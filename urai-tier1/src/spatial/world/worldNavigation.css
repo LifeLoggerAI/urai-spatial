@@ -167,36 +167,188 @@
   animation: urai-world-tunnel-travel 1.9s cubic-bezier(.7, 0, .2, 1) both;
 }
 
-/* Selected-memory crossings must preserve hierarchy without drawing a portal,
-   ring gate or radial tunnel over the live scene. This covers Life Map -> Focus,
-   Focus <-> Replay, and Focus -> Life Map unwind. Ground/infrastructure travel
-   keeps its existing transition grammar. */
-.urai-world-transition[data-phase='travelling'][data-to='focus'] .urai-world-transition__surface,
-.urai-world-transition[data-phase='travelling'][data-to='focus'] .urai-world-transition__aperture,
-.urai-world-transition[data-phase='travelling'][data-to='replay'] .urai-world-transition__surface,
-.urai-world-transition[data-phase='travelling'][data-to='replay'] .urai-world-transition__aperture,
-.urai-world-transition[data-phase='travelling'][data-from='focus'][data-to='life-map'] .urai-world-transition__surface,
-.urai-world-transition[data-phase='travelling'][data-from='focus'][data-to='life-map'] .urai-world-transition__aperture {
-  display: none;
+/* Replay is a memory crossing, not a portal/tunnel. Keep the shared travel timing,
+   but let Focus remain visible beneath a restrained material/atmospheric takeover. */
+.urai-world-transition[data-phase='travelling'][data-to='replay'] {
+  perspective: none;
 }
 
-.urai-world-transition[data-phase='travelling'][data-to='focus'] .urai-world-transition__depth,
-.urai-world-transition[data-phase='travelling'][data-to='replay'] .urai-world-transition__depth,
-.urai-world-transition[data-phase='travelling'][data-from='focus'][data-to='life-map'] .urai-world-transition__depth {
-  background:
-    radial-gradient(ellipse at 50% 52%, rgba(176, 222, 205, .10) 0, rgba(65, 103, 94, .08) 30%, transparent 66%),
-    linear-gradient(180deg, rgba(3, 12, 14, .02), rgba(2, 8, 10, .16));
+.urai-world-transition[data-phase='travelling'][data-to='replay'] .urai-world-transition__aperture {
+  border: 0;
+  box-shadow: none;
+  background: transparent;
   opacity: 0;
-  transform: scale(1.018);
+  transform: none;
+  animation: none;
 }
 
-.urai-world-transition[data-phase='travelling'][data-to='focus'] .urai-world-transition__depth,
-.urai-world-transition[data-phase='travelling'][data-from='focus'][data-to='life-map'] .urai-world-transition__depth {
-  animation: urai-memory-depth-crossing 1.1s cubic-bezier(.4, 0, .2, 1) both;
+.urai-world-transition[data-phase='travelling'][data-to='replay'] .urai-world-transition__surface {
+  background:
+    radial-gradient(ellipse at 50% 48%, rgba(218, 239, 227, .08) 0 16%, rgba(15, 27, 27, .06) 38%, rgba(3, 8, 10, .58) 82%, rgba(1, 4, 7, .9) 100%),
+    linear-gradient(180deg, rgba(12, 20, 20, 0), rgba(2, 7, 9, .68));
+  transform-origin: 50% 50%;
+  animation: urai-replay-focus-recede 1.9s cubic-bezier(.16, 1, .3, 1) both;
 }
 
 .urai-world-transition[data-phase='travelling'][data-to='replay'] .urai-world-transition__depth {
-  animation: urai-memory-depth-crossing 1.9s cubic-bezier(.4, 0, .2, 1) both;
+  background:
+    radial-gradient(ellipse at 50% 51%, rgba(176, 210, 195, .1) 0 18%, rgba(38, 57, 51, .08) 36%, rgba(8, 15, 16, .26) 64%, rgba(1, 5, 8, .74) 100%),
+    linear-gradient(180deg, rgba(4, 10, 12, 0), rgba(2, 7, 9, .72));
+  transform: scale(1.04);
+  animation: urai-replay-memory-crossing 1.9s cubic-bezier(.16, 1, .3, 1) both;
+}
+
+/* Focus already marks Replay intent by disabling the committed primary action.
+   Use that state to create the authored approach without introducing a ring or wormhole. */
+.focusWorld:has(.focusControls .primary:disabled) .focusCanvas {
+  animation: urai-focus-to-replay-camera 1.9s cubic-bezier(.16, 1, .3, 1) both;
+  transform-origin: 50% 48%;
+}
+
+.focusWorld:has(.focusControls .primary:disabled) :is(.focusHeading,.memoryMeaning,.focusControls,.focusHelp,.focusStatus) {
+  animation: urai-focus-to-replay-ui 720ms cubic-bezier(.22, .61, .36, 1) both;
+}
+
+.focusWorld:has(.focusControls .primary:disabled) .focusFog {
+  animation: urai-focus-to-replay-fog 1.55s cubic-bezier(.16, 1, .3, 1) both;
+}
+
+/* Replay HUD convergence: keep all semantics and hit targets, but make playback read
+   as a thin temporal seam instead of a video-player panel. */
+.replayWorld .controls {
+  bottom: max(34px, calc(env(safe-area-inset-bottom) + 26px));
+  width: min(760px, calc(100vw - 36px));
+  grid-template-columns: auto minmax(0, 1fr) 1px;
+  gap: 12px;
+  padding: 6px 8px;
+  border-color: rgba(255,255,255,.11);
+  border-radius: 999px;
+  background: rgba(2,7,12,.34);
+  box-shadow: 0 10px 42px rgba(0,0,0,.18);
+  backdrop-filter: blur(10px);
+}
+
+.replayWorld .controls button {
+  min-width: 58px;
+  min-height: 44px;
+  padding: 0 15px;
+  background: rgba(4,14,18,.78);
+  border: 1px solid color-mix(in srgb,var(--replay-light) 36%,transparent);
+  color: #f7fbf8;
+}
+
+.replayWorld .controls input[type='range'] {
+  width: 100%;
+  min-height: 44px;
+  margin: 0;
+  appearance: none;
+  background: transparent;
+  cursor: pointer;
+}
+
+.replayWorld .controls input[type='range']::-webkit-slider-runnable-track {
+  height: 3px;
+  border-radius: 999px;
+  background: linear-gradient(90deg,var(--replay-light) 0 var(--replay-progress),rgba(255,255,255,.18) var(--replay-progress) 100%);
+}
+
+.replayWorld .controls input[type='range']::-moz-range-track {
+  height: 3px;
+  border-radius: 999px;
+  background: rgba(255,255,255,.18);
+}
+
+.replayWorld .controls input[type='range']::-moz-range-progress {
+  height: 3px;
+  border-radius: 999px;
+  background: var(--replay-light);
+}
+
+.replayWorld .controls input[type='range']::-webkit-slider-thumb {
+  width: 14px;
+  height: 14px;
+  margin-top: -5.5px;
+  appearance: none;
+  border: 2px solid rgba(2,7,12,.86);
+  border-radius: 50%;
+  background: var(--replay-light);
+  box-shadow: 0 0 0 3px rgba(255,255,255,.08);
+}
+
+.replayWorld .controls input[type='range']::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(2,7,12,.86);
+  border-radius: 50%;
+  background: var(--replay-light);
+  box-shadow: 0 0 0 3px rgba(255,255,255,.08);
+}
+
+.replayWorld .controls output {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0,0,0,0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.replayWorld .caption {
+  bottom: clamp(116px,18svh,184px);
+  width: min(760px,86vw);
+}
+
+.replayWorld .caption small {
+  opacity: .72;
+}
+
+.replayWorld .caption strong {
+  font-size: clamp(1.12rem,3vw,2.1rem);
+}
+
+.replayWorld .caption span {
+  max-width: 580px;
+  opacity: .82;
+}
+
+/* Keep owner actions available without letting them compete with the memory. */
+.replayWorld .replayProduct {
+  left: auto;
+  right: max(16px,env(safe-area-inset-right));
+  bottom: max(86px,calc(env(safe-area-inset-bottom) + 78px));
+  transform: none;
+  width: auto;
+  max-width: min(460px,calc(100vw - 32px));
+  gap: 4px;
+  padding: 4px;
+  border-color: rgba(255,255,255,.1);
+  background: rgba(2,7,12,.38);
+  backdrop-filter: blur(10px);
+  opacity: .46;
+  transition: opacity 180ms ease, background 180ms ease;
+}
+
+.replayWorld .replayProduct:hover,
+.replayWorld .replayProduct:focus-within {
+  opacity: 1;
+  background: rgba(2,7,12,.84);
+}
+
+.replayWorld .replayProduct > button,
+.replayWorld .replayHistory summary {
+  min-height: 44px;
+  font-size: 11px;
+}
+
+.replayWorld .replayOperationStatus {
+  left: auto;
+  right: max(16px,env(safe-area-inset-right));
+  bottom: max(140px,calc(env(safe-area-inset-bottom) + 132px));
+  transform: none;
+  opacity: .78;
 }
 
 @keyframes urai-ground-surface-descend {
@@ -226,11 +378,62 @@
   100% { opacity: 0; transform: scale(.68) rotate(7deg); }
 }
 
-@keyframes urai-memory-depth-crossing {
-  0% { opacity: 0; transform: scale(1.018); }
-  36% { opacity: .22; transform: scale(1.008); }
-  72% { opacity: .34; transform: scale(1.002); }
-  100% { opacity: .08; transform: scale(1); }
+@keyframes urai-replay-focus-recede {
+  0% { opacity: 0; transform: scale(1); }
+  18% { opacity: .04; }
+  46% { opacity: .12; transform: scale(1.008); }
+  76% { opacity: .42; transform: scale(1.018); }
+  100% { opacity: .82; transform: scale(1.025); }
+}
+
+@keyframes urai-replay-memory-crossing {
+  0% { opacity: 0; transform: scale(1.04); }
+  34% { opacity: .04; }
+  62% { opacity: .12; transform: scale(1.02); }
+  84% { opacity: .34; }
+  100% { opacity: .72; transform: scale(1); }
+}
+
+@keyframes urai-focus-to-replay-camera {
+  0% { transform: scale(1); filter: brightness(1) saturate(1); }
+  38% { transform: scale(1.012); filter: brightness(.96) saturate(.99); }
+  72% { transform: scale(1.038); filter: brightness(.89) saturate(.96); }
+  100% { transform: scale(1.055); filter: brightness(.82) saturate(.92); }
+}
+
+@keyframes urai-focus-to-replay-ui {
+  0% { opacity: 1; }
+  38% { opacity: .82; }
+  100% { opacity: 0; }
+}
+
+@keyframes urai-focus-to-replay-fog {
+  0% { opacity: 1; }
+  55% { opacity: .82; }
+  100% { opacity: .36; }
+}
+
+@media (max-width: 700px) {
+  .replayWorld .controls {
+    width: calc(100vw - 24px);
+    bottom: max(12px,env(safe-area-inset-bottom));
+  }
+
+  .replayWorld .caption {
+    bottom: clamp(96px,19svh,148px);
+  }
+
+  .replayWorld .replayProduct {
+    right: 12px;
+    bottom: max(66px,calc(env(safe-area-inset-bottom) + 58px));
+    max-width: calc(100vw - 24px);
+    opacity: .34;
+  }
+
+  .replayWorld .replayOperationStatus {
+    right: 12px;
+    bottom: max(118px,calc(env(safe-area-inset-bottom) + 110px));
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -250,9 +453,15 @@
     transform: translate(-50%, -50%) scale(1) rotateX(68deg);
   }
 
-  .urai-world-transition[data-phase='travelling'][data-to='focus'] .urai-world-transition__depth,
-  .urai-world-transition[data-phase='travelling'][data-to='replay'] .urai-world-transition__depth,
-  .urai-world-transition[data-phase='travelling'][data-from='focus'][data-to='life-map'] .urai-world-transition__depth {
-    transform: none;
+  .focusWorld:has(.focusControls .primary:disabled) .focusCanvas,
+  .focusWorld:has(.focusControls .primary:disabled) :is(.focusHeading,.memoryMeaning,.focusControls,.focusHelp,.focusStatus),
+  .focusWorld:has(.focusControls .primary:disabled) .focusFog {
+    animation-duration: 260ms !important;
+    transform: none !important;
+    filter: none !important;
+  }
+
+  .replayWorld .replayProduct {
+    transition: none;
   }
 }
