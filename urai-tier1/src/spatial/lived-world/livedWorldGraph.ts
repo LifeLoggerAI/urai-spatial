@@ -23,7 +23,7 @@ export type LivedWorldEntityKind =
 export type LivedWorldSource = {
   id: string
   provenance: ProvenanceClass
-  sourceType: 'photo' | 'video' | 'audio' | 'scan' | 'map' | 'location-history' | 'user-statement' | 'connected-source' | 'replay-source' | 'system-derived'
+  sourceType: 'photo' | 'video' | 'audio' | 'scan' | 'map' | 'device-location' | 'location-history' | 'user-statement' | 'connected-source' | 'replay-source' | 'system-derived'
   sourceTime?: string
   capturedAt?: string
   checksum?: string
