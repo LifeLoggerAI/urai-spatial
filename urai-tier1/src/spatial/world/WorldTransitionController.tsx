@@ -8,7 +8,7 @@ import {
   URAI_WORLD_RETURN_EVENT,
   URAI_WORLD_TRAVEL_EVENT,
 } from './worldEvents'
-import type { UraiDestination, UraiWorldTravelRequest } from './worldTypes'
+import type { UraiDestination, UraiWorldState, UraiWorldTravelRequest } from './worldTypes'
 
 const CONTEXT_KEYS = [
   'memoryId',
@@ -16,8 +16,12 @@ const CONTEXT_KEYS = [
   'thread',
   'personId',
   'placeId',
+  'eraId',
   'manifestId',
   'privacyMode',
+  'originRealm',
+  'returnToken',
+  'fidelity',
   'demo',
 ] as const
 
@@ -26,8 +30,6 @@ function prefersReducedMotion() {
 }
 
 function transitionDuration(destination: UraiDestination) {
-  // Home owns the authored Ground descent. Once that choreography completes, route
-  // immediately instead of layering the legacy global aperture/tunnel on top.
   if (destination === 'infrastructure-hub') return 40
   if (prefersReducedMotion()) return 260
   if (destination === 'replay' || destination === 'location-map') return 1900
@@ -52,8 +54,12 @@ function buildTravelHref(request: UraiWorldTravelRequest) {
   if (context?.threadId) target.searchParams.set('thread', context.threadId)
   if (context?.personId) target.searchParams.set('personId', context.personId)
   if (context?.placeId) target.searchParams.set('placeId', context.placeId)
+  if (context?.eraId) target.searchParams.set('eraId', context.eraId)
   if (context?.replayManifestId) target.searchParams.set('manifestId', context.replayManifestId)
   if (context?.privacyMode) target.searchParams.set('privacyMode', context.privacyMode)
+  if (context?.originRealm) target.searchParams.set('originRealm', context.originRealm)
+  if (context?.returnToken) target.searchParams.set('returnToken', context.returnToken)
+  if (context?.reconstructionFidelity) target.searchParams.set('fidelity', context.reconstructionFidelity)
   if (context?.demo) target.searchParams.set('demo', '1')
   if (request.entryPortal) target.searchParams.set('entryPortal', request.entryPortal)
   if (request.cameraCheckpoint) target.searchParams.set('cameraCheckpoint', request.cameraCheckpoint)
@@ -78,15 +84,15 @@ function isEditableTarget(target: EventTarget | null) {
   return target.isContentEditable || target.matches('input, textarea, select, [role="textbox"]')
 }
 
-function canonicalReturnDestination(
-  destination: UraiDestination,
-  previousDestination?: UraiDestination,
-): UraiDestination {
-  if (destination === 'replay') return 'focus'
-  if (destination === 'focus') return 'life-map'
-  if (destination === 'life-map') return 'home'
-  if (destination === 'infrastructure-hub') return 'home'
-  return previousDestination ?? 'home'
+function canonicalReturnDestination(world: UraiWorldState): UraiDestination {
+  if (world.destination === 'replay') return 'focus'
+  if (world.destination === 'focus') {
+    if (world.originRealm === 'ground') return 'infrastructure-hub'
+    return 'life-map'
+  }
+  if (world.destination === 'life-map') return 'home'
+  if (world.destination === 'infrastructure-hub') return 'home'
+  return world.previousDestination ?? 'home'
 }
 
 export function WorldTransitionController() {
@@ -145,7 +151,7 @@ export function WorldTransitionController() {
   const reverseTravel = useCallback(() => {
     const currentWorld = worldRef.current
     if (phaseRef.current !== 'idle') return
-    const destination = canonicalReturnDestination(currentWorld.destination, currentWorld.previousDestination)
+    const destination = canonicalReturnDestination(currentWorld)
     const definition = definitionForDestination(destination)
     executeTravel({
       destination,
@@ -157,8 +163,12 @@ export function WorldTransitionController() {
         threadId: currentWorld.threadId,
         personId: currentWorld.personId,
         placeId: currentWorld.placeId,
+        eraId: currentWorld.eraId,
         replayManifestId: currentWorld.replayManifestId,
         privacyMode: currentWorld.privacyMode,
+        originRealm: currentWorld.originRealm,
+        returnToken: currentWorld.returnToken,
+        reconstructionFidelity: currentWorld.reconstructionFidelity,
         demo: currentWorld.demo,
       },
     })
@@ -171,8 +181,6 @@ export function WorldTransitionController() {
       const currentWorld = worldRef.current
       if (event.defaultPrevented || event.key !== 'Escape' || isEditableTarget(event.target)) return
       if (currentWorld.destination === 'home' && phaseRef.current === 'idle') return
-      // Life Map and Location Map own their realm-specific Escape contracts.
-      // The global reverse-travel fallback must not race either realm-owned handler.
       if (currentWorld.destination === 'life-map' || currentWorld.destination === 'location-map') return
       event.preventDefault()
       reverseTravel()
