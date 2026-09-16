@@ -2,6 +2,8 @@
 
 This storyboard is the visual/motion handoff for the Home embodiment canon. Each frame is a production acceptance frame, not a loose concept. Runtime names match `src/spatial/home/homeExperienceState.ts`.
 
+**Non-XR first-person rule:** desktop, mobile, and flat-screen controller views are camera-only. No hands, forearms, torso, legs, feet, or first-person body mesh may appear in the direct viewport. Tracked hand/controller representation is reserved for future XR/VR runtime modes.
+
 ## A. Master journey: presentation -> embodiment -> self -> Orb -> sky -> Ground -> presentation
 
 ### Frame 01 — HOME_PRESENTATION / canonical rest
@@ -39,11 +41,13 @@ This storyboard is the visual/motion handoff for the Home embodiment canon. Each
 ### Frame 06 — AVATAR_HOME_FIRST_PERSON / arrival
 - Camera locks to calibrated first-person eye position.
 - No exterior duplicate Avatar in front of user.
+- No visible hands/body in non-XR mode.
 - Same Orb, same terrain, same weather, same sky, same world coordinates.
 - Locomotion unlocks only now.
 
 ### Frame 07 — first-person walk
 - User moves through Home at calm human pace.
+- Viewport remains camera-only: no hands, arms, torso, legs, or feet.
 - Subtle contact/footstep audio; no aggressive head bob.
 - Ground parallax and nearby geometry establish scale.
 - Orb changes apparent scale only because the user is physically approaching it.
@@ -67,6 +71,7 @@ This storyboard is the visual/motion handoff for the Home embodiment canon. Each
 
 ### Frame 11 — Orb approach
 - User walks toward physical Orb.
+- Camera-only non-XR view; no first-person hands.
 - Orb acknowledges proximity through restrained light/internal motion/audio.
 - No floating “CHAT” label.
 - Accessible semantic activation exists without visually dominating the world.
@@ -91,6 +96,7 @@ This storyboard is the visual/motion handoff for the Home embodiment canon. Each
 
 ### Frame 15 — first-person sky targeting
 - User looks upward.
+- Camera-only view: sky and world only, no player hands/body.
 - The actual sky acknowledges targeting atmospherically: subtle luminance/depth/particle response only.
 - Explicitly absent: portal ring, white dot, doorway, floating Life Map button.
 
@@ -99,9 +105,11 @@ This storyboard is the visual/motion handoff for the Home embodiment canon. Each
 - First-person camera commits upward from the user’s current location.
 - Ground recedes beneath.
 - Exterior Avatar does not reappear.
+- No non-XR hands/body appear during ascent.
 
 ### Frame 17 — SKY_ASCENT / atmosphere
 - Clouds, haze, precipitation, light shafts, and spatial wind pass around camera according to current weather.
+- Camera-only non-XR view is maintained.
 - Home audio attenuates; altitude sound field opens.
 - No loading screen.
 
@@ -115,6 +123,7 @@ This storyboard is the visual/motion handoff for the Home embodiment canon. Each
 - Destination authority takes over only after the threshold.
 - First-person/explorable personal-universe semantics preserved.
 - No exterior Avatar wandering in front of camera.
+- No non-XR body rig enters the viewport.
 
 ### Frame 20 — LIFE_MAP_UNWIND / ESC
 - ESC removes one layer.
@@ -125,14 +134,17 @@ This storyboard is the visual/motion handoff for the Home embodiment canon. Each
 - Weather/light state reconciles to the live Home environment.
 - Ground/world reappears in expected orientation.
 - No reset to presentation camera if origin was first-person.
+- View remains camera-only in non-XR mode.
 
 ### Frame 22 — AVATAR_HOME_FIRST_PERSON restored
 - Exact stable mode restored.
 - Approximate X/Z, yaw/pitch, environment revision, and Orb state restored where safe.
+- No non-XR hands/body visible.
 - User can immediately continue walking.
 
 ### Frame 23 — Ground target
 - User looks down/selects actual terrain.
+- The lower frame shows terrain only; no rendered shoes, legs, feet, or hands in non-XR mode.
 - Local material response communicates that the world surface is actionable.
 - No Ground button, doorway, ring, or localized portal sculpture.
 
@@ -141,10 +153,12 @@ This storyboard is the visual/motion handoff for the Home embodiment canon. Each
 - Terrain texture/material scale increases.
 - Foreground grass/stone/soil/root/water detail grows according to Ground canon.
 - Sound and haptic depth increase.
+- View remains bodyless/camera-only outside XR.
 
 ### Frame 25 — Ground stable arrival
 - Ground becomes the active first-person lived world.
 - Entry feels spatially related to where user descended.
+- No non-XR first-person hands/body rig.
 
 ### Frame 26 — GROUND_UNWIND / ESC
 - Ground detail/scale reverses into Home terrain.
@@ -153,6 +167,7 @@ This storyboard is the visual/motion handoff for the Home embodiment canon. Each
 
 ### Frame 27 — AVATAR_HOME_FIRST_PERSON restored again
 - First-person Home context restored, not cinematic root.
+- Camera-only non-XR view is restored exactly.
 - User remains free to walk or choose another physical surface.
 
 ### Frame 28 — EMBODIMENT_UNWIND / ESC
@@ -268,17 +283,18 @@ All haptics are optional and non-essential. Every audio-only meaning has visual/
 3. Home with a glowing Ground button/hotspot — WRONG.
 4. Home Presentation with no Avatar — WRONG under this successor canon.
 5. First-person Home with duplicate Avatar standing in front — WRONG.
-6. Life Map with third-person Avatar wandering scene — WRONG.
-7. Sky click hard-cuts to generic galaxy — WRONG.
-8. Orb click opens plain rectangular chatbot modal disconnected from Orb — WRONG.
-9. Avatar click opens profile page instead of embodiment — WRONG.
-10. Self View shown as RPG strength/agility/XP grid — WRONG.
-11. ESC from Life Map entered in first-person resets directly to cinematic Home — WRONG.
-12. Returned Home has different weather/time without continuity reconciliation — WRONG.
-13. Two camera systems fight/jitter during transition — WRONG.
-14. Transition loses keyboard focus or traps screen reader — WRONG.
-15. Route refresh returns to half-transitioned state — WRONG.
-16. Mobile movement pad overlaps Orb/Self View/back controls — WRONG.
+6. Non-XR first-person Home/Ground/Life Map showing hands, arms, legs, feet, or an FPS body rig — WRONG.
+7. Life Map with third-person Avatar wandering scene — WRONG.
+8. Sky click hard-cuts to generic galaxy — WRONG.
+9. Orb click opens plain rectangular chatbot modal disconnected from Orb — WRONG.
+10. Avatar click opens profile page instead of embodiment — WRONG.
+11. Self View shown as RPG strength/agility/XP grid — WRONG.
+12. ESC from Life Map entered in first-person resets directly to cinematic Home — WRONG.
+13. Returned Home has different weather/time without continuity reconciliation — WRONG.
+14. Two camera systems fight/jitter during transition — WRONG.
+15. Transition loses keyboard focus or traps screen reader — WRONG.
+16. Route refresh returns to half-transitioned state — WRONG.
+17. Mobile movement pad overlaps Orb/Self View/back controls — WRONG.
 
 ---
 
@@ -288,23 +304,24 @@ Gold-master visual evidence must retain at minimum:
 
 - Frame 01 canonical presentation: desktop landscape, mobile portrait.
 - Frame 04 Avatar approach midpoint.
-- Frame 06 first-person Home arrival.
+- Frame 06 first-person Home arrival, **camera-only/no non-XR hands or body**.
 - Frame 08/09 Self View.
-- Frame 11 Orb proximity first-person.
+- Frame 11 Orb proximity first-person, **camera-only**.
 - Frame 12 Orb transform midpoint.
 - Frame 13 conversation active.
-- Frame 15 sky target first-person.
-- Frame 17 atmospheric ascent.
+- Frame 15 sky target first-person, **camera-only**.
+- Frame 17 atmospheric ascent, **camera-only**.
 - Frame 18 cosmic threshold.
-- Frame 19 Life Map stable.
-- Frame 21 atmospheric re-entry.
-- Frame 22 first-person restored.
-- Frame 23 Ground target.
-- Frame 24 Ground descent midpoint.
-- Frame 25 Ground stable.
+- Frame 19 Life Map stable, **no non-XR body rig**.
+- Frame 21 atmospheric re-entry, **camera-only**.
+- Frame 22 first-person restored, **camera-only**.
+- Frame 23 Ground target, **terrain only in lower frame; no legs/feet/hands**.
+- Frame 24 Ground descent midpoint, **camera-only**.
+- Frame 25 Ground stable, **camera-only**.
 - Frame 28 embodiment unwind midpoint.
 - Frame 30 restored cinematic Home.
 - direct fast-path return frames for Sky, Ground, and Orb.
 - reduced-motion equivalents of embodiment, Sky, Ground, and Orb.
+- future XR references must be stored separately from non-XR retained pixels and may show tracked hands/controllers only when XR mode is explicit.
 
-Each retained image must record exact source SHA, viewport, DPR, reduced-motion setting, quality tier, route, stable/transition state, and origin context.
+Each retained image must record exact source SHA, viewport, DPR, reduced-motion setting, quality tier, route, stable/transition state, origin context, and whether runtime mode is non-XR or XR.
