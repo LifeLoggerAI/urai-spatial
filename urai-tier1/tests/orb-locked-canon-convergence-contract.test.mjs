@@ -35,7 +35,7 @@ test('Home Life Map ascent belongs to the broad sky rather than a localized port
 test('Current Orb authored state clips are one-shot entry gestures, not infinite loops', () => {
   assert.match(currentHome, /setLoop\(THREE\.LoopOnce, 1\)/)
   assert.match(currentHome, /clampWhenFinished = true/)
-  assert.doesNotMatch(currentHome, /setLoop\(THREE\.LoopRepeat, Infinity\).*ORB_CLIPS/s)
+  assert.doesNotMatch(currentHome, /next\.reset\(\)\.setLoop\(THREE\.LoopRepeat\s*,\s*Infinity\)/)
   assert.match(currentHome, /ORB_STATE_MOTION/)
   assert.match(currentHome, /stateMotion: 'one-shot-entry-plus-persistent-organic-runtime'/)
 })
