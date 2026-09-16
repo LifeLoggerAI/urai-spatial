@@ -1,0 +1,32 @@
+import assert from 'node:assert/strict'
+import fs from 'node:fs'
+import path from 'node:path'
+import test from 'node:test'
+import { fileURLToPath } from 'node:url'
+
+const here = path.dirname(fileURLToPath(import.meta.url))
+const root = path.resolve(here, '..')
+const read = (relativePath) => fs.readFileSync(path.join(root, relativePath), 'utf8')
+
+const controller = read('src/spatial/world/WorldTransitionController.tsx')
+const gateway = read('src/spatial/world/GroundGateway.tsx')
+const home = read('src/spatial/layout/HomeWorldProductionV223.tsx')
+const css = read('src/spatial/world/worldNavigation.css')
+
+test('Ground travel is visually owned by Home rather than the generic aperture stack', () => {
+  assert.match(controller, /destination === 'infrastructure-hub'\) return 40/)
+  assert.match(controller, /pendingTravel\?\.destination === 'infrastructure-hub'/)
+  assert.match(controller, /data-ground-visual-owner=\{groundOwned \? 'home-authored-descent' : 'none'\}/)
+  assert.match(controller, /!groundOwned \? <>/)
+  assert.match(css, /\.urai-world-transition__aperture/)
+})
+
+test('Home terrain owns pointer and touch entry while GroundGateway is semantic access only', () => {
+  assert.match(home, /data-home-ground-entry="physical-world-surface"/)
+  assert.match(home, /onGround\(event\.point\.clone\(\)\)/)
+  assert.match(gateway, /data-ground-gateway="semantic-access-only"/)
+  assert.match(gateway, /Pointer and touch users enter through the visible Home terrain/)
+  assert.match(gateway, /Enter Ground — explore your physical lived world in first person/)
+  assert.doesNotMatch(gateway, /urai-ground-gateway__focus-ring|urai-ground-gateway__surface|Enter below/)
+  assert.doesNotMatch(home, /Ground portal|ground portal|white dot|ground-portal/i)
+})
