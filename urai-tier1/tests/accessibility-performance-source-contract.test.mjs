@@ -79,7 +79,8 @@ test('accessibility and performance implementation contracts are present on visi
     'prefers-reduced-motion: reduce',
   ]) requireText(currentHome, marker)
   assert.doesNotMatch(currentHome, /first-person-viewpoint-no-avatar|privacy-preserving-first-person/, 'Home must not regress to retired no-avatar presentation')
-  assert.doesNotMatch(currentHome, /THREE\.LoopRepeat\s*,\s*Infinity/, 'Orb authored state entry clips must not loop forever')
+  assert.doesNotMatch(currentHome, /next\.reset\(\)\.setLoop\(THREE\.LoopRepeat\s*,\s*Infinity\)/, 'Orb authored state entry clips must not loop forever')
+  assert.match(currentHome, /idle\.reset\(\)\.setLoop\(THREE\.LoopRepeat, Infinity\)/, 'The supported Avatar idle clip may loop while reduced motion is off')
   assert.doesNotMatch(currentHome, /MobileMovementPad|useMovementInput|stepEmbodiedMotion/, 'Home must not regress to a synthetic movement-pad world')
 
   for (const marker of [
