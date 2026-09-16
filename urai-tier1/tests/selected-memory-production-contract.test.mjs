@@ -158,7 +158,7 @@ test('Focus retains adaptive quality, reduced motion, visibility pausing, and We
   assert.match(focus, /markFirstSpatialFrame\('\/focus'/)
   assert.match(focus, /webglcontextlost/)
   assert.match(focus, /webglcontextrestored/)
-  assert.match(focus, /data-webgl-state=\{webGLState\}/)
+  assert.match(focus, /data-webgl-state=\{webglState\}/)
 })
 
 test('public demo is disclosed by default and retains an explicit production kill switch', () => {
