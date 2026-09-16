@@ -1,4 +1,5 @@
 import GroundSpatialWorldClean from '@/app/GroundSpatialWorldClean'
+import GroundSemanticGuide from '@/spatial/ground/GroundSemanticGuide'
 import GroundCheckpointRestoreSignal from './GroundCheckpointRestoreSignal'
 import GroundFocusContainment from './GroundFocusContainment'
 import './ground-focus-containment.css'
@@ -20,6 +21,7 @@ export default function GroundPage() {
     >
       <GroundCheckpointRestoreSignal />
       <GroundFocusContainment />
+      <GroundSemanticGuide />
       <GroundSpatialWorldClean />
     </main>
   )
