@@ -5,6 +5,8 @@ import { test } from 'node:test'
 const orb = readFileSync(new URL('../src/spatial/assets/HomeOrbReliquaryV286.tsx', import.meta.url), 'utf8')
 const adapter = readFileSync(new URL('../src/spatial/assets/HomeOrbGroundedV288.tsx', import.meta.url), 'utf8')
 const authority = readFileSync(new URL('../src/spatial/layout/HomeVisualAuthority.tsx', import.meta.url), 'utf8')
+const activeRepair = readFileSync(new URL('../src/spatial/layout/HomeAAAVisualRepair.tsx', import.meta.url), 'utf8')
+const activeHome = readFileSync(new URL('../src/spatial/layout/HomeWorldProductionV223.tsx', import.meta.url), 'utf8')
 const inventory = JSON.parse(readFileSync(new URL('../src/app/currentHomeVisualAuthority.json', import.meta.url), 'utf8'))
 const workflow = readFileSync(new URL('../../.github/workflows/portal-orb-exact-proof.yml', import.meta.url), 'utf8')
 
@@ -46,16 +48,27 @@ test('V286 grounds through restrained inlaid traces instead of visible root tube
   assert.doesNotMatch(orb, /orbiting|rotating halo|memoryLoop|rootTendrils/)
 })
 
-test('current Home authority mounts the V288 grounded adapter which preserves V286 pixels and retires V253', () => {
-  assert.match(authority, /import \{ HomeOrbGroundedV288 \} from '\.\.\/assets\/HomeOrbGroundedV288'/)
-  assert.match(authority, /<HomeOrbGroundedV288 \/>/)
+test('current Home mounts V288 in the active V223 repair slot while preserving interaction-only V223 Orb semantics', () => {
+  assert.match(activeHome, /<HomeAAAVisualRepair \/>/)
+  assert.match(activeRepair, /import \{ HomeOrbGroundedV288 \} from '@\/spatial\/assets\/HomeOrbGroundedV288'/)
+  assert.match(activeRepair, /<HomeOrbGroundedV288 \/>/)
   assert.match(adapter, /import \{ HomeOrbReliquaryV286 \} from '\.\/HomeOrbReliquaryV286'/)
-  assert.match(adapter, /return <HomeOrbReliquaryV286 \/>/)
+  assert.match(adapter, /<HomeOrbReliquaryV286 \/>/)
   assert.match(adapter, /home-v288-grounded-biomorphic-memory-reliquary/)
+  assert.match(adapter, /FALLBACK_INTERACTION_OWNER_NAMES/)
+  assert.match(adapter, /home-living-memory-orb/)
   assert.match(adapter, /fallbackVisualOwner: false/)
   assert.match(adapter, /material\.colorWrite = false/)
   assert.match(adapter, /material\.depthWrite = false/)
   assert.match(adapter, /material\.opacity = 0/)
+  assert.match(adapter, /object\.visible = false/)
+  assert.match(adapter, /interactionOwner: false/)
+  assert.match(adapter, /interactionOwner: true/)
+})
+
+test('certified predecessor authority and inventory still identify V288/V286 and reject retired literal-heart authority', () => {
+  assert.match(authority, /import \{ HomeOrbGroundedV288 \} from '\.\.\/assets\/HomeOrbGroundedV288'/)
+  assert.match(authority, /<HomeOrbGroundedV288 \/>/)
   assert.doesNotMatch(authority, /livingHeartGeometryV253|home-v253-literal-living-memory-heart|<GroundedOrbRootsV253|<LiteralOrbAuthorityV253/)
   assert.ok(inventory.runtimeAssets.includes('HomeOrbReliquaryV286.tsx'))
   assert.ok(inventory.runtimeAssets.includes('HomeOrbGroundedV288.tsx'))
