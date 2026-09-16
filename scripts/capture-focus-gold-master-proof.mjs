@@ -25,7 +25,7 @@ await mkdir(outputDir, { recursive: true })
 await mkdir(videoDir, { recursive: true })
 
 const receipt = {
-  schemaVersion: 'urai-focus-gold-master-proof-1',
+  schemaVersion: 'urai-focus-gold-master-proof-2',
   exactHead,
   capturedAt: new Date().toISOString(),
   base,
@@ -112,11 +112,17 @@ async function waitWorldIdle(page) {
 }
 
 async function waitForFocus(page, { selected = false, noWebGL = false } = {}) {
-  const shell = page.getByTestId('urai-final-focus-chamber')
+  const shell = page.locator('[data-testid="urai-final-focus-chamber"]:visible').first()
   await shell.waitFor({ state: 'visible', timeout: 45_000 })
   if (selected) {
     await page.waitForFunction(() => {
-      const node = document.querySelector('[data-testid="urai-final-focus-chamber"]')
+      const nodes = [...document.querySelectorAll('[data-testid="urai-final-focus-chamber"]')]
+      const node = nodes.find((candidate) => {
+        const style = getComputedStyle(candidate)
+        const rect = candidate.getBoundingClientRect()
+        return style.display !== 'none' && style.visibility !== 'hidden' && Number.parseFloat(style.opacity || '1') > 0.02
+          && rect.width > 100 && rect.height > 100
+      })
       return node?.getAttribute('data-memory-status') === 'demo'
         && node?.getAttribute('data-memory-id') === 'demo:quiet-reset'
         && node?.getAttribute('data-manifest-id') === 'replay-recovery-thread'
@@ -124,7 +130,7 @@ async function waitForFocus(page, { selected = false, noWebGL = false } = {}) {
     }, null, { timeout: 45_000 })
   }
   if (noWebGL) {
-    await page.locator('[data-focus-fallback="semantic"]').waitFor({ state: 'visible', timeout: 15_000 })
+    await page.locator('[data-focus-fallback="semantic"]:visible').first().waitFor({ state: 'visible', timeout: 15_000 })
   } else {
     await shell.locator('canvas').first().waitFor({ state: 'visible', timeout: 45_000 })
     await delay(850)
@@ -136,7 +142,13 @@ async function waitForFocus(page, { selected = false, noWebGL = false } = {}) {
 
 async function describeFocus(page, { selected = false, noWebGL = false } = {}) {
   return page.evaluate(({ selectedExpected, noWebGLExpected }) => {
-    const shell = document.querySelector('[data-testid="urai-final-focus-chamber"]')
+    const shells = [...document.querySelectorAll('[data-testid="urai-final-focus-chamber"]')]
+    const shell = shells.find((candidate) => {
+      const style = getComputedStyle(candidate)
+      const rect = candidate.getBoundingClientRect()
+      return style.display !== 'none' && style.visibility !== 'hidden' && Number.parseFloat(style.opacity || '1') > 0.02
+        && rect.width > 100 && rect.height > 100
+    }) ?? shells[0] ?? null
     const canvas = shell?.querySelector('canvas')
     const canvasRect = canvas?.getBoundingClientRect()
     const text = shell?.textContent || ''
@@ -222,15 +234,21 @@ async function captureJourney(browser) {
   await waitForFocus(page, { selected: true })
   await shot('focus-selected-before-replay')
 
-  const replayAction = page.getByText('Enter Replay', { exact: true }).first()
+  const replayAction = page.getByText('Enter Replay', { exact: true }).filter({ visible: true }).first()
   await replayAction.click()
   await delay(650)
   await shot('focus-to-replay-transition')
   await page.waitForURL((url) => url.pathname.replace(/\/+$/, '') === '/replay', { timeout: 12_000 })
-  const replay = page.getByTestId('cinematic-replay-client')
+  const replay = page.locator('[data-testid="cinematic-replay-client"]:visible').first()
   await replay.waitFor({ state: 'visible', timeout: 45_000 })
   await page.waitForFunction(() => {
-    const node = document.querySelector('[data-testid="cinematic-replay-client"]')
+    const nodes = [...document.querySelectorAll('[data-testid="cinematic-replay-client"]')]
+    const node = nodes.find((candidate) => {
+      const style = getComputedStyle(candidate)
+      const rect = candidate.getBoundingClientRect()
+      return style.display !== 'none' && style.visibility !== 'hidden' && Number.parseFloat(style.opacity || '1') > 0.02
+        && rect.width > 100 && rect.height > 100
+    })
     return node?.getAttribute('data-memory-status') === 'demo'
       && node?.getAttribute('data-memory-id') === 'demo:quiet-reset'
       && node?.getAttribute('data-manifest-id') === 'replay-recovery-thread'
