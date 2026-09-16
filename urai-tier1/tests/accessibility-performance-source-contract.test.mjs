@@ -10,7 +10,7 @@ const requireText = (source, marker, message = marker) => assert.equal(source.in
 const normalizeSource = (source) => source.replace(/\r\n/g, '\n').replace(/"/g, "'").replace(/\s+/g, ' ')
 const requireNormalizedPattern = (source, pattern, message) => assert.match(normalizeSource(source), pattern, message)
 
-test('accessibility and performance implementation contracts are present on first-person Home and first-person Ground', () => {
+test('accessibility and performance implementation contracts are present on visible-avatar Home and first-person Ground', () => {
   const reducedMotion = read('src/spatial/hooks/useReducedMotion.ts')
   const adaptiveQuality = read('src/spatial/performance/useAdaptiveSpatialQuality.ts')
   const companion = read('src/spatial/world/PersistentWorldCompanion.tsx')
@@ -65,16 +65,22 @@ test('accessibility and performance implementation contracts are present on firs
   requireText(homeRuntime, 'role="status"')
 
   for (const marker of [
-    'data-home-embodied-self="first-person-viewpoint-no-avatar"',
+    'data-home-embodied-self="visible-cinematic-avatar"',
+    'data-home-presence-presentation="visible-avatar-third-person"',
     'data-home-movement="camera-look-world-surface-selection"',
     'data-home-ground-entry="physical-world-surface"',
     'data-home-life-map-entry="visible-sky-broad-interaction"',
-    "'first-person-viewpoint'",
+    "'cinematic-third-person'",
+    'home-visible-user-avatar',
+    'home-living-memory-orb',
+    '/assets/urai/generated/models/urai-orb-avatar-v1.glb',
+    '/assets/urai/generated/human-makehuman-v4/home-human-makehuman-v4.glb',
+    'THREE.LoopOnce',
     'prefers-reduced-motion: reduce',
   ]) requireText(currentHome, marker)
-  assert.doesNotMatch(currentHome, /function\s+VisibleUserAvatar\s*\(|<VisibleUserAvatar\b/, 'Home must not restore an active avatar component')
-  assert.doesNotMatch(currentHome, /data-home-embodied-self=["']visible-cinematic-avatar["']|data-home-camera-mode=["']cinematic-third-person["']|name=["']urai-home-embodied-avatar["']/, 'Home must remain first-person/no-avatar')
-  assert.doesNotMatch(currentHome, /MobileMovementPad|useMovementInput|stepEmbodiedMotion/, 'Home must not regress to a movement-pad world')
+  assert.doesNotMatch(currentHome, /first-person-viewpoint-no-avatar|privacy-preserving-first-person/, 'Home must not regress to retired no-avatar presentation')
+  assert.doesNotMatch(currentHome, /THREE\.LoopRepeat\s*,\s*Infinity/, 'Orb authored state entry clips must not loop forever')
+  assert.doesNotMatch(currentHome, /MobileMovementPad|useMovementInput|stepEmbodiedMotion/, 'Home must not regress to a synthetic movement-pad world')
 
   for (const marker of [
     'data-ground-exploration="first-person"',
@@ -98,13 +104,15 @@ test('accessibility and performance implementation contracts are present on firs
   requireText(routeOwnerCss, 'max-height: 100svh !important;')
 
   for (const marker of [
-    "toHaveAttribute('data-home-embodied-self', 'first-person-viewpoint-no-avatar'",
-    "not.toHaveAttribute('data-home-camera-mode', 'cinematic-third-person'",
+    "toHaveAttribute('data-home-embodied-self', 'visible-cinematic-avatar'",
+    "toHaveAttribute('data-home-presence-presentation', 'visible-avatar-third-person'",
     "toHaveAttribute('data-home-movement', 'camera-look-world-surface-selection'",
-    "toHaveCount(0)",
+    "data-home-orb-runtime-asset",
+    "data-home-avatar-runtime-asset",
     'data-ground-exploration="first-person"',
     "name: 'Ground first-person movement controls'",
   ]) requireText(embodiedEvidence, marker)
+  assert.doesNotMatch(embodiedEvidence, /toHaveAttribute\('data-home-embodied-self', 'first-person-viewpoint-no-avatar'\)/, 'Accessibility evidence must not reassert retired no-avatar Home')
 
   requireText(focus, 'aria-label={`Open Replay for ${memory.title}`}')
   assert.equal(focus.includes('min-height:44px'), false, 'Focus controls must not retain 44px minimum targets')
