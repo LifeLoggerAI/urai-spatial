@@ -69,16 +69,18 @@ test('Home sky is the canonical broad Life Map threshold and localized Home-side
   assert.doesNotMatch(currentHome, /home-life-map-physical-portal|LifeMapPortal|PORTAL_MODEL/)
 })
 
-test('Home runtime exposes the governed Avatar and Orb candidate while keeping route destinations semantic', () => {
+test('Home runtime exposes the governed Avatar and current Orb candidate while preserving certified predecessor provenance', () => {
   assert.match(assetHome, /cinematic-home-ground-threshold-convergence/)
   assert.match(assetHome, /continuous-lived-physical-world/)
   assert.match(currentHome, /urai-home-user-avatar/)
   assert.match(currentHome, /home-living-memory-orb/)
   assert.match(currentHome, /HOME_AVATAR_MODEL/)
   assert.doesNotMatch(assetHome, /HOME_GROUND|HOME_SPAWN|stagePortalLifecycle|PortalDestination/)
-  // Keep the last certified V288 metadata until fresh candidate pixels are accepted.
   assert.equal(currentHomeVisualAuthority.artRevision, 'v288-cinematic-lived-world-grounded-reliquary')
-  assert.equal(currentHomeVisualAuthority.orbVisualAuthority, 'v288-grounded-biomorphic-reliquary')
+  assert.equal(currentHomeVisualAuthority.orbVisualAuthority, 'authored-living-memory-orb-candidate')
+  assert.equal(currentHomeVisualAuthority.currentRuntimeCandidate.orbVisualAuthority, 'authored-living-memory-orb-candidate')
+  assert.equal(currentHomeVisualAuthority.currentRuntimeCandidate.certified, false)
+  assert.equal(currentHomeVisualAuthority.lastCertifiedPredecessor.orbVisualAuthority, 'v288-grounded-biomorphic-reliquary')
   assert.equal(currentHomeVisualAuthority.worldIdentifier, 'cinematic-lived-world-threshold')
   assert.match(homeEntry, /HomeWorldProductionV223 as HomeWorldProduction/)
   assert.match(groundGateway, /aria-label="Enter your physical Ground world"/)
@@ -86,22 +88,25 @@ test('Home runtime exposes the governed Avatar and Orb candidate while keeping r
   assert.match(homeRuntime, /aria-label="Open Ground directly"/)
 })
 
-test('Ground remains a true first-person lived world with privacy-safe empty-by-default place authority', () => {
+test('Ground remains a bodyless first-person lived world with privacy-safe empty-by-default place authority', () => {
   for (const marker of [
-    'data-ground-exploration="first-person"',
+    'data-ground-exploration="first-person-no-visible-body"',
     'data-ground-runtime-owner="first-person-lived-world"',
-    'data-ground-camera="eye-level-terrain-following"',
-    'data-ground-collision="visible-terrain-heightfield"',
+    'data-ground-camera="eye-level-terrain-following-no-authored-bob"',
+    'data-ground-collision="terrain-plus-authored-obstacle-field"',
     'data-ground-place-layer="consent-aware-empty-by-default"',
     'data-ground-private-location-mounted="false"',
+    'data-ground-visible-avatar="false"',
+    'data-ground-visible-hands="false"',
     'ground-visible-traversable-terrain',
     'stepEmbodiedMotion',
     'useMovementInput',
     'MobileMovementPad',
+    'GROUND_EYE_HEIGHT_M',
   ]) has(groundOwner, marker)
   for (const profile of ['temperate','urban','woodland','arid','coastal']) has(groundOwner, `id: "${profile}"`)
-  assert.match(groundOwner, /const EYE_HEIGHT = 1\.69/)
-  assert.match(groundOwner, /surfaceY \+ EYE_HEIGHT/)
+  assert.match(groundOwner, /surfaceY \+ GROUND_EYE_HEIGHT_M/)
+  assert.doesNotMatch(groundOwner, /const EYE_HEIGHT = 1\.69/)
   assert.doesNotMatch(groundOwner, /GroundPhysicalArchitecture|GroundVaultArchitecture|ground-destination-compass|ground-central-nexus|ground-enterable-threshold-/)
 })
 
