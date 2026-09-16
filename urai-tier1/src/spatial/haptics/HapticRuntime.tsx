@@ -3,6 +3,7 @@
 import { useEffect } from 'react'
 import { getHapticCue, type SpatialHapticCueId } from './hapticCueRegistry'
 import { URAI_WORLD_RETURN_EVENT, URAI_WORLD_TRAVEL_EVENT } from '@/spatial/world/worldEvents'
+import type { UraiWorldTravelRequest } from '@/spatial/world/worldTypes'
 
 export const URAI_HAPTIC_CUE_EVENT = 'urai:haptic-cue'
 export const URAI_HAPTICS_ENABLED_EVENT = 'urai:haptics-enabled'
@@ -90,9 +91,14 @@ export function setHapticsEnabled(enabled: boolean) {
   window.dispatchEvent(new CustomEvent<HapticsEnabledDetail>(URAI_HAPTICS_ENABLED_EVENT, { detail: { enabled } }))
 }
 
+function isGroundTravel(request: UraiWorldTravelRequest | undefined) {
+  return request?.destination === 'infrastructure-hub' || request?.href?.startsWith('/ground') === true
+}
+
 export function HapticRuntime() {
   useEffect(() => {
     let runtimeEnabled = hapticsEnabled()
+    let groundArrivalTimer = 0
 
     const onCue = (event: Event) => {
       if (!runtimeEnabled) return
@@ -100,10 +106,22 @@ export function HapticRuntime() {
       if (!detail?.cue) return
       void executeHapticCue(detail.cue)
     }
-    const onWorldTravel = () => { if (runtimeEnabled) void executeHapticCue('portal-open') }
+    const onWorldTravel = (event: Event) => {
+      if (!runtimeEnabled) return
+      const request = (event as CustomEvent<UraiWorldTravelRequest>).detail
+      if (isGroundTravel(request)) {
+        window.clearTimeout(groundArrivalTimer)
+        groundArrivalTimer = window.setTimeout(() => {
+          if (runtimeEnabled) void executeHapticCue('ground-arrival')
+        }, 220)
+        return
+      }
+      void executeHapticCue('portal-open')
+    }
     const onWorldReturn = () => { if (runtimeEnabled) void executeHapticCue('return-home') }
     const onEnabled = (event: Event) => {
       runtimeEnabled = (event as CustomEvent<HapticsEnabledDetail>).detail?.enabled === true
+      if (!runtimeEnabled) window.clearTimeout(groundArrivalTimer)
     }
 
     window.addEventListener(URAI_HAPTIC_CUE_EVENT, onCue)
@@ -111,6 +129,7 @@ export function HapticRuntime() {
     window.addEventListener(URAI_WORLD_RETURN_EVENT, onWorldReturn)
     window.addEventListener(URAI_HAPTICS_ENABLED_EVENT, onEnabled)
     return () => {
+      window.clearTimeout(groundArrivalTimer)
       window.removeEventListener(URAI_HAPTIC_CUE_EVENT, onCue)
       window.removeEventListener(URAI_WORLD_TRAVEL_EVENT, onWorldTravel)
       window.removeEventListener(URAI_WORLD_RETURN_EVENT, onWorldReturn)

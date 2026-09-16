@@ -1,0 +1,56 @@
+name: Ground Canon Stack
+
+on:
+  push:
+    branches:
+      - ground-canon-lock-20260916-v1
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ground-canon-stack-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: Ground source + type + build verification
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Checkout exact branch head
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1
+        with:
+          version: 10.0.0
+          run_install: false
+
+      - name: Setup Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Install frozen dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run Ground zero-ambiguity contract
+        working-directory: urai-tier1
+        run: node --import tsx --test tests/ground-zero-ambiguity-contract.test.mjs
+
+      - name: Typecheck runtime
+        working-directory: urai-tier1
+        run: pnpm run typecheck
+
+      - name: Build production runtime
+        working-directory: urai-tier1
+        run: pnpm run build

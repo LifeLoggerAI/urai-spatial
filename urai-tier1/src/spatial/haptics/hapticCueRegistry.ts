@@ -6,6 +6,11 @@ export type SpatialHapticCueId =
   | 'portal-open'
   | 'gate-shown'
   | 'return-home'
+  | 'ground-activation'
+  | 'ground-arrival'
+  | 'orb-attention'
+  | 'memory-ready'
+  | 'replay-commit'
 
 export type SpatialHapticCue = {
   id: SpatialHapticCueId
@@ -22,6 +27,11 @@ export const HAPTIC_CUE_REGISTRY: Record<SpatialHapticCueId, SpatialHapticCue> =
   'portal-open': { id: 'portal-open', label: 'Portal Open', patternMs: [20, 20, 20], reducedMotionSafe: true },
   'gate-shown': { id: 'gate-shown', label: 'Gate Shown', patternMs: [10], reducedMotionSafe: true },
   'return-home': { id: 'return-home', label: 'Return Home', patternMs: [18], reducedMotionSafe: true },
+  'ground-activation': { id: 'ground-activation', label: 'Ground Activation', patternMs: [12], reducedMotionSafe: true },
+  'ground-arrival': { id: 'ground-arrival', label: 'Ground Arrival', patternMs: [24], reducedMotionSafe: true },
+  'orb-attention': { id: 'orb-attention', label: 'Orb Attention', patternMs: [10], reducedMotionSafe: true },
+  'memory-ready': { id: 'memory-ready', label: 'Memory Ready', patternMs: [18, 90, 8], reducedMotionSafe: true },
+  'replay-commit': { id: 'replay-commit', label: 'Replay Commit', patternMs: [22], reducedMotionSafe: true },
 }
 
 export function getHapticCue(id: SpatialHapticCueId) {
