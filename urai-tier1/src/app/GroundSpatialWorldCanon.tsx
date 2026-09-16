@@ -26,6 +26,14 @@ import {
   type GroundUnwindReason,
 } from '@/spatial/world/homeGroundContract'
 import { height as homeHeight } from '@/spatial/layout/HomeWorldProductionV223Geometry'
+import { requestUraiWorldOrbOpen } from '@/spatial/world/worldEvents'
+import { requestHapticCue } from '@/spatial/haptics/HapticRuntime'
+import {
+  resolveOrbSensoryOutput,
+  URAI_ORB_STATE_EVENT,
+  type OrbState,
+  type OrbStateEventDetail,
+} from '@/app/home/orbStateController'
 
 const EYE_HEIGHT = 1.70
 const TERRAIN_ALBEDO = '/assets/urai/home-production/cc0/rock-tile-floor/rock-tile-floor-diff-1k.webp'
@@ -44,22 +52,53 @@ const SLOPE_SAMPLE = .18
 const PLAYER_RADIUS = .28
 
 const PRIMARY_LANDMARKS = [
-  { id: 'western-weathered-shelf', x: -12.4, z: -24.5, radius: 2.4, variant: '01' as const, scale: [5.4, 3.0, 6.2] as [number, number, number] },
-  { id: 'eastern-fracture-mass', x: 13.2, z: -29.0, radius: 2.8, variant: '02' as const, scale: [6.0, 4.0, 6.6] as [number, number, number] },
-  { id: 'deep-saddle-stone', x: 3.4, z: -39.0, radius: 2.0, variant: '01' as const, scale: [4.2, 2.2, 4.7] as [number, number, number] },
+  { id: 'western-weathered-shelf', label: 'western weathered shelf', x: -12.4, z: -24.5, radius: 2.4, variant: '01' as const, scale: [5.4, 3.0, 6.2] as [number, number, number] },
+  { id: 'eastern-fracture-mass', label: 'eastern fracture mass', x: 13.2, z: -29.0, radius: 2.8, variant: '02' as const, scale: [6.0, 4.0, 6.6] as [number, number, number] },
+  { id: 'deep-saddle-stone', label: 'deep saddle stone', x: 3.4, z: -39.0, radius: 2.0, variant: '01' as const, scale: [4.2, 2.2, 4.7] as [number, number, number] },
 ] as const
 
 const SECONDARY_PLACES = [
-  { id: 'lichen-shelf', x: -7.2, z: -10.4, radius: 1.25 },
-  { id: 'quiet-runoff', x: 6.4, z: -14.2, radius: 1.05 },
-  { id: 'moss-hollow', x: -9.6, z: -31.0, radius: 1.2 },
-  { id: 'mineral-overlook', x: 9.0, z: -36.2, radius: 1.2 },
+  { id: 'lichen-shelf', label: 'lichen shelf', x: -7.2, z: -10.4, radius: 1.25 },
+  { id: 'quiet-runoff', label: 'quiet runoff channel', x: 6.4, z: -14.2, radius: 1.05 },
+  { id: 'moss-hollow', label: 'moss hollow', x: -9.6, z: -31.0, radius: 1.2 },
+  { id: 'mineral-overlook', label: 'mineral overlook', x: 9.0, z: -36.2, radius: 1.2 },
+] as const
+
+const BOUNDARY_GEOLOGY = [
+  { id: 'west-near', x: -26.0, z: 8.0, radius: 3.0, variant: '01' as const, rotation: .18, scale: [5.5, 4.2, 6.0] as [number, number, number] },
+  { id: 'west-mid-a', x: -26.8, z: -7.0, radius: 3.4, variant: '02' as const, rotation: .52, scale: [6.8, 5.1, 7.0] as [number, number, number] },
+  { id: 'west-mid-b', x: -26.2, z: -23.0, radius: 3.2, variant: '01' as const, rotation: 1.02, scale: [6.1, 4.8, 6.6] as [number, number, number] },
+  { id: 'west-deep', x: -24.8, z: -41.0, radius: 3.8, variant: '02' as const, rotation: .74, scale: [7.5, 6.0, 8.0] as [number, number, number] },
+  { id: 'east-near', x: 26.3, z: 7.0, radius: 3.0, variant: '02' as const, rotation: -.28, scale: [5.4, 4.4, 5.8] as [number, number, number] },
+  { id: 'east-mid-a', x: 26.7, z: -8.0, radius: 3.5, variant: '01' as const, rotation: -.64, scale: [6.7, 5.5, 7.1] as [number, number, number] },
+  { id: 'east-mid-b', x: 26.0, z: -25.0, radius: 3.3, variant: '02' as const, rotation: -1.10, scale: [6.2, 5.0, 6.7] as [number, number, number] },
+  { id: 'east-deep', x: 24.6, z: -42.0, radius: 3.8, variant: '01' as const, rotation: -.82, scale: [7.4, 6.2, 7.8] as [number, number, number] },
+  { id: 'rear-left', x: -12.5, z: 13.2, radius: 2.6, variant: '02' as const, rotation: 2.0, scale: [4.8, 3.8, 5.0] as [number, number, number] },
+  { id: 'rear-right', x: 12.8, z: 13.0, radius: 2.5, variant: '01' as const, rotation: -2.1, scale: [4.7, 3.7, 4.9] as [number, number, number] },
+  { id: 'deep-left', x: -12.5, z: -46.5, radius: 3.4, variant: '01' as const, rotation: .33, scale: [6.8, 5.1, 6.9] as [number, number, number] },
+  { id: 'deep-right', x: 15.0, z: -46.0, radius: 3.2, variant: '02' as const, rotation: -.41, scale: [6.2, 5.0, 6.5] as [number, number, number] },
 ] as const
 
 const COLLISION_OBSTACLES: MovementObstacle[] = [
   ...PRIMARY_LANDMARKS.map((item) => ({ x: item.x, z: item.z, radius: item.radius + PLAYER_RADIUS })),
   ...SECONDARY_PLACES.map((item) => ({ x: item.x, z: item.z, radius: item.radius * .55 + PLAYER_RADIUS })),
+  ...BOUNDARY_GEOLOGY.map((item) => ({ x: item.x, z: item.z, radius: item.radius + PLAYER_RADIUS })),
 ]
+
+const ORB_PALETTES: Record<OrbState, { body: string; warm: string; cool: string; field: string }> = {
+  dormant: { body: '#484943', warm: '#9a7656', cool: '#687e7b', field: '#8d826e' },
+  idle: { body: '#535047', warm: '#d39a61', cool: '#789391', field: '#c2a070' },
+  attention: { body: '#5b564b', warm: '#e0a461', cool: '#8ba7a0', field: '#d5aa70' },
+  listening: { body: '#4a5652', warm: '#8db9ad', cool: '#6f8f9d', field: '#82a9a3' },
+  thinking: { body: '#514b55', warm: '#a28aac', cool: '#7696a4', field: '#9289a3' },
+  speaking: { body: '#5e5145', warm: '#e3aa68', cool: '#c98559', field: '#d9a066' },
+  guiding: { body: '#595548', warm: '#c6ad72', cool: '#7ea08c', field: '#a6ab76' },
+  reflecting: { body: '#504d54', warm: '#9d8fa9', cool: '#748d9c', field: '#8e879e' },
+  calming: { body: '#4d554c', warm: '#9fb49d', cool: '#789a93', field: '#91a793' },
+  privacy: { body: '#48545a', warm: '#7ca1ae', cool: '#6e8199', field: '#7d98a5' },
+  warning: { body: '#5b473f', warm: '#d77e59', cool: '#aa6853', field: '#bb7659' },
+  transition: { body: '#504c55', warm: '#aa94b1', cool: '#7898a1', field: '#918ba7' },
+}
 
 function mapRange(value: number, sourceMin: number, sourceMax: number, targetMin: number, targetMax: number) {
   const t = THREE.MathUtils.clamp((value - sourceMin) / Math.max(.0001, sourceMax - sourceMin), 0, 1)
@@ -78,7 +117,10 @@ function groundHeight(x: number, z: number) {
   const sharedHome = homeHeight(mapped.x, mapped.z)
   const localErosion = Math.sin(x * .43 + z * .21) * .028 + Math.cos(x * .77 - z * .37) * .018
   const runoff = Math.exp(-Math.pow(x - Math.sin(z * .075) * 1.5, 2) / 6.4) * -.055
-  return sharedHome + localErosion + runoff
+  const sideRise = THREE.MathUtils.smoothstep(Math.abs(x), 20.5, 28) * 6.4
+  const deepRise = THREE.MathUtils.smoothstep(-z, 39.0, 48.0) * 6.8
+  const rearRise = THREE.MathUtils.smoothstep(z, 9.5, 16.0) * 4.6
+  return sharedHome + localErosion + runoff + sideRise + deepRise + rearRise
 }
 
 function slopeDegrees(x: number, z: number) {
@@ -201,11 +243,15 @@ function FernPatch({ x, z, scale, rotation }: { x: number; z: number; scale: num
   return <group position={[x, groundHeight(x, z), z]} rotation={[0, rotation, 0]} scale={scale} raycast={() => null}><primitive object={model} /></group>
 }
 
-function BoundaryRidges() {
-  return <group name="ground-physical-boundary-ridges" raycast={() => null}>
-    <mesh position={[-29.5, 5.5, -17]} rotation={[0, .05, -.08]} castShadow receiveShadow><boxGeometry args={[5.5, 12, 70]} /><meshStandardMaterial color="#354039" roughness={.97} /></mesh>
-    <mesh position={[29.5, 6.5, -17]} rotation={[0, -.08, .09]} castShadow receiveShadow><boxGeometry args={[5.0, 14, 70]} /><meshStandardMaterial color="#354039" roughness={.97} /></mesh>
-    <mesh position={[0, 7.5, -51]} rotation={[.03, 0, 0]} castShadow receiveShadow><boxGeometry args={[64, 16, 7]} /><meshStandardMaterial color="#354039" roughness={.97} /></mesh>
+function BoundaryGeology() {
+  return <group name="ground-physical-boundary-geology" userData={{ boundaryTreatment: 'terrain-rise-plus-scanned-geology-no-invisible-wall-first' }} raycast={() => null}>
+    {BOUNDARY_GEOLOGY.map((item) => <ScannedRock
+      key={item.id}
+      variant={item.variant}
+      position={[item.x, groundHeight(item.x, item.z) - .65, item.z]}
+      rotationY={item.rotation}
+      scale={item.scale}
+    />)}
   </group>
 }
 
@@ -223,7 +269,11 @@ function GroundPlaces({ announce }: { announce: (value: string) => void }) {
       name={`ground-place-${item.id}`}
       position={[item.x, groundHeight(item.x, item.z) + .08, item.z]}
       scale={[item.radius, .12 + (index % 2) * .04, item.radius * .82]}
-      onClick={(event) => { event.stopPropagation(); announce(item.id.replace(/-/g, ' ')) }}
+      onClick={(event) => {
+        event.stopPropagation()
+        requestHapticCue('select-object', 'ground-place')
+        announce(item.label)
+      }}
       receiveShadow
       userData={{ placeHierarchy: 'secondary', authoredPlacement: true, memoryReady: true }}
     >
@@ -234,23 +284,115 @@ function GroundPlaces({ announce }: { announce: (value: string) => void }) {
   </group>
 }
 
-function GroundWorld({ target, announce }: { target: MutableRefObject<THREE.Vector3 | null>; announce: (value: string) => void }) {
+function GroundWorld({ target, announce, onReady }: {
+  target: MutableRefObject<THREE.Vector3 | null>
+  announce: (value: string) => void
+  onReady: () => void
+}) {
   const geometry = useMemo(buildTerrainGeometry, [])
   useEffect(() => () => geometry.dispose(), [geometry])
+  useEffect(() => onReady(), [onReady])
   const onTerrainClick = (event: ThreeEvent<MouseEvent>) => {
     event.stopPropagation()
     if (event.delta > 8) return
     const x = THREE.MathUtils.clamp(event.point.x, GROUND_PLAYABLE_BOUNDS.minX + 1, GROUND_PLAYABLE_BOUNDS.maxX - 1)
     const z = THREE.MathUtils.clamp(event.point.z, GROUND_PLAYABLE_BOUNDS.minZ + 1, GROUND_PLAYABLE_BOUNDS.maxZ - 1)
-    if (slopeDegrees(x, z) > MAX_WALK_SLOPE_DEGREES) { announce('That slope is too steep to walk safely.'); return }
+    if (slopeDegrees(x, z) > MAX_WALK_SLOPE_DEGREES) {
+      requestHapticCue('gate-shown', 'ground-slope')
+      announce('That slope is too steep to walk safely.')
+      return
+    }
+    requestHapticCue('select-object', 'ground-target-walk')
     target.current = new THREE.Vector3(x, 0, z)
   }
   return <group name="ground-lived-world" userData={{ semanticOwner: 'ground-physical-lived-world', continuity: 'home-ground-shared-geology-v1' }}>
     <mesh name="ground-visible-traversable-terrain" geometry={geometry} onClick={onTerrainClick} receiveShadow>
       <GroundMaterial />
     </mesh>
-    <BoundaryRidges />
-    <Suspense fallback={null}><GroundPlaces announce={announce} /></Suspense>
+    <Suspense fallback={null}>
+      <BoundaryGeology />
+      <GroundPlaces announce={announce} />
+    </Suspense>
+  </group>
+}
+
+function makeOrbTrace(index: number) {
+  const angle = -.8 + index * .78
+  const reach = .38 + (index % 3) * .14
+  const bend = index % 2 ? .09 : -.07
+  const points = [
+    new THREE.Vector3(0, .010, 0),
+    new THREE.Vector3(Math.cos(angle) * reach * .45, .007, Math.sin(angle) * reach * .36),
+    new THREE.Vector3(Math.cos(angle + bend) * reach, .004, Math.sin(angle + bend) * reach * .72),
+  ]
+  return new THREE.TubeGeometry(new THREE.CatmullRomCurve3(points, false, 'centripetal', .42), 22, .005 + (index % 2) * .0015, 5, false)
+}
+
+function GroundOrbPresence({ visible, playerPosition, yaw, reducedMotion, onActivate }: {
+  visible: boolean
+  playerPosition: MutableRefObject<THREE.Vector3>
+  yaw: MutableRefObject<number>
+  reducedMotion: boolean
+  onActivate: () => void
+}) {
+  const [state, setState] = useState<OrbState>('idle')
+  const [anchor, setAnchor] = useState(() => new THREE.Vector3(0, -100, 0))
+  const root = useRef<THREE.Group>(null)
+  const traces = useMemo(() => Array.from({ length: 6 }, (_, index) => makeOrbTrace(index)), [])
+  const palette = ORB_PALETTES[state]
+  const sensory = resolveOrbSensoryOutput(state, reducedMotion, true)
+
+  useEffect(() => () => traces.forEach((geometry) => geometry.dispose()), [traces])
+  useEffect(() => {
+    const listener = (event: CustomEvent<OrbStateEventDetail>) => setState(event.detail.state)
+    window.addEventListener(URAI_ORB_STATE_EVENT, listener)
+    return () => window.removeEventListener(URAI_ORB_STATE_EVENT, listener)
+  }, [])
+  useEffect(() => {
+    if (!visible) return
+    const player = playerPosition.current
+    const forward = new THREE.Vector3(-Math.sin(yaw.current), 0, -Math.cos(yaw.current))
+    const right = new THREE.Vector3(Math.cos(yaw.current), 0, -Math.sin(yaw.current))
+    const next = player.clone().addScaledVector(forward, 1.65).addScaledVector(right, .58)
+    next.x = THREE.MathUtils.clamp(next.x, GROUND_PLAYABLE_BOUNDS.minX + 2, GROUND_PLAYABLE_BOUNDS.maxX - 2)
+    next.z = THREE.MathUtils.clamp(next.z, GROUND_PLAYABLE_BOUNDS.minZ + 2, GROUND_PLAYABLE_BOUNDS.maxZ - 2)
+    next.y = groundHeight(next.x, next.z)
+    setAnchor(next)
+  }, [playerPosition, visible, yaw])
+  useFrame(({ clock }) => {
+    if (!visible || !root.current || reducedMotion) return
+    const t = clock.elapsedTime
+    root.current.rotation.y = .12 + Math.sin(t * .21) * .017
+    root.current.scale.setScalar(1 + Math.sin(t * .71) * .004)
+  })
+
+  if (!visible) return null
+  return <group
+    ref={root}
+    position={[anchor.x, anchor.y, anchor.z]}
+    name="ground-summoned-physical-orb"
+    userData={{ semanticOwner: 'orb', physicalGroundPresence: true, derivedVisualLanguage: 'v288-grounded-biomorphic-reliquary', animation: sensory.animation }}
+  >
+    <group position={[0, .62, 0]} onClick={(event) => { event.stopPropagation(); onActivate() }}>
+      <mesh position={[-.19, .04, .01]} scale={[.52, .82, .43]} rotation={[.06, -.22, .19]} castShadow receiveShadow>
+        <icosahedronGeometry args={[.68, 3]} />
+        <meshStandardMaterial color={palette.body} emissive={palette.warm} emissiveIntensity={state === 'dormant' ? .02 : .09} roughness={.79} metalness={.015} />
+      </mesh>
+      <mesh position={[.21, .08, -.04]} scale={[.46, .72, .39]} rotation={[-.05, .26, -.21]} castShadow receiveShadow>
+        <icosahedronGeometry args={[.68, 3]} />
+        <meshStandardMaterial color={palette.body} emissive={palette.cool} emissiveIntensity={state === 'dormant' ? .018 : .07} roughness={.81} metalness={.01} />
+      </mesh>
+      <mesh position={[0, -.35, .025]} scale={[.30, .38, .28]} castShadow receiveShadow>
+        <icosahedronGeometry args={[.64, 2]} />
+        <meshStandardMaterial color={palette.body} emissive={palette.warm} emissiveIntensity={.045} roughness={.87} />
+      </mesh>
+      <pointLight position={[0, .16, .16]} color={palette.warm} intensity={state === 'warning' ? .62 : .20} distance={2.2} decay={2} />
+    </group>
+    <group name="ground-orb-contact-field" raycast={() => null}>
+      {traces.map((geometry, index) => <mesh key={index} geometry={geometry}>
+        <meshStandardMaterial color={index % 2 ? '#343d38' : '#5e4b3b'} emissive={palette.field} emissiveIntensity={state === 'idle' ? .008 : .026} roughness={.94} />
+      </mesh>)}
+    </group>
   </group>
 }
 
@@ -407,6 +549,15 @@ function AnalogPad({ input, disabled }: { input: MovementInput; disabled: boolea
   </div>
 }
 
+function directionPhrase(relativeRadians: number) {
+  const normalized = Math.atan2(Math.sin(relativeRadians), Math.cos(relativeRadians))
+  const degrees = THREE.MathUtils.radToDeg(normalized)
+  if (Math.abs(degrees) <= 25) return 'ahead'
+  if (degrees > 25 && degrees < 155) return 'to your left'
+  if (degrees < -25 && degrees > -155) return 'to your right'
+  return 'behind you'
+}
+
 export default function GroundSpatialWorldCanon() {
   const router = useRouter()
   const reducedMotion = useReducedMotion()
@@ -417,18 +568,21 @@ export default function GroundSpatialWorldCanon() {
     const z = checkpoint?.groundSpawn[1] ?? 6
     return new THREE.Vector3(x, 0, z)
   }, [checkpoint])
-  const [ready, setReady] = useState(false)
+  const [worldReady, setWorldReady] = useState(false)
+  const [cameraReady, setCameraReady] = useState(false)
   const [inputReady, setInputReady] = useState(false)
   const [dragging, setDragging] = useState(false)
   const [unwinding, setUnwinding] = useState(false)
   const [unwindReason, setUnwindReason] = useState<GroundUnwindReason>('return-control')
   const [announcement, setAnnouncement] = useState('Ground is forming.')
   const [cameraHandoff, setCameraHandoff] = useState(false)
+  const [orbVisible, setOrbVisible] = useState(false)
   const yaw = useRef(checkpoint?.groundHeading ?? 0)
   const pitch = useRef(-.04)
   const target = useRef<THREE.Vector3 | null>(null)
   const lastPosition = useRef(spawn.clone())
   const unwindStarted = useRef(false)
+  const ready = worldReady && cameraReady
 
   const beginUnwind = useCallback((reason: GroundUnwindReason) => {
     if (unwindStarted.current) return
@@ -436,7 +590,9 @@ export default function GroundSpatialWorldCanon() {
     setUnwindReason(reason)
     setInputReady(false)
     setDragging(false)
+    setOrbVisible(false)
     target.current = null
+    requestHapticCue('return-home', 'ground-unwind')
     setUnwinding(true)
     setAnnouncement('Returning Home.')
   }, [])
@@ -453,10 +609,16 @@ export default function GroundSpatialWorldCanon() {
   const look = useDragLook({ yaw, pitch, enabled: inputReady && !unwinding, sensitivity: .0024, minPitch: -.96, maxPitch: .96, onDragState: setDragging })
 
   useEffect(() => {
+    if (!ready || unwinding) {
+      setInputReady(false)
+      return
+    }
     const delay = reducedMotion ? 40 : 180
     const timer = window.setTimeout(() => setInputReady(true), delay)
+    requestHapticCue('enter-place', 'ground-ready')
+    setAnnouncement('Ground is ready for first-person exploration.')
     return () => window.clearTimeout(timer)
-  }, [reducedMotion])
+  }, [ready, reducedMotion, unwinding])
 
   useEffect(() => {
     const handler = (event: WindowEventMap[typeof GROUND_UNWIND_EVENT]) => beginUnwind(event.detail.reason)
@@ -464,20 +626,29 @@ export default function GroundSpatialWorldCanon() {
     return () => window.removeEventListener(GROUND_UNWIND_EVENT, handler)
   }, [beginUnwind])
 
-  useEffect(() => {
-    const onPopState = () => {
-      if (unwindStarted.current) return
-      window.history.forward()
-      window.setTimeout(() => beginUnwind('browser-back'), 0)
-    }
-    window.addEventListener('popstate', onPopState)
-    return () => window.removeEventListener('popstate', onPopState)
-  }, [beginUnwind])
-
   const completeUnwind = useCallback(() => {
     if (enteredFromHome && window.history.length > 1) router.back()
     else router.replace('/home?returnFrom=ground')
   }, [enteredFromHome, router])
+
+  const describeSurroundings = useCallback(() => {
+    const position = lastPosition.current
+    const candidates = [...PRIMARY_LANDMARKS, ...SECONDARY_PLACES]
+      .map((place) => ({ ...place, distance: Math.hypot(place.x - position.x, place.z - position.z) }))
+      .sort((a, b) => a.distance - b.distance)
+      .slice(0, 3)
+    if (!candidates.length) {
+      setAnnouncement('No nearby place is currently resolved.')
+      return
+    }
+    const phrases = candidates.map((place) => {
+      const bearing = Math.atan2(-(place.x - position.x), -(place.z - position.z))
+      const relative = bearing - yaw.current
+      return `${place.label}, ${Math.max(1, Math.round(place.distance))} meters ${directionPhrase(relative)}`
+    })
+    requestHapticCue('select-object', 'ground-surroundings')
+    setAnnouncement(`Nearby: ${phrases.join('; ')}.`)
+  }, [])
 
   return <main
     className="ground-spatial-root"
@@ -493,12 +664,16 @@ export default function GroundSpatialWorldCanon() {
     data-ground-collision="terrain-slope-step-and-authored-obstacles"
     data-ground-slope-limit={MAX_WALK_SLOPE_DEGREES}
     data-ground-step-height={MAX_STEP_HEIGHT}
+    data-ground-boundary="terrain-rise-scanned-geology-before-safety-clamp"
     data-ground-pointer-lock="false"
     data-ground-ready={ready ? 'true' : 'false'}
+    data-ground-world-ready={worldReady ? 'true' : 'false'}
+    data-ground-camera-ready={cameraReady ? 'true' : 'false'}
     data-ground-input-ready={inputReady && !unwinding ? 'true' : 'false'}
     data-ground-camera-mode={unwinding ? 'unwind' : dragging ? 'look' : 'first-person'}
     data-ground-unwind={unwinding ? unwindReason : 'idle'}
     data-ground-camera-handoff={cameraHandoff ? 'home-pending' : 'ground-owned'}
+    data-ground-orb={orbVisible ? 'summoned-physical' : 'available'}
     {...look}
   >
     <Canvas
@@ -520,12 +695,17 @@ export default function GroundSpatialWorldCanon() {
       <hemisphereLight args={['#c3d7cf', '#1c302b', .52]} />
       <directionalLight position={[-8, 11, 6]} intensity={2.45} color="#f1d6b1" castShadow shadow-mapSize-width={1536} shadow-mapSize-height={1536} shadow-bias={-.00018} />
       <directionalLight position={[9, 6, -11]} intensity={.62} color="#79a99f" />
-      <Suspense fallback={null}><GroundWorld target={target} announce={setAnnouncement} /></Suspense>
-      <FirstPersonRig input={input} yaw={yaw} pitch={pitch} target={target} spawn={spawn} active={inputReady} unwinding={unwinding} reducedMotion={reducedMotion} onReady={() => { setReady(true); setAnnouncement('Ground is ready for first-person exploration.') }} onPosition={(position) => lastPosition.current.copy(position)} />
+      <Suspense fallback={null}><GroundWorld target={target} announce={setAnnouncement} onReady={() => setWorldReady(true)} /></Suspense>
+      <FirstPersonRig input={input} yaw={yaw} pitch={pitch} target={target} spawn={spawn} active={inputReady} unwinding={unwinding} reducedMotion={reducedMotion} onReady={() => setCameraReady(true)} onPosition={(position) => lastPosition.current.copy(position)} />
+      <GroundOrbPresence visible={orbVisible && !unwinding} playerPosition={lastPosition} yaw={yaw} reducedMotion={reducedMotion} onActivate={() => requestUraiWorldOrbOpen()} />
       <UnwindCamera active={unwinding} reducedMotion={reducedMotion} startPosition={lastPosition} yaw={yaw} onHandoff={() => setCameraHandoff(true)} onComplete={completeUnwind} />
     </Canvas>
 
-    <button className="ground-home-return" type="button" onClick={() => requestGroundUnwind('return-control')} aria-label="Return Home">Home</button>
+    <div className="ground-primary-controls" aria-label="Ground spatial controls">
+      <button type="button" onClick={() => setOrbVisible((value) => !value)} aria-label={orbVisible ? 'Dismiss Ground Orb' : 'Summon Ground Orb'}>{orbVisible ? 'Orb off' : 'Orb'}</button>
+      <button type="button" onClick={describeSurroundings} aria-label="Describe nearby Ground places">Nearby</button>
+      <button type="button" onClick={() => requestGroundUnwind('return-control')} aria-label="Return Home">Home</button>
+    </div>
     <nav className="ground-place-access" aria-label="Ground place and privacy tools">
       <a href="/location-map/geographic/">Places</a>
       <a href="/privacy-controls">Privacy</a>
@@ -537,15 +717,17 @@ export default function GroundSpatialWorldCanon() {
     <style jsx>{`
       .ground-spatial-root{position:fixed;inset:0;width:100vw;height:100svh;overflow:hidden;background:#294946;color:#f8fbff;isolation:isolate;outline:none;touch-action:none;cursor:${dragging ? 'grabbing' : 'grab'}}
       .ground-spatial-root canvas{position:absolute!important;inset:0;z-index:1;display:block;width:100%!important;height:100%!important;background:transparent!important}
-      .ground-home-return{position:absolute;z-index:20;right:max(16px,env(safe-area-inset-right));top:max(16px,env(safe-area-inset-top));min-width:48px;min-height:48px;padding:0 13px;border:1px solid rgba(226,248,247,.2);border-radius:999px;background:rgba(5,20,24,.32);color:rgba(241,251,249,.88);backdrop-filter:blur(12px);font:750 9px/1 system-ui;letter-spacing:.12em;text-transform:uppercase;cursor:pointer}
-      .ground-home-return:focus-visible,.ground-place-access a:focus-visible{outline:3px solid #fff;outline-offset:3px}
+      .ground-primary-controls{position:absolute;z-index:20;right:max(16px,env(safe-area-inset-right));top:max(16px,env(safe-area-inset-top));display:flex;gap:6px;opacity:.035;transition:opacity .18s ease}
+      .ground-primary-controls:hover,.ground-primary-controls:focus-within{opacity:1}
+      .ground-primary-controls button{min-width:48px;min-height:48px;padding:0 12px;border:1px solid rgba(226,248,247,.2);border-radius:999px;background:rgba(5,20,24,.38);color:rgba(241,251,249,.9);backdrop-filter:blur(12px);font:750 9px/1 system-ui;letter-spacing:.08em;cursor:pointer}
+      .ground-primary-controls button:focus-visible,.ground-place-access a:focus-visible{outline:3px solid #fff;outline-offset:3px}
       .ground-place-access{position:absolute;z-index:19;left:max(16px,env(safe-area-inset-left));top:max(16px,env(safe-area-inset-top));display:flex;gap:8px;opacity:.02;transition:opacity .2s ease}
       .ground-place-access:focus-within{opacity:1}
       .ground-place-access a{display:grid;place-items:center;min-width:48px;min-height:48px;padding:0 12px;border:1px solid rgba(226,248,247,.18);border-radius:999px;background:rgba(5,20,24,.72);color:#f4fbfa;text-decoration:none;font:700 10px/1 system-ui}
       .ground-analog-pad{position:absolute;z-index:22;left:max(14px,env(safe-area-inset-left));bottom:max(18px,calc(env(safe-area-inset-bottom) + 10px));width:132px;height:132px;border-radius:50%;border:1px solid rgba(225,245,240,.12);background:radial-gradient(circle,rgba(215,238,228,.09),rgba(5,20,24,.22) 66%,rgba(5,20,24,.06));touch-action:none;display:none}
       .ground-analog-pad>span{position:absolute;left:50%;top:50%;width:48px;height:48px;transform:translate(-50%,-50%);border-radius:50%;border:1px solid rgba(230,247,242,.18);background:rgba(5,20,24,.22);pointer-events:none}
-      @media(max-width:900px),(pointer:coarse){.ground-analog-pad{display:block}.ground-home-return{right:12px;top:12px}.ground-place-access{left:12px;top:12px}}
-      @media(prefers-reduced-motion:reduce){.ground-place-access{transition:none}}
+      @media(max-width:900px),(pointer:coarse){.ground-analog-pad{display:block}.ground-primary-controls{right:12px;top:12px}.ground-place-access{left:12px;top:12px}.ground-primary-controls button{padding:0 9px}}
+      @media(prefers-reduced-motion:reduce){.ground-place-access,.ground-primary-controls{transition:none}}
     `}</style>
   </main>
 }
