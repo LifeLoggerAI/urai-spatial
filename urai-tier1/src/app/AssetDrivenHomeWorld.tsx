@@ -38,7 +38,7 @@ export default function AssetDrivenHomeWorld({ onOrbOpen, webglAvailable }: Prop
       world.setAttribute('data-home-art-certification', 'fresh-exact-head-pixels-required')
       world.setAttribute('data-home-visual-repair', 'cinematic-home-ground-threshold-convergence')
       world.setAttribute('data-home-physical-base', 'continuous-lived-physical-world')
-      world.setAttribute('data-home-scanned-composition', 'visible-user-grounded-companion-physical-world-and-broad-sky-threshold')
+      world.setAttribute('data-home-scanned-composition', 'first-person-grounded-companion-physical-world-and-broad-sky-threshold')
       world.setAttribute('data-home-runtime-assets', RUNTIME_ASSETS)
       world.setAttribute('data-home-ground-entry', 'physical-world-surface')
       world.setAttribute('data-home-life-map-entry', 'visible-sky-broad-interaction')
@@ -72,7 +72,7 @@ export default function AssetDrivenHomeWorld({ onOrbOpen, webglAvailable }: Prop
     data-home-authored-region-contract="true"
     data-home-visible-world="cinematic-lived-world-threshold"
     data-home-route-owner="asset-driven-sacred-home"
-    data-home-spatial-regions="home-physical-world home-visible-user-avatar home-grounded-companion home-life-map-sky-threshold"
+    data-home-spatial-regions="home-physical-world home-grounded-companion home-life-map-sky-threshold"
     data-home-forge-scenery="suppressed"
     data-home-v225-retained-pixel-rebuild="superseded"
     data-home-v226-retained-pixel-rebuild="superseded"
