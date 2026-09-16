@@ -83,15 +83,17 @@ test('relationship language stays contextual and never becomes the overview visu
   assert.doesNotMatch(overlay, /selected \? 3 : 4/)
 })
 
-test('portrait overview composes the full celestial memory volume without dead-sky collapse', () => {
+test('portrait overview compacts the full celestial memory volume without dead-sky collapse', () => {
   assert.match(layoutSource, /const jitterY = .* \* 5\.4/)
   assert.match(layoutSource, /z \* 1\.82 - 8\.0 \+ jitterZ/)
-  assert.match(layoutSource, /\? \{ scale: \[\.92, \.92, \.92\], position: \[0, -\.2, 1\.0\] \}/)
+  assert.match(layoutSource, /\? \{ scale: \[\.62, \.84, \.92\], position: \[0, -\.15, 1\.0\] \}/)
   assert.match(layoutSource, /const widthDistance = halfWidth \/ Math\.max\(horizontalTan \* \.88, \.08\)/)
   assert.match(layoutSource, /const heightDistance = halfHeight \/ Math\.max\(verticalTan \* \.86, \.08\)/)
-  assert.match(layoutSource, /const distance = Math\.max\(portrait \? 34 : 24, widthDistance, heightDistance\)/)
+  assert.match(layoutSource, /const distance = Math\.max\(portrait \? 30 : 24, widthDistance, heightDistance\)/)
+  assert.match(layoutSource, /target\[2\] - \(portrait \? 3\.0 : 4\.0\)/)
   assert.match(layoutSource, /nearestZ \+ distance/)
   assert.doesNotMatch(layoutSource, /lifeMapTerrainHeight\(x, worldZ\) \+ \.62 \+ narrativeLift/)
+  assert.doesNotMatch(layoutSource, /\? \{ scale: \[\.92, \.92, \.92\], position: \[0, -\.2, 1\.0\] \}/)
   assert.doesNotMatch(layoutSource, /scale: \[\.94, 2\.20, \.72\], position: \[0, -\.18, 3\.65\]/)
   assert.doesNotMatch(layoutSource, /scale: \[\.82, 1\.08, \.86\]|scale: \[\.58, 1\.02, 1\.18\]|scale: \[\.46, \.82, \.92\]/)
 })
@@ -115,7 +117,7 @@ test('Founder proof samples retained WebGL canvas pixels only', () => {
   assert.match(workflow, /lifemap-review-repair-contract\.test\.mjs/)
 })
 
-test('Focus final composition gives live WebGL memory geometry pixel authority and rejects stale static sphere/ring dominance', () => {
+test('Focus final composition gives live WebGL separated memory plates pixel authority and rejects stale static sphere/ring dominance', () => {
   assert.match(focusSource, /focus-v251-grounded-living-memory-manifestation/)
   assert.match(focusSource, /createFocusStrata, createFocusSurfaceMaps/)
   assert.doesNotMatch(focusSource, /focus-v249-memory-root-cradle/)
@@ -124,7 +126,10 @@ test('Focus final composition gives live WebGL memory geometry pixel authority a
   assert.match(focusPolish, /\.focusWorld \.focusBackdrop \{[\s\S]*display: none !important;/)
   assert.match(focusPolish, /\.focusWorld \.focusCanvas canvas \{[\s\S]*opacity: 1 !important;[\s\S]*filter: none !important;[\s\S]*mix-blend-mode: normal !important;/)
   assert.doesNotMatch(focusPolish, /opacity: \.30|opacity: \.22|mix-blend-mode: screen|var\(--focus-asset\)/)
-  assert.match(focusGeology, /seven staggered thin luminous lamellae|seven staggered|length: 7/)
-  assert.match(focusGeology, /Subdued weathered mineral texture/)
+  assert.match(focusGeology, /V267 selected-memory manifestation/)
+  assert.match(focusGeology, /length: 7/)
+  assert.match(focusGeology, /visibly-separated-fractured-memory-plate/)
+  assert.match(focusGeology, /HDR-ish vertex energy/)
+  assert.match(focusGeology, /Subdued weathered mineral texture|Bright contour veins are intentionally/)
   assert.doesNotMatch(focusGeology, /history \* 92|Math\.pow\(vein, 3\.0\)/)
 })
