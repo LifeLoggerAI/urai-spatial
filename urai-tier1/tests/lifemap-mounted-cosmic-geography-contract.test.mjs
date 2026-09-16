@@ -4,10 +4,13 @@ import test from 'node:test'
 
 const cosmic = fs.readFileSync(new URL('../src/components/lifemap/CosmicComposedLifeMapScene.tsx', import.meta.url), 'utf8')
 const canonical = fs.readFileSync(new URL('../src/spatial/lifemap/SpatialLifeMapCanonical.tsx', import.meta.url), 'utf8')
+const boundary = fs.readFileSync(new URL('../src/components/lifemap/LifeMapRouteBoundary.tsx', import.meta.url), 'utf8')
 
 test('persistent Life Map mounts the Cosmic owner guarded by this contract', () => {
-  assert.match(canonical, /CosmicComposedLifeMapScene/)
-  assert.match(canonical, /<CosmicComposedLifeMapScene\s*\/>/)
+  assert.match(canonical, /LifeMapRouteBoundary/)
+  assert.match(canonical, /<LifeMapRouteBoundary\s*\/>/)
+  assert.match(boundary, /import ComposedLifeMapScene from ['"]\.\/CosmicComposedLifeMapScene['"]/)
+  assert.match(boundary, /<ComposedLifeMapScene\s*\/>/)
 })
 
 test('mounted Cosmic memory coordinates are stable across source array ordering', () => {
