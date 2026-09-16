@@ -1,31 +1,33 @@
 import * as THREE from 'three'
 
-// V263 selected-memory manifestation. Focus must resolve the selected Memory Star
-// into one irregular, layered, inhabitable memory formation — never a doorway,
-// ring, cage, bubble, planet, flower, or pair of framing horns.
+// V264 selected-memory manifestation. Focus resolves the selected Memory Star
+// into one asymmetric stack of fractured luminous lamellae — never a doorway,
+// ring, cage, bubble, planet, flower, rock, or pair of framing horns.
 function createMemoryLamella(layer: number) {
-  const segments = 15
-  const frontZ = .08 + layer * .055
-  const backZ = -.20 - layer * .045
-  const radiusX = 1.08 - layer * .075
-  const radiusY = 1.22 - layer * .065
-  const offsetX = Math.sin(layer * 1.73) * .16
-  const offsetY = -.02 + Math.cos(layer * 1.31) * .09
-  const rotation = -.16 + layer * .075
+  const segments = 17
+  const depth = -.18 + layer * .105
+  const thickness = .055 + (layer % 3) * .012
+  const frontZ = depth + thickness
+  const backZ = depth - thickness
+  const radiusX = .82 + .075 * Math.sin(layer * 1.61) + layer * .018
+  const radiusY = 1.16 + .09 * Math.cos(layer * 1.27) - layer * .012
+  const offsetX = Math.sin(layer * 1.37) * (.12 + layer * .018)
+  const offsetY = .04 + Math.cos(layer * 1.11) * .13 + (layer - 3) * .014
+  const rotation = -.34 + layer * .115
   const positions: number[] = []
   const colors: number[] = []
   const indices: number[] = []
-  const cool = new THREE.Color('#9fc7d7')
-  const mineral = new THREE.Color('#d8d0ba')
-  const warm = new THREE.Color('#efd8b4')
+  const cool = new THREE.Color('#a7ddeb')
+  const pearl = new THREE.Color('#eef2df')
+  const warm = new THREE.Color('#f4d5ac')
 
   const points: Array<[number, number]> = []
   for (let i = 0; i < segments; i += 1) {
     const angle = (i / segments) * Math.PI * 2
     const fracture = 1
-      + .12 * Math.sin(angle * 3.1 + layer * .81)
-      + .07 * Math.sin(angle * 6.7 - layer * .46)
-      + .045 * Math.cos(angle * 9.2 + layer * 1.17)
+      + .15 * Math.sin(angle * 3.15 + layer * .83)
+      + .075 * Math.sin(angle * 6.45 - layer * .49)
+      + .05 * Math.cos(angle * 9.35 + layer * 1.23)
     const rawX = Math.cos(angle) * radiusX * fracture
     const rawY = Math.sin(angle) * radiusY * fracture
     const x = rawX * Math.cos(rotation) - rawY * Math.sin(rotation) + offsetX
@@ -34,14 +36,16 @@ function createMemoryLamella(layer: number) {
   }
 
   positions.push(offsetX, offsetY, frontZ, offsetX, offsetY, backZ)
-  colors.push(mineral.r, mineral.g, mineral.b, cool.r, cool.g, cool.b)
+  const centerColor = pearl.clone().lerp(cool, .22 + layer * .035).lerp(warm, .08)
+  colors.push(centerColor.r, centerColor.g, centerColor.b, cool.r * .72, cool.g * .78, cool.b * .82)
 
   for (let i = 0; i < segments; i += 1) {
     const [x, y] = points[i]
-    positions.push(x, y, frontZ, x * .94 + offsetX * .06, y * .94 + offsetY * .06, backZ)
+    positions.push(x, y, frontZ, x * .985 + offsetX * .015, y * .985 + offsetY * .015, backZ)
     const edge = i / segments
-    const faceColor = cool.clone().lerp(mineral, .42 + .26 * Math.sin(edge * Math.PI * 2 + layer)).lerp(warm, .10 + layer * .025)
-    colors.push(faceColor.r, faceColor.g, faceColor.b, faceColor.r * .76, faceColor.g * .80, faceColor.b * .82)
+    const shimmer = .5 + .5 * Math.sin(edge * Math.PI * 4 + layer * .77)
+    const faceColor = cool.clone().lerp(pearl, .38 + shimmer * .28).lerp(warm, .08 + (layer % 3) * .035)
+    colors.push(faceColor.r, faceColor.g, faceColor.b, faceColor.r * .68, faceColor.g * .74, faceColor.b * .78)
   }
 
   for (let i = 0; i < segments; i += 1) {
@@ -65,7 +69,7 @@ function createMemoryLamella(layer: number) {
 }
 
 export function createFocusStrata() {
-  return Array.from({ length: 6 }, (_, layer) => createMemoryLamella(layer))
+  return Array.from({ length: 7 }, (_, layer) => createMemoryLamella(layer))
 }
 
 function hash2(x: number, y: number) {
@@ -92,27 +96,26 @@ export function createFocusSurfaceMaps(): [THREE.Texture, THREE.Texture, THREE.T
 
   for (let y = 0; y < size; y += 1) for (let x = 0; x < size; x += 1) {
     const u = x / size, v = y / size
-    const broad = valueNoise(u, v, 3.2)
-    const medium = valueNoise(u + .17, v - .11, 8.7)
-    const fine = valueNoise(u - .31, v + .23, 22.0)
-    const mineral = valueNoise(u + medium * .08, v - broad * .06, 13.5)
-    const vein = Math.max(0, .17 - Math.abs(mineral - .5)) / .17
-    const value = .43 + broad * .15 + medium * .075 + fine * .035
-    const history = Math.pow(vein, 3.0)
-    h[y * size + x] = value - history * .018
+    const broad = valueNoise(u, v, 2.7)
+    const medium = valueNoise(u + .17, v - .11, 7.1)
+    const fine = valueNoise(u - .31, v + .23, 17.0)
+    const value = .40 + broad * .11 + medium * .045 + fine * .022
+    h[y * size + x] = value
 
     const i = (y * size + x) * 4
-    const r = Math.min(255, 58 + value * 118 + history * 92)
-    const g = Math.min(255, 72 + value * 128 + history * 82)
-    const b = Math.min(255, 78 + value * 134 + history * 66)
+    // Subdued weathered mineral texture. The predecessor bright contour veins
+    // made the terrain visually compete with the selected memory.
+    const r = Math.min(255, 50 + value * 92)
+    const g = Math.min(255, 61 + value * 98)
+    const b = Math.min(255, 62 + value * 94)
     rgba.set([r, g, b, 255], i)
-    const roughness = Math.min(255, 205 + fine * 28 - history * 20)
+    const roughness = Math.min(255, 224 + fine * 20)
     rough.set([255, roughness, 0, 255], i)
   }
 
   for (let y = 0; y < size; y += 1) for (let x = 0; x < size; x += 1) {
-    const dx = (h[y * size + (x + 1) % size] - h[y * size + (x + size - 1) % size]) * 1.18
-    const dy = (h[((y + 1) % size) * size + x] - h[((y + size - 1) % size) * size + x]) * 1.18
+    const dx = (h[y * size + (x + 1) % size] - h[y * size + (x + size - 1) % size]) * .52
+    const dy = (h[((y + 1) % size) * size + x] - h[((y + size - 1) % size) * size + x]) * .52
     const n = new THREE.Vector3(-dx, -dy, 1).normalize()
     normals.set([(n.x * .5 + .5) * 255, (n.y * .5 + .5) * 255, (n.z * .5 + .5) * 255, 255], (y * size + x) * 4)
   }
