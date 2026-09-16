@@ -26,6 +26,9 @@ const ORB_MODEL = '/assets/urai/generated/models/urai-orb-avatar-v1.glb'
 const HUMAN_MODEL = '/assets/urai/generated/human-makehuman-v4/home-human-makehuman-v4.glb'
 const HOME_FOCUS = new THREE.Vector3(0, 3.05, -1.15)
 const ORB_POSITION = new THREE.Vector3(1.02, 0, .72)
+const ORB_FIELD_RADIUS = 0.5
+const ORB_GROUND_CLEARANCE = 0.015
+const ORB_REST_CENTER_OFFSET = ORB_FIELD_RADIUS + ORB_GROUND_CLEARANCE
 const AVATAR_POSITION = new THREE.Vector3(-.72, 0, 5.95)
 const ORB_CLIPS: Record<OrbState, string> = {
   dormant: 'Orb_Resting', idle: 'Orb_Idle', attention: 'Orb_Attention', listening: 'Orb_Listening',
@@ -273,7 +276,7 @@ function OrbCompanion({ state, reducedMotion, onOrb }: { state: OrbState; reduce
   useFrame(({ clock }, delta) => {
     if (!root.current) return
     const motion = ORB_STATE_MOTION[state]
-    const baseY = groundY + 1.52
+    const baseY = groundY + ORB_REST_CENTER_OFFSET
     speechEnergy.current = THREE.MathUtils.damp(speechEnergy.current, speechActive.current ? speechEnergy.current * .82 : 0, speechActive.current ? 5 : 8, delta)
     speechImpulse.current = THREE.MathUtils.damp(speechImpulse.current, 0, 11, delta)
     anticipation.current = THREE.MathUtils.damp(anticipation.current, 0, 3.8, delta)
@@ -334,7 +337,7 @@ function OrbCompanion({ state, reducedMotion, onOrb }: { state: OrbState; reduce
   return <group
     ref={root}
     name="home-living-memory-orb"
-    position={[ORB_POSITION.x, groundY + 1.52, ORB_POSITION.z]}
+    position={[ORB_POSITION.x, groundY + ORB_REST_CENTER_OFFSET, ORB_POSITION.z]}
     onClick={activate}
     userData={{
       semanticOwner: 'orb',
@@ -349,7 +352,7 @@ function OrbCompanion({ state, reducedMotion, onOrb }: { state: OrbState; reduce
     }}
   >
     <mesh ref={fieldShell} castShadow scale={[1,1.04,.95]} onClick={activate}>
-      <sphereGeometry args={[.5,effectBudget.membraneSegments,effectBudget.membraneSegments]} />
+      <sphereGeometry args={[ORB_FIELD_RADIUS,effectBudget.membraneSegments,effectBudget.membraneSegments]} />
       <meshPhysicalMaterial ref={membrane} color="#9cc6c5" transparent opacity={.012} transmission={.92} thickness={.052} roughness={.25} metalness={0} clearcoat={.54} clearcoatRoughness={.28} ior={1.16} envMapIntensity={.9} depthWrite={false} />
     </mesh>
     <group ref={authoredCore} scale={.338} name="home-orb-authored-core"><primitive object={authoredOrb} /></group>
