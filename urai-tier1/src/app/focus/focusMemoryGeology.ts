@@ -1,34 +1,43 @@
 import * as THREE from 'three'
 
-// V264 selected-memory manifestation. Focus resolves the selected Memory Star
-// into one asymmetric stack of fractured luminous lamellae — never a doorway,
-// ring, cage, bubble, planet, flower, rock, or pair of framing horns.
+// V267 selected-memory manifestation. Focus resolves the selected Memory Star
+// into one coherent stack of visibly separated fractured memory plates. Each
+// plate remains part of the same manifestation, but its authored offset, depth,
+// silhouette and luminous vertex energy remain legible from the hero camera so
+// the fallback cannot collapse back into a boulder, onion, sphere, doorway,
+// ring, cage, bubble, planet, flower, or pair of framing horns.
 function createMemoryLamella(layer: number) {
-  const segments = 17
-  const depth = -.18 + layer * .105
-  const thickness = .055 + (layer % 3) * .012
+  const segments = 13
+  const signed = layer - 3
+  const depth = -.42 + layer * .14
+  const thickness = .026 + (layer % 2) * .008
   const frontZ = depth + thickness
   const backZ = depth - thickness
-  const radiusX = .82 + .075 * Math.sin(layer * 1.61) + layer * .018
-  const radiusY = 1.16 + .09 * Math.cos(layer * 1.27) - layer * .012
-  const offsetX = Math.sin(layer * 1.37) * (.12 + layer * .018)
-  const offsetY = .04 + Math.cos(layer * 1.11) * .13 + (layer - 3) * .014
-  const rotation = -.34 + layer * .115
+  const radiusX = .50 + .045 * Math.sin(layer * 1.47) + (layer % 3) * .035
+  const radiusY = .92 + .055 * Math.cos(layer * 1.31) - Math.abs(signed) * .018
+  const offsetX = signed * .115 + Math.sin(layer * 1.73) * .075
+  const offsetY = signed * .035 + Math.cos(layer * 1.19) * .075
+  const rotation = -.46 + layer * .145
   const positions: number[] = []
   const colors: number[] = []
   const indices: number[] = []
-  const cool = new THREE.Color('#a7ddeb')
-  const pearl = new THREE.Color('#eef2df')
-  const warm = new THREE.Color('#f4d5ac')
+
+  // Deliberately allow HDR-ish vertex energy. The runtime material still owns
+  // physically lit response, while these values keep the memory plates visually
+  // distinct from the subdued mineral terrain in the retained hero frame.
+  const cool = new THREE.Color().setRGB(1.18, 1.55, 1.72)
+  const pearl = new THREE.Color().setRGB(1.58, 1.66, 1.47)
+  const warm = new THREE.Color().setRGB(1.54, 1.18, .82)
 
   const points: Array<[number, number]> = []
   for (let i = 0; i < segments; i += 1) {
     const angle = (i / segments) * Math.PI * 2
     const fracture = 1
-      + .15 * Math.sin(angle * 3.15 + layer * .83)
-      + .075 * Math.sin(angle * 6.45 - layer * .49)
-      + .05 * Math.cos(angle * 9.35 + layer * 1.23)
-    const rawX = Math.cos(angle) * radiusX * fracture
+      + .19 * Math.sin(angle * 2.75 + layer * .91)
+      + .095 * Math.sin(angle * 5.2 - layer * .57)
+      + .055 * Math.cos(angle * 8.4 + layer * 1.11)
+    const pinch = .80 + .20 * Math.abs(Math.sin(angle * 1.5 + layer * .34))
+    const rawX = Math.cos(angle) * radiusX * fracture * pinch
     const rawY = Math.sin(angle) * radiusY * fracture
     const x = rawX * Math.cos(rotation) - rawY * Math.sin(rotation) + offsetX
     const y = rawX * Math.sin(rotation) + rawY * Math.cos(rotation) + offsetY
@@ -36,16 +45,16 @@ function createMemoryLamella(layer: number) {
   }
 
   positions.push(offsetX, offsetY, frontZ, offsetX, offsetY, backZ)
-  const centerColor = pearl.clone().lerp(cool, .22 + layer * .035).lerp(warm, .08)
-  colors.push(centerColor.r, centerColor.g, centerColor.b, cool.r * .72, cool.g * .78, cool.b * .82)
+  const centerColor = pearl.clone().lerp(cool, .20 + layer * .045).lerp(warm, .055 + (layer % 2) * .025)
+  colors.push(centerColor.r, centerColor.g, centerColor.b, cool.r * .70, cool.g * .72, cool.b * .76)
 
   for (let i = 0; i < segments; i += 1) {
     const [x, y] = points[i]
-    positions.push(x, y, frontZ, x * .985 + offsetX * .015, y * .985 + offsetY * .015, backZ)
+    positions.push(x, y, frontZ, x * .992 + offsetX * .008, y * .992 + offsetY * .008, backZ)
     const edge = i / segments
-    const shimmer = .5 + .5 * Math.sin(edge * Math.PI * 4 + layer * .77)
-    const faceColor = cool.clone().lerp(pearl, .38 + shimmer * .28).lerp(warm, .08 + (layer % 3) * .035)
-    colors.push(faceColor.r, faceColor.g, faceColor.b, faceColor.r * .68, faceColor.g * .74, faceColor.b * .78)
+    const shimmer = .5 + .5 * Math.sin(edge * Math.PI * 3.6 + layer * .83)
+    const faceColor = cool.clone().lerp(pearl, .32 + shimmer * .34).lerp(warm, .05 + (layer % 3) * .025)
+    colors.push(faceColor.r, faceColor.g, faceColor.b, faceColor.r * .64, faceColor.g * .68, faceColor.b * .72)
   }
 
   for (let i = 0; i < segments; i += 1) {
@@ -65,6 +74,8 @@ function createMemoryLamella(layer: number) {
   geometry.setIndex(indices)
   geometry.computeVertexNormals()
   geometry.computeBoundingSphere()
+  geometry.userData.focusLamellaLayer = layer
+  geometry.userData.focusLamellaRole = 'visibly-separated-fractured-memory-plate'
   return geometry
 }
 
@@ -103,8 +114,8 @@ export function createFocusSurfaceMaps(): [THREE.Texture, THREE.Texture, THREE.T
     h[y * size + x] = value
 
     const i = (y * size + x) * 4
-    // Subdued weathered mineral texture. The predecessor bright contour veins
-    // made the terrain visually compete with the selected memory.
+    // Subdued weathered mineral texture. Bright contour veins are intentionally
+    // absent so terrain cannot visually compete with the selected memory.
     const r = Math.min(255, 50 + value * 92)
     const g = Math.min(255, 61 + value * 98)
     const b = Math.min(255, 62 + value * 94)
