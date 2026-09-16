@@ -11,9 +11,11 @@ import * as THREE from 'three'
 // continuous surface density to avoid a generic low-poly game-artifact read.
 //
 // Literal inspection of the first V272 retained pack found the topology coherent
-// but too smooth and blob-like. This refinement keeps the one-piece authority and
-// deep longitudinal furrow while adding a secondary folded crease, stronger
-// asymmetric lobes, weathered striation and denser continuous surface relief.
+// but too smooth and blob-like. A denser relief pass improved surface definition,
+// but the second retained pack still read as a standing rock because the primary
+// furrow rotated mostly around the side of the arrival view. This refinement keeps
+// one closed continuous form while camera-biasing the longitudinal cleft, widening
+// the asymmetric folded silhouette and shortening the vertical boulder profile.
 // The form must read as one held memory phenomenon. It must not regress into a
 // crystal crown/shard cluster, boulder, sphere/orb, flower, portal, ring, cage,
 // doorway, sheet fan, stack of cards or generic game pickup.
@@ -39,10 +41,10 @@ function livingMemoryVertexColor(section: number, radial: number, t: number, fur
   const color = deep.clone()
     .lerp(mineral, .42 + phase * .28)
     .lerp(weathered, .16 + .18 * (1 - edge))
-  if (scar > .24) color.lerp(deep, .18 + scar * .24)
-  if (ridge > .42) color.lerp(weathered, .16 + ridge * .08)
-  color.lerp(warm, .035 * strata * (1 - scar))
-  if ((section * 5 + radial * 3) % 29 === 0) color.lerp(warm, .16)
+  if (scar > .24) color.lerp(deep, .22 + scar * .27)
+  if (ridge > .42) color.lerp(weathered, .18 + ridge * .09)
+  color.lerp(warm, .055 * strata * (1 - scar))
+  if ((section * 5 + radial * 3) % 29 === 0) color.lerp(warm, .18)
   return color
 }
 
@@ -57,15 +59,21 @@ function createLivingMemoryFold() {
     const t = THREE.MathUtils.lerp(-1, 1, u)
     const envelope = Math.pow(Math.max(.025, 1 - Math.pow(Math.abs(t), 1.72)), .48)
     const shoulderBias = .86 + .14 * Math.sin(u * Math.PI)
-    const centerX = .245 * Math.sin(t * 1.88) + .075 * Math.sin(t * 5.35 + .4)
-    const centerY = t * 1.04 + .065 * Math.sin(t * 3.2)
-    const centerZ = -.08 + .15 * Math.cos(t * 1.76) - .06 * Math.sin(t * 4.65)
-    const width = .112 + envelope * (.43 * shoulderBias + .038 * Math.sin(section * .31))
-    const depth = .102 + envelope * (.282 + .034 * Math.cos(section * .27))
-    const twist = -.68 + u * 1.42 + .075 * Math.sin(section * .19)
-    const furrowAngle = .12 + .22 * Math.sin(t * 1.75) + .045 * Math.sin(t * 5.2)
-    const secondaryFurrowAngle = furrowAngle + Math.PI * .61 + .11 * Math.sin(t * 2.7)
-    const ridgeAngle = furrowAngle + Math.PI * .88
+
+    // A shorter, wider, laterally wandering centerline removes the retained
+    // standing-boulder read while preserving one continuous embodied object.
+    const centerX = .36 * Math.sin(t * 1.52) + .11 * Math.sin(t * 4.7 + .34)
+    const centerY = t * .79 + .075 * Math.sin(t * 2.9)
+    const centerZ = -.08 + .17 * Math.cos(t * 1.66) - .065 * Math.sin(t * 4.35)
+    const width = .14 + envelope * (.54 * shoulderBias + .045 * Math.sin(section * .31))
+    const depth = .095 + envelope * (.245 + .032 * Math.cos(section * .27))
+    const twist = -.52 + u * 1.04 + .065 * Math.sin(section * .19)
+
+    // The arrival camera looks toward the manifestation from positive Z. Keep the
+    // primary cleft visibly on that face even as the cross-section twists.
+    const furrowAngle = Math.PI * .5 - twist + .10 * Math.sin(t * 1.9)
+    const secondaryFurrowAngle = furrowAngle + Math.PI * .54 + .10 * Math.sin(t * 2.7)
+    const ridgeAngle = furrowAngle + Math.PI * .93
 
     for (let radial = 0; radial < MEMORY_RENDER_RING_POINTS; radial += 1) {
       const radialU = radial / MEMORY_RENDER_RING_POINTS
@@ -73,34 +81,34 @@ function createLivingMemoryFold() {
       const furrowDistance = wrappedAngleDistance(angle, furrowAngle)
       const secondaryFurrowDistance = wrappedAngleDistance(angle, secondaryFurrowAngle)
       const ridgeDistance = wrappedAngleDistance(angle, ridgeAngle)
-      const furrow = Math.exp(-Math.pow(furrowDistance / .30, 2))
-      const secondaryFurrow = Math.exp(-Math.pow(secondaryFurrowDistance / .25, 2)) * (.44 + .34 * envelope)
-      const ridge = Math.exp(-Math.pow(ridgeDistance / .46, 2))
+      const furrow = Math.exp(-Math.pow(furrowDistance / .25, 2))
+      const secondaryFurrow = Math.exp(-Math.pow(secondaryFurrowDistance / .24, 2)) * (.48 + .30 * envelope)
+      const ridge = Math.exp(-Math.pow(ridgeDistance / .43, 2))
       const broadLobe = 1
-        + .18 * Math.cos((angle - furrowAngle) * 2)
-        + .085 * Math.sin(angle * 3 + t * 2.1)
-        + .042 * Math.cos(angle * 5 - t * 3.3)
+        + .22 * Math.cos((angle - furrowAngle) * 2)
+        + .10 * Math.sin(angle * 3 + t * 2.1)
+        + .05 * Math.cos(angle * 5 - t * 3.3)
       const tissue = 1
-        + .052 * Math.sin(angle * 7 + section * .22)
-        + .031 * Math.cos(angle * 11 - section * .17)
-        + .018 * Math.sin(angle * 17 + section * .09)
-      const striation = .018 * envelope * Math.sin(section * 1.74 + angle * 6.2)
-        + .011 * envelope * Math.cos(section * .63 - angle * 13)
-      const edgeFold = .075 * envelope * Math.sin(angle * 2 - t * 4.3)
-        + .028 * envelope * Math.sin(angle * 4 + t * 2.8)
-      const pinch = Math.max(.34, 1 - .49 * furrow - .24 * secondaryFurrow)
+        + .048 * Math.sin(angle * 7 + section * .22)
+        + .029 * Math.cos(angle * 11 - section * .17)
+        + .017 * Math.sin(angle * 17 + section * .09)
+      const striation = .016 * envelope * Math.sin(section * 1.74 + angle * 6.2)
+        + .010 * envelope * Math.cos(section * .63 - angle * 13)
+      const edgeFold = .085 * envelope * Math.sin(angle * 2 - t * 4.3)
+        + .034 * envelope * Math.sin(angle * 4 + t * 2.8)
+      const pinch = Math.max(.27, 1 - .61 * furrow - .28 * secondaryFurrow)
       const localX = Math.cos(angle) * width * broadLobe * tissue * pinch + edgeFold
-      const localZ = Math.sin(angle) * depth * (1 + .15 * ridge)
-        - furrow * depth * .39
-        - secondaryFurrow * depth * .18
-        + ridge * depth * .11
+      const localZ = Math.sin(angle) * depth * (1 + .17 * ridge)
+        - furrow * depth * .58
+        - secondaryFurrow * depth * .20
+        + ridge * depth * .12
         + striation
       const x = centerX + localX * Math.cos(twist) - localZ * Math.sin(twist)
       const z = centerZ + localX * Math.sin(twist) + localZ * Math.cos(twist)
       const y = centerY
-        + .075 * envelope * Math.sin(angle * 2 + section * .14)
-        + .026 * envelope * Math.sin(angle * 5 - section * .11)
-        + .012 * envelope * Math.cos(angle * 9 + section * .17)
+        + .085 * envelope * Math.sin(angle * 2 + section * .14)
+        + .031 * envelope * Math.sin(angle * 5 - section * .11)
+        + .014 * envelope * Math.cos(angle * 9 + section * .17)
       positions.push(x, y, z)
       uvs.push(radialU, u)
       const color = livingMemoryVertexColor(section, radial, t, furrow, ridge, secondaryFurrow)
@@ -122,11 +130,11 @@ function createLivingMemoryFold() {
   }
 
   const bottomCap = positions.length / 3
-  positions.push(-.06, -1.065, .012)
+  positions.push(-.12, -.815, .018)
   colors.push(.020, .052, .050)
   uvs.push(.5, 0)
   const topCap = positions.length / 3
-  positions.push(.052, 1.075, -.018)
+  positions.push(.11, .825, -.018)
   colors.push(.055, .092, .078)
   uvs.push(.5, 1)
 
@@ -151,7 +159,7 @@ function createLivingMemoryFold() {
   geometry.userData.focusLiteralPixelRepair = 'v272-no-crystal-crown-no-card-stack'
   geometry.userData.focusSilhouetteRule = 'one-coherent-memory-phenomenon-not-discrete-objects'
   geometry.userData.focusSurfaceDensity = `${MEMORY_RENDER_SECTIONS}x${MEMORY_RENDER_RING_POINTS}-continuous-tactile-surface`
-  geometry.userData.focusLiteralPixelRefinement = 'secondary-fold-raking-striation-and-asymmetric-lobe-relief'
+  geometry.userData.focusLiteralPixelRefinement = 'camera-facing-primary-cleft-wide-asymmetric-fold-no-standing-boulder'
   return geometry
 }
 
