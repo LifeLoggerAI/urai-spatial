@@ -39,7 +39,7 @@ test('demo memory is explicit, disclosed, and retained through Life Map camera t
   assert.match(replay, /DEMO FIXTURE · NOT PERSONAL DATA/)
 })
 
-test('Focus is an explorable authored living memory chamber rather than a static composited page', () => {
+test('Focus is an explorable authored selected-memory world rather than a static composited page', () => {
   const cameraRig = focus.match(/function FocusCameraRig[\s\S]*?\n}\n\nfunction cloneAuthoredFocusModel/)?.[0]
   assert.ok(cameraRig, 'FocusCameraRig must remain a mounted camera controller')
 
@@ -63,9 +63,10 @@ test('Focus is an explorable authored living memory chamber rather than a static
   assert.match(focus, /v249-no-focus-ring-cage-or-repeated-runes/)
   assert.match(focus, /createFocusStrata, createFocusSurfaceMaps/)
   assert.match(focus, /focus-v251-grounded-living-memory-manifestation/)
-  assert.match(focus, /v251-fractured-rooted-memory-strata/)
+  assert.match(focus, /v269-living-luminous-memory-lamella/)
   assert.match(focus, /focus-authored-fractured-stratum-/)
-  assert.match(focus, /<meshStandardMaterial map=\{maps\[0\]\}[\s\S]*?vertexColors/)
+  assert.match(focus, /materialAuthority: 'vertex-energy-not-mineral-terrain-map'/)
+  assert.match(focus, /<meshStandardMaterial vertexColors[\s\S]*?emissiveIntensity=\{hovered \? \.34 : \.20\}[\s\S]*?roughness=\{\.36\}[\s\S]*?metalness=\{\.035\}/)
   assert.doesNotMatch(focus, /new THREE\.IcosahedronGeometry\(/)
   assert.doesNotMatch(focus, /new THREE\.SphereGeometry\(1, 72, 48\)/)
   assert.doesNotMatch(focus, /focus-v217-single-connected-memory-manifestation/)
@@ -76,7 +77,7 @@ test('Focus is an explorable authored living memory chamber rather than a static
   assert.match(focus, /focus-v216-continuous-weathered-vault/)
   assert.doesNotMatch(focus, /focus-v249-memory-root-cradle/)
   assert.match(focus, /geometry\.setAttribute\('position', new THREE\.Float32BufferAttribute\(positions, 3\)\)/)
-  assert.match(focus, /data-focus-visual-revision="v251-fractured-rooted-memory-strata"/)
+  assert.match(focus, /data-focus-visual-revision="v269-luminous-memory-material-separation"/)
   assert.match(focus, /alpha: false/)
   assert.match(focus, /<color attach="background"/)
   assert.match(focus, /\.focusBackdrop\{display:none\}/)
@@ -119,17 +120,18 @@ test('Focus is an explorable authored living memory chamber rather than a static
   assert.match(focus, /data-star-id=\{memory\?\.star\.id\}/)
   assert.match(focus, /data-node=\{memory\?\.star\.id\}/)
 
-  assert.match(focus, /aria-label="Focus chamber controls"/)
+  assert.match(focus, /aria-label="Focus controls"/)
   assert.match(focus, /<button type="button" onClick=\{\(\) => setRecenterSignal/)
-  assert.match(focus, /aria-label=\{`Open Replay for \$\{memory\.title\}`\}/)
+  assert.match(focus, /aria-label=\{`Enter Replay for \$\{memory\.title\}`\}/)
   assert.match(focus, /<details className="focusHelp">/)
   assert.match(focus, /data-focus-fallback="semantic"/)
   assert.match(focus, /Spatial view unavailable/)
   assert.match(focus, /No personal memory is displayed in this neutral observatory/)
-  assert.match(focus, /Held in context\. Nothing leaves this chamber\./)
+  assert.match(focus, /Held in context\. Your selected memory remains private\./)
   assert.match(focus, /prefers-reduced-motion:reduce/)
   assert.match(focus, /@media\(max-width:\d+px\)/)
 
+  assert.doesNotMatch(focus, /Focus chamber controls|Open Replay for|Held in context\. Nothing leaves this chamber\./)
   assert.doesNotMatch(focus, /className="artifactImage"/, 'the retired static artifact-image owner must not return')
   assert.doesNotMatch(focus, /\.artifactImage\{/, 'the retired static artifact-image CSS owner must not return')
 })

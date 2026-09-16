@@ -106,7 +106,7 @@ test('accessibility and performance implementation contracts are present on firs
     "name: 'Ground first-person movement controls'",
   ]) requireText(embodiedEvidence, marker)
 
-  requireText(focus, 'aria-label={`Open Replay for ${memory.title}`}')
+  requireText(focus, 'aria-label={memory ? `Enter Replay for ${memory.title}`')
   assert.equal(focus.includes('min-height:44px'), false, 'Focus controls must not retain 44px minimum targets')
   requireText(focus, 'min-height:48px')
   requireText(focus, 'env(safe-area-inset-left)')
