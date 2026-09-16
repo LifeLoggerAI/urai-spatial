@@ -40,14 +40,30 @@ test('pointer and touch use page-context DOM geometry and real browser-coordinat
   assert.match(proof, /await page\.waitForURL[\s\S]*record\.targetOwnsHitPoint = true/)
 })
 
-test('native doorway activation stays browser-native while rendered destination settlement is allowed', () => {
+test('native doorway activation stays browser-native while current rendered destination settlement is enforced', () => {
   assert.doesNotMatch(proof, /__reactProps|__reactFiber/)
   assert.doesNotMatch(proof, /dispatchEvent\(new MouseEvent|target\.evaluate\([\s\S]*\.click\(/)
   assert.match(proof, /nativeAnchorActivationDoesNotRequireReactClickHandler: true/)
   assert.match(proof, /tagName !== 'A'/)
   assert.match(proof, /async function settleRenderedDestination/)
-  assert.match(proof, /page\.waitForFunction\(\(\) => \{[\s\S]*data-testid="urai-ground-private-workforce-world"[\s\S]*groundVisualOwner === 'shared-continuity-architecture'/)
-  assert.match(proof, /groundRenderedOwnerContract: 'shared-continuity-architecture-plus-visible-canvas'/)
+  assert.match(proof, /data-testid="urai-ground-lived-world"/)
+  assert.match(proof, /groundReady === 'true'/)
+  assert.match(proof, /groundVisualOwner === 'physical-lived-world'/)
+  assert.match(proof, /groundRuntimeOwner === 'first-person-lived-world'/)
+  assert.match(proof, /groundExploration === 'first-person'/)
+  assert.match(proof, /groundRenderedOwnerContract: 'physical-lived-world-plus-first-person-runtime-plus-visible-canvas'/)
+  assert.doesNotMatch(proof, /urai-ground-private-workforce-world|shared-continuity-architecture/)
+})
+
+test('mobile Ground proof keeps current movement, Home return, Places and Privacy controls usable', () => {
+  assert.match(proof, /Ground first-person movement controls/)
+  assert.match(proof, /Return Home/)
+  assert.match(proof, /Ground place and privacy tools/)
+  assert.match(proof, /name: 'Places'/)
+  assert.match(proof, /name: 'Privacy'/)
+  assert.match(proof, /Ground movement target is below 44px/)
+  assert.match(proof, /Ground Home return target is below 44px/)
+  assert.match(proof, /Ground place\/privacy target is below 44px/)
 })
 
 test('semantic navigation stays statically opacity-bounded and runtime footprint-bounded', () => {
