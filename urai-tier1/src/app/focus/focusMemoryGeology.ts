@@ -1,33 +1,58 @@
 import * as THREE from 'three'
 
-// V262 selected-memory threshold. Focus is not a ring, cage, rock, flower,
-// ribbon or portal prop. Two asymmetric mineral-light branches frame a large
-// open center so the selected stellar memory reads as a doorway rather than an object.
-function createThresholdBranch(side: -1 | 1) {
-  const segments = 18
+// V263 selected-memory manifestation. Focus must resolve the selected Memory Star
+// into one irregular, layered, inhabitable memory formation — never a doorway,
+// ring, cage, bubble, planet, flower, or pair of framing horns.
+function createMemoryLamella(layer: number) {
+  const segments = 15
+  const frontZ = .08 + layer * .055
+  const backZ = -.20 - layer * .045
+  const radiusX = 1.08 - layer * .075
+  const radiusY = 1.22 - layer * .065
+  const offsetX = Math.sin(layer * 1.73) * .16
+  const offsetY = -.02 + Math.cos(layer * 1.31) * .09
+  const rotation = -.16 + layer * .075
   const positions: number[] = []
   const colors: number[] = []
   const indices: number[] = []
-  const cool = new THREE.Color(side < 0 ? '#b7ddff' : '#d8e9ff')
-  const warm = new THREE.Color('#ffe6bc')
+  const cool = new THREE.Color('#9fc7d7')
+  const mineral = new THREE.Color('#d8d0ba')
+  const warm = new THREE.Color('#efd8b4')
 
-  for (let i = 0; i <= segments; i += 1) {
-    const t = i / segments
-    const y = THREE.MathUtils.lerp(-1.22, 1.34, t)
-    const inward = Math.sin(t * Math.PI) * .28
-    const sweep = .12 * Math.sin(t * 5.3 + (side < 0 ? .6 : 1.7))
-    const x = side * (1.05 - inward + sweep + (1 - t) * .16)
-    const z = -.03 + .08 * Math.sin(t * 4.2 + side)
-    const width = .19 - t * .07 + .035 * Math.sin(t * Math.PI * 3.2 + side)
-    positions.push(x - width, y, z, x + width, y + .035 * side, z + .045)
+  const points: Array<[number, number]> = []
+  for (let i = 0; i < segments; i += 1) {
+    const angle = (i / segments) * Math.PI * 2
+    const fracture = 1
+      + .12 * Math.sin(angle * 3.1 + layer * .81)
+      + .07 * Math.sin(angle * 6.7 - layer * .46)
+      + .045 * Math.cos(angle * 9.2 + layer * 1.17)
+    const rawX = Math.cos(angle) * radiusX * fracture
+    const rawY = Math.sin(angle) * radiusY * fracture
+    const x = rawX * Math.cos(rotation) - rawY * Math.sin(rotation) + offsetX
+    const y = rawX * Math.sin(rotation) + rawY * Math.cos(rotation) + offsetY
+    points.push([x, y])
+  }
 
-    const color = cool.clone().lerp(warm, .18 + .42 * t)
-    colors.push(color.r, color.g, color.b, color.r * .96, color.g * .98, color.b)
+  positions.push(offsetX, offsetY, frontZ, offsetX, offsetY, backZ)
+  colors.push(mineral.r, mineral.g, mineral.b, cool.r, cool.g, cool.b)
+
+  for (let i = 0; i < segments; i += 1) {
+    const [x, y] = points[i]
+    positions.push(x, y, frontZ, x * .94 + offsetX * .06, y * .94 + offsetY * .06, backZ)
+    const edge = i / segments
+    const faceColor = cool.clone().lerp(mineral, .42 + .26 * Math.sin(edge * Math.PI * 2 + layer)).lerp(warm, .10 + layer * .025)
+    colors.push(faceColor.r, faceColor.g, faceColor.b, faceColor.r * .76, faceColor.g * .80, faceColor.b * .82)
   }
 
   for (let i = 0; i < segments; i += 1) {
-    const a = i * 2, b = a + 1, c = a + 2, d = a + 3
-    indices.push(a, c, b, b, c, d)
+    const next = (i + 1) % segments
+    const frontA = 2 + i * 2
+    const backA = frontA + 1
+    const frontB = 2 + next * 2
+    const backB = frontB + 1
+    indices.push(0, frontA, frontB)
+    indices.push(1, backB, backA)
+    indices.push(frontA, backA, frontB, frontB, backA, backB)
   }
 
   const geometry = new THREE.BufferGeometry()
@@ -40,7 +65,7 @@ function createThresholdBranch(side: -1 | 1) {
 }
 
 export function createFocusStrata() {
-  return [createThresholdBranch(-1), createThresholdBranch(1)]
+  return Array.from({ length: 6 }, (_, layer) => createMemoryLamella(layer))
 }
 
 function hash2(x: number, y: number) {
