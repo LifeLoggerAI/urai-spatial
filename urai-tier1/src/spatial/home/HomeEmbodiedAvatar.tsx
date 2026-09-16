@@ -25,8 +25,9 @@ function cloneAvatar(source: THREE.Object3D) {
     if (!(object instanceof THREE.Mesh)) return
     object.castShadow = true
     object.receiveShadow = true
-    const materials = Array.isArray(object.material) ? object.material : [object.material]
-    object.material = materials.map((material) => {
+    const sourceIsArray = Array.isArray(object.material)
+    const sourceMaterials = sourceIsArray ? object.material : [object.material]
+    const clonedMaterials = sourceMaterials.map((material) => {
       const clone = material.clone()
       if (clone instanceof THREE.MeshStandardMaterial) {
         clone.roughness = Math.max(clone.roughness, 0.56)
@@ -36,7 +37,7 @@ function cloneAvatar(source: THREE.Object3D) {
       }
       return clone
     })
-    if (!Array.isArray(object.material)) object.material = object.material[0]
+    object.material = sourceIsArray ? clonedMaterials : clonedMaterials[0]
   })
   root.name = 'urai-home-user-avatar-model'
   return root
