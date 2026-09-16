@@ -37,7 +37,7 @@ test('V249 and V281 localized repair modules remain historical inert provenance'
   assert.doesNotMatch(aaaRepair, /aaa-celestial-ascent-v3-gold-master-depth|home-aaa-life-map-celestial-ascent|home-aaa-v281-rooted-ascent-ribbons|buildCelestialVolume/)
 })
 
-test('retired localized Home hotspots are disabled while the active Avatar and living-memory Orb are protected', () => {
+test('retired localized Home hotspots are disabled while the entire active Avatar and living-memory Orb hierarchies are protected', () => {
   assert.match(owner, /function RetireLegacyHomeHotspots\(\)/)
   assert.match(owner, /object\.visible = false/)
   assert.match(owner, /object\.raycast = \(\) => undefined/)
@@ -45,8 +45,11 @@ test('retired localized Home hotspots are disabled while the active Avatar and l
   assert.match(owner, /\/home-v226-rooted-single-living-memory-presence\//)
   assert.match(owner, /\/home-current-orb\//)
   assert.match(owner, /\/home-v249-organic-living-memory-presence\//)
-  assert.match(owner, /if \(object\.name === 'home-living-memory-orb' \|\| object\.name === 'home-visible-user-avatar'\) return/)
-  assert.match(owner, /function VisibleHomeAvatar\(\)/)
+  assert.match(owner, /const CURRENT_HOME_PRESENCE_ROOTS = new Set\(\['home-living-memory-orb', 'home-visible-user-avatar'\]\)/)
+  assert.match(owner, /function isInsideCurrentHomePresence\(object: THREE\.Object3D\)/)
+  assert.match(owner, /if \(isInsideCurrentHomePresence\(object\)\) return/)
+  assert.match(owner, /function VisibleHomeAvatar\(\{ reducedMotion \}/)
+  assert.match(owner, /<VisibleHomeAvatar reducedMotion=\{reducedMotion\} \/>/)
   assert.match(owner, /name="home-visible-user-avatar"/)
   assert.match(owner, /presentation: 'visible-home-avatar-third-person'/)
   assert.match(owner, /name="home-living-memory-orb"/)

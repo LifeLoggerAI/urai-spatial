@@ -53,10 +53,12 @@ test('current candidate Home advances to visible Avatar plus governed Orb while 
     'event.point.clone()',
     'setLoop(THREE.LoopOnce, 1)',
   ]) has(renderer, marker)
-  assert.match(renderer, /function\s+VisibleHomeAvatar\s*\(/)
-  assert.match(renderer, /<VisibleHomeAvatar\s*\/>/)
+  assert.match(renderer, /function\s+VisibleHomeAvatar\s*\(\{ reducedMotion \}/)
+  assert.match(renderer, /<VisibleHomeAvatar reducedMotion=\{reducedMotion\} \/>/)
+  assert.match(renderer, /const idle = actions\.idle_breath/)
+  assert.match(renderer, /idle\.reset\(\)\.setLoop\(THREE\.LoopRepeat, Infinity\)/)
   assert.doesNotMatch(renderer, /first-person-viewpoint-no-avatar|privacy-preserving-first-person/)
-  assert.doesNotMatch(renderer, /THREE\.LoopRepeat\s*,\s*Infinity/)
+  assert.doesNotMatch(renderer, /next\.reset\(\)\.setLoop\(THREE\.LoopRepeat\s*,\s*Infinity\)/)
   assert.doesNotMatch(renderer, /HOME_LIFE_MAP|nearby\s*===\s*['"]life-map['"]|useMovementInput|MobileMovementPad/)
 })
 
@@ -65,6 +67,7 @@ test('rendering stays bounded and Orb state/reduced-motion telemetry remains exa
   assert.match(renderer, /data-home-orb-state=\{orbState\}/)
   assert.match(renderer, /data-home-orb-clip=\{resolveOrbSensoryOutput\(orbState, reducedMotion, true\)\.animation\}/)
   assert.match(renderer, /data-home-orb-model-clip=\{reducedMotion \? 'stopped-reduced-motion'/)
+  assert.match(renderer, /const expressiveEnergy = reducedMotion \? 0/)
   assert.match(geometry, /export const ORB\s*=\s*new THREE\.Vector3/)
   has(owner, "world.setAttribute('data-home-art-certification', 'fresh-exact-head-pixels-required')")
 })

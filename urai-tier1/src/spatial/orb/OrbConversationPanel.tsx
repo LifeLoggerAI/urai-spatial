@@ -7,6 +7,12 @@ import { URAI_VOICE_CONFIG } from '@/spatial/narrator/narratorCopy'
 import { narratorPlayback } from '@/spatial/narrator/narratorPlayback'
 import styles from './OrbConversationPanel.module.css'
 import {
+  emitOrbSpeechClock,
+  ORB_RESPONSE_ANTICIPATION_MS,
+  type OrbSpeechClockDetail,
+  type OrbSpeechSource,
+} from './orbSpeechClock'
+import {
   attemptedExternalOrbFallback,
   deterministicOrbFallback,
   OrbProviderAttemptError,
@@ -17,22 +23,8 @@ import {
   type OrbProviderResult,
 } from './openaiClient'
 
-type OrbSpeechClockDetail = {
-  readonly phase: 'start' | 'boundary' | 'frame' | 'end' | 'cancel'
-  readonly source: 'natural' | 'device' | 'text'
-  readonly elapsedMs?: number
-  readonly durationMs?: number
-  readonly charIndex?: number
-}
-
-const ORB_SPEECH_CLOCK_EVENT = 'urai:orb-speech-clock'
 const VAD_THRESHOLD = 0.035
 const BARGE_IN_HOLD_MS = 70
-
-function emitSpeechClock(detail: OrbSpeechClockDetail) {
-  if (typeof window === 'undefined') return
-  window.dispatchEvent(new CustomEvent<OrbSpeechClockDetail>(ORB_SPEECH_CLOCK_EVENT, { detail }))
-}
 
 function textResponseDurationMs(text: string) {
   return Math.min(8000, Math.max(1400, Math.round(text.length * 34)))
@@ -84,6 +76,11 @@ export default function OrbConversationPanel() {
   const voiceAborter = useRef<AbortController | null>(null)
   const voiceAudio = useRef<HTMLAudioElement | null>(null)
   const voiceObjectUrl = useRef<string | null>(null)
+  const voiceContext = useRef<AudioContext | null>(null)
+  const voiceSource = useRef<MediaElementAudioSourceNode | null>(null)
+  const voiceAnalyser = useRef<AnalyserNode | null>(null)
+  const voiceFrame = useRef<number | null>(null)
+  const voiceGeneration = useRef(0)
   const stateResetTimer = useRef<number | null>(null)
   const consentStateTimer = useRef<number | null>(null)
   const speechStartedAt = useRef<number | null>(null)
@@ -115,28 +112,108 @@ export default function OrbConversationPanel() {
     }
   }
 
-  const beginSpeakingClock = (source: OrbSpeechClockDetail['source']) => {
+  const beginSpeakingClock = (source: Exclude<OrbSpeechSource, 'text'>) => {
     speechStartedAt.current = performance.now()
-    setVoicePlaying(source !== 'text')
+    setVoicePlaying(true)
     publishConversationState('speaking')
-    emitSpeechClock({ phase: 'start', source, elapsedMs: 0 })
+    emitOrbSpeechClock({ phase: 'start', source, elapsedMs: 0 })
   }
 
-  const endSpeakingClock = (source: OrbSpeechClockDetail['source'], phase: 'end' | 'cancel' = 'end') => {
+  const endSpeakingClock = (source: Exclude<OrbSpeechSource, 'text'>, phase: 'end' | 'cancel' = 'end') => {
     const started = speechStartedAt.current
     const elapsedMs = started === null ? undefined : Math.max(0, performance.now() - started)
     speechStartedAt.current = null
     setVoicePlaying(false)
-    emitSpeechClock({ phase, source, elapsedMs })
+    emitOrbSpeechClock({ phase, source, elapsedMs })
     publishConversationState(micActiveRef.current ? 'listening' : 'idle')
   }
 
+  const stopNaturalVoiceAnalysis = () => {
+    if (voiceFrame.current !== null) {
+      window.cancelAnimationFrame(voiceFrame.current)
+      voiceFrame.current = null
+    }
+    try { voiceSource.current?.disconnect() } catch { /* browser cleanup only */ }
+    try { voiceAnalyser.current?.disconnect() } catch { /* browser cleanup only */ }
+    voiceSource.current = null
+    voiceAnalyser.current = null
+    const context = voiceContext.current
+    voiceContext.current = null
+    if (context && context.state !== 'closed') void context.close().catch(() => undefined)
+  }
+
+  const startNaturalVoiceAnalysis = async (audio: HTMLAudioElement) => {
+    if (typeof window === 'undefined' || voiceAudio.current !== audio) return false
+    try {
+      const context = new AudioContext()
+      await context.resume()
+      if (context.state !== 'running' || voiceAudio.current !== audio) {
+        await context.close().catch(() => undefined)
+        return false
+      }
+      const source = context.createMediaElementSource(audio)
+      const analyser = context.createAnalyser()
+      analyser.fftSize = 512
+      analyser.smoothingTimeConstant = 0.42
+      source.connect(analyser)
+      analyser.connect(context.destination)
+      voiceContext.current = context
+      voiceSource.current = source
+      voiceAnalyser.current = analyser
+      const samples = new Float32Array(analyser.fftSize)
+      let lastEmission = 0
+      const sample = (now: number) => {
+        if (voiceAudio.current !== audio || voiceAnalyser.current !== analyser) return
+        analyser.getFloatTimeDomainData(samples)
+        if (now - lastEmission >= 32) {
+          let energy = 0
+          for (const value of samples) energy += value * value
+          const rms = Math.min(1, Math.sqrt(energy / Math.max(1, samples.length)))
+          emitOrbSpeechClock({
+            phase: 'frame',
+            source: 'natural',
+            elapsedMs: Math.max(0, audio.currentTime * 1000),
+            durationMs: Number.isFinite(audio.duration) ? Math.max(0, audio.duration * 1000) : undefined,
+            amplitude: rms,
+          })
+          lastEmission = now
+        }
+        voiceFrame.current = window.requestAnimationFrame(sample)
+      }
+      voiceFrame.current = window.requestAnimationFrame(sample)
+      return true
+    } catch {
+      stopNaturalVoiceAnalysis()
+      return false
+    }
+  }
+
+  const waitForResponseAnticipation = async (source: OrbSpeechSource, generation: number, signal?: AbortSignal) => {
+    emitOrbSpeechClock({ phase: 'anticipation', source, elapsedMs: 0, durationMs: ORB_RESPONSE_ANTICIPATION_MS })
+    if (source === 'text') publishConversationState(micActiveRef.current ? 'listening' : 'attention')
+    else publishConversationState('thinking')
+    await new Promise<void>((resolve) => {
+      let settled = false
+      const finish = () => {
+        if (settled) return
+        settled = true
+        signal?.removeEventListener('abort', finish)
+        resolve()
+      }
+      const timer = window.setTimeout(finish, ORB_RESPONSE_ANTICIPATION_MS)
+      if (signal) signal.addEventListener('abort', () => { window.clearTimeout(timer); finish() }, { once: true })
+    })
+    return voiceGeneration.current === generation && !signal?.aborted
+  }
+
   const stopVoice = (publishIdle = false) => {
+    voiceGeneration.current += 1
     const hadNaturalVoice = Boolean(voiceAudio.current)
     const hadDeviceVoice = typeof window !== 'undefined' && 'speechSynthesis' in window && window.speechSynthesis.speaking
 
     voiceAborter.current?.abort()
     voiceAborter.current = null
+    stopNaturalVoiceAnalysis()
 
     const activeAudio = voiceAudio.current
     if (activeAudio) {
@@ -161,7 +238,7 @@ export default function OrbConversationPanel() {
       const started = speechStartedAt.current
       const elapsedMs = started === null ? undefined : Math.max(0, performance.now() - started)
       speechStartedAt.current = null
-      emitSpeechClock({ phase: 'cancel', source: hadNaturalVoice ? 'natural' : 'device', elapsedMs })
+      emitOrbSpeechClock({ phase: 'cancel', source: hadNaturalVoice ? 'natural' : 'device', elapsedMs })
     }
 
     if (publishIdle) publishConversationState(micActiveRef.current ? 'listening' : 'idle')
@@ -231,8 +308,7 @@ export default function OrbConversationPanel() {
         audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
         video: false,
       })
-      const AudioContextCtor = window.AudioContext
-      const context = new AudioContextCtor()
+      const context = new AudioContext()
       const source = context.createMediaStreamSource(stream)
       const analyser = context.createAnalyser()
       analyser.fftSize = 1024
@@ -253,34 +329,47 @@ export default function OrbConversationPanel() {
     }
   }
 
-  const playTextOnlyResponse = (text: string) => {
-    beginSpeakingClock('text')
+  const playTextOnlyResponse = async (text: string) => {
+    const generation = ++voiceGeneration.current
+    if (!await waitForResponseAnticipation('text', generation)) return
     const duration = textResponseDurationMs(text)
-    emitSpeechClock({ phase: 'frame', source: 'text', elapsedMs: 0, durationMs: duration })
+    emitOrbSpeechClock({ phase: 'frame', source: 'text', elapsedMs: 0, durationMs: duration })
+    publishConversationState(micActiveRef.current ? 'listening' : 'attention')
     stateResetTimer.current = window.setTimeout(() => {
       stateResetTimer.current = null
-      endSpeakingClock('text')
+      if (voiceGeneration.current !== generation) return
+      emitOrbSpeechClock({ phase: 'end', source: 'text', elapsedMs: duration, durationMs: duration })
+      publishConversationState(micActiveRef.current ? 'listening' : 'idle')
     }, duration)
   }
 
-  const playDeviceVoice = (text: string) => {
+  const playDeviceVoice = async (text: string) => {
     if (voiceMuted) {
-      playTextOnlyResponse(text)
+      void playTextOnlyResponse(text)
       return
     }
 
+    const generation = ++voiceGeneration.current
+    if (!await waitForResponseAnticipation('device', generation)) return
     speakWithDeviceVoice(text, {
-      onStart: () => beginSpeakingClock('device'),
+      onStart: () => {
+        if (voiceGeneration.current !== generation) return
+        beginSpeakingClock('device')
+      },
       onBoundary: (charIndex) => {
+        if (voiceGeneration.current !== generation) return
         const started = speechStartedAt.current
-        emitSpeechClock({
+        emitOrbSpeechClock({
           phase: 'boundary',
           source: 'device',
           elapsedMs: started === null ? undefined : Math.max(0, performance.now() - started),
           charIndex,
         })
       },
-      onDone: () => endSpeakingClock('device'),
+      onDone: () => {
+        if (voiceGeneration.current !== generation) return
+        endSpeakingClock('device')
+      },
     })
   }
 
@@ -289,7 +378,7 @@ export default function OrbConversationPanel() {
     stopVoice(false)
 
     if (voiceMuted) {
-      playTextOnlyResponse(text)
+      void playTextOnlyResponse(text)
       return
     }
 
@@ -303,37 +392,38 @@ export default function OrbConversationPanel() {
         controller.signal,
         true,
       )
-      if (voiceAborter.current === controller) voiceAborter.current = null
       if (controller.signal.aborted) return
 
       if (blob) {
         const url = URL.createObjectURL(blob)
         const audio = new Audio(url)
+        const generation = ++voiceGeneration.current
         voiceObjectUrl.current = url
         voiceAudio.current = audio
 
-        const cleanup = (phase: 'end' | 'cancel' = 'end') => {
+        const release = (finishSpeech: boolean) => {
+          stopNaturalVoiceAnalysis()
           if (voiceAudio.current === audio) voiceAudio.current = null
           if (voiceObjectUrl.current === url) {
             URL.revokeObjectURL(url)
             voiceObjectUrl.current = null
           }
+          if (voiceAborter.current === controller) voiceAborter.current = null
+          audio.onended = null
+          audio.onerror = null
           audio.ontimeupdate = null
-          endSpeakingClock('natural', phase)
+          if (finishSpeech && speechStartedAt.current !== null) endSpeakingClock('natural', 'end')
         }
 
-        audio.onended = () => cleanup('end')
+        audio.onended = () => release(true)
         audio.onerror = () => {
-          if (voiceAudio.current === audio) voiceAudio.current = null
-          if (voiceObjectUrl.current === url) {
-            URL.revokeObjectURL(url)
-            voiceObjectUrl.current = null
-          }
-          audio.ontimeupdate = null
-          if (!controller.signal.aborted) playDeviceVoice(text)
+          const canFallback = !controller.signal.aborted && voiceGeneration.current === generation
+          release(false)
+          if (canFallback) void playDeviceVoice(text)
         }
         audio.ontimeupdate = () => {
-          emitSpeechClock({
+          if (voiceAnalyser.current) return
+          emitOrbSpeechClock({
             phase: 'frame',
             source: 'natural',
             elapsedMs: Math.max(0, audio.currentTime * 1000),
@@ -341,29 +431,38 @@ export default function OrbConversationPanel() {
           })
         }
 
+        if (!await waitForResponseAnticipation('natural', generation, controller.signal)) {
+          release(false)
+          return
+        }
+
         try {
           await audio.play()
+          if (voiceGeneration.current !== generation || controller.signal.aborted || voiceAudio.current !== audio) {
+            release(false)
+            return
+          }
           beginSpeakingClock('natural')
+          void startNaturalVoiceAnalysis(audio)
           setStatus('Live Orb response ready. Natural voice is playing.')
           return
         } catch {
-          audio.onended = null
-          audio.onerror = null
-          audio.ontimeupdate = null
+          const canFallback = !controller.signal.aborted && voiceGeneration.current === generation
           audio.pause()
-          if (voiceAudio.current === audio) voiceAudio.current = null
-          if (voiceObjectUrl.current === url) {
-            URL.revokeObjectURL(url)
-            voiceObjectUrl.current = null
+          release(false)
+          if (canFallback) {
+            setStatus('Live Orb response ready. Natural voice playback is unavailable, so the device voice is being used.')
+            void playDeviceVoice(text)
+            return
           }
-          if (controller.signal.aborted) return
         }
       }
 
+      if (voiceAborter.current === controller) voiceAborter.current = null
       setStatus('Live Orb response ready. Natural voice is unavailable, so the device voice is being used.')
     }
 
-    playDeviceVoice(text)
+    void playDeviceVoice(text)
   }
 
   useEffect(() => {
@@ -372,8 +471,10 @@ export default function OrbConversationPanel() {
   }, [externalVoiceConsent])
 
   useEffect(() => () => {
+    voiceGeneration.current += 1
     aborter.current?.abort()
     voiceAborter.current?.abort()
+    stopNaturalVoiceAnalysis()
     if (micFrame.current !== null) window.cancelAnimationFrame(micFrame.current)
     micStream.current?.getTracks().forEach((track) => track.stop())
     const context = micContext.current
@@ -454,7 +555,7 @@ export default function OrbConversationPanel() {
       setStatus(resolved.provider === 'openai' ? 'Live Orb response ready.' : 'Local fallback response ready.')
       emitAudioCue('orb-confirm')
       if (resolved.provider === 'openai') void speakOrbResponse(resolved.message)
-      else playDeviceVoice(resolved.message)
+      else void playDeviceVoice(resolved.message)
     } catch (error) {
       if (controller.signal.aborted) return
       const fallback = error instanceof OrbProviderAttemptError
@@ -471,7 +572,7 @@ export default function OrbConversationPanel() {
           : 'Live provider unavailable before external processing; local fallback response ready.')
       publishConversationState('warning', 2400)
       emitAudioCue('error')
-      if (!voiceMuted) playDeviceVoice(fallback.message)
+      if (!voiceMuted) void playDeviceVoice(fallback.message)
     } finally {
       if (aborter.current === controller) aborter.current = null
       if (!controller.signal.aborted) setBusy(false)
@@ -550,7 +651,7 @@ export default function OrbConversationPanel() {
               if (!result) return
               cancelDeferredConsentState()
               if (result.provider === 'openai') void speakOrbResponse(result.message)
-              else playDeviceVoice(result.message)
+              else void playDeviceVoice(result.message)
             }}>
               Replay
             </button>
