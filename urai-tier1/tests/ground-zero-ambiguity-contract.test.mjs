@@ -76,6 +76,7 @@ test('Ground renders no follower Orb while preserving semantic UrAi access', () 
   ]) has(orbBridge, marker)
   assert.doesNotMatch(orbBridge, /ground-physical-orb|single-ground-world-orb|preferredDistanceM|catchupDistanceM|icosahedronGeometry|pointLight/)
   assert.doesNotMatch(canon, /GROUND_ORB|orbCoherence/)
+  assert.doesNotMatch(ground, /The physical Orb is present in the world\./)
 })
 
 test('Ground atmosphere uses bounded physical variables rather than screen-tint emotion labels', () => {
