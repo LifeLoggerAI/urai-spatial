@@ -123,6 +123,8 @@ export function useHomeExperienceController({
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key !== 'Escape') return
+      if (event.defaultPrevented) return
+      if (document.querySelector('[data-home-layer="AVATAR_SELF_VIEW"]')) return
       if (event.target instanceof Element && event.target.closest('input,textarea,select,[contenteditable="true"]')) return
       event.preventDefault()
       escape()
@@ -132,10 +134,16 @@ export function useHomeExperienceController({
   }, [escape])
 
   useEffect(() => {
-    const onPopState = () => escape()
+    const onPopState = () => {
+      if (document.querySelector('[data-home-layer="AVATAR_SELF_VIEW"]')) {
+        closeSelfView()
+        return
+      }
+      escape()
+    }
     window.addEventListener('popstate', onPopState)
     return () => window.removeEventListener('popstate', onPopState)
-  }, [escape])
+  }, [closeSelfView, escape])
 
   const api = useMemo(() => ({
     activateAvatar,
