@@ -6,7 +6,7 @@ import * as THREE from 'three'
 // slabs: narrow irregular leaves interlock around one vertical memory core,
 // with high-contrast cool / pearl / warm energy and dark inter-layer depth.
 // It must never read as a boulder, onion, sphere, doorway, portal, ring, cage,
-// bubble, planet, flower, pair of horns, folded paper fan, or terrain debris.
+// bubble, planet, flower, pair of horns, broad folded-sheet fan, or terrain debris.
 function createMemoryLamella(layer: number) {
   const signed = layer - 3
   const depth = -.45 + layer * .15
