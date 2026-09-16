@@ -1,0 +1,78 @@
+feature: global-emotional-field
+repo: LifeLoggerAI/urai-spatial
+owner: URAI Privacy + Foundation Governance + Spatial
+privacyGovernanceVersion: 0.1.0-draft
+status: source_policy_only_no_public_signal_provider
+lastReviewed: 2026-09-16
+sourceEvidence:
+  - docs/URAI_PERSONALIZED_LIVED_WORLD_AUTHORITY_V1.md
+  - urai-tier1/src/spatial/lived-world/globalEmotionalField.ts
+  - LifeLoggerAI/urai-privacy/docs/ANONYMIZATION_STANDARD.md
+  - LifeLoggerAI/urai-privacy/docs/CONSENT_TIERS.md
+
+summary:
+  purpose: Display privacy-preserving cohort-level emotional/public-good patterns without exposing individual emotion, raw sensitive data or precise movement.
+  userBenefit: Lets opted-in users observe broad collective patterns while individual and small-cohort states remain unavailable.
+  implementationStatus: evaluation_and_suppression_policy_implemented_provider_and_home_globe_not_activated
+
+dataProcessing:
+  collectedFields:
+    - name: global_field_participation_consent
+      collectionOrTable: existing_consent_authority_only
+      dataClass: L1
+      source: user
+      purpose: data.monetization.anonymized
+      consentTier: C8
+      retentionClass: R4
+      exportable: true
+      deletable: true
+      auditRequired: true
+    - name: global_field_sensitive_input
+      collectionOrTable: not_activated
+      dataClass: L4
+      source: model
+      purpose: inference.sensitive
+      consentTier: C4
+      retentionClass: R3
+      exportable: true
+      deletable: true
+      auditRequired: true
+  derivedFields:
+    - name: global_emotional_field_cell
+      collectionOrTable: not_activated
+      dataClass: L6
+      sourceFields:
+        - global_field_participation_consent
+        - global_field_sensitive_input
+      purpose: cohort-level de-identified public-good aggregate
+      consentTier: C8
+      retentionClass: R5
+      exportable: false
+      deletable: false
+      explainabilityRequired: true
+
+userRights:
+  exportSupported: true
+  deletionSupported: true
+  consentRevocationSupported: true
+  explanationSupported: true
+
+adminAccess:
+  allowed: false
+  roles: []
+  auditEventTypes:
+    - global_field.consent_changed
+    - global_field.batch_suppressed
+    - global_field.batch_approved
+    - global_field.cell_published
+
+monetization:
+  participatesInDataSharing: true
+  requiresC8Consent: true
+  anonymizationBatchRequired: true
+  minimumCohortSize: 100
+
+review:
+  reviewer: pending_independent_privacy_and_foundation_governance_review
+  decision: blocked_from_public_signal_activation
+  notes: 100 users is only the default anonymization floor from current privacy authority. Location, mental-health/crisis, biometric-derived, relationship/social-graph, minors and protected-population cohorts require an approved higher minimum. Source suppresses rather than invents that number. No individual, household, street, building, raw voice, transcript, memory, movement trail or identifiable social graph may be exposed.
