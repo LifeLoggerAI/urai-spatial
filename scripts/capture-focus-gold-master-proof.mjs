@@ -87,11 +87,21 @@ function attachDiagnostics(page, label) {
 
 function blockingFailedRequests(failedRequests) {
   return failedRequests.filter((request) => {
-    // Next.js can abort an in-flight static chunk or stylesheet when the proof
-    // intentionally changes realms. Retain those diagnostics in the receipt,
-    // but do not confuse a navigation cancellation with a missing/failed asset.
-    const expectedNavigationAbort = request.failure === 'net::ERR_ABORTED'
-      && /\/_next\/static\//.test(request.url)
+    // Next.js can abort static assets or an in-flight RSC document when an
+    // intentional client navigation commits first. Keep every cancellation in
+    // diagnostics, but do not classify that navigation bookkeeping as a failed
+    // runtime resource. Any non-abort or unrelated same-origin failure remains
+    // blocking.
+    let expectedNavigationAbort = false
+    if (request.failure === 'net::ERR_ABORTED') {
+      try {
+        const requestUrl = new URL(request.url)
+        expectedNavigationAbort = /\/_next\/static\//.test(requestUrl.pathname)
+          || (requestUrl.pathname.endsWith('/index.txt') && requestUrl.searchParams.has('_rsc'))
+      } catch {
+        expectedNavigationAbort = /\/_next\/static\//.test(request.url)
+      }
+    }
     return !expectedNavigationAbort
   })
 }
