@@ -1,0 +1,50 @@
+name: Ground Replay Canon Stack
+
+on:
+  push:
+    branches:
+      - ground-replay-canon-lock-20260916-v1
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ground-replay-canon-stack-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: Canon source + type verification
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Checkout exact branch head
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Setup Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Install frozen dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run zero-ambiguity Ground Replay contract
+        working-directory: urai-tier1
+        run: node --import tsx --test tests/ground-replay-zero-ambiguity-contract.test.mjs
+
+      - name: Typecheck runtime
+        working-directory: urai-tier1
+        run: pnpm run typecheck
+
+      - name: Build production runtime
+        working-directory: urai-tier1
+        run: pnpm run build
