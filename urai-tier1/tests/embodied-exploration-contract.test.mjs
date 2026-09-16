@@ -34,7 +34,10 @@ test('Home keeps one V223 first-person cinematic Canvas owner while predecessor 
   has(activeHomeRuntime3d, 'data-home-ground-entry="physical-world-surface"')
   has(activeHomeRuntime3d, 'data-home-life-map-entry="visible-sky-broad-interaction"')
   assert.equal((activeHomeRuntime3d.match(/<Canvas/g) ?? []).length, 1)
-  assert.doesNotMatch(activeHomeRuntime3d, /function VisibleUserAvatar|<VisibleUserAvatar|home-visible-user-avatar|cinematic-third-person|urai-home-embodied-avatar/)
+  // Reject live avatar ownership while permitting compatibility strings that exist only
+  // to retire/hide historical avatar geometry from the current first-person runtime.
+  assert.doesNotMatch(activeHomeRuntime3d, /function\s+VisibleUserAvatar\s*\(|<VisibleUserAvatar\b/)
+  assert.doesNotMatch(activeHomeRuntime3d, /data-home-embodied-self=["']visible-cinematic-avatar["']|data-home-camera-mode=["']cinematic-third-person["']|name=["']urai-home-embodied-avatar["']/)
   assert.doesNotMatch(activeHomeRuntime3d, /stepEmbodiedMotion|useMovementInput|MobileMovementPad/)
   assert.doesNotMatch(homeArt, /<Canvas/)
   assert.doesNotMatch(homeGraph, /PRODUCTION CERTIFIED|retained-pixel-pass|pixel-certified/)
