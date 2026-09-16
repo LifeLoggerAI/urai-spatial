@@ -7,6 +7,7 @@ const homeRuntime = read('src/app/HomeSpatialRuntimeLayer.tsx')
 const assetHome = read('src/app/AssetDrivenHomeWorld.tsx')
 const homeEntry = read('src/spatial/layout/HomeWorldProduction.tsx')
 const currentHome = read('src/spatial/layout/HomeWorldProductionV223.tsx')
+const embodiedAvatar = read('src/spatial/home/HomeEmbodiedAvatar.tsx')
 const currentHomeGeometry = read('src/spatial/layout/HomeWorldProductionV223Geometry.tsx')
 const sky = read('src/spatial/assets/HomeAtmosphericSky.tsx')
 const currentHomeVisualAuthority = JSON.parse(read('src/app/currentHomeVisualAuthority.json'))
@@ -16,33 +17,38 @@ const lifeMap = read('src/spatial/lifemap/SpatialLifeMapCanonical.tsx')
 
 const has = (source, marker) => assert.ok(source.includes(marker), `missing marker: ${marker}`)
 
-test('Home is a visible-Avatar cinematic threshold with the living-memory Orb, physical-world Ground and broad-sky Life Map', () => {
+test('Home supports cinematic visible-Avatar presentation plus camera-only first-person embodiment without changing Ground/Sky ownership', () => {
   for (const marker of [
-    'data-home-embodied-self="visible-cinematic-avatar"',
-    'data-home-presence-presentation="visible-avatar-third-person"',
-    'data-home-movement="camera-look-world-surface-selection"',
+    'data-home-embodied-self=',
+    'visible-cinematic-avatar',
+    'camera-only-first-person-home',
+    'data-home-presence-presentation=',
+    'visible-avatar-third-person',
+    'hidden-exterior-avatar-first-person',
+    'data-home-movement=',
+    'walk-look-interact',
     'data-home-ground-entry="physical-world-surface"',
     'data-home-life-map-entry="visible-sky-broad-interaction"',
     'data-home-camera-mode=',
     'cinematic-third-person',
-    'home-visible-user-avatar',
+    'avatar-home-first-person',
+    'urai-home-user-avatar',
     'home-living-memory-orb',
     '/assets/urai/generated/models/urai-orb-avatar-v1.glb',
-    '/assets/urai/generated/human-makehuman-v4/home-human-makehuman-v4.glb',
     'physicalWorldClick',
     'event.point.clone()',
+    'data-home-non-xr-body-policy="camera-only-no-hands-body-rig"',
   ]) has(currentHome, marker)
 
-  assert.match(currentHome, /function\s+VisibleHomeAvatar\s*\(\{ reducedMotion \}/)
-  assert.match(currentHome, /<VisibleHomeAvatar reducedMotion=\{reducedMotion\} \/>/)
-  assert.match(currentHome, /const idle = actions\.idle_breath/)
+  assert.match(currentHome, /<HomeEmbodiedAvatar/)
+  assert.match(currentHome, /useHomeExperienceController/)
+  assert.match(currentHome, /homeApi\.activateAvatar\(\)/)
+  assert.match(embodiedAvatar, /const idle = actions\.idle_breath/)
   assert.match(currentHome, /setLoop\(THREE\.LoopOnce, 1\)/)
   assert.match(currentHome, /clampWhenFinished = true/)
-  assert.doesNotMatch(currentHome, /first-person-viewpoint-no-avatar|privacy-preserving-first-person/)
+  assert.doesNotMatch(currentHome, /privacy-preserving-first-person/)
   assert.doesNotMatch(currentHome, /next\.reset\(\)\.setLoop\(THREE\.LoopRepeat\s*,\s*Infinity\)/)
-  assert.doesNotMatch(currentHome, /stepEmbodiedMotion|useMovementInput|MobileMovementPad/)
   assert.doesNotMatch(currentHome, /nearby==='ground'|nearby === 'ground'/)
-  assert.doesNotMatch(currentHome, /data-home-movement="walk-keyboard-click-touch"/)
   assert.doesNotMatch(currentHome, /The path descends/)
   assert.doesNotMatch(currentHome, /from '\.\/HomeWorldProductionV223Geometry'.*GROUND/)
   assert.match(currentHome, /data-home-distance-ground="world-surface"/)
@@ -60,15 +66,15 @@ test('Home sky is the canonical broad Life Map threshold and localized Home-side
     'RetireLocalizedLifeMapGateways',
   ]) has(sky, marker)
   assert.match(currentHome, /<HomeAtmosphericSky[^>]*onLifeMap=\{onLifeMap\}/)
-  assert.doesNotMatch(currentHome, /LIFE_MAP/)
+  assert.doesNotMatch(currentHome, /home-life-map-physical-portal|LifeMapPortal|PORTAL_MODEL/)
 })
 
-test('Home runtime exposes the visible Avatar and governed Orb candidate without restoring portal-hub or locomotion ownership', () => {
+test('Home runtime exposes the governed Avatar and Orb candidate while keeping route destinations semantic', () => {
   assert.match(assetHome, /cinematic-home-ground-threshold-convergence/)
   assert.match(assetHome, /continuous-lived-physical-world/)
-  assert.match(assetHome, /home-physical-world home-visible-avatar home-living-memory-orb home-life-map-sky-threshold/)
-  assert.match(currentHome, /home-visible-user-avatar/)
+  assert.match(currentHome, /urai-home-user-avatar/)
   assert.match(currentHome, /home-living-memory-orb/)
+  assert.match(currentHome, /HOME_AVATAR_MODEL/)
   assert.doesNotMatch(assetHome, /HOME_GROUND|HOME_SPAWN|stagePortalLifecycle|PortalDestination/)
   // Keep the last certified V288 metadata until fresh candidate pixels are accepted.
   assert.equal(currentHomeVisualAuthority.artRevision, 'v288-cinematic-lived-world-grounded-reliquary')
