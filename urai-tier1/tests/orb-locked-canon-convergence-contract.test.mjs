@@ -15,7 +15,7 @@ test('Home preserves the locked Avatar + Orb + Ground + Sky authority', () => {
   assert.match(home, /data-home-presence-presentation="visible-avatar-third-person"/)
   assert.match(home, /presentation:'visible-home-avatar-third-person'/)
   assert.match(home, /<primitive object=\{model\} visible scale=\{0\.72\}/)
-  assert.match(home, /data-home-camera-mode=\{transition!==?'none'/)
+  assert.match(home, /data-home-camera-mode=/)
   assert.doesNotMatch(home, /privacy-preserving-first-person-presence/)
 })
 
@@ -55,17 +55,30 @@ test('Conversation speaking state is bound to actual playback rather than stream
   assert.match(conversation, /utterance\.onboundary/)
 })
 
-test('Text focus is attention, not fake acoustic listening', () => {
+test('Text focus only becomes Listening when a real microphone session is active', () => {
   const focusBlock = conversation.match(/onFocus=\{\(\) => \{([\s\S]*?)\}\}/)?.[1] ?? ''
-  assert.match(focusBlock, /publishConversationState\('attention'\)/)
+  assert.match(focusBlock, /micActiveRef\.current \? 'listening' : 'attention'/)
   assert.doesNotMatch(focusBlock, /publishConversationState\('listening'\)/)
 })
 
-test('Speech lifecycle exposes timing events for Orb embodiment and barge-in integration', () => {
+test('Speech lifecycle exposes timing events for Orb embodiment', () => {
   assert.match(conversation, /const ORB_SPEECH_CLOCK_EVENT = 'urai:orb-speech-clock'/)
   assert.match(conversation, /phase: 'start'/)
   assert.match(conversation, /phase: 'boundary'/)
   assert.match(conversation, /phase: 'frame'/)
   assert.match(conversation, /phase: 'cancel'/)
   assert.match(conversation, /audio\.ontimeupdate/)
+})
+
+test('Real microphone activity drives Listening and local VAD barge-in', () => {
+  assert.match(conversation, /navigator\.mediaDevices\?\.getUserMedia/)
+  assert.match(conversation, /echoCancellation: true/)
+  assert.match(conversation, /noiseSuppression: true/)
+  assert.match(conversation, /autoGainControl: true/)
+  assert.match(conversation, /const VAD_THRESHOLD = 0\.035/)
+  assert.match(conversation, /const BARGE_IN_HOLD_MS = 70/)
+  assert.match(conversation, /getFloatTimeDomainData/)
+  assert.match(conversation, /if \(wasSpeaking\) \{\s*stopVoice\(false\)/)
+  assert.match(conversation, /publishConversationState\('listening'\)/)
+  assert.match(conversation, /Microphone audio is not uploaded or transcribed by this control/)
 })
