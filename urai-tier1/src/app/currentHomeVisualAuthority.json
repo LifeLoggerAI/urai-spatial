@@ -19,5 +19,17 @@
     "polyhaven-v48/rock_face_01/asset.gltf",
     "polyhaven-v48/rock_face_02/asset.gltf"
   ],
-  "orbVisualAuthority": "v288-grounded-biomorphic-reliquary"
+  "orbVisualAuthority": "v288-grounded-biomorphic-reliquary",
+  "certifiedPredecessor": {
+    "artRevision": "v288-cinematic-lived-world-grounded-reliquary",
+    "orbVisualAuthority": "v288-grounded-biomorphic-reliquary",
+    "status": "last-certified-predecessor-only"
+  },
+  "currentCandidateRuntime": {
+    "rendererOwner": "HomeWorldProductionV223.tsx",
+    "orbVisualAuthority": "authored-urai-orb-avatar-v1-glb",
+    "orbRuntimeAsset": "/assets/urai/generated/models/urai-orb-avatar-v1.glb",
+    "orbGroundRelationship": "self-supported-near-ground-no-external-support",
+    "certification": "fresh-exact-head-pixels-required"
+  }
 }
