@@ -21,3 +21,32 @@
   pointer-events: auto !important;
   touch-action: manipulation;
 }
+
+/* Portrait retained-pixel repair: the mounted Cosmic scene remains the geometry
+   authority. This is a restrained atmospheric compositing layer only, filling
+   the tall mid-field with off-axis depth cues so mobile does not collapse into
+   a black central corridor. No centered ring, portal, doorway, or semantic hit
+   target is introduced; all interaction still belongs to the scene/navigator. */
+@media (orientation: portrait) {
+  .life-map-root::before {
+    content: '';
+    position: absolute;
+    inset: -6%;
+    z-index: 1;
+    pointer-events: none;
+    background:
+      radial-gradient(ellipse 54% 28% at 22% 23%, rgba(69, 111, 126, .18) 0%, rgba(33, 64, 77, .09) 38%, transparent 72%),
+      radial-gradient(ellipse 48% 31% at 76% 38%, rgba(128, 112, 91, .13) 0%, rgba(70, 65, 60, .07) 42%, transparent 74%),
+      radial-gradient(ellipse 58% 34% at 34% 58%, rgba(54, 91, 104, .15) 0%, rgba(25, 52, 67, .08) 44%, transparent 76%),
+      radial-gradient(ellipse 52% 30% at 74% 76%, rgba(111, 103, 88, .11) 0%, rgba(52, 59, 66, .06) 43%, transparent 74%),
+      linear-gradient(168deg, transparent 8%, rgba(55, 82, 91, .045) 31%, transparent 48%, rgba(104, 92, 74, .035) 66%, transparent 88%);
+    opacity: .92;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .life-map-root::before {
+    transition: none !important;
+    animation: none !important;
+  }
+}
