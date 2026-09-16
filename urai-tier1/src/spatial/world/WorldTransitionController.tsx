@@ -85,6 +85,10 @@ function fallbackReturnDestination(destination: UraiDestination): UraiDestinatio
   return 'infrastructure-hub'
 }
 
+function isGroundOwnedTravel(from: UraiDestination, to: UraiDestination) {
+  return to === 'infrastructure-hub' || (from === 'infrastructure-hub' && to === 'home')
+}
+
 export function WorldTransitionController() {
   const router = useRouter()
   const { world, phase, pendingTravel, beginTravel } = useUraiWorldState()
@@ -125,6 +129,8 @@ export function WorldTransitionController() {
 
     const href = buildTravelHref(request)
     const targetPathname = normalizedPathname(new URL(href, window.location.origin).pathname)
+    const groundOwned = isGroundOwnedTravel(currentWorld.destination, request.destination)
+    const delay = groundOwned ? 40 : transitionDuration(request.destination)
     timer.current = window.setTimeout(() => {
       router.push(href)
       timer.current = null
@@ -135,7 +141,7 @@ export function WorldTransitionController() {
           window.location.assign(href)
         }
       }, 2500)
-    }, transitionDuration(request.destination))
+    }, delay)
   }, [clearTimer, router])
 
   const reverseTravel = useCallback(() => {
@@ -185,14 +191,15 @@ export function WorldTransitionController() {
     }
   }, [clearTimer, executeTravel, reverseTravel])
 
-  const groundOwned = pendingTravel?.destination === 'infrastructure-hub'
+  const targetDestination = pendingTravel?.destination ?? world.destination
+  const groundOwned = isGroundOwnedTravel(world.destination, targetDestination)
   return (
     <div
       className="urai-world-transition"
       data-phase={phase}
       data-from={world.destination}
-      data-to={pendingTravel?.destination ?? world.destination}
-      data-ground-visual-owner={groundOwned ? 'home-authored-descent' : 'none'}
+      data-to={targetDestination}
+      data-ground-visual-owner={groundOwned ? 'realm-authored-transition' : 'none'}
       aria-hidden="true"
     >
       {!groundOwned ? <>
