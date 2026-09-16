@@ -10,6 +10,11 @@ const boundarySource = fs.readFileSync(new URL('../src/app/ground/GroundPersonal
 const groundPage = fs.readFileSync(new URL('../src/app/ground/page.tsx', import.meta.url), 'utf8')
 const worldTypes = fs.readFileSync(new URL('../src/spatial/world/worldTypes.ts', import.meta.url), 'utf8')
 const worldEvents = fs.readFileSync(new URL('../src/spatial/world/worldEvents.ts', import.meta.url), 'utf8')
+const passportPage = fs.readFileSync(new URL('../src/app/passport/page.tsx', import.meta.url), 'utf8')
+const publicGoodCard = fs.readFileSync(new URL('../src/app/passport/GlobalEmotionalFieldConsentCard.tsx', import.meta.url), 'utf8')
+const privacyClient = fs.readFileSync(new URL('../src/lib/privacy/operationalPrivacyClient.ts', import.meta.url), 'utf8')
+const publicGoodFunctions = fs.readFileSync(new URL('../../apps/functions/src/publicGoodConsent.ts', import.meta.url), 'utf8')
+const functionIndex = fs.readFileSync(new URL('../../apps/functions/src/index.ts', import.meta.url), 'utf8')
 const authority = fs.readFileSync(new URL('../../docs/URAI_PERSONALIZED_LIVED_WORLD_AUTHORITY_V1.md', import.meta.url), 'utf8')
 
 test('Lived World Graph is provenance-first and covers terrestrial life entities', () => {
@@ -35,6 +40,28 @@ test('Global Emotional Field is cohort aggregate only and suppresses unsafe loca
   assert.ok(fieldSource.includes("'country' | 'multi-region' | 'coarse-region'"))
   assert.ok(fieldSource.includes("purpose: 'inference.sensitive'"))
   assert.ok(fieldSource.includes("tier !== 'C4'"))
+})
+
+test('Passport has dedicated fail-closed C8 public-good consent without activating publication', () => {
+  assert.ok(passportPage.includes('GlobalEmotionalFieldConsentCard'))
+  assert.ok(publicGoodCard.includes("(['off', 'limited', 'on'] as const)"))
+  assert.ok(publicGoodCard.includes('Default is <strong>Off</strong>'))
+  assert.ok(publicGoodCard.includes('Absolute privacy floor: {snapshot.minimumCohortFloor} users'))
+  assert.ok(publicGoodCard.includes('Location/sensitive cohorts require a separately approved higher threshold'))
+  assert.ok(publicGoodCard.includes('What never contributes'))
+  assert.ok(privacyClient.includes("callOperationalPrivacyFunction('getGlobalEmotionalFieldConsent')"))
+  assert.ok(privacyClient.includes("callOperationalPrivacyFunction('applyGlobalEmotionalFieldConsent'"))
+  assert.ok(functionIndex.includes('applyGlobalEmotionalFieldConsent'))
+  assert.ok(functionIndex.includes('getGlobalEmotionalFieldConsent'))
+  assert.ok(publicGoodFunctions.includes("mode: 'off'"))
+  assert.ok(publicGoodFunctions.includes("consentTier: 'C8'"))
+  assert.ok(publicGoodFunctions.includes("purpose: 'data.public-good.emotional-field'"))
+  assert.ok(publicGoodFunctions.includes("providerState: 'not-activated'"))
+  assert.ok(publicGoodFunctions.includes("publicationState: 'blocked-pending-governance-and-aggregate-provider'"))
+  assert.ok(publicGoodFunctions.includes("minimumCohortFloor: 100"))
+  for (const forbidden of ['individual emotion', 'exact location', 'raw voice', 'raw transcript', 'raw memory', 'movement trail', 'identifiable social graph', 'biometric template']) {
+    assert.ok(publicGoodFunctions.includes(`'${forbidden}'`) || publicGoodFunctions.includes(forbidden), `missing forbidden contribution ${forbidden}`)
+  }
 })
 
 test('Ground memory handoff preserves place, memory, provenance, fidelity and exact return origin', () => {
