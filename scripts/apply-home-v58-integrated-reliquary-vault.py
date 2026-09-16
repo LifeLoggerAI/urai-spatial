@@ -1,0 +1,169 @@
+from pathlib import Path
+
+path = Path('urai-tier1/src/spatial/layout/HomeWorldProductionFinal.tsx')
+text = path.read_text()
+
+
+def replace_between(source: str, start: str, end: str, replacement: str) -> str:
+    i = source.index(start)
+    j = source.index(end, i)
+    return source[:i] + replacement + source[j:]
+
+
+court = r'''function SanctuaryCourt({ target }: { target: MutableRefObject<THREE.Vector3 | null> }) {
+  const sanctuary = useGLTF(SANCTUARY)
+  const compatibilityModel = useMemo(() => cloneCompatibilitySanctuary(sanctuary.scene), [sanctuary.scene])
+  const pack = useStonePack(0.32, 0.52)
+  const onWalk = (event: ThreeEvent<MouseEvent>) => {
+    event.stopPropagation()
+    if (useSceneStore.getState().inputLocked) return
+    target.current = new THREE.Vector3(THREE.MathUtils.clamp(event.point.x, BOUNDS.minX, BOUNDS.maxX), 0, THREE.MathUtils.clamp(event.point.z, BOUNDS.minZ, BOUNDS.maxZ))
+  }
+  return <group name="home-authored-terrain" userData={{ treatment: 'v58-continuous-dark-stone-processional-floor-no-road-inset', source: HOME_PHOTOGRAPHIC_PBR_V19 }}>
+    <primitive object={compatibilityModel} />
+    <mesh name="home-v58-continuous-stone-floor" position={[0,-0.16,-1.65]} rotation={[-Math.PI/2,0,0]} receiveShadow>
+      <planeGeometry args={[14.2,18.0,32,40]} />
+      <meshPhysicalMaterial color="#121917" map={pack.color} normalMap={pack.normal} normalScale={new THREE.Vector2(0.2,0.2)} roughnessMap={pack.arm} displacementMap={pack.displacement} displacementScale={0.006} displacementBias={-0.0028} roughness={0.86} metalness={0.006} clearcoat={0.012} clearcoatRoughness={0.9} envMapIntensity={0.46} />
+    </mesh>
+    <mesh name="home-v58-processional-wear" position={[0,-0.13,-3.05]} rotation={[-Math.PI/2,0,0]} receiveShadow>
+      <planeGeometry args={[5.1,8.7,16,20]} />
+      <meshPhysicalMaterial color="#202925" map={pack.color} normalMap={pack.normal} normalScale={new THREE.Vector2(0.12,0.12)} roughnessMap={pack.arm} roughness={0.8} metalness={0.008} clearcoat={0.018} clearcoatRoughness={0.86} envMapIntensity={0.52} />
+    </mesh>
+    <group name="home-v58-floor-guides" userData={{treatment:'two-subtle-inlaid-guides-not-road-lanes'}}>
+      <mesh position={[-2.18,-0.104,-4.45]} rotation={[-Math.PI/2,0,-0.018]} receiveShadow><planeGeometry args={[0.028,7.1]}/><meshStandardMaterial color="#35524a" emissive="#13221e" emissiveIntensity={0.035} roughness={0.78} metalness={0.18}/></mesh>
+      <mesh position={[2.18,-0.104,-4.45]} rotation={[-Math.PI/2,0,0.018]} receiveShadow><planeGeometry args={[0.028,7.1]}/><meshStandardMaterial color="#594d39" emissive="#241c12" emissiveIntensity={0.03} roughness={0.8} metalness={0.16}/></mesh>
+    </group>
+    <mesh name="home-walkable-navigation-surface" position={[0,0.18,-1.45]} rotation={[-Math.PI/2,0,0]} onClick={onWalk}>
+      <planeGeometry args={[13.0,17.0]} /><meshBasicMaterial transparent opacity={0} depthWrite={false} colorWrite={false} />
+    </mesh>
+  </group>
+}
+
+
+'''
+text = replace_between(text, 'function SanctuaryCourt', 'function ProductionSanctuary', court)
+
+architecture = r'''function ContinuousVaultSkin({pack}:{pack:SurfacePack}){
+  return <group name="home-v47-reliquary-apse" userData={{treatment:'v58-continuous-load-bearing-stone-vault-with-recessed-machine-bay'}}>
+    <SanctuaryShellMass pack={pack} position={[0,2.45,-8.65]} width={12.6} height={8.1} depth={1.55} openingWidth={6.1} openingHeight={4.55} color="#171d1b"/>
+    <SanctuaryShellMass pack={pack} position={[0,2.35,-8.08]} width={9.25} height={6.45} depth={1.02} openingWidth={4.65} openingHeight={3.48} color="#202724"/>
+    <ProductionAsset url={V48_ROCK_FACE_01} name="home-v58-left-geology-inlay" position={[-4.62,1.18,-8.0]} rotation={[.02,.54,.04]} span={3.0} scale={[.74,.82,.42]}/>
+    <ProductionAsset url={V48_ROCK_FACE_02} name="home-v58-right-geology-inlay" position={[4.7,1.12,-8.08]} rotation={[-.02,-.58,-.03]} span={2.95} scale={[.74,.8,.42]}/>
+  </group>
+}
+
+function CantedWallMass({pack,side}:{pack:SurfacePack;side:-1|1}){return <group name={side<0?'home-v58-left-integrated-return':'home-v58-right-integrated-return'} userData={{treatment:'v58-side-return-owned-by-continuous-vault'}} />}
+
+function MachineCavityLiner(){
+  return <group name="home-v47-reliquary-cavity" userData={{treatment:'v58-recessed-engineered-bay-no-pipe-kitbash-no-black-void'}}>
+    <TaperedLoadBeam from={[-2.55,.35,-7.72]} to={[-1.18,3.95,-7.56]} width={.34} color="#34443f"/>
+    <TaperedLoadBeam from={[2.55,.35,-7.72]} to={[1.18,3.95,-7.56]} width={.34} color="#50483a"/>
+    <TaperedLoadBeam from={[-1.2,3.95,-7.56]} to={[1.2,3.95,-7.56]} width={.3} color="#39433f"/>
+    <StructuralRib points={[[-2.15,.7,-7.38],[-1.72,2.0,-7.28],[-1.05,3.02,-7.23],[0,3.42,-7.2],[1.05,3.02,-7.23],[1.72,2.0,-7.28],[2.15,.7,-7.38]]} radius={.075} color="#46534e" metalness={.58} roughness={.48}/>
+    <mesh position={[0,2.15,-7.52]} receiveShadow><circleGeometry args={[2.18,48]}/><meshPhysicalMaterial color="#0b100f" roughness={.92} metalness={.02} envMapIntensity={.22}/></mesh>
+    <pointLight position={[0,2.35,-6.65]} color="#77aaa1" intensity={.36} distance={5.4} decay={2}/>
+  </group>
+}
+
+function SanctuarySideGallery(){
+  return <group name="home-v47-side-gallery" userData={{treatment:'v58-contained-side-buttresses-and-practicals'}}>
+    <ProductionAsset url={V48_CAGED_SCONCE} name="home-v58-left-depth-practical" position={[-4.5,2.15,-6.45]} rotation={[0,.7,0]} span={.48}/>
+    <ProductionAsset url={V48_CAGED_SCONCE} name="home-v58-right-depth-practical" position={[4.46,2.12,-6.52]} rotation={[0,-.7,0]} span={.48}/>
+    <pointLight position={[-4.22,2.12,-6.15]} color="#7fa59f" intensity={.27} distance={4.4} decay={2}/>
+    <pointLight position={[4.18,2.08,-6.22]} color="#b18e62" intensity={.25} distance={4.4} decay={2}/>
+  </group>
+}
+
+function SanctuaryArchitecture(){const pack=useStonePack(.5,.72);return <group name="home-sanctuary-pavilion" userData={{visualOwner:'integrated-reliquary-vault-v58',construction:'continuous-load-bearing-stone-vault-recessed-engineered-orb-bay',visualTreatment:'v58-retained-pixel-rebuild-no-cutout-cave-no-pipe-kitbash'}}>
+  <ContinuousVaultSkin pack={pack}/>
+  <SanctuarySideGallery/>
+  <MachineCavityLiner/>
+  <group name="home-v58-floor-depth-practicals" userData={{treatment:'low-recessed-practicals-support-depth'}}>
+    <RecessedPractical position={[-1.7,.15,-6.15]} warm={false}/><RecessedPractical position={[1.72,.15,-6.2]}/>
+  </group>
+</group>}
+
+
+'''
+text = replace_between(text, 'function ContinuousVaultSkin', 'function SanctuaryGlazing', architecture)
+
+core = r'''function MachineCoreAssembly(){
+  return <group name="home-v47-machine-core-assembly" userData={{treatment:'v58-wall-integrated-relic-machine-load-path-no-pipe-kitbash-no-display-platform'}}>
+    <TaperedLoadBeam from={[-2.05,.42,-7.0]} to={[-.88,2.28,-6.72]} width={.28} color="#33453f"/>
+    <TaperedLoadBeam from={[2.05,.42,-7.0]} to={[.88,2.28,-6.72]} width={.28} color="#514938"/>
+    <TaperedLoadBeam from={[-1.46,3.52,-7.1]} to={[-.7,2.55,-6.72]} width={.24} color="#3d4a45"/>
+    <TaperedLoadBeam from={[1.46,3.52,-7.1]} to={[.7,2.55,-6.72]} width={.24} color="#514c40"/>
+    <OrbArmorPlate position={[-.78,2.18,-6.58]} rotation={[0,.2,.16]} scale={[1.18,1.05,1.16]}/>
+    <OrbArmorPlate position={[.78,2.18,-6.58]} rotation={[0,-.2,-.16]} scale={[1.18,1.05,1.16]} warm/>
+    <OrbArmorPlate position={[0,2.91,-6.66]} rotation={[0,0,.02]} scale={[1.24,1.0,1.1]}/>
+    <pointLight position={[0,2.22,-5.9]} color="#7dc0b3" intensity={.48} distance={4.6} decay={2}/>
+  </group>
+}
+
+
+'''
+text = replace_between(text, 'function MachineCoreAssembly', 'function OrbArmorPlate', core)
+
+orb = r'''function SacredOrb({state,reducedMotion,onOpen}:{state:OrbState;reducedMotion:boolean;onOpen:()=>void}){
+  const root=useRef<THREE.Group>(null),activeAction=useRef<THREE.AnimationAction|null>(null)
+  const orb=useGLTF(ORB_MODEL)
+  const authoredOrb=useMemo(()=>cloneOrbModel(orb.scene),[orb.scene])
+  const {actions}=useAnimations(orb.animations,authoredOrb)
+  const sensory=useMemo(()=>resolveOrbSensoryOutput(state,reducedMotion,true),[state,reducedMotion])
+  useEffect(()=>{const allActions=Object.values(actions).filter((action):action is THREE.AnimationAction=>Boolean(action));if(reducedMotion){allActions.forEach((action)=>action.stop());activeAction.current=null;return}const next=actions[ORB_CLIPS[state]];if(!next)return;const previous=activeAction.current;if(previous&&previous!==next)previous.fadeOut(.2);next.reset().setLoop(THREE.LoopRepeat,Infinity).fadeIn(.2).play();activeAction.current=next},[actions,reducedMotion,state])
+  useEffect(()=>()=>{Object.values(actions).forEach((action)=>action?.stop())},[actions])
+  useFrame(({clock})=>{if(!root.current)return;root.current.rotation.y=reducedMotion?0:Math.sin(clock.elapsedTime*.18)*.018;root.current.position.y=ORB.y+(reducedMotion?0:Math.sin(clock.elapsedTime*.32)*.008)})
+  const stateColor=state==='warning'?'#d0a06e':state==='thinking'||state==='reflecting'?'#9eacd0':'#78b9ac'
+  return <group ref={root} name="home-orb-sanctuary" position={ORB} onClick={(event)=>{event.stopPropagation();onOpen()}} userData={{orbState:state,animation:sensory.animation,modelClip:ORB_CLIPS[state],runtimeAsset:ORB_MODEL,treatment:'v58-large-faceted-relic-core-integrated-into-load-bearing-vault'}}>
+    <group scale={.34} position={[0,0,-.72]} name="home-orb-governed-hidden-animation-identity" userData={{treatment:'v58-governed-glb-animation-identity-retained-behind-integrated-core'}}><primitive object={authoredOrb}/></group>
+    <mesh name="home-v58-orb-relic-core" position={[0,0,.08]} castShadow receiveShadow>
+      <icosahedronGeometry args={[.52,2]}/>
+      <meshPhysicalMaterial color="#263d38" emissive={stateColor} emissiveIntensity={state==='speaking'?.55:.28} metalness={.62} roughness={.36} clearcoat={.08} clearcoatRoughness={.52}/>
+    </mesh>
+    <mesh name="home-v58-orb-inner-light" position={[0,0,.16]}>
+      <icosahedronGeometry args={[.31,1]}/>
+      <meshStandardMaterial color={stateColor} emissive={stateColor} emissiveIntensity={state==='speaking'?1.05:.72} metalness={.18} roughness={.42}/>
+    </mesh>
+    {ORB_FRAGMENT_LAYOUT.map(([p,r,s],index)=><OrbArmorPlate key={index} position={[p[0]*2.15,p[1]*2.15,p[2]*1.15+.12]} rotation={r} scale={[.72+s*3,.8,.7]} warm={index%3===1}/>) }
+    <pointLight color={stateColor} intensity={state==='speaking'?.68:.42} distance={4.2} decay={2}/>
+  </group>
+}
+
+
+'''
+text = replace_between(text, 'function SacredOrb', 'function HumanPresence', orb)
+
+replacements = {
+    'cinematic-pbr-v57-photogrammetry-service-vault': 'cinematic-pbr-v58-integrated-reliquary-vault',
+    'v57-photogrammetry-service-vault-candidate': 'v58-integrated-reliquary-vault-candidate',
+    'v57-retained-pixel-candidate-not-certified': 'v58-retained-pixel-candidate-not-certified',
+    'photogrammetry-service-v57-plus-governed-orb-identity': 'integrated-reliquary-v58-plus-governed-orb-identity',
+    'gl.toneMappingExposure=2.32': 'gl.toneMappingExposure=1.36',
+    '<ambientLight intensity={0.72} color="#e6efea" />': '<ambientLight intensity={0.3} color="#c9d8d3" />',
+    "<hemisphereLight args={['#c8ddd7','#25312b',0.96]} />": "<hemisphereLight args={['#91aaa4','#111713',0.5]} />",
+    'intensity={1.24} color="#f2e5cf"': 'intensity={0.72} color="#e8d6b8"',
+    'intensity={0.92} color="#91c9c1"': 'intensity={0.48} color="#79aaa2"',
+    'intensity={5.1} color="#f4dfb7"': 'intensity={1.65} color="#dfc695"',
+    'intensity={3.65} distance={10.8}': 'intensity={1.05} distance={9.2}',
+    'intensity={1.12} color="#d3ad78"': 'intensity={0.48} color="#b18d60"',
+    'intensity={1.04} color="#78a8a7"': 'intensity={0.44} color="#6c9995"',
+}
+for old, new in replacements.items():
+    if old not in text:
+        raise SystemExit(f'missing expected source token: {old}')
+    text = text.replace(old, new)
+
+path.write_text(text)
+
+proof = Path('scripts/capture-natural-home-orb-proof.mjs')
+p = proof.read_text()
+for old, new in {
+    'v57-photogrammetry-service-vault-home-real-glb-makehuman-orb-portal-semantic-and-visual-proof': 'v58-integrated-reliquary-vault-home-real-glb-makehuman-orb-portal-semantic-and-visual-proof',
+    'cinematic-pbr-v57-photogrammetry-service-vault': 'cinematic-pbr-v58-integrated-reliquary-vault',
+    'v57-photogrammetry-service-vault-candidate': 'v58-integrated-reliquary-vault-candidate',
+    'v57-retained-pixel-candidate-not-certified': 'v58-retained-pixel-candidate-not-certified',
+}.items():
+    if old not in p:
+        raise SystemExit(f'missing expected proof token: {old}')
+    p = p.replace(old, new)
+proof.write_text(p)

@@ -21,3 +21,37 @@
   pointer-events: auto !important;
   touch-action: manipulation;
 }
+
+/* Portrait retained-pixel repair. The Cosmic R3F scene remains the geometry and
+   interaction authority; these presentation-only veils restore large-scale
+   luminance structure in a tall viewport without introducing a centered portal,
+   ring, doorway, semantic hit target, or neon wallpaper. */
+@media (orientation: portrait) {
+  .life-map-root canvas {
+    filter: brightness(1.16) contrast(1.08) saturate(.92);
+  }
+
+  .life-map-root::before {
+    content: '';
+    position: absolute;
+    inset: -8%;
+    z-index: 1;
+    pointer-events: none;
+    background:
+      radial-gradient(ellipse 72% 34% at 14% 18%, rgba(78, 124, 138, .30) 0%, rgba(35, 72, 84, .16) 36%, transparent 70%),
+      radial-gradient(ellipse 64% 38% at 84% 34%, rgba(145, 124, 94, .22) 0%, rgba(77, 70, 61, .12) 40%, transparent 72%),
+      radial-gradient(ellipse 76% 42% at 29% 54%, rgba(61, 103, 116, .27) 0%, rgba(28, 61, 75, .14) 42%, transparent 74%),
+      radial-gradient(ellipse 66% 38% at 80% 70%, rgba(126, 113, 88, .19) 0%, rgba(58, 65, 70, .10) 42%, transparent 72%),
+      radial-gradient(ellipse 74% 34% at 22% 88%, rgba(50, 82, 98, .18) 0%, rgba(24, 48, 64, .09) 44%, transparent 73%),
+      linear-gradient(166deg, rgba(25, 48, 60, .05) 4%, transparent 20%, rgba(74, 96, 100, .09) 36%, transparent 51%, rgba(113, 94, 70, .07) 67%, transparent 84%);
+    opacity: .96;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .life-map-root::before,
+  .life-map-root canvas {
+    transition: none !important;
+    animation: none !important;
+  }
+}

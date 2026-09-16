@@ -1,0 +1,80 @@
+/* Final Replay rail authority.
+   This file is imported after replay-production-polish.css so the literal retained-pixel
+   composition cannot regress through equal-specificity !important rules loaded later.
+   Order from scene inward: caption -> transport -> owner controls -> safe edge. */
+
+.replayWorld .caption {
+  bottom: max(286px, calc(env(safe-area-inset-bottom) + 280px)) !important;
+  width: min(680px, calc(100vw - 40px)) !important;
+  opacity: .72;
+}
+
+.replayWorld .controls {
+  left: 50% !important;
+  right: auto !important;
+  bottom: max(190px, calc(env(safe-area-inset-bottom) + 184px)) !important;
+  transform: translateX(-50%) !important;
+  width: min(680px, calc(100vw - 32px)) !important;
+  min-height: 64px;
+  opacity: .34;
+}
+
+.replayWorld .replayOperationStatus {
+  bottom: max(160px, calc(env(safe-area-inset-bottom) + 154px)) !important;
+}
+
+.replayWorld .replayProduct {
+  bottom: max(96px, calc(env(safe-area-inset-bottom) + 90px)) !important;
+}
+
+@media (max-width: 700px) {
+  .replayWorld .caption {
+    bottom: max(300px, calc(env(safe-area-inset-bottom) + 294px)) !important;
+    width: calc(100vw - 28px) !important;
+  }
+
+  .replayWorld .controls {
+    left: 50% !important;
+    right: auto !important;
+    bottom: max(196px, calc(env(safe-area-inset-bottom) + 190px)) !important;
+    transform: translateX(-50%) !important;
+    width: calc(100vw - 28px) !important;
+    gap: 8px !important;
+    padding: 9px 10px !important;
+  }
+
+  .replayWorld .replayProduct {
+    left: 50% !important;
+    right: auto !important;
+    bottom: max(96px, calc(env(safe-area-inset-bottom) + 90px)) !important;
+    transform: translateX(-50%) !important;
+    width: calc(100vw - 28px) !important;
+  }
+}
+
+@media (max-height: 720px) {
+  .replayWorld .caption {
+    bottom: max(246px, calc(env(safe-area-inset-bottom) + 240px)) !important;
+  }
+
+  .replayWorld .controls {
+    bottom: max(164px, calc(env(safe-area-inset-bottom) + 158px)) !important;
+    min-height: 58px;
+  }
+
+  .replayWorld .replayOperationStatus {
+    bottom: max(150px, calc(env(safe-area-inset-bottom) + 144px)) !important;
+  }
+
+  .replayWorld .replayProduct {
+    bottom: max(78px, calc(env(safe-area-inset-bottom) + 72px)) !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .replayWorld .controls,
+  .replayWorld .replayProduct,
+  .replayWorld .caption {
+    transition: none;
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 1,
+  "asset": "life-map-memory-sanctuary-v214.glb",
+  "sha256": "f3ab13f989f18739ca0cf6f305cf7eca53722600c7ff4a4e7a44df4cc4f8c2fb",
+  "bytes": 1699780,
+  "generator": "scripts/blender/generate-life-map-sanctuary-v214.py",
+  "generatorSha256": "fd3bcb00e86a024cbb8360ca5dbce14c4d3184801e3dd85a86574b7079546268",
+  "seed": 1177214,
+  "license": "Original work for the private LifeLoggerAI repository",
+  "externalAssets": [],
+  "sourceMaster": "07_3D_SOURCE_MODELS/PR-1177/life-map-v214/life-map-memory-sanctuary-v214.blend",
+  "sourceMasterSha256": "b8fd4981901f2468ed568ef95c47ea770a8efbf9a538cf64db727835454d2acb",
+  "previewSha256": "26ee92a3285be3844fecbfd602fcc52bff3573fc4fb06714fa9711cd13141932",
+  "design": "Continuous eroded terrain, narrow worn channel, terrain-stitched scarps and individually authored reliefs; no hidden test geometry"
+}

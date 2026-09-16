@@ -56,6 +56,16 @@ Home -> camera ascent -> Life Map -> selected memory -> Focus -> Replay -> recov
 
 Ascent is a Home-owned camera transition, not a second destination runtime. Home sky activation begins the transition and navigates to `/life-map?from=home-sky` after the bounded camera move. Reduced-motion users retain an immediate bounded path.
 
+## Focus terminology authority
+
+`Focus` is the canonical user-facing close-range selected-memory experience between Life Map and Replay. `Focus Observatory` is reserved for safe neutral direct `/focus` entry when no authorized selected memory is present.
+
+Generic neighboring graph entities use **Related Context**. Use **Related Memories** only when those neighboring entities are actually memories. Public actions prefer **Explore**, **Close Inspection**, **Enter Replay**, **Return to Focus**, **Return to Life Map**, and **Recenter**.
+
+Stable internal implementation vocabulary such as `FocusChamberClient`, `MemoryAperture`, `entryPortal`, `cameraCheckpoint`, and governed asset filenames may remain. Internal portal/aperture metadata never authorizes a visible portal, ring gate, wormhole, or hyperspace tunnel.
+
+The historical productivity-session model (`Focus Session`, `Deep Focus`, `Deep Work`, mission-cockpit/task-timer semantics) is non-governing for the current spatial `/focus` route.
+
 ## Scene authority rules
 
 1. `FinalHomeThreshold` is the route-level Home entry and capability-safe initial owner.

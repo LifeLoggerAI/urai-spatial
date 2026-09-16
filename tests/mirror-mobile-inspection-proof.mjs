@@ -88,6 +88,21 @@ try {
   })
   if (!statusGeometry.visibleWithinInspector) throw new Error(`fragment status is clipped: ${JSON.stringify(statusGeometry)}`)
 
+  const headingVisibleAfterScroll = await inspector.locator('h2').evaluate((element) => {
+    const rect = element.getBoundingClientRect()
+    const panel = element.closest('.mirrorInspection').getBoundingClientRect()
+    const hit = document.elementFromPoint(rect.left + rect.width / 2, rect.top + rect.height / 2)
+    return rect.top >= panel.top && rect.bottom <= panel.bottom && Boolean(hit && (hit === element || element.contains(hit)))
+  })
+  if (!headingVisibleAfterScroll) throw new Error('Inspector heading is clipped or covered after reading the final fragment')
+  const close = inspector.getByRole('button', { name: 'Return to Mirror overview' })
+  const closeUnobstructedAfterScroll = await close.evaluate((element) => {
+    const rect = element.getBoundingClientRect()
+    const hit = document.elementFromPoint(rect.left + rect.width / 2, rect.top + rect.height / 2)
+    return Boolean(hit && (hit === element || element.contains(hit)))
+  })
+  if (!closeUnobstructedAfterScroll) throw new Error('Inspector exit is unreachable after scrolling')
+
   const thresholds = page.locator('.mirrorThresholds')
   const passport = thresholds.getByRole('button', { name: 'Passport threshold' })
   const passportHit = await passport.evaluate((element) => {
@@ -104,6 +119,10 @@ try {
 
   const screenshot = 'screenshots/mobile-mirror-inspector-unobstructed.png'
   await page.screenshot({ path: path.join(outDir, screenshot), fullPage: false, animations: 'disabled' })
+  await close.click()
+  await inspector.waitFor({ state: 'hidden' })
+  await movementPad.waitFor({ state: 'visible' })
+  await orb.waitFor({ state: 'visible' })
 
   if (consoleErrors.length) throw new Error(`console errors: ${consoleErrors.join(' | ')}`)
   if (failedRequests.length) throw new Error(`failed requests: ${failedRequests.join(' | ')}`)
@@ -120,6 +139,9 @@ try {
     passportThresholdUnobstructed: true,
     finalFragmentUnobstructed: true,
     fragmentStatusVisibleWithinInspector: true,
+    headingVisibleAfterScroll,
+    closeUnobstructedAfterScroll,
+    returnedToOverviewAfterScroll: true,
     consoleErrors,
     failedRequests,
   }

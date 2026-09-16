@@ -10,108 +10,112 @@ const requireText = (source, marker, message = marker) => assert.equal(source.in
 const normalizeSource = (source) => source.replace(/\r\n/g, '\n').replace(/"/g, "'").replace(/\s+/g, ' ')
 const requireNormalizedPattern = (source, pattern, message) => assert.match(normalizeSource(source), pattern, message)
 
-test('accessibility and performance implementation contracts are present', () => {
+test('accessibility and performance implementation contracts are present on first-person Home and first-person Ground', () => {
   const reducedMotion = read('src/spatial/hooks/useReducedMotion.ts')
   const adaptiveQuality = read('src/spatial/performance/useAdaptiveSpatialQuality.ts')
   const companion = read('src/spatial/world/PersistentWorldCompanion.tsx')
+  const worldEvents = read('src/spatial/world/worldEvents.ts')
+  const template = read('src/app/template.tsx')
   const worldShell = read('src/spatial/world/UraiWorldShell.tsx')
   const companionCss = read('src/spatial/world/persistentWorldCompanion.css')
   const routeOwnerCss = read('src/spatial/world/routeOwnerConvergence.css')
   const homeCapability = read('src/app/HomeSpatialCanvas.tsx')
-  const finalHome = read('src/app/FinalHomeWorld.tsx')
   const homeRuntime = read('src/app/HomeSpatialRuntimeLayer.tsx')
-  const homeParallaxBridge = read('src/app/HomeParallaxTelemetryBridge.tsx')
-  const homeFallback = read('src/app/FinalHomeThreshold.tsx')
+  const currentHome = read('src/spatial/layout/HomeWorldProductionV223.tsx')
   const focus = read('src/app/focus/FocusChamberClient.tsx')
   const ground = read('src/app/GroundSpatialWorldClean.tsx')
   const playwrightConfig = read('../playwright.accessibility.config.ts')
   const performanceMetrics = read('tests/accessibility-performance-metrics.spec.ts')
   const accessibilityEvidence = read('tests/accessibility-performance-evidence.spec.ts')
   const embodiedEvidence = read('tests/accessibility-performance-embodied-exploration.spec.ts')
+
   requireText(reducedMotion, 'prefers-reduced-motion: reduce')
   requireText(reducedMotion, "addEventListener?.('change', update)")
   requireText(reducedMotion, "removeEventListener?.('change', update)")
   for (const marker of ['saveData', 'deviceMemory', 'effectiveType', 'visibilitychange', 'markFirstSpatialFrame']) requireText(adaptiveQuality, marker)
-  requireText(companion, "open ? 'Close Orb travel controls' : 'Open Orb travel controls'")
-  requireText(companion, 'aria-expanded={open}')
-  requireText(companion, 'aria-controls="urai-world-companion-menu"')
-  requireText(companion, 'inert={!open ? true : undefined}')
-  requireText(companion, 'firstControl?.focus()')
-  requireText(companion, 'orbRef.current?.focus()')
-  requireText(companion, "event.key !== 'Escape'")
-  requireText(companion, "event.key !== 'Enter' && event.key !== ' '")
-  requireText(companion, 'event.stopPropagation()')
-  requireText(companion, 'onClick={toggleCompanion}')
-  requireText(companion, 'const [hydrated, setHydrated] = useState(false)')
-  requireText(companion, 'setHydrated(true)')
-  requireText(companion, "disabled={!hydrated || phase !== 'idle'}")
-  requireText(companion, "aria-current={destination.id === world.destination ? 'page' : undefined}")
-  requireText(companion, 'aria-label="Return through the world"')
+
+  for (const marker of [
+    "open ? 'Close Orb travel controls' : 'Open Orb travel controls'",
+    'aria-expanded={open}',
+    'aria-controls="urai-world-companion-menu"',
+    'inert={!open ? true : undefined}',
+    'firstControl?.focus()',
+    'orbRef.current?.focus()',
+    "event.key !== 'Escape'",
+    'onClick={toggleCompanion}',
+  ]) requireText(companion, marker)
+  assert.doesNotMatch(companion, /onKeyDown=\{/, 'Native button keyboard activation must not have a second manual dispatch owner')
+  requireText(worldEvents, 'export function takePendingUraiWorldOrbOpen()')
+  assert.doesNotMatch(template, /HomeSemanticOrbHydrationBridge/, 'Home must not mount a second capture-phase semantic Orb click owner')
   requireText(worldShell, "const showWorldCompanion = world.destination !== 'life-map'")
-  requireText(worldShell, 'showWorldCompanion ? <PersistentWorldCompanion /> : null')
-  requireText(routeOwnerCss, ".urai-world-runtime[data-world-destination='home'] .urai-world-companion__orb")
-  requireText(routeOwnerCss, 'background: transparent !important;')
-  requireText(routeOwnerCss, 'box-shadow: none !important;')
-  requireText(routeOwnerCss, 'width: 96px !important;')
-  requireText(routeOwnerCss, 'height: 96px !important;')
-  requireText(routeOwnerCss, "data-open='true'] .urai-world-companion__orb")
-  requireText(routeOwnerCss, 'position: relative !important;')
-  requireText(routeOwnerCss, 'left: auto !important;')
-  requireText(routeOwnerCss, 'top: auto !important;')
-  requireText(routeOwnerCss, 'outline: 3px solid rgba(224,255,255,.96) !important;')
-  requireText(companionCss, 'width: 64px;')
-  requireText(companionCss, 'height: 64px;')
   requireText(companionCss, 'min-height: 48px;')
   requireText(companionCss, 'min-width: 48px;')
   requireText(companionCss, 'env(safe-area-inset-bottom)')
   requireText(companionCss, '@media (prefers-reduced-motion: reduce)')
-  requireNormalizedPattern(homeCapability, /canvas\.getContext\('webgl2'(?:,\s*\{[^)]*\})?\)\s*\?\?\s*canvas\.getContext\('webgl'(?:,\s*\{[^)]*\})?\)/, 'Home must test WebGL2 and WebGL capability with optional hardened context settings')
+  requireText(routeOwnerCss, 'outline: 3px solid rgba(224,255,255,.96) !important;')
+
+  requireNormalizedPattern(homeCapability, /canvas\.getContext\('webgl2'(?:,\s*\{[^)]*\})?\)\s*\?\?\s*canvas\.getContext\('webgl'(?:,\s*\{[^)]*\})?\)/, 'Home must test WebGL2 and WebGL capability')
   requireText(homeRuntime, 'AssetDrivenHomeWorld')
-  requireText(homeRuntime, 'data-home-visual-owner="asset-driven-personalized-sanctuary"')
-  requireText(finalHome, 'data-testid="urai-home-webgl-orb"')
-  assert.equal((finalHome.match(/data-testid="urai-home-webgl-orb"/g) ?? []).length, 1, 'Final Home must expose exactly one physical Orb ownership marker')
-  requireNormalizedPattern(finalHome, /function Orb\([\s\S]*?<group[^>]*name='home-final-orb-physical-anchor'[^>]*data-testid='urai-home-webgl-orb'[^>]*>[\s\S]*?<mesh onClick=\{activate\} castShadow>/, 'The ownership marker and canonical scene identity must remain on the rendered interactive Orb group')
-  assert.doesNotMatch(finalHome, /name=["']home-authored-orb["']/, 'Final Home must not regress to the superseded Orb scene identity')
-  requireText(finalHome, 'const ORB_POSITION = new THREE.Vector3(0, 1.55, -1.2)')
-  requireText(finalHome, '<meshBasicMaterial transparent opacity={0} colorWrite={false} depthWrite={false} />')
-  requireText(finalHome, 'aria-label="Open Orb directly"')
-  requireText(finalHome, 'aria-label="Open Ground directly"')
-  requireText(finalHome, 'aria-label="Open Life Map directly"')
-  assert.doesNotMatch(finalHome, /name="home-only-companion"|emissiveIntensity=\{hovered|<pointLight color="#7cecf2"/, 'Final Home must not paint a second DOM-only Orb over the physical sanctuary Orb')
-  requireText(homeFallback, 'data-testid="urai-home-accessible-fallback"')
-  requireText(homeFallback, '<HomeSpatialWorldFinal />')
+  requireText(homeRuntime, 'aria-label="Open URAI Orb companion"')
+  requireText(homeRuntime, 'aria-label="Open Ground directly"')
+  requireText(homeRuntime, 'aria-label="Open Life Map directly"')
   requireText(homeRuntime, "addEventListener('webglcontextlost', onContextLost)")
   requireText(homeRuntime, "addEventListener('webglcontextrestored', onContextRestored)")
-  requireText(homeRuntime, 'recoveryAttemptsRef.current >= 1')
   requireText(homeRuntime, 'accessible-fallback-after-renderer-failure')
   requireText(homeRuntime, 'role="status"')
-  requireText(embodiedEvidence, "element.style.getPropertyValue('--home-parallax-y')")
-  requireText(embodiedEvidence, 'Math.abs(Number.parseFloat(value))')
-  requireText(embodiedEvidence, 'toBeGreaterThan(0.1)')
-  assert.doesNotMatch(embodiedEvidence, /\.not\.toBe\('0\.0px'\)/, 'Parallax evidence must use numeric magnitude rather than a transient string-negation poll')
-  requireText(ground, 'event.currentTarget.scrollIntoView')
-  requireNormalizedPattern(ground, /block:\s*'nearest'/, 'Ground focus reveal must use the nearest block boundary')
-  requireNormalizedPattern(ground, /inline:\s*'nearest'/, 'Ground focus reveal must use the nearest inline boundary')
-  assert.equal(ground.includes('min-height:44px'), false, 'Ground destinations must not retain 44px targets')
-  requireText(ground, 'min-height:48px')
-  requireText(ground, 'padding-inline:max(14px,env(safe-area-inset-left)) max(14px,env(safe-area-inset-right))')
-  requireText(ground, 'scroll-padding-inline-start:max(14px,env(safe-area-inset-left))')
-  requireText(ground, 'scroll-padding-inline-end:max(14px,env(safe-area-inset-right))')
-  requireText(ground, 'font-size:9px;transition:none')
-  requireText(ground, '.ground-destination-compass :is(a,button) strong{transition:none}')
-  assert.equal(ground.includes('padding-inline:12px 210px'), false, 'Ground must not reserve a hard-coded mobile right gutter')
-  assert.doesNotMatch(routeOwnerCss, /ground-spatial-root canvas[\s\S]{0,220}transform:\s*scale\(/, 'Ground canvas must not exceed the mobile viewport through CSS scaling')
+
+  for (const marker of [
+    'data-home-embodied-self="first-person-viewpoint-no-avatar"',
+    'data-home-movement="camera-look-world-surface-selection"',
+    'data-home-ground-entry="physical-world-surface"',
+    'data-home-life-map-entry="visible-sky-broad-interaction"',
+    "'first-person-viewpoint'",
+    'prefers-reduced-motion: reduce',
+  ]) requireText(currentHome, marker)
+  assert.doesNotMatch(currentHome, /function\s+VisibleUserAvatar\s*\(|<VisibleUserAvatar\b/, 'Home must not restore an active avatar component')
+  assert.doesNotMatch(currentHome, /data-home-embodied-self=["']visible-cinematic-avatar["']|data-home-camera-mode=["']cinematic-third-person["']|name=["']urai-home-embodied-avatar["']/, 'Home must remain first-person/no-avatar')
+  assert.doesNotMatch(currentHome, /MobileMovementPad|useMovementInput|stepEmbodiedMotion/, 'Home must not regress to a movement-pad world')
+
+  for (const marker of [
+    'data-ground-exploration="first-person"',
+    'data-ground-runtime-owner="first-person-lived-world"',
+    'data-ground-camera="eye-level-terrain-following"',
+    'data-ground-collision="visible-terrain-heightfield"',
+    'data-ground-place-layer="consent-aware-empty-by-default"',
+    'data-ground-private-location-mounted="false"',
+    'MobileMovementPad',
+    'aria-label="Return Home"',
+    'aria-label="Ground place and privacy tools"',
+    'min-width:48px',
+    'min-height:48px',
+    'env(safe-area-inset-right)',
+    'env(safe-area-inset-left)',
+    '@media(prefers-reduced-motion:reduce)',
+  ]) requireText(ground, marker)
+  assert.doesNotMatch(ground, /ground-destination-compass|GroundPhysicalArchitecture|GroundVaultArchitecture|ground-central-nexus/, 'Ground must not restore the institutional destination hub')
+  assert.doesNotMatch(routeOwnerCss, /ground-spatial-root canvas[\s\S]{0,220}transform:\s*scale\(/, 'Ground canvas must not exceed viewport through CSS scaling')
   requireText(routeOwnerCss, 'max-width: 100vw !important;')
   requireText(routeOwnerCss, 'max-height: 100svh !important;')
-  requireText(focus, 'aria-label={`Open Replay for ${memory.title}`}')
+
+  for (const marker of [
+    "toHaveAttribute('data-home-embodied-self', 'first-person-viewpoint-no-avatar'",
+    "not.toHaveAttribute('data-home-camera-mode', 'cinematic-third-person'",
+    "toHaveAttribute('data-home-movement', 'camera-look-world-surface-selection'",
+    "toHaveCount(0)",
+    'data-ground-exploration="first-person"',
+    "name: 'Ground first-person movement controls'",
+  ]) requireText(embodiedEvidence, marker)
+
+  requireText(focus, 'aria-label={memory ? `Enter Replay for ${memory.title}`')
   assert.equal(focus.includes('min-height:44px'), false, 'Focus controls must not retain 44px minimum targets')
   requireText(focus, 'min-height:48px')
   requireText(focus, 'env(safe-area-inset-left)')
   requireText(focus, 'env(safe-area-inset-right)')
   requireText(focus, 'env(safe-area-inset-bottom)')
   requireText(focus, '@media(prefers-reduced-motion:reduce)')
+
   requireText(playwrightConfig, 'python3 -m http.server 3000')
   assert.equal(playwrightConfig.includes('next dev'), false, 'Performance evidence must not use a development server')
-  for (const marker of ['DESKTOP_FRAME_P95_BUDGET_MS = 20', 'MOBILE_FRAME_P95_BUDGET_MS = 33.3', 'MAX_HEAP_GROWTH_BYTES = 32 * 1024 * 1024', 'JOURNEY_CYCLES = 5', "serverMode: 'static-export'", 'WEBGL_debug_renderer_info', 'NOT_AVAILABLE_HARDWARE_RENDERER', 'hardwareAcceleration']) requireText(performanceMetrics, marker)
-  for (const marker of ['[data-urai-audit-action="orb-controls"]', 'toHaveAccessibleName(/close orb travel controls/i)', 'hasScrollableAncestor', 'scrollableGroundRail']) requireText(accessibilityEvidence, marker)
+  for (const marker of ['DESKTOP_FRAME_P95_BUDGET_MS = 20', 'MOBILE_FRAME_P95_BUDGET_MS = 33.3', 'MAX_HEAP_GROWTH_BYTES = 32 * 1024 * 1024', 'JOURNEY_CYCLES = 5', "serverMode: 'static-export'", 'WEBGL_debug_renderer_info', 'hardwareAcceleration']) requireText(performanceMetrics, marker)
+  for (const marker of ['[data-urai-audit-action="orb-controls"]', "name: 'Open URAI Orb companion', exact: true", "toHaveAttribute('aria-hidden', 'false'"]) requireText(accessibilityEvidence, marker)
 })

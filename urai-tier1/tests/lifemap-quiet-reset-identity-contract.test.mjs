@@ -24,8 +24,9 @@ test('Quiet Reset is an exact replayable canonical Life Map node', () => {
 test('the explicit demo feed always publishes canonical positioned Quiet Reset identity', () => {
   assert.match(events, /import \{ canonicalLifeMapDemoNodes \} from "\.\/canonicalLifeMapDemoNodes"/)
   assert.match(events, /const positionedDemoNodes = canonicalLifeMapDemoNodes\.map/)
-  assert.match(events, /useState<LifeMapNode\[\]>\(\(\) => explicitDemo \? positionedDemoNodes : \[\]\)/)
-  assert.match(events, /setNodes\(positionedDemoNodes\)/)
+  assert.match(events, /const syntheticMode = deterministicTest\.enabled/)
+  assert.match(events, /useState<LifeMapNode\[\]>\(\(\) => syntheticMode \? deterministicNodes : explicitDemo \? positionedDemoNodes : \[\]\)/)
+  assert.match(events, /if \(explicitDemo\) \{[\s\S]*?setNodes\(positionedDemoNodes\)/)
   assert.doesNotMatch(events, /explicitDemo \? lifeMapNodes : \[\]/)
   assert.doesNotMatch(events, /setNodes\(lifeMapNodes\)/)
 })

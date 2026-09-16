@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
+import { readLifeMapDeterministicTestConfig } from '@/components/lifemap/lifeMapDeterministicTestMode'
 
 export type SpatialQualityTier = 'low' | 'medium' | 'high'
 
@@ -32,8 +33,17 @@ const PROFILE = {
   high: { pixelRatioMax: 1.75, particleCount: 520, shadows: true, postprocessing: true, antialias: true, preloadSecondaryWorlds: true },
 } as const
 
+function deterministicOverride() {
+  if (typeof window === 'undefined') return null
+  const config = readLifeMapDeterministicTestConfig()
+  if (!config.enabled) return null
+  return config
+}
+
 function deriveTier(reducedMotion: boolean): SpatialQualityTier {
   if (typeof window === 'undefined') return 'medium'
+  const deterministic = deterministicOverride()
+  if (deterministic) return deterministic.quality
   const hints = navigator as NavigatorHints
   const memory = hints.deviceMemory ?? 4
   const cores = navigator.hardwareConcurrency ?? 4
@@ -48,7 +58,10 @@ function deriveTier(reducedMotion: boolean): SpatialQualityTier {
 }
 
 function initialReducedMotion() {
-  return typeof window === 'undefined' ? false : window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  if (typeof window === 'undefined') return false
+  const deterministic = deterministicOverride()
+  if (deterministic) return deterministic.freeze || deterministic.reducedMotion
+  return window.matchMedia('(prefers-reduced-motion: reduce)').matches
 }
 
 function initialDocumentVisible() {
@@ -61,6 +74,13 @@ export function useAdaptiveSpatialQuality(): SpatialQualityProfile {
   const [tier, setTier] = useState<SpatialQualityTier>(() => deriveTier(initialReducedMotion()))
 
   useEffect(() => {
+    const deterministic = deterministicOverride()
+    if (deterministic) {
+      setReducedMotion(deterministic.freeze || deterministic.reducedMotion)
+      setTier(deterministic.quality)
+      setDocumentVisible(true)
+      return
+    }
     const motion = window.matchMedia('(prefers-reduced-motion: reduce)')
     const narrow = window.matchMedia('(max-width: 760px)')
     const coarsePointer = window.matchMedia('(pointer: coarse)')
@@ -86,7 +106,18 @@ export function useAdaptiveSpatialQuality(): SpatialQualityProfile {
     }
   }, [])
 
-  return useMemo(() => ({ tier, ...PROFILE[tier], reducedMotion, documentVisible }), [documentVisible, reducedMotion, tier])
+  return useMemo(() => {
+    const deterministic = deterministicOverride()
+    const base = PROFILE[tier]
+    if (!deterministic) return { tier, ...base, reducedMotion, documentVisible }
+    return {
+      tier,
+      ...base,
+      pixelRatioMax: deterministic.dpr,
+      reducedMotion,
+      documentVisible: true,
+    }
+  }, [documentVisible, reducedMotion, tier])
 }
 
 export function markFirstSpatialFrame(route: string, tier: SpatialQualityTier) {

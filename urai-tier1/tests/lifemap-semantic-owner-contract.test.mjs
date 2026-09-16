@@ -14,9 +14,10 @@ test('semantic navigator invokes the authoritative world selection transaction w
   assert.match(navigator, /requestLifeMapSelection\(node\.id, source\)/)
   assert.match(selection, /LIFE_MAP_SELECTION_EVENT = 'urai:life-map-select-node'/)
   assert.match(selection, /window\.dispatchEvent\(new CustomEvent<LifeMapSelectionDetail>/)
-  assert.match(world, /window\.addEventListener\(LIFE_MAP_SELECTION_EVENT, handleSelectionRequest\)/)
-  assert.match(world, /const node = nodes\.find\(\(candidate\) => candidate\.id === detail\.nodeId\)/)
-  assert.match(world, /if \(node\) onSelect\(node\)/)
+  assert.match(scene, /window\.addEventListener\(LIFE_MAP_SELECTION_EVENT, handleSelectionRequest\)/)
+  assert.match(scene, /const node = nodes\.find\(\(candidate\) => candidate\.id === detail\.nodeId\)/)
+  assert.match(scene, /if \(node\) selectNode\(node\)/)
+  assert.doesNotMatch(world, /window\.addEventListener\(LIFE_MAP_SELECTION_EVENT/)
   assert.match(scene, /onSelect=\{selectNode\}/)
 })
 
@@ -42,7 +43,6 @@ test('mounted 3D artifacts retain independent pointer activation ownership', () 
   assert.match(world, /userData=\{\{ artifactFamily: resolveArtifactFamily\(node\), importance: importance\.toFixed\(2\), semanticLabel, chapterId: chapter\.id, runtimeAsset: MEMORY_STAR_MODEL \}\}/)
   assert.doesNotMatch(world, /data-artifact-family=/)
   assert.match(world, /onClick=\{\(event\) => \{ event\.stopPropagation\(\); onSelect\(node\); \}\}/)
-  assert.match(world, /if \(node\) onSelect\(node\)/)
 })
 
 test('pointer keyboard and touch semantic paths converge on one single-fire selection transaction', () => {

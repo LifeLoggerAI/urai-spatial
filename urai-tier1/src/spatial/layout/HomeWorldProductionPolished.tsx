@@ -51,6 +51,20 @@ function seeded(index: number, salt = 0) {
   return value - Math.floor(value)
 }
 
+function temperAuthoredMaterial(material: THREE.Material) {
+  const clone = material.clone()
+  if (clone instanceof THREE.MeshStandardMaterial) {
+    const mineral = new THREE.Color('#657165')
+    clone.color.lerp(mineral, .06)
+    clone.roughness = THREE.MathUtils.clamp(clone.roughness * .94 + .04, .46, .96)
+    clone.metalness = Math.min(clone.metalness, .08)
+    clone.envMapIntensity = Math.max(clone.envMapIntensity, .72)
+    clone.emissiveIntensity = Math.min(clone.emissiveIntensity, .08)
+    clone.needsUpdate = true
+  }
+  return clone
+}
+
 function prepareNaturalSanctuary(source: THREE.Object3D) {
   const world = source.clone(true)
   const rejected = /portal|ring|threshold|village|mannequin|avatar|debug|marker|label|embodied|presence|memory-place-anchor|living-growth|vault|monolith|bridge|grove|firefly|alcove|veil|waterfall|sculpture|pedestal|rib/i
@@ -59,13 +73,9 @@ function prepareNaturalSanctuary(source: THREE.Object3D) {
     if (!(object instanceof THREE.Mesh)) return
     object.visible = !rejected.test(object.name)
     if (!object.visible) return
-    const name = object.name.toLowerCase()
-    const grounded = /basin|path|ground|terrain|stone|floor/.test(name)
-    object.material = new THREE.MeshStandardMaterial({
-      color: grounded ? '#58665b' : '#40554a',
-      roughness: grounded ? .92 : .96,
-      metalness: .01,
-    })
+    object.material = Array.isArray(object.material)
+      ? object.material.map(temperAuthoredMaterial)
+      : temperAuthoredMaterial(object.material)
     object.castShadow = true
     object.receiveShadow = true
     visibleMeshCount += 1
@@ -75,14 +85,16 @@ function prepareNaturalSanctuary(source: THREE.Object3D) {
   world.scale.setScalar(.94)
   world.userData.visibleMeshCount = visibleMeshCount
   world.userData.role = 'authored-sanctuary-structure-with-proof-forms-suppressed'
+  world.userData.materialTreatment = 'governed-pbr-preserved-and-tempered'
   return world
 }
 
 function terrainHeight(x: number, z: number) {
-  const broad = Math.sin(x * .12) * .34 + Math.cos(z * .09) * .28 + Math.sin((x + z) * .065) * .18
-  const detail = Math.sin(x * .43 + z * .19) * .055 + Math.cos(z * .34 - x * .18) * .045
-  const clearing = -Math.exp(-((x / 8.2) ** 2 + ((z + 1.5) / 9.8) ** 2)) * .32
-  return broad + detail + clearing - .18
+  const broad = Math.sin(x * .105) * .16 + Math.cos(z * .081) * .13 + Math.sin((x + z) * .052) * .09
+  const cross = Math.sin(x * .071 - z * .113) * Math.cos(x * .037 + z * .059) * .075
+  const detail = Math.sin(x * .37 + z * .17) * .032 + Math.cos(z * .29 - x * .16) * .026
+  const clearing = -Math.exp(-((x / 8.7) ** 2 + ((z + 1.5) / 10.2) ** 2)) * .18
+  return broad + cross + detail + clearing - .12
 }
 
 function makeTerrainGeometry() {
@@ -90,15 +102,16 @@ function makeTerrainGeometry() {
   geometry.rotateX(-Math.PI / 2)
   const position = geometry.attributes.position as THREE.BufferAttribute
   const colors = new Float32Array(position.count * 3)
-  const low = new THREE.Color('#304b39')
-  const high = new THREE.Color('#61745b')
+  const low = new THREE.Color('#344b3b')
+  const high = new THREE.Color('#69755e')
   const color = new THREE.Color()
   for (let i = 0; i < position.count; i += 1) {
     const x = position.getX(i)
     const z = position.getZ(i)
     const y = terrainHeight(x, z)
     position.setY(i, y)
-    const variation = THREE.MathUtils.clamp(.42 + y * .3 + Math.sin(x * .19 + z * .13) * .08, .12, .82)
+    const mineralNoise = Math.sin(x * .071 - z * .113) * Math.cos(x * .043 + z * .067)
+    const variation = THREE.MathUtils.clamp(.44 + y * .24 + mineralNoise * .065, .16, .78)
     color.copy(low).lerp(high, variation)
     colors[i * 3] = color.r
     colors[i * 3 + 1] = color.g
@@ -229,17 +242,17 @@ const LIFE_MAP_PATH_GEOMETRY = makeRibbonGeometry(makePathPoints(new THREE.Vecto
 const ORB_CLEARING_GEOMETRY = makeIrregularPatchGeometry(ORB.x, ORB.z, 2.7, 1.85, 41)
 const POND_GEOMETRY = makeIrregularPatchGeometry(5.55, -11.15, 3.25, 2.15, 73)
 const POND_INNER_GEOMETRY = makeIrregularPatchGeometry(5.55, -11.15, 2.9, 1.86, 91)
-const RIDGE_NEAR = makeRidgeGeometry(88, 2.45, .6)
-const RIDGE_MID = makeRidgeGeometry(96, 2.8, 1.7)
-const RIDGE_FAR = makeRidgeGeometry(104, 3.1, 2.8)
+const RIDGE_NEAR = makeRidgeGeometry(88, 1.55, .6)
+const RIDGE_MID = makeRidgeGeometry(96, 1.82, 1.7)
+const RIDGE_FAR = makeRidgeGeometry(104, 2.05, 2.8)
 
-const FERN_PLACEMENTS = Array.from({ length: 72 }, (_, index) => {
-  const side = index % 2 === 0 ? -1 : 1
-  const band = Math.floor(index / 2)
-  const z = 7.6 - (band % 18) * 1.28 + (seeded(index, 64) - .5) * .78
-  const edge = 5.2 + seeded(index, 65) * 6.3
-  const x = side * edge + (seeded(index, 66) - .5) * 1.1
-  const scale = .46 + seeded(index, 67) * .52
+const FERN_PLACEMENTS = Array.from({ length: 92 }, (_, index) => {
+  const side = seeded(index, 61) > .5 ? -1 : 1
+  const depth = seeded(index, 62)
+  const z = 9.1 - depth * 27.8 + (seeded(index, 64) - .5) * 1.6
+  const edge = 4.9 + seeded(index, 65) * 7.7
+  const x = side * edge + (seeded(index, 66) - .5) * 2.0
+  const scale = .38 + Math.pow(seeded(index, 67), .72) * .76
   const rotation = seeded(index, 68) * Math.PI * 2
   return [x, z, scale, rotation] as const
 })
@@ -255,7 +268,7 @@ function Terrain({ target }: { target: MutableRefObject<THREE.Vector3 | null> })
   return <group name="home-authored-terrain" userData={{ geometryOwner: 'canonical-sanctuary-plus-natural-terrain' }}>
     <primitive object={authored} />
     <mesh name="home-natural-terrain" geometry={TERRAIN_GEOMETRY} receiveShadow onClick={onWalk}>
-      <meshStandardMaterial color="#ffffff" vertexColors roughness={.98} metalness={0} />
+      <meshStandardMaterial color="#ffffff" vertexColors roughness={.96} metalness={0} />
     </mesh>
     <mesh name="home-walkable-navigation-surface" rotation={[-Math.PI / 2, 0, 0]} position={[0, .7, -2]} onClick={onWalk}>
       <planeGeometry args={[28, 34]} /><meshBasicMaterial transparent opacity={0} depthWrite={false} colorWrite={false} />
@@ -273,15 +286,15 @@ function SanctuaryPath() {
 
 function Vegetation() {
   const fern = useGLTF(HOME_FERN_MODEL)
-  const material = useMemo(() => new THREE.MeshStandardMaterial({ color: '#76946f', roughness: .94, metalness: 0, side: THREE.DoubleSide }), [])
+  const material = useMemo(() => new THREE.MeshStandardMaterial({ color: '#789774', roughness: .91, metalness: 0, side: THREE.DoubleSide }), [])
   useEffect(() => () => material.dispose(), [material])
   const instances = useMemo(() => FERN_PLACEMENTS.map(([x,z,scale,rotation], index) => {
     const object = fern.scene.clone(true)
     object.name = `home-scanned-fern-${index + 1}`
     object.position.set(x, terrainHeight(x,z) + .025, z)
-    object.rotation.y = rotation
-    object.scale.set(scale * (1 + seeded(index, 16) * .08), scale * (.9 + seeded(index, 22) * .18), scale * (1 + seeded(index, 29) * .08))
-    object.traverse((child) => { if (child instanceof THREE.Mesh) { child.material = material; child.castShadow = index < 24; child.receiveShadow = true } })
+    object.rotation.set((seeded(index, 72)-.5)*.10, rotation, (seeded(index, 73)-.5)*.12)
+    object.scale.set(scale * (.90 + seeded(index, 16) * .18), scale * (.82 + seeded(index, 22) * .28), scale * (.90 + seeded(index, 29) * .18))
+    object.traverse((child) => { if (child instanceof THREE.Mesh) { child.material = material; child.castShadow = index < 30; child.receiveShadow = true } })
     return object
   }), [fern.scene, material])
   return <group name="home-living-vegetation" userData={{ role: 'edge-clustered-scanned-cc0-nature', source: 'Poly Haven fern_02 CC0' }}>{instances.map((object) => <primitive key={object.name} object={object} />)}</group>
@@ -544,7 +557,7 @@ export function HomeWorldProductionPolished({ onOrbOpen = requestUraiWorldOrbOpe
   const context = phase === 'ASCENT' ? 'Ascending through the sky' : groundDescent ? 'Descending into Ground' : nearby === 'orb' ? 'The Orb is here' : nearby === 'ground' ? 'The path descends' : nearby === 'life-map' ? 'Look to the sky' : null
 
   return <main className={`${styles.world} urai-asset-home-world`} data-urai-home-production data-urai-true-3d="true" data-home-primary-owner="asset-driven" data-home-real-world-first="true" data-home-visible-world="authored-coherent-three-dimensional-sanctuary" data-home-world-character="believable-natural-inhabitable-environment" data-home-visible-portals="false" data-home-transition-affordances="ground-environmental-descent life-map-sky-lookout" data-home-provider-environment={HOME_PROVIDER_ENVIRONMENT} data-home-provider-role="atmospheric-support-only" data-home-provider-regions="home-atmospheric-horizon" data-home-generated-scenery="suppressed" data-home-physical-base="authored-coherent-world" data-home-visual-ownership="three-dimensional-geometry" data-home-desktop-mobile-world="same-scene" data-home-embodied-self="privacy-preserving-shadow" data-home-movement="walk-keyboard-click-touch" data-home-pointer-lock="false" data-home-audio="production-opus-consent-controlled" data-home-assets-ready={ready ? 'true' : 'false'} data-home-runtime-assets="home-entry-chamber-v1.glb polyhaven-fern-02-geometry-v1.glb local-three-dimensional-terrain living-orb reflecting-water" data-home-authored-regions="home-canonical-sanctuary-structure home-sanctuary-geometry home-mountain-horizon home-living-vegetation home-reflecting-water" data-home-nearby={nearby ?? 'none'} data-home-camera-mode={groundDescent ? 'descent' : phase === 'ASCENT' ? 'ascent' : dragging ? 'look' : 'embodied-first-person'} data-home-scene-phase={groundDescent ? 'GROUND_DESCENT' : phase} data-home-ascent-progress={phase === 'ASCENT' ? progress.toFixed(3) : '0.000'} data-home-input-locked={transitioning || inputLocked ? 'true' : 'false'} data-home-portal-sequence={portalSequence} data-home-portal-lifecycle="environmental-approach-traversal-arrival" data-home-review-fixture={reviewFixture} data-home-orb-state={orbState} data-home-orb-clip={ORB_CLIPS[orbState]} data-home-orb-animation={orbSensory.animation} data-home-orb-material={orbSensory.material} data-home-orb-movement={orbSensory.movement} data-home-orb-caption={orbSensory.caption} data-home-orb-reduced-motion={reducedMotion ? 'true' : 'false'} data-home-animation-owner={HOME_SCANNED_COMPOSITION_V1} data-testid="home-visible-navigable-sanctuary-world" style={{ position:'relative', overflow:'hidden', background:'#172c27' }} {...look}>
-    <div style={{ position:'absolute', inset:0, zIndex:1 }}><Canvas className={styles.canvas} dpr={[1,1.35]} shadows camera={{ position:[SPAWN.x,1.68,SPAWN.z], fov:50, near:.05, far:300 }} gl={{ antialias:true, alpha:false, powerPreference:'high-performance' }} onCreated={({ gl }) => { gl.outputColorSpace = THREE.SRGBColorSpace; gl.toneMapping = THREE.ACESFilmicToneMapping; gl.toneMappingExposure = 1.22; gl.shadowMap.type = THREE.PCFSoftShadowMap; setCanvasReady(true) }}><Scene input={input} yaw={yaw} pitch={pitch} target={target} avatar={avatar} onNearby={setNearby} onOrbOpen={openOrb} onGround={startGround} onGroundComplete={finishGround} onLifeMap={startLifeMap} onReady={() => setSceneReady(true)} onTransitionSequence={setPortalSequence} groundDescent={groundDescent} reducedMotion={reducedMotion} orbState={orbState} /></Canvas></div>
+    <div style={{ position:'absolute', inset:0, zIndex:1 }}><Canvas className={styles.canvas} dpr={[1,1.35]} shadows camera={{ position:[SPAWN.x,1.68,SPAWN.z], fov:50, near:.05, far:300 }} gl={{ antialias:true, alpha:false, powerPreference:'high-performance' }} onCreated={({ gl }) => { gl.outputColorSpace = THREE.SRGBColorSpace; gl.toneMapping = THREE.ACESFilmicToneMapping; gl.toneMappingExposure = 1.16; gl.shadowMap.type = THREE.PCFSoftShadowMap; setCanvasReady(true) }}><Scene input={input} yaw={yaw} pitch={pitch} target={target} avatar={avatar} onNearby={setNearby} onOrbOpen={openOrb} onGround={startGround} onGroundComplete={finishGround} onLifeMap={startLifeMap} onReady={() => setSceneReady(true)} onTransitionSequence={setPortalSequence} groundDescent={groundDescent} reducedMotion={reducedMotion} orbState={orbState} /></Canvas></div>
     <header className={styles.brand} aria-label="URAI" style={{ zIndex:3 }}><strong>URAI</strong></header>
     {context ? <div className={`${styles.worldHint} home-world-context`} role="status" aria-live="polite" style={{ zIndex:3 }}>{context}</div> : null}
     {!transitioning && mobileControls ? <MobileMovementPad input={input} label="Home movement controls" /> : null}

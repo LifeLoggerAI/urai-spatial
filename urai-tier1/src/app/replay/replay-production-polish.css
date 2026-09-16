@@ -1,0 +1,234 @@
+/* V265 Replay convergence: the memory is the environment. Product transport stays
+   fully reachable, but the spatial canvas is allowed to fill and slightly crop the
+   viewport so authentic memory media dominates instead of reading as a player card. */
+.replayWorld .replaySpatialCanvas {
+  transform: scale(1.16);
+  transform-origin: 50% 48%;
+}
+
+.replayWorld .replayAtmosphere {
+  background:
+    radial-gradient(ellipse at 50% 46%, transparent 0 46%, rgba(0,0,0,.08) 68%, rgba(0,0,0,.48) 100%) !important;
+}
+
+.replayWorld header {
+  top: max(18px, env(safe-area-inset-top)) !important;
+  max-width: min(300px, 28vw) !important;
+  opacity: .78;
+}
+.replayWorld header h1 { font-size: clamp(1.08rem, 2.5vw, 2rem) !important; }
+.replayWorld header p,
+.replayWorld header span { opacity: .72; }
+.replayWorld .unwind {
+  min-height: 48px;
+  opacity: .62;
+  background: rgba(2,7,12,.42) !important;
+  backdrop-filter: blur(8px);
+}
+.replayWorld .unwind:hover,
+.replayWorld .unwind:focus-visible { opacity: 1; }
+
+.replayWorld .caption {
+  bottom: clamp(118px, 16svh, 168px) !important;
+  width: min(680px, 74vw) !important;
+  opacity: .56;
+  text-shadow: 0 2px 22px rgba(0,0,0,.9);
+  transition: opacity 180ms ease;
+}
+.replayWorld .caption:hover,
+.replayWorld .caption:focus-within { opacity: .9; }
+.replayWorld .caption strong {
+  margin-top: 5px !important;
+  font-size: clamp(.98rem, 2.25vw, 1.72rem) !important;
+  line-height: 1.08 !important;
+  font-weight: 500 !important;
+}
+.replayWorld .caption span {
+  margin-top: 5px !important;
+  max-width: 520px !important;
+  font-size: 10px !important;
+  opacity: .78;
+}
+
+.replayWorld .controls {
+  bottom: max(18px, calc(env(safe-area-inset-bottom) + 12px)) !important;
+  width: min(520px, calc(100vw - 34px)) !important;
+  padding: 4px 7px !important;
+  gap: 8px !important;
+  border-color: rgba(235,251,255,.06) !important;
+  border-radius: 999px !important;
+  background: linear-gradient(90deg, rgba(2,7,14,.20), rgba(7,18,26,.10)) !important;
+  box-shadow: 0 8px 30px rgba(0,0,0,.12) !important;
+  backdrop-filter: blur(8px) saturate(1.02) !important;
+  opacity: .12;
+  transition: opacity 180ms ease, background-color 180ms ease;
+}
+.replayWorld .controls:hover,
+.replayWorld .controls:focus-within { opacity: .96; }
+.replayWorld .controls button {
+  min-width: 58px !important;
+  min-height: 48px !important;
+  background: linear-gradient(135deg, color-mix(in srgb,var(--replay-light) 84%,transparent), color-mix(in srgb,var(--replay-accent) 78%,transparent)) !important;
+}
+.replayWorld .controls output { opacity: .72; }
+
+.replayWorld .replayProduct {
+  border-color: rgba(235,251,255,.05);
+  background: linear-gradient(90deg, rgba(2,7,14,.18), rgba(7,18,26,.08));
+  box-shadow: 0 8px 28px rgba(0,0,0,.10), inset 0 1px rgba(255,255,255,.02);
+  backdrop-filter: blur(8px) saturate(1.02);
+  opacity: .06;
+  transition: opacity 180ms ease;
+}
+.replayWorld .replayProduct:hover,
+.replayWorld .replayProduct:focus-within { opacity: .94; }
+.replayWorld .replayProduct > button {
+  border-color: rgba(235,251,255,.08);
+  background: linear-gradient(145deg, rgba(16,39,53,.34), rgba(7,19,30,.22));
+}
+
+/* Owner mutation controls occupy their own lower rail. Reserve a clear caption
+   band above that rail so memory text never collides with Save/Hide/Correct/
+   History or the transport controls. Read-only/demo Replay keeps the tighter
+   composition because its disabled mutation rail is hidden below. */
+.replayWorld:has(.replayProduct > button:not(:disabled)) .caption {
+  bottom: max(190px, calc(env(safe-area-inset-bottom) + 184px)) !important;
+  width: min(620px, 66vw) !important;
+}
+
+/* Read-only/demo Replay has no actionable mutation control. Do not let disabled
+   Save/Hide/Correct chrome sit over the memory; retain the truthful live status
+   as a small disclosure instead. Owner controls remain unchanged. */
+.replayWorld .replayProduct:has(> button:nth-of-type(1):disabled):has(> button:nth-of-type(2):disabled):has(> button:nth-of-type(3):disabled) {
+  display: none;
+}
+.replayWorld:has(.replayProduct > button:nth-of-type(1):disabled):has(.replayProduct > button:nth-of-type(2):disabled):has(.replayProduct > button:nth-of-type(3):disabled) .replayOperationStatus {
+  left: auto;
+  right: max(16px, env(safe-area-inset-right));
+  bottom: max(18px, calc(env(safe-area-inset-bottom) + 12px));
+  transform: none;
+  max-width: min(260px, calc(100vw - 190px));
+  padding: 4px 8px;
+  background: rgba(2,7,14,.28);
+  color: rgba(255,255,255,.58);
+  font-size: 9px;
+  letter-spacing: .02em;
+  opacity: .66;
+  pointer-events: none;
+}
+
+.replayWorld .transcript {
+  border-color: rgba(235,251,255,.07);
+  background: rgba(2,7,14,.22);
+  backdrop-filter: blur(8px);
+  opacity: .34;
+  transition: opacity 180ms ease;
+}
+.replayWorld .transcript:hover,
+.replayWorld .transcript:focus-within,
+.replayWorld .transcript[open] { opacity: .96; }
+
+/* V270 entry crossing: the neutral 3D Replay scene owns the transition pixels.
+   Keep loading semantics visible and readable, but never present them as a modal,
+   player card, portal, tunnel, or unrelated page. The status sits quietly at the
+   lower-left edge while the spatial field remains full-viewport authority. */
+.replayState section[role="status"] {
+  position: absolute !important;
+  left: max(20px, env(safe-area-inset-left)) !important;
+  right: auto !important;
+  top: auto !important;
+  bottom: max(22px, calc(env(safe-area-inset-bottom) + 14px)) !important;
+  width: min(520px, calc(100vw - 40px)) !important;
+  max-width: min(520px, calc(100vw - 40px)) !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: none !important;
+  backdrop-filter: none !important;
+  text-align: left !important;
+  text-shadow: 0 3px 24px rgba(0,0,0,.92) !important;
+}
+.replayState section[role="status"] p {
+  margin-bottom: 6px !important;
+  color: rgba(210,248,255,.72) !important;
+  font-size: 9px !important;
+  letter-spacing: .20em !important;
+}
+.replayState section[role="status"] h1 {
+  max-width: 15ch !important;
+  font-size: clamp(1.05rem, 2.4vw, 1.6rem) !important;
+  line-height: 1.05 !important;
+  letter-spacing: -.025em !important;
+}
+.replayState section[role="status"] span {
+  max-width: 430px !important;
+  margin: 6px 0 0 !important;
+  color: rgba(235,247,255,.58) !important;
+  font-size: 10px !important;
+}
+
+@media (max-width: 700px) {
+  .replayWorld .replaySpatialCanvas {
+    transform: scale(1.24);
+    transform-origin: 50% 46%;
+  }
+  .replayWorld header {
+    left: max(14px, env(safe-area-inset-left)) !important;
+    top: max(14px, env(safe-area-inset-top)) !important;
+    max-width: 220px !important;
+    opacity: .70;
+  }
+  .replayWorld .caption {
+    bottom: max(86px, calc(env(safe-area-inset-bottom) + 80px)) !important;
+    width: 76vw !important;
+    opacity: .48;
+  }
+  .replayWorld:has(.replayProduct > button:not(:disabled)) .caption {
+    bottom: max(188px, calc(env(safe-area-inset-bottom) + 180px)) !important;
+    width: min(78vw, calc(100vw - 28px)) !important;
+  }
+  .replayWorld .caption strong { font-size: 1.05rem !important; }
+  .replayWorld .caption span {
+    display: -webkit-box;
+    -webkit-line-clamp: 1;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .replayWorld .controls,
+  .replayWorld .replayProduct {
+    left: 14px;
+    right: 14px;
+    width: auto !important;
+    transform: none;
+  }
+  .replayWorld .controls { opacity: .10; }
+  .replayWorld .replayProduct { opacity: .04; }
+  .replayWorld .transcript {
+    top: max(72px, calc(env(safe-area-inset-top) + 66px));
+    right: 12px;
+    max-width: 142px;
+    opacity: .24;
+  }
+  .replayWorld:has(.replayProduct > button:nth-of-type(1):disabled):has(.replayProduct > button:nth-of-type(2):disabled):has(.replayProduct > button:nth-of-type(3):disabled) .replayOperationStatus {
+    right: 12px;
+    bottom: max(74px, calc(env(safe-area-inset-bottom) + 68px));
+    max-width: 150px;
+    font-size: 8px;
+  }
+  .replayState section[role="status"] {
+    left: max(16px, env(safe-area-inset-left)) !important;
+    bottom: max(18px, calc(env(safe-area-inset-bottom) + 10px)) !important;
+    width: min(360px, calc(100vw - 32px)) !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .replayWorld .replaySpatialCanvas { transform: scale(1.14); }
+  .replayWorld .controls,
+  .replayWorld .replayProduct,
+  .replayWorld .transcript,
+  .replayWorld .caption {
+    backdrop-filter: none;
+    transition: none;
+  }
+}
