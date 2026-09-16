@@ -20,10 +20,11 @@ const generatedPath = new URL('./.capture-home-state-proof-v288.generated.mjs', 
 const original = await readFile(capturePath, 'utf8')
 const stalePredicate = "record.movement === 'walk-keyboard-click-touch'"
 const currentPredicate = "record.movement === 'camera-look-world-surface-selection'"
-if (original.split(stalePredicate).length - 1 !== 1) {
-  throw new Error('Home state proof movement predicate changed; refusing an ambiguous derived proof')
+const currentPredicateCount = original.split(currentPredicate).length - 1
+if (currentPredicateCount !== 1 || original.includes(stalePredicate)) {
+  throw new Error('Home state proof movement predicate is not bound exactly once to the current first-person authority')
 }
-const derived = original.replace(stalePredicate, currentPredicate)
+const derived = original
 
 await writeFile(generatedPath, derived, 'utf8')
 let result
@@ -53,7 +54,7 @@ if (result.status !== 0) {
     authority,
     derivedProof: {
       source: 'capture-home-state-proof.mjs',
-      replacement: `${stalePredicate} -> ${currentPredicate}`,
+      replacement: 'none; canonical capture already carries current first-person movement authority',
       reason: 'Home is cinematic and no longer owns embodied locomotion',
     },
     exitStatus: result.status,
