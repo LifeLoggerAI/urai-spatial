@@ -62,10 +62,17 @@ test('Current Home never retires descendants of the canonical Avatar or living-m
   assert.match(currentHome, /name="home-orb-stabilizer-ring-1"/)
 })
 
-test('Authored model cloning preserves single-material and multi-material shape', () => {
+test('Authored model cloning is skeleton-safe, preserves material shape, and disposes only cloned materials', () => {
+  assert.match(currentHome, /import \{ clone as cloneSkeleton \} from 'three\/addons\/utils\/SkeletonUtils\.js'/)
+  assert.match(currentHome, /const root = cloneSkeleton\(source\)/)
   assert.match(currentHome, /object\.material = Array\.isArray\(object\.material\)/)
   assert.match(currentHome, /object\.material\.map\(\(material\) => material\.clone\(\)\)/)
   assert.match(currentHome, /: object\.material\.clone\(\)/)
+  assert.match(currentHome, /function disposeClonedMaterials\(root: THREE\.Object3D\)/)
+  assert.match(currentHome, /materials\.forEach\(\(material\) => material\.dispose\(\)\)/)
+  assert.match(currentHome, /disposeClonedMaterials\(model\)/)
+  assert.match(currentHome, /disposeClonedMaterials\(authoredOrb\)/)
+  assert.doesNotMatch(currentHome, /geometry\.dispose\(\)|texture\.dispose\(\)/)
   assert.doesNotMatch(currentHome, /Array\.isArray\(source\)/)
 })
 
@@ -75,6 +82,7 @@ test('Visible Home Avatar uses the existing authored idle_breath clip and respec
   assert.match(currentHome, /if \(!idle \|\| reducedMotion\) return/)
   assert.match(currentHome, /idle\.reset\(\)\.setLoop\(THREE\.LoopRepeat, Infinity\)\.fadeIn\(\.3\)\.play\(\)/)
   assert.match(currentHome, /animation: reducedMotion \? 'still-reduced-motion' : 'idle_breath'/)
+  assert.match(currentHome, /cloneStrategy: 'skeleton-safe'/)
 })
 
 test('Conversation speaking state is bound to actual audible playback rather than streamed text or muted response timing', () => {
