@@ -53,9 +53,9 @@ function cloneAuthoredModel(source: THREE.Object3D) {
   const root = source.clone(true)
   root.traverse((object) => {
     if (!(object instanceof THREE.Mesh)) return
-    const materials = Array.isArray(object.material) ? object.material : [object.material]
-    object.material = materials.map((material) => material.clone())
-    if (!Array.isArray(source)) object.material = object.material.length === 1 ? object.material[0] : object.material
+    object.material = Array.isArray(object.material)
+      ? object.material.map((material) => material.clone())
+      : object.material.clone()
     object.castShadow = true
     object.receiveShadow = true
   })
@@ -101,6 +101,16 @@ const legacyHotspotPatterns = [
   /memory-reliquary/,
   /home-v249-organic-living-memory-presence/,
 ]
+const CURRENT_HOME_PRESENCE_ROOTS = new Set(['home-living-memory-orb', 'home-visible-user-avatar'])
+
+function isInsideCurrentHomePresence(object: THREE.Object3D) {
+  let current: THREE.Object3D | null = object
+  while (current) {
+    if (CURRENT_HOME_PRESENCE_ROOTS.has(current.name)) return true
+    current = current.parent
+  }
+  return false
+}
 
 /** Retire predecessor hotspot sculptures while preserving the canonical Avatar, Orb, world and broad Sky interaction. */
 function RetireLegacyHomeHotspots() {
@@ -109,7 +119,7 @@ function RetireLegacyHomeHotspots() {
     const hidden = new Map<THREE.Object3D, boolean>()
     const raycasts = new Map<THREE.Object3D, THREE.Object3D['raycast']>()
     const retire = () => scene.traverse((object) => {
-      if (object.name === 'home-living-memory-orb' || object.name === 'home-visible-user-avatar') return
+      if (isInsideCurrentHomePresence(object)) return
       if (!legacyHotspotPatterns.some((pattern) => pattern.test(object.name))) return
       if (!hidden.has(object)) hidden.set(object, object.visible)
       object.visible = false
