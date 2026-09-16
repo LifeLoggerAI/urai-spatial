@@ -41,6 +41,7 @@ test('Home canon has exactly two primary stable embodiment anchors plus scoped o
 
 test('Avatar activation is guarded to cinematic presentation and becomes a locked embodiment transition', () => {
   assert.match(source, /case 'AVATAR_ACTIVATE':[\s\S]*state\.stableState !== 'HOME_PRESENTATION'[\s\S]*'AVATAR_EMBODIMENT_TRANSITION'[\s\S]*inputLocked: true/)
+  assert.match(source, /case 'AVATAR_ACTIVATE':[\s\S]*returnStack: pushReturnFrame\(state, \{ kind: 'local', origin: event\.snapshot \}\)/)
   assert.match(source, /case 'EMBODIMENT_COMPLETE':[\s\S]*'AVATAR_HOME_FIRST_PERSON'[\s\S]*inputLocked: false/)
 })
 
@@ -69,14 +70,14 @@ test('Orb conversation unwinds to its immediate origin rather than deleting cont
   assert.match(source, /state\.stableState === 'IMMERSIVE_CONVERSATION'[\s\S]*'ORB_COLLAPSE'[\s\S]*origin\.stableState/)
 })
 
-test('first-person Home ESC exits embodiment one layer to cinematic presentation', () => {
-  assert.match(source, /state\.stableState === 'AVATAR_HOME_FIRST_PERSON'[\s\S]*'EMBODIMENT_UNWIND'/)
+test('first-person Home ESC pops the presentation frame before embodiment unwind', () => {
+  assert.match(source, /state\.stableState === 'AVATAR_HOME_FIRST_PERSON'[\s\S]*const \{ frame, stack \} = popReturnFrame\(state\)[\s\S]*frame\?\.origin[\s\S]*makeHomeOriginSnapshot\('HOME_PRESENTATION'\)[\s\S]*returnStack: stack[\s\S]*'EMBODIMENT_UNWIND'/)
   assert.match(source, /state\.transition === 'EMBODIMENT_UNWIND' \? 'HOME_PRESENTATION'/)
 })
 
-test('interrupted Ground or Sky transition restores the recorded origin safely', () => {
+test('interrupted Avatar, Ground or Sky transition restores its recorded origin safely', () => {
+  assert.match(source, /state\.transition === 'AVATAR_EMBODIMENT_TRANSITION'[\s\S]*popReturnFrame\(state\)[\s\S]*transition: 'HOME_RESTORE'/)
   assert.match(source, /state\.transition === 'GROUND_DESCENT' \|\| state\.transition === 'SKY_ASCENT'/)
-  assert.match(source, /transition: 'HOME_RESTORE'/)
   assert.match(source, /pendingDestination: null/)
 })
 
