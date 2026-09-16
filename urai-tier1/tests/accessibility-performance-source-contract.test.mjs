@@ -24,6 +24,7 @@ test('accessibility and performance implementation contracts are present on two-
   const currentHome = read('src/spatial/layout/HomeWorldProductionV223.tsx')
   const homeAvatar = read('src/spatial/home/HomeEmbodiedAvatar.tsx')
   const homeController = read('src/spatial/home/useHomeExperienceController.ts')
+  const homeEvents = read('src/spatial/home/homeExperienceEvents.ts')
   const focus = read('src/app/focus/FocusChamberClient.tsx')
   const ground = read('src/app/GroundSpatialWorldClean.tsx')
   const playwrightConfig = read('../playwright.accessibility.config.ts')
@@ -47,7 +48,9 @@ test('accessibility and performance implementation contracts are present on two-
   requireText(routeOwnerCss, 'outline: 3px solid rgba(224,255,255,.96) !important;')
 
   requireNormalizedPattern(homeCapability, /canvas\.getContext\('webgl2'(?:,\s*\{[^)]*\})?\)\s*\?\?\s*canvas\.getContext\('webgl'(?:,\s*\{[^)]*\})?\)/, 'Home must test WebGL2 and WebGL capability')
-  for (const marker of ['AssetDrivenHomeWorld', 'aria-label="Open URAI Orb companion"', 'aria-label="Open Ground directly"', 'aria-label="Open Life Map directly"', "addEventListener('webglcontextlost', onContextLost)", "addEventListener('webglcontextrestored', onContextRestored)", 'accessible-fallback-after-renderer-failure', 'role="status"']) requireText(homeRuntime, marker)
+  for (const marker of ['AssetDrivenHomeWorld', 'aria-label="Enter first-person Home through your Avatar"', 'data-urai-audit-action="home-avatar-embody"', 'aria-label="Open URAI Orb companion"', 'aria-label="Open Ground directly"', 'aria-label="Open Life Map directly"', "addEventListener('webglcontextlost', onContextLost)", "addEventListener('webglcontextrestored', onContextRestored)", 'accessible-fallback-after-renderer-failure', 'role="status"']) requireText(homeRuntime, marker)
+  for (const marker of ["URAI_HOME_AVATAR_ACTIVATE_EVENT = 'urai:home-avatar-activate'", 'requestHomeAvatarActivation']) requireText(homeEvents, marker)
+  for (const marker of ['URAI_HOME_AVATAR_ACTIVATE_EVENT', 'window.addEventListener(URAI_HOME_AVATAR_ACTIVATE_EVENT, onSemanticAvatarActivate)', 'activateAvatar()']) requireText(homeController, marker)
 
   for (const marker of [
     "'visible-cinematic-avatar'", "'camera-only-avatar-embodied-first-person'", "'visible-avatar-third-person'", "'avatar-hidden-camera-first-person'", "'camera-look-world-surface-selection'", "'persistent-first-person-keyboard-mobile-camera-look'", 'data-home-first-person-body="none-non-xr"', 'data-home-ground-entry="physical-world-surface"', 'data-home-life-map-entry="visible-sky-broad-interaction"', "'cinematic-third-person'", "'avatar-home-first-person'", 'home-visible-user-avatar', 'home-living-memory-orb', '/assets/urai/generated/models/urai-orb-avatar-v1.glb', 'THREE.LoopOnce', 'useHomeExperienceController', 'useMovementInput({', 'stepEmbodiedMotion({', '<MobileMovementPad input={movement} label="Move through Home"', 'AvatarSelfView', 'prefers-reduced-motion: reduce',
@@ -67,7 +70,7 @@ test('accessibility and performance implementation contracts are present on two-
   requireText(routeOwnerCss, 'max-height: 100svh !important;')
 
   for (const marker of [
-    "toHaveAttribute('data-home-embodied-self', 'visible-cinematic-avatar'", "toHaveAttribute('data-home-presence-presentation', 'visible-avatar-third-person'", "toHaveAttribute('data-home-movement', 'camera-look-world-surface-selection'", "toHaveAttribute('data-home-embodied-self', 'camera-only-avatar-embodied-first-person'", "toHaveAttribute('data-home-first-person-body', 'none-non-xr'", "name: 'Home first-person movement controls'", 'data-home-orb-runtime-asset', 'data-home-avatar-runtime-asset', 'data-ground-exploration="first-person"', "name: 'Ground first-person movement controls'",
+    "toHaveAttribute('data-home-embodied-self', 'visible-cinematic-avatar'", "toHaveAttribute('data-home-presence-presentation', 'visible-avatar-third-person'", "toHaveAttribute('data-home-movement', 'camera-look-world-surface-selection'", "toHaveAttribute('data-home-embodied-self', 'camera-only-avatar-embodied-first-person'", "toHaveAttribute('data-home-first-person-body', 'none-non-xr'", "name: 'Move through Home'", 'data-home-orb-runtime-asset', 'data-home-avatar-runtime-asset', 'data-ground-exploration="first-person"', "name: 'Ground first-person movement controls'",
   ]) requireText(embodiedEvidence, marker)
   assert.doesNotMatch(embodiedEvidence, /toHaveAttribute\('data-home-embodied-self', 'first-person-viewpoint-no-avatar'\)/, 'Accessibility evidence must not reassert retired no-avatar Home')
 
