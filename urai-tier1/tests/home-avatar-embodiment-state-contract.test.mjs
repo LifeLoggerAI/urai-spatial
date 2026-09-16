@@ -7,6 +7,7 @@ import { fileURLToPath } from 'node:url'
 const here = path.dirname(fileURLToPath(import.meta.url))
 const root = path.resolve(here, '..')
 const source = fs.readFileSync(path.join(root, 'src/spatial/home/homeExperienceState.ts'), 'utf8')
+const selfView = fs.readFileSync(path.join(root, 'src/spatial/home/AvatarSelfView.tsx'), 'utf8')
 
 const mustContain = (marker) => assert.equal(source.includes(marker), true, `missing ${marker}`)
 
@@ -48,6 +49,18 @@ test('self inspection is a one-layer overlay over first-person Home', () => {
   assert.match(source, /case 'SELF_VIEW_OPEN':[\s\S]*'AVATAR_HOME_FIRST_PERSON'[\s\S]*'AVATAR_SELF_VIEW'/)
   assert.match(source, /case 'SELF_VIEW_CLOSE':[\s\S]*'AVATAR_HOME_FIRST_PERSON'/)
   assert.match(source, /case 'ESCAPE':[\s\S]*state\.stableState === 'AVATAR_SELF_VIEW'[\s\S]*'AVATAR_HOME_FIRST_PERSON'/)
+})
+
+test('Self View always preserves the six locked privacy-bounded categories', () => {
+  for (const id of ['appearance', 'identity', 'embodiment', 'journey', 'accessibility', 'privacy']) {
+    assert.match(selfView, new RegExp(`id: '${id}'`))
+  }
+  assert.match(selfView, /const CANONICAL_SELF_VIEW_SECTIONS/)
+  assert.match(selfView, /CANONICAL_SELF_VIEW_SECTIONS\.map\(\(section\) => supplied\.get\(section\.id\) \?\? section\)/)
+  assert.match(selfView, /data-self-view-category-authority="appearance identity embodiment journey accessibility privacy"/)
+  assert.match(selfView, /Only user-approved Passport fields may appear here/)
+  assert.match(selfView, /No private memory content is surfaced by default/)
+  assert.doesNotMatch(selfView, /emotion score|life score|health score|raw health|current location/i)
 })
 
 test('world surfaces activate only from the two stable Home world states', () => {
