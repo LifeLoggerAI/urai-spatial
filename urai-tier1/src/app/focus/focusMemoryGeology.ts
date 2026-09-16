@@ -10,12 +10,12 @@ import * as THREE from 'three'
 // centerline, changing cross-section, restrained physical energy and enough
 // continuous surface density to avoid a generic low-poly game-artifact read.
 //
-// Literal inspection of the first V272 retained pack found the topology coherent
-// but too smooth and blob-like. A denser relief pass improved surface definition,
-// but the second retained pack still read as a standing rock because the primary
-// furrow rotated mostly around the side of the arrival view. This refinement keeps
-// one closed continuous form while camera-biasing the longitudinal cleft, widening
-// the asymmetric folded silhouette and shortening the vertical boulder profile.
+// V273 literal-pixel refinement keeps that V272 topology contract but responds to
+// the exact-head 39c6458 retained pack: the prior fold still read as a dark upright
+// soft rock and exposed a hard flat cap. The release-facing form now reclines along
+// a wandering horizontal centerline, tapers to near-point ends, keeps its cleft on
+// the arrival-camera face, broadens into two continuous asymmetric shoulders, and
+// lifts the weathered mineral energy without returning to cyan/white emissive art.
 // The form must read as one held memory phenomenon. It must not regress into a
 // crystal crown/shard cluster, boulder, sphere/orb, flower, portal, ring, cage,
 // doorway, sheet fan, stack of cards or generic game pickup.
@@ -34,17 +34,23 @@ function livingMemoryVertexColor(section: number, radial: number, t: number, fur
   const mineral = new THREE.Color().setRGB(.155, .245, .218)
   const weathered = new THREE.Color().setRGB(.285, .335, .278)
   const warm = new THREE.Color().setRGB(.405, .235, .115)
+  const litMineral = new THREE.Color().setRGB(.48, .56, .43)
   const phase = .5 + .5 * Math.sin(section * .27 + radial * .43)
   const strata = .5 + .5 * Math.sin(section * .91 + radial * .36)
   const edge = Math.pow(Math.abs(t), 1.5)
   const scar = Math.max(furrow, secondaryFurrow)
   const color = deep.clone()
-    .lerp(mineral, .42 + phase * .28)
-    .lerp(weathered, .16 + .18 * (1 - edge))
-  if (scar > .24) color.lerp(deep, .22 + scar * .27)
-  if (ridge > .42) color.lerp(weathered, .18 + ridge * .09)
-  color.lerp(warm, .055 * strata * (1 - scar))
-  if ((section * 5 + radial * 3) % 29 === 0) color.lerp(warm, .18)
+    .lerp(mineral, .48 + phase * .25)
+    .lerp(weathered, .22 + .16 * (1 - edge))
+  if (scar > .24) color.lerp(deep, .18 + scar * .22)
+  if (ridge > .42) color.lerp(weathered, .20 + ridge * .08)
+  color.lerp(warm, .060 * strata * (1 - scar))
+  color.lerp(litMineral, .16 + .08 * (1 - edge) + .05 * ridge)
+  if ((section * 5 + radial * 3) % 29 === 0) color.lerp(warm, .14)
+  color.multiplyScalar(1.16)
+  color.r = Math.min(.70, color.r)
+  color.g = Math.min(.72, color.g)
+  color.b = Math.min(.64, color.b)
   return color
 }
 
@@ -53,27 +59,30 @@ function createLivingMemoryFold() {
   const colors: number[] = []
   const uvs: number[] = []
   const indices: number[] = []
+  const sectionCenters: THREE.Vector3[] = []
 
   for (let section = 0; section < MEMORY_RENDER_SECTIONS; section += 1) {
     const u = section / (MEMORY_RENDER_SECTIONS - 1)
     const t = THREE.MathUtils.lerp(-1, 1, u)
-    const envelope = Math.pow(Math.max(.025, 1 - Math.pow(Math.abs(t), 1.72)), .48)
-    const shoulderBias = .86 + .14 * Math.sin(u * Math.PI)
+    const endTaper = Math.pow(Math.max(0, Math.sin(u * Math.PI)), .58)
+    const shoulder = Math.pow(Math.max(0, Math.sin(u * Math.PI)), .36)
 
-    // A shorter, wider, laterally wandering centerline removes the retained
-    // standing-boulder read while preserving one continuous embodied object.
-    const centerX = .36 * Math.sin(t * 1.52) + .11 * Math.sin(t * 4.7 + .34)
-    const centerY = t * .79 + .075 * Math.sin(t * 2.9)
-    const centerZ = -.08 + .17 * Math.cos(t * 1.66) - .065 * Math.sin(t * 4.35)
-    const width = .14 + envelope * (.54 * shoulderBias + .045 * Math.sin(section * .31))
-    const depth = .095 + envelope * (.245 + .032 * Math.cos(section * .27))
-    const twist = -.52 + u * 1.04 + .065 * Math.sin(section * .19)
+    // Recline the longitudinal axis across the frame. This removes the retained
+    // upright-boulder read while keeping one closed connected phenomenon.
+    const centerX = t * .96 + .10 * Math.sin(t * 2.75) + .045 * Math.sin(t * 6.1)
+    const centerY = -.10 + .17 * Math.cos(t * 1.48) - .055 * t + .035 * Math.sin(t * 4.2)
+    const centerZ = -.07 + .11 * Math.sin(t * 1.72) - .035 * Math.cos(t * 4.4)
+    sectionCenters.push(new THREE.Vector3(centerX, centerY, centerZ))
 
-    // The arrival camera looks toward the manifestation from positive Z. Keep the
-    // primary cleft visibly on that face even as the cross-section twists.
-    const furrowAngle = Math.PI * .5 - twist + .10 * Math.sin(t * 1.9)
-    const secondaryFurrowAngle = furrowAngle + Math.PI * .54 + .10 * Math.sin(t * 2.7)
-    const ridgeAngle = furrowAngle + Math.PI * .93
+    const height = .024 + endTaper * (.42 + .055 * Math.sin(section * .29))
+    const depth = .022 + endTaper * (.275 + .030 * Math.cos(section * .31))
+    const twist = .10 * Math.sin(t * 2.2) + .055 * Math.sin(t * 5.1)
+
+    // Arrival camera is on positive Z. Keep the primary cleft visible on that face
+    // instead of letting the twist rotate it out of view.
+    const furrowAngle = Math.PI * .5 - twist + .055 * Math.sin(t * 2.0)
+    const secondaryFurrowAngle = furrowAngle + Math.PI * .62 + .08 * Math.sin(t * 2.7)
+    const ridgeAngle = furrowAngle + Math.PI
 
     for (let radial = 0; radial < MEMORY_RENDER_RING_POINTS; radial += 1) {
       const radialU = radial / MEMORY_RENDER_RING_POINTS
@@ -81,35 +90,36 @@ function createLivingMemoryFold() {
       const furrowDistance = wrappedAngleDistance(angle, furrowAngle)
       const secondaryFurrowDistance = wrappedAngleDistance(angle, secondaryFurrowAngle)
       const ridgeDistance = wrappedAngleDistance(angle, ridgeAngle)
-      const furrow = Math.exp(-Math.pow(furrowDistance / .25, 2))
-      const secondaryFurrow = Math.exp(-Math.pow(secondaryFurrowDistance / .24, 2)) * (.48 + .30 * envelope)
-      const ridge = Math.exp(-Math.pow(ridgeDistance / .43, 2))
+      const furrow = Math.exp(-Math.pow(furrowDistance / .24, 2))
+      const secondaryFurrow = Math.exp(-Math.pow(secondaryFurrowDistance / .27, 2)) * (.36 + .28 * shoulder)
+      const ridge = Math.exp(-Math.pow(ridgeDistance / .42, 2))
+
+      // Two shoulders remain part of the same cross-section; there are no discrete
+      // shards, leaves, cards or lamellae.
       const broadLobe = 1
-        + .22 * Math.cos((angle - furrowAngle) * 2)
-        + .10 * Math.sin(angle * 3 + t * 2.1)
-        + .05 * Math.cos(angle * 5 - t * 3.3)
+        + .23 * Math.cos((angle - furrowAngle) * 2)
+        + .075 * Math.sin(angle * 3 + t * 2.4)
+        + .035 * Math.cos(angle * 5 - t * 3.1)
       const tissue = 1
-        + .048 * Math.sin(angle * 7 + section * .22)
-        + .029 * Math.cos(angle * 11 - section * .17)
-        + .017 * Math.sin(angle * 17 + section * .09)
-      const striation = .016 * envelope * Math.sin(section * 1.74 + angle * 6.2)
-        + .010 * envelope * Math.cos(section * .63 - angle * 13)
-      const edgeFold = .085 * envelope * Math.sin(angle * 2 - t * 4.3)
-        + .034 * envelope * Math.sin(angle * 4 + t * 2.8)
-      const pinch = Math.max(.27, 1 - .61 * furrow - .28 * secondaryFurrow)
-      const localX = Math.cos(angle) * width * broadLobe * tissue * pinch + edgeFold
-      const localZ = Math.sin(angle) * depth * (1 + .17 * ridge)
-        - furrow * depth * .58
-        - secondaryFurrow * depth * .20
-        + ridge * depth * .12
-        + striation
-      const x = centerX + localX * Math.cos(twist) - localZ * Math.sin(twist)
-      const z = centerZ + localX * Math.sin(twist) + localZ * Math.cos(twist)
-      const y = centerY
-        + .085 * envelope * Math.sin(angle * 2 + section * .14)
-        + .031 * envelope * Math.sin(angle * 5 - section * .11)
-        + .014 * envelope * Math.cos(angle * 9 + section * .17)
-      positions.push(x, y, z)
+        + .035 * Math.sin(angle * 7 + section * .22)
+        + .020 * Math.cos(angle * 11 - section * .17)
+        + .011 * Math.sin(angle * 17 + section * .09)
+      const longitudinalRill = .014 * endTaper * Math.sin(section * 1.25 + angle * 5.6)
+        + .008 * endTaper * Math.cos(section * .58 - angle * 11.0)
+      const asymmetricFold = .055 * endTaper * Math.sin(angle * 2 - t * 3.7)
+        + .022 * endTaper * Math.sin(angle * 4 + t * 2.5)
+      const pinch = Math.max(.34, 1 - .54 * furrow - .18 * secondaryFurrow)
+
+      const localY = Math.cos(angle) * height * broadLobe * tissue * pinch + asymmetricFold
+      const localZ = Math.sin(angle) * depth * (1 + .16 * ridge)
+        - furrow * depth * .64
+        - secondaryFurrow * depth * .17
+        + ridge * depth * .10
+        + longitudinalRill
+
+      const y = centerY + localY * Math.cos(twist) - localZ * Math.sin(twist)
+      const z = centerZ + localY * Math.sin(twist) + localZ * Math.cos(twist)
+      positions.push(centerX, y, z)
       uvs.push(radialU, u)
       const color = livingMemoryVertexColor(section, radial, t, furrow, ridge, secondaryFurrow)
       colors.push(color.r, color.g, color.b)
@@ -129,20 +139,25 @@ function createLivingMemoryFold() {
     }
   }
 
-  const bottomCap = positions.length / 3
-  positions.push(-.12, -.815, .018)
-  colors.push(.020, .052, .050)
+  // The end rings already taper almost to points. Cap them at the actual section
+  // centers so the arrival camera cannot see the previous broad flat rectangular
+  // cut while the mesh remains watertight.
+  const startCap = positions.length / 3
+  const start = sectionCenters[0]
+  positions.push(start.x, start.y, start.z)
+  colors.push(.070, .115, .100)
   uvs.push(.5, 0)
-  const topCap = positions.length / 3
-  positions.push(.11, .825, -.018)
-  colors.push(.055, .092, .078)
+  const endCap = positions.length / 3
+  const end = sectionCenters[sectionCenters.length - 1]
+  positions.push(end.x, end.y, end.z)
+  colors.push(.090, .132, .108)
   uvs.push(.5, 1)
 
   for (let radial = 0; radial < MEMORY_RENDER_RING_POINTS; radial += 1) {
     const next = (radial + 1) % MEMORY_RENDER_RING_POINTS
-    indices.push(bottomCap, next, radial)
-    const topRow = (MEMORY_RENDER_SECTIONS - 1) * MEMORY_RENDER_RING_POINTS
-    indices.push(topCap, topRow + radial, topRow + next)
+    indices.push(startCap, next, radial)
+    const endRow = (MEMORY_RENDER_SECTIONS - 1) * MEMORY_RENDER_RING_POINTS
+    indices.push(endCap, endRow + radial, endRow + next)
   }
 
   const geometry = new THREE.BufferGeometry()
@@ -155,11 +170,11 @@ function createLivingMemoryFold() {
   geometry.computeBoundingSphere()
   geometry.userData.focusMemoryRole = 'v272-single-connected-living-memory-fold'
   geometry.userData.focusMemoryTopology = 'closed-twisted-longitudinal-fold-with-deep-furrow'
-  geometry.userData.focusMemoryEnergy = 'dark-weathered-mineral-restrained-warm-cool-response'
+  geometry.userData.focusMemoryEnergy = 'weathered-mineral-restrained-warm-cool-response'
   geometry.userData.focusLiteralPixelRepair = 'v272-no-crystal-crown-no-card-stack'
   geometry.userData.focusSilhouetteRule = 'one-coherent-memory-phenomenon-not-discrete-objects'
   geometry.userData.focusSurfaceDensity = `${MEMORY_RENDER_SECTIONS}x${MEMORY_RENDER_RING_POINTS}-continuous-tactile-surface`
-  geometry.userData.focusLiteralPixelRefinement = 'camera-facing-primary-cleft-wide-asymmetric-fold-no-standing-boulder'
+  geometry.userData.focusLiteralPixelRefinement = 'v273-reclined-tapered-camera-facing-fold-no-flat-cap-no-standing-boulder'
   return geometry
 }
 
