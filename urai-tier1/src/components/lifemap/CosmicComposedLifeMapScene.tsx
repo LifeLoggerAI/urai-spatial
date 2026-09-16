@@ -15,6 +15,8 @@ import { LIFE_MAP_SELECTION_EVENT, readLifeMapSelection } from "./lifeMapSelecti
 // overview a data-derived vertical territory composition instead of dim horizontal bands.
 const DEFAULT_MANIFEST_ID = "replay-recovery-thread";
 const PHASE_MS = { departure: 620, travel: 980, approach: 880 } as const;
+const COSMIC_LAYOUT_VERSION = 3;
+const COSMIC_SEED_VERSION = 1;
 type Phase = "overview" | "departure" | "travel" | "approach" | "arrival";
 type WebGLState = "ready" | "lost" | "recovering" | "failed";
 type Point3 = [number, number, number];
@@ -24,14 +26,14 @@ function token(value: string | null, fallback = "") { return (value || fallback)
 function hash(value: string) { let h = 2166136261; for (let i = 0; i < value.length; i += 1) { h ^= value.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; }
 function seeded(index: number, salt: number) { const v = Math.sin(index * 91.317 + salt * 13.77) * 43758.5453; return v - Math.floor(v); }
 
-function cosmicPoint(node: LifeMapNode, index: number): Point3 {
-  const seed = hash(`${node.id}:${node.eraId || "era"}:${node.clusterId || node.type}:${index}`);
+function cosmicPoint(node: LifeMapNode, _index: number): Point3 {
+  const seed = hash(`v${COSMIC_LAYOUT_VERSION}:s${COSMIC_SEED_VERSION}:${node.id}:${node.eraId || "era"}:${node.clusterId || node.type}`);
   const u = seeded(seed, 2.17);
   const v = seeded(seed, 4.81);
   const w = seeded(seed, 8.33);
   const arm = seed % 4;
   const radius = 6.6 + Math.pow(u, .72) * 17.5;
-  const angle = arm * Math.PI * .5 + v * 1.54 + radius * .072 + (index % 3) * .19;
+  const angle = arm * Math.PI * .5 + v * 1.54 + radius * .072 + (seeded(seed, 17.41) - .5) * .38;
   const originalBiasX = THREE.MathUtils.clamp(node.position[0], -8, 8) * .23;
   const originalBiasY = THREE.MathUtils.clamp(node.position[1], -5, 5) * .19;
   const x = Math.cos(angle) * radius * (1.08 + .13 * Math.sin(angle * 1.7)) + originalBiasX + (w - .5) * 2.2;
@@ -301,7 +303,7 @@ function SelectedTravelWeather({ node, index, phase }: { node: LifeMapNode; inde
       <NebulaVeil position={departureBridge.right} scale={[52, 33]} rotation={-.29} colors={["#1d5365", "#71594d"]} opacity={.46} seed={12.83} />
       <NebulaVeil position={departureBridge.deep} scale={[66, 38]} rotation={.10} colors={["#163d53", "#545b6c"]} opacity={.38} seed={13.47} />
     </group> : null}
-    <SelectedMemoryFormation point={point} aura={node.aura} phase={phase} index={index} />
+    <SelectedMemoryFormation point={point} aura={node.aura} phase={phase} index={hash(node.id) % 997} />
     <NebulaVeil position={[point[0] - 9, point[1] + 5, point[2] - 6]} scale={[52, 30]} rotation={-.25} colors={["#1b5365", "#76635a"]} opacity={strength * .76} seed={3.11} />
     <NebulaVeil position={[point[0] + 10, point[1] - 5, point[2] - 11]} scale={[56, 33]} rotation={.21} colors={["#1a4d60", "#64586a"]} opacity={strength * .70} seed={4.37} />
     <NebulaVeil position={[point[0] - 3, point[1] - 1, point[2] - 21]} scale={[70, 38]} rotation={-.09} colors={["#17485a", "#705b55"]} opacity={strength * .64} seed={5.73} />
