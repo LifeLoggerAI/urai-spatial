@@ -6,11 +6,17 @@ type PlaceReplayPageProps = {
   params: Promise<{
     placeId: string
   }>
+  searchParams?: Promise<{
+    demo?: string | string[]
+  }>
 }
 
-export default async function PlaceReplayPage({ params }: PlaceReplayPageProps) {
+export default async function PlaceReplayPage({ params, searchParams }: PlaceReplayPageProps) {
   const { placeId } = await params
-  const resolved = await resolveMemoryPlace(placeId)
+  const query = searchParams ? await searchParams : undefined
+  const explicitDemo = query?.demo === '1'
+  const context = explicitDemo ? { source: 'demo' as const } : undefined
+  const resolved = await resolveMemoryPlace(placeId, context)
 
   if (!resolved.ok) {
     return (
@@ -29,5 +35,9 @@ export default async function PlaceReplayPage({ params }: PlaceReplayPageProps) 
     )
   }
 
-  return <PlaceReplayScene place={resolved.place} objects={await listMemoryPlaceObjects(resolved.place.id)} />
+  return (
+    <div data-place-replay-authority={explicitDemo ? 'explicit-disclosed-demo' : 'validated-personalized-source'}>
+      <PlaceReplayScene place={resolved.place} objects={await listMemoryPlaceObjects(resolved.place.id, context)} />
+    </div>
+  )
 }
