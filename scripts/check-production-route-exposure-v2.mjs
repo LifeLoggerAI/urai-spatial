@@ -102,7 +102,7 @@ for (const token of [
   "entryPortal: 'focus-memory-aperture'",
   'replayManifestId: memory.replayManifest.id',
   'requestUraiWorldReturn()',
-  'aria-label={`Open Replay for ${memory.title}`}',
+  'aria-label={`Enter Replay for ${memory.title}`}',
   'No personal memory is displayed in this neutral observatory.',
   'data-chamber-state={chamberState}',
 ]) {
