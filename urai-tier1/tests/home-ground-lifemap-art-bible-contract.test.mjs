@@ -33,12 +33,13 @@ test('Home is a visible-Avatar cinematic threshold with the living-memory Orb, p
     'event.point.clone()',
   ]) has(currentHome, marker)
 
-  assert.match(currentHome, /function\s+VisibleHomeAvatar\s*\(/)
-  assert.match(currentHome, /<VisibleHomeAvatar\s*\/>/)
+  assert.match(currentHome, /function\s+VisibleHomeAvatar\s*\(\{ reducedMotion \}/)
+  assert.match(currentHome, /<VisibleHomeAvatar reducedMotion=\{reducedMotion\} \/>/)
+  assert.match(currentHome, /const idle = actions\.idle_breath/)
   assert.match(currentHome, /setLoop\(THREE\.LoopOnce, 1\)/)
   assert.match(currentHome, /clampWhenFinished = true/)
   assert.doesNotMatch(currentHome, /first-person-viewpoint-no-avatar|privacy-preserving-first-person/)
-  assert.doesNotMatch(currentHome, /THREE\.LoopRepeat\s*,\s*Infinity/)
+  assert.doesNotMatch(currentHome, /next\.reset\(\)\.setLoop\(THREE\.LoopRepeat\s*,\s*Infinity\)/)
   assert.doesNotMatch(currentHome, /stepEmbodiedMotion|useMovementInput|MobileMovementPad/)
   assert.doesNotMatch(currentHome, /nearby==='ground'|nearby === 'ground'/)
   assert.doesNotMatch(currentHome, /data-home-movement="walk-keyboard-click-touch"/)
@@ -65,7 +66,7 @@ test('Home sky is the canonical broad Life Map threshold and localized Home-side
 test('Home runtime exposes the visible Avatar and governed Orb candidate without restoring portal-hub or locomotion ownership', () => {
   assert.match(assetHome, /cinematic-home-ground-threshold-convergence/)
   assert.match(assetHome, /continuous-lived-physical-world/)
-  assert.match(assetHome, /home-physical-world home-grounded-companion home-life-map-sky-threshold/)
+  assert.match(assetHome, /home-physical-world home-visible-avatar home-living-memory-orb home-life-map-sky-threshold/)
   assert.match(currentHome, /home-visible-user-avatar/)
   assert.match(currentHome, /home-living-memory-orb/)
   assert.doesNotMatch(assetHome, /HOME_GROUND|HOME_SPAWN|stagePortalLifecycle|PortalDestination/)
