@@ -38,7 +38,7 @@ const fileNeedles = {
     'data-urai-home-runtime=',
     'data-testid="urai-home-accessible-fallback"',
     'aria-label="Open Life Map directly"',
-    "href: '/life-map/'",
+    "requestUraiWorldTravel({ destination: 'life-map', href: '/life-map/?from=home-sky', entryPortal: 'home-sky', cameraCheckpoint: 'home-sky-ascent-complete' })",
   ],
   'src/spatial/lifemap/SpatialLifeMapCanonical.tsx': [
     'data-testid="urai-r3f-canonical-lifemap"',
