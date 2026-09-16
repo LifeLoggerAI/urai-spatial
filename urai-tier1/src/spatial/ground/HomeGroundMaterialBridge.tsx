@@ -5,6 +5,7 @@ import { useGLTF } from '@react-three/drei'
 import { useEffect, useMemo, useRef, type MutableRefObject } from 'react'
 import * as THREE from 'three'
 import { clone as cloneSkeleton } from 'three/addons/utils/SkeletonUtils.js'
+import { requestHapticCue } from '@/spatial/haptics/HapticRuntime'
 import type { GroundDescentPhase } from './groundTransitionTimeline'
 
 type TargetRef = MutableRefObject<{ point: THREE.Vector3; normal?: THREE.Vector3 } | null>
@@ -68,6 +69,7 @@ export function HomeGroundMaterialBridge({ phase, target, reducedMotion }: { pha
   const { scene } = useThree()
   const root = useRef<THREE.Group>(null)
   const shell = useRef<THREE.MeshPhysicalMaterial>(null)
+  const lastPhase = useRef<GroundDescentPhase | null>(null)
   const rock01 = useGLTF(ROCK_01)
   const rock02 = useGLTF(ROCK_02)
   const leftRock = useMemo(() => cloneNormalizedRock(rock01.scene), [rock01.scene])
@@ -77,6 +79,12 @@ export function HomeGroundMaterialBridge({ phase, target, reducedMotion }: { pha
     rootGeometry([[1.2,.28,.55],[.72,.14,.28],[.25,-.02,-.22],[-.28,-.18,-.9],[-.78,-.34,-1.48]], .034),
     rootGeometry([[-.7,.52,-.3],[-.3,.22,-.46],[.02,.03,-.72],[.35,-.2,-1.15],[.62,-.38,-1.72]], .026),
   ], [])
+
+  useEffect(() => {
+    if (phase === lastPhase.current) return
+    lastPhase.current = phase
+    if (phase === 'ground-surface-crossing') requestHapticCue('ground-crossing', 'home-ground-material-bridge')
+  }, [phase])
 
   useEffect(() => () => {
     disposeRock(leftRock)
@@ -109,7 +117,7 @@ export function HomeGroundMaterialBridge({ phase, target, reducedMotion }: { pha
     }
   })
 
-  return <group ref={root} visible={false} name="home-ground-physical-material-bridge" userData={{ semanticOwner: 'ground-material-crossing', visualLanguage: 'soil-root-mineral-scanned-rock-no-portal' }}>
+  return <group ref={root} visible={false} name="home-ground-physical-material-bridge" userData={{ semanticOwner: 'ground-material-crossing', visualLanguage: 'soil-root-mineral-scanned-rock-no-portal', hapticCue: 'ground-crossing' }}>
     <mesh position={[0,-.34,-.42]} scale={[1.3,.72,1.45]} raycast={() => null}>
       <sphereGeometry args={[1,32,20]} />
       <meshPhysicalMaterial ref={shell} side={THREE.BackSide} color="#5b4d3d" roughness={.98} metalness={0} transparent opacity={.18} depthWrite={false} envMapIntensity={.12} />
