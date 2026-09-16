@@ -7,6 +7,7 @@ const policySource = fs.readFileSync(new URL('../src/spatial/lived-world/reconst
 const fieldSource = fs.readFileSync(new URL('../src/spatial/lived-world/globalEmotionalField.ts', import.meta.url), 'utf8')
 const contextSource = fs.readFileSync(new URL('../src/spatial/lived-world/groundMemoryContext.ts', import.meta.url), 'utf8')
 const boundarySource = fs.readFileSync(new URL('../src/app/ground/GroundPersonalizationBoundary.tsx', import.meta.url), 'utf8')
+const geographicBridge = fs.readFileSync(new URL('../src/app/ground/GroundGeographicLivedWorldBridge.tsx', import.meta.url), 'utf8')
 const groundPage = fs.readFileSync(new URL('../src/app/ground/page.tsx', import.meta.url), 'utf8')
 const worldTypes = fs.readFileSync(new URL('../src/spatial/world/worldTypes.ts', import.meta.url), 'utf8')
 const worldEvents = fs.readFileSync(new URL('../src/spatial/world/worldEvents.ts', import.meta.url), 'utf8')
@@ -21,7 +22,7 @@ test('Lived World Graph is provenance-first and covers terrestrial life entities
   for (const marker of ['place', 'building', 'room', 'vehicle-place', 'route', 'object', 'person-presence', 'memory', 'event', 'era', 'environment', 'emotional-association']) {
     assert.ok(graphSource.includes(`'${marker}'`), `missing lived-world entity ${marker}`)
   }
-  for (const marker of ['confirmed', 'partial', 'unknown', 'sourceIds', 'confidence', 'userCorrectionRevision', 'autonomousDialogueAllowed: false']) assert.ok(graphSource.includes(marker))
+  for (const marker of ['confirmed', 'partial', 'unknown', 'sourceIds', 'confidence', 'userCorrectionRevision', 'autonomousDialogueAllowed: false', 'device-location']) assert.ok(graphSource.includes(marker))
   assert.ok(graphSource.includes('CONFIRMED_WITHOUT_SOURCE'))
   assert.ok(graphSource.includes('SENSITIVE_INFERENCE_REQUIRES_C4'))
 })
@@ -62,6 +63,22 @@ test('Passport has dedicated fail-closed C8 public-good consent without activati
   for (const forbidden of ['individual emotion', 'exact location', 'raw voice', 'raw transcript', 'raw memory', 'movement trail', 'identifiable social graph', 'biometric template']) {
     assert.ok(publicGoodFunctions.includes(`'${forbidden}'`) || publicGoodFunctions.includes(forbidden), `missing forbidden contribution ${forbidden}`)
   }
+})
+
+test('existing geographic pins can seed only partial C3-gated place anchors without new collection', () => {
+  assert.ok(groundPage.includes('GroundGeographicLivedWorldBridge'))
+  assert.ok(geographicBridge.includes('It performs no location request'))
+  assert.ok(geographicBridge.includes("sourceType: 'device-location'"))
+  assert.ok(geographicBridge.includes("placeType: 'other'"))
+  assert.ok(geographicBridge.includes("fidelity: 'partial'"))
+  assert.ok(geographicBridge.includes("requiredPurposes: ['location.context']"))
+  assert.ok(geographicBridge.includes("consentTiers: ['C3']"))
+  assert.ok(geographicBridge.includes("policy.domains.location.mode !== 'denied'"))
+  assert.ok(geographicBridge.includes("policy.domains.location.mode !== 'paused'"))
+  assert.ok(geographicBridge.includes('clearBridgeGraph()'))
+  assert.equal(geographicBridge.includes('navigator.geolocation'), false)
+  assert.equal(geographicBridge.includes("placeType: 'home'"), false)
+  assert.equal(geographicBridge.includes("fidelity: 'confirmed'"), false)
 })
 
 test('Ground memory handoff preserves place, memory, provenance, fidelity and exact return origin', () => {
