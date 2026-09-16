@@ -11,10 +11,16 @@ const has = (source, marker) => assert.equal(source.includes(marker), true, `mis
 
 const homeGraph = read('src/app/AssetDrivenHomeWorld.tsx')
 const homeRuntime = read('src/spatial/layout/HomeWorldProduction.tsx')
-const activeHomeRuntime3d = read('src/spatial/layout/HomeWorldProductionV223.tsx')
+const activeHomeRuntime3d = read('src/spatial/layout/HomeWorldProductionGroundCanon.tsx')
+const predecessorHome = read('src/spatial/layout/HomeWorldProductionV223.tsx')
 const homeRuntime3d = read('src/spatial/layout/HomeWorldProductionV70.tsx')
 const homeArt = read('src/spatial/layout/HomeWorldProductionV76.tsx')
-const ground = read('src/app/GroundSpatialWorldClean.tsx')
+const ground = read('src/app/GroundSpatialWorldCanon.tsx')
+const groundRoute = read('src/app/ground/page.tsx')
+const groundContract = read('src/spatial/world/homeGroundContract.ts')
+const gateway = read('src/spatial/world/GroundGateway.tsx')
+const worldEvents = read('src/spatial/world/worldEvents.ts')
+const navigationCss = read('src/spatial/world/worldNavigation.css')
 const lifeMap = read('src/spatial/lifemap/SpatialLifeMapCanonical.tsx')
 const travel = read('src/spatial/navigation/EmbodiedNavigation.tsx')
 
@@ -23,73 +29,162 @@ test('shared movement kernel preserves stable embodied controls and bounded moti
   assert.doesNotMatch(travel, /embodied-motion-kernel-v66|homeDistanceLifeMap|homeDistanceGround|spawnX\s*=\s*4\.45/)
 })
 
-test('Home keeps one V223 cinematic Canvas owner while predecessor art remains historical provenance', () => {
-  has(homeRuntime, 'HomeWorldProductionV223 as HomeWorldProduction')
-  has(activeHomeRuntime3d, 'export function HomeWorldProductionV223')
-  has(activeHomeRuntime3d, 'URAI_ORB_STATE_EVENT')
-  has(activeHomeRuntime3d, 'resolveOrbSensoryOutput')
-  has(activeHomeRuntime3d, 'data-home-visible-world="cinematic-lived-world-threshold"')
-  has(activeHomeRuntime3d, 'data-home-embodied-self="visible-cinematic-avatar"')
-  has(activeHomeRuntime3d, 'data-home-movement="camera-look-world-surface-selection"')
-  has(activeHomeRuntime3d, 'data-home-ground-entry="physical-world-surface"')
-  has(activeHomeRuntime3d, 'data-home-life-map-entry="visible-sky-broad-interaction"')
+test('Home uses the canonical overview owner while V223 remains predecessor provenance', () => {
+  has(homeRuntime, 'HomeWorldProductionGroundCanon as HomeWorldProduction')
+  has(activeHomeRuntime3d, 'export function HomeWorldProductionGroundCanon')
+  for (const marker of [
+    'data-home-visible-world="cinematic-lived-world-threshold"',
+    'data-home-embodied-self="visible-cinematic-avatar"',
+    'data-home-movement="camera-look-world-surface-selection"',
+    'data-home-ground-entry="physical-world-surface"',
+    'data-home-life-map-entry="visible-sky-broad-interaction"',
+    'data-home-avatar-entry="visible-user-avatar"',
+    'data-home-ground-transition-owner="home-camera-rig-only"',
+    'createGroundEntryCheckpoint',
+    'writeGroundEntryCheckpoint',
+    'GROUND_PREPARE',
+    'GROUND_DESCENT',
+    'GROUND_EYE_HEIGHT = 1.70',
+    'HomeVisualAuthority',
+  ]) has(activeHomeRuntime3d, marker)
   assert.equal((activeHomeRuntime3d.match(/<Canvas/g) ?? []).length, 1)
   assert.doesNotMatch(activeHomeRuntime3d, /stepEmbodiedMotion|useMovementInput|MobileMovementPad/)
-  assert.doesNotMatch(homeArt, /<Canvas/)
+  assert.match(activeHomeRuntime3d, /router\.push\('\/ground\/\?from=home-ground&cameraCheckpoint=ground-first-person-arrival'\)/)
+  assert.doesNotMatch(activeHomeRuntime3d, /hit\.y - .*\.34/)
+  assert.match(predecessorHome, /export function HomeWorldProductionV223/)
   assert.doesNotMatch(homeGraph, /PRODUCTION CERTIFIED|retained-pixel-pass|pixel-certified/)
 })
 
-test('V185 preserves embodied authority while repairing contour terrain, camera clipping, weak destinations and weak Orb presence', () => {
+test('Home Ground contract carries deterministic selected-point continuity and unwind timings', () => {
+  for (const marker of [
+    "HOME_GROUND_CONTRACT_VERSION = 'urai-home-ground-canon-1'",
+    'descentMs: 1800',
+    'firstPersonTakeoverMs: 1620',
+    'unwindMs: 1650',
+    'groundCameraReleaseMs: 740',
+    'createGroundEntryCheckpoint',
+    'normalizedSurfaceUV',
+    'groundSpawn',
+    'writeHomeReturnCheckpoint',
+    'GROUND_UNWIND_EVENT',
+    'minZ: -19.8',
+    'maxZ: 6.4',
+  ]) has(groundContract, marker)
+})
+
+test('Ground is first-person, mapped from Home, explorable, collision-aware and unwindable', () => {
+  for (const marker of [
+    'function GroundWorld(',
+    'function FirstPersonRig(',
+    'function UnwindCamera(',
+    'stepEmbodiedMotion({',
+    'useMovementInput({',
+    "const EYE_HEIGHT = 1.70",
+    'const WALK_SPEED = 1.85',
+    'const MAX_STEP_HEIGHT = .28',
+    'const MAX_WALK_SLOPE_DEGREES = 42',
+    'COLLISION_OBSTACLES',
+    'readGroundEntryCheckpoint()',
+    'data-ground-exploration="first-person"',
+    'data-ground-camera="eye-level-terrain-following"',
+    'data-ground-movement="hybrid-continuous-target-walk"',
+    'data-ground-collision="terrain-slope-step-and-authored-obstacles"',
+    "requestGroundUnwind('return-control')",
+    "beginUnwind('escape')",
+  ]) has(ground, marker)
+  assert.doesNotMatch(ground, /router\.push\("\/home\?returnFrom=ground"\)|GroundPhysicalArchitecture|ground-destination-compass/)
+  has(groundRoute, 'GroundSpatialWorldCanon')
+  assert.doesNotMatch(groundRoute, /GroundFocusContainment|GroundCheckpointRestoreSignal|GroundSpatialWorldClean/)
+})
+
+test('Ground readiness waits for both the camera and the physical core world', () => {
+  for (const marker of [
+    'const [worldReady, setWorldReady] = useState(false)',
+    'const [cameraReady, setCameraReady] = useState(false)',
+    'const ready = worldReady && cameraReady',
+    'data-ground-world-ready={worldReady',
+    'data-ground-camera-ready={cameraReady',
+    'onReady={() => setWorldReady(true)}',
+    'onReady={() => setCameraReady(true)}',
+  ]) has(ground, marker)
+})
+
+test('Ground boundaries become physical terrain and scanned geology before the safety clamp', () => {
+  for (const marker of [
+    'const sideRise = THREE.MathUtils.smoothstep',
+    'const deepRise = THREE.MathUtils.smoothstep',
+    'const rearRise = THREE.MathUtils.smoothstep',
+    'function BoundaryGeology()',
+    'ground-physical-boundary-geology',
+    'terrain-rise-plus-scanned-geology-no-invisible-wall-first',
+    'data-ground-boundary="terrain-rise-scanned-geology-before-safety-clamp"',
+  ]) has(ground, marker)
+  assert.doesNotMatch(ground, /function BoundaryRidges|<boxGeometry/)
+})
+
+test('Ground owns a summonable physical Orb instead of a permanent camera HUD follower', () => {
+  for (const marker of [
+    'function GroundOrbPresence(',
+    'ground-summoned-physical-orb',
+    "derivedVisualLanguage: 'v288-grounded-biomorphic-reliquary'",
+    'ground-orb-contact-field',
+    'data-ground-orb={orbVisible',
+    "aria-label={orbVisible ? 'Dismiss Ground Orb' : 'Summon Ground Orb'}",
+    'requestUraiWorldOrbOpen()',
+  ]) has(ground, marker)
+  assert.doesNotMatch(ground, /position:\s*fixed[^\n]*ground-summoned-physical-orb/)
+})
+
+test('Ground exposes semantic nearby-place discovery with haptic parity', () => {
+  for (const marker of [
+    'function directionPhrase(',
+    'const describeSurroundings = useCallback',
+    "requestHapticCue('select-object', 'ground-surroundings')",
+    'aria-label="Describe nearby Ground places"',
+    "requestHapticCue('enter-place', 'ground-ready')",
+    "requestHapticCue('return-home', 'ground-unwind')",
+  ]) has(ground, marker)
+})
+
+test('every Ground Return path converges on the canonical unwind owner', () => {
+  for (const marker of [
+    "pathname === '/ground' || pathname.startsWith('/ground/')",
+    "window.dispatchEvent(new CustomEvent('urai:ground-unwind'",
+    "reason: 'accessible-control'",
+  ]) has(worldEvents, marker)
+  assert.match(gateway, /router\.push\(`\$\{target\.pathname\}\$\{target\.search\}`\)/)
+  assert.doesNotMatch(gateway, /requestUraiWorldTravel/)
+})
+
+test('Ground gateway is semantic fallback only and old portal visuals are retired', () => {
+  has(gateway, 'data-ground-gateway="semantic-fallback-only"')
+  has(gateway, 'data-pointer-owner="false"')
+  assert.doesNotMatch(gateway, /focus-ring|ground-gateway__surface/)
+  assert.doesNotMatch(navigationCss, /urai-ground-aperture-open|repeating-radial-gradient|radial-gradient\(ellipse at 50% 76%/)
+  assert.match(navigationCss, /Home <-> Ground owns its physical camera choreography/)
+})
+
+test('V185 predecessor art provenance remains reproducible after successor advancement', () => {
   for (const marker of [
     'function SculptedCanyonGround(', 'home-v125-sculpted-canyon-ground',
     'continuous-weathered-canyon-camera-safe-destination-basins-soft-strata-no-contour-staircase',
     'home-v126-continuous-walkable-terrace-network',
-    'governed-landscape-provenance-retained-nonrendered-single-ground-owner',
     'legacy-alcove-meshes-remain-disabled-no-gate-facade',
-    'edge-scans-outside-primary-frustum-no-pasted-islands',
-    'function FramedFissure(', 'terrain-flush-readable-destination-cut-clear-camera-corridor-no-door-no-ring',
-    'camera-safe-basin-wide-ground-level-signal-place-no-upright-gate', 'home-v175-${side}-terrain-signal-veins',
-    'function weatheredSanctuaryMassGeometry(', 'home-v149-weathered-rift-threshold-sanctuary',
-    'detached-mass-family-retained-as-nonrendered-provenance-no-piles',
-    'function ApseAndOrbCradle(', 'home-v126-layered-apse-orb-cradle',
-    'detached-apse-masses-retained-nonrendered-no-pedestal',
-    'function LivingOrb(', 'home-v126-apse-integrated-orb', 'home-v126-orb-memory-motes',
-    'home-v154-orb-memory-depth-motes', 'home-v174-orb-memory-nucleus-motes', 'home-v179-orb-memory-heart-motes',
-    'single-connected-folded-memory-mantle-with-state-specific-silhouette-timing-emission-and-surface-response',
+    'function LivingOrb(', 'home-v126-apse-integrated-orb',
     'v185-continuous-weathered-canyon-camera-safe-destination-basins-large-contained-memory-orb-no-runway',
-    'remove-contour-staircase-carve-camera-safe-destination-basins-brighten-world-sky-enlarge-point-orb-hide-solid-seed',
   ]) has(homeArt, marker)
-  assert.match(homeArt, /name="home-v154-inlaid-stone-approach"[^>]*visible=\{false\}/)
-  assert.match(homeArt, /name="home-v131-passive-signal-arrival-path"[^>]*visible=\{false\}/)
-  assert.match(homeArt, /<primitive object=\{environment\} visible=\{false\} \/>/)
-  assert.match(homeArt, /<primitive object=\{thresholds\} visible=\{false\} \/>/)
-  assert.match(homeArt, /name="home-v126-apse-integrated-orb"[^>]*scale=\{motion\.scale\}/)
-  assert.match(homeArt, /name="home-v182-orb-faceted-mineral-seed"[^>]*visible=\{false\}/)
-  assert.match(homeArt, /const ORB = new THREE\.Vector3\(-0\.18, 2\.18, -6\.90\)/)
-  assert.doesNotMatch(homeArt, /function canyonShelfGeometry|function CanyonShelf|home-v164-\$\{side\}-continuous-canyon-shelf/)
   assert.doesNotMatch(homeArt, /<ringGeometry|<torusGeometry|<RoundedBox/)
   assert.doesNotMatch(homeArt, /retained-pixel-pass|pixel-certified|PRODUCTION CERTIFIED/)
 })
 
-test('Historical V70 telemetry and destination authority remain reproducible after successor advancement', () => {
+test('Historical V70 telemetry and destination authority remain reproducible', () => {
   for (const marker of ['const ORB = new THREE.Vector3(','const GROUND = new THREE.Vector3(','const LIFE_MAP = new THREE.Vector3(','URAI_ORB_STATE_EVENT','resolveOrbSensoryOutput','requestUraiWorldTravel',"destination: 'infrastructure-hub'","destination: 'life-map'",'requestUraiWorldOrbOpen']) has(homeRuntime3d, marker)
 })
 
-test('Ground and Life Map keep their canonical embodied contracts', () => {
-  for (const marker of [
-    'function LivedGroundWorld(',
-    'function FirstPersonPlayer(',
-    'stepEmbodiedMotion({',
-    'useMovementInput({',
-    'data-ground-exploration="first-person"',
-    'data-ground-camera="eye-level-terrain-following"',
-    'data-ground-collision="visible-terrain-heightfield"',
-    'data-ground-private-location-mounted="false"',
-  ]) has(ground, marker)
-  assert.doesNotMatch(ground, /GroundPhysicalArchitecture|ground-destination-compass|router\.push\(destination\.href\)/)
+test('Life Map keeps its independent canonical embodied contract', () => {
   for (const marker of ['SpatialLifeMapCanonical','LifeMapRouteBoundary','requestUraiWorldReturn','data-private-memory-mounted="false"','data-life-map-access={mode}']) has(lifeMap, marker)
 })
 
-test('travel infrastructure keeps movement input and virtual controls for Ground and other embodied realms', () => {
+test('travel infrastructure keeps movement input and virtual controls for embodied realms', () => {
   for (const marker of ['useMovementInput','stepEmbodiedMotion','setVirtualMovement','clearVirtualMovement']) has(travel, marker)
 })
