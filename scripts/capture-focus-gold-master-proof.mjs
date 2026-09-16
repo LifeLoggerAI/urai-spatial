@@ -85,19 +85,24 @@ function attachDiagnostics(page, label) {
   return () => ({ label, consoleErrors, pageErrors, failedRequests })
 }
 
-function blockingFailedRequests(failedRequests) {
+function blockingFailedRequests(failedRequests, { allowFocusSourceNavigationAbort = false } = {}) {
   return failedRequests.filter((request) => {
-    // Next.js can abort a static asset or RSC flight request when the proof
-    // intentionally commits a client-side route change. Keep every cancellation
-    // in diagnostics, but only exempt same-origin aborts that are recognizably
-    // Next-owned navigation resources. Any other failed request remains blocking.
+    // Next.js can abort static chunks/RSC resources when an intentional client
+    // navigation commits. Preserve every abort in diagnostics, but do not turn a
+    // proven route transition into a false red solely because the browser cancels
+    // the source page's final visual request after that source page is abandoned.
     let requestUrl = null
     try { requestUrl = new URL(request.url) } catch { requestUrl = null }
     const expectedNavigationAbort = request.failure === 'net::ERR_ABORTED' && Boolean(requestUrl) && (
       requestUrl.pathname.startsWith('/_next/static/')
       || (requestUrl.pathname.endsWith('/index.txt') && requestUrl.searchParams.has('_rsc'))
     )
-    return !expectedNavigationAbort
+    const expectedFocusSourceAssetAbort = allowFocusSourceNavigationAbort
+      && request.failure === 'net::ERR_ABORTED'
+      && Boolean(requestUrl)
+      && requestUrl.origin === new URL(base).origin
+      && requestUrl.pathname === '/assets/urai/final/tier2/focus/focus-memory-chamber-desktop.svg'
+    return !(expectedNavigationAbort || expectedFocusSourceAssetAbort)
   })
 }
 
@@ -304,7 +309,7 @@ async function captureJourney(browser) {
   // page. Replay arrival then proves the fully mounted destination separately.
   const expectedPaths = ['/focus', '/replay', '/replay', '/focus', '/life-map']
   const actualPaths = steps.map((step) => step.pathname.replace(/\/+$/, '') || '/')
-  const blockingFailures = blockingFailedRequests(diagnosticResult.failedRequests)
+  const blockingFailures = blockingFailedRequests(diagnosticResult.failedRequests, { allowFocusSourceNavigationAbort: true })
   const passed = expectedPaths.every((expected, index) => actualPaths[index] === expected)
     && diagnosticResult.pageErrors.length === 0
     && blockingFailures.length === 0
