@@ -23,6 +23,11 @@ test('shared movement kernel preserves stable embodied controls and bounded moti
   assert.doesNotMatch(travel, /embodied-motion-kernel-v66|homeDistanceLifeMap|homeDistanceGround|spawnX\s*=\s*4\.45/)
 })
 
+test('shared drag-look preserves click ownership until pointer motion proves a drag', () => {
+  for (const marker of ['DRAG_ACTIVATION_DISTANCE_PX = 4','Math.hypot(event.clientX - active.startX, event.clientY - active.startY)','if (distance < DRAG_ACTIVATION_DISTANCE_PX) return','active.captured = true']) has(travel, marker)
+  assert.doesNotMatch(travel, /drag\.current = \{ pointerId: event\.pointerId, x: event\.clientX, y: event\.clientY \}\s*\n\s*try \{ event\.currentTarget\.setPointerCapture/)
+})
+
 test('Home keeps one V223 first-person cinematic Canvas owner while predecessor art remains historical provenance', () => {
   has(homeRuntime, 'HomeWorldProductionV223 as HomeWorldProduction')
   has(activeHomeRuntime3d, 'export function HomeWorldProductionV223')
@@ -34,8 +39,6 @@ test('Home keeps one V223 first-person cinematic Canvas owner while predecessor 
   has(activeHomeRuntime3d, 'data-home-ground-entry="physical-world-surface"')
   has(activeHomeRuntime3d, 'data-home-life-map-entry="visible-sky-broad-interaction"')
   assert.equal((activeHomeRuntime3d.match(/<Canvas/g) ?? []).length, 1)
-  // Reject live avatar ownership while permitting compatibility strings that exist only
-  // to retire/hide historical avatar geometry from the current first-person runtime.
   assert.doesNotMatch(activeHomeRuntime3d, /function\s+VisibleUserAvatar\s*\(|<VisibleUserAvatar\b/)
   assert.doesNotMatch(activeHomeRuntime3d, /data-home-embodied-self=["']visible-cinematic-avatar["']|data-home-camera-mode=["']cinematic-third-person["']|name=["']urai-home-embodied-avatar["']/)
   assert.doesNotMatch(activeHomeRuntime3d, /stepEmbodiedMotion|useMovementInput|MobileMovementPad/)

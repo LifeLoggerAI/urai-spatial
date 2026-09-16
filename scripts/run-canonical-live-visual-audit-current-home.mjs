@@ -19,6 +19,7 @@ for (const [label, marker] of [
   ['Focus fixture identity expectation', `const expectedFixtureMemoryId = 'demo:quiet-reset'`],
   ['retired Mirror audit marker', `markers: ['Mirror does not judge.']`],
   ['legacy Ground route', `{ id: 'ground', path: '/ground/', selector: '.ground-spatial-root', markers: ['URAI Ground', 'Private infrastructure, embodied.'] },`],
+  ['legacy Life Map disclosure', `{ id: 'life-map', path: '/life-map/?demo=1&manifestId=replay-recovery-thread&overview=1', selector: '[data-testid="urai-true-3d-life-map"]', markers: ['Disclosed sample universe'] },`],
   ['legacy Life Map click', `await focus.click()`],
 ]) {
   if (!original.includes(marker)) throw new Error(`${label} is not present in the canonical audit authority`)
@@ -35,8 +36,15 @@ patched = replaceOnce(
 patched = replaceOnce(
   patched,
   `{ id: 'ground', path: '/ground/', selector: '.ground-spatial-root', markers: ['URAI Ground', 'Private infrastructure, embodied.'] },`,
-  `{ id: 'ground', path: '/ground/', selector: '[data-testid="urai-ground-private-workforce-world"]', markers: [] },`,
+  `{ id: 'ground', path: '/ground/', selector: '[data-testid="urai-ground-lived-world"]', markers: [] },`,
   'current Ground structural owner',
+)
+
+patched = replaceOnce(
+  patched,
+  `{ id: 'life-map', path: '/life-map/?demo=1&manifestId=replay-recovery-thread&overview=1', selector: '[data-testid="urai-true-3d-life-map"]', markers: ['Disclosed sample universe'] },`,
+  `{ id: 'life-map', path: '/life-map/?demo=1&manifestId=replay-recovery-thread&overview=1', selector: '[data-testid="urai-true-3d-life-map"]', markers: ['Disclosed sample · not your memories'] },`,
+  'current Life Map disclosed sample copy',
 )
 
 patched = replaceOnce(
@@ -94,11 +102,13 @@ const oldGroundSettlement = `  if (route.id === 'ground') {
   }`
 const currentGroundSettlement = `  if (route.id === 'ground') {
     await page.waitForFunction(() => {
-      const root = document.querySelector('[data-testid="urai-ground-private-workforce-world"]')
+      const root = document.querySelector('[data-testid="urai-ground-lived-world"]')
       const canvas = root?.querySelector('canvas')
       const rect = canvas?.getBoundingClientRect()
       return root instanceof HTMLElement
-        && root.dataset.groundVisualOwner === 'shared-continuity-architecture'
+        && root.dataset.groundRuntimeOwner === 'first-person-lived-world'
+        && root.dataset.groundVisualOwner === 'physical-lived-world'
+        && root.dataset.groundExploration === 'first-person'
         && canvas instanceof HTMLCanvasElement
         && Boolean(rect && rect.width >= 240 && rect.height >= 240)
         && canvas.width > 0
@@ -178,9 +188,12 @@ patched = replaceOnce(
 
 for (const [label, marker] of [
   ['Home current visible-world authority', `data-home-visible-world') === 'cinematic-lived-world-threshold'`],
-  ['Ground current structural owner', `data-testid="urai-ground-private-workforce-world"`],
-  ['Ground current visual owner', `groundVisualOwner === 'shared-continuity-architecture'`],
+  ['Ground current structural owner', `data-testid="urai-ground-lived-world"`],
+  ['Ground current runtime owner', `groundRuntimeOwner === 'first-person-lived-world'`],
+  ['Ground current visual owner', `groundVisualOwner === 'physical-lived-world'`],
+  ['Ground first-person authority', `groundExploration === 'first-person'`],
   ['Ground canvas geometry', `rect.width >= 240 && rect.height >= 240`],
+  ['Life Map current sample disclosure', `Disclosed sample · not your memories`],
   ['Replay current spatial owner', `data-replay-spatial-owner="r3f-memory-theater"`],
   ['Replay fixture memory identity', `data-memory-id') === 'demo:quiet-reset'`],
   ['Replay manifest identity', `data-manifest-id') === 'replay-recovery-thread'`],
@@ -193,6 +206,8 @@ for (const [label, marker] of [
 }
 if (patched.includes(`root?.getAttribute('data-ground-ready') === 'true'`)) throw new Error('stale Ground readiness marker survived current visual audit')
 if (patched.includes('Private infrastructure beneath the living world')) throw new Error('stale Ground copy survived current visual audit')
+if (patched.includes('urai-ground-private-workforce-world')) throw new Error('retired Ground owner survived current visual audit')
+if (patched.includes('Disclosed sample universe')) throw new Error('retired Life Map disclosure survived current visual audit')
 
 await writeFile(runtimeUrl, patched, 'utf8')
 try {
