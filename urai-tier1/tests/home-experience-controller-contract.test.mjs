@@ -41,6 +41,7 @@ test('destination handoff persists only the validated semantic return frame befo
   assert.match(source, /persistHomeReturnFrame\(frame\)[\s\S]*onDestinationCommit\(destination, frame\.origin\)/)
   assert.match(source, /state\.pendingDestination !== destination/)
   assert.match(source, /frame\.kind !== 'destination'/)
+  assert.match(source, /frame\.destination !== destination/)
 })
 
 test('destination return is consumed from session bridge into reducer authority', () => {
@@ -48,7 +49,14 @@ test('destination return is consumed from session bridge into reducer authority'
   assert.match(source, /type: 'DESTINATION_RETURN'/)
 })
 
-test('Escape ignores editable text fields so Orb chat and forms keep native editing semantics', () => {
+test('Escape ignores editable text fields and yields modal ownership to Avatar Self View', () => {
   assert.match(source, /closest\('input,textarea,select,\[contenteditable="true"\]'\)/)
   assert.match(source, /event\.key !== 'Escape'/)
+  assert.match(source, /event\.defaultPrevented/)
+  assert.match(source, /querySelector\('\[data-home-layer="AVATAR_SELF_VIEW"\]'\)/)
+})
+
+test('browser Back follows semantic unwind and closes Self View only when that layer owns focus', () => {
+  assert.match(source, /window\.addEventListener\('popstate'/)
+  assert.match(source, /closeSelfView\(\)[\s\S]*return[\s\S]*escape\(\)/)
 })
