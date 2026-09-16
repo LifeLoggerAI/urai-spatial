@@ -1,15 +1,14 @@
 'use client'
 
-import { HomeOrbGroundedV288 } from '@/spatial/assets/HomeOrbGroundedV288'
-
 /**
  * Current Home visual convergence extension point.
  *
- * Historical V281 localized Ground/ascent overlays remain retired. The only
- * active repair mounted here is the accepted V288 grounded biomorphic Orb
- * reliquary, which is visual-only while the V223 Orb owner keeps semantic,
- * speech/VAD and pointer/touch interaction ownership.
+ * Historical V281 localized Ground/ascent overlays remain retired. V288 remains
+ * retained as the last certified Orb predecessor in source and visual-authority
+ * provenance, but it is no longer mounted into the current candidate scene.
+ * The authored living-memory Orb in HomeWorldProductionV223 owns current pixels,
+ * semantics, speech/VAD timing and pointer/touch interaction as one hierarchy.
  */
 export function HomeAAAVisualRepair() {
-  return <HomeOrbGroundedV288 />
+  return null
 }
