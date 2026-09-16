@@ -9,7 +9,6 @@ import styles from './OrbConversationPanel.module.css'
 import {
   emitOrbSpeechClock,
   ORB_RESPONSE_ANTICIPATION_MS,
-  type OrbSpeechClockDetail,
   type OrbSpeechSource,
 } from './orbSpeechClock'
 import {
@@ -146,9 +145,10 @@ export default function OrbConversationPanel() {
     if (typeof window === 'undefined' || voiceAudio.current !== audio) return false
     try {
       const context = new AudioContext()
+      voiceContext.current = context
       await context.resume()
       if (context.state !== 'running' || voiceAudio.current !== audio) {
-        await context.close().catch(() => undefined)
+        stopNaturalVoiceAnalysis()
         return false
       }
       const source = context.createMediaElementSource(audio)
@@ -157,7 +157,6 @@ export default function OrbConversationPanel() {
       analyser.smoothingTimeConstant = 0.42
       source.connect(analyser)
       analyser.connect(context.destination)
-      voiceContext.current = context
       voiceSource.current = source
       voiceAnalyser.current = analyser
       const samples = new Float32Array(analyser.fftSize)
@@ -308,14 +307,15 @@ export default function OrbConversationPanel() {
         audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
         video: false,
       })
+      micStream.current = stream
       const context = new AudioContext()
+      micContext.current = context
+      await context.resume()
       const source = context.createMediaStreamSource(stream)
       const analyser = context.createAnalyser()
       analyser.fftSize = 1024
       analyser.smoothingTimeConstant = 0.35
       source.connect(analyser)
-      micStream.current = stream
-      micContext.current = context
       micAnalyser.current = analyser
       micActiveRef.current = true
       setMicActive(true)
@@ -412,7 +412,7 @@ export default function OrbConversationPanel() {
           audio.onended = null
           audio.onerror = null
           audio.ontimeupdate = null
-          if (finishSpeech && speechStartedAt.current !== null) endSpeakingClock('natural', 'end')
+          if (speechStartedAt.current !== null) endSpeakingClock('natural', finishSpeech ? 'end' : 'cancel')
         }
 
         audio.onended = () => release(true)

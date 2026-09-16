@@ -144,3 +144,11 @@ test('Real microphone activity drives Listening and local VAD barge-in', () => {
   assert.match(conversation, /publishConversationState\('listening'\)/)
   assert.match(conversation, /Microphone audio is not uploaded or transcribed by this control/)
 })
+
+test('Orb audio lifecycle closes acquired resources and cancels truthful speech state on playback failure', () => {
+  assert.match(conversation, /const context = new AudioContext\(\)\s*voiceContext\.current = context\s*await context\.resume\(\)/)
+  assert.match(conversation, /if \(context\.state !== 'running' \|\| voiceAudio\.current !== audio\) \{\s*stopNaturalVoiceAnalysis\(\)/)
+  assert.match(conversation, /const stream = await navigator\.mediaDevices\.getUserMedia[\s\S]*?micStream\.current = stream\s*const context = new AudioContext\(\)\s*micContext\.current = context\s*await context\.resume\(\)/)
+  assert.match(conversation, /if \(speechStartedAt\.current !== null\) endSpeakingClock\('natural', finishSpeech \? 'end' : 'cancel'\)/)
+  assert.match(conversation, /catch \{\s*await stopMicrophone\(false\)/)
+})
