@@ -24,6 +24,7 @@ const tests = [
   'tests/firebase-hosting-recovery-contract.test.mjs',
   'tests/ground-transition-ownership-contract.test.mjs',
   'tests/ground-v92-coherent-hub-contract.test.mjs',
+  'tests/lived-world-core-reconstruction-contract.test.mjs',
   'tests/home-avatar-embodiment-state-contract.test.mjs',
   'tests/home-avatar-presentation-contract.test.mjs',
   'tests/home-experience-controller-contract.test.mjs',
