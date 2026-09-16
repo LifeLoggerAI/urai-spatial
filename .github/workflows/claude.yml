@@ -1,9 +1,6 @@
 name: Claude Code
 
 on:
-  push:
-    branches:
-      - claude-code-github-main-20260916
   issue_comment:
     types: [created]
   pull_request_review_comment:
@@ -14,30 +11,6 @@ on:
     types: [submitted]
 
 jobs:
-  validate-auth:
-    if: github.event_name == 'push'
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v6
-        with:
-          fetch-depth: 1
-
-      - name: Validate Claude subscription OAuth
-        uses: anthropics/claude-code-action@v1
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
-          settings: .claude/settings.json
-          prompt: |
-            Authentication validation only. Read CLAUDE.md and respond with exactly CLAUDE_AUTH_OK.
-            Do not modify files, create commits, create branches, open or edit pull requests, or deploy anything.
-          claude_args: |
-            --max-turns 3
-            --allowedTools "Read"
-
   claude:
     if: |
       (github.event_name == 'issue_comment' && contains(github.event.comment.body, '@claude')) ||
