@@ -1,62 +1,80 @@
 import * as THREE from 'three'
 
-// V268 selected-memory manifestation. Focus resolves the selected Memory Star
-// into one coherent fan of visibly separated fractured memory plates. The
-// fallback must read as a luminous living-memory artifact from the hero camera,
-// never as a boulder, onion, sphere, doorway, ring, cage, bubble, planet,
-// flower, or pair of framing horns.
+// V269 selected-memory manifestation. Focus resolves the selected Memory Star
+// into one coherent, compact stack of fractured luminous lamellae. The hero
+// silhouette is deliberately crystalline/biomorphic rather than broad paper
+// slabs: narrow irregular leaves interlock around one vertical memory core,
+// with high-contrast cool / pearl / warm energy and dark inter-layer depth.
+// It must never read as a boulder, onion, sphere, doorway, portal, ring, cage,
+// bubble, planet, flower, pair of horns, folded paper fan, or terrain debris.
 function createMemoryLamella(layer: number) {
-  const segments = 13
   const signed = layer - 3
-  const depth = -.54 + layer * .18
-  const thickness = .018 + (layer % 2) * .006
+  const depth = -.45 + layer * .15
+  const thickness = .024 + (layer % 2) * .006
   const frontZ = depth + thickness
   const backZ = depth - thickness
-  const radiusX = .34 + .035 * Math.sin(layer * 1.47) + (layer % 3) * .025
-  const radiusY = .78 + .045 * Math.cos(layer * 1.31) - Math.abs(signed) * .014
-  const offsetX = signed * .205 + Math.sin(layer * 1.73) * .055
-  const offsetY = signed * .075 + Math.cos(layer * 1.19) * .055
-  const rotation = -.52 + layer * .17
+  const width = .26 + (layer % 3) * .035
+  const height = .92 + .07 * Math.cos(layer * 1.31)
+  const offsetX = signed * .105 + Math.sin(layer * 1.73) * .032
+  const offsetY = Math.cos(layer * 1.19) * .038 - Math.abs(signed) * .006
+  const rotation = signed * .055 + Math.sin(layer * .87) * .035
   const positions: number[] = []
   const colors: number[] = []
   const indices: number[] = []
 
-  // Deliberately high vertex energy keeps the memory plates visually luminous
-  // under the physically lit Focus material while terrain remains subdued.
-  const cool = new THREE.Color().setRGB(3.6, 4.7, 5.4)
-  const pearl = new THREE.Color().setRGB(5.2, 5.5, 4.5)
-  const warm = new THREE.Color().setRGB(4.8, 3.1, 1.8)
+  // HDR-ish authored vertex energy is intentional. Focus's physically lit
+  // material tone-maps this energy, while the saturated ratios keep the memory
+  // visually separate from the matte olive mineral terrain.
+  const cool = new THREE.Color().setRGB(.34, 3.75, 6.20)
+  const pearl = new THREE.Color().setRGB(5.35, 5.80, 3.55)
+  const warm = new THREE.Color().setRGB(6.10, 2.15, .48)
+  const deep = new THREE.Color().setRGB(.10, .34, .46)
 
-  const points: Array<[number, number]> = []
-  for (let i = 0; i < segments; i += 1) {
-    const angle = (i / segments) * Math.PI * 2
-    const fracture = 1
-      + .22 * Math.sin(angle * 2.65 + layer * .91)
-      + .105 * Math.sin(angle * 5.35 - layer * .57)
-      + .065 * Math.cos(angle * 8.6 + layer * 1.11)
-    const pinch = .70 + .30 * Math.abs(Math.sin(angle * 1.45 + layer * .34))
-    const rawX = Math.cos(angle) * radiusX * fracture * pinch
-    const rawY = Math.sin(angle) * radiusY * fracture
-    const x = rawX * Math.cos(rotation) - rawY * Math.sin(rotation) + offsetX
-    const y = rawX * Math.sin(rotation) + rawY * Math.cos(rotation) + offsetY
-    points.push([x, y])
-  }
+  const template: Array<[number, number]> = [
+    [-.16, -.72],
+    [-.31, -.39],
+    [-.27, .10],
+    [-.12, .68],
+    [.08, .79],
+    [.29, .31],
+    [.24, -.24],
+    [.07, -.74],
+  ]
+
+  const points = template.map(([px, py], index): [number, number] => {
+    const fractureX = Math.sin((index + 1) * 2.31 + layer * 1.17) * .045
+    const fractureY = Math.cos((index + 1) * 1.73 - layer * .91) * .040
+    const rawX = (px + fractureX) * (width / .30)
+    const rawY = (py + fractureY) * height
+    return [
+      rawX * Math.cos(rotation) - rawY * Math.sin(rotation) + offsetX,
+      rawX * Math.sin(rotation) + rawY * Math.cos(rotation) + offsetY,
+    ]
+  })
 
   positions.push(offsetX, offsetY, frontZ, offsetX, offsetY, backZ)
-  const centerColor = pearl.clone().lerp(cool, .16 + layer * .045).lerp(warm, .035 + (layer % 2) * .018)
-  colors.push(centerColor.r, centerColor.g, centerColor.b, cool.r * .72, cool.g * .74, cool.b * .78)
+  const centerColor = pearl.clone().lerp(cool, .22 + layer * .035).lerp(warm, .035 + (layer % 2) * .018)
+  colors.push(
+    centerColor.r, centerColor.g, centerColor.b,
+    deep.r, deep.g, deep.b,
+  )
 
-  for (let i = 0; i < segments; i += 1) {
+  for (let i = 0; i < points.length; i += 1) {
     const [x, y] = points[i]
-    positions.push(x, y, frontZ, x * .995 + offsetX * .005, y * .995 + offsetY * .005, backZ)
-    const edge = i / segments
-    const shimmer = .5 + .5 * Math.sin(edge * Math.PI * 4.2 + layer * .83)
-    const faceColor = cool.clone().lerp(pearl, .28 + shimmer * .42).lerp(warm, .03 + (layer % 3) * .02)
-    colors.push(faceColor.r, faceColor.g, faceColor.b, faceColor.r * .66, faceColor.g * .70, faceColor.b * .74)
+    const backX = THREE.MathUtils.lerp(x, offsetX, .025)
+    const backY = THREE.MathUtils.lerp(y, offsetY, .025)
+    positions.push(x, y, frontZ, backX, backY, backZ)
+
+    const edgePhase = .5 + .5 * Math.sin(i * 1.91 + layer * .83)
+    const faceColor = cool.clone()
+      .lerp(pearl, .20 + edgePhase * .38)
+      .lerp(warm, (i === 0 || i === 3 || i === 6 ? .11 : .025) + (layer % 3) * .012)
+    const rearColor = deep.clone().lerp(cool, .18 + edgePhase * .08)
+    colors.push(faceColor.r, faceColor.g, faceColor.b, rearColor.r, rearColor.g, rearColor.b)
   }
 
-  for (let i = 0; i < segments; i += 1) {
-    const next = (i + 1) % segments
+  for (let i = 0; i < points.length; i += 1) {
+    const next = (i + 1) % points.length
     const frontA = 2 + i * 2
     const backA = frontA + 1
     const frontB = 2 + next * 2
@@ -73,7 +91,8 @@ function createMemoryLamella(layer: number) {
   geometry.computeVertexNormals()
   geometry.computeBoundingSphere()
   geometry.userData.focusLamellaLayer = layer
-  geometry.userData.focusLamellaRole = 'luminous-separated-fractured-memory-plate'
+  geometry.userData.focusLamellaRole = 'v269-living-luminous-memory-lamella'
+  geometry.userData.focusLamellaEnergy = 'cool-pearl-warm-with-dark-interlayer-depth'
   return geometry
 }
 
