@@ -52,6 +52,8 @@ Global Emotional Field is a cohort-level public-good aggregate, not the user's m
 
 Insufficient safe signal renders no emotional overlay, not a false zero-emotion state.
 
+The physical Home globe is a separate public/cohort system from Location Map. Location Map may visualize the user's authorized private place context; it must not be reused as the Global Emotional Field globe, and private place/weather points must never become public-field cells by visual or data-path aliasing. The globe requires its own governed physically plausible Earth authority, aggregate provider boundary, suppression states and literal-pixel acceptance. Until those exist, absence is more truthful than a symbolic blue sphere or a private-map substitute.
+
 ## Ground memory semantics
 
 Ground means where life happened. Focus means which memory/event/person/moment is being examined. Replay means what happened over time. A Ground-origin memory context carries place ID, memory ID, era, involved person-presences, source IDs, privacy purposes, reconstruction fidelity, camera origin and return token into Focus/Replay. Confirmed memory context cannot exist without source evidence.
@@ -61,6 +63,8 @@ Semantic unwind preserves origin: Replay -> Focus -> Ground when Ground was the 
 ## Home ownership systems
 
 First-person Home remains camera-only and persistent. Passport is the ownership/authority surface and reuses the operational Passport backend for identity, sources, devices, consent, provenance, export, deletion, audit and recovery. It does not create a parallel consent store. Global Emotional Field is a separate physical Home system. Both must remain sparse architectural presences rather than dashboard widgets.
+
+Passport's Home presence is a physical ownership artifact, not a portal. It exists only in first-person Home, must have a semantic/accessibility equivalent, and must capture the exact live first-person Home origin before travel. Returning from Passport restores that origin and camera through the existing Home return-frame authority; it must not reset the user to generic cinematic Home or masquerade as a Ground/Life Map unwind.
 
 ## Ground descent
 
