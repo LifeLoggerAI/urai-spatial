@@ -120,6 +120,11 @@ function popReturnFrame(state: HomeExperienceState) {
   }
 }
 
+function canActivateWorldSurface(state: HomeExperienceState) {
+  return !state.transition
+    && (state.stableState === 'HOME_PRESENTATION' || state.stableState === 'AVATAR_HOME_FIRST_PERSON')
+}
+
 export function homeExperienceReducer(
   state: HomeExperienceState,
   event: HomeExperienceEvent,
@@ -156,7 +161,7 @@ export function homeExperienceReducer(
       return { ...state, stableState: 'AVATAR_HOME_FIRST_PERSON', inputLocked: false }
 
     case 'GROUND_ACTIVATE':
-      if (state.transition || state.stableState === 'AVATAR_SELF_VIEW') return state
+      if (!canActivateWorldSurface(state)) return state
       return {
         ...state,
         origin: event.snapshot,
@@ -171,7 +176,7 @@ export function homeExperienceReducer(
       }
 
     case 'SKY_ACTIVATE':
-      if (state.transition || state.stableState === 'AVATAR_SELF_VIEW') return state
+      if (!canActivateWorldSurface(state)) return state
       return {
         ...state,
         origin: event.snapshot,
@@ -186,7 +191,7 @@ export function homeExperienceReducer(
       }
 
     case 'ORB_ACTIVATE':
-      if (state.transition || state.stableState === 'AVATAR_SELF_VIEW') return state
+      if (!canActivateWorldSurface(state)) return state
       return {
         ...state,
         origin: event.snapshot,
@@ -209,10 +214,9 @@ export function homeExperienceReducer(
     case 'DESTINATION_RETURN': {
       const { frame, stack } = popReturnFrame(state)
       const origin = event.snapshot ?? frame?.origin ?? state.origin
-      const stableState = origin.stableState
       return {
         ...state,
-        stableState,
+        stableState: origin.stableState,
         transition: event.destination === 'GROUND' ? 'GROUND_UNWIND' : 'LIFE_MAP_UNWIND',
         returnStack: stack,
         origin,
@@ -301,16 +305,33 @@ export function serializeHomeReturnFrame(frame: HomeReturnFrame): string {
   return JSON.stringify(frame)
 }
 
+function isOptionalString(value: unknown) {
+  return value === undefined || typeof value === 'string'
+}
+
 export function parseHomeReturnFrame(value: string | null): HomeReturnFrame | null {
   if (!value) return null
   try {
     const parsed = JSON.parse(value) as Partial<HomeReturnFrame>
     if (parsed.kind !== 'local' && parsed.kind !== 'destination') return null
+    if (parsed.kind === 'destination' && parsed.destination !== 'GROUND' && parsed.destination !== 'LIFE_MAP') return null
+    if (parsed.kind === 'local' && parsed.destination !== undefined) return null
     if (!parsed.origin || (parsed.origin.stableState !== 'HOME_PRESENTATION' && parsed.origin.stableState !== 'AVATAR_HOME_FIRST_PERSON')) return null
+
     const camera = parsed.origin.camera
     if (!camera || !Array.isArray(camera.position) || camera.position.length !== 3) return null
-    if (!camera.position.every((value) => typeof value === 'number' && Number.isFinite(value))) return null
+    if (!camera.position.every((entry) => typeof entry === 'number' && Number.isFinite(entry))) return null
     if (!Number.isFinite(camera.yaw) || !Number.isFinite(camera.pitch)) return null
+    if (!Number.isFinite(parsed.origin.capturedAt) || parsed.origin.capturedAt < 0) return null
+    if (parsed.origin.orbState !== undefined && typeof parsed.origin.orbState !== 'string') return null
+
+    const environment = parsed.origin.environment
+    if (!environment || typeof environment !== 'object') return null
+    if (!isOptionalString(environment.timeKey)) return null
+    if (!isOptionalString(environment.weatherKey)) return null
+    if (!isOptionalString(environment.lightingKey)) return null
+    if (!isOptionalString(environment.environmentRevision)) return null
+
     return parsed as HomeReturnFrame
   } catch {
     return null
