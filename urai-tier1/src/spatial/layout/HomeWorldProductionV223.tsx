@@ -8,6 +8,8 @@ import { useCallback, useEffect, useMemo, useRef, useState, type MutableRefObjec
 import * as THREE from 'three'
 import { resolveOrbSensoryOutput, URAI_ORB_STATE_EVENT, type OrbState, type OrbStateEventDetail } from '@/app/home/orbStateController'
 import { useDragLook } from '@/spatial/navigation/EmbodiedNavigation'
+import { useAdaptiveSpatialQuality, type SpatialQualityTier } from '@/spatial/performance/useAdaptiveSpatialQuality'
+import { ORB_SPEECH_CLOCK_EVENT, type OrbSpeechClockDetail } from '@/spatial/orb/orbSpeechClock'
 import { requestUraiWorldOrbOpen, requestUraiWorldTravel } from '@/spatial/world/worldEvents'
 import { height } from './HomeWorldProductionV223Geometry'
 import { HomeV225PolishV3 } from './HomeWorldProductionV225PolishV3'
@@ -48,6 +50,11 @@ const ORB_FRAGMENT_LAYOUT: readonly [readonly [number, number, number], readonly
   [[.16,-.24,.2],[.8,.2,-.4],.06], [[-.18,-.2,-.22],[-.5,.3,.9],.056],
   [[.05,.29,-.18],[.2,-.6,.4],.052], [[-.04,-.31,.15],[-.7,-.2,.1],.048],
 ]
+const ORB_EFFECT_BUDGET: Record<SpatialQualityTier, { motes: number; filaments: number; membraneSegments: number }> = {
+  low: { motes: 120, filaments: 2, membraneSegments: 32 },
+  medium: { motes: 180, filaments: 5, membraneSegments: 48 },
+  high: { motes: 520, filaments: 8, membraneSegments: 64 },
+}
 
 function cloneAuthoredModel(source: THREE.Object3D) {
   const root = source.clone(true)
@@ -141,15 +148,26 @@ function RetireLegacyHomeHotspots() {
   return null
 }
 
-function VisibleHomeAvatar() {
+function VisibleHomeAvatar({ reducedMotion }: { reducedMotion: boolean }) {
   const human = useGLTF(HUMAN_MODEL)
   const model = useMemo(() => cloneAuthoredModel(human.scene), [human.scene])
+  const { actions } = useAnimations(human.animations, model)
   const groundY = height(AVATAR_POSITION.x, AVATAR_POSITION.z)
+
+  useEffect(() => {
+    const idle = actions.idle_breath
+    if (!idle || reducedMotion) return
+    idle.reset().setLoop(THREE.LoopRepeat, Infinity).fadeIn(.3).play()
+    return () => { idle.fadeOut(.2); idle.stop() }
+  }, [actions, reducedMotion])
+
+  useEffect(() => () => { Object.values(actions).forEach((action) => action?.stop()) }, [actions])
+
   return <group
     name="home-visible-user-avatar"
     position={[AVATAR_POSITION.x, groundY, AVATAR_POSITION.z]}
     rotation={[0, Math.PI, 0]}
-    userData={{ semanticOwner: 'user-avatar', presentation: 'visible-home-avatar-third-person', runtimeAsset: HUMAN_MODEL }}
+    userData={{ semanticOwner: 'user-avatar', presentation: 'visible-home-avatar-third-person', runtimeAsset: HUMAN_MODEL, animation: reducedMotion ? 'still-reduced-motion' : 'idle_breath' }}
   >
     <primitive object={model} scale={.72} />
   </group>
@@ -157,7 +175,10 @@ function VisibleHomeAvatar() {
 
 function OrbCompanion({ state, reducedMotion, onOrb }: { state: OrbState; reducedMotion: boolean; onOrb: () => void }) {
   const root = useRef<THREE.Group>(null)
+  const fieldShell = useRef<THREE.Mesh>(null)
   const authoredCore = useRef<THREE.Group>(null)
+  const heart = useRef<THREE.Mesh>(null)
+  const heartMaterial = useRef<THREE.MeshPhysicalMaterial>(null)
   const activeAction = useRef<THREE.AnimationAction | null>(null)
   const ringA = useRef<THREE.Mesh>(null)
   const ringB = useRef<THREE.Mesh>(null)
@@ -166,11 +187,61 @@ function OrbCompanion({ state, reducedMotion, onOrb }: { state: OrbState; reduce
   const membrane = useRef<THREE.MeshPhysicalMaterial>(null)
   const worldLight = useRef<THREE.PointLight>(null)
   const yaw = useRef(0)
+  const speechEnergy = useRef(0)
+  const speechImpulse = useRef(0)
+  const anticipation = useRef(0)
+  const speechActive = useRef(false)
   const orb = useGLTF(ORB_MODEL)
   const authoredOrb = useMemo(() => cloneAuthoredModel(orb.scene), [orb.scene])
   const { actions } = useAnimations(orb.animations, authoredOrb)
+  const quality = useAdaptiveSpatialQuality()
+  const effectBudget = ORB_EFFECT_BUDGET[quality.tier]
   const groundY = height(ORB_POSITION.x, ORB_POSITION.z)
   const sensory = useMemo(() => resolveOrbSensoryOutput(state, reducedMotion, true), [state, reducedMotion])
+
+  useEffect(() => {
+    const listener = (event: CustomEvent<OrbSpeechClockDetail>) => {
+      const detail = event.detail
+      if (detail.phase === 'anticipation') {
+        anticipation.current = 1
+        return
+      }
+      if (detail.source === 'text') {
+        if (detail.phase === 'end' || detail.phase === 'cancel') anticipation.current = 0
+        return
+      }
+      if (detail.phase === 'start') {
+        speechActive.current = true
+        speechEnergy.current = Math.max(speechEnergy.current, .12)
+        speechImpulse.current = Math.max(speechImpulse.current, .24)
+        anticipation.current = 0
+        return
+      }
+      if (detail.phase === 'boundary') {
+        if (speechActive.current) speechImpulse.current = Math.min(1, speechImpulse.current + .28)
+        return
+      }
+      if (detail.phase === 'frame') {
+        if (!speechActive.current) return
+        const actualAmplitude = typeof detail.amplitude === 'number' ? THREE.MathUtils.clamp(detail.amplitude * 7, 0, 1) : .08
+        speechEnergy.current = Math.max(speechEnergy.current, actualAmplitude)
+        return
+      }
+      if (detail.phase === 'end') {
+        speechActive.current = false
+        anticipation.current = 0
+        return
+      }
+      if (detail.phase === 'cancel') {
+        speechActive.current = false
+        speechEnergy.current = 0
+        speechImpulse.current = 0
+        anticipation.current = 0
+      }
+    }
+    window.addEventListener(ORB_SPEECH_CLOCK_EVENT, listener)
+    return () => window.removeEventListener(ORB_SPEECH_CLOCK_EVENT, listener)
+  }, [])
 
   useEffect(() => {
     const allActions = Object.values(actions).filter((action): action is THREE.AnimationAction => Boolean(action))
@@ -192,24 +263,52 @@ function OrbCompanion({ state, reducedMotion, onOrb }: { state: OrbState; reduce
     if (!root.current) return
     const motion = ORB_STATE_MOTION[state]
     const baseY = groundY + 1.52
+    speechEnergy.current = THREE.MathUtils.damp(speechEnergy.current, speechActive.current ? speechEnergy.current * .82 : 0, speechActive.current ? 5 : 8, delta)
+    speechImpulse.current = THREE.MathUtils.damp(speechImpulse.current, 0, 11, delta)
+    anticipation.current = THREE.MathUtils.damp(anticipation.current, 0, 3.8, delta)
+    const expressiveEnergy = reducedMotion ? 0 : Math.min(1, speechEnergy.current + speechImpulse.current * .58)
+    const gather = reducedMotion ? 0 : anticipation.current
+
     if (!reducedMotion) {
       yaw.current += delta * .015 * motion.rotation
       root.current.rotation.y = yaw.current
       root.current.position.y = baseY + Math.sin(clock.elapsedTime * .58) * motion.hover
-      if (authoredCore.current) authoredCore.current.scale.setScalar(.338 * motion.coreScale + Math.sin(clock.elapsedTime * .9) * motion.breath)
-      if (ringA.current) ringA.current.rotation.y += delta * .028 * motion.ring
-      if (ringB.current) ringB.current.rotation.x -= delta * .021 * motion.ring
-      if (ringC.current) ringC.current.rotation.z += delta * .016 * motion.ring
-      if (fragments.current) fragments.current.rotation.y += delta * .012 * motion.ring
+      if (authoredCore.current) {
+        const baseScale = .338 * motion.coreScale + Math.sin(clock.elapsedTime * .9) * motion.breath
+        authoredCore.current.scale.setScalar(baseScale - gather * .004 + expressiveEnergy * .006)
+      }
+      if (heart.current) {
+        const pressure = 1 - gather * .035 + expressiveEnergy * .052
+        heart.current.scale.set(.13 * pressure, .225 * pressure, .105 * pressure)
+      }
+      if (fieldShell.current) {
+        const pressure = 1 + expressiveEnergy * .004
+        fieldShell.current.scale.set(pressure, 1.04 * pressure, .95 * pressure)
+      }
+      const articulation = 1 + expressiveEnergy * .62 + gather * .18
+      if (ringA.current) ringA.current.rotation.y += delta * .028 * motion.ring * articulation
+      if (ringB.current) ringB.current.rotation.x -= delta * .021 * motion.ring * articulation
+      if (ringC.current) ringC.current.rotation.z += delta * .016 * motion.ring * articulation
+      if (fragments.current) fragments.current.rotation.y += delta * .012 * motion.ring * (1 + expressiveEnergy * .25)
     } else {
       root.current.position.y = baseY
       if (authoredCore.current) authoredCore.current.scale.setScalar(.338 * motion.coreScale)
+      if (heart.current) heart.current.scale.set(.13, .225, .105)
+      if (fieldShell.current) fieldShell.current.scale.set(1, 1.04, .95)
     }
     if (membrane.current) {
-      const targetOpacity = state === 'privacy' ? .022 : state === 'warning' ? .018 : state === 'dormant' ? .01 : .012
-      membrane.current.opacity = THREE.MathUtils.damp(membrane.current.opacity, targetOpacity, 8, delta)
+      const stateOpacity = state === 'privacy' ? .022 : state === 'warning' ? .018 : state === 'dormant' ? .01 : .012
+      const speechPressure = reducedMotion ? 0 : expressiveEnergy * .004 + gather * .0015
+      membrane.current.opacity = THREE.MathUtils.damp(membrane.current.opacity, stateOpacity + speechPressure, 8, delta)
     }
-    if (worldLight.current) worldLight.current.intensity = THREE.MathUtils.damp(worldLight.current.intensity, sensory.light.intensity * .46, 8, delta)
+    if (heartMaterial.current) {
+      const target = sensory.light.intensity * .56 + (reducedMotion ? 0 : expressiveEnergy * .72 + gather * .16)
+      heartMaterial.current.emissiveIntensity = THREE.MathUtils.damp(heartMaterial.current.emissiveIntensity, target, 10, delta)
+    }
+    if (worldLight.current) {
+      const target = sensory.light.intensity * .46 + (reducedMotion ? 0 : expressiveEnergy * .22 + gather * .06)
+      worldLight.current.intensity = THREE.MathUtils.damp(worldLight.current.intensity, target, 8, delta)
+    }
   })
 
   const stateColor = state === 'warning' ? '#cf9b65'
@@ -226,16 +325,26 @@ function OrbCompanion({ state, reducedMotion, onOrb }: { state: OrbState; reduce
     name="home-living-memory-orb"
     position={[ORB_POSITION.x, groundY + 1.52, ORB_POSITION.z]}
     onClick={activate}
-    userData={{ semanticOwner: 'orb', runtimeAsset: ORB_MODEL, animation: sensory.animation, modelClip: ORB_CLIPS[state], stateMotion: 'one-shot-entry-plus-persistent-organic-runtime' }}
+    userData={{
+      semanticOwner: 'orb',
+      runtimeAsset: ORB_MODEL,
+      animation: sensory.animation,
+      modelClip: ORB_CLIPS[state],
+      stateMotion: 'one-shot-entry-plus-persistent-organic-runtime',
+      speechEmbodiment: 'actual-playback-clock-with-rms-when-available',
+      qualityTier: quality.tier,
+      moteCeiling: effectBudget.motes,
+      filamentCeiling: effectBudget.filaments,
+    }}
   >
-    <mesh castShadow scale={[1,1.04,.95]} onClick={activate}>
-      <sphereGeometry args={[.5,64,64]} />
+    <mesh ref={fieldShell} castShadow scale={[1,1.04,.95]} onClick={activate}>
+      <sphereGeometry args={[.5,effectBudget.membraneSegments,effectBudget.membraneSegments]} />
       <meshPhysicalMaterial ref={membrane} color="#9cc6c5" transparent opacity={.012} transmission={.92} thickness={.052} roughness={.25} metalness={0} clearcoat={.54} clearcoatRoughness={.28} ior={1.16} envMapIntensity={.9} depthWrite={false} />
     </mesh>
     <group ref={authoredCore} scale={.338} name="home-orb-authored-core"><primitive object={authoredOrb} /></group>
-    <mesh name="home-orb-non-spherical-core" scale={[.13,.225,.105]} rotation={[.16,.38,-.08]} castShadow>
+    <mesh ref={heart} name="home-orb-non-spherical-core" scale={[.13,.225,.105]} rotation={[.16,.38,-.08]} castShadow>
       <octahedronGeometry args={[1,2]} />
-      <meshPhysicalMaterial color="#c8dcda" emissive={stateColor} emissiveIntensity={sensory.light.intensity * .56} roughness={.4} metalness={.16} clearcoat={.28} clearcoatRoughness={.38} envMapIntensity={.95} />
+      <meshPhysicalMaterial ref={heartMaterial} color="#c8dcda" emissive={stateColor} emissiveIntensity={sensory.light.intensity * .56} roughness={.4} metalness={.16} clearcoat={.28} clearcoatRoughness={.38} envMapIntensity={.95} />
     </mesh>
     <mesh ref={ringA} name="home-orb-stabilizer-ring-1" rotation={[.28,.5,.14]} castShadow><torusGeometry args={[.49,.014,16,128]} /><meshStandardMaterial color="#66716f" emissive="#456c6e" emissiveIntensity={.028} metalness={.84} roughness={.32} envMapIntensity={1.08} /></mesh>
     <mesh ref={ringB} name="home-orb-stabilizer-ring-2" rotation={[1.38,-.22,.64]} castShadow><torusGeometry args={[.44,.013,16,128]} /><meshStandardMaterial color="#766d5e" emissive="#66553d" emissiveIntensity={.024} metalness={.8} roughness={.36} envMapIntensity={1.02} /></mesh>
@@ -354,7 +463,7 @@ function Scene({ yaw, pitch, transition, transitionTarget, reducedMotion, orbSta
     <HomeCurrentArtRepair orbState={orbState} reducedMotion={reducedMotion} onOrb={retiredLocalDestination} onGround={retiredLocalDestination} onLifeMap={retiredLocalDestination} />
     <HomeAAAVisualRepair />
     <RetireLegacyHomeHotspots />
-    <VisibleHomeAvatar />
+    <VisibleHomeAvatar reducedMotion={reducedMotion} />
     <OrbCompanion state={orbState} reducedMotion={reducedMotion} onOrb={onOrb} />
     <CameraRig yaw={yaw} pitch={pitch} transition={transition} target={transitionTarget} reducedMotion={reducedMotion} owner={owner} onComplete={onComplete} />
   </>
