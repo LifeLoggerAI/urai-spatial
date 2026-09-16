@@ -1,16 +1,22 @@
 feature: replays
 repo: LifeLoggerAI/urai-spatial
-owner: TBD
-privacyGovernanceVersion: 0.1.0-draft
-status: blocked_stubbed_from_repo_audit
-lastReviewed: 2026-05-09
+owner: URAI Privacy + Spatial
+privacyGovernanceVersion: 0.2.0-draft
+status: current_runtime_implemented_exact_head_privacy_review_required
+lastReviewed: 2026-09-16
 sourceEvidence:
-  - URAI_ECOSYSTEM_AUDIT.md
+  - urai-tier1/src/app/replay/page.tsx
+  - urai-tier1/tests/replay-memory-theater-contract.test.mjs
+  - urai-tier1/tests/replay-operations-contract.test.mjs
+  - urai-tier1/tests/replay-product-controls-contract.test.mjs
+  - urai-tier1/tests/replay-mobile-control-clearance-contract.test.mjs
+  - urai-tier1/tests/replay-final-rail-authority-contract.test.mjs
+  - firebase/firestore.rules
 
 summary:
-  purpose: Store user-generated replays of their memories.
-  userBenefit: Lets users revisit curated or generated memory sequences.
-  implementationStatus: stubbed_per_repo_audit
+  purpose: Reconstruct and revisit authorized memory sequences while preserving memory provenance and the distinction between factual Replay and hypothetical Possible Futures.
+  userBenefit: Lets users revisit source-backed memory experiences without silently promoting generated context or Scenario output into autobiographical truth.
+  implementationStatus: active_canonical_replay_runtime_with_contract_and_operational_tests_exact_head_privacy_export_delete_explanation_review_still_required
 
 dataProcessing:
   collectedFields:
@@ -19,35 +25,49 @@ dataProcessing:
       dataClass: L3
       source: user_provided
       purpose: source material for memory replay generation
-      consentTier: C2
-      retentionClass: R3
+      consentTier: C1
+      retentionClass: R2
       exportable: true
       deletable: true
+      monetizable: false
+      aiTrainingAllowed: false
+      adminAccessible: false
       auditRequired: true
     - name: memory_media
       collectionOrTable: memories/storage
-      dataClass: L4
+      dataClass: L3
       source: user_upload
-      purpose: optional media source material for memory replay generation
-      consentTier: C4
-      retentionClass: R3
+      purpose: optional personal media source material for memory replay generation
+      consentTier: C1
+      retentionClass: R2
       exportable: true
       deletable: true
+      monetizable: false
+      aiTrainingAllowed: false
+      adminAccessible: false
       auditRequired: true
   derivedFields:
     - name: replay_record
-      collectionOrTable: replays
-      dataClass: L3
+      collectionOrTable: replayEvents_and_replay_runtime
+      dataClass: L3_or_L4_when_sensitive_interpretation_is_included
       sourceFields:
         - memory_text
         - memory_media
         - memory_star_visualization
-      purpose: user-facing generated or curated memory replay
-      consentTier: C2
+      purpose: user-facing memory replay
+      consentTier: C1_plus_C4_if_sensitive_inference_is_included
       retentionClass: R3
       exportable: true
       deletable: true
+      monetizable: false
+      aiTrainingAllowed: false
       explainabilityRequired: true
+
+truthBoundary:
+  scenarioContentMayBecomeReplayFact: false
+  generatedContextMayBecomeConfirmedMemory: false
+  unknownMustRemainUnknown: true
+  conflictingEvidenceMustRemainVisible: true
 
 userRights:
   exportSupported: true
@@ -69,9 +89,8 @@ monetization:
   participatesInDataSharing: false
   requiresC8Consent: false
   anonymizationBatchRequired: false
-  minimumCohortSize: 100
 
 review:
-  reviewer: TBD
-  decision: blocked_until_implemented_and_reviewed
-  notes: Repo audit marks replays as stubbed. Replays must not launch until consent, export, deletion, explanation, and audit behavior are implemented and tested.
+  reviewer: pending_independent_privacy_review
+  decision: blocked_from_gold_master_until_current_exact_head_privacy_export_delete_explanation_and_visual_runtime_evidence_pass
+  notes: The May 2026 stub designation is stale and has been replaced with current-runtime truth. This update does not certify Replay for launch; it corrects implementation status while retaining fail-closed exact-head review requirements.

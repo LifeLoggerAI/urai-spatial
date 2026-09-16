@@ -1,17 +1,38 @@
 repo: LifeLoggerAI/urai-spatial
-privacyGovernanceVersion: 0.1.0-draft
-owner: TBD
-lastReviewed: 2026-05-09
-status: draft_real_inventory_from_repo_audit
+privacyGovernanceVersion: 0.2.0-draft
+owner: URAI Privacy
+lastReviewed: 2026-09-16
+status: current_source_reconciliation_pending_independent_review
 sourceEvidence:
-  - URAI_ECOSYSTEM_AUDIT.md
+  - LifeLoggerAI/urai-privacy/docs/CONSENT_TIERS.md
+  - LifeLoggerAI/urai-privacy/docs/DATA_CLASSIFICATION.md
+  - LifeLoggerAI/urai-privacy/docs/RETENTION_AND_DELETION.md
+  - privacy/feature-manifests/personalized-lived-world.privacy.yaml
+  - privacy/feature-manifests/global-emotional-field.privacy.yaml
+  - privacy/feature-manifests/possible-futures.privacy.yaml
+  - privacy/feature-manifests/ai-self-ledger.privacy.yaml
 
 fields:
   - name: user_profile
     collectionOrTable: users
     source: user_account
-    dataClass: L2
-    purpose: manage user identity and profile context
+    dataClass: L1
+    purpose: account identity and service operation
+    consentTier: C0
+    retentionClass: R2
+    exportable: true
+    deletable: true
+    monetizable: false
+    aiTrainingAllowed: false
+    adminAccessible: false
+    auditRequired: true
+    implementationStatus: implemented
+
+  - name: memory_text
+    collectionOrTable: memories
+    source: user_provided
+    dataClass: L3
+    purpose: personal memory storage
     consentTier: C1
     retentionClass: R2
     exportable: true
@@ -20,28 +41,28 @@ fields:
     aiTrainingAllowed: false
     adminAccessible: false
     auditRequired: true
-    implementationStatus: complete_per_repo_audit
+    implementationStatus: implemented_requires_exact_runtime_review
 
-  - name: memory_text
-    collectionOrTable: memories
-    source: user_provided
+  - name: memory_media
+    collectionOrTable: memories/storage
+    source: user_upload
     dataClass: L3
-    purpose: store user-created memory text
-    consentTier: C2
-    retentionClass: R3
+    purpose: personal audio/image/video memory storage
+    consentTier: C1
+    retentionClass: R2
     exportable: true
     deletable: true
     monetizable: false
     aiTrainingAllowed: false
     adminAccessible: false
     auditRequired: true
-    implementationStatus: complete_per_repo_audit
+    implementationStatus: implemented_requires_exact_runtime_review
 
-  - name: memory_media
-    collectionOrTable: memories/storage
-    source: user_upload
+  - name: sensitive_media_interpretation
+    collectionOrTable: derived_insights
+    source: model
     dataClass: L4
-    purpose: store user-created audio and image memories
+    purpose: sensitive inference from authorized personal content
     consentTier: C4
     retentionClass: R3
     exportable: true
@@ -50,14 +71,14 @@ fields:
     aiTrainingAllowed: false
     adminAccessible: false
     auditRequired: true
-    implementationStatus: complete_per_repo_audit
+    implementationStatus: producer_not_activated_by_lived_world_donor
 
   - name: memory_star_visualization
     collectionOrTable: stars
     source: system_derived
     dataClass: L2
-    purpose: represent memories visually in the spatial galaxy
-    consentTier: C2
+    purpose: represent authorized memories spatially
+    consentTier: C1
     retentionClass: R3
     exportable: true
     deletable: true
@@ -65,13 +86,13 @@ fields:
     aiTrainingAllowed: false
     adminAccessible: false
     auditRequired: true
-    implementationStatus: complete_per_repo_audit
+    implementationStatus: implemented
 
   - name: insight_record
     collectionOrTable: insights
     source: model
     dataClass: L4
-    purpose: store user-facing AI-generated insights
+    purpose: user-facing sensitive AI interpretation where separately authorized
     consentTier: C4
     retentionClass: R3
     exportable: true
@@ -80,13 +101,28 @@ fields:
     aiTrainingAllowed: false
     adminAccessible: false
     auditRequired: true
-    implementationStatus: partial_per_repo_audit
+    implementationStatus: partial_provider_and_feature_dependent
 
-  - name: voice_event
-    collectionOrTable: voiceEvents
+  - name: stored_voice_memory
+    collectionOrTable: memories/storage
     source: user_voice_interaction
+    dataClass: L3
+    purpose: personal memory/content storage
+    consentTier: C1
+    retentionClass: R2
+    exportable: true
+    deletable: true
+    monetizable: false
+    aiTrainingAllowed: false
+    adminAccessible: false
+    auditRequired: true
+    implementationStatus: source_dependent
+
+  - name: biometric_voice_or_face_identity
+    collectionOrTable: biometric_identity
+    source: biometric_processor
     dataClass: L5
-    purpose: planned voice interaction storage
+    purpose: biometric identity or speaker/face recognition
     consentTier: C5
     retentionClass: R6
     exportable: true
@@ -95,13 +131,28 @@ fields:
     aiTrainingAllowed: false
     adminAccessible: false
     auditRequired: true
-    implementationStatus: stubbed_per_repo_audit
+    implementationStatus: not_activated_for_personalized_lived_world
 
   - name: behavior_signal
     collectionOrTable: behaviorSignals
     source: system_collected
+    dataClass: L2
+    purpose: passive behavioral context before any sensitive inference
+    consentTier: C2
+    retentionClass: R1
+    exportable: true
+    deletable: true
+    monetizable: false
+    aiTrainingAllowed: false
+    adminAccessible: false
+    auditRequired: true
+    implementationStatus: feature_dependent
+
+  - name: sensitive_behavior_inference
+    collectionOrTable: derived_insights
+    source: model
     dataClass: L4
-    purpose: planned behavioral signal capture for AI analysis
+    purpose: emotional relationship mental-load or other sensitive inference
     consentTier: C4
     retentionClass: R3
     exportable: true
@@ -110,14 +161,14 @@ fields:
     aiTrainingAllowed: false
     adminAccessible: false
     auditRequired: true
-    implementationStatus: stubbed_per_repo_audit
+    implementationStatus: gated
 
   - name: location_record
     collectionOrTable: locations
     source: device_or_user_provided
     dataClass: L4
-    purpose: planned location context associated with memories
-    consentTier: C4
+    purpose: private place and route context
+    consentTier: C3
     retentionClass: R3
     exportable: true
     deletable: true
@@ -125,27 +176,110 @@ fields:
     aiTrainingAllowed: false
     adminAccessible: false
     auditRequired: true
-    implementationStatus: stubbed_per_repo_audit
+    implementationStatus: browser_local_private_producer_only_on_current_lived_world_donor
+
+  - name: scenario_metadata
+    collectionOrTable: users/{uid}/scenarios
+    source: user_and_system
+    dataClass: L2
+    purpose: scenario.explore
+    consentTier: C1_plus_source_specific_authority
+    retentionClass: R3
+    exportable: true
+    deletable: true
+    monetizable: false
+    aiTrainingAllowed: false
+    adminAccessible: false
+    auditRequired: true
+    implementationStatus: source_implemented_provider_disabled
+
+  - name: scenario_output
+    collectionOrTable: users/{uid}/scenarios/{scenarioId}/branches
+    source: user_or_future_provider
+    dataClass: L3_or_L4_when_sensitive
+    purpose: scenario.explore
+    consentTier: C1_plus_C3_C4_C5_as_applicable
+    retentionClass: R3
+    exportable: true
+    deletable: true
+    monetizable: false
+    aiTrainingAllowed: false
+    adminAccessible: false
+    auditRequired: true
+    implementationStatus: manual_path_implemented_provider_disabled
+
+  - name: ai_activity_ledger
+    collectionOrTable: users/{uid}/aiLedger
+    source: system
+    dataClass: L2_or_inherits_referenced_sensitivity
+    purpose: intelligence.audit-and-explain
+    consentTier: operational_plus_referenced_source_authority
+    retentionClass: R1
+    exportable: true
+    deletable: true
+    monetizable: false
+    aiTrainingAllowed: false
+    adminAccessible: false
+    auditRequired: true
+    implementationStatus: source_implemented
+
+  - name: global_field_participation_envelope
+    collectionOrTable: globalEmotionalFieldIntake
+    source: user_consent_and_server
+    dataClass: L2
+    purpose: data.public-good.emotional-field
+    consentTier: C8
+    retentionClass: R0
+    exportable: true
+    deletable: true
+    monetizable: false
+    aiTrainingAllowed: false
+    adminAccessible: false
+    auditRequired: true
+    implementationStatus: participation_only_intake_implemented_sensitive_signal_producer_disabled
+
+  - name: global_emotional_field_cell
+    collectionOrTable: globalEmotionalFieldCells
+    source: future_governed_aggregate_pipeline
+    dataClass: L6
+    purpose: cohort-level privacy-protected public-good aggregate
+    consentTier: C8_source_contribution
+    retentionClass: R5
+    exportable: false
+    deletable: false
+    monetizable: false
+    aiTrainingAllowed: false
+    adminAccessible: false
+    auditRequired: true
+    implementationStatus: publication_contract_present_public_emotional_activation_blocked
 
 processors:
   - name: Firebase Authentication
     role: authentication
-    status: complete_per_repo_audit
-    reviewStatus: needs_privacy_review
+    status: active
+    reviewStatus: privacy_review_required
   - name: Firestore
     role: primary_database
-    status: mixed_complete_partial_stubbed_per_repo_audit
-    reviewStatus: needs_privacy_review
+    status: active_mixed_feature_state
+    reviewStatus: exact_head_rules_review_required
   - name: Firebase Storage
     role: media_storage
-    status: complete_per_repo_audit
-    reviewStatus: needs_privacy_review
+    status: active
+    reviewStatus: source_scope_review_required
   - name: Firebase Hosting
     role: frontend_hosting
-    status: complete_per_repo_audit
-    reviewStatus: needs_privacy_review
+    status: active
+    reviewStatus: deployment_receipt_required
+  - name: Scenario Provider
+    role: possible_futures_generation
+    status: not_activated
+    reviewStatus: exact_model_version_and_release_eval_required
+  - name: Global Emotional Field Aggregate Provider
+    role: sensitive_cohort_aggregation
+    status: not_activated
+    reviewStatus: privacy_foundation_governance_and_higher_threshold_required
 
 review:
-  status: blocked_until_reviewed
-  reviewer: TBD
-  notes: Derived from URAI_ECOSYSTEM_AUDIT.md. Must be reviewed against actual production schema, rules, and runtime behavior before launch approval.
+  status: blocked_until_exact_head_independent_review
+  reviewer: pending
+  notes: Current-source reconciliation corrects the stale May consent vocabulary. Personal memory storage is C1, passive behavioral context is C2, location is C3, sensitive inference is C4, biometrics is C5, personalization learning is C6, and separately authorized anonymized cohort participation is C8. No listed personal field is authorized for AI training at launch.

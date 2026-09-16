@@ -1,24 +1,14 @@
 'use client'
 
-import {
-  createContext,
-  useCallback,
-  useContext,
-  useEffect,
-  useMemo,
-  useReducer,
-  type ReactNode,
-} from 'react'
-import {
-  definitionForDestination,
-  destinationForPathname,
-} from './destinationRegistry'
+import { createContext, useCallback, useContext, useEffect, useMemo, useReducer, type ReactNode } from 'react'
+import { definitionForDestination, destinationForPathname } from './destinationRegistry'
 import {
   INITIAL_URAI_WORLD_STATE,
   type UraiDestination,
   type UraiOriginRealm,
   type UraiPrivacyMode,
   type UraiReconstructionFidelity,
+  type UraiTruthMode,
   type UraiWorldContextPatch,
   type UraiWorldState,
   type UraiWorldTravelRequest,
@@ -26,12 +16,7 @@ import {
 
 export type UraiTransitionPhase = 'idle' | 'descending' | 'ascending' | 'travelling'
 
-type RuntimeState = {
-  world: UraiWorldState
-  phase: UraiTransitionPhase
-  pendingTravel?: UraiWorldTravelRequest
-}
-
+type RuntimeState = { world: UraiWorldState; phase: UraiTransitionPhase; pendingTravel?: UraiWorldTravelRequest }
 type RuntimeAction =
   | { type: 'SYNC_ROUTE'; destination: UraiDestination; context: UraiWorldContextPatch }
   | { type: 'BEGIN_TRAVEL'; request: UraiWorldTravelRequest; phase: UraiTransitionPhase }
@@ -50,14 +35,16 @@ function privacyModeFrom(value: string | null): UraiPrivacyMode | undefined {
   if (value === 'private' || value === 'revealing' || value === 'held-private') return value
   return undefined
 }
-
 function originRealmFrom(value: string | null): UraiOriginRealm | undefined {
-  if (value === 'home' || value === 'ground' || value === 'life-map' || value === 'focus' || value === 'replay' || value === 'passport') return value
+  if (value === 'home' || value === 'ground' || value === 'life-map' || value === 'focus' || value === 'replay' || value === 'passport' || value === 'mirror' || value === 'council' || value === 'possible-futures') return value
   return undefined
 }
-
 function reconstructionFidelityFrom(value: string | null): UraiReconstructionFidelity | undefined {
   if (value === 'confirmed' || value === 'partial' || value === 'unknown') return value
+  return undefined
+}
+function truthModeFrom(value: string | null): UraiTruthMode | undefined {
+  if (value === 'reality' || value === 'memory' || value === 'interpretation' || value === 'scenario') return value
   return undefined
 }
 
@@ -76,21 +63,19 @@ function contextFromLocation(): UraiWorldContextPatch {
   const reconstructionFidelity = reconstructionFidelityFrom(params.get('fidelity'))
   const entryPortal = params.get('entryPortal') ?? params.get('from') ?? undefined
   const cameraCheckpoint = params.get('cameraCheckpoint') ?? undefined
+  const scenarioId = params.get('scenario') ?? undefined
+  const scenarioBranchId = params.get('branch') ?? undefined
+  const scenarioBasisRevisionRaw = params.get('basisRevision')
+  const scenarioBasisRevision = scenarioBasisRevisionRaw && Number.isInteger(Number(scenarioBasisRevisionRaw)) ? Number(scenarioBasisRevisionRaw) : undefined
+  const truthMode = truthModeFrom(params.get('truthMode'))
+  const scenarioOrigin = originRealmFrom(params.get('scenarioOrigin'))
   const demo = params.get('demo') === '1'
-
   return {
-    ...(memoryId ? { memoryId } : {}),
-    ...(threadId ? { threadId } : {}),
-    ...(personId ? { personId } : {}),
-    ...(placeId ? { placeId } : {}),
-    ...(eraId ? { eraId } : {}),
-    ...(replayManifestId ? { replayManifestId } : {}),
-    ...(privacyMode ? { privacyMode } : {}),
-    ...(originRealm ? { originRealm } : {}),
-    ...(returnToken ? { returnToken } : {}),
-    ...(reconstructionFidelity ? { reconstructionFidelity } : {}),
-    ...(entryPortal ? { entryPortal } : {}),
-    ...(cameraCheckpoint ? { cameraCheckpoint } : {}),
+    ...(memoryId ? { memoryId } : {}), ...(threadId ? { threadId } : {}), ...(personId ? { personId } : {}), ...(placeId ? { placeId } : {}),
+    ...(eraId ? { eraId } : {}), ...(replayManifestId ? { replayManifestId } : {}), ...(privacyMode ? { privacyMode } : {}), ...(originRealm ? { originRealm } : {}),
+    ...(returnToken ? { returnToken } : {}), ...(reconstructionFidelity ? { reconstructionFidelity } : {}), ...(entryPortal ? { entryPortal } : {}),
+    ...(cameraCheckpoint ? { cameraCheckpoint } : {}), ...(scenarioId ? { scenarioId } : {}), ...(scenarioBranchId ? { scenarioBranchId } : {}),
+    ...(scenarioBasisRevision !== undefined ? { scenarioBasisRevision } : {}), ...(truthMode ? { truthMode } : {}), ...(scenarioOrigin ? { scenarioOrigin } : {}),
     ...(demo ? { demo: true } : {}),
   }
 }
@@ -98,16 +83,7 @@ function contextFromLocation(): UraiWorldContextPatch {
 function initialRuntimeState(pathname: string): RuntimeState {
   const destination = destinationForPathname(pathname) ?? INITIAL_URAI_WORLD_STATE.destination
   const definition = definitionForDestination(destination)
-  return {
-    world: {
-      ...INITIAL_URAI_WORLD_STATE,
-      destination,
-      layer: definition.layer,
-      entryPortal: definition.entryPortal,
-      cameraCheckpoint: definition.cameraCheckpoint,
-    },
-    phase: 'idle',
-  }
+  return { world: { ...INITIAL_URAI_WORLD_STATE, destination, layer: definition.layer, entryPortal: definition.entryPortal, cameraCheckpoint: definition.cameraCheckpoint }, phase: 'idle' }
 }
 
 function reducer(state: RuntimeState, action: RuntimeAction): RuntimeState {
@@ -115,52 +91,22 @@ function reducer(state: RuntimeState, action: RuntimeAction): RuntimeState {
     const definition = definitionForDestination(action.destination)
     const changed = state.world.destination !== action.destination
     return {
-      phase: 'idle',
-      pendingTravel: undefined,
+      phase: 'idle', pendingTravel: undefined,
       world: {
-        ...state.world,
-        ...action.context,
-        destination: action.destination,
+        ...state.world, ...action.context, destination: action.destination,
         previousDestination: changed ? state.world.destination : state.world.previousDestination,
         layer: definition.layer,
         entryPortal: action.context.entryPortal ?? state.pendingTravel?.entryPortal ?? state.world.entryPortal ?? definition.entryPortal,
-        cameraCheckpoint:
-          action.context.cameraCheckpoint ??
-          state.pendingTravel?.cameraCheckpoint ??
-          definition.cameraCheckpoint,
+        cameraCheckpoint: action.context.cameraCheckpoint ?? state.pendingTravel?.cameraCheckpoint ?? definition.cameraCheckpoint,
+        truthMode: action.destination === 'possible-futures' ? 'scenario' : (action.context.truthMode ?? state.world.truthMode ?? 'reality'),
       },
     }
   }
-
   if (action.type === 'BEGIN_TRAVEL') {
-    return {
-      ...state,
-      phase: action.phase,
-      pendingTravel: action.request,
-      world: {
-        ...state.world,
-        ...action.request.context,
-        previousDestination: state.world.destination,
-        layer: 'transition',
-        entryPortal: action.request.entryPortal ?? state.world.entryPortal,
-        cameraCheckpoint: action.request.cameraCheckpoint ?? state.world.cameraCheckpoint,
-      },
-    }
+    return { ...state, phase: action.phase, pendingTravel: action.request, world: { ...state.world, ...action.request.context, previousDestination: state.world.destination, layer: 'transition', entryPortal: action.request.entryPortal ?? state.world.entryPortal, cameraCheckpoint: action.request.cameraCheckpoint ?? state.world.cameraCheckpoint } }
   }
-
-  if (action.type === 'PATCH_CONTEXT') {
-    return { ...state, world: { ...state.world, ...action.patch } }
-  }
-
-  return {
-    ...state,
-    phase: 'idle',
-    pendingTravel: undefined,
-    world: {
-      ...state.world,
-      layer: definitionForDestination(state.world.destination).layer,
-    },
-  }
+  if (action.type === 'PATCH_CONTEXT') return { ...state, world: { ...state.world, ...action.patch } }
+  return { ...state, phase: 'idle', pendingTravel: undefined, world: { ...state.world, layer: definitionForDestination(state.world.destination).layer } }
 }
 
 function transitionPhaseFor(state: UraiWorldState, destination: UraiDestination): UraiTransitionPhase {
@@ -171,31 +117,11 @@ function transitionPhaseFor(state: UraiWorldState, destination: UraiDestination)
 
 export function UraiWorldStateProvider({ pathname, children }: { pathname: string; children: ReactNode }) {
   const [runtime, dispatch] = useReducer(reducer, pathname, initialRuntimeState)
-
-  useEffect(() => {
-    const destination = destinationForPathname(pathname)
-    if (!destination) return
-    dispatch({ type: 'SYNC_ROUTE', destination, context: contextFromLocation() })
-  }, [pathname])
-
-  const beginTravel = useCallback((request: UraiWorldTravelRequest) => {
-    dispatch({
-      type: 'BEGIN_TRAVEL',
-      request,
-      phase: transitionPhaseFor(runtime.world, request.destination),
-    })
-  }, [runtime.world])
-
+  useEffect(() => { const destination = destinationForPathname(pathname); if (destination) dispatch({ type: 'SYNC_ROUTE', destination, context: contextFromLocation() }) }, [pathname])
+  const beginTravel = useCallback((request: UraiWorldTravelRequest) => dispatch({ type: 'BEGIN_TRAVEL', request, phase: transitionPhaseFor(runtime.world, request.destination) }), [runtime.world])
   const cancelTransition = useCallback(() => dispatch({ type: 'CANCEL_TRANSITION' }), [])
   const patchContext = useCallback((patch: UraiWorldContextPatch) => dispatch({ type: 'PATCH_CONTEXT', patch }), [])
-
-  const value = useMemo<UraiWorldContextValue>(() => ({
-    ...runtime,
-    beginTravel,
-    cancelTransition,
-    patchContext,
-  }), [beginTravel, cancelTransition, patchContext, runtime])
-
+  const value = useMemo<UraiWorldContextValue>(() => ({ ...runtime, beginTravel, cancelTransition, patchContext }), [beginTravel, cancelTransition, patchContext, runtime])
   return <UraiWorldContext.Provider value={value}>{children}</UraiWorldContext.Provider>
 }
 

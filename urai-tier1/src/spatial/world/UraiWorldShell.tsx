@@ -5,6 +5,7 @@ import SpatialAmbientRuntime from '@/spatial/audio/SpatialAmbientRuntime'
 import SpatialPositionedAudioRuntime from '@/spatial/audio/SpatialPositionedAudioRuntime'
 import HapticRuntime from '@/spatial/haptics/HapticRuntime'
 import MotionOrchestrator from '@/spatial/motion/MotionOrchestrator'
+import { PossibleFuturesOrbEntry } from '@/spatial/scenario/PossibleFuturesOrbEntry'
 import { GroundGateway } from './GroundGateway'
 import { LifeMapIndependentInputBoundary } from './LifeMapIndependentInputBoundary'
 import { LifeMapRouteTransactionBridge } from './LifeMapRouteTransactionBridge'
@@ -15,6 +16,7 @@ import { WorldTransitionController } from './WorldTransitionController'
 import { useUraiWorldState } from './WorldStateProvider'
 import './worldNavigation.css'
 import './persistentWorldCompanion.css'
+import './possibleFuturesOrbEntry.css'
 import './homePhysicalOrbOwnership.css'
 import './interactiveTargetConvergence.css'
 import './persistentRealmAtmosphere.css'
@@ -57,6 +59,7 @@ export function UraiWorldShell({ children }: { children: ReactNode }) {
       {world.destination === 'life-map' ? <LifeMapRouteTransactionBridge /> : null}
       {world.destination === 'life-map' ? <LifeMapIndependentInputBoundary /> : null}
       {showWorldCompanion ? <PersistentWorldCompanion /> : null}
+      {showWorldCompanion ? <PossibleFuturesOrbEntry /> : null}
       <WorldTransitionController />
       <p className="sr-only" aria-live="polite" aria-atomic="true">
         URAI destination {world.destination}. World layer {world.layer}.

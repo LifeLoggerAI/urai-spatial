@@ -1,21 +1,24 @@
 feature: global-emotional-field
 repo: LifeLoggerAI/urai-spatial
 owner: URAI Privacy + Foundation Governance + Spatial
-privacyGovernanceVersion: 0.1.0-draft
-status: dedicated_consent_operational_provider_and_publication_blocked
+privacyGovernanceVersion: 0.2.0-draft
+status: consent_and_participation_intake_operational_sensitive_provider_and_publication_blocked
 lastReviewed: 2026-09-16
 sourceEvidence:
   - docs/URAI_PERSONALIZED_LIVED_WORLD_AUTHORITY_V1.md
   - urai-tier1/src/spatial/lived-world/globalEmotionalField.ts
   - apps/functions/src/publicGoodConsent.ts
+  - apps/functions/src/globalEmotionalFieldAggregation.ts
   - urai-tier1/src/app/passport/GlobalEmotionalFieldConsentCard.tsx
+  - urai-tier1/src/spatial/layout/HomeAAAVisualRepair.tsx
+  - firebase/firestore.rules
   - LifeLoggerAI/urai-privacy/docs/ANONYMIZATION_STANDARD.md
   - LifeLoggerAI/urai-privacy/docs/CONSENT_TIERS.md
 
 summary:
-  purpose: Record dedicated opt-in authority for privacy-preserving cohort-level emotional/public-good patterns without exposing individual emotion, raw sensitive data or precise movement.
-  userBenefit: Lets users independently control public-good participation while small/unsafe cohorts remain unavailable.
-  implementationStatus: dedicated_c8_consent_receipt_and_runtime_target_implemented_aggregate_provider_and_home_globe_not_activated
+  purpose: Record dedicated opt-in authority for privacy-preserving cohort-level emotional/public-good patterns while allowing safely published aggregate viewing independently from contribution.
+  userBenefit: Lets users control participation without making contribution a condition of viewing public-good aggregate state; small, unsafe, or ungoverned cohorts remain unavailable.
+  implementationStatus: dedicated_c8_consent_receipt_runtime_target_and_participation_only_intake_implemented_viewer_separation_and_home_earth_source_candidate_implemented_sensitive_signal_provider_aggregate_publication_and_pixel_acceptance_not_activated
 
 dataProcessing:
   collectedFields:
@@ -28,30 +31,83 @@ dataProcessing:
       retentionClass: R4
       exportable: true
       deletable: true
+      monetizable: false
+      aiTrainingAllowed: false
+      adminAccessible: false
       auditRequired: true
+    - name: global_field_participation_envelope
+      collectionOrTable: globalEmotionalFieldIntake
+      dataClass: L2
+      source: authenticated_user_and_server
+      purpose: data.public-good.emotional-field
+      consentTier: C8
+      retentionClass: R0
+      exportable: true
+      deletable: true
+      monetizable: false
+      aiTrainingAllowed: false
+      adminAccessible: false
+      auditRequired: true
+      constraints:
+        precision: country_only_at_launch
+        timeBucket: 6_hours
+        contributionKind: cohort_participation_only
+        expiresWithin: 24_hours
     - name: global_field_sensitive_input
       collectionOrTable: not_activated
       dataClass: L4
-      source: model
+      source: future_governed_sensitive_inference_provider
       purpose: inference.sensitive
       consentTier: C4
       retentionClass: R3
       exportable: true
       deletable: true
+      monetizable: false
+      aiTrainingAllowed: false
+      adminAccessible: false
       auditRequired: true
   derivedFields:
     - name: global_emotional_field_cell
-      collectionOrTable: not_activated
+      collectionOrTable: globalEmotionalFieldCells
       dataClass: L6
       sourceFields:
+        - future_governed_global_field_sensitive_input
         - global_field_participation_consent
-        - global_field_sensitive_input
       purpose: cohort-level de-identified public-good aggregate
-      consentTier: C8
+      consentTier: C8_source_participation
       retentionClass: R5
       exportable: false
       deletable: false
+      monetizable: false
+      aiTrainingAllowed: false
       explainabilityRequired: true
+      implementationStatus: publication_contract_only_no_sensitive_aggregate_provider_activated
+
+viewerAuthority:
+  contributionRequiredToViewPublishedAggregate: false
+  rawDatabaseCellReadAllowed: false
+  readBoundary: getGlobalEmotionalFieldSnapshot
+  launchPrecision: country
+  missingCellBehavior: unavailable
+  unsafeCellBehavior: suppressed
+  interpolationOfMissingData: forbidden
+
+hardBoundaries:
+  minimumAbsoluteCohortFloor: 100
+  sensitiveHigherThresholdRequired: true
+  sensitiveHigherThresholdValue: UNKNOWN_REQUIRES_GOVERNANCE
+  individualEmotionPublished: false
+  householdEmotionPublished: false
+  exactLocationPublished: false
+  streetOrBuildingSignalPublished: false
+  rawVoicePublished: false
+  rawTranscriptPublished: false
+  rawMemoryPublished: false
+  movementTrailPublished: false
+  identifiableSocialGraphPublished: false
+  biometricTemplatePublished: false
+  differentialPrivacyActivated: false
+  aiTrainingAuthorized: false
 
 userRights:
   exportSupported: true
@@ -65,17 +121,26 @@ adminAccess:
   auditEventTypes:
     - global_field.consent_changed
     - global_field.consent_revoked
+    - global_field.pending_contribution_created
+    - global_field.pending_contribution_revoked
     - global_field.batch_suppressed
     - global_field.batch_approved
     - global_field.cell_published
 
 monetization:
-  participatesInDataSharing: true
+  participatesInDataSharing: false
   requiresC8Consent: true
   anonymizationBatchRequired: true
   minimumCohortSize: 100
 
+visualState:
+  homeEarthSourceImplemented: true
+  literalPixelAccepted: false
+  aggregateStateMayRenderOnlyFromPublishedSafeCell: true
+  unavailableStateImplemented: true
+  suppressedStateImplemented: true
+
 review:
   reviewer: pending_independent_privacy_and_foundation_governance_review
-  decision: blocked_from_public_signal_activation
-  notes: Dedicated consent defaults Off and records a versioned receipt/runtime target without activating any aggregate provider or publication path. 100 users is only the default anonymization floor from current privacy authority. Location, mental-health/crisis, biometric-derived, relationship/social-graph, minors and protected-population cohorts require an approved higher minimum. Source suppresses rather than invents that number. No individual, household, street, building, raw voice, transcript, memory, movement trail or identifiable social graph may be exposed.
+  decision: blocked_from_public_emotional_signal_activation
+  notes: Dedicated consent defaults Off. Launch intake currently accepts only a country-level cohort-participation envelope and explicitly rejects emotional/raw signal payloads because the governed C4 sensitive-input producer and approved >100 sensitive cohort threshold do not yet exist. The Home Earth is a source candidate, not pixel-accepted visual authority. No public emotional aggregate may be manufactured or activated to beautify the globe.

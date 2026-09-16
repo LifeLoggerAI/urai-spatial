@@ -60,6 +60,32 @@ test.describe('Visible-avatar Home and first-person Ground accessibility evidenc
     expect(errors.consoleErrors).toEqual([])
   })
 
+  test('Avatar activation enters camera-only first-person Home with shared keyboard and touch movement authority', async ({ page }) => {
+    const errors = await collectRuntimeErrors(page)
+    await page.goto('/home/', { waitUntil: 'domcontentloaded' })
+    const home = page.locator(homeOwnerSelector)
+    await waitForHomeWorld(home)
+
+    const avatar = page.getByRole('button', { name: 'Enter first-person Home' })
+    await expect(avatar).toBeVisible()
+    await avatar.focus()
+    await expect(avatar).toBeFocused()
+    await avatar.press('Enter')
+
+    await expect(home).toHaveAttribute('data-home-stable-state', 'AVATAR_HOME_FIRST_PERSON', { timeout: 15_000 })
+    await expect(home).toHaveAttribute('data-home-embodied-self', 'camera-only-first-person-home')
+    await expect(home).toHaveAttribute('data-home-presence-presentation', 'hidden-exterior-avatar-first-person')
+    await expect(home).toHaveAttribute('data-home-movement', 'shared-keyboard-touch-walk-look-interact')
+    await expect(home).toHaveAttribute('data-home-non-xr-body-policy', 'camera-only-no-hands-body-rig')
+    await expect(page.getByRole('button', { name: 'Open Avatar Self View' })).toBeVisible()
+    const homeMovement = page.getByRole('group', { name: 'Home movement controls' })
+    await expect(homeMovement).toHaveCount(1)
+    await expect(homeMovement).toBeHidden()
+    expect(await page.evaluate(() => document.pointerLockElement)).toBeNull()
+    expect(errors.pageErrors).toEqual([])
+    expect(errors.consoleErrors).toEqual([])
+  })
+
   test('Ground is first-person, keyboard/touch navigable, privacy-safe, and keeps direct Home/place controls focusable', async ({ page }) => {
     const errors = await collectRuntimeErrors(page)
     await page.goto('/ground/', { waitUntil: 'domcontentloaded' })
@@ -115,7 +141,9 @@ test.describe('Visible-avatar Home and first-person Ground accessibility evidenc
       const rect = await button.boundingBox()
       expect(rect).not.toBeNull()
       expect(rect!.width).toBeGreaterThanOrEqual(48)
+      expect(rect!.width).toBeLessThanOrEqual(393)
       expect(rect!.height).toBeGreaterThanOrEqual(48)
+      expect(rect!.height).toBeLessThanOrEqual(873)
       expect(rect!.x).toBeGreaterThanOrEqual(0)
       expect(rect!.x + rect!.width).toBeLessThanOrEqual(393)
       expect(rect!.y).toBeGreaterThanOrEqual(0)
