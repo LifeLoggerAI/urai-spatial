@@ -13,12 +13,13 @@ A workflow named visual proof is not visual acceptance. A head move invalidates 
 
 ## Source hierarchy
 
-1. PR #1237 / `unified-spatial-convergence-20260916` is the single current Home + Avatar + Orb + Ground + Life Map + Focus/Replay runtime spine and now owns this visual-control-plane authority.
-2. PR #1241 is a selective donor for personalized Lived World + Passport + Global Emotional Field work, not whole-tree authority.
-3. PR #1243 is a selective donor for Possible Futures + truth model + AI self-ledger + Global Emotional Field work, not whole-tree authority.
-4. PR #1252 is historical mechanical-conflict evidence proving those donor trees cannot be wholesale-merged safely.
-5. Visual sidecar restacks #1255/#1256/#1258/#1260 and sync probes are superseded once this manifest is adopted on #1237.
-6. PR #1177 and older Home/Orb/Ground/Focus lanes are historical/current-supporting lineage only where not already superseded.
+1. PR #1237 / `unified-spatial-convergence-20260916` is the single current runtime + visual-control-plane authority.
+2. Personalized Lived World fail-closed Ground integration has now been selectively converged directly onto #1237; PR #1241 remains historical/selective donor provenance for uncarried scope, not whole-tree authority.
+3. Passport exact-origin return semantics and the first-person Home physical Passport candidate are now on #1237; #1241 remains donor provenance for any still-unreconciled Passport/public-good scope.
+4. PR #1243 remains a selective donor for Possible Futures + truth model + AI self-ledger + Global Emotional Field runtime scope not yet converged.
+5. PR #1252 remains historical mechanical-conflict evidence proving donor trees cannot be wholesale-merged safely.
+6. Visual sidecar restacks #1255/#1256/#1258/#1260 and sync probes are superseded historical provenance.
+7. PR #1177 and older Home/Orb/Ground/Focus lanes are historical/current-supporting lineage only where not already superseded.
 
 ## Locked current visual/product canon
 
@@ -33,9 +34,10 @@ A workflow named visual proof is not visual acceptance. A head move invalidates 
 ### Ground
 - First-person terrestrial lived world.
 - No visible non-XR body/hands, shooter HUD, forced head bob, or follower Orb.
+- Personalized Lived World source boundary is now mounted on #1237 and reuses only already-saved, currently authorized geographic pins as partial private Place anchors; it performs no new location request and fails closed.
 - Personalized elements require provenance and fidelity: `confirmed` / `partial` / `unknown`.
-- Generic fallback must be explicitly non-autobiographical.
-- Final art rejects primitive trees, box-city architecture, flat blue water, obvious tiling, fog walls, repeated scatter, portal spectacle, and generic sci-fi signage.
+- Generic fallback remains explicitly non-autobiographical.
+- Final art still rejects primitive trees, box-city architecture, flat blue water, obvious tiling, fog walls, repeated scatter, portal spectacle, and generic sci-fi signage.
 
 ### Orb
 - Home-owned physical conversational intelligence.
@@ -60,8 +62,9 @@ A workflow named visual proof is not visual acceptance. A head move invalidates 
 
 ### Passport
 - First-person-Home-only physical ownership/authority artifact; not a portal.
-- Must reuse operational Passport authority and restore exact FP Home origin on return.
-- Physical donor implementation still requires selective convergence + fresh literal pixels.
+- Current #1237 source mounts the candidate physical object only in unlocked `AVATAR_HOME_FIRST_PERSON`.
+- Before Passport travel, Home captures the exact current FP origin into the governed return-frame authority; Passport return may restore that camera/state via the `PASSPORT` destination.
+- Source implementation is therefore CURRENT_CANDIDATE; literal pixels, responsive/a11y behavior, full round-trip browser proof, and final physical art acceptance remain required.
 
 ### Global Emotional Field Earth
 - Separate physical Home Earth system, distinct from Location Map and Personal Emotional Weather.
@@ -77,7 +80,7 @@ A workflow named visual proof is not visual acceptance. A head move invalidates 
 - Scenario World is visually distinct from Replay/reality.
 - Relevant surfaces carry `POSSIBLE FUTURE · NOT A MEMORY`.
 - Maximum three launch branches where current authority applies; unranked.
-- Donor implementation requires selective reconciliation onto unified Spatial.
+- PR #1243 implementation remains donor-only until selectively reconciled to unified Spatial.
 
 ## Visual authority inventory
 
@@ -95,8 +98,8 @@ A workflow named visual proof is not visual acceptance. A head move invalidates 
 | VGM-REPLAY-001 | Replay | CURRENT_CANDIDATE | Fresh source-present/source-absent/mobile/reduced/offline pixels |
 | VGM-GROUND-001 | Ground descent/return | CURRENT_CANDIDATE | Fresh exact-head sequence + reduced-motion capture |
 | VGM-GROUND-002 | Ground generic fallback art | REJECTED | Replace vegetation/architecture/water final art |
-| VGM-GROUND-003 | Personalized lived world | MISSING_REPLACEMENT_REQUIRED | Selectively converge truth/provenance runtime, then create confirmed/partial/unknown references |
-| VGM-PASSPORT-001 | Physical Home Passport | MISSING_REPLACEMENT_REQUIRED | Selective convergence + approach/activation/origin-return pixel pack |
+| VGM-GROUND-003 | Personalized lived world source boundary | CURRENT_CANDIDATE | Source is converged fail-closed; create/accept confirmed/partial/unknown visuals and prove revocation/degradation |
+| VGM-PASSPORT-001 | Physical Home Passport | CURRENT_CANDIDATE | Source + exact-origin capture are converged; accept physical art, activation, round-trip, mobile/reduced/a11y pixels |
 | VGM-PASSPORT-002 | Passport UI | CURRENT_CANDIDATE | Responsive/accessibility/receipt-state audit |
 | VGM-GEF-001 | Global Emotional Field Earth | MISSING_REPLACEMENT_REQUIRED | Governed physically plausible Earth + unavailable/suppressed/aggregate pack |
 | VGM-PEW-001 | Personal Emotional Weather | MISSING_REPLACEMENT_REQUIRED | Create distinct private-weather visual grammar |
