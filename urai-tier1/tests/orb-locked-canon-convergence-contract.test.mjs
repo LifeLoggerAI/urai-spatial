@@ -50,6 +50,16 @@ test('Current Orb persistent motion remains state-aware and reduced-motion safe'
   assert.match(currentHome, /const expressiveEnergy = reducedMotion \? 0/)
 })
 
+test('Home Orb shares one near-ground rest-height authority', () => {
+  assert.match(currentHome, /const ORB_FIELD_RADIUS = 0\.5/)
+  assert.match(currentHome, /const ORB_GROUND_CLEARANCE = 0\.015/)
+  assert.match(currentHome, /const ORB_REST_CENTER_OFFSET = ORB_FIELD_RADIUS \+ ORB_GROUND_CLEARANCE/)
+  assert.match(currentHome, /const baseY = groundY \+ ORB_REST_CENTER_OFFSET/)
+  assert.match(currentHome, /position=\{\[ORB_POSITION\.x, groundY \+ ORB_REST_CENTER_OFFSET, ORB_POSITION\.z\]\}/)
+  assert.match(currentHome, /<sphereGeometry args=\{\[ORB_FIELD_RADIUS,effectBudget\.membraneSegments,effectBudget\.membraneSegments\]\}/)
+  assert.doesNotMatch(currentHome, /groundY \+ 1\.52/)
+})
+
 test('Current Home never retires descendants of the canonical Avatar or living-memory Orb', () => {
   assert.match(currentHome, /const CURRENT_HOME_PRESENCE_ROOTS = new Set\(\['home-living-memory-orb', 'home-visible-user-avatar'\]\)/)
   assert.match(currentHome, /function isInsideCurrentHomePresence\(object: THREE\.Object3D\)/)
