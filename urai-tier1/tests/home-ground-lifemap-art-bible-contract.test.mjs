@@ -16,20 +16,20 @@ const lifeMap = read('src/spatial/lifemap/SpatialLifeMapCanonical.tsx')
 
 const has = (source, marker) => assert.ok(source.includes(marker), `missing marker: ${marker}`)
 
-test('Home is a cinematic threshold with a visible user, grounded Orb companion, physical-world Ground and broad-sky Life Map', () => {
+test('Home is a first-person cinematic threshold with a grounded Orb companion, physical-world Ground and broad-sky Life Map', () => {
   for (const marker of [
-    'data-home-embodied-self="visible-cinematic-avatar"',
+    'data-home-embodied-self="first-person-viewpoint-no-avatar"',
     'data-home-movement="camera-look-world-surface-selection"',
     'data-home-ground-entry="physical-world-surface"',
     'data-home-life-map-entry="visible-sky-broad-interaction"',
     'data-home-camera-mode=',
-    'cinematic-third-person',
-    'home-visible-user-avatar',
+    'first-person-viewpoint',
     'home-gold-companion',
     'physicalWorldClick',
     'event.point.clone()',
   ]) has(currentHome, marker)
 
+  assert.doesNotMatch(currentHome, /function VisibleUserAvatar|<VisibleUserAvatar|home-visible-user-avatar|cinematic-third-person|urai-home-embodied-avatar/)
   assert.doesNotMatch(currentHome, /stepEmbodiedMotion|useMovementInput|MobileMovementPad/)
   assert.doesNotMatch(currentHome, /nearby==='ground'|nearby === 'ground'/)
   assert.doesNotMatch(currentHome, /data-home-embodied-self="privacy-preserving-first-person"/)
@@ -54,10 +54,11 @@ test('Home sky is the canonical broad Life Map threshold and localized Home-side
   assert.doesNotMatch(currentHome, /LIFE_MAP/)
 })
 
-test('Home runtime and metadata no longer advertise portal-hub or Home-locomotion ownership', () => {
+test('Home runtime and metadata no longer advertise portal-hub, third-person avatar or Home-locomotion ownership', () => {
   assert.match(assetHome, /cinematic-home-ground-threshold-convergence/)
   assert.match(assetHome, /continuous-lived-physical-world/)
-  assert.match(assetHome, /home-visible-user-avatar home-grounded-companion home-life-map-sky-threshold/)
+  assert.match(assetHome, /home-physical-world home-grounded-companion home-life-map-sky-threshold/)
+  assert.doesNotMatch(assetHome, /home-visible-user-avatar/)
   assert.doesNotMatch(assetHome, /HOME_GROUND|HOME_SPAWN|stagePortalLifecycle|PortalDestination/)
   assert.equal(currentHomeVisualAuthority.artRevision, 'v288-cinematic-lived-world-grounded-reliquary')
   assert.equal(currentHomeVisualAuthority.orbVisualAuthority, 'v288-grounded-biomorphic-reliquary')
