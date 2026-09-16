@@ -7,6 +7,7 @@ const previewConfig = JSON.parse(fs.readFileSync(new URL('../../.github/firebase
 const requiredProviderRewrites = [
   { source: '/api/urai/orb/openai', function: { functionId: 'openAiOrbProvider', region: 'us-central1' } },
   { source: '/api/urai/narrator/elevenlabs', function: { functionId: 'elevenLabsVoiceProvider', region: 'us-central1' } },
+  { source: '/api/urai/founder-voice/elevenlabs', function: { functionId: 'founderVoiceProvider', region: 'us-central1' } },
   { source: '/api/voice/elevenlabs', function: { functionId: 'elevenLabsVoiceProvider', region: 'us-central1' } },
 ]
 
