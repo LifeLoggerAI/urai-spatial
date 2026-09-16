@@ -10,6 +10,15 @@ on:
       - 'urai-tier1/src/app/GroundSpatialWorldClean.tsx'
       - 'urai-tier1/src/spatial/ground/**'
       - 'urai-tier1/src/spatial/world/WorldTransitionController.tsx'
+  pull_request:
+    branches:
+      - orb-canon-lock-convergence-v2-20260916
+    paths:
+      - '.github/workflows/ground-goldmaster-visual-proof.yml'
+      - 'scripts/capture-ground-goldmaster-proof.mjs'
+      - 'urai-tier1/src/app/GroundSpatialWorldClean.tsx'
+      - 'urai-tier1/src/spatial/ground/**'
+      - 'urai-tier1/src/spatial/world/WorldTransitionController.tsx'
   workflow_dispatch:
 
 permissions:
