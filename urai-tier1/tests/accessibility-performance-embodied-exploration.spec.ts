@@ -16,10 +16,11 @@ async function waitForHomeWorld(home: Locator) {
   await expect(home).toHaveAttribute('data-home-assets-ready', 'true', { timeout: 45_000 })
   await expect(home).toHaveAttribute('data-home-ready', 'true', { timeout: 45_000 })
   await expect(home).toHaveAttribute('data-home-interaction-ready', 'true', { timeout: 45_000 })
-  await expect(home).toHaveAttribute('data-home-embodied-self', 'visible-cinematic-avatar')
+  await expect(home).toHaveAttribute('data-home-embodied-self', 'first-person-viewpoint-no-avatar')
   await expect(home).toHaveAttribute('data-home-movement', 'camera-look-world-surface-selection')
   await expect(home).toHaveAttribute('data-home-ground-entry', 'physical-world-surface')
   await expect(home).toHaveAttribute('data-home-life-map-entry', 'visible-sky-broad-interaction')
+  await expect(home).not.toHaveAttribute('data-home-camera-mode', 'cinematic-third-person')
 }
 
 async function enableLifeMapDemo(page: Page) {
@@ -33,12 +34,13 @@ function normalizedPathname(url: string) {
 test.describe('Cinematic Home and first-person Ground accessibility evidence', () => {
   test.describe.configure({ timeout: 300_000 })
 
-  test('Home exposes cinematic world semantics, three keyboard destinations, and no movement pad', async ({ page }) => {
+  test('Home exposes first-person world semantics, three keyboard destinations, and no movement pad or avatar owner', async ({ page }) => {
     const errors = await collectRuntimeErrors(page)
     await page.goto('/home/', { waitUntil: 'domcontentloaded' })
     const home = page.locator(homeOwnerSelector)
     await waitForHomeWorld(home)
-    await expect(home).toHaveAttribute('data-home-camera-mode', /cinematic-third-person|cinematic-look/)
+    await expect(home).toHaveAttribute('data-home-camera-mode', /first-person-viewpoint|cinematic-look/)
+    await expect(page.locator('[data-home-embodied-self="visible-cinematic-avatar"], [name="urai-home-embodied-avatar"]')).toHaveCount(0)
 
     const direct = page.getByRole('navigation', { name: 'Accessible Home destinations' })
     const orb = direct.getByRole('button', { name: 'Open URAI Orb companion' })

@@ -10,7 +10,7 @@ const requireText = (source, marker, message = marker) => assert.equal(source.in
 const normalizeSource = (source) => source.replace(/\r\n/g, '\n').replace(/"/g, "'").replace(/\s+/g, ' ')
 const requireNormalizedPattern = (source, pattern, message) => assert.match(normalizeSource(source), pattern, message)
 
-test('accessibility and performance implementation contracts are present on cinematic Home and first-person Ground', () => {
+test('accessibility and performance implementation contracts are present on first-person Home and first-person Ground', () => {
   const reducedMotion = read('src/spatial/hooks/useReducedMotion.ts')
   const adaptiveQuality = read('src/spatial/performance/useAdaptiveSpatialQuality.ts')
   const companion = read('src/spatial/world/PersistentWorldCompanion.tsx')
@@ -65,13 +65,15 @@ test('accessibility and performance implementation contracts are present on cine
   requireText(homeRuntime, 'role="status"')
 
   for (const marker of [
-    'data-home-embodied-self="visible-cinematic-avatar"',
+    'data-home-embodied-self="first-person-viewpoint-no-avatar"',
     'data-home-movement="camera-look-world-surface-selection"',
     'data-home-ground-entry="physical-world-surface"',
     'data-home-life-map-entry="visible-sky-broad-interaction"',
-    'cinematic-third-person',
+    "'first-person-viewpoint'",
     'prefers-reduced-motion: reduce',
   ]) requireText(currentHome, marker)
+  assert.doesNotMatch(currentHome, /function\s+VisibleUserAvatar\s*\(|<VisibleUserAvatar\b/, 'Home must not restore an active avatar component')
+  assert.doesNotMatch(currentHome, /data-home-embodied-self=["']visible-cinematic-avatar["']|data-home-camera-mode=["']cinematic-third-person["']|name=["']urai-home-embodied-avatar["']/, 'Home must remain first-person/no-avatar')
   assert.doesNotMatch(currentHome, /MobileMovementPad|useMovementInput|stepEmbodiedMotion/, 'Home must not regress to a movement-pad world')
 
   for (const marker of [
@@ -96,7 +98,8 @@ test('accessibility and performance implementation contracts are present on cine
   requireText(routeOwnerCss, 'max-height: 100svh !important;')
 
   for (const marker of [
-    "toHaveAttribute('data-home-embodied-self', 'visible-cinematic-avatar'",
+    "toHaveAttribute('data-home-embodied-self', 'first-person-viewpoint-no-avatar'",
+    "not.toHaveAttribute('data-home-camera-mode', 'cinematic-third-person'",
     "toHaveAttribute('data-home-movement', 'camera-look-world-surface-selection'",
     "toHaveCount(0)",
     'data-ground-exploration="first-person"',
