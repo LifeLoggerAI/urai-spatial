@@ -14,7 +14,28 @@ export type MemoryPlaceRepository = {
   listPlaces(context?: MemoryPlaceRepositoryContext): Promise<MemoryPlace[]>
 }
 
-export const fallbackMemoryPlaceRepository: MemoryPlaceRepository = {
+const personalizedSourceRequired = (): MemoryPlaceResolution => ({
+  ok: false,
+  status: 404,
+  reason: 'personalized-place-source-required',
+  safeHref: '/ground',
+})
+
+/** Ordinary user authority when no validated personalized provider is active. */
+export const failClosedMemoryPlaceRepository: MemoryPlaceRepository = {
+  async resolvePlace() {
+    return personalizedSourceRequired()
+  },
+  async listPlaceObjects() {
+    return []
+  },
+  async listPlaces() {
+    return []
+  },
+}
+
+/** Historical/demo authority only. It must never be the ordinary user fallback. */
+export const demoMemoryPlaceRepository: MemoryPlaceRepository = {
   async resolvePlace(placeId) {
     return resolveDemoMemoryPlace(placeId)
   },
@@ -28,13 +49,16 @@ export const fallbackMemoryPlaceRepository: MemoryPlaceRepository = {
 }
 
 export async function resolveMemoryPlace(placeId: string | undefined | null, context?: MemoryPlaceRepositoryContext) {
-  return fallbackMemoryPlaceRepository.resolvePlace(placeId, context)
+  if (context?.source === 'demo') return demoMemoryPlaceRepository.resolvePlace(placeId, context)
+  return failClosedMemoryPlaceRepository.resolvePlace(placeId, context)
 }
 
 export async function listMemoryPlaceObjects(placeId: string | undefined | null, context?: MemoryPlaceRepositoryContext) {
-  return fallbackMemoryPlaceRepository.listPlaceObjects(placeId, context)
+  if (context?.source === 'demo') return demoMemoryPlaceRepository.listPlaceObjects(placeId, context)
+  return failClosedMemoryPlaceRepository.listPlaceObjects(placeId, context)
 }
 
 export async function listMemoryPlaces(context?: MemoryPlaceRepositoryContext) {
-  return fallbackMemoryPlaceRepository.listPlaces(context)
+  if (context?.source === 'demo') return demoMemoryPlaceRepository.listPlaces(context)
+  return failClosedMemoryPlaceRepository.listPlaces(context)
 }

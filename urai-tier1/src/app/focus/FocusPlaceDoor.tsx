@@ -11,12 +11,19 @@ type FocusPlaceDoorProps = {
 export function FocusPlaceDoor({ manifestId }: FocusPlaceDoorProps) {
   const searchParams = useSearchParams()
   const resolvedManifestId = manifestId ?? searchParams?.get('manifestId')
+  const explicitDemo = searchParams?.get('demo') === '1'
   const resolution = resolveDemoMemoryStar(resolvedManifestId)
   if (!resolution.ok) return null
 
   const star = resolution.star
-  const enterPlaceHref = canEnterMemoryPlace(star)
-    ? star.enterPlaceHref
+  // This component currently resolves bundled demo stars only. Never present its
+  // symbolic place door as autobiographical UI unless the route is explicitly
+  // disclosed as demo/sample mode. Real lived-world place activation belongs to
+  // Ground and source-backed Ground -> Focus context.
+  if (star.privacyState === 'demo' && !explicitDemo) return null
+
+  const enterPlaceHref = canEnterMemoryPlace(star) && star.enterPlaceHref
+    ? `${star.enterPlaceHref}${star.enterPlaceHref.includes('?') ? '&' : '?'}demo=1`
     : undefined
 
   if (!enterPlaceHref) return null
@@ -24,7 +31,8 @@ export function FocusPlaceDoor({ manifestId }: FocusPlaceDoorProps) {
   return (
     <aside
       data-testid="urai-focus-place-door"
-      aria-label="Enter selected memory place"
+      data-place-door-authority="explicit-demo-only"
+      aria-label="Enter disclosed sample memory place"
       style={{
         position: 'fixed',
         zIndex: 32,
@@ -49,36 +57,18 @@ export function FocusPlaceDoor({ manifestId }: FocusPlaceDoorProps) {
           fontWeight: 800,
         }}
       >
-        Memory Place
+        Sample Memory Place
       </div>
 
-      <h2
-        style={{
-          margin: '8px 0',
-          fontSize: '1.15rem',
-        }}
-      >
-        {star.title} has a place.
+      <h2 style={{ margin: '8px 0', fontSize: '1.15rem' }}>
+        {star.title} has a disclosed sample place.
       </h2>
 
-      <p
-        style={{
-          margin: '0 0 14px',
-          color: 'rgba(234,244,255,0.74)',
-          lineHeight: 1.45,
-        }}
-      >
-        Step through this star into its symbolic memory location. Exact
-        location is not shown by default.
+      <p style={{ margin: '0 0 14px', color: 'rgba(234,244,255,0.74)', lineHeight: 1.45 }}>
+        This is bundled demo data, not reconstructed personal memory. Personal places are entered from authorized Ground context.
       </p>
 
-      <div
-        style={{
-          display: 'flex',
-          flexWrap: 'wrap',
-          gap: '10px',
-        }}
-      >
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
         <Link
           href={enterPlaceHref}
           style={{
@@ -91,11 +81,11 @@ export function FocusPlaceDoor({ manifestId }: FocusPlaceDoorProps) {
             textDecoration: 'none',
           }}
         >
-          Enter Place
+          Enter Sample Place
         </Link>
 
         <Link
-          href={star.replayHref}
+          href={`${star.replayHref}${star.replayHref.includes('?') ? '&' : '?'}demo=1`}
           style={{
             border: '1px solid rgba(147,197,253,0.28)',
             borderRadius: '999px',
@@ -106,7 +96,7 @@ export function FocusPlaceDoor({ manifestId }: FocusPlaceDoorProps) {
             textDecoration: 'none',
           }}
         >
-          Replay First
+          Replay Sample
         </Link>
       </div>
     </aside>

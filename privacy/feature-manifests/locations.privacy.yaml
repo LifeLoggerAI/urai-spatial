@@ -1,47 +1,52 @@
 feature: locations
 repo: LifeLoggerAI/urai-spatial
-owner: TBD
+owner: URAI Privacy + Spatial
 privacyGovernanceVersion: 0.1.0-draft
-status: blocked_stubbed_from_repo_audit
-lastReviewed: 2026-05-09
+status: source_implemented_provider_and_release_policy_gated
+lastReviewed: 2026-09-16
 sourceEvidence:
-  - URAI_ECOSYSTEM_AUDIT.md
+  - urai-tier1/src/spatial/places/geographicLocationVault.ts
+  - urai-tier1/tests/geographic-location-vault.test.mjs
+  - urai-tier1/tests/geographic-location-client-contract.test.mjs
+  - urai-tier1/tests/geographic-maps-launch-policy.test.mjs
+  - LifeLoggerAI/urai-privacy/docs/CONSENT_TIERS.md
+  - LifeLoggerAI/urai-privacy/functions/src/consent-decision.ts
 
 summary:
-  purpose: Store location context associated with memories.
-  userBenefit: Helps users organize and revisit memories by place.
-  implementationStatus: stubbed_per_repo_audit
+  purpose: Store authorized location context associated with memories and user-controlled geographic place records.
+  userBenefit: Helps users organize and revisit memories by place while keeping exact-private precision owner-controlled.
+  implementationStatus: client_vault_and_source_contracts_present_external_provider_launch_remains_policy_gated
 
 dataProcessing:
   collectedFields:
     - name: location_record
-      collectionOrTable: locations
+      collectionOrTable: geographic_memory_pins_or_governed_location_store
       dataClass: L4
       source: device_or_user_provided
-      purpose: associate memories with places or location context
-      consentTier: C4
+      purpose: location.context
+      consentTier: C3
       retentionClass: R3
       exportable: true
       deletable: true
       auditRequired: true
   derivedFields:
     - name: location_memory_context
-      collectionOrTable: locations
+      collectionOrTable: governed_location_context
       dataClass: L4
       sourceFields:
         - location_record
-      purpose: user-facing place-based memory organization
-      consentTier: C4
+      purpose: location.context
+      consentTier: C3
       retentionClass: R3
       exportable: true
       deletable: true
-      explainabilityRequired: false
+      explainabilityRequired: true
 
 userRights:
   exportSupported: true
   deletionSupported: true
   consentRevocationSupported: true
-  explanationSupported: false
+  explanationSupported: true
 
 adminAccess:
   allowed: false
@@ -49,7 +54,10 @@ adminAccess:
   auditEventTypes:
     - location.created
     - location.linked_to_memory
+    - location.corrected
+    - location.precision_changed
     - location.deleted
+    - location.consent_revoked
 
 monetization:
   participatesInDataSharing: false
@@ -58,6 +66,6 @@ monetization:
   minimumCohortSize: 100
 
 review:
-  reviewer: TBD
-  decision: blocked_until_implemented_and_reviewed
-  notes: Repo audit marks locations as stubbed. Location data is sensitive context and must not launch until explicit consent, revocation, export, deletion, and audit behavior are implemented and tested.
+  reviewer: pending_independent_privacy_review
+  decision: blocked_from_unreviewed_provider_or_public_activation
+  notes: Current authoritative privacy policy assigns location.context to C3, not C4. Sensitive emotional/mental/relationship inference derived from location remains a separate C4 purpose and must not be bundled into location consent. Exact routes and exact-private coordinates remain private and revocable.

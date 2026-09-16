@@ -5,6 +5,7 @@ export type HomeStableState =
   | 'IMMERSIVE_CONVERSATION'
 
 export type HomeDestination = 'GROUND' | 'LIFE_MAP'
+export type HomeReturnDestination = HomeDestination | 'PASSPORT'
 
 export type HomeTransitionState =
   | 'AVATAR_EMBODIMENT_TRANSITION'
@@ -43,7 +44,7 @@ export type HomeOriginSnapshot = {
 
 export type HomeReturnFrame = {
   kind: 'local' | 'destination'
-  destination?: HomeDestination
+  destination?: HomeReturnDestination
   origin: HomeOriginSnapshot
 }
 
@@ -66,13 +67,14 @@ export type HomeExperienceEvent =
   | { type: 'SKY_ACTIVATE'; snapshot: HomeOriginSnapshot }
   | { type: 'ORB_ACTIVATE'; snapshot: HomeOriginSnapshot }
   | { type: 'TRANSITION_COMPLETE' }
-  | { type: 'DESTINATION_RETURN'; destination: HomeDestination; snapshot?: HomeOriginSnapshot }
+  | { type: 'DESTINATION_RETURN'; destination: HomeReturnDestination; snapshot?: HomeOriginSnapshot }
   | { type: 'ESCAPE' }
   | { type: 'HOME_RESTORE_COMPLETE' }
   | { type: 'RECOVER'; snapshot?: HomeOriginSnapshot }
   | { type: 'SET_REDUCED_MOTION'; value: boolean }
 
 export const HOME_RETURN_SESSION_KEY = 'urai:home:return-frame:v1'
+export const HOME_PASSPORT_ORIGIN_CAPTURE_EVENT = 'urai:home-passport-origin-capture' as const
 
 export const DEFAULT_HOME_PRESENTATION_CAMERA: HomeCameraSnapshot = {
   position: [0, 1.75, 7.85],
@@ -214,10 +216,15 @@ export function homeExperienceReducer(
     case 'DESTINATION_RETURN': {
       const { frame, stack } = popReturnFrame(state)
       const origin = event.snapshot ?? frame?.origin ?? state.origin
+      const transition = event.destination === 'GROUND'
+        ? 'GROUND_UNWIND'
+        : event.destination === 'LIFE_MAP'
+          ? 'LIFE_MAP_UNWIND'
+          : 'HOME_RESTORE'
       return {
         ...state,
         stableState: origin.stableState,
-        transition: event.destination === 'GROUND' ? 'GROUND_UNWIND' : 'LIFE_MAP_UNWIND',
+        transition,
         returnStack: stack,
         origin,
         pendingDestination: null,
@@ -314,7 +321,12 @@ export function parseHomeReturnFrame(value: string | null): HomeReturnFrame | nu
   try {
     const parsed = JSON.parse(value) as Partial<HomeReturnFrame>
     if (parsed.kind !== 'local' && parsed.kind !== 'destination') return null
-    if (parsed.kind === 'destination' && parsed.destination !== 'GROUND' && parsed.destination !== 'LIFE_MAP') return null
+    if (
+      parsed.kind === 'destination'
+      && parsed.destination !== 'GROUND'
+      && parsed.destination !== 'LIFE_MAP'
+      && parsed.destination !== 'PASSPORT'
+    ) return null
     if (parsed.kind === 'local' && parsed.destination !== undefined) return null
     if (!parsed.origin || (parsed.origin.stableState !== 'HOME_PRESENTATION' && parsed.origin.stableState !== 'AVATAR_HOME_FIRST_PERSON')) return null
 

@@ -23,13 +23,15 @@ assert.match(validation, /privacyLevel/, "Validator must require privacyLevel.")
 const adapter = readFileSync(join(app, "src/spatial/places/firestoreMemoryPlaceRepository.ts"), "utf8");
 assert.match(adapter, /validateMemoryPlace/, "Firestore adapter must validate memory places.");
 assert.match(adapter, /validatePlaceObject/, "Firestore adapter must validate place objects.");
-assert.match(adapter, /fallbackMemoryPlaceRepository/, "Firestore adapter must preserve fallback behavior.");
+assert.match(adapter, /failClosedMemoryPlaceRepository/, "Unwired Firestore adapter must fail closed.");
+assert.doesNotMatch(adapter, /demoMemoryPlaceRepository|fallbackMemoryPlaceRepository/, "Live data validation must never preserve an implicit demo fallback.");
+assert.match(adapter, /source: 'firestore'/, "Firestore authority must remain explicit when provider wiring is added.");
 
 const continuity = readFileSync(join(app, "src/spatial/world/worldContinuityRepository.ts"), "utf8");
 assert.match(continuity, /WorldContinuityRepository/, "World continuity repository contract must exist.");
 assert.match(continuity, /markPlaceVisited/, "Continuity repository must mark place visits.");
 assert.match(continuity, /markObjectInspected/, "Continuity repository must mark object inspection.");
 assert.match(continuity, /markReplayCompleted/, "Continuity repository must mark replay completion.");
-assert.match(continuity, /fallbackWorldContinuityRepository/, "Continuity repository must have fallback behavior.");
+assert.match(continuity, /fallbackWorldContinuityRepository/, "Continuity repository must have non-personal continuity fallback behavior.");
 
 console.log("URAI live data validation canon passed.");

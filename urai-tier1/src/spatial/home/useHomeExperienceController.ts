@@ -5,6 +5,7 @@ import * as THREE from 'three'
 import { URAI_WORLD_ORB_CLOSE_EVENT } from '@/spatial/world/worldEvents'
 import { URAI_HOME_AVATAR_ACTIVATE_EVENT } from './homeSemanticEvents'
 import {
+  HOME_PASSPORT_ORIGIN_CAPTURE_EVENT,
   consumeHomeReturnFrame,
   createInitialHomeExperienceState,
   homeExperienceReducer,
@@ -79,6 +80,15 @@ export function useHomeExperienceController({
     window.addEventListener(URAI_HOME_AVATAR_ACTIVATE_EVENT, onSemanticAvatarActivate)
     return () => window.removeEventListener(URAI_HOME_AVATAR_ACTIVATE_EVENT, onSemanticAvatarActivate)
   }, [activateAvatar])
+
+  useEffect(() => {
+    const capturePassportOrigin = () => {
+      if (state.transition || state.inputLocked || state.stableState !== 'AVATAR_HOME_FIRST_PERSON') return
+      persistHomeReturnFrame({ kind: 'destination', destination: 'PASSPORT', origin: currentOrigin() })
+    }
+    window.addEventListener(HOME_PASSPORT_ORIGIN_CAPTURE_EVENT, capturePassportOrigin)
+    return () => window.removeEventListener(HOME_PASSPORT_ORIGIN_CAPTURE_EVENT, capturePassportOrigin)
+  }, [currentOrigin, state.inputLocked, state.stableState, state.transition])
 
   const completeEmbodiment = useCallback(() => {
     const runtime = readRuntimeSnapshot()

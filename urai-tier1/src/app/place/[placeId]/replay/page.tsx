@@ -1,38 +1,43 @@
 import Link from 'next/link'
 import { PlaceReplayScene } from '@/spatial/places/PlaceReplayScene'
-import { DEMO_MEMORY_PLACES } from '@/spatial/places/demoMemoryPlaces'
 import { listMemoryPlaceObjects, resolveMemoryPlace } from '@/spatial/places/memoryPlaceRepository'
 
-
-export function generateStaticParams() {
-  return DEMO_MEMORY_PLACES.map((place) => ({
-    placeId: place.id,
-  }))
-}
 type PlaceReplayPageProps = {
   params: Promise<{
     placeId: string
   }>
+  searchParams?: Promise<{
+    demo?: string | string[]
+  }>
 }
 
-export default async function PlaceReplayPage({ params }: PlaceReplayPageProps) {
+export default async function PlaceReplayPage({ params, searchParams }: PlaceReplayPageProps) {
   const { placeId } = await params
-  const resolved = await resolveMemoryPlace(placeId)
+  const query = searchParams ? await searchParams : undefined
+  const explicitDemo = query?.demo === '1'
+  const context = explicitDemo ? { source: 'demo' as const } : undefined
+  const resolved = await resolveMemoryPlace(placeId, context)
 
   if (!resolved.ok) {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-slate-950 p-6 text-white">
+      <main className="flex min-h-screen items-center justify-center bg-slate-950 p-6 text-white" data-place-replay-authority="legacy-fail-closed-no-demo-substitution">
         <section className="max-w-xl rounded-3xl border border-white/10 bg-white/10 p-8 text-center backdrop-blur">
           <p className="text-xs uppercase tracking-[0.4em] text-cyan-100/70">Place Replay</p>
-          <h1 className="mt-3 text-3xl font-semibold">Replay unavailable</h1>
-          <p className="mt-3 text-sm text-slate-200">This place replay could not be opened safely.</p>
-          <Link className="mt-6 inline-flex rounded-full bg-white px-5 py-2 text-sm font-semibold text-slate-950" href="/life-map">
-            Back to LifeMap
+          <h1 className="mt-3 text-3xl font-semibold">Source-backed replay required</h1>
+          <p className="mt-3 text-sm text-slate-200">
+            UrAi will not replay a demo place as personal memory. Return to Ground and enter Replay only from an authorized place-bound memory context.
+          </p>
+          <Link className="mt-6 inline-flex rounded-full bg-white px-5 py-2 text-sm font-semibold text-slate-950" href="/ground">
+            Return to Ground
           </Link>
         </section>
       </main>
     )
   }
 
-  return <PlaceReplayScene place={resolved.place} objects={await listMemoryPlaceObjects(resolved.place.id)} />
+  return (
+    <div data-place-replay-authority={explicitDemo ? 'explicit-disclosed-demo' : 'validated-personalized-source'}>
+      <PlaceReplayScene place={resolved.place} objects={await listMemoryPlaceObjects(resolved.place.id, context)} />
+    </div>
+  )
 }
