@@ -10,6 +10,7 @@ const read = (relative) => fs.readFileSync(path.join(root, relative), 'utf8')
 
 const home = read('src/spatial/layout/HomeWorldProductionSacred.tsx')
 const currentHome = read('src/spatial/layout/HomeWorldProductionV223.tsx')
+const homeAvatar = read('src/spatial/home/HomeEmbodiedAvatar.tsx')
 const conversation = read('src/spatial/orb/OrbConversationPanel.tsx')
 const speechClock = read('src/spatial/orb/orbSpeechClock.ts')
 const adaptiveQuality = read('src/spatial/performance/useAdaptiveSpatialQuality.ts')
@@ -57,12 +58,13 @@ test('Current Home never retires descendants of the canonical Avatar or living-m
   assert.match(currentHome, /CURRENT_HOME_PRESENCE_ROOTS\.has\(current\.name\)/)
   assert.match(currentHome, /current = current\.parent/)
   assert.match(currentHome, /if \(isInsideCurrentHomePresence\(object\)\) return/)
+  assert.match(currentHome, /name="home-visible-user-avatar"/)
   assert.match(currentHome, /name="home-orb-authored-core"/)
   assert.match(currentHome, /name="home-orb-non-spherical-core"/)
   assert.match(currentHome, /name="home-orb-stabilizer-ring-1"/)
 })
 
-test('Authored model cloning is skeleton-safe, preserves material shape, and disposes only cloned materials', () => {
+test('Authored Orb cloning is skeleton-safe, preserves material shape, and disposes only cloned materials', () => {
   assert.match(currentHome, /import \{ clone as cloneSkeleton \} from 'three\/addons\/utils\/SkeletonUtils\.js'/)
   assert.match(currentHome, /const root = cloneSkeleton\(source\)/)
   assert.match(currentHome, /object\.material = Array\.isArray\(object\.material\)/)
@@ -70,19 +72,45 @@ test('Authored model cloning is skeleton-safe, preserves material shape, and dis
   assert.match(currentHome, /: object\.material\.clone\(\)/)
   assert.match(currentHome, /function disposeClonedMaterials\(root: THREE\.Object3D\)/)
   assert.match(currentHome, /materials\.forEach\(\(material\) => material\.dispose\(\)\)/)
-  assert.match(currentHome, /disposeClonedMaterials\(model\)/)
   assert.match(currentHome, /disposeClonedMaterials\(authoredOrb\)/)
   assert.doesNotMatch(currentHome, /geometry\.dispose\(\)|texture\.dispose\(\)/)
   assert.doesNotMatch(currentHome, /Array\.isArray\(source\)/)
 })
 
-test('Visible Home Avatar uses the existing authored idle_breath clip and respects reduced motion', () => {
-  assert.match(currentHome, /const \{ actions \} = useAnimations\(human\.animations, model\)/)
-  assert.match(currentHome, /const idle = actions\.idle_breath/)
-  assert.match(currentHome, /if \(!idle \|\| reducedMotion\) return/)
-  assert.match(currentHome, /idle\.reset\(\)\.setLoop\(THREE\.LoopRepeat, Infinity\)\.fadeIn\(\.3\)\.play\(\)/)
-  assert.match(currentHome, /animation: reducedMotion \? 'still-reduced-motion' : 'idle_breath'/)
-  assert.match(currentHome, /cloneStrategy: 'skeleton-safe'/)
+test('Unified Home Avatar owns skeleton-safe cloning, disposal, authored idle_breath, and reduced-motion stillness', () => {
+  assert.match(homeAvatar, /import \{ useAnimations, useGLTF \} from '@react-three\/drei'/)
+  assert.match(homeAvatar, /cloneSkeleton\(source\)/)
+  assert.match(homeAvatar, /const \{ actions \} = useAnimations\(gltf\.animations, model\)/)
+  assert.match(homeAvatar, /const idle = actions\.idle_breath/)
+  assert.match(homeAvatar, /if \(!idle \|\| reducedMotion \|\| !visible\)/)
+  assert.match(homeAvatar, /idle\.reset\(\)\.setLoop\(THREE\.LoopRepeat, Infinity\)\.fadeIn\(\.3\)\.play\(\)/)
+  assert.match(homeAvatar, /materials\.forEach\(\(material\) => material\.dispose\(\)\)/)
+  assert.match(homeAvatar, /authoredIdle: actions\.idle_breath \? 'idle_breath' : 'unavailable-still'/)
+  assert.match(currentHome, /<HomeEmbodiedAvatar/)
+  assert.match(currentHome, /state=\{avatarState\}/)
+  assert.match(currentHome, /data-home-first-person-body="none-non-xr"/)
+})
+
+test('Active Home renderer wires Avatar activation to persistent camera-only first-person Home', () => {
+  assert.match(currentHome, /useHomeExperienceController\(/)
+  assert.match(currentHome, /homeApi\.activateAvatar\(\)/)
+  assert.match(currentHome, /homeApi\.completeEmbodiment/)
+  assert.match(currentHome, /homeTransition === 'AVATAR_EMBODIMENT_TRANSITION'/)
+  assert.match(currentHome, /stableMode === 'AVATAR_HOME_FIRST_PERSON'/)
+  assert.match(currentHome, /stepEmbodiedMotion\(\{/)
+  assert.match(currentHome, /HOME_FIRST_PERSON_EYE_HEIGHT/)
+  assert.match(currentHome, /HOME_FIRST_PERSON_BOUNDS/)
+  assert.match(currentHome, /<MobileMovementPad input=\{movement\} label="Move through Home"/)
+  assert.match(currentHome, /<AvatarSelfView open=\{homeExperience\.stableState === 'AVATAR_SELF_VIEW'\}/)
+  assert.match(currentHome, /data-home-embodied-self=\{firstPerson \? 'camera-only-avatar-embodied-first-person' : 'visible-cinematic-avatar'\}/)
+})
+
+test('Ground and Sky departure commit through origin-aware Home controller and Sky remains the Life Map owner', () => {
+  assert.match(currentHome, /homeApi\.activateGround\(\)/)
+  assert.match(currentHome, /homeApi\.activateSky\(\)/)
+  assert.match(currentHome, /homeApi\.commitDestination\(next === 'ground' \? 'GROUND' : 'LIFE_MAP'\)/)
+  assert.match(currentHome, /href: '\/life-map\/\?from=home-sky'/)
+  assert.doesNotMatch(currentHome, /home-life-map-physical-portal|LifeMapPortal|PORTAL_MODEL/)
 })
 
 test('Conversation speaking state is bound to actual audible playback rather than streamed text or muted response timing', () => {
