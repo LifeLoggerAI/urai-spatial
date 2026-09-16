@@ -63,7 +63,7 @@ Write-Host ''
 Write-Host 'Launching Claude Code.'
 Write-Host 'When the Anthropic browser sign-in opens, sign in with adam@urailabs.com.'
 Write-Host 'Use the existing Claude Pro subscription; do not create separate Anthropic API billing for normal interactive use.'
-Write-Host 'Never paste your password, MFA code, recovery code, OAuth token, recovery code, or session cookie into an AI chat.'
+Write-Host 'Never paste your password, MFA code, OAuth token, recovery code, or session cookie into an AI chat.'
 Write-Host ''
 
 claude
