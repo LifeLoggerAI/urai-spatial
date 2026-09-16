@@ -5,6 +5,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import AssetDrivenHomeWorld from './AssetDrivenHomeWorld'
 import { useWebGLAvailable } from './HomeSpatialCanvas'
 import HomeSpatialWorldFinal from './HomeSpatialWorldFinal'
+import { requestHomeAvatarActivation } from '@/spatial/home/homeExperienceEvents'
 import { requestUraiWorldOrbOpen } from '@/spatial/world/worldEvents'
 
 type RendererState = 'ready' | 'recovering' | 'failed'
@@ -17,6 +18,7 @@ const HOME_SEMANTIC_DESTINATIONS = {
 function HomeSemanticNavigation() {
   return (
     <nav className="home-semantic-navigation" aria-label="Accessible Home destinations" data-home-navigation-owner="runtime-boundary" data-home-navigation-non-dominant="true">
+      <button type="button" aria-label="Enter first-person Home through your Avatar" data-testid="home-semantic-avatar" data-urai-audit-action="home-avatar-embody" onClick={requestHomeAvatarActivation}>Avatar</button>
       <button type="button" aria-label="Open URAI Orb companion" data-testid="home-semantic-orb" data-urai-audit-action="home-orb-direct" onClick={(event) => requestUraiWorldOrbOpen(event.currentTarget)}>Open URAI Orb companion</button>
       <a aria-label="Open Ground directly" data-testid="home-semantic-ground" href={HOME_SEMANTIC_DESTINATIONS.ground.travelHref}>Ground</a>
       <a aria-label="Open Life Map directly" data-testid="home-semantic-life-map" href={HOME_SEMANTIC_DESTINATIONS.lifeMap.travelHref}>Life Map</a>
@@ -24,7 +26,7 @@ function HomeSemanticNavigation() {
   )
 }
 
-const runtimeStyles = `.urai-home-spatial-runtime-layer .urai-final-home-doorways,.urai-home-spatial-runtime-layer .urai-asset-home-world>.home-semantic-navigation{display:none!important}.urai-home-spatial-runtime-layer>.home-semantic-navigation{position:absolute;z-index:47;right:max(10px,env(safe-area-inset-right));top:50%;transform:translateY(-50%);display:grid;gap:8px;width:48px;pointer-events:auto;opacity:.015}.urai-home-spatial-runtime-layer>.home-semantic-navigation:focus-within{opacity:1}.urai-home-spatial-runtime-layer>.home-semantic-navigation button,.urai-home-spatial-runtime-layer>.home-semantic-navigation a{display:flex;align-items:center;justify-content:center;width:48px;height:48px;min-width:48px;min-height:48px;padding:0;border:1px solid rgba(230,246,240,.32);border-radius:50%;background:rgba(6,18,19,.92);color:#f3fbf8;font:700 0/1 system-ui;cursor:pointer;pointer-events:auto;touch-action:manipulation;text-decoration:none}.urai-home-spatial-runtime-layer>.home-semantic-navigation button:focus-visible,.urai-home-spatial-runtime-layer>.home-semantic-navigation a:focus-visible{font-size:10px;outline:2px solid #fff;outline-offset:2px}.urai-home-spatial-runtime-layer[data-webgl-ready="false"]>.home-semantic-navigation{position:absolute;left:50%;right:auto;top:auto;bottom:max(34px,calc(env(safe-area-inset-bottom) + 24px));transform:translateX(-50%);display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;width:min(680px,calc(100vw - 32px));padding:12px;border:1px solid rgba(230,246,240,.28);border-radius:22px;background:rgba(6,18,19,.92);box-shadow:0 18px 54px rgba(0,0,0,.46);opacity:1}.urai-home-spatial-runtime-layer[data-webgl-ready="false"]>.home-semantic-navigation button,.urai-home-spatial-runtime-layer[data-webgl-ready="false"]>.home-semantic-navigation a{width:auto;height:auto;min-width:0;min-height:52px;padding:9px 12px;border-radius:14px;font:700 12px/1.25 system-ui;text-align:center}.urai-home-spatial-runtime-layer>.home-runtime-loading{position:absolute;inset:0;z-index:45;display:grid;place-content:center;gap:14px;text-align:center;background:radial-gradient(circle at 50% 52%,rgba(80,139,119,.2),rgba(8,25,22,.94) 48%,#081b18 100%);color:#eef8f3;font:600 13px/1.3 system-ui;letter-spacing:.03em;pointer-events:none}.urai-home-spatial-runtime-layer>.home-runtime-loading span{width:52px;height:52px;margin:auto;border:1px solid rgba(190,232,218,.34);border-radius:50%;box-shadow:0 0 34px rgba(109,201,174,.2),inset 0 0 22px rgba(109,201,174,.12);animation:home-runtime-forming-breath 1.8s ease-in-out infinite}@keyframes home-runtime-forming-breath{50%{transform:scale(1.08);opacity:.68}}@media(max-width:700px){.urai-home-spatial-runtime-layer>.home-semantic-navigation{right:max(8px,env(safe-area-inset-right))}.urai-home-spatial-runtime-layer[data-webgl-ready="false"]>.home-semantic-navigation{left:16px;right:16px;bottom:max(18px,calc(env(safe-area-inset-bottom) + 12px));transform:none;grid-template-columns:1fr;width:auto}}@media(prefers-reduced-motion:reduce){.urai-home-spatial-runtime-layer>.home-runtime-loading span{animation:none}}`
+const runtimeStyles = `.urai-home-spatial-runtime-layer .urai-final-home-doorways,.urai-home-spatial-runtime-layer .urai-asset-home-world>.home-semantic-navigation{display:none!important}.urai-home-spatial-runtime-layer>.home-semantic-navigation{position:absolute;z-index:47;right:max(10px,env(safe-area-inset-right));top:50%;transform:translateY(-50%);display:grid;gap:8px;width:48px;pointer-events:auto;opacity:.08}.urai-home-spatial-runtime-layer>.home-semantic-navigation:hover,.urai-home-spatial-runtime-layer>.home-semantic-navigation:focus-within{opacity:1}.urai-home-spatial-runtime-layer>.home-semantic-navigation button,.urai-home-spatial-runtime-layer>.home-semantic-navigation a{display:flex;align-items:center;justify-content:center;width:48px;height:48px;min-width:48px;min-height:48px;padding:0;border:1px solid rgba(230,246,240,.32);border-radius:50%;background:rgba(6,18,19,.92);color:#f3fbf8;font:700 0/1 system-ui;cursor:pointer;pointer-events:auto;touch-action:manipulation;text-decoration:none}.urai-home-spatial-runtime-layer>.home-semantic-navigation button:focus-visible,.urai-home-spatial-runtime-layer>.home-semantic-navigation a:focus-visible{font-size:10px;outline:2px solid #fff;outline-offset:2px}.urai-home-spatial-runtime-layer[data-webgl-ready="false"]>.home-semantic-navigation{position:absolute;left:50%;right:auto;top:auto;bottom:max(34px,calc(env(safe-area-inset-bottom) + 24px));transform:translateX(-50%);display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;width:min(680px,calc(100vw - 32px));padding:12px;border:1px solid rgba(230,246,240,.28);border-radius:22px;background:rgba(6,18,19,.92);box-shadow:0 18px 54px rgba(0,0,0,.46);opacity:1}.urai-home-spatial-runtime-layer[data-webgl-ready="false"]>.home-semantic-navigation button,.urai-home-spatial-runtime-layer[data-webgl-ready="false"]>.home-semantic-navigation a{width:auto;height:auto;min-width:0;min-height:52px;padding:9px 12px;border-radius:14px;font:700 12px/1.25 system-ui;text-align:center}.urai-home-spatial-runtime-layer>.home-runtime-loading{position:absolute;inset:0;z-index:45;display:grid;place-content:center;gap:14px;text-align:center;background:radial-gradient(circle at 50% 52%,rgba(80,139,119,.2),rgba(8,25,22,.94) 48%,#081b18 100%);color:#eef8f3;font:600 13px/1.3 system-ui;letter-spacing:.03em;pointer-events:none}.urai-home-spatial-runtime-layer>.home-runtime-loading span{width:52px;height:52px;margin:auto;border:1px solid rgba(190,232,218,.34);border-radius:50%;box-shadow:0 0 34px rgba(109,201,174,.2),inset 0 0 22px rgba(109,201,174,.12);animation:home-runtime-forming-breath 1.8s ease-in-out infinite}@keyframes home-runtime-forming-breath{50%{transform:scale(1.08);opacity:.68}}@media(max-width:700px){.urai-home-spatial-runtime-layer>.home-semantic-navigation{right:max(8px,env(safe-area-inset-right))}.urai-home-spatial-runtime-layer[data-webgl-ready="false"]>.home-semantic-navigation{left:16px;right:16px;bottom:max(18px,calc(env(safe-area-inset-bottom) + 12px));transform:none;grid-template-columns:repeat(2,minmax(0,1fr));width:auto}}@media(prefers-reduced-motion:reduce){.urai-home-spatial-runtime-layer>.home-runtime-loading span{animation:none}}`
 
 export default function HomeSpatialRuntimeLayer() {
   const pathname = usePathname() ?? '/'
@@ -59,9 +61,6 @@ export default function HomeSpatialRuntimeLayer() {
     setRendererState(state)
   }
 
-  // Attach before the browser can paint a newly mounted canvas. The recovery
-  // contract deliberately dispatches a context-loss event immediately after a
-  // canvas becomes visible; a passive effect leaves a real race there.
   useLayoutEffect(() => {
     if (!homeRuntimeActive) {
       setAssetsReady(false)
@@ -180,17 +179,8 @@ export default function HomeSpatialRuntimeLayer() {
 
   if (webglAvailable === null) {
     return (
-      <section
-        className="urai-home-spatial-runtime-layer"
-        data-testid="urai-home-webgl-detecting"
-        data-webgl-state="detecting"
-        data-urai-home-runtime="accessible-boundary-while-detecting-webgl"
-        data-webgl-ready="recovering"
-        aria-label="URAI Home startup"
-      >
-        <div role="status" aria-live="polite" className="sr-only">
-          Detecting spatial rendering support. Accessible Home controls remain available.
-        </div>
+      <section className="urai-home-spatial-runtime-layer" data-testid="urai-home-webgl-detecting" data-webgl-state="detecting" data-urai-home-runtime="accessible-boundary-while-detecting-webgl" data-webgl-ready="recovering" aria-label="URAI Home startup">
+        <div role="status" aria-live="polite" className="sr-only">Detecting spatial rendering support. Accessible Home controls remain available.</div>
         <HomeSemanticNavigation />
         <style jsx global>{runtimeStyles}</style>
       </section>
@@ -200,19 +190,8 @@ export default function HomeSpatialRuntimeLayer() {
   if (webglAvailable === false || rendererState === 'failed') {
     const unavailable = webglAvailable === false
     return (
-      <section
-        className="urai-home-spatial-runtime-layer"
-        data-testid="urai-home-accessible-fallback"
-        data-webgl-state={unavailable ? 'unavailable' : 'renderer-failed'}
-        data-urai-home-runtime={unavailable ? 'accessible-fallback-without-webgl' : 'accessible-fallback-after-renderer-failure'}
-        data-webgl-ready="false"
-        aria-label="Spatial Home fallback"
-      >
-        <div role="status" aria-live="polite" className="sr-only">
-          {unavailable
-            ? 'WebGL is unavailable. Accessible Home controls remain available.'
-            : 'The spatial renderer could not recover. Accessible Home controls remain available.'}
-        </div>
+      <section className="urai-home-spatial-runtime-layer" data-testid="urai-home-accessible-fallback" data-webgl-state={unavailable ? 'unavailable' : 'renderer-failed'} data-urai-home-runtime={unavailable ? 'accessible-fallback-without-webgl' : 'accessible-fallback-after-renderer-failure'} data-webgl-ready="false" aria-label="Spatial Home fallback">
+        <div role="status" aria-live="polite" className="sr-only">{unavailable ? 'WebGL is unavailable. Accessible Home controls remain available.' : 'The spatial renderer could not recover. Accessible Home controls remain available.'}</div>
         <HomeSemanticNavigation />
         <HomeSpatialWorldFinal />
         <style jsx global>{runtimeStyles}</style>
@@ -221,22 +200,7 @@ export default function HomeSpatialRuntimeLayer() {
   }
 
   return (
-    <section
-      ref={runtimeRef}
-      className="urai-home-spatial-runtime-layer"
-      data-urai-home-runtime="asset-driven-primary-with-procedural-degraded-fallback"
-      data-home-visual-owner="asset-driven-personalized-sanctuary"
-      data-home-authored-terrain="home-authored-terrain"
-      data-home-authored-embodied-self="home-authored-embodied-self"
-      data-home-exploration="walkable"
-      data-home-ground-affordance="home-ground-environmental-threshold"
-      data-home-life-map-affordance="home-life-map-sky-lookout"
-      data-home-context-owner="world-local-context-only"
-      data-webgl-state={rendererState}
-      data-webgl-recovery-attempts={recoveryAttemptsRef.current}
-      data-webgl-ready={rendererState === 'ready' ? 'true' : 'recovering'}
-      aria-label="URAI living spatial Home"
-    >
+    <section ref={runtimeRef} className="urai-home-spatial-runtime-layer" data-urai-home-runtime="asset-driven-primary-with-procedural-degraded-fallback" data-home-visual-owner="asset-driven-personalized-sanctuary" data-home-authored-terrain="home-authored-terrain" data-home-authored-embodied-self="home-authored-embodied-self" data-home-exploration="walkable" data-home-ground-affordance="home-ground-environmental-threshold" data-home-life-map-affordance="home-life-map-sky-lookout" data-home-context-owner="world-local-context-only" data-webgl-state={rendererState} data-webgl-recovery-attempts={recoveryAttemptsRef.current} data-webgl-ready={rendererState === 'ready' ? 'true' : 'recovering'} aria-label="URAI living spatial Home">
       {rendererState === 'recovering' ? <div role="status" aria-live="polite" className="sr-only">Restoring the spatial Home renderer.</div> : null}
       {!assetsReady ? <div className="home-runtime-loading" role="status" aria-label="Your private world is forming" aria-live="polite"><span aria-hidden="true" /><strong>Your private world is forming</strong></div> : null}
       <HomeSemanticNavigation />
