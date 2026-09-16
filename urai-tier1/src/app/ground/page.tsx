@@ -1,6 +1,7 @@
 import GroundSpatialWorldClean from '@/app/GroundSpatialWorldClean'
 import GroundCheckpointRestoreSignal from './GroundCheckpointRestoreSignal'
 import GroundFocusContainment from './GroundFocusContainment'
+import GroundSemanticReturnBridge from './GroundSemanticReturnBridge'
 import './ground-focus-containment.css'
 import './ground-production-polish.css'
 import { getSceneDefinition } from '@/spatial/realms/sceneRegistry'
@@ -20,6 +21,7 @@ export default function GroundPage() {
     >
       <GroundCheckpointRestoreSignal />
       <GroundFocusContainment />
+      <GroundSemanticReturnBridge />
       <GroundSpatialWorldClean />
     </main>
   )
