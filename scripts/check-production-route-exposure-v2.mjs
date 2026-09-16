@@ -38,6 +38,16 @@ for (const file of walk(appRoot)) {
   if (!guardTokens.some((token) => source.includes(token))) failures.push(`${path.relative(root, file)} exposes /${route} without an explicit production guard`)
 }
 
+const destinationRegistryPath = 'urai-tier1/src/spatial/world/destinationRegistry.ts'
+const destinationRegistrySource = read(destinationRegistryPath)
+const declaredDestinationHrefs = [...destinationRegistrySource.matchAll(/\bhref:\s*['"](\/[^'"]*)['"]/g)].map((match) => match[1])
+for (const href of declaredDestinationHrefs) {
+  const pathname = href.split(/[?#]/, 1)[0].replace(/\/$/, '') || '/'
+  const routeDirectory = pathname === '/' ? appRoot : path.join(appRoot, pathname.slice(1))
+  const routeExists = ['page.tsx', 'page.ts', 'page.jsx', 'page.js'].some((fileName) => fs.existsSync(path.join(routeDirectory, fileName)))
+  if (!routeExists) failures.push(`${destinationRegistryPath} exposes ${href} but no App Router page exists for ${pathname}`)
+}
+
 requireTokens('urai-tier1/src/app/demo/page.tsx', [
   "import CutOneReplayFilmPage from './replay-film/page'",
   'without exposing personal data',
