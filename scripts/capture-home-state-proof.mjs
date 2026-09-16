@@ -199,7 +199,7 @@ async function capture(state, options = {}) {
       && record.canvasCount === 1
       && record.primaryOwner === 'asset-driven'
       && record.visibleWorld === visualAuthority.worldIdentifier
-      && record.movement === 'walk-keyboard-click-touch'
+      && record.movement === 'camera-look-world-surface-selection'
       && visualAuthority.runtimeAssets.every((asset) => record.runtimeAssets?.includes(asset))
       && !record.runtimeAssets?.includes('HomeWorldProductionV225PolishV2.tsx')
       && record.pointerLock
