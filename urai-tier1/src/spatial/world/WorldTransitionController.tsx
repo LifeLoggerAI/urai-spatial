@@ -2,6 +2,7 @@
 
 import { useRouter } from 'next/navigation'
 import { useCallback, useEffect, useLayoutEffect, useRef } from 'react'
+import { GROUND_REDUCED_RETURN_ROUTE_HANDOFF_MS, GROUND_RETURN_ROUTE_HANDOFF_MS } from '@/spatial/ground/groundTransitionTimeline'
 import { definitionForDestination } from './destinationRegistry'
 import { useUraiWorldState } from './WorldStateProvider'
 import {
@@ -32,6 +33,14 @@ function transitionDuration(destination: UraiDestination) {
   if (prefersReducedMotion()) return 260
   if (destination === 'replay' || destination === 'location-map') return 1900
   return 1100
+}
+
+function groundOwnedDelay(from: UraiDestination, to: UraiDestination) {
+  if (from === 'infrastructure-hub' && to === 'home') {
+    return prefersReducedMotion() ? GROUND_REDUCED_RETURN_ROUTE_HANDOFF_MS : GROUND_RETURN_ROUTE_HANDOFF_MS
+  }
+  if (to === 'infrastructure-hub') return 40
+  return null
 }
 
 function buildTravelHref(request: UraiWorldTravelRequest) {
@@ -130,7 +139,8 @@ export function WorldTransitionController() {
     const href = buildTravelHref(request)
     const targetPathname = normalizedPathname(new URL(href, window.location.origin).pathname)
     const groundOwned = isGroundOwnedTravel(currentWorld.destination, request.destination)
-    const delay = groundOwned ? 40 : transitionDuration(request.destination)
+    const authoredGroundDelay = groundOwnedDelay(currentWorld.destination, request.destination)
+    const delay = authoredGroundDelay ?? transitionDuration(request.destination)
     timer.current = window.setTimeout(() => {
       router.push(href)
       timer.current = null
@@ -149,11 +159,12 @@ export function WorldTransitionController() {
     if (phaseRef.current !== 'idle') return
     const destination = currentWorld.previousDestination ?? fallbackReturnDestination(currentWorld.destination)
     const definition = definitionForDestination(destination)
+    const returningGroundHome = currentWorld.destination === 'infrastructure-hub' && destination === 'home'
     executeTravel({
       destination,
-      href: definition.href,
-      entryPortal: currentWorld.entryPortal ?? definition.entryPortal,
-      cameraCheckpoint: destination === 'home' ? 'home-threshold' : definition.cameraCheckpoint,
+      href: returningGroundHome ? '/home?returnFrom=ground' : definition.href,
+      entryPortal: returningGroundHome ? 'home-ground-return' : currentWorld.entryPortal ?? definition.entryPortal,
+      cameraCheckpoint: returningGroundHome ? 'home-avatar-eye-return' : destination === 'home' ? 'home-threshold' : definition.cameraCheckpoint,
       context: {
         memoryId: currentWorld.memoryId,
         threadId: currentWorld.threadId,
@@ -200,6 +211,7 @@ export function WorldTransitionController() {
       data-from={world.destination}
       data-to={targetDestination}
       data-ground-visual-owner={groundOwned ? 'realm-authored-transition' : 'none'}
+      data-ground-return-handoff-ms={world.destination === 'infrastructure-hub' && targetDestination === 'home' ? (prefersReducedMotion() ? GROUND_REDUCED_RETURN_ROUTE_HANDOFF_MS : GROUND_RETURN_ROUTE_HANDOFF_MS) : undefined}
       aria-hidden="true"
     >
       {!groundOwned ? <>
