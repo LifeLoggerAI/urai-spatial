@@ -19,10 +19,10 @@ export function buildNamedExplicitDemoMemory(id: string): SelectedMemory {
       durationMs: 12_000,
       transcript: 'Explicit demonstration replay: pressure softens, permission appears, and the scene returns to calm.',
       segments: [
-        { id: 'memory', label: 'Memory', caption: 'The pressure becomes visible.', narratorLine: 'This is an explicit demonstration memory.', startsAtMs: 0, durationMs: 2_800 },
-        { id: 'emotion', label: 'Emotion', caption: 'Permission creates room to breathe.', narratorLine: 'No personal inference is being made.', startsAtMs: 2_800, durationMs: 3_000 },
-        { id: 'pattern', label: 'Pattern', caption: 'The reset interrupts the old loop.', narratorLine: 'This pattern exists only in the disclosed fixture.', startsAtMs: 5_800, durationMs: 3_200 },
-        { id: 'return', label: 'Return', caption: 'The scene settles into quiet.', narratorLine: 'Return to the explicit demo Focus chamber.', startsAtMs: 9_000, durationMs: 3_000 },
+        { id: 'quiet-reset-arrival', kind: 'symbolic-bridge', evidenceClass: 'SYMBOLIC', evidenceIds: ['demo-symbolic-fixture'], legacyPhase: 'memory', label: 'Arrival', caption: 'The pressure becomes visible.', narratorLine: 'This is an explicit demonstration memory.', startsAtMs: 0, durationMs: 2_800 },
+        { id: 'quiet-reset-reflection', kind: 'reflection', evidenceClass: 'SYMBOLIC', evidenceIds: ['demo-symbolic-fixture'], legacyPhase: 'emotion', label: 'Reflection', caption: 'Permission creates room to breathe.', narratorLine: 'No personal inference is being made.', startsAtMs: 2_800, durationMs: 3_000 },
+        { id: 'quiet-reset-context', kind: 'derived-context', evidenceClass: 'SYMBOLIC', evidenceIds: ['demo-symbolic-fixture'], legacyPhase: 'pattern', label: 'Context', caption: 'The reset interrupts the old loop.', narratorLine: 'This pattern exists only in the disclosed fixture.', startsAtMs: 5_800, durationMs: 3_200 },
+        { id: 'quiet-reset-return', kind: 'symbolic-bridge', evidenceClass: 'SYMBOLIC', evidenceIds: ['demo-symbolic-fixture'], legacyPhase: 'return', label: 'Return', caption: 'The scene settles into quiet.', narratorLine: 'Return to the explicit demo Focus chamber.', startsAtMs: 9_000, durationMs: 3_000 },
       ],
     },
     narrator: {
