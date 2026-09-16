@@ -50,12 +50,32 @@ try {
     page.on('console', (message) => { if (message.type() === 'error') pageErrors.push(`console: ${message.text()}`) })
 
     await page.goto(`${base}/ground/?environment=temperate`, { waitUntil: 'networkidle', timeout: 60_000 })
-    await page.waitForSelector('[data-testid="urai-ground-lived-world"][data-ground-ready="true"]', { timeout: 45_000 })
+    await page.waitForSelector('[data-testid="urai-ground-lived-world"]', { state: 'visible', timeout: 45_000 })
     await page.waitForSelector('.ground-spatial-root canvas', { state: 'visible', timeout: 45_000 })
-    await page.waitForTimeout(800)
+
+    let readinessTimedOut = false
+    try {
+      await page.waitForSelector('[data-testid="urai-ground-lived-world"][data-ground-ready="true"]', { timeout: 20_000 })
+    } catch {
+      readinessTimedOut = true
+      const diagnostic = await page.locator('[data-testid="urai-ground-lived-world"]').evaluate((node) => {
+        const canvas = node.querySelector('canvas')
+        const canvasRect = canvas?.getBoundingClientRect()
+        return {
+          groundReady: node.getAttribute('data-ground-ready'),
+          runtimeOwner: node.getAttribute('data-ground-runtime-owner'),
+          visualOwner: node.getAttribute('data-ground-visual-owner'),
+          canvas: canvasRect ? { width: canvasRect.width, height: canvasRect.height } : null,
+        }
+      })
+      errors.push(`${viewport.id}: Ground readiness did not become true; diagnostics=${JSON.stringify(diagnostic)}`)
+      await capture(page, viewport, 'readiness-timeout-diagnostic')
+    }
+    await page.waitForTimeout(readinessTimedOut ? 250 : 800)
 
     const root = page.locator('[data-testid="urai-ground-lived-world"]')
     const contract = await root.evaluate((node) => ({
+      ready: node.getAttribute('data-ground-ready'),
       visualOwner: node.getAttribute('data-ground-visual-owner'),
       runtimeOwner: node.getAttribute('data-ground-runtime-owner'),
       exploration: node.getAttribute('data-ground-exploration'),
@@ -74,6 +94,7 @@ try {
     }))
 
     const expected = {
+      ready: 'true',
       exploration: 'first-person-no-visible-body',
       eyeHeight: '1.69',
       desktopSpeed: '2.55',
