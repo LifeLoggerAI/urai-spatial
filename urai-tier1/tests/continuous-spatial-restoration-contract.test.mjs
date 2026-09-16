@@ -35,6 +35,7 @@ test('current Home is the single cinematic V288 authority with retained exact-he
   has(assetHome, 'HomeWorldProductionV223')
   has(assetHome, 'data-home-canvas-owner="home-world-production-v223-cinematic-threshold-authority"')
   has(assetHome, "world.setAttribute('data-home-art-certification', 'fresh-exact-head-pixels-required')")
+  has(assetHome, "world.setAttribute('data-home-scanned-composition', 'first-person-grounded-companion-physical-world-and-broad-sky-threshold')")
   assert.equal(authority.artRevision, 'v288-cinematic-lived-world-grounded-reliquary')
   assert.equal(authority.worldIdentifier, 'cinematic-lived-world-threshold')
   assert.equal(authority.orbVisualAuthority, 'v288-grounded-biomorphic-reliquary')
@@ -68,10 +69,11 @@ test('Home Ground entry remains a physical world-surface descent into the lived 
   assert.doesNotMatch(ground, /ground-central-nexus|ground-destination-compass|GroundPhysicalArchitecture|GroundVaultArchitecture/)
 })
 
-test('Home interaction and accessibility ownership stays bounded', () => {
+test('Home interaction and accessibility ownership stays first-person and bounded', () => {
   has(renderer, 'data-testid="urai-home-webgl-orb"')
-  has(renderer, 'data-testid="urai-home-embodied-avatar"')
+  has(renderer, 'data-home-embodied-self="first-person-viewpoint-no-avatar"')
   has(renderer, "data-home-orb-model-clip={reducedMotion ? 'stopped-reduced-motion'")
+  assert.doesNotMatch(renderer, /urai-home-embodied-avatar|home-visible-user-avatar|<VisibleUserAvatar|cinematic-third-person/)
   has(homeRuntime, 'requestUraiWorldOrbOpen')
   has(homeRuntime, 'webglcontextlost')
   has(homeRuntime, 'webglcontextrestored')
