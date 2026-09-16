@@ -34,7 +34,8 @@ test('Home authority keeps V288 as the certified predecessor while the authored 
 
 test('V249 and V281 localized destination overlays stay retired while V288 is provenance-only in the current candidate scene', () => {
   assert.match(currentRepair, /Historical V249 localized destination art is retained only as repository/)
-  assert.match(currentRepair, /broad visible atmosphere for Life Map, and V288 for Orb pixels/)
+  assert.match(currentRepair, /broad visible atmosphere for Life Map, and the authored living-memory Orb/)
+  assert.match(currentRepair, /V288 remains certified predecessor provenance/)
   assert.match(currentRepair, /export function HomeCurrentArtRepair/)
   assert.match(currentRepair, /return null/)
   assert.doesNotMatch(currentRepair, /home-v249-ground-geological-descent|home-v249-life-map-rooted-celestial-ascent|home-v249-organic-living-memory-presence|function suppressRaycast\(/)
