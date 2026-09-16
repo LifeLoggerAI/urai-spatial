@@ -16,16 +16,17 @@ A workflow named visual proof is not visual acceptance. A head move invalidates 
 1. PR #1237 / `unified-spatial-convergence-20260916` is the single current runtime + visual-control-plane authority.
 2. Personalized Lived World fail-closed Ground integration has now been selectively converged directly onto #1237; PR #1241 remains historical/selective donor provenance for uncarried scope, not whole-tree authority.
 3. Passport exact-origin return semantics and the first-person Home physical Passport candidate are now on #1237; #1241 remains donor provenance for any still-unreconciled Passport/public-good scope.
-4. PR #1243 remains a selective donor for Possible Futures + truth model + AI self-ledger + Global Emotional Field runtime scope not yet converged.
-5. PR #1252 remains historical mechanical-conflict evidence proving donor trees cannot be wholesale-merged safely.
-6. Visual sidecar restacks #1255/#1256/#1258/#1260 and sync probes are superseded historical provenance.
-7. PR #1177 and older Home/Orb/Ground/Focus lanes are historical/current-supporting lineage only where not already superseded.
+4. Global Emotional Field privacy evaluation plus a deterministic first-person Home Earth candidate are now on #1237. Publication remains fail-closed/unavailable until a governed aggregate provider and approved thresholds exist; donor/global-field branches do not override this unified truth boundary.
+5. PR #1243 remains a selective donor for Possible Futures + truth model + AI self-ledger scope not yet converged.
+6. PR #1252 remains historical mechanical-conflict evidence proving donor trees cannot be wholesale-merged safely.
+7. Visual sidecar restacks #1255/#1256/#1258/#1260 and sync probes are superseded historical provenance.
+8. PR #1177 and older Home/Orb/Ground/Focus lanes are historical/current-supporting lineage only where not already superseded.
 
 ## First-person Home master reference package
 
-`docs/URAI_HOME_FPV_MASTER_VISUAL_REFERENCE_V1.md` is the current **candidate reference contract** for Home presentation → Avatar activation → first-person Home continuity, the candidate 16-frame production-reference package, Orb state continuity, Passport placement, camera/lens rules, accessibility variants, failure criteria, and implementation handoff.
+`docs/URAI_HOME_FPV_MASTER_VISUAL_REFERENCE_V1.md` and `docs/URAI_HOME_FPV_TERMINAL_VISUAL_PACKAGE_V1.md` are the current candidate reference contracts for Home presentation → Avatar activation → first-person Home continuity, the candidate production-reference package, Orb state continuity, Passport placement, camera/lens rules, accessibility variants, failure criteria, implementation handoff, Global Emotional Field visual truth, and Personal Emotional Weather grammar.
 
-It is subordinate to this manifest and does not convert concept/reference art into accepted runtime pixels. Its fixed 16-frame set is a production working set, not a replacement for the VGM inventory or Gold-Master completion boundary. Global Emotional Field Earth and Personal Emotional Weather remain `MISSING_REPLACEMENT_REQUIRED` until governed production art and literal-pixel evidence exist.
+They are subordinate to this manifest and do not convert concept/reference art into accepted runtime pixels. The fixed 16-frame set is a production working set, not a replacement for the VGM inventory or Gold-Master completion boundary. The previously generated marketing/luxury-villa master and later montage board are rejected as `URAI_HOME_FPV_MASTER_01`; they remain supporting/historical reference only.
 
 ## Locked current visual/product canon
 
@@ -69,17 +70,21 @@ It is subordinate to this manifest and does not convert concept/reference art in
 ### Passport
 - First-person-Home-only physical ownership/authority artifact; not a portal.
 - Current #1237 source mounts the candidate physical object only in unlocked `AVATAR_HOME_FIRST_PERSON`.
+- Current visual form is `protected-custody-stone-v2`; it remains visually uncertified until exact-head pixels pass.
 - Before Passport travel, Home captures the exact current FP origin into the governed return-frame authority; Passport return may restore that camera/state via the `PASSPORT` destination.
 - Source implementation is therefore CURRENT_CANDIDATE; literal pixels, responsive/a11y behavior, full round-trip browser proof, and final physical art acceptance remain required.
 
 ### Global Emotional Field Earth
-- Separate physical Home Earth system, distinct from Location Map and Personal Emotional Weather.
-- Truth states: unavailable / suppressed / safely published aggregate where authorized.
+- Separate physical first-person Home Earth system, distinct from Location Map and Personal Emotional Weather.
+- A deterministic current source candidate now exists at `HomeGlobalEmotionalFieldEarth.tsx` and is mounted from `HomeAAAVisualRepair.tsx`.
+- Current mounted publication state is deliberately `unavailable`; provider state remains `not-activated`.
+- Truth states remain unavailable / suppressed / safely published aggregate where authorized.
 - No individual dots, exact locations, raw emotion, private-map aliasing, or fake activity.
-- No physically authoritative production Earth is certified yet.
+- The candidate is not production-authoritative until literal pixels, accessibility/performance, aggregate-provider, threshold/privacy/security, and governance evidence pass on one unchanged exact head.
 
 ### Personal Emotional Weather
 - Private, uncertainty-aware, visually distinct from ordinary weather and Global Emotional Field.
+- Current visual grammar is specified but runtime production art remains incomplete.
 - Never presented as diagnosis.
 
 ### Possible Futures
@@ -94,7 +99,7 @@ It is subordinate to this manifest and does not convert concept/reference art in
 |---|---|---|---|
 | VGM-HOME-001 | Home presentation | CURRENT_CANDIDATE | Fresh exact-head desktop/mobile/reduced-motion pixels + literal inspection |
 | VGM-HOME-002 | Avatar embodiment transition | CURRENT_CANDIDATE | Capture presentation → activation → eye-transfer → FP arrival + reverse |
-| VGM-HOME-003 | FP Home | CURRENT_CANDIDATE | Capture/inspect exact-head FP Home; verify no body/hands |
+| VGM-HOME-003 | FP Home | CURRENT_CANDIDATE | Capture/inspect exact-head FP Home; verify no body/hands; clean master reference still required |
 | VGM-AVATAR-001 | Avatar | MISSING_REPLACEMENT_REQUIRED | Complete turnaround/scale/motion/light/mobile component sheet |
 | VGM-ORB-001 | Orb | CURRENT_CANDIDATE | Fresh exact-head state captures and literal inspection |
 | VGM-SKY-001 | Home Sky / ascent | CURRENT_CANDIDATE | Capture broad-sky ascent; reject localized portal language |
@@ -103,12 +108,12 @@ It is subordinate to this manifest and does not convert concept/reference art in
 | VGM-FOCUS-001 | Focus | CURRENT_CANDIDATE | Open fresh V272 retained pixels; accept or reject literally |
 | VGM-REPLAY-001 | Replay | CURRENT_CANDIDATE | Fresh source-present/source-absent/mobile/reduced/offline pixels |
 | VGM-GROUND-001 | Ground descent/return | CURRENT_CANDIDATE | Fresh exact-head sequence + reduced-motion capture |
-| VGM-GROUND-002 | Ground generic fallback art | REJECTED | Replace vegetation/architecture/water final art |
+| VGM-GROUND-002 | Ground generic fallback art | REJECTED | Add governed natural canopy/world-depth art without restoring portal terrain |
 | VGM-GROUND-003 | Personalized lived world source boundary | CURRENT_CANDIDATE | Source is converged fail-closed; create/accept confirmed/partial/unknown visuals and prove revocation/degradation |
-| VGM-PASSPORT-001 | Physical Home Passport | CURRENT_CANDIDATE | Source + exact-origin capture are converged; accept physical art, activation, round-trip, mobile/reduced/a11y pixels |
+| VGM-PASSPORT-001 | Physical Home Passport | CURRENT_CANDIDATE | Accept protected-custody-stone-v2 physical art, activation, round-trip, mobile/reduced/a11y pixels |
 | VGM-PASSPORT-002 | Passport UI | CURRENT_CANDIDATE | Responsive/accessibility/receipt-state audit |
-| VGM-GEF-001 | Global Emotional Field Earth | MISSING_REPLACEMENT_REQUIRED | Governed physically plausible Earth + unavailable/suppressed/aggregate pack |
-| VGM-PEW-001 | Personal Emotional Weather | MISSING_REPLACEMENT_REQUIRED | Create distinct private-weather visual grammar |
+| VGM-GEF-001 | Global Emotional Field Earth | CURRENT_CANDIDATE | Inspect unavailable Earth pixels; prove mobile/reduced/a11y; add suppressed/aggregate only when governed provider truth exists |
+| VGM-PEW-001 | Personal Emotional Weather | MISSING_REPLACEMENT_REQUIRED | Implement and inspect distinct private-weather visual grammar |
 | VGM-MIRROR-001 | Mirror | CURRENT_CANDIDATE | Re-audit current source/retained assets; derive current state pack |
 | VGM-SHADOW-001 | Shadow | MISSING_REPLACEMENT_REQUIRED | Re-derive reference/storyboard authority |
 | VGM-LEGACY-001 | Legacy | MISSING_REPLACEMENT_REQUIRED | Re-derive reference/storyboard authority |
