@@ -17,6 +17,8 @@ export type UraiDestination = (typeof URAI_DESTINATIONS)[number]
 export type UraiWorldLayer = 'living-world' | 'transition' | 'infrastructure-world'
 
 export type UraiPrivacyMode = 'private' | 'revealing' | 'held-private'
+export type UraiOriginRealm = 'home' | 'ground' | 'life-map' | 'focus' | 'replay' | 'passport'
+export type UraiReconstructionFidelity = 'confirmed' | 'partial' | 'unknown'
 
 export type UraiWorldState = {
   destination: UraiDestination
@@ -28,8 +30,12 @@ export type UraiWorldState = {
   threadId?: string
   personId?: string
   placeId?: string
+  eraId?: string
   replayManifestId?: string
   privacyMode?: UraiPrivacyMode
+  originRealm?: UraiOriginRealm
+  returnToken?: string
+  reconstructionFidelity?: UraiReconstructionFidelity
   demo?: boolean
 }
 
@@ -42,8 +48,12 @@ export type UraiWorldContextPatch = Partial<
     | 'threadId'
     | 'personId'
     | 'placeId'
+    | 'eraId'
     | 'replayManifestId'
     | 'privacyMode'
+    | 'originRealm'
+    | 'returnToken'
+    | 'reconstructionFidelity'
     | 'demo'
   >
 >
