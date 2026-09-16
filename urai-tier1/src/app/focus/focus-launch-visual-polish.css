@@ -1,37 +1,26 @@
-/* V265 retained-pixel convergence: the selected memory image is the threshold.
-   The live WebGL chamber remains spatial context, but it recedes behind authentic
-   memory media so Focus reads as crossing through the selected star rather than
-   entering a contour-floor sci-fi set. Controls stay available and accessible. */
+/* V266 literal-pixel convergence: the live WebGL selected-memory world owns Focus.
+   Retire the stale static Focus artwork from visible authority. It encoded the
+   rejected sphere/ring-cage presentation and hid the newer fractured, grounded
+   memory manifestation behind a mostly opaque 2D backdrop. */
 .focusWorld .focusBackdrop {
-  display: block !important;
-  position: absolute;
-  inset: -3%;
-  z-index: 0;
-  pointer-events: none;
-  background-image:
-    linear-gradient(180deg, rgba(1,5,9,.12), rgba(1,5,9,.04) 42%, rgba(1,5,9,.28)),
-    var(--focus-asset);
-  background-size: cover;
-  background-position: center 46%;
-  background-repeat: no-repeat;
-  opacity: .82;
-  filter: saturate(.88) contrast(1.04) brightness(.82);
-  transform: scale(1.018);
+  display: none !important;
 }
 
-.focusWorld .focusCanvas { z-index: 1; background: transparent; }
+.focusWorld .focusCanvas {
+  z-index: 1;
+  background: #071513;
+}
 .focusWorld .focusCanvas canvas {
-  opacity: .30;
-  filter: saturate(.66) contrast(.92) brightness(.72);
-  mix-blend-mode: screen;
+  opacity: 1 !important;
+  filter: none !important;
+  mix-blend-mode: normal !important;
 }
 
 .focusWorld .focusFog {
   z-index: 2;
   background:
-    radial-gradient(ellipse at 50% 49%, transparent 0 34%, rgba(2,8,12,.05) 62%, rgba(1,5,9,.34) 100%),
-    linear-gradient(90deg, rgba(1,5,9,.32), transparent 22% 80%, rgba(1,5,9,.26)),
-    linear-gradient(180deg, rgba(1,4,8,.08), transparent 46%, rgba(1,4,8,.34));
+    radial-gradient(ellipse at 50% 50%, transparent 0 48%, rgba(2,8,12,.04) 70%, rgba(1,5,9,.22) 100%),
+    linear-gradient(180deg, rgba(1,4,8,.02), transparent 55%, rgba(1,4,8,.16));
   mix-blend-mode: normal;
 }
 
@@ -42,22 +31,22 @@
 .focusWorld .focusStatus,
 .focusWorld .webglRecovery { position: absolute; }
 
-/* Keep identity and narration available while the memory itself owns the frame. */
+/* Keep identity and narration readable while the physical memory owns the frame. */
 .focusWorld .focusHeading {
   width: min(300px, 28vw) !important;
-  opacity: .88;
+  opacity: .94;
 }
 .focusWorld .focusHeading h2 {
   font-size: clamp(1.7rem, 3.2vw, 3.7rem) !important;
   max-width: 10ch !important;
   text-wrap: balance;
 }
-.focusWorld .focusHeading > span { opacity: .66; }
+.focusWorld .focusHeading > span { opacity: .72; }
 .focusWorld .focusNarration {
   max-width: 300px !important;
   margin-top: 10px !important;
   padding: 8px 10px !important;
-  background: linear-gradient(90deg, rgba(2,7,12,.52), rgba(2,7,12,.10), transparent) !important;
+  background: linear-gradient(90deg, rgba(2,7,12,.58), rgba(2,7,12,.10), transparent) !important;
   backdrop-filter: blur(7px) !important;
 }
 .focusWorld .focusNarration strong {
@@ -69,56 +58,51 @@
 .focusWorld .memoryMeaning {
   width: min(340px, 29vw) !important;
   padding: 8px 10px !important;
-  opacity: .58;
-  border-color: color-mix(in srgb,var(--memory-light) 10%,transparent) !important;
-  background: linear-gradient(135deg,rgba(2,7,12,.54),rgba(2,7,12,.12)) !important;
+  opacity: .72;
+  border-color: color-mix(in srgb,var(--memory-light) 12%,transparent) !important;
+  background: linear-gradient(135deg,rgba(2,7,12,.64),rgba(2,7,12,.16)) !important;
   backdrop-filter: blur(8px) !important;
   transition: opacity 160ms ease;
 }
 .focusWorld .memoryMeaning:hover,
-.focusWorld .memoryMeaning:focus-within { opacity: .94; }
+.focusWorld .memoryMeaning:focus-within { opacity: .96; }
 .focusWorld .memoryMeaning p { margin-bottom: 6px !important; font-size: 10px !important; }
-.focusWorld .memoryMeaning dt { font-size: 8px !important; opacity: .74; }
+.focusWorld .memoryMeaning dt { font-size: 8px !important; opacity: .78; }
 .focusWorld .memoryMeaning dd { font-size: 10px !important; }
 
 .focusWorld .focusControls {
-  opacity: .52;
+  opacity: .68;
   padding: 4px !important;
-  background: rgba(2,7,12,.42) !important;
-  border-color: rgba(215,246,255,.10) !important;
+  background: rgba(2,7,12,.52) !important;
+  border-color: rgba(215,246,255,.12) !important;
   backdrop-filter: blur(9px) !important;
   transition: opacity 160ms ease;
 }
 .focusWorld .focusControls:hover,
 .focusWorld .focusControls:focus-within { opacity: 1; }
 .focusWorld .focusControls button { min-height: 48px !important; }
-.focusWorld .focusStatus { opacity: .44; background: rgba(2,7,12,.36) !important; }
-.focusWorld .focusHelp { opacity: .42; background: rgba(2,7,12,.42) !important; backdrop-filter: blur(9px) !important; }
+.focusWorld .focusStatus { opacity: .58; background: rgba(2,7,12,.46) !important; }
+.focusWorld .focusHelp { opacity: .56; background: rgba(2,7,12,.50) !important; backdrop-filter: blur(9px) !important; }
 .focusWorld .focusHelp:hover,
 .focusWorld .focusHelp:focus-within,
 .focusWorld .focusHelp[open] { opacity: 1; }
 .focusWorld .focus-spatial-aperture-button {
-  background: rgba(3,12,20,.48) !important;
-  border-color: rgba(220,248,255,.18) !important;
+  background: rgba(3,12,20,.70) !important;
+  border-color: rgba(220,248,255,.24) !important;
   min-height: 48px !important;
-  box-shadow: 0 0 30px rgba(190,235,255,.08);
+  box-shadow: 0 0 24px rgba(190,235,255,.06);
 }
 
 @media (max-width: 760px) {
-  .focusWorld .focusBackdrop {
-    inset: -2%;
-    background-position: center 43%;
-    opacity: .86;
-    filter: saturate(.9) contrast(1.03) brightness(.80);
-  }
   .focusWorld .focusCanvas canvas {
-    opacity: .22;
-    filter: saturate(.60) contrast(.90) brightness(.66);
+    opacity: 1 !important;
+    filter: none !important;
+    mix-blend-mode: normal !important;
   }
   .focusWorld .focusFog {
     background:
-      radial-gradient(ellipse at 50% 51%, transparent 0 38%, rgba(3,12,10,.06) 66%, rgba(2,8,8,.28)),
-      linear-gradient(180deg, rgba(1,4,10,.06), transparent 52%, rgba(1,4,10,.30));
+      radial-gradient(ellipse at 50% 51%, transparent 0 52%, rgba(3,12,10,.03) 72%, rgba(2,8,8,.18)),
+      linear-gradient(180deg, rgba(1,4,10,.02), transparent 58%, rgba(1,4,10,.16));
   }
   .focusWorld .focusHeading { left: 14px !important; top: 14px !important; width: min(62vw,270px) !important; }
   .focusWorld .focusHeading h2 { font-size: clamp(1.8rem, 8.7vw, 2.9rem) !important; }
@@ -130,7 +114,7 @@
     width: min(66vw,300px) !important;
     max-height: 78px !important;
     overflow: auto;
-    opacity: .46;
+    opacity: .62;
   }
   .focusWorld .focusControls { left: 12px !important; right: 12px !important; bottom: max(10px,env(safe-area-inset-bottom)) !important; }
   .focusWorld .focusHelp { right: 12px !important; top: 84px !important; }
@@ -138,7 +122,6 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .focusWorld .focusBackdrop { transform: none; }
   .focusWorld .focusControls,
   .focusWorld .focusHelp,
   .focusWorld .memoryMeaning { transition: none; backdrop-filter: none !important; }
