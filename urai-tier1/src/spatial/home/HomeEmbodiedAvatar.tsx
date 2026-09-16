@@ -1,6 +1,6 @@
 'use client'
 
-import { useGLTF } from '@react-three/drei'
+import { useAnimations, useGLTF } from '@react-three/drei'
 import { type ThreeEvent, useFrame } from '@react-three/fiber'
 import { useEffect, useMemo, useRef } from 'react'
 import * as THREE from 'three'
@@ -55,27 +55,36 @@ export function HomeEmbodiedAvatar({
 }: Props) {
   const gltf = useGLTF(HOME_AVATAR_MODEL)
   const model = useMemo(() => cloneAvatar(gltf.scene), [gltf.scene])
+  const { actions } = useAnimations(gltf.animations, model)
   const root = useRef<THREE.Group>(null)
   const targeted = state === 'targeted'
-  const visible = state !== 'hidden-first-person'
+  const visible = state !== 'hidden-first-person' && state !== 'returning'
+
+  useEffect(() => {
+    const idle = actions.idle_breath
+    if (!idle || reducedMotion || !visible) return
+    idle.reset().setLoop(THREE.LoopRepeat, Infinity).fadeIn(.3).play()
+    return () => { idle.fadeOut(.2); idle.stop() }
+  }, [actions, reducedMotion, visible])
 
   useEffect(() => () => {
+    Object.values(actions).forEach((action) => action?.stop())
     model.traverse((object) => {
       if (!(object instanceof THREE.Mesh)) return
       const materials = Array.isArray(object.material) ? object.material : [object.material]
       materials.forEach((material) => material.dispose())
     })
-  }, [model])
+  }, [actions, model])
 
   useFrame(({ clock }, delta) => {
     const group = root.current
     if (!group || !visible) return
     const time = clock.elapsedTime
-    const breath = reducedMotion ? 1 : 1 + Math.sin(time * 1.08) * 0.0045
+    const proceduralBreath = reducedMotion || actions.idle_breath ? 1 : 1 + Math.sin(time * 1.08) * 0.0045
     const attentionYaw = targeted ? -0.045 : 0
     const embodyScale = state === 'embodying' ? 1.006 : 1
     group.scale.x = THREE.MathUtils.damp(group.scale.x, scale * embodyScale, 9, delta)
-    group.scale.y = THREE.MathUtils.damp(group.scale.y, scale * breath * embodyScale, 9, delta)
+    group.scale.y = THREE.MathUtils.damp(group.scale.y, scale * proceduralBreath * embodyScale, 9, delta)
     group.scale.z = THREE.MathUtils.damp(group.scale.z, scale * embodyScale, 9, delta)
     group.rotation.y = THREE.MathUtils.damp(group.rotation.y, rotationY + attentionYaw, 8, delta)
   })
@@ -109,6 +118,7 @@ export function HomeEmbodiedAvatar({
         semanticOwner: 'avatar',
         embodiedAnchor: true,
         presentationState: state,
+        runtimeAnimation: reducedMotion ? 'still-reduced-motion' : actions.idle_breath ? 'idle_breath' : 'procedural-breath-fallback',
         directDestination: false,
       }}
     >
