@@ -20,7 +20,11 @@ const css = read('src/spatial/world/worldNavigation.css')
 test('Ground descent and return are realm-owned rather than generic aperture/tunnel travel', () => {
   assert.match(controller, /to === 'infrastructure-hub' \|\| \(from === 'infrastructure-hub' && to === 'home'\)/)
   assert.match(controller, /const groundOwned = isGroundOwnedTravel\(currentWorld\.destination, request\.destination\)/)
-  assert.match(controller, /const delay = groundOwned \? 40 : transitionDuration\(request\.destination\)/)
+  assert.match(controller, /GROUND_RETURN_ROUTE_HANDOFF_MS/)
+  assert.match(controller, /GROUND_REDUCED_RETURN_ROUTE_HANDOFF_MS/)
+  assert.match(controller, /groundOwnedDelay\(currentWorld\.destination, request\.destination\)/)
+  assert.match(controller, /returningGroundHome \? '\/home\?returnFrom=ground'/)
+  assert.match(controller, /returningGroundHome \? 'home-avatar-eye-return'/)
   assert.match(controller, /data-ground-visual-owner=\{groundOwned \? 'realm-authored-transition' : 'none'\}/)
   assert.match(controller, /!groundOwned \? <>/)
   assert.match(css, /\.urai-world-transition__aperture/)
@@ -36,12 +40,14 @@ test('Home terrain owns pointer and touch entry while GroundGateway is semantic 
   assert.doesNotMatch(home, /Ground portal|ground portal|white dot|ground-portal/i)
 })
 
-test('Ground Home action uses world return state and no follower Orb is rendered', () => {
+test('Ground Home action uses world return state and no follower Orb model is rendered', () => {
   assert.match(bridge, /requestUraiWorldReturn/)
   assert.match(bridge, /returnButton\?\.addEventListener\('click', returnThroughWorld, true\)/)
   assert.match(bridge, /groundOrbMode = 'semantic-invocation-only'/)
   assert.match(bridge, /no follower Orb is rendered/)
-  assert.match(bridge, /return null/)
+  assert.match(bridge, /GroundReturnWorldBridge/)
+  assert.match(bridge, /return <GroundReturnWorldBridge/)
+  assert.doesNotMatch(bridge, /urai-orb-avatar-v1\.glb|useGLTF|<primitive|<mesh|pointLight|icosahedronGeometry/)
 })
 
 test('Ground rejects the generic portal travel sound until authored material-crossing audio exists', () => {
