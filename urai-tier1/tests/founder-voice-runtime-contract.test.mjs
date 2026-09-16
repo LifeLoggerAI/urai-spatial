@@ -41,6 +41,23 @@ test('founder voice remains authenticated, consent-gated, rate-limited, allowlis
   assert.doesNotMatch(provider, /NEXT_PUBLIC_/)
 })
 
+test('founder voice usage telemetry is private aggregate metadata only', () => {
+  const start = provider.indexOf('async function recordFounderVoiceUsage')
+  const end = provider.indexOf('\n}\n\nfunction readBody', start)
+  assert.notEqual(start, -1)
+  assert.notEqual(end, -1)
+  const telemetry = provider.slice(start, end)
+  assert.match(telemetry, /providerUsage\/elevenlabs-founder-/)
+  assert.match(telemetry, /requestCount: admin\.firestore\.FieldValue\.increment\(1\)/)
+  assert.match(telemetry, /characterCount: admin\.firestore\.FieldValue\.increment\(characterCount\)/)
+  assert.match(telemetry, /totalLatencyMs/)
+  assert.match(telemetry, /lastPerformanceMode/)
+  assert.match(telemetry, /providerModel/)
+  assert.match(telemetry, /rateWindowMs: RATE_WINDOW_MS/)
+  assert.match(telemetry, /maxRequestsPerWindow: MAX_REQUESTS_PER_WINDOW/)
+  assert.doesNotMatch(telemetry, /\btext\b|voiceId|audio|transcript|apiKey|ELEVENLABS_API_KEY/)
+})
+
 test('client uses same-origin founder route and never sends a voice id', () => {
   assert.match(client, /\/api\/urai\/founder-voice\/elevenlabs/)
   assert.match(client, /getAuth\(app\)\.currentUser/)

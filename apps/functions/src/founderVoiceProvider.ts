@@ -30,6 +30,8 @@ type VoiceSettings = {
   use_speaker_boost: boolean
 }
 
+type FounderUsageOutcome = 'success' | 'provider_error' | 'network_error' | 'stream_error'
+
 const FOUNDER_PERFORMANCE_MODES = new Set<FounderPerformanceMode>([
   'natural',
   'neutral',
@@ -54,6 +56,13 @@ const FOUNDER_VOICE_SETTINGS: Record<FounderPerformanceMode, VoiceSettings> = {
   quiet: { stability: 0.78, similarity_boost: 0.84, style: 0.08, use_speaker_boost: true },
   reassuring: { stability: 0.74, similarity_boost: 0.84, style: 0.14, use_speaker_boost: true },
   authoritative: { stability: 0.76, similarity_boost: 0.86, style: 0.12, use_speaker_boost: true },
+}
+
+const FOUNDER_USAGE_COUNTER_FIELDS: Record<FounderUsageOutcome, string> = {
+  success: 'successCount',
+  provider_error: 'providerErrorCount',
+  network_error: 'networkErrorCount',
+  stream_error: 'streamErrorCount',
 }
 
 class FounderVoiceError extends Error {
@@ -126,6 +135,41 @@ async function consumeFounderVoiceRateLimit(uid: string) {
   })
 }
 
+async function recordFounderVoiceUsage({
+  uid,
+  performanceMode,
+  characterCount,
+  outcome,
+  latencyMs,
+  providerModel,
+}: {
+  uid: string
+  performanceMode: FounderPerformanceMode
+  characterCount: number
+  outcome: FounderUsageOutcome
+  latencyMs: number
+  providerModel: string
+}) {
+  const bucket = new Date().toISOString().slice(0, 10)
+  const ref = db.doc(`users/${uid}/providerUsage/elevenlabs-founder-${bucket}`)
+  const outcomeCounter = FOUNDER_USAGE_COUNTER_FIELDS[outcome]
+  await ref.set({
+    provider: 'elevenlabs',
+    voiceRole: 'founder',
+    date: bucket,
+    requestCount: admin.firestore.FieldValue.increment(1),
+    characterCount: admin.firestore.FieldValue.increment(characterCount),
+    totalLatencyMs: admin.firestore.FieldValue.increment(Math.max(0, Math.round(latencyMs))),
+    [outcomeCounter]: admin.firestore.FieldValue.increment(1),
+    lastOutcome: outcome,
+    lastPerformanceMode: performanceMode,
+    providerModel,
+    rateWindowMs: RATE_WINDOW_MS,
+    maxRequestsPerWindow: MAX_REQUESTS_PER_WINDOW,
+    updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+  }, { merge: true })
+}
+
 function readBody(request: { body?: unknown }) {
   if (!isRecord(request.body)) throw new FounderVoiceError(400, 'INVALID_BODY', 'Request body must be a JSON object.')
   if (Buffer.byteLength(JSON.stringify(request.body), 'utf8') > 16_384) {
@@ -184,6 +228,7 @@ export const founderVoiceProvider = onRequest({
 
     const voiceId = resolveFounderVoiceId()
     const performanceMode = resolvePerformanceMode(body.founderPerformanceMode)
+    const providerModel = process.env.FOUNDER_VOICE_MODEL || 'eleven_multilingual_v2'
     const endpoint = new URL(`https://api.elevenlabs.io/v1/text-to-speech/${encodeURIComponent(voiceId)}/stream`)
     endpoint.searchParams.set('output_format', process.env.ELEVENLABS_OUTPUT_FORMAT || 'mp3_44100_128')
     if (process.env.ELEVENLABS_ZERO_RETENTION === 'true') endpoint.searchParams.set('enable_logging', 'false')
@@ -191,22 +236,44 @@ export const founderVoiceProvider = onRequest({
     const controller = new AbortController()
     const timeout = setTimeout(() => controller.abort(), 15_000)
     request.on('close', () => controller.abort())
-    const upstream = await fetch(endpoint, {
-      method: 'POST',
-      headers: {
-        'xi-api-key': ELEVENLABS_API_KEY.value(),
-        'Content-Type': 'application/json',
-        Accept: 'audio/mpeg',
-      },
-      body: JSON.stringify({
-        text,
-        model_id: process.env.FOUNDER_VOICE_MODEL || 'eleven_multilingual_v2',
-        voice_settings: FOUNDER_VOICE_SETTINGS[performanceMode],
-      }),
-      signal: controller.signal,
-    }).finally(() => clearTimeout(timeout))
+    const providerStartedAt = Date.now()
+    let upstream: Response
+    try {
+      upstream = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          'xi-api-key': ELEVENLABS_API_KEY.value(),
+          'Content-Type': 'application/json',
+          Accept: 'audio/mpeg',
+        },
+        body: JSON.stringify({
+          text,
+          model_id: providerModel,
+          voice_settings: FOUNDER_VOICE_SETTINGS[performanceMode],
+        }),
+        signal: controller.signal,
+      }).finally(() => clearTimeout(timeout))
+    } catch {
+      await recordFounderVoiceUsage({
+        uid,
+        performanceMode,
+        characterCount: text.length,
+        outcome: 'network_error',
+        latencyMs: Date.now() - providerStartedAt,
+        providerModel,
+      }).catch(() => undefined)
+      throw new FounderVoiceError(503, 'FOUNDER_VOICE_REQUEST_FAILED', 'Founder voice provider is unavailable.')
+    }
 
     if (!upstream.ok || !upstream.body) {
+      await recordFounderVoiceUsage({
+        uid,
+        performanceMode,
+        characterCount: text.length,
+        outcome: 'provider_error',
+        latencyMs: Date.now() - providerStartedAt,
+        providerModel,
+      }).catch(() => undefined)
       throw new FounderVoiceError(upstream.status === 429 ? 429 : 503, 'FOUNDER_VOICE_REQUEST_FAILED', 'Founder voice provider is unavailable.')
     }
 
@@ -219,11 +286,32 @@ export const founderVoiceProvider = onRequest({
     response.setHeader('X-URAI-Founder-Performance', performanceMode)
 
     const reader = upstream.body.getReader()
-    while (true) {
-      const { value, done } = await reader.read()
-      if (done) break
-      response.write(Buffer.from(value))
+    try {
+      while (true) {
+        const { value, done } = await reader.read()
+        if (done) break
+        response.write(Buffer.from(value))
+      }
+    } catch {
+      await recordFounderVoiceUsage({
+        uid,
+        performanceMode,
+        characterCount: text.length,
+        outcome: 'stream_error',
+        latencyMs: Date.now() - providerStartedAt,
+        providerModel,
+      }).catch(() => undefined)
+      throw new FounderVoiceError(503, 'FOUNDER_VOICE_STREAM_FAILED', 'Founder voice stream was interrupted.')
     }
+
+    await recordFounderVoiceUsage({
+      uid,
+      performanceMode,
+      characterCount: text.length,
+      outcome: 'success',
+      latencyMs: Date.now() - providerStartedAt,
+      providerModel,
+    }).catch(() => undefined)
     response.end()
   } catch (error) {
     if (!response.headersSent) sendError(response, error)

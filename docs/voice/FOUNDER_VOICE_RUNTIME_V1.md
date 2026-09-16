@@ -45,6 +45,10 @@ The isolated founder endpoint recognizes these identity-preserving delivery mode
 
 These modes alter provider delivery settings without selecting a different public voice identity.
 
+## Private aggregate telemetry
+
+Eligible founder-provider calls write only daily aggregate metadata beneath the authenticated user's private `providerUsage` namespace. The aggregate is limited to request counts, character counts, total provider latency, outcome counters, last performance mode, provider model family, and rate-limit configuration. It does not store request text, raw or generated audio, transcripts, provider secrets, corpus/holdout material, or the private founder voice ID. Telemetry write failure does not expose or replace the user-facing provider response.
+
 ## Model-collapse protection
 
 Only authorized human-source material may create or improve the founder model. Generated founder speech is evaluation output, never future human-source authority. The frozen evaluation holdout must never be used for enrollment, tuning, pronunciation tuning, or failure correction.
