@@ -7,7 +7,7 @@ import { useAnimations, useGLTF } from '@react-three/drei'
 import { useCallback, useEffect, useMemo, useRef, useState, type MutableRefObject } from 'react'
 import * as THREE from 'three'
 import { resolveOrbSensoryOutput, URAI_ORB_STATE_EVENT, type OrbState, type OrbStateEventDetail } from '@/app/home/orbStateController'
-import { useDragLook } from '@/spatial/navigation/EmbodiedNavigation'
+import { MobileMovementPad, MovementHelp, stepEmbodiedMotion, useDragLook, useMovementInput, type MovementInput } from '@/spatial/navigation/EmbodiedNavigation'
 import { useAdaptiveSpatialQuality, type SpatialQualityTier } from '@/spatial/performance/useAdaptiveSpatialQuality'
 import { ORB_SPEECH_CLOCK_EVENT, type OrbSpeechClockDetail } from '@/spatial/orb/orbSpeechClock'
 import { requestUraiWorldOrbOpen, requestUraiWorldTravel } from '@/spatial/world/worldEvents'
@@ -35,7 +35,10 @@ const ORB_REST_OFFSET = ORB_FIELD_RADIUS * ORB_FIELD_Y_SCALE + ORB_GROUND_CLEARA
 const AVATAR_POSITION = new THREE.Vector3(-.72, 0, 5.95)
 const HOME_EYE_HEIGHT = 1.64
 const HOME_WALK_SPEED = 2.6
+const HOME_WALK_ACCELERATION = 8
+const HOME_WALK_DECELERATION = 10.5
 const HOME_WALK_RADIUS = 14
+const HOME_WALK_BOUNDS = { minX: -HOME_WALK_RADIUS, maxX: HOME_WALK_RADIUS, minZ: -HOME_WALK_RADIUS, maxZ: HOME_WALK_RADIUS }
 const ORB_CLIPS: Record<OrbState, string> = {
   dormant: 'Orb_Resting', idle: 'Orb_Idle', attention: 'Orb_Attention', listening: 'Orb_Listening',
   thinking: 'Orb_Thinking', speaking: 'Orb_Speaking', guiding: 'Orb_Guiding', reflecting: 'Orb_Reflecting',
@@ -362,6 +365,9 @@ function CameraRig({
   homeTransition,
   homeOrigin,
   cameraSnapshot,
+  movementInput,
+  firstPersonVelocity,
+  firstPersonTarget,
   onEmbodimentComplete,
   onHomeRestoreComplete,
   onComplete,
@@ -376,6 +382,9 @@ function CameraRig({
   homeTransition: HomeTransitionState | null
   homeOrigin: HomeOriginSnapshot
   cameraSnapshot: MutableRefObject<THREE.Vector3>
+  movementInput: MovementInput
+  firstPersonVelocity: MutableRefObject<THREE.Vector3>
+  firstPersonTarget: MutableRefObject<THREE.Vector3 | null>
   onEmbodimentComplete: () => void
   onHomeRestoreComplete: () => void
   onComplete: (transition: Exclude<Transition, 'none'>) => void
@@ -387,32 +396,16 @@ function CameraRig({
   const desired = useRef(new THREE.Vector3())
   const look = useRef(new THREE.Vector3())
   const direction = useRef(new THREE.Vector3())
-  const right = useRef(new THREE.Vector3())
-  const movement = useRef(new THREE.Vector3())
-  const keys = useRef(new Set<string>())
 
   useEffect(() => {
     elapsed.current = 0
     completed.current = false
     start.current.copy(camera.position)
-  }, [camera, homeStableState, homeTransition, transition])
-
-  useEffect(() => {
-    const down = (event: KeyboardEvent) => {
-      if (event.target instanceof Element && event.target.closest('input,textarea,select,[contenteditable="true"]')) return
-      keys.current.add(event.code)
+    if (homeTransition || transition !== 'none') {
+      firstPersonVelocity.current.set(0, 0, 0)
+      firstPersonTarget.current = null
     }
-    const up = (event: KeyboardEvent) => keys.current.delete(event.code)
-    const clear = () => keys.current.clear()
-    window.addEventListener('keydown', down)
-    window.addEventListener('keyup', up)
-    window.addEventListener('blur', clear)
-    return () => {
-      window.removeEventListener('keydown', down)
-      window.removeEventListener('keyup', up)
-      window.removeEventListener('blur', clear)
-    }
-  }, [])
+  }, [camera, firstPersonTarget, firstPersonVelocity, homeStableState, homeTransition, transition])
 
   useFrame((_, delta) => {
     const portrait = size.height > size.width
@@ -420,7 +413,7 @@ function CameraRig({
     const firstPersonStable = homeStableState === 'AVATAR_HOME_FIRST_PERSON' && !homeTransition
     if (camera instanceof THREE.PerspectiveCamera) {
       const desiredFov = firstPersonStable
-        ? (portrait ? 66 : 60)
+        ? (portrait ? 66 : 58)
         : transition === 'none'
           ? (portrait ? 58 : 52)
           : transition === 'life-map'
@@ -485,6 +478,8 @@ function CameraRig({
       if (shell) shell.dataset.homeTransitionProgress = t.toFixed(3)
       if (t >= .995 && !completed.current) {
         completed.current = true
+        firstPersonVelocity.current.set(0, 0, 0)
+        firstPersonTarget.current = null
         yaw.current = 0
         pitch.current = 0
         onEmbodimentComplete()
@@ -521,21 +516,25 @@ function CameraRig({
     }
 
     if (firstPersonStable) {
-      const forwardAmount = (keys.current.has('KeyW') || keys.current.has('ArrowUp') ? 1 : 0) - (keys.current.has('KeyS') || keys.current.has('ArrowDown') ? 1 : 0)
-      const rightAmount = (keys.current.has('KeyD') || keys.current.has('ArrowRight') ? 1 : 0) - (keys.current.has('KeyA') || keys.current.has('ArrowLeft') ? 1 : 0)
-      movement.current.set(0, 0, 0)
-      direction.current.set(Math.sin(yaw.current), 0, -Math.cos(yaw.current))
-      right.current.set(Math.cos(yaw.current), 0, Math.sin(yaw.current))
-      movement.current.addScaledVector(direction.current, forwardAmount).addScaledVector(right.current, rightAmount)
-      if (movement.current.lengthSq() > 1) movement.current.normalize()
-      if (movement.current.lengthSq() > 0) {
-        camera.position.addScaledVector(movement.current, HOME_WALK_SPEED * delta)
-        const radial = Math.hypot(camera.position.x, camera.position.z)
-        if (radial > HOME_WALK_RADIUS) {
-          const scale = HOME_WALK_RADIUS / radial
-          camera.position.x *= scale
-          camera.position.z *= scale
-        }
+      stepEmbodiedMotion({
+        position: camera.position,
+        velocity: firstPersonVelocity.current,
+        input: movementInput,
+        target: firstPersonTarget,
+        yaw: -yaw.current,
+        delta,
+        speed: HOME_WALK_SPEED,
+        acceleration: HOME_WALK_ACCELERATION,
+        deceleration: HOME_WALK_DECELERATION,
+        bounds: HOME_WALK_BOUNDS,
+        arrivalRadius: .32,
+      })
+      const radial = Math.hypot(camera.position.x, camera.position.z)
+      if (radial > HOME_WALK_RADIUS) {
+        const scale = HOME_WALK_RADIUS / radial
+        camera.position.x *= scale
+        camera.position.z *= scale
+        firstPersonVelocity.current.set(0, 0, 0)
       }
       camera.position.y = height(camera.position.x, camera.position.z) + HOME_EYE_HEIGHT
       directionFromAngles(yaw.current, pitch.current, direction.current)
@@ -570,6 +569,9 @@ function Scene({
   homeTransition,
   homeOrigin,
   cameraSnapshot,
+  movementInput,
+  firstPersonVelocity,
+  firstPersonTarget,
   onAvatar,
   onEmbodimentComplete,
   onHomeRestoreComplete,
@@ -590,6 +592,9 @@ function Scene({
   homeTransition: HomeTransitionState | null
   homeOrigin: HomeOriginSnapshot
   cameraSnapshot: MutableRefObject<THREE.Vector3>
+  movementInput: MovementInput
+  firstPersonVelocity: MutableRefObject<THREE.Vector3>
+  firstPersonTarget: MutableRefObject<THREE.Vector3 | null>
   onAvatar: () => void
   onEmbodimentComplete: () => void
   onHomeRestoreComplete: () => void
@@ -648,6 +653,9 @@ function Scene({
       homeTransition={homeTransition}
       homeOrigin={homeOrigin}
       cameraSnapshot={cameraSnapshot}
+      movementInput={movementInput}
+      firstPersonVelocity={firstPersonVelocity}
+      firstPersonTarget={firstPersonTarget}
       onEmbodimentComplete={onEmbodimentComplete}
       onHomeRestoreComplete={onHomeRestoreComplete}
       onComplete={onComplete}
@@ -667,6 +675,8 @@ export function HomeWorldProductionV223({ onOrbOpen = requestUraiWorldOrbOpen, w
   const pitch = useRef(.02)
   const transitionTarget = useRef<TransitionTarget | null>(null)
   const cameraSnapshot = useRef(new THREE.Vector3(0, 1.92, 7.85))
+  const firstPersonVelocity = useRef(new THREE.Vector3())
+  const firstPersonTarget = useRef<THREE.Vector3 | null>(null)
   const stableModeRef = useRef<'HOME_PRESENTATION' | 'AVATAR_HOME_FIRST_PERSON'>('HOME_PRESENTATION')
   const orbStateRef = useRef<OrbState>('idle')
   const worldRef = useRef<HTMLElement>(null)
@@ -712,6 +722,8 @@ export function HomeWorldProductionV223({ onOrbOpen = requestUraiWorldOrbOpen, w
     ) {
       setTransition('none')
       transitionTarget.current = null
+      firstPersonVelocity.current.set(0, 0, 0)
+      firstPersonTarget.current = null
       if (homeState.transition !== 'ORB_COLLAPSE') setOrbState('idle')
     }
   }, [homeState.transition])
@@ -747,6 +759,7 @@ export function HomeWorldProductionV223({ onOrbOpen = requestUraiWorldOrbOpen, w
   }, [homeApi])
 
   const firstPerson = homeState.stableState === 'AVATAR_HOME_FIRST_PERSON' && !homeState.transition
+  const movementInput = useMovementInput({ enabled: firstPerson && transition === 'none' && !homeState.inputLocked })
   const look = useDragLook({
     yaw,
     pitch,
@@ -796,7 +809,7 @@ export function HomeWorldProductionV223({ onOrbOpen = requestUraiWorldOrbOpen, w
     data-home-desktop-mobile-world="same-scene"
     data-home-embodied-self={firstPerson ? 'camera-only-first-person-home' : 'visible-cinematic-avatar'}
     data-home-presence-presentation={avatarVisible ? 'visible-avatar-third-person' : firstPerson ? 'hidden-exterior-avatar-first-person' : 'transitioning'}
-    data-home-movement={firstPerson ? 'walk-look-interact' : 'camera-look-world-surface-selection'}
+    data-home-movement={firstPerson ? 'shared-keyboard-touch-walk-look-interact' : 'camera-look-world-surface-selection'}
     data-home-pointer-lock="false"
     data-home-assets-ready={ready ? 'true' : 'false'}
     data-home-ready={ready ? 'true' : 'warming'}
@@ -853,6 +866,9 @@ export function HomeWorldProductionV223({ onOrbOpen = requestUraiWorldOrbOpen, w
         homeTransition={homeState.transition}
         homeOrigin={homeState.origin}
         cameraSnapshot={cameraSnapshot}
+        movementInput={movementInput}
+        firstPersonVelocity={firstPersonVelocity}
+        firstPersonTarget={firstPersonTarget}
         onAvatar={activateAvatar}
         onEmbodimentComplete={homeApi.completeEmbodiment}
         onHomeRestoreComplete={homeApi.completeRestore}
@@ -865,14 +881,19 @@ export function HomeWorldProductionV223({ onOrbOpen = requestUraiWorldOrbOpen, w
       />
     </Canvas>
     {firstPerson ? (
-      <button
-        type="button"
-        aria-label="Open Avatar Self View"
-        onClick={homeApi.openSelfView}
-        style={{ position: 'absolute', right: 'max(16px, env(safe-area-inset-right))', bottom: 'max(16px, env(safe-area-inset-bottom))', zIndex: 35, minWidth: 48, minHeight: 48, padding: '0 16px', borderRadius: 999, border: '1px solid rgba(235,244,239,.26)', background: 'rgba(7,18,20,.56)', color: '#f4faf7', backdropFilter: 'blur(12px)', font: '600 12px/1 system-ui', cursor: 'pointer' }}
-      >
-        Self
-      </button>
+      <>
+        <MovementHelp realm="Home" summary="Move through your Home in first person without a synthetic body overlay." controls="WASD or arrow keys move · drag to look · Escape returns one semantic layer." />
+        <MobileMovementPad input={movementInput} label="Move through Home" />
+        <button
+          type="button"
+          aria-label="Open Avatar Self View"
+          data-movement-ui="true"
+          onClick={homeApi.openSelfView}
+          style={{ position: 'absolute', right: 'max(16px, env(safe-area-inset-right))', bottom: 'max(16px, env(safe-area-inset-bottom))', zIndex: 35, minWidth: 48, minHeight: 48, padding: '0 16px', borderRadius: 999, border: '1px solid rgba(235,244,239,.26)', background: 'rgba(7,18,20,.56)', color: '#f4faf7', backdropFilter: 'blur(12px)', font: '600 12px/1 system-ui', cursor: 'pointer' }}
+        >
+          Self
+        </button>
+      </>
     ) : null}
     <AvatarSelfView open={homeState.stableState === 'AVATAR_SELF_VIEW'} sections={selfSections} onClose={homeApi.closeSelfView} />
     <span className="sr-only" role="status" aria-live="polite">{
