@@ -113,7 +113,11 @@ test('accessibility and performance implementation contracts are present on visi
     'data-ground-exploration="first-person"',
     "name: 'Ground first-person movement controls'",
   ]) requireText(embodiedEvidence, marker)
-  assert.doesNotMatch(embodiedEvidence, /toHaveAttribute\('data-home-embodied-self', 'first-person-viewpoint-no-avatar'\)/, 'Accessibility evidence must not reassert retired no-avatar Home')
+  assert.equal(
+    embodiedEvidence.includes("await expect(home).toHaveAttribute('data-home-embodied-self', 'first-person-viewpoint-no-avatar')"),
+    false,
+    'Accessibility evidence must not positively reassert retired no-avatar Home',
+  )
 
   requireText(focus, 'aria-label={`Open Replay for ${memory.title}`}')
   assert.equal(focus.includes('min-height:44px'), false, 'Focus controls must not retain 44px minimum targets')
