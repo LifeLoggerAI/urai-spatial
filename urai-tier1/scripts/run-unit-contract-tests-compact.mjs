@@ -40,6 +40,7 @@ const tests = [
   'tests/lifemap-scene-behavior.test.mjs',
   'tests/lifemap-review-repair-contract.test.mjs',
   'tests/lifemap-stable-geography-contract.test.mjs',
+  'tests/lifemap-mounted-cosmic-geography-contract.test.mjs',
   'tests/lifemap-deterministic-test-mode.test.mjs',
   'tests/lifemap-v3-memory-volume-contract.test.mjs',
   'tests/memory-star-phase4-contract.test.mjs',
