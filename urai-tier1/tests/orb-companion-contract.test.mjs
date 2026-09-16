@@ -4,6 +4,7 @@ import fs from 'node:fs'
 
 const source = fs.readFileSync(new URL('../src/lib/orb-companion-contract.ts', import.meta.url), 'utf8')
 const conversationSource = fs.readFileSync(new URL('../src/spatial/orb/OrbConversationPanel.tsx', import.meta.url), 'utf8')
+const speechClockSource = fs.readFileSync(new URL('../src/spatial/orb/orbSpeechClock.ts', import.meta.url), 'utf8')
 const conversationCss = fs.readFileSync(new URL('../src/spatial/orb/OrbConversationPanel.module.css', import.meta.url), 'utf8')
 const voiceClientSource = fs.readFileSync(new URL('../src/spatial/narrator/elevenlabsClient.ts', import.meta.url), 'utf8')
 const flat = source.replace(/\s+/g, ' ')
@@ -78,14 +79,30 @@ test('live Orb replies use the external natural voice path before device fallbac
   assert.match(conversationSource, /Allow Orb replies and narrator lines to use the configured natural external voice provider/)
 })
 
-test('Orb speaking state begins from actual playback instead of streamed text arrival', () => {
+test('Orb audible speaking begins from actual playback instead of streamed text or text-only timing', () => {
   const deltaBlock = conversationSource.match(/if \(providerEvent\.type === 'delta'\) \{([\s\S]*?)\} else if/)?.[1] ?? ''
   assert.match(deltaBlock, /setStreamedText/)
   assert.doesNotMatch(deltaBlock, /publishConversationState\('speaking'/)
-  assert.match(conversationSource, /await audio\.play\(\)\s*\n\s*beginSpeakingClock\('natural'\)/)
+  assert.match(conversationSource, /await audio\.play\(\)/)
+  assert.match(conversationSource, /beginSpeakingClock\('natural'\)/)
   assert.match(conversationSource, /utterance\.onstart = \(\) => handlers\.onStart\(\)/)
   assert.match(conversationSource, /utterance\.onboundary/)
-  assert.match(conversationSource, /const ORB_SPEECH_CLOCK_EVENT = 'urai:orb-speech-clock'/)
+  assert.match(speechClockSource, /export const ORB_SPEECH_CLOCK_EVENT = 'urai:orb-speech-clock'/)
+  assert.match(speechClockSource, /export const ORB_RESPONSE_ANTICIPATION_MS = 380/)
+  const textOnly = conversationSource.match(/const playTextOnlyResponse = async[\s\S]*?\n  }\n\n  const playDeviceVoice/)?.[0] ?? ''
+  assert.match(textOnly, /source: 'text'/)
+  assert.doesNotMatch(textOnly, /beginSpeakingClock\('text'\)|publishConversationState\('speaking'/)
+})
+
+test('natural voice analysis is local, optional, and does not double-route audio', () => {
+  assert.match(conversationSource, /createMediaElementSource\(audio\)/)
+  assert.match(conversationSource, /const analyser = context\.createAnalyser\(\)/)
+  assert.match(conversationSource, /source\.connect\(analyser\)/)
+  assert.match(conversationSource, /analyser\.connect\(context\.destination\)/)
+  assert.match(conversationSource, /getFloatTimeDomainData\(samples\)/)
+  assert.match(conversationSource, /amplitude: rms/)
+  assert.match(conversationSource, /if \(voiceAnalyser\.current\) return/)
+  assert.match(conversationSource, /stopNaturalVoiceAnalysis\(\)/)
 })
 
 test('Orb voice can be stopped after the AI response finishes', () => {
