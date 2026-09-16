@@ -11,12 +11,20 @@ const reliquary = fs.readFileSync(new URL('../src/spatial/assets/HomeOrbReliquar
 const sky = fs.readFileSync(new URL('../src/spatial/assets/HomeAtmosphericSky.tsx', import.meta.url), 'utf8')
 const authority = JSON.parse(fs.readFileSync(new URL('../src/app/currentHomeVisualAuthority.json', import.meta.url), 'utf8'))
 
-test('current certified Home visual authority remains V288 until fresh candidate pixels are accepted', () => {
+test('last certified Home visual authority remains V288 while current authored Orb candidate stays explicitly uncertified', () => {
   assert.equal(authority.artRevision, 'v288-cinematic-lived-world-grounded-reliquary')
   assert.equal(authority.worldIdentifier, 'cinematic-lived-world-threshold')
   assert.equal(authority.orbVisualAuthority, 'v288-grounded-biomorphic-reliquary')
+  assert.equal(authority.certifiedPredecessor.artRevision, 'v288-cinematic-lived-world-grounded-reliquary')
+  assert.equal(authority.certifiedPredecessor.orbVisualAuthority, 'v288-grounded-biomorphic-reliquary')
+  assert.equal(authority.certifiedPredecessor.status, 'last-certified-predecessor-only')
+  assert.equal(authority.currentCandidateRuntime.rendererOwner, 'HomeWorldProductionV223.tsx')
+  assert.equal(authority.currentCandidateRuntime.orbVisualAuthority, 'authored-urai-orb-avatar-v1-glb')
+  assert.equal(authority.currentCandidateRuntime.orbRuntimeAsset, '/assets/urai/generated/models/urai-orb-avatar-v1.glb')
+  assert.equal(authority.currentCandidateRuntime.orbGroundRelationship, 'self-supported-near-ground-no-external-support')
+  assert.equal(authority.currentCandidateRuntime.certification, 'fresh-exact-head-pixels-required')
   for (const asset of ['HomeWorldProductionV223.tsx','HomeVisualAuthority.tsx','HomeAtmosphericSky.tsx','HomeOrbReliquaryV286.tsx','HomeOrbGroundedV288.tsx']) {
-    assert.ok(authority.runtimeAssets.includes(asset), `missing V288 runtime asset ${asset}`)
+    assert.ok(authority.runtimeAssets.includes(asset), `missing V288 predecessor runtime asset ${asset}`)
   }
   assert.doesNotMatch(JSON.stringify(authority.runtimeAssets), /HomeLaunchSanctuaryV254\.tsx|HomeWorldProductionV225PolishV2\.tsx/)
   assert.match(visualAuthority, /import \{ HomeOrbGroundedV288 \} from '\.\.\/assets\/HomeOrbGroundedV288'/)
@@ -37,7 +45,7 @@ test('V249 and V281 localized repair modules remain historical inert provenance'
   assert.doesNotMatch(aaaRepair, /aaa-celestial-ascent-v3-gold-master-depth|home-aaa-life-map-celestial-ascent|home-aaa-v281-rooted-ascent-ribbons|buildCelestialVolume/)
 })
 
-test('retired localized Home hotspots are disabled while the entire active Avatar and living-memory Orb hierarchies are protected', () => {
+test('retired localized Home hotspots are disabled while the active Avatar and living-memory Orb hierarchies are protected', () => {
   assert.match(owner, /function RetireLegacyHomeHotspots\(\)/)
   assert.match(owner, /object\.visible = false/)
   assert.match(owner, /object\.raycast = \(\) => undefined/)
@@ -48,11 +56,12 @@ test('retired localized Home hotspots are disabled while the entire active Avata
   assert.match(owner, /const CURRENT_HOME_PRESENCE_ROOTS = new Set\(\['home-living-memory-orb', 'home-visible-user-avatar'\]\)/)
   assert.match(owner, /function isInsideCurrentHomePresence\(object: THREE\.Object3D\)/)
   assert.match(owner, /if \(isInsideCurrentHomePresence\(object\)\) return/)
-  assert.match(owner, /function VisibleHomeAvatar\(\{ reducedMotion \}/)
-  assert.match(owner, /<VisibleHomeAvatar reducedMotion=\{reducedMotion\} \/>/)
+  assert.match(owner, /<HomeEmbodiedAvatar/)
+  assert.match(owner, /state=\{avatarState\}/)
   assert.match(owner, /name="home-visible-user-avatar"/)
-  assert.match(owner, /presentation: 'visible-home-avatar-third-person'/)
+  assert.match(owner, /data-home-presence-presentation=\{firstPerson \? 'avatar-hidden-camera-first-person' : 'visible-avatar-third-person'\}/)
   assert.match(owner, /name="home-living-memory-orb"/)
+  assert.match(owner, /data-home-orb-ground-relationship="self-supported-near-ground-no-external-support"/)
   assert.doesNotMatch(owner, /\/home-visible-user-avatar\//, 'the active Avatar must not be included in the legacy-retirement pattern list')
 })
 
@@ -64,7 +73,6 @@ test('Ground is owned by the physical world surface and Life Map by the broad vi
     'data-home-distance-life-map="sky-threshold"',
     'data-home-portal-sequence="idle"',
     "cameraCheckpoint: 'ground-first-person-arrival'",
-    "cameraCheckpoint: 'home-sky-ascent'",
     "cameraCheckpoint: 'home-sky-ascent-complete'",
   ]) assert.match(owner, new RegExp(marker.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')))
   assert.match(owner, /event\.point\.clone\(\)/)
@@ -84,7 +92,7 @@ test('visible sky is the canonical broad Life Map interaction surface and locali
   assert.doesNotMatch(sky, /HomeLaunchSanctuaryV254|home-v249-life-map-rooted-celestial-ascent/)
 })
 
-test('V288 Orb keeps its last certified reliquary pixels while fallback geometry remains interaction-only provenance', () => {
+test('V288 Orb keeps its last certified predecessor pixels while fallback geometry remains interaction-only provenance', () => {
   assert.match(groundedOrb, /HomeOrbReliquaryV286/)
   assert.match(groundedOrb, /home-v288-grounded-biomorphic-memory-reliquary/)
   assert.match(groundedOrb, /home-gold-companion/)
