@@ -3,15 +3,16 @@
 import { useEffect, type MutableRefObject } from 'react'
 import * as THREE from 'three'
 import { requestUraiWorldReturn } from '@/spatial/world/worldEvents'
+import { GroundReturnWorldBridge } from './GroundReturnWorldBridge'
 
 /**
  * Ground deliberately renders no follower Orb. This bridge preserves the existing
  * semantic Orb control as a keyboard/screen-reader recovery surface while keeping
- * ordinary first-person Ground visually free of a companion model. It also binds
- * the visible Home action to the world return state machine instead of bypassing
- * realm continuity with a direct router push.
+ * ordinary first-person Ground visually free of a companion model. It also owns
+ * the reverse material/world bridge so Home, Escape, and the visible return action
+ * all enter one deterministic return path rather than raw route navigation.
  */
-export function GroundOrbCompanion(_props: {
+export function GroundOrbCompanion(props: {
   playerPosition: MutableRefObject<THREE.Vector3>
   yaw: MutableRefObject<number>
   groundHeight: (x: number, z: number) => number
@@ -38,9 +39,7 @@ export function GroundOrbCompanion(_props: {
       ) ?? ''
     }
     const observer = liveRegion ? new MutationObserver(normalizeStatus) : null
-    if (liveRegion && observer) {
-      observer.observe(liveRegion, { childList: true, characterData: true, subtree: true })
-    }
+    if (liveRegion && observer) observer.observe(liveRegion, { childList: true, characterData: true, subtree: true })
     normalizeStatus()
 
     const reveal = () => { if (fallback) fallback.style.opacity = '1' }
@@ -55,16 +54,30 @@ export function GroundOrbCompanion(_props: {
       fallback.addEventListener('blur', hide)
     }
 
-    const returnThroughWorld = (event: MouseEvent) => {
-      event.preventDefault()
-      event.stopImmediatePropagation()
+    const beginReturn = (event?: Event) => {
+      if (event) {
+        event.preventDefault()
+        event.stopImmediatePropagation()
+      }
+      const root = document.querySelector<HTMLElement>('[data-testid="urai-ground-lived-world"]')
+      if (root?.dataset.groundInputLocked === 'true') return
       requestUraiWorldReturn()
     }
+    const returnThroughWorld = (event: MouseEvent) => beginReturn(event)
+    const escapeThroughWorld = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return
+      const target = event.target
+      if (target instanceof Element && target.closest('input,textarea,select,[contenteditable="true"],button,a,summary')) return
+      beginReturn(event)
+    }
+
     returnButton?.addEventListener('click', returnThroughWorld, true)
+    window.addEventListener('keydown', escapeThroughWorld, { capture: true })
 
     return () => {
       observer?.disconnect()
       returnButton?.removeEventListener('click', returnThroughWorld, true)
+      window.removeEventListener('keydown', escapeThroughWorld, true)
       if (!fallback || !previous) return
       fallback.removeEventListener('focus', reveal)
       fallback.removeEventListener('blur', hide)
@@ -78,5 +91,5 @@ export function GroundOrbCompanion(_props: {
     }
   }, [])
 
-  return null
+  return <GroundReturnWorldBridge groundHeight={props.groundHeight} reducedMotion={props.reducedMotion} />
 }
