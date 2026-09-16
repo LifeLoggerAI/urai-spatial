@@ -27,6 +27,20 @@ test('presentation Avatar uses the governed skinned human candidate as a physica
   assert.doesNotMatch(avatar, /portal|Life Map|ground hotspot/i)
 })
 
+test('Avatar living presence remains restrained, non-repetitive and reduced-motion safe', () => {
+  for (const marker of [
+    'non-harmonic-weight-shift',
+    'idle_breath-plus-restrained-micro-presence',
+    'procedural-breath-plus-restrained-micro-presence',
+    'Math.sin(time * 0.31 + 0.42)',
+    'Math.sin(time * 0.173 + 1.83)',
+    'Math.sin(time * 0.227 + 0.77)',
+    "microPresence: reducedMotion ? 'settled'",
+  ]) has(avatar, marker)
+  assert.match(avatar, /const weightShift = reducedMotion\s*\? 0/)
+  assert.match(avatar, /const microYaw = reducedMotion \|\| targeted \|\| state === 'embodying'\s*\? 0/)
+})
+
 test('Avatar targeting stays restrained and does not introduce RPG selection geometry', () => {
   has(avatar, 'urai-home-avatar-target-response')
   assert.doesNotMatch(avatar, /ringGeometry|torusGeometry|outline|selection-ring/i)
