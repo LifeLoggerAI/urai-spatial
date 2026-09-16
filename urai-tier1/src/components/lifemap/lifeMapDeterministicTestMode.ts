@@ -20,6 +20,7 @@ const FIXTURES = new Set<LifeMapTestFixture>(['zero', 'one', 'five', 'sparse', '
 const QUALITIES = new Set<LifeMapTestQuality>(['low', 'medium', 'high'])
 
 function boundedNumber(value: string | null, fallback: number, min: number, max: number) {
+  if (value === null || value.trim() === '') return fallback
   const parsed = Number(value)
   return Number.isFinite(parsed) ? Math.min(max, Math.max(min, parsed)) : fallback
 }

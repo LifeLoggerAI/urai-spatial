@@ -73,7 +73,7 @@ test('Home interaction and accessibility ownership stays first-person and bounde
   has(renderer, 'data-testid="urai-home-webgl-orb"')
   has(renderer, 'data-home-embodied-self="first-person-viewpoint-no-avatar"')
   has(renderer, "data-home-orb-model-clip={reducedMotion ? 'stopped-reduced-motion'")
-  assert.doesNotMatch(renderer, /urai-home-embodied-avatar|home-visible-user-avatar|<VisibleUserAvatar|cinematic-third-person/)
+  assert.doesNotMatch(renderer, /function\s+VisibleUserAvatar\s*\(|<VisibleUserAvatar\b|data-home-embodied-self=["']visible-cinematic-avatar["']|data-home-camera-mode=["']cinematic-third-person["']|name=["']urai-home-embodied-avatar["']/)
   has(homeRuntime, 'requestUraiWorldOrbOpen')
   has(homeRuntime, 'webglcontextlost')
   has(homeRuntime, 'webglcontextrestored')

@@ -22,30 +22,35 @@
   touch-action: manipulation;
 }
 
-/* Portrait retained-pixel repair: the mounted Cosmic scene remains the geometry
-   authority. This is a restrained atmospheric compositing layer only, filling
-   the tall mid-field with off-axis depth cues so mobile does not collapse into
-   a black central corridor. No centered ring, portal, doorway, or semantic hit
-   target is introduced; all interaction still belongs to the scene/navigator. */
+/* Portrait retained-pixel repair. The Cosmic R3F scene remains the geometry and
+   interaction authority; these presentation-only veils restore large-scale
+   luminance structure in a tall viewport without introducing a centered portal,
+   ring, doorway, semantic hit target, or neon wallpaper. */
 @media (orientation: portrait) {
+  .life-map-root canvas {
+    filter: brightness(1.16) contrast(1.08) saturate(.92);
+  }
+
   .life-map-root::before {
     content: '';
     position: absolute;
-    inset: -6%;
+    inset: -8%;
     z-index: 1;
     pointer-events: none;
     background:
-      radial-gradient(ellipse 54% 28% at 22% 23%, rgba(69, 111, 126, .18) 0%, rgba(33, 64, 77, .09) 38%, transparent 72%),
-      radial-gradient(ellipse 48% 31% at 76% 38%, rgba(128, 112, 91, .13) 0%, rgba(70, 65, 60, .07) 42%, transparent 74%),
-      radial-gradient(ellipse 58% 34% at 34% 58%, rgba(54, 91, 104, .15) 0%, rgba(25, 52, 67, .08) 44%, transparent 76%),
-      radial-gradient(ellipse 52% 30% at 74% 76%, rgba(111, 103, 88, .11) 0%, rgba(52, 59, 66, .06) 43%, transparent 74%),
-      linear-gradient(168deg, transparent 8%, rgba(55, 82, 91, .045) 31%, transparent 48%, rgba(104, 92, 74, .035) 66%, transparent 88%);
-    opacity: .92;
+      radial-gradient(ellipse 72% 34% at 14% 18%, rgba(78, 124, 138, .30) 0%, rgba(35, 72, 84, .16) 36%, transparent 70%),
+      radial-gradient(ellipse 64% 38% at 84% 34%, rgba(145, 124, 94, .22) 0%, rgba(77, 70, 61, .12) 40%, transparent 72%),
+      radial-gradient(ellipse 76% 42% at 29% 54%, rgba(61, 103, 116, .27) 0%, rgba(28, 61, 75, .14) 42%, transparent 74%),
+      radial-gradient(ellipse 66% 38% at 80% 70%, rgba(126, 113, 88, .19) 0%, rgba(58, 65, 70, .10) 42%, transparent 72%),
+      radial-gradient(ellipse 74% 34% at 22% 88%, rgba(50, 82, 98, .18) 0%, rgba(24, 48, 64, .09) 44%, transparent 73%),
+      linear-gradient(166deg, rgba(25, 48, 60, .05) 4%, transparent 20%, rgba(74, 96, 100, .09) 36%, transparent 51%, rgba(113, 94, 70, .07) 67%, transparent 84%);
+    opacity: .96;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .life-map-root::before {
+  .life-map-root::before,
+  .life-map-root canvas {
     transition: none !important;
     animation: none !important;
   }

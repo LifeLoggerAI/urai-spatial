@@ -36,7 +36,8 @@ test('V288 restores the biomorphic reliquary as pixels while preserving the grou
 })
 
 test('V287 cinematic Home, physical Ground and broad-sky Life Map authority remain intact beneath the Orb repair', () => {
-  for (const marker of ['data-home-embodied-self="visible-cinematic-avatar"','data-home-ground-entry="physical-world-surface"','data-home-life-map-entry="visible-sky-broad-interaction"',"cameraCheckpoint: 'ground-first-person-arrival'","cameraCheckpoint: 'home-sky-ascent'","cameraCheckpoint: 'home-sky-ascent-complete'","router.prefetch('/ground/')","router.prefetch('/life-map/')",'event.point.clone()']) has(renderer, marker)
+  for (const marker of ['data-home-embodied-self="first-person-viewpoint-no-avatar"','data-home-ground-entry="physical-world-surface"','data-home-life-map-entry="visible-sky-broad-interaction"',"cameraCheckpoint: 'ground-first-person-arrival'","cameraCheckpoint: 'home-sky-ascent'","cameraCheckpoint: 'home-sky-ascent-complete'","router.prefetch('/ground/')","router.prefetch('/life-map/')",'event.point.clone()']) has(renderer, marker)
+  assert.doesNotMatch(renderer, /function\s+VisibleUserAvatar\s*\(|<VisibleUserAvatar\b|data-home-embodied-self=["']visible-cinematic-avatar["']|data-home-camera-mode=["']cinematic-third-person["']/)
   assert.doesNotMatch(renderer, /HOME_LIFE_MAP|nearby\s*===\s*['"]life-map['"]|useMovementInput|MobileMovementPad/)
 })
 

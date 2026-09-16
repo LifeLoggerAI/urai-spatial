@@ -42,8 +42,8 @@ const cases = [
 ]
 await mkdir(outputDir, { recursive: true })
 const receipt = {
-  schemaVersion: 'urai-natural-home-orb-proof-18', exactHead, capturedAt: new Date().toISOString(), runtimeIdentity,
-  visualPolicy: 'V287 Home is one cinematic lived physical world with a visible user embodiment, a grounded Orb companion, physical Ground surface interaction, and the broad visible sky as the only Life Map threshold. Exact-head pixels remain candidates until literally inspected.',
+  schemaVersion: 'urai-natural-home-orb-proof-19', exactHead, capturedAt: new Date().toISOString(), runtimeIdentity,
+  visualPolicy: 'Current Home is one first-person cinematic lived physical world with no visible user avatar, a grounded Orb companion, physical Ground surface interaction, and the broad visible sky as the only Life Map threshold. Exact-head pixels remain candidates until literally inspected.',
   cases: [], errors: [],
 }
 
@@ -92,7 +92,7 @@ for (const spec of cases) {
     record.status = response?.status(); record.canvasCount = await owner.locator('canvas').count()
     record.visibleWorld = await attr('data-home-visible-world'); record.worldCharacter = await attr('data-home-world-character')
     record.visualOwnership = await attr('data-home-visual-ownership'); record.desktopMobileWorld = await attr('data-home-desktop-mobile-world')
-    record.movement = await attr('data-home-movement'); record.visualGrade = await attr('data-home-visual-grade')
+    record.embodiedSelf = await attr('data-home-embodied-self'); record.movement = await attr('data-home-movement'); record.visualGrade = await attr('data-home-visual-grade')
     record.artCertification = await attr('data-home-art-certification'); record.runtimeAssets = await attr('data-home-runtime-assets')
     record.physicalBase = await attr('data-home-physical-base'); record.authoredRegions = await attr('data-home-authored-regions')
     record.groundEntry = await attr('data-home-ground-entry'); record.lifeMapEntry = await attr('data-home-life-map-entry')
@@ -112,22 +112,24 @@ for (const spec of cases) {
       && record.worldCharacter === 'production-cinematic-real-place-sacred-tech'
       && record.visualOwnership === 'single-canvas-three-dimensional-geometry'
       && record.desktopMobileWorld === 'same-scene'
+      && record.embodiedSelf === 'first-person-viewpoint-no-avatar'
       && record.movement === 'camera-look-world-surface-selection'
       && record.visualGrade === 'current-literal-pixel-candidate-not-certified'
       && record.artCertification === 'fresh-exact-head-pixels-required'
       && record.physicalBase === 'continuous-lived-physical-world'
       && record.runtimeAssets?.includes('HomeAtmosphericSky.tsx')
       && record.runtimeAssets?.includes('HomeWorldProductionV223.tsx')
-      && record.authoredRegions?.includes('home-visible-user-avatar')
+      && record.authoredRegions?.includes('home-physical-world')
       && record.authoredRegions?.includes('home-grounded-companion')
       && record.authoredRegions?.includes('home-life-map-sky-threshold')
+      && !record.authoredRegions?.includes('home-visible-user-avatar')
       && !record.authoredRegions?.includes('home-life-map-physical-portal')
       && record.groundEntry === 'physical-world-surface'
       && record.lifeMapEntry === 'visible-sky-broad-interaction'
-      && record.cameraMode !== null && record.orbState !== null
+      && record.cameraMode !== null && record.cameraMode !== 'cinematic-third-person' && record.orbState !== null
       && (!spec.orbState || record.orbState === spec.orbState)
       && (spec.reducedMotion !== 'reduce' || record.orbModelClip === 'stopped-reduced-motion')
-      && record.orbMarkers === 1 && record.embodimentMarkers === 1
+      && record.orbMarkers === 1 && record.embodimentMarkers === 0
       && record.semanticButtons === 1 && record.semanticLinks === 2
       && record.semanticGroundHref === '/ground/?entryPortal=home-ground&cameraCheckpoint=home-ground-descent'
       && record.semanticLifeMapHref === '/life-map/?from=home-sky&entryPortal=home-sky&cameraCheckpoint=home-sky-ascent-complete'
