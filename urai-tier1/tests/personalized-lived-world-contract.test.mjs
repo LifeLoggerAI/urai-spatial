@@ -8,6 +8,8 @@ const fieldSource = fs.readFileSync(new URL('../src/spatial/lived-world/globalEm
 const contextSource = fs.readFileSync(new URL('../src/spatial/lived-world/groundMemoryContext.ts', import.meta.url), 'utf8')
 const boundarySource = fs.readFileSync(new URL('../src/app/ground/GroundPersonalizationBoundary.tsx', import.meta.url), 'utf8')
 const groundPage = fs.readFileSync(new URL('../src/app/ground/page.tsx', import.meta.url), 'utf8')
+const worldTypes = fs.readFileSync(new URL('../src/spatial/world/worldTypes.ts', import.meta.url), 'utf8')
+const worldEvents = fs.readFileSync(new URL('../src/spatial/world/worldEvents.ts', import.meta.url), 'utf8')
 const authority = fs.readFileSync(new URL('../../docs/URAI_PERSONALIZED_LIVED_WORLD_AUTHORITY_V1.md', import.meta.url), 'utf8')
 
 test('Lived World Graph is provenance-first and covers terrestrial life entities', () => {
@@ -21,9 +23,9 @@ test('Lived World Graph is provenance-first and covers terrestrial life entities
 
 test('personal reconstruction fails closed on consent, uncertainty and third-party identity', () => {
   for (const marker of ["granted(consent, 'location.context')", "granted(consent, 'inference.sensitive')", 'generic-fallback', 'UNKNOWN_AUTOBIOGRAPHICAL_FIDELITY', 'PERSON_PRESENCE_AUTHORITY_UNAVAILABLE', 'PARTIAL_RECONSTRUCTION_MUST_REMAIN_VISIBLY_BOUNDED']) assert.ok(policySource.includes(marker))
-  assert.ok(policySource.includes("entity.thirdParty"))
-  assert.ok(policySource.includes("entity.minorOrDependent"))
-  assert.ok(policySource.includes("entity.griefOrLegacySensitive"))
+  assert.ok(policySource.includes('entity.thirdParty'))
+  assert.ok(policySource.includes('entity.minorOrDependent'))
+  assert.ok(policySource.includes('entity.griefOrLegacySensitive'))
 })
 
 test('Global Emotional Field is cohort aggregate only and suppresses unsafe location or sensitive cells', () => {
@@ -38,6 +40,10 @@ test('Global Emotional Field is cohort aggregate only and suppresses unsafe loca
 test('Ground memory handoff preserves place, memory, provenance, fidelity and exact return origin', () => {
   for (const marker of ['placeId', 'memoryId', 'eraId', 'personPresenceIds', 'sourceIds', 'privacyPurposes', 'reconstructionFidelity', 'camera', 'returnToken']) assert.ok(contextSource.includes(marker))
   assert.ok(contextSource.includes('CONFIRMED_MEMORY_REQUIRES_SOURCE'))
+  for (const marker of ['originRealm', 'returnToken', 'reconstructionFidelity', 'eraId']) assert.ok(worldTypes.includes(marker), `world context missing ${marker}`)
+  assert.ok(worldEvents.includes("target.searchParams.set('originRealm', context.originRealm)"))
+  assert.ok(worldEvents.includes("target.searchParams.set('returnToken', context.returnToken)"))
+  assert.ok(worldEvents.includes("target.searchParams.set('fidelity', context.reconstructionFidelity)"))
 })
 
 test('Ground route mounts the fail-closed personalization boundary and retires stale compass/checkpoint owners', () => {
