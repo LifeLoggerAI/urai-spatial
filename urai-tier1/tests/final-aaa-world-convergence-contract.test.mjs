@@ -65,11 +65,14 @@ test('Orb ownership preserves certified V288 predecessor truth while the current
   assert.match(historicalHomeProduction, /<HomeV76Sanctuary/)
   assert.match(historicalHomeArt, /export function HomeV76Sanctuary/)
 
-  // Do not promote visual-certification metadata until fresh exact-head literal pixels are accepted.
+  // Preserve the last certified V288 predecessor separately from the authored current candidate.
   assert.equal(currentHomeVisualAuthority.artRevision, 'v288-cinematic-lived-world-grounded-reliquary')
   assert.equal(currentHomeVisualAuthority.worldIdentifier, 'cinematic-lived-world-threshold')
-  assert.equal(currentHomeVisualAuthority.orbVisualAuthority, 'v288-grounded-biomorphic-reliquary')
-  assert.ok(currentHomeVisualAuthority.runtimeAssets.includes('HomeOrbGroundedV288.tsx'))
+  assert.equal(currentHomeVisualAuthority.lastCertifiedPredecessor.orbVisualAuthority, 'v288-grounded-biomorphic-reliquary')
+  assert.equal(currentHomeVisualAuthority.currentRuntimeCandidate.orbVisualAuthority, 'authored-living-memory-orb-candidate')
+  assert.equal(currentHomeVisualAuthority.orbVisualAuthority, 'authored-living-memory-orb-candidate')
+  assert.equal(currentHomeVisualAuthority.currentRuntimeCandidate.certified, false)
+  assert.ok(currentHomeVisualAuthority.lastCertifiedPredecessor.runtimeAssets.includes('HomeOrbGroundedV288.tsx'))
 
   // Current candidate runtime is allowed to advance beyond the last certified visual metadata.
   assert.match(activeHomeProduction, /export function HomeWorldProductionV223/)
