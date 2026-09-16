@@ -23,7 +23,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  URAI_EXACT_HEAD: ${{ github.sha }}
+  URAI_EXACT_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
   PLAYWRIGHT_BROWSERS_PATH: '0'
   NEXT_PUBLIC_URAI_EXPLICIT_DEMO: 'true'
 
@@ -36,6 +36,7 @@ jobs:
       - name: Checkout exact head
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
           fetch-depth: 1
           persist-credentials: false
 
