@@ -2,6 +2,7 @@ import { spawnSync } from 'node:child_process'
 import fs from 'node:fs'
 
 const tests = [
+  'tests/ai-evolution-policy-safety.test.mjs',
   'tests/aaa-world-artifact-contract.test.mjs',
   'tests/v1-aaa-asset-program-matrix-contract.test.mjs',
   'tests/geographic-location-vault.test.mjs',
@@ -48,6 +49,7 @@ const tests = [
   'tests/security-boundary-contract.test.mjs',
   'tests/selected-memory-production-contract.test.mjs',
   'tests/sensory-asset-resolution-contract.test.mjs',
+  'tests/semantic-release-gate-regression.test.mjs',
   'tests/spatial-launch-boundaries.test.mjs',
   'tests/spatial-production-audio-runtime-contract.test.mjs',
   'tests/tier0-world-navigation-canon.test.mjs',
