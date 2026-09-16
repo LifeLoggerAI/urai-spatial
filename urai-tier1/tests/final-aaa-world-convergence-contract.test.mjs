@@ -40,7 +40,7 @@ test('the full journey participates in one persistent world model', () => {
   assert.match(registry, /environmentalForm:\s*['"]explorable-memory-constellation['"]/)
 })
 
-test('Orb ownership follows V288 cinematic destination canon without visual duplication', () => {
+test('Orb ownership preserves certified V288 predecessor truth while the current candidate converges on the governed living-memory Orb', () => {
   assert.match(shell, /PersistentWorldCompanion/)
   assert.match(shell, /const showWorldCompanion = world\.destination !== 'life-map'/)
   assert.match(shell, /\{showWorldCompanion \? <PersistentWorldCompanion \/> : null\}/)
@@ -65,22 +65,32 @@ test('Orb ownership follows V288 cinematic destination canon without visual dupl
   assert.match(historicalHomeProduction, /<HomeV76Sanctuary/)
   assert.match(historicalHomeArt, /export function HomeV76Sanctuary/)
 
+  // Do not promote visual-certification metadata until fresh exact-head literal pixels are accepted.
   assert.equal(currentHomeVisualAuthority.artRevision, 'v288-cinematic-lived-world-grounded-reliquary')
   assert.equal(currentHomeVisualAuthority.worldIdentifier, 'cinematic-lived-world-threshold')
   assert.equal(currentHomeVisualAuthority.orbVisualAuthority, 'v288-grounded-biomorphic-reliquary')
   assert.ok(currentHomeVisualAuthority.runtimeAssets.includes('HomeOrbGroundedV288.tsx'))
 
+  // Current candidate runtime is allowed to advance beyond the last certified visual metadata.
   assert.match(activeHomeProduction, /export function HomeWorldProductionV223/)
   assert.match(activeHomeProduction, /<HomeV225PolishV3 orbState=\{orbState\}/)
   assert.match(activeHomeProduction, /<HomeAtmosphericSky[^>]*onLifeMap=\{onLifeMap\}/)
-  assert.doesNotMatch(activeHomeProduction, /function\s+VisibleUserAvatar\s*\(|<VisibleUserAvatar\b/)
+  assert.match(activeHomeProduction, /function\s+VisibleHomeAvatar\s*\(/)
+  assert.match(activeHomeProduction, /<VisibleHomeAvatar\s*\/>/)
   assert.match(activeHomeProduction, /<OrbCompanion state=\{orbState\} reducedMotion=\{reducedMotion\} onOrb=\{onOrb\} \/>/)
   assert.match(activeHomeProduction, /data-testid="urai-home-webgl-orb"/)
-  assert.match(activeHomeProduction, /data-home-embodied-self="first-person-viewpoint-no-avatar"/)
-  assert.doesNotMatch(activeHomeProduction, /data-home-camera-mode=["']cinematic-third-person["']|name=["']urai-home-embodied-avatar["']/)
+  assert.match(activeHomeProduction, /data-home-embodied-self="visible-cinematic-avatar"/)
+  assert.match(activeHomeProduction, /data-home-presence-presentation="visible-avatar-third-person"/)
+  assert.match(activeHomeProduction, /data-home-camera-mode=\{transition !== 'none' \? transition : dragging \? 'cinematic-third-person-look' : 'cinematic-third-person'\}/)
   assert.match(activeHomeProduction, /data-home-movement="camera-look-world-surface-selection"/)
   assert.match(activeHomeProduction, /data-home-ground-entry="physical-world-surface"/)
   assert.match(activeHomeProduction, /data-home-life-map-entry="visible-sky-broad-interaction"/)
+  assert.match(activeHomeProduction, /\/assets\/urai\/generated\/models\/urai-orb-avatar-v1\.glb/)
+  assert.match(activeHomeProduction, /\/assets\/urai\/generated\/human-makehuman-v4\/home-human-makehuman-v4\.glb/)
+  assert.match(activeHomeProduction, /setLoop\(THREE\.LoopOnce, 1\)/)
+  assert.match(activeHomeProduction, /clampWhenFinished = true/)
+  assert.doesNotMatch(activeHomeProduction, /first-person-viewpoint-no-avatar|privacy-preserving-first-person/)
+  assert.doesNotMatch(activeHomeProduction, /THREE\.LoopRepeat\s*,\s*Infinity/)
   assert.match(activeHomeProduction, /const retiredLocalDestination = useCallback\(\(\) => \{\}, \[\]\)/)
   assert.match(activeHomeProduction, /onOrb=\{retiredLocalDestination\} onGround=\{retiredLocalDestination\} onLifeMap=\{retiredLocalDestination\}/)
   assert.match(activeHomeProduction, /event\.point\.clone\(\)/)
