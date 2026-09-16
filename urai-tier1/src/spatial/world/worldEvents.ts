@@ -22,6 +22,15 @@ function dispatchSpatialAudioCue(cue: 'transition' | 'orb-confirm' | 'error') {
   window.dispatchEvent(new CustomEvent('urai:audio-cue', { detail: { cue } }))
 }
 
+function isGroundDestination(request: UraiWorldTravelRequest) {
+  return request.destination === 'infrastructure-hub'
+}
+
+function isGroundPathname(pathname = window.location.pathname) {
+  const normalized = pathname.replace(/\/+$/, '') || '/'
+  return normalized === '/ground'
+}
+
 function buildFallbackHref(request: UraiWorldTravelRequest) {
   if (!request.href || typeof window === 'undefined') return request.href
   const target = new URL(request.href, window.location.origin)
@@ -86,7 +95,12 @@ export function requestUraiWorldTravel(request: UraiWorldTravelRequest) {
   if (fingerprint === lastTravelFingerprint && now - lastTravelAt < WORLD_TRAVEL_DEBOUNCE_MS) return
   lastTravelFingerprint = fingerprint
   lastTravelAt = now
-  dispatchSpatialAudioCue('transition')
+
+  // Ground explicitly rejects the generic portal travel language. Until the
+  // governed soil/root/stone crossing sound pack exists, the authored Home/Ground
+  // worlds and their consent-controlled ambient beds are more truthful than the
+  // global portal-transition tone. Other realm travel keeps the existing cue.
+  if (!isGroundDestination(request)) dispatchSpatialAudioCue('transition')
   window.dispatchEvent(new CustomEvent<UraiWorldTravelRequest>(URAI_WORLD_TRAVEL_EVENT, { detail: request }))
 
   const fallbackHref = buildFallbackHref(request)
@@ -114,7 +128,8 @@ export function requestUraiWorldTravel(request: UraiWorldTravelRequest) {
 
 export function requestUraiWorldReturn() {
   if (typeof window === 'undefined') return
-  dispatchSpatialAudioCue('transition')
+  // Ground return is the reverse material/world transition, not a portal cue.
+  if (!isGroundPathname()) dispatchSpatialAudioCue('transition')
   window.dispatchEvent(new Event(URAI_WORLD_RETURN_EVENT))
 }
 

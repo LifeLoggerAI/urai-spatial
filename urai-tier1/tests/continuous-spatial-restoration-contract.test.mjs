@@ -29,6 +29,10 @@ const hostStableProof = read('../scripts/run-continuous-spatial-proof-v18-host-s
 
 const has = (source, marker) => assert.ok(source.includes(marker), `missing marker: ${marker}`)
 
+function compact(source) {
+  return source.replace(/\s+/g, '')
+}
+
 test('current Home candidate uses one cinematic owner while certified V288 metadata remains fail-closed', () => {
   for (const marker of ['HomeSpatialRuntimeLayer','spatial-runtime-restoration.css','continuous-spatial-proof-defects.css']) assert.match(template, new RegExp(marker.replace('.', '\\.')))
   has(homeRuntime, 'AssetDrivenHomeWorld')
@@ -45,7 +49,7 @@ test('current Home candidate uses one cinematic owner while certified V288 metad
   assert.doesNotMatch(`${assetHome}\n${renderer}`, /PRODUCTION CERTIFIED|retained-pixel-pass|pixel-certified/)
 })
 
-test('V288 biomorphic reliquary remains certified predecessor evidence while the current candidate Orb advances separately', () => {
+test('V288 biomorphic reliquary remains certified predecessor evidence while current Orb advances separately', () => {
   has(visualAuthority, '<HomeOrbGroundedV288 />')
   for (const marker of ['v288-grounded-biomorphic-memory-reliquary','home-gold-companion','fallbackVisualOwner: false','material.colorWrite = false','material.depthWrite = false','material.opacity = 0','interactionOwner: true','interactionOwner: false']) has(groundedOrb, marker)
   for (const marker of ['plateSpecsV286','reliquaryPlateGeometryV286','home-v286-layered-internal-memory-world','home-v286-embedded-memory-filament','home-v286-localized-memory-field']) has(reliquary, marker)
@@ -53,13 +57,16 @@ test('V288 biomorphic reliquary remains certified predecessor evidence while the
   assert.doesNotMatch(reliquary, /home-v253-literal-living-memory-heart|livingHeartGeometryV253/)
   has(renderer, '/assets/urai/generated/models/urai-orb-avatar-v1.glb')
   has(renderer, 'name="home-living-memory-orb"')
-  has(renderer, 'setLoop(THREE.LoopOnce, 1)')
-  assert.doesNotMatch(renderer, /next\.reset\(\)\.setLoop\(THREE\.LoopRepeat\s*,\s*Infinity\)/)
+  assert.match(compact(renderer), /setLoop\(THREE\.LoopOnce,1\)/)
+  assert.doesNotMatch(compact(renderer), /next\.reset\(\)\.setLoop\(THREE\.LoopRepeat,Infinity\)/)
 })
 
 test('Home Life Map is the broad visible sky and preserves one canonical ascent transaction', () => {
   for (const marker of ['name="home-sky-life-map-threshold"',"threshold: 'broad-visible-sky'",'localGroundPortal: false','event.ray.direction.y > .015','onClick={activateSky}']) has(sky, marker)
-  for (const marker of ["cameraCheckpoint: 'home-sky-ascent'","cameraCheckpoint: 'home-sky-ascent-complete'",'data-home-life-map-entry="visible-sky-broad-interaction"']) has(renderer, marker)
+  const normalized = compact(renderer)
+  assert.match(normalized, /cameraCheckpoint:'home-sky-ascent'/)
+  assert.match(normalized, /cameraCheckpoint:'home-sky-ascent-complete'/)
+  has(renderer, 'data-home-life-map-entry="visible-sky-broad-interaction"')
   assert.match(sceneStore, /enterLifeMap:/)
   assert.match(worldEvents, /home-sky-ascent/)
   assert.match(worldEvents, /home-sky-ascent-complete/)
@@ -67,10 +74,26 @@ test('Home Life Map is the broad visible sky and preserves one canonical ascent 
 })
 
 test('Home Ground entry remains a physical world-surface descent into the lived first-person Ground', () => {
-  for (const marker of ['data-home-ground-entry="physical-world-surface"','event.point.clone()',"destination: 'infrastructure-hub'","cameraCheckpoint: 'ground-first-person-arrival'"]) has(renderer, marker)
-  for (const marker of ['data-ground-exploration="first-person"','data-ground-runtime-owner="first-person-lived-world"','data-ground-camera="eye-level-terrain-following"','data-ground-collision="visible-terrain-heightfield"','data-ground-place-layer="consent-aware-empty-by-default"','ground-visible-traversable-terrain','surfaceY + EYE_HEIGHT']) has(ground, marker)
-  has(groundGateway, 'aria-label="Enter your physical Ground world"')
+  const normalized = compact(renderer)
+  has(renderer, 'data-home-ground-entry="physical-world-surface"')
+  assert.match(normalized, /event\.point\.clone\(\)/)
+  assert.match(normalized, /destination:'infrastructure-hub'/)
+  assert.match(normalized, /cameraCheckpoint:'ground-first-person-arrival'/)
+  for (const marker of [
+    'GROUND_DESCENT_TOTAL_MS',
+    'GROUND_REDUCED_MOTION_TOTAL_MS',
+    'groundDescentPhaseAt',
+    'home-avatar-camera-approach',
+    'home-avatar-eye-transfer',
+    'data-home-ground-cinematic-phase',
+    'culled-before-eye-plane',
+    'event.delta>4',
+  ]) assert.ok(normalized.includes(marker.replace(/\s+/g, '')) || renderer.includes(marker), `missing Ground transition authority: ${marker}`)
+  for (const marker of ['data-ground-exploration="first-person-no-visible-body"','data-ground-runtime-owner="first-person-lived-world"','data-ground-camera="eye-level-terrain-following-no-authored-bob"','data-ground-collision="terrain-plus-authored-obstacle-field"','data-ground-place-layer="consent-aware-empty-by-default"','data-ground-visible-avatar="false"','data-ground-visible-hands="false"','ground-visible-traversable-terrain','surfaceY + GROUND_EYE_HEIGHT_M']) has(ground, marker)
+  has(groundGateway, 'data-ground-gateway="semantic-access-only"')
+  has(groundGateway, 'aria-label="Enter Ground — explore your physical lived world in first person"')
   has(groundGateway, "cameraCheckpoint: world.cameraCheckpoint ?? 'home-ground-descent'")
+  assert.doesNotMatch(groundGateway, /urai-ground-gateway__focus-ring|Enter below/)
   assert.doesNotMatch(ground, /ground-central-nexus|ground-destination-compass|GroundPhysicalArchitecture|GroundVaultArchitecture/)
 })
 
@@ -80,8 +103,9 @@ test('Home interaction and accessibility ownership stays visible-avatar, cinemat
   has(renderer, 'data-home-presence-presentation="visible-avatar-third-person"')
   has(renderer, 'name="home-visible-user-avatar"')
   has(renderer, '/assets/urai/generated/human-makehuman-v4/home-human-makehuman-v4.glb')
-  has(renderer, "data-home-orb-model-clip={reducedMotion ? 'stopped-reduced-motion'")
-  assert.match(renderer, /data-home-camera-mode=\{transition !== 'none' \? transition : dragging \? 'cinematic-third-person-look' : 'cinematic-third-person'\}/)
+  assert.match(compact(renderer), /data-home-orb-model-clip=\{reducedMotion\?'stopped-reduced-motion':ORB_CLIPS\[orbState\]\}/)
+  assert.match(compact(renderer), /data-home-camera-mode=\{transition==='ground'&&groundPhase\?groundPhase:/)
+  assert.match(compact(renderer), /visible=\{!hiddenForEmbodiment\}/)
   assert.doesNotMatch(renderer, /first-person-viewpoint-no-avatar|privacy-preserving-first-person/)
   assert.doesNotMatch(renderer, /useMovementInput|MobileMovementPad|stepEmbodiedMotion/)
   has(homeRuntime, 'requestUraiWorldOrbOpen')
@@ -90,6 +114,18 @@ test('Home interaction and accessibility ownership stays visible-avatar, cinemat
   has(companion, 'URAI_WORLD_ORB_OPEN_EVENT')
   assert.match(companion, /publishOrbState\('attention', 'companion'\)/)
   assert.match(companion, /publishOrbState\('transition', 'companion'\)/)
+})
+
+test('Ground return resumes at Avatar-eye before restoring visible Home composition', () => {
+  const normalized = compact(renderer)
+  assert.match(normalized, /returningFromGround=searchParams\.get\('returnFrom'\)==='ground'/)
+  assert.match(normalized, /returningFromGround\?'ground-return':'none'/)
+  assert.match(normalized, /groundReturnPhaseAt\(globalMs,reducedMotion\)/)
+  assert.match(normalized, /camera\.position\.copy\(AVATAR_EYE\)/)
+  assert.match(normalized, /avatar\.visible=withdraw&&phaseProgress\(globalMs,eyeEnd,total\)>\.08/)
+  assert.match(normalized, /orb\.visible=withdraw&&phaseProgress\(globalMs,eyeEnd,total\)>\.16/)
+  assert.match(normalized, /router\.replace\('\/home'\)/)
+  assert.match(normalized, /data-home-return-from-ground=\{returningFromGround\?'true':'false'\}/)
 })
 
 test('visual overrides cannot veil active spatial owners', () => {

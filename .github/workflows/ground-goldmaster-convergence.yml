@@ -1,0 +1,71 @@
+name: Ground Goldmaster Convergence
+
+on:
+  push:
+    branches:
+      - ground-goldmaster-convergence-20260916-v1
+  pull_request:
+    branches:
+      - orb-canon-lock-convergence-v2-20260916
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ground-goldmaster-convergence-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  URAI_EXACT_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
+
+jobs:
+  verify:
+    name: Ground source + type + build verification
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Checkout exact branch head
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Prove exact checkout
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$URAI_EXACT_HEAD"
+          test -z "$(git status --porcelain --untracked-files=all)"
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1
+        with:
+          version: 10.0.0
+          run_install: false
+
+      - name: Setup Node 22
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '22'
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Install frozen dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run Ground zero-ambiguity contracts
+        working-directory: urai-tier1
+        run: node --import tsx --test tests/ground-zero-ambiguity-contract.test.mjs tests/ground-transition-ownership-contract.test.mjs tests/ground-transition-timeline-contract.test.mjs tests/ground-semantic-accessibility-contract.test.mjs
+
+      - name: Typecheck runtime
+        working-directory: urai-tier1
+        run: pnpm run typecheck
+
+      - name: Build production runtime
+        working-directory: urai-tier1
+        run: pnpm run build

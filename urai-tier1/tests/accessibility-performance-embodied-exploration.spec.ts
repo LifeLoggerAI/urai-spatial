@@ -1,6 +1,7 @@
 import { expect, test, type Locator, type Page } from '@playwright/test'
 
 const homeOwnerSelector = '.urai-asset-home-world[data-home-primary-owner="asset-driven"]'
+const groundOwnerSelector = '.ground-spatial-root[data-ground-exploration="first-person-no-visible-body"]'
 
 async function collectRuntimeErrors(page: Page) {
   const pageErrors: string[] = []
@@ -34,7 +35,7 @@ function normalizedPathname(url: string) {
   return new URL(url).pathname.replace(/\/+$/, '') || '/'
 }
 
-test.describe('Visible-avatar Home and first-person Ground accessibility evidence', () => {
+test.describe('Visible-avatar Home and no-body first-person Ground accessibility evidence', () => {
   test.describe.configure({ timeout: 300_000 })
 
   test('Home exposes visible-avatar world semantics, three keyboard destinations, and no synthetic movement pad', async ({ page }) => {
@@ -60,15 +61,17 @@ test.describe('Visible-avatar Home and first-person Ground accessibility evidenc
     expect(errors.consoleErrors).toEqual([])
   })
 
-  test('Ground is first-person, keyboard/touch navigable, privacy-safe, and keeps direct Home/place controls focusable', async ({ page }) => {
+  test('Ground is no-body first-person, keyboard/touch navigable, privacy-safe, and keeps direct Home/place controls focusable', async ({ page }) => {
     const errors = await collectRuntimeErrors(page)
     await page.goto('/ground/', { waitUntil: 'domcontentloaded' })
-    const ground = page.locator('.ground-spatial-root[data-ground-exploration="first-person"]').first()
+    const ground = page.locator(groundOwnerSelector).first()
     await expect(ground).toBeVisible({ timeout: 30_000 })
     await expect(ground).toHaveAttribute('data-ground-pointer-lock', 'false')
+    await expect(ground).toHaveAttribute('data-ground-visible-avatar', 'false')
+    await expect(ground).toHaveAttribute('data-ground-visible-hands', 'false')
     await expect(ground).toHaveAttribute('data-ground-ready', 'true', { timeout: 45_000 })
-    await expect(ground).toHaveAttribute('data-ground-camera', 'eye-level-terrain-following')
-    await expect(ground).toHaveAttribute('data-ground-collision', 'visible-terrain-heightfield')
+    await expect(ground).toHaveAttribute('data-ground-camera', 'eye-level-terrain-following-no-authored-bob')
+    await expect(ground).toHaveAttribute('data-ground-collision', 'terrain-plus-authored-obstacle-field')
     await expect(ground).toHaveAttribute('data-ground-place-layer', 'consent-aware-empty-by-default')
     await expect(ground).toHaveAttribute('data-ground-private-location-mounted', 'false')
     await expect(ground.locator('canvas')).toBeVisible({ timeout: 30_000 })
@@ -106,7 +109,7 @@ test.describe('Visible-avatar Home and first-person Ground accessibility evidenc
     await expect(page.getByRole('group', { name: 'Home movement controls' })).toHaveCount(0)
 
     await page.goto('/ground/', { waitUntil: 'domcontentloaded' })
-    const ground = page.locator('.ground-spatial-root[data-ground-exploration="first-person"]').first()
+    const ground = page.locator(groundOwnerSelector).first()
     await expect(ground).toHaveAttribute('data-ground-ready', 'true', { timeout: 45_000 })
     const pad = page.getByRole('group', { name: 'Ground first-person movement controls' })
     await expect(pad).toBeVisible()
@@ -129,7 +132,7 @@ test.describe('Visible-avatar Home and first-person Ground accessibility evidenc
     expect(layout.scrollWidth).toBeLessThanOrEqual(layout.innerWidth + 1)
   })
 
-  test('reduced motion preserves Home semantic access and Ground first-person controls without pointer lock', async ({ page }) => {
+  test('reduced motion preserves Home semantic access and Ground no-body first-person controls without pointer lock', async ({ page }) => {
     await page.emulateMedia({ reducedMotion: 'reduce' })
     await page.goto('/home/', { waitUntil: 'domcontentloaded' })
     const home = page.locator(homeOwnerSelector)
@@ -138,8 +141,9 @@ test.describe('Visible-avatar Home and first-person Ground accessibility evidenc
     await expect(page.getByRole('group', { name: 'Home movement controls' })).toHaveCount(0)
 
     await page.goto('/ground/', { waitUntil: 'domcontentloaded' })
-    const ground = page.locator('.ground-spatial-root[data-ground-exploration="first-person"]').first()
+    const ground = page.locator(groundOwnerSelector).first()
     await expect(ground).toHaveAttribute('data-ground-ready', 'true', { timeout: 45_000 })
+    await expect(ground).toHaveAttribute('data-ground-visible-hands', 'false')
     await expect(page.getByRole('group', { name: 'Ground first-person movement controls' })).toBeVisible()
     expect(await page.evaluate(() => document.pointerLockElement)).toBeNull()
   })

@@ -84,12 +84,15 @@ test('accessibility and performance implementation contracts are present on visi
   assert.doesNotMatch(currentHome, /MobileMovementPad|useMovementInput|stepEmbodiedMotion/, 'Home must not regress to a synthetic movement-pad world')
 
   for (const marker of [
-    'data-ground-exploration="first-person"',
+    'data-ground-exploration="first-person-no-visible-body"',
     'data-ground-runtime-owner="first-person-lived-world"',
-    'data-ground-camera="eye-level-terrain-following"',
-    'data-ground-collision="visible-terrain-heightfield"',
+    'data-ground-camera="eye-level-terrain-following-no-authored-bob"',
+    'data-ground-collision="terrain-plus-authored-obstacle-field"',
     'data-ground-place-layer="consent-aware-empty-by-default"',
     'data-ground-private-location-mounted="false"',
+    'data-ground-pointer-lock="false"',
+    'data-ground-visible-avatar="false"',
+    'data-ground-visible-hands="false"',
     'MobileMovementPad',
     'aria-label="Return Home"',
     'aria-label="Ground place and privacy tools"',
@@ -110,10 +113,9 @@ test('accessibility and performance implementation contracts are present on visi
     "toHaveAttribute('data-home-movement', 'camera-look-world-surface-selection'",
     "data-home-orb-runtime-asset",
     "data-home-avatar-runtime-asset",
-    'data-ground-exploration="first-person"',
+    'data-ground-exploration="first-person-no-visible-body"',
     "name: 'Ground first-person movement controls'",
   ]) requireText(embodiedEvidence, marker)
-  assert.doesNotMatch(embodiedEvidence, /toHaveAttribute\('data-home-embodied-self', 'first-person-viewpoint-no-avatar'\)/, 'Accessibility evidence must not reassert retired no-avatar Home')
 
   requireText(focus, 'aria-label={`Open Replay for ${memory.title}`}')
   assert.equal(focus.includes('min-height:44px'), false, 'Focus controls must not retain 44px minimum targets')

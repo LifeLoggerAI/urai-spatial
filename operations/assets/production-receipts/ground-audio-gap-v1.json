@@ -1,0 +1,51 @@
+{
+  "schemaVersion": 1,
+  "receiptId": "urai-ground-audio-gap-v1",
+  "owner": "URAI Labs",
+  "status": "partial-production-wiring-complete-assets-missing",
+  "runtimeRoute": "/ground",
+  "knownReady": [
+    {
+      "id": "ground-ambient",
+      "path": "/assets/urai/generated/audio/ground-ambient-v1.opus",
+      "role": "governed ambient bed",
+      "status": "ready"
+    }
+  ],
+  "intentionallyExcluded": [
+    {
+      "id": "portal-transition",
+      "reason": "Generic portal language is not valid for physical Home to Ground or Ground to Home material travel."
+    }
+  ],
+  "requiredMissingProductionAssets": [
+    "ground-descent-terrain-acknowledgement",
+    "ground-descent-avatar-embodiment",
+    "ground-descent-soil-entry",
+    "ground-descent-root-contact",
+    "ground-descent-stone-mineral",
+    "ground-descent-spatial-widening",
+    "ground-footstep-soil-variations",
+    "ground-footstep-grass-variations",
+    "ground-footstep-leaf-variations",
+    "ground-footstep-stone-variations",
+    "ground-footstep-wet-ground-variations",
+    "ground-footstep-sand-variations",
+    "ground-footstep-urban-surface-variations",
+    "ground-footstep-shoreline-variations",
+    "ground-biome-temperate-layer",
+    "ground-biome-woodland-layer",
+    "ground-biome-urban-layer",
+    "ground-biome-arid-layer",
+    "ground-biome-coastal-layer",
+    "ground-memory-bearing-distance-occlusion-layer"
+  ],
+  "interactionWiring": {
+    "groundActivationHaptic": "wired",
+    "groundMaterialCrossingHaptic": "wired",
+    "groundArrivalHaptic": "wired",
+    "groundAmbientConsentRuntime": "wired",
+    "genericPortalAudioForGround": "disabled"
+  },
+  "certificationBoundary": "This receipt is not an audio PASS. Ground audio remains PARTIAL until governed production samples for the missing roles are created, provenance-checked, integrated, and perceptually verified."
+}

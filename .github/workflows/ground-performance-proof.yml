@@ -1,0 +1,106 @@
+name: Ground Performance Proof
+
+on:
+  push:
+    branches:
+      - ground-goldmaster-convergence-20260916-v1
+  pull_request:
+    branches:
+      - orb-canon-lock-convergence-v2-20260916
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ground-performance-proof-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  URAI_EXACT_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
+  PLAYWRIGHT_BROWSERS_PATH: '0'
+  NEXT_PUBLIC_URAI_EXPLICIT_DEMO: 'true'
+
+jobs:
+  proof:
+    name: Ground measured frame-pacing diagnostic
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    steps:
+      - name: Checkout exact head
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Prove exact checkout
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$URAI_EXACT_HEAD"
+          test -z "$(git status --porcelain --untracked-files=all)"
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1
+        with:
+          version: 10.0.0
+          run_install: false
+
+      - name: Setup Node 22
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Install frozen dependencies
+        run: |
+          corepack enable
+          pnpm install --frozen-lockfile
+
+      - name: Build exact static candidate
+        run: pnpm build:static
+
+      - name: Install Chromium
+        run: pnpm --dir urai-tier1 exec playwright install --with-deps chromium
+
+      - name: Measure Ground frame pacing
+        shell: bash
+        run: |
+          set -euo pipefail
+          output="artifacts/ground-performance-proof"
+          mkdir -p "$output"
+          python3 -m http.server 4173 --bind 127.0.0.1 --directory urai-tier1/out > "$output/http-server.log" 2>&1 &
+          server_pid=$!
+          trap 'kill "$server_pid" 2>/dev/null || true' EXIT
+          for attempt in $(seq 1 60); do
+            curl --fail --silent http://127.0.0.1:4173/ground/ >/dev/null && break
+            sleep 1
+          done
+          curl --fail --silent --show-error http://127.0.0.1:4173/ground/ >/dev/null
+          URAI_PROOF_BASE=http://127.0.0.1:4173 URAI_PROOF_DIR="$output" URAI_EXACT_HEAD="$URAI_EXACT_HEAD" node scripts/capture-ground-performance-proof.mjs
+
+      - name: Verify exact-head receipt
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --input-type=module - artifacts/ground-performance-proof/receipt.json "$URAI_EXACT_HEAD" <<'NODE'
+          import { readFile } from 'node:fs/promises'
+          const [receiptPath, expectedHead] = process.argv.slice(2)
+          const receipt = JSON.parse(await readFile(receiptPath, 'utf8'))
+          if (receipt.exactHead !== expectedHead) throw new Error('Ground performance proof SHA mismatch')
+          if (receipt.measurementClass !== 'ci-software-renderer-diagnostic-not-device-certification') throw new Error('Ground performance measurement class is not fail-closed')
+          if (receipt.errors?.length) throw new Error(`Ground performance proof has ${receipt.errors.length} browser error(s)`)
+          if (receipt.results?.length !== 2) throw new Error('Ground performance proof requires desktop and mobile receipts')
+          NODE
+
+      - name: Upload Ground performance receipt
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: ground-performance-proof-${{ env.URAI_EXACT_HEAD }}
+          path: artifacts/ground-performance-proof
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 6
