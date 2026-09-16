@@ -25,7 +25,7 @@ assert.match(door, /canEnterMemoryPlace/, "FocusPlaceDoor must check whether the
 assert.match(door, /enterPlaceHref/, "FocusPlaceDoor must use enterPlaceHref.");
 assert.match(focusPage, /FocusChamberClient/, "Focus route must render the final focus chamber client owner.");
 assert.match(focusClient, /useSelectedMemory\(\)/, "Final Focus chamber must resolve the authenticated selected-memory contract.");
-assert.match(focusClient, /aria-label=\{`Open Replay for \$\{memory\.title\}`\}/, "Final Focus chamber must expose an accessible Replay portal action.");
+assert.match(focusClient, /aria-label=\{memory \? `Enter Replay for \$\{memory\.title\}`/, "Final Focus chamber must expose the canonical accessible Enter Replay action.");
 assert.match(focusClient, /requestUraiWorldTravel\(\{/, "Final Focus chamber must enter Replay through persistent world travel.");
 assert.match(focusClient, /destination: 'replay'/, "Final Focus chamber must target the Replay destination.");
 assert.match(focusClient, /replayManifestId: memory\.replayManifest\.id/, "Final Focus chamber must preserve replay manifest identity.");
@@ -45,4 +45,4 @@ assert.match(focusClient, /data-focus-spatial="explorable-observatory"/, "Final 
 assert.match(focusClient, /<OrbitControls/, "Final Focus chamber must retain bounded pointer and touch exploration.");
 assert.match(memoryStar, /canEnterMemoryPlace/, "Memory star schema must define canEnterMemoryPlace.");
 
-console.log("URAI focus place doorway canon passed: place door remains available and authenticated Focus uses the spatial selected-memory Replay portal contract.");
+console.log("URAI focus place doorway canon passed: place door remains available and authenticated Focus uses the spatial selected-memory Enter Replay contract.");
