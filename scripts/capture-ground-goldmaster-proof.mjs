@@ -25,6 +25,49 @@ async function capture(page, viewport, state) {
   captures.push({ viewport: viewport.id, state, file })
 }
 
+async function retainDiagnostic(page, viewport, pageErrors, phase, failure) {
+  const root = page.locator('[data-testid="urai-ground-lived-world"]').first()
+  const canvas = page.locator('.ground-spatial-root canvas').first()
+  const rootCount = await root.count().catch(() => 0)
+  const canvasCount = await canvas.count().catch(() => 0)
+  const rootState = rootCount ? await root.evaluate((node) => ({
+    ready: node.getAttribute('data-ground-ready'),
+    visualOwner: node.getAttribute('data-ground-visual-owner'),
+    runtimeOwner: node.getAttribute('data-ground-runtime-owner'),
+    exploration: node.getAttribute('data-ground-exploration'),
+    camera: node.getAttribute('data-ground-camera'),
+    cameraMode: node.getAttribute('data-ground-camera-mode'),
+    environment: node.getAttribute('data-ground-environment-profile'),
+    rect: (() => { const rect = node.getBoundingClientRect(); return { width: rect.width, height: rect.height, x: rect.x, y: rect.y } })(),
+  })).catch((error) => ({ evaluateError: String(error) })) : null
+  const canvasState = canvasCount ? {
+    visible: await canvas.isVisible().catch(() => false),
+    box: await canvas.boundingBox().catch(() => null),
+  } : null
+  const bodyExcerpt = await page.locator('body').innerText().then((text) => text.slice(0, 4000)).catch(() => '')
+  const htmlExcerpt = await page.locator('body').innerHTML().then((html) => html.slice(0, 6000)).catch(() => '')
+  const diagnostic = {
+    schema: 'urai-ground-proof-diagnostic-1',
+    exactHead,
+    viewport: viewport.id,
+    phase,
+    url: page.url(),
+    failure: String(failure),
+    rootCount,
+    rootState,
+    canvasCount,
+    canvasState,
+    pageErrors,
+    bodyExcerpt,
+    htmlExcerpt,
+  }
+  const jsonFile = `ground-${viewport.id}-${phase}-diagnostic.json`
+  const screenshotFile = `ground-${viewport.id}-${phase}-diagnostic.png`
+  await writeFile(path.join(outDir, jsonFile), `${JSON.stringify(diagnostic, null, 2)}\n`, 'utf8')
+  await page.screenshot({ path: path.join(outDir, screenshotFile), fullPage: false }).catch(() => undefined)
+  captures.push({ viewport: viewport.id, state: `${phase}-diagnostic`, file: screenshotFile, diagnostic: jsonFile })
+}
+
 async function dragLook(page, canvasBox, dx, dy) {
   const x = canvasBox.x + canvasBox.width * 0.5
   const y = canvasBox.y + canvasBox.height * 0.5
@@ -50,28 +93,33 @@ try {
     page.on('console', (message) => { if (message.type() === 'error') pageErrors.push(`console: ${message.text()}`) })
 
     await page.goto(`${base}/ground/?environment=temperate`, { waitUntil: 'networkidle', timeout: 60_000 })
-    await page.waitForSelector('[data-testid="urai-ground-lived-world"]', { state: 'visible', timeout: 45_000 })
-    await page.waitForSelector('.ground-spatial-root canvas', { state: 'visible', timeout: 45_000 })
+    try {
+      await page.waitForSelector('[data-testid="urai-ground-lived-world"]', { state: 'visible', timeout: 20_000 })
+    } catch (rootError) {
+      await retainDiagnostic(page, viewport, pageErrors, 'root-timeout', rootError)
+      errors.push(`${viewport.id}: Ground root did not become visible`)
+      errors.push(...pageErrors.map((error) => `${viewport.id}: ${error}`))
+      await context.close()
+      continue
+    }
 
-    let readinessTimedOut = false
+    try {
+      await page.waitForSelector('.ground-spatial-root canvas', { state: 'visible', timeout: 20_000 })
+    } catch (canvasError) {
+      await retainDiagnostic(page, viewport, pageErrors, 'canvas-timeout', canvasError)
+      errors.push(`${viewport.id}: Ground canvas did not become visible`)
+      errors.push(...pageErrors.map((error) => `${viewport.id}: ${error}`))
+      await context.close()
+      continue
+    }
+
     try {
       await page.waitForSelector('[data-testid="urai-ground-lived-world"][data-ground-ready="true"]', { timeout: 20_000 })
-    } catch {
-      readinessTimedOut = true
-      const diagnostic = await page.locator('[data-testid="urai-ground-lived-world"]').evaluate((node) => {
-        const canvas = node.querySelector('canvas')
-        const canvasRect = canvas?.getBoundingClientRect()
-        return {
-          groundReady: node.getAttribute('data-ground-ready'),
-          runtimeOwner: node.getAttribute('data-ground-runtime-owner'),
-          visualOwner: node.getAttribute('data-ground-visual-owner'),
-          canvas: canvasRect ? { width: canvasRect.width, height: canvasRect.height } : null,
-        }
-      })
-      errors.push(`${viewport.id}: Ground readiness did not become true; diagnostics=${JSON.stringify(diagnostic)}`)
-      await capture(page, viewport, 'readiness-timeout-diagnostic')
+    } catch (readinessError) {
+      await retainDiagnostic(page, viewport, pageErrors, 'readiness-timeout', readinessError)
+      errors.push(`${viewport.id}: Ground readiness did not become true`)
     }
-    await page.waitForTimeout(readinessTimedOut ? 250 : 800)
+    await page.waitForTimeout(250)
 
     const root = page.locator('[data-testid="urai-ground-lived-world"]')
     const contract = await root.evaluate((node) => ({
