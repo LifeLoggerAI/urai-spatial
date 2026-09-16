@@ -4,21 +4,9 @@ on:
   push:
     branches:
       - ground-goldmaster-convergence-20260916-v1
-    paths:
-      - '.github/workflows/ground-goldmaster-visual-proof.yml'
-      - 'scripts/capture-ground-goldmaster-proof.mjs'
-      - 'urai-tier1/src/app/GroundSpatialWorldClean.tsx'
-      - 'urai-tier1/src/spatial/ground/**'
-      - 'urai-tier1/src/spatial/world/WorldTransitionController.tsx'
   pull_request:
     branches:
       - orb-canon-lock-convergence-v2-20260916
-    paths:
-      - '.github/workflows/ground-goldmaster-visual-proof.yml'
-      - 'scripts/capture-ground-goldmaster-proof.mjs'
-      - 'urai-tier1/src/app/GroundSpatialWorldClean.tsx'
-      - 'urai-tier1/src/spatial/ground/**'
-      - 'urai-tier1/src/spatial/world/WorldTransitionController.tsx'
   workflow_dispatch:
 
 permissions:
@@ -91,10 +79,7 @@ jobs:
             sleep 1
           done
           curl --fail --silent --show-error http://127.0.0.1:4173/ground/ >/dev/null
-          URAI_PROOF_BASE=http://127.0.0.1:4173 \
-          URAI_PROOF_DIR="$output" \
-          URAI_EXACT_HEAD="$URAI_EXACT_HEAD" \
-            node scripts/capture-ground-goldmaster-proof.mjs
+          URAI_PROOF_BASE=http://127.0.0.1:4173 URAI_PROOF_DIR="$output" URAI_EXACT_HEAD="$URAI_EXACT_HEAD" node scripts/capture-ground-goldmaster-proof.mjs
 
       - name: Verify receipt
         shell: bash
