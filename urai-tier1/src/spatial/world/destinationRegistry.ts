@@ -45,20 +45,10 @@ export const URAI_DESTINATION_REGISTRY: Record<UraiDestination, UraiDestinationD
   replay: {
     id: 'replay', label: 'Replay Theater', href: '/replay', layer: 'infrastructure-world', entryPortal: 'memory-replay', cameraCheckpoint: 'replay-arrival', environmentalForm: 'cinematic-memory-theater',
   },
-  'possible-futures': {
-    id: 'possible-futures',
-    label: 'Explore a Possible Future',
-    href: '/possible-futures',
-    layer: 'infrastructure-world',
-    entryPortal: 'orb-possible-futures',
-    cameraCheckpoint: 'possible-futures-arrival',
-    environmentalForm: 'truth-isolated-scenario-world',
-  },
 }
 
 const PATH_DESTINATIONS: readonly [string, UraiDestination][] = [
   ['/privacy-controls', 'privacy-controls'],
-  ['/possible-futures', 'possible-futures'],
   ['/location-map', 'location-map'],
   ['/infrastructure', 'infrastructure-hub'],
   ['/ground', 'infrastructure-hub'],
