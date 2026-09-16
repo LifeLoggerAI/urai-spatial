@@ -82,6 +82,17 @@ function fallbackReturnDestination(destination: UraiDestination): UraiDestinatio
   return 'infrastructure-hub'
 }
 
+function canonicalReturnDestination(current: { destination: UraiDestination; previousDestination?: UraiDestination }) {
+  // Replay and Focus are a semantic depth stack, not browser-history peers.
+  // A Replay -> Focus return intentionally leaves `previousDestination` as Replay;
+  // using that value again from Focus would bounce the user back into Replay.
+  // Lock the canonical unwind here: Replay -> Focus -> Life Map.
+  if (current.destination === 'replay' || current.destination === 'focus') {
+    return fallbackReturnDestination(current.destination)
+  }
+  return current.previousDestination ?? fallbackReturnDestination(current.destination)
+}
+
 export function WorldTransitionController() {
   const router = useRouter()
   const { world, phase, pendingTravel, beginTravel } = useUraiWorldState()
@@ -138,7 +149,7 @@ export function WorldTransitionController() {
   const reverseTravel = useCallback(() => {
     const currentWorld = worldRef.current
     if (phaseRef.current !== 'idle') return
-    const destination = currentWorld.previousDestination ?? fallbackReturnDestination(currentWorld.destination)
+    const destination = canonicalReturnDestination(currentWorld)
     const definition = definitionForDestination(destination)
     executeTravel({
       destination,
@@ -164,8 +175,6 @@ export function WorldTransitionController() {
       const currentWorld = worldRef.current
       if (event.defaultPrevented || event.key !== 'Escape' || isEditableTarget(event.target)) return
       if (currentWorld.destination === 'home' && phaseRef.current === 'idle') return
-      // Life Map and Location Map own their realm-specific Escape contracts.
-      // The global reverse-travel fallback must not race either realm-owned handler.
       if (currentWorld.destination === 'life-map' || currentWorld.destination === 'location-map') return
       event.preventDefault()
       reverseTravel()
