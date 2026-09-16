@@ -26,6 +26,8 @@ type OrbSpeechClockDetail = {
 }
 
 const ORB_SPEECH_CLOCK_EVENT = 'urai:orb-speech-clock'
+const VAD_THRESHOLD = 0.035
+const BARGE_IN_HOLD_MS = 70
 
 function emitSpeechClock(detail: OrbSpeechClockDetail) {
   if (typeof window === 'undefined') return
@@ -77,6 +79,7 @@ export default function OrbConversationPanel() {
   const [externalVoiceConsent, setExternalVoiceConsent] = useState(false)
   const [voiceMuted, setVoiceMuted] = useState(false)
   const [voicePlaying, setVoicePlaying] = useState(false)
+  const [micActive, setMicActive] = useState(false)
   const aborter = useRef<AbortController | null>(null)
   const voiceAborter = useRef<AbortController | null>(null)
   const voiceAudio = useRef<HTMLAudioElement | null>(null)
@@ -84,6 +87,13 @@ export default function OrbConversationPanel() {
   const stateResetTimer = useRef<number | null>(null)
   const consentStateTimer = useRef<number | null>(null)
   const speechStartedAt = useRef<number | null>(null)
+  const micActiveRef = useRef(false)
+  const micStream = useRef<MediaStream | null>(null)
+  const micContext = useRef<AudioContext | null>(null)
+  const micAnalyser = useRef<AnalyserNode | null>(null)
+  const micFrame = useRef<number | null>(null)
+  const speechDetectedAt = useRef<number | null>(null)
+  const bargeInCommitted = useRef(false)
 
   const cancelDeferredConsentState = () => {
     if (consentStateTimer.current === null) return
@@ -100,7 +110,7 @@ export default function OrbConversationPanel() {
     if (resetAfterMs) {
       stateResetTimer.current = window.setTimeout(() => {
         stateResetTimer.current = null
-        publishOrbState('idle', 'conversation')
+        publishOrbState(micActiveRef.current ? 'listening' : 'idle', 'conversation')
       }, resetAfterMs)
     }
   }
@@ -118,7 +128,7 @@ export default function OrbConversationPanel() {
     speechStartedAt.current = null
     setVoicePlaying(false)
     emitSpeechClock({ phase, source, elapsedMs })
-    publishConversationState('idle')
+    publishConversationState(micActiveRef.current ? 'listening' : 'idle')
   }
 
   const stopVoice = (publishIdle = false) => {
@@ -154,7 +164,93 @@ export default function OrbConversationPanel() {
       emitSpeechClock({ phase: 'cancel', source: hadNaturalVoice ? 'natural' : 'device', elapsedMs })
     }
 
-    if (publishIdle) publishConversationState('idle')
+    if (publishIdle) publishConversationState(micActiveRef.current ? 'listening' : 'idle')
+  }
+
+  const stopMicrophone = async (publishState = true) => {
+    if (micFrame.current !== null) {
+      window.cancelAnimationFrame(micFrame.current)
+      micFrame.current = null
+    }
+    speechDetectedAt.current = null
+    bargeInCommitted.current = false
+    micStream.current?.getTracks().forEach((track) => track.stop())
+    micStream.current = null
+    const context = micContext.current
+    micContext.current = null
+    micAnalyser.current = null
+    if (context && context.state !== 'closed') {
+      try { await context.close() } catch { /* browser cleanup only */ }
+    }
+    micActiveRef.current = false
+    setMicActive(false)
+    if (publishState && speechStartedAt.current === null && !busy) publishConversationState('idle')
+  }
+
+  const runVadLoop = () => {
+    const analyser = micAnalyser.current
+    if (!analyser || !micActiveRef.current) return
+    const samples = new Float32Array(analyser.fftSize)
+    analyser.getFloatTimeDomainData(samples)
+    let energy = 0
+    for (const sample of samples) energy += sample * sample
+    const rms = Math.sqrt(energy / Math.max(1, samples.length))
+    const now = performance.now()
+
+    if (rms >= VAD_THRESHOLD) {
+      if (speechDetectedAt.current === null) speechDetectedAt.current = now
+      const heldMs = now - speechDetectedAt.current
+      if (heldMs >= BARGE_IN_HOLD_MS && !bargeInCommitted.current) {
+        bargeInCommitted.current = true
+        const wasSpeaking = speechStartedAt.current !== null || voiceAudio.current !== null || (typeof window !== 'undefined' && 'speechSynthesis' in window && window.speechSynthesis.speaking)
+        if (wasSpeaking) {
+          stopVoice(false)
+          setStatus('Orb yielded to your voice. Listening locally for voice activity; this control does not upload or transcribe microphone audio.')
+        }
+        publishConversationState('listening')
+      }
+    } else {
+      speechDetectedAt.current = null
+      bargeInCommitted.current = false
+    }
+
+    micFrame.current = window.requestAnimationFrame(runVadLoop)
+  }
+
+  const startMicrophone = async () => {
+    if (typeof window === 'undefined') return
+    if (!navigator.mediaDevices?.getUserMedia) {
+      setStatus('Microphone activity detection is not available in this browser. Text conversation remains available.')
+      publishConversationState('warning', 2200)
+      return
+    }
+
+    await stopMicrophone(false)
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
+        video: false,
+      })
+      const AudioContextCtor = window.AudioContext
+      const context = new AudioContextCtor()
+      const source = context.createMediaStreamSource(stream)
+      const analyser = context.createAnalyser()
+      analyser.fftSize = 1024
+      analyser.smoothingTimeConstant = 0.35
+      source.connect(analyser)
+      micStream.current = stream
+      micContext.current = context
+      micAnalyser.current = analyser
+      micActiveRef.current = true
+      setMicActive(true)
+      setStatus('Listening locally for voice activity. Microphone audio is not uploaded or transcribed by this control.')
+      if (speechStartedAt.current === null) publishConversationState('listening')
+      runVadLoop()
+    } catch {
+      await stopMicrophone(false)
+      setStatus('Microphone permission is unavailable. Text conversation remains available.')
+      publishConversationState('privacy', 2200)
+    }
   }
 
   const playTextOnlyResponse = (text: string) => {
@@ -278,6 +374,10 @@ export default function OrbConversationPanel() {
   useEffect(() => () => {
     aborter.current?.abort()
     voiceAborter.current?.abort()
+    if (micFrame.current !== null) window.cancelAnimationFrame(micFrame.current)
+    micStream.current?.getTracks().forEach((track) => track.stop())
+    const context = micContext.current
+    if (context && context.state !== 'closed') void context.close()
     const activeAudio = voiceAudio.current
     if (activeAudio) {
       activeAudio.onended = null
@@ -395,9 +495,9 @@ export default function OrbConversationPanel() {
             disabled={busy}
             onFocus={() => {
               if (voicePlaying) stopVoice(false)
-              publishConversationState('attention')
+              publishConversationState(micActiveRef.current ? 'listening' : 'attention')
             }}
-            onBlur={() => { if (!busy && !voicePlaying) publishConversationState('idle') }}
+            onBlur={() => { if (!busy && !voicePlaying) publishConversationState(micActiveRef.current ? 'listening' : 'idle') }}
             onChange={(event) => setMessage(event.target.value)}
           />
           <label className={styles.consent}>
@@ -411,7 +511,7 @@ export default function OrbConversationPanel() {
                 cancelDeferredConsentState()
                 consentStateTimer.current = window.setTimeout(() => {
                   consentStateTimer.current = null
-                  publishConversationState(checked ? 'attention' : 'privacy')
+                  publishConversationState(checked ? (micActiveRef.current ? 'listening' : 'attention') : 'privacy')
                 }, 0)
               }}
             />
@@ -428,6 +528,13 @@ export default function OrbConversationPanel() {
           <div className={styles.actions}>
             <button type="submit" disabled={busy || !message.trim() || !aiConsent}>Send</button>
             <button type="button" disabled={!busy && !voicePlaying} onClick={stop}>Stop</button>
+            <button
+              type="button"
+              aria-pressed={micActive}
+              onClick={() => { if (micActive) void stopMicrophone(); else void startMicrophone() }}
+            >
+              {micActive ? 'Mic listening' : 'Start mic'}
+            </button>
             <button
               type="button"
               aria-pressed={!voiceMuted}
