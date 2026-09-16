@@ -5,6 +5,14 @@ export const metadata = {
   description: 'Sign in to open your private URAI world and ownership controls.',
 }
 
-export default function LoginPage() {
-  return <LoginClient />
+type LoginPageProps = {
+  searchParams: Promise<Record<string, string | string[] | undefined>>
+}
+
+export default async function LoginPage({ searchParams }: LoginPageProps) {
+  const params = await searchParams
+  const rawFrom = params.from
+  const from = Array.isArray(rawFrom) ? rawFrom[0] : rawFrom
+
+  return <LoginClient intent={from === 'signup' ? 'signup' : 'login'} />
 }
