@@ -29,6 +29,15 @@ test('shared drag-look preserves click ownership until pointer motion proves a d
   assert.doesNotMatch(travel, /drag\.current = \{ pointerId: event\.pointerId, x: event\.clientX, y: event\.clientY \}\s*\n\s*try \{ event\.currentTarget\.setPointerCapture/)
 })
 
+test('mobile movement controls remain touch/coarse-pointer affordances instead of permanent desktop HUD', () => {
+  assert.match(travel, /\.urai-mobile-movement\{display:none;/)
+  assert.match(travel, /@media\(max-width:900px\),\(pointer:coarse\)\{\.urai-mobile-movement\{display:grid\}\}/)
+  for (const marker of ['minWidth', 'MobileMovementPad']) {
+    if (marker === 'MobileMovementPad') has(travel, marker)
+  }
+  assert.match(travel, /button\{width:48px;height:48px;/)
+})
+
 test('Home keeps one V223 Canvas owner with visible Avatar presentation, click embodiment, authored Orb, physical Ground and broad Sky ascent', () => {
   has(homeRuntime, 'HomeWorldProductionV223 as HomeWorldProduction')
   for (const marker of [
@@ -51,8 +60,19 @@ test('Home keeps one V223 Canvas owner with visible Avatar presentation, click e
     'useHomeExperienceController',
     'homeApi.activateAvatar()',
     'HOME_WALK_SPEED',
+    'HOME_WALK_ACCELERATION',
+    'HOME_WALK_DECELERATION',
+    'useMovementInput({',
+    'stepEmbodiedMotion({',
+    '<MobileMovementPad input={movementInput} label="Move through Home" />',
+    'data-home-movement={firstPerson ? \'shared-keyboard-touch-walk-look-interact\'',
     'data-home-non-xr-body-policy="camera-only-no-hands-body-rig"',
   ]) has(activeHomeRuntime3d, marker)
+  assert.match(activeHomeRuntime3d, /firstPersonStable[\s\S]*\? \(portrait \? 66 : 58\)/)
+  assert.match(activeHomeRuntime3d, /yaw: -yaw\.current/)
+  assert.match(activeHomeRuntime3d, /acceleration: HOME_WALK_ACCELERATION/)
+  assert.match(activeHomeRuntime3d, /deceleration: HOME_WALK_DECELERATION/)
+  assert.doesNotMatch(activeHomeRuntime3d, /const keys = useRef\(new Set<string>\(\)\)/)
   has(embodiedAvatar, 'const idle = actions.idle_breath')
   assert.equal((activeHomeRuntime3d.match(/<Canvas/g) ?? []).length, 1)
   assert.doesNotMatch(activeHomeRuntime3d, /privacy-preserving-first-person/)
