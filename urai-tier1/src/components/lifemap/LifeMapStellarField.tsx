@@ -17,8 +17,14 @@ function seeded(seed: number, salt: number) {
   return value - Math.floor(value)
 }
 
-function nodeSeed(node: LifeMapNode, index: number) {
-  return node.id.split('').reduce((sum, character) => sum + character.charCodeAt(0), 0) + index * 37
+function nodeSeed(node: LifeMapNode) {
+  const key = `${node.id}:${node.eraId || 'unassigned-era'}:${node.clusterId || 'unassigned-cluster'}`
+  let hash = 2166136261
+  for (let index = 0; index < key.length; index += 1) {
+    hash ^= key.charCodeAt(index)
+    hash = Math.imul(hash, 16777619)
+  }
+  return hash >>> 0
 }
 
 function depthGeometry() {
@@ -27,10 +33,10 @@ function depthGeometry() {
   const count = deepCount + nearCount
   const positions = new Float32Array(count * 3)
   const colors = new Float32Array(count * 3)
-  const cool = new THREE.Color('#d7f2ff')
-  const warm = new THREE.Color('#ffe5b5')
-  const violet = new THREE.Color('#ddd4ff')
-  const jade = new THREE.Color('#b7eadf')
+  const cool = new THREE.Color('#d7edf5')
+  const warm = new THREE.Color('#ead8b7')
+  const pearl = new THREE.Color('#d7d4dc')
+  const mutedCyan = new THREE.Color('#aecfd0')
 
   for (let index = 0; index < count; index += 1) {
     const near = index >= deepCount
@@ -49,7 +55,7 @@ function depthGeometry() {
       (seeded(seedBase, 5) - .5) * vertical * 2,
       depth,
     ], index * 3)
-    const base = index % 13 === 0 ? warm : index % 8 === 0 ? violet : index % 11 === 0 ? jade : cool
+    const base = index % 13 === 0 ? warm : index % 8 === 0 ? pearl : index % 11 === 0 ? mutedCyan : cool
     const brightness = near ? .62 + seeded(seedBase, 6) * .38 : .38 + seeded(seedBase, 6) * .62
     const color = base.clone().multiplyScalar(brightness)
     colors.set([color.r, color.g, color.b], index * 3)
@@ -115,13 +121,13 @@ function galaxyThreadsGeometry() {
   return new THREE.BufferGeometry().setFromPoints(points)
 }
 
-function memoryMotes(node: LifeMapNode, index: number, active: boolean) {
-  const seed = nodeSeed(node, index)
+function memoryMotes(node: LifeMapNode, active: boolean) {
+  const seed = nodeSeed(node)
   const count = active ? 72 : 30
   const positions = new Float32Array(count * 3)
   const colors = new Float32Array(count * 3)
   const aura = new THREE.Color(node.aura)
-  const white = new THREE.Color('#fffaf0')
+  const white = new THREE.Color('#f7f2e8')
   for (let mote = 0; mote < count; mote += 1) {
     const angle = mote * 2.39996323 + seeded(seed, mote) * .9
     const radius = .13 + Math.sqrt((mote + .5) / count) * (active ? 1.48 : .84)
@@ -139,13 +145,21 @@ function memoryMotes(node: LifeMapNode, index: number, active: boolean) {
   return geometry
 }
 
-function memoryRayGeometry(seed: number) {
+function memoryFilamentGeometry(seed: number) {
   const points: THREE.Vector3[] = []
-  for (let ray = 0; ray < 6; ray += 1) {
-    const angle = ray / 6 * Math.PI * 2 + seed * .13
-    const start = new THREE.Vector3(Math.cos(angle) * .22, Math.sin(angle * .7) * .11, Math.sin(angle) * .22)
-    const end = new THREE.Vector3(Math.cos(angle) * (1.05 + (ray % 2) * .22), Math.sin(angle * 1.3) * .52, Math.sin(angle) * (1.05 + (ray % 3) * .14))
-    points.push(start, end)
+  for (let branch = 0; branch < 5; branch += 1) {
+    const side = branch % 2 ? -1 : 1
+    let previous = new THREE.Vector3((seeded(seed, 20 + branch) - .5) * .12, -.18 + branch * .08, (seeded(seed, 40 + branch) - .5) * .10)
+    for (let step = 1; step <= 5; step += 1) {
+      const t = step / 5
+      const current = new THREE.Vector3(
+        side * (.08 + t * (.34 + branch * .025)) + Math.sin(t * 4.7 + branch) * .045,
+        -.18 + t * (.48 + branch * .035),
+        Math.cos(t * 3.8 + branch * .9) * (.08 + t * .20),
+      )
+      points.push(previous, current)
+      previous = current
+    }
   }
   return new THREE.BufferGeometry().setFromPoints(points)
 }
@@ -153,46 +167,45 @@ function memoryRayGeometry(seed: number) {
 function StellarMemory({ node, index, active, reducedMotion }: { node: LifeMapNode; index: number; active: boolean; reducedMotion: boolean }) {
   const root = useRef<THREE.Group>(null)
   const point = useMemo(() => lifeMapLocalPoint(node, index), [node, index])
-  const motes = useMemo(() => memoryMotes(node, index, active), [node, index, active])
-  const rays = useMemo(() => memoryRayGeometry(nodeSeed(node, index)), [node, index])
-  useEffect(() => () => { motes.dispose(); rays.dispose() }, [motes, rays])
+  const seed = useMemo(() => nodeSeed(node), [node])
+  const motes = useMemo(() => memoryMotes(node, active), [node, active])
+  const filaments = useMemo(() => memoryFilamentGeometry(seed), [seed])
+  useEffect(() => () => { motes.dispose(); filaments.dispose() }, [motes, filaments])
   useFrame(({ clock }) => {
     if (!root.current || reducedMotion) return
-    const pulse = 1 + Math.sin(clock.elapsedTime * .54 + index * .83) * (active ? .032 : .015)
+    const pulse = 1 + Math.sin(clock.elapsedTime * .46 + (seed % 1000) * .013) * (active ? .026 : .011)
     root.current.scale.setScalar(pulse)
-    if (active) root.current.rotation.z = Math.sin(clock.elapsedTime * .12) * .018
+    root.current.rotation.y = Math.sin(clock.elapsedTime * .07 + (seed % 29)) * .035
   })
-  const core = active ? .31 : .145
-  return <group ref={root} position={point} renderOrder={120} name={`life-map-v259-stellar-memory-${node.id}`} userData={{ visualOnly: true, interactionOwner: false, presentation: 'white-hot-memory-star-over-semantic-hit-target', goldMasterRevision: 'v280-depth-bearing-memory-star' }} raycast={() => null}>
-    <mesh renderOrder={123} raycast={() => null}>
-      <sphereGeometry args={[core, 28, 20]} />
-      <meshBasicMaterial color="#fffdf7" depthTest={false} depthWrite={false} toneMapped={false} />
-    </mesh>
-    <mesh renderOrder={122} scale={active ? 3.4 : 3.05} raycast={() => null}>
-      <sphereGeometry args={[core, 22, 16]} />
-      <meshBasicMaterial color={node.aura} transparent opacity={active ? .38 : .25} blending={THREE.AdditiveBlending} depthTest={false} depthWrite={false} toneMapped={false} />
-    </mesh>
-    <mesh renderOrder={121} scale={active ? 6.8 : 5.9} raycast={() => null}>
+  const core = active ? .34 : .16
+  const aura = new THREE.Color(node.aura)
+  const warmCore = aura.clone().lerp(new THREE.Color('#f3e5c9'), .52).getStyle()
+  return <group ref={root} position={point} renderOrder={120} name={`life-map-v3-memory-volume-${node.id}`} userData={{ visualOnly: true, interactionOwner: false, presentation: 'asymmetric-luminous-memory-volume', goldMasterRevision: 'v3-no-planet-no-ring-memory-language' }} raycast={() => null}>
+    <group rotation={[.22 + seeded(seed, 2) * .30, -.35 + seeded(seed, 3) * .70, .15 + seeded(seed, 4) * .40]}>
+      <mesh position={[-core * .42, core * .18, 0]} scale={[1.28, .78, .58]} renderOrder={123} raycast={() => null}>
+        <sphereGeometry args={[core, 24, 16]} />
+        <meshBasicMaterial color={warmCore} transparent opacity={active ? .98 : .90} depthTest={false} depthWrite={false} toneMapped={false} />
+      </mesh>
+      <mesh position={[core * .40, -core * .10, core * .08]} scale={[.82, 1.20, .54]} renderOrder={123} raycast={() => null}>
+        <sphereGeometry args={[core * .88, 24, 16]} />
+        <meshBasicMaterial color={node.aura} transparent opacity={active ? .88 : .76} blending={THREE.AdditiveBlending} depthTest={false} depthWrite={false} toneMapped={false} />
+      </mesh>
+      <mesh position={[0, -core * .42, -core * .08]} scale={[.54, 1.38, .46]} renderOrder={122} raycast={() => null}>
+        <sphereGeometry args={[core * .72, 20, 14]} />
+        <meshBasicMaterial color={warmCore} transparent opacity={active ? .62 : .42} blending={THREE.AdditiveBlending} depthTest={false} depthWrite={false} toneMapped={false} />
+      </mesh>
+    </group>
+    <mesh renderOrder={121} scale={active ? [4.8,3.7,3.2] : [3.8,3.0,2.6]} rotation={[.35,-.2,.4]} raycast={() => null}>
       <sphereGeometry args={[core, 18, 12]} />
-      <meshBasicMaterial color={node.aura} transparent opacity={active ? .12 : .065} blending={THREE.AdditiveBlending} depthTest={false} depthWrite={false} toneMapped={false} />
+      <meshBasicMaterial color={node.aura} transparent opacity={active ? .075 : .038} blending={THREE.AdditiveBlending} depthTest={false} depthWrite={false} toneMapped={false} />
     </mesh>
-    <lineSegments renderOrder={124} geometry={rays} raycast={() => null}>
-      <lineBasicMaterial color={node.aura} transparent opacity={active ? .24 : .10} blending={THREE.AdditiveBlending} depthTest={false} depthWrite={false} />
+    <lineSegments renderOrder={124} geometry={filaments} raycast={() => null}>
+      <lineBasicMaterial color={warmCore} transparent opacity={active ? .34 : .12} blending={THREE.AdditiveBlending} depthTest={false} depthWrite={false} />
     </lineSegments>
     <points renderOrder={125} geometry={motes} raycast={() => null}>
-      <pointsMaterial vertexColors size={active ? .060 : .036} transparent opacity={active ? .90 : .61} depthTest={false} depthWrite={false} sizeAttenuation />
+      <pointsMaterial vertexColors size={active ? .050 : .030} transparent opacity={active ? .78 : .50} depthTest={false} depthWrite={false} sizeAttenuation />
     </points>
-    {active ? <>
-      <mesh rotation={[Math.PI / 2.8, .35, .12]} renderOrder={120} raycast={() => null}>
-        <torusGeometry args={[.88,.012,8,96]} />
-        <meshBasicMaterial color={node.aura} transparent opacity={.30} blending={THREE.AdditiveBlending} depthTest={false} depthWrite={false} toneMapped={false}/>
-      </mesh>
-      <mesh rotation={[Math.PI / 2.2,-.48,-.18]} scale={1.32} renderOrder={120} raycast={() => null}>
-        <torusGeometry args={[.88,.008,8,96]} />
-        <meshBasicMaterial color="#fff1d6" transparent opacity={.16} blending={THREE.AdditiveBlending} depthTest={false} depthWrite={false} toneMapped={false}/>
-      </mesh>
-    </> : null}
-    <pointLight color={node.aura} intensity={active ? 4.6 : 1.18} distance={active ? 11.5 : 5.8} decay={2} />
+    <pointLight color={node.aura} intensity={active ? 3.1 : .72} distance={active ? 9.2 : 4.5} decay={2} />
   </group>
 }
 
@@ -208,15 +221,15 @@ export function LifeMapStellarField({ nodes, selected, reducedMotion }: { nodes:
       root.current.rotation.y = Math.sin(clock.elapsedTime * .006) * .006
     }
   })
-  return <group name="life-map-v259-stellar-visual-authority" userData={{ visualOnly: true, interactionOwner: false, visualRepair: 'memory-stars-visually-authoritative-over-semantic-geology', goldMasterRevision: 'v280-layered-personal-galaxy-depth' }} raycast={() => null}>
+  return <group name="life-map-v3-stellar-visual-authority" userData={{ visualOnly: true, interactionOwner: false, visualRepair: 'asymmetric-memory-volumes-over-semantic-geography', goldMasterRevision: 'v3-layered-personal-galaxy-no-planets-no-rings' }} raycast={() => null}>
     <points geometry={continuity} name="life-map-home-sky-continuity-anchors" raycast={() => null} renderOrder={116} userData={{ continuitySeed: HOME_SKY_CONTINUITY_SEED, precursorCount: HOME_SKY_PRECURSOR_COUNT, revealedFromHome: true }}>
-      <pointsMaterial vertexColors size={.066} transparent opacity={.62} depthWrite={false} sizeAttenuation />
+      <pointsMaterial vertexColors size={.060} transparent opacity={.54} depthWrite={false} sizeAttenuation />
     </points>
-    <points ref={root} geometry={geometry} name="life-map-v259-deep-personal-galaxy" raycast={() => null}>
-      <pointsMaterial vertexColors size={.060} transparent opacity={.80} depthWrite={false} sizeAttenuation />
+    <points ref={root} geometry={geometry} name="life-map-v3-deep-personal-galaxy" raycast={() => null}>
+      <pointsMaterial vertexColors size={.052} transparent opacity={.68} depthWrite={false} sizeAttenuation />
     </points>
-    <lineSegments geometry={threads} name="life-map-v280-memory-constellation-currents" raycast={() => null}>
-      <lineBasicMaterial color="#afcfd5" transparent opacity={.055} blending={THREE.AdditiveBlending} depthWrite={false} />
+    <lineSegments geometry={threads} name="life-map-v3-memory-atmospheric-currents" raycast={() => null}>
+      <lineBasicMaterial color="#a8c4c8" transparent opacity={.028} blending={THREE.AdditiveBlending} depthWrite={false} />
     </lineSegments>
     {nodes.map((node, index) => <StellarMemory key={node.id} node={node} index={index} active={selected?.id === node.id} reducedMotion={reducedMotion} />)}
   </group>
