@@ -48,10 +48,16 @@ test('V286 grounds through restrained inlaid traces instead of visible root tube
   assert.doesNotMatch(orb, /orbiting|rotating halo|memoryLoop|rootTendrils/)
 })
 
-test('current Home mounts V288 in the active V223 repair slot while preserving interaction-only V223 Orb semantics', () => {
+test('current Home keeps the authored V223 Orb current while V288/V286 remain certified predecessor provenance', () => {
   assert.match(activeHome, /<HomeAAAVisualRepair \/>/)
-  assert.match(activeRepair, /import \{ HomeOrbGroundedV288 \} from '@\/spatial\/assets\/HomeOrbGroundedV288'/)
-  assert.match(activeRepair, /<HomeOrbGroundedV288 \/>/)
+  assert.match(activeHome, /name="home-living-memory-orb"/)
+  assert.doesNotMatch(activeRepair, /import \{ HomeOrbGroundedV288 \} from '@\/spatial\/assets\/HomeOrbGroundedV288'/)
+  assert.doesNotMatch(activeRepair, /<HomeOrbGroundedV288 \/>/)
+  assert.match(activeRepair, /Historical V281 localized Ground\/ascent overlays[\s\S]*predecessor V288 Orb[\s\S]*remain retired/)
+  assert.match(activeRepair, /authored living-memory Orb[\s\S]*keeps current Orb pixels/)
+  assert.match(activeRepair, /function HomePassportOwnershipObject/)
+  assert.match(activeRepair, /visibility: 'first-person-only'/)
+  assert.match(activeRepair, /return <HomePassportOwnershipObject \/>/)
   assert.match(adapter, /import \{ HomeOrbReliquaryV286 \} from '\.\/HomeOrbReliquaryV286'/)
   assert.match(adapter, /<HomeOrbReliquaryV286 \/>/)
   assert.match(adapter, /home-v288-grounded-biomorphic-memory-reliquary/)
