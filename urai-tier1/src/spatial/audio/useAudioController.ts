@@ -111,7 +111,7 @@ export function useAudioController() {
     }
     const target = ducked ? 0.18 : 0.56;
     const track = ambientTrackRef.current;
-    const active = track && track !== "mirror" ? ambientLayersRef.current.get(track) : undefined;
+    const active = track ? ambientLayersRef.current.get(track) : undefined;
     if (active) active.volume = target;
   }, []);
 
