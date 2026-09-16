@@ -85,24 +85,30 @@ function attachDiagnostics(page, label) {
   return () => ({ label, consoleErrors, pageErrors, failedRequests })
 }
 
-function blockingFailedRequests(failedRequests, { allowFocusSourceNavigationAbort = false } = {}) {
+const JOURNEY_SOURCE_VISUAL_ABORTS = new Set([
+  '/assets/urai/final/tier2/focus/focus-memory-chamber-desktop.svg',
+  '/assets/urai/final/tier2/replay/replay-cinematic-stage-desktop.svg',
+])
+
+function blockingFailedRequests(failedRequests, { allowJourneySourceVisualAbort = false } = {}) {
   return failedRequests.filter((request) => {
-    // Next.js can abort static chunks/RSC resources when an intentional client
-    // navigation commits. Preserve every abort in diagnostics, but do not turn a
-    // proven route transition into a false red solely because the browser cancels
-    // the source page's final visual request after that source page is abandoned.
+    // Next.js can abort chunks/RSC resources after an intentional client route
+    // commits. Preserve every failure in diagnostics. The only non-framework
+    // exceptions are the exact source-page visual assets listed above, and those
+    // are permitted only in the full journey proof where the five path states are
+    // independently verified. Static/direct captures still fail on these assets.
     let requestUrl = null
     try { requestUrl = new URL(request.url) } catch { requestUrl = null }
     const expectedNavigationAbort = request.failure === 'net::ERR_ABORTED' && Boolean(requestUrl) && (
       requestUrl.pathname.startsWith('/_next/static/')
       || (requestUrl.pathname.endsWith('/index.txt') && requestUrl.searchParams.has('_rsc'))
     )
-    const expectedFocusSourceAssetAbort = allowFocusSourceNavigationAbort
+    const expectedSourceVisualAbort = allowJourneySourceVisualAbort
       && request.failure === 'net::ERR_ABORTED'
       && Boolean(requestUrl)
       && requestUrl.origin === new URL(base).origin
-      && requestUrl.pathname === '/assets/urai/final/tier2/focus/focus-memory-chamber-desktop.svg'
-    return !(expectedNavigationAbort || expectedFocusSourceAssetAbort)
+      && JOURNEY_SOURCE_VISUAL_ABORTS.has(requestUrl.pathname)
+    return !(expectedNavigationAbort || expectedSourceVisualAbort)
   })
 }
 
@@ -304,13 +310,11 @@ async function captureJourney(browser) {
     videoPath = path.relative(outputDir, target)
   }
 
-  // The transition frame is intentionally captured after the client route has
-  // committed so it proves the destination crossing rather than a stale source
-  // page. Replay arrival then proves the fully mounted destination separately.
   const expectedPaths = ['/focus', '/replay', '/replay', '/focus', '/life-map']
   const actualPaths = steps.map((step) => step.pathname.replace(/\/+$/, '') || '/')
-  const blockingFailures = blockingFailedRequests(diagnosticResult.failedRequests, { allowFocusSourceNavigationAbort: true })
-  const passed = expectedPaths.every((expected, index) => actualPaths[index] === expected)
+  const pathSequencePassed = expectedPaths.every((expected, index) => actualPaths[index] === expected)
+  const blockingFailures = blockingFailedRequests(diagnosticResult.failedRequests, { allowJourneySourceVisualAbort: pathSequencePassed })
+  const passed = pathSequencePassed
     && diagnosticResult.pageErrors.length === 0
     && blockingFailures.length === 0
   receipt.journey = {
