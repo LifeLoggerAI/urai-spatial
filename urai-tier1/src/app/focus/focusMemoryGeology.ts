@@ -1,87 +1,33 @@
 import * as THREE from 'three'
 
-// V269 selected-memory manifestation. Focus resolves the selected Memory Star
-// into one coherent, compact stack of fractured luminous lamellae. The hero
-// silhouette is deliberately crystalline/biomorphic rather than broad paper
-// slabs: narrow irregular leaves interlock around one vertical memory core,
-// with high-contrast cool / pearl / warm energy and dark inter-layer depth.
-// It must never read as a boulder, onion, sphere, doorway, portal, ring, cage,
-// bubble, planet, flower, pair of horns, broad folded-sheet fan, or terrain debris.
-function createMemoryLamella(layer: number) {
-  const signed = layer - 3
-  const depth = -.45 + layer * .15
-  const thickness = .024 + (layer % 2) * .006
-  const frontZ = depth + thickness
-  const backZ = depth - thickness
-  const width = .26 + (layer % 3) * .035
-  const height = .92 + .07 * Math.cos(layer * 1.31)
-  const offsetX = signed * .105 + Math.sin(layer * 1.73) * .032
-  const offsetY = Math.cos(layer * 1.19) * .038 - Math.abs(signed) * .006
-  const rotation = signed * .055 + Math.sin(layer * .87) * .035
+// V262 selected-memory threshold. Focus is not a ring, cage, rock, flower,
+// ribbon or portal prop. Two asymmetric mineral-light branches frame a large
+// open center so the selected stellar memory reads as a doorway rather than an object.
+function createThresholdBranch(side: -1 | 1) {
+  const segments = 18
   const positions: number[] = []
   const colors: number[] = []
   const indices: number[] = []
+  const cool = new THREE.Color(side < 0 ? '#b7ddff' : '#d8e9ff')
+  const warm = new THREE.Color('#ffe6bc')
 
-  // HDR-ish authored vertex energy is intentional. Focus's physically lit
-  // material tone-maps this energy, while the saturated ratios keep the memory
-  // visually separate from the matte olive mineral terrain.
-  const cool = new THREE.Color().setRGB(.34, 3.75, 6.20)
-  const pearl = new THREE.Color().setRGB(5.35, 5.80, 3.55)
-  const warm = new THREE.Color().setRGB(6.10, 2.15, .48)
-  const deep = new THREE.Color().setRGB(.10, .34, .46)
+  for (let i = 0; i <= segments; i += 1) {
+    const t = i / segments
+    const y = THREE.MathUtils.lerp(-1.22, 1.34, t)
+    const inward = Math.sin(t * Math.PI) * .28
+    const sweep = .12 * Math.sin(t * 5.3 + (side < 0 ? .6 : 1.7))
+    const x = side * (1.05 - inward + sweep + (1 - t) * .16)
+    const z = -.03 + .08 * Math.sin(t * 4.2 + side)
+    const width = .19 - t * .07 + .035 * Math.sin(t * Math.PI * 3.2 + side)
+    positions.push(x - width, y, z, x + width, y + .035 * side, z + .045)
 
-  const template: Array<[number, number]> = [
-    [-.16, -.72],
-    [-.31, -.39],
-    [-.27, .10],
-    [-.12, .68],
-    [.08, .79],
-    [.29, .31],
-    [.24, -.24],
-    [.07, -.74],
-  ]
-
-  const points = template.map(([px, py], index): [number, number] => {
-    const fractureX = Math.sin((index + 1) * 2.31 + layer * 1.17) * .045
-    const fractureY = Math.cos((index + 1) * 1.73 - layer * .91) * .040
-    const rawX = (px + fractureX) * (width / .30)
-    const rawY = (py + fractureY) * height
-    return [
-      rawX * Math.cos(rotation) - rawY * Math.sin(rotation) + offsetX,
-      rawX * Math.sin(rotation) + rawY * Math.cos(rotation) + offsetY,
-    ]
-  })
-
-  positions.push(offsetX, offsetY, frontZ, offsetX, offsetY, backZ)
-  const centerColor = pearl.clone().lerp(cool, .22 + layer * .035).lerp(warm, .035 + (layer % 2) * .018)
-  colors.push(
-    centerColor.r, centerColor.g, centerColor.b,
-    deep.r, deep.g, deep.b,
-  )
-
-  for (let i = 0; i < points.length; i += 1) {
-    const [x, y] = points[i]
-    const backX = THREE.MathUtils.lerp(x, offsetX, .025)
-    const backY = THREE.MathUtils.lerp(y, offsetY, .025)
-    positions.push(x, y, frontZ, backX, backY, backZ)
-
-    const edgePhase = .5 + .5 * Math.sin(i * 1.91 + layer * .83)
-    const faceColor = cool.clone()
-      .lerp(pearl, .20 + edgePhase * .38)
-      .lerp(warm, (i === 0 || i === 3 || i === 6 ? .11 : .025) + (layer % 3) * .012)
-    const rearColor = deep.clone().lerp(cool, .18 + edgePhase * .08)
-    colors.push(faceColor.r, faceColor.g, faceColor.b, rearColor.r, rearColor.g, rearColor.b)
+    const color = cool.clone().lerp(warm, .18 + .42 * t)
+    colors.push(color.r, color.g, color.b, color.r * .96, color.g * .98, color.b)
   }
 
-  for (let i = 0; i < points.length; i += 1) {
-    const next = (i + 1) % points.length
-    const frontA = 2 + i * 2
-    const backA = frontA + 1
-    const frontB = 2 + next * 2
-    const backB = frontB + 1
-    indices.push(0, frontA, frontB)
-    indices.push(1, backB, backA)
-    indices.push(frontA, backA, frontB, frontB, backA, backB)
+  for (let i = 0; i < segments; i += 1) {
+    const a = i * 2, b = a + 1, c = a + 2, d = a + 3
+    indices.push(a, c, b, b, c, d)
   }
 
   const geometry = new THREE.BufferGeometry()
@@ -90,14 +36,11 @@ function createMemoryLamella(layer: number) {
   geometry.setIndex(indices)
   geometry.computeVertexNormals()
   geometry.computeBoundingSphere()
-  geometry.userData.focusLamellaLayer = layer
-  geometry.userData.focusLamellaRole = 'v269-living-luminous-memory-lamella'
-  geometry.userData.focusLamellaEnergy = 'cool-pearl-warm-with-dark-interlayer-depth'
   return geometry
 }
 
 export function createFocusStrata() {
-  return Array.from({ length: 7 }, (_, layer) => createMemoryLamella(layer))
+  return [createThresholdBranch(-1), createThresholdBranch(1)]
 }
 
 function hash2(x: number, y: number) {
@@ -124,26 +67,27 @@ export function createFocusSurfaceMaps(): [THREE.Texture, THREE.Texture, THREE.T
 
   for (let y = 0; y < size; y += 1) for (let x = 0; x < size; x += 1) {
     const u = x / size, v = y / size
-    const broad = valueNoise(u, v, 2.7)
-    const medium = valueNoise(u + .17, v - .11, 7.1)
-    const fine = valueNoise(u - .31, v + .23, 17.0)
-    const value = .40 + broad * .11 + medium * .045 + fine * .022
-    h[y * size + x] = value
+    const broad = valueNoise(u, v, 3.2)
+    const medium = valueNoise(u + .17, v - .11, 8.7)
+    const fine = valueNoise(u - .31, v + .23, 22.0)
+    const mineral = valueNoise(u + medium * .08, v - broad * .06, 13.5)
+    const vein = Math.max(0, .17 - Math.abs(mineral - .5)) / .17
+    const value = .43 + broad * .15 + medium * .075 + fine * .035
+    const history = Math.pow(vein, 3.0)
+    h[y * size + x] = value - history * .018
 
     const i = (y * size + x) * 4
-    // Subdued weathered mineral texture. Bright contour veins are intentionally
-    // absent so terrain cannot visually compete with the selected memory.
-    const r = Math.min(255, 50 + value * 92)
-    const g = Math.min(255, 61 + value * 98)
-    const b = Math.min(255, 62 + value * 94)
+    const r = Math.min(255, 58 + value * 118 + history * 92)
+    const g = Math.min(255, 72 + value * 128 + history * 82)
+    const b = Math.min(255, 78 + value * 134 + history * 66)
     rgba.set([r, g, b, 255], i)
-    const roughness = Math.min(255, 224 + fine * 20)
+    const roughness = Math.min(255, 205 + fine * 28 - history * 20)
     rough.set([255, roughness, 0, 255], i)
   }
 
   for (let y = 0; y < size; y += 1) for (let x = 0; x < size; x += 1) {
-    const dx = (h[y * size + (x + 1) % size] - h[y * size + (x + size - 1) % size]) * .52
-    const dy = (h[((y + 1) % size) * size + x] - h[((y + size - 1) % size) * size + x]) * .52
+    const dx = (h[y * size + (x + 1) % size] - h[y * size + (x + size - 1) % size]) * 1.18
+    const dy = (h[((y + 1) % size) * size + x] - h[((y + size - 1) % size) * size + x]) * 1.18
     const n = new THREE.Vector3(-dx, -dy, 1).normalize()
     normals.set([(n.x * .5 + .5) * 255, (n.y * .5 + .5) * 255, (n.z * .5 + .5) * 255, 255], (y * size + x) * 4)
   }

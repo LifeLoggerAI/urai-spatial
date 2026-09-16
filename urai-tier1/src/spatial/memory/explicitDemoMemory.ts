@@ -22,11 +22,11 @@ export function buildNamedExplicitDemoMemory(id: string): SelectedMemory {
         { id: 'memory', label: 'Memory', caption: 'The pressure becomes visible.', narratorLine: 'This is an explicit demonstration memory.', startsAtMs: 0, durationMs: 2_800 },
         { id: 'emotion', label: 'Emotion', caption: 'Permission creates room to breathe.', narratorLine: 'No personal inference is being made.', startsAtMs: 2_800, durationMs: 3_000 },
         { id: 'pattern', label: 'Pattern', caption: 'The reset interrupts the old loop.', narratorLine: 'This pattern exists only in the disclosed fixture.', startsAtMs: 5_800, durationMs: 3_200 },
-        { id: 'return', label: 'Return', caption: 'The scene settles into quiet.', narratorLine: 'Return to Focus.', startsAtMs: 9_000, durationMs: 3_000 },
+        { id: 'return', label: 'Return', caption: 'The scene settles into quiet.', narratorLine: 'Return to the explicit demo Focus chamber.', startsAtMs: 9_000, durationMs: 3_000 },
       ],
     },
     narrator: {
-      focus: 'Selected memory. The quiet reset is ready as an explicit demonstration.',
+      focus: 'Selected memory chamber. The quiet reset is ready as an explicit demonstration.',
       replay: 'Replay the thread from pressure through permission and return.',
     },
     star: {

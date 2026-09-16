@@ -141,12 +141,8 @@ export function lifeMapStage(selected: boolean, portrait: boolean): { scale: Poi
     }
   }
 
-  // Portrait overview is a presentation transform only: deterministic local
-  // memory identity and depth remain unchanged, while narrow screens compact the
-  // celestial envelope toward the visual center instead of fitting widely
-  // separated authored clusters around a dead central column.
   return portrait
-    ? { scale: [.62, .84, .92], position: [0, -.15, 1.0] }
+    ? { scale: [.92, .92, .92], position: [0, -.2, 1.0] }
     : { scale: [1, 1, 1], position: [0, 0, .4] }
 }
 
@@ -179,10 +175,10 @@ export function lifeMapOverviewCamera(nodes: LifeMapNode[], portrait: boolean, a
   const widthDistance = halfWidth / Math.max(horizontalTan * .88, .08)
   const heightDistance = halfHeight / Math.max(verticalTan * .86, .08)
   const nearestZ = max[2]
-  const distance = Math.max(portrait ? 30 : 24, widthDistance, heightDistance)
+  const distance = Math.max(portrait ? 34 : 24, widthDistance, heightDistance)
 
   return {
-    position: [target[0], target[1] + (portrait ? 2.0 : 1.8), nearestZ + distance],
-    target: [target[0], target[1], target[2] - (portrait ? 3.0 : 4.0)],
+    position: [target[0], target[1] + (portrait ? 2.4 : 1.8), nearestZ + distance],
+    target: [target[0], target[1], target[2] - 4.0],
   }
 }

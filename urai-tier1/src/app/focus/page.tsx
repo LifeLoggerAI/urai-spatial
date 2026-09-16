@@ -4,7 +4,7 @@ import './focus-launch-visual-polish.css'
 
 export const metadata = {
   title: 'URAI Focus',
-  description: 'Enter Focus, the close-range selected-memory experience reached from a Life Map Memory Star.',
+  description: 'Enter the private spatial chamber held around a selected Life Map memory star.',
 }
 
 export default function FocusRoutePage() {

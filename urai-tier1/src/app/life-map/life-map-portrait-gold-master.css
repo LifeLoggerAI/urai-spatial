@@ -6,40 +6,28 @@
 @media (max-width: 700px) and (orientation: portrait) {
   .life-map-root[data-life-map-phase="overview"]::before {
     inset: -10%;
-    opacity: 1;
+    opacity: .98;
     pointer-events: none;
     background:
-      radial-gradient(ellipse 92% 42% at 8% 18%, rgba(72,137,178,.58) 0%, rgba(38,86,120,.34) 31%, rgba(20,48,69,.14) 55%, transparent 76%),
-      radial-gradient(ellipse 86% 38% at 91% 34%, rgba(145,105,170,.47) 0%, rgba(88,66,126,.29) 34%, rgba(44,43,72,.12) 58%, transparent 77%),
-      radial-gradient(ellipse 94% 40% at 23% 57%, rgba(66,137,157,.50) 0%, rgba(35,85,105,.29) 35%, rgba(19,47,62,.12) 59%, transparent 78%),
-      radial-gradient(ellipse 88% 37% at 86% 72%, rgba(111,133,185,.43) 0%, rgba(65,76,130,.24) 36%, rgba(34,39,77,.10) 59%, transparent 77%),
-      radial-gradient(ellipse 82% 34% at 39% 88%, rgba(91,115,151,.36) 0%, rgba(48,70,105,.21) 38%, transparent 75%),
-      radial-gradient(ellipse 62% 46% at 54% 46%, rgba(94,127,166,.22) 0%, rgba(50,78,116,.12) 42%, transparent 75%),
-      linear-gradient(164deg, rgba(12,32,54,.16) 0 12%, rgba(55,107,142,.27) 28%, rgba(24,61,82,.12) 45%, rgba(102,77,126,.23) 63%, rgba(39,76,113,.18) 82%, rgba(8,20,34,.16) 100%) !important;
+      radial-gradient(ellipse 76% 38% at 16% 31%, rgba(87,126,145,.42) 0%, rgba(42,73,88,.24) 34%, rgba(18,34,45,.08) 56%, transparent 73%),
+      radial-gradient(ellipse 68% 34% at 84% 44%, rgba(151,128,92,.30) 0%, rgba(87,75,58,.18) 36%, rgba(35,42,47,.07) 57%, transparent 72%),
+      radial-gradient(ellipse 72% 34% at 34% 66%, rgba(105,132,146,.34) 0%, rgba(47,77,91,.19) 37%, rgba(22,38,48,.08) 58%, transparent 75%),
+      radial-gradient(ellipse 62% 30% at 78% 79%, rgba(111,104,126,.25) 0%, rgba(62,63,81,.14) 39%, transparent 72%),
+      linear-gradient(162deg, rgba(5,14,23,.08) 0 15%, rgba(55,88,101,.18) 34%, rgba(17,35,46,.08) 51%, rgba(101,88,68,.12) 70%, rgba(8,19,28,.14) 100%) !important;
     background-repeat: no-repeat;
-    filter: contrast(1.24) saturate(1.08) brightness(1.20);
-    mix-blend-mode: screen;
+    filter: contrast(1.31) saturate(.90) brightness(1.18);
   }
 
   .life-map-root[data-life-map-phase="overview"] canvas {
-    filter: brightness(1.18) contrast(1.07) saturate(1.02);
-  }
-
-  .life-map-root[data-life-map-phase="overview"]::after {
-    background:
-      radial-gradient(ellipse at 23% 25%, rgba(36,82,116,.15), transparent 35%),
-      radial-gradient(ellipse at 79% 39%, rgba(81,65,107,.12), transparent 34%),
-      radial-gradient(ellipse at 34% 69%, rgba(35,80,102,.12), transparent 36%),
-      radial-gradient(ellipse at 76% 76%, rgba(70,82,127,.10), transparent 32%),
-      radial-gradient(circle at 50% 48%, transparent 0 67%, rgba(0,0,0,.025) 84%, rgba(0,0,0,.16) 100%) !important;
+    filter: brightness(1.10) contrast(1.08) saturate(.94);
   }
 
   .life-map-root[data-life-map-phase="overview"] .life-map-title {
-    opacity: .72;
+    opacity: .68;
   }
 
   .life-map-root[data-life-map-phase="overview"] .life-map-status {
-    opacity: .66;
+    opacity: .60;
   }
 }
 

@@ -128,45 +128,6 @@
 .replayWorld .transcript:focus-within,
 .replayWorld .transcript[open] { opacity: .96; }
 
-/* V270 entry crossing: the neutral 3D Replay scene owns the transition pixels.
-   Keep loading semantics visible and readable, but never present them as a modal,
-   player card, portal, tunnel, or unrelated page. The status sits quietly at the
-   lower-left edge while the spatial field remains full-viewport authority. */
-.replayState section[role="status"] {
-  position: absolute !important;
-  left: max(20px, env(safe-area-inset-left)) !important;
-  right: auto !important;
-  top: auto !important;
-  bottom: max(22px, calc(env(safe-area-inset-bottom) + 14px)) !important;
-  width: min(520px, calc(100vw - 40px)) !important;
-  max-width: min(520px, calc(100vw - 40px)) !important;
-  padding: 0 !important;
-  border: 0 !important;
-  border-radius: 0 !important;
-  background: none !important;
-  backdrop-filter: none !important;
-  text-align: left !important;
-  text-shadow: 0 3px 24px rgba(0,0,0,.92) !important;
-}
-.replayState section[role="status"] p {
-  margin-bottom: 6px !important;
-  color: rgba(210,248,255,.72) !important;
-  font-size: 9px !important;
-  letter-spacing: .20em !important;
-}
-.replayState section[role="status"] h1 {
-  max-width: 15ch !important;
-  font-size: clamp(1.05rem, 2.4vw, 1.6rem) !important;
-  line-height: 1.05 !important;
-  letter-spacing: -.025em !important;
-}
-.replayState section[role="status"] span {
-  max-width: 430px !important;
-  margin: 6px 0 0 !important;
-  color: rgba(235,247,255,.58) !important;
-  font-size: 10px !important;
-}
-
 @media (max-width: 700px) {
   .replayWorld .replaySpatialCanvas {
     transform: scale(1.24);
@@ -214,11 +175,6 @@
     bottom: max(74px, calc(env(safe-area-inset-bottom) + 68px));
     max-width: 150px;
     font-size: 8px;
-  }
-  .replayState section[role="status"] {
-    left: max(16px, env(safe-area-inset-left)) !important;
-    bottom: max(18px, calc(env(safe-area-inset-bottom) + 10px)) !important;
-    width: min(360px, calc(100vw - 32px)) !important;
   }
 }
 

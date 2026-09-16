@@ -127,11 +127,11 @@ async function openDemoReplay(page, baseUrl) {
   await page.waitForLoadState('networkidle', { timeout: 30000 }).catch(() => {});
 
   const focus = page.getByTestId('urai-final-focus-chamber').first();
-  await expectVisible(focus, 'demo Focus surface');
+  await expectVisible(focus, 'demo Focus chamber');
   await expectAttribute(focus, 'data-memory-status', 'demo');
 
-  const replayAction = page.getByRole('button', { name: /Enter Replay(?: for .+)?/i }).first();
-  await expectVisible(replayAction, 'Focus Enter Replay action');
+  const replayAction = page.getByRole('button', { name: /Open Replay for|Replay this memory/i }).first();
+  await expectVisible(replayAction, 'Focus Replay action');
   await replayAction.click();
   await page.waitForURL(/\/replay\?/, { waitUntil: 'domcontentloaded', timeout: 30000 });
   await page.waitForLoadState('networkidle', { timeout: 30000 }).catch(() => {});

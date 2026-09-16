@@ -75,15 +75,11 @@ function isEditableTarget(target: EventTarget | null) {
   return target.isContentEditable || target.matches('input, textarea, select, [role="textbox"]')
 }
 
-function canonicalReturnDestination(
-  destination: UraiDestination,
-  previousDestination?: UraiDestination,
-): UraiDestination {
-  if (destination === 'replay') return 'focus'
+function fallbackReturnDestination(destination: UraiDestination): UraiDestination {
   if (destination === 'focus') return 'life-map'
-  if (destination === 'life-map') return 'home'
+  if (destination === 'replay') return 'focus'
   if (destination === 'infrastructure-hub') return 'home'
-  return previousDestination ?? 'home'
+  return 'infrastructure-hub'
 }
 
 export function WorldTransitionController() {
@@ -142,7 +138,7 @@ export function WorldTransitionController() {
   const reverseTravel = useCallback(() => {
     const currentWorld = worldRef.current
     if (phaseRef.current !== 'idle') return
-    const destination = canonicalReturnDestination(currentWorld.destination, currentWorld.previousDestination)
+    const destination = currentWorld.previousDestination ?? fallbackReturnDestination(currentWorld.destination)
     const definition = definitionForDestination(destination)
     executeTravel({
       destination,

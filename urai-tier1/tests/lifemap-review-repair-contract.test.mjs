@@ -12,7 +12,6 @@ const layoutSource = fs.readFileSync(new URL('../src/components/lifemap/lifeMapS
 const authoredLayoutSource = fs.readFileSync(new URL('../src/components/lifemap/lifeMapLayout.ts', import.meta.url), 'utf8')
 const focusSource = fs.readFileSync(new URL('../src/app/focus/FocusChamberClient.tsx', import.meta.url), 'utf8')
 const focusPolish = fs.readFileSync(new URL('../src/app/focus/focus-launch-visual-polish.css', import.meta.url), 'utf8')
-const focusGeology = fs.readFileSync(new URL('../src/app/focus/focusMemoryGeology.ts', import.meta.url), 'utf8')
 
 test('selected camera goals use the same indexed world transform as rendered memories', () => {
   assert.match(scene, /lifeMapWorldPoint\(node, selectedIndex, portrait\)/)
@@ -83,17 +82,15 @@ test('relationship language stays contextual and never becomes the overview visu
   assert.doesNotMatch(overlay, /selected \? 3 : 4/)
 })
 
-test('portrait overview compacts the full celestial memory volume without dead-sky collapse', () => {
+test('portrait overview composes the full celestial memory volume without dead-sky collapse', () => {
   assert.match(layoutSource, /const jitterY = .* \* 5\.4/)
   assert.match(layoutSource, /z \* 1\.82 - 8\.0 \+ jitterZ/)
-  assert.match(layoutSource, /\? \{ scale: \[\.62, \.84, \.92\], position: \[0, -\.15, 1\.0\] \}/)
+  assert.match(layoutSource, /\? \{ scale: \[\.92, \.92, \.92\], position: \[0, -\.2, 1\.0\] \}/)
   assert.match(layoutSource, /const widthDistance = halfWidth \/ Math\.max\(horizontalTan \* \.88, \.08\)/)
   assert.match(layoutSource, /const heightDistance = halfHeight \/ Math\.max\(verticalTan \* \.86, \.08\)/)
-  assert.match(layoutSource, /const distance = Math\.max\(portrait \? 30 : 24, widthDistance, heightDistance\)/)
-  assert.match(layoutSource, /target\[2\] - \(portrait \? 3\.0 : 4\.0\)/)
+  assert.match(layoutSource, /const distance = Math\.max\(portrait \? 34 : 24, widthDistance, heightDistance\)/)
   assert.match(layoutSource, /nearestZ \+ distance/)
   assert.doesNotMatch(layoutSource, /lifeMapTerrainHeight\(x, worldZ\) \+ \.62 \+ narrativeLift/)
-  assert.doesNotMatch(layoutSource, /\? \{ scale: \[\.92, \.92, \.92\], position: \[0, -\.2, 1\.0\] \}/)
   assert.doesNotMatch(layoutSource, /scale: \[\.94, 2\.20, \.72\], position: \[0, -\.18, 3\.65\]/)
   assert.doesNotMatch(layoutSource, /scale: \[\.82, 1\.08, \.86\]|scale: \[\.58, 1\.02, 1\.18\]|scale: \[\.46, \.82, \.92\]/)
 })
@@ -117,20 +114,16 @@ test('Founder proof samples retained WebGL canvas pixels only', () => {
   assert.match(workflow, /lifemap-review-repair-contract\.test\.mjs/)
 })
 
-test('Focus final composition gives live WebGL luminous memory lamellae pixel authority and rejects stale static sphere/ring dominance', () => {
+test('Focus final composition makes authentic selected-memory media own the threshold while retiring obsolete contour dominance', () => {
   assert.match(focusSource, /focus-v251-grounded-living-memory-manifestation/)
   assert.match(focusSource, /createFocusStrata, createFocusSurfaceMaps/)
   assert.doesNotMatch(focusSource, /focus-v249-memory-root-cradle/)
   assert.doesNotMatch(focusSource, /new THREE\.IcosahedronGeometry\(|<torusGeometry|<ringGeometry|wireframe/)
-  assert.match(focusPolish, /V266 literal-pixel convergence/)
-  assert.match(focusPolish, /\.focusWorld \.focusBackdrop \{[\s\S]*display: none !important;/)
-  assert.match(focusPolish, /\.focusWorld \.focusCanvas canvas \{[\s\S]*opacity: 1 !important;[\s\S]*filter: none !important;[\s\S]*mix-blend-mode: normal !important;/)
-  assert.doesNotMatch(focusPolish, /opacity: \.30|opacity: \.22|mix-blend-mode: screen|var\(--focus-asset\)/)
-  assert.match(focusGeology, /V269 selected-memory manifestation/)
-  assert.match(focusGeology, /length: 7/)
-  assert.match(focusGeology, /v269-living-luminous-memory-lamella/)
-  assert.match(focusGeology, /cool-pearl-warm-with-dark-interlayer-depth/)
-  assert.match(focusGeology, /Subdued weathered mineral texture|Bright contour veins are intentionally/)
-  assert.doesNotMatch(focusGeology, /folded paper fan/)
-  assert.doesNotMatch(focusGeology, /history \* 92|Math\.pow\(vein, 3\.0\)/)
+  assert.match(focusPolish, /V265 retained-pixel convergence/)
+  assert.match(focusPolish, /\.focusWorld \.focusBackdrop \{[\s\S]*opacity: \.82;[\s\S]*brightness\(\.82\)/)
+  assert.match(focusPolish, /\.focusWorld \.focusCanvas canvas \{[\s\S]*opacity: \.30;[\s\S]*brightness\(\.72\);[\s\S]*mix-blend-mode: screen;/)
+  assert.match(focusPolish, /@media \(max-width: 760px\) \{[\s\S]*\.focusWorld \.focusCanvas canvas \{[\s\S]*opacity: \.22;[\s\S]*brightness\(\.66\)/)
+  assert.match(focusPolish, /@media \(prefers-reduced-motion: reduce\) \{[\s\S]*\.focusWorld \.focusBackdrop \{ transform: none; \}/)
+  assert.doesNotMatch(focusPolish, /\.focusWorld \.focusCanvas canvas \{[^}]*opacity: 1;[^}]*\}/)
+  assert.doesNotMatch(focusPolish, /\.focusWorld \.focusBackdrop \{[^}]*opacity: 0\.10;[^}]*\}/)
 })

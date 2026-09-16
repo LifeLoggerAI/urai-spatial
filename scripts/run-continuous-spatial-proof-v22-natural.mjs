@@ -145,12 +145,6 @@ async function clickCanvasRatio(page, owner, viewport, ratios, expectedPhase, to
       return { x: Math.round(x), y: Math.round(y), viewport, phase: lastPhase }
     } catch {
       lastPhase = await owner.getAttribute('data-home-scene-phase')
-      // A transition can become observable exactly at the wait boundary. Treat
-      // the authoritative live phase readback as success instead of reporting
-      // the contradictory "Expected X; observed X" false negative.
-      if (lastPhase === expectedPhase) {
-        return { x: Math.round(x), y: Math.round(y), viewport, phase: lastPhase }
-      }
       if (lastPhase !== 'HOME_IDLE') break
     }
   }

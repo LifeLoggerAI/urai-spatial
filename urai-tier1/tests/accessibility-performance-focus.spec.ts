@@ -51,7 +51,7 @@ test.describe('Focus exact-head accessibility and movement evidence', () => {
     await expect(focus).toHaveAttribute('data-memory-id', 'demo:quiet-reset')
     await expect(page.getByText('DEMO FIXTURE · NOT PERSONAL DATA', { exact: true })).toBeVisible()
 
-    const replay = page.getByRole('button', { name: /Enter Replay for/i }).last()
+    const replay = page.getByRole('button', { name: /Open Replay for/i }).last()
     await expect(replay).toBeVisible()
     await replay.click()
     await expect.poll(() => new URL(page.url()).pathname.replace(/\/+$/, '')).toBe('/replay')
@@ -66,7 +66,7 @@ test.describe('Focus exact-head accessibility and movement evidence', () => {
   test('forced colors retains visible semantic Focus controls', async ({ page }) => {
     await page.emulateMedia({ forcedColors: 'active', reducedMotion: 'reduce' })
     await page.goto(focusDemo, { waitUntil: 'domcontentloaded' })
-    const controls = page.getByRole('navigation', { name: 'Focus controls' })
+    const controls = page.getByRole('navigation', { name: 'Focus chamber controls' })
     await expect(controls).toBeVisible({ timeout: 15_000 })
     for (const name of ['Recenter', 'Life Map']) {
       const button = controls.getByRole('button', { name: new RegExp(name, 'i') }).first()
@@ -86,10 +86,10 @@ test.describe('Focus exact-head accessibility and movement evidence', () => {
     await expect(focus).toHaveAttribute('data-memory-id', 'demo:quiet-reset')
     await expect(focus.locator('[data-focus-fallback="semantic"]')).toBeVisible()
     await expect(focus.getByText('Spatial view unavailable', { exact: true })).toBeVisible()
-    await expect(focus.getByText('Held in context. Your memory remains private.', { exact: true })).toBeVisible()
-    const controls = page.getByRole('navigation', { name: 'Focus controls' })
+    await expect(focus.getByText('Held in context. Nothing leaves this chamber.', { exact: true })).toBeVisible()
+    const controls = page.getByRole('navigation', { name: 'Focus chamber controls' })
     await expect(controls.getByRole('button', { name: 'Recenter', exact: true })).toBeVisible()
-    await expect(controls.getByRole('button', { name: /Enter Replay for/i })).toBeVisible()
+    await expect(controls.getByRole('button', { name: /Open Replay for|Enter Replay/i })).toBeVisible()
     await expect(controls.getByRole('button', { name: /Life Map/i })).toBeVisible()
   })
 })
