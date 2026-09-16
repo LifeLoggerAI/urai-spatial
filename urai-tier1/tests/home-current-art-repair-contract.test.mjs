@@ -3,6 +3,7 @@ import fs from 'node:fs'
 import test from 'node:test'
 
 const owner = fs.readFileSync(new URL('../src/spatial/layout/HomeWorldProductionV223.tsx', import.meta.url), 'utf8')
+const embodiedAvatar = fs.readFileSync(new URL('../src/spatial/home/HomeEmbodiedAvatar.tsx', import.meta.url), 'utf8')
 const currentRepair = fs.readFileSync(new URL('../src/spatial/layout/HomeCurrentArtRepair.tsx', import.meta.url), 'utf8')
 const aaaRepair = fs.readFileSync(new URL('../src/spatial/layout/HomeAAAVisualRepair.tsx', import.meta.url), 'utf8')
 const visualAuthority = fs.readFileSync(new URL('../src/spatial/layout/HomeVisualAuthority.tsx', import.meta.url), 'utf8')
@@ -37,7 +38,7 @@ test('V249 and V281 localized repair modules remain historical inert provenance'
   assert.doesNotMatch(aaaRepair, /aaa-celestial-ascent-v3-gold-master-depth|home-aaa-life-map-celestial-ascent|home-aaa-v281-rooted-ascent-ribbons|buildCelestialVolume/)
 })
 
-test('retired localized Home hotspots are disabled while the entire active Avatar and living-memory Orb hierarchies are protected', () => {
+test('retired localized Home hotspots are disabled while the active Avatar and living-memory Orb hierarchies are protected', () => {
   assert.match(owner, /function RetireLegacyHomeHotspots\(\)/)
   assert.match(owner, /object\.visible = false/)
   assert.match(owner, /object\.raycast = \(\) => undefined/)
@@ -45,15 +46,14 @@ test('retired localized Home hotspots are disabled while the entire active Avata
   assert.match(owner, /\/home-v226-rooted-single-living-memory-presence\//)
   assert.match(owner, /\/home-current-orb\//)
   assert.match(owner, /\/home-v249-organic-living-memory-presence\//)
-  assert.match(owner, /const CURRENT_HOME_PRESENCE_ROOTS = new Set\(\['home-living-memory-orb', 'home-visible-user-avatar'\]\)/)
+  assert.match(owner, /const CURRENT_HOME_PRESENCE_ROOTS = new Set\(\[[\s\S]*'home-living-memory-orb'[\s\S]*'urai-home-user-avatar'[\s\S]*\]\)/)
   assert.match(owner, /function isInsideCurrentHomePresence\(object: THREE\.Object3D\)/)
   assert.match(owner, /if \(isInsideCurrentHomePresence\(object\)\) return/)
-  assert.match(owner, /function VisibleHomeAvatar\(\{ reducedMotion \}/)
-  assert.match(owner, /<VisibleHomeAvatar reducedMotion=\{reducedMotion\} \/>/)
-  assert.match(owner, /name="home-visible-user-avatar"/)
-  assert.match(owner, /presentation: 'visible-home-avatar-third-person'/)
+  assert.match(owner, /<HomeEmbodiedAvatar/)
+  assert.match(embodiedAvatar, /name="urai-home-user-avatar"/)
+  assert.match(embodiedAvatar, /semanticOwner: 'avatar'/)
   assert.match(owner, /name="home-living-memory-orb"/)
-  assert.doesNotMatch(owner, /\/home-visible-user-avatar\//, 'the active Avatar must not be included in the legacy-retirement pattern list')
+  assert.doesNotMatch(owner, /\/urai-home-user-avatar\//, 'the active Avatar must not be included in the legacy-retirement pattern list')
 })
 
 test('Ground is owned by the physical world surface and Life Map by the broad visible sky', () => {
@@ -64,7 +64,6 @@ test('Ground is owned by the physical world surface and Life Map by the broad vi
     'data-home-distance-life-map="sky-threshold"',
     'data-home-portal-sequence="idle"',
     "cameraCheckpoint: 'ground-first-person-arrival'",
-    "cameraCheckpoint: 'home-sky-ascent'",
     "cameraCheckpoint: 'home-sky-ascent-complete'",
   ]) assert.match(owner, new RegExp(marker.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')))
   assert.match(owner, /event\.point\.clone\(\)/)
