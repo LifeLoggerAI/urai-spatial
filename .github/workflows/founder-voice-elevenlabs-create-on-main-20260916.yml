@@ -1,0 +1,158 @@
+name: Founder Voice ElevenLabs Create On Main 2026-09-16
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/founder-voice-elevenlabs-create-on-main-20260916.yml'
+
+permissions:
+  contents: read
+  id-token: write
+
+env:
+  EXPECTED_REPOSITORY: LifeLoggerAI/urai-spatial
+  EXPECTED_PROJECT_ID: urai-4dc1d
+  EXPECTED_REF: refs/heads/main
+  ENROLLMENT_FILE_ID: 1F_9syYMYbSEx9kR2SEwtA6MiDH1jcaz8
+  ENROLLMENT_SHA256: a03c3d56918274f5dfe06a130c50a0142ca4e779a8da208b5cc773bb31787368
+  VOICE_NAME: UrAi - Adam Clamp Founder Voice V1
+
+jobs:
+  create-founder-voice:
+    if: github.repository == 'LifeLoggerAI/urai-spatial' && github.ref == 'refs/heads/main'
+    environment: production
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Checkout exact main
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 1
+          persist-credentials: false
+          show-progress: false
+
+      - name: Guard governed execution context
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$GITHUB_REPOSITORY" = "$EXPECTED_REPOSITORY"
+          test "$GITHUB_REF" = "$EXPECTED_REF"
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          test -z "$(git status --porcelain --untracked-files=all)"
+          test -n '${{ vars.GCP_WIF_PROVIDER }}'
+          test '${{ vars.GCP_URAI_SPATIAL_RELEASE_SERVICE_ACCOUNT }}' = 'urai-spatial-release@urai-4dc1d.iam.gserviceaccount.com'
+
+      - name: Authenticate governed Google release identity
+        id: auth
+        uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093
+        with:
+          project_id: ${{ env.EXPECTED_PROJECT_ID }}
+          workload_identity_provider: ${{ vars.GCP_WIF_PROVIDER }}
+          service_account: ${{ vars.GCP_URAI_SPATIAL_RELEASE_SERVICE_ACCOUNT }}
+          create_credentials_file: true
+          export_environment_variables: true
+          token_format: access_token
+          access_token_scopes: |
+            https://www.googleapis.com/auth/cloud-platform,
+            https://www.googleapis.com/auth/drive.readonly
+
+      - name: Install Google Cloud CLI
+        uses: google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db
+        with:
+          project_id: ${{ env.EXPECTED_PROJECT_ID }}
+          version: '>= 500.0.0'
+
+      - name: Download canonical enrollment audio privately from Drive
+        shell: bash
+        env:
+          DRIVE_TOKEN: ${{ steps.auth.outputs.access_token }}
+        run: |
+          set -euo pipefail
+          test -n "$DRIVE_TOKEN"
+          mkdir -p founder-voice-receipt
+          curl --fail --silent --show-error --location \
+            -H "Authorization: Bearer $DRIVE_TOKEN" \
+            "https://www.googleapis.com/drive/v3/files/${ENROLLMENT_FILE_ID}?alt=media" \
+            --output founder-enrollment.mp3
+          echo "${ENROLLMENT_SHA256}  founder-enrollment.mp3" | sha256sum --check --strict
+          test "$(stat -c '%s' founder-enrollment.mp3)" -gt 1000000
+
+      - name: Read ElevenLabs key without disclosure and create or reuse canonical founder clone
+        id: voice
+        shell: bash
+        run: |
+          set -euo pipefail
+          key="$(gcloud secrets versions access latest --secret=ELEVENLABS_API_KEY --project "$EXPECTED_PROJECT_ID")"
+          test -n "$key"
+          echo "::add-mask::$key"
+
+          existing_json="$(curl --fail --silent --show-error \
+            -H "xi-api-key: $key" \
+            --get 'https://api.elevenlabs.io/v2/voices' \
+            --data-urlencode "search=$VOICE_NAME" \
+            --data-urlencode 'page_size=100')"
+
+          existing_id="$(printf '%s' "$existing_json" | jq -r --arg n "$VOICE_NAME" '.voices[]? | select(.name == $n) | .voice_id' | head -n 1)"
+          created=false
+
+          if [ -n "$existing_id" ] && [ "$existing_id" != "null" ]; then
+            voice_id="$existing_id"
+          else
+            response_file="$(mktemp)"
+            http_code="$(curl --silent --show-error --output "$response_file" --write-out '%{http_code}' \
+              -X POST 'https://api.elevenlabs.io/v1/voices/add' \
+              -H "xi-api-key: $key" \
+              -F "name=$VOICE_NAME" \
+              -F 'description=Authorized private UrAi founder voice clone for Adam Clamp. Source: frozen V1 train-only enrollment authority.' \
+              -F 'remove_background_noise=false' \
+              -F 'labels[language]=en' \
+              -F 'labels[use_case]=urai-founder-avatar' \
+              -F 'files=@founder-enrollment.mp3;type=audio/mpeg')"
+            if [ "$http_code" -lt 200 ] || [ "$http_code" -ge 300 ]; then
+              echo "::error::ElevenLabs IVC create failed with HTTP $http_code"
+              jq -c '{detail:(.detail // .message // .)}' "$response_file" 2>/dev/null || true
+              exit 1
+            fi
+            voice_id="$(jq -r '.voice_id // empty' "$response_file")"
+            test -n "$voice_id"
+            created=true
+          fi
+
+          test "$voice_id" != 'pNInz6obpgDQGcFmaJgB'
+          echo "voice_id=$voice_id" >> "$GITHUB_OUTPUT"
+          echo "created=$created" >> "$GITHUB_OUTPUT"
+
+          jq -n \
+            --arg schema 'urai-founder-voice-elevenlabs-ivc-receipt-1' \
+            --arg provider 'ElevenLabs' \
+            --arg voiceName "$VOICE_NAME" \
+            --arg voiceId "$voice_id" \
+            --arg enrollmentSha256 "$ENROLLMENT_SHA256" \
+            --arg repository "$GITHUB_REPOSITORY" \
+            --arg sha "$GITHUB_SHA" \
+            --arg runId "$GITHUB_RUN_ID" \
+            --arg created "$created" \
+            '{schema:$schema,provider:$provider,voiceName:$voiceName,voiceId:$voiceId,enrollmentSha256:$enrollmentSha256,repository:$repository,sha:$sha,runId:$runId,createdThisRun:($created=="true"),stockAdamExcluded:true,apiKeyExposed:false,rawAudioPersisted:false,generatedAt:(now|todate)}' \
+            > founder-voice-receipt/receipt.json
+
+          rm -f founder-enrollment.mp3
+
+      - name: Prove no founder source remains in workspace receipt package
+        shell: bash
+        run: |
+          set -euo pipefail
+          test ! -e founder-enrollment.mp3
+          test -f founder-voice-receipt/receipt.json
+          jq -e '.voiceId | type == "string" and length > 0' founder-voice-receipt/receipt.json >/dev/null
+          ! grep -R --binary-files=without-match -n 'ELEVENLABS_API_KEY' founder-voice-receipt || false
+
+      - name: Upload non-secret founder voice receipt
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: urai-founder-voice-elevenlabs-ivc-${{ github.sha }}
+          path: founder-voice-receipt/receipt.json
+          if-no-files-found: error
+          retention-days: 365
