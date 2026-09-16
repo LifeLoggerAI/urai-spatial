@@ -3,9 +3,11 @@ import { readFileSync } from 'node:fs'
 import test from 'node:test'
 
 const ground = readFileSync(new URL('../src/app/GroundSpatialWorldClean.tsx', import.meta.url), 'utf8')
+const groundCanon = readFileSync(new URL('../src/spatial/ground/groundCanon.ts', import.meta.url), 'utf8')
 
 test('Ground renders a lived physical world instead of the retired chamber hub', () => {
-  assert.match(ground, /data-ground-visual-revision="ground-lived-world-v1"/)
+  assert.match(ground, /data-ground-visual-revision="ground-lived-world-v2-canon-lock"/)
+  assert.match(ground, /data-ground-art-revision="ground-scanned-pbr-v2"/)
   assert.match(ground, /data-ground-runtime-owner="first-person-lived-world"/)
   assert.match(ground, /name="ground-lived-world"/)
   assert.match(ground, /name="ground-visible-traversable-terrain"/)
@@ -13,12 +15,13 @@ test('Ground renders a lived physical world instead of the retired chamber hub',
 })
 
 test('Ground uses true eye-level terrain-following first-person movement', () => {
-  assert.match(ground, /const EYE_HEIGHT = 1\.69/)
+  assert.match(groundCanon, /export const GROUND_EYE_HEIGHT_M = 1\.69/)
   assert.match(ground, /groundHeight\(position\.current\.x, position\.current\.z, profile\.id\)/)
-  assert.match(ground, /desired\.current\.set\(position\.current\.x, surfaceY \+ EYE_HEIGHT, position\.current\.z\)/)
-  assert.match(ground, /data-ground-camera="eye-level-terrain-following"/)
-  assert.match(ground, /data-ground-collision="visible-terrain-heightfield"/)
+  assert.match(ground, /desired\.current\.set\(position\.current\.x, surfaceY \+ GROUND_EYE_HEIGHT_M, position\.current\.z\)/)
+  assert.match(ground, /data-ground-camera="eye-level-terrain-following-no-authored-bob"/)
+  assert.match(ground, /data-ground-collision="terrain-plus-authored-obstacle-field"/)
   assert.match(ground, /stepEmbodiedMotion/)
+  assert.match(ground, /buildGroundObstacleField\(profile\.id\)/)
   assert.doesNotMatch(ground, /cameraOffset|distance = portrait \? 1\.4 : 1\.1/)
 })
 
