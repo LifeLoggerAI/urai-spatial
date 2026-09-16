@@ -29,7 +29,10 @@ test('Home is a first-person cinematic threshold with a grounded Orb companion, 
     'event.point.clone()',
   ]) has(currentHome, marker)
 
-  assert.doesNotMatch(currentHome, /function VisibleUserAvatar|<VisibleUserAvatar|home-visible-user-avatar|cinematic-third-person|urai-home-embodied-avatar/)
+  // Fail closed on active avatar ownership while allowing retirement/compatibility
+  // strings that exist specifically to hide legacy avatar geometry.
+  assert.doesNotMatch(currentHome, /function\s+VisibleUserAvatar\s*\(|<VisibleUserAvatar\b/)
+  assert.doesNotMatch(currentHome, /data-home-embodied-self=["']visible-cinematic-avatar["']|data-home-camera-mode=["']cinematic-third-person["']|name=["']urai-home-embodied-avatar["']/)
   assert.doesNotMatch(currentHome, /stepEmbodiedMotion|useMovementInput|MobileMovementPad/)
   assert.doesNotMatch(currentHome, /nearby==='ground'|nearby === 'ground'/)
   assert.doesNotMatch(currentHome, /data-home-embodied-self="privacy-preserving-first-person"/)
