@@ -1,100 +1,113 @@
 import * as THREE from 'three'
 
-// V271 literal-pixel repair of the selected-memory manifestation.
+// V272 literal-pixel repair of the selected-memory manifestation.
 //
-// V269/V270 proved the route, material separation and responsive composition, but
-// retained pixels still read as a stack of pale cards because each hero element
-// was almost a metre tall while only 4–5 cm deep. V271 changes the silhouette at
-// the geometry source: the selected Memory Star resolves into a compact cluster of
-// genuinely volumetric, closed, irregular memory facets whose depth is comparable
-// to their width. The facets interlock around an intentional dark central void and
-// use restrained mineral energy rather than white/paper-like faces.
+// V271 proved that real volume removes the predecessor's paper-card silhouette,
+// but retained pixels still read as five separate low-poly cyan crystal shards.
+// V272 removes that object language at the geometry source. The selected Memory
+// Star now resolves into one continuous, closed, asymmetrical living-memory fold:
+// a softly faceted mineral/tissue volume with a deep longitudinal furrow, curved
+// centerline, changing cross-section and restrained physical energy.
 //
-// The form must remain recognisably one selected memory, not a generic boulder,
-// sphere/orb, flower, portal, ring, cage, doorway, sheet fan or pile of cards.
-type MemoryFacetSpec = {
-  center: readonly [number, number, number]
-  size: readonly [number, number, number]
-  rotation: readonly [number, number, number]
-  phase: number
+// The form must read as one held memory phenomenon. It must not regress into a
+// crystal crown/shard cluster, boulder, sphere/orb, flower, portal, ring, cage,
+// doorway, sheet fan, stack of cards or generic game pickup.
+const MEMORY_SECTIONS = 15
+const MEMORY_RING_POINTS = 12
+
+function wrappedAngleDistance(a: number, b: number) {
+  return Math.abs(Math.atan2(Math.sin(a - b), Math.cos(a - b)))
 }
 
-const MEMORY_FACETS: readonly MemoryFacetSpec[] = [
-  { center: [-.28, .17, -.11], size: [.34, .78, .31], rotation: [.18, -.48, -.24], phase: .17 },
-  { center: [.22, .14, .06], size: [.32, .86, .35], rotation: [-.14, .34, .21], phase: 1.13 },
-  { center: [-.03, -.16, .22], size: [.42, .58, .40], rotation: [.31, .16, .61], phase: 2.21 },
-  { center: [.31, -.22, -.20], size: [.29, .54, .34], rotation: [-.27, -.36, -.52], phase: 3.08 },
-  { center: [-.31, -.25, .12], size: [.28, .49, .32], rotation: [.15, .54, .46], phase: 4.04 },
-]
-
-function facetVertexColor(facet: number, vertex: number, y: number) {
-  const deep = new THREE.Color().setRGB(.030, .092, .104)
-  const mineral = new THREE.Color().setRGB(.105, .285, .315)
-  const cool = new THREE.Color().setRGB(.125, .405, .485)
-  const warm = new THREE.Color().setRGB(.47, .205, .075)
-  const phase = .5 + .5 * Math.sin((facet + 1) * 1.37 + vertex * 1.91)
-  const color = deep.clone().lerp(mineral, .34 + phase * .24)
-  if (y > .15) color.lerp(cool, .20 + phase * .12)
-  if ((facet + vertex) % 7 === 0) color.lerp(warm, .12)
+function livingMemoryVertexColor(section: number, radial: number, t: number, furrow: number) {
+  const deep = new THREE.Color().setRGB(.026, .067, .064)
+  const mineral = new THREE.Color().setRGB(.155, .245, .218)
+  const weathered = new THREE.Color().setRGB(.285, .335, .278)
+  const warm = new THREE.Color().setRGB(.405, .235, .115)
+  const phase = .5 + .5 * Math.sin(section * .73 + radial * 1.37)
+  const edge = Math.pow(Math.abs(t), 1.4)
+  const color = deep.clone().lerp(mineral, .34 + phase * .24).lerp(weathered, .08 + .10 * (1 - edge))
+  if (furrow > .6) color.lerp(deep, .34)
+  if ((section * 3 + radial) % 17 === 0) color.lerp(warm, .10)
   return color
 }
 
-function createMemoryFacet(spec: MemoryFacetSpec, facet: number) {
-  const [width, height, depth] = spec.size
-  const local: THREE.Vector3[] = [
-    new THREE.Vector3(.05 * width, .62 * height, -.04 * depth),
-    new THREE.Vector3(-.07 * width, -.57 * height, .03 * depth),
-  ]
-
-  // Five irregular equatorial vertices create a closed asymmetric bipyramid.
-  // Their Z radius is deliberately comparable to X radius, which is the key V271
-  // rejection rule against the old paper-card / lamella silhouette.
-  for (let index = 0; index < 5; index += 1) {
-    const angle = spec.phase + index / 5 * Math.PI * 2
-    const radialX = width * (.78 + .16 * Math.sin(index * 1.71 + spec.phase))
-    const radialZ = depth * (.76 + .17 * Math.cos(index * 1.43 - spec.phase))
-    const y = height * (.08 * Math.sin(index * 2.07 + spec.phase) - .03 * Math.cos(index * .83))
-    local.push(new THREE.Vector3(Math.cos(angle) * radialX, y, Math.sin(angle) * radialZ))
-  }
-
-  const euler = new THREE.Euler(spec.rotation[0], spec.rotation[1], spec.rotation[2], 'XYZ')
-  const center = new THREE.Vector3(...spec.center)
+function createLivingMemoryFold() {
   const positions: number[] = []
   const colors: number[] = []
-  for (let index = 0; index < local.length; index += 1) {
-    const vertex = local[index].applyEuler(euler).add(center)
-    positions.push(vertex.x, vertex.y, vertex.z)
-    const color = facetVertexColor(facet, index, local[index].y)
-    colors.push(color.r, color.g, color.b)
-  }
-
   const indices: number[] = []
-  for (let index = 0; index < 5; index += 1) {
-    const current = 2 + index
-    const next = 2 + ((index + 1) % 5)
-    indices.push(0, current, next)
-    indices.push(1, next, current)
+
+  for (let section = 0; section < MEMORY_SECTIONS; section += 1) {
+    const u = section / (MEMORY_SECTIONS - 1)
+    const t = THREE.MathUtils.lerp(-.88, .88, u)
+    const envelope = Math.pow(Math.max(.04, 1 - Math.pow(Math.abs(t), 1.55)), .52)
+    const centerX = .11 * Math.sin(t * 2.7) + .035 * Math.sin(t * 7.1)
+    const centerY = t * .86
+    const centerZ = -.035 + .085 * Math.cos(t * 2.15) - .035 * Math.sin(t * 5.3)
+    const width = .16 + envelope * (.34 + .035 * Math.sin(section * .83))
+    const depth = .14 + envelope * (.255 + .028 * Math.cos(section * .71))
+    const twist = -.34 + u * .72 + .08 * Math.sin(section * .91)
+
+    for (let radial = 0; radial < MEMORY_RING_POINTS; radial += 1) {
+      const angle = radial / MEMORY_RING_POINTS * Math.PI * 2
+      const furrowDistance = wrappedAngleDistance(angle, .18 + .12 * Math.sin(t * 2.2))
+      const furrow = Math.exp(-Math.pow(furrowDistance / .42, 2))
+      const organic = 1 + .075 * Math.sin(angle * 3 + section * .57) + .035 * Math.cos(angle * 5 - section * .31)
+      const localX = Math.cos(angle) * width * organic * (1 - .34 * furrow)
+      const localZ = Math.sin(angle) * depth * (1 + .06 * Math.cos(angle * 2 - t * 3.1)) - furrow * depth * .16
+      const x = centerX + localX * Math.cos(twist) - localZ * Math.sin(twist)
+      const z = centerZ + localX * Math.sin(twist) + localZ * Math.cos(twist)
+      const y = centerY + .045 * envelope * Math.sin(angle * 2 + section * .49)
+      positions.push(x, y, z)
+      const color = livingMemoryVertexColor(section, radial, t, furrow)
+      colors.push(color.r, color.g, color.b)
+    }
   }
 
-  const indexed = new THREE.BufferGeometry()
-  indexed.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3))
-  indexed.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3))
-  indexed.setIndex(indices)
-  const geometry = indexed.toNonIndexed()
-  indexed.dispose()
+  for (let section = 0; section < MEMORY_SECTIONS - 1; section += 1) {
+    const row = section * MEMORY_RING_POINTS
+    const nextRow = (section + 1) * MEMORY_RING_POINTS
+    for (let radial = 0; radial < MEMORY_RING_POINTS; radial += 1) {
+      const next = (radial + 1) % MEMORY_RING_POINTS
+      const a = row + radial
+      const b = row + next
+      const c = nextRow + radial
+      const d = nextRow + next
+      indices.push(a, c, b, b, c, d)
+    }
+  }
+
+  const bottomCap = positions.length / 3
+  positions.push(-.075, -.91, .012)
+  colors.push(.020, .052, .050)
+  const topCap = positions.length / 3
+  positions.push(.066, .91, -.008)
+  colors.push(.055, .092, .078)
+
+  for (let radial = 0; radial < MEMORY_RING_POINTS; radial += 1) {
+    const next = (radial + 1) % MEMORY_RING_POINTS
+    indices.push(bottomCap, next, radial)
+    const topRow = (MEMORY_SECTIONS - 1) * MEMORY_RING_POINTS
+    indices.push(topCap, topRow + radial, topRow + next)
+  }
+
+  const geometry = new THREE.BufferGeometry()
+  geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3))
+  geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3))
+  geometry.setIndex(indices)
   geometry.computeVertexNormals()
   geometry.computeBoundingBox()
   geometry.computeBoundingSphere()
-  geometry.userData.focusFacetIndex = facet
-  geometry.userData.focusFacetRole = 'v271-interlocked-volumetric-memory-facet'
-  geometry.userData.focusFacetEnergy = 'dark-mineral-cool-edge-restrained-warm-vein'
-  geometry.userData.focusLiteralPixelRepair = 'v271-no-card-slab-silhouette'
-  geometry.userData.focusDepthRule = 'closed-volume-depth-comparable-to-width'
+  geometry.userData.focusMemoryRole = 'v272-single-connected-living-memory-fold'
+  geometry.userData.focusMemoryTopology = 'closed-twisted-longitudinal-fold-with-deep-furrow'
+  geometry.userData.focusMemoryEnergy = 'dark-weathered-mineral-restrained-warm-cool-response'
+  geometry.userData.focusLiteralPixelRepair = 'v272-no-crystal-crown-no-card-stack'
+  geometry.userData.focusSilhouetteRule = 'one-coherent-memory-phenomenon-not-discrete-objects'
   return geometry
 }
 
 export function createFocusStrata() {
-  return MEMORY_FACETS.map((spec, facet) => createMemoryFacet(spec, facet))
+  return [createLivingMemoryFold()]
 }
 
 function hash2(x: number, y: number) {
