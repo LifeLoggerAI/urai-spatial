@@ -53,6 +53,13 @@ export default function OrbConversationPanel() {
   const voiceAudio = useRef<HTMLAudioElement | null>(null)
   const voiceObjectUrl = useRef<string | null>(null)
   const stateResetTimer = useRef<number | null>(null)
+  const consentStateTimer = useRef<number | null>(null)
+
+  const cancelDeferredConsentState = () => {
+    if (consentStateTimer.current === null) return
+    window.clearTimeout(consentStateTimer.current)
+    consentStateTimer.current = null
+  }
 
   const publishConversationState = (state: 'idle' | 'attention' | 'listening' | 'thinking' | 'speaking' | 'privacy' | 'warning', resetAfterMs?: number) => {
     if (stateResetTimer.current !== null) {
@@ -171,11 +178,13 @@ export default function OrbConversationPanel() {
     }
     if (voiceObjectUrl.current) URL.revokeObjectURL(voiceObjectUrl.current)
     if (stateResetTimer.current !== null) window.clearTimeout(stateResetTimer.current)
+    if (consentStateTimer.current !== null) window.clearTimeout(consentStateTimer.current)
     if (typeof window !== 'undefined' && 'speechSynthesis' in window) window.speechSynthesis.cancel()
     publishOrbState('idle', 'conversation')
   }, [])
 
   const stop = () => {
+    cancelDeferredConsentState()
     aborter.current?.abort()
     aborter.current = null
     stopVoice()
@@ -194,6 +203,11 @@ export default function OrbConversationPanel() {
       return
     }
 
+    // A consent toggle intentionally publishes asynchronously so the native
+    // control stays responsive on software WebGL. Once Send owns the lifecycle,
+    // that queued attention/privacy event is stale and must not overwrite the
+    // thinking -> speaking render before Home samples the visible Orb state.
+    cancelDeferredConsentState()
     aborter.current?.abort()
     stopVoice()
     const controller = new AbortController()
@@ -288,8 +302,16 @@ export default function OrbConversationPanel() {
               checked={aiConsent}
               disabled={busy}
               onChange={(event) => {
-                setAiConsent(event.target.checked)
-                publishConversationState(event.target.checked ? 'attention' : 'privacy')
+                const checked = event.target.checked
+                setAiConsent(checked)
+                // Consent state is the interactive authority. Spatial telemetry is
+                // observational and must not make this privacy control unresponsive
+                // when a heavy WebGL listener is rendering on software fallbacks.
+                cancelDeferredConsentState()
+                consentStateTimer.current = window.setTimeout(() => {
+                  consentStateTimer.current = null
+                  publishConversationState(checked ? 'attention' : 'privacy')
+                }, 0)
               }}
             />
             Allow this message and bounded recent context to be processed by OpenAI.
@@ -318,6 +340,7 @@ export default function OrbConversationPanel() {
             </button>
             <button type="button" disabled={!result || voiceMuted} onClick={() => {
               if (!result) return
+              cancelDeferredConsentState()
               publishConversationState('speaking', 2200)
               if (result.provider === 'openai') void speakOrbResponse(result.message)
               else playDeviceVoice(result.message)

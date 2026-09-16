@@ -39,7 +39,7 @@ const nextConfig: NextConfig = {
     config.cache = false;
     return config;
   },
-  allowedDevOrigins: uraiAllowedDevOrigins,
+  allowedDevOrigins: [...uraiAllowedDevOrigins, "terminal.local"],
 };
 
 export default nextConfig;

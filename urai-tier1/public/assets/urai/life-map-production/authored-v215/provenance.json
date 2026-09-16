@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 1,
+  "asset": "life-map-memory-sanctuary-v215.glb",
+  "sha256": "d2dbf91f3b5307b67d2101e0d3bcf290eb8ba5cbeebe86f3e0428d8576ae87ae",
+  "bytes": 1346888,
+  "generator": "scripts/blender/generate-life-map-sanctuary-v215.py",
+  "generatorSha256": "8a3e9c2fd26c94259086bf7600f0c1f59aec72e9bb4b4bdcf531d45b29f0ceb5",
+  "seed": 1177215,
+  "license": "Original work for the private LifeLoggerAI repository",
+  "externalAssets": [],
+  "sourceMaster": "07_3D_SOURCE_MODELS/PR-1177/life-map-v215/life-map-memory-sanctuary-v215.blend",
+  "sourceMasterSha256": "030ea52557b1e7e19c5c580ee2bbdf678b2d9a712be1fe4e379f62a6219952ee",
+  "previewSha256": "108edddcc03202075bc84c6911f8ffde2e2ed83236bb82e9203d78ca45b33467",
+  "design": "One continuous height-field sanctuary with embedded erosion path, alternating authored banks, localized scars, and no overlapping relief sheets or hidden test geometry"
+}

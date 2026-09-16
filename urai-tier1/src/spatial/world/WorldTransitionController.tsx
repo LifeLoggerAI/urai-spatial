@@ -84,7 +84,7 @@ function fallbackReturnDestination(destination: UraiDestination): UraiDestinatio
 
 export function WorldTransitionController() {
   const router = useRouter()
-  const { world, phase, beginTravel } = useUraiWorldState()
+  const { world, phase, pendingTravel, beginTravel } = useUraiWorldState()
   const timer = useRef<number | null>(null)
   const navigationWatchdog = useRef<number | null>(null)
   const worldRef = useRef(world)
@@ -187,7 +187,7 @@ export function WorldTransitionController() {
       className="urai-world-transition"
       data-phase={phase}
       data-from={world.destination}
-      data-to={world.destination}
+      data-to={pendingTravel?.destination ?? world.destination}
       aria-hidden="true"
     >
       <span className="urai-world-transition__surface" />

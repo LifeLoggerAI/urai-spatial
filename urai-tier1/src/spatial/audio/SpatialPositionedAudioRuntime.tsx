@@ -12,7 +12,7 @@ const CUES: Record<SpatialAudioCue, { src: string; position: [number, number, nu
   error: { src: '/assets/urai/generated/audio/ui-error-v1.opus', position: [0, 1.1, -1.6], gain: 0.38 },
 }
 
-type AudioState = { context: AudioContext; reverb: ConvolverNode; cache: Map<string, AudioBuffer> }
+type AudioState = { context: AudioContext; reverb: ConvolverNode; output: GainNode; cache: Map<string, AudioBuffer>; generation: number; active: Set<AudioBufferSourceNode> }
 
 function makeImpulse(context: AudioContext) {
   const duration = 0.42
@@ -41,7 +41,10 @@ async function bufferFor(state: AudioState, src: string) {
 async function playPositioned(state: AudioState, cue: SpatialAudioCue) {
   const spec = CUES[cue]
   if (!spec) return
+  const generation = state.generation
   if (state.context.state === 'suspended') await state.context.resume()
+  const buffer = await bufferFor(state, spec.src)
+  if (generation !== state.generation || state.context.state === 'closed') return
   const source = state.context.createBufferSource()
   const panner = new PannerNode(state.context, {
     panningModel: 'HRTF',
@@ -57,10 +60,12 @@ async function playPositioned(state: AudioState, cue: SpatialAudioCue) {
   const wet = state.context.createGain()
   dry.gain.value = spec.gain
   wet.gain.value = spec.gain * 0.18
-  source.buffer = await bufferFor(state, spec.src)
+  source.buffer = buffer
   source.connect(panner)
-  panner.connect(dry).connect(state.context.destination)
-  panner.connect(wet).connect(state.reverb).connect(state.context.destination)
+  panner.connect(dry).connect(state.output)
+  panner.connect(wet).connect(state.reverb)
+  state.active.add(source)
+  source.onended = () => { state.active.delete(source); source.disconnect(); panner.disconnect(); dry.disconnect(); wet.disconnect() }
   source.start()
 }
 
@@ -84,16 +89,29 @@ export default function SpatialPositionedAudioRuntime() {
       const context = new AudioContextCtor({ latencyHint: 'interactive' })
       const reverb = context.createConvolver()
       reverb.buffer = makeImpulse(context)
-      stateRef.current = { context, reverb, cache: new Map() }
+      const output = context.createGain()
+      output.connect(context.destination)
+      reverb.connect(output)
+      stateRef.current = { context, reverb, output, cache: new Map(), generation: 0, active: new Set() }
       return stateRef.current
+    }
+
+    const cancelCues = () => {
+      const state = stateRef.current
+      if (!state) return
+      state.generation += 1
+      state.output.gain.value = 0
+      for (const source of state.active) { try { source.stop() } catch { /* already ended */ } }
+      state.active.clear()
     }
 
     const onConsent = (event: Event) => {
       enabledRef.current = Boolean((event as CustomEvent<{ enabled?: boolean }>).detail?.enabled)
       mutedRef.current = !enabledRef.current
-      if (enabledRef.current) void ensure().context.resume().catch(() => undefined)
+      if (!enabledRef.current) cancelCues()
+      if (enabledRef.current) { const state = ensure(); state.output.gain.value = 1; void state.context.resume().catch(() => undefined) }
     }
-    const onMute = (event: Event) => { mutedRef.current = Boolean((event as CustomEvent<{ muted?: boolean }>).detail?.muted) }
+    const onMute = (event: Event) => { mutedRef.current = Boolean((event as CustomEvent<{ muted?: boolean }>).detail?.muted); if (mutedRef.current) cancelCues(); else if (enabledRef.current && stateRef.current) stateRef.current.output.gain.value = 1 }
     const onCue = (event: Event) => {
       const cue = (event as CustomEvent<{ cue?: SpatialAudioCue }>).detail?.cue
       if (!cue || !enabledRef.current || mutedRef.current) return
@@ -107,6 +125,7 @@ export default function SpatialPositionedAudioRuntime() {
       window.removeEventListener('urai:audio-consent', onConsent)
       window.removeEventListener('urai:audio-mute', onMute)
       window.removeEventListener('urai:audio-cue', onCue)
+      cancelCues()
       const state = stateRef.current
       stateRef.current = null
       if (state) void state.context.close().catch(() => undefined)

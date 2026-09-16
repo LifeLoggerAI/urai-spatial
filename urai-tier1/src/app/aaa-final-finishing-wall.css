@@ -99,7 +99,7 @@ summary:focus-visible {
 }
 [data-testid="urai-r3f-canonical-lifemap"] button { min-height: 36px; border-radius: 999px !important; box-shadow: 0 12px 38px rgba(0, 0, 0, 0.34); }
 [data-testid="urai-r3f-canonical-lifemap"] header::after {
-  content: "Private seed constellation · image-textured stars · Focus opens selection";
+  content: "Explore a memory. Follow what connects.";
   display: block;
   margin-top: 0.75rem;
   color: rgba(226, 252, 255, 0.68);

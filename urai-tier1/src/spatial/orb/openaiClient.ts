@@ -1,5 +1,5 @@
 import { buildOrbCompanionResponse } from '@/lib/orb-companion-contract'
-import { getAuth } from 'firebase/auth'
+import { getAuth, type User } from 'firebase/auth'
 import { app, firebasePublicEnvReady } from '@/lib/firebase/client'
 
 export type OrbConversationMessage = {
@@ -29,6 +29,7 @@ const DEFINITE_EXTERNAL_ATTEMPT_CODES = new Set([
   'OPENAI_RESPONSE_INCOMPLETE',
   'INVALID_PROVIDER_RESPONSE',
 ])
+const AUTH_TOKEN_TIMEOUT_MS = 3_000
 
 export class OrbProviderAttemptError extends Error {
   constructor(readonly code = 'EXTERNAL_PROVIDER_ATTEMPT_FAILED') {
@@ -53,6 +54,30 @@ function fallbackResult(message: string, disclosure: string): OrbProviderResult 
     suggestedActions: fallback.routeHint ? [`Open ${fallback.routeHint}`, 'Review privacy controls'] : ['Pause here', 'Review privacy controls'],
     provider: 'fallback',
   }
+}
+
+async function getBoundedIdToken(user: User, signal: AbortSignal): Promise<string | null> {
+  if (signal.aborted) return null
+
+  return await new Promise((resolve) => {
+    let settled = false
+    let timeoutId: ReturnType<typeof setTimeout>
+
+    const finish = (token: string | null) => {
+      if (settled) return
+      settled = true
+      clearTimeout(timeoutId)
+      signal.removeEventListener('abort', onAbort)
+      resolve(token)
+    }
+    const onAbort = () => finish(null)
+
+    timeoutId = setTimeout(() => finish(null), AUTH_TOKEN_TIMEOUT_MS)
+    signal.addEventListener('abort', onAbort, { once: true })
+    user.getIdToken()
+      .then((token) => finish(token || null))
+      .catch(() => finish(null))
+  })
 }
 
 export function deterministicOrbFallback(message = ''): OrbProviderResult {
@@ -83,7 +108,7 @@ export async function requestOpenAIOrb(input: {
   if (!input.aiProcessingConsent || !firebasePublicEnvReady || input.signal.aborted) return null
   const user = getAuth(app).currentUser
   if (!user) return null
-  const token = await user.getIdToken()
+  const token = await getBoundedIdToken(user, input.signal)
   if (!token || input.signal.aborted) return null
 
   let response: Response

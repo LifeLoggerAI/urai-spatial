@@ -1,0 +1,47 @@
+/* UrAi Life Map portrait Gold-Master convergence.
+   Keep point stars and memory identity WebGL-owned. This layer adds only broad,
+   non-interactive astronomical weather so narrow portrait overview retains
+   readable mid-field depth instead of collapsing into a dark corridor. */
+
+@media (max-width: 700px) and (orientation: portrait) {
+  .life-map-root[data-life-map-phase="overview"]::before {
+    inset: -10%;
+    opacity: .98;
+    pointer-events: none;
+    background:
+      radial-gradient(ellipse 76% 38% at 16% 31%, rgba(87,126,145,.42) 0%, rgba(42,73,88,.24) 34%, rgba(18,34,45,.08) 56%, transparent 73%),
+      radial-gradient(ellipse 68% 34% at 84% 44%, rgba(151,128,92,.30) 0%, rgba(87,75,58,.18) 36%, rgba(35,42,47,.07) 57%, transparent 72%),
+      radial-gradient(ellipse 72% 34% at 34% 66%, rgba(105,132,146,.34) 0%, rgba(47,77,91,.19) 37%, rgba(22,38,48,.08) 58%, transparent 75%),
+      radial-gradient(ellipse 62% 30% at 78% 79%, rgba(111,104,126,.25) 0%, rgba(62,63,81,.14) 39%, transparent 72%),
+      linear-gradient(162deg, rgba(5,14,23,.08) 0 15%, rgba(55,88,101,.18) 34%, rgba(17,35,46,.08) 51%, rgba(101,88,68,.12) 70%, rgba(8,19,28,.14) 100%) !important;
+    background-repeat: no-repeat;
+    filter: contrast(1.31) saturate(.90) brightness(1.18);
+  }
+
+  .life-map-root[data-life-map-phase="overview"] canvas {
+    filter: brightness(1.10) contrast(1.08) saturate(.94);
+  }
+
+  .life-map-root[data-life-map-phase="overview"] .life-map-title {
+    opacity: .68;
+  }
+
+  .life-map-root[data-life-map-phase="overview"] .life-map-status {
+    opacity: .60;
+  }
+}
+
+/* Preserve the 44px mobile accessibility floor for every selected-memory action.
+   The prior exact-head evidence measured the compact Overview action at 38.89px. */
+@media (max-width: 700px) {
+  .life-map-root .life-map-thresholds button {
+    min-width: 44px !important;
+    min-height: 44px !important;
+  }
+
+  .life-map-root .life-map-thresholds .overview-return {
+    min-width: 72px !important;
+    min-height: 44px !important;
+    padding-inline: 12px !important;
+  }
+}
