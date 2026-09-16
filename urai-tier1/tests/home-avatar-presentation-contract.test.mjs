@@ -84,7 +84,9 @@ test('active Home still preserves visible Avatar, authored Orb and broad-sky Lif
     'home-living-memory-orb',
     'visible-sky-broad-interaction',
     '/life-map/?from=home-sky',
-    'data-home-presence-presentation="visible-avatar-third-person"',
+    "data-home-presence-presentation={avatarVisible ? 'visible-avatar-third-person' : firstPerson ? 'hidden-exterior-avatar-first-person' : 'transitioning'}",
+    "const avatarVisible = homeState.stableState === 'HOME_PRESENTATION' && homeState.transition !== 'AVATAR_EMBODIMENT_TRANSITION'",
+    "data-home-embodied-self={firstPerson ? 'camera-only-first-person-home' : 'visible-cinematic-avatar'}",
   ]) has(activeHome, marker)
   assert.doesNotMatch(activeHome, /first-person-hand|fps-hand|weapon-rig|player-hands/i)
 })
