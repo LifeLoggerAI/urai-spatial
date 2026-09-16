@@ -2,26 +2,46 @@ feature: personalized-lived-world
 repo: LifeLoggerAI/urai-spatial
 owner: URAI Privacy + Spatial
 privacyGovernanceVersion: 0.1.0-draft
-status: source_boundary_implemented_runtime_data_producer_blocked
+status: local_c3_geographic_pin_bridge_active_private_geometry_and_person_producers_blocked
 lastReviewed: 2026-09-16
 sourceEvidence:
   - docs/URAI_PERSONALIZED_LIVED_WORLD_AUTHORITY_V1.md
   - urai-tier1/src/spatial/lived-world/livedWorldGraph.ts
   - urai-tier1/src/spatial/lived-world/reconstructionPolicy.ts
+  - urai-tier1/src/app/ground/GroundGeographicLivedWorldBridge.tsx
+  - urai-tier1/src/app/ground/GroundPersonalizationBoundary.tsx
+  - urai-tier1/src/app/ground/GroundRuntimeTruthBridge.tsx
   - LifeLoggerAI/urai-privacy/docs/CONSENT_TIERS.md
   - LifeLoggerAI/urai-privacy/functions/src/consent-decision.ts
 
 summary:
   purpose: Reconstruct a user's terrestrial lived world from authorized source-backed places, objects, vehicles, routes, memories and bounded person-presences.
   userBenefit: Lets users spatially recognize and explore where their life happened without presenting generated detail as observed memory.
-  implementationStatus: provenance_and_mount_policy_source_implemented_private_data_producer_not_activated
+  implementationStatus: existing_authorized_local_geographic_pins_can_seed_partial_private_place_anchors_remote_private_geometry_photo_scan_person_and_sensitive_inference_producers_not_activated
 
 dataProcessing:
   collectedFields:
-    - name: lived_world_location_context
+    - name: lived_world_local_geographic_pin_anchor
+      collectionOrTable: existing_browser_local_geographic_location_vault_to_session_graph_only
+      dataClass: L4
+      source: existing_user_saved_geographic_pin
+      purpose: location.context
+      consentTier: C3
+      retentionClass: browser_local_existing_source_plus_ephemeral_session_graph
+      exportable: true
+      deletable: true
+      auditRequired: true
+      implementation: active_fail_closed_bridge
+      restrictions:
+        - performs_no_new_geolocation_request
+        - never_infers_home_or_workplace_from_coordinate_or_label
+        - never_promotes_pin_only_evidence_to_confirmed_geometry
+        - exact_private_precision_requires_existing_precise_location_authority
+        - consent_close_or_revoke_removes_bridge_owned_session_graph
+    - name: lived_world_source_backed_private_geometry
       collectionOrTable: not_activated
       dataClass: L4
-      source: user_or_explicit_connected_source
+      source: user_or_explicit_connected_photo_video_scan_map_or_replay_source
       purpose: location.context
       consentTier: C3
       retentionClass: R3
@@ -50,10 +70,11 @@ dataProcessing:
       auditRequired: true
   derivedFields:
     - name: lived_world_reconstruction_authority
-      collectionOrTable: not_activated
+      collectionOrTable: session_graph_active_for_local_partial_place_anchors_other_sources_not_activated
       dataClass: L4
       sourceFields:
-        - lived_world_location_context
+        - lived_world_local_geographic_pin_anchor
+        - lived_world_source_backed_private_geometry
         - lived_world_sensitive_association
         - person_presence_identity_material
       purpose: user-facing source/provenance/confidence/fidelity decision
@@ -88,5 +109,5 @@ monetization:
 
 review:
   reviewer: pending_independent_privacy_governance_review
-  decision: blocked_from_private_data_activation
-  notes: Source/runtime policy is intentionally fail-closed. No private lived-world producer, person likeness pipeline, or autobiographical geometry store is authorized by this manifest. Location is C3; sensitive emotional inference is separately C4; biometric person identity is separately C5. User memory ownership does not waive third-party rights.
+  decision: local_c3_pin_bridge_allowed_by_existing_authority_private_geometry_person_sensitive_and_remote_producers_blocked
+  notes: The active producer is narrowly limited to already-saved browser-local geographic pins under the existing live C3 location policy. It creates partial private place anchors in session storage only; it makes no new browser location request and no map/provider lookup. No photo/scan geometry producer, remote autobiographical geometry store, person likeness pipeline, sensitive-inference producer, or public contribution path is authorized by this manifest. Location is C3; sensitive emotional inference is separately C4; biometric person identity is separately C5. User memory ownership does not waive third-party rights.
