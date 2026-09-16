@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, type MutableRefObject } from 'react'
 import { useFrame } from '@react-three/fiber'
 import * as THREE from 'three'
+import { requestUraiWorldOrbOpen } from '@/spatial/world/worldEvents'
 import { GROUND_ORB } from './groundCanon'
 
 const DEG = Math.PI / 180
@@ -57,7 +58,34 @@ export function GroundOrbCompanion({
 
   useEffect(() => {
     window.dispatchEvent(new CustomEvent(ORB_READY_EVENT, { detail: { ready: true } }))
-    return () => window.dispatchEvent(new CustomEvent(ORB_READY_EVENT, { detail: { ready: false } }))
+    const fallback = document.querySelector<HTMLButtonElement>('.urai-world-companion__orb')
+    const previous = fallback ? {
+      opacity: fallback.style.opacity,
+      pointerEvents: fallback.style.pointerEvents,
+      transition: fallback.style.transition,
+    } : null
+    const revealForKeyboard = () => { if (fallback) fallback.style.opacity = '1' }
+    const hideVisualFallback = () => { if (fallback) fallback.style.opacity = '0' }
+    if (fallback) {
+      fallback.dataset.physicalGroundOrbFallback = 'true'
+      fallback.style.opacity = '0'
+      fallback.style.pointerEvents = 'none'
+      fallback.style.transition = 'opacity 120ms ease'
+      fallback.addEventListener('focus', revealForKeyboard)
+      fallback.addEventListener('blur', hideVisualFallback)
+    }
+    return () => {
+      window.dispatchEvent(new CustomEvent(ORB_READY_EVENT, { detail: { ready: false } }))
+      document.body.style.cursor = ''
+      if (fallback && previous) {
+        fallback.removeEventListener('focus', revealForKeyboard)
+        fallback.removeEventListener('blur', hideVisualFallback)
+        delete fallback.dataset.physicalGroundOrbFallback
+        fallback.style.opacity = previous.opacity
+        fallback.style.pointerEvents = previous.pointerEvents
+        fallback.style.transition = previous.transition
+      }
+    }
   }, [])
 
   useFrame(({ camera, clock }, delta) => {
@@ -141,6 +169,9 @@ export function GroundOrbCompanion({
       name="ground-physical-orb"
       scale={GROUND_ORB.widthM}
       userData={{ semanticOwner: 'single-ground-world-orb', visualAuthority: 'biomorphic-grounded-reliquary', mascotBehavior: false }}
+      onClick={(event) => { event.stopPropagation(); requestUraiWorldOrbOpen() }}
+      onPointerOver={(event) => { event.stopPropagation(); document.body.style.cursor = 'pointer' }}
+      onPointerOut={() => { document.body.style.cursor = '' }}
     >
       <mesh castShadow receiveShadow scale={[0.55, 0.72, 0.46]} rotation={[0.08, -0.2, -0.11]}>
         <icosahedronGeometry args={[0.48, 3]} />
