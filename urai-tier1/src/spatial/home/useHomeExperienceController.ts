@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useReducer, useRef } from 'react'
 import * as THREE from 'three'
+import { URAI_HOME_AVATAR_ACTIVATE_EVENT } from './homeExperienceEvents'
 import {
   consumeHomeReturnFrame,
   createInitialHomeExperienceState,
@@ -71,6 +72,12 @@ export function useHomeExperienceController({
   const activateAvatar = useCallback(() => {
     dispatch({ type: 'AVATAR_ACTIVATE', snapshot: currentOrigin() })
   }, [currentOrigin])
+
+  useEffect(() => {
+    const onSemanticAvatarActivate = () => activateAvatar()
+    window.addEventListener(URAI_HOME_AVATAR_ACTIVATE_EVENT, onSemanticAvatarActivate)
+    return () => window.removeEventListener(URAI_HOME_AVATAR_ACTIVATE_EVENT, onSemanticAvatarActivate)
+  }, [activateAvatar])
 
   const completeEmbodiment = useCallback(() => {
     const runtime = readRuntimeSnapshot()
