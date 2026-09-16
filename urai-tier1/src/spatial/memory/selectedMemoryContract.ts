@@ -28,8 +28,52 @@ export type SelectedMemoryMedia = {
   caption?: string
 }
 
+export type ReplayEvidenceClass =
+  | 'CAPTURED'
+  | 'DERIVED'
+  | 'SUPPORTED_RECONSTRUCTION'
+  | 'SYMBOLIC'
+  | 'UNKNOWN'
+
+export type ReplayEvidenceSourceKind =
+  | 'photo'
+  | 'video'
+  | 'audio'
+  | 'journal'
+  | 'calendar'
+  | 'location'
+  | 'sensor'
+  | 'user-statement'
+  | 'generated'
+
+export type ReplayEvidence = {
+  id: string
+  class: ReplayEvidenceClass
+  sourceKind: ReplayEvidenceSourceKind
+  sourceId?: string
+  occurredAt?: string
+  derivedFrom: string[]
+  userConfirmed: boolean
+  presentationAllowed: boolean
+  confidence?: number
+  provenance?: Record<string, string>
+}
+
+export type ReplaySegmentKind =
+  | 'captured-event'
+  | 'gap'
+  | 'derived-context'
+  | 'reflection'
+  | 'symbolic-bridge'
+
+export type LegacyReplayPhase = 'memory' | 'emotion' | 'pattern' | 'return'
+
 export type SelectedMemoryReplaySegment = {
-  id: 'memory' | 'emotion' | 'pattern' | 'return'
+  id: string
+  kind: ReplaySegmentKind
+  evidenceClass: ReplayEvidenceClass
+  evidenceIds: string[]
+  legacyPhase?: LegacyReplayPhase
   label: string
   caption: string
   narratorLine: string
@@ -42,6 +86,7 @@ export type SelectedMemoryReplayManifest = {
   version: number
   durationMs: number
   segments: SelectedMemoryReplaySegment[]
+  evidence: ReplayEvidence[]
   transcript?: string
   audioUrl?: string
 }
@@ -95,8 +140,17 @@ export type SelectedMemoryResult =
 
 const SAFE_TOKEN = /^[A-Za-z0-9._:-]{1,120}$/
 const CANONICAL_UTC_TIMESTAMP = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/
-const CANONICAL_REPLAY_PHASES = ['memory', 'emotion', 'pattern', 'return'] as const
 const MAX_REPLAY_DURATION_MS = 7 * 24 * 60 * 60 * 1000
+const EVIDENCE_CLASSES = new Set<ReplayEvidenceClass>(['CAPTURED', 'DERIVED', 'SUPPORTED_RECONSTRUCTION', 'SYMBOLIC', 'UNKNOWN'])
+const EVIDENCE_SOURCE_KINDS = new Set<ReplayEvidenceSourceKind>(['photo', 'video', 'audio', 'journal', 'calendar', 'location', 'sensor', 'user-statement', 'generated'])
+const SEGMENT_KINDS = new Set<ReplaySegmentKind>(['captured-event', 'gap', 'derived-context', 'reflection', 'symbolic-bridge'])
+const LEGACY_PHASES = new Set<LegacyReplayPhase>(['memory', 'emotion', 'pattern', 'return'])
+const LEGACY_KIND: Record<LegacyReplayPhase, ReplaySegmentKind> = {
+  memory: 'captured-event',
+  emotion: 'reflection',
+  pattern: 'derived-context',
+  return: 'reflection',
+}
 
 function stringValue(value: unknown) {
   return typeof value === 'string' && value.trim() ? value.trim() : null
@@ -125,6 +179,60 @@ function tuple3(value: unknown): [number, number, number] | null {
     : null
 }
 
+function evidenceClassValue(value: unknown): ReplayEvidenceClass | null {
+  return typeof value === 'string' && EVIDENCE_CLASSES.has(value as ReplayEvidenceClass) ? value as ReplayEvidenceClass : null
+}
+
+function evidenceSourceKindValue(value: unknown): ReplayEvidenceSourceKind | null {
+  return typeof value === 'string' && EVIDENCE_SOURCE_KINDS.has(value as ReplayEvidenceSourceKind) ? value as ReplayEvidenceSourceKind : null
+}
+
+function segmentKindValue(value: unknown): ReplaySegmentKind | null {
+  return typeof value === 'string' && SEGMENT_KINDS.has(value as ReplaySegmentKind) ? value as ReplaySegmentKind : null
+}
+
+function legacyPhaseValue(value: unknown): LegacyReplayPhase | null {
+  return typeof value === 'string' && LEGACY_PHASES.has(value as LegacyReplayPhase) ? value as LegacyReplayPhase : null
+}
+
+function stringRecord(value: unknown): Record<string, string> | undefined {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return undefined
+  const entries = Object.entries(value as Record<string, unknown>).filter((entry): entry is [string, string] => typeof entry[1] === 'string')
+  return entries.length ? Object.fromEntries(entries) : undefined
+}
+
+function parseSourceMedia(raw: unknown): SelectedMemoryMedia[] {
+  return Array.isArray(raw) ? raw.flatMap((item) => {
+    if (!item || typeof item !== 'object') return []
+    const value = item as Record<string, unknown>
+    const kind = value.kind
+    const url = stringValue(value.url)
+    return url && (kind === 'image' || kind === 'video' || kind === 'audio') ? [{ kind, url, caption: stringValue(value.caption) ?? undefined }] : []
+  }) : []
+}
+
+function legacyEvidenceForMedia(media: SelectedMemoryMedia[]): ReplayEvidence[] {
+  if (!media.length) return [{
+    id: 'legacy-unclassified',
+    class: 'UNKNOWN',
+    sourceKind: 'user-statement',
+    derivedFrom: [],
+    userConfirmed: false,
+    presentationAllowed: true,
+    provenance: { compatibility: 'legacy replay without explicit evidence manifest' },
+  }]
+  return media.map((item, index) => ({
+    id: `legacy-source-${index + 1}`,
+    class: 'CAPTURED' as const,
+    sourceKind: item.kind === 'image' ? 'photo' as const : item.kind,
+    sourceId: item.url,
+    derivedFrom: [],
+    userConfirmed: false,
+    presentationAllowed: true,
+    provenance: { compatibility: 'derived from legacy sourceMedia entry' },
+  }))
+}
+
 export function sanitizeMemoryId(value: string | null | undefined) {
   return value && SAFE_TOKEN.test(value) ? value : null
 }
@@ -134,6 +242,15 @@ export function isExplicitDemoRequest(params: URLSearchParams) {
 }
 
 export function buildExplicitDemoMemory(id: string): SelectedMemory {
+  const evidence: ReplayEvidence[] = [{
+    id: 'demo-symbolic-fixture',
+    class: 'SYMBOLIC',
+    sourceKind: 'generated',
+    derivedFrom: [],
+    userConfirmed: true,
+    presentationAllowed: true,
+    provenance: { disclosure: 'Explicit demonstration fixture; not personal data.' },
+  }]
   return {
     id,
     ownerId: 'explicit-demo',
@@ -149,14 +266,15 @@ export function buildExplicitDemoMemory(id: string): SelectedMemory {
     privacy: 'private',
     replayManifest: {
       id: 'demo-manifest',
-      version: 1,
+      version: 2,
       durationMs: 10000,
       transcript: 'Demonstration replay. No personal memory is being shown.',
+      evidence,
       segments: [
-        { id: 'memory', label: 'Memory', caption: 'The example scene opens.', narratorLine: 'This is an explicit demonstration.', startsAtMs: 0, durationMs: 2400 },
-        { id: 'emotion', label: 'Emotion', caption: 'The example feeling becomes visible.', narratorLine: 'No personal inference is being made.', startsAtMs: 2400, durationMs: 2600 },
-        { id: 'pattern', label: 'Pattern', caption: 'An example pattern appears.', narratorLine: 'This pattern exists only in the fixture.', startsAtMs: 5000, durationMs: 2800 },
-        { id: 'return', label: 'Return', caption: 'The demonstration settles.', narratorLine: 'Return to the disclosed demo Focus state.', startsAtMs: 7800, durationMs: 2200 },
+        { id: 'demo-arrival', kind: 'symbolic-bridge', evidenceClass: 'SYMBOLIC', evidenceIds: ['demo-symbolic-fixture'], label: 'Arrival', caption: 'The disclosed example scene opens.', narratorLine: 'This is an explicit demonstration.', startsAtMs: 0, durationMs: 2400 },
+        { id: 'demo-reflection', kind: 'reflection', evidenceClass: 'SYMBOLIC', evidenceIds: ['demo-symbolic-fixture'], label: 'Reflection', caption: 'The example feeling becomes visible.', narratorLine: 'No personal inference is being made.', startsAtMs: 2400, durationMs: 2600 },
+        { id: 'demo-context', kind: 'derived-context', evidenceClass: 'SYMBOLIC', evidenceIds: ['demo-symbolic-fixture'], label: 'Context', caption: 'An example relationship is disclosed.', narratorLine: 'This context exists only in the fixture.', startsAtMs: 5000, durationMs: 2800 },
+        { id: 'demo-return', kind: 'symbolic-bridge', evidenceClass: 'SYMBOLIC', evidenceIds: ['demo-symbolic-fixture'], label: 'Return', caption: 'The demonstration settles.', narratorLine: 'Return to the disclosed demo Focus state.', startsAtMs: 7800, durationMs: 2200 },
       ],
     },
     narrator: { focus: 'Explicit demo mode is active.', replay: 'This replay contains demonstration content only.' },
@@ -185,44 +303,98 @@ export function parseSelectedMemory(raw: Record<string, unknown>, expectedOwnerI
     return { status: 'corrupt', memory: null, message: 'This memory is incomplete and cannot be opened safely.' }
   }
 
+  const sourceMedia = parseSourceMedia(raw.sourceMedia)
+  const evidenceRaw = Array.isArray(replay.evidence) ? replay.evidence : null
+  const parsedEvidence: ReplayEvidence[] = evidenceRaw ? evidenceRaw.flatMap((item): ReplayEvidence[] => {
+    if (!item || typeof item !== 'object') return []
+    const value = item as Record<string, unknown>
+    const evidenceId = stringValue(value.id)
+    const evidenceClass = evidenceClassValue(value.class ?? value.evidenceClass)
+    const sourceKind = evidenceSourceKindValue(value.sourceKind)
+    if (!evidenceId || !SAFE_TOKEN.test(evidenceId) || !evidenceClass || !sourceKind) return []
+    if (sourceKind === 'generated' && evidenceClass !== 'SUPPORTED_RECONSTRUCTION' && evidenceClass !== 'SYMBOLIC') return []
+    const confidence = typeof value.confidence === 'number' && Number.isFinite(value.confidence)
+      ? Math.max(0, Math.min(1, value.confidence))
+      : undefined
+    return [{
+      id: evidenceId,
+      class: evidenceClass,
+      sourceKind,
+      sourceId: stringValue(value.sourceId) ?? undefined,
+      occurredAt: isoDateValue(value.occurredAt) ?? undefined,
+      derivedFrom: stringArray(value.derivedFrom).filter((entry) => SAFE_TOKEN.test(entry)),
+      userConfirmed: value.userConfirmed === true,
+      presentationAllowed: value.presentationAllowed !== false,
+      confidence,
+      provenance: stringRecord(value.provenance),
+    }]
+  }) : legacyEvidenceForMedia(sourceMedia)
+
+  if (evidenceRaw && parsedEvidence.length !== evidenceRaw.length) {
+    return { status: 'corrupt', memory: null, message: 'The replay evidence manifest is invalid.' }
+  }
+  const evidenceIds = new Set(parsedEvidence.map((item) => item.id))
+  if (evidenceIds.size !== parsedEvidence.length) {
+    return { status: 'corrupt', memory: null, message: 'The replay evidence manifest contains duplicate source identifiers.' }
+  }
+  for (const item of parsedEvidence) {
+    if (item.derivedFrom.some((sourceId) => !evidenceIds.has(sourceId) || sourceId === item.id)) {
+      return { status: 'corrupt', memory: null, message: 'The replay evidence derivation chain is invalid.' }
+    }
+  }
+
+  const legacyFallbackEvidenceIds = parsedEvidence.map((item) => item.id)
   const segments: SelectedMemoryReplaySegment[] = replaySegments.flatMap((item): SelectedMemoryReplaySegment[] => {
     if (!item || typeof item !== 'object') return []
     const value = item as Record<string, unknown>
-    const segmentId = value.id
-    if (segmentId !== 'memory' && segmentId !== 'emotion' && segmentId !== 'pattern' && segmentId !== 'return') return []
+    const segmentId = stringValue(value.id)
+    if (!segmentId || !SAFE_TOKEN.test(segmentId)) return []
+    const legacyPhase = legacyPhaseValue(value.id)
+    const kind = segmentKindValue(value.kind) ?? (legacyPhase ? LEGACY_KIND[legacyPhase] : null)
     const label = stringValue(value.label)
     const caption = stringValue(value.caption)
     const narratorLine = stringValue(value.narratorLine)
     const startsAtMs = numberValue(value.startsAtMs, -1)
     const durationMs = numberValue(value.durationMs, -1)
-    if (!label || !caption || !narratorLine) return []
+    if (!kind || !label || !caption || !narratorLine) return []
     if (!Number.isSafeInteger(startsAtMs) || startsAtMs < 0) return []
     if (!Number.isSafeInteger(durationMs) || durationMs <= 0) return []
-    return [{ id: segmentId, label, caption, narratorLine, startsAtMs, durationMs }]
+
+    const explicitEvidenceClass = evidenceClassValue(value.evidenceClass)
+    const segmentEvidenceIds = stringArray(value.evidenceIds).filter((entry) => SAFE_TOKEN.test(entry))
+    const normalizedEvidenceIds = segmentEvidenceIds.length ? segmentEvidenceIds : legacyFallbackEvidenceIds
+    if (normalizedEvidenceIds.some((sourceId) => !evidenceIds.has(sourceId))) return []
+    const referencedClasses = normalizedEvidenceIds.map((sourceId) => parsedEvidence.find((entry) => entry.id === sourceId)?.class).filter(Boolean) as ReplayEvidenceClass[]
+    const inferredClass = referencedClasses.length && referencedClasses.every((entry) => entry === referencedClasses[0]) ? referencedClasses[0] : 'UNKNOWN'
+
+    return [{
+      id: segmentId,
+      kind,
+      evidenceClass: explicitEvidenceClass ?? inferredClass,
+      evidenceIds: normalizedEvidenceIds,
+      legacyPhase: legacyPhase ?? undefined,
+      label,
+      caption,
+      narratorLine,
+      startsAtMs,
+      durationMs,
+    }]
   })
-  const replayPhaseIds = new Set(segments.map(({ id: phaseId }) => phaseId))
+
   const chronologicalSegments = [...segments].sort((left, right) => left.startsAtMs - right.startsAtMs)
-  const chronologicalPhaseIds = chronologicalSegments.map(({ id: phaseId }) => phaseId)
-  const hasCanonicalChronology = CANONICAL_REPLAY_PHASES.every((phase, index) => chronologicalPhaseIds[index] === phase)
   const hasNonOverlappingChronology = chronologicalSegments.every((segment, index) => {
     if (index === 0) return segment.startsAtMs === 0
     const previous = chronologicalSegments[index - 1]
     return segment.startsAtMs >= previous.startsAtMs + previous.durationMs
   })
-  const segmentDurationMs = chronologicalSegments.reduce((total, segment) => total + segment.durationMs, 0)
+  const segmentIds = new Set(chronologicalSegments.map((segment) => segment.id))
   const finalSegment = chronologicalSegments.at(-1)
   const finalSegmentEndMs = finalSegment ? finalSegment.startsAtMs + finalSegment.durationMs : -1
   if (
-    replaySegments.length !== CANONICAL_REPLAY_PHASES.length
+    replaySegments.length < 1
     || segments.length !== replaySegments.length
-    || segments.length !== CANONICAL_REPLAY_PHASES.length
-    || replayPhaseIds.size !== CANONICAL_REPLAY_PHASES.length
-    || CANONICAL_REPLAY_PHASES.some((phase) => !replayPhaseIds.has(phase))
-    || !hasCanonicalChronology
+    || segmentIds.size !== segments.length
     || !hasNonOverlappingChronology
-    || !Number.isSafeInteger(segmentDurationMs)
-    || segmentDurationMs <= 0
-    || segmentDurationMs > MAX_REPLAY_DURATION_MS
     || !Number.isSafeInteger(finalSegmentEndMs)
     || finalSegmentEndMs <= 0
     || finalSegmentEndMs > MAX_REPLAY_DURATION_MS
@@ -270,19 +442,14 @@ export function parseSelectedMemory(raw: Record<string, unknown>, expectedOwnerI
       place: placeLabel ? { label: placeLabel, region: stringValue(placeRaw?.region) ?? undefined } : undefined,
       emotionalState,
       emotionalArc: stringArray(raw.emotionalArc),
-      sourceMedia: Array.isArray(raw.sourceMedia) ? raw.sourceMedia.flatMap((item) => {
-        if (!item || typeof item !== 'object') return []
-        const value = item as Record<string, unknown>
-        const kind = value.kind
-        const url = stringValue(value.url)
-        return url && (kind === 'image' || kind === 'video' || kind === 'audio') ? [{ kind, url, caption: stringValue(value.caption) ?? undefined }] : []
-      }) : [],
+      sourceMedia,
       privacy,
       replayManifest: {
         id: replayId,
         version: numberValue(replay?.version, 1),
         durationMs: replayDurationMs,
         segments: chronologicalSegments,
+        evidence: parsedEvidence,
         transcript: stringValue(replay?.transcript) ?? undefined,
         audioUrl: stringValue(replay?.audioUrl) ?? undefined,
       },
