@@ -13,6 +13,8 @@ Scope: Home Presentation, Avatar embodiment, First-Person Home, Self View, Groun
 
 > **FIRST-PERSON HOME IS A STABLE MODE, NOT A TEMPORARY TRANSITION.**
 
+> **STANDARD DESKTOP / MOBILE / CONTROLLER FIRST-PERSON HOME IS CAMERA-ONLY: NO VISIBLE HANDS, FOREARMS, TORSO, LEGS, FEET, OR FIRST-PERSON BODY MESH. VISIBLE TRACKED HANDS / CONTROLLERS ARE XR-ONLY.**
+
 > **FROM FIRST-PERSON HOME THE USER MAY INSPECT THEIR AVATAR, WALK THE ENVIRONMENT, ENTER GROUND, ASCEND THROUGH THE SKY INTO LIFE MAP, OR APPROACH THE ORB AND ENTER CONVERSATION WITHOUT RETURNING TO THIRD PERSON.**
 
 > **THE SKY ITSELF IS THE LIFE MAP ENTRY SURFACE.**
@@ -57,6 +59,7 @@ Required:
 
 - same Home coordinates and environment;
 - no duplicate exterior Avatar rendered in front of the user;
+- standard non-XR first person is camera-only with no rendered hands/body in the direct viewport;
 - user can walk, turn, look, stop, and inspect surroundings;
 - user can remain here indefinitely;
 - user can enter Ground, Life Map, or Orb conversation directly;
@@ -76,8 +79,9 @@ Normal-motion choreography:
 5. Avatar grows naturally in frame; no teleport cut.
 6. Camera crosses the body's perceptual threshold at head/eye position.
 7. Exterior Avatar rendering is disabled for the embodied viewpoint.
-8. First-person eye position stabilizes.
-9. Locomotion unlocks only after the stable first-person pose is established.
+8. No first-person hands/body geometry appears on desktop, mobile, or controller modes.
+9. First-person eye position stabilizes.
+10. Locomotion unlocks only after the stable first-person pose is established.
 
 Reduced-motion choreography:
 
@@ -105,7 +109,7 @@ V1 target values are product constants and may be tuned through literal-pixel/co
 - head bob: near-zero by default; optional subtle comfort-safe micro-motion only;
 - collision: terrain + authored obstacle volumes;
 - movement bounds: world-authored, never arbitrary browser-edge clamping visible to the user;
-- camera near plane must prevent face/body clipping during embodiment;
+- camera near plane must remain safe through embodiment even though the exterior body is hidden after threshold;
 - recovery action returns the user to a safe local anchor without erasing session context.
 
 Desktop:
@@ -113,7 +117,8 @@ Desktop:
 - WASD and arrows move;
 - pointer drag or pointer lock look may be used only under one clear ownership model;
 - Enter/Space or contextual click activates the current target;
-- ESC unwinds one semantic layer.
+- ESC unwinds one semantic layer;
+- no visible player hands/body rig.
 
 Mobile:
 
@@ -121,7 +126,8 @@ Mobile:
 - minimum touch target 44 CSS px;
 - landscape and portrait safe areas respected;
 - movement control placement must not cover Orb, Avatar Self View, or return controls;
-- system Back follows semantic unwind.
+- system Back follows semantic unwind;
+- no visible player hands/body rig.
 
 Controller:
 
@@ -129,7 +135,8 @@ Controller:
 - right stick look;
 - primary action interact;
 - Back/B performs semantic unwind;
-- configurable dead zones and look sensitivity.
+- configurable dead zones and look sensitivity;
+- no visible player hands/body rig.
 
 Future XR:
 
@@ -138,6 +145,8 @@ Future XR:
 - snap/smooth turn;
 - optional teleport for comfort;
 - direct/gaze interaction equivalents;
+- tracked hands or controller representations may be visible when the XR runtime provides real pose tracking;
+- XR hand/controller visibility must never leak into flat-screen desktop/mobile/controller first-person presentation;
 - never fork product semantics into an incompatible XR-only navigation model.
 
 ## 4. Avatar Self View
@@ -150,7 +159,7 @@ Self View is an in-world self-inspection layer, not an RPG inventory screen.
 
 ### Entry
 
-V1 authority: expose one explicit, accessible self-inspection action while embodied, reinforced by world-coherent reflection/mirror affordances when present. Looking down at the body alone must not be the only activation method because it excludes users with motion, vision, or input constraints.
+V1 authority: expose one explicit, accessible self-inspection action while embodied, reinforced by world-coherent reflection/mirror affordances when present. Looking down at a rendered body is not a V1 self-inspection mechanism because standard non-XR first person intentionally renders no direct-view body geometry.
 
 ### Information hierarchy
 
@@ -158,7 +167,7 @@ Allowed V1 categories:
 
 1. **Appearance** - avatar representation, presentation, clothing/style customization state.
 2. **Identity & Passport link** - only user-approved profile fields.
-3. **Embodiment** - first-person body mode, movement preferences, voice/avatar pairing status.
+3. **Embodiment** - first-person camera mode, movement preferences, voice/avatar pairing status.
 4. **Journey** - non-sensitive progression/milestones and unlocked visual elements.
 5. **Accessibility** - movement/visual/audio comfort settings, clearly private.
 6. **Privacy** - visibility controls and provenance labels for any surfaced personal data.
@@ -188,7 +197,7 @@ From embodied Home:
 
 `AVATAR_HOME_FIRST_PERSON -> SKY_ASCENT -> LIFE_MAP`
 
-First-person entry preserves embodiment through ascent. The exterior Avatar must not appear during ascent.
+First-person entry preserves embodiment through ascent. The exterior Avatar must not appear during ascent. Non-XR ascent remains camera-only with no visible hands/body.
 
 Choreography:
 
@@ -249,7 +258,8 @@ Choreography:
 - local material scale grows;
 - vegetation/soil/stone/root/water layers gain detail according to Ground canon;
 - spatial sound closes in;
-- final Ground state is first person.
+- final Ground state is first person;
+- non-XR direct viewport remains bodyless/camera-only throughout descent and Ground arrival.
 
 Return restores the recorded Home origin mode and local camera snapshot.
 
@@ -335,10 +345,11 @@ Never put sensitive memory content or wellness data into route query parameters.
 ### AVATAR_HOME_FIRST_PERSON
 
 - eye-level terrain-following camera;
-- body model never clips through near plane;
-- no exterior duplicate Avatar;
+- direct viewport is camera-only on desktop/mobile/controller;
+- no hands, forearms, torso, legs, feet, weapon/tool rig, or exterior duplicate Avatar;
 - pitch range supports looking at sky and ground without vestibularly aggressive rotation;
-- first-person FOV tuned per device class, with comfort option.
+- first-person FOV tuned per device class, with comfort option;
+- the user reads embodiment from camera position, world scale, locomotion, spatial audio, environment response, and origin continuity—not from a fake FPS body rig.
 
 ### Ownership
 
@@ -346,15 +357,37 @@ Only one camera system owns the active pose per frame. Transition systems explic
 
 ## 12. First-person body presence
 
-V1 body policy: **context-specific partial embodiment**.
+V1 body policy: **camera-only non-XR first person.**
 
-- no duplicate third-person body in front of camera;
-- hands/forearms may appear only for authored interactions where quality is sufficient;
-- downward body/legs may be rendered if clipping, animation, proportions, and accessibility are production-grade;
-- shadows/reflections may preserve body presence without forcing a full first-person mesh at all times;
-- Self View uses an intentional representation rather than relying on accidental first-person body visibility.
+### Desktop / mobile / flat-screen controller
 
-This avoids the uncanny clipping cost of a permanently visible full body while preserving embodied continuity.
+- no visible hands;
+- no visible forearms;
+- no visible torso;
+- no visible legs or feet when looking down;
+- no first-person body mesh;
+- no FPS-style interaction hands;
+- no weapon/tool rig conventions;
+- no body part is injected merely to make the view feel “first person.”
+
+The user is embodied by occupying the Avatar's calibrated eye position and moving through the same world. The exterior Avatar ceases direct rendering after the embodiment threshold. This keeps the view clean, cinematic, non-gamey, and free of hand/body clipping artifacts.
+
+Reflections and shadows may represent the Avatar when physically coherent and visually accepted, but they must not create a direct-view body rig or duplicate body in front of the camera.
+
+`AVATAR_SELF_VIEW` is the deliberate mechanism for seeing/inspecting the Avatar while in first-person Home.
+
+### Future XR / VR
+
+XR is the exception because the runtime may have real tracked pose data.
+
+- tracked hands may be visible;
+- tracked controllers may be visible;
+- articulated arms/body may appear only when driven by sufficiently accurate tracking/IK;
+- seated/standing comfort settings apply;
+- XR representations remain spatially registered to real input;
+- synthetic flat-screen “VR hands” are forbidden outside XR.
+
+This rule applies consistently to Home, Ground, Life Map traversal, ascent/descent, and other non-XR first-person spatial states unless a future canon revision explicitly changes it.
 
 ## 13. Environment continuity
 
@@ -411,7 +444,8 @@ All transitions are idempotent and cancellable to a stable state.
 - no blank canvas between realms;
 - device-tier quality scaling may reduce particles, shadow resolution, reflections, and atmospheric samples but must not remove semantic surfaces;
 - reduced graphics never replaces the sky with a Life Map button;
-- recoverable WebGL loss retains accessible direct navigation.
+- recoverable WebGL loss retains accessible direct navigation;
+- non-XR first-person does not spend GPU/animation budget on hidden hand/body meshes.
 
 ## 17. Privacy boundaries
 
@@ -440,6 +474,8 @@ Only presentation and deliberately approved user-safe state belong by default. A
 - Ground button or glowing destination hotspot pasted on terrain;
 - Avatar missing from Home Presentation;
 - exterior Avatar visible in front of camera after embodiment;
+- visible hands/forearms/legs/feet in non-XR first-person Home/Ground/Life Map;
+- fake FPS-style interaction hands on desktop/mobile/controller;
 - third-person Avatar wandering Life Map;
 - instant hard cut from Home to unrelated galaxy;
 - Orb opens a generic SaaS modal with no physical continuity;
@@ -471,10 +507,10 @@ Home is not terminally accepted until all of the following are current on one ex
 - active runtime wiring;
 - Home Presentation retained pixels;
 - Avatar embodiment storyboard/pixels;
-- first-person Home retained pixels;
+- first-person Home retained pixels with **no non-XR hands/body visible**;
 - Self View retained pixels;
-- Ground entry + return evidence;
-- Sky ascent + Life Map return evidence;
+- Ground entry + return evidence with **no non-XR hands/body visible**;
+- Sky ascent + Life Map return evidence with **no non-XR hands/body visible**;
 - Orb transformation + return evidence;
 - keyboard/touch/back-stack interaction evidence;
 - reduced-motion evidence;
