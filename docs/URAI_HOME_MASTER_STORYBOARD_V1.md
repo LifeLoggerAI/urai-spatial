@@ -4,6 +4,8 @@ This storyboard is the visual/motion handoff for the Home embodiment canon. Each
 
 **Non-XR first-person rule:** desktop, mobile, and flat-screen controller views are camera-only. No hands, forearms, torso, legs, feet, or first-person body mesh may appear in the direct viewport. Tracked hand/controller representation is reserved for future XR/VR runtime modes.
 
+**Reference invalidation:** Any earlier generated concept image showing hands, forearms, legs, feet, or a first-person body in non-XR Home, Ground, ascent, Life Map, or return frames is rejected and must not be used as visual acceptance evidence. This textual storyboard plus exact-head retained pixels are authoritative.
+
 ## A. Master journey: presentation -> embodiment -> self -> Orb -> sky -> Ground -> presentation
 
 ### Frame 01 — HOME_PRESENTATION / canonical rest
