@@ -105,13 +105,14 @@ export function useAudioController() {
   }, [stopAmbient, stopCue, stopVoice]);
 
   const duckAmbient = useCallback((ducked: boolean) => {
-    if (ambientTrackRef.current === "mirror") {
+    const track = ambientTrackRef.current;
+    if (!track) return;
+    if (track === "mirror") {
       mirrorIdentityRef.current?.setLevel(ducked ? 0.045 : 0.12, 0.32);
       return;
     }
     const target = ducked ? 0.18 : 0.56;
-    const track = ambientTrackRef.current;
-    const active = track ? ambientLayersRef.current.get(track) : undefined;
+    const active = ambientLayersRef.current.get(track);
     if (active) active.volume = target;
   }, []);
 
