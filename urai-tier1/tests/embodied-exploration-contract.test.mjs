@@ -124,9 +124,9 @@ test('Ground and Life Map keep their canonical embodied contracts', () => {
     'function FirstPersonPlayer(',
     'stepEmbodiedMotion({',
     'useMovementInput({',
-    'data-ground-exploration="first-person"',
-    'data-ground-camera="eye-level-terrain-following"',
-    'data-ground-collision="visible-terrain-heightfield"',
+    'data-ground-exploration="first-person-no-visible-body"',
+    'data-ground-camera="eye-level-terrain-following-no-authored-bob"',
+    'data-ground-collision="terrain-plus-authored-obstacle-field"',
     'data-ground-private-location-mounted="false"',
   ]) has(ground, marker)
   assert.doesNotMatch(ground, /GroundPhysicalArchitecture|ground-destination-compass|router\.push\(destination\.href\)/)
