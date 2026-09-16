@@ -22,7 +22,7 @@ const cases = [
 ]
 
 const receipt = {
-  schemaVersion: 'urai-home-sky-interaction-proof-5',
+  schemaVersion: 'urai-home-sky-interaction-proof-6',
   exactHead,
   capturedAt: new Date().toISOString(),
   canonicalLaw: 'ground-to-atmosphere-to-depth-to-memory',
@@ -48,9 +48,11 @@ async function settleFrames(page, count = 30) {
 
 async function captureShot(page, id, options = {}) {
   const viewport = page.viewportSize()
-  const canvas = page.locator('.urai-asset-home-world canvas')
+  const canvasSelector = options.canvasSelector ?? '.urai-asset-home-world canvas'
+  const ownerSelector = options.ownerSelector ?? '.urai-asset-home-world[data-home-primary-owner="asset-driven"]'
+  const canvas = page.locator(canvasSelector).first()
   const box = await canvas.boundingBox()
-  if (!viewport || !box) throw new Error(`${id}: missing viewport/canvas bounds`)
+  if (!viewport || !box) throw new Error(`${id}: missing viewport/canvas bounds for ${canvasSelector}`)
   const clip = options.clip
     ? {
         x: Math.max(0, box.x + box.width * options.clip.x),
@@ -62,7 +64,7 @@ async function captureShot(page, id, options = {}) {
   const buffer = await page.screenshot({ animations: 'disabled', caret: 'hide', fullPage: false, clip, timeout: 90_000 })
   const filename = `${id}-${exactHead.slice(0, 12)}.png`
   await writeFile(path.join(outputDir, filename), buffer)
-  const owner = page.locator('.urai-asset-home-world[data-home-primary-owner="asset-driven"]')
+  const owner = page.locator(ownerSelector).first()
   const record = {
     id,
     filename,
@@ -89,72 +91,99 @@ async function openCanonicalHome(context, query = '') {
   return { page, pageErrors }
 }
 
-// Canonical 12-shot retained visual pack. These are acceptance evidence, not generated concept art.
+async function runCanonicalGroup(id, task) {
+  try {
+    await task()
+  } catch (error) {
+    receipt.errors.push({ id, error: String(error), passed: false })
+  }
+}
+
+// Canonical 12-shot retained visual pack. Each group is isolated so one route
+// handoff cannot erase independent Home/Orb/weather evidence.
 {
   const browser = await chromium.launch({ headless: true, args: ['--enable-unsafe-swiftshader'] })
   try {
-    // 01, 02, 03, 08, 09, 10, 11 and 12 share one canonical desktop journey.
-    const context = await browser.newContext({ viewport: { width: 1440, height: 900 } })
-    const { page, pageErrors } = await openCanonicalHome(context)
-    if (pageErrors.length) throw new Error(`canonical desktop page errors: ${pageErrors.join(' | ')}`)
-    await captureShot(page, 'sky-shot-01-canonical-home-establishing')
-    await captureShot(page, 'sky-shot-02-orb-atmosphere-hero', { clip: { x: .40, y: .42, width: .42, height: .50 } })
-    await captureShot(page, 'sky-shot-03-horizon-depth', { clip: { x: .05, y: .35, width: .90, height: .38 } })
+    await runCanonicalGroup('canonical-home-to-lifemap-journey', async () => {
+      const context = await browser.newContext({ viewport: { width: 1440, height: 900 } })
+      try {
+        const { page, pageErrors } = await openCanonicalHome(context)
+        if (pageErrors.length) throw new Error(`canonical desktop page errors: ${pageErrors.join(' | ')}`)
+        await captureShot(page, 'sky-shot-01-canonical-home-establishing')
+        await captureShot(page, 'sky-shot-02-orb-atmosphere-hero', { clip: { x: .40, y: .42, width: .42, height: .50 } })
+        await captureShot(page, 'sky-shot-03-horizon-depth', { clip: { x: .05, y: .35, width: .90, height: .38 } })
 
-    const canvas = page.locator('.urai-asset-home-world canvas')
-    const box = await canvas.boundingBox()
-    if (!box) throw new Error('canonical desktop canvas missing')
-    const skyX = box.x + box.width * .50
-    const skyY = box.y + box.height * .18
-    await page.mouse.move(skyX, skyY)
-    await page.waitForTimeout(450)
-    await captureShot(page, 'sky-shot-08-broad-sky-intent')
+        const canvas = page.locator('.urai-asset-home-world canvas')
+        const box = await canvas.boundingBox()
+        if (!box) throw new Error('canonical desktop canvas missing')
+        const skyX = box.x + box.width * .50
+        const skyY = box.y + box.height * .18
+        await page.mouse.move(skyX, skyY)
+        await page.waitForTimeout(450)
+        await captureShot(page, 'sky-shot-08-broad-sky-intent')
 
-    await page.mouse.click(skyX, skyY)
-    await page.waitForFunction(() => document.querySelector('.urai-asset-home-world')?.getAttribute('data-home-scene-phase') === 'SKY_ASCENT', null, { timeout: 6_000, polling: 20 })
-    await page.waitForTimeout(500)
-    await captureShot(page, 'sky-shot-09-ascent-lower-atmosphere')
-    await page.waitForTimeout(520)
-    await captureShot(page, 'sky-shot-10-atmospheric-threshold')
-    await page.waitForURL(url => url.pathname.startsWith('/life-map'), { timeout: 8_000 }).catch(() => {})
-    await page.waitForTimeout(450)
-    await captureShot(page, 'sky-shot-11-first-life-map-reveal')
-    await context.close()
+        await page.mouse.click(skyX, skyY)
+        await page.waitForFunction(() => document.querySelector('.urai-asset-home-world')?.getAttribute('data-home-scene-phase') === 'SKY_ASCENT', null, { timeout: 6_000, polling: 20 })
+        await page.waitForTimeout(500)
+        await captureShot(page, 'sky-shot-09-ascent-lower-atmosphere')
+        await page.waitForTimeout(520)
+        await captureShot(page, 'sky-shot-10-atmospheric-threshold')
+        await page.waitForURL(url => url.pathname.startsWith('/life-map'), { timeout: 8_000 })
+        await page.locator('[data-testid="urai-true-3d-life-map"] canvas').first().waitFor({ state: 'visible', timeout: 30_000 })
+        await settleFrames(page, 24)
+        await captureShot(page, 'sky-shot-11-first-life-map-reveal', {
+          canvasSelector: '[data-testid="urai-true-3d-life-map"] canvas',
+          ownerSelector: '[data-testid="urai-true-3d-life-map"]',
+        })
+      } finally {
+        await context.close().catch(() => {})
+      }
+    })
 
-    // 04 and 05 use the same runtime with a restrained pointer-look pitch change.
-    const lookContext = await browser.newContext({ viewport: { width: 1440, height: 900 } })
-    const { page: lookPage, pageErrors: lookErrors } = await openCanonicalHome(lookContext)
-    if (lookErrors.length) throw new Error(`upward-view page errors: ${lookErrors.join(' | ')}`)
-    const lookCanvas = lookPage.locator('.urai-asset-home-world canvas')
-    const lookBox = await lookCanvas.boundingBox()
-    if (!lookBox) throw new Error('upward-view canvas missing')
-    const cx = lookBox.x + lookBox.width * .50
-    const cy = lookBox.y + lookBox.height * .55
-    await lookPage.mouse.move(cx, cy)
-    await lookPage.mouse.down()
-    await lookPage.mouse.move(cx, cy + lookBox.height * .20, { steps: 12 })
-    await lookPage.mouse.up()
-    await settleFrames(lookPage, 24)
-    await captureShot(lookPage, 'sky-shot-04-upward-high-atmosphere')
-    await captureShot(lookPage, 'sky-shot-05-cloud-volumetric-detail', { clip: { x: .12, y: .05, width: .76, height: .58 } })
-    await captureShot(lookPage, 'sky-shot-12-pixel-vfx-forensic', { clip: { x: .28, y: .08, width: .44, height: .44 } })
-    await lookContext.close()
+    await runCanonicalGroup('canonical-upward-atmosphere', async () => {
+      const context = await browser.newContext({ viewport: { width: 1440, height: 900 } })
+      try {
+        const { page, pageErrors } = await openCanonicalHome(context)
+        if (pageErrors.length) throw new Error(`upward-view page errors: ${pageErrors.join(' | ')}`)
+        const canvas = page.locator('.urai-asset-home-world canvas')
+        const box = await canvas.boundingBox()
+        if (!box) throw new Error('upward-view canvas missing')
+        const cx = box.x + box.width * .50
+        const cy = box.y + box.height * .55
+        await page.mouse.move(cx, cy)
+        await page.mouse.down()
+        await page.mouse.move(cx, cy + box.height * .20, { steps: 12 })
+        await page.mouse.up()
+        await settleFrames(page, 24)
+        await captureShot(page, 'sky-shot-04-upward-high-atmosphere')
+        await captureShot(page, 'sky-shot-05-cloud-volumetric-detail', { clip: { x: .12, y: .05, width: .76, height: .58 } })
+        await captureShot(page, 'sky-shot-12-pixel-vfx-forensic', { clip: { x: .28, y: .08, width: .44, height: .44 } })
+      } finally {
+        await context.close().catch(() => {})
+      }
+    })
 
-    // 06 is the same world with reflective atmospheric parameters only.
-    const reflectiveContext = await browser.newContext({ viewport: { width: 1440, height: 900 } })
-    const { page: reflectivePage, pageErrors: reflectiveErrors } = await openCanonicalHome(reflectiveContext, 'homeWeather=reflective')
-    if (reflectiveErrors.length) throw new Error(`reflective-weather page errors: ${reflectiveErrors.join(' | ')}`)
-    await captureShot(reflectivePage, 'sky-shot-06-reflective-emotional-weather')
-    await reflectiveContext.close()
+    await runCanonicalGroup('canonical-reflective-weather', async () => {
+      const context = await browser.newContext({ viewport: { width: 1440, height: 900 } })
+      try {
+        const { page, pageErrors } = await openCanonicalHome(context, 'homeWeather=reflective')
+        if (pageErrors.length) throw new Error(`reflective-weather page errors: ${pageErrors.join(' | ')}`)
+        await captureShot(page, 'sky-shot-06-reflective-emotional-weather')
+      } finally {
+        await context.close().catch(() => {})
+      }
+    })
 
-    // 07 exercises the bounded local-time modulation during a real deep-night clock window.
-    const nightContext = await browser.newContext({ viewport: { width: 1440, height: 900 }, timezoneId: 'Europe/London' })
-    const { page: nightPage, pageErrors: nightErrors } = await openCanonicalHome(nightContext)
-    if (nightErrors.length) throw new Error(`deep-night page errors: ${nightErrors.join(' | ')}`)
-    await captureShot(nightPage, 'sky-shot-07-deep-night-influence')
-    await nightContext.close()
-  } catch (error) {
-    receipt.errors.push({ id: 'canonical-12-shot-pack', error: String(error), passed: false })
+    await runCanonicalGroup('canonical-deep-night-weather', async () => {
+      const context = await browser.newContext({ viewport: { width: 1440, height: 900 }, timezoneId: 'Europe/London' })
+      try {
+        const { page, pageErrors } = await openCanonicalHome(context)
+        if (pageErrors.length) throw new Error(`deep-night page errors: ${pageErrors.join(' | ')}`)
+        await captureShot(page, 'sky-shot-07-deep-night-influence')
+      } finally {
+        await context.close().catch(() => {})
+      }
+    })
   } finally {
     await browser.close().catch(() => {})
   }
