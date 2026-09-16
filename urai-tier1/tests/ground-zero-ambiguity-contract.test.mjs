@@ -13,6 +13,8 @@ const ground = read('src/app/GroundSpatialWorldClean.tsx')
 const canon = read('src/spatial/ground/groundCanon.ts')
 const orb = read('src/spatial/ground/GroundOrbCompanion.tsx')
 const navigation = read('src/spatial/navigation/EmbodiedNavigation.tsx')
+const hapticRegistry = read('src/spatial/haptics/hapticCueRegistry.ts')
+const hapticRuntime = read('src/spatial/haptics/HapticRuntime.tsx')
 
 test('Ground locked locomotion is human-scale first-person presence', () => {
   for (const marker of [
@@ -82,6 +84,7 @@ test('physical Ground Orb owns pointer activation and fixed Orb is accessibility
     'canonicalWidthM: GROUND_ORB.widthM',
     'mascotBehavior: false',
     'requestUraiWorldOrbOpen()',
+    "requestHapticCue('orb-attention', 'ground-physical-orb')",
     "fallback.dataset.physicalGroundOrbFallback = 'true'",
     "fallback.style.opacity = '0'",
     "fallback.addEventListener('focus', reveal)",
@@ -111,4 +114,21 @@ test('Ground keeps scanned material ownership, wide visual depth and accessible 
     'ACESFilmicToneMapping',
     'toneMappingExposure = 0.96',
   ]) has(ground, marker)
+})
+
+test('Ground haptics use exact semantic pulses and never reuse portal-open for the physical Ground handoff', () => {
+  for (const marker of [
+    "'ground-activation': { id: 'ground-activation', label: 'Ground Activation', patternMs: [12]",
+    "'ground-arrival': { id: 'ground-arrival', label: 'Ground Arrival', patternMs: [24]",
+    "'orb-attention': { id: 'orb-attention', label: 'Orb Attention', patternMs: [10]",
+    "'memory-ready': { id: 'memory-ready', label: 'Memory Ready', patternMs: [18, 90, 8]",
+    "'replay-commit': { id: 'replay-commit', label: 'Replay Commit', patternMs: [22]",
+  ]) has(hapticRegistry, marker)
+  for (const marker of [
+    "request?.destination === 'infrastructure-hub'",
+    "request?.href?.startsWith('/ground')",
+    "executeHapticCue('ground-arrival')",
+    '}, 220)',
+  ]) has(hapticRuntime, marker)
+  assert.doesNotMatch(hapticRuntime, /if \(isGroundTravel\(request\)\)[\s\S]{0,220}executeHapticCue\('portal-open'\)/)
 })
