@@ -53,6 +53,14 @@ async function observePhase(page, phase, id) {
   return contract
 }
 
+async function observeGroundReturnPhase(page, phase, id) {
+  await page.waitForFunction((expected) => document.querySelector('[data-testid="urai-ground-lived-world"]')?.getAttribute('data-ground-return-phase') === expected, phase, { timeout: 5000 })
+  const root = page.locator('[data-testid="urai-ground-lived-world"]')
+  const contract = await root.evaluate((node) => ({ phase: node.getAttribute('data-ground-return-phase'), progress: node.getAttribute('data-ground-return-progress'), inputLocked: node.getAttribute('data-ground-input-locked'), exploration: node.getAttribute('data-ground-exploration') }))
+  await snapshot(page, id, { contract })
+  return contract
+}
+
 try {
   const context = await browser.newContext({ viewport: { width: 1440, height: 900 }, reducedMotion: 'no-preference' })
   const page = await context.newPage(); const pageErrors = []
@@ -75,6 +83,20 @@ try {
   await page.waitForURL(/\/ground\//, { timeout: 8000 })
   await page.waitForSelector('[data-testid="urai-ground-lived-world"][data-ground-ready="true"]', { timeout: 45_000 })
   await snapshot(page, '07-ground-arrival-first-frame')
+
+  const returnPromises = [
+    observeGroundReturnPhase(page, 'ground-return-geology', '08-ground-return-geology'),
+    observeGroundReturnPhase(page, 'ground-return-surface-crossing', '09-ground-return-surface-crossing'),
+  ]
+  await page.locator('.ground-home-return').click()
+  await Promise.all(returnPromises)
+  await page.waitForURL(/\/home\?returnFrom=ground/, { timeout: 8000 })
+  await waitForHomeReady(page)
+  await page.waitForFunction(() => document.querySelector('[data-testid="home-visible-navigable-sanctuary-world"]')?.getAttribute('data-home-return-from-ground') === 'true', null, { timeout: 1500 })
+  await snapshot(page, '10-home-avatar-eye-return', { contract: await page.locator('[data-testid="home-visible-navigable-sanctuary-world"]').evaluate((root) => ({ returnFromGround: root.getAttribute('data-home-return-from-ground'), cameraMode: root.getAttribute('data-home-camera-mode'), scenePhase: root.getAttribute('data-home-scene-phase'), inputLocked: root.getAttribute('data-home-input-locked') })) })
+  await page.waitForURL((url) => url.pathname.endsWith('/home') && !url.searchParams.has('returnFrom'), { timeout: 6000 })
+  await page.waitForFunction(() => document.querySelector('[data-testid="home-visible-navigable-sanctuary-world"]')?.getAttribute('data-home-scene-phase') === 'HOME_IDLE', null, { timeout: 2500 })
+  await snapshot(page, '11-home-restored-after-ground-return')
   errors.push(...pageErrors.map((error) => `desktop: ${error}`)); await context.close()
 
   const reduced = await browser.newContext({ viewport: { width: 1440, height: 900 }, reducedMotion: 'reduce' })
@@ -84,16 +106,16 @@ try {
   await reducedPage.goto(`${base}/home/`, { waitUntil: 'networkidle', timeout: 60_000 }); await waitForHomeReady(reducedPage)
   const reducedActivation = await activatePhysicalTerrain(reducedPage)
   await reducedPage.waitForFunction(() => document.querySelector('[data-testid="home-visible-navigable-sanctuary-world"]')?.getAttribute('data-home-ground-cinematic-duration-ms') === '520', null, { timeout: 1000 })
-  await snapshot(reducedPage, '08-reduced-motion-ground-transfer', { activation: reducedActivation })
+  await snapshot(reducedPage, '12-reduced-motion-ground-transfer', { activation: reducedActivation })
   await reducedPage.waitForURL(/\/ground\//, { timeout: 5000 })
   await reducedPage.waitForSelector('[data-testid="urai-ground-lived-world"][data-ground-ready="true"]', { timeout: 45_000 })
-  await snapshot(reducedPage, '09-reduced-motion-ground-arrival')
+  await snapshot(reducedPage, '13-reduced-motion-ground-arrival')
   errors.push(...reducedErrors.map((error) => `reduced: ${error}`)); await reduced.close()
 } catch (error) {
   errors.push(String(error))
 } finally { await browser.close() }
 
-const receipt = { schema: 'urai-ground-transition-proof-2', exactHead, capturedAt: new Date().toISOString(), captures, errors, boundary: 'Screenshots are retained natural-runtime evidence. Timing certification remains owned by source/browser timing contracts; literal pixel acceptance requires human inspection.' }
+const receipt = { schema: 'urai-ground-transition-proof-3', exactHead, capturedAt: new Date().toISOString(), captures, errors, boundary: 'Screenshots are retained natural-runtime evidence for entry, reverse return, and restored Home. Timing certification remains owned by source/browser timing contracts; literal pixel acceptance requires human inspection.' }
 await writeFile(path.join(outDir, 'receipt.json'), `${JSON.stringify(receipt, null, 2)}\n`, 'utf8')
 if (errors.length) throw new Error(`Ground transition proof recorded ${errors.length} error(s): ${errors.join(' | ')}`)
-if (captures.length < 9) throw new Error(`Expected 9 Ground transition captures, got ${captures.length}`)
+if (captures.length < 13) throw new Error(`Expected 13 Ground transition/return captures, got ${captures.length}`)
