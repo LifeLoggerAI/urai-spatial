@@ -6,5 +6,5 @@ export { applyConsentPolicy, cancelDeletionRequest, cancelExportRequest, createD
 export { applyGlobalEmotionalFieldConsent, getGlobalEmotionalFieldConsent } from './publicGoodConsent'
 export { createPossibleFuture, generatePossibleFutureBranches, getPossibleFuture, savePossibleFuture, discardPossibleFuture, comparePossibleFutureBranches, recordPossibleFutureOutcome, deletePossibleFuture } from './scenarioOperations'
 export { calibratePossibleFutureOutcome } from './scenarioCalibration'
-export { getAILedgerEntries } from './aiLedgerOperations'
+export { getAILedgerEntries, ledgerScenarioCreated, ledgerScenarioOutcomeObserved } from './aiLedgerOperations'
 export { getGlobalEmotionalFieldSnapshot, submitGlobalEmotionalFieldContribution, revokePendingGlobalFieldContribution } from './globalEmotionalFieldAggregation'
