@@ -70,7 +70,7 @@ test('Home Life Map is the broad visible sky and commits one canonical ascent tr
 test('Home Ground entry remains a physical world-surface descent into the lived first-person Ground', () => {
   for (const marker of ['data-home-ground-entry="physical-world-surface"','event.point.clone()',"destination: 'infrastructure-hub'","cameraCheckpoint: 'ground-first-person-arrival'",'homeApi.activateGround()']) has(renderer, marker)
   for (const marker of ['data-ground-exploration="first-person-no-visible-body"','data-ground-runtime-owner="first-person-lived-world"','data-ground-camera="eye-level-terrain-following-no-authored-bob"','data-ground-collision="terrain-plus-authored-obstacle-field"','data-ground-place-layer="consent-aware-empty-by-default"','ground-visible-traversable-terrain','surfaceY + GROUND_EYE_HEIGHT_M']) has(ground, marker)
-  has(groundGateway, 'aria-label="Enter your physical Ground world"')
+  has(groundGateway, 'aria-label="Enter Ground — explore your physical lived world in first person"')
   has(groundGateway, "cameraCheckpoint: world.cameraCheckpoint ?? 'home-ground-descent'")
   assert.doesNotMatch(ground, /ground-central-nexus|ground-destination-compass|GroundPhysicalArchitecture|GroundVaultArchitecture/)
 })
