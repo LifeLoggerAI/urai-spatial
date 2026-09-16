@@ -19,16 +19,19 @@ const normalize = (value) => new URL(value).pathname.replace(/\/$/, '') || '/'
 
 async function settleRenderedDestination(page, doorway) {
   if (doorway.destination === '/ground') {
-    const ground = page.locator('[data-testid="urai-ground-private-workforce-world"]')
+    const ground = page.locator('[data-testid="urai-ground-lived-world"]')
     await ground.waitFor({ state: 'visible', timeout: 45000 })
     const canvas = ground.locator('canvas').first()
     await canvas.waitFor({ state: 'visible', timeout: 45000 })
     await page.waitForFunction(() => {
-      const root = document.querySelector('[data-testid="urai-ground-private-workforce-world"]')
+      const root = document.querySelector('[data-testid="urai-ground-lived-world"]')
       const surface = root?.querySelector('canvas')
       if (!(root instanceof HTMLElement) || !(surface instanceof HTMLCanvasElement)) return false
       const box = surface.getBoundingClientRect()
-      return root.dataset.groundVisualOwner === 'shared-continuity-architecture'
+      return root.dataset.groundReady === 'true'
+        && root.dataset.groundVisualOwner === 'physical-lived-world'
+        && root.dataset.groundRuntimeOwner === 'first-person-lived-world'
+        && root.dataset.groundExploration === 'first-person'
         && box.width >= 240
         && box.height >= 240
         && surface.width > 0
@@ -75,25 +78,41 @@ async function stableBrowserBox(target) {
 }
 
 async function proveGroundMobileControls(page, viewport) {
-  const rail = page.getByRole('navigation', { name: 'Ground destinations' })
-  const movement = page.getByRole('group', { name: 'Ground movement controls' })
-  const prompt = page.locator('.ground-prompt')
-  const railBox = await rail.boundingBox(), padBox = await movement.boundingBox(), promptBox = await prompt.boundingBox()
+  const movement = page.getByRole('group', { name: 'Ground first-person movement controls' })
+  const home = page.getByRole('button', { name: 'Return Home' })
+  const tools = page.getByRole('navigation', { name: 'Ground place and privacy tools' })
+  await movement.waitFor({ state: 'visible', timeout: 15000 })
+  await home.waitFor({ state: 'visible', timeout: 15000 })
+  await tools.waitFor({ state: 'attached', timeout: 15000 })
+
   const inside = box => box && box.x >= 0 && box.y >= 0 && box.x + box.width <= viewport.width + 1 && box.y + box.height <= viewport.height + 1
-  if (![railBox, padBox, promptBox].every(inside)) throw new Error('Ground mobile controls extend outside the viewport')
-  if (railBox.y + railBox.height > padBox.y || promptBox.y + promptBox.height > railBox.y) throw new Error('Ground mobile control rows overlap')
-  for (const button of await movement.getByRole('button').all()) {
+  const movementBox = await movement.boundingBox()
+  const homeBox = await home.boundingBox()
+  if (!inside(movementBox) || !inside(homeBox)) throw new Error('Ground mobile controls extend outside the viewport')
+
+  const movementButtons = await movement.getByRole('button').all()
+  for (const button of movementButtons) {
     const box = await button.boundingBox()
     if (!box || box.width < 44 || box.height < 44) throw new Error('Ground movement target is below 44px')
   }
-  const buttons = rail.getByRole('button')
-  for (const button of [buttons.first(), buttons.last(), buttons.first()]) {
-    await button.focus()
-    await page.waitForTimeout(250)
-    const box = await button.boundingBox()
-    if (!box || box.x < railBox.x - 1 || box.x + box.width > railBox.x + railBox.width + 1) throw new Error('Focused Ground destination is clipped by its rail')
+  if (!homeBox || homeBox.width < 44 || homeBox.height < 44) throw new Error('Ground Home return target is below 44px')
+
+  const links = [page.getByRole('link', { name: 'Places' }), page.getByRole('link', { name: 'Privacy' })]
+  for (const link of links) {
+    await link.focus()
+    await page.waitForTimeout(120)
+    const box = await link.boundingBox()
+    if (!inside(box)) throw new Error('Focused Ground place/privacy tool is clipped by the viewport')
+    if (!box || box.width < 44 || box.height < 44) throw new Error('Ground place/privacy target is below 44px')
   }
-  return { railBox, padBox, promptBox, minimumMovementTarget: 44, endpointDestinationsFullyVisible: true }
+
+  return {
+    movementBox,
+    homeBox,
+    minimumMovementTarget: 44,
+    returnTargetMinimum: 44,
+    placePrivacyToolsFocusable: true,
+  }
 }
 
 async function focusTargetWithNativeKeyboard(page, target, maxSteps = 64) {
@@ -199,7 +218,7 @@ try {
   await browser.close()
 }
 const errors = interactions.filter((item) => !item.success).map((item) => `${item.device}:${item.activationMethod}:${item.destinationRoute}: ${item.failureReason}`)
-const receipt = { schemaVersion: 17, exactSha, baseUrl, createdAt: new Date().toISOString(), persistentWorldCanon: true, directDestinationNavigationPermitted: true, persistentVisibleShortcutPillsForbidden: true, semanticNavigationRequired: true, semanticNavigationOwner: 'runtime-boundary', nativeSemanticDestinationAnchorsRequired: true, nativeAnchorActivationDoesNotRequireReactClickHandler: true, fallbackNavigationParityRequired: true, spatialPointerAndTouchCoveredByBrowserCoordinates: true, keyboardNavigationCoveredByBrowserTabAndEnter: true, nonDominanceMeasuredByDeclaredOwnershipOpacityAndViewportFootprint: true, nonDominanceOpacitySourceContract: '.015', renderedDestinationRequiredBeforeCapture: true, groundRenderedOwnerContract: 'shared-continuity-architecture-plus-visible-canvas', pageContextDomGeometryRequired: true, interactions, status: errors.length ? 'failed' : 'passed', errors }
+const receipt = { schemaVersion: 18, exactSha, baseUrl, createdAt: new Date().toISOString(), persistentWorldCanon: true, directDestinationNavigationPermitted: true, persistentVisibleShortcutPillsForbidden: true, semanticNavigationRequired: true, semanticNavigationOwner: 'runtime-boundary', nativeSemanticDestinationAnchorsRequired: true, nativeAnchorActivationDoesNotRequireReactClickHandler: true, fallbackNavigationParityRequired: true, spatialPointerAndTouchCoveredByBrowserCoordinates: true, keyboardNavigationCoveredByBrowserTabAndEnter: true, nonDominanceMeasuredByDeclaredOwnershipOpacityAndViewportFootprint: true, nonDominanceOpacitySourceContract: '.015', renderedDestinationRequiredBeforeCapture: true, groundRenderedOwnerContract: 'physical-lived-world-plus-first-person-runtime-plus-visible-canvas', pageContextDomGeometryRequired: true, interactions, status: errors.length ? 'failed' : 'passed', errors }
 await fs.writeFile(path.join(outDir, 'native-doorway-receipt.json'), `${JSON.stringify(receipt, null, 2)}\n`)
 console.log(errors.length ? 'NATIVE_DOORWAY_PROOF_FAILED' : 'NATIVE_DOORWAY_PROOF_PASSED')
 console.log(JSON.stringify(receipt, null, 2))
