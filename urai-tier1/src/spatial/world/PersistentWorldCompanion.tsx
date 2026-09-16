@@ -18,7 +18,7 @@ import { useUraiWorldState } from './WorldStateProvider'
 import type { UraiDestination, UraiWorldTravelRequest } from './worldTypes'
 
 const PRIMARY_DESTINATIONS: readonly UraiDestination[] = ['home', 'infrastructure-hub', 'life-map', 'focus', 'replay']
-const SECONDARY_DESTINATIONS: readonly UraiDestination[] = ['mirror', 'passport', 'privacy-controls', 'location-map', 'possible-futures']
+const SECONDARY_DESTINATIONS: readonly UraiDestination[] = ['mirror', 'passport', 'privacy-controls', 'location-map']
 const CONTEXT_KEYS = ['memoryId', 'node', 'thread', 'personId', 'placeId', 'manifestId', 'privacyMode'] as const
 const AUDIO_CONSENT_KEY = 'urai:spatial-audio-consent-v1'
 const AUDIO_MUTE_KEY = 'urai:spatial-audio-muted-v1'
