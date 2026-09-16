@@ -10,6 +10,7 @@ const focusedContractTests = [
   'tests/embodied-exploration-contract.test.mjs',
   'tests/field-reconstruction-phase5-contract.test.mjs',
   'tests/home-avatar-embodiment-state-contract.test.mjs',
+  'tests/home-avatar-motion-contract.test.mjs',
   'tests/home-cohesion-contract.test.mjs',
   'tests/home-experience-controller-contract.test.mjs',
   'tests/home-ground-lifemap-art-bible-contract.test.mjs',
