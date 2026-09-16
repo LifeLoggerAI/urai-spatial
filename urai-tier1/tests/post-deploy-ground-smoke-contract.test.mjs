@@ -10,11 +10,11 @@ const embodiedNavigation = fs.readFileSync('src/spatial/navigation/EmbodiedNavig
 
 const expectedGroundMarkers = [
   'urai-ground-lived-world',
-  'ground-lived-world-v1',
+  'ground-lived-world-v2-canon-lock',
   'first-person-lived-world',
-  'eye-level-terrain-following',
-  'data-ground-exploration="first-person"',
-  'data-ground-collision="visible-terrain-heightfield"',
+  'eye-level-terrain-following-no-authored-bob',
+  'data-ground-exploration="first-person-no-visible-body"',
+  'data-ground-collision="terrain-plus-authored-obstacle-field"',
   'data-ground-place-layer="consent-aware-empty-by-default"',
   'data-ground-private-location-mounted="false"',
   'ground-visible-traversable-terrain',
@@ -41,7 +41,7 @@ test('post-deploy Ground smoke is tied to the live first-person lived-world auth
     assert.ok(ground.includes(marker), `missing lived-world Ground marker: ${marker}`)
   }
 
-  for (const marker of ['walkable-first-person-ground-layer', 'urai-ground-lived-world', 'ground-lived-world-v1', 'first-person-lived-world', 'eye-level-terrain-following']) {
+  for (const marker of ['walkable-first-person-ground-layer', 'urai-ground-lived-world', 'ground-lived-world-v2-canon-lock', 'first-person-lived-world', 'first-person-no-visible-body', 'eye-level-terrain-following-no-authored-bob', 'terrain-plus-authored-obstacle-field']) {
     assert.ok(smoke.includes(`'${marker}'`), `post-deploy smoke is missing current Ground marker: ${marker}`)
   }
 
@@ -49,7 +49,7 @@ test('post-deploy Ground smoke is tied to the live first-person lived-world auth
 })
 
 test('Ground visual audit traceability names current authority and retires chamber copy', () => {
-  for (const marker of ['urai-ground-lived-world', 'ground-lived-world-v1', 'first-person-lived-world', 'eye-level-terrain-following']) {
+  for (const marker of ['urai-ground-lived-world', 'ground-lived-world-v2-canon-lock', 'first-person-lived-world', 'first-person-no-visible-body', 'eye-level-terrain-following-no-authored-bob', 'terrain-plus-authored-obstacle-field']) {
     assert.ok(visualAudit.includes(`'${marker}'`), `visual audit is missing current Ground marker: ${marker}`)
   }
   for (const marker of retiredGroundMarkers) {
