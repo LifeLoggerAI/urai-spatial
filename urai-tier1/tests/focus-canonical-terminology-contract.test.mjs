@@ -49,7 +49,24 @@ test('internal chamber and aperture names may remain while the visible Replay ac
   assert.match(focusRuntime, /FOCUS_CHAMBER_MODEL = '\/assets\/urai\/generated\/models\/focus-memory-chamber-v1\.glb'/)
   assert.match(focusRuntime, /function MemoryAperture/)
   assert.match(focusRuntime, /entryPortal: 'focus-memory-aperture'/)
-  assert.match(focusRuntime, /Enter Replay/)
+  assert.match(focusRuntime, /aria-label=\{memory \? `Enter Replay for \$\{memory\.title\}`/)
+  assert.match(focusRuntime, />\{memory \? 'Enter Replay' : 'Awaiting a selected star'\}<\/button>/)
+})
+
+test('public Focus runtime does not regress to chamber-era product copy', () => {
+  for (const blocked of [
+    'Preparing spatial chamber',
+    'Memory chamber resting',
+    'Chamber threshold',
+    'Focus chamber controls',
+    'Spatial chamber ready',
+    'Open Replay for',
+    'The chamber remains accessible through the controls and memory details.',
+    'Held in context. Nothing leaves this chamber.',
+  ]) assert.equal(focusRuntime.includes(blocked), false, blocked)
+  assert.match(focusRuntime, /Preparing Focus/)
+  assert.match(focusRuntime, /aria-label="Focus controls"/)
+  assert.match(focusRuntime, /Focus ready/)
 })
 
 test('historical productivity terminology remains explicitly non-governing', () => {
