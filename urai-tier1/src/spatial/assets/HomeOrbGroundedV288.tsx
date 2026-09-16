@@ -10,7 +10,8 @@ const V287_COMPANION_X = 1.02
 const V287_COMPANION_Z = .72
 const RETIRED_RELIQUARY_NAME = 'home-v286-biomorphic-memory-reliquary'
 const GROUNDED_RELIQUARY_NAME = 'home-v288-grounded-biomorphic-memory-reliquary'
-const FALLBACK_INTERACTION_OWNER_NAMES = ['home-gold-companion', 'home-living-memory-orb'] as const
+const FALLBACK_INTERACTION_OWNER = 'home-gold-companion'
+const FALLBACK_INTERACTION_OWNER_NAMES = [FALLBACK_INTERACTION_OWNER, 'home-living-memory-orb'] as const
 
 function findInteractionOwner(scene: THREE.Scene): THREE.Object3D | null {
   for (const name of FALLBACK_INTERACTION_OWNER_NAMES) {
