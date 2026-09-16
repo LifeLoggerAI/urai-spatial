@@ -1,8 +1,7 @@
 import GroundSpatialWorldClean from '@/app/GroundSpatialWorldClean'
-import GroundCheckpointRestoreSignal from './GroundCheckpointRestoreSignal'
-import GroundFocusContainment from './GroundFocusContainment'
+import GroundGeographicLivedWorldBridge from './GroundGeographicLivedWorldBridge'
+import GroundPersonalizationBoundary from './GroundPersonalizationBoundary'
 import GroundSemanticReturnBridge from './GroundSemanticReturnBridge'
-import './ground-focus-containment.css'
 import './ground-production-polish.css'
 import { getSceneDefinition } from '@/spatial/realms/sceneRegistry'
 
@@ -18,9 +17,10 @@ export default function GroundPage() {
     <main
       data-testid="walkable-first-person-ground-layer"
       data-scene-id={groundScene.id}
+      data-ground-personalization="personal-lived-world-with-non-personal-fallback"
     >
-      <GroundCheckpointRestoreSignal />
-      <GroundFocusContainment />
+      <GroundGeographicLivedWorldBridge />
+      <GroundPersonalizationBoundary />
       <GroundSemanticReturnBridge />
       <GroundSpatialWorldClean />
     </main>
