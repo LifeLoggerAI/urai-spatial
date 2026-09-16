@@ -23,8 +23,11 @@ type Props = {
   title?: string
 }
 
+const FOCUSABLE = 'button:not([disabled]),a[href],input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])'
+
 export function AvatarSelfView({ open, sections, onClose, title = 'Your Avatar' }: Props) {
   const closeRef = useRef<HTMLButtonElement>(null)
+  const surfaceRef = useRef<HTMLDivElement>(null)
   const previouslyFocused = useRef<HTMLElement | null>(null)
 
   useEffect(() => {
@@ -40,10 +43,30 @@ export function AvatarSelfView({ open, sections, onClose, title = 'Your Avatar' 
   useEffect(() => {
     if (!open) return
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key !== 'Escape') return
-      event.preventDefault()
-      event.stopPropagation()
-      onClose()
+      if (event.key === 'Escape') {
+        event.preventDefault()
+        event.stopImmediatePropagation()
+        onClose()
+        return
+      }
+      if (event.key !== 'Tab') return
+      const focusables = Array.from(surfaceRef.current?.querySelectorAll<HTMLElement>(FOCUSABLE) ?? [])
+        .filter((element) => !element.hidden && element.getAttribute('aria-hidden') !== 'true')
+      if (!focusables.length) {
+        event.preventDefault()
+        closeRef.current?.focus()
+        return
+      }
+      const first = focusables[0]
+      const last = focusables[focusables.length - 1]
+      const active = document.activeElement
+      if (event.shiftKey && (active === first || !surfaceRef.current?.contains(active))) {
+        event.preventDefault()
+        last.focus()
+      } else if (!event.shiftKey && active === last) {
+        event.preventDefault()
+        first.focus()
+      }
     }
     window.addEventListener('keydown', onKeyDown, true)
     return () => window.removeEventListener('keydown', onKeyDown, true)
@@ -60,7 +83,7 @@ export function AvatarSelfView({ open, sections, onClose, title = 'Your Avatar' 
       data-home-layer="AVATAR_SELF_VIEW"
       data-personal-data-boundary="explicit-safe-fields-only"
     >
-      <div className="urai-avatar-self-view__surface">
+      <div ref={surfaceRef} className="urai-avatar-self-view__surface">
         <header>
           <div>
             <p className="eyebrow">Self view</p>
