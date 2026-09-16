@@ -139,6 +139,7 @@ export function homeExperienceReducer(
         ...state,
         origin: event.snapshot,
         transition: 'AVATAR_EMBODIMENT_TRANSITION',
+        returnStack: pushReturnFrame(state, { kind: 'local', origin: event.snapshot }),
         inputLocked: true,
       }
 
@@ -244,10 +245,14 @@ export function homeExperienceReducer(
       }
 
       if (state.transition === 'AVATAR_EMBODIMENT_TRANSITION') {
+        const { frame, stack } = popReturnFrame(state)
+        const origin = frame?.origin ?? state.origin
         return {
           ...state,
           stableState: 'HOME_PRESENTATION',
           transition: 'HOME_RESTORE',
+          returnStack: stack,
+          origin,
           pendingDestination: null,
           inputLocked: true,
         }
@@ -268,7 +273,15 @@ export function homeExperienceReducer(
       }
 
       if (state.stableState === 'AVATAR_HOME_FIRST_PERSON' && !state.transition) {
-        return { ...state, transition: 'EMBODIMENT_UNWIND', inputLocked: true }
+        const { frame, stack } = popReturnFrame(state)
+        const origin = frame?.origin ?? makeHomeOriginSnapshot('HOME_PRESENTATION')
+        return {
+          ...state,
+          origin,
+          returnStack: stack,
+          transition: 'EMBODIMENT_UNWIND',
+          inputLocked: true,
+        }
       }
 
       return state
