@@ -28,6 +28,10 @@ type TransitionTarget = { point: THREE.Vector3; normal?: THREE.Vector3 }
 const ORB_MODEL = '/assets/urai/generated/models/urai-orb-avatar-v1.glb'
 const HOME_FOCUS = new THREE.Vector3(0, 3.05, -1.15)
 const ORB_POSITION = new THREE.Vector3(1.02, 0, .72)
+const ORB_FIELD_RADIUS = .5
+const ORB_FIELD_Y_SCALE = 1.04
+const ORB_GROUND_CLEARANCE = .015
+const ORB_REST_OFFSET = ORB_FIELD_RADIUS * ORB_FIELD_Y_SCALE + ORB_GROUND_CLEARANCE
 const AVATAR_POSITION = new THREE.Vector3(-.72, 0, 5.95)
 const HOME_EYE_HEIGHT = 1.64
 const HOME_WALK_SPEED = 2.6
@@ -243,7 +247,7 @@ function OrbCompanion({ state, reducedMotion, onOrb }: { state: OrbState; reduce
   useFrame(({ clock }, delta) => {
     if (!root.current) return
     const motion = ORB_STATE_MOTION[state]
-    const baseY = groundY + 1.52
+    const baseY = groundY + ORB_REST_OFFSET
     speechEnergy.current = THREE.MathUtils.damp(speechEnergy.current, speechActive.current ? speechEnergy.current * .82 : 0, speechActive.current ? 5 : 8, delta)
     speechImpulse.current = THREE.MathUtils.damp(speechImpulse.current, 0, 11, delta)
     anticipation.current = THREE.MathUtils.damp(anticipation.current, 0, 3.8, delta)
@@ -264,7 +268,7 @@ function OrbCompanion({ state, reducedMotion, onOrb }: { state: OrbState; reduce
       }
       if (fieldShell.current) {
         const pressure = 1 + expressiveEnergy * .004
-        fieldShell.current.scale.set(pressure, 1.04 * pressure, .95 * pressure)
+        fieldShell.current.scale.set(pressure, ORB_FIELD_Y_SCALE * pressure, .95 * pressure)
       }
       const articulation = 1 + expressiveEnergy * .62 + gather * .18
       if (ringA.current) ringA.current.rotation.y += delta * .028 * motion.ring * articulation
@@ -275,7 +279,7 @@ function OrbCompanion({ state, reducedMotion, onOrb }: { state: OrbState; reduce
       root.current.position.y = baseY
       if (authoredCore.current) authoredCore.current.scale.setScalar(.338 * motion.coreScale)
       if (heart.current) heart.current.scale.set(.13, .225, .105)
-      if (fieldShell.current) fieldShell.current.scale.set(1, 1.04, .95)
+      if (fieldShell.current) fieldShell.current.scale.set(1, ORB_FIELD_Y_SCALE, .95)
     }
     if (membrane.current) {
       const stateOpacity = state === 'privacy' ? .022 : state === 'warning' ? .018 : state === 'dormant' ? .01 : .012
@@ -304,7 +308,7 @@ function OrbCompanion({ state, reducedMotion, onOrb }: { state: OrbState; reduce
   return <group
     ref={root}
     name="home-living-memory-orb"
-    position={[ORB_POSITION.x, groundY + 1.52, ORB_POSITION.z]}
+    position={[ORB_POSITION.x, groundY + ORB_REST_OFFSET, ORB_POSITION.z]}
     onClick={activate}
     userData={{
       semanticOwner: 'orb',
@@ -316,10 +320,11 @@ function OrbCompanion({ state, reducedMotion, onOrb }: { state: OrbState; reduce
       qualityTier: quality.tier,
       moteCeiling: effectBudget.motes,
       filamentCeiling: effectBudget.filaments,
+      restHeight: 'visible-shell-radius-plus-1.5cm-terrain-clearance',
     }}
   >
-    <mesh ref={fieldShell} castShadow scale={[1,1.04,.95]} onClick={activate}>
-      <sphereGeometry args={[.5,effectBudget.membraneSegments,effectBudget.membraneSegments]} />
+    <mesh ref={fieldShell} castShadow scale={[1,ORB_FIELD_Y_SCALE,.95]} onClick={activate}>
+      <sphereGeometry args={[ORB_FIELD_RADIUS,effectBudget.membraneSegments,effectBudget.membraneSegments]} />
       <meshPhysicalMaterial ref={membrane} color="#9cc6c5" transparent opacity={.012} transmission={.92} thickness={.052} roughness={.25} metalness={0} clearcoat={.54} clearcoatRoughness={.28} ior={1.16} envMapIntensity={.9} depthWrite={false} />
     </mesh>
     <group ref={authoredCore} scale={.338} name="home-orb-authored-core"><primitive object={authoredOrb} /></group>
