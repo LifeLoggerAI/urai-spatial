@@ -8,13 +8,14 @@ const transport = fs.readFileSync('src/spatial/replay/replayServerTransport.ts',
 const operations = fs.readFileSync('src/spatial/replay/replayOperations.ts', 'utf8')
 const rules = fs.readFileSync('../firebase/firestore.rules', 'utf8')
 
-test('Replay preserves current cinematic identity while exposing Save Hide Correct and History', () => {
+test('Replay preserves current cinematic identity while exposing quiet owner actions', () => {
   for (const marker of ['assetCssStack', 'replayAssets', 'data-node={memory.star.id}', 'data-canonical-asset={replayAssets.primary.src}', '<ReplayProductControls memory={memory} />']) {
     assert.ok(client.includes(marker), `missing current-main Replay marker: ${marker}`)
   }
-  for (const marker of ['Replay memory controls', "operations.saved ? 'Saved' : 'Save'", "operations.hidden ? 'Unhide' : 'Hide'", "pendingCorrection ? 'Correcting…' : 'Correct'", '>History<', 'data-replay-saved', 'data-replay-hidden', 'data-pending-operations']) {
+  for (const marker of ['Replay memory controls', 'Memory actions', 'replayActions', 'replayActionPanel', "operations.saved ? 'Saved' : 'Save'", "operations.hidden ? 'Unhide' : 'Hide'", "pendingCorrection ? 'Correcting...' : 'Correct'", '>History<', 'data-replay-saved', 'data-replay-hidden', 'data-pending-operations']) {
     assert.ok(controls.includes(marker), `missing Replay product marker: ${marker}`)
   }
+  assert.match(controls, /<details className="replayActions">.*<summary>Memory actions<\/summary>.*className="replayActionPanel"/s)
 })
 
 test('Replay controls expose truthful accessible pending offline error and recovery states', () => {
@@ -31,7 +32,8 @@ test('Replay controls expose truthful accessible pending offline error and recov
   assert.match(controls, /forced-colors:active/)
   assert.match(client, /<header>.*className="unwind".*<\/header>/s)
   assert.match(client, /bottom:max\(180px,calc\(env\(safe-area-inset-bottom\) \+ 174px\)\)/)
-  assert.match(controls, /bottom:max\(102px,calc\(env\(safe-area-inset-bottom\) \+ 96px\)\)/)
+  assert.match(controls, /bottom:max\(86px,calc\(env\(safe-area-inset-bottom\) \+ 78px\)\)/)
+  assert.match(controls, /\.replayActions>summary\{[^}]*min-height:44px/)
 })
 
 test('correction workflow preserves original history and unsent owner-scoped drafts', () => {
