@@ -8,11 +8,17 @@ type MemoryPlacePageProps = {
   params: Promise<{
     placeId: string
   }>
+  searchParams?: Promise<{
+    demo?: string | string[]
+  }>
 }
 
-export default async function MemoryPlacePage({ params }: MemoryPlacePageProps) {
+export default async function MemoryPlacePage({ params, searchParams }: MemoryPlacePageProps) {
   const { placeId } = await params
-  const resolved = await resolveMemoryPlace(placeId)
+  const query = searchParams ? await searchParams : undefined
+  const explicitDemo = query?.demo === '1'
+  const context = explicitDemo ? { source: 'demo' as const } : undefined
+  const resolved = await resolveMemoryPlace(placeId, context)
 
   if (!resolved.ok) {
     return (
@@ -34,5 +40,9 @@ export default async function MemoryPlacePage({ params }: MemoryPlacePageProps) 
   const gate = gateForMemoryPlace(resolved.place)
   if (gate.required) return <MemoryPlaceGatePanel place={resolved.place} gate={gate} />
 
-  return <MemoryPlaceScene place={resolved.place} objects={await listMemoryPlaceObjects(resolved.place.id)} />
+  return (
+    <div data-place-route-authority={explicitDemo ? 'explicit-disclosed-demo' : 'validated-personalized-source'}>
+      <MemoryPlaceScene place={resolved.place} objects={await listMemoryPlaceObjects(resolved.place.id, context)} />
+    </div>
+  )
 }
