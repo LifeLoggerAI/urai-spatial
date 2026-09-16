@@ -238,7 +238,7 @@ async function captureJourney(browser) {
   await replayAction.click()
   await delay(650)
   await shot('focus-to-replay-transition')
-  await page.waitForURL((url) => url.pathname.replace(/\/+$/, '') === '/replay', { timeout: 12_000 })
+  await page.waitForURL((url) => url.pathname.replace(/\/+$/, '') === '/replay', { waitUntil: 'commit', timeout: 12_000 })
   const replay = page.locator('[data-testid="cinematic-replay-client"]:visible').first()
   await replay.waitFor({ state: 'visible', timeout: 45_000 })
   await page.waitForFunction(() => {
@@ -259,12 +259,12 @@ async function captureJourney(browser) {
   await shot('replay-arrival')
 
   await page.keyboard.press('Escape')
-  await page.waitForURL((url) => url.pathname.replace(/\/+$/, '') === '/focus', { timeout: 12_000 })
+  await page.waitForURL((url) => url.pathname.replace(/\/+$/, '') === '/focus', { waitUntil: 'commit', timeout: 12_000 })
   await waitForFocus(page, { selected: true })
   await shot('replay-to-focus-restored')
 
   await page.keyboard.press('Escape')
-  await page.waitForURL((url) => url.pathname.replace(/\/+$/, '') === '/life-map', { timeout: 12_000 })
+  await page.waitForURL((url) => url.pathname.replace(/\/+$/, '') === '/life-map', { waitUntil: 'commit', timeout: 12_000 })
   await page.locator('body').waitFor({ state: 'visible', timeout: 15_000 })
   await delay(900)
   await shot('focus-to-lifemap-restored')
