@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
 
 export type AvatarSelfViewField = {
   id: string
@@ -25,10 +25,53 @@ type Props = {
 
 const FOCUSABLE = 'button:not([disabled]),a[href],input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])'
 
+const CANONICAL_SELF_VIEW_SECTIONS: readonly AvatarSelfViewSection[] = [
+  {
+    id: 'appearance',
+    title: 'Appearance',
+    fields: [
+      { id: 'representation', label: 'Representation', value: 'Current governed Avatar', provenance: 'active Home Avatar representation', visibility: 'private' },
+    ],
+  },
+  {
+    id: 'identity',
+    title: 'Identity & Passport',
+    fields: [
+      { id: 'passport-boundary', label: 'Identity fields', value: 'Only user-approved Passport fields may appear here', provenance: 'Passport visibility boundary', visibility: 'user-approved-profile' },
+    ],
+  },
+  {
+    id: 'embodiment',
+    title: 'Embodiment',
+    fields: [],
+  },
+  {
+    id: 'journey',
+    title: 'Journey',
+    fields: [
+      { id: 'journey-boundary', label: 'Journey', value: 'No private memory content is surfaced by default', provenance: 'privacy-bounded Self View', visibility: 'private' },
+    ],
+  },
+  {
+    id: 'accessibility',
+    title: 'Accessibility',
+    fields: [],
+  },
+  {
+    id: 'privacy',
+    title: 'Privacy',
+    fields: [],
+  },
+]
+
 export function AvatarSelfView({ open, sections, onClose, title = 'Your Avatar' }: Props) {
   const closeRef = useRef<HTMLButtonElement>(null)
   const surfaceRef = useRef<HTMLDivElement>(null)
   const previouslyFocused = useRef<HTMLElement | null>(null)
+  const canonicalSections = useMemo(() => {
+    const supplied = new Map(sections.map((section) => [section.id, section] as const))
+    return CANONICAL_SELF_VIEW_SECTIONS.map((section) => supplied.get(section.id) ?? section)
+  }, [sections])
 
   useEffect(() => {
     if (!open) return
@@ -82,6 +125,7 @@ export function AvatarSelfView({ open, sections, onClose, title = 'Your Avatar' 
       aria-labelledby="urai-avatar-self-view-title"
       data-home-layer="AVATAR_SELF_VIEW"
       data-personal-data-boundary="explicit-safe-fields-only"
+      data-self-view-category-authority="appearance identity embodiment journey accessibility privacy"
     >
       <div ref={surfaceRef} className="urai-avatar-self-view__surface">
         <header>
@@ -93,7 +137,7 @@ export function AvatarSelfView({ open, sections, onClose, title = 'Your Avatar' 
         </header>
 
         <div className="urai-avatar-self-view__sections">
-          {sections.map((section) => (
+          {canonicalSections.map((section) => (
             <section key={section.id} aria-labelledby={`urai-avatar-self-${section.id}`}>
               <h3 id={`urai-avatar-self-${section.id}`}>{section.title}</h3>
               {section.fields.length ? (
