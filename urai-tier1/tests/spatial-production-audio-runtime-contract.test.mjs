@@ -9,6 +9,7 @@ const controller = fs.readFileSync(path.join(tierRoot, 'src/spatial/audio/useAud
 const runtime = fs.readFileSync(path.join(tierRoot, 'src/spatial/audio/SpatialAmbientRuntime.tsx'), 'utf8')
 const shell = fs.readFileSync(path.join(tierRoot, 'src/spatial/world/UraiWorldShell.tsx'), 'utf8')
 const companion = fs.readFileSync(path.join(tierRoot, 'src/spatial/world/PersistentWorldCompanion.tsx'), 'utf8')
+const settings = fs.readFileSync(path.join(tierRoot, 'src/app/settings/DeviceSettingsClient.tsx'), 'utf8')
 const orbConversation = fs.readFileSync(path.join(tierRoot, 'src/spatial/orb/OrbConversationPanel.tsx'), 'utf8')
 const generator = fs.readFileSync(path.join(repositoryRoot, 'scripts/generate-production-spatial-audio.py'), 'utf8')
 const forgeWorkflow = fs.readFileSync(path.join(repositoryRoot, '.github/workflows/production-spatial-audio-forge.yml'), 'utf8')
@@ -79,6 +80,15 @@ test('shared world runtime owns explicit consent, mute, route ambience and acces
   assert.match(runtime, /aria-live="polite"/)
   assert.match(runtime, /data-audio-consent/)
   assert.match(runtime, /data-audio-muted/)
+})
+
+test('Settings controls the same production audio consent and mute authority', () => {
+  assert.match(settings, /urai:spatial-audio-consent-v1/)
+  assert.match(settings, /urai:spatial-audio-muted-v1/)
+  assert.match(settings, /readAudioPreference/)
+  assert.match(settings, /urai:audio-consent/)
+  assert.match(settings, /urai:audio-mute/)
+  assert.match(settings, /aria-labelledby="audio-heading"/)
 })
 
 test('Orb controls expose user-owned sound enable and mute behavior', () => {
