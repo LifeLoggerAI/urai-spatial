@@ -13,15 +13,18 @@ const geometry = readFileSync(new URL('../src/spatial/layout/HomeWorldProduction
 
 const has = (source, marker) => assert.ok(source.includes(marker), `missing marker: ${marker}`)
 
-test('V288 remains the last certified cinematic Home authority while candidate pixels stay fail-closed', () => {
+test('V288 remains the last certified cinematic Home predecessor while current candidate pixels stay fail-closed', () => {
   has(renderer, 'export function HomeWorldProductionV223')
   has(renderer, 'data-home-visual-ownership="single-canvas-three-dimensional-geometry"')
   has(owner, 'data-home-canvas-owner="home-world-production-v223-cinematic-threshold-authority"')
   assert.equal(authority.artRevision, 'v288-cinematic-lived-world-grounded-reliquary')
   assert.equal(authority.worldIdentifier, 'cinematic-lived-world-threshold')
-  assert.equal(authority.orbVisualAuthority, 'v288-grounded-biomorphic-reliquary')
-  assert.ok(authority.runtimeAssets.includes('HomeOrbReliquaryV286.tsx'))
-  assert.ok(authority.runtimeAssets.includes('HomeOrbGroundedV288.tsx'))
+  assert.equal(authority.lastCertifiedPredecessor.orbVisualAuthority, 'v288-grounded-biomorphic-reliquary')
+  assert.ok(authority.lastCertifiedPredecessor.runtimeAssets.includes('HomeOrbReliquaryV286.tsx'))
+  assert.ok(authority.lastCertifiedPredecessor.runtimeAssets.includes('HomeOrbGroundedV288.tsx'))
+  assert.equal(authority.orbVisualAuthority, 'authored-living-memory-orb-candidate')
+  assert.equal(authority.currentRuntimeCandidate.orbVisualAuthority, 'authored-living-memory-orb-candidate')
+  assert.equal(authority.currentRuntimeCandidate.certified, false)
   assert.equal((renderer.match(/<Canvas/g) ?? []).length, 1)
   assert.doesNotMatch(`${renderer}\n${owner}`, /PRODUCTION CERTIFIED|retained-pixel-pass|pixel-certified/)
 })
