@@ -92,8 +92,8 @@ test('Ground memory handoff preserves place, memory, provenance, fidelity and ex
   assert.ok(worldEvents.includes("target.searchParams.set('returnToken', context.returnToken)"))
   assert.ok(worldEvents.includes("target.searchParams.set('fidelity', context.reconstructionFidelity)"))
   for (const marker of ["params.get('originRealm')", "params.get('returnToken')", "params.get('eraId')", "params.get('fidelity')"]) assert.ok(worldState.includes(marker), `world route hydration missing ${marker}`)
-  assert.ok(worldTransition.includes("currentWorld.originRealm === 'ground'"))
-  assert.ok(worldTransition.includes("destination === 'focus' ? 'infrastructure-hub'"))
+  assert.ok(worldTransition.includes("world.originRealm === 'ground'"))
+  assert.ok(worldTransition.includes("return 'infrastructure-hub'"))
 })
 
 test('Ground return controls delegate to the shared one-layer semantic return stack', () => {
