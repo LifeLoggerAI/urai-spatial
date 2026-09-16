@@ -9,7 +9,7 @@ const focusedContractTests = [
   'tests/body-biometric-contract.test.mjs',
   'tests/embodied-exploration-contract.test.mjs',
   'tests/field-reconstruction-phase5-contract.test.mjs',
-  'tests/focus-v271-volumetric-memory-contract.test.mjs',
+  'tests/focus-v272-living-memory-fold-contract.test.mjs',
   'tests/ground-transition-ownership-contract.test.mjs',
   'tests/home-avatar-embodiment-state-contract.test.mjs',
   'tests/home-avatar-presentation-contract.test.mjs',
