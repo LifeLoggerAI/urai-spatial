@@ -6,6 +6,8 @@ const route = fs.readFileSync(new URL('../src/app/focus/page.tsx', import.meta.u
 const compatibilityRoute = fs.readFileSync(new URL('../src/app/focus/session/[sessionId]/page.tsx', import.meta.url), 'utf8')
 const focusState = fs.readFileSync(new URL('../src/spatial/scene/focusState.ts', import.meta.url), 'utf8')
 const focusRuntime = fs.readFileSync(new URL('../src/app/focus/FocusChamberClient.tsx', import.meta.url), 'utf8')
+const focusPolish = fs.readFileSync(new URL('../src/app/focus/focus-launch-visual-polish.css', import.meta.url), 'utf8')
+const explicitDemoMemory = fs.readFileSync(new URL('../src/spatial/memory/explicitDemoMemory.ts', import.meta.url), 'utf8')
 const selectedMemory = fs.readFileSync(new URL('../src/spatial/memory/selectedMemoryContract.ts', import.meta.url), 'utf8')
 const canon = fs.readFileSync(new URL('../../docs/FOCUS_CANONICAL_TERMINOLOGY_LOCK.md', import.meta.url), 'utf8')
 
@@ -67,6 +69,21 @@ test('public Focus runtime does not regress to chamber-era product copy', () => 
   assert.match(focusRuntime, /Preparing Focus/)
   assert.match(focusRuntime, /aria-label="Focus controls"/)
   assert.match(focusRuntime, /Focus ready/)
+})
+
+test('live fractured WebGL Focus remains the visible pixel authority', () => {
+  assert.match(focusRuntime, /focus-v251-grounded-living-memory-manifestation/)
+  assert.match(focusRuntime, /focus-authored-fractured-stratum-/)
+  assert.match(focusRuntime, /v249-no-focus-ring-cage-or-repeated-runes/)
+  assert.match(focusPolish, /\.focusWorld \.focusBackdrop \{\s*display: none !important;/)
+  assert.match(focusPolish, /\.focusWorld \.focusCanvas canvas \{[\s\S]*opacity: 1 !important;[\s\S]*filter: none !important;[\s\S]*mix-blend-mode: normal !important;/)
+  assert.doesNotMatch(focusPolish, /background-image:[\s\S]*var\(--focus-asset\)/)
+})
+
+test('explicit demo narration stays canonical and does not reintroduce chamber product copy', () => {
+  assert.match(explicitDemoMemory, /narratorLine: 'Return to Focus\.'/)
+  assert.match(explicitDemoMemory, /focus: 'Selected memory\. The quiet reset is ready as an explicit demonstration\.'/)
+  assert.doesNotMatch(explicitDemoMemory, /Focus chamber|Selected memory chamber/)
 })
 
 test('historical productivity terminology remains explicitly non-governing', () => {
