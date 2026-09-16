@@ -117,7 +117,7 @@ test('Founder proof samples retained WebGL canvas pixels only', () => {
   assert.match(workflow, /lifemap-review-repair-contract\.test\.mjs/)
 })
 
-test('Focus final composition gives live WebGL luminous memory plates pixel authority and rejects stale static sphere/ring dominance', () => {
+test('Focus final composition gives live WebGL luminous memory lamellae pixel authority and rejects stale static sphere/ring dominance', () => {
   assert.match(focusSource, /focus-v251-grounded-living-memory-manifestation/)
   assert.match(focusSource, /createFocusStrata, createFocusSurfaceMaps/)
   assert.doesNotMatch(focusSource, /focus-v249-memory-root-cradle/)
@@ -126,10 +126,11 @@ test('Focus final composition gives live WebGL luminous memory plates pixel auth
   assert.match(focusPolish, /\.focusWorld \.focusBackdrop \{[\s\S]*display: none !important;/)
   assert.match(focusPolish, /\.focusWorld \.focusCanvas canvas \{[\s\S]*opacity: 1 !important;[\s\S]*filter: none !important;[\s\S]*mix-blend-mode: normal !important;/)
   assert.doesNotMatch(focusPolish, /opacity: \.30|opacity: \.22|mix-blend-mode: screen|var\(--focus-asset\)/)
-  assert.match(focusGeology, /V268 selected-memory manifestation/)
+  assert.match(focusGeology, /V269 selected-memory manifestation/)
   assert.match(focusGeology, /length: 7/)
-  assert.match(focusGeology, /luminous-separated-fractured-memory-plate/)
-  assert.match(focusGeology, /high vertex energy keeps the memory plates visually luminous/)
+  assert.match(focusGeology, /v269-living-luminous-memory-lamella/)
+  assert.match(focusGeology, /cool-pearl-warm-with-dark-interlayer-depth/)
   assert.match(focusGeology, /Subdued weathered mineral texture|Bright contour veins are intentionally/)
+  assert.doesNotMatch(focusGeology, /folded paper fan/)
   assert.doesNotMatch(focusGeology, /history \* 92|Math\.pow\(vein, 3\.0\)/)
 })
