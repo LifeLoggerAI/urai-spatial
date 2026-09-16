@@ -1,109 +1,100 @@
 import * as THREE from 'three'
 
-// V270 literal-pixel repair of the V269 selected-memory manifestation.
-// Focus resolves the selected Memory Star into one coherent, compact stack of
-// fractured luminous lamellae. The hero must read as a deep living memory form,
-// never as overexposed white paper/slabs. Geometry stays narrow, irregular and
-// interlocked around one vertical core while restrained cool / pearl / warm
-// energy preserves dark inter-layer depth under ACES tone mapping.
-// It must never read as a boulder, onion, sphere, doorway, portal, ring, cage,
-// bubble, planet, flower, pair of horns, broad folded-sheet fan, or terrain debris.
-function createMemoryLamella(layer: number) {
-  const signed = layer - 3
-  const depth = -.72 + layer * .24
-  const thickness = .040 + (layer % 2) * .010
-  const frontZ = depth + thickness
-  const backZ = depth - thickness
-  const width = .235 + (layer % 3) * .032
-  const height = .88 + .075 * Math.cos(layer * 1.31)
-  const offsetX = signed * .088 + Math.sin(layer * 1.73) * .036
-  const offsetY = Math.cos(layer * 1.19) * .044 - Math.abs(signed) * .008
-  const rotation = signed * .082 + Math.sin(layer * .87) * .044
-  const positions: number[] = []
-  const colors: number[] = []
-  const indices: number[] = []
+// V271 literal-pixel repair of the selected-memory manifestation.
+//
+// V269/V270 proved the route, material separation and responsive composition, but
+// retained pixels still read as a stack of pale cards because each hero element
+// was almost a metre tall while only 4–5 cm deep. V271 changes the silhouette at
+// the geometry source: the selected Memory Star resolves into a compact cluster of
+// genuinely volumetric, closed, irregular memory facets whose depth is comparable
+// to their width. The facets interlock around an intentional dark central void and
+// use restrained mineral energy rather than white/paper-like faces.
+//
+// The form must remain recognisably one selected memory, not a generic boulder,
+// sphere/orb, flower, portal, ring, cage, doorway, sheet fan or pile of cards.
+type MemoryFacetSpec = {
+  center: readonly [number, number, number]
+  size: readonly [number, number, number]
+  rotation: readonly [number, number, number]
+  phase: number
+}
 
-  // Keep vertex energy in a physically plausible SDR range. The predecessor's
-  // multi-unit RGB values tone-mapped to near-white and erased the authored
-  // layering in retained proof. These values preserve color separation and
-  // shadow depth while the runtime's emissive accent supplies restrained life.
-  const cool = new THREE.Color().setRGB(.10, .46, .68)
-  const pearl = new THREE.Color().setRGB(.72, .86, .82)
-  const warm = new THREE.Color().setRGB(.92, .38, .12)
-  const deep = new THREE.Color().setRGB(.018, .060, .082)
+const MEMORY_FACETS: readonly MemoryFacetSpec[] = [
+  { center: [-.28, .17, -.11], size: [.34, .78, .31], rotation: [.18, -.48, -.24], phase: .17 },
+  { center: [.22, .14, .06], size: [.32, .86, .35], rotation: [-.14, .34, .21], phase: 1.13 },
+  { center: [-.03, -.16, .22], size: [.42, .58, .40], rotation: [.31, .16, .61], phase: 2.21 },
+  { center: [.31, -.22, -.20], size: [.29, .54, .34], rotation: [-.27, -.36, -.52], phase: 3.08 },
+  { center: [-.31, -.25, .12], size: [.28, .49, .32], rotation: [.15, .54, .46], phase: 4.04 },
+]
 
-  const template: Array<[number, number]> = [
-    [-.14, -.72],
-    [-.29, -.42],
-    [-.25, .07],
-    [-.11, .65],
-    [.07, .80],
-    [.27, .32],
-    [.22, -.22],
-    [.055, -.75],
+function facetVertexColor(facet: number, vertex: number, y: number) {
+  const deep = new THREE.Color().setRGB(.030, .092, .104)
+  const mineral = new THREE.Color().setRGB(.105, .285, .315)
+  const cool = new THREE.Color().setRGB(.125, .405, .485)
+  const warm = new THREE.Color().setRGB(.47, .205, .075)
+  const phase = .5 + .5 * Math.sin((facet + 1) * 1.37 + vertex * 1.91)
+  const color = deep.clone().lerp(mineral, .34 + phase * .24)
+  if (y > .15) color.lerp(cool, .20 + phase * .12)
+  if ((facet + vertex) % 7 === 0) color.lerp(warm, .12)
+  return color
+}
+
+function createMemoryFacet(spec: MemoryFacetSpec, facet: number) {
+  const [width, height, depth] = spec.size
+  const local: THREE.Vector3[] = [
+    new THREE.Vector3(.05 * width, .62 * height, -.04 * depth),
+    new THREE.Vector3(-.07 * width, -.57 * height, .03 * depth),
   ]
 
-  const points = template.map(([px, py], index): [number, number] => {
-    const fractureX = Math.sin((index + 1) * 2.31 + layer * 1.17) * .050
-    const fractureY = Math.cos((index + 1) * 1.73 - layer * .91) * .044
-    const taper = .92 + .08 * Math.cos(index * 1.47 + layer * .63)
-    const rawX = (px + fractureX) * (width / .30) * taper
-    const rawY = (py + fractureY) * height
-    return [
-      rawX * Math.cos(rotation) - rawY * Math.sin(rotation) + offsetX,
-      rawX * Math.sin(rotation) + rawY * Math.cos(rotation) + offsetY,
-    ]
-  })
-
-  positions.push(offsetX, offsetY, frontZ, offsetX, offsetY, backZ)
-  const centerColor = pearl.clone().lerp(cool, .30 + layer * .025).lerp(warm, .028 + (layer % 2) * .018)
-  colors.push(
-    centerColor.r, centerColor.g, centerColor.b,
-    deep.r, deep.g, deep.b,
-  )
-
-  for (let i = 0; i < points.length; i += 1) {
-    const [x, y] = points[i]
-    const backInset = .045 + .015 * Math.sin(i * 1.31 + layer)
-    const backX = THREE.MathUtils.lerp(x, offsetX, backInset)
-    const backY = THREE.MathUtils.lerp(y, offsetY, backInset)
-    positions.push(x, y, frontZ, backX, backY, backZ)
-
-    const edgePhase = .5 + .5 * Math.sin(i * 1.91 + layer * .83)
-    const faceColor = cool.clone()
-      .lerp(pearl, .18 + edgePhase * .34)
-      .lerp(warm, (i === 0 || i === 3 || i === 6 ? .085 : .018) + (layer % 3) * .010)
-      .multiplyScalar(.82 + edgePhase * .18)
-    const rearColor = deep.clone().lerp(cool, .12 + edgePhase * .07)
-    colors.push(faceColor.r, faceColor.g, faceColor.b, rearColor.r, rearColor.g, rearColor.b)
+  // Five irregular equatorial vertices create a closed asymmetric bipyramid.
+  // Their Z radius is deliberately comparable to X radius, which is the key V271
+  // rejection rule against the old paper-card / lamella silhouette.
+  for (let index = 0; index < 5; index += 1) {
+    const angle = spec.phase + index / 5 * Math.PI * 2
+    const radialX = width * (.78 + .16 * Math.sin(index * 1.71 + spec.phase))
+    const radialZ = depth * (.76 + .17 * Math.cos(index * 1.43 - spec.phase))
+    const y = height * (.08 * Math.sin(index * 2.07 + spec.phase) - .03 * Math.cos(index * .83))
+    local.push(new THREE.Vector3(Math.cos(angle) * radialX, y, Math.sin(angle) * radialZ))
   }
 
-  for (let i = 0; i < points.length; i += 1) {
-    const next = (i + 1) % points.length
-    const frontA = 2 + i * 2
-    const backA = frontA + 1
-    const frontB = 2 + next * 2
-    const backB = frontB + 1
-    indices.push(0, frontA, frontB)
-    indices.push(1, backB, backA)
-    indices.push(frontA, backA, frontB, frontB, backA, backB)
+  const euler = new THREE.Euler(spec.rotation[0], spec.rotation[1], spec.rotation[2], 'XYZ')
+  const center = new THREE.Vector3(...spec.center)
+  const positions: number[] = []
+  const colors: number[] = []
+  for (let index = 0; index < local.length; index += 1) {
+    const vertex = local[index].applyEuler(euler).add(center)
+    positions.push(vertex.x, vertex.y, vertex.z)
+    const color = facetVertexColor(facet, index, local[index].y)
+    colors.push(color.r, color.g, color.b)
   }
 
-  const geometry = new THREE.BufferGeometry()
-  geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3))
-  geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3))
-  geometry.setIndex(indices)
+  const indices: number[] = []
+  for (let index = 0; index < 5; index += 1) {
+    const current = 2 + index
+    const next = 2 + ((index + 1) % 5)
+    indices.push(0, current, next)
+    indices.push(1, next, current)
+  }
+
+  const indexed = new THREE.BufferGeometry()
+  indexed.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3))
+  indexed.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3))
+  indexed.setIndex(indices)
+  const geometry = indexed.toNonIndexed()
+  indexed.dispose()
   geometry.computeVertexNormals()
+  geometry.computeBoundingBox()
   geometry.computeBoundingSphere()
-  geometry.userData.focusLamellaLayer = layer
-  geometry.userData.focusLamellaRole = 'v269-living-luminous-memory-lamella'
-  geometry.userData.focusLamellaEnergy = 'cool-pearl-warm-with-dark-interlayer-depth'
-  geometry.userData.focusLiteralPixelRepair = 'v270-sdr-energy-depth-separation'
+  geometry.userData.focusFacetIndex = facet
+  geometry.userData.focusFacetRole = 'v271-interlocked-volumetric-memory-facet'
+  geometry.userData.focusFacetEnergy = 'dark-mineral-cool-edge-restrained-warm-vein'
+  geometry.userData.focusLiteralPixelRepair = 'v271-no-card-slab-silhouette'
+  geometry.userData.focusDepthRule = 'closed-volume-depth-comparable-to-width'
   return geometry
 }
 
 export function createFocusStrata() {
-  return Array.from({ length: 7 }, (_, layer) => createMemoryLamella(layer))
+  return MEMORY_FACETS.map((spec, facet) => createMemoryFacet(spec, facet))
 }
 
 function hash2(x: number, y: number) {
