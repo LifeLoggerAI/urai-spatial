@@ -48,7 +48,7 @@ jobs:
 
       - name: Run Ground zero-ambiguity contracts
         working-directory: urai-tier1
-        run: node --import tsx --test tests/ground-zero-ambiguity-contract.test.mjs tests/ground-transition-ownership-contract.test.mjs tests/ground-transition-timeline-contract.test.mjs
+        run: node --import tsx --test tests/ground-zero-ambiguity-contract.test.mjs tests/ground-transition-ownership-contract.test.mjs tests/ground-transition-timeline-contract.test.mjs tests/ground-semantic-accessibility-contract.test.mjs
 
       - name: Typecheck runtime
         working-directory: urai-tier1
