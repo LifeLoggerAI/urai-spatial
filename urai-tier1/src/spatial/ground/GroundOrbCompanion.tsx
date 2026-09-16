@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, type MutableRefObject } from 'react'
 import { useFrame } from '@react-three/fiber'
 import * as THREE from 'three'
+import { requestHapticCue } from '@/spatial/haptics/HapticRuntime'
 import { requestUraiWorldOrbOpen } from '@/spatial/world/worldEvents'
 import { GROUND_ORB } from './groundCanon'
 
@@ -36,6 +37,7 @@ export function GroundOrbCompanion({ playerPosition, yaw, groundHeight, obstacle
   const decisionElapsed = useRef(0)
   const followDelay = useRef(0)
   const gazeMs = useRef(0)
+  const previousAttentive = useRef(false)
   const candidateA = useMemo(() => new THREE.Vector3(), [])
   const candidateB = useMemo(() => new THREE.Vector3(), [])
   const candidateC = useMemo(() => new THREE.Vector3(), [])
@@ -114,6 +116,8 @@ export function GroundOrbCompanion({ playerPosition, yaw, groundHeight, obstacle
     const close = camera.position.distanceTo(current) <= GROUND_ORB.attentionDistanceM
     gazeMs.current = close && gazeAngle <= GROUND_ORB.centerExclusionDeg ? gazeMs.current + delta * 1000 : Math.max(0, gazeMs.current - delta * 1800)
     const attentive = gazeMs.current >= GROUND_ORB.attentionGazeMs
+    if (attentive && !previousAttentive.current) requestHapticCue('orb-attention', 'ground-physical-orb')
+    previousAttentive.current = attentive
 
     if (group.current) {
       const idleY = reducedMotion ? 0 : Math.sin(clock.elapsedTime * 0.62) * GROUND_ORB.idleVerticalM
