@@ -78,12 +78,43 @@ test('live Orb replies use the external natural voice path before device fallbac
   assert.match(conversationSource, /Allow Orb replies and narrator lines to use the configured natural external voice provider/)
 })
 
+test('Orb speaking state begins from actual playback instead of streamed text arrival', () => {
+  const deltaBlock = conversationSource.match(/if \(providerEvent\.type === 'delta'\) \{([\s\S]*?)\} else if/)?.[1] ?? ''
+  assert.match(deltaBlock, /setStreamedText/)
+  assert.doesNotMatch(deltaBlock, /publishConversationState\('speaking'/)
+  assert.match(conversationSource, /await audio\.play\(\)\s*\n\s*beginSpeakingClock\('natural'\)/)
+  assert.match(conversationSource, /utterance\.onstart = \(\) => handlers\.onStart\(\)/)
+  assert.match(conversationSource, /utterance\.onboundary/)
+  assert.match(conversationSource, /const ORB_SPEECH_CLOCK_EVENT = 'urai:orb-speech-clock'/)
+})
+
 test('Orb voice can be stopped after the AI response finishes', () => {
   assert.match(conversationSource, /const \[voicePlaying, setVoicePlaying\] = useState\(false\)/)
   assert.match(conversationSource, /disabled=\{!busy && !voicePlaying\}/)
   assert.match(conversationSource, /voiceAborter\.current\?\.abort\(\)/)
   assert.match(conversationSource, /activeAudio\.pause\(\)/)
   assert.match(conversationSource, /window\.speechSynthesis\.cancel\(\)/)
+  assert.match(conversationSource, /phase: 'cancel'/)
+})
+
+test('Orb local microphone VAD is explicit, ephemeral, and supports barge-in without transcription claims', () => {
+  assert.match(conversationSource, /navigator\.mediaDevices\?\.getUserMedia/)
+  assert.match(conversationSource, /echoCancellation: true/)
+  assert.match(conversationSource, /noiseSuppression: true/)
+  assert.match(conversationSource, /autoGainControl: true/)
+  assert.match(conversationSource, /getFloatTimeDomainData/)
+  assert.match(conversationSource, /const VAD_THRESHOLD = 0\.035/)
+  assert.match(conversationSource, /const BARGE_IN_HOLD_MS = 70/)
+  assert.match(conversationSource, /if \(wasSpeaking\) \{\s*stopVoice\(false\)/)
+  assert.match(conversationSource, /publishConversationState\('listening'\)/)
+  assert.match(conversationSource, /Microphone audio is not uploaded or transcribed by this control/)
+  assert.doesNotMatch(conversationSource, /MediaRecorder|FormData\(\).*microphone|fetch\([^)]*microphone/i)
+})
+
+test('textarea focus does not masquerade as acoustic Listening without an active microphone session', () => {
+  const focusBlock = conversationSource.match(/onFocus=\{\(\) => \{([\s\S]*?)\}\}/)?.[1] ?? ''
+  assert.match(focusBlock, /micActiveRef\.current \? 'listening' : 'attention'/)
+  assert.doesNotMatch(focusBlock, /publishConversationState\('listening'\)/)
 })
 
 test('Orb conversation disclosure remains a real pointer hit target above the spatial canvas', () => {
