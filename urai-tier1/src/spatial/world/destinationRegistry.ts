@@ -5,6 +5,9 @@ export type UraiDestinationDefinition = {
   label: string
   href: string
   layer: UraiWorldLayer
+  /** Canonical spatial entry relationship. This does not imply a literal portal visual. */
+  entryAnchor: string
+  /** @deprecated Compatibility alias retained for serialized routes and older callers. */
   entryPortal: string
   cameraCheckpoint: string
   environmentalForm: string
@@ -17,9 +20,10 @@ export const URAI_DESTINATION_REGISTRY: Record<UraiDestination, UraiDestinationD
     label: 'Living World',
     href: '/home',
     layer: 'living-world',
+    entryAnchor: 'living-world-home',
     entryPortal: 'living-world-home',
     cameraCheckpoint: 'home-threshold',
-    environmentalForm: 'sky-ground-avatar-orb',
+    environmentalForm: 'first-person-living-world',
   },
   'infrastructure-hub': {
     // Compatibility id retained while the public /ground authority is the lived physical world.
@@ -27,6 +31,7 @@ export const URAI_DESTINATION_REGISTRY: Record<UraiDestination, UraiDestinationD
     label: 'Ground',
     href: '/ground',
     layer: 'living-world',
+    entryAnchor: 'home-ground',
     entryPortal: 'home-ground',
     cameraCheckpoint: 'ground-first-person-arrival',
     environmentalForm: 'lived-physical-world',
@@ -37,15 +42,17 @@ export const URAI_DESTINATION_REGISTRY: Record<UraiDestination, UraiDestinationD
     label: 'Life Map',
     href: '/life-map',
     layer: 'infrastructure-world',
+    entryAnchor: 'home-sky',
     entryPortal: 'constellation-threshold',
     cameraCheckpoint: 'life-map-overview',
-    environmentalForm: 'explorable-memory-constellation',
+    environmentalForm: 'explorable-personal-universe',
   },
   mirror: {
     id: 'mirror',
     label: 'Reflection Realm',
     href: '/mirror',
     layer: 'infrastructure-world',
+    entryAnchor: 'reflection-threshold',
     entryPortal: 'reflection-threshold',
     cameraCheckpoint: 'mirror-arrival',
     environmentalForm: 'reflective-cavern',
@@ -55,6 +62,7 @@ export const URAI_DESTINATION_REGISTRY: Record<UraiDestination, UraiDestinationD
     label: 'Shadow Realm',
     href: '/shadow',
     layer: 'infrastructure-world',
+    entryAnchor: 'shadow-integration-threshold',
     entryPortal: 'shadow-integration-threshold',
     cameraCheckpoint: 'shadow-arrival',
     environmentalForm: 'walkable-fracture-field',
@@ -64,6 +72,7 @@ export const URAI_DESTINATION_REGISTRY: Record<UraiDestination, UraiDestinationD
     label: 'Council Chamber',
     href: '/council',
     layer: 'infrastructure-world',
+    entryAnchor: 'council-stewardship-threshold',
     entryPortal: 'council-stewardship-threshold',
     cameraCheckpoint: 'council-arrival',
     environmentalForm: 'luminous-governance-chamber',
@@ -73,6 +82,7 @@ export const URAI_DESTINATION_REGISTRY: Record<UraiDestination, UraiDestinationD
     label: 'Ownership Vault',
     href: '/passport',
     layer: 'infrastructure-world',
+    entryAnchor: 'ownership-seal',
     entryPortal: 'ownership-seal',
     cameraCheckpoint: 'passport-arrival',
     environmentalForm: 'protected-vault',
@@ -82,6 +92,7 @@ export const URAI_DESTINATION_REGISTRY: Record<UraiDestination, UraiDestinationD
     label: 'Consent Sanctuary',
     href: '/privacy-controls',
     layer: 'infrastructure-world',
+    entryAnchor: 'consent-sanctuary',
     entryPortal: 'consent-aperture',
     cameraCheckpoint: 'privacy-arrival',
     environmentalForm: 'permission-control-chamber',
@@ -91,27 +102,30 @@ export const URAI_DESTINATION_REGISTRY: Record<UraiDestination, UraiDestinationD
     label: 'Emotional Atlas',
     href: '/location-map',
     layer: 'infrastructure-world',
+    entryAnchor: 'location-beacon',
     entryPortal: 'location-beacon',
     cameraCheckpoint: 'atlas-world-view',
     environmentalForm: 'permission-aware-globe',
   },
   focus: {
     id: 'focus',
-    label: 'Focus Chamber',
+    label: 'Focus',
     href: '/focus',
     layer: 'infrastructure-world',
+    entryAnchor: 'selected-memory',
     entryPortal: 'memory-focus',
     cameraCheckpoint: 'focus-arrival',
-    environmentalForm: 'selected-memory-chamber',
+    environmentalForm: 'selected-memory-manifestation',
   },
   replay: {
     id: 'replay',
-    label: 'Replay Theater',
+    label: 'Replay',
     href: '/replay',
     layer: 'infrastructure-world',
+    entryAnchor: 'memory-replay',
     entryPortal: 'memory-replay',
     cameraCheckpoint: 'replay-arrival',
-    environmentalForm: 'cinematic-memory-theater',
+    environmentalForm: 'spatial-temporal-memory-reconstruction',
   },
 }
 
