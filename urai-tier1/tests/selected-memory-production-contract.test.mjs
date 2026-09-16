@@ -41,7 +41,9 @@ test('demo memory is explicit, disclosed, and retained through Life Map camera t
 
 test('Focus is an explorable authored selected-memory world rather than a static composited page', () => {
   const cameraRig = focus.match(/function FocusCameraRig[\s\S]*?\n}\n\nfunction cloneAuthoredFocusModel/)?.[0]
+  const memoryAperture = focus.match(/function MemoryAperture[\s\S]*?\n}\n\nfunction FocusScene/)?.[0]
   assert.ok(cameraRig, 'FocusCameraRig must remain a mounted camera controller')
+  assert.ok(memoryAperture, 'MemoryAperture must remain the selected-memory material owner')
 
   assert.match(focus, /from '@react-three\/fiber'/)
   assert.match(focus, /import \* as THREE from 'three'/)
@@ -63,9 +65,11 @@ test('Focus is an explorable authored selected-memory world rather than a static
   assert.match(focus, /v249-no-focus-ring-cage-or-repeated-runes/)
   assert.match(focus, /createFocusStrata, createFocusSurfaceMaps/)
   assert.match(focus, /focus-v251-grounded-living-memory-manifestation/)
-  assert.match(focus, /v251-fractured-rooted-memory-strata/)
+  assert.match(focus, /v269-living-luminous-memory-lamella/)
   assert.match(focus, /focus-authored-fractured-stratum-/)
-  assert.match(focus, /<meshStandardMaterial map=\{maps\[0\]\}[\s\S]*?vertexColors/)
+  assert.match(memoryAperture, /materialAuthority: 'vertex-energy-not-mineral-terrain-map'/)
+  assert.match(memoryAperture, /<meshStandardMaterial vertexColors[\s\S]*?emissiveIntensity=\{hovered \? \.34 : \.20\}[\s\S]*?roughness=\{\.36\}/)
+  assert.doesNotMatch(memoryAperture, /map=\{maps\[0\]\}|normalMap=\{maps\[1\]\}|roughnessMap=\{maps\[2\]\}/)
   assert.doesNotMatch(focus, /new THREE\.IcosahedronGeometry\(/)
   assert.doesNotMatch(focus, /new THREE\.SphereGeometry\(1, 72, 48\)/)
   assert.doesNotMatch(focus, /focus-v217-single-connected-memory-manifestation/)
@@ -76,7 +80,7 @@ test('Focus is an explorable authored selected-memory world rather than a static
   assert.match(focus, /focus-v216-continuous-weathered-vault/)
   assert.doesNotMatch(focus, /focus-v249-memory-root-cradle/)
   assert.match(focus, /geometry\.setAttribute\('position', new THREE\.Float32BufferAttribute\(positions, 3\)\)/)
-  assert.match(focus, /data-focus-visual-revision="v251-fractured-rooted-memory-strata"/)
+  assert.match(focus, /data-focus-visual-revision="v269-luminous-memory-material-separation"/)
   assert.match(focus, /alpha: false/)
   assert.match(focus, /<color attach="background"/)
   assert.match(focus, /\.focusBackdrop\{display:none\}/)

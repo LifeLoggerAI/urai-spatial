@@ -142,11 +142,11 @@ export function lifeMapStage(selected: boolean, portrait: boolean): { scale: Poi
   }
 
   // Portrait overview is a presentation transform only: deterministic local
-  // memory identity and depth remain unchanged, while narrow screens compact the
-  // celestial envelope toward the visual center instead of fitting widely
-  // separated authored clusters around a dead central column.
+  // memory identity and depth remain unchanged. Narrow screens compact the
+  // celestial envelope much harder on X/Y so authored clusters converge toward
+  // the visual heart instead of forcing a distant camera around edge islands.
   return portrait
-    ? { scale: [.62, .84, .92], position: [0, -.15, 1.0] }
+    ? { scale: [.38, .72, .92], position: [0, -.10, 1.25] }
     : { scale: [1, 1, 1], position: [0, 0, .4] }
 }
 
@@ -161,7 +161,7 @@ export function lifeMapOverviewCamera(nodes: LifeMapNode[], portrait: boolean, a
   const points = nodes.map((node, index) => lifeMapLocalPoint(node, index).map((value, axis) => value * stage.scale[axis] + stage.position[axis]) as Point3)
     .filter(point => point.every(Number.isFinite))
   if (!points.length) return portrait
-    ? { position: [0, 4.8, 31], target: [0, 0, -31] }
+    ? { position: [0, 4.0, 27], target: [0, 0, -31] }
     : { position: [0, 3.2, 24], target: [0, 0, -34] }
 
   const min: Point3 = [Infinity, Infinity, Infinity]
@@ -171,18 +171,18 @@ export function lifeMapOverviewCamera(nodes: LifeMapNode[], portrait: boolean, a
     max[axis] = Math.max(max[axis], point[axis])
   }
   const target = min.map((value, axis) => (value + max[axis]) / 2) as Point3
-  const halfWidth = Math.max(Math.abs(min[0] - target[0]), Math.abs(max[0] - target[0])) + 4.5
-  const halfHeight = Math.max(Math.abs(min[1] - target[1]), Math.abs(max[1] - target[1])) + 3.6
+  const halfWidth = Math.max(Math.abs(min[0] - target[0]), Math.abs(max[0] - target[0])) + (portrait ? 2.2 : 4.5)
+  const halfHeight = Math.max(Math.abs(min[1] - target[1]), Math.abs(max[1] - target[1])) + (portrait ? 2.8 : 3.6)
   const verticalFov = portrait ? 50 : 46
   const verticalTan = Math.tan(verticalFov * Math.PI / 360)
   const horizontalTan = verticalTan * Math.max(aspect, .24)
-  const widthDistance = halfWidth / Math.max(horizontalTan * .88, .08)
-  const heightDistance = halfHeight / Math.max(verticalTan * .86, .08)
+  const widthDistance = halfWidth / Math.max(horizontalTan * (portrait ? 1.02 : .88), .08)
+  const heightDistance = halfHeight / Math.max(verticalTan * (portrait ? .94 : .86), .08)
   const nearestZ = max[2]
-  const distance = Math.max(portrait ? 30 : 24, widthDistance, heightDistance)
+  const distance = Math.max(24, widthDistance, heightDistance)
 
   return {
-    position: [target[0], target[1] + (portrait ? 2.0 : 1.8), nearestZ + distance],
-    target: [target[0], target[1], target[2] - (portrait ? 3.0 : 4.0)],
+    position: [target[0], target[1] + (portrait ? 1.5 : 1.8), nearestZ + distance],
+    target: [target[0], target[1], target[2] - (portrait ? 2.0 : 4.0)],
   }
 }
