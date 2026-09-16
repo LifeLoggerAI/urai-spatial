@@ -38,7 +38,9 @@ test('current Home candidate uses one cinematic/embodied owner while certified V
   has(assetHome, "world.setAttribute('data-home-art-certification', 'fresh-exact-head-pixels-required')")
   assert.equal(authority.artRevision, 'v288-cinematic-lived-world-grounded-reliquary')
   assert.equal(authority.worldIdentifier, 'cinematic-lived-world-threshold')
-  assert.equal(authority.orbVisualAuthority, 'v288-grounded-biomorphic-reliquary')
+  assert.equal(authority.lastCertifiedPredecessor.orbVisualAuthority, 'v288-grounded-biomorphic-reliquary')
+  assert.equal(authority.currentRuntimeCandidate.orbVisualAuthority, 'authored-living-memory-orb-candidate')
+  assert.equal(authority.orbVisualAuthority, 'authored-living-memory-orb-candidate')
   for (const asset of ['HomeWorldProductionV223.tsx','HomeVisualAuthority.tsx','HomeOrbReliquaryV286.tsx','HomeOrbGroundedV288.tsx','HomeAtmosphericSky.tsx']) assert.ok(authority.runtimeAssets.includes(asset), `missing certified predecessor runtime asset ${asset}`)
   assert.equal((renderer.match(/<Canvas/g) ?? []).length, 1)
   assert.doesNotMatch(`${assetHome}\n${renderer}`, /PRODUCTION CERTIFIED|retained-pixel-pass|pixel-certified/)
@@ -67,7 +69,7 @@ test('Home Life Map is the broad visible sky and commits one canonical ascent tr
 
 test('Home Ground entry remains a physical world-surface descent into the lived first-person Ground', () => {
   for (const marker of ['data-home-ground-entry="physical-world-surface"','event.point.clone()',"destination: 'infrastructure-hub'","cameraCheckpoint: 'ground-first-person-arrival'",'homeApi.activateGround()']) has(renderer, marker)
-  for (const marker of ['data-ground-exploration="first-person"','data-ground-runtime-owner="first-person-lived-world"','data-ground-camera="eye-level-terrain-following"','data-ground-collision="visible-terrain-heightfield"','data-ground-place-layer="consent-aware-empty-by-default"','ground-visible-traversable-terrain','surfaceY + EYE_HEIGHT']) has(ground, marker)
+  for (const marker of ['data-ground-exploration="first-person-no-visible-body"','data-ground-runtime-owner="first-person-lived-world"','data-ground-camera="eye-level-terrain-following-no-authored-bob"','data-ground-collision="terrain-plus-authored-obstacle-field"','data-ground-place-layer="consent-aware-empty-by-default"','ground-visible-traversable-terrain','surfaceY + GROUND_EYE_HEIGHT_M']) has(ground, marker)
   has(groundGateway, 'aria-label="Enter your physical Ground world"')
   has(groundGateway, "cameraCheckpoint: world.cameraCheckpoint ?? 'home-ground-descent'")
   assert.doesNotMatch(ground, /ground-central-nexus|ground-destination-compass|GroundPhysicalArchitecture|GroundVaultArchitecture/)
