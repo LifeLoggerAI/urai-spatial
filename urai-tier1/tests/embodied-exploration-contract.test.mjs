@@ -67,6 +67,8 @@ test('Home Ground contract carries deterministic selected-point continuity and u
     'groundSpawn',
     'writeHomeReturnCheckpoint',
     'GROUND_UNWIND_EVENT',
+    'minZ: -19.8',
+    'maxZ: 6.4',
   ]) has(groundContract, marker)
 })
 
@@ -93,6 +95,55 @@ test('Ground is first-person, mapped from Home, explorable, collision-aware and 
   assert.doesNotMatch(ground, /router\.push\("\/home\?returnFrom=ground"\)|GroundPhysicalArchitecture|ground-destination-compass/)
   has(groundRoute, 'GroundSpatialWorldCanon')
   assert.doesNotMatch(groundRoute, /GroundFocusContainment|GroundCheckpointRestoreSignal|GroundSpatialWorldClean/)
+})
+
+test('Ground readiness waits for both the camera and the physical core world', () => {
+  for (const marker of [
+    'const [worldReady, setWorldReady] = useState(false)',
+    'const [cameraReady, setCameraReady] = useState(false)',
+    'const ready = worldReady && cameraReady',
+    'data-ground-world-ready={worldReady',
+    'data-ground-camera-ready={cameraReady',
+    'onReady={() => setWorldReady(true)}',
+    'onReady={() => setCameraReady(true)}',
+  ]) has(ground, marker)
+})
+
+test('Ground boundaries become physical terrain and scanned geology before the safety clamp', () => {
+  for (const marker of [
+    'const sideRise = THREE.MathUtils.smoothstep',
+    'const deepRise = THREE.MathUtils.smoothstep',
+    'const rearRise = THREE.MathUtils.smoothstep',
+    'function BoundaryGeology()',
+    'ground-physical-boundary-geology',
+    'terrain-rise-plus-scanned-geology-no-invisible-wall-first',
+    'data-ground-boundary="terrain-rise-scanned-geology-before-safety-clamp"',
+  ]) has(ground, marker)
+  assert.doesNotMatch(ground, /function BoundaryRidges|<boxGeometry/)
+})
+
+test('Ground owns a summonable physical Orb instead of a permanent camera HUD follower', () => {
+  for (const marker of [
+    'function GroundOrbPresence(',
+    'ground-summoned-physical-orb',
+    "derivedVisualLanguage: 'v288-grounded-biomorphic-reliquary'",
+    'ground-orb-contact-field',
+    'data-ground-orb={orbVisible',
+    "aria-label={orbVisible ? 'Dismiss Ground Orb' : 'Summon Ground Orb'}",
+    'requestUraiWorldOrbOpen()',
+  ]) has(ground, marker)
+  assert.doesNotMatch(ground, /position:\s*fixed[^\n]*ground-summoned-physical-orb/)
+})
+
+test('Ground exposes semantic nearby-place discovery with haptic parity', () => {
+  for (const marker of [
+    'function directionPhrase(',
+    'const describeSurroundings = useCallback',
+    "requestHapticCue('select-object', 'ground-surroundings')",
+    'aria-label="Describe nearby Ground places"',
+    "requestHapticCue('enter-place', 'ground-ready')",
+    "requestHapticCue('return-home', 'ground-unwind')",
+  ]) has(ground, marker)
 })
 
 test('every Ground Return path converges on the canonical unwind owner', () => {
