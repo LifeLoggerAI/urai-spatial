@@ -55,7 +55,12 @@ async function waitForHome(page) {
 async function waitForGround(page) {
   const ground = page.locator('.ground-spatial-root[data-ground-exploration="first-person"]').first()
   await ground.waitFor({ state: 'visible', timeout: 45_000 })
-  await page.waitForFunction(() => document.querySelector('.ground-spatial-root[data-ground-exploration="first-person"]')?.getAttribute('data-ground-ready') === 'true', null, { timeout: 45_000 })
+  await page.waitForFunction(() => {
+    const owner = document.querySelector('.ground-spatial-root[data-ground-exploration="first-person"]')
+    return owner?.getAttribute('data-ground-ready') === 'true'
+      && owner?.getAttribute('data-ground-world-ready') === 'true'
+      && owner?.getAttribute('data-ground-camera-ready') === 'true'
+  }, null, { timeout: 45_000 })
   return ground
 }
 
@@ -83,6 +88,7 @@ async function capture(page, id, selector = null, clip = null) {
     homeProgress: await home.getAttribute('data-home-transition-progress').catch(() => null),
     groundCamera: await ground.getAttribute('data-ground-camera-mode').catch(() => null),
     groundUnwind: await ground.getAttribute('data-ground-unwind').catch(() => null),
+    groundOrb: await ground.getAttribute('data-ground-orb').catch(() => null),
     passed: buffer.length > 12_000,
   }
   receipt.screenshots.push(record)
@@ -150,6 +156,8 @@ async function runDesktopJourney(browser) {
   assertReceipt('ground-walk-speed', Math.abs(speed - 1.85) < .001, `Ground walk speed=${speed}`)
   assertReceipt('ground-no-pointer-lock', await page.evaluate(() => document.pointerLockElement === null), 'pointerLockElement must remain null')
   assertReceipt('ground-collision-contract', await ground.getAttribute('data-ground-collision') === 'terrain-slope-step-and-authored-obstacles', `collision=${await ground.getAttribute('data-ground-collision')}`)
+  assertReceipt('ground-boundary-contract', await ground.getAttribute('data-ground-boundary') === 'terrain-rise-scanned-geology-before-safety-clamp', `boundary=${await ground.getAttribute('data-ground-boundary')}`)
+  assertReceipt('ground-readiness-barrier', (await ground.getAttribute('data-ground-world-ready')) === 'true' && (await ground.getAttribute('data-ground-camera-ready')) === 'true', 'camera and physical world must both be ready')
 
   await page.keyboard.down('w')
   await page.waitForTimeout(2200)
@@ -165,9 +173,18 @@ async function runDesktopJourney(browser) {
       width: groundCanvas.width * .56,
       height: groundCanvas.height * .40,
     })
-    await page.mouse.click(groundCanvas.x + groundCanvas.width * .54, groundCanvas.y + groundCanvas.height * .74)
-    await page.waitForTimeout(900)
   }
+
+  const nearby = page.getByRole('button', { name: 'Describe nearby Ground places' })
+  await nearby.click()
+  await page.waitForTimeout(180)
+  assertReceipt('ground-nearby-semantic-discovery', await nearby.isVisible(), 'Nearby semantic discovery control must remain available')
+
+  const summonOrb = page.getByRole('button', { name: 'Summon Ground Orb' })
+  await summonOrb.click()
+  await page.waitForFunction(() => document.querySelector('.ground-spatial-root[data-ground-exploration="first-person"]')?.getAttribute('data-ground-orb') === 'summoned-physical', null, { timeout: 3_000 })
+  await settleFrames(page, 16)
+  assertReceipt('ground-physical-orb-summoned', await ground.getAttribute('data-ground-orb') === 'summoned-physical', `orb=${await ground.getAttribute('data-ground-orb')}`)
   await capture(page, 'home-ground-shot-09-ground-interaction')
 
   const homeButton = page.getByRole('button', { name: 'Return Home' })
@@ -213,6 +230,7 @@ async function runMobileJourney(browser) {
   assertReceipt('mobile-controls-visible', await controls.isVisible(), 'semantic mobile movement controls must be visible')
   assertReceipt('mobile-no-overflow', await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1), 'mobile Ground must not overflow horizontally')
   assertReceipt('mobile-ground-ready', await ground.getAttribute('data-ground-ready') === 'true', 'mobile Ground must become ready')
+  assertReceipt('mobile-orb-control', await page.getByRole('button', { name: 'Summon Ground Orb' }).isVisible(), 'mobile Ground must keep Orb summon reachable')
   await closeAndRecord(context, page, 'home-ground-motion-mobile-entry')
 }
 
@@ -234,6 +252,7 @@ async function runReducedMotionJourney(browser) {
   await capture(page, 'home-ground-shot-15-reduced-motion-ground')
   assertReceipt('reduced-motion-first-person', await ground.getAttribute('data-ground-camera') === 'eye-level-terrain-following', 'reduced motion must preserve first-person spatial meaning')
   assertReceipt('reduced-motion-no-pointer-lock', await page.evaluate(() => document.pointerLockElement === null), 'reduced motion must never require pointer lock')
+  assertReceipt('reduced-motion-world-ready', await ground.getAttribute('data-ground-world-ready') === 'true', 'reduced motion must retain the physical Ground world')
   await closeAndRecord(context, page, 'home-ground-motion-reduced-entry')
 }
 
