@@ -9,6 +9,7 @@ const root = path.resolve(here, '..')
 const read = (relativePath) => fs.readFileSync(path.join(root, relativePath), 'utf8')
 
 const guide = read('src/spatial/ground/GroundSemanticGuide.tsx')
+const orbBridge = read('src/spatial/ground/GroundOrbCompanion.tsx')
 const page = read('src/app/ground/page.tsx')
 const ground = read('src/app/GroundSpatialWorldClean.tsx')
 
@@ -24,11 +25,26 @@ test('canonical Ground mounts a nonvisual relative-language spatial guide', () =
   assert.doesNotMatch(guide, /\b[xyz]\s*[:=]\s*-?\d/i)
 })
 
+test('Ground semantic guide exposes relative Home and landmark orientation without raw coordinates', () => {
+  assert.match(orbBridge, /urai:ground-relative-navigation/)
+  assert.match(orbBridge, /returnDirection/)
+  assert.match(orbBridge, /returnDistanceMeters/)
+  assert.match(orbBridge, /landmarkDirection/)
+  assert.match(orbBridge, /landmarkDistanceMeters/)
+  assert.match(orbBridge, /relativeDirection/)
+  assert.match(guide, /data-ground-return-orientation/)
+  assert.match(guide, /Home arrival is \{navigation\.returnDirection\}, about \{navigation\.returnDistanceMeters\} meters away/)
+  assert.match(guide, /data-ground-landmark-orientation/)
+  assert.match(guide, /distant terrain mass is \{navigation\.landmarkDirection\}/)
+  assert.doesNotMatch(guide, /position\.x|position\.y|position\.z|coordinates/i)
+})
+
 test('Ground semantic guide announces meaningful movement and return events without leaking coordinates', () => {
   assert.match(guide, /urai:ground-surface-commit/)
-  assert.match(guide, /Moving toward the selected terrain while staying at human eye height/)
+  assert.match(guide, /Moving toward the selected terrain at human eye height/)
+  assert.match(guide, /Home is \$\{current\.returnDirection\}, about \$\{current\.returnDistanceMeters\} meters/)
   assert.match(guide, /urai:world-return/)
-  assert.match(guide, /Returning toward Home through the Ground transition/)
+  assert.match(guide, /Returning toward Home through the physical Ground transition/)
   assert.match(guide, /role="status" aria-live="polite" aria-atomic="true"/)
 })
 
