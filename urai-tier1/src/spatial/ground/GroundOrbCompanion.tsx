@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useRef } from 'react'
+import { useEffect, useMemo, useRef, type MutableRefObject } from 'react'
 import { useFrame } from '@react-three/fiber'
 import * as THREE from 'three'
 import { GROUND_ORB } from './groundCanon'
@@ -33,8 +33,8 @@ export function GroundOrbCompanion({
   obstacles,
   reducedMotion,
 }: {
-  playerPosition: React.MutableRefObject<THREE.Vector3>
-  yaw: React.MutableRefObject<number>
+  playerPosition: MutableRefObject<THREE.Vector3>
+  yaw: MutableRefObject<number>
   groundHeight: (x: number, z: number) => number
   obstacles: readonly { x: number; z: number; radius: number }[]
   reducedMotion: boolean
@@ -43,7 +43,8 @@ export function GroundOrbCompanion({
   const core = useRef<THREE.MeshStandardMaterial>(null)
   const position = useRef(new THREE.Vector3(1.4, GROUND_ORB.centerHeightM, 4.4))
   const velocity = useRef(new THREE.Vector3())
-  const desired = useRef(new THREE.Vector3())
+  const desired = useRef(new THREE.Vector3(1.4, GROUND_ORB.centerHeightM, 4.4))
+  const deltaToTarget = useRef(new THREE.Vector3())
   const decisionElapsed = useRef(0)
   const followDelay = useRef(0)
   const gazeMs = useRef(0)
@@ -88,24 +89,19 @@ export function GroundOrbCompanion({
           bestScore = score
         }
       }
-      if (followDelay.current >= GROUND_ORB.followDelayMs || separation > GROUND_ORB.catchupDistanceM) {
-        desired.current.copy(best)
-      } else {
-        desired.current.copy(current)
-      }
+      if (followDelay.current >= GROUND_ORB.followDelayMs || separation > GROUND_ORB.catchupDistanceM) desired.current.copy(best)
+      else desired.current.copy(current)
     }
 
-    const flatDesired = desired.current
-    const targetY = groundHeight(flatDesired.x, flatDesired.z) + GROUND_ORB.centerHeightM
-    flatDesired.y = targetY
-    const deltaToTarget = flatDesired.clone().sub(current)
-    const distanceToTarget = deltaToTarget.length()
+    desired.current.y = groundHeight(desired.current.x, desired.current.z) + GROUND_ORB.centerHeightM
+    deltaToTarget.current.copy(desired.current).sub(current)
+    const distanceToTarget = deltaToTarget.current.length()
     const targetSpeed = separation > GROUND_ORB.catchupDistanceM ? GROUND_ORB.catchupSpeedMps : GROUND_ORB.normalSpeedMps
     if (distanceToTarget > 0.015) {
-      deltaToTarget.normalize().multiplyScalar(targetSpeed)
-      velocity.current.x = THREE.MathUtils.damp(velocity.current.x, deltaToTarget.x, GROUND_ORB.accelerationMps2, delta)
-      velocity.current.y = THREE.MathUtils.damp(velocity.current.y, deltaToTarget.y, GROUND_ORB.accelerationMps2, delta)
-      velocity.current.z = THREE.MathUtils.damp(velocity.current.z, deltaToTarget.z, GROUND_ORB.accelerationMps2, delta)
+      deltaToTarget.current.normalize().multiplyScalar(targetSpeed)
+      velocity.current.x = THREE.MathUtils.damp(velocity.current.x, deltaToTarget.current.x, GROUND_ORB.accelerationMps2, delta)
+      velocity.current.y = THREE.MathUtils.damp(velocity.current.y, deltaToTarget.current.y, GROUND_ORB.accelerationMps2, delta)
+      velocity.current.z = THREE.MathUtils.damp(velocity.current.z, deltaToTarget.current.z, GROUND_ORB.accelerationMps2, delta)
     } else {
       velocity.current.multiplyScalar(Math.pow(0.04, delta))
     }
@@ -116,7 +112,7 @@ export function GroundOrbCompanion({
     toOrb.copy(current).sub(camera.position).normalize()
     const gazeAngle = THREE.MathUtils.radToDeg(Math.acos(THREE.MathUtils.clamp(cameraForward.dot(toOrb), -1, 1)))
     const closeEnough = camera.position.distanceTo(current) <= GROUND_ORB.attentionDistanceM
-    if (closeEnough && gazeAngle <= 8) gazeMs.current += delta * 1000
+    if (closeEnough && gazeAngle <= GROUND_ORB.centerExclusionDeg) gazeMs.current += delta * 1000
     else gazeMs.current = Math.max(0, gazeMs.current - delta * 1800)
     attention.current = gazeMs.current >= GROUND_ORB.attentionGazeMs
 
@@ -159,7 +155,7 @@ export function GroundOrbCompanion({
         <meshStandardMaterial color="#75636a" roughness={0.8} metalness={0.01} emissive="#957b82" emissiveIntensity={0.14} />
       </mesh>
       <mesh position={[0, -0.03, 0.29]} scale={[0.045, 0.42, 0.035]} rotation={[0.08, 0, 0.18]}>
-        <capsuleGeometry args={[0.055, 0.65, 4, 10]} />
+        <cylinderGeometry args={[0.055, 0.055, 0.65, 10]} />
         <meshStandardMaterial color="#d6c79c" emissive="#d6c79c" emissiveIntensity={0.58} roughness={0.48} />
       </mesh>
       <pointLight position={[0, 0.08, 0.18]} intensity={0.34} distance={2.4} decay={2} color="#d6c79c" />
