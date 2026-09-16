@@ -23,17 +23,18 @@ test('shared movement kernel preserves stable embodied controls and bounded moti
   assert.doesNotMatch(travel, /embodied-motion-kernel-v66|homeDistanceLifeMap|homeDistanceGround|spawnX\s*=\s*4\.45/)
 })
 
-test('Home keeps one V223 cinematic Canvas owner while predecessor art remains historical provenance', () => {
+test('Home keeps one V223 first-person cinematic Canvas owner while predecessor art remains historical provenance', () => {
   has(homeRuntime, 'HomeWorldProductionV223 as HomeWorldProduction')
   has(activeHomeRuntime3d, 'export function HomeWorldProductionV223')
   has(activeHomeRuntime3d, 'URAI_ORB_STATE_EVENT')
   has(activeHomeRuntime3d, 'resolveOrbSensoryOutput')
   has(activeHomeRuntime3d, 'data-home-visible-world="cinematic-lived-world-threshold"')
-  has(activeHomeRuntime3d, 'data-home-embodied-self="visible-cinematic-avatar"')
+  has(activeHomeRuntime3d, 'data-home-embodied-self="first-person-viewpoint-no-avatar"')
   has(activeHomeRuntime3d, 'data-home-movement="camera-look-world-surface-selection"')
   has(activeHomeRuntime3d, 'data-home-ground-entry="physical-world-surface"')
   has(activeHomeRuntime3d, 'data-home-life-map-entry="visible-sky-broad-interaction"')
   assert.equal((activeHomeRuntime3d.match(/<Canvas/g) ?? []).length, 1)
+  assert.doesNotMatch(activeHomeRuntime3d, /function VisibleUserAvatar|<VisibleUserAvatar|home-visible-user-avatar|cinematic-third-person|urai-home-embodied-avatar/)
   assert.doesNotMatch(activeHomeRuntime3d, /stepEmbodiedMotion|useMovementInput|MobileMovementPad/)
   assert.doesNotMatch(homeArt, /<Canvas/)
   assert.doesNotMatch(homeGraph, /PRODUCTION CERTIFIED|retained-pixel-pass|pixel-certified/)
