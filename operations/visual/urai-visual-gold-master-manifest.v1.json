@@ -8,8 +8,8 @@
   "evidenceTransferAcrossHeadMove": false,
   "fixedHistoricalImageCountsAreCompletionAuthority": false,
   "sourceHierarchy": [
-    {"pr":1237,"role":"unified-runtime-and-visual-control-plane-authority"},
-    {"pr":1241,"role":"selective-donor-personalized-lived-world-passport-global-field","wholeTreeAuthority":false},
+    {"pr":1237,"role":"unified-runtime-and-visual-control-plane-authority","personalizedLivedWorldSourceConverged":true,"passportExactOriginSourceConverged":true},
+    {"pr":1241,"role":"historical-selective-donor-for-uncarried-lived-world-passport-global-field-scope","wholeTreeAuthority":false},
     {"pr":1243,"role":"selective-donor-possible-futures-truth-self-ledger-global-field","wholeTreeAuthority":false},
     {"pr":1252,"role":"historical-mechanical-conflict-probe","mergeable":false}
   ],
@@ -27,8 +27,8 @@
     {"id":"VGM-REPLAY-001","experience":"replay","system":"memory-interior","status":"CURRENT_CANDIDATE"},
     {"id":"VGM-GROUND-001","experience":"ground","system":"descent-return","status":"CURRENT_CANDIDATE"},
     {"id":"VGM-GROUND-002","experience":"ground","system":"generic-fallback-art","status":"REJECTED"},
-    {"id":"VGM-GROUND-003","experience":"ground","system":"personalized-lived-world","status":"MISSING_REPLACEMENT_REQUIRED","donorPr":1241},
-    {"id":"VGM-PASSPORT-001","experience":"home","system":"physical-passport-artifact","status":"MISSING_REPLACEMENT_REQUIRED","donorPr":1241},
+    {"id":"VGM-GROUND-003","experience":"ground","system":"personalized-lived-world-source-boundary","status":"CURRENT_CANDIDATE","sourceConverged":true,"visualAcceptance":false},
+    {"id":"VGM-PASSPORT-001","experience":"home","system":"physical-passport-artifact","status":"CURRENT_CANDIDATE","sourceConverged":true,"exactOriginCaptureConverged":true,"visualAcceptance":false},
     {"id":"VGM-PASSPORT-002","experience":"passport","system":"passport-ui","status":"CURRENT_CANDIDATE"},
     {"id":"VGM-GEF-001","experience":"home","system":"global-emotional-field-earth","status":"MISSING_REPLACEMENT_REQUIRED","donorPr":1243},
     {"id":"VGM-PEW-001","experience":"home","system":"personal-emotional-weather","status":"MISSING_REPLACEMENT_REQUIRED"},
