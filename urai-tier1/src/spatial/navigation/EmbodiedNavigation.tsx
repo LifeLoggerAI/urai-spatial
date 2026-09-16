@@ -70,6 +70,17 @@ export function useMovementInput({
     callbacksRef.current = { onEscape, onInteract, onReset }
   }, [onEscape, onInteract, onReset])
 
+  // Demand-mode canvases still need a steady render cadence while the user is
+  // actively moving. This pulse is input-driven only: reduced-motion can keep
+  // decorative animation suppressed without degrading locomotion responsiveness.
+  useEffect(() => {
+    if (!enabled) return
+    const active = keys.current.size > 0 || Math.abs(virtualX.current) > 0.01 || Math.abs(virtualZ.current) > 0.01
+    if (!active) return
+    const frame = window.requestAnimationFrame(() => setRevision((value) => value + 1))
+    return () => window.cancelAnimationFrame(frame)
+  }, [enabled, revision])
+
   useEffect(() => {
     if (!enabled) return
     const onKeyDown = (event: KeyboardEvent) => {
@@ -252,9 +263,6 @@ export function stepEmbodiedMotion({
 
   if (requested.lengthSq() > 0.0001) requested.normalize().multiplyScalar(speed)
   const damping = requested.lengthSq() > 0 ? acceleration : deceleration
-  // Preserve real elapsed movement on slow devices without allowing an unbounded
-  // background-tab leap. Integrating in 50 ms substeps keeps damping and collision
-  // behavior stable instead of discarding all frame time above the old hard clamp.
   let remainingDelta = Math.min(delta, 0.5)
   while (remainingDelta > 0) {
     const stepDelta = Math.min(remainingDelta, 0.05)
@@ -285,15 +293,7 @@ export function stepEmbodiedMotion({
   }
 }
 
-export function MovementHelp({
-  realm,
-  summary,
-  controls,
-}: {
-  realm: string
-  summary: string
-  controls: string
-}) {
+export function MovementHelp({ realm, summary, controls }: { realm: string; summary: string; controls: string }) {
   return (
     <details className="urai-movement-help" data-movement-ui="true">
       <summary>Move through {realm}</summary>
