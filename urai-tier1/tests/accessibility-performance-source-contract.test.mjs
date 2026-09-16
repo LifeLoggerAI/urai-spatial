@@ -77,10 +77,12 @@ test('accessibility and performance implementation contracts are present on firs
   assert.doesNotMatch(currentHome, /MobileMovementPad|useMovementInput|stepEmbodiedMotion/, 'Home must not regress to a movement-pad world')
 
   for (const marker of [
-    'data-ground-exploration="first-person"',
+    'data-ground-exploration="first-person-no-visible-body"',
     'data-ground-runtime-owner="first-person-lived-world"',
-    'data-ground-camera="eye-level-terrain-following"',
-    'data-ground-collision="visible-terrain-heightfield"',
+    'data-ground-camera="eye-level-terrain-following-no-authored-bob"',
+    'data-ground-collision="terrain-plus-authored-obstacle-field"',
+    'data-ground-visible-avatar="false"',
+    'data-ground-visible-hands="false"',
     'data-ground-place-layer="consent-aware-empty-by-default"',
     'data-ground-private-location-mounted="false"',
     'MobileMovementPad',
@@ -102,7 +104,7 @@ test('accessibility and performance implementation contracts are present on firs
     "not.toHaveAttribute('data-home-camera-mode', 'cinematic-third-person'",
     "toHaveAttribute('data-home-movement', 'camera-look-world-surface-selection'",
     "toHaveCount(0)",
-    'data-ground-exploration="first-person"',
+    'data-ground-exploration="first-person-no-visible-body"',
     "name: 'Ground first-person movement controls'",
   ]) requireText(embodiedEvidence, marker)
 
