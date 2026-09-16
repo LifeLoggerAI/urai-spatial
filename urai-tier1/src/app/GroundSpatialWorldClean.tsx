@@ -193,28 +193,6 @@ function FernPatch({ position, rotationY, scale }: { position: [number, number, 
   return <group position={position} rotation={[0, rotationY, 0]} scale={scale} raycast={() => null}><primitive object={model} /></group>;
 }
 
-function OrganicTree({ position, scale, woodland }: { position: [number, number, number]; scale: number; woodland: boolean }) {
-  const crown = woodland ? "#2d4434" : "#465b42";
-  return <group position={position} scale={scale} raycast={() => null}>
-    <mesh position={[0, 1.55, 0]} castShadow receiveShadow>
-      <cylinderGeometry args={[0.12, 0.23, 3.1, 12]} />
-      <meshStandardMaterial color="#46382e" roughness={0.98} />
-    </mesh>
-    <mesh position={[-0.18, 3.15, 0.05]} scale={[1.0, 0.82, 0.92]} castShadow receiveShadow>
-      <sphereGeometry args={[1, 20, 14]} />
-      <meshStandardMaterial color={crown} roughness={0.97} />
-    </mesh>
-    <mesh position={[0.55, 3.0, -0.18]} scale={[0.82, 0.7, 0.78]} castShadow receiveShadow>
-      <sphereGeometry args={[1, 18, 12]} />
-      <meshStandardMaterial color={woodland ? "#344d39" : "#53694d"} roughness={0.97} />
-    </mesh>
-    <mesh position={[-0.48, 2.75, -0.28]} scale={[0.72, 0.64, 0.68]} castShadow receiveShadow>
-      <sphereGeometry args={[1, 18, 12]} />
-      <meshStandardMaterial color={woodland ? "#263d2e" : "#3e573f"} roughness={0.98} />
-    </mesh>
-  </group>;
-}
-
 function urbanFootprint(index: number) {
   const width = 1.15 + (index % 4) * 0.26;
   const depth = 0.9 + (index % 3) * 0.22;
@@ -293,10 +271,8 @@ function NaturalScatter({ profile }: { profile: EnvironmentProfile }) {
   }
 
   const woodland = profile.id === "woodland";
-  const trees = items.slice(0, woodland ? 18 : 12);
   const ferns = items.slice(0, woodland ? 14 : 8);
-  return <group name={woodland ? "ground-woodland-scanned-understory" : "ground-temperate-scanned-understory"} userData={{ treatment: "organic-tree-canopy-plus-polyhaven-fern-and-scanned-rock" }} raycast={() => null}>
-    {trees.map((item) => <OrganicTree key={`tree-${item.index}`} position={[item.x, item.y, item.z]} scale={1.0 + item.scale * 0.38} woodland={woodland} />)}
+  return <group name={woodland ? "ground-woodland-scanned-understory" : "ground-temperate-scanned-understory"} userData={{ treatment: "polyhaven-fern-and-scanned-rock-understory-placeholder-trees-retired" }} raycast={() => null}>
     {ferns.map((item) => <FernPatch key={`fern-${item.index}`} position={[item.x * 0.72, groundHeight(item.x * 0.72, item.z - 1.3, profile.id), item.z - 1.3]} rotationY={item.index * 0.73} scale={0.82 + item.scale * 0.45} />)}
     {items.slice(0, 8).map((item) => <ScannedRock key={`rock-${item.index}`} variant={item.index % 2 ? "01" : "02"} position={[item.x * 0.55, groundHeight(item.x * 0.55, item.z + 2.2, profile.id) - 0.1, item.z + 2.2]} rotation={[0, item.index * 0.39, 0]} scale={[0.82 * item.scale, 0.48 * item.scale, 0.94 * item.scale]} />)}
   </group>;
@@ -547,7 +523,7 @@ export default function GroundSpatialWorldClean() {
       <a href="/location-map/geographic/">Places</a>
       <a href="/privacy-controls">Privacy</a>
     </nav>
-    <div className="sr-only" role="status" aria-live="polite">{ready ? `${profile.label} is ready for first-person exploration. The physical Orb is present in the world.` : "Ground is forming."}</div>
+    <div className="sr-only" role="status" aria-live="polite">{ready ? `${profile.label} is ready for first-person exploration. UrAi remains available through semantic voice and accessible controls; no follower Orb is rendered.` : "Ground is forming."}</div>
     {isCoarse ? <GroundAnalogPad input={input} /> : null}
     <details className="ground-accessible-movement" data-movement-ui="true"><summary>Movement controls</summary><MobileMovementPad input={input} label="Ground first-person movement controls" /></details>
     <span className="sr-only" data-testid="urai-ground-walkable-surface">The visible Ground terrain is the traversal and click-to-move surface.</span>
