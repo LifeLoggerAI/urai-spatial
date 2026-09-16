@@ -16,7 +16,9 @@ import {
 import {
   INITIAL_URAI_WORLD_STATE,
   type UraiDestination,
+  type UraiOriginRealm,
   type UraiPrivacyMode,
+  type UraiReconstructionFidelity,
   type UraiWorldContextPatch,
   type UraiWorldState,
   type UraiWorldTravelRequest,
@@ -49,6 +51,16 @@ function privacyModeFrom(value: string | null): UraiPrivacyMode | undefined {
   return undefined
 }
 
+function originRealmFrom(value: string | null): UraiOriginRealm | undefined {
+  if (value === 'home' || value === 'ground' || value === 'life-map' || value === 'focus' || value === 'replay' || value === 'passport') return value
+  return undefined
+}
+
+function reconstructionFidelityFrom(value: string | null): UraiReconstructionFidelity | undefined {
+  if (value === 'confirmed' || value === 'partial' || value === 'unknown') return value
+  return undefined
+}
+
 function contextFromLocation(): UraiWorldContextPatch {
   if (typeof window === 'undefined') return {}
   const params = new URLSearchParams(window.location.search)
@@ -56,9 +68,14 @@ function contextFromLocation(): UraiWorldContextPatch {
   const threadId = params.get('thread') ?? undefined
   const personId = params.get('personId') ?? undefined
   const placeId = params.get('placeId') ?? undefined
+  const eraId = params.get('eraId') ?? undefined
   const replayManifestId = params.get('manifestId') ?? undefined
   const privacyMode = privacyModeFrom(params.get('privacyMode') ?? params.get('state'))
+  const originRealm = originRealmFrom(params.get('originRealm'))
+  const returnToken = params.get('returnToken') ?? undefined
+  const reconstructionFidelity = reconstructionFidelityFrom(params.get('fidelity'))
   const entryPortal = params.get('entryPortal') ?? params.get('from') ?? undefined
+  const cameraCheckpoint = params.get('cameraCheckpoint') ?? undefined
   const demo = params.get('demo') === '1'
 
   return {
@@ -66,9 +83,14 @@ function contextFromLocation(): UraiWorldContextPatch {
     ...(threadId ? { threadId } : {}),
     ...(personId ? { personId } : {}),
     ...(placeId ? { placeId } : {}),
+    ...(eraId ? { eraId } : {}),
     ...(replayManifestId ? { replayManifestId } : {}),
     ...(privacyMode ? { privacyMode } : {}),
+    ...(originRealm ? { originRealm } : {}),
+    ...(returnToken ? { returnToken } : {}),
+    ...(reconstructionFidelity ? { reconstructionFidelity } : {}),
     ...(entryPortal ? { entryPortal } : {}),
+    ...(cameraCheckpoint ? { cameraCheckpoint } : {}),
     ...(demo ? { demo: true } : {}),
   }
 }
