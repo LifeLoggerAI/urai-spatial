@@ -7,6 +7,7 @@ export type SpatialHapticCueId =
   | 'gate-shown'
   | 'return-home'
   | 'ground-activation'
+  | 'ground-crossing'
   | 'ground-arrival'
   | 'orb-attention'
   | 'memory-ready'
@@ -28,6 +29,7 @@ export const HAPTIC_CUE_REGISTRY: Record<SpatialHapticCueId, SpatialHapticCue> =
   'gate-shown': { id: 'gate-shown', label: 'Gate Shown', patternMs: [10], reducedMotionSafe: true },
   'return-home': { id: 'return-home', label: 'Return Home', patternMs: [18], reducedMotionSafe: true },
   'ground-activation': { id: 'ground-activation', label: 'Ground Activation', patternMs: [12], reducedMotionSafe: true },
+  'ground-crossing': { id: 'ground-crossing', label: 'Ground Material Crossing', patternMs: [14, 34, 20], reducedMotionSafe: true },
   'ground-arrival': { id: 'ground-arrival', label: 'Ground Arrival', patternMs: [24], reducedMotionSafe: true },
   'orb-attention': { id: 'orb-attention', label: 'Orb Attention', patternMs: [10], reducedMotionSafe: true },
   'memory-ready': { id: 'memory-ready', label: 'Memory Ready', patternMs: [18, 90, 8], reducedMotionSafe: true },
