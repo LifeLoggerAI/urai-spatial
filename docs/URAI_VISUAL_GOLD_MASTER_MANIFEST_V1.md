@@ -21,6 +21,12 @@ A workflow named visual proof is not visual acceptance. A head move invalidates 
 6. Visual sidecar restacks #1255/#1256/#1258/#1260 and sync probes are superseded historical provenance.
 7. PR #1177 and older Home/Orb/Ground/Focus lanes are historical/current-supporting lineage only where not already superseded.
 
+## First-person Home master reference package
+
+`docs/URAI_HOME_FPV_MASTER_VISUAL_REFERENCE_V1.md` is the current **candidate reference contract** for Home presentation → Avatar activation → first-person Home continuity, the candidate 16-frame production-reference package, Orb state continuity, Passport placement, camera/lens rules, accessibility variants, failure criteria, and implementation handoff.
+
+It is subordinate to this manifest and does not convert concept/reference art into accepted runtime pixels. Its fixed 16-frame set is a production working set, not a replacement for the VGM inventory or Gold-Master completion boundary. Global Emotional Field Earth and Personal Emotional Weather remain `MISSING_REPLACEMENT_REQUIRED` until governed production art and literal-pixel evidence exist.
+
 ## Locked current visual/product canon
 
 ### Home
