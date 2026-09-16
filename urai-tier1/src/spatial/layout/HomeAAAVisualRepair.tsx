@@ -5,8 +5,10 @@ import { useEffect, useState } from 'react'
 import type { ThreeEvent } from '@react-three/fiber'
 import { HomeOrbGroundedV288 } from '@/spatial/assets/HomeOrbGroundedV288'
 import { requestUraiWorldTravel } from '@/spatial/world/worldEvents'
+import { HOME_PASSPORT_ORIGIN_CAPTURE_EVENT } from '@/spatial/home/homeExperienceState'
 
 function openPassport() {
+  window.dispatchEvent(new Event(HOME_PASSPORT_ORIGIN_CAPTURE_EVENT))
   requestUraiWorldTravel({
     destination: 'passport',
     href: '/passport',
@@ -103,8 +105,9 @@ function HomePassportOwnershipObject() {
  * Historical V281 localized Ground/ascent overlays remain retired. V288 remains
  * the visual Orb repair while the V223 Orb owner keeps semantic/speech/pointer
  * ownership. Passport is a first-person-only physical ownership artifact that
- * reuses the existing Passport vault and world-travel stack; it is not a portal
- * and remains a visual candidate until literal desktop/mobile pixels are accepted.
+ * reuses the existing Passport vault and world-travel stack; it is not a portal.
+ * Before travel it asks the Home controller to persist the exact live FP origin,
+ * so semantic return can restore the prior camera/state rather than generic Home.
  */
 export function HomeAAAVisualRepair() {
   return <>
