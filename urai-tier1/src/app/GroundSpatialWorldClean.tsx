@@ -3,16 +3,35 @@
 import { Canvas, useFrame, useThree, type ThreeEvent } from "@react-three/fiber";
 import { Environment, useGLTF, useTexture } from "@react-three/drei";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Suspense, useCallback, useEffect, useMemo, useRef, useState, type MutableRefObject } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState, type MutableRefObject, type PointerEvent as ReactPointerEvent } from "react";
 import * as THREE from "three";
 import {
   MobileMovementPad,
+  clearVirtualMovement,
+  setVirtualMovement,
   stepEmbodiedMotion,
   useDragLook,
   useMovementInput,
   type MovementInput,
+  type MovementObstacle,
 } from "@/spatial/navigation/EmbodiedNavigation";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
+import {
+  DEFAULT_GROUND_WEATHER,
+  GROUND_ACCELERATION_MPS2,
+  GROUND_ARRIVAL_RADIUS_M,
+  GROUND_DECELERATION_MPS2,
+  GROUND_DESKTOP_SPEED_MPS,
+  GROUND_EYE_HEIGHT_M,
+  GROUND_LANDSCAPE_FOV_DEG,
+  GROUND_MOBILE_SPEED_MPS,
+  GROUND_NEAR_PLANE_M,
+  GROUND_PORTRAIT_FOV_DEG,
+  buildGroundObstacleField,
+  slopeDegrees,
+  slopeSpeedMultiplier,
+} from "@/spatial/ground/groundCanon";
+import { GroundOrbCompanion } from "@/spatial/ground/GroundOrbCompanion";
 
 type EnvironmentProfileId = "temperate" | "urban" | "woodland" | "arid" | "coastal";
 
@@ -38,7 +57,6 @@ const PROFILES: Record<EnvironmentProfileId, EnvironmentProfile> = {
 
 const BOUNDS = { minX: -28, maxX: 28, minZ: -48, maxZ: 16 };
 const SPAWN = new THREE.Vector3(0, 0, 6);
-const EYE_HEIGHT = 1.69;
 const ROCK_01 = "/assets/urai/home-production/cc0/polyhaven-v48/rock_face_01/asset.gltf";
 const ROCK_02 = "/assets/urai/home-production/cc0/polyhaven-v48/rock_face_02/asset.gltf";
 const FERN = "/assets/urai/home-production/cc0/polyhaven-v48/fern_02/asset.gltf";
@@ -115,7 +133,7 @@ function TerrainMaterial({ profile }: { profile: EnvironmentProfile }) {
     roughnessMap={arm}
     roughness={profile.roughness}
     metalnessMap={arm}
-    metalness={profile.id === "urban" ? 0.035 : 0.005}
+    metalness={profile.id === "urban" ? 0.02 : 0.005}
     vertexColors
     envMapIntensity={0.42}
   />;
@@ -138,7 +156,7 @@ function normalizedClone(source: THREE.Object3D) {
       const material = sourceMaterial.clone();
       if (material instanceof THREE.MeshStandardMaterial) {
         material.roughness = Math.max(material.roughness, 0.86);
-        material.metalness = Math.min(material.metalness, 0.04);
+        material.metalness = Math.min(material.metalness, 0.02);
         material.envMapIntensity = 0.42;
       }
       return material;
@@ -224,11 +242,11 @@ function UrbanBuilding({ index, x, z, heightValue }: { index: number; x: number;
   const windows = useMemo(() => Array.from({ length: Math.max(2, Math.min(7, Math.floor(heightValue / 1.6))) }, (_, row) => row), [heightValue]);
   return <group position={[x, 0, z]} raycast={() => null}>
     <mesh geometry={geometry} castShadow receiveShadow>
-      <meshStandardMaterial color={index % 3 === 0 ? "#555d61" : index % 3 === 1 ? "#676766" : "#4c5358"} roughness={0.78} metalness={0.08} />
+      <meshStandardMaterial color={index % 3 === 0 ? "#555d61" : index % 3 === 1 ? "#676766" : "#4c5358"} roughness={0.78} metalness={0.02} />
     </mesh>
-    {windows.map((row) => <mesh key={row} position={[0, 1.15 + row * 1.35, 0.96 + (index % 3) * 0.08]} rotation={[0, 0, 0]} scale={[0.85 + (index % 2) * 0.25, 0.12, 1]}>
+    {windows.map((row) => <mesh key={row} position={[0, 1.15 + row * 1.35, 0.96 + (index % 3) * 0.08]} scale={[0.85 + (index % 2) * 0.25, 0.12, 1]}>
       <planeGeometry args={[1, 1]} />
-      <meshStandardMaterial color="#77878a" emissive="#52656a" emissiveIntensity={0.08} roughness={0.32} metalness={0.12} />
+      <meshStandardMaterial color="#77878a" emissive="#52656a" emissiveIntensity={0.08} roughness={0.32} metalness={0.02} />
     </mesh>)}
   </group>;
 }
@@ -262,13 +280,11 @@ function NaturalScatter({ profile }: { profile: EnvironmentProfile }) {
       {items.map((item) => <UrbanBuilding key={item.index} index={item.index} x={item.x * 1.15} z={Math.min(-34, item.z - 21)} heightValue={5.8 + (item.index % 6) * 1.55} />)}
     </group>;
   }
-
   if (profile.id === "arid") {
     return <group name="ground-arid-scanned-geology" userData={{ treatment: "polyhaven-scanned-rock-field" }} raycast={() => null}>
       {items.slice(0, 12).map((item) => <ScannedRock key={item.index} variant={item.index % 2 ? "01" : "02"} position={[item.x, item.y - 0.02, item.z]} rotation={[0, item.index * 0.41, 0]} scale={[2.2 * item.scale, 1.25 * item.scale, 2.45 * item.scale]} />)}
     </group>;
   }
-
   if (profile.id === "coastal") {
     return <group name="ground-coastal-world" userData={{ treatment: "scanned-rock-shore-and-physical-water" }} raycast={() => null}>
       <CoastalWater />
@@ -286,6 +302,19 @@ function NaturalScatter({ profile }: { profile: EnvironmentProfile }) {
   </group>;
 }
 
+function DistantGroundContinuation({ profile }: { profile: EnvironmentProfile }) {
+  return <group name="ground-distant-continuation" raycast={() => null} userData={{ perceivedRangeMeters: 400 }}>
+    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.32, -128]} receiveShadow>
+      <planeGeometry args={[420, 300, 36, 28]} />
+      <meshStandardMaterial color={profile.horizon} roughness={0.98} metalness={0} />
+    </mesh>
+    <mesh position={[0, 16, -205]} scale={[130, 22, 18]}>
+      <sphereGeometry args={[1, 48, 24]} />
+      <meshStandardMaterial color={profile.groundDeep} roughness={1} metalness={0} />
+    </mesh>
+  </group>;
+}
+
 function LivedGroundWorld({ profile, target }: { profile: EnvironmentProfile; target: MutableRefObject<THREE.Vector3 | null> }) {
   const geometry = useMemo(() => buildTerrainGeometry(profile), [profile]);
   useEffect(() => () => geometry.dispose(), [geometry]);
@@ -298,6 +327,7 @@ function LivedGroundWorld({ profile, target }: { profile: EnvironmentProfile; ta
       0,
       THREE.MathUtils.clamp(event.point.z, BOUNDS.minZ, BOUNDS.maxZ),
     );
+    window.dispatchEvent(new CustomEvent('urai:ground-surface-commit', { detail: { x: event.point.x, z: event.point.z } }));
   };
 
   return <group name="ground-lived-world" userData={{ semanticOwner: "ground-physical-lived-world", placeLayer: "consent-aware-empty-by-default", profile: profile.id, materialAuthority: "scanned-pbr-ground-v2" }}>
@@ -305,20 +335,24 @@ function LivedGroundWorld({ profile, target }: { profile: EnvironmentProfile; ta
       <TerrainMaterial profile={profile} />
     </mesh>
     <NaturalScatter profile={profile} />
+    <DistantGroundContinuation profile={profile} />
   </group>;
 }
 
-function FirstPersonPlayer({ input, yaw, pitch, target, profile, onReady }: {
+function FirstPersonPlayer({ input, yaw, pitch, target, profile, obstacles, playerPosition, isCoarse, onReady }: {
   input: MovementInput;
   yaw: MutableRefObject<number>;
   pitch: MutableRefObject<number>;
   target: MutableRefObject<THREE.Vector3 | null>;
   profile: EnvironmentProfile;
+  obstacles: readonly MovementObstacle[];
+  playerPosition: MutableRefObject<THREE.Vector3>;
+  isCoarse: boolean;
   onReady: () => void;
 }) {
   const { camera, size } = useThree();
   const reducedMotion = useReducedMotion();
-  const position = useRef(SPAWN.clone());
+  const position = playerPosition;
   const velocity = useRef(new THREE.Vector3());
   const desired = useRef(new THREE.Vector3());
   const lookAt = useRef(new THREE.Vector3());
@@ -326,6 +360,9 @@ function FirstPersonPlayer({ input, yaw, pitch, target, profile, onReady }: {
   const ready = useRef(false);
 
   useFrame((_, delta) => {
+    const terrainSlope = slopeDegrees((x, z) => groundHeight(x, z, profile.id), position.current.x, position.current.z);
+    const slopeMultiplier = slopeSpeedMultiplier(terrainSlope);
+    const baseSpeed = isCoarse ? GROUND_MOBILE_SPEED_MPS : GROUND_DESKTOP_SPEED_MPS;
     stepEmbodiedMotion({
       position: position.current,
       velocity: velocity.current,
@@ -333,15 +370,16 @@ function FirstPersonPlayer({ input, yaw, pitch, target, profile, onReady }: {
       target,
       yaw: yaw.current,
       delta,
-      speed: 3.7,
-      acceleration: 12,
-      deceleration: 14,
+      speed: baseSpeed * slopeMultiplier,
+      acceleration: GROUND_ACCELERATION_MPS2,
+      deceleration: GROUND_DECELERATION_MPS2,
       bounds: BOUNDS,
-      arrivalRadius: 0.32,
+      obstacles: [...obstacles],
+      arrivalRadius: GROUND_ARRIVAL_RADIUS_M,
     });
 
     const surfaceY = groundHeight(position.current.x, position.current.z, profile.id);
-    desired.current.set(position.current.x, surfaceY + EYE_HEIGHT, position.current.z);
+    desired.current.set(position.current.x, surfaceY + GROUND_EYE_HEIGHT_M, position.current.z);
     camera.position.lerp(desired.current, reducedMotion ? 1 : 1 - Math.pow(0.001, delta));
 
     forward.current.set(-Math.sin(yaw.current), 0, -Math.cos(yaw.current));
@@ -351,7 +389,7 @@ function FirstPersonPlayer({ input, yaw, pitch, target, profile, onReady }: {
 
     if (camera instanceof THREE.PerspectiveCamera) {
       const portrait = size.height > size.width;
-      const desiredFov = portrait ? 66 : 58;
+      const desiredFov = portrait ? GROUND_PORTRAIT_FOV_DEG : GROUND_LANDSCAPE_FOV_DEG;
       if (Math.abs(camera.fov - desiredFov) > 0.01) {
         camera.fov = desiredFov;
         camera.updateProjectionMatrix();
@@ -366,25 +404,72 @@ function FirstPersonPlayer({ input, yaw, pitch, target, profile, onReady }: {
   return null;
 }
 
-function GroundScene({ profile, input, yaw, pitch, target, onReady }: {
+function GroundScene({ profile, input, yaw, pitch, target, obstacles, playerPosition, isCoarse, onReady }: {
   profile: EnvironmentProfile;
   input: MovementInput;
   yaw: MutableRefObject<number>;
   pitch: MutableRefObject<number>;
   target: MutableRefObject<THREE.Vector3 | null>;
+  obstacles: readonly MovementObstacle[];
+  playerPosition: MutableRefObject<THREE.Vector3>;
+  isCoarse: boolean;
   onReady: () => void;
 }) {
+  const reducedMotion = useReducedMotion();
+  const heightAt = useCallback((x: number, z: number) => groundHeight(x, z, profile.id), [profile.id]);
+  const weather = DEFAULT_GROUND_WEATHER;
   return <>
     <color attach="background" args={[profile.fog]} />
-    <fogExp2 attach="fog" args={[profile.fog, profile.id === "urban" ? 0.018 : 0.0135]} />
+    <fogExp2 attach="fog" args={[profile.fog, profile.id === "urban" ? 0.018 : 0.0135 + weather.atmosphericDensity * 0.002]} />
     <Environment files="/assets/urai/home-production/cc0/environment/studio-small-08-1k.hdr" background={false} environmentIntensity={0.24} />
     <ambientLight intensity={0.35} color="#cad7d0" />
     <hemisphereLight args={["#d7e5df", profile.groundDeep, 0.56]} />
     <directionalLight position={[-14, 20, 8]} intensity={2.05} color="#f0d6b0" castShadow shadow-mapSize={[1024, 1024]} shadow-camera-left={-28} shadow-camera-right={28} shadow-camera-top={28} shadow-camera-bottom={-28} shadow-camera-far={90} shadow-normalBias={0.035} />
     <directionalLight position={[12, 8, -18]} intensity={0.28} color="#81a8ad" />
     <Suspense fallback={null}><LivedGroundWorld profile={profile} target={target} /></Suspense>
-    <FirstPersonPlayer input={input} yaw={yaw} pitch={pitch} target={target} profile={profile} onReady={onReady} />
+    <GroundOrbCompanion playerPosition={playerPosition} yaw={yaw} groundHeight={heightAt} obstacles={obstacles} reducedMotion={reducedMotion} />
+    <FirstPersonPlayer input={input} yaw={yaw} pitch={pitch} target={target} profile={profile} obstacles={obstacles} playerPosition={playerPosition} isCoarse={isCoarse} onReady={onReady} />
   </>;
+}
+
+function GroundAnalogPad({ input }: { input: MovementInput }) {
+  const pad = useRef<HTMLDivElement>(null);
+  const [active, setActive] = useState(false);
+  const [thumb, setThumb] = useState({ x: 0, y: 0 });
+  const update = (event: ReactPointerEvent<HTMLDivElement>) => {
+    const rect = pad.current?.getBoundingClientRect();
+    if (!rect) return;
+    const centerX = rect.left + rect.width / 2;
+    const centerY = rect.top + rect.height / 2;
+    const dx = event.clientX - centerX;
+    const dy = event.clientY - centerY;
+    const max = 38;
+    const length = Math.hypot(dx, dy);
+    const scale = length > max ? max / length : 1;
+    const x = dx * scale;
+    const y = dy * scale;
+    setThumb({ x, y });
+    const normalizedX = Math.abs(x / max) < 0.14 ? 0 : x / max;
+    const normalizedY = Math.abs(y / max) < 0.14 ? 0 : y / max;
+    setVirtualMovement(input, normalizedX, normalizedY);
+  };
+  const stop = () => {
+    setActive(false);
+    setThumb({ x: 0, y: 0 });
+    clearVirtualMovement(input);
+  };
+  return <div
+    ref={pad}
+    className="ground-analog-pad"
+    data-movement-ui="true"
+    role="group"
+    aria-label="Ground analog movement"
+    data-active={active ? "true" : "false"}
+    onPointerDown={(event) => { setActive(true); event.currentTarget.setPointerCapture(event.pointerId); update(event); }}
+    onPointerMove={(event) => { if (active) update(event); }}
+    onPointerUp={stop}
+    onPointerCancel={stop}
+  ><span style={{ transform: `translate(${thumb.x}px, ${thumb.y}px)` }} /></div>;
 }
 
 export default function GroundSpatialWorldClean() {
@@ -392,15 +477,27 @@ export default function GroundSpatialWorldClean() {
   const params = useSearchParams();
   const [ready, setReady] = useState(false);
   const [dragging, setDragging] = useState(false);
+  const [isCoarse, setIsCoarse] = useState(false);
   const yaw = useRef(0);
   const pitch = useRef(-0.04);
   const target = useRef<THREE.Vector3 | null>(null);
+  const playerPosition = useRef(SPAWN.clone());
   const profile = useMemo(() => resolveProfile(params.get("environment")), [params]);
+  const obstacles = useMemo(() => buildGroundObstacleField(profile.id), [profile.id]);
+
+  useEffect(() => {
+    const query = window.matchMedia('(pointer: coarse)');
+    const update = () => setIsCoarse(query.matches);
+    update();
+    query.addEventListener?.('change', update);
+    return () => query.removeEventListener?.('change', update);
+  }, []);
 
   const reset = useCallback(() => {
     yaw.current = 0;
     pitch.current = -0.04;
     target.current = SPAWN.clone();
+    playerPosition.current.copy(SPAWN);
   }, []);
   const input = useMovementInput({ onEscape: () => router.push("/home?returnFrom=ground"), onReset: reset });
   const look = useDragLook({ yaw, pitch, sensitivity: 0.0032, minPitch: -0.96, maxPitch: 0.96, onDragState: setDragging });
@@ -411,16 +508,22 @@ export default function GroundSpatialWorldClean() {
     data-testid="urai-ground-lived-world"
     data-ground-visual-owner="physical-lived-world"
     data-ground-runtime-owner="first-person-lived-world"
-    data-ground-visual-revision="ground-lived-world-v1"
+    data-ground-visual-revision="ground-lived-world-v2-canon-lock"
     data-ground-art-revision="ground-scanned-pbr-v2"
-    data-ground-exploration="first-person"
-    data-ground-camera="eye-level-terrain-following"
-    data-ground-eye-height={EYE_HEIGHT}
-    data-ground-collision="visible-terrain-heightfield"
+    data-ground-exploration="first-person-no-visible-body"
+    data-ground-camera="eye-level-terrain-following-no-authored-bob"
+    data-ground-eye-height={GROUND_EYE_HEIGHT_M}
+    data-ground-speed-desktop={GROUND_DESKTOP_SPEED_MPS}
+    data-ground-speed-mobile={GROUND_MOBILE_SPEED_MPS}
+    data-ground-acceleration={GROUND_ACCELERATION_MPS2}
+    data-ground-deceleration={GROUND_DECELERATION_MPS2}
+    data-ground-collision="terrain-plus-authored-obstacle-field"
     data-ground-place-layer="consent-aware-empty-by-default"
     data-ground-environment-profile={profile.id}
     data-ground-private-location-mounted="false"
     data-ground-pointer-lock="false"
+    data-ground-visible-avatar="false"
+    data-ground-visible-hands="false"
     data-ground-ready={ready ? "true" : "false"}
     data-ground-camera-mode={dragging ? "look" : "first-person"}
     {...look}
@@ -428,7 +531,7 @@ export default function GroundSpatialWorldClean() {
     <Canvas
       shadows
       dpr={[1, 1.3]}
-      camera={{ position: [0, EYE_HEIGHT, 6], fov: 58, near: 0.08, far: 180 }}
+      camera={{ position: [0, GROUND_EYE_HEIGHT_M, 6], fov: GROUND_LANDSCAPE_FOV_DEG, near: GROUND_NEAR_PLANE_M, far: 800 }}
       gl={{ antialias: true, alpha: false, powerPreference: "high-performance" }}
       onCreated={({ gl }) => {
         gl.outputColorSpace = THREE.SRGBColorSpace;
@@ -436,7 +539,7 @@ export default function GroundSpatialWorldClean() {
         gl.toneMappingExposure = 0.96;
       }}
     >
-      <GroundScene profile={profile} input={input} yaw={yaw} pitch={pitch} target={target} onReady={() => setReady(true)} />
+      <GroundScene profile={profile} input={input} yaw={yaw} pitch={pitch} target={target} obstacles={obstacles} playerPosition={playerPosition} isCoarse={isCoarse} onReady={() => setReady(true)} />
     </Canvas>
 
     <button className="ground-home-return" type="button" onClick={() => router.push("/home?returnFrom=ground")} aria-label="Return Home">Home</button>
@@ -444,20 +547,28 @@ export default function GroundSpatialWorldClean() {
       <a href="/location-map/geographic/">Places</a>
       <a href="/privacy-controls">Privacy</a>
     </nav>
-    <div className="sr-only" role="status" aria-live="polite">{ready ? `${profile.label} is ready for first-person exploration.` : "Ground is forming."}</div>
-    <MobileMovementPad input={input} label="Ground first-person movement controls" />
+    <div className="sr-only" role="status" aria-live="polite">{ready ? `${profile.label} is ready for first-person exploration. The physical Orb is present in the world.` : "Ground is forming."}</div>
+    {isCoarse ? <GroundAnalogPad input={input} /> : null}
+    <details className="ground-accessible-movement" data-movement-ui="true"><summary>Movement controls</summary><MobileMovementPad input={input} label="Ground first-person movement controls" /></details>
     <span className="sr-only" data-testid="urai-ground-walkable-surface">The visible Ground terrain is the traversal and click-to-move surface.</span>
 
     <style jsx>{`
       .ground-spatial-root{position:fixed;inset:0;width:100vw;height:100svh;overflow:hidden;background:${profile.fog};color:#f8fbff;isolation:isolate;outline:none;touch-action:none;cursor:${dragging ? "grabbing" : "grab"}}
       .ground-spatial-root canvas{position:absolute!important;inset:0;z-index:1;display:block;width:100%!important;height:100%!important;background:transparent!important}
       .ground-home-return{position:absolute;z-index:20;right:max(16px,env(safe-area-inset-right));top:max(16px,env(safe-area-inset-top));min-width:48px;min-height:48px;padding:0 13px;border:1px solid rgba(226,248,247,.2);border-radius:999px;background:rgba(5,20,24,.32);color:rgba(241,251,249,.88);backdrop-filter:blur(12px);font:750 9px/1 system-ui;letter-spacing:.12em;text-transform:uppercase;cursor:pointer}
-      .ground-home-return:focus-visible,.ground-place-access a:focus-visible{outline:3px solid #fff;outline-offset:3px}
+      .ground-home-return:focus-visible,.ground-place-access a:focus-visible,.ground-accessible-movement summary:focus-visible{outline:3px solid #fff;outline-offset:3px}
       .ground-place-access{position:absolute;z-index:19;left:max(16px,env(safe-area-inset-left));top:max(16px,env(safe-area-inset-top));display:flex;gap:8px;opacity:.02;transition:opacity .2s ease}
       .ground-place-access:focus-within{opacity:1}
       .ground-place-access a{display:grid;place-items:center;min-width:48px;min-height:48px;padding:0 12px;border:1px solid rgba(226,248,247,.18);border-radius:999px;background:rgba(5,20,24,.72);color:#f4fbfa;text-decoration:none;font:700 10px/1 system-ui}
+      .ground-analog-pad{position:absolute;z-index:24;left:max(18px,env(safe-area-inset-left));bottom:max(88px,calc(env(safe-area-inset-bottom) + 76px));width:100px;height:100px;border:1px solid rgba(233,248,244,.16);border-radius:50%;background:rgba(5,17,20,.18);backdrop-filter:blur(8px);touch-action:none;opacity:.24;transition:opacity .14s ease}
+      .ground-analog-pad[data-active='true']{opacity:.62}
+      .ground-analog-pad span{position:absolute;left:50%;top:50%;width:34px;height:34px;margin:-17px;border:1px solid rgba(244,252,249,.26);border-radius:50%;background:rgba(223,242,233,.13);pointer-events:none}
+      .ground-accessible-movement{position:absolute;z-index:25;left:max(12px,env(safe-area-inset-left));bottom:max(12px,env(safe-area-inset-bottom));max-width:190px;color:#fff;font:700 10px/1 system-ui}
+      .ground-accessible-movement summary{display:grid;place-items:center;min-height:44px;padding:0 12px;border:1px solid rgba(255,255,255,.18);border-radius:999px;background:rgba(4,14,18,.55);cursor:pointer;list-style:none}
+      .ground-accessible-movement summary::-webkit-details-marker{display:none}
+      .ground-accessible-movement:not([open]) :global(.urai-mobile-movement){display:none!important}
       @media(max-width:760px){.ground-home-return{right:12px;top:12px}.ground-place-access{left:12px;top:12px}}
-      @media(prefers-reduced-motion:reduce){.ground-place-access{transition:none}}
+      @media(prefers-reduced-motion:reduce){.ground-place-access,.ground-analog-pad{transition:none}}
     `}</style>
   </main>;
 }
