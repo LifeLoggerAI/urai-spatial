@@ -12,6 +12,7 @@ const requiredFocusedTests = [
   'tests/home-avatar-embodiment-state-contract.test.mjs',
   'tests/home-avatar-presentation-contract.test.mjs',
   'tests/home-experience-controller-contract.test.mjs',
+  'tests/home-passport-return-contract.test.mjs',
   'tests/orb-companion-contract.test.mjs',
   'tests/personalized-lived-world-contract.test.mjs',
   'tests/provider-boundary-contract.test.mjs',
