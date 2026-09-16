@@ -83,10 +83,25 @@ export function HomeEmbodiedAvatar({
     const proceduralBreath = reducedMotion || actions.idle_breath ? 1 : 1 + Math.sin(time * 1.08) * 0.0045
     const attentionYaw = targeted ? -0.045 : 0
     const embodyScale = state === 'embodying' ? 1.006 : 1
+
+    // Keep the Avatar physically present without turning the idle into NPC fidgeting.
+    // Two slow, non-harmonic waves avoid an obvious short loop while staying below
+    // perceptual "sway" levels. Reduced motion settles exactly onto the authored pose.
+    const weightShift = reducedMotion
+      ? 0
+      : Math.sin(time * 0.31 + 0.42) * 0.0045 + Math.sin(time * 0.173 + 1.83) * 0.0025
+    const microYaw = reducedMotion || targeted || state === 'embodying'
+      ? 0
+      : Math.sin(time * 0.227 + 0.77) * 0.0035
+    const settleY = reducedMotion ? 0 : Math.sin(time * 0.19 + 2.1) * 0.0015
+
+    group.position.x = THREE.MathUtils.damp(group.position.x, position[0] + weightShift, 4.2, delta)
+    group.position.y = THREE.MathUtils.damp(group.position.y, position[1] + settleY, 4.2, delta)
+    group.position.z = THREE.MathUtils.damp(group.position.z, position[2], 4.2, delta)
     group.scale.x = THREE.MathUtils.damp(group.scale.x, scale * embodyScale, 9, delta)
     group.scale.y = THREE.MathUtils.damp(group.scale.y, scale * proceduralBreath * embodyScale, 9, delta)
     group.scale.z = THREE.MathUtils.damp(group.scale.z, scale * embodyScale, 9, delta)
-    group.rotation.y = THREE.MathUtils.damp(group.rotation.y, rotationY + attentionYaw, 8, delta)
+    group.rotation.y = THREE.MathUtils.damp(group.rotation.y, rotationY + attentionYaw + microYaw, 8, delta)
   })
 
   const activate = (event: ThreeEvent<MouseEvent>) => {
@@ -118,7 +133,8 @@ export function HomeEmbodiedAvatar({
         semanticOwner: 'avatar',
         embodiedAnchor: true,
         presentationState: state,
-        runtimeAnimation: reducedMotion ? 'still-reduced-motion' : actions.idle_breath ? 'idle_breath' : 'procedural-breath-fallback',
+        runtimeAnimation: reducedMotion ? 'still-reduced-motion' : actions.idle_breath ? 'idle_breath-plus-restrained-micro-presence' : 'procedural-breath-plus-restrained-micro-presence',
+        microPresence: reducedMotion ? 'settled' : 'non-harmonic-weight-shift',
         directDestination: false,
       }}
     >
