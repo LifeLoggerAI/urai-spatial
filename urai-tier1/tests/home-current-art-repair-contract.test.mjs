@@ -12,29 +12,38 @@ const reliquary = fs.readFileSync(new URL('../src/spatial/assets/HomeOrbReliquar
 const sky = fs.readFileSync(new URL('../src/spatial/assets/HomeAtmosphericSky.tsx', import.meta.url), 'utf8')
 const authority = JSON.parse(fs.readFileSync(new URL('../src/app/currentHomeVisualAuthority.json', import.meta.url), 'utf8'))
 
-test('current certified Home visual authority remains V288 until fresh candidate pixels are accepted', () => {
+test('Home authority keeps V288 as the certified predecessor while the authored Orb remains an uncertified current candidate', () => {
   assert.equal(authority.artRevision, 'v288-cinematic-lived-world-grounded-reliquary')
   assert.equal(authority.worldIdentifier, 'cinematic-lived-world-threshold')
-  assert.equal(authority.orbVisualAuthority, 'v288-grounded-biomorphic-reliquary')
+  assert.equal(authority.certificationState, 'candidate-requires-fresh-exact-head-pixels')
+  assert.equal(authority.lastCertifiedPredecessor.orbVisualAuthority, 'v288-grounded-biomorphic-reliquary')
+  assert.equal(authority.currentRuntimeCandidate.orbVisualAuthority, 'authored-living-memory-orb-candidate')
+  assert.equal(authority.currentRuntimeCandidate.orbRuntimeAsset, '/assets/urai/generated/models/urai-orb-avatar-v1.glb')
+  assert.equal(authority.currentRuntimeCandidate.certified, false)
+  assert.equal(authority.orbVisualAuthority, 'authored-living-memory-orb-candidate')
   for (const asset of ['HomeWorldProductionV223.tsx','HomeVisualAuthority.tsx','HomeAtmosphericSky.tsx','HomeOrbReliquaryV286.tsx','HomeOrbGroundedV288.tsx']) {
-    assert.ok(authority.runtimeAssets.includes(asset), `missing V288 runtime asset ${asset}`)
+    assert.ok(authority.runtimeAssets.includes(asset), `missing Home runtime/provenance asset ${asset}`)
+  }
+  for (const asset of ['HomeOrbReliquaryV286.tsx','HomeOrbGroundedV288.tsx']) {
+    assert.ok(authority.lastCertifiedPredecessor.runtimeAssets.includes(asset), `missing V288 certified predecessor asset ${asset}`)
   }
   assert.doesNotMatch(JSON.stringify(authority.runtimeAssets), /HomeLaunchSanctuaryV254\.tsx|HomeWorldProductionV225PolishV2\.tsx/)
   assert.match(visualAuthority, /import \{ HomeOrbGroundedV288 \} from '\.\.\/assets\/HomeOrbGroundedV288'/)
   assert.match(visualAuthority, /<HomeOrbGroundedV288 \/>/)
 })
 
-test('V249 and V281 localized repair modules remain historical inert provenance', () => {
+test('V249 and V281 localized destination overlays remain retired while the V288 visual-only predecessor fallback remains mounted', () => {
   assert.match(currentRepair, /Historical V249 localized destination art is retained only as repository/)
   assert.match(currentRepair, /broad visible atmosphere for Life Map, and V288 for Orb pixels/)
   assert.match(currentRepair, /export function HomeCurrentArtRepair/)
   assert.match(currentRepair, /return null/)
   assert.doesNotMatch(currentRepair, /home-v249-ground-geological-descent|home-v249-life-map-rooted-celestial-ascent|home-v249-organic-living-memory-presence|function suppressRaycast\(/)
 
-  assert.match(aaaRepair, /Historical V281 repair overlays are retired from current Home authority/)
-  assert.match(aaaRepair, /physical-world Ground \/ broad-sky Life Map interaction canon/)
+  assert.match(aaaRepair, /Historical V281 localized Ground\/ascent overlays remain retired/)
+  assert.match(aaaRepair, /accepted V288 grounded biomorphic Orb/)
+  assert.match(aaaRepair, /visual-only while the V223 Orb owner keeps semantic/)
   assert.match(aaaRepair, /export function HomeAAAVisualRepair/)
-  assert.match(aaaRepair, /return null/)
+  assert.match(aaaRepair, /return <HomeOrbGroundedV288 \/>/)
   assert.doesNotMatch(aaaRepair, /aaa-celestial-ascent-v3-gold-master-depth|home-aaa-life-map-celestial-ascent|home-aaa-v281-rooted-ascent-ribbons|buildCelestialVolume/)
 })
 
