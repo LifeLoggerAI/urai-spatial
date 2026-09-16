@@ -66,13 +66,16 @@ test('current Home mounts V288 in the active V223 repair slot while preserving i
   assert.match(adapter, /interactionOwner: true/)
 })
 
-test('certified predecessor authority and inventory still identify V288/V286 and reject retired literal-heart authority', () => {
+test('certified predecessor authority and inventory distinguish V288/V286 evidence from the uncertified current Orb candidate', () => {
   assert.match(authority, /import \{ HomeOrbGroundedV288 \} from '\.\.\/assets\/HomeOrbGroundedV288'/)
   assert.match(authority, /<HomeOrbGroundedV288 \/>/)
   assert.doesNotMatch(authority, /livingHeartGeometryV253|home-v253-literal-living-memory-heart|<GroundedOrbRootsV253|<LiteralOrbAuthorityV253/)
   assert.ok(inventory.runtimeAssets.includes('HomeOrbReliquaryV286.tsx'))
   assert.ok(inventory.runtimeAssets.includes('HomeOrbGroundedV288.tsx'))
-  assert.equal(inventory.orbVisualAuthority, 'v288-grounded-biomorphic-reliquary')
+  assert.equal(inventory.lastCertifiedPredecessor.orbVisualAuthority, 'v288-grounded-biomorphic-reliquary')
+  assert.equal(inventory.currentRuntimeCandidate.orbVisualAuthority, 'authored-living-memory-orb-candidate')
+  assert.equal(inventory.orbVisualAuthority, 'authored-living-memory-orb-candidate')
+  assert.equal(inventory.currentRuntimeCandidate.certified, false)
 })
 
 test('normal exact-head Portal/Orb proof watches and rejects regression away from V288 grounded reliquary authority', () => {
