@@ -24,13 +24,13 @@ PR #1177 moved from predecessor `7d318faa48bd6a0ee0f335cb4dcca7a11280e50b` to `b
 
 ## Preservation boundary
 
-This restack intentionally does **not** replace `urai-tier1/src/app/focus/FocusChamberClient.tsx`. The newer visual/runtime implementation inherited from #1177 remains authoritative.
+The newer #1177 visual/runtime implementation remains authoritative. The isolated restack does not import old-main Focus visuals or replace the newer geometry, lighting, camera, material, movement, asset, privacy, or state logic.
 
 The proof harness does not by itself establish Life Map -> Focus approach acceptance, subjective literal-pixel acceptance, independent approval, governance, deployment, or live parity.
 
-## Known remaining source reconciliation
+## Public copy reconciliation completed
 
-Current #1177 Focus runtime still contains public-facing chamber-era strings such as `Preparing spatial chamber`, `Open Replay for`, `Chamber threshold`, `Focus chamber controls`, and `Spatial chamber ready`. These require copy-only reconciliation on the eventual frozen winner without overwriting its newer visual source.
+Public Focus chamber-era wording was reconciled on this restack to canonical Focus language while retaining stable internal chamber/aperture identifiers. This includes canonical `Enter Replay` accessible copy, Focus loading/fallback/status wording, Focus controls, and neutral Focus Observatory language. The production-route exposure verifier was reconciled to require the canonical `Enter Replay` accessible action rather than the predecessor `Open Replay` wording.
 
 ## Exact-head rule
 
