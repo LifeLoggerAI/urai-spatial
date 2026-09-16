@@ -11,12 +11,14 @@ const read = (relativePath) => fs.readFileSync(path.join(root, relativePath), 'u
 const controller = read('src/spatial/world/WorldTransitionController.tsx')
 const gateway = read('src/spatial/world/GroundGateway.tsx')
 const home = read('src/spatial/layout/HomeWorldProductionV223.tsx')
+const bridge = read('src/spatial/ground/GroundOrbCompanion.tsx')
 const css = read('src/spatial/world/worldNavigation.css')
 
-test('Ground travel is visually owned by Home rather than the generic aperture stack', () => {
-  assert.match(controller, /destination === 'infrastructure-hub'\) return 40/)
-  assert.match(controller, /pendingTravel\?\.destination === 'infrastructure-hub'/)
-  assert.match(controller, /data-ground-visual-owner=\{groundOwned \? 'home-authored-descent' : 'none'\}/)
+test('Ground descent and return are realm-owned rather than generic aperture/tunnel travel', () => {
+  assert.match(controller, /to === 'infrastructure-hub' \|\| \(from === 'infrastructure-hub' && to === 'home'\)/)
+  assert.match(controller, /const groundOwned = isGroundOwnedTravel\(currentWorld\.destination, request\.destination\)/)
+  assert.match(controller, /const delay = groundOwned \? 40 : transitionDuration\(request\.destination\)/)
+  assert.match(controller, /data-ground-visual-owner=\{groundOwned \? 'realm-authored-transition' : 'none'\}/)
   assert.match(controller, /!groundOwned \? <>/)
   assert.match(css, /\.urai-world-transition__aperture/)
 })
@@ -29,4 +31,12 @@ test('Home terrain owns pointer and touch entry while GroundGateway is semantic 
   assert.match(gateway, /Enter Ground — explore your physical lived world in first person/)
   assert.doesNotMatch(gateway, /urai-ground-gateway__focus-ring|urai-ground-gateway__surface|Enter below/)
   assert.doesNotMatch(home, /Ground portal|ground portal|white dot|ground-portal/i)
+})
+
+test('Ground Home action uses world return state and no follower Orb is rendered', () => {
+  assert.match(bridge, /requestUraiWorldReturn/)
+  assert.match(bridge, /returnButton\?\.addEventListener\('click', returnThroughWorld, true\)/)
+  assert.match(bridge, /groundOrbMode = 'semantic-invocation-only'/)
+  assert.match(bridge, /no follower Orb is rendered/)
+  assert.match(bridge, /return null/)
 })
