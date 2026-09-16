@@ -87,6 +87,7 @@ test('Focus and Replay crossings are destination-aware and cannot render the sha
   assert.match(worldTransition, /data-to=\{pendingTravel\?\.destination \?\? world\.destination\}/)
   assert.match(worldNavigation, /data-to='focus'[\s\S]*\.urai-world-transition__aperture[\s\S]*display: none/)
   assert.match(worldNavigation, /data-to='replay'[\s\S]*\.urai-world-transition__aperture[\s\S]*display: none/)
+  assert.match(worldNavigation, /data-from='focus'\]\[data-to='life-map'[\s\S]*\.urai-world-transition__aperture[\s\S]*display: none/)
   assert.match(worldNavigation, /urai-memory-depth-crossing/)
   const memoryCrossing = worldNavigation.slice(worldNavigation.indexOf("data-to='focus'"))
   assert.doesNotMatch(memoryCrossing, /repeating-radial-gradient[^}]*urai-memory-depth-crossing/)
