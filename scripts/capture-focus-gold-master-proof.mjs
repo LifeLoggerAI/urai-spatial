@@ -85,6 +85,17 @@ function attachDiagnostics(page, label) {
   return () => ({ label, consoleErrors, pageErrors, failedRequests })
 }
 
+function blockingFailedRequests(failedRequests) {
+  return failedRequests.filter((request) => {
+    // Next.js can abort an in-flight static chunk or stylesheet when the proof
+    // intentionally changes realms. Retain those diagnostics in the receipt,
+    // but do not confuse a navigation cancellation with a missing/failed asset.
+    const expectedNavigationAbort = request.failure === 'net::ERR_ABORTED'
+      && /\/_next\/static\//.test(request.url)
+    return !expectedNavigationAbort
+  })
+}
+
 async function openContext(browser, spec, options = {}) {
   const context = await browser.newContext({
     viewport: { width: spec.width, height: spec.height },
@@ -219,7 +230,7 @@ async function captureFocus(browser, spec, state) {
     diagnostics: diagnosticResult,
   }
   receipt.captures.push(record)
-  if (!verification.passed || diagnosticResult.pageErrors.length || diagnosticResult.failedRequests.length) receipt.errors.push(record)
+  if (!verification.passed || diagnosticResult.pageErrors.length || blockingFailedRequests(diagnosticResult.failedRequests).length) receipt.errors.push(record)
 }
 
 async function captureJourney(browser) {
@@ -283,12 +294,24 @@ async function captureJourney(browser) {
     videoPath = path.relative(outputDir, target)
   }
 
-  const expectedPaths = ['/focus', '/focus', '/replay', '/focus', '/life-map']
+  // The transition frame is intentionally captured after the client route has
+  // committed so it proves the destination crossing rather than a stale source
+  // page. Replay arrival then proves the fully mounted destination separately.
+  const expectedPaths = ['/focus', '/replay', '/replay', '/focus', '/life-map']
   const actualPaths = steps.map((step) => step.pathname.replace(/\/+$/, '') || '/')
+  const blockingFailures = blockingFailedRequests(diagnosticResult.failedRequests)
   const passed = expectedPaths.every((expected, index) => actualPaths[index] === expected)
     && diagnosticResult.pageErrors.length === 0
-    && diagnosticResult.failedRequests.length === 0
-  receipt.journey = { id, steps, video: videoPath, expectedPaths, actualPaths, passed, diagnostics: diagnosticResult }
+    && blockingFailures.length === 0
+  receipt.journey = {
+    id,
+    steps,
+    video: videoPath,
+    expectedPaths,
+    actualPaths,
+    passed,
+    diagnostics: { ...diagnosticResult, blockingFailedRequests: blockingFailures },
+  }
   if (!passed) receipt.errors.push(receipt.journey)
 }
 
