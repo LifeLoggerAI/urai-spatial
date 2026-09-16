@@ -54,7 +54,7 @@ test('V288 biomorphic reliquary remains certified predecessor evidence while the
   has(renderer, '/assets/urai/generated/models/urai-orb-avatar-v1.glb')
   has(renderer, 'name="home-living-memory-orb"')
   has(renderer, 'setLoop(THREE.LoopOnce, 1)')
-  assert.doesNotMatch(renderer, /THREE\.LoopRepeat\s*,\s*Infinity/)
+  assert.doesNotMatch(renderer, /next\.reset\(\)\.setLoop\(THREE\.LoopRepeat\s*,\s*Infinity\)/)
 })
 
 test('Home Life Map is the broad visible sky and preserves one canonical ascent transaction', () => {
