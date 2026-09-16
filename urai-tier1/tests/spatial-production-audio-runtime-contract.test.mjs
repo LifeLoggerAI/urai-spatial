@@ -102,10 +102,11 @@ test('shared world runtime owns explicit consent, mute, route ambience and acces
   assert.match(runtime, /data-audio-muted/)
 })
 
-test('Passport remains silence-first while explicit cue vocabulary has caption and haptic equivalents', () => {
+test('Passport remains silence-first while explicit cue vocabulary has audible, caption and haptic equivalents', () => {
   assert.match(audioTypes, /"confirm" \| "permission"/)
   assert.match(runtime, /confirm:'Action confirmed\.'/)
   assert.match(runtime, /permission:'Permission action acknowledged\.'/)
+  assert.match(runtime, /if\(consented&&!muted\)audio\.playCue\(cue\)/)
   assert.match(runtime, /cue==='permission'\)navigator\.vibrate\(12\)/)
   assert.match(runtime, /cue==='confirm'\|\|cue==='orb-confirm'\)navigator\.vibrate\(8\)/)
   assert.doesNotMatch(runtime, /destination==='passport'[^\n]*return 'MIRROR'/)
