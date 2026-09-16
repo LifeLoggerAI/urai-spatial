@@ -20,7 +20,7 @@ const receipt = {
   group,
   capturedAt: new Date().toISOString(),
   productAuthority: {
-    home: 'cinematic-third-person-visible-user-grounded-companion',
+    home: 'cinematic-first-person-no-avatar-grounded-companion',
     ground: 'physical-world-surface-to-first-person-lived-world',
     lifeMap: 'broad-visible-sky-ascent',
   },
@@ -80,7 +80,7 @@ async function homeSnapshot(owner, page) {
 
 function snapshotPasses(value) {
   return value.visibleWorld === 'cinematic-lived-world-threshold'
-    && value.embodiedSelf === 'visible-cinematic-avatar'
+    && value.embodiedSelf === 'first-person-viewpoint-no-avatar'
     && value.movement === 'camera-look-world-surface-selection'
     && value.groundEntry === 'physical-world-surface'
     && value.lifeMapEntry === 'visible-sky-broad-interaction'

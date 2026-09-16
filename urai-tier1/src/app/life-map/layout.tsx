@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import { usePathname } from "next/navigation";
 import SpatialLifeMapCanonical from "@/spatial/lifemap/SpatialLifeMapCanonical";
 import "./life-map-stellar-retained-pixel-polish.css";
+import "./life-map-portrait-gold-master.css";
 
 export default function LifeMapLayout({ children }: { children: ReactNode }) {
   const pathname = usePathname();
