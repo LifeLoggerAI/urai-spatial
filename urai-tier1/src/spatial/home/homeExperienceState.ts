@@ -4,7 +4,8 @@ export type HomeStableState =
   | 'AVATAR_SELF_VIEW'
   | 'IMMERSIVE_CONVERSATION'
 
-export type HomeDestination = 'GROUND' | 'LIFE_MAP' | 'PASSPORT'
+export type HomeDestination = 'GROUND' | 'LIFE_MAP'
+export type HomeReturnDestination = HomeDestination | 'PASSPORT'
 
 export type HomeTransitionState =
   | 'AVATAR_EMBODIMENT_TRANSITION'
@@ -43,7 +44,7 @@ export type HomeOriginSnapshot = {
 
 export type HomeReturnFrame = {
   kind: 'local' | 'destination'
-  destination?: HomeDestination
+  destination?: HomeReturnDestination
   origin: HomeOriginSnapshot
 }
 
@@ -66,7 +67,7 @@ export type HomeExperienceEvent =
   | { type: 'SKY_ACTIVATE'; snapshot: HomeOriginSnapshot }
   | { type: 'ORB_ACTIVATE'; snapshot: HomeOriginSnapshot }
   | { type: 'TRANSITION_COMPLETE' }
-  | { type: 'DESTINATION_RETURN'; destination: HomeDestination; snapshot?: HomeOriginSnapshot }
+  | { type: 'DESTINATION_RETURN'; destination: HomeReturnDestination; snapshot?: HomeOriginSnapshot }
   | { type: 'ESCAPE' }
   | { type: 'HOME_RESTORE_COMPLETE' }
   | { type: 'RECOVER'; snapshot?: HomeOriginSnapshot }
