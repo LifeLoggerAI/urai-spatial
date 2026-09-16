@@ -4,12 +4,6 @@ on:
   push:
     branches:
       - ground-goldmaster-convergence-20260916-v1
-    paths:
-      - '.github/workflows/ground-transition-proof.yml'
-      - 'scripts/capture-ground-transition-proof.mjs'
-      - 'urai-tier1/src/spatial/layout/HomeWorldProductionV223.tsx'
-      - 'urai-tier1/src/spatial/ground/groundTransitionTimeline.ts'
-      - 'urai-tier1/src/app/GroundSpatialWorldClean.tsx'
   pull_request:
     branches:
       - orb-canon-lock-convergence-v2-20260916
@@ -85,10 +79,7 @@ jobs:
             sleep 1
           done
           curl --fail --silent --show-error http://127.0.0.1:4173/home/ >/dev/null
-          URAI_PROOF_BASE=http://127.0.0.1:4173 \
-          URAI_PROOF_DIR="$output" \
-          URAI_EXACT_HEAD="$URAI_EXACT_HEAD" \
-            node scripts/capture-ground-transition-proof.mjs
+          URAI_PROOF_BASE=http://127.0.0.1:4173 URAI_PROOF_DIR="$output" URAI_EXACT_HEAD="$URAI_EXACT_HEAD" node scripts/capture-ground-transition-proof.mjs
 
       - name: Verify exact-head receipt
         shell: bash
