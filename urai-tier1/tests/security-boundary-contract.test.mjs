@@ -3,12 +3,15 @@ import fs from "node:fs";
 import test from "node:test";
 
 const providerFunctions = fs.readFileSync(new URL("../../apps/functions/src/providerFunctions.ts", import.meta.url), "utf8");
+const founderVoiceProvider = fs.readFileSync(new URL("../../apps/functions/src/founderVoiceProvider.ts", import.meta.url), "utf8");
 const staticProviderRoutes = [
   new URL("../src/app/api/voice/elevenlabs/route.ts", import.meta.url),
   new URL("../src/app/api/urai/narrator/elevenlabs/route.ts", import.meta.url),
+  new URL("../src/app/api/urai/founder-voice/elevenlabs/route.ts", import.meta.url),
   new URL("../src/app/api/urai/orb/openai/route.ts", import.meta.url),
 ];
 const narratorClient = fs.readFileSync(new URL("../src/spatial/narrator/elevenlabsClient.ts", import.meta.url), "utf8");
+const founderVoiceClient = fs.readFileSync(new URL("../src/spatial/narrator/founderVoiceClient.ts", import.meta.url), "utf8");
 const narratorPlayback = fs.readFileSync(new URL("../src/spatial/narrator/narratorPlayback.ts", import.meta.url), "utf8");
 const checkoutRoute = fs.readFileSync(new URL("../src/app/api/stripe/create-checkout-session/route.ts", import.meta.url), "utf8");
 const firebaseUser = fs.readFileSync(new URL("../src/lib/server/firebase-user.ts", import.meta.url), "utf8");
@@ -27,6 +30,20 @@ test("Firebase provider functions require revoked-token checks, saved consent, d
   assert.match(providerFunctions, /defineSecret\('ELEVENLABS_API_KEY'\)/);
   assert.match(providerFunctions, /private, no-store, max-age=0/);
   assert.doesNotMatch(providerFunctions, /NEXT_PUBLIC_(OPENAI|ELEVENLABS)/);
+});
+
+test("founder voice provider is isolated, server-resolved, kill-switchable, and fail closed", () => {
+  assert.match(founderVoiceProvider, /verifyIdToken\([^,]+, true\)/);
+  assert.match(founderVoiceProvider, /privacyPolicy\/current/);
+  assert.match(founderVoiceProvider, /fully-enforced/);
+  assert.match(founderVoiceProvider, /providerRateLimits\/elevenlabs-founder/);
+  assert.match(founderVoiceProvider, /defineSecret\('ELEVENLABS_API_KEY'\)/);
+  assert.match(founderVoiceProvider, /FOUNDER_VOICE_ENABLED/);
+  assert.match(founderVoiceProvider, /FOUNDER_VOICE_ID/);
+  assert.match(founderVoiceProvider, /ELEVENLABS_ALLOWED_VOICE_IDS/);
+  assert.match(founderVoiceProvider, /private, no-store, max-age=0/);
+  assert.doesNotMatch(founderVoiceProvider, /NEXT_PUBLIC_/);
+  assert.doesNotMatch(founderVoiceClient, /voiceId|FOUNDER_VOICE_ID|api\.elevenlabs\.io/);
 });
 
 test("active narrator client and controller fail closed until session consent", () => {
