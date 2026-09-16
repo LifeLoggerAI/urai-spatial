@@ -52,6 +52,13 @@
         }
       },
       {
+        "source": "/api/urai/founder-voice/elevenlabs",
+        "function": {
+          "functionId": "founderVoiceProvider",
+          "region": "us-central1"
+        }
+      },
+      {
         "source": "/api/voice/elevenlabs",
         "function": {
           "functionId": "elevenLabsVoiceProvider",
