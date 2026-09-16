@@ -4,6 +4,7 @@ import { useGLTF } from '@react-three/drei'
 import { type ThreeEvent, useFrame } from '@react-three/fiber'
 import { useEffect, useMemo, useRef } from 'react'
 import * as THREE from 'three'
+import { clone as cloneSkeleton } from 'three/addons/utils/SkeletonUtils.js'
 
 export const HOME_AVATAR_MODEL = '/assets/urai/generated/human-makehuman-v4/home-human-makehuman-v4.glb'
 
@@ -20,7 +21,7 @@ type Props = {
 }
 
 function cloneAvatar(source: THREE.Object3D) {
-  const root = source.clone(true)
+  const root = cloneSkeleton(source)
   root.traverse((object) => {
     if (!(object instanceof THREE.Mesh)) return
     object.castShadow = true
