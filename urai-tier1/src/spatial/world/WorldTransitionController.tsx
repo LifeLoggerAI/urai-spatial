@@ -82,6 +82,17 @@ function fallbackReturnDestination(destination: UraiDestination): UraiDestinatio
   return 'infrastructure-hub'
 }
 
+function canonicalReturnDestination(destination: UraiDestination, previousDestination?: UraiDestination) {
+  // Focus and Replay are a deliberate nested spatial chain. A one-deep
+  // previousDestination cannot represent Replay -> Focus -> Life Map because
+  // returning from Replay updates the immediate previous realm to Replay.
+  // Keep these canonical parents authoritative while all other realms retain
+  // their normal previous-destination behavior.
+  if (destination === 'replay') return 'focus' as UraiDestination
+  if (destination === 'focus') return 'life-map' as UraiDestination
+  return previousDestination ?? fallbackReturnDestination(destination)
+}
+
 export function WorldTransitionController() {
   const router = useRouter()
   const { world, phase, pendingTravel, beginTravel } = useUraiWorldState()
@@ -138,7 +149,7 @@ export function WorldTransitionController() {
   const reverseTravel = useCallback(() => {
     const currentWorld = worldRef.current
     if (phaseRef.current !== 'idle') return
-    const destination = currentWorld.previousDestination ?? fallbackReturnDestination(currentWorld.destination)
+    const destination = canonicalReturnDestination(currentWorld.destination, currentWorld.previousDestination)
     const definition = definitionForDestination(destination)
     executeTravel({
       destination,
