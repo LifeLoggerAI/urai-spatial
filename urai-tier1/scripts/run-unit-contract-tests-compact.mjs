@@ -27,6 +27,7 @@ const tests = [
   'tests/home-avatar-embodiment-state-contract.test.mjs',
   'tests/home-avatar-presentation-contract.test.mjs',
   'tests/home-experience-controller-contract.test.mjs',
+  'tests/home-passport-return-contract.test.mjs',
   'tests/home-cohesion-contract.test.mjs',
   'tests/home-current-art-repair-contract.test.mjs',
   'tests/home-ground-lifemap-art-bible-contract.test.mjs',
