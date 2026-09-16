@@ -34,10 +34,12 @@ test('Life Map event listeners remain offline when public Firebase configuration
   assert.equal((lifeMapEventsSource.match(/if \(!firebasePublicEnvReady\)/g) ?? []).length, 1)
   assert.match(lifeMapEventsSource, /if \(!resolvedUserId \|\| !firebasePublicEnvReady\) \{[\s\S]*setEras\(\[\]\)/)
   assert.match(lifeMapEventsSource, /const positionedDemoNodes = canonicalLifeMapDemoNodes\.map/)
+  assert.match(lifeMapEventsSource, /const syntheticMode = deterministicTest\.enabled/)
+  assert.match(lifeMapEventsSource, /if \(syntheticMode\) \{[\s\S]*setNodes\(deterministicNodes\)/)
   assert.match(lifeMapEventsSource, /if \(explicitDemo\) \{[\s\S]*setNodes\(positionedDemoNodes\)/)
-  assert.match(lifeMapEventsSource, /if \(explicitDemo\) \{[\s\S]*setEras\(lifeMapEras\)/)
+  assert.match(lifeMapEventsSource, /if \(syntheticMode \|\| explicitDemo\) \{[\s\S]*setEras\(lifeMapEras\)/)
   assert.match(lifeMapEventsSource, /if \(!firebasePublicEnvReady\) \{[\s\S]*setNodes\(\[\]\)/)
-  assert.match(lifeMapEventsSource, /sourceMode: LifeMapSourceMode = explicitDemo[\s\S]*\? "explicit-demo"[\s\S]*: !firebasePublicEnvReady[\s\S]*\? "unavailable"/)
+  assert.match(lifeMapEventsSource, /sourceMode: LifeMapSourceMode = syntheticMode \|\| explicitDemo \? "explicit-demo"[\s\S]*: !firebasePublicEnvReady \? "unavailable"/)
 })
 
 test('external requests are intercepted and aborted before send', () => {
