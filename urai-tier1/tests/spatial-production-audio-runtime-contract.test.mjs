@@ -7,6 +7,7 @@ const tierRoot = process.cwd()
 const repositoryRoot = path.resolve(tierRoot, '..')
 const controller = fs.readFileSync(path.join(tierRoot, 'src/spatial/audio/useAudioController.ts'), 'utf8')
 const runtime = fs.readFileSync(path.join(tierRoot, 'src/spatial/audio/SpatialAmbientRuntime.tsx'), 'utf8')
+const positionedRuntime = fs.readFileSync(path.join(tierRoot, 'src/spatial/audio/SpatialPositionedAudioRuntime.tsx'), 'utf8')
 const mirrorIdentity = fs.readFileSync(path.join(tierRoot, 'src/spatial/audio/mirrorSonicIdentity.ts'), 'utf8')
 const audioTypes = fs.readFileSync(path.join(tierRoot, 'src/spatial/audio/audioTypes.ts'), 'utf8')
 const shell = fs.readFileSync(path.join(tierRoot, 'src/spatial/world/UraiWorldShell.tsx'), 'utf8')
@@ -102,14 +103,22 @@ test('shared world runtime owns explicit consent, mute, route ambience and acces
   assert.match(runtime, /data-audio-muted/)
 })
 
-test('Passport remains silence-first while explicit cue vocabulary has audible, caption and haptic equivalents', () => {
+test('Passport remains silence-first while explicit permission and confirmation cues are audible, captioned and haptic', () => {
   assert.match(audioTypes, /"confirm" \| "permission"/)
   assert.match(runtime, /confirm:'Action confirmed\.'/)
   assert.match(runtime, /permission:'Permission action acknowledged\.'/)
-  assert.match(runtime, /if\(consented&&!muted\)audio\.playCue\(cue\)/)
+  assert.match(runtime, /if\(consented&&!muted&&\(cue==='confirm'\|\|cue==='permission'\)\)audio\.playCue\(cue\)/)
   assert.match(runtime, /cue==='permission'\)navigator\.vibrate\(12\)/)
   assert.match(runtime, /cue==='confirm'\|\|cue==='orb-confirm'\)navigator\.vibrate\(8\)/)
   assert.doesNotMatch(runtime, /destination==='passport'[^\n]*return 'MIRROR'/)
+})
+
+test('positional renderer retains sole audible ownership of transition, Orb and error cues', () => {
+  assert.match(positionedRuntime, /transition: \{ src: '\/assets\/urai\/generated\/audio\/portal-transition-v1\.opus'/)
+  assert.match(positionedRuntime, /'orb-confirm': \{ src: '\/assets\/urai\/generated\/audio\/orb-confirm-v1\.opus'/)
+  assert.match(positionedRuntime, /error: \{ src: '\/assets\/urai\/generated\/audio\/ui-error-v1\.opus'/)
+  assert.match(positionedRuntime, /void playPositioned\(ensure\(\), cue\)/)
+  assert.doesNotMatch(runtime, /consented&&!muted\)audio\.playCue\(cue\)/)
 })
 
 test('Orb controls expose user-owned sound enable and mute behavior', () => {
