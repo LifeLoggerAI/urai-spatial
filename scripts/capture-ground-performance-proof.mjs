@@ -21,121 +21,61 @@ function percentile(values, fraction) {
 }
 
 await mkdir(outDir, { recursive: true })
-const browser = await chromium.launch({ headless: true, args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-webgl', '--ignore-gpu-blocklist'] })
+const browser = await chromium.launch({ headless: true, args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-webgl', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'] })
 const results = []
 const errors = []
 
 try {
   for (const profile of profiles) {
-    const context = await browser.newContext({
-      viewport: { width: profile.width, height: profile.height },
-      isMobile: profile.mobile,
-      hasTouch: profile.mobile,
-      reducedMotion: 'no-preference',
-    })
+    const context = await browser.newContext({ viewport: { width: profile.width, height: profile.height }, isMobile: profile.mobile, hasTouch: profile.mobile, reducedMotion: 'no-preference' })
     const page = await context.newPage()
     const pageErrors = []
     page.on('pageerror', (error) => pageErrors.push(String(error)))
     page.on('console', (message) => { if (message.type() === 'error') pageErrors.push(`console: ${message.text()}`) })
 
-    await page.goto(`${base}/ground/?environment=temperate`, { waitUntil: 'networkidle', timeout: 60_000 })
-    const root = page.locator('[data-testid="urai-ground-lived-world"][data-ground-ready="true"]')
-    await root.waitFor({ state: 'visible', timeout: 45_000 })
-    await page.locator('.ground-spatial-root canvas').first().waitFor({ state: 'visible', timeout: 45_000 })
+    try {
+      await page.goto(`${base}/ground/?environment=temperate`, { waitUntil: 'networkidle', timeout: 60_000 })
+      const root = page.locator('[data-testid="urai-ground-lived-world"]')
+      await root.waitFor({ state: 'visible', timeout: 45_000 })
+      await page.locator('.ground-spatial-root canvas').first().waitFor({ state: 'visible', timeout: 45_000 })
+      await page.waitForFunction(() => document.querySelector('[data-testid="urai-ground-lived-world"]')?.getAttribute('data-ground-ready') === 'true', null, { timeout: 45_000 })
 
-    const renderer = await page.evaluate(() => {
-      const canvas = document.querySelector('.ground-spatial-root canvas')
-      const gl = canvas?.getContext('webgl2') || canvas?.getContext('webgl')
-      if (!gl) return { available: false, renderer: 'none', vendor: 'none' }
-      const debug = gl.getExtension('WEBGL_debug_renderer_info')
-      return {
-        available: true,
-        renderer: String(debug ? gl.getParameter(debug.UNMASKED_RENDERER_WEBGL) : gl.getParameter(gl.RENDERER)),
-        vendor: String(debug ? gl.getParameter(debug.UNMASKED_VENDOR_WEBGL) : gl.getParameter(gl.VENDOR)),
+      const renderer = await page.evaluate(() => {
+        const canvas = document.querySelector('.ground-spatial-root canvas')
+        const gl = canvas?.getContext('webgl2') || canvas?.getContext('webgl')
+        if (!gl) return { available: false, renderer: 'none', vendor: 'none' }
+        const debug = gl.getExtension('WEBGL_debug_renderer_info')
+        return { available: true, renderer: String(debug ? gl.getParameter(debug.UNMASKED_RENDERER_WEBGL) : gl.getParameter(gl.RENDERER)), vendor: String(debug ? gl.getParameter(debug.UNMASKED_VENDOR_WEBGL) : gl.getParameter(gl.VENDOR)) }
+      })
+      const beforeHeap = await page.evaluate(() => 'memory' in performance ? performance.memory?.usedJSHeapSize ?? null : null)
+      if (profile.mobile) {
+        const pad = page.locator('.ground-analog-pad').first()
+        if (await pad.isVisible()) { const box = await pad.boundingBox(); if (box) await page.touchscreen.tap(box.x + box.width / 2, box.y + box.height * 0.2) }
+      } else {
+        await page.keyboard.down('KeyW'); await page.waitForTimeout(900); await page.keyboard.up('KeyW')
       }
-    })
-
-    const beforeHeap = await page.evaluate(() => {
-      const perf = performance
-      return 'memory' in perf ? perf.memory?.usedJSHeapSize ?? null : null
-    })
-
-    if (profile.mobile) {
-      const pad = page.locator('.ground-analog-pad').first()
-      if (await pad.isVisible()) {
-        const box = await pad.boundingBox()
-        if (box) await page.touchscreen.tap(box.x + box.width / 2, box.y + box.height * 0.2)
-      }
-    } else {
-      await page.keyboard.down('KeyW')
-      await page.waitForTimeout(900)
-      await page.keyboard.up('KeyW')
+      const intervals = await page.evaluate(async (frameCount) => new Promise((resolve) => {
+        const values = []; let previous = performance.now(); let remaining = frameCount
+        const tick = (now) => { values.push(now - previous); previous = now; remaining -= 1; if (remaining <= 0) resolve(values.slice(1)); else requestAnimationFrame(tick) }
+        requestAnimationFrame(tick)
+      }), profile.sampleFrames)
+      const afterHeap = await page.evaluate(() => 'memory' in performance ? performance.memory?.usedJSHeapSize ?? null : null)
+      const numeric = intervals.filter((value) => Number.isFinite(value) && value > 0)
+      const meanMs = numeric.reduce((sum, value) => sum + value, 0) / Math.max(1, numeric.length)
+      results.push({ profile: profile.id, viewport: { width: profile.width, height: profile.height }, renderer, sampleCount: numeric.length, meanFrameIntervalMs: meanMs, p50FrameIntervalMs: percentile(numeric, 0.5), p95FrameIntervalMs: percentile(numeric, 0.95), p99FrameIntervalMs: percentile(numeric, 0.99), maxFrameIntervalMs: numeric.length ? Math.max(...numeric) : null, effectiveFps: meanMs ? 1000 / meanMs : null, heap: beforeHeap == null || afterHeap == null ? null : { beforeBytes: beforeHeap, afterBytes: afterHeap, deltaBytes: afterHeap - beforeHeap }, contract: await root.evaluate((node) => ({ eyeHeight: node.getAttribute('data-ground-eye-height'), desktopSpeed: node.getAttribute('data-ground-speed-desktop'), mobileSpeed: node.getAttribute('data-ground-speed-mobile'), collision: node.getAttribute('data-ground-collision'), exploration: node.getAttribute('data-ground-exploration') })) })
+    } catch (error) {
+      const root = page.locator('[data-testid="urai-ground-lived-world"]').first()
+      const diagnostic = { profile: profile.id, url: page.url(), failure: String(error), rootCount: await root.count().catch(() => 0), rootReady: await root.getAttribute('data-ground-ready').catch(() => null), pageErrors }
+      await writeFile(path.join(outDir, `${profile.id}-diagnostic.json`), `${JSON.stringify(diagnostic, null, 2)}\n`, 'utf8')
+      await page.screenshot({ path: path.join(outDir, `${profile.id}-diagnostic.png`) }).catch(() => undefined)
+      errors.push(`${profile.id}: ${String(error)}`)
     }
-
-    const intervals = await page.evaluate(async (frameCount) => new Promise((resolve) => {
-      const values = []
-      let previous = performance.now()
-      let remaining = frameCount
-      const tick = (now) => {
-        values.push(now - previous)
-        previous = now
-        remaining -= 1
-        if (remaining <= 0) resolve(values.slice(1))
-        else requestAnimationFrame(tick)
-      }
-      requestAnimationFrame(tick)
-    }), profile.sampleFrames)
-
-    const afterHeap = await page.evaluate(() => {
-      const perf = performance
-      return 'memory' in perf ? perf.memory?.usedJSHeapSize ?? null : null
-    })
-
-    const numeric = intervals.filter((value) => Number.isFinite(value) && value > 0)
-    const meanMs = numeric.reduce((sum, value) => sum + value, 0) / Math.max(1, numeric.length)
-    const p50Ms = percentile(numeric, 0.5)
-    const p95Ms = percentile(numeric, 0.95)
-    const p99Ms = percentile(numeric, 0.99)
-    const maxMs = numeric.length ? Math.max(...numeric) : null
-    const effectiveFps = meanMs ? 1000 / meanMs : null
-
-    results.push({
-      profile: profile.id,
-      viewport: { width: profile.width, height: profile.height },
-      renderer,
-      sampleCount: numeric.length,
-      meanFrameIntervalMs: meanMs,
-      p50FrameIntervalMs: p50Ms,
-      p95FrameIntervalMs: p95Ms,
-      p99FrameIntervalMs: p99Ms,
-      maxFrameIntervalMs: maxMs,
-      effectiveFps,
-      heap: beforeHeap == null || afterHeap == null ? null : { beforeBytes: beforeHeap, afterBytes: afterHeap, deltaBytes: afterHeap - beforeHeap },
-      contract: await root.evaluate((node) => ({
-        eyeHeight: node.getAttribute('data-ground-eye-height'),
-        desktopSpeed: node.getAttribute('data-ground-speed-desktop'),
-        mobileSpeed: node.getAttribute('data-ground-speed-mobile'),
-        collision: node.getAttribute('data-ground-collision'),
-        exploration: node.getAttribute('data-ground-exploration'),
-      })),
-    })
     errors.push(...pageErrors.map((error) => `${profile.id}: ${error}`))
     await context.close()
   }
-} finally {
-  await browser.close()
-}
+} finally { await browser.close() }
 
-const receipt = {
-  schema: 'urai-ground-performance-proof-1',
-  exactHead,
-  capturedAt: new Date().toISOString(),
-  measurementClass: 'ci-software-renderer-diagnostic-not-device-certification',
-  targets: { desktopFpsWhereSupported: 60, mainstreamMobileMinimumFps: 30 },
-  results,
-  errors,
-}
+const receipt = { schema: 'urai-ground-performance-proof-1', exactHead, capturedAt: new Date().toISOString(), measurementClass: 'ci-software-renderer-diagnostic-not-device-certification', targets: { desktopFpsWhereSupported: 60, mainstreamMobileMinimumFps: 30 }, results, errors }
 await writeFile(path.join(outDir, 'receipt.json'), `${JSON.stringify(receipt, null, 2)}\n`, 'utf8')
-
 if (errors.length) throw new Error(`Ground performance proof recorded ${errors.length} browser error(s): ${errors.join(' | ')}`)
 if (results.length !== profiles.length || results.some((result) => result.sampleCount < 180)) throw new Error('Ground performance proof did not collect the required frame samples')
