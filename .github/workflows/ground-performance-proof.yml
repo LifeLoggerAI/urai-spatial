@@ -4,12 +4,6 @@ on:
   push:
     branches:
       - ground-goldmaster-convergence-20260916-v1
-    paths:
-      - '.github/workflows/ground-performance-proof.yml'
-      - 'scripts/capture-ground-performance-proof.mjs'
-      - 'urai-tier1/src/app/GroundSpatialWorldClean.tsx'
-      - 'urai-tier1/src/spatial/ground/**'
-      - 'urai-tier1/src/spatial/navigation/**'
   pull_request:
     branches:
       - orb-canon-lock-convergence-v2-20260916
@@ -85,10 +79,7 @@ jobs:
             sleep 1
           done
           curl --fail --silent --show-error http://127.0.0.1:4173/ground/ >/dev/null
-          URAI_PROOF_BASE=http://127.0.0.1:4173 \
-          URAI_PROOF_DIR="$output" \
-          URAI_EXACT_HEAD="$URAI_EXACT_HEAD" \
-            node scripts/capture-ground-performance-proof.mjs
+          URAI_PROOF_BASE=http://127.0.0.1:4173 URAI_PROOF_DIR="$output" URAI_EXACT_HEAD="$URAI_EXACT_HEAD" node scripts/capture-ground-performance-proof.mjs
 
       - name: Verify exact-head receipt
         shell: bash
