@@ -1,7 +1,7 @@
-/* V266 literal-pixel convergence: the live WebGL selected-memory world owns Focus.
+/* V272 literal-pixel convergence: the live WebGL selected-memory world owns Focus.
    Retire the stale static Focus artwork from visible authority. It encoded the
-   rejected sphere/ring-cage presentation and hid the newer fractured, grounded
-   memory manifestation behind a mostly opaque 2D backdrop. */
+   rejected sphere/ring-cage presentation and hid the newer grounded living-memory
+   manifestation behind a mostly opaque 2D backdrop. */
 .focusWorld .focusBackdrop {
   display: none !important;
 }
@@ -104,7 +104,11 @@
       radial-gradient(ellipse at 50% 51%, transparent 0 52%, rgba(3,12,10,.03) 72%, rgba(2,8,8,.18)),
       linear-gradient(180deg, rgba(1,4,10,.02), transparent 58%, rgba(1,4,10,.16));
   }
-  .focusWorld .focusHeading { left: 14px !important; top: 14px !important; width: min(62vw,270px) !important; }
+  .focusWorld .focusHeading {
+    left: 14px !important;
+    top: max(54px,calc(env(safe-area-inset-top) + 44px)) !important;
+    width: min(62vw,270px) !important;
+  }
   .focusWorld .focusHeading h2 { font-size: clamp(1.8rem, 8.7vw, 2.9rem) !important; }
   .focusWorld .focusNarration { max-width: min(58vw,270px) !important; margin-top: 7px !important; padding: 7px 9px !important; }
   .focusWorld .focusNarration strong { font-size: .86rem !important; }
@@ -117,8 +121,15 @@
     opacity: .62;
   }
   .focusWorld .focusControls { left: 12px !important; right: 12px !important; bottom: max(10px,env(safe-area-inset-bottom)) !important; }
-  .focusWorld .focusHelp { right: 12px !important; top: 84px !important; }
-  .focusWorld .focusStatus { left: 50% !important; top: 10px !important; transform: translateX(-50%) !important; }
+  .focusWorld .focusHelp { right: 12px !important; top: max(104px,calc(env(safe-area-inset-top) + 92px)) !important; }
+  .focusWorld .focusStatus {
+    left: 50% !important;
+    top: max(10px,env(safe-area-inset-top)) !important;
+    transform: translateX(-50%) !important;
+    max-width: calc(100vw - 28px);
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
