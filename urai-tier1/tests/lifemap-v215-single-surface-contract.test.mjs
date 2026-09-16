@@ -6,6 +6,7 @@ const read = (path) => readFileSync(new URL(`../${path}`, import.meta.url), 'utf
 const world = read('src/components/lifemap/LifeMapProductionWorld.tsx')
 const scene = read('src/components/lifemap/ComposedLifeMapScene.tsx')
 const focus = read('src/app/focus/FocusChamberClient.tsx')
+const geology = read('src/app/focus/focusMemoryGeology.ts')
 const replay = read('src/app/replay/CinematicReplayClient.tsx')
 const companion = read('src/spatial/world/persistentWorldCompanion.css')
 const generator = read('scripts/blender/generate-life-map-sanctuary-v215.py')
@@ -38,11 +39,16 @@ test('Life Map selection routing cannot let stale overview state cancel the jour
   assert.match(scene, /setPhase\("approach"\)/)
 })
 
-test('Focus formation stays grounded in the authored chamber and Replay preserves readable organic-edged media', () => {
+test('Focus formation stays grounded in the authored chamber and current V272 fold while Replay preserves readable organic-edged media', () => {
   assert.match(focus, /V250 convergence authority: the selected living-memory manifestation owns the/)
   assert.match(focus, /function FocusSanctuaryGround\(/)
   assert.match(focus, /focus-v251-grounded-living-memory-manifestation/)
-  assert.match(focus, /focus-authored-fractured-stratum-/)
+  assert.match(focus, /focus-authored-living-memory-fold-/)
+  assert.match(focus, /v272-single-connected-living-memory-fold/)
+  assert.match(geology, /focusMemoryRole = 'v272-single-connected-living-memory-fold'/)
+  assert.match(geology, /focusSilhouetteRule = 'one-coherent-memory-phenomenon-not-discrete-objects'/)
+  assert.doesNotMatch(focus, /focus-authored-fractured-stratum-/)
+  assert.doesNotMatch(geology, /v269-living-luminous-memory-lamella|v271-interlocked-volumetric-memory-facet/)
   assert.match(focus, /focus-retired-procedural-vault/)
   assert.match(focus, /<group visible=\{false\} name="focus-retired-procedural-vault"/)
   assert.match(focus, /focus-v216-continuous-weathered-vault/)
