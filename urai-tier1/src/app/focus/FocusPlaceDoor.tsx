@@ -22,8 +22,8 @@ export function FocusPlaceDoor({ manifestId }: FocusPlaceDoorProps) {
   // Ground and source-backed Ground -> Focus context.
   if (star.privacyState === 'demo' && !explicitDemo) return null
 
-  const enterPlaceHref = canEnterMemoryPlace(star)
-    ? `${star.enterPlaceHref}${star.enterPlaceHref?.includes('?') ? '&' : '?'}demo=1`
+  const enterPlaceHref = canEnterMemoryPlace(star) && star.enterPlaceHref
+    ? `${star.enterPlaceHref}${star.enterPlaceHref.includes('?') ? '&' : '?'}demo=1`
     : undefined
 
   if (!enterPlaceHref) return null
