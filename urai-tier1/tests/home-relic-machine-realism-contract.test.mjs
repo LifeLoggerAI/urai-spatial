@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs'
 import test from 'node:test'
 
 const renderer = readFileSync(new URL('../src/spatial/layout/HomeWorldProductionV223.tsx', import.meta.url), 'utf8')
+const embodiedAvatar = readFileSync(new URL('../src/spatial/home/HomeEmbodiedAvatar.tsx', import.meta.url), 'utf8')
 const owner = readFileSync(new URL('../src/app/AssetDrivenHomeWorld.tsx', import.meta.url), 'utf8')
 const authority = JSON.parse(readFileSync(new URL('../src/app/currentHomeVisualAuthority.json', import.meta.url), 'utf8'))
 const visualAuthority = readFileSync(new URL('../src/spatial/layout/HomeVisualAuthority.tsx', import.meta.url), 'utf8')
@@ -35,31 +36,33 @@ test('V288 certified predecessor keeps the biomorphic reliquary evidence and gro
   assert.match(reliquary, /raycast=\{\(\) => null\}/)
 })
 
-test('current candidate Home advances to visible Avatar plus governed Orb while physical Ground and broad-sky Life Map remain intact', () => {
+test('current candidate Home advances to visible Avatar plus governed Orb and persistent camera-only first-person Home', () => {
   for (const marker of [
-    'data-home-embodied-self="visible-cinematic-avatar"',
-    'data-home-presence-presentation="visible-avatar-third-person"',
-    'home-visible-user-avatar',
+    'visible-cinematic-avatar',
+    'camera-only-first-person-home',
+    'visible-avatar-third-person',
+    'hidden-exterior-avatar-first-person',
+    'urai-home-user-avatar',
     'home-living-memory-orb',
     '/assets/urai/generated/models/urai-orb-avatar-v1.glb',
-    '/assets/urai/generated/human-makehuman-v4/home-human-makehuman-v4.glb',
     'data-home-ground-entry="physical-world-surface"',
     'data-home-life-map-entry="visible-sky-broad-interaction"',
     "cameraCheckpoint: 'ground-first-person-arrival'",
-    "cameraCheckpoint: 'home-sky-ascent'",
     "cameraCheckpoint: 'home-sky-ascent-complete'",
     "router.prefetch('/ground/')",
     "router.prefetch('/life-map/')",
     'event.point.clone()',
     'setLoop(THREE.LoopOnce, 1)',
+    'useHomeExperienceController',
+    'HOME_WALK_SPEED',
+    'data-home-non-xr-body-policy="camera-only-no-hands-body-rig"',
   ]) has(renderer, marker)
-  assert.match(renderer, /function\s+VisibleHomeAvatar\s*\(\{ reducedMotion \}/)
-  assert.match(renderer, /<VisibleHomeAvatar reducedMotion=\{reducedMotion\} \/>/)
-  assert.match(renderer, /const idle = actions\.idle_breath/)
-  assert.match(renderer, /idle\.reset\(\)\.setLoop\(THREE\.LoopRepeat, Infinity\)/)
-  assert.doesNotMatch(renderer, /first-person-viewpoint-no-avatar|privacy-preserving-first-person/)
+  assert.match(renderer, /<HomeEmbodiedAvatar/)
+  assert.match(embodiedAvatar, /const idle = actions\.idle_breath/)
+  assert.match(embodiedAvatar, /idle\.reset\(\)\.setLoop\(THREE\.LoopRepeat, Infinity\)/)
+  assert.doesNotMatch(renderer, /privacy-preserving-first-person/)
   assert.doesNotMatch(renderer, /next\.reset\(\)\.setLoop\(THREE\.LoopRepeat\s*,\s*Infinity\)/)
-  assert.doesNotMatch(renderer, /HOME_LIFE_MAP|nearby\s*===\s*['"]life-map['"]|useMovementInput|MobileMovementPad/)
+  assert.doesNotMatch(renderer, /HOME_LIFE_MAP|nearby\s*===\s*['"]life-map['"]|MobileMovementPad/)
 })
 
 test('rendering stays bounded and Orb state/reduced-motion telemetry remains exact-head proofable', () => {
