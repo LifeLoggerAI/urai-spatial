@@ -28,6 +28,11 @@ export const GROUND_DESCENT_TOTAL_MS = 2650
 export const GROUND_REDUCED_MOTION_TOTAL_MS = 520
 export const GROUND_RETURN_TOTAL_MS = 2650
 export const GROUND_REDUCED_RETURN_TOTAL_MS = 520
+// Route ownership changes only after Ground has compressed back through the
+// physical surface. Home then continues the same global return clock at the
+// Avatar-eye state and finishes the camera withdrawal in the Home canvas.
+export const GROUND_RETURN_ROUTE_HANDOFF_MS = 1900
+export const GROUND_REDUCED_RETURN_ROUTE_HANDOFF_MS = 360
 
 export const GROUND_DESCENT_WINDOWS: readonly GroundPhaseWindow<GroundDescentPhase>[] = [
   { phase: 'ground-recognition', startMs: 0, endMs: 180 },
@@ -59,8 +64,8 @@ export const GROUND_RETURN_WINDOWS: readonly GroundPhaseWindow<GroundReturnPhase
   { phase: 'ground-return-commit', startMs: 0, endMs: 180 },
   { phase: 'ground-return-compression', startMs: 180, endMs: 720 },
   { phase: 'ground-return-geology', startMs: 720, endMs: 1320 },
-  { phase: 'ground-return-surface-crossing', startMs: 1320, endMs: 1900 },
-  { phase: 'home-avatar-eye-return', startMs: 1900, endMs: 2260 },
+  { phase: 'ground-return-surface-crossing', startMs: 1320, endMs: GROUND_RETURN_ROUTE_HANDOFF_MS },
+  { phase: 'home-avatar-eye-return', startMs: GROUND_RETURN_ROUTE_HANDOFF_MS, endMs: 2260 },
   { phase: 'home-avatar-camera-withdraw', startMs: 2260, endMs: GROUND_RETURN_TOTAL_MS },
 ] as const
 
@@ -68,8 +73,8 @@ export const GROUND_REDUCED_RETURN_WINDOWS: readonly GroundPhaseWindow<GroundRet
   { phase: 'ground-return-commit', startMs: 0, endMs: 70 },
   { phase: 'ground-return-compression', startMs: 70, endMs: 155 },
   { phase: 'ground-return-geology', startMs: 155, endMs: 255 },
-  { phase: 'ground-return-surface-crossing', startMs: 255, endMs: 360 },
-  { phase: 'home-avatar-eye-return', startMs: 360, endMs: 435 },
+  { phase: 'ground-return-surface-crossing', startMs: 255, endMs: GROUND_REDUCED_RETURN_ROUTE_HANDOFF_MS },
+  { phase: 'home-avatar-eye-return', startMs: GROUND_REDUCED_RETURN_ROUTE_HANDOFF_MS, endMs: 435 },
   { phase: 'home-avatar-camera-withdraw', startMs: 435, endMs: GROUND_REDUCED_RETURN_TOTAL_MS },
 ] as const
 
