@@ -39,6 +39,7 @@ const tests = [
   'tests/lifemap-deep-link-controls-contract.test.mjs',
   'tests/lifemap-scene-behavior.test.mjs',
   'tests/lifemap-review-repair-contract.test.mjs',
+  'tests/lifemap-stable-geography-contract.test.mjs',
   'tests/memory-star-phase4-contract.test.mjs',
   'tests/mirror-spatial-realm-contract.test.mjs',
   'tests/mirror-canonical-owner-hydration-contract.test.mjs',
