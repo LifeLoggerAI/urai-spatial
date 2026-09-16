@@ -50,6 +50,13 @@ test('self inspection is a one-layer overlay over first-person Home', () => {
   assert.match(source, /case 'ESCAPE':[\s\S]*state\.stableState === 'AVATAR_SELF_VIEW'[\s\S]*'AVATAR_HOME_FIRST_PERSON'/)
 })
 
+test('world surfaces activate only from the two stable Home world states', () => {
+  assert.match(source, /function canActivateWorldSurface[\s\S]*HOME_PRESENTATION[\s\S]*AVATAR_HOME_FIRST_PERSON/)
+  assert.match(source, /case 'GROUND_ACTIVATE':[\s\S]*!canActivateWorldSurface\(state\)/)
+  assert.match(source, /case 'SKY_ACTIVATE':[\s\S]*!canActivateWorldSurface\(state\)/)
+  assert.match(source, /case 'ORB_ACTIVATE':[\s\S]*!canActivateWorldSurface\(state\)/)
+})
+
 test('Ground and Life Map preserve origin snapshots for semantic return', () => {
   assert.match(source, /case 'GROUND_ACTIVATE':[\s\S]*destination: 'GROUND'[\s\S]*origin: event\.snapshot/)
   assert.match(source, /case 'SKY_ACTIVATE':[\s\S]*destination: 'LIFE_MAP'[\s\S]*origin: event\.snapshot/)
@@ -73,9 +80,12 @@ test('interrupted Ground or Sky transition restores the recorded origin safely',
   assert.match(source, /pendingDestination: null/)
 })
 
-test('return frame persistence is bounded to session storage and validated on parse', () => {
+test('return frame persistence is session-bounded and validates full origin shape', () => {
   assert.match(source, /sessionStorage\.setItem\(HOME_RETURN_SESSION_KEY/)
   assert.match(source, /sessionStorage\.removeItem\(HOME_RETURN_SESSION_KEY\)/)
   assert.match(source, /parsed\.origin\.stableState !== 'HOME_PRESENTATION'/)
   assert.match(source, /camera\.position\.length !== 3/)
+  assert.match(source, /parsed\.kind === 'destination'[\s\S]*parsed\.destination !== 'GROUND'[\s\S]*parsed\.destination !== 'LIFE_MAP'/)
+  assert.match(source, /parsed\.origin\.capturedAt/)
+  assert.match(source, /environment\.environmentRevision/)
 })
