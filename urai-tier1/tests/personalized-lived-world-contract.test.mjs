@@ -10,6 +10,7 @@ const boundarySource = fs.readFileSync(new URL('../src/app/ground/GroundPersonal
 const geographicBridge = fs.readFileSync(new URL('../src/app/ground/GroundGeographicLivedWorldBridge.tsx', import.meta.url), 'utf8')
 const semanticReturnBridge = fs.readFileSync(new URL('../src/app/ground/GroundSemanticReturnBridge.tsx', import.meta.url), 'utf8')
 const groundPage = fs.readFileSync(new URL('../src/app/ground/page.tsx', import.meta.url), 'utf8')
+const homeRepair = fs.readFileSync(new URL('../src/spatial/layout/HomeAAAVisualRepair.tsx', import.meta.url), 'utf8')
 const worldTypes = fs.readFileSync(new URL('../src/spatial/world/worldTypes.ts', import.meta.url), 'utf8')
 const worldEvents = fs.readFileSync(new URL('../src/spatial/world/worldEvents.ts', import.meta.url), 'utf8')
 const worldState = fs.readFileSync(new URL('../src/spatial/world/WorldStateProvider.tsx', import.meta.url), 'utf8')
@@ -66,6 +67,17 @@ test('Passport has dedicated fail-closed C8 public-good consent without activati
   for (const forbidden of ['individual emotion', 'exact location', 'raw voice', 'raw transcript', 'raw memory', 'movement trail', 'identifiable social graph', 'biometric template']) {
     assert.ok(publicGoodFunctions.includes(`'${forbidden}'`) || publicGoodFunctions.includes(forbidden), `missing forbidden contribution ${forbidden}`)
   }
+})
+
+test('first-person Home exposes a physical Passport artifact without creating a second backend or portal', () => {
+  assert.ok(homeRepair.includes("destination: 'passport'"))
+  assert.ok(homeRepair.includes("href: '/passport'"))
+  assert.ok(homeRepair.includes("data-home-stable-state") || homeRepair.includes("getAttribute('data-home-stable-state')"))
+  assert.ok(homeRepair.includes("'AVATAR_HOME_FIRST_PERSON'"))
+  assert.ok(homeRepair.includes("semanticOwner: 'passport-physical-home-presence'"))
+  assert.ok(homeRepair.includes("backendAuthority: 'existing-passport-vault'"))
+  assert.ok(homeRepair.includes("portal: false"))
+  assert.ok(homeRepair.includes('Open Passport ownership and permissions'))
 })
 
 test('existing geographic pins can seed only partial C3-gated place anchors without new collection', () => {
