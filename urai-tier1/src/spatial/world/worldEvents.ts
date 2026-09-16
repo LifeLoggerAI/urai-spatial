@@ -34,8 +34,12 @@ function buildFallbackHref(request: UraiWorldTravelRequest) {
   if (context?.threadId) target.searchParams.set('thread', context.threadId)
   if (context?.personId) target.searchParams.set('personId', context.personId)
   if (context?.placeId) target.searchParams.set('placeId', context.placeId)
+  if (context?.eraId) target.searchParams.set('eraId', context.eraId)
   if (context?.replayManifestId) target.searchParams.set('manifestId', context.replayManifestId)
   if (context?.privacyMode) target.searchParams.set('privacyMode', context.privacyMode)
+  if (context?.originRealm) target.searchParams.set('originRealm', context.originRealm)
+  if (context?.returnToken) target.searchParams.set('returnToken', context.returnToken)
+  if (context?.reconstructionFidelity) target.searchParams.set('fidelity', context.reconstructionFidelity)
 
   return `${target.pathname}${target.search}${target.hash}`
 }
