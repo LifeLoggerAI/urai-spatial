@@ -16,11 +16,14 @@ async function waitForHomeWorld(home: Locator) {
   await expect(home).toHaveAttribute('data-home-assets-ready', 'true', { timeout: 45_000 })
   await expect(home).toHaveAttribute('data-home-ready', 'true', { timeout: 45_000 })
   await expect(home).toHaveAttribute('data-home-interaction-ready', 'true', { timeout: 45_000 })
-  await expect(home).toHaveAttribute('data-home-embodied-self', 'first-person-viewpoint-no-avatar')
+  await expect(home).toHaveAttribute('data-home-embodied-self', 'visible-cinematic-avatar')
+  await expect(home).toHaveAttribute('data-home-presence-presentation', 'visible-avatar-third-person')
   await expect(home).toHaveAttribute('data-home-movement', 'camera-look-world-surface-selection')
   await expect(home).toHaveAttribute('data-home-ground-entry', 'physical-world-surface')
   await expect(home).toHaveAttribute('data-home-life-map-entry', 'visible-sky-broad-interaction')
-  await expect(home).not.toHaveAttribute('data-home-camera-mode', 'cinematic-third-person')
+  await expect(home).toHaveAttribute('data-home-camera-mode', /cinematic-third-person(?:-look)?/)
+  await expect(home).toHaveAttribute('data-home-orb-runtime-asset', '/assets/urai/generated/models/urai-orb-avatar-v1.glb')
+  await expect(home).toHaveAttribute('data-home-avatar-runtime-asset', '/assets/urai/generated/human-makehuman-v4/home-human-makehuman-v4.glb')
 }
 
 async function enableLifeMapDemo(page: Page) {
@@ -31,16 +34,16 @@ function normalizedPathname(url: string) {
   return new URL(url).pathname.replace(/\/+$/, '') || '/'
 }
 
-test.describe('Cinematic Home and first-person Ground accessibility evidence', () => {
+test.describe('Visible-avatar Home and first-person Ground accessibility evidence', () => {
   test.describe.configure({ timeout: 300_000 })
 
-  test('Home exposes first-person world semantics, three keyboard destinations, and no movement pad or avatar owner', async ({ page }) => {
+  test('Home exposes visible-avatar world semantics, three keyboard destinations, and no synthetic movement pad', async ({ page }) => {
     const errors = await collectRuntimeErrors(page)
     await page.goto('/home/', { waitUntil: 'domcontentloaded' })
     const home = page.locator(homeOwnerSelector)
     await waitForHomeWorld(home)
-    await expect(home).toHaveAttribute('data-home-camera-mode', /first-person-viewpoint|cinematic-look/)
-    await expect(page.locator('[data-home-embodied-self="visible-cinematic-avatar"], [name="urai-home-embodied-avatar"]')).toHaveCount(0)
+    await expect(home).toHaveAttribute('data-home-camera-mode', /cinematic-third-person(?:-look)?/)
+    await expect(home).not.toHaveAttribute('data-home-embodied-self', 'first-person-viewpoint-no-avatar')
 
     const direct = page.getByRole('navigation', { name: 'Accessible Home destinations' })
     const orb = direct.getByRole('button', { name: 'Open URAI Orb companion' })
