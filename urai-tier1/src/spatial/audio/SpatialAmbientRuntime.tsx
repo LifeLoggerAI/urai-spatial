@@ -8,6 +8,10 @@ import type { SpatialAudioCue, SpatialAudioPhase } from './audioTypes'
 const SESSION_KEY = 'urai:spatial-audio-consent-v1'
 const MUTE_KEY = 'urai:spatial-audio-muted-v1'
 const AMBIENT_CAPTIONS: Record<SpatialAudioPhase, string> = { HOME:'A soft filtered-noise bed with low sustained sanctuary tones.', GROUND:'A low filtered environmental bed with restrained sustained tones.', ASCENT:'A spacious filtered-noise field with layered harmonic tones.', LIFEMAP:'A spacious filtered-noise field with layered harmonic tones.', FOCUS:'A close, steady filtered-noise bed with stable low tones.', REPLAY:'A restrained filtered-noise cinematic bed with slow harmonic tones.' }
+const SILENT_DESTINATION_CAPTIONS: Record<string, string> = {
+  mirror: 'Mirror is intentionally quiet while you inspect reflections and patterns.',
+  passport: 'Passport is silence-first; permission and identity controls remain available without ambient audio.',
+}
 const CUE_CAPTIONS: Record<SpatialAudioCue,string> = { transition:'Realm transition.', 'orb-confirm':'Orb confirmed.', error:'Action could not be completed.' }
 function phaseForDestination(destination:string, transition:string): SpatialAudioPhase|null { if(transition==='ascending'||transition==='travelling') return 'ASCENT'; if(destination==='home') return 'HOME'; if(destination==='infrastructure-hub') return 'GROUND'; if(destination==='life-map') return 'LIFEMAP'; if(destination==='focus') return 'FOCUS'; if(destination==='replay') return 'REPLAY'; return null }
 
@@ -20,8 +24,8 @@ export function SpatialAmbientRuntime(){
     const handleCue=(event:Event)=>{const cue=(event as CustomEvent<{cue?:SpatialAudioCue}>).detail?.cue;if(!cue||!(cue in CUE_CAPTIONS))return;setLiveCaption(CUE_CAPTIONS[cue])};
     window.addEventListener('urai:audio-consent',handleConsent);window.addEventListener('urai:audio-mute',handleMute);window.addEventListener('urai:audio-cue',handleCue);return()=>{window.removeEventListener('urai:audio-consent',handleConsent);window.removeEventListener('urai:audio-mute',handleMute);window.removeEventListener('urai:audio-cue',handleCue)}
   },[audio,consented,spatialPhase])
-  useEffect(()=>{if(!spatialPhase){audio.stopAmbient();return}setLiveCaption(AMBIENT_CAPTIONS[spatialPhase]);if(consented&&!muted)audio.setAmbientPhase(spatialPhase);else audio.stopAmbient()},[audio,consented,muted,spatialPhase])
+  useEffect(()=>{if(!spatialPhase){audio.stopAmbient();setLiveCaption(SILENT_DESTINATION_CAPTIONS[world.destination]??'');return}setLiveCaption(AMBIENT_CAPTIONS[spatialPhase]);if(consented&&!muted)audio.setAmbientPhase(spatialPhase);else audio.stopAmbient()},[audio,consented,muted,spatialPhase,world.destination])
   useEffect(()=>{if(phase!=='idle'&&previousTransition.current==='idle')setLiveCaption(CUE_CAPTIONS.transition);previousTransition.current=phase},[phase])
-  return <span className="sr-only" role="status" aria-live="polite" data-urai-spatial-audio-runtime="production-opus-v2" data-audio-consent={consented?'granted':'not-granted'} data-audio-muted={muted?'true':'false'} data-audio-phase={spatialPhase??'none'}>{liveCaption}</span>
+  return <span className="sr-only" role="status" aria-live="polite" data-urai-spatial-audio-runtime="production-opus-v2" data-audio-consent={consented?'granted':'not-granted'} data-audio-muted={muted?'true':'false'} data-audio-phase={spatialPhase??'none'} data-audio-silent-destination={SILENT_DESTINATION_CAPTIONS[world.destination]?'true':'false'}>{liveCaption}</span>
 }
 export default SpatialAmbientRuntime
