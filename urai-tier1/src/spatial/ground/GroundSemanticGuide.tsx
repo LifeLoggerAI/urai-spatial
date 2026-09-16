@@ -1,9 +1,15 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 
 type GroundEnvironment = 'temperate' | 'woodland' | 'urban' | 'arid' | 'coastal'
+type RelativeNavigation = {
+  returnDirection: string
+  returnDistanceMeters: number
+  landmarkDirection: string
+  landmarkDistanceMeters: number
+}
 
 const descriptions: Record<GroundEnvironment, string> = {
   temperate: 'Temperate lived terrain with soil, low vegetation, rock, open air, and a natural route through the middle distance.',
@@ -22,13 +28,26 @@ export default function GroundSemanticGuide() {
   const searchParams = useSearchParams()
   const environment = useMemo(() => resolveEnvironment(searchParams.get('environment')), [searchParams])
   const [announcement, setAnnouncement] = useState('')
+  const [navigation, setNavigation] = useState<RelativeNavigation | null>(null)
+  const navigationRef = useRef<RelativeNavigation | null>(null)
 
   useEffect(() => {
-    const onSurfaceCommit = () => setAnnouncement('Moving toward the selected terrain while staying at human eye height.')
-    const onReturn = () => setAnnouncement('Returning toward Home through the Ground transition.')
+    const onRelativeNavigation = (event: WindowEventMap['urai:ground-relative-navigation']) => {
+      navigationRef.current = event.detail
+      setNavigation(event.detail)
+    }
+    const onSurfaceCommit = () => {
+      const current = navigationRef.current
+      setAnnouncement(current
+        ? `Moving toward the selected terrain at human eye height. Home is ${current.returnDirection}, about ${current.returnDistanceMeters} meters from your current position.`
+        : 'Moving toward the selected terrain while staying at human eye height.')
+    }
+    const onReturn = () => setAnnouncement('Returning toward Home through the physical Ground transition.')
+    window.addEventListener('urai:ground-relative-navigation', onRelativeNavigation)
     window.addEventListener('urai:ground-surface-commit', onSurfaceCommit)
     window.addEventListener('urai:world-return', onReturn)
     return () => {
+      window.removeEventListener('urai:ground-relative-navigation', onRelativeNavigation)
       window.removeEventListener('urai:ground-surface-commit', onSurfaceCommit)
       window.removeEventListener('urai:world-return', onReturn)
     }
@@ -40,6 +59,10 @@ export default function GroundSemanticGuide() {
       <p>{descriptions[environment]}</p>
       <p>You are exploring in first person at human eye height. No visible body, hands, reticle, or artificial head bob is required.</p>
       <p>Move with the available directional controls or select visible terrain. The environment, not a waypoint beam or compass, provides orientation.</p>
+      {navigation ? <>
+        <p data-ground-return-orientation>Home arrival is {navigation.returnDirection}, about {navigation.returnDistanceMeters} meters away.</p>
+        <p data-ground-landmark-orientation>The distant terrain mass is {navigation.landmarkDirection}, about {navigation.landmarkDistanceMeters} meters away and provides a broad orientation cue.</p>
+      </> : <p>Home begins at the current arrival area. Relative direction and distance become available as you move.</p>}
       <p>Home is always available through the Return Home control or the standard back or Escape path. The arrival area remains part of the physical terrain rather than becoming a portal.</p>
       <p>Private place and memory content remains absent unless the required consent and authorized data are available.</p>
       <p>UrAi remains available through semantic conversation and audio controls without a follower Orb in the Ground world.</p>
