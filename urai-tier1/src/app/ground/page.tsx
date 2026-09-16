@@ -2,6 +2,7 @@ import GroundSpatialWorldClean from '@/app/GroundSpatialWorldClean'
 import GroundPersonalizationBoundary from './GroundPersonalizationBoundary'
 import GroundGeographicLivedWorldBridge from './GroundGeographicLivedWorldBridge'
 import GroundSemanticReturnBridge from './GroundSemanticReturnBridge'
+import GroundRuntimeTruthBridge from './GroundRuntimeTruthBridge'
 import './ground-production-polish.css'
 import { getSceneDefinition } from '@/spatial/realms/sceneRegistry'
 
@@ -22,6 +23,7 @@ export default function GroundPage() {
       <GroundPersonalizationBoundary />
       <GroundGeographicLivedWorldBridge />
       <GroundSemanticReturnBridge />
+      <GroundRuntimeTruthBridge />
       <GroundSpatialWorldClean />
     </main>
   )
