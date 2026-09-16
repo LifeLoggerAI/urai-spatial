@@ -28,6 +28,7 @@ const tests = [
   'tests/ground-personalized-lived-world-boundary-contract.test.mjs',
   'tests/lived-world-core-reconstruction-contract.test.mjs',
   'tests/global-emotional-field-core-contract.test.mjs',
+  'tests/global-emotional-field-passport-consent-contract.test.mjs',
   'tests/home-avatar-embodiment-state-contract.test.mjs',
   'tests/home-avatar-presentation-contract.test.mjs',
   'tests/home-experience-controller-contract.test.mjs',

@@ -20,3 +20,7 @@ export {
   processExportJob,
   processPrivacyEnforcementJob,
 } from './privacyOperations'
+export {
+  applyGlobalEmotionalFieldConsent,
+  getGlobalEmotionalFieldConsent,
+} from './publicGoodConsent'
