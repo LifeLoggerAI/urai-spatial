@@ -12,6 +12,7 @@ const layoutSource = fs.readFileSync(new URL('../src/components/lifemap/lifeMapS
 const authoredLayoutSource = fs.readFileSync(new URL('../src/components/lifemap/lifeMapLayout.ts', import.meta.url), 'utf8')
 const focusSource = fs.readFileSync(new URL('../src/app/focus/FocusChamberClient.tsx', import.meta.url), 'utf8')
 const focusPolish = fs.readFileSync(new URL('../src/app/focus/focus-launch-visual-polish.css', import.meta.url), 'utf8')
+const focusGeology = fs.readFileSync(new URL('../src/app/focus/focusMemoryGeology.ts', import.meta.url), 'utf8')
 
 test('selected camera goals use the same indexed world transform as rendered memories', () => {
   assert.match(scene, /lifeMapWorldPoint\(node, selectedIndex, portrait\)/)
@@ -114,16 +115,16 @@ test('Founder proof samples retained WebGL canvas pixels only', () => {
   assert.match(workflow, /lifemap-review-repair-contract\.test\.mjs/)
 })
 
-test('Focus final composition makes authentic selected-memory media own the threshold while retiring obsolete contour dominance', () => {
+test('Focus final composition gives live WebGL memory geometry pixel authority and rejects stale static sphere/ring dominance', () => {
   assert.match(focusSource, /focus-v251-grounded-living-memory-manifestation/)
   assert.match(focusSource, /createFocusStrata, createFocusSurfaceMaps/)
   assert.doesNotMatch(focusSource, /focus-v249-memory-root-cradle/)
   assert.doesNotMatch(focusSource, /new THREE\.IcosahedronGeometry\(|<torusGeometry|<ringGeometry|wireframe/)
-  assert.match(focusPolish, /V265 retained-pixel convergence/)
-  assert.match(focusPolish, /\.focusWorld \.focusBackdrop \{[\s\S]*opacity: \.82;[\s\S]*brightness\(\.82\)/)
-  assert.match(focusPolish, /\.focusWorld \.focusCanvas canvas \{[\s\S]*opacity: \.30;[\s\S]*brightness\(\.72\);[\s\S]*mix-blend-mode: screen;/)
-  assert.match(focusPolish, /@media \(max-width: 760px\) \{[\s\S]*\.focusWorld \.focusCanvas canvas \{[\s\S]*opacity: \.22;[\s\S]*brightness\(\.66\)/)
-  assert.match(focusPolish, /@media \(prefers-reduced-motion: reduce\) \{[\s\S]*\.focusWorld \.focusBackdrop \{ transform: none; \}/)
-  assert.doesNotMatch(focusPolish, /\.focusWorld \.focusCanvas canvas \{[^}]*opacity: 1;[^}]*\}/)
-  assert.doesNotMatch(focusPolish, /\.focusWorld \.focusBackdrop \{[^}]*opacity: 0\.10;[^}]*\}/)
+  assert.match(focusPolish, /V266 literal-pixel convergence/)
+  assert.match(focusPolish, /\.focusWorld \.focusBackdrop \{[\s\S]*display: none !important;/)
+  assert.match(focusPolish, /\.focusWorld \.focusCanvas canvas \{[\s\S]*opacity: 1 !important;[\s\S]*filter: none !important;[\s\S]*mix-blend-mode: normal !important;/)
+  assert.doesNotMatch(focusPolish, /opacity: \.30|opacity: \.22|mix-blend-mode: screen|var\(--focus-asset\)/)
+  assert.match(focusGeology, /seven staggered thin luminous lamellae|seven staggered|length: 7/)
+  assert.match(focusGeology, /Subdued weathered mineral texture/)
+  assert.doesNotMatch(focusGeology, /history \* 92|Math\.pow\(vein, 3\.0\)/)
 })
