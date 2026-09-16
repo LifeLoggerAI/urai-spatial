@@ -71,7 +71,7 @@ const tests = [
   'tests/route-owner-exclusivity-contract.test.mjs',
   'tests/security-boundary-contract.test.mjs',
   'tests/selected-memory-production-contract.test.mjs',
-  'tests/focus-v271-volumetric-memory-contract.test.mjs',
+  'tests/focus-v272-living-memory-fold-contract.test.mjs',
   'tests/focus-ground-normal-geometry.test.mjs',
   'tests/focus-review-regression-contract.test.mjs',
   'tests/sensory-asset-resolution-contract.test.mjs',
