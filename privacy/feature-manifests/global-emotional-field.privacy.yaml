@@ -2,26 +2,28 @@ feature: global-emotional-field
 repo: LifeLoggerAI/urai-spatial
 owner: URAI Privacy + Foundation Governance + Spatial
 privacyGovernanceVersion: 0.1.0-draft
-status: source_policy_only_no_public_signal_provider
+status: dedicated_consent_operational_provider_and_publication_blocked
 lastReviewed: 2026-09-16
 sourceEvidence:
   - docs/URAI_PERSONALIZED_LIVED_WORLD_AUTHORITY_V1.md
   - urai-tier1/src/spatial/lived-world/globalEmotionalField.ts
+  - apps/functions/src/publicGoodConsent.ts
+  - urai-tier1/src/app/passport/GlobalEmotionalFieldConsentCard.tsx
   - LifeLoggerAI/urai-privacy/docs/ANONYMIZATION_STANDARD.md
   - LifeLoggerAI/urai-privacy/docs/CONSENT_TIERS.md
 
 summary:
-  purpose: Display privacy-preserving cohort-level emotional/public-good patterns without exposing individual emotion, raw sensitive data or precise movement.
-  userBenefit: Lets opted-in users observe broad collective patterns while individual and small-cohort states remain unavailable.
-  implementationStatus: evaluation_and_suppression_policy_implemented_provider_and_home_globe_not_activated
+  purpose: Record dedicated opt-in authority for privacy-preserving cohort-level emotional/public-good patterns without exposing individual emotion, raw sensitive data or precise movement.
+  userBenefit: Lets users independently control public-good participation while small/unsafe cohorts remain unavailable.
+  implementationStatus: dedicated_c8_consent_receipt_and_runtime_target_implemented_aggregate_provider_and_home_globe_not_activated
 
 dataProcessing:
   collectedFields:
     - name: global_field_participation_consent
-      collectionOrTable: existing_consent_authority_only
+      collectionOrTable: users/{uid}/privacyPolicy/globalEmotionalField
       dataClass: L1
       source: user
-      purpose: data.monetization.anonymized
+      purpose: data.public-good.emotional-field
       consentTier: C8
       retentionClass: R4
       exportable: true
@@ -62,6 +64,7 @@ adminAccess:
   roles: []
   auditEventTypes:
     - global_field.consent_changed
+    - global_field.consent_revoked
     - global_field.batch_suppressed
     - global_field.batch_approved
     - global_field.cell_published
@@ -75,4 +78,4 @@ monetization:
 review:
   reviewer: pending_independent_privacy_and_foundation_governance_review
   decision: blocked_from_public_signal_activation
-  notes: 100 users is only the default anonymization floor from current privacy authority. Location, mental-health/crisis, biometric-derived, relationship/social-graph, minors and protected-population cohorts require an approved higher minimum. Source suppresses rather than invents that number. No individual, household, street, building, raw voice, transcript, memory, movement trail or identifiable social graph may be exposed.
+  notes: Dedicated consent defaults Off and records a versioned receipt/runtime target without activating any aggregate provider or publication path. 100 users is only the default anonymization floor from current privacy authority. Location, mental-health/crisis, biometric-derived, relationship/social-graph, minors and protected-population cohorts require an approved higher minimum. Source suppresses rather than invents that number. No individual, household, street, building, raw voice, transcript, memory, movement trail or identifiable social graph may be exposed.
