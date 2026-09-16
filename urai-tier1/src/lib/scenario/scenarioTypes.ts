@@ -1,5 +1,5 @@
 import type { EvidenceSupport, TruthKind } from '@/lib/truth/truthTypes'
-import type { UraiOriginRealm } from '@/spatial/world/worldTypes'
+import type { UraiDestination } from '@/spatial/world/worldTypes'
 
 export const SCENARIO_SCHEMA_VERSION = 1 as const
 export const MAX_SCENARIO_BRANCHES = 3 as const
@@ -52,7 +52,7 @@ export type Scenario = {
   ownerId: string
   question: string
   status: ScenarioStatus
-  originRealm: UraiOriginRealm
+  originRealm: UraiDestination
   returnToken: string
   cameraCheckpoint?: string
   basisId: string
