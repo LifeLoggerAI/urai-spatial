@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useReducer, useRef } from 'react'
 import * as THREE from 'three'
+import { URAI_WORLD_ORB_CLOSE_EVENT } from '@/spatial/world/worldEvents'
 import {
   consumeHomeReturnFrame,
   createInitialHomeExperienceState,
@@ -119,6 +120,15 @@ export function useHomeExperienceController({
     ) return
     onStableRestore?.(state.origin)
   }, [onStableRestore, state.origin, state.transition])
+
+  useEffect(() => {
+    const onOrbClose = () => {
+      if (state.stableState !== 'IMMERSIVE_CONVERSATION' || state.transition) return
+      dispatch({ type: 'ESCAPE' })
+    }
+    window.addEventListener(URAI_WORLD_ORB_CLOSE_EVENT, onOrbClose)
+    return () => window.removeEventListener(URAI_WORLD_ORB_CLOSE_EVENT, onOrbClose)
+  }, [state.stableState, state.transition])
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
