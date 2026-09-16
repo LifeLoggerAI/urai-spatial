@@ -15,6 +15,12 @@ test('legacy public entry paths converge on canonical owners', async () => {
   for (const [path, marker] of expectations) assert.ok((await read(path)).includes(marker), `${path} must redirect to its canonical owner`)
 })
 
+test('signup compatibility route preserves signup intent at the canonical auth owner', async () => {
+  const login = await read('login')
+  assert.match(login, /from === 'signup' \? 'signup' : 'login'/)
+  assert.match(login, /<LoginClient intent=/)
+})
+
 test('waitlist remains fail closed while durable intake is unavailable', async () => {
   const waitlist = await read('waitlist')
   const unsafeEarlyAccessRedirect = /redirect\s*\(\s*['"`]\/early-access/
