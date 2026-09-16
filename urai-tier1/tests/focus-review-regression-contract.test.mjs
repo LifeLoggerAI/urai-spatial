@@ -24,10 +24,11 @@ test('home telemetry synchronizes from mutations and input without perpetual doc
   assert.doesNotMatch(telemetryBridge, /const synchronize = \(\) =>/)
 })
 
-test('Focus focal authority is a grounded living-memory manifestation, not the rejected giant dark icosahedron', () => {
+test('Focus focal authority is the V269 grounded luminous memory manifestation, not the rejected giant dark icosahedron or terrain-mapped focal body', () => {
   assert.match(focus, /createFocusStrata, createFocusSurfaceMaps/)
   assert.match(focus, /focus-v251-grounded-living-memory-manifestation/)
-  assert.match(focus, /v251-fractured-rooted-memory-strata/)
+  assert.match(focus, /v269-living-luminous-memory-lamella/)
+  assert.match(focus, /materialAuthority: 'vertex-energy-not-mineral-terrain-map'/)
   assert.doesNotMatch(focus, /new THREE\.IcosahedronGeometry\(/)
   assert.doesNotMatch(focus, /new THREE\.SphereGeometry\(1, 72, 48\)/)
   assert.doesNotMatch(focus, /focus-v217-single-connected-memory-manifestation/)
