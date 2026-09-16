@@ -88,7 +88,22 @@ When a task names a component, route, workflow, script, asset, PR, or file:
 Do not claim a test passed unless it was actually run or a current exact-head CI result was actually inspected.
 Do not claim literal-pixel acceptance from generated files that were not visually opened and inspected.
 
-## 6. Locked Home / spatial canon currently governing convergence
+## 6. Release-state vocabulary
+
+Use these states precisely and never collapse them together:
+
+- **Code created** — source changes exist.
+- **Code tested** — named checks were actually run against the stated exact SHA and their observed results are recorded.
+- **PR opened** — a pull request exists; this does not imply its checks are green.
+- **PR green** — the required checks observed for the current PR head are passing; a newer head invalidates that evidence.
+- **PR approved** — an eligible reviewer approved the current head under the repository's governing policy.
+- **PR merged** — GitHub records the change as merged into the stated base branch.
+- **Deployed** — the merged or otherwise authorized source was actually deployed by the governing deployment path.
+- **Live verified** — the deployed runtime was independently checked and tied back to the intended deployed source/version.
+
+Never use one state as evidence for a later state. In particular, compilation or tests are not deployment proof, and deployment is not live verification.
+
+## 7. Locked Home / spatial canon currently governing convergence
 
 Treat live GitHub authority as final when it is newer than this file. At the time this contract was created, the active convergence canon includes:
 
@@ -106,7 +121,7 @@ Treat live GitHub authority as final when it is newer than this file. At the tim
 
 If newer exact-head repository authority contradicts this section, stop treating this snapshot as current and reconcile the file before implementation.
 
-## 7. Scope discipline
+## 8. Scope discipline
 
 Avoid over-engineering.
 
@@ -116,7 +131,7 @@ Avoid over-engineering.
 - Do not duplicate an existing authority when the correct action is to reconcile or reuse it.
 - Do not create new canon casually. Recover and reconcile existing canon first.
 
-## 8. Visual and spatial work
+## 9. Visual and spatial work
 
 For visual acceptance work:
 
@@ -127,23 +142,15 @@ For visual acceptance work:
 - open generated screenshots/artifacts before describing them as accepted;
 - treat a workflow marked skipped as not accepted unless the governing contract explicitly says otherwise.
 
-## 9. Handoff format to Codex
+## 10. Handoff format to Codex
 
-End each coding lane with a compact handoff containing:
+End each coding lane with the repository, task goal, starting authority SHA, branch/worktree, resulting exact SHA, changed files, implementation summary, tests/checks actually run, passing and failing checks, known risks, unresolved uncertainty, conflicts with newer authority, an evidence-based `Safe to merge?` status, merge/deploy status, and recommended Codex review action.
 
-- task goal;
-- starting authority SHA;
-- branch/worktree name;
-- resulting commit SHA;
-- changed files;
-- tests/checks actually run and their results;
-- any failures or unresolved uncertainty;
-- conflicts with newer authority, if discovered;
-- explicit statement that no merge/deploy occurred unless one was specifically authorized and verified.
+Use the dedicated `.claude/agents/codex-handoff.md` contract for the exact section names and allowed `Safe to merge?` values.
 
 This handoff is evidence for review, not automatic approval.
 
-## 10. Definition of done for a Claude lane
+## 11. Definition of done for a Claude lane
 
 A Claude lane is done only when its assigned scope is implemented, relevant focused verification is complete, the changes are committed on the isolated branch, and the handoff is precise enough for Codex to review without guessing.
 
