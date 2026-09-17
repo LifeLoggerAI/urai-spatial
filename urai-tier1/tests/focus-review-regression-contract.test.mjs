@@ -25,14 +25,15 @@ test('home telemetry synchronizes from mutations and input without perpetual doc
   assert.doesNotMatch(telemetryBridge, /const synchronize = \(\) =>/)
 })
 
-test('Focus focal authority is the V292 ground-held continuation of the V272 single connected living-memory fold, not rejected lamellae, shards, sphere, or portable focal body', () => {
+test('Focus focal authority is the V295 ground-held continuation of the V272 single connected living-memory fold, not rejected lamellae, shards, sphere, or portable focal body', () => {
   assert.match(focus, /createFocusStrata, createFocusSurfaceMaps/)
   assert.match(focus, /focus-v251-grounded-living-memory-manifestation/)
   assert.match(geology, /v272-single-connected-living-memory-fold/)
   assert.match(geology, /v272-no-crystal-crown-no-card-stack/)
-  assert.match(geology, /v292-ground-intersecting-longitudinal-fracture-with-deep-furrow/)
-  assert.match(geology, /ground-held-fracture-not-portable-object/)
-  assert.match(geology, /v292-sanctuary-memory-fracture/)
+  assert.match(geology, /v295-closed-ground-fused-scar-volume-with-buried-closure/)
+  assert.match(geology, /one-closed-ground-owned-scar-no-split-pair-no-portable-outline/)
+  assert.match(geology, /v295-sanctuary-memory-scar-volume/)
+  assert.match(geology, /v295-closed-continuous-ground-held-memory-rupture/)
   assert.doesNotMatch(geology, /v269-living-luminous-memory-lamella/)
   assert.doesNotMatch(geology, /v271-interlocked-volumetric-memory-facet/)
   assert.doesNotMatch(focus, /new THREE\.IcosahedronGeometry\(/)
