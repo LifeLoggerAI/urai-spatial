@@ -1,0 +1,21 @@
+{
+  "schemaVersion":"1.0.0",
+  "voice":"minimal-poetic-grounded",
+  "rules":["no-hype-claims","no-live-claim-without-receipt","no-medical-certainty","no-surveillance-framing","consent-language-clear"],
+  "systemCopy":{
+    "Genesis":{"title":"Your world begins here.","subtitle":"A private spatial memory system that grows with you."},
+    "Home Sanctuary":{"title":"Home","subtitle":"The quiet center of your world."},
+    "Ground":{"title":"Ground","subtitle":"Where daily life becomes place."},
+    "Life Map / Galaxy":{"title":"Life Map","subtitle":"Your memories, patterns, and chapters in motion."},
+    "Focus":{"title":"Focus","subtitle":"Enter one moment without losing the whole."},
+    "Replay":{"title":"Replay","subtitle":"Return to the shape of a moment."},
+    "Mirror":{"title":"Mirror","subtitle":"See what has changed, and what keeps returning."},
+    "Shadow":{"title":"Shadow","subtitle":"Patterns that are easier to see from the edge."},
+    "Legacy":{"title":"Legacy","subtitle":"What you choose to carry forward."},
+    "Passport":{"title":"Passport","subtitle":"You decide what can move, connect, and be shared."},
+    "Council":{"title":"Council","subtitle":"Different perspectives. One private conversation."},
+    "Orb":{"title":"Orb","subtitle":"A living guide through your world."},
+    "Privacy Controls":{"title":"Privacy","subtitle":"Your permissions remain visible and reversible."},
+    "Spatial / XR":{"title":"Spatial","subtitle":"The same world, with more room to move."}
+  }
+}

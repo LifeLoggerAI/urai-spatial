@@ -1,0 +1,100 @@
+{
+  "schemaVersion": "1.0.0",
+  "programId": "URAI-ZERO-BUDGET-PARALLEL-PACK-20260814",
+  "authority": {
+    "repository": "LifeLoggerAI/urai-spatial",
+    "runtimeRoot": "urai-tier1",
+    "baseSha": "08fd3bc89973386dc49d00d185f1336f705bfa1c",
+    "workingBranch": "agent/zero-budget-parallel-packs-20260814",
+    "parentIssues": [
+      "LifeLoggerAI/urai-spatial#1106",
+      "LifeLoggerAI/urai-spatial#1030"
+    ],
+    "productionMutationAllowed": false,
+    "mergeAuthorityGranted": false
+  },
+  "budgetBoundary": {
+    "providerCalls": 0,
+    "spendUsd": "0.00",
+    "paidGenerationAllowed": false,
+    "paidRetryAllowed": false,
+    "acceptedAssetRegenerationAllowed": false,
+    "openAiApiUsageAllowedByThisPack": false,
+    "localDeterministicProofAllowed": true
+  },
+  "truthBoundary": {
+    "templatesAreFinalProductCapture": false,
+    "templatesMayBePublishedAsLiveProduct": false,
+    "exactReleaseShaRequiredForFinalProductCapture": true,
+    "privateIdentityMediaAllowedInPublicRepo": false,
+    "generatedUiMayBePresentedAsRealProduct": false,
+    "finalHumanVisualApprovalRequired": true
+  },
+  "systems": [
+    {"id":"genesis","label":"Genesis","mark":"spark-origin","surfaces":["system-glyph","hero-template","splash","loading","walkthrough-card"]},
+    {"id":"home","label":"Home Sanctuary","mark":"sanctuary-ring","surfaces":["system-glyph","hero-template","walkthrough-card","store-frame"]},
+    {"id":"ground","label":"Ground","mark":"horizon-root","surfaces":["system-glyph","hero-template","walkthrough-card","store-frame"]},
+    {"id":"life-map","label":"Life Map / Galaxy","mark":"constellation","surfaces":["system-glyph","hero-template","walkthrough-card","store-frame","demo-scroll"]},
+    {"id":"focus","label":"Focus","mark":"lens-star","surfaces":["system-glyph","walkthrough-card","store-frame"]},
+    {"id":"replay","label":"Replay","mark":"memory-loop","surfaces":["system-glyph","walkthrough-card","weekly-memory-scroll","store-frame"]},
+    {"id":"mirror","label":"Mirror","mark":"split-reflection","surfaces":["system-glyph","hero-template","walkthrough-card","store-frame"]},
+    {"id":"shadow","label":"Shadow","mark":"eclipse","surfaces":["system-glyph","hero-template","walkthrough-card"]},
+    {"id":"legacy","label":"Legacy","mark":"thread-archive","surfaces":["system-glyph","hero-template","walkthrough-card"]},
+    {"id":"passport","label":"Passport","mark":"permission-gate","surfaces":["system-glyph","hero-template","walkthrough-card","store-frame"]},
+    {"id":"council","label":"Council","mark":"six-orbit","surfaces":["system-glyph","hero-template","walkthrough-card","investor-frame"]},
+    {"id":"orb","label":"Orb","mark":"living-orb","surfaces":["system-glyph","hero-template","loading","social-card"]},
+    {"id":"privacy","label":"Privacy Controls","mark":"shield-keyhole","surfaces":["system-glyph","walkthrough-card","store-frame","investor-frame"]},
+    {"id":"location-map","label":"Location Map","mark":"pin-field","surfaces":["system-glyph","walkthrough-card","store-frame"]},
+    {"id":"status","label":"Status","mark":"pulse-check","surfaces":["system-glyph","github-card","investor-frame"]},
+    {"id":"spatial-xr","label":"Spatial / XR","mark":"portal-cube","surfaces":["system-glyph","hero-template","investor-frame","github-card"]},
+    {"id":"studio","label":"URAI Studio","mark":"frame-spark","surfaces":["system-glyph","github-card","social-card"]},
+    {"id":"motion","label":"URAI Motion","mark":"motion-arc","surfaces":["system-glyph","social-card"]},
+    {"id":"cinema","label":"URAI Cinema","mark":"film-orbit","surfaces":["system-glyph","social-card","investor-frame"]},
+    {"id":"music","label":"URAI Music","mark":"wave-orbit","surfaces":["system-glyph","social-card"]},
+    {"id":"visuals","label":"URAI Visuals","mark":"prism-eye","surfaces":["system-glyph","social-card"]},
+    {"id":"labs","label":"URAI Labs","mark":"lab-orbit","surfaces":["system-glyph","github-card","investor-frame"]},
+    {"id":"foundation","label":"URAI Foundation","mark":"open-hands","surfaces":["system-glyph","github-card","social-card","investor-frame"]},
+    {"id":"admin","label":"URAI Admin","mark":"control-grid","surfaces":["system-glyph","github-card"]},
+    {"id":"analytics","label":"URAI Analytics","mark":"signal-graph","surfaces":["system-glyph","github-card","investor-frame"]},
+    {"id":"communications","label":"URAI Communications","mark":"message-orbit","surfaces":["system-glyph","github-card","social-card"]},
+    {"id":"content","label":"URAI Content","mark":"story-stack","surfaces":["system-glyph","github-card","social-card"]},
+    {"id":"jobs","label":"URAI Jobs","mark":"path-briefcase","surfaces":["system-glyph","github-card"]},
+    {"id":"b2b","label":"URAI B2B","mark":"bridge-nodes","surfaces":["system-glyph","github-card","investor-frame"]}
+  ],
+  "packTypes": [
+    {"id":"system-glyph","source":"vector-sprite","status":"template-ready","finalCaptureRequired":false},
+    {"id":"hero-template","source":"deterministic-layout","status":"template-ready","finalCaptureRequired":true},
+    {"id":"walkthrough-card","source":"deterministic-layout","status":"template-ready","finalCaptureRequired":true},
+    {"id":"demo-scroll","source":"deterministic-layout","status":"template-ready","finalCaptureRequired":true},
+    {"id":"weekly-memory-scroll","source":"deterministic-layout","status":"template-ready","finalCaptureRequired":true},
+    {"id":"store-frame","source":"deterministic-layout","status":"template-ready-not-store-certified","finalCaptureRequired":true},
+    {"id":"investor-frame","source":"deterministic-layout","status":"template-ready","finalCaptureRequired":true},
+    {"id":"social-card","source":"deterministic-layout","status":"template-ready","finalCaptureRequired":true},
+    {"id":"github-card","source":"deterministic-layout","status":"template-ready","finalCaptureRequired":true},
+    {"id":"splash","source":"deterministic-layout","status":"template-ready","finalCaptureRequired":false},
+    {"id":"loading","source":"deterministic-layout","status":"template-ready","finalCaptureRequired":false}
+  ],
+  "captureStates": [
+    "desktop",
+    "mobile-375",
+    "mobile-430",
+    "tablet-768",
+    "desktop-1024",
+    "desktop-1440",
+    "reduced-motion",
+    "forced-colors",
+    "muted-audio",
+    "no-webgl",
+    "offline",
+    "failed-asset",
+    "permission-denied"
+  ],
+  "executionLanes": [
+    {"id":"A","name":"system-identity","mode":"local-deterministic","spendUsd":"0.00","outputs":["glyph-sprite","system-index","brand-token-map"]},
+    {"id":"B","name":"launch-layouts","mode":"local-deterministic","spendUsd":"0.00","outputs":["hero","walkthrough","demo-scroll","weekly-scroll","store","investor","social","github","splash","loading"]},
+    {"id":"C","name":"runtime-capture-placeholders","mode":"template-only","spendUsd":"0.00","outputs":["replaceable-capture-slots","exact-sha-receipt-fields"]},
+    {"id":"D","name":"accessibility-derivatives","mode":"local-deterministic","spendUsd":"0.00","outputs":["reduced-motion-layout","forced-colors-layout","caption-safe-areas","audio-description-copy-slot"]},
+    {"id":"E","name":"drive-control-plane","mode":"metadata-and-docs","spendUsd":"0.00","outputs":["surface-matrix","pack-register","blocker-register","github-links"]}
+  ],
+  "completionRule": "This pack is complete when every named system has a reusable identity mark and every launch/output surface has a deterministic zero-cost template, while final product captures remain replaceable and explicitly blocked until an accepted exact release SHA and human visual approval exist."
+}
