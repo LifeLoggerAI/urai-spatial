@@ -70,7 +70,7 @@ test('Focus is an explorable authored selected-memory world rather than a static
   assert.match(geology, /v272-no-crystal-crown-no-card-stack/)
   assert.match(geology, /one-closed-ground-owned-fissure-no-split-pair-no-portable-outline/)
   assert.match(geology, /v295-sanctuary-memory-scar-volume/)
-  assert.match(geology, /v299-ground-grade-dark-mineral-memory-fissure/)
+  assert.match(geology, /v300-terrain-seated-continuous-memory-fissure/)
   assert.doesNotMatch(geology, /v269-living-luminous-memory-lamella|v271-interlocked-volumetric-memory-facet/)
   assert.doesNotMatch(focus.match(/function MemoryAperture[\s\S]*?\n}\n\nfunction FocusScene/)?.[0] ?? '', /map=\{maps\[0\]\}|normalMap=\{maps\[1\]\}|roughnessMap=\{maps\[2\]\}/)
   assert.doesNotMatch(focus, /new THREE\.IcosahedronGeometry\(/)

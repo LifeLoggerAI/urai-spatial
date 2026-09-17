@@ -24,6 +24,14 @@ import * as THREE from 'three'
 // one broken lip rises modestly in irregular pressure windows, and warmer mineral albedo
 // survives the higher-level neutral material multiplier and cool selected-memory lights.
 //
+// V300 responds to exact V299 pixels, where the fixed local Y plane intersected the real
+// eroded sanctuary at different heights and produced one left strip plus detached islands;
+// portrait then buried the manifestation another .28 units. V300 seats every visible vertex
+// against the SAME sanctuary-height equation for both desktop and portrait transforms, keeps
+// the central incision continuously readable just above grade, removes the portrait bury
+// offset, narrows the footprint, and reduces cool emissive contamination. One continuous
+// ground-owned fissure must survive both viewport families; disconnected islands are failure.
+//
 // The form must read as memory pressure physically held by place. It must not regress
 // into a crystal crown, boulder, orb, flower, portal, ring, shell/mouth, manta, tent,
 // aircraft, animal, shoe, boat, bowl, helmet, body-part silhouette, smooth blob,
@@ -39,6 +47,26 @@ function fractureCenter(t: number) {
     + .34 * Math.sin(t * 2.31 - .48)
     + .11 * Math.sin(t * 6.35 + .66)
   return new THREE.Vector2(x, z)
+}
+
+function sanctuaryGroundHeight(x: number, z: number) {
+  const side = Math.pow(Math.max(0, (Math.abs(x) - 4.2) / 10.8), 1.7) * 8.5
+  const weather = 0.18 * Math.sin(x * 0.64 + z * 0.23)
+    + 0.08 * Math.sin(x * 1.73 - z * 0.82)
+    + 0.038 * Math.cos(x * 4.1 + z * 2.7)
+  const threshold = 0.48 * Math.exp(-((x + 3.8) ** 2 / 18 + (z + 3.4) ** 2 / 28))
+  const archive = 0.72 * Math.exp(-((x - 5.1) ** 2 / 14 + (z + 8.8) ** 2 / 22))
+  const bank = THREE.MathUtils.smoothstep(Math.abs(x), 4.2, 5.8)
+    * 2.1
+    * Math.exp(-((Math.abs(x) - 6.1) ** 2 / 10))
+    * THREE.MathUtils.smoothstep(-z, 5.5, 12.5)
+  return -1.5 + side + weather + threshold + archive + bank
+}
+
+function focusGroundHeightForMemory(localX: number, localZ: number) {
+  const desktop = sanctuaryGroundHeight(.25 + localX * 1.15, -1.56 + localZ * 1.05)
+  const portrait = sanctuaryGroundHeight(.02 + localX * .98, -1.56 + localZ)
+  return Math.max(desktop, portrait)
 }
 
 function livingMemoryVertexColor(section: number, cross: number, t: number, lateral: number, furrow: number, ridge: number) {
@@ -86,11 +114,7 @@ function createLivingMemoryFold() {
     const brokenKnot = Math.exp(-Math.pow((t - .01) / .15, 2))
     const pulse = .5 + .5 * Math.sin(t * 12.7 + .62)
     const pressureWindow = .20 + .80 * Math.pow(.5 + .5 * Math.sin(t * 10.5 + .38), 1.8)
-    const baseHalfWidth = (.205 + .085 * centralScar + .050 * nearPressure + .026 * farPressure) * (.42 + .58 * endFade)
-    const centerY = -1.205
-      + .010 * Math.sin(t * 5.4)
-      + .008 * Math.sin(t * 12.7 + .4)
-      - terminalSink
+    const baseHalfWidth = (.145 + .058 * centralScar + .034 * nearPressure + .018 * farPressure) * (.48 + .52 * endFade)
 
     for (let cross = 0; cross < MEMORY_CROSS_POINTS; cross += 1) {
       const crossU = cross / (MEMORY_CROSS_POINTS - 1)
@@ -122,24 +146,26 @@ function createLivingMemoryFold() {
       const localBuckling = .020 * Math.sin(t * 8.2 + lateral * 2.9 + .55)
         * centralScar * (1 - .68 * absLateral)
 
-      // V299 keeps the fissure visually at grade instead of floating above it. The dark
-      // incision is shallow enough to remain visible over the sanctuary mesh; only one
-      // discontinuous lip rises, while the opposite side and outer edges dissolve downward.
-      const y = centerY
-        + minimalContinuity
-        - .065 * furrow
-        + .082 * dominantLip
-        + .006 * counterLip
-        + .006 * pulse * dominantLip
-        + localBuckling
-        + micro
-        - edgeSink
+      // V300 seats the scar to authored sanctuary height instead of a fixed local-Y plane.
       const lateralDistance = lateral * halfWidth
       const edgeBreak = absLateral > .54
-        ? .060 * Math.sin(section * 2.23 + cross * 1.47)
-        : .012 * Math.sin(section * 1.39 + cross * .61) * absLateral
+        ? .042 * Math.sin(section * 2.23 + cross * 1.47)
+        : .008 * Math.sin(section * 1.39 + cross * .61) * absLateral
       const x = center.x + side.x * (lateralDistance + edgeBreak)
       const z = center.y + side.y * (lateralDistance + edgeBreak)
+      const groundY = focusGroundHeightForMemory(x, z)
+      const y = groundY
+        + .075
+        + .012 * centralScar
+        + minimalContinuity * .55
+        - .070 * furrow
+        + .125 * dominantLip
+        + .004 * counterLip
+        + .012 * pulse * dominantLip
+        + localBuckling * .45
+        + micro * .55
+        - edgeSink * .42
+        - terminalSink * .38
 
       positions.push(x, y, z)
       uvs.push(crossU, u)
@@ -217,8 +243,9 @@ function createLivingMemoryFold() {
   geometry.userData.focusLiteralPixelSuccessorV297 = 'v297-off-axis-s-fracture-shallow-meandering-furrow-one-dominant-lip-portrait-legibility'
   geometry.userData.focusLiteralPixelSuccessorV298 = 'v298-narrow-short-deep-incision-broken-dominant-lip-counter-side-buried-no-panel'
   geometry.userData.focusLiteralPixelSuccessorV299 = 'v299-ground-grade-dark-mineral-fissure-readable-footprint-warm-broken-lip-no-blue-object'
+  geometry.userData.focusLiteralPixelSuccessorV300 = 'v300-terrain-seated-continuous-dark-mineral-fissure-desktop-portrait-no-islands'
   geometry.userData.focusVisualAuthority = 'v295-sanctuary-memory-scar-volume'
-  geometry.userData.focusCurrentVisualAuthority = 'v299-ground-grade-dark-mineral-memory-fissure'
+  geometry.userData.focusCurrentVisualAuthority = 'v300-terrain-seated-continuous-memory-fissure'
   return geometry
 }
 
