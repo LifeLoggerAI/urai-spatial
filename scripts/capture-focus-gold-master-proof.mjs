@@ -89,6 +89,7 @@ const JOURNEY_SOURCE_VISUAL_ABORTS = new Set([
   '/assets/urai/generated/models/focus-memory-chamber-v1.glb',
   '/assets/urai/final/tier2/focus/focus-memory-chamber-desktop.svg',
   '/assets/urai/final/tier2/replay/replay-cinematic-stage-desktop.svg',
+  '/assets/urai/final/tier2/life-map/lifemap-galaxy-field-desktop.svg',
 ])
 
 function blockingFailedRequests(failedRequests, { allowJourneySourceVisualAbort = false } = {}) {
