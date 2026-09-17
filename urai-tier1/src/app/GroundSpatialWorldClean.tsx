@@ -60,6 +60,7 @@ const SPAWN = new THREE.Vector3(0, 0, 6);
 const ROCK_01 = "/assets/urai/home-production/cc0/polyhaven-v48/rock_face_01/asset.gltf";
 const ROCK_02 = "/assets/urai/home-production/cc0/polyhaven-v48/rock_face_02/asset.gltf";
 const FERN = "/assets/urai/home-production/cc0/polyhaven-v48/fern_02/asset.gltf";
+const NATURAL_CANOPY = "/assets/urai/generated/models/ground-natural-canopy-v3.glb";
 const TERRAIN_ALBEDO = "/assets/urai/home-production/cc0/rock-tile-floor/rock-tile-floor-diff-1k.webp";
 const TERRAIN_NORMAL = "/assets/urai/home-production/cc0/rock-tile-floor/rock-tile-floor-normal-gl-1k.webp";
 const TERRAIN_ARM = "/assets/urai/home-production/cc0/rock-tile-floor/rock-tile-floor-arm-1k.webp";
@@ -193,6 +194,38 @@ function FernPatch({ position, rotationY, scale }: { position: [number, number, 
   return <group position={position} rotation={[0, rotationY, 0]} scale={scale} raycast={() => null}><primitive object={model} /></group>;
 }
 
+function NaturalCanopy({ profile, position, rotationY, scale }: {
+  profile: EnvironmentProfile;
+  position: [number, number, number];
+  rotationY: number;
+  scale: number;
+}) {
+  const asset = useGLTF(NATURAL_CANOPY);
+  const model = useMemo(() => {
+    const copy = normalizedClone(asset.scene);
+    const trunk = new THREE.Color(profile.id === "woodland" ? "#372f27" : "#4a3d31");
+    const foliage = new THREE.Color(profile.id === "woodland" ? "#334534" : "#526149");
+    copy.traverse((object) => {
+      if (!(object instanceof THREE.Mesh)) return;
+      const materials = Array.isArray(object.material) ? object.material : [object.material];
+      for (const material of materials) {
+        if (!(material instanceof THREE.MeshStandardMaterial)) continue;
+        material.color.copy(/trunk/i.test(object.name) ? trunk : foliage);
+        material.roughness = 0.96;
+        material.metalness = 0;
+        material.envMapIntensity = 0.28;
+      }
+    });
+    return copy;
+  }, [asset.scene, profile.id]);
+  useEffect(() => () => model.traverse((object) => {
+    if (!(object instanceof THREE.Mesh)) return;
+    const materials = Array.isArray(object.material) ? object.material : [object.material];
+    materials.forEach((material) => material.dispose());
+  }), [model]);
+  return <group position={position} rotation={[0, rotationY, 0]} scale={scale} raycast={() => null}><primitive object={model} /></group>;
+}
+
 function urbanFootprint(index: number) {
   const width = 1.15 + (index % 4) * 0.26;
   const depth = 0.9 + (index % 3) * 0.22;
@@ -272,20 +305,66 @@ function NaturalScatter({ profile }: { profile: EnvironmentProfile }) {
 
   const woodland = profile.id === "woodland";
   const ferns = items.slice(0, woodland ? 14 : 8);
-  return <group name={woodland ? "ground-woodland-scanned-understory" : "ground-temperate-scanned-understory"} userData={{ treatment: "polyhaven-fern-and-scanned-rock-understory-placeholder-trees-retired" }} raycast={() => null}>
+  const canopies = items.slice(0, woodland ? 7 : 5);
+  return <group name={woodland ? "ground-woodland-scanned-understory" : "ground-temperate-scanned-understory"} userData={{ treatment: "urai-self-authored-static-canopy-v3-with-polyhaven-fern-rock-understory" }} raycast={() => null}>
+    {canopies.map((item) => {
+      const x = item.x * 1.08;
+      const z = item.z - 5.5;
+      return <NaturalCanopy key={`canopy-${item.index}`} profile={profile} position={[x, groundHeight(x, z, profile.id) - 0.02, z]} rotationY={item.index * 0.91 + (woodland ? 0.22 : -0.14)} scale={(woodland ? 5.2 : 4.5) + item.scale * 1.4} />;
+    })}
     {ferns.map((item) => <FernPatch key={`fern-${item.index}`} position={[item.x * 0.72, groundHeight(item.x * 0.72, item.z - 1.3, profile.id), item.z - 1.3]} rotationY={item.index * 0.73} scale={0.82 + item.scale * 0.45} />)}
     {items.slice(0, 8).map((item) => <ScannedRock key={`rock-${item.index}`} variant={item.index % 2 ? "01" : "02"} position={[item.x * 0.55, groundHeight(item.x * 0.55, item.z + 2.2, profile.id) - 0.1, item.z + 2.2]} rotation={[0, item.index * 0.39, 0]} scale={[0.82 * item.scale, 0.48 * item.scale, 0.94 * item.scale]} />)}
   </group>;
 }
 
+function buildDistantRidgeGeometry(profile: EnvironmentProfile) {
+  const columns = 48;
+  const rows = 6;
+  const positions: number[] = [];
+  const indices: number[] = [];
+  const profileLift = profile.id === "urban" ? 0.52 : profile.id === "coastal" ? 0.58 : 1;
+  for (let row = 0; row <= rows; row += 1) {
+    const v = row / rows;
+    const z = THREE.MathUtils.lerp(-154, -246, v);
+    const envelope = Math.sin(v * Math.PI);
+    for (let column = 0; column <= columns; column += 1) {
+      const u = column / columns;
+      const x = THREE.MathUtils.lerp(-188, 188, u);
+      const irregular = 6.4
+        + 2.8 * Math.sin(x * 0.031 + 0.7)
+        + 1.6 * Math.sin(x * 0.079 - 1.1)
+        + 0.8 * Math.cos(x * 0.147 + v * 2.4);
+      const shoulder = 1.2 * Math.sin((u + v * 0.17) * Math.PI * 5.0);
+      const y = -0.55 + envelope * Math.max(1.2, irregular + shoulder) * profileLift;
+      positions.push(x, y, z);
+    }
+  }
+  const stride = columns + 1;
+  for (let row = 0; row < rows; row += 1) for (let column = 0; column < columns; column += 1) {
+    const a = row * stride + column;
+    const b = a + 1;
+    const c = a + stride;
+    const d = c + 1;
+    indices.push(a, c, b, b, c, d);
+  }
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
+  geometry.setIndex(indices);
+  geometry.computeVertexNormals();
+  geometry.computeBoundingBox();
+  geometry.computeBoundingSphere();
+  return geometry;
+}
+
 function DistantGroundContinuation({ profile }: { profile: EnvironmentProfile }) {
-  return <group name="ground-distant-continuation" raycast={() => null} userData={{ perceivedRangeMeters: 400 }}>
+  const ridge = useMemo(() => buildDistantRidgeGeometry(profile), [profile]);
+  useEffect(() => () => ridge.dispose(), [ridge]);
+  return <group name="ground-distant-continuation" raycast={() => null} userData={{ perceivedRangeMeters: 400, horizonAuthority: "authored-irregular-ridge-v3-no-stretched-sphere" }}>
     <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.32, -128]} receiveShadow>
       <planeGeometry args={[420, 300, 36, 28]} />
       <meshStandardMaterial color={profile.horizon} roughness={0.98} metalness={0} />
     </mesh>
-    <mesh position={[0, 16, -205]} scale={[130, 22, 18]}>
-      <sphereGeometry args={[1, 48, 24]} />
+    <mesh name="ground-authored-distant-ridge-v3" geometry={ridge} receiveShadow>
       <meshStandardMaterial color={profile.groundDeep} roughness={1} metalness={0} />
     </mesh>
   </group>;
@@ -485,7 +564,7 @@ export default function GroundSpatialWorldClean() {
     data-ground-visual-owner="physical-lived-world"
     data-ground-runtime-owner="first-person-lived-world"
     data-ground-visual-revision="ground-lived-world-v2-canon-lock"
-    data-ground-art-revision="ground-scanned-pbr-v2"
+    data-ground-art-revision="ground-natural-canopy-v3-authored-ridge-v3"
     data-ground-exploration="first-person-no-visible-body"
     data-ground-camera="eye-level-terrain-following-no-authored-bob"
     data-ground-eye-height={GROUND_EYE_HEIGHT_M}
@@ -552,3 +631,4 @@ export default function GroundSpatialWorldClean() {
 useGLTF.preload(ROCK_01);
 useGLTF.preload(ROCK_02);
 useGLTF.preload(FERN);
+useGLTF.preload(NATURAL_CANOPY);

@@ -9,9 +9,12 @@ const base = (process.env.URAI_PROOF_BASE || 'http://127.0.0.1:4173').replace(/\
 const outDir = path.resolve(process.env.URAI_PROOF_DIR || 'artifacts/ground-goldmaster-proof')
 const exactHead = process.env.URAI_EXACT_HEAD || 'local'
 
-const viewports = [
-  { id: 'desktop', width: 1440, height: 900, mobile: false },
-  { id: 'mobile', width: 390, height: 844, mobile: true },
+const scenarios = [
+  { id: 'temperate-desktop', environment: 'temperate', width: 1440, height: 900, mobile: false, reducedMotion: 'no-preference' },
+  { id: 'woodland-desktop', environment: 'woodland', width: 1440, height: 900, mobile: false, reducedMotion: 'no-preference' },
+  { id: 'temperate-phone-portrait', environment: 'temperate', width: 390, height: 844, mobile: true, reducedMotion: 'no-preference' },
+  { id: 'woodland-phone-portrait', environment: 'woodland', width: 390, height: 844, mobile: true, reducedMotion: 'no-preference' },
+  { id: 'temperate-reduced-motion', environment: 'temperate', width: 1440, height: 900, mobile: false, reducedMotion: 'reduce' },
 ]
 
 await mkdir(outDir, { recursive: true })
@@ -19,10 +22,10 @@ const browser = await chromium.launch({ headless: true, args: ['--use-gl=angle',
 const captures = []
 const errors = []
 
-async function capture(page, viewport, state) {
-  const file = `ground-${viewport.id}-${state}.png`
+async function capture(page, scenario, state) {
+  const file = `ground-${scenario.id}-${state}.png`
   await page.screenshot({ path: path.join(outDir, file), fullPage: false })
-  captures.push({ viewport: viewport.id, state, file })
+  captures.push({ scenario: scenario.id, environment: scenario.environment, reducedMotion: scenario.reducedMotion, state, file })
 }
 
 async function dragLook(page, canvasBox, dx, dy) {
@@ -36,12 +39,12 @@ async function dragLook(page, canvasBox, dx, dy) {
 }
 
 try {
-  for (const viewport of viewports) {
+  for (const scenario of scenarios) {
     const context = await browser.newContext({
-      viewport: { width: viewport.width, height: viewport.height },
-      isMobile: viewport.mobile,
-      hasTouch: viewport.mobile,
-      reducedMotion: 'no-preference',
+      viewport: { width: scenario.width, height: scenario.height },
+      isMobile: scenario.mobile,
+      hasTouch: scenario.mobile,
+      reducedMotion: scenario.reducedMotion,
       colorScheme: 'dark',
     })
     const page = await context.newPage()
@@ -49,7 +52,7 @@ try {
     page.on('pageerror', (error) => pageErrors.push(String(error)))
     page.on('console', (message) => { if (message.type() === 'error') pageErrors.push(`console: ${message.text()}`) })
 
-    await page.goto(`${base}/ground/?environment=temperate`, { waitUntil: 'networkidle', timeout: 60_000 })
+    await page.goto(`${base}/ground/?environment=${scenario.environment}`, { waitUntil: 'networkidle', timeout: 60_000 })
     await page.waitForSelector('[data-testid="urai-ground-lived-world"][data-ground-ready="true"]', { timeout: 45_000 })
     await page.waitForSelector('.ground-spatial-root canvas', { state: 'visible', timeout: 45_000 })
     await page.waitForTimeout(800)
@@ -87,51 +90,56 @@ try {
       privateLocationMounted: 'false',
     }
     for (const [key, value] of Object.entries(expected)) {
-      if (contract[key] !== value) errors.push(`${viewport.id}: ${key}=${contract[key]} expected ${value}`)
+      if (contract[key] !== value) errors.push(`${scenario.id}: ${key}=${contract[key]} expected ${value}`)
     }
 
     const canvas = page.locator('.ground-spatial-root canvas').first()
     const canvasBox = await canvas.boundingBox()
-    if (!canvasBox || canvasBox.width < 240 || canvasBox.height < 240) throw new Error(`${viewport.id}: Ground canvas is not usable`)
+    if (!canvasBox || canvasBox.width < 240 || canvasBox.height < 240) throw new Error(`${scenario.id}: Ground canvas is not usable`)
 
     const fixedOrb = page.locator('.urai-world-companion__orb').first()
     const fixedOrbCount = await fixedOrb.count()
     const fixedOrbStyle = fixedOrbCount ? await fixedOrb.evaluate((node) => ({ opacity: getComputedStyle(node).opacity, pointerEvents: getComputedStyle(node).pointerEvents })) : null
-    if (fixedOrbStyle && Number.parseFloat(fixedOrbStyle.opacity || '1') > 0.02) errors.push(`${viewport.id}: semantic Orb fallback is visibly duplicated`)
+    if (fixedOrbStyle && Number.parseFloat(fixedOrbStyle.opacity || '1') > 0.02) errors.push(`${scenario.id}: semantic Orb fallback is visibly duplicated`)
 
-    await capture(page, viewport, 'idle')
+    await capture(page, scenario, 'idle')
 
-    if (viewport.mobile) {
+    if (scenario.mobile) {
       const analog = page.locator('.ground-analog-pad').first()
-      if (!(await analog.isVisible())) throw new Error('mobile: analog movement pad is not visible')
+      if (!(await analog.isVisible())) throw new Error(`${scenario.id}: analog movement pad is not visible`)
       const analogBox = await analog.boundingBox()
-      if (!analogBox) throw new Error('mobile: analog movement pad has no bounds')
+      if (!analogBox) throw new Error(`${scenario.id}: analog movement pad has no bounds`)
       await page.touchscreen.tap(analogBox.x + analogBox.width / 2, analogBox.y + analogBox.height * 0.2)
       await page.waitForTimeout(450)
-      await capture(page, viewport, 'after-move')
+      await capture(page, scenario, 'after-move')
     } else {
       await page.keyboard.down('KeyW')
       await page.waitForTimeout(700)
       await page.keyboard.up('KeyW')
       await page.waitForTimeout(180)
-      await capture(page, viewport, 'after-move')
+      await capture(page, scenario, 'after-move')
 
       await dragLook(page, canvasBox, 0, -220)
-      await capture(page, viewport, 'look-down-material-gate')
+      await capture(page, scenario, 'look-down-material-gate')
       await dragLook(page, canvasBox, 0, 420)
-      await capture(page, viewport, 'look-up-sky-gate')
+      await capture(page, scenario, 'look-up-sky-gate')
       await dragLook(page, canvasBox, 620, -180)
-      await capture(page, viewport, 'look-back-world-continuity')
+      await capture(page, scenario, 'look-back-world-continuity')
     }
 
     captures[captures.length - 1].contract = contract
-    errors.push(...pageErrors.map((error) => `${viewport.id}: ${error}`))
+    errors.push(...pageErrors.map((error) => `${scenario.id}: ${error}`))
     await context.close()
   }
 } finally {
   await browser.close()
 }
 
-const receipt = { schema: 'urai-ground-goldmaster-proof-1', exactHead, capturedAt: new Date().toISOString(), captures, errors }
+const required = scenarios.flatMap((scenario) => scenario.mobile
+  ? ['idle', 'after-move'].map((state) => `${scenario.id}:${state}`)
+  : ['idle', 'after-move', 'look-down-material-gate', 'look-up-sky-gate', 'look-back-world-continuity'].map((state) => `${scenario.id}:${state}`))
+const observed = new Set(captures.map((capture) => `${capture.scenario}:${capture.state}`))
+for (const key of required) if (!observed.has(key)) errors.push(`missing required capture ${key}`)
+const receipt = { schema: 'urai-ground-goldmaster-proof-2', exactHead, capturedAt: new Date().toISOString(), scenarios, captures, errors }
 await writeFile(path.join(outDir, 'receipt.json'), `${JSON.stringify(receipt, null, 2)}\n`, 'utf8')
 if (errors.length) throw new Error(`Ground Goldmaster proof recorded ${errors.length} error(s): ${errors.join(' | ')}`)
