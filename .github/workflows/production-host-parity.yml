@@ -127,4 +127,4 @@ jobs:
           name: urai-production-host-parity-${{ env.URAI_EXPECTED_LIVE_SHA }}
           path: production-host-parity
           if-no-files-found: error
-          retention-days: 365
+          retention-days: 90
