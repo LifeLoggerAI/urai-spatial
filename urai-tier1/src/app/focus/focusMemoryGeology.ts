@@ -60,11 +60,15 @@ import * as THREE from 'three'
 // V288 breaks that petal/shell organization with a diagonal three-dimensional torque,
 // but retained pixels still collapsed into a pale shell/boulder/helmet-like mound.
 //
-// V289 removes the mound. The visible body follows a narrow off-axis S-fold with a
-// materially deeper diagonal scar, broken ridge hierarchy, unequal shoulders and
-// both terminals tucked backward in depth. Broad smooth panel area is reduced so the
-// first read is tension + scar + folded volume rather than shell, boulder, cloth,
-// anatomy or another familiar object family.
+// V289 removes the mound with a narrow scar-dominant S-fold, but retained pixels
+// read as a small folded vessel / boat / crown because the fold remained too
+// horizontal and still hovered above a detached hard shadow.
+//
+// V290 preserves the narrower V289 topology but changes the actual spatial pose: the
+// entire fold is materially rotated off the horizontal screen plane, yawed into depth
+// so one shoulder occludes the other, and lowered into contact with the authored
+// ground. The intended first read is diagonal tension + scar + grounded folded volume,
+// never a basin/crown/boat or a hovering pickup.
 //
 // The form must read as one held memory phenomenon. It must not regress into a
 // crystal crown/shard cluster, boulder, sphere/orb, flower, portal, ring, cage,
@@ -111,6 +115,21 @@ function createLivingMemoryFold() {
   const uvs: number[] = []
   const indices: number[] = []
   const sectionCenters: THREE.Vector3[] = []
+
+  const v290TiltZ = -.72
+  const v290YawY = .43
+  const v290CosZ = Math.cos(v290TiltZ)
+  const v290SinZ = Math.sin(v290TiltZ)
+  const v290CosY = Math.cos(v290YawY)
+  const v290SinY = Math.sin(v290YawY)
+  const transformV290 = (x: number, y: number, z: number) => {
+    const centeredY = y + .67
+    const tiltedX = x * v290CosZ - centeredY * v290SinZ
+    const tiltedY = x * v290SinZ + centeredY * v290CosZ
+    const yawedX = tiltedX * v290CosY + z * v290SinY
+    const yawedZ = -tiltedX * v290SinY + z * v290CosY
+    return new THREE.Vector3(yawedX, -.94 + tiltedY, yawedZ)
+  }
 
   for (let section = 0; section < MEMORY_RENDER_SECTIONS; section += 1) {
     const u = section / (MEMORY_RENDER_SECTIONS - 1)
@@ -293,10 +312,8 @@ function createLivingMemoryFold() {
         + ridge * depth * .40
         + longitudinalRill
 
-      // V289: narrow off-axis S-fold. Terminal extent is compressed in screen space
-      // and sent backward in depth. The furrow is exaggerated as a diagonal internal
-      // scar while the opposite ridge breaks into uneven shoulders rather than one
-      // broad smooth shell/boulder panel.
+      // V289 topology: narrow off-axis S-fold. V290 then changes its spatial pose
+      // rather than widening it back into another object family.
       const terminalWeight = Math.pow(Math.abs(t), 2.65)
       const terminalCollapse = 1 - .72 * terminalWeight
       const sPath = t + .18 * Math.sin(t * 3.55 + .35)
@@ -340,7 +357,8 @@ function createLivingMemoryFold() {
         + .075 * localY
         + .105 * brokenRidge
         - .185 * scar
-      positions.push(v289X, v289Y, v289Z)
+      const v290 = transformV290(v289X, v289Y, v289Z)
+      positions.push(v290.x, v290.y, v290.z)
       uvs.push(radialU, u)
       const color = livingMemoryVertexColor(section, radial, t, furrow, ridge, secondaryFurrow)
       colors.push(color.r, color.g, color.b)
@@ -363,11 +381,12 @@ function createLivingMemoryFold() {
   const startCap = positions.length / 3
   const endCap = startCap + 1
 
-  // Dark cap centers stay tucked behind the S-fold, never at the silhouette edge.
-  positions.push(-.065, -.805, -.43)
+  const startV290 = transformV290(-.065, -.805, -.43)
+  const endV290 = transformV290(.052, -.720, -.46)
+  positions.push(startV290.x, startV290.y, startV290.z)
   colors.push(.075, .062, .034)
   uvs.push(.5, 0)
-  positions.push(.052, -.720, -.46)
+  positions.push(endV290.x, endV290.y, endV290.z)
   colors.push(.085, .068, .036)
   uvs.push(.5, 1)
 
@@ -402,6 +421,7 @@ function createLivingMemoryFold() {
   geometry.userData.focusLiteralPixelSuccessorV287 = 'v287-self-crossing-central-knot-submerged-caps-no-directional-anatomy'
   geometry.userData.focusLiteralPixelSuccessorV288 = 'v288-diagonal-torqued-geological-fold-cragged-scar-no-petal-shell'
   geometry.userData.focusLiteralPixelSuccessorV289 = 'v289-narrow-s-fold-dominant-diagonal-scar-broken-ridge-no-mound'
+  geometry.userData.focusLiteralPixelSuccessorV290 = 'v290-diagonal-yawed-grounded-s-fold-contact-integrated'
   return geometry
 }
 
