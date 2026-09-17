@@ -1,0 +1,162 @@
+feature: private-source-media
+repo: LifeLoggerAI/urai-spatial
+owner: TBD
+privacyGovernanceVersion: 0.1.0-draft
+status: contract_ready_runtime_ingest_blocked
+lastReviewed: 2026-09-16
+sourceEvidence:
+  - urai-tier1/src/lib/privacy/privateSourceMedia.ts
+  - urai-tier1/tests/private-source-media-consent-contract.test.mjs
+  - privacy/feature-manifests/voice-events.privacy.yaml
+  - urai-tier1/src/app/privacy-controls/consentModel.ts
+
+summary:
+  purpose: Preserve immutable private source media while gating every derived use behind source consent and owner runtime consent.
+  userBenefit: Lets private family and personal media support Memory, Replay, Life Map, Orb, and Dreaming without making archival possession equivalent to processing permission.
+  implementationStatus: policy_contract_only_runtime_ingest_not_implemented
+
+sourceAuthority:
+  immutableOriginalRequired: true
+  integrityAlgorithm: sha256
+  externalPrivateVaultAllowed: true
+  publicRepositoryStorageAllowed: false
+  exactLocationStoredSeparately: true
+  sourceConsentSeparateFromOwnerRuntimeConsent: true
+
+dataProcessing:
+  collectedFields:
+    - name: private_source_media
+      collectionOrTable: external_private_vault
+      dataClass: L5
+      source: user_or_consented_third_party_source
+      purpose: preserve immutable private source media for user-controlled memory workflows
+      consentTier: C5
+      retentionClass: R6
+      exportable: true
+      deletable: true
+      auditRequired: true
+      monetizable: false
+      aiTrainingAllowed: false
+      adminAccessible: false
+      implementationStatus: external_vault_only
+
+    - name: private_source_media_receipt
+      collectionOrTable: privateSourceMediaReceipts
+      dataClass: L5
+      source: system_and_user_attestation
+      purpose: bind source identity, integrity, provenance, source-consent scopes, and private storage authority
+      consentTier: C5
+      retentionClass: R6
+      exportable: true
+      deletable: true
+      auditRequired: true
+      monetizable: false
+      aiTrainingAllowed: false
+      adminAccessible: false
+      implementationStatus: contract_only_not_runtime_persisted
+
+  derivedFields:
+    - name: private_source_transcript
+      collectionOrTable: voiceEvents_or_memory_derivative
+      dataClass: L5
+      sourceFields:
+        - private_source_media
+        - private_source_media_receipt
+      purpose: create searchable private transcript only after scoped source consent and runtime memory/models/identity consent
+      consentTier: C5
+      retentionClass: R6
+      exportable: true
+      deletable: true
+      explainabilityRequired: true
+      implementationStatus: blocked_until_runtime_ingest
+
+    - name: private_source_memory_index
+      collectionOrTable: memory_derivative
+      dataClass: L5
+      sourceFields:
+        - private_source_media
+        - private_source_media_receipt
+      purpose: connect consented private source material to user-owned memory retrieval without exposing raw source publicly
+      consentTier: C5
+      retentionClass: R6
+      exportable: true
+      deletable: true
+      explainabilityRequired: true
+      implementationStatus: blocked_until_runtime_ingest
+
+enforcement:
+  evaluator: urai-tier1/src/lib/privacy/privateSourceMedia.ts#evaluatePrivateSourceMediaUse
+  defaultBehavior: deny
+  requirements:
+    - Validate an immutable L5 source receipt before any derived processing.
+    - Require an established source-consent status and a purpose-specific source scope.
+    - Require current owner runtime consent for every affected privacy domain.
+    - Treat audio and video transcription or memory indexing as identity-linked processing in addition to memory/model processing.
+    - Keep exact location separate and require precise location consent before precise place enrichment.
+    - Keep Replay and Life Map visibility separately controllable.
+    - Require direct-subject or provider-recorded consent for public sharing, likeness use, and voice synthesis; owner attestation alone is insufficient.
+    - Keep sharing, likeness use, and voice synthesis separately gated at runtime even after strong source consent exists.
+    - Source-consent revocation must override previously permissive runtime policy.
+    - Never treat archival possession or a legacy schema declaration as proof that runtime processing is authorized.
+
+systemMapping:
+  memory:
+    purposes:
+      - transcribe
+      - memory-index
+      - replay
+      - life-map
+      - orb-context
+      - dreaming
+  models:
+    purposes:
+      - transcribe
+      - memory-index
+      - orb-context
+      - dreaming
+      - relationship-context
+      - voice-synthesis
+  identity:
+    purposes:
+      - audio_or_video_transcribe
+      - audio_or_video_memory-index
+      - relationship-context
+      - likeness
+      - voice-synthesis
+  location:
+    purposes:
+      - precise-location
+  exports:
+    purposes:
+      - export
+      - public-share
+
+userRights:
+  exportSupported: true
+  deletionSupported: true
+  consentRevocationSupported: true
+  explanationSupported: true
+  biometricDeletionSupported: true
+
+adminAccess:
+  allowed: false
+  roles: []
+  auditEventTypes:
+    - private_source.archived
+    - private_source.receipt_created
+    - private_source.processing_allowed
+    - private_source.processing_denied
+    - private_source.transcribed
+    - private_source.indexed
+    - private_source.deleted
+    - private_source.consent_revoked
+
+monetization:
+  participatesInDataSharing: false
+  requiresC8Consent: false
+  anonymizationBatchRequired: false
+
+review:
+  reviewer: TBD
+  decision: blocked_until_runtime_ingest_and_privacy_review
+  notes: This contract deliberately does not mark voiceEvents or private-source ingestion as production-complete. It provides a fail-closed policy boundary for future ingestion workers and private memory surfaces.
