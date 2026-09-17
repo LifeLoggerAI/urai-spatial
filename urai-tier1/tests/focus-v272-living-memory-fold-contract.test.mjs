@@ -30,7 +30,7 @@ test('living-memory palette stays weathered and restrained rather than cyan crys
   assert.match(geology, /const weathered = new THREE\.Color\(\)\.setRGB/)
   assert.match(geology, /const warm = new THREE\.Color\(\)\.setRGB/)
   assert.match(geology, /focusMemoryEnergy = 'weathered-mineral-restrained-warm-cool-response'/)
-  assert.match(geology, /focusLiteralPixelRefinement = 'v275-grounded-hooked-asymmetric-weathered-fold-no-boulder-pickup'/)
+  assert.match(geology, /focusLiteralPixelRefinement = 'v276-long-s-curve-slim-variable-cross-section-local-fold-no-boulder-no-mouth'/)
   assert.match(geology, /color\.r = Math\.min\(\.74, color\.r\)/)
   assert.match(geology, /color\.g = Math\.min\(\.68, color\.g\)/)
   assert.match(geology, /color\.b = Math\.min\(\.52, color\.b\)/)
