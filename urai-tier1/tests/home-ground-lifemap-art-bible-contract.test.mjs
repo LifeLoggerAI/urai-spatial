@@ -109,6 +109,8 @@ test('Ground remains a bodyless first-person lived world with privacy-safe empty
   assert.doesNotMatch(groundOwner, /const EYE_HEIGHT = 1\.69/)
   assert.doesNotMatch(groundOwner, /GroundPhysicalArchitecture|GroundVaultArchitecture|ground-destination-compass|ground-central-nexus|ground-enterable-threshold-/)
   assert.match(groundOwner, /ground-natural-canopy-v3\.glb/)
+  assert.match(groundOwner, /class GroundCanopyBoundary extends Component/)
+  assert.match(groundOwner, /scanned-understory-remains-without-canopy/)
   assert.match(groundOwner, /urai-self-authored-static-canopy-v3-with-polyhaven-fern-rock-understory/)
   assert.match(groundOwner, /ground-authored-distant-ridge-v3/)
   assert.match(groundOwner, /authored-irregular-ridge-v3-no-stretched-sphere/)

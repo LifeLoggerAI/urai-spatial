@@ -5,33 +5,540 @@
   "runtimeRoot": "urai-tier1",
   "generatedRoot": "urai-tier1/public/assets/urai/generated",
   "receiptRoot": "operations/assets/generated-receipts",
-  "releasePolicy": {"candidateAssetsMayShip":false,"readyAssetsRequireSha256":true,"readyAssetsRequireLicenseRecord":true,"readyModelsRequireCompression":true,"fallbackRequired":true},
+  "releasePolicy": {
+    "candidateAssetsMayShip": false,
+    "readyAssetsRequireSha256": true,
+    "readyAssetsRequireLicenseRecord": true,
+    "readyModelsRequireCompression": true,
+    "fallbackRequired": true
+  },
   "assets": [
-    {"id":"home-entry-chamber-v1","kind":"model","fixedPath":"urai-tier1/public/assets/urai/generated/models/home-entry-chamber-v1.glb","targetRoutes":["/","/home"],"targetBoundsMeters":[18.69,8,18],"maxTriangles":180000,"requiredCompression":"draco-or-meshopt","fallback":"procedural-home-threshold","source":"URAI Labs deterministic authored sanctuary v3 pipeline; replaceable only by a separately reviewed provider asset","license":"URAI Labs internal proprietary production asset","releaseState":"pending-final-review"},
-    {"id":"ground-world-terrain-v1","kind":"model","fixedPath":"urai-tier1/public/assets/urai/generated/models/ground-world-terrain-v1.glb","targetRoutes":["/ground"],"targetBoundsMeters":[30,6,30],"maxTriangles":220000,"requiredCompression":"draco-or-meshopt","fallback":"procedural-ground-terrain","source":"URAI deterministic candidate forge; replaceable by reviewed provider asset","license":"URAI Labs internal production asset","releaseState":"pending-final-review"},
-    {"id":"life-map-memory-star-v1","kind":"model","fixedPath":"urai-tier1/public/assets/urai/generated/models/life-map-memory-star-v1.glb","targetRoutes":["/life-map"],"targetBoundsMeters":[3,3,3],"maxTriangles":12000,"requiredCompression":"draco-or-meshopt","fallback":"procedural-memory-star","source":"URAI deterministic candidate forge; replaceable by reviewed provider asset","license":"URAI Labs internal production asset","releaseState":"pending-final-review"},
-    {"id":"focus-memory-chamber-v1","kind":"model","fixedPath":"urai-tier1/public/assets/urai/generated/models/focus-memory-chamber-v1.glb","targetRoutes":["/focus"],"targetBoundsMeters":[14,8,18],"maxTriangles":140000,"requiredCompression":"draco-or-meshopt","fallback":"procedural-focus-chamber","source":"URAI deterministic candidate forge; replaceable by reviewed provider asset","license":"URAI Labs internal production asset","releaseState":"pending-final-review"},
-    {"id":"replay-memory-environment-v1","kind":"model","fixedPath":"urai-tier1/public/assets/urai/generated/models/replay-memory-environment-v1.glb","targetRoutes":["/replay"],"targetBoundsMeters":[18,10,22],"maxTriangles":160000,"requiredCompression":"draco-or-meshopt","fallback":"procedural-replay-theater","source":"URAI deterministic candidate forge; replaceable by reviewed provider asset","license":"URAI Labs internal production asset","releaseState":"pending-final-review"},
-    {"id":"urai-orb-avatar-v1","kind":"model","fixedPath":"urai-tier1/public/assets/urai/generated/models/urai-orb-avatar-v1.glb","targetRoutes":["/","/home","/life-map","/focus","/replay"],"targetBoundsMeters":[1.5,1.5,1.5],"maxTriangles":30000,"requiredCompression":"draco-or-meshopt","fallback":"procedural-orb","source":"URAI Labs deterministic authored sanctuary v3 pipeline; replaceable only by a separately reviewed provider asset","license":"URAI Labs internal proprietary production asset","releaseState":"pending-final-review"},
-    {"id":"portal-ring-master-v1","kind":"model","fixedPath":"urai-tier1/public/assets/urai/generated/models/portal-ring-master-v1.glb","targetRoutes":["/","/home","/ground","/life-map","/focus","/replay"],"targetBoundsMeters":[5,5,1],"maxTriangles":24000,"requiredCompression":"draco-or-meshopt","fallback":"procedural-portal-ring","source":"URAI Labs deterministic authored sanctuary v3 pipeline; replaceable only by a separately reviewed provider asset","license":"URAI Labs internal proprietary production asset","releaseState":"pending-final-review"},
-    {"id":"passport-status-room-v1","kind":"model","fixedPath":"urai-tier1/public/assets/urai/generated/models/passport-status-room-v1.glb","targetRoutes":["/passport"],"targetBoundsMeters":[14,8,16],"maxTriangles":120000,"requiredCompression":"draco-or-meshopt","fallback":"semantic-passport-status-room","source":"URAI deterministic candidate forge; replaceable by reviewed provider asset","license":"URAI Labs internal production asset","releaseState":"pending-final-review"},
-    {"id":"home-human-rig-v3","kind":"model","fixedPath":"urai-tier1/public/assets/urai/generated/human-rig-v3/home-human-rigged-v3.glb","targetRoutes":["/","/home"],"targetBoundsMeters":[1,2.2,0.6],"maxTriangles":65000,"requiredCompression":"draco-or-meshopt","fallback":"home-world-without-rigged-human","source":"URAI Human Rig Forge V3 deterministic procedural skinned-human generator","license":"URAI Labs internally generated production candidate asset","releaseState":"pending-final-review"},
-    {"id":"council-guide-human-rig-v3","kind":"model","fixedPath":"urai-tier1/public/assets/urai/generated/human-rig-v3/council-guide-human-rigged-v3.glb","targetRoutes":["/council"],"targetBoundsMeters":[1,2.2,0.6],"maxTriangles":65000,"requiredCompression":"draco-or-meshopt","fallback":"council-semantic-presence-without-rigged-human","source":"URAI Human Rig Forge V3 deterministic procedural skinned-human generator","license":"URAI Labs internally generated production candidate asset","releaseState":"pending-final-review"},
-    {"id":"council-archivist-human-rig-v3","kind":"model","fixedPath":"urai-tier1/public/assets/urai/generated/human-rig-v3/council-archivist-human-rigged-v3.glb","targetRoutes":["/council"],"targetBoundsMeters":[1,2.2,0.6],"maxTriangles":65000,"requiredCompression":"draco-or-meshopt","fallback":"council-semantic-presence-without-rigged-human","source":"URAI Human Rig Forge V3 deterministic procedural skinned-human generator","license":"URAI Labs internally generated production candidate asset","releaseState":"pending-final-review"},
-    {"id":"council-guardian-human-rig-v3","kind":"model","fixedPath":"urai-tier1/public/assets/urai/generated/human-rig-v3/council-guardian-human-rigged-v3.glb","targetRoutes":["/council"],"targetBoundsMeters":[1,2.2,0.6],"maxTriangles":65000,"requiredCompression":"draco-or-meshopt","fallback":"council-semantic-presence-without-rigged-human","source":"URAI Human Rig Forge V3 deterministic procedural skinned-human generator","license":"URAI Labs internally generated production candidate asset","releaseState":"pending-final-review"},
-    {"id":"council-builder-human-rig-v3","kind":"model","fixedPath":"urai-tier1/public/assets/urai/generated/human-rig-v3/council-builder-human-rigged-v3.glb","targetRoutes":["/council"],"targetBoundsMeters":[1,2.2,0.6],"maxTriangles":65000,"requiredCompression":"draco-or-meshopt","fallback":"council-semantic-presence-without-rigged-human","source":"URAI Human Rig Forge V3 deterministic procedural skinned-human generator","license":"URAI Labs internally generated production candidate asset","releaseState":"pending-final-review"},
-    {"id":"council-mirror-human-rig-v3","kind":"model","fixedPath":"urai-tier1/public/assets/urai/generated/human-rig-v3/council-mirror-human-rigged-v3.glb","targetRoutes":["/council"],"targetBoundsMeters":[1,2.2,0.6],"maxTriangles":65000,"requiredCompression":"draco-or-meshopt","fallback":"council-semantic-presence-without-rigged-human","source":"URAI Human Rig Forge V3 deterministic procedural skinned-human generator","license":"URAI Labs internally generated production candidate asset","releaseState":"pending-final-review"},
-    {"id":"council-trickster-human-rig-v3","kind":"model","fixedPath":"urai-tier1/public/assets/urai/generated/human-rig-v3/council-trickster-human-rigged-v3.glb","targetRoutes":["/council"],"targetBoundsMeters":[1,2.2,0.6],"maxTriangles":65000,"requiredCompression":"draco-or-meshopt","fallback":"council-semantic-presence-without-rigged-human","source":"URAI Human Rig Forge V3 deterministic procedural skinned-human generator","license":"URAI Labs internally generated production candidate asset","releaseState":"pending-final-review"},
-    {"id":"home-human-makehuman-v4","kind":"model","fixedPath":"urai-tier1/public/assets/urai/generated/human-makehuman-v4/home-human-makehuman-v4.glb","targetRoutes":["/","/home"],"targetBoundsMeters":[1,2.2,0.7],"maxTriangles":65000,"requiredCompression":"draco-or-meshopt","fallback":"home-human-rig-v3","source":"Pinned MakeHuman CC0 base topology with URAI V4 17-joint skin and five-clip animation contract","license":"MakeHuman base topology CC0-1.0; URAI V4 rig/animation candidate","releaseState":"pending-final-review"},
-    {"id":"council-guide-human-makehuman-v4","kind":"model","fixedPath":"urai-tier1/public/assets/urai/generated/human-makehuman-v4/council-guide-human-makehuman-v4.glb","targetRoutes":["/council"],"targetBoundsMeters":[1,2.2,0.7],"maxTriangles":65000,"requiredCompression":"draco-or-meshopt","fallback":"council-guide-human-rig-v3","source":"Pinned MakeHuman CC0 base topology with URAI V4 17-joint skin and five-clip animation contract","license":"MakeHuman base topology CC0-1.0; URAI V4 rig/animation candidate","releaseState":"pending-final-review"},
-    {"id":"council-archivist-human-makehuman-v4","kind":"model","fixedPath":"urai-tier1/public/assets/urai/generated/human-makehuman-v4/council-archivist-human-makehuman-v4.glb","targetRoutes":["/council"],"targetBoundsMeters":[1,2.2,0.7],"maxTriangles":65000,"requiredCompression":"draco-or-meshopt","fallback":"council-archivist-human-rig-v3","source":"Pinned MakeHuman CC0 base topology with URAI V4 17-joint skin and five-clip animation contract","license":"MakeHuman base topology CC0-1.0; URAI V4 rig/animation candidate","releaseState":"pending-final-review"},
-    {"id":"council-guardian-human-makehuman-v4","kind":"model","fixedPath":"urai-tier1/public/assets/urai/generated/human-makehuman-v4/council-guardian-human-makehuman-v4.glb","targetRoutes":["/council"],"targetBoundsMeters":[1,2.2,0.7],"maxTriangles":65000,"requiredCompression":"draco-or-meshopt","fallback":"council-guardian-human-rig-v3","source":"Pinned MakeHuman CC0 base topology with URAI V4 17-joint skin and five-clip animation contract","license":"MakeHuman base topology CC0-1.0; URAI V4 rig/animation candidate","releaseState":"pending-final-review"},
-    {"id":"council-builder-human-makehuman-v4","kind":"model","fixedPath":"urai-tier1/public/assets/urai/generated/human-makehuman-v4/council-builder-human-makehuman-v4.glb","targetRoutes":["/council"],"targetBoundsMeters":[1,2.2,0.7],"maxTriangles":65000,"requiredCompression":"draco-or-meshopt","fallback":"council-builder-human-rig-v3","source":"Pinned MakeHuman CC0 base topology with URAI V4 17-joint skin and five-clip animation contract","license":"MakeHuman base topology CC0-1.0; URAI V4 rig/animation candidate","releaseState":"pending-final-review"},
-    {"id":"council-mirror-human-makehuman-v4","kind":"model","fixedPath":"urai-tier1/public/assets/urai/generated/human-makehuman-v4/council-mirror-human-makehuman-v4.glb","targetRoutes":["/council"],"targetBoundsMeters":[1,2.2,0.7],"maxTriangles":65000,"requiredCompression":"draco-or-meshopt","fallback":"council-mirror-human-rig-v3","source":"Pinned MakeHuman CC0 base topology with URAI V4 17-joint skin and five-clip animation contract","license":"MakeHuman base topology CC0-1.0; URAI V4 rig/animation candidate","releaseState":"pending-final-review"},
-    {"id":"council-trickster-human-makehuman-v4","kind":"model","fixedPath":"urai-tier1/public/assets/urai/generated/human-makehuman-v4/council-trickster-human-makehuman-v4.glb","targetRoutes":["/council"],"targetBoundsMeters":[1,2.2,0.7],"maxTriangles":65000,"requiredCompression":"draco-or-meshopt","fallback":"council-trickster-human-rig-v3","source":"Pinned MakeHuman CC0 base topology with URAI V4 17-joint skin and five-clip animation contract","license":"MakeHuman base topology CC0-1.0; URAI V4 rig/animation candidate","releaseState":"pending-final-review"},
-    {"id":"spatial-particle-atlas-v1","kind":"texture","fixedPath":"urai-tier1/public/assets/urai/generated/textures/spatial-particle-atlas-v1.svg","targetRoutes":["/","/home","/ground","/life-map","/focus","/replay"],"targetResolution":[1024,1024],"maxBytes":524288,"requiredCompression":"svg-source-then-ktx2-or-webp","fallback":"shader-point-particles","source":"URAI deterministic candidate forge","license":"URAI Labs internal production asset","releaseState":"pending-final-review"},
-    {"id":"global-cinematic-material-pack-v1","kind":"material-pack","fixedPath":"urai-tier1/public/assets/urai/generated/textures/global-cinematic-material-pack-v1.json","targetRoutes":["/","/home","/ground","/life-map","/focus","/replay"],"maxBytes":262144,"requiredCompression":"json","fallback":"runtime-default-materials","source":"URAI deterministic candidate forge","license":"URAI Labs internal production asset","releaseState":"pending-final-review"},
-    {"id":"urai-loading-sequence-v1","kind":"loading-sequence","fixedPath":"urai-tier1/public/assets/urai/generated/loading/urai-loading-sequence-v1.json","targetRoutes":["/","/home","/life-map","/focus","/replay"],"maxBytes":262144,"requiredCompression":"json","fallback":"accessible-static-loading-state","source":"URAI deterministic candidate forge","license":"URAI Labs internal production asset","releaseState":"pending-final-review"},
-    {"id":"urai-ambient-bed-v1","kind":"audio","fixedPath":"urai-tier1/public/assets/urai/generated/audio/urai-ambient-bed-v1.wav","targetRoutes":["/home","/life-map","/focus","/replay"],"durationSeconds":8,"maxBytes":1048576,"requiredCompression":"ogg-or-aac-for-production","fallback":"silent-audio-with-user-controlled-enable","source":"URAI deterministic candidate forge; final mix requires review","license":"URAI Labs internal production asset","releaseState":"pending-final-review"}
+    {
+      "id": "home-entry-chamber-v1",
+      "kind": "model",
+      "fixedPath": "urai-tier1/public/assets/urai/generated/models/home-entry-chamber-v1.glb",
+      "targetRoutes": [
+        "/",
+        "/home"
+      ],
+      "targetBoundsMeters": [
+        18.69,
+        8,
+        18
+      ],
+      "maxTriangles": 180000,
+      "requiredCompression": "draco-or-meshopt",
+      "fallback": "procedural-home-threshold",
+      "source": "URAI Labs deterministic authored sanctuary v3 pipeline; replaceable only by a separately reviewed provider asset",
+      "license": "URAI Labs internal proprietary production asset",
+      "releaseState": "pending-final-review"
+    },
+    {
+      "id": "ground-world-terrain-v1",
+      "kind": "model",
+      "fixedPath": "urai-tier1/public/assets/urai/generated/models/ground-world-terrain-v1.glb",
+      "targetRoutes": [
+        "/ground"
+      ],
+      "targetBoundsMeters": [
+        30,
+        6,
+        30
+      ],
+      "maxTriangles": 220000,
+      "requiredCompression": "draco-or-meshopt",
+      "fallback": "procedural-ground-terrain",
+      "source": "URAI deterministic candidate forge; replaceable by reviewed provider asset",
+      "license": "URAI Labs internal production asset",
+      "releaseState": "pending-final-review"
+    },
+    {
+      "id": "ground-natural-canopy-v3",
+      "kind": "model",
+      "fixedPath": "urai-tier1/public/assets/urai/generated/models/ground-natural-canopy-v3.glb",
+      "targetRoutes": [
+        "/ground"
+      ],
+      "targetBoundsMeters": [
+        12,
+        12,
+        12
+      ],
+      "maxTriangles": 5000,
+      "requiredCompression": "compact-static-glb",
+      "fallback": "scanned-understory-remains-without-canopy",
+      "source": "URAI self-authored deterministic static geometry; no third-party binary used",
+      "license": "URAI Labs internal proprietary production asset",
+      "releaseState": "pending-final-review"
+    },
+    {
+      "id": "life-map-memory-star-v1",
+      "kind": "model",
+      "fixedPath": "urai-tier1/public/assets/urai/generated/models/life-map-memory-star-v1.glb",
+      "targetRoutes": [
+        "/life-map"
+      ],
+      "targetBoundsMeters": [
+        3,
+        3,
+        3
+      ],
+      "maxTriangles": 12000,
+      "requiredCompression": "draco-or-meshopt",
+      "fallback": "procedural-memory-star",
+      "source": "URAI deterministic candidate forge; replaceable by reviewed provider asset",
+      "license": "URAI Labs internal production asset",
+      "releaseState": "pending-final-review"
+    },
+    {
+      "id": "focus-memory-chamber-v1",
+      "kind": "model",
+      "fixedPath": "urai-tier1/public/assets/urai/generated/models/focus-memory-chamber-v1.glb",
+      "targetRoutes": [
+        "/focus"
+      ],
+      "targetBoundsMeters": [
+        14,
+        8,
+        18
+      ],
+      "maxTriangles": 140000,
+      "requiredCompression": "draco-or-meshopt",
+      "fallback": "procedural-focus-chamber",
+      "source": "URAI deterministic candidate forge; replaceable by reviewed provider asset",
+      "license": "URAI Labs internal production asset",
+      "releaseState": "pending-final-review"
+    },
+    {
+      "id": "replay-memory-environment-v1",
+      "kind": "model",
+      "fixedPath": "urai-tier1/public/assets/urai/generated/models/replay-memory-environment-v1.glb",
+      "targetRoutes": [
+        "/replay"
+      ],
+      "targetBoundsMeters": [
+        18,
+        10,
+        22
+      ],
+      "maxTriangles": 160000,
+      "requiredCompression": "draco-or-meshopt",
+      "fallback": "procedural-replay-theater",
+      "source": "URAI deterministic candidate forge; replaceable by reviewed provider asset",
+      "license": "URAI Labs internal production asset",
+      "releaseState": "pending-final-review"
+    },
+    {
+      "id": "urai-orb-avatar-v1",
+      "kind": "model",
+      "fixedPath": "urai-tier1/public/assets/urai/generated/models/urai-orb-avatar-v1.glb",
+      "targetRoutes": [
+        "/",
+        "/home",
+        "/life-map",
+        "/focus",
+        "/replay"
+      ],
+      "targetBoundsMeters": [
+        1.5,
+        1.5,
+        1.5
+      ],
+      "maxTriangles": 30000,
+      "requiredCompression": "draco-or-meshopt",
+      "fallback": "procedural-orb",
+      "source": "URAI Labs deterministic authored sanctuary v3 pipeline; replaceable only by a separately reviewed provider asset",
+      "license": "URAI Labs internal proprietary production asset",
+      "releaseState": "pending-final-review"
+    },
+    {
+      "id": "portal-ring-master-v1",
+      "kind": "model",
+      "fixedPath": "urai-tier1/public/assets/urai/generated/models/portal-ring-master-v1.glb",
+      "targetRoutes": [
+        "/",
+        "/home",
+        "/ground",
+        "/life-map",
+        "/focus",
+        "/replay"
+      ],
+      "targetBoundsMeters": [
+        5,
+        5,
+        1
+      ],
+      "maxTriangles": 24000,
+      "requiredCompression": "draco-or-meshopt",
+      "fallback": "procedural-portal-ring",
+      "source": "URAI Labs deterministic authored sanctuary v3 pipeline; replaceable only by a separately reviewed provider asset",
+      "license": "URAI Labs internal proprietary production asset",
+      "releaseState": "pending-final-review"
+    },
+    {
+      "id": "passport-status-room-v1",
+      "kind": "model",
+      "fixedPath": "urai-tier1/public/assets/urai/generated/models/passport-status-room-v1.glb",
+      "targetRoutes": [
+        "/passport"
+      ],
+      "targetBoundsMeters": [
+        14,
+        8,
+        16
+      ],
+      "maxTriangles": 120000,
+      "requiredCompression": "draco-or-meshopt",
+      "fallback": "semantic-passport-status-room",
+      "source": "URAI deterministic candidate forge; replaceable by reviewed provider asset",
+      "license": "URAI Labs internal production asset",
+      "releaseState": "pending-final-review"
+    },
+    {
+      "id": "home-human-rig-v3",
+      "kind": "model",
+      "fixedPath": "urai-tier1/public/assets/urai/generated/human-rig-v3/home-human-rigged-v3.glb",
+      "targetRoutes": [
+        "/",
+        "/home"
+      ],
+      "targetBoundsMeters": [
+        1,
+        2.2,
+        0.6
+      ],
+      "maxTriangles": 65000,
+      "requiredCompression": "draco-or-meshopt",
+      "fallback": "home-world-without-rigged-human",
+      "source": "URAI Human Rig Forge V3 deterministic procedural skinned-human generator",
+      "license": "URAI Labs internally generated production candidate asset",
+      "releaseState": "pending-final-review"
+    },
+    {
+      "id": "council-guide-human-rig-v3",
+      "kind": "model",
+      "fixedPath": "urai-tier1/public/assets/urai/generated/human-rig-v3/council-guide-human-rigged-v3.glb",
+      "targetRoutes": [
+        "/council"
+      ],
+      "targetBoundsMeters": [
+        1,
+        2.2,
+        0.6
+      ],
+      "maxTriangles": 65000,
+      "requiredCompression": "draco-or-meshopt",
+      "fallback": "council-semantic-presence-without-rigged-human",
+      "source": "URAI Human Rig Forge V3 deterministic procedural skinned-human generator",
+      "license": "URAI Labs internally generated production candidate asset",
+      "releaseState": "pending-final-review"
+    },
+    {
+      "id": "council-archivist-human-rig-v3",
+      "kind": "model",
+      "fixedPath": "urai-tier1/public/assets/urai/generated/human-rig-v3/council-archivist-human-rigged-v3.glb",
+      "targetRoutes": [
+        "/council"
+      ],
+      "targetBoundsMeters": [
+        1,
+        2.2,
+        0.6
+      ],
+      "maxTriangles": 65000,
+      "requiredCompression": "draco-or-meshopt",
+      "fallback": "council-semantic-presence-without-rigged-human",
+      "source": "URAI Human Rig Forge V3 deterministic procedural skinned-human generator",
+      "license": "URAI Labs internally generated production candidate asset",
+      "releaseState": "pending-final-review"
+    },
+    {
+      "id": "council-guardian-human-rig-v3",
+      "kind": "model",
+      "fixedPath": "urai-tier1/public/assets/urai/generated/human-rig-v3/council-guardian-human-rigged-v3.glb",
+      "targetRoutes": [
+        "/council"
+      ],
+      "targetBoundsMeters": [
+        1,
+        2.2,
+        0.6
+      ],
+      "maxTriangles": 65000,
+      "requiredCompression": "draco-or-meshopt",
+      "fallback": "council-semantic-presence-without-rigged-human",
+      "source": "URAI Human Rig Forge V3 deterministic procedural skinned-human generator",
+      "license": "URAI Labs internally generated production candidate asset",
+      "releaseState": "pending-final-review"
+    },
+    {
+      "id": "council-builder-human-rig-v3",
+      "kind": "model",
+      "fixedPath": "urai-tier1/public/assets/urai/generated/human-rig-v3/council-builder-human-rigged-v3.glb",
+      "targetRoutes": [
+        "/council"
+      ],
+      "targetBoundsMeters": [
+        1,
+        2.2,
+        0.6
+      ],
+      "maxTriangles": 65000,
+      "requiredCompression": "draco-or-meshopt",
+      "fallback": "council-semantic-presence-without-rigged-human",
+      "source": "URAI Human Rig Forge V3 deterministic procedural skinned-human generator",
+      "license": "URAI Labs internally generated production candidate asset",
+      "releaseState": "pending-final-review"
+    },
+    {
+      "id": "council-mirror-human-rig-v3",
+      "kind": "model",
+      "fixedPath": "urai-tier1/public/assets/urai/generated/human-rig-v3/council-mirror-human-rigged-v3.glb",
+      "targetRoutes": [
+        "/council"
+      ],
+      "targetBoundsMeters": [
+        1,
+        2.2,
+        0.6
+      ],
+      "maxTriangles": 65000,
+      "requiredCompression": "draco-or-meshopt",
+      "fallback": "council-semantic-presence-without-rigged-human",
+      "source": "URAI Human Rig Forge V3 deterministic procedural skinned-human generator",
+      "license": "URAI Labs internally generated production candidate asset",
+      "releaseState": "pending-final-review"
+    },
+    {
+      "id": "council-trickster-human-rig-v3",
+      "kind": "model",
+      "fixedPath": "urai-tier1/public/assets/urai/generated/human-rig-v3/council-trickster-human-rigged-v3.glb",
+      "targetRoutes": [
+        "/council"
+      ],
+      "targetBoundsMeters": [
+        1,
+        2.2,
+        0.6
+      ],
+      "maxTriangles": 65000,
+      "requiredCompression": "draco-or-meshopt",
+      "fallback": "council-semantic-presence-without-rigged-human",
+      "source": "URAI Human Rig Forge V3 deterministic procedural skinned-human generator",
+      "license": "URAI Labs internally generated production candidate asset",
+      "releaseState": "pending-final-review"
+    },
+    {
+      "id": "home-human-makehuman-v4",
+      "kind": "model",
+      "fixedPath": "urai-tier1/public/assets/urai/generated/human-makehuman-v4/home-human-makehuman-v4.glb",
+      "targetRoutes": [
+        "/",
+        "/home"
+      ],
+      "targetBoundsMeters": [
+        1,
+        2.2,
+        0.7
+      ],
+      "maxTriangles": 65000,
+      "requiredCompression": "draco-or-meshopt",
+      "fallback": "home-human-rig-v3",
+      "source": "Pinned MakeHuman CC0 base topology with URAI V4 17-joint skin and five-clip animation contract",
+      "license": "MakeHuman base topology CC0-1.0; URAI V4 rig/animation candidate",
+      "releaseState": "pending-final-review"
+    },
+    {
+      "id": "council-guide-human-makehuman-v4",
+      "kind": "model",
+      "fixedPath": "urai-tier1/public/assets/urai/generated/human-makehuman-v4/council-guide-human-makehuman-v4.glb",
+      "targetRoutes": [
+        "/council"
+      ],
+      "targetBoundsMeters": [
+        1,
+        2.2,
+        0.7
+      ],
+      "maxTriangles": 65000,
+      "requiredCompression": "draco-or-meshopt",
+      "fallback": "council-guide-human-rig-v3",
+      "source": "Pinned MakeHuman CC0 base topology with URAI V4 17-joint skin and five-clip animation contract",
+      "license": "MakeHuman base topology CC0-1.0; URAI V4 rig/animation candidate",
+      "releaseState": "pending-final-review"
+    },
+    {
+      "id": "council-archivist-human-makehuman-v4",
+      "kind": "model",
+      "fixedPath": "urai-tier1/public/assets/urai/generated/human-makehuman-v4/council-archivist-human-makehuman-v4.glb",
+      "targetRoutes": [
+        "/council"
+      ],
+      "targetBoundsMeters": [
+        1,
+        2.2,
+        0.7
+      ],
+      "maxTriangles": 65000,
+      "requiredCompression": "draco-or-meshopt",
+      "fallback": "council-archivist-human-rig-v3",
+      "source": "Pinned MakeHuman CC0 base topology with URAI V4 17-joint skin and five-clip animation contract",
+      "license": "MakeHuman base topology CC0-1.0; URAI V4 rig/animation candidate",
+      "releaseState": "pending-final-review"
+    },
+    {
+      "id": "council-guardian-human-makehuman-v4",
+      "kind": "model",
+      "fixedPath": "urai-tier1/public/assets/urai/generated/human-makehuman-v4/council-guardian-human-makehuman-v4.glb",
+      "targetRoutes": [
+        "/council"
+      ],
+      "targetBoundsMeters": [
+        1,
+        2.2,
+        0.7
+      ],
+      "maxTriangles": 65000,
+      "requiredCompression": "draco-or-meshopt",
+      "fallback": "council-guardian-human-rig-v3",
+      "source": "Pinned MakeHuman CC0 base topology with URAI V4 17-joint skin and five-clip animation contract",
+      "license": "MakeHuman base topology CC0-1.0; URAI V4 rig/animation candidate",
+      "releaseState": "pending-final-review"
+    },
+    {
+      "id": "council-builder-human-makehuman-v4",
+      "kind": "model",
+      "fixedPath": "urai-tier1/public/assets/urai/generated/human-makehuman-v4/council-builder-human-makehuman-v4.glb",
+      "targetRoutes": [
+        "/council"
+      ],
+      "targetBoundsMeters": [
+        1,
+        2.2,
+        0.7
+      ],
+      "maxTriangles": 65000,
+      "requiredCompression": "draco-or-meshopt",
+      "fallback": "council-builder-human-rig-v3",
+      "source": "Pinned MakeHuman CC0 base topology with URAI V4 17-joint skin and five-clip animation contract",
+      "license": "MakeHuman base topology CC0-1.0; URAI V4 rig/animation candidate",
+      "releaseState": "pending-final-review"
+    },
+    {
+      "id": "council-mirror-human-makehuman-v4",
+      "kind": "model",
+      "fixedPath": "urai-tier1/public/assets/urai/generated/human-makehuman-v4/council-mirror-human-makehuman-v4.glb",
+      "targetRoutes": [
+        "/council"
+      ],
+      "targetBoundsMeters": [
+        1,
+        2.2,
+        0.7
+      ],
+      "maxTriangles": 65000,
+      "requiredCompression": "draco-or-meshopt",
+      "fallback": "council-mirror-human-rig-v3",
+      "source": "Pinned MakeHuman CC0 base topology with URAI V4 17-joint skin and five-clip animation contract",
+      "license": "MakeHuman base topology CC0-1.0; URAI V4 rig/animation candidate",
+      "releaseState": "pending-final-review"
+    },
+    {
+      "id": "council-trickster-human-makehuman-v4",
+      "kind": "model",
+      "fixedPath": "urai-tier1/public/assets/urai/generated/human-makehuman-v4/council-trickster-human-makehuman-v4.glb",
+      "targetRoutes": [
+        "/council"
+      ],
+      "targetBoundsMeters": [
+        1,
+        2.2,
+        0.7
+      ],
+      "maxTriangles": 65000,
+      "requiredCompression": "draco-or-meshopt",
+      "fallback": "council-trickster-human-rig-v3",
+      "source": "Pinned MakeHuman CC0 base topology with URAI V4 17-joint skin and five-clip animation contract",
+      "license": "MakeHuman base topology CC0-1.0; URAI V4 rig/animation candidate",
+      "releaseState": "pending-final-review"
+    },
+    {
+      "id": "spatial-particle-atlas-v1",
+      "kind": "texture",
+      "fixedPath": "urai-tier1/public/assets/urai/generated/textures/spatial-particle-atlas-v1.svg",
+      "targetRoutes": [
+        "/",
+        "/home",
+        "/ground",
+        "/life-map",
+        "/focus",
+        "/replay"
+      ],
+      "targetResolution": [
+        1024,
+        1024
+      ],
+      "maxBytes": 524288,
+      "requiredCompression": "svg-source-then-ktx2-or-webp",
+      "fallback": "shader-point-particles",
+      "source": "URAI deterministic candidate forge",
+      "license": "URAI Labs internal production asset",
+      "releaseState": "pending-final-review"
+    },
+    {
+      "id": "global-cinematic-material-pack-v1",
+      "kind": "material-pack",
+      "fixedPath": "urai-tier1/public/assets/urai/generated/textures/global-cinematic-material-pack-v1.json",
+      "targetRoutes": [
+        "/",
+        "/home",
+        "/ground",
+        "/life-map",
+        "/focus",
+        "/replay"
+      ],
+      "maxBytes": 262144,
+      "requiredCompression": "json",
+      "fallback": "runtime-default-materials",
+      "source": "URAI deterministic candidate forge",
+      "license": "URAI Labs internal production asset",
+      "releaseState": "pending-final-review"
+    },
+    {
+      "id": "urai-loading-sequence-v1",
+      "kind": "loading-sequence",
+      "fixedPath": "urai-tier1/public/assets/urai/generated/loading/urai-loading-sequence-v1.json",
+      "targetRoutes": [
+        "/",
+        "/home",
+        "/life-map",
+        "/focus",
+        "/replay"
+      ],
+      "maxBytes": 262144,
+      "requiredCompression": "json",
+      "fallback": "accessible-static-loading-state",
+      "source": "URAI deterministic candidate forge",
+      "license": "URAI Labs internal production asset",
+      "releaseState": "pending-final-review"
+    },
+    {
+      "id": "urai-ambient-bed-v1",
+      "kind": "audio",
+      "fixedPath": "urai-tier1/public/assets/urai/generated/audio/urai-ambient-bed-v1.wav",
+      "targetRoutes": [
+        "/home",
+        "/life-map",
+        "/focus",
+        "/replay"
+      ],
+      "durationSeconds": 8,
+      "maxBytes": 1048576,
+      "requiredCompression": "ogg-or-aac-for-production",
+      "fallback": "silent-audio-with-user-controlled-enable",
+      "source": "URAI deterministic candidate forge; final mix requires review",
+      "license": "URAI Labs internal production asset",
+      "releaseState": "pending-final-review"
+    }
   ]
 }

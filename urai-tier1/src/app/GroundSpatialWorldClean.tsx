@@ -3,7 +3,7 @@
 import { Canvas, useFrame, useThree, type ThreeEvent } from "@react-three/fiber";
 import { Environment, useGLTF, useTexture } from "@react-three/drei";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Suspense, useCallback, useEffect, useMemo, useRef, useState, type MutableRefObject, type PointerEvent as ReactPointerEvent } from "react";
+import { Component, Suspense, useCallback, useEffect, useMemo, useRef, useState, type MutableRefObject, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
 import * as THREE from "three";
 import {
   MobileMovementPad,
@@ -194,6 +194,12 @@ function FernPatch({ position, rotationY, scale }: { position: [number, number, 
   return <group position={position} rotation={[0, rotationY, 0]} scale={scale} raycast={() => null}><primitive object={model} /></group>;
 }
 
+class GroundCanopyBoundary extends Component<{ children: ReactNode }, { failed: boolean }> {
+  state = { failed: false };
+  static getDerivedStateFromError() { return { failed: true }; }
+  render() { return this.state.failed ? null : this.props.children; }
+}
+
 function NaturalCanopy({ profile, position, rotationY, scale }: {
   profile: EnvironmentProfile;
   position: [number, number, number];
@@ -306,12 +312,16 @@ function NaturalScatter({ profile }: { profile: EnvironmentProfile }) {
   const woodland = profile.id === "woodland";
   const ferns = items.slice(0, woodland ? 14 : 8);
   const canopies = items.slice(0, woodland ? 7 : 5);
-  return <group name={woodland ? "ground-woodland-scanned-understory" : "ground-temperate-scanned-understory"} userData={{ treatment: "urai-self-authored-static-canopy-v3-with-polyhaven-fern-rock-understory" }} raycast={() => null}>
-    {canopies.map((item) => {
-      const x = item.x * 1.08;
-      const z = item.z - 5.5;
-      return <NaturalCanopy key={`canopy-${item.index}`} profile={profile} position={[x, groundHeight(x, z, profile.id) - 0.02, z]} rotationY={item.index * 0.91 + (woodland ? 0.22 : -0.14)} scale={(woodland ? 5.2 : 4.5) + item.scale * 1.4} />;
-    })}
+  return <group name={woodland ? "ground-woodland-scanned-understory" : "ground-temperate-scanned-understory"} userData={{ treatment: "urai-self-authored-static-canopy-v3-with-polyhaven-fern-rock-understory", canopyFallback: "scanned-understory-remains-without-canopy" }} raycast={() => null}>
+    <GroundCanopyBoundary>
+      <Suspense fallback={null}>
+        {canopies.map((item) => {
+          const x = item.x * 1.08;
+          const z = item.z - 5.5;
+          return <NaturalCanopy key={`canopy-${item.index}`} profile={profile} position={[x, groundHeight(x, z, profile.id) - 0.02, z]} rotationY={item.index * 0.91 + (woodland ? 0.22 : -0.14)} scale={(woodland ? 5.2 : 4.5) + item.scale * 1.4} />;
+        })}
+      </Suspense>
+    </GroundCanopyBoundary>
     {ferns.map((item) => <FernPatch key={`fern-${item.index}`} position={[item.x * 0.72, groundHeight(item.x * 0.72, item.z - 1.3, profile.id), item.z - 1.3]} rotationY={item.index * 0.73} scale={0.82 + item.scale * 0.45} />)}
     {items.slice(0, 8).map((item) => <ScannedRock key={`rock-${item.index}`} variant={item.index % 2 ? "01" : "02"} position={[item.x * 0.55, groundHeight(item.x * 0.55, item.z + 2.2, profile.id) - 0.1, item.z + 2.2]} rotation={[0, item.index * 0.39, 0]} scale={[0.82 * item.scale, 0.48 * item.scale, 0.94 * item.scale]} />)}
   </group>;
