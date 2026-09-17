@@ -5,6 +5,10 @@ import { useUraiWorldState } from './WorldStateProvider'
 export function PersistentRealmAtmosphere() {
   const { world, phase } = useUraiWorldState()
 
+  // These spatial owners render their own sky, weather and depth. A fixed
+  // screen-space veil above the route dims controls and draws a false horizon.
+  if (['home', 'infrastructure-hub', 'life-map', 'focus', 'replay', 'mirror'].includes(world.destination)) return null
+
   return (
     <div
       className="urai-world-atmosphere"

@@ -12,6 +12,12 @@ urai-tier1
 
 a8a133fcac45d37ede5f48fab6a90052f36d6896
 
+## Exact-head qualification trigger
+
+V49 materialized source head: `428fa3cbe6ad03debab775dbfa0ecce04c1e5d06`.
+
+This receipt-only update creates an owner-authored exact head after the V49 materializer commit so the normal pull-request verification matrix can execute. It does not assert visual acceptance, Drive asset locks, governance approval, merge, deployment, or provider proof. Those remain contingent on fresh exact-head evidence.
+
 ## Completed repo work
 
 - homepage metadata updated

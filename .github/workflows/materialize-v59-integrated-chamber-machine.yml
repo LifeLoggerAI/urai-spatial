@@ -1,0 +1,35 @@
+name: Materialize V59 Integrated Chamber Machine
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  materialize:
+    if: "github.event.head_commit.message != 'Home: materialize V59 integrated chamber machine' && github.event.head_commit.message != 'Home: owner-certify V59 runtime head'"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: home-final-v24-certify-20260826
+          fetch-depth: 0
+      - name: Materialize V59 runtime and proof contracts
+        run: |
+          python3 scripts/apply-home-v59-integrated-chamber-machine.py
+          git diff --check
+          grep -q "v59-integrated-chamber-machine-retained-pixel-rebuild" urai-tier1/src/spatial/layout/HomeWorldProductionFinal.tsx
+          grep -q "v59-recessed-machined-state-slit" urai-tier1/src/spatial/layout/HomeWorldProductionFinal.tsx
+          grep -q "cinematic-pbr-v59-integrated-chamber-machine" scripts/capture-natural-home-orb-proof.mjs
+      - name: Commit materialized V59 candidate
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add urai-tier1/src/spatial/layout/HomeWorldProductionFinal.tsx scripts/capture-natural-home-orb-proof.mjs scripts/run-continuous-spatial-proof-v22-natural.mjs urai-tier1/tests/home-relic-machine-realism-contract.test.mjs
+          if git diff --cached --quiet; then
+            echo "No V59 changes to commit"
+            exit 0
+          fi
+          git commit -m "Home: materialize V59 integrated chamber machine"
+          git push origin HEAD:home-final-v24-certify-20260826

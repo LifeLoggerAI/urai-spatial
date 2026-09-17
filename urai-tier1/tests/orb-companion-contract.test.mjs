@@ -4,6 +4,7 @@ import fs from 'node:fs'
 
 const source = fs.readFileSync(new URL('../src/lib/orb-companion-contract.ts', import.meta.url), 'utf8')
 const conversationSource = fs.readFileSync(new URL('../src/spatial/orb/OrbConversationPanel.tsx', import.meta.url), 'utf8')
+const conversationCss = fs.readFileSync(new URL('../src/spatial/orb/OrbConversationPanel.module.css', import.meta.url), 'utf8')
 const voiceClientSource = fs.readFileSync(new URL('../src/spatial/narrator/elevenlabsClient.ts', import.meta.url), 'utf8')
 const flat = source.replace(/\s+/g, ' ')
 
@@ -28,6 +29,14 @@ const requiredRouteHints = [
   'object-memory',
   'lifemap',
 ]
+
+function hasCssDeclaration(block, property, value) {
+  return block
+    .split(';')
+    .map((declaration) => declaration.trim())
+    .filter(Boolean)
+    .some((declaration) => declaration === `${property}:${value}`)
+}
 
 test('orb companion preserves required home unwind route commands', () => {
   assert.match(source, /const HOME_ROUTE_COMMANDS = \[/)
@@ -75,4 +84,26 @@ test('Orb voice can be stopped after the AI response finishes', () => {
   assert.match(conversationSource, /voiceAborter\.current\?\.abort\(\)/)
   assert.match(conversationSource, /activeAudio\.pause\(\)/)
   assert.match(conversationSource, /window\.speechSynthesis\.cancel\(\)/)
+})
+
+test('Orb conversation disclosure remains a real pointer hit target above the spatial canvas', () => {
+  const panelCss = conversationCss.match(/\.panel\{([^}]*)\}/)?.[1] ?? ''
+  const summaryCss = conversationCss.match(/\.panel summary\{([^}]*)\}/)?.[1] ?? ''
+  const bodyCss = conversationCss.match(/\.body\{([^}]*)\}/)?.[1] ?? ''
+
+  assert.ok(hasCssDeclaration(panelCss, 'position', 'relative'))
+  assert.ok(hasCssDeclaration(panelCss, 'z-index', '1'))
+  assert.ok(hasCssDeclaration(panelCss, 'isolation', 'isolate'))
+  assert.ok(hasCssDeclaration(panelCss, 'pointer-events', 'auto'))
+
+  assert.ok(hasCssDeclaration(summaryCss, 'position', 'relative'))
+  assert.ok(hasCssDeclaration(summaryCss, 'z-index', '2'))
+  assert.ok(hasCssDeclaration(summaryCss, 'pointer-events', 'auto'))
+  assert.ok(hasCssDeclaration(summaryCss, 'touch-action', 'manipulation'))
+  assert.ok(hasCssDeclaration(summaryCss, 'transform', 'translateZ(0)'))
+
+  assert.ok(hasCssDeclaration(bodyCss, 'position', 'relative'))
+  assert.ok(hasCssDeclaration(bodyCss, 'z-index', '1'))
+  assert.ok(hasCssDeclaration(bodyCss, 'pointer-events', 'auto'))
+  assert.match(conversationSource, /<summary>Talk with Orb<\/summary>/)
 })

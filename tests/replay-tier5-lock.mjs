@@ -127,11 +127,11 @@ async function openDemoReplay(page, baseUrl) {
   await page.waitForLoadState('networkidle', { timeout: 30000 }).catch(() => {});
 
   const focus = page.getByTestId('urai-final-focus-chamber').first();
-  await expectVisible(focus, 'demo Focus chamber');
+  await expectVisible(focus, 'demo Focus surface');
   await expectAttribute(focus, 'data-memory-status', 'demo');
 
-  const replayAction = page.getByRole('button', { name: /Open Replay for|Replay this memory/i }).first();
-  await expectVisible(replayAction, 'Focus Replay action');
+  const replayAction = page.getByRole('button', { name: /Enter Replay(?: for .+)?/i }).first();
+  await expectVisible(replayAction, 'Focus Enter Replay action');
   await replayAction.click();
   await page.waitForURL(/\/replay\?/, { waitUntil: 'domcontentloaded', timeout: 30000 });
   await page.waitForLoadState('networkidle', { timeout: 30000 }).catch(() => {});
@@ -140,12 +140,12 @@ async function openDemoReplay(page, baseUrl) {
 async function validateReplay(page, report, screenshotName) {
   const proof = page.getByTestId('urai-replay-surface').first();
   const client = page.getByTestId('cinematic-replay-client').first();
-  const controls = page.locator('[aria-label="Replay controls"]').first();
-  const productControls = page.locator('[aria-label="Replay memory controls"]').first();
+  const controls = client.locator('[aria-label="Replay controls"]').first();
+  const productControls = client.locator('[aria-label="Replay memory controls"]').first();
   const companion = page.getByRole('button', { name: /Orb travel controls/i }).first();
-  const heading = page.locator('.replayWorld header h1').first();
-  const caption = page.locator('.caption').first();
-  const unwind = page.locator('.unwind').first();
+  const heading = client.locator('header h1').first();
+  const caption = client.locator('.caption').first();
+  const unwind = client.locator('.unwind').first();
 
   await proof.waitFor({ state: 'attached', timeout: 30000 });
   await expectAttribute(proof, 'data-replay-phase', 'replay_playing');
@@ -200,7 +200,9 @@ async function run() {
 
   try {
     await waitForServer(server.baseUrl);
-    browser = await chromium.launch();
+    // Match the repository's supported software-WebGL renderer on GitHub runners.
+    // Capability checks and recovery UI remain active; no forced clicks or skips.
+    browser = await chromium.launch({ args: process.env.GITHUB_ACTIONS === 'true' ? ['--enable-unsafe-swiftshader'] : [] });
     page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
     page.on('console', (message) => {
       const entry = { type: message.type(), text: message.text() };

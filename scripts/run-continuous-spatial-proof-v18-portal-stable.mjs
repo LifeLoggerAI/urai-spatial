@@ -222,6 +222,21 @@ const repairedPortal = `async function capturePortalSequence(browser) {
       }, { key: historyKey, destination }).catch(() => null)
     }
 
+    if (!activationFailure) {
+      try {
+        await page.waitForSelector(destination === 'ground'
+          ? '[data-ground-ready="true"] canvas'
+          : '[data-life-map-render-ready="true"] canvas', { state: 'visible', timeout: 45000 })
+        await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))))
+        routeEvidence.renderKind = await page.evaluate(() => document.querySelector('[data-testid="urai-life-map-signed-out-threshold"]') ? 'signed-out-private-threshold' : 'runtime-3d')
+        routeEvidence.destinationReady = true
+        routeEvidence.visualReady = routeEvidence.renderKind === 'runtime-3d'
+      } catch (error) {
+        activationFailure = { message: 'Destination runtime pixels were not ready: ' + String(error), stack: error?.stack || null }
+        if (routeEvidence) routeEvidence.visualReady = false
+      }
+    }
+
     screenshot = path.join(outputDir, \`\${id}-\${activationFailure ? 'failed' : 'settled'}-\${exactHead.slice(0, 12)}.png\`)
     await page.screenshot({ path: screenshot }).catch(() => {})
     const rawDiagnostics = diagnostics()

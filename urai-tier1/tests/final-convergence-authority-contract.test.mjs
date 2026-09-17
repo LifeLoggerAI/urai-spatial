@@ -3,6 +3,8 @@ import fs from 'node:fs'
 import test from 'node:test'
 
 const auth = fs.readFileSync('src/app/login/LoginClient.tsx', 'utf8')
+const signup = fs.readFileSync('src/app/signup/page.tsx', 'utf8')
+const routes = JSON.parse(fs.readFileSync('../release/route-manifest.json', 'utf8'))
 const settings = fs.readFileSync('src/app/settings/DeviceSettingsClient.tsx', 'utf8')
 const xr = fs.readFileSync('src/spatial/xr/xrReleaseAuthority.ts', 'utf8')
 
@@ -13,6 +15,18 @@ test('canonical auth entry uses Firebase provider authority and never collects p
   assert.match(auth, /firebasePublicEnvReady/)
   assert.match(auth, /Private routes remain fail-closed/)
   assert.doesNotMatch(auth, /type="password"/)
+})
+
+test('signup is a real provider-backed account entry route', () => {
+  assert.match(signup, /LoginClient intent="signup"/)
+  assert.match(signup, /Create Your Private World/)
+  assert.match(auth, /intent === 'signup'/)
+  assert.match(auth, /first-time account registration happen with the configured Firebase provider/)
+  assert.doesNotMatch(signup, /Return to Home|Pages Router shim/)
+  assert.ok(routes.criticalRoutes.includes('/login'))
+  assert.ok(routes.criticalRoutes.includes('/signup'))
+  assert.ok(routes.classification.publicExact.includes('/login'))
+  assert.ok(routes.classification.publicExact.includes('/signup'))
 })
 
 test('device settings exposes the governed persistent haptic hard-off control', () => {

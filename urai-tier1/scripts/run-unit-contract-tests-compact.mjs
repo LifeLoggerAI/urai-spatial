@@ -2,6 +2,7 @@ import { spawnSync } from 'node:child_process'
 import fs from 'node:fs'
 
 const tests = [
+  '../tests/canonical-route-compatibility.test.mjs',
   'tests/aaa-world-artifact-contract.test.mjs',
   'tests/v1-aaa-asset-program-matrix-contract.test.mjs',
   'tests/geographic-location-vault.test.mjs',
@@ -21,15 +22,32 @@ const tests = [
   'tests/final-aaa-world-convergence-contract.test.mjs',
   'tests/firebase-hosting-capture-workflow-contract.test.mjs',
   'tests/firebase-hosting-recovery-contract.test.mjs',
+  'tests/ground-v92-coherent-hub-contract.test.mjs',
   'tests/home-cohesion-contract.test.mjs',
+  'tests/home-current-art-repair-contract.test.mjs',
   'tests/home-ground-lifemap-art-bible-contract.test.mjs',
+  'tests/home-sky-lifemap-threshold-contract.test.mjs',
+  'tests/home-presence-geometry-motion.test.mjs',
+  'tests/home-relic-machine-realism-contract.test.mjs',
+  'tests/home-v88-retained-pixel-repair-contract.test.mjs',
+  'tests/home-v197-authored-place-contract.test.mjs',
+  'tests/home-v91-portrait-composition-contract.test.mjs',
   'tests/lifemap-cinematic-contract.test.mjs',
+  'tests/lifemap-cosmic-canon-contract.test.mjs',
+  'tests/lifemap-overview-framing.test.mjs',
+  'tests/lifemap-mobile-travel-density-contract.test.mjs',
   'tests/lifemap-deep-link-controls-contract.test.mjs',
   'tests/lifemap-scene-behavior.test.mjs',
+  'tests/lifemap-review-repair-contract.test.mjs',
+  'tests/lifemap-stable-geography-contract.test.mjs',
+  'tests/lifemap-mounted-cosmic-geography-contract.test.mjs',
+  'tests/lifemap-deterministic-test-mode.test.mjs',
+  'tests/lifemap-v3-memory-volume-contract.test.mjs',
   'tests/memory-star-phase4-contract.test.mjs',
   'tests/mirror-spatial-realm-contract.test.mjs',
   'tests/mirror-canonical-owner-hydration-contract.test.mjs',
   'tests/orb-companion-contract.test.mjs',
+  'tests/orb-v286-biomorphic-reliquary-contract.test.mjs',
   'tests/provider-boundary-contract.test.mjs',
   'tests/provider-hosting-runtime-contract.test.mjs',
   'tests/provider-preview-routing-contract.test.mjs',
@@ -44,9 +62,12 @@ const tests = [
   'tests/replay-operations-contract.test.mjs',
   'tests/replay-product-controls-contract.test.mjs',
   'tests/replay-mobile-control-clearance-contract.test.mjs',
+  'tests/replay-final-rail-authority-contract.test.mjs',
   'tests/route-owner-exclusivity-contract.test.mjs',
   'tests/security-boundary-contract.test.mjs',
   'tests/selected-memory-production-contract.test.mjs',
+  'tests/focus-ground-normal-geometry.test.mjs',
+  'tests/focus-review-regression-contract.test.mjs',
   'tests/sensory-asset-resolution-contract.test.mjs',
   'tests/spatial-launch-boundaries.test.mjs',
   'tests/spatial-production-audio-runtime-contract.test.mjs',
@@ -63,7 +84,10 @@ for (const testPath of tests) {
     console.error(`MISSING ${testPath}`)
     process.exit(1)
   }
-  const result = spawnSync(process.execPath, ['--import', 'tsx', '--test', testPath], { encoding: 'utf8' })
+  const args = testPath === 'tests/final-aaa-world-convergence-contract.test.mjs'
+    ? ['scripts/run-final-aaa-world-convergence-v224.mjs']
+    : ['--import', 'tsx', '--test', testPath]
+  const result = spawnSync(process.execPath, args, { encoding: 'utf8' })
   if (result.status === 0) {
     console.log(`PASS ${testPath}`)
     continue

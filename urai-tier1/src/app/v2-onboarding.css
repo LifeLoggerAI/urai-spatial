@@ -23,6 +23,26 @@
 .uraiV2OnboardingCard a { display: inline-flex; align-items: center; justify-content: center; color: #041018; background: #d9f9ff; text-decoration: none; }
 .uraiV2OnboardingCard button { color: rgba(245,250,255,.78); background: transparent; cursor: pointer; }
 
+.uraiV2OnboardingCard[data-route="/"],
+.uraiV2OnboardingCard[data-route="/home"] {
+  grid-template-columns: 92px 1fr;
+  width: min(304px, calc(100vw - 36px));
+  border-radius: 18px;
+  background: rgba(2,7,15,.78);
+  backdrop-filter: blur(12px);
+}
+.uraiV2OnboardingCard[data-route="/"] img,
+.uraiV2OnboardingCard[data-route="/home"] img { height: 100%; min-height: 120px; object-fit: cover; }
+.uraiV2OnboardingCard[data-route="/"] > div,
+.uraiV2OnboardingCard[data-route="/home"] > div { grid-template-columns: 1fr auto; gap: 6px; padding: 10px; }
+.uraiV2OnboardingCard[data-route="/"] strong,
+.uraiV2OnboardingCard[data-route="/home"] strong { font-size: 15px; line-height: 1.12; }
+.uraiV2OnboardingCard[data-route="/"] a,
+.uraiV2OnboardingCard[data-route="/"] button,
+.uraiV2OnboardingCard[data-route="/home"] a,
+.uraiV2OnboardingCard[data-route="/home"] button { min-height: 34px; padding: 0 10px; }
+
 @media (max-width: 760px) {
   .uraiV2OnboardingCard { right: 10px; bottom: 70px; width: calc(100vw - 20px); }
+  .uraiV2OnboardingCard[data-route="/"], .uraiV2OnboardingCard[data-route="/home"] { width: min(292px, calc(100vw - 20px)); }
 }

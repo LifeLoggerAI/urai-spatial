@@ -20,6 +20,8 @@ export type MovementInput = {
   keys: MutableRefObject<Set<string>>
   virtualX: MutableRefObject<number>
   virtualZ: MutableRefObject<number>
+  revision: number
+  notifyChange: () => void
 }
 
 export type DragLookHandlers = {
@@ -33,6 +35,7 @@ const MOVEMENT_KEYS = new Set([
   'KeyW', 'KeyA', 'KeyS', 'KeyD',
   'ArrowUp', 'ArrowLeft', 'ArrowDown', 'ArrowRight',
 ])
+const DRAG_ACTIVATION_DISTANCE_PX = 4
 
 // The motion kernel is called once per rendered frame. Reusing scratch vectors keeps
 // locomotion allocation-free while the active realm owns the only motion call.
@@ -59,6 +62,8 @@ export function useMovementInput({
   const keys = useRef(new Set<string>())
   const virtualX = useRef(0)
   const virtualZ = useRef(0)
+  const [revision, setRevision] = useState(0)
+  const notifyChange = useCallback(() => setRevision((value) => value + 1), [])
   const callbacksRef = useRef({ onEscape, onInteract, onReset })
 
   useEffect(() => {
@@ -71,6 +76,7 @@ export function useMovementInput({
       if (isEditableTarget(event.target)) return
       if (MOVEMENT_KEYS.has(event.code)) {
         keys.current.add(event.code)
+        notifyChange()
         event.preventDefault()
         return
       }
@@ -91,12 +97,14 @@ export function useMovementInput({
       }
     }
     const onKeyUp = (event: KeyboardEvent) => {
-      keys.current.delete(event.code)
+      if (keys.current.delete(event.code)) notifyChange()
     }
     const clear = () => {
+      const changed = keys.current.size > 0 || virtualX.current !== 0 || virtualZ.current !== 0
       keys.current.clear()
       virtualX.current = 0
       virtualZ.current = 0
+      if (changed) notifyChange()
     }
     window.addEventListener('keydown', onKeyDown, { passive: false, capture: true })
     window.addEventListener('keyup', onKeyUp)
@@ -107,11 +115,13 @@ export function useMovementInput({
       window.removeEventListener('keyup', onKeyUp)
       window.removeEventListener('blur', clear)
       document.removeEventListener('visibilitychange', clear)
-      clear()
+      keys.current.clear()
+      virtualX.current = 0
+      virtualZ.current = 0
     }
-  }, [enabled])
+  }, [enabled, notifyChange])
 
-  return { keys, virtualX, virtualZ }
+  return { keys, virtualX, virtualZ, revision, notifyChange }
 }
 
 export function useDragLook({
@@ -131,31 +141,50 @@ export function useDragLook({
   maxPitch?: number
   onDragState?: (dragging: boolean) => void
 }): DragLookHandlers {
-  const drag = useRef<{ pointerId: number; x: number; y: number } | null>(null)
+  const drag = useRef<{ pointerId: number; x: number; y: number; startX: number; startY: number; captured: boolean } | null>(null)
 
   const onPointerDown = useCallback((event: ReactPointerEvent<HTMLElement>) => {
     if (!enabled || event.button !== 0) return
     if (event.target instanceof Element && event.target.closest('button,a,input,textarea,select,summary,[data-movement-ui="true"]')) return
-    drag.current = { pointerId: event.pointerId, x: event.clientX, y: event.clientY }
-    try { event.currentTarget.setPointerCapture(event.pointerId) } catch { /* pointer capture is best effort */ }
-    onDragState?.(true)
-  }, [enabled, onDragState])
+    drag.current = {
+      pointerId: event.pointerId,
+      x: event.clientX,
+      y: event.clientY,
+      startX: event.clientX,
+      startY: event.clientY,
+      captured: false,
+    }
+  }, [enabled])
 
   const onPointerMove = useCallback((event: ReactPointerEvent<HTMLElement>) => {
-    if (!drag.current || drag.current.pointerId !== event.pointerId) return
-    const dx = event.clientX - drag.current.x
-    const dy = event.clientY - drag.current.y
-    drag.current.x = event.clientX
-    drag.current.y = event.clientY
+    const active = drag.current
+    if (!active || active.pointerId !== event.pointerId) return
+    if (!active.captured) {
+      const distance = Math.hypot(event.clientX - active.startX, event.clientY - active.startY)
+      if (distance < DRAG_ACTIVATION_DISTANCE_PX) return
+      active.captured = true
+      active.x = event.clientX
+      active.y = event.clientY
+      try { event.currentTarget.setPointerCapture(event.pointerId) } catch { /* pointer capture is best effort */ }
+      onDragState?.(true)
+      return
+    }
+    const dx = event.clientX - active.x
+    const dy = event.clientY - active.y
+    active.x = event.clientX
+    active.y = event.clientY
     yaw.current -= dx * sensitivity
     pitch.current = THREE.MathUtils.clamp(pitch.current - dy * sensitivity, minPitch, maxPitch)
-  }, [maxPitch, minPitch, pitch, sensitivity, yaw])
+  }, [maxPitch, minPitch, onDragState, pitch, sensitivity, yaw])
 
   const end = useCallback((event: ReactPointerEvent<HTMLElement>) => {
-    if (!drag.current || drag.current.pointerId !== event.pointerId) return
+    const active = drag.current
+    if (!active || active.pointerId !== event.pointerId) return
     drag.current = null
-    try { event.currentTarget.releasePointerCapture(event.pointerId) } catch { /* browser may already release */ }
-    onDragState?.(false)
+    if (active.captured) {
+      try { event.currentTarget.releasePointerCapture(event.pointerId) } catch { /* browser may already release */ }
+      onDragState?.(false)
+    }
   }, [onDragState])
 
   return { onPointerDown, onPointerMove, onPointerUp: end, onPointerCancel: end }
@@ -164,11 +193,13 @@ export function useDragLook({
 export function setVirtualMovement(input: MovementInput, x: number, z: number) {
   input.virtualX.current = THREE.MathUtils.clamp(x, -1, 1)
   input.virtualZ.current = THREE.MathUtils.clamp(z, -1, 1)
+  input.notifyChange()
 }
 
 export function clearVirtualMovement(input: MovementInput) {
   input.virtualX.current = 0
   input.virtualZ.current = 0
+  input.notifyChange()
 }
 
 export function stepEmbodiedMotion({
@@ -248,36 +279,8 @@ export function stepEmbodiedMotion({
     remainingDelta -= stepDelta
   }
 
-  const moving = velocity.lengthSq() > 0.0025
-  if (typeof document !== 'undefined') {
-    const owner = document.querySelector<HTMLElement>('.urai-asset-home-world[data-home-primary-owner="asset-driven"]')
-    if (owner) {
-      const spawnX = 0
-      const spawnZ = 6.9
-      owner.dataset.homeInputOwner = 'window-capture-movement'
-      owner.dataset.homeTelemetryOwner = 'embodied-motion-kernel'
-      owner.dataset.homeInputReady = 'true'
-      const assetsReady = owner.dataset.homeAssetsReady === 'true'
-      owner.dataset.homeInteractionReady = assetsReady ? 'true' : 'false'
-      owner.dataset.homeReady = 'false'
-      owner.dataset.homePlayerX = position.x.toFixed(3)
-      owner.dataset.homePlayerZ = position.z.toFixed(3)
-      owner.dataset.homeDistance = Math.hypot(position.x - spawnX, position.z - spawnZ).toFixed(3)
-      owner.dataset.homeDistanceOrb = Math.hypot(position.x, position.z + 2.65).toFixed(3)
-      owner.dataset.homeDistanceGround = Math.hypot(position.x + 5.2, position.z + 8.4).toFixed(3)
-      owner.dataset.homeDistanceLifeMap = Math.hypot(position.x - 5.2, position.z + 8.4).toFixed(3)
-      owner.dataset.homeMoving = moving ? 'true' : 'false'
-      owner.dataset.homePressedKeys = [...input.keys.current].sort().join(',')
-      owner.dataset.homeMovementVector = `${strafeInput.toFixed(3)},${forwardInput.toFixed(3)}`
-      const renderedFrames = Number.parseInt(owner.dataset.homeRenderedFrames || '0', 10)
-      const nextRenderedFrames = Number.isFinite(renderedFrames) ? renderedFrames + 1 : 1
-      owner.dataset.homeRenderedFrames = String(nextRenderedFrames)
-      owner.dataset.homeReady = assetsReady && nextRenderedFrames >= 3 ? 'true' : 'false'
-    }
-  }
-
   return {
-    moving,
+    moving: velocity.lengthSq() > 0.0025,
     hasTarget: target.current !== null,
   }
 }

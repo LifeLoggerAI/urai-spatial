@@ -14,47 +14,22 @@
   position: relative;
   width: 64px;
   height: 64px;
-  border: 1px solid rgba(207, 250, 254, .52);
-  border-radius: 999px;
-  padding: 0;
-  background:
-    radial-gradient(circle at 42% 34%, rgba(255,255,255,.98) 0 5%, rgba(174,249,255,.94) 12%, rgba(81,226,235,.7) 28%, rgba(17,71,91,.78) 52%, rgba(3,12,24,.96) 76%);
-  box-shadow:
-    0 0 22px rgba(103,232,249,.48),
-    0 0 70px rgba(103,232,249,.24),
-    inset 0 0 28px rgba(255,255,255,.3);
+  padding: 8px;
+  border: 1px solid rgba(207, 238, 225, .6);
+  border-radius: 24px 29px 23px 27px;
+  background: #0b2225;
+  color: #dceee4;
+  box-shadow: 0 5px 18px rgba(0,0,0,.28);
   cursor: pointer;
   pointer-events: auto;
-  transition: transform 180ms ease, box-shadow 180ms ease;
+  transition: transform 180ms ease, background 180ms ease;
 }
-
-.urai-world-companion__orb::before,
-.urai-world-companion__orb::after,
-.urai-world-companion__orb span {
-  content: '';
-  position: absolute;
-  inset: -8px;
-  border: 1px solid rgba(134,239,255,.24);
-  border-radius: inherit;
-}
-
-.urai-world-companion__orb::after {
-  inset: -17px;
-  border-color: rgba(167,139,250,.15);
-}
-
-.urai-world-companion__orb span {
-  inset: 15px;
-  border: 0;
-  background: rgba(255,255,255,.68);
-  filter: blur(8px);
-}
-
+.urai-world-companion__orb svg { display:block; width:100%; height:100%; }
 .urai-world-companion__orb:hover,
 .urai-world-companion__orb:focus-visible,
 .urai-world-companion[data-open='true'] .urai-world-companion__orb {
-  transform: scale(1.08);
-  box-shadow: 0 0 28px rgba(103,232,249,.7), 0 0 96px rgba(103,232,249,.34), inset 0 0 32px rgba(255,255,255,.4);
+  background: #163a3b;
+  transform: translateY(-2px);
 }
 
 .urai-world-companion__orb:focus-visible {
@@ -224,6 +199,7 @@
 
 .urai-world-companion[data-phase]:not([data-phase='idle']) .urai-world-companion__orb {
   animation: urai-world-orb-travel 900ms ease-in-out infinite alternate;
+  border-radius: 31% 69% 24% 76% / 68% 24% 76% 32%;
 }
 
 /* PRODUCT routes keep the companion available as a constellation return path,
@@ -284,8 +260,8 @@
 }
 
 @keyframes urai-world-orb-travel {
-  from { transform: scale(.96); filter: brightness(.92); }
-  to { transform: scale(1.08); filter: brightness(1.18); }
+  from { transform: rotate(-9deg) skewX(-7deg) scale(.94,1.04); filter: brightness(.92); }
+  to { transform: rotate(6deg) skewX(4deg) scale(1.08,.94); filter: brightness(1.18); }
 }
 
 @media (max-width: 700px) {
@@ -319,7 +295,10 @@
 }
 
 @media (max-width: 560px) {
-  .urai-world-companion__orb { width: 56px; height: 56px; }
+  .urai-world-companion__orb {
+    width: 64px;
+    height: 64px;
+  }
   .urai-world-companion__menu { border-radius: 20px; }
   .urai-world-companion__menu nav { justify-content: flex-start; }
   .urai-world-companion__estate ul { grid-template-columns: repeat(2, minmax(0, 1fr)); }
