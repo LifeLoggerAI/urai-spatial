@@ -61,7 +61,7 @@ test('archive integrity is allowed only with established scoped source consent',
   )
 })
 
-test('transcription requires source scope plus memory and model runtime consent', () => {
+test('audio transcription requires source scope plus memory model and identity runtime consent', () => {
   assert.equal(evaluatePrivateSourceMediaUse(receipt(), policy(), 'transcribe').allowed, true)
   assert.equal(
     evaluatePrivateSourceMediaUse(receipt(), policy({ models: domain({ mode: 'paused' }) }), 'transcribe').allowed,
@@ -69,6 +69,14 @@ test('transcription requires source scope plus memory and model runtime consent'
   )
   assert.equal(
     evaluatePrivateSourceMediaUse(receipt(), policy({ models: domain({ modelContext: false }) }), 'transcribe').allowed,
+    false,
+  )
+  assert.equal(
+    evaluatePrivateSourceMediaUse(receipt(), policy({ identity: domain({ mode: 'paused' }) }), 'transcribe').allowed,
+    false,
+  )
+  assert.equal(
+    evaluatePrivateSourceMediaUse(receipt({ mediaKind: 'document' }), policy(), 'transcribe').allowed,
     false,
   )
 })
@@ -87,36 +95,51 @@ test('Replay and Life Map obey their specific memory visibility controls', () =>
 })
 
 test('precise location never follows from private media alone', () => {
-  assert.equal(evaluatePrivateSourceMediaUse(receipt({ consent: { ...receipt().consent, scopes: [...receipt().consent.scopes, 'precise-location'] } }), policy(), 'precise-location').allowed, false)
+  const preciseScoped = receipt({ consent: { ...receipt().consent, scopes: [...receipt().consent.scopes, 'precise-location'] } })
+  assert.equal(evaluatePrivateSourceMediaUse(preciseScoped, policy(), 'precise-location').allowed, false)
   assert.equal(
-    evaluatePrivateSourceMediaUse(
-      receipt({ consent: { ...receipt().consent, scopes: [...receipt().consent.scopes, 'precise-location'] } }),
-      policy({ location: domain({ precise: true }) }),
-      'precise-location',
-    ).allowed,
+    evaluatePrivateSourceMediaUse(preciseScoped, policy({ location: domain({ precise: true }) }), 'precise-location').allowed,
     true,
   )
 })
 
-test('public sharing, likeness and voice synthesis are separately gated and denied by default', () => {
+test('owner attestation cannot authorize public sharing likeness or voice synthesis', () => {
   const expanded = receipt({
     consent: {
       ...receipt().consent,
       scopes: [...receipt().consent.scopes, 'public-share', 'likeness', 'voice-synthesis'],
     },
   })
-  assert.equal(evaluatePrivateSourceMediaUse(expanded, policy(), 'public-share').allowed, false)
-  assert.equal(evaluatePrivateSourceMediaUse(expanded, policy(), 'likeness').allowed, false)
-  assert.equal(evaluatePrivateSourceMediaUse(expanded, policy(), 'voice-synthesis').allowed, false)
-
   const elevated = policy({
     exports: domain({ sharingEnabled: true }),
     identity: domain({ likenessEnabled: true }),
     models: domain({ modelContext: true }),
   })
-  assert.equal(evaluatePrivateSourceMediaUse(expanded, elevated, 'public-share').allowed, true)
-  assert.equal(evaluatePrivateSourceMediaUse(expanded, elevated, 'likeness').allowed, true)
-  assert.equal(evaluatePrivateSourceMediaUse(expanded, elevated, 'voice-synthesis').allowed, true)
+
+  assert.equal(evaluatePrivateSourceMediaUse(expanded, elevated, 'public-share').allowed, false)
+  assert.equal(evaluatePrivateSourceMediaUse(expanded, elevated, 'likeness').allowed, false)
+  assert.equal(evaluatePrivateSourceMediaUse(expanded, elevated, 'voice-synthesis').allowed, false)
+})
+
+test('direct-subject consent plus runtime permissions can authorize high-risk uses', () => {
+  const direct = receipt({
+    consent: {
+      ...receipt().consent,
+      status: 'direct-subject',
+      evidence: 'subject',
+      scopes: [...receipt().consent.scopes, 'public-share', 'likeness', 'voice-synthesis'],
+    },
+  })
+  const elevated = policy({
+    exports: domain({ sharingEnabled: true }),
+    identity: domain({ likenessEnabled: true }),
+    models: domain({ modelContext: true }),
+  })
+
+  assert.equal(evaluatePrivateSourceMediaUse(direct, elevated, 'public-share').allowed, true)
+  assert.equal(evaluatePrivateSourceMediaUse(direct, elevated, 'likeness').allowed, true)
+  assert.equal(evaluatePrivateSourceMediaUse(direct, elevated, 'voice-synthesis').allowed, true)
+  assert.equal(evaluatePrivateSourceMediaUse({ ...direct, mediaKind: 'image' }, elevated, 'voice-synthesis').allowed, false)
 })
 
 test('revocation overrides previously granted runtime policy', () => {
