@@ -40,9 +40,17 @@ import * as THREE from 'three'
 // underfold a true valley instead of a sheet edge, and lifts only the counter knee so
 // the silhouette reads as one twisted held-memory sculpture rather than two wings.
 //
+// V285 responds to retained V284 pixels. V284 removed the manta but overshot into
+// an origami/paper-airplane/jet silhouette because both pointed terminals stayed
+// readable on one horizontal screen plane and the lifted folds read as fins. V285
+// preserves the same connected topology and crease authority, but turns the whole
+// longitudinal body materially into depth, foreshortens both returns unequally,
+// lowers the vertical fin amplitude, and separates the terminal depth signs so the
+// object reads as one compact twisted mineral/tissue knot rather than a vehicle.
+//
 // The form must read as one held memory phenomenon. It must not regress into a
 // crystal crown/shard cluster, boulder, sphere/orb, flower, portal, ring, cage,
-// doorway, sheet fan, stack of cards, shell/mouth, manta, tent or generic pickup.
+// doorway, sheet fan, stack of cards, shell/mouth, manta, tent, aircraft or generic pickup.
 const MEMORY_SECTIONS = 15
 const MEMORY_RING_POINTS = 12
 const MEMORY_SURFACE_DETAIL = 4
@@ -279,7 +287,20 @@ function createLivingMemoryFold() {
 
       const y = centerY + localY * Math.cos(twist) - localZ * Math.sin(twist)
       const z = centerZ + localY * Math.sin(twist) + localZ * Math.cos(twist)
-      positions.push(centerX, y, z)
+
+      // V285 screen-space correction. Both terminals are pulled toward the knot
+      // in x, sent to opposite depth signs, and the whole path is yawed so the
+      // camera cannot read two equal lateral wings. Vertical amplitude is reduced
+      // around the ground baseline so V284's folded-fin silhouette is suppressed
+      // without flattening the actual furrow or deleting the continuous volume.
+      const terminalWeight = Math.min(1, leadingTuck + counterTuck)
+      const compactX = centerX * (.74 - .13 * terminalWeight)
+      const depthReturn = z * 1.18 + .24 * leadingTuck - .31 * counterTuck + .07 * spineKnot - .05 * underFold
+      const yaw = .54
+      const v285X = compactX * Math.cos(yaw) - depthReturn * Math.sin(yaw)
+      const v285Z = compactX * Math.sin(yaw) + depthReturn * Math.cos(yaw)
+      const v285Y = -.65 + (y + .65) * .68 + .018 * Math.sin(t * 4.7 + .3) - .018 * counterTuck
+      positions.push(v285X, v285Y, v285Z)
       uvs.push(radialU, u)
       const color = livingMemoryVertexColor(section, radial, t, furrow, ridge, secondaryFurrow)
       colors.push(color.r, color.g, color.b)
@@ -301,12 +322,28 @@ function createLivingMemoryFold() {
 
   const startCap = positions.length / 3
   const start = sectionCenters[0]
-  positions.push(start.x, start.y, start.z)
+  const endCap = startCap + 1
+  const end = sectionCenters[sectionCenters.length - 1]
+
+  // Cap centers must undergo the same V285 spatial turn as their rings or the
+  // terminal fans would stretch back toward the untransformed V284 centers.
+  const capYaw = .54
+  const transformCap = (center: THREE.Vector3, leading: number, counter: number) => {
+    const weight = Math.min(1, leading + counter)
+    const compactX = center.x * (.74 - .13 * weight)
+    const depthReturn = center.z * 1.18 + .24 * leading - .31 * counter
+    return new THREE.Vector3(
+      compactX * Math.cos(capYaw) - depthReturn * Math.sin(capYaw),
+      -.65 + (center.y + .65) * .68,
+      compactX * Math.sin(capYaw) + depthReturn * Math.cos(capYaw),
+    )
+  }
+  const startV285 = transformCap(start, 1, 0)
+  const endV285 = transformCap(end, 0, 1)
+  positions.push(startV285.x, startV285.y, startV285.z)
   colors.push(.13, .105, .052)
   uvs.push(.5, 0)
-  const endCap = positions.length / 3
-  const end = sectionCenters[sectionCenters.length - 1]
-  positions.push(end.x, end.y, end.z)
+  positions.push(endV285.x, endV285.y, endV285.z)
   colors.push(.15, .12, .055)
   uvs.push(.5, 1)
 
@@ -336,6 +373,7 @@ function createLivingMemoryFold() {
   geometry.userData.focusLiteralPixelCandidate = 'v282-compressed-terminal-tucks-volumetric-knees-central-depth-no-ribbon-tips'
   geometry.userData.focusLiteralPixelSuccessor = 'v283-compact-offcenter-knot-thick-terminals-tucked-underfold-no-tent-manta'
   geometry.userData.focusLiteralPixelSuccessorV284 = 'v284-compressed-span-inward-terminal-returns-deep-s-valley-counter-knee-lift'
+  geometry.userData.focusLiteralPixelSuccessorV285 = 'v285-yawed-depth-knot-foreshortened-returns-lowered-fins-no-aircraft'
   return geometry
 }
 
