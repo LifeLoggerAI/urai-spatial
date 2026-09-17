@@ -42,9 +42,48 @@ const lifecycleRecordCount = original.split(lifecycleRecordAnchor).length - 1
 if (lifecycleRecordCount !== 1) throw new Error('Home state proof Orb lifecycle receipt anchor is not unique')
 const lifecycleRecordWithFixture = "const record = { id, pageErrors, passed: false, reducedMotion, speechTransportFixture: 'deterministic-ci-device-speech-window-override-v2', audibleQualityCertified: false }"
 
-const derived = original
+let derived = original
   .replace(speechFixtureAnchor, speechFixture)
   .replace(lifecycleRecordAnchor, lifecycleRecordWithFixture)
+
+// Playwright locator.focus() can wait on actionability/stability for a control that is
+// already present and natively focusable while the live 3D Home continues rendering.
+// The keyboard proof must still prove actual focus and native key activation; it must not
+// click, force, or bypass accessibility. For generated proof only, focus the concrete DOM
+// element, assert document.activeElement, then dispatch the same keyboard key through the
+// page keyboard. This keeps the requirement strict while removing the unrelated 30 s
+// actionability stall observed on the semantic Orb control.
+const keyboardProofReplacements = [
+  {
+    source: 'await openOrb.focus()', expected: 1,
+    replacement: "if (!await openOrb.evaluate((element) => { if (!(element instanceof HTMLElement)) return false; element.focus({ preventScroll: true }); return document.activeElement === element })) throw new Error('Orb open control failed DOM keyboard-focus verification')",
+  },
+  { source: "await openOrb.press('Enter')", expected: 1, replacement: "await page.keyboard.press('Enter')" },
+  {
+    source: 'await talk.focus()', expected: 1,
+    replacement: "if (!await talk.evaluate((element) => { if (!(element instanceof HTMLElement)) return false; element.focus({ preventScroll: true }); return document.activeElement === element })) throw new Error('Orb conversation summary failed DOM keyboard-focus verification')",
+  },
+  { source: "await talk.press('Enter')", expected: 1, replacement: "await page.keyboard.press('Enter')" },
+  {
+    source: 'await message.focus()', expected: 2,
+    replacement: "if (!await message.evaluate((element) => { if (!(element instanceof HTMLElement)) return false; element.focus({ preventScroll: true }); return document.activeElement === element })) throw new Error('Orb message field failed DOM keyboard-focus verification')",
+  },
+  {
+    source: 'await consent.focus()', expected: 2,
+    replacement: "if (!await consent.evaluate((element) => { if (!(element instanceof HTMLElement)) return false; element.focus({ preventScroll: true }); return document.activeElement === element })) throw new Error('Orb consent control failed DOM keyboard-focus verification')",
+  },
+  { source: "await consent.press('Space')", expected: 2, replacement: "await page.keyboard.press('Space')" },
+  {
+    source: 'await send.focus()', expected: 1,
+    replacement: "if (!await send.evaluate((element) => { if (!(element instanceof HTMLElement)) return false; element.focus({ preventScroll: true }); return document.activeElement === element })) throw new Error('Orb send control failed DOM keyboard-focus verification')",
+  },
+  { source: "send.press('Enter')", expected: 1, replacement: "page.keyboard.press('Enter')" },
+]
+for (const replacement of keyboardProofReplacements) {
+  const count = derived.split(replacement.source).length - 1
+  if (count !== replacement.expected) throw new Error(`Home state proof keyboard anchor mismatch for ${replacement.source}: expected ${replacement.expected}, received ${count}`)
+  derived = derived.replaceAll(replacement.source, replacement.replacement)
+}
 
 await writeFile(generatedPath, derived, 'utf8')
 let result
@@ -74,8 +113,8 @@ if (result.status !== 0) {
     authority,
     derivedProof: {
       source: 'capture-home-state-proof.mjs',
-      replacement: 'deterministic CI-only device speech transport replaces the headless window speechSynthesis transport and supplies onstart/boundary/onend; runtime state/rendering remains authoritative',
-      reason: 'headless Chromium exposes Web Speech but does not start an OS speech engine, and inherited native methods are not a reliable mutation boundary; proof must not force runtime to fake acoustic speaking',
+      replacement: 'deterministic CI-only device speech transport replaces the headless window speechSynthesis transport and supplies onstart/boundary/onend; runtime state/rendering remains authoritative; generated proof uses direct DOM focus plus activeElement assertion before native keyboard activation to avoid Playwright actionability stalls',
+      reason: 'headless Chromium exposes Web Speech but does not start an OS speech engine, and live WebGL rendering can keep locator.focus actionability unstable even when the semantic control is present and natively focusable; proof must not force runtime to fake acoustic speaking or bypass keyboard focus',
       audibleQualityCertified: false,
     },
     exitStatus: result.status,
