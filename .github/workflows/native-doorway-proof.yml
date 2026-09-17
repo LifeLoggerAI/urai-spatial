@@ -79,4 +79,4 @@ jobs:
           name: native-doorway-proof-${{ env.URAI_PROOF_SOURCE_SHA }}
           path: native-doorway-proof
           if-no-files-found: error
-          retention-days: 365
+          retention-days: 90
