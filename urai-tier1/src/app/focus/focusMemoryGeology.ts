@@ -57,11 +57,14 @@ import * as THREE from 'three'
 // retained pixels were still rejected because the centered opening and broad smooth
 // panels read as a seashell / rosebud / folded napkin.
 //
-// V288 breaks that petal/shell organization. The centerline is no longer radial or
-// neatly self-wrapped: it follows an uneven diagonal three-dimensional torque with
-// unequal thickness, cragged relief and an off-axis internal scar. Both terminal
-// regions are submerged in depth. The first read must be geological tension and an
-// internal valley—not flower petals, a shell lip, cloth, anatomy or a known object.
+// V288 breaks that petal/shell organization with a diagonal three-dimensional torque,
+// but retained pixels still collapsed into a pale shell/boulder/helmet-like mound.
+//
+// V289 removes the mound. The visible body follows a narrow off-axis S-fold with a
+// materially deeper diagonal scar, broken ridge hierarchy, unequal shoulders and
+// both terminals tucked backward in depth. Broad smooth panel area is reduced so the
+// first read is tension + scar + folded volume rather than shell, boulder, cloth,
+// anatomy or another familiar object family.
 //
 // The form must read as one held memory phenomenon. It must not regress into a
 // crystal crown/shard cluster, boulder, sphere/orb, flower, portal, ring, cage,
@@ -290,47 +293,54 @@ function createLivingMemoryFold() {
         + ridge * depth * .40
         + longitudinalRill
 
-      // V288 torqued geological fold. No radial bud or shell aperture: the centerline
-      // moves diagonally through three dimensions, while local cross-sections gain
-      // uneven crag relief. Terminal regions collapse behind the visible scar mass.
-      const terminalWeight = Math.pow(Math.abs(t), 3.0)
-      const torque = t * 2.06 + .28 * Math.sin(t * 3.65 + .20)
-      const pathX = .31 * Math.sin(torque)
-        + .115 * Math.sin(t * 5.35 + .62)
-        + .055 * spineKnot
-        - .038 * counterWaist
-        - .025 * underFold
-      const pathY = -.65
-        + .165 * Math.sin(t * 3.15 - .35)
-        + .095 * Math.cos(t * 5.05 + .40)
-        + .085 * spineKnot
+      // V289: narrow off-axis S-fold. Terminal extent is compressed in screen space
+      // and sent backward in depth. The furrow is exaggerated as a diagonal internal
+      // scar while the opposite ridge breaks into uneven shoulders rather than one
+      // broad smooth shell/boulder panel.
+      const terminalWeight = Math.pow(Math.abs(t), 2.65)
+      const terminalCollapse = 1 - .72 * terminalWeight
+      const sPath = t + .18 * Math.sin(t * 3.55 + .35)
+      const pathX = .43 * sPath * terminalCollapse
+        + .075 * Math.sin(t * 5.2 + .50)
+        + .050 * spineKnot
+        - .035 * underFold
+      const pathY = -.67
+        + .235 * Math.sin(t * 2.28 + .30)
+        + .090 * Math.sin(t * 5.0 - .42)
+        + .120 * spineKnot
         - .105 * underFold
-        - .055 * counterKnee
-      const pathZ = .205 * Math.cos(torque * 1.37 + .48)
-        + .145 * Math.sin(t * 4.62 - .18)
-        + .070 * leadingKnee
-        - .085 * counterKnee
-        - .125 * underFold
-      const terminalCollapse = 1 - .58 * terminalWeight
+        + .055 * leadingKnee
+        - .035 * counterKnee
+      const pathZ = -.03
+        + .245 * Math.sin(t * 3.10 - .35)
+        + .110 * Math.cos(t * 5.15 + .28)
+        - .255 * terminalWeight
+        + .080 * leadingWaist
+        - .085 * counterWaist
+        - .075 * returnCrease
       const crag = 1
-        + .115 * Math.sin(angle * 3 + t * 5.7)
-        + .072 * Math.cos(angle * 5 - t * 3.35)
-        + .035 * Math.sin(angle * 9 + t * 1.7)
-      const scarBias = 1 + .20 * ridge - .16 * furrow
-      const v288X = pathX * terminalCollapse
-        + localZ * .30 * crag
-        + localY * .12 * scarBias
-        + .028 * Math.sin(angle * 2.0 + t * 3.1)
-      const v288Y = pathY
-        + localY * (.74 + .12 * spineKnot) * crag
-        + localZ * .105
-        - .030 * terminalWeight
-      const v288Z = pathZ
-        + localZ * (.87 + .13 * underFold) * scarBias
-        + localY * .19
-        - .105 * returnCrease
-        - .16 * terminalWeight
-      positions.push(v288X, v288Y, v288Z)
+        + .16 * Math.sin(angle * 3 + t * 5.5)
+        + .09 * Math.cos(angle * 5 - t * 3.7)
+        + .045 * Math.sin(angle * 8 + t * 2.0)
+      const scar = Math.min(1.2, furrow * (1.08 + .58 * spineKnot + .30 * underFold))
+      const brokenRidge = Math.min(1.2, ridge * (.78 + .44 * spineKnot) * (.72 + .28 * Math.sin(t * 4.0 + .8)))
+      const v289X = pathX
+        + localZ * (.18 + .055 * crag)
+        + localY * .075
+        + .055 * brokenRidge
+        - .040 * scar
+      const v289Y = pathY
+        + localY * (.46 + .10 * spineKnot) * crag
+        + .040 * localZ
+        + .105 * brokenRidge
+        - .115 * scar
+        - .028 * terminalWeight
+      const v289Z = pathZ
+        + localZ * (.58 + .10 * underFold) * crag
+        + .075 * localY
+        + .105 * brokenRidge
+        - .185 * scar
+      positions.push(v289X, v289Y, v289Z)
       uvs.push(radialU, u)
       const color = livingMemoryVertexColor(section, radial, t, furrow, ridge, secondaryFurrow)
       colors.push(color.r, color.g, color.b)
@@ -353,13 +363,12 @@ function createLivingMemoryFold() {
   const startCap = positions.length / 3
   const endCap = startCap + 1
 
-  // V288 keeps both caps behind the visible diagonal fold so they cannot become
-  // eyes, petal centers, shell lips, snouts or tails.
-  positions.push(-.035, -.785, -.34)
-  colors.push(.085, .070, .038)
+  // Dark cap centers stay tucked behind the S-fold, never at the silhouette edge.
+  positions.push(-.065, -.805, -.43)
+  colors.push(.075, .062, .034)
   uvs.push(.5, 0)
-  positions.push(.025, -.735, -.39)
-  colors.push(.095, .075, .040)
+  positions.push(.052, -.720, -.46)
+  colors.push(.085, .068, .036)
   uvs.push(.5, 1)
 
   for (let radial = 0; radial < MEMORY_RENDER_RING_POINTS; radial += 1) {
@@ -392,6 +401,7 @@ function createLivingMemoryFold() {
   geometry.userData.focusLiteralPixelSuccessorV286 = 'v286-bound-terminal-knot-no-head-tail-anatomy-deep-internal-valley'
   geometry.userData.focusLiteralPixelSuccessorV287 = 'v287-self-crossing-central-knot-submerged-caps-no-directional-anatomy'
   geometry.userData.focusLiteralPixelSuccessorV288 = 'v288-diagonal-torqued-geological-fold-cragged-scar-no-petal-shell'
+  geometry.userData.focusLiteralPixelSuccessorV289 = 'v289-narrow-s-fold-dominant-diagonal-scar-broken-ridge-no-mound'
   return geometry
 }
 
