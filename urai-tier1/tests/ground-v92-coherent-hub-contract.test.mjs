@@ -7,7 +7,7 @@ const groundCanon = readFileSync(new URL('../src/spatial/ground/groundCanon.ts',
 
 test('Ground renders a lived physical world instead of the retired chamber hub', () => {
   assert.match(ground, /data-ground-visual-revision="ground-lived-world-v2-canon-lock"/)
-  assert.match(ground, /data-ground-art-revision="ground-scanned-pbr-v2"/)
+  assert.match(ground, /data-ground-art-revision="ground-natural-canopy-v3-authored-ridge-v3"/)
   assert.match(ground, /data-ground-runtime-owner="first-person-lived-world"/)
   assert.match(ground, /name="ground-lived-world"/)
   assert.match(ground, /name="ground-visible-traversable-terrain"/)
