@@ -48,9 +48,18 @@ import * as THREE from 'three'
 // lowers the vertical fin amplitude, and separates the terminal depth signs so the
 // object reads as one compact twisted mineral/tissue knot rather than a vehicle.
 //
+// V286 responds to retained V285 pixels. V285 removed the aircraft read but still
+// produced a crouched-creature silhouette: one swollen rear mass plus a smaller
+// projecting head/beak-like end. V286 therefore removes readable end-to-end anatomy.
+// Both terminals are bound back toward the central knot, separated primarily in
+// depth rather than screen-space length, and submerged behind a deeper crease valley.
+// The localized furrow/ridge hierarchy—not a head, tail, limb, wing or torso—must own
+// the first read at desktop and phone portrait scale.
+//
 // The form must read as one held memory phenomenon. It must not regress into a
 // crystal crown/shard cluster, boulder, sphere/orb, flower, portal, ring, cage,
-// doorway, sheet fan, stack of cards, shell/mouth, manta, tent, aircraft or generic pickup.
+// doorway, sheet fan, stack of cards, shell/mouth, manta, tent, aircraft, animal,
+// body-part silhouette or generic pickup.
 const MEMORY_SECTIONS = 15
 const MEMORY_RING_POINTS = 12
 const MEMORY_SURFACE_DETAIL = 4
@@ -288,19 +297,32 @@ function createLivingMemoryFold() {
       const y = centerY + localY * Math.cos(twist) - localZ * Math.sin(twist)
       const z = centerZ + localY * Math.sin(twist) + localZ * Math.cos(twist)
 
-      // V285 screen-space correction. Both terminals are pulled toward the knot
-      // in x, sent to opposite depth signs, and the whole path is yawed so the
-      // camera cannot read two equal lateral wings. Vertical amplitude is reduced
-      // around the ground baseline so V284's folded-fin silhouette is suppressed
-      // without flattening the actual furrow or deleting the continuous volume.
+      // V286 screen-space correction. The terminal sections are drawn back toward
+      // the knot in x and split mainly in z, so neither end can become a head/tail.
+      // A central bind and deeper underfold keep the visible hierarchy internal.
       const terminalWeight = Math.min(1, leadingTuck + counterTuck)
-      const compactX = centerX * (.74 - .13 * terminalWeight)
-      const depthReturn = z * 1.18 + .24 * leadingTuck - .31 * counterTuck + .07 * spineKnot - .05 * underFold
-      const yaw = .54
-      const v285X = compactX * Math.cos(yaw) - depthReturn * Math.sin(yaw)
-      const v285Z = compactX * Math.sin(yaw) + depthReturn * Math.cos(yaw)
-      const v285Y = -.65 + (y + .65) * .68 + .018 * Math.sin(t * 4.7 + .3) - .018 * counterTuck
-      positions.push(v285X, v285Y, v285Z)
+      const centralBind = Math.exp(-Math.pow(t / .58, 2))
+      const compactX = centerX * (.54 - .18 * terminalWeight) + .045 * Math.sin(t * 5.10) * centralBind
+      const depthReturn = z * 1.34
+        + .36 * leadingTuck
+        - .39 * counterTuck
+        + .12 * spineKnot
+        - .17 * underFold
+        - .08 * returnCrease
+        + .055 * Math.sin(t * 3.90)
+      const yaw = .68
+      const rotatedX = compactX * Math.cos(yaw) - depthReturn * Math.sin(yaw)
+      const rotatedZ = compactX * Math.sin(yaw) + depthReturn * Math.cos(yaw)
+      const terminalInward = .17 * leadingTuck - .17 * counterTuck
+      const v286X = rotatedX + terminalInward + .032 * returnCrease - .025 * spineKnot
+      const v286Z = rotatedZ + .085 * (leadingKnee - counterKnee) - .060 * returnCrease + .045 * underFold
+      const v286Y = -.65
+        + (y + .65) * .76
+        + .052 * spineKnot
+        - .050 * underFold
+        + .022 * Math.sin(t * 7.10 + .30) * centralBind
+        - .025 * terminalWeight
+      positions.push(v286X, v286Y, v286Z)
       uvs.push(radialU, u)
       const color = livingMemoryVertexColor(section, radial, t, furrow, ridge, secondaryFurrow)
       colors.push(color.r, color.g, color.b)
@@ -325,25 +347,27 @@ function createLivingMemoryFold() {
   const endCap = startCap + 1
   const end = sectionCenters[sectionCenters.length - 1]
 
-  // Cap centers must undergo the same V285 spatial turn as their rings or the
-  // terminal fans would stretch back toward the untransformed V284 centers.
-  const capYaw = .54
+  // Cap centers undergo the same V286 bound-return transform as their rings so
+  // neither cap stretches back into a readable beak, snout, tail or wing tip.
+  const capYaw = .68
   const transformCap = (center: THREE.Vector3, leading: number, counter: number) => {
     const weight = Math.min(1, leading + counter)
-    const compactX = center.x * (.74 - .13 * weight)
-    const depthReturn = center.z * 1.18 + .24 * leading - .31 * counter
+    const compactX = center.x * (.54 - .18 * weight)
+    const depthReturn = center.z * 1.34 + .36 * leading - .39 * counter
+    const rotatedX = compactX * Math.cos(capYaw) - depthReturn * Math.sin(capYaw)
+    const rotatedZ = compactX * Math.sin(capYaw) + depthReturn * Math.cos(capYaw)
     return new THREE.Vector3(
-      compactX * Math.cos(capYaw) - depthReturn * Math.sin(capYaw),
-      -.65 + (center.y + .65) * .68,
-      compactX * Math.sin(capYaw) + depthReturn * Math.cos(capYaw),
+      rotatedX + .17 * leading - .17 * counter,
+      -.65 + (center.y + .65) * .76 - .025 * weight,
+      rotatedZ,
     )
   }
-  const startV285 = transformCap(start, 1, 0)
-  const endV285 = transformCap(end, 0, 1)
-  positions.push(startV285.x, startV285.y, startV285.z)
+  const startV286 = transformCap(start, 1, 0)
+  const endV286 = transformCap(end, 0, 1)
+  positions.push(startV286.x, startV286.y, startV286.z)
   colors.push(.13, .105, .052)
   uvs.push(.5, 0)
-  positions.push(endV285.x, endV285.y, endV285.z)
+  positions.push(endV286.x, endV286.y, endV286.z)
   colors.push(.15, .12, .055)
   uvs.push(.5, 1)
 
@@ -374,6 +398,7 @@ function createLivingMemoryFold() {
   geometry.userData.focusLiteralPixelSuccessor = 'v283-compact-offcenter-knot-thick-terminals-tucked-underfold-no-tent-manta'
   geometry.userData.focusLiteralPixelSuccessorV284 = 'v284-compressed-span-inward-terminal-returns-deep-s-valley-counter-knee-lift'
   geometry.userData.focusLiteralPixelSuccessorV285 = 'v285-yawed-depth-knot-foreshortened-returns-lowered-fins-no-aircraft'
+  geometry.userData.focusLiteralPixelSuccessorV286 = 'v286-bound-terminal-knot-no-head-tail-anatomy-deep-internal-valley'
   return geometry
 }
 
