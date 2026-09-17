@@ -24,10 +24,15 @@ test('V272 selected memory is one connected living-memory fold rather than discr
   assert.doesNotMatch(geology, /Array\.from\(\{ length: 7 \}/)
 })
 
-test('V272 palette stays weathered and restrained rather than cyan crystal or paper-white', () => {
-  assert.match(geology, /const deep = new THREE\.Color\(\)\.setRGB\(\.026, \.067, \.064\)/)
-  assert.match(geology, /const mineral = new THREE\.Color\(\)\.setRGB\(\.155, \.245, \.218\)/)
-  assert.match(geology, /const weathered = new THREE\.Color\(\)\.setRGB\(\.285, \.335, \.278\)/)
-  assert.match(geology, /const warm = new THREE\.Color\(\)\.setRGB\(\.405, \.235, \.115\)/)
+test('living-memory palette stays weathered and restrained rather than cyan crystal or paper-white', () => {
+  assert.match(geology, /const deep = new THREE\.Color\(\)\.setRGB/)
+  assert.match(geology, /const mineral = new THREE\.Color\(\)\.setRGB/)
+  assert.match(geology, /const weathered = new THREE\.Color\(\)\.setRGB/)
+  assert.match(geology, /const warm = new THREE\.Color\(\)\.setRGB/)
+  assert.match(geology, /focusMemoryEnergy = 'weathered-mineral-restrained-warm-cool-response'/)
+  assert.match(geology, /focusLiteralPixelRefinement = 'v275-grounded-hooked-asymmetric-weathered-fold-no-boulder-pickup'/)
+  assert.match(geology, /color\.r = Math\.min\(\.74, color\.r\)/)
+  assert.match(geology, /color\.g = Math\.min\(\.68, color\.g\)/)
+  assert.match(geology, /color\.b = Math\.min\(\.52, color\.b\)/)
   assert.doesNotMatch(geology, /setRGB\(\.125, \.405, \.485\)|setRGB\(\.72, \.86, \.82\)|setRGB\(\.92, \.38, \.12\)/)
 })
