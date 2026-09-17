@@ -11,6 +11,13 @@ import * as THREE from 'three'
 // and a dark central furrow remain above/at grade. Both ends continue below grade so the
 // eye cannot find a bow/stern, head/tail, shell edge, or collectible silhouette.
 //
+// V293 responds to exact-head V292 retained pixels, where the fracture became so deeply
+// buried that the selected-memory event nearly disappeared into ordinary sanctuary
+// ground. V293 does not add a new mound or closed object. It exposes only the compact
+// central scar lips and unequal ridge fragments while the centerline, long outer runs,
+// underside and both terminal caps remain held below grade. The correction is visibility
+// of the rupture, not more total mass.
+//
 // The form must read as memory pressure physically held by place: a weathered scar in
 // the sanctuary, not an object placed on top of it. It must not regress into a crystal
 // crown, boulder, orb, flower, portal, ring, shell/mouth, manta, tent, aircraft, animal,
@@ -107,6 +114,14 @@ function createLivingMemoryFold() {
     const counterRidgeAngle = furrowAngle - Math.PI * .58
     const scarWindow = .28 + .94 * centralScar + .28 * nearRidge + .16 * fracturePulse
 
+    // V293 lifts only the compact scar zone. The pulse prevents a continuous raised
+    // rail, while the terminal burial still wins decisively outside the central event.
+    const localEmergence = (
+      .22 * centralScar
+      + .12 * nearRidge
+      + .035 * farRidge
+    ) * (.72 + .28 * fracturePulse)
+
     for (let radial = 0; radial < MEMORY_RENDER_RING_POINTS; radial += 1) {
       const radialU = radial / MEMORY_RENDER_RING_POINTS
       const angle = radialU * Math.PI * 2
@@ -145,6 +160,9 @@ function createLivingMemoryFold() {
         + .018 * ridge
       const y = centerY
         + localY
+        + localEmergence
+        + .060 * ridge
+        + .025 * counterRidge
         - undersideSink
         - edgeSink
       const z = centerZ
@@ -204,7 +222,9 @@ function createLivingMemoryFold() {
   geometry.userData.focusSilhouetteRule = 'ground-held-fracture-not-portable-object'
   geometry.userData.focusSurfaceDensity = `${MEMORY_RENDER_SECTIONS}x${MEMORY_RENDER_RING_POINTS}-continuous-tactile-surface`
   geometry.userData.focusLiteralPixelSuccessorV292 = 'v292-shallow-ground-fracture-buried-ends-broken-scar-lips-no-closed-arch'
+  geometry.userData.focusLiteralPixelSuccessorV293 = 'v293-local-scar-emergence-buried-runs-no-restored-object-mass'
   geometry.userData.focusVisualAuthority = 'v292-sanctuary-memory-fracture'
+  geometry.userData.focusCurrentVisualAuthority = 'v293-visible-ground-held-memory-rupture'
   return geometry
 }
 
