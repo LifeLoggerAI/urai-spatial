@@ -13,13 +13,12 @@ import * as THREE from 'three'
 // V273 removed the upright-rock / flat-cap read. V274 removed the bilateral
 // clam/mouth seam. V275 grounded the form and warmed the palette, but literal
 // desktop/mobile pixels still collapsed into a ribbed stone/lump silhouette.
-//
-// V276 attacks that remaining object-language failure at the silhouette source:
-// the longitudinal spine is materially longer and more three-dimensional, one
-// leading end rises and hooks while the counter-end narrows and tucks away, the
-// center mass is deliberately slimmer, and the visible fold is localized rather
-// than spanning the whole width. The result remains one watertight phenomenon,
-// but its gesture must read as a folded/twisted memory rather than a boulder.
+// V276 fixed that silhouette failure with a materially longer S-curve, unequal
+// ends and a slimmer center, but current pixels still read too much like a smooth
+// floating cloth/manta/ribbon. V277 therefore preserves the V276 silhouette win
+// while increasing localized physical thickness, crease depth, tactile tissue
+// relief and warm weathered material contrast. It must remain one watertight
+// sculptural memory phenomenon rather than becoming a rock, sheet or pickup.
 //
 // The form must read as one held memory phenomenon. It must not regress into a
 // crystal crown/shard cluster, boulder, sphere/orb, flower, portal, ring, cage,
@@ -35,27 +34,27 @@ function wrappedAngleDistance(a: number, b: number) {
 }
 
 function livingMemoryVertexColor(section: number, radial: number, t: number, furrow: number, ridge: number, secondaryFurrow: number) {
-  const deep = new THREE.Color().setRGB(.045, .058, .047)
-  const mineral = new THREE.Color().setRGB(.225, .255, .205)
-  const weathered = new THREE.Color().setRGB(.39, .34, .235)
-  const warm = new THREE.Color().setRGB(.50, .285, .115)
-  const litMineral = new THREE.Color().setRGB(.57, .54, .39)
+  const deep = new THREE.Color().setRGB(.050, .060, .045)
+  const mineral = new THREE.Color().setRGB(.32, .36, .25)
+  const weathered = new THREE.Color().setRGB(.48, .36, .22)
+  const warm = new THREE.Color().setRGB(.62, .33, .13)
+  const litMineral = new THREE.Color().setRGB(.68, .60, .40)
   const phase = .5 + .5 * Math.sin(section * .27 + radial * .43)
   const strata = .5 + .5 * Math.sin(section * .91 + radial * .36)
   const edge = Math.pow(Math.abs(t), 1.5)
   const scar = Math.max(furrow, secondaryFurrow)
   const color = deep.clone()
-    .lerp(mineral, .40 + phase * .22)
-    .lerp(weathered, .30 + .18 * (1 - edge))
-  if (scar > .24) color.lerp(deep, .17 + scar * .20)
-  if (ridge > .42) color.lerp(weathered, .24 + ridge * .10)
-  color.lerp(warm, .11 * strata * (1 - scar) + .025 * Math.max(0, -t))
-  color.lerp(litMineral, .13 + .07 * (1 - edge) + .04 * ridge)
-  if ((section * 5 + radial * 3) % 23 === 0) color.lerp(warm, .20)
-  color.multiplyScalar(1.12)
-  color.r = Math.min(.74, color.r)
-  color.g = Math.min(.68, color.g)
-  color.b = Math.min(.52, color.b)
+    .lerp(mineral, .43 + phase * .22)
+    .lerp(weathered, .32 + .20 * (1 - edge))
+  if (scar > .24) color.lerp(deep, .20 + scar * .25)
+  if (ridge > .38) color.lerp(weathered, .29 + ridge * .12)
+  color.lerp(warm, .16 * strata * (1 - scar) + .040 * Math.max(0, -t))
+  color.lerp(litMineral, .16 + .08 * (1 - edge) + .055 * ridge)
+  if ((section * 5 + radial * 3) % 23 === 0) color.lerp(warm, .24)
+  color.multiplyScalar(1.19)
+  color.r = Math.min(.88, color.r)
+  color.g = Math.min(.78, color.g)
+  color.b = Math.min(.58, color.b)
   return color
 }
 
@@ -74,41 +73,42 @@ function createLivingMemoryFold() {
     const leadingHook = Math.exp(-Math.pow((t + .70) / .23, 2))
     const counterTuck = Math.exp(-Math.pow((t - .66) / .27, 2))
     const middleWaist = Math.exp(-Math.pow((t - .04) / .31, 2))
+    const foldedShoulder = Math.exp(-Math.pow((t + .22) / .30, 2))
 
-    // V276: a long S-gesture makes the longitudinal reading visible even at
-    // phone scale. The leading end rises and moves toward camera, while the
-    // counter-end settles and recedes. Neither end mirrors the other.
-    const centerX = t * 1.28 + .12 * Math.sin(t * 2.62) + .042 * Math.sin(t * 5.55)
+    // Preserve V276's phone-readable S-gesture while increasing unequal end
+    // articulation. The leading end rises toward camera; the counter end tucks
+    // down and away rather than mirroring it.
+    const centerX = t * 1.28 + .13 * Math.sin(t * 2.62) + .048 * Math.sin(t * 5.55)
     const centerY = -.62
-      + .17 * Math.sin(t * 1.94 + .30)
-      + .085 * Math.sin(t * 4.25 - .24)
-      - .070 * t
-      + .30 * leadingHook
-      - .13 * counterTuck
+      + .18 * Math.sin(t * 1.94 + .30)
+      + .090 * Math.sin(t * 4.25 - .24)
+      - .072 * t
+      + .34 * leadingHook
+      - .16 * counterTuck
+      + .055 * foldedShoulder
     const centerZ = -.10
-      + .19 * Math.sin(t * 1.68 - .18)
-      + .070 * Math.sin(t * 4.45 + .12)
-      + .19 * leadingHook
-      - .085 * counterTuck
+      + .205 * Math.sin(t * 1.68 - .18)
+      + .078 * Math.sin(t * 4.45 + .12)
+      + .21 * leadingHook
+      - .105 * counterTuck
     sectionCenters.push(new THREE.Vector3(centerX, centerY, centerZ))
 
-    // Keep the section narrow enough that the silhouette cannot collapse into
-    // one swollen center stone. A shallow waist and unequal end shoulders make
-    // the changing cross-section legible without splitting the object.
-    const widthProfile = 1 - .22 * middleWaist + .16 * leadingHook - .08 * counterTuck
-    const height = .016 + endTaper * (.205 + .040 * Math.sin(section * .31) + .050 * leadingHook) * widthProfile
-    const depth = .014 + endTaper * (.145 + .026 * Math.cos(section * .35) + .032 * leadingHook) * (.94 + .06 * shoulder)
-    const twist = .31 * Math.sin(t * 1.86) + .18 * t + .080 * Math.sin(t * 4.7) + .10 * leadingHook
+    // V277 adds localized sculptural thickness without restoring the V275
+    // swollen center. The middle remains waisted and ends remain asymmetric.
+    const widthProfile = 1 - .24 * middleWaist + .18 * leadingHook - .10 * counterTuck + .08 * foldedShoulder
+    const height = .018 + endTaper * (.225 + .048 * Math.sin(section * .31) + .066 * leadingHook + .030 * foldedShoulder) * widthProfile
+    const depth = .016 + endTaper * (.158 + .030 * Math.cos(section * .35) + .040 * leadingHook + .020 * foldedShoulder) * (.94 + .06 * shoulder)
+    const twist = .34 * Math.sin(t * 1.86) + .20 * t + .092 * Math.sin(t * 4.7) + .12 * leadingHook
 
-    // The primary crease is a bounded diagonal event around the middle third,
-    // not a tip-to-tip mouth seam. A displaced ridge carries the opposite side
-    // so the visible fold hierarchy reads as one continuous gesture.
-    const furrowAngle = Math.PI * .24 + .61 * t - twist + .15 * Math.sin(t * 2.4)
-    const secondaryFurrowAngle = furrowAngle + Math.PI * .56 + .19 * Math.sin(t * 1.72 + .52)
+    // The crease remains bounded rather than becoming a tip-to-tip mouth seam.
+    // V277 deepens the local fold and displaced ridge so light can describe the
+    // object as tactile mineral/tissue rather than a smooth cloth surface.
+    const furrowAngle = Math.PI * .24 + .64 * t - twist + .17 * Math.sin(t * 2.4)
+    const secondaryFurrowAngle = furrowAngle + Math.PI * .56 + .20 * Math.sin(t * 1.72 + .52)
     const ridgeAngle = furrowAngle + Math.PI * .76
-    const primaryWindow = Math.exp(-Math.pow((t + .02) / .50, 4)) * (.58 + .12 * Math.sin(t * 2.65 + .6))
-    const branchWindow = Math.exp(-Math.pow((t + .31) / .31, 2))
-    const ridgeWindow = .38 + .62 * Math.exp(-Math.pow((t - .12) / .62, 2))
+    const primaryWindow = Math.exp(-Math.pow((t + .02) / .48, 4)) * (.68 + .13 * Math.sin(t * 2.65 + .6))
+    const branchWindow = Math.exp(-Math.pow((t + .31) / .30, 2))
+    const ridgeWindow = .42 + .68 * Math.exp(-Math.pow((t - .12) / .60, 2))
 
     for (let radial = 0; radial < MEMORY_RENDER_RING_POINTS; radial += 1) {
       const radialU = radial / MEMORY_RENDER_RING_POINTS
@@ -116,34 +116,35 @@ function createLivingMemoryFold() {
       const furrowDistance = wrappedAngleDistance(angle, furrowAngle)
       const secondaryFurrowDistance = wrappedAngleDistance(angle, secondaryFurrowAngle)
       const ridgeDistance = wrappedAngleDistance(angle, ridgeAngle)
-      const furrow = Math.exp(-Math.pow(furrowDistance / .225, 2)) * Math.max(0, primaryWindow)
-      const secondaryFurrow = Math.exp(-Math.pow(secondaryFurrowDistance / .29, 2)) * (.12 + .11 * shoulder) * branchWindow
-      const ridge = Math.exp(-Math.pow(ridgeDistance / .39, 2)) * ridgeWindow
+      const furrow = Math.exp(-Math.pow(furrowDistance / .215, 2)) * Math.max(0, primaryWindow)
+      const secondaryFurrow = Math.exp(-Math.pow(secondaryFurrowDistance / .275, 2)) * (.15 + .13 * shoulder) * branchWindow
+      const ridge = Math.exp(-Math.pow(ridgeDistance / .36, 2)) * ridgeWindow
 
       const dominantMass = 1
-        + .19 * Math.cos(angle - furrowAngle - 1.00)
-        + .070 * t * Math.sin(angle + .36)
-        + .055 * Math.sin(angle * 3 + t * 2.30)
-        + .026 * Math.cos(angle * 5 - t * 3.05)
-        + .065 * leadingHook * Math.cos(angle + .18)
+        + .22 * Math.cos(angle - furrowAngle - 1.00)
+        + .082 * t * Math.sin(angle + .36)
+        + .070 * Math.sin(angle * 3 + t * 2.30)
+        + .034 * Math.cos(angle * 5 - t * 3.05)
+        + .080 * leadingHook * Math.cos(angle + .18)
       const tissue = 1
-        + .033 * Math.sin(angle * 7 + section * .22)
-        + .020 * Math.cos(angle * 11 - section * .17)
-        + .010 * Math.sin(angle * 17 + section * .09)
-      const longitudinalRill = .013 * endTaper * Math.sin(section * 1.18 + angle * 5.35)
-        + .007 * endTaper * Math.cos(section * .54 - angle * 10.7)
-      const asymmetricFold = .050 * endTaper * Math.sin(angle - t * 3.10 + .72)
-        + .025 * endTaper * Math.sin(angle * 2.7 + t * 2.0)
-        + .016 * endTaper * t * Math.cos(angle * 4.0)
-        + .036 * leadingHook * Math.sin(angle - .12)
-      const ridgeLift = .050 * endTaper * ridge * (.72 + .28 * Math.sin(t * 3.0 + .35))
-      const pinch = Math.max(.66, 1 - .19 * furrow - .070 * secondaryFurrow)
+        + .062 * Math.sin(angle * 7 + section * .22)
+        + .034 * Math.cos(angle * 11 - section * .17)
+        + .016 * Math.sin(angle * 17 + section * .09)
+      const longitudinalRill = .022 * endTaper * Math.sin(section * 1.18 + angle * 5.35)
+        + .011 * endTaper * Math.cos(section * .54 - angle * 10.7)
+      const asymmetricFold = .068 * endTaper * Math.sin(angle - t * 3.10 + .72)
+        + .034 * endTaper * Math.sin(angle * 2.7 + t * 2.0)
+        + .021 * endTaper * t * Math.cos(angle * 4.0)
+        + .050 * leadingHook * Math.sin(angle - .12)
+        + .030 * foldedShoulder * Math.cos(angle + .75)
+      const ridgeLift = .078 * endTaper * ridge * (.72 + .28 * Math.sin(t * 3.0 + .35))
+      const pinch = Math.max(.58, 1 - .27 * furrow - .095 * secondaryFurrow)
 
       const localY = Math.cos(angle) * height * dominantMass * tissue * pinch + asymmetricFold + ridgeLift
-      const localZ = Math.sin(angle) * depth * (1 + .14 * ridge)
-        - furrow * depth * .24
-        - secondaryFurrow * depth * .08
-        + ridge * depth * .17
+      const localZ = Math.sin(angle) * depth * (1 + .20 * ridge)
+        - furrow * depth * .34
+        - secondaryFurrow * depth * .12
+        + ridge * depth * .24
         + longitudinalRill
 
       const y = centerY + localY * Math.cos(twist) - localZ * Math.sin(twist)
@@ -171,12 +172,12 @@ function createLivingMemoryFold() {
   const startCap = positions.length / 3
   const start = sectionCenters[0]
   positions.push(start.x, start.y, start.z)
-  colors.push(.095, .105, .075)
+  colors.push(.11, .105, .070)
   uvs.push(.5, 0)
   const endCap = positions.length / 3
   const end = sectionCenters[sectionCenters.length - 1]
   positions.push(end.x, end.y, end.z)
-  colors.push(.115, .120, .080)
+  colors.push(.13, .115, .070)
   uvs.push(.5, 1)
 
   for (let radial = 0; radial < MEMORY_RENDER_RING_POINTS; radial += 1) {
@@ -200,7 +201,7 @@ function createLivingMemoryFold() {
   geometry.userData.focusLiteralPixelRepair = 'v272-no-crystal-crown-no-card-stack'
   geometry.userData.focusSilhouetteRule = 'one-coherent-memory-phenomenon-not-discrete-objects'
   geometry.userData.focusSurfaceDensity = `${MEMORY_RENDER_SECTIONS}x${MEMORY_RENDER_RING_POINTS}-continuous-tactile-surface`
-  geometry.userData.focusLiteralPixelRefinement = 'v276-long-s-curve-slim-variable-cross-section-local-fold-no-boulder-no-mouth'
+  geometry.userData.focusLiteralPixelRefinement = 'v277-sculptural-tactile-weathered-fold-no-boulder-no-cloth-no-mouth'
   return geometry
 }
 
