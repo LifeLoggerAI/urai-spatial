@@ -39,14 +39,15 @@ test('Life Map selection routing cannot let stale overview state cancel the jour
   assert.match(scene, /setPhase\("approach"\)/)
 })
 
-test('Focus formation stays grounded in the authored chamber and current V272 fold while Replay preserves readable organic-edged media', () => {
+test('Focus formation stays grounded in the authored chamber and current connected memory fracture while Replay preserves readable organic-edged media', () => {
   assert.match(focus, /V250 convergence authority: the selected living-memory manifestation owns the/)
   assert.match(focus, /function FocusSanctuaryGround\(/)
   assert.match(focus, /focus-v251-grounded-living-memory-manifestation/)
   assert.match(focus, /focus-authored-living-memory-fold-/)
   assert.match(focus, /v272-single-connected-living-memory-fold/)
   assert.match(geology, /focusMemoryRole = 'v272-single-connected-living-memory-fold'/)
-  assert.match(geology, /focusSilhouetteRule = 'one-coherent-memory-phenomenon-not-discrete-objects'/)
+  assert.match(geology, /focusSilhouetteRule = 'ground-held-fracture-not-portable-object'/)
+  assert.match(geology, /focusVisualAuthority = 'v292-sanctuary-memory-fracture'/)
   assert.doesNotMatch(focus, /focus-authored-fractured-stratum-/)
   assert.doesNotMatch(geology, /v269-living-luminous-memory-lamella|v271-interlocked-volumetric-memory-facet/)
   assert.match(focus, /focus-retired-procedural-vault/)
