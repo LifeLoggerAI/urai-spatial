@@ -23,8 +23,13 @@ import * as THREE from 'three'
 // body taper. V280 removes that head-like mass, deepens the middle waist, increases
 // true three-dimensional S displacement, strengthens the tucked counter-end and
 // concentrates the crease/ridge hierarchy around one asymmetric central knot.
-// The object stays one watertight phenomenon; it does not become a rock, sheet,
-// mouth, shell, creature, collectible or generic game pickup.
+// V280 remained too horizontally smooth in literal pixels: its two tapered ends
+// still read as nose/head and tail. V281 therefore makes the fold itself—not the
+// taper—the identity. It introduces two separated tension waists around a dominant
+// central knot, a lifted inward leading curl, a down/back counter fold, a much
+// stronger screen-space vertical gesture and greater asymmetric cross-section
+// rotation. The result remains one watertight phenomenon rather than a creature,
+// ribbon, rock, shell, collectible or generic game pickup.
 //
 // The form must read as one held memory phenomenon. It must not regress into a
 // crystal crown/shard cluster, boulder, sphere/orb, flower, portal, ring, cage,
@@ -77,66 +82,91 @@ function createLivingMemoryFold() {
     const endTaper = Math.pow(Math.max(0, Math.sin(u * Math.PI)), .98)
     const shoulder = Math.pow(Math.max(0, Math.sin(u * Math.PI)), .58)
     const detailWindow = .24 + .76 * endTaper
-    const leadingHook = Math.exp(-Math.pow((t + .72) / .20, 2))
-    const counterTuck = Math.exp(-Math.pow((t - .68) / .24, 2))
-    const middleWaist = Math.exp(-Math.pow((t - .02) / .29, 2))
-    const foldedShoulder = Math.exp(-Math.pow((t + .25) / .27, 2))
-    const spineKnot = Math.exp(-Math.pow((t + .08) / .20, 2))
-    const counterShoulder = Math.exp(-Math.pow((t - .34) / .23, 2))
 
-    // V280 moves the silhouette through space instead of building identity out of
-    // end mass. The leading side is a lean lifted tip; the counter side folds down
-    // and back. The stronger compound curve remains readable in portrait without
-    // turning either end into a head or tail.
-    const centerX = t * 1.30 + .185 * Math.sin(t * 2.62) + .074 * Math.sin(t * 5.55)
-    const centerY = -.62
-      + .215 * Math.sin(t * 1.94 + .30)
-      + .112 * Math.sin(t * 4.25 - .24)
-      - .082 * t
-      + .18 * leadingHook
-      - .255 * counterTuck
-      + .070 * foldedShoulder
-      + .055 * spineKnot
-      - .038 * counterShoulder
+    // V281 uses spatial posture rather than end mass to distinguish the ends.
+    const leadingCurl = Math.exp(-Math.pow((t + .73) / .19, 2))
+    const leadingWaist = Math.exp(-Math.pow((t + .37) / .18, 2))
+    const spineKnot = Math.exp(-Math.pow((t + .04) / .18, 2))
+    const counterWaist = Math.exp(-Math.pow((t - .34) / .18, 2))
+    const counterFold = Math.exp(-Math.pow((t - .58) / .20, 2))
+    const counterTuck = Math.exp(-Math.pow((t - .78) / .17, 2))
+    const foldedShoulder = Math.exp(-Math.pow((t + .20) / .23, 2))
+
+    // Screen-space posture is intentionally pronounced: lifted curl -> tension
+    // valley -> dominant knot -> second tension valley -> tucked/down-back end.
+    // This breaks the smooth body line that caused V280's slug/fish read.
+    const centerX = t * 1.24
+      + .135 * Math.sin(t * 2.70)
+      + .052 * Math.sin(t * 6.10)
+      - .055 * leadingCurl
+      - .045 * counterTuck
+    const centerY = -.66
+      + .095 * Math.sin(t * 2.20 + .28)
+      + .045 * Math.sin(t * 5.10 - .18)
+      + .305 * leadingCurl
+      - .145 * leadingWaist
+      + .245 * spineKnot
+      - .185 * counterWaist
+      - .105 * counterFold
+      - .285 * counterTuck
     const centerZ = -.10
-      + .265 * Math.sin(t * 1.68 - .18)
-      + .105 * Math.sin(t * 4.45 + .12)
-      + .075 * leadingHook
-      - .185 * counterTuck
-      + .072 * spineKnot
+      + .205 * Math.sin(t * 1.82 - .18)
+      + .082 * Math.sin(t * 4.90 + .16)
+      + .165 * leadingCurl
+      - .095 * leadingWaist
+      + .145 * spineKnot
+      + .085 * counterWaist
+      - .205 * counterFold
+      - .145 * counterTuck
     sectionCenters.push(new THREE.Vector3(centerX, centerY, centerZ))
 
-    // Keep a compact sculptural section, but pinch the center more decisively and
-    // shift useful mass into the asymmetric knot. This breaks the continuous slug-
-    // body read while preserving a single closed, tensioned phenomenon.
-    const widthProfile = 1 - .36 * middleWaist + .035 * leadingHook - .14 * counterTuck + .055 * foldedShoulder + .17 * spineKnot - .050 * counterShoulder
-    const height = .016 + endTaper * (
-      .198
-      + .026 * Math.sin(t * 2.45 - .30)
-      + .010 * leadingHook
-      + .024 * foldedShoulder
-      + .068 * spineKnot
-      - .020 * counterShoulder
+    // Two pronounced waists bracket the central knot. The knot owns the mass;
+    // neither end can become a head/body anchor. Depth stays substantial so the
+    // stronger silhouette does not collapse into a ribbon or draped membrane.
+    const widthProfile = Math.max(.43,
+      1
+      - .40 * leadingWaist
+      - .38 * counterWaist
+      - .10 * counterFold
+      + .34 * spineKnot
+      + .08 * foldedShoulder
+      - .08 * counterTuck)
+    const height = .015 + endTaper * (
+      .178
+      + .024 * Math.sin(t * 2.55 - .26)
+      - .012 * leadingCurl
+      + .040 * foldedShoulder
+      + .115 * spineKnot
+      - .018 * counterFold
+      - .024 * counterTuck
     ) * widthProfile
     const depth = .016 + endTaper * (
-      .188
-      + .025 * Math.cos(t * 2.10 + .22)
-      + .006 * leadingHook
-      + .017 * foldedShoulder
-      + .078 * spineKnot
-      - .016 * counterShoulder
-    ) * (.95 + .05 * shoulder)
-    const twist = .43 * Math.sin(t * 1.86) + .24 * t + .115 * Math.sin(t * 4.7) + .035 * leadingHook + .075 * spineKnot - .045 * counterTuck
+      .184
+      + .023 * Math.cos(t * 2.18 + .20)
+      + .018 * leadingCurl
+      + .026 * foldedShoulder
+      + .105 * spineKnot
+      + .016 * counterWaist
+      - .018 * counterTuck
+    ) * (.94 + .06 * shoulder)
+    const twist = .50 * Math.sin(t * 1.90)
+      + .29 * t
+      + .145 * Math.sin(t * 4.75)
+      + .18 * leadingCurl
+      + .34 * spineKnot
+      - .20 * counterWaist
+      - .30 * counterFold
+      - .14 * counterTuck
 
-    // The primary crease is bounded and one-sided around the central knot. V280
-    // makes that hierarchy more legible locally while keeping the opposite surface
-    // subordinate, avoiding a bilateral mouth or a continuous ribbon centerline.
-    const furrowAngle = Math.PI * .22 + .70 * t - twist + .20 * Math.sin(t * 2.4)
-    const secondaryFurrowAngle = furrowAngle + Math.PI * .61 + .22 * Math.sin(t * 1.72 + .52)
-    const ridgeAngle = furrowAngle + Math.PI * .73
-    const primaryWindow = Math.exp(-Math.pow((t + .04) / .34, 4)) * (.86 + .10 * Math.sin(t * 2.65 + .6))
-    const branchWindow = Math.exp(-Math.pow((t + .30) / .22, 2))
-    const ridgeWindow = .24 + .84 * Math.exp(-Math.pow((t - .01) / .40, 2))
+    // One oblique crease/ridge system crosses the central knot and turns with the
+    // fold. A small subordinate branch exists only on the leading shoulder; there
+    // is no bilateral seam that can become a mouth.
+    const furrowAngle = Math.PI * .18 + .82 * t - twist + .26 * Math.sin(t * 2.55)
+    const secondaryFurrowAngle = furrowAngle + Math.PI * .64 + .18 * Math.sin(t * 1.85 + .48)
+    const ridgeAngle = furrowAngle + Math.PI * .70
+    const primaryWindow = Math.exp(-Math.pow((t + .02) / .31, 4)) * (.91 + .07 * Math.sin(t * 2.8 + .5))
+    const branchWindow = Math.exp(-Math.pow((t + .28) / .19, 2))
+    const ridgeWindow = .20 + .98 * Math.exp(-Math.pow((t + .01) / .34, 2))
 
     for (let radial = 0; radial < MEMORY_RENDER_RING_POINTS; radial += 1) {
       const radialU = radial / MEMORY_RENDER_RING_POINTS
@@ -144,42 +174,44 @@ function createLivingMemoryFold() {
       const furrowDistance = wrappedAngleDistance(angle, furrowAngle)
       const secondaryFurrowDistance = wrappedAngleDistance(angle, secondaryFurrowAngle)
       const ridgeDistance = wrappedAngleDistance(angle, ridgeAngle)
-      const furrow = Math.exp(-Math.pow(furrowDistance / .178, 2)) * Math.max(0, primaryWindow)
-      const secondaryFurrow = Math.exp(-Math.pow(secondaryFurrowDistance / .255, 2)) * (.085 + .080 * shoulder) * branchWindow
-      const ridge = Math.exp(-Math.pow(ridgeDistance / .305, 2)) * ridgeWindow
+      const furrow = Math.exp(-Math.pow(furrowDistance / .166, 2)) * Math.max(0, primaryWindow)
+      const secondaryFurrow = Math.exp(-Math.pow(secondaryFurrowDistance / .250, 2)) * (.070 + .070 * shoulder) * branchWindow
+      const ridge = Math.exp(-Math.pow(ridgeDistance / .285, 2)) * ridgeWindow
 
       const dominantMass = 1
-        + .22 * Math.cos(angle - furrowAngle - 1.00)
-        + .076 * t * Math.sin(angle + .36)
-        + .050 * Math.sin(angle * 3 + t * 2.30)
-        + .026 * Math.cos(angle * 5 - t * 3.05)
-        + .018 * leadingHook * Math.cos(angle + .18)
-        + .100 * spineKnot * Math.cos(angle - ridgeAngle + .20)
+        + .24 * Math.cos(angle - furrowAngle - .96)
+        + .068 * t * Math.sin(angle + .31)
+        + .055 * Math.sin(angle * 3 + t * 2.40)
+        + .028 * Math.cos(angle * 5 - t * 3.10)
+        + .030 * leadingCurl * Math.cos(angle - .40)
+        + .145 * spineKnot * Math.cos(angle - ridgeAngle + .15)
+        - .030 * counterFold * Math.sin(angle + .25)
       const tissue = 1
         + detailWindow * .036 * Math.sin(angle * 7 + t * 3.2)
         + detailWindow * .020 * Math.cos(angle * 11 - t * 2.4)
         + detailWindow * .010 * Math.sin(angle * 17 + t * 1.8)
       const longitudinalRill = detailWindow * .010 * endTaper * Math.sin(t * 5.2 + angle * 4.5)
         + detailWindow * .005 * endTaper * Math.cos(t * 3.1 - angle * 8.2)
-      const asymmetricFold = .044 * endTaper * Math.sin(angle - t * 3.10 + .72)
-        + .023 * endTaper * Math.sin(angle * 2.7 + t * 2.0)
-        + .015 * endTaper * t * Math.cos(angle * 4.0)
-        + .008 * leadingHook * Math.sin(angle - .12)
-        + .020 * foldedShoulder * Math.cos(angle + .75)
-        + .036 * spineKnot * Math.sin(angle - ridgeAngle - .18)
-        - .012 * counterTuck * Math.cos(angle + .38)
-      const ridgeLift = .092 * endTaper * ridge * (.72 + .28 * Math.sin(t * 3.0 + .35))
-      const creaseSink = .055 * endTaper * furrow * (1 + .48 * spineKnot)
-      const pinch = Math.max(.51, 1 - .35 * furrow - .050 * secondaryFurrow)
+      const asymmetricFold = .048 * endTaper * Math.sin(angle - t * 3.20 + .70)
+        + .024 * endTaper * Math.sin(angle * 2.7 + t * 2.1)
+        + .016 * endTaper * t * Math.cos(angle * 4.0)
+        + .024 * leadingCurl * Math.sin(angle - .35)
+        + .030 * foldedShoulder * Math.cos(angle + .68)
+        + .058 * spineKnot * Math.sin(angle - ridgeAngle - .14)
+        - .024 * counterFold * Math.cos(angle + .42)
+        - .018 * counterTuck * Math.sin(angle + .20)
+      const ridgeLift = .108 * endTaper * ridge * (.72 + .28 * Math.sin(t * 3.15 + .33))
+      const creaseSink = .066 * endTaper * furrow * (1 + .62 * spineKnot)
+      const pinch = Math.max(.47, 1 - .39 * furrow - .045 * secondaryFurrow)
 
       const localY = Math.cos(angle) * height * dominantMass * tissue * pinch
         + asymmetricFold
         + ridgeLift
         - creaseSink
-      const localZ = Math.sin(angle) * depth * (1 + .24 * ridge + .13 * spineKnot)
-        - furrow * depth * .46
-        - secondaryFurrow * depth * .060
-        + ridge * depth * .30
+      const localZ = Math.sin(angle) * depth * (1 + .28 * ridge + .17 * spineKnot)
+        - furrow * depth * .50
+        - secondaryFurrow * depth * .052
+        + ridge * depth * .35
         + longitudinalRill
 
       const y = centerY + localY * Math.cos(twist) - localZ * Math.sin(twist)
@@ -236,7 +268,9 @@ function createLivingMemoryFold() {
   geometry.userData.focusLiteralPixelRepair = 'v272-no-crystal-crown-no-card-stack'
   geometry.userData.focusSilhouetteRule = 'one-coherent-memory-phenomenon-not-discrete-objects'
   geometry.userData.focusSurfaceDensity = `${MEMORY_RENDER_SECTIONS}x${MEMORY_RENDER_RING_POINTS}-continuous-tactile-surface`
+  // Preserve the tested V280 baseline marker as lineage while V281 is literally evaluated.
   geometry.userData.focusLiteralPixelRefinement = 'v280-lean-leading-tip-deep-waist-3d-s-gesture-tucked-counter-end-local-asymmetric-knot'
+  geometry.userData.focusLiteralPixelIteration = 'v281-dominant-central-fold-dual-tension-waists-lifted-curl-downback-tuck-oblique-ridge'
   return geometry
 }
 
