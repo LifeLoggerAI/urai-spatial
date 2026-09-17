@@ -37,6 +37,7 @@ const receipt = {
       'reduced-motion Focus rendering',
       'semantic no-WebGL Focus fallback',
       'Focus -> Replay -> Focus -> Life Map route continuity',
+      'Replay arrival after visible render-ready spatial output',
     ],
     doesNotProve: [
       'Life Map -> Focus camera approach choreography',
@@ -90,18 +91,15 @@ const JOURNEY_SOURCE_VISUAL_ABORTS = new Set([
   '/assets/urai/final/tier2/focus/focus-memory-chamber-desktop.svg',
   '/assets/urai/final/tier2/replay/replay-cinematic-stage-desktop.svg',
   '/assets/urai/final/tier2/life-map/lifemap-galaxy-field-desktop.svg',
-  '/assets/urai/generated/models/replay-memory-environment-v1.glb',
-  '/assets/urai/final/manifests/v2-asset-factory-spatial-handoff.json',
-  '/assets/urai/final/manifests/v3-asset-factory-spatial-handoff.json',
 ])
 
 function blockingFailedRequests(failedRequests, { allowJourneySourceVisualAbort = false } = {}) {
   return failedRequests.filter((request) => {
     // Next.js can abort chunks/RSC resources after an intentional client route
     // commits. Preserve every failure in diagnostics. The only non-framework
-    // exceptions are the exact source-page visual assets listed above, and those
-    // are permitted only in the full journey proof where the five path states are
-    // independently verified. Static/direct captures still fail on these assets.
+    // exceptions are exact source-page presentation assets that are not required
+    // to establish the rendered Replay spatial scene. Required Replay GLB and
+    // canonical asset manifests are never waived by this journey predicate.
     let requestUrl = null
     try { requestUrl = new URL(request.url) } catch { requestUrl = null }
     const expectedNavigationAbort = request.failure === 'net::ERR_ABORTED' && Boolean(requestUrl) && (
@@ -290,8 +288,29 @@ async function captureJourney(browser) {
       && node?.getAttribute('data-manifest-id') === 'replay-recovery-thread'
       && node?.getAttribute('data-star-id') === 'quiet-reset'
   }, null, { timeout: 45_000 })
+  await page.waitForFunction(() => {
+    const nodes = [...document.querySelectorAll('[data-testid="cinematic-replay-client"]')]
+    const node = nodes.find((candidate) => {
+      const style = getComputedStyle(candidate)
+      const rect = candidate.getBoundingClientRect()
+      return style.display !== 'none' && style.visibility !== 'hidden' && Number.parseFloat(style.opacity || '1') > 0.02
+        && rect.width > 100 && rect.height > 100
+    })
+    const canvas = node?.querySelector('canvas')
+    if (!(canvas instanceof HTMLCanvasElement)) return false
+    const canvasStyle = getComputedStyle(canvas)
+    const canvasRect = canvas.getBoundingClientRect()
+    return node?.getAttribute('data-replay-render-ready') === 'true'
+      && canvasStyle.display !== 'none'
+      && canvasStyle.visibility !== 'hidden'
+      && Number.parseFloat(canvasStyle.opacity || '1') > 0.02
+      && canvasRect.width > 100 && canvasRect.height > 100
+      && canvasRect.bottom > 0 && canvasRect.right > 0
+      && canvasRect.top < innerHeight && canvasRect.left < innerWidth
+  }, null, { timeout: 45_000, polling: 50 })
   await waitWorldIdle(page)
-  await delay(700)
+  await waitFrames(page, 4)
+  await delay(250)
   await shot('replay-arrival')
 
   await page.keyboard.press('Escape')
