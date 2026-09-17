@@ -4,8 +4,8 @@
   "repository": "LifeLoggerAI/urai-spatial",
   "assetId": "ground-natural-canopy-v3",
   "canonicalPath": "urai-tier1/public/assets/urai/generated/models/ground-natural-canopy-v3.glb",
-  "bytes": 7804,
-  "sha256": "99573df9d41719621d057067155aa25ef0886afdf91c725b5f71e8b66a780d55",
+  "bytes": 7924,
+  "sha256": "1a347a2d7680f086e03a1686d380cd02cbd85a8856335597d13ca6c403a597a3",
   "source": "URAI self-authored deterministic static geometry; no third-party binary used",
   "fallback": "scanned-understory-remains-without-canopy",
   "license": "URAI Labs internal proprietary production asset",
@@ -20,5 +20,5 @@
   "optimizationVerified": true,
   "visualProofVerified": false,
   "exactHeadChecksPassed": false,
-  "notes": "Fail-closed rehearsal for the URAI self-authored Ground canopy candidate. Runtime route consumption and binary identity are bound; the canopy is isolated behind a no-canopy error boundary so scanned fern/rock understory and authored terrain remain available if the canopy asset fails. Promotion and visual approval remain false until successor exact-head proof and literal retained-pixel acceptance."
+  "notes": "Fail-closed rehearsal for the URAI self-authored Ground canopy candidate. Binary identity is rebound directly to GitHub blob 3b081f79ca2684f5deeea82bb8924e08e0688caf (7,924 bytes; SHA-256 1a347a2d7680f086e03a1686d380cd02cbd85a8856335597d13ca6c403a597a3). Runtime route consumption and the no-canopy understory fallback are bound. Promotion and visual approval remain false until successor exact-head proof and literal retained-pixel acceptance."
 }

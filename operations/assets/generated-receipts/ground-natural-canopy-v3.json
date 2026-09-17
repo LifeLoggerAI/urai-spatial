@@ -2,12 +2,15 @@
   "schemaVersion": 1,
   "id": "ground-natural-canopy-v3",
   "fixedPath": "urai-tier1/public/assets/urai/generated/models/ground-natural-canopy-v3.glb",
-  "bytes": 7804,
-  "sha256": "99573df9d41719621d057067155aa25ef0886afdf91c725b5f71e8b66a780d55",
+  "bytes": 7924,
+  "sha256": "1a347a2d7680f086e03a1686d380cd02cbd85a8856335597d13ca6c403a597a3",
   "measured": {
     "triangleCount": 270,
     "drawCalls": 2,
-    "meshes": ["organic_branched_trunk", "asymmetric_clustered_canopy"]
+    "meshes": [
+      "organic_branched_trunk",
+      "asymmetric_clustered_canopy"
+    ]
   },
   "requiredCompression": "compact-static-glb",
   "fallback": "scanned-understory-remains-without-canopy",
@@ -15,5 +18,6 @@
   "license": "URAI Labs internal proprietary production asset",
   "generatedBy": "URAI deterministic Ground canopy forge",
   "generatedAt": "2026-09-17T18:46:00-05:00",
-  "releaseState": "candidate-not-production-ready"
+  "releaseState": "candidate-not-production-ready",
+  "gitBlobSha": "3b081f79ca2684f5deeea82bb8924e08e0688caf"
 }
