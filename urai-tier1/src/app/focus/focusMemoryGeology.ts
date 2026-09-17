@@ -1,23 +1,21 @@
 import * as THREE from 'three'
 
-// V272 literal-pixel repair established the selected-memory manifestation as one
-// continuous, closed living-memory fold rather than cards, shards, a sphere, or a
-// generic game pickup. That lineage remains the semantic contract.
+// V272 established one connected living-memory phenomenon rather than cards, shards,
+// a sphere, or a generic pickup. V290 still read as a portable shoe/boat/shell. V291
+// buried its terminals, but literal desktop and phone pixels still collapsed into a
+// detached smooth arch / manta / ramp silhouette.
 //
-// V290 passed mechanical proof but literal desktop and phone pixels still read as a
-// small portable shoe / boat / shell-like object sitting on the sanctuary floor.
-// V291 removes the portable-object silhouette at the geometry source. Both terminals
-// now descend below the authored ground plane, the visible mass stretches into a
-// diagonal ground-fused seam, and the primary visual event becomes a deep longitudinal
-// furrow with broken asymmetric ridges rising out of the sanctuary instead of a closed
-// collectible-shaped outline. The memory remains one connected phenomenon, but its
-// visible boundary is deliberately incomplete because the ends disappear into place.
+// V292 removes the remaining object read by changing the visible topology from a raised
+// closed arch into a long, shallow sanctuary fracture. Most of the connected volume now
+// intersects the authored ground plane. Only irregular scar lips, broken mineral ridges,
+// and a dark central furrow remain above/at grade. Both ends continue below grade so the
+// eye cannot find a bow/stern, head/tail, shell edge, or collectible silhouette.
 //
-// The form must read as memory matter held by the world: grounded, scarred, irregular,
-// tactile and non-anatomical. It must not regress into a crystal crown, boulder, orb,
-// flower, portal, ring, shell/mouth, manta, tent, aircraft, animal, shoe, boat, bowl,
-// helmet, body-part silhouette, smooth blob, or generic pickup.
-const MEMORY_SECTIONS = 15
+// The form must read as memory pressure physically held by place: a weathered scar in
+// the sanctuary, not an object placed on top of it. It must not regress into a crystal
+// crown, boulder, orb, flower, portal, ring, shell/mouth, manta, tent, aircraft, animal,
+// shoe, boat, bowl, helmet, body-part silhouette, smooth blob, or generic pickup.
+const MEMORY_SECTIONS = 21
 const MEMORY_RING_POINTS = 12
 const MEMORY_SURFACE_DETAIL = 4
 const MEMORY_RENDER_SECTIONS = (MEMORY_SECTIONS - 1) * MEMORY_SURFACE_DETAIL + 1
@@ -28,24 +26,24 @@ function wrappedAngleDistance(a: number, b: number) {
 }
 
 function livingMemoryVertexColor(section: number, radial: number, t: number, furrow: number, ridge: number, burial: number) {
-  const deep = new THREE.Color().setRGB(.028, .040, .031)
-  const mineral = new THREE.Color().setRGB(.20, .25, .20)
-  const weathered = new THREE.Color().setRGB(.40, .30, .17)
-  const warm = new THREE.Color().setRGB(.62, .31, .09)
-  const litMineral = new THREE.Color().setRGB(.58, .52, .34)
-  const phase = .5 + .5 * Math.sin(section * .31 + radial * .37)
-  const strata = .5 + .5 * Math.sin(section * .86 + radial * .41)
+  const deep = new THREE.Color().setRGB(.018, .027, .022)
+  const mineral = new THREE.Color().setRGB(.145, .165, .128)
+  const weathered = new THREE.Color().setRGB(.30, .235, .135)
+  const warm = new THREE.Color().setRGB(.49, .235, .065)
+  const litMineral = new THREE.Color().setRGB(.43, .39, .25)
+  const phase = .5 + .5 * Math.sin(section * .27 + radial * .41)
+  const strata = .5 + .5 * Math.sin(section * .81 + radial * .37)
   const center = 1 - Math.min(1, Math.abs(t))
   const color = deep.clone()
-    .lerp(mineral, .48 + .18 * phase)
-    .lerp(weathered, .18 + .22 * center)
-  if (furrow > .18) color.lerp(deep, .30 + furrow * .34)
-  if (ridge > .24) color.lerp(litMineral, .16 + ridge * .18)
-  color.lerp(warm, .10 * strata * center + .08 * ridge)
-  color.lerp(deep, burial * .42)
-  color.r = Math.min(.78, color.r)
-  color.g = Math.min(.64, color.g)
-  color.b = Math.min(.42, color.b)
+    .lerp(mineral, .46 + .16 * phase)
+    .lerp(weathered, .14 + .18 * center)
+  if (furrow > .16) color.lerp(deep, .40 + furrow * .34)
+  if (ridge > .20) color.lerp(litMineral, .12 + ridge * .17)
+  color.lerp(warm, .065 * strata * center + .055 * ridge)
+  color.lerp(deep, burial * .52)
+  color.r = Math.min(.58, color.r)
+  color.g = Math.min(.46, color.g)
+  color.b = Math.min(.28, color.b)
   return color
 }
 
@@ -58,57 +56,56 @@ function createLivingMemoryFold() {
   for (let section = 0; section < MEMORY_RENDER_SECTIONS; section += 1) {
     const u = section / (MEMORY_RENDER_SECTIONS - 1)
     const t = THREE.MathUtils.lerp(-1, 1, u)
-    const endTaper = Math.pow(Math.max(0, Math.sin(u * Math.PI)), .78)
-    const terminalBurial = THREE.MathUtils.smoothstep(Math.abs(t), .56, 1)
-    const centralScar = Math.exp(-Math.pow((t + .07) / .30, 2))
-    const nearRidge = Math.exp(-Math.pow((t + .34) / .18, 2))
-    const farRidge = Math.exp(-Math.pow((t - .29) / .21, 2))
-    const brokenKnot = Math.exp(-Math.pow((t - .02) / .16, 2))
-    const detailWindow = .22 + .78 * endTaper
+    const endTaper = Math.pow(Math.max(0, Math.sin(u * Math.PI)), .70)
+    const terminalBurial = THREE.MathUtils.smoothstep(Math.abs(t), .62, 1)
+    const centralScar = Math.exp(-Math.pow((t + .05) / .34, 2))
+    const nearRidge = Math.exp(-Math.pow((t + .42) / .19, 2))
+    const farRidge = Math.exp(-Math.pow((t - .36) / .23, 2))
+    const brokenKnot = Math.exp(-Math.pow((t - .02) / .13, 2))
+    const fracturePulse = .5 + .5 * Math.sin(t * 13.2 + .7)
+    const detailWindow = .16 + .84 * endTaper
 
-    // A diagonal seam in x/z space. The visible ends are not terminals: they are
-    // buried continuations, so the eye reads an event in the ground rather than an
-    // isolated object with a nose/tail or bow/stern.
-    const centerX = 1.44 * t
-      + .13 * Math.sin(t * 3.30 + .20)
-      + .060 * Math.sin(t * 7.10 - .35)
-      - .08 * brokenKnot
-    const centerZ = -.42 * t
-      + .24 * Math.sin(t * 2.18 - .45)
-      + .095 * Math.sin(t * 5.30 + .70)
-      - .12 * centralScar
-    const centerY = -1.34
-      + .36 * centralScar
-      + .18 * nearRidge
-      + .11 * farRidge
-      + .08 * brokenKnot
-      + .07 * t * (1 - terminalBurial)
-      - .54 * terminalBurial
+    // Long diagonal fracture with no readable terminal silhouette. Its centerline
+    // remains essentially at sanctuary grade while the final thirds sink below it.
+    const centerX = 2.55 * t
+      + .20 * Math.sin(t * 3.15 + .18)
+      + .075 * Math.sin(t * 8.20 - .32)
+      - .055 * brokenKnot
+    const centerZ = -.58 * t
+      + .30 * Math.sin(t * 2.30 - .52)
+      + .11 * Math.sin(t * 5.70 + .63)
+      - .08 * centralScar
+    const centerY = -1.48
+      + .018 * Math.sin(t * 9.1)
+      + .028 * centralScar
+      + .018 * nearRidge
+      - .012 * farRidge
+      - .34 * terminalBurial
 
-    const height = .035 + endTaper * (
-      .095
-      + .21 * centralScar
-      + .10 * nearRidge
-      + .055 * farRidge
-      + .065 * brokenKnot
+    // V292 is intentionally shallow. Height no longer creates a closed arch; depth
+    // and longitudinal extent carry the shape while scar lips barely rise above grade.
+    const height = .010 + endTaper * (
+      .020
+      + .032 * centralScar
+      + .022 * nearRidge
+      + .015 * farRidge
+      + .018 * fracturePulse
     )
-    const depth = .050 + endTaper * (
-      .19
-      + .085 * centralScar
-      + .055 * nearRidge
-      + .035 * farRidge
+    const depth = .075 + endTaper * (
+      .13
+      + .045 * centralScar
+      + .030 * nearRidge
+      + .025 * farRidge
     )
-    const width = .50 + .18 * centralScar - .08 * farRidge
-    const twist = .30 * t
-      + .52 * Math.sin(t * 1.86 + .28)
-      + .18 * nearRidge
-      - .24 * farRidge
-      + .26 * brokenKnot
+    const twist = .18 * t
+      + .31 * Math.sin(t * 1.92 + .31)
+      + .12 * nearRidge
+      - .15 * farRidge
 
-    const furrowAngle = -.38 + .74 * t - twist + .18 * Math.sin(t * 3.1)
-    const ridgeAngle = furrowAngle + Math.PI * .78
-    const counterRidgeAngle = furrowAngle - Math.PI * .63
-    const scarWindow = .18 + .92 * centralScar + .30 * nearRidge
+    const furrowAngle = -.52 + .58 * t - twist + .14 * Math.sin(t * 3.4)
+    const ridgeAngle = furrowAngle + Math.PI * .72
+    const counterRidgeAngle = furrowAngle - Math.PI * .58
+    const scarWindow = .28 + .94 * centralScar + .28 * nearRidge + .16 * fracturePulse
 
     for (let radial = 0; radial < MEMORY_RENDER_RING_POINTS; radial += 1) {
       const radialU = radial / MEMORY_RENDER_RING_POINTS
@@ -116,40 +113,44 @@ function createLivingMemoryFold() {
       const furrowDistance = wrappedAngleDistance(angle, furrowAngle)
       const ridgeDistance = wrappedAngleDistance(angle, ridgeAngle)
       const counterRidgeDistance = wrappedAngleDistance(angle, counterRidgeAngle)
-      const furrow = Math.exp(-Math.pow(furrowDistance / .17, 2)) * scarWindow
-      const ridge = Math.exp(-Math.pow(ridgeDistance / .24, 2)) * (.30 + .78 * centralScar + .42 * nearRidge)
-      const counterRidge = Math.exp(-Math.pow(counterRidgeDistance / .30, 2)) * (.12 + .44 * farRidge)
+      const furrow = Math.exp(-Math.pow(furrowDistance / .16, 2)) * scarWindow
+      const ridge = Math.exp(-Math.pow(ridgeDistance / .20, 2)) * (.22 + .72 * centralScar + .48 * nearRidge)
+      const counterRidge = Math.exp(-Math.pow(counterRidgeDistance / .25, 2)) * (.10 + .42 * farRidge)
 
       const crag = 1
-        + detailWindow * .10 * Math.sin(angle * 3 + t * 5.8)
-        + detailWindow * .055 * Math.cos(angle * 5 - t * 4.1)
-        + detailWindow * .026 * Math.sin(angle * 9 + t * 2.6)
-      const asymmetry = .045 * endTaper * Math.sin(angle - t * 2.7 + .62)
-        + .025 * nearRidge * Math.sin(angle * 2.0 + .25)
-        - .020 * farRidge * Math.cos(angle * 3.0 - .55)
-      const localY = Math.cos(angle) * height * width * crag
-        + asymmetry
-        + .095 * ridge
-        + .045 * counterRidge
-        - .115 * furrow
+        + detailWindow * .13 * Math.sin(angle * 3 + t * 6.4)
+        + detailWindow * .070 * Math.cos(angle * 5 - t * 4.7)
+        + detailWindow * .032 * Math.sin(angle * 9 + t * 3.1)
+      const brokenEdge = detailWindow * (
+        .018 * Math.sin(angle * 7.0 + t * 11.0)
+        + .012 * Math.cos(angle * 11.0 - t * 7.0)
+      )
+      const localY = Math.cos(angle) * height * crag
+        + brokenEdge
+        + .054 * ridge
+        + .025 * counterRidge
+        - .092 * furrow
       const localZ = Math.sin(angle) * depth * crag
-        + .060 * ridge
-        - .045 * counterRidge
-        - .11 * furrow
+        + .040 * ridge
+        - .030 * counterRidge
+        - .095 * furrow
 
-      const edgeSink = terminalBurial * (.20 + .14 * (.5 + .5 * Math.sin(angle + t * 4.2)))
+      // Most of the underside is forced below grade, so there is no detached dark
+      // oval shadow or continuous lower contour for the eye to read as a portable form.
+      const undersideSink = Math.max(0, -Math.cos(angle)) * (.055 + .055 * endTaper)
+      const edgeSink = terminalBurial * (.22 + .11 * (.5 + .5 * Math.sin(angle + t * 4.6)))
       const x = centerX
-        + localZ * .42
-        + localY * .08
-        + .025 * ridge
+        + localZ * .34
+        + localY * .05
+        + .018 * ridge
       const y = centerY
         + localY
+        - undersideSink
         - edgeSink
-        - .035 * Math.abs(Math.sin(angle * 2.0 + t * 3.7)) * terminalBurial
       const z = centerZ
         + localZ
-        + localY * .16
-        - .035 * furrow
+        + localY * .10
+        - .045 * furrow
 
       positions.push(x, y, z)
       uvs.push(radialU, u)
@@ -173,11 +174,11 @@ function createLivingMemoryFold() {
 
   const startCap = positions.length / 3
   const endCap = startCap + 1
-  positions.push(-1.48, -1.93, .34)
-  colors.push(.020, .028, .022)
+  positions.push(-2.70, -1.98, .52)
+  colors.push(.012, .019, .015)
   uvs.push(.5, 0)
-  positions.push(1.45, -1.94, -.47)
-  colors.push(.020, .028, .022)
+  positions.push(2.67, -1.99, -.60)
+  colors.push(.012, .019, .015)
   uvs.push(.5, 1)
 
   for (let radial = 0; radial < MEMORY_RENDER_RING_POINTS; radial += 1) {
@@ -196,16 +197,14 @@ function createLivingMemoryFold() {
   geometry.computeBoundingBox()
   geometry.computeBoundingSphere()
 
-  // V272 lineage metadata remains stable for integration contracts; V291 is the
-  // current literal-pixel authority.
   geometry.userData.focusMemoryRole = 'v272-single-connected-living-memory-fold'
-  geometry.userData.focusMemoryTopology = 'closed-twisted-longitudinal-fold-with-deep-furrow'
+  geometry.userData.focusMemoryTopology = 'v292-ground-intersecting-longitudinal-fracture-with-deep-furrow'
   geometry.userData.focusMemoryEnergy = 'weathered-mineral-restrained-warm-cool-response'
   geometry.userData.focusLiteralPixelRepair = 'v272-no-crystal-crown-no-card-stack'
-  geometry.userData.focusSilhouetteRule = 'one-coherent-memory-phenomenon-not-discrete-objects'
+  geometry.userData.focusSilhouetteRule = 'ground-held-fracture-not-portable-object'
   geometry.userData.focusSurfaceDensity = `${MEMORY_RENDER_SECTIONS}x${MEMORY_RENDER_RING_POINTS}-continuous-tactile-surface`
-  geometry.userData.focusLiteralPixelSuccessorV291 = 'v291-ground-fused-memory-seam-submerged-terminals-nonportable-scar-ridges'
-  geometry.userData.focusVisualAuthority = 'v291-ground-fused-memory-seam'
+  geometry.userData.focusLiteralPixelSuccessorV292 = 'v292-shallow-ground-fracture-buried-ends-broken-scar-lips-no-closed-arch'
+  geometry.userData.focusVisualAuthority = 'v292-sanctuary-memory-fracture'
   return geometry
 }
 
