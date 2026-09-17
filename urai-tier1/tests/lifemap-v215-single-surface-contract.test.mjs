@@ -39,18 +39,18 @@ test('Life Map selection routing cannot let stale overview state cancel the jour
   assert.match(scene, /setPhase\("approach"\)/)
 })
 
-test('Focus formation stays grounded in the authored chamber and current connected CLOSED memory scar while Replay preserves readable organic-edged media', () => {
+test('Focus formation stays grounded in the authored chamber and current connected CLOSED memory fissure while Replay preserves readable organic-edged media', () => {
   assert.match(focus, /V250 convergence authority: the selected living-memory manifestation owns the/)
   assert.match(focus, /function FocusSanctuaryGround\(/)
   assert.match(focus, /focus-v251-grounded-living-memory-manifestation/)
   assert.match(focus, /focus-authored-living-memory-fold-/)
   assert.match(focus, /v272-single-connected-living-memory-fold/)
   assert.match(geology, /focusMemoryRole = 'v272-single-connected-living-memory-fold'/)
-  assert.match(geology, /focusSilhouetteRule = 'one-closed-ground-owned-scar-no-split-pair-no-portable-outline'/)
+  assert.match(geology, /focusSilhouetteRule = 'one-closed-ground-owned-fissure-no-split-pair-no-portable-outline'/)
   assert.match(geology, /focusMemoryTopology = 'v295-closed-ground-fused-scar-volume-with-buried-closure'/)
   assert.match(geology, /focusVisualAuthority = 'v295-sanctuary-memory-scar-volume'/)
-  assert.match(geology, /focusLiteralPixelSuccessorV298 = 'v298-narrow-short-deep-incision-broken-dominant-lip-counter-side-buried-no-panel'/)
-  assert.match(geology, /focusCurrentVisualAuthority = 'v298-narrow-broken-ground-held-memory-scar'/)
+  assert.match(geology, /focusLiteralPixelSuccessorV299 = 'v299-ground-grade-dark-mineral-fissure-readable-footprint-warm-broken-lip-no-blue-object'/)
+  assert.match(geology, /focusCurrentVisualAuthority = 'v299-ground-grade-dark-mineral-memory-fissure'/)
   assert.doesNotMatch(focus, /focus-authored-fractured-stratum-/)
   assert.doesNotMatch(geology, /v269-living-luminous-memory-lamella|v271-interlocked-volumetric-memory-facet/)
   assert.match(focus, /focus-retired-procedural-vault/)
