@@ -32,7 +32,8 @@ const routes = [
   { paths: ['/ascent', '/ascent/'], markers: [/Ascent|Life Map|Portal/i, /URAI/i] },
   {
     paths: ['/life-map', '/life-map/'],
-    markers: [/URAI Life Map/i, /step inside your private constellation/i, /urai-r3f-canonical-lifemap/i],
+    markers: [/URAI Life Map/i, /step inside your private constellation/i],
+    bundleMarkers: [/urai-r3f-canonical-lifemap/i],
   },
   {
     paths: ['/focus?memoryId=quiet-reset', '/focus/?memoryId=quiet-reset'],
@@ -98,13 +99,69 @@ const legacyRuntimePatterns = [
 
 const failures = []
 let checkCount = 0
+const scriptBodyCache = new Map()
 
 const normalizePath = (pathname) => {
   const value = pathname.replace(/\/+$/, '')
   return value || '/'
 }
 
-for (const { paths, markers, forbidden = [] } of routes) {
+const loadSameOriginScriptBodies = async (html, pageUrl) => {
+  const page = new URL(pageUrl)
+  const sources = [...html.matchAll(/<script\b[^>]*\bsrc=(['"])([^'"]+)\1/gi)].map((match) => match[2])
+  const bodies = []
+
+  for (const source of new Set(sources)) {
+    const scriptUrl = new URL(source, page)
+    if (scriptUrl.origin !== page.origin) continue
+
+    if (!scriptBodyCache.has(scriptUrl.href)) {
+      try {
+        const response = await fetch(scriptUrl, {
+          method: 'GET',
+          headers: { 'user-agent': 'urai-live-smoke/4.3', accept: 'application/javascript,text/javascript,*/*;q=0.8' },
+          redirect: 'follow',
+        })
+        scriptBodyCache.set(scriptUrl.href, response.ok ? await response.text() : '')
+      } catch {
+        scriptBodyCache.set(scriptUrl.href, '')
+      }
+    }
+
+    bodies.push(scriptBodyCache.get(scriptUrl.href) ?? '')
+  }
+
+  return bodies.join('\n')
+}
+
+const inspectStaleCopy = (body, requestedPath) => {
+  if (normalizePath(requestedPath) !== '/api/system/deploy-proof') {
+    return {
+      stale: staleFallbackPatterns.find((pattern) => pattern.test(body)),
+      deployProofContractInvalid: false,
+    }
+  }
+
+  try {
+    const proof = JSON.parse(body)
+    const declaredForbiddenCopy = Array.isArray(proof?.forbiddenLiveCopy) ? proof.forbiddenLiveCopy : []
+    const deployProofContractInvalid = staleFallbackPatterns.some(
+      (pattern) => !declaredForbiddenCopy.some((value) => pattern.test(String(value))),
+    )
+    const staleScanProof = { ...proof, forbiddenLiveCopy: [] }
+    return {
+      stale: staleFallbackPatterns.find((pattern) => pattern.test(JSON.stringify(staleScanProof))),
+      deployProofContractInvalid,
+    }
+  } catch {
+    return {
+      stale: staleFallbackPatterns.find((pattern) => pattern.test(body)),
+      deployProofContractInvalid: true,
+    }
+  }
+}
+
+for (const { paths, markers, bundleMarkers = [], forbidden = [] } of routes) {
   for (const path of paths) {
     checkCount += 1
     const url = `${normalizedBase}${path}`
@@ -113,7 +170,7 @@ for (const { paths, markers, forbidden = [] } of routes) {
       const response = await fetch(url, {
         method: 'GET',
         headers: {
-          'user-agent': 'urai-live-smoke/4.2',
+          'user-agent': 'urai-live-smoke/4.3',
           accept: 'text/html,application/xhtml+xml,application/json,application/xml;q=0.9,*/*;q=0.8',
         },
         redirect: 'follow',
@@ -122,9 +179,11 @@ for (const { paths, markers, forbidden = [] } of routes) {
       const body = await response.text()
       const finalUrl = new URL(response.url)
       const hasExpectedContent = /<html|<body|__next|URAI|Urai|urai-spatial-deploy-proof/i.test(body)
-      const stale = staleFallbackPatterns.find((pattern) => pattern.test(body))
+      const { stale, deployProofContractInvalid } = inspectStaleCopy(body, requestedUrl.pathname)
       const legacyRuntime = legacyRuntimePatterns.find((pattern) => pattern.test(body))
       const missingMarker = markers.find((pattern) => !pattern.test(body))
+      const bundleBody = bundleMarkers.length > 0 ? await loadSameOriginScriptBodies(body, finalUrl) : ''
+      const missingBundleMarker = bundleMarkers.find((pattern) => !pattern.test(bundleBody))
       const forbiddenMarker = forbidden.find((pattern) => pattern.test(body))
       const pathMismatch = normalizePath(finalUrl.pathname) !== normalizePath(requestedUrl.pathname)
       const missingQuery = [...requestedUrl.searchParams.entries()].find(
@@ -141,7 +200,9 @@ for (const { paths, markers, forbidden = [] } of routes) {
         stale ||
         legacyRuntime ||
         missingMarker ||
+        missingBundleMarker ||
         forbiddenMarker ||
+        deployProofContractInvalid ||
         pathMismatch ||
         missingQuery ||
         liveCommitShaMissing
@@ -149,7 +210,8 @@ for (const { paths, markers, forbidden = [] } of routes) {
         failures.push(
           `${url} returned ${response.status} finalUrl=${response.url} expectedContent=${hasExpectedContent} ` +
             `stale=${stale?.source ?? 'no'} legacyRuntime=${legacyRuntime?.source ?? 'no'} ` +
-            `missing=${missingMarker?.source ?? 'none'} forbidden=${forbiddenMarker?.source ?? 'none'} ` +
+            `missing=${missingMarker?.source ?? 'none'} missingBundle=${missingBundleMarker?.source ?? 'none'} ` +
+            `forbidden=${forbiddenMarker?.source ?? 'none'} deployProofContractInvalid=${deployProofContractInvalid} ` +
             `pathMismatch=${pathMismatch} missingQuery=${missingQuery ? missingQuery.join('=') : 'none'} ` +
             `liveCommitShaMissing=${liveCommitShaMissing}`,
         )
@@ -169,5 +231,5 @@ if (failures.length > 0) {
 }
 
 console.log(
-  `URAI live smoke passed ${checkCount} custom-route checks with slash parity, route-specific fingerprints, legacy-runtime rejection, and deploy proof. requireLiveCommitSha=${requireLiveCommitSha} requireCustomDomain=${requireCustomDomain}`,
+  `URAI live smoke passed ${checkCount} custom-route checks with slash parity, route-specific fingerprints, client-bundle fingerprints, legacy-runtime rejection, and deploy proof. requireLiveCommitSha=${requireLiveCommitSha} requireCustomDomain=${requireCustomDomain}`,
 )
