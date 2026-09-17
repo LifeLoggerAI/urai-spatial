@@ -25,7 +25,26 @@ const currentPredicateCount = original.split(currentPredicate).length - 1
 if (currentPredicateCount !== 1 || original.includes(stalePredicate)) {
   throw new Error('Home state proof movement predicate is not bound exactly once to the current first-person authority')
 }
+
+// Headless Chromium has the Web Speech API surface but does not start an OS speech
+// engine, so SpeechSynthesisUtterance.onstart never fires. Runtime authority correctly
+// refuses to publish acoustic `speaking` until that onstart edge exists. Provide only the
+// missing transport edge in the generated CI proof: the product's real onstart -> Orb
+// state -> rendered clip path still has to execute. This fixture never changes runtime
+// source, never makes a provider request, and does not certify audible quality.
+const speechFixtureAnchor = 'window.__uraiObservedOrbStates = []'
+const speechFixtureCount = original.split(speechFixtureAnchor).length - 1
+if (speechFixtureCount !== 1) throw new Error('Home state proof device-speech fixture anchor is not unique')
+const speechFixture = `${speechFixtureAnchor}\n      window.__uraiProofSpeechTransport = 'deterministic-ci-device-speech-onstart-boundary-onend'\n      if (window.speechSynthesis) {\n        window.speechSynthesis.cancel = () => {}\n        window.speechSynthesis.speak = (utterance) => {\n          window.setTimeout(() => utterance.onstart?.(new Event('start')), 0)\n          window.setTimeout(() => utterance.onboundary?.({ charIndex: Math.min(8, utterance.text?.length ?? 0) }), 120)\n          window.setTimeout(() => utterance.onend?.(new Event('end')), 1200)\n        }\n      }`
+
+const lifecycleRecordAnchor = "const record = { id, pageErrors, passed: false, reducedMotion }"
+const lifecycleRecordCount = original.split(lifecycleRecordAnchor).length - 1
+if (lifecycleRecordCount !== 1) throw new Error('Home state proof Orb lifecycle receipt anchor is not unique')
+const lifecycleRecordWithFixture = "const record = { id, pageErrors, passed: false, reducedMotion, speechTransportFixture: 'deterministic-ci-device-speech-onstart-boundary-onend', audibleQualityCertified: false }"
+
 const derived = original
+  .replace(speechFixtureAnchor, speechFixture)
+  .replace(lifecycleRecordAnchor, lifecycleRecordWithFixture)
 
 await writeFile(generatedPath, derived, 'utf8')
 let result
@@ -55,8 +74,9 @@ if (result.status !== 0) {
     authority,
     derivedProof: {
       source: 'capture-home-state-proof.mjs',
-      replacement: 'none; canonical capture already carries current first-person movement authority',
-      reason: 'Home is cinematic and no longer owns embodied locomotion',
+      replacement: 'deterministic CI-only device speech transport supplies onstart/boundary/onend; runtime state/rendering remains authoritative',
+      reason: 'headless Chromium exposes Web Speech but does not start an OS speech engine; proof must not force runtime to fake acoustic speaking',
+      audibleQualityCertified: false,
     },
     exitStatus: result.status,
     signal: result.signal,
