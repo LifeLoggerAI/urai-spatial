@@ -51,15 +51,17 @@ import * as THREE from 'three'
 // V286 responds to retained V285 pixels. V285 removed the aircraft read but still
 // produced a crouched-creature silhouette: one swollen rear mass plus a smaller
 // projecting head/beak-like end. V286 therefore removes readable end-to-end anatomy.
-// Both terminals are bound back toward the central knot, separated primarily in
-// depth rather than screen-space length, and submerged behind a deeper crease valley.
 //
-// V287 responds to retained V286 pixels. V286 still read as a whale/slug-like
-// organism because one end remained directionally projected and a pale side patch
-// read as an eye/nostril. V287 removes the privileged front entirely: the longitudinal
-// centerline is folded through a compact asymmetric figure-eight path, both terminal
-// caps are submerged behind the visible mass, and internal negative-space/furrow
-// hierarchy owns the silhouette instead of a face/body/tail axis.
+// V287 removes V286's persistent whale/slug-like directional anatomy by folding the
+// centerline through a compact figure-eight and hiding the caps behind the mass. Its
+// retained pixels were still rejected because the centered opening and broad smooth
+// panels read as a seashell / rosebud / folded napkin.
+//
+// V288 breaks that petal/shell organization. The centerline is no longer radial or
+// neatly self-wrapped: it follows an uneven diagonal three-dimensional torque with
+// unequal thickness, cragged relief and an off-axis internal scar. Both terminal
+// regions are submerged in depth. The first read must be geological tension and an
+// internal valley—not flower petals, a shell lip, cloth, anatomy or a known object.
 //
 // The form must read as one held memory phenomenon. It must not regress into a
 // crystal crown/shard cluster, boulder, sphere/orb, flower, portal, ring, cage,
@@ -288,37 +290,47 @@ function createLivingMemoryFold() {
         + ridge * depth * .40
         + longitudinalRill
 
-      const y = centerY + localY * Math.cos(twist) - localZ * Math.sin(twist)
-      const z = centerZ + localY * Math.sin(twist) + localZ * Math.cos(twist)
-
-      // V287 central-knot remap. Instead of a projected longitudinal body, the
-      // section path crosses itself in depth. The terminal sections collapse behind
-      // the knot, which removes the persistent face/snount/tail hierarchy.
-      const terminalWeight = Math.pow(Math.abs(t), 2.7)
-      const foldAngle = t * 2.38 + .24 * Math.sin(t * 3.7) - .10 * spineKnot
-      const knotRadius = .31 + .095 * (1 - Math.abs(t)) + .055 * spineKnot - .035 * underFold
-      const pathX = knotRadius * Math.sin(foldAngle)
-        + .065 * Math.sin(foldAngle * 2.6 + .35)
+      // V288 torqued geological fold. No radial bud or shell aperture: the centerline
+      // moves diagonally through three dimensions, while local cross-sections gain
+      // uneven crag relief. Terminal regions collapse behind the visible scar mass.
+      const terminalWeight = Math.pow(Math.abs(t), 3.0)
+      const torque = t * 2.06 + .28 * Math.sin(t * 3.65 + .20)
+      const pathX = .31 * Math.sin(torque)
+        + .115 * Math.sin(t * 5.35 + .62)
+        + .055 * spineKnot
+        - .038 * counterWaist
         - .025 * underFold
-      const pathZ = .28 * Math.sin(foldAngle * 2.0 - .22)
-        + .13 * Math.cos(foldAngle + .35)
-        - .20 * terminalWeight
-        - .08 * underFold
-        + .06 * spineKnot
-      const collapse = 1 - .64 * terminalWeight
-      const v287X = pathX * collapse
-        + localZ * (.22 + .06 * spineKnot)
-        + .018 * Math.sin(angle * 3 + t * 2.1)
-      const v287Z = pathZ
-        + localZ * (.82 + .12 * underFold)
-        + .055 * localY
-      const v287Y = -.65
-        + localY * .90
-        + .095 * Math.sin(foldAngle + .72)
-        + .070 * spineKnot
-        - .072 * underFold
-        - .055 * terminalWeight
-      positions.push(v287X, v287Y, v287Z)
+      const pathY = -.65
+        + .165 * Math.sin(t * 3.15 - .35)
+        + .095 * Math.cos(t * 5.05 + .40)
+        + .085 * spineKnot
+        - .105 * underFold
+        - .055 * counterKnee
+      const pathZ = .205 * Math.cos(torque * 1.37 + .48)
+        + .145 * Math.sin(t * 4.62 - .18)
+        + .070 * leadingKnee
+        - .085 * counterKnee
+        - .125 * underFold
+      const terminalCollapse = 1 - .58 * terminalWeight
+      const crag = 1
+        + .115 * Math.sin(angle * 3 + t * 5.7)
+        + .072 * Math.cos(angle * 5 - t * 3.35)
+        + .035 * Math.sin(angle * 9 + t * 1.7)
+      const scarBias = 1 + .20 * ridge - .16 * furrow
+      const v288X = pathX * terminalCollapse
+        + localZ * .30 * crag
+        + localY * .12 * scarBias
+        + .028 * Math.sin(angle * 2.0 + t * 3.1)
+      const v288Y = pathY
+        + localY * (.74 + .12 * spineKnot) * crag
+        + localZ * .105
+        - .030 * terminalWeight
+      const v288Z = pathZ
+        + localZ * (.87 + .13 * underFold) * scarBias
+        + localY * .19
+        - .105 * returnCrease
+        - .16 * terminalWeight
+      positions.push(v288X, v288Y, v288Z)
       uvs.push(radialU, u)
       const color = livingMemoryVertexColor(section, radial, t, furrow, ridge, secondaryFurrow)
       colors.push(color.r, color.g, color.b)
@@ -341,14 +353,13 @@ function createLivingMemoryFold() {
   const startCap = positions.length / 3
   const endCap = startCap + 1
 
-  // V287 cap centers are deliberately submerged behind the central visible mass.
-  // They remain distinct in depth so the topology stays closed without creating
-  // bright readable endpoints that can become eyes, snouts or tails.
-  positions.push(-.055, -.735, -.31)
-  colors.push(.09, .075, .040)
+  // V288 keeps both caps behind the visible diagonal fold so they cannot become
+  // eyes, petal centers, shell lips, snouts or tails.
+  positions.push(-.035, -.785, -.34)
+  colors.push(.085, .070, .038)
   uvs.push(.5, 0)
-  positions.push(.045, -.755, -.36)
-  colors.push(.10, .080, .042)
+  positions.push(.025, -.735, -.39)
+  colors.push(.095, .075, .040)
   uvs.push(.5, 1)
 
   for (let radial = 0; radial < MEMORY_RENDER_RING_POINTS; radial += 1) {
@@ -380,6 +391,7 @@ function createLivingMemoryFold() {
   geometry.userData.focusLiteralPixelSuccessorV285 = 'v285-yawed-depth-knot-foreshortened-returns-lowered-fins-no-aircraft'
   geometry.userData.focusLiteralPixelSuccessorV286 = 'v286-bound-terminal-knot-no-head-tail-anatomy-deep-internal-valley'
   geometry.userData.focusLiteralPixelSuccessorV287 = 'v287-self-crossing-central-knot-submerged-caps-no-directional-anatomy'
+  geometry.userData.focusLiteralPixelSuccessorV288 = 'v288-diagonal-torqued-geological-fold-cragged-scar-no-petal-shell'
   return geometry
 }
 
