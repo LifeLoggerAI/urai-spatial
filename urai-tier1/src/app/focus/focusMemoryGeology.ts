@@ -1,79 +1,22 @@
 import * as THREE from 'three'
 
-// V272 literal-pixel repair of the selected-memory manifestation.
+// V272 literal-pixel repair established the selected-memory manifestation as one
+// continuous, closed living-memory fold rather than cards, shards, a sphere, or a
+// generic game pickup. That lineage remains the semantic contract.
 //
-// V271 proved that real volume removes the predecessor's paper-card silhouette,
-// but retained pixels still read as five separate low-poly cyan crystal shards.
-// V272 removes that object language at the geometry source. The selected Memory
-// Star now resolves into one continuous, closed, asymmetrical living-memory fold:
-// a tactile mineral/tissue volume with a deep longitudinal furrow, curved
-// centerline, changing cross-section, restrained physical energy and enough
-// continuous surface density to avoid a generic low-poly game-artifact read.
+// V290 passed mechanical proof but literal desktop and phone pixels still read as a
+// small portable shoe / boat / shell-like object sitting on the sanctuary floor.
+// V291 removes the portable-object silhouette at the geometry source. Both terminals
+// now descend below the authored ground plane, the visible mass stretches into a
+// diagonal ground-fused seam, and the primary visual event becomes a deep longitudinal
+// furrow with broken asymmetric ridges rising out of the sanctuary instead of a closed
+// collectible-shaped outline. The memory remains one connected phenomenon, but its
+// visible boundary is deliberately incomplete because the ends disappear into place.
 //
-// V273 removed the upright-rock / flat-cap read. V274 removed the bilateral
-// clam/mouth seam. V275 grounded the form and warmed the palette, but literal
-// desktop/mobile pixels still collapsed into a ribbed stone/lump silhouette.
-// V276 fixed that silhouette failure with a materially longer S-curve and unequal
-// ends. V277 added tactile relief and stronger weathering. V278 added a localized
-// knot and deeper one-sided crease, but exact pixels still broadened into a soft
-// manta/draped-membrane read and the counter-end broke into bead-like lobes.
-// V279 narrowed the section and removed the manta/bead regression, but exact
-// desktop/phone pixels still read as a soft slug/fish because the leading shoulder
-// carried too much rounded mass and the centerline stayed too close to an animal
-// body taper. V280 removed that head-like mass, deepened the middle waist, increased
-// true three-dimensional S displacement, strengthened the tucked counter-end and
-// concentrated the crease/ridge hierarchy around one asymmetric central knot.
-// V281 made the fold rather than the taper the identity, but still read too much
-// like a smooth ribbon/wave. V282 compressed the terminal curls into short tucks
-// and added volumetric knees, yet exact pixels still read as a draped tent/fabric
-// crest or folded manta, especially in portrait.
-//
-// V283 deliberately removes that broad sheet silhouette. The whole manifestation is
-// shorter, thicker and more compact. Its dominant mass is moved off-center, both
-// terminals retain real section thickness, and a distinct tucked underfold creates
-// readable three-dimensional return volume rather than a thin wing/flap. The two
-// ends remain unequal in posture and depth without becoming head/tail anatomy.
-//
-// V284 responds to retained V283 pixels, which still flattened into a low manta /
-// draped-crest read at desktop and portrait scale. It compresses the screen-space
-// span again, folds both terminals inward, deepens the front/back S return, makes the
-// underfold a true valley instead of a sheet edge, and lifts only the counter knee so
-// the silhouette reads as one twisted held-memory sculpture rather than two wings.
-//
-// V285 responds to retained V284 pixels. V284 removed the manta but overshot into
-// an origami/paper-airplane/jet silhouette because both pointed terminals stayed
-// readable on one horizontal screen plane and the lifted folds read as fins. V285
-// preserves the same connected topology and crease authority, but turns the whole
-// longitudinal body materially into depth, foreshortens both returns unequally,
-// lowers the vertical fin amplitude, and separates the terminal depth signs so the
-// object reads as one compact twisted mineral/tissue knot rather than a vehicle.
-//
-// V286 responds to retained V285 pixels. V285 removed the aircraft read but still
-// produced a crouched-creature silhouette: one swollen rear mass plus a smaller
-// projecting head/beak-like end. V286 therefore removes readable end-to-end anatomy.
-//
-// V287 removes V286's persistent whale/slug-like directional anatomy by folding the
-// centerline through a compact figure-eight and hiding the caps behind the mass. Its
-// retained pixels were still rejected because the centered opening and broad smooth
-// panels read as a seashell / rosebud / folded napkin.
-//
-// V288 breaks that petal/shell organization with a diagonal three-dimensional torque,
-// but retained pixels still collapsed into a pale shell/boulder/helmet-like mound.
-//
-// V289 removes the mound with a narrow scar-dominant S-fold, but retained pixels
-// read as a small folded vessel / boat / crown because the fold remained too
-// horizontal and still hovered above a detached hard shadow.
-//
-// V290 preserves the narrower V289 topology but changes the actual spatial pose: the
-// entire fold is materially rotated off the horizontal screen plane, yawed into depth
-// so one shoulder occludes the other, and lowered into contact with the authored
-// ground. The intended first read is diagonal tension + scar + grounded folded volume,
-// never a basin/crown/boat or a hovering pickup.
-//
-// The form must read as one held memory phenomenon. It must not regress into a
-// crystal crown/shard cluster, boulder, sphere/orb, flower, portal, ring, cage,
-// doorway, sheet fan, stack of cards, shell/mouth, manta, tent, aircraft, animal,
-// body-part silhouette or generic pickup.
+// The form must read as memory matter held by the world: grounded, scarred, irregular,
+// tactile and non-anatomical. It must not regress into a crystal crown, boulder, orb,
+// flower, portal, ring, shell/mouth, manta, tent, aircraft, animal, shoe, boat, bowl,
+// helmet, body-part silhouette, smooth blob, or generic pickup.
 const MEMORY_SECTIONS = 15
 const MEMORY_RING_POINTS = 12
 const MEMORY_SURFACE_DETAIL = 4
@@ -84,28 +27,25 @@ function wrappedAngleDistance(a: number, b: number) {
   return Math.abs(Math.atan2(Math.sin(a - b), Math.cos(a - b)))
 }
 
-function livingMemoryVertexColor(section: number, radial: number, t: number, furrow: number, ridge: number, secondaryFurrow: number) {
-  const deep = new THREE.Color().setRGB(.035, .045, .032)
-  const mineral = new THREE.Color().setRGB(.37, .40, .255)
-  const weathered = new THREE.Color().setRGB(.55, .39, .19)
-  const warm = new THREE.Color().setRGB(.72, .36, .10)
-  const litMineral = new THREE.Color().setRGB(.78, .66, .39)
-  const phase = .5 + .5 * Math.sin(section * .27 + radial * .43)
-  const strata = .5 + .5 * Math.sin(section * .91 + radial * .36)
-  const edge = Math.pow(Math.abs(t), 1.5)
-  const scar = Math.max(furrow, secondaryFurrow)
+function livingMemoryVertexColor(section: number, radial: number, t: number, furrow: number, ridge: number, burial: number) {
+  const deep = new THREE.Color().setRGB(.028, .040, .031)
+  const mineral = new THREE.Color().setRGB(.20, .25, .20)
+  const weathered = new THREE.Color().setRGB(.40, .30, .17)
+  const warm = new THREE.Color().setRGB(.62, .31, .09)
+  const litMineral = new THREE.Color().setRGB(.58, .52, .34)
+  const phase = .5 + .5 * Math.sin(section * .31 + radial * .37)
+  const strata = .5 + .5 * Math.sin(section * .86 + radial * .41)
+  const center = 1 - Math.min(1, Math.abs(t))
   const color = deep.clone()
-    .lerp(mineral, .46 + phase * .22)
-    .lerp(weathered, .35 + .19 * (1 - edge))
-  if (scar > .20) color.lerp(deep, .26 + scar * .30)
-  if (ridge > .34) color.lerp(weathered, .31 + ridge * .13)
-  color.lerp(warm, .21 * strata * (1 - scar) + .055 * Math.max(0, -t) + .050 * ridge)
-  color.lerp(litMineral, .18 + .09 * (1 - edge) + .070 * ridge)
-  if ((section * 5 + radial * 3) % 23 === 0) color.lerp(warm, .28)
-  color.multiplyScalar(1.23)
-  color.r = Math.min(.96, color.r)
-  color.g = Math.min(.84, color.g)
-  color.b = Math.min(.60, color.b)
+    .lerp(mineral, .48 + .18 * phase)
+    .lerp(weathered, .18 + .22 * center)
+  if (furrow > .18) color.lerp(deep, .30 + furrow * .34)
+  if (ridge > .24) color.lerp(litMineral, .16 + ridge * .18)
+  color.lerp(warm, .10 * strata * center + .08 * ridge)
+  color.lerp(deep, burial * .42)
+  color.r = Math.min(.78, color.r)
+  color.g = Math.min(.64, color.g)
+  color.b = Math.min(.42, color.b)
   return color
 }
 
@@ -114,253 +54,106 @@ function createLivingMemoryFold() {
   const colors: number[] = []
   const uvs: number[] = []
   const indices: number[] = []
-  const sectionCenters: THREE.Vector3[] = []
-
-  const v290TiltZ = -.72
-  const v290YawY = .43
-  const v290CosZ = Math.cos(v290TiltZ)
-  const v290SinZ = Math.sin(v290TiltZ)
-  const v290CosY = Math.cos(v290YawY)
-  const v290SinY = Math.sin(v290YawY)
-  const transformV290 = (x: number, y: number, z: number) => {
-    const centeredY = y + .67
-    const tiltedX = x * v290CosZ - centeredY * v290SinZ
-    const tiltedY = x * v290SinZ + centeredY * v290CosZ
-    const yawedX = tiltedX * v290CosY + z * v290SinY
-    const yawedZ = -tiltedX * v290SinY + z * v290CosY
-    return new THREE.Vector3(yawedX, -.94 + tiltedY, yawedZ)
-  }
 
   for (let section = 0; section < MEMORY_RENDER_SECTIONS; section += 1) {
     const u = section / (MEMORY_RENDER_SECTIONS - 1)
     const t = THREE.MathUtils.lerp(-1, 1, u)
-    const endTaper = Math.pow(Math.max(0, Math.sin(u * Math.PI)), .82)
-    const shoulder = Math.pow(Math.max(0, Math.sin(u * Math.PI)), .60)
-    const detailWindow = .28 + .72 * endTaper
+    const endTaper = Math.pow(Math.max(0, Math.sin(u * Math.PI)), .78)
+    const terminalBurial = THREE.MathUtils.smoothstep(Math.abs(t), .56, 1)
+    const centralScar = Math.exp(-Math.pow((t + .07) / .30, 2))
+    const nearRidge = Math.exp(-Math.pow((t + .34) / .18, 2))
+    const farRidge = Math.exp(-Math.pow((t - .29) / .21, 2))
+    const brokenKnot = Math.exp(-Math.pow((t - .02) / .16, 2))
+    const detailWindow = .22 + .78 * endTaper
 
-    const leadingTuck = Math.exp(-Math.pow((t + .73) / .16, 2))
-    const leadingKnee = Math.exp(-Math.pow((t + .48) / .15, 2))
-    const leadingWaist = Math.exp(-Math.pow((t + .29) / .16, 2))
-    const spineKnot = Math.exp(-Math.pow((t + .13) / .18, 2))
-    const underFold = Math.exp(-Math.pow((t - .16) / .16, 2))
-    const counterWaist = Math.exp(-Math.pow((t - .35) / .17, 2))
-    const counterKnee = Math.exp(-Math.pow((t - .53) / .16, 2))
-    const counterTuck = Math.exp(-Math.pow((t - .72) / .16, 2))
-    const returnCrease = Math.exp(-Math.pow((t - .08) / .12, 2))
+    // A diagonal seam in x/z space. The visible ends are not terminals: they are
+    // buried continuations, so the eye reads an event in the ground rather than an
+    // isolated object with a nose/tail or bow/stern.
+    const centerX = 1.44 * t
+      + .13 * Math.sin(t * 3.30 + .20)
+      + .060 * Math.sin(t * 7.10 - .35)
+      - .08 * brokenKnot
+    const centerZ = -.42 * t
+      + .24 * Math.sin(t * 2.18 - .45)
+      + .095 * Math.sin(t * 5.30 + .70)
+      - .12 * centralScar
+    const centerY = -1.34
+      + .36 * centralScar
+      + .18 * nearRidge
+      + .11 * farRidge
+      + .08 * brokenKnot
+      + .07 * t * (1 - terminalBurial)
+      - .54 * terminalBurial
 
-    const centerX = t * .94
-      - .16 * t
-      + .075 * Math.sin(t * 2.85)
-      + .038 * Math.sin(t * 6.40)
-      + .110 * leadingTuck
-      + .080 * leadingTuck
-      - .055 * leadingKnee
-      - .042 * underFold
-      - .105 * counterTuck
-      - .105 * counterTuck
-      + .042 * counterKnee
-      + .034 * spineKnot
-      - .046 * returnCrease
-    const centerY = -.65
-      + .060 * Math.sin(t * 2.35 + .28)
-      + .028 * Math.sin(t * 5.60 - .15)
-      + .125 * leadingTuck
-      + .095 * leadingKnee
-      - .060 * leadingKnee
-      - .112 * leadingWaist
-      + .215 * spineKnot
-      + .065 * spineKnot
-      - .145 * underFold
-      - .090 * underFold
-      - .065 * returnCrease
-      + .055 * counterWaist
-      - .095 * counterKnee
-      + .205 * counterKnee
-      - .120 * counterTuck
-      + .110 * counterTuck
-    const centerZ = -.08
-      + .145 * Math.sin(t * 1.95 - .22)
-      + .060 * Math.sin(t * 5.25 + .10)
-      + .210 * leadingTuck
-      + .090 * leadingTuck
-      - .135 * leadingKnee
-      - .060 * leadingKnee
-      - .055 * leadingWaist
-      + .205 * spineKnot
-      + .090 * spineKnot
-      - .275 * underFold
-      - .095 * underFold
-      - .075 * returnCrease
-      + .080 * counterWaist
-      - .145 * counterKnee
-      + .225 * counterKnee
-      - .205 * counterTuck
-      - .050 * counterTuck
-    sectionCenters.push(new THREE.Vector3(centerX, centerY, centerZ))
+    const height = .035 + endTaper * (
+      .095
+      + .21 * centralScar
+      + .10 * nearRidge
+      + .055 * farRidge
+      + .065 * brokenKnot
+    )
+    const depth = .050 + endTaper * (
+      .19
+      + .085 * centralScar
+      + .055 * nearRidge
+      + .035 * farRidge
+    )
+    const width = .50 + .18 * centralScar - .08 * farRidge
+    const twist = .30 * t
+      + .52 * Math.sin(t * 1.86 + .28)
+      + .18 * nearRidge
+      - .24 * farRidge
+      + .26 * brokenKnot
 
-    const widthProfile = Math.max(.50,
-      1
-      - .28 * leadingWaist
-      - .24 * counterWaist
-      - .06 * leadingKnee
-      - .07 * counterKnee
-      - .11 * returnCrease
-      + .34 * spineKnot
-      + .20 * underFold
-      + .13 * leadingTuck
-      + .12 * counterTuck)
-    const height = .052 + endTaper * (
-      .135
-      + .018 * Math.sin(t * 2.70 - .28)
-      + .022 * leadingTuck
-      + .028 * leadingKnee
-      - .020 * leadingKnee
-      + .090 * spineKnot
-      + .038 * underFold
-      - .018 * returnCrease
-      - .008 * counterKnee
-      + .040 * counterKnee
-      + .020 * counterTuck
-    ) * widthProfile
-    const depth = .058 + endTaper * (
-      .188
-      + .022 * Math.cos(t * 2.28 + .16)
-      + .046 * leadingTuck
-      + .060 * leadingTuck
-      + .020 * leadingKnee
-      + .148 * spineKnot
-      + .055 * spineKnot
-      + .118 * underFold
-      + .070 * underFold
-      + .045 * returnCrease
-      + .030 * counterWaist
-      + .034 * counterKnee
-      + .080 * counterKnee
-      + .045 * counterTuck
-      + .055 * counterTuck
-    ) * (.95 + .05 * shoulder)
-    const twist = .62 * Math.sin(t * 2.02)
-      + .34 * t
-      + .165 * Math.sin(t * 4.95)
-      + .28 * leadingTuck
-      - .20 * leadingKnee
-      - .12 * leadingKnee
-      + .42 * spineKnot
-      + .12 * returnCrease
-      - .34 * underFold
-      - .16 * counterWaist
-      + .22 * counterKnee
-      + .24 * counterKnee
-      - .30 * counterTuck
-
-    const furrowAngle = Math.PI * .14 + .90 * t - twist + .30 * Math.sin(t * 2.70)
-    const secondaryFurrowAngle = furrowAngle + Math.PI * .66 + .16 * Math.sin(t * 1.90 + .44)
-    const ridgeAngle = furrowAngle + Math.PI * .69
-    const primaryWindow = Math.exp(-Math.pow((t + .06) / .28, 4)) * (.94 + .05 * Math.sin(t * 3.0 + .45))
-    const branchWindow = Math.exp(-Math.pow((t + .24) / .18, 2))
-    const ridgeWindow = .16 + 1.08 * Math.exp(-Math.pow((t + .07) / .31, 2))
+    const furrowAngle = -.38 + .74 * t - twist + .18 * Math.sin(t * 3.1)
+    const ridgeAngle = furrowAngle + Math.PI * .78
+    const counterRidgeAngle = furrowAngle - Math.PI * .63
+    const scarWindow = .18 + .92 * centralScar + .30 * nearRidge
 
     for (let radial = 0; radial < MEMORY_RENDER_RING_POINTS; radial += 1) {
       const radialU = radial / MEMORY_RENDER_RING_POINTS
       const angle = radialU * Math.PI * 2
       const furrowDistance = wrappedAngleDistance(angle, furrowAngle)
-      const secondaryFurrowDistance = wrappedAngleDistance(angle, secondaryFurrowAngle)
       const ridgeDistance = wrappedAngleDistance(angle, ridgeAngle)
-      const furrow = Math.exp(-Math.pow(furrowDistance / .158, 2)) * Math.max(0, primaryWindow)
-      const secondaryFurrow = Math.exp(-Math.pow(secondaryFurrowDistance / .245, 2)) * (.058 + .058 * shoulder) * branchWindow
-      const ridge = Math.exp(-Math.pow(ridgeDistance / .270, 2)) * ridgeWindow
+      const counterRidgeDistance = wrappedAngleDistance(angle, counterRidgeAngle)
+      const furrow = Math.exp(-Math.pow(furrowDistance / .17, 2)) * scarWindow
+      const ridge = Math.exp(-Math.pow(ridgeDistance / .24, 2)) * (.30 + .78 * centralScar + .42 * nearRidge)
+      const counterRidge = Math.exp(-Math.pow(counterRidgeDistance / .30, 2)) * (.12 + .44 * farRidge)
 
-      const dominantMass = 1
-        + .27 * Math.cos(angle - furrowAngle - .90)
-        + .060 * t * Math.sin(angle + .26)
-        + .058 * Math.sin(angle * 3 + t * 2.52)
-        + .030 * Math.cos(angle * 5 - t * 3.20)
-        + .074 * leadingTuck * Math.cos(angle - .30)
-        - .040 * leadingKnee * Math.sin(angle + .18)
-        + .185 * spineKnot * Math.cos(angle - ridgeAngle + .12)
-        + .110 * underFold * Math.sin(angle + .62)
-        + .080 * returnCrease * Math.cos(angle + .95)
-        + .048 * counterKnee * Math.sin(angle - .25)
-        + .070 * counterTuck * Math.cos(angle + .38)
-      const tissue = 1
-        + detailWindow * .036 * Math.sin(angle * 7 + t * 3.2)
-        + detailWindow * .020 * Math.cos(angle * 11 - t * 2.4)
-        + detailWindow * .010 * Math.sin(angle * 17 + t * 1.8)
-      const longitudinalRill = detailWindow * .010 * endTaper * Math.sin(t * 5.2 + angle * 4.5)
-        + detailWindow * .005 * endTaper * Math.cos(t * 3.1 - angle * 8.2)
-      const asymmetricFold = .052 * endTaper * Math.sin(angle - t * 3.32 + .64)
-        + .025 * endTaper * Math.sin(angle * 2.75 + t * 2.12)
-        + .016 * endTaper * t * Math.cos(angle * 4.1)
-        + .044 * leadingTuck * Math.sin(angle - .28)
-        - .024 * leadingKnee * Math.cos(angle + .18)
-        + .074 * spineKnot * Math.sin(angle - ridgeAngle - .10)
-        - .086 * underFold * Math.cos(angle - .52)
-        - .045 * returnCrease * Math.sin(angle + .72)
-        + .028 * counterKnee * Math.cos(angle - .34)
-        - .042 * counterTuck * Math.sin(angle + .15)
-      const ridgeLift = .122 * endTaper * ridge * (.71 + .29 * Math.sin(t * 3.25 + .28))
-      const creaseSink = .074 * endTaper * furrow * (1 + .72 * spineKnot + .24 * underFold + .22 * returnCrease)
-      const pinch = Math.max(.48, 1 - .41 * furrow - .040 * secondaryFurrow - .065 * returnCrease)
-
-      const localY = Math.cos(angle) * height * dominantMass * tissue * pinch
-        + asymmetricFold
-        + ridgeLift
-        - creaseSink
-      const localZ = Math.sin(angle) * depth * (1 + .31 * ridge + .20 * spineKnot + .18 * underFold + .16 * returnCrease)
-        - furrow * depth * .54
-        - secondaryFurrow * depth * .045
-        + ridge * depth * .40
-        + longitudinalRill
-
-      // V289 topology: narrow off-axis S-fold. V290 then changes its spatial pose
-      // rather than widening it back into another object family.
-      const terminalWeight = Math.pow(Math.abs(t), 2.65)
-      const terminalCollapse = 1 - .72 * terminalWeight
-      const sPath = t + .18 * Math.sin(t * 3.55 + .35)
-      const pathX = .43 * sPath * terminalCollapse
-        + .075 * Math.sin(t * 5.2 + .50)
-        + .050 * spineKnot
-        - .035 * underFold
-      const pathY = -.67
-        + .235 * Math.sin(t * 2.28 + .30)
-        + .090 * Math.sin(t * 5.0 - .42)
-        + .120 * spineKnot
-        - .105 * underFold
-        + .055 * leadingKnee
-        - .035 * counterKnee
-      const pathZ = -.03
-        + .245 * Math.sin(t * 3.10 - .35)
-        + .110 * Math.cos(t * 5.15 + .28)
-        - .255 * terminalWeight
-        + .080 * leadingWaist
-        - .085 * counterWaist
-        - .075 * returnCrease
       const crag = 1
-        + .16 * Math.sin(angle * 3 + t * 5.5)
-        + .09 * Math.cos(angle * 5 - t * 3.7)
-        + .045 * Math.sin(angle * 8 + t * 2.0)
-      const scar = Math.min(1.2, furrow * (1.08 + .58 * spineKnot + .30 * underFold))
-      const brokenRidge = Math.min(1.2, ridge * (.78 + .44 * spineKnot) * (.72 + .28 * Math.sin(t * 4.0 + .8)))
-      const v289X = pathX
-        + localZ * (.18 + .055 * crag)
-        + localY * .075
-        + .055 * brokenRidge
-        - .040 * scar
-      const v289Y = pathY
-        + localY * (.46 + .10 * spineKnot) * crag
-        + .040 * localZ
-        + .105 * brokenRidge
-        - .115 * scar
-        - .028 * terminalWeight
-      const v289Z = pathZ
-        + localZ * (.58 + .10 * underFold) * crag
-        + .075 * localY
-        + .105 * brokenRidge
-        - .185 * scar
-      const v290 = transformV290(v289X, v289Y, v289Z)
-      positions.push(v290.x, v290.y, v290.z)
+        + detailWindow * .10 * Math.sin(angle * 3 + t * 5.8)
+        + detailWindow * .055 * Math.cos(angle * 5 - t * 4.1)
+        + detailWindow * .026 * Math.sin(angle * 9 + t * 2.6)
+      const asymmetry = .045 * endTaper * Math.sin(angle - t * 2.7 + .62)
+        + .025 * nearRidge * Math.sin(angle * 2.0 + .25)
+        - .020 * farRidge * Math.cos(angle * 3.0 - .55)
+      const localY = Math.cos(angle) * height * width * crag
+        + asymmetry
+        + .095 * ridge
+        + .045 * counterRidge
+        - .115 * furrow
+      const localZ = Math.sin(angle) * depth * crag
+        + .060 * ridge
+        - .045 * counterRidge
+        - .11 * furrow
+
+      const edgeSink = terminalBurial * (.20 + .14 * (.5 + .5 * Math.sin(angle + t * 4.2)))
+      const x = centerX
+        + localZ * .42
+        + localY * .08
+        + .025 * ridge
+      const y = centerY
+        + localY
+        - edgeSink
+        - .035 * Math.abs(Math.sin(angle * 2.0 + t * 3.7)) * terminalBurial
+      const z = centerZ
+        + localZ
+        + localY * .16
+        - .035 * furrow
+
+      positions.push(x, y, z)
       uvs.push(radialU, u)
-      const color = livingMemoryVertexColor(section, radial, t, furrow, ridge, secondaryFurrow)
+      const color = livingMemoryVertexColor(section, radial, t, furrow, Math.max(ridge, counterRidge), terminalBurial)
       colors.push(color.r, color.g, color.b)
     }
   }
@@ -380,14 +173,11 @@ function createLivingMemoryFold() {
 
   const startCap = positions.length / 3
   const endCap = startCap + 1
-
-  const startV290 = transformV290(-.065, -.805, -.43)
-  const endV290 = transformV290(.052, -.720, -.46)
-  positions.push(startV290.x, startV290.y, startV290.z)
-  colors.push(.075, .062, .034)
+  positions.push(-1.48, -1.93, .34)
+  colors.push(.020, .028, .022)
   uvs.push(.5, 0)
-  positions.push(endV290.x, endV290.y, endV290.z)
-  colors.push(.085, .068, .036)
+  positions.push(1.45, -1.94, -.47)
+  colors.push(.020, .028, .022)
   uvs.push(.5, 1)
 
   for (let radial = 0; radial < MEMORY_RENDER_RING_POINTS; radial += 1) {
@@ -405,23 +195,17 @@ function createLivingMemoryFold() {
   geometry.computeVertexNormals()
   geometry.computeBoundingBox()
   geometry.computeBoundingSphere()
+
+  // V272 lineage metadata remains stable for integration contracts; V291 is the
+  // current literal-pixel authority.
   geometry.userData.focusMemoryRole = 'v272-single-connected-living-memory-fold'
   geometry.userData.focusMemoryTopology = 'closed-twisted-longitudinal-fold-with-deep-furrow'
   geometry.userData.focusMemoryEnergy = 'weathered-mineral-restrained-warm-cool-response'
   geometry.userData.focusLiteralPixelRepair = 'v272-no-crystal-crown-no-card-stack'
   geometry.userData.focusSilhouetteRule = 'one-coherent-memory-phenomenon-not-discrete-objects'
   geometry.userData.focusSurfaceDensity = `${MEMORY_RENDER_SECTIONS}x${MEMORY_RENDER_RING_POINTS}-continuous-tactile-surface`
-  geometry.userData.focusLiteralPixelRefinement = 'v280-lean-leading-tip-deep-waist-3d-s-gesture-tucked-counter-end-local-asymmetric-knot'
-  geometry.userData.focusLiteralPixelIteration = 'v281-dominant-central-fold-dual-tension-waists-lifted-curl-downback-tuck-oblique-ridge'
-  geometry.userData.focusLiteralPixelCandidate = 'v282-compressed-terminal-tucks-volumetric-knees-central-depth-no-ribbon-tips'
-  geometry.userData.focusLiteralPixelSuccessor = 'v283-compact-offcenter-knot-thick-terminals-tucked-underfold-no-tent-manta'
-  geometry.userData.focusLiteralPixelSuccessorV284 = 'v284-compressed-span-inward-terminal-returns-deep-s-valley-counter-knee-lift'
-  geometry.userData.focusLiteralPixelSuccessorV285 = 'v285-yawed-depth-knot-foreshortened-returns-lowered-fins-no-aircraft'
-  geometry.userData.focusLiteralPixelSuccessorV286 = 'v286-bound-terminal-knot-no-head-tail-anatomy-deep-internal-valley'
-  geometry.userData.focusLiteralPixelSuccessorV287 = 'v287-self-crossing-central-knot-submerged-caps-no-directional-anatomy'
-  geometry.userData.focusLiteralPixelSuccessorV288 = 'v288-diagonal-torqued-geological-fold-cragged-scar-no-petal-shell'
-  geometry.userData.focusLiteralPixelSuccessorV289 = 'v289-narrow-s-fold-dominant-diagonal-scar-broken-ridge-no-mound'
-  geometry.userData.focusLiteralPixelSuccessorV290 = 'v290-diagonal-yawed-grounded-s-fold-contact-integrated'
+  geometry.userData.focusLiteralPixelSuccessorV291 = 'v291-ground-fused-memory-seam-submerged-terminals-nonportable-scar-ridges'
+  geometry.userData.focusVisualAuthority = 'v291-ground-fused-memory-seam'
   return geometry
 }
 
