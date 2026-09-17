@@ -53,8 +53,13 @@ import * as THREE from 'three'
 // projecting head/beak-like end. V286 therefore removes readable end-to-end anatomy.
 // Both terminals are bound back toward the central knot, separated primarily in
 // depth rather than screen-space length, and submerged behind a deeper crease valley.
-// The localized furrow/ridge hierarchy—not a head, tail, limb, wing or torso—must own
-// the first read at desktop and phone portrait scale.
+//
+// V287 responds to retained V286 pixels. V286 still read as a whale/slug-like
+// organism because one end remained directionally projected and a pale side patch
+// read as an eye/nostril. V287 removes the privileged front entirely: the longitudinal
+// centerline is folded through a compact asymmetric figure-eight path, both terminal
+// caps are submerged behind the visible mass, and internal negative-space/furrow
+// hierarchy owns the silhouette instead of a face/body/tail axis.
 //
 // The form must read as one held memory phenomenon. It must not regress into a
 // crystal crown/shard cluster, boulder, sphere/orb, flower, portal, ring, cage,
@@ -109,8 +114,6 @@ function createLivingMemoryFold() {
     const shoulder = Math.pow(Math.max(0, Math.sin(u * Math.PI)), .60)
     const detailWindow = .28 + .72 * endTaper
 
-    // V283 uses a compact asymmetric knot with one visible underfold. The spatial
-    // knees break the broad tent/manta crest while keeping the object continuous.
     const leadingTuck = Math.exp(-Math.pow((t + .73) / .16, 2))
     const leadingKnee = Math.exp(-Math.pow((t + .48) / .15, 2))
     const leadingWaist = Math.exp(-Math.pow((t + .29) / .16, 2))
@@ -121,10 +124,6 @@ function createLivingMemoryFold() {
     const counterTuck = Math.exp(-Math.pow((t - .72) / .16, 2))
     const returnCrease = Math.exp(-Math.pow((t - .08) / .12, 2))
 
-    // Shorter horizontal reach, stronger depth separation and an off-center knot
-    // prevent a centered fabric peak. V284 folds both terminal spans farther back
-    // toward the mass while preserving the V283 contract literals for regression
-    // history and adds a deeper non-planar S path through the middle.
     const centerX = t * .94
       - .16 * t
       + .075 * Math.sin(t * 2.85)
@@ -175,9 +174,6 @@ function createLivingMemoryFold() {
       - .050 * counterTuck
     sectionCenters.push(new THREE.Vector3(centerX, centerY, centerZ))
 
-    // Terminal base thickness remains substantial even where the longitudinal
-    // taper approaches zero. V284 narrows the waists but increases depth at the
-    // folded returns so they read as tucked volume rather than thin wing tips.
     const widthProfile = Math.max(.50,
       1
       - .28 * leadingWaist
@@ -233,8 +229,6 @@ function createLivingMemoryFold() {
       + .24 * counterKnee
       - .30 * counterTuck
 
-    // One oblique crease/ridge system owns the dominant reading. The subordinate
-    // branch is local and cannot form a bilateral shell/mouth seam.
     const furrowAngle = Math.PI * .14 + .90 * t - twist + .30 * Math.sin(t * 2.70)
     const secondaryFurrowAngle = furrowAngle + Math.PI * .66 + .16 * Math.sin(t * 1.90 + .44)
     const ridgeAngle = furrowAngle + Math.PI * .69
@@ -297,32 +291,34 @@ function createLivingMemoryFold() {
       const y = centerY + localY * Math.cos(twist) - localZ * Math.sin(twist)
       const z = centerZ + localY * Math.sin(twist) + localZ * Math.cos(twist)
 
-      // V286 screen-space correction. The terminal sections are drawn back toward
-      // the knot in x and split mainly in z, so neither end can become a head/tail.
-      // A central bind and deeper underfold keep the visible hierarchy internal.
-      const terminalWeight = Math.min(1, leadingTuck + counterTuck)
-      const centralBind = Math.exp(-Math.pow(t / .58, 2))
-      const compactX = centerX * (.54 - .18 * terminalWeight) + .045 * Math.sin(t * 5.10) * centralBind
-      const depthReturn = z * 1.34
-        + .36 * leadingTuck
-        - .39 * counterTuck
-        + .12 * spineKnot
-        - .17 * underFold
-        - .08 * returnCrease
-        + .055 * Math.sin(t * 3.90)
-      const yaw = .68
-      const rotatedX = compactX * Math.cos(yaw) - depthReturn * Math.sin(yaw)
-      const rotatedZ = compactX * Math.sin(yaw) + depthReturn * Math.cos(yaw)
-      const terminalInward = .17 * leadingTuck - .17 * counterTuck
-      const v286X = rotatedX + terminalInward + .032 * returnCrease - .025 * spineKnot
-      const v286Z = rotatedZ + .085 * (leadingKnee - counterKnee) - .060 * returnCrease + .045 * underFold
-      const v286Y = -.65
-        + (y + .65) * .76
-        + .052 * spineKnot
-        - .050 * underFold
-        + .022 * Math.sin(t * 7.10 + .30) * centralBind
-        - .025 * terminalWeight
-      positions.push(v286X, v286Y, v286Z)
+      // V287 central-knot remap. Instead of a projected longitudinal body, the
+      // section path crosses itself in depth. The terminal sections collapse behind
+      // the knot, which removes the persistent face/snount/tail hierarchy.
+      const terminalWeight = Math.pow(Math.abs(t), 2.7)
+      const foldAngle = t * 2.38 + .24 * Math.sin(t * 3.7) - .10 * spineKnot
+      const knotRadius = .31 + .095 * (1 - Math.abs(t)) + .055 * spineKnot - .035 * underFold
+      const pathX = knotRadius * Math.sin(foldAngle)
+        + .065 * Math.sin(foldAngle * 2.6 + .35)
+        - .025 * underFold
+      const pathZ = .28 * Math.sin(foldAngle * 2.0 - .22)
+        + .13 * Math.cos(foldAngle + .35)
+        - .20 * terminalWeight
+        - .08 * underFold
+        + .06 * spineKnot
+      const collapse = 1 - .64 * terminalWeight
+      const v287X = pathX * collapse
+        + localZ * (.22 + .06 * spineKnot)
+        + .018 * Math.sin(angle * 3 + t * 2.1)
+      const v287Z = pathZ
+        + localZ * (.82 + .12 * underFold)
+        + .055 * localY
+      const v287Y = -.65
+        + localY * .90
+        + .095 * Math.sin(foldAngle + .72)
+        + .070 * spineKnot
+        - .072 * underFold
+        - .055 * terminalWeight
+      positions.push(v287X, v287Y, v287Z)
       uvs.push(radialU, u)
       const color = livingMemoryVertexColor(section, radial, t, furrow, ridge, secondaryFurrow)
       colors.push(color.r, color.g, color.b)
@@ -343,32 +339,16 @@ function createLivingMemoryFold() {
   }
 
   const startCap = positions.length / 3
-  const start = sectionCenters[0]
   const endCap = startCap + 1
-  const end = sectionCenters[sectionCenters.length - 1]
 
-  // Cap centers undergo the same V286 bound-return transform as their rings so
-  // neither cap stretches back into a readable beak, snout, tail or wing tip.
-  const capYaw = .68
-  const transformCap = (center: THREE.Vector3, leading: number, counter: number) => {
-    const weight = Math.min(1, leading + counter)
-    const compactX = center.x * (.54 - .18 * weight)
-    const depthReturn = center.z * 1.34 + .36 * leading - .39 * counter
-    const rotatedX = compactX * Math.cos(capYaw) - depthReturn * Math.sin(capYaw)
-    const rotatedZ = compactX * Math.sin(capYaw) + depthReturn * Math.cos(capYaw)
-    return new THREE.Vector3(
-      rotatedX + .17 * leading - .17 * counter,
-      -.65 + (center.y + .65) * .76 - .025 * weight,
-      rotatedZ,
-    )
-  }
-  const startV286 = transformCap(start, 1, 0)
-  const endV286 = transformCap(end, 0, 1)
-  positions.push(startV286.x, startV286.y, startV286.z)
-  colors.push(.13, .105, .052)
+  // V287 cap centers are deliberately submerged behind the central visible mass.
+  // They remain distinct in depth so the topology stays closed without creating
+  // bright readable endpoints that can become eyes, snouts or tails.
+  positions.push(-.055, -.735, -.31)
+  colors.push(.09, .075, .040)
   uvs.push(.5, 0)
-  positions.push(endV286.x, endV286.y, endV286.z)
-  colors.push(.15, .12, .055)
+  positions.push(.045, -.755, -.36)
+  colors.push(.10, .080, .042)
   uvs.push(.5, 1)
 
   for (let radial = 0; radial < MEMORY_RENDER_RING_POINTS; radial += 1) {
@@ -399,6 +379,7 @@ function createLivingMemoryFold() {
   geometry.userData.focusLiteralPixelSuccessorV284 = 'v284-compressed-span-inward-terminal-returns-deep-s-valley-counter-knee-lift'
   geometry.userData.focusLiteralPixelSuccessorV285 = 'v285-yawed-depth-knot-foreshortened-returns-lowered-fins-no-aircraft'
   geometry.userData.focusLiteralPixelSuccessorV286 = 'v286-bound-terminal-knot-no-head-tail-anatomy-deep-internal-valley'
+  geometry.userData.focusLiteralPixelSuccessorV287 = 'v287-self-crossing-central-knot-submerged-caps-no-directional-anatomy'
   return geometry
 }
 
