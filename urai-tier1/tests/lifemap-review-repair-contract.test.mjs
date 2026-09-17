@@ -117,9 +117,10 @@ test('Founder proof samples retained WebGL canvas pixels only', () => {
   assert.match(workflow, /lifemap-review-repair-contract\.test\.mjs/)
 })
 
-test('Focus final composition preserves one connected living-memory authority and locks the V303 exact-grade sanctuary fissure', () => {
+test('Focus final composition preserves one connected living-memory authority and locks the V304 coplanar ground-owned sanctuary fissure', () => {
   assert.match(focusSource, /focus-v251-grounded-living-memory-manifestation/)
-  assert.match(focusSource, /createFocusStrata, createFocusSurfaceMaps/)
+  assert.match(focusSource, /createFocusStrata, createFocusSurfaceMaps, createFocusGroundIncision/)
+  assert.match(focusSource, /focus-v304-ground-owned-incision/)
   assert.doesNotMatch(focusSource, /focus-v249-memory-root-cradle/)
   assert.doesNotMatch(focusSource, /new THREE\.IcosahedronGeometry\(|<torusGeometry|<ringGeometry|wireframe/)
   assert.match(focusPolish, /V272 literal-pixel convergence/)
@@ -133,6 +134,7 @@ test('Focus final composition preserves one connected living-memory authority an
   assert.match(focusGeology, /V301 responds to literal V300 pixels/)
   assert.match(focusGeology, /V302 responds to retained V301 pixels/)
   assert.match(focusGeology, /V303 removes the remaining structural mismatch exposed by V302 pixels/)
+  assert.match(focusGeology, /V304 responds to exact V303 pixels/)
   assert.match(focusGeology, /const MEMORY_SECTIONS = 45/)
   assert.match(focusGeology, /const MEMORY_CROSS_POINTS = 9/)
   assert.match(focusGeology, /createLivingMemoryFold/)
@@ -168,8 +170,10 @@ test('Focus final composition preserves one connected living-memory authority an
   assert.match(focusGeology, /focusLiteralPixelSuccessorV301 = 'v301-crack-scale-dark-incision-intermittent-mineral-crust-no-raised-strip'/)
   assert.match(focusGeology, /focusLiteralPixelSuccessorV302 = 'v302-grade-flush-hairline-incision-fragmented-low-crust-ground-owned-silhouette'/)
   assert.match(focusGeology, /focusLiteralPixelSuccessorV303 = 'v303-shared-world-exact-grade-dark-crack-buried-closure-no-viewport-lift'/)
+  assert.match(focusGeology, /focusLiteralPixelSuccessorV304 = 'v304-buried-closed-body-coplanar-ground-incision-no-object-edge'/)
+  assert.match(focusGeology, /focusIncisionAuthority = 'v304-coplanar-ground-owned-dark-incision'/)
   assert.match(focusGeology, /focusVisualAuthority = 'v295-sanctuary-memory-scar-volume'/)
-  assert.match(focusGeology, /focusCurrentVisualAuthority = 'v303-exact-grade-ground-owned-fissure-no-twig'/)
+  assert.match(focusGeology, /focusCurrentVisualAuthority = 'v304-ground-owned-coplanar-incision-buried-closed-body'/)
   assert.match(focusGeology, /const weathered = new THREE\.Color\(\)\.setRGB/)
   assert.match(focusGeology, /const warm = new THREE\.Color\(\)\.setRGB/)
   assert.doesNotMatch(focusGeology, /MEMORY_FACETS|createMemoryFacet|v271-interlocked-volumetric-memory-facet/)

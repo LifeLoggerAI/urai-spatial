@@ -52,6 +52,14 @@ import * as THREE from 'three'
 // desktop/portrait max-height proxy. The crack core receives only a near-zero reveal,
 // while lateral edges and terminal closure remain below the exact local grade.
 //
+// V304 responds to exact V303 pixels: even exact grade alignment left a continuous top face
+// that first-read as a twig/seam. The V295 closed body is therefore buried completely below
+// grade while a separate zero-thickness, ground-conforming incision skin carries the visible
+// dark crack. The skin has no volume, no shadow ownership and no emissive glow; it samples
+// the same canonical ground function at every vertex and is polygon-offset only at material
+// time to prevent z-fighting. The place now owns the visible event while the buried closed
+// volume preserves the non-negotiable topology contract underneath.
+//
 // The form must read as memory pressure physically held by place. It must not regress
 // into a crystal crown, boulder, orb, flower, portal, ring, shell/mouth, manta, tent,
 // aircraft, animal, shoe, boat, bowl, helmet, body-part silhouette, smooth blob,
@@ -173,17 +181,19 @@ function createLivingMemoryFold() {
       const z = center.y + side.y * (lateralDistance + edgeBreak)
       const groundY = focusGroundHeight(FOCUS_MEMORY_WORLD_X + x, FOCUS_MEMORY_WORLD_Z + z)
       const incisionReveal = .004 + .0015 * centralScar
+      const burialDepth = .060
       const y = groundY
-        + incisionReveal
-        + minimalContinuity * .05
+        - burialDepth
+        + incisionReveal * .05
+        + minimalContinuity * .012
         - .0015 * furrow
-        + .010 * dominantLip
-        + .0003 * counterLip
-        + .001 * pulse * dominantLip
-        + localBuckling * .03
-        + micro * .05
-        - edgeSink * .42
-        - terminalSink * .56
+        + .002 * dominantLip
+        + .0001 * counterLip
+        + .0002 * pulse * dominantLip
+        + localBuckling * .008
+        + micro * .010
+        - edgeSink * .52
+        - terminalSink * .62
 
       positions.push(x, y, z)
       uvs.push(crossU, u)
@@ -265,13 +275,80 @@ function createLivingMemoryFold() {
   geometry.userData.focusLiteralPixelSuccessorV301 = 'v301-crack-scale-dark-incision-intermittent-mineral-crust-no-raised-strip'
   geometry.userData.focusLiteralPixelSuccessorV302 = 'v302-grade-flush-hairline-incision-fragmented-low-crust-ground-owned-silhouette'
   geometry.userData.focusLiteralPixelSuccessorV303 = 'v303-shared-world-exact-grade-dark-crack-buried-closure-no-viewport-lift'
+  geometry.userData.focusLiteralPixelSuccessorV304 = 'v304-buried-closed-body-coplanar-ground-incision-no-object-edge'
   geometry.userData.focusVisualAuthority = 'v295-sanctuary-memory-scar-volume'
-  geometry.userData.focusCurrentVisualAuthority = 'v303-exact-grade-ground-owned-fissure-no-twig'
+  geometry.userData.focusCurrentVisualAuthority = 'v304-ground-owned-coplanar-incision-buried-closed-body'
   return geometry
 }
 
 export function createFocusStrata() {
   return [createLivingMemoryFold()]
+}
+
+const INCISION_CROSS_POINTS = 5
+
+export function createFocusGroundIncision() {
+  const positions: number[] = []
+  const colors: number[] = []
+  const uvs: number[] = []
+  const indices: number[] = []
+  const edgeColor = new THREE.Color().setRGB(.080, .066, .045)
+  const innerColor = new THREE.Color().setRGB(.012, .006, .004)
+
+  for (let section = 0; section < MEMORY_SECTIONS; section += 1) {
+    const u = section / (MEMORY_SECTIONS - 1)
+    const t = THREE.MathUtils.lerp(-1, 1, u)
+    const center = fractureCenter(t)
+    const before = fractureCenter(Math.max(-1, t - .018))
+    const after = fractureCenter(Math.min(1, t + .018))
+    const tangent = after.clone().sub(before).normalize()
+    const side = new THREE.Vector2(-tangent.y, tangent.x)
+    const endFade = Math.pow(Math.max(0, Math.sin(u * Math.PI)), .55)
+    const centralScar = Math.exp(-Math.pow((t + .05) / .38, 2))
+    const halfWidth = (.034 + .014 * centralScar) * (.12 + .88 * endFade)
+
+    for (let cross = 0; cross < INCISION_CROSS_POINTS; cross += 1) {
+      const crossU = cross / (INCISION_CROSS_POINTS - 1)
+      const lateral = THREE.MathUtils.lerp(-1, 1, crossU)
+      const edgeJitter = Math.abs(lateral) > .55
+        ? .010 * Math.sin(section * 2.47 + cross * 1.31)
+        : .0025 * Math.sin(section * 1.71 + cross * .83) * Math.abs(lateral)
+      const lateralDistance = lateral * halfWidth + edgeJitter
+      const x = center.x + side.x * lateralDistance
+      const z = center.y + side.y * lateralDistance
+      const y = focusGroundHeight(FOCUS_MEMORY_WORLD_X + x, FOCUS_MEMORY_WORLD_Z + z) + .00035
+      positions.push(x, y, z)
+      uvs.push(crossU, u)
+      const core = Math.exp(-Math.pow(lateral / .34, 2))
+      const color = edgeColor.clone().lerp(innerColor, .36 + .64 * core)
+      colors.push(color.r, color.g, color.b)
+    }
+  }
+
+  for (let section = 0; section < MEMORY_SECTIONS - 1; section += 1) {
+    const row = section * INCISION_CROSS_POINTS
+    const nextRow = (section + 1) * INCISION_CROSS_POINTS
+    for (let cross = 0; cross < INCISION_CROSS_POINTS - 1; cross += 1) {
+      const a = row + cross
+      const b = row + cross + 1
+      const c = nextRow + cross
+      const d = nextRow + cross + 1
+      indices.push(a, b, c, b, d, c)
+    }
+  }
+
+  const geometry = new THREE.BufferGeometry()
+  geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3))
+  geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3))
+  geometry.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2))
+  geometry.setIndex(indices)
+  geometry.computeVertexNormals()
+  geometry.computeBoundingBox()
+  geometry.computeBoundingSphere()
+  geometry.userData.focusIncisionAuthority = 'v304-coplanar-ground-owned-dark-incision'
+  geometry.userData.focusIncisionTopology = 'zero-thickness-open-visual-skin-over-buried-v295-closed-authority'
+  geometry.userData.focusIncisionRule = 'no-raised-edge-no-shadow-no-emissive-no-portable-silhouette'
+  return geometry
 }
 
 function hash2(x: number, y: number) {

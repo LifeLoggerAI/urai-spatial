@@ -6,7 +6,7 @@ import { Suspense, useCallback, useEffect, useMemo, useRef, useState, type CSSPr
 import * as THREE from 'three'
 import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib'
 import { assetCssStack, focusAssets } from '@/spatial/assets/uraiAssets'
-import { FOCUS_MEMORY_WORLD_X, FOCUS_MEMORY_WORLD_Z, createFocusStrata, createFocusSurfaceMaps, focusGroundHeight } from './focusMemoryGeology'
+import { FOCUS_MEMORY_WORLD_X, FOCUS_MEMORY_WORLD_Z, createFocusStrata, createFocusSurfaceMaps, createFocusGroundIncision, focusGroundHeight } from './focusMemoryGeology'
 import { markFirstSpatialFrame, useAdaptiveSpatialQuality, type SpatialQualityProfile } from '@/spatial/performance/useAdaptiveSpatialQuality'
 import { useSelectedMemory } from '@/spatial/memory/useSelectedMemory'
 import type { SelectedMemory } from '@/spatial/memory/selectedMemoryContract'
@@ -388,7 +388,8 @@ function MemoryTraces({ memory, accent }: { memory: SelectedMemory | null; accen
 function MemoryAperture({ memory, accent, onActivate }: { memory: SelectedMemory | null; accent: string; light: string; reducedMotion: boolean; onActivate: () => void }) {
   const [hovered, setHovered] = useState(false)
   const strata = useMemo(createFocusStrata, [])
-  useEffect(() => () => { strata.forEach(geometry => geometry.dispose()) }, [strata])
+  const incision = useMemo(createFocusGroundIncision, [])
+  useEffect(() => () => { strata.forEach(geometry => geometry.dispose()); incision.dispose() }, [strata, incision])
   const pointer = (event: ThreeEvent<PointerEvent>, state: boolean) => {
     event.stopPropagation()
     setHovered(state)
@@ -398,11 +399,14 @@ function MemoryAperture({ memory, accent, onActivate }: { memory: SelectedMemory
   // only restrained surface response; geometry, scale, camera and idle position do
   // not pulse. The material stays weathered/mineral so the fold cannot regress to
   // the rejected cyan crystal-crown or white-card readings.
-  return <group position={[FOCUS_MEMORY_WORLD_X, 0, FOCUS_MEMORY_WORLD_Z]} name="focus-memory-aperture" userData={{ artRevision: 'v303-shared-world-exact-grade-fissure', hierarchy: 'selected-memory-single-coherent-fold-with-authored-chamber-context', materialAuthority: 'vertex-weathered-mineral-energy-no-terrain-map' }}>
-    <group scale={[1, 1, 1]} position={[0, 0, 0]} name="focus-v251-grounded-living-memory-manifestation" onClick={(event) => { event.stopPropagation(); if (memory) onActivate() }} onPointerOver={(event) => pointer(event, true)} onPointerOut={(event) => pointer(event, false)}>
-      {strata.map((geometry,index) => <mesh key={index} geometry={geometry} castShadow={false} receiveShadow name={`focus-authored-living-memory-fold-${index}`}>
-        <meshStandardMaterial vertexColors color={hovered ? '#847760' : '#51493d'} emissive={accent} emissiveIntensity={hovered ? .004 : 0} roughness={.94} metalness={.001} side={THREE.DoubleSide} />
+  return <group position={[FOCUS_MEMORY_WORLD_X, 0, FOCUS_MEMORY_WORLD_Z]} name="focus-memory-aperture" userData={{ artRevision: 'v304-ground-owned-coplanar-incision', hierarchy: 'selected-memory-buried-closed-authority-plus-coplanar-ground-incision', materialAuthority: 'ground-conforming-dark-incision-no-emissive-no-object-edge' }}>
+    <group scale={[1, 1, 1]} position={[0, 0, 0]} name="focus-v251-grounded-living-memory-manifestation">
+      {strata.map((geometry,index) => <mesh key={index} geometry={geometry} castShadow={false} receiveShadow={false} raycast={() => null} name={`focus-authored-living-memory-fold-${index}`}>
+        <meshStandardMaterial vertexColors color="#51493d" emissive="#000000" emissiveIntensity={0} roughness={1} metalness={0} side={THREE.DoubleSide} />
       </mesh>)}
+      <mesh geometry={incision} castShadow={false} receiveShadow={false} renderOrder={2} name="focus-v304-ground-owned-incision" onClick={(event) => { event.stopPropagation(); if (memory) onActivate() }} onPointerOver={(event) => pointer(event, true)} onPointerOut={(event) => pointer(event, false)}>
+        <meshStandardMaterial vertexColors color={hovered ? '#a69b88' : '#ffffff'} emissive="#000000" emissiveIntensity={0} roughness={1} metalness={0} side={THREE.DoubleSide} depthWrite={false} polygonOffset polygonOffsetFactor={-4} polygonOffsetUnits={-4} />
+      </mesh>
     </group>
     <Html center position={[0, -1.56, .48]} transform distanceFactor={6.4}><button type="button" className="focus-spatial-aperture-button" disabled={!memory} onClick={onActivate} aria-label={memory ? `Enter Replay for ${memory.title}` : 'Select a memory in Life Map to enter Replay'}>{memory ? 'Enter Replay' : 'Awaiting a selected star'}</button></Html>
   </group>
