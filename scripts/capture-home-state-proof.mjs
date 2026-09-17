@@ -266,23 +266,25 @@ async function captureOrbLifecycle({ reducedMotion = 'no-preference' } = {}) {
     record.phase = 'home-ready'
     const owner = await waitForHomeReady(page)
     const openOrb = page.getByRole('button', { name: 'Open URAI Orb companion' }).first()
-    record.phase = 'orb-open'
-    await openOrb.click({ noWaitAfter: true })
+    record.phase = 'orb-open-keyboard'
+    await openOrb.focus()
+    await openOrb.press('Enter')
     record.phase = 'orb-menu-visible'
     await page.locator('#urai-world-companion-menu[aria-hidden="false"]').waitFor({ state: 'visible', timeout: 20_000 })
     record.phase = 'orb-attention-rendered'
     await page.waitForFunction((selector) => document.querySelector(selector)?.getAttribute('data-home-orb-state') === 'attention', ownerSelector)
 
     const talk = page.locator('summary').filter({ hasText: 'Talk with Orb' }).first()
-    record.phase = 'conversation-open'
-    await talk.click({ noWaitAfter: true })
+    record.phase = 'conversation-open-keyboard'
+    await talk.focus()
+    await talk.press('Enter')
     const message = page.getByLabel('Message for Orb').first()
     await message.focus()
-    record.phase = 'orb-listening-rendered'
-    await page.waitForFunction((selector) => document.querySelector(selector)?.getAttribute('data-home-orb-state') === 'listening', ownerSelector)
+    record.phase = 'orb-text-entry-attention-rendered'
+    await page.waitForFunction((selector) => document.querySelector(selector)?.getAttribute('data-home-orb-state') === 'attention', ownerSelector)
 
-    record.listeningState = await owner.getAttribute('data-home-orb-state')
-    record.listeningClip = await owner.getAttribute('data-home-orb-clip')
+    record.textEntryState = await owner.getAttribute('data-home-orb-state')
+    record.textEntryClip = await owner.getAttribute('data-home-orb-clip')
 
     if (reducedMotion === 'reduce') {
       record.visual = await waitForVisualEvidence(page)
@@ -292,8 +294,8 @@ async function captureOrbLifecycle({ reducedMotion = 'no-preference' } = {}) {
       record.screenshotSha256 = createHash('sha256').update(screenshot).digest('hex')
       record.observedStates = await page.evaluate(() => window.__uraiObservedOrbStates || [])
       record.passed = response?.status() === 200
-        && record.listeningState === 'listening'
-        && record.listeningClip === 'orb-state-static'
+        && record.textEntryState === 'attention'
+        && record.textEntryClip === 'orb-state-static'
         && record.visual?.available === true
         && record.visual.viewportCoverage >= receipt.visualGate.minimumViewportCoverage
         && record.visual.luminanceRange >= receipt.visualGate.minimumLuminanceRange
@@ -319,11 +321,12 @@ async function captureOrbLifecycle({ reducedMotion = 'no-preference' } = {}) {
       return candidate instanceof HTMLButtonElement && !candidate.disabled
     }, null, { timeout: 20_000 })
     record.phase = 'orb-speaking-rendered'
+    await send.focus()
     await Promise.all([
       page.waitForFunction(() => window.__uraiObservedOrbFrames?.some((sample) => sample.eventState === 'speaking'
         && sample.renderedState === 'speaking'
         && sample.renderedClip === 'orb-speaking'), null, { timeout: 20_000 }),
-      send.click({ noWaitAfter: true }),
+      send.press('Enter'),
     ])
     const respondingSample = await page.evaluate(() => window.__uraiObservedOrbFrames?.find((sample) => sample.eventState === 'speaking'
       && sample.renderedState === 'speaking'
@@ -335,7 +338,7 @@ async function captureOrbLifecycle({ reducedMotion = 'no-preference' } = {}) {
     await responsePanel.waitFor({ state: 'visible', timeout: 20_000 })
     record.responseText = (await responsePanel.textContent()) || ''
     record.observedStates = await page.evaluate(() => window.__uraiObservedOrbStates || [])
-    record.lifecyclePassed = ['attention', 'listening', 'thinking', 'speaking'].every((state) => record.observedStates.includes(state))
+    record.lifecyclePassed = ['attention', 'thinking', 'speaking'].every((state) => record.observedStates.includes(state))
 
     await consent.focus()
     await consent.press('Space')
@@ -358,8 +361,8 @@ async function captureOrbLifecycle({ reducedMotion = 'no-preference' } = {}) {
     record.closedClip = await owner.getAttribute('data-home-orb-clip')
 
     record.passed = response?.status() === 200
-      && record.listeningState === 'listening'
-      && record.listeningClip === 'orb-listening'
+      && record.textEntryState === 'attention'
+      && record.textEntryClip === 'orb-attention'
       && record.respondingState === 'speaking'
       && record.respondingClip === 'orb-speaking'
       && record.privacyState === 'privacy'
