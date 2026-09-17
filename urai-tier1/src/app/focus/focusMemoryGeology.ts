@@ -39,6 +39,13 @@ import * as THREE from 'three'
 // removes meaningful cast-shadow ownership. The first read must be a fissure IN the place,
 // never a strip laid ON the place.
 //
+// V302 responds to retained V301 pixels: crack scale and terrain seating are correct, but
+// the whole visible skin still rides about .03 above grade and the dominant crust can lift
+// about .07 more, so silhouette reads as a dark rope/worm laid on the floor. V302 makes the
+// continuously readable event a hairline near-grade incision, thresholds the one-sided crust
+// into genuinely broken pressure windows, and reduces crust amplitude so ground owns silhouette.
+// Closed V295 underside/side/cap topology remains buried and unchanged.
+//
 // The form must read as memory pressure physically held by place. It must not regress
 // into a crystal crown, boulder, orb, flower, portal, ring, shell/mouth, manta, tent,
 // aircraft, animal, shoe, boat, bowl, helmet, body-part silhouette, smooth blob,
@@ -120,7 +127,8 @@ function createLivingMemoryFold() {
     const farPressure = Math.exp(-Math.pow((t - .31) / .23, 2))
     const brokenKnot = Math.exp(-Math.pow((t - .01) / .15, 2))
     const pulse = .5 + .5 * Math.sin(t * 12.7 + .62)
-    const pressureWindow = .20 + .80 * Math.pow(.5 + .5 * Math.sin(t * 10.5 + .38), 1.8)
+    const pressureWave = .5 + .5 * Math.sin(t * 10.5 + .38)
+    const pressureWindow = THREE.MathUtils.smoothstep(pressureWave, .56, .84)
     const baseHalfWidth = (.055 + .022 * centralScar + .013 * nearPressure + .008 * farPressure) * (.42 + .58 * endFade)
 
     for (let cross = 0; cross < MEMORY_CROSS_POINTS; cross += 1) {
@@ -161,18 +169,18 @@ function createLivingMemoryFold() {
       const x = center.x + side.x * (lateralDistance + edgeBreak)
       const z = center.y + side.y * (lateralDistance + edgeBreak)
       const groundY = focusGroundHeightForMemory(x, z)
+      const incisionReveal = .007 + .003 * centralScar
       const y = groundY
-        + .030
-        + .006 * centralScar
-        + minimalContinuity * .20
-        - .010 * furrow
-        + .070 * dominantLip
-        + .001 * counterLip
-        + .006 * pulse * dominantLip
-        + localBuckling * .18
-        + micro * .30
-        - edgeSink * .58
-        - terminalSink * .46
+        + incisionReveal
+        + minimalContinuity * .05
+        - .004 * furrow
+        + .016 * dominantLip
+        + .0005 * counterLip
+        + .0015 * pulse * dominantLip
+        + localBuckling * .05
+        + micro * .08
+        - edgeSink * .30
+        - terminalSink * .48
 
       positions.push(x, y, z)
       uvs.push(crossU, u)
@@ -252,8 +260,9 @@ function createLivingMemoryFold() {
   geometry.userData.focusLiteralPixelSuccessorV299 = 'v299-ground-grade-dark-mineral-fissure-readable-footprint-warm-broken-lip-no-blue-object'
   geometry.userData.focusLiteralPixelSuccessorV300 = 'v300-terrain-seated-continuous-dark-mineral-fissure-desktop-portrait-no-islands'
   geometry.userData.focusLiteralPixelSuccessorV301 = 'v301-crack-scale-dark-incision-intermittent-mineral-crust-no-raised-strip'
+  geometry.userData.focusLiteralPixelSuccessorV302 = 'v302-grade-flush-hairline-incision-fragmented-low-crust-ground-owned-silhouette'
   geometry.userData.focusVisualAuthority = 'v295-sanctuary-memory-scar-volume'
-  geometry.userData.focusCurrentVisualAuthority = 'v301-ground-crack-dark-incision-no-ribbon-object'
+  geometry.userData.focusCurrentVisualAuthority = 'v302-grade-flush-dark-incision-fragmented-crust-no-raised-object'
   return geometry
 }
 

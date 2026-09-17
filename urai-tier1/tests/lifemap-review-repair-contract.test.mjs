@@ -117,7 +117,7 @@ test('Founder proof samples retained WebGL canvas pixels only', () => {
   assert.match(workflow, /lifemap-review-repair-contract\.test\.mjs/)
 })
 
-test('Focus final composition preserves one connected living-memory authority and locks the V301 terrain-seated sanctuary fissure', () => {
+test('Focus final composition preserves one connected living-memory authority and locks the V302 grade-flush sanctuary fissure', () => {
   assert.match(focusSource, /focus-v251-grounded-living-memory-manifestation/)
   assert.match(focusSource, /createFocusStrata, createFocusSurfaceMaps/)
   assert.doesNotMatch(focusSource, /focus-v249-memory-root-cradle/)
@@ -131,6 +131,7 @@ test('Focus final composition preserves one connected living-memory authority an
   assert.match(focusGeology, /V298 narrowed the event/)
   assert.match(focusGeology, /V299 changes ownership/)
   assert.match(focusGeology, /V301 responds to literal V300 pixels/)
+  assert.match(focusGeology, /V302 responds to retained V301 pixels/)
   assert.match(focusGeology, /const MEMORY_SECTIONS = 45/)
   assert.match(focusGeology, /const MEMORY_CROSS_POINTS = 9/)
   assert.match(focusGeology, /createLivingMemoryFold/)
@@ -146,7 +147,9 @@ test('Focus final composition preserves one connected living-memory authority an
   assert.match(focusGeology, /const nearPressure = Math\.exp/)
   assert.match(focusGeology, /const farPressure = Math\.exp/)
   assert.match(focusGeology, /const brokenKnot = Math\.exp/)
-  assert.match(focusGeology, /const pressureWindow =/)
+  assert.match(focusGeology, /const pressureWave =/)
+  assert.match(focusGeology, /const pressureWindow = THREE\.MathUtils\.smoothstep\(pressureWave, \.56, \.84\)/)
+  assert.match(focusGeology, /const incisionReveal = \.007 \+ \.003 \* centralScar/)
   assert.match(focusGeology, /function sanctuaryGroundHeight\(x: number, z: number\)/)
   assert.match(focusGeology, /function focusGroundHeightForMemory\(localX: number, localZ: number\)/)
   assert.match(focusGeology, /const groundY = focusGroundHeightForMemory\(x, z\)/)
@@ -162,8 +165,9 @@ test('Focus final composition preserves one connected living-memory authority an
   assert.match(focusGeology, /positions\.push\(positions\[i\], positions\[i \+ 1\] - \.18, positions\[i \+ 2\]\)/)
   assert.match(focusGeology, /one-closed-ground-owned-fissure-no-split-pair-no-portable-outline/)
   assert.match(focusGeology, /focusLiteralPixelSuccessorV301 = 'v301-crack-scale-dark-incision-intermittent-mineral-crust-no-raised-strip'/)
+  assert.match(focusGeology, /focusLiteralPixelSuccessorV302 = 'v302-grade-flush-hairline-incision-fragmented-low-crust-ground-owned-silhouette'/)
   assert.match(focusGeology, /focusVisualAuthority = 'v295-sanctuary-memory-scar-volume'/)
-  assert.match(focusGeology, /focusCurrentVisualAuthority = 'v301-ground-crack-dark-incision-no-ribbon-object'/)
+  assert.match(focusGeology, /focusCurrentVisualAuthority = 'v302-grade-flush-dark-incision-fragmented-crust-no-raised-object'/)
   assert.match(focusGeology, /const weathered = new THREE\.Color\(\)\.setRGB/)
   assert.match(focusGeology, /const warm = new THREE\.Color\(\)\.setRGB/)
   assert.doesNotMatch(focusGeology, /MEMORY_FACETS|createMemoryFacet|v271-interlocked-volumetric-memory-facet/)
