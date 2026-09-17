@@ -14,55 +14,50 @@ import * as THREE from 'three'
 // its thin underside, side walls, and terminal caps are deliberately buried below grade
 // so closure cannot become a portable slab, shell, card, arch, or collectible silhouette.
 //
-// V296 responds to literal V295 pixels without changing that topology. V295's closed scar
-// is source-continuous but sanctuary-grade occlusion breaks the rendered top into detached
-// islands and portrait loses it almost entirely. V296 lifts only the compact interior scar
-// skin around the central pressure window; lateral edges, side walls, underside, outer runs
-// and terminal caps stay buried. The repair is visible continuity, never more object mass.
-//
-// V297 responds to the literal V296 retained pixels. V296 survives on desktop but still
-// reads as two broad parallel ribbon/lip bands and portrait re-buries most of the event.
-// V297 keeps the same closed/watertight topology while sharpening the planform into an
-// off-axis S fracture, narrowing the smooth panel, making the dark furrow meander instead
-// of forming a straight split, strongly biasing one broken mineral lip, and lifting the
-// compact interior pressure skin enough to remain legible without exposing closure.
+// V296 restored rendered continuity but retained pixels read as broad parallel ribbons.
+// V297 removed the split-pair read but exposed too much continuous top surface, producing
+// a long smooth slab/tongue on desktop and portrait. V298 therefore changes silhouette and
+// height-field structure rather than merely color: the visible footprint is materially
+// narrower and shorter, the central incision is deeper/darker, one mineral lip appears in
+// irregular pressure windows, the counter-side is nearly flush, and both terminals remain
+// buried. The V295 closed/watertight under-grade topology is preserved unchanged in kind.
 //
 // The form must read as memory pressure physically held by place. It must not regress
 // into a crystal crown, boulder, orb, flower, portal, ring, shell/mouth, manta, tent,
 // aircraft, animal, shoe, boat, bowl, helmet, body-part silhouette, smooth blob,
-// disconnected pair, card/slab, or generic pickup.
+// disconnected pair, card/slab, ribbon pair, tongue, or generic pickup.
 const MEMORY_SECTIONS = 41
 const MEMORY_CROSS_POINTS = 9
 
 function fractureCenter(t: number) {
-  const x = 2.62 * t
-    + .18 * Math.sin(t * 3.05 + .18)
-    + .055 * Math.sin(t * 8.4 - .31)
-  const z = -.92 * t
-    + .34 * Math.sin(t * 2.26 - .48)
-    + .11 * Math.sin(t * 5.8 + .66)
+  const x = 1.56 * t
+    + .17 * Math.sin(t * 3.12 + .18)
+    + .060 * Math.sin(t * 8.6 - .31)
+  const z = -1.02 * t
+    + .31 * Math.sin(t * 2.34 - .48)
+    + .095 * Math.sin(t * 6.1 + .66)
   return new THREE.Vector2(x, z)
 }
 
 function livingMemoryVertexColor(section: number, cross: number, t: number, lateral: number, furrow: number, ridge: number) {
-  const deep = new THREE.Color().setRGB(.020, .020, .015)
-  const mineral = new THREE.Color().setRGB(.16, .14, .085)
-  const weathered = new THREE.Color().setRGB(.34, .24, .11)
-  const warm = new THREE.Color().setRGB(.52, .22, .045)
-  const edgeMineral = new THREE.Color().setRGB(.40, .31, .16)
+  const deep = new THREE.Color().setRGB(.006, .010, .008)
+  const mineral = new THREE.Color().setRGB(.105, .095, .060)
+  const weathered = new THREE.Color().setRGB(.34, .225, .090)
+  const warm = new THREE.Color().setRGB(.56, .225, .035)
+  const edgeMineral = new THREE.Color().setRGB(.43, .30, .13)
   const centerWindow = 1 - Math.min(1, Math.abs(t))
-  const age = .5 + .5 * Math.sin(section * .47 + cross * .73)
-  const edge = THREE.MathUtils.smoothstep(Math.abs(lateral), .48, 1)
+  const age = .5 + .5 * Math.sin(section * .51 + cross * .79)
+  const edge = THREE.MathUtils.smoothstep(Math.abs(lateral), .44, 1)
   const color = deep.clone()
-    .lerp(mineral, .44 + .20 * age)
-    .lerp(weathered, .13 + .18 * centerWindow)
-  if (furrow > .2) color.lerp(deep, .40 + .28 * furrow)
-  if (ridge > .16) color.lerp(edgeMineral, .18 + .22 * ridge)
-  color.lerp(warm, .055 * centerWindow * (1 - edge))
-  color.lerp(deep, edge * .20)
-  color.r = Math.min(.56, color.r)
-  color.g = Math.min(.44, color.g)
-  color.b = Math.min(.23, color.b)
+    .lerp(mineral, .30 + .15 * age)
+    .lerp(weathered, .07 + .11 * centerWindow)
+  if (furrow > .2) color.lerp(deep, .74 + .18 * furrow)
+  if (ridge > .16) color.lerp(edgeMineral, .32 + .26 * ridge)
+  color.lerp(warm, .07 * centerWindow * ridge)
+  color.lerp(deep, edge * .30)
+  color.r = Math.min(.54, color.r)
+  color.g = Math.min(.36, color.g)
+  color.b = Math.min(.17, color.b)
   return color
 }
 
@@ -72,8 +67,6 @@ function createLivingMemoryFold() {
   const uvs: number[] = []
   const indices: number[] = []
 
-  // Build the visible scar surface first. Edge and terminal sinks make the top surface
-  // dissolve into the sanctuary instead of presenting a detachable outer silhouette.
   for (let section = 0; section < MEMORY_SECTIONS; section += 1) {
     const u = section / (MEMORY_SECTIONS - 1)
     const t = THREE.MathUtils.lerp(-1, 1, u)
@@ -83,17 +76,18 @@ function createLivingMemoryFold() {
     const tangent = after.clone().sub(before).normalize()
     const side = new THREE.Vector2(-tangent.y, tangent.x)
 
-    const endFade = Math.pow(Math.max(0, Math.sin(u * Math.PI)), .42)
-    const terminalSink = THREE.MathUtils.smoothstep(Math.abs(t), .72, 1) * .28
-    const centralScar = Math.exp(-Math.pow((t + .05) / .38, 2))
-    const nearPressure = Math.exp(-Math.pow((t + .43) / .20, 2))
-    const farPressure = Math.exp(-Math.pow((t - .34) / .24, 2))
-    const brokenKnot = Math.exp(-Math.pow((t - .02) / .15, 2))
-    const pulse = .5 + .5 * Math.sin(t * 12.7 + .62)
-    const baseHalfWidth = (.32 + .14 * centralScar + .07 * nearPressure + .04 * farPressure) * (.46 + .54 * endFade)
-    const centerY = -1.205
-      + .022 * Math.sin(t * 5.2)
-      + .015 * Math.sin(t * 12.4 + .4)
+    const endFade = Math.pow(Math.max(0, Math.sin(u * Math.PI)), .50)
+    const terminalSink = THREE.MathUtils.smoothstep(Math.abs(t), .66, 1) * .34
+    const centralScar = Math.exp(-Math.pow((t + .04) / .36, 2))
+    const nearPressure = Math.exp(-Math.pow((t + .40) / .19, 2))
+    const farPressure = Math.exp(-Math.pow((t - .30) / .22, 2))
+    const brokenKnot = Math.exp(-Math.pow((t - .02) / .14, 2))
+    const pulse = .5 + .5 * Math.sin(t * 12.9 + .62)
+    const pressureWindow = .34 + .66 * Math.pow(.5 + .5 * Math.sin(t * 10.8 + .35), 1.55)
+    const baseHalfWidth = (.155 + .072 * centralScar + .040 * nearPressure + .022 * farPressure) * (.40 + .60 * endFade)
+    const centerY = -1.255
+      + .014 * Math.sin(t * 5.4)
+      + .010 * Math.sin(t * 12.7 + .4)
       - terminalSink
 
     for (let cross = 0; cross < MEMORY_CROSS_POINTS; cross += 1) {
@@ -101,43 +95,46 @@ function createLivingMemoryFold() {
       const lateral = THREE.MathUtils.lerp(-1, 1, crossU)
       const absLateral = Math.abs(lateral)
       const jaggedEdge = 1
-        + .15 * Math.sin(section * 1.73 + (lateral < 0 ? .4 : 2.1))
-        + .08 * Math.sin(section * 3.31 + cross * .91)
-      const halfWidth = baseHalfWidth * (absLateral > .66 ? jaggedEdge : 1)
-      const furrowCenter = .08 * Math.sin(t * 3.4 + .35) - .035 * nearPressure + .025 * farPressure
-      const furrow = Math.exp(-Math.pow((lateral - furrowCenter) / .18, 2)) * (.58 + .42 * centralScar)
-      const leftLipCenter = -.48 + .08 * Math.sin(t * 2.9 - .25)
-      const rightLipCenter = .34 + .06 * Math.sin(t * 4.1 + .7)
-      const leftLip = Math.exp(-Math.pow((lateral - leftLipCenter) / .14, 2)) * (.34 + .72 * nearPressure + .28 * centralScar)
-      const rightLip = Math.exp(-Math.pow((lateral - rightLipCenter) / .16, 2)) * (.09 + .30 * farPressure + .16 * brokenKnot)
-      const ridge = Math.max(leftLip, rightLip)
-      const edgeSink = THREE.MathUtils.smoothstep(absLateral, .64, 1) * (.085 + .045 * endFade)
-      const micro = (.014 * Math.sin(section * 2.57 + cross * 1.21)
-        + .008 * Math.cos(section * 4.19 - cross * .77)) * endFade
-      const interiorWindow = 1 - THREE.MathUtils.smoothstep(absLateral, .38, .78)
-      const continuityLift = interiorWindow * (
-        .36 * centralScar * (.78 + .22 * pulse)
-        + .075 * nearPressure
-        + .040 * farPressure
+        + .20 * Math.sin(section * 1.81 + (lateral < 0 ? .4 : 2.1))
+        + .11 * Math.sin(section * 3.47 + cross * .91)
+      const halfWidth = baseHalfWidth * (absLateral > .52 ? jaggedEdge : 1)
+      const furrowCenter = .10 * Math.sin(t * 3.65 + .28) - .045 * nearPressure + .030 * farPressure
+      const furrow = Math.exp(-Math.pow((lateral - furrowCenter) / .115, 2)) * (.68 + .32 * centralScar)
+      const dominantLipCenter = -.43 + .10 * Math.sin(t * 3.1 - .25)
+      const counterLipCenter = .40 + .05 * Math.sin(t * 4.4 + .7)
+      const dominantLip = Math.exp(-Math.pow((lateral - dominantLipCenter) / .115, 2))
+        * pressureWindow
+        * (.28 + .72 * nearPressure + .38 * centralScar)
+      const counterLip = Math.exp(-Math.pow((lateral - counterLipCenter) / .14, 2))
+        * (.025 + .075 * farPressure + .045 * brokenKnot)
+      const ridge = Math.max(dominantLip, counterLip)
+      const edgeSink = THREE.MathUtils.smoothstep(absLateral, .50, 1) * (.10 + .055 * endFade)
+      const micro = (.018 * Math.sin(section * 2.71 + cross * 1.27)
+        + .010 * Math.cos(section * 4.33 - cross * .83)) * endFade
+      const scarCore = Math.exp(-Math.pow((lateral - furrowCenter) / .44, 2))
+      const minimalContinuity = scarCore * (
+        .075 * centralScar
+        + .034 * nearPressure
+        + .018 * farPressure
       )
-      const depthWarp = .050 * Math.sin(t * 4.6 + lateral * 2.2 + .55) * centralScar * (1 - .55 * absLateral)
+      const localBuckling = .035 * Math.sin(t * 8.1 + lateral * 2.8 + .55)
+        * centralScar * (1 - .65 * absLateral)
 
-      // Scar first: one lip dominates, the counter-lip breaks and recedes, and the
-      // V297 furrow stays shallow enough to read as one connected rupture rather than
-      // a split pair. Closure geometry and terminal/lateral edges remain below grade.
+      // V298 deliberately avoids a broad raised panel. Most of the top stays at or below
+      // sanctuary grade; the deep dark incision and one discontinuous lip carry the read.
       const y = centerY
-        + continuityLift
-        - .032 * furrow
-        + .070 * leftLip
-        + .018 * rightLip
-        + .014 * pulse * (1 - absLateral)
-        + depthWarp
+        + minimalContinuity
+        - .175 * furrow
+        + .205 * dominantLip
+        + .012 * counterLip
+        + .010 * pulse * dominantLip
+        + localBuckling
         + micro
         - edgeSink
       const lateralDistance = lateral * halfWidth
-      const edgeBreak = absLateral > .72
-        ? .038 * Math.sin(section * 2.11 + cross * 1.37)
-        : 0
+      const edgeBreak = absLateral > .55
+        ? .050 * Math.sin(section * 2.19 + cross * 1.43)
+        : .010 * Math.sin(section * 1.41 + cross * .59) * absLateral
       const x = center.x + side.x * (lateralDistance + edgeBreak)
       const z = center.y + side.y * (lateralDistance + edgeBreak)
 
@@ -151,18 +148,16 @@ function createLivingMemoryFold() {
   const topVertexCount = positions.length / 3
   const bottomOffset = topVertexCount
 
-  // Restore watertight closure without restoring a visible portable object. The thin
-  // underside copies the top footprint but is pushed materially below sanctuary grade;
-  // side walls and caps therefore exist only to satisfy closed-volume topology.
+  // Watertight closure remains physically present but buried enough that it cannot become
+  // a portable slab silhouette. The visual event is the scar at grade, not its underside.
   for (let vertex = 0; vertex < topVertexCount; vertex += 1) {
     const i = vertex * 3
     const uv = vertex * 2
     positions.push(positions[i], positions[i + 1] - .18, positions[i + 2])
-    colors.push(colors[i] * .42, colors[i + 1] * .42, colors[i + 2] * .42)
+    colors.push(colors[i] * .38, colors[i + 1] * .38, colors[i + 2] * .38)
     uvs.push(uvs[uv], uvs[uv + 1])
   }
 
-  // Top + bottom surfaces.
   for (let section = 0; section < MEMORY_SECTIONS - 1; section += 1) {
     const row = section * MEMORY_CROSS_POINTS
     const nextRow = (section + 1) * MEMORY_CROSS_POINTS
@@ -176,7 +171,6 @@ function createLivingMemoryFold() {
     }
   }
 
-  // Long side walls close the two lateral boundaries.
   for (let section = 0; section < MEMORY_SECTIONS - 1; section += 1) {
     const row = section * MEMORY_CROSS_POINTS
     const nextRow = (section + 1) * MEMORY_CROSS_POINTS
@@ -188,7 +182,6 @@ function createLivingMemoryFold() {
     indices.push(rightA, rightA + bottomOffset, rightB, rightB, rightA + bottomOffset, rightB + bottomOffset)
   }
 
-  // Both terminal caps are below grade and complete the watertight manifold.
   const endRow = (MEMORY_SECTIONS - 1) * MEMORY_CROSS_POINTS
   for (let cross = 0; cross < MEMORY_CROSS_POINTS - 1; cross += 1) {
     const startA = cross
@@ -219,8 +212,9 @@ function createLivingMemoryFold() {
   geometry.userData.focusLiteralPixelSuccessorV295 = 'v295-closed-watertight-scar-ribbon-buried-underside-sides-caps-asymmetric-lips'
   geometry.userData.focusLiteralPixelSuccessorV296 = 'v296-interior-continuity-lift-buried-edges-closed-scar-volume'
   geometry.userData.focusLiteralPixelSuccessorV297 = 'v297-off-axis-s-fracture-shallow-meandering-furrow-one-dominant-lip-portrait-legibility'
+  geometry.userData.focusLiteralPixelSuccessorV298 = 'v298-narrow-short-deep-incision-broken-dominant-lip-counter-side-buried-no-panel'
   geometry.userData.focusVisualAuthority = 'v295-sanctuary-memory-scar-volume'
-  geometry.userData.focusCurrentVisualAuthority = 'v297-off-axis-continuous-ground-held-memory-rupture'
+  geometry.userData.focusCurrentVisualAuthority = 'v298-narrow-broken-ground-held-memory-scar'
   return geometry
 }
 
