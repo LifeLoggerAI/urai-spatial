@@ -5,12 +5,33 @@ import ts from 'typescript'
 import * as THREE from 'three'
 
 const source = readFileSync(new URL('../src/app/focus/FocusChamberClient.tsx', import.meta.url), 'utf8')
-const start = source.indexOf('function focusGroundHeight(')
+const geologySource = readFileSync(new URL('../src/app/focus/focusMemoryGeology.ts', import.meta.url), 'utf8')
+
+const groundStart = geologySource.indexOf('export function focusGroundHeight(')
+const groundEndMarker = '\n}\n\nfunction livingMemoryVertexColor'
+const groundEnd = geologySource.indexOf(groundEndMarker, groundStart)
+assert.ok(groundStart >= 0 && groundEnd > groundStart, 'shared exported focusGroundHeight must remain extractable')
+const sharedGround = geologySource
+  .slice(groundStart, groundEnd + 2)
+  .replace('export function focusGroundHeight', 'function focusGroundHeight')
+
+const start = source.indexOf('function FocusSanctuaryGround(')
 const end = source.indexOf('  const maps =', start)
-const body = source.slice(start, end) + '\nreturn geometry; }'
-const seating = source.slice(source.indexOf('function seatFocusStoneGeometry('), source.indexOf('function FocusStoneBank('))
+assert.ok(start >= 0 && end > start, 'FocusSanctuaryGround geometry factory must remain extractable')
+const body = sharedGround + '\n' + source.slice(start, end) + '\nreturn geometry; }'
+
+const seatingStart = source.indexOf('function seatFocusStoneGeometry(')
+const seatingEnd = source.indexOf('function FocusStoneBank(', seatingStart)
+assert.ok(seatingStart >= 0 && seatingEnd > seatingStart, 'stone seating function must remain extractable')
+const seating = source.slice(seatingStart, seatingEnd)
+
 const compile = ts.transpile(`${body}\n${seating}`, { target: ts.ScriptTarget.ES2022 })
-const { geometry, height, seat } = new Function('THREE', 'useMemo', `${compile}; return { geometry: FocusSanctuaryGround({accent:'#abc'}), height: focusGroundHeight, seat: seatFocusStoneGeometry };`)(THREE, fn => fn())
+const { geometry, height, seat } = new Function(
+  'THREE',
+  'useMemo',
+  `${compile}; return { geometry: FocusSanctuaryGround({accent:'#abc'}), height: focusGroundHeight, seat: seatFocusStoneGeometry };`,
+)(THREE, fn => fn())
+
 test('Focus walkable terrain faces the camera above the surface', () => {
   const positions = geometry.getAttribute('position'), normals = geometry.getAttribute('normal')
   let checked = 0
@@ -25,7 +46,7 @@ test('Focus walkable terrain faces the camera above the surface', () => {
   geometry.dispose()
 })
 
-test('Focus rock crop edges meet the ground without mutating the cached asset', () => {
+test('Focus rock crop edges meet the shared canonical ground without mutating the cached asset', () => {
   const original = new THREE.PlaneGeometry(4, 4, 16, 16)
   const before = Array.from(original.getAttribute('position').array)
   const world = new THREE.Matrix4().compose(
