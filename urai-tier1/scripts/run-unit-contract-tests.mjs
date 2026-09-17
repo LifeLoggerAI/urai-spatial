@@ -5,6 +5,7 @@ const focusedContractTests = [
   'tests/aaa-world-artifact-contract.test.mjs',
   'tests/asset-factory-phase6-contract.test.mjs',
   'tests/automatic-hosting-recovery-contract.test.mjs',
+  'tests/ai-evolution-policy-safety.test.mjs',
   'tests/body-biometric-contract.test.mjs',
   'tests/embodied-exploration-contract.test.mjs',
   'tests/field-reconstruction-phase5-contract.test.mjs',
