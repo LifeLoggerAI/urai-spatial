@@ -2,7 +2,7 @@ name: Home State Proof
 
 on:
   pull_request:
-    branches: [main]
+    branches: [main, home-final-v24-certify-20260826]
     paths:
       - 'scripts/capture-home-state-proof.mjs'
       - 'scripts/reconcile-home-orb-consent-proof.mjs'
