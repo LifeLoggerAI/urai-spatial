@@ -130,7 +130,7 @@ test('Focus final composition preserves one connected living-memory authority an
   assert.match(focusGeology, /V295 keeps the useful V294 top-surface language/)
   assert.match(focusGeology, /V298 narrowed the event/)
   assert.match(focusGeology, /V299 changes ownership/)
-  assert.match(focusGeology, /V301 responds to exact V299 pixels/)
+  assert.match(focusGeology, /V301 responds to literal V300 pixels/)
   assert.match(focusGeology, /const MEMORY_SECTIONS = 45/)
   assert.match(focusGeology, /const MEMORY_CROSS_POINTS = 9/)
   assert.match(focusGeology, /createLivingMemoryFold/)

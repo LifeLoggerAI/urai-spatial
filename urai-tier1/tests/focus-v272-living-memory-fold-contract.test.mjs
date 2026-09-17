@@ -32,7 +32,7 @@ test('V301 preserves V295 watertight topology while seating the dark mineral fis
   assert.match(geology, /V295 keeps the useful V294 top-surface language while restoring the non-negotiable/)
   assert.match(geology, /V298 narrowed the event/)
   assert.match(geology, /V299 changes ownership/)
-  assert.match(geology, /V301 responds to exact V299 pixels/)
+  assert.match(geology, /V301 responds to literal V300 pixels/)
   assert.match(geology, /const deep = new THREE\.Color\(\)\.setRGB/)
   assert.match(geology, /const mineral = new THREE\.Color\(\)\.setRGB/)
   assert.match(geology, /const weathered = new THREE\.Color\(\)\.setRGB/)
