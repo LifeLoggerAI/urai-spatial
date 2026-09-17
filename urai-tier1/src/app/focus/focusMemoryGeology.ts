@@ -16,48 +16,50 @@ import * as THREE from 'three'
 //
 // V296 restored rendered continuity but retained pixels read as broad parallel ribbons.
 // V297 removed the split-pair read but exposed too much continuous top surface, producing
-// a long smooth slab/tongue on desktop and portrait. V298 therefore changes silhouette and
-// height-field structure rather than merely color: the visible footprint is materially
-// narrower and shorter, the central incision is deeper/darker, one mineral lip appears in
-// irregular pressure windows, the counter-side is nearly flush, and both terminals remain
-// buried. The V295 closed/watertight under-grade topology is preserved unchanged in kind.
+// a long smooth slab/tongue on desktop and portrait. V298 narrowed the event, but retained
+// pixels still read as a small cool-blue ribbon/leaf/fish sitting on the sanctuary floor.
+// V299 changes ownership, not merely silhouette: the visible event is a broader readable
+// DARK MINERAL FISSURE at grade. The central incision stays just above the authored ground
+// so it cannot disappear behind the sanctuary mesh, the outer edges sink into grade, only
+// one broken lip rises modestly in irregular pressure windows, and warmer mineral albedo
+// survives the higher-level neutral material multiplier and cool selected-memory lights.
 //
 // The form must read as memory pressure physically held by place. It must not regress
 // into a crystal crown, boulder, orb, flower, portal, ring, shell/mouth, manta, tent,
 // aircraft, animal, shoe, boat, bowl, helmet, body-part silhouette, smooth blob,
-// disconnected pair, card/slab, ribbon pair, tongue, or generic pickup.
-const MEMORY_SECTIONS = 41
+// disconnected pair, card/slab, ribbon pair, tongue, leaf, fish, or generic pickup.
+const MEMORY_SECTIONS = 45
 const MEMORY_CROSS_POINTS = 9
 
 function fractureCenter(t: number) {
-  const x = 1.56 * t
-    + .17 * Math.sin(t * 3.12 + .18)
-    + .060 * Math.sin(t * 8.6 - .31)
-  const z = -1.02 * t
-    + .31 * Math.sin(t * 2.34 - .48)
-    + .095 * Math.sin(t * 6.1 + .66)
+  const x = 1.92 * t
+    + .18 * Math.sin(t * 3.08 + .18)
+    + .070 * Math.sin(t * 8.9 - .31)
+  const z = -1.23 * t
+    + .34 * Math.sin(t * 2.31 - .48)
+    + .11 * Math.sin(t * 6.35 + .66)
   return new THREE.Vector2(x, z)
 }
 
 function livingMemoryVertexColor(section: number, cross: number, t: number, lateral: number, furrow: number, ridge: number) {
-  const deep = new THREE.Color().setRGB(.006, .010, .008)
-  const mineral = new THREE.Color().setRGB(.105, .095, .060)
-  const weathered = new THREE.Color().setRGB(.34, .225, .090)
-  const warm = new THREE.Color().setRGB(.56, .225, .035)
-  const edgeMineral = new THREE.Color().setRGB(.43, .30, .13)
+  const deep = new THREE.Color().setRGB(.012, .006, .003)
+  const mineral = new THREE.Color().setRGB(.30, .18, .065)
+  const weathered = new THREE.Color().setRGB(.58, .34, .10)
+  const warm = new THREE.Color().setRGB(.78, .36, .055)
+  const edgeMineral = new THREE.Color().setRGB(.64, .40, .13)
   const centerWindow = 1 - Math.min(1, Math.abs(t))
-  const age = .5 + .5 * Math.sin(section * .51 + cross * .79)
-  const edge = THREE.MathUtils.smoothstep(Math.abs(lateral), .44, 1)
+  const age = .5 + .5 * Math.sin(section * .49 + cross * .83)
+  const edge = THREE.MathUtils.smoothstep(Math.abs(lateral), .50, 1)
   const color = deep.clone()
-    .lerp(mineral, .30 + .15 * age)
-    .lerp(weathered, .07 + .11 * centerWindow)
-  if (furrow > .2) color.lerp(deep, .74 + .18 * furrow)
-  if (ridge > .16) color.lerp(edgeMineral, .32 + .26 * ridge)
-  color.lerp(warm, .07 * centerWindow * ridge)
-  color.lerp(deep, edge * .30)
-  color.r = Math.min(.54, color.r)
-  color.g = Math.min(.36, color.g)
-  color.b = Math.min(.17, color.b)
+    .lerp(mineral, .48 + .18 * age)
+    .lerp(weathered, .10 + .13 * centerWindow)
+  if (furrow > .2) color.lerp(deep, .88 + .08 * furrow)
+  if (ridge > .12) color.lerp(edgeMineral, .42 + .28 * ridge)
+  color.lerp(warm, .10 * centerWindow * ridge)
+  color.lerp(deep, edge * .38)
+  color.r = Math.min(.76, color.r)
+  color.g = Math.min(.44, color.g)
+  color.b = Math.min(.15, color.b)
   return color
 }
 
@@ -71,23 +73,23 @@ function createLivingMemoryFold() {
     const u = section / (MEMORY_SECTIONS - 1)
     const t = THREE.MathUtils.lerp(-1, 1, u)
     const center = fractureCenter(t)
-    const before = fractureCenter(Math.max(-1, t - .018))
-    const after = fractureCenter(Math.min(1, t + .018))
+    const before = fractureCenter(Math.max(-1, t - .016))
+    const after = fractureCenter(Math.min(1, t + .016))
     const tangent = after.clone().sub(before).normalize()
     const side = new THREE.Vector2(-tangent.y, tangent.x)
 
-    const endFade = Math.pow(Math.max(0, Math.sin(u * Math.PI)), .50)
-    const terminalSink = THREE.MathUtils.smoothstep(Math.abs(t), .66, 1) * .34
-    const centralScar = Math.exp(-Math.pow((t + .04) / .36, 2))
-    const nearPressure = Math.exp(-Math.pow((t + .40) / .19, 2))
-    const farPressure = Math.exp(-Math.pow((t - .30) / .22, 2))
-    const brokenKnot = Math.exp(-Math.pow((t - .02) / .14, 2))
-    const pulse = .5 + .5 * Math.sin(t * 12.9 + .62)
-    const pressureWindow = .34 + .66 * Math.pow(.5 + .5 * Math.sin(t * 10.8 + .35), 1.55)
-    const baseHalfWidth = (.155 + .072 * centralScar + .040 * nearPressure + .022 * farPressure) * (.40 + .60 * endFade)
-    const centerY = -1.255
-      + .014 * Math.sin(t * 5.4)
-      + .010 * Math.sin(t * 12.7 + .4)
+    const endFade = Math.pow(Math.max(0, Math.sin(u * Math.PI)), .46)
+    const terminalSink = THREE.MathUtils.smoothstep(Math.abs(t), .70, 1) * .30
+    const centralScar = Math.exp(-Math.pow((t + .04) / .40, 2))
+    const nearPressure = Math.exp(-Math.pow((t + .41) / .20, 2))
+    const farPressure = Math.exp(-Math.pow((t - .31) / .23, 2))
+    const brokenKnot = Math.exp(-Math.pow((t - .01) / .15, 2))
+    const pulse = .5 + .5 * Math.sin(t * 12.7 + .62)
+    const pressureWindow = .20 + .80 * Math.pow(.5 + .5 * Math.sin(t * 10.5 + .38), 1.8)
+    const baseHalfWidth = (.205 + .085 * centralScar + .050 * nearPressure + .026 * farPressure) * (.42 + .58 * endFade)
+    const centerY = -1.205
+      + .010 * Math.sin(t * 5.4)
+      + .008 * Math.sin(t * 12.7 + .4)
       - terminalSink
 
     for (let cross = 0; cross < MEMORY_CROSS_POINTS; cross += 1) {
@@ -95,46 +97,47 @@ function createLivingMemoryFold() {
       const lateral = THREE.MathUtils.lerp(-1, 1, crossU)
       const absLateral = Math.abs(lateral)
       const jaggedEdge = 1
-        + .20 * Math.sin(section * 1.81 + (lateral < 0 ? .4 : 2.1))
-        + .11 * Math.sin(section * 3.47 + cross * .91)
-      const halfWidth = baseHalfWidth * (absLateral > .52 ? jaggedEdge : 1)
-      const furrowCenter = .10 * Math.sin(t * 3.65 + .28) - .045 * nearPressure + .030 * farPressure
-      const furrow = Math.exp(-Math.pow((lateral - furrowCenter) / .115, 2)) * (.68 + .32 * centralScar)
-      const dominantLipCenter = -.43 + .10 * Math.sin(t * 3.1 - .25)
-      const counterLipCenter = .40 + .05 * Math.sin(t * 4.4 + .7)
-      const dominantLip = Math.exp(-Math.pow((lateral - dominantLipCenter) / .115, 2))
+        + .24 * Math.sin(section * 1.79 + (lateral < 0 ? .4 : 2.1))
+        + .13 * Math.sin(section * 3.51 + cross * .93)
+      const halfWidth = baseHalfWidth * (absLateral > .50 ? jaggedEdge : 1)
+      const furrowCenter = .11 * Math.sin(t * 3.75 + .28) - .050 * nearPressure + .032 * farPressure
+      const furrow = Math.exp(-Math.pow((lateral - furrowCenter) / .13, 2)) * (.72 + .28 * centralScar)
+      const dominantLipCenter = -.48 + .11 * Math.sin(t * 3.0 - .25)
+      const counterLipCenter = .43 + .05 * Math.sin(t * 4.5 + .7)
+      const dominantLip = Math.exp(-Math.pow((lateral - dominantLipCenter) / .105, 2))
         * pressureWindow
-        * (.28 + .72 * nearPressure + .38 * centralScar)
-      const counterLip = Math.exp(-Math.pow((lateral - counterLipCenter) / .14, 2))
-        * (.025 + .075 * farPressure + .045 * brokenKnot)
+        * (.26 + .70 * nearPressure + .34 * centralScar)
+      const counterLip = Math.exp(-Math.pow((lateral - counterLipCenter) / .13, 2))
+        * (.012 + .045 * farPressure + .025 * brokenKnot)
       const ridge = Math.max(dominantLip, counterLip)
-      const edgeSink = THREE.MathUtils.smoothstep(absLateral, .50, 1) * (.10 + .055 * endFade)
-      const micro = (.018 * Math.sin(section * 2.71 + cross * 1.27)
-        + .010 * Math.cos(section * 4.33 - cross * .83)) * endFade
-      const scarCore = Math.exp(-Math.pow((lateral - furrowCenter) / .44, 2))
+      const edgeSink = THREE.MathUtils.smoothstep(absLateral, .54, 1) * (.095 + .050 * endFade)
+      const micro = (.015 * Math.sin(section * 2.73 + cross * 1.29)
+        + .009 * Math.cos(section * 4.39 - cross * .81)) * endFade
+      const scarCore = Math.exp(-Math.pow((lateral - furrowCenter) / .42, 2))
       const minimalContinuity = scarCore * (
-        .075 * centralScar
-        + .034 * nearPressure
-        + .018 * farPressure
+        .022 * centralScar
+        + .010 * nearPressure
+        + .006 * farPressure
       )
-      const localBuckling = .035 * Math.sin(t * 8.1 + lateral * 2.8 + .55)
-        * centralScar * (1 - .65 * absLateral)
+      const localBuckling = .020 * Math.sin(t * 8.2 + lateral * 2.9 + .55)
+        * centralScar * (1 - .68 * absLateral)
 
-      // V298 deliberately avoids a broad raised panel. Most of the top stays at or below
-      // sanctuary grade; the deep dark incision and one discontinuous lip carry the read.
+      // V299 keeps the fissure visually at grade instead of floating above it. The dark
+      // incision is shallow enough to remain visible over the sanctuary mesh; only one
+      // discontinuous lip rises, while the opposite side and outer edges dissolve downward.
       const y = centerY
         + minimalContinuity
-        - .175 * furrow
-        + .205 * dominantLip
-        + .012 * counterLip
-        + .010 * pulse * dominantLip
+        - .065 * furrow
+        + .082 * dominantLip
+        + .006 * counterLip
+        + .006 * pulse * dominantLip
         + localBuckling
         + micro
         - edgeSink
       const lateralDistance = lateral * halfWidth
-      const edgeBreak = absLateral > .55
-        ? .050 * Math.sin(section * 2.19 + cross * 1.43)
-        : .010 * Math.sin(section * 1.41 + cross * .59) * absLateral
+      const edgeBreak = absLateral > .54
+        ? .060 * Math.sin(section * 2.23 + cross * 1.47)
+        : .012 * Math.sin(section * 1.39 + cross * .61) * absLateral
       const x = center.x + side.x * (lateralDistance + edgeBreak)
       const z = center.y + side.y * (lateralDistance + edgeBreak)
 
@@ -149,12 +152,12 @@ function createLivingMemoryFold() {
   const bottomOffset = topVertexCount
 
   // Watertight closure remains physically present but buried enough that it cannot become
-  // a portable slab silhouette. The visual event is the scar at grade, not its underside.
+  // a portable slab silhouette. The visual event is the fissure at grade, not its underside.
   for (let vertex = 0; vertex < topVertexCount; vertex += 1) {
     const i = vertex * 3
     const uv = vertex * 2
     positions.push(positions[i], positions[i + 1] - .18, positions[i + 2])
-    colors.push(colors[i] * .38, colors[i + 1] * .38, colors[i + 2] * .38)
+    colors.push(colors[i] * .32, colors[i + 1] * .32, colors[i + 2] * .32)
     uvs.push(uvs[uv], uvs[uv + 1])
   }
 
@@ -204,17 +207,18 @@ function createLivingMemoryFold() {
 
   geometry.userData.focusMemoryRole = 'v272-single-connected-living-memory-fold'
   geometry.userData.focusMemoryTopology = 'v295-closed-ground-fused-scar-volume-with-buried-closure'
-  geometry.userData.focusMemoryEnergy = 'weathered-mineral-restrained-warm-cool-response'
+  geometry.userData.focusMemoryEnergy = 'weathered-warm-mineral-dark-fissure-response'
   geometry.userData.focusLiteralPixelRepair = 'v272-no-crystal-crown-no-card-stack'
-  geometry.userData.focusSilhouetteRule = 'one-closed-ground-owned-scar-no-split-pair-no-portable-outline'
-  geometry.userData.focusSurfaceDensity = `${MEMORY_SECTIONS}x${MEMORY_CROSS_POINTS}-closed-ground-scar-volume`
+  geometry.userData.focusSilhouetteRule = 'one-closed-ground-owned-fissure-no-split-pair-no-portable-outline'
+  geometry.userData.focusSurfaceDensity = `${MEMORY_SECTIONS}x${MEMORY_CROSS_POINTS}-closed-ground-fissure-volume`
   geometry.userData.focusLiteralPixelSuccessorV294 = 'v294-continuous-open-sanctuary-scar-jagged-edges-dark-furrow-asymmetric-lips'
   geometry.userData.focusLiteralPixelSuccessorV295 = 'v295-closed-watertight-scar-ribbon-buried-underside-sides-caps-asymmetric-lips'
   geometry.userData.focusLiteralPixelSuccessorV296 = 'v296-interior-continuity-lift-buried-edges-closed-scar-volume'
   geometry.userData.focusLiteralPixelSuccessorV297 = 'v297-off-axis-s-fracture-shallow-meandering-furrow-one-dominant-lip-portrait-legibility'
   geometry.userData.focusLiteralPixelSuccessorV298 = 'v298-narrow-short-deep-incision-broken-dominant-lip-counter-side-buried-no-panel'
+  geometry.userData.focusLiteralPixelSuccessorV299 = 'v299-ground-grade-dark-mineral-fissure-readable-footprint-warm-broken-lip-no-blue-object'
   geometry.userData.focusVisualAuthority = 'v295-sanctuary-memory-scar-volume'
-  geometry.userData.focusCurrentVisualAuthority = 'v298-narrow-broken-ground-held-memory-scar'
+  geometry.userData.focusCurrentVisualAuthority = 'v299-ground-grade-dark-mineral-memory-fissure'
   return geometry
 }
 
