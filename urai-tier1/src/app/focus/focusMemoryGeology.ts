@@ -14,6 +14,12 @@ import * as THREE from 'three'
 // its thin underside, side walls, and terminal caps are deliberately buried below grade
 // so closure cannot become a portable slab, shell, card, arch, or collectible silhouette.
 //
+// V296 responds to literal V295 pixels without changing that topology. V295's closed scar
+// is source-continuous but sanctuary-grade occlusion breaks the rendered top into detached
+// islands and portrait loses it almost entirely. V296 lifts only the compact interior scar
+// skin around the central pressure window; lateral edges, side walls, underside, outer runs
+// and terminal caps stay buried. The repair is visible continuity, never more object mass.
+//
 // The form must read as memory pressure physically held by place. It must not regress
 // into a crystal crown, boulder, orb, flower, portal, ring, shell/mouth, manta, tent,
 // aircraft, animal, shoe, boat, bowl, helmet, body-part silhouette, smooth blob,
@@ -98,10 +104,14 @@ function createLivingMemoryFold() {
       const edgeSink = THREE.MathUtils.smoothstep(absLateral, .66, 1) * (.065 + .030 * endFade)
       const micro = (.009 * Math.sin(section * 2.57 + cross * 1.21)
         + .006 * Math.cos(section * 4.19 - cross * .77)) * endFade
+      const interiorWindow = 1 - THREE.MathUtils.smoothstep(absLateral, .42, .86)
+      const continuityLift = .28 * centralScar * interiorWindow * (.76 + .24 * pulse)
 
       // Scar first: the furrow cuts down, one lip dominates and the counter-lip recedes.
-      // Only this top skin is intended to be visible; all closure geometry is below grade.
+      // V296 lifts only the interior scar window; all closure geometry and lateral edges
+      // remain below grade so rendered continuity cannot become a portable slab outline.
       const y = centerY
+        + continuityLift
         - .070 * furrow
         + .082 * leftLip
         + .040 * rightLip
@@ -191,8 +201,9 @@ function createLivingMemoryFold() {
   geometry.userData.focusSurfaceDensity = `${MEMORY_SECTIONS}x${MEMORY_CROSS_POINTS}-closed-ground-scar-volume`
   geometry.userData.focusLiteralPixelSuccessorV294 = 'v294-continuous-open-sanctuary-scar-jagged-edges-dark-furrow-asymmetric-lips'
   geometry.userData.focusLiteralPixelSuccessorV295 = 'v295-closed-watertight-scar-ribbon-buried-underside-sides-caps-asymmetric-lips'
+  geometry.userData.focusLiteralPixelSuccessorV296 = 'v296-interior-continuity-lift-buried-edges-closed-scar-volume'
   geometry.userData.focusVisualAuthority = 'v295-sanctuary-memory-scar-volume'
-  geometry.userData.focusCurrentVisualAuthority = 'v295-closed-continuous-ground-held-memory-rupture'
+  geometry.userData.focusCurrentVisualAuthority = 'v296-continuous-visible-ground-held-memory-rupture'
   return geometry
 }
 
