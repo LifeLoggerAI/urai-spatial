@@ -9,7 +9,7 @@ test('selected memory remains one connected living-memory fold rather than discr
   assert.match(geology, /const MEMORY_SECTIONS = 15/)
   assert.match(geology, /const MEMORY_RING_POINTS = 12/)
   assert.match(geology, /function createLivingMemoryFold\(/)
-  assert.match(geology, /deep longitudinal furrow/)
+  assert.match(geology, /deep\s+longitudinal\s+furrow/)
   assert.match(geology, /focusMemoryRole = 'v272-single-connected-living-memory-fold'/)
   assert.match(geology, /focusMemoryTopology = 'closed-twisted-longitudinal-fold-with-deep-furrow'/)
   assert.match(geology, /focusLiteralPixelRepair = 'v272-no-crystal-crown-no-card-stack'/)
