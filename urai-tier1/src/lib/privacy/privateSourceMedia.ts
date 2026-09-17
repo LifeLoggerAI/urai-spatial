@@ -90,8 +90,11 @@ export function isPrivateSourceMediaReceipt(value: unknown): value is PrivateSou
   if (candidate.version !== 1 || candidate.immutableOriginal !== true || candidate.privacyClass !== 'L5') return false
   if (!candidate.sourceId || !/^[A-Za-z0-9_-]{8,160}$/.test(candidate.sourceId)) return false
   if (!candidate.sha256 || !/^[a-f0-9]{64}$/i.test(candidate.sha256)) return false
-  if (!Number.isSafeInteger(candidate.byteLength) || Number(candidate.byteLength) <= 0) return false
-  if (candidate.durationSeconds !== undefined && (!Number.isFinite(candidate.durationSeconds) || Number(candidate.durationSeconds) < 0)) return false
+  if (typeof candidate.byteLength !== 'number' || !Number.isSafeInteger(candidate.byteLength) || candidate.byteLength <= 0) return false
+  if (
+    candidate.durationSeconds !== undefined &&
+    (typeof candidate.durationSeconds !== 'number' || !Number.isFinite(candidate.durationSeconds) || candidate.durationSeconds < 0)
+  ) return false
   if (!candidate.consent || !Array.isArray(candidate.consent.scopes) || !candidate.consent.assertedAt) return false
   return ['direct-subject', 'owner-attested', 'provider-recorded', 'unknown', 'revoked'].includes(candidate.consent.status)
 }
@@ -125,6 +128,9 @@ export function evaluatePrivateSourceMediaUse(
     case 'memory-index':
       requireDomain('memory', policy.memory, requiredDomains, reasons)
       requireDomain('models', policy.models, requiredDomains, reasons)
+      if (receipt.mediaKind === 'audio' || receipt.mediaKind === 'video') {
+        requireDomain('identity', policy.identity, requiredDomains, reasons)
+      }
       if (!policy.models.modelContext) reasons.push('models consent does not permit model context')
       break
     case 'replay':
