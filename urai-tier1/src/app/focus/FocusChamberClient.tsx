@@ -411,8 +411,8 @@ function MemoryAperture({ memory, accent, onActivate }: { memory: SelectedMemory
   // the rejected cyan crystal-crown or white-card readings.
   return <group position={[portrait ? .02 : .25, 0, -1.56]} name="focus-memory-aperture" userData={{ artRevision: 'v272-single-connected-living-memory-fold', hierarchy: 'selected-memory-single-coherent-fold-with-authored-chamber-context', materialAuthority: 'vertex-weathered-mineral-energy-no-terrain-map' }}>
     <group scale={portrait ? [.98, 1.0, 1.0] : [1.15, 1.0, 1.05]} position={[0, 0, 0]} name="focus-v251-grounded-living-memory-manifestation" onClick={(event) => { event.stopPropagation(); if (memory) onActivate() }} onPointerOver={(event) => pointer(event, true)} onPointerOut={(event) => pointer(event, false)}>
-      {strata.map((geometry,index) => <mesh key={index} geometry={geometry} castShadow receiveShadow name={`focus-authored-living-memory-fold-${index}`}>
-        <meshStandardMaterial vertexColors color={hovered ? '#c0a878' : '#a18460'} emissive={accent} emissiveIntensity={hovered ? .025 : .008} roughness={.82} metalness={.008} side={THREE.DoubleSide} />
+      {strata.map((geometry,index) => <mesh key={index} geometry={geometry} castShadow={false} receiveShadow name={`focus-authored-living-memory-fold-${index}`}>
+        <meshStandardMaterial vertexColors color={hovered ? '#a48d68' : '#604b32'} emissive={accent} emissiveIntensity={hovered ? .010 : .002} roughness={.92} metalness={.002} side={THREE.DoubleSide} />
       </mesh>)}
     </group>
     <Html center position={[0, -1.56, .48]} transform distanceFactor={6.4}><button type="button" className="focus-spatial-aperture-button" disabled={!memory} onClick={onActivate} aria-label={memory ? `Enter Replay for ${memory.title}` : 'Select a memory in Life Map to enter Replay'}>{memory ? 'Enter Replay' : 'Awaiting a selected star'}</button></Html>

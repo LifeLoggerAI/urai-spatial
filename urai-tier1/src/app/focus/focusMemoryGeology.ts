@@ -32,20 +32,27 @@ import * as THREE from 'three'
 // offset, narrows the footprint, and reduces cool emissive contamination. One continuous
 // ground-owned fissure must survive both viewport families; disconnected islands are failure.
 //
+// V301 responds to literal V300 pixels: terrain seating removed detached islands, but the
+// continuous raised brown surface still read as a rope/ribbon object. V301 collapses the
+// visible footprint to crack scale, shortens the run, keeps the dark incision at grade,
+// raises only intermittent mineral crust on one side, suppresses the counter-side, and
+// removes meaningful cast-shadow ownership. The first read must be a fissure IN the place,
+// never a strip laid ON the place.
+//
 // The form must read as memory pressure physically held by place. It must not regress
 // into a crystal crown, boulder, orb, flower, portal, ring, shell/mouth, manta, tent,
 // aircraft, animal, shoe, boat, bowl, helmet, body-part silhouette, smooth blob,
-// disconnected pair, card/slab, ribbon pair, tongue, leaf, fish, or generic pickup.
+// disconnected pair, card/slab, ribbon pair, rope, tongue, leaf, fish, or generic pickup.
 const MEMORY_SECTIONS = 45
 const MEMORY_CROSS_POINTS = 9
 
 function fractureCenter(t: number) {
-  const x = 1.92 * t
-    + .18 * Math.sin(t * 3.08 + .18)
-    + .070 * Math.sin(t * 8.9 - .31)
-  const z = -1.23 * t
-    + .34 * Math.sin(t * 2.31 - .48)
-    + .11 * Math.sin(t * 6.35 + .66)
+  const x = 1.24 * t
+    + .13 * Math.sin(t * 3.08 + .18)
+    + .055 * Math.sin(t * 8.9 - .31)
+  const z = -.78 * t
+    + .23 * Math.sin(t * 2.31 - .48)
+    + .075 * Math.sin(t * 6.35 + .66)
   return new THREE.Vector2(x, z)
 }
 
@@ -114,27 +121,27 @@ function createLivingMemoryFold() {
     const brokenKnot = Math.exp(-Math.pow((t - .01) / .15, 2))
     const pulse = .5 + .5 * Math.sin(t * 12.7 + .62)
     const pressureWindow = .20 + .80 * Math.pow(.5 + .5 * Math.sin(t * 10.5 + .38), 1.8)
-    const baseHalfWidth = (.145 + .058 * centralScar + .034 * nearPressure + .018 * farPressure) * (.48 + .52 * endFade)
+    const baseHalfWidth = (.055 + .022 * centralScar + .013 * nearPressure + .008 * farPressure) * (.42 + .58 * endFade)
 
     for (let cross = 0; cross < MEMORY_CROSS_POINTS; cross += 1) {
       const crossU = cross / (MEMORY_CROSS_POINTS - 1)
       const lateral = THREE.MathUtils.lerp(-1, 1, crossU)
       const absLateral = Math.abs(lateral)
       const jaggedEdge = 1
-        + .24 * Math.sin(section * 1.79 + (lateral < 0 ? .4 : 2.1))
-        + .13 * Math.sin(section * 3.51 + cross * .93)
+        + .32 * Math.sin(section * 1.79 + (lateral < 0 ? .4 : 2.1))
+        + .18 * Math.sin(section * 3.51 + cross * .93)
       const halfWidth = baseHalfWidth * (absLateral > .50 ? jaggedEdge : 1)
       const furrowCenter = .11 * Math.sin(t * 3.75 + .28) - .050 * nearPressure + .032 * farPressure
-      const furrow = Math.exp(-Math.pow((lateral - furrowCenter) / .13, 2)) * (.72 + .28 * centralScar)
-      const dominantLipCenter = -.48 + .11 * Math.sin(t * 3.0 - .25)
+      const furrow = Math.exp(-Math.pow((lateral - furrowCenter) / .10, 2)) * (.72 + .28 * centralScar)
+      const dominantLipCenter = -.50 + .12 * Math.sin(t * 3.0 - .25)
       const counterLipCenter = .43 + .05 * Math.sin(t * 4.5 + .7)
-      const dominantLip = Math.exp(-Math.pow((lateral - dominantLipCenter) / .105, 2))
+      const dominantLip = Math.exp(-Math.pow((lateral - dominantLipCenter) / .085, 2))
         * pressureWindow
         * (.26 + .70 * nearPressure + .34 * centralScar)
       const counterLip = Math.exp(-Math.pow((lateral - counterLipCenter) / .13, 2))
         * (.012 + .045 * farPressure + .025 * brokenKnot)
       const ridge = Math.max(dominantLip, counterLip)
-      const edgeSink = THREE.MathUtils.smoothstep(absLateral, .54, 1) * (.095 + .050 * endFade)
+      const edgeSink = THREE.MathUtils.smoothstep(absLateral, .48, 1) * (.070 + .038 * endFade)
       const micro = (.015 * Math.sin(section * 2.73 + cross * 1.29)
         + .009 * Math.cos(section * 4.39 - cross * .81)) * endFade
       const scarCore = Math.exp(-Math.pow((lateral - furrowCenter) / .42, 2))
@@ -155,17 +162,17 @@ function createLivingMemoryFold() {
       const z = center.y + side.y * (lateralDistance + edgeBreak)
       const groundY = focusGroundHeightForMemory(x, z)
       const y = groundY
-        + .075
-        + .012 * centralScar
-        + minimalContinuity * .55
-        - .070 * furrow
-        + .125 * dominantLip
-        + .004 * counterLip
-        + .012 * pulse * dominantLip
-        + localBuckling * .45
-        + micro * .55
-        - edgeSink * .42
-        - terminalSink * .38
+        + .030
+        + .006 * centralScar
+        + minimalContinuity * .20
+        - .010 * furrow
+        + .070 * dominantLip
+        + .001 * counterLip
+        + .006 * pulse * dominantLip
+        + localBuckling * .18
+        + micro * .30
+        - edgeSink * .58
+        - terminalSink * .46
 
       positions.push(x, y, z)
       uvs.push(crossU, u)
@@ -244,8 +251,9 @@ function createLivingMemoryFold() {
   geometry.userData.focusLiteralPixelSuccessorV298 = 'v298-narrow-short-deep-incision-broken-dominant-lip-counter-side-buried-no-panel'
   geometry.userData.focusLiteralPixelSuccessorV299 = 'v299-ground-grade-dark-mineral-fissure-readable-footprint-warm-broken-lip-no-blue-object'
   geometry.userData.focusLiteralPixelSuccessorV300 = 'v300-terrain-seated-continuous-dark-mineral-fissure-desktop-portrait-no-islands'
+  geometry.userData.focusLiteralPixelSuccessorV301 = 'v301-crack-scale-dark-incision-intermittent-mineral-crust-no-raised-strip'
   geometry.userData.focusVisualAuthority = 'v295-sanctuary-memory-scar-volume'
-  geometry.userData.focusCurrentVisualAuthority = 'v300-terrain-seated-continuous-memory-fissure'
+  geometry.userData.focusCurrentVisualAuthority = 'v301-ground-crack-dark-incision-no-ribbon-object'
   return geometry
 }
 
