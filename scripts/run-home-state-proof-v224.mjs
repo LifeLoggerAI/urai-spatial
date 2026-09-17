@@ -4,7 +4,8 @@ import path from 'node:path'
 
 const authorityPath = new URL('../urai-tier1/src/app/currentHomeVisualAuthority.json', import.meta.url)
 const authority = JSON.parse(await readFile(authorityPath, 'utf8'))
-if (authority.schemaVersion !== 'urai-home-visual-authority-1') throw new Error('Home visual authority schema is unsupported')
+const supportedAuthoritySchemas = new Set(['urai-home-visual-authority-1', 'urai-home-visual-authority-2'])
+if (!supportedAuthoritySchemas.has(authority.schemaVersion)) throw new Error(`Home visual authority schema is unsupported: ${authority.schemaVersion}`)
 if (!authority.rendererOwner || !authority.artRevision || !authority.worldIdentifier || !authority.proofSchema) {
   throw new Error('Home visual authority is missing a required identity field')
 }
