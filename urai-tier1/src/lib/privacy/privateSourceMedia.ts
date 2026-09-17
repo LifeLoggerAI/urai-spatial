@@ -69,6 +69,8 @@ export type PrivateSourceUseDecision = {
 }
 
 const ACTIVE_SOURCE_CONSENT = new Set<SourceConsentStatus>(['direct-subject', 'owner-attested', 'provider-recorded'])
+const STRONG_SOURCE_CONSENT = new Set<SourceConsentStatus>(['direct-subject', 'provider-recorded'])
+const STRONG_CONSENT_PURPOSES = new Set<PrivateSourcePurpose>(['public-share', 'likeness', 'voice-synthesis'])
 
 function enabled(policy: PrivateSourceDomainPolicy) {
   return policy.mode === 'granted' || policy.mode === 'limited'
@@ -120,6 +122,15 @@ export function evaluatePrivateSourceMediaUse(
     reasons.push(receipt.consent.status === 'revoked' ? 'source consent was revoked' : 'source consent is not established')
   }
   if (!receipt.consent.scopes.includes(purpose)) reasons.push(`source consent does not include ${purpose}`)
+  if (STRONG_CONSENT_PURPOSES.has(purpose) && !STRONG_SOURCE_CONSENT.has(receipt.consent.status)) {
+    reasons.push(`${purpose} requires direct-subject or provider-recorded consent`)
+  }
+  if (purpose === 'transcribe' && receipt.mediaKind !== 'audio' && receipt.mediaKind !== 'video') {
+    reasons.push('transcription requires audio or video source media')
+  }
+  if (purpose === 'voice-synthesis' && receipt.mediaKind !== 'audio' && receipt.mediaKind !== 'video') {
+    reasons.push('voice synthesis requires audio or video source media')
+  }
 
   switch (purpose) {
     case 'archive-integrity':
