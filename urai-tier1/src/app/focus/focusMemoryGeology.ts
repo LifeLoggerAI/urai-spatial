@@ -46,6 +46,12 @@ import * as THREE from 'three'
 // into genuinely broken pressure windows, and reduces crust amplitude so ground owns silhouette.
 // Closed V295 underside/side/cap topology remains buried and unchanged.
 //
+// V303 removes the remaining structural mismatch exposed by V302 pixels. The selected
+// memory now uses one fixed world transform on every viewport and calls the exact same
+// exported sanctuary ground-height function used by the terrain mesh. There is no
+// desktop/portrait max-height proxy. The crack core receives only a near-zero reveal,
+// while lateral edges and terminal closure remain below the exact local grade.
+//
 // The form must read as memory pressure physically held by place. It must not regress
 // into a crystal crown, boulder, orb, flower, portal, ring, shell/mouth, manta, tent,
 // aircraft, animal, shoe, boat, bowl, helmet, body-part silhouette, smooth blob,
@@ -63,7 +69,10 @@ function fractureCenter(t: number) {
   return new THREE.Vector2(x, z)
 }
 
-function sanctuaryGroundHeight(x: number, z: number) {
+export const FOCUS_MEMORY_WORLD_X = .15
+export const FOCUS_MEMORY_WORLD_Z = -1.56
+
+export function focusGroundHeight(x: number, z: number) {
   const side = Math.pow(Math.max(0, (Math.abs(x) - 4.2) / 10.8), 1.7) * 8.5
   const weather = 0.18 * Math.sin(x * 0.64 + z * 0.23)
     + 0.08 * Math.sin(x * 1.73 - z * 0.82)
@@ -75,12 +84,6 @@ function sanctuaryGroundHeight(x: number, z: number) {
     * Math.exp(-((Math.abs(x) - 6.1) ** 2 / 10))
     * THREE.MathUtils.smoothstep(-z, 5.5, 12.5)
   return -1.5 + side + weather + threshold + archive + bank
-}
-
-function focusGroundHeightForMemory(localX: number, localZ: number) {
-  const desktop = sanctuaryGroundHeight(.25 + localX * 1.15, -1.56 + localZ * 1.05)
-  const portrait = sanctuaryGroundHeight(.02 + localX * .98, -1.56 + localZ)
-  return Math.max(desktop, portrait)
 }
 
 function livingMemoryVertexColor(section: number, cross: number, t: number, lateral: number, furrow: number, ridge: number) {
@@ -161,26 +164,26 @@ function createLivingMemoryFold() {
       const localBuckling = .020 * Math.sin(t * 8.2 + lateral * 2.9 + .55)
         * centralScar * (1 - .68 * absLateral)
 
-      // V300 seats the scar to authored sanctuary height instead of a fixed local-Y plane.
+      // V303 samples the exact sanctuary grade at the fixed world-space aperture transform.
       const lateralDistance = lateral * halfWidth
       const edgeBreak = absLateral > .54
         ? .042 * Math.sin(section * 2.23 + cross * 1.47)
         : .008 * Math.sin(section * 1.39 + cross * .61) * absLateral
       const x = center.x + side.x * (lateralDistance + edgeBreak)
       const z = center.y + side.y * (lateralDistance + edgeBreak)
-      const groundY = focusGroundHeightForMemory(x, z)
-      const incisionReveal = .007 + .003 * centralScar
+      const groundY = focusGroundHeight(FOCUS_MEMORY_WORLD_X + x, FOCUS_MEMORY_WORLD_Z + z)
+      const incisionReveal = .004 + .0015 * centralScar
       const y = groundY
         + incisionReveal
         + minimalContinuity * .05
-        - .004 * furrow
-        + .016 * dominantLip
-        + .0005 * counterLip
-        + .0015 * pulse * dominantLip
-        + localBuckling * .05
-        + micro * .08
-        - edgeSink * .30
-        - terminalSink * .48
+        - .0015 * furrow
+        + .010 * dominantLip
+        + .0003 * counterLip
+        + .001 * pulse * dominantLip
+        + localBuckling * .03
+        + micro * .05
+        - edgeSink * .42
+        - terminalSink * .56
 
       positions.push(x, y, z)
       uvs.push(crossU, u)
@@ -261,8 +264,9 @@ function createLivingMemoryFold() {
   geometry.userData.focusLiteralPixelSuccessorV300 = 'v300-terrain-seated-continuous-dark-mineral-fissure-desktop-portrait-no-islands'
   geometry.userData.focusLiteralPixelSuccessorV301 = 'v301-crack-scale-dark-incision-intermittent-mineral-crust-no-raised-strip'
   geometry.userData.focusLiteralPixelSuccessorV302 = 'v302-grade-flush-hairline-incision-fragmented-low-crust-ground-owned-silhouette'
+  geometry.userData.focusLiteralPixelSuccessorV303 = 'v303-shared-world-exact-grade-dark-crack-buried-closure-no-viewport-lift'
   geometry.userData.focusVisualAuthority = 'v295-sanctuary-memory-scar-volume'
-  geometry.userData.focusCurrentVisualAuthority = 'v302-grade-flush-dark-incision-fragmented-crust-no-raised-object'
+  geometry.userData.focusCurrentVisualAuthority = 'v303-exact-grade-ground-owned-fissure-no-twig'
   return geometry
 }
 

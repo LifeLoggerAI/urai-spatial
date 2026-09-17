@@ -6,7 +6,7 @@ import { Suspense, useCallback, useEffect, useMemo, useRef, useState, type CSSPr
 import * as THREE from 'three'
 import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib'
 import { assetCssStack, focusAssets } from '@/spatial/assets/uraiAssets'
-import { createFocusStrata, createFocusSurfaceMaps } from './focusMemoryGeology'
+import { FOCUS_MEMORY_WORLD_X, FOCUS_MEMORY_WORLD_Z, createFocusStrata, createFocusSurfaceMaps, focusGroundHeight } from './focusMemoryGeology'
 import { markFirstSpatialFrame, useAdaptiveSpatialQuality, type SpatialQualityProfile } from '@/spatial/performance/useAdaptiveSpatialQuality'
 import { useSelectedMemory } from '@/spatial/memory/useSelectedMemory'
 import type { SelectedMemory } from '@/spatial/memory/selectedMemoryContract'
@@ -222,15 +222,6 @@ function AuthoredFocusChamber() {
   return <group name="focus-authored-physical-chamber" userData={{ runtimeAsset: FOCUS_CHAMBER_MODEL, visualAuthority: 'authored-focus-chamber' }}><primitive object={model} /></group>
 }
 
-function focusGroundHeight(x: number, z: number) {
-  const side = Math.pow(Math.max(0, (Math.abs(x) - 4.2) / 10.8), 1.7) * 8.5
-  const weather = 0.18 * Math.sin(x * 0.64 + z * 0.23) + 0.08 * Math.sin(x * 1.73 - z * 0.82) + 0.038 * Math.cos(x * 4.1 + z * 2.7)
-  const threshold = 0.48 * Math.exp(-((x + 3.8) ** 2 / 18 + (z + 3.4) ** 2 / 28))
-  const archive = 0.72 * Math.exp(-((x - 5.1) ** 2 / 14 + (z + 8.8) ** 2 / 22))
-  const bank = THREE.MathUtils.smoothstep(Math.abs(x), 4.2, 5.8) * 2.1 * Math.exp(-((Math.abs(x) - 6.1) ** 2 / 10)) * THREE.MathUtils.smoothstep(-z, 5.5, 12.5)
-  return -1.5 + side + weather + threshold + archive + bank
-}
-
 function FocusSanctuaryGround({ accent }: { accent: string }) {
   const geometry = useMemo(() => {
     const columns = 96
@@ -395,8 +386,6 @@ function MemoryTraces({ memory, accent }: { memory: SelectedMemory | null; accen
 }
 
 function MemoryAperture({ memory, accent, onActivate }: { memory: SelectedMemory | null; accent: string; light: string; reducedMotion: boolean; onActivate: () => void }) {
-  const { size } = useThree()
-  const portrait = size.height > size.width
   const [hovered, setHovered] = useState(false)
   const strata = useMemo(createFocusStrata, [])
   useEffect(() => () => { strata.forEach(geometry => geometry.dispose()) }, [strata])
@@ -409,8 +398,8 @@ function MemoryAperture({ memory, accent, onActivate }: { memory: SelectedMemory
   // only restrained surface response; geometry, scale, camera and idle position do
   // not pulse. The material stays weathered/mineral so the fold cannot regress to
   // the rejected cyan crystal-crown or white-card readings.
-  return <group position={[portrait ? .02 : .25, 0, -1.56]} name="focus-memory-aperture" userData={{ artRevision: 'v272-single-connected-living-memory-fold', hierarchy: 'selected-memory-single-coherent-fold-with-authored-chamber-context', materialAuthority: 'vertex-weathered-mineral-energy-no-terrain-map' }}>
-    <group scale={portrait ? [.98, 1.0, 1.0] : [1.15, 1.0, 1.05]} position={[0, 0, 0]} name="focus-v251-grounded-living-memory-manifestation" onClick={(event) => { event.stopPropagation(); if (memory) onActivate() }} onPointerOver={(event) => pointer(event, true)} onPointerOut={(event) => pointer(event, false)}>
+  return <group position={[FOCUS_MEMORY_WORLD_X, 0, FOCUS_MEMORY_WORLD_Z]} name="focus-memory-aperture" userData={{ artRevision: 'v303-shared-world-exact-grade-fissure', hierarchy: 'selected-memory-single-coherent-fold-with-authored-chamber-context', materialAuthority: 'vertex-weathered-mineral-energy-no-terrain-map' }}>
+    <group scale={[1, 1, 1]} position={[0, 0, 0]} name="focus-v251-grounded-living-memory-manifestation" onClick={(event) => { event.stopPropagation(); if (memory) onActivate() }} onPointerOver={(event) => pointer(event, true)} onPointerOut={(event) => pointer(event, false)}>
       {strata.map((geometry,index) => <mesh key={index} geometry={geometry} castShadow={false} receiveShadow name={`focus-authored-living-memory-fold-${index}`}>
         <meshStandardMaterial vertexColors color={hovered ? '#847760' : '#51493d'} emissive={accent} emissiveIntensity={hovered ? .004 : 0} roughness={.94} metalness={.001} side={THREE.DoubleSide} />
       </mesh>)}
