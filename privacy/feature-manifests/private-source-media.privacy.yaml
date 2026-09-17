@@ -94,7 +94,8 @@ enforcement:
     - Treat audio and video transcription or memory indexing as identity-linked processing in addition to memory/model processing.
     - Keep exact location separate and require precise location consent before precise place enrichment.
     - Keep Replay and Life Map visibility separately controllable.
-    - Keep sharing, likeness use, and voice synthesis separately gated and denied unless explicitly permitted.
+    - Require direct-subject or provider-recorded consent for public sharing, likeness use, and voice synthesis; owner attestation alone is insufficient.
+    - Keep sharing, likeness use, and voice synthesis separately gated at runtime even after strong source consent exists.
     - Source-consent revocation must override previously permissive runtime policy.
     - Never treat archival possession or a legacy schema declaration as proof that runtime processing is authorized.
 
