@@ -14,12 +14,14 @@ import * as THREE from 'three'
 // clam/mouth seam. V275 grounded the form and warmed the palette, but literal
 // desktop/mobile pixels still collapsed into a ribbed stone/lump silhouette.
 // V276 fixed that silhouette failure with a materially longer S-curve and unequal
-// ends. V277 added tactile relief and stronger weathering, but retained pixels
-// still read too much like a smooth manta/cloth ribbon. V278 keeps the long
-// asymmetric gesture while building one localized knotted spine, a genuinely
-// recessed one-sided fold hierarchy and a more legible warm/mineral surface. The
-// object stays one watertight phenomenon; it does not become a rock, sheet, mouth,
-// shell, collectible or generic game pickup.
+// ends. V277 added tactile relief and stronger weathering. V278 added a localized
+// knot and deeper one-sided crease, but exact pixels still broadened into a soft
+// manta/draped-membrane read and the counter-end broke into bead-like lobes.
+// V279 preserves the successful long asymmetric gesture while narrowing the
+// cross-section, damping high-frequency end detail, replacing longitudinal ribbing
+// with broad sculptural variation and keeping the crease/ridge local to the spine.
+// The object stays one watertight phenomenon; it does not become a rock, sheet,
+// mouth, shell, collectible or generic game pickup.
 //
 // The form must read as one held memory phenomenon. It must not regress into a
 // crystal crown/shard cluster, boulder, sphere/orb, flower, portal, ring, cage,
@@ -69,8 +71,9 @@ function createLivingMemoryFold() {
   for (let section = 0; section < MEMORY_RENDER_SECTIONS; section += 1) {
     const u = section / (MEMORY_RENDER_SECTIONS - 1)
     const t = THREE.MathUtils.lerp(-1, 1, u)
-    const endTaper = Math.pow(Math.max(0, Math.sin(u * Math.PI)), .82)
-    const shoulder = Math.pow(Math.max(0, Math.sin(u * Math.PI)), .52)
+    const endTaper = Math.pow(Math.max(0, Math.sin(u * Math.PI)), .98)
+    const shoulder = Math.pow(Math.max(0, Math.sin(u * Math.PI)), .58)
+    const detailWindow = .24 + .76 * endTaper
     const leadingHook = Math.exp(-Math.pow((t + .70) / .23, 2))
     const counterTuck = Math.exp(-Math.pow((t - .66) / .27, 2))
     const middleWaist = Math.exp(-Math.pow((t - .04) / .31, 2))
@@ -78,9 +81,8 @@ function createLivingMemoryFold() {
     const spineKnot = Math.exp(-Math.pow((t + .10) / .22, 2))
     const counterShoulder = Math.exp(-Math.pow((t - .34) / .25, 2))
 
-    // Preserve the V276/V277 phone-readable S-gesture. V278 adds only a localized
-    // knotted spine and unequal shoulder break so the silhouette stays long and
-    // asymmetrical rather than swelling back into a center boulder.
+    // Keep the V278 phone-readable S-gesture, but make the two ends terminate
+    // cleanly rather than widening into membrane wings or a chain of soft lobes.
     const centerX = t * 1.30 + .135 * Math.sin(t * 2.62) + .050 * Math.sin(t * 5.55)
     const centerY = -.62
       + .18 * Math.sin(t * 1.94 + .30)
@@ -99,27 +101,27 @@ function createLivingMemoryFold() {
       + .055 * spineKnot
     sectionCenters.push(new THREE.Vector3(centerX, centerY, centerZ))
 
-    // Cross-sections stay narrow along most of the body, with one deliberate
-    // knotted mass and a smaller counter-shoulder. This gives the object an actual
-    // spine and changing thickness without restoring the V275 mound silhouette.
-    const widthProfile = 1 - .25 * middleWaist + .18 * leadingHook - .11 * counterTuck + .09 * foldedShoulder + .18 * spineKnot - .045 * counterShoulder
-    const height = .020 + endTaper * (
-      .228
-      + .045 * Math.sin(section * .31)
-      + .066 * leadingHook
-      + .034 * foldedShoulder
-      + .062 * spineKnot
-      - .018 * counterShoulder
+    // V279 favors a compact sculptural section over a flattened sheet. Broad
+    // t-based variation replaces section-index ripples so the longitudinal body
+    // reads as one tensioned form instead of a sequence of beads.
+    const widthProfile = 1 - .24 * middleWaist + .16 * leadingHook - .12 * counterTuck + .07 * foldedShoulder + .13 * spineKnot - .040 * counterShoulder
+    const height = .018 + endTaper * (
+      .205
+      + .026 * Math.sin(t * 2.45 - .30)
+      + .052 * leadingHook
+      + .026 * foldedShoulder
+      + .050 * spineKnot
+      - .016 * counterShoulder
     ) * widthProfile
-    const depth = .020 + endTaper * (
-      .180
-      + .030 * Math.cos(section * .35)
-      + .040 * leadingHook
-      + .022 * foldedShoulder
-      + .075 * spineKnot
-      - .015 * counterShoulder
-    ) * (.94 + .06 * shoulder)
-    const twist = .36 * Math.sin(t * 1.86) + .21 * t + .098 * Math.sin(t * 4.7) + .13 * leadingHook + .055 * spineKnot
+    const depth = .018 + endTaper * (
+      .195
+      + .024 * Math.cos(t * 2.10 + .22)
+      + .035 * leadingHook
+      + .018 * foldedShoulder
+      + .060 * spineKnot
+      - .012 * counterShoulder
+    ) * (.96 + .04 * shoulder)
+    const twist = .36 * Math.sin(t * 1.86) + .21 * t + .090 * Math.sin(t * 4.7) + .12 * leadingHook + .050 * spineKnot
 
     // The primary crease is a bounded, one-sided recessed fold centered around
     // the knotted spine. Its displaced ridge and a much weaker branch create a
@@ -129,7 +131,7 @@ function createLivingMemoryFold() {
     const ridgeAngle = furrowAngle + Math.PI * .73
     const primaryWindow = Math.exp(-Math.pow((t + .05) / .39, 4)) * (.78 + .12 * Math.sin(t * 2.65 + .6))
     const branchWindow = Math.exp(-Math.pow((t + .32) / .24, 2))
-    const ridgeWindow = .36 + .82 * Math.exp(-Math.pow((t - .03) / .48, 2))
+    const ridgeWindow = .30 + .72 * Math.exp(-Math.pow((t - .03) / .48, 2))
 
     for (let radial = 0; radial < MEMORY_RENDER_RING_POINTS; radial += 1) {
       const radialU = radial / MEMORY_RENDER_RING_POINTS
@@ -142,36 +144,36 @@ function createLivingMemoryFold() {
       const ridge = Math.exp(-Math.pow(ridgeDistance / .325, 2)) * ridgeWindow
 
       const dominantMass = 1
-        + .24 * Math.cos(angle - furrowAngle - 1.00)
-        + .086 * t * Math.sin(angle + .36)
-        + .082 * Math.sin(angle * 3 + t * 2.30)
-        + .040 * Math.cos(angle * 5 - t * 3.05)
-        + .084 * leadingHook * Math.cos(angle + .18)
-        + .090 * spineKnot * Math.cos(angle - ridgeAngle + .20)
+        + .22 * Math.cos(angle - furrowAngle - 1.00)
+        + .072 * t * Math.sin(angle + .36)
+        + .050 * Math.sin(angle * 3 + t * 2.30)
+        + .026 * Math.cos(angle * 5 - t * 3.05)
+        + .070 * leadingHook * Math.cos(angle + .18)
+        + .075 * spineKnot * Math.cos(angle - ridgeAngle + .20)
       const tissue = 1
-        + .074 * Math.sin(angle * 7 + section * .22)
-        + .042 * Math.cos(angle * 11 - section * .17)
-        + .020 * Math.sin(angle * 17 + section * .09)
-      const longitudinalRill = .027 * endTaper * Math.sin(section * 1.18 + angle * 5.35)
-        + .014 * endTaper * Math.cos(section * .54 - angle * 10.7)
-      const asymmetricFold = .072 * endTaper * Math.sin(angle - t * 3.10 + .72)
-        + .038 * endTaper * Math.sin(angle * 2.7 + t * 2.0)
-        + .024 * endTaper * t * Math.cos(angle * 4.0)
-        + .054 * leadingHook * Math.sin(angle - .12)
-        + .036 * foldedShoulder * Math.cos(angle + .75)
-        + .038 * spineKnot * Math.sin(angle - ridgeAngle - .18)
-      const ridgeLift = .105 * endTaper * ridge * (.72 + .28 * Math.sin(t * 3.0 + .35))
-      const creaseSink = .052 * endTaper * furrow * (1 + .45 * spineKnot)
-      const pinch = Math.max(.50, 1 - .34 * furrow - .065 * secondaryFurrow)
+        + detailWindow * .036 * Math.sin(angle * 7 + t * 3.2)
+        + detailWindow * .020 * Math.cos(angle * 11 - t * 2.4)
+        + detailWindow * .010 * Math.sin(angle * 17 + t * 1.8)
+      const longitudinalRill = detailWindow * .010 * endTaper * Math.sin(t * 5.2 + angle * 4.5)
+        + detailWindow * .005 * endTaper * Math.cos(t * 3.1 - angle * 8.2)
+      const asymmetricFold = .042 * endTaper * Math.sin(angle - t * 3.10 + .72)
+        + .022 * endTaper * Math.sin(angle * 2.7 + t * 2.0)
+        + .015 * endTaper * t * Math.cos(angle * 4.0)
+        + .032 * leadingHook * Math.sin(angle - .12)
+        + .020 * foldedShoulder * Math.cos(angle + .75)
+        + .026 * spineKnot * Math.sin(angle - ridgeAngle - .18)
+      const ridgeLift = .078 * endTaper * ridge * (.72 + .28 * Math.sin(t * 3.0 + .35))
+      const creaseSink = .047 * endTaper * furrow * (1 + .40 * spineKnot)
+      const pinch = Math.max(.54, 1 - .31 * furrow - .055 * secondaryFurrow)
 
       const localY = Math.cos(angle) * height * dominantMass * tissue * pinch
         + asymmetricFold
         + ridgeLift
         - creaseSink
-      const localZ = Math.sin(angle) * depth * (1 + .25 * ridge + .12 * spineKnot)
-        - furrow * depth * .46
-        - secondaryFurrow * depth * .080
-        + ridge * depth * .31
+      const localZ = Math.sin(angle) * depth * (1 + .21 * ridge + .10 * spineKnot)
+        - furrow * depth * .43
+        - secondaryFurrow * depth * .070
+        + ridge * depth * .27
         + longitudinalRill
 
       const y = centerY + localY * Math.cos(twist) - localZ * Math.sin(twist)
@@ -228,7 +230,7 @@ function createLivingMemoryFold() {
   geometry.userData.focusLiteralPixelRepair = 'v272-no-crystal-crown-no-card-stack'
   geometry.userData.focusSilhouetteRule = 'one-coherent-memory-phenomenon-not-discrete-objects'
   geometry.userData.focusSurfaceDensity = `${MEMORY_RENDER_SECTIONS}x${MEMORY_RENDER_RING_POINTS}-continuous-tactile-surface`
-  geometry.userData.focusLiteralPixelRefinement = 'v278-knotted-spine-recessed-one-sided-fold-warm-mineral-no-boulder-no-cloth-no-mouth'
+  geometry.userData.focusLiteralPixelRefinement = 'v279-narrow-sculptural-section-clean-tapered-ends-local-spine-no-manta-no-beads-no-mouth'
   return geometry
 }
 
