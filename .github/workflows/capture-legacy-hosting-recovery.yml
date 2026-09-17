@@ -90,4 +90,4 @@ jobs:
           name: urai-legacy-hosting-recovery-verification-${{ inputs.expected_sha }}
           path: artifacts/legacy-hosting-recovery/quarantine.json
           if-no-files-found: error
-          retention-days: 365
+          retention-days: 90
