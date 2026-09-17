@@ -11,7 +11,7 @@ test('selected memory remains one connected CLOSED living-memory phenomenon rath
   assert.match(geology, /function createLivingMemoryFold\(/)
   assert.match(geology, /const furrowCenter =/)
   assert.match(geology, /const furrow = Math\.exp/)
-  assert.match(geology, /- \.010 \* furrow/)
+  assert.match(geology, /- \.004 \* furrow/)
   assert.match(geology, /const bottomOffset = topVertexCount/)
   assert.match(geology, /positions\.push\(positions\[i\], positions\[i \+ 1\] - \.18, positions\[i \+ 2\]\)/)
   assert.match(geology, /focusMemoryRole = 'v272-single-connected-living-memory-fold'/)
