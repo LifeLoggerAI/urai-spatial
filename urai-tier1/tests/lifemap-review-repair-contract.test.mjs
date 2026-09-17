@@ -134,7 +134,7 @@ test('Focus final composition gives one connected V272 living-memory fold pixel 
   assert.match(focusGeology, /closed-twisted-longitudinal-fold-with-deep-furrow/)
   assert.match(focusGeology, /v272-no-crystal-crown-no-card-stack/)
   assert.match(focusGeology, /weathered-mineral-restrained-warm-cool-response/)
-  assert.match(focusGeology, /v276-long-s-curve-slim-variable-cross-section-local-fold-no-boulder-no-mouth/)
+  assert.match(focusGeology, /v277-sculptural-tactile-weathered-fold-no-boulder-no-cloth-no-mouth/)
   assert.match(focusGeology, /const weathered = new THREE\.Color\(\)\.setRGB/)
   assert.match(focusGeology, /const warm = new THREE\.Color\(\)\.setRGB/)
   assert.doesNotMatch(focusGeology, /MEMORY_FACETS|createMemoryFacet|v271-interlocked-volumetric-memory-facet/)
