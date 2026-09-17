@@ -26,21 +26,21 @@ if (currentPredicateCount !== 1 || original.includes(stalePredicate)) {
   throw new Error('Home state proof movement predicate is not bound exactly once to the current first-person authority')
 }
 
-// Headless Chromium has the Web Speech API surface but does not start an OS speech
+// Headless Chromium exposes Web Speech API objects but does not start an OS speech
 // engine, so SpeechSynthesisUtterance.onstart never fires. Runtime authority correctly
-// refuses to publish acoustic `speaking` until that onstart edge exists. Provide only the
-// missing transport edge in the generated CI proof: the product's real onstart -> Orb
-// state -> rendered clip path still has to execute. This fixture never changes runtime
-// source, never makes a provider request, and does not certify audible quality.
+// refuses to publish acoustic `speaking` until that onstart edge exists. Install a
+// generated-proof-only transport object instead of mutating runtime source. Replacing the
+// window property is more deterministic than assigning inherited SpeechSynthesis methods,
+// which Chromium may keep native/read-only even when a plain assignment appears to work.
 const speechFixtureAnchor = 'window.__uraiObservedOrbStates = []'
 const speechFixtureCount = original.split(speechFixtureAnchor).length - 1
 if (speechFixtureCount !== 1) throw new Error('Home state proof device-speech fixture anchor is not unique')
-const speechFixture = `${speechFixtureAnchor}\n      window.__uraiProofSpeechTransport = 'deterministic-ci-device-speech-onstart-boundary-onend'\n      if (window.speechSynthesis) {\n        window.speechSynthesis.cancel = () => {}\n        window.speechSynthesis.speak = (utterance) => {\n          window.setTimeout(() => utterance.onstart?.(new Event('start')), 0)\n          window.setTimeout(() => utterance.onboundary?.({ charIndex: Math.min(8, utterance.text?.length ?? 0) }), 120)\n          window.setTimeout(() => utterance.onend?.(new Event('end')), 1200)\n        }\n      }`
+const speechFixture = `${speechFixtureAnchor}\n      window.__uraiProofSpeechTransport = 'deterministic-ci-device-speech-window-override-v2'\n      if ('speechSynthesis' in window) {\n        const nativeSynth = window.speechSynthesis\n        let proofSpeaking = false\n        const proofSynth = Object.create(nativeSynth ?? null)\n        Object.defineProperties(proofSynth, {\n          speaking: { configurable: true, enumerable: true, get: () => proofSpeaking },\n          pending: { configurable: true, enumerable: true, get: () => false },\n          paused: { configurable: true, enumerable: true, get: () => false },\n          cancel: { configurable: true, enumerable: true, writable: true, value: () => { proofSpeaking = false } },\n          pause: { configurable: true, enumerable: true, writable: true, value: () => {} },\n          resume: { configurable: true, enumerable: true, writable: true, value: () => {} },\n          getVoices: { configurable: true, enumerable: true, writable: true, value: () => nativeSynth?.getVoices?.() ?? [] },\n          speak: {\n            configurable: true, enumerable: true, writable: true,\n            value: (utterance) => {\n              proofSpeaking = true\n              window.queueMicrotask(() => utterance.onstart?.(new Event('start')))\n              window.setTimeout(() => utterance.onboundary?.({ charIndex: Math.min(8, utterance.text?.length ?? 0) }), 120)\n              window.setTimeout(() => { proofSpeaking = false; utterance.onend?.(new Event('end')) }, 1200)\n            },\n          },\n        })\n        try {\n          Object.defineProperty(window, 'speechSynthesis', { configurable: true, enumerable: true, value: proofSynth })\n        } catch {\n          try { Object.defineProperty(nativeSynth, 'cancel', { configurable: true, value: proofSynth.cancel }) } catch {}\n          try { Object.defineProperty(nativeSynth, 'speak', { configurable: true, value: proofSynth.speak }) } catch {}\n          try { Object.defineProperty(nativeSynth, 'speaking', { configurable: true, get: () => proofSpeaking }) } catch {}\n        }\n      }`
 
 const lifecycleRecordAnchor = "const record = { id, pageErrors, passed: false, reducedMotion }"
 const lifecycleRecordCount = original.split(lifecycleRecordAnchor).length - 1
 if (lifecycleRecordCount !== 1) throw new Error('Home state proof Orb lifecycle receipt anchor is not unique')
-const lifecycleRecordWithFixture = "const record = { id, pageErrors, passed: false, reducedMotion, speechTransportFixture: 'deterministic-ci-device-speech-onstart-boundary-onend', audibleQualityCertified: false }"
+const lifecycleRecordWithFixture = "const record = { id, pageErrors, passed: false, reducedMotion, speechTransportFixture: 'deterministic-ci-device-speech-window-override-v2', audibleQualityCertified: false }"
 
 const derived = original
   .replace(speechFixtureAnchor, speechFixture)
@@ -74,8 +74,8 @@ if (result.status !== 0) {
     authority,
     derivedProof: {
       source: 'capture-home-state-proof.mjs',
-      replacement: 'deterministic CI-only device speech transport supplies onstart/boundary/onend; runtime state/rendering remains authoritative',
-      reason: 'headless Chromium exposes Web Speech but does not start an OS speech engine; proof must not force runtime to fake acoustic speaking',
+      replacement: 'deterministic CI-only device speech transport replaces the headless window speechSynthesis transport and supplies onstart/boundary/onend; runtime state/rendering remains authoritative',
+      reason: 'headless Chromium exposes Web Speech but does not start an OS speech engine, and inherited native methods are not a reliable mutation boundary; proof must not force runtime to fake acoustic speaking',
       audibleQualityCertified: false,
     },
     exitStatus: result.status,
