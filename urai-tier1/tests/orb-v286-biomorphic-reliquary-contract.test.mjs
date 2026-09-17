@@ -57,7 +57,7 @@ test('current Home keeps the authored V223 Orb current while V288/V286 remain ce
   assert.match(activeRepair, /authored living-memory Orb[\s\S]*keeps current Orb pixels/)
   assert.match(activeRepair, /function HomePassportOwnershipObject/)
   assert.match(activeRepair, /visibility: 'first-person-only'/)
-  assert.match(activeRepair, /return <HomePassportOwnershipObject \/>/)
+  assert.match(activeRepair, /<HomePassportOwnershipObject \/>[\s\S]*<HomeGlobalEmotionalFieldEarth state="unavailable" \/>/)
   assert.match(adapter, /import \{ HomeOrbReliquaryV286 \} from '\.\/HomeOrbReliquaryV286'/)
   assert.match(adapter, /<HomeOrbReliquaryV286 \/>/)
   assert.match(adapter, /home-v288-grounded-biomorphic-memory-reliquary/)
