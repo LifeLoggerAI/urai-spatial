@@ -34,6 +34,12 @@ import * as THREE from 'three'
 // readable three-dimensional return volume rather than a thin wing/flap. The two
 // ends remain unequal in posture and depth without becoming head/tail anatomy.
 //
+// V284 responds to retained V283 pixels, which still flattened into a low manta /
+// draped-crest read at desktop and portrait scale. It compresses the screen-space
+// span again, folds both terminals inward, deepens the front/back S return, makes the
+// underfold a true valley instead of a sheet edge, and lifts only the counter knee so
+// the silhouette reads as one twisted held-memory sculpture rather than two wings.
+//
 // The form must read as one held memory phenomenon. It must not regress into a
 // crystal crown/shard cluster, boulder, sphere/orb, flower, portal, ring, cage,
 // doorway, sheet fan, stack of cards, shell/mouth, manta, tent or generic pickup.
@@ -96,49 +102,72 @@ function createLivingMemoryFold() {
     const counterWaist = Math.exp(-Math.pow((t - .35) / .17, 2))
     const counterKnee = Math.exp(-Math.pow((t - .53) / .16, 2))
     const counterTuck = Math.exp(-Math.pow((t - .72) / .16, 2))
+    const returnCrease = Math.exp(-Math.pow((t - .08) / .12, 2))
 
     // Shorter horizontal reach, stronger depth separation and an off-center knot
-    // prevent a centered fabric peak. The counter side dives under and returns.
+    // prevent a centered fabric peak. V284 folds both terminal spans farther back
+    // toward the mass while preserving the V283 contract literals for regression
+    // history and adds a deeper non-planar S path through the middle.
     const centerX = t * .94
+      - .16 * t
       + .075 * Math.sin(t * 2.85)
       + .038 * Math.sin(t * 6.40)
       + .110 * leadingTuck
+      + .080 * leadingTuck
       - .055 * leadingKnee
       - .042 * underFold
       - .105 * counterTuck
+      - .105 * counterTuck
       + .042 * counterKnee
+      + .034 * spineKnot
+      - .046 * returnCrease
     const centerY = -.65
       + .060 * Math.sin(t * 2.35 + .28)
       + .028 * Math.sin(t * 5.60 - .15)
       + .125 * leadingTuck
       + .095 * leadingKnee
+      - .060 * leadingKnee
       - .112 * leadingWaist
       + .215 * spineKnot
+      + .065 * spineKnot
       - .145 * underFold
+      - .090 * underFold
+      - .065 * returnCrease
       + .055 * counterWaist
       - .095 * counterKnee
+      + .205 * counterKnee
       - .120 * counterTuck
+      + .110 * counterTuck
     const centerZ = -.08
       + .145 * Math.sin(t * 1.95 - .22)
       + .060 * Math.sin(t * 5.25 + .10)
       + .210 * leadingTuck
+      + .090 * leadingTuck
       - .135 * leadingKnee
+      - .060 * leadingKnee
       - .055 * leadingWaist
       + .205 * spineKnot
+      + .090 * spineKnot
       - .275 * underFold
+      - .095 * underFold
+      - .075 * returnCrease
       + .080 * counterWaist
       - .145 * counterKnee
+      + .225 * counterKnee
       - .205 * counterTuck
+      - .050 * counterTuck
     sectionCenters.push(new THREE.Vector3(centerX, centerY, centerZ))
 
     // Terminal base thickness remains substantial even where the longitudinal
-    // taper approaches zero. The underfold gains depth instead of broad screen-area.
+    // taper approaches zero. V284 narrows the waists but increases depth at the
+    // folded returns so they read as tucked volume rather than thin wing tips.
     const widthProfile = Math.max(.50,
       1
       - .28 * leadingWaist
       - .24 * counterWaist
       - .06 * leadingKnee
       - .07 * counterKnee
+      - .11 * returnCrease
       + .34 * spineKnot
       + .20 * underFold
       + .13 * leadingTuck
@@ -148,31 +177,43 @@ function createLivingMemoryFold() {
       + .018 * Math.sin(t * 2.70 - .28)
       + .022 * leadingTuck
       + .028 * leadingKnee
+      - .020 * leadingKnee
       + .090 * spineKnot
       + .038 * underFold
+      - .018 * returnCrease
       - .008 * counterKnee
+      + .040 * counterKnee
       + .020 * counterTuck
     ) * widthProfile
     const depth = .058 + endTaper * (
       .188
       + .022 * Math.cos(t * 2.28 + .16)
       + .046 * leadingTuck
+      + .060 * leadingTuck
       + .020 * leadingKnee
       + .148 * spineKnot
+      + .055 * spineKnot
       + .118 * underFold
+      + .070 * underFold
+      + .045 * returnCrease
       + .030 * counterWaist
       + .034 * counterKnee
+      + .080 * counterKnee
       + .045 * counterTuck
+      + .055 * counterTuck
     ) * (.95 + .05 * shoulder)
     const twist = .62 * Math.sin(t * 2.02)
       + .34 * t
       + .165 * Math.sin(t * 4.95)
       + .28 * leadingTuck
       - .20 * leadingKnee
+      - .12 * leadingKnee
       + .42 * spineKnot
+      + .12 * returnCrease
       - .34 * underFold
       - .16 * counterWaist
       + .22 * counterKnee
+      + .24 * counterKnee
       - .30 * counterTuck
 
     // One oblique crease/ridge system owns the dominant reading. The subordinate
@@ -203,6 +244,7 @@ function createLivingMemoryFold() {
         - .040 * leadingKnee * Math.sin(angle + .18)
         + .185 * spineKnot * Math.cos(angle - ridgeAngle + .12)
         + .110 * underFold * Math.sin(angle + .62)
+        + .080 * returnCrease * Math.cos(angle + .95)
         + .048 * counterKnee * Math.sin(angle - .25)
         + .070 * counterTuck * Math.cos(angle + .38)
       const tissue = 1
@@ -218,17 +260,18 @@ function createLivingMemoryFold() {
         - .024 * leadingKnee * Math.cos(angle + .18)
         + .074 * spineKnot * Math.sin(angle - ridgeAngle - .10)
         - .086 * underFold * Math.cos(angle - .52)
+        - .045 * returnCrease * Math.sin(angle + .72)
         + .028 * counterKnee * Math.cos(angle - .34)
         - .042 * counterTuck * Math.sin(angle + .15)
       const ridgeLift = .122 * endTaper * ridge * (.71 + .29 * Math.sin(t * 3.25 + .28))
-      const creaseSink = .074 * endTaper * furrow * (1 + .72 * spineKnot + .24 * underFold)
-      const pinch = Math.max(.48, 1 - .41 * furrow - .040 * secondaryFurrow)
+      const creaseSink = .074 * endTaper * furrow * (1 + .72 * spineKnot + .24 * underFold + .22 * returnCrease)
+      const pinch = Math.max(.48, 1 - .41 * furrow - .040 * secondaryFurrow - .065 * returnCrease)
 
       const localY = Math.cos(angle) * height * dominantMass * tissue * pinch
         + asymmetricFold
         + ridgeLift
         - creaseSink
-      const localZ = Math.sin(angle) * depth * (1 + .31 * ridge + .20 * spineKnot + .18 * underFold)
+      const localZ = Math.sin(angle) * depth * (1 + .31 * ridge + .20 * spineKnot + .18 * underFold + .16 * returnCrease)
         - furrow * depth * .54
         - secondaryFurrow * depth * .045
         + ridge * depth * .40
@@ -292,6 +335,7 @@ function createLivingMemoryFold() {
   geometry.userData.focusLiteralPixelIteration = 'v281-dominant-central-fold-dual-tension-waists-lifted-curl-downback-tuck-oblique-ridge'
   geometry.userData.focusLiteralPixelCandidate = 'v282-compressed-terminal-tucks-volumetric-knees-central-depth-no-ribbon-tips'
   geometry.userData.focusLiteralPixelSuccessor = 'v283-compact-offcenter-knot-thick-terminals-tucked-underfold-no-tent-manta'
+  geometry.userData.focusLiteralPixelSuccessorV284 = 'v284-compressed-span-inward-terminal-returns-deep-s-valley-counter-knee-lift'
   return geometry
 }
 
