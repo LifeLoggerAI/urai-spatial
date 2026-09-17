@@ -102,7 +102,7 @@ export function HomeGlobalEmotionalFieldEarth({ state = 'unavailable' }: { state
   if (!visible) return null
 
   const summary = state === 'aggregate'
-    ? 'Global Emotional Field: a safely published aggregate state is available. No individual people or exact private locations are shown.'
+    ? 'Global Emotional Field: a safely published cohort-level aggregate is available with privacy-preserving geographic precision.'
     : state === 'suppressed'
       ? 'Global Emotional Field: aggregate publication is suppressed by privacy or governance requirements.'
       : 'Global Emotional Field: aggregate signal is currently unavailable. No emotional activity is inferred or fabricated.'
