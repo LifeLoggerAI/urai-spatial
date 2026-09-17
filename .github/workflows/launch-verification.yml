@@ -69,3 +69,4 @@ jobs:
           path: |
             _audit/20260623_launch_route_chain/**
             /tmp/urai-spatial-dev.log
+          retention-days: 30

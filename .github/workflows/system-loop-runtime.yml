@@ -90,7 +90,7 @@ jobs:
           name: system-loop-smoke-${{ env.URAI_EXACT_HEAD }}-${{ github.run_id }}
           path: artifacts/system-loop/system-loop-smoke.log
           if-no-files-found: error
-          retention-days: 365
+          retention-days: 14
 
       - name: Enforce SystemLoop smoke result
         shell: bash

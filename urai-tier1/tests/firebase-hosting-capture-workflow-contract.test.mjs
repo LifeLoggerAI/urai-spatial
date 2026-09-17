@@ -55,7 +55,7 @@ test('quarantine receipt remains outside source and is retained without claiming
   assert.match(workflow, /checksOnly: true/)
   assert.match(workflow, /exactHeadSha: process\.env\.EXPECTED_SHA/)
   assert.match(workflow, /path: artifacts\/legacy-hosting-recovery\/quarantine\.json/)
-  assert.match(workflow, /retention-days: 365/)
+  assert.match(workflow, /retention-days: 90/)
   assert.match(workflow, /test -z "\$\(git status --porcelain --untracked-files=all\)"/)
   assert.doesNotMatch(workflow, /legacy-live-release\.json|URAI_HOSTING_RECOVERY_RECEIPT/)
 })

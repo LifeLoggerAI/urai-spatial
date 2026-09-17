@@ -85,7 +85,7 @@ jobs:
           name: spatial-production-verify-${{ env.URAI_EXACT_HEAD }}-${{ github.run_id }}
           path: ${{ runner.temp }}/spatial-production-verify
           if-no-files-found: error
-          retention-days: 365
+          retention-days: ${{ github.event_name == 'pull_request' && 30 || 90 }}
 
       - name: Enforce production verification
         shell: bash

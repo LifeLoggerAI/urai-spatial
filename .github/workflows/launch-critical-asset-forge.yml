@@ -321,7 +321,7 @@ jobs:
         with:
           name: urai-governed-promotion-${{ env.URAI_EXACT_HEAD }}
           if-no-files-found: error
-          retention-days: 365
+          retention-days: 90
           path: |
             operations/assets/launch-critical-assets.json
             operations/assets/promotion-decisions/
