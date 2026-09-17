@@ -90,6 +90,9 @@ const JOURNEY_SOURCE_VISUAL_ABORTS = new Set([
   '/assets/urai/final/tier2/focus/focus-memory-chamber-desktop.svg',
   '/assets/urai/final/tier2/replay/replay-cinematic-stage-desktop.svg',
   '/assets/urai/final/tier2/life-map/lifemap-galaxy-field-desktop.svg',
+  '/assets/urai/generated/models/replay-memory-environment-v1.glb',
+  '/assets/urai/final/manifests/v2-asset-factory-spatial-handoff.json',
+  '/assets/urai/final/manifests/v3-asset-factory-spatial-handoff.json',
 ])
 
 function blockingFailedRequests(failedRequests, { allowJourneySourceVisualAbort = false } = {}) {
