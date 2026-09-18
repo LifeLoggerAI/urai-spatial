@@ -56,6 +56,7 @@ import './native-doorway-final-fix.css'
 import './location-map-header-evidence-fix.css'
 import './urai-production-system.css'
 import WorldRuntimeBoundary from '@/spatial/world/WorldRuntimeBoundary'
+import SpatialSettingsBootstrap from '@/spatial/settings/SpatialSettingsBootstrap'
 
 const configuredBuildSha = process.env.NEXT_PUBLIC_URAI_BUILD_SHA ?? process.env.GITHUB_SHA ?? ''
 const deployedSha = /^[0-9a-f]{40}$/.test(configuredBuildSha) ? configuredBuildSha : 'unverified'
@@ -66,9 +67,7 @@ const embeddedIcon = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/sv
 export const metadata: Metadata = {
   title: previewMode ? 'PREVIEW — URAI Spatial' : 'URAI Spatial',
   description: 'A private spatial world for memory, reflection, relationships, and personal intelligence.',
-  icons: {
-    icon: embeddedIcon,
-  },
+  icons: { icon: embeddedIcon },
   other: {
     'urai-deployed-sha': deployedSha,
     'urai-preview-mode': previewMode ? 'true' : 'false',
@@ -106,27 +105,18 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             aria-label="Preview environment. Not production certified."
             data-testid="urai-global-preview-banner"
             style={{
-              position: 'fixed',
-              inset: '0 0 auto 0',
-              zIndex: 2147483647,
-              padding: '8px 12px',
-              background: 'rgba(126, 34, 206, 0.96)',
-              color: '#ffffff',
-              fontFamily: 'system-ui, sans-serif',
-              fontSize: '12px',
-              fontWeight: 900,
-              letterSpacing: '0.12em',
-              lineHeight: 1.2,
-              textAlign: 'center',
-              textTransform: 'uppercase',
-              pointerEvents: 'none',
-              boxShadow: '0 1px 18px rgba(0, 0, 0, 0.45)',
+              position: 'fixed', inset: '0 0 auto 0', zIndex: 2147483647,
+              padding: '8px 12px', background: 'rgba(126, 34, 206, 0.96)', color: '#ffffff',
+              fontFamily: 'system-ui, sans-serif', fontSize: '12px', fontWeight: 900,
+              letterSpacing: '0.12em', lineHeight: 1.2, textAlign: 'center', textTransform: 'uppercase',
+              pointerEvents: 'none', boxShadow: '0 1px 18px rgba(0, 0, 0, 0.45)',
             }}
           >
             PREVIEW — NOT PRODUCTION CERTIFIED · {previewChannel} · {deployedSha.slice(0, 12)}
           </div>
         ) : null}
         <WorldRuntimeBoundary>
+          <SpatialSettingsBootstrap />
           <UraiAAAARoutePolish />
           <UraiFinalAssetSpineBridge />
           {children}

@@ -59,7 +59,6 @@ const tests = [
   'tests/orb-companion-contract.test.mjs',
   'tests/orb-locked-canon-convergence-contract.test.mjs',
   'tests/orb-v286-biomorphic-reliquary-contract.test.mjs',
-  'tests/private-source-media-consent-contract.test.mjs',
   'tests/provider-boundary-contract.test.mjs',
   'tests/provider-hosting-runtime-contract.test.mjs',
   'tests/provider-preview-routing-contract.test.mjs',
@@ -88,6 +87,7 @@ const tests = [
   'tests/spatial-missing-resource-diagnostic-contract.test.mjs',
   'tests/unit-runner-coverage.test.mjs',
   'tests/v2-asset-gating.test.mjs',
+  'tests/whole-product-onboarding-settings-contract.test.mjs',
   'tests/xr-runtime-contract.test.mjs',
   'tests/xr-static-gate-diagnostics-contract.test.mjs',
 ]
