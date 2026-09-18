@@ -54,7 +54,7 @@ test('Focus formation stays grounded in the authored chamber and current connect
   assert.match(geology, /focusLiteralPixelSuccessorV303 = 'v303-shared-world-exact-grade-dark-crack-buried-closure-no-viewport-lift'/)
   assert.match(geology, /focusLiteralPixelSuccessorV304 = 'v304-buried-closed-body-coplanar-ground-incision-no-object-edge'/)
   assert.match(geology, /focusIncisionAuthority = 'v305-coplanar-jagged-width-modulated-ground-fissure'/)
-  assert.match(geology, /focusCurrentVisualAuthority = 'v304-ground-owned-coplanar-incision-buried-closed-body'/)
+  assert.match(geology, /focusCurrentVisualAuthority = 'v305-ground-owned-jagged-fissure-buried-closed-body'/)
   assert.doesNotMatch(focus, /focus-authored-fractured-stratum-/)
   assert.doesNotMatch(geology, /v269-living-luminous-memory-lamella|v271-interlocked-volumetric-memory-facet/)
   assert.match(focus, /focus-retired-procedural-vault/)
