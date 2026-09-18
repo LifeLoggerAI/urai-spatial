@@ -13,7 +13,7 @@ const groundEnd = geologySource.indexOf(groundEndMarker, groundStart)
 assert.ok(groundStart >= 0 && groundEnd > groundStart, 'shared exported focusGroundHeight must remain extractable')
 const sharedGround = geologySource
   .slice(groundStart, groundEnd + 2)
-  .replace('export function focusGroundHeight', 'function focusGroundHeight')
+  .replace(/export function (focusGroundHeight|focusSelectedMemoryCavityDepth)/g, 'function $1')
 
 const start = source.indexOf('function FocusSanctuaryGround(')
 const end = source.indexOf('  const maps =', start)
