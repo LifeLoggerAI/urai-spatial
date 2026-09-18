@@ -218,6 +218,7 @@ function safePrivateFixtureEvidence(): readonly HomeEvidenceRef[] {
   return [
     { id: 'fixture-memory', kind: 'memory', sourceLabel: 'a synthetic memory-place review signal', permission: 'the disclosed safe-private fixture' },
     { id: 'fixture-relationship', kind: 'relationship', sourceLabel: 'a synthetic relationship review signal', permission: 'the disclosed safe-private fixture' },
+    { id: 'fixture-emotional-weather', kind: 'emotional-weather', sourceLabel: 'a synthetic emotional-weather review signal', permission: 'the disclosed safe-private fixture' },
     { id: 'fixture-recovery', kind: 'recovery', sourceLabel: 'a synthetic recovery review signal', permission: 'the disclosed safe-private fixture' },
     { id: 'fixture-routine', kind: 'location-routine', sourceLabel: 'a synthetic routine review signal', permission: 'the disclosed safe-private fixture' },
     { id: 'fixture-stress', kind: 'stress', sourceLabel: 'a synthetic stress review signal', permission: 'the disclosed safe-private fixture' },
