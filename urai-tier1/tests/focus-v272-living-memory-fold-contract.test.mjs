@@ -28,7 +28,7 @@ test('selected memory remains one connected CLOSED living-memory phenomenon rath
   assert.doesNotMatch(geology, /Array\.from\(\{ length: 7 \}/)
 })
 
-test('V306 preserves the buried V295 watertight body while the visual skin reads as broken earth with attached microbranches', () => {
+test('V307 preserves the buried V295 watertight body while the visual skin reads as one torn-earth rupture without branch vocabulary', () => {
   assert.match(geology, /V295 keeps the useful V294 top-surface language while restoring the non-negotiable/)
   assert.match(geology, /V298 narrowed the event/)
   assert.match(geology, /V299 changes ownership/)

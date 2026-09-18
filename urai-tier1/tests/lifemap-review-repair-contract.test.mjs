@@ -117,10 +117,10 @@ test('Founder proof samples retained WebGL canvas pixels only', () => {
   assert.match(workflow, /lifemap-review-repair-contract\.test\.mjs/)
 })
 
-test('Focus final composition preserves one connected living-memory authority and locks the V306 broken-earth ground-owned sanctuary fissure', () => {
+test('Focus final composition preserves one connected living-memory authority and locks the V307 torn-earth ground-owned sanctuary fissure', () => {
   assert.match(focusSource, /focus-v251-grounded-living-memory-manifestation/)
   assert.match(focusSource, /createFocusStrata, createFocusSurfaceMaps, createFocusGroundIncision/)
-  assert.match(focusSource, /focus-v306-ground-owned-fissure/)
+  assert.match(focusSource, /focus-v307-ground-owned-fissure/)
   assert.doesNotMatch(focusSource, /focus-v249-memory-root-cradle/)
   assert.doesNotMatch(focusSource, /new THREE\.IcosahedronGeometry\(|<torusGeometry|<ringGeometry|wireframe/)
   assert.match(focusPolish, /V272 literal-pixel convergence/)
