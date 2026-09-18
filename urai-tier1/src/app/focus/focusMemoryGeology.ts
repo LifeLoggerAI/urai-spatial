@@ -140,6 +140,13 @@ import * as THREE from 'three'
 // narrowing the longitudinal windows, and ground-blending the subordinate connector so intact
 // sanctuary ground separates the three openings at first read.
 //
+// V320 responds to exact-head d2e2b11f retained pixels: separation and terrain ownership are
+// correct, but the three openings became too small to own first read at normal desktop/ultrawide
+// distance. V320 enlarges only the localized radial basin radii and their near-black bottom
+// footprints, with a modest depth increase. The connector remains the same subordinate hairline,
+// intact sanctuary ground must remain between the three openings, and no raised rim/panel/object
+// geometry is introduced.
+//
 // The form must read as memory pressure physically held by place. It must not regress
 // into a crystal crown, boulder, orb, flower, portal, ring, shell/mouth, manta, tent,
 // aircraft, animal, shoe, boat, bowl, helmet, body-part silhouette, smooth blob,
@@ -186,9 +193,9 @@ export function focusSelectedMemoryCavityDepth(worldX: number, worldZ: number) {
   }
 
   const basinSpecs = [
-    { t: -.48, radius: .36, depth: .078 },
-    { t: -.02, radius: .40, depth: .088 },
-    { t: .42, radius: .34, depth: .074 },
+    { t: -.48, radius: .44, depth: .084 },
+    { t: -.02, radius: .48, depth: .094 },
+    { t: .42, radius: .42, depth: .080 },
   ]
   let basinDepth = 0
   for (const basin of basinSpecs) {
@@ -199,7 +206,7 @@ export function focusSelectedMemoryCavityDepth(worldX: number, worldZ: number) {
 
   const connectorFalloff = Math.exp(-Math.pow(nearestDistance / .020, 2))
   const connectorDepth = .0014 * connectorFalloff
-  return -Math.min(.094, basinDepth + connectorDepth)
+  return -Math.min(.100, basinDepth + connectorDepth)
 }
 
 function livingMemoryVertexColor(section: number, cross: number, t: number, lateral: number, furrow: number, ridge: number) {
@@ -398,8 +405,9 @@ function createLivingMemoryFold() {
   geometry.userData.focusLiteralPixelSuccessorV316 = 'v316-resolved-terrain-basin-sampling-and-depth-with-narrow-cavity-bottom-skin'
   geometry.userData.focusLiteralPixelSuccessorV317 = 'v317-three-radial-terrain-basins-with-separated-cavity-bottoms-and-subordinate-hairline-connector'
   geometry.userData.focusLiteralPixelSuccessorV318 = 'v318-localized-three-cavity-bottoms-ground-blended-hairline-connector'
+  geometry.userData.focusLiteralPixelSuccessorV320 = 'v320-readable-localized-radial-cavities-subordinate-hairline-connector'
   geometry.userData.focusVisualAuthority = 'v295-sanctuary-memory-scar-volume'
-  geometry.userData.focusCurrentVisualAuthority = 'v318-three-radial-terrain-cavities-localized-bottoms-ground-blended-hairline-connector-buried-closed-body'
+  geometry.userData.focusCurrentVisualAuthority = 'v320-readable-three-radial-terrain-cavities-localized-bottoms-ground-blended-hairline-connector-buried-closed-body'
   return geometry
 }
 
@@ -449,12 +457,12 @@ export function createFocusGroundIncision() {
     const side = new THREE.Vector2(-tangent.y, tangent.x)
     const endFade = Math.pow(Math.max(0, Math.sin(u * Math.PI)), .46)
 
-    const nearPocket = Math.exp(-Math.pow((t + .48) / .052, 2))
-    const centerPocket = Math.exp(-Math.pow((t + .02) / .060, 2))
-    const farPocket = Math.exp(-Math.pow((t - .42) / .052, 2))
+    const nearPocket = Math.exp(-Math.pow((t + .48) / .070, 2))
+    const centerPocket = Math.exp(-Math.pow((t + .02) / .078, 2))
+    const farPocket = Math.exp(-Math.pow((t - .42) / .068, 2))
     const pocketStrength = Math.max(nearPocket, centerPocket, farPocket)
     const hairlineHalfWidth = .0027 + .00055 * Math.sin(section * .91 + .31)
-    const pocketHalfWidth = .175 * nearPocket + .205 * centerPocket + .165 * farPocket
+    const pocketHalfWidth = .225 * nearPocket + .255 * centerPocket + .215 * farPocket
     const widthPulse = THREE.MathUtils.clamp(
       .96 + .14 * Math.sin(section * 1.37 + .22) + .08 * Math.sin(section * 3.11 - .73),
       .76,
@@ -511,9 +519,9 @@ export function createFocusGroundIncision() {
   geometry.computeVertexNormals()
   geometry.computeBoundingBox()
   geometry.computeBoundingSphere()
-  geometry.userData.focusIncisionAuthority = 'v318-localized-near-black-cavity-bottoms-ground-blended-subordinate-hairline-connector'
+  geometry.userData.focusIncisionAuthority = 'v320-readable-localized-near-black-cavity-bottoms-ground-blended-subordinate-hairline-connector'
   geometry.userData.focusIncisionTopology = 'zero-thickness-localized-cavity-bottoms-plus-ground-blended-hairline-inside-three-radial-terrain-owned-depressions-over-buried-v295-closed-authority'
-  geometry.userData.focusIncisionRule = 'near-black-void-owned-only-by-three-local-radial-basins-ground-blended-subordinate-connector-no-continuous-black-strip-no-panel-no-ridge-no-mound-no-shadow-no-emissive'
+  geometry.userData.focusIncisionRule = 'readable-near-black-void-owned-only-by-three-local-radial-basins-ground-blended-subordinate-connector-intact-ground-between-openings-no-continuous-black-strip-no-panel-no-ridge-no-mound-no-shadow-no-emissive'
   return geometry
 }
 
