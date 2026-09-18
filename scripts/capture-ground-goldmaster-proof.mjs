@@ -175,9 +175,9 @@ try {
       await page.waitForTimeout(180)
       await capture(page, scenario, 'after-move')
 
-      await dragLook(page, canvasBox, 0, -220)
+      await dragLook(page, canvasBox, 0, 220)
       await capture(page, scenario, 'look-down-material-gate')
-      await dragLook(page, canvasBox, 0, 420)
+      await dragLook(page, canvasBox, 0, -420)
       await capture(page, scenario, 'look-up-sky-gate')
       await dragLook(page, canvasBox, 620, -180)
       await capture(page, scenario, 'look-back-world-continuity')
