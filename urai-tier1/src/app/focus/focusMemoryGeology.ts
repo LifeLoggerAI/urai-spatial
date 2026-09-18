@@ -284,8 +284,9 @@ function createLivingMemoryFold() {
   geometry.userData.focusLiteralPixelSuccessorV303 = 'v303-shared-world-exact-grade-dark-crack-buried-closure-no-viewport-lift'
   geometry.userData.focusLiteralPixelSuccessorV304 = 'v304-buried-closed-body-coplanar-ground-incision-no-object-edge'
   geometry.userData.focusLiteralPixelSuccessorV305 = 'v305-jagged-width-modulated-ground-fissure-no-twig-seam'
+  geometry.userData.focusLiteralPixelSuccessorV306 = 'v306-broken-earth-footprint-attached-microbranches-sparse-weathered-edge-no-cable-outline'
   geometry.userData.focusVisualAuthority = 'v295-sanctuary-memory-scar-volume'
-  geometry.userData.focusCurrentVisualAuthority = 'v305-ground-owned-jagged-fissure-buried-closed-body'
+  geometry.userData.focusCurrentVisualAuthority = 'v306-ground-owned-broken-earth-fissure-buried-closed-body'
   return geometry
 }
 
@@ -293,15 +294,26 @@ export function createFocusStrata() {
   return [createLivingMemoryFold()]
 }
 
-const INCISION_CROSS_POINTS = 5
+const INCISION_CROSS_POINTS = 9
 
 export function createFocusGroundIncision() {
   const positions: number[] = []
   const colors: number[] = []
   const uvs: number[] = []
   const indices: number[] = []
-  const edgeColor = new THREE.Color().setRGB(.112, .078, .043)
-  const innerColor = new THREE.Color().setRGB(.006, .003, .002)
+  const disturbedColor = new THREE.Color().setRGB(.070, .066, .048)
+  const weatheredColor = new THREE.Color().setRGB(.145, .098, .046)
+  const innerColor = new THREE.Color().setRGB(.004, .0025, .002)
+
+  const pushColor = (lateral: number, sectionPhase: number, coreScale = 1) => {
+    const absLateral = Math.abs(lateral)
+    const core = Math.exp(-Math.pow(lateral / (.38 * coreScale), 2))
+    const weatherFleck = THREE.MathUtils.smoothstep(absLateral, .55, 1)
+      * Math.max(0, Math.sin(sectionPhase * 2.17 + absLateral * 7.1))
+      * .28
+    const color = disturbedColor.clone().lerp(weatheredColor, weatherFleck).lerp(innerColor, .50 + .50 * core)
+    colors.push(color.r, color.g, color.b)
+  }
 
   for (let section = 0; section < MEMORY_SECTIONS; section += 1) {
     const u = section / (MEMORY_SECTIONS - 1)
@@ -311,32 +323,35 @@ export function createFocusGroundIncision() {
     const after = fractureCenter(Math.min(1, t + .018))
     const tangent = after.clone().sub(before).normalize()
     const side = new THREE.Vector2(-tangent.y, tangent.x)
-    const endFade = Math.pow(Math.max(0, Math.sin(u * Math.PI)), .55)
-    const centralScar = Math.exp(-Math.pow((t + .05) / .38, 2))
+    const endFade = Math.pow(Math.max(0, Math.sin(u * Math.PI)), .48)
+    const centralScar = Math.exp(-Math.pow((t + .04) / .40, 2))
+    const leftBreak = Math.exp(-Math.pow((t + .34) / .15, 2))
+    const rightBreak = Math.exp(-Math.pow((t - .29) / .16, 2))
     const widthPulse = THREE.MathUtils.clamp(
-      .78 + .24 * Math.sin(section * 1.37 + .41) + .14 * Math.sin(section * 3.11 - .73),
-      .48,
-      1.22,
+      .88 + .32 * Math.sin(section * 1.19 + .37) + .18 * Math.sin(section * 2.83 - .64),
+      .52,
+      1.42,
     )
-    const halfWidth = (.060 + .036 * centralScar) * (.10 + .90 * endFade) * widthPulse
+    const halfWidth = (.092 + .072 * centralScar + .028 * leftBreak + .020 * rightBreak)
+      * (.10 + .90 * endFade)
+      * widthPulse
 
     for (let cross = 0; cross < INCISION_CROSS_POINTS; cross += 1) {
       const crossU = cross / (INCISION_CROSS_POINTS - 1)
       const lateral = THREE.MathUtils.lerp(-1, 1, crossU)
-      const edgeSidePhase = lateral < 0 ? .37 : 1.91
-      const edgeJitter = Math.abs(lateral) > .55
-        ? .020 * Math.sin(section * 2.47 + cross * 1.31 + edgeSidePhase)
-          + .009 * Math.sin(section * 4.73 - cross * .67 + edgeSidePhase)
-        : .004 * Math.sin(section * 1.71 + cross * .83 + edgeSidePhase) * Math.abs(lateral)
-      const lateralDistance = lateral * halfWidth + edgeJitter
+      const absLateral = Math.abs(lateral)
+      const asymmetricBreak = (lateral < 0 ? leftBreak : rightBreak) * (.035 + .015 * Math.sin(section * 2.4 + cross))
+      const edgeJitter = absLateral > .45
+        ? .032 * Math.sin(section * 2.31 + cross * 1.47 + (lateral < 0 ? .32 : 1.84))
+          + .014 * Math.sin(section * 4.61 - cross * .71)
+        : .006 * Math.sin(section * 1.63 + cross * .91) * absLateral
+      const lateralDistance = lateral * (halfWidth + asymmetricBreak) + edgeJitter
       const x = center.x + side.x * lateralDistance
       const z = center.y + side.y * lateralDistance
-      const y = focusGroundHeight(FOCUS_MEMORY_WORLD_X + x, FOCUS_MEMORY_WORLD_Z + z) + .00035
+      const y = focusGroundHeight(FOCUS_MEMORY_WORLD_X + x, FOCUS_MEMORY_WORLD_Z + z) + .00032
       positions.push(x, y, z)
       uvs.push(crossU, u)
-      const core = Math.exp(-Math.pow(lateral / .27, 2))
-      const color = edgeColor.clone().lerp(innerColor, .36 + .64 * core)
-      colors.push(color.r, color.g, color.b)
+      pushColor(lateral, section + t * 5.3)
     }
   }
 
@@ -352,6 +367,56 @@ export function createFocusGroundIncision() {
     }
   }
 
+  const appendBranch = (rootT: number, sideSign: -1 | 1, length: number, phase: number) => {
+    const branchSections = 7
+    const branchCrossPoints = 5
+    const root = fractureCenter(rootT)
+    const before = fractureCenter(Math.max(-1, rootT - .02))
+    const after = fractureCenter(Math.min(1, rootT + .02))
+    const tangent = after.clone().sub(before).normalize()
+    const side = new THREE.Vector2(-tangent.y, tangent.x)
+    const direction = tangent.clone().multiplyScalar(.30).add(side.clone().multiplyScalar(sideSign * .96)).normalize()
+    const baseOffset = side.clone().multiplyScalar(sideSign * .035)
+    const vertexOffset = positions.length / 3
+
+    for (let branchSection = 0; branchSection < branchSections; branchSection += 1) {
+      const branchU = branchSection / (branchSections - 1)
+      const taper = Math.pow(1 - branchU, .62)
+      const center = root.clone()
+        .add(baseOffset)
+        .add(direction.clone().multiplyScalar(length * branchU))
+        .add(side.clone().multiplyScalar(Math.sin(branchU * Math.PI) * .018 * sideSign))
+      const branchHalfWidth = (.050 + .018 * Math.sin(phase + branchSection * 1.17)) * taper
+      for (let cross = 0; cross < branchCrossPoints; cross += 1) {
+        const crossU = cross / (branchCrossPoints - 1)
+        const lateral = THREE.MathUtils.lerp(-1, 1, crossU)
+        const jitter = .008 * Math.sin(phase + branchSection * 2.2 + cross * 1.4) * taper
+        const x = center.x + side.x * (lateral * branchHalfWidth + jitter)
+        const z = center.y + side.y * (lateral * branchHalfWidth + jitter)
+        const y = focusGroundHeight(FOCUS_MEMORY_WORLD_X + x, FOCUS_MEMORY_WORLD_Z + z) + .00030
+        positions.push(x, y, z)
+        uvs.push(crossU, branchU)
+        pushColor(lateral, phase + branchSection, .82)
+      }
+    }
+
+    for (let branchSection = 0; branchSection < branchSections - 1; branchSection += 1) {
+      const row = vertexOffset + branchSection * branchCrossPoints
+      const nextRow = vertexOffset + (branchSection + 1) * branchCrossPoints
+      for (let cross = 0; cross < branchCrossPoints - 1; cross += 1) {
+        const a = row + cross
+        const b = row + cross + 1
+        const c = nextRow + cross
+        const d = nextRow + cross + 1
+        indices.push(a, b, c, b, d, c)
+      }
+    }
+  }
+
+  appendBranch(-.34, -1, .34, .7)
+  appendBranch(.08, 1, .28, 2.2)
+  appendBranch(.36, -1, .24, 4.1)
+
   const geometry = new THREE.BufferGeometry()
   geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3))
   geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3))
@@ -360,9 +425,9 @@ export function createFocusGroundIncision() {
   geometry.computeVertexNormals()
   geometry.computeBoundingBox()
   geometry.computeBoundingSphere()
-  geometry.userData.focusIncisionAuthority = 'v305-coplanar-jagged-width-modulated-ground-fissure'
-  geometry.userData.focusIncisionTopology = 'zero-thickness-open-visual-skin-over-buried-v295-closed-authority'
-  geometry.userData.focusIncisionRule = 'no-raised-edge-no-shadow-no-emissive-no-portable-silhouette'
+  geometry.userData.focusIncisionAuthority = 'v306-broken-earth-footprint-attached-microbranches-sparse-weathered-edge'
+  geometry.userData.focusIncisionTopology = 'zero-thickness-open-visual-skin-plus-attached-microbranches-over-buried-v295-closed-authority'
+  geometry.userData.focusIncisionRule = 'broad-central-rupture-tapered-terminals-no-continuous-brown-outline-no-shadow-no-emissive-no-portable-silhouette'
   return geometry
 }
 
