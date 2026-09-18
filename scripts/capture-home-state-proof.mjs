@@ -389,11 +389,118 @@ async function captureOrbLifecycle({ reducedMotion = 'no-preference' } = {}) {
   }
 }
 
+async function captureHomeSpatialContinuity() {
+  const browser = await chromium.launch({ headless: true, args: ['--enable-unsafe-swiftshader'] })
+  const context = await browser.newContext({ viewport: { width: 1440, height: 900 } })
+  const page = await context.newPage()
+  const pageErrors = []
+  page.on('pageerror', (error) => pageErrors.push(String(error)))
+  const id = 'home-first-person-passport-earth-emotional-weather'
+  const record = { id, pageErrors, passed: false }
+  const screenshotRecord = async (state) => {
+    const file = id + '-' + state + '-' + exactHead.slice(0, 12) + '.png'
+    const screenshot = await page.screenshot({ path: path.join(outputDir, file), fullPage: false, animations: 'disabled', caret: 'hide', timeout: 90_000 })
+    return { file, bytes: screenshot.length, sha256: createHash('sha256').update(screenshot).digest('hex') }
+  }
+  try {
+    const response = await page.goto(base + '/home/?homeAssetReview=1&homePrivateFixture=1', { waitUntil: 'domcontentloaded', timeout: 60_000 })
+    let owner = await waitForHomeReady(page)
+    record.status = response?.status()
+    record.neutralPresentationStableState = await owner.getAttribute('data-home-stable-state')
+    record.neutralPresentationCamera = await owner.getAttribute('data-home-camera-mode')
+
+    const enterFirstPerson = page.getByRole('button', { name: 'Enter first-person Home' }).first()
+    await enterFirstPerson.focus()
+    await enterFirstPerson.press('Enter')
+    await page.waitForFunction((selector) => document.querySelector(selector)?.getAttribute('data-home-stable-state') === 'AVATAR_HOME_FIRST_PERSON', ownerSelector, { timeout: 20_000 })
+    owner = page.locator(ownerSelector)
+    record.firstPersonStableState = await owner.getAttribute('data-home-stable-state')
+    record.firstPersonCamera = await owner.getAttribute('data-home-camera-mode')
+    record.firstPersonMovement = await owner.getAttribute('data-home-movement')
+
+    const earthStatus = page.getByRole('status').filter({ hasText: /Global Emotional Field: aggregate signal is currently unavailable/i }).first()
+    await earthStatus.waitFor({ state: 'attached', timeout: 20_000 })
+    record.globalFieldText = (await earthStatus.textContent()) || ''
+    record.globalFieldFailClosed = record.globalFieldText.includes('No emotional activity is inferred or fabricated.')
+
+    const weather = page.getByTestId('home-personal-emotional-weather')
+    const weatherStatus = page.getByTestId('home-personal-emotional-weather-status')
+    record.emotionalWeather = {
+      tone: await weather.getAttribute('data-home-emotional-weather-tone'),
+      source: await weather.getAttribute('data-home-emotional-weather-source'),
+      visible: await weather.getAttribute('data-home-emotional-weather-visible'),
+      summary: (await weatherStatus.textContent()) || '',
+      ownerTone: await owner.getAttribute('data-home-emotional-weather-tone'),
+      ownerEvidence: await owner.getAttribute('data-home-emotional-weather-evidence'),
+    }
+    record.firstPersonVisual = await waitForVisualEvidence(page)
+    record.firstPersonScreenshot = await screenshotRecord('first-person')
+
+    const passportControl = page.getByRole('button', { name: 'Open Passport ownership and permissions' }).first()
+    await passportControl.waitFor({ state: 'attached', timeout: 20_000 })
+    await passportControl.click()
+    await page.waitForURL((url) => url.pathname.replace(/\/+$/, '') === '/passport', { timeout: 30_000 })
+    record.passportPath = new URL(page.url()).pathname
+    record.passportReturnFrame = await page.evaluate(() => {
+      const raw = window.sessionStorage.getItem('urai:home:return-frame:v1')
+      if (!raw) return null
+      try { return JSON.parse(raw) } catch { return { parseError: true } }
+    })
+    record.passportScreenshot = await screenshotRecord('passport-activated')
+
+    await page.goBack({ waitUntil: 'domcontentloaded', timeout: 30_000 })
+    owner = await waitForHomeReady(page)
+    await page.waitForFunction((selector) => document.querySelector(selector)?.getAttribute('data-home-stable-state') === 'AVATAR_HOME_FIRST_PERSON', ownerSelector, { timeout: 20_000 })
+    record.returnStableState = await owner.getAttribute('data-home-stable-state')
+    record.returnCamera = await owner.getAttribute('data-home-camera-mode')
+    record.returnFrameConsumed = await page.evaluate(() => window.sessionStorage.getItem('urai:home:return-frame:v1') === null)
+    record.returnScreenshot = await screenshotRecord('passport-return-first-person')
+
+    const origin = record.passportReturnFrame?.origin
+    const camera = origin?.camera
+    record.passportOriginValid = record.passportReturnFrame?.kind === 'destination'
+      && record.passportReturnFrame?.destination === 'PASSPORT'
+      && origin?.stableState === 'AVATAR_HOME_FIRST_PERSON'
+      && Array.isArray(camera?.position)
+      && camera.position.length === 3
+      && camera.position.every(Number.isFinite)
+      && Number.isFinite(camera?.yaw)
+      && Number.isFinite(camera?.pitch)
+
+    record.passed = record.status === 200
+      && record.firstPersonStableState === 'AVATAR_HOME_FIRST_PERSON'
+      && record.firstPersonCamera === 'avatar-home-first-person'
+      && record.firstPersonMovement === 'shared-keyboard-touch-walk-look-interact'
+      && record.globalFieldFailClosed
+      && record.emotionalWeather.visible === 'true'
+      && record.emotionalWeather.source === 'disclosed-safe-private-synthetic-review-fixture'
+      && record.emotionalWeather.summary.includes('disclosed synthetic review input, not user data')
+      && record.emotionalWeather.ownerEvidence?.includes('emotional-weather')
+      && record.firstPersonVisual?.available === true
+      && record.firstPersonScreenshot.bytes > 12_000
+      && record.passportPath.replace(/\/+$/, '') === '/passport'
+      && record.passportOriginValid
+      && record.passportScreenshot.bytes > 12_000
+      && record.returnStableState === 'AVATAR_HOME_FIRST_PERSON'
+      && record.returnCamera === 'avatar-home-first-person'
+      && record.returnFrameConsumed
+      && record.returnScreenshot.bytes > 12_000
+      && pageErrors.length === 0
+  } catch (error) {
+    record.error = String(error)
+  } finally {
+    receipt.captures.push(record)
+    if (!record.passed) receipt.errors.push(record)
+    await context.close().catch(() => {})
+    await browser.close().catch(() => {})
+  }
+}
 for (const state of states) await capture(state)
 await capture({ id: 'reduced-motion', query: 'homePrivateFixture=1' }, { reducedMotion: 'reduce' })
 await capture({ id: 'forced-colors', query: 'homePrivateFixture=1' }, { forcedColors: 'active' })
 await captureOrbLifecycle()
 await captureOrbLifecycle({ reducedMotion: 'reduce' })
+await captureHomeSpatialContinuity()
 
 const transitionBrowser = await chromium.launch({ headless: true, args: ['--enable-unsafe-swiftshader'] })
 const transitionContext = await transitionBrowser.newContext({ viewport: { width: 1440, height: 900 } })
