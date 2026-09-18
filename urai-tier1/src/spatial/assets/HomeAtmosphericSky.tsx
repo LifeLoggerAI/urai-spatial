@@ -9,6 +9,7 @@ import {
   resolveAdaptiveBlueHour,
   resolveHomeEmotionalWeather,
   type HomeAtmosphereParameters,
+  type HomeEmotionalWeatherName,
 } from '../environment/HomeEmotionalWeatherState'
 import {
   HOME_SKY_CONTINUITY_SEED,
@@ -474,7 +475,7 @@ function OrbLocalAir({ reducedMotion }: { reducedMotion: boolean }) {
  * interaction owner. This is broad environmental selection, not a hidden
  * portal plane, ring, hotspot, or localized gateway.
  */
-export function HomeAtmosphericSky({ reducedMotion, active = false, onLifeMap }: { reducedMotion: boolean; active?: boolean; onLifeMap: () => void }) {
+export function HomeAtmosphericSky({ reducedMotion, active = false, weatherState, onLifeMap }: { reducedMotion: boolean; active?: boolean; weatherState?: HomeEmotionalWeatherName; onLifeMap: () => void }) {
   const atmosphere = useRef<THREE.Mesh>(null)
   const [focused, setFocused] = useState(false)
   const { gl, scene } = useThree()
@@ -496,7 +497,7 @@ export function HomeAtmosphericSky({ reducedMotion, active = false, onLifeMap }:
   }, [])
 
   useEffect(() => {
-    const initial = resolveHomeEmotionalWeather(new URLSearchParams(window.location.search).get('homeWeather'))
+    const initial = weatherState ?? resolveHomeEmotionalWeather(new URLSearchParams(window.location.search).get('homeWeather'))
     weatherTarget.current = HOME_EMOTIONAL_WEATHER_PRESETS[initial]
     const onWeather = (event: Event) => {
       const state = resolveHomeEmotionalWeather((event as CustomEvent<{ state?: unknown }>).detail?.state)
@@ -504,7 +505,7 @@ export function HomeAtmosphericSky({ reducedMotion, active = false, onLifeMap }:
     }
     window.addEventListener(URAI_HOME_EMOTIONAL_WEATHER_EVENT, onWeather)
     return () => window.removeEventListener(URAI_HOME_EMOTIONAL_WEATHER_EVENT, onWeather)
-  }, [])
+  }, [weatherState])
 
   useEffect(() => () => {
     atmosphereMaterial.dispose()
