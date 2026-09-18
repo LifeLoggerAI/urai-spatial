@@ -13,6 +13,9 @@ const manifest = read('src/spatial/assets/assetManifest.ts')
 const runtime = read('src/app/HomeSpatialRuntimeLayer.tsx')
 const productionEntry = read('src/spatial/layout/HomeWorldProduction.tsx')
 const production = read('src/spatial/layout/HomeWorldProductionFinal.tsx')
+const productionV223 = read('src/spatial/layout/HomeWorldProductionV223.tsx')
+const atmosphericSky = read('src/spatial/assets/HomeAtmosphericSky.tsx')
+const emotionalWeather = read('src/spatial/environment/HomeEmotionalWeatherState.ts')
 const selectedMemoryContract = read('src/spatial/memory/selectedMemoryContract.ts')
 const forge = read('../scripts/author-final-glb-pack.mjs')
 const verifier = read('../scripts/verify-final-glb-pack.mjs')
@@ -47,6 +50,23 @@ test('private personalization remains fail-closed and never invents memories', (
   assert.match(homeStateProof, /Global Emotional Field: aggregate signal is currently unavailable/)
   assert.match(homeStateProof, /destination === 'PASSPORT'/)
   assert.match(homeStateProof, /returnFrameConsumed/)
+})
+
+
+test('personal emotional weather binds permitted Home state into the canonical atmosphere without fabricating a second world', () => {
+  assert.match(productionV223, /useHomePersonalizedScene/)
+  assert.match(productionV223, /homeWeatherToneToAtmosphere/)
+  for (const [tone, state] of [['clear','calm'], ['soft','reflective'], ['active','energized'], ['heavy','heavy'], ['recovering','hopeful'], ['forming','uncertain']]) {
+    assert.match(productionV223, new RegExp(`case ['"]${tone}['"]: return ['"]${state}['"]`))
+  }
+  assert.match(productionV223, /weatherState=\{personalWeatherState\}/)
+  assert.match(productionV223, /data-home-personal-weather-tone=\{personalizedHomeScene\.environment\.weatherTone\}/)
+  assert.match(productionV223, /data-home-personal-weather-synthetic-review=\{personalizedHomeScene\.disclosedSample/)
+  assert.match(atmosphericSky, /weatherState\?: HomeEmotionalWeatherName/)
+  assert.match(atmosphericSky, /const initial = weatherState \?\? resolveHomeEmotionalWeather/)
+  assert.match(emotionalWeather, /URAI_HOME_EMOTIONAL_WEATHER_EVENT/)
+  assert.match(personalization, /weatherTone: deriveWeatherTone\(evidence\)/)
+  assert.match(personalization, /These signals are synthetic review inputs, not user records/)
 })
 
 test('selected memory timestamps remain canonical before rendering', () => {
