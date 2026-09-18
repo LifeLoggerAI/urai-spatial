@@ -28,7 +28,7 @@ test('selected memory remains one connected CLOSED living-memory phenomenon rath
   assert.doesNotMatch(geology, /Array\.from\(\{ length: 7 \}/)
 })
 
-test('V314 preserves the buried V295 watertight body while core-only unlit near-black cavities retain a hairline connector', () => {
+test('V315 preserves the buried V295 watertight body while sanctuary-owned shallow cavities retain a hairline connector', () => {
   assert.match(geology, /V295 keeps the useful V294 top-surface language while restoring the non-negotiable/)
   assert.match(geology, /V298 narrowed the event/)
   assert.match(geology, /V299 changes ownership/)
@@ -82,13 +82,16 @@ test('V314 preserves the buried V295 watertight body while core-only unlit near-
   assert.match(geology, /focusLiteralPixelSuccessorV312 = 'v312-near-black-missing-ground-cavities-terrain-collapsed-pocket-skin-sparse-one-sided-edge'/)
   assert.match(geology, /focusLiteralPixelSuccessorV313 = 'v313-unlit-missing-ground-cavities-no-lit-facet-ridges-v312-geometry-preserved'/)
   assert.match(geology, /focusLiteralPixelSuccessorV314 = 'v314-core-only-unlit-cavity-footprints-no-filled-outer-pocket-skin'/)
+  assert.match(geology, /focusLiteralPixelSuccessorV315 = 'v315-terrain-owned-shallow-pressure-cavity-depth-shared-with-cavity-bottom-skin'/)
+  assert.match(geology, /export function focusSelectedMemoryCavityDepth/)
+  assert.match(geology, /return -Math\.min\(\.044, connectorDepth \+ pocketDepth\)/)
   assert.match(geology, /const hairlineHalfWidth = \.008 \+ \.0015 \* Math\.sin/)
   assert.match(geology, /const pocketHalfWidth = \.125 \* nearPocket \+ \.155 \* centerPocket \+ \.115 \* farPocket/)
   assert.doesNotMatch(geology, /const pocketHalfWidth = \.235 \* nearPocket \+ \.285 \* centerPocket \+ \.220 \* farPocket/)
-  assert.match(geology, /focusIncisionAuthority = 'v314-unlit-core-only-three-pressure-cavities-hairline-connector'/)
+  assert.match(geology, /focusIncisionAuthority = 'v315-unlit-cavity-bottom-three-pressure-cavities-hairline-connector'/)
   assert.match(geology, /focusIncisionTopology = 'zero-thickness-open-pocketed-fissure-skin-over-buried-v295-closed-authority'/)
   assert.match(geology, /focusVisualAuthority = 'v295-sanctuary-memory-scar-volume'/)
-  assert.match(geology, /focusCurrentVisualAuthority = 'v314-ground-owned-core-only-unlit-pressure-cavities-buried-closed-body'/)
+  assert.match(geology, /focusCurrentVisualAuthority = 'v315-terrain-owned-shallow-pressure-cavities-buried-closed-body'/)
   assert.doesNotMatch(geology, /appendBranch\(/)
   assert.match(geology, /color\.r = Math\.min\(\.76, color\.r\)/)
   assert.match(geology, /color\.g = Math\.min\(\.44, color\.g\)/)
