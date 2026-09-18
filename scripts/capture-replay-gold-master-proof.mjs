@@ -72,7 +72,13 @@ function blockingFailures(requests, allowNavigationAborts = false) {
     if (!allowNavigationAborts || request.failure !== 'net::ERR_ABORTED') return true
     try {
       const parsed = new URL(request.url)
-      return !(parsed.pathname.startsWith('/_next/static/') || parsed.pathname.endsWith('/index.txt'))
+      const expectedReplayToFocusTransitionAbort =
+        parsed.pathname === '/assets/urai/generated/models/focus-memory-chamber-v1.glb'
+      return !(
+        parsed.pathname.startsWith('/_next/static/')
+        || parsed.pathname.endsWith('/index.txt')
+        || expectedReplayToFocusTransitionAbort
+      )
     } catch {
       return true
     }
