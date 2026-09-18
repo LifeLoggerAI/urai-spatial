@@ -227,6 +227,22 @@ async function describeFocus(page, { selected = false, noWebGL = false } = {}) {
   }, { selectedExpected: selected, noWebGLExpected: noWebGL })
 }
 
+async function captureScreenshotWithRetry(page, options) {
+  let lastError = null
+  for (let attempt = 1; attempt <= 3; attempt += 1) {
+    try {
+      await page.screenshot(options)
+      return
+    } catch (error) {
+      lastError = error
+      const message = String(error)
+      if (!message.includes('Page.captureScreenshot') || attempt === 3) throw error
+      await delay(250 * attempt)
+    }
+  }
+  throw lastError
+}
+
 async function captureFocus(browser, spec, state) {
   const id = `${state.id}-${spec.id}`
   const { context, page } = await openContext(browser, spec, state)
@@ -236,7 +252,7 @@ async function captureFocus(browser, spec, state) {
   await waitForFocus(page, { selected: state.selected, noWebGL: state.disableWebGL })
   const verification = await describeFocus(page, { selected: state.selected, noWebGL: state.disableWebGL })
   const screenshot = path.join(outputDir, `${safeName(id)}-${exactHead.slice(0, 12)}.png`)
-  await page.screenshot({ path: screenshot, fullPage: false })
+  await captureScreenshotWithRetry(page, { path: screenshot, fullPage: false })
   const diagnosticResult = diagnostics()
   await context.close()
   const record = {
@@ -262,7 +278,7 @@ async function captureJourney(browser) {
   const steps = []
   const shot = async (step) => {
     const screenshot = path.join(outputDir, `${safeName(step)}-${exactHead.slice(0, 12)}.png`)
-    await page.screenshot({ path: screenshot, fullPage: false })
+    await captureScreenshotWithRetry(page, { path: screenshot, fullPage: false })
     steps.push({ step, pathname: new URL(page.url()).pathname, url: page.url(), screenshot: path.relative(outputDir, screenshot) })
   }
 
