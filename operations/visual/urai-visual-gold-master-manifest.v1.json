@@ -1,6 +1,6 @@
 {
   "schemaVersion": "urai-visual-gold-master-manifest-1",
-  "authorityDate": "2026-09-16",
+  "authorityDate": "2026-09-17",
   "repository": "LifeLoggerAI/urai-spatial",
   "branch": "unified-spatial-convergence-20260916",
   "authorityPr": 1237,
@@ -8,37 +8,217 @@
   "evidenceTransferAcrossHeadMove": false,
   "fixedHistoricalImageCountsAreCompletionAuthority": false,
   "sourceHierarchy": [
-    {"pr":1237,"role":"unified-runtime-and-visual-control-plane-authority","personalizedLivedWorldSourceConverged":true,"passportExactOriginSourceConverged":true},
-    {"pr":1241,"role":"historical-selective-donor-for-uncarried-lived-world-passport-global-field-scope","wholeTreeAuthority":false},
-    {"pr":1243,"role":"selective-donor-possible-futures-truth-self-ledger-global-field","wholeTreeAuthority":false},
-    {"pr":1252,"role":"historical-mechanical-conflict-probe","mergeable":false}
+    {
+      "pr": 1237,
+      "role": "unified-runtime-and-visual-control-plane-authority",
+      "personalizedLivedWorldSourceConverged": true,
+      "passportExactOriginSourceConverged": true
+    },
+    {
+      "pr": 1241,
+      "role": "historical-selective-donor-for-uncarried-lived-world-passport-global-field-scope",
+      "wholeTreeAuthority": false
+    },
+    {
+      "pr": 1243,
+      "role": "selective-donor-possible-futures-truth-self-ledger-global-field",
+      "wholeTreeAuthority": false
+    },
+    {
+      "pr": 1252,
+      "role": "historical-mechanical-conflict-probe",
+      "mergeable": false
+    }
   ],
-  "statusVocabulary": ["CURRENT_AUTHORITY","CURRENT_CANDIDATE","REUSABLE_SUPPORTING_REFERENCE","HISTORICAL_PROVENANCE_ONLY","SUPERSEDED","REJECTED","MISSING_REPLACEMENT_REQUIRED"],
+  "statusVocabulary": [
+    "CURRENT_AUTHORITY",
+    "CURRENT_CANDIDATE",
+    "REUSABLE_SUPPORTING_REFERENCE",
+    "HISTORICAL_PROVENANCE_ONLY",
+    "SUPERSEDED",
+    "REJECTED",
+    "MISSING_REPLACEMENT_REQUIRED"
+  ],
   "artifacts": [
-    {"id":"VGM-HOME-001","experience":"home","system":"home-presentation","status":"CURRENT_CANDIDATE"},
-    {"id":"VGM-HOME-002","experience":"home","system":"avatar-embodiment-transition","status":"CURRENT_CANDIDATE"},
-    {"id":"VGM-HOME-003","experience":"home","system":"first-person-home","status":"CURRENT_CANDIDATE"},
-    {"id":"VGM-AVATAR-001","experience":"home","system":"avatar","status":"MISSING_REPLACEMENT_REQUIRED"},
-    {"id":"VGM-ORB-001","experience":"home","system":"orb","status":"CURRENT_CANDIDATE"},
-    {"id":"VGM-SKY-001","experience":"home","system":"sky-ascent","status":"CURRENT_CANDIDATE"},
-    {"id":"VGM-LIFEMAP-001","experience":"life-map","system":"life-map","status":"CURRENT_CANDIDATE"},
-    {"id":"VGM-MEMSTAR-001","experience":"life-map","system":"memory-star","status":"MISSING_REPLACEMENT_REQUIRED"},
-    {"id":"VGM-FOCUS-001","experience":"focus","system":"selected-memory","status":"CURRENT_CANDIDATE","visualRevision":"V272"},
-    {"id":"VGM-REPLAY-001","experience":"replay","system":"memory-interior","status":"CURRENT_CANDIDATE"},
-    {"id":"VGM-GROUND-001","experience":"ground","system":"descent-return","status":"CURRENT_CANDIDATE"},
-    {"id":"VGM-GROUND-002","experience":"ground","system":"generic-fallback-art","status":"REJECTED"},
-    {"id":"VGM-GROUND-003","experience":"ground","system":"personalized-lived-world-source-boundary","status":"CURRENT_CANDIDATE","sourceConverged":true,"visualAcceptance":false},
-    {"id":"VGM-PASSPORT-001","experience":"home","system":"physical-passport-artifact","status":"CURRENT_CANDIDATE","sourceConverged":true,"exactOriginCaptureConverged":true,"visualAcceptance":false},
-    {"id":"VGM-PASSPORT-002","experience":"passport","system":"passport-ui","status":"CURRENT_CANDIDATE"},
-    {"id":"VGM-GEF-001","experience":"home","system":"global-emotional-field-earth","status":"MISSING_REPLACEMENT_REQUIRED","donorPr":1243},
-    {"id":"VGM-PEW-001","experience":"home","system":"personal-emotional-weather","status":"MISSING_REPLACEMENT_REQUIRED"},
-    {"id":"VGM-MIRROR-001","experience":"mirror","system":"mirror","status":"CURRENT_CANDIDATE"},
-    {"id":"VGM-SHADOW-001","experience":"shadow","system":"shadow","status":"MISSING_REPLACEMENT_REQUIRED"},
-    {"id":"VGM-LEGACY-001","experience":"legacy","system":"legacy","status":"MISSING_REPLACEMENT_REQUIRED"},
-    {"id":"VGM-COUNCIL-001","experience":"council","system":"council","status":"MISSING_REPLACEMENT_REQUIRED"},
-    {"id":"VGM-RITUAL-001","experience":"rituals","system":"rituals","status":"MISSING_REPLACEMENT_REQUIRED"},
-    {"id":"VGM-FUTURES-001","experience":"possible-futures","system":"scenario-world","status":"MISSING_REPLACEMENT_REQUIRED","donorPr":1243},
-    {"id":"VGM-SETTINGS-001","experience":"support-surfaces","system":"settings-privacy-auth-status","status":"CURRENT_CANDIDATE"}
+    {
+      "id": "VGM-HOME-001",
+      "experience": "home",
+      "system": "home-presentation",
+      "status": "CURRENT_CANDIDATE"
+    },
+    {
+      "id": "VGM-HOME-002",
+      "experience": "home",
+      "system": "avatar-embodiment-transition",
+      "status": "CURRENT_CANDIDATE"
+    },
+    {
+      "id": "VGM-HOME-003",
+      "experience": "home",
+      "system": "first-person-home",
+      "status": "CURRENT_CANDIDATE"
+    },
+    {
+      "id": "VGM-AVATAR-001",
+      "experience": "home",
+      "system": "avatar",
+      "status": "MISSING_REPLACEMENT_REQUIRED"
+    },
+    {
+      "id": "VGM-ORB-001",
+      "experience": "home",
+      "system": "orb",
+      "status": "CURRENT_CANDIDATE"
+    },
+    {
+      "id": "VGM-SKY-001",
+      "experience": "home",
+      "system": "sky-ascent",
+      "status": "CURRENT_CANDIDATE"
+    },
+    {
+      "id": "VGM-LIFEMAP-001",
+      "experience": "life-map",
+      "system": "life-map",
+      "status": "CURRENT_CANDIDATE"
+    },
+    {
+      "id": "VGM-MEMSTAR-001",
+      "experience": "life-map",
+      "system": "memory-star",
+      "status": "MISSING_REPLACEMENT_REQUIRED",
+      "runtimeSourceConverged": true,
+      "runtimeIdentity": "point-photosphere-layered-corona-no-visible-sphere",
+      "dedicatedReferencePackAccepted": false,
+      "visualAcceptance": false
+    },
+    {
+      "id": "VGM-FOCUS-001",
+      "experience": "focus",
+      "system": "selected-memory",
+      "status": "CURRENT_CANDIDATE",
+      "visualRevision": "V317",
+      "visualAuthority": "v317-three-radial-terrain-pressure-cavities-buried-closed-body",
+      "visualAcceptance": false
+    },
+    {
+      "id": "VGM-REPLAY-001",
+      "experience": "replay",
+      "system": "memory-interior",
+      "status": "CURRENT_CANDIDATE"
+    },
+    {
+      "id": "VGM-GROUND-001",
+      "experience": "ground",
+      "system": "descent-return",
+      "status": "CURRENT_CANDIDATE",
+      "governedCanopySourceConverged": true,
+      "authoredRidgeSourceConverged": true,
+      "visualAcceptance": false
+    },
+    {
+      "id": "VGM-GROUND-002",
+      "experience": "ground",
+      "system": "generic-fallback-art",
+      "status": "REJECTED"
+    },
+    {
+      "id": "VGM-GROUND-003",
+      "experience": "ground",
+      "system": "personalized-lived-world-source-boundary",
+      "status": "CURRENT_CANDIDATE",
+      "sourceConverged": true,
+      "visualAcceptance": false
+    },
+    {
+      "id": "VGM-PASSPORT-001",
+      "experience": "home",
+      "system": "physical-passport-artifact",
+      "status": "CURRENT_CANDIDATE",
+      "sourceConverged": true,
+      "exactOriginCaptureConverged": true,
+      "visualAcceptance": false
+    },
+    {
+      "id": "VGM-PASSPORT-002",
+      "experience": "passport",
+      "system": "passport-ui",
+      "status": "CURRENT_CANDIDATE"
+    },
+    {
+      "id": "VGM-GEF-001",
+      "experience": "home",
+      "system": "global-emotional-field-earth",
+      "status": "CURRENT_CANDIDATE",
+      "sourceConverged": true,
+      "failClosedUnavailableDefault": true,
+      "forbidsIndividualOrExactLocationSignals": true,
+      "visualAcceptance": false
+    },
+    {
+      "id": "VGM-PEW-001",
+      "experience": "home",
+      "system": "personal-emotional-weather",
+      "status": "CURRENT_CANDIDATE",
+      "stateModelImplemented": true,
+      "activeHomeAtmosphereBindingProven": false,
+      "dedicatedReferencePackAccepted": false,
+      "visualAcceptance": false
+    },
+    {
+      "id": "VGM-MIRROR-001",
+      "experience": "mirror",
+      "system": "mirror",
+      "status": "CURRENT_CANDIDATE"
+    },
+    {
+      "id": "VGM-SHADOW-001",
+      "experience": "shadow",
+      "system": "shadow",
+      "status": "CURRENT_CANDIDATE",
+      "runtimeExists": true,
+      "dedicatedReferencePackAccepted": false,
+      "visualAcceptance": false
+    },
+    {
+      "id": "VGM-LEGACY-001",
+      "experience": "legacy",
+      "system": "legacy",
+      "status": "CURRENT_CANDIDATE",
+      "runtimeExists": true,
+      "dedicatedReferencePackAccepted": false,
+      "visualAcceptance": false
+    },
+    {
+      "id": "VGM-COUNCIL-001",
+      "experience": "council",
+      "system": "council",
+      "status": "CURRENT_CANDIDATE",
+      "runtimeExists": true,
+      "dedicatedReferencePackAccepted": false,
+      "visualAcceptance": false
+    },
+    {
+      "id": "VGM-RITUAL-001",
+      "experience": "rituals",
+      "system": "rituals",
+      "status": "MISSING_REPLACEMENT_REQUIRED"
+    },
+    {
+      "id": "VGM-FUTURES-001",
+      "experience": "possible-futures",
+      "system": "scenario-world",
+      "status": "CURRENT_CANDIDATE",
+      "truthSemanticsConverged": true,
+      "spatialVisualAuthorityConverged": false,
+      "visualAcceptance": false
+    },
+    {
+      "id": "VGM-SETTINGS-001",
+      "experience": "support-surfaces",
+      "system": "settings-privacy-auth-status",
+      "status": "CURRENT_CANDIDATE"
+    }
   ],
   "negativeCanon": [
     "non-xr-first-person-hands-or-body",
@@ -59,6 +239,16 @@
     "obvious-tiling-fog-walls-particle-soup-giant-bloom",
     "desktop-crop-used-as-mobile-composition"
   ],
-  "requiredBibles": ["camera","scale","materials","lighting","motion","audio-haptics","accessibility","device-responsive","negative-canon"],
+  "requiredBibles": [
+    "camera",
+    "scale",
+    "materials",
+    "lighting",
+    "motion",
+    "audio-haptics",
+    "accessibility",
+    "device-responsive",
+    "negative-canon"
+  ],
   "goldMasterAuthorized": false
 }
