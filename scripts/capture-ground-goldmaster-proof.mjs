@@ -54,8 +54,20 @@ try {
 
     await page.goto(`${base}/ground/?environment=${scenario.environment}`, { waitUntil: 'networkidle', timeout: 60_000 })
     const readyRoot = page.locator('[data-testid="urai-ground-lived-world"]').first()
-    await readyRoot.waitFor({ state: 'attached', timeout: 45_000 })
-    await page.waitForSelector('.ground-spatial-root canvas', { state: 'visible', timeout: 45_000 })
+    try {
+      await readyRoot.waitFor({ state: 'attached', timeout: 45_000 })
+      await page.waitForSelector('.ground-spatial-root canvas', { state: 'visible', timeout: 45_000 })
+    } catch (error) {
+      const diagnostic = await page.evaluate(() => ({
+        url: window.location.href,
+        title: document.title,
+        readyRootCount: document.querySelectorAll('[data-testid="urai-ground-lived-world"]').length,
+        walkableRootCount: document.querySelectorAll('[data-testid="walkable-first-person-ground-layer"]').length,
+        bodyText: document.body?.innerText?.slice(0, 1200) ?? '',
+        bodyHtml: document.body?.innerHTML?.slice(0, 1800) ?? '',
+      })).catch(() => null)
+      throw new Error(`${scenario.id}: Ground route root/canvas was not mountable; diagnostic=${JSON.stringify(diagnostic)}; browserErrors=${pageErrors.join(" || ")}; cause=${String(error)}`)
+    }
     try {
       await page.waitForFunction(() => document.querySelector('[data-testid="urai-ground-lived-world"]')?.getAttribute('data-ground-ready') === 'true', null, { timeout: 45_000, polling: 50 })
     } catch (error) {
