@@ -165,9 +165,10 @@
       "system": "personal-emotional-weather",
       "status": "CURRENT_CANDIDATE",
       "stateModelImplemented": true,
-      "activeHomeAtmosphereBindingProven": false,
+      "activeHomeAtmosphereBindingProven": true,
       "dedicatedReferencePackAccepted": false,
-      "visualAcceptance": false
+      "visualAcceptance": false,
+      "sourceConverged": true
     },
     {
       "id": "VGM-MIRROR-001",
