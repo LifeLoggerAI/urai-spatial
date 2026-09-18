@@ -122,6 +122,12 @@ import * as THREE from 'three'
 // panel. V314 removes that outer visual body and makes the rendered skin approximate only the
 // near-black cavity footprint plus its hairline connector; no broad ground-colored pocket panel.
 //
+// V315 responds to conflicting V314 literal inspection by making missing-ground depth physical:
+// the sanctuary terrain and visible near-black cavity bottom share one deterministic shallow
+// depression field. The maximum depression stays above the buried V295 body, the connector is
+// hairline-shallow, and neutral Focus never applies the deformation because the terrain owner
+// activates this field only when a selected memory is present.
+//
 // The form must read as memory pressure physically held by place. It must not regress
 // into a crystal crown, boulder, orb, flower, portal, ring, shell/mouth, manta, tent,
 // aircraft, animal, shoe, boat, bowl, helmet, body-part silhouette, smooth blob,
@@ -154,6 +160,35 @@ export function focusGroundHeight(x: number, z: number) {
     * Math.exp(-((Math.abs(x) - 6.1) ** 2 / 10))
     * THREE.MathUtils.smoothstep(-z, 5.5, 12.5)
   return -1.5 + side + weather + threshold + archive + bank
+}
+
+
+export function focusSelectedMemoryCavityDepth(worldX: number, worldZ: number) {
+  const local = new THREE.Vector2(worldX - FOCUS_MEMORY_WORLD_X, worldZ - FOCUS_MEMORY_WORLD_Z)
+  let nearestT = 0
+  let nearestDistance = Number.POSITIVE_INFINITY
+
+  for (let section = 0; section < MEMORY_SECTIONS; section += 1) {
+    const t = THREE.MathUtils.lerp(-1, 1, section / (MEMORY_SECTIONS - 1))
+    const center = fractureCenter(t)
+    const distance = center.distanceTo(local)
+    if (distance < nearestDistance) {
+      nearestDistance = distance
+      nearestT = t
+    }
+  }
+
+  const nearPocket = Math.exp(-Math.pow((nearestT + .48) / .13, 2))
+  const centerPocket = Math.exp(-Math.pow((nearestT + .02) / .15, 2))
+  const farPocket = Math.exp(-Math.pow((nearestT - .42) / .14, 2))
+  const pocketStrength = Math.max(nearPocket, centerPocket, farPocket)
+
+  const connectorFalloff = Math.exp(-Math.pow(nearestDistance / .026, 2))
+  const pocketRadius = .17 + .055 * pocketStrength
+  const pocketFalloff = Math.exp(-Math.pow(nearestDistance / pocketRadius, 2))
+  const connectorDepth = .0035 * connectorFalloff
+  const pocketDepth = .038 * pocketStrength * pocketFalloff
+  return -Math.min(.044, connectorDepth + pocketDepth)
 }
 
 function livingMemoryVertexColor(section: number, cross: number, t: number, lateral: number, furrow: number, ridge: number) {
@@ -348,8 +383,9 @@ function createLivingMemoryFold() {
   geometry.userData.focusLiteralPixelSuccessorV312 = 'v312-near-black-missing-ground-cavities-terrain-collapsed-pocket-skin-sparse-one-sided-edge'
   geometry.userData.focusLiteralPixelSuccessorV313 = 'v313-unlit-missing-ground-cavities-no-lit-facet-ridges-v312-geometry-preserved'
   geometry.userData.focusLiteralPixelSuccessorV314 = 'v314-core-only-unlit-cavity-footprints-no-filled-outer-pocket-skin'
+  geometry.userData.focusLiteralPixelSuccessorV315 = 'v315-terrain-owned-shallow-pressure-cavity-depth-shared-with-cavity-bottom-skin'
   geometry.userData.focusVisualAuthority = 'v295-sanctuary-memory-scar-volume'
-  geometry.userData.focusCurrentVisualAuthority = 'v314-ground-owned-core-only-unlit-pressure-cavities-buried-closed-body'
+  geometry.userData.focusCurrentVisualAuthority = 'v315-terrain-owned-shallow-pressure-cavities-buried-closed-body'
   return geometry
 }
 
@@ -429,7 +465,9 @@ export function createFocusGroundIncision() {
       const lateralDistance = lateral * (halfWidth + sidePocket) + scallop + Math.sign(lateral || 1) * edgeBite
       const x = center.x + side.x * lateralDistance
       const z = center.y + side.y * lateralDistance
-      const y = focusGroundHeight(FOCUS_MEMORY_WORLD_X + x, FOCUS_MEMORY_WORLD_Z + z) + .00034
+      const worldX = FOCUS_MEMORY_WORLD_X + x
+      const worldZ = FOCUS_MEMORY_WORLD_Z + z
+      const y = focusGroundHeight(worldX, worldZ) + focusSelectedMemoryCavityDepth(worldX, worldZ) + .00034
       positions.push(x, y, z)
       uvs.push(crossU, u)
       pushColor(lateral, section + t * 4.3, pocketStrength)
@@ -456,9 +494,9 @@ export function createFocusGroundIncision() {
   geometry.computeVertexNormals()
   geometry.computeBoundingBox()
   geometry.computeBoundingSphere()
-  geometry.userData.focusIncisionAuthority = 'v314-unlit-core-only-three-pressure-cavities-hairline-connector'
-  geometry.userData.focusIncisionTopology = 'zero-thickness-open-pocketed-fissure-skin-over-buried-v295-closed-authority'
-  geometry.userData.focusIncisionRule = 'three-local-core-only-unlit-near-black-cavities-hairline-connector-no-filled-outer-skin-no-panel-no-ridge-no-mound-no-shadow-no-emissive'
+  geometry.userData.focusIncisionAuthority = 'v315-unlit-cavity-bottom-three-pressure-cavities-hairline-connector'
+  geometry.userData.focusIncisionTopology = 'zero-thickness-cavity-bottom-fissure-skin-inside-terrain-owned-shallow-depression-over-buried-v295-closed-authority'
+  geometry.userData.focusIncisionRule = 'three-local-terrain-owned-shallow-cavities-with-unlit-near-black-bottoms-hairline-connector-no-panel-no-ridge-no-mound-no-shadow-no-emissive'
   return geometry
 }
 
