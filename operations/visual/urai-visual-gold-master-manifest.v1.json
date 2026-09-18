@@ -97,9 +97,10 @@
       "experience": "focus",
       "system": "selected-memory",
       "status": "CURRENT_CANDIDATE",
-      "visualRevision": "V317",
-      "visualAuthority": "v317-three-radial-terrain-pressure-cavities-buried-closed-body",
-      "visualAcceptance": false
+      "visualRevision": "V318",
+      "visualAuthority": "v318-three-radial-terrain-cavities-localized-bottoms-ground-blended-hairline-connector-buried-closed-body",
+      "visualAcceptance": false,
+      "predecessorV317LiteralVerdict": "REJECTED_CONTINUOUS_NEAR_BLACK_CONNECTOR_STRIP"
     },
     {
       "id": "VGM-REPLAY-001",
