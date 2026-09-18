@@ -69,7 +69,7 @@ test('Ground renders no follower Orb while preserving semantic UrAi access', () 
   for (const marker of [
     'Ground deliberately renders no follower Orb',
     "groundOrbMode = 'semantic-invocation-only'",
-    "style.opacity = '0'",
+    "style.setProperty('opacity', '0', 'important')",
     "addEventListener('focus', reveal)",
     'no follower Orb is rendered',
     'return null',
