@@ -107,7 +107,7 @@ test('visual overrides cannot veil active spatial owners', () => {
 
 test('browser and state proofs retain exact-head desktop mobile reduced-motion and Orb lifecycle evidence', () => {
   for (const marker of ["schemaVersion: 'urai-continuous-spatial-visual-proof-18'","id: 'home-normal-root'",'portrait-mobile','landscape-mobile','homeOrbState','Orb_Resting','Orb_Transition','home-pointer-look-desktop','home-no-webgl-fallback','receipt.json']) has(proof, marker)
-  for (const marker of ['visualAuthority.proofSchema','retained-canvas-png','page.screenshot','homeState=permission-limited','homeState=unavailable','homeState=offline','reducedMotion','forcedColors','orb-lifecycle-production-ui','orb-lifecycle-reduced-motion',"'thinking'","'speaking'",'minimumLuminanceRange','--enable-unsafe-swiftshader','home-first-person-passport-earth-emotional-weather','phone-portrait','phone-landscape','tablet-portrait','sampleVisual: false']) has(stateProof, marker)
+  for (const marker of ['visualAuthority.proofSchema','retained-canvas-png','page.screenshot','homeState=permission-limited','homeState=unavailable','homeState=offline','reducedMotion','forcedColors','orb-lifecycle-production-ui','orb-lifecycle-reduced-motion',"'thinking'","'speaking'",'minimumLuminanceRange','--enable-unsafe-swiftshader','home-first-person-passport-earth-emotional-weather','phone-portrait','phone-landscape','tablet-portrait','sampleVisual: false','urai:onboarding:v2:complete','urai:onboarding:v3:setup-complete','prepareHomeProofContext']) has(stateProof, marker)
   assert.doesNotMatch(`${proof}\n${stateProof}`, /waitForTimeout/)
   assert.doesNotMatch(stateProof, /gl\.readPixels/)
   assert.match(proofWorkflow, /run-continuous-spatial-proof-v22-natural\.mjs/)
