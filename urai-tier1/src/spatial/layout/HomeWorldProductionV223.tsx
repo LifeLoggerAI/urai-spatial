@@ -2,6 +2,9 @@
 
 import { useRouter } from 'next/navigation'
 import { HomeAtmosphericSky } from '@/spatial/assets/HomeAtmosphericSky'
+import { useHomePersonalizedScene } from '@/app/home/useHomePersonalizedScene'
+import type { HomeSceneEnvironment } from '@/app/home/homePersonalizationModel'
+import type { HomeEmotionalWeatherName } from '@/spatial/environment/HomeEmotionalWeatherState'
 import { Canvas, useFrame, useThree, type ThreeEvent } from '@react-three/fiber'
 import { useAnimations, useGLTF } from '@react-three/drei'
 import { useCallback, useEffect, useMemo, useRef, useState, type MutableRefObject } from 'react'
@@ -68,6 +71,17 @@ const ORB_EFFECT_BUDGET: Record<SpatialQualityTier, { motes: number; filaments: 
   low: { motes: 120, filaments: 2, membraneSegments: 32 },
   medium: { motes: 180, filaments: 5, membraneSegments: 48 },
   high: { motes: 520, filaments: 8, membraneSegments: 64 },
+}
+
+function homeWeatherToneToAtmosphere(tone: HomeSceneEnvironment['weatherTone']): HomeEmotionalWeatherName {
+  switch (tone) {
+    case 'clear': return 'calm'
+    case 'soft': return 'reflective'
+    case 'active': return 'energized'
+    case 'heavy': return 'heavy'
+    case 'recovering': return 'hopeful'
+    case 'forming': return 'uncertain'
+  }
 }
 
 function cloneAuthoredModel(source: THREE.Object3D) {
@@ -565,6 +579,7 @@ function Scene({
   transition,
   transitionTarget,
   reducedMotion,
+  personalWeatherState,
   orbState,
   homeStableState,
   homeTransition,
@@ -588,6 +603,7 @@ function Scene({
   transition: Transition
   transitionTarget: MutableRefObject<TransitionTarget | null>
   reducedMotion: boolean
+  personalWeatherState: HomeEmotionalWeatherName
   orbState: OrbState
   homeStableState: HomeStableState
   homeTransition: HomeTransitionState | null
@@ -624,7 +640,7 @@ function Scene({
     <Cadence reducedMotion={reducedMotion} />
     <color attach="background" args={['#10272a']} />
     <fogExp2 attach="fog" args={['#294946', .0145]} />
-    <HomeAtmosphericSky reducedMotion={reducedMotion} active={transition === 'life-map'} onLifeMap={onLifeMap} />
+    <HomeAtmosphericSky reducedMotion={reducedMotion} active={transition === 'life-map'} weatherState={personalWeatherState} onLifeMap={onLifeMap} />
     <ambientLight intensity={.30} color="#c2cec7" />
     <hemisphereLight args={['#c3d7cf', '#1c302b', .52]} />
     <directionalLight position={[-8, 11, 6]} intensity={2.45} color="#f1d6b1" castShadow shadow-mapSize-width={1536} shadow-mapSize-height={1536} shadow-bias={-.00018} />
@@ -671,6 +687,8 @@ export function HomeWorldProductionV223({ onOrbOpen = requestUraiWorldOrbOpen, w
   const [dragging, setDragging] = useState(false)
   const [reducedMotion, setReducedMotion] = useState(false)
   const [orbState, setOrbState] = useState<OrbState>('idle')
+  const { scene: personalizedHomeScene, loading: personalizedHomeLoading } = useHomePersonalizedScene()
+  const personalWeatherState = useMemo(() => homeWeatherToneToAtmosphere(personalizedHomeScene.environment.weatherTone), [personalizedHomeScene.environment.weatherTone])
   const [transition, setTransition] = useState<Transition>('none')
   const yaw = useRef(0)
   const pitch = useRef(.02)
@@ -839,6 +857,11 @@ export function HomeWorldProductionV223({ onOrbOpen = requestUraiWorldOrbOpen, w
     data-home-non-xr-body-policy="camera-only-no-hands-body-rig"
     data-home-visual-grade="current-literal-pixel-candidate-not-certified"
     data-home-art-certification="fresh-exact-head-pixels-required"
+    data-home-personal-weather-tone={personalizedHomeScene.environment.weatherTone}
+    data-home-personal-weather-atmosphere={personalWeatherState}
+    data-home-personal-weather-mode={personalizedHomeScene.mode}
+    data-home-personal-weather-loading={personalizedHomeLoading ? 'true' : 'false'}
+    data-home-personal-weather-synthetic-review={personalizedHomeScene.disclosedSample ? 'true' : 'false'}
     data-home-scanned-composition="visible-avatar-authored-living-memory-orb-physical-world-and-broad-sky-threshold"
     data-home-authored-regions="home-physical-world urai-home-user-avatar home-living-memory-orb home-life-map-sky-threshold"
     data-testid="home-visible-navigable-sanctuary-world"
@@ -867,6 +890,7 @@ export function HomeWorldProductionV223({ onOrbOpen = requestUraiWorldOrbOpen, w
         transition={transition}
         transitionTarget={transitionTarget}
         reducedMotion={reducedMotion}
+        personalWeatherState={personalWeatherState}
         orbState={orbState}
         homeStableState={homeState.stableState}
         homeTransition={homeState.transition}
