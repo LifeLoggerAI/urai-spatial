@@ -68,9 +68,9 @@ test('Ground keeps slope, obstacle and world-depth production behavior', () => {
 test('Ground renders no follower Orb while preserving semantic UrAi access', () => {
   for (const marker of [
     'Ground deliberately renders no follower Orb',
-    "fallback.dataset.groundOrbMode = 'semantic-invocation-only'",
-    "fallback.style.opacity = '0'",
-    "fallback.addEventListener('focus', reveal)",
+    "groundOrbMode = 'semantic-invocation-only'",
+    "style.opacity = '0'",
+    "addEventListener('focus', reveal)",
     'no follower Orb is rendered',
     'return null',
   ]) has(orbBridge, marker)
