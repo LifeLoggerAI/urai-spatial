@@ -337,9 +337,13 @@ function FocusStoneBank({ variant, side }: { variant: '01' | '02'; side: -1 | 1 
   const model = useMemo(() => {
     const copy = asset.scene.clone(true)
     copy.updateMatrixWorld(true)
-    const scale = side < 0 ? 1.18 : 1.3
+    // V319 keeps these scans as subordinate side-bank geology. The prior
+    // V318 placement let ultrawide/reduced-motion framing expose them as
+    // floating wing/slab forms, so scale and grade are deliberately reduced
+    // without touching the accepted V318 selected-memory cavity system.
+    const scale = side < 0 ? 0.78 : 0.84
     const placement = new THREE.Matrix4().compose(
-      new THREE.Vector3(side * 5.8, -1.65, side < 0 ? -6.8 : -8.5),
+      new THREE.Vector3(side * 6.45, -2.35, side < 0 ? -7.35 : -9.1),
       new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), side < 0 ? .4 : -.6),
       new THREE.Vector3(scale, scale, scale),
     )
@@ -352,7 +356,7 @@ function FocusStoneBank({ variant, side }: { variant: '01' | '02'; side: -1 | 1 
     return copy
   }, [asset.scene, side])
   useEffect(() => () => model.traverse(child => { if (child instanceof THREE.Mesh) child.geometry.dispose() }), [model])
-  return <primitive object={model} name={`focus-scanned-stone-bank-${variant}`} position={[side * 5.8, -1.65, side < 0 ? -6.8 : -8.5]} rotation={[0, side < 0 ? .4 : -.6, 0]} scale={side < 0 ? 1.18 : 1.3} />
+  return <primitive object={model} name={`focus-scanned-stone-bank-${variant}`} position={[side * 6.45, -2.35, side < 0 ? -7.35 : -9.1]} rotation={[0, side < 0 ? .4 : -.6, 0]} scale={side < 0 ? 0.78 : 0.84} userData={{ visualAuthority: 'v319-grounded-subordinate-side-bank-geology' }} />
 }
 
 function ChamberArchitecture({ accent, light, selectedMemoryActive }: { accent: string; light: string; reducedMotion: boolean; selectedMemoryActive: boolean }) {
