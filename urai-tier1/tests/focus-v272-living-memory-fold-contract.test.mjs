@@ -28,7 +28,7 @@ test('selected memory remains one connected CLOSED living-memory phenomenon rath
   assert.doesNotMatch(geology, /Array\.from\(\{ length: 7 \}/)
 })
 
-test('V317 preserves the buried V295 watertight body while three radial sanctuary-owned basins retain a subordinate hairline connector', () => {
+test('V318 preserves the buried V295 watertight body while three radial basins localize near-black bottoms and ground-blend the subordinate connector', () => {
   assert.match(geology, /V295 keeps the useful V294 top-surface language while restoring the non-negotiable/)
   assert.match(geology, /V298 narrowed the event/)
   assert.match(geology, /V299 changes ownership/)
@@ -85,6 +85,7 @@ test('V317 preserves the buried V295 watertight body while three radial sanctuar
   assert.match(geology, /focusLiteralPixelSuccessorV315 = 'v315-terrain-owned-shallow-pressure-cavity-depth-shared-with-cavity-bottom-skin'/)
   assert.match(geology, /focusLiteralPixelSuccessorV316 = 'v316-resolved-terrain-basin-sampling-and-depth-with-narrow-cavity-bottom-skin'/)
   assert.match(geology, /focusLiteralPixelSuccessorV317 = 'v317-three-radial-terrain-basins-with-separated-cavity-bottoms-and-subordinate-hairline-connector'/)
+  assert.match(geology, /focusLiteralPixelSuccessorV318 = 'v318-localized-three-cavity-bottoms-ground-blended-hairline-connector'/)
   assert.match(geology, /export function focusSelectedMemoryCavityDepth/)
   assert.match(geology, /const basinSpecs = \[/)
   assert.match(geology, /\{ t: -\.48, radius: \.36, depth: \.078 \}/)
@@ -97,10 +98,10 @@ test('V317 preserves the buried V295 watertight body while three radial sanctuar
   assert.match(geology, /const hairlineHalfWidth = \.008 \+ \.0015 \* Math\.sin/)
   assert.match(geology, /const pocketHalfWidth = \.135 \* nearPocket \+ \.165 \* centerPocket \+ \.125 \* farPocket/)
   assert.doesNotMatch(geology, /const pocketHalfWidth = \.235 \* nearPocket \+ \.285 \* centerPocket \+ \.220 \* farPocket/)
-  assert.match(geology, /focusIncisionAuthority = 'v317-unlit-separated-cavity-bottoms-three-radial-terrain-basins-hairline-connector'/)
-  assert.match(geology, /focusIncisionTopology = 'zero-thickness-cavity-bottom-fissure-skin-inside-terrain-owned-shallow-depression-over-buried-v295-closed-authority'/)
+  assert.match(geology, /focusIncisionAuthority = 'v318-localized-near-black-cavity-bottoms-ground-blended-subordinate-hairline-connector'/)
+  assert.match(geology, /focusIncisionTopology = 'zero-thickness-localized-cavity-bottoms-plus-ground-blended-hairline-inside-three-radial-terrain-owned-depressions-over-buried-v295-closed-authority'/)
   assert.match(geology, /focusVisualAuthority = 'v295-sanctuary-memory-scar-volume'/)
-  assert.match(geology, /focusCurrentVisualAuthority = 'v317-three-radial-terrain-pressure-cavities-buried-closed-body'/)
+  assert.match(geology, /focusCurrentVisualAuthority = 'v318-three-radial-terrain-cavities-localized-bottoms-ground-blended-hairline-connector-buried-closed-body'/)
   assert.doesNotMatch(geology, /appendBranch\(/)
   assert.match(geology, /color\.r = Math\.min\(\.76, color\.r\)/)
   assert.match(geology, /color\.g = Math\.min\(\.44, color\.g\)/)

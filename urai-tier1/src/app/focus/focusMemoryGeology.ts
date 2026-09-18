@@ -134,6 +134,12 @@ import * as THREE from 'three'
 // pressure failures from explicit radial wells centered at the canonical pressure locations.
 // Longitudinal black-bottom windows are narrowed so real ground remains between the openings.
 //
+// V318 responds to exact V317 retained pixels: the terrain basins are radial, but one continuous
+// near-black cavity-bottom skin still visually unifies them into a single strip. V318 preserves
+// the three radial terrain basins while localizing near-black void ownership to the pressure wells,
+// narrowing the longitudinal windows, and ground-blending the subordinate connector so intact
+// sanctuary ground separates the three openings at first read.
+//
 // The form must read as memory pressure physically held by place. It must not regress
 // into a crystal crown, boulder, orb, flower, portal, ring, shell/mouth, manta, tent,
 // aircraft, animal, shoe, boat, bowl, helmet, body-part silhouette, smooth blob,
@@ -391,8 +397,9 @@ function createLivingMemoryFold() {
   geometry.userData.focusLiteralPixelSuccessorV315 = 'v315-terrain-owned-shallow-pressure-cavity-depth-shared-with-cavity-bottom-skin'
   geometry.userData.focusLiteralPixelSuccessorV316 = 'v316-resolved-terrain-basin-sampling-and-depth-with-narrow-cavity-bottom-skin'
   geometry.userData.focusLiteralPixelSuccessorV317 = 'v317-three-radial-terrain-basins-with-separated-cavity-bottoms-and-subordinate-hairline-connector'
+  geometry.userData.focusLiteralPixelSuccessorV318 = 'v318-localized-three-cavity-bottoms-ground-blended-hairline-connector'
   geometry.userData.focusVisualAuthority = 'v295-sanctuary-memory-scar-volume'
-  geometry.userData.focusCurrentVisualAuthority = 'v317-three-radial-terrain-pressure-cavities-buried-closed-body'
+  geometry.userData.focusCurrentVisualAuthority = 'v318-three-radial-terrain-cavities-localized-bottoms-ground-blended-hairline-connector-buried-closed-body'
   return geometry
 }
 
@@ -407,23 +414,26 @@ export function createFocusGroundIncision() {
   const colors: number[] = []
   const uvs: number[] = []
   const indices: number[] = []
+  const connectorGround = new THREE.Color().setRGB(.030, .034, .027)
   const cavityEdge = new THREE.Color().setRGB(.012, .014, .010)
   const weatheredMineral = new THREE.Color().setRGB(.072, .060, .036)
   const innerFissure = new THREE.Color().setRGB(.00035, .0003, .00025)
 
   const pushColor = (lateral: number, sectionPhase: number, pocketStrength: number) => {
     const absLateral = Math.abs(lateral)
-    const cavityCenter = .10 * Math.sin(sectionPhase * .63 + .4) * pocketStrength
-    const coreWidth = .46 + .20 * pocketStrength
+    const cavityCenter = .08 * Math.sin(sectionPhase * .63 + .4) * pocketStrength
+    const coreWidth = .38 + .18 * pocketStrength
     const core = Math.exp(-Math.pow((lateral - cavityCenter) / coreWidth, 2))
+    const pocketMix = THREE.MathUtils.smoothstep(pocketStrength, .10, .62)
     const oneSidedFleck = lateral < 0
-      ? THREE.MathUtils.smoothstep(absLateral, .68, 1)
+      ? THREE.MathUtils.smoothstep(absLateral, .70, 1)
         * pocketStrength
-        * Math.max(0, Math.sin(sectionPhase * 2.11 + absLateral * 6.7) - .86)
-        * .18
+        * Math.max(0, Math.sin(sectionPhase * 2.11 + absLateral * 6.7) - .88)
+        * .15
       : 0
-    const voidMix = THREE.MathUtils.clamp(.72 + .25 * core + .03 * pocketStrength, .72, .995)
-    const color = cavityEdge.clone()
+    const voidMix = THREE.MathUtils.clamp(.06 + .91 * pocketMix * core, .06, .97)
+    const color = connectorGround.clone()
+      .lerp(cavityEdge, .28 + .58 * pocketMix)
       .lerp(weatheredMineral, oneSidedFleck)
       .lerp(innerFissure, voidMix)
     colors.push(color.r, color.g, color.b)
@@ -439,12 +449,12 @@ export function createFocusGroundIncision() {
     const side = new THREE.Vector2(-tangent.y, tangent.x)
     const endFade = Math.pow(Math.max(0, Math.sin(u * Math.PI)), .46)
 
-    const nearPocket = Math.exp(-Math.pow((t + .48) / .075, 2))
-    const centerPocket = Math.exp(-Math.pow((t + .02) / .085, 2))
-    const farPocket = Math.exp(-Math.pow((t - .42) / .075, 2))
+    const nearPocket = Math.exp(-Math.pow((t + .48) / .052, 2))
+    const centerPocket = Math.exp(-Math.pow((t + .02) / .060, 2))
+    const farPocket = Math.exp(-Math.pow((t - .42) / .052, 2))
     const pocketStrength = Math.max(nearPocket, centerPocket, farPocket)
-    const hairlineHalfWidth = .0055 + .001 * Math.sin(section * .91 + .31)
-    const pocketHalfWidth = .135 * nearPocket + .165 * centerPocket + .125 * farPocket
+    const hairlineHalfWidth = .0027 + .00055 * Math.sin(section * .91 + .31)
+    const pocketHalfWidth = .175 * nearPocket + .205 * centerPocket + .165 * farPocket
     const widthPulse = THREE.MathUtils.clamp(
       .96 + .14 * Math.sin(section * 1.37 + .22) + .08 * Math.sin(section * 3.11 - .73),
       .76,
@@ -501,9 +511,9 @@ export function createFocusGroundIncision() {
   geometry.computeVertexNormals()
   geometry.computeBoundingBox()
   geometry.computeBoundingSphere()
-  geometry.userData.focusIncisionAuthority = 'v317-unlit-separated-cavity-bottoms-three-radial-terrain-basins-hairline-connector'
-  geometry.userData.focusIncisionTopology = 'zero-thickness-cavity-bottom-fissure-skin-inside-terrain-owned-shallow-depression-over-buried-v295-closed-authority'
-  geometry.userData.focusIncisionRule = 'three-local-radial-terrain-owned-basins-with-separated-unlit-near-black-bottoms-subordinate-hairline-connector-no-panel-no-ridge-no-mound-no-shadow-no-emissive'
+  geometry.userData.focusIncisionAuthority = 'v318-localized-near-black-cavity-bottoms-ground-blended-subordinate-hairline-connector'
+  geometry.userData.focusIncisionTopology = 'zero-thickness-localized-cavity-bottoms-plus-ground-blended-hairline-inside-three-radial-terrain-owned-depressions-over-buried-v295-closed-authority'
+  geometry.userData.focusIncisionRule = 'near-black-void-owned-only-by-three-local-radial-basins-ground-blended-subordinate-connector-no-continuous-black-strip-no-panel-no-ridge-no-mound-no-shadow-no-emissive'
   return geometry
 }
 
