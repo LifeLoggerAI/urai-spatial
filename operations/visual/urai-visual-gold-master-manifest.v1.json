@@ -119,8 +119,12 @@
     {
       "id": "VGM-GROUND-002",
       "experience": "ground",
-      "system": "generic-fallback-art",
-      "status": "REJECTED"
+      "system": "governed-production-environment",
+      "status": "CURRENT_CANDIDATE",
+      "governedCanopySourceConverged": true,
+      "authoredRidgeSourceConverged": true,
+      "noCanopyFallbackConverged": true,
+      "visualAcceptance": false
     },
     {
       "id": "VGM-GROUND-003",
