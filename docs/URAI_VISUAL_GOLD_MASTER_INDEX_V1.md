@@ -1,7 +1,7 @@
 # URAI Visual Gold Master Index V1
 
 Authority: `LifeLoggerAI/urai-spatial` / PR #1237 / `unified-spatial-convergence-20260916`
-Date: 2026-09-16
+Date: 2026-09-17
 Status: CURRENT INDEX / FAIL-CLOSED / NOT GOLD MASTER
 
 This index answers which reference, storyboard, transition, accessibility/device variant, negative example, and literal-pixel proof is required for every current visual system. A row marked MISSING or CANDIDATE is not accepted visual authority.
@@ -24,22 +24,22 @@ This index answers which reference, storyboard, transition, accessibility/device
 | REF-ORB-001 | Orb | silhouette/material/scale + idle/anticipation/listening/speaking/text-only/cancel/barge-in/privacy/error/reduced-motion/quality tiers | CANDIDATE | Exact-head state pixels + truthful acoustic timing accepted |
 | REF-SKY-001 | Home Sky | broad-sky interaction ownership and atmospheric threshold | CANDIDATE | No localized portal/hotspot in accepted pixels |
 | REF-LIFEMAP-001 | Life Map | desktop/portrait overview, selected, approach, depth/parallax, reduced-motion/low-performance | CANDIDATE | Current exact-head retained pack accepted |
-| REF-MEMSTAR-001 | Memory Star | far/mid/near/attention/selection/approach/Focus handoff/material/scale | MISSING | Non-planet/non-pickup identity locked |
-| REF-FOCUS-001 | Focus V272 | arrival, hero, close inspection, context, Replay entry/return, Life Map return, desktop/mobile/reduced/fallback | CANDIDATE | V272 literal pixels must not read as slab/crystal/pickup |
+| REF-MEMSTAR-001 | Memory Star | current stellar point/photosphere + layered-corona morphology; far/mid/near/attention/selection/approach/Focus handoff/material/scale | MISSING | Runtime identity is source-converged; dedicated accepted state/reference pack remains required; never regress to planet/geode/orbit-shard language |
+| REF-FOCUS-001 | Focus V317 | arrival, three radial terrain-owned pressure cavities + subordinate hairline, close inspection, Replay entry/return, Life Map return, desktop/mobile/tablet/reduced/fallback | CANDIDATE | Fresh unchanged-head literal pixels must first-read as three local ground failures, never one trench/strip/ridge/mound/cable/ribbon/collectible |
 | REF-REPLAY-001 | Replay | source-present, source-absent, evidence classes, temporal progression, controls, audio, unwind, mobile/reduced/offline | CANDIDATE | Exact-head source-first pixels accepted |
 | REF-GROUND-001 | Ground descent/return | terrain target, Avatar awareness, eye transfer, material scale/crossing/fold, arrival, reverse return | CANDIDATE | Exact-head transition frames + motion accepted |
-| REF-GROUND-002 | Ground generic fallback | near/mid/far terrain, vegetation, architecture, water, topology, atmospheric depth | REJECTED | Replace placeholder-class vegetation/urban/coastal art |
+| REF-GROUND-002 | Ground governed production environment | self-authored natural canopy, authored irregular ridge, scanned fern/rock understory, PBR terrain, no-canopy fail-closed boundary | CANDIDATE | Governed source/provenance is present; exact-head desktop/portrait/reduced-motion pixels + performance/governance still require literal acceptance |
 | REF-GROUND-003 | Personalized Lived World | confirmed/partial/unknown Place/Building/Room/VehiclePlace/Route/Object/PersonPresence/Memory states | CANDIDATE | Fail-closed geographic source boundary is now converged on #1237; create and accept provenance-safe visual pack |
 | REF-PASSPORT-001 | Physical Passport | FP Home artifact, scale, approach, activation, camera-origin capture and exact return | CANDIDATE | Physical object + exact-origin source are converged; literal pixels + full round-trip browser proof required |
 | REF-PASSPORT-002 | Passport UI | identity, ownership, provenance, devices, permissions, contribution, export/delete/audit/recovery | CANDIDATE | Responsive/a11y/state audit accepted |
-| REF-GEF-001 | Global Emotional Field Earth | physically plausible Earth, unavailable, suppressed, safe aggregate, stale/no-data/fail-closed, privacy, mobile/reduced | MISSING | Governed Earth art + truth-state pixels; no fabricated data |
-| REF-PEW-001 | Personal Emotional Weather | calm, pressure, recovery, mixed, insufficient evidence, disabled, reduced-stimulation | MISSING | Private/uncertain grammar distinct from physical weather + Global Field |
+| REF-GEF-001 | Global Emotional Field Earth | current deterministic first-person Earth candidate; unavailable, suppressed, safely governed aggregate, stale/no-data/fail-closed, privacy, mobile/reduced | CANDIDATE | Source is present and defaults honestly unavailable; exact-head truth-state pixels/accessibility/privacy/performance remain required; no fabricated data or individual/exact-location signals |
+| REF-PEW-001 | Personal Emotional Weather | calm, pressure, recovery, mixed, insufficient evidence, disabled, reduced-stimulation | CANDIDATE | State/signal authority exists, but end-to-end weather state → active canonical Home atmosphere binding is still unproven; bind first, then accept same-world state pixels |
 | REF-MIRROR-001 | Mirror | current entry/environment/material/evidence/uncertainty/privacy/return/mobile/reduced/failure | CANDIDATE | Re-audit current runtime and retained visual evidence |
-| REF-SHADOW-001 | Shadow | entry, safe intensity, uncertainty, low-stimulation, accessibility, return, rejection examples | MISSING | Current runtime/canon package |
-| REF-LEGACY-001 | Legacy | entry, continuity, low-data/empty, privacy/third-party boundaries, return | MISSING | Current runtime/canon package |
-| REF-COUNCIL-001 | Council | contextual presence, perspectives, conversation, disagreement/no-consensus, privacy, scenario context, return | MISSING | No authority theater/fake consensus |
+| REF-SHADOW-001 | Shadow | entry, safe intensity, uncertainty, low-stimulation, accessibility, return, rejection examples | CANDIDATE | Runtime exists; dedicated safe visual pack and literal acceptance remain open |
+| REF-LEGACY-001 | Legacy | entry, continuity, low-data/empty, privacy/third-party boundaries, return | CANDIDATE | Substantive runtime exists; dedicated current visual pack and literal acceptance remain open |
+| REF-COUNCIL-001 | Council | contextual presence, perspectives, conversation, disagreement/no-consensus, privacy, scenario context, return | CANDIDATE | Runtime exists but current realm art/identity pack is not final; no authority theater/fake consensus |
 | REF-RITUAL-001 | Rituals | initiation, active, completion, interruption, return, reduced-motion/stimulation | MISSING | Current runtime/canon package |
-| REF-FUTURES-001 | Possible Futures | entry, manual/provider-unavailable, 1/2/3 branches, assumptions/evidence/uncertainty/comparison/outcome/save/discard/return/mobile/reduced | MISSING | Must remain visibly `POSSIBLE FUTURE · NOT A MEMORY`; source still requires selective convergence |
+| REF-FUTURES-001 | Possible Futures | entry, manual/provider-unavailable, 1/2/3 branches, assumptions/evidence/uncertainty/comparison/outcome/save/discard/return/mobile/reduced | CANDIDATE | Truth semantics are source-converged (`POSSIBLE FUTURE · NOT A MEMORY`, unranked/fail-closed); planned spatial Scenario World visual authority remains incomplete |
 | REF-SUPPORT-001 | Settings/Privacy/Auth/Status | desktop/mobile/zoom/focus/loading/empty/error/offline/denied | CANDIDATE | Conventional UI responsive+a11y audit |
 
 ## Storyboard index
@@ -58,12 +58,12 @@ Every storyboard must define start, anticipation, intermediate beats, camera/FOV
 | SB-GROUND-HOME-001 | Ground → reverse geology/material crossing → Home | CANDIDATE |
 | SB-GROUND-MEMORY-001 | Ground → Focus/Replay → Ground when source-backed origin exists | MISSING — authorized place-bound memory producer still absent |
 | SB-PASSPORT-001 | FP Home → Passport → exact captured FP Home origin | CANDIDATE — source converged, current pixels/browser round trip required |
-| SB-GEF-001 | FP Home → Global Emotional Field Earth interaction → Home | MISSING |
-| SB-FUTURES-001 | Orb/Home → Possible Futures → original world state | MISSING |
+| SB-GEF-001 | FP Home → Global Emotional Field Earth interaction → Home | CANDIDATE — source interaction/fail-closed Earth exists; current exact-head responsive visual proof required |
+| SB-FUTURES-001 | Orb/Home → Possible Futures → original world state | CANDIDATE — route/truth boundary exists; spatial visual convergence and return proof remain open |
 | SB-MIRROR-001 | Mirror entry/exit | CANDIDATE |
-| SB-SHADOW-001 | Shadow entry/exit | MISSING |
-| SB-COUNCIL-001 | Council entry/exit | MISSING |
-| SB-LEGACY-001 | Legacy entry/exit | MISSING |
+| SB-SHADOW-001 | Shadow entry/exit | CANDIDATE — runtime exists; safe visual/transition pack remains open |
+| SB-COUNCIL-001 | Council entry/exit | CANDIDATE — runtime exists; current visual/identity acceptance remains open |
+| SB-LEGACY-001 | Legacy entry/exit | CANDIDATE — runtime exists; fresh exact-head visual pack remains open |
 | SB-RITUAL-001 | Ritual initiation/complete/interruption/return | MISSING |
 
 ## Transition authority index
@@ -80,7 +80,7 @@ Every storyboard must define start, anticipation, intermediate beats, camera/FOV
 ## Accessibility matrix
 Every major realm must carry explicit proof for keyboard-only, visible focus, screen-reader state, reduced motion, reduced stimulation where applicable, Deaf/HoH captions and non-audio warnings, blind/low-vision spatial guidance, haptic equivalents where appropriate, high zoom, mobile touch containment, and truthful fallback/no-WebGL behavior.
 
-Current classification: Home/Orb/Ground/Life Map/Focus/Replay/Personalized Lived World source boundary/Passport/Mirror/support surfaces = CANDIDATE pending fresh exact-head evidence. Earth, PEW, Shadow, Legacy, Council, Rituals, Possible Futures = MISSING until implemented/converged and proven.
+Current classification: Home/Orb/Ground/Life Map/Focus/Replay/Personalized Lived World source boundary/Passport/Earth/PEW/Mirror/Shadow/Legacy/Council/Possible Futures/support surfaces = CANDIDATE at different convergence boundaries pending fresh exact-head evidence. Memory Star still requires its dedicated accepted state/reference pack despite source-converged stellar morphology. Rituals remains PARTIAL/MISSING as a standalone canonical experience authority. Avatar final likeness remains separately blocked from non-likeness/runtime work.
 
 ## Device matrix
 - Desktop: authored cinematic composition; no hover-only critical access.
