@@ -12,7 +12,7 @@
       "asymmetric_clustered_canopy"
     ]
   },
-  "requiredCompression": "compact-static-glb",
+  "compressionStatus": "compact-static-glb",
   "fallback": "scanned-understory-remains-without-canopy",
   "source": "URAI self-authored deterministic static geometry; no third-party binary used",
   "license": "URAI Labs internal proprietary production asset",
