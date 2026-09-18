@@ -18,7 +18,7 @@ const scenarios = [
 ]
 
 await mkdir(outDir, { recursive: true })
-const browser = await chromium.launch({ headless: true, args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-webgl', '--ignore-gpu-blocklist'] })
+const browser = await chromium.launch({ headless: true, args: ['--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'] })
 const captures = []
 const errors = []
 
@@ -53,8 +53,20 @@ try {
     page.on('console', (message) => { if (message.type() === 'error') pageErrors.push(`console: ${message.text()}`) })
 
     await page.goto(`${base}/ground/?environment=${scenario.environment}`, { waitUntil: 'networkidle', timeout: 60_000 })
-    await page.waitForSelector('[data-testid="urai-ground-lived-world"][data-ground-ready="true"]', { timeout: 45_000 })
+    const readyRoot = page.locator('[data-testid="urai-ground-lived-world"]').first()
+    await readyRoot.waitFor({ state: 'visible', timeout: 45_000 })
     await page.waitForSelector('.ground-spatial-root canvas', { state: 'visible', timeout: 45_000 })
+    try {
+      await page.waitForFunction(() => document.querySelector('[data-testid="urai-ground-lived-world"]')?.getAttribute('data-ground-ready') === 'true', null, { timeout: 45_000, polling: 50 })
+    } catch (error) {
+      const diagnostic = await readyRoot.evaluate((node) => ({
+        ready: node.getAttribute('data-ground-ready'),
+        profile: node.getAttribute('data-ground-environment-profile'),
+        camera: node.getAttribute('data-ground-camera-mode'),
+        html: node.outerHTML.slice(0, 1200),
+      })).catch(() => null)
+      throw new Error(`${scenario.id}: Ground never reached exact ready state; diagnostic=${JSON.stringify(diagnostic)}; browserErrors=${pageErrors.join(" || ")}; cause=${String(error)}`)
+    }
     await page.waitForTimeout(800)
 
     const root = page.locator('[data-testid="urai-ground-lived-world"]')
