@@ -38,8 +38,16 @@ export function GroundOrbCompanion(_props: {
     }
     normalizeStatus()
 
-    const reveal = () => { if (fallback) fallback.style.opacity = '1' }
-    const hide = () => { if (fallback) fallback.style.opacity = '0' }
+    const reveal = () => {
+      if (!fallback) return
+      fallback.style.setProperty('opacity', '1', 'important')
+      fallback.style.setProperty('pointer-events', 'auto', 'important')
+    }
+    const hide = () => {
+      if (!fallback) return
+      fallback.style.setProperty('opacity', '0', 'important')
+      fallback.style.setProperty('pointer-events', 'none', 'important')
+    }
     const restoreFallback = () => {
       if (!fallback || !previous) return
       fallback.removeEventListener('focus', reveal)
@@ -65,16 +73,16 @@ export function GroundOrbCompanion(_props: {
         groundMode: candidate.dataset.groundOrbMode,
       }
       candidate.dataset.groundOrbMode = 'semantic-invocation-only'
-      candidate.style.opacity = '0'
-      candidate.style.pointerEvents = 'none'
-      candidate.style.transition = 'opacity 120ms ease'
+      candidate.style.setProperty('opacity', '0', 'important')
+      candidate.style.setProperty('pointer-events', 'none', 'important')
+      candidate.style.setProperty('transition', 'opacity 120ms ease', 'important')
       candidate.addEventListener('focus', reveal)
       candidate.addEventListener('blur', hide)
     }
 
     attachFallback()
     const fallbackObserver = new MutationObserver(attachFallback)
-    fallbackObserver.observe(document.body, { childList: true, subtree: true })
+    fallbackObserver.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['style', 'class'] })
 
     return () => {
       observer?.disconnect()
