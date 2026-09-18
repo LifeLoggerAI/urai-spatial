@@ -90,7 +90,7 @@ test('V316 preserves the buried V295 watertight body while resolved sanctuary-ow
   assert.match(geology, /const pocketHalfWidth = \.125 \* nearPocket \+ \.155 \* centerPocket \+ \.115 \* farPocket/)
   assert.doesNotMatch(geology, /const pocketHalfWidth = \.235 \* nearPocket \+ \.285 \* centerPocket \+ \.220 \* farPocket/)
   assert.match(geology, /focusIncisionAuthority = 'v316-unlit-narrow-cavity-bottom-three-resolved-terrain-basins-hairline-connector'/)
-  assert.match(geology, /focusIncisionTopology = 'zero-thickness-open-pocketed-fissure-skin-over-buried-v295-closed-authority'/)
+  assert.match(geology, /focusIncisionTopology = 'zero-thickness-cavity-bottom-fissure-skin-inside-terrain-owned-shallow-depression-over-buried-v295-closed-authority'/)
   assert.match(geology, /focusVisualAuthority = 'v295-sanctuary-memory-scar-volume'/)
   assert.match(geology, /focusCurrentVisualAuthority = 'v316-terrain-owned-resolved-pressure-cavities-buried-closed-body'/)
   assert.doesNotMatch(geology, /appendBranch\(/)
