@@ -42,7 +42,7 @@ test('the full journey participates in one persistent world model', () => {
 
 test('Orb and Home ownership preserve predecessor truth while the current candidate uses the governed third-person to camera-only first-person embodiment', () => {
   assert.match(shell, /PersistentWorldCompanion/)
-  assert.match(shell, /const showWorldCompanion = world\.destination !== 'life-map'/)
+  assert.match(shell, /const showWorldCompanion = !flatControlRoute && world\.destination !== 'life-map' && world\.destination !== 'location-map'/)
   assert.match(shell, /\{showWorldCompanion \? <PersistentWorldCompanion \/> : null\}/)
   assert.match(companion, /PRIMARY_DESTINATIONS/)
   assert.match(companion, /SECONDARY_DESTINATIONS/)
