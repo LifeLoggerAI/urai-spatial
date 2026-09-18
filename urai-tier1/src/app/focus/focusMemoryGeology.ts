@@ -112,6 +112,11 @@ import * as THREE from 'three'
 // into the sanctuary palette. The near-black missing-ground cavity must own each pocket, with
 // only sparse one-sided mineral fragments and abrupt asymmetric pinches at its edge.
 //
+// V313 responds to exact V312 pixels: color collapse alone did not remove the mound illusion.
+// The remaining cause is lighting ownership on the coplanar incision skin. V313 keeps the V312
+// cavity geometry and palette intact but makes the visible pressure tears explicitly UNLIT so
+// chamber lights and computed normals cannot create raised facet peaks on an exact-grade mark.
+//
 // The form must read as memory pressure physically held by place. It must not regress
 // into a crystal crown, boulder, orb, flower, portal, ring, shell/mouth, manta, tent,
 // aircraft, animal, shoe, boat, bowl, helmet, body-part silhouette, smooth blob,
@@ -336,8 +341,9 @@ function createLivingMemoryFold() {
   geometry.userData.focusLiteralPixelSuccessorV310 = 'v310-legible-dark-pressure-cavities-broken-mineral-rims-hairline-connector-no-panel'
   geometry.userData.focusLiteralPixelSuccessorV311 = 'v311-near-black-asymmetric-pressure-voids-sparse-ground-blended-rims-no-raised-strip'
   geometry.userData.focusLiteralPixelSuccessorV312 = 'v312-near-black-missing-ground-cavities-terrain-collapsed-pocket-skin-sparse-one-sided-edge'
+  geometry.userData.focusLiteralPixelSuccessorV313 = 'v313-unlit-missing-ground-cavities-no-lit-facet-ridges-v312-geometry-preserved'
   geometry.userData.focusVisualAuthority = 'v295-sanctuary-memory-scar-volume'
-  geometry.userData.focusCurrentVisualAuthority = 'v312-ground-owned-missing-ground-pressure-cavities-buried-closed-body'
+  geometry.userData.focusCurrentVisualAuthority = 'v313-ground-owned-unlit-missing-ground-pressure-cavities-buried-closed-body'
   return geometry
 }
 
@@ -449,9 +455,9 @@ export function createFocusGroundIncision() {
   geometry.computeVertexNormals()
   geometry.computeBoundingBox()
   geometry.computeBoundingSphere()
-  geometry.userData.focusIncisionAuthority = 'v312-three-near-black-missing-ground-cavities-terrain-collapsed-skin-hairline-connector'
+  geometry.userData.focusIncisionAuthority = 'v313-unlit-three-near-black-missing-ground-cavities-hairline-connector'
   geometry.userData.focusIncisionTopology = 'zero-thickness-open-pocketed-fissure-skin-over-buried-v295-closed-authority'
-  geometry.userData.focusIncisionRule = 'three-local-near-black-missing-ground-cavities-terrain-collapsed-pocket-skin-sparse-one-sided-edge-hairline-connector-no-ridge-no-mound-no-shadow-no-emissive'
+  geometry.userData.focusIncisionRule = 'three-local-unlit-near-black-missing-ground-cavities-sparse-one-sided-edge-hairline-connector-no-lit-facets-no-ridge-no-mound-no-shadow-no-emissive'
   return geometry
 }
 

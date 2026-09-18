@@ -28,7 +28,7 @@ test('selected memory remains one connected CLOSED living-memory phenomenon rath
   assert.doesNotMatch(geology, /Array\.from\(\{ length: 7 \}/)
 })
 
-test('V312 preserves the buried V295 watertight body while three near-black missing-ground cavities retain a hairline connector', () => {
+test('V313 preserves the buried V295 watertight body while unlit near-black missing-ground cavities retain a hairline connector', () => {
   assert.match(geology, /V295 keeps the useful V294 top-surface language while restoring the non-negotiable/)
   assert.match(geology, /V298 narrowed the event/)
   assert.match(geology, /V299 changes ownership/)
@@ -80,10 +80,11 @@ test('V312 preserves the buried V295 watertight body while three near-black miss
   assert.match(geology, /focusLiteralPixelSuccessorV310 = 'v310-legible-dark-pressure-cavities-broken-mineral-rims-hairline-connector-no-panel'/)
   assert.match(geology, /focusLiteralPixelSuccessorV311 = 'v311-near-black-asymmetric-pressure-voids-sparse-ground-blended-rims-no-raised-strip'/)
   assert.match(geology, /focusLiteralPixelSuccessorV312 = 'v312-near-black-missing-ground-cavities-terrain-collapsed-pocket-skin-sparse-one-sided-edge'/)
-  assert.match(geology, /focusIncisionAuthority = 'v312-three-near-black-missing-ground-cavities-terrain-collapsed-skin-hairline-connector'/)
+  assert.match(geology, /focusLiteralPixelSuccessorV313 = 'v313-unlit-missing-ground-cavities-no-lit-facet-ridges-v312-geometry-preserved'/)
+  assert.match(geology, /focusIncisionAuthority = 'v313-unlit-three-near-black-missing-ground-cavities-hairline-connector'/)
   assert.match(geology, /focusIncisionTopology = 'zero-thickness-open-pocketed-fissure-skin-over-buried-v295-closed-authority'/)
   assert.match(geology, /focusVisualAuthority = 'v295-sanctuary-memory-scar-volume'/)
-  assert.match(geology, /focusCurrentVisualAuthority = 'v312-ground-owned-missing-ground-pressure-cavities-buried-closed-body'/)
+  assert.match(geology, /focusCurrentVisualAuthority = 'v313-ground-owned-unlit-missing-ground-pressure-cavities-buried-closed-body'/)
   assert.doesNotMatch(geology, /appendBranch\(/)
   assert.match(geology, /color\.r = Math\.min\(\.76, color\.r\)/)
   assert.match(geology, /color\.g = Math\.min\(\.44, color\.g\)/)
