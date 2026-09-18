@@ -227,7 +227,7 @@ function NaturalCanopy({ profile, position, rotationY, scale }: {
       new THREE.Vector3(0.015, 1.82, 0.035),
       new THREE.Vector3(0.08, 2.5, -0.02),
     ]);
-    const trunkGeometry = new THREE.TubeGeometry(trunkCurve, 30, 0.105, 10, false);
+    const trunkGeometry = new THREE.TubeGeometry(trunkCurve, 36, 0.072, 10, false);
 
     const branchDefs = [
       [[0.03, 1.18, 0.00], [0.42, 1.62, 0.10], [0.86, 1.92, 0.18]],
@@ -239,8 +239,8 @@ function NaturalCanopy({ profile, position, rotationY, scale }: {
     ] as const;
     const branches = branchDefs.map((points) => new THREE.TubeGeometry(
       new THREE.CatmullRomCurve3(points.map(([x, y, z]) => new THREE.Vector3(x, y, z))),
-      16,
-      0.045,
+      18,
+      0.032,
       8,
       false,
     ));
@@ -387,14 +387,20 @@ function NaturalScatter({ profile }: { profile: EnvironmentProfile }) {
 
   const woodland = profile.id === "woodland";
   const ferns = items.slice(0, woodland ? 14 : 8);
-  const canopies = items.slice(0, woodland ? 7 : 5);
+  const canopies = items.slice(0, woodland ? 10 : 8);
   return <group name={woodland ? "ground-woodland-scanned-understory" : "ground-temperate-scanned-understory"} userData={{ treatment: "urai-self-authored-static-canopy-v3-with-polyhaven-fern-rock-understory", canopyFallback: "scanned-understory-remains-without-canopy" }} raycast={() => null}>
     <GroundCanopyBoundary>
       <Suspense fallback={null}>
         {canopies.map((item) => {
-          const x = item.x * 1.08;
-          const z = item.z - 5.5;
-          return <NaturalCanopy key={`canopy-${item.index}`} profile={profile} position={[x, groundHeight(x, z, profile.id) - 0.02, z]} rotationY={item.index * 0.91 + (woodland ? 0.22 : -0.14)} scale={(woodland ? 5.2 : 4.5) + item.scale * 1.4} />;
+          const x = item.x * 0.62;
+          const z = item.z - 8.5;
+          return <NaturalCanopy
+            key={`canopy-${item.index}`}
+            profile={profile}
+            position={[x, groundHeight(x, z, profile.id) - 0.02, z]}
+            rotationY={item.index * 0.91 + (woodland ? 0.22 : -0.14)}
+            scale={(woodland ? 2.85 : 2.55) + item.scale * 0.72}
+          />;
         })}
       </Suspense>
     </GroundCanopyBoundary>
