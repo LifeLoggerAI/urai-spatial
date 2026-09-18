@@ -409,7 +409,7 @@ function MemoryAperture({ memory, accent, onActivate }: { memory: SelectedMemory
       {strata.map((geometry,index) => <mesh key={index} geometry={geometry} castShadow={false} receiveShadow={false} raycast={() => null} name={`focus-authored-living-memory-fold-${index}`}>
         <meshStandardMaterial vertexColors color="#51493d" emissive="#000000" emissiveIntensity={0} roughness={1} metalness={0} side={THREE.DoubleSide} />
       </mesh>)}
-      <mesh geometry={incision} castShadow={false} receiveShadow={false} renderOrder={2} name="focus-v318-localized-three-radial-pressure-cavity-bottoms" onClick={(event) => { event.stopPropagation(); if (memory) onActivate() }} onPointerOver={(event) => pointer(event, true)} onPointerOut={(event) => pointer(event, false)}>
+      <mesh geometry={incision} castShadow={false} receiveShadow={false} renderOrder={2} name="focus-v320-readable-three-radial-pressure-cavity-bottoms" onClick={(event) => { event.stopPropagation(); if (memory) onActivate() }} onPointerOver={(event) => pointer(event, true)} onPointerOut={(event) => pointer(event, false)}>
         <meshBasicMaterial vertexColors color={hovered ? '#f4f1e8' : '#ffffff'} toneMapped={false} side={THREE.DoubleSide} depthWrite={false} polygonOffset polygonOffsetFactor={-4} polygonOffsetUnits={-4} />
       </mesh>
     </group>
