@@ -1,9 +1,9 @@
 # UrAi First-Person Home — Master Visual Reference V1
 
-Authority date: 2026-09-16
+Authority date: 2026-09-17
 Repository: `LifeLoggerAI/urai-spatial`
 Authority branch: `unified-spatial-convergence-20260916` / PR #1237
-Source head audited before creation: `d4362831c28def1ac4c27a2c2df5b27ef7133d6b`
+Historical creation audit head: `d4362831c28def1ac4c27a2c2df5b27ef7133d6b` (provenance only; live #1237 source wins). This reference contract intentionally does not self-bind to its own commit as exact-head proof.
 Status: `CURRENT_CANDIDATE_REFERENCE / NOT LITERAL-PIXEL ACCEPTANCE / NOT GOLD MASTER`
 
 ## Purpose
@@ -174,27 +174,36 @@ Its semantic role is ownership, identity, consent, permissions, and system relat
 
 ## Global Emotional Field Earth
 
-`MISSING_REPLACEMENT_REQUIRED`
+`CURRENT_RUNTIME_FACT / CURRENT_CANDIDATE_ART`
 
-The current manifest requires a separate physical Home Earth system distinct from Location Map and Personal Emotional Weather, but **no physically authoritative production Earth is certified yet**.
+Current #1237 source contains a deterministic first-person Home Earth candidate distinct from Location Map and Personal Emotional Weather. Its truth boundary is fail-closed: the default is visibly unavailable/provider-not-activated, and source explicitly forbids fabricated emotional activity, individual dots, exact user/household location, or reuse of private location-map identity.
 
 Therefore:
 
-- Master Image 01 may reserve composition space for this system as a `REFERENCE_TARGET`, but must not portray a concept Earth as accepted runtime proof.
-- Production Earth must read as physically plausible Earth first.
-- Safe aggregate emotional-field information is an overlay on Earth identity.
-- Truth states are `unavailable`, `suppressed`, and `safely published aggregate`.
-- Never show individual dots, exact locations, raw private emotion, or fake activity.
-
-No hard world coordinate is locked here until the production Earth asset and collision/occlusion relationship are implemented and measured in current Home.
+- Master Image 01 may include the current Earth candidate only as a runtime candidate, never as already accepted Gold-Master pixels.
+- Earth must read as physically plausible Earth first.
+- Safe aggregate emotional-field information is an overlay on Earth identity and may appear only when a governed aggregate provider/privacy-threshold boundary actually publishes it.
+- Truth states remain `unavailable`, `suppressed`, and `safely published aggregate`.
+- Never show individual dots, exact locations, raw private emotion, household identity, or fake activity.
+- Exact-head literal pixels, accessibility, privacy, responsive and performance acceptance remain open.
 
 ## Personal Emotional Weather
 
-`MISSING_REPLACEMENT_REQUIRED`
+`CURRENT_STATE_MODEL / ACTIVE_HOME_ATMOSPHERE_BINDING_UNPROVEN / CURRENT_CANDIDATE_REFERENCE`
 
-Private Personal Emotional Weather requires its own uncertainty-aware visual grammar distinct from ordinary meteorological weather and the Global Emotional Field. It must never imply diagnosis.
+The current state/signal authority exists, including uncertainty-aware/fail-closed modes and weather-tone semantics. Current Home proof can expose a clearly disclosed safe synthetic personal-weather review fixture, but current source reconciliation has not yet proven that the active canonical Home atmosphere owner visibly consumes that state end to end.
 
-Until that grammar is implemented and accepted, concept imagery may show atmospheric-state targets only when clearly classified as reference art rather than runtime evidence.
+Private Personal Emotional Weather must remain distinct from ordinary meteorological weather and the Global Emotional Field and must never imply diagnosis.
+
+Required next boundary before visual promotion:
+
+- bind permitted personal-weather state into the active canonical Home atmosphere owner without inventing private memories or diagnoses;
+- preserve the same geography across weather states;
+- capture desktop/mobile/reduced-motion/reduced-stimulation/fallback state pixels;
+- label synthetic review fixtures explicitly as not user data;
+- literally inspect and accept the resulting same-world grammar.
+
+Concept imagery remains reference-only until that runtime binding and proof are earned.
 
 ## Candidate 16-frame reference package
 
@@ -208,9 +217,9 @@ These files are candidate production references and must all inherit `URAI_HOME_
 6. `URAI_HOME_FPV_PURPOSE_06` — source-governed work/purpose state.
 7. `URAI_HOME_FPV_SKY_07` — broad Sky / ascent relationship.
 8. `URAI_HOME_FPV_GROUND_08` — terrain-owned descent relationship.
-9. `URAI_HOME_FPV_GEF_EARTH_09` — Global Emotional Field Earth candidate; not runtime authority until accepted.
+9. `URAI_HOME_FPV_GEF_EARTH_09` — current fail-closed Global Emotional Field Earth runtime candidate; not visual Gold Master until exact-head pixels are accepted.
 10. `URAI_HOME_FPV_NIGHT_10` — same geography at night.
-11. `URAI_HOME_FPV_PERSONAL_WEATHER_11` — Personal Emotional Weather candidate; not runtime authority until accepted.
+11. `URAI_HOME_FPV_PERSONAL_WEATHER_11` — Personal Emotional Weather candidate; state authority exists, but canonical Home atmosphere binding and literal acceptance remain open.
 12. `URAI_HOME_FPV_REDUCED_STIM_12` — same geography, reduced stimulation.
 13. `URAI_HOME_FPV_CONTEXT_UI_13` — contextual UI without dashboard takeover.
 14. `URAI_HOME_FPV_PASSPORT_14` — physical Passport candidate in FP Home.
@@ -413,6 +422,6 @@ Reduced-motion/constrained rendering may lower cadence and macro motion. Degrada
 
 **NO-GO / NOT GOLD MASTER.**
 
-Current Home presentation, embodiment, FP Home, Orb, Sky, Ground transition ownership, and Passport source are candidates on #1237, but literal current-head pixels and inspection remain required. Avatar replacement/component references, Global Emotional Field Earth production art, Personal Emotional Weather visual grammar, and other manifest rows remain incomplete where the VGM manifest says so.
+Current Home presentation, embodiment, FP Home, Orb, Sky, Ground transition ownership, physical Passport, and fail-closed Global Emotional Field Earth are source/runtime candidates on #1237, but literal current-head pixels and inspection remain required. Personal Emotional Weather has a current state model but still lacks proven end-to-end binding into the active canonical Home atmosphere. Avatar final likeness/component references and other open VGM rows remain incomplete at their separately recorded boundaries.
 
 This document is complete as a **candidate reference contract**. It becomes visual authority only through the governing VGM manifest, exact-head runtime proof, literal-pixel acceptance, accessibility/performance/privacy/security acceptance, required independent review/governance, protected merge/deploy, deployed-SHA readback, live verification, and rollback/recovery evidence.
