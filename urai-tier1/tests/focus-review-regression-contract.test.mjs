@@ -36,7 +36,7 @@ test('Focus focal authority is the V310 legible pressure-cavity ground-owned fis
   assert.match(geology, /one-closed-ground-owned-fissure-no-split-pair-no-portable-outline/)
   assert.match(geology, /v295-sanctuary-memory-scar-volume/)
   assert.match(geology, /v299-ground-grade-dark-mineral-fissure-readable-footprint-warm-broken-lip-no-blue-object/)
-  assert.match(geology, /v309-ground-owned-cavity-fissure-buried-closed-body/)
+  assert.match(geology, /focusLiteralPixelSuccessorV309 = 'v309-localized-dark-rupture-cavities-hairline-connector-ground-owned-no-panel'/)
   assert.match(geology, /v310-ground-owned-pressure-cavity-fissure-buried-closed-body/)
   assert.doesNotMatch(geology, /v269-living-luminous-memory-lamella/)
   assert.doesNotMatch(geology, /v271-interlocked-volumetric-memory-facet/)
