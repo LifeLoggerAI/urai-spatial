@@ -184,11 +184,11 @@ export function focusSelectedMemoryCavityDepth(worldX: number, worldZ: number) {
   const pocketStrength = Math.max(nearPocket, centerPocket, farPocket)
 
   const connectorFalloff = Math.exp(-Math.pow(nearestDistance / .026, 2))
-  const pocketRadius = .17 + .055 * pocketStrength
+  const pocketRadius = .30 + .07 * pocketStrength
   const pocketFalloff = Math.exp(-Math.pow(nearestDistance / pocketRadius, 2))
-  const connectorDepth = .0035 * connectorFalloff
-  const pocketDepth = .038 * pocketStrength * pocketFalloff
-  return -Math.min(.044, connectorDepth + pocketDepth)
+  const connectorDepth = .0022 * connectorFalloff
+  const pocketDepth = .062 * pocketStrength * pocketFalloff
+  return -Math.min(.070, connectorDepth + pocketDepth)
 }
 
 function livingMemoryVertexColor(section: number, cross: number, t: number, lateral: number, furrow: number, ridge: number) {
@@ -278,7 +278,7 @@ function createLivingMemoryFold() {
       const z = center.y + side.y * (lateralDistance + edgeBreak)
       const groundY = focusGroundHeight(FOCUS_MEMORY_WORLD_X + x, FOCUS_MEMORY_WORLD_Z + z)
       const incisionReveal = .004 + .0015 * centralScar
-      const burialDepth = .060
+      const burialDepth = .105
       const y = groundY
         - burialDepth
         + incisionReveal * .05
@@ -384,8 +384,9 @@ function createLivingMemoryFold() {
   geometry.userData.focusLiteralPixelSuccessorV313 = 'v313-unlit-missing-ground-cavities-no-lit-facet-ridges-v312-geometry-preserved'
   geometry.userData.focusLiteralPixelSuccessorV314 = 'v314-core-only-unlit-cavity-footprints-no-filled-outer-pocket-skin'
   geometry.userData.focusLiteralPixelSuccessorV315 = 'v315-terrain-owned-shallow-pressure-cavity-depth-shared-with-cavity-bottom-skin'
+  geometry.userData.focusLiteralPixelSuccessorV316 = 'v316-resolved-terrain-basin-sampling-and-depth-with-narrow-cavity-bottom-skin'
   geometry.userData.focusVisualAuthority = 'v295-sanctuary-memory-scar-volume'
-  geometry.userData.focusCurrentVisualAuthority = 'v315-terrain-owned-shallow-pressure-cavities-buried-closed-body'
+  geometry.userData.focusCurrentVisualAuthority = 'v316-terrain-owned-resolved-pressure-cavities-buried-closed-body'
   return geometry
 }
 
@@ -494,9 +495,9 @@ export function createFocusGroundIncision() {
   geometry.computeVertexNormals()
   geometry.computeBoundingBox()
   geometry.computeBoundingSphere()
-  geometry.userData.focusIncisionAuthority = 'v315-unlit-cavity-bottom-three-pressure-cavities-hairline-connector'
+  geometry.userData.focusIncisionAuthority = 'v316-unlit-narrow-cavity-bottom-three-resolved-terrain-basins-hairline-connector'
   geometry.userData.focusIncisionTopology = 'zero-thickness-cavity-bottom-fissure-skin-inside-terrain-owned-shallow-depression-over-buried-v295-closed-authority'
-  geometry.userData.focusIncisionRule = 'three-local-terrain-owned-shallow-cavities-with-unlit-near-black-bottoms-hairline-connector-no-panel-no-ridge-no-mound-no-shadow-no-emissive'
+  geometry.userData.focusIncisionRule = 'three-local-resolved-terrain-owned-basins-with-unlit-narrow-near-black-bottoms-hairline-connector-no-panel-no-ridge-no-mound-no-shadow-no-emissive'
   return geometry
 }
 
