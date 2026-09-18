@@ -1,4 +1,4 @@
-/* V265 Replay convergence: the memory is the environment. Product transport stays
+/* V265 Replay convergence: the memory is the environment. Memory pacing stays
    fully reachable, but the spatial canvas is allowed to fill and slightly crop the
    viewport so authentic memory media dominates instead of reading as a player card. */
 .replayWorld .replaySpatialCanvas {
@@ -50,7 +50,7 @@
   opacity: .78;
 }
 
-.replayWorld .controls {
+.replayWorld .memoryPacing {
   bottom: max(18px, calc(env(safe-area-inset-bottom) + 12px)) !important;
   width: min(520px, calc(100vw - 34px)) !important;
   padding: 4px 7px !important;
@@ -63,14 +63,14 @@
   opacity: .12;
   transition: opacity 180ms ease, background-color 180ms ease;
 }
-.replayWorld .controls:hover,
-.replayWorld .controls:focus-within { opacity: .96; }
-.replayWorld .controls button {
+.replayWorld .memoryPacing:hover,
+.replayWorld .memoryPacing:focus-within { opacity: .96; }
+.replayWorld .memoryPacing button {
   min-width: 58px !important;
   min-height: 48px !important;
   background: linear-gradient(135deg, color-mix(in srgb,var(--replay-light) 84%,transparent), color-mix(in srgb,var(--replay-accent) 78%,transparent)) !important;
 }
-.replayWorld .controls output { opacity: .72; }
+.replayWorld .memoryPacing output { opacity: .72; }
 
 .replayWorld .replayProduct {
   border-color: rgba(235,251,255,.05);
@@ -89,7 +89,7 @@
 
 /* Owner mutation controls occupy their own lower rail. Reserve a clear caption
    band above that rail so memory text never collides with Save/Hide/Correct/
-   History or the transport controls. Read-only/demo Replay keeps the tighter
+   History or the memory pacing controls. Read-only/demo Replay keeps the tighter
    composition because its disabled mutation rail is hidden below. */
 .replayWorld:has(.replayProduct > button:not(:disabled)) .caption {
   bottom: max(190px, calc(env(safe-area-inset-bottom) + 184px)) !important;
@@ -194,14 +194,14 @@
     -webkit-box-orient: vertical;
     overflow: hidden;
   }
-  .replayWorld .controls,
+  .replayWorld .memoryPacing,
   .replayWorld .replayProduct {
     left: 14px;
     right: 14px;
     width: auto !important;
     transform: none;
   }
-  .replayWorld .controls { opacity: .10; }
+  .replayWorld .memoryPacing { opacity: .10; }
   .replayWorld .replayProduct { opacity: .04; }
   .replayWorld .transcript {
     top: max(72px, calc(env(safe-area-inset-top) + 66px));
@@ -224,7 +224,7 @@
 
 @media (prefers-reduced-motion: reduce) {
   .replayWorld .replaySpatialCanvas { transform: scale(1.14); }
-  .replayWorld .controls,
+  .replayWorld .memoryPacing,
   .replayWorld .replayProduct,
   .replayWorld .transcript,
   .replayWorld .caption {
