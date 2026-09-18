@@ -52,7 +52,7 @@ test.describe('first-run onboarding accessibility', () => {
     const stored = await page.evaluate(() => ({
       setupComplete: localStorage.getItem('urai:onboarding:v3:setup-complete'),
       setupStep: localStorage.getItem('urai:onboarding:v3:setup-step'),
-      haptics: localStorage.getItem('urai:haptics-enabled-v1'),
+      haptics: localStorage.getItem('urai:haptics:enabled-v1'),
     }))
     expect(stored.setupComplete).toBe('1')
     expect(stored.setupStep).toBeNull()
