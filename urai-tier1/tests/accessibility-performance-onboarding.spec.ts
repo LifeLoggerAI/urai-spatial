@@ -69,10 +69,10 @@ test.describe('first-run onboarding accessibility', () => {
 
     const reduced = await page.evaluate(() => ({
       media: matchMedia('(prefers-reduced-motion: reduce)').matches,
-      documentAuthority: document.documentElement.dataset.uraiReducedMotion ?? null,
+      persistedUserSetting: document.documentElement.dataset.uraiReducedMotion ?? null,
     }))
     expect(reduced.media).toBe(true)
-    expect(reduced.documentAuthority).toBe('true')
+    expect(reduced.persistedUserSetting).toBe('false')
 
     const skip = page.getByRole('button', { name: 'Skip setup' })
     await skip.focus()
