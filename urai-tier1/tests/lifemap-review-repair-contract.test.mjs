@@ -117,10 +117,10 @@ test('Founder proof samples retained WebGL canvas pixels only', () => {
   assert.match(workflow, /lifemap-review-repair-contract\.test\.mjs/)
 })
 
-test('Focus final composition preserves one connected living-memory authority and locks the V311 near-black pressure-void ground-owned sanctuary fissure', () => {
+test('Focus final composition preserves one connected living-memory authority and locks the V312 near-black missing-ground pressure-cavity sanctuary fissure', () => {
   assert.match(focusSource, /focus-v251-grounded-living-memory-manifestation/)
   assert.match(focusSource, /createFocusStrata, createFocusSurfaceMaps, createFocusGroundIncision/)
-  assert.match(focusSource, /focus-v311-ground-owned-near-black-pressure-void-fissure/)
+  assert.match(focusSource, /focus-v312-ground-owned-missing-ground-pressure-cavities/)
   assert.doesNotMatch(focusSource, /focus-v249-memory-root-cradle/)
   assert.doesNotMatch(focusSource, /new THREE\.IcosahedronGeometry\(|<torusGeometry|<ringGeometry|wireframe/)
   assert.match(focusPolish, /V272 literal-pixel convergence/)
@@ -179,9 +179,10 @@ test('Focus final composition preserves one connected living-memory authority an
   assert.match(focusGeology, /focusLiteralPixelSuccessorV309 = 'v309-localized-dark-rupture-cavities-hairline-connector-ground-owned-no-panel'/)
   assert.match(focusGeology, /focusLiteralPixelSuccessorV310 = 'v310-legible-dark-pressure-cavities-broken-mineral-rims-hairline-connector-no-panel'/)
   assert.match(focusGeology, /focusLiteralPixelSuccessorV311 = 'v311-near-black-asymmetric-pressure-voids-sparse-ground-blended-rims-no-raised-strip'/)
-  assert.match(focusGeology, /focusIncisionAuthority = 'v311-three-near-black-asymmetric-pressure-voids-sparse-ground-blended-rims-hairline-connector'/)
+  assert.match(focusGeology, /focusLiteralPixelSuccessorV312 = 'v312-near-black-missing-ground-cavities-terrain-collapsed-pocket-skin-sparse-one-sided-edge'/)
+  assert.match(focusGeology, /focusIncisionAuthority = 'v312-three-near-black-missing-ground-cavities-terrain-collapsed-skin-hairline-connector'/)
   assert.match(focusGeology, /focusVisualAuthority = 'v295-sanctuary-memory-scar-volume'/)
-  assert.match(focusGeology, /focusCurrentVisualAuthority = 'v311-ground-owned-near-black-pressure-void-fissure-buried-closed-body'/)
+  assert.match(focusGeology, /focusCurrentVisualAuthority = 'v312-ground-owned-missing-ground-pressure-cavities-buried-closed-body'/)
   assert.doesNotMatch(focusGeology, /appendBranch\(/)
   assert.match(focusGeology, /const weathered = new THREE\.Color\(\)\.setRGB/)
   assert.match(focusGeology, /const warm = new THREE\.Color\(\)\.setRGB/)

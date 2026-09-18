@@ -106,6 +106,12 @@ import * as THREE from 'three'
 // near-black void: widen and asymmetrically offset only the dark cavity core, desaturate and
 // sharply sparsify mineral rim exposure, and keep outer disturbance close to sanctuary ground.
 //
+// V312 responds to exact V311 pixels: the warm rim is suppressed, but too much opaque pocket
+// skin still reads as a low folded ridge or mound. Preserve the three local pressure events,
+// hairline connector and exact grade registration while collapsing non-core pocket contrast
+// into the sanctuary palette. The near-black missing-ground cavity must own each pocket, with
+// only sparse one-sided mineral fragments and abrupt asymmetric pinches at its edge.
+//
 // The form must read as memory pressure physically held by place. It must not regress
 // into a crystal crown, boulder, orb, flower, portal, ring, shell/mouth, manta, tent,
 // aircraft, animal, shoe, boat, bowl, helmet, body-part silhouette, smooth blob,
@@ -329,8 +335,9 @@ function createLivingMemoryFold() {
   geometry.userData.focusLiteralPixelSuccessorV309 = 'v309-localized-dark-rupture-cavities-hairline-connector-ground-owned-no-panel'
   geometry.userData.focusLiteralPixelSuccessorV310 = 'v310-legible-dark-pressure-cavities-broken-mineral-rims-hairline-connector-no-panel'
   geometry.userData.focusLiteralPixelSuccessorV311 = 'v311-near-black-asymmetric-pressure-voids-sparse-ground-blended-rims-no-raised-strip'
+  geometry.userData.focusLiteralPixelSuccessorV312 = 'v312-near-black-missing-ground-cavities-terrain-collapsed-pocket-skin-sparse-one-sided-edge'
   geometry.userData.focusVisualAuthority = 'v295-sanctuary-memory-scar-volume'
-  geometry.userData.focusCurrentVisualAuthority = 'v311-ground-owned-near-black-pressure-void-fissure-buried-closed-body'
+  geometry.userData.focusCurrentVisualAuthority = 'v312-ground-owned-missing-ground-pressure-cavities-buried-closed-body'
   return geometry
 }
 
@@ -345,27 +352,29 @@ export function createFocusGroundIncision() {
   const colors: number[] = []
   const uvs: number[] = []
   const indices: number[] = []
-  const groundDisturbance = new THREE.Color().setRGB(.064, .068, .056)
-  const weatheredMineral = new THREE.Color().setRGB(.118, .102, .061)
+  const groundDisturbance = new THREE.Color().setRGB(.118, .126, .088)
+  const weatheredMineral = new THREE.Color().setRGB(.126, .120, .084)
   const innerFissure = new THREE.Color().setRGB(.0008, .0007, .0006)
 
   const pushColor = (lateral: number, sectionPhase: number, pocketStrength: number) => {
     const absLateral = Math.abs(lateral)
-    const cavityCenter = .055 * Math.sin(sectionPhase * .63 + .4) * pocketStrength
-    const coreWidth = .24 + .34 * pocketStrength
+    const cavityCenter = .11 * Math.sin(sectionPhase * .63 + .4) * pocketStrength
+    const coreWidth = .34 + .46 * pocketStrength
     const core = Math.exp(-Math.pow((lateral - cavityCenter) / coreWidth, 2))
     const edge = THREE.MathUtils.smoothstep(absLateral, .56, 1)
-    const rimWindow = Math.max(0, Math.sin(sectionPhase * 2.07 + absLateral * 7.3) - .52)
+    const rimWindow = Math.max(0, Math.sin(sectionPhase * 2.07 + absLateral * 7.3) - .78)
     const brokenRim = Math.exp(-Math.pow((absLateral - (.70 - .06 * pocketStrength)) / .11, 2))
       * pocketStrength
       * rimWindow
+      * (lateral < 0 ? 1 : .18)
     const mineralFleck = edge
       * pocketStrength
       * Math.max(0, Math.sin(sectionPhase * 1.83 + absLateral * 6.1) - .70)
-      * .08
-    const voidMix = THREE.MathUtils.clamp(.08 + .84 * core * (.28 + .72 * pocketStrength), .08, .96)
+      * .035
+    const connectorCore = (1 - pocketStrength) * core
+    const voidMix = THREE.MathUtils.clamp(.015 + .965 * core * (.34 + .66 * pocketStrength) + .48 * connectorCore, .015, .995)
     const color = groundDisturbance.clone()
-      .lerp(weatheredMineral, Math.min(.18, mineralFleck + brokenRim * .16))
+      .lerp(weatheredMineral, Math.min(.055, mineralFleck + brokenRim * .055))
       .lerp(innerFissure, voidMix)
     colors.push(color.r, color.g, color.b)
   }
@@ -440,9 +449,9 @@ export function createFocusGroundIncision() {
   geometry.computeVertexNormals()
   geometry.computeBoundingBox()
   geometry.computeBoundingSphere()
-  geometry.userData.focusIncisionAuthority = 'v311-three-near-black-asymmetric-pressure-voids-sparse-ground-blended-rims-hairline-connector'
+  geometry.userData.focusIncisionAuthority = 'v312-three-near-black-missing-ground-cavities-terrain-collapsed-skin-hairline-connector'
   geometry.userData.focusIncisionTopology = 'zero-thickness-open-pocketed-fissure-skin-over-buried-v295-closed-authority'
-  geometry.userData.focusIncisionRule = 'three-local-near-black-pressure-voids-sparse-ground-blended-rims-hairline-connector-no-raised-strip-no-branches-no-panel-no-shadow-no-emissive'
+  geometry.userData.focusIncisionRule = 'three-local-near-black-missing-ground-cavities-terrain-collapsed-pocket-skin-sparse-one-sided-edge-hairline-connector-no-ridge-no-mound-no-shadow-no-emissive'
   return geometry
 }
 
