@@ -399,12 +399,12 @@ function MemoryAperture({ memory, accent, onActivate }: { memory: SelectedMemory
   // only restrained surface response; geometry, scale, camera and idle position do
   // not pulse. The material stays weathered/mineral so the fold cannot regress to
   // the rejected cyan crystal-crown or white-card readings.
-  return <group position={[FOCUS_MEMORY_WORLD_X, 0, FOCUS_MEMORY_WORLD_Z]} name="focus-memory-aperture" userData={{ artRevision: 'v309-ground-owned-localized-cavity-fissure', hierarchy: 'selected-memory-buried-closed-authority-plus-coplanar-ground-incision', materialAuthority: 'ground-conforming-three-dark-cavity-pockets-hairline-connector-ground-blended-edge-no-emissive-no-panel' }}>
+  return <group position={[FOCUS_MEMORY_WORLD_X, 0, FOCUS_MEMORY_WORLD_Z]} name="focus-memory-aperture" userData={{ artRevision: 'v310-ground-owned-legible-pressure-cavity-fissure', hierarchy: 'selected-memory-buried-closed-authority-plus-coplanar-ground-incision', materialAuthority: 'ground-conforming-three-legible-dark-pressure-cavities-broken-mineral-rims-hairline-connector-no-emissive-no-panel' }}>
     <group scale={[1, 1, 1]} position={[0, 0, 0]} name="focus-v251-grounded-living-memory-manifestation">
       {strata.map((geometry,index) => <mesh key={index} geometry={geometry} castShadow={false} receiveShadow={false} raycast={() => null} name={`focus-authored-living-memory-fold-${index}`}>
         <meshStandardMaterial vertexColors color="#51493d" emissive="#000000" emissiveIntensity={0} roughness={1} metalness={0} side={THREE.DoubleSide} />
       </mesh>)}
-      <mesh geometry={incision} castShadow={false} receiveShadow={false} renderOrder={2} name="focus-v309-ground-owned-cavity-fissure" onClick={(event) => { event.stopPropagation(); if (memory) onActivate() }} onPointerOver={(event) => pointer(event, true)} onPointerOut={(event) => pointer(event, false)}>
+      <mesh geometry={incision} castShadow={false} receiveShadow={false} renderOrder={2} name="focus-v310-ground-owned-pressure-cavity-fissure" onClick={(event) => { event.stopPropagation(); if (memory) onActivate() }} onPointerOver={(event) => pointer(event, true)} onPointerOut={(event) => pointer(event, false)}>
         <meshStandardMaterial vertexColors color={hovered ? '#a69b88' : '#ffffff'} emissive="#000000" emissiveIntensity={0} roughness={1} metalness={0} side={THREE.DoubleSide} depthWrite={false} polygonOffset polygonOffsetFactor={-4} polygonOffsetUnits={-4} />
       </mesh>
     </group>
