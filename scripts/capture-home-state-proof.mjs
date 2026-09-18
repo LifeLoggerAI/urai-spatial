@@ -35,6 +35,8 @@ const receipt = {
   visualAuthority,
 }
 
+const sharedBrowser = await chromium.launch({ headless: true, args: ['--enable-unsafe-swiftshader'] })
+
 async function settleAnimationFrames(page, frameCount) {
   await page.evaluate((frames) => new Promise((resolve) => {
     let completed = 0
@@ -149,8 +151,7 @@ async function waitForHomeReady(page) {
 }
 
 async function capture(state, options = {}) {
-  const browser = await chromium.launch({ headless: true, args: ['--enable-unsafe-swiftshader'] })
-  const context = await browser.newContext({
+  const context = await sharedBrowser.newContext({
     viewport: { width: 1440, height: 900 },
     reducedMotion: options.reducedMotion,
     forcedColors: options.forcedColors,
@@ -221,13 +222,11 @@ async function capture(state, options = {}) {
     receipt.captures.push(record)
     if (!record.passed) receipt.errors.push(record)
     await context.close().catch(() => {})
-    await browser.close().catch(() => {})
   }
 }
 
 async function captureOrbLifecycle({ reducedMotion = 'no-preference' } = {}) {
-  const browser = await chromium.launch({ headless: true, args: ['--enable-unsafe-swiftshader'] })
-  const context = await browser.newContext({ viewport: { width: 1440, height: 900 }, reducedMotion })
+  const context = await sharedBrowser.newContext({ viewport: { width: 1440, height: 900 }, reducedMotion })
   const page = await context.newPage()
   const pageErrors = []
   page.on('pageerror', (error) => pageErrors.push(String(error)))
@@ -393,13 +392,11 @@ async function captureOrbLifecycle({ reducedMotion = 'no-preference' } = {}) {
     receipt.captures.push(record)
     if (!record.passed) receipt.errors.push(record)
     await context.close().catch(() => {})
-    await browser.close().catch(() => {})
   }
 }
 
 async function captureHomeSpatialContinuity({ idSuffix = 'desktop', viewport = { width: 1440, height: 900 }, reducedMotion = 'no-preference', sampleVisual = true } = {}) {
-  const browser = await chromium.launch({ headless: true, args: ['--enable-unsafe-swiftshader'] })
-  const context = await browser.newContext({ viewport, reducedMotion })
+  const context = await sharedBrowser.newContext({ viewport, reducedMotion })
   const page = await context.newPage()
   const pageErrors = []
   page.on('pageerror', (error) => pageErrors.push(String(error)))
@@ -500,7 +497,6 @@ async function captureHomeSpatialContinuity({ idSuffix = 'desktop', viewport = {
     receipt.captures.push(record)
     if (!record.passed) receipt.errors.push(record)
     await context.close().catch(() => {})
-    await browser.close().catch(() => {})
   }
 }
 for (const state of states) await capture(state)
@@ -514,8 +510,7 @@ await captureHomeSpatialContinuity({ idSuffix: 'phone-landscape', viewport: { wi
 await captureHomeSpatialContinuity({ idSuffix: 'tablet-portrait', viewport: { width: 820, height: 1180 }, sampleVisual: false })
 await captureHomeSpatialContinuity({ idSuffix: 'reduced-motion', reducedMotion: 'reduce', sampleVisual: false })
 
-const transitionBrowser = await chromium.launch({ headless: true, args: ['--enable-unsafe-swiftshader'] })
-const transitionContext = await transitionBrowser.newContext({ viewport: { width: 1440, height: 900 } })
+const transitionContext = await sharedBrowser.newContext({ viewport: { width: 1440, height: 900 } })
 const transitionPage = await transitionContext.newPage()
 const transitionErrors = []
 transitionPage.on('pageerror', (error) => transitionErrors.push(String(error)))
@@ -544,11 +539,11 @@ try {
 } finally {
   await transitionContext.setOffline(false).catch(() => {})
   await transitionContext.close().catch(() => {})
-  await transitionBrowser.close().catch(() => {})
   receipt.captures.push(transition)
   if (!transition.passed) receipt.errors.push(transition)
 }
 
 await writeFile(path.join(outputDir, 'receipt.json'), `${JSON.stringify(receipt, null, 2)}\
 `)
+await sharedBrowser.close().catch(() => {})
 if (receipt.errors.length) process.exit(1)
