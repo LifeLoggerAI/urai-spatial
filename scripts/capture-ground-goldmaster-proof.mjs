@@ -54,7 +54,7 @@ try {
 
     await page.goto(`${base}/ground/?environment=${scenario.environment}`, { waitUntil: 'networkidle', timeout: 60_000 })
     const readyRoot = page.locator('[data-testid="urai-ground-lived-world"]').first()
-    await readyRoot.waitFor({ state: 'visible', timeout: 45_000 })
+    await readyRoot.waitFor({ state: 'attached', timeout: 45_000 })
     await page.waitForSelector('.ground-spatial-root canvas', { state: 'visible', timeout: 45_000 })
     try {
       await page.waitForFunction(() => document.querySelector('[data-testid="urai-ground-lived-world"]')?.getAttribute('data-ground-ready') === 'true', null, { timeout: 45_000, polling: 50 })
