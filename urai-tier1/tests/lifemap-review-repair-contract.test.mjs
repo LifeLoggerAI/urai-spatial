@@ -117,10 +117,10 @@ test('Founder proof samples retained WebGL canvas pixels only', () => {
   assert.match(workflow, /lifemap-review-repair-contract\.test\.mjs/)
 })
 
-test('Focus final composition preserves one connected living-memory authority and locks the V315 terrain-owned shallow pressure-cavity sanctuary fissure', () => {
+test('Focus final composition preserves one connected living-memory authority and locks the V316 terrain-owned resolved pressure-cavity sanctuary fissure', () => {
   assert.match(focusSource, /focus-v251-grounded-living-memory-manifestation/)
   assert.match(focusSource, /createFocusStrata, createFocusSurfaceMaps, createFocusGroundIncision/)
-  assert.match(focusSource, /focus-v315-terrain-owned-shallow-pressure-cavity-bottoms/)
+  assert.match(focusSource, /focus-v316-terrain-owned-resolved-pressure-cavity-bottoms/)
   assert.doesNotMatch(focusSource, /focus-v249-memory-root-cradle/)
   assert.doesNotMatch(focusSource, /new THREE\.IcosahedronGeometry\(|<torusGeometry|<ringGeometry|wireframe/)
   assert.match(focusPolish, /V272 literal-pixel convergence/)
@@ -183,10 +183,11 @@ test('Focus final composition preserves one connected living-memory authority an
   assert.match(focusGeology, /focusLiteralPixelSuccessorV313 = 'v313-unlit-missing-ground-cavities-no-lit-facet-ridges-v312-geometry-preserved'/)
   assert.match(focusGeology, /focusLiteralPixelSuccessorV314 = 'v314-core-only-unlit-cavity-footprints-no-filled-outer-pocket-skin'/)
   assert.match(focusGeology, /focusLiteralPixelSuccessorV315 = 'v315-terrain-owned-shallow-pressure-cavity-depth-shared-with-cavity-bottom-skin'/)
+  assert.match(focusGeology, /focusLiteralPixelSuccessorV316 = 'v316-resolved-terrain-basin-sampling-and-depth-with-narrow-cavity-bottom-skin'/)
   assert.match(focusGeology, /export function focusSelectedMemoryCavityDepth/)
-  assert.match(focusGeology, /focusIncisionAuthority = 'v315-unlit-cavity-bottom-three-pressure-cavities-hairline-connector'/)
+  assert.match(focusGeology, /focusIncisionAuthority = 'v316-unlit-narrow-cavity-bottom-three-resolved-terrain-basins-hairline-connector'/)
   assert.match(focusGeology, /focusVisualAuthority = 'v295-sanctuary-memory-scar-volume'/)
-  assert.match(focusGeology, /focusCurrentVisualAuthority = 'v315-terrain-owned-shallow-pressure-cavities-buried-closed-body'/)
+  assert.match(focusGeology, /focusCurrentVisualAuthority = 'v316-terrain-owned-resolved-pressure-cavities-buried-closed-body'/)
   assert.doesNotMatch(focusGeology, /appendBranch\(/)
   assert.match(focusGeology, /const weathered = new THREE\.Color\(\)\.setRGB/)
   assert.match(focusGeology, /const warm = new THREE\.Color\(\)\.setRGB/)
