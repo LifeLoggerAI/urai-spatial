@@ -399,12 +399,12 @@ function MemoryAperture({ memory, accent, onActivate }: { memory: SelectedMemory
   // only restrained surface response; geometry, scale, camera and idle position do
   // not pulse. The material stays weathered/mineral so the fold cannot regress to
   // the rejected cyan crystal-crown or white-card readings.
-  return <group position={[FOCUS_MEMORY_WORLD_X, 0, FOCUS_MEMORY_WORLD_Z]} name="focus-memory-aperture" userData={{ artRevision: 'v313-ground-owned-unlit-missing-ground-pressure-cavities', hierarchy: 'selected-memory-buried-closed-authority-plus-coplanar-ground-incision', materialAuthority: 'unlit-ground-conforming-three-near-black-missing-ground-cavities-hairline-connector-no-lit-facets-no-panel' }}>
+  return <group position={[FOCUS_MEMORY_WORLD_X, 0, FOCUS_MEMORY_WORLD_Z]} name="focus-memory-aperture" userData={{ artRevision: 'v314-ground-owned-core-only-unlit-pressure-cavities', hierarchy: 'selected-memory-buried-closed-authority-plus-coplanar-ground-incision', materialAuthority: 'unlit-ground-conforming-core-only-three-near-black-cavities-hairline-connector-no-filled-outer-skin-no-panel' }}>
     <group scale={[1, 1, 1]} position={[0, 0, 0]} name="focus-v251-grounded-living-memory-manifestation">
       {strata.map((geometry,index) => <mesh key={index} geometry={geometry} castShadow={false} receiveShadow={false} raycast={() => null} name={`focus-authored-living-memory-fold-${index}`}>
         <meshStandardMaterial vertexColors color="#51493d" emissive="#000000" emissiveIntensity={0} roughness={1} metalness={0} side={THREE.DoubleSide} />
       </mesh>)}
-      <mesh geometry={incision} castShadow={false} receiveShadow={false} renderOrder={2} name="focus-v313-ground-owned-unlit-missing-ground-pressure-cavities" onClick={(event) => { event.stopPropagation(); if (memory) onActivate() }} onPointerOver={(event) => pointer(event, true)} onPointerOut={(event) => pointer(event, false)}>
+      <mesh geometry={incision} castShadow={false} receiveShadow={false} renderOrder={2} name="focus-v314-ground-owned-core-only-unlit-pressure-cavities" onClick={(event) => { event.stopPropagation(); if (memory) onActivate() }} onPointerOver={(event) => pointer(event, true)} onPointerOut={(event) => pointer(event, false)}>
         <meshBasicMaterial vertexColors color={hovered ? '#f4f1e8' : '#ffffff'} toneMapped={false} side={THREE.DoubleSide} depthWrite={false} polygonOffset polygonOffsetFactor={-4} polygonOffsetUnits={-4} />
       </mesh>
     </group>
