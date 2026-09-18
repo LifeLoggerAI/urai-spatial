@@ -37,6 +37,20 @@ const receipt = {
 
 const sharedBrowser = await chromium.launch({ headless: true, args: ['--enable-unsafe-swiftshader'] })
 
+const homeProofOnboardingKeys = {
+  completion: 'urai:onboarding:v2:complete',
+  setupComplete: 'urai:onboarding:v3:setup-complete',
+  setupStep: 'urai:onboarding:v3:setup-step',
+}
+
+async function prepareHomeProofContext(context) {
+  await context.addInitScript((keys) => {
+    window.localStorage.setItem(keys.completion, '1')
+    window.localStorage.setItem(keys.setupComplete, '1')
+    window.localStorage.removeItem(keys.setupStep)
+  }, homeProofOnboardingKeys)
+}
+
 async function settleAnimationFrames(page, frameCount) {
   await page.evaluate((frames) => new Promise((resolve) => {
     let completed = 0
@@ -156,6 +170,7 @@ async function capture(state, options = {}) {
     reducedMotion: options.reducedMotion,
     forcedColors: options.forcedColors,
   })
+  await prepareHomeProofContext(context)
   const page = await context.newPage()
   const pageErrors = []
   page.on('pageerror', (error) => pageErrors.push(String(error)))
@@ -227,6 +242,7 @@ async function capture(state, options = {}) {
 
 async function captureOrbLifecycle({ reducedMotion = 'no-preference' } = {}) {
   const context = await sharedBrowser.newContext({ viewport: { width: 1440, height: 900 }, reducedMotion })
+  await prepareHomeProofContext(context)
   const page = await context.newPage()
   const pageErrors = []
   page.on('pageerror', (error) => pageErrors.push(String(error)))
@@ -397,6 +413,7 @@ async function captureOrbLifecycle({ reducedMotion = 'no-preference' } = {}) {
 
 async function captureHomeSpatialContinuity({ idSuffix = 'desktop', viewport = { width: 1440, height: 900 }, reducedMotion = 'no-preference', sampleVisual = true } = {}) {
   const context = await sharedBrowser.newContext({ viewport, reducedMotion })
+  await prepareHomeProofContext(context)
   const page = await context.newPage()
   const pageErrors = []
   page.on('pageerror', (error) => pageErrors.push(String(error)))
@@ -511,6 +528,7 @@ await captureHomeSpatialContinuity({ idSuffix: 'tablet-portrait', viewport: { wi
 await captureHomeSpatialContinuity({ idSuffix: 'reduced-motion', reducedMotion: 'reduce', sampleVisual: false })
 
 const transitionContext = await sharedBrowser.newContext({ viewport: { width: 1440, height: 900 } })
+await prepareHomeProofContext(transitionContext)
 const transitionPage = await transitionContext.newPage()
 const transitionErrors = []
 transitionPage.on('pageerror', (error) => transitionErrors.push(String(error)))
