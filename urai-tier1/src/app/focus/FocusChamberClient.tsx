@@ -6,7 +6,7 @@ import { Suspense, useCallback, useEffect, useMemo, useRef, useState, type CSSPr
 import * as THREE from 'three'
 import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib'
 import { assetCssStack, focusAssets } from '@/spatial/assets/uraiAssets'
-import { FOCUS_MEMORY_WORLD_X, FOCUS_MEMORY_WORLD_Z, createFocusStrata, createFocusSurfaceMaps, createFocusGroundIncision, focusGroundHeight } from './focusMemoryGeology'
+import { FOCUS_MEMORY_WORLD_X, FOCUS_MEMORY_WORLD_Z, createFocusStrata, createFocusSurfaceMaps, createFocusGroundIncision, focusGroundHeight, focusSelectedMemoryCavityDepth } from './focusMemoryGeology'
 import { markFirstSpatialFrame, useAdaptiveSpatialQuality, type SpatialQualityProfile } from '@/spatial/performance/useAdaptiveSpatialQuality'
 import { useSelectedMemory } from '@/spatial/memory/useSelectedMemory'
 import type { SelectedMemory } from '@/spatial/memory/selectedMemoryContract'
@@ -222,7 +222,7 @@ function AuthoredFocusChamber() {
   return <group name="focus-authored-physical-chamber" userData={{ runtimeAsset: FOCUS_CHAMBER_MODEL, visualAuthority: 'authored-focus-chamber' }}><primitive object={model} /></group>
 }
 
-function FocusSanctuaryGround({ accent }: { accent: string }) {
+function FocusSanctuaryGround({ accent, selectedMemoryActive }: { accent: string; selectedMemoryActive: boolean }) {
   const geometry = useMemo(() => {
     const columns = 96
     const rows = 108
@@ -235,7 +235,8 @@ function FocusSanctuaryGround({ accent }: { accent: string }) {
       for (let column = 0; column <= columns; column += 1) {
         const u = column / columns
         const x = -15 + u * 30
-        positions.push(x, focusGroundHeight(x, z), z)
+        const cavityDepth = selectedMemoryActive ? focusSelectedMemoryCavityDepth(x, z) : 0
+        positions.push(x, focusGroundHeight(x, z) + cavityDepth, z)
         uvs.push(u * 6, v * 6)
       }
     }
@@ -252,10 +253,10 @@ function FocusSanctuaryGround({ accent }: { accent: string }) {
     result.setIndex(indices)
     result.computeVertexNormals()
     return result
-  }, [])
+  }, [selectedMemoryActive])
   const maps = useMemo(createFocusSurfaceMaps, [])
   useEffect(() => () => { geometry.dispose(); maps.forEach(texture => texture.dispose()) }, [geometry, maps])
-  return <mesh name="focus-v214-continuous-eroded-memory-ground" geometry={geometry} receiveShadow>
+  return <mesh name={selectedMemoryActive ? "focus-v315-terrain-owned-selected-memory-cavities" : "focus-v214-continuous-eroded-memory-ground"} geometry={geometry} receiveShadow userData={{ selectedMemoryCavityAuthority: selectedMemoryActive ? "v315-shared-shallow-terrain-depression" : "neutral-ground-no-memory-rupture" }}>
     <meshStandardMaterial map={maps[0]} normalMap={maps[1]} roughnessMap={maps[2]} normalScale={new THREE.Vector2(.6,.6)} color="#9b967e" roughness={0.94} metalness={0} />
   </mesh>
 }
@@ -354,9 +355,9 @@ function FocusStoneBank({ variant, side }: { variant: '01' | '02'; side: -1 | 1 
   return <primitive object={model} name={`focus-scanned-stone-bank-${variant}`} position={[side * 5.8, -1.65, side < 0 ? -6.8 : -8.5]} rotation={[0, side < 0 ? .4 : -.6, 0]} scale={side < 0 ? 1.18 : 1.3} />
 }
 
-function ChamberArchitecture({ accent, light }: { accent: string; light: string; reducedMotion: boolean }) {
+function ChamberArchitecture({ accent, light, selectedMemoryActive }: { accent: string; light: string; reducedMotion: boolean; selectedMemoryActive: boolean }) {
   return <group name="focus-v249-authored-depth-observatory-light" userData={{ visualRepair: 'authored-chamber-dominant-procedural-vault-retired', composition: 'bounded-asymmetric-light-and-authored-floor' }}>
-    <FocusSanctuaryGround accent={accent} />
+    <FocusSanctuaryGround accent={accent} selectedMemoryActive={selectedMemoryActive} />
     <group visible={false} name="focus-retired-procedural-vault" userData={{ retainedFor: 'source-contract-only', visualOwner: false }}><FocusVault /></group>
     <Suspense fallback={null}><FocusStoneBank variant="01" side={-1} /><FocusStoneBank variant="02" side={1} /></Suspense>
     <pointLight position={[-3.8, 1.6, -4.4]} color={accent} intensity={0.30} distance={7.5} decay={2} />
@@ -399,12 +400,12 @@ function MemoryAperture({ memory, accent, onActivate }: { memory: SelectedMemory
   // only restrained surface response; geometry, scale, camera and idle position do
   // not pulse. The material stays weathered/mineral so the fold cannot regress to
   // the rejected cyan crystal-crown or white-card readings.
-  return <group position={[FOCUS_MEMORY_WORLD_X, 0, FOCUS_MEMORY_WORLD_Z]} name="focus-memory-aperture" userData={{ artRevision: 'v314-ground-owned-core-only-unlit-pressure-cavities', hierarchy: 'selected-memory-buried-closed-authority-plus-coplanar-ground-incision', materialAuthority: 'unlit-ground-conforming-core-only-three-near-black-cavities-hairline-connector-no-filled-outer-skin-no-panel' }}>
+  return <group position={[FOCUS_MEMORY_WORLD_X, 0, FOCUS_MEMORY_WORLD_Z]} name="focus-memory-aperture" userData={{ artRevision: 'v315-terrain-owned-shallow-pressure-cavities', hierarchy: 'selected-memory-buried-closed-authority-plus-terrain-depression-plus-cavity-bottom-incision', materialAuthority: 'terrain-owned-shallow-three-cavity-depth-plus-unlit-near-black-cavity-bottoms-hairline-connector-no-panel' }}>
     <group scale={[1, 1, 1]} position={[0, 0, 0]} name="focus-v251-grounded-living-memory-manifestation">
       {strata.map((geometry,index) => <mesh key={index} geometry={geometry} castShadow={false} receiveShadow={false} raycast={() => null} name={`focus-authored-living-memory-fold-${index}`}>
         <meshStandardMaterial vertexColors color="#51493d" emissive="#000000" emissiveIntensity={0} roughness={1} metalness={0} side={THREE.DoubleSide} />
       </mesh>)}
-      <mesh geometry={incision} castShadow={false} receiveShadow={false} renderOrder={2} name="focus-v314-ground-owned-core-only-unlit-pressure-cavities" onClick={(event) => { event.stopPropagation(); if (memory) onActivate() }} onPointerOver={(event) => pointer(event, true)} onPointerOut={(event) => pointer(event, false)}>
+      <mesh geometry={incision} castShadow={false} receiveShadow={false} renderOrder={2} name="focus-v315-terrain-owned-shallow-pressure-cavity-bottoms" onClick={(event) => { event.stopPropagation(); if (memory) onActivate() }} onPointerOver={(event) => pointer(event, true)} onPointerOut={(event) => pointer(event, false)}>
         <meshBasicMaterial vertexColors color={hovered ? '#f4f1e8' : '#ffffff'} toneMapped={false} side={THREE.DoubleSide} depthWrite={false} polygonOffset polygonOffsetFactor={-4} polygonOffsetUnits={-4} />
       </mesh>
     </group>
@@ -427,7 +428,7 @@ function FocusScene({ memory, profile, recenterSignal, onActivate, controls, onW
     <pointLight position={[2.8, 1.8, -3.8]} intensity={2.2} color="#d3dcd6" distance={9.2} decay={2} />
     <spotLight position={[-2.6, 6.4, 2.6]} target-position={[0, -.06, -1.52]} color={light} intensity={.88} distance={19} angle={.36} penumbra={.88} castShadow={profile.shadows} />
     <Suspense fallback={null}><AuthoredFocusChamber /></Suspense>
-    <ChamberArchitecture accent={accent} light={light} reducedMotion={profile.reducedMotion} />
+    <ChamberArchitecture accent={accent} light={light} reducedMotion={profile.reducedMotion} selectedMemoryActive={Boolean(memory)} />
     <MemoryTraces memory={memory} accent={accent} reducedMotion={profile.reducedMotion} />
     <MemoryAperture memory={memory} accent={accent} light={light} reducedMotion={profile.reducedMotion} onActivate={onActivate} />
     <OrbitControls ref={controls} makeDefault enableDamping={!profile.reducedMotion} dampingFactor={0.07} enablePan={false} enableZoom minDistance={2.4} maxDistance={10.5} zoomSpeed={0.55} rotateSpeed={0.32} minPolarAngle={0.58} maxPolarAngle={1.9} target={DEFAULT_TARGET} />
