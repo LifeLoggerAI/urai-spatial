@@ -710,7 +710,7 @@ export default function GroundSpatialWorldClean() {
       <a href="/privacy-controls">Privacy</a>
     </nav>
     <div className="sr-only" role="status" aria-live="polite">{ready ? `${profile.label} is ready for first-person exploration. UrAi remains available through semantic voice and accessible controls; no follower Orb is rendered.` : "Ground is forming."}</div>
-    {isCoarse ? <GroundAnalogPad input={input} /> : null}
+    <GroundAnalogPad input={input} />
     <details className="ground-accessible-movement" data-movement-ui="true"><summary>Movement controls</summary><MobileMovementPad input={input} label="Ground first-person movement controls" /></details>
     <span className="sr-only" data-testid="urai-ground-walkable-surface">The visible Ground terrain is the traversal and click-to-move surface.</span>
 
@@ -722,7 +722,7 @@ export default function GroundSpatialWorldClean() {
       .ground-place-access{position:absolute;z-index:19;left:max(16px,env(safe-area-inset-left));top:max(16px,env(safe-area-inset-top));display:flex;gap:8px;opacity:.02;transition:opacity .2s ease}
       .ground-place-access:focus-within{opacity:1}
       .ground-place-access a{display:grid;place-items:center;min-width:48px;min-height:48px;padding:0 12px;border:1px solid rgba(226,248,247,.18);border-radius:999px;background:rgba(5,20,24,.72);color:#f4fbfa;text-decoration:none;font:700 10px/1 system-ui}
-      .ground-analog-pad{position:absolute;z-index:24;left:max(18px,env(safe-area-inset-left));bottom:max(88px,calc(env(safe-area-inset-bottom) + 76px));width:100px;height:100px;border:1px solid rgba(233,248,244,.16);border-radius:50%;background:rgba(5,17,20,.18);backdrop-filter:blur(8px);touch-action:none;opacity:.24;transition:opacity .14s ease}
+      .ground-analog-pad{display:none;position:absolute;z-index:24;left:max(18px,env(safe-area-inset-left));bottom:max(88px,calc(env(safe-area-inset-bottom) + 76px));width:100px;height:100px;border:1px solid rgba(233,248,244,.16);border-radius:50%;background:rgba(5,17,20,.18);backdrop-filter:blur(8px);touch-action:none;opacity:.24;transition:opacity .14s ease}\n      @media (pointer:coarse),(max-width:760px){.ground-analog-pad{display:block}}
       .ground-analog-pad[data-active='true']{opacity:.62}
       .ground-analog-pad span{position:absolute;left:50%;top:50%;width:34px;height:34px;margin:-17px;border:1px solid rgba(244,252,249,.26);border-radius:50%;background:rgba(223,242,233,.13);pointer-events:none}
       .ground-accessible-movement{position:absolute;z-index:25;left:max(12px,env(safe-area-inset-left));bottom:max(12px,env(safe-area-inset-bottom));max-width:190px;color:#fff;font:700 10px/1 system-ui}
