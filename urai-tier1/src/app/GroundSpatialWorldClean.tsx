@@ -90,6 +90,9 @@ function buildTerrainGeometry(profile: EnvironmentProfile) {
   const low = new THREE.Color(profile.groundDeep);
   const mid = new THREE.Color(profile.ground);
   const high = new THREE.Color(profile.accent);
+  const naturalSoil = new THREE.Color(profile.id === "woodland" ? "#292820" : "#3f4331");
+  const naturalMoss = new THREE.Color(profile.id === "woodland" ? "#42553b" : "#59694a");
+  const naturalProfile = profile.id === "temperate" || profile.id === "woodland";
   for (let index = 0; index < position.count; index += 1) {
     const x = position.getX(index);
     const z = position.getZ(index);
@@ -97,7 +100,13 @@ function buildTerrainGeometry(profile: EnvironmentProfile) {
     position.setY(index, y);
     const mineral = 0.5 + 0.5 * Math.sin(x * 0.29 + z * 0.17) * Math.cos(x * 0.11 - z * 0.23);
     const wear = Math.exp(-Math.pow(x - Math.sin(z * 0.09) * 1.1, 2) / 5.5);
-    const color = low.clone().lerp(mid, 0.48 + mineral * 0.28).lerp(high, Math.max(0, y) * 0.11 + wear * 0.045);
+    const broadPatch = 0.5 + 0.5 * Math.sin(x * 0.17 + z * 0.13 + Math.sin(z * 0.07) * 1.4);
+    const finePatch = 0.5 + 0.5 * Math.sin(x * 0.91 - z * 0.73) * Math.cos(x * 0.37 + z * 0.49);
+    const color = naturalProfile
+      ? naturalSoil.clone()
+          .lerp(naturalMoss, THREE.MathUtils.clamp(0.18 + broadPatch * 0.48 + finePatch * 0.14 - wear * 0.12, 0.08, 0.78))
+          .lerp(high, Math.max(0, y) * 0.045 + wear * 0.025)
+      : low.clone().lerp(mid, 0.48 + mineral * 0.28).lerp(high, Math.max(0, y) * 0.11 + wear * 0.045);
     colors[index * 3] = color.r;
     colors[index * 3 + 1] = color.g;
     colors[index * 3 + 2] = color.b;
@@ -113,6 +122,7 @@ function buildTerrainGeometry(profile: EnvironmentProfile) {
 
 function TerrainMaterial({ profile }: { profile: EnvironmentProfile }) {
   const [albedo, normal, arm] = useTexture([TERRAIN_ALBEDO, TERRAIN_NORMAL, TERRAIN_ARM]);
+  const naturalProfile = profile.id === "temperate" || profile.id === "woodland";
   useMemo(() => {
     albedo.colorSpace = THREE.SRGBColorSpace;
     for (const texture of [albedo, normal, arm]) {
@@ -125,17 +135,17 @@ function TerrainMaterial({ profile }: { profile: EnvironmentProfile }) {
     return null;
   }, [albedo, arm, normal, profile]);
   return <meshStandardMaterial
-    map={albedo}
-    normalMap={normal}
-    normalScale={new THREE.Vector2(profile.id === "urban" ? 0.34 : 0.62, profile.id === "urban" ? 0.34 : 0.62)}
-    aoMap={arm}
-    aoMapIntensity={0.72}
-    roughnessMap={arm}
-    roughness={profile.roughness}
-    metalnessMap={arm}
+    map={naturalProfile ? null : albedo}
+    normalMap={naturalProfile ? null : normal}
+    normalScale={new THREE.Vector2(profile.id === "urban" ? 0.34 : naturalProfile ? 0.18 : 0.62, profile.id === "urban" ? 0.34 : naturalProfile ? 0.18 : 0.62)}
+    aoMap={naturalProfile ? null : arm}
+    aoMapIntensity={naturalProfile ? 0 : 0.72}
+    roughnessMap={naturalProfile ? null : arm}
+    roughness={naturalProfile ? 0.99 : profile.roughness}
+    metalnessMap={naturalProfile ? null : arm}
     metalness={profile.id === "urban" ? 0.02 : 0.005}
     vertexColors
-    envMapIntensity={0.42}
+    envMapIntensity={naturalProfile ? 0.24 : 0.42}
   />;
 }
 
@@ -671,7 +681,7 @@ export default function GroundSpatialWorldClean() {
     data-ground-visual-owner="physical-lived-world"
     data-ground-runtime-owner="first-person-lived-world"
     data-ground-visual-revision="ground-lived-world-v2-canon-lock"
-    data-ground-art-revision="ground-natural-canopy-v3-authored-ridge-v3"
+    data-ground-art-revision="ground-natural-surface-v4-authored-canopy-v4-ridge-v3"
     data-ground-exploration="first-person-no-visible-body"
     data-ground-camera="eye-level-terrain-following-no-authored-bob"
     data-ground-eye-height={GROUND_EYE_HEIGHT_M}
