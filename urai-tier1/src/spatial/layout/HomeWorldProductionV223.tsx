@@ -13,6 +13,7 @@ import { ORB_SPEECH_CLOCK_EVENT, type OrbSpeechClockDetail } from '@/spatial/orb
 import { requestUraiWorldOrbOpen, requestUraiWorldTravel } from '@/spatial/world/worldEvents'
 import { AvatarSelfView, type AvatarSelfViewSection } from '@/spatial/home/AvatarSelfView'
 import { HomeEmbodiedAvatar, HOME_AVATAR_MODEL, type HomeAvatarPresentationState } from '@/spatial/home/HomeEmbodiedAvatar'
+import { URAI_HOME_AVATAR_ACTIVATE_EVENT } from '@/spatial/home/homeSemanticEvents'
 import { useHomeExperienceController } from '@/spatial/home/useHomeExperienceController'
 import type { HomeOriginSnapshot, HomeStableState, HomeTransitionState } from '@/spatial/home/homeExperienceState'
 import { height } from './HomeWorldProductionV223Geometry'
@@ -733,6 +734,11 @@ export function HomeWorldProductionV223({ onOrbOpen = requestUraiWorldOrbOpen, w
     if (transition !== 'none' || homeState.inputLocked || homeState.stableState !== 'HOME_PRESENTATION') return
     homeApi.activateAvatar()
   }, [homeApi, homeState.inputLocked, homeState.stableState, transition])
+  useEffect(() => {
+    const activateFromSemanticControl = () => activateAvatar()
+    window.addEventListener(URAI_HOME_AVATAR_ACTIVATE_EVENT, activateFromSemanticControl)
+    return () => window.removeEventListener(URAI_HOME_AVATAR_ACTIVATE_EVENT, activateFromSemanticControl)
+  }, [activateAvatar])
   const openOrb = useCallback(() => {
     if (transition !== 'none' || homeState.inputLocked) return
     homeApi.activateOrb()

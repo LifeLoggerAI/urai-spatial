@@ -7,6 +7,8 @@ import { fileURLToPath } from 'node:url'
 const here = path.dirname(fileURLToPath(import.meta.url))
 const root = path.resolve(here, '..')
 const source = fs.readFileSync(path.join(root, 'src/spatial/home/homeExperienceState.ts'), 'utf8')
+const runtimeSource = fs.readFileSync(path.join(root, 'src/spatial/layout/HomeWorldProductionV223.tsx'), 'utf8')
+const semanticEventSource = fs.readFileSync(path.join(root, 'src/spatial/home/homeSemanticEvents.ts'), 'utf8')
 
 const mustContain = (marker) => assert.equal(source.includes(marker), true, `missing ${marker}`)
 
@@ -89,3 +91,12 @@ test('return frame persistence is session-bounded and validates full origin shap
   assert.match(source, /parsed\.origin\.capturedAt/)
   assert.match(source, /environment\.environmentRevision/)
 })
+
+test('semantic Enter first-person Home control is wired to the authoritative V223 embodiment controller', () => {
+  assert.match(semanticEventSource, /URAI_HOME_AVATAR_ACTIVATE_EVENT = 'urai:home-avatar-activate'/)
+  assert.match(runtimeSource, /import \{ URAI_HOME_AVATAR_ACTIVATE_EVENT \} from '@\/spatial\/home\/homeSemanticEvents'/)
+  assert.match(runtimeSource, /window\.addEventListener\(URAI_HOME_AVATAR_ACTIVATE_EVENT, activateFromSemanticControl\)/)
+  assert.match(runtimeSource, /const activateFromSemanticControl = \(\) => activateAvatar\(\)/)
+  assert.match(runtimeSource, /window\.removeEventListener\(URAI_HOME_AVATAR_ACTIVATE_EVENT, activateFromSemanticControl\)/)
+})
+
