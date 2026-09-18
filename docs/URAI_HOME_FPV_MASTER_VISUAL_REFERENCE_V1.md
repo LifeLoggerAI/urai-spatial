@@ -189,21 +189,21 @@ Therefore:
 
 ## Personal Emotional Weather
 
-`CURRENT_STATE_MODEL / ACTIVE_HOME_ATMOSPHERE_BINDING_UNPROVEN / CURRENT_CANDIDATE_REFERENCE`
+`CURRENT_STATE_MODEL / ACTIVE_HOME_ATMOSPHERE_BINDING_SOURCE_CONVERGED / CURRENT_CANDIDATE_REFERENCE`
 
-The current state/signal authority exists, including uncertainty-aware/fail-closed modes and weather-tone semantics. Current Home proof can expose a clearly disclosed safe synthetic personal-weather review fixture, but current source reconciliation has not yet proven that the active canonical Home atmosphere owner visibly consumes that state end to end.
+The current state/signal authority exists, including uncertainty-aware/fail-closed modes and weather-tone semantics. Current #1237 source now binds that model directly into the canonical V223 Home atmospheric owner: `clear → calm`, `soft → reflective`, `active → energized`, `heavy → heavy`, `recovering → hopeful`, and `forming → uncertain`. The world exposes the source tone, mapped atmosphere, scene mode, loading state, and disclosed-synthetic-review flag for deterministic proof.
 
 Private Personal Emotional Weather must remain distinct from ordinary meteorological weather and the Global Emotional Field and must never imply diagnosis.
 
 Required next boundary before visual promotion:
 
-- bind permitted personal-weather state into the active canonical Home atmosphere owner without inventing private memories or diagnoses;
+- preserve the new source binding under exact-head unit/type/build proof;
 - preserve the same geography across weather states;
 - capture desktop/mobile/reduced-motion/reduced-stimulation/fallback state pixels;
 - label synthetic review fixtures explicitly as not user data;
 - literally inspect and accept the resulting same-world grammar.
 
-Concept imagery remains reference-only until that runtime binding and proof are earned.
+Concept imagery remains reference-only until exact-head runtime proof and literal-pixel acceptance are earned.
 
 ## Candidate 16-frame reference package
 
@@ -219,7 +219,7 @@ These files are candidate production references and must all inherit `URAI_HOME_
 8. `URAI_HOME_FPV_GROUND_08` — terrain-owned descent relationship.
 9. `URAI_HOME_FPV_GEF_EARTH_09` — current fail-closed Global Emotional Field Earth runtime candidate; not visual Gold Master until exact-head pixels are accepted.
 10. `URAI_HOME_FPV_NIGHT_10` — same geography at night.
-11. `URAI_HOME_FPV_PERSONAL_WEATHER_11` — Personal Emotional Weather candidate; state authority exists, but canonical Home atmosphere binding and literal acceptance remain open.
+11. `URAI_HOME_FPV_PERSONAL_WEATHER_11` — Personal Emotional Weather candidate; state authority and canonical Home atmosphere source binding are converged, while literal responsive/reduced-state acceptance remains open.
 12. `URAI_HOME_FPV_REDUCED_STIM_12` — same geography, reduced stimulation.
 13. `URAI_HOME_FPV_CONTEXT_UI_13` — contextual UI without dashboard takeover.
 14. `URAI_HOME_FPV_PASSPORT_14` — physical Passport candidate in FP Home.
@@ -422,6 +422,6 @@ Reduced-motion/constrained rendering may lower cadence and macro motion. Degrada
 
 **NO-GO / NOT GOLD MASTER.**
 
-Current Home presentation, embodiment, FP Home, Orb, Sky, Ground transition ownership, physical Passport, and fail-closed Global Emotional Field Earth are source/runtime candidates on #1237, but literal current-head pixels and inspection remain required. Personal Emotional Weather has a current state model but still lacks proven end-to-end binding into the active canonical Home atmosphere. Avatar final likeness/component references and other open VGM rows remain incomplete at their separately recorded boundaries.
+Current Home presentation, embodiment, FP Home, Orb, Sky, Ground transition ownership, physical Passport, and fail-closed Global Emotional Field Earth are source/runtime candidates on #1237, but literal current-head pixels and inspection remain required. Personal Emotional Weather has a current state model and source-converged binding into the active canonical Home atmosphere, but its fresh exact-head responsive/reduced-state literal visual acceptance remains open. Avatar final likeness/component references and other open VGM rows remain incomplete at their separately recorded boundaries.
 
 This document is complete as a **candidate reference contract**. It becomes visual authority only through the governing VGM manifest, exact-head runtime proof, literal-pixel acceptance, accessibility/performance/privacy/security acceptance, required independent review/governance, protected merge/deploy, deployed-SHA readback, live verification, and rollback/recovery evidence.
