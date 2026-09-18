@@ -25,9 +25,9 @@ test('home telemetry synchronizes from mutations and input without perpetual doc
   assert.doesNotMatch(telemetryBridge, /const synchronize = \(\) =>/)
 })
 
-test('Focus focal authority is the V310 legible pressure-cavity ground-owned fissure continuation of the V272 single connected living-memory fold, not rejected lamellae, shards, sphere, slab, twig, leaf, or portable focal body', () => {
+test('Focus focal authority is the V311 near-black pressure-void ground-owned fissure continuation of the V272 single connected living-memory fold, not rejected lamellae, shards, sphere, slab, twig, leaf, or portable focal body', () => {
   assert.match(focus, /createFocusStrata, createFocusSurfaceMaps, createFocusGroundIncision/)
-  assert.match(focus, /focus-v310-ground-owned-pressure-cavity-fissure/)
+  assert.match(focus, /focus-v311-ground-owned-near-black-pressure-void-fissure/)
   assert.match(focus, /polygonOffsetFactor=\{-4\}/)
   assert.match(focus, /focus-v251-grounded-living-memory-manifestation/)
   assert.match(geology, /v272-single-connected-living-memory-fold/)
@@ -37,7 +37,9 @@ test('Focus focal authority is the V310 legible pressure-cavity ground-owned fis
   assert.match(geology, /v295-sanctuary-memory-scar-volume/)
   assert.match(geology, /v299-ground-grade-dark-mineral-fissure-readable-footprint-warm-broken-lip-no-blue-object/)
   assert.match(geology, /focusLiteralPixelSuccessorV309 = 'v309-localized-dark-rupture-cavities-hairline-connector-ground-owned-no-panel'/)
-  assert.match(geology, /v310-ground-owned-pressure-cavity-fissure-buried-closed-body/)
+  assert.match(geology, /focusLiteralPixelSuccessorV310 = 'v310-legible-dark-pressure-cavities-broken-mineral-rims-hairline-connector-no-panel'/)
+  assert.match(geology, /focusLiteralPixelSuccessorV311 = 'v311-near-black-asymmetric-pressure-voids-sparse-ground-blended-rims-no-raised-strip'/)
+  assert.match(geology, /v311-ground-owned-near-black-pressure-void-fissure-buried-closed-body/)
   assert.doesNotMatch(geology, /v269-living-luminous-memory-lamella/)
   assert.doesNotMatch(geology, /v271-interlocked-volumetric-memory-facet/)
   assert.doesNotMatch(geology, /focusCurrentVisualAuthority = 'v305-ground-owned-jagged-fissure-buried-closed-body'/)

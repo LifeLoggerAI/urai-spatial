@@ -18,14 +18,37 @@ const scenarios = [
 ]
 
 await mkdir(outDir, { recursive: true })
-const browser = await chromium.launch({ headless: true, args: ['--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'] })
 const captures = []
 const errors = []
+let activeScenario = 'initializing'
+let activePhase = 'launch-browser'
+const watchdogMs = Number.parseInt(process.env.URAI_GROUND_PROOF_WATCHDOG_MS || '', 10) || 45 * 60 * 1000
+const watchdog = setTimeout(async () => {
+  const message = `Ground proof watchdog expired in scenario=${activeScenario} phase=${activePhase}`
+  const watchdogReceipt = {
+    schema: 'urai-ground-goldmaster-proof-2',
+    exactHead,
+    capturedAt: new Date().toISOString(),
+    scenarios,
+    captures,
+    errors: [...errors, message],
+    watchdog: { activeScenario, activePhase, watchdogMs },
+  }
+  await writeFile(path.join(outDir, 'receipt.json'), `${JSON.stringify(watchdogReceipt, null, 2)}\n`, 'utf8').catch(() => undefined)
+  await writeFile(path.join(outDir, 'watchdog.json'), `${JSON.stringify(watchdogReceipt.watchdog, null, 2)}\n`, 'utf8').catch(() => undefined)
+  console.error(message)
+  process.exit(1)
+}, watchdogMs)
+const browser = await chromium.launch({ headless: true, args: ['--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'] })
 
 async function capture(page, scenario, state) {
   const file = `ground-${scenario.id}-${state}.png`
-  await page.screenshot({ path: path.join(outDir, file), fullPage: false })
+  activeScenario = scenario.id
+  activePhase = `screenshot:${state}`
+  console.log(`[ground-proof] scenario=${activeScenario} phase=${activePhase} start`)
+  await page.screenshot({ path: path.join(outDir, file), fullPage: false, animations: 'disabled', caret: 'hide', timeout: 90_000 })
   captures.push({ scenario: scenario.id, environment: scenario.environment, reducedMotion: scenario.reducedMotion, state, file })
+  console.log(`[ground-proof] scenario=${activeScenario} phase=${activePhase} complete`)
 }
 
 async function dragLook(page, canvasBox, dx, dy) {
@@ -40,6 +63,9 @@ async function dragLook(page, canvasBox, dx, dy) {
 
 try {
   for (const scenario of scenarios) {
+    activeScenario = scenario.id
+    activePhase = 'create-context'
+    console.log(`[ground-proof] scenario=${activeScenario} phase=${activePhase}`)
     const context = await browser.newContext({
       viewport: { width: scenario.width, height: scenario.height },
       isMobile: scenario.mobile,
@@ -48,11 +74,16 @@ try {
       colorScheme: 'dark',
     })
     const page = await context.newPage()
+    page.setDefaultTimeout(45_000)
+    page.setDefaultNavigationTimeout(60_000)
     const pageErrors = []
     page.on('pageerror', (error) => pageErrors.push(String(error)))
     page.on('console', (message) => { if (message.type() === 'error') pageErrors.push(`console: ${message.text()}`) })
 
+    activePhase = 'navigate'
+    console.log(`[ground-proof] scenario=${activeScenario} phase=${activePhase}`)
     await page.goto(`${base}/ground/?environment=${scenario.environment}`, { waitUntil: 'networkidle', timeout: 60_000 })
+    activePhase = 'wait-ready-root'
     const readyRoot = page.locator('[data-testid="urai-ground-lived-world"]').first()
     try {
       await readyRoot.waitFor({ state: 'attached', timeout: 45_000 })
@@ -81,6 +112,7 @@ try {
     }
     await page.waitForTimeout(800)
 
+    activePhase = 'read-contract'
     const root = page.locator('[data-testid="urai-ground-lived-world"]')
     const contract = await root.evaluate((node) => ({
       visualOwner: node.getAttribute('data-ground-visual-owner'),
@@ -153,10 +185,19 @@ try {
 
     captures[captures.length - 1].contract = contract
     errors.push(...pageErrors.map((error) => `${scenario.id}: ${error}`))
+    activePhase = 'context-close'
     await context.close()
+    activePhase = 'scenario-complete'
+    console.log(`[ground-proof] scenario=${activeScenario} phase=${activePhase}`)
   }
+} catch (error) {
+  const message = `${activeScenario}:${activePhase}: ${String(error)}`
+  errors.push(message)
+  console.error(`[ground-proof] ${message}`)
 } finally {
+  activePhase = 'browser-close'
   await browser.close()
+  clearTimeout(watchdog)
 }
 
 const required = scenarios.flatMap((scenario) => scenario.mobile

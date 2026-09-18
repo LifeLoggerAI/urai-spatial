@@ -87,7 +87,8 @@ jobs:
             exit 1
           fi
           grep -Fq 'home-visible-user-avatar' "$home"
-          grep -Fq 'home-gold-companion' "$home"
+          grep -Fq 'home-living-memory-orb' "$home"
+          grep -Fq 'data-home-orb-runtime-asset={ORB_MODEL}' "$home"
           grep -Fq 'RetireLegacyHomeHotspots' "$home"
           grep -Fq "data-home-ground-entry=\"physical-world-surface\"" "$home"
           grep -Fq "data-home-life-map-entry=\"visible-sky-broad-interaction\"" "$home"
