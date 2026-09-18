@@ -67,6 +67,11 @@ import * as THREE from 'three'
 // tighter dark core must read as broken earth without introducing raised lip ownership,
 // shadow ownership, emissive glow or any portable-object silhouette.
 //
+// V306 responds to retained V305 pixels: the wider fissure has stronger terrain ownership,
+// but a single uninterrupted path can still read as a drawn cable or seam. V306 breaks the
+// footprint with attached microbranches, tapered terminals and sparse weathered edge rhythm
+// while keeping every visible vertex coplanar with the sanctuary and the V295 closed body buried.
+//
 // The form must read as memory pressure physically held by place. It must not regress
 // into a crystal crown, boulder, orb, flower, portal, ring, shell/mouth, manta, tent,
 // aircraft, animal, shoe, boat, bowl, helmet, body-part silhouette, smooth blob,
