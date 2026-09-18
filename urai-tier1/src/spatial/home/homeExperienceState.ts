@@ -5,7 +5,7 @@ export type HomeStableState =
   | 'IMMERSIVE_CONVERSATION'
 
 export type HomeDestination = 'GROUND' | 'LIFE_MAP'
-export type HomeReturnDestination = HomeDestination | 'PASSPORT'
+export type HomeReturnDestination = HomeDestination | 'PASSPORT' | 'SETTINGS'
 
 export type HomeTransitionState =
   | 'AVATAR_EMBODIMENT_TRANSITION'
@@ -75,6 +75,7 @@ export type HomeExperienceEvent =
 
 export const HOME_RETURN_SESSION_KEY = 'urai:home:return-frame:v1'
 export const HOME_PASSPORT_ORIGIN_CAPTURE_EVENT = 'urai:home-passport-origin-capture' as const
+export const HOME_SETTINGS_ORIGIN_CAPTURE_EVENT = 'urai:home-settings-origin-capture' as const
 
 export const DEFAULT_HOME_PRESENTATION_CAMERA: HomeCameraSnapshot = {
   position: [0, 1.75, 7.85],
@@ -107,19 +108,13 @@ export function createInitialHomeExperienceState(
   }
 }
 
-function pushReturnFrame(
-  state: HomeExperienceState,
-  frame: HomeReturnFrame,
-): readonly HomeReturnFrame[] {
+function pushReturnFrame(state: HomeExperienceState, frame: HomeReturnFrame): readonly HomeReturnFrame[] {
   return [...state.returnStack, frame]
 }
 
 function popReturnFrame(state: HomeExperienceState) {
   const frame = state.returnStack[state.returnStack.length - 1]
-  return {
-    frame,
-    stack: frame ? state.returnStack.slice(0, -1) : state.returnStack,
-  }
+  return { frame, stack: frame ? state.returnStack.slice(0, -1) : state.returnStack }
 }
 
 function canActivateWorldSurface(state: HomeExperienceState) {
@@ -127,194 +122,82 @@ function canActivateWorldSurface(state: HomeExperienceState) {
     && (state.stableState === 'HOME_PRESENTATION' || state.stableState === 'AVATAR_HOME_FIRST_PERSON')
 }
 
-export function homeExperienceReducer(
-  state: HomeExperienceState,
-  event: HomeExperienceEvent,
-): HomeExperienceState {
+export function homeExperienceReducer(state: HomeExperienceState, event: HomeExperienceEvent): HomeExperienceState {
   switch (event.type) {
     case 'SET_REDUCED_MOTION':
       return { ...state, reducedMotion: event.value }
-
     case 'AVATAR_ACTIVATE':
       if (state.stableState !== 'HOME_PRESENTATION' || state.transition) return state
-      return {
-        ...state,
-        origin: event.snapshot,
-        transition: 'AVATAR_EMBODIMENT_TRANSITION',
-        inputLocked: true,
-      }
-
+      return { ...state, origin: event.snapshot, transition: 'AVATAR_EMBODIMENT_TRANSITION', inputLocked: true }
     case 'EMBODIMENT_COMPLETE':
       if (state.transition !== 'AVATAR_EMBODIMENT_TRANSITION') return state
-      return {
-        ...state,
-        stableState: 'AVATAR_HOME_FIRST_PERSON',
-        transition: null,
-        origin: event.snapshot,
-        inputLocked: false,
-      }
-
+      return { ...state, stableState: 'AVATAR_HOME_FIRST_PERSON', transition: null, origin: event.snapshot, inputLocked: false }
     case 'SELF_VIEW_OPEN':
       if (state.stableState !== 'AVATAR_HOME_FIRST_PERSON' || state.transition) return state
       return { ...state, stableState: 'AVATAR_SELF_VIEW', inputLocked: true }
-
     case 'SELF_VIEW_CLOSE':
       if (state.stableState !== 'AVATAR_SELF_VIEW') return state
       return { ...state, stableState: 'AVATAR_HOME_FIRST_PERSON', inputLocked: false }
-
     case 'GROUND_ACTIVATE':
       if (!canActivateWorldSurface(state)) return state
       return {
         ...state,
         origin: event.snapshot,
         transition: 'GROUND_DESCENT',
-        returnStack: pushReturnFrame(state, {
-          kind: 'destination',
-          destination: 'GROUND',
-          origin: event.snapshot,
-        }),
+        returnStack: pushReturnFrame(state, { kind: 'destination', destination: 'GROUND', origin: event.snapshot }),
         pendingDestination: 'GROUND',
         inputLocked: true,
       }
-
     case 'SKY_ACTIVATE':
       if (!canActivateWorldSurface(state)) return state
       return {
         ...state,
         origin: event.snapshot,
         transition: 'SKY_ASCENT',
-        returnStack: pushReturnFrame(state, {
-          kind: 'destination',
-          destination: 'LIFE_MAP',
-          origin: event.snapshot,
-        }),
+        returnStack: pushReturnFrame(state, { kind: 'destination', destination: 'LIFE_MAP', origin: event.snapshot }),
         pendingDestination: 'LIFE_MAP',
         inputLocked: true,
       }
-
     case 'ORB_ACTIVATE':
       if (!canActivateWorldSurface(state)) return state
-      return {
-        ...state,
-        origin: event.snapshot,
-        transition: 'ORB_TRANSFORMATION',
-        returnStack: pushReturnFrame(state, { kind: 'local', origin: event.snapshot }),
-        inputLocked: true,
-      }
-
+      return { ...state, origin: event.snapshot, transition: 'ORB_TRANSFORMATION', returnStack: pushReturnFrame(state, { kind: 'local', origin: event.snapshot }), inputLocked: true }
     case 'TRANSITION_COMPLETE':
-      if (state.transition === 'ORB_TRANSFORMATION') {
-        return {
-          ...state,
-          stableState: 'IMMERSIVE_CONVERSATION',
-          transition: null,
-          inputLocked: false,
-        }
-      }
+      if (state.transition === 'ORB_TRANSFORMATION') return { ...state, stableState: 'IMMERSIVE_CONVERSATION', transition: null, inputLocked: false }
       return state
-
     case 'DESTINATION_RETURN': {
       const { frame, stack } = popReturnFrame(state)
       const origin = event.snapshot ?? frame?.origin ?? state.origin
-      const transition = event.destination === 'GROUND'
-        ? 'GROUND_UNWIND'
-        : event.destination === 'LIFE_MAP'
-          ? 'LIFE_MAP_UNWIND'
-          : 'HOME_RESTORE'
-      return {
-        ...state,
-        stableState: origin.stableState,
-        transition,
-        returnStack: stack,
-        origin,
-        pendingDestination: null,
-        inputLocked: true,
-      }
+      const transition = event.destination === 'GROUND' ? 'GROUND_UNWIND' : event.destination === 'LIFE_MAP' ? 'LIFE_MAP_UNWIND' : 'HOME_RESTORE'
+      return { ...state, stableState: origin.stableState, transition, returnStack: stack, origin, pendingDestination: null, inputLocked: true }
     }
-
     case 'ESCAPE': {
-      if (state.stableState === 'AVATAR_SELF_VIEW') {
-        return { ...state, stableState: 'AVATAR_HOME_FIRST_PERSON', inputLocked: false }
-      }
-
+      if (state.stableState === 'AVATAR_SELF_VIEW') return { ...state, stableState: 'AVATAR_HOME_FIRST_PERSON', inputLocked: false }
       if (state.stableState === 'IMMERSIVE_CONVERSATION') {
         const { frame, stack } = popReturnFrame(state)
         const origin = frame?.origin ?? state.origin
-        return {
-          ...state,
-          stableState: origin.stableState,
-          transition: 'ORB_COLLAPSE',
-          returnStack: stack,
-          origin,
-          inputLocked: true,
-        }
+        return { ...state, stableState: origin.stableState, transition: 'ORB_COLLAPSE', returnStack: stack, origin, inputLocked: true }
       }
-
-      if (state.transition === 'AVATAR_EMBODIMENT_TRANSITION') {
-        return {
-          ...state,
-          stableState: 'HOME_PRESENTATION',
-          transition: 'HOME_RESTORE',
-          pendingDestination: null,
-          inputLocked: true,
-        }
-      }
-
+      if (state.transition === 'AVATAR_EMBODIMENT_TRANSITION') return { ...state, stableState: 'HOME_PRESENTATION', transition: 'HOME_RESTORE', pendingDestination: null, inputLocked: true }
       if (state.transition === 'GROUND_DESCENT' || state.transition === 'SKY_ASCENT') {
         const { frame, stack } = popReturnFrame(state)
         const origin = frame?.origin ?? state.origin
-        return {
-          ...state,
-          stableState: origin.stableState,
-          transition: 'HOME_RESTORE',
-          returnStack: stack,
-          origin,
-          pendingDestination: null,
-          inputLocked: true,
-        }
+        return { ...state, stableState: origin.stableState, transition: 'HOME_RESTORE', returnStack: stack, origin, pendingDestination: null, inputLocked: true }
       }
-
-      if (state.stableState === 'AVATAR_HOME_FIRST_PERSON' && !state.transition) {
-        return { ...state, transition: 'EMBODIMENT_UNWIND', inputLocked: true }
-      }
-
+      if (state.stableState === 'AVATAR_HOME_FIRST_PERSON' && !state.transition) return { ...state, transition: 'EMBODIMENT_UNWIND', inputLocked: true }
       return state
     }
-
     case 'HOME_RESTORE_COMPLETE':
-      if (
-        state.transition !== 'HOME_RESTORE'
-        && state.transition !== 'EMBODIMENT_UNWIND'
-        && state.transition !== 'GROUND_UNWIND'
-        && state.transition !== 'LIFE_MAP_UNWIND'
-        && state.transition !== 'ORB_COLLAPSE'
-      ) return state
-      return {
-        ...state,
-        stableState: state.transition === 'EMBODIMENT_UNWIND' ? 'HOME_PRESENTATION' : state.stableState,
-        transition: null,
-        inputLocked: false,
-        pendingDestination: null,
-      }
-
+      if (!['HOME_RESTORE','EMBODIMENT_UNWIND','GROUND_UNWIND','LIFE_MAP_UNWIND','ORB_COLLAPSE'].includes(state.transition ?? '')) return state
+      return { ...state, stableState: state.transition === 'EMBODIMENT_UNWIND' ? 'HOME_PRESENTATION' : state.stableState, transition: null, inputLocked: false, pendingDestination: null }
     case 'RECOVER':
-      return {
-        ...createInitialHomeExperienceState(state.reducedMotion, event.snapshot ?? state.origin),
-        stableState: event.snapshot?.stableState ?? 'HOME_PRESENTATION',
-      }
-
+      return { ...createInitialHomeExperienceState(state.reducedMotion, event.snapshot ?? state.origin), stableState: event.snapshot?.stableState ?? 'HOME_PRESENTATION' }
     default:
       return state
   }
 }
 
-export function serializeHomeReturnFrame(frame: HomeReturnFrame): string {
-  return JSON.stringify(frame)
-}
-
-function isOptionalString(value: unknown) {
-  return value === undefined || typeof value === 'string'
-}
+export function serializeHomeReturnFrame(frame: HomeReturnFrame): string { return JSON.stringify(frame) }
+function isOptionalString(value: unknown) { return value === undefined || typeof value === 'string' }
 
 export function parseHomeReturnFrame(value: string | null): HomeReturnFrame | null {
   if (!value) return null
@@ -326,28 +209,21 @@ export function parseHomeReturnFrame(value: string | null): HomeReturnFrame | nu
       && parsed.destination !== 'GROUND'
       && parsed.destination !== 'LIFE_MAP'
       && parsed.destination !== 'PASSPORT'
+      && parsed.destination !== 'SETTINGS'
     ) return null
     if (parsed.kind === 'local' && parsed.destination !== undefined) return null
     if (!parsed.origin || (parsed.origin.stableState !== 'HOME_PRESENTATION' && parsed.origin.stableState !== 'AVATAR_HOME_FIRST_PERSON')) return null
-
     const camera = parsed.origin.camera
     if (!camera || !Array.isArray(camera.position) || camera.position.length !== 3) return null
     if (!camera.position.every((entry) => typeof entry === 'number' && Number.isFinite(entry))) return null
     if (!Number.isFinite(camera.yaw) || !Number.isFinite(camera.pitch)) return null
     if (!Number.isFinite(parsed.origin.capturedAt) || parsed.origin.capturedAt < 0) return null
     if (parsed.origin.orbState !== undefined && typeof parsed.origin.orbState !== 'string') return null
-
     const environment = parsed.origin.environment
     if (!environment || typeof environment !== 'object') return null
-    if (!isOptionalString(environment.timeKey)) return null
-    if (!isOptionalString(environment.weatherKey)) return null
-    if (!isOptionalString(environment.lightingKey)) return null
-    if (!isOptionalString(environment.environmentRevision)) return null
-
+    if (!isOptionalString(environment.timeKey) || !isOptionalString(environment.weatherKey) || !isOptionalString(environment.lightingKey) || !isOptionalString(environment.environmentRevision)) return null
     return parsed as HomeReturnFrame
-  } catch {
-    return null
-  }
+  } catch { return null }
 }
 
 export function persistHomeReturnFrame(frame: HomeReturnFrame) {
@@ -361,7 +237,5 @@ export function consumeHomeReturnFrame(): HomeReturnFrame | null {
     const frame = parseHomeReturnFrame(window.sessionStorage.getItem(HOME_RETURN_SESSION_KEY))
     window.sessionStorage.removeItem(HOME_RETURN_SESSION_KEY)
     return frame
-  } catch {
-    return null
-  }
+  } catch { return null }
 }

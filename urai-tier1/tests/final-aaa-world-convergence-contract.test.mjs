@@ -52,6 +52,11 @@ test('Orb and Home ownership preserve predecessor truth while the current candid
   assert.match(companion, /URAI_WORLD_ORB_OPEN_EVENT/)
   assert.match(companion, /aria-label=\{open \? 'Close Orb travel controls' : 'Open Orb travel controls'\}/)
   assert.match(companion, /aria-label="Return through the world"/)
+  assert.match(companion, /HOME_PASSPORT_ORIGIN_CAPTURE_EVENT/)
+  assert.match(companion, /HOME_SETTINGS_ORIGIN_CAPTURE_EVENT/)
+  assert.match(companion, /world\.destination === 'home' && destination === 'passport'[\s\S]*dispatchEvent\(new Event\(HOME_PASSPORT_ORIGIN_CAPTURE_EVENT\)\)/)
+  assert.match(companion, /world\.destination === 'home' \? <button[^>]*data-world-target="settings"[\s\S]*Device Settings/)
+  assert.match(companion, /dispatchEvent\(new Event\(HOME_SETTINGS_ORIGIN_CAPTURE_EVENT\)\)[\s\S]*router\.push\('\/settings'\)/)
   assert.doesNotMatch(companion, /next\/link/)
   assert.match(worldEvents, /requestUraiWorldOrbOpen/)
   assert.match(homeRuntime, /onOrbOpen=\{requestUraiWorldOrbOpen\}/)
@@ -123,6 +128,17 @@ test('Orb and Home ownership preserve predecessor truth while the current candid
   assert.match(routeOwnerConvergence, /box-shadow:\s*none\s*!important/)
   assert.match(routeOwnerConvergence, /outline:\s*3px solid rgba\(224,255,255,.96\)\s*!important/)
   assert.doesNotMatch(homeRuntime, /urai-home-spatial-orb-trigger|urai-home-spatial-runtime-orb/)
+})
+
+test('flat Device Settings preserves sensory runtimes without inheriting world navigation chrome', () => {
+  assert.match(shell, /const flatControlRoute = pathname === '\/settings' \|\| pathname\.startsWith\('\/settings\/'\)/)
+  assert.match(shell, /const showWorldCompanion = !flatControlRoute/)
+  assert.match(shell, /!flatControlRoute \? <PersistentRealmAtmosphere \/> : null/)
+  assert.match(shell, /!flatControlRoute \? <GroundGateway \/> : null/)
+  assert.match(shell, /<SpatialAmbientRuntime \/>/)
+  assert.match(shell, /<SpatialPositionedAudioRuntime \/>/)
+  assert.match(shell, /<HapticRuntime \/>/)
+  assert.match(shell, /<MotionOrchestrator \/>/)
 })
 
 test('one environmental continuity layer persists across every route transition', () => {

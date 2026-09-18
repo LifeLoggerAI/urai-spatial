@@ -49,6 +49,16 @@ test('destination return is consumed from session bridge into reducer authority'
   assert.match(source, /type: 'DESTINATION_RETURN'/)
 })
 
+test('Passport and Settings capture exact Home origin through the same session return authority', () => {
+  assert.match(source, /HOME_PASSPORT_ORIGIN_CAPTURE_EVENT/)
+  assert.match(source, /HOME_SETTINGS_ORIGIN_CAPTURE_EVENT/)
+  assert.match(source, /const controlRealmOrigin = \(\) =>/)
+  assert.match(source, /state\.stableState === 'HOME_PRESENTATION' \|\| state\.stableState === 'AVATAR_HOME_FIRST_PERSON'[\s\S]*currentOrigin\(\)/)
+  assert.match(source, /state\.stableState === 'IMMERSIVE_CONVERSATION'[\s\S]*state\.returnStack\[state\.returnStack\.length - 1\][\s\S]*frame\?\.kind === 'local' \? frame\.origin : null/)
+  assert.match(source, /destination: 'PASSPORT'[\s\S]*origin \}/)
+  assert.match(source, /destination: 'SETTINGS'[\s\S]*origin \}/)
+})
+
 test('Escape ignores editable text fields and yields modal ownership to Avatar Self View', () => {
   assert.match(source, /closest\('input,textarea,select,\[contenteditable="true"\]'\)/)
   assert.match(source, /event\.key !== 'Escape'/)

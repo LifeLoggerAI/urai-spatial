@@ -3,6 +3,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import test from 'node:test'
 import { fileURLToPath } from 'node:url'
+import { makeHomeOriginSnapshot, parseHomeReturnFrame } from '../src/spatial/home/homeExperienceState.ts'
 
 const here = path.dirname(fileURLToPath(import.meta.url))
 const root = path.resolve(here, '..')
@@ -90,6 +91,22 @@ test('return frame persistence is session-bounded and validates full origin shap
   assert.match(source, /parsed\.kind === 'destination'[\s\S]*parsed\.destination !== 'GROUND'[\s\S]*parsed\.destination !== 'LIFE_MAP'/)
   assert.match(source, /parsed\.origin\.capturedAt/)
   assert.match(source, /environment\.environmentRevision/)
+})
+
+test('return frame parser accepts governed control destinations and rejects unknown destinations', () => {
+  const origin = makeHomeOriginSnapshot(
+    'HOME_PRESENTATION',
+    { position: [1, 2, 3], yaw: 0.4, pitch: -0.2 },
+    { environmentRevision: 'contract-test' },
+    'idle',
+    123,
+  )
+  for (const destination of ['PASSPORT', 'SETTINGS']) {
+    const parsed = parseHomeReturnFrame(JSON.stringify({ kind: 'destination', destination, origin }))
+    assert.equal(parsed?.destination, destination)
+    assert.deepEqual(parsed?.origin, origin)
+  }
+  assert.equal(parseHomeReturnFrame(JSON.stringify({ kind: 'destination', destination: 'UNKNOWN', origin })), null)
 })
 
 test('semantic Enter first-person Home control is wired to the authoritative V223 embodiment controller', () => {

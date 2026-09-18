@@ -5,6 +5,7 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } fr
 import { flushSync } from 'react-dom'
 import { publishOrbState } from '@/app/home/orbStateController'
 import OrbConversationPanel from '@/spatial/orb/OrbConversationPanel'
+import { HOME_PASSPORT_ORIGIN_CAPTURE_EVENT, HOME_SETTINGS_ORIGIN_CAPTURE_EVENT } from '@/spatial/home/homeExperienceState'
 import { definitionForDestination, URAI_DESTINATION_REGISTRY } from './destinationRegistry'
 import {
   publishUraiWorldOrbClose,
@@ -148,6 +149,9 @@ export function PersistentWorldCompanion() {
 
   const travel = useCallback((destination: UraiDestination) => {
     if (phase !== 'idle' || destination === world.destination) { closeCompanion(true); return }
+    if (world.destination === 'home' && destination === 'passport') {
+      window.dispatchEvent(new Event(HOME_PASSPORT_ORIGIN_CAPTURE_EVENT))
+    }
     const target = definitionForDestination(destination)
     const request: UraiWorldTravelRequest = {
       destination, href: target.href, entryPortal: target.entryPortal, cameraCheckpoint: target.cameraCheckpoint,
@@ -159,6 +163,15 @@ export function PersistentWorldCompanion() {
     router.push(href)
     requestUraiWorldTravel({ ...request, href })
   }, [closeCompanion, phase, router, world])
+
+  const openSettings = useCallback(() => {
+    if (phase !== 'idle') { closeCompanion(true); return }
+    if (world.destination === 'home') {
+      window.dispatchEvent(new Event(HOME_SETTINGS_ORIGIN_CAPTURE_EVENT))
+    }
+    closeCompanion(false)
+    router.push('/settings')
+  }, [closeCompanion, phase, router, world.destination])
 
   const returnThroughWorld = useCallback(() => {
     if (phase !== 'idle' || world.destination === 'home') { closeCompanion(true); return }
@@ -176,7 +189,10 @@ export function PersistentWorldCompanion() {
       <div ref={menuRef} id="urai-world-companion-menu" className="urai-world-companion__menu" aria-hidden={open ? 'false' : 'true'} inert={!open ? true : undefined}>
         <p>{current.label}</p>
         <nav aria-label="Travel through the URAI world">{destinationButtons(primaryDestinations)}</nav>
-        <nav className="urai-world-companion__secondary" aria-label="Travel to private URAI realms">{destinationButtons(secondaryDestinations)}</nav>
+        <nav className="urai-world-companion__secondary" aria-label="Travel to private URAI realms">
+          {destinationButtons(secondaryDestinations)}
+          {world.destination === 'home' ? <button type="button" disabled={!hydrated || phase !== 'idle'} data-world-target="settings" onClick={openSettings}>Device Settings</button> : null}
+        </nav>
         <section className="urai-world-companion__estate" aria-labelledby="urai-public-estate-title">
           <h2 id="urai-public-estate-title">Public constellation</h2>
           <ul>{PUBLIC_ESTATE.map((entry) => <li key={entry.id} data-estate-id={entry.id} data-estate-status={entry.status}>{entry.status === 'live' ? <a href={entry.href} target="_blank" rel="noreferrer"><span>{entry.label}</span><small>Verified live · opens a new site</small></a> : <span className="urai-world-companion__estate-card"><span>{entry.label}</span><small>Verification pending</small></span>}</li>)}</ul>

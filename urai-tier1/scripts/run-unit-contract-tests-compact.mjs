@@ -87,6 +87,7 @@ const tests = [
   'tests/spatial-missing-resource-diagnostic-contract.test.mjs',
   'tests/unit-runner-coverage.test.mjs',
   'tests/v2-asset-gating.test.mjs',
+  'tests/whole-product-onboarding-settings-contract.test.mjs',
   'tests/xr-runtime-contract.test.mjs',
   'tests/xr-static-gate-diagnostics-contract.test.mjs',
 ]
