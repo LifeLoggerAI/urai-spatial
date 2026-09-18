@@ -53,10 +53,14 @@ test.describe('first-run onboarding accessibility', () => {
       setupComplete: localStorage.getItem('urai:onboarding:v3:setup-complete'),
       setupStep: localStorage.getItem('urai:onboarding:v3:setup-step'),
       haptics: localStorage.getItem('urai:haptics:enabled-v1'),
+      audioConsent: sessionStorage.getItem('urai:spatial-audio-consent-v1'),
+      audioMuted: sessionStorage.getItem('urai:spatial-audio-muted-v1'),
     }))
     expect(stored.setupComplete).toBe('1')
     expect(stored.setupStep).toBeNull()
     expect(stored.haptics).toBe('false')
+    expect(stored.audioConsent).toBe('true')
+    expect(stored.audioMuted).toBe('false')
   })
 
   test('Skip setup persists completion and reduced-motion remains additive to the OS preference', async ({ page }) => {
