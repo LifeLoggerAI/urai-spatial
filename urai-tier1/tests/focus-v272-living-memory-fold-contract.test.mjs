@@ -28,7 +28,7 @@ test('selected memory remains one connected CLOSED living-memory phenomenon rath
   assert.doesNotMatch(geology, /Array\.from\(\{ length: 7 \}/)
 })
 
-test('V307 preserves the buried V295 watertight body while the visual skin reads as one torn-earth rupture without branch vocabulary', () => {
+test('V308 preserves the buried V295 watertight body while the visible skin is three local rupture pockets joined by a hairline ground-owned fissure', () => {
   assert.match(geology, /V295 keeps the useful V294 top-surface language while restoring the non-negotiable/)
   assert.match(geology, /V298 narrowed the event/)
   assert.match(geology, /V299 changes ownership/)
@@ -75,10 +75,11 @@ test('V307 preserves the buried V295 watertight body while the visual skin reads
   assert.match(geology, /focusLiteralPixelSuccessorV306 = 'v306-broken-earth-footprint-attached-microbranches-sparse-weathered-edge-no-cable-outline'/)
   assert.match(geology, /export function createFocusGroundIncision\(\)/)
   assert.match(geology, /focusLiteralPixelSuccessorV307 = 'v307-torn-earth-rupture-pockets-scalloped-edges-no-branches-no-cable-outline'/)
-  assert.match(geology, /focusIncisionAuthority = 'v307-torn-earth-rupture-pockets-scalloped-edges-no-branches'/)
-  assert.match(geology, /focusIncisionTopology = 'zero-thickness-open-torn-earth-skin-over-buried-v295-closed-authority'/)
+  assert.match(geology, /focusLiteralPixelSuccessorV308 = 'v308-three-rupture-pockets-hairline-connector-ground-blended-edges-no-leaf-panel'/)
+  assert.match(geology, /focusIncisionAuthority = 'v308-three-rupture-pockets-hairline-connector-ground-blended-edges'/)
+  assert.match(geology, /focusIncisionTopology = 'zero-thickness-open-pocketed-fissure-skin-over-buried-v295-closed-authority'/)
   assert.match(geology, /focusVisualAuthority = 'v295-sanctuary-memory-scar-volume'/)
-  assert.match(geology, /focusCurrentVisualAuthority = 'v307-ground-owned-torn-earth-fissure-buried-closed-body'/)
+  assert.match(geology, /focusCurrentVisualAuthority = 'v308-ground-owned-pocketed-fissure-buried-closed-body'/)
   assert.doesNotMatch(geology, /appendBranch\(/)
   assert.match(geology, /color\.r = Math\.min\(\.76, color\.r\)/)
   assert.match(geology, /color\.g = Math\.min\(\.44, color\.g\)/)
