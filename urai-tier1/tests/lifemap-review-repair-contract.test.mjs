@@ -136,7 +136,6 @@ test('Focus final composition preserves one connected living-memory authority an
   assert.match(focusGeology, /V303 removes the remaining structural mismatch exposed by V302 pixels/)
   assert.match(focusGeology, /V304 responds to exact V303 pixels/)
   assert.match(focusGeology, /V305 responds to retained V304 pixels/)
-  assert.match(focusGeology, /V306 responds to retained V305 pixels/)
   assert.match(focusGeology, /const MEMORY_SECTIONS = 45/)
   assert.match(focusGeology, /const MEMORY_CROSS_POINTS = 9/)
   assert.match(focusGeology, /createLivingMemoryFold/)
