@@ -17,10 +17,15 @@ const finalMemorySurfaces = read('src/app/FinalMemorySurfaces.tsx')
 const replayUnwindButton = read('src/app/replay/ReplayUnwindButton.tsx')
 const replayRoute = read('src/app/replay/[replayId]/page.tsx')
 
-test('replay route remains wired to the final cinematic memory film owner', () => {
-  assert.match(replayPage, /FinalReplayFilm/)
+test('replay route remains wired to the current spatial memory world owner', () => {
+  assert.match(replayPage, /FinalReplayFilm = CinematicReplayClient/)
   assert.match(replayPage, /replay-route-launch-fingerprint/)
-  assert.match(replayPage, /replay-thread-film-beats/)
+  assert.match(replayPage, /replay-spatial-memory-world/)
+  assert.match(replayPage, /v221-world-first-readable-spatial-memory-cove-mobile-clearance/)
+  assert.doesNotMatch(replayPage, /replay-thread-film-beats|Cinematic memory camera film\.|Film beats/)
+})
+
+test('legacy FinalReplayFilm lineage remains historical rather than active route authority', () => {
   assert.match(finalMemorySurfaces, /export function FinalReplayFilm/)
   assert.match(finalMemorySurfaces, /cinematic-memory-camera-film/)
   assert.match(finalMemorySurfaces, /Memory film\./)

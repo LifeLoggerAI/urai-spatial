@@ -255,26 +255,29 @@ function NaturalCanopy({ profile, position, rotationY, scale }: {
       false,
     ));
 
-    const leaves = Array.from({ length: woodland ? 72 : 58 }, (_, index) => {
+    const leafGeometry = new THREE.SphereGeometry(1, 12, 8);
+    const leaves = Array.from({ length: woodland ? 36 : 30 }, (_, index) => {
       const angle = index * 2.3999632297;
-      const ring = 0.34 + (index % 9) * 0.055;
-      const layer = index % 5;
-      const x = Math.cos(angle) * ring * (0.88 + (index % 4) * 0.06);
-      const z = Math.sin(angle) * ring * (0.72 + (index % 3) * 0.08);
-      const y = 1.72 + layer * 0.18 + Math.sin(index * 1.73) * 0.13;
-      const rx = -0.38 + (index % 7) * 0.12;
-      const ry = angle + ((index % 3) - 1) * 0.21;
-      const rz = -0.22 + (index % 5) * 0.11;
-      const sx = 0.20 + (index % 4) * 0.025;
-      const sy = 0.10 + (index % 3) * 0.012;
-      return { position: [x, y, z] as [number, number, number], rotation: [rx, ry, rz] as [number, number, number], scale: [sx, sy] as [number, number], color: index % 2 ? leafA : leafB };
+      const ring = 0.28 + (index % 8) * 0.072;
+      const layer = index % 6;
+      const x = Math.cos(angle) * ring * (0.92 + (index % 4) * 0.07);
+      const z = Math.sin(angle) * ring * (0.76 + (index % 3) * 0.09);
+      const y = 1.68 + layer * 0.15 + Math.sin(index * 1.73) * 0.12;
+      const rx = -0.28 + (index % 5) * 0.11;
+      const ry = angle + ((index % 3) - 1) * 0.18;
+      const rz = -0.16 + (index % 5) * 0.08;
+      const sx = 0.22 + (index % 4) * 0.025;
+      const sy = 0.105 + (index % 3) * 0.012;
+      const sz = 0.17 + (index % 5) * 0.018;
+      return { position: [x, y, z] as [number, number, number], rotation: [rx, ry, rz] as [number, number, number], scale: [sx, sy, sz] as [number, number, number], color: index % 2 ? leafA : leafB };
     });
 
-    return { trunkGeometry, branches, leaves, trunkColor, branchColor };
+    return { trunkGeometry, branches, leafGeometry, leaves, trunkColor, branchColor };
   }, [profile.id]);
 
   useEffect(() => () => {
     authored.trunkGeometry.dispose();
+    authored.leafGeometry.dispose();
     authored.branches.forEach((geometry) => geometry.dispose());
   }, [authored]);
 
@@ -283,11 +286,11 @@ function NaturalCanopy({ profile, position, rotationY, scale }: {
     rotation={[0, rotationY, 0]}
     scale={scale}
     raycast={() => null}
-    name="ground-authored-natural-canopy-v4"
+    name="ground-authored-natural-canopy-v5"
     userData={{
-      treatment: "deterministic-curved-branch-and-leaf-cluster-canopy-v4",
+      treatment: "deterministic-curved-branch-and-organic-foliage-cluster-canopy-v5",
       provenance: NATURAL_CANOPY,
-      visibleAuthority: "runtime-authored-canopy-v4",
+      visibleAuthority: "runtime-authored-canopy-v5",
       supersedesVisibleCandidate: "ground-natural-canopy-v3-low-poly-silhouette",
     }}
   >
@@ -300,19 +303,18 @@ function NaturalCanopy({ profile, position, rotationY, scale }: {
     </mesh>)}
     {authored.leaves.map((leaf, index) => <mesh
       key={index}
+      geometry={authored.leafGeometry}
       position={leaf.position}
       rotation={leaf.rotation}
+      scale={leaf.scale}
       castShadow
       receiveShadow
     >
-      <planeGeometry args={[leaf.scale[0] * 2, leaf.scale[1] * 2, 1, 1]} />
       <meshStandardMaterial
         color={leaf.color}
-        roughness={0.9}
+        roughness={0.96}
         metalness={0}
-        side={THREE.DoubleSide}
-        alphaTest={0.1}
-        envMapIntensity={0.22}
+        envMapIntensity={0.16}
       />
     </mesh>)}
   </group>;
@@ -588,7 +590,7 @@ function GroundScene({ profile, input, yaw, pitch, target, obstacles, playerPosi
   </>;
 }
 
-function GroundAnalogPad({ input }: { input: MovementInput }) {
+function GroundAnalogPad({ input, visible }: { input: MovementInput; visible: boolean }) {
   const pad = useRef<HTMLDivElement>(null);
   const [active, setActive] = useState(false);
   const [thumb, setThumb] = useState({ x: 0, y: 0 });
@@ -621,11 +623,39 @@ function GroundAnalogPad({ input }: { input: MovementInput }) {
     role="group"
     aria-label="Ground analog movement"
     data-active={active ? "true" : "false"}
+    style={{
+      display: visible ? "block" : "none",
+      position: "absolute",
+      zIndex: 24,
+      left: "max(18px, env(safe-area-inset-left))",
+      bottom: "max(88px, calc(env(safe-area-inset-bottom) + 76px))",
+      width: 100,
+      height: 100,
+      border: "1px solid rgba(233,248,244,.24)",
+      borderRadius: "50%",
+      background: "rgba(5,17,20,.28)",
+      backdropFilter: "blur(8px)",
+      touchAction: "none",
+      opacity: active ? 0.66 : 0.38,
+    }}
     onPointerDown={(event) => { setActive(true); event.currentTarget.setPointerCapture(event.pointerId); update(event); }}
     onPointerMove={(event) => { if (active) update(event); }}
     onPointerUp={stop}
     onPointerCancel={stop}
-  ><span style={{ transform: `translate(${thumb.x}px, ${thumb.y}px)` }} /></div>;
+  ><span style={{
+    position: "absolute",
+    left: "50%",
+    top: "50%",
+    width: 34,
+    height: 34,
+    marginLeft: -17,
+    marginTop: -17,
+    border: "1px solid rgba(244,252,249,.34)",
+    borderRadius: "50%",
+    background: "rgba(223,242,233,.18)",
+    pointerEvents: "none",
+    transform: `translate(${thumb.x}px, ${thumb.y}px)`,
+  }} /></div>;
 }
 
 export default function GroundSpatialWorldClean() {
@@ -681,7 +711,7 @@ export default function GroundSpatialWorldClean() {
     data-ground-visual-owner="physical-lived-world"
     data-ground-runtime-owner="first-person-lived-world"
     data-ground-visual-revision="ground-lived-world-v2-canon-lock"
-    data-ground-art-revision="ground-natural-surface-v4-authored-canopy-v4-ridge-v3"
+    data-ground-art-revision="ground-natural-surface-v5-organic-canopy-v5-ridge-v3"
     data-ground-exploration="first-person-no-visible-body"
     data-ground-camera="eye-level-terrain-following-no-authored-bob"
     data-ground-eye-height={GROUND_EYE_HEIGHT_M}
@@ -720,7 +750,7 @@ export default function GroundSpatialWorldClean() {
       <a href="/privacy-controls">Privacy</a>
     </nav>
     <div className="sr-only" role="status" aria-live="polite">{ready ? `${profile.label} is ready for first-person exploration. UrAi remains available through semantic voice and accessible controls; no follower Orb is rendered.` : "Ground is forming."}</div>
-    <GroundAnalogPad input={input} />
+    <GroundAnalogPad input={input} visible={isCoarse} />
     <details className="ground-accessible-movement" data-movement-ui="true"><summary>Movement controls</summary><MobileMovementPad input={input} label="Ground first-person movement controls" /></details>
     <span className="sr-only" data-testid="urai-ground-walkable-surface">The visible Ground terrain is the traversal and click-to-move surface.</span>
 

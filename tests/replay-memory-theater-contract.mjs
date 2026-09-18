@@ -29,7 +29,8 @@ const autonomousIsolation = read(autonomousIsolationPath)
 for (const token of [
   'CinematicReplayClient',
   'replay-route-launch-fingerprint',
-  'cinematic-memory-camera-film',
+  'replay-spatial-memory-world',
+  'v221-world-first-readable-spatial-memory-cove-mobile-clearance',
   'ReplayRouteProofSurface',
   'data-proof-only="true"',
   'aria-hidden="true"',
@@ -62,6 +63,10 @@ for (const token of [
   'assetCssStack(replayAssets.primary)',
 ]) {
   assertIncludes(replayClientPath, replayClient, token)
+}
+
+for (const legacyRouteToken of ['replay-thread-film-beats', 'Cinematic memory camera film.']) {
+  assertNotIncludes(replayPagePath, replayPage, legacyRouteToken)
 }
 
 for (const forbidden of [

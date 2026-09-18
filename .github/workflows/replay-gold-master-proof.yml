@@ -1,0 +1,132 @@
+name: Replay Gold Master Proof
+
+on:
+  workflow_dispatch:
+    inputs:
+      verification_sha:
+        description: Exact 40-character commit SHA to verify
+        required: true
+        type: string
+  pull_request:
+    branches: [main, home-final-v24-certify-20260826]
+    paths:
+      - '.github/workflows/replay-gold-master-proof.yml'
+      - 'scripts/capture-replay-gold-master-proof.mjs'
+      - 'scripts/run-with-ci-webgl.mjs'
+      - 'tests/replay-memory-theater-contract.mjs'
+      - 'urai-tier1/tests/replay-memory-theater-contract.test.mjs'
+      - 'urai-tier1/src/app/replay/**'
+      - 'urai-tier1/src/lib/memory/**'
+      - 'urai-tier1/src/spatial/memory/**'
+      - 'urai-tier1/src/spatial/world/**'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: replay-gold-master-proof-${{ github.event.pull_request.number || inputs.verification_sha || github.ref }}
+  cancel-in-progress: true
+
+env:
+  URAI_EXACT_HEAD: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.event_name == 'workflow_dispatch' && inputs.verification_sha || github.sha }}
+  PLAYWRIGHT_BROWSERS_PATH: '0'
+  NEXT_PUBLIC_URAI_EXPLICIT_DEMO: 'true'
+
+jobs:
+  exact-head-replay-proof:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - name: Checkout exact candidate
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ env.URAI_EXACT_HEAD }}
+          fetch-depth: 1
+          persist-credentials: false
+          show-progress: false
+
+      - name: Prove exact clean candidate
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "$URAI_EXACT_HEAD" =~ ^[0-9a-f]{40}$ ]]
+          test "$(git rev-parse HEAD)" = "$URAI_EXACT_HEAD"
+          test -z "$(git status --porcelain --untracked-files=all)"
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1
+        with:
+          version: 10.0.0
+          run_install: false
+
+      - name: Setup Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Install exact lockfile
+        run: |
+          corepack enable
+          pnpm install --frozen-lockfile
+
+      - name: Validate Replay contracts and build
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/replay-gold-master-proof
+          node tests/replay-memory-theater-contract.mjs
+          (cd urai-tier1 && node --test tests/replay-memory-theater-contract.test.mjs)
+          pnpm build:static 2>&1 | tee artifacts/replay-gold-master-proof/build-static.log
+
+      - name: Install Chromium and validate proof source
+        shell: bash
+        run: |
+          set -euo pipefail
+          pnpm --dir urai-tier1 exec playwright install --with-deps chromium
+          node --check scripts/run-with-ci-webgl.mjs
+          node --check scripts/capture-replay-gold-master-proof.mjs
+
+      - name: Capture exact-head Replay proof
+        shell: bash
+        run: |
+          set -euo pipefail
+          output=artifacts/replay-gold-master-proof
+          python3 -m http.server 4173 --bind 127.0.0.1 --directory urai-tier1/out > "$output/http-server.log" 2>&1 &
+          server_pid=$!
+          trap 'kill "$server_pid" 2>/dev/null || true' EXIT
+          for attempt in $(seq 1 60); do
+            curl --fail --silent http://127.0.0.1:4173/replay/ >/dev/null && break
+            sleep 1
+          done
+          curl --fail --silent --show-error http://127.0.0.1:4173/replay/ >/dev/null
+          URAI_PROOF_BASE=http://127.0.0.1:4173 \
+          URAI_PROOF_DIR="$output" \
+          URAI_EXACT_HEAD="$URAI_EXACT_HEAD" \
+            node scripts/run-with-ci-webgl.mjs scripts/capture-replay-gold-master-proof.mjs 2>&1 | tee "$output/capture.log"
+
+      - name: Prove complete exact-head receipt
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --input-type=module - artifacts/replay-gold-master-proof/receipt.json "$URAI_EXACT_HEAD" <<'NODE'
+          import { readFile } from 'node:fs/promises'
+          const [receiptPath, head] = process.argv.slice(2)
+          const receipt = JSON.parse(await readFile(receiptPath, 'utf8'))
+          if (receipt.exactHead !== head) throw new Error('Replay proof exact-head mismatch')
+          if (receipt.captures.length !== 5) throw new Error(`Expected 5 Replay captures, found ${receipt.captures.length}`)
+          if (receipt.captures.some((capture) => !capture.verification?.passed)) throw new Error('Replay capture verification failed')
+          if (!receipt.journey?.passed) throw new Error('Replay -> Focus unwind proof failed')
+          if (receipt.errors.length) throw new Error(`Replay proof receipt contains ${receipt.errors.length} errors`)
+          NODE
+
+      - name: Upload exact-head Replay Gold Master candidate proof
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: replay-gold-master-proof-${{ env.URAI_EXACT_HEAD }}
+          path: artifacts/replay-gold-master-proof
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 6

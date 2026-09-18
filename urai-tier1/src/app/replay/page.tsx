@@ -55,10 +55,10 @@ export default function ReplayRoutePage() {
     <>
       <span
         data-testid="replay-route-launch-fingerprint"
-        data-urai-route-fingerprint="replay-thread-film-beats cinematic-memory-camera-film"
+        data-urai-route-fingerprint="replay-spatial-memory-world v221-world-first-readable-spatial-memory-cove-mobile-clearance"
         style={routeFingerprintStyle}
       >
-        Replay the thread. Film beats. Cinematic memory camera film.
+        Replay the memory place. Spatial memory world.
       </span>
       <ReplayRouteProofSurface />
       <FinalReplayFilm />
