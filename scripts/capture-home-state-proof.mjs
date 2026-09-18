@@ -119,10 +119,15 @@ async function readVisualEvidence(page) {
   return { ...sample, viewportCoverage, bounds: { width: bounds.width, height: bounds.height }, canvasPngBytes: png.length }
 }
 
-async function waitForVisualEvidence(page, frameBudget = 240) {
+async function waitForVisualEvidence(page, frameBudget = 24) {
+  // The visual gate is defined by the retained PNG coverage/luminance/sample
+  // predicates, not by an arbitrary number of software-WebGL frames. Keep
+  // three bounded readiness samples while avoiding hundreds of expensive
+  // SwiftShader frames per state.
   let evidence = null
-  for (let elapsed = 0; elapsed < frameBudget; elapsed += 30) {
-    await settleAnimationFrames(page, 30)
+  const frameStep = 8
+  for (let elapsed = 0; elapsed < frameBudget; elapsed += frameStep) {
+    await settleAnimationFrames(page, frameStep)
     evidence = await readVisualEvidence(page)
     if (evidence.available === true
       && evidence.viewportCoverage >= receipt.visualGate.minimumViewportCoverage
@@ -158,7 +163,10 @@ async function capture(state, options = {}) {
   try {
     const response = await page.goto(`${base}/home/?${query}`, { waitUntil: 'domcontentloaded', timeout: 60_000 })
     const owner = await waitForHomeReady(page)
-    await settleAnimationFrames(page, options.forcedColors === 'active' ? 24 : 60)
+    // assets-ready plus retained-pixel predicates are the authority. A small
+    // settle window is sufficient and avoids CI spending minutes rendering
+    // redundant SwiftShader frames before the exact same screenshot gate.
+    await settleAnimationFrames(page, options.forcedColors === 'active' ? 4 : 8)
 
     record.status = response?.status()
     record.canvasReady = await owner.getAttribute('data-home-assets-ready')
@@ -517,7 +525,7 @@ try {
   const owner = await waitForHomeReady(transitionPage)
   await transitionContext.setOffline(true)
   await transitionPage.evaluate(() => window.dispatchEvent(new Event('offline')))
-  await settleAnimationFrames(transitionPage, 30)
+  await settleAnimationFrames(transitionPage, 6)
   transition.status = response?.status()
   transition.canvasReady = await owner.getAttribute('data-home-assets-ready')
   transition.canvasCount = await owner.locator('canvas').count()
