@@ -5,7 +5,6 @@ export interface AnalyticsEvent {
   type: string;
   timestamp: number;
   metrics: Record<string, number>;
-  raw: CommunicationPacket;
 }
 
 export class AnalyticsBridge {
@@ -22,8 +21,7 @@ export class AnalyticsBridge {
       id: `analytics-${packet.id}`,
       type: packet.type,
       timestamp: packet.timestamp,
-      metrics,
-      raw: packet
+      metrics
     };
 
     this.buffer.push(event);
