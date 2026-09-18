@@ -389,14 +389,14 @@ async function captureOrbLifecycle({ reducedMotion = 'no-preference' } = {}) {
   }
 }
 
-async function captureHomeSpatialContinuity() {
+async function captureHomeSpatialContinuity({ idSuffix = 'desktop', viewport = { width: 1440, height: 900 }, reducedMotion = 'no-preference', sampleVisual = true } = {}) {
   const browser = await chromium.launch({ headless: true, args: ['--enable-unsafe-swiftshader'] })
-  const context = await browser.newContext({ viewport: { width: 1440, height: 900 } })
+  const context = await browser.newContext({ viewport, reducedMotion })
   const page = await context.newPage()
   const pageErrors = []
   page.on('pageerror', (error) => pageErrors.push(String(error)))
-  const id = 'home-first-person-passport-earth-emotional-weather'
-  const record = { id, pageErrors, passed: false }
+  const id = `home-first-person-passport-earth-emotional-weather-${idSuffix}`
+  const record = { id, pageErrors, passed: false, viewport, reducedMotion, sampleVisual }
   const screenshotRecord = async (state) => {
     const file = id + '-' + state + '-' + exactHead.slice(0, 12) + '.png'
     const screenshot = await page.screenshot({ path: path.join(outputDir, file), fullPage: false, animations: 'disabled', caret: 'hide', timeout: 90_000 })
@@ -433,7 +433,7 @@ async function captureHomeSpatialContinuity() {
       ownerTone: await owner.getAttribute('data-home-emotional-weather-tone'),
       ownerEvidence: await owner.getAttribute('data-home-emotional-weather-evidence'),
     }
-    record.firstPersonVisual = await waitForVisualEvidence(page)
+    record.firstPersonVisual = sampleVisual ? await waitForVisualEvidence(page) : { available: true, reason: 'retained-responsive-pixels-no-extra-sampling' }
     record.firstPersonScreenshot = await screenshotRecord('first-person')
 
     const passportControl = page.getByRole('button', { name: 'Open Passport ownership and permissions' }).first()
@@ -501,6 +501,10 @@ await capture({ id: 'forced-colors', query: 'homePrivateFixture=1' }, { forcedCo
 await captureOrbLifecycle()
 await captureOrbLifecycle({ reducedMotion: 'reduce' })
 await captureHomeSpatialContinuity()
+await captureHomeSpatialContinuity({ idSuffix: 'phone-portrait', viewport: { width: 390, height: 844 }, sampleVisual: false })
+await captureHomeSpatialContinuity({ idSuffix: 'phone-landscape', viewport: { width: 844, height: 390 }, sampleVisual: false })
+await captureHomeSpatialContinuity({ idSuffix: 'tablet-portrait', viewport: { width: 820, height: 1180 }, sampleVisual: false })
+await captureHomeSpatialContinuity({ idSuffix: 'reduced-motion', reducedMotion: 'reduce', sampleVisual: false })
 
 const transitionBrowser = await chromium.launch({ headless: true, args: ['--enable-unsafe-swiftshader'] })
 const transitionContext = await transitionBrowser.newContext({ viewport: { width: 1440, height: 900 } })
