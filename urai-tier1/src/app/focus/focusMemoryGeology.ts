@@ -60,6 +60,13 @@ import * as THREE from 'three'
 // time to prevent z-fighting. The place now owns the visible event while the buried closed
 // volume preserves the non-negotiable topology contract underneath.
 //
+// V305 responds to retained V304 pixels: exact terrain ownership is correct, but the
+// uniform hairline silhouette can still read as a cable, twig or drawn seam. Keep the
+// zero-volume ground-conforming skin and buried V295 body, but widen the incision into
+// an asymmetric, strongly width-modulated geological fissure. Jagged edge rhythm and a
+// tighter dark core must read as broken earth without introducing raised lip ownership,
+// shadow ownership, emissive glow or any portable-object silhouette.
+//
 // The form must read as memory pressure physically held by place. It must not regress
 // into a crystal crown, boulder, orb, flower, portal, ring, shell/mouth, manta, tent,
 // aircraft, animal, shoe, boat, bowl, helmet, body-part silhouette, smooth blob,
@@ -276,8 +283,9 @@ function createLivingMemoryFold() {
   geometry.userData.focusLiteralPixelSuccessorV302 = 'v302-grade-flush-hairline-incision-fragmented-low-crust-ground-owned-silhouette'
   geometry.userData.focusLiteralPixelSuccessorV303 = 'v303-shared-world-exact-grade-dark-crack-buried-closure-no-viewport-lift'
   geometry.userData.focusLiteralPixelSuccessorV304 = 'v304-buried-closed-body-coplanar-ground-incision-no-object-edge'
+  geometry.userData.focusLiteralPixelSuccessorV305 = 'v305-jagged-width-modulated-ground-fissure-no-twig-seam'
   geometry.userData.focusVisualAuthority = 'v295-sanctuary-memory-scar-volume'
-  geometry.userData.focusCurrentVisualAuthority = 'v304-ground-owned-coplanar-incision-buried-closed-body'
+  geometry.userData.focusCurrentVisualAuthority = 'v305-ground-owned-jagged-fissure-buried-closed-body'
   return geometry
 }
 
@@ -292,8 +300,8 @@ export function createFocusGroundIncision() {
   const colors: number[] = []
   const uvs: number[] = []
   const indices: number[] = []
-  const edgeColor = new THREE.Color().setRGB(.080, .066, .045)
-  const innerColor = new THREE.Color().setRGB(.012, .006, .004)
+  const edgeColor = new THREE.Color().setRGB(.112, .078, .043)
+  const innerColor = new THREE.Color().setRGB(.006, .003, .002)
 
   for (let section = 0; section < MEMORY_SECTIONS; section += 1) {
     const u = section / (MEMORY_SECTIONS - 1)
@@ -305,21 +313,28 @@ export function createFocusGroundIncision() {
     const side = new THREE.Vector2(-tangent.y, tangent.x)
     const endFade = Math.pow(Math.max(0, Math.sin(u * Math.PI)), .55)
     const centralScar = Math.exp(-Math.pow((t + .05) / .38, 2))
-    const halfWidth = (.034 + .014 * centralScar) * (.12 + .88 * endFade)
+    const widthPulse = THREE.MathUtils.clamp(
+      .78 + .24 * Math.sin(section * 1.37 + .41) + .14 * Math.sin(section * 3.11 - .73),
+      .48,
+      1.22,
+    )
+    const halfWidth = (.060 + .036 * centralScar) * (.10 + .90 * endFade) * widthPulse
 
     for (let cross = 0; cross < INCISION_CROSS_POINTS; cross += 1) {
       const crossU = cross / (INCISION_CROSS_POINTS - 1)
       const lateral = THREE.MathUtils.lerp(-1, 1, crossU)
+      const edgeSidePhase = lateral < 0 ? .37 : 1.91
       const edgeJitter = Math.abs(lateral) > .55
-        ? .010 * Math.sin(section * 2.47 + cross * 1.31)
-        : .0025 * Math.sin(section * 1.71 + cross * .83) * Math.abs(lateral)
+        ? .020 * Math.sin(section * 2.47 + cross * 1.31 + edgeSidePhase)
+          + .009 * Math.sin(section * 4.73 - cross * .67 + edgeSidePhase)
+        : .004 * Math.sin(section * 1.71 + cross * .83 + edgeSidePhase) * Math.abs(lateral)
       const lateralDistance = lateral * halfWidth + edgeJitter
       const x = center.x + side.x * lateralDistance
       const z = center.y + side.y * lateralDistance
       const y = focusGroundHeight(FOCUS_MEMORY_WORLD_X + x, FOCUS_MEMORY_WORLD_Z + z) + .00035
       positions.push(x, y, z)
       uvs.push(crossU, u)
-      const core = Math.exp(-Math.pow(lateral / .34, 2))
+      const core = Math.exp(-Math.pow(lateral / .27, 2))
       const color = edgeColor.clone().lerp(innerColor, .36 + .64 * core)
       colors.push(color.r, color.g, color.b)
     }
@@ -345,7 +360,7 @@ export function createFocusGroundIncision() {
   geometry.computeVertexNormals()
   geometry.computeBoundingBox()
   geometry.computeBoundingSphere()
-  geometry.userData.focusIncisionAuthority = 'v304-coplanar-ground-owned-dark-incision'
+  geometry.userData.focusIncisionAuthority = 'v305-coplanar-jagged-width-modulated-ground-fissure'
   geometry.userData.focusIncisionTopology = 'zero-thickness-open-visual-skin-over-buried-v295-closed-authority'
   geometry.userData.focusIncisionRule = 'no-raised-edge-no-shadow-no-emissive-no-portable-silhouette'
   return geometry
