@@ -42,7 +42,7 @@ test('Focus walkable terrain faces the camera above the surface', () => {
     }
   }
   assert.ok(checked > 100)
-  assert.ok(geometry.index.count / 3 < 25000)
+  assert.equal(geometry.index.count / 3, 144 * 162 * 2, 'Focus terrain must retain the exact basin-resolution tessellation budget')
   geometry.dispose()
 })
 
