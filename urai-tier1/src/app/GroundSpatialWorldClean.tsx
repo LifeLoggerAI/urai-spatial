@@ -31,7 +31,6 @@ import {
   slopeDegrees,
   slopeSpeedMultiplier,
 } from "@/spatial/ground/groundCanon";
-import { GroundOrbCompanion } from "@/spatial/ground/GroundOrbCompanion";
 
 type EnvironmentProfileId = "temperate" | "urban" | "woodland" | "arid" | "coastal";
 
@@ -492,7 +491,6 @@ function GroundScene({ profile, input, yaw, pitch, target, obstacles, playerPosi
     <directionalLight position={[-14, 20, 8]} intensity={2.05} color="#f0d6b0" castShadow shadow-mapSize={[1024, 1024]} shadow-camera-left={-28} shadow-camera-right={28} shadow-camera-top={28} shadow-camera-bottom={-28} shadow-camera-far={90} shadow-normalBias={0.035} />
     <directionalLight position={[12, 8, -18]} intensity={0.28} color="#81a8ad" />
     <Suspense fallback={null}><LivedGroundWorld profile={profile} target={target} /></Suspense>
-    <GroundOrbCompanion playerPosition={playerPosition} yaw={yaw} groundHeight={heightAt} obstacles={obstacles} reducedMotion={reducedMotion} />
     <FirstPersonPlayer input={input} yaw={yaw} pitch={pitch} target={target} profile={profile} obstacles={obstacles} playerPosition={playerPosition} isCoarse={isCoarse} onReady={onReady} />
   </>;
 }
