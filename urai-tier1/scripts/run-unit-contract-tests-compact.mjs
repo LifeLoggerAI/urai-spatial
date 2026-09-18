@@ -59,6 +59,7 @@ const tests = [
   'tests/orb-companion-contract.test.mjs',
   'tests/orb-locked-canon-convergence-contract.test.mjs',
   'tests/orb-v286-biomorphic-reliquary-contract.test.mjs',
+  'tests/private-source-media-consent-contract.test.mjs',
   'tests/provider-boundary-contract.test.mjs',
   'tests/provider-hosting-runtime-contract.test.mjs',
   'tests/provider-preview-routing-contract.test.mjs',
