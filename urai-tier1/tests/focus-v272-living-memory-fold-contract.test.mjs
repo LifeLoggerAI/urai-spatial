@@ -28,7 +28,7 @@ test('selected memory remains one connected CLOSED living-memory phenomenon rath
   assert.doesNotMatch(geology, /Array\.from\(\{ length: 7 \}/)
 })
 
-test('V305 preserves the V295 watertight body while the coplanar skin reads as a jagged geological fissure', () => {
+test('V306 preserves the buried V295 watertight body while the visual skin reads as broken earth with attached microbranches', () => {
   assert.match(geology, /V295 keeps the useful V294 top-surface language while restoring the non-negotiable/)
   assert.match(geology, /V298 narrowed the event/)
   assert.match(geology, /V299 changes ownership/)
@@ -72,11 +72,12 @@ test('V305 preserves the V295 watertight body while the coplanar skin reads as a
   assert.match(geology, /focusLiteralPixelSuccessorV303 = 'v303-shared-world-exact-grade-dark-crack-buried-closure-no-viewport-lift'/)
   assert.match(geology, /focusLiteralPixelSuccessorV304 = 'v304-buried-closed-body-coplanar-ground-incision-no-object-edge'/)
   assert.match(geology, /focusLiteralPixelSuccessorV305 = 'v305-jagged-width-modulated-ground-fissure-no-twig-seam'/)
+  assert.match(geology, /focusLiteralPixelSuccessorV306 = 'v306-broken-earth-footprint-attached-microbranches-sparse-weathered-edge-no-cable-outline'/)
   assert.match(geology, /export function createFocusGroundIncision\(\)/)
-  assert.match(geology, /focusIncisionAuthority = 'v305-coplanar-jagged-width-modulated-ground-fissure'/)
-  assert.match(geology, /focusIncisionTopology = 'zero-thickness-open-visual-skin-over-buried-v295-closed-authority'/)
+  assert.match(geology, /focusIncisionAuthority = 'v306-broken-earth-footprint-attached-microbranches-sparse-weathered-edge'/)
+  assert.match(geology, /focusIncisionTopology = 'zero-thickness-open-visual-skin-plus-attached-microbranches-over-buried-v295-closed-authority'/)
   assert.match(geology, /focusVisualAuthority = 'v295-sanctuary-memory-scar-volume'/)
-  assert.match(geology, /focusCurrentVisualAuthority = 'v305-ground-owned-jagged-fissure-buried-closed-body'/)
+  assert.match(geology, /focusCurrentVisualAuthority = 'v306-ground-owned-broken-earth-fissure-buried-closed-body'/)
   assert.match(geology, /color\.r = Math\.min\(\.76, color\.r\)/)
   assert.match(geology, /color\.g = Math\.min\(\.44, color\.g\)/)
   assert.match(geology, /color\.b = Math\.min\(\.15, color\.b\)/)
