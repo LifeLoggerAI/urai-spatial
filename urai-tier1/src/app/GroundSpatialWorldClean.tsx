@@ -206,29 +206,106 @@ function NaturalCanopy({ profile, position, rotationY, scale }: {
   scale: number;
 }) {
   const asset = useGLTF(NATURAL_CANOPY);
-  const model = useMemo(() => {
+  const hiddenGovernedSource = useMemo(() => {
     const copy = normalizedClone(asset.scene);
-    const trunk = new THREE.Color(profile.id === "woodland" ? "#372f27" : "#4a3d31");
-    const foliage = new THREE.Color(profile.id === "woodland" ? "#334534" : "#526149");
-    copy.traverse((object) => {
-      if (!(object instanceof THREE.Mesh)) return;
-      const materials = Array.isArray(object.material) ? object.material : [object.material];
-      for (const material of materials) {
-        if (!(material instanceof THREE.MeshStandardMaterial)) continue;
-        material.color.copy(/trunk/i.test(object.name) ? trunk : foliage);
-        material.roughness = 0.96;
-        material.metalness = 0;
-        material.envMapIntensity = 0.28;
-      }
-    });
+    copy.visible = false;
+    copy.userData.uraiGroundCanopyRole = 'governed-source-lineage-hidden-after-literal-pixel-rejection';
     return copy;
-  }, [asset.scene, profile.id]);
-  useEffect(() => () => model.traverse((object) => {
-    if (!(object instanceof THREE.Mesh)) return;
-    const materials = Array.isArray(object.material) ? object.material : [object.material];
-    materials.forEach((material) => material.dispose());
-  }), [model]);
-  return <group position={position} rotation={[0, rotationY, 0]} scale={scale} raycast={() => null}><primitive object={model} /></group>;
+  }, [asset.scene]);
+
+  const authored = useMemo(() => {
+    const woodland = profile.id === "woodland";
+    const trunkColor = woodland ? "#3a3027" : "#493a2c";
+    const branchColor = woodland ? "#42372d" : "#514334";
+    const leafA = woodland ? "#314b35" : "#4c674e";
+    const leafB = woodland ? "#3d5a3e" : "#5b7358";
+
+    const trunkCurve = new THREE.CatmullRomCurve3([
+      new THREE.Vector3(0, 0, 0),
+      new THREE.Vector3(-0.035, 0.55, 0.018),
+      new THREE.Vector3(0.045, 1.18, -0.028),
+      new THREE.Vector3(0.015, 1.82, 0.035),
+      new THREE.Vector3(0.08, 2.5, -0.02),
+    ]);
+    const trunkGeometry = new THREE.TubeGeometry(trunkCurve, 30, 0.105, 10, false);
+
+    const branchDefs = [
+      [[0.03, 1.18, 0.00], [0.42, 1.62, 0.10], [0.86, 1.92, 0.18]],
+      [[0.00, 1.35, 0.02], [-0.38, 1.72, -0.08], [-0.82, 2.02, -0.18]],
+      [[0.05, 1.58, -0.02], [0.22, 1.95, -0.42], [0.46, 2.18, -0.72]],
+      [[0.00, 1.74, 0.01], [-0.18, 2.08, 0.38], [-0.48, 2.28, 0.72]],
+      [[0.06, 1.95, 0.00], [0.46, 2.18, -0.16], [0.74, 2.38, -0.28]],
+      [[0.02, 2.02, 0.00], [-0.42, 2.24, 0.12], [-0.70, 2.42, 0.28]],
+    ] as const;
+    const branches = branchDefs.map((points) => new THREE.TubeGeometry(
+      new THREE.CatmullRomCurve3(points.map(([x, y, z]) => new THREE.Vector3(x, y, z))),
+      16,
+      0.045,
+      8,
+      false,
+    ));
+
+    const leaves = Array.from({ length: woodland ? 72 : 58 }, (_, index) => {
+      const angle = index * 2.3999632297;
+      const ring = 0.34 + (index % 9) * 0.055;
+      const layer = index % 5;
+      const x = Math.cos(angle) * ring * (0.88 + (index % 4) * 0.06);
+      const z = Math.sin(angle) * ring * (0.72 + (index % 3) * 0.08);
+      const y = 1.72 + layer * 0.18 + Math.sin(index * 1.73) * 0.13;
+      const rx = -0.38 + (index % 7) * 0.12;
+      const ry = angle + ((index % 3) - 1) * 0.21;
+      const rz = -0.22 + (index % 5) * 0.11;
+      const sx = 0.20 + (index % 4) * 0.025;
+      const sy = 0.10 + (index % 3) * 0.012;
+      return { position: [x, y, z] as [number, number, number], rotation: [rx, ry, rz] as [number, number, number], scale: [sx, sy] as [number, number], color: index % 2 ? leafA : leafB };
+    });
+
+    return { trunkGeometry, branches, leaves, trunkColor, branchColor };
+  }, [profile.id]);
+
+  useEffect(() => () => {
+    authored.trunkGeometry.dispose();
+    authored.branches.forEach((geometry) => geometry.dispose());
+  }, [authored]);
+
+  return <group
+    position={position}
+    rotation={[0, rotationY, 0]}
+    scale={scale}
+    raycast={() => null}
+    name="ground-authored-natural-canopy-v4"
+    userData={{
+      treatment: "deterministic-curved-branch-and-leaf-cluster-canopy-v4",
+      provenance: NATURAL_CANOPY,
+      visibleAuthority: "runtime-authored-canopy-v4",
+      supersedesVisibleCandidate: "ground-natural-canopy-v3-low-poly-silhouette",
+    }}
+  >
+    <primitive object={hiddenGovernedSource} />
+    <mesh geometry={authored.trunkGeometry} castShadow receiveShadow>
+      <meshStandardMaterial color={authored.trunkColor} roughness={0.93} metalness={0} envMapIntensity={0.28} />
+    </mesh>
+    {authored.branches.map((geometry, index) => <mesh key={index} geometry={geometry} castShadow receiveShadow>
+      <meshStandardMaterial color={authored.branchColor} roughness={0.94} metalness={0} envMapIntensity={0.26} />
+    </mesh>)}
+    {authored.leaves.map((leaf, index) => <mesh
+      key={index}
+      position={leaf.position}
+      rotation={leaf.rotation}
+      castShadow
+      receiveShadow
+    >
+      <planeGeometry args={[leaf.scale[0] * 2, leaf.scale[1] * 2, 1, 1]} />
+      <meshStandardMaterial
+        color={leaf.color}
+        roughness={0.9}
+        metalness={0}
+        side={THREE.DoubleSide}
+        alphaTest={0.1}
+        envMapIntensity={0.22}
+      />
+    </mesh>)}
+  </group>;
 }
 
 function urbanFootprint(index: number) {
