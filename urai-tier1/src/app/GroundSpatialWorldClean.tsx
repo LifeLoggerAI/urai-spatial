@@ -617,7 +617,13 @@ export default function GroundSpatialWorldClean() {
   const params = useSearchParams();
   const [ready, setReady] = useState(false);
   const [dragging, setDragging] = useState(false);
-  const [isCoarse, setIsCoarse] = useState(false);
+  const [isCoarse, setIsCoarse] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return window.matchMedia("(pointer: coarse)").matches
+      || window.matchMedia("(max-width: 760px)").matches
+      || navigator.maxTouchPoints > 0
+      || "ontouchstart" in window;
+  });
   const yaw = useRef(0);
   const pitch = useRef(-0.04);
   const target = useRef<THREE.Vector3 | null>(null);
