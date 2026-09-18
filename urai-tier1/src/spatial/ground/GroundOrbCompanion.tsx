@@ -16,14 +16,14 @@ export function GroundOrbCompanion(_props: {
   reducedMotion: boolean
 }) {
   useLayoutEffect(() => {
-    const fallback = document.querySelector<HTMLButtonElement>('.urai-world-companion__orb')
     const liveRegion = document.querySelector<HTMLElement>('.ground-spatial-root [role="status"]')
-    const previous = fallback ? {
-      opacity: fallback.style.opacity,
-      pointerEvents: fallback.style.pointerEvents,
-      transition: fallback.style.transition,
-      groundMode: fallback.dataset.groundOrbMode,
-    } : null
+    let fallback: HTMLButtonElement | null = null
+    let previous: {
+      opacity: string
+      pointerEvents: string
+      transition: string
+      groundMode: string | undefined
+    } | null = null
 
     const normalizeStatus = () => {
       if (!liveRegion) return
@@ -40,17 +40,7 @@ export function GroundOrbCompanion(_props: {
 
     const reveal = () => { if (fallback) fallback.style.opacity = '1' }
     const hide = () => { if (fallback) fallback.style.opacity = '0' }
-    if (fallback) {
-      fallback.dataset.groundOrbMode = 'semantic-invocation-only'
-      fallback.style.opacity = '0'
-      fallback.style.pointerEvents = 'none'
-      fallback.style.transition = 'opacity 120ms ease'
-      fallback.addEventListener('focus', reveal)
-      fallback.addEventListener('blur', hide)
-    }
-
-    return () => {
-      observer?.disconnect()
+    const restoreFallback = () => {
       if (!fallback || !previous) return
       fallback.removeEventListener('focus', reveal)
       fallback.removeEventListener('blur', hide)
@@ -59,6 +49,37 @@ export function GroundOrbCompanion(_props: {
       fallback.style.transition = previous.transition
       if (previous.groundMode) fallback.dataset.groundOrbMode = previous.groundMode
       else delete fallback.dataset.groundOrbMode
+      fallback = null
+      previous = null
+    }
+    const attachFallback = () => {
+      const candidate = document.querySelector<HTMLButtonElement>('.urai-world-companion__orb')
+      if (candidate === fallback) return
+      restoreFallback()
+      if (!candidate) return
+      fallback = candidate
+      previous = {
+        opacity: candidate.style.opacity,
+        pointerEvents: candidate.style.pointerEvents,
+        transition: candidate.style.transition,
+        groundMode: candidate.dataset.groundOrbMode,
+      }
+      candidate.dataset.groundOrbMode = 'semantic-invocation-only'
+      candidate.style.opacity = '0'
+      candidate.style.pointerEvents = 'none'
+      candidate.style.transition = 'opacity 120ms ease'
+      candidate.addEventListener('focus', reveal)
+      candidate.addEventListener('blur', hide)
+    }
+
+    attachFallback()
+    const fallbackObserver = new MutationObserver(attachFallback)
+    fallbackObserver.observe(document.body, { childList: true, subtree: true })
+
+    return () => {
+      observer?.disconnect()
+      fallbackObserver.disconnect()
+      restoreFallback()
     }
   }, [])
 

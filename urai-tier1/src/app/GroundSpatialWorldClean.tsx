@@ -549,11 +549,21 @@ export default function GroundSpatialWorldClean() {
   const obstacles = useMemo(() => buildGroundObstacleField(profile.id), [profile.id]);
 
   useEffect(() => {
-    const query = window.matchMedia('(pointer: coarse)');
-    const update = () => setIsCoarse(query.matches);
+    const pointerQuery = window.matchMedia('(pointer: coarse)');
+    const compactQuery = window.matchMedia('(max-width: 760px)');
+    const update = () => setIsCoarse(
+      pointerQuery.matches
+      || compactQuery.matches
+      || navigator.maxTouchPoints > 0
+      || 'ontouchstart' in window,
+    );
     update();
-    query.addEventListener?.('change', update);
-    return () => query.removeEventListener?.('change', update);
+    pointerQuery.addEventListener?.('change', update);
+    compactQuery.addEventListener?.('change', update);
+    return () => {
+      pointerQuery.removeEventListener?.('change', update);
+      compactQuery.removeEventListener?.('change', update);
+    };
   }, []);
 
   const reset = useCallback(() => {
