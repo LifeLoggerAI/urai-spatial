@@ -9,6 +9,7 @@ test('mobile Replay controls reserve the persistent lower-left world-control cor
   assert.match(layout, /import '\.\/replay-mobile-control-clearance\.css'/)
   assert.match(clearance, /@media \(max-width: 760px\)/)
   assert.match(clearance, /\.uraiAutoReplay \.uraiReplayControls/)
+  assert.match(clearance, /\.replayWorld \.memoryPacing/)
   assert.match(clearance, /left: max\(58px, calc\(env\(safe-area-inset-left, 0px\) \+ 46px\)\)/)
   assert.match(clearance, /right: max\(6px, env\(safe-area-inset-right, 0px\)\)/)
   assert.match(clearance, /width: auto/)
