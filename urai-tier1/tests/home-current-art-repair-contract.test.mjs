@@ -89,7 +89,7 @@ test('Ground is owned by the physical world surface and Life Map by the broad vi
     "cameraCheckpoint: 'home-sky-ascent-complete'",
   ]) assert.match(owner, new RegExp(marker.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')))
   assert.match(owner, /event\.point\.clone\(\)/)
-  assert.match(owner, /<HomeAtmosphericSky reducedMotion=\{reducedMotion\} active=\{transition === 'life-map'\} onLifeMap=\{onLifeMap\} \/>/)
+  assert.match(owner, /<HomeAtmosphericSky reducedMotion=\{reducedMotion\} active=\{transition === 'life-map'\} weatherState=\{personalWeatherState\} onLifeMap=\{onLifeMap\} \/>/)
   assert.doesNotMatch(owner, /nearby\s*===?\s*['"]life-map['"]|HOME_LIFE_MAP|home-life-map-physical-portal/)
 })
 
