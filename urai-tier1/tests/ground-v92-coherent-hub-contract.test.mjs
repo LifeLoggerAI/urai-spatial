@@ -7,7 +7,7 @@ const groundCanon = readFileSync(new URL('../src/spatial/ground/groundCanon.ts',
 
 test('Ground renders a lived physical world instead of the retired chamber hub', () => {
   assert.match(ground, /data-ground-visual-revision="ground-lived-world-v2-canon-lock"/)
-  assert.match(ground, /data-ground-art-revision="ground-natural-surface-v4-authored-canopy-v4-ridge-v3"/)
+  assert.match(ground, /data-ground-art-revision="ground-natural-surface-v5-organic-canopy-v5-ridge-v3"/)
   assert.match(ground, /const naturalProfile = profile\.id === "temperate" \|\| profile\.id === "woodland"/)
   assert.match(ground, /map=\{naturalProfile \? null : albedo\}/)
   assert.match(ground, /naturalSoil\.clone\(\)/)
