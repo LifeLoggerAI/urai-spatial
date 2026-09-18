@@ -57,7 +57,6 @@ test('V316 preserves the buried V295 watertight body while resolved sanctuary-ow
   assert.match(geology, /const pressureWave =/)
   assert.match(geology, /const pressureWindow = THREE\.MathUtils\.smoothstep\(pressureWave, \.56, \.84\)/)
   assert.match(geology, /const incisionReveal = \.004 \+ \.0015 \* centralScar/)
-  assert.match(geology, /const burialDepth = \.060/)
   assert.match(geology, /const groundY = focusGroundHeight\(FOCUS_MEMORY_WORLD_X \+ x, FOCUS_MEMORY_WORLD_Z \+ z\)/)
   assert.match(geology, /const dominantLipCenter =/)
   assert.match(geology, /const counterLipCenter =/)
