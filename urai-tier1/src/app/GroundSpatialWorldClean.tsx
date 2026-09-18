@@ -485,7 +485,7 @@ function GroundScene({ profile, input, yaw, pitch, target, obstacles, playerPosi
   return <>
     <color attach="background" args={[profile.fog]} />
     <fogExp2 attach="fog" args={[profile.fog, profile.id === "urban" ? 0.018 : 0.0135 + weather.atmosphericDensity * 0.002]} />
-    <Environment files="/assets/urai/home-production/cc0/environment/studio-small-08-1k.hdr" background={false} environmentIntensity={0.24} />
+    <Suspense fallback={null}><Environment files="/assets/urai/home-production/cc0/environment/studio-small-08-1k.hdr" background={false} environmentIntensity={0.24} /></Suspense>
     <ambientLight intensity={0.35} color="#cad7d0" />
     <hemisphereLight args={["#d7e5df", profile.groundDeep, 0.56]} />
     <directionalLight position={[-14, 20, 8]} intensity={2.05} color="#f0d6b0" castShadow shadow-mapSize={[1024, 1024]} shadow-camera-left={-28} shadow-camera-right={28} shadow-camera-top={28} shadow-camera-bottom={-28} shadow-camera-far={90} shadow-normalBias={0.035} />
