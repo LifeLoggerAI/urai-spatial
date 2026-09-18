@@ -256,7 +256,7 @@ function FocusSanctuaryGround({ accent, selectedMemoryActive }: { accent: string
   }, [selectedMemoryActive])
   const maps = useMemo(createFocusSurfaceMaps, [])
   useEffect(() => () => { geometry.dispose(); maps.forEach(texture => texture.dispose()) }, [geometry, maps])
-  return <mesh name={selectedMemoryActive ? "focus-v316-terrain-owned-resolved-selected-memory-cavities" : "focus-v214-continuous-eroded-memory-ground"} geometry={geometry} receiveShadow userData={{ selectedMemoryCavityAuthority: selectedMemoryActive ? "v316-resolved-terrain-basin-sampling-and-depth" : "neutral-ground-no-memory-rupture" }}>
+  return <mesh name={selectedMemoryActive ? "focus-v317-three-radial-terrain-selected-memory-cavities" : "focus-v214-continuous-eroded-memory-ground"} geometry={geometry} receiveShadow userData={{ selectedMemoryCavityAuthority: selectedMemoryActive ? "v317-three-radial-terrain-basin-depth" : "neutral-ground-no-memory-rupture" }}>
     <meshStandardMaterial map={maps[0]} normalMap={maps[1]} roughnessMap={maps[2]} normalScale={new THREE.Vector2(.6,.6)} color="#9b967e" roughness={0.94} metalness={0} />
   </mesh>
 }
@@ -400,12 +400,12 @@ function MemoryAperture({ memory, accent, onActivate }: { memory: SelectedMemory
   // only restrained surface response; geometry, scale, camera and idle position do
   // not pulse. The material stays weathered/mineral so the fold cannot regress to
   // the rejected cyan crystal-crown or white-card readings.
-  return <group position={[FOCUS_MEMORY_WORLD_X, 0, FOCUS_MEMORY_WORLD_Z]} name="focus-memory-aperture" userData={{ artRevision: 'v316-terrain-owned-resolved-pressure-cavities', hierarchy: 'selected-memory-buried-closed-authority-plus-terrain-depression-plus-cavity-bottom-incision', materialAuthority: 'terrain-owned-resolved-three-basin-depth-plus-unlit-narrow-near-black-cavity-bottoms-hairline-connector-no-panel' }}>
+  return <group position={[FOCUS_MEMORY_WORLD_X, 0, FOCUS_MEMORY_WORLD_Z]} name="focus-memory-aperture" userData={{ artRevision: 'v317-three-radial-terrain-pressure-cavities', hierarchy: 'selected-memory-buried-closed-authority-plus-terrain-depression-plus-cavity-bottom-incision', materialAuthority: 'terrain-owned-three-radial-basin-depth-plus-separated-unlit-near-black-cavity-bottoms-subordinate-hairline-connector-no-panel' }}>
     <group scale={[1, 1, 1]} position={[0, 0, 0]} name="focus-v251-grounded-living-memory-manifestation">
       {strata.map((geometry,index) => <mesh key={index} geometry={geometry} castShadow={false} receiveShadow={false} raycast={() => null} name={`focus-authored-living-memory-fold-${index}`}>
         <meshStandardMaterial vertexColors color="#51493d" emissive="#000000" emissiveIntensity={0} roughness={1} metalness={0} side={THREE.DoubleSide} />
       </mesh>)}
-      <mesh geometry={incision} castShadow={false} receiveShadow={false} renderOrder={2} name="focus-v316-terrain-owned-resolved-pressure-cavity-bottoms" onClick={(event) => { event.stopPropagation(); if (memory) onActivate() }} onPointerOver={(event) => pointer(event, true)} onPointerOut={(event) => pointer(event, false)}>
+      <mesh geometry={incision} castShadow={false} receiveShadow={false} renderOrder={2} name="focus-v317-three-radial-terrain-pressure-cavity-bottoms" onClick={(event) => { event.stopPropagation(); if (memory) onActivate() }} onPointerOver={(event) => pointer(event, true)} onPointerOut={(event) => pointer(event, false)}>
         <meshBasicMaterial vertexColors color={hovered ? '#f4f1e8' : '#ffffff'} toneMapped={false} side={THREE.DoubleSide} depthWrite={false} polygonOffset polygonOffsetFactor={-4} polygonOffsetUnits={-4} />
       </mesh>
     </group>
