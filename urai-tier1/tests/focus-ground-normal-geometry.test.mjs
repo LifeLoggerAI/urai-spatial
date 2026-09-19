@@ -17,6 +17,7 @@ test('Focus star geometry owns the close-range spatial silhouette', () => {
   assert.match(focus, /name="focus-selected-memory-star"/)
   assert.match(focus, /name="focus-memory-star-outer-corona"/)
   assert.match(focus, /name="focus-memory-star-inner-corona"/)
+  assert.match(focus, /name="focus-memory-star-photosphere-core"/)
   assert.match(focus, /name="focus-memory-star-glass-shell"/)
   assert.match(focus, /name="focus-memory-star-interior-depth"/)
   assert.match(focus, /<sphereGeometry args=\{\[1\.18, 64, 48\]\} \/>/)
