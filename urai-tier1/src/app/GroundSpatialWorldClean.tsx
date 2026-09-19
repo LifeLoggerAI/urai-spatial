@@ -230,7 +230,7 @@ function CanopyLeafInstances({ geometry, leaves, color }: {
     owner.computeBoundingSphere();
   }, [dummy, leaves]);
   return <instancedMesh ref={mesh} args={[geometry, undefined, leaves.length]} castShadow receiveShadow frustumCulled>
-    <meshStandardMaterial color={color} roughness={0.97} metalness={0} envMapIntensity={0.14} />
+    <meshStandardMaterial color={color} roughness={0.98} metalness={0} envMapIntensity={0.12} side={THREE.DoubleSide} />
   </instancedMesh>;
 }
 
@@ -256,15 +256,21 @@ function NaturalCanopy({ profile, position, rotationY, scale, shapeSeed }: {
     const leafA = woodland ? "#314b35" : "#4c674e";
     const leafB = woodland ? "#3d5a3e" : "#5b7358";
 
+    const shapePhase = shapeSeed * 0.731;
+    const trunkLeanX = (((shapeSeed * 17) % 19) - 9) * 0.008;
+    const trunkLeanZ = (((shapeSeed * 23) % 17) - 8) * 0.007;
+    const crownWidth = 0.74 + ((shapeSeed * 29) % 37) / 100;
+    const crownDepth = 0.76 + ((shapeSeed * 31) % 33) / 100;
+    const crownLift = 0.92 + ((shapeSeed * 11) % 19) / 100;
     const trunkCurve = new THREE.CatmullRomCurve3([
       new THREE.Vector3(0, 0, 0),
-      new THREE.Vector3(-0.045, 0.56, 0.025),
-      new THREE.Vector3(0.055, 1.16, -0.035),
-      new THREE.Vector3(-0.025, 1.78, 0.045),
-      new THREE.Vector3(0.065, 2.42, -0.035),
-      new THREE.Vector3(0.02, 2.72, 0.02),
+      new THREE.Vector3(-0.035 + trunkLeanX * 0.35, 0.56, 0.018 + trunkLeanZ * 0.25),
+      new THREE.Vector3(0.042 + trunkLeanX * 0.72, 1.16, -0.028 + trunkLeanZ * 0.58),
+      new THREE.Vector3(-0.018 + trunkLeanX * 1.05, 1.78, 0.034 + trunkLeanZ * 0.94),
+      new THREE.Vector3(0.046 + trunkLeanX * 1.35, 2.42 * crownLift, -0.026 + trunkLeanZ * 1.28),
+      new THREE.Vector3(0.012 + trunkLeanX * 1.58, 2.72 * crownLift, 0.014 + trunkLeanZ * 1.48),
     ]);
-    const trunkGeometry = new THREE.TubeGeometry(trunkCurve, 44, 0.066, 12, false);
+    const trunkGeometry = new THREE.TubeGeometry(trunkCurve, 44, 0.058 + ((shapeSeed * 7) % 13) * 0.001, 12, false);
 
     const branchDefs = [
       [[0.02, 1.12, 0.00], [0.30, 1.46, 0.06], [0.72, 1.73, 0.15], [1.02, 1.94, 0.23]],
@@ -276,31 +282,26 @@ function NaturalCanopy({ profile, position, rotationY, scale, shapeSeed }: {
       [[0.03, 2.12, 0.00], [0.18, 2.31, 0.24], [0.30, 2.47, 0.48]],
       [[0.00, 2.24, -0.01], [-0.16, 2.40, -0.22], [-0.28, 2.54, -0.42]],
     ] as const;
-    const branches = branchDefs.map((points, index) => new THREE.TubeGeometry(
+    const transformedBranchDefs = branchDefs.map((points, branchIndex) => points.map(([x, y, z], pointIndex) => [
+      x * crownWidth + trunkLeanX * y * 0.72 + Math.sin(shapePhase + branchIndex * 1.91 + pointIndex * 0.73) * 0.035,
+      y * crownLift + Math.cos(shapePhase * 0.7 + branchIndex * 0.83 + pointIndex) * 0.025,
+      z * crownDepth + trunkLeanZ * y * 0.66 + Math.cos(shapePhase + branchIndex * 1.37 + pointIndex * 0.61) * 0.035,
+    ] as [number, number, number]));
+    const branches = transformedBranchDefs.map((points, index) => new THREE.TubeGeometry(
       new THREE.CatmullRomCurve3(points.map(([x, y, z]) => new THREE.Vector3(x, y, z))),
       22,
-      index < 2 ? 0.022 : 0.017,
+      index < 2 ? 0.020 : 0.014,
       8,
       false,
     ));
 
-    const leafGeometry = new THREE.SphereGeometry(1, 16, 10);
-    const leafPositions = leafGeometry.getAttribute('position') as THREE.BufferAttribute;
-    for (let index = 0; index < leafPositions.count; index += 1) {
-      const x = leafPositions.getX(index);
-      const y = leafPositions.getY(index);
-      const z = leafPositions.getZ(index);
-      const warp = 1 + 0.13 * Math.sin(index * 1.37) + 0.07 * Math.cos(index * 0.53);
-      leafPositions.setXYZ(index, x * warp, y * (0.78 + 0.16 * Math.sin(index * 0.43)), z * (0.88 + 0.11 * Math.cos(index * 0.91)));
-    }
-    leafPositions.needsUpdate = true;
-    leafGeometry.computeVertexNormals();
+    const leafGeometry = new THREE.CircleGeometry(1, 8);
 
     const foliageAnchors = [
-      ...branchDefs.map((points) => points[points.length - 1]),
-      [0.02, 2.67, 0.02] as const,
-      [0.26, 2.48, 0.12] as const,
-      [-0.24, 2.50, -0.10] as const,
+      ...transformedBranchDefs.map((points) => points[points.length - 1]),
+      [trunkLeanX * 2.55, 2.67 * crownLift, trunkLeanZ * 2.45] as const,
+      [0.22 * crownWidth + trunkLeanX * 2.2, 2.48 * crownLift, 0.10 * crownDepth + trunkLeanZ * 2.0] as const,
+      [-0.21 * crownWidth + trunkLeanX * 2.15, 2.50 * crownLift, -0.09 * crownDepth + trunkLeanZ * 2.05] as const,
     ];
     const hash = (seed: number) => {
       const value = Math.sin(seed * 12.9898 + shapeSeed * 53.117 + (woodland ? 78.233 : 31.417)) * 43758.5453;
@@ -316,9 +317,9 @@ function NaturalCanopy({ profile, position, rotationY, scale, shapeSeed }: {
       const rx = (hash(index * 7 + 6) - 0.5) * 1.28;
       const ry = theta + (hash(index * 7 + 7) - 0.5) * 1.15;
       const rz = (hash(index * 7 + 8) - 0.5) * 1.12;
-      const sx = 0.052 + hash(index * 7 + 9) * 0.052;
-      const sy = 0.020 + hash(index * 7 + 10) * 0.028;
-      const sz = 0.040 + hash(index * 7 + 11) * 0.048;
+      const sx = 0.040 + hash(index * 7 + 9) * 0.038;
+      const sy = 0.014 + hash(index * 7 + 10) * 0.018;
+      const sz = 0.030 + hash(index * 7 + 11) * 0.032;
       return {
         position: [x, y, z] as [number, number, number],
         rotation: [rx, ry, rz] as [number, number, number],
@@ -347,11 +348,11 @@ function NaturalCanopy({ profile, position, rotationY, scale, shapeSeed }: {
       scale * (0.82 + ((shapeSeed * 29) % 21) / 100),
     ]}
     raycast={() => null}
-    name="ground-authored-natural-canopy-v12"
+    name="ground-authored-natural-canopy-v13"
     userData={{
-      treatment: "deterministic-fine-leaf-irregular-seeded-branch-tip-canopy-v12",
+      treatment: "seed-varied-branch-architecture-fine-flat-leaf-canopy-v13",
       provenance: NATURAL_CANOPY,
-      visibleAuthority: "runtime-authored-canopy-v12",
+      visibleAuthority: "runtime-authored-canopy-v13",
       supersedesVisibleCandidate: "ground-natural-canopy-v3-low-poly-silhouette",
     }}
   >
@@ -422,13 +423,13 @@ function NaturalScatter({ profile }: { profile: EnvironmentProfile }) {
       const value = Math.sin(seed * 12.9898 + profile.id.length * 41.733) * 43758.5453;
       return value - Math.floor(value);
     };
-    return Array.from({ length: profile.id === "urban" ? 18 : 26 }, (_, index) => {
+    return Array.from({ length: profile.id === "urban" ? 18 : 30 }, (_, index) => {
       const side = hash(index * 5 + 1) > 0.5 ? -1 : 1;
-      const lane = 6.8 + hash(index * 5 + 2) * 13.2;
-      const x = side * lane + (hash(index * 5 + 3) - 0.5) * 3.4;
-      const z = 7 - index * 1.92 + (hash(index * 5 + 4) - 0.5) * 7.2;
+      const lane = 7.8 + hash(index * 5 + 2) * 15.4;
+      const x = side * lane + (hash(index * 5 + 3) - 0.5) * 4.8;
+      const z = 3.5 - hash(index * 5 + 4) * 52;
       const y = groundHeight(x, z, profile.id);
-      const scale = 0.64 + hash(index * 5 + 5) * 0.72;
+      const scale = 0.52 + hash(index * 5 + 5) * 0.94;
       return { x, y, z, scale, index };
     });
   }, [profile]);
@@ -451,20 +452,20 @@ function NaturalScatter({ profile }: { profile: EnvironmentProfile }) {
   }
 
   const woodland = profile.id === "woodland";
-  const ferns = items.slice(0, woodland ? 24 : 16);
-  const canopies = items.slice(0, woodland ? 24 : 20);
+  const ferns = items.slice(0, woodland ? 28 : 22);
+  const canopies = items.filter((item) => item.z < (woodland ? 1.5 : -1.5)).slice(0, woodland ? 20 : 16);
   return <group name={woodland ? "ground-woodland-scanned-understory" : "ground-temperate-scanned-understory"} userData={{ treatment: "urai-self-authored-static-canopy-v3-with-polyhaven-fern-rock-understory", canopyFallback: "scanned-understory-remains-without-canopy" }} raycast={() => null}>
     <GroundCanopyBoundary>
       <Suspense fallback={null}>
         {canopies.map((item) => {
-          const x = item.x * 0.72;
-          const z = item.z - 6.4 + Math.sin(item.index * 0.83) * 1.7;
+          const x = item.x * 0.78;
+          const z = item.z - 3.4;
           return <NaturalCanopy
             key={`canopy-${item.index}`}
             profile={profile}
             position={[x, groundHeight(x, z, profile.id) - 0.02, z]}
             rotationY={item.index * 0.91 + (woodland ? 0.22 : -0.14)}
-            scale={(woodland ? 1.82 : 1.68) + item.scale * 0.48}
+            scale={(woodland ? 1.58 : 1.42) + item.scale * 0.42}
             shapeSeed={item.index + (woodland ? 101 : 17)}
           />;
         })}
@@ -517,13 +518,13 @@ function buildDistantRidgeGeometry(profile: EnvironmentProfile) {
 function DistantGroundContinuation({ profile }: { profile: EnvironmentProfile }) {
   const ridge = useMemo(() => buildDistantRidgeGeometry(profile), [profile]);
   useEffect(() => () => ridge.dispose(), [ridge]);
-  return <group name="ground-distant-continuation" raycast={() => null} userData={{ perceivedRangeMeters: 400, horizonAuthority: "authored-irregular-ridge-v3-no-stretched-sphere" }}>
-    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.32, -128]} receiveShadow>
+  return <group name="ground-distant-continuation" raycast={() => null} userData={{ perceivedRangeMeters: 400, horizonAuthority: "authored-irregular-ridge-v4-muted-fog-blended" }}>
+    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.32, -128]}>
       <planeGeometry args={[420, 300, 36, 28]} />
-      <meshStandardMaterial color={profile.horizon} roughness={0.98} metalness={0} />
+      <meshBasicMaterial color={profile.horizon} fog toneMapped={false} />
     </mesh>
-    <mesh name="ground-authored-distant-ridge-v3" geometry={ridge} receiveShadow>
-      <meshStandardMaterial color={profile.groundDeep} roughness={1} metalness={0} />
+    <mesh name="ground-authored-distant-ridge-v4" geometry={ridge}>
+      <meshBasicMaterial color={profile.groundDeep} fog toneMapped={false} />
     </mesh>
   </group>;
 }
@@ -810,7 +811,7 @@ export default function GroundSpatialWorldClean() {
     data-ground-visual-owner="physical-lived-world"
     data-ground-runtime-owner="first-person-lived-world"
     data-ground-visual-revision="ground-lived-world-v2-canon-lock"
-    data-ground-art-revision="ground-natural-surface-v12-fine-leaf-seeded-canopy-v12-atmosphere-v4-authored-dome-ridge-v3"
+    data-ground-art-revision="ground-natural-surface-v13-varied-branch-flat-leaf-canopy-v13-atmosphere-v4-muted-ridge-v4"
     data-ground-exploration="first-person-no-visible-body"
     data-ground-camera="eye-level-terrain-following-no-authored-bob"
     data-ground-eye-height={GROUND_EYE_HEIGHT_M}
