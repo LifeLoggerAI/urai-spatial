@@ -454,7 +454,7 @@ function NaturalScatter({ profile }: { profile: EnvironmentProfile }) {
   const woodland = profile.id === "woodland";
   const ferns = items.slice(0, woodland ? 28 : 22);
   const canopies = items.filter((item) => item.z < (woodland ? 1.5 : -1.5)).slice(0, woodland ? 20 : 16);
-  return <group name={woodland ? "ground-woodland-scanned-understory" : "ground-temperate-scanned-understory"} userData={{ treatment: "urai-self-authored-static-canopy-v3-with-polyhaven-fern-rock-understory", canopyFallback: "scanned-understory-remains-without-canopy" }} raycast={() => null}>
+  return <group name={woodland ? "ground-woodland-scanned-understory" : "ground-temperate-scanned-understory"} userData={{ treatment: "urai-self-authored-varied-canopy-v13-with-polyhaven-fern-rock-understory", canopyFallback: "scanned-understory-remains-without-canopy" }} raycast={() => null}>
     <GroundCanopyBoundary>
       <Suspense fallback={null}>
         {canopies.map((item) => {
