@@ -280,7 +280,7 @@ function CanopyLeafInstances({ geometry, leaves, color }: {
     owner.computeBoundingSphere();
   }, [dummy, leaves]);
   return <instancedMesh ref={mesh} args={[geometry, undefined, leaves.length]} castShadow receiveShadow frustumCulled>
-    <meshStandardMaterial color={color} roughness={0.98} metalness={0} envMapIntensity={0.12} side={THREE.DoubleSide} />
+    <meshStandardMaterial color={color} roughness={0.94} metalness={0} envMapIntensity={0.20} side={THREE.DoubleSide} />
   </instancedMesh>;
 }
 
@@ -361,18 +361,18 @@ function NaturalCanopy({ profile, position, rotationY, scale, shapeSeed }: {
       const value = Math.sin(seed * 12.9898 + shapeSeed * 53.117 + (woodland ? 78.233 : 31.417)) * 43758.5453;
       return value - Math.floor(value);
     };
-    const leaves = Array.from({ length: woodland ? 820 : 720 }, (_, index) => {
+    const leaves = Array.from({ length: woodland ? 1480 : 1280 }, (_, index) => {
       const anchor = foliageAnchors[index % foliageAnchors.length];
-      const spread = 0.085 + hash(index * 7 + 1) * 0.29;
+      const spread = 0.12 + hash(index * 7 + 1) * 0.42;
       const theta = hash(index * 7 + 2) * Math.PI * 2;
       const x = anchor[0] + Math.cos(theta) * spread * (0.48 + hash(index * 7 + 3) * 0.92);
-      const y = anchor[1] - 0.02 + (hash(index * 7 + 4) - 0.46) * 0.48;
+      const y = anchor[1] - 0.02 + (hash(index * 7 + 4) - 0.45) * 0.64;
       const z = anchor[2] + Math.sin(theta) * spread * (0.46 + hash(index * 7 + 5) * 0.88);
       const rx = (hash(index * 7 + 6) - 0.5) * 1.28;
       const ry = theta + (hash(index * 7 + 7) - 0.5) * 1.15;
       const rz = (hash(index * 7 + 8) - 0.5) * 1.12;
-      const sx = 0.145 + hash(index * 7 + 9) * 0.155;
-      const sy = 0.072 + hash(index * 7 + 10) * 0.094;
+      const sx = 0.24 + hash(index * 7 + 9) * 0.22;
+      const sy = 0.11 + hash(index * 7 + 10) * 0.13;
       const sz = 1;
       return {
         position: [x, y, z] as [number, number, number],
@@ -508,7 +508,7 @@ function NaturalScatter({ profile }: { profile: EnvironmentProfile }) {
 
   const woodland = profile.id === "woodland";
   const ferns = items.slice(0, woodland ? 76 : 64);
-  const canopies = items.filter((item) => item.z < (woodland ? 6.0 : 4.5)).slice(0, woodland ? 50 : 42);
+  const canopies = items.filter((item) => item.z < (woodland ? 8.0 : 6.5)).slice(0, woodland ? 62 : 54);
   return <group name={woodland ? "ground-woodland-scanned-understory" : "ground-temperate-scanned-understory"} userData={{ treatment: "urai-self-authored-varied-canopy-v13-with-polyhaven-fern-rock-understory", canopyFallback: "scanned-understory-remains-without-canopy" }} raycast={() => null}>
     <GroundCanopyBoundary>
       <Suspense fallback={null}>
@@ -520,7 +520,7 @@ function NaturalScatter({ profile }: { profile: EnvironmentProfile }) {
             profile={profile}
             position={[x, groundHeight(x, z, profile.id) - 0.02, z]}
             rotationY={item.index * 0.91 + (woodland ? 0.22 : -0.14)}
-            scale={(woodland ? 1.48 : 1.38) + item.scale * 0.34}
+            scale={(woodland ? 1.62 : 1.52) + item.scale * 0.42}
             shapeSeed={item.index + (woodland ? 101 : 17)}
           />;
         })}
