@@ -121,3 +121,15 @@ test('V288 Orb keeps its last certified reliquary pixels while fallback geometry
   }
   assert.match(reliquary, /raycast=\{\(\) => null\}/)
 })
+
+
+test('current Home candidate uses the governed residence architecture instead of the rejected rooted valley layer', () => {
+  assert.match(owner, /HOME_ARCHITECTURE_MODEL = '\/assets\/urai\/generated\/models\/home-entry-chamber-v1\.glb'/)
+  assert.match(owner, /function ReferenceHomeArchitecture/)
+  assert.match(owner, /home-v289-governed-lived-residence/)
+  assert.match(owner, /data-home-art-revision="v289-governed-lived-residence-reference-rewire"/)
+  assert.match(owner, /data-home-reference-architecture=\{HOME_ARCHITECTURE_MODEL\}/)
+  assert.doesNotMatch(owner, /<HomeV225PolishV3/)
+  assert.match(owner, /certification: 'candidate-requires-fresh-exact-head-pixels'/)
+  assert.match(owner, /data-home-visual-grade="current-literal-pixel-candidate-not-certified"/)
+})
