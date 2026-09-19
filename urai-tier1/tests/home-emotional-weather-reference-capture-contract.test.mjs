@@ -22,10 +22,9 @@ test('review time override is explicit and cannot replace normal adaptive time o
 })
 
 test('reference estate captures supported Personal Emotional Weather authority states', () => {
-  for (const id of ['WEATHER-001','WEATHER-002','WEATHER-003','WEATHER-004','WEATHER-005','WEATHER-006','WEATHER-007','WEATHER-008','WEATHER-009','WEATHER-010','WEATHER-011','WEATHER-013','WEATHER-014','WEATHER-015','WEATHER-018']) {
+  for (const id of ['WEATHER-001','WEATHER-002','WEATHER-003','WEATHER-004','WEATHER-005','WEATHER-006','WEATHER-007','WEATHER-008','WEATHER-009','WEATHER-010','WEATHER-011','WEATHER-013','WEATHER-014','WEATHER-015','WEATHER-017','WEATHER-018']) {
     assert.ok(capture.includes(`id:'${id}'`), `missing ${id}`)
   }
   assert.ok(!capture.includes("id:'WEATHER-012'"), 'reduced-stimulation capture must remain blocked until a real control exists')
   assert.ok(!capture.includes("id:'WEATHER-016'"), 'private place-specific overlay must not be fabricated')
-  assert.ok(!capture.includes("id:'WEATHER-017'"), 'disclosed place-specific demo must not be fabricated')
 })
