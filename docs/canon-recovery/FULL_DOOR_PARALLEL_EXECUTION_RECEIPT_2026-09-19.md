@@ -107,6 +107,54 @@ Most inspected non-Spatial candidate heads had successful current-head CI/verifi
 
 Many candidates are stacked on intermediate branches and/or explicitly retain independent-review, provider-runtime, protected-deploy, legal, security or live-readback gates. No candidate was merged merely because CI was green.
 
+## 9A. Public standalone-domain sweep
+
+Browser-backed live verification established:
+
+Serving real URAI application/site content:
+- `uraiadmin.com` — live standalone Admin site with public features/security/pricing/contact/login/privacy/terms routes.
+- `uraianalytics.com` — live Analytics site with `/overview`, `/jobs-health` and `/executions` routes.
+
+Important truth boundaries:
+- Admin is early-access rather than terminal commercial launch: the live contact page still instructs operators to connect a preferred support mailbox/CRM/contact provider, and live privacy/terms pages explicitly say final legal terms/review remain pending before broad external release.
+- Analytics live `/overview` displays fixture/sample values while its page metadata describes a production analytics command center. Current source hardening explicitly repairs this truth boundary, but that successor is unmerged/undeployed. Treat the current Analytics deployment as reachable, not provider-telemetry certified.
+
+Reachable but still registrar/parking "Coming Soon" surfaces at verification time:
+- `urailabs.com`
+- `uraib2bportal.com`
+- `uraicommunications.com`
+- `uraicontent.com`
+- `uraifoundation.org` (with `.com` redirecting there)
+- `uraiinvestors.com`
+- `uraijobs.com`
+- `uraimarketing.com`
+- `uraiprivacy.com`
+- `uraispatial.com`
+- `uraistorytime.com`
+- `uraistudio.com`
+
+`uraiassetfactory.com` returned 404.
+
+Flagship routing verified:
+- `www.urai.app` -> `urai.app`
+- `urai.life` / `www.urai.life` -> `urai.app`
+- `geturai.app` / `www.geturai.app` -> `urai.app`
+- `geturai.life` -> `urai.app`
+- `ruai.app` / `www.ruai.app` -> `urai.app`
+- `ruai.life` -> `urai.app`
+
+Source-green standalone PRs therefore MUST NOT be described as publicly launched merely because their code is ready.
+
+## 9B. Autonomous operations / media / model-factory state
+
+Observed machine-executable source authority includes:
+- URAI Jobs #99 exact head `1c1028b55be7f11823d9ec5fe9f6c3b98387883b`: 9/9 exact-head workflows green for the fail-closed private-source transcription worker contract. Protected deployment, source-authority/provider bindings, lifecycle proof and independent privacy/security review remain open.
+- URAI Studio #89 exact head `05b6692a7fbea940ae8d97503c1d94193663db51`: exact-head Production Verify and Video Factory Verification green for the private-memory-film contract. Provider/compositor execution, rights/consent, QC, private delivery and final human acceptance remain protected.
+- Asset Factory #274 current GitHub head observed as `12bd3dbf19dd9deadc97938fd9b2a7504ef2d58f`: current workflow set included Model Forge Proof, Production Verify and Blender Runtime Proof success. PR prose contained a different historical/current-authority SHA, so live GitHub metadata remains controlling. Real provider generation, candidate GLBs, scene integration, literal-pixel acceptance and governed promotion remain separate gates.
+- Spatial Possible Futures / AI Self-Ledger #1243 is implemented as a draft source candidate, but explicitly leaves production Scenario AI, autonomous/background Scenario exploration, persistent autonomous Council agents, cross-user worlds, external Scenario actions and public emotional-field activation disabled.
+
+Therefore URAI has substantial autonomous/orchestration machinery, but **fully autonomous production authority is not yet activated**.
+
 ## 10. Post-freeze Spatial children
 
 The following current nonvisual lanes are intentionally separated from the moving pixel convergence and must be reconciled onto the final frozen #1237 authority rather than merged against stale bases:
