@@ -7,7 +7,8 @@ Status: SOURCE-NORMALIZED BASELINE / FINAL ACCEPTANCE PARTIAL
 Primary current visual/reference authority is normalized in:
 - `46-CURRENT-ASSET-REFERENCE-AUTHORITY.md`
 - `10-GOLD-MASTER-SOURCE-RECOVERY.md`
-- `34-MISSING-VISUAL-REFERENCE-BRIEFS.md`
+- `09-MISSING-ARTIFACT-MANIFEST.md`
+- `43-STORYBOARD-FRAME-SPECIFICATIONS.md`
 
 Primary source families:
 - Drive: URAI Visual Gold Master Active Manifest — 2026-09-17
@@ -111,4 +112,4 @@ when current canon and evidence prove equivalence.
 
 The reference system is now normalized enough to identify current authority and every major missing visual pack. It is not yet a claim that every required frame has been created or accepted.
 
-Missing-reference production briefs live in `34-MISSING-VISUAL-REFERENCE-BRIEFS.md`. Literal acceptance remains a separate evidence step.
+Missing-reference requirements and production-ready state/frame briefs are retained in `09-MISSING-ARTIFACT-MANIFEST.md`, `43-STORYBOARD-FRAME-SPECIFICATIONS.md`, and the stable authority definitions in `46-CURRENT-ASSET-REFERENCE-AUTHORITY.md`. Literal acceptance remains a separate evidence step.

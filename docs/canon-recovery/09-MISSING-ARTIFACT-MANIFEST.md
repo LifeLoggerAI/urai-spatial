@@ -26,10 +26,10 @@ Still open:
 Still required:
 - attach stable IDs to retained proof/reference screenshots;
 - link rejected/predecessor images to their superseding current authority;
-- continue Final Asset Lock / 53-asset row reconciliation where historical rows remain useful;
+- use the completed `47-LAUNCH-ASSET-LEDGER-NORMALIZATION.md` and `57-FINAL-ASSET-LOCK-ROW-NORMALIZATION.md` mappings when attaching item-level retained proof/reference pointers;
 - record exact source path or Drive ID, date, authority class, acceptance state, implementation target and supersession pointer for retained references.
 
-The older 213-row asset inventory is a semantic inventory, not a requirement for 213 standalone files.
+The Final Asset Lock began from a 213-row semantic baseline and now contains 220 tracked rows through `URA-220`; the row-level canon mapping is complete, and neither count is a requirement for that many standalone files.
 
 ## Priority 1 — storyboard / experience gaps
 
@@ -64,8 +64,6 @@ Still requires finalized content packs for:
 
 ## Priority 1 — functional authority still unresolved
 
-- Companion versus Narrator role relationship;
-- Mood Forecast relationship to Emotional Weather and Possible Futures;
 - shared-memory multi-party consent;
 - Legacy inheritance/posthumous access;
 - native offline/edge conflict resolution;
