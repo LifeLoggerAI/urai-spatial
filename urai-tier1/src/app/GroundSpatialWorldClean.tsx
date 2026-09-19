@@ -345,10 +345,6 @@ function NaturalCanopy({ profile, position, rotationY, scale, shapeSeed }: {
       false,
     ));
 
-    const leafShape = new THREE.Shape();
-    leafShape.moveTo(0, -1);
-    leafShape.quadraticCurveTo(.72, -.22, 0, 1);
-    leafShape.quadraticCurveTo(-.72, -.22, 0, -1);
     const leafGeometry = new THREE.SphereGeometry(0.5, 10, 8);
 
     const foliageAnchors = [
