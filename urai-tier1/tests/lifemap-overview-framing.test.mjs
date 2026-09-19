@@ -106,7 +106,7 @@ test('selected-memory travel remains spatial, volumetric, and celestial until Fo
   assert.match(cosmic, /phase === "departure" \? \.34 : phase === "travel" \? \.32 : phase === "approach" \? \.28 : \.22/)
   assert.match(cosmic, /life-map-v287-selected-memory-stellar-weather/)
   assert.match(cosmic, /v287-selected-memory-star-no-glass-shards/)
-  assert.match(cosmic, /phase === "arrival" \? 6\.8 : phase === "approach" \? 5\.2 : phase === "travel" \? 3\.7 : 2\.6/)
+  assert.match(cosmic, /const scale = phase === "arrival" \? 3\.9 : phase === "approach" \? 3\.45 : phase === "travel" \? 2\.9 : 2\.35;/)
   assert.match(cosmic, /life-map-selected-memory-corona/)
   assert.match(cosmic, /life-map-selected-memory-inner-corona/)
   assert.match(cosmic, /life-map-selected-memory-photosphere/)
