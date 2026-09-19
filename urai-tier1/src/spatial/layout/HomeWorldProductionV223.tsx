@@ -30,7 +30,7 @@ type Props = { onOrbOpen?: () => void; webglAvailable?: boolean }
 type TransitionTarget = { point: THREE.Vector3; normal?: THREE.Vector3 }
 
 const ORB_MODEL = '/assets/urai/generated/models/urai-orb-avatar-v1.glb'
-const HOME_FOCUS = new THREE.Vector3(0, 3.05, -1.15)
+const HOME_FOCUS = new THREE.Vector3(0, 1.35, -1.15)
 const ORB_POSITION = new THREE.Vector3(1.02, 0, .72)
 const ORB_FIELD_RADIUS = .5
 const ORB_FIELD_Y_SCALE = 1.04
@@ -430,7 +430,7 @@ function CameraRig({
       const desiredFov = firstPersonStable
         ? (portrait ? 66 : 58)
         : transition === 'none'
-          ? (portrait ? 58 : 52)
+          ? (portrait ? 66 : 58)
           : transition === 'life-map'
             ? (portrait ? 64 : 50)
             : (portrait ? 60 : 48)
@@ -574,108 +574,6 @@ function CameraRig({
 }
 
 
-function HomeReferenceArchitecture() {
-  const floorY = height(0, 1.4) + .02
-  const stone = '#6f7068'
-  const darkStone = '#343936'
-  const timber = '#5b4334'
-  const fabric = '#8a8175'
-  const glass = '#a7c2c0'
-
-  return <group
-    name="home-reference-architecture-v1"
-    position={[0, floorY, 1.15]}
-    userData={{
-      visualAuthority: 'home-05-first-person-modern-lived-place',
-      continuity: 'same-physical-world-not-backdrop',
-      architecture: 'restrained-modern-stone-timber-glass',
-    }}
-  >
-    <mesh position={[0,-.09,.15]} receiveShadow raycast={() => null}>
-      <boxGeometry args={[11.6,.18,8.8]} />
-      <meshStandardMaterial color={stone} roughness={.88} metalness={0} />
-    </mesh>
-    <mesh position={[0,-.02,-3.95]} receiveShadow raycast={() => null}>
-      <boxGeometry args={[12.8,.12,2.0]} />
-      <meshStandardMaterial color="#73776d" roughness={.93} metalness={0} />
-    </mesh>
-
-    {[-5.25,5.25].flatMap((x) => [-2.8,.2,3.2].map((z) => (
-      <mesh key={`${x}-${z}`} position={[x,1.62,z]} castShadow receiveShadow raycast={() => null}>
-        <boxGeometry args={[.24,3.32,.24]} />
-        <meshStandardMaterial color="#292e2c" roughness={.58} metalness={.28} />
-      </mesh>
-    )))}
-
-    <mesh position={[0,3.25,.15]} castShadow receiveShadow raycast={() => null}>
-      <boxGeometry args={[11.4,.18,8.55]} />
-      <meshStandardMaterial color="#2e302d" roughness={.72} metalness={.05} />
-    </mesh>
-    {[-3.7,-1.25,1.25,3.7].map((x) => (
-      <mesh key={x} position={[x,3.10,-1.15]} castShadow raycast={() => null}>
-        <boxGeometry args={[.12,.32,6.2]} />
-        <meshStandardMaterial color={timber} roughness={.68} metalness={0} />
-      </mesh>
-    ))}
-
-    {[-5.02,5.02].map((x) => (
-      <mesh key={x} position={[x,1.58,.15]} rotation={[0,Math.PI/2,0]} raycast={() => null}>
-        <planeGeometry args={[8.0,2.85]} />
-        <meshPhysicalMaterial
-          color={glass}
-          transparent
-          opacity={.13}
-          transmission={.64}
-          thickness={.03}
-          roughness={.18}
-          metalness={0}
-          side={THREE.DoubleSide}
-          depthWrite={false}
-        />
-      </mesh>
-    ))}
-
-    <group position={[-3.2,.38,1.6]} rotation={[0,.12,0]}>
-      <mesh castShadow receiveShadow raycast={() => null}>
-        <boxGeometry args={[2.9,.62,.92]} />
-        <meshStandardMaterial color={fabric} roughness={.94} metalness={0} />
-      </mesh>
-      <mesh position={[0,.45,.38]} castShadow receiveShadow raycast={() => null}>
-        <boxGeometry args={[2.72,.7,.18]} />
-        <meshStandardMaterial color="#756d64" roughness={.95} metalness={0} />
-      </mesh>
-      {[-1.30,1.30].map((x) => <mesh key={x} position={[x,.25,0]} castShadow raycast={() => null}>
-        <boxGeometry args={[.18,.72,.94]} /><meshStandardMaterial color="#756d64" roughness={.94} />
-      </mesh>)}
-    </group>
-
-    <group position={[3.88,.48,.35]} raycast={() => null}>
-      <mesh castShadow receiveShadow>
-        <boxGeometry args={[1.95,.95,.62]} />
-        <meshStandardMaterial color={darkStone} roughness={.93} metalness={0} />
-      </mesh>
-      <mesh position={[0,.02,.318]}>
-        <planeGeometry args={[1.45,.54]} />
-        <meshStandardMaterial color="#4a2015" emissive="#d47a42" emissiveIntensity={1.25} roughness={.72} />
-      </mesh>
-      <pointLight position={[0,.1,.65]} color="#e6a36a" intensity={1.8} distance={5.2} decay={2} />
-    </group>
-
-    <mesh position={[-.9,.05,-1.1]} receiveShadow raycast={() => null}>
-      <boxGeometry args={[2.8,.10,1.35]} />
-      <meshStandardMaterial color="#59584f" roughness={.92} metalness={0} />
-    </mesh>
-
-    <mesh position={[0,.02,-3.0]} receiveShadow raycast={() => null}>
-      <boxGeometry args={[8.3,.08,.95]} />
-      <meshStandardMaterial color="#4d5651" roughness={.90} metalness={0} />
-    </mesh>
-
-    <pointLight position={[-3.6,2.35,1.7]} color="#e8c59d" intensity={.78} distance={5.8} decay={2} />
-    <pointLight position={[3.6,2.35,1.7]} color="#e8c59d" intensity={.72} distance={5.8} decay={2} />
-  </group>
-}
-
 function Scene({
   yaw,
   pitch,
@@ -742,16 +640,15 @@ function Scene({
   return <>
     <Cadence reducedMotion={reducedMotion} />
     <color attach="background" args={['#10272a']} />
-    <fogExp2 attach="fog" args={['#294946', .0145]} />
+    <fogExp2 attach="fog" args={['#294946', .011]} />
     <HomeAtmosphericSky reducedMotion={reducedMotion} active={transition === 'life-map'} weatherState={personalWeatherState} onLifeMap={onLifeMap} />
-    <ambientLight intensity={.30} color="#c2cec7" />
-    <hemisphereLight args={['#c3d7cf', '#1c302b', .52]} />
+    <ambientLight intensity={.42} color="#d2ddd5" />
+    <hemisphereLight args={['#d5e2db', '#223932', .68]} />
     <directionalLight position={[-8, 11, 6]} intensity={2.45} color="#f1d6b1" castShadow shadow-mapSize-width={1536} shadow-mapSize-height={1536} shadow-bias={-.00018} />
-    <directionalLight position={[9, 6, -11]} intensity={.62} color="#79a99f" />
+    <directionalLight position={[9, 6, -11]} intensity={.78} color="#83b8ad" />
     <HomeV225PolishV3 orbState={orbState} reducedMotion={reducedMotion} onOrb={retiredLocalDestination} onGround={retiredLocalDestination} onLifeMap={retiredLocalDestination} onWalk={physicalWorldClick} />
     <HomeCurrentArtRepair orbState={orbState} reducedMotion={reducedMotion} onOrb={retiredLocalDestination} onGround={retiredLocalDestination} onLifeMap={retiredLocalDestination} />
     <HomeAAAVisualRepair />
-    <HomeReferenceArchitecture />
     <RetireLegacyHomeHotspots />
     <HomeEmbodiedAvatar
       position={[AVATAR_POSITION.x, height(AVATAR_POSITION.x, AVATAR_POSITION.z), AVATAR_POSITION.z]}
@@ -977,12 +874,12 @@ export function HomeWorldProductionV223({ onOrbOpen = requestUraiWorldOrbOpen, w
       dpr={1}
       shadows
       frameloop={reducedMotion ? 'demand' : 'always'}
-      camera={{ position: [0, 1.92, 7.85], fov: 52, near: .1, far: 125 }}
+      camera={{ position: [0, 1.92, 7.85], fov: 58, near: .1, far: 125 }}
       gl={{ antialias: true, alpha: false, powerPreference: 'high-performance' }}
       onCreated={({ gl }) => {
         gl.outputColorSpace = THREE.SRGBColorSpace
         gl.toneMapping = THREE.ACESFilmicToneMapping
-        gl.toneMappingExposure = 1.55
+        gl.toneMappingExposure = 1.68
         gl.shadowMap.type = THREE.PCFSoftShadowMap
         gl.setClearColor(0x10272a, 1)
         setCanvasReady(true)
