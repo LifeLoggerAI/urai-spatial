@@ -118,7 +118,38 @@ async function enterPrivateWeather(page, expectedTone) {
   await assertWeather(page, expectedTone, { visible:true, source:'disclosed-safe-private-synthetic-review-fixture' })
 }
 
+
+async function enterPhysicalPassport(page, expectedState = 'dormant') {
+  await enterFirstPersonHome(page)
+  const passport = page.getByTestId('home-passport-physical-control')
+  await passport.waitFor({ state:'attached', timeout:30000 })
+  const dims = await passport.getAttribute('data-home-passport-dimensions-mm')
+  if (dims !== '185x260x18') throw new Error(`Unexpected Passport dimensions ${dims}`)
+  const state = await passport.getAttribute('data-home-passport-artifact-state')
+  if (state !== expectedState) throw new Error(`Expected Passport state ${expectedState}, got ${state}`)
+  return passport
+}
+
+async function activatePhysicalPassport(page) {
+  const passport = await enterPhysicalPassport(page, 'dormant')
+  await passport.focus()
+  await passport.press('Enter')
+  await page.waitForURL(/\/passport(?:\?|$)/, { timeout:30000 })
+  await page.locator('main[data-route-owner="passport-ownership-vault"]').waitFor({ state:'visible', timeout:30000 })
+}
+
 const simple = [
+
+
+  { id:'PASSPORT-PHYS-003', system:'Physical Home Passport', state:'home-placement-establishing-view', route:'/home?homeAssetReview=1&homePassportReviewState=dormant', marker:'.urai-asset-home-world[data-home-primary-owner="asset-driven"]', action: async (page) => enterPhysicalPassport(page, 'dormant') },
+  { id:'PASSPORT-PHYS-004', system:'Physical Home Passport', state:'first-person-dormant', route:'/home?homeAssetReview=1&homePassportReviewState=dormant', marker:'.urai-asset-home-world[data-home-primary-owner="asset-driven"]', action: async (page) => enterPhysicalPassport(page, 'dormant') },
+  { id:'PASSPORT-PHYS-005', system:'Physical Home Passport', state:'pointer-keyboard-focus', route:'/home?homeAssetReview=1&homePassportReviewState=focused', marker:'.urai-asset-home-world[data-home-primary-owner="asset-driven"]', action: async (page) => enterPhysicalPassport(page, 'focused') },
+  { id:'PASSPORT-PHYS-006', system:'Physical Home Passport', state:'selected', route:'/home?homeAssetReview=1&homePassportReviewState=selected', marker:'.urai-asset-home-world[data-home-primary-owner="asset-driven"]', action: async (page) => enterPhysicalPassport(page, 'selected') },
+  { id:'PASSPORT-PHYS-007', system:'Physical Home Passport', state:'opening-midpoint', route:'/home?homeAssetReview=1&homePassportReviewState=opening', marker:'.urai-asset-home-world[data-home-primary-owner="asset-driven"]', action: async (page) => enterPhysicalPassport(page, 'opening'), waitAfterActionMs:350 },
+  { id:'PASSPORT-PHYS-008', system:'Physical Home Passport', state:'trust-handoff-to-passport', route:'/home?homeAssetReview=1', marker:'.urai-asset-home-world[data-home-primary-owner="asset-driven"]', action: activatePhysicalPassport },
+  { id:'PASSPORT-PHYS-011', system:'Physical Home Passport', state:'return-to-exact-home-origin', route:'/home?homeAssetReview=1', marker:'.urai-asset-home-world[data-home-primary-owner="asset-driven"]', action: async (page) => { await activatePhysicalPassport(page); await page.goBack({ waitUntil:'networkidle' }); await page.waitForFunction(() => document.querySelector('.urai-asset-home-world[data-home-primary-owner="asset-driven"]')?.getAttribute('data-home-stable-state') === 'AVATAR_HOME_FIRST_PERSON', null, { timeout:30000 }); await page.getByTestId('home-passport-physical-control').waitFor({ state:'attached', timeout:30000 }) } },
+  { id:'PASSPORT-PHYS-012', system:'Physical Home Passport', state:'phone-touch-adaptation', route:'/home?homeAssetReview=1&homePassportReviewState=dormant', marker:'.urai-asset-home-world[data-home-primary-owner="asset-driven"]', device:'mobile', action: async (page) => enterPhysicalPassport(page, 'dormant') },
+  { id:'PASSPORT-PHYS-013', system:'Physical Home Passport', state:'reduced-motion', route:'/home?homeAssetReview=1&homePassportReviewState=dormant', marker:'.urai-asset-home-world[data-home-primary-owner="asset-driven"]', reducedMotion:true, action: async (page) => enterPhysicalPassport(page, 'dormant') },
 
   { id:'WEATHER-001', system:'Personal Emotional Weather', state:'same-home-world-forming-desktop', route:'/home?homeAssetReview=1&homeState=world-forming', marker:'.urai-asset-home-world[data-home-primary-owner="asset-driven"]' },
   { id:'WEATHER-002', system:'Personal Emotional Weather', state:'clear-desktop', route:'/home?homeAssetReview=1&homePrivateFixture=1&homeWeatherReview=clear', marker:'.urai-asset-home-world[data-home-primary-owner="asset-driven"]', action: async (page) => enterPrivateWeather(page, 'clear') },

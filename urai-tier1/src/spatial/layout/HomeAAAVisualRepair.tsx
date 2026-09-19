@@ -1,14 +1,18 @@
 'use client'
 
 import { Html } from '@react-three/drei'
-import { useEffect, useState } from 'react'
-import type { ThreeEvent } from '@react-three/fiber'
+import { useEffect, useRef, useState } from 'react'
+import { useFrame, type ThreeEvent } from '@react-three/fiber'
+import * as THREE from 'three'
 import { requestUraiWorldTravel } from '@/spatial/world/worldEvents'
 import { HOME_PASSPORT_ORIGIN_CAPTURE_EVENT } from '@/spatial/home/homeExperienceState'
 import { HomeGlobalEmotionalFieldEarth } from '@/spatial/home/HomeGlobalEmotionalFieldEarth'
 
-function openPassport() {
+function capturePassportOrigin() {
   window.dispatchEvent(new Event(HOME_PASSPORT_ORIGIN_CAPTURE_EVENT))
+}
+
+function commitPassportTravel() {
   requestUraiWorldTravel({
     destination: 'passport',
     href: '/passport',
@@ -16,6 +20,9 @@ function openPassport() {
     cameraCheckpoint: 'home-first-person-passport-origin',
   })
 }
+
+type PassportArtifactState = 'dormant' | 'focused' | 'selected' | 'opening'
+const PASSPORT_REVIEW_STATES = new Set<PassportArtifactState>(['dormant', 'focused', 'selected', 'opening'])
 
 function useFirstPersonHomePresence() {
   const [visible, setVisible] = useState(false)
@@ -40,115 +47,160 @@ function useFirstPersonHomePresence() {
 
 function HomePassportOwnershipObject() {
   const visible = useFirstPersonHomePresence()
+  const [artifactState, setArtifactState] = useState<PassportArtifactState>('dormant')
+  const [reviewPinned, setReviewPinned] = useState(false)
+  const leftCover = useRef<THREE.Group>(null)
+  const rightCover = useRef<THREE.Group>(null)
+  const timers = useRef<number[]>([])
+
+  useEffect(() => {
+    timers.current.forEach((timer) => window.clearTimeout(timer))
+    timers.current = []
+    if (!visible) {
+      setArtifactState('dormant')
+      setReviewPinned(false)
+      return
+    }
+    const params = new URLSearchParams(window.location.search)
+    const requested = params.get('homePassportReviewState') as PassportArtifactState | null
+    const pinned = params.get('homeAssetReview') === '1' && requested !== null && PASSPORT_REVIEW_STATES.has(requested)
+    setReviewPinned(pinned)
+    setArtifactState(pinned ? requested : 'dormant')
+    return () => {
+      timers.current.forEach((timer) => window.clearTimeout(timer))
+      timers.current = []
+    }
+  }, [visible])
+
+  useFrame((_, delta) => {
+    const targetAngle = artifactState === 'opening' ? 0.72 : artifactState === 'selected' ? 0.12 : artifactState === 'focused' ? 0.035 : 0
+    if (leftCover.current) leftCover.current.rotation.y = THREE.MathUtils.damp(leftCover.current.rotation.y, targetAngle, 7.5, delta)
+    if (rightCover.current) rightCover.current.rotation.y = THREE.MathUtils.damp(rightCover.current.rotation.y, -targetAngle, 7.5, delta)
+  })
+
   if (!visible) return null
 
-  const activate = (event: ThreeEvent<MouseEvent>) => {
-    event.stopPropagation()
-    openPassport()
+  const beginOpen = (event?: ThreeEvent<MouseEvent>) => {
+    event?.stopPropagation()
+    if (reviewPinned || artifactState === 'opening') return
+    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    capturePassportOrigin()
+    setArtifactState('selected')
+    timers.current.push(window.setTimeout(() => setArtifactState('opening'), reducedMotion ? 45 : 220))
+    timers.current.push(window.setTimeout(commitPassportTravel, reducedMotion ? 140 : 700))
   }
+
+  const focus = () => {
+    if (!reviewPinned && artifactState === 'dormant') setArtifactState('focused')
+  }
+  const blur = () => {
+    if (!reviewPinned && artifactState === 'focused') setArtifactState('dormant')
+  }
+
+  const active = artifactState !== 'dormant'
+  const opening = artifactState === 'opening'
+  const markIntensity = artifactState === 'opening' ? 0.42 : artifactState === 'selected' ? 0.28 : artifactState === 'focused' ? 0.16 : 0.025
 
   return (
     <group
       name="home-first-person-passport-ownership-object"
-      position={[3.15, 0.62, 1.85]}
-      rotation={[0, -0.34, 0]}
+      position={[3.15, 0.68, 1.85]}
+      rotation={[0, -0.34, -0.045]}
+      onPointerOver={(event) => { event.stopPropagation(); focus() }}
+      onPointerOut={(event) => { event.stopPropagation(); blur() }}
+      onClick={beginOpen}
       userData={{
         semanticOwner: 'passport-physical-home-presence',
         realm: 'home',
         visibility: 'first-person-only',
         portal: false,
         backendAuthority: 'existing-passport-vault',
-        visualForm: 'protected-custody-stone-v2',
+        visualForm: 'rigid-ownership-folio-v1',
         visualStatus: 'candidate-requires-literal-pixel-acceptance',
+        dimensionsMm: [185, 260, 18],
+        interactionState: artifactState,
       }}
     >
-      <mesh
-        name="passport-ownership-shell-primary"
-        scale={[0.46, 0.55, 0.18]}
-        rotation={[0.035, 0.1, -0.075]}
-        onClick={activate}
-        castShadow
-        receiveShadow
-      >
-        <icosahedronGeometry args={[1, 4]} />
-        <meshPhysicalMaterial
-          color="#202925"
-          roughness={0.72}
-          metalness={0.08}
-          clearcoat={0.08}
-          clearcoatRoughness={0.78}
-          envMapIntensity={0.38}
+      <mesh name="passport-integrated-architectural-ledge" position={[0, -0.16, -0.025]} receiveShadow>
+        <boxGeometry args={[0.31, 0.035, 0.22]} />
+        <meshStandardMaterial color="#18201d" roughness={0.84} metalness={0.02} />
+      </mesh>
+
+      <group ref={leftCover} name="passport-folio-left-cover">
+        <mesh position={[-0.04625, 0, 0]} castShadow receiveShadow>
+          <boxGeometry args={[0.0925, 0.26, 0.018]} />
+          <meshStandardMaterial color="#252d29" roughness={0.68} metalness={0.035} />
+        </mesh>
+        <mesh position={[-0.04625, 0, 0.0115]}>
+          <boxGeometry args={[0.085, 0.238, 0.004]} />
+          <meshStandardMaterial color="#343c37" roughness={0.76} metalness={0.01} />
+        </mesh>
+      </group>
+
+      <group ref={rightCover} name="passport-folio-right-cover">
+        <mesh position={[0.04625, 0, 0]} castShadow receiveShadow>
+          <boxGeometry args={[0.0925, 0.26, 0.018]} />
+          <meshStandardMaterial color="#222b27" roughness={0.66} metalness={0.04} />
+        </mesh>
+        <mesh position={[0.04625, 0, 0.0115]}>
+          <boxGeometry args={[0.085, 0.238, 0.004]} />
+          <meshStandardMaterial color="#313a35" roughness={0.74} metalness={0.01} />
+        </mesh>
+      </group>
+
+      <mesh name="passport-folio-spine" position={[0, 0, -0.002]} castShadow receiveShadow>
+        <boxGeometry args={[0.018, 0.26, 0.024]} />
+        <meshStandardMaterial color="#111816" roughness={0.46} metalness={0.075} />
+      </mesh>
+
+      <mesh name="passport-folio-clasp" position={[0.083, 0, 0.014]} castShadow>
+        <boxGeometry args={[0.018, 0.052, 0.012]} />
+        <meshStandardMaterial color="#303a36" roughness={0.42} metalness={0.07} />
+      </mesh>
+
+      <mesh name="passport-ownership-mark" position={[0.047, 0.045, 0.021]}>
+        <boxGeometry args={[0.045, 0.012, 0.0035]} />
+        <meshStandardMaterial
+          color="#798f87"
+          emissive="#76978b"
+          emissiveIntensity={markIntensity}
+          roughness={0.52}
+          metalness={0.025}
         />
       </mesh>
 
-      <mesh
-        name="passport-ownership-shell-protected-face"
-        position={[0.055, 0.018, 0.165]}
-        scale={[0.29, 0.39, 0.055]}
-        rotation={[0.015, -0.025, 0.045]}
-        onClick={activate}
-        castShadow
-        receiveShadow
-      >
-        <icosahedronGeometry args={[1, 3]} />
-        <meshPhysicalMaterial
-          color="#3d4a44"
-          roughness={0.61}
-          metalness={0.15}
-          clearcoat={0.11}
-          clearcoatRoughness={0.68}
-          envMapIntensity={0.5}
-        />
-      </mesh>
+      {active && !opening && <>
+        <mesh name="passport-focus-frame-top" position={[0, 0.145, 0.008]}>
+          <boxGeometry args={[0.205, 0.006, 0.006]} />
+          <meshBasicMaterial color="#dce9e4" toneMapped={false} />
+        </mesh>
+        <mesh name="passport-focus-frame-bottom" position={[0, -0.145, 0.008]}>
+          <boxGeometry args={[0.205, 0.006, 0.006]} />
+          <meshBasicMaterial color="#dce9e4" toneMapped={false} />
+        </mesh>
+        <mesh name="passport-focus-frame-left" position={[-0.1025, 0, 0.008]}>
+          <boxGeometry args={[0.006, 0.284, 0.006]} />
+          <meshBasicMaterial color="#dce9e4" toneMapped={false} />
+        </mesh>
+        <mesh name="passport-focus-frame-right" position={[0.1025, 0, 0.008]}>
+          <boxGeometry args={[0.006, 0.284, 0.006]} />
+          <meshBasicMaterial color="#dce9e4" toneMapped={false} />
+        </mesh>
+      </>}
 
-      <mesh
-        name="passport-custody-seam"
-        position={[0.03, 0.012, 0.217]}
-        scale={[0.032, 0.255, 0.017]}
-        rotation={[0, 0, -0.08]}
-        onClick={activate}
-      >
-        <sphereGeometry args={[1, 32, 24]} />
-        <meshPhysicalMaterial
-          color="#92a8a0"
-          emissive="#7f9d94"
-          emissiveIntensity={0.07}
-          roughness={0.42}
-          metalness={0.17}
-          clearcoat={0.16}
-          clearcoatRoughness={0.52}
-          envMapIntensity={0.62}
-        />
-      </mesh>
-
-      <mesh
-        name="passport-custody-memory-inclusion"
-        position={[-0.16, 0.21, 0.19]}
-        scale={[0.052, 0.075, 0.026]}
-        rotation={[0.18, 0.3, -0.22]}
-        onClick={activate}
-        castShadow
-      >
-        <octahedronGeometry args={[1, 2]} />
-        <meshPhysicalMaterial
-          color="#718078"
-          emissive="#5d7e73"
-          emissiveIntensity={0.025}
-          roughness={0.53}
-          metalness={0.19}
-          clearcoat={0.14}
-          clearcoatRoughness={0.56}
-        />
-      </mesh>
-
-      <Html center transform distanceFactor={8} position={[0, 0, 0.24]}>
+      <Html center transform distanceFactor={8} position={[0, -0.205, 0.05]}>
         <button
           type="button"
           className="sr-only"
-          onClick={openPassport}
-          aria-label="Open Passport ownership and permissions"
+          data-testid="home-passport-physical-control"
+          data-home-passport-artifact-state={artifactState}
+          data-home-passport-dimensions-mm="185x260x18"
+          onFocus={focus}
+          onBlur={blur}
+          onClick={() => beginOpen()}
+          aria-label="Passport — open ownership and consent vault"
         >
-          Open Passport ownership and permissions
+          Passport — ownership and consent
         </button>
       </Html>
     </group>
@@ -161,11 +213,11 @@ function HomePassportOwnershipObject() {
  * Historical V281 localized Ground/ascent overlays and the predecessor V288 Orb
  * overlay remain retired. The authored living-memory Orb in HomeWorldProductionV223
  * keeps current Orb pixels, semantics, speech/VAD timing and pointer/touch ownership.
- * Passport is a first-person-only physical ownership artifact that reuses the
- * existing Passport vault and world-travel stack; it is not a portal. The current
- * visual candidate is a protected-custody stone: layered tactile mineral shells and
- * a restrained ownership seam, deliberately rejecting tablet, kiosk, settings-panel,
- * passport-book, portal and pedestal language. Before travel it asks the Home
+ * Passport is a first-person-only physical ownership folio that reuses the existing
+ * Passport vault and world-travel stack; it is not a portal. The current candidate
+ * follows the written 260 mm × 185 mm × 18 mm rigid-folio authority with restrained
+ * mineral/fiber material language, bounded focus/selection/opening states and no
+ * visible sensitive records. Before travel it asks the Home
  * controller to persist the exact live FP origin so semantic return restores the
  * prior camera/state rather than generic Home.
  *
