@@ -12,6 +12,7 @@ const has = (source, marker) => assert.equal(source.includes(marker), true, `mis
 const homeGraph = read('src/app/AssetDrivenHomeWorld.tsx')
 const homeRuntime = read('src/spatial/layout/HomeWorldProduction.tsx')
 const activeHomeRuntime3d = read('src/spatial/layout/HomeWorldProductionV223.tsx')
+const embodiedAvatar = read('src/spatial/home/HomeEmbodiedAvatar.tsx')
 const homeRuntime3d = read('src/spatial/layout/HomeWorldProductionV70.tsx')
 const homeArt = read('src/spatial/layout/HomeWorldProductionV76.tsx')
 const ground = read('src/app/GroundSpatialWorldClean.tsx')
@@ -28,20 +29,55 @@ test('shared drag-look preserves click ownership until pointer motion proves a d
   assert.doesNotMatch(travel, /drag\.current = \{ pointerId: event\.pointerId, x: event\.clientX, y: event\.clientY \}\s*\n\s*try \{ event\.currentTarget\.setPointerCapture/)
 })
 
-test('Home keeps one V223 first-person cinematic Canvas owner while predecessor art remains historical provenance', () => {
+test('mobile movement controls remain touch/coarse-pointer affordances instead of permanent desktop HUD', () => {
+  assert.match(travel, /\.urai-mobile-movement\{display:none;/)
+  assert.match(travel, /@media\(max-width:900px\),\(pointer:coarse\)\{\.urai-mobile-movement\{display:grid\}\}/)
+  for (const marker of ['minWidth', 'MobileMovementPad']) {
+    if (marker === 'MobileMovementPad') has(travel, marker)
+  }
+  assert.match(travel, /button\{width:48px;height:48px;/)
+})
+
+test('Home keeps one V223 Canvas owner with visible Avatar presentation, click embodiment, authored Orb, physical Ground and broad Sky ascent', () => {
   has(homeRuntime, 'HomeWorldProductionV223 as HomeWorldProduction')
-  has(activeHomeRuntime3d, 'export function HomeWorldProductionV223')
-  has(activeHomeRuntime3d, 'URAI_ORB_STATE_EVENT')
-  has(activeHomeRuntime3d, 'resolveOrbSensoryOutput')
-  has(activeHomeRuntime3d, 'data-home-visible-world="cinematic-lived-world-threshold"')
-  has(activeHomeRuntime3d, 'data-home-embodied-self="first-person-viewpoint-no-avatar"')
-  has(activeHomeRuntime3d, 'data-home-movement="camera-look-world-surface-selection"')
-  has(activeHomeRuntime3d, 'data-home-ground-entry="physical-world-surface"')
-  has(activeHomeRuntime3d, 'data-home-life-map-entry="visible-sky-broad-interaction"')
+  for (const marker of [
+    'export function HomeWorldProductionV223',
+    'URAI_ORB_STATE_EVENT',
+    'resolveOrbSensoryOutput',
+    'data-home-visible-world="cinematic-lived-world-threshold"',
+    'visible-cinematic-avatar',
+    'camera-only-first-person-home',
+    'visible-avatar-third-person',
+    'hidden-exterior-avatar-first-person',
+    'data-home-ground-entry="physical-world-surface"',
+    'data-home-life-map-entry="visible-sky-broad-interaction"',
+    'urai-home-user-avatar',
+    'home-living-memory-orb',
+    '/assets/urai/generated/models/urai-orb-avatar-v1.glb',
+    'HOME_AVATAR_MODEL',
+    'THREE.LoopOnce',
+    'clampWhenFinished = true',
+    'useHomeExperienceController',
+    'homeApi.activateAvatar()',
+    'HOME_WALK_SPEED',
+    'HOME_WALK_ACCELERATION',
+    'HOME_WALK_DECELERATION',
+    'useMovementInput({',
+    'stepEmbodiedMotion({',
+    '<MobileMovementPad input={movementInput} label="Move through Home" />',
+    'data-home-movement={firstPerson ? \'shared-keyboard-touch-walk-look-interact\'',
+    'data-home-non-xr-body-policy="camera-only-no-hands-body-rig"',
+  ]) has(activeHomeRuntime3d, marker)
+  assert.match(activeHomeRuntime3d, /firstPersonStable[\s\S]*\? \(portrait \? 66 : 58\)/)
+  assert.match(activeHomeRuntime3d, /yaw: -yaw\.current/)
+  assert.match(activeHomeRuntime3d, /acceleration: HOME_WALK_ACCELERATION/)
+  assert.match(activeHomeRuntime3d, /deceleration: HOME_WALK_DECELERATION/)
+  assert.doesNotMatch(activeHomeRuntime3d, /const keys = useRef\(new Set<string>\(\)\)/)
+  has(embodiedAvatar, 'const idle = actions.idle_breath')
   assert.equal((activeHomeRuntime3d.match(/<Canvas/g) ?? []).length, 1)
-  assert.doesNotMatch(activeHomeRuntime3d, /function\s+VisibleUserAvatar\s*\(|<VisibleUserAvatar\b/)
-  assert.doesNotMatch(activeHomeRuntime3d, /data-home-embodied-self=["']visible-cinematic-avatar["']|data-home-camera-mode=["']cinematic-third-person["']|name=["']urai-home-embodied-avatar["']/)
-  assert.doesNotMatch(activeHomeRuntime3d, /stepEmbodiedMotion|useMovementInput|MobileMovementPad/)
+  assert.doesNotMatch(activeHomeRuntime3d, /privacy-preserving-first-person/)
+  assert.doesNotMatch(activeHomeRuntime3d, /first-person-hand|fps-hand|player-hands|weapon-rig/i)
+  assert.doesNotMatch(activeHomeRuntime3d, /next\.reset\(\)\.setLoop\(THREE\.LoopRepeat\s*,\s*Infinity\)/)
   assert.doesNotMatch(homeArt, /<Canvas/)
   assert.doesNotMatch(homeGraph, /PRODUCTION CERTIFIED|retained-pixel-pass|pixel-certified/)
 })
@@ -88,9 +124,9 @@ test('Ground and Life Map keep their canonical embodied contracts', () => {
     'function FirstPersonPlayer(',
     'stepEmbodiedMotion({',
     'useMovementInput({',
-    'data-ground-exploration="first-person"',
-    'data-ground-camera="eye-level-terrain-following"',
-    'data-ground-collision="visible-terrain-heightfield"',
+    'data-ground-exploration="first-person-no-visible-body"',
+    'data-ground-camera="eye-level-terrain-following-no-authored-bob"',
+    'data-ground-collision="terrain-plus-authored-obstacle-field"',
     'data-ground-private-location-mounted="false"',
   ]) has(ground, marker)
   assert.doesNotMatch(ground, /GroundPhysicalArchitecture|ground-destination-compass|router\.push\(destination\.href\)/)

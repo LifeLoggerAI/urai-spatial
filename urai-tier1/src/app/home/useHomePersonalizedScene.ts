@@ -56,7 +56,9 @@ export function useHomePersonalizedScene(): { scene: HomePersonalizedScene; load
   const isolatedReviewMode = requestedMode !== 'auto'
   const [online, setOnline] = useState(() => typeof navigator === 'undefined' ? true : navigator.onLine)
   const [signedIn, setSignedIn] = useState(false)
-  const [permissionsAvailable, setPermissionsAvailable] = useState(true)
+  const [permissionsAvailable, setPermissionsAvailable] = useState(() => typeof window === 'undefined'
+    ? true
+    : window.localStorage.getItem('urai:homePermissionsAvailable') !== 'false')
   const [dataAvailable, setDataAvailable] = useState(true)
   const [evidence, setEvidence] = useState<readonly HomeEvidenceRef[]>([])
   const [loading, setLoading] = useState(true)
@@ -98,6 +100,12 @@ export function useHomePersonalizedScene(): { scene: HomePersonalizedScene; load
         setLoading(false)
         return
       }
+      if (!permissionsAvailable) {
+        setEvidence([])
+        setDataAvailable(true)
+        setLoading(false)
+        return
+      }
       setLoading(true)
       try {
         const snapshot = await getDocs(query(collection(getFirebaseDb(), 'users', user.uid, 'memories'), limit(12)))
@@ -118,7 +126,7 @@ export function useHomePersonalizedScene(): { scene: HomePersonalizedScene; load
       cancelled = true
       unsubscribe()
     }
-  }, [isolatedReviewMode, requestedMode])
+  }, [isolatedReviewMode, permissionsAvailable, requestedMode])
 
   const scene = useMemo(() => buildHomePersonalizedScene({
     requestedMode: requestedMode === 'auto' && !online ? 'offline' : requestedMode,

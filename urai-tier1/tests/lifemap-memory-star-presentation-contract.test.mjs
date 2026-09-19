@@ -21,7 +21,9 @@ assert.ok(source.includes('Array.from({ length: 7 }'), 'the arrival place must p
 assert.ok(!source.includes('radius * Math.sin(t * Math.PI)'), 'arrival threads must not converge into a wire-cage pole');
 assert.ok(source.includes('name={`life-map-weathered-memory-outcrop-${siteKey}`}'), 'memories must remain individually addressable in the spatial scene');
 assert.ok(!source.includes('new THREE.SphereGeometry(1, 72, 54)'), 'the rejected smooth egg geometry must not return');
-assert.ok(source.includes('// V237 literal-pixel authority: a continuous illuminated memory valley whose'), 'The active Life Map source must declare the grounded V237 presentation boundary');
+assert.ok(source.includes('// V290 literal-pixel candidate: the governed memory artifacts now live inside'), 'The active Life Map source must declare the current V290 galaxy presentation boundary');
+assert.ok(source.includes('name="life-map-v237-grounded-geography-retired"'), 'the superseded V237 valley must remain explicitly retired rather than silently reclaiming overview authority');
+assert.ok(source.includes('retiredVisualRole: "former-memory-valley-not-current-galaxy-authority"'), 'the retired valley must advertise its non-authoritative visual role');
 assert.ok(source.includes('function LivingMemoryGeography()'), 'Life Map must render a continuous authored geography beneath memory manifestations');
 assert.ok(source.includes('function MemoryRoots('), 'memory manifestations must visibly grow from the environment');
 assert.ok(source.includes('Array.from({ length: 2 }'), 'memory outcrops must use restrained material strata rather than cloned flower whorls');

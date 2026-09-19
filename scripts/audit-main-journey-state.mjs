@@ -52,7 +52,7 @@ requireMatch(
 requireMatch('Focus enters Replay through world travel', focusClient, /requestUraiWorldTravel\(\{/)
 requireMatch('Focus Replay destination', focusClient, /destination: 'replay'/)
 requireMatch('Focus Replay manifest context', focusClient, /replayManifestId: memory\.replayManifest\.id/)
-requireMatch('Focus Replay portal accessibility', focusClient, /aria-label={`Open Replay for \${memory\.title}`}/)
+requireMatch('Focus Replay accessible action', focusClient, /'Enter Replay for ' \+ memory\.title/)
 
 const combinedFocusGuard = /if \(!memory \|\| !replayHref \|\| committed\) return/.test(focusClient)
 const separateAuthorizationGuard = /if \(!memory \|\| !replayHref\) return/.test(focusClient)

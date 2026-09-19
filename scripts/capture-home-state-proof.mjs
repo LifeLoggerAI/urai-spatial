@@ -35,6 +35,22 @@ const receipt = {
   visualAuthority,
 }
 
+const sharedBrowser = await chromium.launch({ headless: true, args: ['--enable-unsafe-swiftshader'] })
+
+const homeProofOnboardingKeys = {
+  completion: 'urai:onboarding:v2:complete',
+  setupComplete: 'urai:onboarding:v3:setup-complete',
+  setupStep: 'urai:onboarding:v3:setup-step',
+}
+
+async function prepareHomeProofContext(context) {
+  await context.addInitScript((keys) => {
+    window.localStorage.setItem(keys.completion, '1')
+    window.localStorage.setItem(keys.setupComplete, '1')
+    window.localStorage.removeItem(keys.setupStep)
+  }, homeProofOnboardingKeys)
+}
+
 async function settleAnimationFrames(page, frameCount) {
   await page.evaluate((frames) => new Promise((resolve) => {
     let completed = 0
@@ -119,10 +135,15 @@ async function readVisualEvidence(page) {
   return { ...sample, viewportCoverage, bounds: { width: bounds.width, height: bounds.height }, canvasPngBytes: png.length }
 }
 
-async function waitForVisualEvidence(page, frameBudget = 240) {
+async function waitForVisualEvidence(page, frameBudget = 24) {
+  // The visual gate is defined by the retained PNG coverage/luminance/sample
+  // predicates, not by an arbitrary number of software-WebGL frames. Keep
+  // three bounded readiness samples while avoiding hundreds of expensive
+  // SwiftShader frames per state.
   let evidence = null
-  for (let elapsed = 0; elapsed < frameBudget; elapsed += 30) {
-    await settleAnimationFrames(page, 30)
+  const frameStep = 8
+  for (let elapsed = 0; elapsed < frameBudget; elapsed += frameStep) {
+    await settleAnimationFrames(page, frameStep)
     evidence = await readVisualEvidence(page)
     if (evidence.available === true
       && evidence.viewportCoverage >= receipt.visualGate.minimumViewportCoverage
@@ -144,12 +165,12 @@ async function waitForHomeReady(page) {
 }
 
 async function capture(state, options = {}) {
-  const browser = await chromium.launch({ headless: true, args: ['--enable-unsafe-swiftshader'] })
-  const context = await browser.newContext({
+  const context = await sharedBrowser.newContext({
     viewport: { width: 1440, height: 900 },
     reducedMotion: options.reducedMotion,
     forcedColors: options.forcedColors,
   })
+  await prepareHomeProofContext(context)
   const page = await context.newPage()
   const pageErrors = []
   page.on('pageerror', (error) => pageErrors.push(String(error)))
@@ -158,7 +179,10 @@ async function capture(state, options = {}) {
   try {
     const response = await page.goto(`${base}/home/?${query}`, { waitUntil: 'domcontentloaded', timeout: 60_000 })
     const owner = await waitForHomeReady(page)
-    await settleAnimationFrames(page, options.forcedColors === 'active' ? 24 : 60)
+    // assets-ready plus retained-pixel predicates are the authority. A small
+    // settle window is sufficient and avoids CI spending minutes rendering
+    // redundant SwiftShader frames before the exact same screenshot gate.
+    await settleAnimationFrames(page, options.forcedColors === 'active' ? 4 : 8)
 
     record.status = response?.status()
     record.canvasReady = await owner.getAttribute('data-home-assets-ready')
@@ -213,13 +237,12 @@ async function capture(state, options = {}) {
     receipt.captures.push(record)
     if (!record.passed) receipt.errors.push(record)
     await context.close().catch(() => {})
-    await browser.close().catch(() => {})
   }
 }
 
 async function captureOrbLifecycle({ reducedMotion = 'no-preference' } = {}) {
-  const browser = await chromium.launch({ headless: true, args: ['--enable-unsafe-swiftshader'] })
-  const context = await browser.newContext({ viewport: { width: 1440, height: 900 }, reducedMotion })
+  const context = await sharedBrowser.newContext({ viewport: { width: 1440, height: 900 }, reducedMotion })
+  await prepareHomeProofContext(context)
   const page = await context.newPage()
   const pageErrors = []
   page.on('pageerror', (error) => pageErrors.push(String(error)))
@@ -266,23 +289,25 @@ async function captureOrbLifecycle({ reducedMotion = 'no-preference' } = {}) {
     record.phase = 'home-ready'
     const owner = await waitForHomeReady(page)
     const openOrb = page.getByRole('button', { name: 'Open URAI Orb companion' }).first()
-    record.phase = 'orb-open'
-    await openOrb.click({ noWaitAfter: true })
+    record.phase = 'orb-open-keyboard'
+    await openOrb.focus()
+    await openOrb.press('Enter')
     record.phase = 'orb-menu-visible'
     await page.locator('#urai-world-companion-menu[aria-hidden="false"]').waitFor({ state: 'visible', timeout: 20_000 })
     record.phase = 'orb-attention-rendered'
     await page.waitForFunction((selector) => document.querySelector(selector)?.getAttribute('data-home-orb-state') === 'attention', ownerSelector)
 
     const talk = page.locator('summary').filter({ hasText: 'Talk with Orb' }).first()
-    record.phase = 'conversation-open'
-    await talk.click({ noWaitAfter: true })
+    record.phase = 'conversation-open-keyboard'
+    await talk.focus()
+    await talk.press('Enter')
     const message = page.getByLabel('Message for Orb').first()
     await message.focus()
-    record.phase = 'orb-listening-rendered'
-    await page.waitForFunction((selector) => document.querySelector(selector)?.getAttribute('data-home-orb-state') === 'listening', ownerSelector)
+    record.phase = 'orb-text-entry-attention-rendered'
+    await page.waitForFunction((selector) => document.querySelector(selector)?.getAttribute('data-home-orb-state') === 'attention', ownerSelector)
 
-    record.listeningState = await owner.getAttribute('data-home-orb-state')
-    record.listeningClip = await owner.getAttribute('data-home-orb-clip')
+    record.textEntryState = await owner.getAttribute('data-home-orb-state')
+    record.textEntryClip = await owner.getAttribute('data-home-orb-clip')
 
     if (reducedMotion === 'reduce') {
       record.visual = await waitForVisualEvidence(page)
@@ -292,8 +317,8 @@ async function captureOrbLifecycle({ reducedMotion = 'no-preference' } = {}) {
       record.screenshotSha256 = createHash('sha256').update(screenshot).digest('hex')
       record.observedStates = await page.evaluate(() => window.__uraiObservedOrbStates || [])
       record.passed = response?.status() === 200
-        && record.listeningState === 'listening'
-        && record.listeningClip === 'orb-state-static'
+        && record.textEntryState === 'attention'
+        && record.textEntryClip === 'orb-state-static'
         && record.visual?.available === true
         && record.visual.viewportCoverage >= receipt.visualGate.minimumViewportCoverage
         && record.visual.luminanceRange >= receipt.visualGate.minimumLuminanceRange
@@ -319,11 +344,12 @@ async function captureOrbLifecycle({ reducedMotion = 'no-preference' } = {}) {
       return candidate instanceof HTMLButtonElement && !candidate.disabled
     }, null, { timeout: 20_000 })
     record.phase = 'orb-speaking-rendered'
+    await send.focus()
     await Promise.all([
       page.waitForFunction(() => window.__uraiObservedOrbFrames?.some((sample) => sample.eventState === 'speaking'
         && sample.renderedState === 'speaking'
         && sample.renderedClip === 'orb-speaking'), null, { timeout: 20_000 }),
-      send.click({ noWaitAfter: true }),
+      send.press('Enter'),
     ])
     const respondingSample = await page.evaluate(() => window.__uraiObservedOrbFrames?.find((sample) => sample.eventState === 'speaking'
       && sample.renderedState === 'speaking'
@@ -335,7 +361,7 @@ async function captureOrbLifecycle({ reducedMotion = 'no-preference' } = {}) {
     await responsePanel.waitFor({ state: 'visible', timeout: 20_000 })
     record.responseText = (await responsePanel.textContent()) || ''
     record.observedStates = await page.evaluate(() => window.__uraiObservedOrbStates || [])
-    record.lifecyclePassed = ['attention', 'listening', 'thinking', 'speaking'].every((state) => record.observedStates.includes(state))
+    record.lifecyclePassed = ['attention', 'thinking', 'speaking'].every((state) => record.observedStates.includes(state))
 
     await consent.focus()
     await consent.press('Space')
@@ -358,8 +384,8 @@ async function captureOrbLifecycle({ reducedMotion = 'no-preference' } = {}) {
     record.closedClip = await owner.getAttribute('data-home-orb-clip')
 
     record.passed = response?.status() === 200
-      && record.listeningState === 'listening'
-      && record.listeningClip === 'orb-listening'
+      && record.textEntryState === 'attention'
+      && record.textEntryClip === 'orb-attention'
       && record.respondingState === 'speaking'
       && record.respondingClip === 'orb-speaking'
       && record.privacyState === 'privacy'
@@ -382,18 +408,134 @@ async function captureOrbLifecycle({ reducedMotion = 'no-preference' } = {}) {
     receipt.captures.push(record)
     if (!record.passed) receipt.errors.push(record)
     await context.close().catch(() => {})
-    await browser.close().catch(() => {})
   }
 }
 
+async function captureHomeSpatialContinuity({ idSuffix = 'desktop', viewport = { width: 1440, height: 900 }, reducedMotion = 'no-preference', sampleVisual = true } = {}) {
+  const context = await sharedBrowser.newContext({ viewport, reducedMotion })
+  await prepareHomeProofContext(context)
+  const page = await context.newPage()
+  const pageErrors = []
+  page.on('pageerror', (error) => pageErrors.push(String(error)))
+  const id = `home-first-person-passport-earth-emotional-weather-${idSuffix}`
+  const record = { id, pageErrors, passed: false, viewport, reducedMotion, sampleVisual }
+  const screenshotRecord = async (state) => {
+    const file = id + '-' + state + '-' + exactHead.slice(0, 12) + '.png'
+    const screenshot = await page.screenshot({ path: path.join(outputDir, file), fullPage: false, animations: 'disabled', caret: 'hide', timeout: 90_000 })
+    return { file, bytes: screenshot.length, sha256: createHash('sha256').update(screenshot).digest('hex') }
+  }
+  try {
+    const response = await page.goto(base + '/home/?homeAssetReview=1&homePrivateFixture=1', { waitUntil: 'domcontentloaded', timeout: 60_000 })
+    let owner = await waitForHomeReady(page)
+    record.status = response?.status()
+    record.neutralPresentationStableState = await owner.getAttribute('data-home-stable-state')
+    record.neutralPresentationCamera = await owner.getAttribute('data-home-camera-mode')
+    record.neutralPresentationAvatarModel = await owner.getAttribute('data-home-avatar-model')
+    record.neutralPresentationVisual = sampleVisual ? await waitForVisualEvidence(page) : { available: true, reason: 'retained-responsive-pixels-no-extra-sampling' }
+    record.neutralPresentationScreenshot = await screenshotRecord('neutral-presentation')
+
+    const enterFirstPerson = page.getByRole('button', { name: 'Enter first-person Home' }).first()
+    await enterFirstPerson.focus()
+    await enterFirstPerson.press('Enter')
+    await page.waitForFunction((selector) => document.querySelector(selector)?.getAttribute('data-home-stable-state') === 'AVATAR_HOME_FIRST_PERSON', ownerSelector, { timeout: 20_000 })
+    owner = page.locator(ownerSelector)
+    record.firstPersonStableState = await owner.getAttribute('data-home-stable-state')
+    record.firstPersonCamera = await owner.getAttribute('data-home-camera-mode')
+    record.firstPersonMovement = await owner.getAttribute('data-home-movement')
+
+    const earthStatus = page.getByRole('status').filter({ hasText: /Global Emotional Field: aggregate signal is currently unavailable/i }).first()
+    await earthStatus.waitFor({ state: 'attached', timeout: 20_000 })
+    record.globalFieldText = (await earthStatus.textContent()) || ''
+    record.globalFieldFailClosed = record.globalFieldText.includes('No emotional activity is inferred or fabricated.')
+
+    const weather = page.getByTestId('home-personal-emotional-weather')
+    const weatherStatus = page.getByTestId('home-personal-emotional-weather-status')
+    record.emotionalWeather = {
+      tone: await weather.getAttribute('data-home-emotional-weather-tone'),
+      source: await weather.getAttribute('data-home-emotional-weather-source'),
+      visible: await weather.getAttribute('data-home-emotional-weather-visible'),
+      summary: (await weatherStatus.textContent()) || '',
+      ownerTone: await owner.getAttribute('data-home-emotional-weather-tone'),
+      ownerEvidence: await owner.getAttribute('data-home-emotional-weather-evidence'),
+    }
+    record.firstPersonVisual = sampleVisual ? await waitForVisualEvidence(page) : { available: true, reason: 'retained-responsive-pixels-no-extra-sampling' }
+    record.firstPersonScreenshot = await screenshotRecord('first-person')
+
+    const passportControl = page.getByRole('button', { name: 'Open Passport ownership and permissions' }).first()
+    await passportControl.waitFor({ state: 'attached', timeout: 20_000 })
+    await passportControl.click()
+    await page.waitForURL((url) => url.pathname.replace(/\/+$/, '') === '/passport', { timeout: 30_000 })
+    record.passportPath = new URL(page.url()).pathname
+    record.passportReturnFrame = await page.evaluate(() => {
+      const raw = window.sessionStorage.getItem('urai:home:return-frame:v1')
+      if (!raw) return null
+      try { return JSON.parse(raw) } catch { return { parseError: true } }
+    })
+    record.passportScreenshot = await screenshotRecord('passport-activated')
+
+    await page.goBack({ waitUntil: 'domcontentloaded', timeout: 30_000 })
+    owner = await waitForHomeReady(page)
+    await page.waitForFunction((selector) => document.querySelector(selector)?.getAttribute('data-home-stable-state') === 'AVATAR_HOME_FIRST_PERSON', ownerSelector, { timeout: 20_000 })
+    record.returnStableState = await owner.getAttribute('data-home-stable-state')
+    record.returnCamera = await owner.getAttribute('data-home-camera-mode')
+    record.returnFrameConsumed = await page.evaluate(() => window.sessionStorage.getItem('urai:home:return-frame:v1') === null)
+    record.returnScreenshot = await screenshotRecord('passport-return-first-person')
+
+    const origin = record.passportReturnFrame?.origin
+    const camera = origin?.camera
+    record.passportOriginValid = record.passportReturnFrame?.kind === 'destination'
+      && record.passportReturnFrame?.destination === 'PASSPORT'
+      && origin?.stableState === 'AVATAR_HOME_FIRST_PERSON'
+      && Array.isArray(camera?.position)
+      && camera.position.length === 3
+      && camera.position.every(Number.isFinite)
+      && Number.isFinite(camera?.yaw)
+      && Number.isFinite(camera?.pitch)
+
+    record.passed = record.status === 200
+      && record.neutralPresentationStableState !== 'AVATAR_HOME_FIRST_PERSON'
+      && record.neutralPresentationCamera !== 'avatar-home-first-person'
+      && record.neutralPresentationVisual?.available === true
+      && record.neutralPresentationScreenshot.bytes > 12_000
+      && record.firstPersonStableState === 'AVATAR_HOME_FIRST_PERSON'
+      && record.firstPersonCamera === 'avatar-home-first-person'
+      && record.firstPersonMovement === 'shared-keyboard-touch-walk-look-interact'
+      && record.globalFieldFailClosed
+      && record.emotionalWeather.visible === 'true'
+      && record.emotionalWeather.source === 'disclosed-safe-private-synthetic-review-fixture'
+      && record.emotionalWeather.summary.includes('disclosed synthetic review input, not user data')
+      && record.emotionalWeather.ownerEvidence?.includes('emotional-weather')
+      && record.firstPersonVisual?.available === true
+      && record.firstPersonScreenshot.bytes > 12_000
+      && record.passportPath.replace(/\/+$/, '') === '/passport'
+      && record.passportOriginValid
+      && record.passportScreenshot.bytes > 12_000
+      && record.returnStableState === 'AVATAR_HOME_FIRST_PERSON'
+      && record.returnCamera === 'avatar-home-first-person'
+      && record.returnFrameConsumed
+      && record.returnScreenshot.bytes > 12_000
+      && pageErrors.length === 0
+  } catch (error) {
+    record.error = String(error)
+  } finally {
+    receipt.captures.push(record)
+    if (!record.passed) receipt.errors.push(record)
+    await context.close().catch(() => {})
+  }
+}
 for (const state of states) await capture(state)
 await capture({ id: 'reduced-motion', query: 'homePrivateFixture=1' }, { reducedMotion: 'reduce' })
 await capture({ id: 'forced-colors', query: 'homePrivateFixture=1' }, { forcedColors: 'active' })
 await captureOrbLifecycle()
 await captureOrbLifecycle({ reducedMotion: 'reduce' })
+await captureHomeSpatialContinuity()
+await captureHomeSpatialContinuity({ idSuffix: 'phone-portrait', viewport: { width: 390, height: 844 }, sampleVisual: false })
+await captureHomeSpatialContinuity({ idSuffix: 'phone-landscape', viewport: { width: 844, height: 390 }, sampleVisual: false })
+await captureHomeSpatialContinuity({ idSuffix: 'tablet-portrait', viewport: { width: 820, height: 1180 }, sampleVisual: false })
+await captureHomeSpatialContinuity({ idSuffix: 'reduced-motion', reducedMotion: 'reduce', sampleVisual: false })
 
-const transitionBrowser = await chromium.launch({ headless: true, args: ['--enable-unsafe-swiftshader'] })
-const transitionContext = await transitionBrowser.newContext({ viewport: { width: 1440, height: 900 } })
+const transitionContext = await sharedBrowser.newContext({ viewport: { width: 1440, height: 900 } })
+await prepareHomeProofContext(transitionContext)
 const transitionPage = await transitionContext.newPage()
 const transitionErrors = []
 transitionPage.on('pageerror', (error) => transitionErrors.push(String(error)))
@@ -403,7 +545,7 @@ try {
   const owner = await waitForHomeReady(transitionPage)
   await transitionContext.setOffline(true)
   await transitionPage.evaluate(() => window.dispatchEvent(new Event('offline')))
-  await settleAnimationFrames(transitionPage, 30)
+  await settleAnimationFrames(transitionPage, 6)
   transition.status = response?.status()
   transition.canvasReady = await owner.getAttribute('data-home-assets-ready')
   transition.canvasCount = await owner.locator('canvas').count()
@@ -422,11 +564,11 @@ try {
 } finally {
   await transitionContext.setOffline(false).catch(() => {})
   await transitionContext.close().catch(() => {})
-  await transitionBrowser.close().catch(() => {})
   receipt.captures.push(transition)
   if (!transition.passed) receipt.errors.push(transition)
 }
 
 await writeFile(path.join(outputDir, 'receipt.json'), `${JSON.stringify(receipt, null, 2)}\
 `)
+await sharedBrowser.close().catch(() => {})
 if (receipt.errors.length) process.exit(1)

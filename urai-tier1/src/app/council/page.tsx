@@ -1,3 +1,5 @@
+import { notFound } from 'next/navigation'
+import { postLaunchSpatialRealmsEnabled } from '@/lib/release/postLaunchRealmGate'
 import { CouncilRealm } from '@/spatial/council/CouncilRealm'
 import { getSceneDefinition } from '@/spatial/realms/sceneRegistry'
 
@@ -10,6 +12,7 @@ export const metadata = {
 }
 
 export default function CouncilRoutePage() {
+  if (!postLaunchSpatialRealmsEnabled()) notFound()
   const scene = getSceneDefinition('council')
 
   return (

@@ -22,9 +22,20 @@ for (const retirementAssertion of [
   "assert.doesNotMatch(assetHome, /data-home-v226-certification/)",
   "assert.match(assetHome, /data-home-v226-retained-pixel-rebuild=\"superseded\"/)",
   "assert.match(assetHome, /data-home-v288-retained-pixel-rebuild=\"active\"/)",
-  "assert.doesNotMatch(activeHomeProduction, /stepEmbodiedMotion|useMovementInput|MobileMovementPad/)",
 ]) {
   if (!source.includes(retirementAssertion)) throw new Error(`V288 fail-closed retirement assertion missing: ${retirementAssertion}`)
+}
+
+// The current Home canon intentionally owns first-person locomotion through the
+// shared embodied movement stack. Guard that positive authority here rather than
+// carrying the retired pre-FPV assertion that these symbols must be absent.
+for (const sharedMovementAssertion of [
+  "assert.match(activeHomeProduction, /stepEmbodiedMotion/)",
+  "assert.match(activeHomeProduction, /useMovementInput/)",
+  "assert.match(activeHomeProduction, /MobileMovementPad/)",
+  "assert.match(activeHomeProduction, /data-home-movement=\\{firstPerson \\? 'shared-keyboard-touch-walk-look-interact' : 'camera-look-world-surface-selection'\\}/)",
+]) {
+  if (!source.includes(sharedMovementAssertion)) throw new Error(`Current Home shared-movement authority missing: ${sharedMovementAssertion}`)
 }
 
 for (const obsoletePositiveAuthority of [

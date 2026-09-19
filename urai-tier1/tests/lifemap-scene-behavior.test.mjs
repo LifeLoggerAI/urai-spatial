@@ -44,6 +44,7 @@ test('Canonical Life Map visually isolates the authored world from legacy plates
 test('Life Map establishes authored foreground middle distance and horizon depth', () => {
   for (const marker of [
     'life-map-white-gold-life-core',
+    'life-map-v290-layered-living-galaxy',
     'life-map-authored-chapter-regions',
     'life-map-light-bridges',
     'life-map-foreground-observatory',
@@ -204,4 +205,18 @@ test('WebGL context loss preserves truthful semantic recovery', () => {
   assert.ok(source.includes('Open semantic overview'))
   assert.ok(canonical.includes('data-testid="urai-life-map-authored-fallback"'))
   assert.ok(canonical.includes('requestUraiWorldReturn()'))
+})
+
+
+test('Life Map literal-pixel candidate restores the visible white-gold core and layered galaxy without the known flat placeholder plate', () => {
+  assert.match(source, /data-life-map-art-revision="v290-layered-living-galaxy-white-gold-core"/)
+  assert.match(world, /function SpiralGalaxyField/)
+  assert.match(world, /name="life-map-v290-layered-living-galaxy"/)
+  assert.match(world, /visualRole: "four-arm-personal-galaxy"/)
+  assert.match(world, /placeholderPlate: false/)
+  assert.match(world, /<LifeCore reducedMotion=\{profile\.reducedMotion\} tier=\{profile\.tier\} \/>/)
+  assert.doesNotMatch(world, /<LifeCore hidden/)
+  assert.doesNotMatch(world, /life-map-galaxy-main\.webp/)
+  assert.match(world, /life-map-v237-grounded-geography-retired/)
+  assert.match(world, /retiredVisualRole: "former-memory-valley-not-current-galaxy-authority"/)
 })

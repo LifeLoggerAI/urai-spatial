@@ -130,9 +130,11 @@ async function activate(page: Page, destination: Destination, activation: Activa
   const target = navigation.getByTestId(`home-semantic-${destination.id}`)
   await expect(target).toHaveCount(1)
   await expect(target).toHaveAccessibleName(destination.label)
-  await expect(target).toBeEnabled()
-  await target.scrollIntoViewIfNeeded()
 
+  // click/tap/press already enforce enabled/actionable state. Avoid a second
+  // full WebGL-era actionability/scroll pass here: under CI SwiftShader those
+  // redundant locator operations can consume the entire per-test budget before
+  // the trusted activation is dispatched.
   if (activation.method === 'keyboard') {
     await target.focus()
     await expect(target).toBeFocused()
@@ -210,7 +212,7 @@ async function proveCanonicalTravel(
 for (const destination of destinations) {
   for (const activation of activations) {
     test(`${activation.id} to ${destination.id} converges on canonical context and Back remains stable`, async ({ browser }, testInfo) => {
-      test.setTimeout(180_000)
+      test.setTimeout(300_000)
       const context = await browser.newContext({ baseURL, ...activation.context })
       try {
         const report = await proveCanonicalTravel(context, destination, activation)

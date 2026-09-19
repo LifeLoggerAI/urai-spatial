@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "id": "ground-natural-canopy-v3",
+  "fixedPath": "urai-tier1/public/assets/urai/generated/models/ground-natural-canopy-v3.glb",
+  "bytes": 7804,
+  "sha256": "99573df9d41719621d057067155aa25ef0886afdf91c725b5f71e8b66a780d55",
+  "measured": {
+    "triangleCount": 270,
+    "drawCalls": 2,
+    "meshes": [
+      "organic_branched_trunk",
+      "asymmetric_clustered_canopy"
+    ]
+  },
+  "compressionStatus": "compact-static-glb",
+  "fallback": "scanned-understory-remains-without-canopy",
+  "source": "URAI self-authored deterministic static geometry; no third-party binary used",
+  "license": "URAI Labs internal proprietary production asset",
+  "generatedBy": "URAI deterministic Ground canopy forge",
+  "generatedAt": "2026-09-17T18:46:00-05:00",
+  "releaseState": "candidate-not-production-ready",
+  "gitBlobSha": "f1f79fa8961c58a4cebcfe7da09808883665a0fa",
+  "binaryRepair": "Restored three missing trunk RGBA records and removed 132-byte junk tail; accessor payload matches the declared glTF layout without geometry redesign."
+}

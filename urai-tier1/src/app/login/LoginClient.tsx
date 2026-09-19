@@ -9,7 +9,8 @@ type AuthState = 'checking' | 'signed-out' | 'working' | 'signed-in' | 'unavaila
 type AuthIntent = 'login' | 'signup'
 
 export default function LoginClient({ intent = 'login' }: { intent?: AuthIntent }) {
-  const creating = intent === 'signup'
+  const [resolvedIntent, setResolvedIntent] = useState<AuthIntent>(intent)
+  const creating = resolvedIntent === 'signup'
   const [user, setUser] = useState<User | null>(null)
   const [state, setState] = useState<AuthState>(firebasePublicEnvReady ? 'checking' : 'unavailable')
   const [message, setMessage] = useState(
@@ -17,6 +18,12 @@ export default function LoginClient({ intent = 'login' }: { intent?: AuthIntent 
       ? creating ? 'Checking account creation availability...' : 'Checking account state...'
       : 'Private account access is unavailable because Firebase public configuration is not present.'
   )
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const from = new URLSearchParams(window.location.search).get('from')
+    setResolvedIntent(from === 'signup' ? 'signup' : intent)
+  }, [intent])
 
   useEffect(() => {
     if (!firebasePublicEnvReady) return

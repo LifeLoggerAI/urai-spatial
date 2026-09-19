@@ -113,7 +113,7 @@ export default function PassportVaultClient() {
   const explicitDemo = params.get('demo') === '1'
   const [user, setUser] = useState<User | null>(null)
   const [state, setState] = useState<LoadState>('loading')
-  const [snapshot, setSnapshot] = useState<SnapshotPayload>(() => toDemoPayload())
+  const [snapshot, setSnapshot] = useState<SnapshotPayload>({})
   const [selectedZone, setSelectedZone] = useState('identity')
   const [message, setMessage] = useState('Opening your Ownership Vault…')
   const [webglAvailable, setWebglAvailable] = useState(true)

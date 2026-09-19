@@ -7,6 +7,7 @@ import { publishOrbState } from '@/app/home/orbStateController'
 import OrbConversationPanel from '@/spatial/orb/OrbConversationPanel'
 import { definitionForDestination, URAI_DESTINATION_REGISTRY } from './destinationRegistry'
 import {
+  publishUraiWorldOrbClose,
   requestUraiWorldReturn,
   requestUraiWorldTravel,
   takePendingUraiWorldOrbOpen,
@@ -22,16 +23,8 @@ const CONTEXT_KEYS = ['memoryId', 'node', 'thread', 'personId', 'placeId', 'mani
 const AUDIO_CONSENT_KEY = 'urai:spatial-audio-consent-v1'
 const AUDIO_MUTE_KEY = 'urai:spatial-audio-muted-v1'
 
-type PublicEstateIdentity = {
-  id: 'studio' | 'privacy' | 'labs' | 'foundation'
-  label: string
-}
-
-type PublicEstateEntry = PublicEstateIdentity & (
-  | { status: 'verification-pending'; href?: never }
-  | { status: 'live'; href: string }
-)
-
+type PublicEstateIdentity = { id: 'studio' | 'privacy' | 'labs' | 'foundation'; label: string }
+type PublicEstateEntry = PublicEstateIdentity & ({ status: 'verification-pending'; href?: never } | { status: 'live'; href: string })
 const PUBLIC_ESTATE: readonly PublicEstateEntry[] = [
   { id: 'studio', label: 'URAI Studio', status: 'verification-pending' },
   { id: 'privacy', label: 'URAI Privacy', status: 'verification-pending' },
@@ -43,9 +36,7 @@ function buildCompanionTravelHref(request: UraiWorldTravelRequest) {
   const definition = definitionForDestination(request.destination)
   const target = new URL(request.href ?? definition.href, window.location.origin)
   const current = new URLSearchParams(window.location.search)
-  for (const key of CONTEXT_KEYS) {
-    if (!target.searchParams.has(key) && current.has(key)) target.searchParams.set(key, current.get(key) ?? '')
-  }
+  for (const key of CONTEXT_KEYS) if (!target.searchParams.has(key) && current.has(key)) target.searchParams.set(key, current.get(key) ?? '')
   const context = request.context
   if (context?.memoryId) target.searchParams.set('memoryId', context.memoryId)
   if (context?.threadId) target.searchParams.set('thread', context.threadId)
@@ -81,15 +72,13 @@ export function PersistentWorldCompanion() {
     restoreFocusRef.current = restoreFocus
     setOpen(false)
     publishOrbState('idle', 'companion')
+    publishUraiWorldOrbClose()
   }, [])
 
   useEffect(() => {
     setHydrated(true)
-    try {
-      setAudioEnabled(sessionStorage.getItem(AUDIO_CONSENT_KEY) === 'true' && sessionStorage.getItem(AUDIO_MUTE_KEY) === 'false')
-    } catch {
-      setAudioEnabled(false)
-    }
+    try { setAudioEnabled(sessionStorage.getItem(AUDIO_CONSENT_KEY) === 'true' && sessionStorage.getItem(AUDIO_MUTE_KEY) === 'false') }
+    catch { setAudioEnabled(false) }
   }, [])
 
   const publishCompanionAttention = useCallback(() => {
@@ -101,11 +90,7 @@ export function PersistentWorldCompanion() {
 
   const toggleCompanion = useCallback(() => {
     if (open) closeCompanion(true)
-    else {
-      externalActivatorRef.current = null
-      setOpen(true)
-      publishCompanionAttention()
-    }
+    else { externalActivatorRef.current = null; setOpen(true); publishCompanionAttention() }
   }, [closeCompanion, open, publishCompanionAttention])
 
   const toggleAudio = useCallback(() => {
@@ -119,32 +104,23 @@ export function PersistentWorldCompanion() {
     const openCompanion = (event: CustomEvent<UraiWorldOrbOpenDetail>) => {
       const request = takePendingUraiWorldOrbOpen() ?? event.detail
       externalActivatorRef.current = request.returnFocusTo ?? null
-      // External semantic Home controls dispatch a native window event. Commit the
-      // accessibility state synchronously so heavy spatial formation work cannot
-      // leave the visible companion stale/aria-hidden after an intentional click.
       flushSync(() => setOpen(true))
       publishCompanionAttention()
     }
     window.addEventListener(URAI_WORLD_ORB_OPEN_EVENT, openCompanion)
     const pending = takePendingUraiWorldOrbOpen()
-    if (pending) {
-      externalActivatorRef.current = pending.returnFocusTo ?? null
-      setOpen(true)
-      publishCompanionAttention()
-    }
+    if (pending) { externalActivatorRef.current = pending.returnFocusTo ?? null; setOpen(true); publishCompanionAttention() }
     return () => window.removeEventListener(URAI_WORLD_ORB_OPEN_EVENT, openCompanion)
   }, [publishCompanionAttention])
 
-  useEffect(() => {
-    if (phase !== 'idle') closeCompanion(false)
-  }, [closeCompanion, phase])
+  useEffect(() => { if (phase !== 'idle') closeCompanion(false) }, [closeCompanion, phase])
 
   useLayoutEffect(() => {
     if (open) {
       restoreFocusRef.current = false
       const firstControl = menuRef.current?.querySelector<HTMLElement>('button:not([disabled])')
       if (firstControl) {
-        firstControl?.focus()
+        firstControl.focus()
         if (document.activeElement !== firstControl) window.requestAnimationFrame(() => firstControl.focus({ preventScroll: true }))
       }
       return
@@ -164,32 +140,18 @@ export function PersistentWorldCompanion() {
     if (!open) return
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key !== 'Escape') return
-      event.preventDefault()
-      closeCompanion(true)
+      event.preventDefault(); event.stopImmediatePropagation(); closeCompanion(true)
     }
     window.addEventListener('keydown', onKeyDown, true)
     return () => window.removeEventListener('keydown', onKeyDown, true)
   }, [closeCompanion, open])
 
   const travel = useCallback((destination: UraiDestination) => {
-    if (phase !== 'idle' || destination === world.destination) {
-      closeCompanion(true)
-      return
-    }
+    if (phase !== 'idle' || destination === world.destination) { closeCompanion(true); return }
     const target = definitionForDestination(destination)
     const request: UraiWorldTravelRequest = {
-      destination,
-      href: target.href,
-      entryPortal: target.entryPortal,
-      cameraCheckpoint: target.cameraCheckpoint,
-      context: {
-        memoryId: world.memoryId,
-        threadId: world.threadId,
-        personId: world.personId,
-        placeId: world.placeId,
-        replayManifestId: world.replayManifestId,
-        privacyMode: world.privacyMode,
-      },
+      destination, href: target.href, entryPortal: target.entryPortal, cameraCheckpoint: target.cameraCheckpoint,
+      context: { memoryId: world.memoryId, threadId: world.threadId, personId: world.personId, placeId: world.placeId, replayManifestId: world.replayManifestId, privacyMode: world.privacyMode },
     }
     const href = buildCompanionTravelHref(request)
     closeCompanion(false)
@@ -199,25 +161,12 @@ export function PersistentWorldCompanion() {
   }, [closeCompanion, phase, router, world])
 
   const returnThroughWorld = useCallback(() => {
-    if (phase !== 'idle' || world.destination === 'home') {
-      closeCompanion(true)
-      return
-    }
-    closeCompanion(false)
-    publishOrbState('transition', 'companion')
-    requestUraiWorldReturn()
+    if (phase !== 'idle' || world.destination === 'home') { closeCompanion(true); return }
+    closeCompanion(false); publishOrbState('transition', 'companion'); requestUraiWorldReturn()
   }, [closeCompanion, phase, world.destination])
 
   const destinationButtons = (destinations: typeof primaryDestinations) => destinations.map((destination) => (
-    <button
-      key={destination.id}
-      type="button"
-      disabled={!hydrated || phase !== 'idle'}
-      data-active={destination.id === world.destination ? 'true' : 'false'}
-      data-world-target={destination.id}
-      aria-current={destination.id === world.destination ? 'page' : undefined}
-      onClick={() => travel(destination.id)}
-    >
+    <button key={destination.id} type="button" disabled={!hydrated || phase !== 'idle'} data-active={destination.id === world.destination ? 'true' : 'false'} data-world-target={destination.id} aria-current={destination.id === world.destination ? 'page' : undefined} onClick={() => travel(destination.id)}>
       {destination.label}
     </button>
   ))
@@ -230,58 +179,14 @@ export function PersistentWorldCompanion() {
         <nav className="urai-world-companion__secondary" aria-label="Travel to private URAI realms">{destinationButtons(secondaryDestinations)}</nav>
         <section className="urai-world-companion__estate" aria-labelledby="urai-public-estate-title">
           <h2 id="urai-public-estate-title">Public constellation</h2>
-          <ul>
-            {PUBLIC_ESTATE.map((entry) => (
-              <li key={entry.id} data-estate-id={entry.id} data-estate-status={entry.status}>
-                {entry.status === 'live' ? (
-                  <a href={entry.href} target="_blank" rel="noreferrer">
-                    <span>{entry.label}</span>
-                    <small>Verified live · opens a new site</small>
-                  </a>
-                ) : (
-                  <span className="urai-world-companion__estate-card">
-                    <span>{entry.label}</span>
-                    <small>Verification pending</small>
-                  </span>
-                )}
-              </li>
-            ))}
-          </ul>
+          <ul>{PUBLIC_ESTATE.map((entry) => <li key={entry.id} data-estate-id={entry.id} data-estate-status={entry.status}>{entry.status === 'live' ? <a href={entry.href} target="_blank" rel="noreferrer"><span>{entry.label}</span><small>Verified live · opens a new site</small></a> : <span className="urai-world-companion__estate-card"><span>{entry.label}</span><small>Verification pending</small></span>}</li>)}</ul>
         </section>
-        {world.destination !== 'home' ? (
-          <button type="button" className="urai-world-companion__return" aria-label="Return through the world" disabled={!hydrated || phase !== 'idle'} data-return="true" onClick={returnThroughWorld}>
-            Return
-          </button>
-        ) : null}
-        <button
-          type="button"
-          aria-pressed={audioEnabled}
-          aria-label={audioEnabled ? 'Mute spatial sound' : 'Enable spatial sound'}
-          data-world-target="spatial-audio-toggle"
-          disabled={!hydrated}
-          onClick={toggleAudio}
-        >
-          {audioEnabled ? 'Sound on' : 'Sound off'}
-        </button>
+        {world.destination !== 'home' ? <button type="button" className="urai-world-companion__return" aria-label="Return through the world" disabled={!hydrated || phase !== 'idle'} data-return="true" onClick={returnThroughWorld}>Return</button> : null}
+        <button type="button" aria-pressed={audioEnabled} aria-label={audioEnabled ? 'Mute spatial sound' : 'Enable spatial sound'} data-world-target="spatial-audio-toggle" disabled={!hydrated} onClick={toggleAudio}>{audioEnabled ? 'Sound on' : 'Sound off'}</button>
         <OrbConversationPanel />
       </div>
-      <button
-        ref={orbRef}
-        type="button"
-        className="urai-world-companion__orb"
-        aria-label={open ? 'Close Orb travel controls' : 'Open Orb travel controls'}
-        aria-expanded={open}
-        aria-controls="urai-world-companion-menu"
-        data-world-target="orb-controls"
-        data-urai-audit-action="orb-controls"
-        disabled={!hydrated || phase !== 'idle'}
-        onClick={toggleCompanion}
-      >
-        <svg viewBox="0 0 48 48" aria-hidden="true" focusable="false">
-          <path d="M23 40C8 33 7 16 15 8C24 11 28 24 23 40Z" fill="#82b4a3" fillOpacity=".5" stroke="#c8e5d6" strokeWidth="1.2" />
-          <path d="M23 40C35 34 42 19 35 12C25 15 22 27 23 40Z" fill="#aa929e" fillOpacity=".48" stroke="#e0bbc2" strokeWidth="1.2" />
-          <path d="M23 39C25 27 16 24 17 14M24 35C28 27 33 24 33 18" fill="none" stroke="#e9e4ca" strokeWidth="1.1" strokeLinecap="round" />
-        </svg>
+      <button ref={orbRef} type="button" className="urai-world-companion__orb" aria-label={open ? 'Close Orb travel controls' : 'Open Orb travel controls'} aria-expanded={open} aria-controls="urai-world-companion-menu" data-world-target="orb-controls" data-urai-audit-action="orb-controls" disabled={!hydrated || phase !== 'idle'} onClick={toggleCompanion}>
+        <svg viewBox="0 0 48 48" aria-hidden="true" focusable="false"><path d="M23 40C8 33 7 16 15 8C24 11 28 24 23 40Z" fill="#82b4a3" fillOpacity=".5" stroke="#c8e5d6" strokeWidth="1.2" /><path d="M23 40C35 34 42 19 35 12C25 15 22 27 23 40Z" fill="#aa929e" fillOpacity=".48" stroke="#e0bbc2" strokeWidth="1.2" /><path d="M23 39C25 27 16 24 17 14M24 35C28 27 33 24 33 18" fill="none" stroke="#e9e4ca" strokeWidth="1.1" strokeLinecap="round" /></svg>
       </button>
     </aside>
   )

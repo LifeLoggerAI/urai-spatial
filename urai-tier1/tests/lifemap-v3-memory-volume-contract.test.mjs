@@ -5,10 +5,11 @@ import test from 'node:test'
 const stellar = fs.readFileSync(new URL('../src/components/lifemap/LifeMapStellarField.tsx', import.meta.url), 'utf8')
 const visualSystem = fs.readFileSync(new URL('../src/components/lifemap/lifeMapVisualSystem.ts', import.meta.url), 'utf8')
 
-test('live stellar owner declares asymmetric v3 memory-volume authority', () => {
-  assert.match(stellar, /life-map-v3-memory-volume-/)
-  assert.match(stellar, /asymmetric-luminous-memory-volume/)
-  assert.match(stellar, /v3-no-planet-no-ring-memory-language/)
+test('live stellar owner declares current Memory Star authority', () => {
+  assert.match(stellar, /life-map-v323-memory-star-/)
+  assert.match(stellar, /stellar-point-photosphere-layered-corona/)
+  assert.match(stellar, /v323-life-map-to-focus-memory-star-continuity/)
+  assert.match(stellar, /life-map-v323-memory-cluster-nebulae/)
 })
 
 test('selected memory presentation does not regress to orbital rings', () => {

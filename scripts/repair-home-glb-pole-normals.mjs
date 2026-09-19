@@ -230,11 +230,18 @@ function repairOrbAsset(config, pack) {
 
 function repairHomeStateProofContract() {
   if (!fs.existsSync(CAPTURE_PROOF_PATH)) return { changed: false, skipped: true, reason: 'capture-proof-script-not-present' }
-  const source = fs.readFileSync(CAPTURE_PROOF_PATH, 'utf8'), oldCount = source.split(OLD_VISIBLE_WORLD).length - 1, currentCount = source.split(CURRENT_VISIBLE_WORLD).length - 1
-  if (oldCount === 0) { if (currentCount >= 2) return { changed: false, oldCount, currentCount }; fail('Home State Proof contract contains neither the stale nor current visible-world marker in the expected assertions') }
+  const source = fs.readFileSync(CAPTURE_PROOF_PATH, 'utf8')
+  const oldCount = source.split(OLD_VISIBLE_WORLD).length - 1
+  const currentCount = source.split(CURRENT_VISIBLE_WORLD).length - 1
+  const dynamicVisibleWorldCount = source.split("getAttribute('data-home-visible-world')").length - 1
+  if (oldCount === 0) {
+    if (currentCount >= 2) return { changed: false, oldCount, currentCount, dynamicVisibleWorldCount }
+    if (dynamicVisibleWorldCount >= 2) return { changed: false, oldCount, currentCount, dynamicVisibleWorldCount, reason: 'dynamic-visible-world-proof-contract' }
+    fail('Home State Proof contract contains neither the stale/current fixed marker nor the current dynamic visible-world assertions')
+  }
   if (oldCount !== 2) fail(`Expected exactly two stale Home State Proof visible-world assertions, found ${oldCount}`)
   fs.writeFileSync(CAPTURE_PROOF_PATH, source.split(OLD_VISIBLE_WORLD).join(CURRENT_VISIBLE_WORLD))
-  return { changed: true, oldCount, currentCount: currentCount + oldCount }
+  return { changed: true, oldCount, currentCount: currentCount + oldCount, dynamicVisibleWorldCount }
 }
 
 const pack = readJson(PACK_PATH)

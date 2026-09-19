@@ -3,22 +3,37 @@ import { readFileSync } from 'node:fs'
 import test from 'node:test'
 
 const ground = readFileSync(new URL('../src/app/GroundSpatialWorldClean.tsx', import.meta.url), 'utf8')
+const groundCanon = readFileSync(new URL('../src/spatial/ground/groundCanon.ts', import.meta.url), 'utf8')
 
-test('Ground renders a lived physical world instead of the retired chamber hub', () => {
-  assert.match(ground, /data-ground-visual-revision="ground-lived-world-v1"/)
+test('Ground renders the current atmospheric lived world instead of the rejected root-vault substrate', () => {
+  assert.match(ground, /data-ground-visual-revision="ground-lived-world-v2-canon-lock"/)
+  assert.match(ground, /data-ground-art-revision="ground-v20-smooth-overlapping-broadleaf-canopy-atmosphere"/)
+  assert.match(ground, /data-ground-visual-owner="atmospheric-living-environment"/)
+  assert.match(ground, /<AtmosphericGroundSky profile=\{profile\} \/>/)
+  assert.match(ground, /<NaturalScatter profile=\{profile\} \/>/)
+  assert.match(ground, /<DistantGroundContinuation profile=\{profile\} \/>/)
+  assert.match(ground, /new THREE\.SphereGeometry\(0\.5, 10, 7\)/)
+  assert.doesNotMatch(ground, /new THREE\.IcosahedronGeometry\(0\.5, 0\)/)
+  assert.match(ground, /<ScannedRock/)
+  assert.match(ground, /<FernPatch/)
+  assert.match(ground, /<color attach="background" args=\{\[profile\.horizon\]\} \/>/)
+  assert.match(ground, /<fogExp2 attach="fog" args=\{\[profile\.fog, 0\.0088/)
+  assert.match(ground, /gl\.toneMappingExposure = 1\.05/)
   assert.match(ground, /data-ground-runtime-owner="first-person-lived-world"/)
   assert.match(ground, /name="ground-lived-world"/)
   assert.match(ground, /name="ground-visible-traversable-terrain"/)
+  assert.doesNotMatch(ground, /<GroundSubstrateWorld profile=\{profile\} \/>/)
   assert.doesNotMatch(ground, /GroundPhysicalArchitecture|GroundVaultArchitecture|ground-destination-compass|ground-central-nexus/)
 })
 
 test('Ground uses true eye-level terrain-following first-person movement', () => {
-  assert.match(ground, /const EYE_HEIGHT = 1\.69/)
+  assert.match(groundCanon, /export const GROUND_EYE_HEIGHT_M = 1\.69/)
   assert.match(ground, /groundHeight\(position\.current\.x, position\.current\.z, profile\.id\)/)
-  assert.match(ground, /desired\.current\.set\(position\.current\.x, surfaceY \+ EYE_HEIGHT, position\.current\.z\)/)
-  assert.match(ground, /data-ground-camera="eye-level-terrain-following"/)
-  assert.match(ground, /data-ground-collision="visible-terrain-heightfield"/)
+  assert.match(ground, /desired\.current\.set\(position\.current\.x, surfaceY \+ GROUND_EYE_HEIGHT_M, position\.current\.z\)/)
+  assert.match(ground, /data-ground-camera="eye-level-terrain-following-no-authored-bob"/)
+  assert.match(ground, /data-ground-collision="terrain-plus-authored-obstacle-field"/)
   assert.match(ground, /stepEmbodiedMotion/)
+  assert.match(ground, /buildGroundObstacleField\(profile\.id\)/)
   assert.doesNotMatch(ground, /cameraOffset|distance = portrait \? 1\.4 : 1\.1/)
 })
 

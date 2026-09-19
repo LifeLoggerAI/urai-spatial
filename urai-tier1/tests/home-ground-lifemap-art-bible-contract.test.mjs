@@ -7,6 +7,7 @@ const homeRuntime = read('src/app/HomeSpatialRuntimeLayer.tsx')
 const assetHome = read('src/app/AssetDrivenHomeWorld.tsx')
 const homeEntry = read('src/spatial/layout/HomeWorldProduction.tsx')
 const currentHome = read('src/spatial/layout/HomeWorldProductionV223.tsx')
+const embodiedAvatar = read('src/spatial/home/HomeEmbodiedAvatar.tsx')
 const currentHomeGeometry = read('src/spatial/layout/HomeWorldProductionV223Geometry.tsx')
 const sky = read('src/spatial/assets/HomeAtmosphericSky.tsx')
 const currentHomeVisualAuthority = JSON.parse(read('src/app/currentHomeVisualAuthority.json'))
@@ -16,27 +17,38 @@ const lifeMap = read('src/spatial/lifemap/SpatialLifeMapCanonical.tsx')
 
 const has = (source, marker) => assert.ok(source.includes(marker), `missing marker: ${marker}`)
 
-test('Home is a first-person cinematic threshold with a grounded Orb companion, physical-world Ground and broad-sky Life Map', () => {
+test('Home supports cinematic visible-Avatar presentation plus camera-only first-person embodiment without changing Ground/Sky ownership', () => {
   for (const marker of [
-    'data-home-embodied-self="first-person-viewpoint-no-avatar"',
-    'data-home-movement="camera-look-world-surface-selection"',
+    'data-home-embodied-self=',
+    'visible-cinematic-avatar',
+    'camera-only-first-person-home',
+    'data-home-presence-presentation=',
+    'visible-avatar-third-person',
+    'hidden-exterior-avatar-first-person',
+    'data-home-movement=',
+    'walk-look-interact',
     'data-home-ground-entry="physical-world-surface"',
     'data-home-life-map-entry="visible-sky-broad-interaction"',
     'data-home-camera-mode=',
-    'first-person-viewpoint',
-    'home-gold-companion',
+    'cinematic-third-person',
+    'avatar-home-first-person',
+    'urai-home-user-avatar',
+    'home-living-memory-orb',
+    '/assets/urai/generated/models/urai-orb-avatar-v1.glb',
     'physicalWorldClick',
     'event.point.clone()',
+    'data-home-non-xr-body-policy="camera-only-no-hands-body-rig"',
   ]) has(currentHome, marker)
 
-  // Fail closed on active avatar ownership while allowing retirement/compatibility
-  // strings that exist specifically to hide legacy avatar geometry.
-  assert.doesNotMatch(currentHome, /function\s+VisibleUserAvatar\s*\(|<VisibleUserAvatar\b/)
-  assert.doesNotMatch(currentHome, /data-home-embodied-self=["']visible-cinematic-avatar["']|data-home-camera-mode=["']cinematic-third-person["']|name=["']urai-home-embodied-avatar["']/)
-  assert.doesNotMatch(currentHome, /stepEmbodiedMotion|useMovementInput|MobileMovementPad/)
+  assert.match(currentHome, /<HomeEmbodiedAvatar/)
+  assert.match(currentHome, /useHomeExperienceController/)
+  assert.match(currentHome, /homeApi\.activateAvatar\(\)/)
+  assert.match(embodiedAvatar, /const idle = actions\.idle_breath/)
+  assert.match(currentHome, /setLoop\(THREE\.LoopOnce, 1\)/)
+  assert.match(currentHome, /clampWhenFinished = true/)
+  assert.doesNotMatch(currentHome, /privacy-preserving-first-person/)
+  assert.doesNotMatch(currentHome, /next\.reset\(\)\.setLoop\(THREE\.LoopRepeat\s*,\s*Infinity\)/)
   assert.doesNotMatch(currentHome, /nearby==='ground'|nearby === 'ground'/)
-  assert.doesNotMatch(currentHome, /data-home-embodied-self="privacy-preserving-first-person"/)
-  assert.doesNotMatch(currentHome, /data-home-movement="walk-keyboard-click-touch"/)
   assert.doesNotMatch(currentHome, /The path descends/)
   assert.doesNotMatch(currentHome, /from '\.\/HomeWorldProductionV223Geometry'.*GROUND/)
   assert.match(currentHome, /data-home-distance-ground="world-surface"/)
@@ -54,41 +66,56 @@ test('Home sky is the canonical broad Life Map threshold and localized Home-side
     'RetireLocalizedLifeMapGateways',
   ]) has(sky, marker)
   assert.match(currentHome, /<HomeAtmosphericSky[^>]*onLifeMap=\{onLifeMap\}/)
-  assert.doesNotMatch(currentHome, /LIFE_MAP/)
+  assert.doesNotMatch(currentHome, /home-life-map-physical-portal|LifeMapPortal|PORTAL_MODEL/)
 })
 
-test('Home runtime and metadata no longer advertise portal-hub, third-person avatar or Home-locomotion ownership', () => {
+test('Home runtime exposes the governed Avatar and current Orb candidate while preserving certified predecessor provenance', () => {
   assert.match(assetHome, /cinematic-home-ground-threshold-convergence/)
   assert.match(assetHome, /continuous-lived-physical-world/)
-  assert.match(assetHome, /home-physical-world home-grounded-companion home-life-map-sky-threshold/)
-  assert.doesNotMatch(assetHome, /home-visible-user-avatar/)
+  assert.match(currentHome, /urai-home-user-avatar/)
+  assert.match(currentHome, /home-living-memory-orb/)
+  assert.match(currentHome, /HOME_AVATAR_MODEL/)
   assert.doesNotMatch(assetHome, /HOME_GROUND|HOME_SPAWN|stagePortalLifecycle|PortalDestination/)
   assert.equal(currentHomeVisualAuthority.artRevision, 'v288-cinematic-lived-world-grounded-reliquary')
-  assert.equal(currentHomeVisualAuthority.orbVisualAuthority, 'v288-grounded-biomorphic-reliquary')
+  assert.equal(currentHomeVisualAuthority.orbVisualAuthority, 'authored-living-memory-orb-candidate')
+  assert.equal(currentHomeVisualAuthority.currentRuntimeCandidate.orbVisualAuthority, 'authored-living-memory-orb-candidate')
+  assert.equal(currentHomeVisualAuthority.currentRuntimeCandidate.certified, false)
+  assert.equal(currentHomeVisualAuthority.lastCertifiedPredecessor.orbVisualAuthority, 'v288-grounded-biomorphic-reliquary')
   assert.equal(currentHomeVisualAuthority.worldIdentifier, 'cinematic-lived-world-threshold')
   assert.match(homeEntry, /HomeWorldProductionV223 as HomeWorldProduction/)
-  assert.match(groundGateway, /aria-label="Enter your physical Ground world"/)
+  assert.match(groundGateway, /aria-label="Enter Ground — explore your physical lived world in first person"/)
   assert.match(homeRuntime, /aria-label="Open Life Map directly"/)
   assert.match(homeRuntime, /aria-label="Open Ground directly"/)
 })
 
-test('Ground remains a true first-person lived world with privacy-safe empty-by-default place authority', () => {
+test('Ground remains a bodyless first-person lived world with privacy-safe empty-by-default place authority', () => {
   for (const marker of [
-    'data-ground-exploration="first-person"',
+    'data-ground-exploration="first-person-no-visible-body"',
     'data-ground-runtime-owner="first-person-lived-world"',
-    'data-ground-camera="eye-level-terrain-following"',
-    'data-ground-collision="visible-terrain-heightfield"',
+    'data-ground-camera="eye-level-terrain-following-no-authored-bob"',
+    'data-ground-collision="terrain-plus-authored-obstacle-field"',
     'data-ground-place-layer="consent-aware-empty-by-default"',
     'data-ground-private-location-mounted="false"',
+    'data-ground-visible-avatar="false"',
+    'data-ground-visible-hands="false"',
     'ground-visible-traversable-terrain',
     'stepEmbodiedMotion',
     'useMovementInput',
     'MobileMovementPad',
+    'GROUND_EYE_HEIGHT_M',
   ]) has(groundOwner, marker)
   for (const profile of ['temperate','urban','woodland','arid','coastal']) has(groundOwner, `id: "${profile}"`)
-  assert.match(groundOwner, /const EYE_HEIGHT = 1\.69/)
-  assert.match(groundOwner, /surfaceY \+ EYE_HEIGHT/)
+  assert.match(groundOwner, /surfaceY \+ GROUND_EYE_HEIGHT_M/)
+  assert.doesNotMatch(groundOwner, /const EYE_HEIGHT = 1\.69/)
   assert.doesNotMatch(groundOwner, /GroundPhysicalArchitecture|GroundVaultArchitecture|ground-destination-compass|ground-central-nexus|ground-enterable-threshold-/)
+  assert.match(groundOwner, /ground-natural-canopy-v3\.glb/)
+  assert.match(groundOwner, /class GroundCanopyBoundary extends Component/)
+  assert.match(groundOwner, /scanned-understory-remains-without-canopy/)
+  assert.match(groundOwner, /urai-self-authored-varied-canopy-v13-with-polyhaven-fern-rock-understory/)
+  assert.match(groundOwner, /ground-authored-distant-ridge-v4/)
+  assert.match(groundOwner, /authored-irregular-ridge-v4-muted-fog-blended/)
+  assert.doesNotMatch(groundOwner, /placeholder-trees-retired/)
+  assert.doesNotMatch(groundOwner, /<sphereGeometry args=\{\[1, 48, 24\]\} \/>/)
 })
 
 test('legacy geometry may remain as compatibility source but cannot own current Home interaction', () => {

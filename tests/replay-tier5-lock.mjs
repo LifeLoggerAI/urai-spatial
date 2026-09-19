@@ -127,11 +127,11 @@ async function openDemoReplay(page, baseUrl) {
   await page.waitForLoadState('networkidle', { timeout: 30000 }).catch(() => {});
 
   const focus = page.getByTestId('urai-final-focus-chamber').first();
-  await expectVisible(focus, 'demo Focus chamber');
+  await expectVisible(focus, 'demo Focus surface');
   await expectAttribute(focus, 'data-memory-status', 'demo');
 
-  const replayAction = page.getByRole('button', { name: /Open Replay for|Replay this memory/i }).first();
-  await expectVisible(replayAction, 'Focus Replay action');
+  const replayAction = page.getByRole('button', { name: /Enter Replay(?: for .+)?/i }).first();
+  await expectVisible(replayAction, 'Focus Enter Replay action');
   await replayAction.click();
   await page.waitForURL(/\/replay\?/, { waitUntil: 'domcontentloaded', timeout: 30000 });
   await page.waitForLoadState('networkidle', { timeout: 30000 }).catch(() => {});
@@ -140,7 +140,7 @@ async function openDemoReplay(page, baseUrl) {
 async function validateReplay(page, report, screenshotName) {
   const proof = page.getByTestId('urai-replay-surface').first();
   const client = page.getByTestId('cinematic-replay-client').first();
-  const controls = client.locator('[aria-label="Replay controls"]').first();
+  const pacing = client.locator('[aria-label="Replay pacing"]').first();
   const productControls = client.locator('[aria-label="Replay memory controls"]').first();
   const companion = page.getByRole('button', { name: /Orb travel controls/i }).first();
   const heading = client.locator('header h1').first();
@@ -154,29 +154,31 @@ async function validateReplay(page, report, screenshotName) {
   await expectAttribute(client, 'data-memory-status', 'demo');
   await expectAttribute(client, 'data-manifest-id', MANIFEST_ID);
   await expectAttribute(client, 'data-playing', 'false');
-  await expectVisible(controls, 'Replay controls');
-  await expectVisible(productControls, 'Replay memory controls');
+  await expectVisible(pacing, 'Replay pacing');
+  if (await productControls.isVisible()) throw new Error('Demo/read-only Replay memory mutation controls must remain hidden');
   await expectVisible(companion, 'persistent Orb travel control');
   await expectVisible(caption, 'Replay caption');
   await expectVisible(unwind, 'Replay unwind control');
   await expectNoOverlap(heading, unwind, 'Replay heading and unwind control', 4);
-  await expectNoOverlap(productControls, companion, 'Replay memory controls and persistent Orb', 4);
+  const operationStatus = client.locator('.replayOperationStatus').first();
+  await expectVisible(operationStatus, 'Replay read-only operation status');
+  await expectNoOverlap(operationStatus, companion, 'Replay read-only operation status and persistent Orb', 4);
 
-  const play = page.getByRole('button', { name: 'Play replay' }).first();
-  await expectVisible(play, 'Play replay control');
-  await play.click();
+  const begin = page.getByRole('button', { name: 'Begin memory' }).first();
+  await expectVisible(begin, 'Begin memory control');
+  await begin.click();
   await expectAttribute(client, 'data-playing', 'true');
 
-  const pause = page.getByRole('button', { name: 'Pause replay' }).first();
-  await expectVisible(pause, 'Pause replay control');
-  await pause.click();
+  const hold = page.getByRole('button', { name: 'Hold memory' }).first();
+  await expectVisible(hold, 'Hold memory control');
+  await hold.click();
   await expectAttribute(client, 'data-playing', 'false');
 
-  report.audits.push('route proof exposes replay_playing while authenticated demo client play and pause states are independently verified');
+  report.audits.push('route proof exposes replay_playing while authenticated demo client begin and hold states are independently verified without player chrome');
   await page.screenshot({ path: `${ARTIFACT_DIR}/${screenshotName}`, fullPage: true });
   report.screenshots.push(screenshotName);
 
-  return { client, controls, productControls, companion, caption, unwind };
+  return { client, pacing, productControls, companion, caption, unwind };
 }
 
 async function run() {
@@ -230,12 +232,15 @@ async function run() {
     await page.goto(mobileUrl, { waitUntil: 'domcontentloaded' });
     await page.waitForLoadState('networkidle', { timeout: 30000 }).catch(() => {});
     const mobile = await validateReplay(page, report, '03-mobile-memory-theater-replay.png');
-    await expectInsideViewport(mobile.controls, page, 'mobile Replay controls');
-    await expectInsideViewport(mobile.productControls, page, 'mobile Replay memory controls');
+    await expectInsideViewport(mobile.pacing, page, 'mobile Replay pacing');
+    if (await mobile.productControls.isVisible()) throw new Error('mobile demo/read-only Replay memory mutation controls must remain hidden');
+    const mobileOperationStatus = mobile.client.locator('.replayOperationStatus').first();
+    await expectVisible(mobileOperationStatus, 'mobile Replay read-only operation status');
+    await expectInsideViewport(mobileOperationStatus, page, 'mobile Replay read-only operation status');
     await expectInsideViewport(mobile.companion, page, 'mobile persistent Orb control');
     await expectInsideViewport(mobile.unwind, page, 'mobile Replay unwind');
-    await expectNoOverlap(mobile.caption, mobile.controls, 'mobile caption and controls');
-    await expectNoOverlap(mobile.unwind, mobile.controls, 'mobile unwind and controls');
+    await expectNoOverlap(mobile.caption, mobile.pacing, 'mobile caption and pacing');
+    await expectNoOverlap(mobile.unwind, mobile.pacing, 'mobile unwind and pacing');
     report.audits.push('mobile Replay safe-area geometry verified');
 
     const modeContract = '[data-scene-mode="replay"]';
@@ -251,7 +256,7 @@ async function run() {
       report.selectors = {
         proofSurface: await page.getByTestId('urai-replay-surface').count().catch(() => 0),
         cinematicClient: await page.getByTestId('cinematic-replay-client').count().catch(() => 0),
-        replayControls: await page.locator('[aria-label="Replay controls"]').count().catch(() => 0),
+        replayPacing: await page.locator('[aria-label="Replay pacing"]').count().catch(() => 0),
         nextError: await page.locator('nextjs-portal').count().catch(() => 0),
       };
       await page.screenshot({ path: `${ARTIFACT_DIR}/failure-replay-route.png`, fullPage: true }).catch(() => {});

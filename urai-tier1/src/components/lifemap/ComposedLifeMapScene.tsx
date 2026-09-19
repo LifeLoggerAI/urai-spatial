@@ -221,11 +221,11 @@ function truthLabel(sourceMode: LifeMapSourceMode) {
 }
 
 function phaseLabel(phase: JourneyPhase) {
-  if (phase === "overview") return "Sanctuary overview";
-  if (phase === "departure") return "Leaving the overlook";
-  if (phase === "travel") return "Following the memory valley";
-  if (phase === "approach") return "Entering the chapter";
-  return "Intimate memory chamber";
+  if (phase === "overview") return "Living galaxy overview";
+  if (phase === "departure") return "Leaving the overview";
+  if (phase === "travel") return "Crossing the memory cluster";
+  if (phase === "approach") return "Approaching selected Memory Star";
+  return "Selected Memory Star";
 }
 
 export default function ComposedLifeMapScene() {
@@ -387,6 +387,8 @@ export default function ComposedLifeMapScene() {
     data-life-map-mode={selected ? "selected" : "overview"}
     data-life-map-scale={selected ? phase === "arrival" ? "intimate" : "regional" : "cosmic"}
     data-life-map-production-world="true"
+    data-life-map-art-revision="v290-layered-living-galaxy-white-gold-core"
+    data-life-map-reference-form="astronomical-layered-personal-galaxy"
     data-webgl-state={webglState}
     data-software-renderer={softwareRenderer === null ? "detecting" : softwareRenderer ? "true" : "false"}
     data-software-render-cadence={softwareRenderer !== false || profile.reducedMotion ? "bounded-demand-4fps" : "continuous"}

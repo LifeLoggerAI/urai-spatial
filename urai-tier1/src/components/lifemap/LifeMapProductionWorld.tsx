@@ -11,9 +11,12 @@ import { lifeMapLocalPoint as celestialNodePosition, lifeMapStage } from "./life
 import type { LifeMapNode } from "./lifeMapData";
 import { LIFE_MAP_PATH_PALETTE, artifactFamilyLabel, artifactImportance, chapterForNode, resolveArtifactFamily, resolvePathKind } from "./lifeMapVisualSystem";
 
-// V237 literal-pixel authority: a continuous illuminated memory valley whose
-// low weathered manifestations emerge from the geology instead of floating as
-// flowers, nodes, or a diagram.
+// V290 literal-pixel candidate: the governed memory artifacts now live inside
+// a layered personal galaxy. Existing authored Memory Star assets remain the
+// semantic objects while the overview regains the white-gold galactic heart,
+// spiral chapter geography, dark dust depth, and astronomical scale required by
+// the current reference authority. The older V237 valley remains as subtle
+// close-range grounding, not the overview's visual owner.
 export type LifeMapJourneyPhase = "overview" | "departure" | "travel" | "approach" | "arrival";
 type Point3 = [number, number, number];
 type ArtifactProps = { node: LifeMapNode; active: boolean };
@@ -360,12 +363,15 @@ function NebulaBreath({ reducedMotion, selected }: { reducedMotion: boolean; sel
       void main(){
         vec3 p=vPosition*.055;
         float n=noise(p)+.52*noise(p*2.07+4.1)+.24*noise(p*4.13-7.3);
-        float bands=.5+.5*sin(vPosition.x*.19+vPosition.y*.23+n*4.2+uTime*.05);
-        float lane=exp(-pow((vPosition.y-vPosition.x*.17-3.*sin(vPosition.x*.08))/9.,2.));
-        float veil=smoothstep(.55,1.12,n)*(.55+.45*bands)*lane;
-        vec3 c=mix(vec3(.025,.15,.19),vec3(.25,.10,.34),noise(p*.72+11.));
-        c=mix(c,vec3(.10,.30,.31),smoothstep(.72,1.2,n));
-        gl_FragColor=vec4(c,(.04+.42*veil)*mix(1.0,1.12,uSelected));
+        float bands=.5+.5*sin(vPosition.x*.17+vPosition.y*.21+n*4.8+uTime*.035);
+        float laneA=exp(-pow((vPosition.y-vPosition.x*.13-2.4*sin(vPosition.x*.07))/7.5,2.));
+        float laneB=exp(-pow((vPosition.y+vPosition.x*.18+4.2*sin(vPosition.x*.045+1.7))/11.,2.));
+        float dust=.58+.42*noise(p*1.31+19.7);
+        float veil=smoothstep(.68,1.18,n)*(.34+.66*bands)*max(laneA,laneB*.72)*dust;
+        vec3 c=mix(vec3(.012,.055,.075),vec3(.11,.045,.15),noise(p*.72+11.));
+        c=mix(c,vec3(.055,.16,.17),smoothstep(.80,1.22,n));
+        float alpha=(.006+.22*veil)*mix(1.0,.62,uSelected);
+        gl_FragColor=vec4(c,alpha);
         #include <colorspace_fragment>
       }
     `,
@@ -419,9 +425,24 @@ function LifeCore({ hidden, reducedMotion, tier }: { hidden?: boolean; reducedMo
   const root = useRef<THREE.Group>(null);
   useFrame(({ clock }) => {
     if (!root.current || reducedMotion) return;
-    root.current.rotation.y = clock.elapsedTime * .035;
+    root.current.rotation.y = clock.elapsedTime * .025;
+    root.current.rotation.z = Math.sin(clock.elapsedTime * .11) * .035;
   });
-  return <group ref={root} visible={!hidden} name="life-map-white-gold-life-core" position={[0,1.4,-18]}><AuthoredMemoryStar aura={GOLD} active siteKey={`core-${tier}`} scale={1.5} /></group>;
+  const coreDust = tier === "low" ? 90 : tier === "medium" ? 160 : 240;
+  return <group
+    ref={root}
+    visible={!hidden}
+    name="life-map-white-gold-life-core"
+    position={[0,1.15,-22]}
+    userData={{ visualRole: "white-gold-galactic-heart", artRevision: "v290-layered-living-galaxy" }}
+  >
+    <AuthoredMemoryStar aura={GOLD} active siteKey={`core-${tier}`} scale={3.0} />
+    <FieldParticles seed={444} count={coreDust} radius={7.4} depth={5.6} height={5.4} color={GOLD} opacity={.68} size={.082} />
+    <FieldParticles seed={445} count={Math.round(coreDust * .72)} radius={9.2} depth={6.8} height={6.1} color={ICE} opacity={.30} size={.052} />
+    <Sparkles count={tier === "low" ? 32 : 72} scale={[9.4,5.7,7.2]} size={2.6} speed={reducedMotion ? 0 : .035} opacity={.58} color="#fff4ce" />
+    <pointLight color="#fff0bd" intensity={10.5} distance={34} decay={2} />
+    <pointLight position={[0,0,-3]} color="#bdefff" intensity={4.2} distance={28} decay={2} />
+  </group>;
 }
 
 function ChapterAnchor({ aura, index, form, scale = 1 }: { aura: string; index: number; form: MemoryForm; scale?: number }) {
@@ -677,6 +698,100 @@ function IntimateMemoryChamber(props: { selectedIndex: number; selected: LifeMap
   return <ArrivalSanctuary {...props} />;
 }
 
+
+function SpiralGalaxyField({ qualityTier, reducedMotion, selected }: { qualityTier: SpatialQualityProfile["tier"]; reducedMotion: boolean; selected: boolean }) {
+  const root = useRef<THREE.Group>(null);
+  const { gl } = useThree();
+  const count = qualityTier === "low" ? 820 : qualityTier === "medium" ? 1480 : 2380;
+  const geometry = useMemo(() => {
+    const positions = new Float32Array(count * 3);
+    const colors = new Float32Array(count * 3);
+    const sizes = new Float32Array(count);
+    const warm = new THREE.Color("#f8dfaa");
+    const ice = new THREE.Color("#b9efff");
+    const violet = new THREE.Color("#b489e2");
+    const teal = new THREE.Color("#72d3cf");
+    for (let index = 0; index < count; index += 1) {
+      const arm = index % 4;
+      const kind = seeded(index + 1900, 69);
+      const u = Math.pow(seeded(index + 1900, 70), .72);
+      let x: number, y: number, z: number, color: THREE.Color, size: number;
+      if (kind < .30) {
+        const radius = Math.pow(seeded(index + 1900, 71), 1.95) * 9.2;
+        const angle = seeded(index + 1900, 72) * Math.PI * 2;
+        x = Math.cos(angle) * radius * 1.22 + (seeded(index + 1900, 73) - .5) * 1.25;
+        y = Math.sin(angle) * radius * .40 + (seeded(index + 1900, 74) - .5) * 1.5;
+        z = (seeded(index + 1900, 75) - .5) * (2.5 + radius * .22);
+        color = warm.clone().lerp(ice, .08 + seeded(index + 1900, 76) * .18);
+        size = 1.05 + Math.pow(seeded(index + 1900, 77), 4) * 4.15;
+      } else {
+        const radius = 4.4 + u * 24.8;
+        const angularNoise = (seeded(index + 1900, 71) - .5) * (1.05 + u * 1.9);
+        const angle = arm * Math.PI * .5 + radius * .235 + angularNoise;
+        const thickness = .85 + u * 3.15;
+        x = Math.cos(angle) * radius * 1.16 + (seeded(index + 1900, 72) - .5) * thickness;
+        y = Math.sin(angle) * radius * .37 + (seeded(index + 1900, 73) - .5) * thickness * .82;
+        z = (seeded(index + 1900, 74) - .5) * (3.0 + u * 4.8) - u * .65;
+        color = warm.clone();
+        color.lerp(arm === 0 ? ice : arm === 1 ? violet : arm === 2 ? teal : ice, THREE.MathUtils.clamp(.18 + u * .62, 0, .74));
+        size = .64 + Math.pow(seeded(index + 1900, 76), 5) * 3.25;
+      }
+      positions[index * 3] = x;
+      positions[index * 3 + 1] = y;
+      positions[index * 3 + 2] = z;
+      const dim = .68 + seeded(index + 1900, 78) * .32;
+      colors[index * 3] = color.r * dim;
+      colors[index * 3 + 1] = color.g * dim;
+      colors[index * 3 + 2] = color.b * dim;
+      sizes[index] = size;
+    }
+    const next = new THREE.BufferGeometry();
+    next.setAttribute("position", new THREE.BufferAttribute(positions, 3));
+    next.setAttribute("color", new THREE.BufferAttribute(colors, 3));
+    next.setAttribute("aSize", new THREE.BufferAttribute(sizes, 1));
+    return next;
+  }, [count]);
+  const material = useMemo(() => new THREE.ShaderMaterial({
+    transparent: true,
+    depthWrite: false,
+    vertexColors: true,
+    blending: THREE.AdditiveBlending,
+    uniforms: { uDpr: { value: gl.getPixelRatio() }, uOpacity: { value: selected ? .24 : .92 } },
+    vertexShader: `uniform float uDpr; attribute float aSize; varying vec3 vColor;
+      void main(){vColor=color;vec4 p=modelViewMatrix*vec4(position,1.);gl_Position=projectionMatrix*p;gl_PointSize=clamp(aSize*135./max(8.,-p.z),1.,6.)*uDpr;}`,
+    fragmentShader: `
+      uniform float uOpacity;
+      varying vec3 vColor;
+      void main(){
+        float r=length(gl_PointCoord-.5)*2.;
+        float halo=exp(-r*r*2.7)*(1.-smoothstep(.72,1.,r));
+        gl_FragColor=vec4(vColor,halo*uOpacity);
+        #include <colorspace_fragment>
+      }
+    `,
+  }), []);
+  useEffect(() => () => geometry.dispose(), [geometry]);
+  useEffect(() => () => material.dispose(), [material]);
+  useFrame(({ clock }) => {
+    material.uniforms.uDpr.value = gl.getPixelRatio();
+    material.uniforms.uOpacity.value = selected ? .24 : .92;
+    if (!root.current || reducedMotion) return;
+    root.current.rotation.z = -.12 + Math.sin(clock.elapsedTime * .035) * .012;
+  });
+  return <group
+    ref={root}
+    name="life-map-v290-layered-living-galaxy"
+    position={[0,1.2,-24.5]}
+    rotation={[.04,0,-.12]}
+    scale={[1.22,1.08,1]}
+    userData={{ visualRole: "four-arm-personal-galaxy", source: "authored-runtime-memory-star-system", placeholderPlate: false }}
+  >
+    <points geometry={geometry} material={material} />
+    <FieldParticles seed={2010} count={qualityTier === "low" ? 120 : 260} radius={15.5} depth={8.5} height={9.5} color={VIOLET} opacity={selected ? .05 : .16} size={.075} />
+    <FieldParticles seed={2011} count={qualityTier === "low" ? 100 : 220} radius={11.5} depth={7.5} height={7.5} color={CYAN} opacity={selected ? .04 : .14} size={.064} />
+  </group>;
+}
+
 function PersonalStarField({ count }: { count: number }) {
   const { gl } = useThree();
   const geometry = useMemo(() => {
@@ -731,12 +846,12 @@ export function LifeMapProductionWorld({ nodes, selected, phase, profile, onSele
   const starCount = profile.tier === "low" ? 420 : profile.tier === "medium" ? 760 : 1160;
 
   return <LifeMapReducedMotionContext.Provider value={profile.reducedMotion}>
-    <color attach="background" args={["#0a1a22"]} />
-    <fog attach="fog" args={["#17333a", 25, 82]} />
-    <ambientLight intensity={.48} color="#b9d8d2" />
-    <hemisphereLight args={["#d4e5d7", "#101713", .82]} />
-    <directionalLight position={[9,14,10]} intensity={2.05} color="#f0dfc3" castShadow={profile.shadows} />
-    <directionalLight position={[-12,7,-24]} intensity={1.02} color="#76aaa7" />
+    <color attach="background" args={["#01040a"]} />
+    <fog attach="fog" args={["#071019", 30, 94]} />
+    <ambientLight intensity={.34} color="#abc8cf" />
+    <hemisphereLight args={["#c7e2e5", "#05080b", .58]} />
+    <directionalLight position={[9,14,10]} intensity={1.72} color="#f2dfbd" castShadow={profile.shadows} />
+    <directionalLight position={[-12,7,-24]} intensity={.84} color="#6ca7bd" />
     {webglRecovery}
     <RenderProofRepublisher />
     {cameraRig}
@@ -745,10 +860,15 @@ export function LifeMapProductionWorld({ nodes, selected, phase, profile, onSele
       <NebulaBreath reducedMotion={profile.reducedMotion} selected={Boolean(selected)} />
       <FieldParticles seed={1220} count={profile.tier === "low" ? 150 : 360} radius={38} depth={72} height={30} color={VIOLET} opacity={.18} size={.06} />
     </group>
-    <group name="life-map-temporal-horizon" position={[0,7,-42]}><FieldParticles seed={964} count={130} radius={22} depth={12} height={6} color={CYAN} opacity={.25} size={.045} /></group>
+    <SpiralGalaxyField qualityTier={profile.tier} reducedMotion={profile.reducedMotion} selected={Boolean(selected)} />
+    <group name="life-map-temporal-horizon" position={[0,7,-42]}><FieldParticles seed={964} count={profile.tier === "low" ? 120 : 220} radius={24} depth={15} height={8} color={CYAN} opacity={.28} size={.05} /></group>
     <group name="life-map-world-stage" scale={stageScale} position={stagePosition}>
-      <LivingMemoryGeography />
-      <LifeCore hidden reducedMotion={profile.reducedMotion} tier={profile.tier} />
+      <group
+        name="life-map-v237-grounded-geography-retired"
+        visible={false}
+        userData={{ retiredVisualRole: "former-memory-valley-not-current-galaxy-authority" }}
+      ><LivingMemoryGeography /></group>
+      <LifeCore reducedMotion={profile.reducedMotion} tier={profile.tier} />
       <ChapterTerritories />
       <group name="life-map-light-bridges" userData={{ presentation: "curved-living-memory-connections" }} />
       <ForegroundObservatory selected={selected} />
@@ -763,7 +883,7 @@ export function LifeMapProductionWorld({ nodes, selected, phase, profile, onSele
     <ArchiveParticles qualityTier={profile.tier} reducedMotion={profile.reducedMotion} />
     <group name="life-map-far-future-horizon">
       <PersonalStarField count={starCount} />
-      <Sparkles count={profile.tier === "low" ? 70 : 160} scale={[48,26,72]} position={[0,3,-18]} size={1.35} speed={profile.reducedMotion ? 0 : .08} opacity={.28} color="#d9f7ff" />
+      <Sparkles count={profile.tier === "low" ? 90 : 220} scale={[52,30,78]} position={[0,3,-22]} size={1.45} speed={profile.reducedMotion ? 0 : .06} opacity={.34} color="#d9f7ff" />
     </group>
     <CinematicPostProcessing active={profile.postprocessing} reducedMotion={profile.reducedMotion} />
   </LifeMapReducedMotionContext.Provider>;

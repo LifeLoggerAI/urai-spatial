@@ -11,12 +11,16 @@ const root = process.cwd()
 const appRoot = path.join(root, 'urai-tier1', 'src', 'app')
 const manifest = JSON.parse(fs.readFileSync(path.join(root, 'release', 'route-manifest.json'), 'utf8'))
 const classification = manifest.classification ?? {}
-const publicExact = new Set(classification.publicExact ?? [])
+const publicExact = new Set([
+  ...(classification.publicExact ?? []),
+  ...(classification.conditionalExact ?? []),
+])
 const prefixGroups = [
   classification.servicePrefixes ?? [],
   classification.internalPrefixes ?? [],
   classification.privatePrefixes ?? [],
   classification.publicPrefixes ?? [],
+  classification.conditionalPrefixes ?? [],
 ]
 
 const walk = (directory) => fs.readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {

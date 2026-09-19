@@ -10,11 +10,13 @@ const requireText = (source, marker, message = marker) => assert.equal(source.in
 const normalizeSource = (source) => source.replace(/\r\n/g, '\n').replace(/"/g, "'").replace(/\s+/g, ' ')
 const requireNormalizedPattern = (source, pattern, message) => assert.match(normalizeSource(source), pattern, message)
 
-test('accessibility and performance implementation contracts are present on first-person Home and first-person Ground', () => {
+test('accessibility and performance implementation contracts cover Home presentation, first-person Home and first-person Ground', () => {
   const reducedMotion = read('src/spatial/hooks/useReducedMotion.ts')
   const adaptiveQuality = read('src/spatial/performance/useAdaptiveSpatialQuality.ts')
   const companion = read('src/spatial/world/PersistentWorldCompanion.tsx')
   const worldEvents = read('src/spatial/world/worldEvents.ts')
+  const homeEvents = read('src/spatial/home/homeSemanticEvents.ts')
+  const homeController = read('src/spatial/home/useHomeExperienceController.ts')
   const template = read('src/app/template.tsx')
   const worldShell = read('src/spatial/world/UraiWorldShell.tsx')
   const companionCss = read('src/spatial/world/persistentWorldCompanion.css')
@@ -39,7 +41,8 @@ test('accessibility and performance implementation contracts are present on firs
     'aria-expanded={open}',
     'aria-controls="urai-world-companion-menu"',
     'inert={!open ? true : undefined}',
-    'firstControl?.focus()',
+    'firstControl.focus()',
+    "firstControl.focus({ preventScroll: true })",
     'orbRef.current?.focus()',
     "event.key !== 'Escape'",
     'onClick={toggleCompanion}',
@@ -47,7 +50,11 @@ test('accessibility and performance implementation contracts are present on firs
   assert.doesNotMatch(companion, /onKeyDown=\{/, 'Native button keyboard activation must not have a second manual dispatch owner')
   requireText(worldEvents, 'export function takePendingUraiWorldOrbOpen()')
   assert.doesNotMatch(template, /HomeSemanticOrbHydrationBridge/, 'Home must not mount a second capture-phase semantic Orb click owner')
-  requireText(worldShell, "const showWorldCompanion = world.destination !== 'life-map'")
+  requireText(worldShell, "const flatControlRoute = pathname === '/settings' || pathname.startsWith('/settings/')")
+  requireText(worldShell, "const showWorldCompanion = !flatControlRoute && world.destination !== 'life-map' && world.destination !== 'location-map'")
+  requireText(worldShell, "{!flatControlRoute ? <PersistentRealmAtmosphere /> : null}")
+  requireText(worldShell, "{!flatControlRoute ? <GroundGateway /> : null}")
+  requireText(worldShell, "data-flat-control-route={flatControlRoute ? 'true' : 'false'}")
   requireText(companionCss, 'min-height: 48px;')
   requireText(companionCss, 'min-width: 48px;')
   requireText(companionCss, 'env(safe-area-inset-bottom)')
@@ -56,31 +63,56 @@ test('accessibility and performance implementation contracts are present on firs
 
   requireNormalizedPattern(homeCapability, /canvas\.getContext\('webgl2'(?:,\s*\{[^)]*\})?\)\s*\?\?\s*canvas\.getContext\('webgl'(?:,\s*\{[^)]*\})?\)/, 'Home must test WebGL2 and WebGL capability')
   requireText(homeRuntime, 'AssetDrivenHomeWorld')
-  requireText(homeRuntime, 'aria-label="Open URAI Orb companion"')
-  requireText(homeRuntime, 'aria-label="Open Ground directly"')
-  requireText(homeRuntime, 'aria-label="Open Life Map directly"')
-  requireText(homeRuntime, "addEventListener('webglcontextlost', onContextLost)")
-  requireText(homeRuntime, "addEventListener('webglcontextrestored', onContextRestored)")
-  requireText(homeRuntime, 'accessible-fallback-after-renderer-failure')
-  requireText(homeRuntime, 'role="status"')
+  for (const marker of [
+    'aria-label="Enter first-person Home"',
+    'data-testid="home-semantic-avatar"',
+    'requestHomeAvatarActivation',
+    'aria-label="Open URAI Orb companion"',
+    'aria-label="Open Ground directly"',
+    'aria-label="Open Life Map directly"',
+    "addEventListener('webglcontextlost', onContextLost)",
+    "addEventListener('webglcontextrestored', onContextRestored)",
+    'accessible-fallback-after-renderer-failure',
+    'role="status"',
+  ]) requireText(homeRuntime, marker)
+  requireText(homeEvents, "URAI_HOME_AVATAR_ACTIVATE_EVENT = 'urai:home-avatar-activate'")
+  requireText(homeEvents, 'window.dispatchEvent(new Event(URAI_HOME_AVATAR_ACTIVATE_EVENT))')
+  requireText(homeController, 'window.addEventListener(URAI_HOME_AVATAR_ACTIVATE_EVENT, onSemanticAvatarActivate)')
+  requireText(homeController, "dispatch({ type: 'AVATAR_ACTIVATE', snapshot: currentOrigin() })")
 
   for (const marker of [
-    'data-home-embodied-self="first-person-viewpoint-no-avatar"',
-    'data-home-movement="camera-look-world-surface-selection"',
+    "homeState.stableState === 'AVATAR_HOME_FIRST_PERSON'",
+    "'camera-only-first-person-home'",
+    "'visible-cinematic-avatar'",
+    "'visible-avatar-third-person'",
+    "'hidden-exterior-avatar-first-person'",
+    "'shared-keyboard-touch-walk-look-interact'",
+    "'camera-look-world-surface-selection'",
+    "'avatar-home-first-person'",
     'data-home-ground-entry="physical-world-surface"',
     'data-home-life-map-entry="visible-sky-broad-interaction"',
-    "'first-person-viewpoint'",
+    'data-home-non-xr-body-policy="camera-only-no-hands-body-rig"',
+    'HomeEmbodiedAvatar',
+    'useHomeExperienceController',
+    'useMovementInput({',
+    'stepEmbodiedMotion({',
+    'MobileMovementPad',
+    'HOME_WALK_SPEED',
+    'HOME_WALK_ACCELERATION',
+    'HOME_WALK_DECELERATION',
+    '(portrait ? 66 : 58)',
+    'aria-label="Open Avatar Self View"',
+    'THREE.LoopOnce',
     'prefers-reduced-motion: reduce',
   ]) requireText(currentHome, marker)
-  assert.doesNotMatch(currentHome, /function\s+VisibleUserAvatar\s*\(|<VisibleUserAvatar\b/, 'Home must not restore an active avatar component')
-  assert.doesNotMatch(currentHome, /data-home-embodied-self=["']visible-cinematic-avatar["']|data-home-camera-mode=["']cinematic-third-person["']|name=["']urai-home-embodied-avatar["']/, 'Home must remain first-person/no-avatar')
-  assert.doesNotMatch(currentHome, /MobileMovementPad|useMovementInput|stepEmbodiedMotion/, 'Home must not regress to a movement-pad world')
+  assert.doesNotMatch(currentHome, /first-person-hand|fps-hand|player-hands|weapon-rig/i, 'Non-XR Home must not invent a first-person body/hands rig')
+  assert.doesNotMatch(currentHome, /next\.reset\(\)\.setLoop\(THREE\.LoopRepeat\s*,\s*Infinity\)/, 'Orb authored state entry clips must not loop forever')
 
   for (const marker of [
-    'data-ground-exploration="first-person"',
+    'data-ground-exploration="first-person-no-visible-body"',
     'data-ground-runtime-owner="first-person-lived-world"',
-    'data-ground-camera="eye-level-terrain-following"',
-    'data-ground-collision="visible-terrain-heightfield"',
+    'data-ground-camera="eye-level-terrain-following-no-authored-bob"',
+    'data-ground-collision="terrain-plus-authored-obstacle-field"',
     'data-ground-place-layer="consent-aware-empty-by-default"',
     'data-ground-private-location-mounted="false"',
     'MobileMovementPad',
@@ -98,15 +130,20 @@ test('accessibility and performance implementation contracts are present on firs
   requireText(routeOwnerCss, 'max-height: 100svh !important;')
 
   for (const marker of [
-    "toHaveAttribute('data-home-embodied-self', 'first-person-viewpoint-no-avatar'",
-    "not.toHaveAttribute('data-home-camera-mode', 'cinematic-third-person'",
-    "toHaveAttribute('data-home-movement', 'camera-look-world-surface-selection'",
-    "toHaveCount(0)",
-    'data-ground-exploration="first-person"',
+    "toHaveAttribute('data-home-embodied-self', 'visible-cinematic-avatar'",
+    "toHaveAttribute('data-home-presence-presentation', 'visible-avatar-third-person'",
+    "getByRole('button', { name: 'Enter first-person Home' })",
+    "toHaveAttribute('data-home-stable-state', 'AVATAR_HOME_FIRST_PERSON'",
+    "toHaveAttribute('data-home-embodied-self', 'camera-only-first-person-home'",
+    "toHaveAttribute('data-home-presence-presentation', 'hidden-exterior-avatar-first-person'",
+    "toHaveAttribute('data-home-movement', 'shared-keyboard-touch-walk-look-interact'",
+    "getByRole('button', { name: 'Open Avatar Self View' })",
+    "name: 'Move through Home'",
+    'data-ground-exploration="first-person-no-visible-body"',
     "name: 'Ground first-person movement controls'",
   ]) requireText(embodiedEvidence, marker)
 
-  requireText(focus, 'aria-label={`Open Replay for ${memory.title}`}')
+  requireText(focus, "'Enter Replay for ' + memory.title")
   assert.equal(focus.includes('min-height:44px'), false, 'Focus controls must not retain 44px minimum targets')
   requireText(focus, 'min-height:48px')
   requireText(focus, 'env(safe-area-inset-left)')

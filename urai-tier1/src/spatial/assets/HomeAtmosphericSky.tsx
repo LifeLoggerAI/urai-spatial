@@ -9,6 +9,7 @@ import {
   resolveAdaptiveBlueHour,
   resolveHomeEmotionalWeather,
   type HomeAtmosphereParameters,
+  type HomeEmotionalWeatherName,
 } from '../environment/HomeEmotionalWeatherState'
 import {
   HOME_SKY_CONTINUITY_SEED,
@@ -91,7 +92,6 @@ function celestialMemoryGeometry() {
   const warmPearl = new THREE.Color('#e6d7bd')
 
   for (let index = 0; index < count; index += 1) {
-    // Exact class budget: 169 physical, 52 anchors, 31 continuity precursors, 8 deep anchors.
     const starClass = index < HOME_SKY_PRECURSOR_COUNT ? 2 : index < HOME_SKY_PRECURSOR_COUNT + 8 ? 3 : index < HOME_SKY_PRECURSOR_COUNT + 60 ? 1 : 0
     let azimuth: number
     let elevation: number
@@ -267,13 +267,11 @@ function makeAtmosphereMaterial() {
         float focusEnvelope=smoothstep(.24,.90,e);
         sky+=mix(uMid,uWarm,.12)*uFocus*(.009+.018*focusEnvelope);
 
-        // Ascent is atmospheric extinction falling away, not a portal or crossfade.
         vec3 cosmicDepth=mix(vec3(.022,.055,.067),vec3(.006,.018,.024),zen);
         float ascentReveal=uActive*smoothstep(.26,.96,e)*.72;
         sky=mix(sky,cosmicDepth,ascentReveal);
         sky*=uTimeLuminance;
 
-        // Sub-visible dither protects blue-hour gradients from 8-bit banding.
         float dither=(hash12(gl_FragCoord.xy+vec2(uTime*.07,0.0))-.5)/255.0;
         sky+=dither;
         gl_FragColor=vec4(max(sky,vec3(.002)),1.0);
@@ -473,10 +471,11 @@ function OrbLocalAir({ reducedMotion }: { reducedMotion: boolean }) {
 
 /**
  * Physical atmosphere and the canonical broad visible-sky Life Map threshold.
- * The custom raycast belongs to this visible sky mesh itself; it is not a
- * hidden portal plane. Nearer visible physical geometry still wins raycasts.
+ * The sky owns upward visible rays directly; lower-world rays never enter this
+ * interaction owner. This is broad environmental selection, not a hidden
+ * portal plane, ring, hotspot, or localized gateway.
  */
-export function HomeAtmosphericSky({ reducedMotion, active = false, onLifeMap }: { reducedMotion: boolean; active?: boolean; onLifeMap: () => void }) {
+export function HomeAtmosphericSky({ reducedMotion, active = false, weatherState, onLifeMap }: { reducedMotion: boolean; active?: boolean; weatherState?: HomeEmotionalWeatherName; onLifeMap: () => void }) {
   const atmosphere = useRef<THREE.Mesh>(null)
   const [focused, setFocused] = useState(false)
   const { gl, scene } = useThree()
@@ -498,7 +497,7 @@ export function HomeAtmosphericSky({ reducedMotion, active = false, onLifeMap }:
   }, [])
 
   useEffect(() => {
-    const initial = resolveHomeEmotionalWeather(new URLSearchParams(window.location.search).get('homeWeather'))
+    const initial = weatherState ?? resolveHomeEmotionalWeather(new URLSearchParams(window.location.search).get('homeWeather'))
     weatherTarget.current = HOME_EMOTIONAL_WEATHER_PRESETS[initial]
     const onWeather = (event: Event) => {
       const state = resolveHomeEmotionalWeather((event as CustomEvent<{ state?: unknown }>).detail?.state)
@@ -506,7 +505,7 @@ export function HomeAtmosphericSky({ reducedMotion, active = false, onLifeMap }:
     }
     window.addEventListener(URAI_HOME_EMOTIONAL_WEATHER_EVENT, onWeather)
     return () => window.removeEventListener(URAI_HOME_EMOTIONAL_WEATHER_EVENT, onWeather)
-  }, [])
+  }, [weatherState])
 
   useEffect(() => () => {
     atmosphereMaterial.dispose()
@@ -567,7 +566,6 @@ export function HomeAtmosphericSky({ reducedMotion, active = false, onLifeMap }:
       material.uniforms.uWindCoherence.value = current.windCoherence
     })
 
-    // Scene fog is the shared aerial-perspective bridge between physical Ground and sky.
     if (scene.fog instanceof THREE.FogExp2) {
       const densityTarget = active ? .0045 : .0100 + current.aerosolDensity * .009 - current.clarity * .0025
       scene.fog.density = THREE.MathUtils.damp(scene.fog.density, densityTarget, 1.3, delta)
@@ -584,8 +582,11 @@ export function HomeAtmosphericSky({ reducedMotion, active = false, onLifeMap }:
   const skyRaycast = useCallback((raycaster: THREE.Raycaster, intersects: THREE.Intersection[]) => {
     const object = atmosphere.current
     if (!object || raycaster.ray.direction.y <= .015) return
-    const distance = 72
-    intersects.push({ distance, point: raycaster.ray.at(distance, new THREE.Vector3()), object })
+    // Upward visible-sky rays must beat distant terrain intersections on
+    // desktop. A tiny synthetic distance gives the visible sky mesh event
+    // priority only for rays that already satisfy the broad-sky direction law.
+    const distance = .001
+    intersects.push({ distance, point: raycaster.ray.at(72, new THREE.Vector3()), object })
   }, [])
   const activateSky = (event: ThreeEvent<MouseEvent>) => {
     if (active || !validSkyRay(event)) return

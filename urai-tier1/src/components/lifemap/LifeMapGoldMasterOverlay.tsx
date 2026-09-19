@@ -105,9 +105,11 @@ function SelectedHistory({ node, index, reducedMotion }: { node: LifeMapNode; in
 export function LifeMapGoldMasterOverlay(props: Props) {
   const { nodes, selected, phase, reducedMotion } = props, { size } = useThree(), portrait = size.height > size.width, stage = lifeMapStage(Boolean(selected), portrait), selectedIndex = selected ? Math.max(0, nodes.findIndex(node => node.id === selected.id)) : -1
   return <>
+    <color attach="background" args={['#01020a']} />
+    <fog attach="fog" args={['#050714', 42, 128]} />
     <LegacyLifeMapGoldMasterOverlay {...props} />
-    <group name="life-map-v249-personal-universe-geography" scale={stage.scale} position={stage.position} userData={{ presentationRevision: 'v258-deep-stellar-personal-universe', visualRepair: 'stellar-depth-memory-identity-no-graph-grammar' }}>
-      <LifeMapStellarField nodes={nodes} selected={selected} reducedMotion={reducedMotion} />
+    <group name="life-map-v323-stellar-personal-universe" scale={stage.scale} position={stage.position} userData={{ presentationRevision: 'v323-layered-living-galaxy', visualRepair: 'dense-clustered-stellar-depth-memory-star-identity' }}>
+      <LifeMapStellarField nodes={nodes} selected={selected} reducedMotion={reducedMotion} onSelect={props.onSelect} />
       <HistoryConstellation nodes={nodes} selected={selected} reducedMotion={reducedMotion} />
       <group name="life-map-v249-grounded-memory-places" userData={{ visualRepair: 'all-sites-remain-grounded-geography-selected-site-rises-without-isolating-context' }}>{nodes.map((node, index) => <group key={node.id} name={`life-map-v255-history-anchor-${node.id}`} position={lifeMapLocalPoint(node, index)} raycast={() => null} />)}</group>
       {selected && phase === 'arrival' ? <SelectedHistory node={selected} index={selectedIndex} reducedMotion={reducedMotion} /> : null}

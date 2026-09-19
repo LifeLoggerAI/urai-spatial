@@ -240,7 +240,23 @@ jobs:
           const manifest = JSON.parse(fs.readFileSync(path, 'utf8'))
           const retained = manifest.assets.find((asset) => asset.id === 'passport-status-room-v1')
           if (!retained) throw new Error('passport-status-room-v1 missing from launch manifest')
-          manifest.assets = manifest.assets.filter((asset) => asset.id !== 'passport-status-room-v1')
+          const deterministicForgeOwned = new Set([
+            'home-entry-chamber-v1',
+            'ground-world-terrain-v1',
+            'life-map-memory-star-v1',
+            'focus-memory-chamber-v1',
+            'replay-memory-environment-v1',
+            'urai-orb-avatar-v1',
+            'portal-ring-master-v1',
+            'life-map-galaxy-skybox-v1',
+            'spatial-particle-atlas-v1',
+            'global-cinematic-material-pack-v1',
+            'urai-loading-sequence-v1',
+            'urai-ambient-bed-v1',
+          ])
+          const specialistOwned = manifest.assets.filter((asset) => !deterministicForgeOwned.has(asset.id) && asset.id !== 'passport-status-room-v1')
+          if (specialistOwned.length === 0) throw new Error('expected specialist-governed launch assets outside generic forge ownership')
+          manifest.assets = manifest.assets.filter((asset) => deterministicForgeOwned.has(asset.id))
           fs.writeFileSync(path, JSON.stringify(manifest, null, 2) + '\n')
           NODE
           node scripts/forge-launch-critical-assets.mjs

@@ -6,7 +6,7 @@
 .focus-spatial-aperture-button {
   position: fixed !important;
   left: 50vw !important;
-  top: calc(50vh + 176px) !important;
+  top: calc(50vh + 268px) !important;
   z-index: 20 !important;
   min-width: 170px;
   min-height: 48px;

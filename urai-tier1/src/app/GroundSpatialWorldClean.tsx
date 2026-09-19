@@ -3,16 +3,34 @@
 import { Canvas, useFrame, useThree, type ThreeEvent } from "@react-three/fiber";
 import { Environment, useGLTF, useTexture } from "@react-three/drei";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Suspense, useCallback, useEffect, useMemo, useRef, useState, type MutableRefObject } from "react";
+import { Component, Suspense, useCallback, useEffect, useMemo, useRef, useState, type MutableRefObject, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
 import * as THREE from "three";
 import {
   MobileMovementPad,
+  clearVirtualMovement,
+  setVirtualMovement,
   stepEmbodiedMotion,
   useDragLook,
   useMovementInput,
   type MovementInput,
+  type MovementObstacle,
 } from "@/spatial/navigation/EmbodiedNavigation";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
+import {
+  DEFAULT_GROUND_WEATHER,
+  GROUND_ACCELERATION_MPS2,
+  GROUND_ARRIVAL_RADIUS_M,
+  GROUND_DECELERATION_MPS2,
+  GROUND_DESKTOP_SPEED_MPS,
+  GROUND_EYE_HEIGHT_M,
+  GROUND_LANDSCAPE_FOV_DEG,
+  GROUND_MOBILE_SPEED_MPS,
+  GROUND_NEAR_PLANE_M,
+  GROUND_PORTRAIT_FOV_DEG,
+  buildGroundObstacleField,
+  slopeDegrees,
+  slopeSpeedMultiplier,
+} from "@/spatial/ground/groundCanon";
 
 type EnvironmentProfileId = "temperate" | "urban" | "woodland" | "arid" | "coastal";
 
@@ -29,19 +47,19 @@ type EnvironmentProfile = {
 };
 
 const PROFILES: Record<EnvironmentProfileId, EnvironmentProfile> = {
-  temperate: { id: "temperate", label: "Temperate lived world", ground: "#596552", groundDeep: "#30382f", accent: "#86916f", horizon: "#4d6258", fog: "#7d9388", roughness: 0.94, textureRepeat: [9, 11] },
+  temperate: { id: "temperate", label: "Temperate lived world", ground: "#596552", groundDeep: "#30382f", accent: "#86916f", horizon: "#394c43", fog: "#667f73", roughness: 0.94, textureRepeat: [4, 5] },
   urban: { id: "urban", label: "Urban lived world", ground: "#66645f", groundDeep: "#34363a", accent: "#8a8177", horizon: "#56616a", fog: "#87919a", roughness: 0.88, textureRepeat: [12, 14] },
-  woodland: { id: "woodland", label: "Woodland lived world", ground: "#414d3f", groundDeep: "#252d27", accent: "#68795d", horizon: "#354d43", fog: "#71887c", roughness: 0.97, textureRepeat: [8, 10] },
+  woodland: { id: "woodland", label: "Woodland lived world", ground: "#414d3f", groundDeep: "#252d27", accent: "#68795d", horizon: "#2f4239", fog: "#5f786b", roughness: 0.97, textureRepeat: [4, 5] },
   arid: { id: "arid", label: "Arid lived world", ground: "#8a6f52", groundDeep: "#554235", accent: "#b28c62", horizon: "#8c725d", fog: "#ba9b7b", roughness: 0.91, textureRepeat: [7, 9] },
   coastal: { id: "coastal", label: "Coastal lived world", ground: "#807563", groundDeep: "#4d504b", accent: "#a69b81", horizon: "#66818a", fog: "#8fa7aa", roughness: 0.89, textureRepeat: [10, 12] },
 };
 
 const BOUNDS = { minX: -28, maxX: 28, minZ: -48, maxZ: 16 };
 const SPAWN = new THREE.Vector3(0, 0, 6);
-const EYE_HEIGHT = 1.69;
 const ROCK_01 = "/assets/urai/home-production/cc0/polyhaven-v48/rock_face_01/asset.gltf";
 const ROCK_02 = "/assets/urai/home-production/cc0/polyhaven-v48/rock_face_02/asset.gltf";
 const FERN = "/assets/urai/home-production/cc0/polyhaven-v48/fern_02/asset.gltf";
+const NATURAL_CANOPY = "/assets/urai/generated/models/ground-natural-canopy-v3.glb";
 const TERRAIN_ALBEDO = "/assets/urai/home-production/cc0/rock-tile-floor/rock-tile-floor-diff-1k.webp";
 const TERRAIN_NORMAL = "/assets/urai/home-production/cc0/rock-tile-floor/rock-tile-floor-normal-gl-1k.webp";
 const TERRAIN_ARM = "/assets/urai/home-production/cc0/rock-tile-floor/rock-tile-floor-arm-1k.webp";
@@ -72,6 +90,9 @@ function buildTerrainGeometry(profile: EnvironmentProfile) {
   const low = new THREE.Color(profile.groundDeep);
   const mid = new THREE.Color(profile.ground);
   const high = new THREE.Color(profile.accent);
+  const naturalSoil = new THREE.Color(profile.id === "woodland" ? "#3b382d" : "#4a4b39");
+  const naturalMoss = new THREE.Color(profile.id === "woodland" ? "#506449" : "#637657");
+  const naturalProfile = profile.id === "temperate" || profile.id === "woodland";
   for (let index = 0; index < position.count; index += 1) {
     const x = position.getX(index);
     const z = position.getZ(index);
@@ -79,7 +100,13 @@ function buildTerrainGeometry(profile: EnvironmentProfile) {
     position.setY(index, y);
     const mineral = 0.5 + 0.5 * Math.sin(x * 0.29 + z * 0.17) * Math.cos(x * 0.11 - z * 0.23);
     const wear = Math.exp(-Math.pow(x - Math.sin(z * 0.09) * 1.1, 2) / 5.5);
-    const color = low.clone().lerp(mid, 0.48 + mineral * 0.28).lerp(high, Math.max(0, y) * 0.11 + wear * 0.045);
+    const broadPatch = 0.5 + 0.5 * Math.sin(x * 0.17 + z * 0.13 + Math.sin(z * 0.07) * 1.4);
+    const finePatch = 0.5 + 0.5 * Math.sin(x * 0.91 - z * 0.73) * Math.cos(x * 0.37 + z * 0.49);
+    const color = naturalProfile
+      ? naturalSoil.clone()
+          .lerp(naturalMoss, THREE.MathUtils.clamp(0.18 + broadPatch * 0.48 + finePatch * 0.14 - wear * 0.12, 0.08, 0.78))
+          .lerp(high, Math.max(0, y) * 0.045 + wear * 0.025)
+      : low.clone().lerp(mid, 0.48 + mineral * 0.28).lerp(high, Math.max(0, y) * 0.11 + wear * 0.045);
     colors[index * 3] = color.r;
     colors[index * 3 + 1] = color.g;
     colors[index * 3 + 2] = color.b;
@@ -93,8 +120,57 @@ function buildTerrainGeometry(profile: EnvironmentProfile) {
   return geometry;
 }
 
+function makeNaturalGroundTextures(profile: EnvironmentProfileId) {
+  const size = 128;
+  const rgba = new Uint8Array(size * size * 4);
+  const height = new Uint8Array(size * size * 4);
+  const soil = new THREE.Color(profile === "woodland" ? "#554b3b" : "#625e48");
+  const moss = new THREE.Color(profile === "woodland" ? "#617956" : "#728564");
+  const grit = new THREE.Color("#8c8069");
+  const hash = (x: number, y: number, salt: number) => {
+    const value = Math.sin(x * 12.9898 + y * 78.233 + salt * 37.719) * 43758.5453;
+    return value - Math.floor(value);
+  };
+  for (let y = 0; y < size; y += 1) for (let x = 0; x < size; x += 1) {
+    const coarse = hash(Math.floor(x / 7), Math.floor(y / 7), 1);
+    const medium = hash(Math.floor(x / 3), Math.floor(y / 3), 2);
+    const fine = hash(x, y, 3);
+    const mossMix = THREE.MathUtils.clamp(.16 + coarse * .42 + medium * .18 - fine * .10, .05, .74);
+    const color = soil.clone().lerp(moss, mossMix);
+    if (fine > .91) color.lerp(grit, .28 + (fine - .91) * 3.2);
+    const offset = (y * size + x) * 4;
+    rgba[offset] = Math.round(color.r * 255);
+    rgba[offset + 1] = Math.round(color.g * 255);
+    rgba[offset + 2] = Math.round(color.b * 255);
+    rgba[offset + 3] = 255;
+    const h = Math.round(255 * THREE.MathUtils.clamp(.28 + coarse * .25 + medium * .22 + fine * .25, 0, 1));
+    height[offset] = h;
+    height[offset + 1] = h;
+    height[offset + 2] = h;
+    height[offset + 3] = 255;
+  }
+  const colorTexture = new THREE.DataTexture(rgba, size, size, THREE.RGBAFormat);
+  colorTexture.colorSpace = THREE.SRGBColorSpace;
+  const bumpTexture = new THREE.DataTexture(height, size, size, THREE.RGBAFormat);
+  for (const texture of [colorTexture, bumpTexture]) {
+    texture.wrapS = THREE.RepeatWrapping;
+    texture.wrapT = THREE.RepeatWrapping;
+    texture.repeat.set(profile === "woodland" ? 18 : 15, profile === "woodland" ? 20 : 17);
+    texture.magFilter = THREE.LinearFilter;
+    texture.minFilter = THREE.LinearMipmapLinearFilter;
+    texture.needsUpdate = true;
+  }
+  return { colorTexture, bumpTexture };
+}
+
 function TerrainMaterial({ profile }: { profile: EnvironmentProfile }) {
   const [albedo, normal, arm] = useTexture([TERRAIN_ALBEDO, TERRAIN_NORMAL, TERRAIN_ARM]);
+  const naturalProfile = profile.id === "temperate" || profile.id === "woodland";
+  const naturalTextures = useMemo(() => naturalProfile ? makeNaturalGroundTextures(profile.id) : null, [naturalProfile, profile.id]);
+  useEffect(() => () => {
+    naturalTextures?.colorTexture.dispose();
+    naturalTextures?.bumpTexture.dispose();
+  }, [naturalTextures]);
   useMemo(() => {
     albedo.colorSpace = THREE.SRGBColorSpace;
     for (const texture of [albedo, normal, arm]) {
@@ -107,17 +183,19 @@ function TerrainMaterial({ profile }: { profile: EnvironmentProfile }) {
     return null;
   }, [albedo, arm, normal, profile]);
   return <meshStandardMaterial
-    map={albedo}
-    normalMap={normal}
+    map={naturalProfile ? naturalTextures?.colorTexture : albedo}
+    normalMap={naturalProfile ? null : normal}
+    bumpMap={naturalProfile ? naturalTextures?.bumpTexture : null}
+    bumpScale={naturalProfile ? 0.11 : 0}
     normalScale={new THREE.Vector2(profile.id === "urban" ? 0.34 : 0.62, profile.id === "urban" ? 0.34 : 0.62)}
-    aoMap={arm}
-    aoMapIntensity={0.72}
-    roughnessMap={arm}
-    roughness={profile.roughness}
-    metalnessMap={arm}
-    metalness={profile.id === "urban" ? 0.035 : 0.005}
-    vertexColors
-    envMapIntensity={0.42}
+    aoMap={naturalProfile ? null : arm}
+    aoMapIntensity={naturalProfile ? 0 : 0.72}
+    roughnessMap={naturalProfile ? null : arm}
+    roughness={naturalProfile ? 0.91 : profile.roughness}
+    metalnessMap={naturalProfile ? null : arm}
+    metalness={profile.id === "urban" ? 0.02 : 0.005}
+    vertexColors={!naturalProfile}
+    envMapIntensity={naturalProfile ? 0.48 : 0.42}
   />;
 }
 
@@ -138,7 +216,7 @@ function normalizedClone(source: THREE.Object3D) {
       const material = sourceMaterial.clone();
       if (material instanceof THREE.MeshStandardMaterial) {
         material.roughness = Math.max(material.roughness, 0.86);
-        material.metalness = Math.min(material.metalness, 0.04);
+        material.metalness = Math.min(material.metalness, 0.02);
         material.envMapIntensity = 0.42;
       }
       return material;
@@ -175,25 +253,166 @@ function FernPatch({ position, rotationY, scale }: { position: [number, number, 
   return <group position={position} rotation={[0, rotationY, 0]} scale={scale} raycast={() => null}><primitive object={model} /></group>;
 }
 
-function OrganicTree({ position, scale, woodland }: { position: [number, number, number]; scale: number; woodland: boolean }) {
-  const crown = woodland ? "#2d4434" : "#465b42";
-  return <group position={position} scale={scale} raycast={() => null}>
-    <mesh position={[0, 1.55, 0]} castShadow receiveShadow>
-      <cylinderGeometry args={[0.12, 0.23, 3.1, 12]} />
-      <meshStandardMaterial color="#46382e" roughness={0.98} />
+class GroundCanopyBoundary extends Component<{ children: ReactNode }, { failed: boolean }> {
+  state = { failed: false };
+  static getDerivedStateFromError() { return { failed: true }; }
+  render() { return this.state.failed ? null : this.props.children; }
+}
+
+function CanopyLeafInstances({ geometry, leaves, color }: {
+  geometry: THREE.BufferGeometry;
+  leaves: ReadonlyArray<{ position: [number, number, number]; rotation: [number, number, number]; scale: [number, number, number] }>;
+  color: string;
+}) {
+  const mesh = useRef<THREE.InstancedMesh>(null);
+  const dummy = useMemo(() => new THREE.Object3D(), []);
+  useEffect(() => {
+    const owner = mesh.current;
+    if (!owner) return;
+    leaves.forEach((leaf, index) => {
+      dummy.position.set(...leaf.position);
+      dummy.rotation.set(...leaf.rotation);
+      dummy.scale.set(...leaf.scale);
+      dummy.updateMatrix();
+      owner.setMatrixAt(index, dummy.matrix);
+    });
+    owner.instanceMatrix.needsUpdate = true;
+    owner.computeBoundingSphere();
+  }, [dummy, leaves]);
+  return <instancedMesh ref={mesh} args={[geometry, undefined, leaves.length]} castShadow receiveShadow frustumCulled>
+    <meshStandardMaterial color={color} roughness={0.94} metalness={0} envMapIntensity={0.20} side={THREE.DoubleSide} />
+  </instancedMesh>;
+}
+
+function NaturalCanopy({ profile, position, rotationY, scale, shapeSeed }: {
+  profile: EnvironmentProfile;
+  position: [number, number, number];
+  rotationY: number;
+  scale: number;
+  shapeSeed: number;
+}) {
+  const authored = useMemo(() => {
+    const woodland = profile.id === "woodland";
+    const trunkColor = woodland ? "#3a3027" : "#493a2c";
+    const branchColor = woodland ? "#42372d" : "#514334";
+    const leafA = woodland ? "#36583d" : "#587a58";
+    const leafB = woodland ? "#466b49" : "#698866";
+
+    const shapePhase = shapeSeed * 0.731;
+    const trunkLeanX = (((shapeSeed * 17) % 19) - 9) * 0.008;
+    const trunkLeanZ = (((shapeSeed * 23) % 17) - 8) * 0.007;
+    const crownWidth = 0.74 + ((shapeSeed * 29) % 37) / 100;
+    const crownDepth = 0.76 + ((shapeSeed * 31) % 33) / 100;
+    const crownLift = 0.92 + ((shapeSeed * 11) % 19) / 100;
+    const trunkCurve = new THREE.CatmullRomCurve3([
+      new THREE.Vector3(0, 0, 0),
+      new THREE.Vector3(-0.035 + trunkLeanX * 0.35, 0.56, 0.018 + trunkLeanZ * 0.25),
+      new THREE.Vector3(0.042 + trunkLeanX * 0.72, 1.16, -0.028 + trunkLeanZ * 0.58),
+      new THREE.Vector3(-0.018 + trunkLeanX * 1.05, 1.78, 0.034 + trunkLeanZ * 0.94),
+      new THREE.Vector3(0.046 + trunkLeanX * 1.35, 2.42 * crownLift, -0.026 + trunkLeanZ * 1.28),
+      new THREE.Vector3(0.012 + trunkLeanX * 1.58, 2.72 * crownLift, 0.014 + trunkLeanZ * 1.48),
+    ]);
+    const trunkGeometry = new THREE.TubeGeometry(trunkCurve, 44, 0.058 + ((shapeSeed * 7) % 13) * 0.001, 12, false);
+
+    const branchDefs = [
+      [[0.02, 1.12, 0.00], [0.30, 1.46, 0.06], [0.72, 1.73, 0.15], [1.02, 1.94, 0.23]],
+      [[-0.01, 1.28, 0.02], [-0.28, 1.56, -0.04], [-0.66, 1.84, -0.16], [-0.98, 2.03, -0.22]],
+      [[0.04, 1.47, -0.02], [0.18, 1.77, -0.30], [0.38, 2.02, -0.62], [0.56, 2.18, -0.88]],
+      [[-0.02, 1.63, 0.02], [-0.14, 1.90, 0.28], [-0.34, 2.12, 0.56], [-0.56, 2.28, 0.82]],
+      [[0.04, 1.83, 0.00], [0.34, 2.02, -0.10], [0.62, 2.20, -0.24], [0.82, 2.36, -0.34]],
+      [[0.00, 1.96, 0.00], [-0.28, 2.12, 0.10], [-0.56, 2.29, 0.22], [-0.78, 2.42, 0.34]],
+      [[0.03, 2.12, 0.00], [0.18, 2.31, 0.24], [0.30, 2.47, 0.48]],
+      [[0.00, 2.24, -0.01], [-0.16, 2.40, -0.22], [-0.28, 2.54, -0.42]],
+    ] as const;
+    const transformedBranchDefs = branchDefs.map((points, branchIndex) => points.map(([x, y, z], pointIndex) => [
+      x * crownWidth + trunkLeanX * y * 0.72 + Math.sin(shapePhase + branchIndex * 1.91 + pointIndex * 0.73) * 0.035,
+      y * crownLift + Math.cos(shapePhase * 0.7 + branchIndex * 0.83 + pointIndex) * 0.025,
+      z * crownDepth + trunkLeanZ * y * 0.66 + Math.cos(shapePhase + branchIndex * 1.37 + pointIndex * 0.61) * 0.035,
+    ] as [number, number, number]));
+    const branches = transformedBranchDefs.map((points, index) => new THREE.TubeGeometry(
+      new THREE.CatmullRomCurve3(points.map(([x, y, z]) => new THREE.Vector3(x, y, z))),
+      22,
+      index < 2 ? 0.020 : 0.014,
+      8,
+      false,
+    ));
+
+    const leafShape = new THREE.Shape();
+    leafShape.moveTo(0, -0.58);
+    leafShape.bezierCurveTo(0.22, -0.31, 0.27, 0.10, 0, 0.62);
+    leafShape.bezierCurveTo(-0.27, 0.10, -0.22, -0.31, 0, -0.58);
+    leafShape.closePath();
+    const leafGeometry = new THREE.ShapeGeometry(leafShape, 5);
+    leafGeometry.computeVertexNormals();
+
+    const foliageAnchors = [
+      ...transformedBranchDefs.map((points) => points[points.length - 1]),
+      [trunkLeanX * 2.55, 2.67 * crownLift, trunkLeanZ * 2.45] as const,
+      [0.22 * crownWidth + trunkLeanX * 2.2, 2.48 * crownLift, 0.10 * crownDepth + trunkLeanZ * 2.0] as const,
+      [-0.21 * crownWidth + trunkLeanX * 2.15, 2.50 * crownLift, -0.09 * crownDepth + trunkLeanZ * 2.05] as const,
+    ];
+    const hash = (seed: number) => {
+      const value = Math.sin(seed * 12.9898 + shapeSeed * 53.117 + (woodland ? 78.233 : 31.417)) * 43758.5453;
+      return value - Math.floor(value);
+    };
+    const leaves = Array.from({ length: woodland ? 168 : 148 }, (_, index) => {
+      const anchor = foliageAnchors[index % foliageAnchors.length];
+      const spread = 0.12 + hash(index * 7 + 1) * 0.56;
+      const theta = hash(index * 7 + 2) * Math.PI * 2;
+      const x = anchor[0] + Math.cos(theta) * spread * (0.48 + hash(index * 7 + 3) * 0.92);
+      const y = anchor[1] - 0.01 + (hash(index * 7 + 4) - 0.45) * 0.78;
+      const z = anchor[2] + Math.sin(theta) * spread * (0.46 + hash(index * 7 + 5) * 0.88);
+      const rx = (hash(index * 7 + 6) - 0.5) * 1.28;
+      const ry = theta + (hash(index * 7 + 7) - 0.5) * 1.15;
+      const rz = (hash(index * 7 + 8) - 0.5) * 1.12;
+      const sx = 0.22 + hash(index * 7 + 9) * 0.17;
+      const sy = 0.42 + hash(index * 7 + 10) * 0.28;
+      const sz = 0.82 + hash(index * 7 + 11) * 0.24;
+      return {
+        position: [x, y, z] as [number, number, number],
+        rotation: [rx, ry, rz] as [number, number, number],
+        scale: [sx, sy, sz] as [number, number, number],
+        color: index % 3 === 0 ? leafB : leafA,
+      };
+    });
+    const leavesA = leaves.filter((leaf) => leaf.color === leafA);
+    const leavesB = leaves.filter((leaf) => leaf.color === leafB);
+
+    return { trunkGeometry, branches, leafGeometry, leavesA, leavesB, leafA, leafB, trunkColor, branchColor };
+  }, [profile.id, shapeSeed]);
+
+  useEffect(() => () => {
+    authored.trunkGeometry.dispose();
+    authored.leafGeometry.dispose();
+    authored.branches.forEach((geometry) => geometry.dispose());
+  }, [authored]);
+
+  return <group
+    position={position}
+    rotation={[0, rotationY, 0]}
+    scale={[
+      scale * (0.84 + ((shapeSeed * 37) % 17) / 100),
+      scale * (0.94 + ((shapeSeed * 19) % 13) / 100),
+      scale * (0.82 + ((shapeSeed * 29) % 21) / 100),
+    ]}
+    raycast={() => null}
+    name="ground-authored-natural-canopy-v13"
+    userData={{
+      treatment: "seed-varied-branch-architecture-smooth-overlapping-broadleaf-canopy-v20",
+      provenance: NATURAL_CANOPY,
+      visibleAuthority: "runtime-authored-canopy-v20",
+      literalPixelRepair: "v20-smooth-overlapping-broadleaf-crown-removes-faceted-game-tree-read",
+      supersedesVisibleCandidate: "ground-natural-canopy-v3-low-poly-silhouette",
+    }}
+  >
+    <mesh geometry={authored.trunkGeometry} castShadow receiveShadow>
+      <meshStandardMaterial color={authored.trunkColor} roughness={0.93} metalness={0} envMapIntensity={0.28} />
     </mesh>
-    <mesh position={[-0.18, 3.15, 0.05]} scale={[1.0, 0.82, 0.92]} castShadow receiveShadow>
-      <sphereGeometry args={[1, 20, 14]} />
-      <meshStandardMaterial color={crown} roughness={0.97} />
-    </mesh>
-    <mesh position={[0.55, 3.0, -0.18]} scale={[0.82, 0.7, 0.78]} castShadow receiveShadow>
-      <sphereGeometry args={[1, 18, 12]} />
-      <meshStandardMaterial color={woodland ? "#344d39" : "#53694d"} roughness={0.97} />
-    </mesh>
-    <mesh position={[-0.48, 2.75, -0.28]} scale={[0.72, 0.64, 0.68]} castShadow receiveShadow>
-      <sphereGeometry args={[1, 18, 12]} />
-      <meshStandardMaterial color={woodland ? "#263d2e" : "#3e573f"} roughness={0.98} />
-    </mesh>
+    {authored.branches.map((geometry, index) => <mesh key={index} geometry={geometry} castShadow receiveShadow>
+      <meshStandardMaterial color={authored.branchColor} roughness={0.94} metalness={0} envMapIntensity={0.26} />
+    </mesh>)}
+    <CanopyLeafInstances geometry={authored.leafGeometry} leaves={authored.leavesA} color={authored.leafA} />
+    <CanopyLeafInstances geometry={authored.leafGeometry} leaves={authored.leavesB} color={authored.leafB} />
   </group>;
 }
 
@@ -224,11 +443,11 @@ function UrbanBuilding({ index, x, z, heightValue }: { index: number; x: number;
   const windows = useMemo(() => Array.from({ length: Math.max(2, Math.min(7, Math.floor(heightValue / 1.6))) }, (_, row) => row), [heightValue]);
   return <group position={[x, 0, z]} raycast={() => null}>
     <mesh geometry={geometry} castShadow receiveShadow>
-      <meshStandardMaterial color={index % 3 === 0 ? "#555d61" : index % 3 === 1 ? "#676766" : "#4c5358"} roughness={0.78} metalness={0.08} />
+      <meshStandardMaterial color={index % 3 === 0 ? "#555d61" : index % 3 === 1 ? "#676766" : "#4c5358"} roughness={0.78} metalness={0.02} />
     </mesh>
-    {windows.map((row) => <mesh key={row} position={[0, 1.15 + row * 1.35, 0.96 + (index % 3) * 0.08]} rotation={[0, 0, 0]} scale={[0.85 + (index % 2) * 0.25, 0.12, 1]}>
+    {windows.map((row) => <mesh key={row} position={[0, 1.15 + row * 1.35, 0.96 + (index % 3) * 0.08]} scale={[0.85 + (index % 2) * 0.25, 0.12, 1]}>
       <planeGeometry args={[1, 1]} />
-      <meshStandardMaterial color="#77878a" emissive="#52656a" emissiveIntensity={0.08} roughness={0.32} metalness={0.12} />
+      <meshStandardMaterial color="#77878a" emissive="#52656a" emissiveIntensity={0.08} roughness={0.32} metalness={0.02} />
     </mesh>)}
   </group>;
 }
@@ -247,28 +466,32 @@ function CoastalWater() {
 }
 
 function NaturalScatter({ profile }: { profile: EnvironmentProfile }) {
-  const items = useMemo(() => Array.from({ length: profile.id === "urban" ? 18 : 26 }, (_, index) => {
-    const side = index % 2 ? -1 : 1;
-    const lane = 7.5 + (index % 7) * 2.7;
-    const x = side * lane + Math.sin(index * 1.71) * 2.4;
-    const z = 6 - index * 1.95 + Math.cos(index * 0.83) * 2.6;
-    const y = groundHeight(x, z, profile.id);
-    const scale = 0.72 + (index % 5) * 0.13;
-    return { x, y, z, scale, index };
-  }), [profile]);
+  const items = useMemo(() => {
+    const hash = (seed: number) => {
+      const value = Math.sin(seed * 12.9898 + profile.id.length * 41.733) * 43758.5453;
+      return value - Math.floor(value);
+    };
+    return Array.from({ length: profile.id === "urban" ? 18 : 92 }, (_, index) => {
+      const side = hash(index * 5 + 1) > 0.5 ? -1 : 1;
+      const lane = 5.8 + hash(index * 5 + 2) * 17.8;
+      const x = side * lane + (hash(index * 5 + 3) - 0.5) * 4.8;
+      const z = 4.5 - hash(index * 5 + 4) * 58;
+      const y = groundHeight(x, z, profile.id);
+      const scale = 0.52 + hash(index * 5 + 5) * 0.94;
+      return { x, y, z, scale, index };
+    });
+  }, [profile]);
 
   if (profile.id === "urban") {
     return <group name="ground-urban-horizon" userData={{ treatment: "distant-irregular-extruded-skyline-not-box-placeholders" }} raycast={() => null}>
       {items.map((item) => <UrbanBuilding key={item.index} index={item.index} x={item.x * 1.15} z={Math.min(-34, item.z - 21)} heightValue={5.8 + (item.index % 6) * 1.55} />)}
     </group>;
   }
-
   if (profile.id === "arid") {
     return <group name="ground-arid-scanned-geology" userData={{ treatment: "polyhaven-scanned-rock-field" }} raycast={() => null}>
-      {items.slice(0, 12).map((item) => <ScannedRock key={item.index} variant={item.index % 2 ? "01" : "02"} position={[item.x, item.y - 0.02, item.z]} rotation={[0, item.index * 0.41, 0]} scale={[2.2 * item.scale, 1.25 * item.scale, 2.45 * item.scale]} />)}
+      {items.slice(0, 18).map((item) => <ScannedRock key={item.index} variant={item.index % 2 ? "01" : "02"} position={[item.x, item.y - 0.02, item.z]} rotation={[0, item.index * 0.41, 0]} scale={[2.2 * item.scale, 1.25 * item.scale, 2.45 * item.scale]} />)}
     </group>;
   }
-
   if (profile.id === "coastal") {
     return <group name="ground-coastal-world" userData={{ treatment: "scanned-rock-shore-and-physical-water" }} raycast={() => null}>
       <CoastalWater />
@@ -277,12 +500,170 @@ function NaturalScatter({ profile }: { profile: EnvironmentProfile }) {
   }
 
   const woodland = profile.id === "woodland";
-  const trees = items.slice(0, woodland ? 18 : 12);
-  const ferns = items.slice(0, woodland ? 14 : 8);
-  return <group name={woodland ? "ground-woodland-scanned-understory" : "ground-temperate-scanned-understory"} userData={{ treatment: "organic-tree-canopy-plus-polyhaven-fern-and-scanned-rock" }} raycast={() => null}>
-    {trees.map((item) => <OrganicTree key={`tree-${item.index}`} position={[item.x, item.y, item.z]} scale={1.0 + item.scale * 0.38} woodland={woodland} />)}
+  const ferns = items.slice(0, woodland ? 88 : 76);
+  const canopies = items.filter((item) => item.z < (woodland ? 8.0 : 6.5)).slice(0, woodland ? 38 : 34);
+  return <group name={woodland ? "ground-woodland-scanned-understory" : "ground-temperate-scanned-understory"} userData={{ treatment: "urai-self-authored-varied-canopy-v13-with-polyhaven-fern-rock-understory", canopyFallback: "scanned-understory-remains-without-canopy" }} raycast={() => null}>
+    <GroundCanopyBoundary>
+      <Suspense fallback={null}>
+        {canopies.map((item) => {
+          const x = item.x * 0.82;
+          const z = item.z - 2.0;
+          return <NaturalCanopy
+            key={`canopy-${item.index}`}
+            profile={profile}
+            position={[x, groundHeight(x, z, profile.id) - 0.02, z]}
+            rotationY={item.index * 0.91 + (woodland ? 0.22 : -0.14)}
+            scale={(woodland ? 1.62 : 1.52) + item.scale * 0.42}
+            shapeSeed={item.index + (woodland ? 101 : 17)}
+          />;
+        })}
+      </Suspense>
+    </GroundCanopyBoundary>
     {ferns.map((item) => <FernPatch key={`fern-${item.index}`} position={[item.x * 0.72, groundHeight(item.x * 0.72, item.z - 1.3, profile.id), item.z - 1.3]} rotationY={item.index * 0.73} scale={0.82 + item.scale * 0.45} />)}
-    {items.slice(0, 8).map((item) => <ScannedRock key={`rock-${item.index}`} variant={item.index % 2 ? "01" : "02"} position={[item.x * 0.55, groundHeight(item.x * 0.55, item.z + 2.2, profile.id) - 0.1, item.z + 2.2]} rotation={[0, item.index * 0.39, 0]} scale={[0.82 * item.scale, 0.48 * item.scale, 0.94 * item.scale]} />)}
+    {items.slice(0, 12).map((item) => <ScannedRock key={`rock-${item.index}`} variant={item.index % 2 ? "01" : "02"} position={[item.x * 0.55, groundHeight(item.x * 0.55, item.z + 2.2, profile.id) - 0.1, item.z + 2.2]} rotation={[0, item.index * 0.39, 0]} scale={[0.82 * item.scale, 0.48 * item.scale, 0.94 * item.scale]} />)}
+  </group>;
+}
+
+function buildDistantRidgeGeometry(profile: EnvironmentProfile) {
+  const columns = 48;
+  const rows = 6;
+  const positions: number[] = [];
+  const indices: number[] = [];
+  const profileLift = profile.id === "urban" ? 0.52 : profile.id === "coastal" ? 0.58 : 1;
+  for (let row = 0; row <= rows; row += 1) {
+    const v = row / rows;
+    const z = THREE.MathUtils.lerp(-154, -246, v);
+    const envelope = Math.sin(v * Math.PI);
+    for (let column = 0; column <= columns; column += 1) {
+      const u = column / columns;
+      const x = THREE.MathUtils.lerp(-188, 188, u);
+      const irregular = 6.4
+        + 2.8 * Math.sin(x * 0.031 + 0.7)
+        + 1.6 * Math.sin(x * 0.079 - 1.1)
+        + 0.8 * Math.cos(x * 0.147 + v * 2.4);
+      const shoulder = 1.2 * Math.sin((u + v * 0.17) * Math.PI * 5.0);
+      const y = -0.55 + envelope * Math.max(1.2, irregular + shoulder) * profileLift;
+      positions.push(x, y, z);
+    }
+  }
+  const stride = columns + 1;
+  for (let row = 0; row < rows; row += 1) for (let column = 0; column < columns; column += 1) {
+    const a = row * stride + column;
+    const b = a + 1;
+    const c = a + stride;
+    const d = c + 1;
+    indices.push(a, c, b, b, c, d);
+  }
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
+  geometry.setIndex(indices);
+  geometry.computeVertexNormals();
+  geometry.computeBoundingBox();
+  geometry.computeBoundingSphere();
+  return geometry;
+}
+
+function DistantGroundContinuation({ profile }: { profile: EnvironmentProfile }) {
+  const ridge = useMemo(() => buildDistantRidgeGeometry(profile), [profile]);
+  useEffect(() => () => ridge.dispose(), [ridge]);
+  return <group name="ground-distant-continuation" raycast={() => null} userData={{ perceivedRangeMeters: 400, horizonAuthority: "authored-irregular-ridge-v4-muted-fog-blended" }}>
+    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.32, -128]}>
+      <planeGeometry args={[420, 300, 36, 28]} />
+      <meshBasicMaterial color={profile.horizon} fog toneMapped={false} transparent opacity={0.22} depthWrite={false} />
+    </mesh>
+    <mesh name="ground-authored-distant-ridge-v4" geometry={ridge}>
+      <meshStandardMaterial color={profile.groundDeep} roughness={1} metalness={0} fog />
+    </mesh>
+    <mesh name="ground-atmospheric-ridge-layer" geometry={ridge} position={[0, -1.6, -34]} scale={[1.12, 0.72, 1.08]} raycast={() => null}>
+      <meshStandardMaterial color={profile.horizon} roughness={1} metalness={0} fog transparent opacity={0.72} />
+    </mesh>
+  </group>;
+}
+
+
+function GroundRootNetwork({ profile }: { profile: EnvironmentProfile }) {
+  const roots = useMemo(() => {
+    const definitions = [
+      [[-18, 7.8, 8], [-13, 6.0, 2], [-9, 4.4, -5], [-5, 3.1, -13], [-2, 2.1, -22]],
+      [[17, 8.4, 6], [12, 6.5, 0], [8, 4.7, -7], [5, 3.0, -15], [3, 2.0, -25]],
+      [[-10, 9.2, -5], [-7, 7.0, -10], [-4, 5.0, -18], [-1, 3.8, -27], [1, 2.5, -36]],
+      [[11, 8.8, -8], [8, 6.8, -13], [5, 5.0, -21], [2, 3.6, -30], [-1, 2.5, -41]],
+      [[-22, 6.8, -18], [-16, 5.5, -20], [-10, 4.1, -24], [-4, 3.0, -30], [0, 2.4, -37]],
+      [[21, 7.1, -22], [15, 5.8, -23], [10, 4.3, -27], [5, 3.1, -33], [1, 2.5, -41]],
+    ] as const;
+    return definitions.map((points, index) => {
+      const curve = new THREE.CatmullRomCurve3(points.map(([x, y, z]) => new THREE.Vector3(x, y, z)));
+      return new THREE.TubeGeometry(curve, 48, 0.17 + index * 0.025, 10, false);
+    });
+  }, []);
+  useEffect(() => () => roots.forEach((geometry) => geometry.dispose()), [roots]);
+  return <group name="ground-canonical-root-network-v14" raycast={() => null}>
+    {roots.map((geometry, index) => <mesh key={index} geometry={geometry} castShadow receiveShadow>
+      <meshStandardMaterial
+        color={profile.id === "woodland" ? "#34281f" : "#403126"}
+        roughness={0.98}
+        metalness={0}
+        envMapIntensity={0.12}
+      />
+    </mesh>)}
+  </group>;
+}
+
+export function GroundSubstrateWorld({ profile }: { profile: EnvironmentProfile }) {
+  const rockPlacements = useMemo(() => [
+    { p: [-16, 0.1, 2] as [number, number, number], r: [0.1, 0.9, 0] as [number, number, number], s: [7.4, 5.8, 6.2] as [number, number, number], v: "01" as const },
+    { p: [17, -0.2, -2] as [number, number, number], r: [0.0, -1.0, 0] as [number, number, number], s: [8.0, 6.4, 6.8] as [number, number, number], v: "02" as const },
+    { p: [-20, -0.5, -19] as [number, number, number], r: [0.2, 0.4, -0.05] as [number, number, number], s: [10.0, 8.0, 8.0] as [number, number, number], v: "02" as const },
+    { p: [19, -0.4, -24] as [number, number, number], r: [-0.1, -0.7, 0.05] as [number, number, number], s: [9.6, 7.4, 8.2] as [number, number, number], v: "01" as const },
+    { p: [-12, -0.8, -43] as [number, number, number], r: [0.1, 1.1, 0] as [number, number, number], s: [12.0, 9.0, 9.6] as [number, number, number], v: "01" as const },
+    { p: [12, -0.8, -45] as [number, number, number], r: [0.0, -1.2, 0] as [number, number, number], s: [12.5, 9.6, 10.2] as [number, number, number], v: "02" as const },
+  ], []);
+
+  const fernPlacements = useMemo(() => [
+    [-5.4, -7.5, 0.72], [5.8, -8.4, 0.66], [-7.8, -17.5, 0.8], [7.2, -18.2, 0.78],
+    [-4.6, -28.0, 0.62], [4.4, -30.5, 0.7], [-8.5, -37.0, 0.84], [8.3, -38.8, 0.72],
+  ] as const, []);
+
+  return <group
+    name="ground-deeper-living-substrate-v14"
+    userData={{
+      visualAuthority: "terrain-to-root-to-geology-to-lived-ground",
+      continuity: "same-home-deeper-substrate",
+      fantasyCave: false,
+      exteriorForestOwner: false,
+    }}
+  >
+    <mesh name="ground-substrate-vault" position={[0, 7.8, -18]} scale={[34, 11, 44]} raycast={() => null}>
+      <sphereGeometry args={[1, 64, 32]} />
+      <meshStandardMaterial
+        side={THREE.BackSide}
+        color="#151713"
+        roughness={1}
+        metalness={0}
+        envMapIntensity={0.06}
+      />
+    </mesh>
+    <GroundRootNetwork profile={profile} />
+    {rockPlacements.map((item, index) => <ScannedRock
+      key={index}
+      variant={item.v}
+      position={item.p}
+      rotation={item.r}
+      scale={item.s}
+    />)}
+    {fernPlacements.map(([x, z, scale], index) => <FernPatch
+      key={index}
+      position={[x, groundHeight(x, z, profile.id) + 0.02, z]}
+      rotationY={index * 1.37}
+      scale={scale}
+    />)}
+    <mesh name="ground-moisture-channel" rotation={[-Math.PI / 2, 0, 0]} position={[1.6, 0.02, -24]} raycast={() => null}>
+      <planeGeometry args={[2.8, 28, 8, 40]} />
+      <meshPhysicalMaterial color="#172b2c" roughness={0.24} metalness={0} transmission={0.08} transparent opacity={0.58} />
+    </mesh>
+    <pointLight position={[-8, 3.4, -10]} intensity={1.15} color="#b88958" distance={18} decay={2} />
+    <pointLight position={[7, 2.8, -25]} intensity={0.92} color="#6a9f98" distance={20} decay={2} />
+    <pointLight position={[0, 3.6, -40]} intensity={1.25} color="#9ba76e" distance={24} decay={2} />
   </group>;
 }
 
@@ -298,27 +679,33 @@ function LivedGroundWorld({ profile, target }: { profile: EnvironmentProfile; ta
       0,
       THREE.MathUtils.clamp(event.point.z, BOUNDS.minZ, BOUNDS.maxZ),
     );
+    window.dispatchEvent(new CustomEvent('urai:ground-surface-commit', { detail: { x: event.point.x, z: event.point.z } }));
   };
 
   return <group name="ground-lived-world" userData={{ semanticOwner: "ground-physical-lived-world", placeLayer: "consent-aware-empty-by-default", profile: profile.id, materialAuthority: "scanned-pbr-ground-v2" }}>
     <mesh name="ground-visible-traversable-terrain" geometry={geometry} onClick={onTerrainClick} receiveShadow>
       <TerrainMaterial profile={profile} />
     </mesh>
+    <AtmosphericGroundSky profile={profile} />
+    <DistantGroundContinuation profile={profile} />
     <NaturalScatter profile={profile} />
   </group>;
 }
 
-function FirstPersonPlayer({ input, yaw, pitch, target, profile, onReady }: {
+function FirstPersonPlayer({ input, yaw, pitch, target, profile, obstacles, playerPosition, isCoarse, onReady }: {
   input: MovementInput;
   yaw: MutableRefObject<number>;
   pitch: MutableRefObject<number>;
   target: MutableRefObject<THREE.Vector3 | null>;
   profile: EnvironmentProfile;
+  obstacles: readonly MovementObstacle[];
+  playerPosition: MutableRefObject<THREE.Vector3>;
+  isCoarse: boolean;
   onReady: () => void;
 }) {
   const { camera, size } = useThree();
   const reducedMotion = useReducedMotion();
-  const position = useRef(SPAWN.clone());
+  const position = playerPosition;
   const velocity = useRef(new THREE.Vector3());
   const desired = useRef(new THREE.Vector3());
   const lookAt = useRef(new THREE.Vector3());
@@ -326,6 +713,9 @@ function FirstPersonPlayer({ input, yaw, pitch, target, profile, onReady }: {
   const ready = useRef(false);
 
   useFrame((_, delta) => {
+    const terrainSlope = slopeDegrees((x, z) => groundHeight(x, z, profile.id), position.current.x, position.current.z);
+    const slopeMultiplier = slopeSpeedMultiplier(terrainSlope);
+    const baseSpeed = isCoarse ? GROUND_MOBILE_SPEED_MPS : GROUND_DESKTOP_SPEED_MPS;
     stepEmbodiedMotion({
       position: position.current,
       velocity: velocity.current,
@@ -333,15 +723,16 @@ function FirstPersonPlayer({ input, yaw, pitch, target, profile, onReady }: {
       target,
       yaw: yaw.current,
       delta,
-      speed: 3.7,
-      acceleration: 12,
-      deceleration: 14,
+      speed: baseSpeed * slopeMultiplier,
+      acceleration: GROUND_ACCELERATION_MPS2,
+      deceleration: GROUND_DECELERATION_MPS2,
       bounds: BOUNDS,
-      arrivalRadius: 0.32,
+      obstacles: [...obstacles],
+      arrivalRadius: GROUND_ARRIVAL_RADIUS_M,
     });
 
     const surfaceY = groundHeight(position.current.x, position.current.z, profile.id);
-    desired.current.set(position.current.x, surfaceY + EYE_HEIGHT, position.current.z);
+    desired.current.set(position.current.x, surfaceY + GROUND_EYE_HEIGHT_M, position.current.z);
     camera.position.lerp(desired.current, reducedMotion ? 1 : 1 - Math.pow(0.001, delta));
 
     forward.current.set(-Math.sin(yaw.current), 0, -Math.cos(yaw.current));
@@ -351,7 +742,7 @@ function FirstPersonPlayer({ input, yaw, pitch, target, profile, onReady }: {
 
     if (camera instanceof THREE.PerspectiveCamera) {
       const portrait = size.height > size.width;
-      const desiredFov = portrait ? 66 : 58;
+      const desiredFov = portrait ? GROUND_PORTRAIT_FOV_DEG : GROUND_LANDSCAPE_FOV_DEG;
       if (Math.abs(camera.fov - desiredFov) > 0.01) {
         camera.fov = desiredFov;
         camera.updateProjectionMatrix();
@@ -366,25 +757,149 @@ function FirstPersonPlayer({ input, yaw, pitch, target, profile, onReady }: {
   return null;
 }
 
-function GroundScene({ profile, input, yaw, pitch, target, onReady }: {
+function AtmosphericGroundSky({ profile }: { profile: EnvironmentProfile }) {
+  const uniforms = useMemo(() => ({
+    zenithColor: { value: new THREE.Color(profile.id === "woodland" ? "#537482" : "#5f8391") },
+    upperColor: { value: new THREE.Color(profile.id === "arid" ? "#9b8065" : "#7897a1") },
+    horizonColor: { value: new THREE.Color(profile.fog) },
+    groundHazeColor: { value: new THREE.Color(profile.horizon) },
+  }), [profile.fog, profile.horizon, profile.id]);
+
+  return <mesh name="ground-authored-atmospheric-dome-v11" scale={360} frustumCulled={false} renderOrder={-1000}>
+    <sphereGeometry args={[1, 64, 32]} />
+    <shaderMaterial
+      side={THREE.BackSide}
+      depthWrite={false}
+      depthTest={false}
+      toneMapped={false}
+      uniforms={uniforms}
+      vertexShader={`
+        varying vec3 vDir;
+        void main() {
+          vDir = normalize(position);
+          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+        }
+      `}
+      fragmentShader={`
+        varying vec3 vDir;
+        uniform vec3 zenithColor;
+        uniform vec3 upperColor;
+        uniform vec3 horizonColor;
+        uniform vec3 groundHazeColor;
+        void main() {
+          float h = clamp(vDir.y * 0.5 + 0.5, 0.0, 1.0);
+          float upperMix = smoothstep(0.42, 0.96, h);
+          vec3 sky = mix(upperColor, zenithColor, upperMix);
+          float horizonBand = 1.0 - smoothstep(0.015, 0.28, abs(vDir.y));
+          sky = mix(sky, horizonColor, horizonBand * 0.34);
+          float groundBand = 1.0 - smoothstep(-0.20, 0.05, vDir.y);
+          sky = mix(sky, groundHazeColor, groundBand * 0.18);
+          vec3 sunDir = normalize(vec3(-0.38, 0.30, -0.88));
+          float sunDot = max(0.0, dot(normalize(vDir), sunDir));
+          float sunGlow = pow(sunDot, 34.0) * 0.08 + pow(sunDot, 240.0) * 0.24;
+          sky += vec3(1.0, 0.72, 0.46) * sunGlow;
+          float haze = pow(max(0.0, 1.0 - abs(vDir.y)), 5.0) * 0.055;
+          sky += vec3(0.68, 0.60, 0.50) * haze;
+          gl_FragColor = vec4(sky, 1.0);
+        }
+      `}
+    />
+  </mesh>;
+}
+
+function GroundScene({ profile, input, yaw, pitch, target, obstacles, playerPosition, isCoarse, onReady }: {
   profile: EnvironmentProfile;
   input: MovementInput;
   yaw: MutableRefObject<number>;
   pitch: MutableRefObject<number>;
   target: MutableRefObject<THREE.Vector3 | null>;
+  obstacles: readonly MovementObstacle[];
+  playerPosition: MutableRefObject<THREE.Vector3>;
+  isCoarse: boolean;
   onReady: () => void;
 }) {
+  const reducedMotion = useReducedMotion();
+  const heightAt = useCallback((x: number, z: number) => groundHeight(x, z, profile.id), [profile.id]);
+  const weather = DEFAULT_GROUND_WEATHER;
   return <>
-    <color attach="background" args={[profile.fog]} />
-    <fogExp2 attach="fog" args={[profile.fog, profile.id === "urban" ? 0.018 : 0.0135]} />
-    <Environment files="/assets/urai/home-production/cc0/environment/studio-small-08-1k.hdr" background={false} environmentIntensity={0.24} />
-    <ambientLight intensity={0.35} color="#cad7d0" />
-    <hemisphereLight args={["#d7e5df", profile.groundDeep, 0.56]} />
-    <directionalLight position={[-14, 20, 8]} intensity={2.05} color="#f0d6b0" castShadow shadow-mapSize={[1024, 1024]} shadow-camera-left={-28} shadow-camera-right={28} shadow-camera-top={28} shadow-camera-bottom={-28} shadow-camera-far={90} shadow-normalBias={0.035} />
-    <directionalLight position={[12, 8, -18]} intensity={0.28} color="#81a8ad" />
+    <color attach="background" args={[profile.horizon]} />
+    <fogExp2 attach="fog" args={[profile.fog, 0.0118 + weather.atmosphericDensity * 0.00135]} />
+    <Suspense fallback={null}><Environment files="/assets/urai/home-production/cc0/environment/studio-small-08-1k.hdr" background={false} environmentIntensity={0.28} /></Suspense>
+    <ambientLight intensity={0.54} color="#b8c8bc" />
+    <hemisphereLight args={["#afc7c6", "#3f392f", 0.76]} />
+    <directionalLight position={[-10, 14, 5]} intensity={1.28} color="#d9bd93" castShadow shadow-mapSize={[1024, 1024]} shadow-camera-left={-28} shadow-camera-right={28} shadow-camera-top={28} shadow-camera-bottom={-28} shadow-camera-far={90} shadow-normalBias={0.035} />
+    <directionalLight position={[10, 7, -20]} intensity={0.44} color="#7fa7aa" />
     <Suspense fallback={null}><LivedGroundWorld profile={profile} target={target} /></Suspense>
-    <FirstPersonPlayer input={input} yaw={yaw} pitch={pitch} target={target} profile={profile} onReady={onReady} />
+    <FirstPersonPlayer input={input} yaw={yaw} pitch={pitch} target={target} profile={profile} obstacles={obstacles} playerPosition={playerPosition} isCoarse={isCoarse} onReady={onReady} />
   </>;
+}
+
+function GroundAnalogPad({ input, visible }: { input: MovementInput; visible: boolean }) {
+  const pad = useRef<HTMLDivElement>(null);
+  const [active, setActive] = useState(false);
+  const [thumb, setThumb] = useState({ x: 0, y: 0 });
+  const update = (event: ReactPointerEvent<HTMLDivElement>) => {
+    const rect = pad.current?.getBoundingClientRect();
+    if (!rect) return;
+    const centerX = rect.left + rect.width / 2;
+    const centerY = rect.top + rect.height / 2;
+    const dx = event.clientX - centerX;
+    const dy = event.clientY - centerY;
+    const max = 38;
+    const length = Math.hypot(dx, dy);
+    const scale = length > max ? max / length : 1;
+    const x = dx * scale;
+    const y = dy * scale;
+    setThumb({ x, y });
+    const normalizedX = Math.abs(x / max) < 0.14 ? 0 : x / max;
+    const normalizedY = Math.abs(y / max) < 0.14 ? 0 : y / max;
+    setVirtualMovement(input, normalizedX, normalizedY);
+  };
+  const stop = () => {
+    setActive(false);
+    setThumb({ x: 0, y: 0 });
+    clearVirtualMovement(input);
+  };
+  return <div
+    ref={pad}
+    className="ground-analog-pad"
+    data-movement-ui="true"
+    role="group"
+    aria-label="Ground analog movement"
+    data-active={active ? "true" : "false"}
+    style={{
+      display: visible ? "block" : "none",
+      position: "absolute",
+      zIndex: 24,
+      left: "max(18px, env(safe-area-inset-left))",
+      bottom: "max(88px, calc(env(safe-area-inset-bottom) + 76px))",
+      width: 100,
+      height: 100,
+      border: "1px solid rgba(233,248,244,.24)",
+      borderRadius: "50%",
+      background: "rgba(5,17,20,.28)",
+      backdropFilter: "blur(8px)",
+      touchAction: "none",
+      opacity: active ? 0.66 : 0.38,
+    }}
+    onPointerDown={(event) => { setActive(true); event.currentTarget.setPointerCapture(event.pointerId); update(event); }}
+    onPointerMove={(event) => { if (active) update(event); }}
+    onPointerUp={stop}
+    onPointerCancel={stop}
+  ><span style={{
+    position: "absolute",
+    left: "50%",
+    top: "50%",
+    width: 34,
+    height: 34,
+    marginLeft: -17,
+    marginTop: -17,
+    border: "1px solid rgba(244,252,249,.34)",
+    borderRadius: "50%",
+    background: "rgba(223,242,233,.18)",
+    pointerEvents: "none",
+    transform: `translate(${thumb.x}px, ${thumb.y}px)`,
+  }} /></div>;
 }
 
 export default function GroundSpatialWorldClean() {
@@ -392,15 +907,43 @@ export default function GroundSpatialWorldClean() {
   const params = useSearchParams();
   const [ready, setReady] = useState(false);
   const [dragging, setDragging] = useState(false);
+  const [isCoarse, setIsCoarse] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return window.matchMedia("(pointer: coarse)").matches
+      || window.matchMedia("(max-width: 760px)").matches
+      || navigator.maxTouchPoints > 0
+      || "ontouchstart" in window;
+  });
   const yaw = useRef(0);
   const pitch = useRef(-0.04);
   const target = useRef<THREE.Vector3 | null>(null);
+  const playerPosition = useRef(SPAWN.clone());
   const profile = useMemo(() => resolveProfile(params.get("environment")), [params]);
+  const obstacles = useMemo(() => buildGroundObstacleField(profile.id), [profile.id]);
+
+  useEffect(() => {
+    const pointerQuery = window.matchMedia('(pointer: coarse)');
+    const compactQuery = window.matchMedia('(max-width: 760px)');
+    const update = () => setIsCoarse(
+      pointerQuery.matches
+      || compactQuery.matches
+      || navigator.maxTouchPoints > 0
+      || 'ontouchstart' in window,
+    );
+    update();
+    pointerQuery.addEventListener?.('change', update);
+    compactQuery.addEventListener?.('change', update);
+    return () => {
+      pointerQuery.removeEventListener?.('change', update);
+      compactQuery.removeEventListener?.('change', update);
+    };
+  }, []);
 
   const reset = useCallback(() => {
     yaw.current = 0;
     pitch.current = -0.04;
     target.current = SPAWN.clone();
+    playerPosition.current.copy(SPAWN);
   }, []);
   const input = useMovementInput({ onEscape: () => router.push("/home?returnFrom=ground"), onReset: reset });
   const look = useDragLook({ yaw, pitch, sensitivity: 0.0032, minPitch: -0.96, maxPitch: 0.96, onDragState: setDragging });
@@ -409,18 +952,24 @@ export default function GroundSpatialWorldClean() {
     className="ground-spatial-root"
     aria-label="URAI Ground first-person lived world"
     data-testid="urai-ground-lived-world"
-    data-ground-visual-owner="physical-lived-world"
+    data-ground-visual-owner="atmospheric-living-environment"
     data-ground-runtime-owner="first-person-lived-world"
-    data-ground-visual-revision="ground-lived-world-v1"
-    data-ground-art-revision="ground-scanned-pbr-v2"
-    data-ground-exploration="first-person"
-    data-ground-camera="eye-level-terrain-following"
-    data-ground-eye-height={EYE_HEIGHT}
-    data-ground-collision="visible-terrain-heightfield"
+    data-ground-visual-revision="ground-lived-world-v2-canon-lock"
+    data-ground-art-revision="ground-v21-leaf-silhouette-canopy-atmospheric-depth"
+    data-ground-exploration="first-person-no-visible-body"
+    data-ground-camera="eye-level-terrain-following-no-authored-bob"
+    data-ground-eye-height={GROUND_EYE_HEIGHT_M}
+    data-ground-speed-desktop={GROUND_DESKTOP_SPEED_MPS}
+    data-ground-speed-mobile={GROUND_MOBILE_SPEED_MPS}
+    data-ground-acceleration={GROUND_ACCELERATION_MPS2}
+    data-ground-deceleration={GROUND_DECELERATION_MPS2}
+    data-ground-collision="terrain-plus-authored-obstacle-field"
     data-ground-place-layer="consent-aware-empty-by-default"
     data-ground-environment-profile={profile.id}
     data-ground-private-location-mounted="false"
     data-ground-pointer-lock="false"
+    data-ground-visible-avatar="false"
+    data-ground-visible-hands="false"
     data-ground-ready={ready ? "true" : "false"}
     data-ground-camera-mode={dragging ? "look" : "first-person"}
     {...look}
@@ -428,15 +977,15 @@ export default function GroundSpatialWorldClean() {
     <Canvas
       shadows
       dpr={[1, 1.3]}
-      camera={{ position: [0, EYE_HEIGHT, 6], fov: 58, near: 0.08, far: 180 }}
+      camera={{ position: [0, GROUND_EYE_HEIGHT_M, 6], fov: GROUND_LANDSCAPE_FOV_DEG, near: GROUND_NEAR_PLANE_M, far: 800 }}
       gl={{ antialias: true, alpha: false, powerPreference: "high-performance" }}
       onCreated={({ gl }) => {
         gl.outputColorSpace = THREE.SRGBColorSpace;
         gl.toneMapping = THREE.ACESFilmicToneMapping;
-        gl.toneMappingExposure = 0.96;
+        gl.toneMappingExposure = 1.16;
       }}
     >
-      <GroundScene profile={profile} input={input} yaw={yaw} pitch={pitch} target={target} onReady={() => setReady(true)} />
+      <GroundScene profile={profile} input={input} yaw={yaw} pitch={pitch} target={target} obstacles={obstacles} playerPosition={playerPosition} isCoarse={isCoarse} onReady={() => setReady(true)} />
     </Canvas>
 
     <button className="ground-home-return" type="button" onClick={() => router.push("/home?returnFrom=ground")} aria-label="Return Home">Home</button>
@@ -444,20 +993,29 @@ export default function GroundSpatialWorldClean() {
       <a href="/location-map/geographic/">Places</a>
       <a href="/privacy-controls">Privacy</a>
     </nav>
-    <div className="sr-only" role="status" aria-live="polite">{ready ? `${profile.label} is ready for first-person exploration.` : "Ground is forming."}</div>
-    <MobileMovementPad input={input} label="Ground first-person movement controls" />
+    <div className="sr-only" role="status" aria-live="polite">{ready ? `${profile.label} is ready for first-person exploration. UrAi remains available through semantic voice and accessible controls; no follower Orb is rendered.` : "Ground is forming."}</div>
+    <GroundAnalogPad input={input} visible={isCoarse} />
+    <details className="ground-accessible-movement" data-movement-ui="true"><summary>Movement controls</summary><MobileMovementPad input={input} label="Ground first-person movement controls" /></details>
     <span className="sr-only" data-testid="urai-ground-walkable-surface">The visible Ground terrain is the traversal and click-to-move surface.</span>
 
     <style jsx>{`
       .ground-spatial-root{position:fixed;inset:0;width:100vw;height:100svh;overflow:hidden;background:${profile.fog};color:#f8fbff;isolation:isolate;outline:none;touch-action:none;cursor:${dragging ? "grabbing" : "grab"}}
       .ground-spatial-root canvas{position:absolute!important;inset:0;z-index:1;display:block;width:100%!important;height:100%!important;background:transparent!important}
       .ground-home-return{position:absolute;z-index:20;right:max(16px,env(safe-area-inset-right));top:max(16px,env(safe-area-inset-top));min-width:48px;min-height:48px;padding:0 13px;border:1px solid rgba(226,248,247,.2);border-radius:999px;background:rgba(5,20,24,.32);color:rgba(241,251,249,.88);backdrop-filter:blur(12px);font:750 9px/1 system-ui;letter-spacing:.12em;text-transform:uppercase;cursor:pointer}
-      .ground-home-return:focus-visible,.ground-place-access a:focus-visible{outline:3px solid #fff;outline-offset:3px}
+      .ground-home-return:focus-visible,.ground-place-access a:focus-visible,.ground-accessible-movement summary:focus-visible{outline:3px solid #fff;outline-offset:3px}
       .ground-place-access{position:absolute;z-index:19;left:max(16px,env(safe-area-inset-left));top:max(16px,env(safe-area-inset-top));display:flex;gap:8px;opacity:.02;transition:opacity .2s ease}
       .ground-place-access:focus-within{opacity:1}
       .ground-place-access a{display:grid;place-items:center;min-width:48px;min-height:48px;padding:0 12px;border:1px solid rgba(226,248,247,.18);border-radius:999px;background:rgba(5,20,24,.72);color:#f4fbfa;text-decoration:none;font:700 10px/1 system-ui}
+      .ground-analog-pad{display:none;position:absolute;z-index:24;left:max(18px,env(safe-area-inset-left));bottom:max(88px,calc(env(safe-area-inset-bottom) + 76px));width:100px;height:100px;border:1px solid rgba(233,248,244,.16);border-radius:50%;background:rgba(5,17,20,.18);backdrop-filter:blur(8px);touch-action:none;opacity:.24;transition:opacity .14s ease}
+      @media (pointer:coarse),(max-width:760px){.ground-analog-pad{display:block}}
+      .ground-analog-pad[data-active='true']{opacity:.62}
+      .ground-analog-pad span{position:absolute;left:50%;top:50%;width:34px;height:34px;margin:-17px;border:1px solid rgba(244,252,249,.26);border-radius:50%;background:rgba(223,242,233,.13);pointer-events:none}
+      .ground-accessible-movement{position:absolute;z-index:25;left:max(12px,env(safe-area-inset-left));bottom:max(12px,env(safe-area-inset-bottom));max-width:190px;color:#fff;font:700 10px/1 system-ui}
+      .ground-accessible-movement summary{display:grid;place-items:center;min-height:44px;padding:0 12px;border:1px solid rgba(255,255,255,.18);border-radius:999px;background:rgba(4,14,18,.55);cursor:pointer;list-style:none}
+      .ground-accessible-movement summary::-webkit-details-marker{display:none}
+      .ground-accessible-movement:not([open]) :global(.urai-mobile-movement){display:none!important}
       @media(max-width:760px){.ground-home-return{right:12px;top:12px}.ground-place-access{left:12px;top:12px}}
-      @media(prefers-reduced-motion:reduce){.ground-place-access{transition:none}}
+      @media(prefers-reduced-motion:reduce){.ground-place-access,.ground-analog-pad{transition:none}}
     `}</style>
   </main>;
 }
@@ -465,3 +1023,4 @@ export default function GroundSpatialWorldClean() {
 useGLTF.preload(ROCK_01);
 useGLTF.preload(ROCK_02);
 useGLTF.preload(FERN);
+useGLTF.preload(NATURAL_CANOPY);

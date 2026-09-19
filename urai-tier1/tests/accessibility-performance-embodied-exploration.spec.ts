@@ -16,11 +16,25 @@ async function waitForHomeWorld(home: Locator) {
   await expect(home).toHaveAttribute('data-home-assets-ready', 'true', { timeout: 45_000 })
   await expect(home).toHaveAttribute('data-home-ready', 'true', { timeout: 45_000 })
   await expect(home).toHaveAttribute('data-home-interaction-ready', 'true', { timeout: 45_000 })
-  await expect(home).toHaveAttribute('data-home-embodied-self', 'first-person-viewpoint-no-avatar')
+  await expect(home).toHaveAttribute('data-home-embodied-self', 'visible-cinematic-avatar')
+  await expect(home).toHaveAttribute('data-home-presence-presentation', 'visible-avatar-third-person')
   await expect(home).toHaveAttribute('data-home-movement', 'camera-look-world-surface-selection')
   await expect(home).toHaveAttribute('data-home-ground-entry', 'physical-world-surface')
   await expect(home).toHaveAttribute('data-home-life-map-entry', 'visible-sky-broad-interaction')
-  await expect(home).not.toHaveAttribute('data-home-camera-mode', 'cinematic-third-person')
+  await expect(home).toHaveAttribute('data-home-camera-mode', /cinematic-third-person(?:-look)?/)
+}
+
+async function enterFirstPersonHome(page: Page) {
+  const home = page.locator(homeOwnerSelector)
+  const semanticAvatar = page.getByRole('button', { name: 'Enter first-person Home' })
+  await expect(semanticAvatar).toBeVisible({ timeout: 30_000 })
+  await semanticAvatar.click()
+  await expect(home).toHaveAttribute('data-home-stable-state', 'AVATAR_HOME_FIRST_PERSON', { timeout: 20_000 })
+  await expect(home).toHaveAttribute('data-home-embodied-self', 'camera-only-first-person-home')
+  await expect(home).toHaveAttribute('data-home-presence-presentation', 'hidden-exterior-avatar-first-person')
+  await expect(home).toHaveAttribute('data-home-movement', 'shared-keyboard-touch-walk-look-interact')
+  await expect(page.getByRole('button', { name: 'Open Avatar Self View' })).toBeVisible()
+  return home
 }
 
 async function enableLifeMapDemo(page: Page) {
@@ -31,49 +45,41 @@ function normalizedPathname(url: string) {
   return new URL(url).pathname.replace(/\/+$/, '') || '/'
 }
 
-test.describe('Cinematic Home and first-person Ground accessibility evidence', () => {
+test.describe('Home and Ground embodied accessibility evidence', () => {
   test.describe.configure({ timeout: 300_000 })
 
-  test('Home exposes first-person world semantics, three keyboard destinations, and no movement pad or avatar owner', async ({ page }) => {
+  test('Home presentation enters persistent bodyless first-person Home with shared keyboard controls', async ({ page }) => {
     const errors = await collectRuntimeErrors(page)
     await page.goto('/home/', { waitUntil: 'domcontentloaded' })
     const home = page.locator(homeOwnerSelector)
     await waitForHomeWorld(home)
-    await expect(home).toHaveAttribute('data-home-camera-mode', /first-person-viewpoint|cinematic-look/)
-    await expect(page.locator('[data-home-embodied-self="visible-cinematic-avatar"], [name="urai-home-embodied-avatar"]')).toHaveCount(0)
 
     const direct = page.getByRole('navigation', { name: 'Accessible Home destinations' })
-    const orb = direct.getByRole('button', { name: 'Open URAI Orb companion' })
-    const ground = direct.getByRole('link', { name: 'Open Ground directly' })
-    const lifeMap = direct.getByRole('link', { name: 'Open Life Map directly' })
-    await expect(direct.locator('button, a[href]')).toHaveCount(3)
-    for (const target of [orb, ground, lifeMap]) {
+    for (const target of [
+      direct.getByRole('button', { name: 'Open URAI Orb companion' }),
+      direct.getByRole('link', { name: 'Open Ground directly' }),
+      direct.getByRole('link', { name: 'Open Life Map directly' }),
+    ]) {
       await target.evaluate((element: HTMLElement) => element.focus())
       await expect(target).toBeFocused()
     }
-    await expect(page.getByRole('group', { name: 'Home movement controls' })).toHaveCount(0)
+
+    await enterFirstPersonHome(page)
+    await page.keyboard.down('w')
+    await page.waitForTimeout(500)
+    await page.keyboard.up('w')
     expect(await page.evaluate(() => document.pointerLockElement)).toBeNull()
     expect(errors.pageErrors).toEqual([])
     expect(errors.consoleErrors).toEqual([])
   })
 
-  test('Ground is first-person, keyboard/touch navigable, privacy-safe, and keeps direct Home/place controls focusable', async ({ page }) => {
-    const errors = await collectRuntimeErrors(page)
-    await page.goto('/ground/', { waitUntil: 'domcontentloaded' })
-    const ground = page.locator('.ground-spatial-root[data-ground-exploration="first-person"]').first()
-    await expect(ground).toBeVisible({ timeout: 30_000 })
-    await expect(ground).toHaveAttribute('data-ground-pointer-lock', 'false')
-    await expect(ground).toHaveAttribute('data-ground-ready', 'true', { timeout: 45_000 })
-    await expect(ground).toHaveAttribute('data-ground-camera', 'eye-level-terrain-following')
-    await expect(ground).toHaveAttribute('data-ground-collision', 'visible-terrain-heightfield')
-    await expect(ground).toHaveAttribute('data-ground-place-layer', 'consent-aware-empty-by-default')
-    await expect(ground).toHaveAttribute('data-ground-private-location-mounted', 'false')
-    await expect(ground.locator('canvas')).toBeVisible({ timeout: 30_000 })
+  test('mobile first-person Home exposes touch-sized Move through Home controls without synthetic body UI', async ({ page }) => {
+    await page.setViewportSize({ width: 393, height: 873 })
+    await page.goto('/home/', { waitUntil: 'domcontentloaded' })
+    await waitForHomeWorld(page.locator(homeOwnerSelector))
+    await enterFirstPersonHome(page)
 
-    await page.keyboard.down('w')
-    await page.waitForTimeout(650)
-    await page.keyboard.up('w')
-    const movement = page.getByRole('group', { name: 'Ground first-person movement controls' })
+    const movement = page.getByRole('group', { name: 'Move through Home' })
     await expect(movement).toBeVisible()
     for (const name of ['Move forward', 'Move left', 'Move backward', 'Move right']) {
       const button = movement.getByRole('button', { name })
@@ -81,7 +87,38 @@ test.describe('Cinematic Home and first-person Ground accessibility evidence', (
       expect(rect).not.toBeNull()
       expect(rect!.width).toBeGreaterThanOrEqual(48)
       expect(rect!.height).toBeGreaterThanOrEqual(48)
+      expect(rect!.x).toBeGreaterThanOrEqual(0)
+      expect(rect!.x + rect!.width).toBeLessThanOrEqual(393)
+      expect(rect!.y).toBeGreaterThanOrEqual(0)
+      expect(rect!.y + rect!.height).toBeLessThanOrEqual(873)
     }
+
+    const forward = movement.getByRole('button', { name: 'Move forward' })
+    await forward.dispatchEvent('pointerdown', { pointerId: 1, button: 0, buttons: 1, pointerType: 'touch', isPrimary: true })
+    await page.waitForTimeout(500)
+    await forward.dispatchEvent('pointerup', { pointerId: 1, button: 0, buttons: 0, pointerType: 'touch', isPrimary: true })
+    const layout = await page.evaluate(() => ({ scrollWidth: document.documentElement.scrollWidth, innerWidth: window.innerWidth }))
+    expect(layout.scrollWidth).toBeLessThanOrEqual(layout.innerWidth + 1)
+  })
+
+  test('Ground is bodyless first-person, keyboard/touch navigable, privacy-safe, and semantically returns Home', async ({ page }) => {
+    const errors = await collectRuntimeErrors(page)
+    await page.goto('/ground/', { waitUntil: 'domcontentloaded' })
+    const ground = page.locator('.ground-spatial-root[data-ground-exploration="first-person-no-visible-body"]').first()
+    await expect(ground).toBeVisible({ timeout: 30_000 })
+    await expect(ground).toHaveAttribute('data-ground-pointer-lock', 'false')
+    await expect(ground).toHaveAttribute('data-ground-ready', 'true', { timeout: 45_000 })
+    await expect(ground).toHaveAttribute('data-ground-camera', 'eye-level-terrain-following-no-authored-bob')
+    await expect(ground).toHaveAttribute('data-ground-collision', 'terrain-plus-authored-obstacle-field')
+    await expect(ground).toHaveAttribute('data-ground-place-layer', 'consent-aware-empty-by-default')
+    await expect(ground).toHaveAttribute('data-ground-private-location-mounted', 'false')
+    await expect(ground).toHaveAttribute('data-ground-visible-avatar', 'false')
+    await expect(ground).toHaveAttribute('data-ground-visible-hands', 'false')
+    await expect(ground.locator('canvas')).toBeVisible({ timeout: 30_000 })
+
+    await page.keyboard.down('w')
+    await page.waitForTimeout(500)
+    await page.keyboard.up('w')
 
     const home = page.getByRole('button', { name: 'Return Home' })
     await home.focus()
@@ -96,15 +133,14 @@ test.describe('Cinematic Home and first-person Ground accessibility evidence', (
     expect(errors.consoleErrors).toEqual([])
   })
 
-  test('mobile Ground controls remain contained and touch-sized while Home remains uncluttered', async ({ page }) => {
+  test('mobile Ground movement controls are touch-sized and contained', async ({ page }) => {
     await page.setViewportSize({ width: 393, height: 873 })
-    await page.goto('/home/', { waitUntil: 'domcontentloaded' })
-    await waitForHomeWorld(page.locator(homeOwnerSelector))
-    await expect(page.getByRole('group', { name: 'Home movement controls' })).toHaveCount(0)
-
     await page.goto('/ground/', { waitUntil: 'domcontentloaded' })
-    const ground = page.locator('.ground-spatial-root[data-ground-exploration="first-person"]').first()
+    const ground = page.locator('.ground-spatial-root[data-ground-exploration="first-person-no-visible-body"]').first()
     await expect(ground).toHaveAttribute('data-ground-ready', 'true', { timeout: 45_000 })
+
+    const details = page.locator('.ground-accessible-movement')
+    await details.locator('summary').click()
     const pad = page.getByRole('group', { name: 'Ground first-person movement controls' })
     await expect(pad).toBeVisible()
     for (const name of ['Move forward', 'Move left', 'Move backward', 'Move right']) {
@@ -118,26 +154,18 @@ test.describe('Cinematic Home and first-person Ground accessibility evidence', (
       expect(rect!.y).toBeGreaterThanOrEqual(0)
       expect(rect!.y + rect!.height).toBeLessThanOrEqual(873)
     }
-    const forward = pad.getByRole('button', { name: 'Move forward' })
-    await forward.dispatchEvent('pointerdown', { pointerId: 1, button: 0, buttons: 1, pointerType: 'touch', isPrimary: true })
-    await page.waitForTimeout(600)
-    await forward.dispatchEvent('pointerup', { pointerId: 1, button: 0, buttons: 0, pointerType: 'touch', isPrimary: true })
-    const layout = await page.evaluate(() => ({ scrollWidth: document.documentElement.scrollWidth, innerWidth: window.innerWidth }))
-    expect(layout.scrollWidth).toBeLessThanOrEqual(layout.innerWidth + 1)
   })
 
-  test('reduced motion preserves Home semantic access and Ground first-person controls without pointer lock', async ({ page }) => {
+  test('reduced motion preserves semantic Home embodiment and Ground controls without pointer lock', async ({ page }) => {
     await page.emulateMedia({ reducedMotion: 'reduce' })
     await page.goto('/home/', { waitUntil: 'domcontentloaded' })
-    const home = page.locator(homeOwnerSelector)
-    await waitForHomeWorld(home)
-    await expect(page.getByRole('navigation', { name: 'Accessible Home destinations' })).toBeVisible()
-    await expect(page.getByRole('group', { name: 'Home movement controls' })).toHaveCount(0)
+    await waitForHomeWorld(page.locator(homeOwnerSelector))
+    await enterFirstPersonHome(page)
+    expect(await page.evaluate(() => document.pointerLockElement)).toBeNull()
 
     await page.goto('/ground/', { waitUntil: 'domcontentloaded' })
-    const ground = page.locator('.ground-spatial-root[data-ground-exploration="first-person"]').first()
+    const ground = page.locator('.ground-spatial-root[data-ground-exploration="first-person-no-visible-body"]').first()
     await expect(ground).toHaveAttribute('data-ground-ready', 'true', { timeout: 45_000 })
-    await expect(page.getByRole('group', { name: 'Ground first-person movement controls' })).toBeVisible()
     expect(await page.evaluate(() => document.pointerLockElement)).toBeNull()
   })
 

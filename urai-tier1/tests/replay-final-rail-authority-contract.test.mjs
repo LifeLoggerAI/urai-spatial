@@ -17,7 +17,7 @@ for (const token of [
   'bottom: max(190px',
   '.replayWorld .replayProduct',
   'bottom: max(96px',
-  '@media (max-width: 700px)',
+  '@media (pointer: coarse), (max-width: 700px)',
   '@media (max-height: 720px)',
 ]) {
   assert.ok(css.includes(token), `Replay final rail authority is missing ${token}`)

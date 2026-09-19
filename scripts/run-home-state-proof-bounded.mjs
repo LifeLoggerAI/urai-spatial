@@ -1,9 +1,14 @@
-import { cp, mkdir, rm, writeFile } from 'node:fs/promises'
+import { cp, mkdir, readFile, rm, writeFile } from 'node:fs/promises'
 import { spawn } from 'node:child_process'
 import path from 'node:path'
 
 const finalDir = path.resolve(process.env.URAI_PROOF_DIR || 'artifacts/home-state-proof')
-const timeoutMs = Number.parseInt(process.env.URAI_HOME_PROOF_ATTEMPT_TIMEOUT_MS || '', 10) || 52 * 60 * 1000
+// The expanded V288 proof reaches the final responsive continuity states on the
+// Actions SwiftShader host after the old 26-minute attempt bound. Two full retries
+// duplicated all expensive visual captures and still killed a progressing run.
+ // Use one bounded envelope that is smaller than the previous 52-minute aggregate
+// retry budget while preserving every required state and every per-action timeout.
+const timeoutMs = Number.parseInt(process.env.URAI_HOME_PROOF_ATTEMPT_TIMEOUT_MS || '', 10) || 38 * 60 * 1000
 const attempts = 1
 
 async function stopProcessGroup(child) {
@@ -63,8 +68,16 @@ async function runAttempt(attempt) {
   }
   await retainAttempt(attemptDir, status)
 
+  let orbReconciliationEligible = false
   if (!timedOut && result.code !== 0) {
-    console.error(`Home state proof attempt ${attempt} failed (code=${result.code}, signal=${result.signal ?? 'none'}); running Orb-open reconciliation as diagnostic-only evidence. It cannot convert a failed real pointer proof into release acceptance.`)
+    try {
+      const failure = JSON.parse(await readFile(path.join(attemptDir, 'runner-failure.json'), 'utf8'))
+      orbReconciliationEligible = failure?.failingRecord?.id === 'orb-lifecycle-production-ui'
+    } catch {}
+  }
+
+  if (!timedOut && result.code !== 0 && orbReconciliationEligible) {
+    console.error(`Home state proof attempt ${attempt} failed on the production Orb lifecycle signature; running Orb-open reconciliation as diagnostic-only evidence. It cannot convert a failed real pointer proof into release acceptance.`)
     const reconciliation = await runChild('scripts/reconcile-home-orb-consent-proof.mjs', attemptEnv)
     const reconciliationResult = await reconciliation.result
     if (!reconciliationResult.error && reconciliationResult.code === 0 && !reconciliationResult.signal) {
@@ -79,6 +92,10 @@ async function runAttempt(attempt) {
     } else {
       console.error(`Home state proof reconciliation failed (code=${reconciliationResult.code}, signal=${reconciliationResult.signal ?? 'none'}).`)
     }
+  }
+
+  if (!timedOut && result.code !== 0 && !orbReconciliationEligible) {
+    console.error(`Home state proof attempt ${attempt} failed outside the production Orb lifecycle signature; skipping inapplicable Orb reconciliation and preserving the original exact-head failure.`)
   }
 
   if (timedOut || result.code !== 0) {

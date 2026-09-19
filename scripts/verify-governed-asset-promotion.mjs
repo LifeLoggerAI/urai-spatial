@@ -75,7 +75,8 @@ if (safePath(decision.canonicalPath)) {
       const buffer = readFileSync(absolute)
       requireCondition(Number.isInteger(decision.bytes) && decision.bytes === buffer.length, `byte mismatch expected=${decision.bytes} actual=${buffer.length}`)
       requireCondition(/^[0-9a-f]{64}$/.test(String(decision.sha256 || '')), 'decision SHA-256 is invalid')
-      requireCondition(decision.sha256 === sha256(buffer), 'decision SHA-256 does not match asset bytes')
+      const actualSha256 = sha256(buffer)
+      requireCondition(decision.sha256 === actualSha256, `decision SHA-256 mismatch expected=${decision.sha256} actual=${actualSha256}`)
       if (aliasMode && asset?.fixedPath && safePath(asset.fixedPath)) {
         const canonicalAbsolute = path.resolve(root, asset.fixedPath)
         requireCondition(existsSync(canonicalAbsolute), `aliased canonical asset does not exist: ${asset.fixedPath}`)

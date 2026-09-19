@@ -5,7 +5,7 @@ requireFromTierOne('playwright')
 
 // Static contract traceability retained for source guards while runtime proof is owned by the canonical driver.
 // Current Ground authority: lived first-person world; visible terrain is traversal; private place data is fail-closed by default.
-// Ground route markers: 'urai-ground-lived-world', 'ground-lived-world-v1', 'first-person-lived-world', 'eye-level-terrain-following'
+// Ground route markers: 'urai-ground-lived-world', 'ground-lived-world-v2-canon-lock', 'first-person-lived-world', 'first-person-no-visible-body', 'eye-level-terrain-following-no-authored-bob', 'terrain-plus-authored-obstacle-field'
 // Retired Ground copy/authority: 'URAI GROUND', 'Private infrastructure beneath the living world', 'Walk deeper. Approach a chamber.', 'ground-destination-compass'
 // data-world-target="focus"
 // check.name === 'life-map-to-focus'

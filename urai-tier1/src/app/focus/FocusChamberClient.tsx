@@ -1,27 +1,58 @@
 'use client'
 
-import { Html, OrbitControls, useGLTF } from '@react-three/drei'
+import { Html, OrbitControls, Stars, useTexture } from '@react-three/drei'
 import { Canvas, useFrame, useThree, type ThreeEvent } from '@react-three/fiber'
-import { Suspense, useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type RefObject } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type RefObject } from 'react'
 import * as THREE from 'three'
 import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib'
-import { assetCssStack, focusAssets } from '@/spatial/assets/uraiAssets'
-import { createFocusStrata, createFocusSurfaceMaps } from './focusMemoryGeology'
 import { markFirstSpatialFrame, useAdaptiveSpatialQuality, type SpatialQualityProfile } from '@/spatial/performance/useAdaptiveSpatialQuality'
 import { useSelectedMemory } from '@/spatial/memory/useSelectedMemory'
 import type { SelectedMemory } from '@/spatial/memory/selectedMemoryContract'
 import { requestUraiWorldReturn, requestUraiWorldTravel } from '@/spatial/world/worldEvents'
 
-// V250 convergence authority: the selected living-memory manifestation owns the
-// arrival composition while remaining grounded inside the authored chamber.
+// Locked product authority; V334 is the current literal-pixel implementation:
+// Life Map shows stellar memory points. Focus resolves the selected point into the
+// same memory star at intimate scale, with authorized source media (or a truthful
+// generated visualization when no media exists) visible inside/through the star.
+// Focus is not Ground, terrain, a biome, a chamber, or a walkable landscape.
 
-const DEFAULT_CAMERA: [number, number, number] = [0, 1.18, 5.1]
-const DEFAULT_TARGET: [number, number, number] = [0, -0.02, -1.55]
-const CAMERA_LIMIT = 8.8
-const FOCUS_CHAMBER_MODEL = '/assets/urai/generated/models/focus-memory-chamber-v1.glb'
+const DEFAULT_CAMERA: [number, number, number] = [0, 0.08, 4.8]
+const STAR_POSITION: [number, number, number] = [0, 0, -1.7]
+const STAR_TARGET = new THREE.Vector3(...STAR_POSITION)
+const MIN_CAMERA_RADIUS = 2.75
+const MAX_CAMERA_RADIUS = 8.2
+const FOCUS_AUTHORED_MEMORY_STAR = '/urai/assets/focus/generated/focus-memory-star-v333.webp'
 
 type ChamberState = 'neutral' | 'loading' | 'ready' | 'unavailable' | 'unauthorized' | 'corrupt' | 'deleted'
 type WebGLState = 'ready' | 'lost' | 'restoring' | 'failed'
+
+function makeFocusCoronaTexture(power: number, rays = false) {
+  const size = 128;
+  const data = new Uint8Array(size * size * 4);
+  for (let y = 0; y < size; y += 1) for (let x = 0; x < size; x += 1) {
+    const dx = ((x + .5) / size - .5) * 2;
+    const dy = ((y + .5) / size - .5) * 2;
+    const distance = Math.sqrt(dx * dx + dy * dy);
+    const radial = Math.max(0, 1 - distance);
+    const axial = rays
+      ? Math.max(0, 1 - Math.min(Math.abs(dx), Math.abs(dy)) * 16) * Math.max(0, 1 - distance * .88)
+      : 0;
+    const diagonal = rays
+      ? Math.max(0, 1 - Math.min(Math.abs(dx - dy), Math.abs(dx + dy)) * 12) * Math.max(0, 1 - distance * .92)
+      : 0;
+    const alpha = Math.min(1, Math.pow(radial, power) + axial * .18 + diagonal * .10);
+    const offset = (y * size + x) * 4;
+    data[offset] = 255;
+    data[offset + 1] = 255;
+    data[offset + 2] = 255;
+    data[offset + 3] = Math.round(alpha * 255);
+  }
+  const texture = new THREE.DataTexture(data, size, size, THREE.RGBAFormat);
+  texture.minFilter = THREE.LinearFilter;
+  texture.magFilter = THREE.LinearFilter;
+  texture.needsUpdate = true;
+  return texture;
+}
 
 function dateLabel(value: string) {
   try {
@@ -29,6 +60,13 @@ function dateLabel(value: string) {
   } catch {
     return value
   }
+}
+
+function focusMemoryVisualKind(memory: SelectedMemory | null) {
+  if (!memory) return 'none'
+  if (memory.sourceMedia.some((item) => item.kind === 'image')) return 'source-image-still'
+  if (memory.sourceMedia.some((item) => item.kind === 'video')) return 'source-video-still'
+  return 'generated-memory-visualization'
 }
 
 function useWebGLAvailable() {
@@ -54,15 +92,16 @@ function FirstFrame({ profile }: { profile: SpatialQualityProfile }) {
   return null
 }
 
-function FocusAssetsReady({ shellRef }: { shellRef: RefObject<HTMLElement | null> }) {
-  useGLTF([FOCUS_CHAMBER_MODEL, '/assets/urai/home-production/cc0/polyhaven-v48/rock_face_01/asset.gltf', '/assets/urai/home-production/cc0/polyhaven-v48/rock_face_02/asset.gltf'])
+function FocusRenderReady({ shellRef }: { shellRef: RefObject<HTMLElement | null> }) {
   const frames = useRef(0)
   useFrame(({ gl }) => {
     if (frames.current >= 2 || !gl.info.render.calls) return
-    frames.current++
+    frames.current += 1
     if (frames.current === 2 && shellRef.current) shellRef.current.dataset.focusRenderReady = 'true'
   })
-  useEffect(() => () => { if (shellRef.current) delete shellRef.current.dataset.focusRenderReady }, [shellRef])
+  useEffect(() => () => {
+    if (shellRef.current) delete shellRef.current.dataset.focusRenderReady
+  }, [shellRef])
   return null
 }
 
@@ -106,15 +145,259 @@ function WebGLRecoveryBridge({ onStateChange }: { onStateChange: (state: WebGLSt
   return null
 }
 
-function FocusCameraRig({ controls, recenterSignal, shellRef }: { controls: RefObject<OrbitControlsImpl | null>; recenterSignal: number; shellRef: RefObject<HTMLElement | null> }) {
+function MemoryVisualContent({ memory, compact = false }: { memory: SelectedMemory | null; compact?: boolean }) {
+  if (!memory) {
+    return <span className={'focusMemoryVisual focusMemoryVisualNeutral' + (compact ? ' compact' : '')}>
+      <span className="focusMemoryNeutralCore" aria-hidden="true" />
+      <span className="focusMemoryTruthLabel">Awaiting a selected star</span>
+    </span>
+  }
+
+  const media = memory.sourceMedia.find((item) => item.kind === 'image')
+    ?? memory.sourceMedia.find((item) => item.kind === 'video')
+  if (media?.kind === 'video') {
+    return <span className={'focusMemoryVisual focusMemoryVisualSource' + (compact ? ' compact' : '')}>
+      <video src={media.url} muted playsInline preload="metadata" data-focus-source-motion="still" aria-label={media.caption || 'Still frame from source video for ' + memory.title} />
+      <span className="focusMemoryGlass" aria-hidden="true" />
+      <span className="focusMemoryTruthLabel">Source moment</span>
+    </span>
+  }
+
+  if (media?.kind === 'image') {
+    const backgroundImage = 'linear-gradient(180deg,rgba(3,7,18,.02),rgba(3,7,18,.38)),url(' + JSON.stringify(media.url) + ')'
+    return <span
+      className={'focusMemoryVisual focusMemoryVisualSource focusMemoryVisualImage' + (compact ? ' compact' : '')}
+      role="img"
+      aria-label={media.caption || 'Source image for ' + memory.title}
+      style={{ backgroundImage }}
+    >
+      <span className="focusMemoryGlass" aria-hidden="true" />
+      <span className="focusMemoryTruthLabel">Source moment</span>
+    </span>
+  }
+
+  return <span
+    className={'focusMemoryVisual focusMemoryVisualGenerated' + (compact ? ' compact' : '')}
+    role="img"
+    aria-label={(memory.demo ? 'Generated demo visualization for ' : 'Generated memory visualization for ') + memory.title}
+  >
+    <span className="generatedMemoryGlow" aria-hidden="true" />
+    <span className="generatedMemoryHorizon" aria-hidden="true" />
+    <span className="generatedMemoryThread generatedMemoryThreadA" aria-hidden="true" />
+    <span className="generatedMemoryThread generatedMemoryThreadB" aria-hidden="true" />
+    <span className="generatedMemoryThread generatedMemoryThreadC" aria-hidden="true" />
+    <span className="focusMemoryGlass" aria-hidden="true" />
+    <span className="srOnly">{memory.demo ? 'Generated demo visualization' : 'Generated memory visualization'}</span>
+  </span>
+}
+
+function FocusMemoryStar({
+  memory,
+  accent,
+  light,
+  reducedMotion,
+  onActivate,
+}: {
+  memory: SelectedMemory | null
+  accent: string
+  light: string
+  reducedMotion: boolean
+  onActivate: () => void
+}) {
+  const group = useRef<THREE.Group | null>(null)
+  const [hovered, setHovered] = useState(false)
+  const activationProgress = useRef(0)
+  const [activating, setActivating] = useState(false)
+  const { size } = useThree()
+  const authoredMemoryStar = useTexture(FOCUS_AUTHORED_MEMORY_STAR)
+  const authoredStarScale = size.width < 760 ? 1.78 : size.width < 1024 ? 2.24 : 2.65
+  const authoredStarY = size.width < 760 ? -.28 : 0
+  const starScale = memory ? THREE.MathUtils.clamp(memory.star.scale * 1.34, 1.18, 1.36) : 1.08
+  const coronaTexture = useMemo(() => makeFocusCoronaTexture(2.25), [])
+  const rayTexture = useMemo(() => makeFocusCoronaTexture(4.2, true), [])
+  useEffect(() => () => {
+    coronaTexture.dispose()
+    rayTexture.dispose()
+  }, [coronaTexture, rayTexture])
+
+  useFrame((state, delta) => {
+    if (!group.current) return
+    if (activating) activationProgress.current = Math.min(1, activationProgress.current + delta / (reducedMotion ? 0.26 : 1.9))
+    const expansion = activating ? THREE.MathUtils.lerp(1, reducedMotion ? 1.08 : 5.4, THREE.MathUtils.smootherstep(activationProgress.current, 0, 1)) : 1
+    if (!reducedMotion) {
+      group.current.rotation.y += Math.min(delta, 0.05) * 0.075
+      const breathe = 1 + Math.sin(state.clock.elapsedTime * 0.72) * 0.010
+      group.current.scale.setScalar(starScale * breathe * expansion)
+    } else {
+      group.current.scale.setScalar(starScale * expansion)
+    }
+  })
+
+  const activateMoment = (event?: ThreeEvent<PointerEvent>) => {
+    event?.stopPropagation()
+    if (!memory || activating) return
+    activationProgress.current = 0
+    setActivating(true)
+    onActivate()
+  }
+
+  const pointer = (event: ThreeEvent<PointerEvent>, state: boolean) => {
+    event.stopPropagation()
+    setHovered(state)
+    document.body.style.cursor = state && memory ? 'pointer' : ''
+  }
+
+  return <group
+    ref={group}
+    position={STAR_POSITION}
+    name="focus-selected-memory-star"
+    userData={{
+      visualAuthority: 'selected-memory-star-with-contained-memory-v334',
+      lifeMapContinuity: 'same-selected-star-resolved-at-close-range',
+      terrainOwner: false,
+    }}
+  >
+    {memory?.demo ? <sprite
+      position={[0, authoredStarY, .18]}
+      scale={[authoredStarScale, authoredStarScale, 1]}
+      name="focus-authored-memory-star-v334"
+      onClick={activateMoment}
+      onPointerOver={(event) => pointer(event, true)}
+      onPointerOut={(event) => pointer(event, false)}
+    >
+      <spriteMaterial map={authoredMemoryStar} transparent opacity={.98} depthWrite={false} toneMapped={false} />
+    </sprite> : null}
+    {!memory?.demo ? <>
+    <sprite raycast={() => null} position={[-.12, .08, -.22]} scale={[4.65, 4.65, 1]} name="focus-memory-star-corona-glow">
+      <spriteMaterial map={coronaTexture} color={accent} transparent opacity={memory ? .56 : .05} depthWrite={false} blending={THREE.AdditiveBlending} toneMapped={false} />
+    </sprite>
+    <sprite raycast={() => null} position={[.10, -.05, -.08]} scale={[4.12, 4.12, 1]} rotation={.22} name="focus-memory-star-photosphere-rays">
+      <spriteMaterial map={rayTexture} color={light} transparent opacity={memory ? .48 : .05} depthWrite={false} blending={THREE.AdditiveBlending} toneMapped={false} />
+    </sprite>
+    <mesh raycast={() => null} scale={0.72} name="focus-memory-star-outer-corona">
+      <sphereGeometry args={[1, 64, 40]} />
+      <meshBasicMaterial color={accent} transparent opacity={memory ? 0.004 : 0.002} depthWrite={false} blending={THREE.AdditiveBlending} />
+    </mesh>
+    <mesh raycast={() => null} scale={0.54} name="focus-memory-star-inner-corona">
+      <sphereGeometry args={[1, 64, 40]} />
+      <meshBasicMaterial color={light} transparent opacity={memory ? 0.006 : 0.003} depthWrite={false} blending={THREE.AdditiveBlending} />
+    </mesh>
+    <mesh raycast={() => null} scale={0.38} name="focus-memory-star-photosphere-core">
+      <sphereGeometry args={[1, 64, 48]} />
+      <meshStandardMaterial
+        color={light}
+        emissive={accent}
+        emissiveIntensity={memory ? 6.4 : 0.20}
+        roughness={0.66}
+        metalness={0}
+        transparent
+        opacity={memory ? 0.86 : 0.18}
+        depthWrite={false}
+      />
+    </mesh>
+    </> : null}
+    <mesh
+      name="focus-memory-star-glass-shell"
+      onClick={activateMoment}
+      onPointerOver={(event) => pointer(event, true)}
+      onPointerOut={(event) => pointer(event, false)}
+    >
+      <sphereGeometry args={[0.68, 64, 48]} />
+      <meshPhysicalMaterial
+        color={light}
+        emissive={accent}
+        emissiveIntensity={memory ? (hovered ? 1.05 : 0.68) : 0.24}
+        transmission={0}
+        thickness={0.08}
+        roughness={0.22}
+        metalness={0}
+        transparent
+        opacity={memory ? 0 : 0.09}
+        clearcoat={0}
+        clearcoatRoughness={0.44}
+        depthWrite={false}
+      />
+    </mesh>
+    {!memory?.demo ? <mesh raycast={() => null} scale={0.46} name="focus-memory-star-interior-depth">
+      <sphereGeometry args={[1, 48, 36]} />
+      <meshBasicMaterial color={accent} transparent opacity={memory ? 0.025 : 0.020} depthWrite={false} side={THREE.BackSide} blending={THREE.AdditiveBlending} />
+    </mesh> : null}
+    <pointLight color={accent} intensity={memory ? 5.2 : .9} distance={8.6} decay={2} />
+    <pointLight position={[-1.1, 1.25, 1.7]} color={light} intensity={memory ? 2.8 : .35} distance={6.4} decay={2} />
+    {!memory?.demo ? <Html center transform position={[0, 0, 0.31]} distanceFactor={6.1} zIndexRange={[20, 10]}>
+      <button
+        type="button"
+        className="focusStarMemoryButton"
+        disabled={!memory}
+        onClick={() => activateMoment()}
+        aria-label={memory ? 'Enter Replay for ' + memory.title : 'Select a memory in Life Map to enter Replay'}
+      >
+        <MemoryVisualContent memory={memory} />
+      </button>
+    </Html> : null}
+  </group>
+}
+
+function MemoryDust({ accent, reducedMotion }: { accent: string; reducedMotion: boolean }) {
+  const points = useRef<THREE.Points | null>(null)
+  const geometry = useMemo(() => {
+    const positions: number[] = []
+    for (let index = 0; index < 420; index += 1) {
+      const seed = index * 12.9898
+      const radius = 5.8 + ((Math.sin(seed) + 1) * 0.5) * 15
+      const angle = index * 2.399963229728653
+      const y = Math.sin(index * 1.713) * 5.8
+      positions.push(Math.cos(angle) * radius, y, STAR_POSITION[2] + Math.sin(angle) * radius)
+    }
+    const result = new THREE.BufferGeometry()
+    result.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3))
+    return result
+  }, [])
+
+  useEffect(() => () => geometry.dispose(), [geometry])
+
+  useFrame((_, delta) => {
+    if (!points.current || reducedMotion) return
+    points.current.rotation.y += Math.min(delta, 0.05) * 0.008
+  })
+
+  return <points ref={points} geometry={geometry} name="focus-deep-space-memory-dust">
+    <pointsMaterial color={accent} size={0.024} transparent opacity={0.26} depthWrite={false} sizeAttenuation />
+  </points>
+}
+
+function FocusCameraRig({
+  controls,
+  recenterSignal,
+  shellRef,
+}: {
+  controls: RefObject<OrbitControlsImpl | null>
+  recenterSignal: number
+  shellRef: RefObject<HTMLElement | null>
+}) {
   const { camera, invalidate } = useThree()
   const keys = useRef(new Set<string>())
-  const target = useMemo(() => new THREE.Vector3(...DEFAULT_TARGET), [])
-  const defaultTarget = useMemo(() => new THREE.Vector3(...DEFAULT_TARGET), [])
   const defaultCamera = useMemo(() => new THREE.Vector3(...DEFAULT_CAMERA), [])
-  const forward = useRef(new THREE.Vector3())
-  const right = useRef(new THREE.Vector3())
-  const movement = useRef(new THREE.Vector3())
+  const target = useMemo(() => STAR_TARGET.clone(), [])
+  const offset = useRef(new THREE.Vector3())
+  const radial = useRef(new THREE.Vector3())
+
+  const setTelemetry = useCallback((moving: boolean) => {
+    const shell = shellRef.current
+    if (!shell) return
+    shell.dataset.focusCameraX = camera.position.x.toFixed(3)
+    shell.dataset.focusCameraY = camera.position.y.toFixed(3)
+    shell.dataset.focusCameraZ = camera.position.z.toFixed(3)
+    shell.dataset.focusDistance = camera.position.distanceTo(defaultCamera).toFixed(3)
+    shell.dataset.focusMoving = moving ? 'true' : 'false'
+  }, [camera, defaultCamera, shellRef])
+
+  useEffect(() => {
+    camera.position.set(...DEFAULT_CAMERA)
+    controls.current?.target.copy(target)
+    controls.current?.update()
+    setTelemetry(false)
+  }, [camera, controls, recenterSignal, setTelemetry, target])
 
   useEffect(() => {
     const down = (event: KeyboardEvent) => {
@@ -125,318 +408,98 @@ function FocusCameraRig({ controls, recenterSignal, shellRef }: { controls: RefO
         event.preventDefault()
       }
     }
-    const up = (event: KeyboardEvent) => { keys.current.delete(event.code); invalidate() }
-    const clearKeys = () => { keys.current.clear(); invalidate() }
+    const up = (event: KeyboardEvent) => {
+      keys.current.delete(event.code)
+      invalidate()
+    }
+    const clear = () => {
+      keys.current.clear()
+      invalidate()
+    }
     window.addEventListener('keydown', down)
     window.addEventListener('keyup', up)
-    window.addEventListener('blur', clearKeys)
+    window.addEventListener('blur', clear)
     return () => {
-      clearKeys()
+      clear()
       window.removeEventListener('keydown', down)
       window.removeEventListener('keyup', up)
-      window.removeEventListener('blur', clearKeys)
+      window.removeEventListener('blur', clear)
     }
   }, [invalidate])
-
-  useEffect(() => {
-    camera.position.set(...DEFAULT_CAMERA)
-    controls.current?.target.set(...DEFAULT_TARGET)
-    controls.current?.update()
-    const shell = shellRef.current
-    if (shell) {
-      shell.dataset.focusCameraX = camera.position.x.toFixed(3)
-      shell.dataset.focusCameraY = camera.position.y.toFixed(3)
-      shell.dataset.focusCameraZ = camera.position.z.toFixed(3)
-      shell.dataset.focusDistance = camera.position.distanceTo(defaultCamera).toFixed(3)
-      shell.dataset.focusMoving = 'false'
-    }
-  }, [camera, controls, defaultCamera, recenterSignal, shellRef])
 
   useFrame((_, delta) => {
     const moving = keys.current.size > 0
     if (moving) {
-      const forwardVector = forward.current
-      camera.getWorldDirection(forwardVector)
-      forwardVector.y = 0
-      if (forwardVector.lengthSq() > 0.0001) {
-        forwardVector.normalize()
-        const rightVector = right.current.crossVectors(forwardVector, camera.up).normalize()
-        const movementVector = movement.current.set(0, 0, 0)
-        if (keys.current.has('KeyW') || keys.current.has('ArrowUp')) movementVector.add(forwardVector)
-        if (keys.current.has('KeyS') || keys.current.has('ArrowDown')) movementVector.sub(forwardVector)
-        if (keys.current.has('KeyD') || keys.current.has('ArrowRight')) movementVector.add(rightVector)
-        if (keys.current.has('KeyA') || keys.current.has('ArrowLeft')) movementVector.sub(rightVector)
-        if (movementVector.lengthSq()) {
-          movementVector.normalize().multiplyScalar(2.15 * Math.min(delta, 0.25))
-          camera.position.add(movementVector)
-          camera.position.x = THREE.MathUtils.clamp(camera.position.x, -CAMERA_LIMIT, CAMERA_LIMIT)
-          camera.position.y = THREE.MathUtils.clamp(camera.position.y, -1.2, 5.5)
-          camera.position.z = THREE.MathUtils.clamp(camera.position.z, -0.4, 12)
-          target.copy(controls.current?.target ?? defaultTarget).addScaledVector(movementVector, 0.72)
-          target.x = THREE.MathUtils.clamp(target.x, -5.5, 5.5)
-          target.y = THREE.MathUtils.clamp(target.y, -1, 4)
-          target.z = THREE.MathUtils.clamp(target.z, -5.5, 1)
-          controls.current?.target.copy(target)
-          controls.current?.update()
-        }
+      const step = 2.0 * Math.min(delta, 0.12)
+      if (keys.current.has('KeyW') || keys.current.has('ArrowUp') || keys.current.has('KeyS') || keys.current.has('ArrowDown')) {
+        radial.current.copy(target).sub(camera.position).normalize()
+        const direction = keys.current.has('KeyW') || keys.current.has('ArrowUp') ? 1 : -1
+        camera.position.addScaledVector(radial.current, step * direction)
       }
+      if (keys.current.has('KeyA') || keys.current.has('ArrowLeft') || keys.current.has('KeyD') || keys.current.has('ArrowRight')) {
+        offset.current.copy(camera.position).sub(target)
+        const direction = keys.current.has('KeyA') || keys.current.has('ArrowLeft') ? 1 : -1
+        offset.current.applyAxisAngle(camera.up, direction * 0.58 * Math.min(delta, 0.12))
+        camera.position.copy(target).add(offset.current)
+      }
+      offset.current.copy(camera.position).sub(target)
+      const radius = THREE.MathUtils.clamp(offset.current.length(), MIN_CAMERA_RADIUS, MAX_CAMERA_RADIUS)
+      if (offset.current.lengthSq() > 0.0001) camera.position.copy(target).add(offset.current.normalize().multiplyScalar(radius))
+      controls.current?.target.copy(target)
+      controls.current?.update()
+      camera.lookAt(target)
     }
-    const shell = shellRef.current
-    if (shell) {
-      shell.dataset.focusCameraX = camera.position.x.toFixed(3)
-      shell.dataset.focusCameraY = camera.position.y.toFixed(3)
-      shell.dataset.focusCameraZ = camera.position.z.toFixed(3)
-      shell.dataset.focusDistance = camera.position.distanceTo(defaultCamera).toFixed(3)
-      shell.dataset.focusMoving = moving ? 'true' : 'false'
-    }
+    setTelemetry(moving)
   })
+
   return null
 }
 
-function cloneAuthoredFocusModel(source: THREE.Object3D) {
-  const root = source.clone(true)
-  root.traverse((object) => {
-    if (!(object instanceof THREE.Mesh)) return
-    const rejectedPresentation = object.name.startsWith('focus-tunnel-ring-')
-      || object.name === 'focus-sculpted-floor'
-      || object.name === 'focus-memory-cradle'
-      || object.name === 'focus-cradle-core'
-      || object.name.startsWith('focus-memory-rune-')
-    if (rejectedPresentation) {
-      object.visible = false
-      object.raycast = () => undefined
-      object.userData.uraiRetiredVisualRole = 'v249-no-focus-ring-cage-or-repeated-runes'
-    }
-    object.material = Array.isArray(object.material)
-      ? object.material.map((material) => material.clone())
-      : object.material.clone()
-    object.castShadow = true
-    object.receiveShadow = true
-  })
-  return root
-}
-
-function AuthoredFocusChamber() {
-  const chamber = useGLTF(FOCUS_CHAMBER_MODEL)
-  const model = useMemo(() => cloneAuthoredFocusModel(chamber.scene), [chamber.scene])
-  return <group name="focus-authored-physical-chamber" userData={{ runtimeAsset: FOCUS_CHAMBER_MODEL, visualAuthority: 'authored-focus-chamber' }}><primitive object={model} /></group>
-}
-
-function focusGroundHeight(x: number, z: number) {
-  const side = Math.pow(Math.max(0, (Math.abs(x) - 4.2) / 10.8), 1.7) * 8.5
-  const weather = 0.18 * Math.sin(x * 0.64 + z * 0.23) + 0.08 * Math.sin(x * 1.73 - z * 0.82) + 0.038 * Math.cos(x * 4.1 + z * 2.7)
-  const threshold = 0.48 * Math.exp(-((x + 3.8) ** 2 / 18 + (z + 3.4) ** 2 / 28))
-  const archive = 0.72 * Math.exp(-((x - 5.1) ** 2 / 14 + (z + 8.8) ** 2 / 22))
-  const bank = THREE.MathUtils.smoothstep(Math.abs(x), 4.2, 5.8) * 2.1 * Math.exp(-((Math.abs(x) - 6.1) ** 2 / 10)) * THREE.MathUtils.smoothstep(-z, 5.5, 12.5)
-  return -1.5 + side + weather + threshold + archive + bank
-}
-
-function FocusSanctuaryGround({ accent }: { accent: string }) {
-  const geometry = useMemo(() => {
-    const columns = 96
-    const rows = 108
-    const positions: number[] = []
-    const uvs: number[] = []
-    const indices: number[] = []
-    for (let row = 0; row <= rows; row += 1) {
-      const v = row / rows
-      const z = 7 - v * 31
-      for (let column = 0; column <= columns; column += 1) {
-        const u = column / columns
-        const x = -15 + u * 30
-        positions.push(x, focusGroundHeight(x, z), z)
-        uvs.push(u * 6, v * 6)
-      }
-    }
-    for (let row = 0; row < rows; row += 1) for (let column = 0; column < columns; column += 1) {
-      const a = row * (columns + 1) + column
-      const b = a + 1
-      const c = a + columns + 1
-      const d = c + 1
-      indices.push(a, b, c, b, d, c)
-    }
-    const result = new THREE.BufferGeometry()
-    result.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3))
-    result.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2))
-    result.setIndex(indices)
-    result.computeVertexNormals()
-    return result
-  }, [])
-  const maps = useMemo(createFocusSurfaceMaps, [])
-  useEffect(() => () => { geometry.dispose(); maps.forEach(texture => texture.dispose()) }, [geometry, maps])
-  return <mesh name="focus-v214-continuous-eroded-memory-ground" geometry={geometry} receiveShadow>
-    <meshStandardMaterial map={maps[0]} normalMap={maps[1]} roughnessMap={maps[2]} normalScale={new THREE.Vector2(.6,.6)} color="#9b967e" roughness={0.94} metalness={0} />
-  </mesh>
-}
-
-function focusVaultGeometry() {
-  const columns = 84
-  const rows = 18
-  const positions: number[] = []
-  const colors: number[] = []
-  const indices: number[] = []
-  const shadow = new THREE.Color('#111c1b')
-  const mineral = new THREE.Color('#455951')
-  const warm = new THREE.Color('#66594d')
-  for (let row = 0; row <= rows; row += 1) {
-    const v = row / rows
-    const y = -1.55 + v * 8.2
-    for (let column = 0; column <= columns; column += 1) {
-      const u = column / columns
-      const angle = THREE.MathUtils.lerp(-1.28, 1.28, u)
-      const radius = 11.4 + 1.25 * Math.sin(angle * 3.1) + .52 * Math.sin(angle * 8.7 + v * 5.4)
-      const x = Math.sin(angle) * radius
-      const z = -1.1 - Math.cos(angle) * radius - v * .52 + .22 * Math.sin(u * 19 - v * 8)
-      positions.push(x, y + .20 * Math.sin(u * 14.2 + v * 9.8), z)
-      const color = shadow.clone().lerp(mineral, .18 + .48 * v).lerp(warm, .13 * (1 - v) * (.5 + .5 * Math.sin(u * 8)))
-      colors.push(color.r, color.g, color.b)
-    }
-  }
-  const stride = columns + 1
-  for (let row = 0; row < rows; row += 1) for (let column = 0; column < columns; column += 1) {
-    const a = row * stride + column
-    const b = a + 1
-    const c = a + stride
-    const d = c + 1
-    indices.push(a, c, b, b, c, d)
-  }
-  const geometry = new THREE.BufferGeometry()
-  geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3))
-  geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3))
-  geometry.setIndex(indices)
-  geometry.computeVertexNormals()
-  return geometry
-}
-
-function FocusVault() {
-  const geometry = useMemo(focusVaultGeometry, [])
-  const maps = useMemo(createFocusSurfaceMaps, [])
-  useEffect(() => () => { geometry.dispose(); maps.forEach((texture) => texture.dispose()) }, [geometry, maps])
-  return <mesh name="focus-v216-continuous-weathered-vault" geometry={geometry} castShadow receiveShadow>
-    <meshStandardMaterial map={maps[0]} normalMap={maps[1]} roughnessMap={maps[2]} normalScale={new THREE.Vector2(.46,.46)} color="#34433d" vertexColors roughness={.97} metalness={0} side={THREE.DoubleSide}/>
-  </mesh>
-}
-
-function seatFocusStoneGeometry(source: THREE.BufferGeometry, world: THREE.Matrix4) {
-  const geometry = source.clone()
-  geometry.computeBoundingBox()
-  const bounds = geometry.boundingBox!
-  const span = bounds.getSize(new THREE.Vector3())
-  const center = bounds.getCenter(new THREE.Vector3())
-  const inverse = world.clone().invert()
-  const positions = geometry.getAttribute('position')
-  const point = new THREE.Vector3()
-  for (let i = 0; i < positions.count; i++) {
-    point.fromBufferAttribute(positions, i)
-    const nx = 2 * (point.x - center.x) / Math.max(span.x, .0001)
-    const ny = 2 * (point.y - center.y) / Math.max(span.y, .0001)
-    const retain = 1 - THREE.MathUtils.smoothstep(Math.hypot(nx, ny), .48, .94)
-    point.applyMatrix4(world)
-    point.y = THREE.MathUtils.lerp(focusGroundHeight(point.x, point.z) - .08, point.y, retain)
-    point.applyMatrix4(inverse)
-    positions.setXYZ(i, point.x, point.y, point.z)
-  }
-  geometry.computeVertexNormals()
-  return geometry
-}
-
-function FocusStoneBank({ variant, side }: { variant: '01' | '02'; side: -1 | 1 }) {
-  const asset = useGLTF(`/assets/urai/home-production/cc0/polyhaven-v48/rock_face_${variant}/asset.gltf`)
-  const model = useMemo(() => {
-    const copy = asset.scene.clone(true)
-    copy.updateMatrixWorld(true)
-    const scale = side < 0 ? 1.18 : 1.3
-    const placement = new THREE.Matrix4().compose(
-      new THREE.Vector3(side * 5.8, -1.65, side < 0 ? -6.8 : -8.5),
-      new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), side < 0 ? .4 : -.6),
-      new THREE.Vector3(scale, scale, scale),
-    )
-    copy.traverse(child => {
-      if (!(child instanceof THREE.Mesh)) return
-      child.geometry = seatFocusStoneGeometry(child.geometry, placement.clone().multiply(child.matrixWorld))
-      child.castShadow = true
-      child.receiveShadow = true
-    })
-    return copy
-  }, [asset.scene, side])
-  useEffect(() => () => model.traverse(child => { if (child instanceof THREE.Mesh) child.geometry.dispose() }), [model])
-  return <primitive object={model} name={`focus-scanned-stone-bank-${variant}`} position={[side * 5.8, -1.65, side < 0 ? -6.8 : -8.5]} rotation={[0, side < 0 ? .4 : -.6, 0]} scale={side < 0 ? 1.18 : 1.3} />
-}
-
-function ChamberArchitecture({ accent, light }: { accent: string; light: string; reducedMotion: boolean }) {
-  return <group name="focus-v249-authored-depth-observatory-light" userData={{ visualRepair: 'authored-chamber-dominant-procedural-vault-retired', composition: 'bounded-asymmetric-light-and-authored-floor' }}>
-    <FocusSanctuaryGround accent={accent} />
-    <group visible={false} name="focus-retired-procedural-vault" userData={{ retainedFor: 'source-contract-only', visualOwner: false }}><FocusVault /></group>
-    <Suspense fallback={null}><FocusStoneBank variant="01" side={-1} /><FocusStoneBank variant="02" side={1} /></Suspense>
-    <pointLight position={[-3.8, 1.6, -4.4]} color={accent} intensity={0.30} distance={7.5} decay={2} />
-    <pointLight position={[4.6, 0.9, -5.4]} color={light} intensity={0.20} distance={8.5} decay={2} />
-    <spotLight position={[-1.8, 6.4, 1.2]} target-position={[0, 0.2, -1.7]} angle={0.48} penumbra={0.86} intensity={0.28} color={light} distance={18} />
-  </group>
-}
-
-function MemoryTraces({ memory, accent }: { memory: SelectedMemory | null; accent: string; reducedMotion: boolean }) {
-  const count = memory ? Math.min(132, 72 + (memory.people.length + memory.emotionalArc.length + (memory.place ? 1 : 0)) * 8) : 76
-  const geometry = useMemo(() => {
-    const positions: number[] = []
-    for (let index = 0; index < count; index += 1) {
-      const t = index / Math.max(1, count - 1)
-      const side = index % 2 ? 1 : -1
-      const spread = 1.45 + t * 3.4
-      const x = side * spread + Math.sin(index * 1.73) * 0.34
-      const y = -0.72 + ((index * 29) % 47) / 47 * 1.42
-      const z = -2.4 - t * 3.7 + Math.cos(index * 0.91) * 0.26
-      positions.push(x, y, z)
-    }
-    const result = new THREE.BufferGeometry()
-    result.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3))
-    return result
-  }, [count])
-  return <points name="focus-grounded-memory-traces" geometry={geometry} visible={false} userData={{ retiredVisualRole: 'v249-no-focus-arc-cage-traces' }}><pointsMaterial color={accent} size={0.035} transparent opacity={0.34} depthWrite={false} sizeAttenuation /></points>
-}
-
-function MemoryAperture({ memory, accent, onActivate }: { memory: SelectedMemory | null; accent: string; light: string; reducedMotion: boolean; onActivate: () => void }) {
-  const { size } = useThree()
-  const portrait = size.height > size.width
-  const [hovered, setHovered] = useState(false)
-  const strata = useMemo(createFocusStrata, [])
-  const maps = useMemo(createFocusSurfaceMaps, [])
-  useEffect(() => () => { strata.forEach(geometry => geometry.dispose()); maps.forEach(texture => texture.dispose()) }, [strata, maps])
-  const pointer = (event: ThreeEvent<PointerEvent>, state: boolean) => {
-    event.stopPropagation()
-    setHovered(state)
-    document.body.style.cursor = state && memory ? 'pointer' : ''
-  }
-  // Stillness is intentional. Hover changes only surface response, never geometry,
-  // scale, camera or idle motion; reduced motion receives the same stable world.
-  return <group position={[portrait ? .02 : .25, 0, -1.56]} name="focus-memory-aperture" userData={{ artRevision: 'v251-fractured-rooted-memory-strata', hierarchy: 'selected-memory-dominant-with-authored-chamber-context' }}>
-    <group scale={portrait ? [.66, .78, .78] : [1, 1, 1]} position={[0, portrait ? -.32 : 0, 0]} name="focus-v251-grounded-living-memory-manifestation" onClick={(event) => { event.stopPropagation(); if (memory) onActivate() }} onPointerOver={(event) => pointer(event, true)} onPointerOut={(event) => pointer(event, false)}>
-      {strata.map((geometry,index) => <mesh key={index} geometry={geometry} castShadow receiveShadow name={`focus-authored-fractured-stratum-${index}`}>
-        <meshStandardMaterial map={maps[0]} normalMap={maps[1]} roughnessMap={maps[2]} normalScale={new THREE.Vector2(.72,.72)} vertexColors color={hovered ? '#fff5df' : '#e6dcc5'} emissive={accent} emissiveIntensity={hovered ? .009 : 0} roughness={.94} metalness={0} side={THREE.DoubleSide} />
-      </mesh>)}
-    </group>
-    <Html center position={[0, -1.56, .48]} transform distanceFactor={6.4}><button type="button" className="focus-spatial-aperture-button" disabled={!memory} onClick={onActivate} aria-label={memory ? `Open Replay for ${memory.title}` : 'Select a memory in Life Map to open Replay'}>{memory ? 'Enter Replay' : 'Awaiting a selected star'}</button></Html>
-  </group>
-}
-
-function FocusScene({ memory, profile, recenterSignal, onActivate, controls, onWebGLState, shellRef }: { memory: SelectedMemory | null; profile: SpatialQualityProfile; recenterSignal: number; onActivate: () => void; controls: RefObject<OrbitControlsImpl | null>; onWebGLState: (state: WebGLState) => void; shellRef: RefObject<HTMLElement | null> }) {
-  const accent = memory?.visuals.accent ?? '#79dfff'
+function FocusScene({
+  memory,
+  profile,
+  recenterSignal,
+  onActivate,
+  controls,
+  onWebGLState,
+  shellRef,
+}: {
+  memory: SelectedMemory | null
+  profile: SpatialQualityProfile
+  recenterSignal: number
+  onActivate: () => void
+  controls: RefObject<OrbitControlsImpl | null>
+  onWebGLState: (state: WebGLState) => void
+  shellRef: RefObject<HTMLElement | null>
+}) {
+  const accent = memory?.star.aura ?? memory?.visuals.accent ?? '#79dfff'
   const light = memory?.visuals.light ?? '#e7fbff'
   return <>
     <FirstFrame profile={profile} />
-    <Suspense fallback={null}><FocusAssetsReady shellRef={shellRef} /></Suspense>
+    <FocusRenderReady shellRef={shellRef} />
     <WebGLRecoveryBridge onStateChange={onWebGLState} />
-    <color attach="background" args={['#071513']} />
-    <fog attach="fog" args={['#13211e', 7.0, 26]} />
-    <ambientLight intensity={0.38} color="#eee4d0" />
-    <hemisphereLight args={['#e4e2d5', '#393225', 0.62]} />
-    <directionalLight position={[-4, 7, 5]} intensity={2.1} color="#fff0d5" castShadow={profile.shadows} shadow-bias={-.0004} shadow-normalBias={.035} shadow-mapSize={[1024,1024]} />
-    <pointLight position={[2.8, 1.8, -3.8]} intensity={2.2} color="#d3dcd6" distance={9.2} decay={2} />
-    <spotLight position={[-2.6, 6.4, 2.6]} target-position={[0, -.06, -1.52]} color={light} intensity={.88} distance={19} angle={.36} penumbra={.88} castShadow={profile.shadows} />
-    <Suspense fallback={null}><AuthoredFocusChamber /></Suspense>
-    <ChamberArchitecture accent={accent} light={light} reducedMotion={profile.reducedMotion} />
-    <MemoryTraces memory={memory} accent={accent} reducedMotion={profile.reducedMotion} />
-    <MemoryAperture memory={memory} accent={accent} light={light} reducedMotion={profile.reducedMotion} onActivate={onActivate} />
-    <OrbitControls ref={controls} makeDefault enableDamping={!profile.reducedMotion} dampingFactor={0.07} enablePan={false} enableZoom minDistance={2.4} maxDistance={10.5} zoomSpeed={0.55} rotateSpeed={0.32} minPolarAngle={0.58} maxPolarAngle={1.9} target={DEFAULT_TARGET} />
+    <color attach="background" args={['#02040b']} />
+    <fog attach="fog" args={['#02040b', 18, 55]} />
+    <ambientLight intensity={0.08} color="#9ab6d8" />
+    <Stars radius={55} depth={26} count={profile.reducedMotion ? 520 : 1100} factor={2.4} saturation={0.18} fade speed={profile.reducedMotion ? 0 : 0.18} />
+    <MemoryDust accent={accent} reducedMotion={profile.reducedMotion} />
+    <pointLight position={[0, 3.2, 3.8]} intensity={0.42} color={light} distance={12} decay={2} />
+    <FocusMemoryStar memory={memory} accent={accent} light={light} reducedMotion={profile.reducedMotion} onActivate={onActivate} />
+    <OrbitControls
+      ref={controls}
+      makeDefault
+      enableDamping={!profile.reducedMotion}
+      dampingFactor={0.06}
+      enablePan={false}
+      enableZoom
+      minDistance={MIN_CAMERA_RADIUS}
+      maxDistance={MAX_CAMERA_RADIUS}
+      zoomSpeed={0.55}
+      rotateSpeed={0.28}
+      minPolarAngle={0.62}
+      maxPolarAngle={2.42}
+      target={STAR_POSITION}
+    />
     <FocusCameraRig controls={controls} recenterSignal={recenterSignal} shellRef={shellRef} />
   </>
 }
@@ -451,15 +514,31 @@ function isSoftwareWebGLRenderer(gl: THREE.WebGLRenderer) {
 function FocusRenderCadence({ bounded, documentVisible }: { bounded: boolean; documentVisible: boolean }) {
   const { invalidate, setFrameloop } = useThree()
   useEffect(() => {
-    if (!documentVisible) { setFrameloop('never'); return }
-    if (!bounded) { setFrameloop('always'); return }
+    if (!documentVisible) {
+      setFrameloop('never')
+      return
+    }
+    if (!bounded) {
+      setFrameloop('always')
+      return
+    }
     setFrameloop('demand')
     let disposed = false
-    const bootstrap = [0, 40, 80, 120, 180, 260].map((delay) => window.setTimeout(() => { if (!disposed) invalidate() }, delay))
+    const bootstrap = [0, 40, 80, 120, 180, 260].map((delay) => window.setTimeout(() => {
+      if (!disposed) invalidate()
+    }, delay))
     let cadenceTimer = 0
-    const renderNext = () => { if (disposed) return; invalidate(); cadenceTimer = window.setTimeout(renderNext, 250) }
+    const renderNext = () => {
+      if (disposed) return
+      invalidate()
+      cadenceTimer = window.setTimeout(renderNext, 250)
+    }
     cadenceTimer = window.setTimeout(renderNext, 250)
-    return () => { disposed = true; bootstrap.forEach((timer) => window.clearTimeout(timer)); window.clearTimeout(cadenceTimer) }
+    return () => {
+      disposed = true
+      bootstrap.forEach((timer) => window.clearTimeout(timer))
+      window.clearTimeout(cadenceTimer)
+    }
   }, [bounded, documentVisible, invalidate, setFrameloop])
   return null
 }
@@ -486,16 +565,32 @@ export default function FocusChamberClient() {
 
   const replayHref = useMemo(() => {
     if (!memory) return null
-    const next = new URLSearchParams({ memoryId: memory.id, manifestId: memory.replayManifest.id, node: memory.star.id, from: 'focus-artifact' })
+    const next = new URLSearchParams({
+      memoryId: memory.id,
+      manifestId: memory.replayManifest.id,
+      node: memory.star.id,
+      from: 'focus-artifact',
+    })
     if (memory.demo) next.set('demo', '1')
-    return `/replay?${next.toString()}`
+    return '/replay?' + next.toString()
   }, [memory])
 
   const enterReplay = useCallback(() => {
     if (!memory || !replayHref || committed) return
     setCommitted(true)
-    requestUraiWorldTravel({ destination: 'replay', href: replayHref, entryPortal: 'focus-memory-aperture', cameraCheckpoint: `focus:${memory.star.id}`, context: { memoryId: memory.id, replayManifestId: memory.replayManifest.id, privacyMode: memory.privacy === 'private' ? 'held-private' : 'private' } })
+    requestUraiWorldTravel({
+      destination: 'replay',
+      href: replayHref,
+      entryPortal: 'focus-memory-aperture',
+      cameraCheckpoint: 'focus:' + memory.star.id,
+      context: {
+        memoryId: memory.id,
+        replayManifestId: memory.replayManifest.id,
+        privacyMode: memory.privacy === 'private' ? 'held-private' : 'private',
+      },
+    })
   }, [committed, memory, replayHref])
+
   const unwind = useCallback(() => requestUraiWorldReturn(), [])
 
   useEffect(() => {
@@ -509,30 +604,135 @@ export default function FocusChamberClient() {
   }, [unwind])
 
   const chamberState: ChamberState = memory ? 'ready' : result.status === 'loading' ? 'loading' : result.status
-  const heading = memory?.title ?? (directEntry ? 'Focus Observatory' : 'Memory chamber resting')
-  const description = memory?.narrator.focus ?? (directEntry ? 'Choose a star in Life Map to inhabit the place where that memory is held.' : result.message)
-  const style = { '--memory-accent': memory?.visuals.accent ?? '#79dfff', '--memory-light': memory?.visuals.light ?? '#e7fbff', '--memory-sky': memory?.visuals.sky ?? '#020712', '--memory-ground': memory?.visuals.ground ?? '#07121c', '--focus-asset': assetCssStack(focusAssets.primary) } as CSSProperties
+  const heading = memory?.title ?? (directEntry ? 'Focus Observatory' : 'Selected memory unavailable')
+  const description = memory?.narrator.focus ?? (directEntry ? 'Choose a star in Life Map to reveal the memory living inside it.' : result.message)
+  const memoryVisual = focusMemoryVisualKind(memory)
+  const accent = memory?.star.aura ?? memory?.visuals.accent ?? '#79dfff'
+  const style = {
+    '--memory-accent': accent,
+    '--memory-light': memory?.visuals.light ?? '#e7fbff',
+    '--memory-sky': memory?.visuals.sky ?? '#020712',
+  } as CSSProperties
   const webglUsable = webglAvailable === true && webglState !== 'failed'
   const boundedCadence = !rendererClassified || softwareRenderer || profile.reducedMotion
 
-  return <main ref={shellRef} className="focusWorld" style={style} data-testid="urai-final-focus-chamber" data-focus-composition="authored-floor-with-dominant-living-memory-tree-manifestation" data-focus-visual-revision="v251-fractured-rooted-memory-strata" data-focus-spatial="explorable-observatory" data-focus-movement="walk-keyboard-orbit-touch" data-focus-pointer-lock="false" data-focus-camera-x="0.000" data-focus-camera-y="1.180" data-focus-camera-z="5.100" data-focus-distance="0.000" data-focus-moving="false" data-memory-status={result.status} data-chamber-state={chamberState} data-webgl-state={webglState} data-canonical-asset={focusAssets.primary.src} data-focus-physical-asset={FOCUS_CHAMBER_MODEL} data-spatial-quality={profile.tier} data-software-renderer={!rendererClassified ? 'detecting' : softwareRenderer ? 'true' : 'false'} data-render-cadence={boundedCadence ? 'bounded-demand-4fps' : 'continuous'} data-memory-id={memory?.id} data-manifest-id={memory?.replayManifest.id} data-star-id={memory?.star.id} data-node={memory?.star.id}>
-    <h1 className="srOnly">URAI Focus spatial memory observatory</h1>
+  return <main
+    ref={shellRef}
+    className="focusWorld"
+    style={style}
+    data-testid="urai-final-focus-chamber"
+    data-focus-composition="selected-memory-star-with-contained-memory"
+    data-focus-visual-revision="v335-clean-authored-stellar-memory-object"
+    data-focus-selected-framing={memory ? 'selected-memory-star-approach' : 'neutral-star-awaiting-selection'}
+    data-focus-spatial="selected-memory-star"
+    data-focus-movement="orbit-zoom-keyboard-touch"
+    data-focus-pointer-lock="false"
+    data-focus-terrain-owner="false"
+    data-focus-memory-visual={memoryVisual}
+    data-focus-life-map-star-morphology="stellar-point-photosphere-layered-corona"
+    data-focus-closeup-morphology="resolved-dimensional-memory-star"
+    data-focus-replay-transition="moment-expands-into-replay"
+    data-focus-camera-x="0.000"
+    data-focus-camera-y="0.080"
+    data-focus-camera-z="4.800"
+    data-focus-distance="0.000"
+    data-focus-moving="false"
+    data-memory-status={result.status}
+    data-chamber-state={chamberState}
+    data-webgl-state={webglState}
+    data-spatial-quality={profile.tier}
+    data-software-renderer={!rendererClassified ? 'detecting' : softwareRenderer ? 'true' : 'false'}
+    data-render-cadence={boundedCadence ? 'bounded-demand-4fps' : 'continuous'}
+    data-memory-id={memory?.id}
+    data-manifest-id={memory?.replayManifest.id}
+    data-star-id={memory?.star.id}
+    data-node={memory?.star.id}
+  >
+    <h1 className="srOnly">URAI Focus selected memory star</h1>
     <div className="focusBackdrop" aria-hidden="true" />
-    <div className="focusFog" aria-hidden="true" />
-    <div className="focusCanvas" aria-label="Explorable Focus chamber. Drag to orbit, scroll or pinch to move through depth, and use W A S D or arrow keys to travel.">
-      {webglAvailable === null ? <div className="focusFallback" role="status">Preparing spatial chamber…</div> : webglUsable ? <Canvas camera={{ position: DEFAULT_CAMERA, fov: 47, near: 0.08, far: 120 }} dpr={[1, profile.pixelRatioMax]} shadows={profile.shadows} frameloop={profile.documentVisible ? 'demand' : 'never'} gl={{ antialias: profile.antialias, alpha: false, powerPreference: 'high-performance' }} onCreated={({ gl }) => { gl.outputColorSpace = THREE.SRGBColorSpace; gl.toneMapping = THREE.ACESFilmicToneMapping; gl.toneMappingExposure = .94; setSoftwareRenderer(isSoftwareWebGLRenderer(gl)); setRendererClassified(true) }}><FocusRenderCadence bounded={boundedCadence} documentVisible={profile.documentVisible} /><FocusScene memory={memory} profile={profile} recenterSignal={recenterSignal} onActivate={enterReplay} controls={controls} onWebGLState={setWebglState} shellRef={shellRef} /></Canvas> : <div className="focusFallback" role="status" data-focus-fallback="semantic"><strong>Spatial view unavailable</strong><span>The chamber remains accessible through the controls and memory details.</span></div>}
+    <div className="focusCanvas" aria-label="Selected Memory Star. Drag to orbit, scroll or pinch to move closer or farther, and use W S or arrow keys for depth and A D for orbit.">
+      {webglAvailable === null
+        ? <div className="focusFallback" role="status">Preparing Focus…</div>
+        : webglUsable
+          ? <Canvas
+              camera={{ position: DEFAULT_CAMERA, fov: 44, near: 0.08, far: 120 }}
+              dpr={[1, profile.pixelRatioMax]}
+              frameloop={profile.documentVisible ? 'demand' : 'never'}
+              gl={{ antialias: profile.antialias, alpha: false, powerPreference: 'high-performance' }}
+              onCreated={({ gl }) => {
+                gl.outputColorSpace = THREE.SRGBColorSpace
+                gl.toneMapping = THREE.ACESFilmicToneMapping
+                gl.toneMappingExposure = 0.92
+                setSoftwareRenderer(isSoftwareWebGLRenderer(gl))
+                setRendererClassified(true)
+              }}
+            >
+              <FocusRenderCadence bounded={boundedCadence} documentVisible={profile.documentVisible} />
+              <FocusScene
+                memory={memory}
+                profile={profile}
+                recenterSignal={recenterSignal}
+                onActivate={enterReplay}
+                controls={controls}
+                onWebGLState={setWebglState}
+                shellRef={shellRef}
+              />
+            </Canvas>
+          : <div className="focusFallback focusFallbackStarField" role="status" data-focus-fallback="semantic">
+              <div className="focusFallbackStar" data-focus-fallback-star="true">
+                <MemoryVisualContent memory={memory} compact />
+              </div>
+              <strong>Spatial view unavailable</strong>
+              <span>{memory ? 'Held in context. Your memory remains private.' : 'No personal memory is displayed in this neutral observatory.'}</span>
+            </div>}
     </div>
-    <header className="focusHeading"><p>{memory ? (memory.demo ? 'DEMO FIXTURE · NOT PERSONAL DATA' : `${memory.privacy} memory`) : 'URAI · FOCUS OBSERVATORY'}</p><h2>{heading}</h2>{memory ? <span>{dateLabel(memory.occurredAt)}</span> : null}<div className="focusNarration"><small>{memory ? 'Selected memory' : 'Chamber threshold'}</small><strong>{description}</strong></div></header>
-    <section className="artifactStage" aria-label={memory ? `Selected memory ${memory.title}` : 'Neutral Focus observatory'}><span className="apertureOrbit apertureOrbitOuter" aria-hidden="true" /><span className="apertureOrbit apertureOrbitInner" aria-hidden="true" /></section>
-    <aside className="memoryMeaning" aria-label="Selected memory context"><p>{memory ? 'Held in context. Nothing leaves this chamber.' : result.status === 'loading' ? 'Opening the selected memory safely.' : 'No personal memory is displayed in this neutral observatory.'}</p>{memory ? <dl><div><dt>Emotion</dt><dd>{memory.emotionalState}</dd></div><div><dt>Place</dt><dd>{memory.place?.label ?? 'Not recorded'}</dd></div><div><dt>People</dt><dd>{memory.people.map((person) => person.relationship ? `${person.label} · ${person.relationship}` : person.label).join(', ') || 'Not recorded'}</dd></div><div><dt>Privacy</dt><dd>{memory.privacy}</dd></div></dl> : <div className="neutralActions"><button type="button" onClick={unwind}>Open Life Map</button><span>{result.status === 'loading' ? 'Loading' : result.message}</span></div>}</aside>
-    <nav className="focusControls" aria-label="Focus chamber controls"><button type="button" onClick={() => setRecenterSignal((value) => value + 1)}>Recenter</button>{memory ? <button type="button" className="primary" disabled={committed} onClick={enterReplay} aria-label={`Open Replay for ${memory.title}`}>{committed ? 'Opening…' : 'Enter Replay'}</button> : null}<button className="unwind" type="button" onClick={unwind}>← Life Map</button></nav>
-    <details className="focusHelp"><summary>Explore</summary><p>Drag to orbit. Scroll or pinch to move through depth. Use W A S D or arrow keys to travel. Recenter restores the arrival view. Escape returns to Life Map.</p></details>
-    {webglState !== 'ready' && webglState !== 'failed' ? <section className="webglRecovery" role="status" aria-live="assertive"><strong>{webglState === 'lost' ? 'Visual field paused safely' : 'Restoring visual field'}</strong><span>Your selected memory and privacy state remain preserved.</span><button type="button" onClick={() => setRecenterSignal((value) => value + 1)}>Recenter when restored</button></section> : null}
-    <div className="focusStatus" role={result.status === 'loading' ? 'status' : 'note'} aria-live="polite">{memory ? 'Spatial chamber ready' : result.status === 'loading' ? 'Opening selected memory' : directEntry ? 'Neutral observatory' : result.message}</div>
-    <style>{`${focusCss}.webglRecovery{pointer-events:none}.webglRecovery button{pointer-events:auto}`}</style>
+
+    <header className="focusHeading">
+      <p>{memory ? (memory.demo ? 'DEMO FIXTURE · NOT PERSONAL DATA' : memory.privacy + ' memory') : 'URAI · FOCUS'}</p>
+      <h2>{heading}</h2>
+      {memory ? <span>{dateLabel(memory.occurredAt)}</span> : null}
+      <div className="focusNarration">
+        <small>{memory ? 'Selected memory star' : 'Focus Observatory'}</small>
+        <strong>{description}</strong>
+      </div>
+    </header>
+
+    <aside className="memoryMeaning" aria-label="Selected memory context">
+      <p>{memory ? 'Held in context. Your selected memory remains private.' : result.status === 'loading' ? 'Opening the selected memory safely.' : 'No personal memory is displayed in this neutral observatory.'}</p>
+      {memory
+        ? <div className="memoryMeta">
+            <span><b>Emotion</b>{memory.emotionalState}</span>
+            <span><b>Place</b>{memory.place?.label ?? 'Not recorded'}</span>
+            <span><b>Privacy</b>{memory.privacy}</span>
+          </div>
+        : <div className="neutralActions">
+            <button type="button" onClick={unwind}>Open Life Map</button>
+            <span>{result.status === 'loading' ? 'Loading' : result.message}</span>
+          </div>}
+    </aside>
+
+    <nav className="focusControls" aria-label="Focus controls">
+      <button type="button" onClick={() => setRecenterSignal((value) => value + 1)}>Recenter</button>
+      {memory ? <button type="button" className="primary" disabled={committed} onClick={enterReplay} aria-label={'Enter Replay for ' + memory.title}>{committed ? 'Opening…' : 'Enter Replay'}</button> : null}
+      <button className="unwind" type="button" onClick={unwind}>← Life Map</button>
+    </nav>
+
+    <details className="focusHelp">
+      <summary>Explore</summary>
+      <p>Drag around the selected Memory Star. Scroll, pinch, or use W and S to move closer or farther; A and D orbit. Select the moment itself to expand it into Replay. Escape returns to Life Map.</p>
+    </details>
+
+    {webglState !== 'ready' && webglState !== 'failed' ? <section className="webglRecovery" role="status" aria-live="assertive">
+      <strong>{webglState === 'lost' ? 'Visual field paused safely' : 'Restoring visual field'}</strong>
+      <span>Your selected memory and privacy state remain preserved.</span>
+      <button type="button" onClick={() => setRecenterSignal((value) => value + 1)}>Recenter when restored</button>
+    </section> : null}
+
+    <div className="focusStatus" role={result.status === 'loading' ? 'status' : 'note'} aria-live="polite">
+      {memory ? 'Focus ready' : result.status === 'loading' ? 'Opening selected memory' : directEntry ? 'Neutral observatory' : result.message}
+    </div>
+    <style>{focusCss + '.webglRecovery{pointer-events:none}.webglRecovery button{pointer-events:auto}'}</style>
   </main>
 }
 
-useGLTF.preload(FOCUS_CHAMBER_MODEL)
-
-const focusCss = `.focusWorld{position:fixed;inset:0;overflow:hidden;color:#fff;background:var(--memory-ground);isolation:isolate;font-family:Inter,system-ui,sans-serif}.srOnly{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}.focusBackdrop{display:none}.focusFog{position:absolute;inset:0;z-index:2;pointer-events:none;background:linear-gradient(180deg,rgba(1,4,10,.04),rgba(1,4,10,.25) 72%,rgba(1,4,10,.78));mix-blend-mode:screen}.focusCanvas{position:absolute;inset:0;z-index:1}.focusCanvas canvas{touch-action:none}.focusFallback{position:absolute;inset:0;display:grid;place-content:center;justify-items:center;gap:8px;padding:24px;text-align:center;background:radial-gradient(circle at 50% 42%,rgba(76,202,255,.14),transparent 32%),linear-gradient(180deg,#020712,#06101d);color:#fff}.focusFallback span{max-width:520px;color:rgba(235,247,255,.72)}.focusHeading{position:absolute;z-index:6;left:max(22px,env(safe-area-inset-left));top:max(24px,env(safe-area-inset-top));width:min(470px,42vw);pointer-events:none;text-shadow:0 8px 34px #000}.focusHeading>p{margin:0;color:var(--memory-light);font-size:10px;font-weight:900;letter-spacing:.24em;text-transform:uppercase}.focusHeading h2{max-width:11ch;margin:12px 0 8px;font:500 clamp(2.8rem,5.8vw,6.8rem)/.88 Georgia,serif;letter-spacing:-.06em;text-wrap:balance}.focusHeading>span{font-size:11px;color:rgba(255,255,255,.7)}.focusNarration{max-width:430px;margin-top:22px;padding:14px 16px;border-left:1px solid color-mix(in srgb,var(--memory-light) 58%,transparent);background:linear-gradient(90deg,rgba(2,7,12,.72),rgba(2,7,12,.06));backdrop-filter:blur(14px)}.focusNarration small{display:block;margin-bottom:6px;color:var(--memory-light);font-size:9px;font-weight:900;letter-spacing:.18em;text-transform:uppercase}.focusNarration strong{display:block;font:500 clamp(1rem,1.8vw,1.45rem)/1.3 Georgia,serif}.artifactStage{position:absolute;z-index:3;left:50%;top:46%;width:min(43vw,560px);aspect-ratio:1;transform:translate(-50%,-50%);pointer-events:none}.apertureOrbit{display:none}.apertureOrbitInner{inset:18%;transform:rotate(22deg) scaleY(.72);border-color:color-mix(in srgb,var(--memory-accent) 26%,transparent)}.memoryMeaning{position:absolute;z-index:7;left:max(22px,env(safe-area-inset-left));bottom:max(22px,calc(env(safe-area-inset-bottom) + 8px));width:min(500px,40vw);padding:13px 15px;border:1px solid color-mix(in srgb,var(--memory-light) 18%,transparent);border-radius:18px;background:linear-gradient(135deg,rgba(2,7,12,.82),rgba(2,7,12,.38));backdrop-filter:blur(18px)}.memoryMeaning p{margin:0 0 10px;font-size:12px;font-weight:800}.memoryMeaning dl{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px;margin:0}.memoryMeaning dt{font-size:10px;text-transform:uppercase;letter-spacing:.15em;color:var(--memory-light)}.memoryMeaning dd{margin:3px 0 0;font-size:12px;line-height:1.4;color:#edf5f0}.neutralActions{display:flex;align-items:center;gap:10px}.neutralActions button,.focusControls button,.webglRecovery button{min-height:48px;padding:0 17px;border-radius:999px;border:1px solid rgba(220,248,255,.24);background:rgba(6,20,31,.84);color:#fff;font-weight:850}.neutralActions span{font-size:10px;color:rgba(235,247,255,.68)}.focusControls{position:absolute;z-index:9;right:max(20px,env(safe-area-inset-right));top:max(20px,env(safe-area-inset-top));display:flex;gap:8px;padding:7px;border:1px solid rgba(215,246,255,.17);border-radius:999px;background:rgba(2,7,12,.68);backdrop-filter:blur(16px)}.focusControls .primary{background:linear-gradient(135deg,var(--memory-light),var(--memory-accent));color:#031019}.focusControls button:focus-visible,.neutralActions button:focus-visible,.focusHelp summary:focus-visible,.focus-spatial-aperture-button:focus-visible,.webglRecovery button:focus-visible{outline:3px solid var(--memory-light);outline-offset:3px}.focusHelp{position:absolute;z-index:9;right:max(20px,env(safe-area-inset-right));bottom:max(20px,env(safe-area-inset-bottom));max-width:min(380px,calc(100vw - 40px));border:1px solid rgba(215,246,255,.17);border-radius:18px;background:rgba(2,7,12,.72);backdrop-filter:blur(16px)}.focusHelp summary{min-height:48px;display:flex;align-items:center;padding:0 17px;font-weight:850;cursor:pointer}.focusHelp p{margin:0;padding:0 17px 16px;color:rgba(235,247,255,.78);font-size:12px;line-height:1.55}.focusStatus{position:absolute;z-index:8;left:50%;top:max(18px,env(safe-area-inset-top));transform:translateX(-50%);padding:8px 12px;border-radius:999px;background:rgba(2,7,12,.62);font-size:10px;font-weight:850;letter-spacing:.1em;text-transform:uppercase}.webglRecovery{position:absolute;z-index:15;inset:0;display:grid;place-content:center;justify-items:center;gap:10px;padding:24px;text-align:center;background:rgba(1,5,12,.88)}.focus-spatial-aperture-button{min-width:170px;min-height:48px;border:1px solid rgba(220,248,255,.3);border-radius:999px;background:rgba(4,15,24,.86);color:#fff;font-weight:900;cursor:pointer}.focus-spatial-aperture-button:disabled{opacity:.55;cursor:not-allowed}@media(max-width:760px){.focusHeading{left:16px;top:16px;width:calc(100vw - 32px)}.focusHeading h2{font-size:clamp(2.25rem,12vw,4rem);max-width:9ch}.focusNarration{margin-top:10px;max-width:min(86vw,340px);padding:10px 14px}.focusNarration strong{font-size:1rem}.memoryMeaning{left:16px;bottom:max(88px,calc(env(safe-area-inset-bottom) + 76px));width:calc(100vw - 32px);max-height:122px;overflow:auto;padding:10px 14px}.memoryMeaning dl{grid-template-columns:repeat(2,minmax(0,1fr))}.focusControls{left:16px;right:16px;top:auto;bottom:max(12px,env(safe-area-inset-bottom));justify-content:center}.focusControls button{flex:1;padding:0 8px}.focusHelp{right:16px;top:118px;bottom:auto}.focusStatus{left:16px;top:118px;bottom:auto;transform:none;white-space:nowrap}.artifactStage{top:48%;width:min(76vw,390px)}}@media(prefers-reduced-motion:reduce){.focusWorld *{animation:none!important;transition:none!important;scroll-behavior:auto!important}.focusBackdrop{transform:none}.focusNarration,.memoryMeaning,.focusControls,.focusHelp{backdrop-filter:none}}`
+const focusCss = ".focusWorld{position:fixed;inset:0;overflow:hidden;color:#fff;background:#02040b;isolation:isolate;font-family:Inter,system-ui,sans-serif}.srOnly{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}.focusBackdrop{position:absolute;inset:-12%;z-index:0;pointer-events:none;background:radial-gradient(circle at 50% 48%,color-mix(in srgb,var(--memory-accent) 14%,transparent),transparent 24%),radial-gradient(circle at 50% 55%,rgba(70,95,170,.08),transparent 48%),linear-gradient(180deg,#01030a 0%,#030714 56%,#010208 100%)}.focusCanvas{position:absolute;inset:0;z-index:1}.focusCanvas canvas{touch-action:none}.focusHeading{position:absolute;z-index:8;left:max(22px,env(safe-area-inset-left));top:max(24px,env(safe-area-inset-top));width:min(370px,34vw);pointer-events:none;text-shadow:0 8px 34px #000}.focusHeading>p{margin:0;color:var(--memory-light);font-size:9px;font-weight:900;letter-spacing:.22em;text-transform:uppercase}.focusHeading h2{max-width:14ch;margin:9px 0 6px;font:500 clamp(1.9rem,3.7vw,4rem)/.94 Georgia,serif;letter-spacing:-.045em;text-wrap:balance}.focusHeading>span{font-size:10px;color:rgba(255,255,255,.62)}.focusNarration{max-width:340px;margin-top:13px;padding:10px 12px;border-left:1px solid color-mix(in srgb,var(--memory-light) 42%,transparent);background:linear-gradient(90deg,rgba(2,7,18,.55),rgba(2,7,18,0));backdrop-filter:blur(10px)}.focusNarration small{display:block;margin-bottom:4px;color:var(--memory-light);font-size:8px;font-weight:900;letter-spacing:.16em;text-transform:uppercase}.focusNarration strong{display:block;font:500 clamp(.86rem,1.3vw,1.08rem)/1.35 Georgia,serif;color:rgba(247,250,255,.9)}.focusStarMemoryButton{display:block;width:56px;height:56px;padding:0;border:0;border-radius:999px;overflow:hidden;background:transparent;color:#fff;cursor:pointer;box-shadow:0 0 18px rgba(255,255,255,.20),0 0 46px color-mix(in srgb,var(--memory-light) 32%,transparent),0 0 108px color-mix(in srgb,var(--memory-accent) 30%,transparent);-webkit-mask-image:radial-gradient(circle at 48% 46%,#000 0 34%,rgba(0,0,0,.82) 48%,rgba(0,0,0,.18) 67%,transparent 88%);mask-image:radial-gradient(circle at 48% 46%,#000 0 34%,rgba(0,0,0,.82) 48%,rgba(0,0,0,.18) 67%,transparent 88%)}.focusStarMemoryButton:disabled{cursor:default}.focusMemoryVisual{position:relative;display:block;width:100%;height:100%;overflow:hidden;border-radius:inherit;background:#050a16;opacity:.72;filter:saturate(.78) contrast(.92) brightness(.82);mix-blend-mode:screen}.focusMemoryVisualSource video{width:100%;height:100%;object-fit:cover}.focusMemoryVisualImage{background-size:cover;background-position:center}.focusMemoryVisualGenerated{background:radial-gradient(circle at 58% 31%,rgba(255,240,195,.98) 0 2.2%,rgba(255,181,115,.42) 3.5%,transparent 17%),linear-gradient(180deg,#08111f 0%,#172538 30%,#6c5755 47%,#c07b5d 55%,#40505b 56%,#172432 72%,#07111c 100%)}.generatedMemoryGlow{position:absolute;left:2%;right:2%;top:34%;height:34%;background:radial-gradient(ellipse at 58% 10%,rgba(255,190,128,.34),transparent 42%),linear-gradient(180deg,rgba(242,174,128,.16),rgba(80,111,128,.09) 46%,rgba(5,16,27,.16));filter:blur(5px);opacity:.92}.generatedMemoryHorizon{position:absolute;left:-12%;right:-12%;top:55%;height:48%;background:linear-gradient(180deg,rgba(116,133,139,.32) 0%,rgba(37,60,73,.88) 11%,rgba(12,29,42,.98) 44%,rgba(3,12,22,1) 100%);clip-path:polygon(0 20%,10% 14%,20% 18%,31% 8%,41% 17%,51% 11%,62% 18%,73% 9%,85% 17%,100% 12%,100% 100%,0 100%);box-shadow:inset 0 5px 18px rgba(225,178,137,.12)}.generatedMemoryThread{position:absolute;left:-8%;width:116%;transform-origin:center;pointer-events:none}.generatedMemoryThreadA{top:48%;height:19%;background:linear-gradient(180deg,rgba(29,43,55,.08),rgba(9,20,31,.72));clip-path:polygon(0 78%,13% 42%,25% 64%,39% 22%,52% 65%,66% 35%,80% 62%,92% 30%,100% 57%,100% 100%,0 100%);filter:blur(.35px)}.generatedMemoryThreadB{top:57%;height:25%;background:linear-gradient(180deg,rgba(19,38,49,.36),rgba(3,13,24,.92));clip-path:polygon(0 73%,12% 54%,24% 61%,36% 38%,48% 70%,61% 50%,73% 67%,86% 45%,100% 58%,100% 100%,0 100%);opacity:.90}.generatedMemoryThreadC{top:63%;height:24%;background:linear-gradient(180deg,rgba(142,151,143,.12),rgba(10,25,36,.72));clip-path:polygon(0 58%,16% 47%,30% 61%,44% 41%,57% 56%,70% 39%,84% 53%,100% 44%,100% 100%,0 100%);opacity:.62;filter:blur(1.4px)}.focusMemoryGlass{position:absolute;inset:0;opacity:.34;border-radius:inherit;background:radial-gradient(circle at 31% 23%,rgba(255,255,255,.14),transparent 15%),radial-gradient(circle at 50% 55%,transparent 54%,rgba(91,157,255,.05) 80%,rgba(255,255,255,.06) 100%);box-shadow:inset 0 0 22px rgba(255,255,255,.08);pointer-events:none}.focusMemoryTruthLabel{position:absolute;left:50%;bottom:18px;transform:translateX(-50%);width:68%;max-width:68%;box-sizing:border-box;padding:3px 5px;border-radius:999px;background:rgba(2,7,18,.42);color:rgba(240,248,255,.78);font-size:7px;font-weight:850;line-height:1.2;letter-spacing:.07em;text-align:center;text-transform:uppercase;white-space:normal;backdrop-filter:blur(6px)}.focusMemoryVisualNeutral{display:grid;place-items:center;background:radial-gradient(circle at 50% 48%,rgba(103,232,249,.11),transparent 28%),#020712}.focusMemoryNeutralCore{width:22px;height:22px;border-radius:999px;background:#effcff;box-shadow:0 0 18px rgba(190,242,255,.9),0 0 48px rgba(103,232,249,.46)}.focusFallback{position:absolute;inset:0;display:grid;place-content:center;justify-items:center;gap:10px;padding:24px;text-align:center;background:radial-gradient(circle at 50% 45%,rgba(76,202,255,.12),transparent 30%),linear-gradient(180deg,#02040b,#040917);color:#fff}.focusFallbackStarField{gap:14px}.focusFallbackStar{width:min(48vw,360px);aspect-ratio:1;border-radius:999px;padding:16px;background:radial-gradient(circle,rgba(103,232,249,.14),rgba(139,92,246,.07) 50%,transparent 72%);box-shadow:0 0 80px color-mix(in srgb,var(--memory-accent) 24%,transparent)}.focusFallbackStar .focusMemoryVisual{box-shadow:inset 0 0 42px rgba(255,255,255,.14),0 0 30px color-mix(in srgb,var(--memory-accent) 42%,transparent)}.focusFallback span:not(.focusMemoryVisual):not(.focusMemoryGlass):not(.generatedMemoryGlow):not(.generatedMemoryHorizon):not(.generatedMemoryThread):not(.focusMemoryTruthLabel){max-width:520px;color:rgba(235,247,255,.72)}.memoryMeaning{position:absolute;z-index:8;left:max(22px,env(safe-area-inset-left));bottom:max(22px,calc(env(safe-area-inset-bottom) + 8px));width:min(390px,36vw);padding:10px 12px;border:1px solid rgba(205,235,255,.14);border-radius:16px;background:rgba(2,7,18,.52);backdrop-filter:blur(16px)}.memoryMeaning p{margin:0 0 8px;font-size:10px;color:rgba(240,248,255,.75)}.memoryMeta{display:flex;flex-wrap:wrap;gap:7px}.memoryMeta span{display:grid;gap:2px;padding:5px 8px;border-radius:10px;background:rgba(255,255,255,.04);font-size:10px;color:rgba(240,248,255,.82)}.memoryMeta b{font-size:7px;letter-spacing:.12em;text-transform:uppercase;color:var(--memory-light)}.neutralActions{display:flex;align-items:center;gap:10px}.neutralActions button,.focusControls button,.webglRecovery button{min-height:48px;padding:0 15px;border-radius:999px;border:1px solid rgba(220,248,255,.2);background:rgba(6,15,30,.72);color:#fff;font-weight:850}.neutralActions span{font-size:9px;color:rgba(235,247,255,.65)}.focusControls{position:absolute;z-index:10;right:max(20px,env(safe-area-inset-right));top:max(20px,env(safe-area-inset-top));display:flex;gap:7px;padding:6px;border:1px solid rgba(215,246,255,.14);border-radius:999px;background:rgba(2,7,18,.54);backdrop-filter:blur(14px)}.focusControls .primary{background:linear-gradient(135deg,var(--memory-light),var(--memory-accent));color:#031019}.focusControls button:focus-visible,.neutralActions button:focus-visible,.focusHelp summary:focus-visible,.focusStarMemoryButton:focus-visible,.webglRecovery button:focus-visible{outline:3px solid var(--memory-light);outline-offset:3px}.focusHelp{position:absolute;z-index:9;right:max(20px,env(safe-area-inset-right));bottom:max(20px,env(safe-area-inset-bottom));max-width:min(360px,calc(100vw - 40px));border:1px solid rgba(215,246,255,.14);border-radius:16px;background:rgba(2,7,18,.56);backdrop-filter:blur(14px)}.focusHelp summary{min-height:48px;display:flex;align-items:center;padding:0 15px;font-weight:850;cursor:pointer;font-size:11px}.focusHelp p{margin:0;padding:0 15px 14px;color:rgba(235,247,255,.74);font-size:11px;line-height:1.5}.focusStatus{position:absolute;z-index:9;left:50%;top:max(16px,env(safe-area-inset-top));transform:translateX(-50%);padding:6px 10px;border-radius:999px;background:rgba(2,7,18,.45);font-size:8px;font-weight:850;letter-spacing:.1em;text-transform:uppercase}.webglRecovery{position:absolute;z-index:15;inset:0;display:grid;place-content:center;justify-items:center;gap:10px;padding:24px;text-align:center;background:rgba(1,5,12,.88)}@media(max-width:760px){.focusHeading{left:14px;top:14px;width:calc(100vw - 28px);max-width:270px}.focusHeading h2{font-size:clamp(1.7rem,8.4vw,2.8rem);max-width:10ch}.focusNarration{margin-top:8px;max-width:250px;padding:8px 10px}.focusNarration strong{font-size:.86rem}.focusControls{right:10px;top:auto;bottom:max(12px,env(safe-area-inset-bottom));max-width:calc(100vw - 20px);overflow-x:auto}.focusControls button{min-height:48px;padding:0 12px;font-size:10px}.memoryMeaning{left:12px;bottom:max(70px,calc(env(safe-area-inset-bottom) + 62px));width:min(300px,calc(100vw - 24px));padding:8px 10px}.memoryMeaning p{display:none}.memoryMeta{gap:5px}.memoryMeta span{font-size:9px;padding:4px 6px}.focusHelp{display:none}.focusStatus{top:10px;font-size:7px}.focusStarMemoryButton{width:76px;height:76px}.focusFallbackStar{width:min(72vw,290px)}}@media(max-height:460px){.focusHeading{top:10px;max-width:250px}.focusHeading h2{font-size:1.45rem;margin:5px 0}.focusNarration{display:none}.memoryMeaning{display:none}.focusControls{top:10px;bottom:auto}.focusStarMemoryButton{width:70px;height:70px}}@media(prefers-reduced-motion:reduce){.focusBackdrop{background:radial-gradient(circle at 50% 48%,color-mix(in srgb,var(--memory-accent) 9%,transparent),transparent 25%),#02040b}}@media(forced-colors:active){.focusControls,.memoryMeaning,.focusHelp{background:Canvas;border-color:CanvasText}.focusControls button,.neutralActions button,.focusHelp summary{forced-color-adjust:auto}.focusStarMemoryButton{border:2px solid CanvasText;box-shadow:none}}"

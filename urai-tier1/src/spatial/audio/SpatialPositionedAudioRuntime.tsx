@@ -6,7 +6,7 @@ import type { SpatialAudioCue } from './audioTypes'
 const SESSION_KEY = 'urai:spatial-audio-consent-v1'
 const MUTE_KEY = 'urai:spatial-audio-muted-v1'
 
-const CUES: Record<SpatialAudioCue, { src: string; position: [number, number, number]; gain: number }> = {
+const CUES: Partial<Record<SpatialAudioCue, { src: string; position: [number, number, number]; gain: number }>> = {
   transition: { src: '/assets/urai/generated/audio/portal-transition-v1.opus', position: [0, 1.2, -3.4], gain: 0.48 },
   'orb-confirm': { src: '/assets/urai/generated/audio/orb-confirm-v1.opus', position: [0, 1.5, 1.4], gain: 0.46 },
   error: { src: '/assets/urai/generated/audio/ui-error-v1.opus', position: [0, 1.1, -1.6], gain: 0.38 },
