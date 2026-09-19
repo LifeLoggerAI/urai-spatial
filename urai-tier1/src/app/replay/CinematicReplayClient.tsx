@@ -324,12 +324,15 @@ function replayRockGeometry(seed: number) {
 }
 
 const REPLAY_DEMO_OUTCROPS = [
-  { x: -8.6, z: -4.4, lift: .62, scale: [2.35, 1.28, 1.75] as [number, number, number], rotation: [0.10, 0.42, -0.08] as [number, number, number] },
-  { x: 8.2, z: -5.8, lift: .50, scale: [2.10, 1.18, 1.92] as [number, number, number], rotation: [-0.06, -0.58, 0.04] as [number, number, number] },
-  { x: -10.0, z: -10.8, lift: .40, scale: [2.70, 1.56, 2.15] as [number, number, number], rotation: [0.08, 0.76, -0.05] as [number, number, number] },
-  { x: 9.4, z: -12.6, lift: .46, scale: [2.55, 1.44, 2.00] as [number, number, number], rotation: [-0.04, -0.92, 0.08] as [number, number, number] },
-  { x: -7.2, z: -17.4, lift: .34, scale: [2.15, 1.24, 1.82] as [number, number, number], rotation: [0.02, 1.12, -0.06] as [number, number, number] },
-  { x: 7.0, z: -19.2, lift: .36, scale: [2.32, 1.34, 1.94] as [number, number, number], rotation: [0.06, -1.24, 0.03] as [number, number, number] },
+  // V226: keep generated-demo geology grounded into the basin instead of
+  // presenting isolated oversized boulders.  The banks remain authored,
+  // non-personal context and deliberately sit at the frame edges.
+  { x: -9.4, z: -4.8, lift: .12, scale: [2.00, .72, 1.62] as [number, number, number], rotation: [0.10, 0.42, -0.08] as [number, number, number] },
+  { x: 9.1, z: -6.1, lift: .10, scale: [1.84, .68, 1.72] as [number, number, number], rotation: [-0.06, -0.58, 0.04] as [number, number, number] },
+  { x: -10.8, z: -11.3, lift: .08, scale: [2.26, .82, 1.92] as [number, number, number], rotation: [0.08, 0.76, -0.05] as [number, number, number] },
+  { x: 10.4, z: -13.0, lift: .09, scale: [2.14, .78, 1.84] as [number, number, number], rotation: [-0.04, -0.92, 0.08] as [number, number, number] },
+  { x: -8.5, z: -17.7, lift: .06, scale: [1.86, .68, 1.66] as [number, number, number], rotation: [0.02, 1.12, -0.06] as [number, number, number] },
+  { x: 8.4, z: -19.4, lift: .06, scale: [1.96, .72, 1.72] as [number, number, number], rotation: [0.06, -1.24, 0.03] as [number, number, number] },
 ] as const
 
 function ReplayMemoryGeography({ accent, demo }: { accent: string; demo: boolean }) {
@@ -354,7 +357,7 @@ function ReplayMemoryGeography({ accent, demo }: { accent: string; demo: boolean
       receiveShadow
       castShadow
       raycast={()=>null}
-    ><meshStandardMaterial map={maps[0]} normalMap={maps[1]} roughnessMap={maps[2]} normalScale={new THREE.Vector2(.56,.56)} color={index % 2 ? "#4b5048" : "#596057"} roughness={.99} metalness={0}/></mesh>) : null}
+    ><meshStandardMaterial map={maps[0]} normalMap={maps[1]} roughnessMap={maps[2]} normalScale={new THREE.Vector2(.24,.24)} color={index % 2 ? "#49443e" : "#565048"} roughness={.96} metalness={0}/></mesh>) : null}
     <pointLight position={[-5.8,.4,-3.8]} color="#d7aa79" intensity={demo ? .82 : 1.52} distance={12} decay={2}/>
     <pointLight position={[5.2,1.1,-4.2]} color={accent} intensity={demo ? .72 : 1.04} distance={11} decay={2}/>
   </group>
