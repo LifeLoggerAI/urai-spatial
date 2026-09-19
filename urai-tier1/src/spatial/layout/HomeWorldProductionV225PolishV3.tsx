@@ -197,7 +197,7 @@ function inhabitedSurfaceGeometry() {
 
 function distantRidgeGeometry() {
   const nx=160,nz=48,positions:number[]=[],uvs:number[]=[],colors:number[]=[],indices:number[]=[]
-  const shadow=new THREE.Color('#626455'),stone=new THREE.Color('#a89d83'),cool=new THREE.Color('#727f76')
+  const shadow=new THREE.Color('#48584d'),stone=new THREE.Color('#899074'),cool=new THREE.Color('#62746a')
   // Different geological events across one continuous escarpment: a broken
   // western shelf, low saddle behind the memory, and a steeper eastern fault.
   // Linear landmarks intentionally retain fracture edges instead of Gaussian hills.
@@ -208,10 +208,10 @@ function distantRidgeGeometry() {
     for(let ix=0;ix<=nx;ix++){
       const u=ix/nx,x=-13.5+u*27
       const rise=THREE.MathUtils.smoothstep(v,0,.74)
-      const ledge=Math.floor(v*7+soilVariation(x*.35,v*3)*.55)/7
+      const ledge=v + (soilVariation(x*.35,v*3)-.5)*.085
       const fractured=soilVariation(x*1.17,v*5.8)-.5
-      const drainage=Math.pow(1-Math.abs(Math.sin(x*1.04+v*.8)),10)*.34
-      const y=height(x,z)+crest(x)*rise+(.24*ledge+.19*fractured-drainage)*Math.sin(v*Math.PI)-.05
+      const drainage=Math.pow(1-Math.abs(Math.sin(x*1.04+v*.8)),10)*.22
+      const y=height(x,z)+crest(x)*rise+(.20*ledge+.15*fractured-drainage)*Math.sin(v*Math.PI)-.05
       positions.push(x,y,z);uvs.push(u*9,v*6)
       const band=.5+.5*Math.sin(v*36+x*.24)
       const c=shadow.clone().lerp(stone,.20+.40*band).lerp(cool,.26*v)
@@ -308,8 +308,8 @@ function TexturedMemoryTerrain() {
   const ridge=useMemo(distantRidgeGeometry,[])
   useEffect(() => () => { surface.dispose(); ridge.dispose() }, [surface, ridge])
   return <group name="home-v229-textured-inhabited-valley-and-distant-ridge">
-    <mesh geometry={surface} receiveShadow><meshStandardMaterial map={albedo} normalMap={maps[1]} roughnessMap={maps[2]} onBeforeCompile={breakSoilRepetition} normalScale={new THREE.Vector2(.34,.34)} vertexColors roughness={.91} color="#b0a28b"/></mesh>
-    <mesh geometry={ridge} receiveShadow castShadow><meshStandardMaterial map={albedo} normalMap={maps[1]} roughnessMap={maps[2]} onBeforeCompile={breakSoilRepetition} normalScale={new THREE.Vector2(.31,.31)} vertexColors roughness={.95} color="#778071" side={THREE.DoubleSide}/></mesh>
+    <mesh geometry={surface} receiveShadow><meshStandardMaterial map={albedo} normalMap={maps[1]} roughnessMap={maps[2]} onBeforeCompile={breakSoilRepetition} normalScale={new THREE.Vector2(.38,.38)} vertexColors roughness={.90} color="#a7aa8e"/></mesh>
+    <mesh geometry={ridge} receiveShadow castShadow><meshStandardMaterial map={albedo} normalMap={maps[1]} roughnessMap={maps[2]} onBeforeCompile={breakSoilRepetition} normalScale={new THREE.Vector2(.36,.36)} vertexColors roughness={.94} color="#768271" side={THREE.DoubleSide}/></mesh>
   </group>
 }
 

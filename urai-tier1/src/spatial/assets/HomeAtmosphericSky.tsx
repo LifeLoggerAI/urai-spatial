@@ -33,9 +33,9 @@ const retiredLifeMapNames = [
 ]
 
 const CLOUD_LAYERS = [
-  { name: 'home-sky-lower-distant-vapor', radius: 61, start: .015, end: .30, opacity: .14, scale: 3.2, windX: .0030, windZ: .0005, warm: .42 },
-  { name: 'home-sky-primary-stratiform-clouds', radius: 67, start: .09, end: .72, opacity: .34, scale: 4.8, windX: .0075, windZ: .0018, warm: .22 },
-  { name: 'home-sky-high-memory-filaments', radius: 72, start: .40, end: .93, opacity: .10, scale: 7.0, windX: .0110, windZ: -.0012, warm: .06 },
+  { name: 'home-sky-lower-distant-vapor', radius: 61, start: .015, end: .30, opacity: .08, scale: 5.6, windX: .0030, windZ: .0005, warm: .36 },
+  { name: 'home-sky-primary-stratiform-clouds', radius: 67, start: .09, end: .72, opacity: .19, scale: 8.4, windX: .0075, windZ: .0018, warm: .18 },
+  { name: 'home-sky-high-memory-filaments', radius: 72, start: .40, end: .93, opacity: .055, scale: 12.0, windX: .0110, windZ: -.0012, warm: .05 },
 ] as const
 
 const ORB_X = 1.02
@@ -299,9 +299,9 @@ function makeCloudMaterial(layer: typeof CLOUD_LAYERS[number]) {
       uScale: { value: layer.scale },
       uWind: { value: new THREE.Vector2(layer.windX, layer.windZ) },
       uWarmWeight: { value: layer.warm },
-      uPearl: { value: new THREE.Color('#c4cbc3') },
-      uCool: { value: new THREE.Color('#647f80') },
-      uWarm: { value: new THREE.Color('#b98d6d') },
+      uPearl: { value: new THREE.Color('#b9c8c1') },
+      uCool: { value: new THREE.Color('#526f72') },
+      uWarm: { value: new THREE.Color('#ad876f') },
     },
     vertexShader: `
       varying vec3 vDirection;
@@ -340,9 +340,9 @@ function makeCloudMaterial(layer: typeof CLOUD_LAYERS[number]) {
         float macro=fbm(p);
         float erosion=noise(p*2.27+vec3(5.2,-1.7,2.6));
         float coherence=mix(noise(p*.47+8.0),macro,uWindCoherence);
-        float field=macro*.70+erosion*.17+coherence*.13;
-        float threshold=mix(.62,.44,uCloudCover);
-        float density=smoothstep(threshold,threshold+.115,field);
+        float field=macro*.52+erosion*.30+coherence*.18;
+        float threshold=mix(.64,.49,uCloudCover);
+        float density=smoothstep(threshold,threshold+.18,field);
         density*=band;
 
         vec3 sourceDir=normalize(vec3(-.68,.16,-.72));
