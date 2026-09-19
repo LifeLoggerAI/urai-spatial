@@ -7,6 +7,7 @@ import * as THREE from 'three'
 import { requestUraiWorldTravel } from '@/spatial/world/worldEvents'
 import { HOME_PASSPORT_ORIGIN_CAPTURE_EVENT } from '@/spatial/home/homeExperienceState'
 import { HomeGlobalEmotionalFieldEarth } from '@/spatial/home/HomeGlobalEmotionalFieldEarth'
+import type { GlobalFieldState } from '@/spatial/lived-world/globalEmotionalField'
 
 function capturePassportOrigin() {
   window.dispatchEvent(new Event(HOME_PASSPORT_ORIGIN_CAPTURE_EVENT))
@@ -227,10 +228,18 @@ function HomePassportOwnershipObject() {
  * individual dots, or claim an active publication provider.
  */
 export function HomeAAAVisualRepair() {
+  const [globalFieldState, setGlobalFieldState] = useState<GlobalFieldState>('unavailable')
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const review = params.get('homeAssetReview') === '1' ? params.get('homeGlobalFieldReview') : null
+    setGlobalFieldState(review === 'suppressed' ? 'suppressed' : 'unavailable')
+  }, [])
+
   return (
     <>
       <HomePassportOwnershipObject />
-      <HomeGlobalEmotionalFieldEarth state="unavailable" />
+      <HomeGlobalEmotionalFieldEarth state={globalFieldState} />
     </>
   )
 }
