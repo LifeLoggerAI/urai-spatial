@@ -164,6 +164,6 @@ The following are **downstream execution/evidence work, not unfinished documenta
 
 This recovery is now a real, source-backed, cross-linked body of canon rather than a loose audit. It is still not truthful to say every historical byte or every final visual exists.
 
-The remaining work is now bounded and visible: normalize evidence, create the specifically missing visual/story packs, finish row-level traceability/copy, and resolve the small set of genuinely external or authority-dependent decisions.
+The docs-only recovery has no currently identified source-resolvable normalization gap. Remaining work is downstream evidence/production (including the specifically missing visual/story packs and real-device/provider/visual-review proof) plus the small set of genuinely external, legal, founder or product-authority decisions retained in the open-question register.
 
 Recover first; invent last.
