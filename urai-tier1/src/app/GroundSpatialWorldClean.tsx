@@ -124,9 +124,9 @@ function makeNaturalGroundTextures(profile: EnvironmentProfileId) {
   const size = 128;
   const rgba = new Uint8Array(size * size * 4);
   const height = new Uint8Array(size * size * 4);
-  const soil = new THREE.Color(profile === "woodland" ? "#28261f" : "#3b3d2d");
-  const moss = new THREE.Color(profile === "woodland" ? "#40543b" : "#566849");
-  const grit = new THREE.Color("#766b56");
+  const soil = new THREE.Color(profile === "woodland" ? "#4a4032" : "#595642");
+  const moss = new THREE.Color(profile === "woodland" ? "#526a48" : "#687a57");
+  const grit = new THREE.Color("#8c8069");
   const hash = (x: number, y: number, salt: number) => {
     const value = Math.sin(x * 12.9898 + y * 78.233 + salt * 37.719) * 43758.5453;
     return value - Math.floor(value);
@@ -186,16 +186,16 @@ function TerrainMaterial({ profile }: { profile: EnvironmentProfile }) {
     map={naturalProfile ? naturalTextures?.colorTexture : albedo}
     normalMap={naturalProfile ? null : normal}
     bumpMap={naturalProfile ? naturalTextures?.bumpTexture : null}
-    bumpScale={naturalProfile ? 0.075 : 0}
+    bumpScale={naturalProfile ? 0.11 : 0}
     normalScale={new THREE.Vector2(profile.id === "urban" ? 0.34 : 0.62, profile.id === "urban" ? 0.34 : 0.62)}
     aoMap={naturalProfile ? null : arm}
     aoMapIntensity={naturalProfile ? 0 : 0.72}
     roughnessMap={naturalProfile ? null : arm}
-    roughness={naturalProfile ? 0.96 : profile.roughness}
+    roughness={naturalProfile ? 0.91 : profile.roughness}
     metalnessMap={naturalProfile ? null : arm}
     metalness={profile.id === "urban" ? 0.02 : 0.005}
-    vertexColors
-    envMapIntensity={naturalProfile ? 0.31 : 0.42}
+    vertexColors={!naturalProfile}
+    envMapIntensity={naturalProfile ? 0.48 : 0.42}
   />;
 }
 
@@ -361,18 +361,18 @@ function NaturalCanopy({ profile, position, rotationY, scale, shapeSeed }: {
       const value = Math.sin(seed * 12.9898 + shapeSeed * 53.117 + (woodland ? 78.233 : 31.417)) * 43758.5453;
       return value - Math.floor(value);
     };
-    const leaves = Array.from({ length: woodland ? 660 : 580 }, (_, index) => {
+    const leaves = Array.from({ length: woodland ? 820 : 720 }, (_, index) => {
       const anchor = foliageAnchors[index % foliageAnchors.length];
-      const spread = 0.055 + hash(index * 7 + 1) * 0.21;
+      const spread = 0.085 + hash(index * 7 + 1) * 0.29;
       const theta = hash(index * 7 + 2) * Math.PI * 2;
       const x = anchor[0] + Math.cos(theta) * spread * (0.48 + hash(index * 7 + 3) * 0.92);
-      const y = anchor[1] - 0.01 + (hash(index * 7 + 4) - 0.46) * 0.34;
+      const y = anchor[1] - 0.02 + (hash(index * 7 + 4) - 0.46) * 0.48;
       const z = anchor[2] + Math.sin(theta) * spread * (0.46 + hash(index * 7 + 5) * 0.88);
       const rx = (hash(index * 7 + 6) - 0.5) * 1.28;
       const ry = theta + (hash(index * 7 + 7) - 0.5) * 1.15;
       const rz = (hash(index * 7 + 8) - 0.5) * 1.12;
-      const sx = 0.050 + hash(index * 7 + 9) * 0.080;
-      const sy = 0.026 + hash(index * 7 + 10) * 0.044;
+      const sx = 0.145 + hash(index * 7 + 9) * 0.155;
+      const sy = 0.072 + hash(index * 7 + 10) * 0.094;
       const sz = 1;
       return {
         position: [x, y, z] as [number, number, number],
@@ -404,10 +404,10 @@ function NaturalCanopy({ profile, position, rotationY, scale, shapeSeed }: {
     raycast={() => null}
     name="ground-authored-natural-canopy-v13"
     userData={{
-      treatment: "seed-varied-branch-architecture-dense-pointed-leaf-canopy-v15",
+      treatment: "seed-varied-branch-architecture-readable-broadleaf-canopy-v17",
       provenance: NATURAL_CANOPY,
-      visibleAuthority: "runtime-authored-canopy-v15",
-      literalPixelRepair: "v15-dense-pointed-leaves-and-detailed-natural-ground",
+      visibleAuthority: "runtime-authored-canopy-v17",
+      literalPixelRepair: "v17-first-person-readable-broadleaf-canopy-and-uncrushed-natural-ground",
       supersedesVisibleCandidate: "ground-natural-canopy-v3-low-poly-silhouette",
     }}
   >
@@ -795,12 +795,18 @@ function AtmosphericGroundSky({ profile }: { profile: EnvironmentProfile }) {
         uniform vec3 groundHazeColor;
         void main() {
           float h = clamp(vDir.y * 0.5 + 0.5, 0.0, 1.0);
-          float upperMix = smoothstep(0.48, 0.98, h);
+          float upperMix = smoothstep(0.42, 0.96, h);
           vec3 sky = mix(upperColor, zenithColor, upperMix);
-          float horizonBand = 1.0 - smoothstep(0.02, 0.34, abs(vDir.y));
-          sky = mix(sky, horizonColor, horizonBand * 0.46);
-          float groundBand = 1.0 - smoothstep(-0.18, 0.06, vDir.y);
-          sky = mix(sky, groundHazeColor, groundBand * 0.28);
+          float horizonBand = 1.0 - smoothstep(0.015, 0.28, abs(vDir.y));
+          sky = mix(sky, horizonColor, horizonBand * 0.34);
+          float groundBand = 1.0 - smoothstep(-0.20, 0.05, vDir.y);
+          sky = mix(sky, groundHazeColor, groundBand * 0.18);
+          vec3 sunDir = normalize(vec3(-0.38, 0.30, -0.88));
+          float sunDot = max(0.0, dot(normalize(vDir), sunDir));
+          float sunGlow = pow(sunDot, 22.0) * 0.22 + pow(sunDot, 180.0) * 0.68;
+          sky += vec3(1.0, 0.72, 0.46) * sunGlow;
+          float haze = pow(max(0.0, 1.0 - abs(vDir.y)), 5.0) * 0.055;
+          sky += vec3(0.68, 0.60, 0.50) * haze;
           gl_FragColor = vec4(sky, 1.0);
         }
       `}
@@ -956,7 +962,7 @@ export default function GroundSpatialWorldClean() {
     data-ground-visual-owner="atmospheric-living-environment"
     data-ground-runtime-owner="first-person-lived-world"
     data-ground-visual-revision="ground-lived-world-v2-canon-lock"
-    data-ground-art-revision="ground-v16-organic-leaf-canopy-deeper-atmosphere"
+    data-ground-art-revision="ground-v17-readable-canopy-natural-ground-atmosphere"
     data-ground-exploration="first-person-no-visible-body"
     data-ground-camera="eye-level-terrain-following-no-authored-bob"
     data-ground-eye-height={GROUND_EYE_HEIGHT_M}
