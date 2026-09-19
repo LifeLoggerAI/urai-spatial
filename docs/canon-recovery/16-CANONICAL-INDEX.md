@@ -62,6 +62,7 @@ This index lists the recovery artifacts currently retained on the branch. Numeri
 51. `44-UI-SURFACE-INVENTORY.md`
 52. `45-LAUNCH-AND-ROADMAP-CLASSIFICATION.md`
 53. `46-CURRENT-ASSET-REFERENCE-AUTHORITY.md`
+54. `47-LAUNCH-ASSET-LEDGER-NORMALIZATION.md`
 
 ## Existing authority this recovery layer does not replace
 
