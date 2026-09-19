@@ -387,6 +387,8 @@ export default function ComposedLifeMapScene() {
     data-life-map-mode={selected ? "selected" : "overview"}
     data-life-map-scale={selected ? phase === "arrival" ? "intimate" : "regional" : "cosmic"}
     data-life-map-production-world="true"
+    data-life-map-art-revision="v290-layered-living-galaxy-white-gold-core"
+    data-life-map-reference-form="astronomical-layered-personal-galaxy"
     data-webgl-state={webglState}
     data-software-renderer={softwareRenderer === null ? "detecting" : softwareRenderer ? "true" : "false"}
     data-software-render-cadence={softwareRenderer !== false || profile.reducedMotion ? "bounded-demand-4fps" : "continuous"}

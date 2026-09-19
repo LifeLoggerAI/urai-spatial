@@ -105,7 +105,7 @@ test('visual repair preserves adaptive performance and evidence budgets', () => 
   assert.match(world, /useGLTF\.preload\(MEMORY_STAR_MODEL\)/)
   assert.match(world, /useGLTF\.preload\(MEMORY_CHAMBER_MODEL\)/)
   assert.doesNotMatch(world, /<torusGeometry|<ringGeometry|<icosahedronGeometry|<octahedronGeometry|<tetrahedronGeometry/)
-  for (const marker of ['life-map-white-gold-life-core', 'life-map-curved-semantic-paths', 'life-map-memory-artifact-families', 'life-map-selected-arrival-sanctuary']) assert.match(world, new RegExp(marker))
+  for (const marker of ['life-map-white-gold-life-core', 'life-map-v290-layered-living-galaxy', 'life-map-curved-semantic-paths', 'life-map-memory-artifact-families', 'life-map-selected-arrival-sanctuary']) assert.match(world, new RegExp(marker))
 })
 
 test('capable hardware receives a bounded high-fidelity Life Map path', () => {
@@ -124,4 +124,14 @@ test('selected departure owns a real volumetric bridge without point-wallpaper o
   const bridge = sliceBetween(cosmicScene, 'life-map-departure-selected-memory-volumetric-bridge', '</group> : null}')
   for (const seed of ['11.37', '12.11', '12.83', '13.47']) assert.match(bridge, new RegExp(`seed=\\{${seed.replace('.', '\\.') }\\}`))
   assert.doesNotMatch(bridge, /<points\b|pointsMaterial|StellarDepthField/, 'departure bridge must stay shader-volume-only rather than point wallpaper')
+})
+
+
+test('overview keeps the galactic heart visible and uses bounded authored spiral depth rather than the soft flat Life Map plate', () => {
+  assert.match(world, /function SpiralGalaxyField/)
+  assert.match(world, /qualityTier === "low" \? 820 : qualityTier === "medium" \? 1480 : 2380/)
+  assert.match(world, /name="life-map-v290-layered-living-galaxy"/)
+  assert.match(world, /<LifeCore reducedMotion=\{profile\.reducedMotion\} tier=\{profile\.tier\} \/>/)
+  assert.doesNotMatch(world, /<LifeCore hidden/)
+  assert.doesNotMatch(world, /life-map-galaxy-main\.webp/)
 })
