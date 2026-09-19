@@ -1,10 +1,24 @@
 # URAI Spatial Live Deploy Runbook
 
-This repo targets Firebase project `urai-4dc1d` through `.firebaserc`.
+## Current status
 
-## Release readiness
+Production mutation is **QUARANTINED / NO-GO**.
 
-Run from repo root:
+The repository currently provides exact-source production verification and a main-only short-lived Google WIF identity proof, not a production deploy workflow.
+
+`.github/workflows/spatial-live-deploy.yml` deliberately:
+
+- verifies exact source and a clean tree;
+- runs the release credential-boundary guards;
+- records a NO-GO production-release classification;
+- may exchange GitHub OIDC for a five-minute read-only Google access token on canonical `main`; and
+- contains no production mutation command.
+
+`scripts/live-release.mjs deploy` is intentionally fail closed. Do not bypass it with direct `firebase deploy`, interactive Firebase login, a Firebase token, service-account JSON, Vercel deployment, or another provider CLI path.
+
+## Source readiness
+
+From the repository root:
 
 ```bash
 corepack enable
@@ -12,50 +26,36 @@ pnpm install --frozen-lockfile
 pnpm live:check
 ```
 
-`pnpm live:check` validates the V1-V5 live release manifest, Tier/XR matrix, required release files, static lock checks, build lock checks, e2e lock checks, tests, and XR verification.
+Also require every release-candidate gate applicable to the exact source, including CI, security, privacy, accessibility, performance, literal visual acceptance, review, and governance.
 
-## Deploy
+## Current WIF proof
 
-Run from repo root with Firebase deploy credentials available in your shell:
+The main-only WIF job proves only that GitHub OIDC can be exchanged for the repository's configured short-lived read-only Google identity. It does not prove deployment IAM, provider mutation authority, runtime identity, deployed revision, or rollback.
 
-```bash
-FIREBASE_PROJECT_ID=urai-4dc1d pnpm live:deploy
-```
+Do not persist the resulting token or reinterpret the read-only proof as production authorization.
 
-The deploy command runs the same release gate first, then deploys:
+## Re-enabling production mutation
 
-```bash
-firebase deploy --project urai-4dc1d --only hosting,firestore:rules,firestore:indexes,functions
-```
+A future mutation workflow must be separately reviewed and fail closed unless it proves:
 
-## Live smoke check
+1. exact canonical `main` SHA and clean source;
+2. protected production environment approval;
+3. short-lived OIDC/WIF or explicitly approved managed identity;
+4. exact authenticated principal and project;
+5. resource-scoped least-privilege IAM with no Owner/Editor dependency;
+6. historical long-lived credential revocation/negative-auth evidence where applicable;
+7. reproducible deploy artifact bound to the source SHA;
+8. explicit provider target and bounded mutation scope;
+9. provider-native revision/source readback;
+10. monitoring/log visibility and alert ownership; and
+11. recovery plus rollback to a genuinely different known-good revision.
 
-After deploy:
+Until that workflow exists and all applicable release gates close, there is no authorized command in this runbook for Firebase Hosting, App Hosting, Functions, Firestore rules, or another production provider mutation.
 
-```bash
-URAI_DEPLOY_URL=https://urai-4dc1d.web.app pnpm smoke:live
-```
+## Existing-host smoke
 
-If needed, also test:
+Read-only smoke against an already reachable public host can be useful diagnostically, but a 200 response does not certify that the current source is deployed. Any live acceptance must be bound to a provider revision and exact source SHA.
 
-```bash
-URAI_DEPLOY_URL=https://urai-4dc1d.firebaseapp.com pnpm smoke:live
-```
+## Rollback truth
 
-## Static hosting path
-
-For static Firebase export hosting:
-
-```bash
-FIREBASE_PROJECT_ID=urai-4dc1d pnpm deploy:xr:firebase:static
-```
-
-This runs XR verification, builds the static export, and deploys with `firebase.static.json`.
-
-## Release rule
-
-Do not call the repo live unless:
-
-1. `pnpm live:check` passes.
-2. Firebase deploy succeeds.
-3. `URAI_DEPLOY_URL=https://urai-4dc1d.web.app pnpm smoke:live` passes.
+A rollback counts only when protected provider authority restores a different known-good revision, the provider confirms that different revision, and live critical route/auth checks pass on it. `git revert`, documentation, or redeploying the same SHA is not operational rollback proof.
