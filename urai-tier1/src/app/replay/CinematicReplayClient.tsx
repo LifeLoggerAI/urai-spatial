@@ -439,13 +439,13 @@ function ReplayMemoryGeography({ accent, demo }: { accent: string; demo: boolean
   const maps=useMemo(createMineralMaps,[])
   useEffect(()=>()=>{basin.dispose();wall.dispose();leftCove.dispose();rightCove.dispose();maps.forEach((texture)=>texture.dispose())},[basin,leftCove,maps,rightCove,wall])
   return <group name="replay-v216-embedded-memory-cove" userData={{ visualIntent:'media-manifested-inside-continuous-weathered-place' }}>
-    <mesh geometry={basin} receiveShadow castShadow>
+    <mesh visible={!demo} geometry={basin} receiveShadow castShadow>
       {demo
         ? <meshStandardMaterial normalMap={maps[1]} roughnessMap={maps[2]} normalScale={new THREE.Vector2(.56,.56)} color="#9ba59a" vertexColors roughness={.88} metalness={0} envMapIntensity={.42} />
         : <meshStandardMaterial map={maps[0]} normalMap={maps[1]} roughnessMap={maps[2]} normalScale={new THREE.Vector2(.40,.40)} color="#b8aa98" vertexColors roughness={.94}/>}
     </mesh>
     {demo ? null : <mesh geometry={wall} position={[0,0,-.18]} receiveShadow castShadow>\n      <meshStandardMaterial map={maps[0]} normalMap={maps[1]} roughnessMap={maps[2]} normalScale={new THREE.Vector2(.52,.52)} color="#8b7d70" vertexColors roughness={.98} side={THREE.DoubleSide}/>\n    </mesh>}
-    {demo ? <group name="replay-v240-open-memory-valley" userData={{ visualRepair: 'subordinate-scanned-geology-sculpted-basin-neutral-water-thread' }}>
+    {demo ? <group visible={false} name="replay-v242-retired-procedural-demo-foreground" userData={{ visualRepair: 'authored-matte-owns-explicit-demo-without-procedural-foreground-conflict' }}>
       <ReplayDemoLake />
       {REPLAY_DEMO_OUTCROPS.map((outcrop, index) => <ReplayScannedProp
         key={`rock-${index}`}
@@ -659,7 +659,7 @@ export default function CinematicReplayClient({ immersiveEntryEnabled = false }:
     if (audio && Number.isFinite(audio.duration)) audio.currentTime = Math.min(audio.duration, next / 1000)
   }
 
-  return <main className="replayWorld" style={style} data-testid="cinematic-replay-client" data-memory-status={result.status} data-memory-id={memory.id} data-star-id={memory.star.id} data-manifest-id={memory.replayManifest.id} data-node={memory.star.id} data-playing={playing ? 'true' : 'false'} data-canonical-asset={replayAssets.primary.src} data-replay-spatial-owner="r3f-memory-theater" data-replay-environment={REPLAY_ENVIRONMENT_MODEL} data-replay-composition="v225-source-first-memory-environment-readable-phased-return" data-replay-demo-art="v241-authored-cinematic-memory-valley" data-replay-camera="anchored-first-person-witness" data-replay-truth={truth?.level ?? 'unknown'} data-replay-immersive-entry={immersiveHref ? 'available' : 'unavailable'}>
+  return <main className="replayWorld" style={style} data-testid="cinematic-replay-client" data-memory-status={result.status} data-memory-id={memory.id} data-star-id={memory.star.id} data-manifest-id={memory.replayManifest.id} data-node={memory.star.id} data-playing={playing ? 'true' : 'false'} data-canonical-asset={replayAssets.primary.src} data-replay-spatial-owner="r3f-memory-theater" data-replay-environment={REPLAY_ENVIRONMENT_MODEL} data-replay-composition="v225-source-first-memory-environment-readable-phased-return" data-replay-demo-art="v242-authored-cinematic-memory-valley-clean-frame" data-replay-camera="anchored-first-person-witness" data-replay-truth={truth?.level ?? 'unknown'} data-replay-immersive-entry={immersiveHref ? 'available' : 'unavailable'}>
     <Canvas className="replaySpatialCanvas" shadows={quality.shadows} dpr={[1, quality.pixelRatioMax]} frameloop={quality.documentVisible ? 'always' : 'never'} camera={{ position: [0, 0.42, 8.4], fov: 46, near: 0.05, far: 120 }} gl={{ antialias: quality.antialias, powerPreference: 'high-performance' }} onCreated={({ gl }) => { gl.outputColorSpace = THREE.SRGBColorSpace; gl.toneMapping = THREE.ACESFilmicToneMapping; gl.toneMappingExposure = memory.demo ? 1.32 : 1.92 }}>
       <ReplaySpatialScene memory={memory} playing={playing} progressMs={progressMs} muteVideo={Boolean(recordedAudioUrl)} />
     </Canvas>

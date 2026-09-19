@@ -43,7 +43,10 @@ export default function QuestVrEntryButton({ memoryMode = false, onModeRequested
       let sessionEnded=false
       session.addEventListener?.('end',()=>{sessionEnded=true;setActiveMode(null);setCopy('Immersive session ended safely. The experience remains available.');onSessionEnded?.()},{once:true})
       await onSessionRequested?.(session)
-      if(sessionEnded){onSessionEnded?.();return}
+      if (sessionEnded) {
+        onSessionEnded?.()
+        return
+      }
       setActiveMode(mode)
       setCopy(memoryMode?(mode==='immersive-ar'?'AR memory active.':'VR memory active.'):(mode==='immersive-ar'?'Immersive AR active.':'Immersive VR active.'))
     }catch{

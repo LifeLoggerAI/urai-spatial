@@ -10,7 +10,7 @@ import { useSelectedMemory } from '@/spatial/memory/useSelectedMemory'
 import type { SelectedMemory } from '@/spatial/memory/selectedMemoryContract'
 import { requestUraiWorldReturn, requestUraiWorldTravel } from '@/spatial/world/worldEvents'
 
-// Locked product authority; V333 is the current literal-pixel implementation:
+// Locked product authority; V334 is the current literal-pixel implementation:
 // Life Map shows stellar memory points. Focus resolves the selected point into the
 // same memory star at intimate scale, with authorized source media (or a truthful
 // generated visualization when no media exists) visible inside/through the star.
@@ -208,7 +208,10 @@ function FocusMemoryStar({
   const [hovered, setHovered] = useState(false)
   const activationProgress = useRef(0)
   const [activating, setActivating] = useState(false)
+  const { size } = useThree()
   const authoredMemoryStar = useTexture(FOCUS_AUTHORED_MEMORY_STAR)
+  const authoredStarScale = size.width < 760 ? 1.78 : size.width < 1024 ? 2.24 : 2.65
+  const authoredStarY = size.width < 760 ? -.28 : 0
   const starScale = memory ? THREE.MathUtils.clamp(memory.star.scale * 1.34, 1.18, 1.36) : 1.08
   const coronaTexture = useMemo(() => makeFocusCoronaTexture(2.25), [])
   const rayTexture = useMemo(() => makeFocusCoronaTexture(4.2, true), [])
@@ -249,15 +252,15 @@ function FocusMemoryStar({
     position={STAR_POSITION}
     name="focus-selected-memory-star"
     userData={{
-      visualAuthority: 'selected-memory-star-with-contained-memory-v333',
+      visualAuthority: 'selected-memory-star-with-contained-memory-v334',
       lifeMapContinuity: 'same-selected-star-resolved-at-close-range',
       terrainOwner: false,
     }}
   >
     {memory?.demo ? <sprite
-      position={[0, 0, .18]}
-      scale={[2.65, 2.65, 1]}
-      name="focus-authored-memory-star-v333"
+      position={[0, authoredStarY, .18]}
+      scale={[authoredStarScale, authoredStarScale, 1]}
+      name="focus-authored-memory-star-v334"
       onClick={activateMoment}
       onPointerOver={(event) => pointer(event, true)}
       onPointerOut={(event) => pointer(event, false)}
@@ -617,7 +620,7 @@ export default function FocusChamberClient() {
     style={style}
     data-testid="urai-final-focus-chamber"
     data-focus-composition="selected-memory-star-with-contained-memory"
-    data-focus-visual-revision="v333-authored-stellar-memory-object"
+    data-focus-visual-revision="v334-responsive-authored-stellar-memory-object"
     data-focus-selected-framing={memory ? 'selected-memory-star-approach' : 'neutral-star-awaiting-selection'}
     data-focus-spatial="selected-memory-star"
     data-focus-movement="orbit-zoom-keyboard-touch"
