@@ -216,4 +216,4 @@ jobs:
           name: hosting-capture-status-${{ github.sha }}
           path: ${{ steps.status.outputs.report_dir }}
           if-no-files-found: error
-          retention-days: 365
+          retention-days: 90
