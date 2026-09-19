@@ -297,18 +297,25 @@ function replayMemoryWallGeometry() {
 
 
 function replayRockGeometry(seed: number) {
-  const geometry = new THREE.IcosahedronGeometry(1, 3)
+  // The explicit-demo outcrops are close enough to the witness camera that
+  // coarse polyhedral silhouettes read as game geometry. Start from a smooth
+  // sphere and weather the radius instead, preserving deterministic source
+  // truth while producing a continuous natural-rock surface.
+  const geometry = new THREE.SphereGeometry(1, 48, 32)
   const position = geometry.getAttribute('position') as THREE.BufferAttribute
   const point = new THREE.Vector3()
+  const direction = new THREE.Vector3()
   for (let index = 0; index < position.count; index += 1) {
     point.fromBufferAttribute(position, index)
-    const direction = point.clone().normalize()
+    direction.copy(point).normalize()
     const grain =
       1
-      + .16 * Math.sin(direction.x * 7.1 + direction.z * 4.3 + seed * .77)
-      + .08 * Math.sin(direction.y * 13.7 - direction.x * 9.4 + seed * 1.31)
-      + .04 * Math.cos((direction.x + direction.y + direction.z) * 19.0 + seed)
+      + .13 * Math.sin(direction.x * 5.7 + direction.z * 4.1 + seed * .77)
+      + .07 * Math.sin(direction.y * 11.3 - direction.x * 8.2 + seed * 1.31)
+      + .035 * Math.cos((direction.x + direction.y + direction.z) * 17.0 + seed)
+    const weatheredY = 0.96 + .08 * Math.sin(direction.x * 3.1 + direction.z * 2.6 + seed * .41)
     point.multiplyScalar(grain)
+    point.y *= weatheredY
     position.setXYZ(index, point.x, point.y, point.z)
   }
   position.needsUpdate = true
