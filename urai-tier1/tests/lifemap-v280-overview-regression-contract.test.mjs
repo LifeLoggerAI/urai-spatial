@@ -29,7 +29,7 @@ test('V280 preserves V279 departure authority while V281 owns the overview hiera
   assert.match(cosmic, /data-life-map-art-revision="v279-departure-volumetric-bridge"/)
   assert.match(cosmic, /life-map-departure-selected-memory-volumetric-bridge/)
   assert.match(cosmic, /data-life-map-overview-polish="v281-literal-pixel-authored-geography"/)
-  assert.match(cosmic, /const overviewWeather = phase === "overview" \? \.38 : \.20/)
+  assert.match(cosmic, /const overviewWeather = phase === "overview" \? \.32 : \.055/)
   assert.match(cosmic, /const overviewBoost = overview \? 1\.48 : 1/)
   assert.match(cosmic, /const outer = \(active \? 1\.08 : related \? \.82 : \.74\) \* overviewBoost/)
   assert.match(cosmic, /const mid = \(active \? \.52 : related \? \.40 : \.36\) \* overviewBoost/)
