@@ -120,9 +120,57 @@ function buildTerrainGeometry(profile: EnvironmentProfile) {
   return geometry;
 }
 
+function makeNaturalGroundTextures(profile: EnvironmentProfileId) {
+  const size = 128;
+  const rgba = new Uint8Array(size * size * 4);
+  const height = new Uint8Array(size * size * 4);
+  const soil = new THREE.Color(profile === "woodland" ? "#28261f" : "#3b3d2d");
+  const moss = new THREE.Color(profile === "woodland" ? "#40543b" : "#566849");
+  const grit = new THREE.Color("#766b56");
+  const hash = (x: number, y: number, salt: number) => {
+    const value = Math.sin(x * 12.9898 + y * 78.233 + salt * 37.719) * 43758.5453;
+    return value - Math.floor(value);
+  };
+  for (let y = 0; y < size; y += 1) for (let x = 0; x < size; x += 1) {
+    const coarse = hash(Math.floor(x / 7), Math.floor(y / 7), 1);
+    const medium = hash(Math.floor(x / 3), Math.floor(y / 3), 2);
+    const fine = hash(x, y, 3);
+    const mossMix = THREE.MathUtils.clamp(.16 + coarse * .42 + medium * .18 - fine * .10, .05, .74);
+    const color = soil.clone().lerp(moss, mossMix);
+    if (fine > .91) color.lerp(grit, .28 + (fine - .91) * 3.2);
+    const offset = (y * size + x) * 4;
+    rgba[offset] = Math.round(color.r * 255);
+    rgba[offset + 1] = Math.round(color.g * 255);
+    rgba[offset + 2] = Math.round(color.b * 255);
+    rgba[offset + 3] = 255;
+    const h = Math.round(255 * THREE.MathUtils.clamp(.28 + coarse * .25 + medium * .22 + fine * .25, 0, 1));
+    height[offset] = h;
+    height[offset + 1] = h;
+    height[offset + 2] = h;
+    height[offset + 3] = 255;
+  }
+  const colorTexture = new THREE.DataTexture(rgba, size, size, THREE.RGBAFormat);
+  colorTexture.colorSpace = THREE.SRGBColorSpace;
+  const bumpTexture = new THREE.DataTexture(height, size, size, THREE.RGBAFormat);
+  for (const texture of [colorTexture, bumpTexture]) {
+    texture.wrapS = THREE.RepeatWrapping;
+    texture.wrapT = THREE.RepeatWrapping;
+    texture.repeat.set(profile === "woodland" ? 18 : 15, profile === "woodland" ? 20 : 17);
+    texture.magFilter = THREE.LinearFilter;
+    texture.minFilter = THREE.LinearMipmapLinearFilter;
+    texture.needsUpdate = true;
+  }
+  return { colorTexture, bumpTexture };
+}
+
 function TerrainMaterial({ profile }: { profile: EnvironmentProfile }) {
   const [albedo, normal, arm] = useTexture([TERRAIN_ALBEDO, TERRAIN_NORMAL, TERRAIN_ARM]);
   const naturalProfile = profile.id === "temperate" || profile.id === "woodland";
+  const naturalTextures = useMemo(() => naturalProfile ? makeNaturalGroundTextures(profile.id) : null, [naturalProfile, profile.id]);
+  useEffect(() => () => {
+    naturalTextures?.colorTexture.dispose();
+    naturalTextures?.bumpTexture.dispose();
+  }, [naturalTextures]);
   useMemo(() => {
     albedo.colorSpace = THREE.SRGBColorSpace;
     for (const texture of [albedo, normal, arm]) {
@@ -135,8 +183,10 @@ function TerrainMaterial({ profile }: { profile: EnvironmentProfile }) {
     return null;
   }, [albedo, arm, normal, profile]);
   return <meshStandardMaterial
-    map={naturalProfile ? null : albedo}
+    map={naturalProfile ? naturalTextures?.colorTexture : albedo}
     normalMap={naturalProfile ? null : normal}
+    bumpMap={naturalProfile ? naturalTextures?.bumpTexture : null}
+    bumpScale={naturalProfile ? 0.075 : 0}
     normalScale={new THREE.Vector2(profile.id === "urban" ? 0.34 : 0.62, profile.id === "urban" ? 0.34 : 0.62)}
     aoMap={naturalProfile ? null : arm}
     aoMapIntensity={naturalProfile ? 0 : 0.72}
@@ -295,7 +345,11 @@ function NaturalCanopy({ profile, position, rotationY, scale, shapeSeed }: {
       false,
     ));
 
-    const leafGeometry = new THREE.CircleGeometry(1, 7);
+    const leafShape = new THREE.Shape();
+    leafShape.moveTo(0, -1);
+    leafShape.quadraticCurveTo(.72, -.22, 0, 1);
+    leafShape.quadraticCurveTo(-.72, -.22, 0, -1);
+    const leafGeometry = new THREE.ShapeGeometry(leafShape, 1);
 
     const foliageAnchors = [
       ...transformedBranchDefs.map((points) => points[points.length - 1]),
@@ -307,9 +361,9 @@ function NaturalCanopy({ profile, position, rotationY, scale, shapeSeed }: {
       const value = Math.sin(seed * 12.9898 + shapeSeed * 53.117 + (woodland ? 78.233 : 31.417)) * 43758.5453;
       return value - Math.floor(value);
     };
-    const leaves = Array.from({ length: woodland ? 300 : 268 }, (_, index) => {
+    const leaves = Array.from({ length: woodland ? 660 : 580 }, (_, index) => {
       const anchor = foliageAnchors[index % foliageAnchors.length];
-      const spread = 0.08 + hash(index * 7 + 1) * 0.27;
+      const spread = 0.055 + hash(index * 7 + 1) * 0.21;
       const theta = hash(index * 7 + 2) * Math.PI * 2;
       const x = anchor[0] + Math.cos(theta) * spread * (0.48 + hash(index * 7 + 3) * 0.92);
       const y = anchor[1] - 0.01 + (hash(index * 7 + 4) - 0.46) * 0.34;
@@ -317,8 +371,8 @@ function NaturalCanopy({ profile, position, rotationY, scale, shapeSeed }: {
       const rx = (hash(index * 7 + 6) - 0.5) * 1.28;
       const ry = theta + (hash(index * 7 + 7) - 0.5) * 1.15;
       const rz = (hash(index * 7 + 8) - 0.5) * 1.12;
-      const sx = 0.12 + hash(index * 7 + 9) * 0.16;
-      const sy = 0.065 + hash(index * 7 + 10) * 0.075;
+      const sx = 0.050 + hash(index * 7 + 9) * 0.080;
+      const sy = 0.026 + hash(index * 7 + 10) * 0.044;
       const sz = 1;
       return {
         position: [x, y, z] as [number, number, number],
@@ -350,10 +404,10 @@ function NaturalCanopy({ profile, position, rotationY, scale, shapeSeed }: {
     raycast={() => null}
     name="ground-authored-natural-canopy-v13"
     userData={{
-      treatment: "seed-varied-branch-architecture-fine-flat-leaf-canopy-v13",
+      treatment: "seed-varied-branch-architecture-dense-pointed-leaf-canopy-v15",
       provenance: NATURAL_CANOPY,
-      visibleAuthority: "runtime-authored-canopy-v13",
-      literalPixelRepair: "v14-smooth-clustered-broadleaf-density",
+      visibleAuthority: "runtime-authored-canopy-v15",
+      literalPixelRepair: "v15-dense-pointed-leaves-and-detailed-natural-ground",
       supersedesVisibleCandidate: "ground-natural-canopy-v3-low-poly-silhouette",
     }}
   >
@@ -454,7 +508,7 @@ function NaturalScatter({ profile }: { profile: EnvironmentProfile }) {
 
   const woodland = profile.id === "woodland";
   const ferns = items.slice(0, woodland ? 76 : 64);
-  const canopies = items.filter((item) => item.z < (woodland ? 6.0 : 4.5)).slice(0, woodland ? 70 : 60);
+  const canopies = items.filter((item) => item.z < (woodland ? 6.0 : 4.5)).slice(0, woodland ? 50 : 42);
   return <group name={woodland ? "ground-woodland-scanned-understory" : "ground-temperate-scanned-understory"} userData={{ treatment: "urai-self-authored-varied-canopy-v13-with-polyhaven-fern-rock-understory", canopyFallback: "scanned-understory-remains-without-canopy" }} raycast={() => null}>
     <GroundCanopyBoundary>
       <Suspense fallback={null}>
@@ -466,7 +520,7 @@ function NaturalScatter({ profile }: { profile: EnvironmentProfile }) {
             profile={profile}
             position={[x, groundHeight(x, z, profile.id) - 0.02, z]}
             rotationY={item.index * 0.91 + (woodland ? 0.22 : -0.14)}
-            scale={(woodland ? 1.62 : 1.52) + item.scale * 0.38}
+            scale={(woodland ? 1.48 : 1.38) + item.scale * 0.34}
             shapeSeed={item.index + (woodland ? 101 : 17)}
           />;
         })}
