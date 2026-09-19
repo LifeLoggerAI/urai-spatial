@@ -291,7 +291,7 @@ function replayMemoryWallGeometry() {
   return geometry
 }
 
-function ReplayMemoryGeography({ accent }: { accent: string }) {
+function ReplayMemoryGeography({ accent, demo }: { accent: string; demo: boolean }) {
   const basin=useMemo(replayBasinGeometry,[])
   const wall=useMemo(replayMemoryWallGeometry,[])
   const maps=useMemo(createMineralMaps,[])
@@ -300,9 +300,9 @@ function ReplayMemoryGeography({ accent }: { accent: string }) {
     <mesh geometry={basin} receiveShadow castShadow>
       <meshStandardMaterial map={maps[0]} normalMap={maps[1]} roughnessMap={maps[2]} normalScale={new THREE.Vector2(.40,.40)} color="#b8aa98" vertexColors roughness={.94}/>
     </mesh>
-    <mesh geometry={wall} position={[0,0,-.18]} receiveShadow castShadow>
+    {demo ? null : <mesh geometry={wall} position={[0,0,-.18]} receiveShadow castShadow>
       <meshStandardMaterial map={maps[0]} normalMap={maps[1]} roughnessMap={maps[2]} normalScale={new THREE.Vector2(.52,.52)} color="#8b7d70" vertexColors roughness={.97} side={THREE.DoubleSide}/>
-    </mesh>
+    </mesh>}
     <pointLight position={[-5.8,.4,-3.8]} color="#e0b181" intensity={1.52} distance={12} decay={2}/>
     <pointLight position={[5.2,1.1,-4.2]} color={accent} intensity={1.04} distance={11} decay={2}/>
   </group>
@@ -326,15 +326,15 @@ function ReplaySpatialScene({ memory, playing, progressMs, muteVideo }: { memory
   return (
     <>
       <color attach="background" args={[memory.visuals.sky]} />
-      <fog attach="fog" args={[memory.visuals.sky, visuals.fogNear, visuals.fogFar]} />
-      <ambientLight intensity={visuals.ambient} color="#c4d0c9" />
-      <hemisphereLight intensity={visuals.fill} color={memory.visuals.light} groundColor={memory.visuals.ground} />
-      <directionalLight position={[-8, 11, 6]} intensity={4.25} color="#f3d4a8" castShadow />
-      <directionalLight position={[6, 5, -7]} intensity={1.45} color={memory.visuals.accent} />
-      <pointLight position={[0, 1.4, -4.6]} intensity={visuals.source} distance={18} color={memory.visuals.accent} />
-      <pointLight position={[-5.5, 2.8, -1.5]} intensity={2.8} distance={18} color="#e2b27f" />
-      <primitive object={model} name="replay-memory-environment-v1" />
-      <ReplayMemoryGeography accent={memory.visuals.accent}/>
+      <fog attach="fog" args={[memory.visuals.sky, memory.demo ? 24 : visuals.fogNear, memory.demo ? 82 : visuals.fogFar]} />
+      <ambientLight intensity={memory.demo ? visuals.ambient * 1.55 : visuals.ambient} color={memory.demo ? "#f4ddc4" : "#c4d0c9"} />
+      <hemisphereLight intensity={memory.demo ? visuals.fill * 1.25 : visuals.fill} color={memory.visuals.light} groundColor={memory.visuals.ground} />
+      <directionalLight position={[-8, 11, 6]} intensity={memory.demo ? 5.4 : 4.25} color="#f3d4a8" castShadow />
+      <directionalLight position={[6, 5, -7]} intensity={memory.demo ? 1.1 : 1.45} color={memory.visuals.accent} />
+      <pointLight position={[0, 1.4, -4.6]} intensity={memory.demo ? visuals.source * 0.58 : visuals.source} distance={22} color={memory.visuals.accent} />
+      <pointLight position={[-5.5, 2.8, -1.5]} intensity={memory.demo ? 3.6 : 2.8} distance={22} color="#e2b27f" />
+      {memory.demo ? null : <primitive object={model} name="replay-memory-environment-v1" />}
+      <ReplayMemoryGeography accent={memory.visuals.accent} demo={memory.demo}/>
       <RecordedMemoryField media={media} playing={playing} progressMs={progressMs} muteVideo={muteVideo} />
       <ReplayTimelineField memory={memory} progress={progress} />
       <ReplayCameraRig progress={progress} reducedMotion={reducedMotion} />
