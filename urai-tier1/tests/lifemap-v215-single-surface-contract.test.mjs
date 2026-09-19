@@ -17,7 +17,8 @@ test('historical V215 single-surface source remains reproducible but is not runt
   assert.match(generator, /def sanctuary_height/)
   assert.match(generator, /one continuous camera-safe sanctuary/)
   assert.doesNotMatch(generator, /braided_channel|integrated_relief|def scarp/)
-  assert.match(world, /V237 literal-pixel authority: a continuous illuminated memory valley/)
+  assert.match(world, /V290 literal-pixel candidate: the governed memory artifacts now live inside/)
+  assert.match(world, /life-map-v237-grounded-geography-retired/)
   assert.doesNotMatch(world, /authored-v215\/life-map-memory-sanctuary-v215\.glb/)
 })
 

@@ -41,7 +41,8 @@ test('V212 delivers a complete optimized Blender-authored Life Map sanctuary', (
 })
 
 test('V212 source authority remains reproducible after the runtime successor advances', () => {
-  assert.match(source, /V237 literal-pixel authority: a continuous illuminated memory valley/)
+  assert.match(source, /V290 literal-pixel candidate: the governed memory artifacts now live inside/)
+  assert.match(source, /life-map-v237-grounded-geography-retired/)
   assert.match(source, /function memoryHeartGeometry\(/)
   assert.match(source, /function memoryFilamentGeometry\(/)
   assert.match(source, /<primitive object=\{hiddenAsset\} visible=\{false\} \/>/)
