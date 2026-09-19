@@ -345,7 +345,7 @@ function NaturalCanopy({ profile, position, rotationY, scale, shapeSeed }: {
       false,
     ));
 
-    const leafGeometry = new THREE.SphereGeometry(0.5, 10, 8);
+    const leafGeometry = new THREE.IcosahedronGeometry(0.5, 0);
 
     const foliageAnchors = [
       ...transformedBranchDefs.map((points) => points[points.length - 1]),
