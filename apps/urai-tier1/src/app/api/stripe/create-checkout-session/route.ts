@@ -26,9 +26,10 @@ async function verifyUser(request: Request): Promise<string | null> {
   const adminApp = await import('firebase-admin/app');
 
   if (!adminApp.getApps().length) {
-    const raw = process.env.FIREBASE_SERVICE_ACCOUNT_JSON;
-    if (!raw) throw new Error('Missing FIREBASE_SERVICE_ACCOUNT_JSON');
-    adminApp.initializeApp({ credential: adminApp.cert(JSON.parse(raw)) });
+    for (const name of ['FIREBASE_SERVICE_ACCOUNT_JSON', 'FIREBASE_PRIVATE_KEY', 'FIREBASE_CLIENT_EMAIL', 'FIREBASE_TOKEN']) {
+      if (String(process.env[name] || '').trim()) throw new Error(`Refusing long-lived Firebase credential environment variable: ${name}`);
+    }
+    adminApp.initializeApp({ credential: adminApp.applicationDefault() });
   }
 
   try {
