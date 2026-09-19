@@ -77,7 +77,8 @@ test('Orb and Home ownership preserve predecessor truth while the current candid
   assert.ok(currentHomeVisualAuthority.lastCertifiedPredecessor.runtimeAssets.includes('HomeOrbGroundedV288.tsx'))
 
   assert.match(activeHomeProduction, /export function HomeWorldProductionV223/)
-  assert.match(activeHomeProduction, /<HomeV225PolishV3 orbState=\{orbState\}/)
+  assert.match(activeHomeProduction, /<ReferenceHomeArchitecture onWalk=\{physicalWorldClick\} \/>/)
+  assert.match(activeHomeProduction, /<HomeCurrentArtRepair orbState=\{orbState\}/)
   assert.match(activeHomeProduction, /<HomeAtmosphericSky[^>]*onLifeMap=\{onLifeMap\}/)
   assert.match(activeHomeProduction, /HomeEmbodiedAvatar/)
   assert.match(activeHomeProduction, /HOME_AVATAR_MODEL/)
