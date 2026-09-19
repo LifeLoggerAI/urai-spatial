@@ -137,10 +137,12 @@ Recovered predecessor concepts now include Life OS/LifeLogger, Mirror of Becomin
 
 ## Remaining internally executable work inside this docs-only recovery PR
 
-1. Normalize current exact-head visual-proof references for Home/Ground/Life Map/Focus/Replay/Orb into stable manifest IDs without transferring predecessor acceptance.
-2. Keep the open-question register limited to genuinely unresolved founder/legal/external decisions.
+No additional source-resolvable documentation gap is currently identified after the present reconciliation pass. Continue to re-open this section if new source evidence or a moving authority exposes a concrete docs defect.
+
+The open-question register is intentionally limited to genuinely unresolved founder/legal/external/product-authority decisions.
 
 Completed in this recovery:
+- current #1237 Home/Ground/Life Map/Focus/Replay/Orb exact-head proof run pointers are bound to stable IDs in `59-CURRENT-SPATIAL-PROOF-POINTERS.md` without transferring predecessor acceptance;
 - standalone system implementation/source pointers are retained in `58-STANDALONE-SYSTEM-IMPLEMENTATION-POINTERS.md`;
 - requirement-level copy authority is reconciled through `11-COPY-MANIFEST.md`, `55-EDGE-STATE-COPY-SPEC.md`, and `56-COMMERCIAL-ENTITLEMENT-AUTHORITY.md`; final public/content-pack wording remains appropriately versioned/gated rather than invented here.
 

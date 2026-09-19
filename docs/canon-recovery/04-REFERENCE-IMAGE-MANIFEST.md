@@ -9,6 +9,7 @@ Primary current visual/reference authority is normalized in:
 - `10-GOLD-MASTER-SOURCE-RECOVERY.md`
 - `09-MISSING-ARTIFACT-MANIFEST.md`
 - `43-STORYBOARD-FRAME-SPECIFICATIONS.md`
+- `59-CURRENT-SPATIAL-PROOF-POINTERS.md`
 
 Primary source families:
 - Drive: URAI Visual Gold Master Active Manifest — 2026-09-17
@@ -57,7 +58,7 @@ A reference may be:
 - PREDECESSOR HEAD;
 - CONCEPT ONLY.
 
-Acceptance never transfers automatically across a changed implementation head.
+Acceptance never transfers automatically across a changed implementation head. Current Home/Ground/Life Map/Focus/Replay/Orb exact-head proof run pointers are retained in `59-CURRENT-SPATIAL-PROOF-POINTERS.md`.
 
 ## Explicit rejected/superseded visual lineage
 

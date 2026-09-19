@@ -86,3 +86,8 @@ The Drive authority gives this sequence:
 11. Avatar final sheet only after valid likeness authority exists.
 
 This file records source authority only. It does not mark those items visually accepted.
+
+
+## Current exact-head proof pointer companion
+
+Current #1237 exact-head workflow/run pointers for Home, Ground, Life Map, Focus, Replay, Orb and accessibility are retained in `59-CURRENT-SPATIAL-PROOF-POINTERS.md`. That register is intentionally status-bearing but non-promotional: queued/pending workflows are not treated as passed, and predecessor-head acceptance does not transfer.
