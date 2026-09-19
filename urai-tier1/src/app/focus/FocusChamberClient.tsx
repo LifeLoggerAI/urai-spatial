@@ -64,8 +64,9 @@ function dateLabel(value: string) {
 
 function focusMemoryVisualKind(memory: SelectedMemory | null) {
   if (!memory) return 'none'
-  const media = memory.sourceMedia.find((item) => item.kind === 'image' || item.kind === 'video')
-  return media ? 'source-' + media.kind : 'generated-memory-visualization'
+  if (memory.sourceMedia.some((item) => item.kind === 'image')) return 'source-image-still'
+  if (memory.sourceMedia.some((item) => item.kind === 'video')) return 'source-video-still'
+  return 'generated-memory-visualization'
 }
 
 function useWebGLAvailable() {
@@ -152,12 +153,13 @@ function MemoryVisualContent({ memory, compact = false }: { memory: SelectedMemo
     </span>
   }
 
-  const media = memory.sourceMedia.find((item) => item.kind === 'image' || item.kind === 'video')
+  const media = memory.sourceMedia.find((item) => item.kind === 'image')
+    ?? memory.sourceMedia.find((item) => item.kind === 'video')
   if (media?.kind === 'video') {
     return <span className={'focusMemoryVisual focusMemoryVisualSource' + (compact ? ' compact' : '')}>
-      <video src={media.url} autoPlay muted loop playsInline preload="metadata" aria-label={media.caption || 'Source video for ' + memory.title} />
+      <video src={media.url} muted playsInline preload="metadata" data-focus-source-motion="still" aria-label={media.caption || 'Still frame from source video for ' + memory.title} />
       <span className="focusMemoryGlass" aria-hidden="true" />
-      <span className="focusMemoryTruthLabel">Source memory</span>
+      <span className="focusMemoryTruthLabel">Source moment</span>
     </span>
   }
 
@@ -170,7 +172,7 @@ function MemoryVisualContent({ memory, compact = false }: { memory: SelectedMemo
       style={{ backgroundImage }}
     >
       <span className="focusMemoryGlass" aria-hidden="true" />
-      <span className="focusMemoryTruthLabel">Source memory</span>
+      <span className="focusMemoryTruthLabel">Source moment</span>
     </span>
   }
 
@@ -204,6 +206,8 @@ function FocusMemoryStar({
 }) {
   const group = useRef<THREE.Group | null>(null)
   const [hovered, setHovered] = useState(false)
+  const activationProgress = useRef(0)
+  const [activating, setActivating] = useState(false)
   const authoredMemoryStar = useTexture(FOCUS_AUTHORED_MEMORY_STAR)
   const starScale = memory ? THREE.MathUtils.clamp(memory.star.scale * 1.34, 1.18, 1.36) : 1.08
   const coronaTexture = useMemo(() => makeFocusCoronaTexture(2.25), [])
@@ -215,14 +219,24 @@ function FocusMemoryStar({
 
   useFrame((state, delta) => {
     if (!group.current) return
+    if (activating) activationProgress.current = Math.min(1, activationProgress.current + delta / (reducedMotion ? 0.26 : 1.9))
+    const expansion = activating ? THREE.MathUtils.lerp(1, reducedMotion ? 1.08 : 5.4, THREE.MathUtils.smootherstep(activationProgress.current, 0, 1)) : 1
     if (!reducedMotion) {
       group.current.rotation.y += Math.min(delta, 0.05) * 0.075
       const breathe = 1 + Math.sin(state.clock.elapsedTime * 0.72) * 0.010
-      group.current.scale.setScalar(starScale * breathe)
+      group.current.scale.setScalar(starScale * breathe * expansion)
     } else {
-      group.current.scale.setScalar(starScale)
+      group.current.scale.setScalar(starScale * expansion)
     }
   })
+
+  const activateMoment = (event?: ThreeEvent<PointerEvent>) => {
+    event?.stopPropagation()
+    if (!memory || activating) return
+    activationProgress.current = 0
+    setActivating(true)
+    onActivate()
+  }
 
   const pointer = (event: ThreeEvent<PointerEvent>, state: boolean) => {
     event.stopPropagation()
@@ -240,7 +254,14 @@ function FocusMemoryStar({
       terrainOwner: false,
     }}
   >
-    {memory?.demo ? <sprite raycast={() => null} position={[0, 0, .18]} scale={[2.65, 2.65, 1]} name="focus-authored-memory-star-v333">
+    {memory?.demo ? <sprite
+      position={[0, 0, .18]}
+      scale={[2.65, 2.65, 1]}
+      name="focus-authored-memory-star-v333"
+      onClick={activateMoment}
+      onPointerOver={(event) => pointer(event, true)}
+      onPointerOut={(event) => pointer(event, false)}
+    >
       <spriteMaterial map={authoredMemoryStar} transparent opacity={.98} depthWrite={false} toneMapped={false} />
     </sprite> : null}
     <sprite raycast={() => null} position={[-.12, .08, -.22]} scale={[4.65, 4.65, 1]} name="focus-memory-star-corona-glow">
@@ -272,7 +293,7 @@ function FocusMemoryStar({
     </mesh>
     <mesh
       name="focus-memory-star-glass-shell"
-      onClick={(event) => { event.stopPropagation(); if (memory) onActivate() }}
+      onClick={activateMoment}
       onPointerOver={(event) => pointer(event, true)}
       onPointerOut={(event) => pointer(event, false)}
     >
@@ -303,7 +324,7 @@ function FocusMemoryStar({
         type="button"
         className="focusStarMemoryButton"
         disabled={!memory}
-        onClick={onActivate}
+        onClick={() => activateMoment()}
         aria-label={memory ? 'Enter Replay for ' + memory.title : 'Select a memory in Life Map to enter Replay'}
       >
         <MemoryVisualContent memory={memory} />
@@ -605,6 +626,7 @@ export default function FocusChamberClient() {
     data-focus-memory-visual={memoryVisual}
     data-focus-life-map-star-morphology="stellar-point-photosphere-layered-corona"
     data-focus-closeup-morphology="resolved-dimensional-memory-star"
+    data-focus-replay-transition="moment-expands-into-replay"
     data-focus-camera-x="0.000"
     data-focus-camera-y="0.080"
     data-focus-camera-z="4.800"
@@ -692,7 +714,7 @@ export default function FocusChamberClient() {
 
     <details className="focusHelp">
       <summary>Explore</summary>
-      <p>Drag around the selected Memory Star. Scroll, pinch, or use W and S to move closer or farther; A and D orbit. Enter Replay crosses through this same memory. Escape returns to Life Map.</p>
+      <p>Drag around the selected Memory Star. Scroll, pinch, or use W and S to move closer or farther; A and D orbit. Select the moment itself to expand it into Replay. Escape returns to Life Map.</p>
     </details>
 
     {webglState !== 'ready' && webglState !== 'failed' ? <section className="webglRecovery" role="status" aria-live="assertive">

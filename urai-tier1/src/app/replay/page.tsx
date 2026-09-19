@@ -1,4 +1,5 @@
 import CinematicReplayClient from './CinematicReplayClient'
+import { postLaunchSpatialRealmsEnabled } from '@/lib/release/postLaunchRealmGate'
 import './replay-production-polish.css'
 import './replay-final-rail-order.css'
 
@@ -51,6 +52,7 @@ function ReplayRouteProofSurface() {
 }
 
 export default function ReplayRoutePage() {
+  const immersiveEntryEnabled = postLaunchSpatialRealmsEnabled()
   return (
     <>
       <span
@@ -61,7 +63,7 @@ export default function ReplayRoutePage() {
         Replay the memory place. Spatial memory world.
       </span>
       <ReplayRouteProofSurface />
-      <FinalReplayFilm />
+      <FinalReplayFilm immersiveEntryEnabled={immersiveEntryEnabled} />
     </>
   )
 }
