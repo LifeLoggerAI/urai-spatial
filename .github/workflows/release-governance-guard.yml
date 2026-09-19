@@ -128,7 +128,7 @@ jobs:
               "$GITHUB_API_URL/repos/$REPOSITORY/collaborators/$reviewer/permission" \
               | jq -r '.permission // empty')"
             case "$permission" in
-              admin|maintain|write)
+              admin|maintain|write|triage|read)
                 approved_reviewer="$reviewer"
                 break
                 ;;
@@ -143,50 +143,9 @@ jobs:
             exit 0
           fi
 
-          # A repository with one writable steward cannot manufacture an independent
-          # reviewer. Preserve fail-closed governance by requiring the PR author to be
-          # the repository owner, to hold write-or-higher permission, and to place an
-          # exact-head attestation in the live PR body. The body is fetched at run time
-          # so a rerun can validate the current attestation without a no-op source commit.
-          repo="$(curl --fail --silent --show-error \
-            --header 'Accept: application/vnd.github+json' \
-            --header "Authorization: Bearer $GH_TOKEN" \
-            --header 'X-GitHub-Api-Version: 2022-11-28' \
-            "$GITHUB_API_URL/repos/$REPOSITORY")"
-          repo_owner="$(jq -r '.owner.login // empty' <<<"$repo")"
-          author_permission="$(curl --fail --silent --show-error \
-            --header 'Accept: application/vnd.github+json' \
-            --header "Authorization: Bearer $GH_TOKEN" \
-            --header 'X-GitHub-Api-Version: 2022-11-28' \
-            "$GITHUB_API_URL/repos/$REPOSITORY/collaborators/$PR_AUTHOR/permission" \
-            | jq -r '.permission // empty')"
-          pr_body="$(curl --fail --silent --show-error \
-            --header 'Accept: application/vnd.github+json' \
-            --header "Authorization: Bearer $GH_TOKEN" \
-            --header 'X-GitHub-Api-Version: 2022-11-28' \
-            "$GITHUB_API_URL/repos/$REPOSITORY/pulls/$PR_NUMBER" \
-            | jq -r '.body // ""')"
-          attestation="SOLO_STEWARD_APPROVED_SHA=$EXACT_SHA"
-
-          if test "$repo_owner" != "$PR_AUTHOR"; then
-            echo "Solo-steward fallback denied: PR author is not repository owner." >&2
-            exit 1
-          fi
-          case "$author_permission" in
-            admin|maintain|write) ;;
-            *)
-              echo "Solo-steward fallback denied: PR author lacks write-or-higher permission." >&2
-              exit 1
-              ;;
-          esac
-          if ! grep -Fq "$attestation" <<<"$pr_body"; then
-            echo "No independent exact-head approval exists and the live PR body lacks exact-head solo-steward attestation: $attestation" >&2
-            exit 1
-          fi
-
-          printf '%s\n' 'solo-steward-exact-head' > artifacts/release-governance/approval-mode.txt
-          : > artifacts/release-governance/approved-reviewer.txt
-          printf '%s\n' "$PR_AUTHOR" > artifacts/release-governance/approved-steward.txt
+          echo "No independent exact-head approval from an eligible read-or-higher non-author collaborator exists." >&2
+          echo "Grant only the minimum collaborator access needed for independent review; do not substitute owner/self attestation." >&2
+          exit 1
 
       - name: Reject temporary dispatchers on canonical source
         if: steps.scope.outputs.applies == 'true'
@@ -291,7 +250,7 @@ jobs:
           approved_steward="$(cat artifacts/release-governance/approved-steward.txt 2>/dev/null || true)"
           cat > artifacts/release-governance/receipt.json <<EOF
           {
-            "schemaVersion": "urai-release-governance-guard-5",
+            "schemaVersion": "urai-release-governance-guard-6",
             "repository": "$GITHUB_REPOSITORY",
             "exactSha": "$EXACT_SHA",
             "baseSha": "$BASE_SHA",
