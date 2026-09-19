@@ -334,12 +334,10 @@ function ReplayMemoryGeography({ accent, demo }: { accent: string; demo: boolean
   return <group name="replay-v216-embedded-memory-cove" userData={{ visualIntent:'media-manifested-inside-continuous-weathered-place' }}>
     <mesh geometry={basin} receiveShadow castShadow>
       {demo
-        ? <meshStandardMaterial map={maps[0]} normalMap={maps[1]} roughnessMap={maps[2]} normalScale={new THREE.Vector2(.40,.40)} color="#536057" vertexColors roughness={.99} metalness={0} />
+        ? <meshStandardMaterial map={maps[0]} normalMap={maps[1]} roughnessMap={maps[2]} normalScale={new THREE.Vector2(.34,.34)} color="#6d756a" vertexColors roughness={.97} metalness={0} />
         : <meshStandardMaterial map={maps[0]} normalMap={maps[1]} roughnessMap={maps[2]} normalScale={new THREE.Vector2(.40,.40)} color="#b8aa98" vertexColors roughness={.94}/>}
     </mesh>
-    <mesh geometry={wall} position={[0,0,-.18]} receiveShadow castShadow>
-      <meshStandardMaterial map={maps[0]} normalMap={maps[1]} roughnessMap={maps[2]} normalScale={new THREE.Vector2(demo ? .64 : .52,demo ? .64 : .52)} color={demo ? "#46524b" : "#8b7d70"} vertexColors roughness={.98} side={THREE.DoubleSide}/>
-    </mesh>
+    {demo ? null : <mesh geometry={wall} position={[0,0,-.18]} receiveShadow castShadow>\n      <meshStandardMaterial map={maps[0]} normalMap={maps[1]} roughnessMap={maps[2]} normalScale={new THREE.Vector2(.52,.52)} color="#8b7d70" vertexColors roughness={.98} side={THREE.DoubleSide}/>\n    </mesh>}
     {demo ? REPLAY_DEMO_OUTCROPS.map((outcrop, index)=><mesh
       key={index}
       geometry={rocks[index]}
@@ -460,14 +458,14 @@ function ReplaySpatialScene({ memory, playing, progressMs, muteVideo }: { memory
 
   return (
     <>
-      <color attach="background" args={[memory.demo ? "#070a11" : memory.visuals.sky]} />
-      <fog attach="fog" args={[memory.demo ? "#10151a" : memory.visuals.sky, memory.demo ? 15 : visuals.fogNear, memory.demo ? 66 : visuals.fogFar]} />
-      <ambientLight intensity={memory.demo ? visuals.ambient * .78 : visuals.ambient} color={memory.demo ? "#c9c2ae" : "#c4d0c9"} />
-      <hemisphereLight intensity={memory.demo ? visuals.fill * .84 : visuals.fill} color={memory.visuals.light} groundColor={memory.demo ? "#1d241f" : memory.visuals.ground} />
-      <directionalLight position={[-8, 11, 6]} intensity={memory.demo ? 3.35 : 4.25} color="#e3c49c" castShadow />
+      <color attach="background" args={[memory.demo ? "#171e27" : memory.visuals.sky]} />
+      <fog attach="fog" args={[memory.demo ? "#293139" : memory.visuals.sky, memory.demo ? 20 : visuals.fogNear, memory.demo ? 76 : visuals.fogFar]} />
+      <ambientLight intensity={memory.demo ? visuals.ambient * 1.02 : visuals.ambient} color={memory.demo ? "#d6d0bd" : "#c4d0c9"} />
+      <hemisphereLight intensity={memory.demo ? visuals.fill * 1.04 : visuals.fill} color={memory.visuals.light} groundColor={memory.demo ? "#30372f" : memory.visuals.ground} />
+      <directionalLight position={[-8, 11, 6]} intensity={memory.demo ? 4.15 : 4.25} color="#ecd2aa" castShadow />
       <directionalLight position={[6, 5, -7]} intensity={memory.demo ? 1.34 : 1.45} color={memory.visuals.accent} />
       <pointLight position={[0, 1.4, -4.6]} intensity={memory.demo ? visuals.source * 0.34 : visuals.source} distance={22} color={memory.visuals.accent} />
-      <pointLight position={[-5.5, 2.8, -1.5]} intensity={memory.demo ? 1.85 : 2.8} distance={22} color="#d5a978" />
+      <pointLight position={[-5.5, 2.8, -1.5]} intensity={memory.demo ? 2.65 : 2.8} distance={24} color="#e0b482" />
       {memory.demo ? <ReplayDemoHorizon /> : <primitive object={model} name="replay-memory-environment-v1" />}
       <ReplayMemoryGeography accent={memory.visuals.accent} demo={memory.demo}/>
       <RecordedMemoryField media={media} playing={playing} progressMs={progressMs} muteVideo={muteVideo} />
@@ -571,7 +569,7 @@ export default function CinematicReplayClient() {
   }
 
   return <main className="replayWorld" style={style} data-testid="cinematic-replay-client" data-memory-status={result.status} data-memory-id={memory.id} data-star-id={memory.star.id} data-manifest-id={memory.replayManifest.id} data-node={memory.star.id} data-playing={playing ? 'true' : 'false'} data-canonical-asset={replayAssets.primary.src} data-replay-spatial-owner="r3f-memory-theater" data-replay-environment={REPLAY_ENVIRONMENT_MODEL} data-replay-composition="v225-source-first-memory-environment-readable-phased-return" data-replay-camera="anchored-first-person-witness" data-replay-truth={truth?.level ?? 'unknown'}>
-    <Canvas className="replaySpatialCanvas" shadows={quality.shadows} dpr={[1, quality.pixelRatioMax]} frameloop={quality.documentVisible ? 'always' : 'never'} camera={{ position: [0, 0.42, 8.4], fov: 46, near: 0.05, far: 120 }} gl={{ antialias: quality.antialias, powerPreference: 'high-performance' }} onCreated={({ gl }) => { gl.outputColorSpace = THREE.SRGBColorSpace; gl.toneMapping = THREE.ACESFilmicToneMapping; gl.toneMappingExposure = memory.demo ? 1.08 : 1.92 }}>
+    <Canvas className="replaySpatialCanvas" shadows={quality.shadows} dpr={[1, quality.pixelRatioMax]} frameloop={quality.documentVisible ? 'always' : 'never'} camera={{ position: [0, 0.42, 8.4], fov: 46, near: 0.05, far: 120 }} gl={{ antialias: quality.antialias, powerPreference: 'high-performance' }} onCreated={({ gl }) => { gl.outputColorSpace = THREE.SRGBColorSpace; gl.toneMapping = THREE.ACESFilmicToneMapping; gl.toneMappingExposure = memory.demo ? 1.32 : 1.92 }}>
       <ReplaySpatialScene memory={memory} playing={playing} progressMs={progressMs} muteVideo={Boolean(recordedAudioUrl)} />
     </Canvas>
     <div className="replayAtmosphere" aria-hidden="true" />
