@@ -80,3 +80,24 @@ Mechanical batch result: 13 files classified; 12 unique byte payloads; 2 SUPERSE
 - Possible Futures now has capture coverage for active branch A, edit assumptions, provider-unavailable disclosure, and no-WebGL conventional fallback in addition to the pre-existing manual scenario states.
 - The governed-provider future state remains blocked; no provider output may be faked.
 
+## 2026-09-19 continuation — literal Drive Focus candidate audit
+
+Direct pixel inspection batch: 12 Drive originals from the legacy Focus source folder. No file in this batch is current accepted authority.
+
+| Drive candidate | SHA-256 | Canon verdict | Literal reason / use boundary |
+|---|---|---|---|
+| `focus.png` | `eb062d6ae838cb956d3f915b4265b1dadfdcd765c49bc7c97a6abb9523214600` | SUPERSEDED | Memory reads as a large transparent spherical bubble/orb with satellite bubbles; conflicts with current stellar selected-memory authority. |
+| `focus0.png` | `00902881dd053126f5606efe3d9b083c93a4299add0ad00a924230b0e77f48d5` | SUPERSEDED | Planet/bubble shell grammar, not a stellar photosphere/corona. |
+| `focus1.png` | `5a3e09377754d5e6c888b851c2c16a07e68a903966f8f4f69404c846a8de2df6` | SUPERSEDED | Transparent spherical memory container with satellite bubbles; not current Memory Star morphology. |
+| `focus2.png` | `e92eb65410fe7bd184af5c24582c6125b22b5cfb3d1c6bba0edb1d883919c000` | SUPERSEDED | Large glassy planet-like sphere owns the composition; current Focus must remain stellar. |
+| `focus3.png` | `f03777c6608c513312cd49febfcfd0a73072a78f82ec4c0591166f763ffbcd19` | SUPERSEDED | Same old bubble/orb memory-container language; do not resurrect. |
+| `storyboard-life-map-to-focus.png` | `75b22ba5a00977770663ae5ccf31fb606b32291d106ffb9681a9f85f755aa2fd` | SUPERSEDED | Visible synthetic hand selects a star which resolves into a transparent sphere around a person; violates bodyless non-XR interaction and stellar Focus authority. |
+| `storyboard-life-map-to-focus0.png` | `81c6e77f4028e1abee5ee90618fc808f3dcd4613fb1589e4c942f8b03b37ff59` | SUPERSEDED | Hand selection plus opening ring/spherical memory bubble; not current selected-star continuity. |
+| `storyboard-life-map-to-focus1.png` | `71241098ebd66bb4b658695c6b54f1586f282d5f2bf3d2d9fd6c800ffd5ec6d8` | SUPERSEDED | Diagram-like construction with visible hand and ring/bubble Memory Star; superseded by current stellar morphology. |
+| `storyboard-life-map-to-focus2.png` | `5c3107246f3b92bf54a6d9f38db58d0412a58b21af3ecd012f7988dce89e7db1` | SUPERSEDED | Hand-driven star-to-spherical-portal transition; conflicts with current camera continuity and contained-memory star grammar. |
+| `storyboard-esc-unwind-focus-to-lifemap.png` | `8fa1e65cffe3cd936e313ccac4984fdcd3544276cb8bddd303852c0d23f6ecac` | HISTORICAL_REFERENCE_ONLY | Broad reverse-travel intent survives, but the starting Focus sphere/ring is superseded and cannot certify current unwind pixels. |
+| `storyboard-esc-unwind-focus-to-lifemap1.png` | `1d3cf80003900efbf0d5d03366b27b28d305cf98f34f4b665f0748fae9b60f65` | HISTORICAL_REFERENCE_ONLY | Historical reverse transition only; old spherical Focus/ring grammar is not current authority. |
+| `storyboard-esc-unwind-focus-to-lifemap2.png` | `79f49fee0b6d44f230416f50088cc1fc4e07b754161971a67fa685342a3baada` | HISTORICAL_REFERENCE_ONLY | Historical unwind sequencing only; exact current state-to-state return must be recaptured from runtime. |
+
+Mechanical batch result: 12 files classified; 9 SUPERSEDED; 3 HISTORICAL_REFERENCE_ONLY; 0 CURRENT_ACCEPTED; 0 CURRENT_REPAIRED. All 12 remain outside Accepted References.
+
