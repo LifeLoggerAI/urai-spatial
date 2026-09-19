@@ -64,6 +64,7 @@ This index intentionally lists every recovery artifact currently present, includ
 53. `43-STORYBOARD-FRAME-SPECIFICATIONS.md`
 54. `44-UI-SURFACE-INVENTORY.md`
 55. `45-LAUNCH-AND-ROADMAP-CLASSIFICATION.md`
+56. `46-CURRENT-ASSET-REFERENCE-AUTHORITY.md`
 
 ## Existing authority this recovery layer does not replace
 
