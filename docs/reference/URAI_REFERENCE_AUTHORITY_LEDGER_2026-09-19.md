@@ -124,3 +124,44 @@ Direct pixel inspection batch: 14 Drive originals from the legacy Ground source 
 
 Mechanical batch result: 14 files classified; 13 unique byte payloads; 6 SUPERSEDED file entries; 8 REJECTED; 0 CURRENT_ACCEPTED; 0 CURRENT_REPAIRED. The exact duplicate pair must be deduplicated in final packaging.
 
+## 2026-09-19 continuation — literal Drive Home candidate audit
+
+Direct pixel inspection batch: 9 Drive originals from the legacy Home source folder. None is current accepted authority.
+
+| Drive candidate | SHA-256 | Canon verdict | Literal reason / use boundary |
+|---|---|---|---|
+| `storyboard-avatar-opening.png` | `36da5635960f6bb1150853c3641fdb3f757ed4ea3d7e2c316e83fb2e5bb51dca` | SUPERSEDED | Explicit third-person avatar opening around a glowing Orb; current non-XR first-person Home is camera-only/bodyless and current Home is realistic inhabited architecture. |
+| `storyboard-avatar-opening1.png` | `f75d000da9777dc292f0cde3bfba01c503b3b5bfabcaf6b8cda62264a193e506` | SUPERSEDED | Third-person avatar and visible hand interactions; conflicts with locked bodyless non-XR FPV authority. |
+| `storyboard-avatar-opening2.png` | `71777f0502f3c89904446b64b2b5d79059304adc9f1c7443efd801eac3ee33d4` | SUPERSEDED | Avatar-centric outdoor fantasy Home staging; not current Home visual owner. |
+| `storyboard-avatar-opening3.png` | `08746888c59d75fb839a92c6a6253dbe012d1f85313725c1398be03ba492336f` | SUPERSEDED | Avatar/hand/camera orbit interaction board from superseded third-person Home language. |
+| `home-day.png` | `eed30cec44f8d46e24de9be1acbb4b416feee3a0019dfa8572cb637819a0b8f9` | REJECTED | Open fantasy landscape with standing person and glowing Orb; not realistic inhabited Home architecture. |
+| `home-night.png` | `41aff782990802ad2fd4d61366d1eb06da09fdb1043553fbb12d184ac20c1f26` | REJECTED | Outdoor cosmic/fantasy staging with person; no current lived Home architecture. |
+| `home-storm.png` | `fb7905a456f919c685ad94dd1fda2bc7fd4f1c92aa493732e161e543b102e861` | REJECTED | Stormy fantasy terrain with visible person/Orb; not current same-Home geometry emotional-weather treatment. |
+| `home-chaos.png` | `f4cf3636201e93d03a06d3f35ce6bde11688cb854de7e430ba4814c0bf7a5194` | REJECTED | Apocalyptic fantasy terrain/portal composition; conflicts with inhabited Home and governed emotional-weather canon. |
+| `home-desert.png` | `f71fc2d4252643170bba595d4ce06cbfd87967f861c65c032a03445995f2e35d` | REJECTED | Desert fantasy scene with cloaked person and generic orb; not same Home geometry and not current Home authority. |
+
+Mechanical batch result: 9 files classified; 4 SUPERSEDED; 5 REJECTED; 0 CURRENT_ACCEPTED; 0 CURRENT_REPAIRED.
+
+## 2026-09-19 continuation — literal Drive Replay candidate audit
+
+Direct pixel inspection batch: 10 Drive originals from the legacy Replay source folder. None is current accepted exact-head evidence.
+
+| Drive candidate | SHA-256 | Canon verdict | Literal reason / use boundary |
+|---|---|---|---|
+| `storyboard-focus-to-replay.png` | `a95267843f775dc77113f0a8acb1b840548246991c064ed4e4b2a00b850f5f26` | HISTORICAL_REFERENCE_ONLY | Preserves useful high-level star-opens-into-memory transition intent, but starts from old spherical/ring Focus grammar and is not exact current runtime proof. |
+| `storyboard-focus-to-replay1.png` | `764ed90263c4a869200072e5915f28982c8bb322f35b12fca65c9971921ee09b` | HISTORICAL_REFERENCE_ONLY | Transition sequencing is historically useful, but visible hand/ring treatment and staged memory images are not current exact authority. |
+| `storyboard-focus-to-replay2.png` | `62cad8c705fccd408950db8ea58a1cf32b0f3175f45e4ef26456c1375e639527` | HISTORICAL_REFERENCE_ONLY | Retains star-to-lived-scene concept only; old ring/portal visual language is superseded. |
+| `storyboard-focus-to-replay3.png` | `e8fb37e4abf43206191a9252d4a0c3a0fb13dd83f0dd4875b9cf77fb87802c8e` | HISTORICAL_REFERENCE_ONLY | Historical memory-opening storyboard; not current exact-head pixels and not a source for fabricated personal imagery. |
+| `replay-example1.png` | `c7d3acbf18dcbbb1a11dd1798fba37e2acd1ac7b2d037d452d7d4da7b9f3d255` | SUPERSEDED | Lived scene remains framed by a cosmic aperture and explicit play glyph; current Replay must read as being inside the memory, not player framing. |
+| `replay-example2.png` | `3ce59429a8178654e01b3b84b165aa5dd306b7a5171434e289440ed663a3c93e` | SUPERSEDED | Cosmic ring around staged personal scene plus visible play affordance; not current truthful source grammar. |
+| `replay-example3.png` | `e6fa247aa4ae421cdc2dea6e86480f5b3b2eb66f598de127d34bf832ccb51456` | SUPERSEDED | Abstract cosmic overlay with playback affordance rather than inside-memory environment. |
+| `replay-example4.png` | `d2afc28917fff78ef977fe0d953b587b3662aadf7d5b07402ed220b5fd00e8a4` | SUPERSEDED | Staged intimate scene enclosed by cosmic ring/player grammar; cannot serve as current Replay authority. |
+| `replay-example5.png` | `09ae2b5a2c76389ce56d6723c5c5926bdd4aa62599f8069000bd30e20a9a544a` | SUPERSEDED | Landscape is viewed through a glowing aperture with play icon; current Replay requires environment ownership. |
+| `replay-example6.png` | `6342ad18ac294deb14e928263a1827267ea1c78c0e231ed24cf4bc0281d8bfca` | SUPERSEDED | Staged people inside a cosmic shell with playback affordance; superseded and potentially autobiographical-looking without provenance. |
+
+Mechanical batch result: 10 files classified; 6 SUPERSEDED; 4 HISTORICAL_REFERENCE_ONLY; 0 CURRENT_ACCEPTED; 0 CURRENT_REPAIRED.
+
+## Legacy source-folder completeness note
+
+The sibling legacy Drive folder named `avatar` was inspected at its canonical folder ID and is empty. No hidden avatar image candidates were recovered from that folder in this pass; do not invent missing likeness material from it.
+
