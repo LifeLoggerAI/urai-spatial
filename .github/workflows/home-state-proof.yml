@@ -93,4 +93,4 @@ jobs:
             artifacts/home-state-proof
             artifacts/home-state-proof-attempt-*
           if-no-files-found: error
-          retention-days: 90
+          retention-days: ${{ github.event_name == 'pull_request' && 30 || 90 }}
