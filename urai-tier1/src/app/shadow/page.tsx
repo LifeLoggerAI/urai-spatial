@@ -1,3 +1,5 @@
+import { notFound } from 'next/navigation'
+import { postLaunchSpatialRealmsEnabled } from '@/lib/release/postLaunchRealmGate'
 import SpatialRealmRuntime from '@/spatial/realms/SpatialRealmRuntime'
 import { getSceneDefinition } from '@/spatial/realms/sceneRegistry'
 
@@ -7,6 +9,7 @@ export const metadata = {
 }
 
 export default function ShadowRoutePage() {
+  if (!postLaunchSpatialRealmsEnabled()) notFound()
   const scene = getSceneDefinition('shadow')
 
   return (

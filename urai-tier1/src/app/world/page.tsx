@@ -1,11 +1,10 @@
-import "../ground-world.css";
-import GroundWorldExperience from "@/spatial/ground/GroundWorldExperience";
+import { redirect } from 'next/navigation'
 
 export const metadata = {
-  title: "Ground World · URAI Spatial",
-  description: "The embodied URAI layer where council avatars and real-life objects live.",
-};
+  title: 'Ground World · URAI Spatial',
+  description: 'Compatibility entry for the canonical URAI Ground runtime.',
+}
 
-export default function GroundWorldPage() {
-  return <GroundWorldExperience />;
+export default function GroundWorldCompatibilityPage() {
+  redirect('/ground?from=world')
 }
