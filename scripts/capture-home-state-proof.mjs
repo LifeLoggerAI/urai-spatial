@@ -430,6 +430,9 @@ async function captureHomeSpatialContinuity({ idSuffix = 'desktop', viewport = {
     record.status = response?.status()
     record.neutralPresentationStableState = await owner.getAttribute('data-home-stable-state')
     record.neutralPresentationCamera = await owner.getAttribute('data-home-camera-mode')
+    record.neutralPresentationAvatarModel = await owner.getAttribute('data-home-avatar-model')
+    record.neutralPresentationVisual = sampleVisual ? await waitForVisualEvidence(page) : { available: true, reason: 'retained-responsive-pixels-no-extra-sampling' }
+    record.neutralPresentationScreenshot = await screenshotRecord('neutral-presentation')
 
     const enterFirstPerson = page.getByRole('button', { name: 'Enter first-person Home' }).first()
     await enterFirstPerson.focus()
@@ -490,6 +493,10 @@ async function captureHomeSpatialContinuity({ idSuffix = 'desktop', viewport = {
       && Number.isFinite(camera?.pitch)
 
     record.passed = record.status === 200
+      && record.neutralPresentationStableState !== 'AVATAR_HOME_FIRST_PERSON'
+      && record.neutralPresentationCamera !== 'avatar-home-first-person'
+      && record.neutralPresentationVisual?.available === true
+      && record.neutralPresentationScreenshot.bytes > 12_000
       && record.firstPersonStableState === 'AVATAR_HOME_FIRST_PERSON'
       && record.firstPersonCamera === 'avatar-home-first-person'
       && record.firstPersonMovement === 'shared-keyboard-touch-walk-look-interact'
