@@ -424,10 +424,10 @@ function ReplayDemoLake() {
 
 const REPLAY_DEMO_OUTCROPS = [
   // V237: a few grounded scanned formations frame the memory without becoming walls.
-  { x: -5.7, z: -4.2, lift: -.78, scale: [2.25, 1.62, 2.18] as [number, number, number], rotation: [0.10, 0.72, -0.08] as [number, number, number] },
-  { x: 5.9, z: -5.8, lift: -.82, scale: [2.10, 1.52, 2.02] as [number, number, number], rotation: [-0.06, -0.88, 0.06] as [number, number, number] },
-  { x: -6.8, z: -13.4, lift: -.72, scale: [2.36, 1.70, 2.20] as [number, number, number], rotation: [0.08, 1.12, -0.05] as [number, number, number] },
-  { x: 6.9, z: -15.6, lift: -.74, scale: [2.18, 1.58, 2.08] as [number, number, number], rotation: [-0.05, -1.18, 0.07] as [number, number, number] },
+  { x: -4.45, z: -3.1, lift: -.38, scale: [3.15, 2.46, 3.02] as [number, number, number], rotation: [0.10, 0.72, -0.08] as [number, number, number] },
+  { x: 4.75, z: -4.4, lift: -.42, scale: [2.92, 2.18, 2.78] as [number, number, number], rotation: [-0.06, -0.88, 0.06] as [number, number, number] },
+  { x: -5.5, z: -10.8, lift: -.44, scale: [3.05, 2.34, 2.88] as [number, number, number], rotation: [0.08, 1.12, -0.05] as [number, number, number] },
+  { x: 5.65, z: -12.8, lift: -.46, scale: [2.86, 2.12, 2.72] as [number, number, number], rotation: [-0.05, -1.18, 0.07] as [number, number, number] },
 ] as const
 
 function ReplayMemoryGeography({ accent, demo }: { accent: string; demo: boolean }) {
@@ -440,7 +440,7 @@ function ReplayMemoryGeography({ accent, demo }: { accent: string; demo: boolean
   return <group name="replay-v216-embedded-memory-cove" userData={{ visualIntent:'media-manifested-inside-continuous-weathered-place' }}>
     <mesh geometry={basin} receiveShadow castShadow>
       {demo
-        ? <meshStandardMaterial normalMap={maps[1]} roughnessMap={maps[2]} normalScale={new THREE.Vector2(.34,.34)} color="#545750" vertexColors roughness={.94} metalness={0} envMapIntensity={.30} />
+        ? <meshStandardMaterial normalMap={maps[1]} roughnessMap={maps[2]} normalScale={new THREE.Vector2(.48,.48)} color="#667067" vertexColors roughness={.90} metalness={0} envMapIntensity={.38} />
         : <meshStandardMaterial map={maps[0]} normalMap={maps[1]} roughnessMap={maps[2]} normalScale={new THREE.Vector2(.40,.40)} color="#b8aa98" vertexColors roughness={.94}/>}
     </mesh>
     {demo ? null : <mesh geometry={wall} position={[0,0,-.18]} receiveShadow castShadow>\n      <meshStandardMaterial map={maps[0]} normalMap={maps[1]} roughnessMap={maps[2]} normalScale={new THREE.Vector2(.52,.52)} color="#8b7d70" vertexColors roughness={.98} side={THREE.DoubleSide}/>\n    </mesh>}
@@ -453,10 +453,10 @@ function ReplayMemoryGeography({ accent, demo }: { accent: string; demo: boolean
         rotation={outcrop.rotation}
         scale={outcrop.scale}
       />)}
-      <ReplayScannedProp src={REPLAY_FERN} position={[-3.7, replayBasinHeight(-3.7, -3.7) + .02, -3.7]} rotation={[0, .42, 0]} scale={[1.18, 1.18, 1.18]} />
-      <ReplayScannedProp src={REPLAY_FERN} position={[3.8, replayBasinHeight(3.8, -4.7) + .02, -4.7]} rotation={[0, -1.08, 0]} scale={[1.10, 1.10, 1.10]} />
-      <ReplayScannedProp src={REPLAY_FERN} position={[-5.0, replayBasinHeight(-5.0, -9.7) + .02, -9.7]} rotation={[0, 1.5, 0]} scale={[1.02, 1.02, 1.02]} />
-      <ReplayScannedProp src={REPLAY_FERN} position={[4.9, replayBasinHeight(4.9, -10.8) + .02, -10.8]} rotation={[0, -.62, 0]} scale={[1.04, 1.04, 1.04]} />
+      <ReplayScannedProp src={REPLAY_FERN} position={[-3.25, replayBasinHeight(-3.25, -3.0) + .02, -3.0]} rotation={[0, .42, 0]} scale={[1.72, 1.72, 1.72]} />
+      <ReplayScannedProp src={REPLAY_FERN} position={[3.35, replayBasinHeight(3.35, -3.9) + .02, -3.9]} rotation={[0, -1.08, 0]} scale={[1.58, 1.58, 1.58]} />
+      <ReplayScannedProp src={REPLAY_FERN} position={[-4.45, replayBasinHeight(-4.45, -8.2) + .02, -8.2]} rotation={[0, 1.5, 0]} scale={[1.42, 1.42, 1.42]} />
+      <ReplayScannedProp src={REPLAY_FERN} position={[4.35, replayBasinHeight(4.35, -9.1) + .02, -9.1]} rotation={[0, -.62, 0]} scale={[1.46, 1.46, 1.46]} />
     </group> : null}
     <pointLight position={[-5.8,1.1,-3.8]} color="#e4b984" intensity={demo ? 1.72 : 1.52} distance={17} decay={2}/>
     <pointLight position={[5.2,1.6,-4.2]} color={accent} intensity={demo ? 1.28 : 1.04} distance={16} decay={2}/>
@@ -469,9 +469,9 @@ function replayDemoDistantTerrainGeometry() {
   const positions: number[] = []
   const colors: number[] = []
   const indices: number[] = []
-  const near = new THREE.Color('#303732')
-  const mid = new THREE.Color('#47413b')
-  const haze = new THREE.Color('#67514b')
+  const near = new THREE.Color('#313a36')
+  const mid = new THREE.Color('#48514b')
+  const haze = new THREE.Color('#76675d')
   for (let row = 0; row <= rows; row += 1) {
     const v = row / rows
     const z = -17.5 - v * 50
@@ -520,9 +520,9 @@ function ReplayDemoHorizon() {
           float fbm(vec2 p){ float n=0.,a=.5; for(int i=0;i<5;i++){ n+=noise(p)*a; p=p*2.03+vec2(7.1,3.7); a*=.5; } return n; }
           void main(){
             float y=vUv.y;
-            vec3 horizon=vec3(0.54,0.39,0.33);
-            vec3 middle=vec3(0.25,0.27,0.33);
-            vec3 top=vec3(0.075,0.105,0.16);
+            vec3 horizon=vec3(0.64,0.48,0.39);
+            vec3 middle=vec3(0.28,0.33,0.40);
+            vec3 top=vec3(0.055,0.085,0.14);
             vec3 color=mix(horizon,middle,smoothstep(.12,.52,y));
             color=mix(color,top,smoothstep(.48,1.0,y));
             float haze=(1.0-smoothstep(.16,.40,y))*(.08+.08*fbm(vec2(vUv.x*3.2,1.7)));
@@ -568,11 +568,11 @@ function ReplaySpatialScene({ memory, playing, progressMs, muteVideo }: { memory
   return (
     <>
       <color attach="background" args={[memory.demo ? "#121922" : memory.visuals.sky]} />
-      <fog attach="fog" args={[memory.demo ? "#252d35" : memory.visuals.sky, memory.demo ? 17 : visuals.fogNear, memory.demo ? 82 : visuals.fogFar]} />
+      <fog attach="fog" args={[memory.demo ? "#202a32" : memory.visuals.sky, memory.demo ? 20 : visuals.fogNear, memory.demo ? 88 : visuals.fogFar]} />
       <ambientLight intensity={memory.demo ? visuals.ambient * 1.06 : visuals.ambient} color={memory.demo ? "#ddd5c3" : "#c4d0c9"} />
       <hemisphereLight intensity={memory.demo ? visuals.fill * 1.02 : visuals.fill} color={memory.visuals.light} groundColor={memory.demo ? "#343638" : memory.visuals.ground} />
       <directionalLight position={[-8, 11, 6]} intensity={memory.demo ? 4.15 : 4.25} color="#ecd2aa" castShadow />
-      <directionalLight position={[6, 5, -7]} intensity={memory.demo ? 0.62 : 1.45} color={memory.visuals.accent} />
+      <directionalLight position={[6, 5, -7]} intensity={memory.demo ? 0.92 : 1.45} color={memory.visuals.accent} />
       <pointLight position={[0, 1.4, -4.6]} intensity={memory.demo ? visuals.source * 0.14 : visuals.source} distance={22} color={memory.visuals.accent} />
       <pointLight position={[-5.5, 2.8, -1.5]} intensity={memory.demo ? 2.65 : 2.8} distance={24} color="#e0b482" />
       {memory.demo ? <ReplayDemoHorizon /> : <primitive object={model} name="replay-memory-environment-v1" />}
@@ -677,8 +677,8 @@ export default function CinematicReplayClient() {
     if (audio && Number.isFinite(audio.duration)) audio.currentTime = Math.min(audio.duration, next / 1000)
   }
 
-  return <main className="replayWorld" style={style} data-testid="cinematic-replay-client" data-memory-status={result.status} data-memory-id={memory.id} data-star-id={memory.star.id} data-manifest-id={memory.replayManifest.id} data-node={memory.star.id} data-playing={playing ? 'true' : 'false'} data-canonical-asset={replayAssets.primary.src} data-replay-spatial-owner="r3f-memory-theater" data-replay-environment={REPLAY_ENVIRONMENT_MODEL} data-replay-composition="v225-source-first-memory-environment-readable-phased-return" data-replay-demo-art="v237-open-horizon-grounded-memory-valley" data-replay-camera="anchored-first-person-witness" data-replay-truth={truth?.level ?? 'unknown'}>
-    <Canvas className="replaySpatialCanvas" shadows={quality.shadows} dpr={[1, quality.pixelRatioMax]} frameloop={quality.documentVisible ? 'always' : 'never'} camera={{ position: [0, 0.42, 8.4], fov: 46, near: 0.05, far: 120 }} gl={{ antialias: quality.antialias, powerPreference: 'high-performance' }} onCreated={({ gl }) => { gl.outputColorSpace = THREE.SRGBColorSpace; gl.toneMapping = THREE.ACESFilmicToneMapping; gl.toneMappingExposure = memory.demo ? 1.18 : 1.92 }}>
+  return <main className="replayWorld" style={style} data-testid="cinematic-replay-client" data-memory-status={result.status} data-memory-id={memory.id} data-star-id={memory.star.id} data-manifest-id={memory.replayManifest.id} data-node={memory.star.id} data-playing={playing ? 'true' : 'false'} data-canonical-asset={replayAssets.primary.src} data-replay-spatial-owner="r3f-memory-theater" data-replay-environment={REPLAY_ENVIRONMENT_MODEL} data-replay-composition="v225-source-first-memory-environment-readable-phased-return" data-replay-demo-art="v238-grounded-cinematic-memory-valley" data-replay-camera="anchored-first-person-witness" data-replay-truth={truth?.level ?? 'unknown'}>
+    <Canvas className="replaySpatialCanvas" shadows={quality.shadows} dpr={[1, quality.pixelRatioMax]} frameloop={quality.documentVisible ? 'always' : 'never'} camera={{ position: [0, 0.42, 8.4], fov: 46, near: 0.05, far: 120 }} gl={{ antialias: quality.antialias, powerPreference: 'high-performance' }} onCreated={({ gl }) => { gl.outputColorSpace = THREE.SRGBColorSpace; gl.toneMapping = THREE.ACESFilmicToneMapping; gl.toneMappingExposure = memory.demo ? 1.32 : 1.92 }}>
       <ReplaySpatialScene memory={memory} playing={playing} progressMs={progressMs} muteVideo={Boolean(recordedAudioUrl)} />
     </Canvas>
     <div className="replayAtmosphere" aria-hidden="true" />
