@@ -29,6 +29,33 @@ const requireTokens = (relative, tokens) => {
   for (const token of tokens) if (!source.includes(token)) failures.push(`${relative} is missing: ${token}`)
 }
 
+
+const routeManifest = JSON.parse(read('release/route-manifest.json') || '{}')
+const conditionalExact = routeManifest.classification?.conditionalExact ?? []
+const conditionalPrefixes = routeManifest.classification?.conditionalPrefixes ?? []
+const publicExact = routeManifest.classification?.publicExact ?? []
+const publicPrefixes = routeManifest.classification?.publicPrefixes ?? []
+
+for (const route of conditionalExact) {
+  if (publicExact.includes(route)) failures.push(`release/route-manifest.json classifies ${route} as both public and conditional`)
+  if (publicPrefixes.some((prefix) => route.startsWith(prefix))) failures.push(`release/route-manifest.json exposes conditional route ${route} through public prefix`)
+  const routeDirectory = path.join(appRoot, route.replace(/^\//, ''))
+  const pagePath = ['page.tsx','page.ts','page.jsx','page.js'].map((name) => path.join(routeDirectory, name)).find((candidate) => fs.existsSync(candidate))
+  if (!pagePath) { failures.push(`conditional route ${route} has no App Router page`); continue }
+  const source = fs.readFileSync(pagePath, 'utf8')
+  if (!source.includes('postLaunchSpatialRealmsEnabled')) failures.push(`conditional route ${route} is missing the shared post-launch gate`)
+  if (!source.includes('notFound()')) failures.push(`conditional route ${route} must fail closed when disabled`)
+}
+for (const prefix of conditionalPrefixes) {
+  if (publicPrefixes.some((value) => prefix.startsWith(value) || value.startsWith(prefix))) failures.push(`conditional prefix ${prefix} overlaps a public prefix`)
+  const routeDirectory = path.join(appRoot, prefix.replace(/^\//, '').replace(/\/$/, ''))
+  for (const pagePath of walk(routeDirectory).filter((candidate) => /(?:^|\/)page\.(?:ts|tsx|js|jsx)$/.test(candidate))) {
+    const source = fs.readFileSync(pagePath, 'utf8')
+    if (!source.includes('postLaunchSpatialRealmsEnabled') || !source.includes('notFound()')) failures.push(`${path.relative(root, pagePath)} must fail closed under conditional prefix ${prefix}`)
+  }
+}
+requireTokens('urai-tier1/src/app/world/page.tsx', ["import { redirect } from 'next/navigation'", "redirect('/ground?from=world')"])
+
 for (const file of walk(appRoot)) {
   const relative = path.relative(appRoot, file).replaceAll(path.sep, '/')
   if (!/(?:^|\/)page\.(?:ts|tsx|js|jsx)$/.test(relative)) continue

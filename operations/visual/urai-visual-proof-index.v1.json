@@ -6,48 +6,336 @@
   "evidenceTransferAcrossHeadMove": false,
   "pixelAcceptanceRequiresLiteralInspection": true,
   "proofFamilies": [
-    {"id":"PIX-HOME","systems":["home-presentation","first-person-home"],"status":"CANDIDATE"},
-    {"id":"PIX-AVATAR","systems":["avatar","embodiment-transition"],"status":"CANDIDATE"},
-    {"id":"PIX-ORB","systems":["home-orb","conversation-states"],"status":"CANDIDATE"},
-    {"id":"PIX-SKY","systems":["home-sky","life-map-ascent"],"status":"CANDIDATE"},
-    {"id":"PIX-LIFEMAP","systems":["life-map","memory-star"],"status":"CANDIDATE"},
-    {"id":"PIX-FOCUS","systems":["focus-v323-selected-memory-star","contained-memory","mobile","reduced-motion","no-webgl"],"status":"CANDIDATE","blockers":["fresh-exact-head-literal-inspection-required"]},
-    {"id":"PIX-REPLAY","systems":["replay"],"status":"CANDIDATE"},
-    {"id":"PIX-GROUND","systems":["ground-descent","ground-return","ground-fallback","personalized-lived-world"],"status":"BLOCKED_MIXED","blockers":["generic-fallback-final-art-rejected","personalized-lived-world-source-converged-but-visual-pack-unaccepted"]},
-    {"id":"PIX-PASSPORT","systems":["physical-home-passport","passport-ui","exact-origin-return"],"status":"CANDIDATE","blockers":["fresh-literal-pixels-required","round-trip-browser-proof-required"]},
-    {"id":"PIX-GEF","systems":["global-emotional-field-earth"],"status":"MISSING","blockers":["governed-physical-earth-authority-missing"]},
-    {"id":"PIX-PEW","systems":["personal-emotional-weather"],"status":"MISSING"},
-    {"id":"PIX-MIRROR","systems":["mirror"],"status":"CANDIDATE"},
-    {"id":"PIX-SHADOW","systems":["shadow"],"status":"MISSING"},
-    {"id":"PIX-LEGACY","systems":["legacy"],"status":"MISSING"},
-    {"id":"PIX-COUNCIL","systems":["council"],"status":"MISSING"},
-    {"id":"PIX-RITUAL","systems":["rituals"],"status":"MISSING"},
-    {"id":"PIX-FUTURES","systems":["possible-futures"],"status":"MISSING","blockers":["selective-donor-convergence-required"]},
-    {"id":"PIX-SUPPORT","systems":["settings","privacy","auth","status","fallbacks"],"status":"CANDIDATE"}
+    {
+      "id": "PIX-HOME",
+      "systems": [
+        "home-presentation",
+        "first-person-home"
+      ],
+      "status": "CANDIDATE"
+    },
+    {
+      "id": "PIX-AVATAR",
+      "systems": [
+        "avatar",
+        "embodiment-transition"
+      ],
+      "status": "CANDIDATE"
+    },
+    {
+      "id": "PIX-ORB",
+      "systems": [
+        "home-orb",
+        "conversation-states"
+      ],
+      "status": "CANDIDATE"
+    },
+    {
+      "id": "PIX-SKY",
+      "systems": [
+        "home-sky",
+        "life-map-ascent"
+      ],
+      "status": "CANDIDATE"
+    },
+    {
+      "id": "PIX-LIFEMAP",
+      "systems": [
+        "life-map",
+        "memory-star"
+      ],
+      "status": "CANDIDATE"
+    },
+    {
+      "id": "PIX-FOCUS",
+      "systems": [
+        "focus-v323-selected-memory-star",
+        "contained-memory",
+        "mobile",
+        "reduced-motion",
+        "no-webgl"
+      ],
+      "status": "CANDIDATE",
+      "blockers": [
+        "fresh-exact-head-literal-inspection-required"
+      ]
+    },
+    {
+      "id": "PIX-REPLAY",
+      "systems": [
+        "replay"
+      ],
+      "status": "CANDIDATE"
+    },
+    {
+      "id": "PIX-GROUND",
+      "systems": [
+        "ground-descent",
+        "ground-return",
+        "ground-fallback",
+        "personalized-lived-world"
+      ],
+      "status": "BLOCKED_MIXED",
+      "blockers": [
+        "generic-fallback-final-art-rejected",
+        "personalized-lived-world-source-converged-but-visual-pack-unaccepted"
+      ]
+    },
+    {
+      "id": "PIX-PASSPORT",
+      "systems": [
+        "physical-home-passport",
+        "passport-ui",
+        "exact-origin-return"
+      ],
+      "status": "CANDIDATE",
+      "blockers": [
+        "fresh-literal-pixels-required",
+        "round-trip-browser-proof-required"
+      ]
+    },
+    {
+      "id": "PIX-GEF",
+      "systems": [
+        "global-emotional-field-earth"
+      ],
+      "status": "MISSING",
+      "blockers": [
+        "governed-physical-earth-authority-missing"
+      ]
+    },
+    {
+      "id": "PIX-PEW",
+      "systems": [
+        "personal-emotional-weather"
+      ],
+      "status": "MISSING"
+    },
+    {
+      "id": "PIX-MIRROR",
+      "systems": [
+        "mirror"
+      ],
+      "status": "CANDIDATE"
+    },
+    {
+      "id": "PIX-SHADOW",
+      "systems": [
+        "shadow"
+      ],
+      "status": "DEFERRED_POST_LAUNCH",
+      "blockers": []
+    },
+    {
+      "id": "PIX-LEGACY",
+      "systems": [
+        "legacy"
+      ],
+      "status": "DEFERRED_POST_LAUNCH",
+      "blockers": []
+    },
+    {
+      "id": "PIX-COUNCIL",
+      "systems": [
+        "council"
+      ],
+      "status": "DEFERRED_POST_LAUNCH",
+      "blockers": []
+    },
+    {
+      "id": "PIX-RITUAL",
+      "systems": [
+        "rituals"
+      ],
+      "status": "DEFERRED_POST_LAUNCH",
+      "blockers": []
+    },
+    {
+      "id": "PIX-FUTURES",
+      "systems": [
+        "possible-futures"
+      ],
+      "status": "DEFERRED_POST_LAUNCH",
+      "blockers": []
+    },
+    {
+      "id": "PIX-SUPPORT",
+      "systems": [
+        "settings",
+        "privacy",
+        "auth",
+        "status",
+        "fallbacks"
+      ],
+      "status": "CANDIDATE"
+    }
   ],
   "transitionFamilies": [
-    {"id":"TX-HOME-AVATAR","from":"HOME_PRESENTATION","to":"AVATAR_HOME_FIRST_PERSON","status":"CANDIDATE"},
-    {"id":"TX-HOME-LIFEMAP","from":"HOME","to":"LIFE_MAP","owner":"broad-visible-sky","status":"CANDIDATE"},
-    {"id":"TX-LIFEMAP-FOCUS","from":"LIFE_MAP","to":"FOCUS","owner":"selected-memory-approach","status":"CANDIDATE"},
-    {"id":"TX-FOCUS-REPLAY","from":"FOCUS","to":"REPLAY","owner":"selected-memory","status":"CANDIDATE"},
-    {"id":"TX-REPLAY-FOCUS","from":"REPLAY","to":"FOCUS","status":"CANDIDATE"},
-    {"id":"TX-FOCUS-LIFEMAP","from":"FOCUS","to":"LIFE_MAP","status":"CANDIDATE"},
-    {"id":"TX-LIFEMAP-HOME","from":"LIFE_MAP","to":"HOME","status":"CANDIDATE"},
-    {"id":"TX-HOME-GROUND","from":"HOME","to":"GROUND","owner":"physical-terrain-material-crossing","status":"CANDIDATE"},
-    {"id":"TX-GROUND-HOME","from":"GROUND","to":"HOME","status":"CANDIDATE"},
-    {"id":"TX-GROUND-MEMORY","from":"GROUND","to":"FOCUS_REPLAY_GROUND","status":"MISSING","requires":"authorized-place-bound-memory-producer"},
-    {"id":"TX-PASSPORT","from":"AVATAR_HOME_FIRST_PERSON","to":"PASSPORT_AND_EXACT_RETURN","status":"CANDIDATE","sourceConverged":true,"requires":["fresh-browser-round-trip-proof","literal-pixel-acceptance"]},
-    {"id":"TX-GEF","from":"AVATAR_HOME_FIRST_PERSON","to":"GLOBAL_EMOTIONAL_FIELD_INTERACTION","status":"MISSING"},
-    {"id":"TX-FUTURES","from":"HOME_OR_ORB","to":"POSSIBLE_FUTURES_AND_RETURN","status":"MISSING"},
-    {"id":"TX-MIRROR","from":"CURRENT_ORIGIN","to":"MIRROR_AND_RETURN","status":"CANDIDATE"},
-    {"id":"TX-SHADOW","from":"CURRENT_ORIGIN","to":"SHADOW_AND_RETURN","status":"MISSING"},
-    {"id":"TX-LEGACY","from":"CURRENT_ORIGIN","to":"LEGACY_AND_RETURN","status":"MISSING"},
-    {"id":"TX-COUNCIL","from":"CURRENT_ORIGIN","to":"COUNCIL_AND_RETURN","status":"MISSING"},
-    {"id":"TX-RITUAL","from":"CURRENT_ORIGIN","to":"RITUAL_AND_RETURN","status":"MISSING"}
+    {
+      "id": "TX-HOME-AVATAR",
+      "from": "HOME_PRESENTATION",
+      "to": "AVATAR_HOME_FIRST_PERSON",
+      "status": "CANDIDATE"
+    },
+    {
+      "id": "TX-HOME-LIFEMAP",
+      "from": "HOME",
+      "to": "LIFE_MAP",
+      "owner": "broad-visible-sky",
+      "status": "CANDIDATE"
+    },
+    {
+      "id": "TX-LIFEMAP-FOCUS",
+      "from": "LIFE_MAP",
+      "to": "FOCUS",
+      "owner": "selected-memory-approach",
+      "status": "CANDIDATE"
+    },
+    {
+      "id": "TX-FOCUS-REPLAY",
+      "from": "FOCUS",
+      "to": "REPLAY",
+      "owner": "selected-memory",
+      "status": "CANDIDATE"
+    },
+    {
+      "id": "TX-REPLAY-FOCUS",
+      "from": "REPLAY",
+      "to": "FOCUS",
+      "status": "CANDIDATE"
+    },
+    {
+      "id": "TX-FOCUS-LIFEMAP",
+      "from": "FOCUS",
+      "to": "LIFE_MAP",
+      "status": "CANDIDATE"
+    },
+    {
+      "id": "TX-LIFEMAP-HOME",
+      "from": "LIFE_MAP",
+      "to": "HOME",
+      "status": "CANDIDATE"
+    },
+    {
+      "id": "TX-HOME-GROUND",
+      "from": "HOME",
+      "to": "GROUND",
+      "owner": "physical-terrain-material-crossing",
+      "status": "CANDIDATE"
+    },
+    {
+      "id": "TX-GROUND-HOME",
+      "from": "GROUND",
+      "to": "HOME",
+      "status": "CANDIDATE"
+    },
+    {
+      "id": "TX-GROUND-MEMORY",
+      "from": "GROUND",
+      "to": "FOCUS_REPLAY_GROUND",
+      "status": "MISSING",
+      "requires": "authorized-place-bound-memory-producer"
+    },
+    {
+      "id": "TX-PASSPORT",
+      "from": "AVATAR_HOME_FIRST_PERSON",
+      "to": "PASSPORT_AND_EXACT_RETURN",
+      "status": "CANDIDATE",
+      "sourceConverged": true,
+      "requires": [
+        "fresh-browser-round-trip-proof",
+        "literal-pixel-acceptance"
+      ]
+    },
+    {
+      "id": "TX-GEF",
+      "from": "AVATAR_HOME_FIRST_PERSON",
+      "to": "GLOBAL_EMOTIONAL_FIELD_INTERACTION",
+      "status": "MISSING"
+    },
+    {
+      "id": "TX-FUTURES",
+      "from": "HOME_OR_ORB",
+      "to": "POSSIBLE_FUTURES_AND_RETURN",
+      "status": "DEFERRED_POST_LAUNCH"
+    },
+    {
+      "id": "TX-MIRROR",
+      "from": "CURRENT_ORIGIN",
+      "to": "MIRROR_AND_RETURN",
+      "status": "CANDIDATE"
+    },
+    {
+      "id": "TX-SHADOW",
+      "from": "CURRENT_ORIGIN",
+      "to": "SHADOW_AND_RETURN",
+      "status": "DEFERRED_POST_LAUNCH"
+    },
+    {
+      "id": "TX-LEGACY",
+      "from": "CURRENT_ORIGIN",
+      "to": "LEGACY_AND_RETURN",
+      "status": "DEFERRED_POST_LAUNCH"
+    },
+    {
+      "id": "TX-COUNCIL",
+      "from": "CURRENT_ORIGIN",
+      "to": "COUNCIL_AND_RETURN",
+      "status": "DEFERRED_POST_LAUNCH"
+    },
+    {
+      "id": "TX-RITUAL",
+      "from": "CURRENT_ORIGIN",
+      "to": "RITUAL_AND_RETURN",
+      "status": "DEFERRED_POST_LAUNCH"
+    }
   ],
-  "comparisonDimensions": ["composition","silhouette","camera","depth","scale","material","lighting","atmosphere","realism","hierarchy","responsive","accessibility","continuity","truth-provenance","negative-canon"],
-  "requiredDevices": ["desktop","mobile-portrait"],
-  "conditionalDevices": ["tablet-if-materially-different","xr-only-with-real-tracking"],
-  "requiredAccessibility": ["keyboard","visible-focus","screen-reader","reduced-motion","reduced-stimulation-where-applicable","deaf-hard-of-hearing","blind-low-vision","high-zoom","touch-containment","fallback-no-webgl"],
-  "goldMasterAuthorized": false
+  "comparisonDimensions": [
+    "composition",
+    "silhouette",
+    "camera",
+    "depth",
+    "scale",
+    "material",
+    "lighting",
+    "atmosphere",
+    "realism",
+    "hierarchy",
+    "responsive",
+    "accessibility",
+    "continuity",
+    "truth-provenance",
+    "negative-canon"
+  ],
+  "requiredDevices": [
+    "desktop",
+    "mobile-portrait"
+  ],
+  "conditionalDevices": [
+    "tablet-if-materially-different",
+    "xr-only-with-real-tracking"
+  ],
+  "requiredAccessibility": [
+    "keyboard",
+    "visible-focus",
+    "screen-reader",
+    "reduced-motion",
+    "reduced-stimulation-where-applicable",
+    "deaf-hard-of-hearing",
+    "blind-low-vision",
+    "high-zoom",
+    "touch-containment",
+    "fallback-no-webgl"
+  ],
+  "goldMasterAuthorized": false,
+  "postLaunchGatedSystems": [
+    "shadow",
+    "legacy",
+    "council",
+    "rituals",
+    "possible-futures",
+    "dream",
+    "xr",
+    "spatial-biome"
+  ]
 }

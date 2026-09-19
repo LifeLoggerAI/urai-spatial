@@ -37,7 +37,8 @@
     "HISTORICAL_PROVENANCE_ONLY",
     "SUPERSEDED",
     "REJECTED",
-    "MISSING_REPLACEMENT_REQUIRED"
+    "MISSING_REPLACEMENT_REQUIRED",
+    "POST_LAUNCH_GATED"
   ],
   "artifacts": [
     {
@@ -182,43 +183,53 @@
       "id": "VGM-SHADOW-001",
       "experience": "shadow",
       "system": "shadow",
-      "status": "CURRENT_CANDIDATE",
+      "status": "POST_LAUNCH_GATED",
       "runtimeExists": true,
       "dedicatedReferencePackAccepted": false,
-      "visualAcceptance": false
+      "visualAcceptance": false,
+      "launchExposed": false,
+      "productionGate": "URAI_ENABLE_POST_LAUNCH_REALMS"
     },
     {
       "id": "VGM-LEGACY-001",
       "experience": "legacy",
       "system": "legacy",
-      "status": "CURRENT_CANDIDATE",
+      "status": "POST_LAUNCH_GATED",
       "runtimeExists": true,
       "dedicatedReferencePackAccepted": false,
-      "visualAcceptance": false
+      "visualAcceptance": false,
+      "launchExposed": false,
+      "productionGate": "URAI_ENABLE_POST_LAUNCH_REALMS"
     },
     {
       "id": "VGM-COUNCIL-001",
       "experience": "council",
       "system": "council",
-      "status": "CURRENT_CANDIDATE",
+      "status": "POST_LAUNCH_GATED",
       "runtimeExists": true,
       "dedicatedReferencePackAccepted": false,
-      "visualAcceptance": false
+      "visualAcceptance": false,
+      "launchExposed": false,
+      "productionGate": "URAI_ENABLE_POST_LAUNCH_REALMS"
     },
     {
       "id": "VGM-RITUAL-001",
       "experience": "rituals",
       "system": "rituals",
-      "status": "MISSING_REPLACEMENT_REQUIRED"
+      "status": "POST_LAUNCH_GATED",
+      "launchExposed": false,
+      "productionGate": "URAI_ENABLE_POST_LAUNCH_REALMS"
     },
     {
       "id": "VGM-FUTURES-001",
       "experience": "possible-futures",
       "system": "scenario-world",
-      "status": "CURRENT_CANDIDATE",
+      "status": "POST_LAUNCH_GATED",
       "truthSemanticsConverged": true,
       "spatialVisualAuthorityConverged": false,
-      "visualAcceptance": false
+      "visualAcceptance": false,
+      "launchExposed": false,
+      "productionGate": "URAI_ENABLE_POST_LAUNCH_REALMS"
     },
     {
       "id": "VGM-SETTINGS-001",
@@ -257,5 +268,15 @@
     "device-responsive",
     "negative-canon"
   ],
-  "goldMasterAuthorized": false
+  "goldMasterAuthorized": false,
+  "postLaunchGatedSystems": [
+    "shadow",
+    "legacy",
+    "council",
+    "rituals",
+    "possible-futures",
+    "dream",
+    "xr",
+    "spatial-biome"
+  ]
 }

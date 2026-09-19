@@ -1,3 +1,5 @@
+import { notFound } from 'next/navigation'
+import { postLaunchSpatialRealmsEnabled } from '@/lib/release/postLaunchRealmGate'
 import { MemoryNodeDetail } from "@/components/spatial/memory-node-detail";
 import { demoLifeMapNodes } from "@/lib/spatial/publicSafeSpatialData";
 import { DEMO_MEMORY_STAR_NODES } from '@/spatial/memory/memoryStarSchema'
@@ -13,6 +15,7 @@ export function generateStaticParams() {
 }
 
 export default async function SpatialMemoryPage({ params }: SpatialMemoryPageProps) {
+  if (!postLaunchSpatialRealmsEnabled()) notFound()
   const { nodeId } = await params;
   const node = demoLifeMapNodes.find((item) => item.id === nodeId) ?? demoLifeMapNodes[0];
   return (

@@ -30,10 +30,92 @@
     "/support"
   ],
   "classification": {
-    "servicePrefixes": ["/api"],
-    "internalPrefixes": ["/admin", "/internal", "/control", "/capture", "/brand-system", "/asset-audit", "/proof", "/receipts", "/tier", "/v1"],
-    "privatePrefixes": ["/u/", "/place/", "/memory/", "/focus/session/", "/life-map/star/", "/replay/", "/passport/", "/spatial/memory/"],
-    "publicExact": ["/", "/home", "/ground", "/life-map", "/focus", "/replay", "/mirror", "/shadow", "/legacy", "/passport", "/privacy-controls", "/location-map", "/privacy", "/terms", "/status", "/about", "/contact", "/early-access", "/event", "/council", "/dream", "/possible-futures", "/unwind", "/spatial", "/spatial-fallback", "/xr", "/world", "/ascent", "/launch", "/login", "/signup", "/onboarding", "/settings/privacy", "/waitlist", "/system", "/support", "/offline", "/glass", "/report-bug", "/settings", "/demo", "/technology"],
-    "publicPrefixes": ["/demo/", "/invite/", "/location-map/", "/spatial/", "/xr/"]
+    "servicePrefixes": [
+      "/api"
+    ],
+    "internalPrefixes": [
+      "/admin",
+      "/internal",
+      "/control",
+      "/capture",
+      "/brand-system",
+      "/asset-audit",
+      "/proof",
+      "/receipts",
+      "/tier",
+      "/v1"
+    ],
+    "privatePrefixes": [
+      "/u/",
+      "/place/",
+      "/memory/",
+      "/focus/session/",
+      "/life-map/star/",
+      "/replay/",
+      "/passport/",
+      "/spatial/memory/"
+    ],
+    "publicExact": [
+      "/",
+      "/home",
+      "/ground",
+      "/life-map",
+      "/focus",
+      "/replay",
+      "/mirror",
+      "/passport",
+      "/privacy-controls",
+      "/location-map",
+      "/privacy",
+      "/terms",
+      "/status",
+      "/about",
+      "/contact",
+      "/early-access",
+      "/event",
+      "/unwind",
+      "/spatial",
+      "/spatial-fallback",
+      "/world",
+      "/ascent",
+      "/launch",
+      "/login",
+      "/signup",
+      "/onboarding",
+      "/settings/privacy",
+      "/waitlist",
+      "/system",
+      "/support",
+      "/offline",
+      "/glass",
+      "/report-bug",
+      "/settings",
+      "/demo",
+      "/technology",
+      "/spatial/life-map",
+      "/spatial/life-map-r3f",
+      "/spatial/life-map-orbit",
+      "/spatial/v1"
+    ],
+    "publicPrefixes": [
+      "/demo/",
+      "/invite/",
+      "/location-map/"
+    ],
+    "conditionalExact": [
+      "/shadow",
+      "/legacy",
+      "/council",
+      "/dream",
+      "/possible-futures",
+      "/xr",
+      "/spatial/ar-vr",
+      "/spatial/biome",
+      "/spatial/legacy",
+      "/spatial/shadow"
+    ],
+    "conditionalPrefixes": [
+      "/spatial/memory/"
+    ]
   }
 }
