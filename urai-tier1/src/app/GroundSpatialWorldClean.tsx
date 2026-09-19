@@ -348,10 +348,10 @@ function NaturalCanopy({ profile, position, rotationY, scale, shapeSeed }: {
     raycast={() => null}
     name="ground-authored-natural-canopy-v13"
     userData={{
-      treatment: "seed-varied-branch-architecture-smooth-overlapping-broadleaf-canopy-v20",
+      treatment: "seed-varied-branch-architecture-layered-thin-leaf-broadleaf-canopy-v21",
       provenance: NATURAL_CANOPY,
-      visibleAuthority: "runtime-authored-canopy-v20",
-      literalPixelRepair: "v20-smooth-overlapping-broadleaf-crown-removes-faceted-game-tree-read",
+      visibleAuthority: "runtime-authored-canopy-v21",
+      literalPixelRepair: "v21-layered-thin-leaf-crown-existing-pbr-terrain-atmospheric-depth",
       supersedesVisibleCandidate: "ground-natural-canopy-v3-low-poly-silhouette",
     }}
   >
