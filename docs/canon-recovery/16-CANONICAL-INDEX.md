@@ -22,6 +22,12 @@ Status: ACTIVE
 16. `15-CANON-TO-IMPLEMENTATION-TRACEABILITY.md`
 17. `17-ROUTE-AND-SURFACE-INVENTORY.md`
 18. `18-ASSET-AUTHORITY-SUMMARY.md`
+19. `19-OPEN-CANON-QUESTIONS.md`
+20. `20-ZERO-AMBIGUITY-COVERAGE-REPORT.md`
+21. `21-SECONDARY-REALMS-MASTER-RECOVERY.md`
+22. `22-MIRROR-CANON-RECOVERY.md`
+23. `23-AUDIO-VOICE-HAPTIC-CANON.md`
+24. `24-EXTERNAL-WORLD-INTERFACE.md`
 
 ## Existing authority this index does not replace
 
@@ -32,6 +38,10 @@ This recovery index points back to existing authority including:
 - Drive Document Authority Register
 - Drive Visual Gold Master Active Manifest
 - Drive Final Asset Lock Master
+- Drive Secondary Realms Master Authority
+- Drive Audio / Spatial Audio / Voice / Haptic Master Authority
+- Drive External World Interface Canonical Architecture
+- Drive Mirror Implementation & Release Receipt
 - Institutional Control Plane
 - legal/evidentiary records for entity/legal questions
 
