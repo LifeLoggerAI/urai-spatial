@@ -91,7 +91,7 @@ These remain valid provenance and product-design sources where their content has
 Older `UrAi/docs/URAI_CANON.md` names `UrAi` canonical. Later authority records and current `urai-spatial/docs/system/CANON_INDEX.md` supersede that for runtime/deployment authority. Keep UrAi content as historical/product canon input only where compatible.
 
 ### Jobs identity conflict
-An early Jobs bible describes recruiting/hiring operations. A later ecosystem roadmap defines URAI-JOBS as the asynchronous execution substrate for Spatial, Studio, Narrator, and Asset Factory. This is a material mixed-era conflict and remains UNRESOLVED until chronology and explicit supersession are verified. Provider/job integration remains separately gated; do not silently merge the two meanings.
+An early Jobs bible describes recruiting/hiring operations and marks substantial portions as inferred. The current `LifeLoggerAI/urai-jobs/README.md` explicitly defines URAI Jobs Runtime as the internal production job-execution fabric and says it is not the public jobs marketplace or careers application surface. Current Jobs identity is therefore RESOLVED as the internal asynchronous execution substrate. Recruiting/hiring material is retained as historical/non-canonical lineage for this runtime repository; any future public hiring surface requires a separate product decision and security review. Provider/worker deployment remains separately gated.
 
 ### Narrow beta vs full vision
 The July authority register intentionally narrows public-beta claims and routes. That narrowing does not supersede broader future canon; it limits launch truth.

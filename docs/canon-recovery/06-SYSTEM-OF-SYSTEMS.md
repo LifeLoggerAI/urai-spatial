@@ -15,7 +15,7 @@ UrAi is one ecosystem with multiple systems of record. A repository is not autom
 | Content | approved content/copy/localization | `urai-content` | versioned content packs and moderation state |
 | Asset Factory | asset execution/provenance | `asset-factory` | generation, validation, conversion, manifests |
 | Studio | creative intent/orchestration | `urai-studio` | project/brief/export intent and production orchestration |
-| Jobs | async execution or historical hiring system | `urai-jobs` | UNRESOLVED mixed-era identity |
+| Jobs | internal asynchronous execution fabric | `urai-jobs` | current README is explicit; historical hiring/careers material is non-canonical lineage for this runtime repository |
 | Analytics | aggregate analytics | `urai-analytics` | privacy-safe aggregate events only unless separately authorized |
 | Admin | operator/control plane | `urai-admin` | role-gated operational actions and audit visibility |
 | Marketing | acquisition/launch funnel | `urai-marketing` | privacy-minimal lead/waitlist/invite surfaces |
@@ -41,7 +41,7 @@ Do not infer legal ownership from repository location.
 1. Marketing -> Main app: waitlist, invite, demo-unlock events with minimal identity/consent metadata.
 2. Main app -> Spatial: approved/fallback-safe state; no silent transfer of raw private-memory ownership.
 3. Studio -> Asset Factory: creative intent / job envelope -> governed asset manifest.
-4. Studio -> Jobs: execution intent -> queue lifecycle, if the execution-fabric identity is confirmed.
+4. Studio -> Jobs: execution intent -> permissioned queue/worker lifecycle; production worker/provider activation remains separately gated.
 5. Content -> public/app surfaces: immutable version + locale + moderation + policy links.
 6. Every personal-data system -> Privacy: consent, retention, export, deletion, unsafe-flow block.
 7. Every system -> Analytics: aggregate-only envelope unless separately privacy-approved.
@@ -65,4 +65,4 @@ The final canon still needs:
 - one deployment/provider truth pointer per system;
 - one owner/checker/approver map per material action;
 - one successor/continuity plan for founder/key-person concentration;
-- Jobs identity resolution.
+- Jobs worker/provider deployment and retained production lifecycle proof; identity itself is resolved by the current `urai-jobs` README.

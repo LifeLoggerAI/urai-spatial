@@ -101,7 +101,7 @@ Do not fabricate independent approval. Reconcile effective collaborator eligibil
 
 ## 9. Standalone system source state
 
-The current estate contains 19 installed LifeLoggerAI repositories. In this pass, current candidate heads across Asset Factory, Labs, Analytics, Communications, Jobs, Foundation, Studio, B2B, Investors, Marketing, Content, Storytime, Admin, Privacy, Staging, UrAiProd and legacy UrAi were recovered.
+The current estate contains 19 installed LifeLoggerAI repositories. In this pass, current candidate heads across Asset Factory (source/provenance authority; live integration separately gated), Labs, Analytics, Communications, Jobs, Foundation, Studio, B2B, Investors, Marketing, Content, Storytime, Admin, Privacy, Staging, UrAiProd and legacy UrAi were recovered.
 
 Most inspected non-Spatial candidate heads had successful current-head CI/verification workflows. This is **source readiness**, not public deployment certification.
 
@@ -169,7 +169,7 @@ The following current nonvisual lanes are intentionally separated from the movin
 
 ## 11. XR / native / media truth boundary
 
-URAI has written XR, native-doorway, cinema, audio/spatial-audio, animation/motion and asset-factory authorities. Existing documents and source demonstrate real implementation/pipeline work.
+URAI has written XR, native-doorway, cinema, audio/spatial-audio, animation/motion and asset-factory provenance/contract authorities. Existing documents and source demonstrate real implementation/pipeline work; live provider integration is separately gated.
 
 Do not translate that into unsupported device certification.
 

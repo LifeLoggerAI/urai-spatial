@@ -9,7 +9,7 @@ Primary source:
 
 ## Interpretation rule
 
-The older Master Asset Lock contains a 213-deliverable semantic inventory. It explicitly states this does NOT mean 213 flat images must exist. GLBs, runtime composition, shaders, procedural effects, UI code, camera behavior, audio and export templates may satisfy rows where current implementation/evidence proves equivalence.
+The Master Asset Lock began from a 213-deliverable semantic baseline and now contains 220 tracked `URA-###` rows after later embodied-human/Council additions (`URA-214` through `URA-220`). Neither 213 nor 220 means that many flat images must exist. GLBs, runtime composition, shaders, procedural effects, UI code, camera behavior, audio and export templates may satisfy rows where current implementation/evidence proves equivalence. Row-level reconciliation is retained in `57-FINAL-ASSET-LOCK-ROW-NORMALIZATION.md`.
 
 The Current Authority tab is the preferred normalization spine for present canon.
 

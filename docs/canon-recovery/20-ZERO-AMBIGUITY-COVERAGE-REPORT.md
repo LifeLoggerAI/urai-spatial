@@ -99,8 +99,8 @@ Launch spine and major standalone systems have source owners. Some broader realm
 
 ### ASSETS
 Do we know what production assets each experience requires?
-**YES FOR THE MAIN SPATIAL PROGRAM AT REQUIREMENT LEVEL; FULL LEDGER NORMALIZATION REMAINS OPEN.**
-The Gold Master and asset ledgers identify current candidates, rejected lineage and missing packs. Row-by-row normalization of Final Asset Lock and the 53-asset ledger is still outstanding.
+**YES FOR THE MAIN SPATIAL PROGRAM AT REQUIREMENT LEVEL; LEDGER SEMANTICS ARE NORMALIZED.**
+The 53-row independent ledger is normalized in `47-LAUNCH-ASSET-LEDGER-NORMALIZATION.md`. The Final Asset Lock's current 220 tracked rows are normalized row-by-row in `57-FINAL-ASSET-LOCK-ROW-NORMALIZATION.md` against the stable current authority families. Missing packs and visual promotion remain separate evidence states.
 
 ### ROADMAP
 Are launch, post-launch, long-range, research, experimental and rejected concepts separated?
@@ -135,16 +135,18 @@ Recovered predecessor concepts now include Life OS/LifeLogger, Mirror of Becomin
 - Shadow, Legacy, Council, Rituals and Possible Futures each have dedicated written state/interaction authority.
 - Historical portalized Ground/ascent, visible flat-screen FP hands, faceless cyan Avatar, fake emotional-globe activity, generic fantasy chambers, crystal/geode Focus and invented identity imagery remain rejected/superseded.
 
-## Remaining internally executable work
+## Remaining internally executable work inside this docs-only recovery PR
 
-1. Normalize Drive Final Asset Lock and 53-asset ledgers row by row into stable reference/asset IDs.
-2. Normalize exact route/component/service/test pointers for every non-Spatial standalone system.
-3. Expand final copy decks where current canon is resolved.
-4. Produce visual storyboard/reference images for the explicitly missing packs using the locked briefs; treat them as candidates until accepted.
-5. Build dedicated professional/RuAI, native-device, wearable/IoT, family/shared-memory and XR storyboard/reference packs.
-6. Normalize current exact-head visual proof references for Home/Ground/Life Map/Focus/Replay/Orb into stable manifest IDs.
-7. Resolve only the remaining founder/legal/external decisions still listed in the open-question register.
-8. Obtain real-device/listening/haptic acceptance where required; automation cannot certify sensory quality.
+1. Normalize exact route/component/service/test pointers for non-Spatial standalone systems where current source exists.
+2. Expand final copy decks where current canon is resolved and no external/legal decision is required.
+3. Normalize current exact-head visual-proof references for Home/Ground/Life Map/Focus/Replay/Orb into stable manifest IDs without transferring predecessor acceptance.
+4. Keep the open-question register limited to genuinely unresolved founder/legal/external decisions.
+
+The following are **downstream execution/evidence work, not unfinished documentation mutations for this PR**:
+- generating the explicitly missing visual/storyboard packs;
+- professional/RuAI, native-device, wearable/IoT, family/shared-memory and XR implementation/reference production;
+- real-device/listening/haptic acceptance;
+- provider activation, deployment, independent review and visual promotion.
 
 ## External / future / human boundaries
 
