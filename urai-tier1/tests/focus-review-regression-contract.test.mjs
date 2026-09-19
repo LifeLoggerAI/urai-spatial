@@ -25,9 +25,9 @@ test('home telemetry synchronizes from mutations and input without perpetual doc
   assert.doesNotMatch(telemetryBridge, /const synchronize = \(\) =>/)
 })
 
-test('Focus focal authority is the V320 readable localized three-cavity-bottom terrain-owned continuation of the V272 single connected living-memory fold, not rejected lamellae, shards, sphere, slab, twig, leaf, or portable focal body', () => {
+test('Focus focal authority is the V321 focal-readable localized three-cavity-bottom terrain-owned continuation of the V272 single connected living-memory fold, not rejected lamellae, shards, sphere, slab, twig, leaf, or portable focal body', () => {
   assert.match(focus, /createFocusStrata, createFocusSurfaceMaps, createFocusGroundIncision/)
-  assert.match(focus, /focus-v320-readable-three-radial-pressure-cavity-bottoms/)
+  assert.match(focus, /focus-v321-focal-readable-three-radial-pressure-cavity-bottoms/)
   assert.match(focus, /polygonOffsetFactor=\{-4\}/)
   assert.match(focus, /focus-v251-grounded-living-memory-manifestation/)
   assert.match(geology, /v272-single-connected-living-memory-fold/)
@@ -48,8 +48,9 @@ test('Focus focal authority is the V320 readable localized three-cavity-bottom t
   assert.match(geology, /focusLiteralPixelSuccessorV317 = 'v317-three-radial-terrain-basins-with-separated-cavity-bottoms-and-subordinate-hairline-connector'/)
   assert.match(geology, /focusLiteralPixelSuccessorV318 = 'v318-localized-three-cavity-bottoms-ground-blended-hairline-connector'/)
   assert.match(geology, /focusLiteralPixelSuccessorV320 = 'v320-readable-localized-radial-cavities-subordinate-hairline-connector'/)
+  assert.match(geology, /focusLiteralPixelSuccessorV321 = 'v321-focal-readable-separated-radial-cavities-subordinate-hairline-connector'/)
   assert.match(geology, /focusSelectedMemoryCavityDepth/)
-  assert.match(geology, /v320-readable-three-radial-terrain-cavities-localized-bottoms-ground-blended-hairline-connector-buried-closed-body/)
+  assert.match(geology, /v321-focal-readable-three-radial-terrain-cavities-localized-bottoms-ground-blended-hairline-connector-buried-closed-body/)
   assert.doesNotMatch(geology, /v269-living-luminous-memory-lamella/)
   assert.doesNotMatch(geology, /v271-interlocked-volumetric-memory-facet/)
   assert.doesNotMatch(geology, /focusCurrentVisualAuthority = 'v305-ground-owned-jagged-fissure-buried-closed-body'/)
