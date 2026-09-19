@@ -22,10 +22,17 @@ export function isSystemLoopState(value: unknown): value is SystemLoopState {
   return typeof record.startedAt === "number" && Number.isFinite(record.startedAt) && typeof record.totalRuns === "number" && Number.isInteger(record.totalRuns) && record.totalRuns >= 0;
 }
 
+export type SystemLoopProcessingDecision = {
+  allowed: boolean;
+  reason: string;
+  revision?: number;
+};
+
 export type SystemLoopOptions = {
   tickIntervalMs?: number;
   replayLimit?: number;
   initialState?: Partial<SystemLoopState>;
+  processingGuard?: () => SystemLoopProcessingDecision | Promise<SystemLoopProcessingDecision>;
 };
 
 type SimulationFeedbackState = {
@@ -43,6 +50,7 @@ export class SystemLoop<TState = Record<string, unknown>> {
   readonly communications: CommunicationsBridge;
   readonly analytics: AnalyticsBridge;
   private readonly replayLimit: number;
+  private readonly processingGuard?: () => SystemLoopProcessingDecision | Promise<SystemLoopProcessingDecision>;
   private simulationState: SimulationFeedbackState = { intentVector: [], predictedBias: null, memoryWeighting: {} };
   private loopState: SystemLoopState;
 
@@ -55,6 +63,7 @@ export class SystemLoop<TState = Record<string, unknown>> {
     this.communications = new CommunicationsBridge();
     this.analytics = new AnalyticsBridge();
     this.replayLimit = options.replayLimit ?? 50;
+    this.processingGuard = options.processingGuard;
     this.loopState = {
       startedAt: options.initialState?.startedAt ?? Date.now(),
       totalRuns: options.initialState?.totalRuns ?? 0,
@@ -83,6 +92,15 @@ export class SystemLoop<TState = Record<string, unknown>> {
   }
 
   async runOnce() {
+    if (this.processingGuard) {
+      const decision = await this.processingGuard();
+      if (!decision.allowed) {
+        // Fail closed before touching the engine bus. The bus feeds MemoryGraph and
+        // Communications, so even an audit event here would mutate/buffer data while
+        // processing consent is revoked.
+        throw new Error(`SYSTEM_LOOP_PRIVACY_BLOCKED:${decision.reason}`);
+      }
+    }
     await this.engine.step();
     const snapshot = this.memory.snapshot();
     const timeline = this.replay.buildTimeline(snapshot, { limit: this.replayLimit });
