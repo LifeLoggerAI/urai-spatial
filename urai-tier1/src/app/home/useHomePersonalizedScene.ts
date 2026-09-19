@@ -8,6 +8,7 @@ import {
   buildHomePersonalizedScene,
   type HomeEvidenceRef,
   type HomePersonalizedScene,
+  type HomeSceneEnvironment,
   type HomeSceneMode,
   type HomeSignalKind,
 } from './homePersonalizationModel'
@@ -18,6 +19,7 @@ const knownKinds = new Set<HomeSignalKind>([
 ])
 
 const reviewModes = new Set<HomeSceneMode>(['private-personalized', 'world-forming', 'permission-limited', 'unavailable', 'offline', 'explicit-sample'])
+const reviewWeatherTones = new Set<HomeSceneEnvironment['weatherTone']>(['clear', 'soft', 'active', 'heavy', 'recovering', 'forming'])
 
 function safeDate(value: unknown): string | undefined {
   if (!value) return undefined
@@ -41,13 +43,21 @@ function evidenceFromDocument(id: string, data: Record<string, unknown>): HomeEv
   }
 }
 
-function parseRequestedMode(): { mode: HomeSceneMode | 'auto'; safePrivate: boolean } {
-  if (typeof window === 'undefined') return { mode: 'auto', safePrivate: false }
+function parseRequestedMode(): { mode: HomeSceneMode | 'auto'; safePrivate: boolean; reviewWeatherTone: HomeSceneEnvironment['weatherTone'] | null } {
+  if (typeof window === 'undefined') return { mode: 'auto', safePrivate: false, reviewWeatherTone: null }
   const params = new URLSearchParams(window.location.search)
-  if (params.get('homeSample') === '1' || params.get('demo') === '1') return { mode: 'explicit-sample', safePrivate: false }
-  if (params.get('homePrivateFixture') === '1') return { mode: 'private-personalized', safePrivate: true }
+  if (params.get('homeSample') === '1' || params.get('demo') === '1') return { mode: 'explicit-sample', safePrivate: false, reviewWeatherTone: null }
+  const privateFixture = params.get('homePrivateFixture') === '1'
+  const reviewMode = params.get('homeAssetReview') === '1'
+  const requestedWeatherTone = params.get('homeWeatherReview') as HomeSceneEnvironment['weatherTone'] | null
+  const reviewWeatherTone = reviewMode && privateFixture && requestedWeatherTone && reviewWeatherTones.has(requestedWeatherTone)
+    ? requestedWeatherTone
+    : null
+  if (privateFixture) return { mode: 'private-personalized', safePrivate: true, reviewWeatherTone }
   const fixture = params.get('homeState') as HomeSceneMode | null
-  return fixture && reviewModes.has(fixture) ? { mode: fixture, safePrivate: fixture === 'private-personalized' } : { mode: 'auto', safePrivate: false }
+  return fixture && reviewModes.has(fixture)
+    ? { mode: fixture, safePrivate: fixture === 'private-personalized', reviewWeatherTone: null }
+    : { mode: 'auto', safePrivate: false, reviewWeatherTone: null }
 }
 
 export function useHomePersonalizedScene(): { scene: HomePersonalizedScene; loading: boolean } {
@@ -135,9 +145,10 @@ export function useHomePersonalizedScene(): { scene: HomePersonalizedScene; load
     permissionsAvailable,
     dataAvailable,
     reviewFixture: requested.safePrivate ? 'safe-private' : null,
+    reviewWeatherTone: requested.reviewWeatherTone,
     evidence,
     now: new Date(),
-  }), [dataAvailable, evidence, online, permissionsAvailable, requested.safePrivate, requestedMode, signedIn])
+  }), [dataAvailable, evidence, online, permissionsAvailable, requested.reviewWeatherTone, requested.safePrivate, requestedMode, signedIn])
 
   return { scene, loading }
 }

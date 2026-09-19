@@ -8,6 +8,7 @@ import {
   URAI_HOME_EMOTIONAL_WEATHER_EVENT,
   resolveAdaptiveBlueHour,
   resolveHomeEmotionalWeather,
+  type AdaptiveBlueHour,
   type HomeAtmosphereParameters,
   type HomeEmotionalWeatherName,
 } from '../environment/HomeEmotionalWeatherState'
@@ -19,6 +20,21 @@ import {
 } from '../visual/homeSkyContinuity'
 import { height } from '../layout/HomeWorldProductionV223Geometry'
 import { HomeVisualAuthority } from '../layout/HomeVisualAuthority'
+
+
+function resolveReviewBlueHour(): AdaptiveBlueHour | null {
+  if (typeof window === 'undefined') return null
+  const params = new URLSearchParams(window.location.search)
+  const reviewAllowed = params.get('homeAssetReview') === '1'
+    && (params.get('homePrivateFixture') === '1' || params.get('homeSample') === '1' || params.get('demo') === '1')
+  if (!reviewAllowed) return null
+  const hour = params.get('homeTimeReview')
+  if (hour === 'dawn') return resolveAdaptiveBlueHour(new Date(2026, 0, 1, 7, 0, 0))
+  if (hour === 'day') return resolveAdaptiveBlueHour(new Date(2026, 0, 1, 12, 0, 0))
+  if (hour === 'dusk') return resolveAdaptiveBlueHour(new Date(2026, 0, 1, 19, 0, 0))
+  if (hour === 'night') return resolveAdaptiveBlueHour(new Date(2026, 0, 1, 23, 0, 0))
+  return null
+}
 
 const retiredLifeMapNames = [
   /life-map-rooted-celestial-ascent/,
@@ -485,11 +501,18 @@ export function HomeAtmosphericSky({ reducedMotion, active = false, weatherState
   const cloudMaterials = useMemo(() => CLOUD_LAYERS.map(makeCloudMaterial), [])
   const weatherTarget = useRef<HomeAtmosphereParameters>(HOME_EMOTIONAL_WEATHER_PRESETS.calm)
   const weatherCurrent = useRef({ ...HOME_EMOTIONAL_WEATHER_PRESETS.calm })
-  const blueHourTarget = useRef(resolveAdaptiveBlueHour())
-  const blueHourCurrent = useRef({ ...blueHourTarget.current })
+  const initialBlueHour = useMemo(() => resolveReviewBlueHour() ?? resolveAdaptiveBlueHour(), [])
+  const blueHourTarget = useRef(initialBlueHour)
+  const blueHourCurrent = useRef({ ...initialBlueHour })
   const fogTargetColor = useMemo(() => new THREE.Color('#36524f'), [])
 
   useEffect(() => {
+    const reviewBlueHour = resolveReviewBlueHour()
+    if (reviewBlueHour) {
+      blueHourTarget.current = reviewBlueHour
+      blueHourCurrent.current = { ...reviewBlueHour }
+      return
+    }
     const updateTime = () => { blueHourTarget.current = resolveAdaptiveBlueHour() }
     updateTime()
     const timer = window.setInterval(updateTime, 5 * 60 * 1000)

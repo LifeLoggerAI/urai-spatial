@@ -23,13 +23,15 @@ export default function AssetDrivenHomeWorld({ onOrbOpen, webglAvailable }: Prop
   const { scene, loading: personalizationLoading } = useHomePersonalizedScene()
   const weather = WEATHER_PRESENTATION[scene.environment.weatherTone]
   const emotionalWeatherVisible = !personalizationLoading
-    && scene.mode === 'private-personalized'
-    && scene.environment.evidence.length > 0
+    && ((scene.mode === 'private-personalized' && scene.environment.evidence.length > 0)
+      || scene.mode === 'explicit-sample')
   const emotionalWeatherSource = scene.reviewFixture === 'safe-private'
     ? 'disclosed-safe-private-synthetic-review-fixture'
-    : scene.privateDataMounted
-      ? 'permitted-private-home-signals'
-      : 'none'
+    : scene.mode === 'explicit-sample'
+      ? 'disclosed-public-sample'
+      : scene.privateDataMounted
+        ? 'permitted-private-home-signals'
+        : 'none'
 
   useEffect(() => {
     const owner = ownerRef.current
@@ -94,7 +96,9 @@ export default function AssetDrivenHomeWorld({ onOrbOpen, webglAvailable }: Prop
   const emotionalWeatherSummary = emotionalWeatherVisible
     ? scene.reviewFixture === 'safe-private'
       ? 'Personal emotional weather review fixture: ' + scene.environment.weatherTone + '. This is a disclosed synthetic review input, not user data.'
-      : 'Personal emotional weather: ' + scene.environment.weatherTone + '. The atmosphere reflects only permitted private Home signals.'
+      : scene.mode === 'explicit-sample'
+        ? 'Personal emotional weather disclosed sample: ' + scene.environment.weatherTone + '. This is sample data, not user data.'
+        : 'Personal emotional weather: ' + scene.environment.weatherTone + '. The atmosphere reflects only permitted private Home signals.'
     : 'Personal emotional weather is not mounted in this Home state.'
 
   return <div
