@@ -49,12 +49,14 @@ test('selected-memory identity and Replay manifest remain bound into Focus trave
   assert.match(focusRuntime, /node: memory\.star\.id/)
 })
 
-test('internal chamber and aperture names may remain while the visible Replay action stays Enter Replay', () => {
-  assert.match(focusRuntime, /FOCUS_CHAMBER_MODEL = '\/assets\/urai\/generated\/models\/focus-memory-chamber-v1\.glb'/)
-  assert.match(focusRuntime, /function MemoryAperture/)
+test('internal replay portal id remains while the visible Focus object is the selected Memory Star', () => {
   assert.match(focusRuntime, /entryPortal: 'focus-memory-aperture'/)
-  assert.match(focusRuntime, /aria-label=\{memory \? `Enter Replay for \$\{memory\.title\}`/)
-  assert.match(focusRuntime, />\{memory \? 'Enter Replay' : 'Awaiting a selected star'\}<\/button>/)
+  assert.match(focusRuntime, /name="focus-selected-memory-star"/)
+  assert.match(focusRuntime, /data-focus-composition="selected-memory-star-with-contained-memory"/)
+  assert.match(focusRuntime, /data-focus-terrain-owner="false"/)
+  assert.match(focusRuntime, /'Enter Replay for ' \+ memory\.title/)
+  assert.match(focusRuntime, />\{committed \? 'Opening…' : 'Enter Replay'\}<\/button>/)
+  assert.doesNotMatch(focusRuntime, /FOCUS_CHAMBER_MODEL|function MemoryAperture|AuthoredFocusChamber/)
 })
 
 test('public Focus runtime does not regress to chamber-era product copy', () => {
@@ -73,12 +75,14 @@ test('public Focus runtime does not regress to chamber-era product copy', () => 
   assert.match(focusRuntime, /Focus ready/)
 })
 
-test('live fractured WebGL Focus remains the visible pixel authority', () => {
-  assert.match(focusRuntime, /focus-v251-grounded-living-memory-manifestation/)
-  assert.match(focusRuntime, /focus-authored-fractured-stratum-/)
-  assert.match(focusRuntime, /v249-no-focus-ring-cage-or-repeated-runes/)
-  assert.match(focusPolish, /\.focusWorld \.focusBackdrop \{\s*display: none !important;/)
-  assert.match(focusPolish, /\.focusWorld \.focusCanvas canvas \{[\s\S]*opacity: 1 !important;[\s\S]*filter: none !important;[\s\S]*mix-blend-mode: normal !important;/)
+test('live selected Memory Star is the Focus pixel authority', () => {
+  assert.match(focusRuntime, /V323 locked product authority/)
+  assert.match(focusRuntime, /name="focus-selected-memory-star"/)
+  assert.match(focusRuntime, /name="focus-memory-star-glass-shell"/)
+  assert.match(focusRuntime, /<MemoryVisualContent memory=\{memory\} \/>/)
+  assert.match(focusRuntime, /data-focus-memory-visual=\{memoryVisual\}/)
+  assert.doesNotMatch(focusRuntime, /FocusSanctuaryGround|focus-v251-grounded-living-memory-manifestation|focus-authored-fractured-stratum-/)
+  assert.doesNotMatch(focusRuntime, /FOCUS_CHAMBER_MODEL|focus-retired-procedural-vault/)
   assert.doesNotMatch(focusPolish, /background-image:[\s\S]*var\(--focus-asset\)/)
 })
 
