@@ -344,22 +344,21 @@ function ReplayScannedProp({ src, position, rotation, scale }: {
 }
 
 function ReplayDemoLake() {
-  return <mesh name="replay-v227-memory-lake" position={[0, -2.02, -12.4]} rotation={[-Math.PI / 2, 0, 0]} raycast={() => null} receiveShadow>
-    <planeGeometry args={[14.8, 22, 1, 1]} />
+  return <mesh name="replay-v234-memory-lake" position={[0, -2.16, -14.0]} rotation={[-Math.PI / 2, 0, 0]} raycast={() => null} receiveShadow>
+    <planeGeometry args={[9.8, 15.6, 1, 1]} />
     <meshPhysicalMaterial color="#18242b" roughness={0.82} metalness={0} clearcoat={0.14} clearcoatRoughness={0.62} envMapIntensity={0.08} transmission={0} ior={1.33} thickness={0.02} transparent opacity={0.98} />
   </mesh>
 }
 
 const REPLAY_DEMO_OUTCROPS = [
-  // V226: keep generated-demo geology grounded into the basin instead of
-  // presenting isolated oversized boulders.  The banks remain authored,
-  // non-personal context and deliberately sit at the frame edges.
-  { x: -10.2, z: -5.8, lift: .08, scale: [1.42, .48, 1.18] as [number, number, number], rotation: [0.10, 0.42, -0.08] as [number, number, number] },
-  { x: 10.0, z: -7.0, lift: .07, scale: [1.34, .46, 1.22] as [number, number, number], rotation: [-0.06, -0.58, 0.04] as [number, number, number] },
-  { x: -11.6, z: -12.4, lift: .06, scale: [1.58, .52, 1.32] as [number, number, number], rotation: [0.08, 0.76, -0.05] as [number, number, number] },
-  { x: 11.1, z: -14.0, lift: .06, scale: [1.52, .50, 1.28] as [number, number, number], rotation: [-0.04, -0.92, 0.08] as [number, number, number] },
-  { x: -9.2, z: -18.7, lift: .04, scale: [1.30, .44, 1.16] as [number, number, number], rotation: [0.02, 1.12, -0.06] as [number, number, number] },
-  { x: 9.1, z: -20.5, lift: .04, scale: [1.36, .46, 1.18] as [number, number, number], rotation: [0.06, -1.24, 0.03] as [number, number, number] },
+  // V234: scanned geology owns the near/mid frame instead of sitting outside
+  // the witness camera while a broad procedural basin owns first read.
+  { x: -4.2, z: -3.4, lift: .05, scale: [3.10, 1.55, 2.45] as [number, number, number], rotation: [0.08, 0.48, -0.10] as [number, number, number] },
+  { x: 4.4, z: -4.1, lift: .05, scale: [2.85, 1.42, 2.26] as [number, number, number], rotation: [-0.06, -0.66, 0.05] as [number, number, number] },
+  { x: -5.6, z: -8.2, lift: .04, scale: [2.72, 1.28, 2.24] as [number, number, number], rotation: [0.10, 0.86, -0.06] as [number, number, number] },
+  { x: 5.7, z: -9.3, lift: .04, scale: [2.58, 1.20, 2.18] as [number, number, number], rotation: [-0.05, -1.04, 0.08] as [number, number, number] },
+  { x: -7.0, z: -15.3, lift: .03, scale: [2.16, 0.98, 1.86] as [number, number, number], rotation: [0.04, 1.18, -0.05] as [number, number, number] },
+  { x: 6.9, z: -16.7, lift: .03, scale: [2.22, 1.02, 1.92] as [number, number, number], rotation: [0.05, -1.30, 0.04] as [number, number, number] },
 ] as const
 
 function ReplayMemoryGeography({ accent, demo }: { accent: string; demo: boolean }) {
@@ -383,10 +382,10 @@ function ReplayMemoryGeography({ accent, demo }: { accent: string; demo: boolean
         rotation={outcrop.rotation}
         scale={outcrop.scale}
       />)}
-      <ReplayScannedProp src={REPLAY_FERN} position={[-5.9, replayBasinHeight(-5.9, -6.8) + .02, -6.8]} rotation={[0, .42, 0]} scale={[1.15, 1.15, 1.15]} />
-      <ReplayScannedProp src={REPLAY_FERN} position={[5.6, replayBasinHeight(5.6, -7.4) + .02, -7.4]} rotation={[0, -1.08, 0]} scale={[1.0, 1.0, 1.0]} />
-      <ReplayScannedProp src={REPLAY_FERN} position={[-6.7, replayBasinHeight(-6.7, -14.8) + .02, -14.8]} rotation={[0, 1.5, 0]} scale={[.88, .88, .88]} />
-      <ReplayScannedProp src={REPLAY_FERN} position={[6.4, replayBasinHeight(6.4, -15.6) + .02, -15.6]} rotation={[0, -.62, 0]} scale={[.92, .92, .92]} />
+      <ReplayScannedProp src={REPLAY_FERN} position={[-3.6, replayBasinHeight(-3.6, -3.8) + .02, -3.8]} rotation={[0, .42, 0]} scale={[1.42, 1.42, 1.42]} />
+      <ReplayScannedProp src={REPLAY_FERN} position={[3.7, replayBasinHeight(3.7, -4.6) + .02, -4.6]} rotation={[0, -1.08, 0]} scale={[1.26, 1.26, 1.26]} />
+      <ReplayScannedProp src={REPLAY_FERN} position={[-5.0, replayBasinHeight(-5.0, -9.7) + .02, -9.7]} rotation={[0, 1.5, 0]} scale={[1.02, 1.02, 1.02]} />
+      <ReplayScannedProp src={REPLAY_FERN} position={[4.9, replayBasinHeight(4.9, -10.8) + .02, -10.8]} rotation={[0, -.62, 0]} scale={[1.04, 1.04, 1.04]} />
     </group> : null}
     <pointLight position={[-5.8,1.1,-3.8]} color="#e4b984" intensity={demo ? 1.72 : 1.52} distance={17} decay={2}/>
     <pointLight position={[5.2,1.6,-4.2]} color={accent} intensity={demo ? 1.28 : 1.04} distance={16} decay={2}/>
@@ -607,7 +606,7 @@ export default function CinematicReplayClient() {
     if (audio && Number.isFinite(audio.duration)) audio.currentTime = Math.min(audio.duration, next / 1000)
   }
 
-  return <main className="replayWorld" style={style} data-testid="cinematic-replay-client" data-memory-status={result.status} data-memory-id={memory.id} data-star-id={memory.star.id} data-manifest-id={memory.replayManifest.id} data-node={memory.star.id} data-playing={playing ? 'true' : 'false'} data-canonical-asset={replayAssets.primary.src} data-replay-spatial-owner="r3f-memory-theater" data-replay-environment={REPLAY_ENVIRONMENT_MODEL} data-replay-composition="v225-source-first-memory-environment-readable-phased-return" data-replay-demo-art="v233-cinematic-neutral-water-clean-basin-depth" data-replay-camera="anchored-first-person-witness" data-replay-truth={truth?.level ?? 'unknown'}>
+  return <main className="replayWorld" style={style} data-testid="cinematic-replay-client" data-memory-status={result.status} data-memory-id={memory.id} data-star-id={memory.star.id} data-manifest-id={memory.replayManifest.id} data-node={memory.star.id} data-playing={playing ? 'true' : 'false'} data-canonical-asset={replayAssets.primary.src} data-replay-spatial-owner="r3f-memory-theater" data-replay-environment={REPLAY_ENVIRONMENT_MODEL} data-replay-composition="v225-source-first-memory-environment-readable-phased-return" data-replay-demo-art="v234-scanned-geology-framed-memory-cove" data-replay-camera="anchored-first-person-witness" data-replay-truth={truth?.level ?? 'unknown'}>
     <Canvas className="replaySpatialCanvas" shadows={quality.shadows} dpr={[1, quality.pixelRatioMax]} frameloop={quality.documentVisible ? 'always' : 'never'} camera={{ position: [0, 0.42, 8.4], fov: 46, near: 0.05, far: 120 }} gl={{ antialias: quality.antialias, powerPreference: 'high-performance' }} onCreated={({ gl }) => { gl.outputColorSpace = THREE.SRGBColorSpace; gl.toneMapping = THREE.ACESFilmicToneMapping; gl.toneMappingExposure = memory.demo ? 1.18 : 1.92 }}>
       <ReplaySpatialScene memory={memory} playing={playing} progressMs={progressMs} muteVideo={Boolean(recordedAudioUrl)} />
     </Canvas>
