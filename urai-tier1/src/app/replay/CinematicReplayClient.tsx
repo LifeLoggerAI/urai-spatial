@@ -504,7 +504,7 @@ function ReplaySpatialScene({ memory, playing, progressMs, muteVideo }: { memory
       <directionalLight position={[6, 5, -7]} intensity={memory.demo ? 1.34 : 1.45} color={memory.visuals.accent} />
       <pointLight position={[0, 1.4, -4.6]} intensity={memory.demo ? visuals.source * 0.34 : visuals.source} distance={22} color={memory.visuals.accent} />
       <pointLight position={[-5.5, 2.8, -1.5]} intensity={memory.demo ? 2.65 : 2.8} distance={24} color="#e0b482" />
-      {memory.demo ? <ReplayDemoHorizon /> : <primitive object={model} name="replay-memory-environment-v1" />}
+      {memory.demo ? <><ReplayDemoHorizon /><primitive object={model} name="replay-demo-canonical-environment-v1" /></> : <primitive object={model} name="replay-memory-environment-v1" />}
       <ReplayMemoryGeography accent={memory.visuals.accent} demo={memory.demo}/>
       <RecordedMemoryField media={media} playing={playing} progressMs={progressMs} muteVideo={muteVideo} />
       <ReplayTimelineField memory={memory} progress={progress} />
@@ -606,7 +606,7 @@ export default function CinematicReplayClient() {
     if (audio && Number.isFinite(audio.duration)) audio.currentTime = Math.min(audio.duration, next / 1000)
   }
 
-  return <main className="replayWorld" style={style} data-testid="cinematic-replay-client" data-memory-status={result.status} data-memory-id={memory.id} data-star-id={memory.star.id} data-manifest-id={memory.replayManifest.id} data-node={memory.star.id} data-playing={playing ? 'true' : 'false'} data-canonical-asset={replayAssets.primary.src} data-replay-spatial-owner="r3f-memory-theater" data-replay-environment={REPLAY_ENVIRONMENT_MODEL} data-replay-composition="v225-source-first-memory-environment-readable-phased-return" data-replay-demo-art="v229-readable-cinematic-material-depth" data-replay-camera="anchored-first-person-witness" data-replay-truth={truth?.level ?? 'unknown'}>
+  return <main className="replayWorld" style={style} data-testid="cinematic-replay-client" data-memory-status={result.status} data-memory-id={memory.id} data-star-id={memory.star.id} data-manifest-id={memory.replayManifest.id} data-node={memory.star.id} data-playing={playing ? 'true' : 'false'} data-canonical-asset={replayAssets.primary.src} data-replay-spatial-owner="r3f-memory-theater" data-replay-environment={REPLAY_ENVIRONMENT_MODEL} data-replay-composition="v225-source-first-memory-environment-readable-phased-return" data-replay-demo-art="v230-canonical-glb-plus-physical-depth" data-replay-camera="anchored-first-person-witness" data-replay-truth={truth?.level ?? 'unknown'}>
     <Canvas className="replaySpatialCanvas" shadows={quality.shadows} dpr={[1, quality.pixelRatioMax]} frameloop={quality.documentVisible ? 'always' : 'never'} camera={{ position: [0, 0.42, 8.4], fov: 46, near: 0.05, far: 120 }} gl={{ antialias: quality.antialias, powerPreference: 'high-performance' }} onCreated={({ gl }) => { gl.outputColorSpace = THREE.SRGBColorSpace; gl.toneMapping = THREE.ACESFilmicToneMapping; gl.toneMappingExposure = memory.demo ? 1.30 : 1.92 }}>
       <ReplaySpatialScene memory={memory} playing={playing} progressMs={progressMs} muteVideo={Boolean(recordedAudioUrl)} />
     </Canvas>
