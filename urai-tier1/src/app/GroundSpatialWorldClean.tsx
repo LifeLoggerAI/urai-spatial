@@ -1,7 +1,7 @@
 "use client";
 
 import { Canvas, useFrame, useThree, type ThreeEvent } from "@react-three/fiber";
-import { Environment, Sky, useGLTF, useTexture } from "@react-three/drei";
+import { Environment, useGLTF, useTexture } from "@react-three/drei";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Component, Suspense, useCallback, useEffect, useMemo, useRef, useState, type MutableRefObject, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
 import * as THREE from "three";
@@ -605,6 +605,50 @@ function FirstPersonPlayer({ input, yaw, pitch, target, profile, obstacles, play
   return null;
 }
 
+function AtmosphericGroundSky({ profile }: { profile: EnvironmentProfile }) {
+  const uniforms = useMemo(() => ({
+    zenithColor: { value: new THREE.Color(profile.id === "woodland" ? "#537482" : "#5f8391") },
+    upperColor: { value: new THREE.Color(profile.id === "arid" ? "#9b8065" : "#7897a1") },
+    horizonColor: { value: new THREE.Color(profile.fog) },
+    groundHazeColor: { value: new THREE.Color(profile.horizon) },
+  }), [profile.fog, profile.horizon, profile.id]);
+
+  return <mesh name="ground-authored-atmospheric-dome-v11" scale={360} frustumCulled={false} renderOrder={-1000}>
+    <sphereGeometry args={[1, 64, 32]} />
+    <shaderMaterial
+      side={THREE.BackSide}
+      depthWrite={false}
+      depthTest={false}
+      toneMapped={false}
+      uniforms={uniforms}
+      vertexShader={`
+        varying vec3 vDir;
+        void main() {
+          vDir = normalize(position);
+          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+        }
+      `}
+      fragmentShader={`
+        varying vec3 vDir;
+        uniform vec3 zenithColor;
+        uniform vec3 upperColor;
+        uniform vec3 horizonColor;
+        uniform vec3 groundHazeColor;
+        void main() {
+          float h = clamp(vDir.y * 0.5 + 0.5, 0.0, 1.0);
+          float upperMix = smoothstep(0.48, 0.98, h);
+          vec3 sky = mix(upperColor, zenithColor, upperMix);
+          float horizonBand = 1.0 - smoothstep(0.02, 0.34, abs(vDir.y));
+          sky = mix(sky, horizonColor, horizonBand * 0.72);
+          float groundBand = 1.0 - smoothstep(-0.18, 0.06, vDir.y);
+          sky = mix(sky, groundHazeColor, groundBand * 0.48);
+          gl_FragColor = vec4(sky, 1.0);
+        }
+      `}
+    />
+  </mesh>;
+}
+
 function GroundScene({ profile, input, yaw, pitch, target, obstacles, playerPosition, isCoarse, onReady }: {
   profile: EnvironmentProfile;
   input: MovementInput;
@@ -621,7 +665,7 @@ function GroundScene({ profile, input, yaw, pitch, target, obstacles, playerPosi
   const weather = DEFAULT_GROUND_WEATHER;
   return <>
     <color attach="background" args={[profile.fog]} />
-    <Sky distance={450000} sunPosition={[18, 28, 12]} turbidity={3.6} rayleigh={1.8} mieCoefficient={0.0009} mieDirectionalG={0.68} />
+    <AtmosphericGroundSky profile={profile} />
     <fogExp2 attach="fog" args={[profile.fog, profile.id === "urban" ? 0.018 : (profile.id === "temperate" || profile.id === "woodland" ? 0.0105 : 0.0135) + weather.atmosphericDensity * 0.002]} />
     <Suspense fallback={null}><Environment files="/assets/urai/home-production/cc0/environment/studio-small-08-1k.hdr" background={false} environmentIntensity={0.24} /></Suspense>
     <ambientLight intensity={0.28} color="#bdcec8" />
@@ -754,7 +798,7 @@ export default function GroundSpatialWorldClean() {
     data-ground-visual-owner="physical-lived-world"
     data-ground-runtime-owner="first-person-lived-world"
     data-ground-visual-revision="ground-lived-world-v2-canon-lock"
-    data-ground-art-revision="ground-natural-surface-v10-overlapping-organic-canopy-v10-atmosphere-v3-ridge-v3"
+    data-ground-art-revision="ground-natural-surface-v11-overlapping-organic-canopy-v10-atmosphere-v4-authored-dome-ridge-v3"
     data-ground-exploration="first-person-no-visible-body"
     data-ground-camera="eye-level-terrain-following-no-authored-bob"
     data-ground-eye-height={GROUND_EYE_HEIGHT_M}
