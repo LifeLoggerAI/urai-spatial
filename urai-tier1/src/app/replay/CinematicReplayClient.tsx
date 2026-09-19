@@ -308,6 +308,31 @@ function ReplayMemoryGeography({ accent, demo }: { accent: string; demo: boolean
   </group>
 }
 
+function ReplayDemoHorizon() {
+  return <group name="replay-explicit-demo-cinematic-horizon" userData={{ truthRole: 'generated-demo-visualization', referenceRole: 'quiet-reset-open-memory-horizon' }}>
+    <mesh position={[0, 4.8, -34]} raycast={() => null}>
+      <planeGeometry args={[64, 24]} />
+      <meshBasicMaterial color="#6b4d58" />
+    </mesh>
+    <mesh position={[0, 1.6, -33.6]} raycast={() => null}>
+      <planeGeometry args={[64, 8]} />
+      <meshBasicMaterial color="#c47b68" transparent opacity={0.58} depthWrite={false} />
+    </mesh>
+    <mesh position={[0, 1.25, -33.2]} raycast={() => null}>
+      <circleGeometry args={[1.05, 64]} />
+      <meshBasicMaterial color="#f6d6a5" transparent opacity={0.95} depthWrite={false} />
+    </mesh>
+    <mesh position={[-9.4, -0.7, -22]} scale={[3.2, 1.65, 2.2]} raycast={() => null}>
+      <sphereGeometry args={[1, 36, 24]} />
+      <meshStandardMaterial color="#7f5646" roughness={1} />
+    </mesh>
+    <mesh position={[9.8, -0.9, -24]} scale={[2.7, 1.45, 2]} raycast={() => null}>
+      <sphereGeometry args={[1, 36, 24]} />
+      <meshStandardMaterial color="#875c4b" roughness={1} />
+    </mesh>
+  </group>
+}
+
 function ReplayTimelineField({ memory, progress }: { memory: SelectedMemory; progress: number }) {
   return <group name="replay-semantic-timeline" visible={false} userData={{ segmentCount: memory.replayManifest.segments.length, progress, retiredVisualRole: 'v211-no-stick-and-ball-timeline' }}>
     {memory.replayManifest.segments.map((segment) => <group key={segment.id} userData={{ replaySegment: segment.id }} />)}
@@ -333,7 +358,7 @@ function ReplaySpatialScene({ memory, playing, progressMs, muteVideo }: { memory
       <directionalLight position={[6, 5, -7]} intensity={memory.demo ? 1.1 : 1.45} color={memory.visuals.accent} />
       <pointLight position={[0, 1.4, -4.6]} intensity={memory.demo ? visuals.source * 0.58 : visuals.source} distance={22} color={memory.visuals.accent} />
       <pointLight position={[-5.5, 2.8, -1.5]} intensity={memory.demo ? 3.6 : 2.8} distance={22} color="#e2b27f" />
-      {memory.demo ? null : <primitive object={model} name="replay-memory-environment-v1" />}
+      {memory.demo ? <ReplayDemoHorizon /> : <primitive object={model} name="replay-memory-environment-v1" />}
       <ReplayMemoryGeography accent={memory.visuals.accent} demo={memory.demo}/>
       <RecordedMemoryField media={media} playing={playing} progressMs={progressMs} muteVideo={muteVideo} />
       <ReplayTimelineField memory={memory} progress={progress} />
