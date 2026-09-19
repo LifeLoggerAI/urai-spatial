@@ -1,130 +1,123 @@
 # URAI Missing Artifact Manifest
 
-Status: ACTIVE GAP REGISTER
+Status: ACTIVE GAP REGISTER / RECONCILED 2026-09-19
 
-This file records what has not yet been proven. Missing does not mean the product concept is invalid; it means an artifact has not yet been located or is insufficient.
+This register now contains only gaps that remain after the current canon-recovery pass. Missing does not mean the concept is invalid; it means the required artifact, acceptance evidence, or final authority is not yet complete.
 
-## Priority 0 — canon integrity
+## Priority 0 — visual/reference completion
 
-- row-by-row normalization of the Drive Visual Gold Master Active Manifest into stable reference IDs;
-- row-by-row normalization of the Final Asset Lock Master and 53 Asset Independent Ledger;
-- exact source citations for every major future-canon concept;
-- chronology/supersession decision for URAI-JOBS;
-- canonical index that links each feature to one authority document and one implementation owner;
-- explicit current/future maturity decision for Mirror, Shadow, Legacy, Council, Rituals, Emotional Weather, Companion, Narrator;
-- complete contradiction sweep across Drive vs current repo.
+Stable authority IDs are defined in `46-CURRENT-ASSET-REFERENCE-AUTHORITY.md`.
 
-## Priority 1 — storyboards
+Still open:
+- `URAI-REF-MEMSTAR-001` dedicated state/reference pack;
+- `URAI-REF-WEATHER-001` WEATHER-001..018 accepted visual pack;
+- `URAI-REF-PASSPORT-PHYS-001` physical Home Passport model/state pack;
+- `URAI-REF-SHADOW-001` embodied implementation + literal pixels;
+- `URAI-REF-LEGACY-001` LEGACY-001..010 accepted visual pack;
+- `URAI-REF-COUNCIL-001` final faces/materials/clothing/chamber/lip-read pack;
+- `URAI-REF-RITUAL-001` RITUAL-001..014 image/audio/haptic pack;
+- `URAI-REF-FUTURES-001` FUTURES-001..012 high-fidelity spatial pack;
+- `URAI-REF-LIVEDWORLD-001` provenance-backed per-place reconstruction;
+- final professional Avatar likeness authority;
+- institutional/native/future surface packs where accepted production references are not yet proven.
 
-Still missing or incomplete:
-- first-run/onboarding permission sequence;
-- Ground full state set;
-- Orb all canonical states;
-- Mirror evidence/correction loop;
-- Shadow trauma-safe entry/exit;
-- Legacy archive/share/export;
-- Council question/context/deliberation/result;
-- Passport onboarding/edit/revocation;
-- rituals library;
-- Emotional Weather evidence/correction;
-- memory capture review/consent;
-- relationship constellation;
-- future simulation;
-- private vault unlock/relock;
-- offline/resync;
-- permission-denied states;
-- empty/no-personal-data world;
-- native mobile/device transitions;
-- AR/VR/XR alternates.
+## Priority 0 — item-level provenance normalization
 
-## Priority 1 — reference imagery
+Still required:
+- attach stable IDs to retained proof/reference screenshots;
+- link rejected/predecessor images to their superseding current authority;
+- continue Final Asset Lock / 53-asset row reconciliation where historical rows remain useful;
+- record exact source path or Drive ID, date, authority class, acceptance state, implementation target and supersession pointer for retained references.
 
-Insufficiently normalized:
-- Ascent
-- Mirror
-- Shadow
-- Legacy
-- Council
-- Passport
-- Rituals
-- Emotional Weather
-- Dream Planetarium
-- Life Museum
-- Companion manifestation
-- Admin
-- Analytics
-- Studio
-- Storytime
-- Marketing
-- Foundation
-- Investors
-- B2B
+The older 213-row asset inventory is a semantic inventory, not a requirement for 213 standalone files.
 
-For each, the target artifact is not random concept art. It is a production reference pack with state, platform, composition, authority, acceptance, and supersession metadata.
+## Priority 1 — storyboard / experience gaps
 
-## Priority 1 — copy
+Text-state storyboard specifications now exist for major source-resolved realms, including Shadow, Legacy, Council, Rituals, Possible Futures, Mirror, Memory Star -> Focus and Personal Emotional Weather.
 
-A unified copy manifest has not yet been proven for:
-- onboarding
-- realm-specific guidance
-- evidence/uncertainty language
-- sensitive-memory consent
-- empty states
-- permission denial
-- offline/resync
-- subscription/entitlement
-- accessibility controls
-- professional/therapist surface
-- Foundation/B2B/admin operational copy
+Still incomplete:
+- first-run/onboarding permission visual sequence;
+- Ground complete state board;
+- Orb complete state board;
+- Passport onboarding/edit/revocation board;
+- memory capture/review/consent board;
+- relationship constellation/shared-memory journey;
+- private-vault unlock/relock/export/delete;
+- offline/resync/conflict;
+- native-device transitions;
+- AR/VR/XR alternates;
+- Foundation/Admin/B2B/Studio task journeys where visual UX is material.
 
-## Priority 1 — functional specifications
+## Priority 1 — final copy/content packs
 
-Need one canonical state/data contract for:
-- passive signal ingestion
-- memory review/promotion
-- relationship links
-- goal/action conversion
-- emotional weather calculation
-- mood forecast/scenario semantics
-- narrator/companion memory
-- offline/edge/resync
-- notifications/quiet hours
-- shared-memory consent
-- legacy/inheritance/export
-- future simulation
-- device/wearable handoff
+Requirement-level copy is documented, including edge states. Final approved wording should be centralized/versioned in `urai-content`.
+
+Still requires finalized content packs for:
+- onboarding/permissions;
+- realm-specific guidance;
+- subscription/entitlement;
+- professional/RuAI workflows;
+- Foundation/B2B/Admin operational surfaces;
+- relationship/shared-memory consent;
+- inheritance/posthumous continuity;
+- native/offline/resync behavior.
+
+## Priority 1 — functional authority still unresolved
+
+- Companion versus Narrator role relationship;
+- Mood Forecast relationship to Emotional Weather and Possible Futures;
+- shared-memory multi-party consent;
+- Legacy inheritance/posthumous access;
+- native offline/edge conflict resolution;
+- relationship/Soul-Thread boundary;
+- professional/RuAI product scope beyond governance;
+- creator/marketplace scope if explicitly re-promoted.
 
 ## Priority 2 — platform packs
 
-Need platform-specific UX/reference/storyboard packs for:
-- iOS
-- Android
-- macOS
-- Windows
-- tablet
-- wearables
-- IoT
-- AR
-- VR
-- XR/spatial computing
+Need platform-specific reference/UX/storyboard packs for:
+- iOS;
+- Android;
+- macOS;
+- Windows;
+- tablet;
+- wearables;
+- IoT/home/vehicle/peripherals;
+- AR;
+- VR;
+- XR/spatial computing.
 
-## Priority 2 — system-of-systems
+EWI defines integration boundaries but does not substitute for platform UX, accessibility, or device proof.
 
-Need:
-- event contract index;
-- API/interface contract index;
-- data classification registry;
-- operator responsibility map;
-- launch/provider evidence pointers;
-- continuity/succession plan;
-- one canonical glossary;
-- one canonical route/surface registry across the whole estate.
+## Priority 2 — institutional/system surfaces
+
+Need normalized visual/UX packs where material for:
+- Admin operator journeys;
+- Analytics dashboards;
+- Studio creative workflows;
+- Asset Factory approval/provenance;
+- Communications operator/provider states;
+- B2B partner workflows;
+- Foundation grants/donations/staff;
+- Storytime guardian/story workflows;
+- RuAI professional surface;
+- Investor/data-room states.
+
+## External / human / provider-bound gaps
+
+- professional Avatar reconstruction candidate;
+- physical listening and haptic-device validation;
+- provider/live activation;
+- legal/privacy decisions for shared memory, inheritance and professional scope;
+- founder decisions listed in `19-OPEN-CANON-QUESTIONS.md`.
 
 ## Completion rule
 
-This manifest reaches zero only when each item is either:
-- VERIFIED with source and artifact pointer,
-- explicitly NOT REQUIRED with rationale,
-- REJECTED with decision source,
-- SUPERSEDED with replacement pointer,
-- or UNRESOLVED because a founder/legal/external decision is genuinely required.
+A gap closes only when it is:
+- VERIFIED with source + artifact + owner + evidence;
+- NOT REQUIRED with rationale;
+- REJECTED with decision source;
+- SUPERSEDED with replacement;
+- or UNRESOLVED because a genuine founder/legal/external decision remains.
+
+A production brief is not visual acceptance. A generated image is not Gold Master merely because it satisfies the brief.
