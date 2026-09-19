@@ -7,7 +7,12 @@ const groundCanon = readFileSync(new URL('../src/spatial/ground/groundCanon.ts',
 
 test('Ground renders a lived physical world instead of the retired chamber hub', () => {
   assert.match(ground, /data-ground-visual-revision="ground-lived-world-v2-canon-lock"/)
-  assert.match(ground, /data-ground-art-revision="ground-natural-surface-v6-irregular-canopy-v6-ridge-v3"/)
+  assert.match(ground, /data-ground-art-revision="ground-natural-surface-v7-fine-canopy-v7-atmosphere-v1-ridge-v3"/)
+  assert.match(ground, /name="ground-authored-natural-canopy-v7"/)
+  assert.match(ground, /normalMap=\{normal\}/)
+  assert.match(ground, /aoMap=\{arm\}/)
+  assert.match(ground, /roughnessMap=\{arm\}/)
+  assert.match(ground, /<Sky distance=\{450000\}/)
   assert.match(ground, /const naturalProfile = profile\.id === "temperate" \|\| profile\.id === "woodland"/)
   assert.match(ground, /map=\{naturalProfile \? null : albedo\}/)
   assert.match(ground, /naturalSoil\.clone\(\)/)
