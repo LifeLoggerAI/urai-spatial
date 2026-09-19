@@ -298,7 +298,9 @@ function ReplayMemoryGeography({ accent, demo }: { accent: string; demo: boolean
   useEffect(()=>()=>{basin.dispose();wall.dispose();maps.forEach((texture)=>texture.dispose())},[basin,maps,wall])
   return <group name="replay-v216-embedded-memory-cove" userData={{ visualIntent:'media-manifested-inside-continuous-weathered-place' }}>
     <mesh geometry={basin} receiveShadow castShadow>
-      <meshStandardMaterial map={maps[0]} normalMap={maps[1]} roughnessMap={maps[2]} normalScale={new THREE.Vector2(.40,.40)} color="#b8aa98" vertexColors roughness={.94}/>
+      {demo
+        ? <meshStandardMaterial normalMap={maps[1]} normalScale={new THREE.Vector2(.12,.12)} color="#b98960" roughness={.98} metalness={0} />
+        : <meshStandardMaterial map={maps[0]} normalMap={maps[1]} roughnessMap={maps[2]} normalScale={new THREE.Vector2(.40,.40)} color="#b8aa98" vertexColors roughness={.94}/>}
     </mesh>
     {demo ? null : <mesh geometry={wall} position={[0,0,-.18]} receiveShadow castShadow>
       <meshStandardMaterial map={maps[0]} normalMap={maps[1]} roughnessMap={maps[2]} normalScale={new THREE.Vector2(.52,.52)} color="#8b7d70" vertexColors roughness={.97} side={THREE.DoubleSide}/>
@@ -310,25 +312,52 @@ function ReplayMemoryGeography({ accent, demo }: { accent: string; demo: boolean
 
 function ReplayDemoHorizon() {
   return <group name="replay-explicit-demo-cinematic-horizon" userData={{ truthRole: 'generated-demo-visualization', referenceRole: 'explicit-demo-open-memory-horizon' }}>
-    <mesh position={[0, 4.8, -34]} raycast={() => null}>
-      <planeGeometry args={[64, 24]} />
-      <meshBasicMaterial color="#6b4d58" />
+    <mesh position={[0, 4.2, -34]} raycast={() => null}>
+      <planeGeometry args={[64, 26]} />
+      <shaderMaterial
+        depthWrite={false}
+        vertexShader={`varying vec2 vUv; void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}`}
+        fragmentShader={`
+          varying vec2 vUv;
+          float hash(vec2 p){ return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453123); }
+          void main(){
+            vec3 top=vec3(0.23,0.18,0.29);
+            vec3 middle=vec3(0.55,0.34,0.36);
+            vec3 horizon=vec3(0.91,0.57,0.39);
+            float y=vUv.y;
+            vec3 color=mix(horizon,middle,smoothstep(0.18,0.48,y));
+            color=mix(color,top,smoothstep(0.48,1.0,y));
+            vec2 sunP=(vUv-vec2(0.52,0.34))*vec2(1.0,1.85);
+            float sun=1.0-smoothstep(0.022,0.03,length(sunP));
+            float glow=1.0-smoothstep(0.03,0.19,length(sunP));
+            color+=vec3(1.0,0.69,0.38)*glow*0.22+vec3(1.0,0.86,0.65)*sun*0.95;
+            float grain=(hash(floor(vUv*vec2(900.0,520.0)))-0.5)*0.018;
+            gl_FragColor=vec4(color+grain,1.0);
+          }`}
+        toneMapped={false}
+      />
     </mesh>
-    <mesh position={[0, 1.6, -33.6]} raycast={() => null}>
-      <planeGeometry args={[64, 8]} />
-      <meshBasicMaterial color="#c47b68" transparent opacity={0.58} depthWrite={false} />
-    </mesh>
-    <mesh position={[0, 1.25, -33.2]} raycast={() => null}>
-      <circleGeometry args={[1.05, 64]} />
-      <meshBasicMaterial color="#f6d6a5" transparent opacity={0.95} depthWrite={false} />
-    </mesh>
-    <mesh position={[-9.4, -0.7, -22]} scale={[3.2, 1.65, 2.2]} raycast={() => null}>
-      <sphereGeometry args={[1, 36, 24]} />
-      <meshStandardMaterial color="#7f5646" roughness={1} />
-    </mesh>
-    <mesh position={[9.8, -0.9, -24]} scale={[2.7, 1.45, 2]} raycast={() => null}>
-      <sphereGeometry args={[1, 36, 24]} />
-      <meshStandardMaterial color="#875c4b" roughness={1} />
+    <mesh position={[0, -0.05, -33.1]} raycast={() => null}>
+      <planeGeometry args={[64, 11]} />
+      <shaderMaterial
+        transparent
+        depthWrite={false}
+        vertexShader={`varying vec2 vUv; void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}`}
+        fragmentShader={`
+          varying vec2 vUv;
+          void main(){
+            float ridge=0.31
+              +0.10*sin(vUv.x*13.0)
+              +0.055*sin(vUv.x*31.0+0.8)
+              +0.025*sin(vUv.x*63.0+1.7);
+            float alpha=1.0-smoothstep(ridge-0.012,ridge+0.012,vUv.y);
+            vec3 nearRidge=vec3(0.25,0.18,0.18);
+            vec3 farRidge=vec3(0.36,0.23,0.23);
+            vec3 color=mix(nearRidge,farRidge,vUv.y);
+            gl_FragColor=vec4(color,alpha*0.92);
+          }`}
+        toneMapped={false}
+      />
     </mesh>
   </group>
 }
