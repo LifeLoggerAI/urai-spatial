@@ -303,8 +303,8 @@ function NaturalCanopy({ profile, position, rotationY, scale, shapeSeed }: {
     const woodland = profile.id === "woodland";
     const trunkColor = woodland ? "#3a3027" : "#493a2c";
     const branchColor = woodland ? "#42372d" : "#514334";
-    const leafA = woodland ? "#314b35" : "#4c674e";
-    const leafB = woodland ? "#3d5a3e" : "#5b7358";
+    const leafA = woodland ? "#36583d" : "#587a58";
+    const leafB = woodland ? "#466b49" : "#698866";
 
     const shapePhase = shapeSeed * 0.731;
     const trunkLeanX = (((shapeSeed * 17) % 19) - 9) * 0.008;
@@ -349,7 +349,7 @@ function NaturalCanopy({ profile, position, rotationY, scale, shapeSeed }: {
     leafShape.moveTo(0, -1);
     leafShape.quadraticCurveTo(.72, -.22, 0, 1);
     leafShape.quadraticCurveTo(-.72, -.22, 0, -1);
-    const leafGeometry = new THREE.ShapeGeometry(leafShape, 1);
+    const leafGeometry = new THREE.SphereGeometry(0.5, 10, 8);
 
     const foliageAnchors = [
       ...transformedBranchDefs.map((points) => points[points.length - 1]),
@@ -361,19 +361,19 @@ function NaturalCanopy({ profile, position, rotationY, scale, shapeSeed }: {
       const value = Math.sin(seed * 12.9898 + shapeSeed * 53.117 + (woodland ? 78.233 : 31.417)) * 43758.5453;
       return value - Math.floor(value);
     };
-    const leaves = Array.from({ length: woodland ? 1480 : 1280 }, (_, index) => {
+    const leaves = Array.from({ length: woodland ? 760 : 680 }, (_, index) => {
       const anchor = foliageAnchors[index % foliageAnchors.length];
-      const spread = 0.12 + hash(index * 7 + 1) * 0.42;
+      const spread = 0.16 + hash(index * 7 + 1) * 0.54;
       const theta = hash(index * 7 + 2) * Math.PI * 2;
       const x = anchor[0] + Math.cos(theta) * spread * (0.48 + hash(index * 7 + 3) * 0.92);
-      const y = anchor[1] - 0.02 + (hash(index * 7 + 4) - 0.45) * 0.64;
+      const y = anchor[1] - 0.01 + (hash(index * 7 + 4) - 0.45) * 0.78;
       const z = anchor[2] + Math.sin(theta) * spread * (0.46 + hash(index * 7 + 5) * 0.88);
       const rx = (hash(index * 7 + 6) - 0.5) * 1.28;
       const ry = theta + (hash(index * 7 + 7) - 0.5) * 1.15;
       const rz = (hash(index * 7 + 8) - 0.5) * 1.12;
-      const sx = 0.24 + hash(index * 7 + 9) * 0.22;
-      const sy = 0.11 + hash(index * 7 + 10) * 0.13;
-      const sz = 1;
+      const sx = 0.34 + hash(index * 7 + 9) * 0.28;
+      const sy = 0.18 + hash(index * 7 + 10) * 0.19;
+      const sz = 0.26 + hash(index * 7 + 11) * 0.24;
       return {
         position: [x, y, z] as [number, number, number],
         rotation: [rx, ry, rz] as [number, number, number],
@@ -404,10 +404,10 @@ function NaturalCanopy({ profile, position, rotationY, scale, shapeSeed }: {
     raycast={() => null}
     name="ground-authored-natural-canopy-v13"
     userData={{
-      treatment: "seed-varied-branch-architecture-readable-broadleaf-canopy-v17",
+      treatment: "seed-varied-branch-architecture-volumetric-broadleaf-canopy-v18",
       provenance: NATURAL_CANOPY,
-      visibleAuthority: "runtime-authored-canopy-v17",
-      literalPixelRepair: "v17-first-person-readable-broadleaf-canopy-and-uncrushed-natural-ground",
+      visibleAuthority: "runtime-authored-canopy-v18",
+      literalPixelRepair: "v18-volumetric-broadleaf-crown-first-person-readable-canopy",
       supersedesVisibleCandidate: "ground-natural-canopy-v3-low-poly-silhouette",
     }}
   >
@@ -962,7 +962,7 @@ export default function GroundSpatialWorldClean() {
     data-ground-visual-owner="atmospheric-living-environment"
     data-ground-runtime-owner="first-person-lived-world"
     data-ground-visual-revision="ground-lived-world-v2-canon-lock"
-    data-ground-art-revision="ground-v17-readable-canopy-natural-ground-atmosphere"
+    data-ground-art-revision="ground-v18-volumetric-broadleaf-canopy-atmosphere"
     data-ground-exploration="first-person-no-visible-body"
     data-ground-camera="eye-level-terrain-following-no-authored-bob"
     data-ground-eye-height={GROUND_EYE_HEIGHT_M}
