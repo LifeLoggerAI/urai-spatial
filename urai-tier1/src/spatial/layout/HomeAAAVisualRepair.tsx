@@ -50,6 +50,7 @@ function HomePassportOwnershipObject() {
   const visible = useFirstPersonHomePresence()
   const [artifactState, setArtifactState] = useState<PassportArtifactState>('dormant')
   const [reviewPinned, setReviewPinned] = useState(false)
+  const [reducedStimulation, setReducedStimulation] = useState(false)
   const leftCover = useRef<THREE.Group>(null)
   const rightCover = useRef<THREE.Group>(null)
   const timers = useRef<number[]>([])
@@ -64,8 +65,10 @@ function HomePassportOwnershipObject() {
     }
     const params = new URLSearchParams(window.location.search)
     const requested = params.get('homePassportReviewState') as PassportArtifactState | null
-    const pinned = params.get('homeAssetReview') === '1' && requested !== null && PASSPORT_REVIEW_STATES.has(requested)
+    const reviewMode = params.get('homeAssetReview') === '1'
+    const pinned = reviewMode && requested !== null && PASSPORT_REVIEW_STATES.has(requested)
     setReviewPinned(pinned)
+    setReducedStimulation(reviewMode && params.get('homeReducedStimulation') === '1')
     setArtifactState(pinned ? requested : 'dormant')
     return () => {
       timers.current.forEach((timer) => window.clearTimeout(timer))
@@ -100,7 +103,8 @@ function HomePassportOwnershipObject() {
 
   const active = artifactState !== 'dormant'
   const opening = artifactState === 'opening'
-  const markIntensity = artifactState === 'opening' ? 0.42 : artifactState === 'selected' ? 0.28 : artifactState === 'focused' ? 0.16 : 0.025
+  const baseMarkIntensity = artifactState === 'opening' ? 0.42 : artifactState === 'selected' ? 0.28 : artifactState === 'focused' ? 0.16 : 0.025
+  const markIntensity = reducedStimulation ? Math.min(baseMarkIntensity, 0.055) : baseMarkIntensity
 
   return (
     <group
@@ -170,7 +174,7 @@ function HomePassportOwnershipObject() {
         />
       </mesh>
 
-      {active && !opening && <>
+      {active && !opening && !reducedStimulation && <>
         <mesh name="passport-focus-frame-top" position={[0, 0.145, 0.008]}>
           <boxGeometry args={[0.205, 0.006, 0.006]} />
           <meshBasicMaterial color="#dce9e4" toneMapped={false} />
@@ -196,6 +200,7 @@ function HomePassportOwnershipObject() {
           data-testid="home-passport-physical-control"
           data-home-passport-artifact-state={artifactState}
           data-home-passport-dimensions-mm="185x260x18"
+          data-home-passport-reduced-stimulation={reducedStimulation ? 'true' : 'false'}
           onFocus={focus}
           onBlur={blur}
           onClick={() => beginOpen()}
