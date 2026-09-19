@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
-import { useGLTF } from '@react-three/drei'
+import { useGLTF, useTexture } from '@react-three/drei'
 import { Canvas, useFrame } from '@react-three/fiber'
 import * as THREE from 'three'
 import { assetCssStack, replayAssets } from '@/spatial/assets/uraiAssets'
@@ -16,6 +16,7 @@ import { ReplayProductControls } from './ReplayProductControls'
 const REPLAY_ENVIRONMENT_MODEL = '/assets/urai/generated/models/replay-memory-environment-v1.glb'
 const REPLAY_ROCK_01 = '/assets/urai/home-production/cc0/polyhaven-v48/rock_face_01/asset.gltf'
 const REPLAY_ROCK_02 = '/assets/urai/home-production/cc0/polyhaven-v48/rock_face_02/asset.gltf'
+const REPLAY_DEMO_VALLEY_MATTE = '/urai/assets/replay/generated/replay-demo-valley-v241.webp'
 const REPLAY_FERN = '/assets/urai/home-production/cc0/polyhaven-v48/fern_02/asset.gltf'
 const REPLAY_FIELD_POSITION: [number, number, number] = [0, 0.18, -5.35]
 
@@ -506,41 +507,15 @@ function replayDemoDistantTerrainGeometry() {
 
 function ReplayDemoHorizon() {
   const distantTerrain = useMemo(replayDemoDistantTerrainGeometry, [])
+  const valleyMatte = useTexture(REPLAY_DEMO_VALLEY_MATTE)
   useEffect(() => () => distantTerrain.dispose(), [distantTerrain])
-  return <group name="replay-explicit-demo-cinematic-horizon" userData={{ truthRole: 'generated-demo-visualization', referenceRole: 'explicit-demo-open-memory-horizon', visualRepair: 'v228-physical-depth-terrain-atmosphere' }}>
+  valleyMatte.colorSpace = THREE.SRGBColorSpace
+  return <group name="replay-explicit-demo-cinematic-horizon" userData={{ truthRole: 'generated-demo-visualization', referenceRole: 'explicit-demo-open-memory-horizon', visualRepair: 'v241-authored-cinematic-valley-matte' }}>
     <mesh position={[0, 4.2, -56]} raycast={() => null}>
-      <planeGeometry args={[112, 40]} />
-      <shaderMaterial
-        depthWrite={false}
-        vertexShader={`varying vec2 vUv; void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}`}
-        fragmentShader={`
-          varying vec2 vUv;
-          float hash(vec2 p){ return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453123); }
-          float noise(vec2 p){ vec2 i=floor(p),f=fract(p); f=f*f*(3.0-2.0*f); return mix(mix(hash(i),hash(i+vec2(1.,0.)),f.x),mix(hash(i+vec2(0.,1.)),hash(i+vec2(1.,1.)),f.x),f.y); }
-          float fbm(vec2 p){ float n=0.,a=.5; for(int i=0;i<5;i++){ n+=noise(p)*a; p=p*2.03+vec2(7.1,3.7); a*=.5; } return n; }
-          void main(){
-            float y=vUv.y;
-            vec3 horizon=vec3(0.64,0.48,0.39);
-            vec3 middle=vec3(0.28,0.33,0.40);
-            vec3 top=vec3(0.055,0.085,0.14);
-            vec3 color=mix(horizon,middle,smoothstep(.12,.52,y));
-            color=mix(color,top,smoothstep(.48,1.0,y));
-            float haze=(1.0-smoothstep(.16,.40,y))*(.08+.08*fbm(vec2(vUv.x*3.2,1.7)));
-            color+=vec3(.72,.55,.43)*haze;
-            vec2 sunP=(vUv-vec2(.54,.315))*vec2(2.25,1.0);
-            float sun=1.0-smoothstep(.007,.012,length(sunP));
-            float glow=1.0-smoothstep(.012,.065,length(sunP));
-            color+=vec3(1.0,.69,.40)*glow*.24+vec3(1.0,.86,.66)*sun*.82;
-            float cloud=fbm(vec2(vUv.x*6.0+2.1,vUv.y*8.0-1.3));
-            float band=smoothstep(.57,.78,cloud)*smoothstep(.28,.43,y)*(1.0-smoothstep(.64,.82,y));
-            color=mix(color,color+vec3(.055,.060,.072),band*.30);
-            float grain=(hash(floor(vUv*vec2(1200.0,700.0)))-.5)*.010;
-            gl_FragColor=vec4(color+grain,1.0);
-          }`}
-        toneMapped={false}
-      />
+      <planeGeometry args={[112, 63]} />
+      <meshBasicMaterial map={valleyMatte} depthWrite={false} toneMapped={false} fog={false} />
     </mesh>
-    <mesh name="replay-v228-distant-physical-terrain" geometry={distantTerrain} receiveShadow raycast={() => null}>
+    <mesh visible={false} name="replay-v228-distant-physical-terrain" geometry={distantTerrain} receiveShadow raycast={() => null}>
       <meshStandardMaterial vertexColors roughness={1} metalness={0} envMapIntensity={0.16} />
     </mesh>
     <mesh position={[0, 1.8, -63]} raycast={() => null}>
@@ -677,7 +652,7 @@ export default function CinematicReplayClient() {
     if (audio && Number.isFinite(audio.duration)) audio.currentTime = Math.min(audio.duration, next / 1000)
   }
 
-  return <main className="replayWorld" style={style} data-testid="cinematic-replay-client" data-memory-status={result.status} data-memory-id={memory.id} data-star-id={memory.star.id} data-manifest-id={memory.replayManifest.id} data-node={memory.star.id} data-playing={playing ? 'true' : 'false'} data-canonical-asset={replayAssets.primary.src} data-replay-spatial-owner="r3f-memory-theater" data-replay-environment={REPLAY_ENVIRONMENT_MODEL} data-replay-composition="v225-source-first-memory-environment-readable-phased-return" data-replay-demo-art="v240-subordinate-geology-cinematic-memory-valley" data-replay-camera="anchored-first-person-witness" data-replay-truth={truth?.level ?? 'unknown'}>
+  return <main className="replayWorld" style={style} data-testid="cinematic-replay-client" data-memory-status={result.status} data-memory-id={memory.id} data-star-id={memory.star.id} data-manifest-id={memory.replayManifest.id} data-node={memory.star.id} data-playing={playing ? 'true' : 'false'} data-canonical-asset={replayAssets.primary.src} data-replay-spatial-owner="r3f-memory-theater" data-replay-environment={REPLAY_ENVIRONMENT_MODEL} data-replay-composition="v225-source-first-memory-environment-readable-phased-return" data-replay-demo-art="v241-authored-cinematic-memory-valley" data-replay-camera="anchored-first-person-witness" data-replay-truth={truth?.level ?? 'unknown'}>
     <Canvas className="replaySpatialCanvas" shadows={quality.shadows} dpr={[1, quality.pixelRatioMax]} frameloop={quality.documentVisible ? 'always' : 'never'} camera={{ position: [0, 0.42, 8.4], fov: 46, near: 0.05, far: 120 }} gl={{ antialias: quality.antialias, powerPreference: 'high-performance' }} onCreated={({ gl }) => { gl.outputColorSpace = THREE.SRGBColorSpace; gl.toneMapping = THREE.ACESFilmicToneMapping; gl.toneMappingExposure = memory.demo ? 1.32 : 1.92 }}>
       <ReplaySpatialScene memory={memory} playing={playing} progressMs={progressMs} muteVideo={Boolean(recordedAudioUrl)} />
     </Canvas>
