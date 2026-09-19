@@ -229,7 +229,7 @@ async function captureSpec(browser, spec) {
 
   if (spec.id === 'desktop-16x10') {
     const begin = page.getByRole('button', { name: 'Begin memory' }).first()
-    await begin.click()
+    await begin.click({ noWaitAfter: true })
     await page.waitForFunction(() => document.querySelector('[data-testid="cinematic-replay-client"]')?.getAttribute('data-playing') === 'true', null, { timeout: 8_000 })
     await delay(650)
     const playingVerification = await describeReplay(page, { playingExpected: true })
