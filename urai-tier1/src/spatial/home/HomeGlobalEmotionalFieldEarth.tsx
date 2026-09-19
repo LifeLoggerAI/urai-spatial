@@ -169,7 +169,7 @@ export function HomeGlobalEmotionalFieldEarth({ state = 'unavailable' }: { state
       ) : null}
 
       <Html center transform distanceFactor={8} position={[0, -0.64, 0]}>
-        <span className="sr-only" role="status" aria-live="polite">{summary}</span>
+        <span className="sr-only" role="status" aria-live="polite" data-testid="home-global-emotional-field-earth-status" data-global-field-state={state}>{summary}</span>
       </Html>
     </group>
   )
