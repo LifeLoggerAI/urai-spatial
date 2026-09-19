@@ -153,5 +153,5 @@ test('Orb conversation disclosure remains a real pointer hit target above the sp
   assert.ok(hasCssDeclaration(bodyCss, 'position', 'relative'))
   assert.ok(hasCssDeclaration(bodyCss, 'z-index', '1'))
   assert.ok(hasCssDeclaration(bodyCss, 'pointer-events', 'auto'))
-  assert.match(conversationSource, /<summary>Talk with Orb<\/summary>/)
+  assert.match(conversationSource, /<summary tabIndex=\{0\}>Talk with Orb<\/summary>/)
 })
