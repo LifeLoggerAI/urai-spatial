@@ -1,115 +1,74 @@
 # URAI Spatial Deployment
 
-URAI-Spatial V1 deploys as the `urai-tier1` Next.js app through Firebase Hosting / App Hosting.
+## Current release authority
 
-## Prerequisites
+URAI Spatial production mutation is currently **QUARANTINED / NO-GO** in canonical source.
 
-- Node 22+
-- Corepack with `pnpm@10.0.0`
-- Firebase CLI authenticated to the target project
-- Firebase project from `.firebaserc` or `FIREBASE_PROJECT_ID`
-- Production env vars configured in Firebase/App Hosting or CI
+The deployed application root is `urai-tier1`, but source existence, a passing build, a reachable historical Firebase URL, or a short-lived identity proof does not authorize a deployment.
 
-## Required Checks
+`.github/workflows/spatial-live-deploy.yml` is intentionally verification-only. It:
 
-Run from the monorepo root:
+- checks the exact source SHA and clean tree;
+- runs the canonical source/release checks;
+- verifies that production mutation remains fail closed;
+- may exchange GitHub OIDC for a short-lived, read-only Google WIF identity on `main`;
+- records a NO-GO release receipt; and
+- exposes **no** production deployment command.
 
-```bash
-corepack pnpm install
-corepack pnpm lint
-corepack pnpm typecheck
-corepack pnpm build
-corepack pnpm test
-```
+The package `live:deploy` path is also deliberately quarantined. Do not bypass that boundary with local Firebase CLI authentication, Vercel deployment, a Firebase CLI token, service-account JSON, or another provider credential.
 
-Current deploy-ready baseline:
+## Local verification
+
+From the repository root:
 
 ```bash
-corepack pnpm lint
-corepack pnpm typecheck
-corepack pnpm build
-corepack pnpm --filter urai-tier1 test
+corepack enable
+pnpm install --frozen-lockfile
+pnpm launch:check
+pnpm live:check
 ```
 
-`corepack pnpm test` also runs the legacy replay-tier5 browser lock. Treat a replay-tier5 failure about `seed memory bloom node is not visible` as Tier-3 until that older LifeMap replay flow is intentionally cleaned up; it does not block the active V1 home spine when build and V1 smoke pass.
+Run additional exact-head CI, security, privacy, accessibility, performance, visual, and governance gates required by the active release candidate. Passing these source checks is necessary but not sufficient for deployment.
 
-Release gates:
+## Credential boundary
 
-```bash
-corepack pnpm launch:check
-corepack pnpm live:check
-```
-
-## Firebase Environment
-
-Public web config:
-
-```bash
-NEXT_PUBLIC_FIREBASE_API_KEY=
-NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=
-NEXT_PUBLIC_FIREBASE_PROJECT_ID=
-NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=
-NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=
-NEXT_PUBLIC_FIREBASE_APP_ID=
-NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID=
-NEXT_PUBLIC_URAI_DEMO_USER_ID=demo-user
-```
-
-Server-only secrets:
-
-```bash
-FIREBASE_SERVICE_ACCOUNT_JSON=
-STRIPE_SECRET_KEY=
-STRIPE_WEBHOOK_SECRET=
-ELEVENLABS_API_KEY=
-ELEVENLABS_VOICE_ID=
-```
-
-Do not commit `.env.local` or service account JSON.
-
-## Deploy Commands
-
-Staging:
-
-```bash
-corepack pnpm deploy:staging
-```
-
-Production:
-
-```bash
-corepack pnpm deploy:prod
-```
-
-Explicit Firebase project:
-
-```bash
-FIREBASE_PROJECT_ID=<project-id> corepack pnpm live:deploy
-```
-
-## Post-Deploy Smoke
-
-Verify:
+Allowed current production-proof behavior is short-lived identity verification only. Do not configure or use:
 
 ```txt
-/
-/home
-/spatial
-/life-map
-/u/adamclamp
-/privacy
-/api/system/health
-/api/orb-companion
+FIREBASE_SERVICE_ACCOUNT_JSON
+FIREBASE_CLIENT_EMAIL
+FIREBASE_PRIVATE_KEY
+FIREBASE_TOKEN
 ```
 
-Expected V1 behavior:
+Do not commit downloaded service-account JSON, authorized-user ADC, provider tokens, Stripe secrets, or other credentials.
 
-- Home renders with sky, ground, orb, mood weather, and companion insight.
-- Demo seed data appears without Firebase.
-- Companion chat returns a local fallback reply.
-- The V1 memory panel shows memory stars; `/life-map` remains the supported adjacent LifeMap route.
-- Missing Firebase config does not blank the app.
+If production deployment is re-enabled later, it must be through a separately reviewed protected workflow on exact canonical `main`, with protected environment approval, short-lived WIF/managed identity, least-privilege IAM, exact project/resource targeting, reproducible artifact identity, and no user-managed private key.
 
-## Deployment Status Rule
+## Existing public runtime
 
-Only call the release live when a deploy command returns a live URL and the smoke routes pass. Otherwise report the build as deploy-ready and list the missing credentials or verification step.
+The existence of `https://urai.app`, `https://urai-4dc1d.web.app`, or another reachable host does not establish that the current candidate SHA is deployed. Live certification requires provider-native revision evidence and exact source-SHA readback.
+
+## Future protected deployment acceptance
+
+A future production deployment is not accepted until all applicable gates are proven on the unchanged certified source:
+
+1. required exact-head workflows terminal-success;
+2. zero unresolved review threads;
+3. eligible independent exact-head approval where governance requires it;
+4. literal retained-pixel and accessibility acceptance;
+5. protected keyless provider identity and least-privilege IAM;
+6. exact deployment workflow run and provider revision;
+7. exact deployed source SHA readback;
+8. positive authorization and denied-auth/tenant/privacy checks;
+9. monitoring/log visibility and alert ownership;
+10. exercised recovery; and
+11. rollback to a genuinely different known-good revision with live readback.
+
+## Commerce boundary
+
+This document does not authorize Stripe live mode, live products/prices, production webhook creation, checkout activation, or customer charging. Commerce remains separately gated by account security, legal/operator authority, settlement banking, provider configuration, test-mode evidence, monitoring, recovery, and distinct rollback.
+
+## Release status rule
+
+Do not call a current candidate deployed or production-live merely because source CI is green. Until a separately authorized protected deployment exists and exact provider readback proves the deployed SHA, classify the production mutation path as **NO-GO / QUARANTINED**.
