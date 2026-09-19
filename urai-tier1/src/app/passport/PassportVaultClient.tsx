@@ -111,6 +111,7 @@ const record = (value: unknown): Record<string, unknown> => value && typeof valu
 export default function PassportVaultClient() {
   const params = useMemo(() => typeof window === 'undefined' ? new URLSearchParams() : new URLSearchParams(window.location.search), [])
   const explicitDemo = params.get('demo') === '1'
+  const reviewState = params.get('assetReview') === '1' ? params.get('passportReview') : null
   const [user, setUser] = useState<User | null>(null)
   const [state, setState] = useState<LoadState>('loading')
   const [snapshot, setSnapshot] = useState<SnapshotPayload>({})
@@ -141,6 +142,22 @@ export default function PassportVaultClient() {
   }, [])
 
   useEffect(() => {
+    if (reviewState === 'recent-auth-locked') {
+      setSnapshot({
+        owner: { displayName: 'Reference review', ownershipStatus: 'verified', keyState: 'locked', ownerReference: 'not-mounted' },
+        consent: { revision: 0, enforcement: { state: 'unavailable', providerState: 'not-mounted' }, domains: {} },
+        sources: [], devices: [], providers: [], exports: [], deletions: [], receipts: [], recovery: { status: 'clear', supportAvailable: true },
+      })
+      setState('empty')
+      setMessage('REFERENCE REVIEW — recent-auth locked. No private owner data is mounted; sensitive actions remain locked until recent authentication is proven.')
+      return
+    }
+    if (reviewState === 'unavailable') {
+      setSnapshot({})
+      setState('unavailable')
+      setMessage('REFERENCE REVIEW — ownership data unavailable. No private data or demonstration records were substituted.')
+      return
+    }
     if (explicitDemo) {
       setSnapshot(toDemoPayload())
       setState('demo')
@@ -161,7 +178,7 @@ export default function PassportVaultClient() {
       }
       setState(navigator.onLine ? 'loading' : 'offline')
     })
-  }, [explicitDemo])
+  }, [explicitDemo, reviewState])
 
   useEffect(() => {
     if (!user || explicitDemo || state === 'offline') return
@@ -247,10 +264,10 @@ export default function PassportVaultClient() {
   }
 
   return (
-    <main className="passportVault" data-route-owner="passport-ownership-vault" data-passport-source={state} data-key-state={keyState}>
+    <main className="passportVault" data-route-owner="passport-ownership-vault" data-passport-source={state} data-key-state={keyState} data-passport-review-state={reviewState ?? 'none'}>
       <a href="#passport-controls" className="passportSkip">Skip to vault controls</a>
       <div className="passportWorld" aria-hidden="true">{webglAvailable ? <Suspense fallback={null}><VaultWorld selected={selectedZone} keyState={keyState} onSelect={setSelectedZone} reducedMotion={reducedMotion} /></Suspense> : <div className="passportFallback"><strong>Ownership Vault</strong><span>All records and actions remain available without WebGL.</span></div>}</div>
-      <header className="passportHeader"><p>UrAi Passport</p><h1>Your life remains in your possession.</h1><div role="status" aria-live="polite" className="passportStatus">{message}</div>{state === 'demo' && <span className="passportDisclosure">DEMONSTRATION — sample data only</span>}</header>
+      <header className="passportHeader"><p>UrAi Passport</p><h1>Your life remains in your possession.</h1><div role="status" aria-live="polite" className="passportStatus">{message}</div>{state === 'demo' && <span className="passportDisclosure">DEMONSTRATION — sample data only</span>}{reviewState && <span className="passportDisclosure">REFERENCE REVIEW — synthetic no-data state</span>}</header>
       <nav className="passportZones" aria-label="Ownership Vault zones">{ZONES.map(([id, label]) => <button key={id} type="button" aria-pressed={selectedZone === id} onClick={() => setSelectedZone(id)}>{label}</button>)}</nav>
       <section id="passport-controls" tabIndex={-1} className="passportPanel">
         <div className="passportPanelHeading"><div><p>Owner reference {String(owner.ownerReference ?? 'not available')}</p><h2>{ZONES.find(([id]) => id === selectedZone)?.[1]}</h2></div><span data-state={keyState} className="passportKeyState">{keyState}</span></div>
