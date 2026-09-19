@@ -19,8 +19,15 @@ async function main() {
   const tempDirectory = mkdtempSync(path.join(tmpdir(), "urai-v50-smoke-"));
   try {
     const persistence = new PersistenceManager<SystemLoopState>({ filePath: path.join(tempDirectory, "runtime-state.json") });
+    let consentAllowed = true;
+    let consentRevision = 7;
+    const processingGuard = () => ({
+      allowed: consentAllowed,
+      reason: consentAllowed ? "consent_valid" : "memory_processing_revoked",
+      revision: consentRevision,
+    });
 
-    const cycle1Loop = await createSystemLoop({ tickIntervalMs: 1000, replayLimit: 25 });
+    const cycle1Loop = await createSystemLoop({ tickIntervalMs: 1000, replayLimit: 25, processingGuard });
     await cycle1Loop.engine.emit("smoke.boot", { startedAt: Date.now(), purpose: "system-loop-runtime-smoke" }, "system-loop-smoke");
     const cycle1 = await cycle1Loop.runOnce();
     assert(cycle1.snapshot.totalNodes > 0, "Cycle 1 expected memory graph nodes.");
@@ -36,7 +43,7 @@ async function main() {
     assert(persisted1 !== null, "Expected Cycle 1 persisted state.");
     assert(persisted1.totalRuns === 1, "Cycle 1 persisted run count mismatch.");
 
-    const cycle2Loop = await createSystemLoop({ tickIntervalMs: 1000, replayLimit: 25, initialState: persisted1 });
+    const cycle2Loop = await createSystemLoop({ tickIntervalMs: 1000, replayLimit: 25, initialState: persisted1, processingGuard });
     const cycle2 = await cycle2Loop.runOnce();
     assert(cycle2.state.totalRuns === 2, "Cycle 2 did not continue persisted run count.");
     assert(cycle2.prediction.id !== cycle1.prediction.id, "Cycle 2 must produce a new prediction.");
@@ -46,7 +53,7 @@ async function main() {
     assert(persisted2 !== null, "Expected Cycle 2 persisted state.");
     assert(persisted2.totalRuns === 2, "Cycle 2 persisted run count mismatch.");
 
-    const cycle3Loop = await createSystemLoop({ tickIntervalMs: 1000, replayLimit: 25, initialState: persisted2 });
+    const cycle3Loop = await createSystemLoop({ tickIntervalMs: 1000, replayLimit: 25, initialState: persisted2, processingGuard });
     const cycle3 = await cycle3Loop.runOnce();
     assert(cycle3.state.totalRuns === 3, "Cycle 3 did not continue persisted run count.");
     assert(cycle3.prediction.id !== cycle2.prediction.id, "Cycle 3 must produce a new prediction.");
@@ -81,6 +88,34 @@ async function main() {
     const recoveredPersisted = persistence.load();
     assert(recoveredPersisted?.totalRuns === 4, "Recovered persisted run count mismatch.");
 
+    const prePrivacyBlockTick = cycle3Loop.engine.tick;
+    const prePrivacyBlockMemory = cycle3Loop.memory.snapshot();
+    const prePrivacyBlockPackets = cycle3Loop.communications.peek();
+
+    consentAllowed = false;
+    consentRevision += 1;
+    let privacyBlockObserved = false;
+    try {
+      await cycle3Loop.runOnce();
+    } catch (error) {
+      privacyBlockObserved = String(error).includes("SYSTEM_LOOP_PRIVACY_BLOCKED:memory_processing_revoked");
+    }
+    assert(privacyBlockObserved, "Expected consent revocation to block SystemLoop before mutation.");
+    assert(cycle3Loop.engine.tick === prePrivacyBlockTick, "Privacy-blocked cycle must not advance engine tick.");
+    assert(cycle3Loop.memory.snapshot().totalNodes === prePrivacyBlockMemory.totalNodes, "Privacy-blocked cycle must not mutate MemoryGraph.");
+    assert(cycle3Loop.memory.snapshot().totalEdges === prePrivacyBlockMemory.totalEdges, "Privacy-blocked cycle must not mutate MemoryGraph edges.");
+    assert(cycle3Loop.communications.peek().length === prePrivacyBlockPackets.length, "Privacy-blocked cycle must not buffer communications packets.");
+    assert(cycle3Loop.getState().totalRuns === 4, "Privacy-blocked cycle must not advance committed loop state.");
+    persistence.save(cycle3Loop.getState());
+    const privacyBlockedPersisted = persistence.load();
+    assert(privacyBlockedPersisted?.totalRuns === 4, "Privacy-blocked persistence must preserve last committed run count.");
+
+    consentAllowed = true;
+    consentRevision += 1;
+    const privacyRecovered = await cycle3Loop.runOnce();
+    assert(privacyRecovered.state.totalRuns === 5, "Consent restoration must resume from the last committed state.");
+    assert(privacyRecovered.analyticsEvents.length > 0, "Consent-restored cycle expected analytics feedback.");
+
     cycle1Loop.stop();
     cycle2Loop.stop();
     cycle3Loop.stop();
@@ -91,6 +126,10 @@ async function main() {
       cycle3Runs: cycle3.state.totalRuns,
       failedCycleCommittedRuns: failedPersisted.totalRuns,
       recoveredRuns: recovered.state.totalRuns,
+      privacyBlockedCommittedRuns: privacyBlockedPersisted.totalRuns,
+      privacyRecoveredRuns: privacyRecovered.state.totalRuns,
+      privacyBlockObserved,
+      consentRevision,
       cycle3AnalyticsEvents: cycle3.analyticsEvents.length,
       recoveredAnalyticsEvents: recovered.analyticsEvents.length,
       failureObserved,
