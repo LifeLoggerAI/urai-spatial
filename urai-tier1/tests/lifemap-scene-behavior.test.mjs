@@ -217,5 +217,6 @@ test('Life Map literal-pixel candidate restores the visible white-gold core and 
   assert.match(world, /<LifeCore reducedMotion=\{profile\.reducedMotion\} tier=\{profile\.tier\} \/>/)
   assert.doesNotMatch(world, /<LifeCore hidden/)
   assert.doesNotMatch(world, /life-map-galaxy-main\.webp/)
-  assert.match(world, /life-map-v237-grounded-geography-subordinate/)
+  assert.match(world, /life-map-v237-grounded-geography-retired/)
+  assert.match(world, /retiredVisualRole: "former-memory-valley-not-current-galaxy-authority"/)
 })
