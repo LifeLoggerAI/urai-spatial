@@ -305,9 +305,9 @@ function NaturalCanopy({ profile, position, rotationY, scale }: {
       const value = Math.sin(seed * 12.9898 + (woodland ? 78.233 : 31.417)) * 43758.5453;
       return value - Math.floor(value);
     };
-    const leaves = Array.from({ length: woodland ? 224 : 188 }, (_, index) => {
+    const leaves = Array.from({ length: woodland ? 188 : 156 }, (_, index) => {
       const anchor = foliageAnchors[index % foliageAnchors.length];
-      const spread = 0.28 + hash(index * 7 + 1) * 0.24;
+      const spread = 0.18 + hash(index * 7 + 1) * 0.17;
       const theta = hash(index * 7 + 2) * Math.PI * 2;
       const x = anchor[0] + Math.cos(theta) * spread * (0.55 + hash(index * 7 + 3) * 0.75);
       const y = anchor[1] - 0.10 + (hash(index * 7 + 4) - 0.35) * 0.52;
@@ -342,11 +342,11 @@ function NaturalCanopy({ profile, position, rotationY, scale }: {
     rotation={[0, rotationY, 0]}
     scale={scale}
     raycast={() => null}
-    name="ground-authored-natural-canopy-v8"
+    name="ground-authored-natural-canopy-v9"
     userData={{
-      treatment: "deterministic-curved-branch-tip-instanced-organic-foliage-canopy-v8",
+      treatment: "deterministic-curved-branch-tip-instanced-organic-foliage-canopy-v9",
       provenance: NATURAL_CANOPY,
-      visibleAuthority: "runtime-authored-canopy-v8",
+      visibleAuthority: "runtime-authored-canopy-v9",
       supersedesVisibleCandidate: "ground-natural-canopy-v3-low-poly-silhouette",
     }}
   >
@@ -621,7 +621,7 @@ function GroundScene({ profile, input, yaw, pitch, target, obstacles, playerPosi
   const weather = DEFAULT_GROUND_WEATHER;
   return <>
     <color attach="background" args={[profile.fog]} />
-    <Sky distance={450000} sunPosition={[-14, 18, 8]} turbidity={7.5} rayleigh={1.35} mieCoefficient={0.0045} mieDirectionalG={0.82} />
+    <Sky distance={450000} sunPosition={[-24, 7, -36]} turbidity={4.2} rayleigh={2.6} mieCoefficient={0.0018} mieDirectionalG={0.76} />
     <fogExp2 attach="fog" args={[profile.fog, profile.id === "urban" ? 0.018 : (profile.id === "temperate" || profile.id === "woodland" ? 0.0105 : 0.0135) + weather.atmosphericDensity * 0.002]} />
     <Suspense fallback={null}><Environment files="/assets/urai/home-production/cc0/environment/studio-small-08-1k.hdr" background={false} environmentIntensity={0.24} /></Suspense>
     <ambientLight intensity={0.35} color="#cad7d0" />
@@ -754,7 +754,7 @@ export default function GroundSpatialWorldClean() {
     data-ground-visual-owner="physical-lived-world"
     data-ground-runtime-owner="first-person-lived-world"
     data-ground-visual-revision="ground-lived-world-v2-canon-lock"
-    data-ground-art-revision="ground-natural-surface-v8-instanced-organic-canopy-v8-atmosphere-v1-ridge-v3"
+    data-ground-art-revision="ground-natural-surface-v9-instanced-organic-canopy-v9-atmosphere-v2-ridge-v3"
     data-ground-exploration="first-person-no-visible-body"
     data-ground-camera="eye-level-terrain-following-no-authored-bob"
     data-ground-eye-height={GROUND_EYE_HEIGHT_M}
@@ -781,7 +781,7 @@ export default function GroundSpatialWorldClean() {
       onCreated={({ gl }) => {
         gl.outputColorSpace = THREE.SRGBColorSpace;
         gl.toneMapping = THREE.ACESFilmicToneMapping;
-        gl.toneMappingExposure = 0.96;
+        gl.toneMappingExposure = 0.78;
       }}
     >
       <GroundScene profile={profile} input={input} yaw={yaw} pitch={pitch} target={target} obstacles={obstacles} playerPosition={playerPosition} isCoarse={isCoarse} onReady={() => setReady(true)} />
