@@ -309,7 +309,7 @@ function ReplayMemoryGeography({ accent, demo }: { accent: string; demo: boolean
 }
 
 function ReplayDemoHorizon() {
-  return <group name="replay-explicit-demo-cinematic-horizon" userData={{ truthRole: 'generated-demo-visualization', referenceRole: 'quiet-reset-open-memory-horizon' }}>
+  return <group name="replay-explicit-demo-cinematic-horizon" userData={{ truthRole: 'generated-demo-visualization', referenceRole: 'explicit-demo-open-memory-horizon' }}>
     <mesh position={[0, 4.8, -34]} raycast={() => null}>
       <planeGeometry args={[64, 24]} />
       <meshBasicMaterial color="#6b4d58" />
