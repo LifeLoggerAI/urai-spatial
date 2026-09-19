@@ -1,5 +1,6 @@
 export { evaluateSpatialTierLock } from './tierLocks'
-export { handleStripeWebhook } from './stripeEntitlements'
+// Stripe billing authority is the authenticated Tier-1 Next.js API surface.
+// Keep one entitlement writer; do not export the legacy Functions webhook.
 export { elevenLabsVoiceProvider, openAiOrbProvider } from './providerFunctions'
 export {
   googleOAuthCallback,
