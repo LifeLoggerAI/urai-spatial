@@ -200,6 +200,7 @@ const simple = [
   { id:'WEATHER-009', system:'Personal Emotional Weather', state:'phone-portrait-active', route:'/home?homeAssetReview=1&homePrivateFixture=1&homeWeatherReview=active', marker:'.urai-asset-home-world[data-home-primary-owner="asset-driven"]', device:'mobile', action: async (page) => enterPrivateWeather(page, 'active') },
   { id:'WEATHER-010', system:'Personal Emotional Weather', state:'phone-portrait-heavy', route:'/home?homeAssetReview=1&homePrivateFixture=1&homeWeatherReview=heavy', marker:'.urai-asset-home-world[data-home-primary-owner="asset-driven"]', device:'mobile', action: async (page) => enterPrivateWeather(page, 'heavy') },
   { id:'WEATHER-011', system:'Personal Emotional Weather', state:'reduced-motion-heavy', route:'/home?homeAssetReview=1&homePrivateFixture=1&homeWeatherReview=heavy', marker:'.urai-asset-home-world[data-home-primary-owner="asset-driven"]', reducedMotion:true, action: async (page) => enterPrivateWeather(page, 'heavy') },
+  { id:'WEATHER-012', system:'Personal Emotional Weather', state:'reduced-stimulation-heavy', route:'/home?homeAssetReview=1&homePrivateFixture=1&homeWeatherReview=heavy&homeReducedStimulation=1', marker:'.urai-asset-home-world[data-home-primary-owner="asset-driven"]', action: async (page) => enterPrivateWeather(page, 'heavy') },
   { id:'WEATHER-013', system:'Personal Emotional Weather', state:'permission-limited-quiet-world', route:'/home?homeAssetReview=1&homeState=permission-limited', marker:'.urai-asset-home-world[data-home-primary-owner="asset-driven"]', action: async (page) => assertWeather(page, 'forming', { visible:false }) },
   { id:'WEATHER-014', system:'Personal Emotional Weather', state:'unavailable-no-personal-data', route:'/home?homeAssetReview=1&homeState=unavailable', marker:'.urai-asset-home-world[data-home-primary-owner="asset-driven"]', action: async (page) => assertWeather(page, 'forming', { visible:false }) },
   { id:'WEATHER-015', system:'Personal Emotional Weather', state:'disclosed-sample-soft', route:'/home?homeAssetReview=1&homeSample=1', marker:'.urai-asset-home-world[data-home-primary-owner="asset-driven"]', action: async (page) => assertWeather(page, 'soft', { visible:true, source:'disclosed-public-sample' }) },
@@ -242,6 +243,8 @@ const simple = [
   { id:'FUTURES-EMPTY-DESKTOP', system:'Possible Futures', state:'empty-manual-entry', route:'/possible-futures', marker:'[data-testid="urai-possible-futures"]' },
   { id:'FUTURES-EMPTY-MOBILE', system:'Possible Futures', state:'mobile-empty', route:'/possible-futures', marker:'[data-testid="urai-possible-futures"]', device:'mobile' },
   { id:'FUTURES-REDUCED-MOTION', system:'Possible Futures', state:'reduced-motion', route:'/possible-futures', marker:'[data-testid="urai-possible-futures"]', reducedMotion:true },
+  { id:'FUTURES-PROVIDER-UNAVAILABLE', system:'Possible Futures', state:'provider-unavailable-disclosure', route:'/possible-futures', marker:'[data-testid="urai-possible-futures"]', text:'provider is unavailable' },
+  { id:'FUTURES-NOWEBGL', system:'Possible Futures', state:'no-webgl-conventional-fallback', route:'/possible-futures', marker:'[data-testid="urai-possible-futures"]', noWebGL:true },
 
   { id:'ONBOARDING-DESKTOP', system:'Onboarding', state:'first-run', route:'/onboarding' },
   { id:'ONBOARDING-MOBILE', system:'Onboarding', state:'first-run-mobile', route:'/onboarding', device:'mobile' },
@@ -305,6 +308,18 @@ const selectedStates = [
     }
   },
   {
+    id:'FUTURES-ACTIVE-A', system:'Possible Futures', state:'active-branch-a', route:'/possible-futures', marker:'[data-testid="urai-possible-futures"]',
+    action: async (page) => {
+      await page.getByPlaceholder('What if I change…').fill('Explore disclosed hypothetical alternatives')
+      const drafts = page.getByPlaceholder('Your assumption or possible branch')
+      await drafts.nth(0).fill('Hypothetical branch A')
+      await drafts.nth(1).fill('Hypothetical branch B')
+      await drafts.nth(2).fill('Hypothetical branch C')
+      await page.getByRole('button', { name:'Enter Manual Scenario' }).click()
+      await page.getByRole('button', { name:'Current path' }).waitFor({ state:'visible' })
+    }
+  },
+  {
     id:'FUTURES-ACTIVE-B', system:'Possible Futures', state:'active-branch-b', route:'/possible-futures', marker:'[data-testid="urai-possible-futures"]',
     action: async (page) => {
       await page.getByPlaceholder('What if I change…').fill('Explore disclosed hypothetical alternatives')
@@ -314,6 +329,17 @@ const selectedStates = [
       await drafts.nth(2).fill('Hypothetical branch C')
       await page.getByRole('button', { name:'Enter Manual Scenario' }).click()
       await page.getByRole('button', { name:'Requested change' }).click()
+    }
+  },
+  {
+    id:'FUTURES-EDIT-ASSUMPTIONS', system:'Possible Futures', state:'edit-assumptions', route:'/possible-futures', marker:'[data-testid="urai-possible-futures"]',
+    action: async (page) => {
+      await page.getByPlaceholder('What if I change…').fill('Explore a disclosed hypothetical change')
+      const drafts = page.getByPlaceholder('Your assumption or possible branch')
+      await drafts.nth(0).fill('Hypothetical branch A')
+      await page.getByRole('button', { name:'Enter Manual Scenario' }).click()
+      await page.getByRole('button', { name:'Edit assumptions' }).click()
+      await page.getByRole('heading', { name:'Manual Scenario' }).waitFor({ state:'visible' })
     }
   },
   {
