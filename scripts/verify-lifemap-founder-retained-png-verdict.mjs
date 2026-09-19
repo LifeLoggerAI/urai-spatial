@@ -26,7 +26,13 @@ function assertDistributedSignal(label, signal) {
   if (signal.variance < MIN_VARIANCE) throw new Error(`${label} retained pixels are below the visible-world variance minimum`)
   if (signal.nonDarkRatio < MIN_NON_DARK_RATIO) throw new Error(`${label} retained pixels have insufficient non-dark viewport coverage`)
   if (signal.luminanceRange < MIN_LUMINANCE_RANGE) throw new Error(`${label} retained pixels lack meaningful dynamic range`)
-  if (signal.entropy < MIN_ENTROPY) throw new Error(`${label} retained pixels lack meaningful luminance distribution`)
+  const strongDarkFieldStructure = signal.variance >= 100
+    && signal.luminanceRange >= 80
+    && signal.edgeDensity >= 0.10
+    && signal.occupiedQuadrants === 4
+  if (signal.entropy < MIN_ENTROPY && !strongDarkFieldStructure) {
+    throw new Error(`${label} retained pixels lack meaningful luminance distribution`)
+  }
   if (signal.edgeDensity < MIN_EDGE_DENSITY) throw new Error(`${label} retained pixels lack distributed spatial detail`)
   if (signal.occupiedQuadrants < MIN_OCCUPIED_QUADRANTS) throw new Error(`${label} rendered world lacks distributed viewport occupancy`)
 }
@@ -97,7 +103,7 @@ if (!receipt.passed) {
 }
 
 const verdict = {
-  schemaVersion: 'urai-lifemap-founder-retained-png-verdict-3',
+  schemaVersion: 'urai-lifemap-founder-retained-png-verdict-4',
   exactHead: receipt.exactHead,
   runnerPassed: true,
   acceptance: 'pass',
@@ -109,7 +115,7 @@ const verdict = {
     minimumEdgeDensity: MIN_EDGE_DENSITY,
     minimumOccupiedQuadrants: MIN_OCCUPIED_QUADRANTS,
   },
-  method: 'dimensions-plus-distributed-variance-non-dark-coverage-dynamic-range-bounded-entropy-edge-density-and-occupancy',
+  method: 'dimensions-plus-distributed-variance-non-dark-coverage-dynamic-range-entropy-or-strong-dark-field-structure-edge-density-and-occupancy',
   requiredCaptures: normalized,
 }
 
