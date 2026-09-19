@@ -16,14 +16,14 @@ Status: SOURCE-BACKED BASELINE
 | asset-factory | generation/validation/provenance/package execution | generation output is not automatically approved product authority |
 | urai-studio | creative/admin/media orchestration, cinematic production and export | production status requires real release evidence |
 | urai-jobs | internal async execution fabric | explicitly not public jobs/careers marketplace in current README |
-| urai-communications | communications/call intelligence and governed delivery | tenant/consent/provider/legal gates remain binding |
+| urai-communications | provider-neutral governed communications/call intelligence, messaging and delivery operations | tenant/consent/provider/legal gates remain binding; EWI policy is necessary but not sufficient for delivery |
 | urai-marketing | public product/launch copy and acquisition | claims must match implemented/evidenced product and privacy truth |
 | urai-investors | investor-facing thesis/data-room portal | no unsupported traction/legal/security claims |
 | B2Bportal | partner/intake/aggregate portal | no raw consumer life telemetry; use privacy-reviewed summaries |
 | urai-foundation | public-benefit/foundation website and institutional surfaces | legal/formation/hosting truth separately evidenced |
 | urai-labs-llc | corporate/Labs public authority and support | distinct from IP Holdings and Foundation |
 | urai-storytime | private story creation/reading expansion | adult/guardian, age, child-safety, sharing, provider, export/delete gates |
-| urai-communications | provider-neutral governed messaging/call operations | EWI policy necessary but not sufficient for delivery |
+
 
 ## Key recovered data boundaries
 
