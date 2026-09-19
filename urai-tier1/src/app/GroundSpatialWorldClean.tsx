@@ -135,17 +135,17 @@ function TerrainMaterial({ profile }: { profile: EnvironmentProfile }) {
     return null;
   }, [albedo, arm, normal, profile]);
   return <meshStandardMaterial
-    map={naturalProfile ? null : albedo}
+    map={albedo}
     normalMap={normal}
-    normalScale={new THREE.Vector2(naturalProfile ? 0.14 : profile.id === "urban" ? 0.34 : 0.62, naturalProfile ? 0.14 : profile.id === "urban" ? 0.34 : 0.62)}
+    normalScale={new THREE.Vector2(naturalProfile ? 0.34 : profile.id === "urban" ? 0.34 : 0.62, naturalProfile ? 0.34 : profile.id === "urban" ? 0.34 : 0.62)}
     aoMap={arm}
-    aoMapIntensity={naturalProfile ? 0.18 : 0.72}
+    aoMapIntensity={naturalProfile ? 0.52 : 0.72}
     roughnessMap={arm}
-    roughness={naturalProfile ? 0.99 : profile.roughness}
+    roughness={naturalProfile ? 0.96 : profile.roughness}
     metalnessMap={naturalProfile ? null : arm}
     metalness={profile.id === "urban" ? 0.02 : 0.005}
     vertexColors
-    envMapIntensity={naturalProfile ? 0.24 : 0.42}
+    envMapIntensity={naturalProfile ? 0.31 : 0.42}
   />;
 }
 
@@ -295,7 +295,7 @@ function NaturalCanopy({ profile, position, rotationY, scale, shapeSeed }: {
       false,
     ));
 
-    const leafGeometry = new THREE.SphereGeometry(1, 8, 5);
+    const leafGeometry = new THREE.SphereGeometry(1, 10, 6);
 
     const foliageAnchors = [
       ...transformedBranchDefs.map((points) => points[points.length - 1]),
@@ -307,19 +307,19 @@ function NaturalCanopy({ profile, position, rotationY, scale, shapeSeed }: {
       const value = Math.sin(seed * 12.9898 + shapeSeed * 53.117 + (woodland ? 78.233 : 31.417)) * 43758.5453;
       return value - Math.floor(value);
     };
-    const leaves = Array.from({ length: woodland ? 112 : 96 }, (_, index) => {
+    const leaves = Array.from({ length: woodland ? 166 : 146 }, (_, index) => {
       const anchor = foliageAnchors[index % foliageAnchors.length];
-      const spread = 0.20 + hash(index * 7 + 1) * 0.32;
+      const spread = 0.09 + hash(index * 7 + 1) * 0.23;
       const theta = hash(index * 7 + 2) * Math.PI * 2;
       const x = anchor[0] + Math.cos(theta) * spread * (0.48 + hash(index * 7 + 3) * 0.92);
-      const y = anchor[1] - 0.02 + (hash(index * 7 + 4) - 0.46) * 0.58;
+      const y = anchor[1] - 0.01 + (hash(index * 7 + 4) - 0.46) * 0.34;
       const z = anchor[2] + Math.sin(theta) * spread * (0.46 + hash(index * 7 + 5) * 0.88);
       const rx = (hash(index * 7 + 6) - 0.5) * 1.28;
       const ry = theta + (hash(index * 7 + 7) - 0.5) * 1.15;
       const rz = (hash(index * 7 + 8) - 0.5) * 1.12;
-      const sx = 0.17 + hash(index * 7 + 9) * 0.19;
-      const sy = 0.09 + hash(index * 7 + 10) * 0.10;
-      const sz = 0.14 + hash(index * 7 + 11) * 0.17;
+      const sx = 0.075 + hash(index * 7 + 9) * 0.105;
+      const sy = 0.028 + hash(index * 7 + 10) * 0.045;
+      const sz = 0.060 + hash(index * 7 + 11) * 0.085;
       return {
         position: [x, y, z] as [number, number, number],
         rotation: [rx, ry, rz] as [number, number, number],
@@ -454,7 +454,7 @@ function NaturalScatter({ profile }: { profile: EnvironmentProfile }) {
 
   const woodland = profile.id === "woodland";
   const ferns = items.slice(0, woodland ? 36 : 30);
-  const canopies = items.filter((item) => item.z < (woodland ? 2.5 : 0.5)).slice(0, woodland ? 28 : 22);
+  const canopies = items.filter((item) => item.z < (woodland ? 2.5 : 0.5)).slice(0, woodland ? 32 : 26);
   return <group name={woodland ? "ground-woodland-scanned-understory" : "ground-temperate-scanned-understory"} userData={{ treatment: "urai-self-authored-varied-canopy-v13-with-polyhaven-fern-rock-understory", canopyFallback: "scanned-understory-remains-without-canopy" }} raycast={() => null}>
     <GroundCanopyBoundary>
       <Suspense fallback={null}>
@@ -466,7 +466,7 @@ function NaturalScatter({ profile }: { profile: EnvironmentProfile }) {
             profile={profile}
             position={[x, groundHeight(x, z, profile.id) - 0.02, z]}
             rotationY={item.index * 0.91 + (woodland ? 0.22 : -0.14)}
-            scale={(woodland ? 1.76 : 1.60) + item.scale * 0.48}
+            scale={(woodland ? 1.48 : 1.38) + item.scale * 0.34}
             shapeSeed={item.index + (woodland ? 101 : 17)}
           />;
         })}

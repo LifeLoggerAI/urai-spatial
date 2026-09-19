@@ -211,13 +211,12 @@ function SelectedMemoryFormation({ point, aura, phase, index }: { point: Point3;
   const base = new THREE.Color(aura), cool = base.clone().lerp(new THREE.Color("#7fc6c8"), .46), warm = base.clone().lerp(new THREE.Color("#d6ad79"), .38);
   const palette: [string, string] = [`#${cool.getHexString()}`, `#${warm.getHexString()}`];
   const scale = phase === "arrival" ? 3.2 : phase === "approach" ? 2.8 : phase === "travel" ? 2.4 : 2.0;
-  return <group name="life-map-v282-selected-memory-celestial-formation" userData={{ visualRole: "selected-memory-authored-volumetric-formation", visualAcceptance: "v284-selected-memory-stellar-archipelago", interactionOwner: false, pointWallpaper: false, journeyPhase: phase }} raycast={() => null}>
-    <CelestialTerritoryStars position={point} palette={palette} index={120 + index} spread={scale * 2.1} strength={1.08} />
-    <CelestialRegionCanopy position={[point[0] - scale * .42, point[1] + scale * .12, point[2] - .6]} palette={palette} index={30 + index} spread={scale} rotation={-.38} opacity={.72} />
-    <CelestialRegionCanopy position={[point[0] + scale * .46, point[1] - scale * .18, point[2] - 2.4]} palette={[palette[1], palette[0]]} index={60 + index} spread={scale * .72} rotation={.46} opacity={.62} />
-    <CelestialRegionCanopy position={[point[0] - scale * .08, point[1] + scale * .48, point[2] - 4.2]} palette={palette} index={90 + index} spread={scale * .48} rotation={.08} opacity={.52} />
-    <pointLight position={[point[0] - .8, point[1] + .9, point[2] + 1.2]} color={aura} intensity={phase === "arrival" ? .84 : .58} distance={11} decay={2} />
-    <pointLight position={[point[0] + 1.6, point[1] - .4, point[2] - 3.2]} color="#e2c49b" intensity={.28} distance={9} decay={2} />
+  return <group name="life-map-v287-selected-memory-stellar-weather" userData={{ visualRole: "selected-memory-star-with-volumetric-weather", visualAcceptance: "v287-selected-memory-star-no-glass-shards", interactionOwner: false, pointWallpaper: false, journeyPhase: phase }} raycast={() => null}>
+    <CelestialTerritoryStars position={point} palette={palette} index={120 + index} spread={scale * 2.25} strength={1.08} />
+    <NebulaVeil position={[point[0] - scale * .18, point[1] + scale * .08, point[2] - 1.4]} scale={[scale * 5.8, scale * 3.4]} rotation={-.18} colors={palette} opacity={phase === "arrival" ? .24 : .18} seed={17.13 + index * .01} />
+    <NebulaVeil position={[point[0] + scale * .34, point[1] - scale * .12, point[2] - 5.6]} scale={[scale * 4.6, scale * 2.8]} rotation={.27} colors={[palette[1], palette[0]]} opacity={phase === "arrival" ? .17 : .13} seed={21.47 + index * .01} />
+    <pointLight position={[point[0] - .8, point[1] + .9, point[2] + 1.2]} color={aura} intensity={phase === "arrival" ? .92 : .62} distance={12} decay={2} />
+    <pointLight position={[point[0] + 1.6, point[1] - .4, point[2] - 3.2]} color="#e2c49b" intensity={.30} distance={10} decay={2} />
   </group>;
 }
 
@@ -368,9 +367,10 @@ function MemoryStar({ node, index, active, related, overview, onSelect }: { node
   useEffect(() => () => { halo.dispose(); photosphere.dispose(); }, [halo, photosphere]);
   const pointer = (event: ThreeEvent<PointerEvent>, value: boolean) => { event.stopPropagation(); document.body.style.cursor = value ? "pointer" : ""; };
   const overviewBoost = overview ? 1.48 : 1;
-  const outer = (active ? 1.08 : related ? .82 : .74) * overviewBoost;
-  const mid = (active ? .52 : related ? .40 : .36) * overviewBoost;
-  const hot = (active ? .20 : related ? .17 : .16) * (overview ? 1.24 : 1);
+  const approachBoost = active && !overview ? 1.86 : 1;
+  const outer = (active ? 1.08 : related ? .82 : .74) * overviewBoost * approachBoost;
+  const mid = (active ? .52 : related ? .40 : .36) * overviewBoost * (active && !overview ? 1.64 : 1);
+  const hot = (active ? .20 : related ? .17 : .16) * (overview ? 1.24 : 1) * (active && !overview ? 1.48 : 1);
   return <group name={`life-map-memory-star-${node.id}`} position={point} userData={{ semanticType: node.type, visualAuthority: "stellar-memory-not-node-graph", stellarMorphology: "point-photosphere-layered-corona-no-visible-sphere", overviewEmphasis: overview }} onClick={(event) => { event.stopPropagation(); onSelect(node); }} onPointerOver={(event) => pointer(event, true)} onPointerOut={(event) => pointer(event, false)}>
     <sprite scale={[outer * 1.24, outer, 1]}><spriteMaterial map={halo} color={node.aura} transparent opacity={active ? .20 : related ? .19 : overview ? .25 : .17} depthWrite={false} blending={THREE.AdditiveBlending} toneMapped={false} /></sprite>
     <sprite scale={[mid * 1.10, mid, 1]}><spriteMaterial map={halo} color={core} transparent opacity={active ? .50 : related ? .44 : overview ? .48 : .40} depthWrite={false} blending={THREE.AdditiveBlending} toneMapped={false} /></sprite>

@@ -14,6 +14,9 @@ import { requestUraiWorldReturn, requestUraiWorldTravel } from '@/spatial/world/
 import { ReplayProductControls } from './ReplayProductControls'
 
 const REPLAY_ENVIRONMENT_MODEL = '/assets/urai/generated/models/replay-memory-environment-v1.glb'
+const REPLAY_ROCK_01 = '/assets/urai/home-production/cc0/polyhaven-v48/rock_face_01/asset.gltf'
+const REPLAY_ROCK_02 = '/assets/urai/home-production/cc0/polyhaven-v48/rock_face_02/asset.gltf'
+const REPLAY_FERN = '/assets/urai/home-production/cc0/polyhaven-v48/fern_02/asset.gltf'
 const REPLAY_FIELD_POSITION: [number, number, number] = [0, 0.18, -5.35]
 
 type ReplayTruthLevel = 'recorded' | 'context' | 'inferred' | 'unknown'
@@ -296,31 +299,54 @@ function replayMemoryWallGeometry() {
 }
 
 
-function replayRockGeometry(seed: number) {
-  // The explicit-demo outcrops are close enough to the witness camera that
-  // coarse polyhedral silhouettes read as game geometry. Start from a smooth
-  // sphere and weather the radius instead, preserving deterministic source
-  // truth while producing a continuous natural-rock surface.
-  const geometry = new THREE.SphereGeometry(1, 48, 32)
-  const position = geometry.getAttribute('position') as THREE.BufferAttribute
-  const point = new THREE.Vector3()
-  const direction = new THREE.Vector3()
-  for (let index = 0; index < position.count; index += 1) {
-    point.fromBufferAttribute(position, index)
-    direction.copy(point).normalize()
-    const grain =
-      1
-      + .13 * Math.sin(direction.x * 5.7 + direction.z * 4.1 + seed * .77)
-      + .07 * Math.sin(direction.y * 11.3 - direction.x * 8.2 + seed * 1.31)
-      + .035 * Math.cos((direction.x + direction.y + direction.z) * 17.0 + seed)
-    const weatheredY = 0.96 + .08 * Math.sin(direction.x * 3.1 + direction.z * 2.6 + seed * .41)
-    point.multiplyScalar(grain)
-    point.y *= weatheredY
-    position.setXYZ(index, point.x, point.y, point.z)
-  }
-  position.needsUpdate = true
-  geometry.computeVertexNormals()
-  return geometry
+function prepareReplayNaturalAsset(source: THREE.Object3D) {
+  const clone = source.clone(true)
+  const box = new THREE.Box3().setFromObject(clone)
+  const size = box.getSize(new THREE.Vector3())
+  const center = box.getCenter(new THREE.Vector3())
+  const normalization = 1 / Math.max(size.x, size.y, size.z, 0.001)
+  clone.scale.setScalar(normalization)
+  clone.position.set(-center.x * normalization, -box.min.y * normalization, -center.z * normalization)
+  clone.traverse((object) => {
+    if (!(object instanceof THREE.Mesh)) return
+    object.castShadow = true
+    object.receiveShadow = true
+    const sourceMaterials = Array.isArray(object.material) ? object.material : [object.material]
+    const materials = sourceMaterials.map((sourceMaterial) => {
+      const material = sourceMaterial.clone()
+      if (material instanceof THREE.MeshStandardMaterial) {
+        material.roughness = Math.max(material.roughness, 0.86)
+        material.metalness = Math.min(material.metalness, 0.02)
+        material.envMapIntensity = 0.62
+      }
+      return material
+    })
+    object.material = Array.isArray(object.material) ? materials : materials[0]
+  })
+  return clone
+}
+
+function ReplayScannedProp({ src, position, rotation, scale }: {
+  src: string
+  position: [number, number, number]
+  rotation: [number, number, number]
+  scale: [number, number, number]
+}) {
+  const asset = useGLTF(src)
+  const model = useMemo(() => prepareReplayNaturalAsset(asset.scene), [asset.scene])
+  useEffect(() => () => model.traverse((object) => {
+    if (!(object instanceof THREE.Mesh)) return
+    const materials = Array.isArray(object.material) ? object.material : [object.material]
+    materials.forEach((material) => material.dispose())
+  }), [model])
+  return <group position={position} rotation={rotation} scale={scale} raycast={() => null}><primitive object={model} /></group>
+}
+
+function ReplayDemoLake() {
+  return <mesh name="replay-v227-memory-lake" position={[0, -2.02, -12.4]} rotation={[-Math.PI / 2, 0, 0]} raycast={() => null} receiveShadow>
+    <planeGeometry args={[14.8, 22, 1, 1]} />
+    <meshPhysicalMaterial color="#395965" roughness={0.16} metalness={0.01} clearcoat={0.52} clearcoatRoughness={0.18} envMapIntensity={0.82} transparent opacity={0.92} />
+  </mesh>
 }
 
 const REPLAY_DEMO_OUTCROPS = [
@@ -339,8 +365,7 @@ function ReplayMemoryGeography({ accent, demo }: { accent: string; demo: boolean
   const basin=useMemo(replayBasinGeometry,[])
   const wall=useMemo(replayMemoryWallGeometry,[])
   const maps=useMemo(createMineralMaps,[])
-  const rocks=useMemo(()=>REPLAY_DEMO_OUTCROPS.map((_, index)=>replayRockGeometry(index+17)),[])
-  useEffect(()=>()=>{basin.dispose();wall.dispose();rocks.forEach((geometry)=>geometry.dispose());maps.forEach((texture)=>texture.dispose())},[basin,maps,rocks,wall])
+  useEffect(()=>()=>{basin.dispose();wall.dispose();maps.forEach((texture)=>texture.dispose())},[basin,maps,wall])
   return <group name="replay-v216-embedded-memory-cove" userData={{ visualIntent:'media-manifested-inside-continuous-weathered-place' }}>
     <mesh geometry={basin} receiveShadow castShadow>
       {demo
@@ -348,16 +373,20 @@ function ReplayMemoryGeography({ accent, demo }: { accent: string; demo: boolean
         : <meshStandardMaterial map={maps[0]} normalMap={maps[1]} roughnessMap={maps[2]} normalScale={new THREE.Vector2(.40,.40)} color="#b8aa98" vertexColors roughness={.94}/>}
     </mesh>
     {demo ? null : <mesh geometry={wall} position={[0,0,-.18]} receiveShadow castShadow>\n      <meshStandardMaterial map={maps[0]} normalMap={maps[1]} roughnessMap={maps[2]} normalScale={new THREE.Vector2(.52,.52)} color="#8b7d70" vertexColors roughness={.98} side={THREE.DoubleSide}/>\n    </mesh>}
-    {demo ? REPLAY_DEMO_OUTCROPS.map((outcrop, index)=><mesh
-      key={index}
-      geometry={rocks[index]}
-      position={[outcrop.x, replayBasinHeight(outcrop.x, outcrop.z) + outcrop.lift, outcrop.z]}
-      rotation={outcrop.rotation}
-      scale={outcrop.scale}
-      receiveShadow
-      castShadow
-      raycast={()=>null}
-    ><meshStandardMaterial map={maps[0]} normalMap={maps[1]} roughnessMap={maps[2]} normalScale={new THREE.Vector2(.24,.24)} color={index % 2 ? "#49443e" : "#565048"} roughness={.96} metalness={0}/></mesh>) : null}
+    {demo ? <group name="replay-v227-scanned-memory-cove" userData={{ visualRepair: 'scanned-rock-shore-memory-lake-no-game-boulders' }}>
+      <ReplayDemoLake />
+      {REPLAY_DEMO_OUTCROPS.map((outcrop, index) => <ReplayScannedProp
+        key={`rock-${index}`}
+        src={index % 2 ? REPLAY_ROCK_01 : REPLAY_ROCK_02}
+        position={[outcrop.x, replayBasinHeight(outcrop.x, outcrop.z) + outcrop.lift, outcrop.z]}
+        rotation={outcrop.rotation}
+        scale={outcrop.scale}
+      />)}
+      <ReplayScannedProp src={REPLAY_FERN} position={[-5.9, replayBasinHeight(-5.9, -6.8) + .02, -6.8]} rotation={[0, .42, 0]} scale={[1.15, 1.15, 1.15]} />
+      <ReplayScannedProp src={REPLAY_FERN} position={[5.6, replayBasinHeight(5.6, -7.4) + .02, -7.4]} rotation={[0, -1.08, 0]} scale={[1.0, 1.0, 1.0]} />
+      <ReplayScannedProp src={REPLAY_FERN} position={[-6.7, replayBasinHeight(-6.7, -14.8) + .02, -14.8]} rotation={[0, 1.5, 0]} scale={[.88, .88, .88]} />
+      <ReplayScannedProp src={REPLAY_FERN} position={[6.4, replayBasinHeight(6.4, -15.6) + .02, -15.6]} rotation={[0, -.62, 0]} scale={[.92, .92, .92]} />
+    </group> : null}
     <pointLight position={[-5.8,.4,-3.8]} color="#d7aa79" intensity={demo ? .82 : 1.52} distance={12} decay={2}/>
     <pointLight position={[5.2,1.1,-4.2]} color={accent} intensity={demo ? .72 : 1.04} distance={11} decay={2}/>
   </group>
@@ -604,3 +633,6 @@ const stateCss = `.replayState{position:fixed;inset:0;overflow:hidden;display:gr
 const replayCss = `.replayWorld{position:fixed;inset:0;overflow:hidden;color:#fff;background:var(--replay-sky);isolation:isolate}.replaySpatialCanvas{position:absolute!important;inset:0;width:100%!important;height:100%!important}.replayAtmosphere{position:absolute;inset:0;background:radial-gradient(circle at 50% 42%,transparent 0 38%,rgba(0,0,0,.04) 66%,rgba(0,0,0,.34) 100%);pointer-events:none}.replayWorld header{position:absolute;z-index:5;left:max(18px,env(safe-area-inset-left));top:max(18px,env(safe-area-inset-top));max-width:min(360px,calc(100vw - 36px));text-shadow:0 3px 24px #000}.replayWorld header p{margin:0;color:var(--replay-light);font-size:10px;font-weight:900;letter-spacing:.18em;text-transform:uppercase}.replayWorld header h1{margin:5px 0;font-size:clamp(1.25rem,4vw,2.4rem);line-height:.95}.replayWorld header span{font-size:11px;color:rgba(255,255,255,.7)}.caption{position:absolute;z-index:5;left:50%;bottom:clamp(104px,15svh,150px);transform:translateX(-50%);width:min(680px,82vw);text-align:center;text-shadow:0 3px 30px #000}.captionMeta{display:flex;justify-content:center;align-items:center;gap:8px}.caption small{display:block;color:var(--replay-light);font-size:10px;font-weight:900;letter-spacing:.2em;text-transform:uppercase}.captionMeta b{padding:4px 7px;border:1px solid rgba(255,255,255,.18);border-radius:999px;background:rgba(2,7,12,.5);color:rgba(255,255,255,.78);font-size:9px;letter-spacing:.08em;text-transform:uppercase}.caption[data-truth-level=inferred] .captionMeta b{border-style:dashed}.caption[data-truth-level=context] .captionMeta b{opacity:.78}.caption strong{display:block;margin-top:7px;font:500 clamp(1rem,2.1vw,1.48rem)/1.12 var(--font-sans);letter-spacing:-.025em}.caption span{display:block;margin:6px auto 0;max-width:560px;font-size:11px;color:rgba(255,255,255,.68)}.memoryPacing{position:absolute;z-index:7;left:50%;bottom:max(18px,env(safe-area-inset-bottom));transform:translateX(-50%);width:min(560px,calc(100vw - 32px));display:grid;grid-template-columns:auto minmax(110px,1fr) auto;align-items:center;gap:12px;padding:9px 12px;border:1px solid rgba(255,255,255,.14);border-radius:999px;background:rgba(2,7,14,.36);backdrop-filter:blur(14px)}.memoryPacing button{min-width:118px;min-height:44px;border:1px solid rgba(255,255,255,.18);border-radius:999px;background:rgba(8,22,29,.78);color:#eefcff;font-weight:850}.memoryProgress{height:4px;border-radius:999px;background:rgba(255,255,255,.12);overflow:hidden}.memoryProgress>span{display:block;width:var(--replay-progress);height:100%;border-radius:inherit;background:linear-gradient(90deg,var(--replay-light),var(--replay-accent))}.memoryPhase{font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.68)}.memoryPosition{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}.transcript,.truthGuide{position:absolute;z-index:8;right:max(16px,env(safe-area-inset-right));top:max(16px,env(safe-area-inset-top));max-width:340px;padding:8px 12px;border:1px solid rgba(255,255,255,.18);border-radius:14px;background:rgba(2,7,14,.7);font-size:12px}.truthGuide{top:max(66px,calc(env(safe-area-inset-top) + 60px));max-width:300px}.transcript p,.truthGuide p{margin:8px 0 0;line-height:1.5}.truthGuide ul{margin:9px 0 2px;padding-left:18px;color:rgba(255,255,255,.76);line-height:1.5}.truthGuide li+li{margin-top:4px}.unwind{display:block;min-height:44px;margin-top:10px;padding:0 16px;border-radius:999px;border:1px solid rgba(255,255,255,.28);background:rgba(2,7,12,.72);color:#fff;font-weight:800}.memoryPacing button:focus-visible,.unwind:focus-visible,.transcript summary:focus-visible,.truthGuide summary:focus-visible{outline:3px solid #fff;outline-offset:3px}@media(max-width:700px){.memoryPacing{bottom:max(10px,env(safe-area-inset-bottom));width:calc(100vw - 24px);grid-template-columns:minmax(104px,auto) minmax(56px,1fr) auto;gap:8px;padding:8px 10px}.memoryPacing button{min-width:104px}.caption{bottom:94px;width:90vw}.caption strong{font-size:1.35rem}.caption span{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}.transcript,.truthGuide{top:max(76px,calc(env(safe-area-inset-top) + 70px));right:14px;bottom:auto;max-width:180px}.truthGuide{top:max(124px,calc(env(safe-area-inset-top) + 118px))}.unwind{margin-top:9px}.controls{grid-template-columns:auto 1fr auto;padding:9px 10px}.controls button{min-width:64px}.replayWorld header{max-width:250px}.replayWorld header h1{font-size:1.35rem}}@media(max-height:720px){.caption{bottom:82px}}@media(prefers-reduced-motion:reduce){.memoryPacing{backdrop-filter:none}}@media(forced-colors:active){.memoryPacing,.unwind,.transcript,.truthGuide{border:2px solid CanvasText}}`
 
 useGLTF.preload(REPLAY_ENVIRONMENT_MODEL)
+useGLTF.preload(REPLAY_ROCK_01)
+useGLTF.preload(REPLAY_ROCK_02)
+useGLTF.preload(REPLAY_FERN)
