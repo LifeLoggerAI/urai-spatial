@@ -229,7 +229,7 @@ function CelestialRegionCanopy({ position, palette, index, spread, rotation = 0,
 function SelectedMemoryFormation({ point, aura, phase, index }: { point: Point3; aura: string; phase: Phase; index: number }) {
   const base = new THREE.Color(aura), cool = base.clone().lerp(new THREE.Color("#7fc6c8"), .46), warm = base.clone().lerp(new THREE.Color("#d6ad79"), .38);
   const palette: [string, string] = [`#${cool.getHexString()}`, `#${warm.getHexString()}`];
-  const scale = phase === "arrival" ? 6.8 : phase === "approach" ? 5.2 : phase === "travel" ? 3.7 : 2.6;
+  const scale = phase === "arrival" ? 3.9 : phase === "approach" ? 3.45 : phase === "travel" ? 2.9 : 2.35;
   const halo = useMemo(() => makeDiscTexture(2.15, true), []);
   const photosphere = useMemo(() => makeDiscTexture(5.8, true), []);
   useEffect(() => () => { halo.dispose(); photosphere.dispose(); }, [halo, photosphere]);
@@ -243,7 +243,7 @@ function SelectedMemoryFormation({ point, aura, phase, index }: { point: Point3;
     <sprite position={point} scale={[scale * .44, scale * .44, 1]} raycast={() => null} name="life-map-selected-memory-photosphere">
       <spriteMaterial map={photosphere} color="#fff8e9" transparent opacity={.98} depthWrite={false} blending={THREE.AdditiveBlending} toneMapped={false} />
     </sprite>
-    <CelestialTerritoryStars position={point} palette={palette} index={120 + index} spread={scale * 2.75} strength={1.46} />
+    <CelestialTerritoryStars position={point} palette={palette} index={120 + index} spread={scale * 2.25} strength={1.18} />
     <NebulaVeil position={[point[0] - scale * .18, point[1] + scale * .08, point[2] - 1.4]} scale={[scale * 4.2, scale * 2.8]} rotation={-.18} colors={palette} opacity={phase === "arrival" ? .22 : .15} seed={17.13 + index * .01} />
     <NebulaVeil position={[point[0] + scale * .34, point[1] - scale * .12, point[2] - 5.6]} scale={[scale * 3.6, scale * 2.2]} rotation={.27} colors={[palette[1], palette[0]]} opacity={phase === "arrival" ? .16 : .11} seed={21.47 + index * .01} />
     <pointLight position={[point[0] - .8, point[1] + .9, point[2] + 1.2]} color={aura} intensity={phase === "arrival" ? 2.8 : 1.1} distance={19} decay={2} />

@@ -1,6 +1,6 @@
 'use client'
 
-import { Html, OrbitControls, Stars, useTexture } from '@react-three/drei'
+import { Html, OrbitControls, Stars } from '@react-three/drei'
 import { Canvas, useFrame, useThree, type ThreeEvent } from '@react-three/fiber'
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type RefObject } from 'react'
 import * as THREE from 'three'
@@ -208,7 +208,7 @@ function FocusMemoryStar({
   const [hovered, setHovered] = useState(false)
   const activationProgress = useRef(0)
   const [activating, setActivating] = useState(false)
-  const { size } = useThree()
+  useThree()
   const authoredMemoryStar = useTexture(FOCUS_AUTHORED_MEMORY_STAR)
   const authoredStarScale = size.width < 760 ? 1.78 : size.width < 1024 ? 2.24 : 2.65
   const authoredStarY = size.width < 760 ? -.28 : 0
@@ -257,22 +257,12 @@ function FocusMemoryStar({
       terrainOwner: false,
     }}
   >
-    {memory?.demo ? <sprite
-      position={[0, authoredStarY, .18]}
-      scale={[authoredStarScale, authoredStarScale, 1]}
-      name="focus-authored-memory-star-v334"
-      onClick={activateMoment}
-      onPointerOver={(event) => pointer(event, true)}
-      onPointerOut={(event) => pointer(event, false)}
-    >
-      <spriteMaterial map={authoredMemoryStar} transparent opacity={.98} depthWrite={false} toneMapped={false} />
-    </sprite> : null}
-    {!memory?.demo ? <>
-    <sprite raycast={() => null} position={[-.12, .08, -.22]} scale={[4.65, 4.65, 1]} name="focus-memory-star-corona-glow">
-      <spriteMaterial map={coronaTexture} color={accent} transparent opacity={memory ? .56 : .05} depthWrite={false} blending={THREE.AdditiveBlending} toneMapped={false} />
+    <>
+    <sprite raycast={() => null} position={[-.12, .08, -.22]} scale={[3.05, 3.05, 1]} name="focus-memory-star-corona-glow">
+      <spriteMaterial map={coronaTexture} color={accent} transparent opacity={memory ? .27 : .05} depthWrite={false} blending={THREE.AdditiveBlending} toneMapped={false} />
     </sprite>
-    <sprite raycast={() => null} position={[.10, -.05, -.08]} scale={[4.12, 4.12, 1]} rotation={.22} name="focus-memory-star-photosphere-rays">
-      <spriteMaterial map={rayTexture} color={light} transparent opacity={memory ? .48 : .05} depthWrite={false} blending={THREE.AdditiveBlending} toneMapped={false} />
+    <sprite raycast={() => null} position={[.10, -.05, -.08]} scale={[2.72, 2.72, 1]} rotation={.22} name="focus-memory-star-photosphere-rays">
+      <spriteMaterial map={rayTexture} color={light} transparent opacity={memory ? .22 : .05} depthWrite={false} blending={THREE.AdditiveBlending} toneMapped={false} />
     </sprite>
     <mesh raycast={() => null} scale={0.72} name="focus-memory-star-outer-corona">
       <sphereGeometry args={[1, 64, 40]} />
@@ -287,11 +277,11 @@ function FocusMemoryStar({
       <meshStandardMaterial
         color={light}
         emissive={accent}
-        emissiveIntensity={memory ? 6.4 : 0.20}
+        emissiveIntensity={memory ? 1.85 : 0.20}
         roughness={0.66}
         metalness={0}
         transparent
-        opacity={memory ? 0.86 : 0.18}
+        opacity={memory ? 0.62 : 0.18}
         depthWrite={false}
       />
     </mesh>
@@ -306,25 +296,25 @@ function FocusMemoryStar({
       <meshPhysicalMaterial
         color={light}
         emissive={accent}
-        emissiveIntensity={memory ? (hovered ? 1.05 : 0.68) : 0.24}
+        emissiveIntensity={memory ? (hovered ? 0.58 : 0.38) : 0.24}
         transmission={0}
         thickness={0.08}
         roughness={0.22}
         metalness={0}
         transparent
-        opacity={memory ? 0 : 0.09}
+        opacity={memory ? 0.035 : 0.09}
         clearcoat={0}
         clearcoatRoughness={0.44}
         depthWrite={false}
       />
     </mesh>
-    {!memory?.demo ? <mesh raycast={() => null} scale={0.46} name="focus-memory-star-interior-depth">
+    <mesh raycast={() => null} scale={0.46} name="focus-memory-star-interior-depth">
       <sphereGeometry args={[1, 48, 36]} />
-      <meshBasicMaterial color={accent} transparent opacity={memory ? 0.025 : 0.020} depthWrite={false} side={THREE.BackSide} blending={THREE.AdditiveBlending} />
+      <meshBasicMaterial color={accent} transparent opacity={memory ? 0.055 : 0.020} depthWrite={false} side={THREE.BackSide} blending={THREE.AdditiveBlending} />
     </mesh> : null}
-    <pointLight color={accent} intensity={memory ? 5.2 : .9} distance={8.6} decay={2} />
-    <pointLight position={[-1.1, 1.25, 1.7]} color={light} intensity={memory ? 2.8 : .35} distance={6.4} decay={2} />
-    {!memory?.demo ? <Html center transform position={[0, 0, 0.31]} distanceFactor={6.1} zIndexRange={[20, 10]}>
+    <pointLight color={accent} intensity={memory ? 1.35 : .9} distance={7.2} decay={2} />
+    <pointLight position={[-1.1, 1.25, 1.7]} color={light} intensity={memory ? .82 : .35} distance={5.4} decay={2} />
+    <Html center transform position={[0, 0, 0.31]} distanceFactor={6.1} zIndexRange={[20, 10]}>
       <button
         type="button"
         className="focusStarMemoryButton"
@@ -334,7 +324,7 @@ function FocusMemoryStar({
       >
         <MemoryVisualContent memory={memory} />
       </button>
-    </Html> : null}
+    </Html>
   </group>
 }
 
@@ -622,7 +612,7 @@ export default function FocusChamberClient() {
     style={style}
     data-testid="urai-final-focus-chamber"
     data-focus-composition="selected-memory-star-with-contained-memory"
-    data-focus-visual-revision="v335-clean-authored-stellar-memory-object"
+    data-focus-visual-revision="v336-contained-memory-stellar-photosphere"
     data-focus-selected-framing={memory ? 'selected-memory-star-approach' : 'neutral-star-awaiting-selection'}
     data-focus-spatial="selected-memory-star"
     data-focus-movement="orbit-zoom-keyboard-touch"
