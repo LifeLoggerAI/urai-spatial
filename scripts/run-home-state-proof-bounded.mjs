@@ -3,8 +3,13 @@ import { spawn } from 'node:child_process'
 import path from 'node:path'
 
 const finalDir = path.resolve(process.env.URAI_PROOF_DIR || 'artifacts/home-state-proof')
-const timeoutMs = Number.parseInt(process.env.URAI_HOME_PROOF_ATTEMPT_TIMEOUT_MS || '', 10) || 26 * 60 * 1000
-const attempts = 2
+// The expanded V288 proof reaches the final responsive continuity states on the
+// Actions SwiftShader host after the old 26-minute attempt bound. Two full retries
+// duplicated all expensive visual captures and still killed a progressing run.
+ // Use one bounded envelope that is smaller than the previous 52-minute aggregate
+// retry budget while preserving every required state and every per-action timeout.
+const timeoutMs = Number.parseInt(process.env.URAI_HOME_PROOF_ATTEMPT_TIMEOUT_MS || '', 10) || 38 * 60 * 1000
+const attempts = 1
 
 async function stopProcessGroup(child) {
   if (!child?.pid) return

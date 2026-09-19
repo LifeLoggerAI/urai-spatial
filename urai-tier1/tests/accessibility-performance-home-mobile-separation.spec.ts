@@ -44,12 +44,20 @@ test.describe('Home mobile control separation evidence', () => {
         const home = page.locator(homeOwnerSelector)
         await waitForHomeWorld(home)
 
-        const movement = page.getByRole('group', { name: 'Home movement controls' })
         const semantic = page.getByRole('navigation', { name: 'Accessible Home destinations' })
-        await expect(movement).toBeVisible()
         await expect(semantic).toBeVisible()
         await expect(semantic).toHaveAttribute('data-home-navigation-owner', 'runtime-boundary')
         await expect(semantic).toHaveAttribute('data-home-navigation-non-dominant', 'true')
+
+        const enterFirstPerson = semantic.getByRole('button', { name: 'Enter first-person Home' })
+        await enterFirstPerson.focus()
+        await expect(enterFirstPerson).toBeFocused()
+        await page.keyboard.press('Enter')
+        await expect(home).toHaveAttribute('data-home-stable-state', 'AVATAR_HOME_FIRST_PERSON', { timeout: 45_000 })
+        await expect(home).toHaveAttribute('data-home-movement', 'shared-keyboard-touch-walk-look-interact')
+
+        const movement = page.getByRole('group', { name: 'Move through Home' })
+        await expect(movement).toBeVisible()
 
         const layout = await page.evaluate(() => {
           const movementRect = document.querySelector<HTMLElement>('.urai-mobile-movement')?.getBoundingClientRect()

@@ -114,6 +114,7 @@ function readAudioPreference() {
 
 function OnboardingCardContent() {
   const pathname = usePathname() || ''
+  const normalizedPathname = pathname.replace(/\/+$/, '') || '/'
   const searchParams = useSearchParams()
   const query = searchParams?.toString() ?? ''
   const [dismissed, setDismissed] = useState(false)
@@ -123,9 +124,9 @@ function OnboardingCardContent() {
   const [haptics, setHaptics] = useState(true)
   const [audioEnabled, setAudioEnabled] = useState(false)
   const setupHeadingRef = useRef<HTMLHeadingElement>(null)
-  const card = cards[pathname as keyof typeof cards]
+  const card = cards[normalizedPathname as keyof typeof cards]
   const explicitSequence = searchParams?.get('onboarding') === '1' || searchParams?.get('firstRun') === '1'
-  const homeRoute = pathname === '/' || pathname === '/home'
+  const homeRoute = normalizedPathname === '/' || normalizedPathname === '/home'
 
   useEffect(() => {
     setDismissed(false)
@@ -163,7 +164,7 @@ function OnboardingCardContent() {
   }
 
   const finishIfLastGuidedStep = () => {
-    if (pathname === '/life-map' || pathname === '/privacy-controls') rememberCompletion()
+    if (normalizedPathname === '/life-map' || normalizedPathname === '/privacy-controls') rememberCompletion()
   }
 
   const advanceSetup = () => {
@@ -204,7 +205,7 @@ function OnboardingCardContent() {
         aria-labelledby="urai-onboarding-setup-title"
         aria-describedby="urai-onboarding-setup-body"
         data-first-run={automaticFirstRun ? 'automatic' : 'guided'}
-        data-route={pathname}
+        data-route={normalizedPathname}
         data-setup="true"
         data-setup-step={setupStep}
       >
@@ -242,7 +243,7 @@ function OnboardingCardContent() {
   if (!card) return null
 
   return (
-    <aside className="uraiV2OnboardingCard" aria-label={`${card.label} first-run guide`} data-first-run={automaticFirstRun ? 'automatic' : 'guided'} data-route={pathname}>
+    <aside className="uraiV2OnboardingCard" aria-label={`${card.label} first-run guide`} data-first-run={automaticFirstRun ? 'automatic' : 'guided'} data-route={normalizedPathname}>
       <img
         src={card.asset.src}
         alt={card.asset.alt}
