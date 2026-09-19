@@ -27,7 +27,13 @@
     "/settings/privacy",
     "/waitlist",
     "/system",
-    "/support"
+    "/support",
+    "/about/labs",
+    "/business",
+    "/founder",
+    "/identity",
+    "/ecosystem",
+    "/press"
   ],
   "classification": {
     "servicePrefixes": [
@@ -95,7 +101,13 @@
       "/spatial/life-map",
       "/spatial/life-map-r3f",
       "/spatial/life-map-orbit",
-      "/spatial/v1"
+      "/spatial/v1",
+      "/about/labs",
+      "/business",
+      "/founder",
+      "/identity",
+      "/ecosystem",
+      "/press"
     ],
     "publicPrefixes": [
       "/demo/",
