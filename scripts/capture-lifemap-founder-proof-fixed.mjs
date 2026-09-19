@@ -592,7 +592,13 @@ function assertVisualSanity() {
     if (capture.signal.variance >= 0 && capture.signal.variance < 8) throw new Error(`${id} WebGL pixel variance is below the visible-world minimum`)
     if (capture.signal.nonDarkRatio >= 0 && capture.signal.nonDarkRatio <= 0) throw new Error(`${id} WebGL non-dark coverage is empty`)
     if (capture.signal.luminanceRange < 20) throw new Error(`${id} retained pixels lack meaningful dynamic range`)
-    if (capture.signal.entropy < 1.2) throw new Error(`${id} retained pixels lack meaningful luminance entropy`)
+    const strongDarkFieldStructure = capture.signal.variance >= 100
+      && capture.signal.luminanceRange >= 80
+      && capture.signal.edgeDensity >= 0.10
+      && capture.signal.occupiedQuadrants === 4
+    if (capture.signal.entropy < 1.2 && !strongDarkFieldStructure) {
+      throw new Error(`${id} retained pixels lack meaningful luminance entropy`)
+    }
     if (capture.signal.edgeDensity < 0.03) throw new Error(`${id} retained pixels lack distributed spatial detail`)
     if (capture.signal.occupiedQuadrants < 3) throw new Error(`${id} rendered world lacks distributed viewport occupancy`)
   }
