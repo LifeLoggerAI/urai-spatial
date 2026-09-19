@@ -62,11 +62,6 @@ const ORB_STATE_MOTION: Record<OrbState, { hover: number; rotation: number; core
   warning: { hover: .002, rotation: .07, coreScale: .94, breath: .0008, ring: .08 },
   transition: { hover: .03, rotation: 1.9, coreScale: 1.08, breath: .0035, ring: 2.1 },
 }
-const ORB_FRAGMENT_LAYOUT: readonly [readonly [number, number, number], readonly [number, number, number], number][] = [
-  [[.31,.12,.08],[.4,.1,.7],.075], [[-.27,.18,.12],[-.3,.7,.2],.066],
-  [[.16,-.24,.2],[.8,.2,-.4],.06], [[-.18,-.2,-.22],[-.5,.3,.9],.056],
-  [[.05,.29,-.18],[.2,-.6,.4],.052], [[-.04,-.31,.15],[-.7,-.2,.1],.048],
-]
 const ORB_EFFECT_BUDGET: Record<SpatialQualityTier, { motes: number; filaments: number; membraneSegments: number }> = {
   low: { motes: 120, filaments: 2, membraneSegments: 32 },
   medium: { motes: 180, filaments: 5, membraneSegments: 48 },
@@ -93,6 +88,39 @@ function cloneAuthoredModel(source: THREE.Object3D) {
       : object.material.clone()
     object.castShadow = true
     object.receiveShadow = true
+  })
+  return root
+}
+
+function prepareAuthoredOrbModel(source: THREE.Object3D) {
+  const root = cloneAuthoredModel(source)
+  root.name = 'home-orb-authored-reference-core-v291'
+  root.traverse((object) => {
+    if (/ring|equatorial|polar/i.test(object.name)) {
+      object.visible = false
+      object.raycast = () => undefined
+      return
+    }
+    if (!(object instanceof THREE.Mesh)) return
+    const materials = Array.isArray(object.material) ? object.material : [object.material]
+    materials.forEach((material) => {
+      if (!(material instanceof THREE.MeshStandardMaterial)) return
+      material.color.set('#75dce4')
+      material.emissive.set('#1a7284')
+      material.emissiveIntensity = .24
+      material.roughness = .18
+      material.metalness = 0
+      material.transparent = true
+      material.opacity = .34
+      if (material instanceof THREE.MeshPhysicalMaterial) {
+        material.transmission = .54
+        material.thickness = .08
+        material.ior = 1.23
+        material.clearcoat = .72
+        material.clearcoatRoughness = .2
+      }
+      material.needsUpdate = true
+    })
   })
   return root
 }
@@ -184,10 +212,6 @@ function OrbCompanion({ state, reducedMotion, onOrb }: { state: OrbState; reduce
   const heart = useRef<THREE.Mesh>(null)
   const heartMaterial = useRef<THREE.MeshPhysicalMaterial>(null)
   const activeAction = useRef<THREE.AnimationAction | null>(null)
-  const ringA = useRef<THREE.Mesh>(null)
-  const ringB = useRef<THREE.Mesh>(null)
-  const ringC = useRef<THREE.Mesh>(null)
-  const fragments = useRef<THREE.Group>(null)
   const membrane = useRef<THREE.MeshPhysicalMaterial>(null)
   const worldLight = useRef<THREE.PointLight>(null)
   const yaw = useRef(0)
@@ -196,12 +220,32 @@ function OrbCompanion({ state, reducedMotion, onOrb }: { state: OrbState; reduce
   const anticipation = useRef(0)
   const speechActive = useRef(false)
   const orb = useGLTF(ORB_MODEL)
-  const authoredOrb = useMemo(() => cloneAuthoredModel(orb.scene), [orb.scene])
+  const authoredOrb = useMemo(() => prepareAuthoredOrbModel(orb.scene), [orb.scene])
   const { actions } = useAnimations(orb.animations, authoredOrb)
   const quality = useAdaptiveSpatialQuality()
   const effectBudget = ORB_EFFECT_BUDGET[quality.tier]
   const groundY = height(ORB_POSITION.x, ORB_POSITION.z)
   const sensory = useMemo(() => resolveOrbSensoryOutput(state, reducedMotion, true), [state, reducedMotion])
+  const memoryMotes = useMemo(() => {
+    const count = Math.min(effectBudget.motes, 160)
+    const positions: number[] = []
+    for (let index = 0; index < count; index++) {
+      const t = (index + .5) / count
+      const phi = Math.acos(1 - 2 * t)
+      const theta = index * 2.399963229728653
+      const radialSeed = ((index * 37) % 97) / 96
+      const radius = .09 + .29 * Math.pow(radialSeed, .72)
+      positions.push(
+        Math.cos(theta) * Math.sin(phi) * radius,
+        Math.cos(phi) * radius * .92,
+        Math.sin(theta) * Math.sin(phi) * radius * .9,
+      )
+    }
+    const geometry = new THREE.BufferGeometry()
+    geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3))
+    return geometry
+  }, [effectBudget.motes])
+  useEffect(() => () => memoryMotes.dispose(), [memoryMotes])
 
   useEffect(() => {
     const listener = (event: CustomEvent<OrbSpeechClockDetail>) => {
@@ -283,26 +327,21 @@ function OrbCompanion({ state, reducedMotion, onOrb }: { state: OrbState; reduce
       }
       if (heart.current) {
         const pressure = 1 - gather * .035 + expressiveEnergy * .052
-        heart.current.scale.set(.13 * pressure, .225 * pressure, .105 * pressure)
+        heart.current.scale.set(.12 * pressure, .16 * pressure, .12 * pressure)
       }
       if (fieldShell.current) {
         const pressure = 1 + expressiveEnergy * .004
         fieldShell.current.scale.set(pressure, ORB_FIELD_Y_SCALE * pressure, .95 * pressure)
       }
-      const articulation = 1 + expressiveEnergy * .62 + gather * .18
-      if (ringA.current) ringA.current.rotation.y += delta * .028 * motion.ring * articulation
-      if (ringB.current) ringB.current.rotation.x -= delta * .021 * motion.ring * articulation
-      if (ringC.current) ringC.current.rotation.z += delta * .016 * motion.ring * articulation
-      if (fragments.current) fragments.current.rotation.y += delta * .012 * motion.ring * (1 + expressiveEnergy * .25)
     } else {
       root.current.position.y = baseY
       if (authoredCore.current) authoredCore.current.scale.setScalar(.338 * motion.coreScale)
-      if (heart.current) heart.current.scale.set(.13, .225, .105)
+      if (heart.current) heart.current.scale.set(.12, .16, .12)
       if (fieldShell.current) fieldShell.current.scale.set(1, ORB_FIELD_Y_SCALE, .95)
     }
     if (membrane.current) {
-      const stateOpacity = state === 'privacy' ? .022 : state === 'warning' ? .018 : state === 'dormant' ? .01 : .012
-      const speechPressure = reducedMotion ? 0 : expressiveEnergy * .004 + gather * .0015
+      const stateOpacity = state === 'privacy' ? .13 : state === 'warning' ? .11 : state === 'dormant' ? .10 : .16
+      const speechPressure = reducedMotion ? 0 : expressiveEnergy * .025 + gather * .01
       membrane.current.opacity = THREE.MathUtils.damp(membrane.current.opacity, stateOpacity + speechPressure, 8, delta)
     }
     if (heartMaterial.current) {
@@ -340,27 +379,27 @@ function OrbCompanion({ state, reducedMotion, onOrb }: { state: OrbState; reduce
       moteCeiling: effectBudget.motes,
       filamentCeiling: effectBudget.filaments,
       restHeight: 'visible-shell-radius-plus-1.5cm-terrain-clearance',
+      visualAuthority: 'v291-translucent-memory-orb-reference-candidate',
+      referenceLanguage: 'smooth-glass-sphere-internal-memory-light-no-rings-no-crystals',
     }}
   >
-    <mesh ref={fieldShell} castShadow scale={[1,ORB_FIELD_Y_SCALE,.95]} onClick={activate}>
+    <mesh ref={fieldShell} castShadow scale={[1,ORB_FIELD_Y_SCALE,.95]} onClick={activate} name="home-orb-reference-glass-shell">
       <sphereGeometry args={[ORB_FIELD_RADIUS,effectBudget.membraneSegments,effectBudget.membraneSegments]} />
-      <meshPhysicalMaterial ref={membrane} color="#9cc6c5" transparent opacity={.012} transmission={.92} thickness={.052} roughness={.25} metalness={0} clearcoat={.54} clearcoatRoughness={.28} ior={1.16} envMapIntensity={.9} depthWrite={false} />
+      <meshPhysicalMaterial ref={membrane} color="#9eeaf0" transparent opacity={.16} transmission={.78} thickness={.12} roughness={.14} metalness={0} clearcoat={.92} clearcoatRoughness={.16} ior={1.23} envMapIntensity={1.1} depthWrite={false} />
     </mesh>
+    <mesh name="home-orb-luminous-inner-volume" scale={[.80,.84,.76]}>
+      <sphereGeometry args={[ORB_FIELD_RADIUS * .82,48,48]} />
+      <meshPhysicalMaterial color={stateColor} emissive={stateColor} emissiveIntensity={.52 + sensory.light.intensity * .28} transparent opacity={.22} transmission={.46} thickness={.08} roughness={.24} metalness={0} depthWrite={false} blending={THREE.AdditiveBlending} />
+    </mesh>
+    <points geometry={memoryMotes} name="home-orb-memory-motes">
+      <pointsMaterial color={stateColor} size={.012} transparent opacity={.42} depthWrite={false} blending={THREE.AdditiveBlending} sizeAttenuation />
+    </points>
     <group ref={authoredCore} scale={.338} name="home-orb-authored-core"><primitive object={authoredOrb} /></group>
-    <mesh ref={heart} name="home-orb-non-spherical-core" scale={[.13,.225,.105]} rotation={[.16,.38,-.08]} castShadow>
-      <octahedronGeometry args={[1,2]} />
-      <meshPhysicalMaterial ref={heartMaterial} color="#c8dcda" emissive={stateColor} emissiveIntensity={sensory.light.intensity * .56} roughness={.4} metalness={.16} clearcoat={.28} clearcoatRoughness={.38} envMapIntensity={.95} />
+    <mesh ref={heart} name="home-orb-memory-bloom-core" scale={[.12,.16,.12]} castShadow>
+      <sphereGeometry args={[1,32,24]} />
+      <meshPhysicalMaterial ref={heartMaterial} color="#e9fbfa" emissive={stateColor} emissiveIntensity={sensory.light.intensity * .72} transparent opacity={.92} roughness={.18} metalness={0} clearcoat={.74} clearcoatRoughness={.2} envMapIntensity={1.05} />
     </mesh>
-    <mesh ref={ringA} name="home-orb-stabilizer-ring-1" rotation={[.28,.5,.14]} castShadow><torusGeometry args={[.49,.014,16,128]} /><meshStandardMaterial color="#66716f" emissive="#456c6e" emissiveIntensity={.028} metalness={.84} roughness={.32} envMapIntensity={1.08} /></mesh>
-    <mesh ref={ringB} name="home-orb-stabilizer-ring-2" rotation={[1.38,-.22,.64]} castShadow><torusGeometry args={[.44,.013,16,128]} /><meshStandardMaterial color="#766d5e" emissive="#66553d" emissiveIntensity={.024} metalness={.8} roughness={.36} envMapIntensity={1.02} /></mesh>
-    <mesh ref={ringC} name="home-orb-stabilizer-ring-3" rotation={[.78,1.1,-.44]} castShadow><torusGeometry args={[.395,.011,16,128]} /><meshStandardMaterial color="#59686a" emissive="#42686b" emissiveIntensity={.024} metalness={.78} roughness={.37} envMapIntensity={1.02} /></mesh>
-    <group ref={fragments} name="home-orb-crystalline-fragments">
-      {ORB_FRAGMENT_LAYOUT.map(([position,rotation,scale],index)=><mesh key={index} position={position as [number,number,number]} rotation={rotation as [number,number,number]} scale={scale} castShadow>
-        <tetrahedronGeometry args={[1,0]} />
-        <meshPhysicalMaterial color={index % 2 === 0 ? '#8fa7a3' : '#858f92'} emissive={stateColor} emissiveIntensity={.038} roughness={.42} metalness={.36} clearcoat={.34} clearcoatRoughness={.36} envMapIntensity={1.06} />
-      </mesh>)}
-    </group>
-    <mesh name="home-orb-state-light" position={[0,-.025,.285]}><sphereGeometry args={[.026,20,20]} /><meshStandardMaterial color="#e3dfd2" emissive={stateColor} emissiveIntensity={sensory.light.intensity * .9} roughness={.36} metalness={.05} /></mesh>
+    <mesh name="home-orb-state-light" position={[0,-.025,.265]}><sphereGeometry args={[.032,24,24]} /><meshStandardMaterial color="#f0ffff" emissive={stateColor} emissiveIntensity={sensory.light.intensity * 1.1} roughness={.24} metalness={0} /></mesh>
     <pointLight ref={worldLight} color={stateColor} intensity={sensory.light.intensity * .46} distance={4.1} decay={2} />
   </group>
 }
@@ -865,7 +904,7 @@ export function HomeWorldProductionV223({ onOrbOpen = requestUraiWorldOrbOpen, w
     data-home-personal-weather-loading={personalizedHomeLoading ? 'true' : 'false'}
     data-home-personal-weather-synthetic-review={personalizedHomeScene.disclosedSample ? 'true' : 'false'}
     data-home-scanned-composition="visible-avatar-authored-living-memory-orb-sculpted-sanctuary-and-broad-sky-threshold"
-    data-home-art-revision="v290-authoritative-sculpted-sanctuary-restoration"
+    data-home-art-revision="v291-sculpted-sanctuary-translucent-reference-orb"
     data-home-authored-regions="home-physical-world urai-home-user-avatar home-living-memory-orb home-life-map-sky-threshold"
     data-testid="home-visible-navigable-sanctuary-world"
     style={{ position: 'relative', overflow: 'hidden', backgroundColor: '#10272a' }}

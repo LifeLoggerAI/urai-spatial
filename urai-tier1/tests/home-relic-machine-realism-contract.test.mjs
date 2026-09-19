@@ -13,25 +13,25 @@ const geometry = readFileSync(new URL('../src/spatial/layout/HomeWorldProduction
 
 const has = (source, marker) => assert.ok(source.includes(marker), `missing marker: ${marker}`)
 
-test('V288 remains the last certified cinematic Home predecessor while current candidate pixels stay fail-closed', () => {
+test('V288 remains the last certified predecessor while V291 current candidate pixels stay fail-closed', () => {
   has(renderer, 'export function HomeWorldProductionV223')
   has(renderer, 'data-home-visual-ownership="single-canvas-three-dimensional-geometry"')
   has(owner, 'data-home-canvas-owner="home-world-production-v223-cinematic-threshold-authority"')
-  assert.equal(authority.artRevision, 'v288-cinematic-lived-world-grounded-reliquary')
+  assert.equal(authority.artRevision, 'v291-sculpted-sanctuary-translucent-reference-orb')
   assert.equal(authority.worldIdentifier, 'cinematic-lived-world-threshold')
   assert.equal(authority.lastCertifiedPredecessor.orbVisualAuthority, 'v288-grounded-biomorphic-reliquary')
   assert.ok(authority.lastCertifiedPredecessor.runtimeAssets.includes('HomeOrbReliquaryV286.tsx'))
   assert.ok(authority.lastCertifiedPredecessor.runtimeAssets.includes('HomeOrbGroundedV288.tsx'))
-  assert.equal(authority.orbVisualAuthority, 'authored-living-memory-orb-candidate')
-  assert.equal(authority.currentRuntimeCandidate.orbVisualAuthority, 'authored-living-memory-orb-candidate')
+  assert.equal(authority.orbVisualAuthority, 'v291-translucent-memory-orb-reference-candidate')
+  assert.equal(authority.currentRuntimeCandidate.orbVisualAuthority, 'v291-translucent-memory-orb-reference-candidate')
   assert.equal(authority.currentRuntimeCandidate.certified, false)
   assert.equal((renderer.match(/<Canvas/g) ?? []).length, 1)
   assert.doesNotMatch(`${renderer}\n${owner}`, /PRODUCTION CERTIFIED|retained-pixel-pass|pixel-certified/)
 })
 
-test('V288 certified predecessor keeps the biomorphic reliquary evidence and grounded interaction provenance', () => {
-  has(visualAuthority, "import { HomeOrbGroundedV288 } from '../assets/HomeOrbGroundedV288'")
-  has(visualAuthority, '<HomeOrbGroundedV288 />')
+test('V288 certified predecessor keeps evidence without overriding the current V291 Orb', () => {
+  assert.doesNotMatch(visualAuthority, /HomeOrbGroundedV288|<HomeOrbGroundedV288/)
+  assert.match(visualAuthority, /return null/)
   for (const marker of ['HomeOrbReliquaryV286','v288-grounded-biomorphic-memory-reliquary','home-gold-companion','fallbackVisualOwner: false','material.colorWrite = false','material.depthWrite = false','material.opacity = 0','interactionOwner: true','interactionOwner: false']) has(adapter, marker)
   for (const marker of ['plateSpecsV286','reliquaryPlateGeometryV286','home-v286-layered-internal-memory-world','home-v286-embedded-memory-filament','home-v286-localized-memory-field','home-v286-inlaid-ground-memory-traces']) has(reliquary, marker)
   assert.doesNotMatch(reliquary, /home-v253-literal-living-memory-heart|livingHeartGeometryV253/)
@@ -68,6 +68,8 @@ test('current candidate Home advances to visible Avatar plus governed Orb and pe
   assert.doesNotMatch(renderer, /privacy-preserving-first-person/)
   assert.doesNotMatch(renderer, /next\.reset\(\)\.setLoop\(THREE\.LoopRepeat\s*,\s*Infinity\)/)
   assert.doesNotMatch(renderer, /HOME_LIFE_MAP|nearby\s*===\s*['"]life-map['"]/)
+  for (const marker of ['home-orb-reference-glass-shell','home-orb-luminous-inner-volume','home-orb-memory-bloom-core','home-orb-memory-motes',"visualAuthority: 'v291-translucent-memory-orb-reference-candidate'"]) has(renderer, marker)
+  assert.doesNotMatch(renderer, /home-orb-stabilizer-ring|home-orb-crystalline-fragments|<torusGeometry|<tetrahedronGeometry/)
 })
 
 test('rendering stays bounded and Orb state/reduced-motion telemetry remains exact-head proofable', () => {

@@ -12,24 +12,24 @@ const reliquary = fs.readFileSync(new URL('../src/spatial/assets/HomeOrbReliquar
 const sky = fs.readFileSync(new URL('../src/spatial/assets/HomeAtmosphericSky.tsx', import.meta.url), 'utf8')
 const authority = JSON.parse(fs.readFileSync(new URL('../src/app/currentHomeVisualAuthority.json', import.meta.url), 'utf8'))
 
-test('Home authority keeps V288 as the certified predecessor while the authored Orb remains an uncertified current candidate', () => {
-  assert.equal(authority.artRevision, 'v288-cinematic-lived-world-grounded-reliquary')
+test('Home authority keeps V288 as predecessor provenance while V291 authored Orb remains the uncertified current candidate', () => {
+  assert.equal(authority.artRevision, 'v291-sculpted-sanctuary-translucent-reference-orb')
   assert.equal(authority.worldIdentifier, 'cinematic-lived-world-threshold')
   assert.equal(authority.certificationState, 'candidate-requires-fresh-exact-head-pixels')
   assert.equal(authority.lastCertifiedPredecessor.orbVisualAuthority, 'v288-grounded-biomorphic-reliquary')
-  assert.equal(authority.currentRuntimeCandidate.orbVisualAuthority, 'authored-living-memory-orb-candidate')
+  assert.equal(authority.currentRuntimeCandidate.orbVisualAuthority, 'v291-translucent-memory-orb-reference-candidate')
   assert.equal(authority.currentRuntimeCandidate.orbRuntimeAsset, '/assets/urai/generated/models/urai-orb-avatar-v1.glb')
   assert.equal(authority.currentRuntimeCandidate.certified, false)
-  assert.equal(authority.orbVisualAuthority, 'authored-living-memory-orb-candidate')
-  for (const asset of ['HomeWorldProductionV223.tsx','HomeVisualAuthority.tsx','HomeAtmosphericSky.tsx','HomeOrbReliquaryV286.tsx','HomeOrbGroundedV288.tsx']) {
+  assert.equal(authority.orbVisualAuthority, 'v291-translucent-memory-orb-reference-candidate')
+  for (const asset of ['HomeWorldProductionV223.tsx','HomeVisualAuthority.tsx','HomeAtmosphericSky.tsx','HomeWorldProductionV225PolishV3.tsx','urai-orb-avatar-v1.glb']) {
     assert.ok(authority.runtimeAssets.includes(asset), `missing Home runtime/provenance asset ${asset}`)
   }
   for (const asset of ['HomeOrbReliquaryV286.tsx','HomeOrbGroundedV288.tsx']) {
     assert.ok(authority.lastCertifiedPredecessor.runtimeAssets.includes(asset), `missing V288 certified predecessor asset ${asset}`)
   }
   assert.doesNotMatch(JSON.stringify(authority.runtimeAssets), /HomeLaunchSanctuaryV254\.tsx|HomeWorldProductionV225PolishV2\.tsx/)
-  assert.match(visualAuthority, /import \{ HomeOrbGroundedV288 \} from '\.\.\/assets\/HomeOrbGroundedV288'/)
-  assert.match(visualAuthority, /<HomeOrbGroundedV288 \/>/)
+  assert.doesNotMatch(visualAuthority, /HomeOrbGroundedV288|<HomeOrbGroundedV288/)
+  assert.match(visualAuthority, /return null/)
 })
 
 test('retired localized Home overlays stay retired while first-person Passport ownership remains the active AAA repair surface', () => {
@@ -105,7 +105,8 @@ test('visible sky is the canonical broad Life Map interaction surface and locali
   assert.doesNotMatch(sky, /HomeLaunchSanctuaryV254|home-v249-life-map-rooted-celestial-ascent/)
 })
 
-test('V288 Orb keeps its last certified reliquary pixels while fallback geometry remains interaction-only provenance', () => {
+test('V288 Orb remains intact as predecessor provenance but is not mounted over V291 current pixels', () => {
+  assert.doesNotMatch(visualAuthority, /HomeOrbGroundedV288/)
   assert.match(groundedOrb, /HomeOrbReliquaryV286/)
   assert.match(groundedOrb, /home-v288-grounded-biomorphic-memory-reliquary/)
   assert.match(groundedOrb, /home-gold-companion/)
@@ -126,8 +127,14 @@ test('V288 Orb keeps its last certified reliquary pixels while fallback geometry
 test('current Home candidate restores the authoritative sculpted sanctuary layer and retires the failed residence rewire', () => {
   assert.match(owner, /import \{ HomeV225PolishV3 \} from '\.\/HomeWorldProductionV225PolishV3'/)
   assert.match(owner, /<HomeV225PolishV3/)
-  assert.match(owner, /data-home-art-revision="v290-authoritative-sculpted-sanctuary-restoration"/)
+  assert.match(owner, /data-home-art-revision="v291-sculpted-sanctuary-translucent-reference-orb"/)
   assert.match(owner, /data-home-scanned-composition="visible-avatar-authored-living-memory-orb-sculpted-sanctuary-and-broad-sky-threshold"/)
   assert.doesNotMatch(owner, /HOME_ARCHITECTURE_MODEL|ReferenceHomeArchitecture|home-v289-governed-lived-residence/)
   assert.match(owner, /data-home-visual-grade="current-literal-pixel-candidate-not-certified"/)
+  assert.match(owner, /home-orb-reference-glass-shell/)
+  assert.match(owner, /home-orb-luminous-inner-volume/)
+  assert.match(owner, /home-orb-memory-bloom-core/)
+  assert.match(owner, /home-orb-memory-motes/)
+  assert.match(owner, /visualAuthority: 'v291-translucent-memory-orb-reference-candidate'/)
+  assert.doesNotMatch(owner, /home-orb-stabilizer-ring|home-orb-crystalline-fragments|<torusGeometry|<tetrahedronGeometry/)
 })

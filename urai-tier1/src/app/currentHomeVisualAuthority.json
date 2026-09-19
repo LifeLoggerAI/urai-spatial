@@ -1,7 +1,7 @@
 {
   "schemaVersion": "urai-home-visual-authority-2",
   "rendererOwner": "HomeWorldProductionV223.tsx",
-  "artRevision": "v288-cinematic-lived-world-grounded-reliquary",
+  "artRevision": "v291-sculpted-sanctuary-translucent-reference-orb",
   "worldIdentifier": "cinematic-lived-world-threshold",
   "proofSchema": "urai-home-state-proof-7",
   "certificationState": "candidate-requires-fresh-exact-head-pixels",
@@ -15,7 +15,7 @@
   "currentRuntimeCandidate": {
     "rendererOwner": "HomeWorldProductionV223.tsx",
     "orbRuntimeAsset": "/assets/urai/generated/models/urai-orb-avatar-v1.glb",
-    "orbVisualAuthority": "authored-living-memory-orb-candidate",
+    "orbVisualAuthority": "v291-translucent-memory-orb-reference-candidate",
     "certified": false,
     "requiredEvidence": "fresh-exact-head-source-build-runtime-and-literal-pixel-acceptance"
   },
@@ -27,12 +27,11 @@
     "HomeAAAVisualRepair.tsx",
     "HomeVisualAuthority.tsx",
     "HomeAtmosphericSky.tsx",
-    "HomeOrbReliquaryV286.tsx",
-    "HomeOrbGroundedV288.tsx",
     "rock-tile-floor/rock-tile-floor-diff-1k.webp",
     "polyhaven-v48/fern_02/asset.gltf",
     "polyhaven-v48/rock_face_01/asset.gltf",
-    "polyhaven-v48/rock_face_02/asset.gltf"
+    "polyhaven-v48/rock_face_02/asset.gltf",
+    "urai-orb-avatar-v1.glb"
   ],
-  "orbVisualAuthority": "authored-living-memory-orb-candidate"
+  "orbVisualAuthority": "v291-translucent-memory-orb-reference-candidate"
 }

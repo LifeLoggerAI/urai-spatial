@@ -113,10 +113,10 @@ function RootedCanopy() {
     })
   }, [fern.scene,alpha])
   useEffect(() => () => materials.forEach(material => material.dispose()), [materials])
-  const plants = useMemo(() => Array.from({ length: 64 }, (_, index) => {
+  const plants = useMemo(() => Array.from({ length: 144 }, (_, index) => {
     const patches = [[-4.3,1.4],[5.9,-1.5],[-6.2,-5.4],[7.2,-8.9],[-5.8,-12.7],[5.6,-15.3],[-8.6,-18.0],[8.8,-18.8]]
-    const [cx, cz] = patches[Math.floor(index / 8)]
-    const angle = index * 2.39996323, radius = Math.sqrt((index % 8) + .35) * .49
+    const [cx, cz] = patches[Math.floor(index / 18)]
+    const angle = index * 2.39996323, radius = Math.sqrt((index % 18) + .35) * .34
     const x = cx + Math.cos(angle) * radius
     const z = cz + Math.sin(angle) * radius * .8
     const variant = fern.scene.getObjectByName(['fern_02_a','fern_02_b','fern_02_c','fern_02_d'][index % 4])
@@ -125,7 +125,7 @@ function RootedCanopy() {
     object.name = `home-scanned-fern-${index + 1}`
     object.position.set(x, height(x,z) + .025, z)
     object.rotation.y = index * 1.41
-    const scale = .60 + (index % 7) * .042
+    const scale = .72 + (index % 7) * .055
     object.scale.set(scale * (.88 + (index % 3) * .09), scale * (1.04 + (index % 4) * .08), scale)
     object.traverse((child) => {
       if (child instanceof THREE.Mesh) {
@@ -136,7 +136,7 @@ function RootedCanopy() {
     })
     return object
   }), [fern.scene, materials])
-  return <group name="home-v226-rooted-inhabited-canopy" userData={{ artRevision:'home-v230-scanned-grounded-fern-grove', source:'Poly Haven fern_02 CC0', composition:'grounded-no-pole-canopy' }}>
+  return <group name="home-v226-rooted-inhabited-canopy" userData={{ artRevision:'home-v291-denser-scanned-grounded-fern-grove', source:'Poly Haven fern_02 CC0', composition:'grounded-denser-existing-fern-canopy' }}>
     {plants.map((plant) => <primitive key={plant.name} object={plant}/>)}
   </group>
 }
