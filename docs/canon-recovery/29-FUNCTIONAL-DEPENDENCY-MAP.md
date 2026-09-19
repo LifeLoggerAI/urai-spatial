@@ -1,48 +1,204 @@
 # URAI Functional Dependency Map
 
-Status: SOURCE-BACKED BASELINE
+Status: CANONICAL BASELINE
 
-## Home
-identity/context -> consent state -> world state -> Orb -> Ground/Life Map thresholds -> movement/direct controls -> accessibility -> persistence/return state.
+## Core journey
 
-## Ground
-Home handoff -> physical arrival -> locomotion/collision -> destination model -> environmental state -> direct destination rail -> return -> accessibility/performance.
+### Home
+identity/world arrival
+-> presentation state
+-> Avatar/embodiment where authorized
+-> Orb availability/state
+-> direct accessible destinations
+-> Ground threshold
+-> broad-sky Life Map ascent
+-> camera/navigation
+-> privacy/demo/personal-data truth
+-> accessibility alternatives
+-> return persistence
 
-## Life Map
-memory index -> chronology/semantic links -> spatial layout -> clustering/LOD -> navigation -> star selection -> evidence state -> Focus handoff -> search/filter -> privacy/accessibility.
+### Ground
+Home handoff
+-> material crossing
+-> embodied arrival
+-> environment family
+-> path network/destinations
+-> weather/world state
+-> direct semantic destination controls
+-> collision/navigation
+-> accessibility
+-> return Home / onward destination
 
-## Memory Star
-reviewed memory identity -> provenance -> morphology/state -> hover/select -> travel/approach -> Focus handoff -> low-power/reduced-motion alternatives.
+### Life Map
+personal-state source
+-> chronology/semantic grouping
+-> memory-star synthesis
+-> spatial layout
+-> overview/regional/intimate scales
+-> search/filter/layers
+-> camera/glide/zoom
+-> star selection
+-> Focus handoff
+-> privacy/uncertainty
+-> accessibility
+-> return-state persistence
 
-## Focus
-selected memory -> evidence/source context -> camera arrival -> localized environment -> actions -> narrator/companion context -> Replay transition -> return.
+### Focus
+selected-memory identity
+-> source/evidence retrieval
+-> place/context manifestation
+-> approach camera
+-> close context UI
+-> source/interpretation distinction
+-> Replay eligibility
+-> privacy/accessibility
+-> unwind to Life Map
 
-## Replay
-memory selection -> source retrieval -> reconstruction -> evidence/context/interpretation separation -> environment/audio -> camera/playback -> privacy -> accessibility -> persistence -> unwind.
+### Replay
+selected memory
+-> source retrieval
+-> provenance/truth state
+-> temporal reconstruction
+-> environment representation
+-> source audio when available
+-> narration/description as separately labeled layer
+-> camera/playback
+-> controls
+-> accessibility
+-> privacy
+-> correction/history
+-> unwind to Focus/Life Map/Home
 
-## Mirror
-authorized evidence -> pattern derivation -> confidence/uncertainty -> pattern instrument -> supporting fragments -> accept/edit/reject -> Replay/Passport/return.
+## Reflection systems
 
-## Shadow
-explicit entry consent -> sensitive evidence boundary -> bounded navigation -> uncertainty/contradiction presentation -> sensory regulation -> user-controlled exit -> re-seal.
+### Mirror
+authorized evidence
+-> typed pattern derivation
+-> confidence/evidence sufficiency
+-> uncertainty/provenance
+-> reflection fragments
+-> embodied chamber
+-> selection/inspection
+-> accept/edit/reject or leave
+-> Replay/Passport continuity
+-> privacy/accessibility
 
-## Legacy
-archive index -> continuity/thread source -> browsing -> provenance -> export/share/inheritance policy -> Life Map continuity -> return.
+### Shadow
+authorized difficult/uncertain material
+-> explicit entry
+-> safe-load policy
+-> embodied navigation
+-> uncertainty/contradiction focus
+-> reduced-stimulation state
+-> no-diagnostic/no-horror rules
+-> immediate exit/recovery
+-> privacy/accessibility
 
-## Council
-question/context -> role selection -> permitted context -> turn taking -> role-specific reflection -> transcript/evidence -> user decision authority -> handoff.
+### Council
+question/context
+-> authorized context scope
+-> participant role selection
+-> one-speaker turn ownership
+-> evidence/suggestion generation
+-> transcript/caption
+-> user remains final authority
+-> cancel/interrupt
+-> Mirror/Passport/Home transitions
+-> privacy/accessibility
 
-## Rituals
-eligible source-backed moment -> invitation -> opt-in -> silence -> bounded action -> response -> completion -> return -> spacing guard.
+## Continuity and ritual
 
-## Emotional Weather
-permitted signal -> state precedence -> atmosphere mapping -> explanation/provenance -> correction -> accessibility -> persistence.
+### Legacy
+archive/continuity source
+-> source/provenance
+-> archive world
+-> shelves/readable items
+-> continuity selection
+-> Life Map handoff
+-> export/share/inheritance boundary
+-> uncertainty for incomplete family records
+-> privacy/accessibility
 
-## Possible Futures
-user assumptions -> branch generation/manual authoring -> unranked representation -> comparison -> edit -> persistence -> no external action -> return.
+### Rituals
+eligible source-backed moment
+-> spacing/eligibility guard
+-> invitation
+-> explicit opt-in
+-> silence-before
+-> one bounded symbolic callback/action
+-> optional voice/bloom/haptic according to state
+-> silence-after
+-> completion
+-> exact return-state
+-> accessibility/sensory-safe controls
 
-## Passive capture
-device/source permission -> signal capture -> normalization -> provenance/confidence -> privacy classification -> storage/edge decision -> review/promotion -> memory/intelligence use -> export/delete.
+## Emotional systems
 
-## EWI
-provider/device -> SignalEnvelope -> permission policy -> intelligence/memory -> ActionRequest -> action class/confirmation -> domain adapter -> provider/device -> receipt/audit.
+### Personal Emotional Weather
+authorized signals
+-> source normalization
+-> confidence/uncertainty
+-> emotional-state interpretation
+-> user correction
+-> localized visual atmosphere
+-> optional bounded audio/haptics
+-> reduced stimulation
+-> persistence/history
+-> privacy/delete/export
+
+### Possible Futures
+user-authored current path/change/constraint
+-> branch construction
+-> scenario truth label
+-> unranked equal hierarchy
+-> branch comparison
+-> assumption editing
+-> no autonomous external action
+-> optional future governed provider
+-> accessibility/privacy
+-> return to origin
+
+## Passive signals
+
+permission
+-> source/device adapter
+-> SignalEnvelope/EWI where applicable
+-> minimization
+-> provenance
+-> confidence
+-> local/private-cloud/passport-shareable classification
+-> pattern processing
+-> user-visible explanation/correction
+-> retention
+-> export/delete/revocation
+
+No signal may skip consent, provenance, or inference-boundary stages.
+
+## External action
+
+intelligence proposes ActionRequest
+-> permission grant lookup
+-> purpose/capability match
+-> action-class check
+-> confirmation state
+-> domain adapter
+-> provider
+-> audit/receipt
+-> user-visible result
+
+Core intelligence does not call providers directly.
+
+## Media/asset production
+
+Studio creative intent
+-> Jobs execution envelope where needed
+-> Asset Factory/provider execution
+-> provenance/right/budget receipt
+-> validation
+-> review
+-> accepted/rejected state
+-> Spatial/content integration
+-> exact-head proof
+-> release evidence
+
+Generated output is never automatically accepted canon.
