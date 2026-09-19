@@ -7,12 +7,14 @@ const groundCanon = readFileSync(new URL('../src/spatial/ground/groundCanon.ts',
 
 test('Ground renders a lived physical world instead of the retired chamber hub', () => {
   assert.match(ground, /data-ground-visual-revision="ground-lived-world-v2-canon-lock"/)
-  assert.match(ground, /data-ground-art-revision="ground-natural-surface-v10-overlapping-organic-canopy-v10-atmosphere-v3-ridge-v3"/)
+  assert.match(ground, /data-ground-art-revision="ground-natural-surface-v11-overlapping-organic-canopy-v10-atmosphere-v4-authored-dome-ridge-v3"/)
   assert.match(ground, /name="ground-authored-natural-canopy-v10"/)
   assert.match(ground, /normalMap=\{normal\}/)
   assert.match(ground, /aoMap=\{arm\}/)
   assert.match(ground, /roughnessMap=\{arm\}/)
-  assert.match(ground, /<Sky distance=\{450000\} sunPosition=\{\[18, 28, 12\]\} turbidity=\{3\.6\} rayleigh=\{1\.8\} mieCoefficient=\{0\.0009\} mieDirectionalG=\{0\.68\} \/>/)
+  assert.match(ground, /name="ground-authored-atmospheric-dome-v11"/)
+  assert.match(ground, /<AtmosphericGroundSky profile=\{profile\} \/>/)
+  assert.match(ground, /toneMapped=\{false\}/)
   assert.match(ground, /gl\.toneMappingExposure = 0\.72/)
   assert.match(ground, /CanopyLeafInstances/)
   assert.match(ground, /<instancedMesh/)
