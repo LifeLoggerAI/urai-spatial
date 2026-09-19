@@ -1,5 +1,6 @@
 'use client'
 
+// Proof retrigger only: no runtime behavior change. Forces fresh Home + accessibility exact-head workflow runs after cancelled rerun attempts.
 import { usePathname } from 'next/navigation'
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import AssetDrivenHomeWorld from './AssetDrivenHomeWorld'
