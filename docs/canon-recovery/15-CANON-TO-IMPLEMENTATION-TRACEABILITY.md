@@ -1,6 +1,6 @@
 # URAI Canon-to-Implementation Traceability
 
-Status: BASELINE / EXPANDING
+Status: BASELINE / CORE AUTHORITY RECONCILED; ROW-LEVEL POINTERS EXPANDING
 
 The required trace is:
 
@@ -39,7 +39,7 @@ Shadow, Legacy, Council, Rituals, Emotional Weather, Possible Futures, Dream Pla
 - public-benefit institution -> `urai-foundation`;
 - corporate/Labs -> `urai-labs-llc`.
 
-URAI-JOBS remains unresolved until identity chronology is reconciled.
+URAI-JOBS identity is resolved by the current repository README as the internal asynchronous execution fabric. Current implementation pointers include `functions/src/jobs/*`, `functions/src/core/{jobs,lease,results}.*`, `workers/*`, and `.github/workflows/urai-jobs-*.yml`. Historical recruiting/careers material is not current runtime identity; production worker/provider lifecycle proof remains separately gated.
 
 ## Completion condition
 
