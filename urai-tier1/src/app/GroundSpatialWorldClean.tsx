@@ -1,7 +1,7 @@
 "use client";
 
 import { Canvas, useFrame, useThree, type ThreeEvent } from "@react-three/fiber";
-import { Environment, useGLTF, useTexture } from "@react-three/drei";
+import { Environment, Sky, useGLTF, useTexture } from "@react-three/drei";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Component, Suspense, useCallback, useEffect, useMemo, useRef, useState, type MutableRefObject, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
 import * as THREE from "three";
@@ -136,11 +136,11 @@ function TerrainMaterial({ profile }: { profile: EnvironmentProfile }) {
   }, [albedo, arm, normal, profile]);
   return <meshStandardMaterial
     map={naturalProfile ? null : albedo}
-    normalMap={naturalProfile ? null : normal}
-    normalScale={new THREE.Vector2(profile.id === "urban" ? 0.34 : naturalProfile ? 0.18 : 0.62, profile.id === "urban" ? 0.34 : naturalProfile ? 0.18 : 0.62)}
-    aoMap={naturalProfile ? null : arm}
-    aoMapIntensity={naturalProfile ? 0 : 0.72}
-    roughnessMap={naturalProfile ? null : arm}
+    normalMap={normal}
+    normalScale={new THREE.Vector2(profile.id === "urban" ? 0.34 : naturalProfile ? 0.5 : 0.62, profile.id === "urban" ? 0.34 : naturalProfile ? 0.5 : 0.62)}
+    aoMap={arm}
+    aoMapIntensity={naturalProfile ? 0.42 : 0.72}
+    roughnessMap={arm}
     roughness={naturalProfile ? 0.99 : profile.roughness}
     metalnessMap={naturalProfile ? null : arm}
     metalness={profile.id === "urban" ? 0.02 : 0.005}
@@ -266,19 +266,19 @@ function NaturalCanopy({ profile, position, rotationY, scale }: {
     }
     leafPositions.needsUpdate = true;
     leafGeometry.computeVertexNormals();
-    const leaves = Array.from({ length: woodland ? 52 : 44 }, (_, index) => {
+    const leaves = Array.from({ length: woodland ? 132 : 108 }, (_, index) => {
       const angle = index * 2.3999632297;
       const ring = 0.24 + (index % 10) * 0.062;
-      const layer = index % 6;
+      const layer = index % 8;
       const x = Math.cos(angle) * ring * (0.92 + (index % 4) * 0.07);
       const z = Math.sin(angle) * ring * (0.76 + (index % 3) * 0.09);
-      const y = 1.58 + layer * 0.145 + Math.sin(index * 1.73) * 0.16;
+      const y = 1.52 + layer * 0.105 + Math.sin(index * 1.73) * 0.19;
       const rx = -0.28 + (index % 5) * 0.11;
       const ry = angle + ((index % 3) - 1) * 0.18;
       const rz = -0.16 + (index % 5) * 0.08;
-      const sx = 0.14 + (index % 5) * 0.022;
-      const sy = 0.075 + (index % 4) * 0.011;
-      const sz = 0.115 + (index % 6) * 0.014;
+      const sx = 0.088 + (index % 5) * 0.014;
+      const sy = 0.042 + (index % 4) * 0.008;
+      const sz = 0.068 + (index % 6) * 0.01;
       return { position: [x, y, z] as [number, number, number], rotation: [rx, ry, rz] as [number, number, number], scale: [sx, sy, sz] as [number, number, number], color: index % 2 ? leafA : leafB };
     });
 
@@ -296,11 +296,11 @@ function NaturalCanopy({ profile, position, rotationY, scale }: {
     rotation={[0, rotationY, 0]}
     scale={scale}
     raycast={() => null}
-    name="ground-authored-natural-canopy-v6"
+    name="ground-authored-natural-canopy-v7"
     userData={{
-      treatment: "deterministic-curved-branch-and-irregular-foliage-crown-canopy-v6",
+      treatment: "deterministic-curved-branch-and-fine-irregular-foliage-crown-canopy-v7",
       provenance: NATURAL_CANOPY,
-      visibleAuthority: "runtime-authored-canopy-v6",
+      visibleAuthority: "runtime-authored-canopy-v7",
       supersedesVisibleCandidate: "ground-natural-canopy-v3-low-poly-silhouette",
     }}
   >
@@ -408,8 +408,8 @@ function NaturalScatter({ profile }: { profile: EnvironmentProfile }) {
   }
 
   const woodland = profile.id === "woodland";
-  const ferns = items.slice(0, woodland ? 18 : 10);
-  const canopies = items.slice(0, woodland ? 18 : 14);
+  const ferns = items.slice(0, woodland ? 24 : 16);
+  const canopies = items.slice(0, woodland ? 24 : 20);
   return <group name={woodland ? "ground-woodland-scanned-understory" : "ground-temperate-scanned-understory"} userData={{ treatment: "urai-self-authored-static-canopy-v3-with-polyhaven-fern-rock-understory", canopyFallback: "scanned-understory-remains-without-canopy" }} raycast={() => null}>
     <GroundCanopyBoundary>
       <Suspense fallback={null}>
@@ -427,7 +427,7 @@ function NaturalScatter({ profile }: { profile: EnvironmentProfile }) {
       </Suspense>
     </GroundCanopyBoundary>
     {ferns.map((item) => <FernPatch key={`fern-${item.index}`} position={[item.x * 0.72, groundHeight(item.x * 0.72, item.z - 1.3, profile.id), item.z - 1.3]} rotationY={item.index * 0.73} scale={0.82 + item.scale * 0.45} />)}
-    {items.slice(0, 8).map((item) => <ScannedRock key={`rock-${item.index}`} variant={item.index % 2 ? "01" : "02"} position={[item.x * 0.55, groundHeight(item.x * 0.55, item.z + 2.2, profile.id) - 0.1, item.z + 2.2]} rotation={[0, item.index * 0.39, 0]} scale={[0.82 * item.scale, 0.48 * item.scale, 0.94 * item.scale]} />)}
+    {items.slice(0, 12).map((item) => <ScannedRock key={`rock-${item.index}`} variant={item.index % 2 ? "01" : "02"} position={[item.x * 0.55, groundHeight(item.x * 0.55, item.z + 2.2, profile.id) - 0.1, item.z + 2.2]} rotation={[0, item.index * 0.39, 0]} scale={[0.82 * item.scale, 0.48 * item.scale, 0.94 * item.scale]} />)}
   </group>;
 }
 
@@ -589,7 +589,8 @@ function GroundScene({ profile, input, yaw, pitch, target, obstacles, playerPosi
   const weather = DEFAULT_GROUND_WEATHER;
   return <>
     <color attach="background" args={[profile.fog]} />
-    <fogExp2 attach="fog" args={[profile.fog, profile.id === "urban" ? 0.018 : 0.0135 + weather.atmosphericDensity * 0.002]} />
+    <Sky distance={450000} sunPosition={[-14, 18, 8]} turbidity={7.5} rayleigh={1.35} mieCoefficient={0.0045} mieDirectionalG={0.82} />
+    <fogExp2 attach="fog" args={[profile.fog, profile.id === "urban" ? 0.018 : (profile.id === "temperate" || profile.id === "woodland" ? 0.0105 : 0.0135) + weather.atmosphericDensity * 0.002]} />
     <Suspense fallback={null}><Environment files="/assets/urai/home-production/cc0/environment/studio-small-08-1k.hdr" background={false} environmentIntensity={0.24} /></Suspense>
     <ambientLight intensity={0.35} color="#cad7d0" />
     <hemisphereLight args={["#d7e5df", profile.groundDeep, 0.56]} />
@@ -721,7 +722,7 @@ export default function GroundSpatialWorldClean() {
     data-ground-visual-owner="physical-lived-world"
     data-ground-runtime-owner="first-person-lived-world"
     data-ground-visual-revision="ground-lived-world-v2-canon-lock"
-    data-ground-art-revision="ground-natural-surface-v6-irregular-canopy-v6-ridge-v3"
+    data-ground-art-revision="ground-natural-surface-v7-fine-canopy-v7-atmosphere-v1-ridge-v3"
     data-ground-exploration="first-person-no-visible-body"
     data-ground-camera="eye-level-terrain-following-no-authored-bob"
     data-ground-eye-height={GROUND_EYE_HEIGHT_M}
