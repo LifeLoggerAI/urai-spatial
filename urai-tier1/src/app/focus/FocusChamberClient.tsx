@@ -267,6 +267,7 @@ function FocusMemoryStar({
     >
       <spriteMaterial map={authoredMemoryStar} transparent opacity={.98} depthWrite={false} toneMapped={false} />
     </sprite> : null}
+    {!memory?.demo ? <>
     <sprite raycast={() => null} position={[-.12, .08, -.22]} scale={[4.65, 4.65, 1]} name="focus-memory-star-corona-glow">
       <spriteMaterial map={coronaTexture} color={accent} transparent opacity={memory ? .56 : .05} depthWrite={false} blending={THREE.AdditiveBlending} toneMapped={false} />
     </sprite>
@@ -294,6 +295,7 @@ function FocusMemoryStar({
         depthWrite={false}
       />
     </mesh>
+    </> : null}
     <mesh
       name="focus-memory-star-glass-shell"
       onClick={activateMoment}
@@ -316,10 +318,10 @@ function FocusMemoryStar({
         depthWrite={false}
       />
     </mesh>
-    <mesh raycast={() => null} scale={0.46} name="focus-memory-star-interior-depth">
+    {!memory?.demo ? <mesh raycast={() => null} scale={0.46} name="focus-memory-star-interior-depth">
       <sphereGeometry args={[1, 48, 36]} />
       <meshBasicMaterial color={accent} transparent opacity={memory ? 0.025 : 0.020} depthWrite={false} side={THREE.BackSide} blending={THREE.AdditiveBlending} />
-    </mesh>
+    </mesh> : null}
     <pointLight color={accent} intensity={memory ? 5.2 : .9} distance={8.6} decay={2} />
     <pointLight position={[-1.1, 1.25, 1.7]} color={light} intensity={memory ? 2.8 : .35} distance={6.4} decay={2} />
     {!memory?.demo ? <Html center transform position={[0, 0, 0.31]} distanceFactor={6.1} zIndexRange={[20, 10]}>
@@ -620,7 +622,7 @@ export default function FocusChamberClient() {
     style={style}
     data-testid="urai-final-focus-chamber"
     data-focus-composition="selected-memory-star-with-contained-memory"
-    data-focus-visual-revision="v334-responsive-authored-stellar-memory-object"
+    data-focus-visual-revision="v335-clean-authored-stellar-memory-object"
     data-focus-selected-framing={memory ? 'selected-memory-star-approach' : 'neutral-star-awaiting-selection'}
     data-focus-spatial="selected-memory-star"
     data-focus-movement="orbit-zoom-keyboard-touch"
