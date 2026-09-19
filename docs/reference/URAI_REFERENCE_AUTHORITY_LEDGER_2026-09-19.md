@@ -165,3 +165,34 @@ Mechanical batch result: 10 files classified; 6 SUPERSEDED; 4 HISTORICAL_REFEREN
 
 The sibling legacy Drive folder named `avatar` was inspected at its canonical folder ID and is empty. No hidden avatar image candidates were recovered from that folder in this pass; do not invent missing likeness material from it.
 
+## 2026-09-19 continuation — Final Asset Lock / Working Review reconciliation
+
+Exact live authority when this reconciliation began: `01b136e5c5417ee0438afb912603c798bc0bd711` (PR #1237 remains draft/open/unmerged).
+
+### Approved Final folder truth
+The following Drive folders under `URAI Final Asset Lock — 2026-08-11 / 03_APPROVED_FINAL` were directly enumerated and contain zero files: `00_HOME_GROUND`, `01_SKY_WEATHER`, `02_ORB_COUNCIL`, `03_GALAXY_LIFEMAP`, `04_MEMORY_BLOOM_REPLAY`, `05_MIRROR`, `06_SHADOW`, `07_LEGACY`, `08_PASSPORT`, `09_PORTALS`, `10_VFX_SHADERS`, `11_UI_GLYPHS`, `12_MOTION_CAMERA`, `13_AUDIO_VOICE`, and `14_EXPORT_TEMPLATES`. Folder names do not establish accepted pixel authority; no hidden approved images were recovered there.
+
+### Working Review P0 image batch
+The August 11 P0 ZIP was opened and its actual pixels inspected. Its own README describes the files as baseline replacements, not current 2026-09-19 exact-head acceptance. The contact sheet and individual assets show older flat/vector Genesis art and generic non-likeness body treatment.
+
+| Candidate | SHA-256 | Canon verdict | Literal reason / use boundary |
+|---|---|---|---|
+| `sky-background.png` | `9c83c616eb0f6f30452af83fd513cbbf68928f48db133a41cf627dd864ecfa8e` | SUPERSEDED | Generic flat starfield/gradient sky; current Home/Ascent authority requires inhabited same-world sky continuity and broad atmospheric depth, not a standalone generic star wallpaper. |
+| `ground-base.png` | `897f716c021c68213e8e1269c1ee153fadffd629b06b75d3b98d28b865adf481` | REJECTED | Flat vector mountain silhouette with neon root-line grammar; directly conflicts with current believable irregular natural traversable Ground. |
+| `orb-core.png` | `1aa478f8cd6d4139ff9856266f63c0bc8c821519d8531b9cf367684878c237ca` | SUPERSEDED | Ring/orbit/diamond atomic-style graphic; current Home Orb is authored material-led living-heart runtime object, not a ring diagram. |
+| `orb-glow.png` | `9a5fd393647769c4cec3a5fde8a081e315852f00f7d11275b15d7a9c0f31d7e5` | HISTORICAL_REFERENCE_ONLY | Generic glow layer may preserve color lineage but cannot establish current Orb form or lifecycle state. |
+| `body-silhouette-base.png` | `41f8d8e9f3fba487940a0a19bfbed9b5e85a1250f530aa21639d3956b34ef7ba` | HISTORICAL_REFERENCE_ONLY | Generic faceless block/silhouette; not Adam likeness authority and not visible non-XR FPV authority. |
+| `body-silhouette-glow.png` | `51008d56ff836207c803672730e41e580642ab8c7a9e729cd41745159ba99a98` | HISTORICAL_REFERENCE_ONLY | Generic blurred humanoid glow; not likeness authority and not current Home first-person pixels. |
+| `aura-field.png` | `77098c5f757357e473f05f80ae40ee791c3ae0cfa4dc4811b01326268491fc78` | HISTORICAL_REFERENCE_ONLY | Abstract support layer only; no current state/route identity or accepted exact-head context. |
+| `foreground-vignette.png` | `5af87175ee77895addf1e62c063154a4aeba108a481ecad3ab78ab8c60a6c07c` | HISTORICAL_REFERENCE_ONLY | Generic compositing layer only; not a standalone current reference state. |
+| `P0-contact-sheet.png` | `0ac344c0536b9d373d09667b4acd20c8ed2ac79d876df502247295ed0647f2fc` | PROVENANCE_ONLY | Review composite proving the eight P0 files coexisted in the August 11 package; it is not an accepted state image. |
+| `body-silhouette-base-pass2.png` | `090024d96705cded79a2eb5405608a21e5b7b271cf128075a7fa6aac97304076` | HISTORICAL_REFERENCE_ONLY | Later generic faceless body pass; still not Adam likeness authority or flat-screen FPV authority. |
+| `body-silhouette-glow-pass2.png` | `21a3651d51ada133d76e440f50776e878fd55285694a3fd33657bf2a6e238575` | HISTORICAL_REFERENCE_ONLY | Later generic glow pass; supporting lineage only. |
+| `body-pass2-preview.png` | `d42a9619b9ac035153da8b914ee31970dae460d82840b0643c7570a774b9b694` | PROVENANCE_ONLY | Preview/composite of the generic body pass, not independent current state authority. |
+| top-level `d1e38711-22cd-43e1-b947-8d1f00e1699e.png` | `7078195276fee1a8f626d66a29c1aca2062ba4f6ded06709ba60dfa1c68c29a3` | IRRELEVANT_TO_CURRENT_REFERENCE_AUTHORITY | URAI Labs institutional/brand illustration; not a product-state reference image. |
+
+This batch adds 13 individually classified image files: 1 REJECTED, 2 SUPERSEDED, 7 HISTORICAL_REFERENCE_ONLY, 2 PROVENANCE_ONLY, and 1 IRRELEVANT_TO_CURRENT_REFERENCE_AUTHORITY. It adds zero current accepted/repaired images.
+
+### Working Review model-source recovery
+Drive Working Review also contains real binary source candidates for Council human rigs and older `shadow-hall-real-v1.glb`, `legacy-archive-real-v1.glb`, `council-chamber-real-v1.glb`. The current exact-head launch asset manifest already carries Council V3/V4 human candidates, but it does not name those three older realm GLBs. Therefore those binaries are provenance/source candidates only until current written realm authority and runtime integration explicitly adopt them; do not silently substitute them into Shadow/Legacy/Council just to manufacture missing screenshots.
+
