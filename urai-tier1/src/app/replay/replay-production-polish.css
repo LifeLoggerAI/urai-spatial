@@ -60,7 +60,7 @@
   background: linear-gradient(90deg, rgba(2,7,14,.20), rgba(7,18,26,.10)) !important;
   box-shadow: 0 8px 30px rgba(0,0,0,.12) !important;
   backdrop-filter: blur(8px) saturate(1.02) !important;
-  opacity: .12;
+  opacity: .72;
   transition: opacity 180ms ease, background-color 180ms ease;
 }
 .replayWorld .memoryPacing:hover,

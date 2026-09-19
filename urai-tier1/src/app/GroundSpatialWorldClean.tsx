@@ -255,20 +255,30 @@ function NaturalCanopy({ profile, position, rotationY, scale }: {
       false,
     ));
 
-    const leafGeometry = new THREE.SphereGeometry(1, 12, 8);
-    const leaves = Array.from({ length: woodland ? 36 : 30 }, (_, index) => {
+    const leafGeometry = new THREE.SphereGeometry(1, 14, 10);
+    const leafPositions = leafGeometry.getAttribute('position') as THREE.BufferAttribute;
+    for (let index = 0; index < leafPositions.count; index += 1) {
+      const x = leafPositions.getX(index);
+      const y = leafPositions.getY(index);
+      const z = leafPositions.getZ(index);
+      const warp = 1 + 0.16 * Math.sin(index * 1.73) + 0.08 * Math.cos(index * 0.61);
+      leafPositions.setXYZ(index, x * warp, y * (0.82 + 0.12 * Math.sin(index * 0.47)), z * (0.9 + 0.1 * Math.cos(index * 1.11)));
+    }
+    leafPositions.needsUpdate = true;
+    leafGeometry.computeVertexNormals();
+    const leaves = Array.from({ length: woodland ? 52 : 44 }, (_, index) => {
       const angle = index * 2.3999632297;
-      const ring = 0.28 + (index % 8) * 0.072;
+      const ring = 0.24 + (index % 10) * 0.062;
       const layer = index % 6;
       const x = Math.cos(angle) * ring * (0.92 + (index % 4) * 0.07);
       const z = Math.sin(angle) * ring * (0.76 + (index % 3) * 0.09);
-      const y = 1.68 + layer * 0.15 + Math.sin(index * 1.73) * 0.12;
+      const y = 1.58 + layer * 0.145 + Math.sin(index * 1.73) * 0.16;
       const rx = -0.28 + (index % 5) * 0.11;
       const ry = angle + ((index % 3) - 1) * 0.18;
       const rz = -0.16 + (index % 5) * 0.08;
-      const sx = 0.22 + (index % 4) * 0.025;
-      const sy = 0.105 + (index % 3) * 0.012;
-      const sz = 0.17 + (index % 5) * 0.018;
+      const sx = 0.14 + (index % 5) * 0.022;
+      const sy = 0.075 + (index % 4) * 0.011;
+      const sz = 0.115 + (index % 6) * 0.014;
       return { position: [x, y, z] as [number, number, number], rotation: [rx, ry, rz] as [number, number, number], scale: [sx, sy, sz] as [number, number, number], color: index % 2 ? leafA : leafB };
     });
 
@@ -286,11 +296,11 @@ function NaturalCanopy({ profile, position, rotationY, scale }: {
     rotation={[0, rotationY, 0]}
     scale={scale}
     raycast={() => null}
-    name="ground-authored-natural-canopy-v5"
+    name="ground-authored-natural-canopy-v6"
     userData={{
-      treatment: "deterministic-curved-branch-and-organic-foliage-cluster-canopy-v5",
+      treatment: "deterministic-curved-branch-and-irregular-foliage-crown-canopy-v6",
       provenance: NATURAL_CANOPY,
-      visibleAuthority: "runtime-authored-canopy-v5",
+      visibleAuthority: "runtime-authored-canopy-v6",
       supersedesVisibleCandidate: "ground-natural-canopy-v3-low-poly-silhouette",
     }}
   >
@@ -398,20 +408,20 @@ function NaturalScatter({ profile }: { profile: EnvironmentProfile }) {
   }
 
   const woodland = profile.id === "woodland";
-  const ferns = items.slice(0, woodland ? 14 : 8);
-  const canopies = items.slice(0, woodland ? 10 : 8);
+  const ferns = items.slice(0, woodland ? 18 : 10);
+  const canopies = items.slice(0, woodland ? 18 : 14);
   return <group name={woodland ? "ground-woodland-scanned-understory" : "ground-temperate-scanned-understory"} userData={{ treatment: "urai-self-authored-static-canopy-v3-with-polyhaven-fern-rock-understory", canopyFallback: "scanned-understory-remains-without-canopy" }} raycast={() => null}>
     <GroundCanopyBoundary>
       <Suspense fallback={null}>
         {canopies.map((item) => {
-          const x = item.x * 0.62;
-          const z = item.z - 8.5;
+          const x = item.x * 0.72;
+          const z = item.z - 6.4 + Math.sin(item.index * 0.83) * 1.7;
           return <NaturalCanopy
             key={`canopy-${item.index}`}
             profile={profile}
             position={[x, groundHeight(x, z, profile.id) - 0.02, z]}
             rotationY={item.index * 0.91 + (woodland ? 0.22 : -0.14)}
-            scale={(woodland ? 2.85 : 2.55) + item.scale * 0.72}
+            scale={(woodland ? 1.95 : 1.78) + item.scale * 0.52}
           />;
         })}
       </Suspense>
@@ -711,7 +721,7 @@ export default function GroundSpatialWorldClean() {
     data-ground-visual-owner="physical-lived-world"
     data-ground-runtime-owner="first-person-lived-world"
     data-ground-visual-revision="ground-lived-world-v2-canon-lock"
-    data-ground-art-revision="ground-natural-surface-v5-organic-canopy-v5-ridge-v3"
+    data-ground-art-revision="ground-natural-surface-v6-irregular-canopy-v6-ridge-v3"
     data-ground-exploration="first-person-no-visible-body"
     data-ground-camera="eye-level-terrain-following-no-authored-bob"
     data-ground-eye-height={GROUND_EYE_HEIGHT_M}

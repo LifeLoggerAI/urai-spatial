@@ -30,7 +30,7 @@ for (const token of [
   'CinematicReplayClient',
   'replay-route-launch-fingerprint',
   'replay-spatial-memory-world',
-  'v223-world-first-readable-spatial-memory-cove-all-orientation-mobile-primary-action-clearance',
+  'v224-world-first-readable-spatial-memory-cove-all-viewport-primary-action-readable',
   'ReplayRouteProofSurface',
   'data-proof-only="true"',
   'aria-hidden="true"',

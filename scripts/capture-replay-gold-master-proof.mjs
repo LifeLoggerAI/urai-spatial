@@ -9,7 +9,7 @@ const base = process.env.URAI_PROOF_BASE || 'http://127.0.0.1:4173'
 const outputDir = path.resolve(process.env.URAI_PROOF_DIR || 'artifacts/replay-gold-master-proof')
 const exactHead = process.env.URAI_EXACT_HEAD || 'local'
 const query = 'memoryId=demo%3Aquiet-reset&manifestId=replay-recovery-thread&node=quiet-reset&returnNode=quiet-reset&demo=1&from=focus-artifact&entryPortal=focus-memory-aperture&cameraCheckpoint=focus%3Aquiet-reset&privacyMode=held-private'
-const replayAuthority = 'v223-world-first-readable-spatial-memory-cove-all-orientation-mobile-primary-action-clearance'
+const replayAuthority = 'v224-world-first-readable-spatial-memory-cove-all-viewport-primary-action-readable'
 
 const specs = [
   { id: 'desktop-16x10', width: 1440, height: 900, isMobile: false, hasTouch: false },
@@ -150,10 +150,10 @@ async function describeReplay(page, { playingExpected = false, reducedExpected =
     const reducedMatches = matchMedia('(prefers-reduced-motion: reduce)').matches
     const playing = root?.getAttribute('data-playing') === 'true'
     const pacingOpacity = pacingStyle ? Number.parseFloat(pacingStyle.opacity || '1') : 0
+    const actionReadable = pacingOpacity >= (mobileExpected ? .75 : .65)
     const mobileActionClear = !mobileExpected || Boolean(actionRect && pacingRect
       && actionRect.bottom <= innerHeight - 64
-      && pacingRect.bottom <= innerHeight - 58
-      && pacingOpacity >= .75)
+      && pacingRect.bottom <= innerHeight - 58)
     const demoProductHidden = !replayProduct || productStyle?.display === 'none'
     const result = {
       memoryStatus: root?.getAttribute('data-memory-status') || null,
@@ -172,6 +172,7 @@ async function describeReplay(page, { playingExpected = false, reducedExpected =
       reducedMatches,
       boundsOkay,
       pacingOpacity,
+      actionReadable,
       mobileActionClear,
       demoProductHidden,
       canvasWidth: canvasRect ? Math.round(canvasRect.width) : 0,
@@ -187,6 +188,7 @@ async function describeReplay(page, { playingExpected = false, reducedExpected =
       && result.memoryContextDisclosure
       && result.legacyVisible.length === 0
       && result.boundsOkay
+      && result.actionReadable
       && result.mobileActionClear
       && result.demoProductHidden
       && result.progressLabel.startsWith('Memory unfolding,')
