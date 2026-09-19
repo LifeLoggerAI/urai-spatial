@@ -136,11 +136,11 @@ function TerrainMaterial({ profile }: { profile: EnvironmentProfile }) {
   }, [albedo, arm, normal, profile]);
   return <meshStandardMaterial
     map={naturalProfile ? null : albedo}
-    normalMap={normal}
-    normalScale={new THREE.Vector2(profile.id === "urban" ? 0.34 : naturalProfile ? 0.5 : 0.62, profile.id === "urban" ? 0.34 : naturalProfile ? 0.5 : 0.62)}
-    aoMap={arm}
-    aoMapIntensity={naturalProfile ? 0.42 : 0.72}
-    roughnessMap={arm}
+    normalMap={naturalProfile ? null : normal}
+    normalScale={new THREE.Vector2(profile.id === "urban" ? 0.34 : 0.62, profile.id === "urban" ? 0.34 : 0.62)}
+    aoMap={naturalProfile ? null : arm}
+    aoMapIntensity={naturalProfile ? 0 : 0.72}
+    roughnessMap={naturalProfile ? null : arm}
     roughness={naturalProfile ? 0.99 : profile.roughness}
     metalnessMap={naturalProfile ? null : arm}
     metalness={profile.id === "urban" ? 0.02 : 0.005}
@@ -234,11 +234,12 @@ function CanopyLeafInstances({ geometry, leaves, color }: {
   </instancedMesh>;
 }
 
-function NaturalCanopy({ profile, position, rotationY, scale }: {
+function NaturalCanopy({ profile, position, rotationY, scale, shapeSeed }: {
   profile: EnvironmentProfile;
   position: [number, number, number];
   rotationY: number;
   scale: number;
+  shapeSeed: number;
 }) {
   const asset = useGLTF(NATURAL_CANOPY);
   const hiddenGovernedSource = useMemo(() => {
@@ -302,22 +303,22 @@ function NaturalCanopy({ profile, position, rotationY, scale }: {
       [-0.24, 2.50, -0.10] as const,
     ];
     const hash = (seed: number) => {
-      const value = Math.sin(seed * 12.9898 + (woodland ? 78.233 : 31.417)) * 43758.5453;
+      const value = Math.sin(seed * 12.9898 + shapeSeed * 53.117 + (woodland ? 78.233 : 31.417)) * 43758.5453;
       return value - Math.floor(value);
     };
-    const leaves = Array.from({ length: woodland ? 188 : 156 }, (_, index) => {
+    const leaves = Array.from({ length: woodland ? 336 : 292 }, (_, index) => {
       const anchor = foliageAnchors[index % foliageAnchors.length];
-      const spread = 0.10 + hash(index * 7 + 1) * 0.13;
+      const spread = 0.14 + hash(index * 7 + 1) * 0.22;
       const theta = hash(index * 7 + 2) * Math.PI * 2;
-      const x = anchor[0] + Math.cos(theta) * spread * (0.55 + hash(index * 7 + 3) * 0.75);
-      const y = anchor[1] - 0.06 + (hash(index * 7 + 4) - 0.42) * 0.32;
-      const z = anchor[2] + Math.sin(theta) * spread * (0.50 + hash(index * 7 + 5) * 0.72);
-      const rx = (hash(index * 7 + 6) - 0.5) * 1.05;
-      const ry = theta + (hash(index * 7 + 7) - 0.5) * 0.8;
-      const rz = (hash(index * 7 + 8) - 0.5) * 0.9;
-      const sx = 0.115 + hash(index * 7 + 9) * 0.075;
-      const sy = 0.050 + hash(index * 7 + 10) * 0.040;
-      const sz = 0.090 + hash(index * 7 + 11) * 0.065;
+      const x = anchor[0] + Math.cos(theta) * spread * (0.48 + hash(index * 7 + 3) * 0.92);
+      const y = anchor[1] - 0.04 + (hash(index * 7 + 4) - 0.46) * 0.42;
+      const z = anchor[2] + Math.sin(theta) * spread * (0.46 + hash(index * 7 + 5) * 0.88);
+      const rx = (hash(index * 7 + 6) - 0.5) * 1.28;
+      const ry = theta + (hash(index * 7 + 7) - 0.5) * 1.15;
+      const rz = (hash(index * 7 + 8) - 0.5) * 1.12;
+      const sx = 0.052 + hash(index * 7 + 9) * 0.052;
+      const sy = 0.020 + hash(index * 7 + 10) * 0.028;
+      const sz = 0.040 + hash(index * 7 + 11) * 0.048;
       return {
         position: [x, y, z] as [number, number, number],
         rotation: [rx, ry, rz] as [number, number, number],
@@ -329,7 +330,7 @@ function NaturalCanopy({ profile, position, rotationY, scale }: {
     const leavesB = leaves.filter((leaf) => leaf.color === leafB);
 
     return { trunkGeometry, branches, leafGeometry, leavesA, leavesB, leafA, leafB, trunkColor, branchColor };
-  }, [profile.id]);
+  }, [profile.id, shapeSeed]);
 
   useEffect(() => () => {
     authored.trunkGeometry.dispose();
@@ -340,13 +341,17 @@ function NaturalCanopy({ profile, position, rotationY, scale }: {
   return <group
     position={position}
     rotation={[0, rotationY, 0]}
-    scale={scale}
+    scale={[
+      scale * (0.84 + ((shapeSeed * 37) % 17) / 100),
+      scale * (0.94 + ((shapeSeed * 19) % 13) / 100),
+      scale * (0.82 + ((shapeSeed * 29) % 21) / 100),
+    ]}
     raycast={() => null}
-    name="ground-authored-natural-canopy-v10"
+    name="ground-authored-natural-canopy-v12"
     userData={{
-      treatment: "deterministic-overlapping-branch-tip-instanced-organic-foliage-canopy-v10",
+      treatment: "deterministic-fine-leaf-irregular-seeded-branch-tip-canopy-v12",
       provenance: NATURAL_CANOPY,
-      visibleAuthority: "runtime-authored-canopy-v10",
+      visibleAuthority: "runtime-authored-canopy-v12",
       supersedesVisibleCandidate: "ground-natural-canopy-v3-low-poly-silhouette",
     }}
   >
@@ -412,15 +417,21 @@ function CoastalWater() {
 }
 
 function NaturalScatter({ profile }: { profile: EnvironmentProfile }) {
-  const items = useMemo(() => Array.from({ length: profile.id === "urban" ? 18 : 26 }, (_, index) => {
-    const side = index % 2 ? -1 : 1;
-    const lane = 7.5 + (index % 7) * 2.7;
-    const x = side * lane + Math.sin(index * 1.71) * 2.4;
-    const z = 6 - index * 1.95 + Math.cos(index * 0.83) * 2.6;
-    const y = groundHeight(x, z, profile.id);
-    const scale = 0.72 + (index % 5) * 0.13;
-    return { x, y, z, scale, index };
-  }), [profile]);
+  const items = useMemo(() => {
+    const hash = (seed: number) => {
+      const value = Math.sin(seed * 12.9898 + profile.id.length * 41.733) * 43758.5453;
+      return value - Math.floor(value);
+    };
+    return Array.from({ length: profile.id === "urban" ? 18 : 26 }, (_, index) => {
+      const side = hash(index * 5 + 1) > 0.5 ? -1 : 1;
+      const lane = 6.8 + hash(index * 5 + 2) * 13.2;
+      const x = side * lane + (hash(index * 5 + 3) - 0.5) * 3.4;
+      const z = 7 - index * 1.92 + (hash(index * 5 + 4) - 0.5) * 7.2;
+      const y = groundHeight(x, z, profile.id);
+      const scale = 0.64 + hash(index * 5 + 5) * 0.72;
+      return { x, y, z, scale, index };
+    });
+  }, [profile]);
 
   if (profile.id === "urban") {
     return <group name="ground-urban-horizon" userData={{ treatment: "distant-irregular-extruded-skyline-not-box-placeholders" }} raycast={() => null}>
@@ -453,7 +464,8 @@ function NaturalScatter({ profile }: { profile: EnvironmentProfile }) {
             profile={profile}
             position={[x, groundHeight(x, z, profile.id) - 0.02, z]}
             rotationY={item.index * 0.91 + (woodland ? 0.22 : -0.14)}
-            scale={(woodland ? 1.95 : 1.78) + item.scale * 0.52}
+            scale={(woodland ? 1.82 : 1.68) + item.scale * 0.48}
+            shapeSeed={item.index + (woodland ? 101 : 17)}
           />;
         })}
       </Suspense>
@@ -798,7 +810,7 @@ export default function GroundSpatialWorldClean() {
     data-ground-visual-owner="physical-lived-world"
     data-ground-runtime-owner="first-person-lived-world"
     data-ground-visual-revision="ground-lived-world-v2-canon-lock"
-    data-ground-art-revision="ground-natural-surface-v11-overlapping-organic-canopy-v10-atmosphere-v4-authored-dome-ridge-v3"
+    data-ground-art-revision="ground-natural-surface-v12-fine-leaf-seeded-canopy-v12-atmosphere-v4-authored-dome-ridge-v3"
     data-ground-exploration="first-person-no-visible-body"
     data-ground-camera="eye-level-terrain-following-no-authored-bob"
     data-ground-eye-height={GROUND_EYE_HEIGHT_M}
