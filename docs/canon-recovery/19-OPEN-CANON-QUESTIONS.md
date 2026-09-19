@@ -22,8 +22,7 @@ Resolved items have been removed from this list rather than left as stale questi
 16. Emotional Time Travel: is this a user-facing system name, or historical lineage now represented by Timeline + Focus + Replay?
 17. Therapist/professional tier: which workflows belong in consumer UrAi, which in RuAI, and which require licensed-human control only?
 18. Avatar final likeness: what source/candidate becomes final authority once the current professional-candidate block clears?
-19. Current pricing/entitlements: which document is canonical for public product copy after provider configuration is finalized?
-20. Public/private life-film boundary: which private reference classes may be used in consumer experiences versus separately authorized Studio/film productions?
+19. Public/private life-film boundary: which private reference classes may be used in consumer experiences versus separately authorized Studio/film productions?
 
 ## Already resolved in current recovery
 
@@ -35,6 +34,7 @@ Resolved items have been removed from this list rather than left as stale questi
 - Personal Emotional Weather source/state model.
 - Memory Star morphology.
 - RuAI professional-access boundary.
+- Current LIVE pricing: Pro $10/month and Therapist $29.99/month; Founder plan exists in source but no active live Founder price was returned. One active Billing Portal configuration exists; live webhook endpoints remain zero.
 
 ## Resolution rule
 
