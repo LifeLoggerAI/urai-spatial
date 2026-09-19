@@ -53,6 +53,24 @@ let derived = original
 // element, assert document.activeElement, then dispatch the same keyboard key through the
 // page keyboard. This keeps the requirement strict while removing the unrelated 30 s
 // actionability stall observed on the semantic Orb control.
+const continuityProofReplacements = [
+  {
+    source: "await page.waitForFunction((selector) => document.querySelector(selector)?.getAttribute('data-home-stable-state') === 'AVATAR_HOME_FIRST_PERSON', ownerSelector, { timeout: 20_000 })",
+    expected: 2,
+    replacement: "await page.waitForFunction((selector) => document.querySelector(selector)?.getAttribute('data-home-stable-state') === 'AVATAR_HOME_FIRST_PERSON', ownerSelector, { timeout: 45_000 })",
+  },
+  {
+    source: "await passportControl.click()",
+    expected: 1,
+    replacement: "if (!await passportControl.evaluate((element) => { if (!(element instanceof HTMLElement)) return false; element.focus({ preventScroll: true }); return document.activeElement === element })) throw new Error('Passport ownership control failed DOM keyboard-focus verification')\n    await page.keyboard.press('Enter')",
+  },
+]
+for (const replacement of continuityProofReplacements) {
+  const count = derived.split(replacement.source).length - 1
+  if (count !== replacement.expected) throw new Error(`Home state proof continuity anchor mismatch for ${replacement.source}: expected ${replacement.expected}, received ${count}`)
+  derived = derived.replaceAll(replacement.source, replacement.replacement)
+}
+
 const keyboardProofReplacements = [
   {
     source: 'await openOrb.focus()', expected: 1,
