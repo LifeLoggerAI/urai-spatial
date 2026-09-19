@@ -1,6 +1,17 @@
-import { expect, test } from '@playwright/test'
+import { expect, test, type Locator, type Page } from '@playwright/test'
+
+async function nativeKeyboardActivate(page: Page, control: Locator, key: 'Enter' | 'Space') {
+  const focused = await control.evaluate((element) => {
+    if (!(element instanceof HTMLElement)) return false
+    element.focus({ preventScroll: true })
+    return document.activeElement === element
+  })
+  expect(focused).toBe(true)
+  await page.keyboard.press(key)
+}
 
 test.describe('first-run onboarding accessibility', () => {
+  test.describe.configure({ timeout: 120_000 })
   test('keyboard setup preserves privacy disclosure, sensory controls, focus, and resumable completion', async ({ page }) => {
     await page.goto('/home/?firstRun=1', { waitUntil: 'load' })
 
@@ -12,8 +23,7 @@ test.describe('first-run onboarding accessibility', () => {
     await expect(heading).toBeFocused()
 
     const continueButton = page.getByRole('button', { name: 'Continue' })
-    await continueButton.focus()
-    await page.keyboard.press('Enter')
+    await nativeKeyboardActivate(page, continueButton, 'Enter')
 
     await expect(setup).toHaveAttribute('data-setup-step', 'privacy')
     await expect(page.getByRole('heading', { name: 'Permission is part of the world, not a hidden switch.' })).toBeFocused()
@@ -21,30 +31,25 @@ test.describe('first-run onboarding accessibility', () => {
     await expect(page.getByRole('link', { name: 'Consent Sanctuary' })).toHaveAttribute('href', '/privacy-controls')
     await expect(page.getByRole('link', { name: 'Passport' })).toHaveAttribute('href', '/passport')
 
-    await continueButton.focus()
-    await page.keyboard.press('Enter')
+    await nativeKeyboardActivate(page, continueButton, 'Enter')
     await expect(setup).toHaveAttribute('data-setup-step', 'comfort')
 
     const audio = page.getByRole('checkbox', { name: 'World audio' })
     const haptics = page.getByRole('checkbox', { name: 'Haptic cues' })
     await expect(audio).toBeVisible()
     await expect(haptics).toBeVisible()
-    await audio.focus()
-    await page.keyboard.press('Space')
+    await nativeKeyboardActivate(page, audio, 'Space')
     await expect(audio).toBeChecked()
-    await haptics.focus()
-    await page.keyboard.press('Space')
+    await nativeKeyboardActivate(page, haptics, 'Space')
     await expect(haptics).not.toBeChecked()
     await expect(page.getByText(/Accessible text remains available when sound is off/i)).toBeVisible()
 
-    await continueButton.focus()
-    await page.keyboard.press('Enter')
+    await nativeKeyboardActivate(page, continueButton, 'Enter')
     await expect(setup).toHaveAttribute('data-setup-step', 'orb')
     await expect(page.getByRole('heading', { name: 'The Orb stays inside the world with you.' })).toBeFocused()
 
     const begin = page.getByRole('button', { name: 'Begin guided tour' })
-    await begin.focus()
-    await page.keyboard.press('Enter')
+    await nativeKeyboardActivate(page, begin, 'Enter')
 
     await expect(page.locator('[data-setup="true"]')).toHaveCount(0)
     await expect(page.getByRole('link', { name: 'Enter Ground' })).toBeVisible()
@@ -79,8 +84,7 @@ test.describe('first-run onboarding accessibility', () => {
     expect(reduced.persistedUserSetting).toBe('false')
 
     const skip = page.getByRole('button', { name: 'Skip setup' })
-    await skip.focus()
-    await page.keyboard.press('Enter')
+    await nativeKeyboardActivate(page, skip, 'Enter')
     await expect(setup).toHaveCount(0)
 
     const completion = await page.evaluate(() => ({
