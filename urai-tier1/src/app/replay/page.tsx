@@ -55,7 +55,7 @@ export default function ReplayRoutePage() {
     <>
       <span
         data-testid="replay-route-launch-fingerprint"
-        data-urai-route-fingerprint="replay-spatial-memory-world v222-world-first-readable-spatial-memory-cove-mobile-primary-action-clearance"
+        data-urai-route-fingerprint="replay-spatial-memory-world v223-world-first-readable-spatial-memory-cove-all-orientation-mobile-primary-action-clearance"
         style={routeFingerprintStyle}
       >
         Replay the memory place. Spatial memory world.

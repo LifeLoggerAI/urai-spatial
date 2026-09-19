@@ -21,7 +21,7 @@ test('replay route remains wired to the current spatial memory world owner', () 
   assert.match(replayPage, /FinalReplayFilm = CinematicReplayClient/)
   assert.match(replayPage, /replay-route-launch-fingerprint/)
   assert.match(replayPage, /replay-spatial-memory-world/)
-  assert.match(replayPage, /v222-world-first-readable-spatial-memory-cove-mobile-primary-action-clearance/)
+  assert.match(replayPage, /v223-world-first-readable-spatial-memory-cove-all-orientation-mobile-primary-action-clearance/)
   assert.doesNotMatch(replayPage, /replay-thread-film-beats|Cinematic memory camera film\.|Film beats/)
 })
 

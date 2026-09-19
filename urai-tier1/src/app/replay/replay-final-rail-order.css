@@ -27,7 +27,7 @@
   bottom: max(96px, calc(env(safe-area-inset-bottom) + 90px)) !important;
 }
 
-@media (max-width: 700px) {
+@media (pointer: coarse), (max-width: 700px) {
   .replayWorld .caption {
     bottom: max(300px, calc(env(safe-area-inset-bottom) + 294px)) !important;
     width: calc(100vw - 28px) !important;
