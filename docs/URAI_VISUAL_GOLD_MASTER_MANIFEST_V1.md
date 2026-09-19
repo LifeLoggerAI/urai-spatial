@@ -57,9 +57,11 @@ They are subordinate to this manifest and do not convert concept/reference art i
 - Memories are not planets or ringed collectibles.
 
 ### Focus
-- Selected-memory close approach/interior bridge to Replay.
-- Current V272 living-memory fold is a candidate, not accepted authority until literal pixels pass.
-- Reject slab/card/crystal crown/shard cluster/pickup/sphere/ring/portal/cage/flower language.
+- Life Map selects one stellar Memory Star; Focus resolves that same selected object at close range.
+- Current source authority is V323 `selected-memory-star-with-contained-memory`: the authorized memory is visibly inside/through the star and Replay crosses that same memory boundary.
+- Terrain, sanctuary ground, cavities, stone banks, fissures, biomes, and walkable Ground-like composition are explicitly superseded/rejected as Focus visual ownership.
+- Source image/video is shown inside the star only when legitimately authorized; explicit demo/no-source states use truthful generated visualization rather than fabricated personal media.
+- Desktop, mobile, reduced-motion, keyboard/touch, and no-WebGL states must preserve selected-star identity and the Focus → Replay semantic transition.
 
 ### Replay
 - Source-first spatial-temporal memory interior.
@@ -105,7 +107,7 @@ They are subordinate to this manifest and do not convert concept/reference art i
 | VGM-SKY-001 | Home Sky / ascent | CURRENT_CANDIDATE | Capture broad-sky ascent; reject localized portal language |
 | VGM-LIFEMAP-001 | Life Map | CURRENT_CANDIDATE | Fresh overview/selected/approach/portrait/mobile/reduced pack |
 | VGM-MEMSTAR-001 | Memory Star | MISSING_REPLACEMENT_REQUIRED | Derive far/mid/near/selection/approach component reference |
-| VGM-FOCUS-001 | Focus | CURRENT_CANDIDATE | Open fresh V272 retained pixels; accept or reject literally |
+| VGM-FOCUS-001 | Focus | CURRENT_CANDIDATE | Capture/open fresh exact-head V323 selected-Memory-Star pixels; verify contained memory, mobile/reduced/no-WebGL, and Focus → Replay continuity |
 | VGM-REPLAY-001 | Replay | CURRENT_CANDIDATE | Fresh source-present/source-absent/mobile/reduced/offline pixels |
 | VGM-GROUND-001 | Ground descent/return | CURRENT_CANDIDATE | Fresh exact-head sequence + reduced-motion capture |
 | VGM-GROUND-002 | Ground generic fallback art | REJECTED | Add governed natural canopy/world-depth art without restoring portal terrain |

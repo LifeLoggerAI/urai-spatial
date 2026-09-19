@@ -11,7 +11,7 @@
     {"id":"PIX-ORB","systems":["home-orb","conversation-states"],"status":"CANDIDATE"},
     {"id":"PIX-SKY","systems":["home-sky","life-map-ascent"],"status":"CANDIDATE"},
     {"id":"PIX-LIFEMAP","systems":["life-map","memory-star"],"status":"CANDIDATE"},
-    {"id":"PIX-FOCUS","systems":["focus-v272"],"status":"CANDIDATE"},
+    {"id":"PIX-FOCUS","systems":["focus-v323-selected-memory-star","contained-memory","mobile","reduced-motion","no-webgl"],"status":"CANDIDATE","blockers":["fresh-exact-head-literal-inspection-required"]},
     {"id":"PIX-REPLAY","systems":["replay"],"status":"CANDIDATE"},
     {"id":"PIX-GROUND","systems":["ground-descent","ground-return","ground-fallback","personalized-lived-world"],"status":"BLOCKED_MIXED","blockers":["generic-fallback-final-art-rejected","personalized-lived-world-source-converged-but-visual-pack-unaccepted"]},
     {"id":"PIX-PASSPORT","systems":["physical-home-passport","passport-ui","exact-origin-return"],"status":"CANDIDATE","blockers":["fresh-literal-pixels-required","round-trip-browser-proof-required"]},

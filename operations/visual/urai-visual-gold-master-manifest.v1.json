@@ -97,10 +97,11 @@
       "experience": "focus",
       "system": "selected-memory",
       "status": "CURRENT_CANDIDATE",
-      "visualRevision": "V318",
-      "visualAuthority": "v318-three-radial-terrain-cavities-localized-bottoms-ground-blended-hairline-connector-buried-closed-body",
+      "visualRevision": "V323",
+      "visualAuthority": "v323-selected-memory-star-with-contained-memory",
       "visualAcceptance": false,
-      "predecessorV317LiteralVerdict": "REJECTED_CONTINUOUS_NEAR_BLACK_CONNECTOR_STRIP"
+      "predecessorTerrainCavityLineage": "REJECTED_SUPERSEDED",
+      "requiredContinuity": "life-map-selected-star-to-focus-contained-memory-to-replay"
     },
     {
       "id": "VGM-REPLAY-001",
