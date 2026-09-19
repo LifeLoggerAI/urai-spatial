@@ -929,7 +929,7 @@ export default function GroundSpatialWorldClean() {
       onCreated={({ gl }) => {
         gl.outputColorSpace = THREE.SRGBColorSpace;
         gl.toneMapping = THREE.ACESFilmicToneMapping;
-        gl.toneMappingExposure = 0.92;
+        gl.toneMappingExposure = 1.05;
       }}
     >
       <GroundScene profile={profile} input={input} yaw={yaw} pitch={pitch} target={target} obstacles={obstacles} playerPosition={playerPosition} isCoarse={isCoarse} onReady={() => setReady(true)} />
