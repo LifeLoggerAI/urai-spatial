@@ -74,6 +74,7 @@ function blockingFailures(requests, allowNavigationAborts = false) {
       const parsed = new URL(request.url)
       const expectedReplayToFocusTransitionAbort =
         parsed.pathname === '/assets/urai/generated/models/focus-memory-chamber-v1.glb'
+        || parsed.pathname === '/assets/urai/final/tier2/focus/focus-memory-chamber-desktop.svg'
       return !(
         parsed.pathname.startsWith('/_next/static/')
         || parsed.pathname.endsWith('/index.txt')
