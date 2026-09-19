@@ -2,7 +2,7 @@
 
 Status: ACTIVE / RECONCILED 2026-09-19
 
-This index intentionally lists every recovery artifact currently present, including same-number historical/concurrent additions. Numeric prefixes are navigation aids, not authority rankings.
+This index lists the recovery artifacts currently retained on the branch. Numeric prefixes are navigation aids, not authority rankings. Same-purpose duplicate documents have been consolidated so one master matrix, one functional dependency map, and one missing-visual brief set remain authoritative.
 
 ## Core recovery spine
 
@@ -40,31 +40,28 @@ This index intentionally lists every recovery artifact currently present, includ
 29. `27-MASTER-COVERAGE-MATRIX.md`
 30. `28-FUNCTIONAL-DEPENDENCY-MAP.md`
 31. `28-INFORMATION-ARCHITECTURE.md`
-32. `29-FUNCTIONAL-DEPENDENCY-MAP.md`
-33. `29-STORYBOARD-STATE-SPECS.md`
-34. `30-DOCUMENT-COVERAGE-MATRIX.md`
-35. `31-MASTER-COVERAGE-MATRIX.md`
-36. `31-UNIFIED-ROADMAP.md`
-37. `32-EXPANSION-MATURITY-CLASSIFICATION.md`
-38. `32-INSTITUTIONAL-SYSTEMS.md`
-39. `33-SOURCE-PROVENANCE-REGISTER.md`
-40. `33-STORYTIME-CANON.md`
-41. `34-MISSING-VISUAL-REFERENCE-BRIEFS.md`
-42. `34-RUAI-CANON.md`
-43. `35-EDGE-STATE-COPY-SPEC.md`
-44. `35-VISUAL-LANGUAGE.md`
-45. `36-COMMERCIAL-ENTITLEMENT-AUTHORITY.md`
-46. `36-MEMORY-SYSTEM.md`
-47. `37-ORB.md`
-48. `38-LIFE-MAP.md`
-49. `39-FOCUS.md`
-50. `40-REPLAY.md`
-51. `41-PASSPORT.md`
-52. `42-MISSING-VISUAL-REFERENCE-BRIEFS.md`
-53. `43-STORYBOARD-FRAME-SPECIFICATIONS.md`
-54. `44-UI-SURFACE-INVENTORY.md`
-55. `45-LAUNCH-AND-ROADMAP-CLASSIFICATION.md`
-56. `46-CURRENT-ASSET-REFERENCE-AUTHORITY.md`
+32. `29-STORYBOARD-STATE-SPECS.md`
+33. `30-DOCUMENT-COVERAGE-MATRIX.md`
+34. `31-UNIFIED-ROADMAP.md`
+35. `32-EXPANSION-MATURITY-CLASSIFICATION.md`
+36. `32-INSTITUTIONAL-SYSTEMS.md`
+37. `33-SOURCE-PROVENANCE-REGISTER.md`
+38. `33-STORYTIME-CANON.md`
+39. `34-MISSING-VISUAL-REFERENCE-BRIEFS.md`
+40. `34-RUAI-CANON.md`
+41. `35-EDGE-STATE-COPY-SPEC.md`
+42. `35-VISUAL-LANGUAGE.md`
+43. `36-COMMERCIAL-ENTITLEMENT-AUTHORITY.md`
+44. `36-MEMORY-SYSTEM.md`
+45. `37-ORB.md`
+46. `38-LIFE-MAP.md`
+47. `39-FOCUS.md`
+48. `40-REPLAY.md`
+49. `41-PASSPORT.md`
+50. `43-STORYBOARD-FRAME-SPECIFICATIONS.md`
+51. `44-UI-SURFACE-INVENTORY.md`
+52. `45-LAUNCH-AND-ROADMAP-CLASSIFICATION.md`
+53. `46-CURRENT-ASSET-REFERENCE-AUTHORITY.md`
 
 ## Existing authority this recovery layer does not replace
 
@@ -86,4 +83,4 @@ This index intentionally lists every recovery artifact currently present, includ
 
 ## Governing rule
 
-This folder is a reconciliation/navigation layer. It does not erase older authority merely because it is newer. Conflicting files are resolved by the authority register and decision log, not by filename order.
+This folder is a reconciliation/navigation layer. It does not erase older authority merely because it is newer. Conflicts are resolved by the authority register and decision log, not by filename order.
