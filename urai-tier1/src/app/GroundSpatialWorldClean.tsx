@@ -529,6 +529,93 @@ function DistantGroundContinuation({ profile }: { profile: EnvironmentProfile })
   </group>;
 }
 
+
+function GroundRootNetwork({ profile }: { profile: EnvironmentProfile }) {
+  const roots = useMemo(() => {
+    const definitions = [
+      [[-18, 7.8, 8], [-13, 6.0, 2], [-9, 4.4, -5], [-5, 3.1, -13], [-2, 2.1, -22]],
+      [[17, 8.4, 6], [12, 6.5, 0], [8, 4.7, -7], [5, 3.0, -15], [3, 2.0, -25]],
+      [[-10, 9.2, -5], [-7, 7.0, -10], [-4, 5.0, -18], [-1, 3.8, -27], [1, 2.5, -36]],
+      [[11, 8.8, -8], [8, 6.8, -13], [5, 5.0, -21], [2, 3.6, -30], [-1, 2.5, -41]],
+      [[-22, 6.8, -18], [-16, 5.5, -20], [-10, 4.1, -24], [-4, 3.0, -30], [0, 2.4, -37]],
+      [[21, 7.1, -22], [15, 5.8, -23], [10, 4.3, -27], [5, 3.1, -33], [1, 2.5, -41]],
+    ] as const;
+    return definitions.map((points, index) => {
+      const curve = new THREE.CatmullRomCurve3(points.map(([x, y, z]) => new THREE.Vector3(x, y, z)));
+      return new THREE.TubeGeometry(curve, 48, 0.17 + index * 0.025, 10, false);
+    });
+  }, []);
+  useEffect(() => () => roots.forEach((geometry) => geometry.dispose()), [roots]);
+  return <group name="ground-canonical-root-network-v14" raycast={() => null}>
+    {roots.map((geometry, index) => <mesh key={index} geometry={geometry} castShadow receiveShadow>
+      <meshStandardMaterial
+        color={profile.id === "woodland" ? "#34281f" : "#403126"}
+        roughness={0.98}
+        metalness={0}
+        envMapIntensity={0.12}
+      />
+    </mesh>)}
+  </group>;
+}
+
+function GroundSubstrateWorld({ profile }: { profile: EnvironmentProfile }) {
+  const rockPlacements = useMemo(() => [
+    { p: [-16, 0.1, 2] as [number, number, number], r: [0.1, 0.9, 0] as [number, number, number], s: [7.4, 5.8, 6.2] as [number, number, number], v: "01" as const },
+    { p: [17, -0.2, -2] as [number, number, number], r: [0.0, -1.0, 0] as [number, number, number], s: [8.0, 6.4, 6.8] as [number, number, number], v: "02" as const },
+    { p: [-20, -0.5, -19] as [number, number, number], r: [0.2, 0.4, -0.05] as [number, number, number], s: [10.0, 8.0, 8.0] as [number, number, number], v: "02" as const },
+    { p: [19, -0.4, -24] as [number, number, number], r: [-0.1, -0.7, 0.05] as [number, number, number], s: [9.6, 7.4, 8.2] as [number, number, number], v: "01" as const },
+    { p: [-12, -0.8, -43] as [number, number, number], r: [0.1, 1.1, 0] as [number, number, number], s: [12.0, 9.0, 9.6] as [number, number, number], v: "01" as const },
+    { p: [12, -0.8, -45] as [number, number, number], r: [0.0, -1.2, 0] as [number, number, number], s: [12.5, 9.6, 10.2] as [number, number, number], v: "02" as const },
+  ], []);
+
+  const fernPlacements = useMemo(() => [
+    [-5.4, -7.5, 0.72], [5.8, -8.4, 0.66], [-7.8, -17.5, 0.8], [7.2, -18.2, 0.78],
+    [-4.6, -28.0, 0.62], [4.4, -30.5, 0.7], [-8.5, -37.0, 0.84], [8.3, -38.8, 0.72],
+  ] as const, []);
+
+  return <group
+    name="ground-deeper-living-substrate-v14"
+    userData={{
+      visualAuthority: "terrain-to-root-to-geology-to-lived-ground",
+      continuity: "same-home-deeper-substrate",
+      fantasyCave: false,
+      exteriorForestOwner: false,
+    }}
+  >
+    <mesh name="ground-substrate-vault" position={[0, 7.8, -18]} scale={[34, 11, 44]} raycast={() => null}>
+      <sphereGeometry args={[1, 64, 32]} />
+      <meshStandardMaterial
+        side={THREE.BackSide}
+        color="#151713"
+        roughness={1}
+        metalness={0}
+        envMapIntensity={0.06}
+      />
+    </mesh>
+    <GroundRootNetwork profile={profile} />
+    {rockPlacements.map((item, index) => <ScannedRock
+      key={index}
+      variant={item.v}
+      position={item.p}
+      rotation={item.r}
+      scale={item.s}
+    />)}
+    {fernPlacements.map(([x, z, scale], index) => <FernPatch
+      key={index}
+      position={[x, groundHeight(x, z, profile.id) + 0.02, z]}
+      rotationY={index * 1.37}
+      scale={scale}
+    />)}
+    <mesh name="ground-moisture-channel" rotation={[-Math.PI / 2, 0, 0]} position={[1.6, 0.02, -24]} raycast={() => null}>
+      <planeGeometry args={[2.8, 28, 8, 40]} />
+      <meshPhysicalMaterial color="#172b2c" roughness={0.24} metalness={0} transmission={0.08} transparent opacity={0.58} />
+    </mesh>
+    <pointLight position={[-8, 3.4, -10]} intensity={1.15} color="#b88958" distance={18} decay={2} />
+    <pointLight position={[7, 2.8, -25]} intensity={0.92} color="#6a9f98" distance={20} decay={2} />
+    <pointLight position={[0, 3.6, -40]} intensity={1.25} color="#9ba76e" distance={24} decay={2} />
+  </group>;
+}
+
 function LivedGroundWorld({ profile, target }: { profile: EnvironmentProfile; target: MutableRefObject<THREE.Vector3 | null> }) {
   const geometry = useMemo(() => buildTerrainGeometry(profile), [profile]);
   useEffect(() => () => geometry.dispose(), [geometry]);
@@ -548,8 +635,7 @@ function LivedGroundWorld({ profile, target }: { profile: EnvironmentProfile; ta
     <mesh name="ground-visible-traversable-terrain" geometry={geometry} onClick={onTerrainClick} receiveShadow>
       <TerrainMaterial profile={profile} />
     </mesh>
-    <NaturalScatter profile={profile} />
-    <DistantGroundContinuation profile={profile} />
+    <GroundSubstrateWorld profile={profile} />
   </group>;
 }
 
@@ -677,14 +763,13 @@ function GroundScene({ profile, input, yaw, pitch, target, obstacles, playerPosi
   const heightAt = useCallback((x: number, z: number) => groundHeight(x, z, profile.id), [profile.id]);
   const weather = DEFAULT_GROUND_WEATHER;
   return <>
-    <color attach="background" args={[profile.fog]} />
-    <AtmosphericGroundSky profile={profile} />
-    <fogExp2 attach="fog" args={[profile.fog, profile.id === "urban" ? 0.018 : (profile.id === "temperate" || profile.id === "woodland" ? 0.0105 : 0.0135) + weather.atmosphericDensity * 0.002]} />
-    <Suspense fallback={null}><Environment files="/assets/urai/home-production/cc0/environment/studio-small-08-1k.hdr" background={false} environmentIntensity={0.24} /></Suspense>
-    <ambientLight intensity={0.28} color="#bdcec8" />
-    <hemisphereLight args={["#bfd7d2", profile.groundDeep, 0.46]} />
-    <directionalLight position={[-14, 20, 8]} intensity={1.35} color="#e7cfb1" castShadow shadow-mapSize={[1024, 1024]} shadow-camera-left={-28} shadow-camera-right={28} shadow-camera-top={28} shadow-camera-bottom={-28} shadow-camera-far={90} shadow-normalBias={0.035} />
-    <directionalLight position={[12, 8, -18]} intensity={0.28} color="#81a8ad" />
+    <color attach="background" args={["#0b0e0d"]} />
+    <fogExp2 attach="fog" args={["#18201d", 0.028 + weather.atmosphericDensity * 0.003]} />
+    <Suspense fallback={null}><Environment files="/assets/urai/home-production/cc0/environment/studio-small-08-1k.hdr" background={false} environmentIntensity={0.11} /></Suspense>
+    <ambientLight intensity={0.13} color="#87978d" />
+    <hemisphereLight args={["#6f827b", "#15120f", 0.18]} />
+    <directionalLight position={[-10, 14, 5]} intensity={0.52} color="#c6a77f" castShadow shadow-mapSize={[1024, 1024]} shadow-camera-left={-28} shadow-camera-right={28} shadow-camera-top={28} shadow-camera-bottom={-28} shadow-camera-far={90} shadow-normalBias={0.035} />
+    <directionalLight position={[10, 7, -20]} intensity={0.2} color="#6b9493" />
     <Suspense fallback={null}><LivedGroundWorld profile={profile} target={target} /></Suspense>
     <FirstPersonPlayer input={input} yaw={yaw} pitch={pitch} target={target} profile={profile} obstacles={obstacles} playerPosition={playerPosition} isCoarse={isCoarse} onReady={onReady} />
   </>;
@@ -808,10 +893,10 @@ export default function GroundSpatialWorldClean() {
     className="ground-spatial-root"
     aria-label="URAI Ground first-person lived world"
     data-testid="urai-ground-lived-world"
-    data-ground-visual-owner="physical-lived-world"
+    data-ground-visual-owner="deeper-living-substrate-of-home"
     data-ground-runtime-owner="first-person-lived-world"
     data-ground-visual-revision="ground-lived-world-v2-canon-lock"
-    data-ground-art-revision="ground-natural-surface-v13-varied-branch-flat-leaf-canopy-v13-atmosphere-v4-muted-ridge-v4"
+    data-ground-art-revision="ground-v14-deeper-living-substrate-root-geology-continuity"
     data-ground-exploration="first-person-no-visible-body"
     data-ground-camera="eye-level-terrain-following-no-authored-bob"
     data-ground-eye-height={GROUND_EYE_HEIGHT_M}
