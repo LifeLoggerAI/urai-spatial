@@ -221,11 +221,11 @@ function truthLabel(sourceMode: LifeMapSourceMode) {
 }
 
 function phaseLabel(phase: JourneyPhase) {
-  if (phase === "overview") return "Sanctuary overview";
-  if (phase === "departure") return "Leaving the overlook";
-  if (phase === "travel") return "Following the memory valley";
-  if (phase === "approach") return "Entering the chapter";
-  return "Intimate memory chamber";
+  if (phase === "overview") return "Living galaxy overview";
+  if (phase === "departure") return "Leaving the overview";
+  if (phase === "travel") return "Crossing the memory cluster";
+  if (phase === "approach") return "Approaching selected Memory Star";
+  return "Selected Memory Star";
 }
 
 export default function ComposedLifeMapScene() {

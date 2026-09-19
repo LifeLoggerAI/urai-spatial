@@ -28,8 +28,8 @@ function nodeSeed(node: LifeMapNode) {
 }
 
 function depthGeometry() {
-  const deepCount = 1200
-  const nearCount = 760
+  const deepCount = 4200
+  const nearCount = 2200
   const count = deepCount + nearCount
   const positions = new Float32Array(count * 3)
   const colors = new Float32Array(count * 3)
@@ -100,6 +100,50 @@ function homeSkyContinuityGeometry() {
   return geometry
 }
 
+
+function chapterCloudGeometry(nodes: LifeMapNode[]) {
+  const groups = new Map<string, Array<{ node: LifeMapNode; index: number }>>()
+  nodes.forEach((node, index) => {
+    const key = node.eraId || node.clusterId || 'unassigned'
+    const group = groups.get(key) || []
+    group.push({ node, index })
+    groups.set(key, group)
+  })
+  const positions: number[] = []
+  const colors: number[] = []
+  const cool = new THREE.Color('#74c8dc')
+  const violet = new THREE.Color('#9b7fd1')
+  const warm = new THREE.Color('#e7c78f')
+  Array.from(groups.values()).forEach((members, groupIndex) => {
+    const center = members.reduce((sum, member) => {
+      const point = lifeMapLocalPoint(member.node, member.index)
+      sum.x += point[0]; sum.y += point[1]; sum.z += point[2]
+      return sum
+    }, new THREE.Vector3()).multiplyScalar(1 / Math.max(1, members.length))
+    const seed = members.reduce((value, member) => value ^ nodeSeed(member.node), 0) + groupIndex * 977
+    const count = 420
+    for (let index = 0; index < count; index += 1) {
+      const radial = Math.pow(seeded(seed + index, 51), .62) * (4.6 + (groupIndex % 3) * 1.15)
+      const angle = seeded(seed + index, 52) * Math.PI * 2 + radial * .19 + groupIndex * .76
+      const vertical = (seeded(seed + index, 53) - .5) * (2.6 + radial * .18)
+      const depth = (seeded(seed + index, 54) - .5) * (3.8 + radial * .34)
+      positions.push(
+        center.x + Math.cos(angle) * radial,
+        center.y + vertical + Math.sin(angle * 2.1) * .22,
+        center.z + Math.sin(angle) * radial * .72 + depth,
+      )
+      const aura = new THREE.Color(members[index % members.length]?.node.aura || '#9fcdda')
+      const base = groupIndex % 3 === 0 ? cool : groupIndex % 3 === 1 ? violet : warm
+      const color = base.clone().lerp(aura, .36 + seeded(seed + index, 55) * .34).multiplyScalar(.55 + seeded(seed + index, 56) * .72)
+      colors.push(color.r, color.g, color.b)
+    }
+  })
+  const geometry = new THREE.BufferGeometry()
+  geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3))
+  geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3))
+  return geometry
+}
+
 function galaxyThreadsGeometry() {
   const points: THREE.Vector3[] = []
   for (let arm = 0; arm < 9; arm += 1) {
@@ -123,7 +167,7 @@ function galaxyThreadsGeometry() {
 
 function memoryMotes(node: LifeMapNode, active: boolean) {
   const seed = nodeSeed(node)
-  const count = active ? 72 : 30
+  const count = active ? 120 : 56
   const positions = new Float32Array(count * 3)
   const colors = new Float32Array(count * 3)
   const aura = new THREE.Color(node.aura)
@@ -164,7 +208,7 @@ function memoryFilamentGeometry(seed: number) {
   return new THREE.BufferGeometry().setFromPoints(points)
 }
 
-function StellarMemory({ node, index, active, reducedMotion }: { node: LifeMapNode; index: number; active: boolean; reducedMotion: boolean }) {
+function StellarMemory({ node, index, active, reducedMotion, onSelect }: { node: LifeMapNode; index: number; active: boolean; reducedMotion: boolean; onSelect: (node: LifeMapNode) => void }) {
   const root = useRef<THREE.Group>(null)
   const point = useMemo(() => lifeMapLocalPoint(node, index), [node, index])
   const seed = useMemo(() => nodeSeed(node), [node])
@@ -177,10 +221,19 @@ function StellarMemory({ node, index, active, reducedMotion }: { node: LifeMapNo
     root.current.scale.setScalar(pulse)
     root.current.rotation.y = Math.sin(clock.elapsedTime * .07 + (seed % 29)) * .035
   })
-  const core = active ? .34 : .16
+  const core = active ? .40 : .23
   const aura = new THREE.Color(node.aura)
   const warmCore = aura.clone().lerp(new THREE.Color('#f3e5c9'), .52).getStyle()
-  return <group ref={root} position={point} renderOrder={120} name={`life-map-v3-memory-volume-${node.id}`} userData={{ visualOnly: true, interactionOwner: false, presentation: 'asymmetric-luminous-memory-volume', goldMasterRevision: 'v3-no-planet-no-ring-memory-language' }} raycast={() => null}>
+  return <group ref={root} position={point} renderOrder={120} name={`life-map-v323-memory-star-${node.id}`} userData={{ visualOnly: false, interactionOwner: true, presentation: 'stellar-point-photosphere-layered-corona', goldMasterRevision: 'v323-life-map-to-focus-memory-star-continuity' }}>
+    <mesh
+      name={`life-map-v323-memory-star-hit-${node.id}`}
+      onClick={(event) => { event.stopPropagation(); onSelect(node) }}
+      onPointerOver={(event) => { event.stopPropagation(); document.body.style.cursor = 'pointer' }}
+      onPointerOut={() => { document.body.style.cursor = '' }}
+    >
+      <sphereGeometry args={[active ? .74 : .52, 16, 12]} />
+      <meshBasicMaterial transparent opacity={0} depthWrite={false} colorWrite={false} />
+    </mesh>
     <group rotation={[.22 + seeded(seed, 2) * .30, -.35 + seeded(seed, 3) * .70, .15 + seeded(seed, 4) * .40]}>
       <mesh position={[-core * .42, core * .18, 0]} scale={[1.28, .78, .58]} renderOrder={123} raycast={() => null}>
         <sphereGeometry args={[core, 24, 16]} />
@@ -195,7 +248,7 @@ function StellarMemory({ node, index, active, reducedMotion }: { node: LifeMapNo
         <meshBasicMaterial color={warmCore} transparent opacity={active ? .62 : .42} blending={THREE.AdditiveBlending} depthTest={false} depthWrite={false} toneMapped={false} />
       </mesh>
     </group>
-    <mesh renderOrder={121} scale={active ? [4.8,3.7,3.2] : [3.8,3.0,2.6]} rotation={[.35,-.2,.4]} raycast={() => null}>
+    <mesh renderOrder={121} scale={active ? [5.8,4.6,3.7] : [4.6,3.6,3.0]} rotation={[.35,-.2,.4]} raycast={() => null}>
       <sphereGeometry args={[core, 18, 12]} />
       <meshBasicMaterial color={node.aura} transparent opacity={active ? .075 : .038} blending={THREE.AdditiveBlending} depthTest={false} depthWrite={false} toneMapped={false} />
     </mesh>
@@ -209,28 +262,32 @@ function StellarMemory({ node, index, active, reducedMotion }: { node: LifeMapNo
   </group>
 }
 
-export function LifeMapStellarField({ nodes, selected, reducedMotion }: { nodes: LifeMapNode[]; selected: LifeMapNode | null; reducedMotion: boolean }) {
+export function LifeMapStellarField({ nodes, selected, reducedMotion, onSelect }: { nodes: LifeMapNode[]; selected: LifeMapNode | null; reducedMotion: boolean; onSelect: (node: LifeMapNode) => void }) {
   const root = useRef<THREE.Points>(null)
   const geometry = useMemo(depthGeometry, [])
   const continuity = useMemo(homeSkyContinuityGeometry, [])
+  const chapterClouds = useMemo(() => chapterCloudGeometry(nodes), [nodes])
   const threads = useMemo(galaxyThreadsGeometry, [])
-  useEffect(() => () => { geometry.dispose(); continuity.dispose(); threads.dispose() }, [continuity, geometry, threads])
+  useEffect(() => () => { geometry.dispose(); continuity.dispose(); chapterClouds.dispose(); threads.dispose() }, [chapterClouds, continuity, geometry, threads])
   useFrame(({ clock }) => {
     if (root.current && !reducedMotion) {
       root.current.rotation.z = Math.sin(clock.elapsedTime * .010) * .004
       root.current.rotation.y = Math.sin(clock.elapsedTime * .006) * .006
     }
   })
-  return <group name="life-map-v3-stellar-visual-authority" userData={{ visualOnly: true, interactionOwner: false, visualRepair: 'asymmetric-memory-volumes-over-semantic-geography', goldMasterRevision: 'v3-layered-personal-galaxy-no-planets-no-rings' }} raycast={() => null}>
+  return <group name="life-map-v323-stellar-visual-authority" userData={{ visualOnly: false, interactionOwner: true, visualRepair: 'dense-layered-clustered-living-galaxy-memory-star-owner', goldMasterRevision: 'v323-layered-personal-galaxy-no-planets-no-rings' }}>
     <points geometry={continuity} name="life-map-home-sky-continuity-anchors" raycast={() => null} renderOrder={116} userData={{ continuitySeed: HOME_SKY_CONTINUITY_SEED, precursorCount: HOME_SKY_PRECURSOR_COUNT, revealedFromHome: true }}>
-      <pointsMaterial vertexColors size={.060} transparent opacity={.54} depthWrite={false} sizeAttenuation />
+      <pointsMaterial vertexColors size={.075} transparent opacity={.62} depthWrite={false} sizeAttenuation />
     </points>
-    <points ref={root} geometry={geometry} name="life-map-v3-deep-personal-galaxy" raycast={() => null}>
-      <pointsMaterial vertexColors size={.052} transparent opacity={.68} depthWrite={false} sizeAttenuation />
+    <points ref={root} geometry={geometry} name="life-map-v323-deep-personal-galaxy" raycast={() => null}>
+      <pointsMaterial vertexColors size={.070} transparent opacity={.78} depthWrite={false} sizeAttenuation />
+    </points>
+    <points geometry={chapterClouds} name="life-map-v323-memory-cluster-nebulae" raycast={() => null} renderOrder={118}>
+      <pointsMaterial vertexColors size={.095} transparent opacity={.54} blending={THREE.AdditiveBlending} depthWrite={false} sizeAttenuation />
     </points>
     <lineSegments geometry={threads} name="life-map-v3-memory-atmospheric-currents" raycast={() => null}>
-      <lineBasicMaterial color="#a8c4c8" transparent opacity={.028} blending={THREE.AdditiveBlending} depthWrite={false} />
+      <lineBasicMaterial color="#b8cad9" transparent opacity={.055} blending={THREE.AdditiveBlending} depthWrite={false} />
     </lineSegments>
-    {nodes.map((node, index) => <StellarMemory key={node.id} node={node} index={index} active={selected?.id === node.id} reducedMotion={reducedMotion} />)}
+    {nodes.map((node, index) => <StellarMemory key={node.id} node={node} index={index} active={selected?.id === node.id} reducedMotion={reducedMotion} onSelect={onSelect} />)}
   </group>
 }

@@ -223,6 +223,13 @@ function RecordedMemoryField({ media, playing, progressMs, muteVideo }: { media:
   )
 }
 
+function replayBasinHeight(x: number, z: number) {
+  const side = Math.pow(Math.max(0, (Math.abs(x) - 4.6) / 9.4), 1.55) * 6.2
+  const hollow = -.34 * Math.exp(-(x * x / 18 + (z + 3.8) * (z + 3.8) / 34))
+  const weather = .16 * Math.sin(x * .58 + z * .31) + .07 * Math.sin(x * 1.9 - z * .77) + .035 * Math.cos(x * 4.1 + z * 2.4)
+  return -2.34 + side + hollow + weather
+}
+
 function replayBasinGeometry() {
   const columns = 84
   const rows = 76
@@ -238,10 +245,7 @@ function replayBasinGeometry() {
     for (let column = 0; column <= columns; column += 1) {
       const u = column / columns
       const x = -14 + u * 28
-      const side = Math.pow(Math.max(0,(Math.abs(x)-4.6)/9.4),1.55) * 6.2
-      const hollow = -.34 * Math.exp(-(x*x/18 + (z+3.8)*(z+3.8)/34))
-      const weather = .16*Math.sin(x*.58+z*.31)+.07*Math.sin(x*1.9-z*.77)+.035*Math.cos(x*4.1+z*2.4)
-      positions.push(x,-2.34+side+hollow+weather,z)
+      positions.push(x, replayBasinHeight(x, z), z)
       uvs.push(u*6,v*6)
       const path=1-THREE.MathUtils.smoothstep(Math.abs(x-.16*Math.sin(z*.32)),.7,2.2)
       const color=stone.clone().lerp(warm,.18+.36*path)
@@ -291,22 +295,63 @@ function replayMemoryWallGeometry() {
   return geometry
 }
 
+
+function replayRockGeometry(seed: number) {
+  const geometry = new THREE.IcosahedronGeometry(1, 3)
+  const position = geometry.getAttribute('position') as THREE.BufferAttribute
+  const point = new THREE.Vector3()
+  for (let index = 0; index < position.count; index += 1) {
+    point.fromBufferAttribute(position, index)
+    const direction = point.clone().normalize()
+    const grain =
+      1
+      + .16 * Math.sin(direction.x * 7.1 + direction.z * 4.3 + seed * .77)
+      + .08 * Math.sin(direction.y * 13.7 - direction.x * 9.4 + seed * 1.31)
+      + .04 * Math.cos((direction.x + direction.y + direction.z) * 19.0 + seed)
+    point.multiplyScalar(grain)
+    position.setXYZ(index, point.x, point.y, point.z)
+  }
+  position.needsUpdate = true
+  geometry.computeVertexNormals()
+  return geometry
+}
+
+const REPLAY_DEMO_OUTCROPS = [
+  { x: -8.6, z: -4.4, lift: .62, scale: [2.35, 1.28, 1.75] as [number, number, number], rotation: [0.10, 0.42, -0.08] as [number, number, number] },
+  { x: 8.2, z: -5.8, lift: .50, scale: [2.10, 1.18, 1.92] as [number, number, number], rotation: [-0.06, -0.58, 0.04] as [number, number, number] },
+  { x: -10.0, z: -10.8, lift: .40, scale: [2.70, 1.56, 2.15] as [number, number, number], rotation: [0.08, 0.76, -0.05] as [number, number, number] },
+  { x: 9.4, z: -12.6, lift: .46, scale: [2.55, 1.44, 2.00] as [number, number, number], rotation: [-0.04, -0.92, 0.08] as [number, number, number] },
+  { x: -7.2, z: -17.4, lift: .34, scale: [2.15, 1.24, 1.82] as [number, number, number], rotation: [0.02, 1.12, -0.06] as [number, number, number] },
+  { x: 7.0, z: -19.2, lift: .36, scale: [2.32, 1.34, 1.94] as [number, number, number], rotation: [0.06, -1.24, 0.03] as [number, number, number] },
+] as const
+
 function ReplayMemoryGeography({ accent, demo }: { accent: string; demo: boolean }) {
   const basin=useMemo(replayBasinGeometry,[])
   const wall=useMemo(replayMemoryWallGeometry,[])
   const maps=useMemo(createMineralMaps,[])
-  useEffect(()=>()=>{basin.dispose();wall.dispose();maps.forEach((texture)=>texture.dispose())},[basin,maps,wall])
+  const rocks=useMemo(()=>REPLAY_DEMO_OUTCROPS.map((_, index)=>replayRockGeometry(index+17)),[])
+  useEffect(()=>()=>{basin.dispose();wall.dispose();rocks.forEach((geometry)=>geometry.dispose());maps.forEach((texture)=>texture.dispose())},[basin,maps,rocks,wall])
   return <group name="replay-v216-embedded-memory-cove" userData={{ visualIntent:'media-manifested-inside-continuous-weathered-place' }}>
     <mesh geometry={basin} receiveShadow castShadow>
       {demo
-        ? <meshStandardMaterial map={maps[0]} normalMap={maps[1]} roughnessMap={maps[2]} normalScale={new THREE.Vector2(.22,.22)} color="#a88a70" roughness={.96} metalness={0} />
+        ? <meshStandardMaterial map={maps[0]} normalMap={maps[1]} roughnessMap={maps[2]} normalScale={new THREE.Vector2(.40,.40)} color="#536057" vertexColors roughness={.99} metalness={0} />
         : <meshStandardMaterial map={maps[0]} normalMap={maps[1]} roughnessMap={maps[2]} normalScale={new THREE.Vector2(.40,.40)} color="#b8aa98" vertexColors roughness={.94}/>}
     </mesh>
-    {demo ? null : <mesh geometry={wall} position={[0,0,-.18]} receiveShadow castShadow>
-      <meshStandardMaterial map={maps[0]} normalMap={maps[1]} roughnessMap={maps[2]} normalScale={new THREE.Vector2(.52,.52)} color="#8b7d70" vertexColors roughness={.97} side={THREE.DoubleSide}/>
-    </mesh>}
-    <pointLight position={[-5.8,.4,-3.8]} color="#e0b181" intensity={1.52} distance={12} decay={2}/>
-    <pointLight position={[5.2,1.1,-4.2]} color={accent} intensity={1.04} distance={11} decay={2}/>
+    <mesh geometry={wall} position={[0,0,-.18]} receiveShadow castShadow>
+      <meshStandardMaterial map={maps[0]} normalMap={maps[1]} roughnessMap={maps[2]} normalScale={new THREE.Vector2(demo ? .64 : .52,demo ? .64 : .52)} color={demo ? "#46524b" : "#8b7d70"} vertexColors roughness={.98} side={THREE.DoubleSide}/>
+    </mesh>
+    {demo ? REPLAY_DEMO_OUTCROPS.map((outcrop, index)=><mesh
+      key={index}
+      geometry={rocks[index]}
+      position={[outcrop.x, replayBasinHeight(outcrop.x, outcrop.z) + outcrop.lift, outcrop.z]}
+      rotation={outcrop.rotation}
+      scale={outcrop.scale}
+      receiveShadow
+      castShadow
+      raycast={()=>null}
+    ><meshStandardMaterial map={maps[0]} normalMap={maps[1]} roughnessMap={maps[2]} normalScale={new THREE.Vector2(.56,.56)} color={index % 2 ? "#4b5048" : "#596057"} roughness={.99} metalness={0}/></mesh>) : null}
+    <pointLight position={[-5.8,.4,-3.8]} color="#d7aa79" intensity={demo ? .82 : 1.52} distance={12} decay={2}/>
+    <pointLight position={[5.2,1.1,-4.2]} color={accent} intensity={demo ? .72 : 1.04} distance={11} decay={2}/>
   </group>
 }
 
@@ -415,14 +460,14 @@ function ReplaySpatialScene({ memory, playing, progressMs, muteVideo }: { memory
 
   return (
     <>
-      <color attach="background" args={[memory.visuals.sky]} />
-      <fog attach="fog" args={[memory.visuals.sky, memory.demo ? 24 : visuals.fogNear, memory.demo ? 82 : visuals.fogFar]} />
-      <ambientLight intensity={memory.demo ? visuals.ambient * 1.55 : visuals.ambient} color={memory.demo ? "#f4ddc4" : "#c4d0c9"} />
-      <hemisphereLight intensity={memory.demo ? visuals.fill * 1.25 : visuals.fill} color={memory.visuals.light} groundColor={memory.visuals.ground} />
-      <directionalLight position={[-8, 11, 6]} intensity={memory.demo ? 5.4 : 4.25} color="#f3d4a8" castShadow />
-      <directionalLight position={[6, 5, -7]} intensity={memory.demo ? 1.1 : 1.45} color={memory.visuals.accent} />
-      <pointLight position={[0, 1.4, -4.6]} intensity={memory.demo ? visuals.source * 0.58 : visuals.source} distance={22} color={memory.visuals.accent} />
-      <pointLight position={[-5.5, 2.8, -1.5]} intensity={memory.demo ? 3.6 : 2.8} distance={22} color="#e2b27f" />
+      <color attach="background" args={[memory.demo ? "#070a11" : memory.visuals.sky]} />
+      <fog attach="fog" args={[memory.demo ? "#10151a" : memory.visuals.sky, memory.demo ? 15 : visuals.fogNear, memory.demo ? 66 : visuals.fogFar]} />
+      <ambientLight intensity={memory.demo ? visuals.ambient * .78 : visuals.ambient} color={memory.demo ? "#c9c2ae" : "#c4d0c9"} />
+      <hemisphereLight intensity={memory.demo ? visuals.fill * .84 : visuals.fill} color={memory.visuals.light} groundColor={memory.demo ? "#1d241f" : memory.visuals.ground} />
+      <directionalLight position={[-8, 11, 6]} intensity={memory.demo ? 3.35 : 4.25} color="#e3c49c" castShadow />
+      <directionalLight position={[6, 5, -7]} intensity={memory.demo ? 1.34 : 1.45} color={memory.visuals.accent} />
+      <pointLight position={[0, 1.4, -4.6]} intensity={memory.demo ? visuals.source * 0.34 : visuals.source} distance={22} color={memory.visuals.accent} />
+      <pointLight position={[-5.5, 2.8, -1.5]} intensity={memory.demo ? 1.85 : 2.8} distance={22} color="#d5a978" />
       {memory.demo ? <ReplayDemoHorizon /> : <primitive object={model} name="replay-memory-environment-v1" />}
       <ReplayMemoryGeography accent={memory.visuals.accent} demo={memory.demo}/>
       <RecordedMemoryField media={media} playing={playing} progressMs={progressMs} muteVideo={muteVideo} />
@@ -526,7 +571,7 @@ export default function CinematicReplayClient() {
   }
 
   return <main className="replayWorld" style={style} data-testid="cinematic-replay-client" data-memory-status={result.status} data-memory-id={memory.id} data-star-id={memory.star.id} data-manifest-id={memory.replayManifest.id} data-node={memory.star.id} data-playing={playing ? 'true' : 'false'} data-canonical-asset={replayAssets.primary.src} data-replay-spatial-owner="r3f-memory-theater" data-replay-environment={REPLAY_ENVIRONMENT_MODEL} data-replay-composition="v225-source-first-memory-environment-readable-phased-return" data-replay-camera="anchored-first-person-witness" data-replay-truth={truth?.level ?? 'unknown'}>
-    <Canvas className="replaySpatialCanvas" shadows={quality.shadows} dpr={[1, quality.pixelRatioMax]} frameloop={quality.documentVisible ? 'always' : 'never'} camera={{ position: [0, 0.42, 8.4], fov: 46, near: 0.05, far: 120 }} gl={{ antialias: quality.antialias, powerPreference: 'high-performance' }} onCreated={({ gl }) => { gl.outputColorSpace = THREE.SRGBColorSpace; gl.toneMapping = THREE.ACESFilmicToneMapping; gl.toneMappingExposure = memory.demo ? 1.38 : 1.92 }}>
+    <Canvas className="replaySpatialCanvas" shadows={quality.shadows} dpr={[1, quality.pixelRatioMax]} frameloop={quality.documentVisible ? 'always' : 'never'} camera={{ position: [0, 0.42, 8.4], fov: 46, near: 0.05, far: 120 }} gl={{ antialias: quality.antialias, powerPreference: 'high-performance' }} onCreated={({ gl }) => { gl.outputColorSpace = THREE.SRGBColorSpace; gl.toneMapping = THREE.ACESFilmicToneMapping; gl.toneMappingExposure = memory.demo ? 1.08 : 1.92 }}>
       <ReplaySpatialScene memory={memory} playing={playing} progressMs={progressMs} muteVideo={Boolean(recordedAudioUrl)} />
     </Canvas>
     <div className="replayAtmosphere" aria-hidden="true" />

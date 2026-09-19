@@ -558,7 +558,7 @@ function GroundRootNetwork({ profile }: { profile: EnvironmentProfile }) {
   </group>;
 }
 
-function GroundSubstrateWorld({ profile }: { profile: EnvironmentProfile }) {
+export function GroundSubstrateWorld({ profile }: { profile: EnvironmentProfile }) {
   const rockPlacements = useMemo(() => [
     { p: [-16, 0.1, 2] as [number, number, number], r: [0.1, 0.9, 0] as [number, number, number], s: [7.4, 5.8, 6.2] as [number, number, number], v: "01" as const },
     { p: [17, -0.2, -2] as [number, number, number], r: [0.0, -1.0, 0] as [number, number, number], s: [8.0, 6.4, 6.8] as [number, number, number], v: "02" as const },
@@ -635,7 +635,9 @@ function LivedGroundWorld({ profile, target }: { profile: EnvironmentProfile; ta
     <mesh name="ground-visible-traversable-terrain" geometry={geometry} onClick={onTerrainClick} receiveShadow>
       <TerrainMaterial profile={profile} />
     </mesh>
-    <GroundSubstrateWorld profile={profile} />
+    <AtmosphericGroundSky profile={profile} />
+    <DistantGroundContinuation profile={profile} />
+    <NaturalScatter profile={profile} />
   </group>;
 }
 
@@ -763,13 +765,13 @@ function GroundScene({ profile, input, yaw, pitch, target, obstacles, playerPosi
   const heightAt = useCallback((x: number, z: number) => groundHeight(x, z, profile.id), [profile.id]);
   const weather = DEFAULT_GROUND_WEATHER;
   return <>
-    <color attach="background" args={["#0b0e0d"]} />
-    <fogExp2 attach="fog" args={["#18201d", 0.028 + weather.atmosphericDensity * 0.003]} />
-    <Suspense fallback={null}><Environment files="/assets/urai/home-production/cc0/environment/studio-small-08-1k.hdr" background={false} environmentIntensity={0.11} /></Suspense>
-    <ambientLight intensity={0.13} color="#87978d" />
-    <hemisphereLight args={["#6f827b", "#15120f", 0.18]} />
-    <directionalLight position={[-10, 14, 5]} intensity={0.52} color="#c6a77f" castShadow shadow-mapSize={[1024, 1024]} shadow-camera-left={-28} shadow-camera-right={28} shadow-camera-top={28} shadow-camera-bottom={-28} shadow-camera-far={90} shadow-normalBias={0.035} />
-    <directionalLight position={[10, 7, -20]} intensity={0.2} color="#6b9493" />
+    <color attach="background" args={[profile.horizon]} />
+    <fogExp2 attach="fog" args={[profile.fog, 0.012 + weather.atmosphericDensity * 0.0015]} />
+    <Suspense fallback={null}><Environment files="/assets/urai/home-production/cc0/environment/studio-small-08-1k.hdr" background={false} environmentIntensity={0.28} /></Suspense>
+    <ambientLight intensity={0.42} color="#b2c2b8" />
+    <hemisphereLight args={["#a9c2c4", "#302a22", 0.62]} />
+    <directionalLight position={[-10, 14, 5]} intensity={1.28} color="#d9bd93" castShadow shadow-mapSize={[1024, 1024]} shadow-camera-left={-28} shadow-camera-right={28} shadow-camera-top={28} shadow-camera-bottom={-28} shadow-camera-far={90} shadow-normalBias={0.035} />
+    <directionalLight position={[10, 7, -20]} intensity={0.44} color="#7fa7aa" />
     <Suspense fallback={null}><LivedGroundWorld profile={profile} target={target} /></Suspense>
     <FirstPersonPlayer input={input} yaw={yaw} pitch={pitch} target={target} profile={profile} obstacles={obstacles} playerPosition={playerPosition} isCoarse={isCoarse} onReady={onReady} />
   </>;
@@ -893,10 +895,10 @@ export default function GroundSpatialWorldClean() {
     className="ground-spatial-root"
     aria-label="URAI Ground first-person lived world"
     data-testid="urai-ground-lived-world"
-    data-ground-visual-owner="deeper-living-substrate-of-home"
+    data-ground-visual-owner="atmospheric-living-environment"
     data-ground-runtime-owner="first-person-lived-world"
     data-ground-visual-revision="ground-lived-world-v2-canon-lock"
-    data-ground-art-revision="ground-v14-deeper-living-substrate-root-geology-continuity"
+    data-ground-art-revision="ground-v15-atmospheric-lived-world-canopy-horizon"
     data-ground-exploration="first-person-no-visible-body"
     data-ground-camera="eye-level-terrain-following-no-authored-bob"
     data-ground-eye-height={GROUND_EYE_HEIGHT_M}
@@ -923,7 +925,7 @@ export default function GroundSpatialWorldClean() {
       onCreated={({ gl }) => {
         gl.outputColorSpace = THREE.SRGBColorSpace;
         gl.toneMapping = THREE.ACESFilmicToneMapping;
-        gl.toneMappingExposure = 0.72;
+        gl.toneMappingExposure = 1.05;
       }}
     >
       <GroundScene profile={profile} input={input} yaw={yaw} pitch={pitch} target={target} obstacles={obstacles} playerPosition={playerPosition} isCoarse={isCoarse} onReady={() => setReady(true)} />
