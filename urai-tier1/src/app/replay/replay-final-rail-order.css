@@ -43,6 +43,21 @@
     padding: 9px 10px !important;
   }
 
+  .replayWorld .memoryPacing {
+    left: max(64px, calc(env(safe-area-inset-left) + 54px)) !important;
+    right: max(12px, env(safe-area-inset-right)) !important;
+    bottom: max(92px, calc(env(safe-area-inset-bottom) + 86px)) !important;
+    width: auto !important;
+    transform: none !important;
+    opacity: .96 !important;
+    border-color: rgba(235,251,255,.18) !important;
+    background: linear-gradient(90deg, rgba(2,7,14,.82), rgba(7,18,26,.66)) !important;
+  }
+
+  .replayWorld[data-memory-status='demo'] .replayProduct {
+    display: none !important;
+  }
+
   .replayWorld .replayProduct {
     left: 50% !important;
     right: auto !important;
@@ -60,6 +75,10 @@
   .replayWorld .controls {
     bottom: max(164px, calc(env(safe-area-inset-bottom) + 158px)) !important;
     min-height: 58px;
+  }
+
+  .replayWorld .memoryPacing {
+    bottom: max(82px, calc(env(safe-area-inset-bottom) + 76px)) !important;
   }
 
   .replayWorld .replayOperationStatus {

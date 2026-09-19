@@ -9,7 +9,7 @@ const base = process.env.URAI_PROOF_BASE || 'http://127.0.0.1:4173'
 const outputDir = path.resolve(process.env.URAI_PROOF_DIR || 'artifacts/replay-gold-master-proof')
 const exactHead = process.env.URAI_EXACT_HEAD || 'local'
 const query = 'memoryId=demo%3Aquiet-reset&manifestId=replay-recovery-thread&node=quiet-reset&returnNode=quiet-reset&demo=1&from=focus-artifact&entryPortal=focus-memory-aperture&cameraCheckpoint=focus%3Aquiet-reset&privacyMode=held-private'
-const replayAuthority = 'v221-world-first-readable-spatial-memory-cove-mobile-clearance'
+const replayAuthority = 'v222-world-first-readable-spatial-memory-cove-mobile-primary-action-clearance'
 
 const specs = [
   { id: 'desktop-16x10', width: 1440, height: 900, isMobile: false, hasTouch: false },
@@ -116,8 +116,8 @@ async function waitReplay(page) {
   return root
 }
 
-async function describeReplay(page, { playingExpected = false, reducedExpected = false } = {}) {
-  return page.evaluate(({ authority, playingExpected, reducedExpected }) => {
+async function describeReplay(page, { playingExpected = false, reducedExpected = false, mobileExpected = false } = {}) {
+  return page.evaluate(({ authority, playingExpected, reducedExpected, mobileExpected }) => {
     const roots = [...document.querySelectorAll('[data-testid="cinematic-replay-client"]')]
     const root = roots.find((candidate) => {
       const style = getComputedStyle(candidate)
@@ -135,6 +135,9 @@ async function describeReplay(page, { playingExpected = false, reducedExpected =
     const action = root?.querySelector('.memoryPacing button')
     const actionRect = action?.getBoundingClientRect()
     const progress = root?.querySelector('[role="progressbar"]')
+    const replayProduct = root?.querySelector('.replayProduct')
+    const pacingStyle = pacing ? getComputedStyle(pacing) : null
+    const productStyle = replayProduct ? getComputedStyle(replayProduct) : null
     const rootText = root?.textContent || ''
     const legacyVisible = ['Film beats', 'Memory film.', 'Cinematic memory camera film'].filter((value) => rootText.includes(value))
     const boundsOkay = Boolean(rootRect && rootRect.width >= innerWidth * 0.98 && rootRect.height >= innerHeight * 0.98)
@@ -146,6 +149,12 @@ async function describeReplay(page, { playingExpected = false, reducedExpected =
     const progressLabel = progress?.getAttribute('aria-label') || ''
     const reducedMatches = matchMedia('(prefers-reduced-motion: reduce)').matches
     const playing = root?.getAttribute('data-playing') === 'true'
+    const pacingOpacity = pacingStyle ? Number.parseFloat(pacingStyle.opacity || '1') : 0
+    const mobileActionClear = !mobileExpected || Boolean(actionRect && pacingRect
+      && actionRect.bottom <= innerHeight - 64
+      && pacingRect.bottom <= innerHeight - 58
+      && pacingOpacity >= .75)
+    const demoProductHidden = !replayProduct || productStyle?.display === 'none'
     const result = {
       memoryStatus: root?.getAttribute('data-memory-status') || null,
       memoryId: root?.getAttribute('data-memory-id') || null,
@@ -162,6 +171,9 @@ async function describeReplay(page, { playingExpected = false, reducedExpected =
       legacyVisible,
       reducedMatches,
       boundsOkay,
+      pacingOpacity,
+      mobileActionClear,
+      demoProductHidden,
       canvasWidth: canvasRect ? Math.round(canvasRect.width) : 0,
       canvasHeight: canvasRect ? Math.round(canvasRect.height) : 0,
     }
@@ -175,11 +187,13 @@ async function describeReplay(page, { playingExpected = false, reducedExpected =
       && result.memoryContextDisclosure
       && result.legacyVisible.length === 0
       && result.boundsOkay
+      && result.mobileActionClear
+      && result.demoProductHidden
       && result.progressLabel.startsWith('Memory unfolding,')
       && (playingExpected ? (result.playing && result.actionLabel === 'Hold memory') : (!result.playing && result.actionLabel === 'Begin memory'))
       && (!reducedExpected || result.reducedMatches)
     return result
-  }, { authority: replayAuthority, playingExpected, reducedExpected })
+  }, { authority: replayAuthority, playingExpected, reducedExpected, mobileExpected })
 }
 
 async function screenshot(page, id) {
@@ -200,7 +214,7 @@ async function captureSpec(browser, spec) {
   await page.goto(urlForReplay(), { waitUntil: 'domcontentloaded', timeout: 45_000 })
   await waitReplay(page)
 
-  const initialVerification = await describeReplay(page, { reducedExpected: spec.reducedMotion === 'reduce' })
+  const initialVerification = await describeReplay(page, { reducedExpected: spec.reducedMotion === 'reduce', mobileExpected: spec.isMobile })
   const initial = {
     id: spec.id,
     route: '/replay/',

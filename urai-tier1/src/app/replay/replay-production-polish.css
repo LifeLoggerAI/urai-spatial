@@ -99,10 +99,10 @@
 /* Read-only/demo Replay has no actionable mutation control. Do not let disabled
    Save/Hide/Correct chrome sit over the memory; retain the truthful live status
    as a small disclosure instead. Owner controls remain unchanged. */
-.replayWorld .replayProduct:has(> button:nth-of-type(1):disabled):has(> button:nth-of-type(2):disabled):has(> button:nth-of-type(3):disabled) {
-  display: none;
+.replayWorld[data-memory-status='demo'] .replayProduct {
+  display: none !important;
 }
-.replayWorld:has(.replayProduct > button:nth-of-type(1):disabled):has(.replayProduct > button:nth-of-type(2):disabled):has(.replayProduct > button:nth-of-type(3):disabled) .replayOperationStatus {
+.replayWorld[data-memory-status='demo'] .replayOperationStatus {
   left: auto;
   right: max(16px, env(safe-area-inset-right));
   bottom: max(18px, calc(env(safe-area-inset-bottom) + 12px));
@@ -201,7 +201,13 @@
     width: auto !important;
     transform: none;
   }
-  .replayWorld .memoryPacing { opacity: .10; }
+  .replayWorld .memoryPacing {
+    bottom: max(92px, calc(env(safe-area-inset-bottom) + 86px)) !important;
+    opacity: .96 !important;
+    border-color: rgba(235,251,255,.18) !important;
+    background: linear-gradient(90deg, rgba(2,7,14,.78), rgba(7,18,26,.62)) !important;
+    box-shadow: 0 12px 34px rgba(0,0,0,.34) !important;
+  }
   .replayWorld .replayProduct { opacity: .04; }
   .replayWorld .transcript {
     top: max(72px, calc(env(safe-area-inset-top) + 66px));

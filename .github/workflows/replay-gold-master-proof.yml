@@ -16,6 +16,7 @@ on:
       - 'tests/replay-memory-theater-contract.mjs'
       - 'urai-tier1/tests/replay-memory-theater-contract.test.mjs'
       - 'urai-tier1/src/app/replay/**'
+      - 'urai-tier1/src/app/replay-mobile-control-clearance.css'
       - 'urai-tier1/src/lib/memory/**'
       - 'urai-tier1/src/spatial/memory/**'
       - 'urai-tier1/src/spatial/world/**'
