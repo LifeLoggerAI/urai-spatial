@@ -43,14 +43,14 @@ These names have repo/Drive/conversation lineage and are preserved so they canno
 
 | Historical name | Known lineage | Current classification |
 |---|---|---|
-| Threshold Mode | route/code + historical canon | CANON UNCERTAIN / likely absorbed into safe-load/ritual boundaries |
-| Mirror of Becoming | code/routes + historical canon | CANON UNCERTAIN / related to Mirror |
-| Recovery Blooms | historical roadmap + emotional-weather lineage | CANON UNCERTAIN / related to recovery/weather |
+| Threshold Mode | historical adaptive-state/threshold lineage | HISTORICAL / PARTIALLY ABSORBED into rituals, threshold transitions and safety/load behavior; not a separate current launch realm |
+| Mirror of Becoming | predecessor code/routes + historical canon | HISTORICAL PREDECESSOR / FUNCTIONAL LINEAGE feeding current Mirror; not a second competing primary realm |
+| Recovery Blooms | historical roadmap + emotional-weather lineage | HISTORICAL MOTIF / ARTIFACT LINEAGE feeding recovery/weather language; not a separate current launch realm |
 | Recovery Timeline | staging/historical feature matrix | FUTURE/HISTORICAL |
-| Weekly Scrolls | code/functions + historical export canon | FUTURE/HISTORICAL; exact owner unresolved |
-| Generational Scrolls | historical canon | FUTURE/UNRESOLVED |
-| Inner Voice | historical canon/code references | CANON UNCERTAIN; related to Narrator/Companion |
-| Emotional Time Travel | route/component/history | CANON UNCERTAIN; likely Timeline/Focus/Replay lineage |
+| Weekly Scrolls | code/functions + historical export canon | HISTORICAL/FUTURE ARTIFACT LINEAGE; retained as recap/export motif, not a separate launch realm |
+| Generational Scrolls | historical canon | HISTORICAL/FUTURE ARTIFACT LINEAGE; not a separate current launch realm |
+| Inner Voice | historical canon/code references | HISTORICAL PRESENTATION LINEAGE feeding Narrator/Companion reflection; not a separate current persistent agent |
+| Emotional Time Travel | route/component/history | HISTORICAL UX LINEAGE feeding Timeline/Focus/Replay/emotional-context behavior; not a separate current launch route |
 | Soul Thread Map | route/component/history | FUTURE/UNRESOLVED |
 | Personality Rings | historical feature matrix | FUTURE/RESEARCH |
 | Emotional Biome | historical feature matrix | FUTURE/RESEARCH |
