@@ -830,7 +830,12 @@ async function mobileAndReduced() {
 }
 
 async function privacyAndRecovery() {
-  const signed = await openPage({ label: 'signed-out' })
+  // Isolate the final privacy/fallback/recovery matrix from the long-lived
+  // Chromium process used by the heavy 3D capture train. This keeps the
+  // full 28-frame acceptance matrix intact while preventing accumulated
+  // WebGL/screenshot state from poisoning the final retained PNGs.
+  const privacyBrowser = await chromium.launch({ headless: true })
+  const signed = await openPage({ label: 'signed-out' }, privacyBrowser)
   try {
     await goto(signed.page, '/life-map/', '[data-testid="urai-life-map-signed-out-threshold"]')
     await shot(signed.page, 'signed-out-private-threshold', 'signed-out')
@@ -838,7 +843,7 @@ async function privacyAndRecovery() {
     await signed.context.close()
   }
 
-  const sample = await openPage({ label: 'disclosed-demo' })
+  const sample = await openPage({ label: 'disclosed-demo' }, privacyBrowser)
   try {
     await goto(sample.page, '/life-map/?demo=1&manifestId=replay-recovery-thread&overview=1')
     await waitForRenderedWorld(sample.page)
@@ -847,7 +852,7 @@ async function privacyAndRecovery() {
     await sample.context.close()
   }
 
-  const fallback = await openPage({ disableWebGL: true, label: 'no-webgl' })
+  const fallback = await openPage({ disableWebGL: true, label: 'no-webgl' }, privacyBrowser)
   try {
     await goto(fallback.page, '/life-map/?demo=1', '[data-testid="urai-life-map-authored-fallback"]')
     await shot(fallback.page, 'no-webgl-fallback', 'no-webgl')
@@ -855,7 +860,7 @@ async function privacyAndRecovery() {
     await fallback.context.close()
   }
 
-  const recovery = await openPage({ label: 'context-recovery' })
+  const recovery = await openPage({ label: 'context-recovery' }, privacyBrowser)
   try {
     await goto(recovery.page, '/life-map/?demo=1&memoryId=quiet-reset&manifestId=replay-recovery-thread&node=quiet-reset')
     await waitForState(recovery.page, 'data-life-map-phase', 'arrival')
@@ -885,6 +890,7 @@ async function privacyAndRecovery() {
     await shot(recovery.page, 'context-recovery-state-preserved', 'context-recovered-selected', { memoryId: 'quiet-reset' })
   } finally {
     await recovery.context.close()
+    await privacyBrowser.close()
   }
 }
 
