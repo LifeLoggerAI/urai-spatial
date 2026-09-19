@@ -10,7 +10,7 @@ import { useSelectedMemory } from '@/spatial/memory/useSelectedMemory'
 import type { SelectedMemory } from '@/spatial/memory/selectedMemoryContract'
 import { requestUraiWorldReturn, requestUraiWorldTravel } from '@/spatial/world/worldEvents'
 
-// Locked product authority; V334 is the current literal-pixel implementation:
+// Locked product authority; V336 is the current literal-pixel implementation:
 // Life Map shows stellar memory points. Focus resolves the selected point into the
 // same memory star at intimate scale, with authorized source media (or a truthful
 // generated visualization when no media exists) visible inside/through the star.
@@ -21,7 +21,6 @@ const STAR_POSITION: [number, number, number] = [0, 0, -1.7]
 const STAR_TARGET = new THREE.Vector3(...STAR_POSITION)
 const MIN_CAMERA_RADIUS = 2.75
 const MAX_CAMERA_RADIUS = 8.2
-const FOCUS_AUTHORED_MEMORY_STAR = '/urai/assets/focus/generated/focus-memory-star-v333.webp'
 
 type ChamberState = 'neutral' | 'loading' | 'ready' | 'unavailable' | 'unauthorized' | 'corrupt' | 'deleted'
 type WebGLState = 'ready' | 'lost' | 'restoring' | 'failed'
@@ -208,10 +207,6 @@ function FocusMemoryStar({
   const [hovered, setHovered] = useState(false)
   const activationProgress = useRef(0)
   const [activating, setActivating] = useState(false)
-  useThree()
-  const authoredMemoryStar = useTexture(FOCUS_AUTHORED_MEMORY_STAR)
-  const authoredStarScale = size.width < 760 ? 1.78 : size.width < 1024 ? 2.24 : 2.65
-  const authoredStarY = size.width < 760 ? -.28 : 0
   const starScale = memory ? THREE.MathUtils.clamp(memory.star.scale * 1.34, 1.18, 1.36) : 1.08
   const coronaTexture = useMemo(() => makeFocusCoronaTexture(2.25), [])
   const rayTexture = useMemo(() => makeFocusCoronaTexture(4.2, true), [])
@@ -252,7 +247,7 @@ function FocusMemoryStar({
     position={STAR_POSITION}
     name="focus-selected-memory-star"
     userData={{
-      visualAuthority: 'selected-memory-star-with-contained-memory-v334',
+      visualAuthority: 'selected-memory-star-with-contained-memory-v336',
       lifeMapContinuity: 'same-selected-star-resolved-at-close-range',
       terrainOwner: false,
     }}
@@ -285,7 +280,7 @@ function FocusMemoryStar({
         depthWrite={false}
       />
     </mesh>
-    </> : null}
+    </>
     <mesh
       name="focus-memory-star-glass-shell"
       onClick={activateMoment}
@@ -311,7 +306,7 @@ function FocusMemoryStar({
     <mesh raycast={() => null} scale={0.46} name="focus-memory-star-interior-depth">
       <sphereGeometry args={[1, 48, 36]} />
       <meshBasicMaterial color={accent} transparent opacity={memory ? 0.055 : 0.020} depthWrite={false} side={THREE.BackSide} blending={THREE.AdditiveBlending} />
-    </mesh> : null}
+    </mesh>
     <pointLight color={accent} intensity={memory ? 1.35 : .9} distance={7.2} decay={2} />
     <pointLight position={[-1.1, 1.25, 1.7]} color={light} intensity={memory ? .82 : .35} distance={5.4} decay={2} />
     <Html center transform position={[0, 0, 0.31]} distanceFactor={6.1} zIndexRange={[20, 10]}>
