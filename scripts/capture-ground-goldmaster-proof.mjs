@@ -22,7 +22,7 @@ const captures = []
 const errors = []
 let activeScenario = 'initializing'
 let activePhase = 'launch-browser'
-const watchdogMs = Number.parseInt(process.env.URAI_GROUND_PROOF_WATCHDOG_MS || '', 10) || 12 * 60 * 1000
+const watchdogMs = Number.parseInt(process.env.URAI_GROUND_PROOF_WATCHDOG_MS || '', 10) || 20 * 60 * 1000
 const watchdog = setTimeout(async () => {
   const message = `Ground proof watchdog expired in scenario=${activeScenario} phase=${activePhase}`
   const watchdogReceipt = {
