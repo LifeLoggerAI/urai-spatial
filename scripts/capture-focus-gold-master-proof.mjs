@@ -299,9 +299,9 @@ async function captureJourney(browser) {
 
   const replayAction = page.locator('button:visible').filter({ hasText: 'Enter Replay' }).first()
   await replayAction.click()
+  await waitForPathname(page, '/replay')
   await delay(650)
   await shot('focus-to-replay-transition')
-  await waitForPathname(page, '/replay')
   const replay = page.locator('[data-testid="cinematic-replay-client"]:visible').first()
   await replay.waitFor({ state: 'visible', timeout: 45_000 })
   await page.waitForFunction(() => {
@@ -342,7 +342,7 @@ async function captureJourney(browser) {
     videoPath = path.relative(outputDir, target)
   }
 
-  const expectedPaths = ['/focus', '/focus', '/replay', '/focus', '/life-map']
+  const expectedPaths = ['/focus', '/replay', '/replay', '/focus', '/life-map']
   const actualPaths = steps.map((step) => step.pathname.replace(/\/+$/, '') || '/')
   const pathSequencePassed = expectedPaths.every((expected, index) => actualPaths[index] === expected)
   const blockingFailures = blockingFailedRequests(diagnosticResult.failedRequests, { allowJourneySourceVisualAbort: pathSequencePassed })
