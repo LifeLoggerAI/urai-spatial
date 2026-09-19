@@ -54,3 +54,7 @@ V1 boundary is private adult/guardian-operated story creation/reading with age-a
 ## Repository-document authority caution
 
 A repository README or roadmap proves product/system intent for that repo only to the extent it has not been superseded by a later accepted authority. It does not prove live deployment, provider activation, legal status, or visual acceptance.
+
+## Exact source-pointer companion register
+
+For exact main-tree snapshot SHAs plus representative implementation and verification paths, see `58-STANDALONE-SYSTEM-IMPLEMENTATION-POINTERS.md`. This authority map remains the semantic owner map; the pointer register is the inspectable source-location companion.

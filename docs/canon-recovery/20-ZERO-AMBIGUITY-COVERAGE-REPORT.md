@@ -137,10 +137,12 @@ Recovered predecessor concepts now include Life OS/LifeLogger, Mirror of Becomin
 
 ## Remaining internally executable work inside this docs-only recovery PR
 
-1. Normalize exact route/component/service/test pointers for non-Spatial standalone systems where current source exists.
-2. Expand final copy decks where current canon is resolved and no external/legal decision is required.
-3. Normalize current exact-head visual-proof references for Home/Ground/Life Map/Focus/Replay/Orb into stable manifest IDs without transferring predecessor acceptance.
-4. Keep the open-question register limited to genuinely unresolved founder/legal/external decisions.
+1. Normalize current exact-head visual-proof references for Home/Ground/Life Map/Focus/Replay/Orb into stable manifest IDs without transferring predecessor acceptance.
+2. Keep the open-question register limited to genuinely unresolved founder/legal/external decisions.
+
+Completed in this recovery:
+- standalone system implementation/source pointers are retained in `58-STANDALONE-SYSTEM-IMPLEMENTATION-POINTERS.md`;
+- requirement-level copy authority is reconciled through `11-COPY-MANIFEST.md`, `55-EDGE-STATE-COPY-SPEC.md`, and `56-COMMERCIAL-ENTITLEMENT-AUTHORITY.md`; final public/content-pack wording remains appropriately versioned/gated rather than invented here.
 
 The following are **downstream execution/evidence work, not unfinished documentation mutations for this PR**:
 - generating the explicitly missing visual/storyboard packs;

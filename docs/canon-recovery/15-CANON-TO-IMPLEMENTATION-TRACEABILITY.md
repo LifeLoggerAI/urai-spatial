@@ -1,6 +1,6 @@
 # URAI Canon-to-Implementation Traceability
 
-Status: BASELINE / CORE AUTHORITY RECONCILED; ROW-LEVEL POINTERS EXPANDING
+Status: CORE AUTHORITY RECONCILED / STANDALONE SOURCE POINTER SNAPSHOT RETAINED
 
 The required trace is:
 
@@ -44,3 +44,8 @@ URAI-JOBS identity is resolved by the current repository README as the internal 
 ## Completion condition
 
 No system is fully traceable until every non-NOT-REQUIRED link above has a stable pointer.
+
+
+## Standalone implementation pointer register
+
+Exact main-tree source snapshots and representative implementation/test/workflow paths for the active standalone systems are retained in `58-STANDALONE-SYSTEM-IMPLEMENTATION-POINTERS.md`. These pointers are source-traceability evidence only; moving PR heads and release/deployment status must be recovered separately.
