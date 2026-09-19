@@ -95,7 +95,7 @@ test('Ground retains accessible coarse-pointer movement and filmic rendering', (
     '< 0.14 ? 0',
     '<MobileMovementPad',
     'ACESFilmicToneMapping',
-    'toneMappingExposure = 0.78',
+    'toneMappingExposure = 0.72',
   ]) has(ground, marker)
 })
 
