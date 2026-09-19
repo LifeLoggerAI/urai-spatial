@@ -107,12 +107,16 @@ const focusClientPath = 'urai-tier1/src/app/focus/FocusChamberClient.tsx'
 const focusClientSource = read(focusClientPath)
 for (const token of [
   'data-testid="urai-final-focus-chamber"',
+  'data-focus-composition="selected-memory-star-with-contained-memory"',
+  'data-focus-spatial="selected-memory-star"',
+  'data-focus-terrain-owner="false"',
+  'data-focus-memory-visual={memoryVisual}',
   'requestUraiWorldTravel({',
   "destination: 'replay'",
   "entryPortal: 'focus-memory-aperture'",
   'replayManifestId: memory.replayManifest.id',
   'requestUraiWorldReturn()',
-  'aria-label={`Enter Replay for ${memory.title}`}',
+  "'Enter Replay for ' + memory.title",
   'No personal memory is displayed in this neutral observatory.',
   'data-chamber-state={chamberState}',
 ]) {

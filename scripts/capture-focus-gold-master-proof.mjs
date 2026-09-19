@@ -25,13 +25,13 @@ await mkdir(outputDir, { recursive: true })
 await mkdir(videoDir, { recursive: true })
 
 const receipt = {
-  schemaVersion: 'urai-focus-gold-master-proof-2',
+  schemaVersion: 'urai-focus-gold-master-proof-3',
   exactHead,
   capturedAt: new Date().toISOString(),
   base,
   scope: {
     proves: [
-      'actual /focus runtime selected-memory rendering',
+      'actual /focus selected Memory Star rendering with contained source/generated memory visual',
       'Focus Observatory direct-entry rendering',
       'desktop/tablet/mobile responsive rendering',
       'reduced-motion Focus rendering',
@@ -86,7 +86,6 @@ function attachDiagnostics(page, label) {
 }
 
 const JOURNEY_SOURCE_VISUAL_ABORTS = new Set([
-  '/assets/urai/generated/models/focus-memory-chamber-v1.glb',
   '/assets/urai/final/tier2/focus/focus-memory-chamber-desktop.svg',
   '/assets/urai/final/tier2/replay/replay-cinematic-stage-desktop.svg',
   '/assets/urai/final/tier2/life-map/lifemap-galaxy-field-desktop.svg',
@@ -200,6 +199,12 @@ async function describeFocus(page, { selected = false, noWebGL = false } = {}) {
       memoryId: shell?.getAttribute('data-memory-id') || null,
       manifestId: shell?.getAttribute('data-manifest-id') || null,
       starId: shell?.getAttribute('data-star-id') || null,
+      composition: shell?.getAttribute('data-focus-composition') || null,
+      spatial: shell?.getAttribute('data-focus-spatial') || null,
+      terrainOwner: shell?.getAttribute('data-focus-terrain-owner') || null,
+      memoryVisual: shell?.getAttribute('data-focus-memory-visual') || null,
+      lifeMapStarMorphology: shell?.getAttribute('data-focus-life-map-star-morphology') || null,
+      closeupMorphology: shell?.getAttribute('data-focus-closeup-morphology') || null,
       chamberState: shell?.getAttribute('data-chamber-state') || null,
       webglState: shell?.getAttribute('data-webgl-state') || null,
       quality: shell?.getAttribute('data-spatial-quality') || null,
@@ -218,6 +223,12 @@ async function describeFocus(page, { selected = false, noWebGL = false } = {}) {
       && result.memoryId === 'demo:quiet-reset'
       && result.manifestId === 'replay-recovery-thread'
       && result.starId === 'quiet-reset'
+      && result.composition === 'selected-memory-star-with-contained-memory'
+      && result.spatial === 'selected-memory-star'
+      && result.terrainOwner === 'false'
+      && result.memoryVisual === 'generated-memory-visualization'
+      && result.lifeMapStarMorphology === 'stellar-point-photosphere-layered-corona'
+      && result.closeupMorphology === 'resolved-dimensional-memory-star'
       && result.demoDisclosure
       && result.enterReplay
     )
