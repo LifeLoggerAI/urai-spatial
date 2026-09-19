@@ -291,14 +291,6 @@ function NaturalCanopy({ profile, position, rotationY, scale, shapeSeed }: {
   scale: number;
   shapeSeed: number;
 }) {
-  const asset = useGLTF(NATURAL_CANOPY);
-  const hiddenGovernedSource = useMemo(() => {
-    const copy = normalizedClone(asset.scene);
-    copy.visible = false;
-    copy.userData.uraiGroundCanopyRole = 'governed-source-lineage-hidden-after-literal-pixel-rejection';
-    return copy;
-  }, [asset.scene]);
-
   const authored = useMemo(() => {
     const woodland = profile.id === "woodland";
     const trunkColor = woodland ? "#3a3027" : "#493a2c";
@@ -357,7 +349,7 @@ function NaturalCanopy({ profile, position, rotationY, scale, shapeSeed }: {
       const value = Math.sin(seed * 12.9898 + shapeSeed * 53.117 + (woodland ? 78.233 : 31.417)) * 43758.5453;
       return value - Math.floor(value);
     };
-    const leaves = Array.from({ length: woodland ? 760 : 680 }, (_, index) => {
+    const leaves = Array.from({ length: woodland ? 112 : 96 }, (_, index) => {
       const anchor = foliageAnchors[index % foliageAnchors.length];
       const spread = 0.16 + hash(index * 7 + 1) * 0.54;
       const theta = hash(index * 7 + 2) * Math.PI * 2;
@@ -367,9 +359,9 @@ function NaturalCanopy({ profile, position, rotationY, scale, shapeSeed }: {
       const rx = (hash(index * 7 + 6) - 0.5) * 1.28;
       const ry = theta + (hash(index * 7 + 7) - 0.5) * 1.15;
       const rz = (hash(index * 7 + 8) - 0.5) * 1.12;
-      const sx = 0.34 + hash(index * 7 + 9) * 0.28;
-      const sy = 0.18 + hash(index * 7 + 10) * 0.19;
-      const sz = 0.26 + hash(index * 7 + 11) * 0.24;
+      const sx = 0.48 + hash(index * 7 + 9) * 0.36;
+      const sy = 0.28 + hash(index * 7 + 10) * 0.25;
+      const sz = 0.38 + hash(index * 7 + 11) * 0.32;
       return {
         position: [x, y, z] as [number, number, number],
         rotation: [rx, ry, rz] as [number, number, number],
@@ -400,14 +392,13 @@ function NaturalCanopy({ profile, position, rotationY, scale, shapeSeed }: {
     raycast={() => null}
     name="ground-authored-natural-canopy-v13"
     userData={{
-      treatment: "seed-varied-branch-architecture-volumetric-broadleaf-canopy-v18",
+      treatment: "seed-varied-branch-architecture-volumetric-broadleaf-canopy-v19",
       provenance: NATURAL_CANOPY,
-      visibleAuthority: "runtime-authored-canopy-v18",
-      literalPixelRepair: "v18-volumetric-broadleaf-crown-first-person-readable-canopy",
+      visibleAuthority: "runtime-authored-canopy-v19",
+      literalPixelRepair: "v19-bounded-volumetric-broadleaf-crown-first-person-readable-canopy",
       supersedesVisibleCandidate: "ground-natural-canopy-v3-low-poly-silhouette",
     }}
   >
-    <primitive object={hiddenGovernedSource} />
     <mesh geometry={authored.trunkGeometry} castShadow receiveShadow>
       <meshStandardMaterial color={authored.trunkColor} roughness={0.93} metalness={0} envMapIntensity={0.28} />
     </mesh>
@@ -504,7 +495,7 @@ function NaturalScatter({ profile }: { profile: EnvironmentProfile }) {
 
   const woodland = profile.id === "woodland";
   const ferns = items.slice(0, woodland ? 76 : 64);
-  const canopies = items.filter((item) => item.z < (woodland ? 8.0 : 6.5)).slice(0, woodland ? 62 : 54);
+  const canopies = items.filter((item) => item.z < (woodland ? 8.0 : 6.5)).slice(0, woodland ? 34 : 30);
   return <group name={woodland ? "ground-woodland-scanned-understory" : "ground-temperate-scanned-understory"} userData={{ treatment: "urai-self-authored-varied-canopy-v13-with-polyhaven-fern-rock-understory", canopyFallback: "scanned-understory-remains-without-canopy" }} raycast={() => null}>
     <GroundCanopyBoundary>
       <Suspense fallback={null}>
@@ -958,7 +949,7 @@ export default function GroundSpatialWorldClean() {
     data-ground-visual-owner="atmospheric-living-environment"
     data-ground-runtime-owner="first-person-lived-world"
     data-ground-visual-revision="ground-lived-world-v2-canon-lock"
-    data-ground-art-revision="ground-v18-volumetric-broadleaf-canopy-atmosphere"
+    data-ground-art-revision="ground-v19-bounded-volumetric-broadleaf-canopy-atmosphere"
     data-ground-exploration="first-person-no-visible-body"
     data-ground-camera="eye-level-terrain-following-no-authored-bob"
     data-ground-eye-height={GROUND_EYE_HEIGHT_M}
