@@ -79,6 +79,21 @@ const CLAIM_SCHEMA = {
   },
 } as const
 
+function extractResponseOutput(payload: JsonMap) {
+  const direct = String(payload.output_text ?? '').trim()
+  if (direct) return direct
+  const output = Array.isArray(payload.output) ? payload.output : []
+  const texts: string[] = []
+  for (const item of output) {
+    if (!isRecord(item) || !Array.isArray(item.content)) continue
+    for (const part of item.content) {
+      if (!isRecord(part)) continue
+      if (part.type === 'output_text' && typeof part.text === 'string') texts.push(part.text)
+    }
+  }
+  return texts.join('').trim()
+}
+
 function parseOutput(raw: string) {
   let parsed: unknown
   try { parsed = JSON.parse(raw) } catch {
@@ -189,7 +204,7 @@ export const openAiIntelligenceEvalProvider = onRequest({
       throw new EvalError(upstream.status === 429 ? 429 : 503, 'OPENAI_REQUEST_FAILED', 'Evaluation provider is unavailable.')
     }
     const payload = await upstream.json() as JsonMap
-    const outputText = String(payload.output_text ?? '').trim()
+    const outputText = extractResponseOutput(payload)
     if (!outputText) throw new EvalError(502, 'OPENAI_RESPONSE_INCOMPLETE', 'Evaluation provider returned no structured output.')
     const result = parseOutput(outputText)
 
