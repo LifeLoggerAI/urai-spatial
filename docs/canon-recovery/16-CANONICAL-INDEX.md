@@ -78,7 +78,7 @@ This index lists the recovery artifacts currently retained on the branch. Numeri
 - Drive External World Interface Canonical Architecture
 - Drive Mirror Implementation & Release Receipt
 - UrAi and RuAi Public Messaging Authority
-- current repo-native authority for Admin, Analytics, Content, Communications, Studio, Asset Factory, Jobs, Storytime, Marketing, Investors, B2B and Foundation
+- current repo-native source/provenance authority for Admin, Analytics, Content, Communications, Studio, Asset Factory, Jobs, Storytime, Marketing, Investors, B2B and Foundation
 - Institutional Control Plane
 - legal/evidentiary records for entity/legal questions
 

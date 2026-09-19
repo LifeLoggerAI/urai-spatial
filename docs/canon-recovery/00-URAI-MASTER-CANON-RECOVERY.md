@@ -106,7 +106,7 @@ Known repositories/systems:
 - urai-investors
 - urai-privacy
 - urai-admin
-- asset-factory
+- asset-factory (source/provenance authority; live integration not claimed)
 - urai-content
 - urai-foundation
 - urai-studio

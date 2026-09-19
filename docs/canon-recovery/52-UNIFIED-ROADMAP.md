@@ -36,7 +36,7 @@ Launch support systems:
 - durable private-memory persistence only after ownership/export/delete/revocation evidence
 - native-device continuity
 - stronger offline/edge/resync behavior
-- richer Studio/Asset Factory production integration
+- future richer Studio/Asset Factory production integration
 - Storytime trust-complete expansion
 - professional/therapist surface only within governed privacy/legal boundaries
 

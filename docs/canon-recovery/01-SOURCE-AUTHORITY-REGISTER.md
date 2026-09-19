@@ -81,7 +81,7 @@ These remain valid provenance and product-design sources where their content has
 - `ARCHITECTURE.md`
 - production film/story packages under `productions/`
 
-### asset-factory
+### asset-factory — source/provenance authority
 - `docs/ASSET_FACTORY_CANONICAL_RUNTIME.md`
 - canonical asset contracts and generation/validation tooling
 
@@ -91,7 +91,7 @@ These remain valid provenance and product-design sources where their content has
 Older `UrAi/docs/URAI_CANON.md` names `UrAi` canonical. Later authority records and current `urai-spatial/docs/system/CANON_INDEX.md` supersede that for runtime/deployment authority. Keep UrAi content as historical/product canon input only where compatible.
 
 ### Jobs identity conflict
-An early Jobs bible describes recruiting/hiring operations. A later ecosystem roadmap defines URAI-JOBS as the asynchronous execution substrate for Spatial, Studio, Narrator, and Asset Factory. This is a material mixed-era conflict and remains UNRESOLVED until chronology and explicit supersession are verified. Do not silently merge the two meanings.
+An early Jobs bible describes recruiting/hiring operations. A later ecosystem roadmap defines URAI-JOBS as the asynchronous execution substrate for Spatial, Studio, Narrator, and Asset Factory. This is a material mixed-era conflict and remains UNRESOLVED until chronology and explicit supersession are verified. Provider/job integration remains separately gated; do not silently merge the two meanings.
 
 ### Narrow beta vs full vision
 The July authority register intentionally narrows public-beta claims and routes. That narrowing does not supersede broader future canon; it limits launch truth.

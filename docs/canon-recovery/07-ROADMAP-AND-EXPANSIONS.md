@@ -30,7 +30,7 @@ Repeatedly established directions include:
 - native-device continuity
 - expanded accessibility/sensory regulation
 - Storytime and life-film production systems
-- richer Studio/Asset Factory orchestration
+- future richer Studio/Asset Factory orchestration
 - professional/therapist surface where retained canon and commercial/legal boundaries permit
 
 ## Long-range spatial/XR canon

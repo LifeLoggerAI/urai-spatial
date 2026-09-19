@@ -131,7 +131,7 @@ Versioned reusable copy, templates, narrator/replay manifests, localization, acc
 - Privacy
 - Content
 - Studio
-- Asset Factory
+- Asset Factory — provenance/source authority
 - Storytime
 - EWI
 - RuAI
