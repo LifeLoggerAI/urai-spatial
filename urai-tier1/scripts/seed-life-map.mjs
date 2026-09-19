@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 import process from 'node:process';
-import { cert, getApps, initializeApp } from 'firebase-admin/app';
+import { applicationDefault, getApps, initializeApp } from 'firebase-admin/app';
 import { getFirestore, Timestamp } from 'firebase-admin/firestore';
 
 const userId = process.argv.find((arg) => arg.startsWith('--user='))?.slice('--user='.length)
@@ -12,17 +12,23 @@ const projectId = process.env.FIREBASE_PROJECT_ID
   || process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID
   || 'urai';
 
-function resolveCredential() {
-  if (process.env.FIREBASE_SERVICE_ACCOUNT_JSON) {
-    return cert(JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_JSON));
+const forbiddenLongLivedCredentialEnv = [
+  'FIREBASE_SERVICE_ACCOUNT_JSON',
+  'FIREBASE_PRIVATE_KEY',
+  'FIREBASE_CLIENT_EMAIL',
+  'FIREBASE_TOKEN',
+];
+
+for (const name of forbiddenLongLivedCredentialEnv) {
+  if (String(process.env[name] || '').trim()) {
+    throw new Error(`Long-lived Google/Firebase credential variable is prohibited for Life Map seeding: ${name}`);
   }
-  return undefined;
 }
 
 if (!getApps().length) {
   initializeApp({
     projectId,
-    credential: resolveCredential(),
+    credential: applicationDefault(),
   });
 }
 
