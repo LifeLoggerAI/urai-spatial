@@ -389,24 +389,50 @@ function ReplayScannedProp({ src, position, rotation, scale }: {
   return <group position={position} rotation={rotation} scale={scale} raycast={() => null}><primitive object={model} /></group>
 }
 
+function replayWaterThreadGeometry() {
+  const segments = 40
+  const positions: number[] = []
+  const uvs: number[] = []
+  const indices: number[] = []
+  for (let index = 0; index <= segments; index += 1) {
+    const t = index / segments
+    const z = -5.4 - t * 21.6
+    const center = Math.sin(t * 6.2) * .44 + Math.sin(t * 15.7) * .12
+    const halfWidth = 1.16 + .34 * Math.sin(t * 8.1 + .8) + .16 * Math.sin(t * 19.3)
+    positions.push(center - halfWidth, 0, z, center + halfWidth, 0, z)
+    uvs.push(0, t, 1, t)
+    if (index < segments) {
+      const a = index * 2
+      indices.push(a, a + 2, a + 1, a + 1, a + 2, a + 3)
+    }
+  }
+  const geometry = new THREE.BufferGeometry()
+  geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3))
+  geometry.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2))
+  geometry.setIndex(indices)
+  geometry.computeVertexNormals()
+  return geometry
+}
+
 function ReplayDemoLake() {
-  return <mesh name="replay-v235-memory-water-thread" position={[0, -2.21, -15.2]} rotation={[-Math.PI / 2, 0, 0]} raycast={() => null} receiveShadow>
-    <planeGeometry args={[5.4, 16.2, 20, 42]} />
-    <meshPhysicalMaterial color="#16252c" roughness={0.54} metalness={0} clearcoat={0.36} clearcoatRoughness={0.28} envMapIntensity={0.18} transmission={0} ior={1.33} thickness={0.02} transparent opacity={0.92} />
+  const geometry = useMemo(replayWaterThreadGeometry, [])
+  useEffect(() => () => geometry.dispose(), [geometry])
+  return <mesh name="replay-v236-memory-water-thread" geometry={geometry} position={[0, -2.18, 0]} raycast={() => null} receiveShadow>
+    <meshPhysicalMaterial color="#17262a" roughness={0.62} metalness={0} clearcoat={0.28} clearcoatRoughness={0.38} envMapIntensity={0.14} transmission={0} ior={1.33} thickness={0.02} transparent opacity={0.84} />
   </mesh>
 }
 
 const REPLAY_DEMO_OUTCROPS = [
   // V235: scanned geology supports continuous weathered cove walls instead of
   // reading as oversized rectangular slabs around a procedural plane.
-  { x: -5.15, z: -2.8, lift: -.18, scale: [4.8, 3.8, 4.4] as [number, number, number], rotation: [0.12, 0.72, -0.10] as [number, number, number] },
-  { x: 5.25, z: -3.9, lift: -.20, scale: [4.5, 3.5, 4.2] as [number, number, number], rotation: [-0.08, -0.88, 0.08] as [number, number, number] },
-  { x: -6.0, z: -8.7, lift: -.15, scale: [5.2, 4.1, 4.7] as [number, number, number], rotation: [0.09, 1.12, -0.07] as [number, number, number] },
-  { x: 6.1, z: -10.0, lift: -.16, scale: [4.9, 3.9, 4.5] as [number, number, number], rotation: [-0.07, -1.18, 0.09] as [number, number, number] },
-  { x: -7.1, z: -16.2, lift: -.12, scale: [4.6, 3.5, 4.2] as [number, number, number], rotation: [0.05, 1.36, -0.05] as [number, number, number] },
-  { x: 7.0, z: -18.0, lift: -.13, scale: [4.4, 3.4, 4.0] as [number, number, number], rotation: [0.05, -1.42, 0.04] as [number, number, number] },
-  { x: -6.3, z: -24.6, lift: -.10, scale: [4.0, 3.0, 3.7] as [number, number, number], rotation: [0.03, .48, -.04] as [number, number, number] },
-  { x: 6.4, z: -26.1, lift: -.10, scale: [3.9, 2.9, 3.6] as [number, number, number], rotation: [-.03, -.56, .04] as [number, number, number] },
+  { x: -5.15, z: -2.8, lift: -.18, scale: [3.45, 2.75, 3.18] as [number, number, number], rotation: [0.12, 0.72, -0.10] as [number, number, number] },
+  { x: 5.25, z: -3.9, lift: -.20, scale: [3.25, 2.55, 3.05] as [number, number, number], rotation: [-0.08, -0.88, 0.08] as [number, number, number] },
+  { x: -6.0, z: -8.7, lift: -.15, scale: [3.65, 2.90, 3.32] as [number, number, number], rotation: [0.09, 1.12, -0.07] as [number, number, number] },
+  { x: 6.1, z: -10.0, lift: -.16, scale: [3.48, 2.76, 3.20] as [number, number, number], rotation: [-0.07, -1.18, 0.09] as [number, number, number] },
+  { x: -7.1, z: -16.2, lift: -.12, scale: [3.20, 2.48, 2.95] as [number, number, number], rotation: [0.05, 1.36, -0.05] as [number, number, number] },
+  { x: 7.0, z: -18.0, lift: -.13, scale: [3.08, 2.38, 2.82] as [number, number, number], rotation: [0.05, -1.42, 0.04] as [number, number, number] },
+  { x: -6.3, z: -24.6, lift: -.10, scale: [2.84, 2.14, 2.64] as [number, number, number], rotation: [0.03, .48, -.04] as [number, number, number] },
+  { x: 6.4, z: -26.1, lift: -.10, scale: [2.76, 2.06, 2.56] as [number, number, number], rotation: [-.03, -.56, .04] as [number, number, number] },
 ] as const
 
 function ReplayMemoryGeography({ accent, demo }: { accent: string; demo: boolean }) {
@@ -423,12 +449,12 @@ function ReplayMemoryGeography({ accent, demo }: { accent: string; demo: boolean
         : <meshStandardMaterial map={maps[0]} normalMap={maps[1]} roughnessMap={maps[2]} normalScale={new THREE.Vector2(.40,.40)} color="#b8aa98" vertexColors roughness={.94}/>}
     </mesh>
     {demo ? null : <mesh geometry={wall} position={[0,0,-.18]} receiveShadow castShadow>\n      <meshStandardMaterial map={maps[0]} normalMap={maps[1]} roughnessMap={maps[2]} normalScale={new THREE.Vector2(.52,.52)} color="#8b7d70" vertexColors roughness={.98} side={THREE.DoubleSide}/>\n    </mesh>}
-    {demo ? <group name="replay-v235-weathered-memory-cove" userData={{ visualRepair: 'continuous-weathered-side-geology-scanned-detail-water-thread' }}>
-      <mesh geometry={leftCove} receiveShadow castShadow raycast={() => null}>
-        <meshStandardMaterial normalMap={maps[1]} roughnessMap={maps[2]} normalScale={new THREE.Vector2(.48,.48)} color="#8f745f" vertexColors roughness={.94} metalness={0} envMapIntensity={.26} />
+    {demo ? <group name="replay-v236-weathered-memory-cove" userData={{ visualRepair: 'open-horizon-scanned-geology-irregular-water-thread' }}>
+      <mesh geometry={leftCove} scale={[1.34, .56, 1]} receiveShadow castShadow raycast={() => null}>
+        <meshStandardMaterial normalMap={maps[1]} roughnessMap={maps[2]} normalScale={new THREE.Vector2(.48,.48)} color="#635d56" vertexColors roughness={.96} metalness={0} envMapIntensity={.26} />
       </mesh>
-      <mesh geometry={rightCove} receiveShadow castShadow raycast={() => null}>
-        <meshStandardMaterial normalMap={maps[1]} roughnessMap={maps[2]} normalScale={new THREE.Vector2(.48,.48)} color="#806b5b" vertexColors roughness={.95} metalness={0} envMapIntensity={.24} />
+      <mesh geometry={rightCove} scale={[1.34, .56, 1]} receiveShadow castShadow raycast={() => null}>
+        <meshStandardMaterial normalMap={maps[1]} roughnessMap={maps[2]} normalScale={new THREE.Vector2(.48,.48)} color="#5b5752" vertexColors roughness={.97} metalness={0} envMapIntensity={.24} />
       </mesh>
       <ReplayDemoLake />
       {REPLAY_DEMO_OUTCROPS.map((outcrop, index) => <ReplayScannedProp
@@ -662,7 +688,7 @@ export default function CinematicReplayClient() {
     if (audio && Number.isFinite(audio.duration)) audio.currentTime = Math.min(audio.duration, next / 1000)
   }
 
-  return <main className="replayWorld" style={style} data-testid="cinematic-replay-client" data-memory-status={result.status} data-memory-id={memory.id} data-star-id={memory.star.id} data-manifest-id={memory.replayManifest.id} data-node={memory.star.id} data-playing={playing ? 'true' : 'false'} data-canonical-asset={replayAssets.primary.src} data-replay-spatial-owner="r3f-memory-theater" data-replay-environment={REPLAY_ENVIRONMENT_MODEL} data-replay-composition="v225-source-first-memory-environment-readable-phased-return" data-replay-demo-art="v235-continuous-weathered-memory-cove" data-replay-camera="anchored-first-person-witness" data-replay-truth={truth?.level ?? 'unknown'}>
+  return <main className="replayWorld" style={style} data-testid="cinematic-replay-client" data-memory-status={result.status} data-memory-id={memory.id} data-star-id={memory.star.id} data-manifest-id={memory.replayManifest.id} data-node={memory.star.id} data-playing={playing ? 'true' : 'false'} data-canonical-asset={replayAssets.primary.src} data-replay-spatial-owner="r3f-memory-theater" data-replay-environment={REPLAY_ENVIRONMENT_MODEL} data-replay-composition="v225-source-first-memory-environment-readable-phased-return" data-replay-demo-art="v236-open-horizon-scanned-memory-cove" data-replay-camera="anchored-first-person-witness" data-replay-truth={truth?.level ?? 'unknown'}>
     <Canvas className="replaySpatialCanvas" shadows={quality.shadows} dpr={[1, quality.pixelRatioMax]} frameloop={quality.documentVisible ? 'always' : 'never'} camera={{ position: [0, 0.42, 8.4], fov: 46, near: 0.05, far: 120 }} gl={{ antialias: quality.antialias, powerPreference: 'high-performance' }} onCreated={({ gl }) => { gl.outputColorSpace = THREE.SRGBColorSpace; gl.toneMapping = THREE.ACESFilmicToneMapping; gl.toneMappingExposure = memory.demo ? 1.18 : 1.92 }}>
       <ReplaySpatialScene memory={memory} playing={playing} progressMs={progressMs} muteVideo={Boolean(recordedAudioUrl)} />
     </Canvas>
