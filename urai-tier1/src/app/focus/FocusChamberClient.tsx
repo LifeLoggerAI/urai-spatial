@@ -10,7 +10,7 @@ import { useSelectedMemory } from '@/spatial/memory/useSelectedMemory'
 import type { SelectedMemory } from '@/spatial/memory/selectedMemoryContract'
 import { requestUraiWorldReturn, requestUraiWorldTravel } from '@/spatial/world/worldEvents'
 
-// Locked product authority; V331 is the current literal-pixel implementation:
+// Locked product authority; V332 is the current literal-pixel implementation:
 // Life Map shows stellar memory points. Focus resolves the selected point into the
 // same memory star at intimate scale, with authorized source media (or a truthful
 // generated visualization when no media exists) visible inside/through the star.
@@ -233,16 +233,16 @@ function FocusMemoryStar({
     position={STAR_POSITION}
     name="focus-selected-memory-star"
     userData={{
-      visualAuthority: 'selected-memory-star-with-contained-memory-v331',
+      visualAuthority: 'selected-memory-star-with-contained-memory-v332',
       lifeMapContinuity: 'same-selected-star-resolved-at-close-range',
       terrainOwner: false,
     }}
   >
     <sprite raycast={() => null} position={[-.12, .08, -.22]} scale={[4.65, 4.65, 1]} name="focus-memory-star-corona-glow">
-      <spriteMaterial map={coronaTexture} color={accent} transparent opacity={memory ? .42 : .05} depthWrite={false} blending={THREE.AdditiveBlending} toneMapped={false} />
+      <spriteMaterial map={coronaTexture} color={accent} transparent opacity={memory ? .56 : .05} depthWrite={false} blending={THREE.AdditiveBlending} toneMapped={false} />
     </sprite>
     <sprite raycast={() => null} position={[.10, -.05, -.08]} scale={[4.12, 4.12, 1]} rotation={.22} name="focus-memory-star-photosphere-rays">
-      <spriteMaterial map={rayTexture} color={light} transparent opacity={memory ? .34 : .05} depthWrite={false} blending={THREE.AdditiveBlending} toneMapped={false} />
+      <spriteMaterial map={rayTexture} color={light} transparent opacity={memory ? .48 : .05} depthWrite={false} blending={THREE.AdditiveBlending} toneMapped={false} />
     </sprite>
     <mesh raycast={() => null} scale={0.72} name="focus-memory-star-outer-corona">
       <sphereGeometry args={[1, 64, 40]} />
@@ -261,7 +261,7 @@ function FocusMemoryStar({
         roughness={0.66}
         metalness={0}
         transparent
-        opacity={memory ? 0.58 : 0.18}
+        opacity={memory ? 0.86 : 0.18}
         depthWrite={false}
       />
     </mesh>
@@ -293,7 +293,7 @@ function FocusMemoryStar({
     </mesh>
     <pointLight color={accent} intensity={memory ? 5.2 : .9} distance={8.6} decay={2} />
     <pointLight position={[-1.1, 1.25, 1.7]} color={light} intensity={memory ? 2.8 : .35} distance={6.4} decay={2} />
-    <Html center transform position={[0, 0, 0.31]} distanceFactor={6.1} zIndexRange={[20, 10]}>
+    <Html center transform position={[0, 0, 0.31]} distanceFactor={11.8} zIndexRange={[20, 10]}>
       <button
         type="button"
         className="focusStarMemoryButton"
@@ -591,7 +591,7 @@ export default function FocusChamberClient() {
     style={style}
     data-testid="urai-final-focus-chamber"
     data-focus-composition="selected-memory-star-with-contained-memory"
-    data-focus-visual-revision="v331-corona-owned-contained-memory-star"
+    data-focus-visual-revision="v332-photosphere-owned-contained-memory-star"
     data-focus-selected-framing={memory ? 'selected-memory-star-approach' : 'neutral-star-awaiting-selection'}
     data-focus-spatial="selected-memory-star"
     data-focus-movement="orbit-zoom-keyboard-touch"
