@@ -22,13 +22,15 @@ test('physical Passport preserves semantic ownership, exact-origin capture and a
   assert.match(source, /reducedMotion \? 140 : 700/)
 })
 
-test('reference estate captures only currently supported physical Passport pack states', () => {
-  for (const id of ['PASSPORT-PHYS-003','PASSPORT-PHYS-004','PASSPORT-PHYS-005','PASSPORT-PHYS-006','PASSPORT-PHYS-007','PASSPORT-PHYS-008','PASSPORT-PHYS-009','PASSPORT-PHYS-010','PASSPORT-PHYS-011','PASSPORT-PHYS-012','PASSPORT-PHYS-013','PASSPORT-PHYS-014','PASSPORT-PHYS-015']) {
+test('reference estate captures the complete physical Passport pack without substituting the conventional vault', () => {
+  for (let index = 1; index <= 15; index += 1) {
+    const id = `PASSPORT-PHYS-${String(index).padStart(3, '0')}`
     assert.ok(capture.includes(`id:'${id}'`), `missing ${id}`)
   }
-  for (const id of ['PASSPORT-PHYS-001','PASSPORT-PHYS-002']) {
-    assert.ok(!capture.includes(`id:'${id}'`), `${id} must remain unclaimed until its real neutral model-sheet/reference state exists`)
-  }
+  assert.match(source, /homePassportReference/)
+  assert.match(source, /neutral-model-sheet/)
+  assert.match(source, /human-scale/)
+  assert.match(source, /non-likeness-human-scale-reference/)
   assert.match(source, /homeReducedStimulation/)
   assert.match(capture, /passportReview=recent-auth-locked/)
   assert.match(capture, /passportReview=unavailable/)

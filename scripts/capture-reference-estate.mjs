@@ -130,6 +130,16 @@ async function enterPhysicalPassport(page, expectedState = 'dormant') {
   return passport
 }
 
+async function enterPassportReferenceSheet(page, expectedMode) {
+  await enterFirstPersonHome(page)
+  const sheet = page.getByTestId('home-passport-reference-sheet')
+  await sheet.waitFor({ state:'visible', timeout:30000 })
+  const mode = await sheet.getAttribute('data-home-passport-reference')
+  if (mode !== expectedMode) throw new Error(`Expected Passport reference mode ${expectedMode}, got ${mode}`)
+  const dims = await sheet.getAttribute('data-home-passport-dimensions-mm')
+  if (dims !== '185x260x18') throw new Error(`Unexpected Passport reference dimensions ${dims}`)
+}
+
 async function activatePhysicalPassport(page) {
   const passport = await enterPhysicalPassport(page, 'dormant')
   await passport.focus()
@@ -150,6 +160,16 @@ async function selectLifeMapPhase(page, phase) {
   await page.waitForFunction(() => document.querySelector('[data-testid="urai-true-3d-life-map"]')?.getAttribute('data-life-map-render-ready') === 'true', null, { timeout:45000 })
   await page.evaluate(() => window.dispatchEvent(new CustomEvent('urai:life-map-select-node', { detail:{ nodeId:'memory-thread', source:'semantic' } })))
   await assertLifeMapPhase(page, phase)
+}
+
+async function enterRitualReview(page, expectedState) {
+  await enterFirstPersonHome(page)
+  const review = page.getByTestId('home-ritual-reference')
+  await review.waitFor({ state:'visible', timeout:30000 })
+  const actual = await review.getAttribute('data-home-ritual-reference-state')
+  if (actual !== expectedState) throw new Error(`Expected Ritual reference state ${expectedState}, got ${actual}`)
+  const fixture = await review.getAttribute('data-home-ritual-fixture')
+  if (fixture !== 'disclosed-synthetic-no-personal-data') throw new Error(`Unexpected Ritual fixture disclosure ${fixture}`)
 }
 
 async function enterGlobalFieldEarth(page, expectedState) {
@@ -175,6 +195,8 @@ const simple = [
   { id:'MEMSTAR-011', system:'Memory Star', state:'reduced-motion', route:'/life-map?demo=1&memoryId=memory-thread&node=memory-thread', marker:'[data-testid="urai-true-3d-life-map"]', reducedMotion:true, action: async (page) => assertLifeMapPhase(page, 'arrival') },
   { id:'MEMSTAR-012', system:'Memory Star', state:'low-performance-accessibility-semantic-fallback', route:'/life-map?demo=1&overview=1', noWebGL:true },
 
+  { id:'PASSPORT-PHYS-001', system:'Physical Home Passport', state:'closed-neutral-model-sheet', route:'/home?homeAssetReview=1&homePassportReference=neutral-model-sheet', marker:'.urai-asset-home-world[data-home-primary-owner="asset-driven"]', action: async (page) => enterPassportReferenceSheet(page, 'neutral-model-sheet') },
+  { id:'PASSPORT-PHYS-002', system:'Physical Home Passport', state:'dimensions-human-scale', route:'/home?homeAssetReview=1&homePassportReference=human-scale', marker:'.urai-asset-home-world[data-home-primary-owner="asset-driven"]', action: async (page) => enterPassportReferenceSheet(page, 'human-scale') },
   { id:'PASSPORT-PHYS-003', system:'Physical Home Passport', state:'home-placement-establishing-view', route:'/home?homeAssetReview=1&homePassportReviewState=dormant', marker:'.urai-asset-home-world[data-home-primary-owner="asset-driven"]', action: async (page) => enterPhysicalPassport(page, 'dormant') },
   { id:'PASSPORT-PHYS-004', system:'Physical Home Passport', state:'first-person-dormant', route:'/home?homeAssetReview=1&homePassportReviewState=dormant', marker:'.urai-asset-home-world[data-home-primary-owner="asset-driven"]', action: async (page) => enterPhysicalPassport(page, 'dormant') },
   { id:'PASSPORT-PHYS-005', system:'Physical Home Passport', state:'pointer-keyboard-focus', route:'/home?homeAssetReview=1&homePassportReviewState=focused', marker:'.urai-asset-home-world[data-home-primary-owner="asset-driven"]', action: async (page) => enterPhysicalPassport(page, 'focused') },
@@ -200,9 +222,11 @@ const simple = [
   { id:'WEATHER-009', system:'Personal Emotional Weather', state:'phone-portrait-active', route:'/home?homeAssetReview=1&homePrivateFixture=1&homeWeatherReview=active', marker:'.urai-asset-home-world[data-home-primary-owner="asset-driven"]', device:'mobile', action: async (page) => enterPrivateWeather(page, 'active') },
   { id:'WEATHER-010', system:'Personal Emotional Weather', state:'phone-portrait-heavy', route:'/home?homeAssetReview=1&homePrivateFixture=1&homeWeatherReview=heavy', marker:'.urai-asset-home-world[data-home-primary-owner="asset-driven"]', device:'mobile', action: async (page) => enterPrivateWeather(page, 'heavy') },
   { id:'WEATHER-011', system:'Personal Emotional Weather', state:'reduced-motion-heavy', route:'/home?homeAssetReview=1&homePrivateFixture=1&homeWeatherReview=heavy', marker:'.urai-asset-home-world[data-home-primary-owner="asset-driven"]', reducedMotion:true, action: async (page) => enterPrivateWeather(page, 'heavy') },
+  { id:'WEATHER-012', system:'Personal Emotional Weather', state:'reduced-stimulation-heavy', route:'/home?homeAssetReview=1&homePrivateFixture=1&homeWeatherReview=heavy&homeReducedStimulation=1', marker:'.urai-asset-home-world[data-home-primary-owner="asset-driven"]', action: async (page) => { await enterPrivateWeather(page, 'heavy'); const weather = page.getByTestId('home-personal-emotional-weather'); const reduced = await weather.getAttribute('data-home-emotional-weather-reduced-stimulation'); if (reduced !== 'true') throw new Error(`Expected weather reduced stimulation, got ${reduced}`) } },
   { id:'WEATHER-013', system:'Personal Emotional Weather', state:'permission-limited-quiet-world', route:'/home?homeAssetReview=1&homeState=permission-limited', marker:'.urai-asset-home-world[data-home-primary-owner="asset-driven"]', action: async (page) => assertWeather(page, 'forming', { visible:false }) },
   { id:'WEATHER-014', system:'Personal Emotional Weather', state:'unavailable-no-personal-data', route:'/home?homeAssetReview=1&homeState=unavailable', marker:'.urai-asset-home-world[data-home-primary-owner="asset-driven"]', action: async (page) => assertWeather(page, 'forming', { visible:false }) },
   { id:'WEATHER-015', system:'Personal Emotional Weather', state:'disclosed-sample-soft', route:'/home?homeAssetReview=1&homeSample=1', marker:'.urai-asset-home-world[data-home-primary-owner="asset-driven"]', action: async (page) => assertWeather(page, 'soft', { visible:true, source:'disclosed-public-sample' }) },
+  { id:'WEATHER-016', system:'Personal Emotional Weather', state:'place-specific-private-symbolic-location-synthetic-review', route:'/home?homeAssetReview=1&homePrivateFixture=1&homeWeatherReview=heavy&homeWeatherPlaceReview=synthetic-private-location', marker:'.urai-asset-home-world[data-home-primary-owner="asset-driven"]', action: async (page) => { await enterPrivateWeather(page, 'heavy'); const weather = page.getByTestId('home-personal-emotional-weather'); const place = await weather.getAttribute('data-home-emotional-weather-place-overlay'); if (place !== 'disclosed-synthetic-private-location') throw new Error(`Unexpected place overlay provenance ${place}`) } },
   { id:'WEATHER-017', system:'Personal Emotional Weather', state:'place-specific-emotional-overlay-disclosed-demo', route:'/location-map?demo=1', marker:'[data-location-map-source="disclosed-demo"]', action: async (page) => { const beacon = page.locator('.locationAtlasBeacon').first(); await beacon.waitFor({ state:'visible', timeout:30000 }); await beacon.click(); await page.locator('.locationAtlasSelection').waitFor({ state:'visible', timeout:30000 }); await page.getByText('Sample place · no personal location history is displayed.', { exact:false }).waitFor({ state:'visible', timeout:30000 }) } },
   { id:'WEATHER-018', system:'Personal Emotional Weather', state:'no-webgl-semantic-fallback', route:'/home?homeAssetReview=1&homeState=unavailable', noWebGL:true },
 
@@ -211,6 +235,19 @@ const simple = [
   { id:'EARTH-003', system:'Global Emotional Field Earth', state:'home-integration', route:'/home?homeAssetReview=1', marker:'.urai-asset-home-world[data-home-primary-owner="asset-driven"]', action: async (page) => enterGlobalFieldEarth(page, 'unavailable') },
   { id:'EARTH-004', system:'Global Emotional Field Earth', state:'phone', route:'/home?homeAssetReview=1', marker:'.urai-asset-home-world[data-home-primary-owner="asset-driven"]', device:'mobile', action: async (page) => enterGlobalFieldEarth(page, 'unavailable') },
   { id:'EARTH-005', system:'Global Emotional Field Earth', state:'reduced-motion', route:'/home?homeAssetReview=1', marker:'.urai-asset-home-world[data-home-primary-owner="asset-driven"]', reducedMotion:true, action: async (page) => enterGlobalFieldEarth(page, 'unavailable') },
+
+  { id:'RITUAL-001', system:'Rituals', state:'shared-platform-neutral', route:'/home?homeAssetReview=1&homeRitualReview=neutral', marker:'.urai-asset-home-world[data-home-primary-owner="asset-driven"]', action: async (page) => enterRitualReview(page, 'neutral') },
+  { id:'RITUAL-002', system:'Rituals', state:'invitation', route:'/home?homeAssetReview=1&homeRitualReview=invitation', marker:'.urai-asset-home-world[data-home-primary-owner="asset-driven"]', action: async (page) => enterRitualReview(page, 'invitation') },
+  { id:'RITUAL-003', system:'Rituals', state:'anniversary-start', route:'/home?homeAssetReview=1&homeRitualReview=anniversary-start', marker:'.urai-asset-home-world[data-home-primary-owner="asset-driven"]', action: async (page) => enterRitualReview(page, 'anniversary-start') },
+  { id:'RITUAL-004', system:'Rituals', state:'anniversary-action', route:'/home?homeAssetReview=1&homeRitualReview=anniversary-action', marker:'.urai-asset-home-world[data-home-primary-owner="asset-driven"]', action: async (page) => enterRitualReview(page, 'anniversary-action') },
+  { id:'RITUAL-005', system:'Rituals', state:'anniversary-completion', route:'/home?homeAssetReview=1&homeRitualReview=anniversary-complete', marker:'.urai-asset-home-world[data-home-primary-owner="asset-driven"]', action: async (page) => enterRitualReview(page, 'anniversary-complete') },
+  { id:'RITUAL-006', system:'Rituals', state:'return-moment', route:'/home?homeAssetReview=1&homeRitualReview=return-moment', marker:'.urai-asset-home-world[data-home-primary-owner="asset-driven"]', action: async (page) => enterRitualReview(page, 'return-moment') },
+  { id:'RITUAL-007', system:'Rituals', state:'threshold-small-map', route:'/home?homeAssetReview=1&homeRitualReview=threshold-small-map', marker:'.urai-asset-home-world[data-home-primary-owner="asset-driven"]', action: async (page) => enterRitualReview(page, 'threshold-small-map') },
+  { id:'RITUAL-008', system:'Rituals', state:'cancel-interruption', route:'/home?homeAssetReview=1&homeRitualReview=cancelled', marker:'.urai-asset-home-world[data-home-primary-owner="asset-driven"]', action: async (page) => enterRitualReview(page, 'cancelled') },
+  { id:'RITUAL-009', system:'Rituals', state:'reduced-motion', route:'/home?homeAssetReview=1&homeRitualReview=reduced-motion', marker:'.urai-asset-home-world[data-home-primary-owner="asset-driven"]', reducedMotion:true, action: async (page) => enterRitualReview(page, 'reduced-motion') },
+  { id:'RITUAL-010', system:'Rituals', state:'reduced-stimulation', route:'/home?homeAssetReview=1&homeRitualReview=reduced-stimulation', marker:'.urai-asset-home-world[data-home-primary-owner="asset-driven"]', action: async (page) => enterRitualReview(page, 'reduced-stimulation') },
+  { id:'RITUAL-011', system:'Rituals', state:'mobile', route:'/home?homeAssetReview=1&homeRitualReview=mobile', marker:'.urai-asset-home-world[data-home-primary-owner="asset-driven"]', device:'mobile', action: async (page) => enterRitualReview(page, 'mobile') },
+  { id:'RITUAL-012', system:'Rituals', state:'semantic-fallback', route:'/home?homeAssetReview=1&homeRitualReview=semantic-fallback', marker:'.urai-asset-home-world[data-home-primary-owner="asset-driven"]', action: async (page) => enterRitualReview(page, 'semantic-fallback') },
 
   { id:'MIRROR-OVERVIEW-DESKTOP', system:'Mirror', state:'overview', route:'/mirror?memoryId=demo%3Aquiet-reset&demo=1', marker:'[data-testid="mirror-spatial-world"]' },
   { id:'MIRROR-OVERVIEW-MOBILE', system:'Mirror', state:'overview-mobile', route:'/mirror?memoryId=demo%3Aquiet-reset&demo=1', marker:'[data-testid="mirror-spatial-world"]', device:'mobile' },

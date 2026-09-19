@@ -42,6 +42,9 @@ jobs:
           test "$(git rev-parse HEAD)" = "$URAI_EXACT_HEAD"
           test -z "$(git status --porcelain --untracked-files=all)"
 
+      - name: Package active reference image candidates
+        run: node scripts/package-reference-image-candidates.mjs
+
       - name: Setup pnpm
         uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1
         with:
@@ -94,6 +97,7 @@ jobs:
           name: reference-estate-proof-${{ env.URAI_EXACT_HEAD }}
           path: |
             artifacts/reference-estate-proof
+            artifacts/reference-image-candidates
             artifacts/reference-estate-http.log
           if-no-files-found: error
           retention-days: 90
