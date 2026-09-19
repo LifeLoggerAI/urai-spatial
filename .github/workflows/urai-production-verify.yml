@@ -87,7 +87,7 @@ jobs:
           if-no-files-found: error
           # Public-repository GitHub artifact retention is capped at 90 days.
           # Longer-lived evidence requires a separately verified durable archive.
-          retention-days: 90
+          retention-days: ${{ github.event_name == 'pull_request' && 30 || 90 }}
 
       - name: Enforce production verification
         shell: bash
