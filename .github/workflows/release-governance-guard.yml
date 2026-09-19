@@ -2,7 +2,7 @@ name: Release Governance Guard
 
 on:
   pull_request:
-    branches: [main]
+    branches: [main, home-final-v24-certify-20260826]
     paths:
       - '.github/workflows/**'
       - '.github/CODEOWNERS'
