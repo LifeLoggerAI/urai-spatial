@@ -203,4 +203,4 @@ jobs:
           if-no-files-found: error
           # GitHub public repositories currently support at most 90 days here.
           # Any longer-lived evidence claim requires a separately verified durable archive.
-          retention-days: 90
+          retention-days: ${{ github.event_name == 'pull_request' && 30 || 90 }}
