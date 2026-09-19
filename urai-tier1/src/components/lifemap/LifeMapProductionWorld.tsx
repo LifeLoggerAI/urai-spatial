@@ -743,8 +743,16 @@ function SpiralGalaxyField({ qualityTier, reducedMotion, selected }: { qualityTi
     uniforms: { uDpr: { value: gl.getPixelRatio() }, uOpacity: { value: selected ? .42 : .88 } },
     vertexShader: `uniform float uDpr; attribute float aSize; varying vec3 vColor;
       void main(){vColor=color;vec4 p=modelViewMatrix*vec4(position,1.);gl_Position=projectionMatrix*p;gl_PointSize=clamp(aSize*135./max(8.,-p.z),1.,6.)*uDpr;}`,
-    fragmentShader: `uniform float uOpacity; varying vec3 vColor;
-      void main(){float r=length(gl_PointCoord-.5)*2.;float halo=exp(-r*r*2.7)*(1.-smoothstep(.72,1.,r));gl_FragColor=vec4(vColor,halo*uOpacity);#include <colorspace_fragment>}`,
+    fragmentShader: `
+      uniform float uOpacity;
+      varying vec3 vColor;
+      void main(){
+        float r=length(gl_PointCoord-.5)*2.;
+        float halo=exp(-r*r*2.7)*(1.-smoothstep(.72,1.,r));
+        gl_FragColor=vec4(vColor,halo*uOpacity);
+        #include <colorspace_fragment>
+      }
+    `,
   }), []);
   useEffect(() => () => geometry.dispose(), [geometry]);
   useEffect(() => () => material.dispose(), [material]);
@@ -839,7 +847,11 @@ export function LifeMapProductionWorld({ nodes, selected, phase, profile, onSele
     <SpiralGalaxyField qualityTier={profile.tier} reducedMotion={profile.reducedMotion} selected={Boolean(selected)} />
     <group name="life-map-temporal-horizon" position={[0,7,-42]}><FieldParticles seed={964} count={profile.tier === "low" ? 120 : 220} radius={24} depth={15} height={8} color={CYAN} opacity={.28} size={.05} /></group>
     <group name="life-map-world-stage" scale={stageScale} position={stagePosition}>
-      <group name="life-map-v237-grounded-geography-subordinate" visible={Boolean(selected)}><LivingMemoryGeography /></group>
+      <group
+        name="life-map-v237-grounded-geography-retired"
+        visible={false}
+        userData={{ retiredVisualRole: "former-memory-valley-not-current-galaxy-authority" }}
+      ><LivingMemoryGeography /></group>
       <LifeCore reducedMotion={profile.reducedMotion} tier={profile.tier} />
       <ChapterTerritories />
       <group name="life-map-light-bridges" userData={{ presentation: "curved-living-memory-connections" }} />
