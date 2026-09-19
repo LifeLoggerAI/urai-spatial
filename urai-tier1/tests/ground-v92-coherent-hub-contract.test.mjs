@@ -19,7 +19,7 @@ test('Ground renders a lived physical world instead of the retired chamber hub',
   assert.match(ground, /CanopyLeafInstances/)
   assert.match(ground, /<instancedMesh/)
   assert.match(ground, /foliageAnchors/)
-  assert.match(ground, /overlapping-branch-tip-instanced-organic-foliage-canopy-v10/)
+  assert.match(ground, /deterministic-fine-leaf-irregular-seeded-branch-tip-canopy-v12/)
   assert.match(ground, /const naturalProfile = profile\.id === "temperate" \|\| profile\.id === "woodland"/)
   assert.match(ground, /map=\{naturalProfile \? null : albedo\}/)
   assert.match(ground, /naturalSoil\.clone\(\)/)
