@@ -101,3 +101,26 @@ Direct pixel inspection batch: 12 Drive originals from the legacy Focus source f
 
 Mechanical batch result: 12 files classified; 9 SUPERSEDED; 3 HISTORICAL_REFERENCE_ONLY; 0 CURRENT_ACCEPTED; 0 CURRENT_REPAIRED. All 12 remain outside Accepted References.
 
+## 2026-09-19 continuation — literal Drive Ground candidate audit
+
+Direct pixel inspection batch: 14 Drive originals from the legacy Ground source folder; 13 unique byte payloads because the two Ground→Home storyboard filenames are exact duplicates. None is current accepted authority.
+
+| Drive candidate | SHA-256 | Canon verdict | Literal reason / use boundary |
+|---|---|---|---|
+| `storyboard-groud-to-home.png` | `a3ade787a414534d526da1bae1542d818d83b4a1012b5fbe84195403077ca392` | SUPERSEDED | Cosmic portal/ring ascent from Ground into Home plus visible third-person person; conflicts with current lived-world continuity and no fantasy-hub/portal substitution. |
+| `storyboard-groud-to-home1.png` | `a3ade787a414534d526da1bae1542d818d83b4a1012b5fbe84195403077ca392` | SUPERSEDED | Byte-identical duplicate of `storyboard-groud-to-home.png`; preserve one provenance copy only. |
+| `storyboard-home-to-groud.png` | `bdb2dfc3ca5396c1c8e1d8e8c9111cbbfa897c20a6650ac9fd5ba679583f52b5` | SUPERSEDED | Visible third-person user and glowing portal/tunnel descent; not current first-person traversable Ground transition authority. |
+| `storyboard-home-to-groud1.png` | `5423df09a2260198e0f85b19a195275358b4a20e7e7b23b3176f61cfc2a61abf` | SUPERSEDED | Orb-like portal interaction and camera plunge into a luminous tunnel; old portal language. |
+| `storyboard-home-to-groud2.png` | `77e7b1c701c42f125e09ed456ea0e7d3fc4a968c879b08120078b5788b8e9d97` | SUPERSEDED | Fantasy sphere/portal opening and underground light-tunnel sequence; conflicts with current natural lived-world descent. |
+| `storyboard-home-to-groud3.png` | `4d7a52a640c8b4e35f9e45dda1721600374deff7695f4cd5379f47985bebf9ac` | SUPERSEDED | Third-person person, blue portal sphere and tunnel camera; superseded by current Ground arrival canon. |
+| `ground-example0.png` | `a95379daf39cad7c3274b1c1f1b6586da22f9f394fe671196ef98e9a1d7a709f` | REJECTED | Generic staged family/friends cabin scene reads as invented autobiography rather than authorized user provenance. |
+| `ground-example1.png` | `b8cf92d108fe72bebb204df02d41a7ad8150e57859e68d450a5a8019ef147766` | REJECTED | Cinematic fantasy settlement/lodge composition; not believable current natural Ground and not user-provenanced lived geography. |
+| `ground-example2.png` | `579d502af2bfdf3d229f5b2feb1470f43bd1c0002a188798eb71b4e343cee546` | REJECTED | Specific suburban people/house scene implies personal history without authorized provenance. |
+| `ground-example3.png` | `8751316e88001997c678a50c4f58730e7e0a98c5cd62e59df74d4847d7e7cdde` | REJECTED | Specific person/house/car routine presented as lived memory; fake autobiography for current reference authority. |
+| `ground-example4.png` | `106d1a1764b19ee7bf908a2513596b0096b4f3387b4cf84677ae0f0a9b7b2d08` | REJECTED | Storyboard of people, house, lake, car and daily actions without user provenance; must not stand in for personalized Ground. |
+| `storyboard-interactions.png` | `540e9deeaee34c546bb1a2b60eb75e803512d58384f80ef2de913fbf75dbe7cd` | REJECTED | Fabricated suburban social interaction sequence with specific people; prohibited fake autobiographical content. |
+| `storyboard-interactions1.png` | `127964ca2418cbe1817c2acd38b124010a5ef6b7de05f73730aff937f7945437` | REJECTED | Same invented-social-memory grammar, no authorized personal source. |
+| `ground-example.png` | `c35d927592fb2813782da4b5c156506afbcfa3f60a7e9d0e4113200a50263d8d` | REJECTED | Highly fantastical cosmic village/ritual scene; directly conflicts with believable irregular natural Ground authority. |
+
+Mechanical batch result: 14 files classified; 13 unique byte payloads; 6 SUPERSEDED file entries; 8 REJECTED; 0 CURRENT_ACCEPTED; 0 CURRENT_REPAIRED. The exact duplicate pair must be deduplicated in final packaging.
+
