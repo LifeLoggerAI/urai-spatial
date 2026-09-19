@@ -25,7 +25,7 @@ on:
         required: true
         type: string
   pull_request:
-    branches: [main]
+    branches: [main, home-final-v24-certify-20260826]
     paths:
       - '.github/workflows/lifemap-founder-visual-proof.yml'
       - 'scripts/capture-lifemap-founder-proof.mjs'
