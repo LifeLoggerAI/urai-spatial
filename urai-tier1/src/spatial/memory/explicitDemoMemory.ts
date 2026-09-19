@@ -13,6 +13,15 @@ export function buildNamedExplicitDemoMemory(id: string): SelectedMemory {
     summary: 'A disclosed demonstration of a quiet reset after sustained pressure. This is not personal data.',
     emotionalState: 'relief',
     emotionalArc: ['pressure', 'permission', 'reset', 'return'],
+    visuals: {
+      ...memory.visuals,
+      sky: '#1c2733',
+      ground: '#48483f',
+      fog: 0.28,
+      reflection: 0.38,
+      light: '#f4dfbd',
+      accent: '#d79a58',
+    },
     replayManifest: {
       ...memory.replayManifest,
       id: QUIET_RESET_MANIFEST_ID,

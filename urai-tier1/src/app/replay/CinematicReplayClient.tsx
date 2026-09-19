@@ -72,7 +72,7 @@ function prepareReplayModel(source: THREE.Object3D) {
     const materials = sourceMaterials.map((sourceMaterial) => {
       const material = sourceMaterial.clone()
       if (material instanceof THREE.MeshStandardMaterial) {
-        material.color.lerp(new THREE.Color('#7c887f'), 0.34)
+        material.color.lerp(new THREE.Color('#8a8176'), 0.28)
         material.roughness = Math.max(material.roughness, 0.82)
         material.metalness = Math.min(material.metalness, 0.04)
         material.envMapIntensity = 0.5
@@ -230,8 +230,8 @@ function replayBasinGeometry() {
   const uvs: number[] = []
   const colors: number[] = []
   const indices: number[] = []
-  const stone = new THREE.Color('#35473f')
-  const warm = new THREE.Color('#75665a')
+  const stone = new THREE.Color('#4c4b46')
+  const warm = new THREE.Color('#8a725c')
   for (let row = 0; row <= rows; row += 1) {
     const v = row / rows
     const z = 8.2 - v * 28
@@ -265,9 +265,9 @@ function replayMemoryWallGeometry() {
   const positions:number[]=[]
   const colors:number[]=[]
   const indices:number[]=[]
-  const shadow=new THREE.Color('#273730')
-  const moss=new THREE.Color('#61736a')
-  const plum=new THREE.Color('#6b5e6c')
+  const shadow=new THREE.Color('#303532')
+  const moss=new THREE.Color('#6e6b61')
+  const plum=new THREE.Color('#665d62')
   for(let row=0;row<=rows;row+=1){
     const v=row/rows
     const y=-3.0+v*11.0
@@ -298,12 +298,12 @@ function ReplayMemoryGeography({ accent }: { accent: string }) {
   useEffect(()=>()=>{basin.dispose();wall.dispose();maps.forEach((texture)=>texture.dispose())},[basin,maps,wall])
   return <group name="replay-v216-embedded-memory-cove" userData={{ visualIntent:'media-manifested-inside-continuous-weathered-place' }}>
     <mesh geometry={basin} receiveShadow castShadow>
-      <meshStandardMaterial map={maps[0]} normalMap={maps[1]} roughnessMap={maps[2]} normalScale={new THREE.Vector2(.40,.40)} color="#a8b1a8" vertexColors roughness={.94}/>
+      <meshStandardMaterial map={maps[0]} normalMap={maps[1]} roughnessMap={maps[2]} normalScale={new THREE.Vector2(.40,.40)} color="#b8aa98" vertexColors roughness={.94}/>
     </mesh>
     <mesh geometry={wall} position={[0,0,-.18]} receiveShadow castShadow>
-      <meshStandardMaterial map={maps[0]} normalMap={maps[1]} roughnessMap={maps[2]} normalScale={new THREE.Vector2(.52,.52)} color="#708279" vertexColors roughness={.97} side={THREE.DoubleSide}/>
+      <meshStandardMaterial map={maps[0]} normalMap={maps[1]} roughnessMap={maps[2]} normalScale={new THREE.Vector2(.52,.52)} color="#8b7d70" vertexColors roughness={.97} side={THREE.DoubleSide}/>
     </mesh>
-    <pointLight position={[-5.8,.4,-3.8]} color="#c89c78" intensity={1.28} distance={12} decay={2}/>
+    <pointLight position={[-5.8,.4,-3.8]} color="#e0b181" intensity={1.52} distance={12} decay={2}/>
     <pointLight position={[5.2,1.1,-4.2]} color={accent} intensity={1.04} distance={11} decay={2}/>
   </group>
 }
@@ -328,11 +328,11 @@ function ReplaySpatialScene({ memory, playing, progressMs, muteVideo }: { memory
       <color attach="background" args={[memory.visuals.sky]} />
       <fog attach="fog" args={[memory.visuals.sky, visuals.fogNear, visuals.fogFar]} />
       <ambientLight intensity={visuals.ambient} color="#c4d0c9" />
-      <hemisphereLight intensity={visuals.fill} color={memory.visuals.light} groundColor="#202a25" />
-      <directionalLight position={[-8, 11, 6]} intensity={3.6} color="#efd0a2" castShadow />
+      <hemisphereLight intensity={visuals.fill} color={memory.visuals.light} groundColor={memory.visuals.ground} />
+      <directionalLight position={[-8, 11, 6]} intensity={4.25} color="#f3d4a8" castShadow />
       <directionalLight position={[6, 5, -7]} intensity={1.45} color={memory.visuals.accent} />
       <pointLight position={[0, 1.4, -4.6]} intensity={visuals.source} distance={18} color={memory.visuals.accent} />
-      <pointLight position={[-5.5, 2.8, -1.5]} intensity={2.2} distance={16} color="#d8ad80" />
+      <pointLight position={[-5.5, 2.8, -1.5]} intensity={2.8} distance={18} color="#e2b27f" />
       <primitive object={model} name="replay-memory-environment-v1" />
       <ReplayMemoryGeography accent={memory.visuals.accent}/>
       <RecordedMemoryField media={media} playing={playing} progressMs={progressMs} muteVideo={muteVideo} />
