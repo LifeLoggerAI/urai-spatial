@@ -20,6 +20,7 @@ import { URAI_HOME_AVATAR_ACTIVATE_EVENT } from '@/spatial/home/homeSemanticEven
 import { useHomeExperienceController } from '@/spatial/home/useHomeExperienceController'
 import type { HomeOriginSnapshot, HomeStableState, HomeTransitionState } from '@/spatial/home/homeExperienceState'
 import { height } from './HomeWorldProductionV223Geometry'
+import { HomeV225PolishV3 } from './HomeWorldProductionV225PolishV3'
 import { HomeCurrentArtRepair } from './HomeCurrentArtRepair'
 import { HomeAAAVisualRepair } from './HomeAAAVisualRepair'
 import styles from './HomeWorldProduction.module.css'
@@ -29,7 +30,6 @@ type Props = { onOrbOpen?: () => void; webglAvailable?: boolean }
 type TransitionTarget = { point: THREE.Vector3; normal?: THREE.Vector3 }
 
 const ORB_MODEL = '/assets/urai/generated/models/urai-orb-avatar-v1.glb'
-const HOME_ARCHITECTURE_MODEL = '/assets/urai/generated/models/home-entry-chamber-v1.glb'
 const HOME_FOCUS = new THREE.Vector3(0, 1.35, -1.15)
 const ORB_POSITION = new THREE.Vector3(1.02, 0, .72)
 const ORB_FIELD_RADIUS = .5
@@ -97,97 +97,6 @@ function cloneAuthoredModel(source: THREE.Object3D) {
   return root
 }
 
-
-function prepareReferenceHomeArchitecture(source: THREE.Object3D) {
-  const root = cloneAuthoredModel(source)
-  root.visible = true
-  root.name = 'home-v289-reference-residence-architecture'
-  root.userData = {
-    ...root.userData,
-    runtimeAsset: HOME_ARCHITECTURE_MODEL,
-    visibleWorldOwner: 'governed-home-entry-architecture-v289',
-    referenceDirection: 'realistic-lived-home-stone-timber-glass',
-    certification: 'candidate-requires-fresh-exact-head-pixels',
-  }
-  const retired = /mirror-basin|orb-sanctuary-pedestal|sanctuary-waterfall|inhabited-village|living-growth|memory-place-anchor|embodied-presence|portal-ring|sky-portal/i
-  root.traverse((object) => {
-    if (retired.test(object.name)) {
-      object.visible = false
-      object.raycast = () => undefined
-      return
-    }
-    if (!(object instanceof THREE.Mesh)) return
-    const materials = Array.isArray(object.material) ? object.material : [object.material]
-    materials.forEach((material) => {
-      if (!(material instanceof THREE.MeshStandardMaterial)) return
-      const role = `${object.name} ${material.name}`.toLowerCase()
-      material.envMapIntensity = THREE.MathUtils.clamp(material.envMapIntensity || .7, .58, 1.08)
-      material.emissiveIntensity = Math.min(material.emissiveIntensity, .16)
-      if (/glass|window|glazing/.test(role)) {
-        material.color.set('#9db7b3')
-        material.roughness = .16
-        material.metalness = 0
-        material.transparent = true
-        material.opacity = .46
-        if (material instanceof THREE.MeshPhysicalMaterial) {
-          material.transmission = .62
-          material.thickness = .08
-          material.ior = 1.46
-          material.clearcoat = .2
-          material.clearcoatRoughness = .18
-        }
-      } else if (/wood|timber|beam/.test(role)) {
-        material.color.multiply(new THREE.Color('#b28b69'))
-        material.roughness = Math.max(.5, material.roughness)
-        material.metalness = Math.min(.04, material.metalness)
-      } else {
-        material.roughness = THREE.MathUtils.clamp(Math.max(material.roughness, .54), .54, .9)
-        material.metalness = THREE.MathUtils.clamp(material.metalness, 0, .38)
-      }
-      material.needsUpdate = true
-    })
-  })
-  return root
-}
-
-function ReferenceHomeArchitecture({ onWalk }: { onWalk: (event: ThreeEvent<MouseEvent>) => void }) {
-  const asset = useGLTF(HOME_ARCHITECTURE_MODEL)
-  const model = useMemo(() => prepareReferenceHomeArchitecture(asset.scene), [asset.scene])
-  useEffect(() => () => {
-    model.traverse((object) => {
-      if (!(object instanceof THREE.Mesh)) return
-      const materials = Array.isArray(object.material) ? object.material : [object.material]
-      materials.forEach((material) => material.dispose())
-    })
-  }, [model])
-
-  return <group
-    name="home-v289-governed-lived-residence"
-    userData={{
-      visualAuthority: 'reference-ledger-realistic-personalized-living-home',
-      runtimeAsset: HOME_ARCHITECTURE_MODEL,
-      replaces: 'home-v226-production-rooted-memory-sanctuary',
-      certification: 'candidate-requires-fresh-exact-head-pixels',
-    }}
-  >
-    <primitive object={model} />
-    <mesh
-      name="home-v289-lived-terrace"
-      position={[0, -.08, -1.2]}
-      rotation={[-Math.PI / 2, 0, 0]}
-      receiveShadow
-      onClick={onWalk}
-    >
-      <planeGeometry args={[18, 22, 1, 1]} />
-      <meshPhysicalMaterial color="#807a6d" roughness={.82} metalness={.012} clearcoat={.035} clearcoatRoughness={.82} envMapIntensity={.72} />
-    </mesh>
-    <group name="home-v289-warm-residential-practicals" raycast={() => null}>
-      <pointLight position={[-4.2, 2.4, -4.8]} color="#f0b77e" intensity={1.05} distance={9} decay={2} />
-      <pointLight position={[4.1, 2.2, -5.4]} color="#d6a36f" intensity={.82} distance={8} decay={2} />
-      <pointLight position={[0, 1.5, 1.8]} color="#9fc4bd" intensity={.34} distance={8} decay={2} />
-    </group>
-  </group>
-}
 
 function isSoftwareWebGLRenderer(gl: THREE.WebGLRenderer) {
   const context = gl.getContext()
@@ -738,7 +647,7 @@ function Scene({
     <hemisphereLight args={['#d5e2db', '#223932', .68]} />
     <directionalLight position={[-8, 11, 6]} intensity={2.45} color="#f1d6b1" castShadow shadow-mapSize-width={1536} shadow-mapSize-height={1536} shadow-bias={-.00018} />
     <directionalLight position={[9, 6, -11]} intensity={.78} color="#83b8ad" />
-    <ReferenceHomeArchitecture onWalk={physicalWorldClick} />
+    <HomeV225PolishV3 orbState={orbState} reducedMotion={reducedMotion} onOrb={retiredLocalDestination} onGround={retiredLocalDestination} onLifeMap={retiredLocalDestination} onWalk={physicalWorldClick} />
     <HomeCurrentArtRepair orbState={orbState} reducedMotion={reducedMotion} onOrb={retiredLocalDestination} onGround={retiredLocalDestination} onLifeMap={retiredLocalDestination} />
     <HomeAAAVisualRepair />
     <RetireLegacyHomeHotspots />
@@ -955,9 +864,8 @@ export function HomeWorldProductionV223({ onOrbOpen = requestUraiWorldOrbOpen, w
     data-home-personal-weather-mode={personalizedHomeScene.mode}
     data-home-personal-weather-loading={personalizedHomeLoading ? 'true' : 'false'}
     data-home-personal-weather-synthetic-review={personalizedHomeScene.disclosedSample ? 'true' : 'false'}
-    data-home-scanned-composition="governed-lived-residence-visible-avatar-authored-living-memory-orb-and-broad-sky-threshold"
-    data-home-reference-architecture={HOME_ARCHITECTURE_MODEL}
-    data-home-art-revision="v289-governed-lived-residence-reference-rewire"
+    data-home-scanned-composition="visible-avatar-authored-living-memory-orb-sculpted-sanctuary-and-broad-sky-threshold"
+    data-home-art-revision="v290-authoritative-sculpted-sanctuary-restoration"
     data-home-authored-regions="home-physical-world urai-home-user-avatar home-living-memory-orb home-life-map-sky-threshold"
     data-testid="home-visible-navigable-sanctuary-world"
     style={{ position: 'relative', overflow: 'hidden', backgroundColor: '#10272a' }}
@@ -1037,4 +945,3 @@ export const HomeWorldProduction = HomeWorldProductionV223
 
 useGLTF.preload(ORB_MODEL)
 useGLTF.preload(HOME_AVATAR_MODEL)
-useGLTF.preload(HOME_ARCHITECTURE_MODEL)

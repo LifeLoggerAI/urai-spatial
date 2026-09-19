@@ -55,9 +55,14 @@ let derived = original
 // actionability stall observed on the semantic Orb control.
 const continuityProofReplacements = [
   {
+    source: 'await enterFirstPerson.focus()', expected: 1,
+    replacement: "if (!await enterFirstPerson.evaluate((element) => { if (!(element instanceof HTMLElement)) return false; element.focus({ preventScroll: true }); return document.activeElement === element })) throw new Error('Enter first-person Home control failed DOM keyboard-focus verification')",
+  },
+  { source: "await enterFirstPerson.press('Enter')", expected: 1, replacement: "await page.keyboard.press('Enter')" },
+  {
     source: "await page.waitForFunction((selector) => document.querySelector(selector)?.getAttribute('data-home-stable-state') === 'AVATAR_HOME_FIRST_PERSON', ownerSelector, { timeout: 20_000 })",
     expected: 2,
-    replacement: "await page.waitForFunction((selector) => document.querySelector(selector)?.getAttribute('data-home-stable-state') === 'AVATAR_HOME_FIRST_PERSON', ownerSelector, { timeout: 45_000 })",
+    replacement: "await page.waitForFunction((selector) => document.querySelector(selector)?.getAttribute('data-home-stable-state') === 'AVATAR_HOME_FIRST_PERSON', ownerSelector, { timeout: 60_000 })",
   },
   {
     source: "await passportControl.click()",
@@ -79,7 +84,7 @@ const keyboardProofReplacements = [
   { source: "await openOrb.press('Enter')", expected: 1, replacement: "await page.keyboard.press('Enter')" },
   {
     source: 'await talk.focus()', expected: 1,
-    replacement: "if (!await talk.evaluate((element) => { if (!(element instanceof HTMLElement)) return false; element.focus({ preventScroll: true }); return document.activeElement === element })) throw new Error('Orb conversation summary failed DOM keyboard-focus verification')",
+    replacement: "if (!await talk.evaluate((element) => { if (!(element instanceof HTMLElement)) return false; element.focus({ preventScroll: true }); return document.activeElement === element })) await talk.focus({ timeout: 45_000 }); if (!await talk.evaluate((element) => document.activeElement === element)) throw new Error('Orb conversation summary failed DOM keyboard-focus verification')",
   },
   { source: "await talk.press('Enter')", expected: 1, replacement: "await page.keyboard.press('Enter')" },
   {

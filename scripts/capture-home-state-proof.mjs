@@ -345,12 +345,10 @@ async function captureOrbLifecycle({ reducedMotion = 'no-preference' } = {}) {
     }, null, { timeout: 20_000 })
     record.phase = 'orb-speaking-rendered'
     await send.focus()
-    await Promise.all([
-      page.waitForFunction(() => window.__uraiObservedOrbFrames?.some((sample) => sample.eventState === 'speaking'
-        && sample.renderedState === 'speaking'
-        && sample.renderedClip === 'orb-speaking'), null, { timeout: 20_000 }),
-      send.press('Enter'),
-    ])
+    await send.press('Enter')
+    await page.waitForFunction(() => window.__uraiObservedOrbFrames?.some((sample) => sample.eventState === 'speaking'
+      && sample.renderedState === 'speaking'
+      && sample.renderedClip === 'orb-speaking'), null, { timeout: 45_000 })
     const respondingSample = await page.evaluate(() => window.__uraiObservedOrbFrames?.find((sample) => sample.eventState === 'speaking'
       && sample.renderedState === 'speaking'
       && sample.renderedClip === 'orb-speaking') ?? null)

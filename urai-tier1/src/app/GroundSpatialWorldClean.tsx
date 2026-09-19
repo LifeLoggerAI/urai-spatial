@@ -120,57 +120,8 @@ function buildTerrainGeometry(profile: EnvironmentProfile) {
   return geometry;
 }
 
-function makeNaturalGroundTextures(profile: EnvironmentProfileId) {
-  const size = 128;
-  const rgba = new Uint8Array(size * size * 4);
-  const height = new Uint8Array(size * size * 4);
-  const soil = new THREE.Color(profile === "woodland" ? "#554b3b" : "#625e48");
-  const moss = new THREE.Color(profile === "woodland" ? "#617956" : "#728564");
-  const grit = new THREE.Color("#8c8069");
-  const hash = (x: number, y: number, salt: number) => {
-    const value = Math.sin(x * 12.9898 + y * 78.233 + salt * 37.719) * 43758.5453;
-    return value - Math.floor(value);
-  };
-  for (let y = 0; y < size; y += 1) for (let x = 0; x < size; x += 1) {
-    const coarse = hash(Math.floor(x / 7), Math.floor(y / 7), 1);
-    const medium = hash(Math.floor(x / 3), Math.floor(y / 3), 2);
-    const fine = hash(x, y, 3);
-    const mossMix = THREE.MathUtils.clamp(.16 + coarse * .42 + medium * .18 - fine * .10, .05, .74);
-    const color = soil.clone().lerp(moss, mossMix);
-    if (fine > .91) color.lerp(grit, .28 + (fine - .91) * 3.2);
-    const offset = (y * size + x) * 4;
-    rgba[offset] = Math.round(color.r * 255);
-    rgba[offset + 1] = Math.round(color.g * 255);
-    rgba[offset + 2] = Math.round(color.b * 255);
-    rgba[offset + 3] = 255;
-    const h = Math.round(255 * THREE.MathUtils.clamp(.28 + coarse * .25 + medium * .22 + fine * .25, 0, 1));
-    height[offset] = h;
-    height[offset + 1] = h;
-    height[offset + 2] = h;
-    height[offset + 3] = 255;
-  }
-  const colorTexture = new THREE.DataTexture(rgba, size, size, THREE.RGBAFormat);
-  colorTexture.colorSpace = THREE.SRGBColorSpace;
-  const bumpTexture = new THREE.DataTexture(height, size, size, THREE.RGBAFormat);
-  for (const texture of [colorTexture, bumpTexture]) {
-    texture.wrapS = THREE.RepeatWrapping;
-    texture.wrapT = THREE.RepeatWrapping;
-    texture.repeat.set(profile === "woodland" ? 18 : 15, profile === "woodland" ? 20 : 17);
-    texture.magFilter = THREE.LinearFilter;
-    texture.minFilter = THREE.LinearMipmapLinearFilter;
-    texture.needsUpdate = true;
-  }
-  return { colorTexture, bumpTexture };
-}
-
 function TerrainMaterial({ profile }: { profile: EnvironmentProfile }) {
   const [albedo, normal, arm] = useTexture([TERRAIN_ALBEDO, TERRAIN_NORMAL, TERRAIN_ARM]);
-  const naturalProfile = profile.id === "temperate" || profile.id === "woodland";
-  const naturalTextures = useMemo(() => naturalProfile ? makeNaturalGroundTextures(profile.id) : null, [naturalProfile, profile.id]);
-  useEffect(() => () => {
-    naturalTextures?.colorTexture.dispose();
-    naturalTextures?.bumpTexture.dispose();
-  }, [naturalTextures]);
   useMemo(() => {
     albedo.colorSpace = THREE.SRGBColorSpace;
     for (const texture of [albedo, normal, arm]) {
@@ -182,20 +133,19 @@ function TerrainMaterial({ profile }: { profile: EnvironmentProfile }) {
     }
     return null;
   }, [albedo, arm, normal, profile]);
+  const normalStrength = profile.id === "urban" ? 0.34 : profile.id === "temperate" || profile.id === "woodland" ? 0.50 : 0.58;
   return <meshStandardMaterial
-    map={naturalProfile ? naturalTextures?.colorTexture : albedo}
-    normalMap={naturalProfile ? null : normal}
-    bumpMap={naturalProfile ? naturalTextures?.bumpTexture : null}
-    bumpScale={naturalProfile ? 0.11 : 0}
-    normalScale={new THREE.Vector2(profile.id === "urban" ? 0.34 : 0.62, profile.id === "urban" ? 0.34 : 0.62)}
-    aoMap={naturalProfile ? null : arm}
-    aoMapIntensity={naturalProfile ? 0 : 0.72}
-    roughnessMap={naturalProfile ? null : arm}
-    roughness={naturalProfile ? 0.91 : profile.roughness}
-    metalnessMap={naturalProfile ? null : arm}
+    map={albedo}
+    normalMap={normal}
+    normalScale={new THREE.Vector2(normalStrength, normalStrength)}
+    aoMap={arm}
+    aoMapIntensity={0.68}
+    roughnessMap={arm}
+    roughness={profile.roughness}
+    metalnessMap={arm}
     metalness={profile.id === "urban" ? 0.02 : 0.005}
-    vertexColors={!naturalProfile}
-    envMapIntensity={naturalProfile ? 0.48 : 0.42}
+    vertexColors
+    envMapIntensity={profile.id === "woodland" ? 0.36 : 0.42}
   />;
 }
 
@@ -338,9 +288,9 @@ function NaturalCanopy({ profile, position, rotationY, scale, shapeSeed }: {
     ));
 
     const leafShape = new THREE.Shape();
-    leafShape.moveTo(0, -0.58);
-    leafShape.bezierCurveTo(0.22, -0.31, 0.27, 0.10, 0, 0.62);
-    leafShape.bezierCurveTo(-0.27, 0.10, -0.22, -0.31, 0, -0.58);
+    leafShape.moveTo(0, -0.46);
+    leafShape.bezierCurveTo(0.34, -0.24, 0.37, 0.13, 0, 0.52);
+    leafShape.bezierCurveTo(-0.37, 0.13, -0.34, -0.24, 0, -0.46);
     leafShape.closePath();
     const leafGeometry = new THREE.ShapeGeometry(leafShape, 5);
     leafGeometry.computeVertexNormals();
@@ -355,9 +305,9 @@ function NaturalCanopy({ profile, position, rotationY, scale, shapeSeed }: {
       const value = Math.sin(seed * 12.9898 + shapeSeed * 53.117 + (woodland ? 78.233 : 31.417)) * 43758.5453;
       return value - Math.floor(value);
     };
-    const leaves = Array.from({ length: woodland ? 168 : 148 }, (_, index) => {
+    const leaves = Array.from({ length: woodland ? 236 : 204 }, (_, index) => {
       const anchor = foliageAnchors[index % foliageAnchors.length];
-      const spread = 0.12 + hash(index * 7 + 1) * 0.56;
+      const spread = 0.10 + hash(index * 7 + 1) * 0.48;
       const theta = hash(index * 7 + 2) * Math.PI * 2;
       const x = anchor[0] + Math.cos(theta) * spread * (0.48 + hash(index * 7 + 3) * 0.92);
       const y = anchor[1] - 0.01 + (hash(index * 7 + 4) - 0.45) * 0.78;
@@ -365,9 +315,9 @@ function NaturalCanopy({ profile, position, rotationY, scale, shapeSeed }: {
       const rx = (hash(index * 7 + 6) - 0.5) * 1.28;
       const ry = theta + (hash(index * 7 + 7) - 0.5) * 1.15;
       const rz = (hash(index * 7 + 8) - 0.5) * 1.12;
-      const sx = 0.22 + hash(index * 7 + 9) * 0.17;
-      const sy = 0.42 + hash(index * 7 + 10) * 0.28;
-      const sz = 0.82 + hash(index * 7 + 11) * 0.24;
+      const sx = 0.30 + hash(index * 7 + 9) * 0.22;
+      const sy = 0.32 + hash(index * 7 + 10) * 0.22;
+      const sz = 0.72 + hash(index * 7 + 11) * 0.18;
       return {
         position: [x, y, z] as [number, number, number],
         rotation: [rx, ry, rz] as [number, number, number],
@@ -501,7 +451,7 @@ function NaturalScatter({ profile }: { profile: EnvironmentProfile }) {
 
   const woodland = profile.id === "woodland";
   const ferns = items.slice(0, woodland ? 88 : 76);
-  const canopies = items.filter((item) => item.z < (woodland ? 8.0 : 6.5)).slice(0, woodland ? 38 : 34);
+  const canopies = items.filter((item) => item.z < (woodland ? 8.0 : 6.5)).slice(0, woodland ? 48 : 44);
   return <group name={woodland ? "ground-woodland-scanned-understory" : "ground-temperate-scanned-understory"} userData={{ treatment: "urai-self-authored-varied-canopy-v13-with-polyhaven-fern-rock-understory", canopyFallback: "scanned-understory-remains-without-canopy" }} raycast={() => null}>
     <GroundCanopyBoundary>
       <Suspense fallback={null}>
@@ -823,12 +773,12 @@ function GroundScene({ profile, input, yaw, pitch, target, obstacles, playerPosi
   const weather = DEFAULT_GROUND_WEATHER;
   return <>
     <color attach="background" args={[profile.horizon]} />
-    <fogExp2 attach="fog" args={[profile.fog, 0.0118 + weather.atmosphericDensity * 0.00135]} />
-    <Suspense fallback={null}><Environment files="/assets/urai/home-production/cc0/environment/studio-small-08-1k.hdr" background={false} environmentIntensity={0.28} /></Suspense>
-    <ambientLight intensity={0.54} color="#b8c8bc" />
-    <hemisphereLight args={["#afc7c6", "#3f392f", 0.76]} />
-    <directionalLight position={[-10, 14, 5]} intensity={1.28} color="#d9bd93" castShadow shadow-mapSize={[1024, 1024]} shadow-camera-left={-28} shadow-camera-right={28} shadow-camera-top={28} shadow-camera-bottom={-28} shadow-camera-far={90} shadow-normalBias={0.035} />
-    <directionalLight position={[10, 7, -20]} intensity={0.44} color="#7fa7aa" />
+    <fogExp2 attach="fog" args={[profile.fog, 0.0092 + weather.atmosphericDensity * 0.0011]} />
+    <Suspense fallback={null}><Environment files="/assets/urai/home-production/cc0/environment/studio-small-08-1k.hdr" background={false} environmentIntensity={0.36} /></Suspense>
+    <ambientLight intensity={0.38} color="#b8c8bc" />
+    <hemisphereLight args={["#afc7c6", "#3f392f", 0.58]} />
+    <directionalLight position={[-10, 14, 5]} intensity={1.72} color="#e1c59a" castShadow shadow-mapSize={[1024, 1024]} shadow-camera-left={-28} shadow-camera-right={28} shadow-camera-top={28} shadow-camera-bottom={-28} shadow-camera-far={90} shadow-normalBias={0.035} />
+    <directionalLight position={[10, 7, -20]} intensity={0.52} color="#7fa7aa" />
     <Suspense fallback={null}><LivedGroundWorld profile={profile} target={target} /></Suspense>
     <FirstPersonPlayer input={input} yaw={yaw} pitch={pitch} target={target} profile={profile} obstacles={obstacles} playerPosition={playerPosition} isCoarse={isCoarse} onReady={onReady} />
   </>;
