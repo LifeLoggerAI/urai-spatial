@@ -342,7 +342,7 @@ async function captureJourney(browser) {
     videoPath = path.relative(outputDir, target)
   }
 
-  const expectedPaths = ['/focus', '/replay', '/replay', '/focus', '/life-map']
+  const expectedPaths = ['/focus', '/focus', '/replay', '/focus', '/life-map']
   const actualPaths = steps.map((step) => step.pathname.replace(/\/+$/, '') || '/')
   const pathSequencePassed = expectedPaths.every((expected, index) => actualPaths[index] === expected)
   const blockingFailures = blockingFailedRequests(diagnosticResult.failedRequests, { allowJourneySourceVisualAbort: pathSequencePassed })
