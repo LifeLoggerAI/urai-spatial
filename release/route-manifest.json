@@ -27,7 +27,13 @@
     "/settings/privacy",
     "/waitlist",
     "/system",
-    "/support"
+    "/support",
+    "/commerce",
+    "/pricing",
+    "/legal/privacy",
+    "/legal/terms",
+    "/legal/refunds",
+    "/legal/subscriptions"
   ],
   "classification": {
     "servicePrefixes": [
@@ -95,7 +101,13 @@
       "/spatial/life-map",
       "/spatial/life-map-r3f",
       "/spatial/life-map-orbit",
-      "/spatial/v1"
+      "/spatial/v1",
+      "/commerce",
+      "/pricing",
+      "/legal/privacy",
+      "/legal/terms",
+      "/legal/refunds",
+      "/legal/subscriptions"
     ],
     "publicPrefixes": [
       "/demo/",
