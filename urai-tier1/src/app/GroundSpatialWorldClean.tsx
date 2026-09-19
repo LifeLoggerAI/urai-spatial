@@ -209,6 +209,31 @@ class GroundCanopyBoundary extends Component<{ children: ReactNode }, { failed: 
   render() { return this.state.failed ? null : this.props.children; }
 }
 
+function CanopyLeafInstances({ geometry, leaves, color }: {
+  geometry: THREE.BufferGeometry;
+  leaves: ReadonlyArray<{ position: [number, number, number]; rotation: [number, number, number]; scale: [number, number, number] }>;
+  color: string;
+}) {
+  const mesh = useRef<THREE.InstancedMesh>(null);
+  const dummy = useMemo(() => new THREE.Object3D(), []);
+  useEffect(() => {
+    const owner = mesh.current;
+    if (!owner) return;
+    leaves.forEach((leaf, index) => {
+      dummy.position.set(...leaf.position);
+      dummy.rotation.set(...leaf.rotation);
+      dummy.scale.set(...leaf.scale);
+      dummy.updateMatrix();
+      owner.setMatrixAt(index, dummy.matrix);
+    });
+    owner.instanceMatrix.needsUpdate = true;
+    owner.computeBoundingSphere();
+  }, [dummy, leaves]);
+  return <instancedMesh ref={mesh} args={[geometry, undefined, leaves.length]} castShadow receiveShadow frustumCulled>
+    <meshStandardMaterial color={color} roughness={0.97} metalness={0} envMapIntensity={0.14} />
+  </instancedMesh>;
+}
+
 function NaturalCanopy({ profile, position, rotationY, scale }: {
   profile: EnvironmentProfile;
   position: [number, number, number];
@@ -232,57 +257,78 @@ function NaturalCanopy({ profile, position, rotationY, scale }: {
 
     const trunkCurve = new THREE.CatmullRomCurve3([
       new THREE.Vector3(0, 0, 0),
-      new THREE.Vector3(-0.035, 0.55, 0.018),
-      new THREE.Vector3(0.045, 1.18, -0.028),
-      new THREE.Vector3(0.015, 1.82, 0.035),
-      new THREE.Vector3(0.08, 2.5, -0.02),
+      new THREE.Vector3(-0.045, 0.56, 0.025),
+      new THREE.Vector3(0.055, 1.16, -0.035),
+      new THREE.Vector3(-0.025, 1.78, 0.045),
+      new THREE.Vector3(0.065, 2.42, -0.035),
+      new THREE.Vector3(0.02, 2.72, 0.02),
     ]);
-    const trunkGeometry = new THREE.TubeGeometry(trunkCurve, 36, 0.072, 10, false);
+    const trunkGeometry = new THREE.TubeGeometry(trunkCurve, 44, 0.066, 12, false);
 
     const branchDefs = [
-      [[0.03, 1.18, 0.00], [0.42, 1.62, 0.10], [0.86, 1.92, 0.18]],
-      [[0.00, 1.35, 0.02], [-0.38, 1.72, -0.08], [-0.82, 2.02, -0.18]],
-      [[0.05, 1.58, -0.02], [0.22, 1.95, -0.42], [0.46, 2.18, -0.72]],
-      [[0.00, 1.74, 0.01], [-0.18, 2.08, 0.38], [-0.48, 2.28, 0.72]],
-      [[0.06, 1.95, 0.00], [0.46, 2.18, -0.16], [0.74, 2.38, -0.28]],
-      [[0.02, 2.02, 0.00], [-0.42, 2.24, 0.12], [-0.70, 2.42, 0.28]],
+      [[0.02, 1.12, 0.00], [0.30, 1.46, 0.06], [0.72, 1.73, 0.15], [1.02, 1.94, 0.23]],
+      [[-0.01, 1.28, 0.02], [-0.28, 1.56, -0.04], [-0.66, 1.84, -0.16], [-0.98, 2.03, -0.22]],
+      [[0.04, 1.47, -0.02], [0.18, 1.77, -0.30], [0.38, 2.02, -0.62], [0.56, 2.18, -0.88]],
+      [[-0.02, 1.63, 0.02], [-0.14, 1.90, 0.28], [-0.34, 2.12, 0.56], [-0.56, 2.28, 0.82]],
+      [[0.04, 1.83, 0.00], [0.34, 2.02, -0.10], [0.62, 2.20, -0.24], [0.82, 2.36, -0.34]],
+      [[0.00, 1.96, 0.00], [-0.28, 2.12, 0.10], [-0.56, 2.29, 0.22], [-0.78, 2.42, 0.34]],
+      [[0.03, 2.12, 0.00], [0.18, 2.31, 0.24], [0.30, 2.47, 0.48]],
+      [[0.00, 2.24, -0.01], [-0.16, 2.40, -0.22], [-0.28, 2.54, -0.42]],
     ] as const;
-    const branches = branchDefs.map((points) => new THREE.TubeGeometry(
+    const branches = branchDefs.map((points, index) => new THREE.TubeGeometry(
       new THREE.CatmullRomCurve3(points.map(([x, y, z]) => new THREE.Vector3(x, y, z))),
-      18,
-      0.032,
+      22,
+      index < 2 ? 0.022 : 0.017,
       8,
       false,
     ));
 
-    const leafGeometry = new THREE.SphereGeometry(1, 14, 10);
+    const leafGeometry = new THREE.SphereGeometry(1, 12, 8);
     const leafPositions = leafGeometry.getAttribute('position') as THREE.BufferAttribute;
     for (let index = 0; index < leafPositions.count; index += 1) {
       const x = leafPositions.getX(index);
       const y = leafPositions.getY(index);
       const z = leafPositions.getZ(index);
-      const warp = 1 + 0.16 * Math.sin(index * 1.73) + 0.08 * Math.cos(index * 0.61);
-      leafPositions.setXYZ(index, x * warp, y * (0.82 + 0.12 * Math.sin(index * 0.47)), z * (0.9 + 0.1 * Math.cos(index * 1.11)));
+      const warp = 1 + 0.13 * Math.sin(index * 1.37) + 0.07 * Math.cos(index * 0.53);
+      leafPositions.setXYZ(index, x * warp, y * (0.78 + 0.16 * Math.sin(index * 0.43)), z * (0.88 + 0.11 * Math.cos(index * 0.91)));
     }
     leafPositions.needsUpdate = true;
     leafGeometry.computeVertexNormals();
-    const leaves = Array.from({ length: woodland ? 132 : 108 }, (_, index) => {
-      const angle = index * 2.3999632297;
-      const ring = 0.24 + (index % 10) * 0.062;
-      const layer = index % 8;
-      const x = Math.cos(angle) * ring * (0.92 + (index % 4) * 0.07);
-      const z = Math.sin(angle) * ring * (0.76 + (index % 3) * 0.09);
-      const y = 1.52 + layer * 0.105 + Math.sin(index * 1.73) * 0.19;
-      const rx = -0.28 + (index % 5) * 0.11;
-      const ry = angle + ((index % 3) - 1) * 0.18;
-      const rz = -0.16 + (index % 5) * 0.08;
-      const sx = 0.088 + (index % 5) * 0.014;
-      const sy = 0.042 + (index % 4) * 0.008;
-      const sz = 0.068 + (index % 6) * 0.01;
-      return { position: [x, y, z] as [number, number, number], rotation: [rx, ry, rz] as [number, number, number], scale: [sx, sy, sz] as [number, number, number], color: index % 2 ? leafA : leafB };
-    });
 
-    return { trunkGeometry, branches, leafGeometry, leaves, trunkColor, branchColor };
+    const foliageAnchors = [
+      ...branchDefs.map((points) => points[points.length - 1]),
+      [0.02, 2.67, 0.02] as const,
+      [0.26, 2.48, 0.12] as const,
+      [-0.24, 2.50, -0.10] as const,
+    ];
+    const hash = (seed: number) => {
+      const value = Math.sin(seed * 12.9898 + (woodland ? 78.233 : 31.417)) * 43758.5453;
+      return value - Math.floor(value);
+    };
+    const leaves = Array.from({ length: woodland ? 224 : 188 }, (_, index) => {
+      const anchor = foliageAnchors[index % foliageAnchors.length];
+      const spread = 0.28 + hash(index * 7 + 1) * 0.24;
+      const theta = hash(index * 7 + 2) * Math.PI * 2;
+      const x = anchor[0] + Math.cos(theta) * spread * (0.55 + hash(index * 7 + 3) * 0.75);
+      const y = anchor[1] - 0.10 + (hash(index * 7 + 4) - 0.35) * 0.52;
+      const z = anchor[2] + Math.sin(theta) * spread * (0.50 + hash(index * 7 + 5) * 0.72);
+      const rx = (hash(index * 7 + 6) - 0.5) * 1.05;
+      const ry = theta + (hash(index * 7 + 7) - 0.5) * 0.8;
+      const rz = (hash(index * 7 + 8) - 0.5) * 0.9;
+      const sx = 0.060 + hash(index * 7 + 9) * 0.055;
+      const sy = 0.028 + hash(index * 7 + 10) * 0.031;
+      const sz = 0.045 + hash(index * 7 + 11) * 0.052;
+      return {
+        position: [x, y, z] as [number, number, number],
+        rotation: [rx, ry, rz] as [number, number, number],
+        scale: [sx, sy, sz] as [number, number, number],
+        color: index % 3 === 0 ? leafB : leafA,
+      };
+    });
+    const leavesA = leaves.filter((leaf) => leaf.color === leafA);
+    const leavesB = leaves.filter((leaf) => leaf.color === leafB);
+
+    return { trunkGeometry, branches, leafGeometry, leavesA, leavesB, leafA, leafB, trunkColor, branchColor };
   }, [profile.id]);
 
   useEffect(() => () => {
@@ -296,11 +342,11 @@ function NaturalCanopy({ profile, position, rotationY, scale }: {
     rotation={[0, rotationY, 0]}
     scale={scale}
     raycast={() => null}
-    name="ground-authored-natural-canopy-v7"
+    name="ground-authored-natural-canopy-v8"
     userData={{
-      treatment: "deterministic-curved-branch-and-fine-irregular-foliage-crown-canopy-v7",
+      treatment: "deterministic-curved-branch-tip-instanced-organic-foliage-canopy-v8",
       provenance: NATURAL_CANOPY,
-      visibleAuthority: "runtime-authored-canopy-v7",
+      visibleAuthority: "runtime-authored-canopy-v8",
       supersedesVisibleCandidate: "ground-natural-canopy-v3-low-poly-silhouette",
     }}
   >
@@ -311,22 +357,8 @@ function NaturalCanopy({ profile, position, rotationY, scale }: {
     {authored.branches.map((geometry, index) => <mesh key={index} geometry={geometry} castShadow receiveShadow>
       <meshStandardMaterial color={authored.branchColor} roughness={0.94} metalness={0} envMapIntensity={0.26} />
     </mesh>)}
-    {authored.leaves.map((leaf, index) => <mesh
-      key={index}
-      geometry={authored.leafGeometry}
-      position={leaf.position}
-      rotation={leaf.rotation}
-      scale={leaf.scale}
-      castShadow
-      receiveShadow
-    >
-      <meshStandardMaterial
-        color={leaf.color}
-        roughness={0.96}
-        metalness={0}
-        envMapIntensity={0.16}
-      />
-    </mesh>)}
+    <CanopyLeafInstances geometry={authored.leafGeometry} leaves={authored.leavesA} color={authored.leafA} />
+    <CanopyLeafInstances geometry={authored.leafGeometry} leaves={authored.leavesB} color={authored.leafB} />
   </group>;
 }
 
@@ -722,7 +754,7 @@ export default function GroundSpatialWorldClean() {
     data-ground-visual-owner="physical-lived-world"
     data-ground-runtime-owner="first-person-lived-world"
     data-ground-visual-revision="ground-lived-world-v2-canon-lock"
-    data-ground-art-revision="ground-natural-surface-v7-fine-canopy-v7-atmosphere-v1-ridge-v3"
+    data-ground-art-revision="ground-natural-surface-v8-instanced-organic-canopy-v8-atmosphere-v1-ridge-v3"
     data-ground-exploration="first-person-no-visible-body"
     data-ground-camera="eye-level-terrain-following-no-authored-bob"
     data-ground-eye-height={GROUND_EYE_HEIGHT_M}

@@ -22,7 +22,7 @@ const captures = []
 const errors = []
 let activeScenario = 'initializing'
 let activePhase = 'launch-browser'
-const watchdogMs = Number.parseInt(process.env.URAI_GROUND_PROOF_WATCHDOG_MS || '', 10) || 20 * 60 * 1000
+const watchdogMs = Number.parseInt(process.env.URAI_GROUND_PROOF_WATCHDOG_MS || '', 10) || 30 * 60 * 1000
 const watchdog = setTimeout(async () => {
   const message = `Ground proof watchdog expired in scenario=${activeScenario} phase=${activePhase}`
   const watchdogReceipt = {
@@ -49,6 +49,18 @@ async function capture(page, scenario, state) {
   await page.screenshot({ path: path.join(outDir, file), fullPage: false, animations: 'disabled', caret: 'hide', timeout: 90_000 })
   captures.push({ scenario: scenario.id, environment: scenario.environment, reducedMotion: scenario.reducedMotion, state, file })
   console.log(`[ground-proof] scenario=${activeScenario} phase=${activePhase} complete`)
+}
+
+async function closeWithBudget(label, closeFn, budgetMs = 10_000) {
+  let timer
+  const timeout = new Promise((resolve) => { timer = setTimeout(() => resolve('timeout'), budgetMs) })
+  const closed = Promise.resolve().then(closeFn).then(() => 'closed').catch((error) => {
+    console.warn(`[ground-proof] ${label} close error: ${String(error)}`)
+    return 'error'
+  })
+  const result = await Promise.race([closed, timeout])
+  clearTimeout(timer)
+  if (result === 'timeout') console.warn(`[ground-proof] ${label} close exceeded ${budgetMs}ms after required evidence was captured`)
 }
 
 async function dragLook(page, canvasBox, dx, dy) {
@@ -186,7 +198,7 @@ try {
     captures[captures.length - 1].contract = contract
     errors.push(...pageErrors.map((error) => `${scenario.id}: ${error}`))
     activePhase = 'context-close'
-    await context.close()
+    await closeWithBudget(`context:${scenario.id}`, () => context.close())
     activePhase = 'scenario-complete'
     console.log(`[ground-proof] scenario=${activeScenario} phase=${activePhase}`)
   }
@@ -196,7 +208,7 @@ try {
   console.error(`[ground-proof] ${message}`)
 } finally {
   activePhase = 'browser-close'
-  await browser.close()
+  await closeWithBudget('browser', () => browser.close(), 15_000)
   clearTimeout(watchdog)
 }
 
