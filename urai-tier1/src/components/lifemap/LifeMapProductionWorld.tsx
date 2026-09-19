@@ -363,12 +363,15 @@ function NebulaBreath({ reducedMotion, selected }: { reducedMotion: boolean; sel
       void main(){
         vec3 p=vPosition*.055;
         float n=noise(p)+.52*noise(p*2.07+4.1)+.24*noise(p*4.13-7.3);
-        float bands=.5+.5*sin(vPosition.x*.19+vPosition.y*.23+n*4.2+uTime*.05);
-        float lane=exp(-pow((vPosition.y-vPosition.x*.17-3.*sin(vPosition.x*.08))/9.,2.));
-        float veil=smoothstep(.55,1.12,n)*(.55+.45*bands)*lane;
-        vec3 c=mix(vec3(.025,.15,.19),vec3(.25,.10,.34),noise(p*.72+11.));
-        c=mix(c,vec3(.10,.30,.31),smoothstep(.72,1.2,n));
-        gl_FragColor=vec4(c,(.04+.42*veil)*mix(1.0,1.12,uSelected));
+        float bands=.5+.5*sin(vPosition.x*.17+vPosition.y*.21+n*4.8+uTime*.035);
+        float laneA=exp(-pow((vPosition.y-vPosition.x*.13-2.4*sin(vPosition.x*.07))/7.5,2.));
+        float laneB=exp(-pow((vPosition.y+vPosition.x*.18+4.2*sin(vPosition.x*.045+1.7))/11.,2.));
+        float dust=.58+.42*noise(p*1.31+19.7);
+        float veil=smoothstep(.68,1.18,n)*(.34+.66*bands)*max(laneA,laneB*.72)*dust;
+        vec3 c=mix(vec3(.012,.055,.075),vec3(.11,.045,.15),noise(p*.72+11.));
+        c=mix(c,vec3(.055,.16,.17),smoothstep(.80,1.22,n));
+        float alpha=(.006+.22*veil)*mix(1.0,.62,uSelected);
+        gl_FragColor=vec4(c,alpha);
         #include <colorspace_fragment>
       }
     `,
@@ -425,7 +428,7 @@ function LifeCore({ hidden, reducedMotion, tier }: { hidden?: boolean; reducedMo
     root.current.rotation.y = clock.elapsedTime * .025;
     root.current.rotation.z = Math.sin(clock.elapsedTime * .11) * .035;
   });
-  const coreDust = tier === "low" ? 70 : tier === "medium" ? 120 : 190;
+  const coreDust = tier === "low" ? 90 : tier === "medium" ? 160 : 240;
   return <group
     ref={root}
     visible={!hidden}
@@ -433,10 +436,10 @@ function LifeCore({ hidden, reducedMotion, tier }: { hidden?: boolean; reducedMo
     position={[0,1.15,-22]}
     userData={{ visualRole: "white-gold-galactic-heart", artRevision: "v290-layered-living-galaxy" }}
   >
-    <AuthoredMemoryStar aura={GOLD} active siteKey={`core-${tier}`} scale={2.25} />
-    <FieldParticles seed={444} count={coreDust} radius={5.8} depth={4.4} height={4.2} color={GOLD} opacity={.58} size={.075} />
-    <FieldParticles seed={445} count={Math.round(coreDust * .72)} radius={7.6} depth={5.4} height={5.2} color={ICE} opacity={.34} size={.055} />
-    <Sparkles count={tier === "low" ? 26 : 54} scale={[7.2,4.5,5.8]} size={2.4} speed={reducedMotion ? 0 : .045} opacity={.52} color="#fff4ce" />
+    <AuthoredMemoryStar aura={GOLD} active siteKey={`core-${tier}`} scale={3.0} />
+    <FieldParticles seed={444} count={coreDust} radius={7.4} depth={5.6} height={5.4} color={GOLD} opacity={.68} size={.082} />
+    <FieldParticles seed={445} count={Math.round(coreDust * .72)} radius={9.2} depth={6.8} height={6.1} color={ICE} opacity={.30} size={.052} />
+    <Sparkles count={tier === "low" ? 32 : 72} scale={[9.4,5.7,7.2]} size={2.6} speed={reducedMotion ? 0 : .035} opacity={.58} color="#fff4ce" />
     <pointLight color="#fff0bd" intensity={10.5} distance={34} decay={2} />
     <pointLight position={[0,0,-3]} color="#bdefff" intensity={4.2} distance={28} decay={2} />
   </group>;
@@ -710,24 +713,37 @@ function SpiralGalaxyField({ qualityTier, reducedMotion, selected }: { qualityTi
     const teal = new THREE.Color("#72d3cf");
     for (let index = 0; index < count; index += 1) {
       const arm = index % 4;
-      const u = Math.pow(seeded(index + 1900, 70), .64);
-      const radius = .9 + u * 25.5;
-      const jitter = (seeded(index + 1900, 71) - .5) * (.35 + u * 1.55);
-      const angle = arm * Math.PI * .5 + radius * .39 + jitter;
-      const thickness = .35 + u * 1.65;
-      const x = Math.cos(angle) * radius * 1.06 + (seeded(index + 1900, 72) - .5) * thickness;
-      const y = Math.sin(angle) * radius * .43 + (seeded(index + 1900, 73) - .5) * thickness * .62;
-      const z = (seeded(index + 1900, 74) - .5) * (2.1 + u * 3.2) - u * 1.3;
+      const kind = seeded(index + 1900, 69);
+      const u = Math.pow(seeded(index + 1900, 70), .72);
+      let x: number, y: number, z: number, color: THREE.Color, size: number;
+      if (kind < .30) {
+        const radius = Math.pow(seeded(index + 1900, 71), 1.95) * 9.2;
+        const angle = seeded(index + 1900, 72) * Math.PI * 2;
+        x = Math.cos(angle) * radius * 1.22 + (seeded(index + 1900, 73) - .5) * 1.25;
+        y = Math.sin(angle) * radius * .40 + (seeded(index + 1900, 74) - .5) * 1.5;
+        z = (seeded(index + 1900, 75) - .5) * (2.5 + radius * .22);
+        color = warm.clone().lerp(ice, .08 + seeded(index + 1900, 76) * .18);
+        size = 1.05 + Math.pow(seeded(index + 1900, 77), 4) * 4.15;
+      } else {
+        const radius = 4.4 + u * 24.8;
+        const angularNoise = (seeded(index + 1900, 71) - .5) * (1.05 + u * 1.9);
+        const angle = arm * Math.PI * .5 + radius * .235 + angularNoise;
+        const thickness = .85 + u * 3.15;
+        x = Math.cos(angle) * radius * 1.16 + (seeded(index + 1900, 72) - .5) * thickness;
+        y = Math.sin(angle) * radius * .37 + (seeded(index + 1900, 73) - .5) * thickness * .82;
+        z = (seeded(index + 1900, 74) - .5) * (3.0 + u * 4.8) - u * .65;
+        color = warm.clone();
+        color.lerp(arm === 0 ? ice : arm === 1 ? violet : arm === 2 ? teal : ice, THREE.MathUtils.clamp(.18 + u * .62, 0, .74));
+        size = .64 + Math.pow(seeded(index + 1900, 76), 5) * 3.25;
+      }
       positions[index * 3] = x;
       positions[index * 3 + 1] = y;
       positions[index * 3 + 2] = z;
-      const color = warm.clone();
-      if (u > .28) color.lerp(arm === 0 ? ice : arm === 1 ? violet : arm === 2 ? teal : ice, THREE.MathUtils.clamp((u - .18) * .9, 0, .78));
-      const dim = .72 + seeded(index + 1900, 75) * .28;
+      const dim = .68 + seeded(index + 1900, 78) * .32;
       colors[index * 3] = color.r * dim;
       colors[index * 3 + 1] = color.g * dim;
       colors[index * 3 + 2] = color.b * dim;
-      sizes[index] = .72 + Math.pow(seeded(index + 1900, 76), 5) * 3.1;
+      sizes[index] = size;
     }
     const next = new THREE.BufferGeometry();
     next.setAttribute("position", new THREE.BufferAttribute(positions, 3));
@@ -740,7 +756,7 @@ function SpiralGalaxyField({ qualityTier, reducedMotion, selected }: { qualityTi
     depthWrite: false,
     vertexColors: true,
     blending: THREE.AdditiveBlending,
-    uniforms: { uDpr: { value: gl.getPixelRatio() }, uOpacity: { value: selected ? .42 : .88 } },
+    uniforms: { uDpr: { value: gl.getPixelRatio() }, uOpacity: { value: selected ? .24 : .92 } },
     vertexShader: `uniform float uDpr; attribute float aSize; varying vec3 vColor;
       void main(){vColor=color;vec4 p=modelViewMatrix*vec4(position,1.);gl_Position=projectionMatrix*p;gl_PointSize=clamp(aSize*135./max(8.,-p.z),1.,6.)*uDpr;}`,
     fragmentShader: `
@@ -758,21 +774,21 @@ function SpiralGalaxyField({ qualityTier, reducedMotion, selected }: { qualityTi
   useEffect(() => () => material.dispose(), [material]);
   useFrame(({ clock }) => {
     material.uniforms.uDpr.value = gl.getPixelRatio();
-    material.uniforms.uOpacity.value = selected ? .42 : .88;
+    material.uniforms.uOpacity.value = selected ? .24 : .92;
     if (!root.current || reducedMotion) return;
     root.current.rotation.z = -.12 + Math.sin(clock.elapsedTime * .035) * .012;
   });
   return <group
     ref={root}
     name="life-map-v290-layered-living-galaxy"
-    position={[0,1.2,-29]}
+    position={[0,1.2,-24.5]}
     rotation={[.04,0,-.12]}
-    scale={[1.08,1,1]}
+    scale={[1.22,1.08,1]}
     userData={{ visualRole: "four-arm-personal-galaxy", source: "authored-runtime-memory-star-system", placeholderPlate: false }}
   >
     <points geometry={geometry} material={material} />
-    <FieldParticles seed={2010} count={qualityTier === "low" ? 120 : 260} radius={14} depth={7} height={8} color={VIOLET} opacity={selected ? .10 : .22} size={.085} />
-    <FieldParticles seed={2011} count={qualityTier === "low" ? 100 : 220} radius={10} depth={6} height={6} color={CYAN} opacity={selected ? .08 : .19} size={.07} />
+    <FieldParticles seed={2010} count={qualityTier === "low" ? 120 : 260} radius={15.5} depth={8.5} height={9.5} color={VIOLET} opacity={selected ? .05 : .16} size={.075} />
+    <FieldParticles seed={2011} count={qualityTier === "low" ? 100 : 220} radius={11.5} depth={7.5} height={7.5} color={CYAN} opacity={selected ? .04 : .14} size={.064} />
   </group>;
 }
 
