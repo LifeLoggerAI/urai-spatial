@@ -17,6 +17,13 @@ import { requestUraiWorldReturn, requestUraiWorldTravel } from '@/spatial/world/
 
 const DEFAULT_CAMERA: [number, number, number] = [0, 1.18, 5.1]
 const DEFAULT_TARGET: [number, number, number] = [0, -0.02, -1.55]
+// V322 changes selected-memory composition rather than geology. Wide selected-memory
+// views move into a deliberate approach shot; portrait keeps the proven camera
+// distance and lowers only the look target so the rupture owns hierarchy without
+// crowding the mobile control rail. Neutral Focus remains on the original framing.
+const SELECTED_MEMORY_WIDE_CAMERA: [number, number, number] = [0, 0.45, 2.15]
+const SELECTED_MEMORY_WIDE_TARGET: [number, number, number] = [0, -1.0, -1.55]
+const SELECTED_MEMORY_PORTRAIT_TARGET: [number, number, number] = [0, -0.78, -1.55]
 const CAMERA_LIMIT = 8.8
 const FOCUS_CHAMBER_MODEL = '/assets/urai/generated/models/focus-memory-chamber-v1.glb'
 
@@ -106,12 +113,17 @@ function WebGLRecoveryBridge({ onStateChange }: { onStateChange: (state: WebGLSt
   return null
 }
 
-function FocusCameraRig({ controls, recenterSignal, shellRef }: { controls: RefObject<OrbitControlsImpl | null>; recenterSignal: number; shellRef: RefObject<HTMLElement | null> }) {
-  const { camera, invalidate } = useThree()
+function FocusCameraRig({ controls, recenterSignal, shellRef, selectedMemoryActive }: { controls: RefObject<OrbitControlsImpl | null>; recenterSignal: number; shellRef: RefObject<HTMLElement | null>; selectedMemoryActive: boolean }) {
+  const { camera, invalidate, size } = useThree()
   const keys = useRef(new Set<string>())
-  const target = useMemo(() => new THREE.Vector3(...DEFAULT_TARGET), [])
-  const defaultTarget = useMemo(() => new THREE.Vector3(...DEFAULT_TARGET), [])
-  const defaultCamera = useMemo(() => new THREE.Vector3(...DEFAULT_CAMERA), [])
+  const wideSelectedFraming = selectedMemoryActive && size.width / Math.max(1, size.height) >= 1.05
+  const framingCamera = wideSelectedFraming ? SELECTED_MEMORY_WIDE_CAMERA : DEFAULT_CAMERA
+  const framingTarget = selectedMemoryActive
+    ? wideSelectedFraming ? SELECTED_MEMORY_WIDE_TARGET : SELECTED_MEMORY_PORTRAIT_TARGET
+    : DEFAULT_TARGET
+  const target = useMemo(() => new THREE.Vector3(...framingTarget), [selectedMemoryActive, wideSelectedFraming])
+  const defaultTarget = useMemo(() => new THREE.Vector3(...framingTarget), [selectedMemoryActive, wideSelectedFraming])
+  const defaultCamera = useMemo(() => new THREE.Vector3(...framingCamera), [wideSelectedFraming])
   const forward = useRef(new THREE.Vector3())
   const right = useRef(new THREE.Vector3())
   const movement = useRef(new THREE.Vector3())
@@ -139,8 +151,8 @@ function FocusCameraRig({ controls, recenterSignal, shellRef }: { controls: RefO
   }, [invalidate])
 
   useEffect(() => {
-    camera.position.set(...DEFAULT_CAMERA)
-    controls.current?.target.set(...DEFAULT_TARGET)
+    camera.position.set(...framingCamera)
+    controls.current?.target.set(...framingTarget)
     controls.current?.update()
     const shell = shellRef.current
     if (shell) {
@@ -149,8 +161,11 @@ function FocusCameraRig({ controls, recenterSignal, shellRef }: { controls: RefO
       shell.dataset.focusCameraZ = camera.position.z.toFixed(3)
       shell.dataset.focusDistance = camera.position.distanceTo(defaultCamera).toFixed(3)
       shell.dataset.focusMoving = 'false'
+      shell.dataset.focusSelectedFraming = selectedMemoryActive
+        ? wideSelectedFraming ? 'v322-wide-selected-memory-approach' : 'v322-portrait-selected-memory-lowered-target'
+        : 'neutral-observatory-default'
     }
-  }, [camera, controls, defaultCamera, recenterSignal, shellRef])
+  }, [camera, controls, defaultCamera, framingCamera, framingTarget, recenterSignal, selectedMemoryActive, shellRef, wideSelectedFraming])
 
   useFrame((_, delta) => {
     const moving = keys.current.size > 0
@@ -436,7 +451,7 @@ function FocusScene({ memory, profile, recenterSignal, onActivate, controls, onW
     <MemoryTraces memory={memory} accent={accent} reducedMotion={profile.reducedMotion} />
     <MemoryAperture memory={memory} accent={accent} light={light} reducedMotion={profile.reducedMotion} onActivate={onActivate} />
     <OrbitControls ref={controls} makeDefault enableDamping={!profile.reducedMotion} dampingFactor={0.07} enablePan={false} enableZoom minDistance={2.4} maxDistance={10.5} zoomSpeed={0.55} rotateSpeed={0.32} minPolarAngle={0.58} maxPolarAngle={1.9} target={DEFAULT_TARGET} />
-    <FocusCameraRig controls={controls} recenterSignal={recenterSignal} shellRef={shellRef} />
+    <FocusCameraRig controls={controls} recenterSignal={recenterSignal} shellRef={shellRef} selectedMemoryActive={Boolean(memory)} />
   </>
 }
 
@@ -514,7 +529,7 @@ export default function FocusChamberClient() {
   const webglUsable = webglAvailable === true && webglState !== 'failed'
   const boundedCadence = !rendererClassified || softwareRenderer || profile.reducedMotion
 
-  return <main ref={shellRef} className="focusWorld" style={style} data-testid="urai-final-focus-chamber" data-focus-composition="authored-floor-with-dominant-single-living-memory-fold" data-focus-visual-revision="v272-single-connected-living-memory-fold" data-focus-spatial="explorable-observatory" data-focus-movement="walk-keyboard-orbit-touch" data-focus-pointer-lock="false" data-focus-camera-x="0.000" data-focus-camera-y="1.180" data-focus-camera-z="5.100" data-focus-distance="0.000" data-focus-moving="false" data-memory-status={result.status} data-chamber-state={chamberState} data-webgl-state={webglState} data-canonical-asset={focusAssets.primary.src} data-focus-physical-asset={FOCUS_CHAMBER_MODEL} data-spatial-quality={profile.tier} data-software-renderer={!rendererClassified ? 'detecting' : softwareRenderer ? 'true' : 'false'} data-render-cadence={boundedCadence ? 'bounded-demand-4fps' : 'continuous'} data-memory-id={memory?.id} data-manifest-id={memory?.replayManifest.id} data-star-id={memory?.star.id} data-node={memory?.star.id}>
+  return <main ref={shellRef} className="focusWorld" style={style} data-testid="urai-final-focus-chamber" data-focus-composition="authored-floor-with-dominant-single-living-memory-fold" data-focus-visual-revision="v272-single-connected-living-memory-fold" data-focus-selected-framing={memory ? 'v322-selected-memory-approach' : 'neutral-observatory-default'} data-focus-spatial="explorable-observatory" data-focus-movement="walk-keyboard-orbit-touch" data-focus-pointer-lock="false" data-focus-camera-x="0.000" data-focus-camera-y="1.180" data-focus-camera-z="5.100" data-focus-distance="0.000" data-focus-moving="false" data-memory-status={result.status} data-chamber-state={chamberState} data-webgl-state={webglState} data-canonical-asset={focusAssets.primary.src} data-focus-physical-asset={FOCUS_CHAMBER_MODEL} data-spatial-quality={profile.tier} data-software-renderer={!rendererClassified ? 'detecting' : softwareRenderer ? 'true' : 'false'} data-render-cadence={boundedCadence ? 'bounded-demand-4fps' : 'continuous'} data-memory-id={memory?.id} data-manifest-id={memory?.replayManifest.id} data-star-id={memory?.star.id} data-node={memory?.star.id}>
     <h1 className="srOnly">URAI Focus spatial memory observatory</h1>
     <div className="focusBackdrop" aria-hidden="true" />
     <div className="focusFog" aria-hidden="true" />
