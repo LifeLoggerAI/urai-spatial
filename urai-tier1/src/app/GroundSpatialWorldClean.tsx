@@ -47,9 +47,9 @@ type EnvironmentProfile = {
 };
 
 const PROFILES: Record<EnvironmentProfileId, EnvironmentProfile> = {
-  temperate: { id: "temperate", label: "Temperate lived world", ground: "#596552", groundDeep: "#30382f", accent: "#86916f", horizon: "#4d6258", fog: "#7d9388", roughness: 0.94, textureRepeat: [9, 11] },
+  temperate: { id: "temperate", label: "Temperate lived world", ground: "#596552", groundDeep: "#30382f", accent: "#86916f", horizon: "#394c43", fog: "#667f73", roughness: 0.94, textureRepeat: [4, 5] },
   urban: { id: "urban", label: "Urban lived world", ground: "#66645f", groundDeep: "#34363a", accent: "#8a8177", horizon: "#56616a", fog: "#87919a", roughness: 0.88, textureRepeat: [12, 14] },
-  woodland: { id: "woodland", label: "Woodland lived world", ground: "#414d3f", groundDeep: "#252d27", accent: "#68795d", horizon: "#354d43", fog: "#71887c", roughness: 0.97, textureRepeat: [8, 10] },
+  woodland: { id: "woodland", label: "Woodland lived world", ground: "#414d3f", groundDeep: "#252d27", accent: "#68795d", horizon: "#2f4239", fog: "#5f786b", roughness: 0.97, textureRepeat: [4, 5] },
   arid: { id: "arid", label: "Arid lived world", ground: "#8a6f52", groundDeep: "#554235", accent: "#b28c62", horizon: "#8c725d", fog: "#ba9b7b", roughness: 0.91, textureRepeat: [7, 9] },
   coastal: { id: "coastal", label: "Coastal lived world", ground: "#807563", groundDeep: "#4d504b", accent: "#a69b81", horizon: "#66818a", fog: "#8fa7aa", roughness: 0.89, textureRepeat: [10, 12] },
 };
@@ -135,11 +135,11 @@ function TerrainMaterial({ profile }: { profile: EnvironmentProfile }) {
     return null;
   }, [albedo, arm, normal, profile]);
   return <meshStandardMaterial
-    map={albedo}
+    map={naturalProfile ? null : albedo}
     normalMap={normal}
-    normalScale={new THREE.Vector2(naturalProfile ? 0.34 : profile.id === "urban" ? 0.34 : 0.62, naturalProfile ? 0.34 : profile.id === "urban" ? 0.34 : 0.62)}
+    normalScale={new THREE.Vector2(naturalProfile ? 0.18 : profile.id === "urban" ? 0.34 : 0.62, naturalProfile ? 0.18 : profile.id === "urban" ? 0.34 : 0.62)}
     aoMap={arm}
-    aoMapIntensity={naturalProfile ? 0.52 : 0.72}
+    aoMapIntensity={naturalProfile ? 0.34 : 0.72}
     roughnessMap={arm}
     roughness={naturalProfile ? 0.96 : profile.roughness}
     metalnessMap={naturalProfile ? null : arm}
@@ -295,7 +295,7 @@ function NaturalCanopy({ profile, position, rotationY, scale, shapeSeed }: {
       false,
     ));
 
-    const leafGeometry = new THREE.SphereGeometry(1, 10, 6);
+    const leafGeometry = new THREE.SphereGeometry(1, 16, 10);
 
     const foliageAnchors = [
       ...transformedBranchDefs.map((points) => points[points.length - 1]),
@@ -307,9 +307,9 @@ function NaturalCanopy({ profile, position, rotationY, scale, shapeSeed }: {
       const value = Math.sin(seed * 12.9898 + shapeSeed * 53.117 + (woodland ? 78.233 : 31.417)) * 43758.5453;
       return value - Math.floor(value);
     };
-    const leaves = Array.from({ length: woodland ? 166 : 146 }, (_, index) => {
+    const leaves = Array.from({ length: woodland ? 300 : 268 }, (_, index) => {
       const anchor = foliageAnchors[index % foliageAnchors.length];
-      const spread = 0.09 + hash(index * 7 + 1) * 0.23;
+      const spread = 0.08 + hash(index * 7 + 1) * 0.27;
       const theta = hash(index * 7 + 2) * Math.PI * 2;
       const x = anchor[0] + Math.cos(theta) * spread * (0.48 + hash(index * 7 + 3) * 0.92);
       const y = anchor[1] - 0.01 + (hash(index * 7 + 4) - 0.46) * 0.34;
@@ -317,9 +317,9 @@ function NaturalCanopy({ profile, position, rotationY, scale, shapeSeed }: {
       const rx = (hash(index * 7 + 6) - 0.5) * 1.28;
       const ry = theta + (hash(index * 7 + 7) - 0.5) * 1.15;
       const rz = (hash(index * 7 + 8) - 0.5) * 1.12;
-      const sx = 0.075 + hash(index * 7 + 9) * 0.105;
-      const sy = 0.028 + hash(index * 7 + 10) * 0.045;
-      const sz = 0.060 + hash(index * 7 + 11) * 0.085;
+      const sx = 0.095 + hash(index * 7 + 9) * 0.13;
+      const sy = 0.042 + hash(index * 7 + 10) * 0.060;
+      const sz = 0.078 + hash(index * 7 + 11) * 0.11;
       return {
         position: [x, y, z] as [number, number, number],
         rotation: [rx, ry, rz] as [number, number, number],
@@ -424,7 +424,7 @@ function NaturalScatter({ profile }: { profile: EnvironmentProfile }) {
       const value = Math.sin(seed * 12.9898 + profile.id.length * 41.733) * 43758.5453;
       return value - Math.floor(value);
     };
-    return Array.from({ length: profile.id === "urban" ? 18 : 42 }, (_, index) => {
+    return Array.from({ length: profile.id === "urban" ? 18 : 92 }, (_, index) => {
       const side = hash(index * 5 + 1) > 0.5 ? -1 : 1;
       const lane = 5.8 + hash(index * 5 + 2) * 17.8;
       const x = side * lane + (hash(index * 5 + 3) - 0.5) * 4.8;
@@ -442,7 +442,7 @@ function NaturalScatter({ profile }: { profile: EnvironmentProfile }) {
   }
   if (profile.id === "arid") {
     return <group name="ground-arid-scanned-geology" userData={{ treatment: "polyhaven-scanned-rock-field" }} raycast={() => null}>
-      {items.slice(0, 12).map((item) => <ScannedRock key={item.index} variant={item.index % 2 ? "01" : "02"} position={[item.x, item.y - 0.02, item.z]} rotation={[0, item.index * 0.41, 0]} scale={[2.2 * item.scale, 1.25 * item.scale, 2.45 * item.scale]} />)}
+      {items.slice(0, 18).map((item) => <ScannedRock key={item.index} variant={item.index % 2 ? "01" : "02"} position={[item.x, item.y - 0.02, item.z]} rotation={[0, item.index * 0.41, 0]} scale={[2.2 * item.scale, 1.25 * item.scale, 2.45 * item.scale]} />)}
     </group>;
   }
   if (profile.id === "coastal") {
@@ -453,8 +453,8 @@ function NaturalScatter({ profile }: { profile: EnvironmentProfile }) {
   }
 
   const woodland = profile.id === "woodland";
-  const ferns = items.slice(0, woodland ? 36 : 30);
-  const canopies = items.filter((item) => item.z < (woodland ? 2.5 : 0.5)).slice(0, woodland ? 32 : 26);
+  const ferns = items.slice(0, woodland ? 76 : 64);
+  const canopies = items.filter((item) => item.z < (woodland ? 6.0 : 4.5)).slice(0, woodland ? 70 : 60);
   return <group name={woodland ? "ground-woodland-scanned-understory" : "ground-temperate-scanned-understory"} userData={{ treatment: "urai-self-authored-varied-canopy-v13-with-polyhaven-fern-rock-understory", canopyFallback: "scanned-understory-remains-without-canopy" }} raycast={() => null}>
     <GroundCanopyBoundary>
       <Suspense fallback={null}>
@@ -466,7 +466,7 @@ function NaturalScatter({ profile }: { profile: EnvironmentProfile }) {
             profile={profile}
             position={[x, groundHeight(x, z, profile.id) - 0.02, z]}
             rotationY={item.index * 0.91 + (woodland ? 0.22 : -0.14)}
-            scale={(woodland ? 1.48 : 1.38) + item.scale * 0.34}
+            scale={(woodland ? 1.62 : 1.52) + item.scale * 0.38}
             shapeSeed={item.index + (woodland ? 101 : 17)}
           />;
         })}
@@ -525,7 +525,10 @@ function DistantGroundContinuation({ profile }: { profile: EnvironmentProfile })
       <meshBasicMaterial color={profile.horizon} fog toneMapped={false} />
     </mesh>
     <mesh name="ground-authored-distant-ridge-v4" geometry={ridge}>
-      <meshBasicMaterial color={profile.groundDeep} fog toneMapped={false} />
+      <meshStandardMaterial color={profile.groundDeep} roughness={1} metalness={0} fog />
+    </mesh>
+    <mesh name="ground-atmospheric-ridge-layer" geometry={ridge} position={[0, -1.6, -34]} scale={[1.12, 0.72, 1.08]} raycast={() => null}>
+      <meshStandardMaterial color={profile.horizon} roughness={1} metalness={0} fog transparent opacity={0.72} />
     </mesh>
   </group>;
 }
