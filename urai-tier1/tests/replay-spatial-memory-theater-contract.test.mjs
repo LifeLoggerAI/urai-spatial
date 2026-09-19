@@ -15,11 +15,11 @@ test('Replay owns a real R3F memory theater instead of a CSS-only composition', 
   assert.ok(fs.statSync(model).size > 100_000, 'Replay environment must be a real binary asset')
 })
 
-test('Replay projects source media into the in-world screen and preserves video play state', () => {
-  assert.match(source, /function MemoryMediaSurface/)
+test('Replay projects source media into the in-world memory field and preserves video play state', () => {
+  assert.match(source, /function RecordedMemoryField/)
   assert.match(source, /new THREE\.VideoTexture\(video\)/)
   assert.match(source, /new THREE\.TextureLoader\(\)/)
-  assert.match(source, /REPLAY_SCREEN_POSITION/)
+  assert.match(source, /REPLAY_FIELD_POSITION/)
   assert.match(source, /if \(playing\) void video\.play\(\)\.catch/)
   assert.match(source, /else video\.pause\(\)/)
 })
@@ -33,7 +33,7 @@ test('Replay camera and timeline are semantic functions of replay progress', () 
 })
 
 test('Replay keeps accessible product controls above the spatial scene', () => {
-  assert.match(source, /<section className="controls" aria-label="Replay controls">/)
+  assert.match(source, /<section className="memoryPacing" aria-label="Replay pacing"/)
   assert.match(source, /<ReplayProductControls memory=\{memory\} \/>/)
   assert.match(source, /<details className="transcript">/)
   assert.match(source, /event\.key === 'Escape'/)
