@@ -83,7 +83,7 @@ test('V285 portrait overview expands data-derived territory hierarchy vertically
   assert.match(cosmic, /opacity=\{\.90\}/)
   assert.match(cosmic, /spread=\{region\.spread \* \(portrait \? 1\.48 : 1\.30\)\}/)
   assert.match(cosmic, /data-life-map-galaxy-polish="v286-layered-living-galaxy-no-shards"/)
-  const overview = sliceBetween(cosmic, 'function OverviewRegions', 'function SelectedTravelWeather')
+  const overview = cosmic.slice(cosmic.indexOf('function OverviewRegions'), cosmic.indexOf('function SelectedTravelWeather'))
   assert.doesNotMatch(overview, /<CelestialRegionCanopy/, 'rejected faceted canopy forms must not own the overview')
   assert.match(cosmic, /life-map-v286-layered-living-galaxy-core/)
   assert.doesNotMatch(cosmic, /const count = 500|const count = 1000/)
