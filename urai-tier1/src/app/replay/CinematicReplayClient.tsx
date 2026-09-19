@@ -313,13 +313,13 @@ function replayDemoCoveSideGeometry(side: -1 | 1) {
     const z = 2.0 - u * 37
     for (let row = 0; row <= rows; row += 1) {
       const v = row / rows
-      const y = -2.45 + v * (7.2 + u * 2.8)
-      const shelf = 4.15 + u * 2.6
+      const y = -2.45 + v * (4.3 + u * 1.35)
+      const shelf = 5.15 + u * 2.15
         + Math.sin(u * 8.1 + v * 4.7 + side) * .52
         + Math.sin(u * 20.3 - v * 8.2) * .22
-      const undercut = Math.sin(v * Math.PI) * (.35 + .55 * Math.sin(u * 5.3 + 1.2))
+      const undercut = Math.sin(v * Math.PI) * (.22 + .36 * Math.sin(u * 5.3 + 1.2))
       const x = side * (shelf + undercut)
-      const erosion = .16 * Math.sin(z * .61 + y * 1.12) + .08 * Math.sin(z * 1.83 - y * 2.14)
+      const erosion = .24 * Math.sin(z * .61 + y * 1.12) + .13 * Math.sin(z * 1.83 - y * 2.14)
       positions.push(x + side * erosion, y, z)
       const depth = THREE.MathUtils.clamp(.18 + u * .46 + v * .12, 0, 1)
       const color = shadow.clone().lerp(stone, .32 + depth * .48).lerp(warm, Math.max(0, .42 - u) * .20)
@@ -390,8 +390,8 @@ function ReplayScannedProp({ src, position, rotation, scale }: {
 }
 
 function ReplayDemoLake() {
-  return <mesh name="replay-v235-memory-water-thread" position={[0, -2.18, -15.2]} rotation={[-Math.PI / 2, 0, 0]} raycast={() => null} receiveShadow>
-    <planeGeometry args={[6.8, 18.8, 20, 42]} />
+  return <mesh name="replay-v235-memory-water-thread" position={[0, -2.21, -15.2]} rotation={[-Math.PI / 2, 0, 0]} raycast={() => null} receiveShadow>
+    <planeGeometry args={[5.4, 16.2, 20, 42]} />
     <meshPhysicalMaterial color="#16252c" roughness={0.54} metalness={0} clearcoat={0.36} clearcoatRoughness={0.28} envMapIntensity={0.18} transmission={0} ior={1.33} thickness={0.02} transparent opacity={0.92} />
   </mesh>
 }
@@ -399,12 +399,14 @@ function ReplayDemoLake() {
 const REPLAY_DEMO_OUTCROPS = [
   // V235: scanned geology supports continuous weathered cove walls instead of
   // reading as oversized rectangular slabs around a procedural plane.
-  { x: -4.25, z: -2.8, lift: .02, scale: [1.55, .82, 1.42] as [number, number, number], rotation: [0.16, 0.72, -0.12] as [number, number, number] },
-  { x: 4.35, z: -3.9, lift: .02, scale: [1.42, .76, 1.34] as [number, number, number], rotation: [-0.10, -0.88, 0.08] as [number, number, number] },
-  { x: -5.4, z: -8.7, lift: .01, scale: [1.34, .68, 1.26] as [number, number, number], rotation: [0.12, 1.12, -0.08] as [number, number, number] },
-  { x: 5.5, z: -10.0, lift: .01, scale: [1.28, .64, 1.20] as [number, number, number], rotation: [-0.08, -1.18, 0.10] as [number, number, number] },
-  { x: -6.6, z: -16.2, lift: .00, scale: [1.18, .58, 1.12] as [number, number, number], rotation: [0.05, 1.36, -0.05] as [number, number, number] },
-  { x: 6.5, z: -18.0, lift: .00, scale: [1.16, .56, 1.10] as [number, number, number], rotation: [0.05, -1.42, 0.04] as [number, number, number] },
+  { x: -5.15, z: -2.8, lift: -.18, scale: [4.8, 3.8, 4.4] as [number, number, number], rotation: [0.12, 0.72, -0.10] as [number, number, number] },
+  { x: 5.25, z: -3.9, lift: -.20, scale: [4.5, 3.5, 4.2] as [number, number, number], rotation: [-0.08, -0.88, 0.08] as [number, number, number] },
+  { x: -6.0, z: -8.7, lift: -.15, scale: [5.2, 4.1, 4.7] as [number, number, number], rotation: [0.09, 1.12, -0.07] as [number, number, number] },
+  { x: 6.1, z: -10.0, lift: -.16, scale: [4.9, 3.9, 4.5] as [number, number, number], rotation: [-0.07, -1.18, 0.09] as [number, number, number] },
+  { x: -7.1, z: -16.2, lift: -.12, scale: [4.6, 3.5, 4.2] as [number, number, number], rotation: [0.05, 1.36, -0.05] as [number, number, number] },
+  { x: 7.0, z: -18.0, lift: -.13, scale: [4.4, 3.4, 4.0] as [number, number, number], rotation: [0.05, -1.42, 0.04] as [number, number, number] },
+  { x: -6.3, z: -24.6, lift: -.10, scale: [4.0, 3.0, 3.7] as [number, number, number], rotation: [0.03, .48, -.04] as [number, number, number] },
+  { x: 6.4, z: -26.1, lift: -.10, scale: [3.9, 2.9, 3.6] as [number, number, number], rotation: [-.03, -.56, .04] as [number, number, number] },
 ] as const
 
 function ReplayMemoryGeography({ accent, demo }: { accent: string; demo: boolean }) {
