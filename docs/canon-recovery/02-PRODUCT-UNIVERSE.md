@@ -24,9 +24,9 @@ Status: SOURCE-RECOVERED BASELINE / MATURITY-CLASSIFIED
 | Personal Emotional Weather | private evidence-derived atmosphere | CURRENT/PARTIAL |
 | Global Emotional Field Earth | governed aggregate/cohort surface | CURRENT CANDIDATE / DATA-GATED |
 | Possible Futures | unranked hypothetical scenario workspace | CURRENT FAIL-CLOSED / FUTURE SPATIAL |
-| Mood Forecast | historical/roadmap emotional-pattern forecasting concept | FUTURE / RELATIONSHIP TO FUTURES UNRESOLVED |
-| Narrator | evidence-aware narrative/reflection voice | CURRENT/PARTIAL |
-| Companion | relational interface/context layer | CURRENT/PARTIAL; ROLE RELATIONSHIP UNRESOLVED |
+| Mood Forecast | historical/demo emotional-pattern forecasting lineage | HISTORICAL / SUPERSEDED AS PREDICTIVE PRODUCT SURFACE; current V1 locks prohibit mood forecasting |
+| Narrator | evidence-aware narration/voice/caption/spatial-audio presentation layer | CURRENT/PARTIAL |
+| Companion | relational/context/decision pipeline and UI presence; may emit voice payload through Narrator presentation | CURRENT/PARTIAL; LAYER RELATIONSHIP RESOLVED |
 | Timeline | lived-time organization | LOCKED CANON |
 | Memory Map | semantic/temporal memory structure | LOCKED CANON |
 | Relationships | living constellations/shared-memory systems | FUTURE CANON / PARTIAL |

@@ -73,12 +73,17 @@ Historical staging documents grouped Narrator/Mirror/Therapist Replay/Story Mode
 ## DEC-020 — Storytime trust boundary
 Current Storytime roadmap supersedes older static-demo phase plans. V1 is a private adult/guardian-operated story creation/reading product with age-aware safety, explicit consent, private cloud sessions, revocable/redacted sharing, honest provider/media gates, and data-rights requirements.
 
+## DEC-021 — Companion and Narrator are separate cooperating layers
+Current source renders Narrator voice/caption/spatial-audio bridges independently from the Companion pipeline. The Companion pipeline owns relational/context/decision continuity and can produce a voice payload; Narrator is the presentation/narration layer that renders voice/caption/audio output.
+Decision: preserve both names as separate cooperating layers. Do not imply two autonomous persistent agents by default.
+
+## DEC-022 — Predictive Mood Forecast is superseded by current safety authority
+Current `SPATIAL_V1_LOCK.md` and `URAI-V1-FOUNDER-LOCK.md` explicitly prohibit predictive analytics, mood forecasting, behavioral simulation, and future mood/life-outcome prediction. Historical/demo Mood Forecast artifacts remain lineage only.
+Decision: Personal Emotional Weather is evidence-derived present-state reflection; Possible Futures is an editable, unranked, non-predictive scenario workspace. Neither is authority to revive predictive Mood Forecast.
+
 ## Remaining source decisions
-- exact current maturity of Companion versus Narrator;
-- Mood Forecast versus Possible Futures relationship;
 - final Legacy inheritance/family/posthumous sharing authority;
 - exact native iOS/Android/macOS/Windows sequencing;
 - creator/marketplace concepts that survive later safety/commercial governance;
-- final pricing/entitlement source;
 - final public/private life-film boundary;
 - maturity of historical names such as Threshold Mode, Mirror of Becoming, Recovery Blooms, Weekly Scrolls, Inner Voice, Emotional Time Travel and Soul Thread where later authorities do not explicitly promote or reject them.

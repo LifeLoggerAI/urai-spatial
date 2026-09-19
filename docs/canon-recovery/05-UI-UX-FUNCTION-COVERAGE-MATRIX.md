@@ -21,7 +21,7 @@ Legend: VERIFIED, EXISTS - NEEDS UPDATE, PARTIAL, MISSING, NOT REQUIRED, CANON U
 | Passport | CURRENT PRODUCT | PARTIAL | PARTIAL | PARTIAL | VERIFIED/PARTIAL | PARTIAL | VERIFIED/PARTIAL | VERIFIED/PARTIAL | canonical screen/state matrix |
 | Rituals | POST-LAUNCH / PARTIAL | PARTIAL | PARTIAL | PARTIAL | PARTIAL | PARTIAL | PARTIAL | PARTIAL | ritual taxonomy + frame-level storyboards |
 | Emotional Weather | CURRENT + FUTURE | PARTIAL | PARTIAL | PARTIAL | PARTIAL | PARTIAL | PARTIAL | PARTIAL | evidence, uncertainty, correction, sensory variants |
-| Mood Forecast | FUTURE / PARTIAL | PARTIAL | PARTIAL | PARTIAL | PARTIAL | PARTIAL | PARTIAL | PARTIAL | explicit non-prediction UX and safety copy |
+| Mood Forecast | HISTORICAL / SUPERSEDED | SUPERSEDED | SUPERSEDED | SUPERSEDED | SUPERSEDED | NOT REQUIRED | NOT REQUIRED | VERIFIED AUTHORITY | V1 founder/spatial locks prohibit predictive mood forecasting; current replacements are Personal Emotional Weather + non-predictive Possible Futures |
 | Memory capture | CORE FUNCTION | PARTIAL | PARTIAL | PARTIAL | PARTIAL | PARTIAL | VERIFIED/PARTIAL | PARTIAL | source consent + review + correction state machine |
 | Search / Recall | CORE FUNCTION | PARTIAL | PARTIAL | PARTIAL | PARTIAL | PARTIAL | PARTIAL | PARTIAL | unified query, evidence, navigation contract |
 | Timeline | LOCKED CANON | PARTIAL | PARTIAL | PARTIAL | PARTIAL | PARTIAL | PARTIAL | PARTIAL | canonical temporal interaction spec |

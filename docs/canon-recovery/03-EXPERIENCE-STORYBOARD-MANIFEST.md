@@ -26,7 +26,7 @@ Legend:
 | Passport | identity/context -> permission configuration | PARTIAL | onboarding + later edits |
 | Rituals | trigger -> practice -> completion/reflection | MISSING/PARTIAL | ritual library, audio/haptic, accessibility |
 | Emotional Weather | observation -> weather field -> explanation/reflection | PARTIAL | evidence display + manual correction |
-| Mood Forecast | history -> scenario/forecast -> user interpretation | FUTURE/PARTIAL | non-prediction labeling |
+| Mood Forecast | historical/demo forecast framing only | SUPERSEDED FOR CURRENT PRODUCT | current V1 locks prohibit predictive mood forecasting; use Personal Emotional Weather for evidence-derived current state and Possible Futures for editable non-predictive scenarios |
 | Memory capture | signal/manual input -> review -> memory object | PARTIAL | consent and data-source states |
 | Memory exploration | query/selection -> context -> links | PARTIAL | search jump, semantic zoom |
 | Relationship constellation | person star -> shared memories | FUTURE/PARTIAL | consent/sharing boundaries |

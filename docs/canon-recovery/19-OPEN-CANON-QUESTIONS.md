@@ -4,22 +4,22 @@ Status: GENUINELY UNRESOLVED AFTER CURRENT SOURCE RECOVERY
 
 Resolved items have been removed from this list rather than left as stale questions.
 
-1. Companion vs Narrator: are these separate persistent roles/agents, presentation modes over one intelligence layer, or a current/future split?
-2. Mood Forecast vs Possible Futures: Mood Forecast has historical emotional-pattern lineage while Possible Futures has a current scenario truth model. What exact relationship and naming should govern future product surfaces?
-3. Legacy: what exact authority governs inheritance, family sharing, memorial/posthumous continuity, beneficiary access and revocation?
-4. Family/shared memory: what consent model is locked when memories involve multiple living people?
-5. Native apps: is there a committed sequence for iOS, Android, macOS and Windows, or only platform intent?
-6. Wearables/IoT: which device classes are committed roadmap versus research beyond the EWI planned integration families?
-7. Creator/marketplace: which historical creator ritual/content/insight marketplace concepts survive current privacy/commercial governance?
-8. Education: which Foundation/product educational concepts are committed programs versus public-interest research?
-9. Life Museum, Dream Planetarium and Archetype Halls: which names are locked future product canon versus historical/working names?
-10. Soul Thread: current code/history exists; is Soul Thread the future canonical relationship/continuity visualization name, or historical lineage feeding relationship constellations/Legacy?
-11. Therapist/professional tier: which workflows belong in consumer UrAi, which in RuAI, and which require licensed-human control only?
-12. Avatar final likeness: what source/candidate becomes final authority once the current professional-candidate block clears?
-13. Public/private life-film boundary: which private reference classes may be used in consumer experiences versus separately authorized Studio/film productions?
+1. Legacy: what exact authority governs inheritance, family sharing, memorial/posthumous continuity, beneficiary access and revocation?
+2. Family/shared memory: what consent model is locked when memories involve multiple living people?
+3. Native apps: is there a committed sequence for iOS, Android, macOS and Windows, or only platform intent?
+4. Wearables/IoT: which device classes are committed roadmap versus research beyond the EWI planned integration families?
+5. Creator/marketplace: which historical creator ritual/content/insight marketplace concepts survive current privacy/commercial governance?
+6. Education: which Foundation/product educational concepts are committed programs versus public-interest research?
+7. Life Museum, Dream Planetarium and Archetype Halls: which names are locked future product canon versus historical/working names?
+8. Soul Thread: current code/history exists; is Soul Thread the future canonical relationship/continuity visualization name, or historical lineage feeding relationship constellations/Legacy?
+9. Therapist/professional tier: which workflows belong in consumer UrAi, which in RuAI, and which require licensed-human control only?
+10. Avatar final likeness: what source/candidate becomes final authority once the current professional-candidate block clears?
+11. Public/private life-film boundary: which private reference classes may be used in consumer experiences versus separately authorized Studio/film productions?
 
 ## Resolved in current recovery
 
+- Companion/Narrator relationship = separate cooperating layers: Companion owns relational/context/decision continuity; Narrator owns narration/voice/caption/spatial-audio presentation. They are not two autonomous persistent agents by default.
+- Predictive Mood Forecast = historical/demo lineage superseded by current V1 safety locks. Personal Emotional Weather is present-state evidence reflection; Possible Futures is editable, unranked, non-predictive scenario exploration.
 - URAI-JOBS = internal async execution fabric; older recruiting/hiring bible is superseded for current Jobs identity.
 - Council role set = Cartographer, Archivist, Guardian, Builder, Mirror, Trickster.
 - Shadow written purpose/state/safety authority.
