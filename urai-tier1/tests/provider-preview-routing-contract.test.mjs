@@ -5,6 +5,7 @@ import test from 'node:test'
 const previewConfig = JSON.parse(fs.readFileSync(new URL('../../.github/firebase.preview.json', import.meta.url), 'utf8'))
 
 const requiredProviderRewrites = [
+  { source: '/api/urai/intelligence/eval', function: { functionId: 'openAiIntelligenceEvalProvider', region: 'us-central1' } },
   { source: '/api/urai/orb/openai', function: { functionId: 'openAiOrbProvider', region: 'us-central1' } },
   { source: '/api/urai/narrator/elevenlabs', function: { functionId: 'elevenLabsVoiceProvider', region: 'us-central1' } },
   { source: '/api/voice/elevenlabs', function: { functionId: 'elevenLabsVoiceProvider', region: 'us-central1' } },

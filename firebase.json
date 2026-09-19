@@ -45,6 +45,13 @@
         }
       },
       {
+        "source": "/api/urai/intelligence/eval",
+        "function": {
+          "functionId": "openAiIntelligenceEvalProvider",
+          "region": "us-central1"
+        }
+      },
+      {
         "source": "/api/urai/narrator/elevenlabs",
         "function": {
           "functionId": "elevenLabsVoiceProvider",

@@ -6,6 +6,12 @@ on:
       - 'operations/intelligence/**'
       - 'scripts/verify-intelligence-release-gate.mjs'
       - 'scripts/run-intelligence-provider-eval.mjs'
+      - 'apps/functions/src/intelligenceEvalProvider.ts'
+      - 'apps/functions/src/index.ts'
+      - 'firebase.json'
+      - '.github/firebase.preview.json'
+      - 'urai-tier1/tests/provider-hosting-runtime-contract.test.mjs'
+      - 'urai-tier1/tests/provider-preview-routing-contract.test.mjs'
       - '.github/workflows/intelligence-release-gate.yml'
   workflow_dispatch:
     inputs:
