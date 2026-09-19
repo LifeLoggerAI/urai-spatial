@@ -155,12 +155,14 @@ async function validateReplay(page, report, screenshotName) {
   await expectAttribute(client, 'data-manifest-id', MANIFEST_ID);
   await expectAttribute(client, 'data-playing', 'false');
   await expectVisible(pacing, 'Replay pacing');
-  await expectVisible(productControls, 'Replay memory controls');
+  if (await productControls.isVisible()) throw new Error('Demo/read-only Replay memory mutation controls must remain hidden');
   await expectVisible(companion, 'persistent Orb travel control');
   await expectVisible(caption, 'Replay caption');
   await expectVisible(unwind, 'Replay unwind control');
   await expectNoOverlap(heading, unwind, 'Replay heading and unwind control', 4);
-  await expectNoOverlap(productControls, companion, 'Replay memory controls and persistent Orb', 4);
+  const operationStatus = client.locator('.replayOperationStatus').first();
+  await expectVisible(operationStatus, 'Replay read-only operation status');
+  await expectNoOverlap(operationStatus, companion, 'Replay read-only operation status and persistent Orb', 4);
 
   const begin = page.getByRole('button', { name: 'Begin memory' }).first();
   await expectVisible(begin, 'Begin memory control');
@@ -231,7 +233,10 @@ async function run() {
     await page.waitForLoadState('networkidle', { timeout: 30000 }).catch(() => {});
     const mobile = await validateReplay(page, report, '03-mobile-memory-theater-replay.png');
     await expectInsideViewport(mobile.pacing, page, 'mobile Replay pacing');
-    await expectInsideViewport(mobile.productControls, page, 'mobile Replay memory controls');
+    if (await mobile.productControls.isVisible()) throw new Error('mobile demo/read-only Replay memory mutation controls must remain hidden');
+    const mobileOperationStatus = mobile.client.locator('.replayOperationStatus').first();
+    await expectVisible(mobileOperationStatus, 'mobile Replay read-only operation status');
+    await expectInsideViewport(mobileOperationStatus, page, 'mobile Replay read-only operation status');
     await expectInsideViewport(mobile.companion, page, 'mobile persistent Orb control');
     await expectInsideViewport(mobile.unwind, page, 'mobile Replay unwind');
     await expectNoOverlap(mobile.caption, mobile.pacing, 'mobile caption and pacing');
