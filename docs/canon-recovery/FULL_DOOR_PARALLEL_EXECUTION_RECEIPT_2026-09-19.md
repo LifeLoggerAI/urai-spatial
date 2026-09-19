@@ -9,12 +9,14 @@ This receipt records live evidence recovered during the "open every damn door" p
 Repository: `LifeLoggerAI/urai-spatial`
 Canonical convergence PR: #1237
 Branch: `unified-spatial-convergence-20260916`
-Observed exact head during this pass: `3eade8ab57dc850e59a9ad5680f6a9eeab0f38ef`
+Latest observed exact head during this pass: `098ead88e3dc174f453346f064836f6ad3ec47ba`
 State at observation: OPEN / DRAFT / UNMERGED / UNDEPLOYED.
 
 The branch advanced concurrently during this execution pass. Earlier exact-head workflow results therefore remain predecessor evidence only. Fresh exact-head workflows were queued on the observed head.
 
-A prior exact-head failure cluster was isolated to retained Home contract assertions that still expected V288 runtime ownership while current authority metadata had advanced to the V291 candidate model. The current convergence branch subsequently incorporated aligned contract source and advanced; no claim is made that the new exact head is accepted until its fresh matrix and literal pixels settle.
+A prior exact-head failure cluster was isolated to retained Home contract assertions that still expected V288 runtime ownership while current authority metadata had advanced to the V291 candidate model. The current convergence branch subsequently incorporated aligned contract source and advanced.
+
+A separate current-line CI defect was then reproduced in `Reference Estate Exact-Head Capture`: the workflow redirected the local proof-server log into `artifacts/reference-estate-http.log` before the `artifacts/` directory existed. That can fail a healthy build before pixel capture. The canonical convergence branch was repaired with `mkdir -p artifacts` before server startup in commit `098ead88e3dc174f453346f064836f6ad3ec47ba`. Product/runtime visuals and acceptance thresholds were unchanged. Fresh exact-head proof remains required.
 
 ## 2. Current public production truth
 
@@ -66,9 +68,13 @@ The connected mailbox contains Google's 2026-09-16 confirmation: **"Your Google 
 
 Therefore the earlier inactivity-deletion warning is cleared and MUST NOT remain represented as a current launch blocker.
 
-A separate Workspace/reseller/admin-control problem remains. The legacy `urai.app` Workspace relationship is still under Squarespace domains/reseller investigation, and controlled public-mail canaries continue to fail. The latest 2026-09-18 canary to `support@urai.app` returned Google 550 5.1.1 / address does not exist. Earlier probes also failed for governed public aliases including contact, hello, accessibility, press, security, privacy and legal.
+Squarespace provided a new authoritative update on 2026-09-19. Product Specialist Zander O. confirmed that the `urai.app` Google Workspace had been removed from Squarespace's system in 2025, but a Squarespace bug left the reseller relationship incompletely severed. Squarespace has now applied the fix to remove the stale reseller relationship so Google can complete account recovery. Squarespace also stated that when Workspace accounts release from resellers their data transfers intact.
 
-Status: **ACCOUNT PRESERVED / ADMIN + PUBLIC MAIL ROUTING STILL BLOCKED**.
+Therefore Squarespace reseller remediation is no longer the blocker. The remaining administrator-recovery authority is Google.
+
+Public-mail routing is still not certified. The latest controlled 2026-09-18 canary to `support@urai.app`, which predates the 2026-09-19 reseller fix, returned Google 550 5.1.1 / address does not exist. Earlier probes also failed for governed public aliases including contact, hello, accessibility, press, security, privacy and legal. Re-test only after Google administrator recovery and governed alias/group configuration are complete.
+
+Status: **ACCOUNT PRESERVED / SQUARESPACE RESELLER BUG FIXED / GOOGLE ADMIN RECOVERY + PUBLIC MAIL ROUTING STILL OPEN**.
 
 ## 6. Google Play / Android developer verification
 
@@ -94,6 +100,8 @@ A live permission check returned `read` for LimberNutz on multiple URAI reposito
 "Reviews may only be requested from collaborators."
 
 This was reproduced on current stable PRs rather than inferred from old receipts.
+
+Fresh 2026-09-19 reproduction included current direct-to-main candidates Content #81, Storytime #36, Jobs #99, Staging #40 and legacy UrAi #385. Permission readback returned `read` for LimberNutz on those repositories, while native review requests still returned HTTP 422.
 
 Status: **PROVIDER/REPOSITORY-ADMIN ELIGIBILITY MISMATCH**.
 
@@ -196,7 +204,7 @@ IMPLEMENTED -> INTEGRATED -> TESTED -> VISUALLY ACCEPTED -> ACCESSIBLE -> SECURE
 
 ## 13. Irreducible external queue observed in this pass
 
-1. Restore valid administrator/reseller authority for the preserved Workspace tenant and create/verify the required governed public aliases/groups; latest support@urai.app canary still fails 550.
+1. Continue the preserved `urai.app` Workspace administrator recovery with Google now that Squarespace has severed the stale reseller relationship; after admin authority is restored, create/verify governed public aliases/groups and re-run inbound canaries.
 2. Reconcile GitHub reviewer collaborator eligibility so exact-head independent review can actually be requested and submitted.
 3. Reconnect GSC Wizard/Search Console to an account with the URAI properties, or verify those properties first.
 4. Check and complete UrAi Android app/signing-key registration before 2026-09-30 where Play Console shows unregistered items.
