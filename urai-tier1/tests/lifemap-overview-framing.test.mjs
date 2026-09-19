@@ -57,7 +57,7 @@ test('V284 overview memory destinations remain stellar archipelagos with volumet
   assert.match(cosmic, /active \? \.50 : related \? \.44 : overview \? \.48 : \.40/)
   assert.match(cosmic, /active \? \.94 : related \? \.91 : overview \? \.94 : \.90/)
   assert.match(cosmic, /active \? \.24 : related \? \.07 : overview \? \.036 : \.024/)
-  assert.match(cosmic, /overviewWeather = phase === "overview" \? \.38 : 1/)
+  assert.match(cosmic, /overviewWeather = phase === "overview" \? \.82 : 1/)
   assert.match(cosmic, /life-map-v283-celestial-island-/)
   assert.match(cosmic, /data-derived-volumetric-celestial-island/)
   assert.match(cosmic, /v284-stellar-memory-archipelago/)
