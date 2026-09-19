@@ -55,11 +55,17 @@ if (rootPackage.scripts?.['live:deploy'] !== 'node scripts/live-release.mjs --de
 }
 
 const expectedSecretNames = [
-  'FIREBASE_SERVICE_ACCOUNT_JSON',
   'FIREBASE_PROJECT_ID',
   'URAI_XR_SESSION_SECRET',
   'URAI_XR_ICE_SERVERS_JSON',
 ]
+
+const productionCredentialAuthority = {
+  class: 'short-lived-github-oidc-google-wif',
+  provider: 'projects/952723774155/locations/global/workloadIdentityPools/urai-github-prod/providers/github-actions',
+  serviceAccount: 'urai-spatial-github-deployer@urai-4dc1d.iam.gserviceaccount.com',
+  longLivedServiceAccountJson: false,
+}
 
 console.log(JSON.stringify({
   ok: true,
@@ -69,5 +75,6 @@ console.log(JSON.stringify({
   requiredFiles: requiredFiles.length,
   requiredScripts,
   expectedSecretNames,
+  productionCredentialAuthority,
   productionAuthority: '.github/workflows/spatial-live-deploy.yml',
 }, null, 2))
