@@ -1,115 +1,153 @@
 # URAI Zero-Ambiguity Coverage Report
 
 Date: 2026-09-19
-Status: MATERIAL CANON RECOVERED / TOTAL COVERAGE NOT YET PROVEN
+Status: CANON RECOVERY SUBSTANTIALLY COMPLETE / VISUAL-PACK, ITEM-LEVEL PROVENANCE, AND FOUNDER-DECISION GAPS REMAIN
 
-## What was actually recovered in this pass
+## Recovery artifacts now present
 
-A new docs-only canon-recovery layer now exists with:
-- source authority and mixed-era precedence;
-- master product-universe inventory;
+The canon-recovery layer now includes:
+- master recovery and source-authority hierarchy;
+- complete product-universe baseline;
 - experience/storyboard manifest;
-- visual-reference manifest;
-- UI/UX/function coverage matrix;
-- system-of-systems map;
-- roadmap and expansion classification;
-- canon decision/conflict log;
+- reference-image manifest;
+- UI/UX/function coverage;
+- system-of-systems and estate repository authority maps;
+- roadmap/expansion classification;
+- decision/conflict log;
 - missing-artifact register;
-- Visual Gold Master source recovery;
-- copy manifest;
-- accessibility matrix;
-- privacy/consent matrix;
-- platform/device matrix;
-- canon-to-code traceability baseline;
-- canonical index;
-- route/surface inventory;
-- asset-authority summary;
-- open canon questions.
+- Gold Master source recovery;
+- copy, accessibility, privacy/consent and platform/device matrices;
+- canon-to-implementation traceability;
+- route/surface and asset-authority inventories;
+- open canon questions narrowed to genuinely unresolved decisions;
+- Secondary Realms authority recovery;
+- Mirror authority recovery;
+- audio/voice/haptic authority;
+- External World Interface authority;
+- historical concept/renaming lineage;
+- master coverage matrix;
+- functional dependency map;
+- source-derived storyboard state specifications;
+- document-coverage matrix;
+- unified roadmap;
+- expansion maturity classification;
+- source/provenance register;
+- missing visual-reference briefs;
+- edge-state copy specification.
 
 ## Completion tests
 
 ### PRODUCT
 Do we know every major UrAi system currently discovered from project history?
-**PARTIAL YES.** Major systems and ecosystem nodes are recovered. Total historical completeness cannot yet be proven until remaining Drive/repository/chat-era source sweeps are exhausted.
+**YES AS A RECOVERED BASELINE, WITH EXPLICIT OPEN-QUESTION EXCEPTIONS.**
+Current, historical, future, institutional and rejected lineages are represented. New evidence can still extend the canon; this report does not claim metaphysical proof that no forgotten file exists.
 
 ### VISUAL
 Does every visually significant system have adequate authoritative reference imagery or an explicit missing-reference requirement?
-**YES AT THE MANIFEST LEVEL, NOT AT ACCEPTANCE LEVEL.** The Gold Master source explicitly identifies required missing packs for Memory Star, personal Emotional Weather, physical Home Passport, Shadow, Legacy, Council, Rituals, Possible Futures, provenance-backed Lived World, and final Avatar likeness. Institutional surfaces still need normalized reference packs.
+**YES AT REQUIREMENT/MANIFEST LEVEL.**
+Current accepted/rejected visual lineage is preserved, and missing packs are explicitly briefed. Final accepted packs remain open for Memory Star, Personal Emotional Weather, Physical Home Passport, Shadow, Legacy, Council, Rituals, Possible Futures, provenance-backed Lived World and final Avatar likeness, plus institutional/product surfaces that lack normalized reference packs.
 
 ### STORY
 Does every major experience have a storyboard or equivalent state/transition specification?
-**NO.** Launch-spine coverage is strongest. Explicit gaps remain for Shadow, Legacy, Council, Rituals, weather, private vault, offline/resync, permission-denied, empty state, relationship/future systems, and device/XR variants.
+**YES FOR THE CORE AND SOURCE-RESOLVED MAJOR REALMS AT TEXT-STATE LEVEL; VISUAL BOARDS REMAIN PARTIAL.**
+Source-derived storyboard state specs now cover Shadow, Legacy, Council, Rituals, Possible Futures, Mirror, Memory Star -> Focus and Personal Emotional Weather. Device/XR, shared-memory, offline/resync and some institutional journeys remain partial.
 
 ### UI
 Is every major interface documented?
-**PARTIAL.** Core routes are mapped; broader realm and institutional state matrices are incomplete.
+**YES AT INVENTORY/COVERAGE LEVEL; NOT EVERY SURFACE HAS FINAL PIXEL SPECIFICATION.**
+Core routes, realms and estate systems are mapped. Several institutional/native/future surfaces remain partial by design.
 
 ### UX
-Is every important journey documented?
-**PARTIAL.** Core spatial flow is documented; edge, permission, offline, shared-memory, and expansion journeys need completion.
+Is every important journey and interaction documented?
+**SUBSTANTIALLY YES.**
+Core journey, realm behavior, truth boundaries, safety, return-state, accessibility and system interactions are documented. Remaining genuine gaps are called out rather than hidden.
 
 ### COPY
 Do we know what language each experience needs?
-**YES AS A COVERAGE MANIFEST; NO AS A FINAL COPY DECK.** Missing/provisional surfaces are enumerated.
+**YES AT REQUIREMENT LEVEL.**
+Copy manifest and edge-state copy specification cover the major language classes. Final wording can remain centralized/versioned in urai-content.
 
 ### FUNCTION
-Are underlying capabilities documented rather than only screens?
-**PARTIAL YES.** Passive-signal, memory, privacy, system-of-systems, and future-simulation boundaries are recovered; several feature state/data contracts remain to normalize.
+Are underlying capabilities documented rather than merely screens?
+**YES AT DEPENDENCY-MAP LEVEL.**
+Core realms, passive signals, EWI, external actions and system-of-systems dependencies are explicitly mapped. Some future subsystems still require final technical contracts.
 
 ### ACCESSIBILITY
 Does every major experience define accessible behavior?
-**YES AT PRINCIPLE/MATRIX LEVEL; NO AT COMPLETE PROOF LEVEL.** Per-state/per-platform evidence remains incomplete.
+**YES AT CANON REQUIREMENT LEVEL; PER-STATE DEVICE PROOF REMAINS PARTIAL.**
+Blind/low-vision, Deaf/hard-of-hearing, reduced motion, reduced stimulation, ADHD/neurodivergent, and PTSD/TBI-sensitive requirements are preserved.
 
 ### PRIVACY
-Does every signal/data-sensitive feature define privacy/consent behavior?
-**YES AT BASELINE POLICY LEVEL; FEATURE ADOPTION VARIES.** Current implementation proof must remain separate.
+Does every signal/data-sensitive feature define privacy and consent behavior?
+**YES AT CANON/CONTROL-PLANE LEVEL.**
+Current implementation/adoption proof remains separate and must be earned per feature.
 
 ### TECHNICAL
 Can canonical concepts be traced into architecture/implementation where implementation exists?
-**PARTIAL.** Launch spine is traceable; broader realms and institutional systems need normalized pointers.
+**YES FOR THE CORE AND MAJOR SYSTEMS; PARTIAL FOR SOME FUTURE/INSTITUTIONAL SURFACES.**
+The traceability and repository authority maps identify implementation owners and evidence boundaries.
 
 ### ASSETS
 Do we know what production assets each experience requires?
-**PARTIAL YES.** Gold Master and asset ledgers provide strong authority for launch/spatial assets and identify missing replacements; full row-by-row normalization is still outstanding.
+**YES AT AUTHORITY/GAP LEVEL; FULL ROW-BY-ROW LEDGER NORMALIZATION REMAINS OPEN.**
+The Gold Master and asset ledgers provide strong source authority and explicit missing replacement systems.
 
 ### ROADMAP
-Are launch, post-launch, long-range, research, experimental, and rejected concepts separated?
-**YES IN THE RECOVERY LAYER.** Individual historical concepts still require source-level maturity verification.
+Are launch, post-launch, long-range, research, experimental and rejected concepts clearly separated?
+**YES.**
+The unified roadmap and expansion-maturity classification separate current release, committed direction, future canon, research and superseded/high-risk lineage without inventing dates.
 
 ### DOCUMENTATION
-Can another capable team understand UrAi without reconstructing the entire project from scratch?
-**SUBSTANTIALLY BETTER / NOT YET COMPLETE.** The recovery index gives a navigable spine, but several unresolved canon questions and source-normalization tasks remain.
+Can another capable team or future AI understand UrAi without reconstructing years of chat history?
+**YES TO A PRACTICAL HANDOFF STANDARD, SUBJECT TO THE OPEN-QUESTION REGISTER.**
+The canonical index provides one navigable recovery spine and source precedence.
 
 ### SOURCE TRUTH
-Can every significant canonical assertion be traced to reliable project authority?
-**NOT YET.** The recovery layer names major source families; line/item-level provenance still needs normalization for the full universe.
+Can every significant canonical assertion be traced back to reliable project authority?
+**MAJOR ASSERTIONS: YES. ITEM-LEVEL NORMALIZATION: PARTIAL.**
+The source-provenance register captures major Drive/repository authorities. Individual reference-image and asset rows still need full path/ID normalization.
 
 ### COMPLETENESS
-Have all major features been proven not to be stranded in older chats, Drive files, obsolete repos, screenshots, or predecessor names?
-**NO.** A deep sweep was performed across connected Drive, current and legacy repositories, project context, and authority records, but total historical exhaustion cannot truthfully be claimed.
+Have we searched deeply enough that major features are not stranded in old conversations, forgotten Drive documents, obsolete repositories, screenshots, or earlier names?
+**YES FOR THE MAJOR KNOWN PRODUCT UNIVERSE, WITH EXPLICIT HISTORICAL-LINEAGE COVERAGE.**
+Life OS/LifeLogger/UrAi eras and historical names including Threshold Mode, Mirror of Becoming, Recovery Blooms, Weekly Scrolls, Emotional Time Travel, RuAI and high-risk inference concepts have been recovered/classified. Unknown future discoveries remain possible and should enter through the decision/provenance process rather than silently rewriting canon.
 
-## Material source findings
+## Material decisions closed during recovery
 
-- Current runtime authority supersedes older UrAi/UrAiProd/Dev deployment authority while preserving their design/canon value.
-- Narrow launch scope does not delete broader future canon.
-- Gold Master explicitly requires several missing visual packs rather than treating them as optional.
-- Historical portalized Ground/ascent, visible flat-screen FP hands, faceless cyan Avatar, fake emotional-globe activity, generic fantasy chambers, crystal/geode Focus, and invented identity imagery are explicitly rejected/superseded.
-- URAI-JOBS contains a material mixed-era identity conflict and is not safely resolvable without more chronology.
-- Private life-reference canon is a separate, privacy-controlled authority for authorized likeness/biographical/cinematic reconstruction and must not be conflated with generic public product reference art.
+- Current runtime authority is urai-spatial/urai-tier1, not legacy UrAi/UrAiProd/Dev deployment authority.
+- URAI-JOBS is the internal asynchronous execution fabric; the recruiting/hiring bible is historical/superseded for that repository.
+- Shadow, Legacy, Council, Rituals and Possible Futures have explicit written master authority.
+- Mirror has an evidence-aware embodied chamber and typed pattern model lineage.
+- Personal Emotional Weather has a current written state/component authority and is distinct from Global Emotional Field Earth.
+- Memory Star current morphology is stellar photosphere/corona rather than planet/crystal/geode/collectible.
+- Physical Home Passport is distinct from the conventional /passport Ownership Vault.
+- RuAI is a separately governed professional surface, not a back door into consumer memories.
+- High-risk deception/trust/facial/crisis/employer/data-marketplace concepts are not current launch canon.
+- Current sensory authority treats silence and non-audio equivalents as first-class and requires physical listening/device validation for Gold Master.
+- EWI architecture/contracts are canonical, while live providers/actions remain independently gated.
 
-## Remaining internally executable work
+## Remaining internally executable normalization work
 
-1. Normalize the Drive Gold Master, Final Asset Lock, and 53-asset ledgers row-by-row into stable IDs and pointers.
-2. Sweep each ecosystem repository for its own canon/roadmap/reference/storyboard authorities and link them into the index.
-3. Exhaust additional Drive searches for old Life OS / LifeLogger / renamed concepts and classify each.
-4. Normalize exact route registries for non-Spatial repos.
-5. Produce final copy decks/specs for surfaces where canon is sufficiently resolved.
-6. Produce storyboard documents for missing-but-source-resolved experiences.
-7. Only after source absence is proven, generate missing reference imagery from the locked visual briefs.
-8. Resolve founder-only open questions explicitly rather than guessing.
+1. Continue row-by-row normalization of Final Asset Lock and independent asset/reference ledgers where raw sheet structure permits reliable extraction.
+2. Attach stable IDs/paths to every retained reference/proof image and rejected predecessor reference.
+3. Normalize remaining non-Spatial route registries where useful.
+4. Centralize final approved copy in urai-content rather than duplicating wording.
+5. Produce visual boards/reference images only from the source-derived briefs and then subject them to literal review; generated images are candidates, never acceptance.
+6. Keep the open-question register limited to genuine founder/legal/product decisions.
+
+## Remaining non-document blockers
+
+- final professional Avatar likeness candidate;
+- final literal-pixel visual packs and acceptance for explicitly open systems;
+- physical listening and haptic-device acceptance;
+- provider/live activation where separately gated;
+- legal/privacy decisions for inheritance, shared memory and professional scopes;
+- founder decisions explicitly listed in Open Canon Questions.
 
 ## Current truth
 
-This pass has created a real canonical recovery structure and materially recovered the product universe. It has **not** proven that every artifact ever discussed has been found, and it has **not** generated new visual references merely to make the checklist look complete.
+The project is no longer dependent on reconstructing its major product universe from scattered memory. The recovery branch now provides a coherent, cross-linked, source-backed canon spine.
 
-That is intentional. The governing rule remains: recover first; invent last.
+It would still be false to claim that every future visual is accepted, every provider is live, every hardware/device experience is designed, or every founder-level product choice is resolved.
+
+Those remaining gaps are now explicit.
