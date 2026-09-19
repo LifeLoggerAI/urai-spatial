@@ -581,7 +581,7 @@ export default function OrbConversationPanel() {
 
   return (
     <details className={styles.panel}>
-      <summary>Talk with Orb</summary>
+      <summary tabIndex={0}>Talk with Orb</summary>
       <div className={styles.body}>
         <p className={styles.disclosure}>
           OpenAI processing and natural external voice processing are separate, optional permissions. The device voice remains local.
