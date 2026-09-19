@@ -60,15 +60,15 @@ The 2026-09-19 GSC Wizard email independently states that the connected Google a
 
 Required external action: connect a Google account that actually owns the URAI Search Console property/properties, or create/verify the property first. Do not guess the owning account.
 
-## 5. Google Workspace preservation
+## 5. Google Workspace preservation and public mail
 
-The connected mailbox contains the Google Workspace deletion warning for the `urai.life` organization: deletion is scheduled on or after 2026-09-21 if the inactivity-preservation action is not satisfied.
+The connected mailbox contains Google's 2026-09-16 confirmation: **"Your Google account has been successfully reactivated"** for the UrAi organization, and states that the account is no longer scheduled to be closed.
 
-Google's notice says an Admin console sign-in before that date should be followed within seven days by an email confirming the account is no longer targeted for deletion.
+Therefore the earlier inactivity-deletion warning is cleared and MUST NOT remain represented as a current launch blocker.
 
-No later confirmation email clearing the deletion target was found during this pass.
+A separate Workspace/reseller/admin-control problem remains. The legacy `urai.app` Workspace relationship is still under Squarespace domains/reseller investigation, and controlled public-mail canaries continue to fail. The latest 2026-09-18 canary to `support@urai.app` returned Google 550 5.1.1 / address does not exist. Earlier probes also failed for governed public aliases including contact, hello, accessibility, press, security, privacy and legal.
 
-Status: **URGENT EXTERNAL / HUMAN ADMIN GATE**.
+Status: **ACCOUNT PRESERVED / ADMIN + PUBLIC MAIL ROUTING STILL BLOCKED**.
 
 ## 6. Google Play / Android developer verification
 
@@ -148,7 +148,7 @@ IMPLEMENTED -> INTEGRATED -> TESTED -> VISUALLY ACCEPTED -> ACCESSIBLE -> SECURE
 
 ## 13. Irreducible external queue observed in this pass
 
-1. Preserve/confirm `urai.life` Workspace before the 2026-09-21 deletion boundary and retain Google's clearing confirmation.
+1. Restore valid administrator/reseller authority for the preserved Workspace tenant and create/verify the required governed public aliases/groups; latest support@urai.app canary still fails 550.
 2. Reconcile GitHub reviewer collaborator eligibility so exact-head independent review can actually be requested and submitted.
 3. Reconnect GSC Wizard/Search Console to an account with the URAI properties, or verify those properties first.
 4. Check and complete UrAi Android app/signing-key registration before 2026-09-30 where Play Console shows unregistered items.
