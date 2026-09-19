@@ -54,6 +54,7 @@ jobs:
           path: |
             guardian-diagnostics.log
             artifacts/guardian/failure.txt
+          retention-days: 14
 
       - name: Fail when Guardian failed
         if: steps.guardian.outputs.exit_code != '0'
