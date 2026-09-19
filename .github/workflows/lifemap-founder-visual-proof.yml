@@ -192,4 +192,4 @@ jobs:
           name: lifemap-founder-visual-proof-${{ env.URAI_EXACT_HEAD }}
           path: artifacts/lifemap-founder-proof
           if-no-files-found: error
-          retention-days: 90
+          retention-days: ${{ github.event_name == 'pull_request' && 30 || 90 }}
