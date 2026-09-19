@@ -136,11 +136,11 @@ function TerrainMaterial({ profile }: { profile: EnvironmentProfile }) {
   }, [albedo, arm, normal, profile]);
   return <meshStandardMaterial
     map={naturalProfile ? null : albedo}
-    normalMap={normal}
-    normalScale={new THREE.Vector2(naturalProfile ? 0.18 : profile.id === "urban" ? 0.34 : 0.62, naturalProfile ? 0.18 : profile.id === "urban" ? 0.34 : 0.62)}
-    aoMap={arm}
-    aoMapIntensity={naturalProfile ? 0.34 : 0.72}
-    roughnessMap={arm}
+    normalMap={naturalProfile ? null : normal}
+    normalScale={new THREE.Vector2(profile.id === "urban" ? 0.34 : 0.62, profile.id === "urban" ? 0.34 : 0.62)}
+    aoMap={naturalProfile ? null : arm}
+    aoMapIntensity={naturalProfile ? 0 : 0.72}
+    roughnessMap={naturalProfile ? null : arm}
     roughness={naturalProfile ? 0.96 : profile.roughness}
     metalnessMap={naturalProfile ? null : arm}
     metalness={profile.id === "urban" ? 0.02 : 0.005}
@@ -295,7 +295,7 @@ function NaturalCanopy({ profile, position, rotationY, scale, shapeSeed }: {
       false,
     ));
 
-    const leafGeometry = new THREE.SphereGeometry(1, 16, 10);
+    const leafGeometry = new THREE.CircleGeometry(1, 7);
 
     const foliageAnchors = [
       ...transformedBranchDefs.map((points) => points[points.length - 1]),
@@ -317,9 +317,9 @@ function NaturalCanopy({ profile, position, rotationY, scale, shapeSeed }: {
       const rx = (hash(index * 7 + 6) - 0.5) * 1.28;
       const ry = theta + (hash(index * 7 + 7) - 0.5) * 1.15;
       const rz = (hash(index * 7 + 8) - 0.5) * 1.12;
-      const sx = 0.095 + hash(index * 7 + 9) * 0.13;
-      const sy = 0.042 + hash(index * 7 + 10) * 0.060;
-      const sz = 0.078 + hash(index * 7 + 11) * 0.11;
+      const sx = 0.12 + hash(index * 7 + 9) * 0.16;
+      const sy = 0.065 + hash(index * 7 + 10) * 0.075;
+      const sz = 1;
       return {
         position: [x, y, z] as [number, number, number],
         rotation: [rx, ry, rz] as [number, number, number],
@@ -744,9 +744,9 @@ function AtmosphericGroundSky({ profile }: { profile: EnvironmentProfile }) {
           float upperMix = smoothstep(0.48, 0.98, h);
           vec3 sky = mix(upperColor, zenithColor, upperMix);
           float horizonBand = 1.0 - smoothstep(0.02, 0.34, abs(vDir.y));
-          sky = mix(sky, horizonColor, horizonBand * 0.72);
+          sky = mix(sky, horizonColor, horizonBand * 0.46);
           float groundBand = 1.0 - smoothstep(-0.18, 0.06, vDir.y);
-          sky = mix(sky, groundHazeColor, groundBand * 0.48);
+          sky = mix(sky, groundHazeColor, groundBand * 0.28);
           gl_FragColor = vec4(sky, 1.0);
         }
       `}
@@ -770,7 +770,7 @@ function GroundScene({ profile, input, yaw, pitch, target, obstacles, playerPosi
   const weather = DEFAULT_GROUND_WEATHER;
   return <>
     <color attach="background" args={[profile.horizon]} />
-    <fogExp2 attach="fog" args={[profile.fog, 0.012 + weather.atmosphericDensity * 0.0015]} />
+    <fogExp2 attach="fog" args={[profile.fog, 0.0088 + weather.atmosphericDensity * 0.0010]} />
     <Suspense fallback={null}><Environment files="/assets/urai/home-production/cc0/environment/studio-small-08-1k.hdr" background={false} environmentIntensity={0.28} /></Suspense>
     <ambientLight intensity={0.42} color="#b2c2b8" />
     <hemisphereLight args={["#a9c2c4", "#302a22", 0.62]} />
@@ -902,7 +902,7 @@ export default function GroundSpatialWorldClean() {
     data-ground-visual-owner="atmospheric-living-environment"
     data-ground-runtime-owner="first-person-lived-world"
     data-ground-visual-revision="ground-lived-world-v2-canon-lock"
-    data-ground-art-revision="ground-v15-atmospheric-lived-world-canopy-horizon"
+    data-ground-art-revision="ground-v16-organic-leaf-canopy-deeper-atmosphere"
     data-ground-exploration="first-person-no-visible-body"
     data-ground-camera="eye-level-terrain-following-no-authored-bob"
     data-ground-eye-height={GROUND_EYE_HEIGHT_M}
@@ -929,7 +929,7 @@ export default function GroundSpatialWorldClean() {
       onCreated={({ gl }) => {
         gl.outputColorSpace = THREE.SRGBColorSpace;
         gl.toneMapping = THREE.ACESFilmicToneMapping;
-        gl.toneMappingExposure = 1.05;
+        gl.toneMappingExposure = 0.92;
       }}
     >
       <GroundScene profile={profile} input={input} yaw={yaw} pitch={pitch} target={target} obstacles={obstacles} playerPosition={playerPosition} isCoarse={isCoarse} onReady={() => setReady(true)} />
