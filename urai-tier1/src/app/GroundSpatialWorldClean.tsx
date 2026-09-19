@@ -90,8 +90,8 @@ function buildTerrainGeometry(profile: EnvironmentProfile) {
   const low = new THREE.Color(profile.groundDeep);
   const mid = new THREE.Color(profile.ground);
   const high = new THREE.Color(profile.accent);
-  const naturalSoil = new THREE.Color(profile.id === "woodland" ? "#292820" : "#3f4331");
-  const naturalMoss = new THREE.Color(profile.id === "woodland" ? "#42553b" : "#59694a");
+  const naturalSoil = new THREE.Color(profile.id === "woodland" ? "#3b382d" : "#4a4b39");
+  const naturalMoss = new THREE.Color(profile.id === "woodland" ? "#506449" : "#637657");
   const naturalProfile = profile.id === "temperate" || profile.id === "woodland";
   for (let index = 0; index < position.count; index += 1) {
     const x = position.getX(index);
@@ -124,8 +124,8 @@ function makeNaturalGroundTextures(profile: EnvironmentProfileId) {
   const size = 128;
   const rgba = new Uint8Array(size * size * 4);
   const height = new Uint8Array(size * size * 4);
-  const soil = new THREE.Color(profile === "woodland" ? "#4a4032" : "#595642");
-  const moss = new THREE.Color(profile === "woodland" ? "#526a48" : "#687a57");
+  const soil = new THREE.Color(profile === "woodland" ? "#554b3b" : "#625e48");
+  const moss = new THREE.Color(profile === "woodland" ? "#617956" : "#728564");
   const grit = new THREE.Color("#8c8069");
   const hash = (x: number, y: number, salt: number) => {
     const value = Math.sin(x * 12.9898 + y * 78.233 + salt * 37.719) * 43758.5453;
@@ -337,7 +337,13 @@ function NaturalCanopy({ profile, position, rotationY, scale, shapeSeed }: {
       false,
     ));
 
-    const leafGeometry = new THREE.SphereGeometry(0.5, 10, 7);
+    const leafShape = new THREE.Shape();
+    leafShape.moveTo(0, -0.58);
+    leafShape.bezierCurveTo(0.22, -0.31, 0.27, 0.10, 0, 0.62);
+    leafShape.bezierCurveTo(-0.27, 0.10, -0.22, -0.31, 0, -0.58);
+    leafShape.closePath();
+    const leafGeometry = new THREE.ShapeGeometry(leafShape, 5);
+    leafGeometry.computeVertexNormals();
 
     const foliageAnchors = [
       ...transformedBranchDefs.map((points) => points[points.length - 1]),
@@ -349,9 +355,9 @@ function NaturalCanopy({ profile, position, rotationY, scale, shapeSeed }: {
       const value = Math.sin(seed * 12.9898 + shapeSeed * 53.117 + (woodland ? 78.233 : 31.417)) * 43758.5453;
       return value - Math.floor(value);
     };
-    const leaves = Array.from({ length: woodland ? 112 : 96 }, (_, index) => {
+    const leaves = Array.from({ length: woodland ? 168 : 148 }, (_, index) => {
       const anchor = foliageAnchors[index % foliageAnchors.length];
-      const spread = 0.10 + hash(index * 7 + 1) * 0.40;
+      const spread = 0.12 + hash(index * 7 + 1) * 0.56;
       const theta = hash(index * 7 + 2) * Math.PI * 2;
       const x = anchor[0] + Math.cos(theta) * spread * (0.48 + hash(index * 7 + 3) * 0.92);
       const y = anchor[1] - 0.01 + (hash(index * 7 + 4) - 0.45) * 0.78;
@@ -359,9 +365,9 @@ function NaturalCanopy({ profile, position, rotationY, scale, shapeSeed }: {
       const rx = (hash(index * 7 + 6) - 0.5) * 1.28;
       const ry = theta + (hash(index * 7 + 7) - 0.5) * 1.15;
       const rz = (hash(index * 7 + 8) - 0.5) * 1.12;
-      const sx = 0.54 + hash(index * 7 + 9) * 0.34;
-      const sy = 0.34 + hash(index * 7 + 10) * 0.24;
-      const sz = 0.46 + hash(index * 7 + 11) * 0.30;
+      const sx = 0.22 + hash(index * 7 + 9) * 0.17;
+      const sy = 0.42 + hash(index * 7 + 10) * 0.28;
+      const sz = 0.82 + hash(index * 7 + 11) * 0.24;
       return {
         position: [x, y, z] as [number, number, number],
         rotation: [rx, ry, rz] as [number, number, number],
@@ -494,8 +500,8 @@ function NaturalScatter({ profile }: { profile: EnvironmentProfile }) {
   }
 
   const woodland = profile.id === "woodland";
-  const ferns = items.slice(0, woodland ? 76 : 64);
-  const canopies = items.filter((item) => item.z < (woodland ? 8.0 : 6.5)).slice(0, woodland ? 34 : 30);
+  const ferns = items.slice(0, woodland ? 88 : 76);
+  const canopies = items.filter((item) => item.z < (woodland ? 8.0 : 6.5)).slice(0, woodland ? 38 : 34);
   return <group name={woodland ? "ground-woodland-scanned-understory" : "ground-temperate-scanned-understory"} userData={{ treatment: "urai-self-authored-varied-canopy-v13-with-polyhaven-fern-rock-understory", canopyFallback: "scanned-understory-remains-without-canopy" }} raycast={() => null}>
     <GroundCanopyBoundary>
       <Suspense fallback={null}>
@@ -563,7 +569,7 @@ function DistantGroundContinuation({ profile }: { profile: EnvironmentProfile })
   return <group name="ground-distant-continuation" raycast={() => null} userData={{ perceivedRangeMeters: 400, horizonAuthority: "authored-irregular-ridge-v4-muted-fog-blended" }}>
     <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.32, -128]}>
       <planeGeometry args={[420, 300, 36, 28]} />
-      <meshBasicMaterial color={profile.horizon} fog toneMapped={false} />
+      <meshBasicMaterial color={profile.horizon} fog toneMapped={false} transparent opacity={0.22} depthWrite={false} />
     </mesh>
     <mesh name="ground-authored-distant-ridge-v4" geometry={ridge}>
       <meshStandardMaterial color={profile.groundDeep} roughness={1} metalness={0} fog />
@@ -790,7 +796,7 @@ function AtmosphericGroundSky({ profile }: { profile: EnvironmentProfile }) {
           sky = mix(sky, groundHazeColor, groundBand * 0.18);
           vec3 sunDir = normalize(vec3(-0.38, 0.30, -0.88));
           float sunDot = max(0.0, dot(normalize(vDir), sunDir));
-          float sunGlow = pow(sunDot, 22.0) * 0.22 + pow(sunDot, 180.0) * 0.68;
+          float sunGlow = pow(sunDot, 34.0) * 0.08 + pow(sunDot, 240.0) * 0.24;
           sky += vec3(1.0, 0.72, 0.46) * sunGlow;
           float haze = pow(max(0.0, 1.0 - abs(vDir.y)), 5.0) * 0.055;
           sky += vec3(0.68, 0.60, 0.50) * haze;
@@ -817,10 +823,10 @@ function GroundScene({ profile, input, yaw, pitch, target, obstacles, playerPosi
   const weather = DEFAULT_GROUND_WEATHER;
   return <>
     <color attach="background" args={[profile.horizon]} />
-    <fogExp2 attach="fog" args={[profile.fog, 0.0088 + weather.atmosphericDensity * 0.0010]} />
+    <fogExp2 attach="fog" args={[profile.fog, 0.0118 + weather.atmosphericDensity * 0.00135]} />
     <Suspense fallback={null}><Environment files="/assets/urai/home-production/cc0/environment/studio-small-08-1k.hdr" background={false} environmentIntensity={0.28} /></Suspense>
-    <ambientLight intensity={0.42} color="#b2c2b8" />
-    <hemisphereLight args={["#a9c2c4", "#302a22", 0.62]} />
+    <ambientLight intensity={0.54} color="#b8c8bc" />
+    <hemisphereLight args={["#afc7c6", "#3f392f", 0.76]} />
     <directionalLight position={[-10, 14, 5]} intensity={1.28} color="#d9bd93" castShadow shadow-mapSize={[1024, 1024]} shadow-camera-left={-28} shadow-camera-right={28} shadow-camera-top={28} shadow-camera-bottom={-28} shadow-camera-far={90} shadow-normalBias={0.035} />
     <directionalLight position={[10, 7, -20]} intensity={0.44} color="#7fa7aa" />
     <Suspense fallback={null}><LivedGroundWorld profile={profile} target={target} /></Suspense>
@@ -949,7 +955,7 @@ export default function GroundSpatialWorldClean() {
     data-ground-visual-owner="atmospheric-living-environment"
     data-ground-runtime-owner="first-person-lived-world"
     data-ground-visual-revision="ground-lived-world-v2-canon-lock"
-    data-ground-art-revision="ground-v20-smooth-overlapping-broadleaf-canopy-atmosphere"
+    data-ground-art-revision="ground-v21-leaf-silhouette-canopy-atmospheric-depth"
     data-ground-exploration="first-person-no-visible-body"
     data-ground-camera="eye-level-terrain-following-no-authored-bob"
     data-ground-eye-height={GROUND_EYE_HEIGHT_M}
@@ -976,7 +982,7 @@ export default function GroundSpatialWorldClean() {
       onCreated={({ gl }) => {
         gl.outputColorSpace = THREE.SRGBColorSpace;
         gl.toneMapping = THREE.ACESFilmicToneMapping;
-        gl.toneMappingExposure = 1.05;
+        gl.toneMappingExposure = 1.16;
       }}
     >
       <GroundScene profile={profile} input={input} yaw={yaw} pitch={pitch} target={target} obstacles={obstacles} playerPosition={playerPosition} isCoarse={isCoarse} onReady={() => setReady(true)} />
