@@ -1,49 +1,67 @@
 # URAI Master Coverage Matrix
 
-Status: MASTER BASELINE / ROW-LEVEL PROVENANCE EXPANDING
+Status: CONSOLIDATED BASELINE
 
-| System | Feature / experience | Surface | Canon source class | Implementation | Launch / roadmap | Ref | Story | UI/UX | Copy | Function | A11y | Privacy | Tests/proof | Missing / next action |
-|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| Core | Home | /, /home | current spatial + Gold Master | CURRENT | LAUNCH REQUIRED | PARTIAL/HEAD-BOUND | PARTIAL | VERIFIED | PARTIAL | VERIFIED | PARTIAL | PARTIAL | VERIFIED | normalize accepted frame IDs |
-| Core | Ground | /ground | current spatial + realm authority | CURRENT | LAUNCH REQUIRED | PARTIAL | PARTIAL | PARTIAL | PARTIAL | PARTIAL | PARTIAL | PARTIAL | PARTIAL | complete current literal-pixel pack |
-| Core | Orb | Home-owned | spatial/asset canon | CURRENT | LAUNCH/CANON | PARTIAL | PARTIAL | PARTIAL | PARTIAL | PARTIAL | PARTIAL | PARTIAL | PARTIAL | normalize states + accepted refs |
-| Core | Ascent | transition | camera/path canon | CURRENT transition | LAUNCH | PARTIAL | PARTIAL | VERIFIED | PARTIAL | VERIFIED | PARTIAL | PARTIAL | VERIFIED | mobile/reduced-motion storyboard |
-| Core | Life Map | /life-map | spatial + life-map canon | CURRENT | LAUNCH | PARTIAL | PARTIAL | VERIFIED/PARTIAL | PARTIAL | PARTIAL | PARTIAL | PARTIAL | VERIFIED | normalize broad layer canon vs launch |
-| Core | Memory Stars | Life Map | current runtime + VGM authority | CURRENT/PARTIAL | LAUNCH CORE | MISSING REQUIRED | PARTIAL | PARTIAL | PARTIAL | PARTIAL | PARTIAL | PARTIAL | PARTIAL | create source-derived ref pack |
-| Core | Focus | /focus | spatial + Gold Master | CURRENT | LAUNCH | VERIFIED/HEAD-BOUND | PARTIAL | VERIFIED | PARTIAL | VERIFIED | PARTIAL | PARTIAL | VERIFIED | final copy/a11y normalization |
-| Core | Replay | /replay | spatial + Gold Master | CURRENT | LAUNCH | VERIFIED/HEAD-BOUND | PARTIAL | VERIFIED | PARTIAL | VERIFIED | PARTIAL | PARTIAL | VERIFIED | source/reconstruction provenance consolidation |
-| Reflection | Mirror | /mirror | Mirror receipt | EXISTS | CURRENT/GATED | PARTIAL | PARTIAL | VERIFIED/PARTIAL | PARTIAL | PARTIAL | PARTIAL | PARTIAL | PARTIAL | current-head reference normalization |
-| Reflection | Shadow | /spatial/shadow lineage | secondary realms authority | INCOMPLETE | POST-LAUNCH/CURRENT EXPANSION | MISSING REQUIRED | STATE PACK | VERIFIED | PARTIAL | PARTIAL | VERIFIED/PARTIAL | VERIFIED/PARTIAL | PARTIAL | final embodied visual pack |
-| Continuity | Legacy | archive world | secondary realms authority | EXISTS | POST-LAUNCH | MISSING REQUIRED | STATE PACK | PARTIAL | PARTIAL | PARTIAL | PARTIAL | PARTIAL | PARTIAL | final image/pixel pack |
-| Reflection | Council | /council | secondary realms authority | EXISTS | POST-LAUNCH | MISSING REQUIRED | STATE PACK | PARTIAL | PARTIAL | PARTIAL | PARTIAL | PARTIAL | PARTIAL | final humans/material/chamber pack |
-| Ritual | Rituals | ritual platform/flows | secondary realms authority | PARTIAL | POST-LAUNCH | MISSING REQUIRED | STATE PACK | VERIFIED/PARTIAL | PARTIAL | PARTIAL | VERIFIED/PARTIAL | PARTIAL | PARTIAL | per-ritual visual/audio pack |
-| Atmosphere | Emotional Weather | world-local | dedicated 2026-09-17 authority | PARTIAL | CURRENT/FUTURE | MISSING REQUIRED | STATE PACK | VERIFIED/PARTIAL | PARTIAL | PARTIAL | VERIFIED | VERIFIED | PARTIAL | WEATHER-001..018 |
-| Futures | Possible Futures | scenario surface/world | secondary realms authority | MANUAL FAIL-CLOSED EXISTS | FUTURE/CURRENT PARTIAL | MISSING REQUIRED | STATE PACK | VERIFIED | PARTIAL | VERIFIED/PARTIAL | VERIFIED | VERIFIED | PARTIAL | high-fidelity scenario pack |
-| Identity | Passport | /passport + Home artifact | spatial/privacy | EXISTS/PARTIAL | CURRENT | PARTIAL | PARTIAL | PARTIAL | PARTIAL | PARTIAL | PARTIAL | VERIFIED | PARTIAL | physical artifact reference pack |
-| Recap | Scrolls | legacy/current route lineage | repo + history | PARTIAL | POST-LAUNCH | MISSING/PARTIAL | MISSING/PARTIAL | PARTIAL | PARTIAL | PARTIAL | PARTIAL | PARTIAL | PARTIAL | normalize weekly/legacy scroll product role |
-| Safety | Threshold Mode | historical route/mode | legacy + current distributed canon | SUPERSEDED AS SEPARATE ROUTE | HISTORICAL/ROADMAP LINEAGE | HISTORICAL | HISTORICAL | DISTRIBUTED | HISTORICAL | DISTRIBUTED | DISTRIBUTED | DISTRIBUTED | N/A | keep lineage; do not duplicate realm |
-| AI | Narrator | multiple realms | content/audio/core canon | PARTIAL | CURRENT | PARTIAL | PARTIAL | PARTIAL | PARTIAL | PARTIAL | VERIFIED/PARTIAL | VERIFIED/PARTIAL | PARTIAL | role vs Companion normalization |
-| AI | Companion | Orb/world interaction | core/audio/history | PARTIAL | CURRENT/FUTURE | PARTIAL | PARTIAL | PARTIAL | PARTIAL | PARTIAL | PARTIAL | PARTIAL | PARTIAL | role vs Narrator normalization |
-| Memory | Timeline | Life Map/Replay | life-map canon | PARTIAL | CURRENT/FUTURE | PARTIAL | PARTIAL | PARTIAL | PARTIAL | PARTIAL | PARTIAL | PARTIAL | PARTIAL | temporal interaction spec |
-| Memory | Search/Recall | world command/search | life-map canon | PARTIAL | CURRENT/FUTURE | PARTIAL | PARTIAL | PARTIAL | PARTIAL | PARTIAL | PARTIAL | PARTIAL | PARTIAL | unified search contract |
-| Relationships | Constellations | Life Map layer | life-map/future canon | PARTIAL | FUTURE CANON | PARTIAL | PARTIAL | PARTIAL | PARTIAL | PARTIAL | PARTIAL | REQUIRED | PARTIAL | consent/shared-memory model |
-| Action | Goals/Habits | Life Map layers | life-map/future canon | PARTIAL | FUTURE CANON | PARTIAL | PARTIAL | PARTIAL | PARTIAL | PARTIAL | PARTIAL | PARTIAL | PARTIAL | goal/action/habit contracts |
-| Privacy | Vaults | sensitive regions | life-map/privacy | PARTIAL | LOCKED CANON | PARTIAL | PARTIAL | PARTIAL | PARTIAL | PARTIAL | PARTIAL | VERIFIED | PARTIAL | unlock/relock/export/delete proof |
-| Integration | EWI | service boundary | merged v1 authority | CONTRACTS MERGED | PLATFORM FOUNDATION | NOT REQUIRED | NOT REQUIRED | PARTIAL | PARTIAL | VERIFIED | PARTIAL | VERIFIED | VERIFIED | provider/device adoption |
-| Professional | RuAI | separate portal | public messaging authority | PARTIAL/PLANNED | FUTURE/PROFESSIONAL | MISSING/PARTIAL | MISSING | PARTIAL | VERIFIED messaging | PARTIAL | PARTIAL | STRONG REQUIRED | PARTIAL | product/UX/technical pack |
-| Platform | iOS/Android | native apps | roadmap/EWI | PLANNED | FUTURE | MISSING | MISSING | MISSING/PARTIAL | PARTIAL | PARTIAL | PARTIAL | REQUIRED | MISSING | native architecture |
-| Platform | macOS/Windows | native apps | roadmap | PLANNED | FUTURE | MISSING | MISSING | MISSING/PARTIAL | PARTIAL | PARTIAL | PARTIAL | REQUIRED | MISSING | native architecture |
-| Platform | Wearables/IoT | device bridge | EWI/roadmap | PLANNED | FUTURE | MISSING | MISSING | MISSING/PARTIAL | PARTIAL | PARTIAL | PARTIAL | REQUIRED | MISSING | device/consent packs |
-| Platform | AR/VR/XR | spatial expansion | XR canon/roadmap | PARTIAL/GATED | FUTURE CANON | PARTIAL | PARTIAL | PARTIAL | PARTIAL | PARTIAL | PARTIAL | REQUIRED | PARTIAL | device-specific acceptance packs |
-| System | Admin | urai-admin | repo architecture | EXISTS | INTERNAL | PARTIAL | PARTIAL | PARTIAL | PARTIAL | VERIFIED | PARTIAL | VERIFIED | PARTIAL | operator task map |
-| System | Analytics | urai-analytics | API contract | EXISTS | INTERNAL | PARTIAL | N/A | PARTIAL | PARTIAL | VERIFIED | PARTIAL | VERIFIED | VERIFIED | durable replay/storage proof |
-| System | Content | urai-content | architecture | EXISTS | INTERNAL | PARTIAL | N/A | PARTIAL | VERIFIED/PARTIAL | VERIFIED | PARTIAL | PARTIAL | VERIFIED | package/schema policy |
-| System | Communications | urai-communications | system doc + EWI | EXISTS | INTERNAL/B2B | PARTIAL | PARTIAL | PARTIAL | PARTIAL | VERIFIED | PARTIAL | VERIFIED | PARTIAL | provider/live validation |
-| System | Studio | urai-studio | architecture/index | EXISTS | INTERNAL/CREATOR | PARTIAL | PARTIAL | PARTIAL | PARTIAL | PARTIAL | PARTIAL | PARTIAL | PARTIAL | creative project UX map |
-| System | Asset Factory | asset-factory | canonical runtime/contracts | EXISTS | INTERNAL | PARTIAL | N/A | PARTIAL | PARTIAL | VERIFIED | PARTIAL | PARTIAL | PARTIAL | provider/provenance UI |
-| System | Jobs | urai-jobs | current README/runtime | EXISTS | INTERNAL | PARTIAL | N/A | PARTIAL | PARTIAL | VERIFIED | PARTIAL | VERIFIED | PARTIAL | staging worker proof |
-| System | Storytime | urai-storytime | current roadmap | EXISTS/PARTIAL | EXPANSION | PARTIAL | PARTIAL | PARTIAL | PARTIAL | PARTIAL | PARTIAL | VERIFIED/PARTIAL | PARTIAL | guardian/safety/live provider proof |
-| Institution | Foundation | public-benefit | foundation repo/docs | EXISTS/PARTIAL | INSTITUTIONAL | PARTIAL | PARTIAL | PARTIAL | PARTIAL | PARTIAL | PARTIAL | PARTIAL | PARTIAL | canonical hosting + program refs |
-| System | Marketing | public acquisition | marketing contract | EXISTS | LAUNCH SUPPORT | PARTIAL | PARTIAL | PARTIAL | VERIFIED | PARTIAL | PARTIAL | VERIFIED/PARTIAL | PARTIAL | claims-to-evidence linkage |
-| System | Investors | investor portal | repo README/contracts | EXISTS/PARTIAL | INSTITUTIONAL | PARTIAL | PARTIAL | PARTIAL | PARTIAL | PARTIAL | PARTIAL | PARTIAL | PARTIAL | live/legal/claim review |
-| System | B2B | partner portal | architecture | EXISTS/PARTIAL | FUTURE/B2B | PARTIAL | PARTIAL | PARTIAL | PARTIAL | PARTIAL | PARTIAL | VERIFIED | PARTIAL | partner UX + live integration |
+Legend: VERIFIED, EXISTS - NEEDS UPDATE, PARTIAL, MISSING, NOT REQUIRED, CANON UNCERTAIN, REJECTED, SUPERSEDED.
+
+| System | Feature / experience | Route/surface | Canon | Implementation | Launch/roadmap | Ref image | Storyboard | UI/UX | Copy | Function | A11y | Privacy | Tech/tests | Assets | Next action |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| Core | Home | /,/home | VERIFIED | VERIFIED | LAUNCH REQUIRED | VERIFIED/PARTIAL | PARTIAL | VERIFIED/PARTIAL | PARTIAL | VERIFIED | PARTIAL | PARTIAL | VERIFIED | VERIFIED | normalize current accepted frame IDs |
+| Core | Ground | /ground | VERIFIED | VERIFIED/PARTIAL | LAUNCH REQUIRED | PARTIAL | PARTIAL | PARTIAL | PARTIAL | VERIFIED/PARTIAL | PARTIAL | PARTIAL | VERIFIED/PARTIAL | PARTIAL | finish literal-pixel/state pack |
+| Core | Orb | Home/world states | VERIFIED | VERIFIED/PARTIAL | LOCKED CANON | PARTIAL | PARTIAL | PARTIAL | PARTIAL | VERIFIED/PARTIAL | PARTIAL | PARTIAL | VERIFIED/PARTIAL | VERIFIED | complete state pack and sensory evidence |
+| Core | Ascent | transition | VERIFIED | VERIFIED | LOCKED TRANSITION | PARTIAL | VERIFIED/PARTIAL | PARTIAL | NOT REQUIRED/PARTIAL | VERIFIED | PARTIAL | PARTIAL | VERIFIED | PARTIAL | normalize transition frames |
+| Core | Life Map | /life-map | VERIFIED | VERIFIED | LAUNCH REQUIRED | VERIFIED/PARTIAL | PARTIAL | VERIFIED/PARTIAL | PARTIAL | VERIFIED/PARTIAL | PARTIAL | PARTIAL | VERIFIED | VERIFIED/PARTIAL | normalize broad-layer vs launch subset |
+| Core | Memory Star | Life Map state | VERIFIED | VERIFIED/PARTIAL | LOCKED CANON | MISSING REQUIRED PACK | PARTIAL | PARTIAL | PARTIAL | PARTIAL | PARTIAL | PARTIAL | VERIFIED/PARTIAL | historical asset superseded visually | create source-derived state pack |
+| Core | Focus | /focus | VERIFIED | VERIFIED | LAUNCH REQUIRED | VERIFIED/PARTIAL | VERIFIED/PARTIAL | VERIFIED | PARTIAL | VERIFIED | PARTIAL | PARTIAL | VERIFIED | VERIFIED | bind latest accepted refs |
+| Core | Replay | /replay | VERIFIED | VERIFIED | LAUNCH REQUIRED | VERIFIED/PARTIAL | VERIFIED/PARTIAL | VERIFIED | PARTIAL | VERIFIED | PARTIAL | PARTIAL | VERIFIED | VERIFIED/PARTIAL | normalize truth/source states |
+| Reflection | Mirror | /mirror | VERIFIED | EXISTS | CURRENT/GATED | PARTIAL | PARTIAL | VERIFIED/PARTIAL | PARTIAL | VERIFIED/PARTIAL | PARTIAL | VERIFIED/PARTIAL | VERIFIED/PARTIAL | PARTIAL | current exact-head reacceptance |
+| Reflection | Shadow | /spatial/shadow or successor | VERIFIED WRITTEN | INCOMPLETE | CURRENT/FUTURE GATED | REQUIRED | VERIFIED STATE SPEC | VERIFIED WRITTEN | PARTIAL | PARTIAL | VERIFIED WRITTEN | VERIFIED WRITTEN | PARTIAL | PARTIAL | build/accept embodied visual pack |
+| Continuity | Legacy | legacy world/successor | VERIFIED WRITTEN | EXISTS | EXPANSION | REQUIRED | VERIFIED STATE SPEC | VERIFIED WRITTEN | PARTIAL | PARTIAL | VERIFIED WRITTEN | PARTIAL | PARTIAL | EXISTS | final visual/pixel acceptance |
+| Stewardship | Council | /council | VERIFIED WRITTEN | EXISTS | EXPANSION | REQUIRED | VERIFIED STATE SPEC | VERIFIED WRITTEN | PARTIAL | PARTIAL | VERIFIED WRITTEN | PARTIAL | PARTIAL | preview humans | final human/material pack |
+| Identity | Passport UI | /passport | VERIFIED | EXISTS | CURRENT | PARTIAL | PARTIAL | PARTIAL | PARTIAL | VERIFIED/PARTIAL | PARTIAL | VERIFIED/PARTIAL | VERIFIED/PARTIAL | PARTIAL | normalize state matrix |
+| Identity | Physical Home Passport | Home artifact | VERIFIED REQUIRED | PARTIAL/UNKNOWN | CURRENT/FUTURE | REQUIRED | MISSING/PARTIAL | PARTIAL | PARTIAL | PARTIAL | PARTIAL | VERIFIED/PARTIAL | PARTIAL | MISSING/PARTIAL | create reference/state pack |
+| Ritual | Rituals | ritual states | VERIFIED WRITTEN | EXISTS/PARTIAL | POST-LAUNCH/PARTIAL | REQUIRED | VERIFIED STATE SPEC | VERIFIED WRITTEN | PARTIAL | VERIFIED/PARTIAL | VERIFIED WRITTEN | PARTIAL | PARTIAL | platform exists | finish visual/audio content pack |
+| Emotion | Personal Emotional Weather | world state | VERIFIED | PARTIAL | CURRENT/FUTURE | REQUIRED | PARTIAL | PARTIAL | PARTIAL | PARTIAL | PARTIAL | VERIFIED/PARTIAL | PARTIAL | PARTIAL | complete component/state authority |
+| Emotion | Global Emotional Field | aggregate Earth | VERIFIED | CANDIDATE | CURRENT/FUTURE | OPEN ACCEPTANCE | PARTIAL | PARTIAL | PARTIAL | PARTIAL | PARTIAL | VERIFIED | PARTIAL | PARTIAL | literal-pixel truthful acceptance |
+| Futures | Possible Futures | scenario surface | VERIFIED WRITTEN | EXISTS MANUAL | FUTURE/CURRENT FAIL-CLOSED | REQUIRED | VERIFIED STATE SPEC | VERIFIED | PARTIAL | VERIFIED | VERIFIED/PARTIAL | VERIFIED | VERIFIED/PARTIAL | PARTIAL | spatial pack; provider remains gated |
+| Memory | capture/review | cross-surface | VERIFIED | PARTIAL | CORE | PARTIAL | PARTIAL | PARTIAL | PARTIAL | PARTIAL | PARTIAL | VERIFIED | PARTIAL | N/A | canonical state/data contract |
+| Memory | timeline/chronology | Life Map/timeline | VERIFIED | PARTIAL | CORE | PARTIAL | PARTIAL | PARTIAL | PARTIAL | PARTIAL | PARTIAL | PARTIAL | PARTIAL | N/A | consolidate temporal contract |
+| Memory | relationship constellations | Life Map/future | VERIFIED FUTURE | PARTIAL | FUTURE CANON | PARTIAL | PARTIAL | PARTIAL | PARTIAL | PARTIAL | PARTIAL | PARTIAL | PARTIAL | N/A | consent/shared-memory spec |
+| Memory | goals/habits/identity | Life Map/future | VERIFIED FUTURE | PARTIAL | FUTURE CANON | PARTIAL | PARTIAL | PARTIAL | PARTIAL | PARTIAL | PARTIAL | PARTIAL | PARTIAL | N/A | normalize future layer specs |
+| Safety | Private Vaults | sensitive regions | VERIFIED | PARTIAL | CORE/FUTURE | PARTIAL | PARTIAL | PARTIAL | PARTIAL | PARTIAL | PARTIAL | VERIFIED | PARTIAL | N/A | unlock/relock/export/delete proof |
+| Intelligence | Narrator | cross-world | VERIFIED | PARTIAL | CURRENT | PARTIAL | PARTIAL | PARTIAL | PARTIAL | VERIFIED/PARTIAL | VERIFIED/PARTIAL | VERIFIED/PARTIAL | PARTIAL | audio partial | reconcile with Companion roles |
+| Intelligence | Companion | cross-world | VERIFIED/PARTIAL | PARTIAL | CURRENT/FUTURE | PARTIAL | PARTIAL | PARTIAL | PARTIAL | PARTIAL | PARTIAL | VERIFIED/PARTIAL | PARTIAL | PARTIAL | role/boundary normalization |
+| Integration | EWI | system boundary | VERIFIED | MERGED CONTRACTS | ROADMAP/CURRENT FOUNDATION | NOT REQUIRED | NOT REQUIRED | PARTIAL | PARTIAL | VERIFIED | PARTIAL | VERIFIED | VERIFIED | N/A | provider-by-provider adoption evidence |
+| Sensory | Audio/voice/haptics | cross-world | VERIFIED | PARTIAL | CURRENT/FUTURE | NOT REQUIRED/asset refs | PARTIAL | PARTIAL | PARTIAL | VERIFIED/PARTIAL | VERIFIED | VERIFIED/PARTIAL | VERIFIED wiring | PARTIAL | physical listening/device validation |
+| Platform | Web desktop | all | VERIFIED | EXISTS | LAUNCH | PARTIAL | PARTIAL | VERIFIED/PARTIAL | PARTIAL | VERIFIED | PARTIAL | PARTIAL | VERIFIED | N/A | finish per-state proof |
+| Platform | Mobile web | all | VERIFIED | EXISTS | LAUNCH | PARTIAL | PARTIAL | PARTIAL | PARTIAL | VERIFIED/PARTIAL | PARTIAL | PARTIAL | VERIFIED/PARTIAL | N/A | per-realm portrait/landscape pack |
+| Platform | Native iOS/Android | native | VERIFIED INTENT | MISSING/PARTIAL | FUTURE | MISSING/PARTIAL | MISSING | PARTIAL | PARTIAL | PARTIAL | PARTIAL | PARTIAL | PARTIAL | N/A | native architecture/UX packs |
+| Platform | macOS/Windows | native | VERIFIED INTENT | MISSING/PARTIAL | FUTURE | MISSING | MISSING | PARTIAL | PARTIAL | PARTIAL | PARTIAL | PARTIAL | PARTIAL | N/A | sequence/architecture decision |
+| Platform | Wearables/IoT | device bridge | VERIFIED FUTURE | PLANNED | FUTURE | MISSING | MISSING | PARTIAL | PARTIAL | PARTIAL | PARTIAL | VERIFIED EWI BOUNDARY | PARTIAL | N/A | device consent/reference packs |
+| Platform | AR/VR/XR | spatial future | VERIFIED FUTURE | GATED/PARTIAL | FUTURE | PARTIAL | PARTIAL | PARTIAL | PARTIAL | PARTIAL | PARTIAL | VERIFIED EWI BOUNDARY | PARTIAL | PARTIAL | platform interaction/reference packs |
+| System | Privacy | privacy controls | VERIFIED | EXISTS | LAUNCH GATE | PARTIAL | PARTIAL | PARTIAL | VERIFIED/PARTIAL | VERIFIED | PARTIAL | VERIFIED | VERIFIED/PARTIAL | N/A | cross-feature adoption receipts |
+| System | Admin | admin routes | VERIFIED | EXISTS | INTERNAL | PARTIAL | PARTIAL | PARTIAL | PARTIAL | VERIFIED | PARTIAL | VERIFIED | VERIFIED | N/A | operator journey/reference pack |
+| System | Analytics | service APIs | VERIFIED | EXISTS/PARTIAL | INTERNAL | PARTIAL | NOT REQUIRED/PARTIAL | PARTIAL | PARTIAL | VERIFIED | PARTIAL | VERIFIED | VERIFIED/PARTIAL | N/A | durable live/replay-control proof |
+| System | Content | content packages | VERIFIED | EXISTS/PARTIAL | INTERNAL | PARTIAL | NOT REQUIRED/PARTIAL | PARTIAL | VERIFIED/PARTIAL | VERIFIED | PARTIAL | VERIFIED | VERIFIED/PARTIAL | N/A | schema/migration/personal-ref rules |
+| System | Asset Factory | asset pipeline | VERIFIED | EXISTS/PARTIAL | INTERNAL | PARTIAL | PARTIAL | PARTIAL | PARTIAL | VERIFIED/PARTIAL | PARTIAL | VERIFIED/PARTIAL | VERIFIED/PARTIAL | VERIFIED/PARTIAL | provider/approval/provenance convergence |
+| System | Studio | creative orchestration | VERIFIED | EXISTS/PARTIAL | INTERNAL/CREATOR | PARTIAL | PARTIAL | PARTIAL | PARTIAL | VERIFIED/PARTIAL | PARTIAL | PARTIAL | VERIFIED/PARTIAL | PARTIAL | creative UX/export map |
+| System | Jobs | async execution fabric | VERIFIED CURRENT | EXISTS | INTERNAL | NOT REQUIRED | NOT REQUIRED | PARTIAL | PARTIAL | VERIFIED | PARTIAL | VERIFIED/PARTIAL | VERIFIED | N/A | retire recruiting ambiguity in docs |
+| System | Communications | governed communications | VERIFIED | EXISTS/PARTIAL | INTERNAL/B2B | PARTIAL | PARTIAL | PARTIAL | PARTIAL | VERIFIED/PARTIAL | PARTIAL | VERIFIED | VERIFIED/PARTIAL | N/A | provider/live/data-rights proof |
+| System | Marketing | public acquisition | VERIFIED | EXISTS | LAUNCH SUPPORT | PARTIAL | PARTIAL | VERIFIED/PARTIAL | VERIFIED/PARTIAL | PARTIAL | PARTIAL | VERIFIED/PARTIAL | VERIFIED/PARTIAL | PARTIAL | current claim-to-evidence index |
+| System | Investors | investor portal | VERIFIED | EXISTS/PARTIAL | INSTITUTIONAL | PARTIAL | PARTIAL | PARTIAL | VERIFIED/PARTIAL | PARTIAL | PARTIAL | PARTIAL | VERIFIED/PARTIAL | PARTIAL | legal/claim/live auth review |
+| System | B2B | partner portal | VERIFIED | EXISTS/PARTIAL | FUTURE/INTERNAL | PARTIAL | PARTIAL | PARTIAL | PARTIAL | PARTIAL | PARTIAL | VERIFIED | VERIFIED/PARTIAL | N/A | aggregate-only integration proof |
+| System | Foundation | public-benefit institution | VERIFIED | EXISTS/PARTIAL | INSTITUTIONAL | PARTIAL | PARTIAL | PARTIAL | VERIFIED/PARTIAL | PARTIAL | PARTIAL | PARTIAL | VERIFIED/PARTIAL | PARTIAL | grants/donations/hosting/legal authority |
+| System | Storytime | story creation | VERIFIED | EXISTS/PARTIAL | EXPANSION | PARTIAL | PARTIAL | PARTIAL | PARTIAL | VERIFIED/PARTIAL | PARTIAL | VERIFIED | VERIFIED/PARTIAL | PARTIAL | adult/guardian safety, data-rights, provider gates |
+| Historical | Threshold Mode | historical route/state | PARTIAL VERIFIED | HISTORICAL | HISTORICAL/PARTIAL ABSORPTION | PARTIAL | PARTIAL | PARTIAL | PARTIAL | PARTIAL | PARTIAL | PARTIAL | PARTIAL | N/A | map surviving behavior to rituals/safety |
+| Historical | Mirror of Becoming | predecessor Mirror | VERIFIED HISTORICAL | SUPERSEDED NAME | CURRENT SUCCESSOR = Mirror | HISTORICAL | HISTORICAL | SUPERSEDED | SUPERSEDED | SUPERSEDED/PARTIAL | PARTIAL | PARTIAL | HISTORICAL | N/A | preserve lineage only |
+| Historical | Recovery Blooms | recovery motif | PARTIAL VERIFIED | HISTORICAL/PARTIAL | ROADMAP LINEAGE | PARTIAL | PARTIAL | PARTIAL | PARTIAL | PARTIAL | PARTIAL | PARTIAL | PARTIAL | N/A | decide whether exact feature name survives |
+| Historical | Weekly/Legacy Scrolls | periodic review concept | PARTIAL VERIFIED | HISTORICAL | ROADMAP LINEAGE | PARTIAL | PARTIAL | PARTIAL | PARTIAL | PARTIAL | PARTIAL | PARTIAL | PARTIAL | N/A | map to current review/Legacy systems |
+| Historical | Emotional Time Travel | predecessor replay/timeline concept | VERIFIED HISTORICAL | HISTORICAL | SUCCESSOR LINEAGE | PARTIAL | PARTIAL | PARTIAL | PARTIAL | PARTIAL | PARTIAL | PARTIAL | PARTIAL | N/A | retain provenance, no duplicate product |
+| Historical | public recruiting Jobs | Jobs predecessor | VERIFIED HISTORICAL | SUPERSEDED | REJECTED AS CURRENT JOBS ROLE | NOT REQUIRED | NOT REQUIRED | SUPERSEDED | SUPERSEDED | SUPERSEDED | NOT REQUIRED | PARTIAL | HISTORICAL | N/A | separate future careers product if desired |
+
+| Professional | RuAI | separate professional portal | VERIFIED GOVERNED | PARTIAL/PLANNED | FUTURE/PROFESSIONAL | MISSING/PARTIAL | MISSING | PARTIAL | VERIFIED MESSAGING | PARTIAL | PARTIAL | STRONG REQUIRED | PARTIAL | N/A | product/UX/technical pack |
+| Recap | Scrolls | periodic review/export lineage | PARTIAL VERIFIED | PARTIAL | POST-LAUNCH LINEAGE | MISSING/PARTIAL | MISSING/PARTIAL | PARTIAL | PARTIAL | PARTIAL | PARTIAL | PARTIAL | PARTIAL | N/A | normalize weekly/legacy scroll role |
+
+## Matrix completion rule
+
+This baseline is intentionally conservative. A row becomes fully VERIFIED only when its canon source, artifact pointers, implementation owner, privacy/accessibility behavior, tests, and acceptance evidence are all stable and current.
