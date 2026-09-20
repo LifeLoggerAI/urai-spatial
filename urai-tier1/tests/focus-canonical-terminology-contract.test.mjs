@@ -76,7 +76,7 @@ test('public Focus runtime does not regress to chamber-era product copy', () => 
 })
 
 test('live selected Memory Star is the Focus pixel authority', () => {
-  assert.match(focusRuntime, /V323 locked product authority/)
+  assert.match(focusRuntime, /Locked product authority; V341 is the current literal-pixel implementation/)
   assert.match(focusRuntime, /name="focus-selected-memory-star"/)
   assert.match(focusRuntime, /name="focus-memory-star-glass-shell"/)
   assert.match(focusRuntime, /<MemoryVisualContent memory=\{memory\} \/>/)
