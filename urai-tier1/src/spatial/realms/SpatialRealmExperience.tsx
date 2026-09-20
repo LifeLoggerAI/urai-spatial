@@ -461,7 +461,7 @@ export default function SpatialRealmExperience({ realm }: { realm: SpatialRealmK
 
       <section className="urai-spatial-realm-prompt" role="status" aria-live="polite">
         <strong>{nearby ? `${nearby.label} threshold within reach` : `Walking through ${definition.title}`}</strong>
-        <span>{nearby ? 'Press Enter or select the portal' : 'WASD / arrows move · drag to look · R resets · Escape returns'}</span>
+        <span>{nearby ? (realm === 'shadow' ? 'Press Enter or select the threshold' : 'Press Enter or select the portal') : 'WASD / arrows move · drag to look · R resets · Escape returns'}</span>
       </section>
 
       <nav className="urai-spatial-realm-portals" aria-label={`${definition.title} destinations`}>
