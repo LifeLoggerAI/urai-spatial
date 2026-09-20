@@ -4,6 +4,7 @@ export { evaluateSpatialTierLock } from './tierLocks'
 // Do not export the legacy Functions webhook: a second independently deployable entitlement writer
 // would create divergent ordering, deduplication, and plan semantics.
 export { elevenLabsVoiceProvider, openAiOrbProvider } from './providerFunctions'
+export { applyGlobalEmotionalFieldConsent, getGlobalEmotionalFieldConsent } from './publicGoodConsent'
 export {
   googleOAuthCallback,
   googleOAuthDisconnect,
