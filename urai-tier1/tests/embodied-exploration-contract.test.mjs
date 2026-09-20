@@ -12,7 +12,6 @@ const has = (source, marker) => assert.equal(source.includes(marker), true, `mis
 const homeGraph = read('src/app/AssetDrivenHomeWorld.tsx')
 const homeRuntime = read('src/spatial/layout/HomeWorldProduction.tsx')
 const activeHomeRuntime3d = read('src/spatial/layout/HomeWorldProductionV223.tsx')
-const embodiedAvatar = read('src/spatial/home/HomeEmbodiedAvatar.tsx')
 const homeRuntime3d = read('src/spatial/layout/HomeWorldProductionV70.tsx')
 const homeArt = read('src/spatial/layout/HomeWorldProductionV76.tsx')
 const ground = read('src/app/GroundSpatialWorldClean.tsx')
@@ -38,27 +37,21 @@ test('mobile movement controls remain touch/coarse-pointer affordances instead o
   assert.match(travel, /button\{width:48px;height:48px;/)
 })
 
-test('Home keeps one V223 Canvas owner with visible Avatar presentation, click embodiment, authored Orb, physical Ground and broad Sky ascent', () => {
+test('Home keeps one V223 Canvas owner with bodyless first-person presence, authored Orb, physical Ground and broad Sky ascent', () => {
   has(homeRuntime, 'HomeWorldProductionV223 as HomeWorldProduction')
   for (const marker of [
     'export function HomeWorldProductionV223',
     'URAI_ORB_STATE_EVENT',
     'resolveOrbSensoryOutput',
     'data-home-visible-world="cinematic-lived-world-threshold"',
-    'visible-cinematic-avatar',
-    'camera-only-first-person-home',
-    'visible-avatar-third-person',
-    'hidden-exterior-avatar-first-person',
+    'data-home-embodied-self="camera-only-first-person-home"',
+    'transitioning-camera-only-first-person',
+    'home-camera-only-first-person',
     'data-home-ground-entry="physical-world-surface"',
     'data-home-life-map-entry="visible-sky-broad-interaction"',
-    'urai-home-user-avatar',
     'home-living-memory-orb',
     '/assets/urai/generated/models/urai-orb-avatar-v1.glb',
-    'HOME_AVATAR_MODEL',
-    'THREE.LoopOnce',
-    'clampWhenFinished = true',
     'useHomeExperienceController',
-    'homeApi.activateAvatar()',
     'HOME_WALK_SPEED',
     'HOME_WALK_ACCELERATION',
     'HOME_WALK_DECELERATION',
@@ -72,16 +65,15 @@ test('Home keeps one V223 Canvas owner with visible Avatar presentation, click e
   assert.match(activeHomeRuntime3d, /yaw: -yaw\.current/)
   assert.match(activeHomeRuntime3d, /acceleration: HOME_WALK_ACCELERATION/)
   assert.match(activeHomeRuntime3d, /deceleration: HOME_WALK_DECELERATION/)
-  assert.doesNotMatch(activeHomeRuntime3d, /const keys = useRef\(new Set<string>\(\)\)/)
-  has(embodiedAvatar, 'const idle = actions.idle_breath')
   assert.equal((activeHomeRuntime3d.match(/<Canvas/g) ?? []).length, 1)
+  assert.doesNotMatch(activeHomeRuntime3d, /<HomeEmbodiedAvatar|HOME_AVATAR_MODEL|homeApi\.activateAvatar\(\)/)
+  assert.doesNotMatch(activeHomeRuntime3d, /visible-cinematic-avatar|visible-avatar-third-person|hidden-exterior-avatar-first-person/)
   assert.doesNotMatch(activeHomeRuntime3d, /privacy-preserving-first-person/)
   assert.doesNotMatch(activeHomeRuntime3d, /first-person-hand|fps-hand|player-hands|weapon-rig/i)
-  assert.doesNotMatch(activeHomeRuntime3d, /next\.reset\(\)\.setLoop\(THREE\.LoopRepeat\s*,\s*Infinity\)/)
+  assert.doesNotMatch(activeHomeRuntime3d, /const keys = useRef\(new Set<string>\(\)\)/)
   assert.doesNotMatch(homeArt, /<Canvas/)
   assert.doesNotMatch(homeGraph, /PRODUCTION CERTIFIED|retained-pixel-pass|pixel-certified/)
 })
-
 test('V185 preserves embodied authority while repairing contour terrain, camera clipping, weak destinations and weak Orb presence', () => {
   for (const marker of [
     'function SculptedCanyonGround(', 'home-v125-sculpted-canyon-ground',
