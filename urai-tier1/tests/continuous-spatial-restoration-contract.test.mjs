@@ -83,21 +83,24 @@ test('Home Ground entry remains a physical world-surface descent into the lived 
   assert.doesNotMatch(ground, /ground-central-nexus|ground-destination-compass|GroundPhysicalArchitecture|GroundVaultArchitecture/)
 })
 
-test('Home interaction/accessibility ownership is bodyless camera-only first person with no mounted avatar', () => {
+test('Home interaction/accessibility preserves Avatar presentation then bodyless camera-only first person', () => {
   for (const marker of [
     'data-testid="urai-home-webgl-orb"',
-    'camera-only-first-person-home',
-    'bodyless-first-person-authored-living-memory-orb-sculpted-sanctuary-and-broad-sky-threshold',
-    'data-home-non-xr-body-policy="camera-only-no-hands-body-rig"',
+    'HomeEmbodiedAvatar',
+    'visible-avatar-presentation-activation-gate',
+    'bodyless-first-person-home',
+    'presentation-avatar-then-first-person-camera-only-no-hands-body-rig',
+    'data-home-avatar-activation-gate="required-before-first-person-home"',
+    'data-testid="urai-home-avatar-enter-first-person"',
     'useHomeExperienceController',
     'AvatarSelfView',
     "data-home-orb-model-clip={reducedMotion ? 'stopped-reduced-motion'",
   ]) has(renderer, marker)
-  assert.doesNotMatch(renderer, /<HomeEmbodiedAvatar|HOME_AVATAR_MODEL|visible-cinematic-avatar|visible-avatar-third-person|hidden-exterior-avatar-first-person/)
-  assert.match(renderer, /CURRENT_HOME_PRESENCE_ROOTS = new Set\(\['home-living-memory-orb'\]\)/)
-  assert.match(renderer, /\/home-visible-user-avatar\//)
-  assert.match(renderer, /\/urai-home-user-avatar\//)
-  assert.doesNotMatch(renderer, /privacy-preserving-first-person|first-person-hand|fps-hand|player-hands|weapon-rig/i)
+  assert.match(renderer, /CURRENT_HOME_PRESENCE_ROOTS = new Set\(\['home-living-memory-orb', 'urai-home-user-avatar'\]\)/)
+  assert.match(renderer, /homeState\.stableState === 'HOME_PRESENTATION'/)
+  assert.match(renderer, /homeState\.stableState === 'AVATAR_HOME_FIRST_PERSON'/)
+  assert.match(renderer, /avatarState=\{avatarPresentationState\}/)
+  assert.doesNotMatch(renderer, /first-person-hand|fps-hand|player-hands|weapon-rig/i)
   has(homeRuntime, 'requestUraiWorldOrbOpen')
   has(homeRuntime, 'webglcontextlost')
   has(homeRuntime, 'webglcontextrestored')
