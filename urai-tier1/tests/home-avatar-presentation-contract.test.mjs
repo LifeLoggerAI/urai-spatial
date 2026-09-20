@@ -78,15 +78,15 @@ test('self view preserves minimum touch target and responsive mobile shell', () 
   assert.match(selfView, /env\(safe-area-inset-/)
 })
 
-test('active Home still preserves visible Avatar, authored Orb and broad-sky Life Map ownership while convergence proceeds', () => {
+test('active non-XR Home is bodyless first-person while the retained avatar component stays unmounted', () => {
   for (const marker of [
-    'home-visible-user-avatar',
+    'camera-only-first-person-home',
+    'data-home-non-xr-body-policy="camera-only-no-hands-body-rig"',
+    'bodyless-first-person-authored-living-memory-orb-sculpted-sanctuary-and-broad-sky-threshold',
     'home-living-memory-orb',
     'visible-sky-broad-interaction',
     '/life-map/?from=home-sky',
-    "data-home-presence-presentation={avatarVisible ? 'visible-avatar-third-person' : firstPerson ? 'hidden-exterior-avatar-first-person' : 'transitioning'}",
-    "const avatarVisible = homeState.stableState === 'HOME_PRESENTATION' && homeState.transition !== 'AVATAR_EMBODIMENT_TRANSITION'",
-    "data-home-embodied-self={firstPerson ? 'camera-only-first-person-home' : 'visible-cinematic-avatar'}",
   ]) has(activeHome, marker)
+  assert.doesNotMatch(activeHome, /<HomeEmbodiedAvatar|HOME_AVATAR_MODEL|home-visible-user-avatar|urai-home-user-avatar|visible-cinematic-avatar|visible-avatar-third-person/)
   assert.doesNotMatch(activeHome, /first-person-hand|fps-hand|weapon-rig|player-hands/i)
 })
