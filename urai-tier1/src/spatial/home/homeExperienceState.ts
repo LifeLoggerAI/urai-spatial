@@ -94,10 +94,10 @@ export function makeHomeOriginSnapshot(
 
 export function createInitialHomeExperienceState(
   reducedMotion = false,
-  origin = makeHomeOriginSnapshot('HOME_PRESENTATION'),
+  origin = makeHomeOriginSnapshot('AVATAR_HOME_FIRST_PERSON'),
 ): HomeExperienceState {
   return {
-    stableState: 'HOME_PRESENTATION',
+    stableState: 'AVATAR_HOME_FIRST_PERSON',
     transition: null,
     returnStack: [],
     origin,
@@ -215,7 +215,10 @@ export function homeExperienceReducer(
 
     case 'DESTINATION_RETURN': {
       const { frame, stack } = popReturnFrame(state)
-      const origin = event.snapshot ?? frame?.origin ?? state.origin
+      const returnedOrigin = event.snapshot ?? frame?.origin ?? state.origin
+      const origin = returnedOrigin.stableState === 'HOME_PRESENTATION'
+        ? { ...returnedOrigin, stableState: 'AVATAR_HOME_FIRST_PERSON' as const }
+        : returnedOrigin
       const transition = event.destination === 'GROUND'
         ? 'GROUND_UNWIND'
         : event.destination === 'LIFE_MAP'
@@ -275,7 +278,7 @@ export function homeExperienceReducer(
       }
 
       if (state.stableState === 'AVATAR_HOME_FIRST_PERSON' && !state.transition) {
-        return { ...state, transition: 'EMBODIMENT_UNWIND', inputLocked: true }
+        return state
       }
 
       return state
@@ -291,17 +294,22 @@ export function homeExperienceReducer(
       ) return state
       return {
         ...state,
-        stableState: state.transition === 'EMBODIMENT_UNWIND' ? 'HOME_PRESENTATION' : state.stableState,
+        stableState: state.transition === 'EMBODIMENT_UNWIND' ? 'AVATAR_HOME_FIRST_PERSON' : state.stableState,
         transition: null,
         inputLocked: false,
         pendingDestination: null,
       }
 
-    case 'RECOVER':
+    case 'RECOVER': {
+      const recovered = event.snapshot ?? state.origin
+      const origin = recovered.stableState === 'HOME_PRESENTATION'
+        ? { ...recovered, stableState: 'AVATAR_HOME_FIRST_PERSON' as const }
+        : recovered
       return {
-        ...createInitialHomeExperienceState(state.reducedMotion, event.snapshot ?? state.origin),
-        stableState: event.snapshot?.stableState ?? 'HOME_PRESENTATION',
+        ...createInitialHomeExperienceState(state.reducedMotion, origin),
+        stableState: origin.stableState,
       }
+    }
 
     default:
       return state
