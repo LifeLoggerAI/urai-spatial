@@ -8,7 +8,7 @@ for (const marker of [
   "const activeHomeProduction = read('src/spatial/layout/HomeWorldProductionV223.tsx')",
   "const currentHomeVisualAuthority = JSON.parse(read('src/app/currentHomeVisualAuthority.json'))",
   "const groundedOrb = read('src/spatial/assets/HomeOrbGroundedV288.tsx')",
-  "v288-cinematic-lived-world-grounded-reliquary",
+  "cinematic-lived-world-threshold",
   "v288-grounded-biomorphic-reliquary",
   "data-home-v288-certification",
   "data-home-v288-retained-pixel-rebuild",
