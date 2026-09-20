@@ -15,8 +15,9 @@ const runtime = read('src/app/HomeSpatialRuntimeLayer.tsx')
 const world = read('src/app/HomeSpatialWorldFinal.tsx')
 
 test('Home has one canonical route entry and no retired multi-mode shell', () => {
-  assert.match(threshold, /HomeSpatialWorldFinal/)
+  assert.match(threshold, /HomeSemanticFallback/)
   assert.match(threshold, /useWebGLAvailable/)
+  assert.doesNotMatch(threshold, /HomeSpatialWorldFinal/)
   assert.doesNotMatch(threshold, /TierOneExperience|UraiV1Experience|RootModeExperience|UraiSpatialStage/)
   for (const retired of [
     'src/spatial/layout/TierOneExperience.tsx',
@@ -40,7 +41,8 @@ test('Home keeps one capability-aware accessible fallback', () => {
   assert.match(runtime, /data-testid="urai-home-accessible-fallback"/)
   assert.match(runtime, /aria-label="Spatial Home fallback"/)
   assert.match(runtime, /<HomeSemanticNavigation \/>/)
-  assert.match(runtime, /<HomeSpatialWorldFinal \/>/)
+  assert.match(runtime, /<HomeSemanticFallback \/>/)
+  assert.match(runtime, /AssetDrivenHomeWorld/)
 })
 
 test('Home keeps direct semantic Ground, Orb, and Life Map navigation in the runtime boundary', () => {
