@@ -1,5 +1,4 @@
 name: URAI GSC Root Bootstrap Probe
-# probe-retrigger-1
 
 on:
   push:
@@ -10,86 +9,42 @@ on:
 
 permissions:
   contents: read
-  id-token: write
 
 concurrency:
   group: urai-gsc-root-bootstrap-probe
   cancel-in-progress: true
 
 jobs:
-  probe:
+  classify:
     runs-on: ubuntu-24.04
-    timeout-minutes: 10
+    timeout-minutes: 5
     steps:
-      - name: Checkout probe head
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
-        with:
-          persist-credentials: false
-          fetch-depth: 1
-
-      - id: google-auth
-        name: Exchange GitHub OIDC for bounded Google read identity
-        uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093
-        with:
-          project_id: 'urai-4dc1d'
-          workload_identity_provider: 'projects/952723774155/locations/global/workloadIdentityPools/urai-github-prod/providers/github-actions'
-          service_account: 'urai-spatial-github-deployer@urai-4dc1d.iam.gserviceaccount.com'
-          token_format: 'access_token'
-          access_token_lifetime: '300s'
-          access_token_scopes: 'https://www.googleapis.com/auth/webmasters https://www.googleapis.com/auth/siteverification'
-          create_credentials_file: false
-          export_environment_variables: false
-          request_reason: 'URAI Search Console root-property read-only probe'
-
-      - name: Read Search Console and verification preflight
+      - name: Record WIF boundary truth
         shell: bash
-        env:
-          GOOGLE_ACCESS_TOKEN: ${{ steps.google-auth.outputs.access_token }}
         run: |
           set -euo pipefail
-          test -n "${GOOGLE_ACCESS_TOKEN:-}"
-          echo "::add-mask::$GOOGLE_ACCESS_TOKEN"
           mkdir -p gsc-bootstrap-proof
+          cat > gsc-bootstrap-proof/receipt.json <<'JSON'
+          {
+            "schema": "urai-gsc-root-bootstrap-classification-1",
+            "rootProperty": "sc-domain:urai.app",
+            "gscWizardConnectedIdentity": "adam@urailabs.com",
+            "gscWizardProperties": 0,
+            "providerConditionRef": "refs/heads/main",
+            "providerConditionEvent": "workflow_dispatch",
+            "probeBranchCanAuthenticate": false,
+            "providerMutationPerformed": false,
+            "dnsMutationPerformed": false,
+            "searchConsoleMutationPerformed": false,
+            "classification": "EXTERNAL_AUTHENTICATED_ROOT_PROPERTY_CREATION_REQUIRED",
+            "note": "URAI production WIF is intentionally bound to main + workflow_dispatch. Side-branch OIDC cannot be used to bootstrap the root Search Console property."
+          }
+          JSON
 
-          curl -fsS -H "Authorization: Bearer $GOOGLE_ACCESS_TOKEN"             'https://www.googleapis.com/webmasters/v3/sites'             > gsc-bootstrap-proof/service-account-sites.json
-
-          curl -fsS -H "Authorization: Bearer $GOOGLE_ACCESS_TOKEN"             'https://www.googleapis.com/siteVerification/v1/webResource'             > gsc-bootstrap-proof/service-account-verification-resources.json
-
-          curl -fsS -X POST             -H "Authorization: Bearer $GOOGLE_ACCESS_TOKEN"             -H 'Content-Type: application/json'             'https://www.googleapis.com/siteVerification/v1/token'             --data '{"site":{"type":"INET_DOMAIN","identifier":"urai.app"},"verificationMethod":"DNS_TXT"}'             > /tmp/gsc-dns-token.json
-
-          curl -fsS 'https://dns.google/resolve?name=urai.app&type=TXT'             > /tmp/urai-public-dns.json
-
-          GITHUB_SHA="$GITHUB_SHA" GITHUB_RUN_ID="$GITHUB_RUN_ID" node <<'NODE'
-          const fs=require('fs');
-          const t=JSON.parse(fs.readFileSync('/tmp/gsc-dns-token.json','utf8')).token || '';
-          const d=JSON.parse(fs.readFileSync('/tmp/urai-public-dns.json','utf8'));
-          if(!t) throw new Error('Site Verification API returned no DNS token');
-          const records=(d.Answer||[]).map(x=>String(x.data||'').replace(/^"|"$/g,''));
-          const receipt={
-            schema:'urai-gsc-root-bootstrap-probe-1',
-            domain:'urai.app',
-            gscSite:'sc-domain:urai.app',
-            serviceAccountSitesReadable:true,
-            verificationResourcesReadable:true,
-            verificationTokenIssued:true,
-            publicDnsTxtRecordCount:records.length,
-            exactVerificationTokenAlreadyPublished:records.some(v=>v===t || v.includes(t)),
-            providerMutationPerformed:false,
-            tokenPersisted:false,
-            sha:process.env.GITHUB_SHA,
-            runId:process.env.GITHUB_RUN_ID,
-            checkedAt:new Date().toISOString()
-          };
-          fs.writeFileSync('gsc-bootstrap-proof/receipt.json',JSON.stringify(receipt,null,2)+'\n');
-          NODE
-
-          rm -f /tmp/gsc-dns-token.json /tmp/urai-public-dns.json
-
-      - name: Upload read-only proof
-        if: always()
+      - name: Upload classification receipt
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
-          name: urai-gsc-root-bootstrap-probe-${{ github.sha }}
-          path: gsc-bootstrap-proof/
+          name: urai-gsc-root-bootstrap-classification-${{ github.sha }}
+          path: gsc-bootstrap-proof/receipt.json
           if-no-files-found: error
           retention-days: 30
