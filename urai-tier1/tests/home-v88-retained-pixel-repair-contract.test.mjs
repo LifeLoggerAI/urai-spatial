@@ -31,8 +31,8 @@ test('historical V185 destinations remain regression-covered and visibly retired
   assert.doesNotMatch(historicalArt, /<ringGeometry|<torusGeometry|<RoundedBox/)
 })
 
-test('V288 remains certified predecessor provenance while the V291 authored Orb candidate stays fail-closed', () => {
-  assert.equal(authority.artRevision, 'v291-sculpted-sanctuary-translucent-reference-orb')
+test('V288 remains certified predecessor provenance while V292 Home carries the V291 authored Orb candidate fail-closed', () => {
+  assert.equal(authority.artRevision, 'v292-avatar-presentation-bodyless-first-person-convergence')
   assert.equal(authority.lastCertifiedPredecessor.orbVisualAuthority, 'v288-grounded-biomorphic-reliquary')
   assert.ok(authority.lastCertifiedPredecessor.runtimeAssets.includes('HomeOrbGroundedV288.tsx'))
   assert.equal(authority.orbVisualAuthority, 'v291-translucent-memory-orb-reference-candidate')
