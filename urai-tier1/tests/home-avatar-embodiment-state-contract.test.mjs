@@ -8,7 +8,6 @@ const here = path.dirname(fileURLToPath(import.meta.url))
 const root = path.resolve(here, '..')
 const source = fs.readFileSync(path.join(root, 'src/spatial/home/homeExperienceState.ts'), 'utf8')
 const runtimeSource = fs.readFileSync(path.join(root, 'src/spatial/layout/HomeWorldProductionV223.tsx'), 'utf8')
-const semanticEventSource = fs.readFileSync(path.join(root, 'src/spatial/home/homeSemanticEvents.ts'), 'utf8')
 
 const mustContain = (marker) => assert.equal(source.includes(marker), true, `missing ${marker}`)
 
@@ -71,9 +70,10 @@ test('Orb conversation unwinds to its immediate origin rather than deleting cont
   assert.match(source, /state\.stableState === 'IMMERSIVE_CONVERSATION'[\s\S]*'ORB_COLLAPSE'[\s\S]*origin\.stableState/)
 })
 
-test('first-person Home ESC exits embodiment one layer to cinematic presentation', () => {
-  assert.match(source, /state\.stableState === 'AVATAR_HOME_FIRST_PERSON'[\s\S]*'EMBODIMENT_UNWIND'/)
-  assert.match(source, /state\.transition === 'EMBODIMENT_UNWIND' \? 'HOME_PRESENTATION'/)
+test('first-person Home ESC stays in bodyless first-person Home when no deeper layer owns escape', () => {
+  assert.match(source, /state\.stableState === 'AVATAR_HOME_FIRST_PERSON' && !state\.transition[\s\S]*return state/)
+  assert.match(source, /state\.transition === 'EMBODIMENT_UNWIND' \? 'AVATAR_HOME_FIRST_PERSON'/)
+  assert.doesNotMatch(source, /state\.transition === 'EMBODIMENT_UNWIND' \? 'HOME_PRESENTATION'/)
 })
 
 test('interrupted Ground or Sky transition restores the recorded origin safely', () => {
@@ -92,11 +92,11 @@ test('return frame persistence is session-bounded and validates full origin shap
   assert.match(source, /environment\.environmentRevision/)
 })
 
-test('semantic Enter first-person Home control is wired to the authoritative V223 embodiment controller', () => {
-  assert.match(semanticEventSource, /URAI_HOME_AVATAR_ACTIVATE_EVENT = 'urai:home-avatar-activate'/)
-  assert.match(runtimeSource, /import \{ URAI_HOME_AVATAR_ACTIVATE_EVENT \} from '@\/spatial\/home\/homeSemanticEvents'/)
-  assert.match(runtimeSource, /window\.addEventListener\(URAI_HOME_AVATAR_ACTIVATE_EVENT, activateFromSemanticControl\)/)
-  assert.match(runtimeSource, /const activateFromSemanticControl = \(\) => activateAvatar\(\)/)
-  assert.match(runtimeSource, /window\.removeEventListener\(URAI_HOME_AVATAR_ACTIVATE_EVENT, activateFromSemanticControl\)/)
+test('active non-XR Home starts bodyless and does not mount the retained avatar component', () => {
+  assert.match(runtimeSource, /data-home-embodied-self="camera-only-first-person-home"/)
+  assert.match(runtimeSource, /data-home-non-xr-body-policy="camera-only-no-hands-body-rig"/)
+  assert.match(runtimeSource, /data-home-scanned-composition="bodyless-first-person-authored-living-memory-orb-sculpted-sanctuary-and-broad-sky-threshold"/)
+  assert.match(runtimeSource, /useRef<'HOME_PRESENTATION' \| 'AVATAR_HOME_FIRST_PERSON'>\('AVATAR_HOME_FIRST_PERSON'\)/)
+  assert.doesNotMatch(runtimeSource, /URAI_HOME_AVATAR_ACTIVATE_EVENT|<HomeEmbodiedAvatar|HOME_AVATAR_MODEL/)
 })
 
