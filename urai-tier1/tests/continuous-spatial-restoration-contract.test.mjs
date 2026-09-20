@@ -93,7 +93,7 @@ test('Home interaction/accessibility ownership is bodyless camera-only first per
     'AvatarSelfView',
     "data-home-orb-model-clip={reducedMotion ? 'stopped-reduced-motion'",
   ]) has(renderer, marker)
-  assert.doesNotMatch(renderer, /<HomeEmbodiedAvatar|HOME_AVATAR_MODEL|visible-cinematic-avatar|visible-avatar-third-person|hidden-exterior-avatar-first-person|urai-home-user-avatar/)
+  assert.doesNotMatch(renderer, /<HomeEmbodiedAvatar|HOME_AVATAR_MODEL|visible-cinematic-avatar|visible-avatar-third-person|hidden-exterior-avatar-first-person/)
   assert.match(renderer, /CURRENT_HOME_PRESENCE_ROOTS = new Set\(\['home-living-memory-orb'\]\)/)
   assert.match(renderer, /\/home-visible-user-avatar\//)
   assert.match(renderer, /\/urai-home-user-avatar\//)
