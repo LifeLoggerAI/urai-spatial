@@ -3,6 +3,10 @@
 Date: 2026-05-07
 Scope: Verification and correction pass only. No new product features.
 
+## Historical snapshot warning
+
+This file is a May 7, 2026 historical implementation audit, **not current deployment or credential authority**. Current release truth must come from the live launch manifest, exact-head GitHub/provider evidence, and the keyless deployment runbooks. Do not infer that routes described here are currently deployed. Long-lived Firebase service-account JSON/private-key/token credentials are prohibited for the canonical production path.
+
 ## Summary
 
 Status: CONDITIONAL PASS
@@ -53,7 +57,7 @@ These cannot be completed inside the repository alone:
 - Create/verify Firebase project.
 - Enable Firebase Auth Email/Password provider.
 - Enable Firestore.
-- Add `FIREBASE_SERVICE_ACCOUNT_JSON` as a production secret.
+- Establish separately reviewed short-lived OIDC/WIF or managed runtime ADC with least-privilege IAM; do not configure service-account JSON/private-key/token credentials.
 - Create Stripe products/prices.
 - Add Stripe webhook endpoint to `/api/stripe/webhook-v2`.
 - Add all hosting environment variables.
@@ -75,9 +79,9 @@ This audit did not run a live `pnpm build` or `pnpm typecheck` against the repos
 
 Root `src/...` contains an older parallel SaaS surface. Runtime scripts currently build `urai-tier1`; future cleanup should either delete the root duplicate or explicitly mark it as non-runtime to avoid confusion.
 
-### RISK: Service account env formatting
+### RISK: Credential authority drift
 
-`FIREBASE_SERVICE_ACCOUNT_JSON` must be valid JSON in the hosting environment. If newline escaping causes deployment failure, convert to a base64-based secret in a future hardening pass.
+Do not use service-account JSON, private keys, Firebase tokens, or base64-wrapped long-lived credentials as a workaround. Production identity must remain short-lived OIDC/WIF or an explicitly approved managed runtime identity with provider-native readback.
 
 ### RISK: Local insight persistence
 

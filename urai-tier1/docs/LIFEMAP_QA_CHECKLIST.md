@@ -17,12 +17,7 @@ cd urai-tier1
 FIREBASE_PROJECT_ID=<project-id> pnpm seed:lifemap -- --user=demo-user
 ```
 
-If using a service account JSON:
-
-```bash
-cd urai-tier1
-FIREBASE_PROJECT_ID=<project-id> FIREBASE_SERVICE_ACCOUNT_JSON='<json>' pnpm seed:lifemap -- --user=demo-user
-```
+Authenticated seed runs must use supported local Application Default Credentials or a separately approved short-lived managed identity. Do not pass service-account JSON/private keys/tokens in environment variables or commit credential files.
 
 ## Route Smoke Test
 
