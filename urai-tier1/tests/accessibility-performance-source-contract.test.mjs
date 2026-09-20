@@ -15,7 +15,6 @@ test('accessibility and performance implementation contracts cover Home presenta
   const adaptiveQuality = read('src/spatial/performance/useAdaptiveSpatialQuality.ts')
   const companion = read('src/spatial/world/PersistentWorldCompanion.tsx')
   const worldEvents = read('src/spatial/world/worldEvents.ts')
-  const homeEvents = read('src/spatial/home/homeSemanticEvents.ts')
   const homeController = read('src/spatial/home/useHomeExperienceController.ts')
   const template = read('src/app/template.tsx')
   const worldShell = read('src/spatial/world/UraiWorldShell.tsx')
@@ -64,9 +63,6 @@ test('accessibility and performance implementation contracts cover Home presenta
   requireNormalizedPattern(homeCapability, /canvas\.getContext\('webgl2'(?:,\s*\{[^)]*\})?\)\s*\?\?\s*canvas\.getContext\('webgl'(?:,\s*\{[^)]*\})?\)/, 'Home must test WebGL2 and WebGL capability')
   requireText(homeRuntime, 'AssetDrivenHomeWorld')
   for (const marker of [
-    'aria-label="Enter first-person Home"',
-    'data-testid="home-semantic-avatar"',
-    'requestHomeAvatarActivation',
     'aria-label="Open URAI Orb companion"',
     'aria-label="Open Ground directly"',
     'aria-label="Open Life Map directly"',
@@ -75,24 +71,19 @@ test('accessibility and performance implementation contracts cover Home presenta
     'accessible-fallback-after-renderer-failure',
     'role="status"',
   ]) requireText(homeRuntime, marker)
-  requireText(homeEvents, "URAI_HOME_AVATAR_ACTIVATE_EVENT = 'urai:home-avatar-activate'")
-  requireText(homeEvents, 'window.dispatchEvent(new Event(URAI_HOME_AVATAR_ACTIVATE_EVENT))')
-  requireText(homeController, 'window.addEventListener(URAI_HOME_AVATAR_ACTIVATE_EVENT, onSemanticAvatarActivate)')
-  requireText(homeController, "dispatch({ type: 'AVATAR_ACTIVATE', snapshot: currentOrigin() })")
+  assert.doesNotMatch(homeRuntime, /Enter first-person Home|home-semantic-avatar|requestHomeAvatarActivation/)
+  assert.doesNotMatch(homeController, /URAI_HOME_AVATAR_ACTIVATE_EVENT|activateAvatar/)
 
   for (const marker of [
     "homeState.stableState === 'AVATAR_HOME_FIRST_PERSON'",
     "'camera-only-first-person-home'",
-    "'visible-cinematic-avatar'",
-    "'visible-avatar-third-person'",
-    "'hidden-exterior-avatar-first-person'",
     "'shared-keyboard-touch-walk-look-interact'",
-    "'camera-look-world-surface-selection'",
-    "'avatar-home-first-person'",
+    "'home-first-person'",
+    "'home-camera-only-first-person'",
+    'bodyless-first-person-authored-living-memory-orb-sculpted-sanctuary-and-broad-sky-threshold',
     'data-home-ground-entry="physical-world-surface"',
     'data-home-life-map-entry="visible-sky-broad-interaction"',
     'data-home-non-xr-body-policy="camera-only-no-hands-body-rig"',
-    'HomeEmbodiedAvatar',
     'useHomeExperienceController',
     'useMovementInput({',
     'stepEmbodiedMotion({',
@@ -105,6 +96,7 @@ test('accessibility and performance implementation contracts cover Home presenta
     'THREE.LoopOnce',
     'prefers-reduced-motion: reduce',
   ]) requireText(currentHome, marker)
+  assert.doesNotMatch(currentHome, /<HomeEmbodiedAvatar|HOME_AVATAR_MODEL|visible-cinematic-avatar|visible-avatar-third-person|hidden-exterior-avatar-first-person/i, 'Non-XR Home must not mount or present a visible avatar')
   assert.doesNotMatch(currentHome, /first-person-hand|fps-hand|player-hands|weapon-rig/i, 'Non-XR Home must not invent a first-person body/hands rig')
   assert.doesNotMatch(currentHome, /next\.reset\(\)\.setLoop\(THREE\.LoopRepeat\s*,\s*Infinity\)/, 'Orb authored state entry clips must not loop forever')
 
@@ -130,13 +122,12 @@ test('accessibility and performance implementation contracts cover Home presenta
   requireText(routeOwnerCss, 'max-height: 100svh !important;')
 
   for (const marker of [
-    "toHaveAttribute('data-home-embodied-self', 'visible-cinematic-avatar'",
-    "toHaveAttribute('data-home-presence-presentation', 'visible-avatar-third-person'",
-    "getByRole('button', { name: 'Enter first-person Home' })",
+    "toHaveCount(0)",
     "toHaveAttribute('data-home-stable-state', 'AVATAR_HOME_FIRST_PERSON'",
     "toHaveAttribute('data-home-embodied-self', 'camera-only-first-person-home'",
-    "toHaveAttribute('data-home-presence-presentation', 'hidden-exterior-avatar-first-person'",
+    "toHaveAttribute('data-home-presence-presentation', 'camera-only-first-person-home'",
     "toHaveAttribute('data-home-movement', 'shared-keyboard-touch-walk-look-interact'",
+    "toHaveAttribute('data-home-non-xr-body-policy', 'camera-only-no-hands-body-rig'",
     "getByRole('button', { name: 'Open Avatar Self View' })",
     "name: 'Move through Home'",
     'data-ground-exploration="first-person-no-visible-body"',

@@ -16,23 +16,24 @@ async function waitForHomeWorld(home: Locator) {
   await expect(home).toHaveAttribute('data-home-assets-ready', 'true', { timeout: 45_000 })
   await expect(home).toHaveAttribute('data-home-ready', 'true', { timeout: 45_000 })
   await expect(home).toHaveAttribute('data-home-interaction-ready', 'true', { timeout: 45_000 })
-  await expect(home).toHaveAttribute('data-home-embodied-self', 'visible-cinematic-avatar')
-  await expect(home).toHaveAttribute('data-home-presence-presentation', 'visible-avatar-third-person')
-  await expect(home).toHaveAttribute('data-home-movement', 'camera-look-world-surface-selection')
+  await expect(home).toHaveAttribute('data-home-stable-state', 'AVATAR_HOME_FIRST_PERSON')
+  await expect(home).toHaveAttribute('data-home-embodied-self', 'camera-only-first-person-home')
+  await expect(home).toHaveAttribute('data-home-presence-presentation', 'camera-only-first-person-home')
+  await expect(home).toHaveAttribute('data-home-movement', 'shared-keyboard-touch-walk-look-interact')
   await expect(home).toHaveAttribute('data-home-ground-entry', 'physical-world-surface')
   await expect(home).toHaveAttribute('data-home-life-map-entry', 'visible-sky-broad-interaction')
-  await expect(home).toHaveAttribute('data-home-camera-mode', /cinematic-third-person(?:-look)?/)
+  await expect(home).toHaveAttribute('data-home-camera-mode', 'home-first-person')
+  await expect(home).toHaveAttribute('data-home-non-xr-body-policy', 'camera-only-no-hands-body-rig')
 }
 
-async function enterFirstPersonHome(page: Page) {
+async function assertBodylessFirstPersonHome(page: Page) {
   const home = page.locator(homeOwnerSelector)
-  const semanticAvatar = page.getByRole('button', { name: 'Enter first-person Home' })
-  await expect(semanticAvatar).toBeVisible({ timeout: 30_000 })
-  await semanticAvatar.click()
+  await expect(page.getByRole('button', { name: 'Enter first-person Home' })).toHaveCount(0)
   await expect(home).toHaveAttribute('data-home-stable-state', 'AVATAR_HOME_FIRST_PERSON', { timeout: 20_000 })
   await expect(home).toHaveAttribute('data-home-embodied-self', 'camera-only-first-person-home')
-  await expect(home).toHaveAttribute('data-home-presence-presentation', 'hidden-exterior-avatar-first-person')
+  await expect(home).toHaveAttribute('data-home-presence-presentation', 'camera-only-first-person-home')
   await expect(home).toHaveAttribute('data-home-movement', 'shared-keyboard-touch-walk-look-interact')
+  await expect(home).toHaveAttribute('data-home-non-xr-body-policy', 'camera-only-no-hands-body-rig')
   await expect(page.getByRole('button', { name: 'Open Avatar Self View' })).toBeVisible()
   return home
 }
@@ -48,7 +49,7 @@ function normalizedPathname(url: string) {
 test.describe('Home and Ground embodied accessibility evidence', () => {
   test.describe.configure({ timeout: 300_000 })
 
-  test('Home presentation enters persistent bodyless first-person Home with shared keyboard controls', async ({ page }) => {
+  test('Home opens directly into persistent bodyless first-person Home with shared keyboard controls', async ({ page }) => {
     const errors = await collectRuntimeErrors(page)
     await page.goto('/home/', { waitUntil: 'domcontentloaded' })
     const home = page.locator(homeOwnerSelector)
@@ -64,7 +65,7 @@ test.describe('Home and Ground embodied accessibility evidence', () => {
       await expect(target).toBeFocused()
     }
 
-    await enterFirstPersonHome(page)
+    await assertBodylessFirstPersonHome(page)
     await page.keyboard.down('w')
     await page.waitForTimeout(500)
     await page.keyboard.up('w')
@@ -77,7 +78,7 @@ test.describe('Home and Ground embodied accessibility evidence', () => {
     await page.setViewportSize({ width: 393, height: 873 })
     await page.goto('/home/', { waitUntil: 'domcontentloaded' })
     await waitForHomeWorld(page.locator(homeOwnerSelector))
-    await enterFirstPersonHome(page)
+    await assertBodylessFirstPersonHome(page)
 
     const movement = page.getByRole('group', { name: 'Move through Home' })
     await expect(movement).toBeVisible()
@@ -156,11 +157,11 @@ test.describe('Home and Ground embodied accessibility evidence', () => {
     }
   })
 
-  test('reduced motion preserves semantic Home embodiment and Ground controls without pointer lock', async ({ page }) => {
+  test('reduced motion preserves bodyless first-person Home and Ground controls without pointer lock', async ({ page }) => {
     await page.emulateMedia({ reducedMotion: 'reduce' })
     await page.goto('/home/', { waitUntil: 'domcontentloaded' })
     await waitForHomeWorld(page.locator(homeOwnerSelector))
-    await enterFirstPersonHome(page)
+    await assertBodylessFirstPersonHome(page)
     expect(await page.evaluate(() => document.pointerLockElement)).toBeNull()
 
     await page.goto('/ground/', { waitUntil: 'domcontentloaded' })
