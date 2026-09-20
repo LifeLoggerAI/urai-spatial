@@ -33,7 +33,8 @@ for (const sharedMovementAssertion of [
   "assert.match(activeHomeProduction, /stepEmbodiedMotion/)",
   "assert.match(activeHomeProduction, /useMovementInput/)",
   "assert.match(activeHomeProduction, /MobileMovementPad/)",
-  "assert.match(activeHomeProduction, /data-home-movement=\\{firstPerson \\? 'shared-keyboard-touch-walk-look-interact' : 'camera-look-world-surface-selection'\\}/)",
+  "assert.match(activeHomeProduction, /data-home-movement=\\{firstPerson \\? 'shared-keyboard-touch-walk-look-interact'/)",
+  "assert.match(activeHomeProduction, /'avatar-presentation-target-activate'/)",
 ]) {
   if (!source.includes(sharedMovementAssertion)) throw new Error(`Current Home shared-movement authority missing: ${sharedMovementAssertion}`)
 }
