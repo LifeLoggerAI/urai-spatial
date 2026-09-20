@@ -35,7 +35,7 @@ test('current Home candidate uses one spatial owner while certified V288 metadat
   has(assetHome, 'HomeWorldProductionV223')
   has(assetHome, 'data-home-canvas-owner="home-world-production-v223-cinematic-threshold-authority"')
   has(assetHome, "world.setAttribute('data-home-art-certification', 'fresh-exact-head-pixels-required')")
-  assert.equal(authority.artRevision, 'v291-sculpted-sanctuary-translucent-reference-orb')
+  assert.equal(authority.artRevision, 'v292-avatar-presentation-bodyless-first-person-convergence')
   assert.equal(authority.worldIdentifier, 'cinematic-lived-world-threshold')
   assert.equal(authority.certificationState, 'candidate-requires-fresh-exact-head-pixels')
   assert.equal(authority.lastCertifiedPredecessor.orbVisualAuthority, 'v288-grounded-biomorphic-reliquary')

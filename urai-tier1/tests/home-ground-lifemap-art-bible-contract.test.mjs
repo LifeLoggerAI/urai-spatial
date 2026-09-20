@@ -79,7 +79,7 @@ test('Home runtime exposes the current Orb candidate while preserving two-mode H
   assert.match(currentHome, /<HomeEmbodiedAvatar/)
   assert.match(currentHome, /CURRENT_HOME_PRESENCE_ROOTS = new Set\(\['home-living-memory-orb', 'urai-home-user-avatar'\]\)/)
   assert.doesNotMatch(assetHome, /HOME_GROUND|HOME_SPAWN|stagePortalLifecycle|PortalDestination/)
-  assert.equal(currentHomeVisualAuthority.artRevision, 'v291-sculpted-sanctuary-translucent-reference-orb')
+  assert.equal(currentHomeVisualAuthority.artRevision, 'v292-avatar-presentation-bodyless-first-person-convergence')
   assert.equal(currentHomeVisualAuthority.orbVisualAuthority, 'v291-translucent-memory-orb-reference-candidate')
   assert.equal(currentHomeVisualAuthority.currentRuntimeCandidate.orbVisualAuthority, 'v291-translucent-memory-orb-reference-candidate')
   assert.equal(currentHomeVisualAuthority.currentRuntimeCandidate.certified, false)
