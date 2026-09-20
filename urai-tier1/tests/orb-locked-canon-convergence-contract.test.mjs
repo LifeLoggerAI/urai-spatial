@@ -46,7 +46,7 @@ test('Current Orb persistent motion remains state-aware and reduced-motion safe'
   assert.match(currentHome, /if \(!reducedMotion\)/)
   assert.match(currentHome, /root\.current\.position\.y = baseY/)
   assert.match(currentHome, /sensory\.light\.intensity/)
-  assert.match(currentHome, /state === 'privacy' \? \.022/)
+  assert.match(currentHome, /privacy: \\{ hover: \\.002, rotation: \\.04, coreScale: \\.96, breath: \\.0006, ring: \\.06 \\}/)
   assert.match(currentHome, /state === 'warning' \? '#cf9b65'/)
   assert.match(currentHome, /const expressiveEnergy = reducedMotion \? 0/)
 })
