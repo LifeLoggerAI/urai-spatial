@@ -49,7 +49,10 @@ test.describe('Home mobile control separation evidence', () => {
         await expect(semantic).toHaveAttribute('data-home-navigation-owner', 'runtime-boundary')
         await expect(semantic).toHaveAttribute('data-home-navigation-non-dominant', 'true')
 
-        await expect(semantic.getByRole('button', { name: 'Enter first-person Home' })).toHaveCount(0)
+        const activate = page.getByRole('button', { name: 'Enter first-person Home through your Avatar' })
+        await activate.focus()
+        await expect(activate).toBeFocused()
+        await activate.press('Enter')
         await expect(home).toHaveAttribute('data-home-stable-state', 'AVATAR_HOME_FIRST_PERSON', { timeout: 45_000 })
         await expect(home).toHaveAttribute('data-home-embodied-self', 'camera-only-first-person-home')
         await expect(home).toHaveAttribute('data-home-non-xr-body-policy', 'camera-only-no-hands-body-rig')
