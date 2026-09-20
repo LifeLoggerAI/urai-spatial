@@ -12,11 +12,11 @@ const geometry = readFileSync(new URL('../src/spatial/layout/HomeWorldProduction
 
 const has = (source, marker) => assert.ok(source.includes(marker), `missing marker: ${marker}`)
 
-test('V288 remains the last certified predecessor while V291 current candidate pixels stay fail-closed', () => {
+test('V288 remains the last certified predecessor while V292 current candidate pixels stay fail-closed', () => {
   has(renderer, 'export function HomeWorldProductionV223')
   has(renderer, 'data-home-visual-ownership="single-canvas-three-dimensional-geometry"')
   has(owner, 'data-home-canvas-owner="home-world-production-v223-cinematic-threshold-authority"')
-  assert.equal(authority.artRevision, 'v291-sculpted-sanctuary-translucent-reference-orb')
+  assert.equal(authority.artRevision, 'v292-avatar-presentation-bodyless-first-person-convergence')
   assert.equal(authority.worldIdentifier, 'cinematic-lived-world-threshold')
   assert.equal(authority.lastCertifiedPredecessor.orbVisualAuthority, 'v288-grounded-biomorphic-reliquary')
   assert.ok(authority.lastCertifiedPredecessor.runtimeAssets.includes('HomeOrbReliquaryV286.tsx'))
