@@ -162,8 +162,10 @@ const legacyHotspotPatterns = [
   /home-orb-/,
   /memory-reliquary/,
   /home-v249-organic-living-memory-presence/,
+  /home-visible-user-avatar/,
+  /urai-home-user-avatar/,
 ]
-const CURRENT_HOME_PRESENCE_ROOTS = new Set(['home-living-memory-orb', 'home-visible-user-avatar', 'urai-home-user-avatar'])
+const CURRENT_HOME_PRESENCE_ROOTS = new Set(['home-living-memory-orb'])
 
 function isInsideCurrentHomePresence(object: THREE.Object3D) {
   let current: THREE.Object3D | null = object
@@ -174,7 +176,7 @@ function isInsideCurrentHomePresence(object: THREE.Object3D) {
   return false
 }
 
-/** Retire predecessor hotspot sculptures while preserving the canonical Avatar, Orb, world and broad Sky interaction. */
+/** Retire predecessor hotspot sculptures and any legacy visible-avatar roots while preserving the canonical Orb, world and broad Sky interaction. */
 function RetireLegacyHomeHotspots() {
   const { scene } = useThree()
   useEffect(() => {
