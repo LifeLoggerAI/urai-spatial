@@ -428,4 +428,4 @@ receipt.completedAt = new Date().toISOString()
 receipt.status = receipt.failures.length ? 'partial' : 'captured'
 await fs.writeFile(path.join(outDir, 'receipt.json'), JSON.stringify(receipt, null, 2) + '\n')
 console.log(JSON.stringify({ exactSha, captures:receipt.captures.length, failures:receipt.failures.length, status:receipt.status }))
-if (!receipt.captures.length) process.exitCode = 1
+if (receipt.failures.length || !receipt.captures.length) process.exitCode = 1
