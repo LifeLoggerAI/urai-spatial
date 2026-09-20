@@ -10,7 +10,7 @@ import { useSelectedMemory } from '@/spatial/memory/useSelectedMemory'
 import type { SelectedMemory } from '@/spatial/memory/selectedMemoryContract'
 import { requestUraiWorldReturn, requestUraiWorldTravel } from '@/spatial/world/worldEvents'
 
-// Locked product authority; V341 is the current literal-pixel implementation:
+// Locked product authority; V342 is the current literal-pixel implementation:
 // Life Map shows stellar memory points. Focus resolves the selected point into the
 // same memory star at intimate scale, with authorized source media (or a truthful
 // generated visualization when no media exists) visible inside/through the star.
@@ -33,15 +33,20 @@ function makeFocusCoronaTexture(power: number, rays = false) {
     const dy = ((y + .5) / size - .5) * 2;
     const distance = Math.sqrt(dx * dx + dy * dy);
     const radial = Math.max(0, 1 - distance);
-    const axial = rays
-      ? Math.max(0, 1 - Math.min(Math.abs(dx), Math.abs(dy)) * 16) * Math.max(0, 1 - distance * .88)
+    const angle = Math.atan2(dy, dx);
+    const irregularRays = rays
+      ? Math.pow(Math.max(0, Math.cos(angle * 11 + Math.sin(angle * 5) * .72)), 18)
+        * Math.pow(radial, .58)
       : 0;
-    const diagonal = rays
-      ? Math.max(0, 1 - Math.min(Math.abs(dx - dy), Math.abs(dx + dy)) * 12) * Math.max(0, 1 - distance * .92)
+    const fineRays = rays
+      ? Math.pow(Math.max(0, Math.cos(angle * 19 - .43)), 28)
+        * Math.pow(radial, .72) * .48
       : 0;
-    const alpha = rays
-      ? Math.min(1, Math.pow(radial, power) * .14 + axial * .96 + diagonal * .68)
-      : Math.min(1, Math.pow(radial, power));
+    const alpha = distance >= 1
+      ? 0
+      : rays
+        ? Math.min(1, Math.pow(radial, power) * .34 + irregularRays * .82 + fineRays)
+        : Math.min(1, Math.pow(radial, power));
     const offset = (y * size + x) * 4;
     data[offset] = 255;
     data[offset + 1] = 255;
@@ -249,7 +254,7 @@ function FocusMemoryStar({
     position={STAR_POSITION}
     name="focus-selected-memory-star"
     userData={{
-      visualAuthority: 'selected-memory-star-resolving-through-memory-v341',
+      visualAuthority: 'selected-memory-star-resolving-through-memory-v342',
       lifeMapContinuity: 'same-selected-star-resolved-at-close-range',
       terrainOwner: false,
     }}
@@ -258,19 +263,10 @@ function FocusMemoryStar({
     <sprite raycast={() => null} position={[-.08, .05, -.24]} scale={[3.72, 3.72, 1]} name="focus-memory-star-corona-glow">
       <spriteMaterial map={coronaTexture} color={accent} transparent opacity={memory ? .26 : .05} depthWrite={false} blending={THREE.AdditiveBlending} toneMapped={false} />
     </sprite>
-    <sprite raycast={() => null} position={[.06, -.03, -.10]} scale={[5.15, 5.15, 1]} rotation={.22} name="focus-memory-star-photosphere-rays">
-      <spriteMaterial map={rayTexture} color="#fff7dc" transparent opacity={memory ? .96 : .05} depthWrite={false} blending={THREE.AdditiveBlending} toneMapped={false} />
+    <sprite raycast={() => null} position={[.06, -.03, -.10]} scale={[4.7, 4.7, 1]} rotation={.22} name="focus-memory-star-photosphere-rays">
+      <spriteMaterial map={rayTexture} color="#fff1bd" transparent opacity={memory ? .82 : .05} depthWrite={false} blending={THREE.AdditiveBlending} toneMapped={false} />
     </sprite>
-    <group raycast={() => null} name="focus-memory-star-explicit-corona-rays" position={[0, 0, -0.04]}>
-      {Array.from({ length: 12 }, (_, index) => {
-        const angle = (index / 12) * Math.PI * 2
-        const length = index % 3 === 0 ? 1.34 : index % 2 === 0 ? 1.08 : 0.86
-        return <mesh key={index} rotation={[0, 0, angle]} position={[Math.cos(angle) * 0.62, Math.sin(angle) * 0.62, 0]}>
-          <planeGeometry args={[index % 3 === 0 ? 0.026 : 0.016, length]} />
-          <meshBasicMaterial color="#fff4cf" transparent opacity={memory ? (index % 3 === 0 ? 0.34 : 0.20) : 0.02} depthWrite={false} blending={THREE.AdditiveBlending} toneMapped={false} />
-        </mesh>
-      })}
-    </group>
+    <group raycast={() => null} name="focus-memory-star-explicit-corona-rays" position={[0, 0, -0.04]} />
     <mesh raycast={() => null} scale={0.72} name="focus-memory-star-outer-corona">
       <sphereGeometry args={[1, 64, 40]} />
       <meshBasicMaterial color={accent} transparent opacity={memory ? 0.024 : 0.002} depthWrite={false} blending={THREE.AdditiveBlending} />
@@ -284,11 +280,11 @@ function FocusMemoryStar({
       <meshStandardMaterial
         color={light}
         emissive={accent}
-        emissiveIntensity={memory ? 6.0 : 0.20}
-        roughness={0.18}
+        emissiveIntensity={memory ? 2.4 : 0.20}
+        roughness={0.34}
         metalness={0}
         transparent
-        opacity={memory ? 0.88 : 0.18}
+        opacity={memory ? 0.26 : 0.18}
         depthWrite={false}
       />
     </mesh>
@@ -619,7 +615,7 @@ export default function FocusChamberClient() {
     style={style}
     data-testid="urai-final-focus-chamber"
     data-focus-composition="selected-memory-star-with-contained-memory"
-    data-focus-visual-revision="v341-stellar-photosphere-memory-through-corona"
+    data-focus-visual-revision="v342-stellar-photosphere-memory-through-irregular-corona"
     data-focus-selected-framing={memory ? 'selected-memory-star-approach' : 'neutral-star-awaiting-selection'}
     data-focus-spatial="selected-memory-star"
     data-focus-movement="orbit-zoom-keyboard-touch"
