@@ -2,7 +2,7 @@
 
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import { ContactShadows, Environment, PerspectiveCamera, useAnimations, useGLTF } from '@react-three/drei'
-import { Suspense, useEffect, useMemo, useRef, useState, type MutableRefObject } from 'react'
+import { Suspense, useEffect, useRef, useState, type MutableRefObject } from 'react'
 import * as THREE from 'three'
 import { DEMO_COUNCIL_AGENTS } from './councilAgentSchema'
 import { useReducedMotion } from '@/spatial/hooks/useReducedMotion'
