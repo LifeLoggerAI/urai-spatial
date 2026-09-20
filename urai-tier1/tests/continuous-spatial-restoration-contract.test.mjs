@@ -10,7 +10,6 @@ const homeRuntime = read('src/app/HomeSpatialRuntimeLayer.tsx')
 const assetHome = read('src/app/AssetDrivenHomeWorld.tsx')
 const authority = JSON.parse(read('src/app/currentHomeVisualAuthority.json'))
 const renderer = read('src/spatial/layout/HomeWorldProductionV223.tsx')
-const embodiedAvatar = read('src/spatial/home/HomeEmbodiedAvatar.tsx')
 const visualAuthority = read('src/spatial/layout/HomeVisualAuthority.tsx')
 const groundedOrb = read('src/spatial/assets/HomeOrbGroundedV288.tsx')
 const reliquary = read('src/spatial/assets/HomeOrbReliquaryV286.tsx')
@@ -30,7 +29,7 @@ const hostStableProof = read('../scripts/run-continuous-spatial-proof-v18-host-s
 
 const has = (source, marker) => assert.ok(source.includes(marker), `missing marker: ${marker}`)
 
-test('current Home candidate uses one cinematic/embodied owner while certified V288 metadata remains fail-closed', () => {
+test('current Home candidate uses one spatial owner while certified V288 metadata remains fail-closed', () => {
   for (const marker of ['HomeSpatialRuntimeLayer','spatial-runtime-restoration.css','continuous-spatial-proof-defects.css']) assert.match(template, new RegExp(marker.replace('.', '\\.')))
   has(homeRuntime, 'AssetDrivenHomeWorld')
   has(assetHome, 'HomeWorldProductionV223')
@@ -84,21 +83,20 @@ test('Home Ground entry remains a physical world-surface descent into the lived 
   assert.doesNotMatch(ground, /ground-central-nexus|ground-destination-compass|GroundPhysicalArchitecture|GroundVaultArchitecture/)
 })
 
-test('Home interaction/accessibility ownership supports visible presentation and camera-only first-person embodiment', () => {
+test('Home interaction/accessibility ownership is bodyless camera-only first person with no mounted avatar', () => {
   for (const marker of [
     'data-testid="urai-home-webgl-orb"',
-    'visible-cinematic-avatar',
     'camera-only-first-person-home',
-    'visible-avatar-third-person',
-    'hidden-exterior-avatar-first-person',
-    'urai-home-user-avatar',
-    'HOME_AVATAR_MODEL',
+    'bodyless-first-person-authored-living-memory-orb-sculpted-sanctuary-and-broad-sky-threshold',
     'data-home-non-xr-body-policy="camera-only-no-hands-body-rig"',
     'useHomeExperienceController',
     'AvatarSelfView',
     "data-home-orb-model-clip={reducedMotion ? 'stopped-reduced-motion'",
   ]) has(renderer, marker)
-  has(embodiedAvatar, 'cloneSkeleton')
+  assert.doesNotMatch(renderer, /<HomeEmbodiedAvatar|HOME_AVATAR_MODEL|visible-cinematic-avatar|visible-avatar-third-person|hidden-exterior-avatar-first-person|urai-home-user-avatar/)
+  assert.match(renderer, /CURRENT_HOME_PRESENCE_ROOTS = new Set\(\['home-living-memory-orb'\]\)/)
+  assert.match(renderer, /\/home-visible-user-avatar\//)
+  assert.match(renderer, /\/urai-home-user-avatar\//)
   assert.doesNotMatch(renderer, /privacy-preserving-first-person|first-person-hand|fps-hand|player-hands|weapon-rig/i)
   has(homeRuntime, 'requestUraiWorldOrbOpen')
   has(homeRuntime, 'webglcontextlost')
