@@ -6,7 +6,7 @@ Repository: LifeLoggerAI/urai-spatial
 
 | Conflict ID | Older authority / behavior | Current winner | Decision |
 |---|---|---|---|
-| VAC-001 | First-person/no-visible-Avatar Home | `HOME_PRESENTATION` + Avatar activation → `AVATAR_HOME_FIRST_PERSON` | Superseded |
+| VAC-001 | `HOME_PRESENTATION` + visible Avatar + Avatar activation before first-person Home | Direct persistent bodyless `AVATAR_HOME_FIRST_PERSON` for ordinary non-XR Home | Older Avatar-presentation flow superseded |
 | VAC-002 | Non-XR first-person hands/body concepts | Camera-only non-XR first person | Rejected |
 | VAC-003 | Ground follower Orb | Ground has no follower Orb | Superseded/rejected |
 | VAC-004 | Generic Memory Places on ordinary flows | Personalized Lived World + explicit generic fallback | Superseded |

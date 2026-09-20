@@ -5,7 +5,7 @@ Repository: `LifeLoggerAI/urai-spatial`
 Authority branch: `unified-spatial-convergence-20260916` / PR #1237
 Status: `CURRENT_CANDIDATE_REFERENCE / NOT GOLD MASTER / REQUIRES EXACT-HEAD PIXELS`
 
-This package is subordinate to `URAI_VISUAL_GOLD_MASTER_MANIFEST_V1.md` and `URAI_HOME_FPV_MASTER_VISUAL_REFERENCE_V1.md`. It consolidates spatial continuity, art bibles, motion, accessibility, personalization, acceptance criteria, and implementation deltas for Home → Avatar → first-person Home.
+This package is subordinate to `URAI_VISUAL_GOLD_MASTER_MANIFEST_V1.md` and `URAI_HOME_FPV_MASTER_VISUAL_REFERENCE_V1.md`. It consolidates spatial continuity, art bibles, motion, accessibility, personalization, acceptance criteria, and implementation deltas for direct bodyless first-person Home. Historical Avatar/presentation sequences are provenance only.
 
 ## 1. Candidate Image 01 audit
 
@@ -43,9 +43,9 @@ A subsequent visual-board candidate is useful as a **design-board reference only
 
 ### CURRENT_RUNTIME
 
-- presentation camera: `[0, 1.75, 7.85]`, yaw `0`, pitch `0.02`;
-- Avatar: `[-0.72, terrain, 5.95]`;
-- first-person eye: Avatar X/Z plus terrain height + `1.64 m`;
+- stable first-person camera starts from the governed Home origin; legacy presentation-camera coordinates remain compatibility provenance only;
+- no visible non-XR Avatar/body is current runtime authority;
+- first-person eye height: terrain height + `1.64 m`;
 - Orb base X/Z: `[1.02, 0.72]`, Y derived from terrain + visible field rest offset;
 - Passport: `[3.15, 0.62, 1.85]`, yaw `-0.34 rad`;
 - first-person walk radius: `14` world units;
@@ -203,29 +203,17 @@ Reduce particle density, contrast fluctuation, macro light transients and Orb mo
 
 Failure examples: over-wide stretched edges; telephoto/tunnel compression; portrait-photo DOF; strong motion blur; tilted horizon; child-height or drone-height camera.
 
-## 9. Avatar → FPV storyboard / timing authority
+## 9. Direct bodyless FPV entry authority
 
 Stable sequence:
 
-1. `HOME_PRESENTATION` — visible Avatar;
-2. Avatar targeted;
-3. Avatar activation / input lock;
-4. camera begins same-world interpolation;
-5. mid-approach with environmental parallax;
-6. embodiment convergence;
-7. camera reaches Avatar eye line;
-8. `AVATAR_HOME_FIRST_PERSON` settles, body hidden;
-9. Orb remains in same physical world and may acknowledge attention.
+1. Home initializes in `AVATAR_HOME_FIRST_PERSON`;
+2. the first stable non-XR view is camera-only/bodyless;
+3. Orb, physical terrain, broad Sky and Passport remain in the same authored Home world;
+4. shared keyboard/touch walk-look-interact controls are available without an Avatar activation gate;
+5. reduced motion preserves the same semantic state without inserting a body transition.
 
-Current measured implementation:
-
-- normal embodiment: `1.45 s`;
-- reduced motion: `0.28 s`;
-- interpolation: smoothstep toward Avatar eye;
-- FOV damps toward stable FP target;
-- no invented independent teleport/load scene.
-
-Do not invent hard sub-timings for audio/UI/Avatar dissolve until the implementation owns them explicitly.
+There is no current non-XR Avatar-target, activation, eye-transfer, dissolve, or embodiment-duration acceptance gate. Historical `1.45 s` / `0.28 s` embodiment timings are provenance only.
 
 ## 10. Motion Bible
 
@@ -241,8 +229,8 @@ Vertical amplitude max `0.011 m`; richer organized internal paths; no spinner la
 ### D — Orb responding/speaking
 Vertical amplitude max `0.009 m`; speech-driven internal energy only when acoustic playback exists; cancel collapses energy immediately.
 
-### E — Avatar → FPV
-`1.45 s` normal / `0.28 s` reduced motion. Smooth same-world convergence.
+### E — Direct FPV entry
+No Avatar transition. Home begins in the stable bodyless first-person state; reduced motion preserves the same state and suppresses unnecessary macro motion.
 
 ### F — FP walking
 Current speed `2.6`, acceleration `8`, deceleration `10.5`; no authored head bob.
@@ -348,7 +336,7 @@ When invoked:
 ## 17. Accessibility reference states
 
 ### Reduced motion
-Use current `0.28 s` embodiment timing, suppress macro Orb/environment motion, preserve semantic ordering.
+Remain in direct bodyless first-person Home, suppress macro Orb/environment motion, and preserve semantic ordering; no embodiment timing applies.
 
 ### Reduced stimulation
 Reduce particles, contrast fluctuation, transient energy and secondary motion without removing meaning.

@@ -8,7 +8,7 @@ Status: `CURRENT_CANDIDATE_REFERENCE / NOT LITERAL-PIXEL ACCEPTANCE / NOT GOLD M
 
 ## Purpose
 
-This document converts the current Home → Avatar → first-person Home canon into one continuity contract for reference-image generation, environment art, camera, Orb, Passport, mobile, accessibility, implementation, and literal-pixel inspection.
+This document converts the current direct bodyless first-person Home canon into one continuity contract for reference-image generation, environment art, camera, Orb, Passport, mobile, accessibility, implementation, and literal-pixel inspection. Historical Avatar/presentation material is provenance only and cannot override the active non-XR Home.
 
 It does **not** declare generated concept art, source code, or CI to be visual acceptance. `docs/URAI_VISUAL_GOLD_MASTER_MANIFEST_V1.md` remains the release/control-plane authority. Any later source-head move requires affected runtime proof and literal pixels to be regenerated.
 
@@ -25,9 +25,9 @@ Polish must never turn a `REFERENCE_TARGET` into a claim that the runtime alread
 
 ## Locked experience continuity
 
-- `HOME_PRESENTATION` is cinematic third-person Home with the governed Avatar visible.
-- Avatar activation enters persistent `AVATAR_HOME_FIRST_PERSON` in the **same Home world**.
-- Ordinary desktop/mobile first person is camera-only: no hands, arms, torso, legs, feet, or tool rig.
+- Ordinary non-XR Home opens directly in persistent `AVATAR_HOME_FIRST_PERSON`; `HOME_PRESENTATION` is legacy compatibility/provenance only.
+- Desktop/mobile Home is camera-only and bodyless from first stable paint: no visible Avatar, hands, arms, torso, legs, feet, or tool rig.
+- No Avatar-target/activation step is part of the current non-XR Home journey.
 - Broad Sky owns Home → Life Map ascent. No localized portal, ring, white dot, doorway, or hotspot.
 - Terrain/material owns Home → Ground descent. No portal, doorway, radial tunnel, or generic vortex.
 - The authored Home Orb remains a physical conversational presence.
@@ -55,24 +55,20 @@ The 16-frame package is a working production-reference set. It does **not** repl
 - Current walk radius: `14` world units.
 - Presentation camera default snapshot: `[0, 1.75, 7.85]`, yaw `0`, pitch `0.02`.
 
-### Avatar
+### Non-XR body authority
 
-- Current presentation position: `[-0.72, terrain, 5.95]`.
-- Visible in `HOME_PRESENTATION`.
-- Hidden as the user's flat-screen body representation in stable first-person Home.
-- XR tracked embodiment is separate authority and never authorizes ordinary flat-screen hands.
+- Current desktop/mobile Home has no visible user Avatar or synthetic body rig.
+- Legacy Avatar coordinates/components are retained only as historical/compatibility provenance and are not current non-XR visual authority.
+- A separately governed self-view or future XR body/likeness surface must earn its own source, consent, provenance and visual acceptance; it never authorizes ordinary flat-screen hands/body.
 
-### Avatar → FP transition
+### Direct first-person entry
 
-Current source timing is authoritative until deliberately changed and reproven:
+- Home initializes directly in stable `AVATAR_HOME_FIRST_PERSON`.
+- There is no current Avatar-target, Avatar-activation, camera-to-body convergence, or embodiment-timing gate for ordinary non-XR Home.
+- Stable first-person FOV remains `58°` landscape / `66°` portrait.
+- World, Orb, Sky, Ground and Passport continuity must be present from the initial stable first-person state.
 
-- Normal embodiment duration: `1.45 s`.
-- Reduced-motion embodiment duration: `0.28 s`.
-- Camera motion uses smoothstep interpolation toward Avatar eye position.
-- Stable first-person FOV damps toward `58°` landscape / `66°` portrait.
-- Transition must preserve world continuity and input locking until embodiment completes.
-
-Do not invent additional per-stage millisecond locks for UI fade, Avatar dissolve, or audio perspective until they are measured/implemented in current source.
+Historical `1.45 s` / `0.28 s` embodiment timings are superseded non-XR provenance and must not be used as current acceptance criteria.
 
 ## Master world composition
 
@@ -326,7 +322,7 @@ Critical access cannot depend on hover. Desktop, keyboard, touch, screen reader,
 ## Accessibility variants
 
 ### Reduced motion
-- Avatar embodiment uses current reduced-motion duration `0.28 s`.
+- Home remains directly bodyless first-person under reduced motion; no Avatar embodiment transition or timing is required.
 - Suppress macro Orb/environment transients while preserving semantic state.
 - No aggressive camera parallax, blur, or surprise motion.
 
@@ -399,7 +395,7 @@ Primary current implementation surfaces include:
 - `urai-tier1/src/spatial/layout/HomeWorldProductionV223Geometry.tsx` — sculpted Home terrain/path/strata/grove geometry.
 - `urai-tier1/src/spatial/home/homeExperienceState.ts` — stable/transition states, return stack, origin snapshots.
 - `urai-tier1/src/spatial/home/useHomeExperienceController.ts` — semantic activation, origin capture/restore, destination commit.
-- `urai-tier1/src/spatial/home/HomeEmbodiedAvatar.tsx` — governed Home Avatar presentation.
+- `urai-tier1/src/spatial/home/HomeEmbodiedAvatar.tsx` — retained historical/separate-surface component; not mounted by current non-XR Home.
 - `urai-tier1/src/spatial/layout/HomeAAAVisualRepair.tsx` — current first-person Passport candidate.
 - `docs/URAI_VISUAL_GOLD_MASTER_MANIFEST_V1.md` — visual/release control plane.
 - `docs/URAI_VISUAL_SYSTEM_BIBLES_V1.md` — cross-system camera/material/light/motion/accessibility grammar.
@@ -422,6 +418,6 @@ Reduced-motion/constrained rendering may lower cadence and macro motion. Degrada
 
 **NO-GO / NOT GOLD MASTER.**
 
-Current Home presentation, embodiment, FP Home, Orb, Sky, Ground transition ownership, physical Passport, and fail-closed Global Emotional Field Earth are source/runtime candidates on #1237, but literal current-head pixels and inspection remain required. Personal Emotional Weather has a current state model and source-converged binding into the active canonical Home atmosphere, but its fresh exact-head responsive/reduced-state literal visual acceptance remains open. Avatar final likeness/component references and other open VGM rows remain incomplete at their separately recorded boundaries.
+Current direct bodyless FP Home, Orb, Sky, Ground transition ownership, physical Passport, and fail-closed Global Emotional Field Earth are source/runtime candidates on #1237, but literal current-head pixels and inspection remain required. Personal Emotional Weather has a current state model and source-converged binding into the active canonical Home atmosphere, but its fresh exact-head responsive/reduced-state literal visual acceptance remains open. Any separately governed likeness/self-view/XR component remains outside ordinary non-XR Home authority and must satisfy its own recorded source/consent/provenance boundary.
 
 This document is complete as a **candidate reference contract**. It becomes visual authority only through the governing VGM manifest, exact-head runtime proof, literal-pixel acceptance, accessibility/performance/privacy/security acceptance, required independent review/governance, protected merge/deploy, deployed-SHA readback, live verification, and rollback/recovery evidence.

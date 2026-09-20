@@ -12,7 +12,7 @@ Live PR metadata remains authoritative for the exact current head after this rec
 1. Refetched PR #1237 and current visual-control-plane authority instead of trusting prior narrative SHAs.
 2. Rechecked Drive authority and historical Home/embodiment records. Older Drive storyboard/implementation receipts are retained as provenance and do not override current #1237 authority.
 3. Literally inspected the previous generated Image 01 candidate and rejected it as master authority because it reads as a luxury eco-futurist marketing poster with promotional typography, invented city/architecture, oversized generic glowing-sphere language, and premature Earth presentation.
-4. Preserved current measured FP Home runtime facts: 1.64 m eye height, 58° landscape / 66° portrait stable FP FOV, 1.45 s normal embodiment, 0.28 s reduced-motion embodiment, bodyless flat-screen FP, broad-Sky Life Map ownership, physical-terrain Ground ownership.
+4. Preserved current FP Home runtime facts: 1.64 m eye height, 58° landscape / 66° portrait stable FP FOV, direct bodyless flat-screen first-person entry, broad-Sky Life Map ownership, and physical-terrain Ground ownership. Historical 1.45 s / 0.28 s Avatar-embodiment timing is superseded non-XR provenance.
 5. Reconciled current Orb placement/state/motion authority from source; did not replace the authored Orb with a generated concept.
 6. Audited the current Passport physical shell and found a concrete art-language mismatch: rounded panel + rectangular face + cylindrical base read as tablet/kiosk/device stand.
 7. Replaced only the Passport visual shell with `protected-custody-stone-v2`, preserving first-person-only visibility, existing Passport backend, exact-origin capture, governed travel/return semantics, and screen-reader activation.
@@ -73,7 +73,7 @@ Fresh workflow evidence is required for the final unchanged head created by this
 - production-authoritative Global Emotional Field Earth art and truthful states;
 - production-authoritative Personal Emotional Weather grammar;
 - fresh literal current-head Home/Orb/Passport desktop/mobile/reduced-motion/reduced-stimulation pixels;
-- exact Avatar→FPV sequence captures and reverse-unwind capture;
+- exact direct bodyless Home-entry, Home → Ascent → Life Map, destination-return, and ESC-unwind continuity captures;
 - Passport round-trip browser proof on the final unchanged head;
 - human literal inspection of the new Passport art;
 - current manifest-required independent exact-head review/governance before release;

@@ -24,16 +24,16 @@ A workflow named visual proof is not visual acceptance. A head move invalidates 
 
 ## First-person Home master reference package
 
-`docs/URAI_HOME_FPV_MASTER_VISUAL_REFERENCE_V1.md` and `docs/URAI_HOME_FPV_TERMINAL_VISUAL_PACKAGE_V1.md` are the current candidate reference contracts for Home presentation → Avatar activation → first-person Home continuity, the candidate production-reference package, Orb state continuity, Passport placement, camera/lens rules, accessibility variants, failure criteria, implementation handoff, Global Emotional Field visual truth, and Personal Emotional Weather grammar.
+`docs/URAI_HOME_FPV_MASTER_VISUAL_REFERENCE_V1.md` and `docs/URAI_HOME_FPV_TERMINAL_VISUAL_PACKAGE_V1.md` are the current candidate reference contracts for direct bodyless first-person Home continuity, the candidate production-reference package, Orb state continuity, Passport placement, camera/lens rules, accessibility variants, failure criteria, implementation handoff, Global Emotional Field visual truth, and Personal Emotional Weather grammar. Historical visible-Avatar/presentation sequences are provenance only.
 
 They are subordinate to this manifest and do not convert concept/reference art into accepted runtime pixels. The fixed 16-frame set is a production working set, not a replacement for the VGM inventory or Gold-Master completion boundary. The previously generated marketing/luxury-villa master and later montage board are rejected as `URAI_HOME_FPV_MASTER_01`; they remain supporting/historical reference only.
 
 ## Locked current visual/product canon
 
 ### Home
-- `HOME_PRESENTATION`: cinematic third-person Home with visible governed Avatar, authored physical Home Orb, physical terrain, broad visible Sky, authored atmosphere.
-- Avatar activation enters persistent `AVATAR_HOME_FIRST_PERSON` in the same world.
-- Non-XR first person is camera-only: no hands, arms, torso, legs, feet, or tool rig.
+- Ordinary non-XR Home initializes directly in persistent `AVATAR_HOME_FIRST_PERSON`; legacy `HOME_PRESENTATION` remains compatibility/provenance only.
+- The first stable desktop/mobile Home view is camera-only and bodyless: no visible Avatar, hands, arms, torso, legs, feet, or tool rig.
+- No Avatar-target or Avatar-activation step is part of the current non-XR Home journey.
 - Broad Sky owns Life Map ascent. No portal/ring/white dot/doorway/hotspot.
 - Terrain owns Ground descent. No portal/doorway/radial tunnel.
 - Mobile first-person Home uses governed shared movement controls.
@@ -99,10 +99,10 @@ They are subordinate to this manifest and do not convert concept/reference art i
 
 | Canonical ID | Experience / system | Status | Required next action |
 |---|---|---|---|
-| VGM-HOME-001 | Home presentation | CURRENT_CANDIDATE | Fresh exact-head desktop/mobile/reduced-motion pixels + literal inspection |
-| VGM-HOME-002 | Avatar embodiment transition | CURRENT_CANDIDATE | Capture presentation → activation → eye-transfer → FP arrival + reverse |
-| VGM-HOME-003 | FP Home | CURRENT_CANDIDATE | Capture/inspect exact-head FP Home; verify no body/hands; clean master reference still required |
-| VGM-AVATAR-001 | Avatar | MISSING_REPLACEMENT_REQUIRED | Complete turnaround/scale/motion/light/mobile component sheet |
+| VGM-HOME-001 | Direct bodyless Home entry | CURRENT_CANDIDATE | Fresh exact-head desktop/mobile/reduced-motion pixels + literal inspection |
+| VGM-HOME-002 | Legacy Avatar embodiment transition | SUPERSEDED | No current non-XR capture required; retain predecessor sequence as historical provenance only |
+| VGM-HOME-003 | Bodyless FP Home | CURRENT_CANDIDATE | Capture/inspect exact-head FP Home; verify no visible body/hands; clean master reference still required |
+| VGM-AVATAR-001 | Separately governed likeness/self-view/XR body component | MISSING_REPLACEMENT_REQUIRED | Requires explicit surface authority plus authorized likeness/source provenance; never gates ordinary non-XR Home |
 | VGM-ORB-001 | Orb | CURRENT_CANDIDATE | Fresh exact-head state captures and literal inspection |
 | VGM-SKY-001 | Home Sky / ascent | CURRENT_CANDIDATE | Capture broad-sky ascent; reject localized portal language |
 | VGM-LIFEMAP-001 | Life Map | CURRENT_CANDIDATE | Fresh overview/selected/approach/portrait/mobile/reduced pack |
