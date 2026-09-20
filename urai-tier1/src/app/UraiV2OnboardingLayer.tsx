@@ -1,6 +1,6 @@
 'use client'
 
-import { Suspense, useEffect, useRef, useState } from 'react'
+import { Suspense, useEffect, useRef, useState, type KeyboardEvent } from 'react'
 import { usePathname, useSearchParams } from 'next/navigation'
 import { v2Onboarding } from '@/spatial/assets/uraiV2Assets'
 import { setHapticsEnabled, URAI_HAPTICS_STORAGE_KEY } from '@/spatial/haptics/HapticRuntime'
@@ -110,6 +110,12 @@ function readAudioPreference() {
   } catch {
     return false
   }
+}
+
+function activateWithKeyboard(event: KeyboardEvent<HTMLButtonElement>, action: () => void) {
+  if (event.key !== 'Enter' && event.key !== ' ') return
+  event.preventDefault()
+  action()
 }
 
 function OnboardingCardContent() {
@@ -231,9 +237,9 @@ function OnboardingCardContent() {
 
           <p className="uraiV2OnboardingProgress" aria-live="polite">Step {stepIndex + 1} of 4</p>
           <div className="uraiV2OnboardingActions">
-            {stepIndex > 0 ? <button type="button" onClick={retreatSetup}>Back</button> : null}
-            <button type="button" className="primary" onClick={advanceSetup}>{setupStep === 'orb' ? 'Begin guided tour' : 'Continue'}</button>
-            <button type="button" onClick={dismiss}>Skip setup</button>
+            {stepIndex > 0 ? <button type="button" onClick={retreatSetup} onKeyDown={(event) => activateWithKeyboard(event, retreatSetup)}>Back</button> : null}
+            <button type="button" className="primary" onClick={advanceSetup} onKeyDown={(event) => activateWithKeyboard(event, advanceSetup)}>{setupStep === 'orb' ? 'Begin guided tour' : 'Continue'}</button>
+            <button type="button" onClick={dismiss} onKeyDown={(event) => activateWithKeyboard(event, dismiss)}>Skip setup</button>
           </div>
         </div>
       </aside>
