@@ -3,6 +3,8 @@
 Date: 2026-05-07
 Scope: Verification and correction pass only. No new product features.
 
+> **STALE / SUPERSEDED HISTORICAL RECEIPT.** This May 7 audit is retained for provenance only. Its phrases such as “deployed app,” its `FIREBASE_SERVICE_ACCOUNT_JSON` recommendation, and its provider checklist are not current production authority. As of the current 2026-09 convergence lane, the hardened Stripe Checkout/Portal/Webhook source is candidate source only until protected deployment and live readback; LIVE Stripe has no webhook endpoint; public subscription terms/privacy/refund gates remain open; and current server credential policy uses external-account ADC/WIF rather than a long-lived Firebase service-account JSON secret. Use the current exact-head release evidence and provider readbacks, not this historical document, for launch decisions.
+
 ## Summary
 
 Status: CONDITIONAL PASS
