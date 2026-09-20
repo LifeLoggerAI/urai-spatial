@@ -112,7 +112,11 @@ test('personal emotional weather remains private and requires explicit C4 sensit
 
 test('Home mounts a separate first-person Earth candidate fail-closed with no invented aggregate activity', () => {
   assert.match(homeRepair, /HomeGlobalEmotionalFieldEarth/)
-  assert.match(homeRepair, /<HomeGlobalEmotionalFieldEarth state="unavailable" \/>/)
+  assert.match(homeRepair, /useState<GlobalFieldState>\('unavailable'\)/)
+  assert.match(homeRepair, /params\.get\('homeAssetReview'\) === '1' \? params\.get\('homeGlobalFieldReview'\) : null/)
+  assert.match(homeRepair, /setGlobalFieldState\(review === 'suppressed' \? 'suppressed' : 'unavailable'\)/)
+  assert.match(homeRepair, /<HomeGlobalEmotionalFieldEarth state=\{globalFieldState\} \/>/)
+  assert.doesNotMatch(homeRepair, /setGlobalFieldState\([^\n]*'aggregate'/)
   assert.match(earth, /semanticOwner: 'global-emotional-field-earth'/)
   assert.match(earth, /privateMapReuse: false/)
   assert.match(earth, /individualDots: false/)
