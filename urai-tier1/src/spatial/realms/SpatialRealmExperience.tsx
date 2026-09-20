@@ -191,60 +191,102 @@ function PortalGateway({ portal, active, onEnter, reducedMotion }: { portal: Por
   )
 }
 
-function ShadowRealmEnvironment({ reducedMotion }: { reducedMotion: boolean }) {
-  const shards = useMemo(() => Array.from({ length: 34 }, (_, index) => {
-    const side = index % 2 === 0 ? -1 : 1
-    const lane = Math.floor(index / 2)
-    return {
-      position: [side * (3.4 + (lane % 5) * 1.15), -0.2 + (lane % 4) * 0.65, 5.5 - lane * 1.35] as [number, number, number],
-      rotation: [0.2 + (index % 4) * 0.24, index * 0.43, 0.18 + (index % 3) * 0.17] as [number, number, number],
-      scale: 0.45 + (index % 6) * 0.16,
-    }
-  }), [])
+type ShadowReviewState = 'entry' | 'neutral' | 'uncertainty' | 'pattern' | 'safe-reduction' | 'recovery' | 'reduced-stimulation'
+
+function ShadowRealmEnvironment({ reducedMotion, reviewState }: { reducedMotion: boolean; reviewState: ShadowReviewState }) {
+  const reducedStimulation = reviewState === 'reduced-stimulation' || reviewState === 'safe-reduction'
+  const recovery = reviewState === 'recovery'
+  const patternFocus = reviewState === 'pattern'
+  const uncertaintyFocus = reviewState === 'uncertainty'
+  const detailCount = reducedStimulation ? 6 : reducedMotion ? 10 : 16
+  const orientationIntensity = recovery ? 2.8 : reducedStimulation ? 0.7 : 1.45
+  const localFocusIntensity = patternFocus ? 1.45 : uncertaintyFocus ? 0.9 : 0.55
+  const fogColor = recovery ? '#1b1b20' : '#0b0b11'
 
   return (
-    <group name="shadow-realm-environment">
-      <ambientLight intensity={0.26} />
-      <hemisphereLight intensity={0.4} color="#756dff" groundColor="#09030f" />
-      <directionalLight position={[4, 10, 5]} intensity={1.1} color="#9ba8ff" castShadow />
-      <pointLight position={[0, 2.8, -7]} intensity={5.2} distance={18} color="#9f73ff" />
-      <pointLight position={[0, -0.4, -14]} intensity={3.2} distance={16} color="#ff806f" />
-      <Stars radius={64} depth={34} count={reducedMotion ? 180 : 680} factor={2.1} fade speed={reducedMotion ? 0 : 0.018} />
-      <Sparkles count={reducedMotion ? 40 : 150} scale={[26, 12, 34]} position={[0, 3, -6]} size={1.2} speed={reducedMotion ? 0 : 0.08} color="#a58cff" opacity={0.32} />
+    <group name="shadow-realm-environment" userData={{ reviewState, grounded: true, horror: false, fantasyPortal: false }}>
+      <ambientLight intensity={reducedStimulation ? 0.22 : 0.34} color="#d7dde3" />
+      <hemisphereLight intensity={reducedStimulation ? 0.28 : 0.44} color="#89919c" groundColor="#171519" />
+      <directionalLight position={[5, 9, 4]} intensity={recovery ? 1.45 : 0.92} color={recovery ? '#ddd5c8' : '#a7b1bb'} castShadow />
+      <pointLight position={[0, 2.6, -14.2]} intensity={orientationIntensity} distance={18} color={recovery ? '#d7c8b0' : '#b0a6c8'} />
+      <pointLight position={[0, 1.3, -6.2]} intensity={localFocusIntensity} distance={10} color={patternFocus ? '#b6a6c8' : '#8994a0'} />
 
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.14, -4.5]} receiveShadow>
-        <planeGeometry args={[24, 38, 18, 22]} />
-        <meshStandardMaterial color="#070811" emissive="#3a174d" emissiveIntensity={0.08} metalness={0.52} roughness={0.48} />
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.12, -4.4]} receiveShadow>
+        <planeGeometry args={[24, 38, 26, 30]} />
+        <meshStandardMaterial color={recovery ? '#2a2826' : '#15151a'} roughness={0.92} metalness={0.02} />
       </mesh>
 
-      {Array.from({ length: 18 }, (_, index) => (
-        <mesh key={`path-${index}`} position={[Math.sin(index * 0.72) * 0.72, -0.04 - index * 0.012, 7.2 - index * 1.28]} rotation={[0, index * 0.21, 0]} castShadow receiveShadow>
-          <boxGeometry args={[1.2 + (index % 3) * 0.22, 0.18, 0.92]} />
-          <meshStandardMaterial color="#101324" emissive={index % 4 === 0 ? '#ff806f' : '#6f63ff'} emissiveIntensity={0.12} metalness={0.38} roughness={0.48} />
-        </mesh>
-      ))}
+      <mesh position={[0, 0.03, -4.7]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
+        <planeGeometry args={[3.2, 29]} />
+        <meshStandardMaterial color={recovery ? '#39342f' : '#26242a'} roughness={0.88} metalness={0.01} />
+      </mesh>
 
-      {shards.map((shard, index) => (
-        <Float key={index} speed={reducedMotion ? 0 : 0.25 + (index % 4) * 0.05} floatIntensity={reducedMotion ? 0 : 0.25} rotationIntensity={reducedMotion ? 0 : 0.06}>
-          <mesh position={shard.position} rotation={shard.rotation} scale={shard.scale} castShadow>
-            <octahedronGeometry args={[0.72, 0]} />
-            <meshPhysicalMaterial color="#16112d" emissive={index % 3 === 0 ? '#ff806f' : '#775cff'} emissiveIntensity={0.22} metalness={0.52} roughness={0.28} transmission={0.12} />
+      {Array.from({ length: detailCount }, (_, index) => {
+        const side = index % 2 === 0 ? -1 : 1
+        const lane = Math.floor(index / 2)
+        const x = side * (3.2 + (lane % 3) * 1.2)
+        const z = 4.6 - lane * 2.1
+        const height = 0.55 + (lane % 4) * 0.28
+        return (
+          <mesh key={index} position={[x, height / 2 - 0.05, z]} rotation={[0, 0.18 * (index % 5), 0]} castShadow receiveShadow>
+            <boxGeometry args={[0.62 + (index % 3) * 0.16, height, 0.7 + (lane % 2) * 0.18]} />
+            <meshStandardMaterial color={index % 4 === 0 ? '#343238' : '#28272c'} roughness={0.96} metalness={0.015} />
           </mesh>
-        </Float>
-      ))}
+        )
+      })}
 
-      <group position={[0, 1.25, -7.2]}>
-        <mesh castShadow>
-          <dodecahedronGeometry args={[1.3, 2]} />
-          <meshPhysicalMaterial color="#120d24" emissive="#9d72ff" emissiveIntensity={0.5} metalness={0.48} roughness={0.18} transmission={0.22} />
-        </mesh>
-        {[1.8, 2.35, 2.95].map((radius, index) => (
-          <mesh key={radius} rotation={[Math.PI / 2, index * 0.5, index * 0.28]}>
-            <torusGeometry args={[radius, 0.025, 10, 96]} />
-            <meshBasicMaterial color={index === 1 ? '#ff8b72' : '#8c7bff'} transparent opacity={0.3 - index * 0.05} />
-          </mesh>
-        ))}
+      <group position={[0, 0.02, -6.3]} name="shadow-pattern-focus-grounded">
+        {Array.from({ length: reducedStimulation ? 4 : 9 }, (_, index) => {
+          const angle = (index / (reducedStimulation ? 4 : 9)) * Math.PI * 2
+          const radius = 0.65 + (index % 3) * 0.34
+          return (
+            <mesh key={index} position={[Math.cos(angle) * radius, 0.08 + (index % 2) * 0.025, Math.sin(angle) * radius]} rotation={[-0.08, -angle, 0]} castShadow receiveShadow>
+              <boxGeometry args={[0.35 + (index % 2) * 0.12, 0.18, 0.72 + (index % 3) * 0.14]} />
+              <meshStandardMaterial color={patternFocus ? '#454149' : '#302e34'} roughness={0.94} metalness={0.01} />
+            </mesh>
+          )
+        })}
       </group>
+
+      <group position={[0, 0, -14.3]} name="shadow-stable-return-landmark">
+        <mesh position={[0, 1.35, 0]} castShadow receiveShadow>
+          <boxGeometry args={[0.7, 2.7, 0.55]} />
+          <meshStandardMaterial color="#3b393c" roughness={0.9} metalness={0.02} />
+        </mesh>
+        <mesh position={[0, 1.55, 0.31]}>
+          <boxGeometry args={[0.12, 1.15, 0.03]} />
+          <meshBasicMaterial color={recovery ? '#e6d8c2' : '#b6adbe'} toneMapped={false} transparent opacity={reducedStimulation ? 0.38 : 0.62} />
+        </mesh>
+      </group>
+
+      {uncertaintyFocus ? (
+        <mesh position={[0, 0.045, -4.0]} rotation={[-Math.PI / 2, 0, 0]}>
+          <circleGeometry args={[2.1, 64]} />
+          <meshBasicMaterial color="#d2d6dc" transparent opacity={0.025} depthWrite={false} />
+        </mesh>
+      ) : null}
+
+      <color attach="background" args={[fogColor]} />
+      <fog attach="fog" args={[fogColor, recovery ? 12 : reducedStimulation ? 8 : 9, recovery ? 36 : reducedStimulation ? 26 : 31]} />
+    </group>
+  )
+}
+
+function ShadowThresholdMarker({ portal, active, onEnter, reducedMotion }: { portal: PortalDefinition; active: boolean; onEnter: (portal: PortalDefinition) => void; reducedMotion: boolean }) {
+  const activate = (event: ThreeEvent<MouseEvent>) => {
+    event.stopPropagation()
+    onEnter(portal)
+  }
+  return (
+    <group position={portal.position} name={portal.id} userData={{ portalId: portal.id, label: portal.label, visualForm: 'grounded-threshold-marker' }}>
+      <mesh position={[0, 0.44, 0]} onClick={activate} castShadow receiveShadow>
+        <boxGeometry args={[0.82, 0.88, 0.58]} />
+        <meshStandardMaterial color="#34343a" roughness={0.92} metalness={0.02} />
+      </mesh>
+      <mesh position={[0, 0.65, 0.3]} onClick={activate}>
+        <boxGeometry args={[0.11, 0.4, 0.025]} />
+        <meshBasicMaterial color={portal.color} toneMapped={false} transparent opacity={active ? 0.82 : reducedMotion ? 0.34 : 0.46} />
+      </mesh>
     </group>
   )
 }
@@ -339,6 +381,7 @@ export default function SpatialRealmExperience({ realm }: { realm: SpatialRealmK
   const [resetVersion, setResetVersion] = useState(0)
   const [dragging, setDragging] = useState(false)
   const [ready, setReady] = useState(false)
+  const [shadowReviewState, setShadowReviewState] = useState<ShadowReviewState>('neutral')
 
   const enterPortal = useCallback((portal: PortalDefinition) => {
     requestUraiWorldTravel({
@@ -361,6 +404,14 @@ export default function SpatialRealmExperience({ realm }: { realm: SpatialRealmK
   const look = useDragLook({ yaw, pitch, sensitivity: reducedMotion ? 0.0022 : 0.0036, onDragState: setDragging })
 
   useEffect(() => {
+    if (realm !== 'shadow') return
+    const params = new URLSearchParams(window.location.search)
+    const requested = params.get('shadowReview') as ShadowReviewState | null
+    const supported: ShadowReviewState[] = ['entry','neutral','uncertainty','pattern','safe-reduction','recovery','reduced-stimulation']
+    setShadowReviewState(requested && supported.includes(requested) ? requested : 'neutral')
+  }, [realm])
+
+  useEffect(() => {
     let second: number | null = null
     const first = window.requestAnimationFrame(() => {
       second = window.requestAnimationFrame(() => setReady(true))
@@ -381,6 +432,7 @@ export default function SpatialRealmExperience({ realm }: { realm: SpatialRealmK
       data-spatial-exploration="walkable"
       data-realm-ready={ready ? 'true' : 'false'}
       data-camera-mode={dragging ? 'look' : 'embodied'}
+      data-shadow-review-state={realm === 'shadow' ? shadowReviewState : undefined}
       aria-label={`URAI ${definition.title}`}
       {...look}
     >
@@ -399,8 +451,10 @@ export default function SpatialRealmExperience({ realm }: { realm: SpatialRealmK
         <color attach="background" args={[definition.background]} />
         <fog attach="fog" args={[definition.fog, 7, 42]} />
         <RealmCamera input={input} yaw={yaw} pitch={pitch} reducedMotion={reducedMotion} resetVersion={resetVersion} realm={realm} nearbyRef={nearbyRef} onNearby={setNearby} shellRef={shellRef} />
-        {realm === 'shadow' ? <ShadowRealmEnvironment reducedMotion={reducedMotion} /> : <CouncilRealmEnvironment reducedMotion={reducedMotion} />}
-        {definition.portals.map((portal) => <PortalGateway key={portal.id} portal={portal} active={nearby?.id === portal.id} onEnter={enterPortal} reducedMotion={reducedMotion} />)}
+        {realm === 'shadow' ? <ShadowRealmEnvironment reducedMotion={reducedMotion} reviewState={shadowReviewState} /> : <CouncilRealmEnvironment reducedMotion={reducedMotion} />}
+        {definition.portals.map((portal) => realm === 'shadow'
+          ? <ShadowThresholdMarker key={portal.id} portal={portal} active={nearby?.id === portal.id} onEnter={enterPortal} reducedMotion={reducedMotion} />
+          : <PortalGateway key={portal.id} portal={portal} active={nearby?.id === portal.id} onEnter={enterPortal} reducedMotion={reducedMotion} />)}
       </Canvas>
 
       <header className="urai-spatial-realm-header">
