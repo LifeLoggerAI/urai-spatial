@@ -1,0 +1,46 @@
+name: Reference Candidate Audit Export
+
+on:
+  push:
+    branches:
+      - reference-candidate-audit-20260920
+
+permissions:
+  contents: read
+
+env:
+  URAI_EXACT_PARENT_HEAD: ffa03baf4933c80333cfb1a21156c218c89ce957
+  URAI_REFERENCE_CANDIDATE_EXPECTED: '787'
+
+jobs:
+  export:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Checkout audit branch
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          fetch-depth: 2
+          persist-credentials: false
+          show-progress: false
+
+      - name: Prove image bytes inherit exact PR head
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD^)" = "$URAI_EXACT_PARENT_HEAD"
+          test -z "$(git diff --name-only "$URAI_EXACT_PARENT_HEAD"..HEAD -- ':!/.github/workflows/reference-candidate-audit-export.yml')"
+          test -z "$(git diff --name-only "$URAI_EXACT_PARENT_HEAD"..HEAD -- '*.png' '*.jpg' '*.jpeg' '*.webp' '*.svg' '*.gif' '*.avif')"
+
+      - name: Package exact inherited candidate pixels
+        env:
+          URAI_EXACT_HEAD: ffa03baf4933c80333cfb1a21156c218c89ce957
+        run: node scripts/package-reference-image-candidates.mjs
+
+      - name: Upload candidate pixel estate
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: reference-image-candidates-ffa03baf4933c80333cfb1a21156c218c89ce957
+          path: artifacts/reference-image-candidates
+          if-no-files-found: error
+          retention-days: 90
