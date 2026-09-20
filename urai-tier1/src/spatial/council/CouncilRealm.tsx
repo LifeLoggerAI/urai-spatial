@@ -2,7 +2,7 @@
 
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import { ContactShadows, Environment, PerspectiveCamera, useAnimations, useGLTF } from '@react-three/drei'
-import { Suspense, useEffect, useRef, useState, type MutableRefObject } from 'react'
+import { Suspense, useEffect, useMemo, useRef, useState, type MutableRefObject } from 'react'
 import * as THREE from 'three'
 import { DEMO_COUNCIL_AGENTS } from './councilAgentSchema'
 import { useReducedMotion } from '@/spatial/hooks/useReducedMotion'
@@ -46,6 +46,9 @@ const ROTATIONS: [number, number, number][] = [
 ]
 
 const COUNCIL_BOUNDS = { minX: -5.2, maxX: 5.2, minZ: -4.6, maxZ: 6.2 }
+type CouncilReviewState = 'overview' | 'observer' | 'selected' | 'listening' | 'speaking' | 'acknowledge' | 'cancelled' | 'reduced-stimulation'
+const COUNCIL_REVIEW_STATES = new Set<CouncilReviewState>(['overview','observer','selected','listening','speaking','acknowledge','cancelled','reduced-stimulation'])
+
 const COUNCIL_OBSTACLES = [
   { x: 0, z: -0.9, radius: 1.75 },
   ...POSITIONS.map(([x, , z]) => ({ x, z, radius: 0.42 })),
@@ -109,12 +112,14 @@ function RiggedCouncilHuman({
   modelUrl,
   index,
   selected,
+  reviewState,
   reducedMotion,
   onSelect,
 }: {
   modelUrl: string
   index: number
   selected: boolean
+  reviewState: CouncilReviewState
   reducedMotion: boolean
   onSelect: () => void
 }) {
@@ -124,12 +129,18 @@ function RiggedCouncilHuman({
 
   useEffect(() => {
     if (reducedMotion) return
-    const clip = selected ? (actions.listen_acknowledge ?? actions.idle_breath) : actions.idle_breath
+    const speakingClip = actions.speaking ?? actions.talk ?? actions.listen_acknowledge ?? actions.idle_breath
+    const selectedClip = reviewState === 'speaking'
+      ? speakingClip
+      : reviewState === 'listening' || reviewState === 'acknowledge'
+        ? (actions.listen_acknowledge ?? actions.idle_breath)
+        : actions.idle_breath
+    const clip = selected ? selectedClip : actions.idle_breath
     clip?.reset().fadeIn(0.25).play()
     return () => {
       clip?.fadeOut(0.2)
     }
-  }, [actions, reducedMotion, selected])
+  }, [actions, reducedMotion, reviewState, selected])
 
   useEffect(() => {
     model.scene.traverse((object) => {
@@ -167,23 +178,34 @@ function RiggedCouncilHuman({
 }
 
 function CouncilStage() {
-  const [selected, setSelected] = useState(0)
+  const [selected, setSelected] = useState<number | null>(null)
+  const [reviewState, setReviewState] = useState<CouncilReviewState>('observer')
   const [dragging, setDragging] = useState(false)
-  const selectedAgent = DEMO_COUNCIL_AGENTS[selected] ?? DEMO_COUNCIL_AGENTS[0]
+  const selectedAgent = DEMO_COUNCIL_AGENTS[selected ?? 0] ?? DEMO_COUNCIL_AGENTS[0]
   const reducedMotion = useReducedMotion()
   const quality = useAdaptiveSpatialQuality()
   const shadowMapSize = quality.tier === 'high' ? 2048 : 1024
-  const environmentIntensity = quality.tier === 'high' ? 0.55 : quality.tier === 'medium' ? 0.42 : 0.28
+  const reducedStimulation = reviewState === 'reduced-stimulation'
+  const environmentIntensity = reducedStimulation ? 0.18 : quality.tier === 'high' ? 0.55 : quality.tier === 'medium' ? 0.42 : 0.28
   const shellRef = useRef<HTMLDivElement | null>(null)
   const yaw = useRef(0)
   const pitch = useRef(-0.025)
-  const input = useMovementInput({ onEscape: () => requestUraiWorldReturn() })
+  const input = useMovementInput({ onEscape: () => selected !== null ? setSelected(null) : requestUraiWorldReturn() })
   const dragLook = useDragLook({
     yaw,
     pitch,
     sensitivity: reducedMotion ? 0.0022 : 0.0036,
     onDragState: setDragging,
   })
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const requested = params.get('councilReview') as CouncilReviewState | null
+    const next = requested && COUNCIL_REVIEW_STATES.has(requested) ? requested : 'observer'
+    setReviewState(next)
+    if (next === 'observer' || next === 'overview' || next === 'cancelled') setSelected(null)
+    else setSelected(0)
+  }, [])
 
   const travel = (destination: 'home' | 'mirror' | 'passport', href: string) => {
     requestUraiWorldTravel({
@@ -203,6 +225,9 @@ function CouncilStage() {
       data-council-embodied="true"
       data-spatial-quality-tier={quality.tier}
       data-camera-mode={dragging ? 'look' : 'embodied'}
+      data-council-review-state={reviewState}
+      data-council-selected-agent={selected === null ? 'none' : String(selected)}
+      data-council-reduced-stimulation={reducedStimulation ? 'true' : 'false'}
       {...dragLook}
     >
       <div className="absolute inset-0">
@@ -218,11 +243,11 @@ function CouncilStage() {
             <PerspectiveCamera makeDefault position={[0, 1.66, 5.4]} fov={42} />
             <CouncilCamera input={input} yaw={yaw} pitch={pitch} reducedMotion={reducedMotion} ownerRef={shellRef} />
 
-            <ambientLight intensity={0.32} color="#dfe8ea" />
-            <hemisphereLight intensity={0.68} color="#dcecf0" groundColor="#50483e" />
+            <ambientLight intensity={reducedStimulation ? 0.2 : 0.32} color="#dfe8ea" />
+            <hemisphereLight intensity={reducedStimulation ? 0.34 : 0.68} color="#dcecf0" groundColor="#50483e" />
             <directionalLight
               position={[-4.5, 7.5, 4.5]}
-              intensity={2.8}
+              intensity={reducedStimulation ? 1.4 : 2.8}
               color="#fff5e6"
               castShadow={quality.shadows}
               shadow-mapSize-width={shadowMapSize}
@@ -230,7 +255,7 @@ function CouncilStage() {
               shadow-bias={-0.0002}
             />
             <directionalLight position={[4.2, 4.8, -3.8]} intensity={0.9} color="#b8d9f2" />
-            <pointLight position={[0, 2.3, -2.4]} intensity={18} distance={8} decay={2} color="#e2b984" />
+            <pointLight position={[0, 2.3, -2.4]} intensity={reducedStimulation ? 4.5 : 18} distance={8} decay={2} color="#e2b984" />
 
             <mesh position={[0, -0.04, -0.6]} receiveShadow>
               <cylinderGeometry args={[5.6, 5.9, 0.12, 96]} />
@@ -247,12 +272,16 @@ function CouncilStage() {
                 modelUrl={HUMAN_MODELS[index] ?? HUMAN_MODELS[0]}
                 index={index}
                 selected={selected === index}
+                reviewState={reviewState}
                 reducedMotion={reducedMotion}
-                onSelect={() => setSelected(index)}
+                onSelect={() => {
+                  setSelected((current) => current === index ? null : index)
+                  setReviewState((current) => current === 'observer' || current === 'overview' || current === 'cancelled' ? 'selected' : current)
+                }}
               />
             ))}
 
-            {quality.tier === 'low' ? null : <ContactShadows position={[0, 0.01, -0.8]} opacity={0.48} scale={10} blur={2.7} far={7} />}
+            {quality.tier === 'low' || reducedStimulation ? null : <ContactShadows position={[0, 0.01, -0.8]} opacity={0.48} scale={10} blur={2.7} far={7} />}
             <Environment preset="apartment" environmentIntensity={environmentIntensity} />
           </Suspense>
         </Canvas>
@@ -260,9 +289,13 @@ function CouncilStage() {
 
       <section className="pointer-events-none absolute bottom-5 left-5 z-10 w-[min(430px,calc(100vw-40px))] rounded-3xl border border-white/15 bg-black/45 p-5 shadow-2xl backdrop-blur-xl md:bottom-8 md:left-8">
         <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-white/55">URAI Council</p>
-        <h1 className="mt-2 text-3xl font-medium tracking-tight md:text-4xl">{selectedAgent.name}</h1>
-        <p className="mt-1 text-xs uppercase tracking-[0.18em] text-[#e8d8b9]/80">{selectedAgent.role}</p>
-        <p className="mt-3 max-w-[38ch] text-sm leading-6 text-white/72">{selectedAgent.focus}</p>
+        <h1 className="mt-2 text-3xl font-medium tracking-tight md:text-4xl">{selected === null ? 'Council Chamber' : selectedAgent.name}</h1>
+        <p className="mt-1 text-xs uppercase tracking-[0.18em] text-[#e8d8b9]/80">{selected === null ? 'Observer' : selectedAgent.role}</p>
+        <p className="mt-3 max-w-[38ch] text-sm leading-6 text-white/72">{selected === null ? 'Observe the chamber or choose one perspective. No role is ranked.' : selectedAgent.focus}</p>
+        {reviewState === 'speaking' ? <p data-testid="council-speaking-transcript" className="mt-3 rounded-xl border border-white/10 bg-black/25 px-3 py-2 text-xs leading-5 text-white/80">REFERENCE REVIEW — selected speaker is visually identified; transcript is authoritative; no personal conversation content is shown.</p> : null}
+        {reviewState === 'listening' ? <p data-testid="council-listening-state" className="mt-3 text-xs text-white/65">REFERENCE REVIEW — listening / turn ownership.</p> : null}
+        {reviewState === 'acknowledge' ? <p data-testid="council-acknowledge-state" className="mt-3 text-xs text-white/65">REFERENCE REVIEW — bounded acknowledgement state.</p> : null}
+        {reviewState === 'cancelled' ? <p data-testid="council-cancelled-state" className="mt-3 text-xs text-white/65">REFERENCE REVIEW — selection cancelled; observer state restored.</p> : null}
         <div className="pointer-events-auto mt-4 flex flex-wrap gap-2">
           <button className="rounded-full bg-white px-4 py-2 text-xs font-semibold text-slate-950" type="button" onClick={() => travel('home', '/home?returnFrom=council')}>Return Home</button>
           <button className="rounded-full border border-white/20 px-4 py-2 text-xs text-white" type="button" onClick={() => travel('mirror', '/mirror?from=council')}>Mirror</button>
@@ -276,8 +309,28 @@ function CouncilStage() {
   )
 }
 
+function detectCouncilWebGL() {
+  if (typeof document === 'undefined') return true
+  const canvas = document.createElement('canvas')
+  return Boolean(canvas.getContext('webgl2') || canvas.getContext('webgl'))
+}
+
+function CouncilSemanticFallback() {
+  return <main data-testid="urai-council-spatial-fallback" style={{ minHeight:'100svh', display:'grid', placeItems:'center', padding:24, background:'#10151a', color:'#f8fbff', fontFamily:'Inter,ui-sans-serif,system-ui' }}>
+    <section style={{ width:'min(720px,100%)', padding:'clamp(28px,7vw,64px)', border:'1px solid rgba(220,246,255,.18)', borderRadius:28, background:'rgba(3,8,18,.86)', textAlign:'center' }}>
+      <p style={{ letterSpacing:'.2em', textTransform:'uppercase', fontSize:11 }}>URAI · SAFE ACCESS</p>
+      <h1>Council Chamber</h1>
+      <p>Three-dimensional rendering is unavailable on this device. Council roles, navigation, transcripts, privacy controls, and return paths remain reachable without WebGL.</p>
+      <nav style={{ display:'flex', justifyContent:'center', gap:10, flexWrap:'wrap' }}><a href="/home">Home</a><a href="/mirror">Mirror</a><a href="/passport">Passport</a></nav>
+    </section>
+  </main>
+}
+
 export function CouncilRealm() {
-  return <CouncilStage />
+  const [webglAvailable, setWebglAvailable] = useState<boolean | null>(null)
+  useEffect(() => setWebglAvailable(detectCouncilWebGL()), [])
+  if (webglAvailable === null) return <main data-testid="urai-council-probe" aria-label="Preparing Council Chamber" />
+  return webglAvailable ? <CouncilStage /> : <CouncilSemanticFallback />
 }
 
 for (const model of HUMAN_MODELS) useGLTF.preload(model)
