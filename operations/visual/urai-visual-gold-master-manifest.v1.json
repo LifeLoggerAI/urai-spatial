@@ -44,17 +44,18 @@
     {
       "id": "VGM-HOME-001",
       "experience": "home",
-      "system": "direct-bodyless-home-entry",
+      "system": "home-presentation-with-governed-avatar-presence",
       "status": "CURRENT_CANDIDATE",
-      "nonXrBodyPolicy": "camera-only-no-hands-body-rig"
+      "activationTarget": "avatar-presence",
+      "nonXrBodyPolicy": "avatar-visible-in-presentation-bodyless-camera-only-in-first-person"
     },
     {
       "id": "VGM-HOME-002",
       "experience": "home",
-      "system": "legacy-avatar-embodiment-transition",
-      "status": "SUPERSEDED",
-      "currentNonXrGate": false,
-      "disposition": "historical-provenance-only"
+      "system": "avatar-embodiment-transition",
+      "status": "CURRENT_CANDIDATE",
+      "currentNonXrGate": true,
+      "destination": "bodyless-first-person-home"
     },
     {
       "id": "VGM-HOME-003",
@@ -65,10 +66,11 @@
     },
     {
       "id": "VGM-AVATAR-001",
-      "experience": "separate-governed-surface",
-      "system": "likeness-self-view-xr-body-component",
+      "experience": "home-presentation",
+      "system": "separate-governed-likeness-authority",
       "status": "MISSING_REPLACEMENT_REQUIRED",
-      "gatesOrdinaryNonXrHome": false,
+      "homePresentationMayUseGovernedNonLikenessPreview": true,
+      "gatesHomeFlow": false,
       "provenanceRequired": true
     },
     {
@@ -245,7 +247,7 @@
     }
   ],
   "negativeCanon": [
-    "visible-non-xr-home-avatar-or-avatar-activation-gate",
+    "visible-non-xr-first-person-avatar-or-body-rig",
     "non-xr-first-person-hands-or-body",
     "ground-follower-orb",
     "life-map-portal-ring-white-dot",

@@ -94,10 +94,10 @@ export function makeHomeOriginSnapshot(
 
 export function createInitialHomeExperienceState(
   reducedMotion = false,
-  origin = makeHomeOriginSnapshot('AVATAR_HOME_FIRST_PERSON'),
+  origin = makeHomeOriginSnapshot('HOME_PRESENTATION'),
 ): HomeExperienceState {
   return {
-    stableState: 'AVATAR_HOME_FIRST_PERSON',
+    stableState: 'HOME_PRESENTATION',
     transition: null,
     returnStack: [],
     origin,
@@ -123,8 +123,7 @@ function popReturnFrame(state: HomeExperienceState) {
 }
 
 function canActivateWorldSurface(state: HomeExperienceState) {
-  return !state.transition
-    && (state.stableState === 'HOME_PRESENTATION' || state.stableState === 'AVATAR_HOME_FIRST_PERSON')
+  return !state.transition && state.stableState === 'AVATAR_HOME_FIRST_PERSON'
 }
 
 export function homeExperienceReducer(
