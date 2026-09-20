@@ -1,7 +1,7 @@
 {
   "schemaVersion": "urai-home-visual-authority-2",
   "rendererOwner": "HomeWorldProductionV223.tsx",
-  "artRevision": "v291-sculpted-sanctuary-translucent-reference-orb",
+  "artRevision": "v292-avatar-presentation-bodyless-first-person-convergence",
   "worldIdentifier": "cinematic-lived-world-threshold",
   "proofSchema": "urai-home-state-proof-7",
   "certificationState": "candidate-requires-fresh-exact-head-pixels",
@@ -17,7 +17,9 @@
     "orbRuntimeAsset": "/assets/urai/generated/models/urai-orb-avatar-v1.glb",
     "orbVisualAuthority": "v291-translucent-memory-orb-reference-candidate",
     "certified": false,
-    "requiredEvidence": "fresh-exact-head-source-build-runtime-and-literal-pixel-acceptance"
+    "requiredEvidence": "fresh-exact-head-source-build-runtime-and-literal-pixel-acceptance",
+    "homePresentationAuthority": "governed-avatar-presence-then-bodyless-first-person",
+    "nonXrFirstPersonBodyPolicy": "camera-only-no-hands-arms-visible-avatar-or-body-rig"
   },
   "runtimeAssets": [
     "HomeWorldProductionV223.tsx",
@@ -31,7 +33,8 @@
     "polyhaven-v48/fern_02/asset.gltf",
     "polyhaven-v48/rock_face_01/asset.gltf",
     "polyhaven-v48/rock_face_02/asset.gltf",
-    "urai-orb-avatar-v1.glb"
+    "urai-orb-avatar-v1.glb",
+    "HomeEmbodiedAvatar.tsx"
   ],
   "orbVisualAuthority": "v291-translucent-memory-orb-reference-candidate"
 }
