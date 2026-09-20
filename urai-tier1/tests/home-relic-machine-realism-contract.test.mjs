@@ -3,7 +3,6 @@ import { readFileSync } from 'node:fs'
 import test from 'node:test'
 
 const renderer = readFileSync(new URL('../src/spatial/layout/HomeWorldProductionV223.tsx', import.meta.url), 'utf8')
-const embodiedAvatar = readFileSync(new URL('../src/spatial/home/HomeEmbodiedAvatar.tsx', import.meta.url), 'utf8')
 const owner = readFileSync(new URL('../src/app/AssetDrivenHomeWorld.tsx', import.meta.url), 'utf8')
 const authority = JSON.parse(readFileSync(new URL('../src/app/currentHomeVisualAuthority.json', import.meta.url), 'utf8'))
 const visualAuthority = readFileSync(new URL('../src/spatial/layout/HomeVisualAuthority.tsx', import.meta.url), 'utf8')
@@ -39,13 +38,10 @@ test('V288 certified predecessor keeps evidence without overriding the current V
   assert.match(reliquary, /raycast=\{\(\) => null\}/)
 })
 
-test('current candidate Home advances to visible Avatar plus governed Orb and persistent camera-only first-person Home', () => {
+test('current candidate Home keeps governed Orb and persistent bodyless camera-only first-person Home', () => {
   for (const marker of [
-    'visible-cinematic-avatar',
     'camera-only-first-person-home',
-    'visible-avatar-third-person',
-    'hidden-exterior-avatar-first-person',
-    'urai-home-user-avatar',
+    'bodyless-first-person-authored-living-memory-orb-sculpted-sanctuary-and-broad-sky-threshold',
     'home-living-memory-orb',
     '/assets/urai/generated/models/urai-orb-avatar-v1.glb',
     'data-home-ground-entry="physical-world-surface"',
@@ -62,9 +58,10 @@ test('current candidate Home advances to visible Avatar plus governed Orb and pe
     '<MobileMovementPad input={movementInput} label="Move through Home" />',
     "const movementInput = useMovementInput({ enabled: firstPerson && transition === 'none' && !homeState.inputLocked })",
   ]) has(renderer, marker)
-  assert.match(renderer, /<HomeEmbodiedAvatar/)
-  assert.match(embodiedAvatar, /const idle = actions\.idle_breath/)
-  assert.match(embodiedAvatar, /idle\.reset\(\)\.setLoop\(THREE\.LoopRepeat, Infinity\)/)
+  assert.doesNotMatch(renderer, /<HomeEmbodiedAvatar|HOME_AVATAR_MODEL|visible-cinematic-avatar|visible-avatar-third-person|hidden-exterior-avatar-first-person/)
+  assert.match(renderer, /CURRENT_HOME_PRESENCE_ROOTS = new Set\(\['home-living-memory-orb'\]\)/)
+  assert.match(renderer, /\/home-visible-user-avatar\//)
+  assert.match(renderer, /\/urai-home-user-avatar\//)
   assert.doesNotMatch(renderer, /privacy-preserving-first-person/)
   assert.doesNotMatch(renderer, /next\.reset\(\)\.setLoop\(THREE\.LoopRepeat\s*,\s*Infinity\)/)
   assert.doesNotMatch(renderer, /HOME_LIFE_MAP|nearby\s*===\s*['"]life-map['"]/)
