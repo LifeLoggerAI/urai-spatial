@@ -72,18 +72,26 @@ test('accessibility and performance implementation contracts cover Home presenta
     'role="status"',
   ]) requireText(homeRuntime, marker)
   assert.doesNotMatch(homeRuntime, /Enter first-person Home|home-semantic-avatar|requestHomeAvatarActivation/)
-  assert.doesNotMatch(homeController, /URAI_HOME_AVATAR_ACTIVATE_EVENT|activateAvatar/)
+  requireText(homeController, 'activateAvatar')
+  requireText(homeController, "type: 'AVATAR_ACTIVATE'")
 
   for (const marker of [
+    "homeState.stableState === 'HOME_PRESENTATION'",
     "homeState.stableState === 'AVATAR_HOME_FIRST_PERSON'",
-    "'camera-only-first-person-home'",
+    'HomeEmbodiedAvatar',
+    "'visible-avatar-home-presentation'",
+    "'visible-avatar-presentation-activation-gate'",
+    "'bodyless-first-person-home'",
     "'shared-keyboard-touch-walk-look-interact'",
+    "'avatar-presentation-target-activate'",
     "'home-first-person'",
-    "'home-camera-only-first-person'",
-    'bodyless-first-person-authored-living-memory-orb-sculpted-sanctuary-and-broad-sky-threshold',
+    "'home-avatar-presentation'",
+    'avatar-presentation-to-bodyless-first-person-authored-living-memory-orb-sculpted-sanctuary-and-broad-sky-threshold',
     'data-home-ground-entry="physical-world-surface"',
     'data-home-life-map-entry="visible-sky-broad-interaction"',
-    'data-home-non-xr-body-policy="camera-only-no-hands-body-rig"',
+    'presentation-avatar-then-first-person-camera-only-no-hands-body-rig',
+    'data-home-avatar-activation-gate="required-before-first-person-home"',
+    'data-testid="urai-home-avatar-enter-first-person"',
     'useHomeExperienceController',
     'useMovementInput({',
     'stepEmbodiedMotion({',
@@ -96,8 +104,9 @@ test('accessibility and performance implementation contracts cover Home presenta
     'THREE.LoopOnce',
     'prefers-reduced-motion: reduce',
   ]) requireText(currentHome, marker)
-  assert.doesNotMatch(currentHome, /<HomeEmbodiedAvatar|HOME_AVATAR_MODEL|visible-cinematic-avatar|visible-avatar-third-person|hidden-exterior-avatar-first-person/i, 'Non-XR Home must not mount or present a visible avatar')
-  assert.doesNotMatch(currentHome, /first-person-hand|fps-hand|player-hands|weapon-rig/i, 'Non-XR Home must not invent a first-person body/hands rig')
+  assert.match(currentHome, /<HomeEmbodiedAvatar/, 'Home presentation must mount the governed Avatar activation target')
+  assert.doesNotMatch(currentHome, /visible-cinematic-avatar|visible-avatar-third-person|hidden-exterior-avatar-first-person/i, 'Home must not restore retired third-person/avatar modes')
+  assert.doesNotMatch(currentHome, /first-person-hand|fps-hand|player-hands|weapon-rig/i, 'Bodyless first-person Home must not invent a body/hands rig')
   assert.doesNotMatch(currentHome, /next\.reset\(\)\.setLoop\(THREE\.LoopRepeat\s*,\s*Infinity\)/, 'Orb authored state entry clips must not loop forever')
 
   for (const marker of [
@@ -122,12 +131,13 @@ test('accessibility and performance implementation contracts cover Home presenta
   requireText(routeOwnerCss, 'max-height: 100svh !important;')
 
   for (const marker of [
-    "toHaveCount(0)",
+    "toHaveAttribute('data-home-stable-state', 'HOME_PRESENTATION'",
+    "getByRole('button', { name: 'Enter first-person Home through your Avatar' })",
     "toHaveAttribute('data-home-stable-state', 'AVATAR_HOME_FIRST_PERSON'",
     "toHaveAttribute('data-home-embodied-self', 'camera-only-first-person-home'",
-    "toHaveAttribute('data-home-presence-presentation', 'camera-only-first-person-home'",
+    "toHaveAttribute('data-home-presence-presentation', 'bodyless-first-person-home'",
     "toHaveAttribute('data-home-movement', 'shared-keyboard-touch-walk-look-interact'",
-    "toHaveAttribute('data-home-non-xr-body-policy', 'camera-only-no-hands-body-rig'",
+    "toHaveAttribute('data-home-non-xr-body-policy', 'presentation-avatar-then-first-person-camera-only-no-hands-body-rig'",
     "getByRole('button', { name: 'Open Avatar Self View' })",
     "name: 'Move through Home'",
     'data-ground-exploration="first-person-no-visible-body"',
