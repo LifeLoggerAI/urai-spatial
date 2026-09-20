@@ -59,7 +59,7 @@ test('retired localized Home overlays stay retired while first-person Passport o
   assert.doesNotMatch(aaaRepair, /aaa-celestial-ascent-v3-gold-master-depth|home-aaa-life-map-celestial-ascent|home-aaa-v281-rooted-ascent-ribbons|buildCelestialVolume/)
 })
 
-test('retired localized Home hotspots and legacy avatar roots are disabled while the living-memory Orb hierarchy is protected', () => {
+test('retired localized Home hotspots stay disabled while current Orb and governed Avatar presence roots are protected', () => {
   assert.match(owner, /function RetireLegacyHomeHotspots\(\)/)
   assert.match(owner, /object\.visible = false/)
   assert.match(owner, /object\.raycast = \(\) => undefined/)
@@ -67,12 +67,13 @@ test('retired localized Home hotspots and legacy avatar roots are disabled while
   assert.match(owner, /\/home-v226-rooted-single-living-memory-presence\//)
   assert.match(owner, /\/home-current-orb\//)
   assert.match(owner, /\/home-v249-organic-living-memory-presence\//)
-  assert.match(owner, /const CURRENT_HOME_PRESENCE_ROOTS = new Set\(\['home-living-memory-orb'\]\)/)
+  assert.match(owner, /const CURRENT_HOME_PRESENCE_ROOTS = new Set\(\['home-living-memory-orb', 'urai-home-user-avatar'\]\)/)
   assert.match(owner, /function isInsideCurrentHomePresence\(object: THREE\.Object3D\)/)
   assert.match(owner, /if \(isInsideCurrentHomePresence\(object\)\) return/)
   assert.match(owner, /\/home-visible-user-avatar\//)
   assert.match(owner, /\/urai-home-user-avatar\//)
-  assert.doesNotMatch(owner, /<HomeEmbodiedAvatar|HOME_AVATAR_MODEL/)
+  assert.match(owner, /<HomeEmbodiedAvatar/)
+  assert.doesNotMatch(owner, /HOME_AVATAR_MODEL/)
   assert.match(owner, /name="home-living-memory-orb"/)
 })
 
@@ -125,8 +126,8 @@ test('V288 Orb remains intact as predecessor provenance but is not mounted over 
 test('current Home candidate restores the authoritative sculpted sanctuary layer and retires the failed residence rewire', () => {
   assert.match(owner, /import \{ HomeV225PolishV3 \} from '\.\/HomeWorldProductionV225PolishV3'/)
   assert.match(owner, /<HomeV225PolishV3/)
-  assert.match(owner, /data-home-art-revision="v291-sculpted-sanctuary-translucent-reference-orb"/)
-  assert.match(owner, /data-home-scanned-composition="bodyless-first-person-authored-living-memory-orb-sculpted-sanctuary-and-broad-sky-threshold"/)
+  assert.match(owner, /data-home-art-revision="v292-avatar-presentation-bodyless-first-person-convergence"/)
+  assert.match(owner, /data-home-scanned-composition="avatar-presentation-to-bodyless-first-person-authored-living-memory-orb-sculpted-sanctuary-and-broad-sky-threshold"/)
   assert.doesNotMatch(owner, /HOME_ARCHITECTURE_MODEL|ReferenceHomeArchitecture|home-v289-governed-lived-residence/)
   assert.match(owner, /data-home-visual-grade="current-literal-pixel-candidate-not-certified"/)
   assert.match(owner, /home-orb-reference-glass-shell/)

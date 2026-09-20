@@ -51,8 +51,8 @@ test('self inspection is a one-layer overlay over first-person Home', () => {
   assert.match(source, /case 'ESCAPE':[\s\S]*state\.stableState === 'AVATAR_SELF_VIEW'[\s\S]*'AVATAR_HOME_FIRST_PERSON'/)
 })
 
-test('world surfaces activate only from the two stable Home world states', () => {
-  assert.match(source, /function canActivateWorldSurface[\s\S]*HOME_PRESENTATION[\s\S]*AVATAR_HOME_FIRST_PERSON/)
+test('world surfaces activate only after Avatar embodiment reaches bodyless first-person Home', () => {
+  assert.match(source, /function canActivateWorldSurface\(state: HomeExperienceState\) \{[\s\S]*state\.stableState === 'AVATAR_HOME_FIRST_PERSON'[\s\S]*\}/)
   assert.match(source, /case 'GROUND_ACTIVATE':[\s\S]*!canActivateWorldSurface\(state\)/)
   assert.match(source, /case 'SKY_ACTIVATE':[\s\S]*!canActivateWorldSurface\(state\)/)
   assert.match(source, /case 'ORB_ACTIVATE':[\s\S]*!canActivateWorldSurface\(state\)/)
@@ -92,11 +92,15 @@ test('return frame persistence is session-bounded and validates full origin shap
   assert.match(source, /environment\.environmentRevision/)
 })
 
-test('active non-XR Home starts bodyless and does not mount the retained avatar component', () => {
-  assert.match(runtimeSource, /data-home-embodied-self="camera-only-first-person-home"/)
-  assert.match(runtimeSource, /data-home-non-xr-body-policy="camera-only-no-hands-body-rig"/)
-  assert.match(runtimeSource, /data-home-scanned-composition="bodyless-first-person-authored-living-memory-orb-sculpted-sanctuary-and-broad-sky-threshold"/)
-  assert.match(runtimeSource, /useRef<'HOME_PRESENTATION' \| 'AVATAR_HOME_FIRST_PERSON'>\('AVATAR_HOME_FIRST_PERSON'\)/)
-  assert.doesNotMatch(runtimeSource, /URAI_HOME_AVATAR_ACTIVATE_EVENT|<HomeEmbodiedAvatar|HOME_AVATAR_MODEL/)
+test('active non-XR Home starts in governed Avatar presentation and transitions to bodyless first-person Home', () => {
+  assert.match(source, /origin = makeHomeOriginSnapshot\('HOME_PRESENTATION'\)/)
+  assert.match(source, /stableState: 'HOME_PRESENTATION'/)
+  assert.match(runtimeSource, /<HomeEmbodiedAvatar/)
+  assert.match(runtimeSource, /homeApi\.activateAvatar\(\)/)
+  assert.match(runtimeSource, /data-home-non-xr-body-policy="presentation-avatar-then-first-person-camera-only-no-hands-body-rig"/)
+  assert.match(runtimeSource, /data-home-avatar-activation-gate="required-before-first-person-home"/)
+  assert.match(runtimeSource, /data-home-scanned-composition="avatar-presentation-to-bodyless-first-person-authored-living-memory-orb-sculpted-sanctuary-and-broad-sky-threshold"/)
+  assert.match(runtimeSource, /data-testid="urai-home-avatar-enter-first-person"/)
+  assert.doesNotMatch(runtimeSource, /URAI_HOME_AVATAR_ACTIVATE_EVENT|HOME_AVATAR_MODEL/)
 })
 

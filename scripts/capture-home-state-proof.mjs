@@ -432,7 +432,7 @@ async function captureHomeSpatialContinuity({ idSuffix = 'desktop', viewport = {
     record.neutralPresentationVisual = sampleVisual ? await waitForVisualEvidence(page) : { available: true, reason: 'retained-responsive-pixels-no-extra-sampling' }
     record.neutralPresentationScreenshot = await screenshotRecord('neutral-presentation')
 
-    const enterFirstPerson = page.getByRole('button', { name: 'Enter first-person Home' }).first()
+    const enterFirstPerson = page.getByRole('button', { name: 'Enter first-person Home through your Avatar' }).first()
     await enterFirstPerson.focus()
     await enterFirstPerson.press('Enter')
     await page.waitForFunction((selector) => document.querySelector(selector)?.getAttribute('data-home-stable-state') === 'AVATAR_HOME_FIRST_PERSON', ownerSelector, { timeout: 20_000 })
@@ -491,12 +491,12 @@ async function captureHomeSpatialContinuity({ idSuffix = 'desktop', viewport = {
       && Number.isFinite(camera?.pitch)
 
     record.passed = record.status === 200
-      && record.neutralPresentationStableState !== 'AVATAR_HOME_FIRST_PERSON'
-      && record.neutralPresentationCamera !== 'avatar-home-first-person'
+      && record.neutralPresentationStableState === 'HOME_PRESENTATION'
+      && record.neutralPresentationCamera === 'home-avatar-presentation'
       && record.neutralPresentationVisual?.available === true
       && record.neutralPresentationScreenshot.bytes > 12_000
       && record.firstPersonStableState === 'AVATAR_HOME_FIRST_PERSON'
-      && record.firstPersonCamera === 'avatar-home-first-person'
+      && record.firstPersonCamera === 'home-first-person'
       && record.firstPersonMovement === 'shared-keyboard-touch-walk-look-interact'
       && record.globalFieldFailClosed
       && record.emotionalWeather.visible === 'true'
@@ -509,7 +509,7 @@ async function captureHomeSpatialContinuity({ idSuffix = 'desktop', viewport = {
       && record.passportOriginValid
       && record.passportScreenshot.bytes > 12_000
       && record.returnStableState === 'AVATAR_HOME_FIRST_PERSON'
-      && record.returnCamera === 'avatar-home-first-person'
+      && record.returnCamera === 'home-first-person'
       && record.returnFrameConsumed
       && record.returnScreenshot.bytes > 12_000
       && pageErrors.length === 0

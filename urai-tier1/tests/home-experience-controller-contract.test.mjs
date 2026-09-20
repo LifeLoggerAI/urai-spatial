@@ -19,7 +19,9 @@ test('controller captures stable mode and physical camera origin before travel',
     'pitch: number',
     'snapshotHomeOrigin',
   ]) has(marker)
-  assert.doesNotMatch(source, /URAI_HOME_AVATAR_ACTIVATE_EVENT|activateAvatar/)
+  has('activateAvatar')
+  assert.match(source, /dispatch\(\{ type: 'AVATAR_ACTIVATE', snapshot: currentOrigin\(\) \}\)/)
+  assert.doesNotMatch(source, /URAI_HOME_AVATAR_ACTIVATE_EVENT/)
 })
 
 test('controller exposes bodyless Home transitions, self view, Ground, Sky, Orb and semantic unwind actions', () => {

@@ -38,10 +38,12 @@ test('V288 certified predecessor keeps evidence without overriding the current V
   assert.match(reliquary, /raycast=\{\(\) => null\}/)
 })
 
-test('current candidate Home keeps governed Orb and persistent bodyless camera-only first-person Home', () => {
+test('current candidate Home keeps governed Avatar presentation, governed Orb and persistent bodyless camera-only first-person Home', () => {
   for (const marker of [
-    'camera-only-first-person-home',
-    'bodyless-first-person-authored-living-memory-orb-sculpted-sanctuary-and-broad-sky-threshold',
+    'HomeEmbodiedAvatar',
+    'visible-avatar-presentation-activation-gate',
+    'bodyless-first-person-home',
+    'avatar-presentation-to-bodyless-first-person-authored-living-memory-orb-sculpted-sanctuary-and-broad-sky-threshold',
     'home-living-memory-orb',
     '/assets/urai/generated/models/urai-orb-avatar-v1.glb',
     'data-home-ground-entry="physical-world-surface"',
@@ -54,12 +56,14 @@ test('current candidate Home keeps governed Orb and persistent bodyless camera-o
     'setLoop(THREE.LoopOnce, 1)',
     'useHomeExperienceController',
     'HOME_WALK_SPEED',
-    'data-home-non-xr-body-policy="camera-only-no-hands-body-rig"',
+    'data-home-non-xr-body-policy="presentation-avatar-then-first-person-camera-only-no-hands-body-rig"',
+    'data-home-avatar-activation-gate="required-before-first-person-home"',
     '<MobileMovementPad input={movementInput} label="Move through Home" />',
     "const movementInput = useMovementInput({ enabled: firstPerson && transition === 'none' && !homeState.inputLocked })",
   ]) has(renderer, marker)
-  assert.doesNotMatch(renderer, /<HomeEmbodiedAvatar|HOME_AVATAR_MODEL|visible-cinematic-avatar|visible-avatar-third-person|hidden-exterior-avatar-first-person/)
-  assert.match(renderer, /CURRENT_HOME_PRESENCE_ROOTS = new Set\(\['home-living-memory-orb'\]\)/)
+  assert.match(renderer, /<HomeEmbodiedAvatar/)
+  assert.doesNotMatch(renderer, /HOME_AVATAR_MODEL|visible-cinematic-avatar|visible-avatar-third-person|hidden-exterior-avatar-first-person/)
+  assert.match(renderer, /CURRENT_HOME_PRESENCE_ROOTS = new Set\(\['home-living-memory-orb', 'urai-home-user-avatar'\]\)/)
   assert.match(renderer, /\/home-visible-user-avatar\//)
   assert.match(renderer, /\/urai-home-user-avatar\//)
   assert.doesNotMatch(renderer, /privacy-preserving-first-person/)
