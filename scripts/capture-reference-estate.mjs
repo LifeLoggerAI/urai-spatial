@@ -96,10 +96,12 @@ async function enterFirstPersonHome(page) {
   const owner = page.locator('.urai-asset-home-world[data-home-primary-owner="asset-driven"]').first()
   await owner.waitFor({ state:'visible', timeout:45000 })
   await page.waitForFunction(() => document.querySelector('.urai-asset-home-world[data-home-primary-owner="asset-driven"]')?.getAttribute('data-home-assets-ready') === 'true', null, { timeout:45000 })
-  const enter = page.getByRole('button', { name:'Enter first-person Home' }).first()
-  await enter.focus()
-  await enter.press('Enter')
-  await page.waitForFunction(() => document.querySelector('.urai-asset-home-world[data-home-primary-owner="asset-driven"]')?.getAttribute('data-home-stable-state') === 'AVATAR_HOME_FIRST_PERSON', null, { timeout:30000 })
+  const enter = page.getByRole('button', { name:'Enter first-person Home through your Avatar' }).first()
+  if (!await enter.evaluate((element) => { if (!(element instanceof HTMLElement)) return false; element.focus({ preventScroll:true }); return document.activeElement === element })) {
+    throw new Error('Reference Estate Home activation control failed keyboard-focus verification')
+  }
+  await page.keyboard.press('Enter')
+  await page.waitForFunction(() => document.querySelector('.urai-asset-home-world[data-home-primary-owner="asset-driven"]')?.getAttribute('data-home-stable-state') === 'AVATAR_HOME_FIRST_PERSON', null, { timeout:60000 })
 }
 
 async function assertWeather(page, expectedTone, { visible = true, source } = {}) {
