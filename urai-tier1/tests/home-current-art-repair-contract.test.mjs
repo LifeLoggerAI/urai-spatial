@@ -3,7 +3,6 @@ import fs from 'node:fs'
 import test from 'node:test'
 
 const owner = fs.readFileSync(new URL('../src/spatial/layout/HomeWorldProductionV223.tsx', import.meta.url), 'utf8')
-const embodiedAvatar = fs.readFileSync(new URL('../src/spatial/home/HomeEmbodiedAvatar.tsx', import.meta.url), 'utf8')
 const currentRepair = fs.readFileSync(new URL('../src/spatial/layout/HomeCurrentArtRepair.tsx', import.meta.url), 'utf8')
 const aaaRepair = fs.readFileSync(new URL('../src/spatial/layout/HomeAAAVisualRepair.tsx', import.meta.url), 'utf8')
 const visualAuthority = fs.readFileSync(new URL('../src/spatial/layout/HomeVisualAuthority.tsx', import.meta.url), 'utf8')
@@ -60,7 +59,7 @@ test('retired localized Home overlays stay retired while first-person Passport o
   assert.doesNotMatch(aaaRepair, /aaa-celestial-ascent-v3-gold-master-depth|home-aaa-life-map-celestial-ascent|home-aaa-v281-rooted-ascent-ribbons|buildCelestialVolume/)
 })
 
-test('retired localized Home hotspots are disabled while the active Avatar and living-memory Orb hierarchies are protected', () => {
+test('retired localized Home hotspots and legacy avatar roots are disabled while the living-memory Orb hierarchy is protected', () => {
   assert.match(owner, /function RetireLegacyHomeHotspots\(\)/)
   assert.match(owner, /object\.visible = false/)
   assert.match(owner, /object\.raycast = \(\) => undefined/)
@@ -68,14 +67,13 @@ test('retired localized Home hotspots are disabled while the active Avatar and l
   assert.match(owner, /\/home-v226-rooted-single-living-memory-presence\//)
   assert.match(owner, /\/home-current-orb\//)
   assert.match(owner, /\/home-v249-organic-living-memory-presence\//)
-  assert.match(owner, /const CURRENT_HOME_PRESENCE_ROOTS = new Set\(\[[\s\S]*'home-living-memory-orb'[\s\S]*'urai-home-user-avatar'[\s\S]*\]\)/)
+  assert.match(owner, /const CURRENT_HOME_PRESENCE_ROOTS = new Set\(\['home-living-memory-orb'\]\)/)
   assert.match(owner, /function isInsideCurrentHomePresence\(object: THREE\.Object3D\)/)
   assert.match(owner, /if \(isInsideCurrentHomePresence\(object\)\) return/)
-  assert.match(owner, /<HomeEmbodiedAvatar/)
-  assert.match(embodiedAvatar, /name="urai-home-user-avatar"/)
-  assert.match(embodiedAvatar, /semanticOwner: 'avatar'/)
+  assert.match(owner, /\/home-visible-user-avatar\//)
+  assert.match(owner, /\/urai-home-user-avatar\//)
+  assert.doesNotMatch(owner, /<HomeEmbodiedAvatar|HOME_AVATAR_MODEL/)
   assert.match(owner, /name="home-living-memory-orb"/)
-  assert.doesNotMatch(owner, /\/urai-home-user-avatar\//, 'the active Avatar must not be included in the legacy-retirement pattern list')
 })
 
 test('Ground is owned by the physical world surface and Life Map by the broad visible sky', () => {
@@ -128,7 +126,7 @@ test('current Home candidate restores the authoritative sculpted sanctuary layer
   assert.match(owner, /import \{ HomeV225PolishV3 \} from '\.\/HomeWorldProductionV225PolishV3'/)
   assert.match(owner, /<HomeV225PolishV3/)
   assert.match(owner, /data-home-art-revision="v291-sculpted-sanctuary-translucent-reference-orb"/)
-  assert.match(owner, /data-home-scanned-composition="visible-avatar-authored-living-memory-orb-sculpted-sanctuary-and-broad-sky-threshold"/)
+  assert.match(owner, /data-home-scanned-composition="bodyless-first-person-authored-living-memory-orb-sculpted-sanctuary-and-broad-sky-threshold"/)
   assert.doesNotMatch(owner, /HOME_ARCHITECTURE_MODEL|ReferenceHomeArchitecture|home-v289-governed-lived-residence/)
   assert.match(owner, /data-home-visual-grade="current-literal-pixel-candidate-not-certified"/)
   assert.match(owner, /home-orb-reference-glass-shell/)
