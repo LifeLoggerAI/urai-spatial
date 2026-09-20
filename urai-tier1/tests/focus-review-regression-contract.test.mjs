@@ -34,7 +34,7 @@ test('Focus focal authority is the selected memory star and cannot regress to V3
   assert.match(focus, /name="focus-memory-star-glass-shell"/)
   assert.match(focus, /<MemoryVisualContent memory=\{memory\} \/>/)
   assert.match(focus, /selected-memory-star-resolving-through-memory-v343/)
-  assert.match(focus, /radial-gradient\(circle at 50% 50%,#000 0 26%/)
+  assert.match(focus, /repeating-conic-gradient\(from 7deg,rgba\(255,244,198,\.92\)/)
   assert.match(focus, /opacity=\{memory \? 0\.26 : 0\.18\}/)
   assert.match(focus, /memory\.sourceMedia\.find/)
   assert.match(focus, /Generated demo visualization/)
