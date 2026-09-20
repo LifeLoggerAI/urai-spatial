@@ -47,9 +47,9 @@ type EnvironmentProfile = {
 };
 
 const PROFILES: Record<EnvironmentProfileId, EnvironmentProfile> = {
-  temperate: { id: "temperate", label: "Temperate lived world", ground: "#596552", groundDeep: "#30382f", accent: "#86916f", horizon: "#394c43", fog: "#667f73", roughness: 0.94, textureRepeat: [4, 5] },
+  temperate: { id: "temperate", label: "Temperate lived world", ground: "#596552", groundDeep: "#30382f", accent: "#86916f", horizon: "#46564d", fog: "#74877d", roughness: 0.94, textureRepeat: [18, 22] },
   urban: { id: "urban", label: "Urban lived world", ground: "#66645f", groundDeep: "#34363a", accent: "#8a8177", horizon: "#56616a", fog: "#87919a", roughness: 0.88, textureRepeat: [12, 14] },
-  woodland: { id: "woodland", label: "Woodland lived world", ground: "#414d3f", groundDeep: "#252d27", accent: "#68795d", horizon: "#2f4239", fog: "#5f786b", roughness: 0.97, textureRepeat: [4, 5] },
+  woodland: { id: "woodland", label: "Woodland lived world", ground: "#414d3f", groundDeep: "#252d27", accent: "#68795d", horizon: "#39483f", fog: "#687b70", roughness: 0.97, textureRepeat: [20, 24] },
   arid: { id: "arid", label: "Arid lived world", ground: "#8a6f52", groundDeep: "#554235", accent: "#b28c62", horizon: "#8c725d", fog: "#ba9b7b", roughness: 0.91, textureRepeat: [7, 9] },
   coastal: { id: "coastal", label: "Coastal lived world", ground: "#807563", groundDeep: "#4d504b", accent: "#a69b81", horizon: "#66818a", fog: "#8fa7aa", roughness: 0.89, textureRepeat: [10, 12] },
 };
@@ -305,19 +305,19 @@ function NaturalCanopy({ profile, position, rotationY, scale, shapeSeed }: {
       const value = Math.sin(seed * 12.9898 + shapeSeed * 53.117 + (woodland ? 78.233 : 31.417)) * 43758.5453;
       return value - Math.floor(value);
     };
-    const leaves = Array.from({ length: woodland ? 236 : 204 }, (_, index) => {
+    const leaves = Array.from({ length: woodland ? 460 : 410 }, (_, index) => {
       const anchor = foliageAnchors[index % foliageAnchors.length];
-      const spread = 0.10 + hash(index * 7 + 1) * 0.48;
+      const spread = 0.08 + hash(index * 7 + 1) * 0.58;
       const theta = hash(index * 7 + 2) * Math.PI * 2;
       const x = anchor[0] + Math.cos(theta) * spread * (0.48 + hash(index * 7 + 3) * 0.92);
-      const y = anchor[1] - 0.01 + (hash(index * 7 + 4) - 0.45) * 0.78;
+      const y = anchor[1] - 0.05 + (hash(index * 7 + 4) - 0.47) * 1.02;
       const z = anchor[2] + Math.sin(theta) * spread * (0.46 + hash(index * 7 + 5) * 0.88);
       const rx = (hash(index * 7 + 6) - 0.5) * 1.28;
       const ry = theta + (hash(index * 7 + 7) - 0.5) * 1.15;
       const rz = (hash(index * 7 + 8) - 0.5) * 1.12;
-      const sx = 0.30 + hash(index * 7 + 9) * 0.22;
-      const sy = 0.32 + hash(index * 7 + 10) * 0.22;
-      const sz = 0.72 + hash(index * 7 + 11) * 0.18;
+      const sx = 0.13 + hash(index * 7 + 9) * 0.12;
+      const sy = 0.14 + hash(index * 7 + 10) * 0.13;
+      const sz = 0.42 + hash(index * 7 + 11) * 0.24;
       return {
         position: [x, y, z] as [number, number, number],
         rotation: [rx, ry, rz] as [number, number, number],
@@ -456,14 +456,14 @@ function NaturalScatter({ profile }: { profile: EnvironmentProfile }) {
     <GroundCanopyBoundary>
       <Suspense fallback={null}>
         {canopies.map((item) => {
-          const x = item.x * 0.82;
-          const z = item.z - 2.0;
+          const x = item.x * (0.60 + (item.index % 5) * 0.035) + Math.sin(item.index * 1.73) * 1.35;
+          const z = item.z - 2.0 + Math.cos(item.index * 1.19) * 2.25;
           return <NaturalCanopy
             key={`canopy-${item.index}`}
             profile={profile}
             position={[x, groundHeight(x, z, profile.id) - 0.02, z]}
             rotationY={item.index * 0.91 + (woodland ? 0.22 : -0.14)}
-            scale={(woodland ? 1.62 : 1.52) + item.scale * 0.42}
+            scale={(woodland ? 1.55 : 1.46) + item.scale * 0.36}
             shapeSeed={item.index + (woodland ? 101 : 17)}
           />;
         })}
@@ -709,8 +709,8 @@ function FirstPersonPlayer({ input, yaw, pitch, target, profile, obstacles, play
 
 function AtmosphericGroundSky({ profile }: { profile: EnvironmentProfile }) {
   const uniforms = useMemo(() => ({
-    zenithColor: { value: new THREE.Color(profile.id === "woodland" ? "#537482" : "#5f8391") },
-    upperColor: { value: new THREE.Color(profile.id === "arid" ? "#9b8065" : "#7897a1") },
+    zenithColor: { value: new THREE.Color(profile.id === "woodland" ? "#627f8b" : "#6f8994") },
+    upperColor: { value: new THREE.Color(profile.id === "arid" ? "#9b8065" : "#879b9b") },
     horizonColor: { value: new THREE.Color(profile.fog) },
     groundHazeColor: { value: new THREE.Color(profile.horizon) },
   }), [profile.fog, profile.horizon, profile.id]);
@@ -932,7 +932,7 @@ export default function GroundSpatialWorldClean() {
       onCreated={({ gl }) => {
         gl.outputColorSpace = THREE.SRGBColorSpace;
         gl.toneMapping = THREE.ACESFilmicToneMapping;
-        gl.toneMappingExposure = 1.16;
+        gl.toneMappingExposure = 1.04;
       }}
     >
       <GroundScene profile={profile} input={input} yaw={yaw} pitch={pitch} target={target} obstacles={obstacles} playerPosition={playerPosition} isCoarse={isCoarse} onReady={() => setReady(true)} />
