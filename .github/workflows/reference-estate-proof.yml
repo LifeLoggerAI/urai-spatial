@@ -21,6 +21,9 @@ env:
   PLAYWRIGHT_BROWSERS_PATH: '0'
   NEXT_PUBLIC_URAI_EXPLICIT_DEMO: 'true'
   NEXT_PUBLIC_URAI_ACCEPTANCE_FIXTURES: '1'
+  # Acceptance-build only: expose implemented post-launch realms for deterministic
+  # Shadow/Council reference capture without changing production fail-closed defaults.
+  URAI_ENABLE_POST_LAUNCH_REALMS: 'true'
 
 jobs:
   capture:
