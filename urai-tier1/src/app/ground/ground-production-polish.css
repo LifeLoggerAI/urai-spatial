@@ -43,8 +43,8 @@
 .ground-spatial-root .urai-mobile-movement {
   left: max(16px, env(safe-area-inset-left)) !important;
   bottom: max(22px, calc(env(safe-area-inset-bottom) + 18px)) !important;
-  grid-template-columns: repeat(3, 42px) !important;
-  grid-template-rows: repeat(2, 42px) !important;
+  grid-template-columns: repeat(3, 48px) !important;
+  grid-template-rows: repeat(2, 48px) !important;
   gap: 2px !important;
   padding: 7px !important;
   border: 1px solid rgba(207, 245, 238, .08);
@@ -55,8 +55,8 @@
 
 .ground-spatial-root .urai-mobile-movement button {
   position: relative;
-  width: 42px !important;
-  height: 42px !important;
+  width: 48px !important;
+  height: 48px !important;
   border-color: transparent !important;
   border-radius: 50% !important;
   background: transparent !important;
@@ -164,12 +164,12 @@
   }
   .ground-spatial-root .ground-brand strong { white-space: normal !important; }
   .ground-spatial-root .urai-mobile-movement {
-    grid-template-columns: repeat(3, 44px) !important;
-    grid-template-rows: repeat(2, 44px) !important;
+    grid-template-columns: repeat(3, 48px) !important;
+    grid-template-rows: repeat(2, 48px) !important;
   }
   .ground-spatial-root .urai-mobile-movement button {
-    width: 44px !important;
-    height: 44px !important;
+    width: 48px !important;
+    height: 48px !important;
   }
 
   .ground-spatial-root[data-ground-camera-mode='look'] .ground-directory,
