@@ -19,11 +19,11 @@ test('controller captures stable mode and physical camera origin before travel',
     'pitch: number',
     'snapshotHomeOrigin',
   ]) has(marker)
+  assert.doesNotMatch(source, /URAI_HOME_AVATAR_ACTIVATE_EVENT|activateAvatar/)
 })
 
-test('controller exposes embodiment, self view, Ground, Sky, Orb and semantic unwind actions', () => {
+test('controller exposes bodyless Home transitions, self view, Ground, Sky, Orb and semantic unwind actions', () => {
   for (const marker of [
-    'activateAvatar',
     'completeEmbodiment',
     'openSelfView',
     'closeSelfView',
