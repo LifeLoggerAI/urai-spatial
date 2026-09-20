@@ -74,11 +74,15 @@ Mechanical batch result: 13 files classified; 12 unique byte payloads; 2 SUPERSE
 
 ## Capture-estate continuation truth
 
-- `WEATHER-012` remains intentionally uncaptured because the source contract says reduced-stimulation proof is blocked until a real control exists.
-- `WEATHER-016` remains uncaptured because private place-specific history must not be fabricated.
-- `WEATHER-017` now has a truthful disclosed-demo capture path through the existing Location Map sample atlas; the frame must retain the sample/no-personal-history disclosure.
-- Possible Futures now has capture coverage for active branch A, edit assumptions, provider-unavailable disclosure, and no-WebGL conventional fallback in addition to the pre-existing manual scenario states.
-- The governed-provider future state remains blocked; no provider output may be faked.
+- `WEATHER-012` now has a real reduced-stimulation control and exact-head capture path; it remains unaccepted until fresh retained pixels are literally inspected.
+- `WEATHER-016` now uses an explicitly disclosed synthetic private-location review fixture rather than fabricated autobiography; no real user place is implied.
+- `WEATHER-017` retains the truthful disclosed-demo Location Map path and sample/no-personal-history disclosure.
+- Physical Home Passport `PASSPORT-PHYS-001…015` is fully wired for exact-head capture, including a neutral model sheet and 1.7 m non-likeness scale reference.
+- Rituals `RITUAL-001…012` are wired from the existing platform/timing authority using disclosed synthetic review fixtures; `RITUAL-013` seasonal and `RITUAL-014` quiet remain external canon blockers.
+- Shadow `SHADOW-001…009` is implemented as a grounded, human-scale mineral/charcoal realm with stable orientation landmark and semantic fallback; predecessor fantasy portal/crystal language is no longer the current review candidate.
+- Legacy `LEGACY-001…010` now has deterministic exact-head review viewpoints, real Life Map/Home handoff captures, low-tier review, and semantic fallback.
+- Council `COUNCIL-001…014` now has deterministic observer/selection/listening/speaking/acknowledgement/cancel review states, real Home/Mirror/Passport handoff captures, reduced-stimulation proof, and no-WebGL fallback while preserving MakeHuman V4 as preview-human authority rather than final face Gold Master.
+- Possible Futures has capture coverage for every currently implemented manual/unranked state; the governed-provider future state remains blocked and no provider output may be faked.
 
 ## 2026-09-19 continuation — literal Drive Focus candidate audit
 
@@ -196,3 +200,17 @@ This batch adds 13 individually classified image files: 1 REJECTED, 2 SUPERSEDED
 ### Working Review model-source recovery
 Drive Working Review also contains real binary source candidates for Council human rigs and older `shadow-hall-real-v1.glb`, `legacy-archive-real-v1.glb`, `council-chamber-real-v1.glb`. The current exact-head launch asset manifest already carries Council V3/V4 human candidates, but it does not name those three older realm GLBs. Therefore those binaries are provenance/source candidates only until current written realm authority and runtime integration explicitly adopt them; do not silently substitute them into Shadow/Legacy/Council just to manufacture missing screenshots.
 
+
+## 2026-09-20 exact-head reference-estate implementation continuation
+
+Current source head at this ledger update: `a44aa6e6e6ae0fc0d56d216c04ac7f5a8ba2f2ad`.
+
+Material changes now in the canonical branch lineage:
+- exact-head candidate inventory packaging for all 787 active repo images (excluding `_audit/**` and `_quarantine/**`) with path, byte count, and SHA-256 manifest;
+- 126 deterministic reference-estate capture IDs across Memory Star, Physical Home Passport, Personal Emotional Weather, Global Emotional Field Earth, Rituals, Mirror, Passport UI, Privacy, Shadow, Legacy, Council, Possible Futures, Onboarding and Settings/Privacy;
+- Shadow visual language repaired away from crystal/ring/fantasy-portal ownership;
+- Council review coverage expanded without promoting preview humans to final likeness/face acceptance;
+- Legacy review coverage expanded without inventing lineage facts;
+- all newly wired states remain `IN_PROGRESS` until exact-head retained pixels are generated and literally inspected.
+
+No predecessor pixel acceptance is transferred to this successor. The reference library remains non-terminal until the exact-head workflow artifacts are inspected and the 787-image inventory is individually classified.
