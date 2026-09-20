@@ -1,0 +1,45 @@
+name: Cancel stale Reference Estate concurrency groups
+
+on:
+  push:
+    branches:
+      - ops/cancel-stale-reference-estate-20260920
+    paths:
+      - '.github/workflows/cancel-stale-reference-estate.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  cancel-stale:
+    name: Cancel stale reference estate ${{ matrix.sha }}
+    strategy:
+      fail-fast: false
+      max-parallel: 17
+      matrix:
+        sha:
+          - 104639281ec35b91172617fbf18800042e1fb44a
+          - a93093ff3a2d57b7be8f1a49ed7f5a1e2066c52c
+          - 863595ba057d248187e653acc4cd790207681031
+          - 0c85ebe9b2c4aa479dcc4ce6a206b42bb1d60d3f
+          - 772e80b17c10863a683d00a46e8b798f9ec3661f
+          - 0bebf7d5a54a262b427ebf9312c547074d246b72
+          - 6924b855c09758ccba0a9013d7ecea0c449664e8
+          - 22df47bd9eeafc8b93d5ed7ab41c69afa882ab5a
+          - 837a4f15f4d35c4957d046ec546bf725fac4d48b
+          - a44aa6e6e6ae0fc0d56d216c04ac7f5a8ba2f2ad
+          - 06790ce2cc9d949987350339a0070f95f82bde1e
+          - 9d6a86d48160b256d9bea10c4940feb5c99e52f5
+          - 99c9ac6c16d87e2756b22e12ad8ca3f35292d362
+          - f8c9e388de385d02bdc72d902d8ad53a8976fad1
+          - 4c2fda463ee40ff48963bc65a11db6456534eb76
+          - ffa03baf4933c80333cfb1a21156c218c89ce957
+          - b723e2db3367d655384c03c6ee52b2460e9999a8
+    concurrency:
+      group: reference-estate-proof-${{ matrix.sha }}
+      cancel-in-progress: true
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Record cancellation group
+        run: echo "Superseding stale Reference Estate concurrency group for ${{ matrix.sha }}"
