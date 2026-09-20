@@ -6,6 +6,7 @@ const hook = fs.readFileSync(new URL('../src/app/home/useHomePersonalizedScene.t
 const model = fs.readFileSync(new URL('../src/app/home/homePersonalizationModel.ts', import.meta.url), 'utf8')
 const sky = fs.readFileSync(new URL('../src/spatial/assets/HomeAtmosphericSky.tsx', import.meta.url), 'utf8')
 const capture = fs.readFileSync(new URL('../../scripts/capture-reference-estate.mjs', import.meta.url), 'utf8')
+const world = fs.readFileSync(new URL('../src/app/AssetDrivenHomeWorld.tsx', import.meta.url), 'utf8')
 
 test('weather review tone override is isolated to explicit asset-review private fixture', () => {
   assert.match(hook, /homeAssetReview/)
