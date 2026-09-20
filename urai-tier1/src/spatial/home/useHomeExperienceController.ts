@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useMemo, useReducer, useRef } from 'react'
 import * as THREE from 'three'
 import { URAI_WORLD_ORB_CLOSE_EVENT } from '@/spatial/world/worldEvents'
-import { URAI_HOME_AVATAR_ACTIVATE_EVENT } from './homeSemanticEvents'
 import {
   HOME_PASSPORT_ORIGIN_CAPTURE_EVENT,
   consumeHomeReturnFrame,
@@ -70,16 +69,6 @@ export function useHomeExperienceController({
   }, [state.transition])
 
   const currentOrigin = useCallback(() => snapshotHomeOrigin(readRuntimeSnapshot()), [readRuntimeSnapshot])
-
-  const activateAvatar = useCallback(() => {
-    dispatch({ type: 'AVATAR_ACTIVATE', snapshot: currentOrigin() })
-  }, [currentOrigin])
-
-  useEffect(() => {
-    const onSemanticAvatarActivate = () => activateAvatar()
-    window.addEventListener(URAI_HOME_AVATAR_ACTIVATE_EVENT, onSemanticAvatarActivate)
-    return () => window.removeEventListener(URAI_HOME_AVATAR_ACTIVATE_EVENT, onSemanticAvatarActivate)
-  }, [activateAvatar])
 
   useEffect(() => {
     const capturePassportOrigin = () => {
@@ -173,7 +162,6 @@ export function useHomeExperienceController({
   }, [closeSelfView, escape])
 
   const api = useMemo(() => ({
-    activateAvatar,
     completeEmbodiment,
     openSelfView,
     closeSelfView,
@@ -185,7 +173,6 @@ export function useHomeExperienceController({
     escape,
     completeRestore,
   }), [
-    activateAvatar,
     activateGround,
     activateOrb,
     activateSky,
