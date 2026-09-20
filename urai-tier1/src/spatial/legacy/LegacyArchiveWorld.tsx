@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import { ContactShadows, Environment, PerspectiveCamera, useGLTF } from '@react-three/drei'
-import { Suspense, useEffect, useRef, type MutableRefObject } from 'react'
+import { Suspense, useEffect, useRef, useState, type MutableRefObject } from 'react'
 import * as THREE from 'three'
 import { MobileMovementPad, MovementHelp, stepEmbodiedMotion, useDragLook, useMovementInput, type MovementInput } from '@/spatial/navigation/EmbodiedNavigation'
 import { useReducedMotion } from '@/spatial/hooks/useReducedMotion'
@@ -13,12 +13,34 @@ const LEGACY_MODEL = '/assets/urai/generated/models/legacy-archive-foundation-v1
 const LIFE_MAP_DESTINATION = '/life-map?from=legacy&overview=1'
 const CAMERA_HEIGHT = 1.68
 
-function LegacyCamera({ input, yaw, pitch, reducedMotion, shellRef }: { input: MovementInput; yaw: MutableRefObject<number>; pitch: MutableRefObject<number>; reducedMotion: boolean; shellRef: MutableRefObject<HTMLDivElement | null> }) {
+type LegacyReviewState = 'entry' | 'exploration' | 'reading-pause' | 'continuity-selected' | 'handoff' | 'return' | 'mobile' | 'reduced-motion' | 'low-tier'
+const LEGACY_REVIEW_STATES = new Set<LegacyReviewState>(['entry','exploration','reading-pause','continuity-selected','handoff','return','mobile','reduced-motion','low-tier'])
+const LEGACY_REVIEW_POSITIONS: Record<LegacyReviewState, [number, number, number]> = {
+  entry: [0, 0, 6.2],
+  exploration: [-2.1, 0, 2.7],
+  'reading-pause': [0.9, 0, 1.75],
+  'continuity-selected': [0, 0, -0.3],
+  handoff: [0, 0, -2.6],
+  return: [1.5, 0, 4.9],
+  mobile: [0, 0, 5.2],
+  'reduced-motion': [0, 0, 4.1],
+  'low-tier': [-1.2, 0, 3.6],
+}
+
+function LegacyCamera({ input, yaw, pitch, reducedMotion, reviewState, shellRef }: { input: MovementInput; yaw: MutableRefObject<number>; pitch: MutableRefObject<number>; reducedMotion: boolean; reviewState: LegacyReviewState; shellRef: MutableRefObject<HTMLDivElement | null> }) {
   const { camera } = useThree()
-  const position = useRef(new THREE.Vector3(0, 0, 6.2))
+  const position = useRef(new THREE.Vector3(...LEGACY_REVIEW_POSITIONS[reviewState]))
   const velocity = useRef(new THREE.Vector3())
   const target = useRef<THREE.Vector3 | null>(null)
   const direction = useRef(new THREE.Vector3())
+
+  useEffect(() => {
+    position.current.set(...LEGACY_REVIEW_POSITIONS[reviewState])
+    velocity.current.set(0, 0, 0)
+    target.current = null
+    yaw.current = reviewState === 'reading-pause' ? -0.28 : reviewState === 'continuity-selected' ? 0.18 : 0
+    pitch.current = reviewState === 'reading-pause' ? -0.08 : -0.03
+  }, [pitch, reviewState, yaw])
 
   useFrame((_, delta) => {
     const motion = stepEmbodiedMotion({
@@ -72,34 +94,58 @@ function ArchiveFurniture() {
   </group>
 }
 
-function LegacyScene({ input, yaw, pitch, reducedMotion, shellRef }: { input: MovementInput; yaw: MutableRefObject<number>; pitch: MutableRefObject<number>; reducedMotion: boolean; shellRef: MutableRefObject<HTMLDivElement | null> }) {
+function LegacyScene({ input, yaw, pitch, reducedMotion, reviewState, shellRef }: { input: MovementInput; yaw: MutableRefObject<number>; pitch: MutableRefObject<number>; reducedMotion: boolean; reviewState: LegacyReviewState; shellRef: MutableRefObject<HTMLDivElement | null> }) {
   const quality = useAdaptiveSpatialQuality()
+  const forceLow = reviewState === 'low-tier'
+  const shadows = forceLow ? false : quality.shadows
   return <>
     <color attach="background" args={['#15120f']} /><fog attach="fog" args={['#211c17', 9, 28]} />
     <PerspectiveCamera makeDefault position={[0, CAMERA_HEIGHT, 6.2]} fov={44} />
     <ambientLight intensity={0.34} color="#eadfce" /><hemisphereLight intensity={0.58} color="#f0e5d5" groundColor="#382f27" />
-    <directionalLight position={[-4.5, 8, 4]} intensity={1.55} color="#f4eadb" castShadow={quality.shadows} shadow-mapSize-width={quality.tier === 'high' ? 1024 : 512} shadow-mapSize-height={quality.tier === 'high' ? 1024 : 512} />
+    <directionalLight position={[-4.5, 8, 4]} intensity={forceLow ? 1.12 : 1.55} color="#f4eadb" castShadow={shadows} shadow-mapSize-width={quality.tier === 'high' && !forceLow ? 1024 : 512} shadow-mapSize-height={quality.tier === 'high' && !forceLow ? 1024 : 512} />
     <pointLight position={[0, 2.1, -4]} intensity={12} distance={12} color="#c9a66d" />
-    <LegacyCamera input={input} yaw={yaw} pitch={pitch} reducedMotion={reducedMotion} shellRef={shellRef} />
+    <LegacyCamera input={input} yaw={yaw} pitch={pitch} reducedMotion={reducedMotion} reviewState={reviewState} shellRef={shellRef} />
     <LegacyFoundation /><ArchiveFurniture />
-    {quality.tier === 'low' ? null : <ContactShadows position={[0, 0.01, 0]} opacity={0.38} scale={12} blur={2.8} far={7} />}
-    <Environment preset="apartment" environmentIntensity={quality.tier === 'low' ? 0.12 : 0.2} />
+    {quality.tier === 'low' || forceLow ? null : <ContactShadows position={[0, 0.01, 0]} opacity={0.38} scale={12} blur={2.8} far={7} />}
+    <Environment preset="apartment" environmentIntensity={forceLow || quality.tier === 'low' ? 0.1 : 0.2} />
   </>
+}
+
+function detectLegacyWebGL() {
+  if (typeof document === 'undefined') return true
+  const canvas = document.createElement('canvas')
+  return Boolean(canvas.getContext('webgl2') || canvas.getContext('webgl'))
+}
+
+function LegacySemanticFallback() {
+  return <main data-testid="urai-legacy-spatial-fallback" style={{minHeight:'100svh',display:'grid',placeItems:'center',padding:24,background:'#15120f',color:'#f8f3ea',fontFamily:'var(--font-sans)'}}><section style={{width:'min(720px,100%)',padding:'clamp(28px,7vw,64px)',border:'1px solid rgba(236,220,196,.16)',borderRadius:28,background:'rgba(21,17,13,.88)',textAlign:'center'}}><p>URAI · SAFE ACCESS</p><h1>Legacy Archive</h1><p>Three-dimensional rendering is unavailable on this device. Continuity navigation, provenance, reading access, Life Map handoff, and Home return remain available semantically.</p><nav style={{display:'flex',justifyContent:'center',gap:10,flexWrap:'wrap'}}><Link href={LIFE_MAP_DESTINATION}>Open continuity in Life Map</Link><Link href="/home">Return Home</Link></nav></section></main>
 }
 
 export default function LegacyArchiveWorld() {
   const reducedMotion = useReducedMotion()
   const quality = useAdaptiveSpatialQuality()
+  const [reviewState, setReviewState] = useState<LegacyReviewState>('entry')
+  const [webglAvailable, setWebglAvailable] = useState<boolean | null>(null)
   const shellRef = useRef<HTMLDivElement | null>(null)
   const yaw = useRef(0)
   const pitch = useRef(-0.03)
   const input = useMovementInput()
   const dragLook = useDragLook({ yaw, pitch, enabled: true, sensitivity: reducedMotion ? 0.0024 : 0.0038 })
 
-  return <main ref={shellRef} data-testid="urai-legacy-archive-world" data-legacy-model-authority="legacy-archive-foundation-v1" data-spatial-quality-tier={quality.tier} style={{position:'fixed',inset:0,minHeight:'100svh',overflow:'hidden',background:'#15120f',color:'#f8f3ea',fontFamily:'var(--font-sans)'}} {...dragLook}>
-    <div style={{position:'absolute',inset:0}}><Canvas shadows={quality.shadows} dpr={[1, quality.pixelRatioMax]} frameloop={quality.documentVisible?'always':'never'} gl={{antialias:quality.antialias,alpha:false,powerPreference:'high-performance'}}><Suspense fallback={null}><LegacyScene input={input} yaw={yaw} pitch={pitch} reducedMotion={reducedMotion} shellRef={shellRef} /></Suspense></Canvas></div>
+  useEffect(() => {
+    setWebglAvailable(detectLegacyWebGL())
+    const params = new URLSearchParams(window.location.search)
+    const requested = params.get('legacyReview') as LegacyReviewState | null
+    setReviewState(requested && LEGACY_REVIEW_STATES.has(requested) ? requested : 'entry')
+  }, [])
+
+  if (webglAvailable === null) return <main data-testid="urai-legacy-probe" aria-label="Preparing Legacy Archive" />
+  if (!webglAvailable) return <LegacySemanticFallback />
+
+  return <main ref={shellRef} data-testid="urai-legacy-archive-world" data-legacy-model-authority="legacy-archive-foundation-v1" data-spatial-quality-tier={reviewState === 'low-tier' ? 'review-low' : quality.tier} data-legacy-review-state={reviewState} style={{position:'fixed',inset:0,minHeight:'100svh',overflow:'hidden',background:'#15120f',color:'#f8f3ea',fontFamily:'var(--font-sans)'}} {...dragLook}>
+    <div style={{position:'absolute',inset:0}}><Canvas shadows={quality.shadows} dpr={[1, quality.pixelRatioMax]} frameloop={quality.documentVisible?'always':'never'} gl={{antialias:quality.antialias,alpha:false,powerPreference:'high-performance'}}><Suspense fallback={null}><LegacyScene input={input} yaw={yaw} pitch={pitch} reducedMotion={reducedMotion} reviewState={reviewState} shellRef={shellRef} /></Suspense></Canvas></div>
     <section style={{position:'absolute',left:'clamp(16px,4vw,48px)',bottom:'clamp(18px,4vw,44px)',zIndex:30,width:'min(470px,calc(100vw - 32px))',padding:'18px 20px 20px',border:'1px solid rgba(236,220,196,.16)',borderRadius:22,background:'rgba(21,17,13,.66)',boxShadow:'0 22px 70px rgba(0,0,0,.34)',backdropFilter:'blur(16px)'}}>
-      <p style={{margin:0,color:'rgba(239,220,190,.62)',fontSize:11,fontWeight:700,letterSpacing:'.2em',textTransform:'uppercase'}}>Legacy Archive</p><h1 style={{margin:'6px 0 0',fontSize:'clamp(30px,5vw,46px)',lineHeight:1,letterSpacing:'-.04em'}}>Continuity has a place.</h1><p style={{margin:'10px 0 0',maxWidth:'40ch',color:'rgba(247,239,226,.72)',fontSize:14,lineHeight:1.55}}>Walk the archive. Open continuity in Life Map when you choose.</p>
+      <p style={{margin:0,color:'rgba(239,220,190,.62)',fontSize:11,fontWeight:700,letterSpacing:'.2em',textTransform:'uppercase'}}>Legacy Archive</p><h1 style={{margin:'6px 0 0',fontSize:'clamp(30px,5vw,46px)',lineHeight:1,letterSpacing:'-.04em'}}>Continuity has a place.</h1><p style={{margin:'10px 0 0',maxWidth:'40ch',color:'rgba(247,239,226,.72)',fontSize:14,lineHeight:1.55}}>Walk the archive. Open continuity in Life Map when you choose.</p>{reviewState === 'reading-pause' ? <p data-testid="legacy-reading-pause" style={{fontSize:12,color:'rgba(247,239,226,.62)'}}>REFERENCE REVIEW — reading-table pause; no invented lineage or family record.</p> : null}{reviewState === 'continuity-selected' ? <p data-testid="legacy-continuity-selected" style={{fontSize:12,color:'rgba(247,239,226,.62)'}}>REFERENCE REVIEW — continuity handoff selected; provenance remains required for actual lineage content.</p> : null}
       <div data-movement-ui="true" style={{display:'flex',flexWrap:'wrap',gap:8,marginTop:14}}><Link href={LIFE_MAP_DESTINATION} style={{padding:'9px 13px',borderRadius:999,background:'#f1eadf',color:'#241b14',fontSize:12,fontWeight:800,textDecoration:'none'}}>Open continuity in Life Map</Link><Link href="/home" style={{padding:'9px 13px',borderRadius:999,border:'1px solid rgba(255,255,255,.17)',color:'#fff',fontSize:12,fontWeight:700,textDecoration:'none'}}>Return Home</Link></div>
     </section>
     <MovementHelp realm="Legacy Archive" summary="Walk among shelves and reading tables before moving into your continuity map." controls="WASD or arrow keys move. Drag to look. Mobile controls appear on touch devices." /><MobileMovementPad input={input} label="Move through Legacy Archive" />
