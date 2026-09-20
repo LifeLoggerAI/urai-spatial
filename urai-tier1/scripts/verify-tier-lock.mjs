@@ -32,8 +32,10 @@ const fileNeedles = {
   ],
   'src/app/page.tsx': ['FinalHomeThreshold'],
   'src/app/home/page.tsx': ['FinalHomeThreshold'],
-  'src/app/FinalHomeThreshold.tsx': ['HomeSpatialWorldFinal'],
+  'src/app/FinalHomeThreshold.tsx': ['<HomeSemanticFallback />', 'if (mounted && webglAvailable !== null) return null'],
   'src/app/HomeSpatialRuntimeLayer.tsx': [
+    '<AssetDrivenHomeWorld',
+    '<HomeSemanticFallback />',
     "normalizedPathname === '/' || normalizedPathname === '/home'",
     'data-urai-home-runtime=',
     'data-testid="urai-home-accessible-fallback"',

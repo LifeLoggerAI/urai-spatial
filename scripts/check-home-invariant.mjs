@@ -5,7 +5,9 @@ const files = {
   root: 'urai-tier1/src/app/page.tsx',
   home: 'urai-tier1/src/app/home/page.tsx',
   threshold: 'urai-tier1/src/app/FinalHomeThreshold.tsx',
-  world: 'urai-tier1/src/app/HomeSpatialWorldFinal.tsx',
+  world: 'urai-tier1/src/app/HomeSpatialRuntimeLayer.tsx',
+  fallback: 'urai-tier1/src/app/HomeSemanticFallback.tsx',
+  template: 'urai-tier1/src/app/template.tsx',
 }
 
 const failures = []
@@ -33,28 +35,36 @@ for (const [path, source] of [[files.root, root], [files.home, home]]) {
   }
 }
 
-if (threshold && !threshold.includes('HomeSpatialWorldFinal')) {
-  failures.push('FinalHomeThreshold must render HomeSpatialWorldFinal')
+// The route threshold only owns pre-hydration/capability detection. The template
+// owns the settled spatial world and its renderer-failure fallback.
+const fallback = read('fallback')
+const template = read('template')
+for (const [label, source, signals] of [
+  ['FinalHomeThreshold', threshold, ['<HomeSemanticFallback />', 'if (mounted && webglAvailable !== null) return null']],
+  ['AppTemplate', template, ['<HomeSpatialRuntimeLayer />', '{children}']],
+  ['HomeSpatialRuntimeLayer', world, [
+    "normalizedPathname === '/' || normalizedPathname === '/home'",
+    "if (!homeRouteActive) return null",
+    "if (webglAvailable === false || rendererState === 'failed')",
+    '<HomeSemanticFallback />', '<AssetDrivenHomeWorld', '<HomeSemanticNavigation />',
+    'webglcontextlost', 'webglcontextrestored', 'prefers-reduced-motion:reduce',
+    'aria-label="Open URAI Orb companion"',
+    'aria-label="Open Ground directly"', 'aria-label="Open Life Map directly"',
+    'href={HOME_SEMANTIC_DESTINATIONS.ground.travelHref}',
+    'href={HOME_SEMANTIC_DESTINATIONS.lifeMap.travelHref}',
+  ]],
+  ['HomeSemanticFallback', fallback, [
+    'aria-label="URAI Home semantic fallback"', 'aria-label="Home semantic destinations"',
+    'href="/ground/?from=home-ground"', 'href="/life-map/?from=home-sky"',
+    'href="/passport"', 'href="/privacy"',
+  ]],
+]) {
+  for (const signal of signals) {
+    if (!source.includes(signal)) failures.push(`${label} missing invariant: ${signal}`)
+  }
 }
-
-const requiredWorldSignals = [
-  'className="urai-genesis-home urai-home-spatial-world-final"',
-  'aria-label="URAI Home World threshold"',
-  'urai-genesis-home__sky',
-  'urai-genesis-home__ground',
-  'urai-genesis-home__body',
-  'urai-genesis-home__orb',
-  'href="/ground?from=home"',
-  'href="/life-map?from=home-sky"',
-  "window.matchMedia('(prefers-reduced-motion: reduce)')",
-  'Skip to world routes',
-  'onPointerMove={handlePointerMove}',
-  'event.key.toLowerCase() === "o"',
-  'event.key === "Escape"',
-]
-
-for (const signal of requiredWorldSignals) {
-  if (world && !world.includes(signal)) failures.push(`HomeSpatialWorldFinal missing invariant: ${signal}`)
+if (threshold.includes('<HomeSpatialWorldFinal')) {
+  failures.push('FinalHomeThreshold must not mount the retired parallel Home world')
 }
 
 const forbiddenPatterns = [
@@ -77,4 +87,4 @@ if (failures.length > 0) {
   process.exit(1)
 }
 
-console.log('Tier-1 Home invariant passed: / and /home use FinalHomeThreshold -> HomeSpatialWorldFinal with sky, ground, body, orb, portals, keyboard access, and reduced-motion safety.')
+console.log('Tier-1 Home invariant passed: / and /home use the pre-hydration threshold and template-owned spatial runtime with accessible destinations and renderer recovery.')
