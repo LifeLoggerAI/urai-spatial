@@ -18,6 +18,9 @@ jobs:
       max-parallel: 17
       matrix:
         sha:
+          - bbb4f4656d4ce1e9d52e83ade9cfaba2b3ad9d3f
+          - 19aa949be2bffaff6f03da4cae203ac095a373aa
+          - 49606557bc57e7ee5516b6ffa59f05e50cb83125
           - 104639281ec35b91172617fbf18800042e1fb44a
           - a93093ff3a2d57b7be8f1a49ed7f5a1e2066c52c
           - 863595ba057d248187e653acc4cd790207681031
@@ -43,3 +46,14 @@ jobs:
     steps:
       - name: Record cancellation group
         run: echo "Superseding stale Reference Estate concurrency group for ${{ matrix.sha }}"
+
+  cancel-stale-spatial-ci:
+    name: Cancel stale Spatial CI 837a4f1
+    concurrency:
+      group: urai-spatial-ci-1237-837a4f15f4d35c4957d046ec546bf725fac4d48b
+      cancel-in-progress: true
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Record stale CI cancellation group
+        run: echo "Superseding stale Spatial CI concurrency group for 837a4f15f4d35c4957d046ec546bf725fac4d48b"
