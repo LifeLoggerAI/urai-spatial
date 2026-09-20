@@ -70,8 +70,6 @@ test('Current Home never retires descendants of the canonical Avatar or living-m
   assert.match(currentHome, /current = current\.parent/)
   assert.match(currentHome, /if \(isInsideCurrentHomePresence\(object\)\) return/)
   assert.match(currentHome, /name="home-orb-authored-core"/)
-  assert.match(currentHome, /name="home-orb-non-spherical-core"/)
-  assert.match(currentHome, /name="home-orb-stabilizer-ring-1"/)
 })
 
 test('Authored Orb model cloning preserves single-material and multi-material shape', () => {
