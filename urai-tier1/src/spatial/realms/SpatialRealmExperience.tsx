@@ -201,8 +201,6 @@ function ShadowRealmEnvironment({ reducedMotion, reviewState }: { reducedMotion:
   const detailCount = reducedStimulation ? 6 : reducedMotion ? 10 : 16
   const orientationIntensity = recovery ? 2.8 : reducedStimulation ? 0.7 : 1.45
   const localFocusIntensity = patternFocus ? 1.45 : uncertaintyFocus ? 0.9 : 0.55
-  const fogColor = recovery ? '#1b1b20' : '#0b0b11'
-
   return (
     <group name="shadow-realm-environment" userData={{ reviewState, grounded: true, horror: false, fantasyPortal: false }}>
       <ambientLight intensity={reducedStimulation ? 0.22 : 0.34} color="#d7dde3" />
@@ -266,8 +264,6 @@ function ShadowRealmEnvironment({ reducedMotion, reviewState }: { reducedMotion:
         </mesh>
       ) : null}
 
-      <color attach="background" args={[fogColor]} />
-      <fog attach="fog" args={[fogColor, recovery ? 12 : reducedStimulation ? 8 : 9, recovery ? 36 : reducedStimulation ? 26 : 31]} />
     </group>
   )
 }
