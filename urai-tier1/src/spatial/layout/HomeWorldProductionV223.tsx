@@ -484,7 +484,7 @@ function CameraRig({
       || homeTransition === 'LIFE_MAP_UNWIND'
       || homeTransition === 'ORB_COLLAPSE'
     if (restoring) {
-      elapsed.current += Math.min(delta, .08)
+      elapsed.current += Math.min(delta, .25)
       const duration = reducedMotion ? .22 : .92
       const t = THREE.MathUtils.smoothstep(Math.min(1, elapsed.current / duration), 0, 1)
       desired.current.set(...homeOrigin.camera.position)
@@ -504,7 +504,7 @@ function CameraRig({
     }
 
     if (homeTransition === 'EMBODIMENT_UNWIND') {
-      elapsed.current += Math.min(delta, .08)
+      elapsed.current += Math.min(delta, .25)
       const duration = reducedMotion ? .24 : 1.15
       const t = THREE.MathUtils.smoothstep(Math.min(1, elapsed.current / duration), 0, 1)
       const focus = look.current.set(HOME_FOCUS.x, height(HOME_FOCUS.x, HOME_FOCUS.z) + HOME_FOCUS.y, HOME_FOCUS.z)
@@ -523,7 +523,7 @@ function CameraRig({
     }
 
     if (homeTransition === 'AVATAR_EMBODIMENT_TRANSITION') {
-      elapsed.current += Math.min(delta, .08)
+      elapsed.current += Math.min(delta, .25)
       const duration = reducedMotion ? .28 : 1.45
       const t = THREE.MathUtils.smoothstep(Math.min(1, elapsed.current / duration), 0, 1)
       const eye = desired.current.set(AVATAR_POSITION.x, height(AVATAR_POSITION.x, AVATAR_POSITION.z) + HOME_EYE_HEIGHT, AVATAR_POSITION.z)
@@ -544,7 +544,7 @@ function CameraRig({
     }
 
     if (transition !== 'none') {
-      elapsed.current += Math.min(delta, .08)
+      elapsed.current += Math.min(delta, .25)
       if (transition === 'ground') {
         const duration = reducedMotion ? .24 : 1.58
         const t = THREE.MathUtils.smoothstep(Math.min(1, elapsed.current / duration), 0, 1)
