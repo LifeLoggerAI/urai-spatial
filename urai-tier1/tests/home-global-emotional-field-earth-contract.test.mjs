@@ -8,7 +8,8 @@ const field = fs.readFileSync(new URL('../src/spatial/lived-world/globalEmotiona
 
 test('Home mounts a separate first-person Global Emotional Field Earth candidate without private-map reuse', () => {
   assert.match(homeRepair, /HomeGlobalEmotionalFieldEarth/)
-  assert.match(homeRepair, /<HomeGlobalEmotionalFieldEarth state="unavailable" \/>/)
+  assert.match(homeRepair, /useState<GlobalFieldState>\('unavailable'\)/)
+  assert.match(homeRepair, /<HomeGlobalEmotionalFieldEarth state=\{globalFieldState\} \/>/)
   assert.match(earth, /name="home-global-emotional-field-earth"/)
   assert.match(earth, /visibility: 'first-person-only'/)
   assert.match(earth, /privateMapReuse: false/)
@@ -20,7 +21,8 @@ test('Home mounts a separate first-person Global Emotional Field Earth candidate
 
 test('Earth candidate is truthful by default and cannot fabricate emotional activity', () => {
   assert.match(earth, /state = 'unavailable'/)
-  assert.match(homeRepair, /state="unavailable"/)
+  assert.match(homeRepair, /setGlobalFieldState\(review === 'suppressed' \? 'suppressed' : 'unavailable'\)/)
+  assert.doesNotMatch(homeRepair, /setGlobalFieldState\([^\n]*'aggregate'/)
   assert.match(earth, /aggregate signal is currently unavailable/)
   assert.match(earth, /No emotional activity is inferred or fabricated/)
   assert.match(earth, /state === 'aggregate'/)
