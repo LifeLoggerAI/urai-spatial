@@ -16,32 +16,35 @@ const lifeMap = read('src/spatial/lifemap/SpatialLifeMapCanonical.tsx')
 
 const has = (source, marker) => assert.ok(source.includes(marker), `missing marker: ${marker}`)
 
-test('Home enforces bodyless camera-only first-person presence without changing Ground/Sky ownership', () => {
+test('Home preserves Avatar presentation then bodyless camera-only first-person without changing Ground/Sky ownership', () => {
   for (const marker of [
-    'data-home-embodied-self="camera-only-first-person-home"',
+    'HomeEmbodiedAvatar',
+    'visible-avatar-presentation-activation-gate',
+    'bodyless-first-person-home',
+    'presentation-avatar-then-first-person-camera-only-no-hands-body-rig',
+    'data-home-avatar-activation-gate="required-before-first-person-home"',
     'data-home-presence-presentation=',
-    'transitioning-camera-only-first-person',
-    'camera-only-first-person-home',
+    'avatar-embodiment-transition',
     'data-home-movement=',
     'walk-look-interact',
-    'camera-only-transition',
+    'avatar-presentation-target-activate',
     'data-home-ground-entry="physical-world-surface"',
     'data-home-life-map-entry="visible-sky-broad-interaction"',
     'data-home-camera-mode=',
     'home-first-person',
-    'home-camera-only-first-person',
-    'bodyless-first-person-authored-living-memory-orb-sculpted-sanctuary-and-broad-sky-threshold',
+    'home-avatar-presentation',
+    'avatar-presentation-to-bodyless-first-person-authored-living-memory-orb-sculpted-sanctuary-and-broad-sky-threshold',
     'home-living-memory-orb',
     '/assets/urai/generated/models/urai-orb-avatar-v1.glb',
     'physicalWorldClick',
     'event.point.clone()',
-    'data-home-non-xr-body-policy="camera-only-no-hands-body-rig"',
   ]) has(currentHome, marker)
 
   assert.match(currentHome, /useHomeExperienceController/)
-  assert.doesNotMatch(currentHome, /<HomeEmbodiedAvatar/)
-  assert.doesNotMatch(currentHome, /HOME_AVATAR_MODEL/)
-  assert.doesNotMatch(currentHome, /homeApi\.activateAvatar\(\)/)
+  assert.match(currentHome, /homeApi\.activateAvatar\(\)/)
+  assert.match(currentHome, /avatarState=\{avatarPresentationState\}/)
+  assert.match(currentHome, /homeState\.stableState === 'HOME_PRESENTATION'/)
+  assert.match(currentHome, /homeState\.stableState === 'AVATAR_HOME_FIRST_PERSON'/)
   assert.doesNotMatch(currentHome, /visible-cinematic-avatar|visible-avatar-third-person|hidden-exterior-avatar-first-person|cinematic-third-person/)
   assert.doesNotMatch(currentHome, /privacy-preserving-first-person/)
   assert.doesNotMatch(currentHome, /next\.reset\(\)\.setLoop\(THREE\.LoopRepeat\s*,\s*Infinity\)/)
@@ -66,16 +69,15 @@ test('Home sky is the canonical broad Life Map threshold and localized Home-side
   assert.doesNotMatch(currentHome, /home-life-map-physical-portal|LifeMapPortal|PORTAL_MODEL/)
 })
 
-test('Home runtime exposes the current Orb candidate while preserving bodyless Home and certified predecessor provenance', () => {
+test('Home runtime exposes the current Orb candidate while preserving two-mode Home and certified predecessor provenance', () => {
   assert.match(assetHome, /cinematic-home-ground-threshold-convergence/)
   assert.match(assetHome, /continuous-lived-physical-world/)
   assert.match(currentHome, /home-living-memory-orb/)
-  assert.match(currentHome, /data-home-non-xr-body-policy="camera-only-no-hands-body-rig"/)
-  assert.match(currentHome, /home-camera-only-first-person/)
-  assert.doesNotMatch(currentHome, /<HomeEmbodiedAvatar|HOME_AVATAR_MODEL/)
-  assert.match(currentHome, /\/home-visible-user-avatar\//)
-  assert.match(currentHome, /\/urai-home-user-avatar\//)
-  assert.match(currentHome, /CURRENT_HOME_PRESENCE_ROOTS = new Set\(\['home-living-memory-orb'\]\)/)
+  assert.match(currentHome, /presentation-avatar-then-first-person-camera-only-no-hands-body-rig/)
+  assert.match(currentHome, /home-avatar-presentation/)
+  assert.match(currentHome, /home-first-person/)
+  assert.match(currentHome, /<HomeEmbodiedAvatar/)
+  assert.match(currentHome, /CURRENT_HOME_PRESENCE_ROOTS = new Set\(\['home-living-memory-orb', 'urai-home-user-avatar'\]\)/)
   assert.doesNotMatch(assetHome, /HOME_GROUND|HOME_SPAWN|stagePortalLifecycle|PortalDestination/)
   assert.equal(currentHomeVisualAuthority.artRevision, 'v291-sculpted-sanctuary-translucent-reference-orb')
   assert.equal(currentHomeVisualAuthority.orbVisualAuthority, 'v291-translucent-memory-orb-reference-candidate')
