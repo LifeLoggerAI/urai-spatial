@@ -387,7 +387,7 @@ function NebulaBreath({ reducedMotion, selected }: { reducedMotion: boolean; sel
 function AuthoredMemoryStar({ aura, active, siteKey, scale = 1, rotation = [0,0,0], form: _form }: { aura: string; active: boolean; siteKey: string; scale?: number; rotation?: Point3; form?: MemoryForm }) {
   const reducedMotion = useContext(LifeMapReducedMotionContext);
   const { scene, animations } = useGLTF(MEMORY_STAR_MODEL);
-  const governedAsset = useMemo(() => scene.clone(true), [scene]);
+  const hiddenAsset = useMemo(() => scene.clone(true), [scene]);
   const group = useRef<THREE.Group>(null);
   const { actions } = useAnimations(animations, group);
   const seed = useMemo(() => siteKey.split("").reduce((sum, char) => sum + char.charCodeAt(0), 0), [siteKey]);
@@ -478,9 +478,9 @@ function AuthoredMemoryStar({ aura, active, siteKey, scale = 1, rotation = [0,0,
       memoryIdentity: siteKey,
     }}
   >
-    <primitive object={governedAsset} visible={false} />
-    <mesh name="memory-star-photosphere" castShadow={false}>
-      <sphereGeometry args={[active ? 0.72 : 0.62, 72, 56]} />
+    <primitive object={hiddenAsset} visible={false} />
+    <mesh name="memory-star-photosphere" castShadow={false} scale={active ? 1.24 : 1.07}>
+      <sphereGeometry args={[0.58, 64, 48]} />
       <primitive object={photosphere} attach="material" />
     </mesh>
     <mesh name="memory-star-inner-corona" scale={active ? 1.34 : 1.25} raycast={() => null}>
