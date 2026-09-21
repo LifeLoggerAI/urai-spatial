@@ -55,7 +55,8 @@ test.describe('Home mobile control separation evidence', () => {
         await activate.press('Enter')
         await expect(home).toHaveAttribute('data-home-stable-state', 'AVATAR_HOME_FIRST_PERSON', { timeout: 45_000 })
         await expect(home).toHaveAttribute('data-home-embodied-self', 'camera-only-first-person-home')
-        await expect(home).toHaveAttribute('data-home-non-xr-body-policy', 'presentation-avatar-then-first-person-camera-only-no-hands-body-rig')
+        await expect(home).toHaveAttribute('data-home-non-xr-body-policy', 'camera-only-no-hands-body-rig')
+        await expect(home).toHaveAttribute('data-home-presence-policy', 'presentation-avatar-then-first-person-camera-only-no-hands-body-rig')
         await expect(home).toHaveAttribute('data-home-movement', 'shared-keyboard-touch-walk-look-interact')
 
         const movement = page.getByRole('group', { name: 'Move through Home' })
