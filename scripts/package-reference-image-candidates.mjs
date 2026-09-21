@@ -7,7 +7,7 @@ const root=process.cwd(), outDir=path.join(root,'artifacts','reference-image-can
 fs.rmSync(outDir,{recursive:true,force:true}); fs.mkdirSync(filesDir,{recursive:true})
 const extensions=/\.(png|jpe?g|webp|gif|svg|avif)$/i
 const tracked=execFileSync('git',['ls-files'],{cwd:root,encoding:'utf8',maxBuffer:32*1024*1024}).split('\n').map(v=>v.trim()).filter(Boolean).filter(f=>extensions.test(f)).filter(f=>!f.startsWith('_audit/')&&!f.startsWith('_quarantine/')).sort((a,b)=>a.localeCompare(b))
-const expected=Number(process.env.URAI_REFERENCE_CANDIDATE_EXPECTED??'787')
+const expected=Number(process.env.URAI_REFERENCE_CANDIDATE_EXPECTED??'789')
 if(tracked.length!==expected) throw new Error(`Active image candidate count drifted: expected ${expected}, found ${tracked.length}`)
 const records=[]
 for(const file of tracked){const source=path.join(root,file),dest=path.join(filesDir,file);fs.mkdirSync(path.dirname(dest),{recursive:true});fs.copyFileSync(source,dest);const bytes=fs.readFileSync(source);records.push({path:file,bytes:bytes.length,sha256:crypto.createHash('sha256').update(bytes).digest('hex')})}
