@@ -1,6 +1,5 @@
 "use client";
 
-import { MemorySurfaceMaterial } from "@/spatial/assets/MemorySurfaceMaterial";
 import { Line, Sparkles, Stars, useAnimations, useGLTF, useTexture } from "@react-three/drei";
 import { useFrame, useThree } from "@react-three/fiber";
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, type ReactNode } from "react";
@@ -38,74 +37,6 @@ const MEMORY_STONE_MAPS = [
 function seeded(index: number, salt: number) {
   const value = Math.sin(index * 91.317 + salt * 13.77) * 43758.5453;
   return value - Math.floor(value);
-}
-
-// These lamellae are low geological folds. Their shared buried baseline and
-// compact relief keep every family materially attached to the valley; the
-// deterministic seed gives each memory its own eroded contour.
-function memoryMembrane(seed: number, layer: number, core: boolean, form: MemoryForm = "petal") {
-  const positions: number[] = [], colors: number[] = [], indices: number[] = [];
-  const rows = 42, cols = 14;
-  const phase = seeded(seed, layer + 3) * Math.PI * 2;
-  const pale = new THREE.Color("#9fb8ac"), deep = new THREE.Color("#182d32"), scar = new THREE.Color("#786878");
-  for (let row = 0; row <= rows; row++) {
-    const t = row / rows;
-    // Contract compatibility retains the authored double taper while the
-    // resulting shape is now a crouched outcrop, not an upright petal.
-    const envelope = Math.pow(Math.sin(Math.PI * t), .74);
-    for (let col = 0; col <= cols; col++) {
-      const across = col / cols * 2 - 1;
-      const lane = layer - 1;
-      const width = (core ? .44 : .13) * envelope * (1 - .16 * Math.abs(across));
-      const relief = (core ? .76 : .34) * envelope * (1 - .5 * Math.abs(across));
-      let x: number, y: number, z: number;
-      if (form === "fan") {
-        x = (t - .5) * 1.58 + .11 * Math.sin(t * 7.2 + phase) + across * width;
-        z = lane * .12 + .25 * Math.sin(t * 2.5 + phase * .18) + .18 * across * envelope;
-        y = -.58 + relief + .12 * Math.sin(t * 5.1 + phase) - .16 * across * across * envelope;
-      } else if (form === "wave") {
-        x = -.84 + 1.68 * t + .12 * Math.sin(t * 5.1 + phase) + across * width * .56;
-        z = lane * .16 + .34 * Math.sin(t * Math.PI * 1.45 + phase * .18) + across * width;
-        y = -.60 + relief * .72 + .18 * Math.sin(t * Math.PI * 2.1 + phase) * envelope - .12 * across * across;
-      } else if (form === "branch") {
-        const side = layer % 2 ? -1 : 1;
-        x = side * (-.58 + 1.16 * t) + .18 * Math.sin(t * 4.4 + phase) + across * width;
-        z = lane * .18 + side * .30 * Math.sin(t * 2.7 + phase * .22) + across * width * .72;
-        y = -.60 + relief * (.72 + .22 * t) + .08 * Math.sin(t * 8.2 + phase) - .10 * Math.abs(across);
-      } else if (form === "shell") {
-        const angle = phase * .08 - 1.1 + t * 4.7;
-        const radius = .12 + .62 * t;
-        x = Math.cos(angle) * radius + Math.cos(angle + Math.PI / 2) * across * width;
-        z = Math.sin(angle) * radius + Math.sin(angle + Math.PI / 2) * across * width + lane * .12;
-        y = -.59 + relief * (.56 + .35 * t) + lane * .025 - .10 * across * across;
-      } else {
-        x = -.76 + 1.52 * t + .13 * Math.sin(t * 6.1 + phase) + across * width;
-        z = lane * .14 + .28 * Math.sin(t * 3.4 + phase * .21) + across * width * .82;
-        y = -.60 + relief * (.82 + .12 * Math.sin(t * 4.8 + phase)) - .15 * across * across * envelope;
-      }
-      positions.push(x, y, z);
-      const c = deep.clone().lerp(pale, .18 + .42 * envelope + .14 * Math.pow(Math.abs(across), 2)).lerp(scar, core ? 0 : .20);
-      colors.push(c.r, c.g, c.b);
-    }
-  }
-  for (let row = 0; row < rows; row++) for (let col = 0; col < cols; col++) {
-    const a = row * (cols + 1) + col, b = a + 1, c = a + cols + 1, d = c + 1;
-    indices.push(a,b,c,b,d,c);
-  }
-  const geometry = new THREE.BufferGeometry();
-  geometry.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
-  geometry.setAttribute("color", new THREE.Float32BufferAttribute(colors, 3));
-  geometry.setIndex(indices);
-  geometry.computeVertexNormals();
-  return geometry;
-}
-
-function memoryHeartGeometry(seed: number, form: MemoryForm) {
-  return memoryMembrane(seed, 0, true, form);
-}
-
-function memoryFilamentGeometry(seed: number, filament: number, form: MemoryForm) {
-  return memoryMembrane(seed, filament + 1, false, form);
 }
 
 function Current({ points, color, opacity = 0.4, width = 0.014 }: { points: Point3[]; color: string; opacity?: number; width?: number }) {
