@@ -384,17 +384,58 @@ function NebulaBreath({ reducedMotion, selected }: { reducedMotion: boolean; sel
   return <mesh name="life-map-v226-nebula-volume" scale={[1.0, .56, 1.12]}><sphereGeometry args={[46, 48, 36]} /><primitive object={material} attach="material" /></mesh>;
 }
 
-function AuthoredMemoryStar({ aura, active, siteKey, scale = 1, rotation = [0,0,0], form }: { aura: string; active: boolean; siteKey: string; scale?: number; rotation?: Point3; form?: MemoryForm }) {
+function AuthoredMemoryStar({ aura, active, siteKey, scale = 1, rotation = [0,0,0], form: _form }: { aura: string; active: boolean; siteKey: string; scale?: number; rotation?: Point3; form?: MemoryForm }) {
   const reducedMotion = useContext(LifeMapReducedMotionContext);
   const { scene, animations } = useGLTF(MEMORY_STAR_MODEL);
-  const hiddenAsset = useMemo(() => scene.clone(true), [scene]);
+  const governedAsset = useMemo(() => scene.clone(true), [scene]);
   const group = useRef<THREE.Group>(null);
   const { actions } = useAnimations(animations, group);
-  const seed = useMemo(() => siteKey.split("").reduce((sum, c) => sum + c.charCodeAt(0), 0), [siteKey]);
-  const resolvedForm = form ?? (["petal", "fan", "wave", "branch", "shell"] as MemoryForm[])[seed % 5];
-  const heart = useMemo(() => memoryHeartGeometry(seed, resolvedForm), [resolvedForm, seed]);
-  const filaments = useMemo(() => Array.from({ length: 2 }, (_, index) => memoryFilamentGeometry(seed, index, resolvedForm)), [resolvedForm, seed]);
-  useEffect(() => () => { heart.dispose(); filaments.forEach((geometry) => geometry.dispose()); }, [filaments, heart]);
+  const seed = useMemo(() => siteKey.split("").reduce((sum, char) => sum + char.charCodeAt(0), 0), [siteKey]);
+  const photosphere = useMemo(() => new THREE.ShaderMaterial({
+    transparent: false,
+    toneMapped: false,
+    uniforms: {
+      uTime: { value: 0 },
+      uAura: { value: new THREE.Color(aura) },
+      uActive: { value: active ? 1 : 0 },
+      uSeed: { value: seed * 0.013 },
+    },
+    vertexShader: `
+      varying vec3 vNormalW;
+      varying vec3 vPos;
+      void main() {
+        vPos = position;
+        vNormalW = normalize(normalMatrix * normal);
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+      }
+    `,
+    fragmentShader: `
+      uniform float uTime;
+      uniform float uActive;
+      uniform float uSeed;
+      uniform vec3 uAura;
+      varying vec3 vNormalW;
+      varying vec3 vPos;
+      float hash(vec3 p){p=fract(p*.3183099+uSeed);p*=17.;return fract(p.x*p.y*p.z*(p.x+p.y+p.z));}
+      float noise(vec3 x){
+        vec3 i=floor(x);vec3 f=fract(x);f=f*f*(3.-2.*f);
+        return mix(mix(mix(hash(i+vec3(0,0,0)),hash(i+vec3(1,0,0)),f.x),mix(hash(i+vec3(0,1,0)),hash(i+vec3(1,1,0)),f.x),f.y),mix(mix(hash(i+vec3(0,0,1)),hash(i+vec3(1,0,1)),f.x),mix(hash(i+vec3(0,1,1)),hash(i+vec3(1,1,1)),f.x),f.y),f.z);
+      }
+      void main() {
+        vec3 p = normalize(vPos) * 4.6;
+        float t = uTime * .055;
+        float n = noise(p + vec3(t,-t*.7,t*.35)) + .55*noise(p*2.1 - vec3(t*.3,t*.6,0.));
+        float granule = .5 + .5*sin((p.x+p.y*.72-p.z*.41)*7.0 + n*8.5 + t*5.0);
+        float limb = pow(clamp(dot(normalize(vNormalW), vec3(0.,0.,1.))*.5+.5,0.,1.), .34);
+        vec3 hot = mix(vec3(1.0,.63,.20), vec3(1.0,.96,.72), clamp(.28+n*.42+granule*.22,0.,1.));
+        vec3 tinted = mix(hot, uAura, .18);
+        float energy = .92 + .18*n + .10*granule + uActive*.12;
+        gl_FragColor = vec4(tinted * energy * (.78 + .22*limb), 1.0);
+        #include <colorspace_fragment>
+      }
+    `,
+  }), [active, aura, seed]);
+  useEffect(() => () => photosphere.dispose(), [photosphere]);
   useEffect(() => {
     const chosen = Object.values(actions).find(Boolean);
     if (!chosen) return;
@@ -405,19 +446,41 @@ function AuthoredMemoryStar({ aura, active, siteKey, scale = 1, rotation = [0,0,
     return () => { chosen.stop(); };
   }, [actions, active, reducedMotion]);
   useFrame(({ clock }) => {
+    photosphere.uniforms.uTime.value = reducedMotion ? 0 : clock.elapsedTime;
+    photosphere.uniforms.uActive.value = active ? 1 : 0;
     if (!group.current || reducedMotion) return;
-    group.current.rotation.y = rotation[1] + Math.sin(clock.elapsedTime * .18 + siteKey.length) * .09;
-    const breath = 1 + Math.sin(clock.elapsedTime * .42 + siteKey.length) * .025;
+    group.current.rotation.y = rotation[1] + Math.sin(clock.elapsedTime * .18 + siteKey.length) * .07;
+    const breath = 1 + Math.sin(clock.elapsedTime * .42 + siteKey.length) * .018;
     group.current.scale.setScalar(scale * breath);
   });
-  return <group ref={group} scale={scale} rotation={rotation} name={`life-map-weathered-memory-outcrop-${siteKey}`} userData={{ artRevision:'v237-grounded-semantic-outcrops', form:resolvedForm }}>
-    <primitive object={hiddenAsset} visible={false} />
-    <mesh geometry={heart} castShadow><MemorySurfaceMaterial color={aura} reducedMotion={reducedMotion} /></mesh>
-    {filaments.map((geometry, index) => <mesh key={index} geometry={geometry} castShadow>
-      <MemorySurfaceMaterial color={index % 3 === 0 ? ICE : aura} reducedMotion={reducedMotion} />
-    </mesh>)}
-    <FieldParticles seed={seed} count={active ? 38 : 12} radius={1.05} depth={1.2} height={.72} color={aura} opacity={active ? .48 : .20} size={active ? .034 : .024} />
-    <pointLight position={[0,.25,0]} color={aura} intensity={active ? 3.6 : .72} distance={active ? 9 : 4} decay={2} />
+  const particleCount = active ? 54 : 20;
+  return <group
+    ref={group}
+    scale={scale}
+    rotation={rotation}
+    name={`life-map-stellar-memory-star-${siteKey}`}
+    userData={{
+      artRevision: "v300-stellar-photosphere-corona",
+      visualAuthority: "stellar-body-not-geology",
+      runtimeAsset: MEMORY_STAR_MODEL,
+      memoryIdentity: siteKey,
+    }}
+  >
+    <primitive object={governedAsset} visible={false} />
+    <mesh name="memory-star-photosphere" castShadow={false}>
+      <sphereGeometry args={[0.58, 64, 48]} />
+      <primitive object={photosphere} attach="material" />
+    </mesh>
+    <mesh name="memory-star-inner-corona" scale={1.28} raycast={() => null}>
+      <sphereGeometry args={[0.58, 48, 32]} />
+      <meshBasicMaterial color={aura} transparent opacity={active ? .16 : .09} blending={THREE.AdditiveBlending} depthWrite={false} toneMapped={false} side={THREE.BackSide} />
+    </mesh>
+    <mesh name="memory-star-outer-corona" scale={1.62} raycast={() => null}>
+      <sphereGeometry args={[0.58, 48, 32]} />
+      <meshBasicMaterial color="#fff0bd" transparent opacity={active ? .075 : .035} blending={THREE.AdditiveBlending} depthWrite={false} toneMapped={false} side={THREE.BackSide} />
+    </mesh>
+    <FieldParticles seed={seed} count={particleCount} radius={active ? 1.75 : 1.25} depth={active ? 1.8 : 1.15} height={active ? 1.55 : 1.05} color={aura} opacity={active ? .46 : .22} size={active ? .038 : .026} />
+    <pointLight position={[0,0,0]} color={aura} intensity={active ? 5.2 : 1.45} distance={active ? 11 : 5.5} decay={2} />
   </group>;
 }
 
