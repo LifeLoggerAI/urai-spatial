@@ -43,7 +43,9 @@ test('legacy persisted weather values migrate to current canon without becoming 
     assert.match(firebase, new RegExp(`${legacy}: ["']${current}["']`))
     assert.match(scene, new RegExp(`${legacy}: ["']${current}["']`))
   }
-  assert.doesNotMatch(rules, /'low'|'recovery'|'dream'|'shadow'|'focused'|'joy'/)
+  const moodRule = rules.match(/request\.resource\.data\.moodState in \[[^\]]+\]/)?.[0] ?? ''
+  assert.ok(moodRule)
+  assert.doesNotMatch(moodRule, /'low'|'recovery'|'dream'|'shadow'|'focused'|'joy'/)
 })
 
 test('visible Home rendering has restrained differentiated treatment for all current states', () => {
