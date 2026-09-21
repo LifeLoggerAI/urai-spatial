@@ -133,7 +133,17 @@ function TerrainMaterial({ profile }: { profile: EnvironmentProfile }) {
     }
     return null;
   }, [albedo, arm, normal, profile]);
-  const normalStrength = profile.id === "urban" ? 0.34 : profile.id === "temperate" || profile.id === "woodland" ? 0.50 : 0.58;
+  const naturalSoilProfile = profile.id === "temperate" || profile.id === "woodland";
+  if (naturalSoilProfile) {
+    return <meshStandardMaterial
+      color="#ffffff"
+      vertexColors
+      roughness={0.985}
+      metalness={0}
+      envMapIntensity={profile.id === "woodland" ? 0.16 : 0.20}
+    />;
+  }
+  const normalStrength = profile.id === "urban" ? 0.34 : 0.58;
   return <meshStandardMaterial
     map={albedo}
     normalMap={normal}
@@ -145,7 +155,7 @@ function TerrainMaterial({ profile }: { profile: EnvironmentProfile }) {
     metalnessMap={arm}
     metalness={profile.id === "urban" ? 0.02 : 0.005}
     vertexColors
-    envMapIntensity={profile.id === "woodland" ? 0.36 : 0.42}
+    envMapIntensity={0.42}
   />;
 }
 
@@ -245,8 +255,10 @@ function NaturalCanopy({ profile, position, rotationY, scale, shapeSeed }: {
     const woodland = profile.id === "woodland";
     const trunkColor = woodland ? "#3a3027" : "#493a2c";
     const branchColor = woodland ? "#42372d" : "#514334";
-    const leafA = woodland ? "#36583d" : "#587a58";
-    const leafB = woodland ? "#466b49" : "#698866";
+    const leafA = woodland ? "#314b38" : "#526b50";
+    const leafB = woodland ? "#3f5a40" : "#63745a";
+    const leafC = woodland ? "#496047" : "#6c7d60";
+    const leafD = woodland ? "#273f31" : "#465f49";
 
     const shapePhase = shapeSeed * 0.731;
     const trunkLeanX = (((shapeSeed * 17) % 19) - 9) * 0.008;
@@ -322,13 +334,15 @@ function NaturalCanopy({ profile, position, rotationY, scale, shapeSeed }: {
         position: [x, y, z] as [number, number, number],
         rotation: [rx, ry, rz] as [number, number, number],
         scale: [sx, sy, sz] as [number, number, number],
-        color: index % 3 === 0 ? leafB : leafA,
+        color: index % 7 === 0 ? leafD : index % 5 === 0 ? leafC : index % 3 === 0 ? leafB : leafA,
       };
     });
     const leavesA = leaves.filter((leaf) => leaf.color === leafA);
     const leavesB = leaves.filter((leaf) => leaf.color === leafB);
+    const leavesC = leaves.filter((leaf) => leaf.color === leafC);
+    const leavesD = leaves.filter((leaf) => leaf.color === leafD);
 
-    return { trunkGeometry, branches, leafGeometry, leavesA, leavesB, leafA, leafB, trunkColor, branchColor };
+    return { trunkGeometry, branches, leafGeometry, leavesA, leavesB, leavesC, leavesD, leafA, leafB, leafC, leafD, trunkColor, branchColor };
   }, [profile.id, shapeSeed]);
 
   useEffect(() => () => {
@@ -363,6 +377,8 @@ function NaturalCanopy({ profile, position, rotationY, scale, shapeSeed }: {
     </mesh>)}
     <CanopyLeafInstances geometry={authored.leafGeometry} leaves={authored.leavesA} color={authored.leafA} />
     <CanopyLeafInstances geometry={authored.leafGeometry} leaves={authored.leavesB} color={authored.leafB} />
+    <CanopyLeafInstances geometry={authored.leafGeometry} leaves={authored.leavesC} color={authored.leafC} />
+    <CanopyLeafInstances geometry={authored.leafGeometry} leaves={authored.leavesD} color={authored.leafD} />
   </group>;
 }
 
@@ -451,13 +467,13 @@ function NaturalScatter({ profile }: { profile: EnvironmentProfile }) {
 
   const woodland = profile.id === "woodland";
   const ferns = items.slice(0, woodland ? 88 : 76);
-  const canopies = items.filter((item) => item.z < (woodland ? 8.0 : 6.5)).slice(0, woodland ? 48 : 44);
+  const canopies = items.filter((item) => item.z < (woodland ? 8.0 : 6.5)).slice(0, woodland ? 38 : 34);
   return <group name={woodland ? "ground-woodland-scanned-understory" : "ground-temperate-scanned-understory"} userData={{ treatment: "urai-self-authored-varied-canopy-v13-with-polyhaven-fern-rock-understory", canopyFallback: "scanned-understory-remains-without-canopy" }} raycast={() => null}>
     <GroundCanopyBoundary>
       <Suspense fallback={null}>
         {canopies.map((item) => {
-          const x = item.x * (0.60 + (item.index % 5) * 0.035) + Math.sin(item.index * 1.73) * 1.35;
-          const z = item.z - 2.0 + Math.cos(item.index * 1.19) * 2.25;
+          const x = item.x * (0.66 + (item.index % 5) * 0.041) + Math.sin(item.index * 2.17) * 2.05 + Math.cos(item.index * 0.71) * 0.92;
+          const z = item.z - 1.5 + Math.cos(item.index * 1.61) * 3.25 + Math.sin(item.index * 0.83) * 1.35;
           return <NaturalCanopy
             key={`canopy-${item.index}`}
             profile={profile}
@@ -709,8 +725,8 @@ function FirstPersonPlayer({ input, yaw, pitch, target, profile, obstacles, play
 
 function AtmosphericGroundSky({ profile }: { profile: EnvironmentProfile }) {
   const uniforms = useMemo(() => ({
-    zenithColor: { value: new THREE.Color(profile.id === "woodland" ? "#627f8b" : "#6f8994") },
-    upperColor: { value: new THREE.Color(profile.id === "arid" ? "#9b8065" : "#879b9b") },
+    zenithColor: { value: new THREE.Color(profile.id === "woodland" ? "#365660" : "#46636c") },
+    upperColor: { value: new THREE.Color(profile.id === "arid" ? "#8e755f" : profile.id === "woodland" ? "#60746f" : "#6f827d") },
     horizonColor: { value: new THREE.Color(profile.fog) },
     groundHazeColor: { value: new THREE.Color(profile.horizon) },
   }), [profile.fog, profile.horizon, profile.id]);
@@ -775,10 +791,10 @@ function GroundScene({ profile, input, yaw, pitch, target, obstacles, playerPosi
     <color attach="background" args={[profile.horizon]} />
     <fogExp2 attach="fog" args={[profile.fog, 0.0092 + weather.atmosphericDensity * 0.0011]} />
     <Suspense fallback={null}><Environment files="/assets/urai/home-production/cc0/environment/studio-small-08-1k.hdr" background={false} environmentIntensity={0.36} /></Suspense>
-    <ambientLight intensity={0.38} color="#b8c8bc" />
-    <hemisphereLight args={["#afc7c6", "#3f392f", 0.58]} />
-    <directionalLight position={[-10, 14, 5]} intensity={1.72} color="#e1c59a" castShadow shadow-mapSize={[1024, 1024]} shadow-camera-left={-28} shadow-camera-right={28} shadow-camera-top={28} shadow-camera-bottom={-28} shadow-camera-far={90} shadow-normalBias={0.035} />
-    <directionalLight position={[10, 7, -20]} intensity={0.52} color="#7fa7aa" />
+    <ambientLight intensity={0.24} color="#a9bbb0" />
+    <hemisphereLight args={["#9fb7b5", "#342f28", 0.42]} />
+    <directionalLight position={[-10, 14, 5]} intensity={1.34} color="#ddc39a" castShadow shadow-mapSize={[1024, 1024]} shadow-camera-left={-28} shadow-camera-right={28} shadow-camera-top={28} shadow-camera-bottom={-28} shadow-camera-far={90} shadow-normalBias={0.035} />
+    <directionalLight position={[10, 7, -20]} intensity={0.36} color="#789a9b" />
     <Suspense fallback={null}><LivedGroundWorld profile={profile} target={target} /></Suspense>
     <FirstPersonPlayer input={input} yaw={yaw} pitch={pitch} target={target} profile={profile} obstacles={obstacles} playerPosition={playerPosition} isCoarse={isCoarse} onReady={onReady} />
   </>;
@@ -905,7 +921,7 @@ export default function GroundSpatialWorldClean() {
     data-ground-visual-owner="atmospheric-living-environment"
     data-ground-runtime-owner="first-person-lived-world"
     data-ground-visual-revision="ground-lived-world-v2-canon-lock"
-    data-ground-art-revision="ground-v21-leaf-silhouette-canopy-atmospheric-depth"
+    data-ground-art-revision="ground-v22-natural-soil-irregular-canopy-atmospheric-depth"
     data-ground-exploration="first-person-no-visible-body"
     data-ground-camera="eye-level-terrain-following-no-authored-bob"
     data-ground-eye-height={GROUND_EYE_HEIGHT_M}
@@ -932,7 +948,7 @@ export default function GroundSpatialWorldClean() {
       onCreated={({ gl }) => {
         gl.outputColorSpace = THREE.SRGBColorSpace;
         gl.toneMapping = THREE.ACESFilmicToneMapping;
-        gl.toneMappingExposure = 1.04;
+        gl.toneMappingExposure = 0.90;
       }}
     >
       <GroundScene profile={profile} input={input} yaw={yaw} pitch={pitch} target={target} obstacles={obstacles} playerPosition={playerPosition} isCoarse={isCoarse} onReady={() => setReady(true)} />
