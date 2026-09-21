@@ -30,7 +30,7 @@ export const demoHomeWorldState: HomeWorldState = {
   groundTier: 3,
   orbTier: 3,
   skyTier: 3,
-  moodState: "recovery",
+  moodState: "hopeful",
   recoveryState: "growing",
   energyScore: 64,
   skyWeatherIntensity: 0.56,
