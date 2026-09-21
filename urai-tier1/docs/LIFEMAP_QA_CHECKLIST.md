@@ -12,16 +12,13 @@ pnpm --filter urai-tier1 test:lifemap
 
 Optional Firestore demo seed:
 
-```bash
-cd urai-tier1
-FIREBASE_PROJECT_ID=<project-id> pnpm seed:lifemap -- --user=demo-user
-```
-
-If using a service account JSON:
+Use only an approved external-account Workload Identity Federation ADC file. Long-lived service-account JSON, Firebase tokens, private-key variables, and downloaded service-account credentials are prohibited.
 
 ```bash
 cd urai-tier1
-FIREBASE_PROJECT_ID=<project-id> FIREBASE_SERVICE_ACCOUNT_JSON='<json>' pnpm seed:lifemap -- --user=demo-user
+GOOGLE_APPLICATION_CREDENTIALS=/protected/path/external-account.json \
+FIREBASE_PROJECT_ID=<project-id> \
+pnpm seed:lifemap -- --user=demo-user
 ```
 
 ## Route Smoke Test
