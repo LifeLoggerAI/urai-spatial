@@ -7,7 +7,7 @@ const groundCanon = readFileSync(new URL('../src/spatial/ground/groundCanon.ts',
 
 test('Ground renders the current atmospheric lived world instead of the rejected root-vault substrate', () => {
   assert.match(ground, /data-ground-visual-revision="ground-lived-world-v2-canon-lock"/)
-  assert.match(ground, /data-ground-art-revision="ground-v21-leaf-silhouette-canopy-atmospheric-depth"/)
+  assert.match(ground, /data-ground-art-revision="ground-v22-natural-soil-irregular-canopy-atmospheric-depth"/)
   assert.match(ground, /data-ground-visual-owner="atmospheric-living-environment"/)
   assert.match(ground, /<AtmosphericGroundSky profile=\{profile\} \/>/)
   assert.match(ground, /<NaturalScatter profile=\{profile\} \/>/)
@@ -22,7 +22,7 @@ test('Ground renders the current atmospheric lived world instead of the rejected
   assert.match(ground, /roughnessMap=\{arm\}/)
   assert.match(ground, /<color attach="background" args=\{\[profile\.horizon\]\} \/>/)
   assert.match(ground, /<fogExp2 attach="fog" args=\{\[profile\.fog, 0\.0092/)
-  assert.match(ground, /gl\.toneMappingExposure = 1\.04/)
+  assert.match(ground, /gl\.toneMappingExposure = 0\.90/)
   assert.match(ground, /data-ground-runtime-owner="first-person-lived-world"/)
   assert.match(ground, /name="ground-lived-world"/)
   assert.match(ground, /name="ground-visible-traversable-terrain"/)
