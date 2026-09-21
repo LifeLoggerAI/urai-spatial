@@ -24,6 +24,13 @@ async function settle(page) {
   await page.waitForTimeout(700)
 }
 
+async function assertOnboardingAbsent(page) {
+  const onboarding = page.locator('.uraiV2OnboardingCard').first()
+  if (await onboarding.count() && await onboarding.isVisible()) {
+    throw new Error('Reference proof is obscured by onboarding; non-onboarding states must expose the underlying runtime')
+  }
+}
+
 async function capture(browser, cfg) {
   const device = devices[cfg.device || 'desktop']
   const context = await browser.newContext({
@@ -80,9 +87,11 @@ async function capture(browser, cfg) {
     if (cfg.marker) await page.locator(cfg.marker).first().waitFor({ state: 'attached', timeout: 45000 })
     if (cfg.text) await page.getByText(cfg.text, { exact: false }).first().waitFor({ state: 'visible', timeout: 45000 })
     await settle(page)
+    if (!cfg.preserveOnboarding) await assertOnboardingAbsent(page)
     if (cfg.action) await cfg.action(page)
     if (cfg.waitAfterActionMs) await page.waitForTimeout(cfg.waitAfterActionMs)
     if (!cfg.skipPostActionSettle) await settle(page)
+    if (!cfg.preserveOnboarding) await assertOnboardingAbsent(page)
 
     const file = path.join('screenshots', `${slug(cfg.id)}.png`)
     await page.screenshot({ path: path.join(outDir, file), fullPage: false, animations: 'disabled', caret: 'hide', scale: 'css', timeout: 120000 })
