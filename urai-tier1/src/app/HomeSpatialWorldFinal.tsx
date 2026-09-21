@@ -240,7 +240,7 @@ export default function HomeSpatialWorldFinal() {
 
       <div className="urai-genesis-home__memory-orbit" aria-label="Home threshold status"><strong>Threshold online</strong><span>body grounded · camera travels</span></div>
 
-      <button type="button" className="urai-genesis-home__orb" aria-label="Open URAI orb companion" aria-expanded={orbOpen} aria-controls="urai-orb-companion-panel" onClick={() => { primeTransition('orb'); setOrbOpen((open) => !open); }}>
+      <button type="button" className="urai-genesis-home__orb" aria-label="Open UrAi Orb companion" aria-expanded={orbOpen} aria-controls="urai-orb-companion-panel" onClick={() => { primeTransition('orb'); setOrbOpen((open) => !open); }}>
         <span className="urai-genesis-home__orb-aura" />
         <span className="urai-genesis-home__orb-shell" />
         <span className="urai-genesis-home__orb-ring urai-genesis-home__orb-ring--outer" />
