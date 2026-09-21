@@ -95,8 +95,19 @@ test('Ground retains accessible coarse-pointer movement and filmic rendering', (
     '< 0.14 ? 0',
     '<MobileMovementPad',
     'ACESFilmicToneMapping',
-    'toneMappingExposure = 1.04',
+    'toneMappingExposure = 0.90',
   ]) has(ground, marker)
+})
+
+test('Ground natural profiles cannot regress to repeated rock-tile paving', () => {
+  for (const marker of [
+    'const naturalSoilProfile = profile.id === "temperate" || profile.id === "woodland"',
+    'if (naturalSoilProfile)',
+    'roughness={0.985}',
+    'ground-v22-natural-soil-irregular-canopy-atmospheric-depth',
+  ]) has(ground, marker)
+  const naturalBranch = ground.match(/if \(naturalSoilProfile\) \{[\s\S]*?\n  \}/)?.[0] ?? ''
+  assert.doesNotMatch(naturalBranch, /map=\{albedo\}|normalMap=\{normal\}|aoMap=\{arm\}|roughnessMap=\{arm\}|metalnessMap=\{arm\}/)
 })
 
 test('Ground haptics use semantic activation and arrival cues instead of portal spectacle', () => {
