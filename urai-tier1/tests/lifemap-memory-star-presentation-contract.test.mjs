@@ -13,7 +13,7 @@ assert.ok(source.includes('artRevision: "v300-stellar-photosphere-corona"'), 'Me
 assert.ok(source.includes('visualAuthority: "stellar-body-not-geology"'), 'Memory Star must explicitly reject geological authority')
 assert.ok(source.includes('memoryIdentity: siteKey'), 'Memory Star must preserve selected-memory identity')
 assert.ok(source.includes('<sphereGeometry args={[0.58, 64, 48]} />'), 'selected Memory Star must improve near-field photosphere readability')
-assert.ok(source.includes('const particleCount = active ? 28 : 10;'), 'flare particles must remain subordinate to the photosphere')
+assert.ok(source.includes('const particleCount = active ? 18 : 10;'), 'flare particles must remain subordinate to the photosphere')
 assert.ok(source.includes('name="life-map-v237-grounded-geography-retired"'), 'superseded V237 valley must remain explicitly retired')
 assert.ok(source.includes('retiredVisualRole: "former-memory-valley-not-current-galaxy-authority"'), 'retired geography must advertise its non-authoritative role')
 assert.ok(!source.includes('life-map-weathered-memory-outcrop-'), 'weathered outcrops must not reclaim Memory Star presentation')
