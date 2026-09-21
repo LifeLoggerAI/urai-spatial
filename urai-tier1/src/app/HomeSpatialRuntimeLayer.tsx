@@ -18,7 +18,7 @@ const HOME_SEMANTIC_DESTINATIONS = {
 function HomeSemanticNavigation() {
   return (
     <nav className="home-semantic-navigation" aria-label="Accessible Home destinations" data-home-navigation-owner="runtime-boundary" data-home-navigation-non-dominant="true">
-      <button type="button" aria-label="Open URAI Orb companion" data-testid="home-semantic-orb" data-urai-audit-action="home-orb-direct" onClick={(event) => requestUraiWorldOrbOpen(event.currentTarget)}>Open URAI Orb companion</button>
+      <button type="button" aria-label="Open UrAi Orb companion" data-testid="home-semantic-orb" data-urai-audit-action="home-orb-direct" onClick={(event) => requestUraiWorldOrbOpen(event.currentTarget)}>Open UrAi Orb companion</button>
       <a aria-label="Open Ground directly" data-testid="home-semantic-ground" href={HOME_SEMANTIC_DESTINATIONS.ground.travelHref}>Ground</a>
       <a aria-label="Open Life Map directly" data-testid="home-semantic-life-map" href={HOME_SEMANTIC_DESTINATIONS.lifeMap.travelHref}>Life Map</a>
     </nav>
@@ -184,7 +184,7 @@ export default function HomeSpatialRuntimeLayer() {
         data-webgl-state="detecting"
         data-urai-home-runtime="accessible-boundary-while-detecting-webgl"
         data-webgl-ready="recovering"
-        aria-label="URAI Home startup"
+        aria-label="UrAi Home startup"
       >
         <div role="status" aria-live="polite" className="sr-only">
           Detecting spatial rendering support. Accessible Home controls remain available.
@@ -233,7 +233,7 @@ export default function HomeSpatialRuntimeLayer() {
       data-webgl-state={rendererState}
       data-webgl-recovery-attempts={recoveryAttemptsRef.current}
       data-webgl-ready={rendererState === 'ready' ? 'true' : 'recovering'}
-      aria-label="URAI living spatial Home"
+      aria-label="UrAi living spatial Home"
     >
       {rendererState === 'recovering' ? <div role="status" aria-live="polite" className="sr-only">Restoring the spatial Home renderer.</div> : null}
       {!assetsReady ? <div className="home-runtime-loading" role="status" aria-label="Your private world is forming" aria-live="polite"><span aria-hidden="true" /><strong>Your private world is forming</strong></div> : null}
