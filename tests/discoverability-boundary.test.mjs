@@ -82,6 +82,6 @@ test('governed installable-web manifest may exist while social, locale, offline,
   assert.equal(fs.existsSync(path.join(root, 'urai-tier1/src/app/manifest.webmanifest')), false)
   const manifest = fs.readFileSync(manifestPath, 'utf8')
   assert.match(manifest, /prefer_related_applications:\s*false/)
-  assert.doesNotMatch(manifest, /serviceworker|serviceWorker|share_target|shortcuts|screenshots|related_applications/)
+  assert.doesNotMatch(manifest, /serviceworker|serviceWorker|share_target|shortcuts|screenshots|(^|\n)\s*related_applications\s*:/m)
   assert.doesNotMatch(manifest, /offline|multilingual|locales|openGraph|twitter/)
 })
