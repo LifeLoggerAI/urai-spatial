@@ -2,12 +2,11 @@ export type HomeWorldTier = 1 | 2 | 3 | 4 | 5;
 
 export type HomeMoodState =
   | "calm"
-  | "low"
-  | "recovery"
-  | "dream"
-  | "shadow"
-  | "focused"
-  | "joy";
+  | "reflective"
+  | "energized"
+  | "heavy"
+  | "uncertain"
+  | "hopeful";
 
 export type HomeRecoveryState =
   | "dormant"
