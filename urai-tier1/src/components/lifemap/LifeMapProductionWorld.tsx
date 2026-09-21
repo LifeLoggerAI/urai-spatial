@@ -372,6 +372,7 @@ function NebulaBreath({ reducedMotion, selected }: { reducedMotion: boolean; sel
         c=mix(c,vec3(.055,.16,.17),smoothstep(.80,1.22,n));
         float alpha=(.006+.22*veil)*mix(1.0,.62,uSelected);
         gl_FragColor=vec4(c,alpha);
+        #include <tonemapping_fragment>
         #include <colorspace_fragment>
       }
     `,
@@ -393,7 +394,7 @@ function AuthoredMemoryStar({ aura, active, siteKey, scale = 1, rotation = [0,0,
   const seed = useMemo(() => siteKey.split("").reduce((sum, char) => sum + char.charCodeAt(0), 0), [siteKey]);
   const photosphere = useMemo(() => new THREE.ShaderMaterial({
     transparent: false,
-    toneMapped: false,
+    toneMapped: true,
     uniforms: {
       uTime: { value: 0 },
       uAura: { value: new THREE.Color(aura) },
@@ -463,12 +464,13 @@ function AuthoredMemoryStar({ aura, active, siteKey, scale = 1, rotation = [0,0,
     if (!group.current || reducedMotion) return;
     group.current.rotation.y = rotation[1] + Math.sin(clock.elapsedTime * .18 + siteKey.length) * .07;
     const breath = 1 + Math.sin(clock.elapsedTime * .42 + siteKey.length) * .018;
-    group.current.scale.setScalar(scale * breath);
+    const selectedScale = active ? 2.25 : 1;
+    group.current.scale.setScalar(scale * selectedScale * breath);
   });
-  const particleCount = active ? 28 : 10;
+  const particleCount = active ? 18 : 10;
   return <group
     ref={group}
-    scale={scale}
+    scale={scale * (active ? 2.25 : 1)}
     rotation={rotation}
     name={`life-map-stellar-memory-star-${siteKey}`}
     userData={{
@@ -485,14 +487,14 @@ function AuthoredMemoryStar({ aura, active, siteKey, scale = 1, rotation = [0,0,
     </mesh>
     <mesh name="memory-star-inner-corona" scale={active ? 1.34 : 1.25} raycast={() => null}>
       <sphereGeometry args={[0.58, 48, 32]} />
-      <meshBasicMaterial color="#ffb347" transparent opacity={active ? .12 : .055} blending={THREE.AdditiveBlending} depthWrite={false} toneMapped={false} side={THREE.BackSide} />
+      <meshBasicMaterial color="#ff9c2f" transparent opacity={active ? .085 : .04} blending={THREE.AdditiveBlending} depthWrite={false} toneMapped={false} side={THREE.BackSide} />
     </mesh>
     <mesh name="memory-star-outer-corona" scale={active ? 1.82 : 1.52} raycast={() => null}>
       <sphereGeometry args={[0.58, 48, 32]} />
-      <meshBasicMaterial color={aura} transparent opacity={active ? .045 : .022} blending={THREE.AdditiveBlending} depthWrite={false} toneMapped={false} side={THREE.BackSide} />
+      <meshBasicMaterial color={aura} transparent opacity={active ? .028 : .016} blending={THREE.AdditiveBlending} depthWrite={false} toneMapped={false} side={THREE.BackSide} />
     </mesh>
-    <FieldParticles seed={seed} count={particleCount} radius={active ? 1.72 : 1.18} depth={active ? 1.55 : 1.0} height={active ? 1.42 : .9} color={aura} opacity={active ? .22 : .10} size={active ? .026 : .018} />
-    <pointLight position={[0,0,0]} color={aura} intensity={active ? 2.8 : 1.05} distance={active ? 9 : 4.8} decay={2} />
+    <FieldParticles seed={seed} count={particleCount} radius={active ? 1.72 : 1.18} depth={active ? 1.55 : 1.0} height={active ? 1.42 : .9} color={aura} opacity={active ? .14 : .10} size={active ? .021 : .018} />
+    <pointLight position={[0,0,0]} color={aura} intensity={active ? 1.75 : 1.05} distance={active ? 7.5 : 4.8} decay={2} />
   </group>;
 }
 
