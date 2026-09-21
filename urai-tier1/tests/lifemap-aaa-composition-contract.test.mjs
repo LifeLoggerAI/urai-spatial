@@ -57,6 +57,21 @@ test('pattern memories retain governed asset authority inside the restrained sel
   assert.doesNotMatch(arrival, /ringGeometry|torusGeometry|icosahedronGeometry|octahedronGeometry|tetrahedronGeometry/)
 })
 
+test('Memory Stars render as stellar photospheres and coronae rather than geological artifacts', () => {
+  const star = sliceBetween(world, 'function AuthoredMemoryStar', 'function LifeCore')
+  assert.match(star, /name="memory-star-photosphere"/)
+  assert.match(star, /name="memory-star-inner-corona"/)
+  assert.match(star, /name="memory-star-outer-corona"/)
+  assert.match(star, /artRevision: "v300-stellar-photosphere-corona"/)
+  assert.match(star, /visualAuthority: "stellar-body-not-geology"/)
+  assert.match(star, /memoryIdentity: siteKey/)
+  assert.match(star, /sphereGeometry args=\{\[0\.58, 64, 48\]\}/)
+  assert.match(star, /THREE\.AdditiveBlending/)
+  assert.match(star, /FieldParticles seed=\{seed\}/)
+  assert.match(star, /pointLight position=\{\[0,0,0\]\}/)
+  assert.doesNotMatch(star, /weathered-memory-outcrop|grounded-semantic-outcrops|memoryHeartGeometry|memoryFilamentGeometry/)
+})
+
 test('authored animation clips honor reduced motion with stable readable poses', () => {
   assert.match(world, /const LifeMapReducedMotionContext = createContext\(false\)/)
   assert.match(world, /<LifeMapReducedMotionContext\.Provider value=\{profile\.reducedMotion\}>/)
