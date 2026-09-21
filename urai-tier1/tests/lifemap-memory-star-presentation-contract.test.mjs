@@ -4,8 +4,8 @@ import fs from 'node:fs'
 const source = fs.readFileSync(new URL('../src/components/lifemap/LifeMapProductionWorld.tsx', import.meta.url), 'utf8')
 
 assert.ok(source.includes('const MEMORY_STAR_MODEL = "/assets/urai/generated/models/life-map-memory-star-v1.glb";'), 'Life Map must retain the governed memory-star GLB as hidden source and animation authority')
-assert.ok(source.includes('const governedAsset = useMemo(() => scene.clone(true), [scene]);'), 'Memory Star must preserve governed asset lineage')
-assert.ok(source.includes('<primitive object={governedAsset} visible={false} />'), 'governed source asset must stay hidden while current stellar presentation owns visible pixels')
+assert.ok(source.includes('const hiddenAsset = useMemo(() => scene.clone(true), [scene]);'), 'Memory Star must preserve governed asset lineage')
+assert.ok(source.includes('<primitive object={hiddenAsset} visible={false} />'), 'governed source asset must stay hidden while current stellar presentation owns visible pixels')
 assert.ok(source.includes('name="memory-star-photosphere"'), 'Memory Star must expose a visible photosphere')
 assert.ok(source.includes('name="memory-star-inner-corona"'), 'Memory Star must expose an inner corona')
 assert.ok(source.includes('name="memory-star-outer-corona"'), 'Memory Star must expose an outer corona')
