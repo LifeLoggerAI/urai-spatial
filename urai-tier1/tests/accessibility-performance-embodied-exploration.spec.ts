@@ -23,7 +23,8 @@ async function waitForHomeWorld(home: Locator) {
   await expect(home).toHaveAttribute('data-home-ground-entry', 'physical-world-surface')
   await expect(home).toHaveAttribute('data-home-life-map-entry', 'visible-sky-broad-interaction')
   await expect(home).toHaveAttribute('data-home-camera-mode', 'home-avatar-presentation')
-  await expect(home).toHaveAttribute('data-home-non-xr-body-policy', 'presentation-avatar-then-first-person-camera-only-no-hands-body-rig')
+  await expect(home).toHaveAttribute('data-home-non-xr-body-policy', 'camera-only-no-hands-body-rig')
+  await expect(home).toHaveAttribute('data-home-presence-policy', 'presentation-avatar-then-first-person-camera-only-no-hands-body-rig')
 }
 
 async function enterBodylessFirstPersonHome(page: Page) {
@@ -38,7 +39,8 @@ async function enterBodylessFirstPersonHome(page: Page) {
   await expect(home).toHaveAttribute('data-home-presence-presentation', 'bodyless-first-person-home')
   await expect(home).toHaveAttribute('data-home-movement', 'shared-keyboard-touch-walk-look-interact')
   await expect(home).toHaveAttribute('data-home-camera-mode', 'home-first-person')
-  await expect(home).toHaveAttribute('data-home-non-xr-body-policy', 'presentation-avatar-then-first-person-camera-only-no-hands-body-rig')
+  await expect(home).toHaveAttribute('data-home-non-xr-body-policy', 'camera-only-no-hands-body-rig')
+  await expect(home).toHaveAttribute('data-home-presence-policy', 'presentation-avatar-then-first-person-camera-only-no-hands-body-rig')
   await expect(page.getByRole('button', { name: 'Open Avatar Self View' })).toBeVisible()
   return home
 }
