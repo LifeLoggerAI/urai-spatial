@@ -299,8 +299,15 @@ function NaturalCanopy({ profile, position, rotationY, scale, shapeSeed }: {
       false,
     ));
 
-    const leafGeometry = new THREE.SphereGeometry(1, 5, 4);
+    const leafShape = new THREE.Shape();
+    leafShape.moveTo(0, -0.46);
+    leafShape.bezierCurveTo(0.34, -0.24, 0.37, 0.13, 0, 0.52);
+    leafShape.bezierCurveTo(-0.37, 0.13, -0.34, -0.24, 0, -0.46);
+    leafShape.closePath();
+    const leafGeometry = new THREE.ShapeGeometry(leafShape, 5);
     leafGeometry.computeVertexNormals();
+    const leafVolumeGeometry = new THREE.SphereGeometry(1, 5, 4);
+    leafVolumeGeometry.computeVertexNormals();
 
     const foliageAnchors = [
       ...transformedBranchDefs.map((points) => points[points.length - 1]),
@@ -312,7 +319,7 @@ function NaturalCanopy({ profile, position, rotationY, scale, shapeSeed }: {
       const value = Math.sin(seed * 12.9898 + shapeSeed * 53.117 + (woodland ? 78.233 : 31.417)) * 43758.5453;
       return value - Math.floor(value);
     };
-    const leaves = Array.from({ length: woodland ? 560 : 510 }, (_, index) => {
+    const leaves = Array.from({ length: woodland ? 460 : 410 }, (_, index) => {
       const anchor = foliageAnchors[index % foliageAnchors.length];
       const spread = 0.08 + hash(index * 7 + 1) * 0.58;
       const theta = hash(index * 7 + 2) * Math.PI * 2;
@@ -336,13 +343,20 @@ function NaturalCanopy({ profile, position, rotationY, scale, shapeSeed }: {
     const leavesB = leaves.filter((leaf) => leaf.color === leafB);
     const leavesC = leaves.filter((leaf) => leaf.color === leafC);
     const leavesD = leaves.filter((leaf) => leaf.color === leafD);
+    const volumeLeaves = leaves
+      .filter((_, index) => index % 4 === 0)
+      .map((leaf) => ({
+        ...leaf,
+        scale: [leaf.scale[0] * 1.85, leaf.scale[1] * 2.15, leaf.scale[2] * 1.35] as [number, number, number],
+      }));
 
-    return { trunkGeometry, branches, leafGeometry, leavesA, leavesB, leavesC, leavesD, leafA, leafB, leafC, leafD, trunkColor, branchColor };
+    return { trunkGeometry, branches, leafGeometry, leafVolumeGeometry, leavesA, leavesB, leavesC, leavesD, volumeLeaves, leafA, leafB, leafC, leafD, trunkColor, branchColor };
   }, [profile.id, shapeSeed]);
 
   useEffect(() => () => {
     authored.trunkGeometry.dispose();
     authored.leafGeometry.dispose();
+    authored.leafVolumeGeometry.dispose();
     authored.branches.forEach((geometry) => geometry.dispose());
   }, [authored]);
 
@@ -361,7 +375,7 @@ function NaturalCanopy({ profile, position, rotationY, scale, shapeSeed }: {
       provenance: NATURAL_CANOPY,
       visibleAuthority: "runtime-authored-canopy-v23",
       supersedesVisibleCandidate: "ground-natural-canopy-v3-low-poly-silhouette",
-      literalPixelRepair: "v23-volumetric-foliage-mature-canopy-natural-atmosphere",
+      literalPixelRepair: "v24-canonical-leaf-silhouette-plus-volumetric-crown-mature-canopy-natural-atmosphere",
     }}
   >
     <mesh geometry={authored.trunkGeometry} castShadow receiveShadow>
@@ -370,6 +384,7 @@ function NaturalCanopy({ profile, position, rotationY, scale, shapeSeed }: {
     {authored.branches.map((geometry, index) => <mesh key={index} geometry={geometry} castShadow receiveShadow>
       <meshStandardMaterial color={authored.branchColor} roughness={0.94} metalness={0} envMapIntensity={0.26} />
     </mesh>)}
+    <CanopyLeafInstances geometry={authored.leafVolumeGeometry} leaves={authored.volumeLeaves} color={authored.leafB} />
     <CanopyLeafInstances geometry={authored.leafGeometry} leaves={authored.leavesA} color={authored.leafA} />
     <CanopyLeafInstances geometry={authored.leafGeometry} leaves={authored.leavesB} color={authored.leafB} />
     <CanopyLeafInstances geometry={authored.leafGeometry} leaves={authored.leavesC} color={authored.leafC} />
@@ -916,7 +931,7 @@ export default function GroundSpatialWorldClean() {
     data-ground-visual-owner="atmospheric-living-environment"
     data-ground-runtime-owner="first-person-lived-world"
     data-ground-visual-revision="ground-lived-world-v2-canon-lock"
-    data-ground-art-revision="ground-v22-natural-soil-irregular-canopy-atmospheric-depth" data-ground-canopy-repair="ground-v23-volumetric-foliage-mature-canopy-natural-atmosphere"
+    data-ground-art-revision="ground-v22-natural-soil-irregular-canopy-atmospheric-depth" data-ground-canopy-repair="ground-v24-canonical-leaf-silhouette-plus-volumetric-crown"
     data-ground-exploration="first-person-no-visible-body"
     data-ground-camera="eye-level-terrain-following-no-authored-bob"
     data-ground-eye-height={GROUND_EYE_HEIGHT_M}
