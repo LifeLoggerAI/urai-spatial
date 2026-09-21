@@ -46,7 +46,7 @@ test('V210 source authority remains reproducible after the runtime successor adv
   assert.match(source, /life-map-v237-grounded-geography-retired/)
   assert.match(source, /function memoryHeartGeometry\(/)
   assert.match(source, /function memoryFilamentGeometry\(/)
-  assert.match(source, /<primitive object=\{governedAsset\} visible=\{false\} \/>/)
+  assert.match(source, /<primitive object=\{hiddenAsset\} visible=\{false\} \/>/)
   assert.doesNotMatch(source, /life-map-production\/authored-v210\/life-map-memory-sanctuary-v210\.glb/)
   assert.match(generator, /def blender_point\(x, y, z\)/)
   assert.match(generator, /apply_packed_strata_texture/)
