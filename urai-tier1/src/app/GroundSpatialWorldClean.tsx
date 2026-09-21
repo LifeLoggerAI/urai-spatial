@@ -135,19 +135,12 @@ function TerrainMaterial({ profile }: { profile: EnvironmentProfile }) {
   }, [albedo, arm, normal, profile]);
   const naturalSoilProfile = profile.id === "temperate" || profile.id === "woodland";
   if (naturalSoilProfile) {
-    const normalStrength = profile.id === "woodland" ? 0.72 : 0.58;
     return <meshStandardMaterial
       color="#ffffff"
-      map={albedo}
-      normalMap={normal}
-      normalScale={new THREE.Vector2(normalStrength, normalStrength)}
-      aoMap={arm}
-      aoMapIntensity={0.82}
-      roughnessMap={arm}
-      roughness={profile.id === "woodland" ? 0.96 : 0.93}
-      metalness={0}
       vertexColors
-      envMapIntensity={profile.id === "woodland" ? 0.28 : 0.34}
+      roughness={0.985}
+      metalness={0}
+      envMapIntensity={profile.id === "woodland" ? 0.20 : 0.24}
     />;
   }
   const normalStrength = profile.id === "urban" ? 0.34 : 0.58;
@@ -366,10 +359,9 @@ function NaturalCanopy({ profile, position, rotationY, scale, shapeSeed }: {
     userData={{
       treatment: "seed-varied-branch-architecture-layered-thin-leaf-broadleaf-canopy-v21",
       provenance: NATURAL_CANOPY,
-      visibleAuthority: "runtime-authored-canopy-v21",
-      literalPixelRepair: "v21-layered-thin-leaf-crown-existing-pbr-terrain-atmospheric-depth",
+      visibleAuthority: "runtime-authored-canopy-v23",
       supersedesVisibleCandidate: "ground-natural-canopy-v3-low-poly-silhouette",
-      literalPixelRepair: "v23-pbr-terrain-volumetric-foliage-mature-canopy-natural-atmosphere",
+      literalPixelRepair: "v23-volumetric-foliage-mature-canopy-natural-atmosphere",
     }}
   >
     <mesh geometry={authored.trunkGeometry} castShadow receiveShadow>
@@ -924,7 +916,7 @@ export default function GroundSpatialWorldClean() {
     data-ground-visual-owner="atmospheric-living-environment"
     data-ground-runtime-owner="first-person-lived-world"
     data-ground-visual-revision="ground-lived-world-v2-canon-lock"
-    data-ground-art-revision="ground-v23-pbr-terrain-volumetric-foliage-mature-canopy-natural-atmosphere"
+    data-ground-art-revision="ground-v23-volumetric-foliage-mature-canopy-natural-atmosphere"
     data-ground-exploration="first-person-no-visible-body"
     data-ground-camera="eye-level-terrain-following-no-authored-bob"
     data-ground-eye-height={GROUND_EYE_HEIGHT_M}
@@ -951,7 +943,7 @@ export default function GroundSpatialWorldClean() {
       onCreated={({ gl }) => {
         gl.outputColorSpace = THREE.SRGBColorSpace;
         gl.toneMapping = THREE.ACESFilmicToneMapping;
-        gl.toneMappingExposure = 1.04;
+        gl.toneMappingExposure = 0.90;
       }}
     >
       <GroundScene profile={profile} input={input} yaw={yaw} pitch={pitch} target={target} obstacles={obstacles} playerPosition={playerPosition} isCoarse={isCoarse} onReady={() => setReady(true)} />
