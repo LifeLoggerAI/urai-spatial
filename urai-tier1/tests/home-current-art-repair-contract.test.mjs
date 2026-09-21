@@ -32,11 +32,16 @@ test('Home authority keeps V288 Orb provenance while V292 two-mode Home remains 
 })
 
 test('retired localized Home overlays stay retired while first-person Passport ownership remains the active AAA repair surface', () => {
-  assert.match(currentRepair, /Historical V249 localized destination art is retained only as repository/)
-  assert.match(currentRepair, /broad visible atmosphere for Life Map, and the authored living-memory Orb/)
-  assert.match(currentRepair, /V288 remains certified predecessor provenance/)
+  assert.match(currentRepair, /Current architectural repair stays inside the existing Home owner/)
+  assert.match(currentRepair, /inhabited threshold rather than an outdoor/)
   assert.match(currentRepair, /export function HomeCurrentArtRepair/)
-  assert.match(currentRepair, /return null/)
+  assert.match(currentRepair, /name="home-current-inhabited-architectural-repair"/)
+  assert.match(currentRepair, /visualAuthority: 'same-world-inhabited-home-threshold-v1'/)
+  assert.match(currentRepair, /portal: false/)
+  assert.match(currentRepair, /destinationOwner: 'existing-home-world'/)
+  for (const marker of ['home-current-stone-threshold','home-current-inhabited-timber-frame','home-current-glazed-living-wall','home-current-hearth-and-shelving','home-current-inhabited-furniture']) {
+    assert.match(currentRepair, new RegExp(marker))
+  }
   assert.doesNotMatch(currentRepair, /home-v249-ground-geological-descent|home-v249-life-map-rooted-celestial-ascent|home-v249-organic-living-memory-presence|function suppressRaycast\(/)
 
   assert.match(aaaRepair, /Historical V281 localized Ground\/ascent overlays[\s\S]*remain retired/)
