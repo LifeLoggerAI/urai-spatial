@@ -459,7 +459,7 @@ async function captureHomeSpatialContinuity({ idSuffix = 'desktop', viewport = {
     record.firstPersonVisual = sampleVisual ? await waitForVisualEvidence(page) : { available: true, reason: 'retained-responsive-pixels-no-extra-sampling' }
     record.firstPersonScreenshot = await screenshotRecord('first-person')
 
-    const passportControl = page.getByRole('button', { name: 'Open Passport ownership and permissions' }).first()
+    const passportControl = page.getByRole('button', { name: 'Passport — open ownership and consent vault' }).first()
     await passportControl.waitFor({ state: 'attached', timeout: 20_000 })
     await passportControl.click()
     await page.waitForURL((url) => url.pathname.replace(/\/+$/, '') === '/passport', { timeout: 30_000 })
