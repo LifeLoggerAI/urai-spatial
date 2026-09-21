@@ -422,15 +422,27 @@ function AuthoredMemoryStar({ aura, active, siteKey, scale = 1, rotation = [0,0,
         return mix(mix(mix(hash(i+vec3(0,0,0)),hash(i+vec3(1,0,0)),f.x),mix(hash(i+vec3(0,1,0)),hash(i+vec3(1,1,0)),f.x),f.y),mix(mix(hash(i+vec3(0,0,1)),hash(i+vec3(1,0,1)),f.x),mix(hash(i+vec3(0,1,1)),hash(i+vec3(1,1,1)),f.x),f.y),f.z);
       }
       void main() {
-        vec3 p = normalize(vPos) * 4.6;
-        float t = uTime * .055;
-        float n = noise(p + vec3(t,-t*.7,t*.35)) + .55*noise(p*2.1 - vec3(t*.3,t*.6,0.));
-        float granule = .5 + .5*sin((p.x+p.y*.72-p.z*.41)*7.0 + n*8.5 + t*5.0);
-        float limb = pow(clamp(dot(normalize(vNormalW), vec3(0.,0.,1.))*.5+.5,0.,1.), .34);
-        vec3 hot = mix(vec3(1.0,.63,.20), vec3(1.0,.96,.72), clamp(.28+n*.42+granule*.22,0.,1.));
-        vec3 tinted = mix(hot, uAura, .18);
-        float energy = .92 + .18*n + .10*granule + uActive*.12;
-        gl_FragColor = vec4(tinted * energy * (.78 + .22*limb), 1.0);
+        vec3 p = normalize(vPos) * 5.2;
+        float t = uTime * .045;
+        float n1 = noise(p + vec3(t,-t*.62,t*.28));
+        float n2 = noise(p*2.35 - vec3(t*.26,t*.54,0.));
+        float n3 = noise(p*5.4 + vec3(-t*.18,t*.22,t*.14));
+        float convection = clamp(n1*.56 + n2*.30 + n3*.14, 0.0, 1.0);
+        float granule = .5 + .5*sin((p.x+p.y*.72-p.z*.41)*8.2 + convection*9.2 + t*4.0);
+        float viewFacing = clamp(dot(normalize(vNormalW), vec3(0.,0.,1.))*.5+.5,0.,1.);
+        float limb = pow(viewFacing, .58);
+        float spot = smoothstep(.20,.48,noise(p*1.38+vec3(13.7,4.1,-8.2)));
+        float filament = smoothstep(.56,.92,granule*.62+convection*.55);
+        vec3 ember = vec3(.72,.105,.018);
+        vec3 gold = vec3(1.0,.47,.055);
+        vec3 cream = vec3(1.0,.80,.30);
+        vec3 hot = mix(ember, gold, clamp(convection*.86+granule*.18,0.,1.));
+        hot = mix(hot, cream, filament*.46);
+        hot *= mix(.58,1.0,spot);
+        vec3 tinted = mix(hot, uAura, .07);
+        float energy = .72 + .16*convection + .07*granule + uActive*.05;
+        float limbFalloff = .55 + .45*limb;
+        gl_FragColor = vec4(clamp(tinted * energy * limbFalloff, 0.0, .98), 1.0);
         #include <colorspace_fragment>
       }
     `,
@@ -453,7 +465,7 @@ function AuthoredMemoryStar({ aura, active, siteKey, scale = 1, rotation = [0,0,
     const breath = 1 + Math.sin(clock.elapsedTime * .42 + siteKey.length) * .018;
     group.current.scale.setScalar(scale * breath);
   });
-  const particleCount = active ? 54 : 20;
+  const particleCount = active ? 28 : 10;
   return <group
     ref={group}
     scale={scale}
@@ -468,19 +480,19 @@ function AuthoredMemoryStar({ aura, active, siteKey, scale = 1, rotation = [0,0,
   >
     <primitive object={governedAsset} visible={false} />
     <mesh name="memory-star-photosphere" castShadow={false}>
-      <sphereGeometry args={[0.58, 64, 48]} />
+      <sphereGeometry args={[active ? 0.72 : 0.62, 72, 56]} />
       <primitive object={photosphere} attach="material" />
     </mesh>
-    <mesh name="memory-star-inner-corona" scale={1.28} raycast={() => null}>
+    <mesh name="memory-star-inner-corona" scale={active ? 1.34 : 1.25} raycast={() => null}>
       <sphereGeometry args={[0.58, 48, 32]} />
-      <meshBasicMaterial color={aura} transparent opacity={active ? .16 : .09} blending={THREE.AdditiveBlending} depthWrite={false} toneMapped={false} side={THREE.BackSide} />
+      <meshBasicMaterial color="#ffb347" transparent opacity={active ? .12 : .055} blending={THREE.AdditiveBlending} depthWrite={false} toneMapped={false} side={THREE.BackSide} />
     </mesh>
-    <mesh name="memory-star-outer-corona" scale={1.62} raycast={() => null}>
+    <mesh name="memory-star-outer-corona" scale={active ? 1.82 : 1.52} raycast={() => null}>
       <sphereGeometry args={[0.58, 48, 32]} />
-      <meshBasicMaterial color="#fff0bd" transparent opacity={active ? .075 : .035} blending={THREE.AdditiveBlending} depthWrite={false} toneMapped={false} side={THREE.BackSide} />
+      <meshBasicMaterial color={aura} transparent opacity={active ? .045 : .022} blending={THREE.AdditiveBlending} depthWrite={false} toneMapped={false} side={THREE.BackSide} />
     </mesh>
-    <FieldParticles seed={seed} count={particleCount} radius={active ? 1.75 : 1.25} depth={active ? 1.8 : 1.15} height={active ? 1.55 : 1.05} color={aura} opacity={active ? .46 : .22} size={active ? .038 : .026} />
-    <pointLight position={[0,0,0]} color={aura} intensity={active ? 5.2 : 1.45} distance={active ? 11 : 5.5} decay={2} />
+    <FieldParticles seed={seed} count={particleCount} radius={active ? 1.72 : 1.18} depth={active ? 1.55 : 1.0} height={active ? 1.42 : .9} color={aura} opacity={active ? .22 : .10} size={active ? .026 : .018} />
+    <pointLight position={[0,0,0]} color={aura} intensity={active ? 2.8 : 1.05} distance={active ? 9 : 4.8} decay={2} />
   </group>;
 }
 
