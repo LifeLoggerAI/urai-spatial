@@ -467,7 +467,7 @@ function AuthoredMemoryStar({ aura, active, siteKey, scale = 1, rotation = [0,0,
     const selectedScale = active ? 2.25 : 1;
     group.current.scale.setScalar(scale * selectedScale * breath);
   });
-  const particleCount = active ? 28 : 10;
+  const particleCount = active ? 18 : 10;
   return <group
     ref={group}
     scale={scale * (active ? 2.25 : 1)}
