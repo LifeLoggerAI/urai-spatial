@@ -24,7 +24,6 @@ test.describe('first-run onboarding accessibility', () => {
   test.describe.configure({ timeout: 120_000 })
   test('keyboard setup preserves privacy disclosure, sensory controls, focus, and resumable completion', async ({ page }) => {
     await disableWebGL(page)
-    await disableWebGL(page)
     await page.goto('/home/?firstRun=1', { waitUntil: 'load' })
 
     const setup = page.locator('[data-setup="true"]').first()
@@ -82,6 +81,7 @@ test.describe('first-run onboarding accessibility', () => {
 
   test('Skip setup persists completion and reduced-motion remains additive to the OS preference', async ({ page }) => {
     await page.emulateMedia({ reducedMotion: 'reduce' })
+    await disableWebGL(page)
     await page.goto('/home/?firstRun=1', { waitUntil: 'load' })
 
     const setup = page.locator('[data-setup="true"]').first()
