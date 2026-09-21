@@ -66,11 +66,41 @@ jobs:
           corepack enable
           pnpm install --frozen-lockfile
 
-      - name: Build exact static candidate
+      - name: Build exact static reference candidate
+        shell: bash
         env:
           NEXT_PUBLIC_URAI_BUILD_SHA: ${{ env.URAI_EXACT_HEAD }}
           URAI_FIREBASE_STATIC_EXPORT: 'true'
-        run: pnpm build:static
+        run: |
+          set -euo pipefail
+          runtime_route="urai-tier1/src/app/api/entitlement/route.ts"
+          staged_route="${runtime_route}.reference-runtime-only"
+
+          # The reference estate is a static visual artifact. The authenticated
+          # entitlement GET handler is deliberately server-only because its
+          # response depends on the incoming Bearer token. Next static export
+          # cannot truthfully render request-dependent GET route handlers.
+          test -f "$runtime_route"
+          test ! -e "$staged_route"
+          git cat-file -e "$URAI_EXACT_HEAD:$runtime_route"
+
+          restore_runtime_route() {
+            if test -e "$staged_route"; then
+              mv "$staged_route" "$runtime_route"
+            fi
+          }
+          trap restore_runtime_route EXIT
+
+          mv "$runtime_route" "$staged_route"
+          pnpm build:static
+
+          restore_runtime_route
+          trap - EXIT
+
+          # Prove the production API source was restored byte-for-byte and the
+          # reference-only staging name did not leak into the candidate tree.
+          test ! -e "$staged_route"
+          git diff --exit-code -- "$runtime_route"
 
       - name: Serve exact static candidate
         shell: bash
