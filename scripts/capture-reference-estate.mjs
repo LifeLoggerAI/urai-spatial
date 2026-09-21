@@ -417,11 +417,15 @@ const selectedStates = [
   },
 ]
 
-const browser = await chromium.launch({ headless:true, args:['--no-sandbox','--disable-dev-shm-usage','--use-angle=swiftshader','--enable-webgl'] })
-try {
-  for (const cfg of [...simple, ...selectedStates]) await capture(browser, cfg)
-} finally {
-  await browser.close()
+const states = [...simple, ...selectedStates]
+const browserBatchSize = 8
+for (let offset = 0; offset < states.length; offset += browserBatchSize) {
+  const browser = await chromium.launch({ headless:true, args:['--no-sandbox','--disable-dev-shm-usage','--use-angle=swiftshader','--enable-webgl'] })
+  try {
+    for (const cfg of states.slice(offset, offset + browserBatchSize)) await capture(browser, cfg)
+  } finally {
+    await browser.close()
+  }
 }
 
 receipt.completedAt = new Date().toISOString()
