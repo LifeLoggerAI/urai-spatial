@@ -7,6 +7,7 @@ const runtimeOnlyRoutes = [
   'urai-tier1/src/app/api/stripe/create-checkout-session/route.ts',
   'urai-tier1/src/app/api/stripe/create-portal-session/route.ts',
   'urai-tier1/src/app/api/stripe/webhook/route.ts',
+  'urai-tier1/src/app/api/stripe/webhook-v2/route.ts',
 ]
 
 const staged = []
