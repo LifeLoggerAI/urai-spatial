@@ -69,7 +69,7 @@ test.describe('URAI accessibility and performance evidence', () => {
     await page.goto('/', { waitUntil: 'domcontentloaded' })
     const companionRuntimeOrb = page.locator('[data-urai-audit-action="orb-controls"]')
     await expect(companionRuntimeOrb).toBeEnabled({ timeout: 15_000 })
-    const orb = page.getByRole('button', { name: 'Open URAI Orb companion', exact: true })
+    const orb = page.getByRole('button', { name: 'Open UrAi Orb companion', exact: true })
     await expect(orb).toBeVisible()
     await expect(orb).toBeEnabled()
     await orb.click()
@@ -90,7 +90,7 @@ test.describe('URAI accessibility and performance evidence', () => {
     await page.goto('/', { waitUntil: 'domcontentloaded' })
     const companionRuntimeOrb = page.locator('[data-urai-audit-action="orb-controls"]')
     await expect(companionRuntimeOrb).toBeEnabled({ timeout: 15_000 })
-    const orb = page.getByRole('button', { name: 'Open URAI Orb companion', exact: true })
+    const orb = page.getByRole('button', { name: 'Open UrAi Orb companion', exact: true })
     await expect(orb).toBeVisible()
     await expect(orb).toBeEnabled()
     await orb.focus()
@@ -204,7 +204,7 @@ test.describe('URAI accessibility and performance evidence', () => {
     await expect(navigation).toHaveCount(1)
     await expect(navigation).toHaveAttribute('data-home-navigation-owner', 'runtime-boundary')
     await expect(navigation).toHaveAttribute('data-home-navigation-non-dominant', 'true')
-    await expect(navigation.getByTestId('home-semantic-orb')).toHaveAccessibleName('Open URAI Orb companion')
+    await expect(navigation.getByTestId('home-semantic-orb')).toHaveAccessibleName('Open UrAi Orb companion')
   })
 
   test('WebGL context loss recovery is bounded and preserves the route', async ({ page }) => {
