@@ -189,7 +189,7 @@ for (const spec of cases) {
     record.visibleWorld = await owner.getAttribute('data-home-visible-world')
     record.movement = await owner.getAttribute('data-home-movement')
     record.accessibleRuntimeText = (await owner.textContent()) || ''
-    record.orbOwned = record.accessibleRuntimeText.includes('Open URAI Orb companion')
+    record.orbOwned = record.accessibleRuntimeText.includes('Open UrAi Orb companion')
     record.groundPortalOwned = record.accessibleRuntimeText.includes('Open Ground directly')
     record.lifeMapAscentOwned = record.accessibleRuntimeText.includes('Ascend to Life Map')
     record.visual = await waitForVisualEvidence(page)
