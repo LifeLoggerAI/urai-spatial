@@ -916,7 +916,7 @@ export default function GroundSpatialWorldClean() {
     data-ground-visual-owner="atmospheric-living-environment"
     data-ground-runtime-owner="first-person-lived-world"
     data-ground-visual-revision="ground-lived-world-v2-canon-lock"
-    data-ground-art-revision="ground-v23-volumetric-foliage-mature-canopy-natural-atmosphere"
+    data-ground-art-revision="ground-v22-natural-soil-irregular-canopy-atmospheric-depth" data-ground-canopy-repair="ground-v23-volumetric-foliage-mature-canopy-natural-atmosphere"
     data-ground-exploration="first-person-no-visible-body"
     data-ground-camera="eye-level-terrain-following-no-authored-bob"
     data-ground-eye-height={GROUND_EYE_HEIGHT_M}
