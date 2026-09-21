@@ -30,6 +30,15 @@ async function capture(browser, cfg) {
     ...device,
     reducedMotion: cfg.reducedMotion ? 'reduce' : 'no-preference',
   })
+  if (!cfg.preserveOnboarding) {
+    await context.addInitScript(() => {
+      try {
+        window.localStorage.setItem('urai:onboarding:v2:complete', '1')
+        window.localStorage.setItem('urai:onboarding:v3:setup-complete', '1')
+        window.localStorage.removeItem('urai:onboarding:v3:setup-step')
+      } catch { /* reference contexts use best-effort local persistence */ }
+    })
+  }
   if (cfg.noWebGL) {
     await context.addInitScript(() => {
       const original = HTMLCanvasElement.prototype.getContext
@@ -146,7 +155,7 @@ async function activatePhysicalPassport(page) {
   const passport = await enterPhysicalPassport(page, 'dormant')
   await passport.focus()
   await passport.press('Enter')
-  await page.waitForURL(/\/passport(?:\?|$)/, { timeout:30000 })
+  await page.waitForURL(/\/passport\/?(?:\?|$)/, { timeout:30000 })
   await page.locator('main[data-route-owner="passport-ownership-vault"]').waitFor({ state:'visible', timeout:30000 })
 }
 
@@ -308,8 +317,8 @@ const simple = [
   { id:'FUTURES-PROVIDER-UNAVAILABLE', system:'Possible Futures', state:'provider-unavailable-disclosure', route:'/possible-futures', marker:'[data-testid="urai-possible-futures"]', text:'provider is unavailable' },
   { id:'FUTURES-NOWEBGL', system:'Possible Futures', state:'no-webgl-conventional-fallback', route:'/possible-futures', marker:'[data-testid="urai-possible-futures"]', noWebGL:true },
 
-  { id:'ONBOARDING-DESKTOP', system:'Onboarding', state:'first-run', route:'/onboarding' },
-  { id:'ONBOARDING-MOBILE', system:'Onboarding', state:'first-run-mobile', route:'/onboarding', device:'mobile' },
+  { id:'ONBOARDING-DESKTOP', system:'Onboarding', state:'first-run', route:'/home?onboarding=1', preserveOnboarding:true, marker:'.uraiV2OnboardingCard[data-route="/home"]' },
+  { id:'ONBOARDING-MOBILE', system:'Onboarding', state:'first-run-mobile', route:'/home?onboarding=1', preserveOnboarding:true, marker:'.uraiV2OnboardingCard[data-route="/home"]', device:'mobile' },
   { id:'SETTINGS-PRIVACY-DESKTOP', system:'Privacy', state:'settings-privacy', route:'/settings/privacy' },
   { id:'SETTINGS-PRIVACY-MOBILE', system:'Privacy', state:'settings-privacy-mobile', route:'/settings/privacy', device:'mobile' },
 ]
