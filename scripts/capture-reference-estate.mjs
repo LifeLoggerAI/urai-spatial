@@ -424,15 +424,19 @@ const selectedStates = [
   },
 ]
 
-const browser = await chromium.launch({ headless:true, args:['--no-sandbox','--disable-dev-shm-usage','--use-angle=swiftshader','--enable-webgl'] })
-try {
-  for (const cfg of [...simple, ...selectedStates]) await capture(browser, cfg)
-} finally {
-  await browser.close()
+const states = [...simple, ...selectedStates]
+const browserBatchSize = 8
+for (let offset = 0; offset < states.length; offset += browserBatchSize) {
+  const browser = await chromium.launch({ headless:true, args:['--no-sandbox','--disable-dev-shm-usage','--use-angle=swiftshader','--enable-webgl'] })
+  try {
+    for (const cfg of states.slice(offset, offset + browserBatchSize)) await capture(browser, cfg)
+  } finally {
+    await browser.close()
+  }
 }
 
 receipt.completedAt = new Date().toISOString()
 receipt.status = receipt.failures.length ? 'partial' : 'captured'
 await fs.writeFile(path.join(outDir, 'receipt.json'), JSON.stringify(receipt, null, 2) + '\n')
 console.log(JSON.stringify({ exactSha, captures:receipt.captures.length, failures:receipt.failures.length, status:receipt.status }))
-if (!receipt.captures.length) process.exitCode = 1
+if (receipt.failures.length || !receipt.captures.length) process.exitCode = 1
