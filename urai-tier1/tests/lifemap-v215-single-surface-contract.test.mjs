@@ -23,7 +23,7 @@ test('historical V215 single-surface source remains reproducible but is not runt
 })
 
 test('current runtime keeps retired V215 strata out while Memory Stars use stellar authority', () => {
-  assert.match(world, /<primitive object=\{governedAsset\} visible=\{false\} \/>/)
+  assert.match(world, /<primitive object=\{hiddenAsset\} visible=\{false\} \/>/)
   assert.match(world, /name="memory-star-photosphere"/)
   assert.match(world, /name="memory-star-inner-corona"/)
   assert.match(world, /name="memory-star-outer-corona"/)
