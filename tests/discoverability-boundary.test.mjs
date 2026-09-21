@@ -73,10 +73,15 @@ test('security patterns detect quote and spacing variants', () => {
   }
 })
 
-test('unapproved installability, social, and locale metadata remain absent', () => {
+test('governed installable-web manifest may exist while social, locale, offline, and indexing claims remain fail closed', () => {
   for (const pattern of unapprovedMetadataKeyPatterns) {
     assert.ok(!pattern.test(layout), `root metadata must not include unapproved token: ${pattern.source}`)
   }
-  assert.equal(fs.existsSync(path.join(root, 'urai-tier1/src/app/manifest.ts')), false)
+  const manifestPath = path.join(root, 'urai-tier1/src/app/manifest.ts')
+  assert.equal(fs.existsSync(manifestPath), true)
   assert.equal(fs.existsSync(path.join(root, 'urai-tier1/src/app/manifest.webmanifest')), false)
+  const manifest = fs.readFileSync(manifestPath, 'utf8')
+  assert.match(manifest, /prefer_related_applications:\s*false/)
+  assert.doesNotMatch(manifest, /serviceworker|serviceWorker|share_target|shortcuts|screenshots|related_applications/)
+  assert.doesNotMatch(manifest, /offline|multilingual|locales|openGraph|twitter/)
 })
