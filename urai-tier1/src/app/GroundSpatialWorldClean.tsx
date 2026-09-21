@@ -375,7 +375,8 @@ function NaturalCanopy({ profile, position, rotationY, scale, shapeSeed }: {
       provenance: NATURAL_CANOPY,
       visibleAuthority: "runtime-authored-canopy-v23",
       supersedesVisibleCandidate: "ground-natural-canopy-v3-low-poly-silhouette",
-      literalPixelRepair: "v24-canonical-leaf-silhouette-plus-volumetric-crown-mature-canopy-natural-atmosphere",
+      literalPixelRepair: "v23-volumetric-foliage-mature-canopy-natural-atmosphere",
+      supplementalPixelRepair: "v24-canonical-leaf-silhouette-plus-volumetric-crown",
     }}
   >
     <mesh geometry={authored.trunkGeometry} castShadow receiveShadow>
