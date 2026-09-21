@@ -392,9 +392,93 @@ function AuthoredMemoryStar({ aura, active, siteKey, scale = 1, rotation = [0,0,
   const { actions } = useAnimations(animations, group);
   const seed = useMemo(() => siteKey.split("").reduce((sum, c) => sum + c.charCodeAt(0), 0), [siteKey]);
   const resolvedForm = form ?? (["petal", "fan", "wave", "branch", "shell"] as MemoryForm[])[seed % 5];
-  const heart = useMemo(() => memoryHeartGeometry(seed, resolvedForm), [resolvedForm, seed]);
-  const filaments = useMemo(() => Array.from({ length: 2 }, (_, index) => memoryFilamentGeometry(seed, index, resolvedForm)), [resolvedForm, seed]);
-  useEffect(() => () => { heart.dispose(); filaments.forEach((geometry) => geometry.dispose()); }, [filaments, heart]);
+  const photosphereMaterial = useMemo(() => new THREE.ShaderMaterial({
+    uniforms: {
+      uTime: { value: 0 },
+      uAura: { value: new THREE.Color(aura) },
+      uActive: { value: active ? 1 : 0 },
+    },
+    vertexShader: `
+      varying vec3 vObjectPosition;
+      varying vec3 vViewNormal;
+      varying vec3 vViewDirection;
+      void main() {
+        vObjectPosition = position;
+        vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
+        vViewNormal = normalize(normalMatrix * normal);
+        vViewDirection = normalize(-mvPosition.xyz);
+        gl_Position = projectionMatrix * mvPosition;
+      }
+    `,
+    fragmentShader: `
+      uniform float uTime;
+      uniform vec3 uAura;
+      uniform float uActive;
+      varying vec3 vObjectPosition;
+      varying vec3 vViewNormal;
+      varying vec3 vViewDirection;
+
+      float stellarNoise(vec3 p) {
+        float a = sin(p.x * 13.7 + uTime * .13);
+        float b = sin(p.y * 17.3 - uTime * .11);
+        float c = sin((p.z + p.x) * 21.1 + uTime * .07);
+        float d = sin(length(p.xy) * 28.0 - uTime * .09);
+        return .5 + .125 * (a + b + c + d);
+      }
+
+      void main() {
+        float granulation = stellarNoise(normalize(vObjectPosition));
+        float limb = clamp(dot(normalize(vViewNormal), normalize(vViewDirection)), 0.0, 1.0);
+        float hotCell = smoothstep(.58, .94, granulation);
+        vec3 whiteGold = vec3(1.0, .86, .56);
+        vec3 plasma = mix(uAura, whiteGold, .68 + hotCell * .22);
+        float brightness = .82 + granulation * .46 + pow(limb, .34) * .24 + uActive * .12;
+        gl_FragColor = vec4(plasma * brightness, 1.0);
+        #include <tonemapping_fragment>
+        #include <colorspace_fragment>
+      }
+    `,
+  }), [active, aura]);
+  const coronaMaterial = useMemo(() => new THREE.ShaderMaterial({
+    transparent: true,
+    depthWrite: false,
+    blending: THREE.AdditiveBlending,
+    side: THREE.DoubleSide,
+    uniforms: {
+      uAura: { value: new THREE.Color(aura) },
+      uActive: { value: active ? 1 : 0 },
+    },
+    vertexShader: `
+      varying vec3 vViewNormal;
+      varying vec3 vViewDirection;
+      void main() {
+        vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
+        vViewNormal = normalize(normalMatrix * normal);
+        vViewDirection = normalize(-mvPosition.xyz);
+        gl_Position = projectionMatrix * mvPosition;
+      }
+    `,
+    fragmentShader: `
+      uniform vec3 uAura;
+      uniform float uActive;
+      varying vec3 vViewNormal;
+      varying vec3 vViewDirection;
+      void main() {
+        float facing = abs(dot(normalize(vViewNormal), normalize(vViewDirection)));
+        float corona = pow(1.0 - clamp(facing, 0.0, 1.0), 1.7);
+        float alpha = corona * (.18 + uActive * .16);
+        vec3 color = mix(uAura, vec3(1.0, .88, .66), .48);
+        gl_FragColor = vec4(color, alpha);
+        #include <colorspace_fragment>
+      }
+    `,
+  }), [active, aura]);
+
+  useEffect(() => () => {
+    photosphereMaterial.dispose();
+    coronaMaterial.dispose();
+  }, [coronaMaterial, photosphereMaterial]);
+
   useEffect(() => {
     const chosen = Object.values(actions).find(Boolean);
     if (!chosen) return;
@@ -404,20 +488,59 @@ function AuthoredMemoryStar({ aura, active, siteKey, scale = 1, rotation = [0,0,
     if (reducedMotion) chosen.time = chosen.getClip().duration * (active ? 0.62 : 0.35);
     return () => { chosen.stop(); };
   }, [actions, active, reducedMotion]);
+
   useFrame(({ clock }) => {
+    photosphereMaterial.uniforms.uTime.value = reducedMotion ? 0 : clock.elapsedTime;
+    photosphereMaterial.uniforms.uActive.value = active ? 1 : 0;
+    coronaMaterial.uniforms.uActive.value = active ? 1 : 0;
     if (!group.current || reducedMotion) return;
     group.current.rotation.y = rotation[1] + Math.sin(clock.elapsedTime * .18 + siteKey.length) * .09;
     const breath = 1 + Math.sin(clock.elapsedTime * .42 + siteKey.length) * .025;
     group.current.scale.setScalar(scale * breath);
   });
-  return <group ref={group} scale={scale} rotation={rotation} name={`life-map-weathered-memory-outcrop-${siteKey}`} userData={{ artRevision:'v237-grounded-semantic-outcrops', form:resolvedForm }}>
+
+  return <group
+    ref={group}
+    scale={scale}
+    rotation={rotation}
+    name={`life-map-stellar-memory-${siteKey}`}
+    userData={{
+      artRevision: 'v291-stellar-memory-photosphere-corona',
+      visualRole: 'stellar-memory-photosphere-corona',
+      morphologyFamily: resolvedForm,
+      runtimeAsset: MEMORY_STAR_MODEL,
+      planetLikeSurface: false,
+    }}
+  >
     <primitive object={hiddenAsset} visible={false} />
-    <mesh geometry={heart} castShadow><MemorySurfaceMaterial color={aura} reducedMotion={reducedMotion} /></mesh>
-    {filaments.map((geometry, index) => <mesh key={index} geometry={geometry} castShadow>
-      <MemorySurfaceMaterial color={index % 3 === 0 ? ICE : aura} reducedMotion={reducedMotion} />
-    </mesh>)}
-    <FieldParticles seed={seed} count={active ? 38 : 12} radius={1.05} depth={1.2} height={.72} color={aura} opacity={active ? .48 : .20} size={active ? .034 : .024} />
-    <pointLight position={[0,.25,0]} color={aura} intensity={active ? 3.6 : .72} distance={active ? 9 : 4} decay={2} />
+    <mesh name="memory-star-corona" scale={active ? 1.52 : .78}>
+      <sphereGeometry args={[.92, active ? 48 : 28, active ? 32 : 20]} />
+      <primitive object={coronaMaterial} attach="material" />
+    </mesh>
+    <mesh name="memory-star-photosphere" scale={active ? 1 : .46}>
+      <sphereGeometry args={[.78, active ? 56 : 32, active ? 36 : 24]} />
+      <primitive object={photosphereMaterial} attach="material" />
+    </mesh>
+    <FieldParticles
+      seed={seed}
+      count={active ? 82 : 18}
+      radius={active ? 1.72 : .72}
+      depth={active ? 2.1 : .9}
+      height={active ? 2.1 : .9}
+      color={active ? "#fff0bd" : aura}
+      opacity={active ? .72 : .26}
+      size={active ? .052 : .028}
+    />
+    <Sparkles
+      count={active ? 28 : 6}
+      scale={active ? [2.8,2.8,2.8] : [1.05,1.05,1.05]}
+      size={active ? 2.2 : 1.1}
+      speed={reducedMotion ? 0 : .06}
+      opacity={active ? .48 : .18}
+      color={active ? "#fff4ce" : aura}
+    />
+    <pointLight position={[0,.1,.3]} color="#fff0bd" intensity={active ? 8.4 : 1.4} distance={active ? 18 : 6} decay={2} />
+    <pointLight position={[0,0,-.4]} color={aura} intensity={active ? 4.2 : .9} distance={active ? 13 : 5} decay={2} />
   </group>;
 }
 
