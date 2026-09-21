@@ -65,7 +65,7 @@ test('Memory Stars render as stellar photospheres and coronae rather than geolog
   assert.match(star, /artRevision: "v300-stellar-photosphere-corona"/)
   assert.match(star, /visualAuthority: "stellar-body-not-geology"/)
   assert.match(star, /memoryIdentity: siteKey/)
-  assert.match(star, /sphereGeometry args=\{\[0\.58, 64, 48\]\}/)
+  assert.match(star, /sphereGeometry args=\{\[active \? 0\.72 : 0\.62, 72, 56\]\}/)
   assert.match(star, /THREE\.AdditiveBlending/)
   assert.match(star, /FieldParticles seed=\{seed\}/)
   assert.match(star, /pointLight position=\{\[0,0,0\]\}/)
