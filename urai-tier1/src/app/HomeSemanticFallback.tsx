@@ -10,7 +10,7 @@ export default function HomeSemanticFallback() {
       data-home-non-xr-body-policy="camera-only-no-hands-body-rig"
       data-home-visible-avatar="false"
       data-home-visible-hands="false"
-      aria-label="URAI Home semantic fallback"
+      aria-label="UrAi Home semantic fallback"
       style={{
         minHeight: '100svh',
         display: 'grid',
@@ -31,7 +31,7 @@ export default function HomeSemanticFallback() {
           boxShadow: '0 22px 70px rgba(0,0,0,.28)',
         }}
       >
-        <p style={{ margin: 0, fontSize: 11, fontWeight: 800, letterSpacing: '.18em', textTransform: 'uppercase', opacity: .72 }}>URAI · HOME · SEMANTIC ACCESS</p>
+        <p style={{ margin: 0, fontSize: 11, fontWeight: 800, letterSpacing: '.18em', textTransform: 'uppercase', opacity: .72 }}>UrAi · HOME · SEMANTIC ACCESS</p>
         <h1 style={{ margin: '10px 0 0', fontSize: 'clamp(32px,7vw,64px)', lineHeight: .98, letterSpacing: '-.045em' }}>Your private Home.</h1>
         <p style={{ maxWidth: '54ch', margin: '16px 0 0', lineHeight: 1.6, opacity: .78 }}>
           The spatial renderer is unavailable or still preparing. No synthetic avatar, hands, arms, body rig, personal memory, or invented history is rendered here.
