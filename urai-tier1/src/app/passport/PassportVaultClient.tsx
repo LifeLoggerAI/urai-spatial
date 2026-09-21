@@ -55,6 +55,22 @@ function VaultWorld({ selected, keyState, onSelect, reducedMotion }: { selected:
         <circleGeometry args={[10, 72]} />
         <meshStandardMaterial color="#090d14" metalness={0.3} roughness={0.72} />
       </mesh>
+      <group position={[0, 1.2, -0.15]} rotation={[-0.08, 0.16, -0.03]} onClick={(event) => { event.stopPropagation(); onSelect('identity') }}>
+        <RoundedBox args={[2.7, 3.8, 0.34]} radius={0.14} smoothness={5}>
+          <meshStandardMaterial color="#112f4f" metalness={0.28} roughness={0.5} />
+        </RoundedBox>
+        <RoundedBox position={[0, 0, 0.2]} args={[2.42, 3.5, 0.08]} radius={0.1} smoothness={4}>
+          <meshStandardMaterial color="#f2e6c9" metalness={0.05} roughness={0.78} />
+        </RoundedBox>
+        <mesh position={[0, 0.58, 0.28]}>
+          <torusGeometry args={[0.42, 0.035, 18, 64]} />
+          <meshStandardMaterial color="#d6b66f" emissive="#8a6d2f" emissiveIntensity={0.35} metalness={0.7} roughness={0.26} />
+        </mesh>
+        <mesh position={[0, -0.45, 0.28]}>
+          <boxGeometry args={[1.2, 0.055, 0.04]} />
+          <meshStandardMaterial color="#d6b66f" emissive="#8a6d2f" emissiveIntensity={0.25} metalness={0.72} roughness={0.28} />
+        </mesh>
+      </group>
       {ZONES.map(([id], index) => {
         const angle = ((index - 1) / ZONES.length) * Math.PI * 2
         const radius = index === 0 ? 0 : 6.2
@@ -73,7 +89,7 @@ function VaultWorld({ selected, keyState, onSelect, reducedMotion }: { selected:
           </group>
         )
       })}
-      <group position={[0, 1.35, 0]}>
+      <group position={[3.15, 1.15, 0.65]}>
         <Float speed={reducedMotion ? 0 : 0.8} rotationIntensity={reducedMotion ? 0 : 0.22} floatIntensity={reducedMotion ? 0 : 0.28}>
           <mesh rotation={[0, 0, Math.PI / 4]}>
             <torusGeometry args={[0.72, 0.16, 20, 64]} />
