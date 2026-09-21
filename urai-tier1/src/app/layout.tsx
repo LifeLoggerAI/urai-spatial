@@ -67,7 +67,7 @@ const embeddedIcon = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/sv
 
 export const metadata: Metadata = {
   metadataBase: new URL(URAI_PUBLIC_ORIGIN),
-  title: previewMode ? 'PREVIEW — URAI Spatial' : 'URAI Spatial',
+  title: previewMode ? 'PREVIEW — UrAi Spatial' : 'UrAi Spatial',
   description: 'A private spatial world for memory, reflection, relationships, and personal intelligence.',
   icons: { icon: embeddedIcon },
   robots: {
