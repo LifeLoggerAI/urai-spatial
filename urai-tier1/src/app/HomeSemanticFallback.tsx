@@ -39,7 +39,7 @@ export default function HomeSemanticFallback() {
         <nav aria-label="Home semantic destinations" style={{ display: 'flex', flexWrap: 'wrap', gap: 10, marginTop: 22 }}>
           <Link href="/ground/?from=home-ground" style={{ minHeight: 48, display: 'inline-flex', alignItems: 'center', padding: '0 16px', borderRadius: 999, background: '#eaf4ef', color: '#0b1716', fontWeight: 800, textDecoration: 'none' }}>Ground</Link>
           <Link href="/life-map/?from=home-sky" style={{ minHeight: 48, display: 'inline-flex', alignItems: 'center', padding: '0 16px', borderRadius: 999, border: '1px solid rgba(234,244,239,.24)', color: '#f3faf7', fontWeight: 800, textDecoration: 'none' }}>Life Map</Link>
-          <Link href="/passport" style={{ minHeight: 48, display: 'inline-flex', alignItems: 'center', padding: '0 16px', borderRadius: 999, border: '1px solid rgba(234,244,239,.24)', color: '#f3faf7', fontWeight: 800, textDecoration: 'none' }}>Passport</Link>
+          <Link href="/passport" aria-label="Open Passport from Home" style={{ minHeight: 48, display: 'inline-flex', alignItems: 'center', padding: '0 16px', borderRadius: 999, border: '1px solid rgba(234,244,239,.24)', color: '#f3faf7', fontWeight: 800, textDecoration: 'none' }}>Passport</Link>
           <Link href="/privacy" style={{ minHeight: 48, display: 'inline-flex', alignItems: 'center', padding: '0 16px', borderRadius: 999, border: '1px solid rgba(234,244,239,.24)', color: '#f3faf7', fontWeight: 800, textDecoration: 'none' }}>Privacy</Link>
         </nav>
       </section>
