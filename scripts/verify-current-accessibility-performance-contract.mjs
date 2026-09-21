@@ -18,7 +18,7 @@ requireMatch(evidence, /data-testid=\"urai-home-accessible-fallback\"\]\[data-we
 requireMatch(evidence, /fallback\)\.toHaveCount\(1\)/, 'single fallback ownership assertion')
 requireMatch(evidence, /Accessible Home destinations/, 'accessible Home destination navigation')
 requireMatch(evidence, /data-home-navigation-owner', 'runtime-boundary'/, 'runtime-boundary semantic navigation owner')
-requireMatch(evidence, /Open URAI Orb companion/, 'canonical semantic Orb name')
+requireMatch(evidence, /Open UrAi Orb companion/, 'canonical semantic Orb name')
 requireMatch(evidence, /Orb menu enters focus, closes on Escape, and returns focus/, 'Orb focus lifecycle proof')
 requireMatch(evidence, /firstDestination\)\.toBeFocused\(\)/, 'Orb first-control focus assertion')
 requireMatch(evidence, /page\.keyboard\.press\(['\"]Escape['\"]\)/, 'Orb Escape close assertion')
