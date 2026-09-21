@@ -3,11 +3,13 @@
 Date: 2026-05-07
 Scope: Verification and correction pass only. No new product features.
 
+> **STALE / SUPERSEDED HISTORICAL RECEIPT.** This May 7 audit is retained for provenance only. Its phrases such as “deployed app,” its `FIREBASE_SERVICE_ACCOUNT_JSON` recommendation, and its provider checklist are not current production authority. As of the current 2026-09 convergence lane, the hardened Stripe Checkout/Portal/Webhook source is candidate source only until protected deployment and live readback; LIVE Stripe has no webhook endpoint; public subscription terms/privacy/refund gates remain open; and current server credential policy uses external-account ADC/WIF rather than a long-lived Firebase service-account JSON secret. Use the current exact-head release evidence and provider readbacks, not this historical document, for launch decisions.
+
 ## Summary
 
 Status: CONDITIONAL PASS
 
-The core SaaS server pieces now exist in the deployed `urai-tier1` Next.js app: secure entitlement API, Stripe checkout, Stripe webhook, Stripe webhook-v2 alias, Firestore entitlement persistence, and package dependencies required by those routes. Production launch still depends on a deployment smoke test with real Firebase, Stripe, and hosting environment variables.
+The core SaaS server pieces now exist in the deployed `urai-tier1` Next.js app: secure entitlement API, Stripe checkout, Stripe webhook, Stripe webhook-v2 alias, Firestore entitlement persistence, and package dependencies required by those routes. Production launch still depends on protected deployment/live verification with real Firebase, Stripe, approved short-lived provider identity, and hosting environment configuration.
 
 ## Verified / Corrected in this pass
 
@@ -53,7 +55,7 @@ These cannot be completed inside the repository alone:
 - Create/verify Firebase project.
 - Enable Firebase Auth Email/Password provider.
 - Enable Firestore.
-- Add `FIREBASE_SERVICE_ACCOUNT_JSON` as a production secret.
+- Configure protected external-account ADC / Workload Identity Federation for the exact production identity; long-lived Firebase service-account JSON is prohibited.
 - Create Stripe products/prices.
 - Add Stripe webhook endpoint to `/api/stripe/webhook-v2`.
 - Add all hosting environment variables.
@@ -75,9 +77,9 @@ This audit did not run a live `pnpm build` or `pnpm typecheck` against the repos
 
 Root `src/...` contains an older parallel SaaS surface. Runtime scripts currently build `urai-tier1`; future cleanup should either delete the root duplicate or explicitly mark it as non-runtime to avoid confusion.
 
-### RISK: Service account env formatting
+### RISK: Production identity must remain keyless
 
-`FIREBASE_SERVICE_ACCOUNT_JSON` must be valid JSON in the hosting environment. If newline escaping causes deployment failure, convert to a base64-based secret in a future hardening pass.
+Canonical Tier1 server routes require external-account ADC / Workload Identity Federation and reject long-lived Firebase service-account JSON, private-key variables, client-email variables, and Firebase CLI tokens. Any deployment environment that cannot provide the approved short-lived identity must fail closed.
 
 ### RISK: Local insight persistence
 
