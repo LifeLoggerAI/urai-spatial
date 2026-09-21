@@ -22,15 +22,13 @@ test('historical V215 single-surface source remains reproducible but is not runt
   assert.doesNotMatch(world, /authored-v215\/life-map-memory-sanctuary-v215\.glb/)
 })
 
-test('V237 runtime keeps retired V215 strata out while grounded outcrops inhabit continuous geography', () => {
-  assert.match(world, /function memoryHeartGeometry\(/)
-  assert.match(world, /function memoryFilamentGeometry\(/)
-  assert.match(world, /life-map-v229-open-branching-memory-grove/)
-  assert.doesNotMatch(world, /function smoothMemoryGeometry\(/)
-  assert.match(world, /<primitive object=\{hiddenAsset\} visible=\{false\} \/>/)
-  assert.match(world, /life-map-weathered-memory-outcrop-/)
-  assert.match(world, /life-map-v237-continuous-illuminated-memory-geography/)
-  assert.match(world, /life-map-v237-root-system-/)
+test('current runtime keeps retired V215 strata out while Memory Stars use stellar authority', () => {
+  assert.match(world, /<primitive object=\{governedAsset\} visible=\{false\} \/>/)
+  assert.match(world, /name="memory-star-photosphere"/)
+  assert.match(world, /name="memory-star-inner-corona"/)
+  assert.match(world, /name="memory-star-outer-corona"/)
+  assert.match(world, /visualAuthority: "stellar-body-not-geology"/)
+  assert.doesNotMatch(world, /life-map-weathered-memory-outcrop-/)
   assert.doesNotMatch(world, /function MemorySeed\(|life-map-v215-rooted-strata-memory|function memoryLedgerGeometry\(/)
 })
 
