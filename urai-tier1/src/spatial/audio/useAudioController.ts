@@ -172,6 +172,7 @@ export function useAudioController() {
         next = new Audio(AMBIENT_SRC[nextTrack]);
         next.loop = true;
         next.preload = "auto";
+        next.load();
         next.volume = 0;
         layers.set(nextTrack, next);
       }

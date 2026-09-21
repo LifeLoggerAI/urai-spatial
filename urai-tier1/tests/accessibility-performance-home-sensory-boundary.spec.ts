@@ -15,6 +15,11 @@ test.describe('Home sensory consent boundary evidence', () => {
       if (homeAmbiencePattern.test(request.url())) ambienceRequests.push(request.url())
     })
 
+    await page.addInitScript(() => {
+      localStorage.setItem('urai:onboarding:v2:complete', '1')
+      localStorage.setItem('urai:onboarding:v3:setup-complete', '1')
+      localStorage.removeItem('urai:onboarding:v3:setup-step')
+    })
     await page.goto('/home/', { waitUntil: 'domcontentloaded' })
 
     const home = page.locator(homeOwnerSelector)
