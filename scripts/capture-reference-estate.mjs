@@ -30,6 +30,13 @@ async function capture(browser, cfg) {
     ...device,
     reducedMotion: cfg.reducedMotion ? 'reduce' : 'no-preference',
   })
+  if (cfg.system !== 'Onboarding') {
+    await context.addInitScript(() => {
+      localStorage.setItem('urai:onboarding:v2:complete', '1')
+      localStorage.setItem('urai:onboarding:v3:setup-complete', '1')
+      localStorage.removeItem('urai:onboarding:v3:setup-step')
+    })
+  }
   if (cfg.noWebGL) {
     await context.addInitScript(() => {
       const original = HTMLCanvasElement.prototype.getContext
