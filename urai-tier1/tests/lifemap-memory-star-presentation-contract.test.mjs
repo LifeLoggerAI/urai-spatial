@@ -1,33 +1,23 @@
-import assert from 'node:assert/strict';
-import fs from 'node:fs';
+import assert from 'node:assert/strict'
+import fs from 'node:fs'
 
-const source = fs.readFileSync(new URL('../src/components/lifemap/LifeMapProductionWorld.tsx', import.meta.url), 'utf8');
+const source = fs.readFileSync(new URL('../src/components/lifemap/LifeMapProductionWorld.tsx', import.meta.url), 'utf8')
 
-assert.ok(source.includes('const MEMORY_STAR_MODEL = "/assets/urai/generated/models/life-map-memory-star-v1.glb";'), 'Life Map must retain the governed memory-star GLB as hidden source and animation authority');
-assert.ok(source.includes('<primitive object={hiddenAsset} visible={false} />'), 'The rejected authored memory-star presentation must remain wholly hidden');
-assert.ok(source.includes('function memoryHeartGeometry('), 'Life Map must render an authored open memory heart instead of a generic solid primitive');
-assert.ok(source.includes('function memoryFilamentGeometry('), 'Life Map must give each memory a branching spatial silhouette');
-assert.ok(source.includes('new THREE.CatmullRomCurve3(points, false'), 'memory hearts, branches, and chambers must remain open rather than closing into orbital glyphs');
-assert.ok(source.includes('function memoryMembrane('), 'memories must have authored open lamellar surfaces');
-for (const form of ['petal', 'fan', 'wave', 'branch', 'shell']) {
-  assert.ok(source.includes(`form=\"${form}\"`) || source.includes(`form === \"${form}\"`), `semantic memory form ${form} must remain authored`);
-}
-assert.ok(source.includes("v237-grounded-semantic-outcrops"), 'the literal-pixel repair must identify the grounded varied semantic form authority');
-assert.ok(source.includes('Math.pow(Math.sin(Math.PI * t), .74)'), 'memory surfaces must taper at both ends');
-assert.ok(source.includes('geometry.computeVertexNormals()'), 'memory surfaces must carry valid lighting normals');
-assert.ok(!source.includes('const originT = (filament + 1) / 10'), 'rejected uniform bare branch presentation must not return');
-assert.ok(source.includes('life-map-v229-open-branching-memory-grove'), 'selected arrival must remain an open branching place instead of an enclosing wire cage');
-assert.ok(source.includes('Array.from({ length: 7 }'), 'the arrival place must preserve seven offset open currents');
-assert.ok(!source.includes('radius * Math.sin(t * Math.PI)'), 'arrival threads must not converge into a wire-cage pole');
-assert.ok(source.includes('name={`life-map-weathered-memory-outcrop-${siteKey}`}'), 'memories must remain individually addressable in the spatial scene');
-assert.ok(!source.includes('new THREE.SphereGeometry(1, 72, 54)'), 'the rejected smooth egg geometry must not return');
-assert.ok(source.includes('// V290 literal-pixel candidate: the governed memory artifacts now live inside'), 'The active Life Map source must declare the current V290 galaxy presentation boundary');
-assert.ok(source.includes('name="life-map-v237-grounded-geography-retired"'), 'the superseded V237 valley must remain explicitly retired rather than silently reclaiming overview authority');
-assert.ok(source.includes('retiredVisualRole: "former-memory-valley-not-current-galaxy-authority"'), 'the retired valley must advertise its non-authoritative visual role');
-assert.ok(source.includes('function LivingMemoryGeography()'), 'Life Map must render a continuous authored geography beneath memory manifestations');
-assert.ok(source.includes('function MemoryRoots('), 'memory manifestations must visibly grow from the environment');
-assert.ok(source.includes('Array.from({ length: 2 }'), 'memory outcrops must use restrained material strata rather than cloned flower whorls');
-assert.ok(source.includes('emissiveIntensity={.32}'), 'continuous terrain must remain materially readable instead of collapsing to black cut planes');
-assert.ok(!/function MemorySeed\(|life-map-v215-rooted-strata-memory|function memoryLedgerGeometry\(/.test(source), 'Rejected grounded strata and shard-like memory presentations must not re-enter runtime');
+assert.ok(source.includes('const MEMORY_STAR_MODEL = "/assets/urai/generated/models/life-map-memory-star-v1.glb";'), 'Life Map must retain the governed memory-star GLB as hidden source and animation authority')
+assert.ok(source.includes('const hiddenAsset = useMemo(() => scene.clone(true), [scene]);'), 'Memory Star must preserve governed asset lineage')
+assert.ok(source.includes('<primitive object={hiddenAsset} visible={false} />'), 'governed source asset must stay hidden while current stellar presentation owns visible pixels')
+assert.ok(source.includes('name="memory-star-photosphere"'), 'Memory Star must expose a visible photosphere')
+assert.ok(source.includes('name="memory-star-inner-corona"'), 'Memory Star must expose an inner corona')
+assert.ok(source.includes('name="memory-star-outer-corona"'), 'Memory Star must expose an outer corona')
+assert.ok(source.includes('artRevision: "v300-stellar-photosphere-corona"'), 'Memory Star must identify current stellar art authority')
+assert.ok(source.includes('visualAuthority: "stellar-body-not-geology"'), 'Memory Star must explicitly reject geological authority')
+assert.ok(source.includes('memoryIdentity: siteKey'), 'Memory Star must preserve selected-memory identity')
+assert.ok(source.includes('<sphereGeometry args={[0.58, 64, 48]} />'), 'selected Memory Star must improve near-field photosphere readability')
+assert.ok(source.includes('const particleCount = active ? 28 : 10;'), 'flare particles must remain subordinate to the photosphere')
+assert.ok(source.includes('name="life-map-v237-grounded-geography-retired"'), 'superseded V237 valley must remain explicitly retired')
+assert.ok(source.includes('retiredVisualRole: "former-memory-valley-not-current-galaxy-authority"'), 'retired geography must advertise its non-authoritative role')
+assert.ok(!source.includes('life-map-weathered-memory-outcrop-'), 'weathered outcrops must not reclaim Memory Star presentation')
+assert.ok(!source.includes("artRevision:'v237-grounded-semantic-outcrops'"), 'grounded semantic outcrops must remain superseded')
+assert.ok(!/function MemorySeed\(|life-map-v215-rooted-strata-memory|function memoryLedgerGeometry\(/.test(source), 'rejected strata and shard-like memory presentations must not re-enter runtime')
 
-console.log('Life Map memory-star presentation contract passed');
+console.log('Life Map Memory Star stellar presentation contract passed')
