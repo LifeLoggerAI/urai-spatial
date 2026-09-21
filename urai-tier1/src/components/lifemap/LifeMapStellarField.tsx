@@ -221,7 +221,7 @@ function StellarMemory({ node, index, active, reducedMotion, onSelect }: { node:
     root.current.scale.setScalar(pulse)
     root.current.rotation.y = Math.sin(clock.elapsedTime * .07 + (seed % 29)) * .035
   })
-  const core = active ? .40 : .23
+  const core = active ? 2.0 : .23
   const aura = new THREE.Color(node.aura)
   const warmCore = aura.clone().lerp(new THREE.Color('#f3e5c9'), .52).getStyle()
   return <group ref={root} position={point} renderOrder={120} name={`life-map-v323-memory-star-${node.id}`} userData={{ visualOnly: false, interactionOwner: true, presentation: 'stellar-point-photosphere-layered-corona', goldMasterRevision: 'v323-life-map-to-focus-memory-star-continuity' }}>
@@ -231,8 +231,12 @@ function StellarMemory({ node, index, active, reducedMotion, onSelect }: { node:
       onPointerOver={(event) => { event.stopPropagation(); document.body.style.cursor = 'pointer' }}
       onPointerOut={() => { document.body.style.cursor = '' }}
     >
-      <sphereGeometry args={[active ? .74 : .52, 16, 12]} />
+      <sphereGeometry args={[active ? 2.55 : .52, 24, 18]} />
       <meshBasicMaterial transparent opacity={0} depthWrite={false} colorWrite={false} />
+    </mesh>
+    <mesh renderOrder={124} raycast={() => null}>
+      <sphereGeometry args={[core * 1.02, 32, 24]} />
+      <meshBasicMaterial color={warmCore} transparent opacity={active ? .96 : .84} depthTest={false} depthWrite={false} toneMapped={false} />
     </mesh>
     <group rotation={[.22 + seeded(seed, 2) * .30, -.35 + seeded(seed, 3) * .70, .15 + seeded(seed, 4) * .40]}>
       <mesh position={[-core * .42, core * .18, 0]} scale={[1.28, .78, .58]} renderOrder={123} raycast={() => null}>
@@ -248,7 +252,7 @@ function StellarMemory({ node, index, active, reducedMotion, onSelect }: { node:
         <meshBasicMaterial color={warmCore} transparent opacity={active ? .62 : .42} blending={THREE.AdditiveBlending} depthTest={false} depthWrite={false} toneMapped={false} />
       </mesh>
     </group>
-    <mesh renderOrder={121} scale={active ? [5.8,4.6,3.7] : [4.6,3.6,3.0]} rotation={[.35,-.2,.4]} raycast={() => null}>
+    <mesh renderOrder={121} scale={active ? [3.4,3.0,2.6] : [4.6,3.6,3.0]} rotation={[.35,-.2,.4]} raycast={() => null}>
       <sphereGeometry args={[core, 18, 12]} />
       <meshBasicMaterial color={node.aura} transparent opacity={active ? .075 : .038} blending={THREE.AdditiveBlending} depthTest={false} depthWrite={false} toneMapped={false} />
     </mesh>
@@ -256,9 +260,9 @@ function StellarMemory({ node, index, active, reducedMotion, onSelect }: { node:
       <lineBasicMaterial color={warmCore} transparent opacity={active ? .34 : .12} blending={THREE.AdditiveBlending} depthTest={false} depthWrite={false} />
     </lineSegments>
     <points renderOrder={125} geometry={motes} raycast={() => null}>
-      <pointsMaterial vertexColors size={active ? .050 : .030} transparent opacity={active ? .78 : .50} depthTest={false} depthWrite={false} sizeAttenuation />
+      <pointsMaterial vertexColors size={active ? .085 : .030} transparent opacity={active ? .78 : .50} depthTest={false} depthWrite={false} sizeAttenuation />
     </points>
-    <pointLight color={node.aura} intensity={active ? 3.1 : .72} distance={active ? 9.2 : 4.5} decay={2} />
+    <pointLight color={node.aura} intensity={active ? 4.6 : .72} distance={active ? 14 : 4.5} decay={2} />
   </group>
 }
 
