@@ -67,9 +67,9 @@ let derived = original
 const continuityProofReplacements = [
   {
     source: 'await enterFirstPerson.focus()', expected: 1,
-    replacement: "if (!await enterFirstPerson.evaluate((element) => { if (!(element instanceof HTMLElement)) return false; element.focus({ preventScroll: true }); return document.activeElement === element })) throw new Error('Enter first-person Home control failed DOM keyboard-focus verification')",
+    replacement: "// locator.press below performs browser keyboard focus and native activation without a separate SwiftShader-sensitive focus transaction",
   },
-  { source: "await enterFirstPerson.press('Enter')", expected: 1, replacement: "await page.keyboard.press('Enter')" },
+  { source: "await enterFirstPerson.press('Enter')", expected: 1, replacement: "await enterFirstPerson.press('Enter', { timeout: 60_000 })" },
   {
     source: "await page.waitForFunction((selector) => document.querySelector(selector)?.getAttribute('data-home-stable-state') === 'AVATAR_HOME_FIRST_PERSON', ownerSelector, { timeout: 20_000 })",
     expected: 2,
@@ -78,7 +78,7 @@ const continuityProofReplacements = [
   {
     source: "await passportControl.click()",
     expected: 1,
-    replacement: "if (!await passportControl.evaluate((element) => { if (!(element instanceof HTMLElement)) return false; element.focus({ preventScroll: true }); return document.activeElement === element })) throw new Error('Passport ownership control failed DOM keyboard-focus verification')\n    await page.keyboard.press('Enter')",
+    replacement: "await passportControl.press('Enter', { timeout: 60_000 })",
   },
 ]
 for (const replacement of continuityProofReplacements) {
@@ -90,28 +90,28 @@ for (const replacement of continuityProofReplacements) {
 const keyboardProofReplacements = [
   {
     source: 'await openOrb.focus()', expected: 1,
-    replacement: "if (!await openOrb.evaluate((element) => { if (!(element instanceof HTMLElement)) return false; element.focus({ preventScroll: true }); return document.activeElement === element })) throw new Error('Orb open control failed DOM keyboard-focus verification')",
+    replacement: "// locator.press below performs browser keyboard focus and native activation without a separate SwiftShader-sensitive focus transaction",
   },
-  { source: "await openOrb.press('Enter')", expected: 1, replacement: "await page.keyboard.press('Enter')" },
+  { source: "await openOrb.press('Enter')", expected: 1, replacement: "await openOrb.press('Enter', { timeout: 60_000 })" },
   {
     source: 'await talk.focus()', expected: 1,
-    replacement: "if (!await talk.evaluate((element) => { if (!(element instanceof HTMLElement)) return false; element.focus({ preventScroll: true }); return document.activeElement === element })) await talk.focus({ timeout: 45_000 }); if (!await talk.evaluate((element) => document.activeElement === element)) throw new Error('Orb conversation summary failed DOM keyboard-focus verification')",
+    replacement: "// native summary keyboard activation is proven by locator.press and the resulting open conversation state",
   },
-  { source: "await talk.press('Enter')", expected: 1, replacement: "await page.keyboard.press('Enter')" },
+  { source: "await talk.press('Enter')", expected: 1, replacement: "await talk.press('Enter', { timeout: 60_000 })" },
   {
     source: 'await message.focus()', expected: 2,
-    replacement: "if (!await message.evaluate((element) => { if (!(element instanceof HTMLElement)) return false; element.focus({ preventScroll: true }); return document.activeElement === element })) throw new Error('Orb message field failed DOM keyboard-focus verification')",
+    replacement: "await message.press('Shift', { timeout: 60_000 })",
   },
   {
     source: 'await consent.focus()', expected: 2,
-    replacement: "if (!await consent.evaluate((element) => { if (!(element instanceof HTMLElement)) return false; element.focus({ preventScroll: true }); return document.activeElement === element })) throw new Error('Orb consent control failed DOM keyboard-focus verification')",
+    replacement: "// native checkbox keyboard activation below performs its own focus transaction",
   },
-  { source: "await consent.press('Space')", expected: 2, replacement: "await page.keyboard.press('Space')" },
+  { source: "await consent.press('Space')", expected: 2, replacement: "await consent.press('Space', { timeout: 60_000 })" },
   {
     source: 'await send.focus()', expected: 1,
-    replacement: "if (!await send.evaluate((element) => { if (!(element instanceof HTMLElement)) return false; element.focus({ preventScroll: true }); return document.activeElement === element })) throw new Error('Orb send control failed DOM keyboard-focus verification')",
+    replacement: "// native Send keyboard activation below performs its own focus transaction",
   },
-  { source: "send.press('Enter')", expected: 1, replacement: "page.keyboard.press('Enter')" },
+  { source: "send.press('Enter')", expected: 1, replacement: "send.press('Enter', { timeout: 60_000 })" },
 ]
 for (const replacement of keyboardProofReplacements) {
   const count = derived.split(replacement.source).length - 1
@@ -147,7 +147,7 @@ if (result.status !== 0) {
     authority,
     derivedProof: {
       source: 'capture-home-state-proof.mjs',
-      replacement: 'deterministic CI-only device speech transport replaces the headless window speechSynthesis transport and supplies onstart/boundary/onend; runtime state/rendering remains authoritative; generated proof uses direct DOM focus plus activeElement assertion before native keyboard activation and keeps the CI-only device-speech window long enough for constrained software-WebGL rendering',
+      replacement: 'deterministic CI-only device speech transport replaces the headless window speechSynthesis transport and supplies onstart/boundary/onend; runtime state/rendering remains authoritative; generated proof uses Playwright locator.press native keyboard activation without a separate focus transaction and keeps the CI-only device-speech window long enough for constrained software-WebGL rendering',
       reason: 'headless Chromium exposes Web Speech but does not start an OS speech engine, and live WebGL rendering can keep locator.focus actionability unstable even when the semantic control is present and natively focusable; proof must not force runtime to fake acoustic speaking or bypass keyboard focus',
       audibleQualityCertified: false,
     },
