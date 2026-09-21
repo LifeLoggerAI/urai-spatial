@@ -22,8 +22,8 @@ export const URAI_DESTINATION_REGISTRY: Record<UraiDestination, UraiDestinationD
   'privacy-controls': { id: 'privacy-controls', label: 'Consent Sanctuary', href: '/privacy-controls', layer: 'infrastructure-world', entryPortal: 'consent-aperture', cameraCheckpoint: 'privacy-arrival', environmentalForm: 'permission-control-chamber' },
   'location-map': { id: 'location-map', label: 'Emotional Atlas', href: '/location-map', layer: 'infrastructure-world', entryPortal: 'location-beacon', cameraCheckpoint: 'atlas-world-view', environmentalForm: 'permission-aware-globe' },
   'possible-futures': { id: 'possible-futures', label: 'Possible Futures', href: '/possible-futures', layer: 'infrastructure-world', entryPortal: 'orb-scenario-threshold', cameraCheckpoint: 'possible-futures-arrival', environmentalForm: 'truth-isolated-scenario-world' },
-  focus: { id: 'focus', label: 'Focus Chamber', href: '/focus', layer: 'infrastructure-world', entryPortal: 'memory-focus', cameraCheckpoint: 'focus-arrival', environmentalForm: 'selected-memory-chamber' },
-  replay: { id: 'replay', label: 'Replay Theater', href: '/replay', layer: 'infrastructure-world', entryPortal: 'memory-replay', cameraCheckpoint: 'replay-arrival', environmentalForm: 'cinematic-memory-theater' },
+  focus: { id: 'focus', label: 'Focus', href: '/focus', layer: 'infrastructure-world', entryPortal: 'memory-focus', cameraCheckpoint: 'focus-arrival', environmentalForm: 'selected-memory-star-interior' },
+  replay: { id: 'replay', label: 'Replay', href: '/replay', layer: 'infrastructure-world', entryPortal: 'memory-replay', cameraCheckpoint: 'replay-arrival', environmentalForm: 'source-first-memory-interior' },
 }
 
 const PATH_DESTINATIONS: readonly [string, UraiDestination][] = [
