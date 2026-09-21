@@ -1,21 +1,52 @@
 {
   "hosting": {
     "public": "urai-tier1/out",
-    "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
+    ],
     "cleanUrls": true,
     "trailingSlash": true,
     "redirects": [],
     "headers": [
       {
+        "source": "**",
+        "headers": [
+          {
+            "key": "Strict-Transport-Security",
+            "value": "max-age=31536000"
+          },
+          {
+            "key": "X-Content-Type-Options",
+            "value": "nosniff"
+          },
+          {
+            "key": "X-Frame-Options",
+            "value": "SAMEORIGIN"
+          },
+          {
+            "key": "Referrer-Policy",
+            "value": "strict-origin-when-cross-origin"
+          }
+        ]
+      },
+      {
         "source": "**/*.html",
         "headers": [
-          { "key": "Cache-Control", "value": "no-store, max-age=0" }
+          {
+            "key": "Cache-Control",
+            "value": "no-store, max-age=0"
+          }
         ]
       },
       {
         "source": "/release-fingerprint.json",
         "headers": [
-          { "key": "Cache-Control", "value": "no-store, max-age=0" }
+          {
+            "key": "Cache-Control",
+            "value": "no-store, max-age=0"
+          }
         ]
       }
     ],
