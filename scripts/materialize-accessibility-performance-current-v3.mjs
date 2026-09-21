@@ -30,7 +30,7 @@ await transformFile('urai-tier1/tests/accessibility-performance-evidence.spec.ts
     await expect(navigation).toHaveCount(1)
     await expect(navigation).toHaveAttribute('data-home-navigation-owner', 'runtime-boundary')
     await expect(navigation).toHaveAttribute('data-home-navigation-non-dominant', 'true')
-    await expect(navigation.getByTestId('home-semantic-orb')).toHaveAccessibleName('Open URAI Orb companion')`,
+    await expect(navigation.getByTestId('home-semantic-orb')).toHaveAccessibleName('Open UrAi Orb companion')`,
   1,
   'single-owner no-WebGL runtime accessibility contract',
 ))
@@ -39,14 +39,14 @@ await transformFile('urai-tier1/tests/accessibility-performance-embodied-explora
   let source = replaceExact(
     input,
     "    await expect(direct.getByRole('button', { name: 'Open Orb directly' })).toBeVisible()",
-    "    await expect(direct.getByRole('button', { name: 'Open URAI Orb companion' })).toBeVisible()",
+    "    await expect(direct.getByRole('button', { name: 'Open UrAi Orb companion' })).toBeVisible()",
     1,
     'embodied Home current Orb accessible name',
   )
   source = replaceExact(
     source,
     "    for (const name of [/Open Orb directly/i, /Open Ground directly/i, /Open Life Map directly/i]) {",
-    "    for (const name of [/Open URAI Orb companion/i, /Open Ground directly/i, /Open Life Map directly/i]) {",
+    "    for (const name of [/Open UrAi Orb companion/i, /Open Ground directly/i, /Open Life Map directly/i]) {",
     1,
     'embodied Home current focusable destination names',
   )
