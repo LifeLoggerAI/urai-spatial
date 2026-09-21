@@ -8,7 +8,7 @@ const finalDir = path.resolve(process.env.URAI_PROOF_DIR || 'artifacts/home-stat
 // duplicated all expensive visual captures and still killed a progressing run.
  // Use one bounded envelope that is smaller than the previous 52-minute aggregate
 // retry budget while preserving every required state and every per-action timeout.
-const timeoutMs = Number.parseInt(process.env.URAI_HOME_PROOF_ATTEMPT_TIMEOUT_MS || '', 10) || 38 * 60 * 1000
+const timeoutMs = Number.parseInt(process.env.URAI_HOME_PROOF_ATTEMPT_TIMEOUT_MS || '', 10) || 50 * 60 * 1000
 const attempts = 1
 
 async function stopProcessGroup(child) {
