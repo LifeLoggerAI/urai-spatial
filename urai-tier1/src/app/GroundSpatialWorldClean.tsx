@@ -138,7 +138,6 @@ function TerrainMaterial({ profile }: { profile: EnvironmentProfile }) {
     const naturalNormalStrength = profile.id === "woodland" ? 0.22 : 0.18;
     return <meshStandardMaterial
       color="#ffffff"
-      map={albedo}
       normalMap={normal}
       normalScale={new THREE.Vector2(naturalNormalStrength, naturalNormalStrength)}
       aoMap={arm}
