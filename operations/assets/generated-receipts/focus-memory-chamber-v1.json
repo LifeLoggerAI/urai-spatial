@@ -2,11 +2,11 @@
   "schemaVersion": 1,
   "id": "focus-memory-chamber-v1",
   "fixedPath": "urai-tier1/public/assets/urai/generated/models/focus-memory-chamber-v1.glb",
-  "bytes": 622516,
-  "sha256": "d0e8a2105927f5fc610f68edc907cbd100b8570253fab3ba942171136d54b79d",
+  "bytes": 231408,
+  "sha256": "d7b514f49ffe8fb460dea6e1f11feb3abf7654033a078af62877bf274db7ae59",
   "measured": {
-    "triangleCount": 17334,
-    "nodeCount": 35,
+    "triangleCount": 3908,
+    "nodeCount": 37,
     "materialCount": 8,
     "animationClips": [
       "Focus_Arrival",
@@ -14,12 +14,12 @@
       "Focus_Exit"
     ]
   },
-  "compressionStatus": "meshopt",
+  "compressionStatus": "candidate-uncompressed-canon-v1",
   "requiredCompression": "draco-or-meshopt",
-  "fallback": "procedural-focus-chamber",
-  "source": "URAI deterministic candidate forge; replaceable by reviewed provider asset",
-  "license": "URAI Labs internal production asset",
-  "generatedBy": "URAI Labs Final GLB Forge 1.0; reconciled to urai-final-glb-production-pack-v1; exact accessor bounds metadata repaired without geometry or animation changes",
-  "generatedAt": "2026-08-08T22:17:46.473Z",
+  "fallback": "procedural-living-memory-field",
+  "source": "URAI canon-clean deterministic convergence candidate; requires rendered inspection and compression before promotion",
+  "license": "URAI Labs internal production candidate asset",
+  "generatedBy": "URAI Labs Final GLB Forge 1.0; canon-clean convergence candidate",
+  "generatedAt": "2026-09-22T06:45:00Z",
   "releaseState": "candidate-not-production-ready"
 }

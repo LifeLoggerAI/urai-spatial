@@ -2,11 +2,11 @@
   "schemaVersion": 1,
   "id": "life-map-memory-star-v1",
   "fixedPath": "urai-tier1/public/assets/urai/generated/models/life-map-memory-star-v1.glb",
-  "bytes": 373236,
-  "sha256": "ae4a70d2964a69025e246e7c09394b674a3c9f7b4b44a014cde6e1bffe7e9efa",
+  "bytes": 276280,
+  "sha256": "b16969261f80d7fc51b2a3efbd19cb938b503d8eaffbeb3d2df9b53baa41a181",
   "measured": {
-    "triangleCount": 8770,
-    "nodeCount": 30,
+    "triangleCount": 5464,
+    "nodeCount": 36,
     "materialCount": 8,
     "animationClips": [
       "MemoryStar_Idle",
@@ -14,12 +14,12 @@
       "MemoryStar_Focus"
     ]
   },
-  "compressionStatus": "meshopt",
+  "compressionStatus": "candidate-uncompressed-canon-v1",
   "requiredCompression": "draco-or-meshopt",
   "fallback": "procedural-memory-star",
-  "source": "URAI deterministic candidate forge; replaceable by reviewed provider asset",
-  "license": "URAI Labs internal production asset",
-  "generatedBy": "URAI Labs Final GLB Forge 1.0; bounded Life Map shard pole-normal repair; reconciled to urai-final-glb-production-pack-v1",
-  "generatedAt": "2026-08-08T23:57:27.724Z",
+  "source": "URAI canon-clean deterministic convergence candidate; requires rendered inspection and compression before promotion",
+  "license": "URAI Labs internal production candidate asset",
+  "generatedBy": "URAI Labs Final GLB Forge 1.0; canon-clean convergence candidate",
+  "generatedAt": "2026-09-22T06:45:00Z",
   "releaseState": "candidate-not-production-ready"
 }

@@ -1,9 +1,9 @@
 {
-  "schemaVersion": "2.0.0",
+  "schemaVersion": "2.1.0",
   "packId": "urai-final-glb-production-pack-v1",
-  "generatedAt": "2026-08-08T04:10:38Z",
+  "generatedAt": "2026-09-22T06:45:00Z",
   "generator": "URAI Labs Final GLB Forge 1.0",
-  "authorship": "Original non-primitive authored mesh surfaces with embedded UV-mapped PBR texture sets; no visible basic primitive stand-ins.",
+  "authorship": "Canon-clean candidate pack. Memory Star, Focus, Replay and Orb are regenerated as unreviewed candidates and require rendered inspection plus compression before promotion.",
   "assets": [
     {
       "fileName": "home-entry-chamber-v1.glb",
@@ -57,10 +57,10 @@
     },
     {
       "fileName": "life-map-memory-star-v1.glb",
-      "bytes": 373236,
-      "sha256": "ae4a70d2964a69025e246e7c09394b674a3c9f7b4b44a014cde6e1bffe7e9efa",
-      "triangleCount": 8770,
-      "nodes": 30,
+      "bytes": 276280,
+      "sha256": "b16969261f80d7fc51b2a3efbd19cb938b503d8eaffbeb3d2df9b53baa41a181",
+      "triangleCount": 5464,
+      "nodes": 36,
       "animations": [
         "MemoryStar_Idle",
         "MemoryStar_Selected",
@@ -72,10 +72,10 @@
     },
     {
       "fileName": "focus-memory-chamber-v1.glb",
-      "bytes": 622516,
-      "sha256": "d0e8a2105927f5fc610f68edc907cbd100b8570253fab3ba942171136d54b79d",
-      "triangleCount": 17334,
-      "nodes": 35,
+      "bytes": 231408,
+      "sha256": "d7b514f49ffe8fb460dea6e1f11feb3abf7654033a078af62877bf274db7ae59",
+      "triangleCount": 3908,
+      "nodes": 37,
       "animations": [
         "Focus_Arrival",
         "Focus_Breathing",
@@ -87,10 +87,10 @@
     },
     {
       "fileName": "replay-memory-environment-v1.glb",
-      "bytes": 435544,
-      "sha256": "fbc58c40c3b7ee18025e605aee72dfd97988747d169b923f690b363a409362b3",
-      "triangleCount": 10410,
-      "nodes": 131,
+      "bytes": 401364,
+      "sha256": "06b35a7b17042a570f95f9c89c3a5f37af8b492beff24aae4592f1a6fac91850",
+      "triangleCount": 9258,
+      "nodes": 130,
       "animations": [
         "Replay_Idle",
         "Replay_Enter",
@@ -103,10 +103,10 @@
     },
     {
       "fileName": "urai-orb-avatar-v1.glb",
-      "bytes": 403220,
-      "sha256": "06b21ff93a2221a6367fb8b8e305a0453cb151d3a92194445d72e4d48d6c7708",
-      "triangleCount": 9380,
-      "nodes": 29,
+      "bytes": 332880,
+      "sha256": "54aaa230c591d441ba6e590c3c3668ff257128521dcded67606b4c53724a6eef",
+      "triangleCount": 6948,
+      "nodes": 28,
       "animations": [
         "Orb_Resting",
         "Orb_Idle",
