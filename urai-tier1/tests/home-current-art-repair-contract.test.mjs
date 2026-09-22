@@ -46,8 +46,8 @@ test('retired localized Home overlays stay retired while first-person Passport o
   assert.doesNotMatch(currentRepair, /home-v249-ground-geological-descent|home-v249-life-map-rooted-celestial-ascent|home-v249-organic-living-memory-presence|function suppressRaycast\(/)
 
   assert.match(aaaRepair, /Historical V281 localized Ground\/ascent overlays[\s\S]*remain retired/)
-  assert.match(aaaRepair, /predecessor V288 Orb[\s\S]*remain retired/)
-  assert.match(aaaRepair, /authored living-memory Orb[\s\S]*keeps current Orb pixels/)
+  assert.match(aaaRepair, /Historical V281 localized Ground\/ascent overlays remain retired/)
+  assert.match(aaaRepair, /HomeVisualAuthority mounts the V288 grounded biomorphic reliquary[\s\S]*visible Orb morphology/)
   assert.match(aaaRepair, /function HomePassportOwnershipObject/)
   assert.match(aaaRepair, /visibility: 'first-person-only'/)
   assert.match(aaaRepair, /backendAuthority: 'existing-passport-vault'/)
