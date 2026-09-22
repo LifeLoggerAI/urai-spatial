@@ -1,14 +1,15 @@
 'use client'
 
+import { HomeOrbGroundedV288 } from '@/spatial/assets/HomeOrbGroundedV288'
+
 /**
- * Current Home visual authority shim.
+ * Current Home Orb visual authority shim.
  *
- * V288 remains the last certified predecessor in currentHomeVisualAuthority.json,
- * but it is no longer mounted over the active runtime. HomeWorldProductionV223
- * owns current Orb pixels through the governed authored GLB, translucent shell,
- * internal memory bloom and exact runtime state machine. Fresh exact-head retained
- * pixels are required before V291 can be certified.
+ * The current Home runtime continues to own Orb semantics, pointer interaction,
+ * speech/VAD timing and state telemetry. The visible morphology is restored to
+ * the last certified V288 grounded biomorphic reliquary authority while fresh
+ * exact-head pixels re-earn acceptance on this successor.
  */
 export function HomeVisualAuthority() {
-  return null
+  return <HomeOrbGroundedV288 />
 }
