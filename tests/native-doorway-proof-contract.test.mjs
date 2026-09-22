@@ -55,8 +55,13 @@ test('native doorway activation stays browser-native while current rendered dest
   assert.doesNotMatch(proof, /urai-ground-private-workforce-world|shared-continuity-architecture/)
 })
 
+test('proof suppresses first-run onboarding while preserving real browser-coordinate touch', () => {
+  assert.match(proof, /urai:onboarding:v3:setup-complete/)
+  assert.match(proof, /page\.touchscreen\.tap\(hitPoint\.center\.x, hitPoint\.center\.y\)/)
+})
+
 test('mobile Ground proof keeps current movement, Home return, Places and Privacy controls usable', () => {
-  assert.match(proof, /Ground first-person movement controls/)
+  assert.match(proof, /Ground movement controls/)
   assert.match(proof, /Return Home/)
   assert.match(proof, /Ground place and privacy tools/)
   assert.match(proof, /name: 'Places'/)
