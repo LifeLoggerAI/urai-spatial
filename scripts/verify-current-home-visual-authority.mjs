@@ -56,7 +56,7 @@ for (const asset of authority.runtimeAssets) {
 const runtime = await readFile(path.join(repoRoot, 'urai-tier1/src/app/AssetDrivenHomeWorld.tsx'), 'utf8')
 for (const token of [
   'cinematic-lived-world-threshold',
-  'bodyless-first-person-living-memory-orb-physical-ground-and-broad-sky-threshold',
+  'avatar-presentation-to-bodyless-first-person-v288-biomorphic-orb-physical-ground-and-broad-sky-threshold',
   'data-home-spatial-regions="home-physical-world home-living-memory-orb home-life-map-sky-threshold"',
   'data-home-life-map-entry',
   'visible-sky-broad-interaction',

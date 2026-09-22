@@ -70,8 +70,9 @@ test('Orb and Home ownership preserve predecessor truth while the current candid
   assert.equal(currentHomeVisualAuthority.artRevision, 'v292-avatar-presentation-bodyless-first-person-convergence')
   assert.equal(currentHomeVisualAuthority.worldIdentifier, 'cinematic-lived-world-threshold')
   assert.equal(currentHomeVisualAuthority.lastCertifiedPredecessor.orbVisualAuthority, 'v288-grounded-biomorphic-reliquary')
-  assert.equal(currentHomeVisualAuthority.currentRuntimeCandidate.orbVisualAuthority, 'v291-translucent-memory-orb-reference-candidate')
-  assert.equal(currentHomeVisualAuthority.orbVisualAuthority, 'v291-translucent-memory-orb-reference-candidate')
+  assert.equal(currentHomeVisualAuthority.currentRuntimeCandidate.orbVisualAuthority, 'v288-grounded-biomorphic-reliquary')
+  assert.equal(currentHomeVisualAuthority.currentRuntimeCandidate.orbInteractionAuthority, 'v291-current-home-orb-state-and-speech-runtime')
+  assert.equal(currentHomeVisualAuthority.orbVisualAuthority, 'v288-grounded-biomorphic-reliquary')
   assert.equal(currentHomeVisualAuthority.currentRuntimeCandidate.certified, false)
   assert.ok(currentHomeVisualAuthority.lastCertifiedPredecessor.runtimeAssets.includes('HomeOrbGroundedV288.tsx'))
 

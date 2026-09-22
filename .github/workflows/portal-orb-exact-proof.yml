@@ -60,7 +60,7 @@ jobs:
           set -euo pipefail
           test "$(git rev-parse HEAD)" = "$URAI_EXACT_HEAD"
           test -z "$(git status --porcelain --untracked-files=all)"
-      - name: Verify current V291 Orb candidate plus lived-world and broad-sky authority
+      - name: Verify current V288 visual authority plus V291 interaction runtime and lived-world/broad-sky authority
         run: |
           set -euo pipefail
           home='urai-tier1/src/spatial/layout/HomeWorldProductionV223.tsx'
@@ -71,14 +71,15 @@ jobs:
           reliquary='urai-tier1/src/spatial/assets/HomeOrbReliquaryV286.tsx'
           authority='urai-tier1/src/app/currentHomeVisualAuthority.json'
           grep -Fq '"artRevision": "v292-avatar-presentation-bodyless-first-person-convergence"' "$authority"
-          grep -Fq '"orbVisualAuthority": "v291-translucent-memory-orb-reference-candidate"' "$authority"
+          grep -Fq '"orbVisualAuthority": "v288-grounded-biomorphic-reliquary"' "$authority"
           grep -Fq '"certificationState": "candidate-requires-fresh-exact-head-pixels"' "$authority"
           grep -Fq 'return null' "$visual"
           grep -Fq 'home-orb-reference-glass-shell' "$home"
           grep -Fq 'home-orb-luminous-inner-volume' "$home"
           grep -Fq 'home-orb-memory-bloom-core' "$home"
           grep -Fq 'home-orb-memory-motes' "$home"
-          grep -Fq "visualAuthority: 'v291-translucent-memory-orb-reference-candidate'" "$home"
+          grep -Fq "visualAuthority: 'v288-grounded-biomorphic-reliquary'" "$home"
+          grep -Fq "interactionAuthority: 'v291-current-home-orb-state-and-speech-runtime'" "$home"
           if grep -Eq 'home-orb-stabilizer-ring|home-orb-crystalline-fragments' "$home"; then
             echo 'Retired Orb ring/crystalline authority returned to current Home source' >&2
             exit 1
