@@ -21,7 +21,8 @@ if (authority.certificationState !== 'candidate-requires-fresh-exact-head-pixels
 if (authority.lastCertifiedPredecessor?.orbVisualAuthority !== 'v288-grounded-biomorphic-reliquary') {
   throw new Error('Home state proof lost V288 certified predecessor authority')
 }
-if (authority.currentRuntimeCandidate?.orbVisualAuthority !== 'v291-translucent-memory-orb-reference-candidate'
+if (authority.currentRuntimeCandidate?.orbVisualAuthority !== 'v288-grounded-biomorphic-reliquary'
+  || authority.currentRuntimeCandidate?.orbInteractionAuthority !== 'v291-current-home-orb-state-and-speech-runtime'
   || authority.currentRuntimeCandidate?.certified !== false
   || authority.currentRuntimeCandidate?.requiredEvidence !== 'fresh-exact-head-source-build-runtime-and-literal-pixel-acceptance') {
   throw new Error('Home state proof current V292 Home candidate contract is incomplete or falsely certified')

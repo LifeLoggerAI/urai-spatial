@@ -71,7 +71,7 @@ test('current candidate Home keeps governed Avatar presentation, governed Orb an
   assert.doesNotMatch(renderer, /privacy-preserving-first-person/)
   assert.doesNotMatch(renderer, /next\.reset\(\)\.setLoop\(THREE\.LoopRepeat\s*,\s*Infinity\)/)
   assert.doesNotMatch(renderer, /HOME_LIFE_MAP|nearby\s*===\s*['"]life-map['"]/)
-  for (const marker of ['home-orb-reference-glass-shell','home-orb-luminous-inner-volume','home-orb-memory-bloom-core','home-orb-memory-motes',"visualAuthority: 'v291-translucent-memory-orb-reference-candidate'",'<HomeVisualAuthority />']) has(renderer, marker)
+  for (const marker of ['home-orb-reference-glass-shell','home-orb-luminous-inner-volume','home-orb-memory-bloom-core','home-orb-memory-motes',"visualAuthority: 'v288-grounded-biomorphic-reliquary'","interactionAuthority: 'v291-current-home-orb-state-and-speech-runtime'",'<HomeVisualAuthority />']) has(renderer, marker)
   const orbStart = renderer.indexOf('function OrbCompanion(')
   const passportStart = renderer.indexOf('function HomePassportArtifact(')
   assert.ok(orbStart >= 0 && passportStart > orbStart, 'expected current Orb and Passport source boundaries')

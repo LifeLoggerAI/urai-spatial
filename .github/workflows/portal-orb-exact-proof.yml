@@ -73,7 +73,7 @@ jobs:
           grep -Fq '"artRevision": "v292-avatar-presentation-bodyless-first-person-convergence"' "$authority"
           grep -Fq '"orbVisualAuthority": "v288-grounded-biomorphic-reliquary"' "$authority"
           grep -Fq '"certificationState": "candidate-requires-fresh-exact-head-pixels"' "$authority"
-          grep -Fq 'return null' "$visual"
+          grep -Fq 'return <HomeOrbGroundedV288 />' "$visual"
           grep -Fq 'home-orb-reference-glass-shell' "$home"
           grep -Fq 'home-orb-luminous-inner-volume' "$home"
           grep -Fq 'home-orb-memory-bloom-core' "$home"
