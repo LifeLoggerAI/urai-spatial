@@ -125,7 +125,7 @@ export function HomeOrbGroundedV288() {
   }, [scene])
 
   return <group
-    name="home-living-memory-orb"
+    name="home-orb-v288-visible-authority"
     userData={{ semanticOwner: 'orb-visual', interactionOwner: false, visualAuthority: GROUNDED_RELIQUARY_NAME }}
   >
     <HomeOrbReliquaryV286 />
