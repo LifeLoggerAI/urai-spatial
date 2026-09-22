@@ -76,8 +76,8 @@ function groundHeight(x: number, z: number, profile: EnvironmentProfileId) {
   if (profile === "urban") return broad * 0.12 + micro * 0.08;
   if (profile === "arid") return broad * 1.35 + micro * 0.5 + path * 0.25;
   if (profile === "coastal") return broad * 0.48 + micro * 0.3 + Math.max(0, (-z - 21) * 0.005);
-  if (profile === "woodland") return broad * 0.82 + micro * 0.75 + path;
-  return broad * 0.68 + micro * 0.58 + path;
+  if (profile === "woodland") return broad * 1.24 + micro * 1.02 + path * 1.18;
+  return broad * 1.02 + micro * 0.86 + path * 1.06;
 }
 
 function buildTerrainGeometry(profile: EnvironmentProfile) {
@@ -135,12 +135,18 @@ function TerrainMaterial({ profile }: { profile: EnvironmentProfile }) {
   }, [albedo, arm, normal, profile]);
   const naturalSoilProfile = profile.id === "temperate" || profile.id === "woodland";
   if (naturalSoilProfile) {
+    const naturalNormalStrength = profile.id === "woodland" ? 0.46 : 0.40;
     return <meshStandardMaterial
       color="#ffffff"
-      vertexColors
-      roughness={0.985}
+      normalMap={normal}
+      normalScale={new THREE.Vector2(naturalNormalStrength, naturalNormalStrength)}
+      aoMap={arm}
+      aoMapIntensity={0.44}
+      roughnessMap={arm}
+      roughness={0.97}
       metalness={0}
-      envMapIntensity={profile.id === "woodland" ? 0.20 : 0.24}
+      vertexColors
+      envMapIntensity={profile.id === "woodland" ? 0.18 : 0.22}
     />;
   }
   const normalStrength = profile.id === "urban" ? 0.34 : 0.58;
@@ -299,15 +305,9 @@ function NaturalCanopy({ profile, position, rotationY, scale, shapeSeed }: {
       false,
     ));
 
-    const leafShape = new THREE.Shape();
-    leafShape.moveTo(0, -0.46);
-    leafShape.bezierCurveTo(0.34, -0.24, 0.37, 0.13, 0, 0.52);
-    leafShape.bezierCurveTo(-0.37, 0.13, -0.34, -0.24, 0, -0.46);
-    leafShape.closePath();
-    const leafGeometry = new THREE.ShapeGeometry(leafShape, 5);
+    const leafGeometry = new THREE.SphereGeometry(1, 12, 8);
+    leafGeometry.scale(0.82, 0.34, 1.0);
     leafGeometry.computeVertexNormals();
-    const leafVolumeGeometry = new THREE.SphereGeometry(1, 5, 4);
-    leafVolumeGeometry.computeVertexNormals();
 
     const foliageAnchors = [
       ...transformedBranchDefs.map((points) => points[points.length - 1]),
@@ -319,7 +319,7 @@ function NaturalCanopy({ profile, position, rotationY, scale, shapeSeed }: {
       const value = Math.sin(seed * 12.9898 + shapeSeed * 53.117 + (woodland ? 78.233 : 31.417)) * 43758.5453;
       return value - Math.floor(value);
     };
-    const leaves = Array.from({ length: woodland ? 460 : 410 }, (_, index) => {
+    const leaves = Array.from({ length: woodland ? 720 : 650 }, (_, index) => {
       const anchor = foliageAnchors[index % foliageAnchors.length];
       const spread = 0.08 + hash(index * 7 + 1) * 0.58;
       const theta = hash(index * 7 + 2) * Math.PI * 2;
@@ -343,20 +343,12 @@ function NaturalCanopy({ profile, position, rotationY, scale, shapeSeed }: {
     const leavesB = leaves.filter((leaf) => leaf.color === leafB);
     const leavesC = leaves.filter((leaf) => leaf.color === leafC);
     const leavesD = leaves.filter((leaf) => leaf.color === leafD);
-    const volumeLeaves = leaves
-      .filter((_, index) => index % 4 === 0)
-      .map((leaf) => ({
-        ...leaf,
-        scale: [leaf.scale[0] * 1.85, leaf.scale[1] * 2.15, leaf.scale[2] * 1.35] as [number, number, number],
-      }));
-
-    return { trunkGeometry, branches, leafGeometry, leafVolumeGeometry, leavesA, leavesB, leavesC, leavesD, volumeLeaves, leafA, leafB, leafC, leafD, trunkColor, branchColor };
+    return { trunkGeometry, branches, leafGeometry, leavesA, leavesB, leavesC, leavesD, leafA, leafB, leafC, leafD, trunkColor, branchColor };
   }, [profile.id, shapeSeed]);
 
   useEffect(() => () => {
     authored.trunkGeometry.dispose();
     authored.leafGeometry.dispose();
-    authored.leafVolumeGeometry.dispose();
     authored.branches.forEach((geometry) => geometry.dispose());
   }, [authored]);
 
@@ -371,12 +363,12 @@ function NaturalCanopy({ profile, position, rotationY, scale, shapeSeed }: {
     raycast={() => null}
     name="ground-authored-natural-canopy-v13"
     userData={{
-      treatment: "seed-varied-branch-architecture-layered-thin-leaf-broadleaf-canopy-v21",
+      treatment: "seed-varied-branch-architecture-dense-three-dimensional-broadleaf-canopy-v25",
       provenance: NATURAL_CANOPY,
-      visibleAuthority: "runtime-authored-canopy-v23",
-      supersedesVisibleCandidate: "ground-natural-canopy-v3-low-poly-silhouette",
-      literalPixelRepair: "v23-volumetric-foliage-mature-canopy-natural-atmosphere",
-      supplementalPixelRepair: "v24-canonical-leaf-silhouette-plus-volumetric-crown",
+      visibleAuthority: "runtime-authored-canopy-v25",
+      supersedesVisibleCandidate: "ground-v24-faceted-volume-crown",
+      literalPixelRepair: "v25-dense-3d-leaflets-mature-canopy-pbr-terrain",
+      supplementalPixelRepair: "v25-natural-horizon-and-terrain-relief",
     }}
   >
     <mesh geometry={authored.trunkGeometry} castShadow receiveShadow>
@@ -385,7 +377,6 @@ function NaturalCanopy({ profile, position, rotationY, scale, shapeSeed }: {
     {authored.branches.map((geometry, index) => <mesh key={index} geometry={geometry} castShadow receiveShadow>
       <meshStandardMaterial color={authored.branchColor} roughness={0.94} metalness={0} envMapIntensity={0.26} />
     </mesh>)}
-    <CanopyLeafInstances geometry={authored.leafVolumeGeometry} leaves={authored.volumeLeaves} color={authored.leafB} />
     <CanopyLeafInstances geometry={authored.leafGeometry} leaves={authored.leavesA} color={authored.leafA} />
     <CanopyLeafInstances geometry={authored.leafGeometry} leaves={authored.leavesB} color={authored.leafB} />
     <CanopyLeafInstances geometry={authored.leafGeometry} leaves={authored.leavesC} color={authored.leafC} />
@@ -490,7 +481,7 @@ function NaturalScatter({ profile }: { profile: EnvironmentProfile }) {
             profile={profile}
             position={[x, groundHeight(x, z, profile.id) - 0.02, z]}
             rotationY={item.index * 0.91 + (woodland ? 0.22 : -0.14)}
-            scale={(woodland ? 2.02 : 1.88) + item.scale * 0.44}
+            scale={(woodland ? 2.72 : 2.52) + item.scale * 0.50}
             shapeSeed={item.index + (woodland ? 101 : 17)}
           />;
         })}
@@ -768,9 +759,9 @@ function AtmosphericGroundSky({ profile }: { profile: EnvironmentProfile }) {
           float upperMix = smoothstep(0.42, 0.96, h);
           vec3 sky = mix(upperColor, zenithColor, upperMix);
           float horizonBand = 1.0 - smoothstep(0.015, 0.28, abs(vDir.y));
-          sky = mix(sky, horizonColor, horizonBand * 0.34);
-          float groundBand = 1.0 - smoothstep(-0.20, 0.05, vDir.y);
-          sky = mix(sky, groundHazeColor, groundBand * 0.18);
+          sky = mix(sky, horizonColor, horizonBand * 0.20);
+          float groundBand = 1.0 - smoothstep(-0.24, 0.04, vDir.y);
+          sky = mix(sky, groundHazeColor, groundBand * 0.10);
           vec3 sunDir = normalize(vec3(-0.38, 0.30, -0.88));
           float sunDot = max(0.0, dot(normalize(vDir), sunDir));
           float sunGlow = pow(sunDot, 34.0) * 0.08 + pow(sunDot, 240.0) * 0.24;
@@ -932,7 +923,7 @@ export default function GroundSpatialWorldClean() {
     data-ground-visual-owner="atmospheric-living-environment"
     data-ground-runtime-owner="first-person-lived-world"
     data-ground-visual-revision="ground-lived-world-v2-canon-lock"
-    data-ground-art-revision="ground-v22-natural-soil-irregular-canopy-atmospheric-depth" data-ground-canopy-repair="ground-v24-canonical-leaf-silhouette-plus-volumetric-crown"
+    data-ground-art-revision="ground-v25-pbr-terrain-dense-3d-canopy-atmospheric-depth" data-ground-canopy-repair="ground-v25-dense-3d-leaflets-no-faceted-volume-crowns"
     data-ground-exploration="first-person-no-visible-body"
     data-ground-camera="eye-level-terrain-following-no-authored-bob"
     data-ground-eye-height={GROUND_EYE_HEIGHT_M}
