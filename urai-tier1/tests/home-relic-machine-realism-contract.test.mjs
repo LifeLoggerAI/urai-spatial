@@ -60,7 +60,7 @@ test('current candidate Home keeps governed Avatar presentation, governed Orb an
     'data-home-presence-policy="presentation-avatar-then-first-person-camera-only-no-hands-body-rig"',
     'data-home-avatar-activation-gate="required-before-first-person-home"',
     '<MobileMovementPad input={movementInput} label="Move through Home" />',
-    "const movementInput = useMovementInput({ enabled: firstPerson && transition === 'none' && !homeState.inputLocked })",
+    "enabled: firstPerson && transition === 'none' && !homeState.inputLocked && !passportDeparting,",
   ]) has(renderer, marker)
   assert.match(renderer, /<HomeEmbodiedAvatar/)
   assert.doesNotMatch(renderer, /HOME_AVATAR_MODEL|visible-cinematic-avatar|visible-avatar-third-person|hidden-exterior-avatar-first-person/)
@@ -71,7 +71,12 @@ test('current candidate Home keeps governed Avatar presentation, governed Orb an
   assert.doesNotMatch(renderer, /next\.reset\(\)\.setLoop\(THREE\.LoopRepeat\s*,\s*Infinity\)/)
   assert.doesNotMatch(renderer, /HOME_LIFE_MAP|nearby\s*===\s*['"]life-map['"]/)
   for (const marker of ['home-orb-reference-glass-shell','home-orb-luminous-inner-volume','home-orb-memory-bloom-core','home-orb-memory-motes',"visualAuthority: 'v291-translucent-memory-orb-reference-candidate'"]) has(renderer, marker)
-  assert.doesNotMatch(renderer, /home-orb-stabilizer-ring|home-orb-crystalline-fragments|<torusGeometry|<tetrahedronGeometry/)
+  const orbStart = renderer.indexOf('function OrbCompanion(')
+  const passportStart = renderer.indexOf('function HomePassportArtifact(')
+  assert.ok(orbStart >= 0 && passportStart > orbStart, 'expected current Orb and Passport source boundaries')
+  const currentOrbSource = renderer.slice(orbStart, passportStart)
+  assert.doesNotMatch(currentOrbSource, /home-orb-stabilizer-ring|home-orb-crystalline-fragments|<torusGeometry|<tetrahedronGeometry/)
+  assert.match(renderer, /semanticRole: 'passport-physical-object'/)
 })
 
 test('rendering stays bounded and Orb state/reduced-motion telemetry remains exact-head proofable', () => {
