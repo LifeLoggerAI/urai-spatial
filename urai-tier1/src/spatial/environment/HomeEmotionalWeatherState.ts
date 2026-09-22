@@ -62,7 +62,10 @@ export const HOME_EMOTIONAL_WEATHER_PRESETS: Record<HomeEmotionalWeatherName, Ho
   },
 }
 
+export type HomeTimeOfDayName = 'dawn' | 'day' | 'dusk' | 'night'
+
 export type AdaptiveBlueHour = {
+  readonly phase: HomeTimeOfDayName
   readonly luminance: number
   readonly temperatureBias: number
   readonly celestialMultiplier: number
@@ -75,14 +78,15 @@ export function resolveHomeEmotionalWeather(value: unknown): HomeEmotionalWeathe
 }
 
 /**
- * Home always remains in UrAi's perpetual blue hour. Local time only nudges
- * luminance, residual horizon temperature and celestial visibility inside a
- * deliberately narrow envelope; it never turns Home into literal noon/night.
+ * Home preserves one coherent architectural world while local time produces
+ * visibly distinct dawn, day, dusk and night atmosphere. The cycle changes
+ * sky luminance, horizon warmth and celestial visibility without swapping the
+ * world into an unrelated fantasy environment.
  */
 export function resolveAdaptiveBlueHour(date = new Date()): AdaptiveBlueHour {
   const hour = date.getHours() + date.getMinutes() / 60
-  if (hour >= 5 && hour < 10) return { luminance: 1.03, temperatureBias: -.025, celestialMultiplier: .94 }
-  if (hour >= 10 && hour < 17) return { luminance: 1.08, temperatureBias: -.010, celestialMultiplier: .88 }
-  if (hour >= 17 && hour < 22) return { luminance: 1.00, temperatureBias: .040, celestialMultiplier: 1.02 }
-  return { luminance: .93, temperatureBias: -.012, celestialMultiplier: 1.12 }
+  if (hour >= 5 && hour < 9) return { phase: 'dawn', luminance: 1.02, temperatureBias: .12, celestialMultiplier: .44 }
+  if (hour >= 9 && hour < 17) return { phase: 'day', luminance: 1.26, temperatureBias: .035, celestialMultiplier: .10 }
+  if (hour >= 17 && hour < 21) return { phase: 'dusk', luminance: .96, temperatureBias: .18, celestialMultiplier: .64 }
+  return { phase: 'night', luminance: .58, temperatureBias: -.035, celestialMultiplier: 1.34 }
 }
