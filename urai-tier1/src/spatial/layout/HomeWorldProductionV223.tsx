@@ -22,6 +22,7 @@ import { height } from './HomeWorldProductionV223Geometry'
 import { HomeV225PolishV3 } from './HomeWorldProductionV225PolishV3'
 import { HomeCurrentArtRepair } from './HomeCurrentArtRepair'
 import { HomeAAAVisualRepair } from './HomeAAAVisualRepair'
+import { HomeVisualAuthority } from './HomeVisualAuthority'
 import styles from './HomeWorldProduction.module.css'
 
 type Transition = 'none' | 'ground' | 'life-map'
@@ -168,7 +169,7 @@ const legacyHotspotPatterns = [
   /home-visible-user-avatar/,
   /urai-home-user-avatar/,
 ]
-const CURRENT_HOME_PRESENCE_ROOTS = new Set(['home-living-memory-orb', 'urai-home-user-avatar'])
+const CURRENT_HOME_PRESENCE_ROOTS = new Set(['home-living-memory-orb', 'home-orb-v288-visible-authority', 'urai-home-user-avatar'])
 
 function isInsideCurrentHomePresence(object: THREE.Object3D) {
   let current: THREE.Object3D | null = object
@@ -816,6 +817,7 @@ function Scene({
       onOpen={onPassport}
     />
     <OrbCompanion state={orbState} reducedMotion={reducedMotion} onOrb={onOrb} />
+    <HomeVisualAuthority />
     <CameraRig
       yaw={yaw}
       pitch={pitch}
