@@ -12,7 +12,7 @@ test('Council reference review preserves preview-human truth and all written sta
   assert.match(source, /data-council-reduced-stimulation/)
   assert.match(source, /urai-council-spatial-fallback/)
   for (let index = 1; index <= 14; index += 1) {
-    const id = `COUNCIL-\${String(index).padStart(3, '0')}`
-    assert.ok(capture.includes(`id:'\${id}'`), `missing \${id}`)
+    const id = `COUNCIL-${String(index).padStart(3, '0')}`
+    assert.ok(capture.includes(`id:'${id}'`), `missing ${id}`)
   }
 })
