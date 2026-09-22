@@ -135,18 +135,12 @@ function TerrainMaterial({ profile }: { profile: EnvironmentProfile }) {
   }, [albedo, arm, normal, profile]);
   const naturalSoilProfile = profile.id === "temperate" || profile.id === "woodland";
   if (naturalSoilProfile) {
-    const naturalNormalStrength = profile.id === "woodland" ? 0.22 : 0.18;
     return <meshStandardMaterial
       color="#ffffff"
-      normalMap={normal}
-      normalScale={new THREE.Vector2(naturalNormalStrength, naturalNormalStrength)}
-      aoMap={arm}
-      aoMapIntensity={0.34}
-      roughnessMap={arm}
-      roughness={0.93}
+      roughness={profile.id === "woodland" ? 0.98 : 0.96}
       metalness={0}
       vertexColors
-      envMapIntensity={profile.id === "woodland" ? 0.24 : 0.28}
+      envMapIntensity={profile.id === "woodland" ? 0.18 : 0.22}
     />;
   }
   const normalStrength = profile.id === "urban" ? 0.34 : 0.58;
@@ -305,8 +299,8 @@ function NaturalCanopy({ profile, position, rotationY, scale, shapeSeed }: {
       false,
     ));
 
-    const leafGeometry = new THREE.SphereGeometry(1, 8, 6);
-    leafGeometry.scale(0.82, 0.34, 1.0);
+    const leafGeometry = new THREE.SphereGeometry(1, 16, 12);
+    leafGeometry.scale(0.72, 0.22, 0.94);
     leafGeometry.computeVertexNormals();
 
     const foliageAnchors = [
@@ -319,7 +313,7 @@ function NaturalCanopy({ profile, position, rotationY, scale, shapeSeed }: {
       const value = Math.sin(seed * 12.9898 + shapeSeed * 53.117 + (woodland ? 78.233 : 31.417)) * 43758.5453;
       return value - Math.floor(value);
     };
-    const leaves = Array.from({ length: woodland ? 520 : 470 }, (_, index) => {
+    const leaves = Array.from({ length: woodland ? 640 : 580 }, (_, index) => {
       const anchor = foliageAnchors[index % foliageAnchors.length];
       const spread = 0.06 + hash(index * 7 + 1) * 0.52;
       const theta = hash(index * 7 + 2) * Math.PI * 2;
@@ -329,9 +323,9 @@ function NaturalCanopy({ profile, position, rotationY, scale, shapeSeed }: {
       const rx = (hash(index * 7 + 6) - 0.5) * 1.28;
       const ry = theta + (hash(index * 7 + 7) - 0.5) * 1.15;
       const rz = (hash(index * 7 + 8) - 0.5) * 1.12;
-      const sx = 0.060 + hash(index * 7 + 9) * 0.050;
-      const sy = 0.040 + hash(index * 7 + 10) * 0.038;
-      const sz = 0.078 + hash(index * 7 + 11) * 0.068;
+      const sx = 0.046 + hash(index * 7 + 9) * 0.036;
+      const sy = 0.026 + hash(index * 7 + 10) * 0.022;
+      const sz = 0.060 + hash(index * 7 + 11) * 0.050;
       return {
         position: [x, y, z] as [number, number, number],
         rotation: [rx, ry, rz] as [number, number, number],
@@ -363,12 +357,12 @@ function NaturalCanopy({ profile, position, rotationY, scale, shapeSeed }: {
     raycast={() => null}
     name="ground-authored-natural-canopy-v13"
     userData={{
-      treatment: "seed-varied-branch-architecture-layered-broadleaf-canopy-v27",
+      treatment: "seed-varied-branch-architecture-layered-broadleaf-canopy-v28",
       provenance: NATURAL_CANOPY,
-      visibleAuthority: "runtime-authored-canopy-v27",
-      supersedesVisibleCandidate: "ground-v26-sparse-open-crown",
-      literalPixelRepair: "v27-layered-foliage-textured-soil-natural-depth",
-      supplementalPixelRepair: "v27-denser-instanced-foliage-with-bounded-counts",
+      visibleAuthority: "runtime-authored-canopy-v28",
+      supersedesVisibleCandidate: "ground-v27-laned-canopy-rock-tile-microdetail",
+      literalPixelRepair: "v28-organic-canopy-layout-procedural-soil-no-paving",
+      supplementalPixelRepair: "v28-smoother-smaller-foliage-with-bounded-instancing",
       retainedContract: "ground-v25-pbr-terrain-dense-3d-canopy-atmospheric-depth",
     }}
   >
@@ -470,19 +464,23 @@ function NaturalScatter({ profile }: { profile: EnvironmentProfile }) {
 
   const woodland = profile.id === "woodland";
   const ferns = items.slice(0, woodland ? 58 : 50);
-  const canopies = items.filter((item) => item.z < (woodland ? 8.0 : 6.5)).slice(0, woodland ? 28 : 24);
+  const canopies = items.filter((item) => item.z < (woodland ? 8.0 : 6.5)).slice(0, woodland ? 34 : 30);
   return <group name={woodland ? "ground-woodland-scanned-understory" : "ground-temperate-scanned-understory"} userData={{ treatment: "urai-self-authored-varied-canopy-v13-with-polyhaven-fern-rock-understory", canopyFallback: "scanned-understory-remains-without-canopy" }} raycast={() => null}>
     <GroundCanopyBoundary>
       <Suspense fallback={null}>
         {canopies.map((item) => {
-          const x = item.x * (0.66 + (item.index % 5) * 0.041) + Math.sin(item.index * 2.17) * 2.05 + Math.cos(item.index * 0.71) * 0.92;
-          const z = item.z - 1.5 + Math.cos(item.index * 1.61) * 3.25 + Math.sin(item.index * 0.83) * 1.35;
+          const organicX = Math.sin((item.index + 1) * 4.83) * 17.6 + Math.cos((item.index + 3) * 1.37) * 6.2;
+          const z = item.z - 2.8 + Math.cos(item.index * 1.61) * 4.1 + Math.sin(item.index * 0.83) * 1.9;
+          const spawnCorridor = Math.abs(organicX) < 3.1 && z > -10;
+          const x = spawnCorridor
+            ? organicX + (organicX >= 0 ? 4.4 : -4.4)
+            : organicX;
           return <NaturalCanopy
             key={`canopy-${item.index}`}
             profile={profile}
             position={[x, groundHeight(x, z, profile.id) - 0.02, z]}
-            rotationY={item.index * 0.91 + (woodland ? 0.22 : -0.14)}
-            scale={(woodland ? 2.72 : 2.52) + item.scale * 0.50}
+            rotationY={item.index * 1.173 + Math.sin(item.index * 0.67) * 0.74 + (woodland ? 0.22 : -0.14)}
+            scale={(woodland ? 2.38 : 2.24) + item.scale * 0.72 + Math.sin(item.index * 2.31) * 0.18}
             shapeSeed={item.index + (woodland ? 101 : 17)}
           />;
         })}
@@ -924,7 +922,7 @@ export default function GroundSpatialWorldClean() {
     data-ground-visual-owner="atmospheric-living-environment"
     data-ground-runtime-owner="first-person-lived-world"
     data-ground-visual-revision="ground-lived-world-v2-canon-lock"
-    data-ground-art-revision="ground-v25-pbr-terrain-dense-3d-canopy-atmospheric-depth" data-ground-canopy-repair="ground-v25-dense-3d-leaflets-no-faceted-volume-crowns"
+    data-ground-art-revision="ground-v28-organic-canopy-procedural-soil-atmospheric-depth" data-ground-canopy-repair="ground-v28-smooth-small-leaflets-non-avenue-layout"
     data-ground-exploration="first-person-no-visible-body"
     data-ground-camera="eye-level-terrain-following-no-authored-bob"
     data-ground-eye-height={GROUND_EYE_HEIGHT_M}
