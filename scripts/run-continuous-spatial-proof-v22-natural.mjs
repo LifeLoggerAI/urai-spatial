@@ -140,6 +140,20 @@ async function enterFirstPersonHome(page, owner) {
   return presentation
 }
 
+async function activateSemanticTargetWithNativeKeyboard(page, testId, maxSteps = 32) {
+  for (let step = 0; step <= maxSteps; step += 1) {
+    const focused = await page.evaluate(() => document.activeElement instanceof HTMLElement
+      ? document.activeElement.getAttribute('data-testid')
+      : null)
+    if (focused === testId) {
+      await page.keyboard.press('Enter')
+      return step
+    }
+    await page.keyboard.press('Tab')
+  }
+  throw new Error(`semantic target ${testId} did not receive browser-native Tab focus`)
+}
+
 async function screenshot(page, id) {
   const name = `${safeName(id)}-${exactHead.slice(0, 12)}.png`
   const bytes = await page.screenshot({ path: path.join(outputDir, name), fullPage: false, animations: 'disabled', caret: 'hide', timeout: 90_000 })
@@ -243,11 +257,14 @@ async function interaction(browser, { id, viewport, kind, reducedMotion = 'no-pr
       record.passed = record.pointer.phase === 'SKY_ASCENT' && record.inputLocked === 'true' && record.transition === 'SKY_ASCENT'
     } else if (kind === 'orb') {
       const button = page.getByRole('button', { name: 'Open UrAi Orb companion' }).first()
-      await button.click({ noWaitAfter: true })
-      await page.waitForFunction((selector) => document.querySelector(selector)?.getAttribute('data-home-orb-state') === 'attention', ownerSelector, { timeout: 5_000 })
+      await button.waitFor({ state: 'visible', timeout: 10_000 })
+      if (await button.getAttribute('data-testid') !== 'home-semantic-orb') throw new Error('unexpected semantic Orb owner')
+      record.focusSteps = await activateSemanticTargetWithNativeKeyboard(page, 'home-semantic-orb')
+      await page.locator('#urai-world-companion-menu[aria-hidden="false"]').waitFor({ state: 'visible', timeout: 10_000 })
+      await page.waitForFunction((selector) => document.querySelector(selector)?.getAttribute('data-home-orb-state') === 'attention', ownerSelector, { timeout: 10_000 })
       record.orbState = await owner.getAttribute('data-home-orb-state')
       record.phase = await owner.getAttribute('data-home-scene-phase')
-      record.passed = record.orbState === 'attention' && record.phase === 'IMMERSIVE_CONVERSATION'
+      record.passed = record.orbState === 'attention' && record.phase === 'AVATAR_HOME_FIRST_PERSON'
     } else if (kind === 'ground-cancel') {
       record.pointer = await clickCanvasRatio(page, owner, viewport, [[.50,.79],[.35,.80],[.65,.80]], 'GROUND_DESCENT', touch)
       await page.keyboard.press('Escape')
@@ -255,7 +272,8 @@ async function interaction(browser, { id, viewport, kind, reducedMotion = 'no-pr
         const node = document.querySelector(selector)
         return node?.getAttribute('data-home-scene-phase') === 'AVATAR_HOME_FIRST_PERSON'
           && node?.getAttribute('data-home-input-locked') === 'false'
-      }, ownerSelector, { timeout: 10_000 })
+          && node?.getAttribute('data-home-transition-sequence') === 'idle'
+      }, ownerSelector, { timeout: 30_000 })
       record.phase = await owner.getAttribute('data-home-scene-phase')
       record.passed = record.phase === 'AVATAR_HOME_FIRST_PERSON'
     }

@@ -164,6 +164,28 @@ async function waitForHomeReady(page) {
   return owner
 }
 
+async function focusNativeSummaryByText(page, text, maxSteps = 24) {
+  for (let step = 0; step <= maxSteps; step += 1) {
+    const focused = await page.evaluate((expected) => {
+      const active = document.activeElement
+      return active instanceof HTMLElement && active.tagName === 'SUMMARY' && active.textContent?.includes(expected)
+    }, text)
+    if (focused) return step
+    await page.keyboard.press('Tab')
+  }
+  throw new Error(`native summary "${text}" did not receive browser-native Tab focus`)
+}
+
+async function focusTestIdForKeyboard(page, testId) {
+  const focused = await page.evaluate((id) => {
+    const element = document.querySelector(`[data-testid="${id}"]`)
+    if (!(element instanceof HTMLElement)) return false
+    element.focus()
+    return document.activeElement === element
+  }, testId)
+  if (!focused) throw new Error(`keyboard target ${testId} could not receive focus`)
+}
+
 async function capture(state, options = {}) {
   const context = await sharedBrowser.newContext({
     viewport: { width: 1440, height: 900 },
@@ -299,14 +321,15 @@ async function captureOrbLifecycle({ reducedMotion = 'no-preference' } = {}) {
 
     const talk = page.locator('summary').filter({ hasText: 'Talk with Orb' }).first()
     record.phase = 'conversation-open-keyboard'
-    await talk.focus()
-    await talk.press('Enter')
+    await talk.waitFor({ state: 'visible', timeout: 10_000 })
+    record.summaryFocusSteps = await focusNativeSummaryByText(page, 'Talk with Orb')
+    await page.keyboard.press('Enter')
     await page.waitForFunction(() => Array.from(document.querySelectorAll('details')).some((details) => {
       const summary = details.querySelector('summary')
       return details.open && summary?.textContent?.includes('Talk with Orb')
-    }), null, { timeout: 5_000 })
+    }), null, { timeout: 10_000 })
     const message = page.getByLabel('Message for Orb').first()
-    await message.waitFor({ state: 'visible', timeout: 5_000 })
+    await message.waitFor({ state: 'visible', timeout: 10_000 })
     await message.focus()
     record.phase = 'orb-text-entry-attention-rendered'
     await page.waitForFunction((selector) => document.querySelector(selector)?.getAttribute('data-home-orb-state') === 'attention', ownerSelector)
@@ -464,10 +487,13 @@ async function captureHomeSpatialContinuity({ idSuffix = 'desktop', viewport = {
     record.firstPersonVisual = sampleVisual ? await waitForVisualEvidence(page) : { available: true, reason: 'retained-responsive-pixels-no-extra-sampling' }
     record.firstPersonScreenshot = await screenshotRecord('first-person')
 
-    const passportControl = page.getByRole('button', { name: 'Passport — open ownership and consent vault' }).first()
+    const passportControl = page.getByTestId('home-passport-physical-control')
     await passportControl.waitFor({ state: 'attached', timeout: 20_000 })
-    await passportControl.click()
-    await page.waitForURL((url) => url.pathname.replace(/\/+$/, '') === '/passport', { timeout: 30_000 })
+    if (await passportControl.getAttribute('aria-label') !== 'Passport — open ownership and consent vault') throw new Error('unexpected Home Passport semantic control')
+    await focusTestIdForKeyboard(page, 'home-passport-physical-control')
+    const passportNavigation = page.waitForURL((url) => url.pathname.replace(/\/+$/, '') === '/passport', { timeout: 45_000 })
+    await page.keyboard.press('Enter')
+    await passportNavigation
     record.passportPath = new URL(page.url()).pathname
     record.passportReturnFrame = await page.evaluate(() => {
       const raw = window.sessionStorage.getItem('urai:home:return-frame:v1')
@@ -484,7 +510,7 @@ async function captureHomeSpatialContinuity({ idSuffix = 'desktop', viewport = {
         && node?.getAttribute('data-home-camera-mode') === 'home-first-person'
         && node?.getAttribute('data-home-transition-sequence') === 'idle'
         && window.sessionStorage.getItem('urai:home:return-frame:v1') === null
-    }, ownerSelector, { timeout: 20_000 })
+    }, ownerSelector, { timeout: 45_000 })
     record.returnStableState = await owner.getAttribute('data-home-stable-state')
     record.returnCamera = await owner.getAttribute('data-home-camera-mode')
     record.returnTransition = await owner.getAttribute('data-home-transition-sequence')

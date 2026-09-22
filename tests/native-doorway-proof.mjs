@@ -77,12 +77,19 @@ async function stableBrowserBox(target) {
   return after
 }
 
-async function domBox(locator) {
-  return locator.evaluate((element) => {
+async function domBox(page, role, name) {
+  return page.evaluate(({ role, name }) => {
+    const element = Array.from(document.querySelectorAll('*')).find((candidate) => {
+      if (!(candidate instanceof HTMLElement)) return false
+      const implicitRole = candidate.tagName === 'BUTTON' ? 'button' : candidate.tagName === 'A' ? 'link' : null
+      const candidateRole = candidate.getAttribute('role') || implicitRole
+      const candidateName = candidate.getAttribute('aria-label') || candidate.textContent?.trim() || ''
+      return candidateRole === role && candidateName === name
+    })
     if (!(element instanceof HTMLElement)) return null
     const rect = element.getBoundingClientRect()
     return { x: rect.x, y: rect.y, width: rect.width, height: rect.height }
-  })
+  }, { role, name })
 }
 
 async function proveGroundMobileControls(page, viewport) {
@@ -94,18 +101,21 @@ async function proveGroundMobileControls(page, viewport) {
   await tools.waitFor({ state: 'attached', timeout: 15000 })
 
   const inside = box => box && box.x >= 0 && box.y >= 0 && box.x + box.width <= viewport.width + 1 && box.y + box.height <= viewport.height + 1
-  const movementBox = await domBox(movement)
-  const homeBox = await domBox(home)
+  const movementBox = await domBox(page, 'group', 'Ground analog movement')
+  const homeBox = await domBox(page, 'button', 'Return Home')
   if (!inside(movementBox) || !inside(homeBox)) throw new Error('Ground mobile controls extend outside the viewport')
 
   if (!movementBox || movementBox.width < 44 || movementBox.height < 44) throw new Error('Ground analog movement target is below 44px')
   if (!homeBox || homeBox.width < 44 || homeBox.height < 44) throw new Error('Ground Home return target is below 44px')
 
-  const links = [page.getByRole('link', { name: 'Places' }), page.getByRole('link', { name: 'Privacy' })]
-  for (const link of links) {
+  const links = [
+    { name: 'Places', locator: page.getByRole('link', { name: 'Places' }) },
+    { name: 'Privacy', locator: page.getByRole('link', { name: 'Privacy' }) },
+  ]
+  for (const { name, locator: link } of links) {
     await link.focus()
     await page.waitForTimeout(120)
-    const box = await domBox(link)
+    const box = await domBox(page, 'link', name)
     if (!inside(box)) throw new Error('Focused Ground place/privacy tool is clipped by the viewport')
     if (!box || box.width < 44 || box.height < 44) throw new Error('Ground place/privacy target is below 44px')
   }

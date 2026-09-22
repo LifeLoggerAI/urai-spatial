@@ -3,7 +3,7 @@ import { readFileSync, existsSync } from "node:fs";
 import { join } from "node:path";
 
 const root = process.cwd();
-const app = join(root, "urai-tier1");
+const app = existsSync(join(root, "src")) ? root : join(root, "urai-tier1");
 
 const files = [
   "src/spatial/passport/passportPermissionSchema.ts",
