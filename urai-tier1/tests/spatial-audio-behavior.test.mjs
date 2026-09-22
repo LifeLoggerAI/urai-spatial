@@ -15,7 +15,7 @@ function load(file, globals = {}) {
 function ambientHarness() {
   let now = 0, sequence = 0
   const frames = new Map(), audios = []
-  class Audio { volume = 0; currentTime = 0; paused = false; constructor(src) { this.src = src; audios.push(this) } play() { this.paused = false; return Promise.resolve() } pause() { this.paused = true } }
+  class Audio { volume = 0; currentTime = 0; paused = false; constructor(src) { this.src = src; audios.push(this) } load() {} play() { this.paused = false; return Promise.resolve() } pause() { this.paused = true } }
   const { exports } = load('useAudioController.ts', { Audio, window: { dispatchEvent() {} }, CustomEvent: class {}, performance: { now: () => now }, requestAnimationFrame: fn => { frames.set(++sequence, fn); return sequence }, cancelAnimationFrame: id => frames.delete(id) })
   return { api: exports.useAudioController(), audios, tick(time) { now = time; const pending = [...frames.values()]; frames.clear(); pending.forEach(fn => fn()) } }
 }
