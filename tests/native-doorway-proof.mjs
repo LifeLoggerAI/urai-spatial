@@ -77,6 +77,14 @@ async function stableBrowserBox(target) {
   return after
 }
 
+async function domBox(locator) {
+  return locator.evaluate((element) => {
+    if (!(element instanceof HTMLElement)) return null
+    const rect = element.getBoundingClientRect()
+    return { x: rect.x, y: rect.y, width: rect.width, height: rect.height }
+  })
+}
+
 async function proveGroundMobileControls(page, viewport) {
   const movement = page.getByRole('group', { name: 'Ground analog movement' })
   const home = page.getByRole('button', { name: 'Return Home' })
@@ -86,8 +94,8 @@ async function proveGroundMobileControls(page, viewport) {
   await tools.waitFor({ state: 'attached', timeout: 15000 })
 
   const inside = box => box && box.x >= 0 && box.y >= 0 && box.x + box.width <= viewport.width + 1 && box.y + box.height <= viewport.height + 1
-  const movementBox = await movement.boundingBox()
-  const homeBox = await home.boundingBox()
+  const movementBox = await domBox(movement)
+  const homeBox = await domBox(home)
   if (!inside(movementBox) || !inside(homeBox)) throw new Error('Ground mobile controls extend outside the viewport')
 
   if (!movementBox || movementBox.width < 44 || movementBox.height < 44) throw new Error('Ground analog movement target is below 44px')
@@ -97,7 +105,7 @@ async function proveGroundMobileControls(page, viewport) {
   for (const link of links) {
     await link.focus()
     await page.waitForTimeout(120)
-    const box = await link.boundingBox()
+    const box = await domBox(link)
     if (!inside(box)) throw new Error('Focused Ground place/privacy tool is clipped by the viewport')
     if (!box || box.width < 44 || box.height < 44) throw new Error('Ground place/privacy target is below 44px')
   }

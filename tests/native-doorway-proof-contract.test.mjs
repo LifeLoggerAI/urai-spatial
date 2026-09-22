@@ -69,6 +69,9 @@ test('mobile Ground proof keeps current movement, Home return, Places and Privac
   assert.match(proof, /Ground analog movement target is below 44px/)
   assert.match(proof, /Ground Home return target is below 44px/)
   assert.match(proof, /Ground place\/privacy target is below 44px/)
+  assert.match(proof, /async function domBox/)
+  assert.match(proof, /getBoundingClientRect\(\)/)
+  assert.doesNotMatch(proof, /movement\.boundingBox\(\)|home\.boundingBox\(\)|link\.boundingBox\(\)/)
 })
 
 test('semantic navigation stays statically opacity-bounded and runtime footprint-bounded', () => {
