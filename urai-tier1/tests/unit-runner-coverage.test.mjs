@@ -41,6 +41,24 @@ const systemicVisualConvergenceTests = [
   'tests/replay-final-rail-authority-contract.test.mjs',
 ]
 
+const extendedCanonAcceptanceTests = [
+  'tests/lifemap-memory-star-presentation-contract.test.mjs',
+  'tests/possible-futures-spatial-truth-contract.test.mjs',
+  'tests/ritual-reference-capture-contract.test.mjs',
+  'tests/rituals-experience-contract.test.mjs',
+  'tests/shadow-embodied-realm-contract.test.mjs',
+  'tests/shadow-route-convergence-contract.test.mjs',
+  'tests/legacy-archive-world-contract.test.mjs',
+  'tests/haptic-runtime-contract.test.mjs',
+  'tests/spatial-audio-behavior.test.mjs',
+  'tests/spatial-positioned-audio-contract.test.mjs',
+  'tests/replay-source-audio-truth-contract.test.mjs',
+  'tests/guardian/council-reference-canon.test.mjs',
+  'tests/guardian/passport-council-runtime-canon.test.mjs',
+  'tests/guardian/legacy-reference-canon.test.mjs',
+  'tests/guardian/shadow-reference-canon.test.mjs',
+]
+
 test('both focused unit runners include critical Spatial public contract tests', () => {
   for (const testPath of requiredFocusedTests) {
     assert.ok(focusedRunnerSource.includes(`'${testPath}'`), `focused unit runner must include ${testPath}`)
@@ -54,6 +72,14 @@ test('compact unit runner includes the V101 retained-pixel repair contract', () 
 
 test('compact CI executes the systemic Home, Orb, Life Map, Focus, Replay, and stable-geography regressions', () => {
   for (const testPath of systemicVisualConvergenceTests) {
+    assert.ok(compactRunnerSource.includes(`'${testPath}'`), `compact unit runner must include ${testPath}`)
+  }
+})
+
+
+test('both focused unit runners include expanded canon acceptance contracts', () => {
+  for (const testPath of extendedCanonAcceptanceTests) {
+    assert.ok(focusedRunnerSource.includes(`'${testPath}'`), `focused unit runner must include ${testPath}`)
     assert.ok(compactRunnerSource.includes(`'${testPath}'`), `compact unit runner must include ${testPath}`)
   }
 })
