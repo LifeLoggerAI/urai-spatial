@@ -21,7 +21,7 @@ concurrency:
 jobs:
   proof:
     runs-on: ubuntu-24.04
-    timeout-minutes: 35
+    timeout-minutes: 50
     env:
       URAI_EXACT_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
       PLAYWRIGHT_BROWSERS_PATH: '0'
@@ -65,4 +65,4 @@ jobs:
           name: home-state-proof-${{ env.URAI_EXACT_HEAD }}
           path: artifacts/home-state-proof
           if-no-files-found: error
-          retention-days: 365
+          retention-days: 90

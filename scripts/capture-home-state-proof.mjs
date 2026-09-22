@@ -16,6 +16,7 @@ const states = [
 ]
 
 await mkdir(outputDir, { recursive: true })
+const sharedBrowser = await chromium.launch({ headless: true, args: ['--enable-unsafe-swiftshader'] })
 const receipt = {
   schemaVersion: 'urai-home-state-proof-5',
   exactHead,
@@ -106,10 +107,11 @@ async function readVisualEvidence(page) {
   return { ...sample, viewportCoverage, bounds: { width: bounds.width, height: bounds.height }, canvasPngBytes: png.length }
 }
 
-async function waitForVisualEvidence(page, frameBudget = 240) {
+async function waitForVisualEvidence(page, frameBudget = 24) {
   let evidence = null
-  for (let elapsed = 0; elapsed < frameBudget; elapsed += 30) {
-    await settleAnimationFrames(page, 30)
+  const frameStep = 8
+  for (let elapsed = 0; elapsed < frameBudget; elapsed += frameStep) {
+    await settleAnimationFrames(page, frameStep)
     evidence = await readVisualEvidence(page)
     if (evidence.available === true
       && evidence.viewportCoverage >= receipt.visualGate.minimumViewportCoverage
@@ -131,8 +133,7 @@ async function waitForHomeReady(page) {
 }
 
 async function capture(state, options = {}) {
-  const browser = await chromium.launch({ headless: true, args: ['--enable-unsafe-swiftshader'] })
-  const context = await browser.newContext({
+  const context = await sharedBrowser.newContext({
     viewport: { width: 1440, height: 900 },
     reducedMotion: options.reducedMotion,
     forcedColors: options.forcedColors,
@@ -145,7 +146,7 @@ async function capture(state, options = {}) {
   try {
     const response = await page.goto(`${base}/home/?${query}`, { waitUntil: 'domcontentloaded', timeout: 60_000 })
     const owner = await waitForHomeReady(page)
-    await settleAnimationFrames(page, options.forcedColors === 'active' ? 24 : 60)
+    await settleAnimationFrames(page, options.forcedColors === 'active' ? 4 : 8)
 
     record.status = response?.status()
     record.canvasReady = await owner.getAttribute('data-home-assets-ready')
@@ -198,13 +199,11 @@ async function capture(state, options = {}) {
     receipt.captures.push(record)
     if (!record.passed) receipt.errors.push(record)
     await context.close().catch(() => {})
-    await browser.close().catch(() => {})
   }
 }
 
 async function captureOrbLifecycle({ reducedMotion = 'no-preference' } = {}) {
-  const browser = await chromium.launch({ headless: true, args: ['--enable-unsafe-swiftshader'] })
-  const context = await browser.newContext({ viewport: { width: 1440, height: 900 }, reducedMotion })
+  const context = await sharedBrowser.newContext({ viewport: { width: 1440, height: 900 }, reducedMotion })
   const page = await context.newPage()
   const pageErrors = []
   page.on('pageerror', (error) => pageErrors.push(String(error)))
@@ -302,7 +301,6 @@ async function captureOrbLifecycle({ reducedMotion = 'no-preference' } = {}) {
     receipt.captures.push(record)
     if (!record.passed) receipt.errors.push(record)
     await context.close().catch(() => {})
-    await browser.close().catch(() => {})
   }
 }
 
@@ -312,8 +310,7 @@ await capture({ id: 'forced-colors', query: 'homePrivateFixture=1' }, { forcedCo
 await captureOrbLifecycle()
 await captureOrbLifecycle({ reducedMotion: 'reduce' })
 
-const transitionBrowser = await chromium.launch({ headless: true, args: ['--enable-unsafe-swiftshader'] })
-const transitionContext = await transitionBrowser.newContext({ viewport: { width: 1440, height: 900 } })
+const transitionContext = await sharedBrowser.newContext({ viewport: { width: 1440, height: 900 } })
 const transitionPage = await transitionContext.newPage()
 const transitionErrors = []
 transitionPage.on('pageerror', (error) => transitionErrors.push(String(error)))
@@ -323,7 +320,7 @@ try {
   const owner = await waitForHomeReady(transitionPage)
   await transitionContext.setOffline(true)
   await transitionPage.evaluate(() => window.dispatchEvent(new Event('offline')))
-  await settleAnimationFrames(transitionPage, 30)
+  await settleAnimationFrames(transitionPage, 6)
   transition.status = response?.status()
   transition.canvasReady = await owner.getAttribute('data-home-assets-ready')
   transition.primaryOwner = await owner.getAttribute('data-home-primary-owner')
@@ -340,10 +337,10 @@ try {
 } finally {
   await transitionContext.setOffline(false).catch(() => {})
   await transitionContext.close().catch(() => {})
-  await transitionBrowser.close().catch(() => {})
   receipt.captures.push(transition)
   if (!transition.passed) receipt.errors.push(transition)
 }
 
 await writeFile(path.join(outputDir, 'receipt.json'), `${JSON.stringify(receipt, null, 2)}\n`)
+await sharedBrowser.close().catch(() => {})
 if (receipt.errors.length) process.exit(1)
