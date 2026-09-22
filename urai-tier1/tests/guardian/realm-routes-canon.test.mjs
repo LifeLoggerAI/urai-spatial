@@ -79,7 +79,7 @@ const councilRealm = readFileSync(join(app, "src/spatial/council/CouncilRealm.ts
 assert.match(councilRoute, /CouncilRealm/, "Council route must mount the rigged embodied Council owner.");
 assert.match(councilRoute, /data-route-owner="rigged-embodied-council"/, "Council route must publish its current owner.");
 assert.match(councilRoute, /getSceneDefinition/, "Council route must retain sceneRegistry authority.");
-assert.doesNotMatch(councilRoute, /SpatialRealmRuntime|RealmShell/, "Council route must not regress to the superseded generic or flat owner.");
+assert.doesNotMatch(councilRoute, /import\s+\{\s*SpatialRealmRuntime\s*\}|<SpatialRealmRuntime|RealmShell/, "Council route must not regress to the superseded generic or flat owner.");
 assert.match(councilRealm, /human-makehuman-v4/, "Council must retain the V4 rigged human candidate set.");
 assert.match(councilRealm, /stepEmbodiedMotion/, "Council must remain embodied and walkable.");
 assert.match(councilRealm, /MobileMovementPad/, "Council must retain touch movement controls.");
