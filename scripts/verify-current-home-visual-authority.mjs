@@ -105,7 +105,7 @@ const avatar = await readFile(path.join(homeRoot, 'HomeEmbodiedAvatar.tsx'), 'ut
 if (!avatar.includes('HomeAvatarPresentationState')) fail('avatar presentation state contract missing')
 
 const ground = await readFile(path.join(repoRoot, 'urai-tier1/src/app/GroundSpatialWorldClean.tsx'), 'utf8')
-for (const token of ['data-ground-exploration="first-person"','data-ground-runtime-owner="first-person-lived-world"','data-ground-camera="eye-level-terrain-following"','data-ground-collision="visible-terrain-heightfield"','data-ground-place-layer="consent-aware-empty-by-default"','ground-visible-traversable-terrain','surfaceY + EYE_HEIGHT']) if (!ground.includes(token)) fail(`Ground lost ${token}`)
+for (const token of ['data-ground-exploration="first-person-no-visible-body"','data-ground-runtime-owner="first-person-lived-world"','data-ground-camera="eye-level-terrain-following-no-authored-bob"','data-ground-collision="terrain-plus-authored-obstacle-field"','data-ground-place-layer="consent-aware-empty-by-default"','data-ground-visible-avatar="false"','data-ground-visible-hands="false"','ground-visible-traversable-terrain','surfaceY + EYE_HEIGHT']) if (!ground.includes(token)) fail(`Ground lost ${token}`)
 
 process.stdout.write(`${JSON.stringify({
   ok:true,
