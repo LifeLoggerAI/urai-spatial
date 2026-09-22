@@ -42,7 +42,7 @@ const watchdog = setTimeout(async () => {
   console.error(message)
   process.exit(1)
 }, watchdogMs)
-const browser = await chromium.launch({ headless: true, args: ['--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'] })
+let activeBrowser = null
 
 async function capture(page, scenario, state) {
   const file = `ground-${scenario.id}-${state}.png`
@@ -71,7 +71,7 @@ async function dragLook(page, canvasBox, dx, dy) {
   const y = canvasBox.y + canvasBox.height * 0.5
   await page.mouse.move(x, y)
   await page.mouse.down()
-  await page.mouse.move(x + dx, y + dy, { steps: 12 })
+  await page.mouse.move(x + dx, y + dy)
   await page.mouse.up()
   await page.waitForTimeout(240)
 }
@@ -79,6 +79,10 @@ async function dragLook(page, canvasBox, dx, dy) {
 try {
   for (const scenario of scenarios) {
     activeScenario = scenario.id
+    activePhase = 'launch-browser'
+    console.log(`[ground-proof] scenario=${activeScenario} phase=${activePhase}`)
+    const browser = await chromium.launch({ headless: true, args: ['--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'] })
+    activeBrowser = browser
     activePhase = 'create-context'
     console.log(`[ground-proof] scenario=${activeScenario} phase=${activePhase}`)
     const context = await browser.newContext({
@@ -219,6 +223,9 @@ try {
     errors.push(...pageErrors.map((error) => `${scenario.id}: ${error}`))
     activePhase = 'context-close'
     await closeWithBudget(`context:${scenario.id}`, () => context.close())
+    activePhase = 'browser-close'
+    await closeWithBudget(`browser:${scenario.id}`, () => browser.close(), 15_000)
+    activeBrowser = null
     activePhase = 'scenario-complete'
     console.log(`[ground-proof] scenario=${activeScenario} phase=${activePhase}`)
   }
@@ -228,7 +235,8 @@ try {
   console.error(`[ground-proof] ${message}`)
 } finally {
   activePhase = 'browser-close'
-  await closeWithBudget('browser', () => browser.close(), 15_000)
+  if (activeBrowser) await closeWithBudget('browser:active', () => activeBrowser.close(), 15_000)
+  activeBrowser = null
   clearTimeout(watchdog)
 }
 
