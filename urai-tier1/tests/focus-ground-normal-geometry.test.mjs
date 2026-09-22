@@ -15,8 +15,8 @@ test('Focus runtime has no walkable terrain or seated geology owner', () => {
 
 test('Focus star geometry owns the close-range spatial silhouette', () => {
   assert.match(focus, /name="focus-selected-memory-star"/)
-  assert.match(focus, /name="focus-memory-star-outer-corona"/)
-  assert.match(focus, /name="focus-memory-star-inner-corona"/)
+  assert.match(focus, /name="focus-memory-star-organic-corona-particles"/)
+  assert.match(focus, /name="focus-memory-star-organic-corona-haze"/)
   assert.match(focus, /name="focus-memory-star-photosphere-core"/)
   assert.match(focus, /name="focus-memory-star-glass-shell"/)
   assert.match(focus, /name="focus-memory-star-interior-depth"/)
