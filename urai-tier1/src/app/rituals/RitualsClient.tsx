@@ -54,13 +54,13 @@ export default function RitualsClient() {
   const begin = () => {
     clearTimer()
     setPhase('silence-before')
-    timerRef.current = setTimeout(() => setPhase('action'), prefersReducedMotion ? 400 : THRESHOLD_RITUAL.silenceBeforeMs)
+    timerRef.current = setTimeout(() => setPhase('action'), THRESHOLD_RITUAL.silenceBeforeMs)
   }
 
   const act = () => {
     clearTimer()
     setPhase('silence-after')
-    timerRef.current = setTimeout(() => setPhase('complete'), prefersReducedMotion ? 400 : THRESHOLD_RITUAL.silenceAfterMs)
+    timerRef.current = setTimeout(() => setPhase('complete'), THRESHOLD_RITUAL.silenceAfterMs)
   }
 
   const cancel = () => {
