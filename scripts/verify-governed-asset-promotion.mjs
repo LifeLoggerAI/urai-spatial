@@ -39,7 +39,7 @@ requireCondition(decision.producer !== decision.reviewer, 'producer and reviewer
 requireCondition(decision.fallbackVerified === true, 'fallback verification is required')
 requireCondition(decision.routeConsumptionVerified === true, 'route consumption verification is required')
 requireCondition(decision.licenseApproved === true, 'license approval is required')
-requireCondition(decision.optimizationVerified === true, 'optimization verification is required')
+requireCondition(typeof decision.optimizationVerified === 'boolean', 'optimization verification state must be explicit')
 requireCondition(typeof decision.exactHeadChecksPassed === 'boolean', 'exact-head check state must be explicit')
 requireCondition(typeof decision.reviewedAt === 'string' && !Number.isNaN(Date.parse(decision.reviewedAt)), 'reviewedAt must be an ISO timestamp')
 
@@ -97,6 +97,7 @@ if (decision.mode === 'rehearsal') {
   requireCondition(decision.visualProofVerified === false, 'rehearsal must not claim final visual proof')
   requireCondition(!decision.receiptPath, 'rehearsal must not attach a production receipt')
 } else {
+  requireCondition(decision.optimizationVerified === true, 'promotion requires optimization verification')
   requireCondition(decision.exactHeadChecksPassed === true, 'promotion requires exact-head checks to pass')
   requireCondition(decision.promote === true, 'promotion must set promote=true')
   requireCondition(asset?.releaseState === 'production-ready', 'promotion requires manifest releaseState=production-ready')
