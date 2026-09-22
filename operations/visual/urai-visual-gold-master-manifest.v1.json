@@ -1,6 +1,6 @@
 {
   "schemaVersion": "urai-visual-gold-master-manifest-1",
-  "authorityDate": "2026-09-17",
+  "authorityDate": "2026-09-21",
   "repository": "LifeLoggerAI/urai-spatial",
   "branch": "unified-spatial-convergence-20260916",
   "authorityPr": 1237,
@@ -106,11 +106,12 @@
       "experience": "focus",
       "system": "selected-memory",
       "status": "CURRENT_CANDIDATE",
-      "visualRevision": "V323",
-      "visualAuthority": "v323-selected-memory-star-with-contained-memory",
+      "visualRevision": "V349",
+      "visualAuthority": "v349-selected-memory-star-with-contained-memory-organic-corona",
       "visualAcceptance": false,
       "predecessorTerrainCavityLineage": "REJECTED_SUPERSEDED",
-      "requiredContinuity": "life-map-selected-star-to-focus-contained-memory-to-replay"
+      "requiredContinuity": "life-map-selected-star-to-focus-contained-memory-to-replay",
+      "currentDiagnostic": "machine-green predecessor/current-lineage pixels still require literal founder acceptance; sphere/planet/target first-read is rejection"
     },
     {
       "id": "VGM-REPLAY-001",
@@ -196,7 +197,9 @@
       "dedicatedReferencePackAccepted": false,
       "visualAcceptance": false,
       "launchExposed": false,
-      "productionGate": "URAI_ENABLE_POST_LAUNCH_REALMS"
+      "productionGate": "URAI_ENABLE_POST_LAUNCH_REALMS",
+      "sourceConverged": true,
+      "currentSourceAuthority": "embodied-safe-realm-no-portal-card"
     },
     {
       "id": "VGM-LEGACY-001",
@@ -237,7 +240,9 @@
       "spatialVisualAuthorityConverged": false,
       "visualAcceptance": false,
       "launchExposed": false,
-      "productionGate": "URAI_ENABLE_POST_LAUNCH_REALMS"
+      "productionGate": "URAI_ENABLE_POST_LAUNCH_REALMS",
+      "sourceConverged": true,
+      "currentSourceAuthority": "spatial-unranked-scenario-world"
     },
     {
       "id": "VGM-SETTINGS-001",
@@ -264,7 +269,12 @@
     "dashboard-passport-as-home-object",
     "primitive-tree-box-city-flat-water-final-art",
     "obvious-tiling-fog-walls-particle-soup-giant-bloom",
-    "desktop-crop-used-as-mobile-composition"
+    "desktop-crop-used-as-mobile-composition",
+    "portal-ring-master-as-current-visual-authority",
+    "portal-ring-or-tunnel-as-degraded-3d-fallback",
+    "focus-tunnel-as-memory-transition-authority",
+    "replay-film-portal-or-theater-as-memory-authority",
+    "legacy-slot-or-filename-treated-as-canon"
   ],
   "requiredBibles": [
     "camera",
@@ -287,5 +297,62 @@
     "dream",
     "xr",
     "spatial-biome"
+  ],
+  "referenceAuthorityRules": {
+    "implementationExistenceDoesNotCreateReferenceAuthority": true,
+    "exactHeadVisualAcceptanceDoesNotTransferAcrossHeadMoves": true,
+    "nonCanonThreeDimensionalFallbacksMustNotReplaceSemanticFallbacks": true,
+    "historicalBinariesMayRemainForProvenanceWithoutRemainingActiveVisualAuthority": true
+  },
+  "assetAuthorityQuarantine": [
+    {
+      "id": "portal-ring-master-glb-v1",
+      "artifact": "urai-tier1/public/assets/urai/generated/models/portal-ring-master-v1.glb",
+      "status": "SUPERSEDED",
+      "authority": "HISTORICAL_PROVENANCE_ONLY",
+      "reason": "Portal/ring ownership conflicts with current Home, Ground, Life Map, Focus and Replay canon. Retain bytes for provenance only; do not use as literal visual/reference authority."
+    },
+    {
+      "id": "portal-ring-proof-fallback",
+      "artifact": "urai-tier1/public/assets/urai/spatial/shared/models/universal-portal-ring-v1.gltf",
+      "status": "REJECTED",
+      "authority": "HISTORICAL_PROVENANCE_ONLY",
+      "reason": "Generic portal-ring fallback is forbidden visual language. Prefer semantic/fail-closed fallback over rendering this geometry."
+    },
+    {
+      "id": "focus-star-tunnel-proof-fallback",
+      "artifact": "urai-tier1/public/assets/urai/spatial/focus-star/models/focus-star-tunnel-v1.gltf",
+      "status": "REJECTED",
+      "authority": "HISTORICAL_PROVENANCE_ONLY",
+      "reason": "Tunnel ownership conflicts with selected Memory Star -> contained memory Focus continuity."
+    },
+    {
+      "id": "replay-film-portal-proof-fallback",
+      "artifact": "urai-tier1/public/assets/urai/spatial/replay-portal/models/replay-film-portal-v1.gltf",
+      "status": "REJECTED",
+      "authority": "HISTORICAL_PROVENANCE_ONLY",
+      "reason": "Film/portal framing conflicts with inside-the-memory Replay and truthful source grammar."
+    },
+    {
+      "id": "life-map-memory-star-v1",
+      "artifact": "urai-tier1/public/assets/urai/generated/models/life-map-memory-star-v1.glb",
+      "status": "REUSABLE_SUPPORTING_REFERENCE",
+      "authority": "NOT_LITERAL_VISUAL_AUTHORITY",
+      "reason": "Historical binary can support compatibility/provenance only. Current visible Memory Star morphology is point/photosphere + layered corona with no visible sphere, crystal, orbit-shard or ring identity."
+    },
+    {
+      "id": "focus-memory-chamber-v1",
+      "artifact": "urai-tier1/public/assets/urai/generated/models/focus-memory-chamber-v1.glb",
+      "status": "REUSABLE_SUPPORTING_REFERENCE",
+      "authority": "NOT_PIXEL_ACCEPTANCE_AUTHORITY",
+      "reason": "Implementation geometry may remain while Focus visual acceptance is open. Current acceptance is governed by same-star continuity and literal retained pixels, not this filename or binary alone."
+    },
+    {
+      "id": "replay-memory-environment-v1",
+      "artifact": "urai-tier1/public/assets/urai/generated/models/replay-memory-environment-v1.glb",
+      "status": "REUSABLE_SUPPORTING_REFERENCE",
+      "authority": "NOT_THEATER_OR_PLAYER_AUTHORITY",
+      "reason": "Implementation geometry may remain only if the rendered result reads as an immersive memory environment rather than a film portal, theater or media player."
+    }
   ]
 }
