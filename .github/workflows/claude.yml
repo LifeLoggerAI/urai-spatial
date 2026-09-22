@@ -1,0 +1,57 @@
+name: Claude Code
+
+on:
+  issue_comment:
+    types: [created]
+  pull_request_review_comment:
+    types: [created]
+  issues:
+    types: [opened, assigned]
+  pull_request_review:
+    types: [submitted]
+
+jobs:
+  claude:
+    if: |
+      (github.event_name == 'issue_comment' && contains(github.event.comment.body, '@claude')) ||
+      (github.event_name == 'pull_request_review_comment' && contains(github.event.comment.body, '@claude')) ||
+      (github.event_name == 'pull_request_review' && contains(github.event.review.body, '@claude')) ||
+      (github.event_name == 'issues' && (contains(github.event.issue.body, '@claude') || contains(github.event.issue.title, '@claude')))
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+      actions: read
+
+    steps:
+      - name: Verify Claude subscription credential is available
+        shell: bash
+        env:
+          HAS_CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN != '' }}
+        run: |
+          if [ "$HAS_CLAUDE_CODE_OAUTH_TOKEN" != "true" ]; then
+            echo "::error::CLAUDE_CODE_OAUTH_TOKEN is not available to this workflow. Configure it as a repository Actions secret or an organization secret explicitly scoped to this repository."
+            exit 1
+          fi
+          echo "Claude subscription credential is available."
+
+      - name: Checkout repository
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          fetch-depth: 0
+
+      - name: Run Claude Code
+        uses: anthropics/claude-code-action@bf38e86e58df9ebf3420326d019f955bb3be64dd # v1.0.225
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          settings: .claude/settings.json
+          additional_permissions: |
+            actions: read
+          show_full_output: false
+          claude_args: |
+            --max-turns 20
+            --allowedTools "Bash(node --version),Bash(pnpm --version),Bash(pnpm install --frozen-lockfile),Bash(pnpm doctor),Bash(pnpm check:types),Bash(pnpm test:canon),Bash(pnpm test:unit),Bash(pnpm test:integration),Bash(pnpm test:e2e),Bash(pnpm test:visual:spatial),Bash(pnpm runtime:authority),Bash(pnpm home:invariant),Bash(pnpm verify:release:critical)"
+            --disallowedTools "WebFetch,WebSearch"
