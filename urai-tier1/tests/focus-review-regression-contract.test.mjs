@@ -26,14 +26,14 @@ test('home telemetry synchronizes from mutations and input without perpetual doc
 })
 
 test('Focus focal authority is the selected memory star and cannot regress to V321 terrain cavities', () => {
-  assert.match(focus, /Locked product authority; V347 is the current literal-pixel implementation/)
+  assert.match(focus, /Locked product authority; V348 is the current literal-pixel implementation/)
   assert.match(focus, /data-focus-composition="selected-memory-star-with-contained-memory"/)
   assert.match(focus, /data-focus-spatial="selected-memory-star"/)
   assert.match(focus, /data-focus-terrain-owner="false"/)
   assert.match(focus, /name="focus-selected-memory-star"/)
   assert.match(focus, /name="focus-memory-star-glass-shell"/)
   assert.match(focus, /<MemoryVisualContent memory=\{memory\} \/>/)
-  assert.match(focus, /selected-memory-star-resolving-through-memory-v347/)
+  assert.match(focus, /selected-memory-star-resolving-through-memory-v348/)
   assert.match(focus, /function makeFocusCoronaTexture\(power: number, rays = false\)/)
   assert.match(focus, /const warpedAngle = angle \+ Math\.sin\(angle \* 3\.0 \+ \.37\) \* \.16/)
   assert.match(focus, /broadPlume/)
