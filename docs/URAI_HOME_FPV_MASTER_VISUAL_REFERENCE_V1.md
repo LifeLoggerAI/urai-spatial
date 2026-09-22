@@ -2,8 +2,8 @@
 
 Authority date: 2026-09-17
 Repository: `LifeLoggerAI/urai-spatial`
-Authority branch: `unified-spatial-convergence-20260916` / PR #1237
-Historical creation audit head: `d4362831c28def1ac4c27a2c2df5b27ef7133d6b` (provenance only; live #1237 source wins). This reference contract intentionally does not self-bind to its own commit as exact-head proof.
+Current convergence authority: `converge/final-canon-spatial-20260922` / PR #1296
+Historical creation audit head: `d4362831c28def1ac4c27a2c2df5b27ef7133d6b` (provenance only). Current PR #1296 source and exact-head evidence govern over the historical creation branch. This reference contract intentionally does not self-bind to its own commit as exact-head proof.
 Status: `CURRENT_CANDIDATE_REFERENCE / NOT LITERAL-PIXEL ACCEPTANCE / NOT GOLD MASTER`
 
 ## Purpose
@@ -16,7 +16,7 @@ It does **not** declare generated concept art, source code, or CI to be visual a
 
 Every statement and artifact in this package must be classified as one of:
 
-1. `CURRENT_RUNTIME_FACT` — directly present in current #1237 source/runtime authority.
+1. `CURRENT_RUNTIME_FACT` — directly present in current PR #1296 source/runtime authority.
 2. `REFERENCE_TARGET` — approved design target that must still be implemented and literally inspected.
 3. `MISSING_REPLACEMENT_REQUIRED` — required visual system/art not yet production-authoritative.
 4. `HISTORICAL_PROVENANCE_ONLY` — retained only to explain lineage and must not override current canon.
@@ -176,7 +176,7 @@ Its semantic role is ownership, identity, consent, permissions, and system relat
 
 `CURRENT_RUNTIME_FACT / CURRENT_CANDIDATE_ART`
 
-Current #1237 source contains a deterministic first-person Home Earth candidate distinct from Location Map and Personal Emotional Weather. Its truth boundary is fail-closed: the default is visibly unavailable/provider-not-activated, and source explicitly forbids fabricated emotional activity, individual dots, exact user/household location, or reuse of private location-map identity.
+Current convergence source contains a deterministic first-person Home Earth candidate distinct from Location Map and Personal Emotional Weather. Its truth boundary is fail-closed: the default is visibly unavailable/provider-not-activated, and source explicitly forbids fabricated emotional activity, individual dots, exact user/household location, or reuse of private location-map identity.
 
 Therefore:
 
@@ -191,7 +191,7 @@ Therefore:
 
 `CURRENT_STATE_MODEL / ACTIVE_HOME_ATMOSPHERE_BINDING_SOURCE_CONVERGED / CURRENT_CANDIDATE_REFERENCE`
 
-The current state/signal authority exists, including uncertainty-aware/fail-closed modes and weather-tone semantics. Current #1237 source now binds that model directly into the canonical V223 Home atmospheric owner: `clear → calm`, `soft → reflective`, `active → energized`, `heavy → heavy`, `recovering → hopeful`, and `forming → uncertain`. The world exposes the source tone, mapped atmosphere, scene mode, loading state, and disclosed-synthetic-review flag for deterministic proof.
+The current state/signal authority exists, including uncertainty-aware/fail-closed modes and weather-tone semantics. Current convergence source binds that model directly into the canonical V223 Home atmospheric owner: `clear → calm`, `soft → reflective`, `active → energized`, `heavy → heavy`, `recovering → hopeful`, and `forming → uncertain`. The world exposes the source tone, mapped atmosphere, scene mode, loading state, and disclosed-synthetic-review flag for deterministic proof.
 
 Private Personal Emotional Weather must remain distinct from ordinary meteorological weather and the Global Emotional Field and must never imply diagnosis.
 
