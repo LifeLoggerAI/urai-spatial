@@ -10,6 +10,12 @@ import { sacredUXDisclosure } from '@/spatial/companion/CompanionRitualTimingEng
 
 type RitualPhase = 'invitation' | 'silence-before' | 'action' | 'silence-after' | 'complete'
 
+function detectWebGL(): boolean {
+  if (typeof document === 'undefined') return false
+  const canvas = document.createElement('canvas')
+  return Boolean(canvas.getContext('webgl2') || canvas.getContext('webgl'))
+}
+
 const THRESHOLD_RITUAL = {
   id: 'threshold-small-ritual',
   title: 'Small Map Ritual',
@@ -42,6 +48,7 @@ export default function RitualsClient() {
   const prefersReducedMotion = useReducedMotion()
   const [phase, setPhase] = useState<RitualPhase>('invitation')
   const [reducedStimulation, setReducedStimulation] = useState(false)
+  const [webglAvailable, setWebglAvailable] = useState<boolean | null>(null)
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const clearTimer = () => {
@@ -50,6 +57,7 @@ export default function RitualsClient() {
   }
 
   useEffect(() => clearTimer, [])
+  useEffect(() => setWebglAvailable(detectWebGL()), [])
 
   const begin = () => {
     clearTimer()
@@ -86,9 +94,14 @@ export default function RitualsClient() {
     data-ritual-truth="symbolic-user-started"
     data-voice-allowed="false"
     data-visual-bloom-allowed="false"
+    data-webgl-state={webglAvailable === null ? 'checking' : webglAvailable ? 'available' : 'unavailable'}
     style={{ position:'fixed', inset:0, overflow:'hidden', background:'#05070d', color:'#f4f2eb', fontFamily:'Inter,ui-sans-serif,system-ui' }}
   >
-    <RitualWorld reducedMotion={prefersReducedMotion} reducedStimulation={reducedStimulation} active={active} />
+    {webglAvailable ? <RitualWorld reducedMotion={prefersReducedMotion} reducedStimulation={reducedStimulation} active={active} /> : <div
+      data-testid="urai-ritual-spatial-fallback"
+      aria-hidden="true"
+      style={{ position:'absolute', inset:0, background:'radial-gradient(circle at 50% 48%, rgba(216,196,141,.12), transparent 28%), linear-gradient(180deg,#070910 0%,#05070d 100%)' }}
+    />}
 
     <section style={{ position:'absolute', left:'50%', bottom:'clamp(20px,6vh,70px)', transform:'translateX(-50%)', zIndex:20, width:'min(680px,calc(100vw - 32px))', padding:'clamp(20px,4vw,32px)', border:'1px solid rgba(220,228,240,.15)', borderRadius:28, background:'rgba(5,7,13,.72)', backdropFilter:'blur(18px)', boxShadow:'0 28px 80px rgba(0,0,0,.38)' }}>
       <p style={{ margin:0, fontSize:10, fontWeight:800, letterSpacing:'.2em', textTransform:'uppercase', color:'rgba(222,228,238,.62)' }}>Ritual · optional symbolic moment</p>
