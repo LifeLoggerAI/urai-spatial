@@ -3,63 +3,18 @@ import fs from 'node:fs'
 import test from 'node:test'
 
 const companion = fs.readFileSync(new URL('../src/spatial/world/PersistentWorldCompanion.tsx', import.meta.url), 'utf8')
-const companionCss = fs.readFileSync(new URL('../src/spatial/world/persistentWorldCompanion.css', import.meta.url), 'utf8')
+const shell = fs.readFileSync(new URL('../src/spatial/world/UraiWorldShell.tsx', import.meta.url), 'utf8')
 
-const estateBlockMatch = companion.match(/const PUBLIC_ESTATE:[\s\S]*?\n\]/)
-assert.ok(estateBlockMatch, 'public estate registry must exist')
-const estateBlock = estateBlockMatch[0]
-
-const approvedPublicProperties = [
-  'URAI Studio',
-  'URAI Privacy',
-  'URAI Labs',
-  'URAI Foundation',
-]
-
-const restrictedProperties = [
-  'Storytime',
-  'Investors',
-  'B2B',
-  'Marketing',
-  'Content',
-  'Jobs Runtime',
-  'Communications',
-  'Admin',
-  'Analytics',
-  'Staging',
-  'Asset Factory',
-  'Stewardship',
-  'UrAiProd',
-  'UrAi-Dev',
-]
-
-test('public estate exposes only the four approved public properties', () => {
-  for (const label of approvedPublicProperties) {
-    assert.ok(estateBlock.includes(`label: '${label}'`), `missing approved public property: ${label}`)
-  }
-  assert.equal((estateBlock.match(/id:/g) ?? []).length, approvedPublicProperties.length)
-  for (const label of restrictedProperties) {
-    assert.ok(!estateBlock.includes(label), `restricted property must not enter the public estate: ${label}`)
-  }
+test('UrAi world shell does not expose a corporate public-estate mega-menu', () => {
+  assert.doesNotMatch(companion, /PUBLIC_ESTATE|Public constellation|URAI Studio|URAI Privacy|URAI Labs|URAI Foundation/)
+  assert.doesNotMatch(companion, /target="_blank"|Travel through the URAI world|Travel to private URAI realms/)
+  assert.match(companion, /Private companion conversation and sensory controls\. World travel stays in the world\./)
 })
 
-test('unverified public properties fail closed as status-only entries', () => {
-  assert.equal((estateBlock.match(/status: 'verification-pending'/g) ?? []).length, approvedPublicProperties.length)
-  assert.ok(!/href\s*:/.test(estateBlock), 'verification-pending registry entries must not contain outbound URLs')
-  assert.match(companion, /\{ status: 'verification-pending'; href\?: never \}/)
-  assert.match(companion, /\{ status: 'live'; href: string \}/)
-  assert.match(companion, /entry\.status === 'live'/)
-  assert.match(companion, /Verification pending/)
-  assert.match(companion, /data-estate-status=\{entry\.status\}/)
-})
-
-test('public constellation is semantic and accessible without WebGL', () => {
-  assert.match(companion, /<section className="urai-world-companion__estate" aria-labelledby="urai-public-estate-title">/)
-  assert.match(companion, /<h2 id="urai-public-estate-title">Public constellation<\/h2>/)
-  assert.match(companion, /<ul>/)
-  assert.match(companion, /<li key=\{entry\.id\}/)
-  assert.match(companion, /<a href=\{entry\.href\} target="_blank" rel="noreferrer">/)
-  assert.match(companionCss, /@media \(max-width: 560px\)[\s\S]*\.urai-world-companion__estate ul \{ grid-template-columns: repeat\(2, minmax\(0, 1fr\)\); \}/)
-  assert.match(companionCss, /@media \(forced-colors: active\)/)
-  assert.match(companionCss, /@media \(prefers-reduced-motion: reduce\)/)
+test('Orb remains a companion rather than a universal destination registry', () => {
+  assert.doesNotMatch(companion, /PRIMARY_DESTINATIONS|SECONDARY_DESTINATIONS|destinationButtons|requestUraiWorldTravel/)
+  assert.match(companion, /<OrbConversationPanel \/>/)
+  assert.match(companion, /aria-label=\{open \? 'Close UrAi Orb companion' : 'Open UrAi Orb companion'\}/)
+  assert.match(companion, /aria-label="Return through the world"/)
+  assert.match(shell, /<PersistentWorldCompanion \/>/)
 })
