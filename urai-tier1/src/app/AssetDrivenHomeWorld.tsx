@@ -74,7 +74,7 @@ export default function AssetDrivenHomeWorld({ onOrbOpen, webglAvailable }: Prop
       world.setAttribute('data-home-art-certification', 'fresh-exact-head-pixels-required')
       world.setAttribute('data-home-visual-repair', 'cinematic-home-ground-threshold-convergence')
       world.setAttribute('data-home-physical-base', 'continuous-lived-physical-world')
-      world.setAttribute('data-home-scanned-composition', 'bodyless-first-person-living-memory-orb-physical-ground-and-broad-sky-threshold')
+      world.setAttribute('data-home-scanned-composition', 'avatar-presentation-to-bodyless-first-person-v288-biomorphic-orb-physical-ground-and-broad-sky-threshold')
       world.setAttribute('data-home-runtime-assets', RUNTIME_ASSETS)
       world.setAttribute('data-home-ground-entry', 'physical-world-surface')
       world.setAttribute('data-home-life-map-entry', 'visible-sky-broad-interaction')
