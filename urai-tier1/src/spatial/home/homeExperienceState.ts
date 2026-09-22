@@ -277,7 +277,12 @@ export function homeExperienceReducer(
       }
 
       if (state.stableState === 'AVATAR_HOME_FIRST_PERSON' && !state.transition) {
-        return state
+        return {
+          ...state,
+          transition: 'EMBODIMENT_UNWIND',
+          inputLocked: true,
+          pendingDestination: null,
+        }
       }
 
       return state
@@ -293,7 +298,7 @@ export function homeExperienceReducer(
       ) return state
       return {
         ...state,
-        stableState: state.transition === 'EMBODIMENT_UNWIND' ? 'AVATAR_HOME_FIRST_PERSON' : state.stableState,
+        stableState: state.transition === 'EMBODIMENT_UNWIND' ? 'HOME_PRESENTATION' : state.stableState,
         transition: null,
         inputLocked: false,
         pendingDestination: null,
