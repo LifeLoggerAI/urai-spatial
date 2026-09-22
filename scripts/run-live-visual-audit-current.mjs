@@ -14,7 +14,7 @@ requireFromTierOne('playwright')
 // focusTouchTarget
 // semanticListHidden
 // firstVisible(page, check.selectors)
-// Open Orb travel controls
+// Open UrAi Orb companion
 // clickOrFollowHref(page, found.locator)
 // waitForURL((url) => url.toString().includes(check.expected), { timeout: 7000 })
 // getAttribute('data-memory-status') === 'demo'
