@@ -79,7 +79,7 @@ for (const token of [
   'data-home-non-xr-body-policy="camera-only-no-hands-body-rig"',
   'data-home-presence-policy="presentation-avatar-then-first-person-camera-only-no-hands-body-rig"',
   "router.prefetch('/ground/')","router.prefetch('/life-map/')",
-  "cameraCheckpoint: 'home-sky-ascent'","cameraCheckpoint: 'ground-first-person-arrival'",
+  "cameraCheckpoint: 'home-sky-ascent-complete'","cameraCheckpoint: 'ground-first-person-arrival'",
   'data-home-ground-entry="physical-world-surface"','data-home-life-map-entry="visible-sky-broad-interaction"'
 ]) if (!renderer.includes(token)) fail(`renderer missing ${token}`)
 for (const retired of [
