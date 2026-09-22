@@ -86,10 +86,10 @@ test('certified predecessor authority and inventory distinguish V288/V286 eviden
   assert.equal(inventory.currentRuntimeCandidate.certified, false)
 })
 
-test('normal exact-head Portal/Orb proof watches and rejects regression away from V288 grounded reliquary authority', () => {
+test('normal exact-head Portal/Orb proof watches and preserves current V291 Orb authority with V288/V286 as predecessor provenance', () => {
   assert.match(workflow, /HomeOrbReliquaryV286\.tsx/)
   assert.match(workflow, /HomeOrbGroundedV288\.tsx/)
-  assert.match(workflow, /Verify V288 grounded reliquary plus V287 lived-world and broad-sky authority/)
+  assert.match(workflow, /Verify current V291 Orb candidate plus lived-world and broad-sky authority/)
   assert.match(workflow, /home-v288-grounded-biomorphic-memory-reliquary/)
   assert.match(workflow, /fallbackVisualOwner: false/)
   assert.match(workflow, /material\.colorWrite = false/)
