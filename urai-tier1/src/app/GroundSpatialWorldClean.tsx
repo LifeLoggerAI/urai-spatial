@@ -135,18 +135,19 @@ function TerrainMaterial({ profile }: { profile: EnvironmentProfile }) {
   }, [albedo, arm, normal, profile]);
   const naturalSoilProfile = profile.id === "temperate" || profile.id === "woodland";
   if (naturalSoilProfile) {
-    const naturalNormalStrength = profile.id === "woodland" ? 0.08 : 0.06;
+    const naturalNormalStrength = profile.id === "woodland" ? 0.22 : 0.18;
     return <meshStandardMaterial
       color="#ffffff"
+      map={albedo}
       normalMap={normal}
       normalScale={new THREE.Vector2(naturalNormalStrength, naturalNormalStrength)}
       aoMap={arm}
-      aoMapIntensity={0.10}
+      aoMapIntensity={0.34}
       roughnessMap={arm}
-      roughness={0.97}
+      roughness={0.93}
       metalness={0}
       vertexColors
-      envMapIntensity={profile.id === "woodland" ? 0.14 : 0.18}
+      envMapIntensity={profile.id === "woodland" ? 0.24 : 0.28}
     />;
   }
   const normalStrength = profile.id === "urban" ? 0.34 : 0.58;
@@ -305,8 +306,8 @@ function NaturalCanopy({ profile, position, rotationY, scale, shapeSeed }: {
       false,
     ));
 
-    const leafGeometry = new THREE.SphereGeometry(1, 6, 4);
-    leafGeometry.scale(0.68, 0.22, 0.86);
+    const leafGeometry = new THREE.SphereGeometry(1, 8, 6);
+    leafGeometry.scale(0.82, 0.34, 1.0);
     leafGeometry.computeVertexNormals();
 
     const foliageAnchors = [
@@ -319,7 +320,7 @@ function NaturalCanopy({ profile, position, rotationY, scale, shapeSeed }: {
       const value = Math.sin(seed * 12.9898 + shapeSeed * 53.117 + (woodland ? 78.233 : 31.417)) * 43758.5453;
       return value - Math.floor(value);
     };
-    const leaves = Array.from({ length: woodland ? 360 : 320 }, (_, index) => {
+    const leaves = Array.from({ length: woodland ? 520 : 470 }, (_, index) => {
       const anchor = foliageAnchors[index % foliageAnchors.length];
       const spread = 0.06 + hash(index * 7 + 1) * 0.52;
       const theta = hash(index * 7 + 2) * Math.PI * 2;
@@ -329,9 +330,9 @@ function NaturalCanopy({ profile, position, rotationY, scale, shapeSeed }: {
       const rx = (hash(index * 7 + 6) - 0.5) * 1.28;
       const ry = theta + (hash(index * 7 + 7) - 0.5) * 1.15;
       const rz = (hash(index * 7 + 8) - 0.5) * 1.12;
-      const sx = 0.045 + hash(index * 7 + 9) * 0.038;
-      const sy = 0.026 + hash(index * 7 + 10) * 0.030;
-      const sz = 0.060 + hash(index * 7 + 11) * 0.055;
+      const sx = 0.060 + hash(index * 7 + 9) * 0.050;
+      const sy = 0.040 + hash(index * 7 + 10) * 0.038;
+      const sz = 0.078 + hash(index * 7 + 11) * 0.068;
       return {
         position: [x, y, z] as [number, number, number],
         rotation: [rx, ry, rz] as [number, number, number],
@@ -363,12 +364,12 @@ function NaturalCanopy({ profile, position, rotationY, scale, shapeSeed }: {
     raycast={() => null}
     name="ground-authored-natural-canopy-v13"
     userData={{
-      treatment: "seed-varied-branch-architecture-fine-scale-three-dimensional-broadleaf-canopy-v26",
+      treatment: "seed-varied-branch-architecture-layered-broadleaf-canopy-v27",
       provenance: NATURAL_CANOPY,
-      visibleAuthority: "runtime-authored-canopy-v26",
-      supersedesVisibleCandidate: "ground-v25-oversized-dense-leaflet-crown",
-      literalPixelRepair: "v26-fine-scale-leaflets-natural-soil-open-atmosphere",
-      supplementalPixelRepair: "v26-swiftshader-budget-and-canopy-depth",
+      visibleAuthority: "runtime-authored-canopy-v27",
+      supersedesVisibleCandidate: "ground-v26-sparse-open-crown",
+      literalPixelRepair: "v27-layered-foliage-textured-soil-natural-depth",
+      supplementalPixelRepair: "v27-denser-instanced-foliage-with-bounded-counts",
       retainedContract: "ground-v25-pbr-terrain-dense-3d-canopy-atmospheric-depth",
     }}
   >
