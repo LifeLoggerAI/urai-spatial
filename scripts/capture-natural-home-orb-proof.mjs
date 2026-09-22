@@ -43,7 +43,7 @@ const cases = [
 await mkdir(outputDir, { recursive: true })
 const receipt = {
   schemaVersion: 'urai-natural-home-orb-proof-19', exactHead, capturedAt: new Date().toISOString(), runtimeIdentity,
-  visualPolicy: 'Current Home is one first-person cinematic lived physical world with no visible user avatar, a grounded Orb companion, physical Ground surface interaction, and the broad visible sky as the only Life Map threshold. Exact-head pixels remain candidates until literally inspected.',
+  visualPolicy: 'Current Home begins with the governed Avatar presentation and requires explicit activation into bodyless non-XR first-person Home. The living-memory Orb, physical Ground surface, and broad visible sky remain in one continuous world. Exact-head pixels remain candidates until literally inspected.',
   cases: [], errors: [],
 }
 
@@ -92,12 +92,34 @@ for (const spec of cases) {
     record.status = response?.status(); record.canvasCount = await owner.locator('canvas').count()
     record.visibleWorld = await attr('data-home-visible-world'); record.worldCharacter = await attr('data-home-world-character')
     record.visualOwnership = await attr('data-home-visual-ownership'); record.desktopMobileWorld = await attr('data-home-desktop-mobile-world')
-    record.embodiedSelf = await attr('data-home-embodied-self'); record.movement = await attr('data-home-movement'); record.visualGrade = await attr('data-home-visual-grade')
+    record.presentationStableState = await attr('data-home-stable-state')
+    record.presentationEmbodiedSelf = await attr('data-home-embodied-self')
+    record.presentationPresence = await attr('data-home-presence-presentation')
+    record.presentationMovement = await attr('data-home-movement')
+    record.presentationCameraMode = await attr('data-home-camera-mode')
+    record.visualGrade = await attr('data-home-visual-grade')
     record.artCertification = await attr('data-home-art-certification'); record.runtimeAssets = await attr('data-home-runtime-assets')
     record.physicalBase = await attr('data-home-physical-base'); record.authoredRegions = await attr('data-home-authored-regions')
     record.groundEntry = await attr('data-home-ground-entry'); record.lifeMapEntry = await attr('data-home-life-map-entry')
-    record.cameraMode = await attr('data-home-camera-mode'); record.orbState = await attr('data-home-orb-state'); record.orbModelClip = await attr('data-home-orb-model-clip')
+    record.orbState = await attr('data-home-orb-state'); record.orbModelClip = await attr('data-home-orb-model-clip')
     record.orbMarkers = await owner.getByTestId('urai-home-webgl-orb').count(); record.embodimentMarkers = await owner.getByTestId('urai-home-embodied-avatar').count()
+    const presentationVisual = await imageEvidence(page)
+    record.presentationScreenshot = `${spec.id}-presentation-${exactHead.slice(0,12)}.png`
+    await writeFile(path.join(outputDir, record.presentationScreenshot), presentationVisual.buffer)
+    record.presentationScreenshotBytes = presentationVisual.buffer.length
+
+    const enter = page.getByTestId('urai-home-avatar-enter-first-person')
+    await enter.waitFor({ state: 'attached', timeout: 30_000 })
+    await enter.focus()
+    await page.keyboard.press('Enter')
+    await page.waitForFunction(() => document.querySelector('.urai-asset-home-world')?.getAttribute('data-home-stable-state') === 'AVATAR_HOME_FIRST_PERSON', null, { timeout: 60_000 })
+    await settle(page, spec.reducedMotion === 'reduce' ? 2 : 4)
+
+    record.stableState = await attr('data-home-stable-state')
+    record.embodiedSelf = await attr('data-home-embodied-self')
+    record.presencePresentation = await attr('data-home-presence-presentation')
+    record.movement = await attr('data-home-movement')
+    record.cameraMode = await attr('data-home-camera-mode')
     const nav = page.getByRole('navigation', { name: 'Accessible Home destinations' })
     record.semanticButtons = await nav.getByRole('button').count(); record.semanticLinks = await nav.getByRole('link').count()
     record.semanticGroundHref = await nav.getByTestId('home-semantic-ground').getAttribute('href'); record.semanticLifeMapHref = await nav.getByTestId('home-semantic-life-map').getAttribute('href')
@@ -109,24 +131,32 @@ for (const spec of cases) {
     record.passed = record.status === 200 && record.canvasCount === 1
       && record.visibleWorld === authority.worldIdentifier
       && record.visibleWorld === 'cinematic-lived-world-threshold'
-      && record.worldCharacter === 'production-cinematic-real-place-sacred-tech'
+      && record.worldCharacter === 'production-cinematic-modern-lived-home-stone-timber-glass'
       && record.visualOwnership === 'single-canvas-three-dimensional-geometry'
       && record.desktopMobileWorld === 'same-scene'
-      && record.embodiedSelf === 'first-person-viewpoint-no-avatar'
-      && record.movement === 'camera-look-world-surface-selection'
+      && record.presentationStableState === 'HOME_PRESENTATION'
+      && record.presentationEmbodiedSelf === 'visible-avatar-home-presentation'
+      && record.presentationPresence === 'visible-avatar-presentation-activation-gate'
+      && record.presentationMovement === 'avatar-presentation-target-activate'
+      && record.presentationCameraMode === 'home-avatar-presentation'
+      && record.stableState === 'AVATAR_HOME_FIRST_PERSON'
+      && record.embodiedSelf === 'camera-only-first-person-home'
+      && record.presencePresentation === 'bodyless-first-person-home'
+      && record.movement === 'shared-keyboard-touch-walk-look-interact'
       && record.visualGrade === 'current-literal-pixel-candidate-not-certified'
       && record.artCertification === 'fresh-exact-head-pixels-required'
       && record.physicalBase === 'continuous-lived-physical-world'
       && record.runtimeAssets?.includes('HomeAtmosphericSky.tsx')
       && record.runtimeAssets?.includes('HomeWorldProductionV223.tsx')
       && record.authoredRegions?.includes('home-physical-world')
-      && record.authoredRegions?.includes('home-grounded-companion')
+      && record.authoredRegions?.includes('home-avatar-presentation')
+      && record.authoredRegions?.includes('home-camera-only-first-person')
+      && record.authoredRegions?.includes('home-living-memory-orb')
       && record.authoredRegions?.includes('home-life-map-sky-threshold')
-      && !record.authoredRegions?.includes('home-visible-user-avatar')
       && !record.authoredRegions?.includes('home-life-map-physical-portal')
       && record.groundEntry === 'physical-world-surface'
       && record.lifeMapEntry === 'visible-sky-broad-interaction'
-      && record.cameraMode !== null && record.cameraMode !== 'cinematic-third-person' && record.orbState !== null
+      && (record.cameraMode === 'home-first-person' || record.cameraMode === 'home-first-person-look') && record.orbState !== null
       && (!spec.orbState || record.orbState === spec.orbState)
       && (spec.reducedMotion !== 'reduce' || record.orbModelClip === 'stopped-reduced-motion')
       && record.orbMarkers === 1 && record.embodimentMarkers === 0
@@ -134,6 +164,7 @@ for (const spec of cases) {
       && record.semanticGroundHref === '/ground/?entryPortal=home-ground&cameraCheckpoint=home-ground-descent'
       && record.semanticLifeMapHref === '/life-map/?from=home-sky&entryPortal=home-sky&cameraCheckpoint=home-sky-ascent-complete'
       && record.semanticOwner === 'runtime-boundary' && record.semanticNonDominant === 'true'
+      && record.presentationScreenshotBytes > 12000
       && record.screenshotBytes > 12000 && record.luminanceRange >= 16 && record.visibleSamples >= 5
       && pageErrors.length === 0 && failedRequests.length === 0
   } catch (error) { record.error = String(error) }
