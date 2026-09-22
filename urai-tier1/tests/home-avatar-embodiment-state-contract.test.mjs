@@ -70,10 +70,10 @@ test('Orb conversation unwinds to its immediate origin rather than deleting cont
   assert.match(source, /state\.stableState === 'IMMERSIVE_CONVERSATION'[\s\S]*'ORB_COLLAPSE'[\s\S]*origin\.stableState/)
 })
 
-test('first-person Home ESC stays in bodyless first-person Home when no deeper layer owns escape', () => {
-  assert.match(source, /state\.stableState === 'AVATAR_HOME_FIRST_PERSON' && !state\.transition[\s\S]*return state/)
-  assert.match(source, /state\.transition === 'EMBODIMENT_UNWIND' \? 'AVATAR_HOME_FIRST_PERSON'/)
-  assert.doesNotMatch(source, /state\.transition === 'EMBODIMENT_UNWIND' \? 'HOME_PRESENTATION'/)
+test('first-person Home ESC unwinds exactly one layer to Home presentation', () => {
+  assert.match(source, /state\.stableState === 'AVATAR_HOME_FIRST_PERSON' && !state\.transition[\s\S]*transition: 'EMBODIMENT_UNWIND'[\s\S]*inputLocked: true/)
+  assert.match(source, /state\.transition === 'EMBODIMENT_UNWIND' \? 'HOME_PRESENTATION'/)
+  assert.doesNotMatch(source, /state\.transition === 'EMBODIMENT_UNWIND' \? 'AVATAR_HOME_FIRST_PERSON'/)
 })
 
 test('interrupted Ground or Sky transition restores the recorded origin safely', () => {
