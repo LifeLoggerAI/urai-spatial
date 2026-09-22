@@ -30,25 +30,25 @@ const contracts = {
   'life-map-memory-star-v1.glb': {
     minNodes: 30,
     maxTriangles: 40000,
-    nodes: ['memory-star-root','memory-star-core','memory-star-heart','memory-star-orbit-1','memory-star-shard-1','memory-star-halo'],
+    nodes: ['memory-star-root','memory-star-photosphere','memory-star-inner-corona','memory-star-outer-corona','memory-star-corona-wisp-1','memory-star-corona-wisp-32'],
     clips: ['MemoryStar_Idle','MemoryStar_Selected','MemoryStar_Focus'],
   },
   'focus-memory-chamber-v1.glb': {
     minNodes: 34,
     maxTriangles: 50000,
-    nodes: ['focus-memory-chamber-root','focus-tunnel-ring-1','focus-memory-cradle','focus-cradle-core','focus-memory-rune-1'],
+    nodes: ['focus-memory-chamber-root','focus-selected-memory-photosphere','focus-selected-memory-corona','focus-living-memory-volume-1','focus-living-memory-volume-34'],
     clips: ['Focus_Arrival','Focus_Breathing','Focus_Exit'],
   },
   'replay-memory-environment-v1.glb': {
     minNodes: 60,
     maxTriangles: 50000,
-    nodes: ['replay-memory-environment-root','replay-film-portal','replay-film-veil','replay-memory-panel-1','replay-camera-track'],
+    nodes: ['replay-memory-environment-root','replay-lived-ground','replay-memory-atmosphere','replay-memory-horizon','replay-memory-growth-1','replay-memory-mote-24'],
     clips: ['Replay_Idle','Replay_Enter','Replay_Play','Replay_Exit'],
   },
   'urai-orb-avatar-v1.glb': {
     minNodes: 24,
     maxTriangles: 30000,
-    nodes: ['orb-root','orb-core','orb-heart','orb-aura','orb-petal-1','orb-orbit-a','orb-orbit-b','orb-orbit-c'],
+    nodes: ['orb-root','orb-core','orb-heart','orb-aura','orb-memory-fold-1','orb-filament-1','orb-filament-12'],
     clips: ['Orb_Resting','Orb_Idle','Orb_Attention','Orb_Listening','Orb_Thinking','Orb_Speaking','Orb_Guiding','Orb_Reflecting','Orb_Calming','Orb_Privacy','Orb_Degraded','Orb_Transition'],
   },
   'passport-status-room-v1.glb': {
