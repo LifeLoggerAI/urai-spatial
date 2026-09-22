@@ -68,13 +68,21 @@ assert.match(spatialRealm, /let second: number \| null = null/, "SpatialRealmExp
 assert.match(spatialRealm, /if \(second !== null\) window\.cancelAnimationFrame\(second\)/, "SpatialRealmExperience must cancel the nested animation frame during cleanup.");
 assert.doesNotMatch(spatialRealm, /return \(\) => window\.cancelAnimationFrame\(second\)/, "SpatialRealmExperience must not return ignored cleanup from inside an animation-frame callback.");
 
-for (const route of ["shadow", "council"]) {
-  const content = readFileSync(join(app, `src/app/${route}/page.tsx`), "utf8");
-  assert.match(content, /SpatialRealmRuntime/, `${route} route must render the capability-aware spatial runtime.`);
-  assert.match(content, new RegExp(`realm="${route}"`), `${route} route must mount its matching realm.`);
-  assert.match(content, /getSceneDefinition/, `${route} route must use sceneRegistry.`);
-  assert.doesNotMatch(content, /RealmShell/, `${route} route must not fall back to the flat shell owner.`);
-}
+const shadowRoute = readFileSync(join(app, "src/app/shadow/page.tsx"), "utf8");
+assert.match(shadowRoute, /SpatialRealmRuntime/, "shadow route must render the capability-aware spatial runtime.");
+assert.match(shadowRoute, /realm="shadow"/, "shadow route must mount the canonical grounded Shadow realm.");
+assert.match(shadowRoute, /getSceneDefinition/, "shadow route must use sceneRegistry.");
+assert.doesNotMatch(shadowRoute, /RealmShell/, "shadow route must not fall back to the flat shell owner.");
+
+const councilRoute = readFileSync(join(app, "src/app/council/page.tsx"), "utf8");
+const councilRealm = readFileSync(join(app, "src/spatial/council/CouncilRealm.tsx"), "utf8");
+assert.match(councilRoute, /CouncilRealm/, "Council route must mount the rigged embodied Council owner.");
+assert.match(councilRoute, /data-route-owner="rigged-embodied-council"/, "Council route must publish its current owner.");
+assert.match(councilRoute, /getSceneDefinition/, "Council route must retain sceneRegistry authority.");
+assert.doesNotMatch(councilRoute, /SpatialRealmRuntime|RealmShell/, "Council route must not regress to the superseded generic or flat owner.");
+assert.match(councilRealm, /human-makehuman-v4/, "Council must retain the V4 rigged human candidate set.");
+assert.match(councilRealm, /stepEmbodiedMotion/, "Council must remain embodied and walkable.");
+assert.match(councilRealm, /MobileMovementPad/, "Council must retain touch movement controls.");
 
 const mirror = readFileSync(join(app, "src/app/mirror/page.tsx"), "utf8");
 const mirrorClient = readFileSync(join(app, "src/app/mirror/MirrorSpatialClient.tsx"), "utf8");
