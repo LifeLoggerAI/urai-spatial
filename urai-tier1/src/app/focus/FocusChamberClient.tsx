@@ -372,7 +372,7 @@ function FocusMemoryStar({
         metalness={0}
         transparent
         opacity={memory ? 0.96 : 0.18}
-        depthWrite={memory}
+        depthWrite={Boolean(memory)}
       />
     </mesh>
     </>
