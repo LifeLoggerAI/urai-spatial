@@ -39,10 +39,10 @@ export const worldAssetManifest = {
     },
     lifeMapAperture: {
       slotId: 'home.lifeMapAperture',
-      label: 'Life Map Portal',
+      label: 'Life Map Sky Threshold (legacy compatibility slot)',
       finalModel: resolved('portal-ring-master-glb-v1'),
       status: 'fallback',
-      notes: 'Canonical portal selection with deterministic portal-ring fallback.',
+      notes: 'LEGACY SLOT NAME/ASSET ONLY. Current canon is broad-sky Life Map ascent with no visible portal/ring authority. This slot must not be used as visual/reference authority.',
     },
   },
   ground: {
@@ -87,10 +87,10 @@ export const worldAssetManifest = {
   focus: {
     starPortalShell: {
       slotId: 'focus.starPortalShell',
-      label: 'Focus Memory Chamber',
+      label: 'Focus Selected Memory Compatibility Geometry',
       finalModel: resolved('focus-memory-chamber-glb-v1'),
       status: 'fallback',
-      notes: 'Canonical Focus selection with deterministic tunnel fallback.',
+      notes: 'LEGACY COMPATIBILITY ONLY. Current Focus authority is the same selected Memory Star resolving into contained memory; tunnel/chamber language is not visual/reference authority.',
     },
     memoryDiorama: {
       slotId: 'focus.memoryDiorama',
@@ -103,10 +103,10 @@ export const worldAssetManifest = {
   replay: {
     memoryThreadTunnel: {
       slotId: 'replay.memoryThreadTunnel',
-      label: 'Replay Memory Environment',
+      label: 'Replay Memory Interior Compatibility Geometry',
       finalModel: resolved('replay-memory-environment-glb-v1'),
       status: 'fallback',
-      notes: 'Canonical Replay selection with deterministic film-portal fallback.',
+      notes: 'LEGACY COMPATIBILITY ONLY. Current Replay authority is an immersive memory interior with truthful source grammar; film portal/theater/player language is rejected.',
     },
     beatMarkers: {
       slotId: 'replay.beatMarkers',
