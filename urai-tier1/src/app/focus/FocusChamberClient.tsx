@@ -367,7 +367,7 @@ function FocusMemoryStar({
     position={STAR_POSITION}
     name="focus-selected-memory-star"
     userData={{
-      visualAuthority: 'selected-memory-star-resolving-through-memory-v350',
+      visualAuthority: 'selected-memory-star-resolving-through-memory-v351',
       lifeMapContinuity: 'same-selected-star-resolved-at-close-range',
       terrainOwner: false,
     }}
@@ -386,18 +386,15 @@ function FocusMemoryStar({
       <spriteMaterial map={photosphereTexture} color="#ffbd68" transparent opacity={memory ? .34 : .10} depthWrite={false} depthTest={false} blending={THREE.AdditiveBlending} toneMapped={false} />
     </sprite>
     <group raycast={() => null} name="focus-memory-star-explicit-corona-rays" position={[0, 0, -0.04]} />
-    <mesh raycast={() => null} geometry={photosphereGeometry} scale={0.74} name="focus-memory-star-photosphere-core" rotation={[0.08, -0.18, 0]}>
-      <meshStandardMaterial
+    <mesh raycast={() => null} geometry={photosphereGeometry} scale={0.62} name="focus-memory-star-photosphere-core" rotation={[0.08, -0.18, 0]}>
+      <meshBasicMaterial
         map={sphereTexture}
-        emissiveMap={sphereTexture}
         color="#ff9a32"
-        emissive="#ff4a00"
-        emissiveIntensity={memory ? 2.28 : 0.20}
-        roughness={0.38}
-        metalness={0}
         transparent
-        opacity={memory ? 0.96 : 0.18}
-        depthWrite={Boolean(memory)}
+        opacity={memory ? 0.26 : 0.10}
+        depthWrite={false}
+        blending={THREE.AdditiveBlending}
+        toneMapped={false}
       />
     </mesh>
     </>
