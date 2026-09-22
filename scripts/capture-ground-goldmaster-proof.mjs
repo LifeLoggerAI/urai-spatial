@@ -166,13 +166,20 @@ try {
       if (contract[key] !== value) errors.push(`${scenario.id}: ${key}=${contract[key]} expected ${value}`)
     }
 
-    const canvas = page.locator('.ground-spatial-root canvas').first()
-    const canvasBox = await canvas.boundingBox()
-    if (!canvasBox || canvasBox.width < 240 || canvasBox.height < 240) throw new Error(`${scenario.id}: Ground canvas is not usable`)
+    const canvasBox = await page.evaluate(() => {
+      const canvas = document.querySelector('.ground-spatial-root canvas')
+      if (!(canvas instanceof HTMLCanvasElement)) return null
+      const rect = canvas.getBoundingClientRect()
+      return { width: rect.width, height: rect.height, backingWidth: canvas.width, backingHeight: canvas.height }
+    })
+    if (!canvasBox || canvasBox.width < 240 || canvasBox.height < 240 || canvasBox.backingWidth <= 0 || canvasBox.backingHeight <= 0) throw new Error(`${scenario.id}: Ground canvas is not usable`)
 
-    const fixedOrb = page.locator('.urai-world-companion__orb').first()
-    const fixedOrbCount = await fixedOrb.count()
-    const fixedOrbStyle = fixedOrbCount ? await fixedOrb.evaluate((node) => ({ opacity: getComputedStyle(node).opacity, pointerEvents: getComputedStyle(node).pointerEvents })) : null
+    const fixedOrbStyle = await page.evaluate(() => {
+      const node = document.querySelector('.urai-world-companion__orb')
+      if (!(node instanceof HTMLElement)) return null
+      const style = getComputedStyle(node)
+      return { opacity: style.opacity, pointerEvents: style.pointerEvents }
+    })
     if (fixedOrbStyle && Number.parseFloat(fixedOrbStyle.opacity || '1') > 0.02) errors.push(`${scenario.id}: semantic Orb fallback is visibly duplicated`)
 
     await capture(page, scenario, 'idle')
