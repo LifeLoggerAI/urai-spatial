@@ -2,7 +2,7 @@
 
 import { Canvas } from '@react-three/fiber'
 import { PerspectiveCamera } from '@react-three/drei'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import * as THREE from 'three'
 import { requestUraiWorldReturn } from '@/spatial/world/worldEvents'
 import { MAX_SCENARIO_BRANCHES } from '@/lib/scenario/scenarioTypes'
@@ -10,6 +10,12 @@ import { MAX_SCENARIO_BRANCHES } from '@/lib/scenario/scenarioTypes'
 const DEFAULT_LABELS = ['Current path', 'Requested change', 'Alternative constraint'] as const
 
 type ManualBranch = { id: string; label: string; summary: string }
+
+function detectWebGL(): boolean {
+  if (typeof document === 'undefined') return false
+  const canvas = document.createElement('canvas')
+  return Boolean(canvas.getContext('webgl2') || canvas.getContext('webgl'))
+}
 
 function makeBranch(index: number, summary: string): ManualBranch {
   return { id: `manual-${index + 1}`, label: DEFAULT_LABELS[index] ?? `Branch ${index + 1}`, summary }
@@ -52,6 +58,9 @@ export default function PossibleFuturesClient() {
   const [drafts, setDrafts] = useState(['', '', ''])
   const [branches, setBranches] = useState<ManualBranch[]>([])
   const [activeId, setActiveId] = useState('')
+  const [webglAvailable, setWebglAvailable] = useState<boolean | null>(null)
+
+  useEffect(() => setWebglAvailable(detectWebGL()), [])
 
   const active = useMemo(() => branches.find((branch) => branch.id === activeId) ?? branches[0] ?? null, [activeId, branches])
 
@@ -76,6 +85,7 @@ export default function PossibleFuturesClient() {
       data-truth-mode="scenario"
       data-provider-state="unavailable-manual-only"
       data-branch-ordering="unranked"
+      data-webgl-state={webglAvailable === null ? 'checking' : webglAvailable ? 'available' : 'unavailable'}
       style={{ minHeight: '100svh', background: 'linear-gradient(180deg,#090d10 0%,#12191a 52%,#0b1012 100%)', color: '#eef4f2', padding: 'clamp(20px,4vw,56px)' }}
     >
       <div style={{ maxWidth: 980, margin: '0 auto', display: 'grid', gap: 24 }}>
@@ -110,7 +120,11 @@ export default function PossibleFuturesClient() {
         ) : (
           <section aria-labelledby="possible-futures-world-title" style={{ display: 'grid', gap: 18 }}>
             <div style={{ minHeight: 360, position: 'relative', borderRadius: 28, overflow: 'hidden', border: '1px solid rgba(238,244,242,.16)', background:'#0a1010' }}>
-              <ScenarioWorld branches={branches} activeId={active?.id ?? ''} />
+              {webglAvailable ? <ScenarioWorld branches={branches} activeId={active?.id ?? ''} /> : <div
+                data-testid="possible-futures-spatial-fallback"
+                aria-hidden="true"
+                style={{ position:'absolute', inset:0, background:'radial-gradient(circle at 50% 42%, rgba(207,226,216,.12), transparent 30%), linear-gradient(180deg,#0a1010 0%,#121a18 100%)' }}
+              />}
               <div style={{ position: 'absolute', inset: 0, display: 'grid', placeItems: 'end center', padding: 24, textAlign: 'center', pointerEvents:'none' }}>
                 <div style={{maxWidth:680,padding:'14px 18px',borderRadius:18,background:'rgba(8,12,12,.72)',backdropFilter:'blur(12px)'}}>
                   <p style={{ letterSpacing: '.14em', fontSize: 11, fontWeight: 800, margin:0 }}>SCENARIO · UNRANKED</p>
