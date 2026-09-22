@@ -8,7 +8,7 @@ Status: `CURRENT_CANDIDATE_REFERENCE / NOT LITERAL-PIXEL ACCEPTANCE / NOT GOLD M
 
 ## Purpose
 
-This document converts the current direct bodyless first-person Home canon into one continuity contract for reference-image generation, environment art, camera, Orb, Passport, mobile, accessibility, implementation, and literal-pixel inspection. Historical Avatar/presentation material is provenance only and cannot override the active non-XR Home.
+This document defines the current Home continuity contract for reference-image generation, environment art, camera, Avatar presentation, bodyless first-person Home, Orb, Passport, mobile, accessibility, implementation, and literal-pixel inspection. Current non-XR Home begins in governed `HOME_PRESENTATION` with a visible Avatar, then enters bodyless `AVATAR_HOME_FIRST_PERSON` through Avatar activation; older direct-first-person-only wording is superseded.
 
 It does **not** declare generated concept art, source code, or CI to be visual acceptance. `docs/URAI_VISUAL_GOLD_MASTER_MANIFEST_V1.md` remains the release/control-plane authority. Any later source-head move requires affected runtime proof and literal pixels to be regenerated.
 
@@ -25,9 +25,10 @@ Polish must never turn a `REFERENCE_TARGET` into a claim that the runtime alread
 
 ## Locked experience continuity
 
-- Ordinary non-XR Home opens directly in persistent `AVATAR_HOME_FIRST_PERSON`; `HOME_PRESENTATION` is legacy compatibility/provenance only.
-- Desktop/mobile Home is camera-only and bodyless from first stable paint: no visible Avatar, hands, arms, torso, legs, feet, or tool rig.
-- No Avatar-target/activation step is part of the current non-XR Home journey.
+- Ordinary non-XR Home opens in governed `HOME_PRESENTATION` with the visible user Avatar as the embodiment anchor.
+- Selecting the Avatar initiates `AVATAR_EMBODIMENT_TRANSITION` into persistent `AVATAR_HOME_FIRST_PERSON` in the same Home.
+- Desktop/mobile first-person Home is camera-only and bodyless: no visible Avatar, hands, arms, torso, legs, feet, or tool rig.
+- Escape from stable `AVATAR_HOME_FIRST_PERSON` initiates `EMBODIMENT_UNWIND` and returns exactly one layer to `HOME_PRESENTATION`.
 - Broad Sky owns Home → Life Map ascent. No localized portal, ring, white dot, doorway, or hotspot.
 - Terrain/material owns Home → Ground descent. No portal, doorway, radial tunnel, or generic vortex.
 - The authored Home Orb remains a physical conversational presence.
@@ -57,18 +58,21 @@ The 16-frame package is a working production-reference set. It does **not** repl
 
 ### Non-XR body authority
 
-- Current desktop/mobile Home has no visible user Avatar or synthetic body rig.
-- Legacy Avatar coordinates/components are retained only as historical/compatibility provenance and are not current non-XR visual authority.
-- A separately governed self-view or future XR body/likeness surface must earn its own source, consent, provenance and visual acceptance; it never authorizes ordinary flat-screen hands/body.
+- Current desktop/mobile Home presentation contains the governed visible user Avatar.
+- After Avatar activation, first-person Home is camera-only and bodyless; no synthetic hands, arms, torso, legs, feet, or first-person body rig are authorized.
+- The same world, Orb, Sky and Ground ownership persist across the presentation-to-first-person transition.
+- A separately governed self-view or future XR body/likeness surface must earn its own source, consent, provenance and visual acceptance; it never authorizes ordinary flat-screen first-person hands/body.
 
-### Direct first-person entry
+### Avatar presentation → bodyless first-person entry
 
-- Home initializes directly in stable `AVATAR_HOME_FIRST_PERSON`.
-- There is no current Avatar-target, Avatar-activation, camera-to-body convergence, or embodiment-timing gate for ordinary non-XR Home.
+- Home initializes in stable `HOME_PRESENTATION`.
+- The governed visible Avatar is the activation gate into `AVATAR_HOME_FIRST_PERSON`.
+- The embodiment transition moves the camera into the Avatar viewpoint without replacing the Home, Orb, Sky or Ground.
 - Stable first-person FOV remains `58°` landscape / `66°` portrait.
-- World, Orb, Sky, Ground and Passport continuity must be present from the initial stable first-person state.
+- Passport and other first-person-only interactions become available only after stable first-person ownership is reached.
+- Escape from stable first-person Home unwinds through `EMBODIMENT_UNWIND` to `HOME_PRESENTATION`.
 
-Historical `1.45 s` / `0.28 s` embodiment timings are superseded non-XR provenance and must not be used as current acceptance criteria.
+Current embodiment timing values are implementation facts, not independent visual authority; acceptance remains exact-head and literal-pixel bound.
 
 ## Master world composition
 
@@ -322,7 +326,7 @@ Critical access cannot depend on hover. Desktop, keyboard, touch, screen reader,
 ## Accessibility variants
 
 ### Reduced motion
-- Home remains directly bodyless first-person under reduced motion; no Avatar embodiment transition or timing is required.
+- Reduced motion preserves the same semantic hierarchy: `HOME_PRESENTATION` → Avatar activation → bodyless `AVATAR_HOME_FIRST_PERSON`, with a shortened/non-aggressive embodiment transition.
 - Suppress macro Orb/environment transients while preserving semantic state.
 - No aggressive camera parallax, blur, or surprise motion.
 
@@ -395,7 +399,7 @@ Primary current implementation surfaces include:
 - `urai-tier1/src/spatial/layout/HomeWorldProductionV223Geometry.tsx` — sculpted Home terrain/path/strata/grove geometry.
 - `urai-tier1/src/spatial/home/homeExperienceState.ts` — stable/transition states, return stack, origin snapshots.
 - `urai-tier1/src/spatial/home/useHomeExperienceController.ts` — semantic activation, origin capture/restore, destination commit.
-- `urai-tier1/src/spatial/home/HomeEmbodiedAvatar.tsx` — retained historical/separate-surface component; not mounted by current non-XR Home.
+- `urai-tier1/src/spatial/home/HomeEmbodiedAvatar.tsx` — current governed Home presentation Avatar and activation anchor; hidden in bodyless first-person Home.
 - `urai-tier1/src/spatial/layout/HomeAAAVisualRepair.tsx` — current first-person Passport candidate.
 - `docs/URAI_VISUAL_GOLD_MASTER_MANIFEST_V1.md` — visual/release control plane.
 - `docs/URAI_VISUAL_SYSTEM_BIBLES_V1.md` — cross-system camera/material/light/motion/accessibility grammar.
@@ -418,6 +422,6 @@ Reduced-motion/constrained rendering may lower cadence and macro motion. Degrada
 
 **NO-GO / NOT GOLD MASTER.**
 
-Current direct bodyless FP Home, Orb, Sky, Ground transition ownership, physical Passport, and fail-closed Global Emotional Field Earth are source/runtime candidates on #1237, but literal current-head pixels and inspection remain required. Personal Emotional Weather has a current state model and source-converged binding into the active canonical Home atmosphere, but its fresh exact-head responsive/reduced-state literal visual acceptance remains open. Any separately governed likeness/self-view/XR component remains outside ordinary non-XR Home authority and must satisfy its own recorded source/consent/provenance boundary.
+Current Avatar-presentation → bodyless-first-person Home, Orb, Sky, Ground transition ownership, physical Passport, and fail-closed Global Emotional Field Earth are source/runtime candidates, but literal current-head pixels and inspection remain required. Personal Emotional Weather has a current state model and source-converged binding into the active canonical Home atmosphere, but its fresh exact-head responsive/reduced-state literal visual acceptance remains open. Any separately governed likeness/self-view/XR component remains outside ordinary non-XR Home authority and must satisfy its own recorded source/consent/provenance boundary.
 
 This document is complete as a **candidate reference contract**. It becomes visual authority only through the governing VGM manifest, exact-head runtime proof, literal-pixel acceptance, accessibility/performance/privacy/security acceptance, required independent review/governance, protected merge/deploy, deployed-SHA readback, live verification, and rollback/recovery evidence.
