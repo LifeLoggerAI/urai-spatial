@@ -56,8 +56,16 @@ const runtime = await readFile(path.join(repoRoot, 'urai-tier1/src/app/AssetDriv
 for (const token of [
   'cinematic-lived-world-threshold',
   'bodyless-first-person-living-memory-orb-physical-ground-and-broad-sky-threshold',
-  'home-grounded-companion','home-life-map-sky-threshold','visible-sky-broad-interaction',
-  'continuous-lived-physical-world','data-home-canvas-owner="home-world-production-v223-cinematic-threshold-authority"'
+  'data-home-spatial-regions="home-physical-world home-living-memory-orb home-life-map-sky-threshold"',
+  'data-home-life-map-entry',
+  'visible-sky-broad-interaction',
+  'continuous-lived-physical-world',
+  'data-home-ground-entry',
+  'physical-world-surface',
+  'data-home-art-certification',
+  'fresh-exact-head-pixels-required',
+  'data-home-canvas-owner="home-world-production-v223-cinematic-threshold-authority"',
+  'data-home-forge-scenery="suppressed"'
 ]) if (!runtime.includes(token)) fail(`runtime missing ${token}`)
 
 const renderer = await readFile(path.join(layoutRoot, authority.rendererOwner), 'utf8')
