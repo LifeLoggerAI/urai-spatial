@@ -74,7 +74,10 @@ for (const token of [
   '<HomeAtmosphericSky reducedMotion={reducedMotion}',
   "const ORB_MODEL = '/assets/urai/generated/models/urai-orb-avatar-v1.glb'",
   "root.name = 'home-orb-authored-reference-core-v291'",
-  'data-home-embodied-self="first-person-viewpoint-no-avatar"',
+  "data-home-embodied-self={firstPerson ? 'camera-only-first-person-home' : 'visible-avatar-home-presentation'}",
+  "data-home-presence-presentation={homeState.transition === 'AVATAR_EMBODIMENT_TRANSITION' ? 'avatar-embodiment-transition' : homeState.stableState === 'HOME_PRESENTATION' ? 'visible-avatar-presentation-activation-gate' : 'bodyless-first-person-home'}",
+  'data-home-non-xr-body-policy="camera-only-no-hands-body-rig"',
+  'data-home-presence-policy="presentation-avatar-then-first-person-camera-only-no-hands-body-rig"',
   "router.prefetch('/ground/')","router.prefetch('/life-map/')",
   "cameraCheckpoint: 'home-sky-ascent'","cameraCheckpoint: 'ground-first-person-arrival'",
   'data-home-ground-entry="physical-world-surface"','data-home-life-map-entry="visible-sky-broad-interaction"'
