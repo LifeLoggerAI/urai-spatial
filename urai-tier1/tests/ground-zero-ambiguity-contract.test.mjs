@@ -106,7 +106,7 @@ test('Ground natural profiles keep organic vertex color while using subtle PBR r
     'normalMap={normal}',
     'aoMap={arm}',
     'roughnessMap={arm}',
-    'roughness={0.97}',
+    'roughness={0.93}',
     'ground-v25-pbr-terrain-dense-3d-canopy-atmospheric-depth',
   ]) has(ground, marker)
   const naturalBranch = ground.match(/if \(naturalSoilProfile\) \{[\s\S]*?\n  \}/)?.[0] ?? ''
