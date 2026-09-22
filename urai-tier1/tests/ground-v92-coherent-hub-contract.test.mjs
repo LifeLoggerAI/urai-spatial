@@ -25,7 +25,7 @@ test('Ground renders the current atmospheric lived world instead of the rejected
   assert.match(ground, /normalMap=\{normal\}/)
   assert.match(ground, /roughnessMap=\{arm\}/)
   assert.match(ground, /<color attach="background" args=\{\[profile\.horizon\]\} \/>/)
-  assert.match(ground, /<fogExp2 attach="fog" args=\{\[profile\.fog, 0\.0092/)
+  assert.match(ground, /<fogExp2 attach="fog" args=\{\[profile\.fog, 0\.0062/)
   assert.match(ground, /gl\.toneMappingExposure = 0\.90/)
   assert.match(ground, /data-ground-runtime-owner="first-person-lived-world"/)
   assert.match(ground, /name="ground-lived-world"/)
