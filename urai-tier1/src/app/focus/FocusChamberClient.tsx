@@ -10,7 +10,7 @@ import { useSelectedMemory } from '@/spatial/memory/useSelectedMemory'
 import type { SelectedMemory } from '@/spatial/memory/selectedMemoryContract'
 import { requestUraiWorldReturn, requestUraiWorldTravel } from '@/spatial/world/worldEvents'
 
-// Locked product authority; V345 is the current literal-pixel implementation:
+// Locked product authority; V346 is the current literal-pixel implementation:
 // Life Map shows stellar memory points. Focus resolves the selected point into the
 // same memory star at intimate scale, with authorized source media (or a truthful
 // generated visualization when no media exists) visible inside/through the star.
@@ -36,17 +36,26 @@ function makeFocusCoronaTexture(power: number, rays = false) {
     const angle = Math.atan2(dy, dx);
     const warpedAngle = angle + Math.sin(angle * 3.0 + .37) * .16 + Math.sin(angle * 7.0 - .61) * .055;
     const broadPlume = rays
-      ? Math.pow(Math.max(0, .62 * Math.cos(warpedAngle * 5 + .2) + .27 * Math.cos(warpedAngle * 11 - .8) + .11 * Math.cos(warpedAngle * 19 + .35)), 5)
-        * Math.pow(radial, .42)
+      ? Math.pow(Math.max(0, .60 * Math.cos(warpedAngle * 5 + .2) + .27 * Math.cos(warpedAngle * 11 - .8) + .13 * Math.cos(warpedAngle * 19 + .35)), 4)
       : 0;
     const finePlume = rays
-      ? Math.pow(Math.max(0, .57 * Math.cos(warpedAngle * 9 - .45) + .31 * Math.cos(warpedAngle * 17 + .73) + .12 * Math.cos(warpedAngle * 29 - .2)), 9)
-        * Math.pow(radial, .72) * .46
+      ? Math.pow(Math.max(0, .56 * Math.cos(warpedAngle * 9 - .45) + .31 * Math.cos(warpedAngle * 17 + .73) + .13 * Math.cos(warpedAngle * 29 - .2)), 7) * .58
+      : 0;
+    const rayBoundary = rays
+      ? THREE.MathUtils.clamp(.56
+        + Math.sin(warpedAngle * 3.0 + .4) * .065
+        + Math.sin(warpedAngle * 7.0 - .7) * .045
+        + broadPlume * .24
+        + finePlume * .14, .46, .94)
+      : 1;
+    const outerCorona = rays
+      ? (1 - THREE.MathUtils.smoothstep(distance, Math.max(.24, rayBoundary - .22), rayBoundary))
+        * THREE.MathUtils.smoothstep(distance, .39, .56)
       : 0;
     const alpha = distance >= 1
       ? 0
       : rays
-        ? Math.min(1, Math.pow(radial, power) * .035 + broadPlume * .86 + finePlume)
+        ? Math.min(1, outerCorona * (.34 + broadPlume * .82 + finePlume * .56))
         : Math.min(1, Math.pow(radial, power));
     const offset = (y * size + x) * 4;
     data[offset] = 255;
@@ -117,13 +126,17 @@ function makeFocusSphereTexture() {
       + Math.sin(longitude * 67 - latitude * 31) * .055;
     const active = Math.max(0,
       Math.sin(longitude * 5.2 - latitude * 3.7)
-      + Math.sin(longitude * 8.7 + latitude * 6.1) - .55) * .14;
-    const banding = Math.sin(latitude * 9 + Math.sin(longitude * 4) * .8) * .035;
-    const brightness = THREE.MathUtils.clamp(.32 + cellular * .52 + active + banding, 0, 1);
+      + Math.sin(longitude * 8.7 + latitude * 6.1) - .55) * .17;
+    const banding = Math.sin(latitude * 9 + Math.sin(longitude * 4) * .8) * .055;
+    const darkFilament = Math.abs(
+      Math.sin(longitude * 31 + latitude * 17)
+      * Math.cos(longitude * 13 - latitude * 29)
+    ) * .18;
+    const brightness = THREE.MathUtils.clamp(.16 + cellular * .66 + active + banding - darkFilament, 0, 1);
     const offset = (y * width + x) * 4;
-    data[offset] = 255;
-    data[offset + 1] = Math.round(72 + brightness * 154);
-    data[offset + 2] = Math.round(8 + brightness * 78);
+    data[offset] = Math.round(232 + brightness * 23);
+    data[offset + 1] = Math.round(34 + brightness * 176);
+    data[offset + 2] = Math.round(3 + brightness * 66);
     data[offset + 3] = 255;
   }
   const texture = new THREE.DataTexture(data, width, height, THREE.RGBAFormat);
@@ -133,6 +146,25 @@ function makeFocusSphereTexture() {
   texture.colorSpace = THREE.SRGBColorSpace;
   texture.needsUpdate = true;
   return texture;
+}
+
+function makeFocusPhotosphereGeometry() {
+  const geometry = new THREE.IcosahedronGeometry(1, 5)
+  const position = geometry.getAttribute('position') as THREE.BufferAttribute
+  const vertex = new THREE.Vector3()
+  for (let index = 0; index < position.count; index += 1) {
+    vertex.fromBufferAttribute(position, index).normalize()
+    const warp = 1
+      + Math.sin(vertex.x * 17 + vertex.y * 11 + vertex.z * 7) * .022
+      + Math.sin(vertex.x * 31 - vertex.y * 13 + vertex.z * 19) * .012
+      + Math.sin((vertex.x + vertex.y - vertex.z) * 43) * .006
+    vertex.multiplyScalar(warp)
+    position.setXYZ(index, vertex.x, vertex.y, vertex.z)
+  }
+  position.needsUpdate = true
+  geometry.computeVertexNormals()
+  geometry.computeBoundingSphere()
+  return geometry
 }
 
 function dateLabel(value: string) {
@@ -294,12 +326,14 @@ function FocusMemoryStar({
   const rayTexture = useMemo(() => makeFocusCoronaTexture(4.2, true), [])
   const photosphereTexture = useMemo(() => makeFocusPhotosphereTexture(), [])
   const sphereTexture = useMemo(() => makeFocusSphereTexture(), [])
+  const photosphereGeometry = useMemo(() => makeFocusPhotosphereGeometry(), [])
   useEffect(() => () => {
     coronaTexture.dispose()
     rayTexture.dispose()
     photosphereTexture.dispose()
     sphereTexture.dispose()
-  }, [coronaTexture, photosphereTexture, rayTexture, sphereTexture])
+    photosphereGeometry.dispose()
+  }, [coronaTexture, photosphereGeometry, photosphereTexture, rayTexture, sphereTexture])
 
   useFrame((state, delta) => {
     if (!group.current) return
@@ -333,23 +367,23 @@ function FocusMemoryStar({
     position={STAR_POSITION}
     name="focus-selected-memory-star"
     userData={{
-      visualAuthority: 'selected-memory-star-resolving-through-memory-v345',
+      visualAuthority: 'selected-memory-star-resolving-through-memory-v346',
       lifeMapContinuity: 'same-selected-star-resolved-at-close-range',
       terrainOwner: false,
     }}
   >
     <>
-    <sprite raycast={() => null} position={[-.10, .04, -.34]} scale={[3.64, 3.12, 1]} rotation={-.08} name="focus-memory-star-corona-glow">
-      <spriteMaterial map={coronaTexture} color={accent} transparent opacity={memory ? .07 : .03} depthWrite={false} blending={THREE.AdditiveBlending} toneMapped={false} />
+    <sprite raycast={() => null} position={[-.06, .03, -.08]} scale={[2.52, 2.34, 1]} rotation={-.11} name="focus-memory-star-corona-glow">
+      <spriteMaterial map={coronaTexture} color="#ff6b25" transparent opacity={memory ? .13 : .03} depthWrite={false} blending={THREE.AdditiveBlending} toneMapped={false} />
     </sprite>
-    <sprite raycast={() => null} position={[.10, -.04, -.28]} scale={[4.86, 3.76, 1]} rotation={.17} name="focus-memory-star-photosphere-rays">
-      <spriteMaterial map={rayTexture} color="#ff9c3d" transparent opacity={memory ? .66 : .04} depthWrite={false} blending={THREE.AdditiveBlending} toneMapped={false} />
+    <sprite raycast={() => null} position={[.05, -.03, .11]} scale={[3.08, 2.70, 1]} rotation={.19} name="focus-memory-star-photosphere-rays">
+      <spriteMaterial map={rayTexture} color="#ff8a2a" transparent opacity={memory ? .74 : .04} depthWrite={false} depthTest={false} blending={THREE.AdditiveBlending} toneMapped={false} />
     </sprite>
-    <sprite raycast={() => null} position={[-.08, .05, -.27]} scale={[3.78, 4.72, 1]} rotation={-.37} name="focus-memory-star-photosphere-rays-secondary">
-      <spriteMaterial map={rayTexture} color="#ffd27a" transparent opacity={memory ? .42 : .03} depthWrite={false} blending={THREE.AdditiveBlending} toneMapped={false} />
+    <sprite raycast={() => null} position={[-.04, .04, .10]} scale={[2.72, 3.22, 1]} rotation={-.43} name="focus-memory-star-photosphere-rays-secondary">
+      <spriteMaterial map={rayTexture} color="#ffd078" transparent opacity={memory ? .48 : .03} depthWrite={false} depthTest={false} blending={THREE.AdditiveBlending} toneMapped={false} />
     </sprite>
-    <sprite raycast={() => null} position={[0, 0, -.16]} scale={[1.72, 1.58, 1]} rotation={.09} name="focus-memory-star-photosphere-surface">
-      <spriteMaterial map={photosphereTexture} color="#ffb65f" transparent opacity={memory ? .24 : .10} depthWrite={false} blending={THREE.AdditiveBlending} toneMapped={false} />
+    <sprite raycast={() => null} position={[0, 0, .12]} scale={[1.58, 1.50, 1]} rotation={.09} name="focus-memory-star-photosphere-surface">
+      <spriteMaterial map={photosphereTexture} color="#ffb45b" transparent opacity={memory ? .19 : .10} depthWrite={false} depthTest={false} blending={THREE.AdditiveBlending} toneMapped={false} />
     </sprite>
     <group raycast={() => null} name="focus-memory-star-explicit-corona-rays" position={[0, 0, -0.04]} />
     <mesh raycast={() => null} scale={0.94} name="focus-memory-star-outer-corona">
@@ -360,14 +394,13 @@ function FocusMemoryStar({
       <sphereGeometry args={[1, 64, 40]} />
       <meshBasicMaterial color={light} transparent opacity={memory ? 0.022 : 0.003} depthWrite={false} blending={THREE.AdditiveBlending} />
     </mesh>
-    <mesh raycast={() => null} scale={0.82} name="focus-memory-star-photosphere-core" rotation={[0.08, -0.18, 0]}>
-      <sphereGeometry args={[1, 96, 64]} />
+    <mesh raycast={() => null} geometry={photosphereGeometry} scale={0.74} name="focus-memory-star-photosphere-core" rotation={[0.08, -0.18, 0]}>
       <meshStandardMaterial
         map={sphereTexture}
         emissiveMap={sphereTexture}
         color="#ffb45b"
         emissive="#ff5b16"
-        emissiveIntensity={memory ? 1.35 : 0.20}
+        emissiveIntensity={memory ? 1.62 : 0.20}
         roughness={0.72}
         metalness={0}
         transparent
@@ -404,7 +437,7 @@ function FocusMemoryStar({
     </mesh>
     <pointLight color={accent} intensity={memory ? 3.1 : .9} distance={7.2} decay={2} />
     <pointLight position={[-1.1, 1.25, 1.7]} color={light} intensity={memory ? .82 : .35} distance={5.4} decay={2} />
-    <Html center transform position={[0.02, -0.01, 0.78]} distanceFactor={1.34} zIndexRange={[20, 10]}>
+    <Html center transform position={[0.02, -0.01, 0.72]} distanceFactor={1.38} zIndexRange={[20, 10]}>
       <button
         type="button"
         className="focusStarMemoryButton"
@@ -702,7 +735,7 @@ export default function FocusChamberClient() {
     style={style}
     data-testid="urai-final-focus-chamber"
     data-focus-composition="selected-memory-star-with-contained-memory"
-    data-focus-visual-revision="v345-dimensional-granular-photosphere-organic-corona-memory-within"
+    data-focus-visual-revision="v346-irregular-photosphere-visible-corona-memory-fused"
     data-focus-selected-framing={memory ? 'selected-memory-star-approach' : 'neutral-star-awaiting-selection'}
     data-focus-spatial="selected-memory-star"
     data-focus-movement="orbit-zoom-keyboard-touch"
@@ -815,4 +848,4 @@ export default function FocusChamberClient() {
   </main>
 }
 
-const focusCss = ".focusWorld{position:fixed;inset:0;overflow:hidden;color:#fff;background:#02040b;isolation:isolate;font-family:Inter,system-ui,sans-serif}.srOnly{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}.focusBackdrop{position:absolute;inset:-12%;z-index:0;pointer-events:none;background:radial-gradient(circle at 50% 48%,color-mix(in srgb,var(--memory-accent) 14%,transparent),transparent 24%),radial-gradient(circle at 50% 55%,rgba(70,95,170,.08),transparent 48%),linear-gradient(180deg,#01030a 0%,#030714 56%,#010208 100%)}.focusCanvas{position:absolute;inset:0;z-index:1}.focusCanvas canvas{touch-action:none}.focusHeading{position:absolute;z-index:8;left:max(22px,env(safe-area-inset-left));top:max(24px,env(safe-area-inset-top));width:min(370px,34vw);pointer-events:none;text-shadow:0 8px 34px #000}.focusHeading>p{margin:0;color:var(--memory-light);font-size:9px;font-weight:900;letter-spacing:.22em;text-transform:uppercase}.focusHeading h2{max-width:14ch;margin:9px 0 6px;font:500 clamp(1.9rem,3.7vw,4rem)/.94 Georgia,serif;letter-spacing:-.045em;text-wrap:balance}.focusHeading>span{font-size:10px;color:rgba(255,255,255,.62)}.focusNarration{max-width:340px;margin-top:13px;padding:10px 12px;border-left:1px solid color-mix(in srgb,var(--memory-light) 42%,transparent);background:linear-gradient(90deg,rgba(2,7,18,.55),rgba(2,7,18,0));backdrop-filter:blur(10px)}.focusNarration small{display:block;margin-bottom:4px;color:var(--memory-light);font-size:8px;font-weight:900;letter-spacing:.16em;text-transform:uppercase}.focusNarration strong{display:block;font:500 clamp(.86rem,1.3vw,1.08rem)/1.35 Georgia,serif;color:rgba(247,250,255,.9)}.focusStarMemoryButton{position:relative;display:block;width:96px;height:78px;padding:0;border:0;border-radius:43% 57% 47% 53%/55% 44% 56% 45%;overflow:visible;isolation:isolate;background:transparent;color:#fff;cursor:pointer}.focusStarMemoryButton::before{content:none}.focusStarMemoryButton::after{content:none}.focusStarMemoryButton:disabled{cursor:default}.focusMemoryVisual{position:relative;z-index:2;display:block;width:100%;height:100%;overflow:hidden;border:0;border-radius:42% 58% 46% 54%/56% 43% 57% 44%;background:#030712;opacity:.46;filter:saturate(.92) contrast(1.12) brightness(.78);box-shadow:none;-webkit-mask-image:radial-gradient(ellipse at 50% 50%,#000 0 38%,rgba(0,0,0,.9) 52%,rgba(0,0,0,.4) 66%,transparent 78%);mask-image:radial-gradient(ellipse at 50% 50%,#000 0 38%,rgba(0,0,0,.9) 52%,rgba(0,0,0,.4) 66%,transparent 78%);mix-blend-mode:screen}.focusMemoryVisualSource video{width:100%;height:100%;object-fit:cover}.focusMemoryVisualImage{background-size:cover;background-position:center}.focusMemoryVisualGenerated{background:radial-gradient(circle at 58% 31%,rgba(255,219,170,.34) 0 4%,rgba(255,167,112,.14) 10%,transparent 25%),radial-gradient(ellipse at 43% 66%,rgba(74,108,129,.36) 0 22%,transparent 48%),radial-gradient(ellipse at 69% 74%,rgba(27,54,74,.44) 0 18%,transparent 46%),linear-gradient(155deg,#08111f 0%,#1b2c3c 42%,#6b514f 60%,#132131 78%,#07111c 100%)}.generatedMemoryGlow{position:absolute;left:2%;right:2%;top:34%;height:34%;background:radial-gradient(ellipse at 58% 10%,rgba(255,190,128,.34),transparent 42%),linear-gradient(180deg,rgba(242,174,128,.16),rgba(80,111,128,.09) 46%,rgba(5,16,27,.16));filter:blur(5px);opacity:.92}.generatedMemoryHorizon{position:absolute;left:-9%;right:-9%;top:53%;height:50%;background:radial-gradient(ellipse at 34% 28%,rgba(85,109,120,.40),transparent 46%),radial-gradient(ellipse at 68% 42%,rgba(31,60,77,.72),transparent 54%),linear-gradient(180deg,rgba(31,48,61,.14),rgba(5,18,29,.82));clip-path:polygon(0 42%,11% 31%,22% 38%,34% 21%,45% 36%,58% 26%,70% 41%,83% 29%,100% 39%,100% 100%,0 100%);filter:blur(4.5px);opacity:.32}.generatedMemoryThread{position:absolute;left:-8%;width:116%;transform-origin:center;pointer-events:none}.generatedMemoryThreadA{top:48%;height:19%;background:linear-gradient(180deg,rgba(29,43,55,.08),rgba(9,20,31,.72));clip-path:polygon(0 78%,13% 42%,25% 64%,39% 22%,52% 65%,66% 35%,80% 62%,92% 30%,100% 57%,100% 100%,0 100%);filter:blur(.35px)}.generatedMemoryThreadB{top:57%;height:25%;background:linear-gradient(180deg,rgba(19,38,49,.36),rgba(3,13,24,.92));clip-path:polygon(0 73%,12% 54%,24% 61%,36% 38%,48% 70%,61% 50%,73% 67%,86% 45%,100% 58%,100% 100%,0 100%);opacity:.90}.generatedMemoryThreadC{top:63%;height:24%;background:linear-gradient(180deg,rgba(142,151,143,.12),rgba(10,25,36,.72));clip-path:polygon(0 58%,16% 47%,30% 61%,44% 41%,57% 56%,70% 39%,84% 53%,100% 44%,100% 100%,0 100%);opacity:.62;filter:blur(1.4px)}.focusMemoryGlass{position:absolute;inset:0;opacity:.10;border-radius:50%;background:radial-gradient(circle at 31% 23%,rgba(255,255,255,.14),transparent 15%),radial-gradient(circle at 50% 55%,transparent 54%,rgba(91,157,255,.05) 80%,rgba(255,255,255,.06) 100%);box-shadow:inset 0 0 22px rgba(255,255,255,.08);pointer-events:none}.focusMemoryTruthLabel{position:absolute;left:50%;bottom:18px;transform:translateX(-50%);width:68%;max-width:68%;box-sizing:border-box;padding:3px 5px;border-radius:999px;background:rgba(2,7,18,.42);color:rgba(240,248,255,.78);font-size:7px;font-weight:850;line-height:1.2;letter-spacing:.07em;text-align:center;text-transform:uppercase;white-space:normal;backdrop-filter:blur(6px)}.focusMemoryVisualNeutral{display:grid;place-items:center;background:radial-gradient(circle at 50% 48%,rgba(103,232,249,.11),transparent 28%),#020712}.focusMemoryNeutralCore{width:22px;height:22px;border-radius:999px;background:#effcff;box-shadow:0 0 18px rgba(190,242,255,.9),0 0 48px rgba(103,232,249,.46)}.focusFallback{position:absolute;inset:0;display:grid;place-content:center;justify-items:center;gap:10px;padding:24px;text-align:center;background:radial-gradient(circle at 50% 45%,rgba(76,202,255,.12),transparent 30%),linear-gradient(180deg,#02040b,#040917);color:#fff}.focusFallbackStarField{gap:14px}.focusFallbackStar{width:min(48vw,360px);aspect-ratio:1;border-radius:999px;padding:16px;background:radial-gradient(circle,rgba(103,232,249,.14),rgba(139,92,246,.07) 50%,transparent 72%);box-shadow:0 0 80px color-mix(in srgb,var(--memory-accent) 24%,transparent)}.focusFallbackStar .focusMemoryVisual{box-shadow:inset 0 0 42px rgba(255,255,255,.14),0 0 30px color-mix(in srgb,var(--memory-accent) 42%,transparent)}.focusFallback span:not(.focusMemoryVisual):not(.focusMemoryGlass):not(.generatedMemoryGlow):not(.generatedMemoryHorizon):not(.generatedMemoryThread):not(.focusMemoryTruthLabel){max-width:520px;color:rgba(235,247,255,.72)}.memoryMeaning{position:absolute;z-index:8;left:max(22px,env(safe-area-inset-left));bottom:max(22px,calc(env(safe-area-inset-bottom) + 8px));width:min(390px,36vw);padding:10px 12px;border:1px solid rgba(205,235,255,.14);border-radius:16px;background:rgba(2,7,18,.52);backdrop-filter:blur(16px)}.memoryMeaning p{margin:0 0 8px;font-size:10px;color:rgba(240,248,255,.75)}.memoryMeta{display:flex;flex-wrap:wrap;gap:7px}.memoryMeta span{display:grid;gap:2px;padding:5px 8px;border-radius:10px;background:rgba(255,255,255,.04);font-size:10px;color:rgba(240,248,255,.82)}.memoryMeta b{font-size:7px;letter-spacing:.12em;text-transform:uppercase;color:var(--memory-light)}.neutralActions{display:flex;align-items:center;gap:10px}.neutralActions button,.focusControls button,.webglRecovery button{min-height:48px;padding:0 15px;border-radius:999px;border:1px solid rgba(220,248,255,.2);background:rgba(6,15,30,.72);color:#fff;font-weight:850}.neutralActions span{font-size:9px;color:rgba(235,247,255,.65)}.focusControls{position:absolute;z-index:10;right:max(20px,env(safe-area-inset-right));top:max(20px,env(safe-area-inset-top));display:flex;gap:7px;padding:6px;border:1px solid rgba(215,246,255,.14);border-radius:999px;background:rgba(2,7,18,.54);backdrop-filter:blur(14px)}.focusControls .primary{background:linear-gradient(135deg,var(--memory-light),var(--memory-accent));color:#031019}.focusControls button:focus-visible,.neutralActions button:focus-visible,.focusHelp summary:focus-visible,.focusStarMemoryButton:focus-visible,.webglRecovery button:focus-visible{outline:3px solid var(--memory-light);outline-offset:3px}.focusHelp{position:absolute;z-index:9;right:max(20px,env(safe-area-inset-right));bottom:max(20px,env(safe-area-inset-bottom));max-width:min(360px,calc(100vw - 40px));border:1px solid rgba(215,246,255,.14);border-radius:16px;background:rgba(2,7,18,.56);backdrop-filter:blur(14px)}.focusHelp summary{min-height:48px;display:flex;align-items:center;padding:0 15px;font-weight:850;cursor:pointer;font-size:11px}.focusHelp p{margin:0;padding:0 15px 14px;color:rgba(235,247,255,.74);font-size:11px;line-height:1.5}.focusStatus{position:absolute;z-index:9;left:50%;top:max(16px,env(safe-area-inset-top));transform:translateX(-50%);padding:6px 10px;border-radius:999px;background:rgba(2,7,18,.45);font-size:8px;font-weight:850;letter-spacing:.1em;text-transform:uppercase}.webglRecovery{position:absolute;z-index:15;inset:0;display:grid;place-content:center;justify-items:center;gap:10px;padding:24px;text-align:center;background:rgba(1,5,12,.88)}@media(max-width:760px){.focusHeading{left:14px;top:14px;width:calc(100vw - 28px);max-width:270px}.focusHeading h2{font-size:clamp(1.7rem,8.4vw,2.8rem);max-width:10ch}.focusNarration{margin-top:8px;max-width:250px;padding:8px 10px}.focusNarration strong{font-size:.86rem}.focusControls{right:10px;top:auto;bottom:max(12px,env(safe-area-inset-bottom));max-width:calc(100vw - 20px);overflow-x:auto}.focusControls button{min-height:48px;padding:0 12px;font-size:10px}.memoryMeaning{left:12px;bottom:max(70px,calc(env(safe-area-inset-bottom) + 62px));width:min(300px,calc(100vw - 24px));padding:8px 10px}.memoryMeaning p{display:none}.memoryMeta{gap:5px}.memoryMeta span{font-size:9px;padding:4px 6px}.focusHelp{display:none}.focusStatus{top:10px;font-size:7px}.focusStarMemoryButton{width:88px;height:72px}.focusFallbackStar{width:min(72vw,290px)}}@media(max-height:460px){.focusHeading{top:10px;max-width:250px}.focusHeading h2{font-size:1.45rem;margin:5px 0}.focusNarration{display:none}.memoryMeaning{display:none}.focusControls{top:10px;bottom:auto}.focusStarMemoryButton{width:82px;height:68px}}@media(prefers-reduced-motion:reduce){.focusBackdrop{background:radial-gradient(circle at 50% 48%,color-mix(in srgb,var(--memory-accent) 9%,transparent),transparent 25%),#02040b}}@media(forced-colors:active){.focusControls,.memoryMeaning,.focusHelp{background:Canvas;border-color:CanvasText}.focusControls button,.neutralActions button,.focusHelp summary{forced-color-adjust:auto}.focusStarMemoryButton{border:2px solid CanvasText;box-shadow:none}}"
+const focusCss = ".focusWorld{position:fixed;inset:0;overflow:hidden;color:#fff;background:#02040b;isolation:isolate;font-family:Inter,system-ui,sans-serif}.srOnly{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}.focusBackdrop{position:absolute;inset:-12%;z-index:0;pointer-events:none;background:radial-gradient(circle at 50% 48%,color-mix(in srgb,var(--memory-accent) 14%,transparent),transparent 24%),radial-gradient(circle at 50% 55%,rgba(70,95,170,.08),transparent 48%),linear-gradient(180deg,#01030a 0%,#030714 56%,#010208 100%)}.focusCanvas{position:absolute;inset:0;z-index:1}.focusCanvas canvas{touch-action:none}.focusHeading{position:absolute;z-index:8;left:max(22px,env(safe-area-inset-left));top:max(24px,env(safe-area-inset-top));width:min(370px,34vw);pointer-events:none;text-shadow:0 8px 34px #000}.focusHeading>p{margin:0;color:var(--memory-light);font-size:9px;font-weight:900;letter-spacing:.22em;text-transform:uppercase}.focusHeading h2{max-width:14ch;margin:9px 0 6px;font:500 clamp(1.9rem,3.7vw,4rem)/.94 Georgia,serif;letter-spacing:-.045em;text-wrap:balance}.focusHeading>span{font-size:10px;color:rgba(255,255,255,.62)}.focusNarration{max-width:340px;margin-top:13px;padding:10px 12px;border-left:1px solid color-mix(in srgb,var(--memory-light) 42%,transparent);background:linear-gradient(90deg,rgba(2,7,18,.55),rgba(2,7,18,0));backdrop-filter:blur(10px)}.focusNarration small{display:block;margin-bottom:4px;color:var(--memory-light);font-size:8px;font-weight:900;letter-spacing:.16em;text-transform:uppercase}.focusNarration strong{display:block;font:500 clamp(.86rem,1.3vw,1.08rem)/1.35 Georgia,serif;color:rgba(247,250,255,.9)}.focusStarMemoryButton{position:relative;display:block;width:126px;height:88px;padding:0;border:0;border-radius:39% 61% 45% 55%/57% 42% 58% 43%;overflow:visible;isolation:isolate;background:transparent;color:#fff;cursor:pointer}.focusStarMemoryButton::before{content:none}.focusStarMemoryButton::after{content:none}.focusStarMemoryButton:disabled{cursor:default}.focusMemoryVisual{position:relative;z-index:2;display:block;width:100%;height:100%;overflow:hidden;border:0;border-radius:39% 61% 45% 55%/57% 42% 58% 43%;background:transparent;opacity:.30;filter:saturate(.94) contrast(1.06) brightness(1.12);box-shadow:none;-webkit-mask-image:radial-gradient(ellipse at 50% 50%,#000 0 34%,rgba(0,0,0,.86) 50%,rgba(0,0,0,.32) 66%,transparent 80%);mask-image:radial-gradient(ellipse at 50% 50%,#000 0 34%,rgba(0,0,0,.86) 50%,rgba(0,0,0,.32) 66%,transparent 80%);mix-blend-mode:screen}.focusMemoryVisualSource video{width:100%;height:100%;object-fit:cover}.focusMemoryVisualImage{background-size:cover;background-position:center}.focusMemoryVisualGenerated{background:radial-gradient(circle at 58% 31%,rgba(255,235,188,.72) 0 5%,rgba(255,170,96,.28) 13%,transparent 32%),radial-gradient(ellipse at 43% 66%,rgba(109,155,176,.28) 0 24%,transparent 52%),radial-gradient(ellipse at 69% 74%,rgba(41,83,106,.25) 0 20%,transparent 49%),linear-gradient(155deg,rgba(255,126,60,.12) 0%,rgba(98,86,105,.14) 44%,rgba(35,80,103,.18) 68%,rgba(7,22,36,.05) 100%)}.generatedMemoryGlow{position:absolute;left:2%;right:2%;top:34%;height:34%;background:radial-gradient(ellipse at 58% 10%,rgba(255,190,128,.34),transparent 42%),linear-gradient(180deg,rgba(242,174,128,.16),rgba(80,111,128,.09) 46%,rgba(5,16,27,.16));filter:blur(5px);opacity:.92}.generatedMemoryHorizon{position:absolute;left:-9%;right:-9%;top:53%;height:50%;background:radial-gradient(ellipse at 34% 28%,rgba(85,109,120,.40),transparent 46%),radial-gradient(ellipse at 68% 42%,rgba(31,60,77,.72),transparent 54%),linear-gradient(180deg,rgba(31,48,61,.14),rgba(5,18,29,.82));clip-path:polygon(0 42%,11% 31%,22% 38%,34% 21%,45% 36%,58% 26%,70% 41%,83% 29%,100% 39%,100% 100%,0 100%);filter:blur(4.5px);opacity:.32}.generatedMemoryThread{position:absolute;left:-8%;width:116%;transform-origin:center;pointer-events:none}.generatedMemoryThreadA{top:48%;height:19%;background:linear-gradient(180deg,rgba(29,43,55,.08),rgba(9,20,31,.72));clip-path:polygon(0 78%,13% 42%,25% 64%,39% 22%,52% 65%,66% 35%,80% 62%,92% 30%,100% 57%,100% 100%,0 100%);filter:blur(.35px)}.generatedMemoryThreadB{top:57%;height:25%;background:linear-gradient(180deg,rgba(19,38,49,.36),rgba(3,13,24,.92));clip-path:polygon(0 73%,12% 54%,24% 61%,36% 38%,48% 70%,61% 50%,73% 67%,86% 45%,100% 58%,100% 100%,0 100%);opacity:.90}.generatedMemoryThreadC{top:63%;height:24%;background:linear-gradient(180deg,rgba(142,151,143,.12),rgba(10,25,36,.72));clip-path:polygon(0 58%,16% 47%,30% 61%,44% 41%,57% 56%,70% 39%,84% 53%,100% 44%,100% 100%,0 100%);opacity:.62;filter:blur(1.4px)}.focusMemoryGlass{position:absolute;inset:0;opacity:.10;border-radius:50%;background:radial-gradient(circle at 31% 23%,rgba(255,255,255,.14),transparent 15%),radial-gradient(circle at 50% 55%,transparent 54%,rgba(91,157,255,.05) 80%,rgba(255,255,255,.06) 100%);box-shadow:inset 0 0 22px rgba(255,255,255,.08);pointer-events:none}.focusMemoryTruthLabel{position:absolute;left:50%;bottom:18px;transform:translateX(-50%);width:68%;max-width:68%;box-sizing:border-box;padding:3px 5px;border-radius:999px;background:rgba(2,7,18,.42);color:rgba(240,248,255,.78);font-size:7px;font-weight:850;line-height:1.2;letter-spacing:.07em;text-align:center;text-transform:uppercase;white-space:normal;backdrop-filter:blur(6px)}.focusMemoryVisualNeutral{display:grid;place-items:center;background:radial-gradient(circle at 50% 48%,rgba(103,232,249,.11),transparent 28%),#020712}.focusMemoryNeutralCore{width:22px;height:22px;border-radius:999px;background:#effcff;box-shadow:0 0 18px rgba(190,242,255,.9),0 0 48px rgba(103,232,249,.46)}.focusFallback{position:absolute;inset:0;display:grid;place-content:center;justify-items:center;gap:10px;padding:24px;text-align:center;background:radial-gradient(circle at 50% 45%,rgba(76,202,255,.12),transparent 30%),linear-gradient(180deg,#02040b,#040917);color:#fff}.focusFallbackStarField{gap:14px}.focusFallbackStar{width:min(48vw,360px);aspect-ratio:1;border-radius:999px;padding:16px;background:radial-gradient(circle,rgba(103,232,249,.14),rgba(139,92,246,.07) 50%,transparent 72%);box-shadow:0 0 80px color-mix(in srgb,var(--memory-accent) 24%,transparent)}.focusFallbackStar .focusMemoryVisual{box-shadow:inset 0 0 42px rgba(255,255,255,.14),0 0 30px color-mix(in srgb,var(--memory-accent) 42%,transparent)}.focusFallback span:not(.focusMemoryVisual):not(.focusMemoryGlass):not(.generatedMemoryGlow):not(.generatedMemoryHorizon):not(.generatedMemoryThread):not(.focusMemoryTruthLabel){max-width:520px;color:rgba(235,247,255,.72)}.memoryMeaning{position:absolute;z-index:8;left:max(22px,env(safe-area-inset-left));bottom:max(22px,calc(env(safe-area-inset-bottom) + 8px));width:min(390px,36vw);padding:10px 12px;border:1px solid rgba(205,235,255,.14);border-radius:16px;background:rgba(2,7,18,.52);backdrop-filter:blur(16px)}.memoryMeaning p{margin:0 0 8px;font-size:10px;color:rgba(240,248,255,.75)}.memoryMeta{display:flex;flex-wrap:wrap;gap:7px}.memoryMeta span{display:grid;gap:2px;padding:5px 8px;border-radius:10px;background:rgba(255,255,255,.04);font-size:10px;color:rgba(240,248,255,.82)}.memoryMeta b{font-size:7px;letter-spacing:.12em;text-transform:uppercase;color:var(--memory-light)}.neutralActions{display:flex;align-items:center;gap:10px}.neutralActions button,.focusControls button,.webglRecovery button{min-height:48px;padding:0 15px;border-radius:999px;border:1px solid rgba(220,248,255,.2);background:rgba(6,15,30,.72);color:#fff;font-weight:850}.neutralActions span{font-size:9px;color:rgba(235,247,255,.65)}.focusControls{position:absolute;z-index:10;right:max(20px,env(safe-area-inset-right));top:max(20px,env(safe-area-inset-top));display:flex;gap:7px;padding:6px;border:1px solid rgba(215,246,255,.14);border-radius:999px;background:rgba(2,7,18,.54);backdrop-filter:blur(14px)}.focusControls .primary{background:linear-gradient(135deg,var(--memory-light),var(--memory-accent));color:#031019}.focusControls button:focus-visible,.neutralActions button:focus-visible,.focusHelp summary:focus-visible,.focusStarMemoryButton:focus-visible,.webglRecovery button:focus-visible{outline:3px solid var(--memory-light);outline-offset:3px}.focusHelp{position:absolute;z-index:9;right:max(20px,env(safe-area-inset-right));bottom:max(20px,env(safe-area-inset-bottom));max-width:min(360px,calc(100vw - 40px));border:1px solid rgba(215,246,255,.14);border-radius:16px;background:rgba(2,7,18,.56);backdrop-filter:blur(14px)}.focusHelp summary{min-height:48px;display:flex;align-items:center;padding:0 15px;font-weight:850;cursor:pointer;font-size:11px}.focusHelp p{margin:0;padding:0 15px 14px;color:rgba(235,247,255,.74);font-size:11px;line-height:1.5}.focusStatus{position:absolute;z-index:9;left:50%;top:max(16px,env(safe-area-inset-top));transform:translateX(-50%);padding:6px 10px;border-radius:999px;background:rgba(2,7,18,.45);font-size:8px;font-weight:850;letter-spacing:.1em;text-transform:uppercase}.webglRecovery{position:absolute;z-index:15;inset:0;display:grid;place-content:center;justify-items:center;gap:10px;padding:24px;text-align:center;background:rgba(1,5,12,.88)}@media(max-width:760px){.focusHeading{left:14px;top:14px;width:calc(100vw - 28px);max-width:270px}.focusHeading h2{font-size:clamp(1.7rem,8.4vw,2.8rem);max-width:10ch}.focusNarration{margin-top:8px;max-width:250px;padding:8px 10px}.focusNarration strong{font-size:.86rem}.focusControls{right:10px;top:auto;bottom:max(12px,env(safe-area-inset-bottom));max-width:calc(100vw - 20px);overflow-x:auto}.focusControls button{min-height:48px;padding:0 12px;font-size:10px}.memoryMeaning{left:12px;bottom:max(70px,calc(env(safe-area-inset-bottom) + 62px));width:min(300px,calc(100vw - 24px));padding:8px 10px}.memoryMeaning p{display:none}.memoryMeta{gap:5px}.memoryMeta span{font-size:9px;padding:4px 6px}.focusHelp{display:none}.focusStatus{top:10px;font-size:7px}.focusStarMemoryButton{width:112px;height:82px}.focusFallbackStar{width:min(72vw,290px)}}@media(max-height:460px){.focusHeading{top:10px;max-width:250px}.focusHeading h2{font-size:1.45rem;margin:5px 0}.focusNarration{display:none}.memoryMeaning{display:none}.focusControls{top:10px;bottom:auto}.focusStarMemoryButton{width:104px;height:76px}}@media(prefers-reduced-motion:reduce){.focusBackdrop{background:radial-gradient(circle at 50% 48%,color-mix(in srgb,var(--memory-accent) 9%,transparent),transparent 25%),#02040b}}@media(forced-colors:active){.focusControls,.memoryMeaning,.focusHelp{background:Canvas;border-color:CanvasText}.focusControls button,.neutralActions button,.focusHelp summary{forced-color-adjust:auto}.focusStarMemoryButton{border:2px solid CanvasText;box-shadow:none}}"
