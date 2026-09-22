@@ -17,7 +17,7 @@ import { requestUraiWorldOrbOpen, requestUraiWorldTravel } from '@/spatial/world
 import { AvatarSelfView, type AvatarSelfViewSection } from '@/spatial/home/AvatarSelfView'
 import { HomeEmbodiedAvatar, type HomeAvatarPresentationState } from '@/spatial/home/HomeEmbodiedAvatar'
 import { useHomeExperienceController } from '@/spatial/home/useHomeExperienceController'
-import type { HomeOriginSnapshot, HomeStableState, HomeTransitionState } from '@/spatial/home/homeExperienceState'
+import { HOME_PASSPORT_ORIGIN_CAPTURE_EVENT, type HomeOriginSnapshot, type HomeStableState, type HomeTransitionState } from '@/spatial/home/homeExperienceState'
 import { height } from './HomeWorldProductionV223Geometry'
 import { HomeV225PolishV3 } from './HomeWorldProductionV225PolishV3'
 import { HomeCurrentArtRepair } from './HomeCurrentArtRepair'
@@ -36,6 +36,8 @@ const ORB_FIELD_Y_SCALE = 1.04
 const ORB_GROUND_CLEARANCE = .015
 const ORB_REST_OFFSET = ORB_FIELD_RADIUS * ORB_FIELD_Y_SCALE + ORB_GROUND_CLEARANCE
 const AVATAR_POSITION = new THREE.Vector3(-.72, 0, 5.95)
+const HOME_PASSPORT_POSITION = new THREE.Vector3(-2.45, 0, 2.15)
+const HOME_PASSPORT_INTERACTION_RADIUS = 2.15
 const HOME_EYE_HEIGHT = 1.64
 const HOME_WALK_SPEED = 2.6
 const HOME_WALK_ACCELERATION = 8
@@ -615,6 +617,113 @@ function CameraRig({
 }
 
 
+
+function HomePassportArtifact({
+  interactive,
+  reducedMotion,
+  onNearby,
+  onOpen,
+}: {
+  interactive: boolean
+  reducedMotion: boolean
+  onNearby: (nearby: boolean) => void
+  onOpen: () => void
+}) {
+  const root = useRef<THREE.Group>(null)
+  const [nearby, setNearby] = useState(false)
+  const lastNearby = useRef(false)
+  const groundY = height(HOME_PASSPORT_POSITION.x, HOME_PASSPORT_POSITION.z)
+
+  useEffect(() => () => onNearby(false), [onNearby])
+
+  useFrame(({ camera, clock }) => {
+    const distance = Math.hypot(
+      camera.position.x - HOME_PASSPORT_POSITION.x,
+      camera.position.z - HOME_PASSPORT_POSITION.z,
+    )
+    const nextNearby = interactive && distance <= HOME_PASSPORT_INTERACTION_RADIUS
+    if (nextNearby !== lastNearby.current) {
+      lastNearby.current = nextNearby
+      setNearby(nextNearby)
+      onNearby(nextNearby)
+    }
+    if (root.current) {
+      root.current.rotation.y = -0.22 + (reducedMotion ? 0 : Math.sin(clock.elapsedTime * 0.35) * 0.012)
+    }
+  })
+
+  const activate = (event: ThreeEvent<MouseEvent>) => {
+    event.stopPropagation()
+    if (interactive) onOpen()
+  }
+
+  return (
+    <group
+      ref={root}
+      position={[HOME_PASSPORT_POSITION.x, groundY, HOME_PASSPORT_POSITION.z]}
+      name="home-physical-passport-artifact"
+      userData={{ testId: 'home-physical-passport-artifact', interaction: 'approach-or-activate' }}
+    >
+      <group name="home-passport-side-table">
+        <mesh position={[0, .58, 0]} castShadow receiveShadow>
+          <boxGeometry args={[1.24, .09, .92]} />
+          <meshStandardMaterial color="#5a4434" roughness={.78} metalness={.02} />
+        </mesh>
+        {[-.48, .48].flatMap((x) => [-.32, .32].map((z) => (
+          <mesh key={`${x}-${z}`} position={[x, .28, z]} castShadow receiveShadow>
+            <boxGeometry args={[.09, .56, .09]} />
+            <meshStandardMaterial color="#3c3028" roughness={.84} />
+          </mesh>
+        )))}
+      </group>
+
+      <group
+        position={[0, .69, 0]}
+        rotation={[-.035, .14, -.015]}
+        name="home-passport-book"
+        userData={{ semanticRole: 'passport-physical-object' }}
+        onClick={activate}
+      >
+        <mesh castShadow receiveShadow>
+          <boxGeometry args={[.72, .09, .96]} />
+          <meshPhysicalMaterial
+            color="#102d4a"
+            roughness={.46}
+            metalness={.14}
+            clearcoat={.34}
+            clearcoatRoughness={.32}
+          />
+        </mesh>
+        <mesh position={[0, .055, .018]} castShadow receiveShadow>
+          <boxGeometry args={[.65, .035, .86]} />
+          <meshStandardMaterial color="#eee3c8" roughness={.82} metalness={0} />
+        </mesh>
+        <mesh position={[0, .082, -.08]} rotation={[-Math.PI / 2, 0, 0]}>
+          <torusGeometry args={[.13, .014, 16, 48]} />
+          <meshStandardMaterial
+            color="#d7b86f"
+            emissive="#8e6b28"
+            emissiveIntensity={nearby ? .55 : .18}
+            metalness={.64}
+            roughness={.28}
+          />
+        </mesh>
+        <mesh position={[0, .083, .21]}>
+          <boxGeometry args={[.34, .012, .018]} />
+          <meshStandardMaterial
+            color="#d7b86f"
+            emissive="#8e6b28"
+            emissiveIntensity={nearby ? .42 : .14}
+            metalness={.66}
+            roughness={.3}
+          />
+        </mesh>
+      </group>
+      {nearby ? <pointLight position={[0, 1.03, 0]} color="#efd69a" intensity={1.5} distance={3.6} decay={2} /> : null}
+    </group>
+  )
+}
+
 function Scene({
   yaw,
   pitch,
@@ -638,6 +747,8 @@ function Scene({
   onOrb,
   onGround,
   onLifeMap,
+  onPassport,
+  onPassportNearby,
   onReady,
   owner,
   onComplete,
@@ -664,6 +775,8 @@ function Scene({
   onOrb: () => void
   onGround: (point: THREE.Vector3) => void
   onLifeMap: () => void
+  onPassport: () => void
+  onPassportNearby: (nearby: boolean) => void
   onReady: () => void
   owner: MutableRefObject<HTMLElement | null>
   onComplete: (transition: Exclude<Transition, 'none'>) => void
@@ -696,6 +809,12 @@ function Scene({
       onTargetChange={onAvatarTargetChange}
     />
     <RetireLegacyHomeHotspots />
+    <HomePassportArtifact
+      interactive={homeStableState === 'AVATAR_HOME_FIRST_PERSON' && !homeTransition && transition === 'none'}
+      reducedMotion={reducedMotion}
+      onNearby={onPassportNearby}
+      onOpen={onPassport}
+    />
     <OrbCompanion state={orbState} reducedMotion={reducedMotion} onOrb={onOrb} />
     <CameraRig
       yaw={yaw}
@@ -726,6 +845,8 @@ export function HomeWorldProductionV223({ onOrbOpen = requestUraiWorldOrbOpen, w
   const [reducedMotion, setReducedMotion] = useState(false)
   const [orbState, setOrbState] = useState<OrbState>('idle')
   const [avatarTargeted, setAvatarTargeted] = useState(false)
+  const [passportNearby, setPassportNearby] = useState(false)
+  const [passportDeparting, setPassportDeparting] = useState(false)
   const { scene: personalizedHomeScene, loading: personalizedHomeLoading } = useHomePersonalizedScene()
   const personalWeatherState = useMemo(() => homeWeatherToneToAtmosphere(personalizedHomeScene.environment.weatherTone), [personalizedHomeScene.environment.weatherTone])
   const [transition, setTransition] = useState<Transition>('none')
@@ -813,6 +934,24 @@ export function HomeWorldProductionV223({ onOrbOpen = requestUraiWorldOrbOpen, w
     setOrbState('transition')
     setTransition('life-map')
   }, [homeApi, homeState.inputLocked, transition])
+  const openPassport = useCallback(() => {
+    if (
+      passportDeparting
+      || transition !== 'none'
+      || homeState.inputLocked
+      || homeState.stableState !== 'AVATAR_HOME_FIRST_PERSON'
+    ) return
+    setPassportDeparting(true)
+    setPassportNearby(false)
+    window.dispatchEvent(new Event(HOME_PASSPORT_ORIGIN_CAPTURE_EVENT))
+    requestUraiWorldTravel({
+      destination: 'passport',
+      href: '/passport?from=home-passport',
+      entryPortal: 'home-passport-artifact',
+      cameraCheckpoint: 'passport-arrival',
+    })
+  }, [homeState.inputLocked, homeState.stableState, passportDeparting, transition])
+
   const completeTransition = useCallback((next: Exclude<Transition, 'none'>) => {
     homeApi.commitDestination(next === 'ground' ? 'GROUND' : 'LIFE_MAP')
   }, [homeApi])
@@ -824,18 +963,21 @@ export function HomeWorldProductionV223({ onOrbOpen = requestUraiWorldOrbOpen, w
         ? avatarTargeted ? 'targeted' : 'rest'
         : 'hidden-first-person'
   const firstPerson = homeState.stableState === 'AVATAR_HOME_FIRST_PERSON' && !homeState.transition
-  const movementInput = useMovementInput({ enabled: firstPerson && transition === 'none' && !homeState.inputLocked })
+  const movementInput = useMovementInput({
+    enabled: firstPerson && transition === 'none' && !homeState.inputLocked && !passportDeparting,
+    onInteract: () => { if (passportNearby) openPassport() },
+  })
   const look = useDragLook({
     yaw,
     pitch,
-    enabled: transition === 'none' && !homeState.inputLocked && (homeState.stableState === 'HOME_PRESENTATION' || firstPerson),
+    enabled: transition === 'none' && !homeState.inputLocked && !passportDeparting && (homeState.stableState === 'HOME_PRESENTATION' || firstPerson),
     sensitivity: firstPerson ? .0018 : .0022,
     minPitch: firstPerson ? -1.02 : -.28,
     maxPitch: firstPerson ? .92 : .25,
     onDragState: setDragging,
   })
 
-  useEffect(() => { router.prefetch('/ground/'); router.prefetch('/life-map/') }, [router])
+  useEffect(() => { router.prefetch('/ground/'); router.prefetch('/life-map/'); router.prefetch('/passport') }, [router])
   useEffect(() => {
     const rm = window.matchMedia('(prefers-reduced-motion: reduce)')
     const apply = () => setReducedMotion(rm.matches)
@@ -888,7 +1030,9 @@ export function HomeWorldProductionV223({ onOrbOpen = requestUraiWorldOrbOpen, w
     data-home-scene-phase={phase}
     data-home-transition-sequence={homeState.transition ?? (transition === 'none' ? 'idle' : `${transition}:traversal`)}
     data-home-portal-sequence="idle"
-    data-home-input-locked={homeState.inputLocked || transition !== 'none' ? 'true' : 'false'}
+    data-home-input-locked={homeState.inputLocked || transition !== 'none' || passportDeparting ? 'true' : 'false'}
+    data-home-passport-artifact="physical-book-origin-captured"
+    data-home-passport-nearby={passportNearby ? 'true' : 'false'}
     data-home-orb-state={orbState}
     data-home-orb-clip={resolveOrbSensoryOutput(orbState, reducedMotion, true).animation}
     data-home-orb-model-clip={reducedMotion ? 'stopped-reduced-motion' : ORB_CLIPS[orbState]}
@@ -949,6 +1093,8 @@ export function HomeWorldProductionV223({ onOrbOpen = requestUraiWorldOrbOpen, w
         onOrb={openOrb}
         onGround={openGround}
         onLifeMap={openLifeMap}
+        onPassport={openPassport}
+        onPassportNearby={setPassportNearby}
         onReady={markReady}
         owner={worldRef}
         onComplete={completeTransition}
@@ -961,8 +1107,20 @@ export function HomeWorldProductionV223({ onOrbOpen = requestUraiWorldOrbOpen, w
     ) : null}
     {firstPerson ? (
       <>
-        <MovementHelp realm="Home" summary="Move through your Home in bodyless first person without a synthetic body overlay." controls="WASD or arrow keys move · drag to look · Escape remains in Home when no deeper layer is open." />
+        <MovementHelp realm="Home" summary="Move through your Home in bodyless first person without a synthetic body overlay." controls="WASD or arrow keys move · drag to look · interact opens nearby physical objects such as Passport · Escape remains in Home when no deeper layer is open." />
         <MobileMovementPad input={movementInput} label="Move through Home" />
+        {passportNearby && !passportDeparting ? (
+          <button
+            type="button"
+            aria-label="Open physical Passport"
+            data-testid="urai-home-passport-interact"
+            data-movement-ui="true"
+            onClick={openPassport}
+            style={{ position: 'absolute', left: '50%', bottom: 'max(22px, calc(env(safe-area-inset-bottom) + 18px))', transform: 'translateX(-50%)', zIndex: 36, minHeight: 48, padding: '0 18px', borderRadius: 999, border: '1px solid rgba(239,214,154,.34)', background: 'rgba(21,28,29,.72)', color: '#fff8e8', backdropFilter: 'blur(12px)', font: '700 12px/1 system-ui', cursor: 'pointer' }}
+          >
+            Open Passport
+          </button>
+        ) : null}
         <button
           type="button"
           aria-label="Open Avatar Self View"
@@ -976,13 +1134,15 @@ export function HomeWorldProductionV223({ onOrbOpen = requestUraiWorldOrbOpen, w
     ) : null}
     <AvatarSelfView open={homeState.stableState === 'AVATAR_SELF_VIEW'} sections={selfSections} onClose={homeApi.closeSelfView} />
     <span className="sr-only" role="status" aria-live="polite">{
-      homeState.transition === 'AVATAR_EMBODIMENT_TRANSITION' ? 'Entering first-person Home.'
+      passportDeparting ? 'Opening Passport from this Home position.'
+        : homeState.transition === 'AVATAR_EMBODIMENT_TRANSITION' ? 'Entering first-person Home.'
         : homeState.transition === 'EMBODIMENT_UNWIND' ? 'Restoring bodyless first-person Home.'
           : transition === 'ground' ? 'Entering your physical Ground world.'
             : transition === 'life-map' ? 'Ascending into your Life Map.'
               : firstPerson ? 'First-person Home active.' : ''
     }</span>
     <span className="sr-only" data-testid="urai-home-webgl-orb">The authored living-memory Orb is physically present in Home and preserves semantic state behavior.</span>
+    <span className="sr-only" data-testid="urai-home-physical-passport">Passport is a physical object in Home. Approaching it exposes an explicit activation control and preserves the first-person return origin.</span>
     <span className="sr-only" data-testid="urai-home-non-xr-body-policy">Home presentation may show the governed Avatar. After activation, non-XR first-person Home is camera-only with no synthetic hands, arms, visible avatar, or body rig.</span>
   </main>
 }
