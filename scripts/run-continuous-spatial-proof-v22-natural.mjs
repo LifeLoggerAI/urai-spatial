@@ -63,9 +63,12 @@ async function waitHome(page) {
 async function homeSnapshot(owner, page) {
   const canvas = owner.locator('canvas').first()
   const box = await canvas.boundingBox()
+  const movementPad = page.locator('.urai-asset-home-world .urai-mobile-movement').first()
   return {
     visibleWorld: await owner.getAttribute('data-home-visible-world'),
+    stableState: await owner.getAttribute('data-home-stable-state'),
     embodiedSelf: await owner.getAttribute('data-home-embodied-self'),
+    presencePresentation: await owner.getAttribute('data-home-presence-presentation'),
     movement: await owner.getAttribute('data-home-movement'),
     groundEntry: await owner.getAttribute('data-home-ground-entry'),
     lifeMapEntry: await owner.getAttribute('data-home-life-map-entry'),
@@ -75,19 +78,52 @@ async function homeSnapshot(owner, page) {
     portalSequence: await owner.getAttribute('data-home-portal-sequence'),
     canvas: box ? { width: Math.round(box.width), height: Math.round(box.height) } : null,
     homeMovementPadCount: await page.locator('.urai-asset-home-world .urai-mobile-movement').count(),
+    homeMovementPadVisible: await movementPad.isVisible().catch(() => false),
   }
 }
 
-function snapshotPasses(value) {
+function presentationSnapshotPasses(value) {
   return value.visibleWorld === 'cinematic-lived-world-threshold'
-    && value.embodiedSelf === 'first-person-viewpoint-no-avatar'
-    && value.movement === 'camera-look-world-surface-selection'
+    && value.stableState === 'HOME_PRESENTATION'
+    && value.embodiedSelf === 'visible-avatar-home-presentation'
+    && value.presencePresentation === 'visible-avatar-presentation-activation-gate'
+    && value.movement === 'avatar-presentation-target-activate'
+    && value.cameraMode === 'home-avatar-presentation'
     && value.groundEntry === 'physical-world-surface'
     && value.lifeMapEntry === 'visible-sky-broad-interaction'
     && value.portalSequence === 'idle'
     && value.canvas?.width >= 240
     && value.canvas?.height >= 240
     && value.homeMovementPadCount === 0
+}
+
+function snapshotPasses(value, viewport) {
+  const expectPad = viewport?.isMobile === true || (viewport?.width ?? 9999) <= 900
+  return value.visibleWorld === 'cinematic-lived-world-threshold'
+    && value.stableState === 'AVATAR_HOME_FIRST_PERSON'
+    && value.embodiedSelf === 'camera-only-first-person-home'
+    && value.presencePresentation === 'bodyless-first-person-home'
+    && value.movement === 'shared-keyboard-touch-walk-look-interact'
+    && (value.cameraMode === 'home-first-person' || value.cameraMode === 'home-first-person-look')
+    && value.groundEntry === 'physical-world-surface'
+    && value.lifeMapEntry === 'visible-sky-broad-interaction'
+    && value.portalSequence === 'idle'
+    && value.canvas?.width >= 240
+    && value.canvas?.height >= 240
+    && value.homeMovementPadCount === 1
+    && value.homeMovementPadVisible === expectPad
+}
+
+async function enterFirstPersonHome(page, owner) {
+  const presentation = await homeSnapshot(owner, page)
+  if (!presentationSnapshotPasses(presentation)) throw new Error(`Home presentation baseline mismatch: ${JSON.stringify(presentation)}`)
+  const enter = page.getByTestId('urai-home-avatar-enter-first-person')
+  await enter.waitFor({ state: 'attached', timeout: 30_000 })
+  await enter.focus()
+  await page.keyboard.press('Enter')
+  await page.waitForFunction((selector) => document.querySelector(selector)?.getAttribute('data-home-stable-state') === 'AVATAR_HOME_FIRST_PERSON', ownerSelector, { timeout: 60_000 })
+  await waitFrames(page, 4)
+  return presentation
 }
 
 async function screenshot(page, id) {
@@ -116,9 +152,18 @@ async function visualCapture(browser, id, viewport, query) {
     const response = await page.goto(url(query), { waitUntil: 'domcontentloaded', timeout: 60_000 })
     const owner = await waitHome(page)
     record.status = response?.status()
+    record.presentationSnapshot = await homeSnapshot(owner, page)
+    if (!presentationSnapshotPasses(record.presentationSnapshot)) throw new Error(`Home presentation baseline mismatch: ${JSON.stringify(record.presentationSnapshot)}`)
+    record.presentationImage = await screenshot(page, `${id}-presentation`)
+    await enterFirstPersonHome(page, owner)
     record.snapshot = await homeSnapshot(owner, page)
     record.image = await screenshot(page, id)
-    record.passed = record.status === 200 && snapshotPasses(record.snapshot) && record.image.bytes > 12_000 && pageErrors.length === 0
+    record.passed = record.status === 200
+      && presentationSnapshotPasses(record.presentationSnapshot)
+      && snapshotPasses(record.snapshot, viewport)
+      && record.presentationImage.bytes > 12_000
+      && record.image.bytes > 12_000
+      && pageErrors.length === 0
   } catch (error) {
     record.error = String(error)
   } finally {
@@ -163,8 +208,10 @@ async function interaction(browser, { id, viewport, kind, reducedMotion = 'no-pr
   try {
     await page.goto(url('homeAssetReview=1&homePrivateFixture=1'), { waitUntil: 'domcontentloaded', timeout: 60_000 })
     const owner = await waitHome(page)
+    record.presentationSnapshot = await enterFirstPersonHome(page, owner)
     const before = await homeSnapshot(owner, page)
-    if (!snapshotPasses(before)) throw new Error(`Home baseline mismatch: ${JSON.stringify(before)}`)
+    if (!snapshotPasses(before, viewport)) throw new Error(`Home first-person baseline mismatch: ${JSON.stringify(before)}`)
+    record.firstPersonBaseline = before
 
     if (kind === 'ground') {
       record.pointer = await clickCanvasRatio(page, owner, viewport, [[.50,.79],[.35,.80],[.65,.80]], 'GROUND_DESCENT', touch)
