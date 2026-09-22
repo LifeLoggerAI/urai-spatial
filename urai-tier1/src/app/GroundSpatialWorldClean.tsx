@@ -135,18 +135,12 @@ function TerrainMaterial({ profile }: { profile: EnvironmentProfile }) {
   }, [albedo, arm, normal, profile]);
   const naturalSoilProfile = profile.id === "temperate" || profile.id === "woodland";
   if (naturalSoilProfile) {
-    const naturalNormalStrength = profile.id === "woodland" ? 0.46 : 0.40;
     return <meshStandardMaterial
       color="#ffffff"
-      normalMap={normal}
-      normalScale={new THREE.Vector2(naturalNormalStrength, naturalNormalStrength)}
-      aoMap={arm}
-      aoMapIntensity={0.44}
-      roughnessMap={arm}
-      roughness={0.97}
+      roughness={0.985}
       metalness={0}
       vertexColors
-      envMapIntensity={profile.id === "woodland" ? 0.18 : 0.22}
+      envMapIntensity={profile.id === "woodland" ? 0.14 : 0.18}
     />;
   }
   const normalStrength = profile.id === "urban" ? 0.34 : 0.58;
@@ -305,8 +299,8 @@ function NaturalCanopy({ profile, position, rotationY, scale, shapeSeed }: {
       false,
     ));
 
-    const leafGeometry = new THREE.SphereGeometry(1, 12, 8);
-    leafGeometry.scale(0.82, 0.34, 1.0);
+    const leafGeometry = new THREE.SphereGeometry(1, 6, 4);
+    leafGeometry.scale(0.68, 0.22, 0.86);
     leafGeometry.computeVertexNormals();
 
     const foliageAnchors = [
@@ -319,19 +313,19 @@ function NaturalCanopy({ profile, position, rotationY, scale, shapeSeed }: {
       const value = Math.sin(seed * 12.9898 + shapeSeed * 53.117 + (woodland ? 78.233 : 31.417)) * 43758.5453;
       return value - Math.floor(value);
     };
-    const leaves = Array.from({ length: woodland ? 720 : 650 }, (_, index) => {
+    const leaves = Array.from({ length: woodland ? 360 : 320 }, (_, index) => {
       const anchor = foliageAnchors[index % foliageAnchors.length];
-      const spread = 0.08 + hash(index * 7 + 1) * 0.58;
+      const spread = 0.06 + hash(index * 7 + 1) * 0.52;
       const theta = hash(index * 7 + 2) * Math.PI * 2;
       const x = anchor[0] + Math.cos(theta) * spread * (0.48 + hash(index * 7 + 3) * 0.92);
-      const y = anchor[1] - 0.05 + (hash(index * 7 + 4) - 0.47) * 1.02;
+      const y = anchor[1] - 0.03 + (hash(index * 7 + 4) - 0.47) * 0.86;
       const z = anchor[2] + Math.sin(theta) * spread * (0.46 + hash(index * 7 + 5) * 0.88);
       const rx = (hash(index * 7 + 6) - 0.5) * 1.28;
       const ry = theta + (hash(index * 7 + 7) - 0.5) * 1.15;
       const rz = (hash(index * 7 + 8) - 0.5) * 1.12;
-      const sx = 0.085 + hash(index * 7 + 9) * 0.075;
-      const sy = 0.055 + hash(index * 7 + 10) * 0.060;
-      const sz = 0.20 + hash(index * 7 + 11) * 0.14;
+      const sx = 0.045 + hash(index * 7 + 9) * 0.038;
+      const sy = 0.026 + hash(index * 7 + 10) * 0.030;
+      const sz = 0.060 + hash(index * 7 + 11) * 0.055;
       return {
         position: [x, y, z] as [number, number, number],
         rotation: [rx, ry, rz] as [number, number, number],
@@ -363,12 +357,12 @@ function NaturalCanopy({ profile, position, rotationY, scale, shapeSeed }: {
     raycast={() => null}
     name="ground-authored-natural-canopy-v13"
     userData={{
-      treatment: "seed-varied-branch-architecture-dense-three-dimensional-broadleaf-canopy-v25",
+      treatment: "seed-varied-branch-architecture-fine-scale-three-dimensional-broadleaf-canopy-v26",
       provenance: NATURAL_CANOPY,
-      visibleAuthority: "runtime-authored-canopy-v25",
-      supersedesVisibleCandidate: "ground-v24-faceted-volume-crown",
-      literalPixelRepair: "v25-dense-3d-leaflets-mature-canopy-pbr-terrain",
-      supplementalPixelRepair: "v25-natural-horizon-and-terrain-relief",
+      visibleAuthority: "runtime-authored-canopy-v26",
+      supersedesVisibleCandidate: "ground-v25-oversized-dense-leaflet-crown",
+      literalPixelRepair: "v26-fine-scale-leaflets-natural-soil-open-atmosphere",
+      supplementalPixelRepair: "v26-swiftshader-budget-and-canopy-depth",
     }}
   >
     <mesh geometry={authored.trunkGeometry} castShadow receiveShadow>
@@ -468,8 +462,8 @@ function NaturalScatter({ profile }: { profile: EnvironmentProfile }) {
   }
 
   const woodland = profile.id === "woodland";
-  const ferns = items.slice(0, woodland ? 88 : 76);
-  const canopies = items.filter((item) => item.z < (woodland ? 8.0 : 6.5)).slice(0, woodland ? 38 : 34);
+  const ferns = items.slice(0, woodland ? 58 : 50);
+  const canopies = items.filter((item) => item.z < (woodland ? 8.0 : 6.5)).slice(0, woodland ? 28 : 24);
   return <group name={woodland ? "ground-woodland-scanned-understory" : "ground-temperate-scanned-understory"} userData={{ treatment: "urai-self-authored-varied-canopy-v13-with-polyhaven-fern-rock-understory", canopyFallback: "scanned-understory-remains-without-canopy" }} raycast={() => null}>
     <GroundCanopyBoundary>
       <Suspense fallback={null}>
@@ -727,8 +721,8 @@ function FirstPersonPlayer({ input, yaw, pitch, target, profile, obstacles, play
 
 function AtmosphericGroundSky({ profile }: { profile: EnvironmentProfile }) {
   const uniforms = useMemo(() => ({
-    zenithColor: { value: new THREE.Color(profile.id === "woodland" ? "#526f79" : "#66828f") },
-    upperColor: { value: new THREE.Color(profile.id === "arid" ? "#987f69" : profile.id === "woodland" ? "#758980" : "#8b9d97") },
+    zenithColor: { value: new THREE.Color(profile.id === "woodland" ? "#668695" : "#7194a4") },
+    upperColor: { value: new THREE.Color(profile.id === "arid" ? "#a58a70" : profile.id === "woodland" ? "#8fa49b" : "#9fb0aa") },
     horizonColor: { value: new THREE.Color(profile.fog) },
     groundHazeColor: { value: new THREE.Color(profile.horizon) },
   }), [profile.fog, profile.horizon, profile.id]);
@@ -791,12 +785,12 @@ function GroundScene({ profile, input, yaw, pitch, target, obstacles, playerPosi
   const weather = DEFAULT_GROUND_WEATHER;
   return <>
     <color attach="background" args={[profile.horizon]} />
-    <fogExp2 attach="fog" args={[profile.fog, 0.0092 + weather.atmosphericDensity * 0.0011]} />
+    <fogExp2 attach="fog" args={[profile.fog, 0.0062 + weather.atmosphericDensity * 0.0008]} />
     <Suspense fallback={null}><Environment files="/assets/urai/home-production/cc0/environment/studio-small-08-1k.hdr" background={false} environmentIntensity={0.36} /></Suspense>
-    <ambientLight intensity={0.34} color="#b9c8bd" />
-    <hemisphereLight args={["#b4c9c6", "#40382d", 0.58]} />
-    <directionalLight position={[-10, 14, 5]} intensity={1.58} color="#e4cba6" castShadow shadow-mapSize={[1024, 1024]} shadow-camera-left={-28} shadow-camera-right={28} shadow-camera-top={28} shadow-camera-bottom={-28} shadow-camera-far={90} shadow-normalBias={0.035} />
-    <directionalLight position={[10, 7, -20]} intensity={0.36} color="#789a9b" />
+    <ambientLight intensity={0.28} color="#b9c8bd" />
+    <hemisphereLight args={["#c7d9d7", "#3b3329", 0.72]} />
+    <directionalLight position={[-10, 15, 4]} intensity={2.05} color="#f1d7ac" castShadow shadow-mapSize={[1024, 1024]} shadow-camera-left={-28} shadow-camera-right={28} shadow-camera-top={28} shadow-camera-bottom={-28} shadow-camera-far={90} shadow-normalBias={0.035} />
+    <directionalLight position={[12, 8, -24]} intensity={0.44} color="#7fa2aa" />
     <Suspense fallback={null}><LivedGroundWorld profile={profile} target={target} /></Suspense>
     <FirstPersonPlayer input={input} yaw={yaw} pitch={pitch} target={target} profile={profile} obstacles={obstacles} playerPosition={playerPosition} isCoarse={isCoarse} onReady={onReady} />
   </>;
