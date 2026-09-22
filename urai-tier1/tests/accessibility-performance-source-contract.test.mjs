@@ -36,7 +36,7 @@ test('accessibility and performance implementation contracts cover Home presenta
   for (const marker of ['saveData', 'deviceMemory', 'effectiveType', 'visibilitychange', 'markFirstSpatialFrame']) requireText(adaptiveQuality, marker)
 
   for (const marker of [
-    "open ? 'Close Orb travel controls' : 'Open Orb travel controls'",
+    "open ? 'Close UrAi Orb companion' : 'Open UrAi Orb companion'",
     'aria-expanded={open}',
     'aria-controls="urai-world-companion-menu"',
     'inert={!open ? true : undefined}',
