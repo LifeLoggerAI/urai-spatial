@@ -31,15 +31,17 @@ test('historical V185 destinations remain regression-covered and visibly retired
   assert.doesNotMatch(historicalArt, /<ringGeometry|<torusGeometry|<RoundedBox/)
 })
 
-test('V288 remains certified predecessor provenance while V292 Home carries the V291 authored Orb candidate fail-closed', () => {
+test('V288 certified morphology is restored while V291 interaction semantics remain fail-closed pending current-head pixels', () => {
   assert.equal(authority.artRevision, 'v292-avatar-presentation-bodyless-first-person-convergence')
   assert.equal(authority.lastCertifiedPredecessor.orbVisualAuthority, 'v288-grounded-biomorphic-reliquary')
   assert.ok(authority.lastCertifiedPredecessor.runtimeAssets.includes('HomeOrbGroundedV288.tsx'))
-  assert.equal(authority.orbVisualAuthority, 'v291-translucent-memory-orb-reference-candidate')
-  assert.equal(authority.currentRuntimeCandidate.orbVisualAuthority, 'v291-translucent-memory-orb-reference-candidate')
+  assert.equal(authority.orbVisualAuthority, 'v288-grounded-biomorphic-reliquary')
+  assert.equal(authority.currentRuntimeCandidate.orbVisualAuthority, 'v288-grounded-biomorphic-reliquary')
+  assert.equal(authority.currentRuntimeCandidate.orbInteractionAuthority, 'v291-current-home-orb-state-and-speech-runtime')
   assert.equal(authority.currentRuntimeCandidate.certified, false)
-  assert.doesNotMatch(visualAuthority, /HomeOrbGroundedV288|<HomeOrbGroundedV288/)
-  assert.match(visualAuthority, /return null/)
+  assert.match(visualAuthority, /HomeOrbGroundedV288/)
+  assert.match(visualAuthority, /return <HomeOrbGroundedV288 \/>/)
+  assert.match(currentRuntime, /<HomeVisualAuthority \/>/)
   has(currentRuntime, 'home-orb-reference-glass-shell')
   has(currentRuntime, 'home-orb-luminous-inner-volume')
   has(currentRuntime, 'home-orb-memory-bloom-core')
