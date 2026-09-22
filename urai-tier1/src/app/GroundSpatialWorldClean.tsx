@@ -135,9 +135,15 @@ function TerrainMaterial({ profile }: { profile: EnvironmentProfile }) {
   }, [albedo, arm, normal, profile]);
   const naturalSoilProfile = profile.id === "temperate" || profile.id === "woodland";
   if (naturalSoilProfile) {
+    const naturalNormalStrength = profile.id === "woodland" ? 0.08 : 0.06;
     return <meshStandardMaterial
       color="#ffffff"
-      roughness={0.985}
+      normalMap={normal}
+      normalScale={new THREE.Vector2(naturalNormalStrength, naturalNormalStrength)}
+      aoMap={arm}
+      aoMapIntensity={0.10}
+      roughnessMap={arm}
+      roughness={0.97}
       metalness={0}
       vertexColors
       envMapIntensity={profile.id === "woodland" ? 0.14 : 0.18}
@@ -363,6 +369,7 @@ function NaturalCanopy({ profile, position, rotationY, scale, shapeSeed }: {
       supersedesVisibleCandidate: "ground-v25-oversized-dense-leaflet-crown",
       literalPixelRepair: "v26-fine-scale-leaflets-natural-soil-open-atmosphere",
       supplementalPixelRepair: "v26-swiftshader-budget-and-canopy-depth",
+      retainedContract: "ground-v25-pbr-terrain-dense-3d-canopy-atmospheric-depth",
     }}
   >
     <mesh geometry={authored.trunkGeometry} castShadow receiveShadow>
