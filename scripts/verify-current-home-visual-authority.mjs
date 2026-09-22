@@ -55,7 +55,7 @@ for (const asset of authority.runtimeAssets) {
 const runtime = await readFile(path.join(repoRoot, 'urai-tier1/src/app/AssetDrivenHomeWorld.tsx'), 'utf8')
 for (const token of [
   'cinematic-lived-world-threshold',
-  'first-person-grounded-companion-physical-world-and-broad-sky-threshold',
+  'bodyless-first-person-living-memory-orb-physical-ground-and-broad-sky-threshold',
   'home-grounded-companion','home-life-map-sky-threshold','visible-sky-broad-interaction',
   'continuous-lived-physical-world','data-home-canvas-owner="home-world-production-v223-cinematic-threshold-authority"'
 ]) if (!runtime.includes(token)) fail(`runtime missing ${token}`)
