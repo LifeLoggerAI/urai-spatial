@@ -29,9 +29,9 @@ async function settleRenderedDestination(page, doorway) {
       if (!(root instanceof HTMLElement) || !(surface instanceof HTMLCanvasElement)) return false
       const box = surface.getBoundingClientRect()
       return root.dataset.groundReady === 'true'
-        && root.dataset.groundVisualOwner === 'physical-lived-world'
+        && root.dataset.groundVisualOwner === 'atmospheric-living-environment'
         && root.dataset.groundRuntimeOwner === 'first-person-lived-world'
-        && root.dataset.groundExploration === 'first-person'
+        && root.dataset.groundExploration === 'first-person-no-visible-body'
         && box.width >= 240
         && box.height >= 240
         && surface.width > 0
@@ -154,7 +154,7 @@ async function resolveTarget(page, doorway) {
   if (nonDominant !== 'true') throw new Error('semantic target owner is not declared non-dominant')
   const accessibleName = await target.getAttribute('aria-label')
   if (accessibleName !== doorway.name) throw new Error(`unexpected accessible name ${accessibleName}`)
-  const tagName = await target.evaluate((node) => node.tagName)
+  const tagName = await page.evaluate((testId) => document.querySelector(`[data-testid="${testId}"]`)?.tagName ?? null, doorway.testId)
   if (tagName !== 'A') throw new Error(`semantic target must be a browser-native anchor; found ${tagName || 'unknown'}`)
   const href = await target.getAttribute('href')
   if (href !== doorway.href) throw new Error(`semantic target must own native href ${doorway.href}; found ${href || 'none'}`)
