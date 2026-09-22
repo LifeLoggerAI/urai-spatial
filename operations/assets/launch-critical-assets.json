@@ -86,8 +86,8 @@
       "maxTriangles": 12000,
       "requiredCompression": "draco-or-meshopt",
       "fallback": "procedural-memory-star",
-      "source": "URAI deterministic candidate forge; replaceable by reviewed provider asset",
-      "license": "URAI Labs internal production asset",
+      "source": "URAI canon-clean deterministic convergence candidate; requires rendered inspection and compression before promotion",
+      "license": "URAI Labs internal production candidate asset",
       "releaseState": "pending-final-review"
     },
     {
@@ -124,8 +124,8 @@
       "maxTriangles": 160000,
       "requiredCompression": "draco-or-meshopt",
       "fallback": "procedural-lived-memory-environment",
-      "source": "URAI deterministic candidate forge; replaceable by reviewed provider asset",
-      "license": "URAI Labs internal production asset",
+      "source": "URAI canon-clean deterministic convergence candidate; requires rendered inspection and compression before promotion",
+      "license": "URAI Labs internal production candidate asset",
       "releaseState": "pending-final-review"
     },
     {
@@ -147,8 +147,8 @@
       "maxTriangles": 30000,
       "requiredCompression": "draco-or-meshopt",
       "fallback": "procedural-orb",
-      "source": "URAI Labs deterministic authored sanctuary v3 pipeline; replaceable only by a separately reviewed provider asset",
-      "license": "URAI Labs internal proprietary production asset",
+      "source": "URAI canon-clean deterministic convergence candidate; requires rendered inspection and compression before promotion",
+      "license": "URAI Labs internal production candidate asset",
       "releaseState": "pending-final-review"
     },
     {
