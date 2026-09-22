@@ -92,7 +92,7 @@ test('active non-XR Home presents the governed Avatar before transitioning to bo
     '/life-map/?from=home-sky',
   ]) has(activeHome, marker)
   assert.match(activeHome, /<HomeEmbodiedAvatar/)
-  assert.match(activeHome, /CURRENT_HOME_PRESENCE_ROOTS = new Set\(\['home-living-memory-orb', 'urai-home-user-avatar'\]\)/)
+  assert.match(activeHome, /CURRENT_HOME_PRESENCE_ROOTS = new Set\(\['home-living-memory-orb', 'home-orb-v288-visible-authority', 'urai-home-user-avatar'\]\)/)
   assert.doesNotMatch(activeHome, /HOME_AVATAR_MODEL|visible-cinematic-avatar|visible-avatar-third-person/)
   assert.doesNotMatch(activeHome, /first-person-hand|fps-hand|weapon-rig|player-hands/i)
 })
