@@ -1,9 +1,9 @@
 import assert from "node:assert/strict";
 import { readFileSync, existsSync } from "node:fs";
 import { join } from "node:path";
+import { fileURLToPath } from "node:url";
 
-const root = process.cwd();
-const app = existsSync(join(root, "src")) ? root : join(root, "urai-tier1");
+const app = fileURLToPath(new URL("../..", import.meta.url));
 
 const files = [
   "src/spatial/passport/passportPermissionSchema.ts",
