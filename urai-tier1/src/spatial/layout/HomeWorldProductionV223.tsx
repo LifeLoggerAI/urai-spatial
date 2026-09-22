@@ -37,7 +37,7 @@ const ORB_FIELD_Y_SCALE = 1.04
 const ORB_GROUND_CLEARANCE = .015
 const ORB_REST_OFFSET = ORB_FIELD_RADIUS * ORB_FIELD_Y_SCALE + ORB_GROUND_CLEARANCE
 const AVATAR_POSITION = new THREE.Vector3(-.72, 0, 5.95)
-const HOME_PASSPORT_POSITION = new THREE.Vector3(-2.45, 0, 2.15)
+const HOME_PASSPORT_POSITION = new THREE.Vector3(3.15, 0, 1.85)
 const HOME_PASSPORT_INTERACTION_RADIUS = 2.15
 const HOME_EYE_HEIGHT = 1.64
 const HOME_WALK_SPEED = 2.6
@@ -619,109 +619,39 @@ function CameraRig({
 
 
 
-function HomePassportArtifact({
+function HomePassportSemanticBridge({
   interactive,
-  reducedMotion,
   onNearby,
-  onOpen,
 }: {
   interactive: boolean
-  reducedMotion: boolean
   onNearby: (nearby: boolean) => void
-  onOpen: () => void
 }) {
-  const root = useRef<THREE.Group>(null)
-  const [nearby, setNearby] = useState(false)
   const lastNearby = useRef(false)
-  const groundY = height(HOME_PASSPORT_POSITION.x, HOME_PASSPORT_POSITION.z)
 
   useEffect(() => () => onNearby(false), [onNearby])
 
-  useFrame(({ camera, clock }) => {
+  useFrame(({ camera }) => {
     const distance = Math.hypot(
       camera.position.x - HOME_PASSPORT_POSITION.x,
       camera.position.z - HOME_PASSPORT_POSITION.z,
     )
     const nextNearby = interactive && distance <= HOME_PASSPORT_INTERACTION_RADIUS
-    if (nextNearby !== lastNearby.current) {
-      lastNearby.current = nextNearby
-      setNearby(nextNearby)
-      onNearby(nextNearby)
-    }
-    if (root.current) {
-      root.current.rotation.y = -0.22 + (reducedMotion ? 0 : Math.sin(clock.elapsedTime * 0.35) * 0.012)
-    }
+    if (nextNearby === lastNearby.current) return
+    lastNearby.current = nextNearby
+    onNearby(nextNearby)
   })
-
-  const activate = (event: ThreeEvent<MouseEvent>) => {
-    event.stopPropagation()
-    if (interactive) onOpen()
-  }
 
   return (
     <group
-      ref={root}
-      position={[HOME_PASSPORT_POSITION.x, groundY, HOME_PASSPORT_POSITION.z]}
-      name="home-physical-passport-artifact"
-      userData={{ testId: 'home-physical-passport-artifact', interaction: 'approach-or-activate' }}
-    >
-      <group name="home-passport-side-table">
-        <mesh position={[0, .58, 0]} castShadow receiveShadow>
-          <boxGeometry args={[1.24, .09, .92]} />
-          <meshStandardMaterial color="#5a4434" roughness={.78} metalness={.02} />
-        </mesh>
-        {[-.48, .48].flatMap((x) => [-.32, .32].map((z) => (
-          <mesh key={`${x}-${z}`} position={[x, .28, z]} castShadow receiveShadow>
-            <boxGeometry args={[.09, .56, .09]} />
-            <meshStandardMaterial color="#3c3028" roughness={.84} />
-          </mesh>
-        )))}
-      </group>
-
-      <group
-        position={[0, .69, 0]}
-        rotation={[-.035, .14, -.015]}
-        name="home-passport-book"
-        userData={{ semanticRole: 'passport-physical-object' }}
-        onClick={activate}
-      >
-        <mesh castShadow receiveShadow>
-          <boxGeometry args={[.72, .09, .96]} />
-          <meshPhysicalMaterial
-            color="#102d4a"
-            roughness={.46}
-            metalness={.14}
-            clearcoat={.34}
-            clearcoatRoughness={.32}
-          />
-        </mesh>
-        <mesh position={[0, .055, .018]} castShadow receiveShadow>
-          <boxGeometry args={[.65, .035, .86]} />
-          <meshStandardMaterial color="#eee3c8" roughness={.82} metalness={0} />
-        </mesh>
-        <mesh position={[0, .082, -.08]} rotation={[-Math.PI / 2, 0, 0]}>
-          <torusGeometry args={[.13, .014, 16, 48]} />
-          <meshStandardMaterial
-            color="#d7b86f"
-            emissive="#8e6b28"
-            emissiveIntensity={nearby ? .55 : .18}
-            metalness={.64}
-            roughness={.28}
-          />
-        </mesh>
-        <mesh position={[0, .083, .21]}>
-          <boxGeometry args={[.34, .012, .018]} />
-          <meshStandardMaterial
-            color="#d7b86f"
-            emissive="#8e6b28"
-            emissiveIntensity={nearby ? .42 : .14}
-            metalness={.66}
-            roughness={.3}
-          />
-        </mesh>
-      </group>
-      {nearby ? <pointLight position={[0, 1.03, 0]} color="#efd69a" intensity={1.5} distance={3.6} decay={2} /> : null}
-    </group>
+      visible={false}
+      position={[HOME_PASSPORT_POSITION.x, height(HOME_PASSPORT_POSITION.x, HOME_PASSPORT_POSITION.z), HOME_PASSPORT_POSITION.z]}
+      name="home-passport-semantic-bridge"
+      userData={{
+        semanticOwner: 'passport-proximity-bridge',
+        visualAuthority: false,
+        supersededBy: 'home-first-person-passport-ownership-object',
+      }}
+    />
   )
 }
 
@@ -748,7 +678,6 @@ function Scene({
   onOrb,
   onGround,
   onLifeMap,
-  onPassport,
   onPassportNearby,
   onReady,
   owner,
@@ -776,7 +705,6 @@ function Scene({
   onOrb: () => void
   onGround: (point: THREE.Vector3) => void
   onLifeMap: () => void
-  onPassport: () => void
   onPassportNearby: (nearby: boolean) => void
   onReady: () => void
   owner: MutableRefObject<HTMLElement | null>
@@ -810,11 +738,9 @@ function Scene({
       onTargetChange={onAvatarTargetChange}
     />
     <RetireLegacyHomeHotspots />
-    <HomePassportArtifact
+    <HomePassportSemanticBridge
       interactive={homeStableState === 'AVATAR_HOME_FIRST_PERSON' && !homeTransition && transition === 'none'}
-      reducedMotion={reducedMotion}
       onNearby={onPassportNearby}
-      onOpen={onPassport}
     />
     <OrbCompanion state={orbState} reducedMotion={reducedMotion} onOrb={onOrb} />
     <HomeVisualAuthority />
@@ -948,9 +874,9 @@ export function HomeWorldProductionV223({ onOrbOpen = requestUraiWorldOrbOpen, w
     window.dispatchEvent(new Event(HOME_PASSPORT_ORIGIN_CAPTURE_EVENT))
     requestUraiWorldTravel({
       destination: 'passport',
-      href: '/passport?from=home-passport',
-      entryPortal: 'home-passport-artifact',
-      cameraCheckpoint: 'passport-arrival',
+      href: '/passport',
+      entryPortal: 'home-passport-ownership-object',
+      cameraCheckpoint: 'home-first-person-passport-origin',
     })
   }, [homeState.inputLocked, homeState.stableState, passportDeparting, transition])
 
@@ -1033,7 +959,7 @@ export function HomeWorldProductionV223({ onOrbOpen = requestUraiWorldOrbOpen, w
     data-home-transition-sequence={homeState.transition ?? (transition === 'none' ? 'idle' : `${transition}:traversal`)}
     data-home-portal-sequence="idle"
     data-home-input-locked={homeState.inputLocked || transition !== 'none' || passportDeparting ? 'true' : 'false'}
-    data-home-passport-artifact="physical-book-origin-captured"
+    data-home-passport-artifact="governed-rigid-folio-visual-plus-semantic-bridge"
     data-home-passport-nearby={passportNearby ? 'true' : 'false'}
     data-home-orb-state={orbState}
     data-home-orb-clip={resolveOrbSensoryOutput(orbState, reducedMotion, true).animation}
@@ -1095,7 +1021,6 @@ export function HomeWorldProductionV223({ onOrbOpen = requestUraiWorldOrbOpen, w
         onOrb={openOrb}
         onGround={openGround}
         onLifeMap={openLifeMap}
-        onPassport={openPassport}
         onPassportNearby={setPassportNearby}
         onReady={markReady}
         owner={worldRef}
