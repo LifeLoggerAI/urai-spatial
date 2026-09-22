@@ -57,6 +57,9 @@ jobs:
           corepack enable
           pnpm install --frozen-lockfile
 
+      - name: Prove Mirror exact-origin contract
+        run: node tests/mirror-release-canonical-origin-contract.test.mjs
+
       - name: Build exact static candidate
         run: pnpm build:static
 
