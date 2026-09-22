@@ -142,7 +142,7 @@ async function validateReplay(page, report, screenshotName) {
   const client = page.getByTestId('cinematic-replay-client').first();
   const pacing = client.locator('[aria-label="Replay pacing"]').first();
   const productControls = client.locator('[aria-label="Replay memory controls"]').first();
-  const companion = page.getByRole('button', { name: /Orb travel controls/i }).first();
+  const companion = page.getByRole('button', { name: /UrAi Orb companion/i }).first();
   const heading = client.locator('header h1').first();
   const caption = client.locator('.caption').first();
   const unwind = client.locator('.unwind').first();
@@ -156,7 +156,7 @@ async function validateReplay(page, report, screenshotName) {
   await expectAttribute(client, 'data-playing', 'false');
   await expectVisible(pacing, 'Replay pacing');
   if (await productControls.isVisible()) throw new Error('Demo/read-only Replay memory mutation controls must remain hidden');
-  await expectVisible(companion, 'persistent Orb travel control');
+  await expectVisible(companion, 'persistent Orb companion control');
   await expectVisible(caption, 'Replay caption');
   await expectVisible(unwind, 'Replay unwind control');
   await expectNoOverlap(heading, unwind, 'Replay heading and unwind control', 4);
@@ -221,7 +221,7 @@ async function run() {
     });
 
     await openDemoReplay(page, server.baseUrl);
-    await validateReplay(page, report, '02-memory-theater-replay.png');
+    await validateReplay(page, report, '02-lived-memory-replay.png');
 
     await page.keyboard.press('Escape');
     await page.waitForURL(/\/(focus|unwind)(\?|$)/, { waitUntil: 'domcontentloaded', timeout: 15000 });
@@ -231,7 +231,7 @@ async function run() {
     const mobileUrl = `${server.baseUrl}/replay?memoryId=${encodeURIComponent(MEMORY_ID)}&manifestId=${MANIFEST_ID}&demo=1`;
     await page.goto(mobileUrl, { waitUntil: 'domcontentloaded' });
     await page.waitForLoadState('networkidle', { timeout: 30000 }).catch(() => {});
-    const mobile = await validateReplay(page, report, '03-mobile-memory-theater-replay.png');
+    const mobile = await validateReplay(page, report, '03-mobile-lived-memory-replay.png');
     await expectInsideViewport(mobile.pacing, page, 'mobile Replay pacing');
     if (await mobile.productControls.isVisible()) throw new Error('mobile demo/read-only Replay memory mutation controls must remain hidden');
     const mobileOperationStatus = mobile.client.locator('.replayOperationStatus').first();
@@ -247,7 +247,7 @@ async function run() {
     report.audits.push(`canonical data-scene-mode contract retained: ${modeContract}`);
 
     if (consoleErrors.length) throw new Error(`Console errors detected:\n${consoleErrors.join('\n')}`);
-    console.log(`URAI Replay Tier 5 Memory Theater validation passed at ${server.baseUrl}.`);
+    console.log(`URAI Replay Tier 5 lived-memory validation passed at ${server.baseUrl}.`);
   } catch (error) {
     report.failure = error instanceof Error ? error.stack || error.message : String(error);
     if (page) {
