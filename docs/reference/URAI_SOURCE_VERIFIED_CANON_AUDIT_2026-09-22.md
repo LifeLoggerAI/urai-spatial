@@ -31,9 +31,9 @@ This document separates source/runtime canon from literal-pixel acceptance. A la
 ### Orb
 
 - Current authored model: `/assets/urai/generated/models/urai-orb-avatar-v1.glb`.
-- Current visual candidate: V291 translucent-memory Orb; not yet literal-pixel certified on the current exact head.
-- V288 grounded biomorphic reliquary is predecessor visual evidence, not automatic current acceptance.
-- Generic glass/cosmic sphere, magic-ball, portal-Orb and fallback ring/fragment geometry are not canonical visual authority.
+- Current visible morphology target: V288 grounded biomorphic memory reliquary, restored over the current interaction owner; fresh exact-head pixels are still required on this successor.
+- V288 is the last certified predecessor morphology and is now remounted as the current visible Orb authority target; its current-head integration still requires fresh literal acceptance.
+- V291 remains the current Orb interaction/state/speech runtime only; its glass-sphere rendering is suppressed from canonical pixels. Generic glass/cosmic sphere, magic-ball, portal-Orb and fallback ring/fragment geometry are not canonical visual authority.
 
 ### Reference implication
 
