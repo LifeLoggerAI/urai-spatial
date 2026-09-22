@@ -11,7 +11,7 @@ test('Legacy reference estate covers all ten states with semantic fallback', () 
   assert.match(source, /no invented lineage or family record/)
   assert.match(source, /review-low/)
   for (let index = 1; index <= 10; index += 1) {
-    const id = \`LEGACY-\${String(index).padStart(3, '0')}\`
-    assert.ok(capture.includes(\`id:'\${id}'\`), \`missing \${id}\`)
+    const id = `LEGACY-${String(index).padStart(3, '0')}`
+    assert.ok(capture.includes(`id:'${id}'`), `missing ${id}`)
   }
 })
