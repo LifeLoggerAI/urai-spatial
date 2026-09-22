@@ -31,7 +31,7 @@ export default function QuestVrEntryButton({ memoryMode = false, onModeRequested
     onModeRequested?.(mode)
     setCopy(mode==='immersive-ar'?'Checking immersive AR support…':'Checking immersive VR support…')
     const xr=(navigator as QuestXrNavigator).xr
-    if(!xr?.requestSession){setBusyMode(null);setCopy('No WebXR session API is available here. The non-XR experience remains available.');return}
+    if(!xr?.requestSession){setBusyMode(null);setCopy('No provider-gated WebXR session API is available here. The non-XR experience remains available.');return}
     let requestedSession:QuestSession|null=null
     try{
       const supported=await xr.isSessionSupported?.(mode).catch(()=>false)
