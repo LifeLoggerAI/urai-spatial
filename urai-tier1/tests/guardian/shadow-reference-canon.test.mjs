@@ -18,10 +18,10 @@ test('Shadow uses grounded mineral authority rather than fantasy portal/crystal 
 
 test('Shadow reference estate covers all nine written states', () => {
   for (let index = 1; index <= 9; index += 1) {
-    const id = \`SHADOW-\${String(index).padStart(3, '0')}\`
-    assert.ok(capture.includes(\`id:'\${id}'\`), \`missing \${id}\`)
+    const id = `SHADOW-${String(index).padStart(3, '0')}`
+    assert.ok(capture.includes(`id:'${id}'`), `missing ${id}`)
   }
   for (const state of ['entry','neutral','uncertainty','pattern','safe-reduction','recovery','reduced-stimulation']) {
-    assert.ok(source.includes(\`'\${state}'\`), \`missing review state \${state}\`)
+    assert.ok(source.includes(`'${state}'`), `missing review state ${state}`)
   }
 })
