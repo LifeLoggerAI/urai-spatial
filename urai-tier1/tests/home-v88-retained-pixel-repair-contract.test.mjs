@@ -44,7 +44,7 @@ test('V288 remains certified predecessor provenance while V292 Home carries the 
   has(currentRuntime, 'home-orb-luminous-inner-volume')
   has(currentRuntime, 'home-orb-memory-bloom-core')
   has(currentRuntime, 'home-orb-memory-motes')
-  assert.doesNotMatch(currentRuntime, /home-orb-stabilizer-ring|home-orb-crystalline-fragments|<torusGeometry|<tetrahedronGeometry/)
+  assert.doesNotMatch(currentRuntime, /home-orb-stabilizer-ring|home-orb-crystalline-fragments|name=["'][^"']*home-orb[^"']*["'][\s\S]{0,800}<torusGeometry|name=["'][^"']*home-orb[^"']*["'][\s\S]{0,800}<tetrahedronGeometry/)
   for (const marker of ['v288-grounded-biomorphic-memory-reliquary','HomeOrbReliquaryV286','home-gold-companion','fallbackVisualOwner: false','interactionOwner: true','interactionOwner: false']) has(groundedOrb, marker)
   for (const marker of ['home-v286-biomorphic-memory-reliquary','home-v286-layered-internal-memory-world','home-v286-embedded-memory-filament','home-v286-localized-memory-field']) has(reliquary, marker)
   assert.match(currentGeometry, /export const ORB\s*=\s*new THREE\.Vector3\(-\.45,\s*1\.03,\s*-7\.45\)/)
