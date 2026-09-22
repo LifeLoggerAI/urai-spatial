@@ -31,8 +31,19 @@ env:
 
 jobs:
   exact-head-ground-proof:
+    strategy:
+      fail-fast: false
+      matrix:
+        scenario:
+          - temperate-desktop
+          - woodland-desktop
+          - temperate-phone-portrait
+          - woodland-phone-portrait
+          - temperate-reduced-motion
     runs-on: ubuntu-24.04
     timeout-minutes: 60
+    env:
+      URAI_GROUND_SCENARIO: ${{ matrix.scenario }}
     steps:
       - name: Checkout exact candidate
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
@@ -81,26 +92,28 @@ jobs:
           server_pid=$!
           trap 'kill "$server_pid" 2>/dev/null || true' EXIT
           for attempt in $(seq 1 60); do curl -fsS http://127.0.0.1:4173/ground/ >/dev/null && break; sleep 1; done
-          URAI_PROOF_BASE=http://127.0.0.1:4173 URAI_PROOF_DIR=artifacts/ground-goldmaster-proof URAI_EXACT_HEAD="$URAI_EXACT_HEAD" node scripts/capture-ground-goldmaster-proof.mjs 2>&1 | tee artifacts/ground-goldmaster-proof/capture.log
+          URAI_PROOF_BASE=http://127.0.0.1:4173 URAI_PROOF_DIR=artifacts/ground-goldmaster-proof URAI_EXACT_HEAD="$URAI_EXACT_HEAD" URAI_GROUND_SCENARIO="$URAI_GROUND_SCENARIO" node scripts/capture-ground-goldmaster-proof.mjs 2>&1 | tee artifacts/ground-goldmaster-proof/capture.log
       - name: Prove complete Ground receipt
         shell: bash
         run: |
           set -euo pipefail
-          node --input-type=module - artifacts/ground-goldmaster-proof/receipt.json "$URAI_EXACT_HEAD" <<'NODE'
+          node --input-type=module - artifacts/ground-goldmaster-proof/receipt.json "$URAI_EXACT_HEAD" "$URAI_GROUND_SCENARIO" <<'NODE'
           import { readFile } from 'node:fs/promises'
-          const [path, head] = process.argv.slice(2)
+          const [path, head, scenario] = process.argv.slice(2)
           const receipt = JSON.parse(await readFile(path, 'utf8'))
           if (receipt.schema !== 'urai-ground-goldmaster-proof-2') throw new Error('Ground proof schema mismatch')
           if (receipt.exactHead !== head) throw new Error('Ground exact-head mismatch')
           if (receipt.errors.length) throw new Error(`Ground receipt has ${receipt.errors.length} errors`)
-          if (receipt.scenarios.length !== 5) throw new Error('Ground scenario matrix incomplete')
-          if (receipt.captures.length !== 19) throw new Error(`Ground capture matrix incomplete: ${receipt.captures.length}`)
+          if (receipt.scenarios.length !== 1 || receipt.scenarios[0]?.id !== scenario) throw new Error('Ground scenario receipt mismatch')
+          const expectedCaptures = scenario.includes('phone-portrait') ? 2 : 5
+          if (receipt.captures.length !== expectedCaptures) throw new Error(`Ground capture matrix incomplete for ${scenario}: ${receipt.captures.length}/${expectedCaptures}`)
+          if (receipt.captures.some((capture) => capture.scenario !== scenario)) throw new Error('Ground receipt contains cross-scenario evidence')
           NODE
       - name: Upload exact-head Ground Gold Master candidate proof
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
-          name: ground-gold-master-proof-${{ env.URAI_EXACT_HEAD }}
+          name: ground-gold-master-proof-${{ env.URAI_EXACT_HEAD }}-${{ matrix.scenario }}
           path: artifacts/ground-goldmaster-proof
           if-no-files-found: error
           retention-days: 90
