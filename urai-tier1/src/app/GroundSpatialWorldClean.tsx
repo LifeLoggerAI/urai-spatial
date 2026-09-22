@@ -120,8 +120,69 @@ function buildTerrainGeometry(profile: EnvironmentProfile) {
   return geometry;
 }
 
+function buildNaturalGroundTexture(profile: EnvironmentProfile) {
+  const size = 256;
+  const colorData = new Uint8Array(size * size * 4);
+  const bumpData = new Uint8Array(size * size * 4);
+  const soil = new THREE.Color(profile.id === "woodland" ? "#d1c5ac" : "#d8cdb1");
+  const moss = new THREE.Color(profile.id === "woodland" ? "#b7c3a7" : "#c1cba7");
+  const pixel = new THREE.Color();
+
+  for (let y = 0; y < size; y += 1) {
+    const v = y / size;
+    for (let x = 0; x < size; x += 1) {
+      const u = x / size;
+      const broad = 0.5 + 0.5 * Math.sin(Math.PI * 2 * (u * 2 + Math.sin(v * Math.PI * 2) * 0.34))
+        * Math.cos(Math.PI * 2 * (v * 3 - Math.sin(u * Math.PI * 2) * 0.21));
+      const medium = 0.5 + 0.5 * Math.sin(Math.PI * 2 * (u * 11 + v * 7))
+        * Math.cos(Math.PI * 2 * (v * 13 - u * 5));
+      const fine = 0.5 + 0.5 * Math.sin(Math.PI * 2 * (u * 41 + v * 37 + Math.sin((u + v) * Math.PI * 8) * 0.13));
+      const fleck = Math.pow(0.5 + 0.5 * Math.sin(Math.PI * 2 * (u * 83 - v * 71)), 7);
+      const mossMix = THREE.MathUtils.clamp(0.04 + broad * 0.19 + medium * 0.07 - fleck * 0.08, 0.02, 0.31);
+      const shade = THREE.MathUtils.clamp(0.79 + medium * 0.12 + fine * 0.07 - fleck * 0.16, 0.66, 0.98);
+      pixel.copy(soil).lerp(moss, mossMix).multiplyScalar(shade);
+
+      const offset = (y * size + x) * 4;
+      colorData[offset] = Math.round(THREE.MathUtils.clamp(pixel.r, 0, 1) * 255);
+      colorData[offset + 1] = Math.round(THREE.MathUtils.clamp(pixel.g, 0, 1) * 255);
+      colorData[offset + 2] = Math.round(THREE.MathUtils.clamp(pixel.b, 0, 1) * 255);
+      colorData[offset + 3] = 255;
+
+      const relief = THREE.MathUtils.clamp(0.30 + broad * 0.20 + medium * 0.29 + fine * 0.17 + fleck * 0.15, 0, 1);
+      const height = Math.round(relief * 255);
+      bumpData[offset] = height;
+      bumpData[offset + 1] = height;
+      bumpData[offset + 2] = height;
+      bumpData[offset + 3] = 255;
+    }
+  }
+
+  const color = new THREE.DataTexture(colorData, size, size, THREE.RGBAFormat, THREE.UnsignedByteType);
+  color.colorSpace = THREE.SRGBColorSpace;
+  color.wrapS = THREE.MirroredRepeatWrapping;
+  color.wrapT = THREE.MirroredRepeatWrapping;
+  color.repeat.set(profile.id === "woodland" ? 4.1 : 3.7, profile.id === "woodland" ? 4.8 : 4.4);
+  color.anisotropy = 4;
+  color.needsUpdate = true;
+
+  const bump = new THREE.DataTexture(bumpData, size, size, THREE.RGBAFormat, THREE.UnsignedByteType);
+  bump.wrapS = THREE.MirroredRepeatWrapping;
+  bump.wrapT = THREE.MirroredRepeatWrapping;
+  bump.repeat.copy(color.repeat);
+  bump.anisotropy = 4;
+  bump.needsUpdate = true;
+
+  return { color, bump };
+}
+
 function TerrainMaterial({ profile }: { profile: EnvironmentProfile }) {
   const [albedo, normal, arm] = useTexture([TERRAIN_ALBEDO, TERRAIN_NORMAL, TERRAIN_ARM]);
+  const natural = useMemo(() => buildNaturalGroundTexture(profile), [profile]);
+  useEffect(() => () => {
+    natural.color.dispose();
+    natural.bump.dispose();
+  }, [natural]);
+
   useMemo(() => {
     albedo.colorSpace = THREE.SRGBColorSpace;
     for (const texture of [albedo, normal, arm]) {
@@ -137,10 +198,13 @@ function TerrainMaterial({ profile }: { profile: EnvironmentProfile }) {
   if (naturalSoilProfile) {
     return <meshStandardMaterial
       color="#ffffff"
-      roughness={profile.id === "woodland" ? 0.98 : 0.96}
+      map={natural.color}
+      bumpMap={natural.bump}
+      bumpScale={profile.id === "woodland" ? 0.065 : 0.052}
+      roughness={profile.id === "woodland" ? 0.99 : 0.975}
       metalness={0}
       vertexColors
-      envMapIntensity={profile.id === "woodland" ? 0.18 : 0.22}
+      envMapIntensity={profile.id === "woodland" ? 0.16 : 0.19}
     />;
   }
   const normalStrength = profile.id === "urban" ? 0.34 : 0.58;
@@ -218,6 +282,41 @@ class GroundCanopyBoundary extends Component<{ children: ReactNode }, { failed: 
   render() { return this.state.failed ? null : this.props.children; }
 }
 
+function makeGroundLeafCardTexture() {
+  const size = 64;
+  const data = new Uint8Array(size * size * 4);
+  for (let y = 0; y < size; y += 1) {
+    const ny = ((y + 0.5) / size) * 2 - 1;
+    const taper = Math.pow(Math.max(0, 1 - Math.abs(ny)), 0.58);
+    const halfWidth = 0.08 + taper * 0.82;
+    for (let x = 0; x < size; x += 1) {
+      const nx = ((x + 0.5) / size) * 2 - 1;
+      const edge = halfWidth - Math.abs(nx);
+      const inside = edge > 0 && Math.abs(ny) < 0.985;
+      const edgeAlpha = THREE.MathUtils.clamp(edge * 22, 0, 1);
+      const tipAlpha = THREE.MathUtils.clamp((0.985 - Math.abs(ny)) * 28, 0, 1);
+      const vein = Math.exp(-Math.abs(nx) * 18) * (0.18 + 0.82 * taper);
+      const sideVeins = Math.pow(Math.max(0, Math.sin((ny + 1) * Math.PI * 9 + Math.abs(nx) * 4)), 12) * taper * 0.12;
+      const luminance = THREE.MathUtils.clamp(0.88 + vein * 0.08 - sideVeins, 0.72, 1);
+      const offset = (y * size + x) * 4;
+      const value = Math.round(luminance * 255);
+      data[offset] = value;
+      data[offset + 1] = value;
+      data[offset + 2] = value;
+      data[offset + 3] = inside ? Math.round(edgeAlpha * tipAlpha * 255) : 0;
+    }
+  }
+  const texture = new THREE.DataTexture(data, size, size, THREE.RGBAFormat, THREE.UnsignedByteType);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  texture.magFilter = THREE.LinearFilter;
+  texture.minFilter = THREE.LinearMipmapLinearFilter;
+  texture.generateMipmaps = true;
+  texture.needsUpdate = true;
+  return texture;
+}
+
+const GROUND_LEAF_CARD_TEXTURE = makeGroundLeafCardTexture();
+
 function CanopyLeafInstances({ geometry, leaves, color }: {
   geometry: THREE.BufferGeometry;
   leaves: ReadonlyArray<{ position: [number, number, number]; rotation: [number, number, number]; scale: [number, number, number] }>;
@@ -239,7 +338,15 @@ function CanopyLeafInstances({ geometry, leaves, color }: {
     owner.computeBoundingSphere();
   }, [dummy, leaves]);
   return <instancedMesh ref={mesh} args={[geometry, undefined, leaves.length]} castShadow receiveShadow frustumCulled>
-    <meshStandardMaterial color={color} roughness={0.84} metalness={0} envMapIntensity={0.34} />
+    <meshStandardMaterial
+      color={color}
+      map={GROUND_LEAF_CARD_TEXTURE}
+      alphaTest={0.32}
+      side={THREE.DoubleSide}
+      roughness={0.9}
+      metalness={0}
+      envMapIntensity={0.22}
+    />
   </instancedMesh>;
 }
 
@@ -298,8 +405,7 @@ function NaturalCanopy({ profile, position, rotationY, scale, shapeSeed }: {
       false,
     ));
 
-    const leafGeometry = new THREE.SphereGeometry(1, 16, 12);
-    leafGeometry.scale(0.72, 0.22, 0.94);
+    const leafGeometry = new THREE.PlaneGeometry(1, 1, 1, 1);
     leafGeometry.computeVertexNormals();
 
     const foliageAnchors = [
@@ -312,7 +418,7 @@ function NaturalCanopy({ profile, position, rotationY, scale, shapeSeed }: {
       const value = Math.sin(seed * 12.9898 + shapeSeed * 53.117 + (woodland ? 78.233 : 31.417)) * 43758.5453;
       return value - Math.floor(value);
     };
-    const leaves = Array.from({ length: woodland ? 640 : 580 }, (_, index) => {
+    const leaves = Array.from({ length: woodland ? 1120 : 980 }, (_, index) => {
       const anchor = foliageAnchors[index % foliageAnchors.length];
       const spread = 0.06 + hash(index * 7 + 1) * 0.52;
       const theta = hash(index * 7 + 2) * Math.PI * 2;
@@ -322,9 +428,9 @@ function NaturalCanopy({ profile, position, rotationY, scale, shapeSeed }: {
       const rx = (hash(index * 7 + 6) - 0.5) * 1.28;
       const ry = theta + (hash(index * 7 + 7) - 0.5) * 1.15;
       const rz = (hash(index * 7 + 8) - 0.5) * 1.12;
-      const sx = 0.046 + hash(index * 7 + 9) * 0.036;
-      const sy = 0.026 + hash(index * 7 + 10) * 0.022;
-      const sz = 0.060 + hash(index * 7 + 11) * 0.050;
+      const sx = 0.034 + hash(index * 7 + 9) * 0.025;
+      const sy = 0.076 + hash(index * 7 + 10) * 0.050;
+      const sz = 1;
       return {
         position: [x, y, z] as [number, number, number],
         rotation: [rx, ry, rz] as [number, number, number],
@@ -356,12 +462,12 @@ function NaturalCanopy({ profile, position, rotationY, scale, shapeSeed }: {
     raycast={() => null}
     name="ground-authored-natural-canopy-v13"
     userData={{
-      treatment: "seed-varied-branch-architecture-layered-broadleaf-canopy-v28",
+      treatment: "seed-varied-branch-architecture-layered-broadleaf-canopy-v29",
       provenance: NATURAL_CANOPY,
-      visibleAuthority: "runtime-authored-canopy-v28",
-      supersedesVisibleCandidate: "ground-v27-laned-canopy-rock-tile-microdetail",
-      literalPixelRepair: "v28-organic-canopy-layout-procedural-soil-no-paving",
-      supplementalPixelRepair: "v28-smoother-smaller-foliage-with-bounded-instancing",
+      visibleAuthority: "runtime-authored-canopy-v29-leaf-card-foliage",
+      supersedesVisibleCandidate: "ground-v28-ellipsoid-leaflets-flat-procedural-soil",
+      literalPixelRepair: "v29-organic-canopy-layout-microrelief-soil-no-paving",
+      supplementalPixelRepair: "v29-alpha-tested-leaf-cards-dense-understory-non-laned-distribution",
       retainedContract: "ground-v25-pbr-terrain-dense-3d-canopy-atmospheric-depth",
     }}
   >
@@ -468,18 +574,24 @@ function NaturalScatter({ profile }: { profile: EnvironmentProfile }) {
     <GroundCanopyBoundary>
       <Suspense fallback={null}>
         {canopies.map((item) => {
-          const organicX = Math.sin((item.index + 1) * 4.83) * 17.6 + Math.cos((item.index + 3) * 1.37) * 6.2;
-          const z = item.z - 2.8 + Math.cos(item.index * 1.61) * 4.1 + Math.sin(item.index * 0.83) * 1.9;
-          const spawnCorridor = Math.abs(organicX) < 3.1 && z > -10;
-          const x = spawnCorridor
-            ? organicX + (organicX >= 0 ? 4.4 : -4.4)
-            : organicX;
+          const seeded = (salt: number) => {
+            const value = Math.sin((item.index + 1) * 19.193 + salt * 37.719 + (woodland ? 7.31 : 3.17)) * 43758.5453;
+            return value - Math.floor(value);
+          };
+          const z = 8.5 - seeded(1) * 63.0 + Math.sin(item.index * 1.73) * 2.6;
+          let x = (seeded(2) - 0.5) * 50.0 + Math.sin(item.index * 0.91) * 2.8;
+          x = THREE.MathUtils.clamp(x, -25.5, 25.5);
+          const protectedCorridor = z > -11 ? 5.4 : 2.2;
+          if (Math.abs(x) < protectedCorridor) {
+            const direction = seeded(3) > 0.5 ? 1 : -1;
+            x = direction * (protectedCorridor + 1.2 + seeded(4) * 5.8);
+          }
           return <NaturalCanopy
             key={`canopy-${item.index}`}
             profile={profile}
             position={[x, groundHeight(x, z, profile.id) - 0.02, z]}
-            rotationY={item.index * 1.173 + Math.sin(item.index * 0.67) * 0.74 + (woodland ? 0.22 : -0.14)}
-            scale={(woodland ? 2.38 : 2.24) + item.scale * 0.72 + Math.sin(item.index * 2.31) * 0.18}
+            rotationY={seeded(5) * Math.PI * 2}
+            scale={(woodland ? 1.92 : 1.78) + seeded(6) * 1.32}
             shapeSeed={item.index + (woodland ? 101 : 17)}
           />;
         })}
@@ -648,7 +760,7 @@ function LivedGroundWorld({ profile, target }: { profile: EnvironmentProfile; ta
     window.dispatchEvent(new CustomEvent('urai:ground-surface-commit', { detail: { x: event.point.x, z: event.point.z } }));
   };
 
-  return <group name="ground-lived-world" userData={{ semanticOwner: "ground-physical-lived-world", placeLayer: "consent-aware-empty-by-default", profile: profile.id, materialAuthority: "scanned-pbr-ground-v2" }}>
+  return <group name="ground-lived-world" userData={{ semanticOwner: "ground-physical-lived-world", placeLayer: "consent-aware-empty-by-default", profile: profile.id, materialAuthority: "procedural-organic-pbr-ground-v29" }}>
     <mesh name="ground-visible-traversable-terrain" geometry={geometry} onClick={onTerrainClick} receiveShadow>
       <TerrainMaterial profile={profile} />
     </mesh>
@@ -921,7 +1033,7 @@ export default function GroundSpatialWorldClean() {
     data-ground-visual-owner="atmospheric-living-environment"
     data-ground-runtime-owner="first-person-lived-world"
     data-ground-visual-revision="ground-lived-world-v2-canon-lock"
-    data-ground-art-revision="ground-v28-organic-canopy-procedural-soil-atmospheric-depth" data-ground-canopy-repair="ground-v28-smooth-small-leaflets-non-avenue-layout"
+    data-ground-art-revision="ground-v29-natural-microrelief-leaf-card-canopy-atmospheric-depth" data-ground-canopy-repair="ground-v29-real-leaf-silhouette-non-laned-layout"
     data-ground-exploration="first-person-no-visible-body"
     data-ground-camera="eye-level-terrain-following-no-authored-bob"
     data-ground-eye-height={GROUND_EYE_HEIGHT_M}
