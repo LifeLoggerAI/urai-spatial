@@ -49,7 +49,19 @@ async function capture(page, scenario, state) {
   activeScenario = scenario.id
   activePhase = `screenshot:${state}`
   console.log(`[ground-proof] scenario=${activeScenario} phase=${activePhase} start`)
-  await page.screenshot({ path: path.join(outDir, file), fullPage: false, animations: 'disabled', caret: 'hide', timeout: 90_000 })
+
+  const cdp = await page.context().newCDPSession(page)
+  try {
+    const screenshot = await cdp.send('Page.captureScreenshot', {
+      format: 'png',
+      fromSurface: true,
+      captureBeyondViewport: false,
+    })
+    await writeFile(path.join(outDir, file), Buffer.from(screenshot.data, 'base64'))
+  } finally {
+    await cdp.detach().catch(() => undefined)
+  }
+
   captures.push({ scenario: scenario.id, environment: scenario.environment, reducedMotion: scenario.reducedMotion, state, file })
   console.log(`[ground-proof] scenario=${activeScenario} phase=${activePhase} complete`)
 }
