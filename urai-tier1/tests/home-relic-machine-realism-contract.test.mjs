@@ -73,11 +73,13 @@ test('current candidate Home keeps governed Avatar presentation, governed Orb an
   assert.doesNotMatch(renderer, /HOME_LIFE_MAP|nearby\s*===\s*['"]life-map['"]/)
   for (const marker of ['home-orb-reference-glass-shell','home-orb-luminous-inner-volume','home-orb-memory-bloom-core','home-orb-memory-motes',"visualAuthority: 'v288-grounded-biomorphic-reliquary'","interactionAuthority: 'v291-current-home-orb-state-and-speech-runtime'",'<HomeVisualAuthority />']) has(renderer, marker)
   const orbStart = renderer.indexOf('function OrbCompanion(')
-  const passportStart = renderer.indexOf('function HomePassportArtifact(')
+  const passportStart = renderer.indexOf('function HomePassportSemanticBridge(')
   assert.ok(orbStart >= 0 && passportStart > orbStart, 'expected current Orb and Passport source boundaries')
   const currentOrbSource = renderer.slice(orbStart, passportStart)
   assert.doesNotMatch(currentOrbSource, /home-orb-stabilizer-ring|home-orb-crystalline-fragments|<torusGeometry|<tetrahedronGeometry/)
-  assert.match(renderer, /semanticRole: 'passport-physical-object'/)
+  assert.match(renderer, /semanticOwner: 'passport-proximity-bridge'/)
+  assert.match(renderer, /visualAuthority: false/)
+  assert.match(renderer, /supersededBy: 'home-first-person-passport-ownership-object'/)
 })
 
 test('rendering stays bounded and Orb state/reduced-motion telemetry remains exact-head proofable', () => {
