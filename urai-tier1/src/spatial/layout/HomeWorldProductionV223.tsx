@@ -383,8 +383,9 @@ function OrbCompanion({ state, reducedMotion, onOrb }: { state: OrbState; reduce
       moteCeiling: effectBudget.motes,
       filamentCeiling: effectBudget.filaments,
       restHeight: 'visible-shell-radius-plus-1.5cm-terrain-clearance',
-      visualAuthority: 'v291-translucent-memory-orb-reference-candidate',
-      referenceLanguage: 'smooth-glass-sphere-internal-memory-light-no-rings-no-crystals',
+      visualAuthority: 'v288-grounded-biomorphic-reliquary',
+      interactionAuthority: 'v291-current-home-orb-state-and-speech-runtime',
+      referenceLanguage: 'grounded-biomorphic-memory-reliquary-visible-authority-with-v291-state-and-speech-runtime',
     }}
   >
     <mesh ref={fieldShell} castShadow scale={[1,ORB_FIELD_Y_SCALE,.95]} onClick={activate} name="home-orb-reference-glass-shell">

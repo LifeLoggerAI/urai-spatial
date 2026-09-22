@@ -10,7 +10,7 @@ if (authority.schemaVersion !== 'urai-home-visual-authority-2') fail(`unsupporte
 for (const field of ['rendererOwner','artRevision','worldIdentifier','proofSchema','orbVisualAuthority','currentRuntimeCandidate','lastCertifiedPredecessor']) if (!authority[field]) fail(`missing ${field}`)
 if (authority.artRevision !== 'v292-avatar-presentation-bodyless-first-person-convergence') fail(`unexpected art revision ${authority.artRevision}`)
 if (authority.worldIdentifier !== 'cinematic-lived-world-threshold') fail(`unexpected world identifier ${authority.worldIdentifier}`)
-if (authority.orbVisualAuthority !== 'v291-translucent-memory-orb-reference-candidate') fail(`unexpected current Orb authority ${authority.orbVisualAuthority}`)
+if (authority.orbVisualAuthority !== 'v288-grounded-biomorphic-reliquary') fail(`unexpected current Orb authority ${authority.orbVisualAuthority}`)
 if (authority.certificationState !== 'candidate-requires-fresh-exact-head-pixels') fail(`unexpected certification state ${authority.certificationState}`)
 
 const predecessor = authority.lastCertifiedPredecessor
@@ -20,6 +20,7 @@ for (const required of ['HomeOrbReliquaryV286.tsx','HomeOrbGroundedV288.tsx']) i
 const candidate = authority.currentRuntimeCandidate
 if (candidate.rendererOwner !== authority.rendererOwner) fail('candidate renderer owner diverges from top-level authority')
 if (candidate.orbVisualAuthority !== authority.orbVisualAuthority) fail('candidate Orb authority diverges from top-level authority')
+if (candidate.orbInteractionAuthority !== 'v291-current-home-orb-state-and-speech-runtime') fail('candidate Orb interaction authority changed')
 if (candidate.orbRuntimeAsset !== '/assets/urai/generated/models/urai-orb-avatar-v1.glb') fail('candidate Orb runtime asset changed')
 if (candidate.certified !== false) fail('unreviewed current candidate must not claim certification')
 if (candidate.requiredEvidence !== 'fresh-exact-head-source-build-runtime-and-literal-pixel-acceptance') fail('candidate evidence boundary changed')
@@ -32,9 +33,9 @@ for (const required of [
   'HomeCurrentArtRepair.tsx','HomeAAAVisualRepair.tsx','HomeVisualAuthority.tsx','HomeAtmosphericSky.tsx',
   'rock-tile-floor/rock-tile-floor-diff-1k.webp','polyhaven-v48/fern_02/asset.gltf',
   'polyhaven-v48/rock_face_01/asset.gltf','polyhaven-v48/rock_face_02/asset.gltf',
-  'urai-orb-avatar-v1.glb','HomeEmbodiedAvatar.tsx'
+  'urai-orb-avatar-v1.glb','HomeEmbodiedAvatar.tsx','HomeOrbReliquaryV286.tsx','HomeOrbGroundedV288.tsx'
 ]) if (!authority.runtimeAssets.includes(required)) fail(`runtimeAssets missing ${required}`)
-for (const retired of ['HomeOrbReliquaryV286.tsx','HomeOrbGroundedV288.tsx','HomeLaunchSanctuaryV254.tsx','HomeWorldProductionV225PolishV2.tsx']) if (authority.runtimeAssets.includes(retired)) fail(`retired/predecessor runtime asset cannot be current: ${retired}`)
+for (const retired of ['HomeLaunchSanctuaryV254.tsx','HomeWorldProductionV225PolishV2.tsx']) if (authority.runtimeAssets.includes(retired)) fail(`retired runtime asset cannot be current: ${retired}`)
 
 const layoutRoot = path.join(repoRoot, 'urai-tier1/src/spatial/layout')
 const assetsRoot = path.join(repoRoot, 'urai-tier1/src/spatial/assets')
@@ -74,6 +75,8 @@ for (const token of [
   '<HomeAtmosphericSky reducedMotion={reducedMotion}',
   "const ORB_MODEL = '/assets/urai/generated/models/urai-orb-avatar-v1.glb'",
   "root.name = 'home-orb-authored-reference-core-v291'",
+  "visualAuthority: 'v288-grounded-biomorphic-reliquary'",
+  "interactionAuthority: 'v291-current-home-orb-state-and-speech-runtime'",
   "data-home-embodied-self={firstPerson ? 'camera-only-first-person-home' : 'visible-avatar-home-presentation'}",
   "data-home-presence-presentation={homeState.transition === 'AVATAR_EMBODIMENT_TRANSITION' ? 'avatar-embodiment-transition' : homeState.stableState === 'HOME_PRESENTATION' ? 'visible-avatar-presentation-activation-gate' : 'bodyless-first-person-home'}",
   'data-home-non-xr-body-policy="camera-only-no-hands-body-rig"',
@@ -89,8 +92,8 @@ for (const retired of [
 ]) if (renderer.includes(retired)) fail(`renderer restored retired Home ownership: ${retired}`)
 
 const visualAuthority = await readFile(path.join(layoutRoot, 'HomeVisualAuthority.tsx'), 'utf8')
-for (const token of ['V288 remains the last certified predecessor','no longer mounted over the active runtime','export function HomeVisualAuthority()']) if (!visualAuthority.includes(token)) fail(`visual authority shim missing ${token}`)
-for (const retiredMount of ['<HomeOrbGroundedV288','<HomeOrbReliquaryV286']) if (visualAuthority.includes(retiredMount)) fail(`visual authority remounted predecessor Orb: ${retiredMount}`)
+for (const token of ['Current Home Orb visual authority shim','visible morphology is restored to','HomeOrbGroundedV288','export function HomeVisualAuthority()']) if (!visualAuthority.includes(token)) fail(`visual authority shim missing ${token}`)
+if (!visualAuthority.includes('return <HomeOrbGroundedV288 />')) fail('V288 visible authority is not mounted')
 
 const currentRepair = await readFile(path.join(layoutRoot, 'HomeCurrentArtRepair.tsx'), 'utf8')
 for (const retired of ['GroundThresholdV234','LifeMapThresholdV234','LivingMemoryHeartV234','home-v249-life-map-rooted-celestial-ascent']) if (currentRepair.includes(retired)) fail(`V249 localized repair returned: ${retired}`)

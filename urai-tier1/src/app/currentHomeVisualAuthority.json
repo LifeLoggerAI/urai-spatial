@@ -35,7 +35,9 @@
     "polyhaven-v48/rock_face_01/asset.gltf",
     "polyhaven-v48/rock_face_02/asset.gltf",
     "urai-orb-avatar-v1.glb",
-    "HomeEmbodiedAvatar.tsx"
+    "HomeEmbodiedAvatar.tsx",
+    "HomeOrbReliquaryV286.tsx",
+    "HomeOrbGroundedV288.tsx"
   ],
   "orbVisualAuthority": "v288-grounded-biomorphic-reliquary"
 }

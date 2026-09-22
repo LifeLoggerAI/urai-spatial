@@ -21,7 +21,7 @@ test('Home authority restores V288 visible Orb morphology while V292 two-mode Ho
   assert.equal(authority.currentRuntimeCandidate.orbRuntimeAsset, '/assets/urai/generated/models/urai-orb-avatar-v1.glb')
   assert.equal(authority.currentRuntimeCandidate.certified, false)
   assert.equal(authority.orbVisualAuthority, 'v288-grounded-biomorphic-reliquary')
-  for (const asset of ['HomeWorldProductionV223.tsx','HomeVisualAuthority.tsx','HomeAtmosphericSky.tsx','HomeWorldProductionV225PolishV3.tsx','urai-orb-avatar-v1.glb']) {
+  for (const asset of ['HomeWorldProductionV223.tsx','HomeVisualAuthority.tsx','HomeAtmosphericSky.tsx','HomeWorldProductionV225PolishV3.tsx','urai-orb-avatar-v1.glb','HomeOrbGroundedV288.tsx','HomeOrbReliquaryV286.tsx']) {
     assert.ok(authority.runtimeAssets.includes(asset), `missing Home runtime/provenance asset ${asset}`)
   }
   for (const asset of ['HomeOrbReliquaryV286.tsx','HomeOrbGroundedV288.tsx']) {
@@ -145,7 +145,8 @@ test('current Home candidate restores the authoritative sculpted sanctuary layer
   assert.match(owner, /home-orb-luminous-inner-volume/)
   assert.match(owner, /home-orb-memory-bloom-core/)
   assert.match(owner, /home-orb-memory-motes/)
-  assert.match(owner, /visualAuthority: 'v291-translucent-memory-orb-reference-candidate'/)
+  assert.match(owner, /visualAuthority: 'v288-grounded-biomorphic-reliquary'/)
+  assert.match(owner, /interactionAuthority: 'v291-current-home-orb-state-and-speech-runtime'/)
   const orbStart = owner.indexOf('function OrbCompanion(')
   const passportStart = owner.indexOf('function HomePassportSemanticBridge(')
   assert.ok(orbStart >= 0 && passportStart > orbStart, 'expected current Orb and Passport source boundaries')
