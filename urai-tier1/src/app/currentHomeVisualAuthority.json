@@ -15,11 +15,12 @@
   "currentRuntimeCandidate": {
     "rendererOwner": "HomeWorldProductionV223.tsx",
     "orbRuntimeAsset": "/assets/urai/generated/models/urai-orb-avatar-v1.glb",
-    "orbVisualAuthority": "v291-translucent-memory-orb-reference-candidate",
+    "orbVisualAuthority": "v288-grounded-biomorphic-reliquary",
     "certified": false,
     "requiredEvidence": "fresh-exact-head-source-build-runtime-and-literal-pixel-acceptance",
     "homePresentationAuthority": "governed-avatar-presence-then-bodyless-first-person",
-    "nonXrFirstPersonBodyPolicy": "camera-only-no-hands-arms-visible-avatar-or-body-rig"
+    "nonXrFirstPersonBodyPolicy": "camera-only-no-hands-arms-visible-avatar-or-body-rig",
+    "orbInteractionAuthority": "v291-current-home-orb-state-and-speech-runtime"
   },
   "runtimeAssets": [
     "HomeWorldProductionV223.tsx",
@@ -36,5 +37,5 @@
     "urai-orb-avatar-v1.glb",
     "HomeEmbodiedAvatar.tsx"
   ],
-  "orbVisualAuthority": "v291-translucent-memory-orb-reference-candidate"
+  "orbVisualAuthority": "v288-grounded-biomorphic-reliquary"
 }
