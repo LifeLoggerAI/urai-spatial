@@ -26,6 +26,7 @@ const stateProof = read('../scripts/capture-home-state-proof.mjs')
 const proofWorkflow = read('../.github/workflows/continuous-spatial-visual-proof.yml')
 const stateProofWorkflow = read('../.github/workflows/home-state-proof.yml')
 const hostStableProof = read('../scripts/run-continuous-spatial-proof-v18-host-stable.mjs')
+const naturalProof = read('../scripts/run-continuous-spatial-proof-v22-natural.mjs')
 
 const has = (source, marker) => assert.ok(source.includes(marker), `missing marker: ${marker}`)
 
@@ -122,6 +123,20 @@ test('browser and state proofs retain exact-head desktop mobile reduced-motion a
   assert.doesNotMatch(stateProof, /gl\.readPixels/)
   assert.match(proofWorkflow, /run-continuous-spatial-proof-v22-natural\.mjs/)
   assert.match(stateProofWorkflow, /capture-home-state-proof\.mjs/)
+})
+
+test('v22 natural proof follows current Home controller states without stale traversal contracts', () => {
+  for (const marker of [
+    'getBoundingClientRect()',
+    'urai:onboarding:v3:setup-complete',
+    "record.transition === 'GROUND_DESCENT'",
+    "record.transition === 'SKY_ASCENT'",
+    "lastPhase !== 'AVATAR_HOME_FIRST_PERSON'",
+    "record.phase === 'IMMERSIVE_CONVERSATION'",
+  ]) has(naturalProof, marker)
+  assert.doesNotMatch(naturalProof, /ground:traversal|life-map:traversal/)
+  assert.doesNotMatch(naturalProof, /canvas\.boundingBox\(\)/)
+  assert.doesNotMatch(naturalProof, /record\.phase === 'HOME_IDLE'/)
 })
 
 test('host-stable generated identity filter remains observable without changing runtime authority', () => {
