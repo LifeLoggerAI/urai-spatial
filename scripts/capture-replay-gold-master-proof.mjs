@@ -95,7 +95,7 @@ async function waitFrames(page, count = 4) {
 }
 
 async function waitReplay(page) {
-  const root = page.locator('[data-testid="cinematic-replay-client"][data-replay-spatial-owner="r3f-memory-theater"]:visible').first()
+  const root = page.locator('[data-testid="cinematic-replay-client"][data-replay-spatial-owner="r3f-lived-memory-environment"]:visible').first()
   await root.waitFor({ state: 'visible', timeout: 45_000 })
   await page.waitForFunction((authority) => {
     const roots = [...document.querySelectorAll('[data-testid="cinematic-replay-client"]')]
@@ -184,7 +184,7 @@ async function describeReplay(page, { playingExpected = false, reducedExpected =
       && result.manifestId === 'replay-recovery-thread'
       && result.starId === 'quiet-reset'
       && result.composition === authority
-      && result.spatialOwner === 'r3f-memory-theater'
+      && result.spatialOwner === 'r3f-lived-memory-environment'
       && result.demoDisclosure
       && result.memoryContextDisclosure
       && result.legacyVisible.length === 0
