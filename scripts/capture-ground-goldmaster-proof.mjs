@@ -127,23 +127,27 @@ try {
 
     activePhase = 'read-contract'
     const root = page.locator('[data-testid="urai-ground-lived-world"]')
-    const contract = await root.evaluate((node) => ({
-      visualOwner: node.getAttribute('data-ground-visual-owner'),
-      runtimeOwner: node.getAttribute('data-ground-runtime-owner'),
-      exploration: node.getAttribute('data-ground-exploration'),
-      camera: node.getAttribute('data-ground-camera'),
-      eyeHeight: node.getAttribute('data-ground-eye-height'),
-      desktopSpeed: node.getAttribute('data-ground-speed-desktop'),
-      mobileSpeed: node.getAttribute('data-ground-speed-mobile'),
-      acceleration: node.getAttribute('data-ground-acceleration'),
-      deceleration: node.getAttribute('data-ground-deceleration'),
-      collision: node.getAttribute('data-ground-collision'),
-      visibleAvatar: node.getAttribute('data-ground-visible-avatar'),
-      visibleHands: node.getAttribute('data-ground-visible-hands'),
-      pointerLock: node.getAttribute('data-ground-pointer-lock'),
-      placeLayer: node.getAttribute('data-ground-place-layer'),
-      privateLocationMounted: node.getAttribute('data-ground-private-location-mounted'),
-    }))
+    const contract = await page.evaluate(() => {
+      const node = document.querySelector('[data-testid="urai-ground-lived-world"]')
+      if (!(node instanceof HTMLElement)) throw new Error('Ground root missing during contract snapshot')
+      return {
+        visualOwner: node.getAttribute('data-ground-visual-owner'),
+        runtimeOwner: node.getAttribute('data-ground-runtime-owner'),
+        exploration: node.getAttribute('data-ground-exploration'),
+        camera: node.getAttribute('data-ground-camera'),
+        eyeHeight: node.getAttribute('data-ground-eye-height'),
+        desktopSpeed: node.getAttribute('data-ground-speed-desktop'),
+        mobileSpeed: node.getAttribute('data-ground-speed-mobile'),
+        acceleration: node.getAttribute('data-ground-acceleration'),
+        deceleration: node.getAttribute('data-ground-deceleration'),
+        collision: node.getAttribute('data-ground-collision'),
+        visibleAvatar: node.getAttribute('data-ground-visible-avatar'),
+        visibleHands: node.getAttribute('data-ground-visible-hands'),
+        pointerLock: node.getAttribute('data-ground-pointer-lock'),
+        placeLayer: node.getAttribute('data-ground-place-layer'),
+        privateLocationMounted: node.getAttribute('data-ground-private-location-mounted'),
+      }
+    })
 
     const expected = {
       exploration: 'first-person-no-visible-body',
