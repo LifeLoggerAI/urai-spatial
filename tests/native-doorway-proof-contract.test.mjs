@@ -48,10 +48,10 @@ test('native doorway activation stays browser-native while current rendered dest
   assert.match(proof, /async function settleRenderedDestination/)
   assert.match(proof, /data-testid="urai-ground-lived-world"/)
   assert.match(proof, /groundReady === 'true'/)
-  assert.match(proof, /groundVisualOwner === 'physical-lived-world'/)
+  assert.match(proof, /groundVisualOwner === 'atmospheric-living-environment'/)
   assert.match(proof, /groundRuntimeOwner === 'first-person-lived-world'/)
-  assert.match(proof, /groundExploration === 'first-person'/)
-  assert.match(proof, /groundRenderedOwnerContract: 'physical-lived-world-plus-first-person-runtime-plus-visible-canvas'/)
+  assert.match(proof, /groundExploration === 'first-person-no-visible-body'/)
+  assert.match(proof, /groundRenderedOwnerContract: 'atmospheric-living-environment-plus-first-person-runtime-plus-visible-canvas'/)
   assert.doesNotMatch(proof, /urai-ground-private-workforce-world|shared-continuity-architecture/)
 })
 
