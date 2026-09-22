@@ -1107,7 +1107,7 @@ export function HomeWorldProductionV223({ onOrbOpen = requestUraiWorldOrbOpen, w
     ) : null}
     {firstPerson ? (
       <>
-        <MovementHelp realm="Home" summary="Move through your Home in bodyless first person without a synthetic body overlay." controls="WASD or arrow keys move · drag to look · interact opens nearby physical objects such as Passport · Escape remains in Home when no deeper layer is open." />
+        <MovementHelp realm="Home" summary="Move through your Home in bodyless first person without a synthetic body overlay." controls="WASD or arrow keys move · drag to look · interact opens nearby physical objects such as Passport · Escape returns exactly one layer to third-person Home." />
         <MobileMovementPad input={movementInput} label="Move through Home" />
         {passportNearby && !passportDeparting ? (
           <button
