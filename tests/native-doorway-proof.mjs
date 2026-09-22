@@ -78,7 +78,7 @@ async function stableBrowserBox(target) {
 }
 
 async function proveGroundMobileControls(page, viewport) {
-  const movement = page.getByRole('group', { name: 'Ground first-person movement controls' })
+  const movement = page.getByRole('group', { name: 'Ground movement controls' })
   const home = page.getByRole('button', { name: 'Return Home' })
   const tools = page.getByRole('navigation', { name: 'Ground place and privacy tools' })
   await movement.waitFor({ state: 'visible', timeout: 15000 })
@@ -165,6 +165,10 @@ async function resolveTarget(page, doorway) {
 
 async function prove(browser, doorway, testCase) {
   const context = await browser.newContext({ viewport: testCase.viewport, isMobile: !!testCase.isMobile, hasTouch: !!testCase.hasTouch, deviceScaleFactor: testCase.isMobile ? 2 : 1 })
+  await context.addInitScript(() => {
+    localStorage.setItem('urai:onboarding:v3:setup-complete', '1')
+    localStorage.removeItem('urai:onboarding:v3:setup-step')
+  })
   const page = await context.newPage()
   const screenshot = `screenshots/${testCase.device}-${testCase.method}-home-to-${doorway.id}.png`
   const record = { exactSha, sourceRoute: '/home', destinationRoute: doorway.destination, device: testCase.device, activationMethod: testCase.method, inputDispatch: testCase.method === 'keyboard' ? 'browser-tab-enter' : 'browser-coordinate-hit', viewport: testCase.viewport, targetAccessibleName: doorway.name, targetTestId: doorway.testId, targetHref: doorway.href, resultingUrl: '', screenshot, semanticNavigationOwner: 'runtime-boundary', semanticNavigationNonDominant: false, legacyVisibleDoorways: 0, targetOwnsHitPoint: false, hitPoint: null, focusSteps: null, destinationRendered: false, success: false, failureReason: '' }
