@@ -252,6 +252,14 @@ function legacyPoleRepairSuperseded(config) {
     && String(receipt.source ?? '').includes('canon-clean deterministic convergence candidate')
 }
 
+function legacyOrbRepairSuperseded(config) {
+  const receipt = readJson(config.receiptPath)
+  return receipt.sha256 === '54aaa230c591d441ba6e590c3c3668ff257128521dcded67606b4c53724a6eef'
+    && receipt.compressionStatus === 'candidate-uncompressed-canon-v1'
+    && receipt.releaseState === 'candidate-not-production-ready'
+    && String(receipt.source ?? '').includes('canon-clean deterministic convergence candidate')
+}
+
 const pack = readJson(PACK_PATH)
 const results = configs.map((config) => legacyPoleRepairSuperseded(config)
   ? {
@@ -262,7 +270,15 @@ const results = configs.map((config) => legacyPoleRepairSuperseded(config)
       skipped: 'canon-clean-stellar-candidate-supersedes-retired-shard-pole-repair',
     }
   : repairAsset(config, pack))
-results.push(repairOrbAsset(ORB_CONFIG, pack))
+results.push(legacyOrbRepairSuperseded(ORB_CONFIG)
+  ? {
+      label: ORB_CONFIG.label,
+      assetId: ORB_CONFIG.assetId,
+      changed: false,
+      packChanged: false,
+      skipped: 'canon-clean-orb-candidate-supersedes-retired-zero-normal-repair',
+    }
+  : repairOrbAsset(ORB_CONFIG, pack))
 if (results.some((result) => result.packChanged)) writeJson(PACK_PATH, pack)
 const proofRepair = repairHomeStateProofContract()
 if (process.env.GITHUB_ACTIONS === 'true') {
