@@ -7,7 +7,7 @@ const groundCanon = readFileSync(new URL('../src/spatial/ground/groundCanon.ts',
 
 test('Ground renders the current atmospheric lived world instead of the rejected root-vault substrate', () => {
   assert.match(ground, /data-ground-visual-revision="ground-lived-world-v2-canon-lock"/)
-  assert.match(ground, /data-ground-art-revision="ground-v25-pbr-terrain-dense-3d-canopy-atmospheric-depth"/)
+  assert.match(ground, /data-ground-art-revision="ground-v28-organic-canopy-procedural-soil-atmospheric-depth"/)
   assert.match(ground, /data-ground-visual-owner="atmospheric-living-environment"/)
   assert.match(ground, /<AtmosphericGroundSky profile=\{profile\} \/>/)
   assert.match(ground, /<NaturalScatter profile=\{profile\} \/>/)
@@ -21,7 +21,7 @@ test('Ground renders the current atmospheric lived world instead of the rejected
   assert.doesNotMatch(ground, /new THREE\.IcosahedronGeometry\(0\.5, 0\)/)
   assert.match(ground, /<ScannedRock/)
   assert.match(ground, /<FernPatch/)
-  assert.match(ground, /map=\{albedo\}/)
+  assert.doesNotMatch(ground, /map=\{albedo\}/)
   assert.match(ground, /normalMap=\{normal\}/)
   assert.match(ground, /roughnessMap=\{arm\}/)
   assert.match(ground, /<color attach="background" args=\{\[profile\.horizon\]\} \/>/)
