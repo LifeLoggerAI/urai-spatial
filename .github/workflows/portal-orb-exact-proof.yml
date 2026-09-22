@@ -146,4 +146,4 @@ jobs:
           name: portal-orb-proof-${{ env.URAI_EXACT_HEAD }}
           path: artifacts/portal-orb-proof
           if-no-files-found: error
-          retention-days: 90
+          retention-days: ${{ github.event_name == 'pull_request' && 30 || 90 }}

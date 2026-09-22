@@ -142,5 +142,5 @@ jobs:
           name: continuous-spatial-visual-proof-${{ matrix.proof_group }}-${{ env.URAI_EXACT_HEAD }}
           path: artifacts/continuous-spatial-proof-${{ matrix.proof_group }}
           if-no-files-found: error
-          retention-days: 90
+          retention-days: ${{ github.event_name == 'pull_request' && 30 || 90 }}
           compression-level: 6
