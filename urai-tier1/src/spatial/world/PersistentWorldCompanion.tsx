@@ -1,6 +1,5 @@
 'use client'
 
-import { useRouter } from 'next/navigation'
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { flushSync } from 'react-dom'
 import { publishOrbState } from '@/app/home/orbStateController'
@@ -18,7 +17,6 @@ const AUDIO_CONSENT_KEY = 'urai:spatial-audio-consent-v1'
 const AUDIO_MUTE_KEY = 'urai:spatial-audio-muted-v1'
 
 export function PersistentWorldCompanion() {
-  const router = useRouter()
   const { world, phase } = useUraiWorldState()
   const [open, setOpen] = useState(false)
   const [hydrated, setHydrated] = useState(false)
