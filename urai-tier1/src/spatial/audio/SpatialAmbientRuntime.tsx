@@ -18,6 +18,7 @@ const AMBIENT_CAPTIONS: Record<SpatialAudioPhase, string> = {
 }
 const SILENT_DESTINATION_CAPTIONS: Record<string, string> = {
   passport: 'Passport is silence-first; permission and identity controls remain available without ambient audio.',
+  replay: 'Replay is source-audio-first. No generic ambient loop plays when an authorized memory source has no audio.',
 }
 const CUE_CAPTIONS: Record<SpatialAudioCue,string> = {
   transition:'Realm transition.',
@@ -26,7 +27,7 @@ const CUE_CAPTIONS: Record<SpatialAudioCue,string> = {
   permission:'Permission action acknowledged.',
   error:'Action could not be completed.',
 }
-function phaseForDestination(destination:string, transition:string): SpatialAudioPhase|null { if(transition==='ascending'||transition==='travelling') return 'ASCENT'; if(destination==='home') return 'HOME'; if(destination==='infrastructure-hub') return 'GROUND'; if(destination==='life-map') return 'LIFEMAP'; if(destination==='focus') return 'FOCUS'; if(destination==='replay') return 'REPLAY'; if(destination==='mirror') return 'MIRROR'; return null }
+function phaseForDestination(destination:string, transition:string): SpatialAudioPhase|null { if(transition==='ascending'||transition==='travelling') return 'ASCENT'; if(destination==='home') return 'HOME'; if(destination==='infrastructure-hub') return 'GROUND'; if(destination==='life-map') return 'LIFEMAP'; if(destination==='focus') return 'FOCUS'; if(destination==='replay') return null; if(destination==='mirror') return 'MIRROR'; return null }
 
 export function SpatialAmbientRuntime(){
   const {world,phase}=useUraiWorldState(); const audio=useAudioController(); const [consented,setConsented]=useState(false); const [muted,setMuted]=useState(true); const [liveCaption,setLiveCaption]=useState(''); const previousTransition=useRef(phase); const spatialPhase=useMemo(()=>phaseForDestination(world.destination,phase),[phase,world.destination]);
