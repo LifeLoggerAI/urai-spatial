@@ -10,50 +10,44 @@ const receiptRoot = path.join(repoRoot, manifest.receiptRoot)
 fs.mkdirSync(receiptRoot, { recursive: true })
 
 const generators = {
-  'home-entry-chamber-v1': () => buildGlb('URAI Home Entry Chamber', [
-    box('threshold-floor', [0, -0.15, 0], [13, 0.3, 13], 0),
-    torus('central-threshold-ring', 2.7, 0.11, [0, 0.2, 0], 1),
+  'home-entry-chamber-v1': () => buildGlb('URAI Home Inhabited Threshold', [
+    box('home-stone-floor', [0, -0.15, 0], [13, 0.3, 13], 0),
     box('left-architecture-fin', [-4.6, 2.1, -1.2], [0.45, 4.4, 5.5], 2),
     box('right-architecture-fin', [4.6, 2.1, -1.2], [0.45, 4.4, 5.5], 2),
-    torus('sky-portal-frame', 3.2, 0.09, [0, 3.1, -4.2], 1, [Math.PI / 2, 0, 0]),
+    box('sky-lookout-lintel', [0, 3.1, -4.2], [7.2, 0.28, 0.5], 0),
     sphere('home-orb-anchor', [0, 1.5, 1.2], 0.38, 3),
   ]),
-  'ground-world-terrain-v1': () => buildGlb('URAI Ground Terrain', [
-    box('ground-main-platform', [0, -0.2, 0], [22, 0.4, 18], 0),
-    box('memory-path-left', [-4.2, 0.08, 1.5], [1.1, 0.16, 10], 2),
-    box('memory-path-center', [0, 0.08, 2.2], [1.1, 0.16, 11], 1),
-    box('memory-path-right', [4.2, 0.08, 1.5], [1.1, 0.16, 10], 2),
-    torus('descent-landing-ring', 2.6, 0.08, [0, 0.14, -4.4], 1),
-    box('ground-room-pad-left', [-4.2, 0.2, 6], [4.2, 0.28, 3.2], 3),
-    box('ground-room-pad-center', [0, 0.2, 6.7], [4.2, 0.28, 3.2], 3),
-    box('ground-room-pad-right', [4.2, 0.2, 6], [4.2, 0.28, 3.2], 3),
+  'ground-world-terrain-v1': () => buildGlb('URAI Ground Material Terrain', [
+    box('ground-bedrock-field', [0, -0.35, 0], [22, 0.7, 18], 0),
+    box('weathered-shelf-left', [-5.4, -0.02, 0.8], [5.8, 0.45, 13], 0),
+    box('weathered-shelf-right', [5.2, -0.08, 1.6], [6.2, 0.34, 12], 0),
+    box('descent-stone-shelf', [0, -0.05, -4.4], [5.4, 0.28, 3.8], 0),
+    box('deep-geology-left', [-5.8, 1.1, 6.2], [4.2, 2.6, 4.8], 0),
+    box('deep-geology-right', [5.5, 0.8, 6.5], [4.8, 2.1, 4.2], 0),
   ]),
-  'life-map-memory-star-v1': () => buildGlb('URAI Life Map Memory Star', [
-    sphere('memory-star-core', [0, 0, 0], 0.42, 1, 18, 12),
-    sphere('memory-star-aura', [0, 0, 0], 0.8, 4, 16, 10),
-    torus('memory-star-orbit', 1.08, 0.025, [0, 0, 0], 2, [Math.PI / 2.8, 0.35, 0]),
+  'life-map-memory-star-v1': () => buildGlb('URAI Life Map Stellar Memory', [
+    sphere('memory-star-photosphere', [0, 0, 0], 0.42, 1, 24, 16),
+    sphere('memory-star-inner-corona', [0, 0, 0], 0.64, 4, 22, 14),
+    sphere('memory-star-outer-corona', [0, 0, 0], 0.9, 4, 18, 12),
   ]),
-  'focus-memory-chamber-v1': () => buildGlb('URAI Focus Memory Chamber', [
-    torus('focus-entry-ring', 2.5, 0.09, [0, 0, 0], 1),
-    torus('focus-depth-ring-1', 2.0, 0.055, [0, 0, -1.7], 2),
-    torus('focus-depth-ring-2', 1.45, 0.045, [0, 0, -3.2], 1),
-    torus('focus-depth-ring-3', 0.95, 0.035, [0, 0, -4.5], 2),
-    sphere('selected-memory-core', [0, 0, -5.6], 0.55, 3, 20, 14),
-    box('focus-memory-plinth', [0, -2.1, -5.6], [4.8, 0.28, 3.2], 0),
+  'focus-memory-chamber-v1': () => buildGlb('URAI Focus Living Memory Field', [
+    sphere('selected-memory-photosphere', [0, 0, -4.8], 0.58, 3, 24, 16),
+    sphere('selected-memory-corona', [0, 0, -4.8], 1.15, 4, 22, 14),
+    sphere('living-memory-volume-near', [-1.4, 0.45, -5.4], 0.72, 4, 18, 12),
+    sphere('living-memory-volume-far', [1.5, -0.25, -6.1], 0.9, 4, 18, 12),
   ]),
-  'replay-memory-environment-v1': () => buildGlb('URAI Replay Memory Environment', [
-    box('replay-theater-floor', [0, -2.4, -1.5], [14, 0.35, 16], 0),
-    box('replay-screen', [0, 0.6, -6.2], [7.8, 4.4, 0.18], 1),
-    box('replay-frame-left', [-4.2, 0.6, -6.1], [0.35, 5.2, 0.4], 2),
-    box('replay-frame-right', [4.2, 0.6, -6.1], [0.35, 5.2, 0.4], 2),
-    torus('replay-entry-portal', 2.8, 0.11, [0, 0, 2.8], 1),
-    box('timeline-rail', [0, -1.7, -1.2], [8.6, 0.14, 0.25], 3),
+  'replay-memory-environment-v1': () => buildGlb('URAI Replay Lived Memory Environment', [
+    box('memory-ground-plane', [0, -2.4, -1.5], [14, 0.35, 16], 0),
+    box('memory-landform-left', [-4.4, -0.9, -5.2], [4.6, 3.1, 3.4], 0),
+    box('memory-landform-right', [4.8, -1.15, -6.4], [5.2, 2.5, 4.0], 0),
+    sphere('memory-atmosphere-near', [-2.2, 0.8, -5.8], 1.8, 4, 18, 12),
+    sphere('memory-atmosphere-far', [3.0, 0.2, -8.0], 2.3, 4, 18, 12),
+    box('memory-path', [0, -2.16, -3.0], [3.2, 0.12, 9.2], 3),
   ]),
-  'urai-orb-avatar-v1': () => buildGlb('URAI Orb Avatar', [
-    sphere('orb-core', [0, 0, 0], 0.34, 1, 24, 16),
-    sphere('orb-inner-aura', [0, 0, 0], 0.56, 4, 20, 12),
-    torus('orb-equatorial-ring', 0.72, 0.025, [0, 0, 0], 2),
-    torus('orb-polar-ring', 0.6, 0.018, [0, 0, 0], 3, [Math.PI / 2, 0, 0]),
+  'urai-orb-avatar-v1': () => buildGlb('URAI Living Memory Orb', [
+    sphere('orb-memory-core', [0, 0, 0], 0.34, 1, 24, 16),
+    sphere('orb-inner-memory-volume', [0, 0, 0], 0.5, 4, 22, 14),
+    sphere('orb-translucent-membrane', [0, 0, 0], 0.66, 4, 20, 12),
   ]),
   'portal-ring-master-v1': () => buildGlb('URAI Portal Ring Master', [
     torus('portal-outer-ring', 2.3, 0.12, [0, 0, 0], 0),
@@ -188,7 +182,7 @@ function makeLoadingSequence() {
       { at: 0, state: 'dark-field', opacity: 0 },
       { at: 250, state: 'orb-seed', opacity: 0.35 },
       { at: 700, state: 'orb-awake', opacity: 0.8 },
-      { at: 1250, state: 'portal-forming', opacity: 1 },
+      { at: 1250, state: 'world-forming', opacity: 1 },
       { at: 1850, state: 'world-reveal', opacity: 1 },
       { at: 2200, state: 'complete', opacity: 0 },
     ],
