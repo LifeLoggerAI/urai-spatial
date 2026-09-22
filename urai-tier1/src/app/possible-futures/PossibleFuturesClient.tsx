@@ -1,6 +1,9 @@
 'use client'
 
+import { Canvas } from '@react-three/fiber'
+import { PerspectiveCamera } from '@react-three/drei'
 import { useMemo, useState } from 'react'
+import * as THREE from 'three'
 import { requestUraiWorldReturn } from '@/spatial/world/worldEvents'
 import { MAX_SCENARIO_BRANCHES } from '@/lib/scenario/scenarioTypes'
 
@@ -10,6 +13,38 @@ type ManualBranch = { id: string; label: string; summary: string }
 
 function makeBranch(index: number, summary: string): ManualBranch {
   return { id: `manual-${index + 1}`, label: DEFAULT_LABELS[index] ?? `Branch ${index + 1}`, summary }
+}
+
+function ScenarioWorld({ branches, activeId }: { branches: ManualBranch[]; activeId: string }) {
+  const paths = useMemo(() => branches.map((branch, index) => {
+    const side = index - (branches.length - 1) / 2
+    const points = [
+      new THREE.Vector3(0, 0.03, 3.4),
+      new THREE.Vector3(side * 0.9, 0.05, 1.2),
+      new THREE.Vector3(side * 2.2, 0.08, -2.8),
+    ]
+    return { branch, geometry: new THREE.TubeGeometry(new THREE.CatmullRomCurve3(points), 40, 0.055, 8, false), x: side * 2.2 }
+  }), [branches])
+  return <Canvas data-testid="possible-futures-spatial-world" dpr={[1,1.4]} gl={{antialias:true,alpha:false,powerPreference:'high-performance'}}>
+    <color attach="background" args={['#0a1010']} />
+    <fog attach="fog" args={['#0a1010', 7, 22]} />
+    <PerspectiveCamera makeDefault position={[0,5.2,9.4]} fov={45} />
+    <ambientLight intensity={0.34} color="#dbe7e1" />
+    <hemisphereLight intensity={0.5} color="#dce9e3" groundColor="#18201e" />
+    <directionalLight position={[-4,7,5]} intensity={1.0} color="#e9efe9" />
+    <mesh rotation={[-Math.PI/2,0,0]} receiveShadow>
+      <planeGeometry args={[16,16,48,48]} />
+      <meshStandardMaterial color="#17211f" roughness={0.98} />
+    </mesh>
+    {paths.map(({branch,geometry,x}, index) => {
+      const active = branch.id === activeId
+      return <group key={branch.id}>
+        <mesh geometry={geometry}><meshStandardMaterial color={active?'#cfe2d8':'#73827c'} emissive={active?'#8aa89b':'#28312e'} emissiveIntensity={active?0.28:0.06} roughness={0.82} /></mesh>
+        <mesh position={[x,0.28,-2.8]}><cylinderGeometry args={[0.28,0.34,0.56,24]} /><meshStandardMaterial color={active?'#dfe8e2':'#7d8984'} roughness={0.9} /></mesh>
+        <pointLight position={[x,0.72,-2.8]} color={active?'#dfeee6':'#88958f'} intensity={active?1.8:0.45} distance={4.2} decay={2} />
+      </group>
+    })}
+  </Canvas>
 }
 
 export default function PossibleFuturesClient() {
@@ -74,13 +109,13 @@ export default function PossibleFuturesClient() {
           </section>
         ) : (
           <section aria-labelledby="possible-futures-world-title" style={{ display: 'grid', gap: 18 }}>
-            <div style={{ minHeight: 360, position: 'relative', borderRadius: 28, overflow: 'hidden', border: '1px solid rgba(238,244,242,.16)', background: 'radial-gradient(circle at 50% 42%,rgba(133,160,151,.16),transparent 28%),linear-gradient(160deg,#151d1d,#080c0f)' }}>
-              <div aria-hidden="true" style={{ position: 'absolute', inset: '12% 8%', borderRadius: '48% 52% 38% 62%', border: '1px solid rgba(214,231,224,.2)', transform: 'perspective(800px) rotateX(62deg) rotateZ(-7deg)' }} />
-              <div style={{ position: 'absolute', inset: 0, display: 'grid', placeItems: 'center', padding: 32, textAlign: 'center' }}>
-                <div>
-                  <p style={{ letterSpacing: '.14em', fontSize: 11, fontWeight: 800 }}>SCENARIO · UNRANKED</p>
-                  <h2 id="possible-futures-world-title" style={{ fontSize: 'clamp(28px,5vw,52px)', margin: '8px 0' }}>{active?.label}</h2>
-                  <p style={{ maxWidth: 640, margin: '0 auto', fontSize: 'clamp(17px,2vw,22px)', lineHeight: 1.5 }}>{active?.summary}</p>
+            <div style={{ minHeight: 360, position: 'relative', borderRadius: 28, overflow: 'hidden', border: '1px solid rgba(238,244,242,.16)', background:'#0a1010' }}>
+              <ScenarioWorld branches={branches} activeId={active?.id ?? ''} />
+              <div style={{ position: 'absolute', inset: 0, display: 'grid', placeItems: 'end center', padding: 24, textAlign: 'center', pointerEvents:'none' }}>
+                <div style={{maxWidth:680,padding:'14px 18px',borderRadius:18,background:'rgba(8,12,12,.72)',backdropFilter:'blur(12px)'}}>
+                  <p style={{ letterSpacing: '.14em', fontSize: 11, fontWeight: 800, margin:0 }}>SCENARIO · UNRANKED</p>
+                  <h2 id="possible-futures-world-title" style={{ fontSize: 'clamp(24px,4vw,42px)', margin: '6px 0' }}>{active?.label}</h2>
+                  <p style={{ margin: 0, fontSize: 'clamp(15px,2vw,18px)', lineHeight: 1.45 }}>{active?.summary}</p>
                 </div>
               </div>
             </div>
