@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 from __future__ import annotations
 
-import io, json, math, hashlib, struct, random
+import io, json, math, hashlib, struct, random, os
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Iterable, Sequence
@@ -602,11 +602,68 @@ BUILDERS=[
  ('home-entry-chamber-v1.glb',build_home),('portal-ring-master-v1.glb',build_portal),('ground-world-terrain-v1.glb',build_ground),('life-map-memory-star-v1.glb',build_star),('focus-memory-chamber-v1.glb',build_focus),('replay-memory-environment-v1.glb',build_replay),('urai-orb-avatar-v1.glb',build_orb),('passport-status-room-v1.glb',build_passport)
 ]
 
+CANON_CRITICAL_FILES={
+ 'life-map-memory-star-v1.glb',
+ 'focus-memory-chamber-v1.glb',
+ 'replay-memory-environment-v1.glb',
+ 'urai-orb-avatar-v1.glb',
+}
+CANON_RECEIPT_META={
+ 'life-map-memory-star-v1.glb': ('life-map-memory-star-v1','procedural-memory-star'),
+ 'focus-memory-chamber-v1.glb': ('focus-memory-chamber-v1','procedural-living-memory-field'),
+ 'replay-memory-environment-v1.glb': ('replay-memory-environment-v1','procedural-lived-memory-environment'),
+ 'urai-orb-avatar-v1.glb': ('urai-orb-avatar-v1','procedural-orb'),
+}
+critical_only=os.environ.get('URAI_CANON_CRITICAL_ONLY') == '1'
+active_builders=[item for item in BUILDERS if (not critical_only or item[0] in CANON_CRITICAL_FILES)]
+
 records=[]
-for filename,fn in BUILDERS:
+for filename,fn in active_builders:
     print('building',filename,flush=True)
     b=fn(); rec=b.build(MODEL_DIR/filename); records.append(rec); print(json.dumps(rec),flush=True)
 
-payload={'schemaVersion':'2.0.0','packId':'urai-final-glb-production-pack-v1','generatedAt':'2026-08-06T03:30:00Z','generator':'URAI Labs Final GLB Forge 1.0','authorship':'Original non-primitive authored mesh surfaces with embedded UV-mapped PBR texture sets; no visible basic primitive stand-ins.','assets':records}
+if critical_only:
+    existing=json.loads(RECEIPT.read_text()) if RECEIPT.exists() else {
+      'schemaVersion':'2.1.0','packId':'urai-final-glb-production-pack-v1','assets':[]
+    }
+    merged={entry['fileName']:entry for entry in existing.get('assets',[])}
+    for rec in records:
+        merged[rec['fileName']]=rec
+        asset_id,fallback=CANON_RECEIPT_META[rec['fileName']]
+        per_receipt={
+          'schemaVersion':1,
+          'id':asset_id,
+          'fixedPath':f"urai-tier1/public/assets/urai/generated/models/{rec['fileName']}",
+          'bytes':rec['bytes'],
+          'sha256':rec['sha256'],
+          'measured':{
+            'triangleCount':rec['triangleCount'],
+            'nodeCount':rec['nodes'],
+            'materialCount':rec['materials'],
+            'animationClips':rec['animations'],
+          },
+          'compressionStatus':'candidate-uncompressed-canon-v1',
+          'requiredCompression':'draco-or-meshopt',
+          'fallback':fallback,
+          'source':'URAI canon-clean deterministic convergence candidate; requires rendered inspection and compression before promotion',
+          'license':'URAI Labs internal production candidate asset',
+          'generatedBy':'URAI Labs Final GLB Forge 1.0; canon-clean convergence candidate',
+          'generatedAt':'2026-09-22T06:45:00Z',
+          'releaseState':'candidate-not-production-ready',
+        }
+        (RECEIPT.parent / f'{asset_id}.json').write_text(json.dumps(per_receipt,indent=2)+'\n')
+    order=[filename for filename,_ in BUILDERS]
+    payload={
+      **existing,
+      'schemaVersion':'2.1.0',
+      'packId':'urai-final-glb-production-pack-v1',
+      'generatedAt':'2026-09-22T06:45:00Z',
+      'generator':'URAI Labs Final GLB Forge 1.0',
+      'authorship':'Canon-clean candidate pack. Memory Star, Focus, Replay and Orb are regenerated as unreviewed candidates and require rendered inspection plus compression before promotion.',
+      'assets':[merged[name] for name in order if name in merged],
+    }
+else:
+    payload={'schemaVersion':'2.0.0','packId':'urai-final-glb-production-pack-v1','generatedAt':'2026-08-06T03:30:00Z','generator':'URAI Labs Final GLB Forge 1.0','authorship':'Original non-primitive authored mesh surfaces with embedded UV-mapped PBR texture sets; no visible basic primitive stand-ins.','assets':records}
+
 RECEIPT.write_text(json.dumps(payload,indent=2)+'\n')
 print('receipt',RECEIPT)
