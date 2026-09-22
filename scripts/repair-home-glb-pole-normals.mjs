@@ -244,8 +244,24 @@ function repairHomeStateProofContract() {
   return { changed: true, oldCount, currentCount: currentCount + oldCount, dynamicVisibleWorldCount }
 }
 
+function legacyPoleRepairSuperseded(config) {
+  if (config.assetId !== 'life-map-memory-star-v1') return false
+  const receipt = readJson(config.receiptPath)
+  return receipt.compressionStatus === 'candidate-uncompressed-canon-v1'
+    && receipt.releaseState === 'candidate-not-production-ready'
+    && String(receipt.source ?? '').includes('canon-clean deterministic convergence candidate')
+}
+
 const pack = readJson(PACK_PATH)
-const results = configs.map((config) => repairAsset(config, pack))
+const results = configs.map((config) => legacyPoleRepairSuperseded(config)
+  ? {
+      label: config.label,
+      assetId: config.assetId,
+      changed: false,
+      packChanged: false,
+      skipped: 'canon-clean-stellar-candidate-supersedes-retired-shard-pole-repair',
+    }
+  : repairAsset(config, pack))
 results.push(repairOrbAsset(ORB_CONFIG, pack))
 if (results.some((result) => result.packChanged)) writeJson(PACK_PATH, pack)
 const proofRepair = repairHomeStateProofContract()
