@@ -45,22 +45,18 @@ assert.match(council, /CouncilAgent/, "CouncilAgent schema must exist.");
 assert.match(council, /DEMO_COUNCIL_AGENTS/, "Demo Council agents must exist.");
 
 const councilRoute = readFileSync(join(app, "src/app/council/page.tsx"), "utf8");
-assert.match(councilRoute, /SpatialRealmRuntime/, "Council route must render the capability-aware spatial owner.");
-assert.match(councilRoute, /realm="council"/, "Council route must mount the Council spatial realm.");
+assert.match(councilRoute, /CouncilRealm/, "Council route must render the rigged embodied Council owner.");
+assert.match(councilRoute, /data-route-owner="rigged-embodied-council"/, "Council route must publish the current owner.");
 assert.match(councilRoute, /getSceneDefinition/, "Council route must use sceneRegistry.");
-assert.doesNotMatch(councilRoute, /RealmShell/, "Council route must not regress to the flat shell owner.");
+assert.doesNotMatch(councilRoute, /SpatialRealmRuntime|RealmShell/, "Council route must not regress to the superseded generic or flat owner.");
 
-const spatialRuntime = readFileSync(join(app, "src/spatial/realms/SpatialRealmRuntime.tsx"), "utf8");
-assert.match(spatialRuntime, /SpatialRealmExperience/, "Council runtime boundary must preserve the canonical navigable R3F owner.");
-assert.match(spatialRuntime, /semantic-no-webgl-fallback/, "Council runtime boundary must preserve semantic no-WebGL access.");
-assert.match(spatialRuntime, /requestUraiWorldTravel/, "Council fallback destinations must use unified world travel.");
-
-const spatialRealm = readFileSync(join(app, "src/spatial/realms/SpatialRealmExperience.tsx"), "utf8");
-assert.match(spatialRealm, /CouncilRealmEnvironment/, "Council must own authored chamber geometry and atmosphere.");
-assert.match(spatialRealm, /CouncilPresence/, "Council must render multiple luminous Council presences.");
-assert.match(spatialRealm, /useMovementInput/, "Council must retain embodied movement input.");
-assert.match(spatialRealm, /requestUraiWorldTravel/, "Council portals must use unified world travel.");
-assert.match(spatialRealm, /MobileMovementPad/, "Council must remain navigable on mobile.");
+const councilRealm = readFileSync(join(app, "src/spatial/council/CouncilRealm.tsx"), "utf8");
+assert.match(councilRealm, /human-makehuman-v4/, "Council must use the current V4 rigged human candidates.");
+assert.match(councilRealm, /RiggedCouncilHuman/, "Council must render rigged human participants rather than luminous placeholders.");
+assert.match(councilRealm, /CouncilSemanticFallback/, "Council must preserve semantic no-WebGL access.");
+assert.match(councilRealm, /stepEmbodiedMotion/, "Council must retain embodied movement input.");
+assert.match(councilRealm, /requestUraiWorldTravel/, "Council destinations must use unified world travel.");
+assert.match(councilRealm, /MobileMovementPad/, "Council must remain navigable on mobile.");
 
 const sound = readFileSync(join(app, "src/spatial/sound/soundCueRegistry.ts"), "utf8");
 assert.match(sound, /SOUND_CUE_REGISTRY/, "Sound cue registry must exist.");
