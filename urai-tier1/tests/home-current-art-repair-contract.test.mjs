@@ -144,7 +144,7 @@ test('current Home candidate restores the authoritative sculpted sanctuary layer
   assert.match(owner, /home-orb-memory-bloom-core/)
   assert.match(owner, /home-orb-memory-motes/)
   assert.match(owner, /visualAuthority: 'v291-translucent-memory-orb-reference-candidate'/)
-  const orbStart = owner.indexOf('function LivingMemoryOrb(')
+  const orbStart = owner.indexOf('function OrbCompanion(')
   const passportStart = owner.indexOf('function HomePassportArtifact(')
   assert.ok(orbStart >= 0 && passportStart > orbStart, 'expected current Orb and Passport source boundaries')
   const currentOrbSource = owner.slice(orbStart, passportStart)
