@@ -1,3 +1,4 @@
+// Exact-head convergence receipt: Orb is companion-only; corporate/public-estate navigation is not owned by the UrAi world shell.
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import test from 'node:test'
