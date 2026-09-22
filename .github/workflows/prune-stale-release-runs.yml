@@ -5,8 +5,7 @@ on:
     branches:
       - main
       - release/final-public-beta-stable-20260710
-    paths:
-      - .github/workflows/prune-stale-release-runs.yml
+      - converge/final-canon-spatial-20260922
   workflow_dispatch:
 
 permissions:
