@@ -3,6 +3,7 @@
 import { useEffect, useRef } from 'react'
 import { publishOrbState, type OrbState } from '@/app/home/orbStateController'
 import { HomeWorldProduction } from '@/spatial/layout/HomeWorldProduction'
+import { URAI_WORLD_TRAVEL_EVENT } from '@/spatial/world/worldEvents'
 
 type Props = {
   onOrbOpen: () => void
@@ -17,6 +18,15 @@ const REVIEW_ORB_STATES = new Set<OrbState>([
   'dormant', 'idle', 'attention', 'listening', 'thinking', 'speaking',
   'guiding', 'reflecting', 'calming', 'privacy', 'warning', 'transition',
 ])
+
+type PortalSequence =
+  | 'idle'
+  | 'ground:opening'
+  | 'ground:traversal'
+  | 'ground:closing'
+  | 'life-map:opening'
+  | 'life-map:traversal'
+  | 'life-map:closing'
 
 function synchronizeCanonicalHomeTelemetry(world: HTMLElement) {
   const playerX = Number.parseFloat(world.dataset.homePlayerX ?? '')
@@ -37,6 +47,43 @@ export default function AssetDrivenHomeWorld({ onOrbOpen, webglAvailable }: Prop
     const owner = ownerRef.current
     if (!owner) return
     let appliedReviewOrbState: OrbState | null = null
+    let observedScenePhase: string | null = null
+    let traversalFrame = 0
+
+    const currentWorld = () => owner.querySelector<HTMLElement>('.urai-asset-home-world[data-home-primary-owner="asset-driven"]')
+    const writePortalSequence = (world: HTMLElement, sequence: PortalSequence) => {
+      if (world.getAttribute('data-home-portal-sequence') !== sequence) {
+        world.setAttribute('data-home-portal-sequence', sequence)
+      }
+    }
+
+    const synchronizePortalLifecycle = (world: HTMLElement) => {
+      const scenePhase = world.getAttribute('data-home-scene-phase') || 'HOME'
+      if (scenePhase === observedScenePhase) return
+      observedScenePhase = scenePhase
+      if (traversalFrame) cancelAnimationFrame(traversalFrame)
+      traversalFrame = 0
+
+      if (scenePhase === 'GROUND') {
+        writePortalSequence(world, 'ground:opening')
+        traversalFrame = requestAnimationFrame(() => {
+          if (world.isConnected && world.getAttribute('data-home-scene-phase') === 'GROUND') {
+            writePortalSequence(world, 'ground:traversal')
+          }
+        })
+        return
+      }
+      if (scenePhase === 'LIFE-MAP') {
+        writePortalSequence(world, 'life-map:opening')
+        traversalFrame = requestAnimationFrame(() => {
+          if (world.isConnected && world.getAttribute('data-home-scene-phase') === 'LIFE-MAP') {
+            writePortalSequence(world, 'life-map:traversal')
+          }
+        })
+        return
+      }
+      if (scenePhase === 'HOME') writePortalSequence(world, 'idle')
+    }
 
     const hardenHomeOwnership = () => {
       owner.querySelectorAll('canvas').forEach((canvas) => {
@@ -45,7 +92,7 @@ export default function AssetDrivenHomeWorld({ onOrbOpen, webglAvailable }: Prop
         canvas.setAttribute('tabindex', '-1')
       })
 
-      const world = owner.querySelector<HTMLElement>('.urai-asset-home-world[data-home-primary-owner="asset-driven"]')
+      const world = currentWorld()
       if (!world) return
       const query = new URLSearchParams(window.location.search)
       const reviewMode = query.get('homeAssetReview') === '1'
@@ -59,6 +106,7 @@ export default function AssetDrivenHomeWorld({ onOrbOpen, webglAvailable }: Prop
       world.setAttribute('data-home-personalization-mode', privateFixture ? 'private-personalized' : 'standard')
       world.setAttribute('data-home-review-fixture', reviewMode && privateFixture ? 'safe-private' : 'none')
       synchronizeCanonicalHomeTelemetry(world)
+      synchronizePortalLifecycle(world)
 
       if (reviewOrbState !== appliedReviewOrbState) {
         appliedReviewOrbState = reviewOrbState
@@ -66,18 +114,29 @@ export default function AssetDrivenHomeWorld({ onOrbOpen, webglAvailable }: Prop
       }
     }
 
+    const closePortalLifecycle = (event: Event) => {
+      const world = currentWorld()
+      if (!world) return
+      const detail = (event as CustomEvent<{ destination?: string }>).detail
+      if (detail?.destination === 'infrastructure-hub') writePortalSequence(world, 'ground:closing')
+      if (detail?.destination === 'life-map') writePortalSequence(world, 'life-map:closing')
+    }
+
     hardenHomeOwnership()
     const observer = new MutationObserver(hardenHomeOwnership)
     observer.observe(owner, {
       attributes: true,
-      attributeFilter: ['data-home-player-x', 'data-home-player-z'],
+      attributeFilter: ['data-home-player-x', 'data-home-player-z', 'data-home-scene-phase'],
       childList: true,
       subtree: true,
     })
     window.addEventListener('popstate', hardenHomeOwnership)
+    window.addEventListener(URAI_WORLD_TRAVEL_EVENT, closePortalLifecycle)
     return () => {
       observer.disconnect()
+      if (traversalFrame) cancelAnimationFrame(traversalFrame)
       window.removeEventListener('popstate', hardenHomeOwnership)
+      window.removeEventListener(URAI_WORLD_TRAVEL_EVENT, closePortalLifecycle)
     }
   }, [])
 

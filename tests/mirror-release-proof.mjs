@@ -4,6 +4,7 @@ import path from 'node:path'
 
 const exactSha = String(process.env.URAI_PROOF_SOURCE_SHA || process.env.URAI_EXACT_HEAD || '').trim()
 const baseUrl = String(process.env.URAI_AUDIT_BASE_URL || 'http://127.0.0.1:4173').replace(/\/$/, '')
+const baseOrigin = new URL(`${baseUrl}/`).origin
 const outDir = process.env.URAI_MIRROR_PROOF_OUT_DIR || 'mirror-release-proof'
 const shotDir = path.join(outDir, 'screenshots')
 
@@ -29,7 +30,19 @@ function absolute(route) {
 }
 
 function pathname(value) {
-  return new URL(value).pathname.replace(/\/$/, '') || '/'
+  return new URL(value, `${baseUrl}/`).pathname.replace(/\/$/, '') || '/'
+}
+
+function isExactCandidateRoute(value, expectedPath) {
+  const parsed = value instanceof URL ? value : new URL(String(value), `${baseUrl}/`)
+  return parsed.origin === baseOrigin && (parsed.pathname.replace(/\/$/, '') || '/') === expectedPath
+}
+
+function assertExactCandidateRoute(value, expectedPath, label) {
+  if (!isExactCandidateRoute(value, expectedPath)) {
+    const parsed = value instanceof URL ? value : new URL(String(value), `${baseUrl}/`)
+    throw new Error(`${label} must stay on exact candidate origin ${baseOrigin}${expectedPath}: ${parsed.toString()}`)
+  }
 }
 
 function pushCase(name, device, status, details = {}) {
@@ -225,12 +238,15 @@ async function proveState(browser, config) {
 
 async function proveTransition(browser, destination, buttonName) {
   const name = `transition-to-${destination}`
+  const expectedPath = `/${destination}`
   const { context, page, consoleErrors, failedRequests, httpErrors } = await createPage(browser, 'desktop')
   try {
     await waitForWorld(page, `/mirror?${demoQuery}&pattern=body-rhythm`)
     await page.getByRole('button', { name: buttonName, exact: true }).click()
-    await page.waitForURL((url) => pathname(url.toString()) === `/${destination}`, { timeout: 30000 })
+    await page.waitForURL((url) => isExactCandidateRoute(url, expectedPath), { timeout: 30000 })
+    assertExactCandidateRoute(page.url(), expectedPath, `${destination} transition destination`)
     const shot = await screenshot(page, `desktop-${name}`)
+    assertExactCandidateRoute(page.url(), expectedPath, `${destination} transition destination after capture`)
     const unattributedConsoleErrors = assertCleanEvidence(consoleErrors, failedRequests, httpErrors)
     pushCase(name, 'desktop', 'passed', { screenshot: shot, finalUrl: page.url(), ...diagnostics(consoleErrors, failedRequests, httpErrors, unattributedConsoleErrors) })
   } catch (error) {
@@ -301,6 +317,7 @@ const receipt = {
   schemaVersion: 3,
   exactSha,
   baseUrl,
+  baseOrigin,
   createdAt: new Date().toISOString(),
   status: errors.length ? 'failed' : 'passed',
   caseCount: cases.length,
@@ -316,6 +333,7 @@ await fs.writeFile(path.join(outDir, 'mirror-release-summary.md'), [
   '',
   `Exact SHA: ${exactSha}`,
   `Base URL: ${baseUrl}`,
+  `Required origin: ${baseOrigin}`,
   `Created: ${receipt.createdAt}`,
   `Status: ${receipt.status.toUpperCase()}`,
   `Cases: ${receipt.caseCount}`,

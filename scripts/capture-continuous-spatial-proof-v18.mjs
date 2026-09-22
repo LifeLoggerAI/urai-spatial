@@ -156,6 +156,7 @@ async function verifyHome(page, expected) {
     reviewFixture: await owner.getAttribute('data-home-review-fixture'),
     orbState: await owner.getAttribute('data-home-orb-state'),
     orbClip: await owner.getAttribute('data-home-orb-clip'),
+    orbModelClip: await owner.getAttribute('data-home-orb-model-clip'),
     animationOwner: await owner.getAttribute('data-home-animation-owner'),
     assetsReady: await owner.getAttribute('data-home-assets-ready'),
     fallbackVisible: await visibleCount(page.locator(fallbackSelector)),
@@ -167,7 +168,7 @@ async function verifyHome(page, expected) {
   const passed = result.ownerCount === 1 && result.canvasVisible && result.canvasWidth >= 240 && result.canvasHeight >= 240
     && result.assetMode === requiredMode && result.personalizationMode === expected.mode
     && result.reviewFixture === (expected.fixture || 'none') && result.orbState === expected.orbState
-    && result.orbClip === orbClips[expected.orbState] && result.animationOwner === 'authored-sanctuary-plus-gltf-interactions'
+    && result.orbModelClip === orbClips[expected.orbState] && result.animationOwner === 'sacred-sanctuary-plus-authored-orb-and-embodiment'
     && result.assetsReady === 'true' && result.fallbackVisible === 0
     && result.semanticButtons === 3 && result.semanticVisible === 0 && result.discreetControls === 2
   return { ...result, passed }
