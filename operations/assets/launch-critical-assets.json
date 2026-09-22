@@ -104,7 +104,7 @@
       ],
       "maxTriangles": 140000,
       "requiredCompression": "draco-or-meshopt",
-      "fallback": "procedural-focus-chamber",
+      "fallback": "procedural-living-memory-field",
       "source": "URAI deterministic candidate forge; replaceable by reviewed provider asset",
       "license": "URAI Labs internal production asset",
       "releaseState": "pending-final-review"
@@ -123,7 +123,7 @@
       ],
       "maxTriangles": 160000,
       "requiredCompression": "draco-or-meshopt",
-      "fallback": "procedural-replay-theater",
+      "fallback": "procedural-lived-memory-environment",
       "source": "URAI deterministic candidate forge; replaceable by reviewed provider asset",
       "license": "URAI Labs internal production asset",
       "releaseState": "pending-final-review"
