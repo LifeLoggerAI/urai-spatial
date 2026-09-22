@@ -11,15 +11,16 @@ const reliquary = fs.readFileSync(new URL('../src/spatial/assets/HomeOrbReliquar
 const sky = fs.readFileSync(new URL('../src/spatial/assets/HomeAtmosphericSky.tsx', import.meta.url), 'utf8')
 const authority = JSON.parse(fs.readFileSync(new URL('../src/app/currentHomeVisualAuthority.json', import.meta.url), 'utf8'))
 
-test('Home authority keeps V288 Orb provenance while V292 two-mode Home remains the uncertified current candidate', () => {
+test('Home authority restores V288 visible Orb morphology while V292 two-mode Home remains uncertified on this head', () => {
   assert.equal(authority.artRevision, 'v292-avatar-presentation-bodyless-first-person-convergence')
   assert.equal(authority.worldIdentifier, 'cinematic-lived-world-threshold')
   assert.equal(authority.certificationState, 'candidate-requires-fresh-exact-head-pixels')
   assert.equal(authority.lastCertifiedPredecessor.orbVisualAuthority, 'v288-grounded-biomorphic-reliquary')
-  assert.equal(authority.currentRuntimeCandidate.orbVisualAuthority, 'v291-translucent-memory-orb-reference-candidate')
+  assert.equal(authority.currentRuntimeCandidate.orbVisualAuthority, 'v288-grounded-biomorphic-reliquary')
+  assert.equal(authority.currentRuntimeCandidate.orbInteractionAuthority, 'v291-current-home-orb-state-and-speech-runtime')
   assert.equal(authority.currentRuntimeCandidate.orbRuntimeAsset, '/assets/urai/generated/models/urai-orb-avatar-v1.glb')
   assert.equal(authority.currentRuntimeCandidate.certified, false)
-  assert.equal(authority.orbVisualAuthority, 'v291-translucent-memory-orb-reference-candidate')
+  assert.equal(authority.orbVisualAuthority, 'v288-grounded-biomorphic-reliquary')
   for (const asset of ['HomeWorldProductionV223.tsx','HomeVisualAuthority.tsx','HomeAtmosphericSky.tsx','HomeWorldProductionV225PolishV3.tsx','urai-orb-avatar-v1.glb']) {
     assert.ok(authority.runtimeAssets.includes(asset), `missing Home runtime/provenance asset ${asset}`)
   }
@@ -27,8 +28,8 @@ test('Home authority keeps V288 Orb provenance while V292 two-mode Home remains 
     assert.ok(authority.lastCertifiedPredecessor.runtimeAssets.includes(asset), `missing V288 certified predecessor asset ${asset}`)
   }
   assert.doesNotMatch(JSON.stringify(authority.runtimeAssets), /HomeLaunchSanctuaryV254\.tsx|HomeWorldProductionV225PolishV2\.tsx/)
-  assert.doesNotMatch(visualAuthority, /HomeOrbGroundedV288|<HomeOrbGroundedV288/)
-  assert.match(visualAuthority, /return null/)
+  assert.match(visualAuthority, /HomeOrbGroundedV288/)
+  assert.match(visualAuthority, /return <HomeOrbGroundedV288 \/>/)
 })
 
 test('retired localized Home overlays stay retired while first-person Passport ownership remains the active AAA repair surface', () => {
@@ -76,7 +77,7 @@ test('retired localized Home hotspots stay disabled while current Orb and govern
   assert.match(owner, /\/home-v226-rooted-single-living-memory-presence\//)
   assert.match(owner, /\/home-current-orb\//)
   assert.match(owner, /\/home-v249-organic-living-memory-presence\//)
-  assert.match(owner, /const CURRENT_HOME_PRESENCE_ROOTS = new Set\(\['home-living-memory-orb', 'urai-home-user-avatar'\]\)/)
+  assert.match(owner, /const CURRENT_HOME_PRESENCE_ROOTS = new Set\(\['home-living-memory-orb', 'home-orb-v288-visible-authority', 'urai-home-user-avatar'\]\)/)
   assert.match(owner, /function isInsideCurrentHomePresence\(object: THREE\.Object3D\)/)
   assert.match(owner, /if \(isInsideCurrentHomePresence\(object\)\) return/)
   assert.match(owner, /\/home-visible-user-avatar\//)
@@ -113,8 +114,9 @@ test('visible sky is the canonical broad Life Map interaction surface and locali
   assert.doesNotMatch(sky, /HomeLaunchSanctuaryV254|home-v249-life-map-rooted-celestial-ascent/)
 })
 
-test('V288 Orb remains intact as predecessor provenance but is not mounted over V291 current pixels', () => {
-  assert.doesNotMatch(visualAuthority, /HomeOrbGroundedV288/)
+test('V288 Orb remains intact and is mounted as visible morphology over V291 interaction semantics', () => {
+  assert.match(visualAuthority, /HomeOrbGroundedV288/)
+  assert.match(owner, /<HomeVisualAuthority \/>/)
   assert.match(groundedOrb, /HomeOrbReliquaryV286/)
   assert.match(groundedOrb, /home-v288-grounded-biomorphic-memory-reliquary/)
   assert.match(groundedOrb, /home-gold-companion/)
