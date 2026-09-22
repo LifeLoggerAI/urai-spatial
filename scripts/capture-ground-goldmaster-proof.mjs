@@ -9,13 +9,16 @@ const base = (process.env.URAI_PROOF_BASE || 'http://127.0.0.1:4173').replace(/\
 const outDir = path.resolve(process.env.URAI_PROOF_DIR || 'artifacts/ground-goldmaster-proof')
 const exactHead = process.env.URAI_EXACT_HEAD || 'local'
 
-const scenarios = [
+const allScenarios = [
   { id: 'temperate-desktop', environment: 'temperate', width: 1440, height: 900, mobile: false, reducedMotion: 'no-preference' },
   { id: 'woodland-desktop', environment: 'woodland', width: 1440, height: 900, mobile: false, reducedMotion: 'no-preference' },
   { id: 'temperate-phone-portrait', environment: 'temperate', width: 390, height: 844, mobile: true, reducedMotion: 'no-preference' },
   { id: 'woodland-phone-portrait', environment: 'woodland', width: 390, height: 844, mobile: true, reducedMotion: 'no-preference' },
   { id: 'temperate-reduced-motion', environment: 'temperate', width: 1440, height: 900, mobile: false, reducedMotion: 'reduce' },
 ]
+const requestedScenario = String(process.env.URAI_GROUND_SCENARIO || '').trim()
+const scenarios = requestedScenario ? allScenarios.filter((scenario) => scenario.id === requestedScenario) : allScenarios
+if (requestedScenario && scenarios.length !== 1) throw new Error(`Unknown URAI_GROUND_SCENARIO: ${requestedScenario}`)
 
 await mkdir(outDir, { recursive: true })
 const captures = []
@@ -100,7 +103,12 @@ try {
     const mountTimeoutMs = 90_000
     try {
       await readyRoot.waitFor({ state: 'attached', timeout: mountTimeoutMs })
-      await page.waitForSelector('.ground-spatial-root canvas', { state: 'visible', timeout: mountTimeoutMs })
+      await page.waitForFunction(() => {
+        const canvas = document.querySelector('.ground-spatial-root canvas')
+        if (!(canvas instanceof HTMLCanvasElement)) return false
+        const rect = canvas.getBoundingClientRect()
+        return rect.width >= 240 && rect.height >= 240 && canvas.width > 0 && canvas.height > 0
+      }, null, { timeout: mountTimeoutMs, polling: 100 })
     } catch (error) {
       const diagnostic = await page.evaluate(() => ({
         url: window.location.href,
