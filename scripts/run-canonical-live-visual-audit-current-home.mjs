@@ -50,7 +50,7 @@ patched = replaceOnce(
 patched = replaceOnce(
   patched,
   `{ id: 'replay', path: '/replay?memoryId=quiet-reset&manifestId=replay-recovery-thread&node=quiet-reset&returnNode=quiet-reset&demo=1&from=life-map', selector: 'main', markers: ['The Quiet Reset'] },`,
-  `{ id: 'replay', path: '/replay?memoryId=quiet-reset&manifestId=replay-recovery-thread&node=quiet-reset&returnNode=quiet-reset&demo=1&from=life-map', selector: '[data-testid="cinematic-replay-client"][data-replay-spatial-owner="r3f-memory-theater"]', markers: [] },`,
+  `{ id: 'replay', path: '/replay?memoryId=quiet-reset&manifestId=replay-recovery-thread&node=quiet-reset&returnNode=quiet-reset&demo=1&from=life-map', selector: '[data-testid="cinematic-replay-client"][data-replay-spatial-owner="r3f-lived-memory-environment"]', markers: [] },`,
   'current Replay spatial owner',
 )
 
@@ -134,7 +134,7 @@ const currentLifeMapAndReplaySettlement = `  if (route.id === 'life-map') {
   }
   if (route.id === 'replay') {
     await page.waitForFunction(() => {
-      const root = document.querySelector('[data-testid="cinematic-replay-client"][data-replay-spatial-owner="r3f-memory-theater"]')
+      const root = document.querySelector('[data-testid="cinematic-replay-client"][data-replay-spatial-owner="r3f-lived-memory-environment"]')
       return root?.getAttribute('data-memory-status') === 'demo'
         && root?.getAttribute('data-memory-id') === 'demo:quiet-reset'
         && root?.getAttribute('data-manifest-id') === 'replay-recovery-thread'
@@ -194,7 +194,7 @@ for (const [label, marker] of [
   ['Ground first-person authority', `groundExploration === 'first-person'`],
   ['Ground canvas geometry', `rect.width >= 240 && rect.height >= 240`],
   ['Life Map current sample disclosure', `Disclosed sample · not your memories`],
-  ['Replay current spatial owner', `data-replay-spatial-owner="r3f-memory-theater"`],
+  ['Replay current spatial owner', `data-replay-spatial-owner="r3f-lived-memory-environment"`],
   ['Replay fixture memory identity', `data-memory-id') === 'demo:quiet-reset'`],
   ['Replay manifest identity', `data-manifest-id') === 'replay-recovery-thread'`],
   ['Life Map rendered canvas evidence', `data-life-map-mode') === 'overview'`],
