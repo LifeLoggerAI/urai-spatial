@@ -505,89 +505,77 @@ def build_ground():
 
 def build_star():
     b=Builder('URAI Memory Star','memory-star-root',44); m=b._materials
-    core=b.add_mesh('memory-star-core-geometry',star_mesh(3,22,.48,1.45,.36),m['glass']); b.add_node('memory-star-core',b.root,core)
-    heart=b.add_mesh('memory-star-heart-geometry',deformed_sphere(32,20,.42,9,.12),m['ivory']); b.add_node('memory-star-heart',b.root,heart)
-    # non-circular orbital calligraphic curves
-    for i in range(7):
-        pts=[]
-        for j in range(64):
-            a=2*math.pi*j/64; rr=1.7+i*.13+.13*math.sin(3*a+i); pts.append([math.cos(a)*rr,math.sin(a*(1+i*.02))*rr*.62,.25*math.sin(2*a+i)])
-        geo=b.add_mesh(f'memory-star-orbit-{i+1}-geometry',tube_curve(pts,.025+i*.002,8,True),m['gold' if i%3==0 else 'violet']); b.add_node(f'memory-star-orbit-{i+1}',b.root,geo,r=quat_euler(i*.17,i*.23,i*.11))
-    shard=b.add_mesh('memory-star-shard-geometry',crystal(13,5,9,1.0,.24),m['glass'])
-    for i in range(18):
-        a=2*math.pi*i/18; b.add_node(f'memory-star-shard-{i+1}',b.root,shard,t=[math.cos(a)*(2.0+(i%3)*.12),math.sin(a)*(1.25+(i%2)*.18),.5*math.sin(i*.7)],s=[.22,.22,.22],r=quat_euler(i*.4,a,i*.2))
-    halo=b.add_mesh('memory-star-halo-geometry',ribbon([[-2.4,0,0],[-1.2,.55,.1],[0,.75,0],[1.2,.55,-.1],[2.4,0,0]],.14,.012),m['glass']); b.add_node('memory-star-halo',b.root,halo,r=quat_euler(0,0,.12))
-    b.add_node('memory-star-halo-secondary',b.root,halo,r=quat_euler(.32,.18,-.22),s=[.72,.72,.72])
-    b.animation('MemoryStar_Idle','memory-star-core','rotation',[0,4,8],[quat_euler(0,0,0),quat_euler(.3,math.pi,.1),quat_euler(0,2*math.pi,0)])
-    b.animation('MemoryStar_Selected','memory-star-heart','scale',[0,1,2],[[1,1,1],[1.35,1.35,1.35],[1,1,1]])
-    b.animation('MemoryStar_Focus','memory-star-halo','scale',[0,1.5,3],[[.6,.6,.6],[1.2,1.2,1.2],[1,1,1]])
+    photosphere=b.add_mesh('memory-star-photosphere-geometry',deformed_sphere(40,26,.5,11,.06),m['ivory']); b.add_node('memory-star-photosphere',b.root,photosphere)
+    inner=b.add_mesh('memory-star-inner-corona-geometry',deformed_sphere(38,24,.78,17,.08),m['glass']); b.add_node('memory-star-inner-corona',b.root,inner)
+    outer=b.add_mesh('memory-star-outer-corona-geometry',deformed_sphere(34,22,1.08,23,.1),m['glass']); b.add_node('memory-star-outer-corona',b.root,outer)
+    wisp=b.add_mesh('memory-star-corona-wisp-geometry',deformed_sphere(16,10,.16,29,.16),m['gold'])
+    for i in range(32):
+        a=2*math.pi*i/32
+        radius=1.08+.22*math.sin(i*.91)
+        z=.28*math.sin(i*.67)
+        b.add_node(f'memory-star-corona-wisp-{i+1}',b.root,wisp,t=[math.cos(a)*radius,math.sin(a)*radius*.72,z],s=[.55+(i%4)*.08,.4+(i%3)*.07,.5])
+    b.animation('MemoryStar_Idle','memory-star-inner-corona','scale',[0,4,8],[[1,1,1],[1.035,1.035,1.035],[1,1,1]])
+    b.animation('MemoryStar_Selected','memory-star-photosphere','scale',[0,1,2],[[1,1,1],[1.28,1.28,1.28],[1,1,1]])
+    b.animation('MemoryStar_Focus','memory-star-outer-corona','scale',[0,1.5,3],[[.88,.88,.88],[1.16,1.16,1.16],[1,1,1]])
     return b
 
 
 def build_focus():
-    b=Builder('URAI Focus Memory Chamber','focus-memory-chamber-root',55); m=b._materials
-    floor=b.add_mesh('focus-sculpted-floor-geometry',heightfield(54,54,(18,18),lambda X,Z:-1.4+.12*np.sin(X*.8)*np.cos(Z*.7)-.25*np.exp(-((X/4)**2+(Z/4)**2))),m['stone']); b.add_node('focus-sculpted-floor',b.root,floor)
-    # nested architectural arches, no torus
-    for i in range(9):
-        geo=b.add_mesh(f'focus-tunnel-ring-{i+1}-geometry',arch_mesh(5.8-i*.28,5.2-i*.14,.45,.12+i*.008,44,60+i),m['glass' if i%2==0 else 'violet']); b.add_node(f'focus-tunnel-ring-{i+1}',b.root,geo,t=[0,-1.1,-2.0-i*.62],s=[1,1,1])
-    cradle=b.add_mesh('focus-memory-cradle-geometry',radial_loft([(-.3,2.3,1.7),(0,2.6,2),(.3,1.8,1.35),(.8,.85,.7),(1.5,.25,.2)],52,.12,71),m['glass']); b.add_node('focus-memory-cradle',b.root,cradle,t=[0,-1.05,-5.8])
-    core=b.add_mesh('focus-cradle-core-geometry',star_mesh(72,20,.42,1.2,.3),m['ivory']); b.add_node('focus-cradle-core',b.root,core,t=[0,.45,-5.8])
-    rune=b.add_mesh('focus-memory-rune-geometry',crystal(73,6,10,1.2,.26),m['gold'])
-    for i in range(22):
-        a=2*math.pi*i/22; b.add_node(f'focus-memory-rune-{i+1}',b.root,rune,t=[math.cos(a)*(5+(i%3)*.4),-.9+math.sin(a)*1.2,-4+math.sin(a)*3],s=[.18,.18,.18],r=quat_euler(i*.22,a,i*.3))
-    b.animation('Focus_Arrival','focus-memory-cradle','scale',[0,1.5,3],[[.55,.55,.55],[1.04,1.04,1.04],[1,1,1]])
-    b.animation('Focus_Breathing','focus-cradle-core','scale',[0,2,4],[[1,1,1],[1.12,1.12,1.12],[1,1,1]])
-    b.animation('Focus_Exit','focus-memory-cradle','translation',[0,1.5,3],[[0,-1.05,-5.8],[0,.2,-8],[0,2,-12]])
+    b=Builder('URAI Focus Living Memory Field','focus-memory-chamber-root',55); m=b._materials
+    core=b.add_mesh('focus-selected-memory-photosphere-geometry',deformed_sphere(40,26,.56,31,.06),m['ivory']); b.add_node('focus-selected-memory-photosphere',b.root,core,t=[0,.35,-5.2])
+    corona=b.add_mesh('focus-selected-memory-corona-geometry',deformed_sphere(36,22,1.15,37,.1),m['glass']); b.add_node('focus-selected-memory-corona',b.root,corona,t=[0,.35,-5.2])
+    volume=b.add_mesh('focus-living-memory-volume-geometry',deformed_sphere(18,12,.42,43,.18),m['glass'])
+    for i in range(34):
+        a=2*math.pi*i/34
+        radius=1.7+(i%6)*.34
+        y=.35+math.sin(i*.73)*1.45
+        z=-5.2+math.cos(i*.41)*2.2
+        b.add_node(f'focus-living-memory-volume-{i+1}',b.root,volume,t=[math.cos(a)*radius,y,z],s=[.5+(i%4)*.12,.45+(i%5)*.08,.55])
+    b.animation('Focus_Arrival','focus-selected-memory-corona','scale',[0,1.5,3],[[.58,.58,.58],[1.08,1.08,1.08],[1,1,1]])
+    b.animation('Focus_Breathing','focus-selected-memory-photosphere','scale',[0,2,4],[[1,1,1],[1.1,1.1,1.1],[1,1,1]])
+    b.animation('Focus_Exit','focus-selected-memory-corona','translation',[0,1.5,3],[[0,.35,-5.2],[0,.8,-7.2],[0,1.6,-10]])
     return b
 
 
 def build_replay():
-    b=Builder('URAI Replay Memory Environment','replay-memory-environment-root',66); m=b._materials
-    floor=b.add_mesh('replay-sculpted-ground-geometry',heightfield(58,70,(20,26),lambda X,Z:-1.5+.16*np.sin(X*.5+Z*.2)*np.cos(Z*.6)),m['stone']); b.add_node('replay-sculpted-ground',b.root,floor,t=[0,0,-5])
-    portal=b.add_mesh('replay-film-portal-geometry',arch_mesh(6.2,6.0,.55,.28,56,90),m['gold']); b.add_node('replay-film-portal',b.root,portal,t=[0,-1,-7])
-    veil=b.add_mesh('replay-film-veil-geometry',ribbon([[-2.2,.2,0],[-1.6,2.7,.1],[0,5.1,-.1],[1.6,2.7,.1],[2.2,.2,0]],1.55,.02),m['glass']); b.add_node('replay-film-veil',b.root,veil,t=[0,-.9,-7.1])
-    # memory panels are curved ribbons suspended in depth
-    panel_geo=b.add_mesh('replay-memory-panel-geometry',ribbon([[-1.5,-.8,0],[-1.65,0,0],[-1.55,.8,0],[0,1.15,.15],[1.55,.8,0],[1.65,0,0],[1.5,-.8,0]],.45,.025),m['glass'])
-    for i in range(24):
-        a=2*math.pi*i/24; rad=4.4+(i%4)*.55; b.add_node(f'replay-memory-panel-{i+1}',b.root,panel_geo,t=[math.cos(a)*rad,-.2+math.sin(i*.7)*.5,-7+math.sin(a)*rad*.48],r=quat_euler(0,-a+math.pi/2,0),s=[.45,.45,.45])
-    # camera track custom spline
-    track_pts=[]
-    for i in range(48):
-        t=i/47; track_pts.append([math.sin(t*math.pi*2)*2.2,.4+math.sin(t*math.pi)*2,-1-t*12])
-    track=b.add_mesh('replay-camera-track-geometry',tube_curve(track_pts,.035,8),m['violet']); b.add_node('replay-camera-track',b.root,track,extras={'role':'cinematic-camera-path'})
-    # atmospheric memory trees
+    b=Builder('URAI Replay Lived Memory Environment','replay-memory-environment-root',66); m=b._materials
+    floor=b.add_mesh('replay-lived-ground-geometry',heightfield(58,70,(20,26),lambda X,Z:-1.5+.16*np.sin(X*.5+Z*.2)*np.cos(Z*.6)),m['stone']); b.add_node('replay-lived-ground',b.root,floor,t=[0,0,-5])
+    atmosphere=b.add_mesh('replay-memory-atmosphere-geometry',deformed_sphere(30,18,2.4,47,.13),m['glass']); b.add_node('replay-memory-atmosphere',b.root,atmosphere,t=[0,.4,-7],s=[1.8,.9,1.4])
+    horizon=b.add_mesh('replay-memory-horizon-geometry',ribbon([[-5,-1,0],[-3,.2,-.1],[0,1,.1],[3,.2,-.1],[5,-1,0]],1.2,.04),m['glass']); b.add_node('replay-memory-horizon',b.root,horizon,t=[0,-.4,-10])
     tree=b.add_mesh('replay-memory-tree-geometry',tree_mesh(91),m['moss']); trunk=b.add_mesh('replay-memory-tree-trunk-geometry',tube_curve([[0,0,0],[0,1,0],[.1,2,0]],[.12,.09,.04],8),m['stone'])
     for i in range(34):
-        a=2*math.pi*i/34; rad=5+(i%7)*.6; p=b.add_node(f'replay-memory-growth-{i+1}',b.root,t=[math.cos(a)*rad,-1.5,math.sin(a)*rad-7],s=[.45,.45,.45]); b.add_node(f'replay-memory-growth-trunk-{i+1}',p,trunk); b.add_node(f'replay-memory-growth-crown-{i+1}',p,tree,t=[0,2.1,0])
-    b.animation('Replay_Idle','replay-film-veil','scale',[0,2.5,5],[[1,1,1],[1.02,1.04,1],[1,1,1]])
-    b.animation('Replay_Enter','replay-film-portal','scale',[0,1.5,3],[[.72,.72,.72],[1.06,1.06,1.06],[1,1,1]])
-    b.animation('Replay_Play','replay-memory-panel-1','translation',[0,2,4],[[4.4,-.2,-7],[4.4,.35,-6.6],[4.4,-.2,-7]])
-    b.animation('Replay_Exit','replay-film-veil','translation',[0,1.5,3],[[0,-.9,-7.1],[0,1,-10],[0,4,-15]])
+        a=2*math.pi*i/34
+        rad=5+(i%7)*.6
+        p=b.add_node(f'replay-memory-growth-{i+1}',b.root,t=[math.cos(a)*rad,-1.5,math.sin(a)*rad-7],s=[.45,.45,.45])
+        b.add_node(f'replay-memory-growth-trunk-{i+1}',p,trunk)
+        b.add_node(f'replay-memory-growth-crown-{i+1}',p,tree,t=[0,2.1,0])
+    mote=b.add_mesh('replay-memory-mote-geometry',deformed_sphere(12,8,.12,53,.16),m['ivory'])
+    for i in range(24):
+        a=2*math.pi*i/24
+        b.add_node(f'replay-memory-mote-{i+1}',b.root,mote,t=[math.cos(a)*(2.5+(i%4)*.9),-.2+math.sin(i*.8)*1.5,-5+math.sin(a)*(3+(i%3))],s=[.6,.6,.6])
+    b.animation('Replay_Idle','replay-memory-atmosphere','scale',[0,2.5,5],[[1,1,1],[1.025,1.035,1.02],[1,1,1]])
+    b.animation('Replay_Enter','replay-memory-horizon','scale',[0,1.5,3],[[.78,.78,.78],[1.04,1.04,1.04],[1,1,1]])
+    b.animation('Replay_Play','replay-memory-mote-1','translation',[0,2,4],[[2.5,-.2,-5],[2.7,.25,-5.4],[2.5,-.2,-5]])
+    b.animation('Replay_Exit','replay-memory-atmosphere','translation',[0,1.5,3],[[0,.4,-7],[0,1,-9],[0,3,-13]])
     return b
 
 
 def build_orb():
-    b=Builder('URAI Premium Celestial Orb','orb-root',77); m=b._materials
+    b=Builder('URAI Living Memory Orb','orb-root',77); m=b._materials
     shell=b.add_mesh('orb-aura-geometry',deformed_sphere(50,30,1.05,9,.045),m['glass']); b.add_node('orb-aura',b.root,shell)
     inner=b.add_mesh('orb-core-geometry',deformed_sphere(44,26,.72,13,.12),m['violet']); b.add_node('orb-core',b.root,inner)
-    heart=b.add_mesh('orb-heart-geometry',star_mesh(14,16,.28,.58,.18),m['ivory']); b.add_node('orb-heart',b.root,heart)
-    pet=b.add_mesh('orb-petal-geometry',petal(17,1.7,.38,.08,18),m['glass'])
+    heart=b.add_mesh('orb-heart-geometry',deformed_sphere(32,20,.32,19,.08),m['ivory']); b.add_node('orb-heart',b.root,heart)
+    pet=b.add_mesh('orb-memory-fold-geometry',petal(17,1.45,.3,.06,18),m['glass'])
     for i in range(12):
-        a=2*math.pi*i/12; b.add_node(f'orb-petal-{i+1}',b.root,pet,r=quat_euler(0,a,a*.5),t=[math.cos(a)*.35,math.sin(a)*.35,0],s=[.58,.58,.58])
-    # custom non-circular filament orbits
-    for name,phase,tilt in [('orb-orbit-a',0,.3),('orb-orbit-b',1.7,1.1),('orb-orbit-c',3.1,1.8)]:
-        pts=[]
-        for i in range(72):
-            a=2*math.pi*i/72; rr=1.32+.09*math.sin(3*a+phase); pts.append([math.cos(a)*rr,math.sin(a)*rr*.57,.18*math.sin(2*a+phase)])
-        geo=b.add_mesh(f'{name}-geometry',tube_curve(pts,.025,8,True),m['gold' if phase<1 else 'glass']); b.add_node(name,b.root,geo,r=quat_euler(tilt,.2*phase,.15*phase))
+        a=2*math.pi*i/12
+        b.add_node(f'orb-memory-fold-{i+1}',b.root,pet,r=quat_euler(0,a,a*.35),t=[math.cos(a)*.28,math.sin(a)*.28,0],s=[.5,.5,.5])
     filament=b.add_mesh('orb-internal-filament-geometry',tube_curve([[-.5,-.65,0],[-.25,-.2,.2],[.1,.1,-.2],[.3,.5,.15],[.55,.7,0]],[.025,.035,.03,.025,.01],7),m['ivory'])
-    for i in range(10): b.add_node(f'orb-filament-{i+1}',b.root,filament,r=quat_euler(i*.31,i*.62,i*.2),s=[.7,.7,.7])
+    for i in range(12): b.add_node(f'orb-filament-{i+1}',b.root,filament,r=quat_euler(i*.31,i*.62,i*.2),s=[.7,.7,.7])
     anims=['Orb_Resting','Orb_Idle','Orb_Attention','Orb_Listening','Orb_Thinking','Orb_Speaking','Orb_Guiding','Orb_Reflecting','Orb_Calming','Orb_Privacy','Orb_Degraded','Orb_Transition']
-    targets=['orb-aura','orb-core','orb-heart','orb-orbit-a','orb-orbit-b','orb-orbit-c']
+    targets=['orb-aura','orb-core','orb-heart','orb-filament-1','orb-filament-2','orb-filament-3']
     for i,name in enumerate(anims):
         t=targets[i%len(targets)]
-        if 'orbit' in t: b.animation(name,t,'rotation',[0,2,4],[quat_euler(0,0,0),quat_euler(i*.1,math.pi,i*.17),quat_euler(0,2*math.pi,0)])
-        else: b.animation(name,t,'scale',[0,1.5,3],[[1,1,1],[1.04+(i%4)*.018,1.04+(i%4)*.018,1.04+(i%4)*.018],[1,1,1]])
+        b.animation(name,t,'scale',[0,1.5,3],[[1,1,1],[1.035+(i%4)*.014,1.035+(i%4)*.014,1.035+(i%4)*.014],[1,1,1]])
     return b
 
 
