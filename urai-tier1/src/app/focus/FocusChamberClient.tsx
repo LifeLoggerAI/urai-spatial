@@ -36,26 +36,26 @@ function makeFocusCoronaTexture(power: number, rays = false) {
     const angle = Math.atan2(dy, dx);
     const warpedAngle = angle + Math.sin(angle * 3.0 + .37) * .16 + Math.sin(angle * 7.0 - .61) * .055;
     const broadPlume = rays
-      ? Math.pow(Math.max(0, .60 * Math.cos(warpedAngle * 5 + .2) + .27 * Math.cos(warpedAngle * 11 - .8) + .13 * Math.cos(warpedAngle * 19 + .35)), 4)
+      ? Math.pow(Math.max(0, .60 * Math.cos(warpedAngle * 5 + .2) + .27 * Math.cos(warpedAngle * 11 - .8) + .13 * Math.cos(warpedAngle * 19 + .35)), 3)
       : 0;
     const finePlume = rays
-      ? Math.pow(Math.max(0, .56 * Math.cos(warpedAngle * 9 - .45) + .31 * Math.cos(warpedAngle * 17 + .73) + .13 * Math.cos(warpedAngle * 29 - .2)), 7) * .58
+      ? Math.pow(Math.max(0, .56 * Math.cos(warpedAngle * 9 - .45) + .31 * Math.cos(warpedAngle * 17 + .73) + .13 * Math.cos(warpedAngle * 29 - .2)), 6) * .68
       : 0;
     const rayBoundary = rays
-      ? THREE.MathUtils.clamp(.56
-        + Math.sin(warpedAngle * 3.0 + .4) * .065
-        + Math.sin(warpedAngle * 7.0 - .7) * .045
-        + broadPlume * .24
-        + finePlume * .14, .46, .94)
+      ? THREE.MathUtils.clamp(.62
+        + Math.sin(warpedAngle * 3.0 + .4) * .10
+        + Math.sin(warpedAngle * 7.0 - .7) * .07
+        + broadPlume * .26
+        + finePlume * .18, .48, .985)
       : 1;
     const outerCorona = rays
-      ? (1 - THREE.MathUtils.smoothstep(distance, Math.max(.24, rayBoundary - .22), rayBoundary))
-        * THREE.MathUtils.smoothstep(distance, .39, .56)
+      ? (1 - THREE.MathUtils.smoothstep(distance, Math.max(.20, rayBoundary - .30), rayBoundary))
+        * THREE.MathUtils.smoothstep(distance, .43, .58)
       : 0;
     const alpha = distance >= 1
       ? 0
       : rays
-        ? Math.min(1, outerCorona * (.34 + broadPlume * .82 + finePlume * .56))
+        ? Math.min(1, outerCorona * (.16 + broadPlume * 1.35 + finePlume * .95))
         : Math.min(1, Math.pow(radial, power));
     const offset = (y * size + x) * 4;
     data[offset] = 255;
@@ -373,14 +373,14 @@ function FocusMemoryStar({
     }}
   >
     <>
-    <sprite raycast={() => null} position={[-.05, .03, -.08]} scale={[2.62, 2.42, 1]} rotation={-.11} name="focus-memory-star-corona-glow">
-      <spriteMaterial map={coronaTexture} color="#ff7a2f" transparent opacity={memory ? .16 : .03} depthWrite={false} blending={THREE.AdditiveBlending} toneMapped={false} />
+    <sprite raycast={() => null} position={[-.05, .03, -.08]} scale={[3.08, 2.78, 1]} rotation={-.11} name="focus-memory-star-corona-glow">
+      <spriteMaterial map={coronaTexture} color="#ff7a2f" transparent opacity={memory ? .12 : .03} depthWrite={false} blending={THREE.AdditiveBlending} toneMapped={false} />
     </sprite>
-    <sprite raycast={() => null} position={[.04, -.03, .11]} scale={[2.82, 2.54, 1]} rotation={.19} name="focus-memory-star-photosphere-rays">
-      <spriteMaterial map={rayTexture} color="#ff9b3f" transparent opacity={memory ? .56 : .04} depthWrite={false} depthTest={false} blending={THREE.AdditiveBlending} toneMapped={false} />
+    <sprite raycast={() => null} position={[.04, -.03, .11]} scale={[3.60, 3.20, 1]} rotation={.19} name="focus-memory-star-photosphere-rays">
+      <spriteMaterial map={rayTexture} color="#ffb14a" transparent opacity={memory ? .78 : .04} depthWrite={false} depthTest={false} blending={THREE.AdditiveBlending} toneMapped={false} />
     </sprite>
-    <sprite raycast={() => null} position={[-.04, .04, .10]} scale={[2.55, 2.92, 1]} rotation={-.43} name="focus-memory-star-photosphere-rays-secondary">
-      <spriteMaterial map={rayTexture} color="#ffd68b" transparent opacity={memory ? .34 : .03} depthWrite={false} depthTest={false} blending={THREE.AdditiveBlending} toneMapped={false} />
+    <sprite raycast={() => null} position={[-.04, .04, .10]} scale={[3.20, 3.75, 1]} rotation={-.43} name="focus-memory-star-photosphere-rays-secondary">
+      <spriteMaterial map={rayTexture} color="#ffe0a0" transparent opacity={memory ? .56 : .03} depthWrite={false} depthTest={false} blending={THREE.AdditiveBlending} toneMapped={false} />
     </sprite>
     <sprite raycast={() => null} position={[0, 0, .12]} scale={[1.66, 1.58, 1]} rotation={.09} name="focus-memory-star-photosphere-surface">
       <spriteMaterial map={photosphereTexture} color="#ffb45b" transparent opacity={memory ? .24 : .10} depthWrite={false} depthTest={false} blending={THREE.AdditiveBlending} toneMapped={false} />
