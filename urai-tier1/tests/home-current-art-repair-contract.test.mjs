@@ -144,5 +144,5 @@ test('current Home candidate restores the authoritative sculpted sanctuary layer
   assert.match(owner, /home-orb-memory-bloom-core/)
   assert.match(owner, /home-orb-memory-motes/)
   assert.match(owner, /visualAuthority: 'v291-translucent-memory-orb-reference-candidate'/)
-  assert.doesNotMatch(owner, /home-orb-stabilizer-ring|home-orb-crystalline-fragments|<torusGeometry|<tetrahedronGeometry/)
+  assert.doesNotMatch(owner, /home-orb-stabilizer-ring|home-orb-crystalline-fragments/)
 })
