@@ -94,7 +94,7 @@ try {
 
     activePhase = 'navigate'
     console.log(`[ground-proof] scenario=${activeScenario} phase=${activePhase}`)
-    await page.goto(`${base}/ground/?environment=${scenario.environment}`, { waitUntil: 'networkidle', timeout: 60_000 })
+    await page.goto(`${base}/ground/?environment=${scenario.environment}`, { waitUntil: 'domcontentloaded', timeout: 60_000 })
     activePhase = 'wait-ready-root'
     const readyRoot = page.locator('[data-testid="urai-ground-lived-world"]').first()
     try {
