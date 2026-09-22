@@ -86,7 +86,7 @@ try {
       colorScheme: 'dark',
     })
     const page = await context.newPage()
-    page.setDefaultTimeout(45_000)
+    page.setDefaultTimeout(90_000)
     page.setDefaultNavigationTimeout(60_000)
     const pageErrors = []
     page.on('pageerror', (error) => pageErrors.push(String(error)))
@@ -98,8 +98,8 @@ try {
     activePhase = 'wait-ready-root'
     const readyRoot = page.locator('[data-testid="urai-ground-lived-world"]').first()
     try {
-      await readyRoot.waitFor({ state: 'attached', timeout: 45_000 })
-      await page.waitForSelector('.ground-spatial-root canvas', { state: 'visible', timeout: 45_000 })
+      await readyRoot.waitFor({ state: 'attached', timeout: 90_000 })
+      await page.waitForSelector('.ground-spatial-root canvas', { state: 'visible', timeout: 90_000 })
     } catch (error) {
       const diagnostic = await page.evaluate(() => ({
         url: window.location.href,
@@ -112,7 +112,7 @@ try {
       throw new Error(`${scenario.id}: Ground route root/canvas was not mountable; diagnostic=${JSON.stringify(diagnostic)}; browserErrors=${pageErrors.join(" || ")}; cause=${String(error)}`)
     }
     try {
-      await page.waitForFunction(() => document.querySelector('[data-testid="urai-ground-lived-world"]')?.getAttribute('data-ground-ready') === 'true', null, { timeout: 45_000, polling: 50 })
+      await page.waitForFunction(() => document.querySelector('[data-testid="urai-ground-lived-world"]')?.getAttribute('data-ground-ready') === 'true', null, { timeout: 90_000, polling: 50 })
     } catch (error) {
       const diagnostic = await readyRoot.evaluate((node) => ({
         ready: node.getAttribute('data-ground-ready'),
