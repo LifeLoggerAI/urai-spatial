@@ -61,12 +61,12 @@ test('proof suppresses first-run onboarding while preserving real browser-coordi
 })
 
 test('mobile Ground proof keeps current movement, Home return, Places and Privacy controls usable', () => {
-  assert.match(proof, /Ground movement controls/)
+  assert.match(proof, /Ground analog movement/)
   assert.match(proof, /Return Home/)
   assert.match(proof, /Ground place and privacy tools/)
   assert.match(proof, /name: 'Places'/)
   assert.match(proof, /name: 'Privacy'/)
-  assert.match(proof, /Ground movement target is below 44px/)
+  assert.match(proof, /Ground analog movement target is below 44px/)
   assert.match(proof, /Ground Home return target is below 44px/)
   assert.match(proof, /Ground place\/privacy target is below 44px/)
 })

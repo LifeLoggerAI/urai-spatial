@@ -78,7 +78,7 @@ async function stableBrowserBox(target) {
 }
 
 async function proveGroundMobileControls(page, viewport) {
-  const movement = page.getByRole('group', { name: 'Ground movement controls' })
+  const movement = page.getByRole('group', { name: 'Ground analog movement' })
   const home = page.getByRole('button', { name: 'Return Home' })
   const tools = page.getByRole('navigation', { name: 'Ground place and privacy tools' })
   await movement.waitFor({ state: 'visible', timeout: 15000 })
@@ -90,11 +90,7 @@ async function proveGroundMobileControls(page, viewport) {
   const homeBox = await home.boundingBox()
   if (!inside(movementBox) || !inside(homeBox)) throw new Error('Ground mobile controls extend outside the viewport')
 
-  const movementButtons = await movement.getByRole('button').all()
-  for (const button of movementButtons) {
-    const box = await button.boundingBox()
-    if (!box || box.width < 44 || box.height < 44) throw new Error('Ground movement target is below 44px')
-  }
+  if (!movementBox || movementBox.width < 44 || movementBox.height < 44) throw new Error('Ground analog movement target is below 44px')
   if (!homeBox || homeBox.width < 44 || homeBox.height < 44) throw new Error('Ground Home return target is below 44px')
 
   const links = [page.getByRole('link', { name: 'Places' }), page.getByRole('link', { name: 'Privacy' })]

@@ -11,6 +11,11 @@ const exactHead = process.env.URAI_EXACT_HEAD || 'local'
 const group = process.env.URAI_PROOF_GROUP || 'visual'
 const ownerSelector = '.urai-asset-home-world[data-home-primary-owner="asset-driven"]'
 const orbStates = ['dormant','idle','attention','listening','thinking','speaking','guiding','reflecting','calming','privacy','warning','transition']
+const proofOnboardingKeys = {
+  completion: 'urai:onboarding:v2:complete',
+  setupComplete: 'urai:onboarding:v3:setup-complete',
+  setupStep: 'urai:onboarding:v3:setup-step',
+}
 
 await mkdir(outputDir, { recursive: true })
 
@@ -60,9 +65,18 @@ async function waitHome(page) {
   return owner
 }
 
+async function homeCanvasBounds(page) {
+  return page.evaluate((selector) => {
+    const owner = document.querySelector(selector)
+    const canvas = owner?.querySelector('canvas')
+    if (!(canvas instanceof HTMLCanvasElement)) return null
+    const rect = canvas.getBoundingClientRect()
+    return { x: rect.x, y: rect.y, width: rect.width, height: rect.height }
+  }, ownerSelector)
+}
+
 async function homeSnapshot(owner, page) {
-  const canvas = owner.locator('canvas').first()
-  const box = await canvas.boundingBox()
+  const box = await homeCanvasBounds(page)
   const movementPad = page.locator('.urai-asset-home-world .urai-mobile-movement').first()
   return {
     visibleWorld: await owner.getAttribute('data-home-visible-world'),
@@ -139,6 +153,11 @@ async function openPage(browser, viewport, options = {}) {
     hasTouch: viewport.hasTouch,
     reducedMotion: options.reducedMotion,
   })
+  await context.addInitScript((keys) => {
+    window.localStorage.setItem(keys.completion, '1')
+    window.localStorage.setItem(keys.setupComplete, '1')
+    window.localStorage.removeItem(keys.setupStep)
+  }, proofOnboardingKeys)
   const page = await context.newPage()
   const pageErrors = []
   page.on('pageerror', (error) => pageErrors.push(String(error)))
@@ -174,8 +193,7 @@ async function visualCapture(browser, id, viewport, query) {
 }
 
 async function clickCanvasRatio(page, owner, viewport, ratios, expectedPhase, touch = false) {
-  const canvas = owner.locator('canvas').first()
-  const box = await canvas.boundingBox()
+  const box = await homeCanvasBounds(page)
   if (!box) throw new Error('Home canvas has no clickable bounds')
   let lastPhase = null
   for (const [xr, yr] of ratios) {
@@ -196,7 +214,7 @@ async function clickCanvasRatio(page, owner, viewport, ratios, expectedPhase, to
       if (lastPhase === expectedPhase) {
         return { x: Math.round(x), y: Math.round(y), viewport, phase: lastPhase }
       }
-      if (lastPhase !== 'HOME_IDLE') break
+      if (lastPhase !== 'AVATAR_HOME_FIRST_PERSON') break
     }
   }
   throw new Error(`Expected ${expectedPhase}; observed ${lastPhase}`)
@@ -217,25 +235,29 @@ async function interaction(browser, { id, viewport, kind, reducedMotion = 'no-pr
       record.pointer = await clickCanvasRatio(page, owner, viewport, [[.50,.79],[.35,.80],[.65,.80]], 'GROUND_DESCENT', touch)
       record.inputLocked = await owner.getAttribute('data-home-input-locked')
       record.transition = await owner.getAttribute('data-home-transition-sequence')
-      record.passed = record.pointer.phase === 'GROUND_DESCENT' && record.inputLocked === 'true' && record.transition === 'ground:traversal'
+      record.passed = record.pointer.phase === 'GROUND_DESCENT' && record.inputLocked === 'true' && record.transition === 'GROUND_DESCENT'
     } else if (kind === 'sky') {
       record.pointer = await clickCanvasRatio(page, owner, viewport, [[.50,.14],[.27,.18],[.73,.18]], 'SKY_ASCENT', touch)
       record.inputLocked = await owner.getAttribute('data-home-input-locked')
       record.transition = await owner.getAttribute('data-home-transition-sequence')
-      record.passed = record.pointer.phase === 'SKY_ASCENT' && record.inputLocked === 'true' && record.transition === 'life-map:traversal'
+      record.passed = record.pointer.phase === 'SKY_ASCENT' && record.inputLocked === 'true' && record.transition === 'SKY_ASCENT'
     } else if (kind === 'orb') {
-      const button = page.getByRole('button', { name: 'Open URAI Orb companion' }).first()
+      const button = page.getByRole('button', { name: 'Open UrAi Orb companion' }).first()
       await button.click({ noWaitAfter: true })
       await page.waitForFunction((selector) => document.querySelector(selector)?.getAttribute('data-home-orb-state') === 'attention', ownerSelector, { timeout: 5_000 })
       record.orbState = await owner.getAttribute('data-home-orb-state')
       record.phase = await owner.getAttribute('data-home-scene-phase')
-      record.passed = record.orbState === 'attention' && record.phase === 'HOME_IDLE'
+      record.passed = record.orbState === 'attention' && record.phase === 'IMMERSIVE_CONVERSATION'
     } else if (kind === 'ground-cancel') {
       record.pointer = await clickCanvasRatio(page, owner, viewport, [[.50,.79],[.35,.80],[.65,.80]], 'GROUND_DESCENT', touch)
       await page.keyboard.press('Escape')
-      await page.waitForFunction((selector) => document.querySelector(selector)?.getAttribute('data-home-scene-phase') === 'HOME_IDLE', ownerSelector, { timeout: 5_000 })
+      await page.waitForFunction((selector) => {
+        const node = document.querySelector(selector)
+        return node?.getAttribute('data-home-scene-phase') === 'AVATAR_HOME_FIRST_PERSON'
+          && node?.getAttribute('data-home-input-locked') === 'false'
+      }, ownerSelector, { timeout: 10_000 })
       record.phase = await owner.getAttribute('data-home-scene-phase')
-      record.passed = record.phase === 'HOME_IDLE'
+      record.passed = record.phase === 'AVATAR_HOME_FIRST_PERSON'
     }
     record.image = await screenshot(page, id)
     record.passed = Boolean(record.passed) && record.image.bytes > 8_000 && pageErrors.length === 0

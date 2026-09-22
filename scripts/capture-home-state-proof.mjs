@@ -301,7 +301,12 @@ async function captureOrbLifecycle({ reducedMotion = 'no-preference' } = {}) {
     record.phase = 'conversation-open-keyboard'
     await talk.focus()
     await talk.press('Enter')
+    await page.waitForFunction(() => Array.from(document.querySelectorAll('details')).some((details) => {
+      const summary = details.querySelector('summary')
+      return details.open && summary?.textContent?.includes('Talk with Orb')
+    }), null, { timeout: 5_000 })
     const message = page.getByLabel('Message for Orb').first()
+    await message.waitFor({ state: 'visible', timeout: 5_000 })
     await message.focus()
     record.phase = 'orb-text-entry-attention-rendered'
     await page.waitForFunction((selector) => document.querySelector(selector)?.getAttribute('data-home-orb-state') === 'attention', ownerSelector)
@@ -473,9 +478,16 @@ async function captureHomeSpatialContinuity({ idSuffix = 'desktop', viewport = {
 
     await page.goBack({ waitUntil: 'domcontentloaded', timeout: 30_000 })
     owner = await waitForHomeReady(page)
-    await page.waitForFunction((selector) => document.querySelector(selector)?.getAttribute('data-home-stable-state') === 'AVATAR_HOME_FIRST_PERSON', ownerSelector, { timeout: 20_000 })
+    await page.waitForFunction((selector) => {
+      const node = document.querySelector(selector)
+      return node?.getAttribute('data-home-stable-state') === 'AVATAR_HOME_FIRST_PERSON'
+        && node?.getAttribute('data-home-camera-mode') === 'home-first-person'
+        && node?.getAttribute('data-home-transition-sequence') === 'idle'
+        && window.sessionStorage.getItem('urai:home:return-frame:v1') === null
+    }, ownerSelector, { timeout: 20_000 })
     record.returnStableState = await owner.getAttribute('data-home-stable-state')
     record.returnCamera = await owner.getAttribute('data-home-camera-mode')
+    record.returnTransition = await owner.getAttribute('data-home-transition-sequence')
     record.returnFrameConsumed = await page.evaluate(() => window.sessionStorage.getItem('urai:home:return-frame:v1') === null)
     record.returnScreenshot = await screenshotRecord('passport-return-first-person')
 
@@ -510,6 +522,7 @@ async function captureHomeSpatialContinuity({ idSuffix = 'desktop', viewport = {
       && record.passportScreenshot.bytes > 12_000
       && record.returnStableState === 'AVATAR_HOME_FIRST_PERSON'
       && record.returnCamera === 'home-first-person'
+      && record.returnTransition === 'idle'
       && record.returnFrameConsumed
       && record.returnScreenshot.bytes > 12_000
       && pageErrors.length === 0

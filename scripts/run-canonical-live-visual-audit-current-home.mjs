@@ -107,8 +107,8 @@ const currentGroundSettlement = `  if (route.id === 'ground') {
       const rect = canvas?.getBoundingClientRect()
       return root instanceof HTMLElement
         && root.dataset.groundRuntimeOwner === 'first-person-lived-world'
-        && root.dataset.groundVisualOwner === 'physical-lived-world'
-        && root.dataset.groundExploration === 'first-person'
+        && root.dataset.groundVisualOwner === 'atmospheric-living-environment'
+        && root.dataset.groundExploration === 'first-person-no-visible-body'
         && canvas instanceof HTMLCanvasElement
         && Boolean(rect && rect.width >= 240 && rect.height >= 240)
         && canvas.width > 0
@@ -190,8 +190,8 @@ for (const [label, marker] of [
   ['Home current visible-world authority', `data-home-visible-world') === 'cinematic-lived-world-threshold'`],
   ['Ground current structural owner', `data-testid="urai-ground-lived-world"`],
   ['Ground current runtime owner', `groundRuntimeOwner === 'first-person-lived-world'`],
-  ['Ground current visual owner', `groundVisualOwner === 'physical-lived-world'`],
-  ['Ground first-person authority', `groundExploration === 'first-person'`],
+  ['Ground current visual owner', `groundVisualOwner === 'atmospheric-living-environment'`],
+  ['Ground first-person authority', `groundExploration === 'first-person-no-visible-body'`],
   ['Ground canvas geometry', `rect.width >= 240 && rect.height >= 240`],
   ['Life Map current sample disclosure', `Disclosed sample · not your memories`],
   ['Replay current spatial owner', `data-replay-spatial-owner="r3f-lived-memory-environment"`],
