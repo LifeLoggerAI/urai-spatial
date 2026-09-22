@@ -21,6 +21,7 @@ for (const [label, marker] of [
   ['legacy Ground route', `{ id: 'ground', path: '/ground/', selector: '.ground-spatial-root', markers: ['URAI Ground', 'Private infrastructure, embodied.'] },`],
   ['legacy Life Map disclosure', `{ id: 'life-map', path: '/life-map/?demo=1&manifestId=replay-recovery-thread&overview=1', selector: '[data-testid="urai-true-3d-life-map"]', markers: ['Disclosed sample universe'] },`],
   ['legacy Life Map click', `await focus.click()`],
+  ['legacy XR chamber audit marker', `{ id: 'spatial-ar-vr', path: '/spatial/ar-vr', selector: 'body', markers: ['URAI AR / VR / XR entry chamber', 'Explorable entry chamber'] },`],
 ]) {
   if (!original.includes(marker)) throw new Error(`${label} is not present in the canonical audit authority`)
 }
@@ -59,6 +60,13 @@ patched = replaceOnce(
   `{ id: 'mirror', path: '/mirror', selector: 'main', markers: ['Mirror does not judge.'] },`,
   `{ id: 'mirror', path: '/mirror', selector: '[data-testid="mirror-bare-entry"]', markers: ['Choose what Mirror may open.', 'Open disclosed demo', 'Open Passport'] },`,
   'current Mirror bare entry',
+)
+
+patched = replaceOnce(
+  patched,
+  `{ id: 'spatial-ar-vr', path: '/spatial/ar-vr', selector: 'body', markers: ['URAI AR / VR / XR entry chamber', 'Explorable entry chamber'] },`,
+  `{ id: 'spatial-ar-vr', path: '/spatial/ar-vr', selector: 'main.urai-system-state', markers: ['This place isn’t part of your world', 'Return home'] },`,
+  'current pre-launch XR fail-closed boundary',
 )
 
 const oldHomeSettlement = `  if (route.id === 'home') {
@@ -144,7 +152,7 @@ const currentLifeMapAndReplaySettlement = `  if (route.id === 'life-map') {
 patched = replaceOnce(patched, oldLifeMapSettlement, currentLifeMapAndReplaySettlement, 'current Life Map and Replay rendered readiness')
 
 const oldScreenshot = `    await page.screenshot({ path: path.join(outputDir, screenshot), fullPage: false, animations: 'disabled', caret: 'hide' })`
-const currentScreenshot = `    if (route.id === 'life-map' && viewport.width === 1440) {
+const currentScreenshot = `    if (['home', 'ground', 'life-map'].includes(route.id)) {
       const cdp = await context.newCDPSession(page)
       try {
         const capture = await cdp.send('Page.captureScreenshot', { format: 'png', fromSurface: true, captureBeyondViewport: false })
@@ -153,7 +161,7 @@ const currentScreenshot = `    if (route.id === 'life-map' && viewport.width ===
         await cdp.detach()
       }
     } else {
-      await page.screenshot({ path: path.join(outputDir, screenshot), fullPage: false, animations: 'disabled', caret: 'hide' })
+      await page.screenshot({ path: path.join(outputDir, screenshot), fullPage: false, animations: 'disabled', caret: 'hide', timeout: 60_000 })
     }`
 patched = replaceOnce(patched, oldScreenshot, currentScreenshot, 'Life Map viewport capture')
 
@@ -198,7 +206,9 @@ for (const [label, marker] of [
   ['Replay fixture memory identity', `data-memory-id') === 'demo:quiet-reset'`],
   ['Replay manifest identity', `data-manifest-id') === 'replay-recovery-thread'`],
   ['Life Map rendered canvas evidence', `data-life-map-mode') === 'overview'`],
-  ['Life Map CDP viewport evidence', `Page.captureScreenshot`],
+  ['WebGL-heavy CDP viewport evidence', `['home', 'ground', 'life-map'].includes(route.id)`],
+  ['CDP screenshot authority', `Page.captureScreenshot`],
+  ['XR pre-launch fail-closed copy', `This place isn’t part of your world`],
   ['Focus DOM geometry', `document.querySelector(selector)`],
   ['Focus direct DOM click', `element.click()`],
 ]) {
@@ -208,6 +218,7 @@ if (patched.includes(`root?.getAttribute('data-ground-ready') === 'true'`)) thro
 if (patched.includes('Private infrastructure beneath the living world')) throw new Error('stale Ground copy survived current visual audit')
 if (patched.includes('urai-ground-private-workforce-world')) throw new Error('retired Ground owner survived current visual audit')
 if (patched.includes('Disclosed sample universe')) throw new Error('retired Life Map disclosure survived current visual audit')
+if (patched.includes(`markers: ['URAI AR / VR / XR entry chamber', 'Explorable entry chamber']`)) throw new Error('post-launch XR chamber expectation survived pre-launch visual audit')
 
 await writeFile(runtimeUrl, patched, 'utf8')
 try {
