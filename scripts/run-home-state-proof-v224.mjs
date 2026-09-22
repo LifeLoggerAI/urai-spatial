@@ -72,7 +72,7 @@ const continuityProofReplacements = [
   { source: "await enterFirstPerson.press('Enter')", expected: 1, replacement: "await enterFirstPerson.press('Enter', { timeout: 60_000 })" },
   {
     source: "await page.waitForFunction((selector) => document.querySelector(selector)?.getAttribute('data-home-stable-state') === 'AVATAR_HOME_FIRST_PERSON', ownerSelector, { timeout: 20_000 })",
-    expected: 2,
+    expected: 1,
     replacement: "await page.waitForFunction((selector) => document.querySelector(selector)?.getAttribute('data-home-stable-state') === 'AVATAR_HOME_FIRST_PERSON', ownerSelector, { timeout: 60_000 })",
   },
   {
