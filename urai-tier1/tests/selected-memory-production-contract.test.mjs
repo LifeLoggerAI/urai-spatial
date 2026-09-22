@@ -54,7 +54,7 @@ test('Focus resolves the selected Life Map star into a memory-containing close-u
   assert.match(focus, /Generated demo visualization/)
   assert.match(focus, /Generated memory visualization/)
   assert.match(focus, /data-focus-composition="selected-memory-star-with-contained-memory"/)
-  assert.match(focus, /data-focus-visual-revision="v346-irregular-photosphere-visible-corona-memory-fused"/)
+  assert.match(focus, /data-focus-visual-revision="v347-irregular-photosphere-geometry-corona-memory-fused"/)
   assert.match(focus, /data-focus-spatial="selected-memory-star"/)
   assert.match(focus, /data-focus-movement="orbit-zoom-keyboard-touch"/)
   assert.match(focus, /data-focus-terrain-owner="false"/)
