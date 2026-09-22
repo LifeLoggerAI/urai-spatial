@@ -99,28 +99,31 @@ try {
     const readyRoot = page.locator('[data-testid="urai-ground-lived-world"]').first()
     try {
       await readyRoot.waitFor({ state: 'attached', timeout: 45_000 })
-      await page.waitForSelector('.ground-spatial-root canvas', { state: 'visible', timeout: 45_000 })
-    } catch (error) {
-      const diagnostic = await page.evaluate(() => ({
-        url: window.location.href,
-        title: document.title,
-        readyRootCount: document.querySelectorAll('[data-testid="urai-ground-lived-world"]').length,
-        walkableRootCount: document.querySelectorAll('[data-testid="walkable-first-person-ground-layer"]').length,
-        bodyText: document.body?.innerText?.slice(0, 1200) ?? '',
-        bodyHtml: document.body?.innerHTML?.slice(0, 1800) ?? '',
-      })).catch(() => null)
-      throw new Error(`${scenario.id}: Ground route root/canvas was not mountable; diagnostic=${JSON.stringify(diagnostic)}; browserErrors=${pageErrors.join(" || ")}; cause=${String(error)}`)
-    }
-    try {
       await page.waitForFunction(() => document.querySelector('[data-testid="urai-ground-lived-world"]')?.getAttribute('data-ground-ready') === 'true', null, { timeout: 45_000, polling: 50 })
+      await page.waitForFunction(() => {
+        const canvas = document.querySelector('.ground-spatial-root canvas')
+        if (!(canvas instanceof HTMLCanvasElement)) return false
+        const rect = canvas.getBoundingClientRect()
+        return rect.width > 1 && rect.height > 1
+      }, null, { timeout: 15_000, polling: 50 })
     } catch (error) {
-      const diagnostic = await readyRoot.evaluate((node) => ({
-        ready: node.getAttribute('data-ground-ready'),
-        profile: node.getAttribute('data-ground-environment-profile'),
-        camera: node.getAttribute('data-ground-camera-mode'),
-        html: node.outerHTML.slice(0, 1200),
-      })).catch(() => null)
-      throw new Error(`${scenario.id}: Ground never reached exact ready state; diagnostic=${JSON.stringify(diagnostic)}; browserErrors=${pageErrors.join(" || ")}; cause=${String(error)}`)
+      const diagnostic = await page.evaluate(() => {
+        const root = document.querySelector('[data-testid="urai-ground-lived-world"]')
+        const canvas = document.querySelector('.ground-spatial-root canvas')
+        const rect = canvas instanceof HTMLCanvasElement ? canvas.getBoundingClientRect() : null
+        return {
+          url: window.location.href,
+          title: document.title,
+          readyRootCount: document.querySelectorAll('[data-testid="urai-ground-lived-world"]').length,
+          ready: root?.getAttribute('data-ground-ready') ?? null,
+          walkableRootCount: document.querySelectorAll('[data-testid="walkable-first-person-ground-layer"]').length,
+          canvasCount: document.querySelectorAll('.ground-spatial-root canvas').length,
+          canvasRect: rect ? { width: rect.width, height: rect.height } : null,
+          bodyText: document.body?.innerText?.slice(0, 1200) ?? '',
+          bodyHtml: document.body?.innerHTML?.slice(0, 1800) ?? '',
+        }
+      }).catch(() => null)
+      throw new Error(`${scenario.id}: Ground route did not reach ready visible-canvas state; diagnostic=${JSON.stringify(diagnostic)}; browserErrors=${pageErrors.join(" || ")}; cause=${String(error)}`)
     }
     await page.waitForTimeout(800)
 
