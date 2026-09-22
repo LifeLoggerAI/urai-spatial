@@ -170,7 +170,7 @@ try {
       const canvas = document.querySelector('.ground-spatial-root canvas')
       if (!(canvas instanceof HTMLCanvasElement)) return null
       const rect = canvas.getBoundingClientRect()
-      return { width: rect.width, height: rect.height, backingWidth: canvas.width, backingHeight: canvas.height }
+      return { x: rect.x, y: rect.y, width: rect.width, height: rect.height, backingWidth: canvas.width, backingHeight: canvas.height }
     })
     if (!canvasBox || canvasBox.width < 240 || canvasBox.height < 240 || canvasBox.backingWidth <= 0 || canvasBox.backingHeight <= 0) throw new Error(`${scenario.id}: Ground canvas is not usable`)
 
