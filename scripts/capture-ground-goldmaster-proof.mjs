@@ -98,29 +98,22 @@ try {
     activePhase = 'wait-ready-root'
     const readyRoot = page.locator('[data-testid="urai-ground-lived-world"]').first()
     try {
-      await readyRoot.waitFor({ state: 'attached', timeout: 90_000 })
-      await page.waitForSelector('.ground-spatial-root canvas', { state: 'visible', timeout: 90_000 })
+      await Promise.all([
+        readyRoot.waitFor({ state: 'attached', timeout: 90_000 }),
+        page.waitForSelector('.ground-spatial-root canvas', { state: 'visible', timeout: 90_000 }),
+        page.waitForFunction(() => document.querySelector('[data-testid="urai-ground-lived-world"]')?.getAttribute('data-ground-ready') === 'true', null, { timeout: 90_000, polling: 50 }),
+      ])
     } catch (error) {
       const diagnostic = await page.evaluate(() => ({
         url: window.location.href,
         title: document.title,
         readyRootCount: document.querySelectorAll('[data-testid="urai-ground-lived-world"]').length,
         walkableRootCount: document.querySelectorAll('[data-testid="walkable-first-person-ground-layer"]').length,
+        ready: document.querySelector('[data-testid="urai-ground-lived-world"]')?.getAttribute('data-ground-ready') ?? null,
         bodyText: document.body?.innerText?.slice(0, 1200) ?? '',
         bodyHtml: document.body?.innerHTML?.slice(0, 1800) ?? '',
       })).catch(() => null)
-      throw new Error(`${scenario.id}: Ground route root/canvas was not mountable; diagnostic=${JSON.stringify(diagnostic)}; browserErrors=${pageErrors.join(" || ")}; cause=${String(error)}`)
-    }
-    try {
-      await page.waitForFunction(() => document.querySelector('[data-testid="urai-ground-lived-world"]')?.getAttribute('data-ground-ready') === 'true', null, { timeout: 90_000, polling: 50 })
-    } catch (error) {
-      const diagnostic = await readyRoot.evaluate((node) => ({
-        ready: node.getAttribute('data-ground-ready'),
-        profile: node.getAttribute('data-ground-environment-profile'),
-        camera: node.getAttribute('data-ground-camera-mode'),
-        html: node.outerHTML.slice(0, 1200),
-      })).catch(() => null)
-      throw new Error(`${scenario.id}: Ground never reached exact ready state; diagnostic=${JSON.stringify(diagnostic)}; browserErrors=${pageErrors.join(" || ")}; cause=${String(error)}`)
+      throw new Error(`${scenario.id}: Ground route did not reach mountable exact-ready state within the shared proof budget; diagnostic=${JSON.stringify(diagnostic)}; browserErrors=${pageErrors.join(" || ")}; cause=${String(error)}`)
     }
     await page.waitForTimeout(800)
 
