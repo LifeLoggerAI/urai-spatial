@@ -1059,7 +1059,6 @@ function GroundScene({ profile, input, yaw, pitch, target, obstacles, playerPosi
     <directionalLight position={[10, 7, -20]} intensity={0.36} color="#789a9b" />
     <Suspense fallback={null}>
       <LivedGroundWorld profile={profile} target={target} />
-      <GroundSubstrateWorld profile={profile} />
     </Suspense>
     <FirstPersonPlayer input={input} yaw={yaw} pitch={pitch} target={target} profile={profile} obstacles={obstacles} playerPosition={playerPosition} isCoarse={isCoarse} onReady={onReady} />
   </>;
