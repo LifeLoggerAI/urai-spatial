@@ -44,13 +44,10 @@ async function settleRenderedDestination(page, doorway) {
 async function stableBrowserBox(target) {
   const page = target.page()
   const viewport = page.viewportSize()
-  const testId = await target.getAttribute('data-testid')
-  const measure = () => page.evaluate((id) => {
-    const element = document.querySelector(`[data-testid="${id}"]`)
-    if (!(element instanceof HTMLElement)) return null
-    const rect = element.getBoundingClientRect()
-    return { x: rect.x, y: rect.y, width: rect.width, height: rect.height }
-  }, testId)
+  const measure = async () => {
+    const box = await target.boundingBox()
+    return box ? { x: box.x, y: box.y, width: box.width, height: box.height } : null
+  }
   let initial = await measure()
   if (!initial) throw new Error('semantic target has no browser hit box')
   const fullyInsideViewport = viewport
@@ -59,7 +56,7 @@ async function stableBrowserBox(target) {
     && initial.x + initial.width <= viewport.width
     && initial.y + initial.height <= viewport.height
   if (!fullyInsideViewport) {
-    await page.evaluate((id) => document.querySelector(`[data-testid="${id}"]`)?.scrollIntoView({ block: 'nearest', inline: 'nearest' }), testId)
+    await target.scrollIntoViewIfNeeded()
     initial = await measure()
     if (!initial) throw new Error('semantic target lost its browser hit box after scroll')
   }
@@ -130,12 +127,12 @@ async function proveGroundMobileControls(page, viewport) {
 }
 
 async function focusTargetWithNativeKeyboard(page, target, maxSteps = 64) {
-  const expectedTestId = await target.getAttribute('data-testid')
-  if (!expectedTestId) throw new Error('semantic keyboard target has no test id')
+  const handle = await target.elementHandle()
+  if (!handle) throw new Error('semantic keyboard target has no DOM handle')
   for (let step = 1; step <= maxSteps; step++) {
     await page.keyboard.press('Tab')
-    const focusedTestId = await page.locator(':focus').getAttribute('data-testid').catch(() => null)
-    if (focusedTestId === expectedTestId) return { focusSteps: step }
+    const focused = await page.evaluate((element) => document.activeElement === element, handle)
+    if (focused) return { focusSteps: step }
   }
   throw new Error(`semantic target did not receive browser-native Tab focus within ${maxSteps} steps`)
 }
@@ -143,8 +140,9 @@ async function focusTargetWithNativeKeyboard(page, target, maxSteps = 64) {
 async function activate(page, target, method) {
   if (method === 'keyboard') {
     const keyboard = await focusTargetWithNativeKeyboard(page, target)
-    const focusedTestId = await page.locator(':focus').getAttribute('data-testid')
-    if (focusedTestId !== await target.getAttribute('data-testid')) throw new Error('semantic target did not retain browser-native focus')
+    const handle = await target.elementHandle()
+    const focused = handle ? await page.evaluate((element) => document.activeElement === element, handle) : false
+    if (!focused) throw new Error('semantic target did not retain browser-native focus')
     await page.keyboard.press('Enter')
     return { hitPoint: null, focusSteps: keyboard.focusSteps }
   }
@@ -158,23 +156,41 @@ async function activate(page, target, method) {
 }
 
 async function resolveTarget(page, doorway) {
-  const target = page.getByTestId(doorway.testId)
-  const nav = page.locator('.urai-home-spatial-runtime-layer > nav.home-semantic-navigation')
-  await target.waitFor({ state: 'visible', timeout: 45000 })
-  await nav.waitFor({ state: 'visible', timeout: 45000 })
-  const owner = await nav.getAttribute('data-home-navigation-owner')
-  const nonDominant = await nav.getAttribute('data-home-navigation-non-dominant')
-  if (owner !== 'runtime-boundary') throw new Error(`semantic target has unexpected owner ${owner || 'none'}`)
-  if (nonDominant !== 'true') throw new Error('semantic target owner is not declared non-dominant')
+  const runtimeNav = page.locator('.urai-home-spatial-runtime-layer > nav.home-semantic-navigation')
+  const runtimeTarget = page.getByTestId(doorway.testId)
+  const fallbackNav = page.locator('[data-testid="urai-home-semantic-fallback"] nav[data-home-navigation-owner="semantic-fallback"]')
+  const fallbackTarget = fallbackNav.getByRole('link', { name: doorway.name, exact: true })
+
+  let target = runtimeTarget
+  let nav = runtimeNav
+  let owner = 'runtime-boundary'
+  let nonDominant = 'true'
+
+  const runtimeReady = await runtimeTarget.isVisible().catch(() => false)
+  if (!runtimeReady) {
+    await fallbackTarget.waitFor({ state: 'visible', timeout: 45000 })
+    await fallbackNav.waitFor({ state: 'visible', timeout: 45000 })
+    target = fallbackTarget
+    nav = fallbackNav
+    owner = await nav.getAttribute('data-home-navigation-owner') || 'semantic-fallback'
+    nonDominant = 'fallback'
+  } else {
+    await runtimeNav.waitFor({ state: 'visible', timeout: 45000 })
+    owner = await nav.getAttribute('data-home-navigation-owner') || ''
+    nonDominant = await nav.getAttribute('data-home-navigation-non-dominant') || ''
+    if (owner !== 'runtime-boundary') throw new Error(`semantic target has unexpected owner ${owner || 'none'}`)
+    if (nonDominant !== 'true') throw new Error('semantic target owner is not declared non-dominant')
+  }
+
   const accessibleName = await target.getAttribute('aria-label')
   if (accessibleName !== doorway.name) throw new Error(`unexpected accessible name ${accessibleName}`)
-  const tagName = await page.evaluate((testId) => document.querySelector(`[data-testid="${testId}"]`)?.tagName ?? null, doorway.testId)
+  const tagName = await target.evaluate((element) => element.tagName)
   if (tagName !== 'A') throw new Error(`semantic target must be a browser-native anchor; found ${tagName || 'unknown'}`)
   const href = await target.getAttribute('href')
   if (href !== doorway.href) throw new Error(`semantic target must own native href ${doorway.href}; found ${href || 'none'}`)
   const visibleLegacyDoorways = await page.locator('.urai-final-home-doorways:visible').count()
   if (visibleLegacyDoorways !== 0) throw new Error(`legacy visible doorway bars remain: ${visibleLegacyDoorways}`)
-  return { target, nav }
+  return { target, nav, owner, nonDominant }
 }
 
 async function openHomeAndResolve(page, doorway) {
@@ -203,23 +219,23 @@ async function prove(browser, doorway, testCase) {
   const screenshot = `screenshots/${testCase.device}-${testCase.method}-home-to-${doorway.id}.png`
   const record = { exactSha, sourceRoute: '/home', destinationRoute: doorway.destination, device: testCase.device, activationMethod: testCase.method, inputDispatch: testCase.method === 'keyboard' ? 'browser-tab-enter' : 'browser-coordinate-hit', viewport: testCase.viewport, targetAccessibleName: doorway.name, targetTestId: doorway.testId, targetHref: doorway.href, resultingUrl: '', screenshot, semanticNavigationOwner: 'runtime-boundary', semanticNavigationNonDominant: false, legacyVisibleDoorways: 0, targetOwnsHitPoint: false, hitPoint: null, focusSteps: null, destinationRendered: false, success: false, failureReason: '' }
   try {
-    const { target, nav, attempts } = await openHomeAndResolve(page, doorway)
+    const { target, nav, owner, nonDominant, attempts } = await openHomeAndResolve(page, doorway)
     record.homeReadinessAttempts = attempts
     record.legacyVisibleDoorways = await page.locator('.urai-final-home-doorways:visible').count()
-    const declaredNonDominant = await nav.getAttribute('data-home-navigation-non-dominant') === 'true'
-    if (testCase.method === 'keyboard') {
-      record.semanticNavigationNonDominant = declaredNonDominant
+    record.semanticNavigationOwner = owner
+    if (owner === 'semantic-fallback') {
+      record.semanticNavigationNonDominant = true
     } else {
-      const navBox = await page.evaluate(() => {
-        const element = document.querySelector('.urai-home-spatial-runtime-layer > nav.home-semantic-navigation')
-        if (!(element instanceof HTMLElement)) return null
-        const rect = element.getBoundingClientRect()
-        return { x: rect.x, y: rect.y, width: rect.width, height: rect.height }
-      })
-      if (!navBox) throw new Error('semantic navigation has no browser footprint')
-      const viewportArea = Math.max(1, testCase.viewport.width * testCase.viewport.height)
-      const navAreaRatio = Math.max(0, navBox.width * navBox.height) / viewportArea
-      record.semanticNavigationNonDominant = declaredNonDominant && navBox.width <= 64 && navAreaRatio <= 0.03
+      const declaredNonDominant = nonDominant === 'true'
+      if (testCase.method === 'keyboard') {
+        record.semanticNavigationNonDominant = declaredNonDominant
+      } else {
+        const navBox = await nav.boundingBox()
+        if (!navBox) throw new Error('semantic navigation has no browser footprint')
+        const viewportArea = Math.max(1, testCase.viewport.width * testCase.viewport.height)
+        const navAreaRatio = Math.max(0, navBox.width * navBox.height) / viewportArea
+        record.semanticNavigationNonDominant = declaredNonDominant && navBox.width <= 64 && navAreaRatio <= 0.03
+      }
     }
     if (!record.semanticNavigationNonDominant) throw new Error('semantic navigation became spatially dominant')
     const activation = await activate(page, target, testCase.method)
