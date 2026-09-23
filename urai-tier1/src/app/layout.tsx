@@ -58,6 +58,7 @@ import './location-map-header-evidence-fix.css'
 import './urai-production-system.css'
 import WorldRuntimeBoundary from '@/spatial/world/WorldRuntimeBoundary'
 import SpatialSettingsBootstrap from '@/spatial/settings/SpatialSettingsBootstrap'
+import LocaleBootstrap from '@/i18n/LocaleBootstrap'
 
 const configuredBuildSha = process.env.NEXT_PUBLIC_URAI_BUILD_SHA ?? process.env.GITHUB_SHA ?? ''
 const deployedSha = /^[0-9a-f]{40}$/.test(configuredBuildSha) ? configuredBuildSha : 'unverified'
@@ -129,6 +130,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             PREVIEW — NOT PRODUCTION CERTIFIED · {previewChannel} · {deployedSha.slice(0, 12)}
           </div>
         ) : null}
+        <LocaleBootstrap />
         <WorldRuntimeBoundary>
           <SpatialSettingsBootstrap />
           <UraiAAAARoutePolish />
