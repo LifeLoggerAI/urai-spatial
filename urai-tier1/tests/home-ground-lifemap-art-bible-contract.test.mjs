@@ -119,7 +119,7 @@ test('Ground remains a bodyless first-person lived world with privacy-safe empty
   assert.match(groundOwner, /ground-natural-canopy-v3\.glb/)
   assert.match(groundOwner, /class GroundCanopyBoundary extends Component/)
   assert.match(groundOwner, /scanned-understory-remains-without-canopy/)
-  assert.match(groundOwner, /urai-self-authored-varied-canopy-v13-with-polyhaven-fern-rock-understory/)
+  assert.match(groundOwner, /urai-sparse-background-canopy-v30-with-polyhaven-fern-rock-understory/)
   assert.match(groundOwner, /seed-varied-branch-architecture-ovate-leaf-canopy-v26/)
   assert.match(groundOwner, /v26-ovate-leaflets-remove-primitive-ball-canopy/)
   assert.match(groundOwner, /new THREE\.BufferGeometry\(\)/)
