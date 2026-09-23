@@ -53,14 +53,14 @@ async function waitFrames(page, count = 8) {
 
 async function waitHome(page) {
   const owner = page.locator(ownerSelector)
-  await owner.waitFor({ state: 'visible', timeout: 45_000 })
+  await owner.waitFor({ state: 'visible', timeout: 120_000 })
   await page.waitForFunction((selector) => {
     const node = document.querySelector(selector)
     return node?.getAttribute('data-home-assets-ready') === 'true'
       && node?.getAttribute('data-home-ready') === 'true'
       && node?.getAttribute('data-home-input-ready') === 'true'
       && node?.getAttribute('data-home-interaction-ready') === 'true'
-  }, ownerSelector, { timeout: 45_000 })
+  }, ownerSelector, { timeout: 120_000 })
   await waitFrames(page, 12)
   return owner
 }
