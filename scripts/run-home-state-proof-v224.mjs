@@ -76,11 +76,6 @@ const continuityProofReplacements = [
     expected: 1,
     replacement: "await page.waitForFunction((selector) => document.querySelector(selector)?.getAttribute('data-home-stable-state') === 'AVATAR_HOME_FIRST_PERSON', ownerSelector, { timeout: 60_000 })",
   },
-  {
-    source: "await passportControl.click()",
-    expected: 1,
-    replacement: "await passportControl.press('Enter', { timeout: 60_000 })",
-  },
 ]
 for (const replacement of continuityProofReplacements) {
   const count = derived.split(replacement.source).length - 1
