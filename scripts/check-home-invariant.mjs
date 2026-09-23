@@ -63,7 +63,7 @@ for (const [label, source, signals] of [
   ]],
   ['HomeSemanticFallback', fallback, [
     'aria-label="UrAi Home semantic fallback"', 'aria-label="Home semantic destinations"',
-    'href="/ground/?from=home-ground"', 'href="/life-map/?from=home-sky"',
+    'href="/ground/?entryPortal=home-ground&cameraCheckpoint=home-ground-descent"', 'href="/life-map/?from=home-sky&entryPortal=home-sky&cameraCheckpoint=home-sky-ascent-complete"',
     'href="/passport"', 'href="/privacy"',
   ]],
 ]) {
