@@ -493,52 +493,159 @@ function NaturalCanopy({ profile, position, rotationY, scale, shapeSeed }: {
   </group>;
 }
 
-function urbanFootprint(index: number) {
-  const width = 1.15 + (index % 4) * 0.26;
-  const depth = 0.9 + (index % 3) * 0.22;
-  const notch = width * (0.18 + (index % 2) * 0.07);
-  const shape = new THREE.Shape();
-  shape.moveTo(-width, -depth);
-  shape.lineTo(width, -depth);
-  shape.lineTo(width, depth * 0.55);
-  shape.lineTo(width - notch, depth);
-  shape.lineTo(-width * 0.35, depth);
-  shape.lineTo(-width, depth * 0.48);
-  shape.closePath();
-  return shape;
+function buildUrbanArchitectureGeometry(index: number, heightValue: number) {
+  // ground-urban-authored-setback-architecture-v29
+  // A hand-authored ring stack replaces the old single extruded footprint so the
+  // skyline has setbacks, offsets, chamfered corners and non-box silhouettes.
+  const ringCount = 6;
+  const sides = 8;
+  const positions: number[] = [];
+  const indices: number[] = [];
+  const uvs: number[] = [];
+  const baseWidth = 1.18 + (index % 4) * 0.24;
+  const baseDepth = 0.92 + (index % 3) * 0.20;
+
+  for (let ring = 0; ring < ringCount; ring += 1) {
+    const t = ring / (ringCount - 1);
+    const setbackStep = ring >= 4 ? 0.72 : ring >= 2 ? 0.86 : 1;
+    const width = baseWidth * setbackStep * (1 - t * 0.09);
+    const depth = baseDepth * setbackStep * (1 - t * 0.07);
+    const offsetX = Math.sin(index * 1.31 + ring * 1.47) * 0.16 * t;
+    const offsetZ = Math.cos(index * 0.93 + ring * 1.19) * 0.12 * t;
+    const y = heightValue * t;
+
+    const ringPoints: Array<[number, number]> = [
+      [-0.72, -1], [0.58, -1], [1, -0.52], [0.92, 0.62],
+      [0.46, 1], [-0.68, 0.94], [-1, 0.46], [-0.92, -0.58],
+    ];
+    for (let side = 0; side < sides; side += 1) {
+      const [px, pz] = ringPoints[side];
+      positions.push(offsetX + px * width, y, offsetZ + pz * depth);
+      uvs.push(side / sides, t);
+    }
+  }
+
+  for (let ring = 0; ring < ringCount - 1; ring += 1) {
+    for (let side = 0; side < sides; side += 1) {
+      const nextSide = (side + 1) % sides;
+      const a = ring * sides + side;
+      const b = ring * sides + nextSide;
+      const c = (ring + 1) * sides + side;
+      const d = (ring + 1) * sides + nextSide;
+      indices.push(a, c, b, b, c, d);
+    }
+  }
+
+  const topCenter = positions.length / 3;
+  const topOffsetX = Math.sin(index * 1.31 + (ringCount - 1) * 1.47) * 0.16;
+  const topOffsetZ = Math.cos(index * 0.93 + (ringCount - 1) * 1.19) * 0.12;
+  positions.push(topOffsetX, heightValue, topOffsetZ);
+  uvs.push(0.5, 1);
+  const topStart = (ringCount - 1) * sides;
+  for (let side = 0; side < sides; side += 1) {
+    indices.push(topCenter, topStart + side, topStart + ((side + 1) % sides));
+  }
+
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
+  geometry.setAttribute("uv", new THREE.Float32BufferAttribute(uvs, 2));
+  geometry.setIndex(indices);
+  geometry.computeVertexNormals();
+  geometry.computeBoundingBox();
+  geometry.computeBoundingSphere();
+  return geometry;
 }
 
 function UrbanBuilding({ index, x, z, heightValue }: { index: number; x: number; z: number; heightValue: number }) {
-  const geometry = useMemo(() => {
-    const next = new THREE.ExtrudeGeometry(urbanFootprint(index), { depth: heightValue, bevelEnabled: true, bevelSize: 0.05, bevelThickness: 0.05, bevelSegments: 2, steps: 1 });
-    next.rotateX(-Math.PI / 2);
-    next.translate(0, heightValue * 0.5, 0);
-    next.computeVertexNormals();
-    return next;
-  }, [heightValue, index]);
+  const geometry = useMemo(() => buildUrbanArchitectureGeometry(index, heightValue), [heightValue, index]);
   useEffect(() => () => geometry.dispose(), [geometry]);
-  const windows = useMemo(() => Array.from({ length: Math.max(2, Math.min(7, Math.floor(heightValue / 1.6))) }, (_, row) => row), [heightValue]);
-  return <group position={[x, 0, z]} raycast={() => null}>
+  const facadeBands = useMemo(() => Array.from({ length: Math.max(2, Math.min(7, Math.floor(heightValue / 1.7))) }, (_, row) => row), [heightValue]);
+  return <group
+    position={[x, 0, z]}
+    rotation={[0, (index % 7 - 3) * 0.035, 0]}
+    raycast={() => null}
+    name="ground-urban-authored-building-v29"
+    userData={{ treatment: "setback-offset-chamfered-authored-architecture-v29", genericFallback: true }}
+  >
     <mesh geometry={geometry} castShadow receiveShadow>
-      <meshStandardMaterial color={index % 3 === 0 ? "#555d61" : index % 3 === 1 ? "#676766" : "#4c5358"} roughness={0.78} metalness={0.02} />
+      <meshStandardMaterial color={index % 3 === 0 ? "#555d61" : index % 3 === 1 ? "#676766" : "#4c5358"} roughness={0.82} metalness={0.015} envMapIntensity={0.24} />
     </mesh>
-    {windows.map((row) => <mesh key={row} position={[0, 1.15 + row * 1.35, 0.96 + (index % 3) * 0.08]} scale={[0.85 + (index % 2) * 0.25, 0.12, 1]}>
+    {facadeBands.map((row) => <mesh
+      key={row}
+      position={[(index % 2 ? 0.12 : -0.10), 1.05 + row * 1.45, 0.96 + (index % 3) * 0.08]}
+      scale={[0.68 + (index % 3) * 0.12, 0.055, 1]}
+      raycast={() => null}
+    >
       <planeGeometry args={[1, 1]} />
-      <meshStandardMaterial color="#77878a" emissive="#52656a" emissiveIntensity={0.08} roughness={0.32} metalness={0.02} />
+      <meshStandardMaterial color="#718185" emissive="#41565b" emissiveIntensity={0.055} roughness={0.42} metalness={0.015} />
     </mesh>)}
   </group>;
 }
 
+function buildCoastalWaterGeometry() {
+  // ground-coastal-deforming-water-surface-v29
+  const columns = 40;
+  const rows = 18;
+  const width = 96;
+  const depth = 42;
+  const positions: number[] = [];
+  const uvs: number[] = [];
+  const indices: number[] = [];
+  for (let row = 0; row <= rows; row += 1) {
+    const v = row / rows;
+    for (let column = 0; column <= columns; column += 1) {
+      const u = column / columns;
+      positions.push((u - 0.5) * width, 0, (v - 0.5) * depth);
+      uvs.push(u, v);
+    }
+  }
+  const stride = columns + 1;
+  for (let row = 0; row < rows; row += 1) for (let column = 0; column < columns; column += 1) {
+    const a = row * stride + column;
+    const b = a + 1;
+    const c = a + stride;
+    const d = c + 1;
+    indices.push(a, c, b, b, c, d);
+  }
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
+  geometry.setAttribute("uv", new THREE.Float32BufferAttribute(uvs, 2));
+  geometry.setIndex(indices);
+  geometry.computeVertexNormals();
+  geometry.computeBoundingBox();
+  geometry.computeBoundingSphere();
+  return geometry;
+}
+
 function CoastalWater() {
-  const water = useRef<THREE.Mesh>(null);
+  const geometry = useMemo(() => buildCoastalWaterGeometry(), []);
+  const frame = useRef(0);
+  useEffect(() => () => geometry.dispose(), [geometry]);
   useFrame(({ clock }) => {
-    if (!water.current) return;
-    water.current.position.y = -0.27 + Math.sin(clock.elapsedTime * 0.45) * 0.018;
-    water.current.rotation.z = Math.sin(clock.elapsedTime * 0.17) * 0.0015;
+    const position = geometry.getAttribute("position") as THREE.BufferAttribute;
+    const t = clock.elapsedTime;
+    for (let index = 0; index < position.count; index += 1) {
+      const x = position.getX(index);
+      const z = position.getZ(index);
+      const wave =
+        Math.sin(x * 0.22 + t * 0.72) * 0.075
+        + Math.sin(z * 0.31 - t * 0.56) * 0.052
+        + Math.sin((x + z) * 0.13 + t * 0.38) * 0.033;
+      position.setY(index, wave);
+    }
+    position.needsUpdate = true;
+    frame.current += 1;
+    if (frame.current % 3 === 0) geometry.computeVertexNormals();
   });
-  return <mesh ref={water} rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.27, -44]} receiveShadow raycast={() => null}>
-    <planeGeometry args={[96, 42, 16, 10]} />
-    <meshPhysicalMaterial color="#2d5a66" roughness={0.14} metalness={0.02} clearcoat={0.34} clearcoatRoughness={0.22} transmission={0.03} transparent opacity={0.92} envMapIntensity={0.72} />
+  return <mesh
+    geometry={geometry}
+    position={[0, -0.27, -44]}
+    receiveShadow
+    raycast={() => null}
+    name="ground-coastal-deforming-water-v29"
+    userData={{ treatment: "multi-frequency-deforming-water-surface-v29", flatPlane: false }}
+  >
+    <meshPhysicalMaterial color="#2d5a66" roughness={0.18} metalness={0.01} clearcoat={0.42} clearcoatRoughness={0.18} transmission={0.035} transparent opacity={0.94} envMapIntensity={0.78} />
   </mesh>;
 }
 
@@ -560,7 +667,7 @@ function NaturalScatter({ profile }: { profile: EnvironmentProfile }) {
   }, [profile]);
 
   if (profile.id === "urban") {
-    return <group name="ground-urban-horizon" userData={{ treatment: "distant-irregular-extruded-skyline-not-box-placeholders" }} raycast={() => null}>
+    return <group name="ground-urban-horizon" userData={{ treatment: "authored-setback-offset-skyline-v29-no-extruded-placeholder-massing" }} raycast={() => null}>
       {items.map((item) => <UrbanBuilding key={item.index} index={item.index} x={item.x * 1.15} z={Math.min(-34, item.z - 21)} heightValue={5.8 + (item.index % 6) * 1.55} />)}
     </group>;
   }
@@ -570,7 +677,7 @@ function NaturalScatter({ profile }: { profile: EnvironmentProfile }) {
     </group>;
   }
   if (profile.id === "coastal") {
-    return <group name="ground-coastal-world" userData={{ treatment: "scanned-rock-shore-and-physical-water" }} raycast={() => null}>
+    return <group name="ground-coastal-world" userData={{ treatment: "scanned-rock-shore-and-deforming-physical-water-v29" }} raycast={() => null}>
       <CoastalWater />
       {items.slice(0, 10).map((item) => <ScannedRock key={item.index} variant={item.index % 2 ? "01" : "02"} position={[item.x, item.y - 0.08, item.z]} rotation={[0, item.index * 0.47, 0]} scale={[1.25 * item.scale, 0.62 * item.scale, 1.5 * item.scale]} />)}
     </group>;
