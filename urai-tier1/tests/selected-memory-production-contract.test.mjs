@@ -95,7 +95,7 @@ test('Focus resolves the selected Life Map star into a memory-containing close-u
   assert.match(focus, /\.focusFallbackStar\{[^}]*border-radius:50%/)
   assert.match(focus, /\.focusFallbackStar\{[^}]*clip-path:none/)
   assert.doesNotMatch(focus, /\.focusFallbackStar\{[^}]*clip-path:polygon/)
-  assert.match(focus, /box-shadow:0 0 14px rgba\(255,245,204,\.38\),0 0 34px rgba\(255,137,35,\.24\);clip-path:circle\(49% at 50% 50%\)/)
+  assert.match(focus, /box-shadow:0 0 18px rgba\(255,245,204,\.44\),0 0 44px rgba\(255,137,35,\.28\);clip-path:circle\(49% at 50% 50%\)/)
   assert.match(focus, /<MemoryVisualContent memory=\{memory\} \/>/)
   assert.match(focus, /<Stars /)
   assert.match(focus, /<OrbitControls/)
