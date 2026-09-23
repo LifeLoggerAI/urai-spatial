@@ -102,6 +102,21 @@ const currentHomeSettlement = `  if (route.id === 'home') {
   }`
 patched = replaceOnce(patched, oldHomeSettlement, currentHomeSettlement, 'current Home readiness')
 
+const oldRouteSettlement = `    await page.locator(route.selector).first().waitFor({ state: 'visible', timeout: 45_000 })
+    await settleSpatialRoute(page, route)`
+const currentRouteSettlement = `    const settleCurrentRoute = async () => {
+      await page.locator(route.selector).first().waitFor({ state: 'visible', timeout: 45_000 })
+      await settleSpatialRoute(page, route)
+    }
+    try {
+      await settleCurrentRoute()
+    } catch (error) {
+      if (route.id !== 'home') throw error
+      await page.reload({ waitUntil: 'domcontentloaded', timeout: 60_000 })
+      await settleCurrentRoute()
+    }`
+patched = replaceOnce(patched, oldRouteSettlement, currentRouteSettlement, 'bounded Home cold-start retry')
+
 const oldGroundSettlement = `  if (route.id === 'ground') {
     await page.waitForFunction(() => {
       const root = document.querySelector('[data-testid="urai-ground-private-workforce-world"]')
@@ -196,6 +211,7 @@ patched = replaceOnce(
 
 for (const [label, marker] of [
   ['Home current visible-world authority', `data-home-visible-world') === 'cinematic-lived-world-threshold'`],
+  ['Bounded Home cold-start retry', `if (route.id !== 'home') throw error`],
   ['Ground current structural owner', `data-testid="urai-ground-lived-world"`],
   ['Ground current runtime owner', `groundRuntimeOwner === 'first-person-lived-world'`],
   ['Ground current visual owner', `groundVisualOwner === 'atmospheric-living-environment'`],
