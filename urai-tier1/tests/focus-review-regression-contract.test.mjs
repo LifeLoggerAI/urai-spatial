@@ -42,7 +42,7 @@ test('Focus focal authority is the selected memory star and cannot regress to V3
   assert.match(focus, /finePlume/)
   assert.match(focus, /const boundary = THREE\.MathUtils\.clamp\(\.94/)
   assert.match(focus, /const rayBoundary = rays/)
-  assert.match(focus, /scale=\{\[3\.06, 2\.58, 1\]\}/)
+  assert.match(focus, /scale=\{\[4\.36, 3\.42, 1\]\}/)
   assert.match(focus, /opacity=\{memory \? \.82 : \.04\}/)
   assert.match(focus, /distanceFactor=\{1\.92\}/)
   assert.match(focus, /function makeFocusPhotosphereGeometry\(\)/)
