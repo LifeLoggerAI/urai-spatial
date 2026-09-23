@@ -51,7 +51,7 @@ test('Focus focal authority is the selected memory star and cannot regress to V3
   assert.match(focus, /mix-blend-mode:normal;opacity:\.84;z-index:4/)
   assert.match(focus, /opacity:\.88;z-index:5/)
   assert.match(focus, /focusMemoryVisual::after/)
-  assert.match(focus, /box-shadow:inset 0 0 24px rgba\(255,252,224,\.90\)/)
+  assert.match(focus, /box-shadow:inset 0 0 18px rgba\(255,255,222,\.96\)/)
   assert.match(focus, /focus-memory-star-photosphere-rays-secondary/)
   assert.match(focus, /name="focus-memory-star-corona-glow"/)
   assert.match(focus, /name="focus-memory-star-photosphere-rays"/)
