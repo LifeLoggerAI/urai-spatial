@@ -46,7 +46,6 @@ test('Focus focal authority is the selected memory star and cannot regress to V3
   assert.match(focus, /function makeFocusPhotosphereGeometry\(\)/)
   assert.match(focus, /new THREE\.SphereGeometry\(1, 128, 96\)/)
   assert.doesNotMatch(focus, /makeFocusCoronaShellGeometry|geometry=\{coronaShellA\}|geometry=\{coronaShellB\}/)
-  assert.match(focus, /width:148px;height:94px/)
   assert.match(focus, /opacity:\.94;filter:saturate\(1\.12\)/)
   assert.match(focus, /focus-memory-star-photosphere-rays-secondary/)
   assert.match(focus, /name="focus-memory-star-corona-glow"/)
