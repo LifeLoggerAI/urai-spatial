@@ -2,6 +2,7 @@
 
 import { useRouter } from 'next/navigation'
 import { HomeAtmosphericSky } from '@/spatial/assets/HomeAtmosphericSky'
+import { HomeLaunchSanctuaryV254 } from '@/spatial/assets/HomeLaunchSanctuaryV254'
 import { useHomePersonalizedScene } from '@/app/home/useHomePersonalizedScene'
 import type { HomeSceneEnvironment } from '@/app/home/homePersonalizationModel'
 import type { HomeEmotionalWeatherName } from '@/spatial/environment/HomeEmotionalWeatherState'
@@ -731,6 +732,7 @@ function Scene({
     <HomeV225PolishV3 orbState={orbState} reducedMotion={reducedMotion} onOrb={retiredLocalDestination} onGround={retiredLocalDestination} onLifeMap={retiredLocalDestination} onWalk={physicalWorldClick} />
     <HomeCurrentArtRepair orbState={orbState} reducedMotion={reducedMotion} onOrb={retiredLocalDestination} onGround={retiredLocalDestination} onLifeMap={retiredLocalDestination} />
     <HomeAAAVisualRepair />
+    <HomeLaunchSanctuaryV254 reducedMotion={reducedMotion} />
     <HomeEmbodiedAvatar
       position={[AVATAR_POSITION.x, height(AVATAR_POSITION.x, AVATAR_POSITION.z), AVATAR_POSITION.z]}
       state={avatarState}

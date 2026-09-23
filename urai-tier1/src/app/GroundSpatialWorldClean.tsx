@@ -1057,7 +1057,10 @@ function GroundScene({ profile, input, yaw, pitch, target, obstacles, playerPosi
     <hemisphereLight args={["#b4c9c6", "#40382d", 0.58]} />
     <directionalLight position={[-10, 14, 5]} intensity={1.58} color="#e4cba6" castShadow shadow-mapSize={[1024, 1024]} shadow-camera-left={-28} shadow-camera-right={28} shadow-camera-top={28} shadow-camera-bottom={-28} shadow-camera-far={90} shadow-normalBias={0.035} />
     <directionalLight position={[10, 7, -20]} intensity={0.36} color="#789a9b" />
-    <Suspense fallback={null}><LivedGroundWorld profile={profile} target={target} /></Suspense>
+    <Suspense fallback={null}>
+      <LivedGroundWorld profile={profile} target={target} />
+      <GroundSubstrateWorld profile={profile} />
+    </Suspense>
     <FirstPersonPlayer input={input} yaw={yaw} pitch={pitch} target={target} profile={profile} obstacles={obstacles} playerPosition={playerPosition} isCoarse={isCoarse} onReady={onReady} />
   </>;
 }
