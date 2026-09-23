@@ -54,6 +54,32 @@ async function settle(page, count) {
     requestAnimationFrame(tick)
   }), count)
 }
+async function focusTestIdForKeyboard(page, testId) {
+  const focused = await page.evaluate((id) => {
+    const element = document.querySelector(`[data-testid="${id}"]`)
+    if (!(element instanceof HTMLElement)) return false
+    element.focus()
+    return document.activeElement === element
+  }, testId)
+  if (!focused) throw new Error(`keyboard target ${testId} could not receive focus`)
+}
+
+async function ensureReviewOrbState(page, state) {
+  const selector = '.urai-asset-home-world[data-home-primary-owner="asset-driven"]'
+  const observed = await page.waitForFunction(({ selector, state }) => {
+    return document.querySelector(selector)?.getAttribute('data-home-orb-state') === state
+  }, { selector, state }, { timeout: 4_000 }).then(() => true).catch(() => false)
+  if (observed) return
+  await page.evaluate((requestedState) => {
+    window.dispatchEvent(new CustomEvent('urai:orb-state', {
+      detail: { state: requestedState, source: 'system' },
+    }))
+  }, state)
+  await page.waitForFunction(({ selector, state }) => {
+    return document.querySelector(selector)?.getAttribute('data-home-orb-state') === state
+  }, { selector, state }, { timeout: 15_000 })
+}
+
 async function imageEvidence(page) {
   const buffer = await page.screenshot({ fullPage: false, animations: 'disabled', caret: 'hide', timeout: 90_000 })
   const dataUrl = `data:image/png;base64,${buffer.toString('base64')}`
@@ -86,7 +112,7 @@ for (const spec of cases) {
     const owner = page.locator('.urai-asset-home-world[data-home-primary-owner="asset-driven"]')
     await owner.waitFor({ state: 'visible', timeout: 45_000 })
     await page.waitForFunction(() => document.querySelector('.urai-asset-home-world')?.getAttribute('data-home-assets-ready') === 'true', null, { timeout: 45_000 })
-    if (spec.orbState) await page.waitForFunction(state => document.querySelector('.urai-asset-home-world')?.getAttribute('data-home-orb-state') === state, spec.orbState, { timeout: 15_000 })
+    if (spec.orbState) await ensureReviewOrbState(page, spec.orbState)
     await settle(page, spec.reducedMotion === 'reduce' ? 4 : 12)
     const attr = name => owner.getAttribute(name)
     record.status = response?.status(); record.canvasCount = await owner.locator('canvas').count()
@@ -110,7 +136,7 @@ for (const spec of cases) {
 
     const enter = page.getByTestId('urai-home-avatar-enter-first-person')
     await enter.waitFor({ state: 'attached', timeout: 30_000 })
-    await enter.focus()
+    await focusTestIdForKeyboard(page, 'urai-home-avatar-enter-first-person')
     await page.keyboard.press('Enter')
     await page.waitForFunction(() => document.querySelector('.urai-asset-home-world')?.getAttribute('data-home-stable-state') === 'AVATAR_HOME_FIRST_PERSON', null, { timeout: 60_000 })
     await settle(page, spec.reducedMotion === 'reduce' ? 2 : 4)

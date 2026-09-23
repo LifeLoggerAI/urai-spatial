@@ -118,9 +118,10 @@ try {
     const readyRoot = page.locator('[data-testid="urai-ground-lived-world"]').first()
     const mountTimeoutMs = 90_000
     try {
-      await readyRoot.waitFor({ state: 'attached', timeout: mountTimeoutMs })
       await page.waitForFunction(() => {
-        const canvas = document.querySelector('.ground-spatial-root canvas')
+        const root = document.querySelector('[data-testid="urai-ground-lived-world"]')
+        if (!(root instanceof HTMLElement)) return false
+        const canvas = root.querySelector('canvas')
         if (!(canvas instanceof HTMLCanvasElement)) return false
         const rect = canvas.getBoundingClientRect()
         return rect.width >= 240 && rect.height >= 240 && canvas.width > 0 && canvas.height > 0
