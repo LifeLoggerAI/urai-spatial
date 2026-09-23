@@ -72,9 +72,9 @@ function resolveProfile(raw: string | null): EnvironmentProfile {
 }
 
 function groundHeight(x: number, z: number, profile: EnvironmentProfileId) {
-  const broad = Math.sin(x * 0.115 + z * 0.052) * 0.24 + Math.cos(z * 0.083 - x * 0.041) * 0.18;
-  const micro = Math.sin(x * 0.73 + z * 0.39) * 0.035 + Math.cos(x * 1.17 - z * 0.54) * 0.022;
-  const path = Math.exp(-Math.pow(x - Math.sin(z * 0.09) * 1.1, 2) / 7.2) * -0.08;
+  const broad = Math.sin(x * 0.115 + z * 0.052) * 0.42 + Math.cos(z * 0.083 - x * 0.041) * 0.34;
+  const micro = Math.sin(x * 0.73 + z * 0.39) * 0.052 + Math.cos(x * 1.17 - z * 0.54) * 0.034;
+  const path = Math.exp(-Math.pow(x - Math.sin(z * 0.09) * 1.1, 2) / 7.2) * -0.12;
   if (profile === "urban") return broad * 0.12 + micro * 0.08;
   if (profile === "arid") return broad * 1.35 + micro * 0.5 + path * 0.25;
   if (profile === "coastal") return broad * 0.48 + micro * 0.3 + Math.max(0, (-z - 21) * 0.005);
@@ -463,7 +463,7 @@ function NaturalCanopy({ profile, position, rotationY, scale, shapeSeed }: {
       const value = Math.sin(seed * 12.9898 + shapeSeed * 53.117 + (woodland ? 78.233 : 31.417)) * 43758.5453;
       return value - Math.floor(value);
     };
-    const leaves = Array.from({ length: woodland ? 420 : 360 }, (_, index) => {
+    const leaves = Array.from({ length: woodland ? 180 : 150 }, (_, index) => {
       const anchor = foliageAnchors[index % foliageAnchors.length];
       const spread = 0.08 + hash(index * 7 + 1) * 0.58;
       const theta = hash(index * 7 + 2) * Math.PI * 2;
@@ -473,9 +473,9 @@ function NaturalCanopy({ profile, position, rotationY, scale, shapeSeed }: {
       const rx = (hash(index * 7 + 6) - 0.5) * 1.28;
       const ry = theta + (hash(index * 7 + 7) - 0.5) * 1.15;
       const rz = (hash(index * 7 + 8) - 0.5) * 1.12;
-      const sx = 0.30 + hash(index * 7 + 9) * 0.24;
-      const sy = 0.82 + hash(index * 7 + 10) * 0.32;
-      const sz = 0.34 + hash(index * 7 + 11) * 0.30;
+      const sx = 0.58 + hash(index * 7 + 9) * 0.38;
+      const sy = 0.54 + hash(index * 7 + 10) * 0.34;
+      const sz = 0.52 + hash(index * 7 + 11) * 0.40;
       return {
         position: [x, y, z] as [number, number, number],
         rotation: [rx, ry, rz] as [number, number, number],
@@ -513,6 +513,7 @@ function NaturalCanopy({ profile, position, rotationY, scale, shapeSeed }: {
       supersedesVisibleCandidate: "ground-v24-faceted-volume-crown",
       literalPixelRepair: "v26-ovate-leaflets-remove-primitive-ball-canopy",
       scannedFoliageRepair: "v31-vendored-polyhaven-fern-atlas-canopy",
+      compositionPixelRepairV32: "v32-edge-canopy-scanned-understory-relief",
       naturalTerrainRepair: "v27-natural-soil-no-repeating-rock-maps",
       structuralPixelRepair: "v28-organic-tapered-trunk-branch-silhouette",
       supplementalPixelRepair: "v25-natural-horizon-and-terrain-relief",
@@ -723,27 +724,31 @@ function NaturalScatter({ profile }: { profile: EnvironmentProfile }) {
   }
 
   const woodland = profile.id === "woodland";
-  const ferns = items.slice(0, woodland ? 88 : 76);
-  const canopies = items.filter((item) => item.z < (woodland ? 2.0 : 0.0)).slice(0, woodland ? 22 : 18);
-  return <group name={woodland ? "ground-woodland-scanned-understory" : "ground-temperate-scanned-understory"} userData={{ treatment: "urai-sparse-background-canopy-v30-with-polyhaven-fern-rock-understory", canopyFallback: "scanned-understory-remains-without-canopy", compositionRepair: "v30-sparse-background-natural-canopy-no-cloned-tree-field" }} raycast={() => null}>
+  const ferns = items.slice(0, woodland ? 92 : 88);
+  const canopies = items.filter((item) => item.z < -6).slice(0, woodland ? 10 : 8);
+  return <group name={woodland ? "ground-woodland-scanned-understory" : "ground-temperate-scanned-understory"} userData={{ treatment: "urai-edge-canopy-scanned-understory-v32", canopyFallback: "scanned-understory-remains-without-canopy", compositionRepair: "v32-edge-canopy-scanned-understory-relief-no-cloned-tree-field" }} raycast={() => null}>
     <GroundCanopyBoundary>
       <Suspense fallback={null}>
         {canopies.map((item) => {
-          const x = item.x * (0.78 + (item.index % 5) * 0.055) + Math.sin(item.index * 2.17) * 3.4 + Math.cos(item.index * 0.71) * 1.8;
-          const z = item.z - 7.5 + Math.cos(item.index * 1.61) * 4.2 + Math.sin(item.index * 0.83) * 2.2;
+          const side = item.x < 0 ? -1 : 1;
+          const x = side * (11.5 + Math.abs(item.x) * 0.72) + Math.sin(item.index * 2.17) * 2.8;
+          const z = item.z - 13.5 + Math.cos(item.index * 1.61) * 5.8 + Math.sin(item.index * 0.83) * 2.6;
           return <NaturalCanopy
             key={`canopy-${item.index}`}
             profile={profile}
             position={[x, groundHeight(x, z, profile.id) - 0.02, z]}
             rotationY={item.index * 0.91 + (woodland ? 0.22 : -0.14)}
-            scale={(woodland ? 1.55 : 1.45) + item.scale * 0.48 + (item.index % 5) * 0.07}
+            scale={(woodland ? 1.30 : 1.22) + item.scale * 0.62 + (item.index % 4) * 0.11}
             shapeSeed={item.index + (woodland ? 101 : 17)}
           />;
         })}
       </Suspense>
     </GroundCanopyBoundary>
-    {ferns.map((item) => <FernPatch key={`fern-${item.index}`} position={[item.x * 0.72, groundHeight(item.x * 0.72, item.z - 1.3, profile.id), item.z - 1.3]} rotationY={item.index * 0.73} scale={0.82 + item.scale * 0.45} />)}
-    {items.slice(0, 12).map((item) => <ScannedRock key={`rock-${item.index}`} variant={item.index % 2 ? "01" : "02"} position={[item.x * 0.55, groundHeight(item.x * 0.55, item.z + 2.2, profile.id) - 0.1, item.z + 2.2]} rotation={[0, item.index * 0.39, 0]} scale={[0.82 * item.scale, 0.48 * item.scale, 0.94 * item.scale]} />)}
+    {ferns.map((item) => <group key={`fern-cluster-${item.index}`} raycast={() => null}>
+      <FernPatch position={[item.x * 0.62, groundHeight(item.x * 0.62, item.z - 1.3, profile.id), item.z - 1.3]} rotationY={item.index * 0.73} scale={1.02 + item.scale * 0.58} />
+      {item.index % 3 === 0 ? <FernPatch position={[item.x * 0.62 + (item.index % 2 ? 1.4 : -1.4), groundHeight(item.x * 0.62 + (item.index % 2 ? 1.4 : -1.4), item.z - 2.1, profile.id), item.z - 2.1]} rotationY={item.index * 0.41 + 1.2} scale={0.72 + item.scale * 0.38} /> : null}
+    </group>)}
+    {items.slice(0, 20).map((item) => <ScannedRock key={`rock-${item.index}`} variant={item.index % 2 ? "01" : "02"} position={[item.x * 0.55, groundHeight(item.x * 0.55, item.z + 2.2, profile.id) - 0.1, item.z + 2.2]} rotation={[0, item.index * 0.39, 0]} scale={[0.96 * item.scale, 0.58 * item.scale, 1.08 * item.scale]} />)}
   </group>;
 }
 
@@ -1177,7 +1182,7 @@ export default function GroundSpatialWorldClean() {
     data-ground-visual-owner="atmospheric-living-environment"
     data-ground-runtime-owner="first-person-lived-world"
     data-ground-visual-revision="ground-lived-world-v2-canon-lock"
-    data-ground-art-revision="ground-v30-sparse-natural-canopy-atmospheric-depth" data-ground-canopy-repair="ground-v30-sparse-background-canopy-no-tree-field" data-ground-foliage-repair="ground-v31-vendored-scanned-fern-atlas-canopy"
+    data-ground-art-revision="ground-v32-edge-canopy-scanned-understory-relief" data-ground-canopy-repair="ground-v32-edge-canopy-no-tree-field" data-ground-foliage-repair="ground-v31-vendored-scanned-fern-atlas-canopy"
     data-ground-exploration="first-person-no-visible-body"
     data-ground-camera="eye-level-terrain-following-no-authored-bob"
     data-ground-eye-height={GROUND_EYE_HEIGHT_M}
