@@ -177,6 +177,22 @@ async function resolveTarget(page, doorway) {
   return { target, nav }
 }
 
+async function openHomeAndResolve(page, doorway) {
+  let lastError = null
+  for (let attempt = 1; attempt <= 2; attempt++) {
+    await page.goto(`${baseUrl}/home`, { waitUntil: 'domcontentloaded', timeout: 60000 })
+    await page.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => {})
+    try {
+      const resolved = await resolveTarget(page, doorway)
+      return { ...resolved, attempts: attempt }
+    } catch (error) {
+      lastError = error
+      if (attempt === 2) throw error
+    }
+  }
+  throw lastError || new Error('Home semantic navigation did not become ready')
+}
+
 async function prove(browser, doorway, testCase) {
   const context = await browser.newContext({ viewport: testCase.viewport, isMobile: !!testCase.isMobile, hasTouch: !!testCase.hasTouch, deviceScaleFactor: testCase.isMobile ? 2 : 1 })
   await context.addInitScript(() => {
@@ -187,9 +203,8 @@ async function prove(browser, doorway, testCase) {
   const screenshot = `screenshots/${testCase.device}-${testCase.method}-home-to-${doorway.id}.png`
   const record = { exactSha, sourceRoute: '/home', destinationRoute: doorway.destination, device: testCase.device, activationMethod: testCase.method, inputDispatch: testCase.method === 'keyboard' ? 'browser-tab-enter' : 'browser-coordinate-hit', viewport: testCase.viewport, targetAccessibleName: doorway.name, targetTestId: doorway.testId, targetHref: doorway.href, resultingUrl: '', screenshot, semanticNavigationOwner: 'runtime-boundary', semanticNavigationNonDominant: false, legacyVisibleDoorways: 0, targetOwnsHitPoint: false, hitPoint: null, focusSteps: null, destinationRendered: false, success: false, failureReason: '' }
   try {
-    await page.goto(`${baseUrl}/home`, { waitUntil: 'domcontentloaded', timeout: 60000 })
-    await page.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => {})
-    const { target, nav } = await resolveTarget(page, doorway)
+    const { target, nav, attempts } = await openHomeAndResolve(page, doorway)
+    record.homeReadinessAttempts = attempts
     record.legacyVisibleDoorways = await page.locator('.urai-final-home-doorways:visible').count()
     const declaredNonDominant = await nav.getAttribute('data-home-navigation-non-dominant') === 'true'
     if (testCase.method === 'keyboard') {
