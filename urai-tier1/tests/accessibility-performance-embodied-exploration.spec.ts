@@ -64,7 +64,7 @@ test.describe('Home and Ground embodied accessibility evidence', () => {
 
     const direct = page.getByRole('navigation', { name: 'Accessible Home destinations' })
     for (const target of [
-      direct.getByRole('button', { name: 'Open URAI Orb companion' }),
+      direct.getByRole('button', { name: 'Open UrAi Orb companion' }),
       direct.getByRole('link', { name: 'Open Ground directly' }),
       direct.getByRole('link', { name: 'Open Life Map directly' }),
     ]) {
@@ -195,6 +195,7 @@ test.describe('Home and Ground embodied accessibility evidence', () => {
     await memory.press('Enter')
     await expect.poll(() => new URL(page.url()).searchParams.get('memoryId')).toBeTruthy()
     await expect(lifeMap).toHaveAttribute('data-life-map-mode', 'selected')
+    await expect(lifeMap).toHaveAttribute('data-life-map-phase', 'arrival', { timeout: 15_000 })
     const actions = page.getByRole('navigation', { name: 'Selected memory actions' })
     await expect(actions.getByRole('button', { name: 'Enter Focus' })).toBeVisible()
     await actions.getByRole('button', { name: 'Overview' }).click()
