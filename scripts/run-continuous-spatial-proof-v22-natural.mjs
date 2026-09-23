@@ -133,8 +133,7 @@ async function enterFirstPersonHome(page, owner) {
   if (!presentationSnapshotPasses(presentation)) throw new Error(`Home presentation baseline mismatch: ${JSON.stringify(presentation)}`)
   const enter = page.getByTestId('urai-home-avatar-enter-first-person')
   await enter.waitFor({ state: 'attached', timeout: 30_000 })
-  await enter.focus()
-  await page.keyboard.press('Enter')
+  await activateSemanticTargetWithNativeKeyboard(page, 'urai-home-avatar-enter-first-person')
   await page.waitForFunction((selector) => document.querySelector(selector)?.getAttribute('data-home-stable-state') === 'AVATAR_HOME_FIRST_PERSON', ownerSelector, { timeout: 60_000 })
   await waitFrames(page, 4)
   return presentation
