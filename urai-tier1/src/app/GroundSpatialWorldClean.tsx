@@ -250,6 +250,74 @@ function CanopyLeafInstances({ geometry, leaves, color }: {
   </instancedMesh>;
 }
 
+function makeOrganicTaperedTube(
+  curve: THREE.CatmullRomCurve3,
+  baseRadius: number,
+  tipRadius: number,
+  seed: number,
+  tubularSegments: number,
+  radialSegments: number,
+  baseFlare = 0,
+) {
+  const frames = curve.computeFrenetFrames(tubularSegments, false);
+  const positions: number[] = [];
+  const uvs: number[] = [];
+  const indices: number[] = [];
+  const center = new THREE.Vector3();
+  const radial = new THREE.Vector3();
+
+  for (let ring = 0; ring <= tubularSegments; ring += 1) {
+    const t = ring / tubularSegments;
+    curve.getPointAt(t, center);
+    const taper = THREE.MathUtils.lerp(baseRadius, tipRadius, Math.pow(t, 0.82));
+    const flare = 1 + baseFlare * Math.exp(-t * 13.5);
+
+    for (let side = 0; side <= radialSegments; side += 1) {
+      const u = side / radialSegments;
+      const angle = u * Math.PI * 2;
+      const irregularity =
+        1
+        + Math.sin(angle * 3 + seed * 1.73 + ring * 0.08) * 0.075
+        + Math.sin(angle * 5 + seed * 0.91 - ring * 0.11) * 0.038;
+
+      radial
+        .copy(frames.normals[ring])
+        .multiplyScalar(Math.cos(angle))
+        .addScaledVector(frames.binormals[ring], Math.sin(angle))
+        .normalize();
+
+      const radius = taper * flare * irregularity;
+      positions.push(
+        center.x + radial.x * radius,
+        center.y + radial.y * radius,
+        center.z + radial.z * radius,
+      );
+      uvs.push(u, t);
+    }
+  }
+
+  const stride = radialSegments + 1;
+  for (let ring = 0; ring < tubularSegments; ring += 1) {
+    for (let side = 0; side < radialSegments; side += 1) {
+      const a = ring * stride + side;
+      const b = (ring + 1) * stride + side;
+      const c = (ring + 1) * stride + side + 1;
+      const d = ring * stride + side + 1;
+      indices.push(a, b, d, b, c, d);
+    }
+  }
+
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
+  geometry.setAttribute("uv", new THREE.Float32BufferAttribute(uvs, 2));
+  geometry.setIndex(indices);
+  geometry.computeVertexNormals();
+  geometry.computeBoundingBox();
+  geometry.computeBoundingSphere();
+  return geometry;
+}
+
+// organic-tapered-trunk-branch-silhouette-v28
 function NaturalCanopy({ profile, position, rotationY, scale, shapeSeed }: {
   profile: EnvironmentProfile;
   position: [number, number, number];
@@ -280,7 +348,16 @@ function NaturalCanopy({ profile, position, rotationY, scale, shapeSeed }: {
       new THREE.Vector3(0.046 + trunkLeanX * 1.35, 2.42 * crownLift, -0.026 + trunkLeanZ * 1.28),
       new THREE.Vector3(0.012 + trunkLeanX * 1.58, 2.72 * crownLift, 0.014 + trunkLeanZ * 1.48),
     ]);
-    const trunkGeometry = new THREE.TubeGeometry(trunkCurve, 52, 0.102 + ((shapeSeed * 7) % 13) * 0.0018, 14, false);
+    const trunkRadius = 0.102 + ((shapeSeed * 7) % 13) * 0.0018;
+    const trunkGeometry = makeOrganicTaperedTube(
+      trunkCurve,
+      trunkRadius,
+      trunkRadius * 0.42,
+      shapeSeed,
+      44,
+      12,
+      0.62,
+    );
 
     const branchDefs = [
       [[0.02, 1.12, 0.00], [0.30, 1.46, 0.06], [0.72, 1.73, 0.15], [1.02, 1.94, 0.23]],
@@ -297,13 +374,19 @@ function NaturalCanopy({ profile, position, rotationY, scale, shapeSeed }: {
       y * crownLift + Math.cos(shapePhase * 0.7 + branchIndex * 0.83 + pointIndex) * 0.025,
       z * crownDepth + trunkLeanZ * y * 0.66 + Math.cos(shapePhase + branchIndex * 1.37 + pointIndex * 0.61) * 0.035,
     ] as [number, number, number]));
-    const branches = transformedBranchDefs.map((points, index) => new THREE.TubeGeometry(
-      new THREE.CatmullRomCurve3(points.map(([x, y, z]) => new THREE.Vector3(x, y, z))),
-      22,
-      index < 2 ? 0.036 : 0.024,
-      10,
-      false,
-    ));
+    const branches = transformedBranchDefs.map((points, index) => {
+      const branchCurve = new THREE.CatmullRomCurve3(points.map(([x, y, z]) => new THREE.Vector3(x, y, z)));
+      const branchRadius = index < 2 ? 0.038 : 0.027;
+      return makeOrganicTaperedTube(
+        branchCurve,
+        branchRadius,
+        branchRadius * 0.22,
+        shapeSeed * 11.7 + index * 2.31,
+        18,
+        8,
+        0.08,
+      );
+    });
 
     // Authored ovate leaf geometry replaces the rejected squashed-sphere canopy primitive.
     // The indexed leaf is substantially cheaper than SphereGeometry while preserving
@@ -392,6 +475,8 @@ function NaturalCanopy({ profile, position, rotationY, scale, shapeSeed }: {
       visibleAuthority: "runtime-authored-canopy-v26",
       supersedesVisibleCandidate: "ground-v24-faceted-volume-crown",
       literalPixelRepair: "v26-ovate-leaflets-remove-primitive-ball-canopy",
+      naturalTerrainRepair: "v27-natural-soil-no-repeating-rock-maps",
+      structuralPixelRepair: "v28-organic-tapered-trunk-branch-silhouette",
       supplementalPixelRepair: "v25-natural-horizon-and-terrain-relief",
     }}
   >
