@@ -860,7 +860,6 @@ function GroundAnalogPad({ input }: { input: MovementInput }) {
     aria-label="Ground analog movement"
     data-active={active ? "true" : "false"}
     style={{
-      display: "block",
       position: "absolute",
       zIndex: 24,
       left: "max(18px, env(safe-area-inset-left))",
