@@ -156,5 +156,5 @@ test('accessibility and performance implementation contracts cover Home presenta
   requireText(playwrightConfig, 'python3 -m http.server 3000')
   assert.equal(playwrightConfig.includes('next dev'), false, 'Performance evidence must not use a development server')
   for (const marker of ['DESKTOP_FRAME_P95_BUDGET_MS = 20', 'MOBILE_FRAME_P95_BUDGET_MS = 33.3', 'MAX_HEAP_GROWTH_BYTES = 32 * 1024 * 1024', 'JOURNEY_CYCLES = 5', "serverMode: 'static-export'", 'WEBGL_debug_renderer_info', 'hardwareAcceleration']) requireText(performanceMetrics, marker)
-  for (const marker of ['[data-urai-audit-action="orb-controls"]', "name: 'Open UrAi Orb companion', exact: true", "toHaveAttribute('aria-hidden', 'false'"]) requireText(accessibilityEvidence, marker)
+  for (const marker of ['[data-urai-audit-action="orb-controls"]', "toHaveAccessibleName('Open UrAi Orb companion')", "toHaveAttribute('aria-hidden', 'false'"]) requireText(accessibilityEvidence, marker)
 })
