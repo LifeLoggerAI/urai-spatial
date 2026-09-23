@@ -16,7 +16,8 @@ test('semantic destinations are browser-native anchors', () => {
 test('keyboard doorway activation proves native Tab focus followed by native Enter', () => {
   assert.match(proof, /async function focusTargetWithNativeKeyboard/)
   assert.match(proof, /await page\.keyboard\.press\('Tab'\)/)
-  assert.match(proof, /page\.locator\(':focus'\)\.getAttribute\('data-testid'\)/)
+  assert.match(proof, /const handle = await target\.elementHandle\(\)/)
+  assert.match(proof, /document\.activeElement === element/)
   assert.match(proof, /browser-native Tab focus/)
   assert.match(proof, /await page\.keyboard\.press\('Enter'\)/)
   assert.match(proof, /inputDispatch: testCase\.method === 'keyboard' \? 'browser-tab-enter'/)
