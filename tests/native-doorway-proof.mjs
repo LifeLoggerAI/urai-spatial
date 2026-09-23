@@ -41,6 +41,12 @@ async function settleRenderedDestination(page, doorway) {
   await page.waitForTimeout(1200)
 }
 
+function liveSemanticTarget(page, doorway) {
+  const name = JSON.stringify(doorway.name)
+  const href = JSON.stringify(doorway.href)
+  return page.locator(`a[aria-label=${name}][href=${href}]:visible`).first()
+}
+
 async function stableBrowserBox(target) {
   const page = target.page()
   const viewport = page.viewportSize()
@@ -126,22 +132,31 @@ async function proveGroundMobileControls(page, viewport) {
   }
 }
 
-async function focusTargetWithNativeKeyboard(page, target, maxSteps = 64) {
-  const handle = await target.elementHandle()
-  if (!handle) throw new Error('semantic keyboard target has no DOM handle')
+async function focusTargetWithNativeKeyboard(page, doorway, maxSteps = 64) {
   for (let step = 1; step <= maxSteps; step++) {
     await page.keyboard.press('Tab')
-    const focused = await page.evaluate((element) => document.activeElement === element, handle)
+    const focused = await page.evaluate(({ name, href }) => {
+      const active = document.activeElement
+      return active instanceof HTMLAnchorElement
+        && active.getAttribute('aria-label') === name
+        && active.getAttribute('href') === href
+    }, { name: doorway.name, href: doorway.href })
     if (focused) return { focusSteps: step }
   }
   throw new Error(`semantic target did not receive browser-native Tab focus within ${maxSteps} steps`)
 }
 
-async function activate(page, target, method) {
+async function activate(page, doorway, method) {
+  const target = liveSemanticTarget(page, doorway)
+  await target.waitFor({ state: 'visible', timeout: 45000 })
   if (method === 'keyboard') {
-    const keyboard = await focusTargetWithNativeKeyboard(page, target)
-    const handle = await target.elementHandle()
-    const focused = handle ? await page.evaluate((element) => document.activeElement === element, handle) : false
+    const keyboard = await focusTargetWithNativeKeyboard(page, doorway)
+    const focused = await page.evaluate(({ name, href }) => {
+      const active = document.activeElement
+      return active instanceof HTMLAnchorElement
+        && active.getAttribute('aria-label') === name
+        && active.getAttribute('href') === href
+    }, { name: doorway.name, href: doorway.href })
     if (!focused) throw new Error('semantic target did not retain browser-native focus')
     await page.keyboard.press('Enter')
     return { hitPoint: null, focusSteps: keyboard.focusSteps }
@@ -190,7 +205,7 @@ async function resolveTarget(page, doorway) {
   if (href !== doorway.href) throw new Error(`semantic target must own native href ${doorway.href}; found ${href || 'none'}`)
   const visibleLegacyDoorways = await page.locator('.urai-final-home-doorways:visible').count()
   if (visibleLegacyDoorways !== 0) throw new Error(`legacy visible doorway bars remain: ${visibleLegacyDoorways}`)
-  return { target, nav, owner, nonDominant }
+  return { target: liveSemanticTarget(page, doorway), nav, owner, nonDominant }
 }
 
 async function openHomeAndResolve(page, doorway) {
@@ -230,7 +245,13 @@ async function prove(browser, doorway, testCase) {
       if (testCase.method === 'keyboard') {
         record.semanticNavigationNonDominant = declaredNonDominant
       } else {
-        const navBox = await nav.boundingBox()
+        const currentTarget = liveSemanticTarget(page, doorway)
+        const navBox = await currentTarget.evaluate((element) => {
+          const nav = element.closest('nav')
+          if (!(nav instanceof HTMLElement)) return null
+          const rect = nav.getBoundingClientRect()
+          return { x: rect.x, y: rect.y, width: rect.width, height: rect.height }
+        })
         if (!navBox) throw new Error('semantic navigation has no browser footprint')
         const viewportArea = Math.max(1, testCase.viewport.width * testCase.viewport.height)
         const navAreaRatio = Math.max(0, navBox.width * navBox.height) / viewportArea
@@ -238,7 +259,7 @@ async function prove(browser, doorway, testCase) {
       }
     }
     if (!record.semanticNavigationNonDominant) throw new Error('semantic navigation became spatially dominant')
-    const activation = await activate(page, target, testCase.method)
+    const activation = await activate(page, doorway, testCase.method)
     record.hitPoint = activation.hitPoint
     record.focusSteps = activation.focusSteps
     await page.waitForURL((url) => normalize(url.toString()) === doorway.destination, { timeout: 20000 })
