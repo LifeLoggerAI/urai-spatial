@@ -39,7 +39,7 @@ test('Life Map selection routing cannot let stale overview state cancel the jour
 })
 
 test('Focus resolves the selected Life Map star while Replay preserves readable organic-edged media', () => {
-  assert.match(focus, /Locked product authority; V359 is the current literal-pixel implementation/)
+  assert.match(focus, /Locked product authority; V360 is the current literal-pixel implementation/)
   assert.match(focus, /data-focus-composition="selected-memory-star-with-contained-memory"/)
   assert.match(focus, /data-focus-spatial="selected-memory-star"/)
   assert.match(focus, /data-focus-terrain-owner="false"/)
