@@ -17,7 +17,7 @@ test.describe('Focus exact-head accessibility and movement evidence', () => {
     await page.emulateMedia({ reducedMotion: 'reduce' })
     await page.goto(focusDemo, { waitUntil: 'domcontentloaded' })
 
-    const focus = page.getByTestId('urai-final-focus-chamber')
+    const focus = page.getByTestId('urai-persistent-world-shell').getByTestId('urai-final-focus-chamber')
     await expect(focus).toBeVisible({ timeout: 15_000 })
     await expect(focus.locator('canvas')).toBeVisible({ timeout: 15_000 })
     await expect(focus).toHaveAttribute('data-focus-movement', 'orbit-zoom-keyboard-touch')
@@ -50,7 +50,7 @@ test.describe('Focus exact-head accessibility and movement evidence', () => {
 
   test('Focus preserves authorized identity through Replay travel authority', async ({ page }) => {
     await page.goto(focusDemo, { waitUntil: 'domcontentloaded' })
-    const focus = page.getByTestId('urai-final-focus-chamber')
+    const focus = page.getByTestId('urai-persistent-world-shell').getByTestId('urai-final-focus-chamber')
     await expect(focus).toHaveAttribute('data-memory-id', 'demo:quiet-reset')
     await expect(page.getByText('DEMO FIXTURE · NOT PERSONAL DATA', { exact: true })).toBeVisible()
 
@@ -84,7 +84,7 @@ test.describe('Focus exact-head accessibility and movement evidence', () => {
   test('non-WebGL Focus keeps identity, privacy copy and keyboard-operable semantic controls', async ({ page }) => {
     await disableWebGL(page)
     await page.goto(focusDemo, { waitUntil: 'domcontentloaded' })
-    const focus = page.getByTestId('urai-final-focus-chamber')
+    const focus = page.getByTestId('urai-persistent-world-shell').getByTestId('urai-final-focus-chamber')
     await expect(focus).toBeVisible()
     await expect(focus).toHaveAttribute('data-memory-id', 'demo:quiet-reset')
     await expect(focus.locator('[data-focus-fallback="semantic"]')).toBeVisible()
