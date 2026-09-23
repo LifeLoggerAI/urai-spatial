@@ -3,7 +3,7 @@ import test from 'node:test'
 import { assertExactHomeOrbOpenTransportFailure } from './lib/home-orb-reconciliation-signature.mjs'
 
 const exactHead = '9ff97275f08f6b8e41f2fe92510659767d296d26'
-const predicate = `TimeoutError: locator.click: Timeout 30000ms exceeded.\nCall log:\n  - waiting for getByRole('button', { name: 'Open URAI Orb companion' }).first()\n    - locator resolved to <button data-testid="home-semantic-orb">Open URAI Orb companion</button>\n  - attempting click action\n    - waiting for element to be visible, enabled and stable\n    - element is visible, enabled and stable`
+const predicate = `TimeoutError: locator.click: Timeout 30000ms exceeded.\nCall log:\n  - waiting for getByRole('button', { name: 'Open UrAi Orb companion' }).first()\n    - locator resolved to <button data-testid="home-semantic-orb">Open UrAi Orb companion</button>\n  - attempting click action\n    - waiting for element to be visible, enabled and stable\n    - element is visible, enabled and stable`
 
 function fixture(overrides = {}) {
   return {
@@ -33,7 +33,7 @@ for (const [name, mutate] of [
   ['page error', (value) => ({ ...value, failingRecord: { ...value.failingRecord, pageErrors: ['boom'] } })],
   ['provider request', (value) => ({ ...value, failingRecord: { ...value.failingRecord, providerBoundaryRequests: [{}] } })],
   ['checkbox timeout', (value) => ({ ...value, failedPredicate: value.failedPredicate.replace('locator.click', 'locator.check') })],
-  ['wrong control', (value) => ({ ...value, failedPredicate: value.failedPredicate.replaceAll('Open URAI Orb companion', 'Other') })],
+  ['wrong control', (value) => ({ ...value, failedPredicate: value.failedPredicate.replaceAll('Open UrAi Orb companion', 'Other') })],
   ['missing canonical test id', (value) => ({ ...value, failedPredicate: value.failedPredicate.replace('data-testid="home-semantic-orb"', 'data-testid="other"') })],
   ['missing actionability', (value) => ({ ...value, failedPredicate: value.failedPredicate.replace('element is visible, enabled and stable', '') })],
   ['missing dispatch', (value) => ({ ...value, failedPredicate: value.failedPredicate.replace('attempting click action', '') })],
