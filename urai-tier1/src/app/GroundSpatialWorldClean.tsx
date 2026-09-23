@@ -59,6 +59,8 @@ const SPAWN = new THREE.Vector3(0, 0, 6);
 const ROCK_01 = "/assets/urai/home-production/cc0/polyhaven-v48/rock_face_01/asset.gltf";
 const ROCK_02 = "/assets/urai/home-production/cc0/polyhaven-v48/rock_face_02/asset.gltf";
 const FERN = "/assets/urai/home-production/cc0/polyhaven-v48/fern_02/asset.gltf";
+const FERN_DIFFUSE = "/assets/urai/home-production/cc0/polyhaven-v48/fern_02/textures/fern_02_diff_1k.jpg";
+const FERN_ALPHA = "/assets/urai/home-production/cc0/polyhaven-v48/fern_02/textures/fern_02_alpha_1k.png";
 const NATURAL_CANOPY = "/assets/urai/generated/models/ground-natural-canopy-v3.glb";
 const TERRAIN_ALBEDO = "/assets/urai/home-production/cc0/rock-tile-floor/rock-tile-floor-diff-1k.webp";
 const TERRAIN_NORMAL = "/assets/urai/home-production/cc0/rock-tile-floor/rock-tile-floor-normal-gl-1k.webp";
@@ -225,10 +227,12 @@ class GroundCanopyBoundary extends Component<{ children: ReactNode }, { failed: 
   render() { return this.state.failed ? null : this.props.children; }
 }
 
-function CanopyLeafInstances({ geometry, leaves, color }: {
+function CanopyLeafInstances({ geometry, leaves, color, map, alphaMap }: {
   geometry: THREE.BufferGeometry;
   leaves: ReadonlyArray<{ position: [number, number, number]; rotation: [number, number, number]; scale: [number, number, number] }>;
   color: string;
+  map: THREE.Texture;
+  alphaMap: THREE.Texture;
 }) {
   const mesh = useRef<THREE.InstancedMesh>(null);
   const dummy = useMemo(() => new THREE.Object3D(), []);
@@ -246,7 +250,17 @@ function CanopyLeafInstances({ geometry, leaves, color }: {
     owner.computeBoundingSphere();
   }, [dummy, leaves]);
   return <instancedMesh ref={mesh} args={[geometry, undefined, leaves.length]} castShadow receiveShadow frustumCulled>
-    <meshStandardMaterial color={color} roughness={0.88} metalness={0} envMapIntensity={0.3} side={THREE.DoubleSide} />
+    <meshStandardMaterial
+      map={map}
+      alphaMap={alphaMap}
+      alphaTest={0.42}
+      transparent
+      color={color}
+      roughness={0.9}
+      metalness={0}
+      envMapIntensity={0.28}
+      side={THREE.DoubleSide}
+    />
   </instancedMesh>;
 }
 
@@ -325,14 +339,26 @@ function NaturalCanopy({ profile, position, rotationY, scale, shapeSeed }: {
   scale: number;
   shapeSeed: number;
 }) {
+  const [foliageDiffuse, foliageAlpha] = useTexture([FERN_DIFFUSE, FERN_ALPHA]);
+  useMemo(() => {
+    foliageDiffuse.colorSpace = THREE.SRGBColorSpace;
+    foliageDiffuse.wrapS = foliageDiffuse.wrapT = THREE.ClampToEdgeWrapping;
+    foliageAlpha.wrapS = foliageAlpha.wrapT = THREE.ClampToEdgeWrapping;
+    foliageDiffuse.anisotropy = 4;
+    foliageAlpha.anisotropy = 4;
+    foliageDiffuse.needsUpdate = true;
+    foliageAlpha.needsUpdate = true;
+    return null;
+  }, [foliageAlpha, foliageDiffuse]);
+
   const authored = useMemo(() => {
     const woodland = profile.id === "woodland";
     const trunkColor = woodland ? "#3a3027" : "#493a2c";
     const branchColor = woodland ? "#42372d" : "#514334";
-    const leafA = woodland ? "#314b38" : "#526b50";
-    const leafB = woodland ? "#3f5a40" : "#63745a";
-    const leafC = woodland ? "#496047" : "#6c7d60";
-    const leafD = woodland ? "#273f31" : "#465f49";
+    const leafA = woodland ? "#9eb492" : "#b8c9aa";
+    const leafB = woodland ? "#aec09e" : "#c2cfb3";
+    const leafC = woodland ? "#8da681" : "#a9bb9b";
+    const leafD = woodland ? "#829b79" : "#9fb392";
 
     const shapePhase = shapeSeed * 0.731;
     const trunkLeanX = (((shapeSeed * 17) % 19) - 9) * 0.008;
@@ -403,6 +429,17 @@ function NaturalCanopy({ profile, position, rotationY, scale, shapeSeed }: {
       -0.26, -0.035,-0.34,
        0.00,  0.00,  0.08,
     ], 3));
+    leafGeometry.setAttribute("uv", new THREE.Float32BufferAttribute([
+      0.00, 0.42,
+      0.18, 0.74,
+      0.50, 1.00,
+      0.82, 0.74,
+      1.00, 0.42,
+      0.82, 0.16,
+      0.50, 0.00,
+      0.18, 0.16,
+      0.50, 0.46,
+    ], 2));
     leafGeometry.setIndex([
       8, 0, 1,
       8, 1, 2,
@@ -426,7 +463,7 @@ function NaturalCanopy({ profile, position, rotationY, scale, shapeSeed }: {
       const value = Math.sin(seed * 12.9898 + shapeSeed * 53.117 + (woodland ? 78.233 : 31.417)) * 43758.5453;
       return value - Math.floor(value);
     };
-    const leaves = Array.from({ length: woodland ? 1180 : 1040 }, (_, index) => {
+    const leaves = Array.from({ length: woodland ? 420 : 360 }, (_, index) => {
       const anchor = foliageAnchors[index % foliageAnchors.length];
       const spread = 0.08 + hash(index * 7 + 1) * 0.58;
       const theta = hash(index * 7 + 2) * Math.PI * 2;
@@ -436,9 +473,9 @@ function NaturalCanopy({ profile, position, rotationY, scale, shapeSeed }: {
       const rx = (hash(index * 7 + 6) - 0.5) * 1.28;
       const ry = theta + (hash(index * 7 + 7) - 0.5) * 1.15;
       const rz = (hash(index * 7 + 8) - 0.5) * 1.12;
-      const sx = 0.15 + hash(index * 7 + 9) * 0.11;
-      const sy = 0.48 + hash(index * 7 + 10) * 0.26;
-      const sz = 0.14 + hash(index * 7 + 11) * 0.10;
+      const sx = 0.30 + hash(index * 7 + 9) * 0.24;
+      const sy = 0.82 + hash(index * 7 + 10) * 0.32;
+      const sz = 0.34 + hash(index * 7 + 11) * 0.30;
       return {
         position: [x, y, z] as [number, number, number],
         rotation: [rx, ry, rz] as [number, number, number],
@@ -475,6 +512,7 @@ function NaturalCanopy({ profile, position, rotationY, scale, shapeSeed }: {
       visibleAuthority: "runtime-authored-canopy-v26",
       supersedesVisibleCandidate: "ground-v24-faceted-volume-crown",
       literalPixelRepair: "v26-ovate-leaflets-remove-primitive-ball-canopy",
+      scannedFoliageRepair: "v31-vendored-polyhaven-fern-atlas-canopy",
       naturalTerrainRepair: "v27-natural-soil-no-repeating-rock-maps",
       structuralPixelRepair: "v28-organic-tapered-trunk-branch-silhouette",
       supplementalPixelRepair: "v25-natural-horizon-and-terrain-relief",
@@ -487,10 +525,10 @@ function NaturalCanopy({ profile, position, rotationY, scale, shapeSeed }: {
     {authored.branches.map((geometry, index) => <mesh key={index} geometry={geometry} castShadow receiveShadow>
       <meshStandardMaterial color={authored.branchColor} roughness={0.94} metalness={0} envMapIntensity={0.26} />
     </mesh>)}
-    <CanopyLeafInstances geometry={authored.leafGeometry} leaves={authored.leavesA} color={authored.leafA} />
-    <CanopyLeafInstances geometry={authored.leafGeometry} leaves={authored.leavesB} color={authored.leafB} />
-    <CanopyLeafInstances geometry={authored.leafGeometry} leaves={authored.leavesC} color={authored.leafC} />
-    <CanopyLeafInstances geometry={authored.leafGeometry} leaves={authored.leavesD} color={authored.leafD} />
+    <CanopyLeafInstances geometry={authored.leafGeometry} leaves={authored.leavesA} color={authored.leafA} map={foliageDiffuse} alphaMap={foliageAlpha} />
+    <CanopyLeafInstances geometry={authored.leafGeometry} leaves={authored.leavesB} color={authored.leafB} map={foliageDiffuse} alphaMap={foliageAlpha} />
+    <CanopyLeafInstances geometry={authored.leafGeometry} leaves={authored.leavesC} color={authored.leafC} map={foliageDiffuse} alphaMap={foliageAlpha} />
+    <CanopyLeafInstances geometry={authored.leafGeometry} leaves={authored.leavesD} color={authored.leafD} map={foliageDiffuse} alphaMap={foliageAlpha} />
   </group>;
 }
 
@@ -1139,7 +1177,7 @@ export default function GroundSpatialWorldClean() {
     data-ground-visual-owner="atmospheric-living-environment"
     data-ground-runtime-owner="first-person-lived-world"
     data-ground-visual-revision="ground-lived-world-v2-canon-lock"
-    data-ground-art-revision="ground-v30-sparse-natural-canopy-atmospheric-depth" data-ground-canopy-repair="ground-v30-sparse-background-canopy-no-tree-field"
+    data-ground-art-revision="ground-v30-sparse-natural-canopy-atmospheric-depth" data-ground-canopy-repair="ground-v30-sparse-background-canopy-no-tree-field" data-ground-foliage-repair="ground-v31-vendored-scanned-fern-atlas-canopy"
     data-ground-exploration="first-person-no-visible-body"
     data-ground-camera="eye-level-terrain-following-no-authored-bob"
     data-ground-eye-height={GROUND_EYE_HEIGHT_M}

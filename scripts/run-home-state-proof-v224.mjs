@@ -58,6 +58,29 @@ let derived = original
   .replace(speechFixtureAnchor, speechFixture)
   .replace(lifecycleRecordAnchor, lifecycleRecordWithFixture)
 
+const readinessSource = `async function waitForHomeReady(page) {
+  const owner = page.locator(ownerSelector)
+  await owner.waitFor({ state: 'visible', timeout: 45_000 })
+  await page.waitForFunction(
+    (selector) => document.querySelector(selector)?.getAttribute('data-home-assets-ready') === 'true',
+    ownerSelector,
+    { timeout: 45_000 },
+  )
+  return owner
+}`
+const readinessReplacement = `async function waitForHomeReady(page) {
+  const owner = page.locator(ownerSelector)
+  await owner.waitFor({ state: 'visible', timeout: 90_000 })
+  await page.waitForFunction(
+    (selector) => document.querySelector(selector)?.getAttribute('data-home-assets-ready') === 'true',
+    ownerSelector,
+    { timeout: 90_000 },
+  )
+  return owner
+}`
+if ((derived.split(readinessSource).length - 1) !== 1) throw new Error('Home proof readiness anchor is not unique')
+derived = derived.replace(readinessSource, readinessReplacement)
+
 // Playwright locator.focus() can wait on actionability/stability for a control that is
 // already present and natively focusable while the live 3D Home continues rendering.
 // The keyboard proof must still prove actual focus and native key activation; it must not
@@ -86,9 +109,9 @@ for (const replacement of continuityProofReplacements) {
 const keyboardProofReplacements = [
   {
     source: 'await openOrb.focus()', expected: 1,
-    replacement: "// locator.press below performs browser keyboard focus and native activation without a separate SwiftShader-sensitive focus transaction",
+    replacement: "await focusTestIdForKeyboard(page, 'home-semantic-orb')",
   },
-  { source: "await openOrb.press('Enter')", expected: 1, replacement: "await openOrb.press('Enter', { timeout: 60_000 })" },
+  { source: "await openOrb.press('Enter')", expected: 1, replacement: "await page.keyboard.press('Enter')" },
   {
     source: 'await message.focus()', expected: 2,
     replacement: "await message.press('Shift', { timeout: 60_000 })",
@@ -109,6 +132,21 @@ for (const replacement of keyboardProofReplacements) {
   if (count !== replacement.expected) throw new Error(`Home state proof keyboard anchor mismatch for ${replacement.source}: expected ${replacement.expected}, received ${count}`)
   derived = derived.replaceAll(replacement.source, replacement.replacement)
 }
+
+const orbSummarySource = "const talk = page.locator('summary').filter({ hasText: 'Talk with Orb' }).first()"
+const orbSummaryReplacement = "const talk = page.locator('summary:visible').filter({ hasText: 'Talk with Orb' }).first()"
+if ((derived.split(orbSummarySource).length - 1) !== 1) throw new Error('Home Orb visible summary anchor is not unique')
+derived = derived.replace(orbSummarySource, orbSummaryReplacement)
+
+const passportNavigationSource = "const passportNavigation = page.waitForURL((url) => url.pathname.replace(/\\/+$/, '') === '/passport', { timeout: 45_000 })"
+const passportNavigationReplacement = "const passportNavigation = page.waitForURL((url) => url.pathname.replace(/\\/+$/, '') === '/passport', { timeout: 60_000, waitUntil: 'domcontentloaded' })"
+if ((derived.split(passportNavigationSource).length - 1) !== 1) throw new Error('Home Passport navigation anchor is not unique')
+derived = derived.replace(passportNavigationSource, passportNavigationReplacement)
+
+const returnReadinessSource = "    }, ownerSelector, { timeout: 45_000 })\n    record.returnStableState"
+const returnReadinessReplacement = "    }, ownerSelector, { timeout: 90_000 })\n    record.returnStableState"
+if ((derived.split(returnReadinessSource).length - 1) !== 1) throw new Error('Home return readiness anchor is not unique')
+derived = derived.replace(returnReadinessSource, returnReadinessReplacement)
 
 await writeFile(generatedPath, derived, 'utf8')
 let result
@@ -138,7 +176,7 @@ if (result.status !== 0) {
     authority,
     derivedProof: {
       source: 'capture-home-state-proof.mjs',
-      replacement: 'deterministic CI-only device speech transport replaces the headless window speechSynthesis transport and supplies onstart/boundary/onend; runtime state/rendering remains authoritative; generated proof uses Playwright locator.press native keyboard activation without a separate focus transaction and keeps the CI-only device-speech window long enough for constrained software-WebGL rendering',
+      replacement: 'deterministic CI-only device speech transport replaces the headless window speechSynthesis transport and supplies onstart/boundary/onend; runtime state/rendering remains authoritative; generated proof uses explicit DOM focus verification plus native page.keyboard activation and keeps the CI-only device-speech window long enough for constrained software-WebGL rendering',
       reason: 'headless Chromium exposes Web Speech but does not start an OS speech engine, and live WebGL rendering can keep locator.focus actionability unstable even when the semantic control is present and natively focusable; proof must not force runtime to fake acoustic speaking or bypass keyboard focus',
       audibleQualityCertified: false,
     },

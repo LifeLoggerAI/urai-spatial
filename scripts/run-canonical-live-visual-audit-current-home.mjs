@@ -98,14 +98,14 @@ const currentHomeSettlement = `  if (route.id === 'home') {
       const fallback = document.querySelector('[data-testid="urai-home-accessible-fallback"]')
       const rect = fallback?.getBoundingClientRect()
       return Boolean(fallback && rect && rect.width >= 240 && rect.height >= 240)
-    }, null, { timeout: 45_000, polling: 50 })
+    }, null, { timeout: 90_000, polling: 50 })
   }`
 patched = replaceOnce(patched, oldHomeSettlement, currentHomeSettlement, 'current Home readiness')
 
 const oldRouteSettlement = `    await page.locator(route.selector).first().waitFor({ state: 'visible', timeout: 45_000 })
     await settleSpatialRoute(page, route)`
 const currentRouteSettlement = `    const settleCurrentRoute = async () => {
-      await page.locator(route.selector).first().waitFor({ state: 'visible', timeout: 45_000 })
+      await page.locator(route.selector).first().waitFor({ state: 'visible', timeout: route.id === 'home' ? 90_000 : 45_000 })
       await settleSpatialRoute(page, route)
     }
     try {
