@@ -246,7 +246,7 @@ function CanopyLeafInstances({ geometry, leaves, color }: {
     owner.computeBoundingSphere();
   }, [dummy, leaves]);
   return <instancedMesh ref={mesh} args={[geometry, undefined, leaves.length]} castShadow receiveShadow frustumCulled>
-    <meshStandardMaterial color={color} roughness={0.84} metalness={0} envMapIntensity={0.34} />
+    <meshStandardMaterial color={color} roughness={0.88} metalness={0} envMapIntensity={0.3} side={THREE.DoubleSide} />
   </instancedMesh>;
 }
 
@@ -305,12 +305,36 @@ function NaturalCanopy({ profile, position, rotationY, scale, shapeSeed }: {
       false,
     ));
 
-    const leafGeometry = new THREE.SphereGeometry(1, 12, 8);
-    leafGeometry.scale(0.82, 0.34, 1.0);
+    // Authored ovate leaf geometry replaces the rejected squashed-sphere canopy primitive.
+    // The indexed leaf is substantially cheaper than SphereGeometry while preserving
+    // three-dimensional orientation through the existing instancing transform.
+    const leafGeometry = new THREE.BufferGeometry();
+    leafGeometry.setAttribute("position", new THREE.Float32BufferAttribute([
+      -0.48,  0.00,  0.00,
+      -0.28,  0.045, 0.48,
+       0.00,  0.085, 0.92,
+       0.28,  0.045, 0.48,
+       0.48,  0.00,  0.00,
+       0.26, -0.035,-0.34,
+       0.00, -0.055,-0.62,
+      -0.26, -0.035,-0.34,
+       0.00,  0.00,  0.08,
+    ], 3));
+    leafGeometry.setIndex([
+      8, 0, 1,
+      8, 1, 2,
+      8, 2, 3,
+      8, 3, 4,
+      8, 4, 5,
+      8, 5, 6,
+      8, 6, 7,
+      8, 7, 0,
+    ]);
     leafGeometry.computeVertexNormals();
+    leafGeometry.computeBoundingSphere();
 
     const foliageAnchors = [
-      ...transformedBranchDefs.map((points) => points[points.length - 1]),
+      ...transformedBranchDefs.flatMap((points) => points.slice(1)),
       [trunkLeanX * 2.55, 2.67 * crownLift, trunkLeanZ * 2.45] as const,
       [0.22 * crownWidth + trunkLeanX * 2.2, 2.48 * crownLift, 0.10 * crownDepth + trunkLeanZ * 2.0] as const,
       [-0.21 * crownWidth + trunkLeanX * 2.15, 2.50 * crownLift, -0.09 * crownDepth + trunkLeanZ * 2.05] as const,
@@ -319,7 +343,7 @@ function NaturalCanopy({ profile, position, rotationY, scale, shapeSeed }: {
       const value = Math.sin(seed * 12.9898 + shapeSeed * 53.117 + (woodland ? 78.233 : 31.417)) * 43758.5453;
       return value - Math.floor(value);
     };
-    const leaves = Array.from({ length: woodland ? 720 : 650 }, (_, index) => {
+    const leaves = Array.from({ length: woodland ? 1180 : 1040 }, (_, index) => {
       const anchor = foliageAnchors[index % foliageAnchors.length];
       const spread = 0.08 + hash(index * 7 + 1) * 0.58;
       const theta = hash(index * 7 + 2) * Math.PI * 2;
@@ -329,9 +353,9 @@ function NaturalCanopy({ profile, position, rotationY, scale, shapeSeed }: {
       const rx = (hash(index * 7 + 6) - 0.5) * 1.28;
       const ry = theta + (hash(index * 7 + 7) - 0.5) * 1.15;
       const rz = (hash(index * 7 + 8) - 0.5) * 1.12;
-      const sx = 0.085 + hash(index * 7 + 9) * 0.075;
-      const sy = 0.055 + hash(index * 7 + 10) * 0.060;
-      const sz = 0.20 + hash(index * 7 + 11) * 0.14;
+      const sx = 0.10 + hash(index * 7 + 9) * 0.075;
+      const sy = 0.82 + hash(index * 7 + 10) * 0.34;
+      const sz = 0.10 + hash(index * 7 + 11) * 0.065;
       return {
         position: [x, y, z] as [number, number, number],
         rotation: [rx, ry, rz] as [number, number, number],
@@ -363,11 +387,11 @@ function NaturalCanopy({ profile, position, rotationY, scale, shapeSeed }: {
     raycast={() => null}
     name="ground-authored-natural-canopy-v13"
     userData={{
-      treatment: "seed-varied-branch-architecture-dense-three-dimensional-broadleaf-canopy-v25",
+      treatment: "seed-varied-branch-architecture-ovate-leaf-canopy-v26",
       provenance: NATURAL_CANOPY,
-      visibleAuthority: "runtime-authored-canopy-v25",
+      visibleAuthority: "runtime-authored-canopy-v26",
       supersedesVisibleCandidate: "ground-v24-faceted-volume-crown",
-      literalPixelRepair: "v25-dense-3d-leaflets-mature-canopy-pbr-terrain",
+      literalPixelRepair: "v26-ovate-leaflets-remove-primitive-ball-canopy",
       supplementalPixelRepair: "v25-natural-horizon-and-terrain-relief",
     }}
   >
