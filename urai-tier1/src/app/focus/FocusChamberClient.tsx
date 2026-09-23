@@ -10,7 +10,7 @@ import { useSelectedMemory } from '@/spatial/memory/useSelectedMemory'
 import type { SelectedMemory } from '@/spatial/memory/selectedMemoryContract'
 import { requestUraiWorldReturn, requestUraiWorldTravel } from '@/spatial/world/worldEvents'
 
-// Locked product authority; V370 is the current literal-pixel implementation:
+// Locked product authority; V371 is the current literal-pixel implementation:
 // Life Map shows stellar memory points. Focus resolves the selected point into the
 // same memory star at intimate scale, with authorized source media (or a truthful
 // generated visualization when no media exists) visible inside/through the star.
@@ -367,34 +367,40 @@ function FocusMemoryStar({
     position={STAR_POSITION}
     name="focus-selected-memory-star"
     userData={{
-      visualAuthority: 'selected-memory-star-resolving-through-memory-v370',
+      visualAuthority: 'selected-memory-star-resolving-through-memory-v371',
       lifeMapContinuity: 'same-selected-star-resolved-at-close-range',
       terrainOwner: false,
     }}
   >
     <>
-    <sprite raycast={() => null} position={[-.08, .04, -.08]} scale={[5.60, 4.10, 1]} rotation={-.18} name="focus-memory-star-corona-glow">
-      <spriteMaterial map={coronaTexture} color="#ffbd63" transparent opacity={memory ? .92 : .04} depthWrite={false} depthTest={false} blending={THREE.AdditiveBlending} toneMapped={false} />
+    <sprite raycast={() => null} position={[-.08, .04, -.08]} scale={[4.20, 3.15, 1]} rotation={-.18} name="focus-memory-star-corona-glow">
+      <spriteMaterial map={coronaTexture} color="#ffbd63" transparent opacity={memory ? .30 : .04} depthWrite={false} depthTest={false} blending={THREE.AdditiveBlending} toneMapped={false} />
     </sprite>
-    <sprite raycast={() => null} position={[.06, -.02, .11]} scale={[7.40, 4.80, 1]} rotation={.23} name="focus-memory-star-photosphere-rays">
+    <sprite raycast={() => null} position={[.06, -.02, .11]} scale={[9.60, 1.28, 1]} rotation={.23} name="focus-memory-star-photosphere-rays">
       <spriteMaterial map={rayTexture} color="#ffe09a" transparent opacity={memory ? .92 : .03} depthWrite={false} depthTest={false} blending={THREE.AdditiveBlending} toneMapped={false} />
     </sprite>
-    <sprite raycast={() => null} position={[-.05, .06, .10]} scale={[4.80, 7.60, 1]} rotation={-.49} name="focus-memory-star-photosphere-rays-secondary">
-      <spriteMaterial map={rayTexture} color="#fff7dc" transparent opacity={memory ? .82 : .02} depthWrite={false} depthTest={false} blending={THREE.AdditiveBlending} toneMapped={false} />
+    <sprite raycast={() => null} position={[-.05, .06, .10]} scale={[1.34, 9.10, 1]} rotation={-.49} name="focus-memory-star-photosphere-rays-secondary">
+      <spriteMaterial map={rayTexture} color="#fff7dc" transparent opacity={memory ? .86 : .02} depthWrite={false} depthTest={false} blending={THREE.AdditiveBlending} toneMapped={false} />
     </sprite>
-    <sprite raycast={() => null} position={[-.02, .01, .12]} scale={[3.70, 2.62, 1]} rotation={.13} name="focus-memory-star-photosphere-surface">
-      <spriteMaterial map={photosphereTexture} color="#ffe7aa" transparent opacity={memory ? .46 : .14} depthWrite={false} depthTest={false} blending={THREE.AdditiveBlending} toneMapped={false} />
+    <sprite raycast={() => null} position={[.02, .01, .13]} scale={[8.20, 1.04, 1]} rotation={.72} name="focus-memory-star-coronal-arm-diagonal-a">
+      <spriteMaterial map={rayTexture} color="#ffd07a" transparent opacity={memory ? .66 : .02} depthWrite={false} depthTest={false} blending={THREE.AdditiveBlending} toneMapped={false} />
     </sprite>
-    <sprite raycast={() => null} position={[.03, -.02, .16]} scale={[3.25, 2.30, 1]} rotation={-.16} name="focus-memory-star-white-hot-limb">
-      <spriteMaterial map={photosphereTexture} color="#fffbe8" transparent opacity={memory ? .24 : .08} depthWrite={false} depthTest={false} blending={THREE.AdditiveBlending} toneMapped={false} />
+    <sprite raycast={() => null} position={[-.03, .02, .14]} scale={[7.40, .92, 1]} rotation={-.91} name="focus-memory-star-coronal-arm-diagonal-b">
+      <spriteMaterial map={rayTexture} color="#fff0b8" transparent opacity={memory ? .58 : .02} depthWrite={false} depthTest={false} blending={THREE.AdditiveBlending} toneMapped={false} />
+    </sprite>
+    <sprite raycast={() => null} position={[-.02, .01, .12]} scale={[2.70, 2.15, 1]} rotation={.13} name="focus-memory-star-photosphere-surface">
+      <spriteMaterial map={photosphereTexture} color="#ffe7aa" transparent opacity={memory ? .38 : .14} depthWrite={false} depthTest={false} blending={THREE.AdditiveBlending} toneMapped={false} />
+    </sprite>
+    <sprite raycast={() => null} position={[.03, -.02, .16]} scale={[2.45, 1.88, 1]} rotation={-.16} name="focus-memory-star-white-hot-limb">
+      <spriteMaterial map={photosphereTexture} color="#fffbe8" transparent opacity={memory ? .16 : .08} depthWrite={false} depthTest={false} blending={THREE.AdditiveBlending} toneMapped={false} />
     </sprite>
     <group raycast={() => null} name="focus-memory-star-explicit-corona-rays" position={[0, 0, -0.04]} />
-    <mesh raycast={() => null} geometry={photosphereGeometry} scale={[0.34, 0.28, 0.22]} name="focus-memory-star-photosphere-core" rotation={[0.08, -0.18, 0]}>
+    <mesh raycast={() => null} geometry={photosphereGeometry} scale={[0.22, 0.17, 0.12]} name="focus-memory-star-photosphere-core" rotation={[0.08, -0.18, 0]}>
       <meshBasicMaterial
         map={sphereTexture}
         color="#fff3b8"
         transparent
-        opacity={memory ? 0.08 : 0.16}
+        opacity={memory ? 0 : 0.16}
         depthWrite={false}
         blending={THREE.AdditiveBlending}
         toneMapped={false}
@@ -427,7 +433,7 @@ function FocusMemoryStar({
       <sphereGeometry args={[1, 48, 36]} />
       <meshBasicMaterial color={accent} transparent opacity={memory ? 0 : 0.012} depthWrite={false} side={THREE.BackSide} blending={THREE.AdditiveBlending} />
     </mesh>
-    <pointLight color="#ffb45f" intensity={memory ? 2.4 : 1.1} distance={7.2} decay={2} />
+    <pointLight color="#ffb45f" intensity={memory ? 1.2 : 1.1} distance={5.8} decay={2} />
     <pointLight position={[-1.1, 1.25, 1.7]} color="#fff0c8" intensity={memory ? 1.55 : .42} distance={6.2} decay={2} />
     <Html center transform position={[0.09, -0.03, 0.42]} distanceFactor={1.92} zIndexRange={[20, 10]}>
       <button
@@ -727,7 +733,7 @@ export default function FocusChamberClient() {
     style={style}
     data-testid="urai-final-focus-chamber"
     data-focus-composition="selected-memory-star-with-contained-memory"
-    data-focus-visual-revision="v370-irregular-corona-first-read-stellar-memory-field"
+    data-focus-visual-revision="v371-asymmetric-coronal-arms-stellar-memory-field"
     data-focus-selected-framing={memory ? 'selected-memory-star-approach' : 'neutral-star-awaiting-selection'}
     data-focus-spatial="selected-memory-star"
     data-focus-movement="orbit-zoom-keyboard-touch"
@@ -735,7 +741,7 @@ export default function FocusChamberClient() {
     data-focus-terrain-owner="false"
     data-focus-memory-visual={memoryVisual}
     data-focus-life-map-star-morphology="stellar-point-photosphere-layered-corona"
-    data-focus-stellar-treatment="selected-irregular-corona-first-read-stellar-field-v370"
+    data-focus-stellar-treatment="selected-asymmetric-coronal-arms-stellar-field-v371"
     data-focus-closeup-morphology="resolved-dimensional-memory-star"
     data-focus-replay-transition="moment-expands-into-replay"
     data-focus-camera-x="0.000"
