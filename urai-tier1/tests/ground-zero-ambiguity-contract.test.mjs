@@ -99,18 +99,18 @@ test('Ground retains accessible coarse-pointer movement and filmic rendering', (
   ]) has(ground, marker)
 })
 
-test('Ground natural profiles keep organic vertex color while using subtle PBR relief instead of repeated paving', () => {
+test('Ground natural profiles keep organic vertex color without repeating paving maps', () => {
   for (const marker of [
     'const naturalSoilProfile = profile.id === "temperate" || profile.id === "woodland"',
     'if (naturalSoilProfile)',
-    'normalMap={normal}',
-    'aoMap={arm}',
-    'roughnessMap={arm}',
-    'roughness={0.97}',
+    'natural-soil-no-repeating-rock-maps-v27',
+    'vertexColors',
+    'roughness={0.98}',
     'ground-v25-pbr-terrain-dense-3d-canopy-atmospheric-depth',
   ]) has(ground, marker)
   const naturalBranch = ground.match(/if \(naturalSoilProfile\) \{[\s\S]*?\n  \}/)?.[0] ?? ''
-  assert.doesNotMatch(naturalBranch, /map=\{albedo\}|metalnessMap=\{arm\}/)
+  assert.doesNotMatch(naturalBranch, /map=\{albedo\}|normalMap=\{normal\}|aoMap=\{arm\}|roughnessMap=\{arm\}|metalnessMap=\{arm\}/)
+  for (const marker of ['map={albedo}', 'normalMap={normal}', 'aoMap={arm}', 'roughnessMap={arm}']) has(ground, marker)
 })
 
 test('Ground haptics use semantic activation and arrival cues instead of portal spectacle', () => {
