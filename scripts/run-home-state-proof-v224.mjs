@@ -90,11 +90,6 @@ const keyboardProofReplacements = [
   },
   { source: "await openOrb.press('Enter')", expected: 1, replacement: "await openOrb.press('Enter', { timeout: 60_000 })" },
   {
-    source: 'await talk.focus()', expected: 1,
-    replacement: "// native summary keyboard activation is proven by locator.press and the resulting open conversation state",
-  },
-  { source: "await talk.press('Enter')", expected: 1, replacement: "await talk.press('Enter', { timeout: 60_000 })" },
-  {
     source: 'await message.focus()', expected: 2,
     replacement: "await message.press('Shift', { timeout: 60_000 })",
   },

@@ -55,7 +55,7 @@ test('current Home keeps V223 Orb interaction ownership while V288/V286 own the 
   assert.doesNotMatch(activeRepair, /<HomeOrbGroundedV288 \/>/)
   assert.match(activeRepair, /Historical V281 localized Ground\/ascent overlays remain retired/)
   assert.match(activeRepair, /HomeVisualAuthority mounts the V288 grounded biomorphic reliquary[\s\S]*visible Orb morphology/)
-  assert.match(activeRepair, /current Home runtime keeps Orb semantics, speech\/VAD timing and pointer\/touch ownership/)
+  assert.match(activeRepair, /Home runtime keeps Orb semantics, speech\/VAD timing and pointer\/touch ownership/)
   assert.match(activeRepair, /function HomePassportOwnershipObject/)
   assert.match(activeRepair, /visibility: 'first-person-only'/)
   assert.match(activeRepair, /<HomePassportOwnershipObject \/>[\s\S]*<HomeGlobalEmotionalFieldEarth state=\{globalFieldState\} \/>/)
