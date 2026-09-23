@@ -1,5 +1,5 @@
 const EXPECTED_FAILURE = 'locator.click: Timeout 30000ms exceeded.'
-const EXPECTED_CONTROL = "getByRole('button', { name: 'Open URAI Orb companion' })"
+const EXPECTED_CONTROL = "getByRole('button', { name: 'Open UrAi Orb companion' })"
 const CLICK_DISPATCH_MARKERS = ['performing click action', 'attempting click action']
 
 export function assertExactHomeOrbOpenTransportFailure({ failure, exactHead }) {
