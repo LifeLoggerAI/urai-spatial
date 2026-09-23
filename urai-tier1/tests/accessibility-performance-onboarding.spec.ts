@@ -40,7 +40,7 @@ test.describe('first-run onboarding accessibility', () => {
     await expect(page.getByRole('heading', { name: 'Permission is part of the world, not a hidden switch.' })).toBeFocused()
     await expect(page.getByText(/Global Emotional Field contribution starts Off/i)).toBeVisible()
     await expect(page.getByRole('link', { name: 'Consent Sanctuary' })).toHaveAttribute('href', '/privacy-controls')
-    await expect(page.getByRole('link', { name: 'Passport' })).toHaveAttribute('href', '/passport')
+    await expect(page.getByRole('link', { name: 'Passport', exact: true })).toHaveAttribute('href', '/passport')
 
     await nativeKeyboardActivate(continueButton, 'Enter')
     await expect(setup).toHaveAttribute('data-setup-step', 'comfort')
