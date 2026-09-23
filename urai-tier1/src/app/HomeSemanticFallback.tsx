@@ -36,9 +36,9 @@ export default function HomeSemanticFallback() {
         <p style={{ maxWidth: '54ch', margin: '16px 0 0', lineHeight: 1.6, opacity: .78 }}>
           The spatial renderer is unavailable or still preparing. No synthetic avatar, hands, arms, body rig, personal memory, or invented history is rendered here.
         </p>
-        <nav aria-label="Home semantic destinations" style={{ display: 'flex', flexWrap: 'wrap', gap: 10, marginTop: 22 }}>
-          <Link href="/ground/?from=home-ground" style={{ minHeight: 48, display: 'inline-flex', alignItems: 'center', padding: '0 16px', borderRadius: 999, background: '#eaf4ef', color: '#0b1716', fontWeight: 800, textDecoration: 'none' }}>Ground</Link>
-          <Link href="/life-map/?from=home-sky" style={{ minHeight: 48, display: 'inline-flex', alignItems: 'center', padding: '0 16px', borderRadius: 999, border: '1px solid rgba(234,244,239,.24)', color: '#f3faf7', fontWeight: 800, textDecoration: 'none' }}>Life Map</Link>
+        <nav aria-label="Home semantic destinations" data-home-navigation-owner="semantic-fallback" style={{ display: 'flex', flexWrap: 'wrap', gap: 10, marginTop: 22 }}>
+          <Link href="/ground/?entryPortal=home-ground&cameraCheckpoint=home-ground-descent" aria-label="Open Ground directly" style={{ minHeight: 48, display: 'inline-flex', alignItems: 'center', padding: '0 16px', borderRadius: 999, background: '#eaf4ef', color: '#0b1716', fontWeight: 800, textDecoration: 'none' }}>Ground</Link>
+          <Link href="/life-map/?from=home-sky&entryPortal=home-sky&cameraCheckpoint=home-sky-ascent-complete" aria-label="Open Life Map directly" style={{ minHeight: 48, display: 'inline-flex', alignItems: 'center', padding: '0 16px', borderRadius: 999, border: '1px solid rgba(234,244,239,.24)', color: '#f3faf7', fontWeight: 800, textDecoration: 'none' }}>Life Map</Link>
           <Link href="/passport" aria-label="Open Passport from Home" style={{ minHeight: 48, display: 'inline-flex', alignItems: 'center', padding: '0 16px', borderRadius: 999, border: '1px solid rgba(234,244,239,.24)', color: '#f3faf7', fontWeight: 800, textDecoration: 'none' }}>Passport</Link>
           <Link href="/privacy" style={{ minHeight: 48, display: 'inline-flex', alignItems: 'center', padding: '0 16px', borderRadius: 999, border: '1px solid rgba(234,244,239,.24)', color: '#f3faf7', fontWeight: 800, textDecoration: 'none' }}>Privacy</Link>
         </nav>
