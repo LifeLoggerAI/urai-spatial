@@ -7,7 +7,7 @@ const groundCanon = readFileSync(new URL('../src/spatial/ground/groundCanon.ts',
 
 test('Ground renders the current atmospheric lived world instead of the rejected root-vault substrate', () => {
   assert.match(ground, /data-ground-visual-revision="ground-lived-world-v2-canon-lock"/)
-  assert.match(ground, /data-ground-art-revision="ground-v25-pbr-terrain-dense-3d-canopy-atmospheric-depth"/)
+  assert.match(ground, /data-ground-art-revision="ground-v30-sparse-natural-canopy-atmospheric-depth"/)
   assert.match(ground, /data-ground-visual-owner="atmospheric-living-environment"/)
   assert.match(ground, /<AtmosphericGroundSky profile=\{profile\} \/>/)
   assert.match(ground, /<NaturalScatter profile=\{profile\} \/>/)
@@ -27,7 +27,9 @@ test('Ground renders the current atmospheric lived world instead of the rejected
   assert.match(ground, /ground-coastal-deforming-water-v29/)
   assert.doesNotMatch(ground, /<planeGeometry args=\{\[96, 42, 16, 10\]\}/)
   assert.match(ground, /makeOrganicTaperedTube/)
-  assert.match(ground, /slice\(0, woodland \? 38 : 34\)/)
+  assert.match(ground, /slice\(0, woodland \? 14 : 12\)/)
+  assert.match(ground, /v30-sparse-background-natural-canopy-no-cloned-tree-field/)
+  assert.match(ground, /data-ground-canopy-repair="ground-v30-sparse-background-canopy-no-tree-field"/)
   assert.doesNotMatch(ground, /new THREE\.IcosahedronGeometry\(0\.5, 0\)/)
   assert.match(ground, /<ScannedRock/)
   assert.match(ground, /<FernPatch/)

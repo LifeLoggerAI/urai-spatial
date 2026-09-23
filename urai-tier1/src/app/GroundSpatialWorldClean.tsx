@@ -478,6 +478,7 @@ function NaturalCanopy({ profile, position, rotationY, scale, shapeSeed }: {
       naturalTerrainRepair: "v27-natural-soil-no-repeating-rock-maps",
       structuralPixelRepair: "v28-organic-tapered-trunk-branch-silhouette",
       supplementalPixelRepair: "v25-natural-horizon-and-terrain-relief",
+      compositionPixelRepair: "v30-sparse-background-natural-canopy-no-cloned-tree-field",
     }}
   >
     <mesh geometry={authored.trunkGeometry} castShadow receiveShadow>
@@ -685,19 +686,19 @@ function NaturalScatter({ profile }: { profile: EnvironmentProfile }) {
 
   const woodland = profile.id === "woodland";
   const ferns = items.slice(0, woodland ? 88 : 76);
-  const canopies = items.filter((item) => item.z < (woodland ? 8.0 : 6.5)).slice(0, woodland ? 38 : 34);
-  return <group name={woodland ? "ground-woodland-scanned-understory" : "ground-temperate-scanned-understory"} userData={{ treatment: "urai-self-authored-varied-canopy-v13-with-polyhaven-fern-rock-understory", canopyFallback: "scanned-understory-remains-without-canopy" }} raycast={() => null}>
+  const canopies = items.filter((item) => item.z < (woodland ? 1.0 : -1.0)).slice(0, woodland ? 14 : 12);
+  return <group name={woodland ? "ground-woodland-scanned-understory" : "ground-temperate-scanned-understory"} userData={{ treatment: "urai-sparse-background-canopy-v30-with-polyhaven-fern-rock-understory", canopyFallback: "scanned-understory-remains-without-canopy", compositionRepair: "v30-sparse-background-natural-canopy-no-cloned-tree-field" }} raycast={() => null}>
     <GroundCanopyBoundary>
       <Suspense fallback={null}>
         {canopies.map((item) => {
-          const x = item.x * (0.66 + (item.index % 5) * 0.041) + Math.sin(item.index * 2.17) * 2.05 + Math.cos(item.index * 0.71) * 0.92;
-          const z = item.z - 1.5 + Math.cos(item.index * 1.61) * 3.25 + Math.sin(item.index * 0.83) * 1.35;
+          const x = item.x * (0.78 + (item.index % 5) * 0.055) + Math.sin(item.index * 2.17) * 3.4 + Math.cos(item.index * 0.71) * 1.8;
+          const z = item.z - 7.5 + Math.cos(item.index * 1.61) * 4.2 + Math.sin(item.index * 0.83) * 2.2;
           return <NaturalCanopy
             key={`canopy-${item.index}`}
             profile={profile}
             position={[x, groundHeight(x, z, profile.id) - 0.02, z]}
             rotationY={item.index * 0.91 + (woodland ? 0.22 : -0.14)}
-            scale={(woodland ? 2.72 : 2.52) + item.scale * 0.50}
+            scale={(woodland ? 2.45 : 2.25) + item.scale * 0.75 + (item.index % 4) * 0.18}
             shapeSeed={item.index + (woodland ? 101 : 17)}
           />;
         })}
@@ -1138,7 +1139,7 @@ export default function GroundSpatialWorldClean() {
     data-ground-visual-owner="atmospheric-living-environment"
     data-ground-runtime-owner="first-person-lived-world"
     data-ground-visual-revision="ground-lived-world-v2-canon-lock"
-    data-ground-art-revision="ground-v25-pbr-terrain-dense-3d-canopy-atmospheric-depth" data-ground-canopy-repair="ground-v25-dense-3d-leaflets-no-faceted-volume-crowns"
+    data-ground-art-revision="ground-v30-sparse-natural-canopy-atmospheric-depth" data-ground-canopy-repair="ground-v30-sparse-background-canopy-no-tree-field"
     data-ground-exploration="first-person-no-visible-body"
     data-ground-camera="eye-level-terrain-following-no-authored-bob"
     data-ground-eye-height={GROUND_EYE_HEIGHT_M}
