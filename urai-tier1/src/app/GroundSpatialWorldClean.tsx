@@ -337,9 +337,9 @@ function NaturalCanopy({ profile, position, rotationY, scale, shapeSeed }: {
     const shapePhase = shapeSeed * 0.731;
     const trunkLeanX = (((shapeSeed * 17) % 19) - 9) * 0.008;
     const trunkLeanZ = (((shapeSeed * 23) % 17) - 8) * 0.007;
-    const crownWidth = 0.74 + ((shapeSeed * 29) % 37) / 100;
-    const crownDepth = 0.76 + ((shapeSeed * 31) % 33) / 100;
-    const crownLift = 0.92 + ((shapeSeed * 11) % 19) / 100;
+    const crownWidth = 0.62 + ((shapeSeed * 29) % 61) / 100;
+    const crownDepth = 0.58 + ((shapeSeed * 31) % 67) / 100;
+    const crownLift = 0.82 + ((shapeSeed * 11) % 39) / 100;
     const trunkCurve = new THREE.CatmullRomCurve3([
       new THREE.Vector3(0, 0, 0),
       new THREE.Vector3(-0.035 + trunkLeanX * 0.35, 0.56, 0.018 + trunkLeanZ * 0.25),
@@ -436,9 +436,9 @@ function NaturalCanopy({ profile, position, rotationY, scale, shapeSeed }: {
       const rx = (hash(index * 7 + 6) - 0.5) * 1.28;
       const ry = theta + (hash(index * 7 + 7) - 0.5) * 1.15;
       const rz = (hash(index * 7 + 8) - 0.5) * 1.12;
-      const sx = 0.10 + hash(index * 7 + 9) * 0.075;
-      const sy = 0.82 + hash(index * 7 + 10) * 0.34;
-      const sz = 0.10 + hash(index * 7 + 11) * 0.065;
+      const sx = 0.15 + hash(index * 7 + 9) * 0.11;
+      const sy = 0.48 + hash(index * 7 + 10) * 0.26;
+      const sz = 0.14 + hash(index * 7 + 11) * 0.10;
       return {
         position: [x, y, z] as [number, number, number],
         rotation: [rx, ry, rz] as [number, number, number],
@@ -686,7 +686,7 @@ function NaturalScatter({ profile }: { profile: EnvironmentProfile }) {
 
   const woodland = profile.id === "woodland";
   const ferns = items.slice(0, woodland ? 88 : 76);
-  const canopies = items.filter((item) => item.z < (woodland ? 1.0 : -1.0)).slice(0, woodland ? 14 : 12);
+  const canopies = items.filter((item) => item.z < (woodland ? 2.0 : 0.0)).slice(0, woodland ? 22 : 18);
   return <group name={woodland ? "ground-woodland-scanned-understory" : "ground-temperate-scanned-understory"} userData={{ treatment: "urai-sparse-background-canopy-v30-with-polyhaven-fern-rock-understory", canopyFallback: "scanned-understory-remains-without-canopy", compositionRepair: "v30-sparse-background-natural-canopy-no-cloned-tree-field" }} raycast={() => null}>
     <GroundCanopyBoundary>
       <Suspense fallback={null}>
@@ -698,7 +698,7 @@ function NaturalScatter({ profile }: { profile: EnvironmentProfile }) {
             profile={profile}
             position={[x, groundHeight(x, z, profile.id) - 0.02, z]}
             rotationY={item.index * 0.91 + (woodland ? 0.22 : -0.14)}
-            scale={(woodland ? 2.45 : 2.25) + item.scale * 0.75 + (item.index % 4) * 0.18}
+            scale={(woodland ? 1.55 : 1.45) + item.scale * 0.48 + (item.index % 5) * 0.07}
             shapeSeed={item.index + (woodland ? 101 : 17)}
           />;
         })}
