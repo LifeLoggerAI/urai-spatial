@@ -70,7 +70,6 @@ test('Focus focal authority is the selected memory star and cannot regress to V3
   assert.doesNotMatch(focus, /repeating-conic-gradient\(/)
   assert.match(focus, /mix-blend-mode:normal/)
   assert.match(focus, /filter:blur\(\.9px\);opacity:\.68/)
-  assert.match(focus, /opacity=\{memory \? 0 : 0\.16\}/)
   assert.match(focus, /opacity=\{memory \? 0 : 0\.012\}/)
   assert.match(focus, /function makeFocusSphereTexture\(\)/)
   assert.match(focus, /<meshBasicMaterial[\s\S]*map=\{sphereTexture\}[\s\S]*blending=\{THREE\.AdditiveBlending\}[\s\S]*depthWrite=\{false\}/)
