@@ -27,7 +27,7 @@ test('Ground renders the current atmospheric lived world instead of the rejected
   assert.match(ground, /ground-coastal-deforming-water-v29/)
   assert.doesNotMatch(ground, /<planeGeometry args=\{\[96, 42, 16, 10\]\}/)
   assert.match(ground, /makeOrganicTaperedTube/)
-  assert.match(ground, /slice\(0, woodland \? 14 : 12\)/)
+  assert.match(ground, /slice\(0, woodland \? 22 : 18\)/)
   assert.match(ground, /v30-sparse-background-natural-canopy-no-cloned-tree-field/)
   assert.match(ground, /data-ground-canopy-repair="ground-v30-sparse-background-canopy-no-tree-field"/)
   assert.doesNotMatch(ground, /new THREE\.IcosahedronGeometry\(0\.5, 0\)/)
