@@ -826,7 +826,7 @@ function GroundScene({ profile, input, yaw, pitch, target, obstacles, playerPosi
   </>;
 }
 
-function GroundAnalogPad({ input, visible }: { input: MovementInput; visible: boolean }) {
+function GroundAnalogPad({ input }: { input: MovementInput }) {
   const pad = useRef<HTMLDivElement>(null);
   const [active, setActive] = useState(false);
   const [thumb, setThumb] = useState({ x: 0, y: 0 });
@@ -860,7 +860,7 @@ function GroundAnalogPad({ input, visible }: { input: MovementInput; visible: bo
     aria-label="Ground analog movement"
     data-active={active ? "true" : "false"}
     style={{
-      display: visible ? "block" : "none",
+      display: "block",
       position: "absolute",
       zIndex: 24,
       left: "max(18px, env(safe-area-inset-left))",
@@ -986,7 +986,7 @@ export default function GroundSpatialWorldClean() {
       <a href="/privacy-controls">Privacy</a>
     </nav>
     <div className="sr-only" role="status" aria-live="polite">{ready ? `${profile.label} is ready for first-person exploration. UrAi remains available through semantic voice and accessible controls; no follower Orb is rendered.` : "Ground is forming."}</div>
-    <GroundAnalogPad input={input} visible={isCoarse} />
+    <GroundAnalogPad input={input} />
     <details className="ground-accessible-movement" data-movement-ui="true"><summary>Movement controls</summary><MobileMovementPad input={input} label="Ground first-person movement controls" /></details>
     <span className="sr-only" data-testid="urai-ground-walkable-surface">The visible Ground terrain is the traversal and click-to-move surface.</span>
 
