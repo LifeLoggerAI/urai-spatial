@@ -135,18 +135,18 @@ function TerrainMaterial({ profile }: { profile: EnvironmentProfile }) {
   }, [albedo, arm, normal, profile]);
   const naturalSoilProfile = profile.id === "temperate" || profile.id === "woodland";
   if (naturalSoilProfile) {
-    const naturalNormalStrength = profile.id === "woodland" ? 0.46 : 0.40;
+    // natural-soil-no-repeating-rock-maps-v27
+    // The prior rock-floor normal/AO/roughness set produced a literal brick/tile
+    // pattern in woodland and temperate retained pixels. Natural profiles rely
+    // on terrain geometry + multi-frequency vertex color instead of repeating
+    // masonry maps so the near field reads as soil/moss rather than a tiled floor.
     return <meshStandardMaterial
       color="#ffffff"
-      normalMap={normal}
-      normalScale={new THREE.Vector2(naturalNormalStrength, naturalNormalStrength)}
-      aoMap={arm}
-      aoMapIntensity={0.44}
-      roughnessMap={arm}
-      roughness={0.97}
+      roughness={0.98}
       metalness={0}
       vertexColors
-      envMapIntensity={profile.id === "woodland" ? 0.18 : 0.22}
+      envMapIntensity={profile.id === "woodland" ? 0.16 : 0.20}
+      dithering
     />;
   }
   const normalStrength = profile.id === "urban" ? 0.34 : 0.58;
