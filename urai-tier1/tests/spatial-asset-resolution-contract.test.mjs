@@ -20,6 +20,14 @@ test('canonical manifest separates selected and proof fallback namespaces', () =
   assert.doesNotMatch(manifest, /status: 'placeholder'/)
 })
 
+test('quarantined portal geometry cannot resolve as active runtime asset authority', () => {
+  assert.doesNotMatch(manifest, /portal-ring-master-glb-v1|portal-ring-proof-fallback/)
+  assert.doesNotMatch(assetLayer, /portal-ring-master-glb-v1|entry-ground-portal-ring/)
+  assert.match(worldManifest, /label: 'Life Map Sky Threshold \\(legacy compatibility slot\\)'/)
+  assert.match(worldManifest, /status: 'missing'/)
+  assert.match(worldManifest, /portal\\/ring geometry is quarantined as historical provenance/)
+})
+
 test('only explicitly ready selected assets count as ready', () => {
   assert.match(
     manifest,

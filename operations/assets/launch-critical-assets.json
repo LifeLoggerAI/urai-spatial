@@ -152,30 +152,6 @@
       "releaseState": "pending-final-review"
     },
     {
-      "id": "portal-ring-master-v1",
-      "kind": "model",
-      "fixedPath": "urai-tier1/public/assets/urai/generated/models/portal-ring-master-v1.glb",
-      "targetRoutes": [
-        "/",
-        "/home",
-        "/ground",
-        "/life-map",
-        "/focus",
-        "/replay"
-      ],
-      "targetBoundsMeters": [
-        5,
-        5,
-        1
-      ],
-      "maxTriangles": 24000,
-      "requiredCompression": "draco-or-meshopt",
-      "fallback": "procedural-portal-ring",
-      "source": "URAI Labs deterministic authored sanctuary v3 pipeline; replaceable only by a separately reviewed provider asset",
-      "license": "URAI Labs internal proprietary production asset",
-      "releaseState": "pending-final-review"
-    },
-    {
       "id": "passport-status-room-v1",
       "kind": "model",
       "fixedPath": "urai-tier1/public/assets/urai/generated/models/passport-status-room-v1.glb",

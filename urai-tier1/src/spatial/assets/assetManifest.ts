@@ -57,7 +57,6 @@ const finalGlb = (
 
 export const uraiSpatialAssetManifest: readonly UraiSpatialAssetManifestEntry[] = [
   finalGlb('home-entry-chamber-model-v1', 'Home Entry Chamber GLB', 'home-entry-chamber-v1.glb', 'model', 'home', 'critical', 'home-entry-chamber-proof-fallback', 'home-world-assets'),
-  finalGlb('portal-ring-master-glb-v1', 'Portal Ring Master GLB', 'portal-ring-master-v1.glb', 'portal', 'global', 'critical', 'portal-ring-proof-fallback', 'home-world-assets'),
   finalGlb('ground-world-terrain-glb-v1', 'Ground World Terrain GLB', 'ground-world-terrain-v1.glb', 'world', 'ground', 'critical', 'ground-room-shell-proof-fallback', 'ground-world-assets'),
   {
     id: 'life-map-galaxy-skybox-v1',
@@ -104,11 +103,6 @@ export const uraiSpatialAssetManifest: readonly UraiSpatialAssetManifestEntry[] 
   {
     id: 'ground-descent-hatch-proof-fallback', name: 'Ground Descent Hatch Proof Fallback', type: 'fallback',
     path: `${proofFallbackRoot}/entry-chamber/models/ground-descent-hatch-v1.gltf`, status: 'fallback', targetSurface: 'home', priority: 'high',
-    notes: 'Emergency degraded geometry only.', createdAt, updatedAt,
-  },
-  {
-    id: 'portal-ring-proof-fallback', name: 'Portal Ring Proof Fallback', type: 'fallback',
-    path: `${proofFallbackRoot}/shared/models/universal-portal-ring-v1.gltf`, status: 'fallback', targetSurface: 'global', priority: 'critical',
     notes: 'Emergency degraded geometry only.', createdAt, updatedAt,
   },
   {

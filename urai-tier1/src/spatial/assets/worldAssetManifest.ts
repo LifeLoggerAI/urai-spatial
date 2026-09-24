@@ -40,9 +40,9 @@ export const worldAssetManifest = {
     lifeMapAperture: {
       slotId: 'home.lifeMapAperture',
       label: 'Life Map Sky Threshold (legacy compatibility slot)',
-      finalModel: resolved('portal-ring-master-glb-v1'),
-      status: 'fallback',
-      notes: 'LEGACY SLOT NAME/ASSET ONLY. Current canon is broad-sky Life Map ascent with no visible portal/ring authority. This slot must not be used as visual/reference authority.',
+      finalModel: '',
+      status: 'missing',
+      notes: 'Compatibility slot only. Current canon is broad-sky Life Map ascent; portal/ring geometry is quarantined as historical provenance and must not resolve into runtime authority.',
     },
   },
   ground: {

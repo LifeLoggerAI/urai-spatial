@@ -60,7 +60,6 @@ test('only bounded local navigation, HMR, promoted asset and canonical manifest 
   assert.match(diagnosticSource, /promotedGeneratedAssetPaths\.has\(parsed\.pathname\)/)
   for (const path of [
     'home-entry-chamber-v1\\.glb',
-    'portal-ring-master-v1\\.glb',
     'urai-orb-avatar-v1\\.glb',
   ]) assert.match(diagnosticSource, new RegExp(path))
   assert.match(diagnosticSource, /promoted-generated-asset-navigation-cancellation/)

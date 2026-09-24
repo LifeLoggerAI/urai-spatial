@@ -44,7 +44,6 @@ export default function SpatialWorldAssetLayer({ phase }: { phase: string }) {
           <AssetModel assetId="home-entry-chamber-model-v1" name="entry-chamber-shell-v1" position={[0, -0.08, -2.4]} scale={[0.72, 0.72, 0.72]} />
           <AssetModel assetId="home-entry-floor-ring-proof-fallback" name="entry-floor-ring-v1" position={[0, -0.03, -0.55]} scale={[0.94, 0.94, 0.94]} />
           <AssetModel assetId="urai-orb-avatar-glb-v1" name="central-orb-v1" position={[-0.52, 1.05, 0]} scale={[0.44, 0.44, 0.44]} />
-          <AssetModel assetId="portal-ring-master-glb-v1" name="entry-ground-portal-ring-v1" position={[0, -0.24, -4.8]} rotation={[Math.PI / 2, 0, 0]} scale={[0.52, 0.52, 0.52]} />
           <AssetModel assetId="ground-descent-hatch-proof-fallback" name="ground-descent-hatch-v1" position={[0, -0.35, -3.4]} scale={[0.72, 0.72, 0.72]} />
         </group>
       )}

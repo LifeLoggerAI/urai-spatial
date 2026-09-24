@@ -31,7 +31,6 @@ const canonicalRedirectUrls = new Set(
 );
 const promotedGeneratedAssetPaths = new Set([
   '/assets/urai/generated/models/home-entry-chamber-v1.glb',
-  '/assets/urai/generated/models/portal-ring-master-v1.glb',
   '/assets/urai/generated/models/urai-orb-avatar-v1.glb',
 ]);
 const neutralizedProviderVariables = [

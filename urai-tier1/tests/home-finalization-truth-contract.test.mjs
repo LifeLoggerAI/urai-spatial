@@ -77,10 +77,9 @@ test('selected memory timestamps remain canonical before rendering', () => {
   assert.match(selectedMemoryContract, /return canonical === value \? canonical : null/)
 })
 
-test('all eight final GLB assets are selected while degraded fallbacks remain available', () => {
+test('current selected GLB assets exclude quarantined portal geometry while degraded fallbacks remain available', () => {
   const ids = [
     'home-entry-chamber-model-v1',
-    'portal-ring-master-glb-v1',
     'ground-world-terrain-glb-v1',
     'life-map-memory-star-glb-v1',
     'focus-memory-chamber-glb-v1',
@@ -90,6 +89,7 @@ test('all eight final GLB assets are selected while degraded fallbacks remain av
   ]
   for (const id of ids) assert.match(manifest, new RegExp(`finalGlb\\('${id}'`))
   assert.match(manifest, /status: 'ready'/)
+  assert.doesNotMatch(manifest, /portal-ring-master-glb-v1|portal-ring-proof-fallback/)
   assert.match(manifest, /fallbackAssetId/)
   assert.match(manifest, /Emergency degraded geometry only/)
   assert.match(manifest, /Rendered visual acceptance remains an exact-head review gate/)
@@ -98,7 +98,6 @@ test('all eight final GLB assets are selected while degraded fallbacks remain av
 test('the deterministic forge owns the complete final binary pack', () => {
   const files = [
     'home-entry-chamber-v1.glb',
-    'portal-ring-master-v1.glb',
     'ground-world-terrain-v1.glb',
     'life-map-memory-star-v1.glb',
     'focus-memory-chamber-v1.glb',

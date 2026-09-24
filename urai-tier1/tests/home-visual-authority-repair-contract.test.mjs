@@ -23,7 +23,6 @@ assert.doesNotMatch(production, /home-ground-portal-world-owned|home-life-map-po
 
 for (const id of [
   'home-entry-chamber-model-v1',
-  'portal-ring-master-glb-v1',
   'ground-world-terrain-glb-v1',
   'life-map-memory-star-glb-v1',
   'focus-memory-chamber-glb-v1',
@@ -34,11 +33,11 @@ for (const id of [
   assert.match(manifest, new RegExp(`finalGlb\\('${id}'`))
 }
 assert.match(manifest, /status: 'ready'/)
+assert.doesNotMatch(manifest, /portal-ring-master-glb-v1|portal-ring-proof-fallback/)
 assert.match(manifest, /Rendered visual acceptance remains an exact-head review gate/)
 
 for (const fileName of [
   'home-entry-chamber-v1.glb',
-  'portal-ring-master-v1.glb',
   'ground-world-terrain-v1.glb',
   'life-map-memory-star-v1.glb',
   'focus-memory-chamber-v1.glb',

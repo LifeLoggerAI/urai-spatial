@@ -1,5 +1,4 @@
 export const uraiPromotedAssetIds = new Set<string>([
-  'portal-ring-master-glb-v1',
   'urai-orb-avatar-glb-v1',
   'home-entry-chamber-model-v1',
   'ground-world-terrain-glb-v1',
