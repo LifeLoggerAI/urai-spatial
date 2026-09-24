@@ -28,6 +28,7 @@ test('keyboard doorway activation proves native Tab focus followed by native Ent
   assert.match(proof, /keyboardNavigationCoveredByBrowserTabAndEnter: true/)
   assert.doesNotMatch(proof, /await target\.focus\(\)/)
   assert.match(proof, /await page\.waitForURL/)
+  assert.match(proof, /waitUntil: 'commit'/)
 })
 
 test('pointer and touch use page-context DOM geometry and real browser-coordinate input', () => {
