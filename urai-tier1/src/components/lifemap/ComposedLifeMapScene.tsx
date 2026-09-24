@@ -256,8 +256,8 @@ export default function ComposedLifeMapScene() {
   const selectionRoutePending = useRef(false);
   const restoredRoutePending = useRef(Boolean(!overviewRequested && queryNode));
   const selected = useMemo(() => nodes.find((node) => node.id === selectedId) || null, [nodes, selectedId]);
-  const proofSelected = memoryStarReviewActive ? nodes[0] ?? null : selected;
-  const proofPhase: JourneyPhase = memoryStarReviewActive ? "arrival" : phase;
+  const reviewSelected = memoryStarReviewActive ? nodes[0] ?? null : selected;
+  const reviewPhase: JourneyPhase = memoryStarReviewActive ? "arrival" : phase;
 
   const withIdentity = useCallback((next: URLSearchParams) => {
     if (explicitDemoRequested) next.set("demo", "1");
@@ -424,13 +424,12 @@ export default function ComposedLifeMapScene() {
       <Suspense fallback={null}>
         <LifeMapProductionWorld
           nodes={nodes}
-          selected={proofSelected}
-          phase={proofPhase}
+          selected={reviewSelected}
+          phase={reviewPhase}
           profile={profile}
           onSelect={selectNode}
-          cameraRig={<CameraRig nodes={nodes} selectedIndex={Math.max(0, nodes.findIndex(node => node.id === proofSelected?.id))} selected={proofSelected} phase={proofPhase} reducedMotion={profile.reducedMotion} />}
+          cameraRig={<CameraRig nodes={nodes} selectedIndex={Math.max(0, nodes.findIndex(node => node.id === reviewSelected?.id))} selected={reviewSelected} phase={reviewPhase} reducedMotion={profile.reducedMotion} />}
           webglRecovery={null}
-          reviewProof={memoryStarReviewActive}
         />
         <LifeMapGoldMasterOverlay nodes={nodes} selected={selected} phase={phase as LifeMapJourneyPhase} reducedMotion={profile.reducedMotion} onSelect={selectNode} />
       </Suspense>
