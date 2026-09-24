@@ -136,6 +136,12 @@ test('Ground remains a bodyless first-person lived world with privacy-safe empty
     'Three-dimensional Ground is unavailable on this device.',
     'Home, Places, Privacy, and semantic navigation remain available.',
     'webglAvailable === true ? <Canvas',
+    'useAdaptiveSpatialQuality',
+    'data-ground-quality-tier={quality.tier}',
+    'shadows={quality.shadows}',
+    'dpr={[1, quality.pixelRatioMax]}',
+    'frameloop={quality.documentVisible ? "always" : "never"}',
+    'antialias: quality.antialias',
   ]) has(groundOwner, marker)
 })
 
