@@ -129,18 +129,11 @@ function snapshotPasses(value, viewport) {
 }
 
 async function enterFirstPersonHome(page, owner) {
-  const presentation = await homeSnapshot(owner, page)
-  if (!presentationSnapshotPasses(presentation)) throw new Error(`Home presentation baseline mismatch: ${JSON.stringify(presentation)}`)
-  const enter = page.getByRole('button', { name: 'Enter first-person Home through your Avatar' }).first()
-  await enter.waitFor({ state: 'visible', timeout: 30_000 })
-  await enter.focus()
-  if (!await enter.evaluate((element) => document.activeElement === element)) {
-    throw new Error('Home first-person activation control did not receive browser-native focus')
+  const direct = await homeSnapshot(owner, page)
+  if (!snapshotPasses(direct, { isMobile: false, width: page.viewportSize()?.width })) {
+    throw new Error(`Direct first-person Home baseline mismatch: ${JSON.stringify(direct)}`)
   }
-  await page.keyboard.press('Enter')
-  await page.waitForFunction((selector) => document.querySelector(selector)?.getAttribute('data-home-stable-state') === 'AVATAR_HOME_FIRST_PERSON', ownerSelector, { timeout: 60_000 })
-  await waitFrames(page, 4)
-  return presentation
+  return direct
 }
 
 async function activateSemanticTargetWithNativeKeyboard(page, testId, maxSteps = 32) {

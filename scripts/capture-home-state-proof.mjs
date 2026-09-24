@@ -458,13 +458,7 @@ async function captureHomeSpatialContinuity({ idSuffix = 'desktop', viewport = {
     record.neutralPresentationCamera = await owner.getAttribute('data-home-camera-mode')
     record.neutralPresentationAvatarModel = await owner.getAttribute('data-home-avatar-model')
     record.neutralPresentationVisual = sampleVisual ? await waitForVisualEvidence(page) : { available: true, reason: 'retained-responsive-pixels-no-extra-sampling' }
-    record.neutralPresentationScreenshot = await screenshotRecord('neutral-presentation')
-
-    const enterFirstPerson = page.getByRole('button', { name: 'Enter first-person Home through your Avatar' }).first()
-    await enterFirstPerson.focus()
-    await enterFirstPerson.press('Enter')
-    await page.waitForFunction((selector) => document.querySelector(selector)?.getAttribute('data-home-stable-state') === 'AVATAR_HOME_FIRST_PERSON', ownerSelector, { timeout: 20_000 })
-    owner = page.locator(ownerSelector)
+    record.neutralPresentationScreenshot = await screenshotRecord('direct-first-person-home')
     record.firstPersonStableState = await owner.getAttribute('data-home-stable-state')
     record.firstPersonCamera = await owner.getAttribute('data-home-camera-mode')
     record.firstPersonMovement = await owner.getAttribute('data-home-movement')
@@ -529,8 +523,8 @@ async function captureHomeSpatialContinuity({ idSuffix = 'desktop', viewport = {
       && Number.isFinite(camera?.pitch)
 
     record.passed = record.status === 200
-      && record.neutralPresentationStableState === 'HOME_PRESENTATION'
-      && record.neutralPresentationCamera === 'home-avatar-presentation'
+      && record.neutralPresentationStableState === 'AVATAR_HOME_FIRST_PERSON'
+      && record.neutralPresentationCamera === 'home-first-person'
       && record.neutralPresentationVisual?.available === true
       && record.neutralPresentationScreenshot.bytes > 12_000
       && record.firstPersonStableState === 'AVATAR_HOME_FIRST_PERSON'

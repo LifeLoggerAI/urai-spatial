@@ -34,13 +34,13 @@ for (const marker of [
   'pendingDestination',
 ]) mustContain(marker)
 
-test('Home canon has exactly two primary stable embodiment anchors plus scoped overlays', () => {
+test('Home retains legacy presentation compatibility while direct first-person is the active non-XR stable anchor', () => {
   assert.match(source, /HOME_PRESENTATION[\s\S]*AVATAR_HOME_FIRST_PERSON/)
   assert.match(source, /AVATAR_SELF_VIEW[\s\S]*IMMERSIVE_CONVERSATION/)
   assert.doesNotMatch(source, /HOME_MENU|LIFE_MAP_PORTAL|GROUND_PORTAL/)
 })
 
-test('Avatar activation is guarded to cinematic presentation and becomes a locked embodiment transition', () => {
+test('legacy Avatar activation remains parse-compatible but is not required for active non-XR Home', () => {
   assert.match(source, /case 'AVATAR_ACTIVATE':[\s\S]*state\.stableState !== 'HOME_PRESENTATION'[\s\S]*'AVATAR_EMBODIMENT_TRANSITION'[\s\S]*inputLocked: true/)
   assert.match(source, /case 'EMBODIMENT_COMPLETE':[\s\S]*'AVATAR_HOME_FIRST_PERSON'[\s\S]*inputLocked: false/)
 })
@@ -70,10 +70,8 @@ test('Orb conversation unwinds to its immediate origin rather than deleting cont
   assert.match(source, /state\.stableState === 'IMMERSIVE_CONVERSATION'[\s\S]*'ORB_COLLAPSE'[\s\S]*origin\.stableState/)
 })
 
-test('first-person Home ESC unwinds exactly one layer to Home presentation', () => {
-  assert.match(source, /state\.stableState === 'AVATAR_HOME_FIRST_PERSON' && !state\.transition[\s\S]*transition: 'EMBODIMENT_UNWIND'[\s\S]*inputLocked: true/)
-  assert.match(source, /state\.transition === 'EMBODIMENT_UNWIND' \? 'HOME_PRESENTATION'/)
-  assert.doesNotMatch(source, /state\.transition === 'EMBODIMENT_UNWIND' \? 'AVATAR_HOME_FIRST_PERSON'/)
+test('first-person Home ESC does not fall back into a superseded presentation gate', () => {
+  assert.match(source, /state\.stableState === 'AVATAR_HOME_FIRST_PERSON' && !state\.transition[\s\S]*return state/)
 })
 
 test('interrupted Ground or Sky transition restores the recorded origin safely', () => {
@@ -92,16 +90,14 @@ test('return frame persistence is session-bounded and validates full origin shap
   assert.match(source, /environment\.environmentRevision/)
 })
 
-test('active non-XR Home starts in governed Avatar presentation and transitions to bodyless first-person Home', () => {
-  assert.match(source, /origin = makeHomeOriginSnapshot\('HOME_PRESENTATION'\)/)
-  assert.match(source, /stableState: 'HOME_PRESENTATION'/)
-  assert.match(runtimeSource, /<HomeEmbodiedAvatar/)
-  assert.match(runtimeSource, /homeApi\.activateAvatar\(\)/)
+test('active non-XR Home starts directly in bodyless first-person without an Avatar activation gate', () => {
+  assert.match(source, /origin = makeHomeOriginSnapshot\('AVATAR_HOME_FIRST_PERSON'\)/)
+  assert.match(source, /stableState: 'AVATAR_HOME_FIRST_PERSON'/)
+  assert.doesNotMatch(runtimeSource, /<HomeEmbodiedAvatar/)
   assert.match(runtimeSource, /data-home-non-xr-body-policy="camera-only-no-hands-body-rig"/)
-  assert.match(runtimeSource, /data-home-presence-policy="presentation-avatar-then-first-person-camera-only-no-hands-body-rig"/)
-  assert.match(runtimeSource, /data-home-avatar-activation-gate="required-before-first-person-home"/)
-  assert.match(runtimeSource, /data-home-scanned-composition="avatar-presentation-to-bodyless-first-person-authored-living-memory-orb-sculpted-sanctuary-and-broad-sky-threshold"/)
-  assert.match(runtimeSource, /data-testid="urai-home-avatar-enter-first-person"/)
-  assert.doesNotMatch(runtimeSource, /URAI_HOME_AVATAR_ACTIVATE_EVENT|HOME_AVATAR_MODEL/)
+  assert.match(runtimeSource, /data-home-presence-policy="direct-first-person-camera-only-no-hands-body-rig"/)
+  assert.match(runtimeSource, /data-home-avatar-activation-gate="none-direct-first-person-home"/)
+  assert.match(runtimeSource, /data-home-scanned-composition="direct-bodyless-first-person-authored-living-memory-orb-sculpted-sanctuary-and-broad-sky-threshold"/)
+  assert.doesNotMatch(runtimeSource, /data-testid="urai-home-avatar-enter-first-person"/)
 })
 

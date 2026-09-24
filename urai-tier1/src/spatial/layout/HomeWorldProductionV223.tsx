@@ -16,7 +16,6 @@ import { useAdaptiveSpatialQuality, type SpatialQualityTier } from '@/spatial/pe
 import { ORB_SPEECH_CLOCK_EVENT, type OrbSpeechClockDetail } from '@/spatial/orb/orbSpeechClock'
 import { requestUraiWorldOrbOpen, requestUraiWorldTravel } from '@/spatial/world/worldEvents'
 import { AvatarSelfView, type AvatarSelfViewSection } from '@/spatial/home/AvatarSelfView'
-import { HomeEmbodiedAvatar, type HomeAvatarPresentationState } from '@/spatial/home/HomeEmbodiedAvatar'
 import { useHomeExperienceController } from '@/spatial/home/useHomeExperienceController'
 import { HOME_PASSPORT_ORIGIN_CAPTURE_EVENT, type HomeOriginSnapshot, type HomeStableState, type HomeTransitionState } from '@/spatial/home/homeExperienceState'
 import { height } from './HomeWorldProductionV223Geometry'
@@ -170,7 +169,7 @@ const legacyHotspotPatterns = [
   /home-visible-user-avatar/,
   /urai-home-user-avatar/,
 ]
-const CURRENT_HOME_PRESENCE_ROOTS = new Set(['home-living-memory-orb', 'home-orb-v288-visible-authority', 'urai-home-user-avatar'])
+const CURRENT_HOME_PRESENCE_ROOTS = new Set(['home-living-memory-orb', 'home-orb-v288-visible-authority'])
 
 function isInsideCurrentHomePresence(object: THREE.Object3D) {
   let current: THREE.Object3D | null = object
@@ -665,9 +664,6 @@ function Scene({
   reducedMotion,
   personalWeatherState,
   orbState,
-  avatarState,
-  onAvatarActivate,
-  onAvatarTargetChange,
   homeStableState,
   homeTransition,
   homeOrigin,
@@ -692,9 +688,6 @@ function Scene({
   reducedMotion: boolean
   personalWeatherState: HomeEmotionalWeatherName
   orbState: OrbState
-  avatarState: HomeAvatarPresentationState
-  onAvatarActivate: () => void
-  onAvatarTargetChange: (targeted: boolean) => void
   homeStableState: HomeStableState
   homeTransition: HomeTransitionState | null
   homeOrigin: HomeOriginSnapshot
@@ -733,13 +726,6 @@ function Scene({
     <HomeCurrentArtRepair orbState={orbState} reducedMotion={reducedMotion} onOrb={retiredLocalDestination} onGround={retiredLocalDestination} onLifeMap={retiredLocalDestination} />
     <HomeAAAVisualRepair />
     <HomeLaunchSanctuaryV254 reducedMotion={reducedMotion} />
-    <HomeEmbodiedAvatar
-      position={[AVATAR_POSITION.x, height(AVATAR_POSITION.x, AVATAR_POSITION.z), AVATAR_POSITION.z]}
-      state={avatarState}
-      reducedMotion={reducedMotion}
-      onActivate={onAvatarActivate}
-      onTargetChange={onAvatarTargetChange}
-    />
     <RetireLegacyHomeHotspots />
     <HomePassportSemanticBridge
       interactive={homeStableState === 'AVATAR_HOME_FIRST_PERSON' && !homeTransition && transition === 'none'}
@@ -775,7 +761,6 @@ export function HomeWorldProductionV223({ onOrbOpen = requestUraiWorldOrbOpen, w
   const [dragging, setDragging] = useState(false)
   const [reducedMotion, setReducedMotion] = useState(false)
   const [orbState, setOrbState] = useState<OrbState>('idle')
-  const [avatarTargeted, setAvatarTargeted] = useState(false)
   const [passportNearby, setPassportNearby] = useState(false)
   const [passportDeparting, setPassportDeparting] = useState(false)
   const { scene: personalizedHomeScene, loading: personalizedHomeLoading } = useHomePersonalizedScene()
@@ -839,11 +824,6 @@ export function HomeWorldProductionV223({ onOrbOpen = requestUraiWorldOrbOpen, w
   }, [homeState.transition])
 
   const markReady = useCallback(() => setSceneReady(true), [])
-  const activateAvatar = useCallback(() => {
-    if (transition !== 'none' || homeState.inputLocked || homeState.stableState !== 'HOME_PRESENTATION') return
-    setAvatarTargeted(false)
-    homeApi.activateAvatar()
-  }, [homeApi, homeState.inputLocked, homeState.stableState, transition])
   const openOrb = useCallback(() => {
     if (transition !== 'none' || homeState.inputLocked || homeState.stableState !== 'AVATAR_HOME_FIRST_PERSON') return
     homeApi.activateOrb()
@@ -887,12 +867,6 @@ export function HomeWorldProductionV223({ onOrbOpen = requestUraiWorldOrbOpen, w
     homeApi.commitDestination(next === 'ground' ? 'GROUND' : 'LIFE_MAP')
   }, [homeApi])
 
-  const avatarPresentationState: HomeAvatarPresentationState =
-    homeState.transition === 'AVATAR_EMBODIMENT_TRANSITION'
-      ? 'embodying'
-      : homeState.stableState === 'HOME_PRESENTATION'
-        ? avatarTargeted ? 'targeted' : 'rest'
-        : 'hidden-first-person'
   const firstPerson = homeState.stableState === 'AVATAR_HOME_FIRST_PERSON' && !homeState.transition
   const movementInput = useMovementInput({
     enabled: firstPerson && transition === 'none' && !homeState.inputLocked && !passportDeparting,
@@ -901,10 +875,10 @@ export function HomeWorldProductionV223({ onOrbOpen = requestUraiWorldOrbOpen, w
   const look = useDragLook({
     yaw,
     pitch,
-    enabled: transition === 'none' && !homeState.inputLocked && !passportDeparting && (homeState.stableState === 'HOME_PRESENTATION' || firstPerson),
-    sensitivity: firstPerson ? .0018 : .0022,
-    minPitch: firstPerson ? -1.02 : -.28,
-    maxPitch: firstPerson ? .92 : .25,
+    enabled: transition === 'none' && !homeState.inputLocked && !passportDeparting && firstPerson,
+    sensitivity: .0018,
+    minPitch: -1.02,
+    maxPitch: .92,
     onDragState: setDragging,
   })
 
@@ -944,9 +918,9 @@ export function HomeWorldProductionV223({ onOrbOpen = requestUraiWorldOrbOpen, w
     data-home-physical-base="continuous-lived-physical-world"
     data-home-visual-ownership="single-canvas-three-dimensional-geometry"
     data-home-desktop-mobile-world="same-scene"
-    data-home-embodied-self={firstPerson ? 'camera-only-first-person-home' : 'visible-avatar-home-presentation'}
-    data-home-presence-presentation={homeState.transition === 'AVATAR_EMBODIMENT_TRANSITION' ? 'avatar-embodiment-transition' : homeState.stableState === 'HOME_PRESENTATION' ? 'visible-avatar-presentation-activation-gate' : 'bodyless-first-person-home'}
-    data-home-movement={firstPerson ? 'shared-keyboard-touch-walk-look-interact' : homeState.stableState === 'HOME_PRESENTATION' ? 'avatar-presentation-target-activate' : 'camera-only-transition'}
+    data-home-embodied-self={firstPerson ? 'camera-only-first-person-home' : 'camera-only-transition'}
+    data-home-presence-presentation={firstPerson ? 'bodyless-first-person-home' : 'camera-only-transition'}
+    data-home-movement={firstPerson ? 'shared-keyboard-touch-walk-look-interact' : 'camera-only-transition'}
     data-home-pointer-lock="false"
     data-home-assets-ready={ready ? 'true' : 'false'}
     data-home-ready={ready ? 'true' : 'warming'}
@@ -956,7 +930,7 @@ export function HomeWorldProductionV223({ onOrbOpen = requestUraiWorldOrbOpen, w
     data-home-distance-life-map="sky-threshold"
     data-home-ground-entry="physical-world-surface"
     data-home-life-map-entry="visible-sky-broad-interaction"
-    data-home-camera-mode={homeState.transition ?? (firstPerson ? (dragging ? 'home-first-person-look' : 'home-first-person') : homeState.stableState === 'HOME_PRESENTATION' ? 'home-avatar-presentation' : 'camera-only-transition')}
+    data-home-camera-mode={homeState.transition ?? (firstPerson ? (dragging ? 'home-first-person-look' : 'home-first-person') : 'camera-only-transition')}
     data-home-stable-state={homeState.stableState}
     data-home-scene-phase={phase}
     data-home-transition-sequence={homeState.transition ?? (transition === 'none' ? 'idle' : `${transition}:traversal`)}
@@ -969,8 +943,8 @@ export function HomeWorldProductionV223({ onOrbOpen = requestUraiWorldOrbOpen, w
     data-home-orb-model-clip={reducedMotion ? 'stopped-reduced-motion' : ORB_CLIPS[orbState]}
     data-home-orb-runtime-asset={ORB_MODEL}
     data-home-non-xr-body-policy="camera-only-no-hands-body-rig"
-    data-home-presence-policy="presentation-avatar-then-first-person-camera-only-no-hands-body-rig"
-    data-home-avatar-activation-gate="required-before-first-person-home"
+    data-home-presence-policy="direct-first-person-camera-only-no-hands-body-rig"
+    data-home-avatar-activation-gate="none-direct-first-person-home"
     data-home-visual-grade="current-literal-pixel-candidate-not-certified"
     data-home-art-certification="fresh-exact-head-pixels-required"
     data-home-personal-weather-tone={personalizedHomeScene.environment.weatherTone}
@@ -978,9 +952,9 @@ export function HomeWorldProductionV223({ onOrbOpen = requestUraiWorldOrbOpen, w
     data-home-personal-weather-mode={personalizedHomeScene.mode}
     data-home-personal-weather-loading={personalizedHomeLoading ? 'true' : 'false'}
     data-home-personal-weather-synthetic-review={personalizedHomeScene.disclosedSample ? 'true' : 'false'}
-    data-home-scanned-composition="avatar-presentation-to-bodyless-first-person-authored-living-memory-orb-sculpted-sanctuary-and-broad-sky-threshold"
-    data-home-art-revision="v292-avatar-presentation-bodyless-first-person-convergence"
-    data-home-authored-regions="home-physical-world home-avatar-presentation home-camera-only-first-person home-living-memory-orb home-life-map-sky-threshold"
+    data-home-scanned-composition="direct-bodyless-first-person-authored-living-memory-orb-sculpted-sanctuary-and-broad-sky-threshold"
+    data-home-art-revision="v293-direct-bodyless-first-person-convergence"
+    data-home-authored-regions="home-physical-world home-camera-only-first-person home-living-memory-orb home-life-map-sky-threshold"
     data-testid="home-visible-navigable-sanctuary-world"
     style={{ position: 'relative', overflow: 'hidden', backgroundColor: '#10272a' }}
     {...look}
@@ -1009,9 +983,6 @@ export function HomeWorldProductionV223({ onOrbOpen = requestUraiWorldOrbOpen, w
         reducedMotion={reducedMotion}
         personalWeatherState={personalWeatherState}
         orbState={orbState}
-        avatarState={avatarPresentationState}
-        onAvatarActivate={activateAvatar}
-        onAvatarTargetChange={setAvatarTargeted}
         homeStableState={homeState.stableState}
         homeTransition={homeState.transition}
         homeOrigin={homeState.origin}
@@ -1030,14 +1001,9 @@ export function HomeWorldProductionV223({ onOrbOpen = requestUraiWorldOrbOpen, w
         onComplete={completeTransition}
       />
     </Canvas>
-    {homeState.stableState === 'HOME_PRESENTATION' && !homeState.transition ? (
-      <button type="button" className="sr-only" data-testid="urai-home-avatar-enter-first-person" onClick={activateAvatar}>
-        Enter first-person Home through your Avatar
-      </button>
-    ) : null}
     {firstPerson ? (
       <>
-        <MovementHelp realm="Home" summary="Move through your Home in bodyless first person without a synthetic body overlay." controls="WASD or arrow keys move · drag to look · interact opens nearby physical objects such as Passport · Escape returns exactly one layer to third-person Home." />
+        <MovementHelp realm="Home" summary="Move through your Home in bodyless first person without a synthetic body overlay." controls="WASD or arrow keys move · drag to look · interact opens nearby physical objects such as Passport · Escape closes the active interaction layer while Home remains first person." />
         <MobileMovementPad input={movementInput} label="Move through Home" />
         {passportNearby && !passportDeparting ? (
           <button
@@ -1065,15 +1031,13 @@ export function HomeWorldProductionV223({ onOrbOpen = requestUraiWorldOrbOpen, w
     <AvatarSelfView open={homeState.stableState === 'AVATAR_SELF_VIEW'} sections={selfSections} onClose={homeApi.closeSelfView} />
     <span className="sr-only" role="status" aria-live="polite">{
       passportDeparting ? 'Opening Passport from this Home position.'
-        : homeState.transition === 'AVATAR_EMBODIMENT_TRANSITION' ? 'Entering first-person Home.'
-        : homeState.transition === 'EMBODIMENT_UNWIND' ? 'Restoring bodyless first-person Home.'
-          : transition === 'ground' ? 'Entering your physical Ground world.'
+        : transition === 'ground' ? 'Entering your physical Ground world.'
             : transition === 'life-map' ? 'Ascending into your Life Map.'
               : firstPerson ? 'First-person Home active.' : ''
     }</span>
     <span className="sr-only" data-testid="urai-home-webgl-orb">The authored living-memory Orb is physically present in Home and preserves semantic state behavior.</span>
     <span className="sr-only" data-testid="urai-home-physical-passport">Passport is a physical object in Home. Approaching it exposes an explicit activation control and preserves the first-person return origin.</span>
-    <span className="sr-only" data-testid="urai-home-non-xr-body-policy">Home presentation may show the governed Avatar. After activation, non-XR first-person Home is camera-only with no synthetic hands, arms, visible avatar, or body rig.</span>
+    <span className="sr-only" data-testid="urai-home-non-xr-body-policy">Non-XR Home opens directly in camera-only first person with no synthetic hands, arms, visible avatar, or body rig. Avatar Self View remains a separate explicit user-invoked surface.</span>
   </main>
 }
 

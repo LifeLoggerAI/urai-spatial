@@ -94,10 +94,10 @@ export function makeHomeOriginSnapshot(
 
 export function createInitialHomeExperienceState(
   reducedMotion = false,
-  origin = makeHomeOriginSnapshot('HOME_PRESENTATION'),
+  origin = makeHomeOriginSnapshot('AVATAR_HOME_FIRST_PERSON'),
 ): HomeExperienceState {
   return {
-    stableState: 'HOME_PRESENTATION',
+    stableState: 'AVATAR_HOME_FIRST_PERSON',
     transition: null,
     returnStack: [],
     origin,
@@ -277,12 +277,7 @@ export function homeExperienceReducer(
       }
 
       if (state.stableState === 'AVATAR_HOME_FIRST_PERSON' && !state.transition) {
-        return {
-          ...state,
-          transition: 'EMBODIMENT_UNWIND',
-          inputLocked: true,
-          pendingDestination: null,
-        }
+        return state
       }
 
       return state

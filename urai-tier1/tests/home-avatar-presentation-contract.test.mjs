@@ -78,21 +78,19 @@ test('self view preserves minimum touch target and responsive mobile shell', () 
   assert.match(selfView, /env\(safe-area-inset-/)
 })
 
-test('active non-XR Home presents the governed Avatar before transitioning to bodyless first-person', () => {
+test('active non-XR Home is direct bodyless first-person and keeps Avatar assets outside the default world', () => {
   for (const marker of [
-    'HomeEmbodiedAvatar',
-    'visible-avatar-presentation-activation-gate',
     'bodyless-first-person-home',
     'data-home-non-xr-body-policy="camera-only-no-hands-body-rig"',
-    'data-home-presence-policy="presentation-avatar-then-first-person-camera-only-no-hands-body-rig"',
-    'data-home-avatar-activation-gate="required-before-first-person-home"',
-    'avatar-presentation-to-bodyless-first-person-authored-living-memory-orb-sculpted-sanctuary-and-broad-sky-threshold',
+    'data-home-presence-policy="direct-first-person-camera-only-no-hands-body-rig"',
+    'data-home-avatar-activation-gate="none-direct-first-person-home"',
+    'direct-bodyless-first-person-authored-living-memory-orb-sculpted-sanctuary-and-broad-sky-threshold',
     'home-living-memory-orb',
     'visible-sky-broad-interaction',
     '/life-map/?from=home-sky',
   ]) has(activeHome, marker)
-  assert.match(activeHome, /<HomeEmbodiedAvatar/)
-  assert.match(activeHome, /CURRENT_HOME_PRESENCE_ROOTS = new Set\(\['home-living-memory-orb', 'home-orb-v288-visible-authority', 'urai-home-user-avatar'\]\)/)
-  assert.doesNotMatch(activeHome, /HOME_AVATAR_MODEL|visible-cinematic-avatar|visible-avatar-third-person/)
+  assert.doesNotMatch(activeHome, /<HomeEmbodiedAvatar/)
+  assert.match(activeHome, /CURRENT_HOME_PRESENCE_ROOTS = new Set\(\['home-living-memory-orb', 'home-orb-v288-visible-authority'\]\)/)
+  assert.doesNotMatch(activeHome, /data-testid="urai-home-avatar-enter-first-person"|visible-cinematic-avatar|visible-avatar-third-person/)
   assert.doesNotMatch(activeHome, /first-person-hand|fps-hand|weapon-rig|player-hands/i)
 })
