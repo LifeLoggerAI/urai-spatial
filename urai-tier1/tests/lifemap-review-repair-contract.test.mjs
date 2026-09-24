@@ -3,6 +3,7 @@ import fs from 'node:fs'
 import test from 'node:test'
 
 const scene = fs.readFileSync(new URL('../src/components/lifemap/ComposedLifeMapScene.tsx', import.meta.url), 'utf8')
+const productionWorld = fs.readFileSync(new URL('../src/components/lifemap/LifeMapProductionWorld.tsx', import.meta.url), 'utf8')
 const overlay = fs.readFileSync(new URL('../src/components/lifemap/LifeMapGoldMasterOverlay.tsx', import.meta.url), 'utf8')
 const legacyOverlay = fs.readFileSync(new URL('../src/components/lifemap/LifeMapGoldMasterOverlayV249.tsx', import.meta.url), 'utf8')
 const lifeMapSource = `${overlay}\n${legacyOverlay}`
@@ -13,6 +14,16 @@ const authoredLayoutSource = fs.readFileSync(new URL('../src/components/lifemap/
 const focusSource = fs.readFileSync(new URL('../src/app/focus/FocusChamberClient.tsx', import.meta.url), 'utf8')
 const focusPolish = fs.readFileSync(new URL('../src/app/focus/focus-launch-visual-polish.css', import.meta.url), 'utf8')
 const focusGeology = fs.readFileSync(new URL('../src/app/focus/focusMemoryGeology.ts', import.meta.url), 'utf8')
+
+test('Memory Star hover and related emphasis preserves the same authored stellar object', () => {
+  assert.match(productionWorld, /const \[hovered, setHovered\] = useState\(false\)/)
+  assert.match(productionWorld, /const emphasis = !active && \(hovered \|\| related\)/)
+  assert.match(productionWorld, /emphasisState: active \? "selected" : hovered \? "hover" : related \? "related" : "neutral"/)
+  assert.match(productionWorld, /onPointerOver=\{\(event\) => \{ event\.stopPropagation\(\); setHovered\(true\)/)
+  assert.match(productionWorld, /<ArtifactShape node=\{node\} active=\{active\} \/>/)
+  assert.doesNotMatch(productionWorld, /hovered \? <[^>]*(planet|orb|ring|portal)/i)
+  assert.match(scene, /data-life-map-quality=\{profile\.tier\}/)
+})
 
 test('selected camera goals use the same indexed world transform as rendered memories', () => {
   assert.match(scene, /lifeMapWorldPoint\(node, selectedIndex, portrait\)/)

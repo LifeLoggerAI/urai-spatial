@@ -392,6 +392,7 @@ export default function ComposedLifeMapScene() {
     data-webgl-state={webglState}
     data-software-renderer={softwareRenderer === null ? "detecting" : softwareRenderer ? "true" : "false"}
     data-software-render-cadence={softwareRenderer !== false || profile.reducedMotion ? "bounded-demand-4fps" : "continuous"}
+    data-life-map-quality={profile.tier}
     data-home-companion-owned="false"
   >
     <h1 className="sr-only">URAI Life Map private universe</h1>

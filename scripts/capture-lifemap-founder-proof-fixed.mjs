@@ -13,7 +13,7 @@ const pr = rawPr ? Number.parseInt(rawPr, 10) : null
 if (pr !== null && (!Number.isInteger(pr) || pr <= 0)) throw new Error(`Invalid URAI_PR_NUMBER: ${rawPr}`)
 
 const receipt = {
-  schemaVersion: 'urai-lifemap-founder-proof-13',
+  schemaVersion: 'urai-lifemap-founder-proof-14',
   repository: 'LifeLoggerAI/urai-spatial',
   pr,
   exactHead,
@@ -387,6 +387,7 @@ async function readRootState(root) {
     ['webgl', 'data-webgl-state'],
     ['privateMounted', 'data-private-memory-mounted'],
     ['fallback', 'data-life-map-fallback'],
+    ['quality', 'data-life-map-quality'],
   ].map(async ([key, attribute]) => [key, await root.getAttribute(attribute)]))
   return Object.fromEntries(entries)
 }
@@ -395,7 +396,14 @@ async function shot(page, id, captureState, extra = {}) {
   const file = `${String(receipt.captures.length + 1).padStart(2, '0')}-${id}-${exactHead.slice(0, 12)}.png`
   const root = page.locator(`${ROOT}, [data-testid="urai-life-map-signed-out-threshold"], [data-testid="urai-life-map-authored-fallback"]`).first()
   const state = await root.count() ? await readRootState(root) : {}
+  if (extra.phaseLocked && state.phase !== extra.phaseLocked) {
+    throw new Error(`${id} phase drifted before retained screenshot: expected=${extra.phaseLocked} actual=${state.phase}`)
+  }
   const { buffer, ...screenshot } = await captureScreenshot(page, file)
+  const stateAfter = await root.count() ? await readRootState(root) : {}
+  if (extra.phaseLocked && stateAfter.phase !== extra.phaseLocked) {
+    throw new Error(`${id} phase drifted during retained screenshot: expected=${extra.phaseLocked} actual=${stateAfter.phase}`)
+  }
   const signal = await canvasSignal(page, buffer)
   receipt.captures.push({
     order: receipt.captures.length + 1,
@@ -405,6 +413,7 @@ async function shot(page, id, captureState, extra = {}) {
     viewport: page.viewportSize(),
     captureState,
     state,
+    stateAfter,
     screenshot,
     signal,
     timestamp: new Date().toISOString(),
@@ -428,6 +437,23 @@ function selectedActionSelector(name) {
   }[name]
   if (!actionClass) throw new Error(`unknown selected-memory action: ${name}`)
   return `nav[aria-label="Selected memory actions"] button.${actionClass}`
+}
+
+async function hoverFirstMemoryStar(page) {
+  const canvas = page.locator('canvas').first()
+  const box = await canvas.boundingBox()
+  if (!box || box.width < 200 || box.height < 200) throw new Error(`Memory Star hover canvas geometry invalid: ${JSON.stringify(box)}`)
+  const columns = 38
+  const rows = 24
+  for (let row = 1; row < rows - 1; row += 1) {
+    for (let column = 1; column < columns - 1; column += 1) {
+      const x = box.x + box.width * (column / (columns - 1))
+      const y = box.y + box.height * (row / (rows - 1))
+      await page.mouse.move(x, y)
+      if (await page.evaluate(() => document.body.style.cursor === 'pointer')) return { x, y }
+    }
+  }
+  throw new Error('Memory Star hover target was not discoverable through the real canvas pointer surface')
 }
 
 async function canonicalControlGeometry(page, selector, label, timeout = 20_000) {
@@ -518,18 +544,35 @@ async function selectQuietReset(page, options = {}) {
   if (options.targetPhase) await armJourneyPhaseWatch(page, options.targetPhase)
   await activateCanonicalControl(page, resultSelector, result, options.keyboard ? 'keyboard' : options.touch ? 'touch' : 'pointer')
 
-  const observedPhase = options.targetPhase ? await readJourneyPhaseWatch(page, options.targetPhase) : null
-  await poll('selected Quiet Reset identity', async () => {
-    const root = page.locator(ROOT).first()
-    const destination = new URL(page.url())
-    return {
-      mode: await root.getAttribute('data-life-map-mode'),
-      memoryId: destination.searchParams.get('memoryId'),
-      node: destination.searchParams.get('node'),
-    }
-  }, (state) => state.mode === 'selected' && state.memoryId === 'quiet-reset' && state.node === 'quiet-reset', 20_000, 50)
+  let livePhase = null
+  if (options.targetPhase) {
+    livePhase = await poll(`live selected journey phase=${options.targetPhase}`, async () => {
+      const root = page.locator(ROOT).first()
+      const destination = new URL(page.url())
+      return {
+        phase: await root.getAttribute('data-life-map-phase'),
+        mode: await root.getAttribute('data-life-map-mode'),
+        memoryId: destination.searchParams.get('memoryId'),
+        node: destination.searchParams.get('node'),
+      }
+    }, (state) => state.phase === options.targetPhase
+      && state.mode === 'selected'
+      && state.memoryId === 'quiet-reset'
+      && state.node === 'quiet-reset', 20_000, 20)
+  } else {
+    await poll('selected Quiet Reset identity', async () => {
+      const root = page.locator(ROOT).first()
+      const destination = new URL(page.url())
+      return {
+        mode: await root.getAttribute('data-life-map-mode'),
+        memoryId: destination.searchParams.get('memoryId'),
+        node: destination.searchParams.get('node'),
+      }
+    }, (state) => state.mode === 'selected' && state.memoryId === 'quiet-reset' && state.node === 'quiet-reset', 20_000, 50)
+  }
+  const observedPhase = options.targetPhase ? await readJourneyPhaseWatch(page, options.targetPhase, 1_000) : null
   await waitForState(page, 'data-life-map-mode', 'selected')
-  return observedPhase
+  return observedPhase || livePhase
 }
 
 async function waitForPath(page, destinationPath, timeout = 30_000) {
@@ -579,7 +622,8 @@ function assertVisualSanity() {
     'desktop-overview', 'selection-start', 'mid-travel', 'approach', 'stable-arrival',
     'keyboard-selection', 'portrait-mobile-overview', 'portrait-mobile-travel',
     'portrait-mobile-selected', 'portrait-tall-overview', 'portrait-tall-selected',
-    'reduced-motion-arrival',
+    'reduced-motion-arrival', 'memory-star-neutral', 'memory-star-hover',
+    'memory-star-near-cluster', 'memory-star-low-tier',
   ]
   for (const id of required) {
     const capture = byId.get(id)
@@ -610,11 +654,17 @@ function assertVisualSanity() {
     ['portrait-mobile-travel', 'travel'],
   ])
   for (const [id, expectedPhase] of observedPhases) {
-    const observed = byId.get(id)?.observedPhase
+    const capture = byId.get(id)
+    const observed = capture?.observedPhase
     if (observed?.phase !== expectedPhase || observed?.mode !== 'selected') {
       throw new Error(`${id} did not observe the authoritative ${expectedPhase} phase: ${JSON.stringify(observed)}`)
     }
+    if (capture?.state?.phase !== expectedPhase || capture?.stateAfter?.phase !== expectedPhase) {
+      throw new Error(`${id} retained screenshot was not locked to ${expectedPhase}: ${JSON.stringify({ before: capture?.state?.phase, after: capture?.stateAfter?.phase })}`)
+    }
   }
+  if (!byId.get('memory-star-hover')?.hoverHit) throw new Error('Memory Star hover proof did not use the real canvas pointer target')
+  if (byId.get('memory-star-low-tier')?.state?.quality !== 'low') throw new Error('Memory Star low-tier proof did not retain low quality')
 
   const phases = required.map((id) => byId.get(id)?.captureState).filter(Boolean)
   if (!phases.includes('departure') || !phases.includes('travel') || !phases.includes('approach') || !phases.includes('arrival')) {
@@ -642,6 +692,37 @@ async function highResolutionOverview() {
   }
 }
 
+async function memoryStarReferencePack() {
+  const states = [
+    { id: 'memory-star-neutral', route: '/life-map/?demo=1&testMode=1&fixture=one&quality=high&freeze=1&overview=1', fixture: 'one', quality: 'high' },
+    { id: 'memory-star-hover', route: '/life-map/?demo=1&testMode=1&fixture=one&quality=high&freeze=1&overview=1', fixture: 'one', quality: 'high', hover: true },
+    { id: 'memory-star-near-cluster', route: '/life-map/?demo=1&testMode=1&fixture=five&quality=high&freeze=1&overview=1', fixture: 'five', quality: 'high' },
+    { id: 'memory-star-low-tier', route: '/life-map/?demo=1&testMode=1&fixture=five&quality=low&freeze=1&overview=1', fixture: 'five', quality: 'low' },
+  ]
+  for (const state of states) {
+    const reviewBrowser = await chromium.launch({ headless: true })
+    let review = null
+    try {
+      review = await openPage({ label: state.id }, reviewBrowser)
+      await goto(review.page, state.route)
+      await waitForRenderedWorld(review.page)
+      const root = review.page.locator(ROOT).first()
+      const quality = await root.getAttribute('data-life-map-quality')
+      if (quality !== state.quality) throw new Error(`${state.id} quality drifted: expected=${state.quality} actual=${quality}`)
+      const hoverHit = state.hover ? await hoverFirstMemoryStar(review.page) : null
+      if (state.hover) await stable(review.page, 3)
+      await shot(review.page, state.id, state.id, {
+        syntheticFixture: state.fixture,
+        expectedQuality: state.quality,
+        hoverHit,
+      })
+    } finally {
+      await review?.context.close()
+      await reviewBrowser.close()
+    }
+  }
+}
+
 async function captureIsolatedJourneyPhase({ id, targetPhase, captureState, interaction = 'pointer', viewport, hasTouch = false, isMobile = false }) {
   const isolatedBrowser = await chromium.launch({ headless: true })
   let isolated = null
@@ -664,6 +745,7 @@ async function captureIsolatedJourneyPhase({ id, targetPhase, captureState, inte
       memoryId: 'quiet-reset',
       interaction,
       observedPhase,
+      phaseLocked: targetPhase,
     })
   } finally {
     await isolated?.context.close()
@@ -896,6 +978,7 @@ async function privacyAndRecovery() {
 
 try {
   await highResolutionOverview()
+  await memoryStarReferencePack()
   await desktopJourney()
   await desktopArrivalEvidence()
   await desktopActionsAndKeyboard()
@@ -909,7 +992,7 @@ try {
 } finally {
   await browser.close()
   receipt.completedAt = new Date().toISOString()
-  receipt.passed = !failed && receipt.captures.length >= 28
+  receipt.passed = !failed && receipt.captures.length >= 32
   await writeFile(path.join(outputDir, 'browser-events.json'), JSON.stringify(receipt.browserEvents, null, 2))
   await writeFile(path.join(outputDir, 'receipt.json'), JSON.stringify(receipt, null, 2))
   if (!receipt.passed) process.exitCode = 1

@@ -42,7 +42,8 @@ const required = [
   'desktop-overview', 'selection-start', 'mid-travel', 'approach', 'stable-arrival',
   'keyboard-selection', 'portrait-mobile-overview', 'portrait-mobile-travel',
   'portrait-mobile-selected', 'portrait-tall-overview', 'portrait-tall-selected',
-  'reduced-motion-arrival',
+  'reduced-motion-arrival', 'memory-star-neutral', 'memory-star-hover',
+  'memory-star-near-cluster', 'memory-star-low-tier',
 ]
 
 const highResolution = byId.get('desktop-overview-high-resolution')
@@ -75,11 +76,17 @@ const observedPhases = new Map([
   ['portrait-mobile-travel', 'travel'],
 ])
 for (const [id, expectedPhase] of observedPhases) {
-  const observed = byId.get(id)?.observedPhase
+  const capture = byId.get(id)
+  const observed = capture?.observedPhase
   if (observed?.phase !== expectedPhase || observed?.mode !== 'selected') {
     throw new Error(`${id} did not observe the authoritative ${expectedPhase} phase: ${JSON.stringify(observed)}`)
   }
+  if (capture?.state?.phase !== expectedPhase || capture?.stateAfter?.phase !== expectedPhase) {
+    throw new Error(`${id} retained screenshot was not locked to ${expectedPhase}: ${JSON.stringify({ before: capture?.state?.phase, after: capture?.stateAfter?.phase })}`)
+  }
 }
+if (!byId.get('memory-star-hover')?.hoverHit) throw new Error('Memory Star hover proof did not use the real canvas pointer target')
+if (byId.get('memory-star-low-tier')?.state?.quality !== 'low') throw new Error('Memory Star low-tier proof did not retain low quality')
 
 const phases = required.map((id) => byId.get(id)?.captureState).filter(Boolean)
 for (const phase of ['departure', 'travel', 'approach', 'arrival']) {
@@ -96,14 +103,14 @@ if (blockingEvents.length) {
   throw new Error(`browser emitted ${blockingEvents.length} blocking console or network events: ${JSON.stringify(blockingEvents.slice(0, 8))}`)
 }
 
-if ((receipt.captures || []).length < 28) throw new Error(`Founder proof retained fewer than 28 captures: ${(receipt.captures || []).length}`)
+if ((receipt.captures || []).length < 32) throw new Error(`Founder proof retained fewer than 32 captures: ${(receipt.captures || []).length}`)
 
 if (!receipt.passed) {
   throw new Error(`Founder runner failed: ${String(receipt.error || 'unknown failure')}`)
 }
 
 const verdict = {
-  schemaVersion: 'urai-lifemap-founder-retained-png-verdict-4',
+  schemaVersion: 'urai-lifemap-founder-retained-png-verdict-5',
   exactHead: receipt.exactHead,
   runnerPassed: true,
   acceptance: 'pass',

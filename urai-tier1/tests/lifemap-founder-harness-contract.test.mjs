@@ -32,7 +32,7 @@ test('Founder proof is a checked-in stable module with a mandatory syntax gate',
 })
 
 test('Founder runner retains every required real interaction and phase owner', () => {
-  for (const owner of ['openPage', 'selectQuietReset', 'clickRouteAction', 'canvasSignal', 'desktopJourney', 'desktopArrivalEvidence', 'desktopActionsAndKeyboard', 'isolatedJourneyPhases', 'mobileAndReduced', 'assertVisualSanity']) {
+  for (const owner of ['openPage', 'selectQuietReset', 'clickRouteAction', 'canvasSignal', 'hoverFirstMemoryStar', 'memoryStarReferencePack', 'desktopJourney', 'desktopArrivalEvidence', 'desktopActionsAndKeyboard', 'isolatedJourneyPhases', 'mobileAndReduced', 'assertVisualSanity']) {
     const matches = runner.match(new RegExp(`(?:async\\s+)?function\\s+${owner}\\s*\\(`, 'g')) || []
     assert.equal(matches.length, 1, `${owner} declaration count drifted`)
   }
@@ -58,7 +58,10 @@ test('Founder runner observes transient production phases without mutating produ
   assert.match(runner, /new MutationObserver\(inspect\)/)
   assert.match(runner, /attributeFilter:\s*\['data-life-map-phase', 'data-life-map-mode', 'data-life-map-scale'\]/)
   assert.match(runner, /if \(options\.targetPhase\) await armJourneyPhaseWatch\(page, options\.targetPhase\)/)
-  assert.match(runner, /const observedPhase = options\.targetPhase \? await readJourneyPhaseWatch\(page, options\.targetPhase\) : null/)
+  assert.match(runner, /live selected journey phase=\$\{options\.targetPhase\}/)
+  assert.match(runner, /phaseLocked: targetPhase/)
+  assert.match(runner, /state\.phase !== extra\.phaseLocked/)
+  assert.match(runner, /stateAfter\.phase !== extra\.phaseLocked/)
   assert.doesNotMatch(runner, /window\.setTimeout\s*=/)
   assert.doesNotMatch(runner, /__uraiFounderOriginalSetTimeout|captureTimingFactor|installPhaseCaptureTiming|restorePhaseCaptureTiming/)
 })
@@ -81,6 +84,23 @@ test('Founder transient probes do not compete with a retained production WebGL c
   assert.match(desktopActions, /await actionPage\?\.context\.close\(\)\s+await actionBrowser\.close\(\)/)
   assert.match(runner, /await desktopJourney\(\)\s+await desktopArrivalEvidence\(\)\s+await desktopActionsAndKeyboard\(\)\s+await isolatedJourneyPhases\(\)\s+await mobileAndReduced\(\)/)
   assert.match(runner, /await isolated\?\.context\.close\(\)\s+await isolatedBrowser\.close\(\)/)
+})
+
+test('Founder proof retains the missing current Memory Star state pack through real runtime surfaces', () => {
+  for (const id of ['memory-star-neutral', 'memory-star-hover', 'memory-star-near-cluster', 'memory-star-low-tier']) {
+    assert.match(runner, new RegExp(id))
+  }
+  assert.match(runner, /testMode=1&fixture=one&quality=high/)
+  assert.match(runner, /testMode=1&fixture=five&quality=high/)
+  assert.match(runner, /testMode=1&fixture=five&quality=low/)
+  assert.match(runner, /await hoverFirstMemoryStar\(review\.page\)/)
+  assert.match(runner, /document\.body\.style\.cursor === 'pointer'/)
+  assert.match(runner, /await memoryStarReferencePack\(\)\s+await desktopJourney\(\)/)
+  assert.match(scene, /data-life-map-quality=\{profile\.tier\}/)
+  assert.match(world, /const \[hovered, setHovered\] = useState\(false\)/)
+  assert.match(world, /const emphasis = !active && \(hovered \|\| related\)/)
+  assert.match(world, /onPointerOver=\{\(event\) => \{ event\.stopPropagation\(\); setHovered\(true\); document\.body\.style\.cursor = "pointer"; \}\}/)
+  assert.match(world, /<ArtifactShape node=\{node\} active=\{active\} \/>/)
 })
 
 test('Founder runner retains one explicit 3x high-resolution proof while the interaction matrix stays runner-feasible', () => {

@@ -3,7 +3,7 @@
 import { MemorySurfaceMaterial } from "@/spatial/assets/MemorySurfaceMaterial";
 import { Line, Sparkles, Stars, useAnimations, useGLTF, useTexture } from "@react-three/drei";
 import { useFrame, useThree } from "@react-three/fiber";
-import { createContext, useCallback, useContext, useEffect, useMemo, useRef, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import * as THREE from "three";
 import CinematicPostProcessing from "@/spatial/cinematic/CinematicPostProcessing";
 import type { SpatialQualityProfile } from "@/spatial/performance/useAdaptiveSpatialQuality";
@@ -603,8 +603,10 @@ function ArtifactShape(props: ArtifactProps) {
 
 function MemoryArtifact({ node, index, selected, phase, reducedMotion, onSelect }: { node: LifeMapNode; index: number; selected: LifeMapNode | null; phase: LifeMapJourneyPhase; reducedMotion: boolean; onSelect: (node: LifeMapNode) => void }) {
   const root = useRef<THREE.Group>(null);
+  const [hovered, setHovered] = useState(false);
   const active = selected?.id === node.id;
   const related = Boolean(selected && (selected.connectedTo.includes(node.id) || node.connectedTo.includes(selected.id)));
+  const emphasis = !active && (hovered || related);
   const visible = !selected || phase !== "arrival" || active || related;
   const importance = artifactImportance(node);
   const chapter = chapterForNode(node, index);
@@ -619,14 +621,17 @@ function MemoryArtifact({ node, index, selected, phase, reducedMotion, onSelect 
     ref={root}
     position={celestialPosition}
     visible={visible}
-    scale={active ? 1.04 : 1.08 + importance * 0.30}
+    scale={active ? 1.04 : emphasis ? 1.16 + importance * 0.30 : 1.08 + importance * 0.30}
     name={`life-map-artifact-${resolveArtifactFamily(node)}-${node.id}`}
-    userData={{ artifactFamily: resolveArtifactFamily(node), importance: importance.toFixed(2), semanticLabel, chapterId: chapter.id, runtimeAsset: MEMORY_STAR_MODEL }}
+    userData={{ artifactFamily: resolveArtifactFamily(node), importance: importance.toFixed(2), semanticLabel, chapterId: chapter.id, runtimeAsset: MEMORY_STAR_MODEL, emphasisState: active ? "selected" : hovered ? "hover" : related ? "related" : "neutral" }}
     onClick={(event) => { event.stopPropagation(); onSelect(node); }}
+    onPointerOver={(event) => { event.stopPropagation(); setHovered(true); document.body.style.cursor = "pointer"; }}
+    onPointerOut={(event) => { event.stopPropagation(); setHovered(false); document.body.style.cursor = ""; }}
   >
     <MemoryRoots node={node} index={index} active={active} />
     <ArtifactShape node={node} active={active} />
-    <Sparkles count={active ? 18 : 5} scale={active ? [2.6,2.8,2.6] : [1.4,1.6,1.4]} size={active ? 1.7 : 1.0} speed={reducedMotion ? 0 : 0.08} opacity={active ? .36 : .18} color={node.aura} />
+    {emphasis ? <pointLight color={node.aura} intensity={.28} distance={3.2} decay={2} /> : null}
+    <Sparkles count={active ? 18 : emphasis ? 10 : 5} scale={active ? [2.6,2.8,2.6] : emphasis ? [1.8,1.9,1.8] : [1.4,1.6,1.4]} size={active ? 1.7 : emphasis ? 1.25 : 1.0} speed={reducedMotion ? 0 : 0.08} opacity={active ? .36 : emphasis ? .26 : .18} color={node.aura} />
   </group>;
 }
 
