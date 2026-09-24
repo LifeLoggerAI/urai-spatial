@@ -14,7 +14,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const { returnUrl } = await request.json() as { returnUrl?: string };
+  const { returnUrl } = await request.json().catch(() => ({})) as { returnUrl?: string };
   const secretKey = process.env.STRIPE_SECRET_KEY;
   const appUrl = process.env.NEXT_PUBLIC_APP_URL;
   const stripeMode = parseStripeRuntimeMode(process.env.URAI_STRIPE_MODE);
@@ -58,6 +58,18 @@ export async function POST(request: Request) {
   }
   if (!stripeLivemodeMatchesRuntime(customer.livemode, stripeMode)) {
     return NextResponse.json({ error: 'Stripe customer mode mismatch.' }, { status: 500 });
+  }
+
+  if (configuration) {
+    try {
+      const portalConfiguration = await stripe.billingPortal.configurations.retrieve(configuration);
+      if (!stripeLivemodeMatchesRuntime(portalConfiguration.livemode, stripeMode)) {
+        return NextResponse.json({ error: 'Stripe portal configuration mode mismatch.' }, { status: 500 });
+      }
+    } catch (error) {
+      console.error('Stripe Billing Portal configuration could not be verified', { error });
+      return NextResponse.json({ error: 'Stripe portal configuration could not be verified.' }, { status: 502 });
+    }
   }
 
   const session = await stripe.billingPortal.sessions.create({
