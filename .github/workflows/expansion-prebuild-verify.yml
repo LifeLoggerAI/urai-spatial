@@ -27,3 +27,7 @@ jobs:
         run: node expansion/v2-living-world/state-machine.test.mjs
       - name: Verify V3 relationship controls
         run: node expansion/v3-relationships/relationship-graph.test.mjs
+      - name: Verify offline local-first contract
+        run: node expansion/offline/local-first.test.mjs
+      - name: Verify native device simulator contract
+        run: node expansion/device/native-simulator.test.mjs
