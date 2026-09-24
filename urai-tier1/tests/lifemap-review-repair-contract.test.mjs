@@ -16,14 +16,12 @@ const focusPolish = fs.readFileSync(new URL('../src/app/focus/focus-launch-visua
 const focusGeology = fs.readFileSync(new URL('../src/app/focus/focusMemoryGeology.ts', import.meta.url), 'utf8')
 
 test('Memory Star review proof publishes bounded readiness without weakening the full-world threshold', () => {
-  assert.match(scene, /function RenderProof\(\{ minObjects = 20, minAnchors = 8 \}/)
-  assert.match(scene, /objects > minObjects && anchors >= minAnchors/)
-  assert.match(scene, /<RenderProof minObjects=\{7\} minAnchors=\{1\} \/>/)
-  assert.match(scene, /<RenderProof \/>/)
-  assert.match(scene, /zOffset=\{-2\}/)
-  assert.match(scene, /zOffset=\{-24\}/)
-  assert.match(scene, /zOffset=\{-58\}/)
-  assert.match(scene, /v294-z-separated-layered-galaxy-and-stellar-review/)
+  assert.match(scene, /memoryStarReviewActive/)
+  assert.match(scene, /proofSelected = memoryStarReviewActive \? nodes\[0\]/)
+  assert.match(scene, /reviewProof=\{memoryStarReviewActive\}/)
+  assert.match(productionWorld, /function RenderProofRepublisher\(\{ reviewProof = false \}/)
+  assert.match(productionWorld, /reviewProof \? calls > 0 && objects > 7 && anchors >= 1 : calls > 0 && objects > 20 && anchors >= 8/)
+  assert.match(productionWorld, /scale=\{\[1\.22,1\.08,1\.28\]\}/)
 })
 
 test('Memory Star hover and related emphasis preserves the same authored stellar object', () => {
