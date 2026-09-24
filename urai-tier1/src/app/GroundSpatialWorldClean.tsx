@@ -1232,4 +1232,4 @@ export default function GroundSpatialWorldClean() {
 useGLTF.preload(ROCK_01);
 useGLTF.preload(ROCK_02);
 useGLTF.preload(FERN);
-useGLTF.preload(NATURAL_CANOPY);
+// Candidate-only canopy authority is intentionally not preloaded into the launch runtime.
