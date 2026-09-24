@@ -11,6 +11,10 @@ test("Ground natural profiles use the governed CC0 photoreal canopy and reject p
   assert.match(source, /name="ground-cc0-jacaranda-canopy-v35"/);
   assert.match(source, /treatment: "cc0-photoreal-broadleaf-canopy-v35"/);
   assert.match(source, /useGLTF\.preload\(GROUND_BROADLEAF_CANOPY\)/);
+  assert.match(source, /data-ground-art-revision="ground-v35-optimized-cc0-jacaranda-canopy"/);
+  assert.match(source, /data-ground-canopy-repair="ground-v35-photoreal-broadleaf-edge-canopy"/);
+  assert.match(source, /data-ground-foliage-repair="ground-v35-scanned-understory-plus-cc0-canopy"/);
+  assert.doesNotMatch(source, /data-ground-(?:art-revision|canopy-repair|foliage-repair)="[^"]*v34/);
   assert.doesNotMatch(source, /ground-natural-canopy-v3\.glb/);
   assert.doesNotMatch(source, /CanopyLeafInstances/);
   assert.doesNotMatch(source, /makeOrganicTaperedTube/);
