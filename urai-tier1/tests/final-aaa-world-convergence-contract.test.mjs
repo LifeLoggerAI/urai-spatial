@@ -26,7 +26,7 @@ const replayClient = read('src/app/replay/CinematicReplayClient.tsx')
 const chrome = read('src/spatial/world/persistentWorldCompanion.css')
 const lifeMapConvergence = read('src/spatial/world/lifeMapConvergence.css')
 const lifeMapSelectedCinematic = read('src/spatial/world/lifeMapSelectedCinematic.css')
-const adaptiveLifeMap = read('src/components/lifemap/AdaptiveLifeMapScene.tsx')
+const cosmicLifeMap = read('src/components/lifemap/CosmicComposedLifeMapScene.tsx')
 const routeOwnerConvergence = read('src/spatial/world/routeOwnerConvergence.css')
 const secondaryRealmConvergence = read('src/spatial/world/secondaryRealmConvergence.css')
 
@@ -160,27 +160,28 @@ test('page-like route chrome is removed from the active world', () => {
   assert.match(chrome, /display:\s*none\s*!important/)
 })
 
-test('Life Map reads as a full-viewport canonical spatial world', () => {
+test('Life Map reads as the active full-viewport canonical stellar world', () => {
   assert.match(shell, /import '\.\/lifeMapConvergence\.css'/)
   assert.match(lifeMapConvergence, /data-world-destination='life-map'/)
-  assert.match(adaptiveLifeMap, /data-testid="urai-true-3d-life-map"/)
-  assert.match(adaptiveLifeMap, /<Canvas camera=\{\{ position: OVERVIEW_POSITION, fov: 44, near: \.08, far: 120 \}\}/)
-  assert.match(adaptiveLifeMap, /className="life-map-root"/)
-  assert.match(adaptiveLifeMap, /position:fixed;inset:0;overflow:hidden/)
-  assert.match(adaptiveLifeMap, /type JourneyPhase = "overview" \| "departure" \| "travel" \| "approach" \| "arrival"/)
-  assert.match(adaptiveLifeMap, /data-life-map-phase=\{phase\}/)
-  assert.match(adaptiveLifeMap, /data-life-map-mode=\{selected \? "selected" : "overview"\}/)
-  assert.match(adaptiveLifeMap, /data-home-companion-owned="false"/)
-  assert.match(adaptiveLifeMap, /<header className="life-map-title">/)
-  assert.match(adaptiveLifeMap, /<h1 className="sr-only">URAI Life Map private universe<\/h1>/)
-  assert.match(adaptiveLifeMap, /<details className="life-map-help">/)
-  assert.match(adaptiveLifeMap, /if \(selectedId\) overview\(\); else router\.push\("\/home"\)/)
-  assert.match(adaptiveLifeMap, /<button type="button" onClick=\{overview\}>Overview<\/button>/)
-  assert.match(adaptiveLifeMap, /<button onClick=\{\(\) => router\.push\("\/home"\)\}>Return Home<\/button>/)
-  assert.match(adaptiveLifeMap, /env\(safe-area-inset-bottom\)/)
-  assert.match(adaptiveLifeMap, /@media\(max-width:700px\)/)
-  assert.match(adaptiveLifeMap, /@media\(prefers-reduced-motion:reduce\)/)
-  assert.doesNotMatch(adaptiveLifeMap, /requestPointerLock|PersistentWorldCompanion/)
+  assert.match(cosmicLifeMap, /data-testid="urai-true-3d-life-map"/)
+  assert.match(cosmicLifeMap, /<Canvas camera=\{\{ position: \[0, 2\.4, 27\], fov: 54, near: \.06, far: 190 \}\}/)
+  assert.match(cosmicLifeMap, /className="life-map-root"/)
+  assert.match(cosmicLifeMap, /position:fixed;inset:0;z-index:100;overflow:hidden/)
+  assert.match(cosmicLifeMap, /type Phase = "overview" \| "departure" \| "travel" \| "approach" \| "arrival"/)
+  assert.match(cosmicLifeMap, /data-life-map-phase=\{phase\}/)
+  assert.match(cosmicLifeMap, /data-life-map-mode=\{selected \? "selected" : "overview"\}/)
+  assert.match(cosmicLifeMap, /data-home-companion-owned="false"/)
+  assert.match(cosmicLifeMap, /data-life-map-production-world="true"/)
+  assert.match(cosmicLifeMap, /data-life-map-ground="none"/)
+  assert.match(cosmicLifeMap, /<header className="life-map-title">/)
+  assert.match(cosmicLifeMap, /<h1 className="sr-only">URAI Life Map private universe<\/h1>/)
+  assert.match(cosmicLifeMap, /if \(selectedId\) overview\(\); else router\.push\("\/home"\)/)
+  assert.match(cosmicLifeMap, /<button className="overview-return" onClick=\{overview\}>Overview<\/button>/)
+  assert.match(cosmicLifeMap, /<button onClick=\{\(\) => router\.push\("\/home"\)\}>Return Home<\/button>/)
+  assert.match(cosmicLifeMap, /env\(safe-area-inset-bottom\)/)
+  assert.match(cosmicLifeMap, /@media\(max-width:700px\)/)
+  assert.match(cosmicLifeMap, /@media\(prefers-reduced-motion:reduce\)/)
+  assert.doesNotMatch(cosmicLifeMap, /requestPointerLock|PersistentWorldCompanion/)
 })
 
 test('canonical route clients own Focus and Replay', () => {
@@ -220,35 +221,37 @@ test('mobile safe area, scroll containment, and reduced motion remain explicit',
   assert.match(lifeMapConvergence, /prefers-reduced-motion: reduce/)
 })
 
-test('Life Map renders luminous spatial lenses with dominant selected mode and recovery', () => {
+test('Life Map renders the current layered galaxy and stellar Memory Star authority', () => {
   for (const pattern of [
-    /function MemoryLens/,
-    /name=\{`life-map-memory-\$\{node\.id\}`\}/,
-    /data-depth-anchor="true"/,
-    /sphereGeometry args=\{\[\.30 \+ node\.intensity \* \.10, 28, 28\]\}/,
-    /meshPhysicalMaterial color=\{color\} emissive=\{color\}/,
-    /emissiveIntensity=\{active \? 1\.5 : \.55\}/,
-    /const scale = active \? 1\.34 : muted \? \.58 : \.82/,
-    /name="life-map-anchored-paths"/,
-    /activeId=\{selected\?\.id \|\| null\}/,
-    /name="life-map-depth-near"/,
-    /name="life-map-depth-middle"/,
-    /name="life-map-depth-far"/,
+    /function MemoryStar/,
+    /name=\{`life-map-memory-star-\$\{node\.id\}`\}/,
+    /stellarMorphology: "point-photosphere-layered-corona-no-visible-sphere"/,
+    /function StellarDepthField/,
+    /depthSpan=\{30\} zOffset=\{-2\}/,
+    /depthSpan=\{58\} zOffset=\{-24\}/,
+    /depthSpan=\{88\} zOffset=\{-58\}/,
+    /<LivingGalaxyField tier=\{tier\}/,
+    /function OverviewRegions/,
+    /graphEdges: false/,
+    /function Constellations\(\) \{ return <group name="life-map-constellations" visible=\{false\}/,
     /setPhase\("departure"\)/,
     /setPhase\("travel"\)/,
     /setPhase\("approach"\)/,
     /setPhase\("arrival"\)/,
-    /<nav className="life-map-actions" aria-label="Selected memory actions">/,
-    />Enter Focus<\/button>/,
-    />Replay<\/button>/,
+    /<nav className="life-map-thresholds" aria-label="Selected memory actions"/,
+    />Enter Focus<\/strong>/,
+    />Replay<\/strong>/,
     />Overview<\/button>/,
     /data-webgl-state=\{webglState\}/,
     /webglcontextlost/,
     /webglcontextrestored/,
-    /Your selected memory and privacy state remain preserved\./,
+    /Your selected memory, privacy state, and return position remain preserved\./,
     /Open semantic overview/,
-  ]) assert.match(adaptiveLifeMap, pattern)
+  ]) assert.match(cosmicLifeMap, pattern)
+
   assert.match(lifeMapSelectedCinematic, /data-life-map-mode='selected'/)
   assert.match(lifeMapSelectedCinematic, /position: fixed/)
   assert.match(lifeMapSelectedCinematic, /pointer-events: auto !important/)
+  assert.doesNotMatch(cosmicLifeMap, /function\s+MemoryLens|life-map-anchored-paths|sphereGeometry args=\{\[\.30 \+ node\.intensity/)
 })
+
