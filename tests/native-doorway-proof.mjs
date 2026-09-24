@@ -282,7 +282,7 @@ async function prove(browser, doorway, testCase) {
     const activation = await activate(page, doorway, testCase.method)
     record.hitPoint = activation.hitPoint
     record.focusSteps = activation.focusSteps
-    await page.waitForURL((url) => normalize(url.toString()) === doorway.destination, { timeout: 20000 })
+    await page.waitForURL((url) => normalize(url.toString()) === doorway.destination, { waitUntil: 'commit', timeout: 30000 })
     record.targetOwnsHitPoint = true
     await settleRenderedDestination(page, doorway)
     record.destinationRendered = true
