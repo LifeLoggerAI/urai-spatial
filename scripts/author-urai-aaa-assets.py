@@ -604,14 +604,10 @@ BUILDERS=[
 
 CANON_CRITICAL_FILES={
  'life-map-memory-star-v1.glb',
- 'focus-memory-chamber-v1.glb',
- 'replay-memory-environment-v1.glb',
  'urai-orb-avatar-v1.glb',
 }
 CANON_RECEIPT_META={
  'life-map-memory-star-v1.glb': ('life-map-memory-star-v1','procedural-memory-star'),
- 'focus-memory-chamber-v1.glb': ('focus-memory-chamber-v1','procedural-living-memory-field'),
- 'replay-memory-environment-v1.glb': ('replay-memory-environment-v1','procedural-lived-memory-environment'),
  'urai-orb-avatar-v1.glb': ('urai-orb-avatar-v1','procedural-orb'),
 }
 critical_only=os.environ.get('URAI_CANON_CRITICAL_ONLY') == '1'
@@ -624,7 +620,7 @@ for filename,fn in active_builders:
 
 if critical_only:
     existing=json.loads(RECEIPT.read_text()) if RECEIPT.exists() else {
-      'schemaVersion':'2.1.0','packId':'urai-final-glb-production-pack-v1','assets':[]
+      'schemaVersion':'2.2.0','packId':'urai-final-glb-production-pack-v1','assets':[]
     }
     active_names={filename for filename,_ in BUILDERS}
     merged={entry['fileName']:entry for entry in existing.get('assets',[]) if entry.get('fileName') in active_names}
@@ -656,11 +652,11 @@ if critical_only:
     order=[filename for filename,_ in BUILDERS]
     payload={
       **existing,
-      'schemaVersion':'2.1.0',
+      'schemaVersion':'2.2.0',
       'packId':'urai-final-glb-production-pack-v1',
-      'generatedAt':'2026-09-22T06:45:00Z',
+      'generatedAt':'2026-09-24T22:30:00Z',
       'generator':'URAI Labs Final GLB Forge 1.0',
-      'authorship':'Canon-clean candidate pack. Memory Star, Focus, Replay and Orb are regenerated as unreviewed candidates and require rendered inspection plus compression before promotion.',
+      'authorship':'Canon-clean active-candidate regeneration is limited to Memory Star and Orb. Focus and Replay GLBs are retained only as supporting references and are never regenerated or promoted by this lane. All visible assets still require rendered inspection and governed promotion.',
       'assets':[merged[name] for name in order if name in merged],
     }
 else:

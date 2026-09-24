@@ -28,6 +28,8 @@ const lifeMapSelectedCinematic = read('src/spatial/world/lifeMapSelectedCinemati
 const cosmicLifeMap = read('src/components/lifemap/CosmicComposedLifeMapScene.tsx')
 const routeOwnerConvergence = read('src/spatial/world/routeOwnerConvergence.css')
 const secondaryRealmConvergence = read('src/spatial/world/secondaryRealmConvergence.css')
+const canonicalAssetForge = read('../scripts/author-urai-aaa-assets.py')
+const activeAssetRegenerationWorkflow = read('../.github/workflows/temp-regenerate-canon-critical-glbs.yml')
 
 const canonicalDestinations = ['home', 'infrastructure-hub', 'life-map', 'focus', 'replay', 'mirror', 'passport', 'privacy-controls', 'location-map']
 
@@ -129,6 +131,18 @@ test('Orb and Home ownership preserve predecessor truth while the current candid
   assert.match(routeOwnerConvergence, /box-shadow:\s*none\s*!important/)
   assert.match(routeOwnerConvergence, /outline:\s*3px solid rgba\(224,255,255,.96\)\s*!important/)
   assert.doesNotMatch(homeRuntime, /urai-home-spatial-orb-trigger|urai-home-spatial-runtime-orb/)
+})
+
+test('active asset regeneration cannot re-promote Focus or Replay supporting-reference binaries', () => {
+  const start = canonicalAssetForge.indexOf('CANON_CRITICAL_FILES={')
+  const end = canonicalAssetForge.indexOf('CANON_RECEIPT_META={', start)
+  const activeSet = canonicalAssetForge.slice(start, end)
+  assert.match(activeSet, /life-map-memory-star-v1\.glb/)
+  assert.match(activeSet, /urai-orb-avatar-v1\.glb/)
+  assert.doesNotMatch(activeSet, /focus-memory-chamber-v1\.glb|replay-memory-environment-v1\.glb/)
+  assert.match(canonicalAssetForge, /'schemaVersion':'2\.2\.0'/)
+  assert.match(canonicalAssetForge, /Focus and Replay GLBs are retained only as supporting references/)
+  assert.doesNotMatch(activeAssetRegenerationWorkflow, /focus-memory-chamber-v1\.glb|replay-memory-environment-v1\.glb/)
 })
 
 test('one environmental continuity layer persists across every route transition', () => {
