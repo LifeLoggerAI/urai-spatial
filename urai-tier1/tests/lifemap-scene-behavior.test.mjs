@@ -6,6 +6,7 @@ const page = fs.readFileSync(new URL('../src/app/life-map/page.tsx', import.meta
 const canonical = fs.readFileSync(new URL('../src/spatial/lifemap/SpatialLifeMapCanonical.tsx', import.meta.url), 'utf8')
 const boundary = fs.readFileSync(new URL('../src/components/lifemap/LifeMapRouteBoundary.tsx', import.meta.url), 'utf8')
 const source = fs.readFileSync(new URL('../src/components/lifemap/ComposedLifeMapScene.tsx', import.meta.url), 'utf8')
+const cosmic = fs.readFileSync(new URL('../src/components/lifemap/CosmicComposedLifeMapScene.tsx', import.meta.url), 'utf8')
 const world = fs.readFileSync(new URL('../src/components/lifemap/LifeMapProductionWorld.tsx', import.meta.url), 'utf8')
 const visualSystem = fs.readFileSync(new URL('../src/components/lifemap/lifeMapVisualSystem.ts', import.meta.url), 'utf8')
 const demo = fs.readFileSync(new URL('../src/components/lifemap/canonicalLifeMapDemoNodes.ts', import.meta.url), 'utf8')
@@ -209,7 +210,8 @@ test('WebGL context loss preserves truthful semantic recovery', () => {
 
 
 test('Life Map literal-pixel candidate restores the visible white-gold core and layered galaxy without the known flat placeholder plate', () => {
-  assert.match(source, /data-life-map-art-revision="v290-layered-living-galaxy-white-gold-core"/)
+  assert.match(cosmic, /data-life-map-galaxy-polish="v290-recognizable-spiral-living-galaxy-no-shards"/)
+  assert.match(cosmic, /data-life-map-reference-depth="v294-z-separated-layered-galaxy-and-stellar-review"/)
   assert.match(world, /function SpiralGalaxyField/)
   assert.match(world, /name="life-map-v290-layered-living-galaxy"/)
   assert.match(world, /visualRole: "four-arm-personal-galaxy"/)
