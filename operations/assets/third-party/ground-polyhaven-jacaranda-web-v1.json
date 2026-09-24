@@ -1,0 +1,44 @@
+{
+  "schema": "urai-third-party-asset-receipt@1",
+  "assetId": "ground-polyhaven-jacaranda-web-v1",
+  "status": "integrated-candidate-awaiting-exact-head-visual-acceptance",
+  "source": {
+    "publisher": "Poly Haven",
+    "slug": "jacaranda_tree",
+    "url": "https://polyhaven.com/a/jacaranda_tree",
+    "license": "CC0 1.0",
+    "authors": [
+      "Rob Tuytel (guidance)",
+      "Rico Cilliers (All)"
+    ],
+    "description": "Lush broadleaf Jacaranda tree with detailed bark, branching and natural multi-trunk silhouette."
+  },
+  "derivative": {
+    "repository": "2600th/web-ocean-3d",
+    "commit": "6496c77d37c12e803108c8f932680a7710a62c1c",
+    "path": "public/models/dressing/jacaranda_tree.glb",
+    "blobSha": "050efee1d6d904d416372c91a2bb8b2bc9e6eb85",
+    "sizeBytes": 1805940,
+    "license": "CC0 1.0",
+    "modifications": [
+      "decimated",
+      "welded",
+      "textures resized and re-encoded to WebP",
+      "Meshopt encoded"
+    ],
+    "provenanceAuthority": "ASSET_LICENSES.md at the pinned derivative commit"
+  },
+  "integration": {
+    "runtimePath": "/assets/urai/ground-production/cc0/polyhaven-jacaranda-web-v1.glb",
+    "repositoryPath": "urai-tier1/public/assets/urai/ground-production/cc0/polyhaven-jacaranda-web-v1.glb",
+    "visualRole": "temperate/woodland broadleaf edge canopy",
+    "replaces": [
+      "runtime-authored procedural canopy",
+      "unapproved ground-natural-canopy-v3 candidate"
+    ],
+    "humanReviewApproved": false,
+    "visualProofVerified": false,
+    "exactHeadChecksPassed": false,
+    "failClosedUntilProof": true
+  }
+}

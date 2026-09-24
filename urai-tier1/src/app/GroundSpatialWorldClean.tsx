@@ -59,7 +59,7 @@ const SPAWN = new THREE.Vector3(0, 0, 6);
 const ROCK_01 = "/assets/urai/home-production/cc0/polyhaven-v48/rock_face_01/asset.gltf";
 const ROCK_02 = "/assets/urai/home-production/cc0/polyhaven-v48/rock_face_02/asset.gltf";
 const FERN = "/assets/urai/home-production/cc0/polyhaven-v48/fern_02/asset.gltf";
-const NATURAL_CANOPY = "/assets/urai/generated/models/ground-natural-canopy-v3.glb";
+const GROUND_BROADLEAF_CANOPY = "/assets/urai/ground-production/cc0/polyhaven-jacaranda-web-v1.glb";
 const TERRAIN_ALBEDO = "/assets/urai/home-production/cc0/rock-tile-floor/rock-tile-floor-diff-1k.webp";
 const TERRAIN_NORMAL = "/assets/urai/home-production/cc0/rock-tile-floor/rock-tile-floor-normal-gl-1k.webp";
 const TERRAIN_ARM = "/assets/urai/home-production/cc0/rock-tile-floor/rock-tile-floor-arm-1k.webp";
@@ -225,105 +225,6 @@ class GroundCanopyBoundary extends Component<{ children: ReactNode }, { failed: 
   render() { return this.state.failed ? null : this.props.children; }
 }
 
-function CanopyLeafInstances({ geometry, leaves, color }: {
-  geometry: THREE.BufferGeometry;
-  leaves: ReadonlyArray<{ position: [number, number, number]; rotation: [number, number, number]; scale: [number, number, number] }>;
-  color: string;
-}) {
-  const mesh = useRef<THREE.InstancedMesh>(null);
-  const dummy = useMemo(() => new THREE.Object3D(), []);
-  useEffect(() => {
-    const owner = mesh.current;
-    if (!owner) return;
-    leaves.forEach((leaf, index) => {
-      dummy.position.set(...leaf.position);
-      dummy.rotation.set(...leaf.rotation);
-      dummy.scale.set(...leaf.scale);
-      dummy.updateMatrix();
-      owner.setMatrixAt(index, dummy.matrix);
-    });
-    owner.instanceMatrix.needsUpdate = true;
-    owner.computeBoundingSphere();
-  }, [dummy, leaves]);
-  return <instancedMesh ref={mesh} args={[geometry, undefined, leaves.length]} castShadow receiveShadow frustumCulled>
-    <meshStandardMaterial
-      color={color}
-      roughness={0.94}
-      metalness={0}
-      envMapIntensity={0.22}
-      side={THREE.DoubleSide}
-    />
-  </instancedMesh>;
-}
-
-function makeOrganicTaperedTube(
-  curve: THREE.CatmullRomCurve3,
-  baseRadius: number,
-  tipRadius: number,
-  seed: number,
-  tubularSegments: number,
-  radialSegments: number,
-  baseFlare = 0,
-) {
-  const frames = curve.computeFrenetFrames(tubularSegments, false);
-  const positions: number[] = [];
-  const uvs: number[] = [];
-  const indices: number[] = [];
-  const center = new THREE.Vector3();
-  const radial = new THREE.Vector3();
-
-  for (let ring = 0; ring <= tubularSegments; ring += 1) {
-    const t = ring / tubularSegments;
-    curve.getPointAt(t, center);
-    const taper = THREE.MathUtils.lerp(baseRadius, tipRadius, Math.pow(t, 0.82));
-    const flare = 1 + baseFlare * Math.exp(-t * 13.5);
-
-    for (let side = 0; side <= radialSegments; side += 1) {
-      const u = side / radialSegments;
-      const angle = u * Math.PI * 2;
-      const irregularity =
-        1
-        + Math.sin(angle * 3 + seed * 1.73 + ring * 0.08) * 0.075
-        + Math.sin(angle * 5 + seed * 0.91 - ring * 0.11) * 0.038;
-
-      radial
-        .copy(frames.normals[ring])
-        .multiplyScalar(Math.cos(angle))
-        .addScaledVector(frames.binormals[ring], Math.sin(angle))
-        .normalize();
-
-      const radius = taper * flare * irregularity;
-      positions.push(
-        center.x + radial.x * radius,
-        center.y + radial.y * radius,
-        center.z + radial.z * radius,
-      );
-      uvs.push(u, t);
-    }
-  }
-
-  const stride = radialSegments + 1;
-  for (let ring = 0; ring < tubularSegments; ring += 1) {
-    for (let side = 0; side < radialSegments; side += 1) {
-      const a = ring * stride + side;
-      const b = (ring + 1) * stride + side;
-      const c = (ring + 1) * stride + side + 1;
-      const d = ring * stride + side + 1;
-      indices.push(a, b, d, b, c, d);
-    }
-  }
-
-  const geometry = new THREE.BufferGeometry();
-  geometry.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
-  geometry.setAttribute("uv", new THREE.Float32BufferAttribute(uvs, 2));
-  geometry.setIndex(indices);
-  geometry.computeVertexNormals();
-  geometry.computeBoundingBox();
-  geometry.computeBoundingSphere();
-  return geometry;
-}
-
-// organic-tapered-trunk-branch-silhouette-v28
 function NaturalCanopy({ profile, position, rotationY, scale, shapeSeed }: {
   profile: EnvironmentProfile;
   position: [number, number, number];
@@ -331,185 +232,67 @@ function NaturalCanopy({ profile, position, rotationY, scale, shapeSeed }: {
   scale: number;
   shapeSeed: number;
 }) {
-  const authored = useMemo(() => {
-    const woodland = profile.id === "woodland";
-    const trunkColor = woodland ? "#3a3027" : "#493a2c";
-    const branchColor = woodland ? "#42372d" : "#514334";
-    const leafA = woodland ? "#526b4c" : "#667b58";
-    const leafB = woodland ? "#617956" : "#758868";
-    const leafC = woodland ? "#475f43" : "#596f50";
-    const leafD = woodland ? "#3f563b" : "#506548";
-
-    const shapePhase = shapeSeed * 0.731;
-    const trunkLeanX = (((shapeSeed * 17) % 19) - 9) * 0.008;
-    const trunkLeanZ = (((shapeSeed * 23) % 17) - 8) * 0.007;
-    const crownWidth = 0.62 + ((shapeSeed * 29) % 61) / 100;
-    const crownDepth = 0.58 + ((shapeSeed * 31) % 67) / 100;
-    const crownLift = 0.82 + ((shapeSeed * 11) % 39) / 100;
-    const trunkCurve = new THREE.CatmullRomCurve3([
-      new THREE.Vector3(0, 0, 0),
-      new THREE.Vector3(-0.035 + trunkLeanX * 0.35, 0.56, 0.018 + trunkLeanZ * 0.25),
-      new THREE.Vector3(0.042 + trunkLeanX * 0.72, 1.16, -0.028 + trunkLeanZ * 0.58),
-      new THREE.Vector3(-0.018 + trunkLeanX * 1.05, 1.78, 0.034 + trunkLeanZ * 0.94),
-      new THREE.Vector3(0.046 + trunkLeanX * 1.35, 2.42 * crownLift, -0.026 + trunkLeanZ * 1.28),
-      new THREE.Vector3(0.012 + trunkLeanX * 1.58, 2.72 * crownLift, 0.014 + trunkLeanZ * 1.48),
-    ]);
-    const trunkRadius = 0.102 + ((shapeSeed * 7) % 13) * 0.0018;
-    const trunkGeometry = makeOrganicTaperedTube(
-      trunkCurve,
-      trunkRadius,
-      trunkRadius * 0.42,
-      shapeSeed,
-      44,
-      12,
-      0.62,
-    );
-
-    const branchDefs = [
-      [[0.02, 1.12, 0.00], [0.30, 1.46, 0.06], [0.72, 1.73, 0.15], [1.02, 1.94, 0.23]],
-      [[-0.01, 1.28, 0.02], [-0.28, 1.56, -0.04], [-0.66, 1.84, -0.16], [-0.98, 2.03, -0.22]],
-      [[0.04, 1.47, -0.02], [0.18, 1.77, -0.30], [0.38, 2.02, -0.62], [0.56, 2.18, -0.88]],
-      [[-0.02, 1.63, 0.02], [-0.14, 1.90, 0.28], [-0.34, 2.12, 0.56], [-0.56, 2.28, 0.82]],
-      [[0.04, 1.83, 0.00], [0.34, 2.02, -0.10], [0.62, 2.20, -0.24], [0.82, 2.36, -0.34]],
-      [[0.00, 1.96, 0.00], [-0.28, 2.12, 0.10], [-0.56, 2.29, 0.22], [-0.78, 2.42, 0.34]],
-      [[0.03, 2.12, 0.00], [0.18, 2.31, 0.24], [0.30, 2.47, 0.48]],
-      [[0.00, 2.24, -0.01], [-0.16, 2.40, -0.22], [-0.28, 2.54, -0.42]],
-    ] as const;
-    const transformedBranchDefs = branchDefs.map((points, branchIndex) => points.map(([x, y, z], pointIndex) => [
-      x * crownWidth + trunkLeanX * y * 0.72 + Math.sin(shapePhase + branchIndex * 1.91 + pointIndex * 0.73) * 0.035,
-      y * crownLift + Math.cos(shapePhase * 0.7 + branchIndex * 0.83 + pointIndex) * 0.025,
-      z * crownDepth + trunkLeanZ * y * 0.66 + Math.cos(shapePhase + branchIndex * 1.37 + pointIndex * 0.61) * 0.035,
-    ] as [number, number, number]));
-    const branches = transformedBranchDefs.map((points, index) => {
-      const branchCurve = new THREE.CatmullRomCurve3(points.map(([x, y, z]) => new THREE.Vector3(x, y, z)));
-      const branchRadius = index < 2 ? 0.038 : 0.027;
-      return makeOrganicTaperedTube(
-        branchCurve,
-        branchRadius,
-        branchRadius * 0.22,
-        shapeSeed * 11.7 + index * 2.31,
-        18,
-        8,
-        0.08,
-      );
+  const asset = useGLTF(GROUND_BROADLEAF_CANOPY);
+  const model = useMemo(() => {
+    const clone = asset.scene.clone(true);
+    const box = new THREE.Box3().setFromObject(clone);
+    const size = box.getSize(new THREE.Vector3());
+    const center = box.getCenter(new THREE.Vector3());
+    const authoredHeight = profile.id === "woodland" ? 3.35 : 3.08;
+    const normalization = authoredHeight / Math.max(size.y, 0.001);
+    clone.scale.setScalar(normalization);
+    clone.position.set(-center.x * normalization, -box.min.y * normalization, -center.z * normalization);
+    clone.traverse((object) => {
+      if (!(object instanceof THREE.Mesh)) return;
+      object.castShadow = true;
+      object.receiveShadow = true;
+      const originals = Array.isArray(object.material) ? object.material : [object.material];
+      const materials = originals.map((original) => {
+        const material = original.clone();
+        if (material instanceof THREE.MeshStandardMaterial) {
+          material.metalness = 0;
+          material.roughness = Math.max(material.roughness, 0.62);
+          material.envMapIntensity = profile.id === "woodland" ? 0.34 : 0.40;
+          if (material.alphaTest > 0) material.alphaTest = Math.max(material.alphaTest, 0.42);
+          material.depthWrite = true;
+          material.needsUpdate = true;
+        }
+        return material;
+      });
+      object.material = Array.isArray(object.material) ? materials : materials[0];
     });
+    return clone;
+  }, [asset.scene, profile.id]);
 
-    // Authored ovate leaf geometry replaces the rejected squashed-sphere canopy primitive.
-    // The indexed leaf is substantially cheaper than SphereGeometry while preserving
-    // three-dimensional orientation through the existing instancing transform.
-    const leafGeometry = new THREE.BufferGeometry();
-    leafGeometry.setAttribute("position", new THREE.Float32BufferAttribute([
-      -0.48,  0.00,  0.00,
-      -0.28,  0.045, 0.48,
-       0.00,  0.085, 0.92,
-       0.28,  0.045, 0.48,
-       0.48,  0.00,  0.00,
-       0.26, -0.035,-0.34,
-       0.00, -0.055,-0.62,
-      -0.26, -0.035,-0.34,
-       0.00,  0.00,  0.08,
-    ], 3));
-    leafGeometry.setAttribute("uv", new THREE.Float32BufferAttribute([
-      0.00, 0.42,
-      0.18, 0.74,
-      0.50, 1.00,
-      0.82, 0.74,
-      1.00, 0.42,
-      0.82, 0.16,
-      0.50, 0.00,
-      0.18, 0.16,
-      0.50, 0.46,
-    ], 2));
-    leafGeometry.setIndex([
-      8, 0, 1,
-      8, 1, 2,
-      8, 2, 3,
-      8, 3, 4,
-      8, 4, 5,
-      8, 5, 6,
-      8, 6, 7,
-      8, 7, 0,
-    ]);
-    leafGeometry.computeVertexNormals();
-    leafGeometry.computeBoundingSphere();
+  useEffect(() => () => model.traverse((object) => {
+    if (!(object instanceof THREE.Mesh)) return;
+    const materials = Array.isArray(object.material) ? object.material : [object.material];
+    materials.forEach((material) => material.dispose());
+  }), [model]);
 
-    const foliageAnchors = [
-      ...transformedBranchDefs.flatMap((points) => points.slice(1)),
-      [trunkLeanX * 2.55, 2.67 * crownLift, trunkLeanZ * 2.45] as const,
-      [0.22 * crownWidth + trunkLeanX * 2.2, 2.48 * crownLift, 0.10 * crownDepth + trunkLeanZ * 2.0] as const,
-      [-0.21 * crownWidth + trunkLeanX * 2.15, 2.50 * crownLift, -0.09 * crownDepth + trunkLeanZ * 2.05] as const,
-    ];
-    const hash = (seed: number) => {
-      const value = Math.sin(seed * 12.9898 + shapeSeed * 53.117 + (woodland ? 78.233 : 31.417)) * 43758.5453;
-      return value - Math.floor(value);
-    };
-    const leaves = Array.from({ length: woodland ? 640 : 540 }, (_, index) => {
-      const anchor = foliageAnchors[index % foliageAnchors.length];
-      const spread = 0.06 + hash(index * 7 + 1) * 0.46;
-      const theta = hash(index * 7 + 2) * Math.PI * 2;
-      const x = anchor[0] + Math.cos(theta) * spread * (0.48 + hash(index * 7 + 3) * 0.92);
-      const y = anchor[1] - 0.03 + (hash(index * 7 + 4) - 0.47) * 0.72;
-      const z = anchor[2] + Math.sin(theta) * spread * (0.46 + hash(index * 7 + 5) * 0.88);
-      const rx = (hash(index * 7 + 6) - 0.5) * 1.28;
-      const ry = theta + (hash(index * 7 + 7) - 0.5) * 1.15;
-      const rz = (hash(index * 7 + 8) - 0.5) * 1.12;
-      const sx = 0.20 + hash(index * 7 + 9) * 0.18;
-      const sy = 0.18 + hash(index * 7 + 10) * 0.16;
-      const sz = 0.18 + hash(index * 7 + 11) * 0.17;
-      return {
-        position: [x, y, z] as [number, number, number],
-        rotation: [rx, ry, rz] as [number, number, number],
-        scale: [sx, sy, sz] as [number, number, number],
-        color: index % 7 === 0 ? leafD : index % 5 === 0 ? leafC : index % 3 === 0 ? leafB : leafA,
-      };
-    });
-    const leavesA = leaves.filter((leaf) => leaf.color === leafA);
-    const leavesB = leaves.filter((leaf) => leaf.color === leafB);
-    const leavesC = leaves.filter((leaf) => leaf.color === leafC);
-    const leavesD = leaves.filter((leaf) => leaf.color === leafD);
-    return { trunkGeometry, branches, leafGeometry, leavesA, leavesB, leavesC, leavesD, leafA, leafB, leafC, leafD, trunkColor, branchColor };
-  }, [profile.id, shapeSeed]);
-
-  useEffect(() => () => {
-    authored.trunkGeometry.dispose();
-    authored.leafGeometry.dispose();
-    authored.branches.forEach((geometry) => geometry.dispose());
-  }, [authored]);
+  const widthVariation = 0.82 + ((shapeSeed * 37) % 19) / 100;
+  const heightVariation = 0.92 + ((shapeSeed * 19) % 15) / 100;
+  const depthVariation = 0.80 + ((shapeSeed * 29) % 23) / 100;
+  const leanX = ((((shapeSeed * 13) % 11) - 5) * Math.PI) / 720;
+  const leanZ = ((((shapeSeed * 17) % 13) - 6) * Math.PI) / 760;
 
   return <group
     position={position}
-    rotation={[0, rotationY, 0]}
-    scale={[
-      scale * (0.84 + ((shapeSeed * 37) % 17) / 100),
-      scale * (0.94 + ((shapeSeed * 19) % 13) / 100),
-      scale * (0.82 + ((shapeSeed * 29) % 21) / 100),
-    ]}
+    rotation={[leanX, rotationY, leanZ]}
+    scale={[scale * widthVariation, scale * heightVariation, scale * depthVariation]}
     raycast={() => null}
-    name="ground-authored-natural-canopy-v13"
+    name="ground-cc0-jacaranda-canopy-v35"
     userData={{
-      treatment: "seed-varied-branch-architecture-dense-small-leaf-canopy-v34",
-      provenance: NATURAL_CANOPY,
-      visibleAuthority: "runtime-authored-canopy-v26",
-      supersedesVisibleCandidate: "ground-v24-faceted-volume-crown",
-      literalPixelRepair: "v26-ovate-leaflets-remove-primitive-ball-canopy",
-      scannedFoliageRepair: "v34-scanned-fern-understory-separated-from-broadleaf-crown",
-      compositionPixelRepairV32: "v32-edge-canopy-scanned-understory-relief",
-      naturalTerrainRepair: "v27-natural-soil-no-repeating-rock-maps",
-      structuralPixelRepair: "v28-organic-tapered-trunk-branch-silhouette",
-      supplementalPixelRepair: "v25-natural-horizon-and-terrain-relief",
-      compositionPixelRepair: "v34-dense-small-leaf-broadleaf-edge-canopy-atmospheric-depth",
+      treatment: "cc0-photoreal-broadleaf-canopy-v35",
+      provenance: GROUND_BROADLEAF_CANOPY,
+      sourceAuthority: "poly-haven-jacaranda-tree-cc0",
+      derivativeAuthority: "web-optimized-decimated-meshopt-webp",
+      visibleAuthority: "scanned-broadleaf-canopy-candidate-v35",
+      supersedesVisibleCandidate: "runtime-authored-canopy-v34",
+      failClosedProofState: "requires-fresh-exact-head-ground-proof",
     }}
   >
-    <mesh geometry={authored.trunkGeometry} castShadow receiveShadow>
-      <meshStandardMaterial color={authored.trunkColor} roughness={0.93} metalness={0} envMapIntensity={0.28} />
-    </mesh>
-    {authored.branches.map((geometry, index) => <mesh key={index} geometry={geometry} castShadow receiveShadow>
-      <meshStandardMaterial color={authored.branchColor} roughness={0.94} metalness={0} envMapIntensity={0.26} />
-    </mesh>)}
-    <CanopyLeafInstances geometry={authored.leafGeometry} leaves={authored.leavesA} color={authored.leafA} />
-    <CanopyLeafInstances geometry={authored.leafGeometry} leaves={authored.leavesB} color={authored.leafB} />
-    <CanopyLeafInstances geometry={authored.leafGeometry} leaves={authored.leavesC} color={authored.leafC} />
-    <CanopyLeafInstances geometry={authored.leafGeometry} leaves={authored.leavesD} color={authored.leafD} />
+    <primitive object={model} />
   </group>;
 }
 
@@ -705,8 +488,8 @@ function NaturalScatter({ profile }: { profile: EnvironmentProfile }) {
 
   const woodland = profile.id === "woodland";
   const ferns = items.slice(0, woodland ? 92 : 88);
-  const canopies = items.filter((item) => item.z < -4).slice(0, woodland ? 18 : 14);
-  return <group name={woodland ? "ground-woodland-scanned-understory" : "ground-temperate-scanned-understory"} userData={{ treatment: "urai-edge-canopy-scanned-understory-v32", canopyFallback: "scanned-understory-remains-without-canopy", compositionRepair: "v32-edge-canopy-scanned-understory-relief-no-cloned-tree-field" }} raycast={() => null}>
+  const canopies = items.filter((item) => item.z < -4).slice(0, woodland ? 14 : 11);
+  return <group name={woodland ? "ground-woodland-scanned-understory" : "ground-temperate-scanned-understory"} userData={{ treatment: "cc0-scanned-broadleaf-edge-canopy-v35", canopyFallback: "scanned-understory-remains-if-canopy-load-fails", compositionRepair: "v35-photoreal-jacaranda-edge-canopy-plus-scanned-understory" }} raycast={() => null}>
     <GroundCanopyBoundary>
       <Suspense fallback={null}>
         {canopies.map((item) => {
@@ -1232,4 +1015,4 @@ export default function GroundSpatialWorldClean() {
 useGLTF.preload(ROCK_01);
 useGLTF.preload(ROCK_02);
 useGLTF.preload(FERN);
-// Candidate-only canopy authority is intentionally not preloaded into the launch runtime.
+useGLTF.preload(GROUND_BROADLEAF_CANOPY);
