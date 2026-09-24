@@ -695,10 +695,10 @@ async function highResolutionOverview() {
 
 async function memoryStarReferencePack() {
   const states = [
-    { id: 'memory-star-neutral', route: '/life-map/?demo=1&testMode=1&fixture=one&quality=high&freeze=1&overview=1', fixture: 'one', quality: 'high' },
-    { id: 'memory-star-hover', route: '/life-map/?demo=1&testMode=1&fixture=one&quality=high&freeze=1&overview=1', fixture: 'one', quality: 'high', hover: true },
-    { id: 'memory-star-near-cluster', route: '/life-map/?demo=1&testMode=1&fixture=five&quality=high&freeze=1&overview=1', fixture: 'five', quality: 'high' },
-    { id: 'memory-star-low-tier', route: '/life-map/?demo=1&testMode=1&fixture=five&quality=low&freeze=1&overview=1', fixture: 'five', quality: 'low' },
+    { id: 'memory-star-neutral', route: '/life-map/?demo=1&testMode=1&fixture=one&quality=high&freeze=1&overview=1&memoryStarReview=isolated', fixture: 'one', quality: 'high' },
+    { id: 'memory-star-hover', route: '/life-map/?demo=1&testMode=1&fixture=one&quality=high&freeze=1&overview=1&memoryStarReview=hover', fixture: 'one', quality: 'high', hover: true },
+    { id: 'memory-star-near-cluster', route: '/life-map/?demo=1&testMode=1&fixture=five&quality=high&freeze=1&overview=1&memoryStarReview=near-cluster', fixture: 'five', quality: 'high' },
+    { id: 'memory-star-low-tier', route: '/life-map/?demo=1&testMode=1&fixture=five&quality=low&freeze=1&overview=1&memoryStarReview=near-cluster', fixture: 'five', quality: 'low' },
   ]
   for (const state of states) {
     const reviewBrowser = await chromium.launch({ headless: true })
