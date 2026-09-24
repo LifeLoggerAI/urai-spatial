@@ -31,3 +31,7 @@ jobs:
         run: node expansion/offline/local-first.test.mjs
       - name: Verify native device simulator contract
         run: node expansion/device/native-simulator.test.mjs
+      - name: Verify haptic accessibility translation
+        run: node expansion/haptics/haptic-translator.test.mjs
+      - name: Verify notification policy fabric
+        run: node expansion/notifications/notification-policy.test.mjs
