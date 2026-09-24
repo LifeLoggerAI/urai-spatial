@@ -1015,4 +1015,4 @@ export default function GroundSpatialWorldClean() {
 useGLTF.preload(ROCK_01);
 useGLTF.preload(ROCK_02);
 useGLTF.preload(FERN);
-useGLTF.preload(GROUND_BROADLEAF_CANOPY);
+// V35 canopy is intentionally not preloaded: unsupported KTX2 must stay inside GroundCanopyBoundary and fail closed to scanned understory.
