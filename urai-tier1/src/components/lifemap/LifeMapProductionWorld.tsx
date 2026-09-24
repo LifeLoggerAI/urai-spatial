@@ -254,7 +254,7 @@ function MemoryRoots({ node, index, active }: { node: LifeMapNode; index: number
   </mesh>)}</group>;
 }
 
-function RenderProofRepublisher() {
+function RenderProofRepublisher({ reviewProof = false }: { reviewProof?: boolean }) {
   const { gl, scene, invalidate: requestRender } = useThree();
   const root = useRef<HTMLElement | null>(null);
   const frames = useRef(0);
@@ -288,7 +288,7 @@ function RenderProofRepublisher() {
     });
     const calls = gl.info.render.calls;
     const triangles = gl.info.render.triangles;
-    const ready = calls > 0 && objects > 20 && anchors >= 8;
+    const ready = reviewProof ? calls > 0 && objects > 7 && anchors >= 1 : calls > 0 && objects > 20 && anchors >= 8;
     const signature = `${objects}:${anchors}:${calls}:${triangles}`;
     const element = resolveOwner();
     if (!element) return false;
@@ -807,7 +807,7 @@ function SpiralGalaxyField({ qualityTier, reducedMotion, selected }: { qualityTi
         const angle = seeded(index + 1900, 72) * Math.PI * 2;
         x = Math.cos(angle) * radius * 1.22 + (seeded(index + 1900, 73) - .5) * 1.25;
         y = Math.sin(angle) * radius * .40 + (seeded(index + 1900, 74) - .5) * 1.5;
-        z = (seeded(index + 1900, 75) - .5) * (2.5 + radius * .22);
+        z = (seeded(index + 1900, 75) - .5) * (6.2 + radius * .62);
         color = warm.clone().lerp(ice, .08 + seeded(index + 1900, 76) * .18);
         size = 1.05 + Math.pow(seeded(index + 1900, 77), 4) * 4.15;
       } else {
@@ -817,7 +817,7 @@ function SpiralGalaxyField({ qualityTier, reducedMotion, selected }: { qualityTi
         const thickness = .85 + u * 3.15;
         x = Math.cos(angle) * radius * 1.16 + (seeded(index + 1900, 72) - .5) * thickness;
         y = Math.sin(angle) * radius * .37 + (seeded(index + 1900, 73) - .5) * thickness * .82;
-        z = (seeded(index + 1900, 74) - .5) * (3.0 + u * 4.8) - u * .65;
+        z = (seeded(index + 1900, 74) - .5) * (8.4 + u * 12.8) - u * 2.4 + Math.sin(angle) * radius * .16;
         color = warm.clone();
         color.lerp(arm === 0 ? ice : arm === 1 ? violet : arm === 2 ? teal : ice, THREE.MathUtils.clamp(.18 + u * .62, 0, .74));
         size = .64 + Math.pow(seeded(index + 1900, 76), 5) * 3.25;
@@ -869,7 +869,7 @@ function SpiralGalaxyField({ qualityTier, reducedMotion, selected }: { qualityTi
     name="life-map-v290-layered-living-galaxy"
     position={[0,1.2,-24.5]}
     rotation={[.04,0,-.12]}
-    scale={[1.22,1.08,1]}
+    scale={[1.22,1.08,1.28]}
     userData={{ visualRole: "four-arm-personal-galaxy", source: "authored-runtime-memory-star-system", placeholderPlate: false }}
   >
     <points geometry={geometry} material={material} />
@@ -917,7 +917,7 @@ function ArchiveParticles({ qualityTier, reducedMotion }: { qualityTier: Spatial
   return <group name="life-map-archive-particles"><Stars radius={58} depth={38} count={qualityTier === "low" ? 80 : qualityTier === "medium" ? 150 : 240} factor={1.45} saturation={.34} fade speed={reducedMotion ? 0 : .012} /></group>;
 }
 
-export function LifeMapProductionWorld({ nodes, selected, phase, profile, onSelect, cameraRig, webglRecovery }: {
+export function LifeMapProductionWorld({ nodes, selected, phase, profile, onSelect, cameraRig, webglRecovery, reviewProof = false }: {
   nodes: LifeMapNode[];
   selected: LifeMapNode | null;
   phase: LifeMapJourneyPhase;
@@ -925,6 +925,7 @@ export function LifeMapProductionWorld({ nodes, selected, phase, profile, onSele
   onSelect: (node: LifeMapNode) => void;
   cameraRig: ReactNode;
   webglRecovery: ReactNode;
+  reviewProof?: boolean;
 }) {
   const { size } = useThree();
   const portrait = size.height > size.width;
@@ -939,7 +940,7 @@ export function LifeMapProductionWorld({ nodes, selected, phase, profile, onSele
     <directionalLight position={[9,14,10]} intensity={1.72} color="#f2dfbd" castShadow={profile.shadows} />
     <directionalLight position={[-12,7,-24]} intensity={.84} color="#6ca7bd" />
     {webglRecovery}
-    <RenderProofRepublisher />
+    <RenderProofRepublisher reviewProof={reviewProof} />
     {cameraRig}
     <group name="life-map-authored-environment">
       {/* Scene background supplies the sky; an opaque sphere here occludes the far star field. */}
