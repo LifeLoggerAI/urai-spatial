@@ -19,6 +19,7 @@ export const URAI_LAUNCH_LOCALES = [
   'ko',
   'it',
   'fa',
+  'nl',
 ] as const
 
 export type UraiLaunchLocale = (typeof URAI_LAUNCH_LOCALES)[number]
@@ -54,6 +55,9 @@ const BASE_ALIASES: Record<string, UraiLaunchLocale> = {
   ko: 'ko',
   it: 'it',
   fa: 'fa',
+  nl: 'nl',
+  'nl-nl': 'nl',
+  'nl-be': 'nl',
 }
 
 export function normalizeLaunchLocale(value: string | null | undefined): UraiLaunchLocale | null {
