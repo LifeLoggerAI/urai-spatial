@@ -44,8 +44,10 @@ test('V281 overview camera is tighter and independent from selected-memory trave
   assert.match(cosmic, /fov: portrait \? 42 : 44/)
   assert.match(cosmic, /travelOrigin\s*=\s*new THREE\.Vector3\(0, portrait \? 1\.2 : 2\.7, portrait \? 29 : 25\.5\)/)
   assert.match(cosmic, /dir = travelOrigin\.clone\(\)\.sub\(target\)\.normalize\(\)/)
-  assert.match(cosmic, /pointer\\.x \\* \\(portrait \\? 1\\.25 : 4\\.2\\)/)
-  assert.match(cosmic, /pointer\.y \* \.45/)
+  assert.match(cosmic, /position\.x \+= pointer\.x \* 2\.15/)
+  assert.match(cosmic, /position\.y \+= pointer\.y \* \.82/)
+  assert.match(cosmic, /target\.x \+= pointer\.x \* \.84/)
+  assert.match(cosmic, /target\.y \+= pointer\.y \* \.34/)
 })
 
 test('V284 overview memory destinations remain stellar archipelagos with volumetric authored hierarchy', () => {
@@ -129,7 +131,8 @@ test('framing keeps reduced-motion, exact-head render proof, and semantic thresh
   assert.match(cosmic, /data-life-map-visible-anchors="0"/)
   assert.match(cosmic, /lifeMapRenderReady/)
   assert.match(cosmic, /lifeMapVisibleAnchors/)
-  assert.match(cosmic, /calls > 0 && objects > 20 && anchors >= 8/)
+  assert.match(cosmic, /function RenderProof\(\{ minObjects = 20, minAnchors = 8 \}/)
+  assert.match(cosmic, /gl\.info\.render\.calls > 0 && objects > minObjects && anchors >= minAnchors/)
   assert.match(cosmic, /className="life-map-thresholds"/)
   assert.match(cosmic, />Enter Focus</)
   assert.match(cosmic, />Replay</)
