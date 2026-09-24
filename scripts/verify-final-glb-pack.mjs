@@ -15,12 +15,6 @@ const contracts = {
     nodes: ['home-sanctuary-root','sanctuary-terrain','mirror-basin-water','ground-alcove-root','life-map-alcove-root','horizon-threshold-root','embodied-presence-root','embodied-presence-cloak-back','embodied-presence-face-light','memory-place-anchor-1'],
     clips: ['Home_Breathing','Presence_Idle','Presence_Privacy','Presence_Forming'],
   },
-  'portal-ring-master-v1.glb': {
-    minNodes: 40,
-    maxTriangles: 24000,
-    nodes: ['portal-root','portal-pillar-left','portal-pillar-right','portal-architectural-arch','portal-membrane','portal-inner-veil','portal-depth-1','portal-threshold-stone'],
-    clips: ['Portal_Closed','Portal_Available','Portal_Attention','Portal_Active','Portal_Opening','Portal_Traversal','Portal_Closing'],
-  },
   'ground-world-terrain-v1.glb': {
     minNodes: 110,
     maxTriangles: 120000,
@@ -61,7 +55,7 @@ const contracts = {
 
 const errors = []
 if (receipt.packId !== 'urai-final-glb-production-pack-v1') errors.push('final GLB receipt packId is invalid')
-if (receipt.assets?.length !== Object.keys(contracts).length) errors.push('final GLB receipt must contain all eight assets')
+if (receipt.assets?.length !== Object.keys(contracts).length) errors.push('final GLB receipt must contain all seven active assets')
 
 for (const [fileName, contract] of Object.entries(contracts)) {
   const record = receipt.assets?.find((asset) => asset.fileName === fileName)

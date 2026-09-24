@@ -599,7 +599,7 @@ def build_passport():
     return b
 
 BUILDERS=[
- ('home-entry-chamber-v1.glb',build_home),('portal-ring-master-v1.glb',build_portal),('ground-world-terrain-v1.glb',build_ground),('life-map-memory-star-v1.glb',build_star),('focus-memory-chamber-v1.glb',build_focus),('replay-memory-environment-v1.glb',build_replay),('urai-orb-avatar-v1.glb',build_orb),('passport-status-room-v1.glb',build_passport)
+ ('home-entry-chamber-v1.glb',build_home),('ground-world-terrain-v1.glb',build_ground),('life-map-memory-star-v1.glb',build_star),('focus-memory-chamber-v1.glb',build_focus),('replay-memory-environment-v1.glb',build_replay),('urai-orb-avatar-v1.glb',build_orb),('passport-status-room-v1.glb',build_passport)
 ]
 
 CANON_CRITICAL_FILES={
@@ -626,7 +626,8 @@ if critical_only:
     existing=json.loads(RECEIPT.read_text()) if RECEIPT.exists() else {
       'schemaVersion':'2.1.0','packId':'urai-final-glb-production-pack-v1','assets':[]
     }
-    merged={entry['fileName']:entry for entry in existing.get('assets',[])}
+    active_names={filename for filename,_ in BUILDERS}
+    merged={entry['fileName']:entry for entry in existing.get('assets',[]) if entry.get('fileName') in active_names}
     for rec in records:
         merged[rec['fileName']]=rec
         asset_id,fallback=CANON_RECEIPT_META[rec['fileName']]

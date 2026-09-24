@@ -10,7 +10,7 @@ const receiptPath = path.join(root, 'operations/assets/generated-receipts/urai-f
 if (!fs.existsSync(receiptPath)) throw new Error('Authored GLB receipt is missing; production builds never generate substitute geometry.')
 const receipt = JSON.parse(fs.readFileSync(receiptPath, 'utf8'))
 if (receipt.packId !== 'urai-final-glb-production-pack-v1') throw new Error('Authored GLB receipt identity mismatch.')
-if (!Array.isArray(receipt.assets) || receipt.assets.length !== 8) throw new Error('Exactly eight authored production GLBs must be committed.')
+if (!Array.isArray(receipt.assets) || receipt.assets.length !== 7) throw new Error('Exactly seven active authored production GLBs must be committed; quarantined historical geometry is excluded.')
 
 for (const asset of receipt.assets) {
   const filePath = path.join(modelRoot, asset.fileName)
