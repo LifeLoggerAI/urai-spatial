@@ -6,7 +6,7 @@
     "v1ProtectedHeadAtCreation": "ae839a7afb6fadf28f8181373d471ba3da9ddf8a",
     "expansionBase": "main@4b3c7bd982865324510eb9581d9f324bd4ad6e93",
     "rule": "No registry entry authorizes production activation.",
-    "expansionHeadLastReconciled": "60ae0ebdacbb1ccf505e35e1be1fab3c6217be00"
+    "expansionHeadLastReconciled": "44ffad95abbe7a29d5abddf5f6ca120c1d8ba402"
   },
   "activationStates": [
     "SPECIFIED",
@@ -289,12 +289,15 @@
       "owningSystem": "haptics",
       "owningRepository": "LifeLoggerAI/urai-spatial",
       "roadmapGeneration": "V4",
-      "status": "SPECIFIED",
-      "activationState": "SPECIFIED",
+      "status": "IMPLEMENTED",
+      "activationState": "IMPLEMENTED",
       "featureGate": "expansion.haptics.universal",
       "defaultEnabled": false,
       "launchVisibility": "hidden",
-      "dependencies": [],
+      "dependencies": [
+        "device.native",
+        "semantic equivalence required"
+      ],
       "requiredAssets": [],
       "requiredProvider": [],
       "requiredPermission": [],
@@ -309,7 +312,7 @@
         "synthetic evidence",
         "applicable review evidence"
       ],
-      "testSuite": "future haptics conformance",
+      "testSuite": "node expansion/haptics/haptic-translator.test.mjs",
       "rolloutClass": "post-launch-controlled",
       "killSwitchOwner": "URAI Admin / owning system",
       "rollbackProcedure": "Disable feature gate, quarantine adapter/provider, preserve receipts, return to last evidenced inactive state."
@@ -320,12 +323,15 @@
       "owningSystem": "notifications",
       "owningRepository": "LifeLoggerAI/urai-spatial",
       "roadmapGeneration": "V3+",
-      "status": "SPECIFIED",
-      "activationState": "SPECIFIED",
+      "status": "IMPLEMENTED",
+      "activationState": "IMPLEMENTED",
       "featureGate": "expansion.notifications.fabric",
       "defaultEnabled": false,
       "launchVisibility": "hidden",
-      "dependencies": [],
+      "dependencies": [
+        "EWI adapter platform",
+        "channel provider activation remains off"
+      ],
       "requiredAssets": [],
       "requiredProvider": [],
       "requiredPermission": [],
@@ -340,7 +346,7 @@
         "synthetic evidence",
         "applicable review evidence"
       ],
-      "testSuite": "future notification conformance",
+      "testSuite": "node expansion/notifications/notification-policy.test.mjs",
       "rolloutClass": "post-launch-controlled",
       "killSwitchOwner": "URAI Admin / owning system",
       "rollbackProcedure": "Disable feature gate, quarantine adapter/provider, preserve receipts, return to last evidenced inactive state."
