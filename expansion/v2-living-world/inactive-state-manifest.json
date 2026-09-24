@@ -1,0 +1,57 @@
+{
+  "version": "1.0.0",
+  "status": "inactive V2 Living World state manifest; not imported by V1 runtime",
+  "activation": "hard-off",
+  "featureGate": "expansion.v2.living-world",
+  "defaultEnabled": false,
+  "stateDimensions": {
+    "timeOfDay": [
+      "dawn",
+      "day",
+      "dusk",
+      "night"
+    ],
+    "weather": [
+      "clear",
+      "cloud",
+      "rain",
+      "storm",
+      "snow",
+      "fog"
+    ],
+    "atmosphere": [
+      "calm",
+      "breeze",
+      "wind",
+      "haze"
+    ],
+    "motion": [
+      "full",
+      "reduced",
+      "still"
+    ],
+    "stimulation": [
+      "standard",
+      "reduced"
+    ],
+    "webgl": [
+      "available",
+      "unavailable"
+    ],
+    "audio": [
+      "ambient",
+      "muted",
+      "captions_only"
+    ]
+  },
+  "accessibility": {
+    "reducedMotion": "wind is clamped to breeze; no-WebGL becomes still",
+    "reducedStimulation": "storm is softened to rain and ambient audio becomes muted",
+    "audioAlternative": "captions_only is a first-class audio mode",
+    "noWebGL": "static fallback is deterministic and does not require WebGL"
+  },
+  "performanceBudgets": {
+    "rule": "V2 assets remain separately packaged and inactive until promoted through exact-head performance evidence.",
+    "activeV1Import": false
+  }
+}
