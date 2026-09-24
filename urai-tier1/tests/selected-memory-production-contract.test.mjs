@@ -78,7 +78,7 @@ test('Focus resolves the selected Life Map star into a memory-containing close-u
   assert.match(focus, /scale=\{\[1\.24, 1\.12, 1\]\}/)
   assert.match(focus, /opacity=\{memory \? \.10 : \.05\}/)
   assert.match(focus, /geometry=\{photosphereGeometry\} scale=\{\[\.48, \.44, \.40\]\}/)
-  assert.match(focus, /opacity=\{memory \? 0\.06 : 0\.08\}/)
+  assert.match(focus, /opacity=\{memory \? 0 : 0\.05\}/)
   assert.match(focus, /depthWrite=\{false\}/)
   assert.match(focus, /blending=\{THREE\.AdditiveBlending\}/)
   assert.match(focus, /name="focus-memory-star-glass-shell"/)
