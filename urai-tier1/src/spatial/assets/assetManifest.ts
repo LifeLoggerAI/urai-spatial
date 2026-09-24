@@ -55,6 +55,26 @@ const finalGlb = (
   generationPromptId,
 })
 
+const supportingGlb = (
+  id: string,
+  name: string,
+  fileName: string,
+  targetSurface: Extract<UraiSpatialTargetSurface, 'focus' | 'replay'>,
+  generationPromptId: string,
+): UraiSpatialAssetManifestEntry => ({
+  id,
+  name,
+  type: 'model',
+  path: `${generatedRoot}/models/${fileName}`,
+  status: 'candidate',
+  targetSurface,
+  priority: 'high',
+  notes: 'Retained supporting reference only. Binary integrity may be verified, but current canon does not authorize this asset as active runtime visual authority. Focus remains the selected Memory Star with contained memory; Replay remains an immersive memory interior with truthful source grammar.',
+  createdAt,
+  updatedAt,
+  generationPromptId,
+})
+
 export const uraiSpatialAssetManifest: readonly UraiSpatialAssetManifestEntry[] = [
   finalGlb('home-entry-chamber-model-v1', 'Home Entry Chamber GLB', 'home-entry-chamber-v1.glb', 'model', 'home', 'critical', 'home-entry-chamber-proof-fallback', 'home-world-assets'),
   finalGlb('ground-world-terrain-glb-v1', 'Ground World Terrain GLB', 'ground-world-terrain-v1.glb', 'world', 'ground', 'critical', 'ground-room-shell-proof-fallback', 'ground-world-assets'),
@@ -73,8 +93,8 @@ export const uraiSpatialAssetManifest: readonly UraiSpatialAssetManifestEntry[] 
     generationPromptId: 'life-map-galaxy-assets',
   },
   finalGlb('life-map-memory-star-glb-v1', 'Life Map Memory Star GLB', 'life-map-memory-star-v1.glb', 'model', 'life-map', 'critical', 'life-map-memory-star-proof-fallback', 'life-map-galaxy-assets'),
-  finalGlb('focus-memory-chamber-glb-v1', 'Focus Memory Chamber GLB', 'focus-memory-chamber-v1.glb', 'model', 'focus', 'high', undefined, 'focus-star-assets'),
-  finalGlb('replay-memory-environment-glb-v1', 'Replay Memory Environment GLB', 'replay-memory-environment-v1.glb', 'model', 'replay', 'high', undefined, 'replay-memory-assets'),
+  supportingGlb('focus-memory-chamber-glb-v1', 'Focus Memory Chamber GLB', 'focus-memory-chamber-v1.glb', 'focus', 'focus-star-assets'),
+  supportingGlb('replay-memory-environment-glb-v1', 'Replay Memory Environment GLB', 'replay-memory-environment-v1.glb', 'replay', 'replay-memory-assets'),
   finalGlb('urai-orb-avatar-glb-v1', 'URAI Orb Avatar GLB', 'urai-orb-avatar-v1.glb', 'model', 'global', 'critical', 'urai-orb-proof-fallback', 'home-world-assets'),
   finalGlb('passport-status-room-glb-v1', 'Passport and Status Room GLB', 'passport-status-room-v1.glb', 'model', 'passport', 'medium', 'passport-identity-plinth-proof-fallback', 'passport-status-room-assets'),
   {

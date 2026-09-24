@@ -25,14 +25,17 @@ for (const id of [
   'home-entry-chamber-model-v1',
   'ground-world-terrain-glb-v1',
   'life-map-memory-star-glb-v1',
-  'focus-memory-chamber-glb-v1',
-  'replay-memory-environment-glb-v1',
   'urai-orb-avatar-glb-v1',
   'passport-status-room-glb-v1',
 ]) {
   assert.match(manifest, new RegExp(`finalGlb\\('${id}'`))
 }
+for (const id of ['focus-memory-chamber-glb-v1', 'replay-memory-environment-glb-v1']) {
+  assert.match(manifest, new RegExp(`supportingGlb\\('${id}'`))
+}
 assert.match(manifest, /status: 'ready'/)
+assert.match(manifest, /status: 'candidate'/)
+assert.match(manifest, /Retained supporting reference only/)
 assert.doesNotMatch(manifest, /portal-ring-master-glb-v1|portal-ring-proof-fallback/)
 assert.match(manifest, /Rendered visual acceptance remains an exact-head review gate/)
 

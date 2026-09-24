@@ -82,13 +82,16 @@ test('current selected GLB assets exclude quarantined portal geometry while degr
     'home-entry-chamber-model-v1',
     'ground-world-terrain-glb-v1',
     'life-map-memory-star-glb-v1',
-    'focus-memory-chamber-glb-v1',
-    'replay-memory-environment-glb-v1',
     'urai-orb-avatar-glb-v1',
     'passport-status-room-glb-v1',
   ]
   for (const id of ids) assert.match(manifest, new RegExp(`finalGlb\\('${id}'`))
+  for (const id of ['focus-memory-chamber-glb-v1', 'replay-memory-environment-glb-v1']) {
+    assert.match(manifest, new RegExp(`supportingGlb\\('${id}'`))
+  }
   assert.match(manifest, /status: 'ready'/)
+  assert.match(manifest, /status: 'candidate'/)
+  assert.match(manifest, /Retained supporting reference only/)
   assert.doesNotMatch(manifest, /portal-ring-master-glb-v1|portal-ring-proof-fallback/)
   assert.match(manifest, /fallbackAssetId/)
   assert.match(manifest, /Emergency degraded geometry only/)
