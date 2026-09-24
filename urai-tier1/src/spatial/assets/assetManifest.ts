@@ -38,7 +38,7 @@ const finalGlb = (
   type: UraiSpatialAssetType,
   targetSurface: UraiSpatialTargetSurface,
   priority: UraiSpatialAssetManifestEntry['priority'],
-  fallbackAssetId: string,
+  fallbackAssetId: string | undefined,
   generationPromptId: string,
 ): UraiSpatialAssetManifestEntry => ({
   id,
@@ -73,8 +73,8 @@ export const uraiSpatialAssetManifest: readonly UraiSpatialAssetManifestEntry[] 
     generationPromptId: 'life-map-galaxy-assets',
   },
   finalGlb('life-map-memory-star-glb-v1', 'Life Map Memory Star GLB', 'life-map-memory-star-v1.glb', 'model', 'life-map', 'critical', 'life-map-memory-star-proof-fallback', 'life-map-galaxy-assets'),
-  finalGlb('focus-memory-chamber-glb-v1', 'Focus Memory Chamber GLB', 'focus-memory-chamber-v1.glb', 'model', 'focus', 'high', 'focus-star-tunnel-proof-fallback', 'focus-star-assets'),
-  finalGlb('replay-memory-environment-glb-v1', 'Replay Memory Environment GLB', 'replay-memory-environment-v1.glb', 'model', 'replay', 'high', 'replay-film-portal-proof-fallback', 'replay-memory-assets'),
+  finalGlb('focus-memory-chamber-glb-v1', 'Focus Memory Chamber GLB', 'focus-memory-chamber-v1.glb', 'model', 'focus', 'high', undefined, 'focus-star-assets'),
+  finalGlb('replay-memory-environment-glb-v1', 'Replay Memory Environment GLB', 'replay-memory-environment-v1.glb', 'model', 'replay', 'high', undefined, 'replay-memory-assets'),
   finalGlb('urai-orb-avatar-glb-v1', 'URAI Orb Avatar GLB', 'urai-orb-avatar-v1.glb', 'model', 'global', 'critical', 'urai-orb-proof-fallback', 'home-world-assets'),
   finalGlb('passport-status-room-glb-v1', 'Passport and Status Room GLB', 'passport-status-room-v1.glb', 'model', 'passport', 'medium', 'passport-identity-plinth-proof-fallback', 'passport-status-room-assets'),
   {
@@ -128,16 +128,6 @@ export const uraiSpatialAssetManifest: readonly UraiSpatialAssetManifestEntry[] 
   {
     id: 'life-map-memory-star-proof-fallback', name: 'Life Map Memory Star Proof Fallback', type: 'fallback',
     path: `${proofFallbackRoot}/life-map/models/star-memory-node-v1.gltf`, status: 'fallback', targetSurface: 'life-map', priority: 'critical',
-    notes: 'Emergency degraded geometry only.', createdAt, updatedAt,
-  },
-  {
-    id: 'focus-star-tunnel-proof-fallback', name: 'Focus Star Tunnel Proof Fallback', type: 'fallback',
-    path: `${proofFallbackRoot}/focus-star/models/focus-star-tunnel-v1.gltf`, status: 'fallback', targetSurface: 'focus', priority: 'high',
-    notes: 'Emergency degraded geometry only.', createdAt, updatedAt,
-  },
-  {
-    id: 'replay-film-portal-proof-fallback', name: 'Replay Film Portal Proof Fallback', type: 'fallback',
-    path: `${proofFallbackRoot}/replay-portal/models/replay-film-portal-v1.gltf`, status: 'fallback', targetSurface: 'replay', priority: 'high',
     notes: 'Emergency degraded geometry only.', createdAt, updatedAt,
   },
   {

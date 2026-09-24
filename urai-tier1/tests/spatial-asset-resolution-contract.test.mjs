@@ -28,6 +28,12 @@ test('quarantined portal geometry cannot resolve as active runtime asset authori
   assert.match(worldManifest, /portal\\/ring geometry is quarantined as historical provenance/)
 })
 
+test('Focus and Replay fail closed instead of resolving rejected visual fallbacks', () => {
+  assert.doesNotMatch(manifest, /focus-star-tunnel-proof-fallback|replay-film-portal-proof-fallback/)
+  assert.match(manifest, /focus-memory-chamber-v1\.glb'[\s\S]*'high', undefined, 'focus-star-assets'/)
+  assert.match(manifest, /replay-memory-environment-v1\.glb'[\s\S]*'high', undefined, 'replay-memory-assets'/)
+})
+
 test('only explicitly ready selected assets count as ready', () => {
   assert.match(
     manifest,
