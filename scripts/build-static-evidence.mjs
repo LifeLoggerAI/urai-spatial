@@ -1,4 +1,4 @@
-import { access, rename } from 'node:fs/promises'
+import { access, rename, rm } from 'node:fs/promises'
 import { constants } from 'node:fs'
 import { spawn } from 'node:child_process'
 
@@ -63,6 +63,7 @@ try {
   await run('node', ['scripts/run-pnpm.mjs', 'bootstrap:check'])
   await run('node', ['scripts/prepare-low-disk-build.mjs'])
   await stageRuntimeOnlyRoutes()
+  await run('node', ['urai-tier1/scripts/require-runtime-deps.mjs', '--prepare-runtime-assets'])
   await run(
     'node',
     ['scripts/run-pnpm.mjs', '--dir', 'urai-tier1', 'exec', 'next', 'build'],
@@ -72,6 +73,7 @@ try {
   buildError = error
 } finally {
   try {
+    await rm('urai-tier1/public/basis', { recursive: true, force: true })
     await restoreRuntimeOnlyRoutes()
     if (staged.length) {
       await run('git', ['diff', '--exit-code', '--', ...staged.map(({ source }) => source)])
