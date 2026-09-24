@@ -41,3 +41,9 @@ jobs:
         run: node expansion/wearables/wearable-signals.test.mjs
       - name: Verify location context boundary
         run: node expansion/location/location-context.test.mjs
+      - name: Verify safe world command policy
+        run: node expansion/iot/safe-world-command.test.mjs
+      - name: Verify XR engineering harness
+        run: node expansion/xr/xr-session-simulator.test.mjs
+      - name: Verify V7 scene provenance receipts
+        run: node expansion/v7-scene/scene-receipt.test.mjs
