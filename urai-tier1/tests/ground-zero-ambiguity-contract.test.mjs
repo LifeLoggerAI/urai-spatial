@@ -95,7 +95,7 @@ test('Ground retains accessible coarse-pointer movement and filmic rendering', (
     '< 0.14 ? 0',
     '<MobileMovementPad',
     'ACESFilmicToneMapping',
-    'toneMappingExposure = 0.90',
+    'toneMappingExposure = 0.84',
   ]) has(ground, marker)
 })
 
@@ -106,7 +106,7 @@ test('Ground natural profiles keep organic vertex color without repeating paving
     'natural-soil-no-repeating-rock-maps-v27',
     'vertexColors',
     'roughness={0.98}',
-    'ground-v33-dense-irregular-edge-canopy-authored-depth',
+    'ground-v34-dense-small-leaf-broadleaf-atmospheric-depth',
   ]) has(ground, marker)
   const naturalBranch = ground.match(/if \(naturalSoilProfile\) \{[\s\S]*?\n  \}/)?.[0] ?? ''
   assert.doesNotMatch(naturalBranch, /map=\{albedo\}|normalMap=\{normal\}|aoMap=\{arm\}|roughnessMap=\{arm\}|metalnessMap=\{arm\}/)
