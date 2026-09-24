@@ -397,7 +397,7 @@ function MemoryStar({ node, index, active, related, overview, onSelect, position
   const photosphere = useMemo(() => makeDiscTexture(5.4, true), []);
   const core = useMemo(() => new THREE.Color(node.aura).lerp(new THREE.Color("#fff3d6"), .30), [node.aura]);
   useEffect(() => () => { halo.dispose(); photosphere.dispose(); }, [halo, photosphere]);
-  const pointer = (event: ThreeEvent<PointerEvent>, value: boolean) => { event.stopPropagation(); setHovered(value); document.body.style.cursor = value ? "pointer" : ""; };
+  const pointer = (event: ThreeEvent<PointerEvent>, value: boolean) => { event.stopPropagation(); setHovered(value); document.body.style.cursor = value ? "pointer" : ""; const root = document.querySelector('[data-testid="urai-true-3d-life-map"]'); if (root instanceof HTMLElement) { if (value) root.dataset.memoryStarPointerHit = node.id; else if (root.dataset.memoryStarPointerHit === node.id) delete root.dataset.memoryStarPointerHit; } };
   const hoverEmphasis = forceHover || hovered;
   const overviewBoost = overview ? 1.48 : 1;
   const approachBoost = active && !overview ? 5.1 : 1;
