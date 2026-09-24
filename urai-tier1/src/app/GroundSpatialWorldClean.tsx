@@ -463,7 +463,7 @@ function NaturalCanopy({ profile, position, rotationY, scale, shapeSeed }: {
       const value = Math.sin(seed * 12.9898 + shapeSeed * 53.117 + (woodland ? 78.233 : 31.417)) * 43758.5453;
       return value - Math.floor(value);
     };
-    const leaves = Array.from({ length: woodland ? 180 : 150 }, (_, index) => {
+    const leaves = Array.from({ length: woodland ? 360 : 300 }, (_, index) => {
       const anchor = foliageAnchors[index % foliageAnchors.length];
       const spread = 0.08 + hash(index * 7 + 1) * 0.58;
       const theta = hash(index * 7 + 2) * Math.PI * 2;
@@ -473,9 +473,9 @@ function NaturalCanopy({ profile, position, rotationY, scale, shapeSeed }: {
       const rx = (hash(index * 7 + 6) - 0.5) * 1.28;
       const ry = theta + (hash(index * 7 + 7) - 0.5) * 1.15;
       const rz = (hash(index * 7 + 8) - 0.5) * 1.12;
-      const sx = 0.58 + hash(index * 7 + 9) * 0.38;
-      const sy = 0.54 + hash(index * 7 + 10) * 0.34;
-      const sz = 0.52 + hash(index * 7 + 11) * 0.40;
+      const sx = 0.72 + hash(index * 7 + 9) * 0.52;
+      const sy = 0.68 + hash(index * 7 + 10) * 0.46;
+      const sz = 0.66 + hash(index * 7 + 11) * 0.50;
       return {
         position: [x, y, z] as [number, number, number],
         rotation: [rx, ry, rz] as [number, number, number],
@@ -517,7 +517,7 @@ function NaturalCanopy({ profile, position, rotationY, scale, shapeSeed }: {
       naturalTerrainRepair: "v27-natural-soil-no-repeating-rock-maps",
       structuralPixelRepair: "v28-organic-tapered-trunk-branch-silhouette",
       supplementalPixelRepair: "v25-natural-horizon-and-terrain-relief",
-      compositionPixelRepair: "v30-sparse-background-natural-canopy-no-cloned-tree-field",
+      compositionPixelRepair: "v33-dense-irregular-edge-canopy-authored-depth-no-cloned-tree-field",
     }}
   >
     <mesh geometry={authored.trunkGeometry} castShadow receiveShadow>
@@ -725,20 +725,20 @@ function NaturalScatter({ profile }: { profile: EnvironmentProfile }) {
 
   const woodland = profile.id === "woodland";
   const ferns = items.slice(0, woodland ? 92 : 88);
-  const canopies = items.filter((item) => item.z < -6).slice(0, woodland ? 10 : 8);
+  const canopies = items.filter((item) => item.z < -4).slice(0, woodland ? 18 : 14);
   return <group name={woodland ? "ground-woodland-scanned-understory" : "ground-temperate-scanned-understory"} userData={{ treatment: "urai-edge-canopy-scanned-understory-v32", canopyFallback: "scanned-understory-remains-without-canopy", compositionRepair: "v32-edge-canopy-scanned-understory-relief-no-cloned-tree-field" }} raycast={() => null}>
     <GroundCanopyBoundary>
       <Suspense fallback={null}>
         {canopies.map((item) => {
           const side = item.x < 0 ? -1 : 1;
-          const x = side * (11.5 + Math.abs(item.x) * 0.72) + Math.sin(item.index * 2.17) * 2.8;
-          const z = item.z - 13.5 + Math.cos(item.index * 1.61) * 5.8 + Math.sin(item.index * 0.83) * 2.6;
+          const x = side * (7.8 + Math.abs(item.x) * 0.46) + Math.sin(item.index * 2.17) * 3.4;
+          const z = item.z - 8.5 + Math.cos(item.index * 1.61) * 7.2 + Math.sin(item.index * 0.83) * 3.4;
           return <NaturalCanopy
             key={`canopy-${item.index}`}
             profile={profile}
             position={[x, groundHeight(x, z, profile.id) - 0.02, z]}
             rotationY={item.index * 0.91 + (woodland ? 0.22 : -0.14)}
-            scale={(woodland ? 1.30 : 1.22) + item.scale * 0.62 + (item.index % 4) * 0.11}
+            scale={(woodland ? 1.46 : 1.34) + item.scale * 0.76 + (item.index % 5) * 0.12}
             shapeSeed={item.index + (woodland ? 101 : 17)}
           />;
         })}
@@ -987,8 +987,8 @@ function FirstPersonPlayer({ input, yaw, pitch, target, profile, obstacles, play
 
 function AtmosphericGroundSky({ profile }: { profile: EnvironmentProfile }) {
   const uniforms = useMemo(() => ({
-    zenithColor: { value: new THREE.Color(profile.id === "woodland" ? "#526f79" : "#66828f") },
-    upperColor: { value: new THREE.Color(profile.id === "arid" ? "#987f69" : profile.id === "woodland" ? "#758980" : "#8b9d97") },
+    zenithColor: { value: new THREE.Color(profile.id === "woodland" ? "#4e6a7c" : "#5f7f96") },
+    upperColor: { value: new THREE.Color(profile.id === "arid" ? "#987f69" : profile.id === "woodland" ? "#74898b" : "#879b9d") },
     horizonColor: { value: new THREE.Color(profile.fog) },
     groundHazeColor: { value: new THREE.Color(profile.horizon) },
   }), [profile.fog, profile.horizon, profile.id]);
@@ -1051,7 +1051,7 @@ function GroundScene({ profile, input, yaw, pitch, target, obstacles, playerPosi
   const weather = DEFAULT_GROUND_WEATHER;
   return <>
     <color attach="background" args={[profile.horizon]} />
-    <fogExp2 attach="fog" args={[profile.fog, 0.0092 + weather.atmosphericDensity * 0.0011]} />
+    <fogExp2 attach="fog" args={[profile.fog, 0.0068 + weather.atmosphericDensity * 0.0009]} />
     <Suspense fallback={null}><Environment files="/assets/urai/home-production/cc0/environment/studio-small-08-1k.hdr" background={false} environmentIntensity={0.36} /></Suspense>
     <ambientLight intensity={0.34} color="#b9c8bd" />
     <hemisphereLight args={["#b4c9c6", "#40382d", 0.58]} />
@@ -1184,7 +1184,7 @@ export default function GroundSpatialWorldClean() {
     data-ground-visual-owner="atmospheric-living-environment"
     data-ground-runtime-owner="first-person-lived-world"
     data-ground-visual-revision="ground-lived-world-v2-canon-lock"
-    data-ground-art-revision="ground-v32-edge-canopy-scanned-understory-relief" data-ground-canopy-repair="ground-v32-edge-canopy-no-tree-field" data-ground-foliage-repair="ground-v31-vendored-scanned-fern-atlas-canopy"
+    data-ground-art-revision="ground-v33-dense-irregular-edge-canopy-authored-depth" data-ground-canopy-repair="ground-v33-dense-irregular-edge-canopy-no-cloned-tree-field" data-ground-foliage-repair="ground-v33-fuller-authored-foliage-mass"
     data-ground-exploration="first-person-no-visible-body"
     data-ground-camera="eye-level-terrain-following-no-authored-bob"
     data-ground-eye-height={GROUND_EYE_HEIGHT_M}
