@@ -13,14 +13,14 @@ A workflow named visual proof is not visual acceptance. A head move invalidates 
 
 ## Source hierarchy
 
-1. PR #1237 / `unified-spatial-convergence-20260916` is the single current runtime + visual-control-plane authority.
-2. Personalized Lived World fail-closed Ground integration has now been selectively converged directly onto #1237; PR #1241 remains historical/selective donor provenance for uncarried scope, not whole-tree authority.
-3. Passport exact-origin return semantics and the first-person Home physical Passport candidate are now on #1237; #1241 remains donor provenance for any still-unreconciled Passport/public-good scope.
-4. Global Emotional Field privacy evaluation plus a deterministic first-person Home Earth candidate are now on #1237. Publication remains fail-closed/unavailable until a governed aggregate provider and approved thresholds exist; donor/global-field branches do not override this unified truth boundary.
-5. PR #1243 remains a selective donor for Possible Futures + truth model + AI self-ledger scope not yet converged.
-6. PR #1252 remains historical mechanical-conflict evidence proving donor trees cannot be wholesale-merged safely.
-7. Visual sidecar restacks #1255/#1256/#1258/#1260 and sync probes are superseded historical provenance.
-8. PR #1177 and older Home/Orb/Ground/Focus lanes are historical/current-supporting lineage only where not already superseded.
+1. PR #1296 / `converge/final-canon-spatial-20260922` is the current runtime + visual-control-plane authority. Its live head must be resolved immediately before action; no predecessor SHA, screenshot, review, CI result, deployment receipt, or pixel acceptance transfers to a successor head.
+2. Ordinary non-XR Home is currently direct persistent bodyless first-person. Legacy visible-Avatar presentation / embodiment-gate behavior is historical compatibility provenance only and is not current Home authority.
+3. PR #1237 / `unified-spatial-convergence-20260916` is a historical unified predecessor. It remains useful provenance but no longer outranks the active #1296 successor.
+4. Personalized Lived World, Passport exact-origin return semantics, Global Emotional Field fail-closed truth, and Personal Emotional Weather authority carried into the current convergence lane remain subject to fresh exact-head proof on #1296.
+5. PR #1241 remains historical/selective donor provenance for any uncarried scope, not whole-tree authority.
+6. PR #1243 remains a selective donor for Possible Futures + truth model + AI self-ledger scope not yet converged.
+7. PR #1252 remains historical mechanical-conflict evidence proving donor trees cannot be wholesale-merged safely.
+8. Visual sidecar restacks #1255/#1256/#1258/#1260, sync probes, PR #1177, and older Home/Orb/Ground/Focus lanes are superseded or supporting historical provenance only where not explicitly reconverged on #1296.
 
 ## First-person Home master reference package
 

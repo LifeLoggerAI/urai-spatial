@@ -1,18 +1,26 @@
 {
   "schemaVersion": "urai-visual-gold-master-manifest-1",
-  "authorityDate": "2026-09-21",
+  "authorityDate": "2026-09-24",
   "repository": "LifeLoggerAI/urai-spatial",
-  "branch": "unified-spatial-convergence-20260916",
-  "authorityPr": 1237,
+  "branch": "converge/final-canon-spatial-20260922",
+  "authorityPr": 1296,
   "status": "NOT_GOLD_MASTER",
   "evidenceTransferAcrossHeadMove": false,
   "fixedHistoricalImageCountsAreCompletionAuthority": false,
   "sourceHierarchy": [
     {
-      "pr": 1237,
-      "role": "unified-runtime-and-visual-control-plane-authority",
+      "pr": 1296,
+      "role": "current-runtime-and-visual-control-plane-authority",
+      "liveHeadMustBeResolvedBeforeActing": true,
+      "evidenceTransferAcrossHeadMove": false,
+      "directBodylessFirstPersonHome": true,
       "personalizedLivedWorldSourceConverged": true,
       "passportExactOriginSourceConverged": true
+    },
+    {
+      "pr": 1237,
+      "role": "historical-unified-runtime-and-visual-control-plane-predecessor",
+      "wholeTreeAuthority": false
     },
     {
       "pr": 1241,
@@ -44,34 +52,38 @@
     {
       "id": "VGM-HOME-001",
       "experience": "home",
-      "system": "home-presentation-with-governed-avatar-presence",
+      "system": "direct-bodyless-first-person-home",
       "status": "CURRENT_CANDIDATE",
-      "activationTarget": "avatar-presence",
-      "nonXrBodyPolicy": "avatar-visible-in-presentation-bodyless-camera-only-in-first-person"
+      "activationTarget": "none",
+      "nonXrBodyPolicy": "direct-camera-only-no-visible-avatar-or-body-rig",
+      "directEntry": true
     },
     {
       "id": "VGM-HOME-002",
       "experience": "home",
-      "system": "avatar-embodiment-transition",
-      "status": "CURRENT_CANDIDATE",
-      "currentNonXrGate": true,
-      "destination": "bodyless-first-person-home"
+      "system": "legacy-avatar-embodiment-transition",
+      "status": "SUPERSEDED",
+      "currentNonXrGate": false,
+      "destination": "bodyless-first-person-home",
+      "historicalProvenanceOnly": true
     },
     {
       "id": "VGM-HOME-003",
       "experience": "home",
-      "system": "bodyless-first-person-home",
+      "system": "persistent-bodyless-first-person-home",
       "status": "CURRENT_CANDIDATE",
-      "nonXrVisibleAvatar": false
+      "nonXrVisibleAvatar": false,
+      "ordinaryHomeDefault": true
     },
     {
       "id": "VGM-AVATAR-001",
-      "experience": "home-presentation",
+      "experience": "self-view-xr-and-explicit-likeness-surfaces",
       "system": "separate-governed-likeness-authority",
       "status": "MISSING_REPLACEMENT_REQUIRED",
-      "homePresentationMayUseGovernedNonLikenessPreview": true,
+      "homePresentationMayUseGovernedNonLikenessPreview": false,
       "gatesHomeFlow": false,
-      "provenanceRequired": true
+      "provenanceRequired": true,
+      "ordinaryHomeRouteAuthority": false
     },
     {
       "id": "VGM-ORB-001",
