@@ -947,7 +947,7 @@ export default function GroundSpatialWorldClean() {
     data-ground-visual-owner="atmospheric-living-environment"
     data-ground-runtime-owner="first-person-lived-world"
     data-ground-visual-revision="ground-lived-world-v2-canon-lock"
-    data-ground-art-revision="ground-v34-dense-small-leaf-broadleaf-atmospheric-depth" data-ground-canopy-repair="ground-v34-dense-small-leaf-broadleaf-no-cloned-tree-field" data-ground-foliage-repair="ground-v34-scanned-fern-understory-separated-from-crown"
+    data-ground-art-revision="ground-v35-optimized-cc0-jacaranda-canopy" data-ground-canopy-repair="ground-v35-photoreal-broadleaf-edge-canopy" data-ground-foliage-repair="ground-v35-scanned-understory-plus-cc0-canopy"
     data-ground-exploration="first-person-no-visible-body"
     data-ground-camera="eye-level-terrain-following-no-authored-bob"
     data-ground-eye-height={GROUND_EYE_HEIGHT_M}
