@@ -35,7 +35,7 @@ test('Focus focal authority is the selected memory star and cannot regress to V3
   assert.match(focus, /<MemoryVisualContent memory=\{memory\} \/>/)
   assert.match(focus, /selected-memory-star-resolving-through-memory-v382/)
   assert.match(focus, /geometry=\{photosphereGeometry\} scale=\{\[\.48, \.44, \.40\]\}/)
-  assert.match(focus, /opacity=\{memory \? 0\.06 : 0\.08\}/)
+  assert.match(focus, /opacity=\{memory \? 0 : 0\.05\}/)
   assert.match(focus, /function makeFocusCoronaTexture\(power: number, rays = false\)/)
   assert.match(focus, /const warpedAngle = angle \+ Math\.sin\(angle \* 3\.0 \+ \.37\) \* \.16/)
   assert.match(focus, /broadPlume/)
