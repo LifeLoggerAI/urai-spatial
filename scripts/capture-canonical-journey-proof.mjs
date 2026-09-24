@@ -96,27 +96,36 @@ async function openHome(page, journey) {
 }
 
 async function proveRealHomeAscent(page, journey, home) {
-  // Current production Home spawns near x=-0.85,z=8.4. The governed Life Map
-  // lookout is near x=5.4,z=-10.8. Move through the real first-person input
-  // system, then use its real Enter interaction when proximity becomes life-map.
-  await page.locator('body').click({ position: { x: 24, y: 24 } }).catch(() => {})
-  await page.keyboard.down('KeyW')
-  await sleep(6100)
-  await page.keyboard.up('KeyW')
-  await page.keyboard.down('KeyD')
-  await sleep(2050)
-  await page.keyboard.up('KeyD')
-
-  const start = Date.now()
-  while (Date.now() - start < 12_000 && await home.getAttribute('data-home-nearby') !== 'life-map') {
-    await page.keyboard.down('KeyW'); await sleep(240); await page.keyboard.up('KeyW')
-    await page.keyboard.down('KeyD'); await sleep(160); await page.keyboard.up('KeyD')
-  }
-  assert.equal(await home.getAttribute('data-home-nearby'), 'life-map', 'keyboard walk did not reach the real Life Map lookout')
+  // V223 begins at the governed Avatar presentation gate. Enter the real
+  // bodyless first-person Home, then activate the broad visible-sky threshold.
+  const avatarGate = page.getByTestId('urai-home-avatar-enter-first-person')
+  await avatarGate.waitFor({ state: 'attached', timeout: 45_000 })
+  await avatarGate.evaluate((node) => node.focus())
   await page.keyboard.press('Enter')
-  await waitAttr(home, 'data-home-scene-phase', 'ASCENT', 12_000)
-  const sequence = await home.getAttribute('data-home-portal-sequence')
-  assert.ok(sequence?.startsWith('life-map:'), 'Home did not own the Life Map ascent sequence')
+  await waitAttr(home, 'data-home-stable-state', 'AVATAR_HOME_FIRST_PERSON', 45_000)
+  await waitAttr(home, 'data-home-input-ready', 'true', 45_000)
+  await capture(page, journey, 'home-first-person')
+
+  const canvas = home.locator('canvas').first()
+  await canvas.waitFor({ state: 'visible', timeout: 45_000 })
+  const box = await canvas.boundingBox()
+  assert.ok(box && box.width > 200 && box.height > 200, 'Home canvas must expose the governed broad-sky interaction surface')
+
+  // The sky interaction itself owns the validity law (upward ray direction).
+  // Try several upper-sky points rather than encoding retired world geometry.
+  const points = [[.50, .12], [.36, .15], [.64, .15], [.50, .22]]
+  let activated = false
+  for (const [x, y] of points) {
+    await canvas.click({ position: { x: box.width * x, y: box.height * y } })
+    try {
+      await waitAttr(home, 'data-home-scene-phase', 'SKY_ASCENT', 2_500)
+      activated = true
+      break
+    } catch {}
+  }
+  assert.equal(activated, true, 'real broad visible-sky interaction did not enter SKY_ASCENT')
+  const sequence = await home.getAttribute('data-home-transition-sequence')
+  assert.ok(sequence === 'SKY_ASCENT' || sequence === 'LIFE_MAP_TRANSITION' || sequence?.includes('life-map'), 'Home did not own the Life Map ascent sequence')
   journey.ascentProven = true
   await capture(page, journey, 'home-ascent')
   await waitPath(page, '/life-map', 60_000)
