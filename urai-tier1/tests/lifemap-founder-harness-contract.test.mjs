@@ -94,7 +94,7 @@ test('Founder proof retains the missing current Memory Star state pack through r
   assert.match(runner, /testMode=1&fixture=five&quality=high/)
   assert.match(runner, /testMode=1&fixture=five&quality=low/)
   assert.match(runner, /await hoverFirstMemoryStar\(review\.page\)/)
-  assert.match(runner, /document\.body\.style\.cursor === 'pointer'/)
+  assert.match(runner, /return \{ cursor: document\.body\.style\.cursor, memoryId:/)\n  assert.match(runner, /hit\.cursor === 'pointer' && hit\.memoryId/)
   assert.match(runner, /await memoryStarReferencePack\(\)\s+await desktopJourney\(\)/)
   assert.match(scene, /data-life-map-quality=\{profile\.tier\}/)
   assert.match(world, /const \[hovered, setHovered\] = useState\(false\)/)
