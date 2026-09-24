@@ -261,6 +261,10 @@ const simple = [
   { id:'MIRROR-OVERVIEW-DESKTOP', system:'Mirror', state:'overview', route:'/mirror?memoryId=demo%3Aquiet-reset&demo=1', marker:'[data-testid="mirror-spatial-world"]' },
   { id:'MIRROR-OVERVIEW-MOBILE', system:'Mirror', state:'overview-mobile', route:'/mirror?memoryId=demo%3Aquiet-reset&demo=1', marker:'[data-testid="mirror-spatial-world"]', device:'mobile' },
   { id:'MIRROR-REDUCED-MOTION', system:'Mirror', state:'reduced-motion', route:'/mirror?memoryId=demo%3Aquiet-reset&demo=1', marker:'[data-testid="mirror-spatial-world"]', reducedMotion:true },
+  { id:'HOME-NOWEBGL', system:'Whole Product Fallback', state:'home-semantic-fallback', route:'/home?demo=1', text:'WebGL is unavailable. Accessible Home controls remain available.', noWebGL:true },
+  { id:'LIFEMAP-NOWEBGL', system:'Whole Product Fallback', state:'life-map-semantic-fallback', route:'/life-map?demo=1&overview=1', text:'WebGL is unavailable. Semantic navigation remains available', noWebGL:true },
+  { id:'FOCUS-NOWEBGL', system:'Whole Product Fallback', state:'focus-semantic-fallback', route:'/focus?memoryId=quiet-reset&manifestId=replay-recovery-thread&node=quiet-reset&returnNode=quiet-reset&demo=1&from=life-map', marker:'[data-testid="urai-final-focus-chamber"]', text:'Spatial view unavailable', noWebGL:true },
+  { id:'REPLAY-NOWEBGL', system:'Whole Product Fallback', state:'replay-semantic-fallback', route:'/replay?memoryId=quiet-reset&manifestId=replay-recovery-thread&node=quiet-reset&returnNode=quiet-reset&demo=1&from=life-map', marker:'[data-testid="cinematic-replay-client"][data-webgl-state="unavailable"]', text:'Spatial Replay unavailable. Memory truth, pacing, transcript, and return controls remain available.', noWebGL:true },
   { id:'MIRROR-NOWEBGL', system:'Mirror', state:'no-webgl', route:'/mirror?memoryId=demo%3Aquiet-reset&demo=1', noWebGL:true },
 
   { id:'PASSPORT-DEMO-DESKTOP', system:'Passport UI', state:'demo-overview', route:'/passport?demo=1', text:'DEMONSTRATION — sample data only' },
