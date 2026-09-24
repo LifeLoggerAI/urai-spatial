@@ -12,8 +12,8 @@ const orb = read('src/app/home/orbStateController.ts')
 const manifest = read('src/spatial/assets/assetManifest.ts')
 const runtime = read('src/app/HomeSpatialRuntimeLayer.tsx')
 const productionEntry = read('src/spatial/layout/HomeWorldProduction.tsx')
-const production = read('src/spatial/layout/HomeWorldProductionFinal.tsx')
-const productionV223 = read('src/spatial/layout/HomeWorldProductionV223.tsx')
+const production = read('src/spatial/layout/HomeWorldProductionV223.tsx')
+const productionV223 = production
 const atmosphericSky = read('src/spatial/assets/HomeAtmosphericSky.tsx')
 const emotionalWeather = read('src/spatial/environment/HomeEmotionalWeatherState.ts')
 const selectedMemoryContract = read('src/spatial/memory/selectedMemoryContract.ts')
@@ -128,11 +128,13 @@ test('production builds always materialize and verify the final pack', () => {
 
 test('Home keeps one live camera authority and canonical ascent', () => {
   assert.match(runtime, /AssetDrivenHomeWorld/)
-  assert.match(productionEntry, /export \{ HomeWorldProductionFinal as HomeWorldProduction \} from "\.\/HomeWorldProductionFinal"/)
-  assert.match(production, /HomeWorldProductionFinal/)
-  assert.match(production, /store\.phase === 'ASCENT'/)
-  assert.match(production, /store\.setProgress\(t\)/)
+  assert.match(productionEntry, /export \{ HomeWorldProductionV223 as HomeWorldProduction \} from ['"]\.\/HomeWorldProductionV223['"]/)
+  assert.match(production, /HomeWorldProductionV223/)
+  assert.match(production, /homeApi\.activateSky\(\)/)
+  assert.match(production, /data-home-life-map-entry="visible-sky-broad-interaction"/)
   assert.match(production, /cameraCheckpoint: 'home-sky-ascent-complete'/)
+  assert.match(production, /data-home-ground-entry="physical-world-surface"/)
+  assert.match(production, /data-home-non-xr-body-policy="camera-only-no-hands-body-rig"/)
   assert.doesNotMatch(production, /<CinematicCameraRig|<SpatialSceneClient/)
 })
 
