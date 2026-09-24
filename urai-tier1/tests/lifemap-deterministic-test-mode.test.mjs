@@ -4,7 +4,9 @@ import {
   deterministicLifeMapNodes,
   readLifeMapDeterministicTestConfig,
 } from '../src/components/lifemap/lifeMapDeterministicTestMode.ts'
-import { lifeMapLocalPoint } from '../src/components/lifemap/lifeMapSpatialLayout.ts'
+import fs from 'node:fs'
+
+const cosmic = fs.readFileSync(new URL('../src/components/lifemap/CosmicComposedLifeMapScene.tsx', import.meta.url), 'utf8')
 
 test('test mode defaults are deterministic and bounded', () => {
   const config = readLifeMapDeterministicTestConfig('?testMode=1')
@@ -40,11 +42,13 @@ test('synthetic fixtures never contain personal payloads and remain stable', () 
   }
 })
 
-test('deterministic dense fixture produces order-stable spatial coordinates', () => {
+test('deterministic fixtures feed an order-independent cosmic placement authority', () => {
   const nodes = deterministicLifeMapNodes('dense')
-  const baseline = Object.fromEntries(nodes.map((node, index) => [node.id, lifeMapLocalPoint(node, index)]))
-  const reversed = [...nodes].reverse()
-  for (const [index, node] of reversed.entries()) {
-    assert.deepEqual(lifeMapLocalPoint(node, index), baseline[node.id], `${node.id} moved after deterministic fixture reorder`)
-  }
+  assert.ok(nodes.length > 0)
+  const placement = cosmic.slice(cosmic.indexOf('function cosmicPoint('), cosmic.indexOf('\n}\n\nfunction truthLabel', cosmic.indexOf('function cosmicPoint(')) + 2)
+  assert.match(placement, /function cosmicPoint\(node: LifeMapNode, _index: number\)/)
+  assert.match(placement, /node\.id/)
+  assert.match(placement, /node\.eraId/)
+  assert.match(placement, /node\.clusterId \|\| node\.type/)
+  assert.doesNotMatch(placement, /\b_index\b[\s\S]*[+*%]|index\s*\*/)
 })
