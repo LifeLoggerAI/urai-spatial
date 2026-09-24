@@ -14,7 +14,7 @@ export type UraiDestinationDefinition = {
 export const URAI_DESTINATION_REGISTRY: Record<UraiDestination, UraiDestinationDefinition> = {
   home: { id: 'home', label: 'Living World', href: '/home', layer: 'living-world', entryPortal: 'living-world-home', cameraCheckpoint: 'home-threshold', environmentalForm: 'sky-ground-avatar-orb' },
   'infrastructure-hub': { id: 'infrastructure-hub', label: 'Ground', href: '/ground', layer: 'living-world', entryPortal: 'home-ground', cameraCheckpoint: 'ground-first-person-arrival', environmentalForm: 'lived-physical-world', deepLinkAliases: ['/infrastructure'] },
-  'life-map': { id: 'life-map', label: 'Life Map', href: '/life-map', layer: 'infrastructure-world', entryPortal: 'constellation-threshold', cameraCheckpoint: 'life-map-overview', environmentalForm: 'explorable-memory-constellation' },
+  'life-map': { id: 'life-map', label: 'Life Map', href: '/life-map', layer: 'infrastructure-world', entryPortal: 'sky-ascent-life-map', cameraCheckpoint: 'life-map-overview', environmentalForm: 'explorable-memory-galaxy' },
   mirror: { id: 'mirror', label: 'Reflection Realm', href: '/mirror', layer: 'infrastructure-world', entryPortal: 'reflection-threshold', cameraCheckpoint: 'mirror-arrival', environmentalForm: 'reflective-cavern' },
   shadow: { id: 'shadow', label: 'Shadow Realm', href: '/shadow', layer: 'infrastructure-world', entryPortal: 'shadow-integration-threshold', cameraCheckpoint: 'shadow-arrival', environmentalForm: 'walkable-fracture-field' },
   council: { id: 'council', label: 'Council Chamber', href: '/council', layer: 'infrastructure-world', entryPortal: 'council-stewardship-threshold', cameraCheckpoint: 'council-arrival', environmentalForm: 'luminous-governance-chamber' },
