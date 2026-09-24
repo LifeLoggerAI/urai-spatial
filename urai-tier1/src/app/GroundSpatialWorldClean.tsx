@@ -1,7 +1,7 @@
 "use client";
 
 import { Canvas, useFrame, useThree, type ThreeEvent } from "@react-three/fiber";
-import { KTX2Loader } from "three/examples/jsm/loaders/KTX2Loader.js";
+import { KTX2Loader } from "three-stdlib";
 import { Environment, useGLTF, useTexture } from "@react-three/drei";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Component, Suspense, useCallback, useEffect, useMemo, useRef, useState, type MutableRefObject, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
@@ -229,7 +229,7 @@ class GroundCanopyBoundary extends Component<{ children: ReactNode }, { failed: 
 function useGroundBroadleafCanopy() {
   const gl = useThree((state) => state.gl);
   const ktx2Loader = useMemo(() => new KTX2Loader().setTranscoderPath("/basis/").detectSupport(gl), [gl]);
-  useEffect(() => () => ktx2Loader.dispose(), [ktx2Loader]);
+  useEffect(() => () => { ktx2Loader.dispose(); }, [ktx2Loader]);
   return useGLTF(GROUND_BROADLEAF_CANOPY, true, true, (loader) => {
     loader.setKTX2Loader(ktx2Loader);
   });
