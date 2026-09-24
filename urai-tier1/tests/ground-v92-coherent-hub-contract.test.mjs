@@ -17,7 +17,7 @@ test('Ground renders the current atmospheric lived world instead of the rejected
   assert.match(ground, /visibleAuthority: "runtime-authored-canopy-v26"/)
   assert.match(ground, /supersedesVisibleCandidate: "ground-v24-faceted-volume-crown"/)
   assert.match(ground, /literalPixelRepair: "v26-ovate-leaflets-remove-primitive-ball-canopy"/)
-  assert.match(ground, /scannedFoliageRepair: "v31-vendored-polyhaven-fern-atlas-canopy"/)
+  assert.match(ground, /scannedFoliageRepair: "v34-scanned-fern-understory-separated-from-broadleaf-crown"/)
   assert.match(ground, /const FERN = "\/assets\/urai\/home-production\/cc0\/polyhaven-v48\/fern_02\/asset\.gltf"/)
   assert.match(ground, /function FernPatch/)
   assert.match(ground, /seed-varied-branch-architecture-dense-small-leaf-canopy-v34/)
