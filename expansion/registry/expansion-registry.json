@@ -6,7 +6,7 @@
     "v1ProtectedHeadAtCreation": "ae839a7afb6fadf28f8181373d471ba3da9ddf8a",
     "expansionBase": "main@4b3c7bd982865324510eb9581d9f324bd4ad6e93",
     "rule": "No registry entry authorizes production activation.",
-    "expansionHeadLastReconciled": "30a7e47d10611b7fb1106e85ccd7a0575ab04503"
+    "expansionHeadLastReconciled": "60ae0ebdacbb1ccf505e35e1be1fab3c6217be00"
   },
   "activationStates": [
     "SPECIFIED",
@@ -160,12 +160,14 @@
       "owningSystem": "offline",
       "owningRepository": "LifeLoggerAI/urai-spatial",
       "roadmapGeneration": "V2-V4",
-      "status": "SPECIFIED",
-      "activationState": "SPECIFIED",
+      "status": "IMPLEMENTED",
+      "activationState": "IMPLEMENTED",
       "featureGate": "expansion.offline.local-first",
       "defaultEnabled": false,
       "launchVisibility": "hidden",
-      "dependencies": [],
+      "dependencies": [
+        "local persistence implementation before live adoption"
+      ],
       "requiredAssets": [],
       "requiredProvider": [],
       "requiredPermission": [],
@@ -180,7 +182,7 @@
         "synthetic evidence",
         "applicable review evidence"
       ],
-      "testSuite": "future offline conformance",
+      "testSuite": "node expansion/offline/local-first.test.mjs",
       "rolloutClass": "post-launch-controlled",
       "killSwitchOwner": "URAI Admin / owning system",
       "rollbackProcedure": "Disable feature gate, quarantine adapter/provider, preserve receipts, return to last evidenced inactive state."
@@ -191,12 +193,15 @@
       "owningSystem": "device",
       "owningRepository": "LifeLoggerAI/urai-spatial",
       "roadmapGeneration": "V4",
-      "status": "SPECIFIED",
-      "activationState": "SPECIFIED",
+      "status": "IMPLEMENTED",
+      "activationState": "IMPLEMENTED",
       "featureGate": "expansion.device.native",
       "defaultEnabled": false,
       "launchVisibility": "hidden",
-      "dependencies": [],
+      "dependencies": [
+        "EWI adapter platform",
+        "platform-native implementation after V1"
+      ],
       "requiredAssets": [],
       "requiredProvider": [],
       "requiredPermission": [],
@@ -211,7 +216,7 @@
         "synthetic evidence",
         "applicable review evidence"
       ],
-      "testSuite": "future device bridge conformance",
+      "testSuite": "node expansion/device/native-simulator.test.mjs",
       "rolloutClass": "post-launch-controlled",
       "killSwitchOwner": "URAI Admin / owning system",
       "rollbackProcedure": "Disable feature gate, quarantine adapter/provider, preserve receipts, return to last evidenced inactive state."
