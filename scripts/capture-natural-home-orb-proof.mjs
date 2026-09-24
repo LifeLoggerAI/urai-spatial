@@ -138,6 +138,12 @@ for (const spec of cases) {
     await enter.waitFor({ state: 'attached', timeout: 30_000 })
     await focusTestIdForKeyboard(page, 'urai-home-avatar-enter-first-person')
     await page.keyboard.press('Enter')
+    const keyboardTransitioned = await page.waitForFunction(() => document.querySelector('.urai-asset-home-world')?.getAttribute('data-home-stable-state') === 'AVATAR_HOME_FIRST_PERSON', null, { timeout: 8_000 }).then(() => true).catch(() => false)
+    if (!keyboardTransitioned) {
+      // Retry through the same visible presentation control; never mutate runtime state to manufacture proof.
+      await enter.click({ timeout: 15_000 })
+      record.presentationActivationFallback = 'same-control-browser-click-after-keyboard-no-transition'
+    }
     await page.waitForFunction(() => document.querySelector('.urai-asset-home-world')?.getAttribute('data-home-stable-state') === 'AVATAR_HOME_FIRST_PERSON', null, { timeout: 60_000 })
     await settle(page, spec.reducedMotion === 'reduce' ? 2 : 4)
 
