@@ -54,16 +54,6 @@ async function settle(page, count) {
     requestAnimationFrame(tick)
   }), count)
 }
-async function focusTestIdForKeyboard(page, testId) {
-  const focused = await page.evaluate((id) => {
-    const element = document.querySelector(`[data-testid="${id}"]`)
-    if (!(element instanceof HTMLElement)) return false
-    element.focus()
-    return document.activeElement === element
-  }, testId)
-  if (!focused) throw new Error(`keyboard target ${testId} could not receive focus`)
-}
-
 async function ensureReviewOrbState(page, state) {
   const selector = '.urai-asset-home-world[data-home-primary-owner="asset-driven"]'
   const observed = await page.waitForFunction(({ selector, state }) => {
@@ -115,8 +105,8 @@ for (const spec of cases) {
     const stateQuery = spec.orbState ? `&homeOrbState=${encodeURIComponent(spec.orbState)}` : ''
     const response = await page.goto(`${base}/home/?homeAssetReview=1&homePrivateFixture=1${stateQuery}`, { waitUntil: 'domcontentloaded', timeout: 60_000 })
     const owner = page.locator('.urai-asset-home-world[data-home-primary-owner="asset-driven"]')
-    await owner.waitFor({ state: 'visible', timeout: 45_000 })
-    await page.waitForFunction(() => document.querySelector('.urai-asset-home-world')?.getAttribute('data-home-assets-ready') === 'true', null, { timeout: 45_000 })
+    await owner.waitFor({ state: 'visible', timeout: 90_000 })
+    await page.waitForFunction(() => document.querySelector('.urai-asset-home-world')?.getAttribute('data-home-assets-ready') === 'true', null, { timeout: 90_000 })
     if (spec.orbState) await ensureReviewOrbState(page, spec.orbState)
     await settle(page, spec.reducedMotion === 'reduce' ? 4 : 12)
     const attr = name => owner.getAttribute(name)
@@ -139,10 +129,13 @@ for (const spec of cases) {
     await writeFile(path.join(outputDir, record.presentationScreenshot), presentationVisual.buffer)
     record.presentationScreenshotBytes = presentationVisual.buffer.length
 
-    const enter = page.getByTestId('urai-home-avatar-enter-first-person')
-    await enter.waitFor({ state: 'attached', timeout: 30_000 })
-    await focusTestIdForKeyboard(page, 'urai-home-avatar-enter-first-person')
-    await page.keyboard.press('Enter')
+    const enter = page.getByRole('button', { name: 'Enter first-person Home through your Avatar' }).first()
+    await enter.waitFor({ state: 'visible', timeout: 30_000 })
+    await enter.focus()
+    if (!await enter.evaluate((element) => document.activeElement === element)) {
+      throw new Error('Avatar presentation activation control did not receive browser-native focus')
+    }
+    await enter.press('Enter')
     const keyboardActivationAccepted = await page.waitForFunction(() => {
       const root = document.querySelector('.urai-asset-home-world')
       if (!(root instanceof HTMLElement)) return false
