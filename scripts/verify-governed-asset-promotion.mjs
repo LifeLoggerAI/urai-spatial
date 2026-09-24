@@ -65,7 +65,11 @@ if (asset) {
   )
   if (asset.releaseState === 'supporting-reference') {
     requireCondition(decision.mode === 'rehearsal', 'supporting-reference assets are rehearsal-only')
-    requireCondition(decision.routeConsumptionVerified === false, 'supporting-reference assets must prove they are not active route authority')
+    const expectedRuntimeConsumption = asset.runtimeConsumptionAllowed === true
+    requireCondition(
+      decision.routeConsumptionVerified === expectedRuntimeConsumption,
+      `supporting-reference route consumption must match manifest runtimeConsumptionAllowed=${expectedRuntimeConsumption}`,
+    )
     requireCondition(decision.promote === false, 'supporting-reference assets may not be promoted')
   } else {
     requireCondition(decision.routeConsumptionVerified === true, 'route consumption verification is required')

@@ -22,6 +22,8 @@ const activeHomeVisual = read('src/spatial/layout/HomeWorldProductionV225PolishV
 const groundedOrb = read('src/spatial/assets/HomeOrbGroundedV288.tsx')
 const focusClient = read('src/app/focus/FocusChamberClient.tsx')
 const replayClient = read('src/app/replay/CinematicReplayClient.tsx')
+const launchAssetManifest = JSON.parse(read('../operations/assets/launch-critical-assets.json'))
+const replayPromotionRehearsal = JSON.parse(read('../operations/assets/promotion-rehearsal/replay-memory-environment-v1.json'))
 const chrome = read('src/spatial/world/persistentWorldCompanion.css')
 const lifeMapConvergence = read('src/spatial/world/lifeMapConvergence.css')
 const lifeMapSelectedCinematic = read('src/spatial/world/lifeMapSelectedCinematic.css')
@@ -204,6 +206,21 @@ test('canonical route clients own Focus and Replay', () => {
   assert.doesNotMatch(replayClient, /uraiAutoReplay|quiet-reset|replay-recovery-thread|seed-memory-bloom/)
   assert.doesNotMatch(routeOwnerConvergence, /\.uraiAutoFocus|\.uraiAutoReplay/)
   assert.match(routeOwnerConvergence, /data-world-destination='replay'/)
+})
+
+test('Replay supporting geometry is truthfully runtime-consumed without becoming visual or promotion authority', () => {
+  const replayAsset = launchAssetManifest.assets.find((asset) => asset.id === 'replay-memory-environment-v1')
+  assert.ok(replayAsset)
+  assert.equal(replayAsset.releaseState, 'supporting-reference')
+  assert.equal(replayAsset.authorityRole, 'runtime-supporting-geometry')
+  assert.equal(replayAsset.runtimeConsumptionAllowed, true)
+  assert.equal(replayPromotionRehearsal.routeConsumptionVerified, true)
+  assert.equal(replayPromotionRehearsal.promote, false)
+  assert.match(replayClient, /const REPLAY_ENVIRONMENT_MODEL = ['"]\/assets\/urai\/generated\/models\/replay-memory-environment-v1\.glb['"]/)
+  assert.match(replayClient, /const gltf = useGLTF\(REPLAY_ENVIRONMENT_MODEL\)/)
+  assert.match(replayClient, /<primitive object=\{model\} name="replay-memory-environment-v1" \/>/)
+  assert.match(replayClient, /replay-film-portal/)
+  assert.match(replayClient, /object\.visible = false/)
 })
 
 test('secondary realms remain full-viewport destinations owned by the shared Orb', () => {
