@@ -374,22 +374,21 @@ async function captureScreenshot(page, file) {
 }
 
 async function readRootState(root) {
-  const entries = await Promise.all([
-    ['source', 'data-life-map-source'],
-    ['phase', 'data-life-map-phase'],
-    ['mode', 'data-life-map-mode'],
-    ['scale', 'data-life-map-scale'],
-    ['renderReady', 'data-life-map-render-ready'],
-    ['objects', 'data-life-map-visible-objects'],
-    ['anchors', 'data-life-map-visible-anchors'],
-    ['calls', 'data-life-map-render-calls'],
-    ['triangles', 'data-life-map-render-triangles'],
-    ['webgl', 'data-webgl-state'],
-    ['privateMounted', 'data-private-memory-mounted'],
-    ['fallback', 'data-life-map-fallback'],
-    ['quality', 'data-life-map-quality'],
-  ].map(async ([key, attribute]) => [key, await root.getAttribute(attribute)]))
-  return Object.fromEntries(entries)
+  return root.evaluate((element) => ({
+    source: element.getAttribute('data-life-map-source'),
+    phase: element.getAttribute('data-life-map-phase'),
+    mode: element.getAttribute('data-life-map-mode'),
+    scale: element.getAttribute('data-life-map-scale'),
+    renderReady: element.getAttribute('data-life-map-render-ready'),
+    objects: element.getAttribute('data-life-map-visible-objects'),
+    anchors: element.getAttribute('data-life-map-visible-anchors'),
+    calls: element.getAttribute('data-life-map-render-calls'),
+    triangles: element.getAttribute('data-life-map-render-triangles'),
+    webgl: element.getAttribute('data-webgl-state'),
+    privateMounted: element.getAttribute('data-private-memory-mounted'),
+    fallback: element.getAttribute('data-life-map-fallback'),
+    quality: element.getAttribute('data-life-map-quality'),
+  }))
 }
 
 async function shot(page, id, captureState, extra = {}) {
