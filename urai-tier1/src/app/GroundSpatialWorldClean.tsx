@@ -1,6 +1,7 @@
 "use client";
 
 import { Canvas, useFrame, useThree, type ThreeEvent } from "@react-three/fiber";
+import { KTX2Loader } from "three/examples/jsm/loaders/KTX2Loader.js";
 import { Environment, useGLTF, useTexture } from "@react-three/drei";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Component, Suspense, useCallback, useEffect, useMemo, useRef, useState, type MutableRefObject, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
@@ -225,6 +226,15 @@ class GroundCanopyBoundary extends Component<{ children: ReactNode }, { failed: 
   render() { return this.state.failed ? null : this.props.children; }
 }
 
+function useGroundBroadleafCanopy() {
+  const gl = useThree((state) => state.gl);
+  const ktx2Loader = useMemo(() => new KTX2Loader().setTranscoderPath("/basis/").detectSupport(gl), [gl]);
+  useEffect(() => () => ktx2Loader.dispose(), [ktx2Loader]);
+  return useGLTF(GROUND_BROADLEAF_CANOPY, true, true, (loader) => {
+    loader.setKTX2Loader(ktx2Loader);
+  });
+}
+
 function NaturalCanopy({ profile, position, rotationY, scale, shapeSeed }: {
   profile: EnvironmentProfile;
   position: [number, number, number];
@@ -232,7 +242,7 @@ function NaturalCanopy({ profile, position, rotationY, scale, shapeSeed }: {
   scale: number;
   shapeSeed: number;
 }) {
-  const asset = useGLTF(GROUND_BROADLEAF_CANOPY);
+  const asset = useGroundBroadleafCanopy();
   const model = useMemo(() => {
     const clone = asset.scene.clone(true);
     const box = new THREE.Box3().setFromObject(clone);
@@ -1015,4 +1025,4 @@ export default function GroundSpatialWorldClean() {
 useGLTF.preload(ROCK_01);
 useGLTF.preload(ROCK_02);
 useGLTF.preload(FERN);
-// V35 canopy is intentionally not preloaded: unsupported KTX2 must stay inside GroundCanopyBoundary and fail closed to scanned understory.
+// V35 canopy requires renderer capability detection; it is loaded inside the Canvas with the local Basis/KTX2 transcoder.
