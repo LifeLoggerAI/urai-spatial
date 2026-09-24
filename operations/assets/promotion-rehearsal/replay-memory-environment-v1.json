@@ -6,8 +6,8 @@
   "canonicalPath": "urai-tier1/public/assets/urai/generated/models/replay-memory-environment-v1.glb",
   "bytes": 401364,
   "sha256": "06b35a7b17042a570f95f9c89c3a5f37af8b492beff24aae4592f1a6fac91850",
-  "source": "URAI canon-clean deterministic convergence candidate; requires rendered inspection and compression before promotion",
-  "fallback": "procedural-lived-memory-environment",
+  "source": "URAI retained Replay supporting reference; current runtime authority is the immersive memory interior with truthful source grammar",
+  "fallback": "not-runtime-authority",
   "license": "URAI Labs internal production candidate asset",
   "producer": "URAI Labs Final GLB Forge 1.0; canon-clean convergence candidate",
   "reviewer": "governed-replacement-rehearsal",
@@ -15,10 +15,10 @@
   "promote": false,
   "humanReviewApproved": false,
   "fallbackVerified": true,
-  "routeConsumptionVerified": true,
+  "routeConsumptionVerified": false,
   "licenseApproved": true,
   "optimizationVerified": false,
   "visualProofVerified": false,
   "exactHeadChecksPassed": false,
-  "notes": "Replay remains an uncompressed canon-clean lived-memory environment candidate. Retired theater fallback grammar is superseded. No production promotion is claimed. Binary identity is current. promote=false, humanReviewApproved=false, optimizationVerified=false, visualProofVerified=false, and exactHeadChecksPassed=false remain intentional until compression, rendered inspection, exact-head proof, performance validation, literal acceptance, and final Gold Master review."
+  "notes": "Supporting-reference-only rehearsal. The binary remains retained for provenance, compatibility study, and future comparison, but active Replay runtime authority is the immersive memory interior with truthful source grammar. It is intentionally not route-consumed and cannot be promoted by the governed asset verifier."
 }

@@ -6,8 +6,8 @@
   "canonicalPath": "urai-tier1/public/assets/urai/generated/models/focus-memory-chamber-v1.glb",
   "bytes": 231408,
   "sha256": "d7b514f49ffe8fb460dea6e1f11feb3abf7654033a078af62877bf274db7ae59",
-  "source": "URAI canon-clean deterministic convergence candidate; requires rendered inspection and compression before promotion",
-  "fallback": "procedural-living-memory-field",
+  "source": "URAI retained Focus supporting reference; current runtime authority is the selected Memory Star with contained memory",
+  "fallback": "not-runtime-authority",
   "license": "URAI Labs internal production candidate asset",
   "producer": "URAI Labs Final GLB Forge 1.0; canon-clean convergence candidate",
   "reviewer": "governed-replacement-rehearsal",
@@ -15,10 +15,10 @@
   "promote": false,
   "humanReviewApproved": false,
   "fallbackVerified": true,
-  "routeConsumptionVerified": true,
+  "routeConsumptionVerified": false,
   "licenseApproved": true,
   "optimizationVerified": false,
   "visualProofVerified": false,
   "exactHeadChecksPassed": false,
-  "notes": "Fail-closed rehearsal rebound to the current canon-clean Focus candidate. Binary identity: 231408 bytes, SHA-256 d7b514f49ffe8fb460dea6e1f11feb3abf7654033a078af62877bf274db7ae59. The candidate remains explicitly uncompressed and not production-ready. promote=false, humanReviewApproved=false, optimizationVerified=false, visualProofVerified=false, and exactHeadChecksPassed=false remain intentional until required compression, rendered inspection, exact-head proof, performance validation, and literal acceptance complete."
+  "notes": "Supporting-reference-only rehearsal. The binary remains retained for provenance, compatibility study, and future comparison, but active Focus runtime authority is the same selected Memory Star resolving into contained memory. It is intentionally not route-consumed and cannot be promoted by the governed asset verifier."
 }

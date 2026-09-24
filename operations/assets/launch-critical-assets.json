@@ -104,10 +104,11 @@
       ],
       "maxTriangles": 140000,
       "requiredCompression": "draco-or-meshopt",
-      "fallback": "procedural-living-memory-field",
-      "source": "URAI canon-clean deterministic convergence candidate; requires rendered inspection and compression before promotion",
+      "fallback": "not-runtime-authority",
+      "source": "URAI retained Focus supporting reference; current runtime authority is the selected Memory Star with contained memory",
       "license": "URAI Labs internal production candidate asset",
-      "releaseState": "pending-final-review"
+      "releaseState": "supporting-reference",
+      "authorityRole": "non-runtime-supporting-reference"
     },
     {
       "id": "replay-memory-environment-v1",
@@ -123,10 +124,11 @@
       ],
       "maxTriangles": 160000,
       "requiredCompression": "draco-or-meshopt",
-      "fallback": "procedural-lived-memory-environment",
-      "source": "URAI canon-clean deterministic convergence candidate; requires rendered inspection and compression before promotion",
+      "fallback": "not-runtime-authority",
+      "source": "URAI retained Replay supporting reference; current runtime authority is the immersive memory interior with truthful source grammar",
       "license": "URAI Labs internal production candidate asset",
-      "releaseState": "pending-final-review"
+      "releaseState": "supporting-reference",
+      "authorityRole": "non-runtime-supporting-reference"
     },
     {
       "id": "urai-orb-avatar-v1",
