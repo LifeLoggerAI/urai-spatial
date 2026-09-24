@@ -38,7 +38,8 @@ test('the full journey participates in one persistent world model', () => {
     assert.match(registry, new RegExp(`['"]${destination}['"]`))
   }
   assert.match(registry, /\[\s*['"]\/life-map['"]\s*,\s*['"]life-map['"]\s*\]/)
-  assert.match(registry, /environmentalForm:\s*['"]explorable-memory-constellation['"]/)
+  assert.match(registry, /entryPortal:\s*['"]sky-ascent-life-map['"]/)
+  assert.match(registry, /environmentalForm:\s*['"]explorable-memory-galaxy['"]/)
 })
 
 test('Orb and Home ownership preserve predecessor truth while the current candidate uses governed Avatar presentation to bodyless camera-only first-person embodiment', () => {
