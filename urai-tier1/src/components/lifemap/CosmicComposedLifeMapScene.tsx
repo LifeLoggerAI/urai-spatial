@@ -435,9 +435,14 @@ function CosmicWorld({ nodes, selected, selectedIndex, phase, reducedMotion, tie
   if (reviewNode && (memoryStarReview === "isolated" || memoryStarReview === "hover" || memoryStarReview === "near-cluster")) {
     const neighbors = nodes.filter((node) => node.id !== reviewNode.id).slice(0, 3);
     return <><color attach="background" args={["#020611"]} /><ambientLight intensity={.055} color="#d9edff" /><RenderProof /><MemoryStarReviewCamera clustered={memoryStarReview === "near-cluster"} /><WebGLRecovery onState={onWebGLState} /><group name="memory-star-reference-review" userData={{ explicitDemoReview: true, reviewState: memoryStarReview }}>
-      {memoryStarReview === "near-cluster" ? <StellarDepthField count={220} reducedMotion={reducedMotion} salt={18.2} size={.19} opacity={.54} depthSpan={34} /> : null}
-      <MemoryStar node={reviewNode} index={0} active={memoryStarReview !== "near-cluster"} related={false} overview={false} onSelect={onSelect} positionOverride={[0, 0, -12]} forceHover={memoryStarReview === "hover"} />
-      {memoryStarReview === "near-cluster" ? neighbors.map((node, index) => <MemoryStar key={node.id} node={node} index={index + 1} active={false} related overview={false} onSelect={onSelect} positionOverride={index === 0 ? [-3.3, 1.4, -15] : index === 1 ? [3.8, -1.1, -17] : [1.0, 3.0, -20]} />) : null}
+      <group name="life-map-review-near-depth"><StellarDepthField count={72} reducedMotion={reducedMotion} salt={18.21} size={.11} opacity={.22} depthSpan={18} zOffset={-4} /></group>
+      <group name="life-map-review-mid-depth"><StellarDepthField count={96} reducedMotion={reducedMotion} salt={18.73} size={.08} opacity={.18} depthSpan={28} zOffset={-12} /></group>
+      <group name="life-map-review-far-depth"><StellarDepthField count={120} reducedMotion={reducedMotion} salt={19.31} size={.05} opacity={.12} depthSpan={42} zOffset={-24} /></group>
+      <group name="life-map-review-key-light"><pointLight position={[-3.5, 3.2, -8]} color="#bfe8ff" intensity={.7} distance={18} decay={2} /></group>
+      <group name="life-map-review-rim-light"><pointLight position={[4.2, -1.4, -10]} color="#f0c9ff" intensity={.45} distance={16} decay={2} /></group>
+      <group name="life-map-review-fill-light"><pointLight position={[0, 4.5, -16]} color="#d7e8ff" intensity={.3} distance={20} decay={2} /></group>
+      <group name="life-map-review-star-subject"><MemoryStar node={reviewNode} index={0} active={memoryStarReview !== "near-cluster"} related={false} overview={false} onSelect={onSelect} positionOverride={[0, 0, -12]} forceHover={memoryStarReview === "hover"} /></group>
+      <group name="life-map-review-related-stars">{memoryStarReview === "near-cluster" ? neighbors.map((node, index) => <MemoryStar key={node.id} node={node} index={index + 1} active={false} related overview={false} onSelect={onSelect} positionOverride={index === 0 ? [-3.3, 1.4, -15] : index === 1 ? [3.8, -1.1, -17] : [1.0, 3.0, -20]} />) : null}</group>
     </group></>;
   }
   const starCount = tier === "low" ? 650 : tier === "medium" ? 1100 : 1700;
