@@ -793,8 +793,8 @@
       "owningSystem": "v8",
       "owningRepository": "LifeLoggerAI/urai-spatial",
       "roadmapGeneration": "V8",
-      "status": "SPECIFIED",
-      "activationState": "SPECIFIED",
+      "status": "IMPLEMENTED",
+      "activationState": "IMPLEMENTED",
       "featureGate": "expansion.v8.product-evolution",
       "defaultEnabled": false,
       "launchVisibility": "hidden",
@@ -807,13 +807,13 @@
       "securityClassification": "review_required",
       "legalResearchDependency": "none",
       "hardwareDependency": "none",
-      "activationCriteria": "Synthetic evidence plus applicable privacy, accessibility, security, governance and human review; real provider/device evidence where applicable.",
+      "activationCriteria": "Read-only observation/proposal proof; human review required; no write, merge or deploy authority.",
       "evidenceRequirements": [
         "exact implementation provenance",
         "synthetic evidence",
         "applicable review evidence"
       ],
-      "testSuite": "future observer conformance",
+      "testSuite": "node expansion/v8-observer/product-observer.test.mjs",
       "rolloutClass": "post-launch-controlled",
       "killSwitchOwner": "URAI Admin / owning system",
       "rollbackProcedure": "Disable feature gate, quarantine adapter/provider, preserve receipts, return to last evidenced inactive state."
@@ -824,8 +824,8 @@
       "owningSystem": "v9",
       "owningRepository": "LifeLoggerAI/urai-spatial",
       "roadmapGeneration": "V9",
-      "status": "SPECIFIED",
-      "activationState": "SPECIFIED",
+      "status": "IMPLEMENTED",
+      "activationState": "IMPLEMENTED",
       "featureGate": "expansion.v9.ecosystem-intelligence",
       "defaultEnabled": false,
       "launchVisibility": "hidden",
@@ -838,13 +838,13 @@
       "securityClassification": "review_required",
       "legalResearchDependency": "none",
       "hardwareDependency": "none",
-      "activationCriteria": "Synthetic evidence plus applicable privacy, accessibility, security, governance and human review; real provider/device evidence where applicable.",
+      "activationCriteria": "Read-only system/dependency registry proof; no cross-system execution authority.",
       "evidenceRequirements": [
         "exact implementation provenance",
         "synthetic evidence",
         "applicable review evidence"
       ],
-      "testSuite": "future ecosystem conformance",
+      "testSuite": "node expansion/v9-ecosystem/system-registry.test.mjs",
       "rolloutClass": "post-launch-controlled",
       "killSwitchOwner": "URAI Admin / owning system",
       "rollbackProcedure": "Disable feature gate, quarantine adapter/provider, preserve receipts, return to last evidenced inactive state."
