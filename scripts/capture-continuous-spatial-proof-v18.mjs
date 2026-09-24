@@ -102,6 +102,11 @@ async function openContext(browser, spec, extras = {}) {
     forcedColors: extras.forcedColors,
     recordVideo: { dir: videoDir, size: { width: spec.width, height: spec.height } },
   })
+  await context.addInitScript(() => {
+    localStorage.setItem('urai:onboarding:v2:complete', '1')
+    localStorage.setItem('urai:onboarding:v3:setup-complete', '1')
+    localStorage.removeItem('urai:onboarding:v3:setup-step')
+  })
   const page = await context.newPage()
   return { context, page }
 }
