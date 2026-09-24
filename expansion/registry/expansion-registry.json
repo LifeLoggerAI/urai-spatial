@@ -5,7 +5,8 @@
     "v1ProtectedPr": 1296,
     "v1ProtectedHeadAtCreation": "ae839a7afb6fadf28f8181373d471ba3da9ddf8a",
     "expansionBase": "main@4b3c7bd982865324510eb9581d9f324bd4ad6e93",
-    "rule": "No registry entry authorizes production activation."
+    "rule": "No registry entry authorizes production activation.",
+    "expansionHeadLastReconciled": "30a7e47d10611b7fb1106e85ccd7a0575ab04503"
   },
   "activationStates": [
     "SPECIFIED",
@@ -61,13 +62,15 @@
       "owningSystem": "v2",
       "owningRepository": "LifeLoggerAI/urai-spatial",
       "roadmapGeneration": "V2",
-      "status": "SPECIFIED",
-      "activationState": "SPECIFIED",
+      "status": "IMPLEMENTED",
+      "activationState": "IMPLEMENTED",
       "featureGate": "expansion.v2.living-world",
       "defaultEnabled": false,
       "launchVisibility": "hidden",
       "dependencies": [],
-      "requiredAssets": [],
+      "requiredAssets": [
+        "existing V2 promoted asset estate; inactive for V1"
+      ],
       "requiredProvider": [],
       "requiredPermission": [],
       "privacyClassification": "review_required",
@@ -81,7 +84,7 @@
         "synthetic evidence",
         "applicable review evidence"
       ],
-      "testSuite": "future V2 dormant proof",
+      "testSuite": "node expansion/v2-living-world/state-machine.test.mjs",
       "rolloutClass": "post-launch-controlled",
       "killSwitchOwner": "URAI Admin / owning system",
       "rollbackProcedure": "Disable feature gate, quarantine adapter/provider, preserve receipts, return to last evidenced inactive state."
@@ -92,12 +95,15 @@
       "owningSystem": "v3",
       "owningRepository": "LifeLoggerAI/urai-spatial",
       "roadmapGeneration": "V3",
-      "status": "SPECIFIED",
-      "activationState": "SPECIFIED",
+      "status": "IMPLEMENTED",
+      "activationState": "IMPLEMENTED",
       "featureGate": "expansion.v3.relationships",
       "defaultEnabled": false,
       "launchVisibility": "hidden",
-      "dependencies": [],
+      "dependencies": [
+        "privacy authority",
+        "synthetic-only until consent/governance gates"
+      ],
       "requiredAssets": [],
       "requiredProvider": [],
       "requiredPermission": [],
@@ -112,7 +118,7 @@
         "synthetic evidence",
         "applicable review evidence"
       ],
-      "testSuite": "future relationship conformance",
+      "testSuite": "node expansion/v3-relationships/relationship-graph.test.mjs",
       "rolloutClass": "post-launch-controlled",
       "killSwitchOwner": "URAI Admin / owning system",
       "rollbackProcedure": "Disable feature gate, quarantine adapter/provider, preserve receipts, return to last evidenced inactive state."
