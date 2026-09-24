@@ -548,17 +548,23 @@ async function selectQuietReset(page, options = {}) {
   if (options.targetPhase) {
     livePhase = await poll(`live selected journey phase=${options.targetPhase}`, async () => {
       const root = page.locator(ROOT).first()
-      const destination = new URL(page.url())
       return {
         phase: await root.getAttribute('data-life-map-phase'),
         mode: await root.getAttribute('data-life-map-mode'),
+      }
+    }, (state) => state.phase === options.targetPhase && state.mode === 'selected', 20_000, 10)
+
+    if (typeof options.captureAtPhase === 'function') {
+      await options.captureAtPhase(livePhase)
+    }
+
+    await poll('selected Quiet Reset route identity', () => {
+      const destination = new URL(page.url())
+      return {
         memoryId: destination.searchParams.get('memoryId'),
         node: destination.searchParams.get('node'),
       }
-    }, (state) => state.phase === options.targetPhase
-      && state.mode === 'selected'
-      && state.memoryId === 'quiet-reset'
-      && state.node === 'quiet-reset', 20_000, 20)
+    }, (state) => state.memoryId === 'quiet-reset' && state.node === 'quiet-reset', 20_000, 20)
   } else {
     await poll('selected Quiet Reset identity', async () => {
       const root = page.locator(ROOT).first()
@@ -569,9 +575,6 @@ async function selectQuietReset(page, options = {}) {
         node: destination.searchParams.get('node'),
       }
     }, (state) => state.mode === 'selected' && state.memoryId === 'quiet-reset' && state.node === 'quiet-reset', 20_000, 50)
-  }
-  if (options.targetPhase && typeof options.captureAtPhase === 'function') {
-    await options.captureAtPhase(livePhase)
   }
   const observedPhase = options.targetPhase ? await readJourneyPhaseWatch(page, options.targetPhase, 1_000) : null
   await waitForState(page, 'data-life-map-mode', 'selected')
