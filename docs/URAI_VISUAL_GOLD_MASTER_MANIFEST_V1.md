@@ -115,7 +115,7 @@ They are subordinate to this manifest and do not convert concept/reference art i
 | VGM-PASSPORT-001 | Physical Home Passport | CURRENT_CANDIDATE | Accept protected-custody-stone-v2 physical art, activation, round-trip, mobile/reduced/a11y pixels |
 | VGM-PASSPORT-002 | Passport UI | CURRENT_CANDIDATE | Responsive/accessibility/receipt-state audit |
 | VGM-GEF-001 | Global Emotional Field Earth | CURRENT_CANDIDATE | Inspect unavailable Earth pixels; prove mobile/reduced/a11y; add suppressed/aggregate only when governed provider truth exists |
-| VGM-PEW-001 | Personal Emotional Weather | MISSING_REPLACEMENT_REQUIRED | Implement and inspect distinct private-weather visual grammar |
+| VGM-PEW-001 | Personal Emotional Weather | CURRENT_CANDIDATE | Source/state authority is implemented and bound to Home; create/inspect the dedicated WEATHER-001…018 pack, mobile/reduced/no-WebGL states, audio listening evidence, and exact-head literal acceptance |
 | VGM-MIRROR-001 | Mirror | CURRENT_CANDIDATE | Re-audit current source/retained assets; derive current state pack |
 | VGM-SHADOW-001 | Shadow | MISSING_REPLACEMENT_REQUIRED | Re-derive reference/storyboard authority |
 | VGM-LEGACY-001 | Legacy | MISSING_REPLACEMENT_REQUIRED | Re-derive reference/storyboard authority |
