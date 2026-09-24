@@ -47,3 +47,7 @@ jobs:
         run: node expansion/xr/xr-session-simulator.test.mjs
       - name: Verify V7 scene provenance receipts
         run: node expansion/v7-scene/scene-receipt.test.mjs
+      - name: Verify V8 read-only observer
+        run: node expansion/v8-observer/product-observer.test.mjs
+      - name: Verify V9 read-only ecosystem registry
+        run: node expansion/v9-ecosystem/system-registry.test.mjs
