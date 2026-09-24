@@ -16,6 +16,9 @@ test('launch locale registry contains the governed 21-locale 20+ preparation set
   assert.match(registry, /pt: 'pt-BR'/)
   assert.match(registry, /tl: 'fil'/)
   assert.match(registry, /'nl-nl': 'nl'/)
+  const governed = registry.match(/URAI_LAUNCH_LOCALES = \[([\s\S]*?)\] as const/)
+  assert.ok(governed, 'launch locale registry must remain statically inspectable')
+  assert.equal((governed[1].match(/'[^']+'/g) ?? []).length, 21)
 })
 
 test('runtime locale bootstrap is truthful, persistent, and RTL-aware without claiming translation approval', () => {
