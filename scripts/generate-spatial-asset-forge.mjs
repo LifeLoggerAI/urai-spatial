@@ -10,15 +10,12 @@ const modelAssets = [
   ['entry-chamber-shell-v1','entry-chamber','/','entry-chamber/models/entry-chamber-shell-v1.gltf','chamber'],
   ['entry-floor-ring-v1','entry-chamber','/','entry-chamber/models/entry-floor-ring-v1.gltf','ring'],
   ['central-orb-v1','entry-chamber','/','entry-chamber/models/central-orb-v1.gltf','orb'],
-  ['universal-portal-ring-v1','shared','all','shared/models/universal-portal-ring-v1.gltf','portal'],
   ['ground-descent-hatch-v1','entry-chamber','/ground','entry-chamber/models/ground-descent-hatch-v1.gltf','hatch'],
   ['ground-room-shell-v1','ground-room','/ground','ground-room/models/ground-room-shell-v1.gltf','chamber'],
   ['ground-terminal-v1','ground-room','/ground','ground-room/models/ground-terminal-v1.gltf','panel'],
   ['agent-source-station-v1','ground-room','/ground','ground-room/models/agent-source-station-v1.gltf','station'],
   ['life-map-sky-dome-v1','life-map-sky','/life-map','life-map/models/life-map-sky-dome-v1.gltf','sky'],
   ['star-memory-node-v1','life-map-sky','/life-map','life-map/models/star-memory-node-v1.gltf','star'],
-  ['focus-star-tunnel-v1','focus-star','/focus','focus-star/models/focus-star-tunnel-v1.gltf','tunnel'],
-  ['replay-film-portal-v1','replay-portal','/replay','replay-portal/models/replay-film-portal-v1.gltf','film'],
   ['passport-identity-plinth-v1','passport-room','/passport','passport-room/models/passport-identity-plinth-v1.gltf','plinth'],
   ['status-control-board-v1','status-room','/status','status-room/models/status-control-board-v1.gltf','board'],
 ]
@@ -45,7 +42,7 @@ const manifest = {
     'ground-room': { routes: ['/ground'], motion: 'camera descent' },
     'life-map-sky': { routes: ['/life-map'], motion: 'camera ascent' },
     'focus-star': { routes: ['/focus'], motion: 'fly into selected star' },
-    'replay-portal': { routes: ['/replay'], motion: 'memory film portal' },
+    'replay-memory': { routes: ['/replay'], motion: 'enter selected memory' },
     'passport-room': { routes: ['/passport'], motion: 'identity chamber' },
     'status-room': { routes: ['/status'], motion: 'control layer room' },
   },
@@ -78,12 +75,9 @@ function scene(id, kind) {
 function build(kind) {
   const base = [{ name:'core', material:1, scale:[1,1,1] }]
   if (kind === 'chamber') return [...base, { name:'floor-ring', material:2, scale:[5,.08,5] }, { name:'ceiling-ring', material:1, translation:[0,3.6,0], scale:[4.8,.08,4.8] }]
-  if (kind === 'portal') return [{ name:'ring', material:1, scale:[2.2,2.2,.12] }, { name:'base', material:2, translation:[0,-1.2,0], scale:[2.6,.18,.6] }]
   if (kind === 'panel' || kind === 'board') return [{ name:'hologram-panel', material:1, translation:[0,1.1,0], scale:[2,1.35,.05] }, { name:'base', material:2, scale:[2.4,.18,.45] }]
   if (kind === 'station' || kind === 'plinth') return [{ name:'plinth', material:0, scale:[1.2,.42,1.2] }, { name:'orb', material:3, translation:[0,1.05,0], scale:[.55,.55,.55] }]
   if (kind === 'sky') return [{ name:'dome', material:1, scale:[7,3.5,7] }]
-  if (kind === 'tunnel') return [{ name:'near-ring', material:1, scale:[3,3,.08] }, { name:'far-ring', material:3, translation:[0,0,-2.8], scale:[1.1,1.1,.08] }]
-  if (kind === 'film') return [{ name:'portal', material:1, scale:[2.4,2.4,.12] }, { name:'film-left', material:2, translation:[-1.8,0,0], scale:[.18,2.8,.08] }, { name:'film-right', material:2, translation:[1.8,0,0], scale:[.18,2.8,.08] }]
   if (kind === 'hatch') return [{ name:'hatch-ring', material:2, scale:[2.2,.08,2.2] }, { name:'bridge', material:0, scale:[2.8,.08,.32] }]
   return base
 }

@@ -58,14 +58,16 @@ jobs:
           receipt = json.loads(receipt_path.read_text())
           inventory = json.loads(inventory_path.read_text())
 
-          assert receipt['modelCount'] == 14, receipt
-          assert receipt['totalVertices'] >= 20000, receipt
-          assert receipt['totalFaces'] >= 40000, receipt
+          assert receipt['modelCount'] == 11, receipt
+          assert receipt['totalVertices'] >= 15000, receipt
+          assert receipt['totalFaces'] >= 30000, receipt
           assert inventory['authority']['selectedProductionRoot'] == 'urai-tier1/public/assets/urai/generated', inventory
           assert inventory['authority']['fallbackRoot'] == 'urai-tier1/public/assets/urai/spatial', inventory
           assert inventory['authority']['selectedProduction'] is False, inventory
           assert inventory['policy']['mayBeDescribedAsFinalArt'] is False, inventory
           assert inventory['policy']['maySilentlyOverrideSelectedAsset'] is False, inventory
+          assert inventory['policy']['failClosedWhenCanonicalFallbackUnavailable'] is True, inventory
+          assert set(inventory['policy']['rejectedVisualFallbacks']) == {'portal-ring', 'focus-tunnel', 'replay-film-portal'}, inventory
 
           receipt_files = {model['file'] for model in receipt['models']}
           inventory_files = {model['file'] for model in inventory['models']}

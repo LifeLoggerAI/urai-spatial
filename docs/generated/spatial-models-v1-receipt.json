@@ -2,9 +2,9 @@
   "schemaVersion": "urai.spatial.real-model-receipt.v1",
   "generator": "URAI deterministic spatial model forge v1",
   "productionClass": "modular-first-pass",
-  "modelCount": 14,
-  "totalVertices": 23712,
-  "totalFaces": 46776,
+  "modelCount": 11,
+  "totalVertices": 15532,
+  "totalFaces": 30504,
   "models": [
     {
       "id": "agent-source-station-v1",
@@ -37,14 +37,6 @@
       "geometryCount": 15,
       "vertices": 1634,
       "faces": 3216
-    },
-    {
-      "id": "focus-star-tunnel-v1",
-      "file": "/assets/urai/spatial/focus-star/models/focus-star-tunnel-v1.gltf",
-      "bytes": 166611,
-      "geometryCount": 12,
-      "vertices": 4164,
-      "faces": 8320
     },
     {
       "id": "ground-descent-hatch-v1",
@@ -87,14 +79,6 @@
       "faces": 1392
     },
     {
-      "id": "replay-film-portal-v1",
-      "file": "/assets/urai/spatial/replay-portal/models/replay-film-portal-v1.gltf",
-      "bytes": 98949,
-      "geometryCount": 12,
-      "vertices": 1360,
-      "faces": 2680
-    },
-    {
       "id": "star-memory-node-v1",
       "file": "/assets/urai/spatial/life-map/models/star-memory-node-v1.gltf",
       "bytes": 72801,
@@ -109,14 +93,6 @@
       "geometryCount": 20,
       "vertices": 704,
       "faces": 1328
-    },
-    {
-      "id": "universal-portal-ring-v1",
-      "file": "/assets/urai/spatial/shared/models/universal-portal-ring-v1.gltf",
-      "bytes": 182907,
-      "geometryCount": 13,
-      "vertices": 2656,
-      "faces": 5272
     }
   ]
 }
