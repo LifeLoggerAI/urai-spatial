@@ -6,7 +6,7 @@
     "v1ProtectedHeadAtCreation": "ae839a7afb6fadf28f8181373d471ba3da9ddf8a",
     "expansionBase": "main@4b3c7bd982865324510eb9581d9f324bd4ad6e93",
     "rule": "No registry entry authorizes production activation.",
-    "expansionHeadLastReconciled": "44ffad95abbe7a29d5abddf5f6ca120c1d8ba402"
+    "expansionHeadSource": "Resolve live head of draft PR #1298; never trust a predecessor SHA after the branch moves."
   },
   "activationStates": [
     "SPECIFIED",
@@ -510,14 +510,16 @@
       "canonicalId": "asset-factory.product",
       "humanName": "Asset Factory Productization",
       "owningSystem": "asset-factory",
-      "owningRepository": "LifeLoggerAI/urai-asset-factory",
+      "owningRepository": "LifeLoggerAI/asset-factory",
       "roadmapGeneration": "ecosystem",
       "status": "SPECIFIED",
       "activationState": "SPECIFIED",
       "featureGate": "expansion.asset-factory.product",
       "defaultEnabled": false,
       "launchVisibility": "hidden",
-      "dependencies": [],
+      "dependencies": [
+        "preserve current Asset Factory terminal authority PRs; no parallel runtime collision"
+      ],
       "requiredAssets": [],
       "requiredProvider": [],
       "requiredPermission": [],
