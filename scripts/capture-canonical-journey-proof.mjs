@@ -96,14 +96,13 @@ async function openHome(page, journey) {
 }
 
 async function proveRealHomeAscent(page, journey, home) {
-  // V223 begins at the governed Avatar presentation gate. Enter the real
-  // bodyless first-person Home, then activate the broad visible-sky threshold.
-  const avatarGate = page.getByTestId('urai-home-avatar-enter-first-person')
-  await avatarGate.waitFor({ state: 'attached', timeout: 45_000 })
-  await avatarGate.evaluate((node) => node.focus())
-  await page.keyboard.press('Enter')
+  // Current non-XR Home authority is direct bodyless first person. Prove the
+  // superseded Avatar presentation/activation gate is absent before sky ascent.
   await waitAttr(home, 'data-home-stable-state', 'AVATAR_HOME_FIRST_PERSON', 45_000)
   await waitAttr(home, 'data-home-input-ready', 'true', 45_000)
+  assert.equal(await page.getByTestId('urai-home-avatar-enter-first-person').count(), 0, 'superseded Avatar activation gate must not exist in ordinary Home')
+  assert.equal(await home.getAttribute('data-home-avatar-activation-gate'), 'none-direct-first-person-home')
+  assert.equal(await home.getAttribute('data-home-non-xr-body-policy'), 'camera-only-no-hands-body-rig')
   await capture(page, journey, 'home-first-person')
 
   const canvas = home.locator('canvas').first()
