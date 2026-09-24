@@ -243,6 +243,8 @@ export default function ComposedLifeMapScene() {
   }), [adaptiveProfile, softwareRenderer]);
   const explicitDemoRequested = params.get("demo") === "1";
   const overviewRequested = params.get("overview") === "1";
+  const memoryStarReview = explicitDemoRequested ? safeToken(params.get("memoryStarReview")) : "";
+  const memoryStarReviewActive = ["isolated", "hover", "near-cluster"].includes(memoryStarReview);
   const { nodes, loading, sourceMode } = useLifeMapEvents(explicitDemoRequested ? "demo-user" : undefined);
   const queryNode = safeToken(params.get("node") || params.get("memoryId"));
   const manifestId = safeToken(params.get("manifestId"), DEFAULT_MANIFEST_ID);
@@ -254,6 +256,8 @@ export default function ComposedLifeMapScene() {
   const selectionRoutePending = useRef(false);
   const restoredRoutePending = useRef(Boolean(!overviewRequested && queryNode));
   const selected = useMemo(() => nodes.find((node) => node.id === selectedId) || null, [nodes, selectedId]);
+  const proofSelected = memoryStarReviewActive ? nodes[0] ?? null : selected;
+  const proofPhase: JourneyPhase = memoryStarReviewActive ? "arrival" : phase;
 
   const withIdentity = useCallback((next: URLSearchParams) => {
     if (explicitDemoRequested) next.set("demo", "1");
@@ -387,8 +391,10 @@ export default function ComposedLifeMapScene() {
     data-life-map-mode={selected ? "selected" : "overview"}
     data-life-map-scale={selected ? phase === "arrival" ? "intimate" : "regional" : "cosmic"}
     data-life-map-production-world="true"
-    data-life-map-art-revision="v290-layered-living-galaxy-white-gold-core"
+    data-life-map-art-revision="v294-z-separated-layered-galaxy-stellar-review"
     data-life-map-reference-form="astronomical-layered-personal-galaxy"
+    data-life-map-reference-depth="v294-z-separated-selected-memory-star-preserved-galaxy-depth"
+    data-life-map-memory-star-review={memoryStarReviewActive ? memoryStarReview : "none"}
     data-webgl-state={webglState}
     data-software-renderer={softwareRenderer === null ? "detecting" : softwareRenderer ? "true" : "false"}
     data-software-render-cadence={softwareRenderer !== false || profile.reducedMotion ? "bounded-demand-4fps" : "continuous"}
@@ -418,12 +424,13 @@ export default function ComposedLifeMapScene() {
       <Suspense fallback={null}>
         <LifeMapProductionWorld
           nodes={nodes}
-          selected={selected}
-          phase={phase as LifeMapJourneyPhase}
+          selected={proofSelected}
+          phase={proofPhase}
           profile={profile}
           onSelect={selectNode}
-          cameraRig={<CameraRig nodes={nodes} selectedIndex={Math.max(0, nodes.findIndex(node => node.id === selected?.id))} selected={selected} phase={phase} reducedMotion={profile.reducedMotion} />}
+          cameraRig={<CameraRig nodes={nodes} selectedIndex={Math.max(0, nodes.findIndex(node => node.id === proofSelected?.id))} selected={proofSelected} phase={proofPhase} reducedMotion={profile.reducedMotion} />}
           webglRecovery={null}
+          reviewProof={memoryStarReviewActive}
         />
         <LifeMapGoldMasterOverlay nodes={nodes} selected={selected} phase={phase as LifeMapJourneyPhase} reducedMotion={profile.reducedMotion} onSelect={selectNode} />
       </Suspense>
