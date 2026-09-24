@@ -729,19 +729,77 @@ async function memoryStarReferencePack() {
   }
 }
 
-async function withPausedVirtualTimeForCapture(page, task) {
+const PHASE_CAPTURE_VIRTUAL_BUDGET_MS = {
+  departure: 0,
+  travel: 950,
+  approach: 2500,
+}
+
+async function advanceVirtualTime(session, budget) {
+  if (!budget) return
+  const expired = new Promise((resolve) => session.once('Emulation.virtualTimeBudgetExpired', resolve))
+  await session.send('Emulation.setVirtualTimePolicy', {
+    policy: 'advance',
+    budget,
+    maxVirtualTimeTaskStarvationCount: 1000,
+  })
+  await expired
+  await session.send('Emulation.setVirtualTimePolicy', { policy: 'pause' })
+}
+
+async function selectQuietResetAtFrozenPhase(page, targetPhase, interaction) {
   const session = await page.context().newCDPSession(page)
   await session.send('Emulation.setVirtualTimePolicy', { policy: 'pause' })
   try {
-    return await task()
-  } finally {
+    const triggerSelector = 'button.life-map-search-trigger[aria-label="Search and navigate Life Map"]'
+    const trigger = await canonicalControlGeometry(page, triggerSelector, 'canonical Life Map search trigger')
+    await activateCanonicalControl(page, triggerSelector, trigger, interaction)
+
+    const navigatorSelector = 'section.life-map-navigator[aria-label="Search and filter Life Map"]'
+    await poll('canonical Life Map semantic navigator', () => page.evaluate((selector) => Boolean(document.querySelector(selector)), navigatorSelector), Boolean, 20_000, 50)
+
+    const resultSelector = `${navigatorSelector} button[data-life-map-semantic-result][data-life-map-node-id="quiet-reset"]`
+    const result = await canonicalControlGeometry(page, resultSelector, 'canonical Quiet Reset semantic result')
+    if (!/The Quiet Reset/i.test(result.text)) throw new Error(`Quiet Reset semantic result text drifted: ${result.text}`)
+
+    await armJourneyPhaseWatch(page, targetPhase)
+    await activateCanonicalControl(page, resultSelector, result, interaction)
+
+    await poll('selected Quiet Reset identity under paused virtual time', async () => {
+      const root = page.locator(ROOT).first()
+      const destination = new URL(page.url())
+      return {
+        phase: await root.getAttribute('data-life-map-phase'),
+        mode: await root.getAttribute('data-life-map-mode'),
+        memoryId: destination.searchParams.get('memoryId'),
+        node: destination.searchParams.get('node'),
+      }
+    }, (state) => state.mode === 'selected'
+      && state.memoryId === 'quiet-reset'
+      && state.node === 'quiet-reset'
+      && state.phase === 'departure', 20_000, 20)
+
+    await advanceVirtualTime(session, PHASE_CAPTURE_VIRTUAL_BUDGET_MS[targetPhase] ?? 0)
+
+    const frozen = await poll(`frozen selected journey phase=${targetPhase}`, async () => {
+      const root = page.locator(ROOT).first()
+      return {
+        phase: await root.getAttribute('data-life-map-phase'),
+        mode: await root.getAttribute('data-life-map-mode'),
+      }
+    }, (state) => state.phase === targetPhase && state.mode === 'selected', 10_000, 10)
+    const observed = await readJourneyPhaseWatch(page, targetPhase, 1_000)
+    return { session, observed, frozen }
+  } catch (error) {
     await session.detach().catch(() => {})
+    throw error
   }
 }
 
 async function captureIsolatedJourneyPhase({ id, targetPhase, captureState, interaction = 'pointer', viewport, hasTouch = false, isMobile = false }) {
   const isolatedBrowser = await chromium.launch({ headless: true })
   let isolated = null
+  let virtualTime = null
   try {
     isolated = await openPage({
       label: `isolated-${id}`,
@@ -752,27 +810,21 @@ async function captureIsolatedJourneyPhase({ id, targetPhase, captureState, inte
     const overviewRoute = '/life-map/?demo=1&manifestId=replay-recovery-thread&overview=1'
     await goto(isolated.page, overviewRoute)
     await waitForRenderedWorld(isolated.page)
-    let retainedPhaseCapture = false
-    await selectQuietReset(isolated.page, {
+
+    const selection = await selectQuietResetAtFrozenPhase(
+      isolated.page,
       targetPhase,
-      keyboard: interaction === 'keyboard',
-      touch: interaction === 'touch',
-      captureAtPhase: async (observedPhase) => {
-        await withPausedVirtualTimeForCapture(isolated.page, async () => {
-          await shot(isolated.page, id, captureState, {
-            memoryId: 'quiet-reset',
-            interaction,
-            observedPhase,
-            phaseLocked: targetPhase,
-          })
-          retainedPhaseCapture = true
-        })
-      },
+      interaction === 'keyboard' ? 'keyboard' : interaction === 'touch' ? 'touch' : 'pointer',
+    )
+    virtualTime = selection.session
+    await shot(isolated.page, id, captureState, {
+      memoryId: 'quiet-reset',
+      interaction,
+      observedPhase: selection.observed,
+      phaseLocked: targetPhase,
     })
-    if (!retainedPhaseCapture) {
-      throw new Error(`${id} did not retain the authoritative ${targetPhase} phase`)
-    }
   } finally {
+    await virtualTime?.detach().catch(() => {})
     await isolated?.context.close()
     await isolatedBrowser.close()
   }
