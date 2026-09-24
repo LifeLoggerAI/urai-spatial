@@ -904,9 +904,23 @@ function GroundAnalogPad({ input }: { input: MovementInput }) {
   }} /></div>;
 }
 
+function useGroundWebGLAvailable() {
+  const [available, setAvailable] = useState<boolean | null>(null);
+  useEffect(() => {
+    try {
+      const canvas = document.createElement("canvas");
+      setAvailable(Boolean(canvas.getContext("webgl2") ?? canvas.getContext("webgl")));
+    } catch {
+      setAvailable(false);
+    }
+  }, []);
+  return available;
+}
+
 export default function GroundSpatialWorldClean() {
   const router = useRouter();
   const params = useSearchParams();
+  const webglAvailable = useGroundWebGLAvailable();
   const [ready, setReady] = useState(false);
   const [dragging, setDragging] = useState(false);
   const [isCoarse, setIsCoarse] = useState(() => {
@@ -973,10 +987,12 @@ export default function GroundSpatialWorldClean() {
     data-ground-visible-avatar="false"
     data-ground-visible-hands="false"
     data-ground-ready={ready ? "true" : "false"}
+    data-webgl-state={webglAvailable === null ? "detecting" : webglAvailable ? "ready" : "unavailable"}
+    data-ground-fallback={webglAvailable === false ? "semantic-no-webgl" : "none"}
     data-ground-camera-mode={dragging ? "look" : "first-person"}
     {...look}
   >
-    <Canvas
+    {webglAvailable === true ? <Canvas
       shadows
       dpr={[1, 1.3]}
       camera={{ position: [0, GROUND_EYE_HEIGHT_M, 6], fov: GROUND_LANDSCAPE_FOV_DEG, near: GROUND_NEAR_PLANE_M, far: 800 }}
@@ -988,14 +1004,17 @@ export default function GroundSpatialWorldClean() {
       }}
     >
       <GroundScene profile={profile} input={input} yaw={yaw} pitch={pitch} target={target} obstacles={obstacles} playerPosition={playerPosition} isCoarse={isCoarse} onReady={() => setReady(true)} />
-    </Canvas>
+    </Canvas> : <section className="ground-semantic-fallback" role="status" data-testid="urai-ground-semantic-fallback">
+      <p>{webglAvailable === null ? "Preparing Ground…" : "Three-dimensional Ground is unavailable on this device."}</p>
+      <strong>{webglAvailable === false ? "Home, Places, Privacy, and semantic navigation remain available." : "Checking spatial rendering capability."}</strong>
+    </section>}
 
     <button className="ground-home-return" type="button" onClick={() => router.push("/home?returnFrom=ground")} aria-label="Return Home">Home</button>
     <nav className="ground-place-access" aria-label="Ground place and privacy tools">
       <a href="/location-map/geographic/">Places</a>
       <a href="/privacy-controls">Privacy</a>
     </nav>
-    <div className="sr-only" role="status" aria-live="polite">{ready ? `${profile.label} is ready for first-person exploration. UrAi remains available through semantic voice and accessible controls; no follower Orb is rendered.` : "Ground is forming."}</div>
+    <div className="sr-only" role="status" aria-live="polite">{webglAvailable === false ? "Three-dimensional Ground is unavailable. Home, Places, Privacy, and semantic navigation remain available." : ready ? `${profile.label} is ready for first-person exploration. UrAi remains available through semantic voice and accessible controls; no follower Orb is rendered.` : "Ground is forming."}</div>
     <GroundAnalogPad input={input} />
     <details className="ground-accessible-movement" data-movement-ui="true"><summary>Movement controls</summary><MobileMovementPad input={input} label="Ground first-person movement controls" /></details>
     <span className="sr-only" data-testid="urai-ground-walkable-surface">The visible Ground terrain is the traversal and click-to-move surface.</span>
@@ -1003,6 +1022,7 @@ export default function GroundSpatialWorldClean() {
     <style jsx>{`
       .ground-spatial-root{position:fixed;inset:0;width:100vw;height:100svh;overflow:hidden;background:${profile.fog};color:#f8fbff;isolation:isolate;outline:none;touch-action:none;cursor:${dragging ? "grabbing" : "grab"}}
       .ground-spatial-root canvas{position:absolute!important;inset:0;z-index:1;display:block;width:100%!important;height:100%!important;background:transparent!important}
+      .ground-semantic-fallback{position:absolute;inset:0;z-index:1;display:grid;place-content:center;gap:8px;padding:28px;text-align:center;background:radial-gradient(circle at 50% 42%,rgba(117,157,143,.20),transparent 34%),linear-gradient(180deg,#263c39,#152825);color:#f2faf7}.ground-semantic-fallback p{margin:0;font:500 clamp(1.2rem,3vw,2.1rem)/1.15 Georgia,serif}.ground-semantic-fallback strong{max-width:620px;color:rgba(235,247,242,.76);font:650 12px/1.5 system-ui}
       .ground-home-return{position:absolute;z-index:20;right:max(16px,env(safe-area-inset-right));top:max(16px,env(safe-area-inset-top));min-width:48px;min-height:48px;padding:0 13px;border:1px solid rgba(226,248,247,.2);border-radius:999px;background:rgba(5,20,24,.32);color:rgba(241,251,249,.88);backdrop-filter:blur(12px);font:750 9px/1 system-ui;letter-spacing:.12em;text-transform:uppercase;cursor:pointer}
       .ground-home-return:focus-visible,.ground-place-access a:focus-visible,.ground-accessible-movement summary:focus-visible{outline:3px solid #fff;outline-offset:3px}
       .ground-place-access{position:absolute;z-index:19;left:max(16px,env(safe-area-inset-left));top:max(16px,env(safe-area-inset-top));display:flex;gap:8px;opacity:.02;transition:opacity .2s ease}
