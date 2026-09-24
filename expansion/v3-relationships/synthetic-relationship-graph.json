@@ -1,0 +1,90 @@
+{
+  "version": "1.0.0",
+  "graphId": "synthetic-relationship-graph-001",
+  "synthetic": true,
+  "revision": 1,
+  "people": [
+    {
+      "personId": "person-self",
+      "displayName": "Synthetic Self",
+      "kind": "other",
+      "visibility": "private",
+      "status": "active",
+      "provenance": [
+        {
+          "type": "synthetic_fixture",
+          "ref": "fixture:self"
+        }
+      ]
+    },
+    {
+      "personId": "person-mentor",
+      "displayName": "Synthetic Mentor",
+      "kind": "mentor",
+      "visibility": "private",
+      "status": "active",
+      "provenance": [
+        {
+          "type": "synthetic_fixture",
+          "ref": "fixture:mentor"
+        }
+      ]
+    },
+    {
+      "personId": "person-legacy",
+      "displayName": "Synthetic Legacy Figure",
+      "kind": "legacy",
+      "visibility": "vaulted",
+      "status": "vaulted",
+      "provenance": [
+        {
+          "type": "synthetic_fixture",
+          "ref": "fixture:legacy"
+        }
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "edgeId": "edge-mentor",
+      "fromPersonId": "person-self",
+      "toPersonId": "person-mentor",
+      "relation": "mentor",
+      "status": "active",
+      "provenance": [
+        {
+          "type": "synthetic_fixture",
+          "ref": "fixture:edge"
+        }
+      ]
+    },
+    {
+      "edgeId": "edge-legacy",
+      "fromPersonId": "person-self",
+      "toPersonId": "person-legacy",
+      "relation": "legacy",
+      "status": "vaulted",
+      "provenance": [
+        {
+          "type": "synthetic_fixture",
+          "ref": "fixture:legacy-edge"
+        }
+      ]
+    }
+  ],
+  "memoryLinks": [
+    {
+      "linkId": "memory-link-001",
+      "memoryId": "synthetic-memory-001",
+      "personId": "person-mentor",
+      "status": "active",
+      "provenance": [
+        {
+          "type": "synthetic_fixture",
+          "ref": "fixture:memory"
+        }
+      ]
+    }
+  ],
+  "history": []
+}

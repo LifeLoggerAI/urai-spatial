@@ -1,0 +1,96 @@
+{
+  "version": "1.0.0",
+  "status": "research horizon registry; no launch commitment or activation authority",
+  "items": [
+    {
+      "id": "self-twin",
+      "name": "Self-Twin",
+      "classification": "research only"
+    },
+    {
+      "id": "what-if-worlds",
+      "name": "What-if worlds",
+      "classification": "experimental"
+    },
+    {
+      "id": "possible-futures-deep",
+      "name": "Deeper Possible Futures",
+      "classification": "committed future roadmap"
+    },
+    {
+      "id": "causal-replay",
+      "name": "Causal Replay",
+      "classification": "research only"
+    },
+    {
+      "id": "dream-sleep-worlds",
+      "name": "Dream / Sleep world generation",
+      "classification": "experimental"
+    },
+    {
+      "id": "collective-constellations",
+      "name": "Collective constellations",
+      "classification": "privacy dependent"
+    },
+    {
+      "id": "group-resonance",
+      "name": "Group resonance",
+      "classification": "research only"
+    },
+    {
+      "id": "global-emotional-empathy",
+      "name": "Global emotional / empathy views",
+      "classification": "privacy dependent"
+    },
+    {
+      "id": "intergenerational-mentorship",
+      "name": "Intergenerational mentorship",
+      "classification": "experimental"
+    },
+    {
+      "id": "deeper-legacy",
+      "name": "Deeper Legacy systems",
+      "classification": "committed future roadmap"
+    },
+    {
+      "id": "voice-to-reality",
+      "name": "Voice-to-reality world construction",
+      "classification": "experimental"
+    },
+    {
+      "id": "biosignal-research",
+      "name": "Deeper biosignal research",
+      "classification": "legal/research dependent"
+    },
+    {
+      "id": "neural-interfaces",
+      "name": "Neural interfaces / research",
+      "classification": "research only"
+    },
+    {
+      "id": "gaussian-splat-reconstruction",
+      "name": "Gaussian-splat experiential reconstruction",
+      "classification": "hardware dependent"
+    },
+    {
+      "id": "collaborative-worlds",
+      "name": "Collaborative worlds",
+      "classification": "experimental"
+    },
+    {
+      "id": "mirror-of-humanity",
+      "name": "Mirror of Humanity",
+      "classification": "research only"
+    },
+    {
+      "id": "collective-rooms",
+      "name": "Collective rooms",
+      "classification": "experimental"
+    },
+    {
+      "id": "dao-governance",
+      "name": "Legacy DAO / collective governance concepts",
+      "classification": "superseded"
+    }
+  ]
+}
