@@ -7,7 +7,7 @@ const groundCanon = readFileSync(new URL('../src/spatial/ground/groundCanon.ts',
 
 test('Ground renders the current atmospheric lived world instead of the rejected root-vault substrate', () => {
   assert.match(ground, /data-ground-visual-revision="ground-lived-world-v2-canon-lock"/)
-  assert.match(ground, /data-ground-art-revision="ground-v32-edge-canopy-scanned-understory-relief"/)
+  assert.match(ground, /data-ground-art-revision="ground-v33-dense-irregular-edge-canopy-authored-depth"/)
   assert.match(ground, /data-ground-visual-owner="atmospheric-living-environment"/)
   assert.match(ground, /<AtmosphericGroundSky profile=\{profile\} \/>/)
   assert.match(ground, /<NaturalScatter profile=\{profile\} \/>/)
@@ -34,7 +34,7 @@ test('Ground renders the current atmospheric lived world instead of the rejected
   assert.match(ground, /makeOrganicTaperedTube/)
   assert.match(ground, /slice\(0, woodland \? 10 : 8\)/)
   assert.match(ground, /v32-edge-canopy-scanned-understory-relief-no-cloned-tree-field/)
-  assert.match(ground, /data-ground-canopy-repair="ground-v32-edge-canopy-no-tree-field"/)
+  assert.match(ground, /data-ground-canopy-repair="ground-v33-dense-irregular-edge-canopy-no-cloned-tree-field"/)
   assert.match(ground, /data-ground-foliage-repair="ground-v31-vendored-scanned-fern-atlas-canopy"/)
   assert.match(ground, /compositionPixelRepairV32: "v32-edge-canopy-scanned-understory-relief"/)
   assert.match(ground, /const ferns = items\.slice\(0, woodland \? 92 : 88\)/)

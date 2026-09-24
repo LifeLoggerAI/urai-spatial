@@ -205,7 +205,7 @@ async function resolveTarget(page, doorway) {
   if (href !== doorway.href) throw new Error(`semantic target must own native href ${doorway.href}; found ${href || 'none'}`)
   const visibleLegacyDoorways = await page.locator('.urai-final-home-doorways:visible').count()
   if (visibleLegacyDoorways !== 0) throw new Error(`legacy visible doorway bars remain: ${visibleLegacyDoorways}`)
-  return { target: liveSemanticTarget(page, doorway), nav, owner, nonDominant }
+  return { target, nav, owner, nonDominant }
 }
 
 async function openHomeAndResolve(page, doorway) {
