@@ -129,6 +129,14 @@ test('Ground remains a bodyless first-person lived world with privacy-safe empty
   assert.match(groundOwner, /authored-irregular-ridge-v4-muted-fog-blended/)
   assert.doesNotMatch(groundOwner, /placeholder-trees-retired/)
   assert.doesNotMatch(groundOwner, /<sphereGeometry args=\{\[1, 48, 24\]\} \/>/)
+  for (const marker of [
+    'function useGroundWebGLAvailable()',
+    'data-testid="urai-ground-semantic-fallback"',
+    'data-ground-fallback={webglAvailable === false ? "semantic-no-webgl" : "none"}',
+    'Three-dimensional Ground is unavailable on this device.',
+    'Home, Places, Privacy, and semantic navigation remain available.',
+    'webglAvailable === true ? <Canvas',
+  ]) has(groundOwner, marker)
 })
 
 test('legacy geometry may remain as compatibility source but cannot own current Home interaction', () => {
