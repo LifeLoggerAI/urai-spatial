@@ -729,6 +729,16 @@ async function memoryStarReferencePack() {
   }
 }
 
+async function withPausedVirtualTimeForCapture(page, task) {
+  const session = await page.context().newCDPSession(page)
+  await session.send('Emulation.setVirtualTimePolicy', { policy: 'pause' })
+  try {
+    return await task()
+  } finally {
+    await session.detach().catch(() => {})
+  }
+}
+
 async function captureIsolatedJourneyPhase({ id, targetPhase, captureState, interaction = 'pointer', viewport, hasTouch = false, isMobile = false }) {
   const isolatedBrowser = await chromium.launch({ headless: true })
   let isolated = null
@@ -739,7 +749,7 @@ async function captureIsolatedJourneyPhase({ id, targetPhase, captureState, inte
       hasTouch,
       isMobile,
     }, isolatedBrowser)
-    const overviewRoute = `/life-map/?demo=1&manifestId=replay-recovery-thread&overview=1&founderProof=1&proofPhaseHold=${targetPhase}`
+    const overviewRoute = '/life-map/?demo=1&manifestId=replay-recovery-thread&overview=1'
     await goto(isolated.page, overviewRoute)
     await waitForRenderedWorld(isolated.page)
     let retainedPhaseCapture = false
@@ -748,13 +758,15 @@ async function captureIsolatedJourneyPhase({ id, targetPhase, captureState, inte
       keyboard: interaction === 'keyboard',
       touch: interaction === 'touch',
       captureAtPhase: async (observedPhase) => {
-        await shot(isolated.page, id, captureState, {
-          memoryId: 'quiet-reset',
-          interaction,
-          observedPhase,
-          phaseLocked: targetPhase,
+        await withPausedVirtualTimeForCapture(isolated.page, async () => {
+          await shot(isolated.page, id, captureState, {
+            memoryId: 'quiet-reset',
+            interaction,
+            observedPhase,
+            phaseLocked: targetPhase,
+          })
+          retainedPhaseCapture = true
         })
-        retainedPhaseCapture = true
       },
     })
     if (!retainedPhaseCapture) {
