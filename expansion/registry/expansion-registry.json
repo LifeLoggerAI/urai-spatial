@@ -129,8 +129,8 @@
       "owningSystem": "v5",
       "owningRepository": "LifeLoggerAI/urai-spatial",
       "roadmapGeneration": "V5",
-      "status": "SPECIFIED",
-      "activationState": "SPECIFIED",
+      "status": "IMPLEMENTED",
+      "activationState": "IMPLEMENTED",
       "featureGate": "expansion.v5.becoming",
       "defaultEnabled": false,
       "launchVisibility": "hidden",
@@ -149,7 +149,7 @@
         "synthetic evidence",
         "applicable review evidence"
       ],
-      "testSuite": "future becoming conformance",
+      "testSuite": "node expansion/v5-becoming/identity-timeline.test.mjs",
       "rolloutClass": "post-launch-controlled",
       "killSwitchOwner": "URAI Admin / owning system",
       "rollbackProcedure": "Disable feature gate, quarantine adapter/provider, preserve receipts, return to last evidenced inactive state."
@@ -227,8 +227,8 @@
       "owningSystem": "wearable",
       "owningRepository": "LifeLoggerAI/urai-spatial",
       "roadmapGeneration": "V4+",
-      "status": "SPECIFIED",
-      "activationState": "SPECIFIED",
+      "status": "IMPLEMENTED",
+      "activationState": "IMPLEMENTED",
       "featureGate": "expansion.wearable.federation",
       "defaultEnabled": false,
       "launchVisibility": "hidden",
@@ -247,7 +247,7 @@
         "synthetic evidence",
         "applicable review evidence"
       ],
-      "testSuite": "future wearable conformance",
+      "testSuite": "node expansion/wearables/wearable-signals.test.mjs",
       "rolloutClass": "post-launch-controlled",
       "killSwitchOwner": "URAI Admin / owning system",
       "rollbackProcedure": "Disable feature gate, quarantine adapter/provider, preserve receipts, return to last evidenced inactive state."
@@ -258,8 +258,8 @@
       "owningSystem": "context",
       "owningRepository": "LifeLoggerAI/urai-spatial",
       "roadmapGeneration": "V4+",
-      "status": "SPECIFIED",
-      "activationState": "SPECIFIED",
+      "status": "IMPLEMENTED",
+      "activationState": "IMPLEMENTED",
       "featureGate": "expansion.context.location",
       "defaultEnabled": false,
       "launchVisibility": "hidden",
@@ -278,7 +278,7 @@
         "synthetic evidence",
         "applicable review evidence"
       ],
-      "testSuite": "future location conformance",
+      "testSuite": "node expansion/location/location-context.test.mjs",
       "rolloutClass": "post-launch-controlled",
       "killSwitchOwner": "URAI Admin / owning system",
       "rollbackProcedure": "Disable feature gate, quarantine adapter/provider, preserve receipts, return to last evidenced inactive state."
