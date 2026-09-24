@@ -60,7 +60,7 @@ test('Focus resolves the selected Life Map star into a memory-containing close-u
   assert.match(focus, /data-focus-terrain-owner="false"/)
   assert.match(focus, /data-focus-memory-visual=\{memoryVisual\}/)
   assert.match(focus, /data-focus-life-map-star-morphology="stellar-point-photosphere-layered-corona"/)
-  assert.match(focus, /data-focus-stellar-treatment="selected-organic-streamer-corona-photosphere-stellar-field-v379"/)
+  assert.match(focus, /data-focus-stellar-treatment="selected-corona-plasma-photosphere-stellar-field-v379"/)
   assert.match(focus, /data-focus-closeup-morphology="resolved-dimensional-memory-star"/)
   assert.match(focus, /name="focus-selected-memory-star"/)
   assert.match(focus, /const compactCorona = rays/)
