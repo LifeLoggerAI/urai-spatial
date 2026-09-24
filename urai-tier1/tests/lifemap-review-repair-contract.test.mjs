@@ -15,6 +15,17 @@ const focusSource = fs.readFileSync(new URL('../src/app/focus/FocusChamberClient
 const focusPolish = fs.readFileSync(new URL('../src/app/focus/focus-launch-visual-polish.css', import.meta.url), 'utf8')
 const focusGeology = fs.readFileSync(new URL('../src/app/focus/focusMemoryGeology.ts', import.meta.url), 'utf8')
 
+test('Memory Star review proof publishes bounded readiness without weakening the full-world threshold', () => {
+  assert.match(scene, /function RenderProof\(\{ minObjects = 20, minAnchors = 8 \}/)
+  assert.match(scene, /objects > minObjects && anchors >= minAnchors/)
+  assert.match(scene, /<RenderProof minObjects=\{7\} minAnchors=\{1\} \/>/)
+  assert.match(scene, /<RenderProof \/>/)
+  assert.match(scene, /zOffset=\{-2\}/)
+  assert.match(scene, /zOffset=\{-24\}/)
+  assert.match(scene, /zOffset=\{-58\}/)
+  assert.match(scene, /v294-z-separated-layered-galaxy-and-stellar-review/)
+})
+
 test('Memory Star hover and related emphasis preserves the same authored stellar object', () => {
   assert.match(productionWorld, /const \[hovered, setHovered\] = useState\(false\)/)
   assert.match(productionWorld, /const emphasis = !active && \(hovered \|\| related\)/)
