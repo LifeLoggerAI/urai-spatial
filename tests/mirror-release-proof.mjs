@@ -247,7 +247,10 @@ async function proveTransition(browser, destination, buttonName) {
     assertExactCandidateRoute(page.url(), expectedPath, `${destination} transition destination`)
     await page.locator('main').first().waitFor({ state: 'visible', timeout: 30000 })
     if (destination === 'replay') {
-      await page.locator('[data-replay-render-ready="true"] canvas').waitFor({ state: 'visible', timeout: 45000 })
+      await page.getByTestId('urai-replay-surface').waitFor({ state: 'attached', timeout: 45000 })
+      await page.getByTestId('cinematic-replay-client').waitFor({ state: 'attached', timeout: 45000 })
+      await page.getByTestId('urai-replay-timeline').first().waitFor({ state: 'attached', timeout: 45000 })
+      await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))))
     }
     const shot = await screenshot(page, `desktop-${name}`)
     assertExactCandidateRoute(page.url(), expectedPath, `${destination} transition destination after capture`)

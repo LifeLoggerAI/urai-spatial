@@ -47,13 +47,24 @@ function liveSemanticTarget(page, doorway) {
   return page.locator(`a[aria-label=${name}][href=${href}]:visible`).first()
 }
 
-async function stableBrowserBox(target) {
-  const page = target.page()
+async function stableBrowserBox(page, doorway) {
   const viewport = page.viewportSize()
-  const measure = async () => {
-    const box = await target.boundingBox()
-    return box ? { x: box.x, y: box.y, width: box.width, height: box.height } : null
-  }
+  const measure = async () => page.evaluate(({ testId, name, href }) => {
+    const element = document.querySelector(`[data-testid="${testId}"]`)
+    if (!(element instanceof HTMLAnchorElement)) return null
+    if (element.getAttribute('aria-label') !== name || element.getAttribute('href') !== href) return null
+    const rect = element.getBoundingClientRect()
+    const center = { x: rect.x + rect.width / 2, y: rect.y + rect.height / 2 }
+    const hit = document.elementFromPoint(center.x, center.y)
+    return {
+      x: rect.x,
+      y: rect.y,
+      width: rect.width,
+      height: rect.height,
+      centerOwned: Boolean(hit && (hit === element || element.contains(hit))),
+      hitTag: hit?.tagName || null,
+    }
+  }, { testId: doorway.testId, name: doorway.name, href: doorway.href })
   let initial = await measure()
   if (!initial) throw new Error('semantic target has no browser hit box')
   const fullyInsideViewport = viewport
@@ -62,7 +73,9 @@ async function stableBrowserBox(target) {
     && initial.x + initial.width <= viewport.width
     && initial.y + initial.height <= viewport.height
   if (!fullyInsideViewport) {
-    await target.scrollIntoViewIfNeeded()
+    await page.evaluate(({ testId }) => {
+      document.querySelector(`[data-testid="${testId}"]`)?.scrollIntoView({ block: 'center', inline: 'center', behavior: 'instant' })
+    }, { testId: doorway.testId })
     initial = await measure()
     if (!initial) throw new Error('semantic target lost its browser hit box after scroll')
   }
@@ -77,6 +90,7 @@ async function stableBrowserBox(target) {
     Math.abs(before.height - after.height),
   )
   if (drift > 1) throw new Error(`semantic target geometry is still moving: ${drift.toFixed(2)}px`)
+  if (!after.centerOwned) throw new Error(`semantic target does not own its browser hit point; hit=${after.hitTag || 'none'}`)
   return after
 }
 
@@ -162,7 +176,7 @@ async function activate(page, doorway, method) {
     return { hitPoint: null, focusSteps: keyboard.focusSteps }
   }
 
-  const box = await stableBrowserBox(target)
+  const box = await stableBrowserBox(page, doorway)
   if (box.width < 44 || box.height < 44) throw new Error(`semantic target below 44px minimum: ${box.width}x${box.height}`)
   const hitPoint = { center: { x: box.x + box.width / 2, y: box.y + box.height / 2 } }
   if (method === 'semantic-touch') await page.touchscreen.tap(hitPoint.center.x, hitPoint.center.y)
@@ -197,11 +211,17 @@ async function resolveTarget(page, doorway) {
     if (nonDominant !== 'true') throw new Error('semantic target owner is not declared non-dominant')
   }
 
-  const accessibleName = await target.getAttribute('aria-label')
+  const identity = await page.evaluate(({ name, href }) => {
+    const element = Array.from(document.querySelectorAll('a')).find((candidate) =>
+      candidate.getAttribute('aria-label') === name && candidate.getAttribute('href') === href
+    )
+    return element ? { accessibleName: element.getAttribute('aria-label'), tagName: element.tagName, href: element.getAttribute('href') } : null
+  }, { name: doorway.name, href: doorway.href })
+  const accessibleName = identity?.accessibleName || null
   if (accessibleName !== doorway.name) throw new Error(`unexpected accessible name ${accessibleName}`)
-  const tagName = await target.evaluate((element) => element.tagName)
+  const tagName = identity?.tagName || null
   if (tagName !== 'A') throw new Error(`semantic target must be a browser-native anchor; found ${tagName || 'unknown'}`)
-  const href = await target.getAttribute('href')
+  const href = identity?.href || null
   if (href !== doorway.href) throw new Error(`semantic target must own native href ${doorway.href}; found ${href || 'none'}`)
   const visibleLegacyDoorways = await page.locator('.urai-final-home-doorways:visible').count()
   if (visibleLegacyDoorways !== 0) throw new Error(`legacy visible doorway bars remain: ${visibleLegacyDoorways}`)
@@ -245,13 +265,13 @@ async function prove(browser, doorway, testCase) {
       if (testCase.method === 'keyboard') {
         record.semanticNavigationNonDominant = declaredNonDominant
       } else {
-        const currentTarget = liveSemanticTarget(page, doorway)
-        const navBox = await currentTarget.evaluate((element) => {
-          const nav = element.closest('nav')
+        const navBox = await page.evaluate(({ testId }) => {
+          const element = document.querySelector(`[data-testid="${testId}"]`)
+          const nav = element?.closest('nav')
           if (!(nav instanceof HTMLElement)) return null
           const rect = nav.getBoundingClientRect()
           return { x: rect.x, y: rect.y, width: rect.width, height: rect.height }
-        })
+        }, { testId: doorway.testId })
         if (!navBox) throw new Error('semantic navigation has no browser footprint')
         const viewportArea = Math.max(1, testCase.viewport.width * testCase.viewport.height)
         const navAreaRatio = Math.max(0, navBox.width * navBox.height) / viewportArea

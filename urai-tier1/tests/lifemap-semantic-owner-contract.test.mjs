@@ -43,6 +43,10 @@ test('mounted 3D artifacts retain independent pointer activation ownership', () 
   assert.match(world, /userData=\{\{ artifactFamily: resolveArtifactFamily\(node\), importance: importance\.toFixed\(2\), semanticLabel, chapterId: chapter\.id, runtimeAsset: MEMORY_STAR_MODEL, emphasisState: active \? "selected" : hovered \? "hover" : related \? "related" : "neutral" \}\}/)
   assert.doesNotMatch(world, /data-artifact-family=/)
   assert.match(world, /onClick=\{\(event\) => \{ event\.stopPropagation\(\); onSelect\(node\); \}\}/)
+  assert.match(world, /name="memory-star-interaction-hit-volume"/)
+  assert.match(world, /scale=\{active \? 1\.9 : 1\.68\}/)
+  assert.match(world, /<sphereGeometry args=\{\[0\.58, 20, 16\]\} \/>/)
+  assert.match(world, /<meshBasicMaterial transparent opacity=\{0\} depthWrite=\{false\} colorWrite=\{false\} \/>/)
 })
 
 test('pointer keyboard and touch semantic paths converge on one single-fire selection transaction', () => {

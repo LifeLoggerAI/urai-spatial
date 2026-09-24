@@ -481,6 +481,10 @@ function AuthoredMemoryStar({ aura, active, siteKey, scale = 1, rotation = [0,0,
     }}
   >
     <primitive object={hiddenAsset} visible={false} />
+    <mesh name="memory-star-interaction-hit-volume" scale={active ? 1.9 : 1.68}>
+      <sphereGeometry args={[0.58, 20, 16]} />
+      <meshBasicMaterial transparent opacity={0} depthWrite={false} colorWrite={false} />
+    </mesh>
     <mesh name="memory-star-photosphere" castShadow={false} scale={active ? 1.24 : 1.07}>
       <sphereGeometry args={[0.58, 64, 48]} />
       <primitive object={photosphere} attach="material" />
