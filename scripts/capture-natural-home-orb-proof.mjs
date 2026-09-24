@@ -102,6 +102,11 @@ async function imageEvidence(page) {
 for (const spec of cases) {
   const browser = await chromium.launch({ headless: true, args: ['--enable-unsafe-swiftshader'] })
   const context = await browser.newContext({ viewport: spec.viewport, isMobile: spec.isMobile, hasTouch: spec.hasTouch, reducedMotion: spec.reducedMotion })
+  await context.addInitScript(() => {
+    localStorage.setItem('urai:onboarding:v2:complete', '1')
+    localStorage.setItem('urai:onboarding:v3:setup-complete', '1')
+    localStorage.removeItem('urai:onboarding:v3:setup-step')
+  })
   const page = await context.newPage(); const pageErrors = []; const failedRequests = []
   page.on('pageerror', error => pageErrors.push(String(error)))
   page.on('requestfailed', request => failedRequests.push({ url: request.url(), failure: request.failure()?.errorText || 'unknown' }))
