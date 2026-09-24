@@ -46,6 +46,19 @@ async function capture(browser, cfg) {
       }
     })
   }
+  if (cfg.lowPower) {
+    await context.addInitScript(() => {
+      Object.defineProperty(navigator, 'deviceMemory', { configurable: true, get: () => 2 })
+      Object.defineProperty(navigator, 'hardwareConcurrency', { configurable: true, get: () => 2 })
+      const connection = {
+        effectiveType: '2g',
+        saveData: true,
+        addEventListener() {},
+        removeEventListener() {},
+      }
+      Object.defineProperty(navigator, 'connection', { configurable: true, get: () => connection })
+    })
+  }
 
   const page = await context.newPage()
   page.setDefaultTimeout(30000)
@@ -66,6 +79,7 @@ async function capture(browser, cfg) {
     device: cfg.device || 'desktop',
     reducedMotion: Boolean(cfg.reducedMotion),
     noWebGL: Boolean(cfg.noWebGL),
+    lowPower: Boolean(cfg.lowPower),
     screenshot: null,
     finalUrl: null,
     consoleErrors,
@@ -263,6 +277,7 @@ const simple = [
   { id:'MIRROR-REDUCED-MOTION', system:'Mirror', state:'reduced-motion', route:'/mirror?memoryId=demo%3Aquiet-reset&demo=1', marker:'[data-testid="mirror-spatial-world"]', reducedMotion:true },
   { id:'HOME-NOWEBGL', system:'Whole Product Fallback', state:'home-semantic-fallback', route:'/home?demo=1', text:'WebGL is unavailable. Accessible Home controls remain available.', noWebGL:true },
   { id:'GROUND-NOWEBGL', system:'Whole Product Fallback', state:'ground-semantic-fallback', route:'/ground?environment=temperate', marker:'[data-testid="urai-ground-semantic-fallback"]', text:'Home, Places, Privacy, and semantic navigation remain available.', noWebGL:true },
+  { id:'GROUND-LOW-POWER', system:'Whole Product Fallback', state:'ground-adaptive-low-power', route:'/ground?environment=temperate', marker:'[data-testid="urai-ground-lived-world"][data-ground-quality-tier="low"]', lowPower:true },
   { id:'LIFEMAP-NOWEBGL', system:'Whole Product Fallback', state:'life-map-semantic-fallback', route:'/life-map?demo=1&overview=1', text:'WebGL is unavailable. Semantic navigation remains available', noWebGL:true },
   { id:'FOCUS-NOWEBGL', system:'Whole Product Fallback', state:'focus-semantic-fallback', route:'/focus?memoryId=quiet-reset&manifestId=replay-recovery-thread&node=quiet-reset&returnNode=quiet-reset&demo=1&from=life-map', marker:'[data-testid="urai-final-focus-chamber"]', text:'Spatial view unavailable', noWebGL:true },
   { id:'REPLAY-NOWEBGL', system:'Whole Product Fallback', state:'replay-semantic-fallback', route:'/replay?memoryId=quiet-reset&manifestId=replay-recovery-thread&node=quiet-reset&returnNode=quiet-reset&demo=1&from=life-map', marker:'[data-testid="cinematic-replay-client"][data-webgl-state="unavailable"]', text:'Spatial Replay unavailable. Memory truth, pacing, transcript, and return controls remain available.', noWebGL:true },
