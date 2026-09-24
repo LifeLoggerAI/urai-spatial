@@ -137,8 +137,11 @@ try {
       await waitLocale(page, spec.locale, spec.dir)
 
       if (spec.noWebGL) {
-        await page.getByTestId('urai-home-accessible-fallback').waitFor({ state: 'visible', timeout: 45_000 })
-        assert.equal(await page.getByTestId('urai-home-accessible-fallback').getAttribute('data-webgl-state'), 'unavailable')
+        const fallback = page.getByTestId('urai-home-semantic-fallback')
+        await fallback.waitFor({ state: 'visible', timeout: 45_000 })
+        const runtime = page.locator('.urai-home-spatial-runtime-layer[data-webgl-state="unavailable"]').first()
+        await runtime.waitFor({ state: 'visible', timeout: 45_000 })
+        assert.equal(await runtime.getAttribute('data-webgl-ready'), 'false')
       }
 
       if (spec.offlineAfterLoad) {
