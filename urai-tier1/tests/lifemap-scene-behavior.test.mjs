@@ -81,9 +81,13 @@ test('Selection Focus Replay Overview and Escape preserve exact memory identity'
   assert.match(cosmic, /next\.set\("artifactFamily", resolveArtifactFamily\(selected\)\)/)
   assert.match(cosmic, /router\.push\(destinationHref\("focus"\)\)/)
   assert.match(cosmic, /router\.push\(destinationHref\("replay"\)\)/)
-  assert.match(cosmic, /if \(selectedId\) overview\(\); else router\.push\("\/home"\)/)
+  assert.match(cosmic, /if \(selectedId\) overview\(\); else returnHome\(\)/)
+  assert.match(cosmic, /router\.push\(explicitDemo \? "\/home\?demo=1" : "\/home"\)/)
   assert.match(cosmic, /next\.set\("overview", "1"\)/)
   assert.match(cosmic, /aria-label="Selected memory actions"/)
+  assert.match(cosmic, /data-life-map-overview-home-return="true"/)
+  assert.match(cosmic, /aria-label="Return Home"/)
+  assert.match(cosmic, /\.life-map-home-return\{[^}]*min-height:48px/)
 })
 
 test('Semantic navigator supports search filters keyboard travel and connected destinations', () => {
@@ -124,6 +128,8 @@ test('Reduced motion portrait adaptive quality and high contrast retain equivale
   assert.match(cosmic, /@media\(max-width:700px\)/)
   assert.match(cosmic, /@media\(prefers-reduced-motion:reduce\)/)
   assert.match(cosmic, /@media\(forced-colors:active\)/)
+  assert.match(cosmic, /\.life-map-home-return/)
+  assert.match(cosmic, /forced-colors:active[^]*\.life-map-home-return/)
   assert.match(navigator, /@media\(max-width:760px\)/)
   assert.match(navigator, /@media\(prefers-reduced-motion:reduce\)/)
 })
