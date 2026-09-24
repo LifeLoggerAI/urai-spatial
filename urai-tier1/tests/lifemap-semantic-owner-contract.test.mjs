@@ -76,7 +76,7 @@ test('semantic navigator is opt-in, semantically controlled, and keyboard access
 test('Founder proof observes the real selected world state and real journey phases', () => {
   assert.match(founder, /waitForState\(page, 'data-life-map-mode', 'selected'\)/)
   assert.match(founder, /armJourneyPhaseWatch\(page, options\.targetPhase\)/)
-  assert.match(founder, /readJourneyPhaseWatch\(page, options\.targetPhase\)/)
+  assert.match(founder, /readJourneyPhaseWatch\(page, options\.targetPhase, 1_000\)/)
   assert.match(founder, /captureIsolatedJourneyPhase\(\{ id: 'selection-start', targetPhase: 'departure', captureState: 'departure' \}\)/)
   assert.match(founder, /captureIsolatedJourneyPhase\(\{ id: 'mid-travel', targetPhase: 'travel', captureState: 'travel' \}\)/)
   assert.match(founder, /captureIsolatedJourneyPhase\(\{ id: 'approach', targetPhase: 'approach', captureState: 'approach' \}\)/)
