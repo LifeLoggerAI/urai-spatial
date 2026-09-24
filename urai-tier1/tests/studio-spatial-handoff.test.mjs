@@ -5,7 +5,7 @@ import { validateStudioSpatialExport } from '../src/lib/studio-spatial-handoff.t
 
 function validExport(overrides = {}) {
   return {
-    contractVersion: '0.1.0',
+    contractVersion: '0.2.0',
     producer: 'urai-studio',
     consumer: 'urai-spatial',
     exportId: 'export-1',
@@ -53,6 +53,14 @@ function validExport(overrides = {}) {
         humanReviewRequired: false,
       },
     ],
+    releaseEvidence: {
+      studioBuildSha: 'b'.repeat(40),
+      spatialBuildSha: 'c'.repeat(40),
+      validatorName: 'studio-spatial-wire-contract',
+      validatorVersion: '0.2.0',
+      validatedAt: '2026-09-23T00:00:00.000Z',
+      liveSmokeUrl: 'https://urai.app/status',
+    },
     ...overrides,
   }
 }
@@ -124,4 +132,39 @@ test('Studio Spatial handoff validator warns on user-scoped assets', () => {
   const result = validateStudioSpatialExport(payload)
   assert.equal(result.ok, true)
   assert.ok(result.warnings.some((warning) => warning.includes('user-scoped')))
+})
+
+
+test('Studio Spatial 0.2.0 requires release evidence', () => {
+  const payload = validExport()
+  delete payload.releaseEvidence
+  const result = validateStudioSpatialExport(payload)
+  assert.equal(result.ok, false)
+  assert.ok(result.errors.includes('releaseEvidence is required'))
+})
+
+test('Studio Spatial 0.2.0 rejects stale or invented release evidence', () => {
+  const staleVersion = validExport({
+    releaseEvidence: {
+      ...validExport().releaseEvidence,
+      validatorVersion: '0.1.0',
+    },
+  })
+  assert.equal(validateStudioSpatialExport(staleVersion).ok, false)
+
+  const badSha = validExport({
+    releaseEvidence: {
+      ...validExport().releaseEvidence,
+      spatialBuildSha: 'unknown',
+    },
+  })
+  assert.equal(validateStudioSpatialExport(badSha).ok, false)
+
+  const insecureSmoke = validExport({
+    releaseEvidence: {
+      ...validExport().releaseEvidence,
+      liveSmokeUrl: 'http://urai.app/status',
+    },
+  })
+  assert.equal(validateStudioSpatialExport(insecureSmoke).ok, false)
 })
