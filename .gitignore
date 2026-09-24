@@ -42,3 +42,6 @@ blob-report/
 # Local Firebase Studio / Playwright runtime repair artifacts
 .playwright-runtime-libs/
 result-*
+
+# Build-materialized Three.js Basis/KTX2 runtime
+urai-tier1/public/basis/
