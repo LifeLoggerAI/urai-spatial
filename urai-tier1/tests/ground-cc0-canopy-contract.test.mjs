@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { readFileSync, statSync } from "node:fs";
 import { resolve } from "node:path";
 
 const source = readFileSync(resolve("src/app/GroundSpatialWorldClean.tsx"), "utf8");
@@ -21,4 +21,23 @@ test("Ground natural profiles use the governed CC0 photoreal canopy and reject p
   assert.doesNotMatch(source, /ground-natural-canopy-v3\.glb/);
   assert.doesNotMatch(source, /CanopyLeafInstances/);
   assert.doesNotMatch(source, /makeOrganicTaperedTube/);
+});
+
+
+test("Ground ships the exact local Basis transcoder declared by provenance", () => {
+  const receipt = JSON.parse(readFileSync(resolve("../operations/assets/third-party/three-r183-basis-transcoder.json"), "utf8"));
+  assert.equal(receipt.dependencyId, "three-r183-basis-transcoder");
+  assert.equal(receipt.status, "integrated-runtime-dependency");
+  assert.equal(receipt.source.tag, "r183");
+  assert.equal(receipt.source.license, "MIT");
+  assert.deepEqual(receipt.integration.runtimePaths, [
+    "/basis/basis_transcoder.js",
+    "/basis/basis_transcoder.wasm",
+  ]);
+  assert.equal(receipt.integration.offlineLocalRuntime, true);
+
+  const js = statSync(resolve("public/basis/basis_transcoder.js"));
+  const wasm = statSync(resolve("public/basis/basis_transcoder.wasm"));
+  assert.ok(js.isFile() && js.size > 50_000, `Basis JS payload missing or truncated: ${js.size}`);
+  assert.ok(wasm.isFile() && wasm.size > 500_000, `Basis WASM payload missing or truncated: ${wasm.size}`);
 });
