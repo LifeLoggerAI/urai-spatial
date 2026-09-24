@@ -66,7 +66,7 @@ test('Focus focal authority is the selected memory star and cannot regress to V3
   assert.match(focus, /focusStarMemoryButton\{width:218px;height:218px\}/)
   assert.match(focus, /focusStarMemoryButton\{width:196px;height:196px\}/)
   assert.match(focus, /focusMemoryVisual\{[^}]*width:58%;height:44%/)
-  assert.match(focus, /focusMemoryVisual\{[^}]*border-radius:34% 66% 46% 54%/)
+  assert.match(focus, /focusMemoryVisual\{[^}]*border-radius:39% 61% 53% 47%/)
   assert.match(focus, /focusMemoryVisual\{[^}]*mask-image:radial-gradient\(ellipse/)
   assert.match(focus, /focusMemoryVisual\{[^}]*clip-path:none/)
   assert.match(focus, /opacity:\.74;filter:saturate\(\.94\) contrast\(1\.15\) brightness\(\.96\)/)
