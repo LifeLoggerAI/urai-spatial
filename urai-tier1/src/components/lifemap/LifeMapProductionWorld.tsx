@@ -24,7 +24,6 @@ type MemoryForm = "petal" | "fan" | "wave" | "branch" | "shell";
 
 const LifeMapReducedMotionContext = createContext(false);
 const MEMORY_STAR_MODEL = "/assets/urai/generated/models/life-map-memory-star-v1.glb";
-const MEMORY_CHAMBER_MODEL = "/assets/urai/generated/models/focus-memory-chamber-v1.glb";
 const GOLD = "#ffd98a";
 const ICE = "#dff8ff";
 const CYAN = "#78e7ff";
@@ -725,66 +724,6 @@ function LivingPaths({ nodes, selected, reducedMotion, phase }: { nodes: LifeMap
   })}</group>;
 }
 
-function ArrivalSanctuary({ selected, selectedIndex, phase, reducedMotion }: { selectedIndex: number; selected: LifeMapNode | null; phase: LifeMapJourneyPhase; reducedMotion: boolean }) {
-  const { scene, animations } = useGLTF(MEMORY_CHAMBER_MODEL);
-  const group = useRef<THREE.Group>(null);
-  const chamber = useMemo(() => scene.clone(true), [scene]);
-  const { actions } = useAnimations(animations, group);
-  const chamberThreads = useMemo(() => Array.from({ length: 7 }, (_, index) => {
-    const points = Array.from({ length: 64 }, (_, point) => {
-      const t = point / 63, angle = -.25 + t * Math.PI * 1.25 + index * .11;
-      const radius = 1.5 + index * .16;
-      return new THREE.Vector3(
-        Math.cos(angle) * radius,
-        -1.40 + Math.sin(t * Math.PI) * .18 + index * .025,
-        -1.7 + Math.sin(angle) * radius * .48,
-      );
-    });
-    return new THREE.TubeGeometry(new THREE.CatmullRomCurve3(points, false, "centripetal", .42), 96, .009, 6, false);
-  }), []);
-  useEffect(() => () => chamberThreads.forEach((geometry) => geometry.dispose()), [chamberThreads]);
-  useEffect(() => {
-    if (!selected || phase !== "arrival") return;
-    const arrival = actions.Focus_Arrival;
-    const breathing = actions.Focus_Breathing;
-    if (arrival) {
-      arrival.reset().play();
-      arrival.setEffectiveTimeScale(reducedMotion ? 0 : 1);
-      arrival.paused = reducedMotion;
-      if (reducedMotion) arrival.time = arrival.getClip().duration;
-    }
-    if (breathing) {
-      breathing.reset().play();
-      breathing.setEffectiveTimeScale(reducedMotion ? 0 : 1);
-      breathing.paused = reducedMotion;
-      if (reducedMotion) breathing.time = breathing.getClip().duration * 0.35;
-    }
-    return () => { arrival?.stop(); breathing?.stop(); };
-  }, [actions, phase, reducedMotion, selected]);
-  if (!selected || phase !== "arrival") return null;
-  const [memoryX, memoryY, memoryZ] = celestialNodePosition(selected, selectedIndex);
-  return <group
-    ref={group}
-    name="life-map-selected-arrival-sanctuary"
-    userData={{ scaleMode: "intimate", depthBand: "near", semanticOwner: "life-map-intimate-memory-chamber", runtimeAsset: MEMORY_CHAMBER_MODEL }}
-    position={[memoryX, memoryY - .28, memoryZ - .6]}
-    scale={0.28}
-  >
-    <primitive object={chamber} visible={false} />
-    <group scale={2.94} name="life-map-v229-open-branching-memory-grove">
-      {chamberThreads.map((geometry, index) => <mesh key={index} geometry={geometry}><meshStandardMaterial color={index % 2 ? ICE : selected.aura} emissive={selected.aura} emissiveIntensity={.24} roughness={.7} transparent opacity={.24} /></mesh>)}
-      <Current points={[[-2.7,-1.4,.4],[-1.5,.8,-1],[0,1.8,-1.8],[1.6,.7,-1.1],[2.8,-1.2,.3]]} color={selected.aura} opacity={.32} width={.026} />
-      <FieldParticles seed={997} count={120} radius={2.8} depth={4.2} height={3.4} color={ICE} opacity={.34} size={.032} />
-      <pointLight color={selected.aura} intensity={6} distance={22} decay={2} />
-    </group>
-  </group>;
-}
-
-function IntimateMemoryChamber(props: { selectedIndex: number; selected: LifeMapNode | null; phase: LifeMapJourneyPhase; reducedMotion: boolean }) {
-  return <ArrivalSanctuary {...props} />;
-}
-
-
 function SpiralGalaxyField({ qualityTier, reducedMotion, selected }: { qualityTier: SpatialQualityProfile["tier"]; reducedMotion: boolean; selected: boolean }) {
   const root = useRef<THREE.Group>(null);
   const { gl } = useThree();
@@ -963,7 +902,6 @@ export function LifeMapProductionWorld({ nodes, selected, phase, profile, onSele
         {nodes.map((node, index) => <MemoryArtifact key={node.id} node={node} index={index} selected={selected} phase={phase} reducedMotion={profile.reducedMotion} onSelect={onSelect} />)}
       </group>
       <LivingPaths nodes={nodes} selected={selected} reducedMotion={profile.reducedMotion} phase={phase} />
-      <IntimateMemoryChamber selectedIndex={Math.max(0, nodes.findIndex(node => node.id === selected?.id))} selected={selected} phase={phase} reducedMotion={profile.reducedMotion} />
     </group>
     <MemoryWeather reducedMotion={profile.reducedMotion} />
     <ArchiveParticles qualityTier={profile.tier} reducedMotion={profile.reducedMotion} />
@@ -976,4 +914,3 @@ export function LifeMapProductionWorld({ nodes, selected, phase, profile, onSele
 }
 
 useGLTF.preload(MEMORY_STAR_MODEL);
-useGLTF.preload(MEMORY_CHAMBER_MODEL);
