@@ -388,8 +388,8 @@
       "owningSystem": "companion",
       "owningRepository": "LifeLoggerAI/urai-content",
       "roadmapGeneration": "V2+",
-      "status": "SPECIFIED",
-      "activationState": "SPECIFIED",
+      "status": "IMPLEMENTED",
+      "activationState": "IMPLEMENTED",
       "featureGate": "expansion.companion.narrator",
       "defaultEnabled": false,
       "launchVisibility": "hidden",
@@ -408,10 +408,15 @@
         "synthetic evidence",
         "applicable review evidence"
       ],
-      "testSuite": "future narrator conformance",
+      "testSuite": "LifeLoggerAI/urai-content PR #83: tests/narrator-session.test.ts",
       "rolloutClass": "post-launch-controlled",
       "killSwitchOwner": "URAI Admin / owning system",
-      "rollbackProcedure": "Disable feature gate, quarantine adapter/provider, preserve receipts, return to last evidenced inactive state."
+      "rollbackProcedure": "Disable feature gate, quarantine adapter/provider, preserve receipts, return to last evidenced inactive state.",
+      "implementationEvidence": [
+        "LifeLoggerAI/urai-content PR #83",
+        "src/narrator/session.ts",
+        "tests/narrator-session.test.ts"
+      ]
     },
     {
       "canonicalId": "content.os",
@@ -450,8 +455,8 @@
       "owningSystem": "creator",
       "owningRepository": "LifeLoggerAI/urai-content",
       "roadmapGeneration": "ecosystem",
-      "status": "SPECIFIED",
-      "activationState": "SPECIFIED",
+      "status": "IMPLEMENTED",
+      "activationState": "IMPLEMENTED",
       "featureGate": "expansion.creator.marketplace",
       "defaultEnabled": false,
       "launchVisibility": "hidden",
@@ -470,10 +475,15 @@
         "synthetic evidence",
         "applicable review evidence"
       ],
-      "testSuite": "future marketplace conformance",
+      "testSuite": "LifeLoggerAI/urai-content PR #83: tests/marketplace-contracts.test.ts",
       "rolloutClass": "post-launch-controlled",
       "killSwitchOwner": "URAI Admin / owning system",
-      "rollbackProcedure": "Disable feature gate, quarantine adapter/provider, preserve receipts, return to last evidenced inactive state."
+      "rollbackProcedure": "Disable feature gate, quarantine adapter/provider, preserve receipts, return to last evidenced inactive state.",
+      "implementationEvidence": [
+        "LifeLoggerAI/urai-content PR #83",
+        "src/marketplace/contracts.ts",
+        "tests/marketplace-contracts.test.ts"
+      ]
     },
     {
       "canonicalId": "exports.pipeline",
@@ -481,8 +491,8 @@
       "owningSystem": "exports",
       "owningRepository": "LifeLoggerAI/urai-content",
       "roadmapGeneration": "ecosystem",
-      "status": "SPECIFIED",
-      "activationState": "SPECIFIED",
+      "status": "IMPLEMENTED",
+      "activationState": "IMPLEMENTED",
       "featureGate": "expansion.exports.pipeline",
       "defaultEnabled": false,
       "launchVisibility": "hidden",
@@ -501,10 +511,15 @@
         "synthetic evidence",
         "applicable review evidence"
       ],
-      "testSuite": "future export conformance",
+      "testSuite": "LifeLoggerAI/urai-content PR #83: tests/export-manifest.test.ts",
       "rolloutClass": "post-launch-controlled",
       "killSwitchOwner": "URAI Admin / owning system",
-      "rollbackProcedure": "Disable feature gate, quarantine adapter/provider, preserve receipts, return to last evidenced inactive state."
+      "rollbackProcedure": "Disable feature gate, quarantine adapter/provider, preserve receipts, return to last evidenced inactive state.",
+      "implementationEvidence": [
+        "LifeLoggerAI/urai-content PR #83",
+        "src/exports/manifest.ts",
+        "tests/export-manifest.test.ts"
+      ]
     },
     {
       "canonicalId": "asset-factory.product",
