@@ -450,7 +450,8 @@ async function hoverFirstMemoryStar(page) {
       const x = box.x + box.width * (column / (columns - 1))
       const y = box.y + box.height * (row / (rows - 1))
       await page.mouse.move(x, y)
-      if (await page.evaluate(() => document.body.style.cursor === 'pointer')) return { x, y }
+      const hit = await page.evaluate((rootSelector) => { const root = document.querySelector(rootSelector); return { cursor: document.body.style.cursor, memoryId: root instanceof HTMLElement ? root.dataset.memoryStarPointerHit || null : null } }, ROOT)
+      if (hit.cursor === 'pointer' && hit.memoryId) return { x, y, memoryId: hit.memoryId }
     }
   }
   throw new Error('Memory Star hover target was not discoverable through the real canvas pointer surface')
