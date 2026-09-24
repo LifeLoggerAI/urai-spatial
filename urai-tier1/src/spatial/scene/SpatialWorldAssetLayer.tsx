@@ -32,7 +32,6 @@ export default function SpatialWorldAssetLayer({ phase }: { phase: string }) {
   const showGround = phase === "GROUND" || phase === "HOME";
   const showLifeMap = phase === "LIFEMAP" || phase === "ASCENT";
   const showFocus = phase === "FOCUS" || phase === "REPLAY";
-  const showReplay = phase === "REPLAY";
   const showPassport = phase === "PASSPORT";
   const showStatus = phase === "STATUS";
 
@@ -66,11 +65,9 @@ export default function SpatialWorldAssetLayer({ phase }: { phase: string }) {
       )}
       {showFocus && (
         <group name="focus-star-assets" position={[0, 4.4, -8]} scale={[0.82, 0.82, 0.82]}>
-          <AssetModel assetId="focus-memory-chamber-glb-v1" name="focus-star-tunnel-v1" />
           <AssetModel assetId="life-map-memory-star-glb-v1" name="focus-selected-star-node-v1" position={[0, 0, -1.2]} scale={[1.25, 1.25, 1.25]} />
         </group>
       )}
-      {showReplay && <AssetModel assetId="replay-memory-environment-glb-v1" name="replay-film-portal-v1" position={[0, 4.25, -9.3]} scale={[0.72, 0.72, 0.72]} />}
       {showPassport && <AssetModel assetId="passport-status-room-glb-v1" name="passport-identity-plinth-v1" position={[-1.15, 0.58, -2.2]} scale={[1.25, 1.25, 1.25]} />}
       {showStatus && <AssetModel assetId="status-control-board-proof-fallback" name="status-control-board-v1" position={[1.25, 0.42, -2.2]} scale={[1.1, 1.1, 1.1]} />}
     </group>

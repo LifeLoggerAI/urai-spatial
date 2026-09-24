@@ -88,9 +88,9 @@ export const worldAssetManifest = {
     starPortalShell: {
       slotId: 'focus.starPortalShell',
       label: 'Focus Selected Memory Compatibility Geometry',
-      finalModel: resolved('focus-memory-chamber-glb-v1'),
-      status: 'fallback',
-      notes: 'LEGACY COMPATIBILITY ONLY. Current Focus authority is the same selected Memory Star resolving into contained memory; tunnel/chamber language is not visual/reference authority.',
+      finalModel: '',
+      status: 'missing',
+      notes: 'Compatibility slot only. Focus authority is the selected Memory Star resolving into contained memory; tunnel/chamber geometry must not resolve into runtime authority.',
     },
     memoryDiorama: {
       slotId: 'focus.memoryDiorama',
@@ -104,9 +104,9 @@ export const worldAssetManifest = {
     memoryThreadTunnel: {
       slotId: 'replay.memoryThreadTunnel',
       label: 'Replay Memory Interior Compatibility Geometry',
-      finalModel: resolved('replay-memory-environment-glb-v1'),
-      status: 'fallback',
-      notes: 'LEGACY COMPATIBILITY ONLY. Current Replay authority is an immersive memory interior with truthful source grammar; film portal/theater/player language is rejected.',
+      finalModel: '',
+      status: 'missing',
+      notes: 'Compatibility slot only. Replay authority is an immersive memory interior with truthful source grammar; film portal/theater/player geometry must not resolve into runtime authority.',
     },
     beatMarkers: {
       slotId: 'replay.beatMarkers',
