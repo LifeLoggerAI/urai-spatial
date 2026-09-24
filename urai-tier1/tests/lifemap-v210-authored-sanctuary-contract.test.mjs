@@ -3,7 +3,7 @@ import { readFileSync, statSync } from 'node:fs'
 import test from 'node:test'
 
 const assetUrl = new URL('../public/assets/urai/life-map-production/authored-v210/life-map-memory-sanctuary-v210.glb', import.meta.url)
-const source = readFileSync(new URL('../src/components/lifemap/LifeMapProductionWorld.tsx', import.meta.url), 'utf8')
+const currentRuntime = readFileSync(new URL('../src/components/lifemap/CosmicComposedLifeMapScene.tsx', import.meta.url), 'utf8')
 const generator = readFileSync(new URL('../scripts/blender/generate-life-map-sanctuary-v210.py', import.meta.url), 'utf8')
 const provenance = JSON.parse(readFileSync(new URL('../public/assets/urai/life-map-production/authored-v210/provenance.json', import.meta.url), 'utf8'))
 
@@ -41,13 +41,11 @@ test('V210 delivers a complete optimized Blender-authored Life Map sanctuary', (
   ]) assert.ok(generator.includes(sourceRole), `${sourceRole} must remain in editable source authority`)
 })
 
-test('V210 source authority remains reproducible after the runtime successor advances', () => {
-  assert.match(source, /V290 literal-pixel candidate: the governed memory artifacts now live inside/)
-  assert.match(source, /life-map-v237-grounded-geography-retired/)
-  assert.match(source, /function memoryHeartGeometry\(/)
-  assert.match(source, /function memoryFilamentGeometry\(/)
-  assert.match(source, /<primitive object=\{hiddenAsset\} visible=\{false\} \/>/)
-  assert.doesNotMatch(source, /life-map-production\/authored-v210\/life-map-memory-sanctuary-v210\.glb/)
+test('V210 source authority remains reproducible while the current galaxy keeps it historical', () => {
+  assert.match(currentRuntime, /data-life-map-production-world="true"/)
+  assert.match(currentRuntime, /data-life-map-ground="none"/)
+  assert.match(currentRuntime, /stellarMorphology: "point-photosphere-layered-corona-no-visible-sphere"/)
+  assert.doesNotMatch(currentRuntime, /life-map-production\/authored-v210\/life-map-memory-sanctuary-v210\.glb|continuous-eroded-memory-sanctuary/)
   assert.match(generator, /def blender_point\(x, y, z\)/)
   assert.match(generator, /apply_packed_strata_texture/)
   assert.match(generator, /camera-safe-traversal-collision-proxy/)
