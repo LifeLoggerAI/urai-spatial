@@ -52,7 +52,7 @@
       "scope": ["alert", "confirmation", "morse", "navigation", "social", "mindfulness", "visual-audio-equivalents", "audio-descriptions", "high-contrast", "forced-colors", "large-text", "reduced-transparency", "keyboard", "screen-reader"]
     },
     {
-      "id": "localization-20",
+      "id": "localization-21",
       "status": "machine-preparation-only",
       "scope": ["string-inventory", "locale-files", "fallbacks", "expansion-tests", "rtl", "screenshot-masters", "captions", "audio-description", "formatting"],
       "approval": "native-review-required"
