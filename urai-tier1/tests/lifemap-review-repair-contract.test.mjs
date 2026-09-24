@@ -2,132 +2,66 @@ import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import test from 'node:test'
 
-const scene = fs.readFileSync(new URL('../src/components/lifemap/ComposedLifeMapScene.tsx', import.meta.url), 'utf8')
-const productionWorld = fs.readFileSync(new URL('../src/components/lifemap/LifeMapProductionWorld.tsx', import.meta.url), 'utf8')
-const overlay = fs.readFileSync(new URL('../src/components/lifemap/LifeMapGoldMasterOverlay.tsx', import.meta.url), 'utf8')
-const legacyOverlay = fs.readFileSync(new URL('../src/components/lifemap/LifeMapGoldMasterOverlayV249.tsx', import.meta.url), 'utf8')
-const lifeMapSource = `${overlay}\n${legacyOverlay}`
+const scene = fs.readFileSync(new URL('../src/components/lifemap/CosmicComposedLifeMapScene.tsx', import.meta.url), 'utf8')
 const canvasProof = fs.readFileSync(new URL('../../scripts/verify-lifemap-canvas-proof.mjs', import.meta.url), 'utf8')
 const workflow = fs.readFileSync(new URL('../../.github/workflows/lifemap-founder-visual-proof.yml', import.meta.url), 'utf8')
-const layoutSource = fs.readFileSync(new URL('../src/components/lifemap/lifeMapSpatialLayout.ts', import.meta.url), 'utf8')
-const authoredLayoutSource = fs.readFileSync(new URL('../src/components/lifemap/lifeMapLayout.ts', import.meta.url), 'utf8')
 const focusSource = fs.readFileSync(new URL('../src/app/focus/FocusChamberClient.tsx', import.meta.url), 'utf8')
-const focusPolish = fs.readFileSync(new URL('../src/app/focus/focus-launch-visual-polish.css', import.meta.url), 'utf8')
-const focusGeology = fs.readFileSync(new URL('../src/app/focus/focusMemoryGeology.ts', import.meta.url), 'utf8')
-const cosmicScene = fs.readFileSync(new URL('../src/components/lifemap/CosmicComposedLifeMapScene.tsx', import.meta.url), 'utf8')
 
-test('Memory Star review proof uses the same canonical readiness threshold as the full authored world', () => {
-  assert.match(cosmicScene, /function RenderProof\(\)/)
-  assert.match(cosmicScene, /const ready = gl\.info\.render\.calls > 0 && objects > 20 && anchors >= 8/)
-  assert.ok((cosmicScene.match(/<RenderProof \/>/g) || []).length >= 2)
-  assert.doesNotMatch(cosmicScene, /minObjects|minAnchors/)
-  assert.match(productionWorld, /function RenderProofRepublisher\(\)/)
-  assert.match(productionWorld, /const ready = calls > 0 && objects > 20 && anchors >= 8/)
-  assert.doesNotMatch(productionWorld, /reviewProof \?/)
-  assert.match(productionWorld, /scale=\{\[1\.22,1\.08,1\.28\]\}/)
+test('Memory Star review proof uses the same canonical readiness threshold as the full cosmic world', () => {
+  assert.match(scene, /function RenderProof\(\)/)
+  assert.match(scene, /const ready = gl\.info\.render\.calls > 0 && objects > 20 && anchors >= 8/)
+  assert.ok((scene.match(/<RenderProof \/>/g) || []).length >= 2)
+  assert.doesNotMatch(scene, /minObjects|minAnchors/)
+  assert.match(scene, /memoryStarReview === "isolated" \|\| memoryStarReview === "hover" \|\| memoryStarReview === "near-cluster"/)
+  assert.match(scene, /name="memory-star-reference-review"/)
 })
 
-test('Memory Star hover and related emphasis preserves the same authored stellar object', () => {
-  assert.match(productionWorld, /const \[hovered, setHovered\] = useState\(false\)/)
-  assert.match(productionWorld, /const emphasis = !active && \(hovered \|\| related\)/)
-  assert.match(productionWorld, /emphasisState: active \? "selected" : hovered \? "hover" : related \? "related" : "neutral"/)
-  assert.match(productionWorld, /onPointerOver=\{\(event\) => \{ event\.stopPropagation\(\); setHovered\(true\)/)
-  assert.match(productionWorld, /<ArtifactShape node=\{node\} active=\{active\} \/>/)
-  assert.doesNotMatch(productionWorld, /hovered \? <[^>]*(planet|orb|ring|portal)/i)
+test('Memory Star hover and related emphasis preserve the same mounted stellar object', () => {
+  assert.match(scene, /const \[hovered, setHovered\] = useState\(false\)/)
+  assert.match(scene, /const hoverEmphasis = forceHover \|\| hovered/)
+  assert.match(scene, /const outer = \(active \? 1\.08 : related \? \.82 : \.74\)/)
+  assert.match(scene, /onPointerOver=\{\(event\) => pointer\(event, true\)\}/)
+  assert.match(scene, /onPointerOut=\{\(event\) => pointer\(event, false\)\}/)
+  assert.match(scene, /root\.dataset\.memoryStarPointerHit = node\.id/)
+  assert.doesNotMatch(scene, /hovered \? <[^>]*(planet|orb|ring|portal)/i)
   assert.match(scene, /data-life-map-quality=\{profile\.tier\}/)
 })
 
-test('selected camera goals use the same indexed world transform as rendered memories', () => {
-  assert.match(scene, /lifeMapWorldPoint\(node, selectedIndex, portrait\)/)
-  assert.match(scene, /goalForNode\(selected, phase, portrait, selectedIndex\)/)
-  const world = fs.readFileSync(new URL('../src/components/lifemap/LifeMapProductionWorld.tsx', import.meta.url), 'utf8')
-  assert.match(world, /lifeMapLocalPoint as celestialNodePosition, lifeMapStage/)
-  assert.match(world, /lifeMapStage\(Boolean\(selected\), portrait\)/)
-  assert.match(world, /celestialNodePosition\(selected, selectedIndex\)/)
+test('selected camera goals use the same deterministic cosmic point as rendered memories', () => {
+  assert.match(scene, /const point = useMemo\(\(\) => positionOverride \?\? cosmicPoint\(node, index\)/)
+  assert.match(scene, /const target = new THREE\.Vector3\(\.\.\.cosmicPoint\(selected, selectedIndex\)\)/)
+  assert.match(scene, /const selectedPoint = selected \? cosmicPoint\(selected, selectedIndex\) : null/)
+  assert.match(scene, /COSMIC_LAYOUT_VERSION = 3/)
+  assert.match(scene, /COSMIC_SEED_VERSION = 1/)
 })
 
-test('desktop and portrait cameras target the same authored memory transform as the rendered artifact', () => {
-  assert.match(layoutSource, /import \{ lifeMapDisplayPosition \} from '\.\/lifeMapLayout'/)
-  assert.match(layoutSource, /const \[x, y, z\] = lifeMapDisplayPosition\(node\)/)
-  assert.match(layoutSource, /const local = lifeMapLocalPoint\(node, index\)/)
-  assert.match(layoutSource, /const stage = lifeMapStage\(true, portrait\)/)
-  assert.match(layoutSource, /return local\.map\(\(value, axis\) => value \* stage\.scale\[axis\] \+ stage\.position\[axis\]\) as Point3/)
-  assert.match(authoredLayoutSource, /const CHAPTER_CENTERS/)
-  assert.match(authoredLayoutSource, /export function lifeMapDisplayPosition/)
-})
-
-test('reduced motion forces an in-flight selected journey to arrival', () => {
-  assert.match(scene, /if \(profile\.reducedMotion\) \{\s*journeyToken\.current \+= 1;\s*setPhase\("arrival"\);\s*return;/s)
+test('reduced motion forces an in-flight selected journey directly to arrival', () => {
+  assert.match(scene, /if \(profile\.reducedMotion\) \{ journey\.current \+= 1; setPhase\("arrival"\); return; \}/)
+  assert.match(scene, /if \(reducedMotion\) \{ camera\.position\.copy\(position\); look\.current\.copy\(target\); \}/)
 })
 
 test('selected arrival preserves surrounding personal-universe geography instead of isolating one node', () => {
-  assert.match(lifeMapSource, /life-map-v249-personal-universe-geography/)
-  assert.match(lifeMapSource, /all-sites-remain-grounded-geography-selected-site-rises-without-isolating-context/)
-  assert.match(lifeMapSource, /nodes\.map\(/)
-  assert.match(lifeMapSource, /life-map-v249-grounded-memory-places/)
-  assert.match(lifeMapSource, /arrivalMeaning: 'inside-history-not-node-zoom'/)
-  assert.doesNotMatch(lifeMapSource, /const visibleNodes\s*=\s*arrival\s*&&\s*selected\s*\?\s*\[selected\]/)
+  assert.match(scene, /<group name="life-map-deep-space">/)
+  assert.match(scene, /<OverviewRegions nodes=\{nodes\} phase=\{phase\} \/>/)
+  assert.match(scene, /<group name="life-map-memory-stars">\{nodes\.map/)
+  assert.match(scene, /life-map-selected-local-depth/)
+  assert.match(scene, /life-map-selected-memory-dust/)
+  assert.doesNotMatch(scene, /const visibleNodes\s*=\s*.*\[selected\]/)
 })
 
-test('retired hidden Life Map visual owners lose pointer authority and restore it only on cleanup', () => {
-  assert.match(legacyOverlay, /const RETIRED_VISUAL_GROUPS = new Set/)
-  assert.match(legacyOverlay, /'life-map-v237-weathered-valley-floor'/)
-  assert.match(legacyOverlay, /object\.raycast = \(\) => undefined/)
-  assert.match(legacyOverlay, /child\.raycast = \(\) => undefined/)
-  assert.match(legacyOverlay, /raycasts\.current\.forEach\(\(raycast, object\) => \{ object\.raycast = raycast \}\)/)
+test('relationship graph language remains retired from the visible overview grammar', () => {
+  assert.match(scene, /function Constellations\(\) \{ return <group name="life-map-constellations" visible=\{false\}/)
+  assert.match(scene, /retiredVisualRole: "v260-no-explicit-graph-edges"/)
+  assert.match(scene, /graphEdges: false/)
+  assert.doesNotMatch(scene, /<line>|<lineSegments>|LineSegments|CatmullRomCurve3|TubeGeometry/)
 })
 
-test('V256 semantic memory families cannot collapse back to one repeated manifestation', () => {
-  assert.match(legacyOverlay, /function semanticFamilyParts\(/)
-  for (const family of ['memory', 'season', 'ritual', 'forecast', 'threshold', 'relationship', 'recovery']) assert.match(legacyOverlay, new RegExp(`node\\.type === '${family}'`))
-  assert.match(legacyOverlay, /const spiralPoints/)
-  assert.match(legacyOverlay, /semanticFamilies: 'memory-season-ritual-forecast-threshold-relationship-recovery-legacy'/)
-  assert.match(legacyOverlay, /semanticFamily: node\.type/)
-  assert.doesNotMatch(legacyOverlay, /nodes\.map\([^)]*=>\s*<mesh[^>]*<sphereGeometry/s)
-})
-
-test('visible terrain authority rejects repeated procedural banding in source and pixels', () => {
-  assert.match(legacyOverlay, /life-map-v256-authored-memory-terrain/)
-  assert.match(legacyOverlay, /visualAuthority: 'authored-chapter-geography'/)
-  assert.match(legacyOverlay, /life-map-v256-authored-chapter-territories/)
-  for (const marker of ['const chapterMasses','const outcrops','const livedCuts','const authoredScars','const lateralBanks','const chapterShelves','const ravines','function valueNoise2D']) assert.match(layoutSource, new RegExp(marker.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')))
-  assert.doesNotMatch(layoutSource, /distanceFromRoute|shoulder|Math\.tanh|terraces/)
-  assert.doesNotMatch(layoutSource, /weathering\s*=\s*\n\s*\.16 \* Math\.sin/)
-})
-
-test('relationship language stays contextual and never becomes the overview visual grammar', () => {
-  assert.match(overlay, /const contextualTypes = new Set<LifeMapNode\['type'\]>/)
-  assert.match(overlay, /const incident = Boolean\(selected &&/)
-  assert.match(overlay, /const overviewContext = !selected && source\.eraId !== target\.node\.eraId/)
-  assert.match(overlay, /const visible = selected \? candidates\.slice\(0, 1\) : \[\]/)
-  assert.match(overlay, /overview-no-explicit-graph-edges/)
-  assert.match(overlay, /selected-memory-only-max-one-subtle/)
-  assert.match(overlay, /opacity=\{selected \? \.025 : 0\}/)
-  assert.doesNotMatch(overlay, /selected \? 3 : 4/)
-})
-
-test('portrait overview compacts the full celestial memory volume without dead-sky collapse', () => {
-  assert.match(layoutSource, /const jitterY = .* \* 5\.4/)
-  assert.match(layoutSource, /z \* 1\.82 - 8\.0 \+ jitterZ/)
-  assert.match(layoutSource, /\? \{ scale: \[\.62, \.84, \.92\], position: \[0, -\.15, 1\.0\] \}/)
-  assert.match(layoutSource, /const widthDistance = halfWidth \/ Math\.max\(horizontalTan \* \.88, \.08\)/)
-  assert.match(layoutSource, /const heightDistance = halfHeight \/ Math\.max\(verticalTan \* \.86, \.08\)/)
-  assert.match(layoutSource, /const distance = Math\.max\(portrait \? 30 : 24, widthDistance, heightDistance\)/)
-  assert.match(layoutSource, /target\[2\] - \(portrait \? 3\.0 : 4\.0\)/)
-  assert.match(layoutSource, /nearestZ \+ distance/)
-  assert.doesNotMatch(layoutSource, /lifeMapTerrainHeight\(x, worldZ\) \+ \.62 \+ narrativeLift/)
-  assert.doesNotMatch(layoutSource, /\? \{ scale: \[\.92, \.92, \.92\], position: \[0, -\.2, 1\.0\] \}/)
-  assert.doesNotMatch(layoutSource, /scale: \[\.94, 2\.20, \.72\], position: \[0, -\.18, 3\.65\]/)
-  assert.doesNotMatch(layoutSource, /scale: \[\.82, 1\.08, \.86\]|scale: \[\.58, 1\.02, 1\.18\]|scale: \[\.46, \.82, \.92\]/)
-})
-
-test('V255 history enrichment remains visual-only and preserves legacy semantic ownership', () => {
-  assert.match(overlay, /LifeMapGoldMasterOverlay as LegacyLifeMapGoldMasterOverlay/)
-  assert.match(overlay, /life-map-v255-contextual-history-constellation/)
-  assert.match(overlay, /life-map-v255-selected-history-sanctuary/)
-  assert.match(overlay, /visualOnly: true, interactionOwner: false/)
-  assert.match(overlay, /raycast=\{\(\) => null\}/)
-  assert.match(overlay, /<LegacyLifeMapGoldMasterOverlay \{\.\.\.props\} \/>/)
+test('portrait overview compacts the same galaxy into vertical territory composition', () => {
+  assert.match(scene, /function PortraitOverviewDepth/)
+  assert.match(scene, /if \(phase !== "overview" \|\| size\.height <= size\.width\) return null/)
+  assert.match(scene, /portraitAuthority: portrait \? "v285-vertical-territory-composition" : "desktop-v284-archipelago-composition"/)
+  assert.match(scene, /layoutRadius = \(portrait \? 6\.8 : 7\.4\)/)
+  assert.match(scene, /portraitBand = portrait \? \(index - 2\.5\) \* 2\.65/)
 })
 
 test('Founder proof samples retained WebGL canvas pixels only', () => {
@@ -140,18 +74,14 @@ test('Founder proof samples retained WebGL canvas pixels only', () => {
   assert.match(workflow, /lifemap-review-repair-contract\.test\.mjs/)
 })
 
-test('Focus final composition preserves selected-star identity and rejects terrain ownership', () => {
+test('Focus final composition preserves selected-star identity and rejects terrain or orb ownership', () => {
   assert.match(focusSource, /data-focus-composition="selected-memory-star-with-contained-memory"/)
+  assert.match(focusSource, /data-focus-visual-revision="v395-stellar-photosphere-visible-contained-memory-no-orb"/)
   assert.match(focusSource, /data-focus-spatial="selected-memory-star"/)
   assert.match(focusSource, /data-focus-terrain-owner="false"/)
   assert.match(focusSource, /data-focus-life-map-star-morphology="stellar-point-photosphere-layered-corona"/)
-  assert.match(focusSource, /data-focus-closeup-morphology="resolved-dimensional-memory-star"/)
+  assert.match(focusSource, /data-focus-stellar-treatment="selected-corona-plasma-irregular-photosphere-visible-contained-memory-v395"/)
   assert.match(focusSource, /name="focus-selected-memory-star"/)
-  assert.match(focusSource, /name="focus-memory-star-glass-shell"/)
   assert.match(focusSource, /<MemoryVisualContent memory=\{memory\} \/>/)
-  assert.match(focusSource, /memory\.sourceMedia\.find/)
-  assert.match(focusSource, /Generated demo visualization/)
-  assert.doesNotMatch(focusSource, /FocusSanctuaryGround|FocusStoneBank|focusSelectedMemoryCavityDepth|createFocusGroundIncision/)
-  assert.doesNotMatch(focusSource, /focus-v321-focal-readable-three-radial-pressure-cavity-bottoms|focus-v251-grounded-living-memory-manifestation/)
-  assert.doesNotMatch(focusSource, /FOCUS_CHAMBER_MODEL/)
+  assert.doesNotMatch(focusSource, /FocusSanctuaryGround|FocusStoneBank|focusSelectedMemoryCavityDepth|createFocusGroundIncision|FOCUS_CHAMBER_MODEL/)
 })
