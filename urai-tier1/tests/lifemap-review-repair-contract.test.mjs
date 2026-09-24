@@ -14,13 +14,16 @@ const authoredLayoutSource = fs.readFileSync(new URL('../src/components/lifemap/
 const focusSource = fs.readFileSync(new URL('../src/app/focus/FocusChamberClient.tsx', import.meta.url), 'utf8')
 const focusPolish = fs.readFileSync(new URL('../src/app/focus/focus-launch-visual-polish.css', import.meta.url), 'utf8')
 const focusGeology = fs.readFileSync(new URL('../src/app/focus/focusMemoryGeology.ts', import.meta.url), 'utf8')
+const cosmicScene = fs.readFileSync(new URL('../src/components/lifemap/CosmicComposedLifeMapScene.tsx', import.meta.url), 'utf8')
 
-test('Memory Star review proof publishes bounded readiness without weakening the full-world threshold', () => {
-  assert.match(scene, /memoryStarReviewActive/)
-  assert.match(scene, /proofSelected = memoryStarReviewActive \? nodes\[0\]/)
-  assert.match(scene, /reviewProof=\{memoryStarReviewActive\}/)
-  assert.match(productionWorld, /function RenderProofRepublisher\(\{ reviewProof = false \}/)
-  assert.match(productionWorld, /reviewProof \? calls > 0 && objects > 7 && anchors >= 1 : calls > 0 && objects > 20 && anchors >= 8/)
+test('Memory Star review proof uses the same canonical readiness threshold as the full authored world', () => {
+  assert.match(cosmicScene, /function RenderProof\(\)/)
+  assert.match(cosmicScene, /const ready = gl\.info\.render\.calls > 0 && objects > 20 && anchors >= 8/)
+  assert.ok((cosmicScene.match(/<RenderProof \/>/g) || []).length >= 2)
+  assert.doesNotMatch(cosmicScene, /minObjects|minAnchors/)
+  assert.match(productionWorld, /function RenderProofRepublisher\(\)/)
+  assert.match(productionWorld, /const ready = calls > 0 && objects > 20 && anchors >= 8/)
+  assert.doesNotMatch(productionWorld, /reviewProof \?/)
   assert.match(productionWorld, /scale=\{\[1\.22,1\.08,1\.28\]\}/)
 })
 

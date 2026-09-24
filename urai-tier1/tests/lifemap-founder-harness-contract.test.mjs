@@ -201,16 +201,16 @@ test('Founder render proof samples one atomic live-root snapshot', () => {
   assert.match(renderedWorld, /timeout, 75\)/)
 })
 
-test('render proof publishes live exact state and recovers after WebGL context restoration', () => {
-  assert.match(scene, /function RenderProof\(\{ minObjects = 20, minAnchors = 8 \}/)
+test('render proof publishes live exact state and recovers after WebGL context restoration without a proof-only threshold bypass', () => {
+  assert.match(scene, /function RenderProof\(\)/)
   assert.match(scene, /function WebGLRecovery\(/)
   assert.match(scene, /webglcontextlost/)
   assert.match(scene, /webglcontextrestored/)
-  assert.match(scene, /const ready = gl\.info\.render\.calls > 0 && objects > minObjects && anchors >= minAnchors/)
+  assert.match(scene, /const ready = gl\.info\.render\.calls > 0 && objects > 20 && anchors >= 8/)
   assert.match(scene, /root\.dataset\.lifeMapRenderReady = ready \? "true" : "false"/)
-  assert.match(scene, /<RenderProof \/>/)
+  assert.ok((scene.match(/<RenderProof \/>/g) || []).length >= 2)
   assert.match(scene, /<WebGLRecovery onState=\{onWebGLState\} \/>/)
-  assert.match(scene, /<RenderProof minObjects=\{7\} minAnchors=\{1\} \/>/)
+  assert.doesNotMatch(scene, /minObjects|minAnchors/)
 })
 
 test('collapsed semantic navigator preserves a visible pointer and touch opener', () => {
