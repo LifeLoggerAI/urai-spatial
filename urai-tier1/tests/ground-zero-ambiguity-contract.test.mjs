@@ -106,7 +106,7 @@ test('Ground natural profiles keep organic vertex color without repeating paving
     'natural-soil-no-repeating-rock-maps-v27',
     'vertexColors',
     'roughness={0.98}',
-    'ground-v32-edge-canopy-scanned-understory-relief',
+    'ground-v33-dense-irregular-edge-canopy-authored-depth',
   ]) has(ground, marker)
   const naturalBranch = ground.match(/if \(naturalSoilProfile\) \{[\s\S]*?\n  \}/)?.[0] ?? ''
   assert.doesNotMatch(naturalBranch, /map=\{albedo\}|normalMap=\{normal\}|aoMap=\{arm\}|roughnessMap=\{arm\}|metalnessMap=\{arm\}/)
