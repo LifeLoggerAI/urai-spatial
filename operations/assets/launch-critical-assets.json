@@ -176,10 +176,7 @@
       "id": "home-human-rig-v3",
       "kind": "model",
       "fixedPath": "urai-tier1/public/assets/urai/generated/human-rig-v3/home-human-rigged-v3.glb",
-      "targetRoutes": [
-        "/",
-        "/home"
-      ],
+      "targetRoutes": [],
       "targetBoundsMeters": [
         1,
         2.2,
@@ -187,10 +184,11 @@
       ],
       "maxTriangles": 65000,
       "requiredCompression": "draco-or-meshopt",
-      "fallback": "home-world-without-rigged-human",
-      "source": "URAI Human Rig Forge V3 deterministic procedural skinned-human generator",
+      "fallback": "no-avatar-in-ordinary-home",
+      "source": "URAI Human Rig Forge V3 retained for explicit Avatar Self View/XR component development; not ordinary non-XR Home runtime authority",
       "license": "URAI Labs internally generated production candidate asset",
-      "releaseState": "pending-final-review"
+      "releaseState": "supporting-reference",
+      "authorityRole": "separate-governed-avatar-component"
     },
     {
       "id": "council-guide-human-rig-v3",
@@ -310,10 +308,7 @@
       "id": "home-human-makehuman-v4",
       "kind": "model",
       "fixedPath": "urai-tier1/public/assets/urai/generated/human-makehuman-v4/home-human-makehuman-v4.glb",
-      "targetRoutes": [
-        "/",
-        "/home"
-      ],
+      "targetRoutes": [],
       "targetBoundsMeters": [
         1,
         2.2,
@@ -321,10 +316,11 @@
       ],
       "maxTriangles": 65000,
       "requiredCompression": "draco-or-meshopt",
-      "fallback": "home-human-rig-v3",
-      "source": "Pinned MakeHuman CC0 base topology with URAI V4 17-joint skin and five-clip animation contract",
+      "fallback": "home-human-rig-v3-supporting-reference",
+      "source": "Pinned MakeHuman CC0 base topology retained for explicit Avatar Self View/XR component development; not ordinary non-XR Home runtime authority",
       "license": "MakeHuman base topology CC0-1.0; URAI V4 rig/animation candidate",
-      "releaseState": "pending-final-review"
+      "releaseState": "supporting-reference",
+      "authorityRole": "separate-governed-avatar-component"
     },
     {
       "id": "council-guide-human-makehuman-v4",

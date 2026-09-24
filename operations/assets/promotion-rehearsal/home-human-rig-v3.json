@@ -6,8 +6,8 @@
   "canonicalPath": "urai-tier1/public/assets/urai/generated/human-rig-v3/home-human-rigged-v3.glb",
   "bytes": 2133052,
   "sha256": "58a72a0d060731a7609ec0fdc5fcfed53f732afbed41b933ee057ab7fdb4a062",
-  "source": "URAI Human Rig Forge V3 deterministic procedural skinned-human generator",
-  "fallback": "home-world-without-rigged-human",
+  "source": "URAI Human Rig Forge V3 retained for explicit Avatar Self View/XR component development; not ordinary non-XR Home runtime authority",
+  "fallback": "no-avatar-in-ordinary-home",
   "license": "URAI Labs internally generated production candidate asset",
   "producer": "URAI Human Rig Forge V3",
   "reviewer": "governed-replacement-rehearsal",
@@ -15,10 +15,10 @@
   "promote": false,
   "humanReviewApproved": false,
   "fallbackVerified": true,
-  "routeConsumptionVerified": true,
+  "routeConsumptionVerified": false,
   "licenseApproved": true,
   "optimizationVerified": true,
   "visualProofVerified": false,
-  "exactHeadChecksPassed": true,
-  "notes": "Fail-closed rehearsal binds the exact V3 Home human binary to the canonical Home PresenceRig. Candidate identity only; final visual approval, compression/LOD, and production promotion remain explicitly unclaimed."
+  "exactHeadChecksPassed": false,
+  "notes": "Supporting-reference-only rehearsal. Ordinary non-XR Home enters directly into bodyless first-person and does not consume this asset. The binary is retained for separately governed Avatar Self View/XR component work and cannot be promoted as ordinary Home runtime authority."
 }
