@@ -14,7 +14,7 @@ import { LIFE_MAP_SELECTION_EVENT, readLifeMapSelection } from "./lifeMapSelecti
 // V285 retained-pixel repair: preserve V284 stellar archipelagos while giving portrait
 // overview a data-derived vertical territory composition instead of dim horizontal bands.
 const DEFAULT_MANIFEST_ID = "replay-recovery-thread";
-const PHASE_MS = { departure: 620, travel: 980, approach: 880 } as const;
+const PHASE_MS = { departure: 900, travel: 1500, approach: 2200 } as const;
 const COSMIC_LAYOUT_VERSION = 3;
 const COSMIC_SEED_VERSION = 1;
 type Phase = "overview" | "departure" | "travel" | "approach" | "arrival";
