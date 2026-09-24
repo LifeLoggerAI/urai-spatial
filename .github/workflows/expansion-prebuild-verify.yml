@@ -23,3 +23,7 @@ jobs:
         run: node expansion/registry/validate-registry.mjs
       - name: Verify EWI synthetic conformance
         run: node expansion/ewi/conformance.test.mjs
+      - name: Verify V2 Living World dormant state contract
+        run: node expansion/v2-living-world/state-machine.test.mjs
+      - name: Verify V3 relationship controls
+        run: node expansion/v3-relationships/relationship-graph.test.mjs
