@@ -571,6 +571,9 @@ async function selectQuietReset(page, options = {}) {
       }
     }, (state) => state.mode === 'selected' && state.memoryId === 'quiet-reset' && state.node === 'quiet-reset', 20_000, 50)
   }
+  if (options.targetPhase && typeof options.captureAtPhase === 'function') {
+    await options.captureAtPhase(livePhase)
+  }
   const observedPhase = options.targetPhase ? await readJourneyPhaseWatch(page, options.targetPhase, 1_000) : null
   await waitForState(page, 'data-life-map-mode', 'selected')
   return observedPhase || livePhase
@@ -737,17 +740,24 @@ async function captureIsolatedJourneyPhase({ id, targetPhase, captureState, inte
     const overviewRoute = '/life-map/?demo=1&manifestId=replay-recovery-thread&overview=1'
     await goto(isolated.page, overviewRoute)
     await waitForRenderedWorld(isolated.page)
-    const observedPhase = await selectQuietReset(isolated.page, {
+    let retainedPhaseCapture = false
+    await selectQuietReset(isolated.page, {
       targetPhase,
       keyboard: interaction === 'keyboard',
       touch: interaction === 'touch',
+      captureAtPhase: async (observedPhase) => {
+        await shot(isolated.page, id, captureState, {
+          memoryId: 'quiet-reset',
+          interaction,
+          observedPhase,
+          phaseLocked: targetPhase,
+        })
+        retainedPhaseCapture = true
+      },
     })
-    await shot(isolated.page, id, captureState, {
-      memoryId: 'quiet-reset',
-      interaction,
-      observedPhase,
-      phaseLocked: targetPhase,
-    })
+    if (!retainedPhaseCapture) {
+      throw new Error(`${id} did not retain the authoritative ${targetPhase} phase`)
+    }
   } finally {
     await isolated?.context.close()
     await isolatedBrowser.close()
