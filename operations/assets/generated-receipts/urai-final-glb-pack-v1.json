@@ -1,9 +1,9 @@
 {
-  "schemaVersion": "2.2.0",
+  "schemaVersion": "2.1.0",
   "packId": "urai-final-glb-production-pack-v1",
-  "generatedAt": "2026-09-24T21:17:00Z",
+  "generatedAt": "2026-09-22T06:45:00Z",
   "generator": "URAI Labs Final GLB Forge 1.0",
-  "authorship": "Canon-clean active production-candidate pack. Superseded portal-ring geometry is excluded from active pack authority and retained separately only for historical provenance. Memory Star, Focus, Replay and Orb remain subject to rendered inspection and promotion gates.",
+  "authorship": "Canon-clean candidate pack. Memory Star, Focus, Replay and Orb are regenerated as unreviewed candidates and require rendered inspection plus compression before promotion.",
   "assets": [
     {
       "fileName": "home-entry-chamber-v1.glb",
