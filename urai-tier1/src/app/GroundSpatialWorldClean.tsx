@@ -17,6 +17,7 @@ import {
   type MovementObstacle,
 } from "@/spatial/navigation/EmbodiedNavigation";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
+import { useAdaptiveSpatialQuality } from "@/spatial/performance/useAdaptiveSpatialQuality";
 import {
   DEFAULT_GROUND_WEATHER,
   GROUND_ACCELERATION_MPS2,
@@ -921,6 +922,7 @@ export default function GroundSpatialWorldClean() {
   const router = useRouter();
   const params = useSearchParams();
   const webglAvailable = useGroundWebGLAvailable();
+  const quality = useAdaptiveSpatialQuality();
   const [ready, setReady] = useState(false);
   const [dragging, setDragging] = useState(false);
   const [isCoarse, setIsCoarse] = useState(() => {
@@ -989,14 +991,17 @@ export default function GroundSpatialWorldClean() {
     data-ground-ready={ready ? "true" : "false"}
     data-webgl-state={webglAvailable === null ? "detecting" : webglAvailable ? "ready" : "unavailable"}
     data-ground-fallback={webglAvailable === false ? "semantic-no-webgl" : "none"}
+    data-ground-quality-tier={quality.tier}
+    data-ground-quality-reduced-motion={quality.reducedMotion ? "true" : "false"}
     data-ground-camera-mode={dragging ? "look" : "first-person"}
     {...look}
   >
     {webglAvailable === true ? <Canvas
-      shadows
-      dpr={[1, 1.3]}
+      shadows={quality.shadows}
+      dpr={[1, quality.pixelRatioMax]}
+      frameloop={quality.documentVisible ? "always" : "never"}
       camera={{ position: [0, GROUND_EYE_HEIGHT_M, 6], fov: GROUND_LANDSCAPE_FOV_DEG, near: GROUND_NEAR_PLANE_M, far: 800 }}
-      gl={{ antialias: true, alpha: false, powerPreference: "high-performance" }}
+      gl={{ antialias: quality.antialias, alpha: false, powerPreference: quality.tier === "low" ? "low-power" : "high-performance" }}
       onCreated={({ gl }) => {
         gl.outputColorSpace = THREE.SRGBColorSpace;
         gl.toneMapping = THREE.ACESFilmicToneMapping;
