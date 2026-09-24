@@ -254,7 +254,7 @@ function MemoryRoots({ node, index, active }: { node: LifeMapNode; index: number
   </mesh>)}</group>;
 }
 
-function RenderProofRepublisher({ reviewProof = false }: { reviewProof?: boolean }) {
+function RenderProofRepublisher() {
   const { gl, scene, invalidate: requestRender } = useThree();
   const root = useRef<HTMLElement | null>(null);
   const frames = useRef(0);
@@ -288,7 +288,7 @@ function RenderProofRepublisher({ reviewProof = false }: { reviewProof?: boolean
     });
     const calls = gl.info.render.calls;
     const triangles = gl.info.render.triangles;
-    const ready = reviewProof ? calls > 0 && objects > 7 && anchors >= 1 : calls > 0 && objects > 20 && anchors >= 8;
+    const ready = calls > 0 && objects > 20 && anchors >= 8;
     const signature = `${objects}:${anchors}:${calls}:${triangles}`;
     const element = resolveOwner();
     if (!element) return false;
@@ -917,7 +917,7 @@ function ArchiveParticles({ qualityTier, reducedMotion }: { qualityTier: Spatial
   return <group name="life-map-archive-particles"><Stars radius={58} depth={38} count={qualityTier === "low" ? 80 : qualityTier === "medium" ? 150 : 240} factor={1.45} saturation={.34} fade speed={reducedMotion ? 0 : .012} /></group>;
 }
 
-export function LifeMapProductionWorld({ nodes, selected, phase, profile, onSelect, cameraRig, webglRecovery, reviewProof = false }: {
+export function LifeMapProductionWorld({ nodes, selected, phase, profile, onSelect, cameraRig, webglRecovery }: {
   nodes: LifeMapNode[];
   selected: LifeMapNode | null;
   phase: LifeMapJourneyPhase;
@@ -925,7 +925,6 @@ export function LifeMapProductionWorld({ nodes, selected, phase, profile, onSele
   onSelect: (node: LifeMapNode) => void;
   cameraRig: ReactNode;
   webglRecovery: ReactNode;
-  reviewProof?: boolean;
 }) {
   const { size } = useThree();
   const portrait = size.height > size.width;
@@ -940,7 +939,7 @@ export function LifeMapProductionWorld({ nodes, selected, phase, profile, onSele
     <directionalLight position={[9,14,10]} intensity={1.72} color="#f2dfbd" castShadow={profile.shadows} />
     <directionalLight position={[-12,7,-24]} intensity={.84} color="#6ca7bd" />
     {webglRecovery}
-    <RenderProofRepublisher reviewProof={reviewProof} />
+    <RenderProofRepublisher />
     {cameraRig}
     <group name="life-map-authored-environment">
       {/* Scene background supplies the sky; an opaque sphere here occludes the far star field. */}
