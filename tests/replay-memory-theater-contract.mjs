@@ -61,6 +61,12 @@ for (const token of [
   'prefers-reduced-motion:reduce',
   'forced-colors:active',
   'assetCssStack(replayAssets.primary)',
+  'function useWebGLAvailable()',
+  'data-replay-fallback="semantic"',
+  'Spatial Replay unavailable. Semantic memory controls remain available.',
+  'Spatial Replay unavailable. Memory truth, pacing, transcript, and return controls remain available.',
+  "data-webgl-state={webglAvailable === null ? 'detecting' : webglAvailable ? 'ready' : 'unavailable'}",
+  'webglAvailable === true ? <Canvas',
 ]) {
   assertIncludes(replayClientPath, replayClient, token)
 }
