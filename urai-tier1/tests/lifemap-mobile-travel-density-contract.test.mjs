@@ -4,10 +4,11 @@ import test from 'node:test'
 
 const boundary = fs.readFileSync(new URL('../src/components/lifemap/LifeMapRouteBoundary.tsx', import.meta.url), 'utf8')
 const density = fs.readFileSync(new URL('../src/components/lifemap/lifeMapMobileTravelDensity.css', import.meta.url), 'utf8')
-const scene = fs.readFileSync(new URL('../src/components/lifemap/ComposedLifeMapScene.tsx', import.meta.url), 'utf8')
+const scene = fs.readFileSync(new URL('../src/components/lifemap/CosmicComposedLifeMapScene.tsx', import.meta.url), 'utf8')
 
-test('portrait travel retains visual density with distinct authored staging and arrival-only action ownership', () => {
+test('portrait travel retains visual density with distinct cosmic staging and arrival-only action ownership', () => {
   assert.match(boundary, /import '\.\/lifeMapMobileTravelDensity\.css'/)
+  assert.match(boundary, /CosmicComposedLifeMapScene/)
   assert.match(density, /max-width:700px/)
   assert.match(density, /orientation:portrait/)
   assert.match(density, /data-life-map-phase='departure'/)
@@ -16,17 +17,14 @@ test('portrait travel retains visual density with distinct authored staging and 
   assert.match(density, /canvas\{[^}]*transform:none!important/)
   assert.doesNotMatch(density, /canvas\{[^}]*transform:scale/)
 
-  assert.match(scene, /function goalForNode\(/)
-  assert.match(scene, /if \(phase === "departure"\)/)
-  assert.match(scene, /const departure = overview\.clone\(\)\.addScaledVector\(lateral, -side \* 2\.4\)/)
-  assert.match(scene, /if \(phase === "travel"\)/)
-  assert.match(scene, /const travel = target\.clone\(\)\.addScaledVector\(direction, SELECTED_MEMORY_STANDOFF \+ 12\.4\)\.addScaledVector\(lateral, side \* 3\.4\)/)
-  assert.match(scene, /const travelTarget = target\.clone\(\)\.addScaledVector\(direction, -2\.2\)/)
-  assert.match(scene, /if \(phase === "approach"\)/)
-  assert.match(scene, /const approach = target\.clone\(\)\.addScaledVector\(direction, SELECTED_MEMORY_STANDOFF \+ 4\.4\)\.addScaledVector\(lateral, side \* 1\.25\)/)
-  assert.doesNotMatch(scene, /const travel = overview\.clone\(\)\.lerp\(arrival, 0\.5\)/)
-  assert.match(scene, /const thresholdsVisible = Boolean\(selected && phase === "arrival"\)/)
-  assert.match(scene, /camera\.position\.z = THREE\.MathUtils\.damp/)
+  assert.match(scene, /function CameraRig\(/)
+  assert.match(scene, /const portrait = size\.height > size\.width/)
+  assert.match(scene, /const distance = phase === "departure" \? 21 : phase === "travel" \? 16\.5 : phase === "approach" \? 11\.2 : portrait \? 8\.6 : 7\.2/)
+  assert.match(scene, /position\.y \+= phase === "travel" \? 2\.2 : phase === "approach" \? \.8 : \.25/)
+  assert.match(scene, /fov: portrait \? phase === "arrival" \? 50 : 56 : phase === "arrival" \? 40 : 49/)
+  assert.match(scene, /const showThresholds = Boolean\(selected && phase === "arrival"\)/)
+  assert.match(scene, /camera\.position\.lerp\(position, 1 - Math\.exp\(-rate \* delta\)\)/)
+  assert.match(scene, /look\.current\.lerp\(target, 1 - Math\.exp\(-4\.2 \* delta\)\)/)
 
   assert.match(density, /forced-colors:active/)
   assert.match(density, /prefers-reduced-motion:reduce/)
