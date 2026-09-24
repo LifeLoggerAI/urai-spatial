@@ -6,8 +6,8 @@ const registry = fs.readFileSync(new URL('../src/i18n/localeRegistry.ts', import
 const bootstrap = fs.readFileSync(new URL('../src/i18n/LocaleBootstrap.tsx', import.meta.url), 'utf8')
 const layout = fs.readFileSync(new URL('../src/app/layout.tsx', import.meta.url), 'utf8')
 
-test('launch locale registry contains exactly the governed 20 preparation locales', () => {
-  for (const locale of ['en','zh-Hans','hi','es','fr','ar','bn','pt-BR','ru','ur','id','de','ja','sw','tr','vi','fil','ko','it','fa']) {
+test('launch locale registry contains the governed 21-locale 20+ preparation set', () => {
+  for (const locale of ['en','zh-Hans','hi','es','fr','ar','bn','pt-BR','ru','ur','id','de','ja','sw','tr','vi','fil','ko','it','fa','nl']) {
     assert.match(registry, new RegExp(`['"]${locale}['"]`))
   }
   assert.match(registry, /URAI_LOCALE_RUNTIME_STATUS = 'machine-preparation-only'/)
@@ -15,6 +15,7 @@ test('launch locale registry contains exactly the governed 20 preparation locale
   assert.match(registry, /'zh-cn': 'zh-Hans'/)
   assert.match(registry, /pt: 'pt-BR'/)
   assert.match(registry, /tl: 'fil'/)
+  assert.match(registry, /'nl-nl': 'nl'/)
 })
 
 test('runtime locale bootstrap is truthful, persistent, and RTL-aware without claiming translation approval', () => {
