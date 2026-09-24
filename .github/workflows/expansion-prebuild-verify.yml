@@ -35,3 +35,9 @@ jobs:
         run: node expansion/haptics/haptic-translator.test.mjs
       - name: Verify notification policy fabric
         run: node expansion/notifications/notification-policy.test.mjs
+      - name: Verify V5 becoming controls
+        run: node expansion/v5-becoming/identity-timeline.test.mjs
+      - name: Verify wearable signal boundary
+        run: node expansion/wearables/wearable-signals.test.mjs
+      - name: Verify location context boundary
+        run: node expansion/location/location-context.test.mjs
