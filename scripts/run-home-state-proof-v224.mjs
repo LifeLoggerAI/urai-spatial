@@ -12,8 +12,8 @@ if (!authority.rendererOwner || !authority.artRevision || !authority.worldIdenti
 if (!Array.isArray(authority.runtimeAssets) || authority.runtimeAssets.length < 4 || !authority.runtimeAssets.includes(authority.rendererOwner)) {
   throw new Error('Home visual authority runtime asset inventory is incomplete')
 }
-if (authority.artRevision !== 'v292-avatar-presentation-bodyless-first-person-convergence') {
-  throw new Error(`Home state proof expected current V292 candidate authority; received ${authority.artRevision}`)
+if (authority.artRevision !== 'v293-direct-bodyless-first-person-convergence') {
+  throw new Error(`Home state proof expected current V293 direct-first-person candidate authority; received ${authority.artRevision}`)
 }
 if (authority.certificationState !== 'candidate-requires-fresh-exact-head-pixels') {
   throw new Error(`Home state proof requires uncertified exact-head candidate state; received ${authority.certificationState}`)
@@ -25,14 +25,14 @@ if (authority.currentRuntimeCandidate?.orbVisualAuthority !== 'v288-grounded-bio
   || authority.currentRuntimeCandidate?.orbInteractionAuthority !== 'v291-current-home-orb-state-and-speech-runtime'
   || authority.currentRuntimeCandidate?.certified !== false
   || authority.currentRuntimeCandidate?.requiredEvidence !== 'fresh-exact-head-source-build-runtime-and-literal-pixel-acceptance') {
-  throw new Error('Home state proof current V292 Home candidate contract is incomplete or falsely certified')
+  throw new Error('Home state proof current V293 Home candidate contract is incomplete or falsely certified')
 }
 
 const capturePath = new URL('./capture-home-state-proof.mjs', import.meta.url)
-const generatedPath = new URL('./.capture-home-state-proof-v292.generated.mjs', import.meta.url)
+const generatedPath = new URL('./.capture-home-state-proof-v293.generated.mjs', import.meta.url)
 const original = await readFile(capturePath, 'utf8')
 const stalePredicate = "record.movement === 'walk-keyboard-click-touch'"
-const currentPredicate = "record.movement === 'avatar-presentation-target-activate'"
+const currentPredicate = "record.movement === 'shared-keyboard-touch-walk-look-interact'"
 const currentPredicateCount = original.split(currentPredicate).length - 1
 if (currentPredicateCount !== 1 || original.includes(stalePredicate)) {
   throw new Error('Home state proof movement predicate is not bound exactly once to the current first-person authority')
@@ -151,7 +151,7 @@ derived = derived.replace(returnReadinessSource, returnReadinessReplacement)
 await writeFile(generatedPath, derived, 'utf8')
 let result
 try {
-  result = spawnSync(process.execPath, ['scripts/.capture-home-state-proof-v292.generated.mjs'], {
+  result = spawnSync(process.execPath, ['scripts/.capture-home-state-proof-v293.generated.mjs'], {
     cwd: process.cwd(),
     env: process.env,
     encoding: 'utf8',

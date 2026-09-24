@@ -245,7 +245,7 @@ async function capture(state, options = {}) {
       && record.canvasCount === 1
       && record.primaryOwner === 'asset-driven'
       && record.visibleWorld === visualAuthority.worldIdentifier
-      && record.movement === 'avatar-presentation-target-activate'
+      && record.movement === 'shared-keyboard-touch-walk-look-interact'
       && visualAuthority.runtimeAssets.every((asset) => record.runtimeAssets?.includes(asset))
       && !record.runtimeAssets?.includes('HomeWorldProductionV225PolishV2.tsx')
       && record.pointerLock

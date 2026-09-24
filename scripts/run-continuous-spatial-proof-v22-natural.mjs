@@ -96,21 +96,6 @@ async function homeSnapshot(owner, page) {
   }
 }
 
-function presentationSnapshotPasses(value) {
-  return value.visibleWorld === 'cinematic-lived-world-threshold'
-    && value.stableState === 'HOME_PRESENTATION'
-    && value.embodiedSelf === 'visible-avatar-home-presentation'
-    && value.presencePresentation === 'visible-avatar-presentation-activation-gate'
-    && value.movement === 'avatar-presentation-target-activate'
-    && value.cameraMode === 'home-avatar-presentation'
-    && value.groundEntry === 'physical-world-surface'
-    && value.lifeMapEntry === 'visible-sky-broad-interaction'
-    && value.portalSequence === 'idle'
-    && value.canvas?.width >= 240
-    && value.canvas?.height >= 240
-    && value.homeMovementPadCount === 0
-}
-
 function snapshotPasses(value, viewport) {
   const expectPad = viewport?.isMobile === true || (viewport?.width ?? 9999) <= 900
   return value.visibleWorld === 'cinematic-lived-world-threshold'

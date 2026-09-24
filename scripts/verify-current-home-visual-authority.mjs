@@ -8,7 +8,7 @@ const fail = (message) => { throw new Error(`Current Home visual authority inval
 
 if (authority.schemaVersion !== 'urai-home-visual-authority-2') fail(`unsupported schema ${String(authority.schemaVersion)}`)
 for (const field of ['rendererOwner','artRevision','worldIdentifier','proofSchema','orbVisualAuthority','currentRuntimeCandidate','lastCertifiedPredecessor']) if (!authority[field]) fail(`missing ${field}`)
-if (authority.artRevision !== 'v292-avatar-presentation-bodyless-first-person-convergence') fail(`unexpected art revision ${authority.artRevision}`)
+if (authority.artRevision !== 'v293-direct-bodyless-first-person-convergence') fail(`unexpected art revision ${authority.artRevision}`)
 if (authority.worldIdentifier !== 'cinematic-lived-world-threshold') fail(`unexpected world identifier ${authority.worldIdentifier}`)
 if (authority.orbVisualAuthority !== 'v288-grounded-biomorphic-reliquary') fail(`unexpected current Orb authority ${authority.orbVisualAuthority}`)
 if (authority.certificationState !== 'candidate-requires-fresh-exact-head-pixels') fail(`unexpected certification state ${authority.certificationState}`)
@@ -24,7 +24,7 @@ if (candidate.orbInteractionAuthority !== 'v291-current-home-orb-state-and-speec
 if (candidate.orbRuntimeAsset !== '/assets/urai/generated/models/urai-orb-avatar-v1.glb') fail('candidate Orb runtime asset changed')
 if (candidate.certified !== false) fail('unreviewed current candidate must not claim certification')
 if (candidate.requiredEvidence !== 'fresh-exact-head-source-build-runtime-and-literal-pixel-acceptance') fail('candidate evidence boundary changed')
-if (candidate.homePresentationAuthority !== 'governed-avatar-presence-then-bodyless-first-person') fail('Home presentation authority changed')
+if (candidate.homePresentationAuthority !== 'direct-bodyless-first-person') fail('Home presentation authority changed')
 if (candidate.nonXrFirstPersonBodyPolicy !== 'camera-only-no-hands-arms-visible-avatar-or-body-rig') fail('non-XR first-person body policy changed')
 
 if (!Array.isArray(authority.runtimeAssets) || new Set(authority.runtimeAssets).size !== authority.runtimeAssets.length) fail('runtime asset inventory invalid')
@@ -33,7 +33,7 @@ for (const required of [
   'HomeCurrentArtRepair.tsx','HomeAAAVisualRepair.tsx','HomeVisualAuthority.tsx','HomeAtmosphericSky.tsx',
   'rock-tile-floor/rock-tile-floor-diff-1k.webp','polyhaven-v48/fern_02/asset.gltf',
   'polyhaven-v48/rock_face_01/asset.gltf','polyhaven-v48/rock_face_02/asset.gltf',
-  'urai-orb-avatar-v1.glb','HomeEmbodiedAvatar.tsx','HomeOrbReliquaryV286.tsx','HomeOrbGroundedV288.tsx'
+  'urai-orb-avatar-v1.glb','HomeOrbReliquaryV286.tsx','HomeOrbGroundedV288.tsx'
 ]) if (!authority.runtimeAssets.includes(required)) fail(`runtimeAssets missing ${required}`)
 for (const retired of ['HomeLaunchSanctuaryV254.tsx','HomeWorldProductionV225PolishV2.tsx']) if (authority.runtimeAssets.includes(retired)) fail(`retired runtime asset cannot be current: ${retired}`)
 
@@ -56,7 +56,7 @@ for (const asset of authority.runtimeAssets) {
 const runtime = await readFile(path.join(repoRoot, 'urai-tier1/src/app/AssetDrivenHomeWorld.tsx'), 'utf8')
 for (const token of [
   'cinematic-lived-world-threshold',
-  'avatar-presentation-to-bodyless-first-person-v288-biomorphic-orb-physical-ground-and-broad-sky-threshold',
+  'direct-bodyless-first-person-v288-biomorphic-orb-physical-ground-and-broad-sky-threshold',
   'data-home-spatial-regions="home-physical-world home-living-memory-orb home-life-map-sky-threshold"',
   'data-home-life-map-entry',
   'visible-sky-broad-interaction',
@@ -77,10 +77,10 @@ for (const token of [
   "root.name = 'home-orb-authored-reference-core-v291'",
   "visualAuthority: 'v288-grounded-biomorphic-reliquary'",
   "interactionAuthority: 'v291-current-home-orb-state-and-speech-runtime'",
-  "data-home-embodied-self={firstPerson ? 'camera-only-first-person-home' : 'visible-avatar-home-presentation'}",
-  "data-home-presence-presentation={homeState.transition === 'AVATAR_EMBODIMENT_TRANSITION' ? 'avatar-embodiment-transition' : homeState.stableState === 'HOME_PRESENTATION' ? 'visible-avatar-presentation-activation-gate' : 'bodyless-first-person-home'}",
+  "data-home-embodied-self={firstPerson ? 'camera-only-first-person-home' : 'camera-only-transition'}",
+  "data-home-presence-presentation={firstPerson ? 'bodyless-first-person-home' : 'camera-only-transition'}",
   'data-home-non-xr-body-policy="camera-only-no-hands-body-rig"',
-  'data-home-presence-policy="presentation-avatar-then-first-person-camera-only-no-hands-body-rig"',
+  'data-home-presence-policy="direct-first-person-camera-only-no-hands-body-rig"',
   "router.prefetch('/ground/')","router.prefetch('/life-map/')",
   "cameraCheckpoint: 'home-sky-ascent-complete'","cameraCheckpoint: 'ground-first-person-arrival'",
   'data-home-ground-entry="physical-world-surface"','data-home-life-map-entry="visible-sky-broad-interaction"'
@@ -103,9 +103,6 @@ for (const retired of ['buildGroundRavine','buildAscentRibbon','buildAscentRoot'
 const atmosphere = await readFile(path.join(assetsRoot, 'HomeAtmosphericSky.tsx'), 'utf8')
 for (const token of ['RetireLocalizedLifeMapGateways','name="home-sky-life-map-threshold"', "threshold: 'broad-visible-sky'",'localGroundPortal: false','raycast={skyRaycast}','onClick={activateSky}']) if (!atmosphere.includes(token)) fail(`sky threshold missing ${token}`)
 for (const retired of ['HomeLaunchSanctuaryV254','home-v249-life-map-rooted-celestial-ascent']) if (atmosphere.includes(retired)) fail(`sky authority restored retired gateway: ${retired}`)
-
-const avatar = await readFile(path.join(homeRoot, 'HomeEmbodiedAvatar.tsx'), 'utf8')
-if (!avatar.includes('HomeAvatarPresentationState')) fail('avatar presentation state contract missing')
 
 const ground = await readFile(path.join(repoRoot, 'urai-tier1/src/app/GroundSpatialWorldClean.tsx'), 'utf8')
 for (const token of ['data-ground-exploration="first-person-no-visible-body"','data-ground-runtime-owner="first-person-lived-world"','data-ground-camera="eye-level-terrain-following-no-authored-bob"','data-ground-collision="terrain-plus-authored-obstacle-field"','data-ground-place-layer="consent-aware-empty-by-default"','data-ground-visible-avatar="false"','data-ground-visible-hands="false"','ground-visible-traversable-terrain','surfaceY + GROUND_EYE_HEIGHT_M']) if (!ground.includes(token)) fail(`Ground lost ${token}`)

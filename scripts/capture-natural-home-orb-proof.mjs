@@ -129,24 +129,12 @@ for (const spec of cases) {
     await writeFile(path.join(outputDir, record.presentationScreenshot), presentationVisual.buffer)
     record.presentationScreenshotBytes = presentationVisual.buffer.length
 
-    const enter = page.getByRole('button', { name: 'Enter first-person Home through your Avatar' }).first()
-    await enter.waitFor({ state: 'visible', timeout: 30_000 })
-    await enter.focus()
-    if (!await enter.evaluate((element) => document.activeElement === element)) {
-      throw new Error('Avatar presentation activation control did not receive browser-native focus')
-    }
-    await enter.press('Enter')
-    const keyboardActivationAccepted = await page.waitForFunction(() => {
+    await page.waitForFunction(() => {
       const root = document.querySelector('.urai-asset-home-world')
-      if (!(root instanceof HTMLElement)) return false
-      return root.getAttribute('data-home-stable-state') === 'AVATAR_HOME_FIRST_PERSON'
-        || root.getAttribute('data-home-transition-sequence') === 'AVATAR_EMBODIMENT_TRANSITION'
-        || root.getAttribute('data-home-presence-presentation') === 'avatar-embodiment-transition'
-    }, null, { timeout: 8_000 }).then(() => true).catch(() => false)
-    if (!keyboardActivationAccepted) {
-      throw new Error('Avatar presentation keyboard activation did not enter the governed embodiment transition')
-    }
-    await page.waitForFunction(() => document.querySelector('.urai-asset-home-world')?.getAttribute('data-home-stable-state') === 'AVATAR_HOME_FIRST_PERSON', null, { timeout: 60_000 })
+      return root?.getAttribute('data-home-stable-state') === 'AVATAR_HOME_FIRST_PERSON'
+        && root?.getAttribute('data-home-avatar-activation-gate') === 'none-direct-first-person-home'
+    }, null, { timeout: 60_000 })
+    record.avatarActivationGateCount = await page.getByTestId('urai-home-avatar-enter-first-person').count()
     await settle(page, spec.reducedMotion === 'reduce' ? 2 : 4)
 
     record.stableState = await attr('data-home-stable-state')
@@ -168,11 +156,11 @@ for (const spec of cases) {
       && record.worldCharacter === 'production-cinematic-modern-lived-home-stone-timber-glass'
       && record.visualOwnership === 'single-canvas-three-dimensional-geometry'
       && record.desktopMobileWorld === 'same-scene'
-      && record.presentationStableState === 'HOME_PRESENTATION'
-      && record.presentationEmbodiedSelf === 'visible-avatar-home-presentation'
-      && record.presentationPresence === 'visible-avatar-presentation-activation-gate'
-      && record.presentationMovement === 'avatar-presentation-target-activate'
-      && record.presentationCameraMode === 'home-avatar-presentation'
+      && record.presentationStableState === 'AVATAR_HOME_FIRST_PERSON'
+      && record.presentationEmbodiedSelf === 'camera-only-first-person-home'
+      && record.presentationPresence === 'bodyless-first-person-home'
+      && record.presentationMovement === 'shared-keyboard-touch-walk-look-interact'
+      && (record.presentationCameraMode === 'home-first-person' || record.presentationCameraMode === 'home-first-person-look')
       && record.stableState === 'AVATAR_HOME_FIRST_PERSON'
       && record.embodiedSelf === 'camera-only-first-person-home'
       && record.presencePresentation === 'bodyless-first-person-home'
@@ -183,7 +171,7 @@ for (const spec of cases) {
       && record.runtimeAssets?.includes('HomeAtmosphericSky.tsx')
       && record.runtimeAssets?.includes('HomeWorldProductionV223.tsx')
       && record.authoredRegions?.includes('home-physical-world')
-      && record.authoredRegions?.includes('home-avatar-presentation')
+      && !record.authoredRegions?.includes('home-avatar-presentation')
       && record.authoredRegions?.includes('home-camera-only-first-person')
       && record.authoredRegions?.includes('home-living-memory-orb')
       && record.authoredRegions?.includes('home-life-map-sky-threshold')
@@ -193,7 +181,7 @@ for (const spec of cases) {
       && (record.cameraMode === 'home-first-person' || record.cameraMode === 'home-first-person-look') && record.orbState !== null
       && (!spec.orbState || record.orbState === spec.orbState)
       && (spec.reducedMotion !== 'reduce' || record.orbModelClip === 'stopped-reduced-motion')
-      && record.orbMarkers === 1 && record.embodimentMarkers === 0
+      && record.orbMarkers === 1 && record.embodimentMarkers === 0 && record.avatarActivationGateCount === 0
       && record.semanticButtons === 1 && record.semanticLinks === 2
       && record.semanticGroundHref === '/ground/?entryPortal=home-ground&cameraCheckpoint=home-ground-descent'
       && record.semanticLifeMapHref === '/life-map/?from=home-sky&entryPortal=home-sky&cameraCheckpoint=home-sky-ascent-complete'
