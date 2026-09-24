@@ -739,7 +739,7 @@ async function captureIsolatedJourneyPhase({ id, targetPhase, captureState, inte
       hasTouch,
       isMobile,
     }, isolatedBrowser)
-    const overviewRoute = '/life-map/?demo=1&manifestId=replay-recovery-thread&overview=1'
+    const overviewRoute = `/life-map/?demo=1&manifestId=replay-recovery-thread&overview=1&founderProof=1&proofPhaseHold=${targetPhase}`
     await goto(isolated.page, overviewRoute)
     await waitForRenderedWorld(isolated.page)
     let retainedPhaseCapture = false
