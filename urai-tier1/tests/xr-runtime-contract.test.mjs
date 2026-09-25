@@ -112,22 +112,12 @@ test('home scene source exposes XR metadata without removing composition anchors
 })
 
 
-test('public XR routes fail closed to an explicit non-XR escape surface when the release gate is disabled', async () => {
-  const { readFile } = await import('node:fs/promises')
+test('conditional XR routes fail closed with notFound when the release gate is disabled', async () => {
   const spatialPage = await readFile(new URL('../src/app/spatial/ar-vr/page.tsx', import.meta.url), 'utf8')
   const canonicalPage = await readFile(new URL('../src/app/xr/page.tsx', import.meta.url), 'utf8')
-  const fallback = await readFile(new URL('../src/app/spatial/ar-vr/XrUnavailableBoundary.tsx', import.meta.url), 'utf8')
   for (const page of [spatialPage, canonicalPage]) {
     assert.match(page, /postLaunchSpatialRealmsEnabled\(\)/)
-    assert.match(page, /return <XrUnavailableBoundary \/>/)
-    assert.doesNotMatch(page, /notFound\(\)/)
+    assert.match(page, /notFound\(\)/)
+    assert.doesNotMatch(page, /return <XrUnavailableBoundary \/>/)
   }
-  for (const marker of [
-    'data-testid="urai-xr-unavailable"',
-    'data-xr-public-enabled="false"',
-    'data-xr-provider-state="gated"',
-    'No AR or VR session will be requested',
-    'The non-XR UrAi experience remains available.',
-    'aria-label="Continue without XR"',
-  ]) assert.ok(fallback.includes(marker), `missing XR gated-state marker: ${marker}`)
 })

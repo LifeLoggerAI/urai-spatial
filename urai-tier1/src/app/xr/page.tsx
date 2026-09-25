@@ -1,6 +1,6 @@
+import { notFound } from 'next/navigation'
 import { postLaunchSpatialRealmsEnabled } from '@/lib/release/postLaunchRealmGate'
 import UraiQuestEntryWorldV2 from '@/app/spatial/ar-vr/UraiQuestEntryWorldV2'
-import XrUnavailableBoundary from '@/app/spatial/ar-vr/XrUnavailableBoundary'
 
 export const metadata = {
   title: 'URAI XR World',
@@ -8,7 +8,7 @@ export const metadata = {
 }
 
 export default function XrPage() {
-  if (!postLaunchSpatialRealmsEnabled()) return <XrUnavailableBoundary />
+  if (!postLaunchSpatialRealmsEnabled()) notFound()
   return (
     <>
       <h1 className="sr-only">URAI XR World</h1>
