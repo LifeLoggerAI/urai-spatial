@@ -28,6 +28,7 @@ const place = {
   label: 'Private remembered place',
   eraIds: [],
   sourceIds: ['video-a'],
+  sourceEvidence: [{ sourceId: 'video-a', sourceType: 'video', capturedAt: '2026-09-16T00:00:00Z' }],
   reconstruction: {
     fidelity: 'confirmed',
     confidence: 0.96,
@@ -64,28 +65,31 @@ const asset = (overrides = {}) => ({
   reconstruction: {
     method: '3dgs',
     inputFormats: ['video', 'colmap', 'ply-3dgs'],
-    runtime: {
-      format: 'splat',
-      url: '/private/captured-reality/capture-1.splat',
-    },
-    fallbackMesh: {
-      format: 'glb',
-      url: '/private/captured-reality/capture-1-fallback.glb',
-    },
+    cameraSolve: { engine: 'colmap', registeredImages: 40, totalInputImages: 44, coordinateSystem: 'right-handed-y-up', receiptRef: 'camera-solve.json' },
+    training: { engine: '3dgs', receiptRef: 'training.json' },
+    archival: { artifactId: 'capture-1-archive', format: 'ply-3dgs' },
+    runtime: { artifactId: 'capture-1-runtime', format: 'splat', delivery: 'server-authorized' },
+    fallbackMesh: { artifactId: 'capture-1-fallback', format: 'glb' },
+    collisionProxy: { artifactId: 'capture-1-collision', format: 'glb' },
   },
   privacy: {
     visibility: 'private',
     requiredPurposes: ['location.context'],
     exactLocationEmbedded: true,
     thirdPartyPresent: false,
+    biometricOrLikenessPresent: false,
   },
+  qa: { sourceVsReconstructionReviewed: true, heldOutViewCount: 8, knownArtifactCount: 0, reviewState: 'accepted' },
   provenance: {
     sourcePackageRef: 'private-source-package',
     transformations: ['video -> selected frames', 'frames -> camera solve', 'camera solve -> 3DGS', '3DGS -> web splat'],
     toolchain: ['capture', 'camera-solve', '3dgs', 'runtime-export'],
+    exactSourceHead: 'test-head',
+    userCorrectionRevision: 0,
     createdAt: '2026-09-25T00:00:00Z',
     mustShowTruthLabel: true,
   },
+  release: { state: 'private-pilot', browserCertified: true, mobileCertified: false, xrCertified: false },
   ...overrides,
 })
 
@@ -103,10 +107,11 @@ test('source-backed captured reality can resolve to a browser Gaussian splat onl
     graph: graph(),
     consent,
     releaseEnabled: true,
+    authorizedRuntimeUrl: 'https://storage.example.invalid/capture-1.splat?sig=test',
   })
   assert.equal(result.mode, 'gaussian-splat')
   assert.equal(result.autobiographical, true)
-  assert.equal(result.assetUrl, '/private/captured-reality/capture-1.splat')
+  assert.match(result.assetUrl ?? '', /^https:\/\//)
   assert.match(result.truthLabel, /Spatial reconstruction from recorded sources/)
 })
 
@@ -116,6 +121,7 @@ test('captured reality fails closed to generic non-autobiographical fallback wit
     graph: graph(),
     consent: {},
     releaseEnabled: true,
+    authorizedRuntimeUrl: 'https://storage.example.invalid/capture-1.splat?sig=test',
   })
   assert.equal(result.mode, 'generic-fallback')
   assert.equal(result.autobiographical, false)
@@ -153,6 +159,7 @@ test('interpretive reconstruction never enters the photoreal autobiographical sp
     graph: graph(),
     consent,
     releaseEnabled: true,
+    authorizedRuntimeUrl: 'https://storage.example.invalid/capture-1.splat?sig=test',
   })
   assert.equal(result.mode, 'mesh-fallback')
   assert.equal(result.autobiographical, false)
@@ -165,7 +172,42 @@ test('missing capture source suppresses the asset rather than guessing', () => {
     graph: graph({}),
     consent,
     releaseEnabled: true,
+    authorizedRuntimeUrl: 'https://storage.example.invalid/capture-1.splat?sig=test',
   })
   assert.equal(result.mode, 'suppressed')
   assert.ok(result.reasons.some((reason) => reason.startsWith('MISSING_CAPTURE_SOURCE:')))
+})
+
+test('source-backed reconstruction waits for server-authorized delivery instead of embedding a private URL', () => {
+  const result = decideCapturedRealityRender({
+    asset: asset(),
+    graph: graph(),
+    consent,
+    releaseEnabled: true,
+  })
+  assert.equal(result.mode, 'awaiting-authorized-delivery')
+  assert.equal(result.assetUrl, null)
+  assert.ok(result.reasons.includes('AUTHORIZED_RUNTIME_URL_REQUIRED'))
+})
+
+test('accepted browser certification is rejected unless source-vs-reconstruction QA occurred', () => {
+  const candidate = asset({
+    qa: { sourceVsReconstructionReviewed: false, heldOutViewCount: 0, knownArtifactCount: 0, reviewState: 'accepted' },
+  })
+  const errors = validateCapturedRealityAsset(candidate, graph())
+  assert.ok(errors.includes('ACCEPTED_WITHOUT_SOURCE_REVIEW'))
+})
+
+test('likeness-bearing reconstruction requires biometric identity authority', () => {
+  const candidate = asset({
+    privacy: {
+      visibility: 'private',
+      requiredPurposes: ['location.context'],
+      exactLocationEmbedded: true,
+      thirdPartyPresent: true,
+      biometricOrLikenessPresent: true,
+    },
+  })
+  const errors = validateCapturedRealityAsset(candidate, graph())
+  assert.ok(errors.includes('LIKENESS_REQUIRES_BIOMETRIC_AUTHORITY'))
 })
