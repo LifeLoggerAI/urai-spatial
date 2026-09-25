@@ -24,6 +24,7 @@
 
 .locationMapGeographicBridge a {
   display: inline-flex;
+  min-width: 48px;
   min-height: 48px;
   align-items: center;
   justify-content: center;
