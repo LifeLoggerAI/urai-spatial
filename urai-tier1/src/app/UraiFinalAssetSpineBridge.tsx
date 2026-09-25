@@ -34,7 +34,7 @@ const finalAssetRoutes: FinalAssetRoute[] = [
   { id: 'home', tier: 'tier1', canon: 'Home Threshold', match: (pathname) => pathname === '/' || pathname === '/home', asset: '/assets/urai/final/tier1/home/home-threshold-desktop.svg' },
   { id: 'ground', tier: 'tier1', canon: 'Ground Realm', match: (pathname) => pathname.startsWith('/ground'), asset: '/assets/urai/final/tier1/ground/ground-realm-desktop.svg' },
   { id: 'life-map', tier: 'tier2', canon: 'Life Map', match: (pathname) => pathname.startsWith('/life-map') || pathname.startsWith('/spatial/life-map'), asset: '/assets/urai/final/tier2/life-map/lifemap-galaxy-field-desktop.svg' },
-  { id: 'focus', tier: 'tier2', canon: 'Focus Chamber', match: (pathname) => pathname.startsWith('/focus'), asset: '/assets/urai/final/tier2/focus/focus-memory-chamber-desktop.svg' },
+  { id: 'focus', tier: 'tier2', canon: 'Focus Selected Memory Star', match: (pathname) => pathname.startsWith('/focus'), asset: '/assets/urai/final/tier2/focus/focus-memory-chamber-desktop.svg' },
   { id: 'replay', tier: 'tier2', canon: 'Replay Realm', match: (pathname) => pathname.startsWith('/replay') || pathname.includes('/replay'), asset: '/assets/urai/final/tier2/replay/replay-cinematic-stage-desktop.svg' },
   { id: 'mirror', tier: 'tier2', canon: 'Mirror Realm', match: (pathname) => pathname.startsWith('/mirror'), asset: '/assets/urai/final/tier2/mirror/mirror-reflection-realm-desktop.svg' },
   { id: 'shadow', tier: 'tier2', canon: 'Shadow Realm', match: (pathname) => pathname.startsWith('/shadow'), asset: '/assets/urai/final/tier2/mirror/mirror-reflection-realm-desktop.svg' },

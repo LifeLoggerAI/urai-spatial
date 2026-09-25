@@ -129,11 +129,11 @@ export const launchTruth = {
     },
     {
       path: '/focus',
-      label: 'Selected memory chamber',
+      label: 'Selected Memory Star',
       group: 'Launch spine',
       state: 'certified-live',
       proofBoundary: 'Demo memory, manifest, and node query identity passed redirects and hydration on desktop and mobile.',
-      publicClaim: 'Verified live Focus chamber for disclosed demo identity.',
+      publicClaim: 'Verified live Focus selected-Memory-Star experience for disclosed demo identity.',
     },
     {
       path: '/replay',
