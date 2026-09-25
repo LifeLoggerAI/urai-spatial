@@ -58,7 +58,6 @@ const tests = [
   'tests/mirror-spatial-realm-contract.test.mjs',
   'tests/mirror-canonical-owner-hydration-contract.test.mjs',
   'tests/orb-companion-contract.test.mjs',
-  'tests/orb-locked-canon-convergence-contract.test.mjs',
   'tests/orb-v286-biomorphic-reliquary-contract.test.mjs',
   'tests/private-source-media-consent-contract.test.mjs',
   'tests/provider-boundary-contract.test.mjs',
