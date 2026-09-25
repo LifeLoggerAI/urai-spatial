@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 const baseUrl = (process.env.URAI_DEPLOY_URL || process.env.LIVE_URL || 'https://urai-4dc1d.web.app').replace(/\/$/, '')
 const requireLiveCommitSha = process.env.REQUIRE_LIVE_COMMIT_SHA === 'true'
+const expectXrEnabled = process.env.URAI_EXPECT_XR_ENABLED === 'true'
 
 const endpoints = [
   '/',
@@ -8,7 +9,6 @@ const endpoints = [
   '/ground',
   '/life-map',
   '/status',
-  '/spatial/ar-vr',
   '/api/system/urai-spatial-lock',
   '/api/system/deploy-proof',
 ]
@@ -27,6 +27,8 @@ const requiredDeployProofPatterns = [
   /urai-spatial-public-surface-2026-06-29-homeworldproduction/i,
   /urai-spatial-deploy-proof-v2-2026-06-30/i,
   /commitShaKnown/i,
+  /conditionalRoutes/i,
+  /governed-post-launch-gated/i,
 ]
 
 const results = []
@@ -70,6 +72,40 @@ for (const endpoint of endpoints) {
   }
 }
 
+{
+  const endpoint = '/spatial/ar-vr'
+  const url = `${baseUrl}${endpoint}`
+  try {
+    const response = await fetch(url, {
+      headers: {
+        'user-agent': 'urai-home-xr-live-deploy-proof/1.4',
+        accept: 'text/html,application/json,*/*;q=0.8',
+      },
+    })
+    const body = await response.text()
+    const forbidden = forbiddenPatterns.find((marker) => marker.test(body))
+    const hasUraiMarker = /urai|spatial|life map|xr|ar|vr|quest/i.test(body)
+    const enabledFailure = expectXrEnabled && (!response.ok || !hasUraiMarker)
+    const gatedFailure = !expectXrEnabled && response.status !== 404
+
+    results.push({
+      endpoint,
+      conditional: true,
+      expectedEnabled: expectXrEnabled,
+      status: response.status,
+      ok: expectXrEnabled ? response.ok && hasUraiMarker : response.status === 404,
+      hasUraiMarker,
+      forbidden: forbidden?.source || null,
+    })
+
+    if (enabledFailure || gatedFailure || forbidden) {
+      failures.push(`${url} conditional status=${response.status} expectedEnabled=${expectXrEnabled} marker=${hasUraiMarker} forbidden=${forbidden?.source || 'none'}`)
+    }
+  } catch (error) {
+    failures.push(`${url} conditional failed: ${error instanceof Error ? error.message : String(error)}`)
+  }
+}
+
 if (failures.length > 0) {
   console.error('[check-home-xr-live-deploy-proof] failed:')
   for (const failure of failures) console.error(`- ${failure}`)
@@ -81,5 +117,6 @@ console.log(JSON.stringify({
   service: 'urai-home-xr-live-deploy-proof',
   baseUrl,
   requireLiveCommitSha,
+  expectXrEnabled,
   results,
 }, null, 2))

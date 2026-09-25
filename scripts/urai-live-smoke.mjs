@@ -2,6 +2,7 @@
 const baseUrl = process.env.URAI_DEPLOY_URL
 const requireLiveCommitSha = process.env.REQUIRE_LIVE_COMMIT_SHA === 'true'
 const requireCustomDomain = process.env.REQUIRE_CUSTOM_DOMAIN === 'true'
+const expectXrEnabled = process.env.URAI_EXPECT_XR_ENABLED === 'true'
 
 if (!baseUrl) {
   console.error('URAI_DEPLOY_URL is required, for example https://urai.app')
@@ -65,10 +66,6 @@ const routes = [
     markers: [/premium-emotional-weather-atlas/i],
   },
   {
-    paths: ['/spatial/ar-vr', '/spatial/ar-vr/'],
-    markers: [/AR|VR|XR|Quest|spatial/i, /Life Map|device|browser|fallback/i],
-  },
-  {
     paths: ['/status', '/status/'],
     markers: [/urai-final-status-control-room/i, /Launch locked\. Proof before expansion\./i, /fingerprint-gated/i, /Production certification remains hidden until the protected fingerprint is validated\./i],
     forbidden: [/Pending proof/i, /World online\. Route matrix visible\./i],
@@ -81,6 +78,14 @@ const routes = [
       /urai-spatial-deploy-proof-v2-2026-06-30/i,
       /commitShaKnown/i,
     ],
+  },
+]
+
+const conditionalRoutes = [
+  {
+    paths: ['/spatial/ar-vr', '/spatial/ar-vr/'],
+    markers: [/AR|VR|XR|Quest|spatial/i, /Life Map|device|browser|fallback/i],
+    enabled: expectXrEnabled,
   },
 ]
 
@@ -162,6 +167,45 @@ for (const { paths, markers, forbidden = [] } of routes) {
   }
 }
 
+for (const { paths, markers, enabled } of conditionalRoutes) {
+  for (const path of paths) {
+    checkCount += 1
+    const url = `${normalizedBase}${path}`
+    try {
+      const requestedUrl = new URL(url)
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'user-agent': 'urai-live-smoke/4.3',
+          accept: 'text/html,application/xhtml+xml,application/json,application/xml;q=0.9,*/*;q=0.8',
+        },
+        redirect: 'follow',
+      })
+
+      const body = await response.text()
+      const finalUrl = new URL(response.url)
+      const stale = staleFallbackPatterns.find((pattern) => pattern.test(body))
+      const legacyRuntime = legacyRuntimePatterns.find((pattern) => pattern.test(body))
+      const pathMismatch = normalizePath(finalUrl.pathname) !== normalizePath(requestedUrl.pathname)
+      const missingMarker = enabled ? markers.find((pattern) => !pattern.test(body)) : null
+      const enabledFailure = enabled && (!response.ok || missingMarker)
+      const gatedFailure = !enabled && response.status !== 404
+
+      if (enabledFailure || gatedFailure || stale || legacyRuntime || pathMismatch) {
+        failures.push(
+          `${url} conditional route returned ${response.status} finalUrl=${response.url} expectedEnabled=${enabled} ` +
+            `missing=${missingMarker?.source ?? 'none'} stale=${stale?.source ?? 'no'} ` +
+            `legacyRuntime=${legacyRuntime?.source ?? 'no'} pathMismatch=${pathMismatch}`,
+        )
+      } else {
+        console.log(`OK conditional ${response.status} ${url} expectedEnabled=${enabled}`)
+      }
+    } catch (error) {
+      failures.push(`${url} conditional route failed: ${error instanceof Error ? error.message : String(error)}`)
+    }
+  }
+}
+
 if (failures.length > 0) {
   console.error('URAI live smoke failed:')
   for (const failure of failures) console.error(`- ${failure}`)
@@ -169,5 +213,5 @@ if (failures.length > 0) {
 }
 
 console.log(
-  `URAI live smoke passed ${checkCount} custom-route checks with slash parity, route-specific fingerprints, legacy-runtime rejection, and deploy proof. requireLiveCommitSha=${requireLiveCommitSha} requireCustomDomain=${requireCustomDomain}`,
+  `URAI live smoke passed ${checkCount} custom-route checks with slash parity, route-specific fingerprints, legacy-runtime rejection, and deploy proof. requireLiveCommitSha=${requireLiveCommitSha} requireCustomDomain=${requireCustomDomain} expectXrEnabled=${expectXrEnabled}`,
 )
