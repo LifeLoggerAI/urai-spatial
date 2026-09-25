@@ -45,7 +45,9 @@ test('current Home is persistent direct bodyless first-person with governed Orb'
     'data-home-avatar-activation-gate="none-direct-first-person-home"',
     '<MobileMovementPad input={movementInput} label="Move through Home" />',
   ]) has(renderer, marker)
-  assert.doesNotMatch(renderer, /HomeEmbodiedAvatar|urai-home-user-avatar|home-human-makehuman-v4\.glb|visible-avatar-presentation-activation-gate|home-avatar-presentation/)
+  assert.doesNotMatch(renderer, /HomeEmbodiedAvatar|home-human-makehuman-v4\.glb|visible-avatar-presentation-activation-gate|home-avatar-presentation/)
+  assert.equal((renderer.match(/urai-home-user-avatar/g) ?? []).length, 1)
+  assert.match(renderer, /const legacyHotspotPatterns = \[[\s\S]*\/urai-home-user-avatar\/,[\s\S]*\]/)
   assert.match(renderer, /CURRENT_HOME_PRESENCE_ROOTS = new Set\(\['home-living-memory-orb', 'home-orb-v288-visible-authority'\]\)/)
   for (const marker of ['home-orb-reference-glass-shell','home-orb-luminous-inner-volume','home-orb-memory-bloom-core','home-orb-memory-motes',"visualAuthority: 'v288-grounded-biomorphic-reliquary'","interactionAuthority: 'v291-current-home-orb-state-and-speech-runtime'",'<HomeVisualAuthority />']) has(renderer, marker)
 })
