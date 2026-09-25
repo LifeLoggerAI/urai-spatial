@@ -85,11 +85,14 @@ async function readVisualEvidence(page) {
   const visibleHeight = Math.max(0, Math.min(bounds.y + bounds.height, viewport.height) - clipY)
   const viewportCoverage = visibleWidth * visibleHeight / Math.max(1, viewport.width * viewport.height)
   if (visibleWidth < 1 || visibleHeight < 1) return { available: false, reason: 'canvas-outside-viewport', viewportCoverage }
-  const png = await page.screenshot({
+  // home-proof-canvas-element-retained-png: sample the WebGL canvas itself.
+  // Page-region screenshots can include DOM overlays and must not contribute
+  // luminance/detail evidence for Gold-Master scene acceptance.
+  const canvas = page.locator(canvasSelector).first()
+  const png = await canvas.screenshot({
     animations: 'disabled',
     caret: 'hide',
     timeout: 90_000,
-    clip: { x: clipX, y: clipY, width: visibleWidth, height: visibleHeight },
   })
   const dataUrl = `data:image/png;base64,${png.toString('base64')}`
   const sample = await page.evaluate(async ({ dataUrl }) => {
