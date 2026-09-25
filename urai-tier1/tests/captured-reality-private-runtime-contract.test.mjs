@@ -40,10 +40,13 @@ test('functions index exports captured reality owner APIs', () => {
   assert.match(index, /getCapturedRealityRuntimeUrl/)
 })
 
-test('privacy package classifies captured reality as L4 C3 with revocation and deletion rights', () => {
+test('privacy package classifies captured reality as L3 C1 content with additional memory and location purpose gates', () => {
   assert.match(manifest, /feature: captured-reality/)
-  assert.match(manifest, /dataClass: L4/)
-  assert.match(manifest, /consentTier: C3/)
+  assert.match(manifest, /dataClass: L3/)
+  assert.match(manifest, /consentTier: C1/)
+  assert.match(manifest, /requiredConsentPurposes:/)
+  assert.match(manifest, /memory\.storage/)
+  assert.match(manifest, /location\.context/)
   assert.match(manifest, /deletionSupported: true/)
   assert.match(manifest, /consentRevocationSupported: true/)
   assert.match(inventory, /name: captured_reality_manifest/)
