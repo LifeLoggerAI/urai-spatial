@@ -36,7 +36,7 @@ env:
 jobs:
   exact-head-replay-proof:
     runs-on: ubuntu-24.04
-    timeout-minutes: 35
+    timeout-minutes: 55
     steps:
       - name: Checkout exact candidate
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
@@ -116,7 +116,7 @@ jobs:
           const [receiptPath, head] = process.argv.slice(2)
           const receipt = JSON.parse(await readFile(receiptPath, 'utf8'))
           if (receipt.exactHead !== head) throw new Error('Replay proof exact-head mismatch')
-          if (receipt.captures.length !== 5) throw new Error(`Expected 5 Replay captures, found ${receipt.captures.length}`)
+          if (receipt.captures.length !== 10) throw new Error(`Expected 10 Replay captures, found ${receipt.captures.length}`)
           if (receipt.captures.some((capture) => !capture.verification?.passed)) throw new Error('Replay capture verification failed')
           if (!receipt.journey?.passed) throw new Error('Replay -> Focus unwind proof failed')
           if (receipt.errors.length) throw new Error(`Replay proof receipt contains ${receipt.errors.length} errors`)
