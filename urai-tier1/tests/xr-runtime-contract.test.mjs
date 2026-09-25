@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
-import { readFile } from 'node:fs/promises'
 import test from 'node:test'
+import { readFile } from 'node:fs/promises'
 import { createEmptyWorldSnapshot, reduceWorldSnapshot } from '../src/spatial/xr/uraiXrProductionRuntime.ts'
 import { createMemoryPersistence, getOrCreateXrSnapshot } from '../src/spatial/xr/uraiXrPersistence.ts'
 import { issueUraiXrRoomSession, encodeUraiXrRoomSession } from '../src/spatial/xr/uraiXrRoomSecurity.ts'
