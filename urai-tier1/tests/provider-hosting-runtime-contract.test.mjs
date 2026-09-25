@@ -23,12 +23,13 @@ test('static Hosting rewrites every live provider URL to secret-bound Firebase F
     { source: '/api/google/oauth/callback', function: { functionId: 'googleOAuthCallback', region: 'us-central1' } },
     { source: '/api/google/oauth/status', function: { functionId: 'googleOAuthStatus', region: 'us-central1' } },
     { source: '/api/google/oauth/disconnect', function: { functionId: 'googleOAuthDisconnect', region: 'us-central1' } },
+    { source: '/api/google/import/preview', function: { functionId: 'googleHistoricalContextPreview', region: 'us-central1' } },
     { source: '/api/urai/orb/openai', function: { functionId: 'openAiOrbProvider', region: 'us-central1' } },
     { source: '/api/urai/narrator/elevenlabs', function: { functionId: 'elevenLabsVoiceProvider', region: 'us-central1' } },
     { source: '/api/voice/elevenlabs', function: { functionId: 'elevenLabsVoiceProvider', region: 'us-central1' } },
   ])
   assert.match(functionsIndex, /elevenLabsVoiceProvider, openAiOrbProvider/)
-  for (const handler of ['googleOAuthCallback', 'googleOAuthDisconnect', 'googleOAuthStart', 'googleOAuthStatus']) {
+  for (const handler of ['googleHistoricalContextPreview', 'googleOAuthCallback', 'googleOAuthDisconnect', 'googleOAuthStart', 'googleOAuthStatus']) {
     assert.match(functionsIndex, new RegExp(`\\b${handler}\\b`))
   }
 })
