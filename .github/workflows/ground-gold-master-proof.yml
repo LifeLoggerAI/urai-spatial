@@ -8,7 +8,13 @@ on:
       - 'urai-tier1/src/app/GroundSpatialWorldClean.tsx'
       - 'urai-tier1/public/assets/urai/generated/models/ground-natural-canopy-v3.glb'
       - 'urai-tier1/public/assets/urai/generated/models/ground-natural-canopy-v3.receipt.json'
+      - 'urai-tier1/public/assets/urai/ground-production/cc0/polyhaven-jacaranda-web-v1.glb'
+      - 'urai-tier1/public/basis/basis_transcoder.js'
+      - 'urai-tier1/public/basis/basis_transcoder.wasm'
+      - 'operations/assets/third-party/ground-polyhaven-jacaranda-web-v1.json'
+      - 'operations/assets/third-party/three-r183-basis-transcoder.json'
       - 'urai-tier1/tests/home-ground-lifemap-art-bible-contract.test.mjs'
+      - 'urai-tier1/tests/ground-cc0-canopy-contract.test.mjs'
       - '.github/workflows/ground-gold-master-proof.yml'
   workflow_dispatch:
     inputs:
@@ -79,6 +85,7 @@ jobs:
           set -euo pipefail
           node --check scripts/capture-ground-goldmaster-proof.mjs
           (cd urai-tier1 && node tests/home-ground-lifemap-art-bible-contract.test.mjs)
+          (cd urai-tier1 && node tests/ground-cc0-canopy-contract.test.mjs)
           pnpm --dir urai-tier1 typecheck
           pnpm build:static
       - name: Install Chromium
