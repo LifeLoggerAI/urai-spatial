@@ -55,6 +55,7 @@ Required release-validation terms:
 - ar-handheld-disabled
 - consentReceipt
 - safetyBoundaries
+- releaseEvidence
 - pattern_support_not_diagnosis
 - UraiSpatialHandoffValidation
 
@@ -80,9 +81,18 @@ export type UraiSpatialHandoffValidation = {
 };
 
 export type StudioSpatialExport = {
+  contractVersion: '0.2.0';
   producer: 'urai-studio';
   consumer: 'urai-spatial';
   validation: UraiSpatialHandoffValidation;
+  releaseEvidence: {
+    studioBuildSha: string;
+    spatialBuildSha: string;
+    validatorName: string;
+    validatorVersion: '0.2.0';
+    validatedAt: string;
+    liveSmokeUrl: string;
+  };
 };
 ```
 
@@ -92,3 +102,8 @@ Release boundary:
 - Studio exports are not live provider sync until provider wiring, consentReceipt validation, fallback behavior, tests, deploy output, and live smoke evidence exist.
 - WebXR, Quest VR, VisionOS, handheld AR, biometric, wearable, memory-grounded, marketplace, B2B, autonomous, analytics, enterprise, and real-time provider capabilities remain disabled or blocked until verified.
 - `pattern_support_not_diagnosis` means supportive pattern language only; no medical, clinical, diagnostic, or treatment claim is made.
+
+
+## 0.2.0 compatibility decision
+
+Version 0.2.0 is a breaking wire-contract revision because `releaseEvidence` is now required by both producer and consumer validators. A 0.1.0 payload is not silently promoted to 0.2.0. This contract remains validation-only and grants no XR, provider, deployment, or live-runtime authority.
