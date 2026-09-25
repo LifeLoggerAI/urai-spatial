@@ -69,6 +69,14 @@ async function layoutMetrics(page) {
       .filter((node) => node instanceof HTMLElement)
       .map((node) => {
         const rect = node.getBoundingClientRect()
+        const style = getComputedStyle(node)
+        const opacity = Number.parseFloat(style.opacity || '1')
+        const visuallyExposed = rect.width > 0
+          && rect.height > 0
+          && style.display !== 'none'
+          && style.visibility !== 'hidden'
+          && opacity >= .05
+          && node.getAttribute('aria-hidden') !== 'true'
         return {
           label: (node.getAttribute('aria-label') || node.textContent || '').trim().slice(0, 120),
           width: rect.width,
@@ -77,10 +85,11 @@ async function layoutMetrics(page) {
           right: rect.right,
           top: rect.top,
           bottom: rect.bottom,
-          visible: rect.width > 0 && rect.height > 0,
+          opacity,
+          visuallyExposed,
         }
       })
-      .filter((item) => item.visible)
+      .filter((item) => item.visuallyExposed)
     return {
       clientWidth: root.clientWidth,
       scrollWidth: Math.max(root.scrollWidth, body?.scrollWidth || 0),
@@ -165,6 +174,7 @@ try {
       assert.equal(record.nativeReview, spec.locale === 'en' ? 'source' : 'required')
       assert.ok(metrics.scrollWidth <= metrics.clientWidth + 4, `horizontal overflow: ${metrics.scrollWidth}/${metrics.clientWidth}`)
       assert.equal(metrics.clippedInteractive.length, 0, 'interactive controls were fully outside the viewport')
+      assert.equal(metrics.undersizedVisibleInteractive.length, 0, 'visually exposed interactive controls must remain at least 32px in both dimensions')
       const filename = spec.id + '.png'
       await page.screenshot({ path: path.join(outputDir, filename), fullPage: false, animations: 'disabled', caret: 'hide', timeout: 90_000 })
       record.screenshot = filename
