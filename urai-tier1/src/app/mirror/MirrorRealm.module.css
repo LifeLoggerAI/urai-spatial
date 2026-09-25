@@ -44,6 +44,10 @@
   top: 14px;
   z-index: 20;
   transform: translateY(-160%);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 48px;
   border-radius: 999px;
   padding: 10px 14px;
   color: #06111d;
@@ -294,7 +298,7 @@
 }
 
 .actionCluster a,
-.actionCluster button { min-height: 44px; padding: 0 16px; }
+.actionCluster button { min-height: 48px; padding: 0 16px; }
 .actionCluster .primaryAction {
   min-height: 50px;
   padding: 0 22px;
@@ -430,7 +434,7 @@
 
 .orbCaption { max-width: 34rem; margin: clamp(10px, 2vh, 20px) auto 0; color: rgba(235, 247, 255, 0.82); font-size: 0.94rem; font-weight: 720; line-height: 1.5; text-align: center; }
 .orbStateControls { display: flex; flex-wrap: wrap; justify-content: center; gap: 7px; margin-top: 12px; padding: 7px; border-radius: 999px; }
-.orbStateControls button { min-height: 32px; padding: 0 10px; font-size: 0.72rem; }
+.orbStateControls button { min-height: 48px; padding: 0 10px; font-size: 0.72rem; }
 .orbStateControls button[aria-pressed='true'] { color: #07111f; background: linear-gradient(135deg, #ccfbf1, #93c5fd); border-color: rgba(226, 255, 255, 0.66); }
 
 .statusPanel { position: relative; border-radius: 30px; padding: clamp(16px, 2vw, 22px); }
@@ -439,7 +443,7 @@
 .statusGrid span { min-height: 76px; display: grid; align-content: center; border: 1px solid rgba(186, 230, 253, 0.13); border-radius: 22px; padding: 11px; background: rgba(2, 6, 23, 0.42); }
 .statusGrid strong { margin-top: 5px; color: #fff; font-size: clamp(1.12rem, 1.75vw, 1.8rem); letter-spacing: -0.045em; }
 .routeLinks { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 14px; padding: 8px; border-radius: 22px; }
-.routeLinks a { min-height: 34px; flex: 1 1 auto; padding: 0 10px; font-size: 0.74rem; }
+.routeLinks a { min-height: 48px; flex: 1 1 auto; padding: 0 10px; font-size: 0.74rem; }
 .privacyNote { margin: 14px 0 0; color: rgba(204, 251, 241, 0.84); font-size: 0.88rem; font-weight: 760; line-height: 1.5; }
 
 .lensDeck { position: relative; z-index: 3; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; transform-style: preserve-3d; }
@@ -457,10 +461,10 @@
 .lensCard > p { margin: 0 0 8px; }
 .lensCard h2 { margin: 0 0 8px; color: #fff; font-size: clamp(1.08rem, 1.35vw, 1.42rem); letter-spacing: -0.04em; }
 .lensCard span { display: block; color: rgba(235, 247, 255, 0.74); font-size: 0.9rem; line-height: 1.5; }
-.lensCard a { width: fit-content; min-height: 34px; margin-top: 12px; padding: 0 12px; font-size: 0.74rem; }
+.lensCard a { width: fit-content; min-height: 48px; margin-top: 12px; padding: 0 12px; font-size: 0.74rem; }
 
 .portalRail { position: fixed; right: clamp(14px, 3vw, 42px); bottom: max(14px, env(safe-area-inset-bottom)); z-index: 10; display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 7px; max-width: min(760px, calc(100vw - 28px)); padding: 7px; border-radius: 999px; }
-.portalRail a { min-height: 36px; padding: 0 12px; font-size: 0.72rem; }
+.portalRail a { min-height: 48px; padding: 0 12px; font-size: 0.72rem; }
 .portalRail a[aria-current='page'] { color: #06111d; background: linear-gradient(135deg, #ccfbf1, #67e8f9 55%, #c4b5fd); border-color: rgba(226, 255, 255, 0.7); }
 
 @keyframes starDrift { from { transform: translate3d(0, 0, 0); } to { transform: translate3d(-42px, 28px, 0); } }
@@ -481,8 +485,8 @@
   .contextStrip div { min-height: 52px; padding: 9px 11px; }
   .actionCluster { margin-top: 12px; }
   .actionCluster a,
-  .actionCluster button { min-height: 38px; padding: 0 12px; font-size: 0.76rem; }
-  .actionCluster .primaryAction { min-height: 42px; }
+  .actionCluster button { min-height: 48px; padding: 0 12px; font-size: 0.76rem; }
+  .actionCluster .primaryAction { min-height: 48px; }
   .orbButton { width: clamp(190px, 20vw, 270px); }
   .orbChamber { min-height: 330px; }
   .orbCaption { margin-top: 8px; font-size: 0.82rem; line-height: 1.38; }
@@ -492,8 +496,8 @@
   .statusGrid span { min-height: 58px; padding: 8px; }
   .lensCard { min-height: 104px; padding: 13px; border-radius: 23px; }
   .lensCard span { display: -webkit-box; overflow: hidden; font-size: 0.8rem; line-height: 1.38; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
-  .lensCard a { min-height: 30px; margin-top: 9px; }
-  .portalRail a { min-height: 32px; padding: 0 10px; }
+  .lensCard a { min-height: 48px; margin-top: 9px; }
+  .portalRail a { min-height: 48px; padding: 0 10px; }
 }
 
 @media (max-width: 1100px) {
@@ -525,7 +529,7 @@
   .orbStateControls button,
   .routeLinks a { flex-basis: 100%; }
   .portalRail { gap: 6px; padding: 8px; border-radius: 24px; }
-  .portalRail a { flex: 1 1 27%; min-height: 36px; padding: 0 8px; font-size: 0.7rem; }
+  .portalRail a { flex: 1 1 27%; min-height: 48px; padding: 0 8px; font-size: 0.7rem; }
 }
 
 @media (prefers-reduced-motion: reduce) {

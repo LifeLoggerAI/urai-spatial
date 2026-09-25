@@ -6,6 +6,7 @@ const routes = [
   { name: 'life-map', path: '/life-map' },
   { name: 'focus', path: '/focus?memoryId=seed-memory-bloom&manifestId=seed-memory-bloom&node=seed-memory-bloom&demo=1' },
   { name: 'replay', path: '/replay?memoryId=seed-memory-bloom&manifestId=seed-memory-bloom&node=seed-memory-bloom&demo=1' },
+  { name: 'mirror', path: '/mirror' },
 ] as const
 
 const interactiveSelector = [
@@ -272,6 +273,26 @@ test.describe('URAI accessibility and performance evidence', () => {
     })
     expect(privacyTargets.length).toBeGreaterThan(0)
     expect(privacyFailures).toEqual([])
+  })
+
+  test('Mirror launch-critical controls meet the 48 CSS pixel minimum', async ({ page }) => {
+    await page.setViewportSize({ width: 320, height: 720 })
+    await page.goto('/mirror', { waitUntil: 'domcontentloaded' })
+    const targets = await page.locator('main a[href], main button:not([disabled])').evaluateAll((elements) => elements
+      .map((element) => ({ element, rect: element.getBoundingClientRect(), style: getComputedStyle(element) }))
+      .filter(({ rect, style }) => style.visibility !== 'hidden' && style.display !== 'none' && rect.width > 0 && rect.height > 0)
+      .map(({ element, rect }) => ({
+        label: element.getAttribute('aria-label') ?? element.textContent?.trim() ?? element.tagName,
+        width: Math.round(rect.width * 100) / 100,
+        height: Math.round(rect.height * 100) / 100,
+      })))
+    const failures = targets.filter(({ width, height }) => width < 48 || height < 48)
+    await test.info().attach('mirror-target-size-report.json', {
+      body: JSON.stringify({ targets, failures }, null, 2),
+      contentType: 'application/json',
+    })
+    expect(targets.length).toBeGreaterThan(0)
+    expect(failures).toEqual([])
   })
 
   test('no-WebGL mode exposes the complete keyboard-operable Home fallback', async ({ page }) => {
