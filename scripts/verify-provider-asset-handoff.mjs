@@ -86,7 +86,7 @@ const routeOwnerChecks = [
       'data-home-life-map-entry="visible-sky-broad-interaction"',
       'data-home-non-xr-body-policy="camera-only-no-hands-body-rig"',
       'data-home-presence-policy="direct-first-person-camera-only-no-hands-body-rig"',
-      'world.setAttribute('data-home-audio', 'production-opus-consent-controlled')',
+      "world.setAttribute('data-home-audio', 'production-opus-consent-controlled')",
       'HomeV225PolishV3',
       'HomeLaunchSanctuaryV254',
       'HomeAtmosphericSky',
