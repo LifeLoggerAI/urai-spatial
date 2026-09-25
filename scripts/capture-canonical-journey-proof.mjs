@@ -26,7 +26,8 @@ async function waitPath(page, expected, timeout = 60_000) {
 async function waitAttr(locator, name, expected, timeout = 60_000) {
   const start = Date.now()
   while (Date.now() - start < timeout) {
-    if ((await locator.count()) && await locator.getAttribute(name) === expected) return
+    const value = await locator.evaluateAll((nodes, attributeName) => nodes[0]?.getAttribute(attributeName) ?? null, name)
+    if (value === expected) return
     await sleep(100)
   }
   throw new Error(`timeout waiting for ${name}=${expected}`)
@@ -43,7 +44,12 @@ async function capture(page, journey, id) {
     if (await candidate.isVisible()) { target = candidate; break }
   }
   if (target) {
-    await target.screenshot({ path: path.join(outputDir, filename), animations: 'disabled', caret: 'hide', timeout: 90_000 })
+    const movingHome = await target.evaluate((node) => node.matches('.urai-asset-home-world[data-home-primary-owner="asset-driven"]'))
+    if (movingHome) {
+      await page.screenshot({ path: path.join(outputDir, filename), fullPage: false, animations: 'disabled', caret: 'hide', timeout: 90_000 })
+    } else {
+      await target.screenshot({ path: path.join(outputDir, filename), animations: 'disabled', caret: 'hide', timeout: 90_000 })
+    }
   } else {
     await page.screenshot({ path: path.join(outputDir, filename), fullPage: false, animations: 'disabled', caret: 'hide', timeout: 90_000 })
   }
