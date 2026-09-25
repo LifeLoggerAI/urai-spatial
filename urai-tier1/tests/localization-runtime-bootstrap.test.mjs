@@ -30,11 +30,15 @@ test('runtime locale bootstrap is truthful, persistent, and RTL-aware without cl
   assert.match(bootstrap, /root\.dataset\.uraiLocaleRuntimeStatus = URAI_LOCALE_RUNTIME_STATUS/)
   assert.match(bootstrap, /root\.dataset\.uraiLocaleNativeReview = localeRequiresNativeReview\(locale\) \? 'required' : 'source'/)
   assert.match(bootstrap, /window\.addEventListener\('storage'/)
+  assert.match(bootstrap, /new MutationObserver\(reconcileRootLocale\)/)
+  assert.match(bootstrap, /data-urai-locale-runtime-status/)
   assert.match(bootstrap, /new CustomEvent\(LOCALE_EVENT/)
 })
 
 test('root layout mounts localization bootstrap while retaining safe English server fallback', () => {
   assert.match(layout, /import LocaleBootstrap from '@\/i18n\/LocaleBootstrap'/)
   assert.match(layout, /<html[\s\S]*lang="en"/)
+  assert.match(layout, /data-urai-locale-runtime-status=\{URAI_LOCALE_RUNTIME_STATUS\}/)
+  assert.match(layout, /data-urai-locale-native-review="source"/)
   assert.match(layout, /<LocaleBootstrap \/>/)
 })

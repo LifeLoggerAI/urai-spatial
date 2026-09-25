@@ -103,7 +103,11 @@ async function openHome(page, journey) {
   assert.ok(response?.ok(), 'Home did not return 2xx')
   const home = page.locator(homeOwnerSelector).first()
   await home.waitFor({ state: 'visible', timeout: 90_000 })
-  await waitAttr(home, 'data-home-assets-ready', 'true', 90_000)
+  await home.locator('canvas').first().waitFor({ state: 'visible', timeout: 90_000 })
+  // The canonical journey proves interaction continuity, not Gold-Master pixels.
+  // Scanned/decorative assets remain separately fail-closed behind
+  // data-home-assets-ready and the exact-head visual proof workflows.
+  await waitAttr(home, 'data-home-input-ready', 'true', 90_000)
   await capture(page, journey, 'home')
   return home
 }

@@ -44,13 +44,33 @@ function applyLocale(locale: UraiLaunchLocale) {
 
 export default function LocaleBootstrap() {
   useEffect(() => {
-    const initial = requestedLocale()
-    applyLocale(initial)
+    let activeLocale = requestedLocale()
+    applyLocale(activeLocale)
+
+    const root = document.documentElement
+    const reconcileRootLocale = () => {
+      const direction = localeDirection(activeLocale)
+      const nativeReview = localeRequiresNativeReview(activeLocale) ? 'required' : 'source'
+      if (root.lang !== activeLocale
+        || root.dir !== direction
+        || root.dataset.uraiLocale !== activeLocale
+        || root.dataset.uraiLocaleDirection !== direction
+        || root.dataset.uraiLocaleRuntimeStatus !== URAI_LOCALE_RUNTIME_STATUS
+        || root.dataset.uraiLocaleNativeReview !== nativeReview) {
+        applyLocale(activeLocale)
+      }
+    }
+    const rootObserver = new MutationObserver(reconcileRootLocale)
+    rootObserver.observe(root, {
+      attributes: true,
+      attributeFilter: ['lang', 'dir', 'data-urai-locale', 'data-urai-locale-direction', 'data-urai-locale-runtime-status', 'data-urai-locale-native-review'],
+    })
 
     const onLocaleChange = (event: Event) => {
       const custom = event as CustomEvent<{ locale?: string }>
       const locale = normalizeLaunchLocale(custom.detail?.locale)
       if (!locale) return
+      activeLocale = locale
       try {
         window.localStorage.setItem(STORAGE_KEY, locale)
       } catch {
@@ -62,13 +82,15 @@ export default function LocaleBootstrap() {
     const onStorage = (event: StorageEvent) => {
       if (event.key !== STORAGE_KEY) return
       const locale = normalizeLaunchLocale(event.newValue)
-      if (locale) applyLocale(locale)
+      if (locale) {
+        activeLocale = locale
+        applyLocale(activeLocale)
+      }
     }
 
     const onConnectivityChange = () => {
-      const locale = requestedLocale()
-      applyLocale(locale)
-      window.requestAnimationFrame(() => applyLocale(locale))
+      applyLocale(activeLocale)
+      window.requestAnimationFrame(() => applyLocale(activeLocale))
     }
 
     window.addEventListener(LOCALE_EVENT, onLocaleChange)
@@ -76,6 +98,7 @@ export default function LocaleBootstrap() {
     window.addEventListener('online', onConnectivityChange)
     window.addEventListener('offline', onConnectivityChange)
     return () => {
+      rootObserver.disconnect()
       window.removeEventListener(LOCALE_EVENT, onLocaleChange)
       window.removeEventListener('storage', onStorage)
       window.removeEventListener('online', onConnectivityChange)

@@ -59,6 +59,7 @@ import './urai-production-system.css'
 import WorldRuntimeBoundary from '@/spatial/world/WorldRuntimeBoundary'
 import SpatialSettingsBootstrap from '@/spatial/settings/SpatialSettingsBootstrap'
 import LocaleBootstrap from '@/i18n/LocaleBootstrap'
+import { URAI_LOCALE_RUNTIME_STATUS } from '@/i18n/localeRegistry'
 
 const configuredBuildSha = process.env.NEXT_PUBLIC_URAI_BUILD_SHA ?? process.env.GITHUB_SHA ?? ''
 const deployedSha = /^[0-9a-f]{40}$/.test(configuredBuildSha) ? configuredBuildSha : 'unverified'
@@ -100,6 +101,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html
       lang="en"
+      data-urai-locale-runtime-status={URAI_LOCALE_RUNTIME_STATUS}
+      data-urai-locale-native-review="source"
       data-urai-domain="app"
       data-urai-surface="spatial"
       data-urai-preview={previewMode ? 'true' : 'false'}

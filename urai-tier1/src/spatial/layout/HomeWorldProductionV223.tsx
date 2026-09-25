@@ -8,7 +8,7 @@ import type { HomeSceneEnvironment } from '@/app/home/homePersonalizationModel'
 import type { HomeEmotionalWeatherName } from '@/spatial/environment/HomeEmotionalWeatherState'
 import { Canvas, useFrame, useThree, type ThreeEvent } from '@react-three/fiber'
 import { useAnimations, useGLTF } from '@react-three/drei'
-import { useCallback, useEffect, useMemo, useRef, useState, type MutableRefObject } from 'react'
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState, type MutableRefObject } from 'react'
 import * as THREE from 'three'
 import { resolveOrbSensoryOutput, URAI_ORB_STATE_EVENT, type OrbState, type OrbStateEventDetail } from '@/app/home/orbStateController'
 import { MobileMovementPad, MovementHelp, stepEmbodiedMotion, useDragLook, useMovementInput, type MovementInput } from '@/spatial/navigation/EmbodiedNavigation'
@@ -656,6 +656,11 @@ function HomePassportSemanticBridge({
   )
 }
 
+function SceneAssetReadySignal({ onReady }: { onReady: () => void }) {
+  useEffect(() => onReady(), [onReady])
+  return null
+}
+
 function Scene({
   yaw,
   pitch,
@@ -711,8 +716,6 @@ function Scene({
     if (event.delta > 8 || transition !== 'none' || homeTransition || homeStableState === 'AVATAR_SELF_VIEW' || homeStableState === 'IMMERSIVE_CONVERSATION') return
     onGround(event.point.clone())
   }, [homeStableState, homeTransition, onGround, transition])
-  useEffect(() => onReady(), [onReady])
-
   return <>
     <Cadence reducedMotion={reducedMotion} />
     <color attach="background" args={['#10272a']} />
@@ -722,10 +725,13 @@ function Scene({
     <hemisphereLight args={['#d5e2db', '#223932', .68]} />
     <directionalLight position={[-8, 11, 6]} intensity={2.45} color="#f1d6b1" castShadow shadow-mapSize-width={1536} shadow-mapSize-height={1536} shadow-bias={-.00018} />
     <directionalLight position={[9, 6, -11]} intensity={.78} color="#83b8ad" />
-    <HomeV225PolishV3 orbState={orbState} reducedMotion={reducedMotion} onOrb={retiredLocalDestination} onGround={retiredLocalDestination} onLifeMap={retiredLocalDestination} onWalk={physicalWorldClick} />
+    <Suspense fallback={null}>
+      <HomeV225PolishV3 orbState={orbState} reducedMotion={reducedMotion} onOrb={retiredLocalDestination} onGround={retiredLocalDestination} onLifeMap={retiredLocalDestination} onWalk={physicalWorldClick} />
+      <HomeLaunchSanctuaryV254 reducedMotion={reducedMotion} />
+      <SceneAssetReadySignal onReady={onReady} />
+    </Suspense>
     <HomeCurrentArtRepair orbState={orbState} reducedMotion={reducedMotion} onOrb={retiredLocalDestination} onGround={retiredLocalDestination} onLifeMap={retiredLocalDestination} />
     <HomeAAAVisualRepair />
-    <HomeLaunchSanctuaryV254 reducedMotion={reducedMotion} />
     <RetireLegacyHomeHotspots />
     <HomePassportSemanticBridge
       interactive={homeStableState === 'AVATAR_HOME_FIRST_PERSON' && !homeTransition && transition === 'none'}
@@ -906,6 +912,7 @@ export function HomeWorldProductionV223({ onOrbOpen = requestUraiWorldOrbOpen, w
 
   if (!webglAvailable) return null
   const ready = canvasReady && sceneReady
+  const inputReady = canvasReady && !homeState.inputLocked && transition === 'none' && !passportDeparting
   const phase = homeState.transition ?? (transition === 'ground' ? 'GROUND_DESCENT' : transition === 'life-map' ? 'SKY_ASCENT' : homeState.stableState)
   return <main
     ref={worldRef}
@@ -923,9 +930,10 @@ export function HomeWorldProductionV223({ onOrbOpen = requestUraiWorldOrbOpen, w
     data-home-movement={firstPerson ? 'shared-keyboard-touch-walk-look-interact' : 'camera-only-transition'}
     data-home-pointer-lock="false"
     data-home-assets-ready={ready ? 'true' : 'false'}
+    data-home-scene-assets-ready={sceneReady ? 'true' : 'false'}
     data-home-ready={ready ? 'true' : 'warming'}
-    data-home-input-ready={ready && !homeState.inputLocked ? 'true' : 'false'}
-    data-home-interaction-ready={ready && !homeState.inputLocked ? 'true' : 'false'}
+    data-home-input-ready={inputReady ? 'true' : 'false'}
+    data-home-interaction-ready={inputReady ? 'true' : 'false'}
     data-home-distance-ground="world-surface"
     data-home-distance-life-map="sky-threshold"
     data-home-ground-entry="physical-world-surface"
