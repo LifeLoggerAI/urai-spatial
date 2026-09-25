@@ -17,12 +17,13 @@ test('canonical auth entry uses Firebase provider authority and never collects p
   assert.doesNotMatch(auth, /type="password"/)
 })
 
-test('signup is a real provider-backed account entry route', () => {
-  assert.match(signup, /LoginClient intent="signup"/)
-  assert.match(signup, /Create Your Private World/)
-  assert.match(auth, /intent === 'signup'/)
+test('signup converges on the provider-backed canonical auth entry', () => {
+  assert.match(signup, /redirect\('\/login\?from=signup'\)/)
+  assert.match(auth, /from === 'signup' \? 'signup' : intent/)
+  assert.match(auth, /resolvedIntent === 'signup'/)
+  assert.match(auth, /creating \? 'Create your world\.' : 'Enter your world\.'/)
   assert.match(auth, /first-time account registration happen with the configured Firebase provider/)
-  assert.doesNotMatch(signup, /Return to Home|Pages Router shim/)
+  assert.doesNotMatch(signup, /Return to Home|Pages Router shim|localStorage/)
   assert.ok(routes.criticalRoutes.includes('/login'))
   assert.ok(routes.criticalRoutes.includes('/signup'))
   assert.ok(routes.classification.publicExact.includes('/login'))
