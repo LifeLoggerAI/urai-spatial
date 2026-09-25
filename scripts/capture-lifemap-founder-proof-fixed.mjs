@@ -749,7 +749,6 @@ async function advanceVirtualTime(session, budget) {
 
 async function selectQuietResetAtFrozenPhase(page, targetPhase, interaction) {
   const session = await page.context().newCDPSession(page)
-  await session.send('Emulation.setVirtualTimePolicy', { policy: 'pause' })
   try {
     const triggerSelector = 'button.life-map-search-trigger[aria-label="Search and navigate Life Map"]'
     const trigger = await canonicalControlGeometry(page, triggerSelector, 'canonical Life Map search trigger')
@@ -765,29 +764,33 @@ async function selectQuietResetAtFrozenPhase(page, targetPhase, interaction) {
     await armJourneyPhaseWatch(page, targetPhase)
     await activateCanonicalControl(page, resultSelector, result, interaction)
 
-    await poll('selected Quiet Reset identity under paused virtual time', async () => {
-      const root = page.locator(ROOT).first()
-      const destination = new URL(page.url())
+    // Let the real React/router selection lifecycle commit before freezing browser
+    // time. Pausing before activation deadlocks locator/state updates and produces
+    // a false missing-phase proof.
+    await poll('selected Quiet Reset identity before virtual-time freeze', () => page.evaluate((rootSelector) => {
+      const root = document.querySelector(rootSelector)
+      const destination = new URL(window.location.href)
       return {
-        phase: await root.getAttribute('data-life-map-phase'),
-        mode: await root.getAttribute('data-life-map-mode'),
+        phase: root instanceof HTMLElement ? root.dataset.lifeMapPhase || null : null,
+        mode: root instanceof HTMLElement ? root.dataset.lifeMapMode || null : null,
         memoryId: destination.searchParams.get('memoryId'),
         node: destination.searchParams.get('node'),
       }
-    }, (state) => state.mode === 'selected'
+    }, ROOT), (state) => state.mode === 'selected'
       && state.memoryId === 'quiet-reset'
       && state.node === 'quiet-reset'
-      && state.phase === 'departure', 20_000, 20)
+      && state.phase === 'departure', 20_000, 10)
 
+    await session.send('Emulation.setVirtualTimePolicy', { policy: 'pause' })
     await advanceVirtualTime(session, PHASE_CAPTURE_VIRTUAL_BUDGET_MS[targetPhase] ?? 0)
 
-    const frozen = await poll(`frozen selected journey phase=${targetPhase}`, async () => {
-      const root = page.locator(ROOT).first()
+    const frozen = await poll(`frozen selected journey phase=${targetPhase}`, () => page.evaluate((rootSelector) => {
+      const root = document.querySelector(rootSelector)
       return {
-        phase: await root.getAttribute('data-life-map-phase'),
-        mode: await root.getAttribute('data-life-map-mode'),
+        phase: root instanceof HTMLElement ? root.dataset.lifeMapPhase || null : null,
+        mode: root instanceof HTMLElement ? root.dataset.lifeMapMode || null : null,
       }
-    }, (state) => state.phase === targetPhase && state.mode === 'selected', 10_000, 10)
+    }, ROOT), (state) => state.phase === targetPhase && state.mode === 'selected', 10_000, 10)
     const observed = await readJourneyPhaseWatch(page, targetPhase, 1_000)
     return { session, observed, frozen }
   } catch (error) {
