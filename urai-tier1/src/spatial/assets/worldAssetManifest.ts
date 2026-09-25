@@ -78,10 +78,10 @@ export const worldAssetManifest = {
     },
     constellationLines: {
       slotId: 'lifeMap.constellationLines',
-      label: 'Constellation Line System',
+      label: 'Retired Relationship-Line Compatibility Slot',
       finalModel: '',
       status: 'missing',
-      notes: 'Shader/runtime system; no independent model namespace is authorized.',
+      notes: 'Legacy graph-edge compatibility metadata only. Current Life Map authority is the layered galaxy with data-derived regions and stellar Memory Stars; no visible constellation-line system is authorized.',
     },
   },
   focus: {
