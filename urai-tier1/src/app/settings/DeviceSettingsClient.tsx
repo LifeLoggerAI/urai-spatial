@@ -24,13 +24,40 @@ function readAudioPreference() {
 
 type GoogleConnection = { connected: boolean; status: string; scopes: string[]; expiresAt: number | null }
 type GoogleUiState = 'checking' | 'signed-out' | 'ready' | 'working' | 'error'
+type GoogleHistoryCategory = 'gmail' | 'calendar' | 'contacts' | 'drive-selected'
+type GooglePreviewEntry = {
+  status: string
+  items?: number
+  estimatedItems?: number
+  estimate?: boolean
+  truncated?: boolean
+  scopeBoundary?: string
+  code?: string
+}
+type GoogleHistoryPreview = {
+  previewId: string
+  categories: GoogleHistoryCategory[]
+  historyDays: number
+  windowStart: string
+  preview: Partial<Record<GoogleHistoryCategory, GooglePreviewEntry>>
+  persistedRawItems: 0
+  admittedToMemory: false
+  nextStep: string
+}
 
-async function googleRequest<T>(path: string, user: User): Promise<T> {
+const GOOGLE_HISTORY_OPTIONS: Array<{ id: GoogleHistoryCategory; label: string; detail: string }> = [
+  { id: 'gmail', label: 'Gmail', detail: 'Estimated message count only; no message bodies or subjects.' },
+  { id: 'calendar', label: 'Calendar', detail: 'Event count only; no titles, attendees, locations or descriptions are saved.' },
+  { id: 'contacts', label: 'Contacts', detail: 'Connection count only; no names or addresses are saved.' },
+  { id: 'drive-selected', label: 'Selected Drive files', detail: 'Counts only files visible through the existing drive.file permission, not all Drive history.' },
+]
+
+async function googleRequest<T>(path: string, user: User, body: Record<string, unknown> = {}): Promise<T> {
   const token = await user.getIdToken()
   const response = await fetch(path, {
     method: 'POST',
     headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-    body: '{}',
+    body: JSON.stringify(body),
     cache: 'no-store',
   })
   const payload = await response.json().catch(() => ({})) as T & { message?: string; error?: string }
@@ -50,6 +77,11 @@ export default function DeviceSettingsClient() {
   const [googleState, setGoogleState] = useState<GoogleUiState>(firebasePublicEnvReady ? 'checking' : 'signed-out')
   const [googleConnection, setGoogleConnection] = useState<GoogleConnection | null>(null)
   const [googleMessage, setGoogleMessage] = useState('Sign in to connect Gmail, Calendar, Contacts, and Drive.')
+  const [googleHistoryCategories, setGoogleHistoryCategories] = useState<GoogleHistoryCategory[]>([])
+  const [googleHistoryDays, setGoogleHistoryDays] = useState(365)
+  const [googlePreview, setGooglePreview] = useState<GoogleHistoryPreview | null>(null)
+  const [googlePreviewWorking, setGooglePreviewWorking] = useState(false)
+  const [googlePreviewMessage, setGooglePreviewMessage] = useState('Nothing is read until you choose categories and request a preview.')
 
   useEffect(() => {
     setHaptics(readHapticsPreference())
@@ -74,6 +106,9 @@ export default function DeviceSettingsClient() {
         setGoogleConnection(null)
         setGoogleState('signed-out')
         setGoogleMessage('Sign in to connect Gmail, Calendar, Contacts, and Drive.')
+        setGoogleHistoryCategories([])
+        setGooglePreview(null)
+        setGooglePreviewMessage('Nothing is read until you choose categories and request a preview.')
         return
       }
       setGoogleState('checking')
@@ -138,6 +173,34 @@ export default function DeviceSettingsClient() {
     }
   }
 
+  const toggleGoogleHistoryCategory = (category: GoogleHistoryCategory) => {
+    setGoogleHistoryCategories((current) => current.includes(category)
+      ? current.filter((item) => item !== category)
+      : [...current, category])
+    setGooglePreview(null)
+    setGooglePreviewMessage('Preview choices changed. Request a new preview when ready.')
+  }
+
+  const previewGoogleHistory = async () => {
+    if (!user || !googleConnection?.connected || googlePreviewWorking || googleHistoryCategories.length === 0) return
+    setGooglePreviewWorking(true)
+    setGooglePreview(null)
+    setGooglePreviewMessage('Reading aggregate availability from the selected Google categories...')
+    try {
+      const result = await googleRequest<GoogleHistoryPreview>('/api/google/import/preview', user, {
+        confirmPreview: true,
+        categories: googleHistoryCategories,
+        historyDays: googleHistoryDays,
+      })
+      setGooglePreview(result)
+      setGooglePreviewMessage('Preview complete. No raw Google content was persisted or admitted into memory.')
+    } catch {
+      setGooglePreviewMessage('History preview could not be completed. Nothing was admitted into memory.')
+    } finally {
+      setGooglePreviewWorking(false)
+    }
+  }
+
   const panel = {border:'1px solid rgba(197,242,247,.16)',borderRadius:28,padding:'clamp(22px,4vw,34px)',background:'rgba(9,20,28,.66)',backdropFilter:'blur(18px)'} as const
 
   return (
@@ -171,6 +234,66 @@ export default function DeviceSettingsClient() {
           </div>
           <p role="status" aria-live="polite" style={{margin:'22px 0 0',fontSize:13,color:'#8fb4bd'}}>{googleMessage}</p>
           <p style={{margin:'10px 0 0',fontSize:13,color:'#8fb4bd',lineHeight:1.55}}>Connection is identity and API authorization only. Historical import remains off until you choose what to bring in and approve the applicable import/use permissions.</p>
+
+          {googleConnection?.connected ? (
+            <div style={{marginTop:24,paddingTop:22,borderTop:'1px solid rgba(255,255,255,.1)'}}>
+              <fieldset style={{border:0,padding:0,margin:0}}>
+                <legend style={{fontWeight:800,fontSize:17}}>Preview what is available</legend>
+                <p style={{margin:'8px 0 16px',color:'#9fb8bf',lineHeight:1.55}}>Choose categories explicitly. Preview reads counts only and does not save Google message, event, contact or file content.</p>
+                <div style={{display:'grid',gap:10}}>
+                  {GOOGLE_HISTORY_OPTIONS.map((option) => (
+                    <label key={option.id} style={{display:'grid',gridTemplateColumns:'24px 1fr',gap:10,alignItems:'start',padding:'12px 14px',borderRadius:16,background:'rgba(255,255,255,.035)'}}>
+                      <input
+                        type="checkbox"
+                        checked={googleHistoryCategories.includes(option.id)}
+                        onChange={() => toggleGoogleHistoryCategory(option.id)}
+                        style={{width:20,height:20,marginTop:2}}
+                      />
+                      <span><strong>{option.label}</strong><small style={{display:'block',marginTop:3,color:'#8fb4bd',lineHeight:1.45}}>{option.detail}</small></span>
+                    </label>
+                  ))}
+                </div>
+              </fieldset>
+
+              <label style={{display:'grid',gap:7,marginTop:16,maxWidth:300}}>
+                <span style={{fontWeight:700}}>History window</span>
+                <select value={googleHistoryDays} onChange={(event)=>{setGoogleHistoryDays(Number(event.currentTarget.value));setGooglePreview(null)}} style={{minHeight:48,borderRadius:14,border:'1px solid rgba(255,255,255,.15)',background:'#0a151c',color:'#edf7f9',padding:'0 12px'}}>
+                  <option value={90}>Last 90 days</option>
+                  <option value={365}>Last year</option>
+                  <option value={1095}>Last 3 years</option>
+                  <option value={3650}>Last 10 years</option>
+                </select>
+              </label>
+
+              <button
+                type="button"
+                disabled={googlePreviewWorking || googleHistoryCategories.length === 0}
+                onClick={() => void previewGoogleHistory()}
+                style={{marginTop:18,minHeight:48,padding:'11px 18px',borderRadius:999,border:0,background:'#dff8fb',color:'#071116',fontWeight:800,cursor:'pointer',opacity:googleHistoryCategories.length === 0 ? 0.5 : 1}}
+              >
+                {googlePreviewWorking ? 'Previewing...' : 'Preview selected history'}
+              </button>
+              <p role="status" aria-live="polite" style={{margin:'12px 0 0',fontSize:13,color:'#8fb4bd',lineHeight:1.55}}>{googlePreviewMessage}</p>
+
+              {googlePreview ? (
+                <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(180px,1fr))',gap:10,marginTop:16}}>
+                  {googlePreview.categories.map((category) => {
+                    const entry = googlePreview.preview[category]
+                    const option = GOOGLE_HISTORY_OPTIONS.find((item) => item.id === category)
+                    const count = entry?.estimatedItems ?? entry?.items
+                    return (
+                      <div key={category} style={{padding:14,borderRadius:16,border:'1px solid rgba(255,255,255,.1)',background:'rgba(255,255,255,.025)'}}>
+                        <strong>{option?.label ?? category}</strong>
+                        <p style={{margin:'7px 0 0',fontSize:24,fontWeight:800}}>{entry?.status === 'available' && typeof count === 'number' ? count.toLocaleString() : 'Unavailable'}</p>
+                        <small style={{display:'block',marginTop:4,color:'#8fb4bd'}}>{entry?.estimate ? 'Estimated matches' : entry?.truncated ? 'Count capped by preview budget' : 'Available items'}</small>
+                      </div>
+                    )
+                  })}
+                  <p style={{gridColumn:'1 / -1',margin:'4px 0 0',fontSize:12,color:'#7897a0',lineHeight:1.55}}>Preview receipt {googlePreview.previewId}. Raw items persisted: {googlePreview.persistedRawItems}. Memory admission: off. An explicit import and use decision is still required.</p>
+                </div>
+              ) : null}
+            </div>
+          ) : null}
         </section>
 
         <section style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(250px,1fr))',gap:16,marginTop:18}}>
