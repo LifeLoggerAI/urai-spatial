@@ -268,7 +268,7 @@ export default function CapturedRealityRouteClient() {
   }, [accessMode, assetId, suppress, user])
 
   useEffect(() => {
-    if (!user || !delivery || state.kind !== 'ready') return
+    if (!user || !assetId || !delivery || state.kind !== 'ready') return
     const expires = Date.parse(delivery.expiresAt)
     if (!Number.isFinite(expires)) {
       suppress('Captured Reality closed because the private delivery expiry was invalid.')
