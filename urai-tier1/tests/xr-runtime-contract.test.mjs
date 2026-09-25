@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict'
+import { readFile } from 'node:fs/promises'
 import test from 'node:test'
 import { createEmptyWorldSnapshot, reduceWorldSnapshot } from '../src/spatial/xr/uraiXrProductionRuntime.ts'
 import { createMemoryPersistence, getOrCreateXrSnapshot } from '../src/spatial/xr/uraiXrPersistence.ts'
@@ -102,7 +103,6 @@ test('SFU adapter creates rooms, peers, tracks and subscriptions coherently', as
 })
 
 test('home scene source exposes XR metadata without removing composition anchors', async () => {
-  const { readFile } = await import('node:fs/promises')
   const source = await readFile(new URL('../src/spatial/home/visual/HomeScene.tsx', import.meta.url), 'utf8')
   assert.match(source, /data-xr-enabled/)
   assert.match(source, /data-xr-navmesh/)
