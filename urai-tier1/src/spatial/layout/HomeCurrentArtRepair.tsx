@@ -62,9 +62,7 @@ function TimberFrame() {
       <Box name="home-current-beam-left" position={[-4.15, 3.08, .3]} scale={[.22, .22, 6.35]} color={TIMBER} roughness={.84} />
       <Box name="home-current-beam-right" position={[4.15, 3.08, .3]} scale={[.22, .22, 6.35]} color={TIMBER} roughness={.84} />
       <Box name="home-current-beam-back" position={[0, 3.08, 3.4]} scale={[8.45, .22, .22]} color={TIMBER} roughness={.84} />
-      {[-3.3, -2.2, -1.1, 0, 1.1, 2.2, 3.3].map((x, index) => (
-        <Box key={x} name={`home-current-roof-slat-${index + 1}`} position={[x, 3.28, .28]} scale={[.13, .13, 6.15]} color={TIMBER_LIGHT} roughness={.86} />
-      ))}
+      {/* Open-air authority: perimeter beams frame Home without creating a ceiling over the first-person sky. */}
     </group>
   )
 }

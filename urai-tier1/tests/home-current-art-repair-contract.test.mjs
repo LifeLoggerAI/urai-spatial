@@ -37,6 +37,8 @@ test('active Home is direct camera-only first-person with Passport and broad-sky
 
 test('retired overlays remain retired while first-person Passport ownership stays active', () => {
   assert.match(currentRepair, /Current architectural repair stays inside the existing Home owner/)
+  assert.doesNotMatch(currentRepair, /home-current-roof-slat-/)
+  assert.match(currentRepair, /Open-air authority: perimeter beams frame Home without creating a ceiling/)
   assert.match(aaaRepair, /function HomePassportOwnershipObject/)
   assert.match(aaaRepair, /visibility: 'first-person-only'/)
   assert.match(aaaRepair, /backendAuthority: 'existing-passport-vault'/)
