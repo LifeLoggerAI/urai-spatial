@@ -26,7 +26,13 @@ export const spatialDeferredCapabilities = [
   "live-wearable-provider",
   "live-memory-grounded-orb",
   "live-spatial-asset-factory-jobs",
-  "live-cross-repo-user-memory-sync"
+  "live-cross-repo-user-memory-sync",
+  "live-camera-depth-capture",
+  "live-lidar-room-scan",
+  "live-photogrammetry-vio-reconstruction",
+  "live-motion-orientation-sensors",
+  "live-ble-uwb-wifi-positioning",
+  "live-acoustic-spatial-sensing"
 ] as const;
 
 export function assertSpatialFallbackMode() {
