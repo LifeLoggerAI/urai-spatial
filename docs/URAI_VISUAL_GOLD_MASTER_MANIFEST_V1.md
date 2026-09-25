@@ -1,9 +1,9 @@
 # URAI Visual Gold Master Manifest V1
 
-Authority date: 2026-09-16
+Authority date: 2026-09-25
 Repository: LifeLoggerAI/urai-spatial
-Authority branch: unified-spatial-convergence-20260916 / PR #1237
-Status: CURRENT VISUAL-AUTHORITY MANIFEST / NOT GOLD MASTER / UNMERGED / UNDEPLOYED
+Authority branch: converge/final-canon-spatial-20260922 / PR #1296
+Status: CURRENT VISUAL-AUTHORITY MANIFEST / NOT GOLD MASTER / PR #1296 OPEN / UNMERGED
 
 ## Rule
 
