@@ -1,0 +1,64 @@
+{
+  "contractVersion": "0.2.0",
+  "producer": "urai-studio",
+  "consumer": "urai-spatial",
+  "exportId": "export-home-001",
+  "projectId": "project-home-001",
+  "tenantId": "tenant-001",
+  "createdAt": "2026-09-03T00:00:00.000Z",
+  "runtimeTargets": [
+    "web-spatial",
+    "webxr-disabled",
+    "quest-vr-disabled",
+    "visionos-disabled",
+    "ar-handheld-disabled"
+  ],
+  "sceneManifest": {
+    "sceneId": "genesis-home-001",
+    "title": "Genesis Home",
+    "worldType": "genesis-home",
+    "cameraRig": {"mode": "walk"},
+    "lightingProfile": {"profile": "home-cinematic"},
+    "groundLayer": {"assetId": "home-chamber-glb"},
+    "skyLayer": {"profile": "home-sky"},
+    "orbLayer": {"profile": "companion"},
+    "weatherLayer": {"profile": "calm"},
+    "memoryStarLayers": [],
+    "fallbackState": {"renderer": "fallback_cards"}
+  },
+  "assetManifest": [
+    {
+      "assetId": "home-chamber-glb",
+      "kind": "mesh",
+      "uri": "gs://urai-assets/tenant-001/home-chamber.glb",
+      "mimeType": "model/gltf-binary",
+      "checksum": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "scope": "tenant-scoped",
+      "fallbackUri": "https://urai.app/assets/fallback/home.webp"
+    }
+  ],
+  "consentReceipt": {
+    "receiptId": "consent-001",
+    "tenantId": "tenant-001",
+    "userId": "user-001",
+    "purpose": "Render a consented Studio scene in URAI Spatial.",
+    "grantedCategories": ["generated_assets"],
+    "createdAt": "2026-09-03T00:00:00.000Z",
+    "retentionPolicyId": "generated_assets_standard_retention"
+  },
+  "safetyBoundaries": [
+    {
+      "layer": "generated-assets",
+      "requiredLanguage": "none",
+      "humanReviewRequired": true
+    }
+  ],
+  "releaseEvidence": {
+    "studioBuildSha": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "spatialBuildSha": "cccccccccccccccccccccccccccccccccccccccc",
+    "validatorName": "studio-spatial-wire-contract",
+    "validatorVersion": "0.2.0",
+    "validatedAt": "2026-09-03T00:00:00.000Z",
+    "liveSmokeUrl": "https://urai.app/status"
+  }
+}
