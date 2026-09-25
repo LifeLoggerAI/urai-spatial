@@ -9,7 +9,6 @@ const root = path.resolve(here, '..')
 const read = (relative) => fs.readFileSync(path.join(root, relative), 'utf8')
 
 const currentHome = read('src/spatial/layout/HomeWorldProductionV223.tsx')
-const embodiedAvatar = read('src/spatial/home/HomeEmbodiedAvatar.tsx')
 const conversation = read('src/spatial/orb/OrbConversationPanel.tsx')
 const speechClock = read('src/spatial/orb/orbSpeechClock.ts')
 const adaptiveQuality = read('src/spatial/performance/useAdaptiveSpatialQuality.ts')
@@ -64,14 +63,15 @@ test('Current authored Orb rests from visible shell geometry instead of the reti
   assert.doesNotMatch(currentHome, /groundY \+ 1\.52/)
 })
 
-test('Current Home never retires descendants of the canonical Avatar or living-memory Orb', () => {
-  assert.match(currentHome, /const CURRENT_HOME_PRESENCE_ROOTS = new Set\(\[[\s\S]*'home-living-memory-orb'[\s\S]*'urai-home-user-avatar'[\s\S]*\]\)/)
+test('Current Home preserves living-memory Orb descendants while keeping the default Home bodyless', () => {
+  assert.match(currentHome, /const CURRENT_HOME_PRESENCE_ROOTS = new Set\(\['home-living-memory-orb', 'home-orb-v288-visible-authority'\]\)/)
   assert.match(currentHome, /function isInsideCurrentHomePresence\(object: THREE\.Object3D\)/)
   assert.match(currentHome, /while \(current\)/)
   assert.match(currentHome, /CURRENT_HOME_PRESENCE_ROOTS\.has\(current\.name\)/)
   assert.match(currentHome, /current = current\.parent/)
   assert.match(currentHome, /if \(isInsideCurrentHomePresence\(object\)\) return/)
   assert.match(currentHome, /name="home-orb-authored-core"/)
+  assert.doesNotMatch(currentHome, /'urai-home-user-avatar'/)
 })
 
 test('Authored Orb model cloning preserves single-material and multi-material shape', () => {
@@ -79,15 +79,6 @@ test('Authored Orb model cloning preserves single-material and multi-material sh
   assert.match(currentHome, /object\.material\.map\(\(material\) => material\.clone\(\)\)/)
   assert.match(currentHome, /: object\.material\.clone\(\)/)
   assert.doesNotMatch(currentHome, /Array\.isArray\(source\)/)
-})
-
-test('Visible Home Avatar uses the existing authored idle_breath clip and respects reduced motion', () => {
-  assert.match(embodiedAvatar, /const \{ actions \} = useAnimations\(gltf\.animations, model\)/)
-  assert.match(embodiedAvatar, /const idle = actions\.idle_breath/)
-  assert.match(embodiedAvatar, /if \(!idle \|\| reducedMotion \|\| !visible\) return/)
-  assert.match(embodiedAvatar, /idle\.reset\(\)\.setLoop\(THREE\.LoopRepeat, Infinity\)\.fadeIn\(\.3\)\.play\(\)/)
-  assert.match(embodiedAvatar, /runtimeAnimation: reducedMotion \? 'still-reduced-motion'/)
-  assert.match(embodiedAvatar, /cloneSkeleton\(source\)/)
 })
 
 test('Conversation speaking state is bound to actual audible playback rather than streamed text or muted response timing', () => {
