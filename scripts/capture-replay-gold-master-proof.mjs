@@ -112,6 +112,16 @@ async function waitReplay(page) {
       && root?.getAttribute('data-replay-composition') === authority
   }, replayAuthority, { timeout: 45_000 })
   await root.locator('canvas').first().waitFor({ state: 'visible', timeout: 45_000 })
+  await page.waitForFunction(() => {
+    const roots = [...document.querySelectorAll('[data-testid="cinematic-replay-client"]')]
+    const root = roots.find((candidate) => {
+      const style = getComputedStyle(candidate)
+      const rect = candidate.getBoundingClientRect()
+      return style.display !== 'none' && style.visibility !== 'hidden' && Number.parseFloat(style.opacity || '1') > 0.02
+        && rect.width > 100 && rect.height > 100
+    })
+    return root?.getAttribute('data-replay-render-ready') === 'true'
+  }, null, { timeout: 45_000, polling: 50 })
   await delay(900)
   await waitFrames(page)
   return root
@@ -178,6 +188,7 @@ async function describeReplay(page, { playingExpected = false, reducedExpected =
       demoProductHidden,
       canvasWidth: canvasRect ? Math.round(canvasRect.width) : 0,
       canvasHeight: canvasRect ? Math.round(canvasRect.height) : 0,
+      renderReady: root?.getAttribute('data-replay-render-ready') === 'true',
     }
     result.passed = result.memoryStatus === 'demo'
       && result.memoryId === 'demo:quiet-reset'
@@ -192,6 +203,7 @@ async function describeReplay(page, { playingExpected = false, reducedExpected =
       && result.actionReadable
       && result.mobileActionClear
       && result.demoProductHidden
+      && result.renderReady
       && result.progressLabel.startsWith('Memory unfolding,')
       && (playingExpected ? (result.playing && result.actionLabel === 'Hold memory') : (!result.playing && result.actionLabel === 'Begin memory'))
       && (!reducedExpected || result.reducedMatches)
