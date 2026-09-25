@@ -67,7 +67,7 @@
       "fallback": "not-current-runtime-authority",
       "source": "URAI self-authored deterministic static geometry retained for provenance only; current Ground canopy authority is the governed optimized CC0 Poly Haven Jacaranda asset",
       "license": "URAI Labs internal proprietary production asset",
-      "releaseState": "historical-supporting-reference",
+      "releaseState": "supporting-reference",
       "authorityRole": "rejected-current-runtime-canopy-reference",
       "runtimeConsumptionAllowed": false
     },
