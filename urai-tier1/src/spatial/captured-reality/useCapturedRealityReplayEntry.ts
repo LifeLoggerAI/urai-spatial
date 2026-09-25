@@ -51,7 +51,7 @@ export function useCapturedRealityReplayEntry(memoryId: string | null) {
         }
         setEntry({
           assetId: data.assetId,
-          href: `/spatial/captured-reality/${encodeURIComponent(data.assetId)}`,
+          href: `/spatial/captured-reality?assetId=${encodeURIComponent(data.assetId)}`,
           truthLabel: data.truthLabel ?? 'Spatial reconstruction from recorded sources',
         })
       }).catch(() => {
