@@ -34,6 +34,25 @@
       "releaseState": "pending-final-review"
     },
     {
+      "id": "portal-ring-master-v1",
+      "kind": "model",
+      "fixedPath": "urai-tier1/public/assets/urai/generated/models/portal-ring-master-v1.glb",
+      "targetRoutes": [],
+      "targetBoundsMeters": [
+        3.9753,
+        5.4779,
+        2.2549
+      ],
+      "maxTriangles": 24000,
+      "requiredCompression": "draco-or-meshopt",
+      "fallback": "procedural-portal-ring",
+      "source": "URAI Labs deterministic authored sanctuary v3 pipeline; replaceable only by a separately reviewed provider asset",
+      "license": "URAI Labs internal proprietary production asset",
+      "releaseState": "supporting-reference",
+      "authorityRole": "non-runtime-portal-reference",
+      "runtimeConsumptionAllowed": false
+    },
+    {
       "id": "ground-world-terrain-v1",
       "kind": "model",
       "fixedPath": "urai-tier1/public/assets/urai/generated/models/ground-world-terrain-v1.glb",

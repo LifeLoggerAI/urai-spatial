@@ -26,8 +26,13 @@ async function waitPath(page, expected, timeout = 60_000) {
 async function waitAttr(locator, name, expected, timeout = 60_000) {
   const start = Date.now()
   while (Date.now() - start < timeout) {
-    if ((await locator.count()) && await locator.getAttribute(name) === expected) return
-    await sleep(100)
+    const remaining = timeout - (Date.now() - start)
+    if (remaining <= 0) break
+    if (await locator.count()) {
+      const value = await locator.getAttribute(name, { timeout: Math.min(1_000, remaining) }).catch(() => null)
+      if (value === expected) return
+    }
+    await sleep(Math.min(100, remaining))
   }
   throw new Error(`timeout waiting for ${name}=${expected}`)
 }
@@ -107,11 +112,8 @@ async function proveRealHomeAscent(page, journey, home, mode) {
 
   const canvas = home.locator('canvas').first()
   await canvas.waitFor({ state: 'visible', timeout: 45_000 })
-  const box = await canvas.evaluate((node) => {
-    const rect = node.getBoundingClientRect()
-    return { width: rect.width, height: rect.height }
-  })
-  assert.ok(box.width > 200 && box.height > 200, 'Home canvas must expose the governed broad-sky interaction surface')
+  const box = await canvas.boundingBox()
+  assert.ok(box && box.width > 200 && box.height > 200, 'Home canvas must expose the governed broad-sky interaction surface')
 
   // The sky interaction itself owns the validity law (upward ray direction).
   // Try several upper-sky points rather than encoding retired world geometry.
@@ -119,8 +121,8 @@ async function proveRealHomeAscent(page, journey, home, mode) {
   let activated = false
   for (const [x, y] of points) {
     const position = { x: box.width * x, y: box.height * y }
-    if (mode === 'touch') await canvas.tap({ position })
-    else await canvas.click({ position })
+    if (mode === 'touch') await page.touchscreen.tap(box.x + position.x, box.y + position.y)
+    else await canvas.click({ position, timeout: 5_000 })
     try {
       await waitAttr(home, 'data-home-scene-phase', 'SKY_ASCENT', 2_500)
       activated = true
