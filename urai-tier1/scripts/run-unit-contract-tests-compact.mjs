@@ -16,6 +16,7 @@ const tests = [
   'tests/accessibility-performance-source-contract.test.mjs',
   'tests/post-render-cadence.test.mjs',
   'tests/home-orb-arrival-clearance.test.mjs',
+  'tests/home-late-hotspot-retirement.test.mjs',
   'tests/body-biometric-contract.test.mjs',
   'tests/continuous-spatial-restoration-contract.test.mjs',
   'tests/embodied-exploration-contract.test.mjs',

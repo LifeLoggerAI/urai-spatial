@@ -62,7 +62,7 @@ function RetireLocalizedLifeMapGateways() {
   useEffect(() => {
     const hidden = new Map<THREE.Object3D, boolean>()
     const raycasts = new Map<THREE.Object3D, THREE.Object3D['raycast']>()
-    const retire = () => scene.traverse((object) => {
+    const retire = (root: THREE.Object3D = scene) => root.traverse((object) => {
       const localizedLifeMap = retiredLifeMapNames.some((pattern) => pattern.test(object.name))
       const localizedV282Light = object instanceof THREE.PointLight
         && object.parent?.name === 'home-v282-scanned-destination-geology'
@@ -77,10 +77,17 @@ function RetireLocalizedLifeMapGateways() {
         child.raycast = () => undefined
       })
     })
+    let disposed = false
+    const childAdded = ({ child }: { child: THREE.Object3D }) => {
+      queueMicrotask(() => {
+        if (!disposed && child.parent === scene) retire(child)
+      })
+    }
+    scene.addEventListener('childadded', childAdded)
     retire()
-    const timers = [window.setTimeout(retire, 80), window.setTimeout(retire, 260), window.setTimeout(retire, 700)]
     return () => {
-      timers.forEach((timer) => window.clearTimeout(timer))
+      disposed = true
+      scene.removeEventListener('childadded', childAdded)
       hidden.forEach((visible, object) => { object.visible = visible })
       raycasts.forEach((raycast, object) => { object.raycast = raycast })
     }

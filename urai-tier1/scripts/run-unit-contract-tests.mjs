@@ -9,6 +9,7 @@ const focusedContractTests = [
   'tests/body-biometric-contract.test.mjs',
   'tests/post-render-cadence.test.mjs',
   'tests/home-orb-arrival-clearance.test.mjs',
+  'tests/home-late-hotspot-retirement.test.mjs',
   'tests/embodied-exploration-contract.test.mjs',
   'tests/ewi-environment-sensor-contract.test.mjs',
   'tests/field-reconstruction-phase5-contract.test.mjs',

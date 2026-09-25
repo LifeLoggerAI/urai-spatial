@@ -197,7 +197,7 @@ function RetireLegacyHomeHotspots() {
   useEffect(() => {
     const hidden = new Map<THREE.Object3D, boolean>()
     const raycasts = new Map<THREE.Object3D, THREE.Object3D['raycast']>()
-    const retire = () => scene.traverse((object) => {
+    const retire = (root: THREE.Object3D = scene) => root.traverse((object) => {
       if (isInsideCurrentHomePresence(object)) return
       if (!legacyHotspotPatterns.some((pattern) => pattern.test(object.name))) return
       if (!hidden.has(object)) hidden.set(object, object.visible)
@@ -209,10 +209,19 @@ function RetireLegacyHomeHotspots() {
         child.raycast = () => undefined
       })
     })
+    let disposed = false
+    // Scanned assets can commit long after the initial loading boundary. Retire
+    // their old hotspots after React has finished attaching/unhiding the subtree.
+    const childAdded = ({ child }: { child: THREE.Object3D }) => {
+      queueMicrotask(() => {
+        if (!disposed && child.parent === scene) retire(child)
+      })
+    }
+    scene.addEventListener('childadded', childAdded)
     retire()
-    const timers = [window.setTimeout(retire, 100), window.setTimeout(retire, 360)]
     return () => {
-      timers.forEach((timer) => window.clearTimeout(timer))
+      disposed = true
+      scene.removeEventListener('childadded', childAdded)
       hidden.forEach((visible, object) => { object.visible = visible })
       raycasts.forEach((raycast, object) => { object.raycast = raycast })
     }
