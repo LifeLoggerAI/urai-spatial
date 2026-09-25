@@ -11,9 +11,9 @@ test('Life Map cosmic layout version and seed version are explicit', () => {
 
 test('memory coordinates are stable by memory identity rather than array index', () => {
   const fn = source.slice(source.indexOf('function cosmicPoint('), source.indexOf('\n}\n\nfunction truthLabel', source.indexOf('function cosmicPoint(')) + 2)
-  assert.match(fn, /function cosmicPoint\(node: LifeMapNode, _index: number\)/)
+  assert.match(fn, /function cosmicPoint\(node: LifeMapNode\)/)
   assert.match(fn, /hash\(`v\$\{COSMIC_LAYOUT_VERSION\}:s\$\{COSMIC_SEED_VERSION\}:\$\{node\.id\}:\$\{node\.eraId \|\| "era"\}:\$\{node\.clusterId \|\| node\.type\}`\)/)
-  assert.doesNotMatch(fn, /\b_index\b[\s\S]*[+*%]|node\.position\[[012]\]\s*\*\s*index|index\s*\*/)
+  assert.doesNotMatch(fn, /\bindex\b/)
 })
 
 test('stable placement preserves real three-axis depth', () => {
@@ -23,9 +23,9 @@ test('stable placement preserves real three-axis depth', () => {
 })
 
 test('every consumer uses the same cosmic point authority for rendering and camera travel', () => {
-  assert.match(source, /positionOverride \?\? cosmicPoint\(node, index\)/)
-  assert.match(source, /new THREE\.Vector3\(\.\.\.cosmicPoint\(selected, selectedIndex\)\)/)
-  assert.match(source, /selected \? cosmicPoint\(selected, selectedIndex\) : null/)
+  assert.match(source, /positionOverride \?\? cosmicPoint\(node\)/)
+  assert.match(source, /new THREE\.Vector3\(\.\.\.cosmicPoint\(selected\)\)/)
+  assert.match(source, /selected \? cosmicPoint\(selected\) : null/)
 })
 
 test('retired terrain layout authority cannot silently reclaim current geography', () => {
