@@ -18,10 +18,13 @@ dataProcessing:
   collectedFields:
     - name: captured_reality_source_reference
       collectionOrTable: users/{uid}/capturedRealityAssets
-      dataClass: L4
+      dataClass: L3
       source: user
       purpose: bind owner-authorized source media to a private real-place reconstruction
-      consentTier: C3
+      consentTier: C1
+      requiredConsentPurposes:
+        - memory.storage
+        - location.context
       retentionClass: R3
       exportable: true
       deletable: true
@@ -29,22 +32,28 @@ dataProcessing:
   derivedFields:
     - name: captured_reality_manifest
       collectionOrTable: users/{uid}/capturedRealityAssets
-      dataClass: L4
+      dataClass: L3
       sourceFields:
         - captured_reality_source_reference
       purpose: record provenance, truth class, privacy, reconstruction method and runtime delivery metadata
-      consentTier: C3
+      consentTier: C1
+      requiredConsentPurposes:
+        - memory.storage
+        - location.context
       retentionClass: R3
       exportable: true
       deletable: true
       explainabilityRequired: true
     - name: captured_reality_runtime_asset
       collectionOrTable: private object storage
-      dataClass: L4
+      dataClass: L3
       sourceFields:
         - captured_reality_source_reference
       purpose: deliver an owner-authorized optimized private spatial reconstruction
-      consentTier: C3
+      consentTier: C1
+      requiredConsentPurposes:
+        - memory.storage
+        - location.context
       retentionClass: R3
       exportable: true
       deletable: true
@@ -75,4 +84,4 @@ monetization:
 review:
   reviewer: TBD
   decision: blocked_until_source_runtime_visual_and_independent_review
-  notes: C3 location.context is the canonical location authority. Exact/private locations remain owner-only. Runtime delivery is short-lived and server-authorized. XR is separately hard-off until physical-device certification.
+  notes: Stored reconstruction content uses C1 memory.storage as L3 personal content; runtime additionally requires C3 location.context. Exact/private locations remain owner-only. Runtime delivery is short-lived and server-authorized. XR is separately hard-off until physical-device certification.
