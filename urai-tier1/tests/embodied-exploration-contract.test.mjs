@@ -12,7 +12,9 @@ const has = (source, marker) => assert.equal(source.includes(marker), true, `mis
 const homeGraph = read('src/app/AssetDrivenHomeWorld.tsx')
 const homeRuntime = read('src/spatial/layout/HomeWorldProduction.tsx')
 const activeHomeRuntime3d = read('src/spatial/layout/HomeWorldProductionV223.tsx')
-const homeArt = read('src/spatial/layout/HomeWorldProductionV76.tsx')
+const homePolish = read('src/spatial/layout/HomeWorldProductionV225PolishV3.tsx')
+const homeArtRepair = read('src/spatial/layout/HomeCurrentArtRepair.tsx')
+const homeVisualAuthority = read('src/spatial/layout/HomeVisualAuthority.tsx')
 const ground = read('src/app/GroundSpatialWorldClean.tsx')
 const lifeMap = read('src/spatial/lifemap/SpatialLifeMapCanonical.tsx')
 const travel = read('src/spatial/navigation/EmbodiedNavigation.tsx')
@@ -69,39 +71,51 @@ test('Home keeps one V223 Canvas owner with direct bodyless first-person presenc
   assert.doesNotMatch(activeHomeRuntime3d, /privacy-preserving-first-person/)
   assert.doesNotMatch(activeHomeRuntime3d, /first-person-hand|fps-hand|player-hands|weapon-rig/i)
   assert.doesNotMatch(activeHomeRuntime3d, /const keys = useRef\(new Set<string>\(\)\)/)
-  assert.doesNotMatch(homeArt, /<Canvas/)
+  for (const source of [homePolish, homeArtRepair, homeVisualAuthority]) assert.doesNotMatch(source, /<Canvas/)
   assert.doesNotMatch(homeGraph, /PRODUCTION CERTIFIED|retained-pixel-pass|pixel-certified/)
 })
-test('V185 preserves embodied authority while repairing contour terrain, camera clipping, weak destinations and weak Orb presence', () => {
+test('current Home art chain keeps legacy hotspot geometry retired while preserving inhabited threshold and current Orb authority', () => {
   for (const marker of [
-    'function SculptedCanyonGround(', 'home-v125-sculpted-canyon-ground',
-    'continuous-weathered-canyon-camera-safe-destination-basins-soft-strata-no-contour-staircase',
-    'home-v126-continuous-walkable-terrace-network',
-    'governed-landscape-provenance-retained-nonrendered-single-ground-owner',
-    'legacy-alcove-meshes-remain-disabled-no-gate-facade',
-    'edge-scans-outside-primary-frustum-no-pasted-islands',
-    'function FramedFissure(', 'terrain-flush-readable-destination-cut-clear-camera-corridor-no-door-no-ring',
-    'camera-safe-basin-wide-ground-level-signal-place-no-upright-gate', 'home-v175-${side}-terrain-signal-veins',
-    'function weatheredSanctuaryMassGeometry(', 'home-v149-weathered-rift-threshold-sanctuary',
-    'detached-mass-family-retained-as-nonrendered-provenance-no-piles',
-    'function ApseAndOrbCradle(', 'home-v126-layered-apse-orb-cradle',
-    'detached-apse-masses-retained-nonrendered-no-pedestal',
-    'function LivingOrb(', 'home-v126-apse-integrated-orb', 'home-v126-orb-memory-motes',
-    'home-v154-orb-memory-depth-motes', 'home-v174-orb-memory-nucleus-motes', 'home-v179-orb-memory-heart-motes',
-    'single-connected-folded-memory-mantle-with-state-specific-silhouette-timing-emission-and-surface-response',
-    'v185-continuous-weathered-canyon-camera-safe-destination-basins-large-contained-memory-orb-no-runway',
-    'remove-contour-staircase-carve-camera-safe-destination-basins-brighten-world-sky-enlarge-point-orb-hide-solid-seed',
-  ]) has(homeArt, marker)
-  assert.match(homeArt, /name="home-v154-inlaid-stone-approach"[^>]*visible=\{false\}/)
-  assert.match(homeArt, /name="home-v131-passive-signal-arrival-path"[^>]*visible=\{false\}/)
-  assert.match(homeArt, /<primitive object=\{environment\} visible=\{false\} \/>/)
-  assert.match(homeArt, /<primitive object=\{thresholds\} visible=\{false\} \/>/)
-  assert.match(homeArt, /name="home-v126-apse-integrated-orb"[^>]*scale=\{motion\.scale\}/)
-  assert.match(homeArt, /name="home-v182-orb-faceted-mineral-seed"[^>]*visible=\{false\}/)
-  assert.match(homeArt, /const ORB = new THREE\.Vector3\(-0\.18, 2\.18, -6\.90\)/)
-  assert.doesNotMatch(homeArt, /function canyonShelfGeometry|function CanyonShelf|home-v164-\$\{side\}-continuous-canyon-shelf/)
-  assert.doesNotMatch(homeArt, /<ringGeometry|<torusGeometry|<RoundedBox/)
-  assert.doesNotMatch(homeArt, /retained-pixel-pass|pixel-certified|PRODUCTION CERTIFIED/)
+    "import { HomeCurrentArtRepair } from './HomeCurrentArtRepair'",
+    "import { HomeAAAVisualRepair } from './HomeAAAVisualRepair'",
+    "import { HomeVisualAuthority } from './HomeVisualAuthority'",
+    '<HomeCurrentArtRepair orbState={orbState}',
+    '<HomeAAAVisualRepair />',
+    '<HomeVisualAuthority />',
+    'function RetireLegacyHomeHotspots()',
+    '/home-v226-ground-inhabited-hearth/',
+    '/home-v231-ground-weathered-threshold/',
+    '/home-current-ground-geological-descent/',
+    '/home-aaa-v281-ground-recessed-geological-descent/',
+    '/home-v282-ground-geology/',
+    '/home-v226-rooted-single-living-memory-presence/',
+    '/home-current-orb/',
+    '/home-orb-/',
+    "const CURRENT_HOME_PRESENCE_ROOTS = new Set(['home-living-memory-orb', 'home-orb-v288-visible-authority'])",
+  ]) has(activeHomeRuntime3d, marker)
+
+  for (const marker of [
+    'same-world-inhabited-home-threshold-v1',
+    'portal: false',
+    'open toward the winding Home terrain and broad',
+    'inhabited threshold rather than an outdoor',
+    'canyon or portal lobby',
+  ]) has(homeArtRepair, marker)
+
+  for (const marker of [
+    "import { HomeOrbGroundedV288 } from '@/spatial/assets/HomeOrbGroundedV288'",
+    'Current Home Orb visual authority shim.',
+    'last certified V288 grounded biomorphic reliquary authority while fresh',
+    'return <HomeOrbGroundedV288 />',
+  ]) has(homeVisualAuthority, marker)
+
+  assert.match(homePolish, /name="home-v226-ground-inhabited-hearth"/)
+  assert.match(homePolish, /name="home-v226-rooted-single-living-memory-presence"/)
+  assert.doesNotMatch(homeArtRepair, /<Canvas/)
+  assert.doesNotMatch(homeVisualAuthority, /<Canvas/)
+  assert.doesNotMatch(homePolish, /retained-pixel-pass|pixel-certified|PRODUCTION CERTIFIED/)
+  assert.doesNotMatch(homeArtRepair, /retained-pixel-pass|pixel-certified|PRODUCTION CERTIFIED/)
+  assert.doesNotMatch(homeVisualAuthority, /retained-pixel-pass|pixel-certified|PRODUCTION CERTIFIED/)
 })
 
 test('current Home telemetry and destination authority stay bound to the V223 owner', () => {
