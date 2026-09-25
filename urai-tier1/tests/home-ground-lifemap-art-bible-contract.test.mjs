@@ -27,7 +27,9 @@ test('Home is direct bodyless camera-only first-person without changing Ground o
     'physicalWorldClick',
     'event.point.clone()',
   ]) has(currentHome, marker)
-  assert.doesNotMatch(currentHome, /HomeEmbodiedAvatar|urai-home-user-avatar|home-human-makehuman-v4\.glb|visible-avatar-presentation-activation-gate|home-avatar-presentation/)
+  assert.doesNotMatch(currentHome, /import\s+\{?\s*HomeEmbodiedAvatar|<HomeEmbodiedAvatar\b|home-human-makehuman-v4\.glb|visible-avatar-presentation-activation-gate|home-avatar-presentation/)
+  assert.match(currentHome, /\/urai-home-user-avatar\//)
+  assert.match(currentHome, /function RetireLegacyHomeHotspots\(\)/)
   assert.match(currentHome, /data-home-art-revision="v293-direct-bodyless-first-person-convergence"/)
   assert.match(currentHome, /CURRENT_HOME_PRESENCE_ROOTS = new Set\(\['home-living-memory-orb', 'home-orb-v288-visible-authority'\]\)/)
 })
