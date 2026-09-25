@@ -319,7 +319,8 @@ class Builder:
         if transmission>0: ext['KHR_materials_transmission']={'transmissionFactor':transmission}; self.extensions.add('KHR_materials_transmission')
         if clearcoat>0: ext['KHR_materials_clearcoat']={'clearcoatFactor':clearcoat,'clearcoatRoughnessFactor':.12}; self.extensions.add('KHR_materials_clearcoat')
         if ext:m['extensions']=ext
-        if alpha!='OPAQUE':m['alphaMode']=alpha;m['alphaCutoff']=.02
+        if alpha!='OPAQUE': m['alphaMode']=alpha
+        if alpha=='MASK': m['alphaCutoff']=.02
         if double:m['doubleSided']=True
         self.materials.append(m); return len(self.materials)-1
     def add_standard_materials(self):
