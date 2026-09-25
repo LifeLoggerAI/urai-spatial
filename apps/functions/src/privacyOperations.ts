@@ -213,6 +213,7 @@ function affectedTargets(domain: ConsentDomain, next: ConsentDomainPolicy): stri
     targets.add('location-collection')
     targets.add('location-precision')
     targets.add('location-retention')
+    targets.add('captured-reality-runtime')
   }
   if (domain === 'models') {
     targets.add('model-context-retrieval')
@@ -471,7 +472,7 @@ function redactSecrets(value: unknown): unknown {
   if (!isRecord(value)) return value
   const output: JsonMap = {}
   for (const [key, item] of Object.entries(value)) {
-    if (/token|secret|password|api.?key|credential|privateMediaUrl|rawAudioUrl/i.test(key)) continue
+    if (/token|secret|password|api.?key|credential|privateMediaUrl|rawAudioUrl|runtimeObject|sourceLocator|exactLocation|privateObject/i.test(key)) continue
     output[key] = redactSecrets(item)
   }
   return output
@@ -558,6 +559,7 @@ async function buildExport(snapshot: FirebaseFirestore.DocumentSnapshot) {
       data.focusStates = await collectionDocuments(userRef.collection('focusStates'))
       data.transitionStates = await collectionDocuments(userRef.collection('transitionStates'))
       data.spatialAnchors = await collectionDocuments(userRef.collection('spatialAnchors'))
+      data.capturedRealityAssets = await collectionDocuments(userRef.collection('capturedRealityAssets'))
     }
     if (scopes.includes('audit')) {
       data.receipts = await collectionDocuments(userRef.collection('privacyReceipts'))
@@ -759,6 +761,7 @@ const DELETION_COLLECTIONS: Record<Exclude<DeletionScope, 'account'>, string[]> 
     'spatialAnchors',
     'userSpatialPreferences',
     'spatialSessions',
+    'capturedRealityAssets',
   ],
   'all-repository-data': [
     'exportJobs',
@@ -777,8 +780,14 @@ const DELETION_COLLECTIONS: Record<Exclude<DeletionScope, 'account'>, string[]> 
     'spatialAnchors',
     'userSpatialPreferences',
     'spatialSessions',
+    'capturedRealityAssets',
     'providerConnections',
   ],
+}
+
+async function deleteCapturedRealityStorage(uid: string) {
+  const bucket = admin.storage().bucket()
+  await bucket.deleteFiles({ prefix: `private-captured-reality/${uid}/` })
 }
 
 async function processDeletion(snapshot: FirebaseFirestore.DocumentSnapshot) {
@@ -803,9 +812,13 @@ async function processDeletion(snapshot: FirebaseFirestore.DocumentSnapshot) {
     const userRef = db.doc(`users/${uid}`)
     const deletedCollections: string[] = []
     if (scope === 'account') {
+      await deleteCapturedRealityStorage(uid)
       await db.recursiveDelete(userRef)
       await admin.auth().deleteUser(uid)
     } else {
+      if (scope === 'spatial-state' || scope === 'all-repository-data') {
+        await deleteCapturedRealityStorage(uid)
+      }
       for (const collectionName of DELETION_COLLECTIONS[scope]) {
         await db.recursiveDelete(userRef.collection(collectionName))
         deletedCollections.push(collectionName)
