@@ -93,7 +93,7 @@ requireTokens('urai-tier1/src/app/demo/replay-film/page.tsx', [
 
 requireTokens('urai-tier1/src/app/privacy-controls/page.tsx', [
   "import ConsentSanctuaryClient from './ConsentSanctuaryClient'",
-  "title: 'URAI Privacy — Permissions & Consent'",
+  "title: 'UrAi Privacy - Permissions & Consent'",
   'return <ConsentSanctuaryClient />',
 ])
 requireTokens('urai-tier1/src/app/privacy-controls/ConsentSanctuaryClient.tsx', [
