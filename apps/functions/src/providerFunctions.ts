@@ -317,7 +317,7 @@ export const elevenLabsVoiceProvider = onRequest({
       headers: { 'xi-api-key': ELEVENLABS_API_KEY.value(), 'Content-Type': 'application/json', Accept: 'audio/mpeg' },
       body: JSON.stringify({
         text,
-        model_id: process.env.ELEVENLABS_MODEL_ID || 'eleven_multilingual_v2',
+        model_id: process.env.ELEVENLABS_MODEL_ID || 'eleven_v3',
         voice_settings: { stability: 0.66, similarity_boost: 0.78, style: 0.18, use_speaker_boost: true },
       }),
       signal: controller.signal,
