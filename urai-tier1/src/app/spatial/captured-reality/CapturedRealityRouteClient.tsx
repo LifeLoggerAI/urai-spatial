@@ -156,7 +156,7 @@ export default function CapturedRealityRouteClient() {
     setDelivery(null)
     setDecision(suppressedDecision(truthLabelRef.current))
     setState({ kind: 'suppressed', message })
-  }, [assetId])
+  }, [])
 
   useEffect(() => {
     if (!assetId) {
@@ -173,7 +173,7 @@ export default function CapturedRealityRouteClient() {
       setUser(nextUser)
       if (!nextUser) setState({ kind: 'unauthenticated' })
     })
-  }, [])
+  }, [assetId])
 
   useEffect(() => {
     if (!user || !assetId) return
