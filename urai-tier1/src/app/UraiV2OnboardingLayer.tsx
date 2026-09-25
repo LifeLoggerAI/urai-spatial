@@ -9,6 +9,7 @@ import {
   ONBOARDING_COMPLETION_KEY,
   ONBOARDING_SETUP_COMPLETE_KEY,
   ONBOARDING_SETUP_STEP_KEY,
+  ONBOARDING_SETUP_STEPS,
   isOnboardingSetupStep,
   nextOnboardingSetupStep,
   onboardingSetupStepIndex,
@@ -63,7 +64,7 @@ const cards = {
 
 const setupCopy: Record<OnboardingSetupStep, { eyebrow: string; title: string; body: string }> = {
   welcome: {
-    eyebrow: 'WELCOME TO URAI',
+    eyebrow: 'WELCOME TO UrAi',
     title: 'Your world begins with what you choose.',
     body: 'UrAi turns the signals and memories you choose to share into an explorable private world. You can enter Home before connecting optional data or permissions.',
   },
@@ -71,6 +72,11 @@ const setupCopy: Record<OnboardingSetupStep, { eyebrow: string; title: string; b
     eyebrow: 'PRIVATE BY DEFAULT',
     title: 'Permission is part of the world, not a hidden switch.',
     body: 'Feature-level permissions stay reversible in the Consent Sanctuary. Global Emotional Field contribution starts Off and is controlled separately in Passport.',
+  },
+  history: {
+    eyebrow: 'YOUR HISTORY, YOUR CHOICE',
+    title: 'Bring context in only when you ask.',
+    body: 'Signing in does not import anything. Connected accounts and historical imports are separate choices, and imported material does not become memory or generated media without the applicable use permission.',
   },
   comfort: {
     eyebrow: 'DEVICE FEEL',
@@ -180,7 +186,7 @@ function OnboardingCardContent() {
 
   const retreatSetup = () => {
     const index = onboardingSetupStepIndex(setupStep)
-    const previous = (['welcome', 'privacy', 'comfort', 'orb'] as const)[Math.max(0, index - 1)]
+    const previous = ONBOARDING_SETUP_STEPS[Math.max(0, index - 1)]
     safeSet(ONBOARDING_SETUP_STEP_KEY, previous)
     setSetupStep(previous)
   }
@@ -221,6 +227,13 @@ function OnboardingCardContent() {
             </div>
           ) : null}
 
+          {setupStep === 'history' ? (
+            <div className="uraiV2OnboardingLinks" aria-label="Historical context controls">
+              <a href="/settings#connected-data">Connected accounts</a>
+              <a href="/privacy-controls">Review permissions</a>
+            </div>
+          ) : null}
+
           {setupStep === 'comfort' ? (
             <div className="uraiV2OnboardingComfort" aria-label="Sensory preferences">
               <label><input type="checkbox" checked={audioEnabled} onChange={(event) => updateAudio(event.currentTarget.checked)} /> <span>World audio</span></label>
@@ -229,7 +242,7 @@ function OnboardingCardContent() {
             </div>
           ) : null}
 
-          <p className="uraiV2OnboardingProgress" aria-live="polite">Step {stepIndex + 1} of 4</p>
+          <p className="uraiV2OnboardingProgress" aria-live="polite">Step {stepIndex + 1} of {ONBOARDING_SETUP_STEPS.length}</p>
           <div className="uraiV2OnboardingActions">
             {stepIndex > 0 ? <button type="button" onClick={retreatSetup}>Back</button> : null}
             <button type="button" className="primary" onClick={advanceSetup}>{setupStep === 'orb' ? 'Begin guided tour' : 'Continue'}</button>
