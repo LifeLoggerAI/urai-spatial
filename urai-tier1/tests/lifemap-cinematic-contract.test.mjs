@@ -59,13 +59,13 @@ test('Life Map keeps deterministic camera travel Escape recovery reduced motion 
     'event.key !== "Escape"',
     'profile.reducedMotion',
     'const returnHome = useCallback',
-    'router.push(explicitDemoRequested ? "/home?demo=1" : "/home")',
+    'router.push(explicitDemo ? "/home?demo=1" : "/home")',
     'webglcontextlost',
     'webglcontextrestored',
   ])
   assert.match(scene, /const PHASE_MS = \{ departure: 900, travel: 1500, approach: 2200 \}/)
-  assert.match(scene, /if \(profile\.reducedMotion\) setPhase\("arrival"\)/)
-  assert.match(scene, /else setPhase\("departure"\)/)
+  assert.match(scene, /setPhase\(profile\.reducedMotion \? "arrival" : "departure"\)/)
+  assert.match(scene, /if \(profile\.reducedMotion\) \{ journey\.current \+= 1; setPhase\("arrival"\); return; \}/)
   assert.match(scene, /phase === "departure"\) setPhase\("travel"\)/)
   assert.match(scene, /phase === "travel"\) setPhase\("approach"\)/)
   assert.match(scene, /phase === "approach"\) setPhase\("arrival"\)/)
