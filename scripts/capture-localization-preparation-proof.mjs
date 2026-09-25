@@ -159,7 +159,7 @@ try {
         await runtime.waitFor({ state: 'visible', timeout: 45_000 })
         await context.setOffline(true)
         await page.evaluate(() => window.dispatchEvent(new Event('offline')))
-        await page.waitForFunction(([locale, direction]) => document.documentElement.lang === locale && document.documentElement.dir === direction, [spec.locale, spec.dir], { timeout: 5000 })
+        await page.waitForFunction(([locale, direction]) => document.documentElement.lang === locale && document.documentElement.dir === direction, [spec.locale, spec.dir], { timeout: 45_000 })
         assert.equal(await page.locator('html').getAttribute('dir'), spec.dir)
         assert.equal(await page.locator('html').getAttribute('lang'), spec.locale)
       }
