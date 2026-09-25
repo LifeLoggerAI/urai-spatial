@@ -58,6 +58,20 @@ dataProcessing:
       exportable: true
       deletable: true
       explainabilityRequired: true
+    - name: captured_reality_replay_binding
+      collectionOrTable: users/{uid}/capturedRealityReplayBindings
+      dataClass: L3
+      sourceFields:
+        - captured_reality_source_reference
+      purpose: bind one owner-authorized memory to one reviewed source-backed captured place
+      consentTier: C1
+      requiredConsentPurposes:
+        - memory.storage
+        - location.context
+      retentionClass: R3
+      exportable: true
+      deletable: true
+      explainabilityRequired: true
 
 userRights:
   exportSupported: true
@@ -72,6 +86,7 @@ adminAccess:
     - captured_reality.asset_created
     - captured_reality.asset_reviewed
     - captured_reality.runtime_accessed
+    - captured_reality.replay_binding_reviewed
     - captured_reality.consent_revoked
     - captured_reality.asset_deleted
 
