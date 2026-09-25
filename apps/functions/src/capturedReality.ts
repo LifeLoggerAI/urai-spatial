@@ -32,14 +32,17 @@ async function requireLocationRuntimeConsent(uid: string) {
   ])
 
   const location = policy.get('domains.location') as Record<string, unknown> | undefined
-  const mode = String(location?.mode ?? 'denied')
-  const policyAllowed = mode === 'granted' || mode === 'limited'
+  const memory = policy.get('domains.memory') as Record<string, unknown> | undefined
+  const locationMode = String(location?.mode ?? 'denied')
+  const memoryMode = String(memory?.mode ?? 'denied')
+  const locationAllowed = locationMode === 'granted' || locationMode === 'limited'
+  const memoryAllowed = memoryMode === 'granted' || memoryMode === 'limited'
   const runtimeAllowed = runtime.exists && runtime.get('enabled') === true
 
-  if (!policyAllowed || !runtimeAllowed) {
+  if (!locationAllowed || !memoryAllowed || !runtimeAllowed) {
     throw new functions.https.HttpsError(
       'permission-denied',
-      'LOCATION_CONTEXT_CONSENT_REQUIRED',
+      'CAPTURED_REALITY_MEMORY_AND_LOCATION_CONSENT_REQUIRED',
     )
   }
 }
