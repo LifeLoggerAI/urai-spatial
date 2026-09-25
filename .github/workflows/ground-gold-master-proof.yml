@@ -42,9 +42,14 @@ jobs:
       matrix:
         scenario:
           - temperate-desktop
+          - temperate-large-desktop
           - woodland-desktop
+          - temperate-phone-narrow
           - temperate-phone-portrait
+          - temperate-phone-large
           - woodland-phone-portrait
+          - temperate-tablet-portrait
+          - temperate-tablet-landscape
           - temperate-reduced-motion
     runs-on: ubuntu-24.04
     timeout-minutes: 60
@@ -112,7 +117,7 @@ jobs:
           if (receipt.exactHead !== head) throw new Error('Ground exact-head mismatch')
           if (receipt.errors.length) throw new Error(`Ground receipt has ${receipt.errors.length} errors`)
           if (receipt.scenarios.length !== 1 || receipt.scenarios[0]?.id !== scenario) throw new Error('Ground scenario receipt mismatch')
-          const expectedCaptures = scenario.includes('phone-portrait') ? 2 : 5
+          const expectedCaptures = scenario.includes('phone-') || scenario.includes('tablet-') ? 2 : 5
           if (receipt.captures.length !== expectedCaptures) throw new Error(`Ground capture matrix incomplete for ${scenario}: ${receipt.captures.length}/${expectedCaptures}`)
           if (receipt.captures.some((capture) => capture.scenario !== scenario)) throw new Error('Ground receipt contains cross-scenario evidence')
           NODE
