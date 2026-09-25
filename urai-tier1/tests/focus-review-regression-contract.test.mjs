@@ -1,3 +1,6 @@
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
+const focusProof = readFileSync(resolve("../scripts/capture-focus-gold-master-proof.mjs"), "utf8");
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import test from 'node:test'
@@ -106,4 +109,12 @@ test('Focus convergence preserves Replay activation, selected-memory semantics, 
   assert.match(focus, /destination: 'replay'/)
   assert.match(focus, /requestUraiWorldReturn\(\)/)
   assert.match(focus, /terrainOwner: false/)
+})
+
+
+test('Focus Gold Master proof requires actual WebGL render readiness before visual acceptance', () => {
+  assert.match(focus, /shellRef\.current\.dataset\.focusRenderReady = 'true'/)
+  assert.match(focusProof, /data-focus-render-ready/)
+  assert.match(focusProof, /renderReady: shell\?\.getAttribute\('data-focus-render-ready'\) === 'true'/)
+  assert.match(focusProof, /result\.canvasVisible && result\.renderReady/)
 })
