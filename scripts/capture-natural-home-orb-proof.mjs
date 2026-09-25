@@ -33,9 +33,13 @@ const runtimeIdentity = {
 }
 const cases = [
   { id: 'desktop', viewport: { width: 1440, height: 900 } },
+  { id: 'desktop-large', viewport: { width: 1920, height: 1080 } },
   { id: 'laptop', viewport: { width: 1280, height: 800 } },
   { id: 'mobile', viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true },
   { id: 'mobile-narrow', viewport: { width: 320, height: 900 }, isMobile: true, hasTouch: true },
+  { id: 'mobile-large', viewport: { width: 430, height: 932 }, isMobile: true, hasTouch: true },
+  { id: 'tablet-portrait', viewport: { width: 768, height: 1024 }, isMobile: true, hasTouch: true },
+  { id: 'tablet-landscape', viewport: { width: 1024, height: 768 }, isMobile: true, hasTouch: true },
   { id: 'reduced-motion', viewport: { width: 1440, height: 900 }, reducedMotion: 'reduce' },
   { id: 'mobile-warning', viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, orbState: 'warning' },
   { id: 'reduced-motion-privacy', viewport: { width: 1440, height: 900 }, reducedMotion: 'reduce', orbState: 'privacy' },
