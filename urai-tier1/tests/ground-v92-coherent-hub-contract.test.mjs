@@ -10,7 +10,7 @@ test('Ground renders the current atmospheric lived world instead of the rejected
   assert.match(ground, /data-ground-art-revision="ground-v35-optimized-cc0-jacaranda-canopy"/)
   assert.match(ground, /data-ground-visual-owner="atmospheric-living-environment"/)
   assert.match(ground, /<AtmosphericGroundSky profile=\{profile\} \/>/)
-  assert.match(ground, /<NaturalScatter profile=\{profile\} \/>/)
+  assert.match(ground, /<NaturalScatter profile=\{profile\} onCanopyReady=\{onCanopyReady\} \/>/)
   assert.match(ground, /<DistantGroundContinuation profile=\{profile\} \/>/)
   assert.match(ground, /const GROUND_BROADLEAF_CANOPY = "\/assets\/urai\/ground-production\/cc0\/polyhaven-jacaranda-web-v1\.glb"/)
   assert.match(ground, /name="ground-cc0-jacaranda-canopy-v35"/)
