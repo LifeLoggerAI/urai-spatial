@@ -62,6 +62,7 @@ const asset = (overrides = {}) => ({
   anchorEntityId: 'place-1',
   truthClass: 'spatially-reconstructable',
   sourceIds: ['video-a'],
+  sourceEvidence: [{ sourceId: 'video-a', sourceType: 'video', capturedAt: '2026-09-16T00:00:00Z' }],
   reconstruction: {
     method: '3dgs',
     inputFormats: ['video', 'colmap', 'ply-3dgs'],
