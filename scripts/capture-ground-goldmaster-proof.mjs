@@ -148,6 +148,23 @@ try {
       })).catch(() => null)
       throw new Error(`${scenario.id}: Ground never reached exact ready state; diagnostic=${JSON.stringify(diagnostic)}; browserErrors=${pageErrors.join(" || ")}; cause=${String(error)}`)
     }
+    activePhase = 'wait-canopy-ready'
+    console.log(`[ground-proof] scenario=${activeScenario} phase=${activePhase}`)
+    try {
+      await page.waitForFunction(() => {
+        const root = document.querySelector('[data-testid="urai-ground-lived-world"]')
+        if (!(root instanceof HTMLElement)) return false
+        const required = root.getAttribute('data-ground-canopy-required') === 'true'
+        return !required || root.getAttribute('data-ground-canopy-ready') === 'true'
+      }, null, { timeout: mountTimeoutMs, polling: 100 })
+    } catch (error) {
+      const diagnostic = await readyRoot.evaluate((node) => ({
+        canopyRequired: node.getAttribute('data-ground-canopy-required'),
+        canopyReady: node.getAttribute('data-ground-canopy-ready'),
+        profile: node.getAttribute('data-ground-environment-profile'),
+      })).catch(() => null)
+      throw new Error(`${scenario.id}: governed canopy never reached loaded/renderable state; diagnostic=${JSON.stringify(diagnostic)}; browserErrors=${pageErrors.join(" || ")}; cause=${String(error)}`)
+    }
     await page.waitForTimeout(800)
 
     activePhase = 'read-contract'
@@ -171,6 +188,8 @@ try {
         pointerLock: node.getAttribute('data-ground-pointer-lock'),
         placeLayer: node.getAttribute('data-ground-place-layer'),
         privateLocationMounted: node.getAttribute('data-ground-private-location-mounted'),
+        canopyRequired: node.getAttribute('data-ground-canopy-required'),
+        canopyReady: node.getAttribute('data-ground-canopy-ready'),
       }
     })
 
@@ -186,6 +205,8 @@ try {
       pointerLock: 'false',
       placeLayer: 'consent-aware-empty-by-default',
       privateLocationMounted: 'false',
+      canopyRequired: 'true',
+      canopyReady: 'true',
     }
     for (const [key, value] of Object.entries(expected)) {
       if (contract[key] !== value) errors.push(`${scenario.id}: ${key}=${contract[key]} expected ${value}`)
