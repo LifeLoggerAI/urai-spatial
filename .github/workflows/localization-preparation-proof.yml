@@ -6,9 +6,13 @@ on:
       - 'urai-tier1/src/i18n/**'
       - 'urai-tier1/src/app/layout.tsx'
       - 'urai-tier1/tests/localization-runtime-bootstrap.test.mjs'
+      - 'urai-tier1/tests/localization-home-readiness.test.mjs'
       - 'brand/LOCALIZATION_20_READINESS.md'
       - 'brand/launch-asset-registry.json'
       - 'scripts/capture-localization-preparation-proof.mjs'
+      - 'scripts/lib/localization-home-readiness.mjs'
+      - 'scripts/lib/localization-layout-metrics.mjs'
+      - 'urai-tier1/tests/localization-layout-metrics.test.mjs'
       - '.github/workflows/localization-preparation-proof.yml'
   workflow_dispatch:
     inputs:
@@ -73,7 +77,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          node --test urai-tier1/tests/localization-runtime-bootstrap.test.mjs
+          node --test urai-tier1/tests/localization-runtime-bootstrap.test.mjs urai-tier1/tests/localization-home-readiness.test.mjs urai-tier1/tests/localization-layout-metrics.test.mjs
           node --check scripts/capture-localization-preparation-proof.mjs
 
       - name: Typecheck localization runtime

@@ -2,6 +2,8 @@ import assert from 'node:assert/strict'
 import fs from 'node:fs/promises'
 import path from 'node:path'
 import { createRequire } from 'node:module'
+import { readLocalizationLayoutMetrics } from './lib/localization-layout-metrics.mjs'
+import { waitForLocalizationHomeScene } from './lib/localization-home-readiness.mjs'
 
 const requireFromTierOne = createRequire(new URL('../urai-tier1/package.json', import.meta.url))
 const { chromium } = requireFromTierOne('playwright')
@@ -62,43 +64,7 @@ async function applyExpansionFixture(page) {
 }
 
 async function layoutMetrics(page) {
-  return page.evaluate(() => {
-    const root = document.documentElement
-    const body = document.body
-    const interactive = Array.from(document.querySelectorAll('button,a,[role="button"],summary'))
-      .filter((node) => node instanceof HTMLElement)
-      .map((node) => {
-        const rect = node.getBoundingClientRect()
-        const style = getComputedStyle(node)
-        const opacity = Number.parseFloat(style.opacity || '1')
-        const visuallyExposed = rect.width > 0
-          && rect.height > 0
-          && style.display !== 'none'
-          && style.visibility !== 'hidden'
-          && opacity >= .05
-          && node.getAttribute('aria-hidden') !== 'true'
-        return {
-          label: (node.getAttribute('aria-label') || node.textContent || '').trim().slice(0, 120),
-          width: rect.width,
-          height: rect.height,
-          left: rect.left,
-          right: rect.right,
-          top: rect.top,
-          bottom: rect.bottom,
-          opacity,
-          visuallyExposed,
-        }
-      })
-      .filter((item) => item.visuallyExposed)
-    return {
-      clientWidth: root.clientWidth,
-      scrollWidth: Math.max(root.scrollWidth, body?.scrollWidth || 0),
-      clientHeight: root.clientHeight,
-      scrollHeight: Math.max(root.scrollHeight, body?.scrollHeight || 0),
-      clippedInteractive: interactive.filter((item) => item.right < -1 || item.left > root.clientWidth + 1),
-      undersizedVisibleInteractive: interactive.filter((item) => item.width > 0 && item.height > 0 && (item.width < 32 || item.height < 32)),
-    }
-  })
+  return page.evaluate(readLocalizationLayoutMetrics)
 }
 
 const receipt = {
@@ -112,7 +78,7 @@ const receipt = {
   errors: [],
 }
 
-const browser = await chromium.launch({ headless: true, args: ['--enable-unsafe-swiftshader'] })
+const browser = await chromium.launch({ executablePath: process.env.URAI_PROOF_CHROMIUM_EXECUTABLE_PATH || undefined, headless: true, args: ['--enable-unsafe-swiftshader'] })
 try {
   for (const spec of cases) {
     const record = { id: spec.id, locale: spec.locale, dir: spec.dir, passed: false }
@@ -145,6 +111,10 @@ try {
       assert.ok(response?.ok(), `route failed: ${spec.route}`)
       await waitLocale(page, spec.locale, spec.dir)
 
+      const isHome = new URL(spec.route, base).pathname.replace(/\/+$/, '') === '/home'
+      const homeScene = isHome && !spec.noWebGL ? await waitForLocalizationHomeScene(page) : null
+      if (homeScene) record.homeSceneAssetsReady = true
+
       if (spec.noWebGL) {
         const fallback = page.getByTestId('urai-home-semantic-fallback')
         await fallback.waitFor({ state: 'visible', timeout: 45_000 })
@@ -154,14 +124,20 @@ try {
       }
 
       if (spec.offlineAfterLoad) {
+        // Renderer capability becomes ready before the suspended Home assets.
+        // This case exercises going offline AFTER the world loaded, so bind it
+        // to the scene's actual readiness before waiting for network quiescence.
+        assert.ok(homeScene, 'offline-after-load requires the loaded Home scene')
         await page.waitForLoadState('networkidle', { timeout: 45_000 })
-        const runtime = page.locator('.urai-home-spatial-runtime-layer[data-webgl-ready="true"]').first()
-        await runtime.waitFor({ state: 'visible', timeout: 45_000 })
+        assert.equal(await homeScene.getAttribute('data-home-assets-ready'), 'true')
+        record.offlineSceneReadyBeforeDisconnect = true
         await context.setOffline(true)
         await page.evaluate(() => window.dispatchEvent(new Event('offline')))
         await page.waitForFunction(([locale, direction]) => document.documentElement.lang === locale && document.documentElement.dir === direction, [spec.locale, spec.dir], { timeout: 45_000 })
         assert.equal(await page.locator('html').getAttribute('dir'), spec.dir)
         assert.equal(await page.locator('html').getAttribute('lang'), spec.locale)
+        assert.equal(await homeScene.getAttribute('data-home-assets-ready'), 'true', 'loaded Home must survive the offline transition')
+        record.offlineSceneReadyAfterDisconnect = true
       }
 
       if (spec.expansion) await applyExpansionFixture(page)

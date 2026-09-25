@@ -6,13 +6,15 @@ import { HomeLaunchSanctuaryV254 } from '@/spatial/assets/HomeLaunchSanctuaryV25
 import { useHomePersonalizedScene } from '@/app/home/useHomePersonalizedScene'
 import type { HomeSceneEnvironment } from '@/app/home/homePersonalizationModel'
 import type { HomeEmotionalWeatherName } from '@/spatial/environment/HomeEmotionalWeatherState'
-import { Canvas, useFrame, useThree, type ThreeEvent } from '@react-three/fiber'
+import { addAfterEffect, Canvas, useFrame, useThree, type ThreeEvent } from '@react-three/fiber'
 import { useAnimations, useGLTF } from '@react-three/drei'
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState, type MutableRefObject } from 'react'
 import * as THREE from 'three'
 import { resolveOrbSensoryOutput, URAI_ORB_STATE_EVENT, type OrbState, type OrbStateEventDetail } from '@/app/home/orbStateController'
 import { MobileMovementPad, MovementHelp, stepEmbodiedMotion, useDragLook, useMovementInput, type MovementInput } from '@/spatial/navigation/EmbodiedNavigation'
 import { useAdaptiveSpatialQuality, type SpatialQualityTier } from '@/spatial/performance/useAdaptiveSpatialQuality'
+import { createPostRenderCadence } from '@/spatial/performance/postRenderCadence'
+import { HOME_ORB_GROUND_ANCHOR } from '@/spatial/home/homeOrbPlacement'
 import { ORB_SPEECH_CLOCK_EVENT, type OrbSpeechClockDetail } from '@/spatial/orb/orbSpeechClock'
 import { requestUraiWorldOrbOpen, requestUraiWorldTravel } from '@/spatial/world/worldEvents'
 import { AvatarSelfView, type AvatarSelfViewSection } from '@/spatial/home/AvatarSelfView'
@@ -31,7 +33,7 @@ type TransitionTarget = { point: THREE.Vector3; normal?: THREE.Vector3 }
 
 const ORB_MODEL = '/assets/urai/generated/models/urai-orb-avatar-v1.glb'
 const HOME_FOCUS = new THREE.Vector3(0, 1.35, -1.15)
-const ORB_POSITION = new THREE.Vector3(1.02, 0, .72)
+const ORB_POSITION = new THREE.Vector3(HOME_ORB_GROUND_ANCHOR.x, 0, HOME_ORB_GROUND_ANCHOR.z)
 const ORB_FIELD_RADIUS = .5
 const ORB_FIELD_Y_SCALE = 1.04
 const ORB_GROUND_CLEARANCE = .015
@@ -137,17 +139,26 @@ function isSoftwareWebGLRenderer(gl: THREE.WebGLRenderer) {
 
 function Cadence({ reducedMotion }: { reducedMotion: boolean }) {
   const { gl, invalidate, setFrameloop } = useThree()
+  const cadenceRef = useRef<ReturnType<typeof createPostRenderCadence> | null>(null)
+  useFrame(() => cadenceRef.current?.beforeRender())
   useEffect(() => {
     const constrained = reducedMotion || isSoftwareWebGLRenderer(gl)
     if (!constrained) { setFrameloop('always'); return }
     setFrameloop('demand')
-    let disposed = false
-    const bootstrap = [0, 40, 80, 120, 180, 260].map((delay) => window.setTimeout(() => { if (!disposed) invalidate() }, delay))
-    const intervalMs = reducedMotion ? 280 : 100
-    let timer = 0
-    const renderNext = () => { if (disposed) return; invalidate(); timer = window.setTimeout(renderNext, intervalMs) }
-    timer = window.setTimeout(renderNext, intervalMs)
-    return () => { disposed = true; bootstrap.forEach((id) => window.clearTimeout(id)); window.clearTimeout(timer) }
+    const cadence = createPostRenderCadence({
+      invalidate,
+      intervalMs: reducedMotion ? 280 : 100,
+      schedule: (callback, delay) => window.setTimeout(callback, delay),
+      cancel: (timer) => window.clearTimeout(timer),
+    })
+    cadenceRef.current = cadence
+    const stopAfterRender = addAfterEffect(cadence.afterRender)
+    cadence.start()
+    return () => {
+      cadenceRef.current = null
+      stopAfterRender()
+      cadence.dispose()
+    }
   }, [gl, invalidate, reducedMotion, setFrameloop])
   return null
 }
@@ -763,6 +774,7 @@ function Scene({
 export function HomeWorldProductionV223({ onOrbOpen = requestUraiWorldOrbOpen, webglAvailable = true }: Props) {
   const router = useRouter()
   const [canvasReady, setCanvasReady] = useState(false)
+  const [softwareRenderer, setSoftwareRenderer] = useState(false)
   const [sceneReady, setSceneReady] = useState(false)
   const [dragging, setDragging] = useState(false)
   const [reducedMotion, setReducedMotion] = useState(false)
@@ -971,10 +983,13 @@ export function HomeWorldProductionV223({ onOrbOpen = requestUraiWorldOrbOpen, w
       className={styles.canvas}
       dpr={1}
       shadows
-      frameloop={reducedMotion ? 'demand' : 'always'}
+      frameloop={reducedMotion || softwareRenderer ? 'demand' : 'always'}
       camera={{ position: [...DEFAULT_HOME_FIRST_PERSON_CAMERA.position], fov: 58, near: .1, far: 125 }}
       gl={{ antialias: true, alpha: false, powerPreference: 'high-performance' }}
-      onCreated={({ gl }) => {
+      onCreated={({ gl, setFrameloop }) => {
+        const software = isSoftwareWebGLRenderer(gl)
+        setSoftwareRenderer(software)
+        if (reducedMotion || software) setFrameloop('demand')
         gl.outputColorSpace = THREE.SRGBColorSpace
         gl.toneMapping = THREE.ACESFilmicToneMapping
         gl.toneMappingExposure = 1.68

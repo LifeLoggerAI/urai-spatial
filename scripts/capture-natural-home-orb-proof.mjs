@@ -97,7 +97,7 @@ async function imageEvidence(page) {
 }
 
 for (const spec of cases) {
-  const browser = await chromium.launch({ headless: true, args: ['--enable-unsafe-swiftshader'] })
+  const browser = await chromium.launch({ executablePath: process.env.URAI_PROOF_CHROMIUM_EXECUTABLE_PATH || undefined, headless: true, args: ['--enable-unsafe-swiftshader'] })
   const context = await browser.newContext({ viewport: spec.viewport, isMobile: spec.isMobile, hasTouch: spec.hasTouch, reducedMotion: spec.reducedMotion })
   await context.addInitScript(() => {
     localStorage.setItem('urai:onboarding:v2:complete', '1')

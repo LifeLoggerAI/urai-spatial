@@ -1,19 +1,18 @@
 'use client'
 
-import { useLayoutEffect } from 'react'
-import { useThree } from '@react-three/fiber'
+import { useLayoutEffect, useRef } from 'react'
+import { useFrame, useThree } from '@react-three/fiber'
 import * as THREE from 'three'
 import { HomeOrbReliquaryV286 } from './HomeOrbReliquaryV286'
 import { ORB, height } from '../layout/HomeWorldProductionV223Geometry'
+import { HOME_ORB_GROUND_ANCHOR } from '../home/homeOrbPlacement'
 
-const V287_COMPANION_X = 1.02
-const V287_COMPANION_Z = .72
 const RETIRED_RELIQUARY_NAME = 'home-v286-biomorphic-memory-reliquary'
 const GROUNDED_RELIQUARY_NAME = 'home-v288-grounded-biomorphic-memory-reliquary'
 const FALLBACK_INTERACTION_OWNER = 'home-gold-companion'
 const FALLBACK_INTERACTION_OWNER_NAMES = [FALLBACK_INTERACTION_OWNER, 'home-living-memory-orb'] as const
 
-function findInteractionOwner(scene: THREE.Scene): THREE.Object3D | null {
+function findInteractionOwner(scene: THREE.Object3D): THREE.Object3D | null {
   for (const name of FALLBACK_INTERACTION_OWNER_NAMES) {
     const object = scene.getObjectByName(name)
     if (!object) continue
@@ -34,10 +33,13 @@ function findInteractionOwner(scene: THREE.Scene): THREE.Object3D | null {
  */
 export function HomeOrbGroundedV288() {
   const { scene } = useThree()
+  const visualRoot = useRef<THREE.Group>(null)
+  const reconcileFrame = useRef<(() => void) | null>(null)
+  useFrame(() => reconcileFrame.current?.())
 
   useLayoutEffect(() => {
     const legacyY = height(ORB.x, ORB.z)
-    const companionY = height(V287_COMPANION_X, V287_COMPANION_Z)
+    const companionY = height(HOME_ORB_GROUND_ANCHOR.x, HOME_ORB_GROUND_ANCHOR.z)
     const materialState = new Map<THREE.Material, {
       colorWrite: boolean
       depthWrite: boolean
@@ -46,35 +48,49 @@ export function HomeOrbGroundedV288() {
     }>()
     const lightState = new Map<THREE.Light, boolean>()
     const rootState = new Map<THREE.Object3D, { name: string; position: THREE.Vector3; visible: boolean }>()
+    let fallback = findInteractionOwner(scene)
+
+    const attachedToScene = (object: THREE.Object3D) => {
+      for (let parent: THREE.Object3D | null = object; parent; parent = parent.parent) {
+        if (parent === scene) return true
+      }
+      return false
+    }
 
     const reconcile = () => {
-      const reliquary = scene.getObjectByName(GROUNDED_RELIQUARY_NAME)
-        ?? scene.getObjectByName(RETIRED_RELIQUARY_NAME)
+      // Only this adapter's visible subtree may be relocated.
+      const reliquary = visualRoot.current?.getObjectByName(GROUNDED_RELIQUARY_NAME)
+        ?? visualRoot.current?.getObjectByName(RETIRED_RELIQUARY_NAME)
       if (reliquary) {
         if (!rootState.has(reliquary)) rootState.set(reliquary, {
           name: reliquary.name,
           position: reliquary.position.clone(),
           visible: reliquary.visible,
         })
-        reliquary.name = GROUNDED_RELIQUARY_NAME
-        reliquary.visible = true
-        reliquary.position.set(
-          V287_COMPANION_X - ORB.x,
-          companionY - legacyY,
-          V287_COMPANION_Z - ORB.z,
-        )
-        reliquary.userData = {
-          ...reliquary.userData,
-          artRevision: 'v288-grounded-biomorphic-memory-reliquary',
-          integrationAuthority: 'current-home-interaction-plus-v286-reliquary',
-          visualOnly: true,
-          interactionOwner: false,
+        if (reliquary.name !== GROUNDED_RELIQUARY_NAME || !reliquary.visible
+          || reliquary.position.x !== HOME_ORB_GROUND_ANCHOR.x - ORB.x
+          || reliquary.position.y !== companionY - legacyY
+          || reliquary.position.z !== HOME_ORB_GROUND_ANCHOR.z - ORB.z) {
+          reliquary.name = GROUNDED_RELIQUARY_NAME
+          reliquary.visible = true
+          reliquary.position.set(
+            HOME_ORB_GROUND_ANCHOR.x - ORB.x,
+            companionY - legacyY,
+            HOME_ORB_GROUND_ANCHOR.z - ORB.z,
+          )
+          reliquary.userData = {
+            ...reliquary.userData,
+            artRevision: 'v288-grounded-biomorphic-memory-reliquary',
+            integrationAuthority: 'current-home-interaction-plus-v286-reliquary',
+            visualOnly: true,
+            interactionOwner: false,
+          }
         }
       }
 
-      const fallback = findInteractionOwner(scene)
+      if (fallback && !attachedToScene(fallback)) fallback = null
       if (!fallback) return
-      fallback.userData = {
+      if (fallback.userData.fallbackVisualOwner !== false || fallback.userData.visualAuthority !== GROUNDED_RELIQUARY_NAME) fallback.userData = {
         ...fallback.userData,
         semanticOwner: 'orb',
         groundedCompanion: true,
@@ -83,7 +99,7 @@ export function HomeOrbGroundedV288() {
         visualAuthority: GROUNDED_RELIQUARY_NAME,
       }
       fallback.traverse((object) => {
-        if (object instanceof THREE.Mesh) {
+        if (object instanceof THREE.Mesh || object instanceof THREE.Points || object instanceof THREE.Line) {
           const materials = Array.isArray(object.material) ? object.material : [object.material]
           for (const material of materials) {
             if (!materialState.has(material)) materialState.set(material, {
@@ -92,6 +108,7 @@ export function HomeOrbGroundedV288() {
               transparent: material.transparent,
               opacity: material.opacity,
             })
+            if (!material.colorWrite && !material.depthWrite && material.transparent && material.opacity === 0) continue
             material.colorWrite = false
             material.depthWrite = false
             material.transparent = true
@@ -99,16 +116,24 @@ export function HomeOrbGroundedV288() {
           }
         } else if (object instanceof THREE.Light) {
           if (!lightState.has(object)) lightState.set(object, object.visible)
-          object.visible = false
+          if (object.visible) object.visible = false
         }
       })
     }
 
+    // OrbCompanion is a direct Scene child. Discover later mounts from that
+    // insertion event, then inspect only its small subtree on rendering frames.
+    const childAdded = ({ child }: { child: THREE.Object3D }) => {
+      if (!fallback || !attachedToScene(fallback)) fallback = findInteractionOwner(child)
+      reconcile()
+    }
+    scene.addEventListener('childadded', childAdded)
+    reconcileFrame.current = reconcile
     reconcile()
-    const timers = [40, 120, 280, 520, 720].map((delay) => window.setTimeout(reconcile, delay))
 
     return () => {
-      timers.forEach((timer) => window.clearTimeout(timer))
+      reconcileFrame.current = null
+      scene.removeEventListener('childadded', childAdded)
       materialState.forEach((state, material) => {
         material.colorWrite = state.colorWrite
         material.depthWrite = state.depthWrite
@@ -125,6 +150,7 @@ export function HomeOrbGroundedV288() {
   }, [scene])
 
   return <group
+    ref={visualRoot}
     name="home-orb-v288-visible-authority"
     userData={{ semanticOwner: 'orb-visual', interactionOwner: false, visualAuthority: GROUNDED_RELIQUARY_NAME }}
   >

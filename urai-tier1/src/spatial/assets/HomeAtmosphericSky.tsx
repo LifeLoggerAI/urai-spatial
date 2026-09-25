@@ -19,7 +19,6 @@ import {
   homeSkyContinuitySample,
 } from '../visual/homeSkyContinuity'
 import { height } from '../layout/HomeWorldProductionV223Geometry'
-import { HomeVisualAuthority } from '../layout/HomeVisualAuthority'
 
 
 function resolveReviewBlueHour(): AdaptiveBlueHour | null {
@@ -619,7 +618,6 @@ export function HomeAtmosphericSky({ reducedMotion, active = false, weatherState
 
   return <>
     <RetireLocalizedLifeMapGateways />
-    <HomeVisualAuthority />
     <points
       geometry={starGeometry}
       material={starMaterial}

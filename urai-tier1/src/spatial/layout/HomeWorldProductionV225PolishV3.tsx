@@ -7,6 +7,7 @@ import * as THREE from 'three'
 import { createLivingMemoryMaterial } from '@/spatial/assets/livingMemoryMaterial'
 import { createMineralMaps } from '@/spatial/assets/naturalSurfaceMaps'
 import { useSanctuarySoilTexture } from '@/spatial/assets/useSanctuarySoilTexture'
+import { batchStaticFernPlants } from '@/spatial/assets/batchStaticFernPlants'
 import type { OrbState } from '@/app/home/orbStateController'
 import { GROUND, LIFE_MAP, ORB, height } from './HomeWorldProductionV223Geometry'
 
@@ -123,6 +124,7 @@ function RootedCanopy() {
     if (!variant) throw new Error('Governed fern variant is missing')
     const object = variant.clone(true)
     object.name = `home-scanned-fern-${index + 1}`
+    object.userData = { ...object.userData, canopyPatch: Math.floor(index / 18) }
     object.position.set(x, height(x,z) + .025, z)
     object.rotation.y = index * 1.41
     const scale = .72 + (index % 7) * .055
@@ -136,8 +138,13 @@ function RootedCanopy() {
     })
     return object
   }), [fern.scene, materials])
+  const batches = useMemo(() => batchStaticFernPlants(plants), [plants])
+  useEffect(() => () => batches.forEach(batch => {
+    // Geometry belongs to the shared GLTF cache; materials have their own owner.
+    if (batch instanceof THREE.InstancedMesh) batch.dispose()
+  }), [batches])
   return <group name="home-v226-rooted-inhabited-canopy" userData={{ artRevision:'home-v291-denser-scanned-grounded-fern-grove', source:'Poly Haven fern_02 CC0', composition:'grounded-denser-existing-fern-canopy' }}>
-    {plants.map((plant) => <primitive key={plant.name} object={plant}/>)}
+    {batches.map((batch) => <primitive key={batch.name} object={batch}/>)}
   </group>
 }
 

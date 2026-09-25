@@ -53,8 +53,25 @@ async function capture(page, journey, id) {
 
 function diagnostics(page) {
   const pageErrors = [], failedRequests = []
+  const pending = new Map()
+  const completed = []
+  page.on('request', (request) => {
+    const url = new URL(request.url())
+    if (url.origin !== new URL(base).origin) return
+    pending.set(request, { path: url.pathname, resourceType: request.resourceType(), startedAt: Date.now() })
+  })
+  const finish = (request, failed) => {
+    const entry = pending.get(request)
+    if (!entry) return
+    pending.delete(request)
+    completed.push({ path: entry.path, resourceType: entry.resourceType, elapsedMs: Date.now() - entry.startedAt, failed })
+    completed.sort((a, b) => b.elapsedMs - a.elapsedMs)
+    if (completed.length > 20) completed.length = 20
+  }
+  page.on('requestfinished', (request) => finish(request, false))
   page.on('pageerror', (error) => pageErrors.push(String(error)))
   page.on('requestfailed', (request) => {
+    finish(request, true)
     try {
       const url = new URL(request.url())
       if (url.origin === new URL(base).origin) failedRequests.push({ url: request.url(), failure: request.failure()?.errorText || 'unknown' })
@@ -62,7 +79,11 @@ function diagnostics(page) {
       failedRequests.push({ url: request.url(), failure: request.failure()?.errorText || 'unknown' })
     }
   })
-  return () => ({ pageErrors, failedRequests })
+  return () => ({
+    pageErrors, failedRequests,
+    pendingRequests: Array.from(pending.values(), ({ path, resourceType, startedAt }) => ({ path, resourceType, elapsedMs: Date.now() - startedAt })),
+    slowestCompletedRequests: completed,
+  })
 }
 
 const expectedAborts = new Set([
@@ -273,11 +294,11 @@ const variants = [
   { id: 'desktop-reduced-keyboard', mode: 'keyboard', realAscent: false, context: { viewport: { width: 1280, height: 800 }, reducedMotion: 'reduce' } },
 ]
 
-const receipt = { schemaVersion: 'urai-canonical-journey-proof-1', exactHead, capturedAt: new Date().toISOString(), status: 'running', journeys: [], errors: [] }
+const receipt = { schemaVersion: 'urai-canonical-journey-proof-1', exactHead, capturedAt: new Date().toISOString(), status: 'running', complete: false, journeys: [], errors: [] }
 for (const variant of variants) {
-  const browser = await chromium.launch({ headless: true, args: ['--enable-unsafe-swiftshader'] })
+  const browser = await chromium.launch({ executablePath: process.env.URAI_PROOF_CHROMIUM_EXECUTABLE_PATH || undefined, headless: true, args: ['--enable-unsafe-swiftshader'] })
   try {
-    const journey = { id: variant.id, mode: variant.mode, realAscent: variant.realAscent, ascentProven: null, identityStable: false, passed: false, steps: [] }
+    const journey = { id: variant.id, mode: variant.mode, browserVersion: browser.version(), realAscent: variant.realAscent, ascentProven: null, identityStable: false, passed: false, steps: [] }
     receipt.journeys.push(journey)
     const context = await browser.newContext(variant.context)
     await context.addInitScript(() => {
@@ -310,6 +331,16 @@ for (const variant of variants) {
         journey.passed = false
         receipt.errors.push({ journey: variant.id, error: 'runtime diagnostics failed', pageErrors: journey.diagnostics.pageErrors, blockingFailedRequests: blocking })
       }
+      if (!journey.passed) {
+        const filename = `${journey.id}-failure.png`
+        try {
+          await page.screenshot({ path: path.join(outputDir, filename), fullPage: false, timeout: 15_000 })
+          journey.failureFrame = { filename, url: page.url() }
+        } catch (error) {
+          journey.failureFrameError = String(error)
+        }
+      }
+      await fs.writeFile(path.join(outputDir, 'receipt.json'), JSON.stringify(receipt, null, 2) + '\n')
       await context.close()
     }
   } finally {
@@ -318,6 +349,7 @@ for (const variant of variants) {
 }
 
 receipt.status = receipt.journeys.every((journey) => journey.passed && journey.identityStable) && receipt.journeys.some((journey) => journey.ascentProven === true) && receipt.errors.length === 0 ? 'passed' : 'failed'
+receipt.complete = true
 await fs.writeFile(path.join(outputDir, 'receipt.json'), JSON.stringify(receipt, null, 2) + '\n')
 console.log(JSON.stringify(receipt, null, 2))
 if (receipt.status !== 'passed') process.exitCode = 1
