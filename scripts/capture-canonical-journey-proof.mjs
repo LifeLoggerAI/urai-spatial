@@ -34,7 +34,19 @@ async function waitAttr(locator, name, expected, timeout = 60_000) {
 
 async function capture(page, journey, id) {
   const filename = `${journey.id}-${id}.png`
-  await page.screenshot({ path: path.join(outputDir, filename), fullPage: false, animations: 'disabled', caret: 'hide', timeout: 90_000 })
+  const candidates = page.locator(
+    '.urai-asset-home-world[data-home-primary-owner="asset-driven"], [data-testid="urai-true-3d-life-map"], [data-testid="urai-final-focus-chamber"], [data-testid="cinematic-replay-client"]',
+  )
+  let target = null
+  for (let index = 0; index < await candidates.count(); index += 1) {
+    const candidate = candidates.nth(index)
+    if (await candidate.isVisible()) { target = candidate; break }
+  }
+  if (target) {
+    await target.screenshot({ path: path.join(outputDir, filename), animations: 'disabled', caret: 'hide', timeout: 90_000 })
+  } else {
+    await page.screenshot({ path: path.join(outputDir, filename), fullPage: false, animations: 'disabled', caret: 'hide', timeout: 90_000 })
+  }
   journey.steps.push({ id, url: page.url(), filename })
 }
 
@@ -76,11 +88,21 @@ function blockingRequests(requests) {
 
 async function activate(page, locator, mode) {
   await locator.waitFor({ state: 'visible', timeout: 45_000 })
-  if (mode === 'touch') return locator.tap()
+  if (mode === 'touch') {
+    const box = await locator.boundingBox()
+    if (!box || box.width <= 0 || box.height <= 0) throw new Error('touch target has no usable geometry')
+    return page.touchscreen.tap(box.x + box.width / 2, box.y + box.height / 2)
+  }
   if (mode === 'keyboard') {
+    const focusable = await locator.evaluate((node) => {
+      if (!(node instanceof HTMLElement)) return false
+      const tag = node.tagName.toLowerCase()
+      const native = tag === 'button' || tag === 'a' || tag === 'input' || tag === 'select' || tag === 'textarea'
+      return native || node.tabIndex >= 0
+    })
+    assert.equal(focusable, true, 'keyboard activation target must be focusable')
     await locator.focus()
-    assert.equal(await locator.evaluate((node) => document.activeElement === node), true)
-    return page.keyboard.press('Enter')
+    return locator.press('Enter')
   }
   return locator.click()
 }
@@ -107,20 +129,17 @@ async function proveRealHomeAscent(page, journey, home, mode) {
 
   const canvas = home.locator('canvas').first()
   await canvas.waitFor({ state: 'visible', timeout: 45_000 })
-  const box = await canvas.evaluate((node) => {
-    const rect = node.getBoundingClientRect()
-    return { width: rect.width, height: rect.height }
-  })
-  assert.ok(box.width > 200 && box.height > 200, 'Home canvas must expose the governed broad-sky interaction surface')
+  const box = await canvas.boundingBox()
+  assert.ok(box && box.width > 200 && box.height > 200, 'Home canvas must expose the governed broad-sky interaction surface')
 
   // The sky interaction itself owns the validity law (upward ray direction).
   // Try several upper-sky points rather than encoding retired world geometry.
   const points = [[.50, .12], [.36, .15], [.64, .15], [.50, .22]]
   let activated = false
   for (const [x, y] of points) {
-    const position = { x: box.width * x, y: box.height * y }
-    if (mode === 'touch') await canvas.tap({ position })
-    else await canvas.click({ position })
+    const absolute = { x: box.x + box.width * x, y: box.y + box.height * y }
+    if (mode === 'touch') await page.touchscreen.tap(absolute.x, absolute.y)
+    else await page.mouse.click(absolute.x, absolute.y)
     try {
       await waitAttr(home, 'data-home-scene-phase', 'SKY_ASCENT', 2_500)
       activated = true
