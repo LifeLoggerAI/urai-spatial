@@ -207,6 +207,9 @@ test.describe('URAI accessibility and performance evidence', () => {
     }
 
     await page.goto('/ground', { waitUntil: 'domcontentloaded' })
+    const movementTargets = await targetSize(page, '.ground-accessible-movement summary')
+    expect(movementTargets.length).toBeGreaterThan(0)
+    expect(movementTargets.filter(({ width, height }) => width < 48 || height < 48)).toEqual([])
     const railTargets = page.locator('.ground-destination-compass :is(a,button)')
     const focusContainment: Array<{ label: string; fullyContained: boolean; left: number; right: number }> = []
     for (let index = 0; index < await railTargets.count(); index += 1) {
