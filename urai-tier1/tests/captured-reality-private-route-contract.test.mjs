@@ -39,7 +39,7 @@ test('route fails to semantic fallback when WebGL2 streaming prerequisites are u
 test('private signed delivery is renewed before expiry and failure closes the scene', () => {
   assert.match(client, /expires - Date\.now\(\) - 60_000/)
   assert.match(client, /private delivery could not be renewed/)
-  assert.match(client, /loadRuntimeDelivery\(assetId\)/)
+  assert.match(client, /loadRuntimeDelivery\(assetId, accessMode\)/)
 })
 
 test('route always provides a deterministic exit and provenance is redacted to safe metadata', () => {
@@ -47,4 +47,12 @@ test('route always provides a deterministic exit and provenance is redacted to s
   assert.match(client, /router\.push\('\/replay'\)/)
   assert.match(client, /View source and provenance|Captured Reality provenance/)
   assert.match(client, /Exact source locators and private location are intentionally not exposed/)
+})
+
+test('proof route is server-gated separately and visibly cannot claim launch runtime', () => {
+  assert.match(page, /URAI_ENABLE_CAPTURED_REALITY_PROOF/)
+  assert.match(page, /proofMode/)
+  assert.match(client, /accessMode: 'runtime' \| 'proof'/)
+  assert.match(client, /Private proof mode · not launch runtime/)
+  assert.match(client, /capturedRealityDeviceTier/)
 })
