@@ -7,6 +7,7 @@ const focusedContractTests = [
   'tests/asset-factory-phase6-contract.test.mjs',
   'tests/automatic-hosting-recovery-contract.test.mjs',
   'tests/body-biometric-contract.test.mjs',
+  'tests/captured-reality-gaussian-v1-contract.test.mjs',
   'tests/embodied-exploration-contract.test.mjs',
   'tests/field-reconstruction-phase5-contract.test.mjs',
   'tests/focus-v272-living-memory-fold-contract.test.mjs',
