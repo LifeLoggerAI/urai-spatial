@@ -32,7 +32,7 @@ export const launchTruth = {
   phase: 'canonical Spatial web release live; supporting estate certification continues',
   finalBlockers: ['physical XR device proof', 'provider activation', 'supporting-service certification'],
   safeClaim:
-    'The canonical URAI Spatial web release is verified live through a protected release fingerprint, exact-head deployment receipt, route and slash parity, desktop and mobile identity checks, and an executable rollback target. Demo data remains disclosed, physical XR remains preview-only, and supporting services retain separate gates.',
+    'The canonical URAI Spatial web release is verified live through a protected release fingerprint, exact-head deployment receipt, route and slash parity, desktop and mobile identity checks, and an executable rollback target. Demo data remains disclosed, XR remains gated behind separate governed release evidence, and supporting services retain separate gates.',
   unsafeClaim:
     'Do not present the full 19-repository ecosystem, provider-backed assets, physical XR devices, private backend integrations, autonomous real-world actions, or regulated outcomes as certified until their separate receipts prove those claims.',
   firstThirtySeconds: {
@@ -90,8 +90,8 @@ export const launchTruth = {
       id: 'XR-DEVICE-PROOF',
       label: 'XR and Quest proof',
       state: 'blocked',
-      evidence: 'The browser XR entry is live as a preview; physical Quest certification is not inferred from desktop or mobile evidence.',
-      next: 'Keep XR labeled preview until physical browser, controller, comfort, recovery, and device evidence exists.',
+      evidence: 'The XR implementation exists behind a fail-closed release gate; no public browser or physical Quest certification is inferred from implementation or desktop/mobile proof.',
+      next: 'Keep XR gated until governed browser, controller, comfort, recovery, and physical-device evidence explicitly authorizes release.',
     },
   ] satisfies LaunchGate[],
   routes: [
@@ -203,9 +203,9 @@ export const launchTruth = {
       path: '/spatial/ar-vr',
       label: 'Explorable XR entry',
       group: 'Showcase and XR',
-      state: 'preview',
-      proofBoundary: 'Browser rendering and controls are live; physical Quest/WebXR certification remains separate.',
-      publicClaim: 'Live XR browser preview; physical device certification not claimed.',
+      state: 'blocked',
+      proofBoundary: 'The XR implementation is fail-closed in the public release; accessibility and browser behavior may be tested only inside explicit proof opt-ins. Physical Quest/WebXR certification remains separate.',
+      publicClaim: 'XR web entry is gated and is not part of the certified public launch surface; physical device certification is not claimed.',
     },
   ] satisfies LaunchRoute[],
 } as const
