@@ -71,7 +71,11 @@ async function ensureReviewOrbState(page, state) {
 }
 
 async function imageEvidence(page) {
-  const buffer = await page.screenshot({ fullPage: false, animations: 'disabled', caret: 'hide', timeout: 90_000 })
+  // portal-orb-proof-canvas-element-retained-png: visual signal must come
+  // from the actual Home WebGL canvas, never from DOM overlays around it.
+  const canvas = page.locator('.urai-asset-home-world[data-home-primary-owner="asset-driven"] canvas').first()
+  await canvas.waitFor({ state: 'visible', timeout: 90_000 })
+  const buffer = await canvas.screenshot({ animations: 'disabled', caret: 'hide', timeout: 90_000 })
   const dataUrl = `data:image/png;base64,${buffer.toString('base64')}`
   const sample = await page.evaluate(async (url) => {
     const image = new Image()
