@@ -86,7 +86,7 @@ export default function LoginClient({ intent = 'login' }: { intent?: AuthIntent 
   )
 }
 
-const primary = {display:'inline-flex',alignItems:'center',justifyContent:'center',padding:'11px 16px',borderRadius:999,background:'#e9fbfd',color:'#071116',fontWeight:800,textDecoration:'none'} as const
-const secondary = {display:'inline-flex',alignItems:'center',justifyContent:'center',padding:'11px 16px',borderRadius:999,border:'1px solid rgba(255,255,255,.17)',color:'#edf7f9',fontWeight:700,textDecoration:'none'} as const
+const primary = {display:'inline-flex',alignItems:'center',justifyContent:'center',minHeight:48,padding:'11px 16px',borderRadius:999,background:'#e9fbfd',color:'#071116',fontWeight:800,textDecoration:'none'} as const
+const secondary = {display:'inline-flex',alignItems:'center',justifyContent:'center',minHeight:48,padding:'11px 16px',borderRadius:999,border:'1px solid rgba(255,255,255,.17)',color:'#edf7f9',fontWeight:700,textDecoration:'none'} as const
 const buttonPrimary = {...primary,border:0,cursor:'pointer'} as const
 const buttonSecondary = {...secondary,background:'transparent',cursor:'pointer'} as const

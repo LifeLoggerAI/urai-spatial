@@ -84,6 +84,28 @@ test.describe('URAI accessibility and performance evidence', () => {
     expect(failures).toEqual([])
   })
 
+  test('login and signup entry actions meet the 48 CSS pixel minimum', async ({ page }) => {
+    await page.setViewportSize({ width: 320, height: 720 })
+    for (const path of ['/login', '/login?from=signup']) {
+      await page.goto(path, { waitUntil: 'domcontentloaded' })
+      const targets = await page.locator('main[data-route-owner] a[href], main[data-route-owner] button').evaluateAll((elements) => elements
+        .map((element) => ({ element, rect: element.getBoundingClientRect(), style: getComputedStyle(element) }))
+        .filter(({ rect, style }) => style.visibility !== 'hidden' && style.display !== 'none' && rect.width > 0 && rect.height > 0)
+        .map(({ element, rect }) => ({
+          label: element.getAttribute('aria-label') ?? element.textContent?.trim() ?? element.tagName,
+          width: Math.round(rect.width * 100) / 100,
+          height: Math.round(rect.height * 100) / 100,
+        })))
+      const failures = targets.filter(({ width, height }) => width < 48 || height < 48)
+      await test.info().attach(`auth-target-size-${path.includes('signup') ? 'signup' : 'login'}.json`, {
+        body: JSON.stringify({ path, targets, failures }, null, 2),
+        contentType: 'application/json',
+      })
+      expect(targets.length).toBeGreaterThan(0)
+      expect(failures).toEqual([])
+    }
+  })
+
   test('Orb menu enters focus, closes on Escape, and returns focus', async ({ page }) => {
     await page.goto('/', { waitUntil: 'domcontentloaded' })
     const orb = page.locator('[data-urai-audit-action="orb-controls"]')
