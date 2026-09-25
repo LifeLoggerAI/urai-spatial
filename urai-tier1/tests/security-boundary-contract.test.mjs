@@ -11,6 +11,7 @@ const staticProviderRoutes = [
 const narratorClient = fs.readFileSync(new URL("../src/spatial/narrator/elevenlabsClient.ts", import.meta.url), "utf8");
 const narratorPlayback = fs.readFileSync(new URL("../src/spatial/narrator/narratorPlayback.ts", import.meta.url), "utf8");
 const checkoutRoute = fs.readFileSync(new URL("../src/app/api/stripe/create-checkout-session/route.ts", import.meta.url), "utf8");
+const portalRoute = fs.readFileSync(new URL("../src/app/api/stripe/create-portal-session/route.ts", import.meta.url), "utf8");
 const firebaseUser = fs.readFileSync(new URL("../src/lib/server/firebase-user.ts", import.meta.url), "utf8");
 const approvedReturnUrl = fs.readFileSync(new URL("../src/lib/server/approved-return-url.ts", import.meta.url), "utf8");
 const passportVault = fs.readFileSync(new URL("../src/app/passport/PassportVaultClient.tsx", import.meta.url), "utf8");
@@ -56,6 +57,17 @@ test("Stripe checkout permits only the configured application origin", () => {
   assert.match(approvedReturnUrl, /resolved\.origin !== approvedOrigin\.origin/);
   assert.match(approvedReturnUrl, /resolved\.username \|\| resolved\.password/);
   assert.doesNotMatch(checkoutRoute, /const redirectBase = returnUrl \|\| appUrl/);
+});
+
+test("Stripe customer portal is authenticated, server-bound and same-origin", () => {
+  assert.match(portalRoute, /verifyFirebaseUser/);
+  assert.match(portalRoute, /readEntitlement\(uid\)/);
+  assert.match(portalRoute, /resolveApprovedReturnUrl/);
+  assert.match(portalRoute, /stripeRuntimeMatchesSecret/);
+  assert.match(portalRoute, /stripeLivemodeMatchesRuntime/);
+  assert.match(portalRoute, /billingPortal\.configurations\.retrieve/);
+  assert.match(portalRoute, /billingPortal\.sessions\.create/);
+  assert.doesNotMatch(portalRoute, /stripeCustomerId.*request\.json/);
 });
 
 test("Passport static render fails closed and sample identity requires explicit demo mode", () => {
