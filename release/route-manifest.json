@@ -53,8 +53,7 @@
       "/life-map/star/",
       "/replay/",
       "/passport/",
-      "/spatial/memory/",
-      "/spatial/captured-reality/"
+      "/spatial/memory/"
     ],
     "publicExact": [
       "/",
@@ -118,6 +117,9 @@
     ],
     "conditionalPrefixes": [
       "/spatial/memory/"
+    ],
+    "privateExact": [
+      "/spatial/captured-reality"
     ]
   }
 }
