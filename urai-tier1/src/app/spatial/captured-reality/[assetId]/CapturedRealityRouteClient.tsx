@@ -10,6 +10,7 @@ import { useReducedMotion } from '@/spatial/hooks/useReducedMotion'
 import CapturedRealityPrivateScene from '@/spatial/captured-reality/CapturedRealityPrivateScene'
 import {
   capturedRealityBrowserCapability,
+  capturedRealityDeviceTier,
 } from '@/spatial/captured-reality/capturedRealityRuntime'
 import type { CapturedRealityRenderDecision } from '@/spatial/captured-reality/capturedReality'
 
@@ -118,8 +119,9 @@ async function loadAssetMetadata(assetId: string) {
 }
 
 async function loadRuntimeDelivery(assetId: string) {
-  const callable = httpsCallable<{ assetId: string }, RuntimeDelivery>(functions, 'getCapturedRealityRuntimeUrl')
-  const result = await callable({ assetId })
+  const deviceTier = capturedRealityDeviceTier(navigator.userAgent)
+  const callable = httpsCallable<{ assetId: string; deviceTier: 'desktop' | 'mobile' }, RuntimeDelivery>(functions, 'getCapturedRealityRuntimeUrl')
+  const result = await callable({ assetId, deviceTier })
   return result.data
 }
 
