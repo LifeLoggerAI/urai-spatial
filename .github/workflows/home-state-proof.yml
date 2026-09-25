@@ -11,6 +11,7 @@ on:
       - 'scripts/run-home-state-proof-bounded.mjs'
       - 'scripts/run-home-state-proof-v224.mjs'
       - 'urai-tier1/tests/continuous-spatial-restoration-contract.test.mjs'
+      - 'urai-tier1/tests/home-state-proof-integrity-contract.test.mjs'
       - '.github/workflows/home-state-proof.yml'
       - 'urai-tier1/src/app/AssetDrivenHomeWorld.tsx'
       - 'urai-tier1/src/app/HomeSpatialRuntimeLayer.tsx'
@@ -69,6 +70,7 @@ jobs:
       - name: Verify state-proof contract and build
         run: |
           (cd urai-tier1 && node tests/continuous-spatial-restoration-contract.test.mjs)
+          (cd urai-tier1 && node --test tests/home-state-proof-integrity-contract.test.mjs)
           node --check scripts/run-home-state-proof-bounded.mjs
           node --check scripts/run-home-state-proof-v224.mjs
           node --check scripts/reconcile-home-orb-consent-proof.mjs
