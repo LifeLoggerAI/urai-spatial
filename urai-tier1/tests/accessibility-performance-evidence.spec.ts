@@ -241,6 +241,39 @@ test.describe('URAI accessibility and performance evidence', () => {
     expect(focusContainment.filter((entry) => !entry.fullyContained)).toEqual([])
   })
 
+  test('Status and Privacy Controls expose 48px launch-critical targets on narrow mobile', async ({ page }) => {
+    await page.setViewportSize({ width: 320, height: 720 })
+
+    await page.goto('/status', { waitUntil: 'domcontentloaded' })
+    const statusTargets = await targetSize(page, 'nav[aria-label="Status route navigation"] a[href]')
+    expect(statusTargets.length).toBeGreaterThan(0)
+    expect(statusTargets.filter(({ width, height }) => width < 48 || height < 48)).toEqual([])
+
+    await page.goto('/privacy-controls', { waitUntil: 'domcontentloaded' })
+    const privacyTargets = await page.locator([
+      '.consentSanctuary button',
+      '.consentSanctuary a[href]',
+      '.consentSanctuary select',
+      '.consentSanctuary label:has(input[type="checkbox"])',
+      '.consentSanctuary input:not([type="checkbox"])',
+    ].join(',')).evaluateAll((elements) => elements
+      .map((element) => ({ element, rect: element.getBoundingClientRect(), style: getComputedStyle(element) }))
+      .filter(({ rect, style }) => style.visibility !== 'hidden' && style.display !== 'none' && rect.width > 0 && rect.height > 0)
+      .map(({ element, rect }) => ({
+        html: element.outerHTML.slice(0, 240),
+        width: Math.round(rect.width * 100) / 100,
+        height: Math.round(rect.height * 100) / 100,
+      })))
+
+    const privacyFailures = privacyTargets.filter(({ width, height }) => width < 48 || height < 48)
+    await test.info().attach('status-privacy-target-size-report.json', {
+      body: JSON.stringify({ statusTargets, privacyTargets, privacyFailures }, null, 2),
+      contentType: 'application/json',
+    })
+    expect(privacyTargets.length).toBeGreaterThan(0)
+    expect(privacyFailures).toEqual([])
+  })
+
   test('no-WebGL mode exposes the complete keyboard-operable Home fallback', async ({ page }) => {
     await disableWebGL(page)
     await page.goto('/', { waitUntil: 'domcontentloaded' })
