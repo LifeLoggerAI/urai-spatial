@@ -81,7 +81,7 @@ export function buildSpatialSystemContract() {
         service: URAI_SPATIAL_SERVICE,
         status: "locked",
         done: true,
-        contractVersion: "0.1.0",
+        contractVersion: "0.2.0",
         route: spatialApiRoutes.studioSpatialHandoff,
         producer: "urai-studio",
         consumer: "urai-spatial",
@@ -106,7 +106,7 @@ export function buildSpatialSystemContract() {
         consumer: "urai-spatial",
         validator: "validateStudioSpatialExport",
         runtimeTargets: ["web-spatial", "webxr-disabled", "quest-vr-disabled", "visionos-disabled", "ar-handheld-disabled"],
-        requiredFields: ["sceneManifest", "assetManifest", "consentReceipt", "safetyBoundaries", "runtimeTargets"],
+        requiredFields: ["sceneManifest", "assetManifest", "consentReceipt", "safetyBoundaries", "runtimeTargets", "releaseEvidence"],
       },
       bodyBiometricSnapshot: {
         regions: ["head", "torso", "arms", "legs"],
