@@ -32,13 +32,9 @@ test('V197 authored GLBs are committed, nontrivial and transport-safe', () => {
   }
 })
 
-test('current Home runtime preserves one bodyless first-person world with physical Ground, sky Life Map, and authored Orb authority', () => {
+test('historical V197/V201 authored place prototypes do not re-enter current V293 Home runtime', () => {
   const runtime = readFileSync(new URL('../src/spatial/layout/HomeWorldProductionV223.tsx', import.meta.url), 'utf8')
-  assert.match(runtime, /data-home-primary-owner="asset-driven"/)
-  assert.match(runtime, /data-home-presence-presentation=\{firstPerson \? 'bodyless-first-person-home' : 'camera-only-transition'\}/)
-  assert.match(runtime, /data-home-ground-entry="physical-world-surface"/)
-  assert.match(runtime, /data-home-life-map-entry="visible-sky-broad-interaction"/)
-  assert.match(runtime, /data-home-orb-runtime-asset=\{ORB_MODEL\}/)
-  assert.match(runtime, /data-home-non-xr-body-policy="camera-only-no-hands-body-rig"/)
-  assert.match(runtime, /HomeLaunchSanctuaryV254/)
+  assert.doesNotMatch(runtime, /home-v199-\$\{side\}-authored-memory-place/)
+  assert.doesNotMatch(runtime, /home-v201-authored-single-connected-folded-living-memory-presence/)
+  assert.match(runtime, /<HomeVisualAuthority \/>/)
 })

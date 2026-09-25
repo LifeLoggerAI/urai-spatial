@@ -1,0 +1,28 @@
+{
+  "schemaVersion": "urai-real-place-capture-readiness-1",
+  "states": [
+    "ready",
+    "conditional",
+    "reshoot-required",
+    "blocked-privacy",
+    "unknown"
+  ],
+  "requiredChecks": [
+    "source-integrity-verified",
+    "location-consent-classified",
+    "third-party-screen-complete",
+    "transition-coverage-reviewed",
+    "blur-reviewed",
+    "overlap-reviewed",
+    "exposure-reviewed",
+    "dynamic-object-reviewed"
+  ],
+  "passes": [
+    "geometry",
+    "object-detail",
+    "ambient-audio",
+    "people-story"
+  ],
+  "sourceMutationAllowed": false,
+  "generatedFillMayCountAsRecordedTruth": false
+}

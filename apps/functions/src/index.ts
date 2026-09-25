@@ -24,3 +24,5 @@ export {
   processExportJob,
   processPrivacyEnforcementJob,
 } from './privacyOperations'
+
+export { getCapturedRealityAsset, getCapturedRealityRuntimeUrl } from './capturedReality'
