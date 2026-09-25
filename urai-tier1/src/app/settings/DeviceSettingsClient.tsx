@@ -269,7 +269,7 @@ export default function DeviceSettingsClient() {
                 type="button"
                 disabled={googlePreviewWorking || googleHistoryCategories.length === 0}
                 onClick={() => void previewGoogleHistory()}
-                style={{marginTop:18,minHeight:48,padding:'11px 18px',borderRadius:999,border:0,background:'#dff8fb',color:'#071116',fontWeight:800,cursor:'pointer',opacity:googleHistoryCategories.length===0?.5:1}}
+                style={{marginTop:18,minHeight:48,padding:'11px 18px',borderRadius:999,border:0,background:'#dff8fb',color:'#071116',fontWeight:800,cursor:'pointer',opacity:googleHistoryCategories.length === 0 ? 0.5 : 1}}
               >
                 {googlePreviewWorking ? 'Previewing...' : 'Preview selected history'}
               </button>
