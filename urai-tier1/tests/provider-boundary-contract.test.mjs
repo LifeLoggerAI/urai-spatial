@@ -3,6 +3,8 @@ import fs from 'node:fs'
 import test from 'node:test'
 
 const providerFunctions = fs.readFileSync(new URL('../../apps/functions/src/providerFunctions.ts', import.meta.url), 'utf8')
+const providerRuntimeEnv = fs.readFileSync(new URL('../../apps/functions/.env.urai-4dc1d', import.meta.url), 'utf8')
+const rootEnvExample = fs.readFileSync(new URL('../../.env.example', import.meta.url), 'utf8')
 const openAiClient = fs.readFileSync(new URL('../src/spatial/orb/openaiClient.ts', import.meta.url), 'utf8')
 const orbPanel = fs.readFileSync(new URL('../src/spatial/orb/OrbConversationPanel.tsx', import.meta.url), 'utf8')
 const narratorClient = fs.readFileSync(new URL('../src/spatial/narrator/elevenlabsClient.ts', import.meta.url), 'utf8')
@@ -92,6 +94,12 @@ test('ElevenLabs is rights-bound, duration-bounded, single-attempt and session-c
   assert.match(providerFunctions, /Math\.ceil\(text\.length \/ 14\) > 120/)
   assert.match(providerFunctions, /text-to-speech\/\$\{encodeURIComponent\(voiceId\)\}\/stream/)
   assert.match(providerFunctions, /enable_logging/)
+  assert.match(providerFunctions, /ELEVENLABS_MODEL_ID \|\| 'eleven_v3'/)
+  assert.match(providerRuntimeEnv, /ELEVENLABS_DEFAULT_VOICE_ID=\s*$/m)
+  assert.match(providerRuntimeEnv, /ELEVENLABS_ALLOWED_VOICE_IDS=\s*$/m)
+  assert.match(providerRuntimeEnv, /ELEVENLABS_MODEL_ID=eleven_v3/)
+  assert.doesNotMatch(providerRuntimeEnv, /pNInz6obpgDQGcFmaJgB/)
+  assert.doesNotMatch(rootEnvExample, /pNInz6obpgDQGcFmaJgB/)
   assert.doesNotMatch(narratorClient, /for \(let attempt/)
   assert.match(narratorClient, /MAX_MEMORY_CACHE_ENTRIES = 12/)
   assert.match(narratorPlayback, /private externalVoiceConsent = false/)
