@@ -15,6 +15,7 @@ on:
       - 'urai-tier1/src/spatial/assets/HomeOrbReliquaryV286.tsx'
       - 'urai-tier1/src/spatial/assets/HomeOrbGroundedV288.tsx'
       - 'urai-tier1/src/spatial/assets/HomeAtmosphericSky.tsx'
+      - 'urai-tier1/tests/portal-orb-proof-integrity-contract.test.mjs'
   pull_request:
     branches: [main]
     paths:
@@ -32,6 +33,7 @@ on:
       - 'urai-tier1/src/spatial/assets/**'
       - 'urai-tier1/public/assets/urai/replay/replay-memory-film-main.webp'
       - 'urai-tier1/public/assets/urai/replay/replay-memory-film-mobile.webp'
+      - 'urai-tier1/tests/portal-orb-proof-integrity-contract.test.mjs'
   workflow_dispatch:
 
 permissions:
@@ -131,6 +133,7 @@ jobs:
           node --check scripts/run-with-ci-webgl.mjs
           node --check scripts/capture-natural-home-orb-proof.mjs
           node --check scripts/capture-home-sky-interaction-proof.mjs
+          (cd urai-tier1 && node --test tests/portal-orb-proof-integrity-contract.test.mjs)
       - name: Capture exact Home, Orb, broad-sky interaction and reduced-motion proof
         run: |
           python3 -m http.server 4173 --bind 127.0.0.1 --directory urai-tier1/out > /tmp/urai-portal-orb-http.log 2>&1 &
