@@ -165,6 +165,24 @@ fields:
     auditRequired: true
     implementationStatus: implemented_hard_off
 
+  - name: captured_reality_replay_binding
+    collectionOrTable: users/{uid}/capturedRealityReplayBindings
+    source: system_derived
+    dataClass: L3
+    purpose: bind one authorized memory to one reviewed source-backed captured place
+    consentTier: C1
+    requiredConsentPurposes:
+      - memory.storage
+      - location.context
+    retentionClass: R3
+    exportable: true
+    deletable: true
+    monetizable: false
+    aiTrainingAllowed: false
+    adminAccessible: false
+    auditRequired: true
+    implementationStatus: implemented_hard_off
+
 processors:
   - name: Firebase Authentication
     role: authentication
