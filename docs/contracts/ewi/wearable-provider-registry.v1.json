@@ -1,0 +1,153 @@
+{
+  "schemaVersion": "urai-wearable-provider-registry-1",
+  "verifiedAt": "2026-09-25",
+  "authority": "provider-neutral admission metadata; provider consoles, native packages and runtime proof remain authoritative",
+  "productionActive": false,
+  "realIngestionAllowed": false,
+  "normalizedLaunchSignalTypes": ["sleep", "steps", "motion", "energy"],
+  "forbiddenFoundationClaims": [
+    "diagnosis",
+    "treatment",
+    "clinical interpretation",
+    "medical-device certification",
+    "provider support without runtime proof"
+  ],
+  "providers": [
+    {
+      "id": "apple-healthkit",
+      "family": "native-health-store",
+      "platforms": ["ios", "ipados", "watchos"],
+      "transport": "native-healthkit",
+      "auth": "per-data-type system authorization",
+      "requiresNativePackage": true,
+      "requiresProviderDeveloperApp": true,
+      "requiresHumanAccountAction": true,
+      "minimumLaunchMode": "read-only",
+      "launchDataMapping": ["sleep", "steps", "motion", "energy"],
+      "sensitiveTypesDefault": "off",
+      "requirements": [
+        "Apple Developer signing authority",
+        "HealthKit capability/entitlement",
+        "NSHealthShareUsageDescription",
+        "per-type user authorization",
+        "privacy policy and clear health/fitness use",
+        "device/runtime verification"
+      ],
+      "status": "EXTERNAL_GATE"
+    },
+    {
+      "id": "android-health-connect",
+      "family": "native-health-store",
+      "platforms": ["android", "wearos"],
+      "transport": "androidx-health-connect",
+      "auth": "per-data-type Android permissions",
+      "requiresNativePackage": true,
+      "requiresProviderDeveloperApp": true,
+      "requiresHumanAccountAction": true,
+      "minimumLaunchMode": "read-only",
+      "launchDataMapping": ["sleep", "steps", "motion", "energy"],
+      "sensitiveTypesDefault": "off",
+      "requirements": [
+        "Android package and manifest",
+        "Health Connect read permissions matching used data types",
+        "Play Console Health apps declaration",
+        "Play privacy/Data safety alignment",
+        "additional permission for background or older-than-default historical reads when actually used",
+        "device/runtime verification"
+      ],
+      "status": "EXTERNAL_GATE"
+    },
+    {
+      "id": "fitbit-web-api",
+      "family": "oauth-wearable-api",
+      "platforms": ["server", "web", "mobile"],
+      "transport": "oauth2-rest",
+      "auth": "Fitbit user OAuth",
+      "requiresNativePackage": false,
+      "requiresProviderDeveloperApp": true,
+      "requiresHumanAccountAction": true,
+      "minimumLaunchMode": "read-only",
+      "launchDataMapping": ["sleep", "steps", "motion", "energy"],
+      "requestedScopeClasses": ["activity", "sleep"],
+      "restrictedOrHigherRiskDefault": "off",
+      "requirements": [
+        "Fitbit developer application",
+        "OAuth client configuration",
+        "user authorization and revocation",
+        "Fitbit Platform Terms compliance",
+        "separate approval for third-party intraday access where required",
+        "server-side token protection and runtime verification"
+      ],
+      "status": "EXTERNAL_GATE"
+    },
+    {
+      "id": "oura-api",
+      "family": "oauth-wearable-api",
+      "platforms": ["server", "web", "mobile"],
+      "transport": "oauth2-rest",
+      "auth": "Oura user OAuth",
+      "requiresNativePackage": false,
+      "requiresProviderDeveloperApp": true,
+      "requiresHumanAccountAction": true,
+      "minimumLaunchMode": "read-only",
+      "launchDataMapping": ["sleep", "motion", "energy"],
+      "requestedScopes": ["daily", "workout"],
+      "excludedByDefaultScopes": ["email", "personal", "heartrate", "spo2", "tag", "session"],
+      "requirements": [
+        "Oura developer application",
+        "OAuth client configuration",
+        "minimum-scope user authorization",
+        "server-side token protection",
+        "revocation and runtime verification"
+      ],
+      "status": "EXTERNAL_GATE"
+    },
+    {
+      "id": "garmin-health-api",
+      "family": "partner-wearable-api",
+      "platforms": ["server", "web", "mobile"],
+      "transport": "garmin-health-rest",
+      "auth": "approved Garmin Connect Developer Program integration",
+      "requiresNativePackage": false,
+      "requiresProviderDeveloperApp": true,
+      "requiresHumanAccountAction": true,
+      "minimumLaunchMode": "read-only",
+      "launchDataMapping": ["sleep", "steps", "motion", "energy"],
+      "sensitiveTypesDefault": "off",
+      "requirements": [
+        "Garmin program application/approval",
+        "evaluation environment",
+        "end-user consent",
+        "subscribe only to necessary data feeds",
+        "commercial license/payment if applicable",
+        "runtime verification"
+      ],
+      "status": "EXTERNAL_GATE"
+    },
+    {
+      "id": "whoop-api",
+      "family": "oauth-wearable-api",
+      "platforms": ["server", "web", "mobile"],
+      "transport": "oauth2-rest",
+      "auth": "WHOOP user OAuth",
+      "requiresNativePackage": false,
+      "requiresProviderDeveloperApp": true,
+      "requiresHumanAccountAction": true,
+      "minimumLaunchMode": "read-only",
+      "launchDataMapping": ["sleep", "motion", "energy"],
+      "requestedScopes": ["read:sleep", "read:recovery", "read:cycles", "read:workout"],
+      "excludedByDefaultScopes": ["read:profile", "read:body_measurement"],
+      "requirements": [
+        "WHOOP membership/developer login",
+        "WHOOP Developer Dashboard app/team",
+        "client ID and server-only client secret",
+        "registered redirect URI",
+        "OAuth state and minimum scopes",
+        "access/refresh token protection and rotation",
+        "revocation on disconnect",
+        "provider app approval before launch"
+      ],
+      "status": "EXTERNAL_GATE"
+    }
+  ]
+}
