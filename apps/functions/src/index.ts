@@ -25,4 +25,4 @@ export {
   processPrivacyEnforcementJob,
 } from './privacyOperations'
 
-export { getCapturedRealityAsset, getCapturedRealityRuntimeUrl } from './capturedReality'
+export { getCapturedRealityAsset, getCapturedRealityRuntimeUrl, getCapturedRealityReplayEntry } from './capturedReality'
