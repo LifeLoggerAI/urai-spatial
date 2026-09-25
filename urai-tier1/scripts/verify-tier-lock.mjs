@@ -49,12 +49,12 @@ const fileNeedles = {
     'href={HOME_SEMANTIC_DESTINATIONS.lifeMap.travelHref}',
   ],
   'src/spatial/layout/HomeWorldProductionV223.tsx': [
-    'HomeEmbodiedAvatar',
-    "homeState.stableState === 'HOME_PRESENTATION'",
     "homeState.stableState === 'AVATAR_HOME_FIRST_PERSON'",
-    'visible-avatar-presentation-activation-gate',
     'bodyless-first-person-home',
-    'presentation-avatar-then-first-person-camera-only-no-hands-body-rig',
+    'data-home-presence-policy="direct-first-person-camera-only-no-hands-body-rig"',
+    'data-home-avatar-activation-gate="none-direct-first-person-home"',
+    'direct-bodyless-first-person-authored-living-memory-orb-sculpted-sanctuary-and-broad-sky-threshold',
+    'home-physical-world home-camera-only-first-person home-living-memory-orb home-life-map-sky-threshold',
   ],
   'src/spatial/home/HomeEmbodiedAvatar.tsx': [
     'HOME_AVATAR_MODEL',

@@ -32,12 +32,14 @@ test('historical V185 destinations remain regression-covered and visibly retired
 })
 
 test('V288 certified morphology is restored while V291 interaction semantics remain fail-closed pending current-head pixels', () => {
-  assert.equal(authority.artRevision, 'v292-avatar-presentation-bodyless-first-person-convergence')
+  assert.equal(authority.artRevision, 'v293-direct-bodyless-first-person-convergence')
   assert.equal(authority.lastCertifiedPredecessor.orbVisualAuthority, 'v288-grounded-biomorphic-reliquary')
   assert.ok(authority.lastCertifiedPredecessor.runtimeAssets.includes('HomeOrbGroundedV288.tsx'))
   assert.equal(authority.orbVisualAuthority, 'v288-grounded-biomorphic-reliquary')
   assert.equal(authority.currentRuntimeCandidate.orbVisualAuthority, 'v288-grounded-biomorphic-reliquary')
   assert.equal(authority.currentRuntimeCandidate.orbInteractionAuthority, 'v291-current-home-orb-state-and-speech-runtime')
+  assert.equal(authority.currentRuntimeCandidate.homePresentationAuthority, 'direct-bodyless-first-person')
+  assert.equal(authority.currentRuntimeCandidate.nonXrFirstPersonBodyPolicy, 'camera-only-no-hands-arms-visible-avatar-or-body-rig')
   assert.equal(authority.currentRuntimeCandidate.certified, false)
   assert.match(visualAuthority, /HomeOrbGroundedV288/)
   assert.match(visualAuthority, /return <HomeOrbGroundedV288 \/>/)

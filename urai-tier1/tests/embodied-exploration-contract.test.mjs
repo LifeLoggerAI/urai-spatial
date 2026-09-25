@@ -37,40 +37,35 @@ test('mobile movement controls remain touch/coarse-pointer affordances instead o
   assert.match(travel, /button\{width:48px;height:48px;/)
 })
 
-test('Home keeps one V223 Canvas owner with Avatar presentation then bodyless first-person presence, authored Orb, physical Ground and broad Sky ascent', () => {
+test('Home keeps one V223 Canvas owner with direct bodyless first-person presence, authored Orb, physical Ground and broad Sky ascent', () => {
   has(homeRuntime, 'HomeWorldProductionV223 as HomeWorldProduction')
   for (const marker of [
     'export function HomeWorldProductionV223',
     'URAI_ORB_STATE_EVENT',
     'resolveOrbSensoryOutput',
     'data-home-visible-world="cinematic-lived-world-threshold"',
-    'HomeEmbodiedAvatar',
-    'visible-avatar-presentation-activation-gate',
     'bodyless-first-person-home',
-    'avatar-embodiment-transition',
-    'home-avatar-presentation',
     'home-first-person',
     'data-home-ground-entry="physical-world-surface"',
     'data-home-life-map-entry="visible-sky-broad-interaction"',
+    'data-home-presence-policy="direct-first-person-camera-only-no-hands-body-rig"',
+    'data-home-avatar-activation-gate="none-direct-first-person-home"',
+    'direct-bodyless-first-person-authored-living-memory-orb-sculpted-sanctuary-and-broad-sky-threshold',
     'home-living-memory-orb',
     '/assets/urai/generated/models/urai-orb-avatar-v1.glb',
     'useHomeExperienceController',
-    'homeApi.activateAvatar()',
-    'HOME_WALK_SPEED',
-    'HOME_WALK_ACCELERATION',
-    'HOME_WALK_DECELERATION',
-    'useMovementInput({',
-    'stepEmbodiedMotion({',
+    'HOME_WALK_SPEED','HOME_WALK_ACCELERATION','HOME_WALK_DECELERATION',
+    'useMovementInput({','stepEmbodiedMotion({',
     '<MobileMovementPad input={movementInput} label="Move through Home" />',
     'data-home-movement={firstPerson ? \'shared-keyboard-touch-walk-look-interact\'',
-    'presentation-avatar-then-first-person-camera-only-no-hands-body-rig',
+    'aria-label="Open Avatar Self View"',
   ]) has(activeHomeRuntime3d, marker)
   assert.match(activeHomeRuntime3d, /firstPersonStable[\s\S]*\? \(portrait \? 66 : 58\)/)
   assert.match(activeHomeRuntime3d, /yaw: -yaw\.current/)
   assert.match(activeHomeRuntime3d, /acceleration: HOME_WALK_ACCELERATION/)
   assert.match(activeHomeRuntime3d, /deceleration: HOME_WALK_DECELERATION/)
   assert.equal((activeHomeRuntime3d.match(/<Canvas/g) ?? []).length, 1)
-  assert.match(activeHomeRuntime3d, /<HomeEmbodiedAvatar/)
+  assert.doesNotMatch(activeHomeRuntime3d, /<HomeEmbodiedAvatar|visible-avatar-presentation-activation-gate|home-avatar-presentation|presentation-avatar-then-first-person-camera-only-no-hands-body-rig/)
   assert.doesNotMatch(activeHomeRuntime3d, /visible-cinematic-avatar|visible-avatar-third-person|hidden-exterior-avatar-first-person/)
   assert.doesNotMatch(activeHomeRuntime3d, /privacy-preserving-first-person/)
   assert.doesNotMatch(activeHomeRuntime3d, /first-person-hand|fps-hand|player-hands|weapon-rig/i)

@@ -72,7 +72,7 @@ jobs:
           adapter='urai-tier1/src/spatial/assets/HomeOrbGroundedV288.tsx'
           reliquary='urai-tier1/src/spatial/assets/HomeOrbReliquaryV286.tsx'
           authority='urai-tier1/src/app/currentHomeVisualAuthority.json'
-          grep -Fq '"artRevision": "v292-avatar-presentation-bodyless-first-person-convergence"' "$authority"
+          grep -Fq '"artRevision": "v293-direct-bodyless-first-person-convergence"' "$authority"
           grep -Fq '"orbVisualAuthority": "v288-grounded-biomorphic-reliquary"' "$authority"
           grep -Fq '"certificationState": "candidate-requires-fresh-exact-head-pixels"' "$authority"
           grep -Fq 'return <HomeOrbGroundedV288 />' "$visual"

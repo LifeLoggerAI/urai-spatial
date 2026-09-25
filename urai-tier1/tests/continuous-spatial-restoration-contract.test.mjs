@@ -36,7 +36,7 @@ test('current Home candidate uses one spatial owner while certified V288 metadat
   has(assetHome, 'HomeWorldProductionV223')
   has(assetHome, 'data-home-canvas-owner="home-world-production-v223-cinematic-threshold-authority"')
   has(assetHome, "world.setAttribute('data-home-art-certification', 'fresh-exact-head-pixels-required')")
-  assert.equal(authority.artRevision, 'v292-avatar-presentation-bodyless-first-person-convergence')
+  assert.equal(authority.artRevision, 'v293-direct-bodyless-first-person-convergence')
   assert.equal(authority.worldIdentifier, 'cinematic-lived-world-threshold')
   assert.equal(authority.certificationState, 'candidate-requires-fresh-exact-head-pixels')
   assert.equal(authority.lastCertifiedPredecessor.orbVisualAuthority, 'v288-grounded-biomorphic-reliquary')
@@ -45,6 +45,8 @@ test('current Home candidate uses one spatial owner while certified V288 metadat
   assert.equal(authority.currentRuntimeCandidate.orbRuntimeAsset, '/assets/urai/generated/models/urai-orb-avatar-v1.glb')
   assert.equal(authority.currentRuntimeCandidate.orbVisualAuthority, 'v288-grounded-biomorphic-reliquary')
   assert.equal(authority.currentRuntimeCandidate.orbInteractionAuthority, 'v291-current-home-orb-state-and-speech-runtime')
+  assert.equal(authority.currentRuntimeCandidate.homePresentationAuthority, 'direct-bodyless-first-person')
+  assert.equal(authority.currentRuntimeCandidate.nonXrFirstPersonBodyPolicy, 'camera-only-no-hands-arms-visible-avatar-or-body-rig')
   assert.equal(authority.currentRuntimeCandidate.certified, false)
   assert.equal(authority.currentRuntimeCandidate.requiredEvidence, 'fresh-exact-head-source-build-runtime-and-literal-pixel-acceptance')
   assert.equal(authority.orbVisualAuthority, 'v288-grounded-biomorphic-reliquary')
@@ -86,23 +88,19 @@ test('Home Ground entry remains a physical world-surface descent into the lived 
   assert.doesNotMatch(ground, /ground-central-nexus|ground-destination-compass|GroundPhysicalArchitecture|GroundVaultArchitecture/)
 })
 
-test('Home interaction/accessibility preserves Avatar presentation then bodyless camera-only first person', () => {
+test('Home interaction/accessibility preserves direct bodyless camera-only first person', () => {
   for (const marker of [
     'data-testid="urai-home-webgl-orb"',
-    'HomeEmbodiedAvatar',
-    'visible-avatar-presentation-activation-gate',
     'bodyless-first-person-home',
-    'presentation-avatar-then-first-person-camera-only-no-hands-body-rig',
-    'data-home-avatar-activation-gate="required-before-first-person-home"',
-    'data-testid="urai-home-avatar-enter-first-person"',
+    'data-home-presence-policy="direct-first-person-camera-only-no-hands-body-rig"',
+    'data-home-avatar-activation-gate="none-direct-first-person-home"',
     'useHomeExperienceController',
     'AvatarSelfView',
     "data-home-orb-model-clip={reducedMotion ? 'stopped-reduced-motion'",
   ]) has(renderer, marker)
-  assert.match(renderer, /CURRENT_HOME_PRESENCE_ROOTS = new Set\(\['home-living-memory-orb', 'home-orb-v288-visible-authority', 'urai-home-user-avatar'\]\)/)
-  assert.match(renderer, /homeState\.stableState === 'HOME_PRESENTATION'/)
+  assert.match(renderer, /CURRENT_HOME_PRESENCE_ROOTS = new Set\(\['home-living-memory-orb', 'home-orb-v288-visible-authority'\]\)/)
   assert.match(renderer, /homeState\.stableState === 'AVATAR_HOME_FIRST_PERSON'/)
-  assert.match(renderer, /avatarState=\{avatarPresentationState\}/)
+  assert.doesNotMatch(renderer, /<HomeEmbodiedAvatar|visible-avatar-presentation-activation-gate|data-testid="urai-home-avatar-enter-first-person"|presentation-avatar-then-first-person-camera-only-no-hands-body-rig/)
   assert.doesNotMatch(renderer, /first-person-hand|fps-hand|player-hands|weapon-rig/i)
   has(homeRuntime, 'requestUraiWorldOrbOpen')
   has(homeRuntime, 'webglcontextlost')

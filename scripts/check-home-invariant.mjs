@@ -76,25 +76,24 @@ if (threshold.includes('<HomeSpatialWorldFinal')) {
 }
 
 for (const marker of [
-  'HomeEmbodiedAvatar',
-  "homeState.stableState === 'HOME_PRESENTATION'",
   "homeState.stableState === 'AVATAR_HOME_FIRST_PERSON'",
-  'visible-avatar-presentation-activation-gate',
   'bodyless-first-person-home',
-  'presentation-avatar-then-first-person-camera-only-no-hands-body-rig',
-  'AVATAR_EMBODIMENT_TRANSITION',
-  'data-testid="urai-home-avatar-enter-first-person"',
+  'data-home-presence-policy="direct-first-person-camera-only-no-hands-body-rig"',
+  'data-home-avatar-activation-gate="none-direct-first-person-home"',
+  'direct-bodyless-first-person-authored-living-memory-orb-sculpted-sanctuary-and-broad-sky-threshold',
+  'home-physical-world home-camera-only-first-person home-living-memory-orb home-life-map-sky-threshold',
+  'aria-label="Open Avatar Self View"',
 ]) {
-  if (!product.includes(marker)) failures.push(`HomeWorldProductionV223 missing two-mode Home invariant: ${marker}`)
+  if (!product.includes(marker)) failures.push(`HomeWorldProductionV223 missing direct-first-person Home invariant: ${marker}`)
 }
-for (const marker of ['urai-home-user-avatar', 'hidden-first-person', 'onClick={activate}', 'HOME_AVATAR_MODEL']) {
-  if (!avatar.includes(marker)) failures.push(`HomeEmbodiedAvatar missing presentation invariant: ${marker}`)
+for (const retired of ['HomeEmbodiedAvatar','visible-avatar-presentation-activation-gate','presentation-avatar-then-first-person-camera-only-no-hands-body-rig','data-testid="urai-home-avatar-enter-first-person"']) {
+  if (product.includes(retired)) failures.push(`HomeWorldProductionV223 restored retired Avatar-first authority: ${retired}`)
 }
-for (const marker of ["makeHomeOriginSnapshot('HOME_PRESENTATION')", "case 'AVATAR_ACTIVATE'", "stableState: 'AVATAR_HOME_FIRST_PERSON'"]) {
-  if (!state.includes(marker)) failures.push(`homeExperienceState missing two-mode state invariant: ${marker}`)
+for (const marker of ["makeHomeOriginSnapshot('AVATAR_HOME_FIRST_PERSON')","stableState: 'AVATAR_HOME_FIRST_PERSON'"]) {
+  if (!state.includes(marker)) failures.push(`homeExperienceState missing direct-first-person state invariant: ${marker}`)
 }
-for (const marker of ["type: 'AVATAR_ACTIVATE'", 'activateAvatar']) {
-  if (!controller.includes(marker)) failures.push(`useHomeExperienceController missing Avatar activation invariant: ${marker}`)
+for (const marker of ['openSelfView','completeEmbodiment']) {
+  if (!controller.includes(marker)) failures.push(`useHomeExperienceController missing direct-first-person continuity invariant: ${marker}`)
 }
 
 const forbiddenPatterns = [
