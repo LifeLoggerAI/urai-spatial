@@ -12,6 +12,7 @@ const requiredFocusedTests = [
   'tests/captured-reality-private-runtime-contract.test.mjs',
   'tests/captured-reality-source-preparation-contract.test.mjs',
   'tests/captured-reality-runtime-budget-contract.test.mjs',
+  'tests/captured-reality-replay-binding-contract.test.mjs',
   'tests/ground-zero-ambiguity-contract.test.mjs',
   'tests/lived-world-core-reconstruction-contract.test.mjs',
   'tests/global-emotional-field-core-contract.test.mjs',
