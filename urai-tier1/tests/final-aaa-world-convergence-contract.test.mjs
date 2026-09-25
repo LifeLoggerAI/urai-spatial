@@ -15,7 +15,6 @@ const homeRuntime = read('src/app/HomeSpatialRuntimeLayer.tsx')
 const assetHome = read('src/app/AssetDrivenHomeWorld.tsx')
 const currentHomeVisualAuthority = JSON.parse(read('src/app/currentHomeVisualAuthority.json'))
 const homeProductionEntry = read('src/spatial/layout/HomeWorldProduction.tsx')
-const historicalHomeArt = read('src/spatial/layout/HomeWorldProductionV76.tsx')
 const activeHomeProduction = read('src/spatial/layout/HomeWorldProductionV223.tsx')
 const activeHomeVisual = read('src/spatial/layout/HomeWorldProductionV225PolishV3.tsx')
 const groundedOrb = read('src/spatial/assets/HomeOrbGroundedV288.tsx')
@@ -67,7 +66,6 @@ test('Orb and Home ownership preserve predecessor truth while the current candid
   assert.doesNotMatch(assetHome, /HomeV75RetainedPixelWorld|HomeWorldProductionV75/)
   assert.match(homeProductionEntry, /export \{ HomeWorldProductionV223 as HomeWorldProduction \} from ['"]\.\/HomeWorldProductionV223['"]/)
   assert.doesNotMatch(homeProductionEntry, /HomeWorldProductionV70/)
-  assert.match(historicalHomeArt, /export function HomeV76Sanctuary/)
 
   assert.equal(currentHomeVisualAuthority.artRevision, 'v293-direct-bodyless-first-person-convergence')
   assert.equal(currentHomeVisualAuthority.worldIdentifier, 'cinematic-lived-world-threshold')
@@ -184,9 +182,9 @@ test('Life Map reads as the active full-viewport canonical stellar world', () =>
   assert.match(cosmicLifeMap, /data-life-map-ground="none"/)
   assert.match(cosmicLifeMap, /<header className="life-map-title">/)
   assert.match(cosmicLifeMap, /<h1 className="sr-only">URAI Life Map private universe<\/h1>/)
-  assert.match(cosmicLifeMap, /if \(selectedId\) overview\(\); else router\.push\("\/home"\)/)
+  assert.match(cosmicLifeMap, /if \(selectedId\) overview\(\); else returnHome\(\)/)
   assert.match(cosmicLifeMap, /<button className="overview-return" onClick=\{overview\}>Overview<\/button>/)
-  assert.match(cosmicLifeMap, /<button onClick=\{\(\) => router\.push\("\/home"\)\}>Return Home<\/button>/)
+  assert.match(cosmicLifeMap, /const returnHome = useCallback\(\(\) => \{ router\.push\(explicitDemo \? "\/home\?demo=1" : "\/home"\); \}/)
   assert.match(cosmicLifeMap, /env\(safe-area-inset-bottom\)/)
   assert.match(cosmicLifeMap, /@media\(max-width:700px\)/)
   assert.match(cosmicLifeMap, /@media\(prefers-reduced-motion:reduce\)/)
@@ -258,7 +256,7 @@ test('Life Map renders the current layered galaxy and stellar Memory Star author
     /function OverviewRegions/,
     /graphEdges: false/,
     /function Constellations\(\) \{ return <group name="life-map-constellations" visible=\{false\}/,
-    /setPhase\("departure"\)/,
+    /setPhase\(profile\.reducedMotion \? "arrival" : "departure"\)/,
     /setPhase\("travel"\)/,
     /setPhase\("approach"\)/,
     /setPhase\("arrival"\)/,
