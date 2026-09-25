@@ -45,7 +45,7 @@ test('node selection stays in Life Map before explicit Focus or Replay actions',
 test('selected-memory travel and recenter remain user controlled', () => {
   assert.ok(sceneSource.includes('function CameraRig'))
   assert.ok(sceneSource.includes('const goal = useCallback'))
-  assert.ok(sceneSource.includes('cosmicPoint(selected, selectedIndex)'))
+  assert.ok(sceneSource.includes('cosmicPoint(selected)'))
   assert.ok(sceneSource.includes('setPhase(profile.reducedMotion ? "arrival" : "departure")'))
   assert.ok(sceneSource.includes('if (profile.reducedMotion) { journey.current += 1; setPhase("arrival"); return; }'))
   assert.ok(sceneSource.includes('if (phase === "departure") setPhase("travel")'))
