@@ -16,10 +16,12 @@ dataProcessing:
   collectedFields:
     - name: location_record
       collectionOrTable: locations
-      dataClass: L4
+      dataClass: L3
       source: device_or_user_provided
       purpose: associate memories with places or location context
-      consentTier: C3
+      consentTier: C1
+      requiredConsentPurposes:
+        - location.context
       retentionClass: R3
       exportable: true
       deletable: true
@@ -27,11 +29,13 @@ dataProcessing:
   derivedFields:
     - name: location_memory_context
       collectionOrTable: locations
-      dataClass: L4
+      dataClass: L3
       sourceFields:
         - location_record
       purpose: user-facing place-based memory organization
-      consentTier: C3
+      consentTier: C1
+      requiredConsentPurposes:
+        - location.context
       retentionClass: R3
       exportable: true
       deletable: true
