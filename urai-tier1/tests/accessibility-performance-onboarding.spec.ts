@@ -88,7 +88,7 @@ test.describe('first-run onboarding accessibility', () => {
     await expect(setup).toBeVisible()
 
     const collect = async (stage: string) => {
-      const targets = await setup.locator('a[href], button:not([disabled]), label:has(input)').evaluateAll((elements) => elements
+      const targets = await setup.locator('a[href], button:not([disabled]), label:has(input)').evaluateAll((elements, stage) => elements
         .map((element) => ({ element, rect: element.getBoundingClientRect(), style: getComputedStyle(element) }))
         .filter(({ rect, style }) => style.visibility !== 'hidden' && style.display !== 'none' && rect.width > 0 && rect.height > 0)
         .map(({ element, rect }) => ({
@@ -96,7 +96,7 @@ test.describe('first-run onboarding accessibility', () => {
           label: element.getAttribute('aria-label') ?? element.textContent?.trim() ?? element.tagName,
           width: Math.round(rect.width * 100) / 100,
           height: Math.round(rect.height * 100) / 100,
-        })))
+        })), stage)
       const failures = targets.filter(({ width, height }) => width < 48 || height < 48)
       await test.info().attach(`onboarding-targets-${stage}.json`, {
         body: JSON.stringify({ targets, failures }, null, 2),

@@ -76,11 +76,17 @@ export type HomeExperienceEvent =
 export const HOME_RETURN_SESSION_KEY = 'urai:home:return-frame:v1'
 export const HOME_PASSPORT_ORIGIN_CAPTURE_EVENT = 'urai:home-passport-origin-capture' as const
 
-export const DEFAULT_HOME_PRESENTATION_CAMERA: HomeCameraSnapshot = {
-  position: [0, 1.75, 7.85],
+// The direct first-person arrival is inside the open-air pavilion. The legacy
+// z=7.85 presentation camera stood behind its back wall (z=3.55), making the
+// doorway and header occlude the sky. Y is the local floor plus 1.64 m eye height;
+// the live camera continues to follow the terrain on every movement frame.
+export const DEFAULT_HOME_FIRST_PERSON_CAMERA: HomeCameraSnapshot = {
+  position: [0, 1.012, 2.8],
   yaw: 0,
   pitch: 0.02,
 }
+
+export const DEFAULT_HOME_PRESENTATION_CAMERA = DEFAULT_HOME_FIRST_PERSON_CAMERA
 
 export function makeHomeOriginSnapshot(
   stableState: HomeOriginSnapshot['stableState'],

@@ -30,6 +30,7 @@ async function disableWebGL(page: Page) {
 }
 
 async function targetSize(page: Page, selector: string) {
+  await expect(page.locator(selector).first()).toBeVisible({ timeout: 30_000 })
   return page.locator(selector).evaluateAll((elements) => elements
     .map((element) => ({ element, rect: element.getBoundingClientRect(), style: getComputedStyle(element) }))
     .filter(({ rect, style }) => style.visibility !== 'hidden' && style.display !== 'none' && style.display !== 'inline' && rect.width > 0 && rect.height > 0)
@@ -37,6 +38,14 @@ async function targetSize(page: Page, selector: string) {
 }
 
 test.describe('URAI accessibility and performance evidence', () => {
+  test.beforeEach(async ({ page }) => {
+    // First-run setup has its own suite. Measure the actual route controls here.
+    await page.addInitScript(() => {
+      localStorage.setItem('urai:onboarding:v2:complete', '1')
+      localStorage.setItem('urai:onboarding:v3:setup-complete', '1')
+    })
+  })
+
   test('all visible interactive controls have accessible names', async ({ page }) => {
     const report: Array<{ route: string; unnamed: string[] }> = []
     for (const route of routes) {
@@ -68,7 +77,7 @@ test.describe('URAI accessibility and performance evidence', () => {
     await page.emulateMedia({ reducedMotion: 'reduce' })
     await page.setViewportSize({ width: 393, height: 873 })
     await page.goto('/', { waitUntil: 'domcontentloaded' })
-    const orb = page.locator('[data-urai-audit-action="orb-controls"]')
+    const orb = page.getByTestId('home-semantic-orb')
     await expect(orb).toHaveAccessibleName('Open UrAi Orb companion')
     await expect(orb).toBeEnabled({ timeout: 15_000 })
     await orb.click()
@@ -109,7 +118,7 @@ test.describe('URAI accessibility and performance evidence', () => {
 
   test('Orb menu enters focus, closes on Escape, and returns focus', async ({ page }) => {
     await page.goto('/', { waitUntil: 'domcontentloaded' })
-    const orb = page.locator('[data-urai-audit-action="orb-controls"]')
+    const orb = page.getByTestId('home-semantic-orb')
     await expect(orb).toHaveAccessibleName('Open UrAi Orb companion')
     await expect(orb).toBeEnabled({ timeout: 15_000 })
     await orb.focus()
@@ -187,7 +196,6 @@ test.describe('URAI accessibility and performance evidence', () => {
           while (current) {
             const style = getComputedStyle(current)
             const overflowsHorizontally = current.scrollWidth > current.clientWidth
-            if (current.matches('.ground-destination-compass') && overflowsHorizontally) return true
             if (/auto|scroll/.test(style.overflowX) && overflowsHorizontally) return true
             current = current.parentElement
           }
@@ -210,27 +218,25 @@ test.describe('URAI accessibility and performance evidence', () => {
     const movementTargets = await targetSize(page, '.ground-accessible-movement summary')
     expect(movementTargets.length).toBeGreaterThan(0)
     expect(movementTargets.filter(({ width, height }) => width < 48 || height < 48)).toEqual([])
-    const railTargets = page.locator('.ground-destination-compass :is(a,button)')
+    const groundTargets = page.locator('.ground-home-return, .ground-place-access a, .ground-accessible-movement summary')
+    await expect(groundTargets).toHaveCount(4)
     const focusContainment: Array<{ label: string; fullyContained: boolean; left: number; right: number }> = []
-    for (let index = 0; index < await railTargets.count(); index += 1) {
-      const target = railTargets.nth(index)
+    for (let index = 0; index < await groundTargets.count(); index += 1) {
+      const target = groundTargets.nth(index)
       await target.focus()
       await expect(target).toBeFocused()
       await target.evaluate((element) => element.scrollIntoView({ block: 'nearest', inline: 'center' }))
       await page.waitForTimeout(250)
       focusContainment.push(await target.evaluate((element) => {
         const rect = element.getBoundingClientRect()
-        const rail = element.closest<HTMLElement>('.ground-destination-compass')
-        const railRect = rail?.getBoundingClientRect() ?? rect
         const viewport = window.visualViewport
-        const leftBoundary = Math.max(viewport?.offsetLeft ?? 0, railRect.left)
-        const rightBoundary = Math.min(
-          (viewport?.offsetLeft ?? 0) + (viewport?.width ?? window.innerWidth),
-          railRect.right,
-        )
+        const leftBoundary = viewport?.offsetLeft ?? 0
+        const rightBoundary = leftBoundary + (viewport?.width ?? window.innerWidth)
+        const topBoundary = viewport?.offsetTop ?? 0
+        const bottomBoundary = topBoundary + (viewport?.height ?? window.innerHeight)
         return {
           label: element.getAttribute('aria-label') ?? element.textContent?.trim() ?? 'unknown',
-          fullyContained: rect.left >= leftBoundary && rect.right <= rightBoundary,
+          fullyContained: rect.left >= leftBoundary && rect.right <= rightBoundary && rect.top >= topBoundary && rect.bottom <= bottomBoundary,
           left: rect.left,
           right: rect.right,
         }
@@ -238,7 +244,7 @@ test.describe('URAI accessibility and performance evidence', () => {
     }
 
     await test.info().attach('mobile-safe-area-report.json', {
-      body: JSON.stringify({ fixedControls: report, scrollableGroundRail: focusContainment }, null, 2),
+      body: JSON.stringify({ fixedControls: report, currentGroundControls: focusContainment }, null, 2),
       contentType: 'application/json',
     })
     expect(report.flatMap((entry) => entry.clipped)).toEqual([])
@@ -254,6 +260,7 @@ test.describe('URAI accessibility and performance evidence', () => {
     expect(statusTargets.filter(({ width, height }) => width < 48 || height < 48)).toEqual([])
 
     await page.goto('/privacy-controls', { waitUntil: 'domcontentloaded' })
+    await expect(page.locator('.consentSanctuary')).toBeVisible({ timeout: 30_000 })
     const privacyTargets = await page.locator([
       '.consentSanctuary button',
       '.consentSanctuary a[href]',
@@ -281,6 +288,7 @@ test.describe('URAI accessibility and performance evidence', () => {
   test('Mirror launch-critical controls meet the 48 CSS pixel minimum', async ({ page }) => {
     await page.setViewportSize({ width: 320, height: 720 })
     await page.goto('/mirror', { waitUntil: 'domcontentloaded' })
+    await expect(page.getByTestId('mirror-bare-entry')).toBeVisible({ timeout: 30_000 })
     const targets = await page.locator('main a[href], main button:not([disabled])').evaluateAll((elements) => elements
       .map((element) => ({ element, rect: element.getBoundingClientRect(), style: getComputedStyle(element) }))
       .filter(({ rect, style }) => style.visibility !== 'hidden' && style.display !== 'none' && rect.width > 0 && rect.height > 0)
@@ -301,6 +309,7 @@ test.describe('URAI accessibility and performance evidence', () => {
   test('XR web controls meet the 48 CSS pixel minimum on narrow mobile', async ({ page }) => {
     await page.setViewportSize({ width: 320, height: 720 })
     await page.goto('/spatial/ar-vr', { waitUntil: 'domcontentloaded' })
+    await expect(page.locator('button:not([disabled])').first()).toBeVisible({ timeout: 30_000 })
     const targets = await page.locator('button:not([disabled])').evaluateAll((elements) => elements
       .map((element) => ({ element, rect: element.getBoundingClientRect(), style: getComputedStyle(element) }))
       .filter(({ rect, style }) => style.visibility !== 'hidden' && style.display !== 'none' && rect.width > 0 && rect.height > 0)

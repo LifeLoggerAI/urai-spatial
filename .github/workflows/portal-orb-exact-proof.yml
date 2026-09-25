@@ -6,6 +6,8 @@ on:
       - '.github/workflows/portal-orb-exact-proof.yml'
       - '.github/workflows/launch-verification.yml'
       - 'scripts/capture-natural-home-orb-proof.mjs'
+      - 'scripts/capture-visible-canvas-png.mjs'
+      - 'urai-tier1/tests/visible-canvas-capture.test.mjs'
       - 'scripts/capture-home-sky-interaction-proof.mjs'
       - 'scripts/run-with-ci-webgl.mjs'
       - 'urai-tier1/src/app/AssetDrivenHomeWorld.tsx'
@@ -22,6 +24,8 @@ on:
       - '.github/workflows/portal-orb-exact-proof.yml'
       - '.github/workflows/launch-verification.yml'
       - 'scripts/capture-natural-home-orb-proof.mjs'
+      - 'scripts/capture-visible-canvas-png.mjs'
+      - 'urai-tier1/tests/visible-canvas-capture.test.mjs'
       - 'scripts/capture-home-sky-interaction-proof.mjs'
       - 'scripts/run-with-ci-webgl.mjs'
       - 'urai-tier1/src/app/AssetDrivenHomeWorld.tsx'
@@ -133,7 +137,7 @@ jobs:
           node --check scripts/run-with-ci-webgl.mjs
           node --check scripts/capture-natural-home-orb-proof.mjs
           node --check scripts/capture-home-sky-interaction-proof.mjs
-          (cd urai-tier1 && node --test tests/portal-orb-proof-integrity-contract.test.mjs)
+          (cd urai-tier1 && node --test tests/portal-orb-proof-integrity-contract.test.mjs tests/visible-canvas-capture.test.mjs)
       - name: Capture exact Home, Orb, broad-sky interaction and reduced-motion proof
         run: |
           python3 -m http.server 4173 --bind 127.0.0.1 --directory urai-tier1/out > /tmp/urai-portal-orb-http.log 2>&1 &

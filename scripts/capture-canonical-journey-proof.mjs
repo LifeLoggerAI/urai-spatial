@@ -26,16 +26,23 @@ async function waitPath(page, expected, timeout = 60_000) {
 
 async function waitAttr(locator, name, expected, timeout = 60_000) {
   const start = Date.now()
+  let lastValue = null
+  let lastReadError = null
   while (Date.now() - start < timeout) {
     const remaining = timeout - (Date.now() - start)
     if (remaining <= 0) break
     if (await locator.count()) {
-      const value = await locator.getAttribute(name, { timeout: Math.min(1_000, remaining) }).catch(() => null)
-      if (value === expected) return
+      try {
+        lastValue = await locator.getAttribute(name, { timeout: Math.min(10_000, remaining) })
+        lastReadError = null
+        if (lastValue === expected) return
+      } catch (error) {
+        lastReadError = String(error)
+      }
     }
     await sleep(Math.min(100, remaining))
   }
-  throw new Error(`timeout waiting for ${name}=${expected}`)
+  throw new Error(`timeout waiting for ${name}=${expected}; lastValue=${JSON.stringify(lastValue)}; lastReadError=${lastReadError}`)
 }
 
 async function capture(page, journey, id) {

@@ -2,6 +2,7 @@ import { createHash } from 'node:crypto'
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import { createRequire } from 'node:module'
+import { CANVAS_EVIDENCE_SAMPLE_POINTS, captureVisibleCanvasPng } from './capture-visible-canvas-png.mjs'
 
 const requireFromTierOne = createRequire(new URL('../urai-tier1/package.json', import.meta.url))
 const { chromium } = requireFromTierOne('playwright')
@@ -47,7 +48,7 @@ const cases = [
 await mkdir(outputDir, { recursive: true })
 const receipt = {
   schemaVersion: 'urai-natural-home-orb-proof-19', exactHead, capturedAt: new Date().toISOString(), runtimeIdentity,
-  visualPolicy: 'Current Home begins with the governed Avatar presentation and requires explicit activation into bodyless non-XR first-person Home. The living-memory Orb, physical Ground surface, and broad visible sky remain in one continuous world. Exact-head pixels remain candidates until literally inspected.',
+  visualPolicy: 'Current Home begins directly in bodyless non-XR first-person Home with no Avatar activation gate. The living-memory Orb, physical Ground surface, and broad visible sky remain in one continuous world. Exact-head pixels remain candidates until literally inspected.',
   cases: [], errors: [],
 }
 
@@ -75,26 +76,24 @@ async function ensureReviewOrbState(page, state) {
 }
 
 async function imageEvidence(page) {
-  // portal-orb-proof-canvas-element-retained-png: visual signal must come
-  // from the actual Home WebGL canvas, never from DOM overlays around it.
+  // portal-orb-proof-canvas-element-retained-png: keep the exact visible Home
+  // canvas bounds, without a scroll/stability wait on costly WebGL frames.
   const canvas = page.locator('.urai-asset-home-world[data-home-primary-owner="asset-driven"] canvas').first()
-  await canvas.waitFor({ state: 'visible', timeout: 90_000 })
-  const buffer = await canvas.screenshot({ animations: 'disabled', caret: 'hide', timeout: 90_000 })
+  const { buffer, capture } = await captureVisibleCanvasPng(page, canvas)
   const dataUrl = `data:image/png;base64,${buffer.toString('base64')}`
-  const sample = await page.evaluate(async (url) => {
+  const sample = await page.evaluate(async ({ url, points }) => {
     const image = new Image()
     await new Promise((resolve, reject) => { image.onload = resolve; image.onerror = reject; image.src = url })
     const canvas = document.createElement('canvas'); canvas.width = image.naturalWidth; canvas.height = image.naturalHeight
     const context = canvas.getContext('2d', { willReadFrequently: true }); if (!context) return { luminanceRange: 0, visibleSamples: 0 }
     context.drawImage(image, 0, 0)
-    const points = [[.12,.18],[.36,.18],[.64,.18],[.88,.18],[.12,.5],[.36,.5],[.64,.5],[.88,.5],[.12,.82],[.36,.82],[.64,.82],[.88,.82]]
     const values = points.map(([xr, yr]) => {
       const p = context.getImageData(Math.floor(canvas.width*xr), Math.floor(canvas.height*yr), 1, 1).data
       return Math.round(p[0]*.2126+p[1]*.7152+p[2]*.0722)
     })
     return { luminanceRange: Math.max(...values)-Math.min(...values), visibleSamples: values.filter((v) => v >= 10).length }
-  }, dataUrl)
-  return { buffer, ...sample }
+  }, { url: dataUrl, points: CANVAS_EVIDENCE_SAMPLE_POINTS })
+  return { buffer, capture, ...sample }
 }
 
 for (const spec of cases) {
@@ -133,6 +132,7 @@ for (const spec of cases) {
     record.orbState = await attr('data-home-orb-state'); record.orbModelClip = await attr('data-home-orb-model-clip')
     record.orbMarkers = await owner.getByTestId('urai-home-webgl-orb').count(); record.embodimentMarkers = await owner.getByTestId('urai-home-embodied-avatar').count()
     const presentationVisual = await imageEvidence(page)
+    record.presentationCapture = presentationVisual.capture
     record.presentationScreenshot = `${spec.id}-presentation-${exactHead.slice(0,12)}.png`
     await writeFile(path.join(outputDir, record.presentationScreenshot), presentationVisual.buffer)
     record.presentationScreenshotBytes = presentationVisual.buffer.length
@@ -155,6 +155,7 @@ for (const spec of cases) {
     record.semanticGroundHref = await nav.getByTestId('home-semantic-ground').getAttribute('href'); record.semanticLifeMapHref = await nav.getByTestId('home-semantic-life-map').getAttribute('href')
     record.semanticOwner = await nav.getAttribute('data-home-navigation-owner'); record.semanticNonDominant = await nav.getAttribute('data-home-navigation-non-dominant')
     const visual = await imageEvidence(page)
+    record.capture = visual.capture
     record.screenshot = `${spec.id}-${exactHead.slice(0,12)}.png`; await writeFile(path.join(outputDir, record.screenshot), visual.buffer)
     record.screenshotBytes = visual.buffer.length; record.screenshotSha256 = createHash('sha256').update(visual.buffer).digest('hex')
     record.luminanceRange = visual.luminanceRange; record.visibleSamples = visual.visibleSamples

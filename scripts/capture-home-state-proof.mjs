@@ -35,6 +35,12 @@ const receipt = {
   visualAuthority,
 }
 
+async function checkpointReceipt() {
+  // Retain observed failures and completed captures even if the outer bounded
+  // runner terminates a later browser action. Partial receipts are never passes.
+  await writeFile(path.join(outputDir, 'receipt.json'), `${JSON.stringify({ ...receipt, complete: false }, null, 2)}\n`)
+}
+
 const sharedBrowser = await chromium.launch({ headless: true, args: ['--enable-unsafe-swiftshader'] })
 
 const homeProofOnboardingKeys = {
@@ -261,6 +267,7 @@ async function capture(state, options = {}) {
   } finally {
     receipt.captures.push(record)
     if (!record.passed) receipt.errors.push(record)
+    await checkpointReceipt()
     await context.close().catch(() => {})
   }
 }
@@ -436,6 +443,7 @@ async function captureOrbLifecycle({ reducedMotion = 'no-preference' } = {}) {
   } finally {
     receipt.captures.push(record)
     if (!record.passed) receipt.errors.push(record)
+    await checkpointReceipt()
     await context.close().catch(() => {})
   }
 }
@@ -554,6 +562,7 @@ async function captureHomeSpatialContinuity({ idSuffix = 'desktop', viewport = {
   } finally {
     receipt.captures.push(record)
     if (!record.passed) receipt.errors.push(record)
+    await checkpointReceipt()
     await context.close().catch(() => {})
   }
 }
@@ -602,7 +611,7 @@ try {
   if (!transition.passed) receipt.errors.push(transition)
 }
 
-await writeFile(path.join(outputDir, 'receipt.json'), `${JSON.stringify(receipt, null, 2)}\
+await writeFile(path.join(outputDir, 'receipt.json'), `${JSON.stringify({ ...receipt, complete: true }, null, 2)}\
 `)
 await sharedBrowser.close().catch(() => {})
 if (receipt.errors.length) process.exit(1)

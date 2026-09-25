@@ -17,7 +17,7 @@ import { ORB_SPEECH_CLOCK_EVENT, type OrbSpeechClockDetail } from '@/spatial/orb
 import { requestUraiWorldOrbOpen, requestUraiWorldTravel } from '@/spatial/world/worldEvents'
 import { AvatarSelfView, type AvatarSelfViewSection } from '@/spatial/home/AvatarSelfView'
 import { useHomeExperienceController } from '@/spatial/home/useHomeExperienceController'
-import { HOME_PASSPORT_ORIGIN_CAPTURE_EVENT, type HomeOriginSnapshot, type HomeStableState, type HomeTransitionState } from '@/spatial/home/homeExperienceState'
+import { DEFAULT_HOME_FIRST_PERSON_CAMERA, HOME_PASSPORT_ORIGIN_CAPTURE_EVENT, type HomeOriginSnapshot, type HomeStableState, type HomeTransitionState } from '@/spatial/home/homeExperienceState'
 import { height } from './HomeWorldProductionV223Geometry'
 import { HomeV225PolishV3 } from './HomeWorldProductionV225PolishV3'
 import { HomeCurrentArtRepair } from './HomeCurrentArtRepair'
@@ -766,10 +766,10 @@ export function HomeWorldProductionV223({ onOrbOpen = requestUraiWorldOrbOpen, w
   const { scene: personalizedHomeScene, loading: personalizedHomeLoading } = useHomePersonalizedScene()
   const personalWeatherState = useMemo(() => homeWeatherToneToAtmosphere(personalizedHomeScene.environment.weatherTone), [personalizedHomeScene.environment.weatherTone])
   const [transition, setTransition] = useState<Transition>('none')
-  const yaw = useRef(0)
-  const pitch = useRef(.02)
+  const yaw = useRef(DEFAULT_HOME_FIRST_PERSON_CAMERA.yaw)
+  const pitch = useRef(DEFAULT_HOME_FIRST_PERSON_CAMERA.pitch)
   const transitionTarget = useRef<TransitionTarget | null>(null)
-  const cameraSnapshot = useRef(new THREE.Vector3(0, 1.92, 7.85))
+  const cameraSnapshot = useRef(new THREE.Vector3(...DEFAULT_HOME_FIRST_PERSON_CAMERA.position))
   const firstPersonVelocity = useRef(new THREE.Vector3())
   const firstPersonTarget = useRef<THREE.Vector3 | null>(null)
   const stableModeRef = useRef<'HOME_PRESENTATION' | 'AVATAR_HOME_FIRST_PERSON'>('AVATAR_HOME_FIRST_PERSON')
@@ -964,7 +964,7 @@ export function HomeWorldProductionV223({ onOrbOpen = requestUraiWorldOrbOpen, w
       dpr={1}
       shadows
       frameloop={reducedMotion ? 'demand' : 'always'}
-      camera={{ position: [0, 1.92, 7.85], fov: 58, near: .1, far: 125 }}
+      camera={{ position: [...DEFAULT_HOME_FIRST_PERSON_CAMERA.position], fov: 58, near: .1, far: 125 }}
       gl={{ antialias: true, alpha: false, powerPreference: 'high-performance' }}
       onCreated={({ gl }) => {
         gl.outputColorSpace = THREE.SRGBColorSpace
