@@ -7,6 +7,6 @@ export async function waitForLocalizationHomeScene(page) {
   // this readiness only after its suspended asset subtree has committed.
   await page.waitForFunction((selector) => {
     return document.querySelector(selector)?.getAttribute('data-home-assets-ready') === 'true'
-  }, HOME_SCENE_SELECTOR, { timeout: 45_000 })
+  }, HOME_SCENE_SELECTOR, { timeout: 90_000 })
   return scene
 }

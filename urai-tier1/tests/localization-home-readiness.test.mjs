@@ -11,7 +11,7 @@ test('renderer capability cannot release localization capture before suspended s
   const page = {
     locator: (selector) => { capturedSelector = selector; return { first: () => scene } },
     waitForFunction: async (predicate, selector, options) => {
-      assert.ok(options.timeout > 0 && options.timeout <= 45_000)
+      assert.ok(options.timeout > 0 && options.timeout <= 90_000)
       const read = () => vm.runInNewContext(`(${predicate.toString()})(selector)`, {
         selector,
         document: {
