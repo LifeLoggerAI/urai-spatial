@@ -124,7 +124,7 @@ export const launchTruth = {
       label: 'Spatial memory galaxy',
       group: 'Launch spine',
       state: 'certified-live',
-      proofBoundary: 'The public-safe constellation and navigation are certified; private persistence claims remain separate.',
+      proofBoundary: 'The public-safe spatial memory galaxy and navigation are certified; private persistence claims remain separate.',
       publicClaim: 'Verified live spatial Life Map.',
     },
     {
