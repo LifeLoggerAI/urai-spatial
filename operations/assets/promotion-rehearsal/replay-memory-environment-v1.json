@@ -4,14 +4,14 @@
   "repository": "LifeLoggerAI/urai-spatial",
   "assetId": "replay-memory-environment-v1",
   "canonicalPath": "urai-tier1/public/assets/urai/generated/models/replay-memory-environment-v1.glb",
-  "bytes": 401364,
-  "sha256": "06b35a7b17042a570f95f9c89c3a5f37af8b492beff24aae4592f1a6fac91850",
+  "bytes": 401024,
+  "sha256": "d9047661a5659dc20717ba073c41d3de6e2028cd457a6adfa34755a5f8bd2f08",
   "source": "URAI retained Replay supporting geometry consumed by the Replay runtime; visual authority remains the immersive memory interior with truthful source grammar, not this binary alone",
   "fallback": "not-visual-authority",
   "license": "URAI Labs internal production candidate asset",
   "producer": "URAI Labs Final GLB Forge 1.0; canon-clean convergence candidate",
   "reviewer": "governed-replacement-rehearsal",
-  "reviewedAt": "2026-09-22T08:12:00Z",
+  "reviewedAt": "2026-09-25T15:28:19.204Z",
   "promote": false,
   "humanReviewApproved": false,
   "fallbackVerified": true,
@@ -19,6 +19,6 @@
   "licenseApproved": true,
   "optimizationVerified": false,
   "visualProofVerified": false,
-  "exactHeadChecksPassed": false,
-  "notes": "Supporting-reference rehearsal with truthful runtime consumption. CinematicReplayClient actively loads this GLB as supporting geometry for non-demo and neutral Replay scenes, while rejecting/hiding retired film-portal, film-veil, panel, camera-track, and repeated-growth presentation roles. The binary is not Replay visual authority, remains non-promotable, and must never be treated as a theater/player/portal authority."
+  "exactHeadChecksPassed": true,
+  "notes": "Supporting-reference rehearsal with truthful runtime consumption. CinematicReplayClient actively loads this GLB as supporting geometry for non-demo and neutral Replay scenes, while rejecting/hiding retired film-portal, film-veil, panel, camera-track, and repeated-growth presentation roles. The binary is not Replay visual authority, remains non-promotable, and must never be treated as a theater/player/portal authority. Bounded glTF repair removed alphaCutoff from non-MASK materials; promotion remains false."
 }

@@ -2,8 +2,8 @@
   "schemaVersion": 1,
   "id": "portal-ring-master-v1",
   "fixedPath": "urai-tier1/public/assets/urai/generated/models/portal-ring-master-v1.glb",
-  "bytes": 242072,
-  "sha256": "5b751cc6e7caa9667d48e4860e76a7b39f6cf84a60afb252497a19f323bb19c5",
+  "bytes": 241740,
+  "sha256": "38fc51035ff7b6ee6663e13df4d0cc4a1acf6899a70e07c47e794e485f82e075",
   "measured": {
     "triangleCount": 7576,
     "boundsMeters": {
@@ -41,7 +41,7 @@
   "fallback": "procedural-portal-ring",
   "source": "URAI Labs deterministic authored sanctuary v3 pipeline; replaceable only by a separately reviewed provider asset",
   "license": "URAI Labs internal proprietary production asset",
-  "generatedBy": "URAI Labs Final GLB Forge 1.0; bounded Portal Ring shard pole-normal repair; reconciled to urai-final-glb-production-pack-v1",
-  "generatedAt": "2026-08-09T00:24:37.168Z",
+  "generatedBy": "URAI Labs Final GLB Forge 1.0; bounded Portal Ring shard pole-normal repair; reconciled to urai-final-glb-production-pack-v1; bounded glTF material alpha-cutoff repair",
+  "generatedAt": "2026-09-25T15:28:19.203Z",
   "releaseState": "candidate-not-production-ready"
 }

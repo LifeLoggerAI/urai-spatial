@@ -2,8 +2,8 @@
   "schemaVersion": 1,
   "id": "replay-memory-environment-v1",
   "fixedPath": "urai-tier1/public/assets/urai/generated/models/replay-memory-environment-v1.glb",
-  "bytes": 401364,
-  "sha256": "06b35a7b17042a570f95f9c89c3a5f37af8b492beff24aae4592f1a6fac91850",
+  "bytes": 401024,
+  "sha256": "d9047661a5659dc20717ba073c41d3de6e2028cd457a6adfa34755a5f8bd2f08",
   "measured": {
     "triangleCount": 9258,
     "nodeCount": 130,
@@ -20,7 +20,7 @@
   "fallback": "procedural-lived-memory-environment",
   "source": "URAI canon-clean deterministic convergence candidate; requires rendered inspection and compression before promotion",
   "license": "URAI Labs internal production candidate asset",
-  "generatedBy": "URAI Labs Final GLB Forge 1.0; canon-clean convergence candidate",
-  "generatedAt": "2026-09-22T06:45:00Z",
+  "generatedBy": "URAI Labs Final GLB Forge 1.0; canon-clean convergence candidate; bounded glTF material alpha-cutoff repair",
+  "generatedAt": "2026-09-25T15:28:19.204Z",
   "releaseState": "candidate-not-production-ready"
 }
