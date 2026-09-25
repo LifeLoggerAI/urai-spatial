@@ -11,6 +11,8 @@ const runtimeOnlyRoutes = [
 ]
 
 const staged = []
+const basisPath = 'urai-tier1/public/basis'
+let basisExistedBefore = false
 
 async function exists(path) {
   try {
@@ -60,6 +62,7 @@ async function restoreRuntimeOnlyRoutes() {
 
 let buildError
 try {
+  basisExistedBefore = await exists(basisPath)
   await run('node', ['scripts/run-pnpm.mjs', 'bootstrap:check'])
   await run('node', ['scripts/prepare-low-disk-build.mjs'])
   await stageRuntimeOnlyRoutes()
@@ -73,7 +76,7 @@ try {
   buildError = error
 } finally {
   try {
-    await rm('urai-tier1/public/basis', { recursive: true, force: true })
+    if (!basisExistedBefore) await rm(basisPath, { recursive: true, force: true })
     await restoreRuntimeOnlyRoutes()
     if (staged.length) {
       await run('git', ['diff', '--exit-code', '--', ...staged.map(({ source }) => source)])
