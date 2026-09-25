@@ -1,9 +1,9 @@
 {
-  "schemaVersion": "2.1.0",
+  "schemaVersion": "2.2.0",
   "packId": "urai-final-glb-production-pack-v1",
-  "generatedAt": "2026-09-22T06:45:00Z",
+  "generatedAt": "2026-09-24T22:30:00Z",
   "generator": "URAI Labs Final GLB Forge 1.0",
-  "authorship": "Canon-clean generated asset receipt pack retained for provenance and supporting-reference roles. Current Ground canopy authority is the governed optimized CC0 Poly Haven Jacaranda runtime asset; current visible Life Map Memory Star authority is procedural point-photosphere + layered corona. Generated binaries do not become literal visual authority by filename or existence.",
+  "authorship": "Canon-clean active-candidate regeneration is limited to Memory Star and Orb. Focus and Replay GLBs are retained only as supporting references and are never regenerated or promoted by this lane. All visible assets still require rendered inspection and governed promotion.",
   "assets": [
     {
       "fileName": "home-entry-chamber-v1.glb",
@@ -38,8 +38,8 @@
     },
     {
       "fileName": "life-map-memory-star-v1.glb",
-      "bytes": 276280,
-      "sha256": "b16969261f80d7fc51b2a3efbd19cb938b503d8eaffbeb3d2df9b53baa41a181",
+      "bytes": 276224,
+      "sha256": "6e8caf75ee47af487020884c6642a56c125fcbb68d628688564356355090df96",
       "triangleCount": 5464,
       "nodes": 36,
       "animations": [
@@ -84,8 +84,8 @@
     },
     {
       "fileName": "urai-orb-avatar-v1.glb",
-      "bytes": 332880,
-      "sha256": "54aaa230c591d441ba6e590c3c3668ff257128521dcded67606b4c53724a6eef",
+      "bytes": 332824,
+      "sha256": "fc8b73fabcf9c30c71afd731d35d88d9fb06cd34feb1136d975e196cfe68dd73",
       "triangleCount": 6948,
       "nodes": 28,
       "animations": [

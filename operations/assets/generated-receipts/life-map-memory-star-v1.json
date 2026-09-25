@@ -2,8 +2,8 @@
   "schemaVersion": 1,
   "id": "life-map-memory-star-v1",
   "fixedPath": "urai-tier1/public/assets/urai/generated/models/life-map-memory-star-v1.glb",
-  "bytes": 276280,
-  "sha256": "b16969261f80d7fc51b2a3efbd19cb938b503d8eaffbeb3d2df9b53baa41a181",
+  "bytes": 276224,
+  "sha256": "6e8caf75ee47af487020884c6642a56c125fcbb68d628688564356355090df96",
   "measured": {
     "triangleCount": 5464,
     "nodeCount": 36,

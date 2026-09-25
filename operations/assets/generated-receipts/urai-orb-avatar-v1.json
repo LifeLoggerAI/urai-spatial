@@ -2,8 +2,8 @@
   "schemaVersion": 1,
   "id": "urai-orb-avatar-v1",
   "fixedPath": "urai-tier1/public/assets/urai/generated/models/urai-orb-avatar-v1.glb",
-  "bytes": 332880,
-  "sha256": "54aaa230c591d441ba6e590c3c3668ff257128521dcded67606b4c53724a6eef",
+  "bytes": 332824,
+  "sha256": "fc8b73fabcf9c30c71afd731d35d88d9fb06cd34feb1136d975e196cfe68dd73",
   "measured": {
     "triangleCount": 6948,
     "nodeCount": 28,
