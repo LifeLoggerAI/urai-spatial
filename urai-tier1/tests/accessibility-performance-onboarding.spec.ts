@@ -79,6 +79,44 @@ test.describe('first-run onboarding accessibility', () => {
     expect(stored.audioMuted).toBe('false')
   })
 
+  test('visible first-run onboarding targets meet the 48 CSS pixel minimum', async ({ page }) => {
+    await disableWebGL(page)
+    await page.setViewportSize({ width: 320, height: 720 })
+    await page.goto('/home/?firstRun=1', { waitUntil: 'load' })
+
+    const setup = page.locator('[data-setup="true"]').first()
+    await expect(setup).toBeVisible()
+
+    const collect = async (stage: string) => {
+      const targets = await setup.locator('a[href], button:not([disabled]), label:has(input)').evaluateAll((elements) => elements
+        .map((element) => ({ element, rect: element.getBoundingClientRect(), style: getComputedStyle(element) }))
+        .filter(({ rect, style }) => style.visibility !== 'hidden' && style.display !== 'none' && rect.width > 0 && rect.height > 0)
+        .map(({ element, rect }) => ({
+          stage,
+          label: element.getAttribute('aria-label') ?? element.textContent?.trim() ?? element.tagName,
+          width: Math.round(rect.width * 100) / 100,
+          height: Math.round(rect.height * 100) / 100,
+        })))
+      const failures = targets.filter(({ width, height }) => width < 48 || height < 48)
+      await test.info().attach(`onboarding-targets-${stage}.json`, {
+        body: JSON.stringify({ targets, failures }, null, 2),
+        contentType: 'application/json',
+      })
+      expect(failures).toEqual([])
+    }
+
+    await collect('welcome')
+    await page.getByRole('button', { name: 'Continue' }).click()
+    await expect(setup).toHaveAttribute('data-setup-step', 'privacy')
+    await collect('privacy')
+    await page.getByRole('button', { name: 'Continue' }).click()
+    await expect(setup).toHaveAttribute('data-setup-step', 'comfort')
+    await collect('comfort')
+    await page.getByRole('button', { name: 'Continue' }).click()
+    await expect(setup).toHaveAttribute('data-setup-step', 'orb')
+    await collect('orb')
+  })
+
   test('Skip setup persists completion and reduced-motion remains additive to the OS preference', async ({ page }) => {
     await page.emulateMedia({ reducedMotion: 'reduce' })
     await disableWebGL(page)
