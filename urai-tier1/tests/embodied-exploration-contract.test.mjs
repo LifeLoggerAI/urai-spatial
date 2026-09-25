@@ -12,7 +12,6 @@ const has = (source, marker) => assert.equal(source.includes(marker), true, `mis
 const homeGraph = read('src/app/AssetDrivenHomeWorld.tsx')
 const homeRuntime = read('src/spatial/layout/HomeWorldProduction.tsx')
 const activeHomeRuntime3d = read('src/spatial/layout/HomeWorldProductionV223.tsx')
-const homeRuntime3d = read('src/spatial/layout/HomeWorldProductionV70.tsx')
 const homeArt = read('src/spatial/layout/HomeWorldProductionV76.tsx')
 const ground = read('src/app/GroundSpatialWorldClean.tsx')
 const lifeMap = read('src/spatial/lifemap/SpatialLifeMapCanonical.tsx')
@@ -105,8 +104,8 @@ test('V185 preserves embodied authority while repairing contour terrain, camera 
   assert.doesNotMatch(homeArt, /retained-pixel-pass|pixel-certified|PRODUCTION CERTIFIED/)
 })
 
-test('Historical V70 telemetry and destination authority remain reproducible after successor advancement', () => {
-  for (const marker of ['const ORB = new THREE.Vector3(','const GROUND = new THREE.Vector3(','const LIFE_MAP = new THREE.Vector3(','URAI_ORB_STATE_EVENT','resolveOrbSensoryOutput','requestUraiWorldTravel',"destination: 'infrastructure-hub'","destination: 'life-map'",'requestUraiWorldOrbOpen']) has(homeRuntime3d, marker)
+test('current Home telemetry and destination authority stay bound to the V223 owner', () => {
+  for (const marker of ['const HOME_FOCUS = new THREE.Vector3(','const ORB_POSITION = new THREE.Vector3(','URAI_ORB_STATE_EVENT','resolveOrbSensoryOutput','requestUraiWorldTravel',"destination: 'infrastructure-hub'","destination: 'life-map'",'requestUraiWorldOrbOpen']) has(activeHomeRuntime3d, marker)
 })
 
 test('Ground and Life Map keep their canonical embodied contracts', () => {

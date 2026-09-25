@@ -3,7 +3,6 @@ import { readFileSync } from 'node:fs'
 import test from 'node:test'
 
 const historicalArt = readFileSync(new URL('../src/spatial/layout/HomeWorldProductionV76.tsx', import.meta.url), 'utf8')
-const historicalRuntime = readFileSync(new URL('../src/spatial/layout/HomeWorldProductionV70.tsx', import.meta.url), 'utf8')
 const currentRuntime = readFileSync(new URL('../src/spatial/layout/HomeWorldProductionV223.tsx', import.meta.url), 'utf8')
 const currentGeometry = readFileSync(new URL('../src/spatial/layout/HomeWorldProductionV223Geometry.tsx', import.meta.url), 'utf8')
 const telemetry = readFileSync(new URL('../src/app/AssetDrivenHomeWorld.tsx', import.meta.url), 'utf8')
@@ -63,11 +62,10 @@ test('historical V185 world-space atmosphere and reduced-motion regression remai
   assert.doesNotMatch(historicalArt, /AncestralMemoryVeils|home-v183-ancestral-memory-weather-veils/)
 })
 
-test('historical V185 traversal gates remain regression-covered without claiming current authority', () => {
-  assert.match(historicalRuntime, /\['orb', ORB, 2\.35\], \['ground', GROUND, 2\.65\], \['life-map', LIFE_MAP, 2\.65\]/)
-  assert.match(historicalRuntime, /const inspectionClearance = nearby === 'orb'/)
-  assert.match(historicalRuntime, /destination: 'infrastructure-hub'/)
-  assert.match(historicalRuntime, /destination: 'life-map'/)
+test('current Home traversal remains regression-covered without restoring retired proximity gates', () => {
+  assert.match(currentRuntime, /requestUraiWorldTravel/)
+  assert.match(currentRuntime, /destination: 'infrastructure-hub'/)
+  assert.match(currentRuntime, /destination: 'life-map'/)
   assert.doesNotMatch(currentRuntime, /\['orb',\s*ORB|\['ground',\s*GROUND|\['life-map',\s*LIFE_MAP/)
 })
 
@@ -81,5 +79,5 @@ test('current Home candidate remains explicitly uncertified until literal exact-
   has(telemetry, 'data-home-v225-retained-pixel-rebuild="superseded"')
   has(currentRuntime, 'data-home-visual-grade="current-literal-pixel-candidate-not-certified"')
   assert.equal(authority.currentRuntimeCandidate.certified, false)
-  assert.doesNotMatch(`${currentRuntime}\n${historicalRuntime}\n${historicalArt}\n${currentGeometry}\n${telemetry}\n${groundedOrb}`, /PRODUCTION CERTIFIED|retained-pixel-pass|pixel-certified/)
+  assert.doesNotMatch(`${currentRuntime}\n${historicalArt}\n${currentGeometry}\n${telemetry}\n${groundedOrb}`, /PRODUCTION CERTIFIED|retained-pixel-pass|pixel-certified/)
 })

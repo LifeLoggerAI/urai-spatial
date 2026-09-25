@@ -2,16 +2,16 @@ import assert from 'node:assert/strict'
 import { readFileSync, statSync } from 'node:fs'
 import test from 'node:test'
 
-const runtime = readFileSync(new URL('../src/spatial/layout/HomeWorldProductionV70.tsx', import.meta.url), 'utf8')
+const runtime = readFileSync(new URL('../src/spatial/layout/HomeWorldProductionV223.tsx', import.meta.url), 'utf8')
 const art = readFileSync(new URL('../src/spatial/layout/HomeWorldProductionV76.tsx', import.meta.url), 'utf8')
 const styles = readFileSync(new URL('../src/spatial/layout/HomeWorldProduction.module.css', import.meta.url), 'utf8')
 
-test('V185 preserves the single opaque responsive Canvas owner', () => {
+test('current Home preserves the single opaque responsive Canvas owner', () => {
   assert.doesNotMatch(runtime, /backgroundImage:/)
   assert.match(runtime, /data-home-desktop-mobile-world="same-scene"/)
   assert.match(runtime, /alpha: false/)
-  assert.match(runtime, /gl\.setClearColor\(0x080b0b, 1\)/)
-  assert.match(runtime, /const fov = portrait \? 50 : 40/)
+  assert.match(runtime, /gl\.setClearColor\(0x10272a, 1\)/)
+  assert.match(runtime, /portrait \? 66 : 58/)
   assert.match(styles, /\.canvas/)
 })
 
