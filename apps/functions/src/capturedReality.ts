@@ -154,3 +154,60 @@ export const getCapturedRealityRuntimeUrl = functions.https.onCall(async (data, 
     truthLabel: String(snapshot.get('truthLabel') ?? 'Spatial reconstruction from recorded sources').slice(0, 240),
   }
 })
+
+
+/**
+ * Resolves an authenticated Replay memory to a reviewed private Captured
+ * Reality asset. No source IDs, storage locators, exact location, or provider
+ * details are returned to the client.
+ */
+export const getCapturedRealityReplayEntry = functions.https.onCall(async (data, context) => {
+  const uid = requireUid(context)
+  if (!capturedRealityEnabled()) return { available: false }
+
+  await requireLocationRuntimeConsent(uid)
+  const memoryId = requireToken(data?.memoryId, 'memoryId')
+  const deviceTier = requireToken(data?.deviceTier, 'deviceTier', 16)
+  if (deviceTier !== 'desktop' && deviceTier !== 'mobile') {
+    throw new functions.https.HttpsError('invalid-argument', 'CAPTURED_REALITY_BROWSER_DEVICE_TIER_REQUIRED')
+  }
+
+  const binding = await db.doc(`users/${uid}/capturedRealityReplayBindings/${memoryId}`).get()
+  if (!binding.exists) return { available: false }
+  if (
+    binding.get('ownerId') !== uid ||
+    binding.get('memoryId') !== memoryId ||
+    binding.get('state') !== 'accepted'
+  ) {
+    return { available: false }
+  }
+
+  const assetId = requireToken(binding.get('capturedRealityAssetId'), 'capturedRealityAssetId')
+  const asset = await db.doc(`users/${uid}/capturedRealityAssets/${assetId}`).get()
+  if (!asset.exists || asset.get('ownerId') !== uid) return { available: false }
+
+  if (
+    asset.get('state') !== 'ready' ||
+    asset.get('reviewState') !== 'accepted' ||
+    asset.get('truthClass') !== 'spatially-reconstructable' ||
+    asset.get('anchorEntityId') !== binding.get('placeEntityId')
+  ) {
+    return { available: false }
+  }
+
+  const releaseState = String(asset.get('releaseState') ?? 'hard-off')
+  if (!['private-pilot', 'private-beta', 'launch-enabled'].includes(releaseState)) {
+    return { available: false }
+  }
+
+  const certified = deviceTier === 'mobile'
+    ? asset.get('mobileCertified') === true
+    : asset.get('browserCertified') === true
+  if (!certified) return { available: false }
+
+  return {
+    available: true,
+    assetId,
+    truthLabel: String(asset.get('truthLabel') ?? 'Spatial reconstruction from recorded sources').slice(0, 240),
+  }
+})
