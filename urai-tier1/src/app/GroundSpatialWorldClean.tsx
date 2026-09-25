@@ -236,12 +236,13 @@ function useGroundBroadleafCanopy() {
   });
 }
 
-function NaturalCanopy({ profile, position, rotationY, scale, shapeSeed }: {
+function NaturalCanopy({ profile, position, rotationY, scale, shapeSeed, onReady }: {
   profile: EnvironmentProfile;
   position: [number, number, number];
   rotationY: number;
   scale: number;
   shapeSeed: number;
+  onReady: (profileId: EnvironmentProfileId) => void;
 }) {
   const asset = useGroundBroadleafCanopy();
   const model = useMemo(() => {
@@ -274,6 +275,14 @@ function NaturalCanopy({ profile, position, rotationY, scale, shapeSeed }: {
     });
     return clone;
   }, [asset.scene, profile.id]);
+
+  useEffect(() => {
+    let meshCount = 0;
+    model.traverse((object) => {
+      if (object instanceof THREE.Mesh) meshCount += 1;
+    });
+    if (meshCount > 0) onReady(profile.id);
+  }, [model, onReady, profile.id]);
 
   useEffect(() => () => model.traverse((object) => {
     if (!(object instanceof THREE.Mesh)) return;
@@ -463,7 +472,7 @@ function CoastalWater() {
   </mesh>;
 }
 
-function NaturalScatter({ profile }: { profile: EnvironmentProfile }) {
+function NaturalScatter({ profile, onCanopyReady }: { profile: EnvironmentProfile; onCanopyReady: (profileId: EnvironmentProfileId) => void }) {
   const items = useMemo(() => {
     const hash = (seed: number) => {
       const value = Math.sin(seed * 12.9898 + profile.id.length * 41.733) * 43758.5453;
@@ -514,6 +523,7 @@ function NaturalScatter({ profile }: { profile: EnvironmentProfile }) {
             rotationY={item.index * 0.91 + (woodland ? 0.22 : -0.14)}
             scale={(woodland ? 1.46 : 1.34) + item.scale * 0.76 + (item.index % 5) * 0.12}
             shapeSeed={item.index + (woodland ? 101 : 17)}
+            onReady={onCanopyReady}
           />;
         })}
       </Suspense>
@@ -669,7 +679,7 @@ export function GroundSubstrateWorld({ profile }: { profile: EnvironmentProfile 
   </group>;
 }
 
-function LivedGroundWorld({ profile, target }: { profile: EnvironmentProfile; target: MutableRefObject<THREE.Vector3 | null> }) {
+function LivedGroundWorld({ profile, target, onCanopyReady }: { profile: EnvironmentProfile; target: MutableRefObject<THREE.Vector3 | null>; onCanopyReady: (profileId: EnvironmentProfileId) => void }) {
   const geometry = useMemo(() => buildTerrainGeometry(profile), [profile]);
   useEffect(() => () => geometry.dispose(), [geometry]);
 
@@ -690,7 +700,7 @@ function LivedGroundWorld({ profile, target }: { profile: EnvironmentProfile; ta
     </mesh>
     <AtmosphericGroundSky profile={profile} />
     <DistantGroundContinuation profile={profile} />
-    <NaturalScatter profile={profile} />
+    <NaturalScatter profile={profile} onCanopyReady={onCanopyReady} />
   </group>;
 }
 
@@ -809,7 +819,7 @@ function AtmosphericGroundSky({ profile }: { profile: EnvironmentProfile }) {
   </mesh>;
 }
 
-function GroundScene({ profile, input, yaw, pitch, target, obstacles, playerPosition, isCoarse, onReady }: {
+function GroundScene({ profile, input, yaw, pitch, target, obstacles, playerPosition, isCoarse, onReady, onCanopyReady }: {
   profile: EnvironmentProfile;
   input: MovementInput;
   yaw: MutableRefObject<number>;
@@ -819,6 +829,7 @@ function GroundScene({ profile, input, yaw, pitch, target, obstacles, playerPosi
   playerPosition: MutableRefObject<THREE.Vector3>;
   isCoarse: boolean;
   onReady: () => void;
+  onCanopyReady: (profileId: EnvironmentProfileId) => void;
 }) {
   const reducedMotion = useReducedMotion();
   const heightAt = useCallback((x: number, z: number) => groundHeight(x, z, profile.id), [profile.id]);
@@ -832,7 +843,7 @@ function GroundScene({ profile, input, yaw, pitch, target, obstacles, playerPosi
     <directionalLight position={[-10, 14, 5]} intensity={1.58} color="#e4cba6" castShadow shadow-mapSize={[1024, 1024]} shadow-camera-left={-28} shadow-camera-right={28} shadow-camera-top={28} shadow-camera-bottom={-28} shadow-camera-far={90} shadow-normalBias={0.035} />
     <directionalLight position={[10, 7, -20]} intensity={0.36} color="#789a9b" />
     <Suspense fallback={null}>
-      <LivedGroundWorld profile={profile} target={target} />
+      <LivedGroundWorld profile={profile} target={target} onCanopyReady={onCanopyReady} />
     </Suspense>
     <FirstPersonPlayer input={input} yaw={yaw} pitch={pitch} target={target} profile={profile} obstacles={obstacles} playerPosition={playerPosition} isCoarse={isCoarse} onReady={onReady} />
   </>;
@@ -924,6 +935,7 @@ export default function GroundSpatialWorldClean() {
   const webglAvailable = useGroundWebGLAvailable();
   const quality = useAdaptiveSpatialQuality();
   const [ready, setReady] = useState(false);
+  const [canopyReadyProfile, setCanopyReadyProfile] = useState<EnvironmentProfileId | null>(null);
   const [dragging, setDragging] = useState(false);
   const [isCoarse, setIsCoarse] = useState(() => {
     if (typeof window === "undefined") return false;
@@ -938,6 +950,9 @@ export default function GroundSpatialWorldClean() {
   const playerPosition = useRef(SPAWN.clone());
   const profile = useMemo(() => resolveProfile(params.get("environment")), [params]);
   const obstacles = useMemo(() => buildGroundObstacleField(profile.id), [profile.id]);
+  const canopyRequired = profile.id === "temperate" || profile.id === "woodland";
+  const canopyReady = canopyRequired && canopyReadyProfile === profile.id;
+  const onCanopyReady = useCallback((profileId: EnvironmentProfileId) => setCanopyReadyProfile(profileId), []);
 
   useEffect(() => {
     const pointerQuery = window.matchMedia('(pointer: coarse)');
@@ -989,6 +1004,8 @@ export default function GroundSpatialWorldClean() {
     data-ground-visible-avatar="false"
     data-ground-visible-hands="false"
     data-ground-ready={ready ? "true" : "false"}
+    data-ground-canopy-required={canopyRequired ? "true" : "false"}
+    data-ground-canopy-ready={canopyReady ? "true" : "false"}
     data-webgl-state={webglAvailable === null ? "detecting" : webglAvailable ? "ready" : "unavailable"}
     data-ground-fallback={webglAvailable === false ? "semantic-no-webgl" : "none"}
     data-ground-quality-tier={quality.tier}
@@ -1008,7 +1025,7 @@ export default function GroundSpatialWorldClean() {
         gl.toneMappingExposure = 0.84;
       }}
     >
-      <GroundScene profile={profile} input={input} yaw={yaw} pitch={pitch} target={target} obstacles={obstacles} playerPosition={playerPosition} isCoarse={isCoarse} onReady={() => setReady(true)} />
+      <GroundScene profile={profile} input={input} yaw={yaw} pitch={pitch} target={target} obstacles={obstacles} playerPosition={playerPosition} isCoarse={isCoarse} onReady={() => setReady(true)} onCanopyReady={onCanopyReady} />
     </Canvas> : <section className="ground-semantic-fallback" role="status" data-testid="urai-ground-semantic-fallback">
       <p>{webglAvailable === null ? "Preparing Ground…" : "Three-dimensional Ground is unavailable on this device."}</p>
       <strong>{webglAvailable === false ? "Home, Places, Privacy, and semantic navigation remain available." : "Checking spatial rendering capability."}</strong>
