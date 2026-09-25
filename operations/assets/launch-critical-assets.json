@@ -56,9 +56,7 @@
       "id": "ground-natural-canopy-v3",
       "kind": "model",
       "fixedPath": "urai-tier1/public/assets/urai/generated/models/ground-natural-canopy-v3.glb",
-      "targetRoutes": [
-        "/ground"
-      ],
+      "targetRoutes": [],
       "targetBoundsMeters": [
         12,
         12,
@@ -66,18 +64,18 @@
       ],
       "maxTriangles": 5000,
       "requiredCompression": "compact-static-glb",
-      "fallback": "scanned-understory-remains-without-canopy",
-      "source": "URAI self-authored deterministic static geometry; no third-party binary used",
+      "fallback": "not-current-runtime-authority",
+      "source": "URAI self-authored deterministic static geometry retained for provenance only; current Ground canopy authority is the governed optimized CC0 Poly Haven Jacaranda asset",
       "license": "URAI Labs internal proprietary production asset",
-      "releaseState": "pending-final-review"
+      "releaseState": "historical-supporting-reference",
+      "authorityRole": "rejected-current-runtime-canopy-reference",
+      "runtimeConsumptionAllowed": false
     },
     {
       "id": "life-map-memory-star-v1",
       "kind": "model",
       "fixedPath": "urai-tier1/public/assets/urai/generated/models/life-map-memory-star-v1.glb",
-      "targetRoutes": [
-        "/life-map"
-      ],
+      "targetRoutes": [],
       "targetBoundsMeters": [
         3,
         3,
@@ -85,10 +83,12 @@
       ],
       "maxTriangles": 12000,
       "requiredCompression": "draco-or-meshopt",
-      "fallback": "procedural-memory-star",
-      "source": "URAI canon-clean deterministic convergence candidate; requires rendered inspection and compression before promotion",
+      "fallback": "procedural-stellar-memory-star-is-current-runtime-authority",
+      "source": "URAI historical generated Memory Star binary retained for compatibility/provenance only; current visible authority is the procedural point-photosphere layered-corona stellar Memory Star",
       "license": "URAI Labs internal production candidate asset",
-      "releaseState": "pending-final-review"
+      "releaseState": "supporting-reference",
+      "authorityRole": "non-literal-stellar-reference",
+      "runtimeConsumptionAllowed": false
     },
     {
       "id": "focus-memory-chamber-v1",
