@@ -1055,7 +1055,7 @@ export default function GroundSpatialWorldClean() {
       .ground-analog-pad[data-active='true']{opacity:.62}
       .ground-analog-pad span{position:absolute;left:50%;top:50%;width:34px;height:34px;margin:-17px;border:1px solid rgba(244,252,249,.26);border-radius:50%;background:rgba(223,242,233,.13);pointer-events:none}
       .ground-accessible-movement{position:absolute;z-index:25;left:max(12px,env(safe-area-inset-left));bottom:max(12px,env(safe-area-inset-bottom));max-width:190px;color:#fff;font:700 10px/1 system-ui}
-      .ground-accessible-movement summary{display:grid;place-items:center;min-height:44px;padding:0 12px;border:1px solid rgba(255,255,255,.18);border-radius:999px;background:rgba(4,14,18,.55);cursor:pointer;list-style:none}
+      .ground-accessible-movement summary{display:grid;place-items:center;min-height:48px;padding:0 12px;border:1px solid rgba(255,255,255,.18);border-radius:999px;background:rgba(4,14,18,.55);cursor:pointer;list-style:none}
       .ground-accessible-movement summary::-webkit-details-marker{display:none}
       .ground-accessible-movement:not([open]) :global(.urai-mobile-movement){display:none!important}
       @media(max-width:760px){.ground-home-return{right:12px;top:12px}.ground-place-access{left:12px;top:12px}}
