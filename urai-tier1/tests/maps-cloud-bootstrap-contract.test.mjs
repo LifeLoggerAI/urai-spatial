@@ -8,14 +8,40 @@ const policyPath = '../operations/maps/geographic-maps-launch-policy.json'
 const workflow = fs.readFileSync(workflowPath, 'utf8')
 const policy = JSON.parse(fs.readFileSync(policyPath, 'utf8'))
 
-test('targets only the canonical project and two governed Maps APIs', () => {
+test('targets the canonical project and complete governed UrAi world API allowlist', () => {
   assert.match(workflow, /EXPECTED_PROJECT_ID: urai-4dc1d/)
-  assert.match(workflow, /maps-backend\.googleapis\.com geocoding-backend\.googleapis\.com/)
-  assert.doesNotMatch(workflow, /places-backend\.googleapis\.com/)
-  assert.doesNotMatch(workflow, /routes\.googleapis\.com/)
-  assert.deepEqual(policy.apiAllowlist, ['maps-javascript-api', 'geocoding-api'])
+  for (const service of [
+    'maps-backend.googleapis.com',
+    'tile.googleapis.com',
+    'places-backend.googleapis.com',
+    'geocoding-backend.googleapis.com',
+    'routes.googleapis.com',
+    'elevation-backend.googleapis.com',
+    'roads.googleapis.com',
+    'timezone-backend.googleapis.com',
+    'weather.googleapis.com',
+    'aerialview.googleapis.com',
+    'arcore.googleapis.com',
+  ]) assert.match(workflow, new RegExp(service.replaceAll('.', '\\.')))
+  assert.deepEqual(policy.apiAllowlist, [
+    'maps-javascript-api',
+    'map-tiles-api',
+    'places-api-new',
+    'geocoding-api',
+    'routes-api',
+    'maps-elevation-api',
+    'roads-api',
+    'time-zone-api',
+    'weather-api',
+    'aerial-view-api',
+    'arcore-api',
+  ])
+  assert.deepEqual(policy.credentials.expectedEnvironmentVariables, [
+    'NEXT_PUBLIC_GOOGLE_MAPS_API_KEY',
+    'GOOGLE_MAPS_SERVER_API_KEY',
+  ])
+  assert.equal(policy.credentials.unrestrictedKeysAllowed, false)
 })
-
 test('requires explicit main-only confirmation before mutation', () => {
   assert.match(workflow, /test "\$GITHUB_REF" = 'refs\/heads\/main'/)
   assert.match(workflow, /enable:ENABLE_URAI_MAPS_APIS/)
