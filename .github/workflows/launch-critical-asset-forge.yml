@@ -11,6 +11,7 @@ on:
       - 'scripts/normalize-launch-critical-assets.mjs'
       - 'scripts/repair-home-glb-pole-normals.mjs'
       - 'scripts/repair-focus-glb-accessor-bounds.mjs'
+      - 'scripts/repair-glb-material-alpha-cutoff.mjs'
       - 'scripts/verify-launch-critical-assets.mjs'
       - 'scripts/verify-governed-asset-promotion.mjs'
       - 'scripts/audit-launch-critical-artifact.mjs'
@@ -127,6 +128,33 @@ jobs:
           git push origin "HEAD:${TARGET_BRANCH}"
           echo 'mutated=true' >> "$GITHUB_OUTPUT"
 
+      - name: Repair invalid alphaCutoff material fields and emit successor when required
+        id: material_repair
+        if: steps.mode.outputs.promotion != 'true' && steps.mode.outputs.replacement == 'true' && steps.home_repair.outputs.mutated != 'true' && steps.focus_repair.outputs.mutated != 'true' && github.event_name == 'pull_request' && github.actor != 'github-actions[bot]'
+        shell: bash
+        run: |
+          set -euo pipefail
+          node scripts/repair-glb-material-alpha-cutoff.mjs
+          if git diff --quiet -- \
+            urai-tier1/public/assets/urai/generated/models \
+            operations/assets/generated-receipts \
+            operations/assets/promotion-rehearsal; then
+            echo 'mutated=false' >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          remote_sha="$(gh api "repos/${GITHUB_REPOSITORY}/git/ref/heads/${TARGET_BRANCH}" --jq '.object.sha')"
+          test "$remote_sha" = "$URAI_EXACT_HEAD"
+          gh auth setup-git
+          git config user.name 'urai-release-bot'
+          git config user.email 'urai-release-bot@users.noreply.github.com'
+          git add \
+            urai-tier1/public/assets/urai/generated/models \
+            operations/assets/generated-receipts \
+            operations/assets/promotion-rehearsal
+          git commit -m 'Repair invalid glTF material alpha cutoffs'
+          git push origin "HEAD:${TARGET_BRANCH}"
+          echo 'mutated=true' >> "$GITHUB_OUTPUT"
+
       - name: Validate every changed governed promotion decision
         if: steps.mode.outputs.promotion == 'true'
         shell: bash
@@ -161,7 +189,7 @@ jobs:
           test -z "$(git status --porcelain)"
 
       - name: Validate exact replacement rehearsal decisions
-        if: steps.mode.outputs.promotion != 'true' && steps.mode.outputs.replacement == 'true' && steps.home_repair.outputs.mutated != 'true' && steps.focus_repair.outputs.mutated != 'true'
+        if: steps.mode.outputs.promotion != 'true' && steps.mode.outputs.replacement == 'true' && steps.home_repair.outputs.mutated != 'true' && steps.focus_repair.outputs.mutated != 'true' && steps.material_repair.outputs.mutated != 'true'
         shell: bash
         env:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
@@ -188,13 +216,13 @@ jobs:
             fi
           done
       - name: Verify exact replacement manifest, receipts and budgets
-        if: steps.mode.outputs.promotion != 'true' && steps.mode.outputs.replacement == 'true' && steps.home_repair.outputs.mutated != 'true' && steps.focus_repair.outputs.mutated != 'true'
+        if: steps.mode.outputs.promotion != 'true' && steps.mode.outputs.replacement == 'true' && steps.home_repair.outputs.mutated != 'true' && steps.focus_repair.outputs.mutated != 'true' && steps.material_repair.outputs.mutated != 'true'
         run: node scripts/verify-launch-critical-assets.mjs
       - name: Strictly decode replacement Radiance HDR scanlines
-        if: steps.mode.outputs.promotion != 'true' && steps.mode.outputs.replacement == 'true' && steps.home_repair.outputs.mutated != 'true' && steps.focus_repair.outputs.mutated != 'true'
+        if: steps.mode.outputs.promotion != 'true' && steps.mode.outputs.replacement == 'true' && steps.home_repair.outputs.mutated != 'true' && steps.focus_repair.outputs.mutated != 'true' && steps.material_repair.outputs.mutated != 'true'
         run: node scripts/validate-radiance-hdr.mjs
       - name: Validate every replacement GLB with Khronos-compatible validator
-        if: steps.mode.outputs.promotion != 'true' && steps.mode.outputs.replacement == 'true' && steps.home_repair.outputs.mutated != 'true' && steps.focus_repair.outputs.mutated != 'true'
+        if: steps.mode.outputs.promotion != 'true' && steps.mode.outputs.replacement == 'true' && steps.home_repair.outputs.mutated != 'true' && steps.focus_repair.outputs.mutated != 'true' && steps.material_repair.outputs.mutated != 'true'
         shell: bash
         run: |
           set -euo pipefail
@@ -319,7 +347,7 @@ jobs:
           retention-days: 14
           path: .urai-artifacts/launch-critical-candidate-bundle/
       - name: Upload exact replacement evidence
-        if: always() && steps.mode.outputs.promotion != 'true' && steps.mode.outputs.replacement == 'true' && steps.home_repair.outputs.mutated != 'true' && steps.focus_repair.outputs.mutated != 'true'
+        if: always() && steps.mode.outputs.promotion != 'true' && steps.mode.outputs.replacement == 'true' && steps.home_repair.outputs.mutated != 'true' && steps.focus_repair.outputs.mutated != 'true' && steps.material_repair.outputs.mutated != 'true'
         uses: actions/upload-artifact@v4
         with:
           name: urai-launch-critical-replacement-${{ env.URAI_EXACT_HEAD }}
