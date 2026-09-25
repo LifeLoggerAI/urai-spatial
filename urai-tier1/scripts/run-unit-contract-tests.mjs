@@ -12,6 +12,7 @@ const focusedContractTests = [
   'tests/captured-reality-source-preparation-contract.test.mjs',
   'tests/captured-reality-runtime-budget-contract.test.mjs',
   'tests/captured-reality-replay-binding-contract.test.mjs',
+  'tests/captured-reality-receipt-contract.test.mjs',
   'tests/embodied-exploration-contract.test.mjs',
   'tests/field-reconstruction-phase5-contract.test.mjs',
   'tests/focus-v272-living-memory-fold-contract.test.mjs',
