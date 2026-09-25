@@ -11,9 +11,14 @@ const exactHead = process.env.URAI_EXACT_HEAD || 'local'
 
 const allScenarios = [
   { id: 'temperate-desktop', environment: 'temperate', width: 1440, height: 900, mobile: false, reducedMotion: 'no-preference' },
+  { id: 'temperate-large-desktop', environment: 'temperate', width: 1920, height: 1080, mobile: false, reducedMotion: 'no-preference' },
   { id: 'woodland-desktop', environment: 'woodland', width: 1440, height: 900, mobile: false, reducedMotion: 'no-preference' },
+  { id: 'temperate-phone-narrow', environment: 'temperate', width: 320, height: 720, mobile: true, reducedMotion: 'no-preference' },
   { id: 'temperate-phone-portrait', environment: 'temperate', width: 390, height: 844, mobile: true, reducedMotion: 'no-preference' },
+  { id: 'temperate-phone-large', environment: 'temperate', width: 430, height: 932, mobile: true, reducedMotion: 'no-preference' },
   { id: 'woodland-phone-portrait', environment: 'woodland', width: 390, height: 844, mobile: true, reducedMotion: 'no-preference' },
+  { id: 'temperate-tablet-portrait', environment: 'temperate', width: 768, height: 1024, mobile: true, reducedMotion: 'no-preference' },
+  { id: 'temperate-tablet-landscape', environment: 'temperate', width: 1024, height: 768, mobile: true, reducedMotion: 'no-preference' },
   { id: 'temperate-reduced-motion', environment: 'temperate', width: 1440, height: 900, mobile: false, reducedMotion: 'reduce' },
 ]
 const requestedScenario = String(process.env.URAI_GROUND_SCENARIO || '').trim()
