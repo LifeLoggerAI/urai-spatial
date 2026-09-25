@@ -186,6 +186,34 @@ function repairOrbAsset(config, pack) {
   const original = fs.readFileSync(config.glbPath), originalSha = crypto.createHash('sha256').update(original).digest('hex')
   const acceptedRepaired = new Set(config.acceptedRepairedSha256 ?? [config.repairedSha256])
   if (originalSha !== config.knownBadSha256 && !acceptedRepaired.has(originalSha)) fail(`${config.label} exact binary identity is neither the known-bad nor an accepted repaired SHA: ${originalSha}`)
+  if (acceptedRepaired.has(originalSha) && originalSha !== config.knownBadSha256) {
+    const receipt = readJson(config.receiptPath)
+    const rehearsal = readJson(config.rehearsalPath)
+    const packEntry = pack.assets?.find((entry) => entry.fileName === config.packFileName)
+    if (!packEntry) fail(`${config.label} entry missing from final GLB pack receipt`)
+    const bytes = original.length
+    if (receipt.id !== config.assetId || receipt.fixedPath !== config.glbPath || receipt.bytes !== bytes || receipt.sha256 !== originalSha) {
+      fail(`${config.label} accepted repaired SHA is not bound by the generated receipt`)
+    }
+    if (rehearsal.assetId !== config.assetId || rehearsal.canonicalPath !== config.glbPath || rehearsal.bytes !== bytes || rehearsal.sha256 !== originalSha) {
+      fail(`${config.label} accepted repaired SHA is not bound by the promotion rehearsal`)
+    }
+    if (packEntry.bytes !== bytes || packEntry.sha256 !== originalSha) {
+      fail(`${config.label} accepted repaired SHA is not bound by the final GLB pack receipt`)
+    }
+    return {
+      label: config.label,
+      binaryChanged: false,
+      receiptChanged: false,
+      packChanged: false,
+      rehearsalChanged: false,
+      changed: false,
+      bytes,
+      sha256: originalSha,
+      acceptedRepairedIdentity: true,
+    }
+  }
+
   const repaired = Buffer.from(original), parsed = parseGlb(repaired, config.label)
   const { accessor, accessorIndex, base, stride } = findTargetNormalAccessor(parsed, config)
   if (accessorIndex !== config.expectedAccessorIndex) fail(`${config.label} expected NORMAL accessor ${config.expectedAccessorIndex}, found ${accessorIndex}`)
