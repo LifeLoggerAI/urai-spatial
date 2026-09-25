@@ -18,6 +18,7 @@ on:
       - 'urai-tier1/src/spatial/memory/**'
       - 'urai-tier1/src/spatial/world/**'
       - 'urai-tier1/src/spatial/performance/**'
+      - 'urai-tier1/tests/focus-review-regression-contract.test.mjs'
 
 permissions:
   contents: read
@@ -85,6 +86,7 @@ jobs:
           pnpm --dir urai-tier1 exec playwright --version
           node --check scripts/run-with-ci-webgl.mjs
           node --check scripts/capture-focus-gold-master-proof.mjs
+          (cd urai-tier1 && node tests/focus-review-regression-contract.test.mjs)
 
       - name: Capture exact-head Focus proof
         shell: bash
