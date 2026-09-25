@@ -22,7 +22,8 @@ test('portrait travel retains visual density with distinct cosmic staging and ar
   assert.match(scene, /const distance = phase === "departure" \? 21 : phase === "travel" \? 16\.5 : phase === "approach" \? 11\.2 : portrait \? 8\.6 : 7\.2/)
   assert.match(scene, /position\.y \+= phase === "travel" \? 2\.2 : phase === "approach" \? \.8 : \.25/)
   assert.match(scene, /fov: portrait \? phase === "arrival" \? 50 : 56 : phase === "arrival" \? 40 : 49/)
-  assert.match(scene, /const showThresholds = Boolean\(selected && phase === "arrival"\)/)
+  assert.match(scene, /const thresholdsVisible = Boolean\(selected && phase === "arrival"\)/)
+  assert.match(scene, /\{thresholdsVisible \? <nav className="life-map-thresholds"/)
   assert.match(scene, /camera\.position\.lerp\(position, 1 - Math\.exp\(-rate \* delta\)\)/)
   assert.match(scene, /look\.current\.lerp\(target, 1 - Math\.exp\(-4\.2 \* delta\)\)/)
 

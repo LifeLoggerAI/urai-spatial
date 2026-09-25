@@ -60,10 +60,11 @@ test('Memory Stars remain stellar and interaction geometry remains visually invi
 
 test('selected travel keeps real volumetric depth through departure travel approach and arrival', () => {
   assert.match(scene, /const PHASE_MS = \{ departure: 900, travel: 1500, approach: 2200 \}/)
-  assert.match(scene, /setPhase\("departure"\)/)
-  assert.match(scene, /setPhase\("travel"\)/)
-  assert.match(scene, /setPhase\("approach"\)/)
-  assert.match(scene, /setPhase\("arrival"\)/)
+  assert.match(scene, /setPhase\(profile\.reducedMotion \? "arrival" : "departure"\)/)
+  assert.match(scene, /phase === "departure"\) setPhase\("travel"\)/)
+  assert.match(scene, /phase === "travel"\) setPhase\("approach"\)/)
+  assert.match(scene, /phase === "approach"\) setPhase\("arrival"\)/)
+  assert.match(scene, /if \(profile\.reducedMotion\) \{ journey\.current \+= 1; setPhase\("arrival"\); return; \}/)
   assert.match(scene, /function SelectedTravelWeather/)
   assert.match(scene, /life-map-departure-selected-memory-volumetric-bridge/)
   assert.match(scene, /visualRole: "departure-selected-memory-volumetric-bridge", pointWallpaper: false, journeyPhase: "departure"/)

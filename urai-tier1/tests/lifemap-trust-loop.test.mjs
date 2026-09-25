@@ -44,11 +44,16 @@ test('node selection stays in Life Map before explicit Focus or Replay actions',
 
 test('selected-memory travel and recenter remain user controlled', () => {
   assert.ok(sceneSource.includes('goalForNode'))
-  assert.ok(sceneSource.includes('setPhase("departure")'))
-  assert.ok(sceneSource.includes('setPhase("arrival")'))
+  assert.ok(sceneSource.includes('if (profile.reducedMotion) setPhase("arrival")'))
+  assert.ok(sceneSource.includes('else setPhase("departure")'))
+  assert.ok(sceneSource.includes('if (phase === "departure") setPhase("travel")'))
+  assert.ok(sceneSource.includes('if (phase === "travel") setPhase("approach")'))
+  assert.ok(sceneSource.includes('if (phase === "approach") setPhase("arrival")'))
   assert.ok(sceneSource.includes('setSelectedId(null)'))
   assert.ok(sceneSource.includes('Overview'))
-  assert.ok(sceneSource.includes('if (selectedId) overview(); else router.push("/home")'))
+  assert.ok(sceneSource.includes('const returnHome = useCallback'))
+  assert.ok(sceneSource.includes('router.push(explicitDemoRequested ? "/home?demo=1" : "/home")'))
+  assert.ok(sceneSource.includes('if (selectedId) overview(); else returnHome()'))
 })
 
 test('mobile controls retain safe areas and 48px touch targets', () => {
