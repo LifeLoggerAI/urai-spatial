@@ -28,12 +28,15 @@ test('quarantined portal geometry cannot resolve as active runtime asset authori
   assert.match(worldManifest, /portal\\/ring geometry is quarantined as historical provenance/)
 })
 
-test('Focus and Replay keep old GLBs as non-ready supporting references and fail closed from active runtime authority', () => {
+test('retired or supporting GLBs stay non-authoritative across Life Map Focus Replay and Passport', () => {
   assert.doesNotMatch(manifest, /focus-star-tunnel-proof-fallback|replay-film-portal-proof-fallback/)
+  assert.match(manifest, /supportingGlb\('life-map-memory-star-glb-v1'[\s\S]*'life-map-galaxy-assets'/)
   assert.match(manifest, /supportingGlb\('focus-memory-chamber-glb-v1'[\s\S]*'focus-star-assets'/)
   assert.match(manifest, /supportingGlb\('replay-memory-environment-glb-v1'[\s\S]*'replay-memory-assets'/)
+  assert.match(manifest, /supportingGlb\('passport-status-room-glb-v1'[\s\S]*'passport-status-room-assets'/)
   assert.match(manifest, /Retained supporting reference only/)
   assert.match(manifest, /status: 'candidate'/)
+  assert.match(manifest, /'urai-orb-avatar-glb-v1'[\s\S]*'home'/)
 })
 
 test('only explicitly ready selected assets count as ready', () => {
@@ -52,11 +55,14 @@ test('resolver chooses selected assets only when ready and otherwise uses explic
   assert.match(manifest, /source: 'unavailable'/)
 })
 
-test('active spatial model layer resolves asset ids instead of hardcoded paths', () => {
-  assert.match(assetLayer, /resolveUraiSpatialAssetPath/)
+test('legacy support asset layer is route-bounded and cannot inject retired cross-route visuals', () => {
+  assert.match(assetLayer, /resolvePromotedUraiSpatialAssetPath/)
+  assert.match(assetLayer, /data-urai-legacy-support-layer="true"/)
+  assert.match(assetLayer, /const showHome = phase === "HOME"/)
+  assert.match(assetLayer, /const showGround = phase === "GROUND"/)
   assert.match(assetLayer, /assetId="home-entry-chamber-model-v1"/)
   assert.match(assetLayer, /assetId="ground-world-terrain-glb-v1"/)
-  assert.match(assetLayer, /assetId="life-map-memory-star-glb-v1"/)
+  assert.doesNotMatch(assetLayer, /assetId="life-map-memory-star-glb-v1"|assetId="passport-status-room-glb-v1"|focus-selected-star-node-v1/)
   assert.doesNotMatch(assetLayer, /src="\/assets\/urai\/spatial/)
   assert.doesNotMatch(assetLayer, /focus-star-tunnel|replay-film-portal|focus-memory-chamber-glb-v1|replay-memory-environment-glb-v1/)
   assert.match(assetLayer, /if \(!\/\\\.\(\?:gltf\|glb\)\$\/i\.test\(path\)\)/)
