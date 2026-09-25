@@ -60,6 +60,19 @@ async function restoreRuntimeOnlyRoutes() {
   }
 }
 
+async function restoreBasisAssets() {
+  if (!basisExistedBefore) {
+    await rm(basisPath, { recursive: true, force: true })
+    return
+  }
+
+  // --prepare-runtime-assets intentionally replaces public/basis from the installed
+  // Three.js package. Static evidence must leave the exact checked-out candidate
+  // untouched, so restore tracked decoder assets and remove any generated extras.
+  await run('git', ['restore', '--source=HEAD', '--worktree', '--', basisPath])
+  await run('git', ['clean', '-fd', '--', basisPath])
+}
+
 let buildError
 try {
   basisExistedBefore = await exists(basisPath)
@@ -76,12 +89,10 @@ try {
   buildError = error
 } finally {
   try {
-    if (!basisExistedBefore) await rm(basisPath, { recursive: true, force: true })
+    await restoreBasisAssets()
     await restoreRuntimeOnlyRoutes()
-    if (staged.length) {
-      await run('git', ['diff', '--exit-code', '--', ...staged.map(({ source }) => source)])
-      await run('git', ['status', '--porcelain', '--untracked-files=all'])
-    }
+    await run('git', ['diff', '--exit-code', '--', basisPath, ...staged.map(({ source }) => source)])
+    await run('git', ['status', '--porcelain', '--untracked-files=all'])
   } catch (restoreError) {
     if (buildError) {
       console.error(buildError)
