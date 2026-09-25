@@ -23,10 +23,16 @@
 }
 
 .locationMapGeographicBridge a {
+  display: inline-flex;
+  min-height: 48px;
+  align-items: center;
+  justify-content: center;
+  padding: 0.5rem 0.65rem;
   color: #ecfdff;
   font-size: 0.84rem;
   font-weight: 900;
   line-height: 1.25;
+  text-align: center;
   text-decoration: none;
 }
 
