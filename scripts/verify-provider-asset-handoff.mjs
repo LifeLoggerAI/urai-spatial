@@ -108,7 +108,7 @@ const routeOwnerChecks = [
       'data-home-asset-mode=',
       'data-home-personalization-mode=',
       'home-personalized-places-',
-      'home-orb-state-',
+      '/ui/orb-',
       'name={`home-${type}-portal-world-owned`}',
       '<WorldPortal type="ground"',
       '<WorldPortal type="life-map"',
