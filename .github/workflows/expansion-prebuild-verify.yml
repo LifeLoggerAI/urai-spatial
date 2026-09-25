@@ -4,6 +4,7 @@ on:
   pull_request:
     paths:
       - "expansion/**"
+      - "docs/contracts/ewi/**"
       - ".github/workflows/expansion-prebuild-verify.yml"
   workflow_dispatch:
 
@@ -39,6 +40,8 @@ jobs:
         run: node expansion/v5-becoming/identity-timeline.test.mjs
       - name: Verify wearable signal boundary
         run: node expansion/wearables/wearable-signals.test.mjs
+      - name: Verify wearable provider admission
+        run: node expansion/wearables/wearable-provider-registry.test.mjs
       - name: Verify location context boundary
         run: node expansion/location/location-context.test.mjs
       - name: Verify safe world command policy
