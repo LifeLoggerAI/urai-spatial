@@ -1,0 +1,42 @@
+{
+  "schemaVersion": "urai-home-visual-authority-2",
+  "rendererOwner": "HomeWorldProductionV223.tsx",
+  "artRevision": "v293-direct-bodyless-first-person-convergence",
+  "worldIdentifier": "cinematic-lived-world-threshold",
+  "proofSchema": "urai-home-state-proof-7",
+  "certificationState": "candidate-requires-fresh-exact-head-pixels",
+  "lastCertifiedPredecessor": {
+    "orbVisualAuthority": "v288-grounded-biomorphic-reliquary",
+    "runtimeAssets": [
+      "HomeOrbReliquaryV286.tsx",
+      "HomeOrbGroundedV288.tsx"
+    ]
+  },
+  "currentRuntimeCandidate": {
+    "rendererOwner": "HomeWorldProductionV223.tsx",
+    "orbRuntimeAsset": "/assets/urai/generated/models/urai-orb-avatar-v1.glb",
+    "orbVisualAuthority": "v288-grounded-biomorphic-reliquary",
+    "certified": false,
+    "requiredEvidence": "fresh-exact-head-source-build-runtime-and-literal-pixel-acceptance",
+    "homePresentationAuthority": "direct-bodyless-first-person",
+    "nonXrFirstPersonBodyPolicy": "camera-only-no-hands-arms-visible-avatar-or-body-rig",
+    "orbInteractionAuthority": "v291-current-home-orb-state-and-speech-runtime"
+  },
+  "runtimeAssets": [
+    "HomeWorldProductionV223.tsx",
+    "HomeWorldProductionV223Geometry.tsx",
+    "HomeWorldProductionV225PolishV3.tsx",
+    "HomeCurrentArtRepair.tsx",
+    "HomeAAAVisualRepair.tsx",
+    "HomeVisualAuthority.tsx",
+    "HomeAtmosphericSky.tsx",
+    "rock-tile-floor/rock-tile-floor-diff-1k.webp",
+    "polyhaven-v48/fern_02/asset.gltf",
+    "polyhaven-v48/rock_face_01/asset.gltf",
+    "polyhaven-v48/rock_face_02/asset.gltf",
+    "urai-orb-avatar-v1.glb",
+    "HomeOrbReliquaryV286.tsx",
+    "HomeOrbGroundedV288.tsx"
+  ],
+  "orbVisualAuthority": "v288-grounded-biomorphic-reliquary"
+}

@@ -25,32 +25,10 @@ test('memory routes hydrate exact query identity without useSearchParams', () =>
   }
 })
 
-test('visible Focus owner hydrates and exposes the same exact query identity', () => {
-  assert.match(visibleLayer, /new URLSearchParams\(window\.location\.search\)/)
-  assert.match(visibleLayer, /setFocusIdentity\(\{ memoryId, manifestId, node \}\)/)
-  assert.match(visibleLayer, /data-testid="urai-final-focus-chamber"/)
-  assert.match(visibleLayer, /data-memory-id=\{identity\.memoryId\}/)
-  assert.match(visibleLayer, /data-manifest-id=\{identity\.manifestId\}/)
-  assert.match(visibleLayer, /data-node=\{identity\.node\}/)
-  assert.match(visibleLayer, /data-visible-route-owner="urai-autonomous-v1-focus"/)
-  assert.match(visibleLayer, /<FocusWorld identity=\{focusIdentity\} \/>/)
-  assert.doesNotMatch(visibleLayer, /if \(pathname\.startsWith\("\/focus"\)\) return <FocusWorld \/>/)
-})
-
-test('visible Focus identity refreshes on same-path history navigation', () => {
-  assert.match(visibleLayer, /const hydrateFocusIdentity = \(\) => \{/)
-  assert.match(visibleLayer, /hydrateFocusIdentity\(\);/)
-  assert.match(visibleLayer, /window\.addEventListener\("popstate", hydrateFocusIdentity\)/)
-  assert.match(visibleLayer, /window\.removeEventListener\("popstate", hydrateFocusIdentity\)/)
-})
-
-test('visible Focus navigation preserves memory, manifest, and node identity', () => {
-  assert.match(visibleLayer, /memoryRoute\("\/replay", identity, \{ from: "focus-chamber" \}\)/)
-  assert.match(visibleLayer, /memoryRoute\("\/life-map", identity, \{ unwind: "focus" \}\)/)
-  assert.match(visibleLayer, /memoryRoute\("\/focus", identity\)/)
-  assert.match(visibleLayer, /href=\{replayHref\}/)
-  assert.match(visibleLayer, /href=\{lifeMapHref\}/)
-  assert.match(visibleLayer, /href=\{focusHref\}/)
+test('legacy autonomous layer cannot duplicate the route-owned Focus surface', () => {
+  assert.match(visibleLayer, /Mirror remains the only legacy realm here/)
+  assert.match(visibleLayer, /pathname\.startsWith\("\/mirror"\)/)
+  assert.doesNotMatch(visibleLayer, /FocusWorld|urai-final-focus-chamber|pathname\.startsWith\("\/focus"\)/)
 })
 
 test('strict smoke waits for an exact visible hydrated identity', () => {

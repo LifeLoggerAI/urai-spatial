@@ -2,27 +2,44 @@ name: Main Journey State Contract
 
 on:
   workflow_dispatch:
+    inputs:
+      verification_sha:
+        description: Exact 40-character commit SHA to verify
+        required: false
+        type: string
   pull_request:
     paths:
       - 'urai-tier1/src/app/focus/**'
       - 'urai-tier1/src/app/replay/**'
+      - 'urai-tier1/src/app/home/**'
+      - 'urai-tier1/src/app/HomeSpatialRuntimeLayer.tsx'
+      - 'urai-tier1/src/components/lifemap/**'
+      - 'urai-tier1/src/spatial/layout/HomeWorldProductionV223.tsx'
+      - 'urai-tier1/src/spatial/assets/HomeAtmosphericSky.tsx'
+      - 'urai-tier1/src/spatial/home/**'
+      - 'urai-tier1/src/spatial/memory/**'
+      - 'urai-tier1/src/spatial/navigation/**'
+      - 'urai-tier1/src/spatial/world/**'
       - 'scripts/audit-main-journey-state.mjs'
+      - 'scripts/capture-canonical-journey-proof.mjs'
       - '.github/workflows/main-journey-state.yml'
 
 permissions:
   contents: read
 
 concurrency:
-  group: main-journey-state-${{ github.event.pull_request.number || github.ref }}-${{ github.event.pull_request.head.sha || github.sha }}
+  group: main-journey-state-${{ github.event.pull_request.number || inputs.verification_sha || github.ref }}-${{ github.event.pull_request.head.sha || inputs.verification_sha || github.sha }}
   cancel-in-progress: true
 
 env:
-  URAI_EXACT_HEAD: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+  URAI_EXACT_HEAD: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.event_name == 'workflow_dispatch' && inputs.verification_sha || github.sha }}
+  PLAYWRIGHT_BROWSERS_PATH: '0'
+  NEXT_PUBLIC_URAI_EXPLICIT_DEMO: 'true'
 
 jobs:
   journey-state:
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
+    runs-on: ubuntu-24.04
+    timeout-minutes: 50
     steps:
       - name: Checkout exact candidate
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
@@ -55,14 +72,78 @@ jobs:
       - name: Enable Corepack
         run: corepack enable
 
-      - name: Install dependencies
+      - name: Install exact lockfile
         run: pnpm install --frozen-lockfile
 
-      - name: Audit Home to Life Map to Focus to Replay state
+      - name: Audit source continuity contract
         run: node scripts/audit-main-journey-state.mjs
+
+      - name: Gate mounted Life Map continuity contract
+        run: node --test urai-tier1/tests/lifemap-scene-behavior.test.mjs
 
       - name: Typecheck current journey runtime
         run: pnpm --dir urai-tier1 typecheck
+
+      - name: Validate journey recorder syntax
+        run: node --check scripts/capture-canonical-journey-proof.mjs
+
+      - name: Build exact static release candidate
+        shell: bash
+        env:
+          URAI_MIN_INSTALL_FREE_MB: '256'
+          URAI_FIREBASE_STATIC_EXPORT: 'true'
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/canonical-journey-proof
+          pnpm build:static 2>&1 | tee artifacts/canonical-journey-proof/build-static.log
+
+      - name: Install Chromium
+        run: pnpm --dir urai-tier1 exec playwright install --with-deps chromium
+
+      - name: Capture exact-head canonical runtime journey
+        shell: bash
+        run: |
+          set -euo pipefail
+          output=artifacts/canonical-journey-proof
+          python3 -m http.server 4173 --bind 127.0.0.1 --directory urai-tier1/out > "$output/http-server.log" 2>&1 &
+          server_pid=$!
+          trap 'kill "$server_pid" 2>/dev/null || true' EXIT
+          for attempt in $(seq 1 60); do
+            curl --fail --silent http://127.0.0.1:4173/home/ >/dev/null && break
+            sleep 1
+          done
+          curl --fail --silent --show-error http://127.0.0.1:4173/home/ >/dev/null
+          URAI_PROOF_BASE=http://127.0.0.1:4173           URAI_PROOF_DIR="$output"           URAI_EXACT_HEAD="$URAI_EXACT_HEAD"             node scripts/capture-canonical-journey-proof.mjs 2>&1 | tee "$output/capture.log"
+
+      - name: Prove complete canonical receipt
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --input-type=module - artifacts/canonical-journey-proof/receipt.json "$URAI_EXACT_HEAD" <<'NODE'
+          import { readFile } from 'node:fs/promises'
+          const [receiptPath, head] = process.argv.slice(2)
+          const receipt = JSON.parse(await readFile(receiptPath, 'utf8'))
+          if (receipt.exactHead !== head) throw new Error('exact-head mismatch')
+          if (receipt.status !== 'passed') throw new Error('canonical journey receipt failed')
+          if (!Array.isArray(receipt.journeys) || receipt.journeys.length !== 3) throw new Error('three canonical input/device journeys required')
+          if (!receipt.journeys.every((journey) => journey.passed && journey.identityStable)) throw new Error('journey continuity or memory identity failed')
+          const ascent = receipt.journeys.find((journey) => journey.id === 'desktop-pointer-keyboard-ascent')
+          if (!ascent || ascent.ascentProven !== true) throw new Error('real Home ASCENT was not proven')
+          const touch = receipt.journeys.find((journey) => journey.id === 'mobile-touch')
+          if (!touch || touch.mode !== 'touch') throw new Error('mobile touch journey missing')
+          const reduced = receipt.journeys.find((journey) => journey.id === 'desktop-reduced-keyboard')
+          if (!reduced || reduced.mode !== 'keyboard') throw new Error('reduced-motion keyboard journey missing')
+          NODE
+
+      - name: Upload exact-head canonical journey proof
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: canonical-journey-proof-${{ env.URAI_EXACT_HEAD }}
+          path: artifacts/canonical-journey-proof
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 6
 
       - name: Final clean-tree proof
         run: test -z "$(git status --porcelain --untracked-files=all)"

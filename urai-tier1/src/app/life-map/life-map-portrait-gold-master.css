@@ -1,0 +1,59 @@
+/* UrAi Life Map portrait Gold-Master convergence.
+   Keep point stars and memory identity WebGL-owned. This layer adds only broad,
+   non-interactive astronomical weather so narrow portrait overview retains
+   readable mid-field depth instead of collapsing into a dark corridor. */
+
+@media (max-width: 700px) and (orientation: portrait) {
+  .life-map-root[data-life-map-phase="overview"]::before {
+    inset: -10%;
+    opacity: 1;
+    pointer-events: none;
+    background:
+      radial-gradient(ellipse 92% 42% at 8% 18%, rgba(72,137,178,.58) 0%, rgba(38,86,120,.34) 31%, rgba(20,48,69,.14) 55%, transparent 76%),
+      radial-gradient(ellipse 86% 38% at 91% 34%, rgba(145,105,170,.47) 0%, rgba(88,66,126,.29) 34%, rgba(44,43,72,.12) 58%, transparent 77%),
+      radial-gradient(ellipse 94% 40% at 23% 57%, rgba(66,137,157,.50) 0%, rgba(35,85,105,.29) 35%, rgba(19,47,62,.12) 59%, transparent 78%),
+      radial-gradient(ellipse 88% 37% at 86% 72%, rgba(111,133,185,.43) 0%, rgba(65,76,130,.24) 36%, rgba(34,39,77,.10) 59%, transparent 77%),
+      radial-gradient(ellipse 82% 34% at 39% 88%, rgba(91,115,151,.36) 0%, rgba(48,70,105,.21) 38%, transparent 75%),
+      radial-gradient(ellipse 62% 46% at 54% 46%, rgba(94,127,166,.22) 0%, rgba(50,78,116,.12) 42%, transparent 75%),
+      linear-gradient(164deg, rgba(12,32,54,.16) 0 12%, rgba(55,107,142,.27) 28%, rgba(24,61,82,.12) 45%, rgba(102,77,126,.23) 63%, rgba(39,76,113,.18) 82%, rgba(8,20,34,.16) 100%) !important;
+    background-repeat: no-repeat;
+    filter: contrast(1.24) saturate(1.08) brightness(1.20);
+    mix-blend-mode: screen;
+  }
+
+  .life-map-root[data-life-map-phase="overview"] canvas {
+    filter: brightness(1.18) contrast(1.07) saturate(1.02);
+  }
+
+  .life-map-root[data-life-map-phase="overview"]::after {
+    background:
+      radial-gradient(ellipse at 23% 25%, rgba(36,82,116,.15), transparent 35%),
+      radial-gradient(ellipse at 79% 39%, rgba(81,65,107,.12), transparent 34%),
+      radial-gradient(ellipse at 34% 69%, rgba(35,80,102,.12), transparent 36%),
+      radial-gradient(ellipse at 76% 76%, rgba(70,82,127,.10), transparent 32%),
+      radial-gradient(circle at 50% 48%, transparent 0 67%, rgba(0,0,0,.025) 84%, rgba(0,0,0,.16) 100%) !important;
+  }
+
+  .life-map-root[data-life-map-phase="overview"] .life-map-title {
+    opacity: .72;
+  }
+
+  .life-map-root[data-life-map-phase="overview"] .life-map-status {
+    opacity: .66;
+  }
+}
+
+/* Preserve the 44px mobile accessibility floor for every selected-memory action.
+   The prior exact-head evidence measured the compact Overview action at 38.89px. */
+@media (max-width: 700px) {
+  .life-map-root .life-map-thresholds button {
+    min-width: 44px !important;
+    min-height: 44px !important;
+  }
+
+  .life-map-root .life-map-thresholds .overview-return {
+    min-width: 72px !important;
+    min-height: 44px !important;
+    padding-inline: 12px !important;
+  }
+}

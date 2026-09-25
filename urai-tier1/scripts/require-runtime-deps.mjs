@@ -1,4 +1,7 @@
 import { createRequire } from 'node:module'
+import { cpSync, mkdirSync, rmSync } from 'node:fs'
+import path from 'node:path'
+import { fileURLToPath } from 'node:url'
 
 const require = createRequire(import.meta.url)
 
@@ -36,5 +39,16 @@ for (const dependency of requiredDependencies) {
 }
 
 if (missing.length > 0) fail(missing)
+
+if (process.argv.includes('--prepare-runtime-assets')) {
+  const threeEntry = require.resolve('three')
+  const threeRoot = path.resolve(path.dirname(threeEntry), '..')
+  const source = path.join(threeRoot, 'examples', 'jsm', 'libs', 'basis')
+  const target = fileURLToPath(new URL('../public/basis/', import.meta.url))
+  rmSync(target, { recursive: true, force: true })
+  mkdirSync(target, { recursive: true })
+  cpSync(source, target, { recursive: true })
+  console.log('[URAI Spatial runtime deps] Prepared local Three.js Basis/KTX2 transcoder assets')
+}
 
 console.log('[URAI Spatial runtime deps] Required workspace dependencies resolved')

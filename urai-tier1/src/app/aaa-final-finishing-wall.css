@@ -82,7 +82,7 @@ summary:focus-visible {
   transform: perspective(760px) rotateX(62deg);
 }
 [data-urai-route="ground-world"] details[open] { border-color: rgba(152, 255, 216, 0.52) !important; box-shadow: 0 30px 110px rgba(0, 0, 0, 0.58), 0 0 52px rgba(152, 255, 216, 0.16) !important; }
-[data-urai-route="ground-world"] summary { min-height: 44px; }
+[data-urai-route="ground-world"] summary { min-height: 48px; }
 
 [data-testid="urai-r3f-canonical-lifemap"]::before {
   content: "";
@@ -97,9 +97,9 @@ summary:focus-visible {
   mix-blend-mode: screen;
   filter: saturate(1.28) contrast(1.08);
 }
-[data-testid="urai-r3f-canonical-lifemap"] button { min-height: 36px; border-radius: 999px !important; box-shadow: 0 12px 38px rgba(0, 0, 0, 0.34); }
+[data-testid="urai-r3f-canonical-lifemap"] button { min-height: 48px; border-radius: 999px !important; box-shadow: 0 12px 38px rgba(0, 0, 0, 0.34); }
 [data-testid="urai-r3f-canonical-lifemap"] header::after {
-  content: "Private seed constellation · image-textured stars · Focus opens selection";
+  content: "Explore a memory. Follow what connects.";
   display: block;
   margin-top: 0.75rem;
   color: rgba(226, 252, 255, 0.68);
@@ -176,7 +176,7 @@ summary:focus-visible {
 
 [data-route-polish="privacy-control-room"] article,
 [data-route-polish="emotional-weather-atlas"] article { box-shadow: var(--urai-aaa-shadow); }
-[data-route-polish="emotional-weather-atlas"] a { min-height: 44px; }
+[data-route-polish="emotional-weather-atlas"] a { min-height: 48px; }
 
 .urai-xr-portal { background: radial-gradient(circle at 50% 28%, rgba(141, 244, 255, 0.22), transparent 20rem), url("/assets/urai/xr/quest-entry-main.webp"), linear-gradient(180deg, #020617 0%, #071225 60%, #01030a 100%) !important; background-size: cover; background-position: center; }
 .urai-xr-portal::after {

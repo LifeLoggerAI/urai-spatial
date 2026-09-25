@@ -34,10 +34,12 @@ test('Life Map event listeners remain offline when public Firebase configuration
   assert.equal((lifeMapEventsSource.match(/if \(!firebasePublicEnvReady\)/g) ?? []).length, 1)
   assert.match(lifeMapEventsSource, /if \(!resolvedUserId \|\| !firebasePublicEnvReady\) \{[\s\S]*setEras\(\[\]\)/)
   assert.match(lifeMapEventsSource, /const positionedDemoNodes = canonicalLifeMapDemoNodes\.map/)
+  assert.match(lifeMapEventsSource, /const syntheticMode = deterministicTest\.enabled/)
+  assert.match(lifeMapEventsSource, /if \(syntheticMode\) \{[\s\S]*setNodes\(deterministicNodes\)/)
   assert.match(lifeMapEventsSource, /if \(explicitDemo\) \{[\s\S]*setNodes\(positionedDemoNodes\)/)
-  assert.match(lifeMapEventsSource, /if \(explicitDemo\) \{[\s\S]*setEras\(lifeMapEras\)/)
+  assert.match(lifeMapEventsSource, /if \(syntheticMode \|\| explicitDemo\) \{[\s\S]*setEras\(lifeMapEras\)/)
   assert.match(lifeMapEventsSource, /if \(!firebasePublicEnvReady\) \{[\s\S]*setNodes\(\[\]\)/)
-  assert.match(lifeMapEventsSource, /sourceMode: LifeMapSourceMode = explicitDemo[\s\S]*\? "explicit-demo"[\s\S]*: !firebasePublicEnvReady[\s\S]*\? "unavailable"/)
+  assert.match(lifeMapEventsSource, /sourceMode: LifeMapSourceMode = syntheticMode \|\| explicitDemo \? "explicit-demo"[\s\S]*: !firebasePublicEnvReady \? "unavailable"/)
 })
 
 test('external requests are intercepted and aborted before send', () => {
@@ -58,7 +60,6 @@ test('only bounded local navigation, HMR, promoted asset and canonical manifest 
   assert.match(diagnosticSource, /promotedGeneratedAssetPaths\.has\(parsed\.pathname\)/)
   for (const path of [
     'home-entry-chamber-v1\\.glb',
-    'portal-ring-master-v1\\.glb',
     'urai-orb-avatar-v1\\.glb',
   ]) assert.match(diagnosticSource, new RegExp(path))
   assert.match(diagnosticSource, /promoted-generated-asset-navigation-cancellation/)
@@ -72,13 +73,15 @@ test('canonical compatibility redirects settle before route teardown', () => {
   assert.match(diagnosticSource, /const canonicalRedirectTargets = new Map/)
   assert.match(diagnosticSource, /\['\/ascent', '\/home\?from=ascent'\]/)
   assert.match(diagnosticSource, /\['\/unwind', '\/life-map\?from=unwind&overview=1'\]/)
-  assert.match(diagnosticSource, /await page\.waitForURL\(`\$\{baseUrl\}\$\{canonicalTarget\}`/)
+  assert.match(diagnosticSource, /const expectedUrl = `\$\{baseUrl\}\$\{canonicalTarget\}`/)
+  assert.match(diagnosticSource, /await page\.waitForFunction\(\(expected\) => window\.location\.href === expected, expectedUrl/)
+  assert.match(diagnosticSource, /if \(page\.url\(\) !== expectedUrl\)/)
   assert.match(diagnosticSource, /Spatial diagnostic canonical redirect failed/)
   assert.match(diagnosticSource, /canonicalRedirectTargets: Object\.fromEntries\(canonicalRedirectTargets\)/)
 })
 
 test('actionable findings fail and remain in a schema-bound artifact', () => {
-  assert.match(diagnosticSource, /urai-spatial-missing-resource-diagnostics-6/)
+  assert.match(diagnosticSource, /urai-spatial-missing-resource-diagnostics-7/)
   assert.match(diagnosticSource, /missing-resources\.json/)
   assert.match(diagnosticSource, /if \(actionable\.length\)/)
   assert.match(diagnosticSource, /process\.exitCode = 1/)

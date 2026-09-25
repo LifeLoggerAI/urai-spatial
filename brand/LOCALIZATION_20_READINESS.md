@@ -1,4 +1,4 @@
-# UrAi Twenty-Language Localization Readiness
+# UrAi 20+ Language Localization Readiness
 
 Status: source-language and engineering readiness authority. Machine-prepared text is not human-approved translation.
 
@@ -26,8 +26,9 @@ The governed initial preparation set is:
 18. Korean (`ko`)
 19. Italian (`it`)
 20. Persian / Farsi (`fa`)
+21. Dutch (`nl`)
 
-This list is a preparation target, not a claim that all locales are translated, reviewed, supported in production, or available at launch. Dutch, Polish, Hebrew, Traditional Chinese, and Thai are not launch-authority locales in this revision and may be added only by a later approved expansion.
+This 21-locale list satisfies the stated 20+ engineering-preparation target. It is a preparation target, not a claim that all locales are translated, reviewed, supported in production, or available at launch. Polish, Hebrew, Traditional Chinese, and Thai are not launch-authority locales in this revision and may be added only by a later approved expansion. Dutch is preparation-only and still requires native review before launch admission.
 
 ## Canonical string rules
 

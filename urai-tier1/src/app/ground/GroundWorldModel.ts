@@ -18,8 +18,7 @@ export type GroundChamberForm =
   | "reflection"
   | "vault"
   | "observatory"
-  | "aperture"
-  | "theater";
+  | "aperture";
 export type GroundLayer = "threshold" | "civic" | "continuity" | "deep";
 
 export type GroundDestination = {
@@ -216,8 +215,8 @@ export const DESTINATIONS: readonly GroundDestination[] = [
   },
   {
     id: "focus",
-    label: "Focus Chamber",
-    detail: "Selected-memory attention",
+    label: "Selected Memory Star",
+    detail: "Selected memory in close stellar focus",
     href: "/focus?demo=1&memoryId=demo:ground-focus&manifestId=demo-manifest&node=demo:ground-focus&from=ground",
     color: "#c4b5fd",
     position: [3.4, 4.25, -30.2],
@@ -233,8 +232,8 @@ export const DESTINATIONS: readonly GroundDestination[] = [
   },
   {
     id: "replay",
-    label: "Replay Theater",
-    detail: "Entered-memory cinema",
+    label: "Replay Memory",
+    detail: "Entered memory world",
     href: "/replay?demo=1&memoryId=demo:ground-replay&manifestId=demo-manifest&node=demo:ground-replay&from=ground",
     color: "#f9a8d4",
     position: [9.8, 3.6, -28.5],
@@ -242,7 +241,7 @@ export const DESTINATIONS: readonly GroundDestination[] = [
     lookAt: [9.8, 4.25, -28.5],
     workforceState: "idle",
     availability: "available",
-    chamberForm: "theater",
+    chamberForm: "aperture",
     layer: "deep",
     signature: "Replay Gate",
     emotionalSentence: "Enter the memory without surrendering the present.",

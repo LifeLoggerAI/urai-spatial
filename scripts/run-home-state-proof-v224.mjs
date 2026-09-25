@@ -1,0 +1,180 @@
+import { mkdir, readFile, rm, writeFile } from 'node:fs/promises'
+import { spawnSync } from 'node:child_process'
+import path from 'node:path'
+
+const authorityPath = new URL('../urai-tier1/src/app/currentHomeVisualAuthority.json', import.meta.url)
+const authority = JSON.parse(await readFile(authorityPath, 'utf8'))
+const supportedAuthoritySchemas = new Set(['urai-home-visual-authority-1', 'urai-home-visual-authority-2'])
+if (!supportedAuthoritySchemas.has(authority.schemaVersion)) throw new Error(`Home visual authority schema is unsupported: ${authority.schemaVersion}`)
+if (!authority.rendererOwner || !authority.artRevision || !authority.worldIdentifier || !authority.proofSchema) {
+  throw new Error('Home visual authority is missing a required identity field')
+}
+if (!Array.isArray(authority.runtimeAssets) || authority.runtimeAssets.length < 4 || !authority.runtimeAssets.includes(authority.rendererOwner)) {
+  throw new Error('Home visual authority runtime asset inventory is incomplete')
+}
+if (authority.artRevision !== 'v293-direct-bodyless-first-person-convergence') {
+  throw new Error(`Home state proof expected current V293 direct-first-person candidate authority; received ${authority.artRevision}`)
+}
+if (authority.certificationState !== 'candidate-requires-fresh-exact-head-pixels') {
+  throw new Error(`Home state proof requires uncertified exact-head candidate state; received ${authority.certificationState}`)
+}
+if (authority.lastCertifiedPredecessor?.orbVisualAuthority !== 'v288-grounded-biomorphic-reliquary') {
+  throw new Error('Home state proof lost V288 certified predecessor authority')
+}
+if (authority.currentRuntimeCandidate?.orbVisualAuthority !== 'v288-grounded-biomorphic-reliquary'
+  || authority.currentRuntimeCandidate?.orbInteractionAuthority !== 'v291-current-home-orb-state-and-speech-runtime'
+  || authority.currentRuntimeCandidate?.certified !== false
+  || authority.currentRuntimeCandidate?.requiredEvidence !== 'fresh-exact-head-source-build-runtime-and-literal-pixel-acceptance') {
+  throw new Error('Home state proof current V293 Home candidate contract is incomplete or falsely certified')
+}
+
+const capturePath = new URL('./capture-home-state-proof.mjs', import.meta.url)
+const generatedPath = new URL('./.capture-home-state-proof-v293.generated.mjs', import.meta.url)
+const original = await readFile(capturePath, 'utf8')
+const stalePredicate = "record.movement === 'walk-keyboard-click-touch'"
+const currentPredicate = "record.movement === 'shared-keyboard-touch-walk-look-interact'"
+const currentPredicateCount = original.split(currentPredicate).length - 1
+if (currentPredicateCount !== 1 || original.includes(stalePredicate)) {
+  throw new Error('Home state proof movement predicate is not bound exactly once to the current first-person authority')
+}
+
+// Headless Chromium exposes Web Speech API objects but does not start an OS speech
+// engine, so SpeechSynthesisUtterance.onstart never fires. Runtime authority correctly
+// refuses to publish acoustic `speaking` until that onstart edge exists. Install a
+// generated-proof-only transport object instead of mutating runtime source. Replacing the
+// window property is more deterministic than assigning inherited SpeechSynthesis methods,
+// which Chromium may keep native/read-only even when a plain assignment appears to work.
+const speechFixtureAnchor = 'window.__uraiObservedOrbStates = []'
+const speechFixtureCount = original.split(speechFixtureAnchor).length - 1
+if (speechFixtureCount !== 1) throw new Error('Home state proof device-speech fixture anchor is not unique')
+const speechFixture = `${speechFixtureAnchor}\n      window.__uraiProofSpeechTransport = 'deterministic-ci-device-speech-window-override-v2'\n      if ('speechSynthesis' in window) {\n        const nativeSynth = window.speechSynthesis\n        let proofSpeaking = false\n        const proofSynth = Object.create(nativeSynth ?? null)\n        Object.defineProperties(proofSynth, {\n          speaking: { configurable: true, enumerable: true, get: () => proofSpeaking },\n          pending: { configurable: true, enumerable: true, get: () => false },\n          paused: { configurable: true, enumerable: true, get: () => false },\n          cancel: { configurable: true, enumerable: true, writable: true, value: () => { proofSpeaking = false } },\n          pause: { configurable: true, enumerable: true, writable: true, value: () => {} },\n          resume: { configurable: true, enumerable: true, writable: true, value: () => {} },\n          getVoices: { configurable: true, enumerable: true, writable: true, value: () => nativeSynth?.getVoices?.() ?? [] },\n          speak: {\n            configurable: true, enumerable: true, writable: true,\n            value: (utterance) => {\n              proofSpeaking = true\n              window.queueMicrotask(() => utterance.onstart?.(new Event('start')))\n              window.setTimeout(() => utterance.onboundary?.({ charIndex: Math.min(8, utterance.text?.length ?? 0) }), 120)\n              window.setTimeout(() => { proofSpeaking = false; utterance.onend?.(new Event('end')) }, 4200)\n            },\n          },\n        })\n        try {\n          Object.defineProperty(window, 'speechSynthesis', { configurable: true, enumerable: true, value: proofSynth })\n        } catch {\n          try { Object.defineProperty(nativeSynth, 'cancel', { configurable: true, value: proofSynth.cancel }) } catch {}\n          try { Object.defineProperty(nativeSynth, 'speak', { configurable: true, value: proofSynth.speak }) } catch {}\n          try { Object.defineProperty(nativeSynth, 'speaking', { configurable: true, get: () => proofSpeaking }) } catch {}\n        }\n      }`
+
+const lifecycleRecordAnchor = "const record = { id, pageErrors, passed: false, reducedMotion }"
+const lifecycleRecordCount = original.split(lifecycleRecordAnchor).length - 1
+if (lifecycleRecordCount !== 1) throw new Error('Home state proof Orb lifecycle receipt anchor is not unique')
+const lifecycleRecordWithFixture = "const record = { id, pageErrors, passed: false, reducedMotion, speechTransportFixture: 'deterministic-ci-device-speech-window-override-v2', audibleQualityCertified: false }"
+
+let derived = original
+  .replace(speechFixtureAnchor, speechFixture)
+  .replace(lifecycleRecordAnchor, lifecycleRecordWithFixture)
+
+const readinessSource = `async function waitForHomeReady(page) {
+  const owner = page.locator(ownerSelector)
+  await owner.waitFor({ state: 'visible', timeout: 45_000 })
+  await page.waitForFunction(
+    (selector) => document.querySelector(selector)?.getAttribute('data-home-assets-ready') === 'true',
+    ownerSelector,
+    { timeout: 45_000 },
+  )
+  return owner
+}`
+const readinessReplacement = `async function waitForHomeReady(page) {
+  const owner = page.locator(ownerSelector)
+  await owner.waitFor({ state: 'visible', timeout: 90_000 })
+  await page.waitForFunction(
+    (selector) => document.querySelector(selector)?.getAttribute('data-home-assets-ready') === 'true',
+    ownerSelector,
+    { timeout: 90_000 },
+  )
+  return owner
+}`
+if ((derived.split(readinessSource).length - 1) !== 1) throw new Error('Home proof readiness anchor is not unique')
+derived = derived.replace(readinessSource, readinessReplacement)
+
+// Current Home is direct bodyless first-person on initial render; there is no
+// separate enter-first-person control to patch. Fail closed if the proof source
+// regresses to the retired entry transaction or loses the current movement truth.
+if (original.includes('enterFirstPerson')) {
+  throw new Error('Home state proof unexpectedly restored the retired first-person entry transaction')
+}
+for (const marker of [
+  "record.neutralPresentationScreenshot = await screenshotRecord('direct-first-person-home')",
+  "record.firstPersonMovement = await owner.getAttribute('data-home-movement')",
+  "record.firstPersonMovement === 'shared-keyboard-touch-walk-look-interact'",
+]) {
+  if (!original.includes(marker)) throw new Error(`Home state proof direct-first-person marker missing: ${marker}`)
+}
+
+const keyboardProofReplacements = [
+  {
+    source: 'await openOrb.focus()', expected: 1,
+    replacement: "await focusTestIdForKeyboard(page, 'home-semantic-orb')",
+  },
+  { source: "await openOrb.press('Enter')", expected: 1, replacement: "await page.keyboard.press('Enter')" },
+  {
+    source: 'await message.focus()', expected: 2,
+    replacement: "await message.press('Shift', { timeout: 60_000 })",
+  },
+  {
+    source: 'await consent.focus()', expected: 2,
+    replacement: "// native checkbox keyboard activation below performs its own focus transaction",
+  },
+  { source: "await consent.press('Space')", expected: 2, replacement: "await consent.press('Space', { timeout: 60_000 })" },
+  {
+    source: 'await send.focus()', expected: 1,
+    replacement: "// native Send keyboard activation below performs its own focus transaction",
+  },
+  { source: "send.press('Enter')", expected: 1, replacement: "send.press('Enter', { timeout: 60_000 })" },
+]
+for (const replacement of keyboardProofReplacements) {
+  const count = derived.split(replacement.source).length - 1
+  if (count !== replacement.expected) throw new Error(`Home state proof keyboard anchor mismatch for ${replacement.source}: expected ${replacement.expected}, received ${count}`)
+  derived = derived.replaceAll(replacement.source, replacement.replacement)
+}
+
+const orbSummarySource = "const talk = page.locator('summary').filter({ hasText: 'Talk with Orb' }).first()"
+const orbSummaryReplacement = "const talk = page.locator('summary:visible').filter({ hasText: 'Talk with Orb' }).first()"
+if ((derived.split(orbSummarySource).length - 1) !== 1) throw new Error('Home Orb visible summary anchor is not unique')
+derived = derived.replace(orbSummarySource, orbSummaryReplacement)
+
+const passportNavigationSource = "const passportNavigation = page.waitForURL((url) => url.pathname.replace(/\\/+$/, '') === '/passport', { timeout: 45_000 })"
+const passportNavigationReplacement = "const passportNavigation = page.waitForURL((url) => url.pathname.replace(/\\/+$/, '') === '/passport', { timeout: 60_000, waitUntil: 'domcontentloaded' })"
+if ((derived.split(passportNavigationSource).length - 1) !== 1) throw new Error('Home Passport navigation anchor is not unique')
+derived = derived.replace(passportNavigationSource, passportNavigationReplacement)
+
+const returnReadinessSource = "    }, ownerSelector, { timeout: 45_000 })\n    record.returnStableState"
+const returnReadinessReplacement = "    }, ownerSelector, { timeout: 90_000 })\n    record.returnStableState"
+if ((derived.split(returnReadinessSource).length - 1) !== 1) throw new Error('Home return readiness anchor is not unique')
+derived = derived.replace(returnReadinessSource, returnReadinessReplacement)
+
+await writeFile(generatedPath, derived, 'utf8')
+let result
+try {
+  result = spawnSync(process.execPath, ['scripts/.capture-home-state-proof-v293.generated.mjs'], {
+    cwd: process.cwd(),
+    env: process.env,
+    encoding: 'utf8',
+  })
+} finally {
+  await rm(generatedPath, { force: true }).catch(() => {})
+}
+
+if (result.stdout) process.stdout.write(result.stdout)
+if (result.stderr) process.stderr.write(result.stderr)
+if (result.status !== 0) {
+  const outputDir = path.resolve(process.env.URAI_PROOF_DIR || 'artifacts/home-state-proof')
+  await mkdir(outputDir, { recursive: true })
+  let failingRecord = null
+  try {
+    const receipt = JSON.parse(await readFile(path.join(outputDir, 'receipt.json'), 'utf8'))
+    failingRecord = receipt.errors?.[0] ?? null
+  } catch {}
+  await writeFile(path.join(outputDir, 'runner-failure.json'), `${JSON.stringify({
+    schemaVersion: 'urai-home-state-runner-failure-2',
+    exactHead: process.env.URAI_EXACT_HEAD || 'local',
+    authority,
+    derivedProof: {
+      source: 'capture-home-state-proof.mjs',
+      replacement: 'deterministic CI-only device speech transport replaces the headless window speechSynthesis transport and supplies onstart/boundary/onend; runtime state/rendering remains authoritative; generated proof uses explicit DOM focus verification plus native page.keyboard activation and keeps the CI-only device-speech window long enough for constrained software-WebGL rendering',
+      reason: 'headless Chromium exposes Web Speech but does not start an OS speech engine, and live WebGL rendering can keep locator.focus actionability unstable even when the semantic control is present and natively focusable; proof must not force runtime to fake acoustic speaking or bypass keyboard focus',
+      audibleQualityCertified: false,
+    },
+    exitStatus: result.status,
+    signal: result.signal,
+    failedPredicate: failingRecord?.error || failingRecord?.id || 'capture-process-failed-before-receipt',
+    failingRecord,
+    stdout: result.stdout || '',
+    stderr: result.stderr || '',
+  }, null, 2)}\n`)
+  process.exitCode = result.status ?? 1
+}

@@ -5,33 +5,31 @@ import { useEffect, useState } from 'react'
 import { getAuth, onAuthStateChanged, type User } from 'firebase/auth'
 import { app, firebasePublicEnvReady } from '@/lib/firebase/client'
 import { setHapticsEnabled, URAI_HAPTICS_STORAGE_KEY } from '@/spatial/haptics/HapticRuntime'
+import { useSpatialSettingsStore } from '@/spatial/settings/spatialSettingsStore'
+
+const AUDIO_CONSENT_KEY = 'urai:spatial-audio-consent-v1'
+const AUDIO_MUTE_KEY = 'urai:spatial-audio-muted-v1'
 
 function readHapticsPreference() {
   if (typeof window === 'undefined') return true
+  try { return window.localStorage.getItem(URAI_HAPTICS_STORAGE_KEY) !== 'false' } catch { return true }
+}
+
+function readAudioPreference() {
+  if (typeof window === 'undefined') return false
   try {
-    return window.localStorage.getItem(URAI_HAPTICS_STORAGE_KEY) !== 'false'
-  } catch {
-    return true
-  }
+    return window.sessionStorage.getItem(AUDIO_CONSENT_KEY) === 'true' && window.sessionStorage.getItem(AUDIO_MUTE_KEY) === 'false'
+  } catch { return false }
 }
 
-type GoogleConnection = {
-  connected: boolean
-  status: string
-  scopes: string[]
-  expiresAt: number | null
-}
-
+type GoogleConnection = { connected: boolean; status: string; scopes: string[]; expiresAt: number | null }
 type GoogleUiState = 'checking' | 'signed-out' | 'ready' | 'working' | 'error'
 
 async function googleRequest<T>(path: string, user: User): Promise<T> {
   const token = await user.getIdToken()
   const response = await fetch(path, {
     method: 'POST',
-    headers: {
-      Authorization: `Bearer ${token}`,
-      'Content-Type': 'application/json',
-    },
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
     body: '{}',
     cache: 'no-store',
   })
@@ -41,9 +39,13 @@ async function googleRequest<T>(path: string, user: User): Promise<T> {
 }
 
 export default function DeviceSettingsClient() {
+  const reducedMotion = useSpatialSettingsStore((state) => state.reducedMotion)
+  const setReducedMotion = useSpatialSettingsStore((state) => state.setReducedMotion)
   const [haptics, setHaptics] = useState(true)
+  const [audioEnabled, setAudioEnabled] = useState(false)
   const [supportsVibration, setSupportsVibration] = useState(false)
   const [supportsGamepad, setSupportsGamepad] = useState(false)
+  const [systemReducedMotion, setSystemReducedMotion] = useState(false)
   const [user, setUser] = useState<User | null>(null)
   const [googleState, setGoogleState] = useState<GoogleUiState>(firebasePublicEnvReady ? 'checking' : 'signed-out')
   const [googleConnection, setGoogleConnection] = useState<GoogleConnection | null>(null)
@@ -51,8 +53,16 @@ export default function DeviceSettingsClient() {
 
   useEffect(() => {
     setHaptics(readHapticsPreference())
+    setAudioEnabled(readAudioPreference())
     setSupportsVibration(typeof navigator !== 'undefined' && typeof navigator.vibrate === 'function')
     setSupportsGamepad(typeof navigator !== 'undefined' && typeof navigator.getGamepads === 'function')
+    if (typeof window !== 'undefined' && window.matchMedia) {
+      const query = window.matchMedia('(prefers-reduced-motion: reduce)')
+      const sync = () => setSystemReducedMotion(query.matches)
+      sync()
+      query.addEventListener?.('change', sync)
+      return () => query.removeEventListener?.('change', sync)
+    }
   }, [])
 
   useEffect(() => {
@@ -92,9 +102,11 @@ export default function DeviceSettingsClient() {
     else if (result === 'error') setGoogleMessage('Google could not complete the connection. Try again when ready.')
   }, [])
 
-  const updateHaptics = (enabled: boolean) => {
-    setHaptics(enabled)
-    setHapticsEnabled(enabled)
+  const updateHaptics = (enabled: boolean) => { setHaptics(enabled); setHapticsEnabled(enabled) }
+  const updateAudio = (enabled: boolean) => {
+    setAudioEnabled(enabled)
+    window.dispatchEvent(new CustomEvent('urai:audio-consent', { detail: { enabled } }))
+    window.dispatchEvent(new CustomEvent('urai:audio-mute', { detail: { muted: !enabled } }))
   }
 
   const connectGoogle = async () => {
@@ -126,18 +138,30 @@ export default function DeviceSettingsClient() {
     }
   }
 
+  const panel = {border:'1px solid rgba(197,242,247,.16)',borderRadius:28,padding:'clamp(22px,4vw,34px)',background:'rgba(9,20,28,.66)',backdropFilter:'blur(18px)'} as const
+
   return (
     <main style={{minHeight:'100svh',background:'radial-gradient(circle at 50% 0%,#10202a 0,#071018 42%,#02060a 100%)',color:'#f4f8fb',padding:'max(28px,env(safe-area-inset-top)) clamp(18px,5vw,72px) max(44px,env(safe-area-inset-bottom))',fontFamily:'var(--font-sans)'}} data-route-owner="device-settings">
       <div style={{maxWidth:860,margin:'0 auto'}}>
         <nav aria-label="Settings navigation" style={{display:'flex',justifyContent:'space-between',gap:16,alignItems:'center'}}><Link href="/home" style={{color:'#c9eef3',textDecoration:'none'}}>← Home</Link><Link href="/passport" style={{color:'#c9eef3',textDecoration:'none'}}>Passport</Link></nav>
-        <header style={{padding:'clamp(42px,8vw,92px) 0 34px'}}><p style={{letterSpacing:'.22em',textTransform:'uppercase',fontSize:11,color:'#8fb4bd'}}>Device feel</p><h1 style={{fontSize:'clamp(42px,8vw,78px)',lineHeight:.94,letterSpacing:'-.055em',margin:'10px 0 18px'}}>How URAI meets you.</h1><p style={{maxWidth:620,fontSize:'clamp(16px,2vw,20px)',lineHeight:1.6,color:'#c4d1d6'}}>Local sensory preferences live on this device. Private data permissions remain in the Consent Sanctuary, and ownership controls remain in Passport.</p></header>
+        <header style={{padding:'clamp(42px,8vw,92px) 0 34px'}}><p style={{letterSpacing:'.22em',textTransform:'uppercase',fontSize:11,color:'#8fb4bd'}}>Device feel</p><h1 style={{fontSize:'clamp(42px,8vw,78px)',lineHeight:.94,letterSpacing:'-.055em',margin:'10px 0 18px'}}>How URAI meets you.</h1><p style={{maxWidth:620,fontSize:'clamp(16px,2vw,20px)',lineHeight:1.6,color:'#c4d1d6'}}>Local sensory preferences live on this device or session. Private data permissions remain in the Consent Sanctuary, and ownership controls remain in Passport.</p></header>
 
-        <section aria-labelledby="haptics-heading" style={{border:'1px solid rgba(197,242,247,.16)',borderRadius:28,padding:'clamp(22px,4vw,34px)',background:'rgba(9,20,28,.66)',backdropFilter:'blur(18px)'}}>
+        <section aria-labelledby="motion-heading" style={panel}>
+          <div style={{display:'flex',justifyContent:'space-between',gap:24,alignItems:'start',flexWrap:'wrap'}}><div><p style={{margin:0,fontSize:11,letterSpacing:'.18em',textTransform:'uppercase',color:'#87aab3'}}>Motion comfort</p><h2 id="motion-heading" style={{fontSize:30,margin:'8px 0'}}>Reduce motion</h2><p style={{maxWidth:560,margin:0,color:'#b8c8ce',lineHeight:1.55}}>Reduce nonessential animation and shorten spatial transitions across the UrAi shell and supported worlds. Your device or browser reduced-motion preference always remains respected.</p></div><label style={{display:'inline-flex',gap:12,alignItems:'center',fontWeight:700}}><input type="checkbox" checked={reducedMotion} onChange={(event)=>setReducedMotion(event.currentTarget.checked)} style={{width:24,height:24}}/><span>{reducedMotion?'On':'Off'}</span></label></div>
+          <p role="status" aria-live="polite" style={{margin:'22px 0 0',fontSize:13,color:'#8fb4bd'}}>{systemReducedMotion ? 'Your device or browser is also requesting reduced motion, so calmer motion remains active.' : reducedMotion ? 'UrAi reduced motion is enabled on this device.' : 'UrAi follows normal motion unless your device requests reduced motion.'}</p>
+        </section>
+
+        <section aria-labelledby="haptics-heading" style={{...panel,marginTop:18}}>
           <div style={{display:'flex',justifyContent:'space-between',gap:24,alignItems:'start',flexWrap:'wrap'}}><div><p style={{margin:0,fontSize:11,letterSpacing:'.18em',textTransform:'uppercase',color:'#87aab3'}}>Tactile language</p><h2 id="haptics-heading" style={{fontSize:30,margin:'8px 0'}}>Haptics</h2><p style={{maxWidth:560,margin:0,color:'#b8c8ce',lineHeight:1.55}}>Allow URAI to use short local vibration or compatible controller pulses for portals, return paths and governed interaction cues. No haptic event is sent to a server.</p></div><label style={{display:'inline-flex',gap:12,alignItems:'center',fontWeight:700}}><input type="checkbox" checked={haptics} onChange={(event)=>updateHaptics(event.currentTarget.checked)} style={{width:24,height:24}}/><span>{haptics?'On':'Off'}</span></label></div>
           <p role="status" style={{margin:'22px 0 0',fontSize:13,color:'#8fb4bd'}}>{supportsVibration || supportsGamepad ? 'This browser exposes a compatible local haptic path. Physical feel still depends on the connected hardware.' : 'No compatible local haptic actuator is exposed by this browser. URAI will remain silent without treating that as an error.'}</p>
         </section>
 
-        <section aria-labelledby="google-workspace-heading" style={{marginTop:18,border:'1px solid rgba(197,242,247,.16)',borderRadius:28,padding:'clamp(22px,4vw,34px)',background:'rgba(9,20,28,.66)',backdropFilter:'blur(18px)'}}>
+        <section aria-labelledby="audio-heading" style={{...panel,marginTop:18}}>
+          <div style={{display:'flex',justifyContent:'space-between',gap:24,alignItems:'start',flexWrap:'wrap'}}><div><p style={{margin:0,fontSize:11,letterSpacing:'.18em',textTransform:'uppercase',color:'#87aab3'}}>Spatial sound</p><h2 id="audio-heading" style={{fontSize:30,margin:'8px 0'}}>World audio</h2><p style={{maxWidth:560,margin:0,color:'#b8c8ce',lineHeight:1.55}}>Allow this session to play the same governed ambient beds and spatial cues used by Home, Ground, Life Map, Focus and Replay. Turning it off stops ambient sound without removing accessible text equivalents.</p></div><label style={{display:'inline-flex',gap:12,alignItems:'center',fontWeight:700}}><input type="checkbox" checked={audioEnabled} onChange={(event)=>updateAudio(event.currentTarget.checked)} style={{width:24,height:24}}/><span>{audioEnabled?'On':'Off'}</span></label></div>
+          <p role="status" style={{margin:'22px 0 0',fontSize:13,color:'#8fb4bd'}}>{audioEnabled ? 'Spatial sound is enabled for this session.' : 'Spatial sound is muted until you choose to enable it.'}</p>
+        </section>
+
+        <section aria-labelledby="google-workspace-heading" style={{...panel,marginTop:18}}>
           <div style={{display:'flex',justifyContent:'space-between',gap:24,alignItems:'start',flexWrap:'wrap'}}>
             <div style={{maxWidth:590}}><p style={{margin:0,fontSize:11,letterSpacing:'.18em',textTransform:'uppercase',color:'#87aab3'}}>Connected data</p><h2 id="google-workspace-heading" style={{fontSize:30,margin:'8px 0'}}>Google Workspace</h2><p style={{margin:0,color:'#b8c8ce',lineHeight:1.55}}>Connect Gmail read access, Calendar events, Contacts, and user-selected Drive files through Google’s permission screen. The connection is optional and revocable.</p></div>
             {user ? (

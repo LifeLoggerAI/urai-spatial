@@ -310,7 +310,7 @@ export default function ConsentSanctuaryClient() {
   const requiredDeletionText = DELETION_SCOPES.find(([scope]) => scope === deletionScope)?.[2] ?? 'CONFIRM DELETE'
 
   return (
-    <main className="consentSanctuary" data-route-owner="consent-sanctuary" data-privacy-source={loadState} data-enforcement-state={policy.enforcement.state}>
+    <main className="consentSanctuary" data-route-owner="consent-sanctuary" data-launch-surface="premium-privacy-consent-console" data-privacy-source={loadState} data-enforcement-state={policy.enforcement.state}>
       <a className="consentSkip" href="#consent-controls">Skip to direct controls</a>
       <div className="consentWorld" aria-hidden="true">
         {webglAvailable ? <Suspense fallback={null}><SanctuaryWorld policy={policy} selectedDomain={selectedDomain} onSelect={setSelectedDomain} reducedMotion={reducedMotion} /></Suspense> : (

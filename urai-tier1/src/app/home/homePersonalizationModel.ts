@@ -61,6 +61,7 @@ export type HomeSceneInput = {
   readonly permissionsAvailable: boolean
   readonly dataAvailable?: boolean
   readonly reviewFixture?: 'safe-private' | null
+  readonly reviewWeatherTone?: HomeSceneEnvironment['weatherTone'] | null
   readonly evidence: readonly HomeEvidenceRef[]
   readonly now: Date
 }
@@ -81,7 +82,7 @@ export function buildHomePersonalizedScene(input: HomeSceneInput): HomePersonali
       privateDataMounted: false,
       reviewFixture: 'safe-private',
       explanation: 'Disclosed privacy-safe personalized fixture. These signals are synthetic review inputs, not user records.',
-    })
+    }, input.reviewWeatherTone)
   }
 
   if (input.requestedMode === 'explicit-sample') {
@@ -144,6 +145,7 @@ function buildPrivateScene(
   evidence: readonly HomeEvidenceRef[],
   now: Date,
   options: Pick<HomePersonalizedScene, 'disclosedSample' | 'privateDataMounted' | 'reviewFixture'> & { explanation: string },
+  reviewWeatherTone?: HomeSceneEnvironment['weatherTone'] | null,
 ): HomePersonalizedScene {
   const places = evidence.slice(0, 12).map<HomeScenePlace>((item, index) => ({
     id: `private-place-${index}-${item.id}`,
@@ -163,7 +165,7 @@ function buildPrivateScene(
     places,
     environment: {
       ...emptyEnvironment(now),
-      weatherTone: deriveWeatherTone(evidence),
+      weatherTone: reviewWeatherTone ?? deriveWeatherTone(evidence),
       explanation: options.explanation,
       evidence: evidence.filter((item) => ['emotional-weather', 'recovery', 'stress', 'cognitive-load'].includes(item.kind)),
     },
@@ -218,6 +220,7 @@ function safePrivateFixtureEvidence(): readonly HomeEvidenceRef[] {
   return [
     { id: 'fixture-memory', kind: 'memory', sourceLabel: 'a synthetic memory-place review signal', permission: 'the disclosed safe-private fixture' },
     { id: 'fixture-relationship', kind: 'relationship', sourceLabel: 'a synthetic relationship review signal', permission: 'the disclosed safe-private fixture' },
+    { id: 'fixture-emotional-weather', kind: 'emotional-weather', sourceLabel: 'a synthetic emotional-weather review signal', permission: 'the disclosed safe-private fixture' },
     { id: 'fixture-recovery', kind: 'recovery', sourceLabel: 'a synthetic recovery review signal', permission: 'the disclosed safe-private fixture' },
     { id: 'fixture-routine', kind: 'location-routine', sourceLabel: 'a synthetic routine review signal', permission: 'the disclosed safe-private fixture' },
     { id: 'fixture-stress', kind: 'stress', sourceLabel: 'a synthetic stress review signal', permission: 'the disclosed safe-private fixture' },

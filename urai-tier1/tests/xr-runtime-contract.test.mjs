@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict'
+import { readFile } from 'node:fs/promises'
 import test from 'node:test'
 import { createEmptyWorldSnapshot, reduceWorldSnapshot } from '../src/spatial/xr/uraiXrProductionRuntime.ts'
 import { createMemoryPersistence, getOrCreateXrSnapshot } from '../src/spatial/xr/uraiXrPersistence.ts'
@@ -102,11 +103,21 @@ test('SFU adapter creates rooms, peers, tracks and subscriptions coherently', as
 })
 
 test('home scene source exposes XR metadata without removing composition anchors', async () => {
-  const { readFile } = await import('node:fs/promises')
   const source = await readFile(new URL('../src/spatial/home/visual/HomeScene.tsx', import.meta.url), 'utf8')
   assert.match(source, /data-xr-enabled/)
   assert.match(source, /data-xr-navmesh/)
   assert.match(source, /urai-sky-deep/)
   assert.match(source, /orb-companion/)
   assert.match(source, /urai-ground/)
+})
+
+
+test('conditional XR routes fail closed with notFound when the release gate is disabled', async () => {
+  const spatialPage = await readFile(new URL('../src/app/spatial/ar-vr/page.tsx', import.meta.url), 'utf8')
+  const canonicalPage = await readFile(new URL('../src/app/xr/page.tsx', import.meta.url), 'utf8')
+  for (const page of [spatialPage, canonicalPage]) {
+    assert.match(page, /postLaunchSpatialRealmsEnabled\(\)/)
+    assert.match(page, /notFound\(\)/)
+    assert.doesNotMatch(page, /return <XrUnavailableBoundary \/>/)
+  }
 })

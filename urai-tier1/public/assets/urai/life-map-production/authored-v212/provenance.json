@@ -1,0 +1,16 @@
+{
+  "asset": "life-map-memory-sanctuary-v212.glb",
+  "sha256": "100149447d2c2b2652d090908067a310f7affe43755c49dc40678860a46eed6f",
+  "sourceMaster": "life-map-memory-sanctuary-v212.blend",
+  "generator": "urai-tier1/scripts/blender/generate-life-map-sanctuary-v212.py",
+  "generatorSeed": 1177212,
+  "toolchain": [
+    "Blender 4.0.2",
+    "glTF Transform 4.2.1 meshopt and WebP optimization"
+  ],
+  "designIntent": "One welded, camera-native, traversable memory valley with integrated lineage, archive, and history landforms; localized grounded emissions; authored erosion, strata, and material variation.",
+  "textureProvenance": "Deterministic original 384px procedural strata texture generated and packed by the Blender source script; no photographic or third-party source.",
+  "externalAssets": [],
+  "license": "Original work for the private LifeLoggerAI repository; no third-party assets.",
+  "driveSourceFolderId": "1UZkAmVNG_rgti2qt_13rPvkvfVvw3KPr"
+}

@@ -5,8 +5,8 @@
   "targetRoutes": [
     "/passport"
   ],
-  "bytes": 347512,
-  "sha256": "15f1f7634389994715e4f263eecf67731b52a8e9ef62a22eae889b6054213257",
+  "bytes": 347064,
+  "sha256": "c8b9713ae9e03f37c02d688de4b1d930461a58261c21ce0d0e312e9552b68087",
   "measured": {
     "triangleCount": 7878,
     "nodeCount": 48,
@@ -23,7 +23,7 @@
   "fallback": "semantic-passport-status-room",
   "source": "URAI deterministic candidate forge; replaceable by reviewed provider asset",
   "license": "URAI Labs internal production asset",
-  "generatedBy": "URAI Labs Final GLB Forge 1.0; bounded Passport identity-core pole-normal repair; reconciled to urai-final-glb-production-pack-v1",
-  "generatedAt": "2026-08-09T00:09:34.176Z",
+  "generatedBy": "URAI Labs Final GLB Forge 1.0; bounded Passport identity-core pole-normal repair; reconciled to urai-final-glb-production-pack-v1; bounded glTF material alpha-cutoff repair",
+  "generatedAt": "2026-09-25T15:28:19.201Z",
   "releaseState": "candidate-not-production-ready"
 }

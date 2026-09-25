@@ -1,0 +1,136 @@
+name: Reference Estate Exact-Head Capture
+
+on:
+  push:
+    branches:
+      - unified-spatial-convergence-20260916
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: reference-estate-proof-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+env:
+  URAI_EXACT_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
+  URAI_REFERENCE_OUT_DIR: artifacts/reference-estate-proof
+  URAI_REFERENCE_BASE_URL: http://127.0.0.1:4173
+  PLAYWRIGHT_BROWSERS_PATH: '0'
+  NEXT_PUBLIC_URAI_EXPLICIT_DEMO: 'true'
+  NEXT_PUBLIC_URAI_ACCEPTANCE_FIXTURES: '1'
+  # Acceptance-build only: expose implemented post-launch realms for deterministic
+  # Shadow/Council reference capture without changing production fail-closed defaults.
+  URAI_ENABLE_POST_LAUNCH_REALMS: 'true'
+
+jobs:
+  capture:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - name: Checkout exact candidate
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ env.URAI_EXACT_HEAD }}
+          fetch-depth: 1
+          persist-credentials: false
+          show-progress: false
+
+      - name: Prove exact clean candidate
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$URAI_EXACT_HEAD"
+          test -z "$(git status --porcelain --untracked-files=all)"
+
+      - name: Package active reference image candidates
+        run: node scripts/package-reference-image-candidates.mjs
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1
+        with:
+          version: 10.0.0
+          run_install: false
+
+      - name: Setup Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Install exact lockfile
+        run: |
+          corepack enable
+          pnpm install --frozen-lockfile
+
+      - name: Build exact static reference candidate
+        shell: bash
+        env:
+          NEXT_PUBLIC_URAI_BUILD_SHA: ${{ env.URAI_EXACT_HEAD }}
+          URAI_FIREBASE_STATIC_EXPORT: 'true'
+        run: |
+          set -euo pipefail
+          runtime_route="urai-tier1/src/app/api/entitlement/route.ts"
+          staged_route="${runtime_route}.reference-runtime-only"
+
+          # The reference estate is a static visual artifact. The authenticated
+          # entitlement GET handler is deliberately server-only because its
+          # response depends on the incoming Bearer token. Next static export
+          # cannot truthfully render request-dependent GET route handlers.
+          test -f "$runtime_route"
+          test ! -e "$staged_route"
+          git cat-file -e "$URAI_EXACT_HEAD:$runtime_route"
+
+          restore_runtime_route() {
+            if test -e "$staged_route"; then
+              mv "$staged_route" "$runtime_route"
+            fi
+          }
+          trap restore_runtime_route EXIT
+
+          mv "$runtime_route" "$staged_route"
+          pnpm build:static
+
+          restore_runtime_route
+          trap - EXIT
+
+          # Prove the production API source was restored byte-for-byte and the
+          # reference-only staging name did not leak into the candidate tree.
+          test ! -e "$staged_route"
+          git diff --exit-code -- "$runtime_route"
+
+      - name: Serve exact static candidate
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts
+          python3 -m http.server 4173 --bind 127.0.0.1 --directory urai-tier1/out > artifacts/reference-estate-http.log 2>&1 &
+          for attempt in $(seq 1 60); do
+            if curl --fail --silent http://127.0.0.1:4173/possible-futures/ >/dev/null; then
+              exit 0
+            fi
+            sleep 1
+          done
+          cat artifacts/reference-estate-http.log
+          exit 1
+
+      - name: Install Chromium
+        run: pnpm --dir urai-tier1 exec playwright install chromium --with-deps
+
+      - name: Capture exact-head reference estate
+        run: node scripts/capture-reference-estate.mjs
+
+      - name: Upload exact-head reference estate
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: reference-estate-proof-${{ env.URAI_EXACT_HEAD }}
+          path: |
+            artifacts/reference-estate-proof
+            artifacts/reference-image-candidates
+            artifacts/reference-estate-http.log
+          if-no-files-found: error
+          retention-days: 90

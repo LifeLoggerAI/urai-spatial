@@ -1,0 +1,43 @@
+name: Home V66 Retained Pixel Composition Repair
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: home-v66-retained-pixel-composition-repair
+  cancel-in-progress: true
+
+jobs:
+  verify-repair:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Checkout exact candidate
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Verify frozen bounded retained-pixel repair
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/apply-home-v66-retained-pixel-composition-repair.py
+          git diff --check
+          test -z "$(git status --porcelain --untracked-files=all)"
+
+      - name: Verify focused Home contracts
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd urai-tier1
+          node --test --test-concurrency=1 \
+            tests/home-cohesion-contract.test.mjs \
+            tests/embodied-exploration-contract.test.mjs \
+            tests/continuous-spatial-restoration-contract.test.mjs \
+            tests/home-ground-lifemap-art-bible-contract.test.mjs \
+            tests/home-relic-machine-realism-contract.test.mjs

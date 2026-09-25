@@ -93,7 +93,7 @@
 
 .card :global(.tier-one-form input) {
   width: min(280px, 72vw);
-  min-height: 42px;
+  min-height: 48px;
   border-radius: 999px;
   border: 1px solid rgba(180, 215, 255, 0.22);
   background: rgba(4, 8, 20, 0.62);
@@ -103,10 +103,19 @@
 }
 
 .card :global(.tier-one-form button) {
-  min-height: 42px;
+  min-height: 48px;
   border-radius: 999px;
   border: 1px solid rgba(142, 220, 255, 0.32);
   background: rgba(95, 125, 255, 0.2);
   color: #edf7ff;
   padding: 0 16px;
+}
+
+
+.card :global(.tier-one-route-card__button) {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 48px;
+  min-height: 48px;
 }

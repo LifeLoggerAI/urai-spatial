@@ -1,9 +1,10 @@
 import FinalFocusChamber from './FocusChamberClient'
 import './focus-stable-controls.css'
+import './focus-launch-visual-polish.css'
 
 export const metadata = {
   title: 'URAI Focus',
-  description: 'Enter the private spatial chamber held around a selected Life Map memory star.',
+  description: 'Enter Focus, the close-range selected-memory experience reached from a Life Map Memory Star.',
 }
 
 export default function FocusRoutePage() {

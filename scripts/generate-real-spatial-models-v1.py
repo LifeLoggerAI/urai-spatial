@@ -19,15 +19,12 @@ MODEL_PATHS = {
     'entry-chamber-shell-v1': 'entry-chamber/models/entry-chamber-shell-v1.gltf',
     'entry-floor-ring-v1': 'entry-chamber/models/entry-floor-ring-v1.gltf',
     'central-orb-v1': 'entry-chamber/models/central-orb-v1.gltf',
-    'universal-portal-ring-v1': 'shared/models/universal-portal-ring-v1.gltf',
     'ground-descent-hatch-v1': 'entry-chamber/models/ground-descent-hatch-v1.gltf',
     'ground-room-shell-v1': 'ground-room/models/ground-room-shell-v1.gltf',
     'ground-terminal-v1': 'ground-room/models/ground-terminal-v1.gltf',
     'agent-source-station-v1': 'ground-room/models/agent-source-station-v1.gltf',
     'life-map-sky-dome-v1': 'life-map/models/life-map-sky-dome-v1.gltf',
     'star-memory-node-v1': 'life-map/models/star-memory-node-v1.gltf',
-    'focus-star-tunnel-v1': 'focus-star/models/focus-star-tunnel-v1.gltf',
-    'replay-film-portal-v1': 'replay-portal/models/replay-film-portal-v1.gltf',
     'passport-identity-plinth-v1': 'passport-room/models/passport-identity-plinth-v1.gltf',
     'status-control-board-v1': 'status-room/models/status-control-board-v1.gltf',
 }
@@ -129,12 +126,6 @@ meshes=[sphere(0.72,color='glass',subdivisions=3),sphere(0.31,color='white',subd
 for y in (-0.38,0.38): meshes.append(sphere(0.055,(0,y,0),'gold',1))
 scene_export('central-orb-v1',meshes)
 
-meshes=[torus(1.65,0.18,color='obsidian',major_sections=64,minor_sections=16),torus(1.62,0.08,color='cyan',major_sections=64,minor_sections=12),torus(1.33,0.035,color='violet',major_sections=64,minor_sections=8)]
-for i in range(8):
-    angle=2*np.pi*i/8
-    meshes.append(sphere(0.095,(1.62*np.cos(angle),1.62*np.sin(angle),0),'white',1))
-meshes += [box((1.2,0.18,0.7),(0,-1.78,0),'obsidian'), box((0.7,0.08,0.4),(0,-1.63,0),'blue')]
-scene_export('universal-portal-ring-v1',meshes)
 
 meshes=[cyl(1.7,0.22,color='obsidian',sections=64),torus(1.45,0.10,(0,0.14,0),'gold',64,12),cyl(1.05,0.12,(0,0.10,0),'slate',48)]
 for i in range(8):
@@ -174,16 +165,7 @@ for i in range(8):
     meshes.append(ray)
 scene_export('star-memory-node-v1',meshes)
 
-meshes=[]
-for i in range(10):
-    meshes.append(torus(1.65-i*0.07,0.045,(0,0,-i*0.65),'cyan' if i%2==0 else 'violet',48,8))
-meshes += [sphere(0.38,(0,0,-6.6),'white',2),sphere(0.62,(0,0,-6.6),'glass',2)]
-scene_export('focus-star-tunnel-v1',meshes)
 
-meshes=[torus(1.65,0.12,color='violet',major_sections=64,minor_sections=12),torus(1.38,0.035,color='cyan',major_sections=64,minor_sections=8),box((2.1,1.15,0.10),(0,0,-0.06),'obsidian'),box((1.9,0.95,0.06),(0,0,-0.13),'blue')]
-for x in (-0.82,0.82):
-    for y in (-0.36,-0.12,0.12,0.36): meshes.append(box((0.12,0.10,0.05),(x,y,-0.19),'white'))
-scene_export('replay-film-portal-v1',meshes)
 
 meshes=[cyl(0.92,0.28,(0,0.14,0),'obsidian',48),cyl(0.58,0.62,(0,0.58,0),'slate',40),torus(0.62,0.05,(0,0.92,0),'gold',48,10)]
 crystal=trimesh.creation.icosphere(subdivisions=1,radius=0.48)

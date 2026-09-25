@@ -33,6 +33,16 @@ if (!Array.isArray(runtimeConfig.files) || runtimeConfig.files.length === 0) {
   process.exit(1);
 }
 
+const analyticsSource = readFileSync("src/bridges/analyticsBridge.ts", "utf-8");
+if (/\braw\s*:\s*CommunicationPacket\b/.test(analyticsSource) || /\braw\s*:\s*packet\b/.test(analyticsSource)) {
+  console.error("SystemLoop runtime check failed: analytics may not retain raw communication packets.");
+  process.exit(1);
+}
+if (!analyticsSource.includes("payloadSize") || !analyticsSource.includes("typeHash")) {
+  console.error("SystemLoop runtime check failed: bounded numeric analytics metrics are required.");
+  process.exit(1);
+}
+
 const persistenceSource = readFileSync("src/kernel/PersistenceManager.ts", "utf-8");
 if (persistenceSource.includes("process.cwd()") || persistenceSource.includes("tmpdir()")) {
   console.error("SystemLoop runtime check failed: default persistence may not write into the repository or an ephemeral temp directory.");

@@ -15,12 +15,28 @@
 }
 
 .urai-world-runtime[data-world-destination='mirror'] main[data-testid='urai-final-mirror-realm'],
-.urai-world-runtime[data-world-destination='passport'] main[data-testid='urai-final-passport-vault'],
-.urai-world-runtime[data-world-destination='privacy-controls'] main[data-launch-surface='premium-privacy-consent-console'],
 .urai-world-runtime[data-world-destination='location-map'] main[data-launch-surface='premium-emotional-weather-atlas'] {
   min-height: 100svh;
   height: 100svh;
   overflow: hidden;
+  isolation: isolate;
+}
+
+.urai-world-runtime[data-world-destination='privacy-controls'] main[data-route-owner='consent-sanctuary'] {
+  min-height: 100svh;
+  height: 100svh;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  isolation: isolate;
+}
+
+.urai-world-runtime[data-world-destination='passport'] main[data-route-owner='passport-ownership-vault'] {
+  min-height: 100svh;
+  height: 100svh;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
   isolation: isolate;
 }
 
@@ -30,25 +46,15 @@
   display: none !important;
 }
 
-.urai-world-runtime[data-world-destination='mirror'] main[data-testid='urai-final-mirror-realm'] > section,
-.urai-world-runtime[data-world-destination='passport'] main[data-testid='urai-final-passport-vault'] > section {
+.urai-world-runtime[data-world-destination='mirror'] main[data-testid='urai-final-mirror-realm'] > section {
   min-height: 100svh;
   padding-bottom: max(7rem, calc(env(safe-area-inset-bottom) + 6rem)) !important;
 }
 
-.urai-world-runtime[data-world-destination='mirror'] main[data-testid='urai-final-mirror-realm'] aside,
-.urai-world-runtime[data-world-destination='passport'] main[data-testid='urai-final-passport-vault'] aside {
+.urai-world-runtime[data-world-destination='mirror'] main[data-testid='urai-final-mirror-realm'] aside {
   max-height: min(62svh, 620px);
   overflow: auto;
   scrollbar-width: thin;
-}
-
-.urai-world-runtime[data-world-destination='privacy-controls'] main[data-launch-surface='premium-privacy-consent-console'] > section {
-  height: 100svh;
-  max-height: 100svh;
-  overflow-y: auto;
-  padding-bottom: max(7rem, calc(env(safe-area-inset-bottom) + 6rem)) !important;
-  overscroll-behavior: contain;
 }
 
 .urai-world-runtime[data-world-destination='location-map'] main[data-launch-surface='premium-emotional-weather-atlas'] > section {
@@ -56,31 +62,24 @@
 }
 
 @media (max-width: 760px) {
-  .urai-world-runtime[data-world-destination='mirror'] main[data-testid='urai-final-mirror-realm'] > section,
-  .urai-world-runtime[data-world-destination='passport'] main[data-testid='urai-final-passport-vault'] > section {
+  .urai-world-runtime[data-world-destination='mirror'] main[data-testid='urai-final-mirror-realm'] > section {
     align-content: end;
     grid-template-columns: minmax(0, 1fr) !important;
     gap: 1rem !important;
     padding: max(2rem, env(safe-area-inset-top)) 1rem max(7rem, calc(env(safe-area-inset-bottom) + 6rem)) !important;
   }
 
-  .urai-world-runtime[data-world-destination='mirror'] main[data-testid='urai-final-mirror-realm'] h1,
-  .urai-world-runtime[data-world-destination='passport'] main[data-testid='urai-final-passport-vault'] h1 {
+  .urai-world-runtime[data-world-destination='mirror'] main[data-testid='urai-final-mirror-realm'] h1 {
     font-size: clamp(3.1rem, 16vw, 5.6rem) !important;
     line-height: .82 !important;
   }
 
-  .urai-world-runtime[data-world-destination='mirror'] main[data-testid='urai-final-mirror-realm'] aside,
-  .urai-world-runtime[data-world-destination='passport'] main[data-testid='urai-final-passport-vault'] aside {
+  .urai-world-runtime[data-world-destination='mirror'] main[data-testid='urai-final-mirror-realm'] aside {
     max-height: 34svh;
   }
 }
 
 @media (max-width: 430px) {
-  .urai-world-runtime[data-world-destination='privacy-controls'] main[data-launch-surface='premium-privacy-consent-console'] > section {
-    padding-inline: 1rem !important;
-  }
-
   .urai-world-runtime[data-world-destination='location-map'] main[data-launch-surface='premium-emotional-weather-atlas'] > section {
     padding-inline: .75rem !important;
   }

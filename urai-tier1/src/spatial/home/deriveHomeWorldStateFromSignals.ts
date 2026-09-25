@@ -244,12 +244,13 @@ function moodFromState(scores: { sky: number; orb: number }, input: HomeWorldSig
   const stress = normalizedValue(input, "recentStress") ?? 38;
   const lifeEvent = normalizedValue(input, "lifeEventIntensity") ?? 20;
   const sleep = normalizedValue(input, "sleepScore") ?? 55;
-  if (lifeEvent > 78 && stress > 62) return "shadow";
-  if (scores.sky > 68 && scores.orb > 62) return "joy";
-  if (sleep > 72 && lifeEvent > 48) return "dream";
-  if (scores.orb > 58 && stress < 38) return "focused";
-  if (scores.sky < 34 && scores.orb < 42) return "low";
-  if (scores.sky >= 48 && stress < 58) return "recovery";
+  const confidence = input.confidence?.overall ?? 0.5;
+  if (confidence < 0.42) return "uncertain";
+  if (lifeEvent > 78 && stress > 62) return "heavy";
+  if (scores.sky > 68 && scores.orb > 62) return "energized";
+  if ((sleep > 72 && lifeEvent > 48) || (scores.orb > 58 && stress < 38)) return "reflective";
+  if (scores.sky < 34 && scores.orb < 42) return "uncertain";
+  if (scores.sky >= 48 && stress < 58) return "hopeful";
   return "calm";
 }
 

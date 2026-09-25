@@ -15,7 +15,7 @@ const canonicalRoutes = [
   ['src/app/location-map/page.tsx', /LocationMapAcceptanceBoundary/],
   ['src/app/passport/page.tsx', /PassportVaultClient/],
   ['src/app/shadow/page.tsx', /SpatialRealmRuntime/],
-  ['src/app/council/page.tsx', /SpatialRealmRuntime/],
+  ['src/app/council/page.tsx', /CouncilRealm/],
   ['src/app/ground/page.tsx', /walkable-first-person-ground-layer/],
 ]
 

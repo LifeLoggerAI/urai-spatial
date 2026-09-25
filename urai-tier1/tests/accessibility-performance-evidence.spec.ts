@@ -6,6 +6,7 @@ const routes = [
   { name: 'life-map', path: '/life-map' },
   { name: 'focus', path: '/focus?memoryId=seed-memory-bloom&manifestId=seed-memory-bloom&node=seed-memory-bloom&demo=1' },
   { name: 'replay', path: '/replay?memoryId=seed-memory-bloom&manifestId=seed-memory-bloom&node=seed-memory-bloom&demo=1' },
+  { name: 'mirror', path: '/mirror' },
 ] as const
 
 const interactiveSelector = [
@@ -29,6 +30,7 @@ async function disableWebGL(page: Page) {
 }
 
 async function targetSize(page: Page, selector: string) {
+  await expect(page.locator(selector).first()).toBeVisible({ timeout: 30_000 })
   return page.locator(selector).evaluateAll((elements) => elements
     .map((element) => ({ element, rect: element.getBoundingClientRect(), style: getComputedStyle(element) }))
     .filter(({ rect, style }) => style.visibility !== 'hidden' && style.display !== 'none' && style.display !== 'inline' && rect.width > 0 && rect.height > 0)
@@ -36,6 +38,14 @@ async function targetSize(page: Page, selector: string) {
 }
 
 test.describe('URAI accessibility and performance evidence', () => {
+  test.beforeEach(async ({ page }) => {
+    // First-run setup has its own suite. Measure the actual route controls here.
+    await page.addInitScript(() => {
+      localStorage.setItem('urai:onboarding:v2:complete', '1')
+      localStorage.setItem('urai:onboarding:v3:setup-complete', '1')
+    })
+  })
+
   test('all visible interactive controls have accessible names', async ({ page }) => {
     const report: Array<{ route: string; unnamed: string[] }> = []
     for (const route of routes) {
@@ -64,13 +74,14 @@ test.describe('URAI accessibility and performance evidence', () => {
   })
 
   test('serialized Orb and Focus targets meet 48 CSS pixel minimum', async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: 'reduce' })
     await page.setViewportSize({ width: 393, height: 873 })
     await page.goto('/', { waitUntil: 'domcontentloaded' })
-    const orb = page.getByRole('button', { name: /open orb travel controls/i })
-    await expect(orb).toBeVisible()
-    await expect(orb).toBeEnabled()
+    const orb = page.getByTestId('home-semantic-orb')
+    await expect(orb).toHaveAccessibleName('Open UrAi Orb companion')
+    await expect(orb).toBeEnabled({ timeout: 15_000 })
     await orb.click()
-    await expect(page.locator('#urai-world-companion-menu')).toHaveAttribute('aria-hidden', 'false')
+    await expect(page.locator('#urai-world-companion-menu')).toHaveAttribute('aria-hidden', 'false', { timeout: 20_000 })
     const companionTargets = await targetSize(page, '.urai-world-companion__menu button')
 
     await page.goto('/focus?memoryId=seed-memory-bloom&manifestId=seed-memory-bloom&node=seed-memory-bloom&demo=1', { waitUntil: 'domcontentloaded' })
@@ -83,22 +94,73 @@ test.describe('URAI accessibility and performance evidence', () => {
     expect(failures).toEqual([])
   })
 
+  test('login and signup entry actions meet the 48 CSS pixel minimum', async ({ page }) => {
+    await page.setViewportSize({ width: 320, height: 720 })
+    for (const path of ['/login', '/login?from=signup']) {
+      await page.goto(path, { waitUntil: 'domcontentloaded' })
+      const targets = await page.locator('main[data-route-owner] a[href], main[data-route-owner] button').evaluateAll((elements) => elements
+        .map((element) => ({ element, rect: element.getBoundingClientRect(), style: getComputedStyle(element) }))
+        .filter(({ rect, style }) => style.visibility !== 'hidden' && style.display !== 'none' && rect.width > 0 && rect.height > 0)
+        .map(({ element, rect }) => ({
+          label: element.getAttribute('aria-label') ?? element.textContent?.trim() ?? element.tagName,
+          width: Math.round(rect.width * 100) / 100,
+          height: Math.round(rect.height * 100) / 100,
+        })))
+      const failures = targets.filter(({ width, height }) => width < 48 || height < 48)
+      await test.info().attach(`auth-target-size-${path.includes('signup') ? 'signup' : 'login'}.json`, {
+        body: JSON.stringify({ path, targets, failures }, null, 2),
+        contentType: 'application/json',
+      })
+      expect(targets.length).toBeGreaterThan(0)
+      expect(failures).toEqual([])
+    }
+  })
+
   test('Orb menu enters focus, closes on Escape, and returns focus', async ({ page }) => {
     await page.goto('/', { waitUntil: 'domcontentloaded' })
-    const orb = page.locator('[data-urai-audit-action="orb-controls"]')
-    await expect(orb).toHaveAccessibleName(/open orb travel controls/i)
-    await expect(orb).toBeEnabled()
+    const orb = page.getByTestId('home-semantic-orb')
+    await expect(orb).toHaveAccessibleName('Open UrAi Orb companion')
+    await expect(orb).toBeEnabled({ timeout: 15_000 })
     await orb.focus()
     await orb.press('Enter')
-    await expect(orb).toHaveAttribute('aria-expanded', 'true')
-    await expect(orb).toHaveAccessibleName(/close orb travel controls/i)
+    await expect(page.locator('#urai-world-companion-menu')).toHaveAttribute('aria-hidden', 'false', { timeout: 20_000 })
     const firstDestination = page.locator('#urai-world-companion-menu button:not([disabled])').first()
     await expect(firstDestination).toBeFocused()
     await page.keyboard.press('Escape')
     await expect(orb).toBeFocused()
-    await expect(orb).toHaveAttribute('aria-expanded', 'false')
-    await expect(orb).toHaveAccessibleName(/open orb travel controls/i)
     await expect(page.locator('#urai-world-companion-menu')).toHaveAttribute('aria-hidden', 'true')
+  })
+
+  test('Tier-One launch support and early-access targets meet 48px and stay in the mobile viewport', async ({ page }) => {
+    await page.setViewportSize({ width: 320, height: 720 })
+    for (const path of ['/support', '/early-access']) {
+      await page.goto(path, { waitUntil: 'domcontentloaded' })
+      const targets = await page.locator('main a[href], main button:not([disabled]), main input:not([disabled])').evaluateAll((elements) => {
+        const viewport = window.visualViewport
+        const left = viewport?.offsetLeft ?? 0
+        const top = viewport?.offsetTop ?? 0
+        const right = left + (viewport?.width ?? window.innerWidth)
+        const bottom = top + (viewport?.height ?? window.innerHeight)
+        return elements
+          .map((element) => ({ element, rect: element.getBoundingClientRect(), style: getComputedStyle(element) }))
+          .filter(({ rect, style }) => style.visibility !== 'hidden' && style.display !== 'none' && rect.width > 0 && rect.height > 0)
+          .map(({ element, rect }) => ({
+            label: element.getAttribute('aria-label') ?? element.getAttribute('placeholder') ?? element.textContent?.trim() ?? element.tagName,
+            width: Math.round(rect.width * 100) / 100,
+            height: Math.round(rect.height * 100) / 100,
+            contained: rect.left >= left && rect.right <= right && rect.top >= top && rect.bottom <= bottom,
+          }))
+      })
+      const undersized = targets.filter(({ width, height }) => width < 48 || height < 48)
+      const clipped = targets.filter(({ contained }) => !contained)
+      await test.info().attach(`tier-one-targets-${path.slice(1)}.json`, {
+        body: JSON.stringify({ path, targets, undersized, clipped }, null, 2),
+        contentType: 'application/json',
+      })
+      expect(targets.length).toBeGreaterThan(0)
+      expect(undersized).toEqual([])
+      expect(clipped).toEqual([])
+    }
   })
 
   test('reduced motion removes active CSS animations from primary controls', async ({ page }) => {
@@ -134,7 +196,6 @@ test.describe('URAI accessibility and performance evidence', () => {
           while (current) {
             const style = getComputedStyle(current)
             const overflowsHorizontally = current.scrollWidth > current.clientWidth
-            if (current.matches('.ground-destination-compass') && overflowsHorizontally) return true
             if (/auto|scroll/.test(style.overflowX) && overflowsHorizontally) return true
             current = current.parentElement
           }
@@ -154,27 +215,28 @@ test.describe('URAI accessibility and performance evidence', () => {
     }
 
     await page.goto('/ground', { waitUntil: 'domcontentloaded' })
-    const railTargets = page.locator('.ground-destination-compass :is(a,button)')
+    const movementTargets = await targetSize(page, '.ground-accessible-movement summary')
+    expect(movementTargets.length).toBeGreaterThan(0)
+    expect(movementTargets.filter(({ width, height }) => width < 48 || height < 48)).toEqual([])
+    const groundTargets = page.locator('.ground-home-return, .ground-place-access a, .ground-accessible-movement summary')
+    await expect(groundTargets).toHaveCount(4)
     const focusContainment: Array<{ label: string; fullyContained: boolean; left: number; right: number }> = []
-    for (let index = 0; index < await railTargets.count(); index += 1) {
-      const target = railTargets.nth(index)
+    for (let index = 0; index < await groundTargets.count(); index += 1) {
+      const target = groundTargets.nth(index)
       await target.focus()
       await expect(target).toBeFocused()
       await target.evaluate((element) => element.scrollIntoView({ block: 'nearest', inline: 'center' }))
       await page.waitForTimeout(250)
       focusContainment.push(await target.evaluate((element) => {
         const rect = element.getBoundingClientRect()
-        const rail = element.closest<HTMLElement>('.ground-destination-compass')
-        const railRect = rail?.getBoundingClientRect() ?? rect
         const viewport = window.visualViewport
-        const leftBoundary = Math.max(viewport?.offsetLeft ?? 0, railRect.left)
-        const rightBoundary = Math.min(
-          (viewport?.offsetLeft ?? 0) + (viewport?.width ?? window.innerWidth),
-          railRect.right,
-        )
+        const leftBoundary = viewport?.offsetLeft ?? 0
+        const rightBoundary = leftBoundary + (viewport?.width ?? window.innerWidth)
+        const topBoundary = viewport?.offsetTop ?? 0
+        const bottomBoundary = topBoundary + (viewport?.height ?? window.innerHeight)
         return {
           label: element.getAttribute('aria-label') ?? element.textContent?.trim() ?? 'unknown',
-          fullyContained: rect.left >= leftBoundary && rect.right <= rightBoundary,
+          fullyContained: rect.left >= leftBoundary && rect.right <= rightBoundary && rect.top >= topBoundary && rect.bottom <= bottomBoundary,
           left: rect.left,
           right: rect.right,
         }
@@ -182,11 +244,133 @@ test.describe('URAI accessibility and performance evidence', () => {
     }
 
     await test.info().attach('mobile-safe-area-report.json', {
-      body: JSON.stringify({ fixedControls: report, scrollableGroundRail: focusContainment }, null, 2),
+      body: JSON.stringify({ fixedControls: report, currentGroundControls: focusContainment }, null, 2),
       contentType: 'application/json',
     })
     expect(report.flatMap((entry) => entry.clipped)).toEqual([])
     expect(focusContainment.filter((entry) => !entry.fullyContained)).toEqual([])
+  })
+
+  test('Status and Privacy Controls expose 48px launch-critical targets on narrow mobile', async ({ page }) => {
+    await page.setViewportSize({ width: 320, height: 720 })
+
+    await page.goto('/status', { waitUntil: 'domcontentloaded' })
+    const statusTargets = await targetSize(page, 'nav[aria-label="Status route navigation"] a[href]')
+    expect(statusTargets.length).toBeGreaterThan(0)
+    expect(statusTargets.filter(({ width, height }) => width < 48 || height < 48)).toEqual([])
+
+    await page.goto('/privacy-controls', { waitUntil: 'domcontentloaded' })
+    await expect(page.locator('.consentSanctuary')).toBeVisible({ timeout: 30_000 })
+    const privacyTargets = await page.locator([
+      '.consentSanctuary button',
+      '.consentSanctuary a[href]',
+      '.consentSanctuary select',
+      '.consentSanctuary label:has(input[type="checkbox"])',
+      '.consentSanctuary input:not([type="checkbox"])',
+    ].join(',')).evaluateAll((elements) => elements
+      .map((element) => ({ element, rect: element.getBoundingClientRect(), style: getComputedStyle(element) }))
+      .filter(({ rect, style }) => style.visibility !== 'hidden' && style.display !== 'none' && rect.width > 0 && rect.height > 0)
+      .map(({ element, rect }) => ({
+        html: element.outerHTML.slice(0, 240),
+        width: Math.round(rect.width * 100) / 100,
+        height: Math.round(rect.height * 100) / 100,
+      })))
+
+    const privacyFailures = privacyTargets.filter(({ width, height }) => width < 48 || height < 48)
+    await test.info().attach('status-privacy-target-size-report.json', {
+      body: JSON.stringify({ statusTargets, privacyTargets, privacyFailures }, null, 2),
+      contentType: 'application/json',
+    })
+    expect(privacyTargets.length).toBeGreaterThan(0)
+    expect(privacyFailures).toEqual([])
+  })
+
+  test('Mirror launch-critical controls meet the 48 CSS pixel minimum', async ({ page }) => {
+    await page.setViewportSize({ width: 320, height: 720 })
+    await page.goto('/mirror', { waitUntil: 'domcontentloaded' })
+    await expect(page.getByTestId('mirror-bare-entry')).toBeVisible({ timeout: 30_000 })
+    const targets = await page.locator('main a[href], main button:not([disabled])').evaluateAll((elements) => elements
+      .map((element) => ({ element, rect: element.getBoundingClientRect(), style: getComputedStyle(element) }))
+      .filter(({ rect, style }) => style.visibility !== 'hidden' && style.display !== 'none' && rect.width > 0 && rect.height > 0)
+      .map(({ element, rect }) => ({
+        label: element.getAttribute('aria-label') ?? element.textContent?.trim() ?? element.tagName,
+        width: Math.round(rect.width * 100) / 100,
+        height: Math.round(rect.height * 100) / 100,
+      })))
+    const failures = targets.filter(({ width, height }) => width < 48 || height < 48)
+    await test.info().attach('mirror-target-size-report.json', {
+      body: JSON.stringify({ targets, failures }, null, 2),
+      contentType: 'application/json',
+    })
+    expect(targets.length).toBeGreaterThan(0)
+    expect(failures).toEqual([])
+  })
+
+  test('XR web controls meet the 48 CSS pixel minimum on narrow mobile', async ({ page }) => {
+    await page.setViewportSize({ width: 320, height: 720 })
+    await page.goto('/spatial/ar-vr', { waitUntil: 'domcontentloaded' })
+    await expect(page.locator('button:not([disabled])').first()).toBeVisible({ timeout: 30_000 })
+    const targets = await page.locator('button:not([disabled])').evaluateAll((elements) => elements
+      .map((element) => ({ element, rect: element.getBoundingClientRect(), style: getComputedStyle(element) }))
+      .filter(({ rect, style }) => style.visibility !== 'hidden' && style.display !== 'none' && rect.width > 0 && rect.height > 0)
+      .map(({ element, rect }) => ({
+        label: element.getAttribute('aria-label') ?? element.textContent?.trim() ?? element.tagName,
+        width: Math.round(rect.width * 100) / 100,
+        height: Math.round(rect.height * 100) / 100,
+      })))
+    const failures = targets.filter(({ width, height }) => width < 48 || height < 48)
+    await test.info().attach('xr-target-size-report.json', {
+      body: JSON.stringify({ targets, failures }, null, 2),
+      contentType: 'application/json',
+    })
+    expect(targets.length).toBeGreaterThan(0)
+    expect(failures).toEqual([])
+  })
+
+  test('Passport launch-critical controls meet the 48 CSS pixel minimum', async ({ page }) => {
+    await page.setViewportSize({ width: 320, height: 720 })
+    await page.goto('/passport', { waitUntil: 'domcontentloaded' })
+    const targets = await page.locator([
+      '.passportVault a[href]',
+      '.passportVault button:not([disabled])',
+      '.passportVault select:not([disabled])',
+      '.passportVault label:has(input[type="checkbox"])',
+      '.passportVault input:not([type="checkbox"]):not([disabled])',
+    ].join(',')).evaluateAll((elements) => elements
+      .map((element) => ({ element, rect: element.getBoundingClientRect(), style: getComputedStyle(element) }))
+      .filter(({ rect, style }) => style.visibility !== 'hidden' && style.display !== 'none' && rect.width > 0 && rect.height > 0)
+      .map(({ element, rect }) => ({
+        label: element.getAttribute('aria-label') ?? element.textContent?.trim() ?? element.tagName,
+        width: Math.round(rect.width * 100) / 100,
+        height: Math.round(rect.height * 100) / 100,
+      })))
+    const failures = targets.filter(({ width, height }) => width < 48 || height < 48)
+    await test.info().attach('passport-target-size-report.json', {
+      body: JSON.stringify({ targets, failures }, null, 2),
+      contentType: 'application/json',
+    })
+    expect(targets.length).toBeGreaterThan(0)
+    expect(failures).toEqual([])
+  })
+
+  test('Location Map launch links meet the 48 CSS pixel minimum on narrow mobile', async ({ page }) => {
+    await page.setViewportSize({ width: 320, height: 720 })
+    await page.goto('/location-map', { waitUntil: 'domcontentloaded' })
+    const targets = await page.locator('a[href], button:not([disabled])').evaluateAll((elements) => elements
+      .map((element) => ({ element, rect: element.getBoundingClientRect(), style: getComputedStyle(element) }))
+      .filter(({ rect, style }) => style.visibility !== 'hidden' && style.display !== 'none' && rect.width > 0 && rect.height > 0)
+      .map(({ element, rect }) => ({
+        label: element.getAttribute('aria-label') ?? element.textContent?.trim() ?? element.tagName,
+        width: Math.round(rect.width * 100) / 100,
+        height: Math.round(rect.height * 100) / 100,
+      })))
+    const failures = targets.filter(({ width, height }) => width < 48 || height < 48)
+    await test.info().attach('location-map-target-size-report.json', {
+      body: JSON.stringify({ targets, failures }, null, 2),
+      contentType: 'application/json',
+    })
+    expect(targets.length).toBeGreaterThan(0)
+    expect(failures).toEqual([])
   })
 
   test('no-WebGL mode exposes the complete keyboard-operable Home fallback', async ({ page }) => {
@@ -194,19 +378,41 @@ test.describe('URAI accessibility and performance evidence', () => {
     await page.goto('/', { waitUntil: 'domcontentloaded' })
     const fallback = page.locator('[data-testid="urai-home-accessible-fallback"][data-webgl-state="unavailable"]')
     await expect(fallback).toBeVisible()
+    await expect(fallback).toHaveCount(1)
     await expect(fallback.getByRole('link', { name: /ground/i }).first()).toBeVisible()
     await expect(fallback.getByRole('link', { name: /life map/i }).first()).toBeVisible()
-    await expect(fallback.getByRole('button', { name: /open urai orb companion/i })).toBeVisible()
+    await expect(page.getByRole('main', { name: 'URAI Home semantic fallback' })).toHaveCount(1)
+    const navigation = fallback.getByRole('navigation', { name: 'Accessible Home destinations' })
+    await expect(navigation).toHaveCount(1)
+    await expect(navigation).toHaveAttribute('data-home-navigation-owner', 'runtime-boundary')
+    await expect(navigation).toHaveAttribute('data-home-navigation-non-dominant', 'true')
+    await expect(navigation.getByTestId('home-semantic-orb')).toHaveAccessibleName('Open UrAi Orb companion')
+  })
+
+  test('XR route links meet the 48 CSS pixel minimum on narrow mobile', async ({ page }) => {
+    await page.setViewportSize({ width: 320, height: 720 })
+    await page.goto('/spatial/ar-vr', { waitUntil: 'domcontentloaded' })
+    const xrTargets = await targetSize(page, '.urai-xr-portal__actions a[href], .urai-xr-portal__rail a[href], .urai-xr-portal__quest-entry button')
+    expect(xrTargets.length).toBeGreaterThan(0)
+    const failures = xrTargets.filter(({ width, height }) => width < 48 || height < 48)
+    await test.info().attach('xr-target-size-report.json', {
+      body: JSON.stringify({ xrTargets, failures }, null, 2),
+      contentType: 'application/json',
+    })
+    expect(failures).toEqual([])
   })
 
   test('WebGL context loss recovery is bounded and preserves the route', async ({ page }) => {
+    test.setTimeout(90_000)
     await page.goto('/', { waitUntil: 'domcontentloaded' })
     const before = page.url()
     const runtime = page.locator('.urai-home-spatial-runtime-layer')
     await expect(runtime.locator('canvas')).toBeVisible({ timeout: 15_000 })
     await runtime.locator('canvas').evaluate((canvas) => canvas.dispatchEvent(new Event('webglcontextlost', { cancelable: true })))
     await expect(runtime.getByRole('status').filter({ hasText: /Restoring the spatial Home renderer/i })).toBeVisible()
-    await expect(runtime.locator('canvas')).toBeVisible({ timeout: 15_000 })
+    await expect(runtime).toHaveAttribute('data-webgl-state', 'ready', { timeout: 45_000 })
+    await expect(runtime).toHaveAttribute('data-webgl-recovery-attempts', '1')
+    await expect(runtime.locator('canvas')).toBeVisible()
     await expect.poll(() => page.url()).toBe(before)
 
     await runtime.locator('canvas').evaluate((canvas) => canvas.dispatchEvent(new Event('webglcontextlost', { cancelable: true })))

@@ -6,7 +6,7 @@ import { execFileSync } from 'node:child_process'
 const PACK_PATH = 'operations/assets/generated-receipts/urai-final-glb-pack-v1.json'
 const CAPTURE_PROOF_PATH = 'scripts/capture-home-state-proof.mjs'
 const OLD_VISIBLE_WORLD = 'authored-coherent-three-dimensional-sanctuary'
-const CURRENT_VISIBLE_WORLD = 'moonlit-sacred-tech-sanctuary'
+const CURRENT_VISIBLE_WORLD = 'v226-rooted-inhabited-memory-sanctuary'
 
 const configs = [
   {
@@ -55,23 +55,6 @@ const configs = [
     generatedBy: 'URAI Labs Final GLB Forge 1.0; bounded Passport identity-core pole-normal repair; reconciled to urai-final-glb-production-pack-v1',
     note: 'Fail-closed exact-binary replacement rehearsal rebound to the bounded Passport identity-core pole-normal repair. Only the two invalid terminal NORMAL vectors on passport-identity-core-geometry and the corresponding NORMAL accessor Y bounds numeric lexemes are corrected in place; GLB byte length and all unrelated JSON/BIN bytes remain unchanged. This record binds candidate identity only; promote=false, humanReviewApproved=false, and visualProofVerified=false remain unchanged pending exact-head visual proof and steward acceptance.',
   },
-  {
-    label: 'Portal Ring',
-    assetId: 'portal-ring-master-v1',
-    glbPath: 'urai-tier1/public/assets/urai/generated/models/portal-ring-master-v1.glb',
-    receiptPath: 'operations/assets/generated-receipts/portal-ring-master-v1.json',
-    rehearsalPath: 'operations/assets/promotion-rehearsal/portal-ring-master-v1.json',
-    targetMesh: 'portal-shard-geometry',
-    bottomIndex: 40,
-    topIndex: 41,
-    badMinY: '-0.5430145859718323',
-    badMaxY: '0.49977248907089233',
-    badVectorTolerance: 1e-4,
-    fixedMaxY: '1.00000000000000000',
-    packFileName: 'portal-ring-master-v1.glb',
-    generatedBy: 'URAI Labs Final GLB Forge 1.0; bounded Portal Ring shard pole-normal repair; reconciled to urai-final-glb-production-pack-v1',
-    note: 'Fail-closed exact-binary replacement rehearsal rebound to the bounded Portal Ring shard pole-normal repair. Only the two invalid terminal NORMAL vectors on portal-shard-geometry and the corresponding NORMAL accessor Y bounds numeric lexemes are corrected in place; GLB byte length and all unrelated JSON/BIN bytes remain unchanged. This record binds candidate identity only; promote=false, humanReviewApproved=false, and visualProofVerified=false remain unchanged pending exact-head visual proof and steward acceptance.',
-  },
 ]
 
 const ORB_CONFIG = {
@@ -86,6 +69,10 @@ const ORB_CONFIG = {
   expectedAccessorIndex: 13,
   knownBadSha256: 'ee69c9e30679635b5799c681528c2021d8ce94d440895d4eb9e0c3094ac0f026',
   repairedSha256: '06b21ff93a2221a6367fb8b8e305a0453cb151d3a92194445d72e4d48d6c7708',
+  acceptedRepairedSha256: [
+    '06b21ff93a2221a6367fb8b8e305a0453cb151d3a92194445d72e4d48d6c7708',
+    'fc8b73fabcf9c30c71afd731d35d88d9fb06cd34feb1136d975e196cfe68dd73',
+  ],
   fixedNormal: [0.6533626914024353, 0.7519069314002991, 0.08805203437805176],
   packFileName: 'urai-orb-avatar-v1.glb',
   generatedBy: 'URAI Labs Final GLB Forge 1.0; bounded Orb petal zero-normal repair; reconciled to urai-final-glb-production-pack-v1',
@@ -197,19 +184,49 @@ function repairAsset(config, pack) {
 
 function repairOrbAsset(config, pack) {
   const original = fs.readFileSync(config.glbPath), originalSha = crypto.createHash('sha256').update(original).digest('hex')
-  if (originalSha !== config.knownBadSha256 && originalSha !== config.repairedSha256) fail(`${config.label} exact binary identity is neither the known-bad nor repaired SHA: ${originalSha}`)
+  const acceptedRepaired = new Set(config.acceptedRepairedSha256 ?? [config.repairedSha256])
+  if (originalSha !== config.knownBadSha256 && !acceptedRepaired.has(originalSha)) fail(`${config.label} exact binary identity is neither the known-bad nor an accepted repaired SHA: ${originalSha}`)
+  if (acceptedRepaired.has(originalSha) && originalSha !== config.knownBadSha256) {
+    const receipt = readJson(config.receiptPath)
+    const rehearsal = readJson(config.rehearsalPath)
+    const packEntry = pack.assets?.find((entry) => entry.fileName === config.packFileName)
+    if (!packEntry) fail(`${config.label} entry missing from final GLB pack receipt`)
+    const bytes = original.length
+    if (receipt.id !== config.assetId || receipt.fixedPath !== config.glbPath || receipt.bytes !== bytes || receipt.sha256 !== originalSha) {
+      fail(`${config.label} accepted repaired SHA is not bound by the generated receipt`)
+    }
+    if (rehearsal.assetId !== config.assetId || rehearsal.canonicalPath !== config.glbPath || rehearsal.bytes !== bytes || rehearsal.sha256 !== originalSha) {
+      fail(`${config.label} accepted repaired SHA is not bound by the promotion rehearsal`)
+    }
+    if (packEntry.bytes !== bytes || packEntry.sha256 !== originalSha) {
+      fail(`${config.label} accepted repaired SHA is not bound by the final GLB pack receipt`)
+    }
+    return {
+      label: config.label,
+      binaryChanged: false,
+      receiptChanged: false,
+      packChanged: false,
+      rehearsalChanged: false,
+      changed: false,
+      bytes,
+      sha256: originalSha,
+      acceptedRepairedIdentity: true,
+    }
+  }
+
   const repaired = Buffer.from(original), parsed = parseGlb(repaired, config.label)
   const { accessor, accessorIndex, base, stride } = findTargetNormalAccessor(parsed, config)
   if (accessorIndex !== config.expectedAccessorIndex) fail(`${config.label} expected NORMAL accessor ${config.expectedAccessorIndex}, found ${accessorIndex}`)
   const originalMin = JSON.stringify(accessor.min), originalMax = JSON.stringify(accessor.max), offset = parsed.binStart + base + config.vectorIndex * stride
   const before = readVec3(repaired, offset), alreadyFixed = before.every((value, index) => close(value, config.fixedNormal[index], 1e-6)), knownBad = vectorLength(before) < 1e-7
   if (originalSha === config.knownBadSha256 && !knownBad) fail(`${config.label} known-bad SHA does not contain the expected zero NORMAL vector`)
-  if (originalSha === config.repairedSha256 && !alreadyFixed) fail(`${config.label} repaired SHA does not contain the expected repaired NORMAL vector`)
+  if (acceptedRepaired.has(originalSha) && !alreadyFixed) fail(`${config.label} accepted repaired SHA does not contain the expected repaired NORMAL vector`)
   let binaryChanged = false
   if (!alreadyFixed) { writeVec3(repaired, offset, config.fixedNormal); binaryChanged = true }
   if (binaryChanged) fs.writeFileSync(config.glbPath, repaired)
   const finalBytes = fs.readFileSync(config.glbPath), sha256 = crypto.createHash('sha256').update(finalBytes).digest('hex')
-  if (finalBytes.length !== original.length || sha256 !== config.repairedSha256) fail(`${config.label} bounded repair identity mismatch`)
+  const expectedFinalSha = originalSha === config.knownBadSha256 ? config.repairedSha256 : originalSha
+  if (finalBytes.length !== original.length || sha256 !== expectedFinalSha) fail(`${config.label} bounded repair identity mismatch`)
   const reparsed = parseGlb(finalBytes, config.label), target = findTargetNormalAccessor(reparsed, config)
   if (JSON.stringify(target.accessor.min) !== originalMin || JSON.stringify(target.accessor.max) !== originalMax) fail(`${config.label} bounded repair altered accessor metadata`)
   const after = readVec3(finalBytes, reparsed.binStart + target.base + config.vectorIndex * target.stride)
@@ -230,16 +247,59 @@ function repairOrbAsset(config, pack) {
 
 function repairHomeStateProofContract() {
   if (!fs.existsSync(CAPTURE_PROOF_PATH)) return { changed: false, skipped: true, reason: 'capture-proof-script-not-present' }
-  const source = fs.readFileSync(CAPTURE_PROOF_PATH, 'utf8'), oldCount = source.split(OLD_VISIBLE_WORLD).length - 1, currentCount = source.split(CURRENT_VISIBLE_WORLD).length - 1
-  if (oldCount === 0) { if (currentCount >= 2) return { changed: false, oldCount, currentCount }; fail('Home State Proof contract contains neither the stale nor current visible-world marker in the expected assertions') }
+  const source = fs.readFileSync(CAPTURE_PROOF_PATH, 'utf8')
+  const oldCount = source.split(OLD_VISIBLE_WORLD).length - 1
+  const currentCount = source.split(CURRENT_VISIBLE_WORLD).length - 1
+  const dynamicVisibleWorldCount = source.split("getAttribute('data-home-visible-world')").length - 1
+  if (oldCount === 0) {
+    if (currentCount >= 2) return { changed: false, oldCount, currentCount, dynamicVisibleWorldCount }
+    if (dynamicVisibleWorldCount >= 2) return { changed: false, oldCount, currentCount, dynamicVisibleWorldCount, reason: 'dynamic-visible-world-proof-contract' }
+    fail('Home State Proof contract contains neither the stale/current fixed marker nor the current dynamic visible-world assertions')
+  }
   if (oldCount !== 2) fail(`Expected exactly two stale Home State Proof visible-world assertions, found ${oldCount}`)
   fs.writeFileSync(CAPTURE_PROOF_PATH, source.split(OLD_VISIBLE_WORLD).join(CURRENT_VISIBLE_WORLD))
-  return { changed: true, oldCount, currentCount: currentCount + oldCount }
+  return { changed: true, oldCount, currentCount: currentCount + oldCount, dynamicVisibleWorldCount }
+}
+
+function legacyPoleRepairSuperseded(config) {
+  if (config.assetId !== 'life-map-memory-star-v1') return false
+  const receipt = readJson(config.receiptPath)
+  return receipt.compressionStatus === 'candidate-uncompressed-canon-v1'
+    && receipt.releaseState === 'candidate-not-production-ready'
+    && String(receipt.source ?? '').includes('canon-clean deterministic convergence candidate')
+}
+
+function legacyOrbRepairSuperseded(config) {
+  const receipt = readJson(config.receiptPath)
+  const acceptedCanonCleanSha = new Set([
+    '54aaa230c591d441ba6e590c3c3668ff257128521dcded67606b4c53724a6eef',
+    ...(config.acceptedRepairedSha256 ?? []),
+  ])
+  return acceptedCanonCleanSha.has(receipt.sha256)
+    && receipt.compressionStatus === 'candidate-uncompressed-canon-v1'
+    && receipt.releaseState === 'candidate-not-production-ready'
+    && String(receipt.source ?? '').includes('canon-clean deterministic convergence candidate')
 }
 
 const pack = readJson(PACK_PATH)
-const results = configs.map((config) => repairAsset(config, pack))
-results.push(repairOrbAsset(ORB_CONFIG, pack))
+const results = configs.map((config) => legacyPoleRepairSuperseded(config)
+  ? {
+      label: config.label,
+      assetId: config.assetId,
+      changed: false,
+      packChanged: false,
+      skipped: 'canon-clean-stellar-candidate-supersedes-retired-shard-pole-repair',
+    }
+  : repairAsset(config, pack))
+results.push(legacyOrbRepairSuperseded(ORB_CONFIG)
+  ? {
+      label: ORB_CONFIG.label,
+      assetId: ORB_CONFIG.assetId,
+      changed: false,
+      packChanged: false,
+      skipped: 'canon-clean-orb-candidate-supersedes-retired-zero-normal-repair',
+    }
+  : repairOrbAsset(ORB_CONFIG, pack))
 if (results.some((result) => result.packChanged)) writeJson(PACK_PATH, pack)
 const proofRepair = repairHomeStateProofContract()
 if (process.env.GITHUB_ACTIONS === 'true') {

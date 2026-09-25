@@ -10,6 +10,7 @@ on:
       - 'pnpm-lock.yaml'
       - '_audit/20260623_launch_route_chain/**'
       - '.github/workflows/launch-verification.yml'
+      - '.github/workflows/portal-orb-exact-proof.yml'
 
 jobs:
   verify-spatial-launch:

@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 
 import process from 'node:process';
-import { cert, getApps, initializeApp } from 'firebase-admin/app';
+import { lstatSync, readFileSync } from 'node:fs';
+import { applicationDefault, getApps, initializeApp } from 'firebase-admin/app';
 import { getFirestore, Timestamp } from 'firebase-admin/firestore';
 
 const userId = process.argv.find((arg) => arg.startsWith('--user='))?.slice('--user='.length)
@@ -12,17 +13,33 @@ const projectId = process.env.FIREBASE_PROJECT_ID
   || process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID
   || 'urai';
 
-function resolveCredential() {
-  if (process.env.FIREBASE_SERVICE_ACCOUNT_JSON) {
-    return cert(JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_JSON));
+function assertSeedAdc() {
+  for (const name of ['FIREBASE_SERVICE_ACCOUNT_JSON', 'FIREBASE_PRIVATE_KEY', 'FIREBASE_CLIENT_EMAIL', 'FIREBASE_TOKEN']) {
+    if (String(process.env[name] || '').trim()) {
+      throw new Error(`Long-lived Firebase credential variable is prohibited for Life Map seeding: ${name}`);
+    }
   }
-  return undefined;
+
+  const adcPath = String(process.env.GOOGLE_APPLICATION_CREDENTIALS || '').trim();
+  if (!adcPath) {
+    throw new Error('GOOGLE_APPLICATION_CREDENTIALS must reference an external-account Workload Identity Federation configuration.');
+  }
+  const stat = lstatSync(adcPath);
+  if (!stat.isFile() || stat.isSymbolicLink()) {
+    throw new Error('GOOGLE_APPLICATION_CREDENTIALS must reference a regular non-symlinked file.');
+  }
+  const config = JSON.parse(readFileSync(adcPath, 'utf8'));
+  if (!config || typeof config !== 'object' || Array.isArray(config) || config.type !== 'external_account') {
+    throw new Error('Life Map seeding accepts external-account ADC only.');
+  }
 }
+
+assertSeedAdc();
 
 if (!getApps().length) {
   initializeApp({
     projectId,
-    credential: resolveCredential(),
+    credential: applicationDefault(),
   });
 }
 

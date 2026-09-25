@@ -1,36 +1,11 @@
 import { NextResponse } from 'next/server';
 import { readEntitlement } from '@/lib/entitlementStore';
-import { assertExternalAccountAdc } from '@/lib/server/google-adc';
+import { verifyFirebaseUser } from '@/lib/server/firebase-user';
 
-export const dynamic = 'force-static';
-
-function bearerTokenFrom(request: Request): string | null {
-  const authHeader = request.headers.get('authorization');
-  if (!authHeader?.startsWith('Bearer ')) return null;
-  const token = authHeader.slice('Bearer '.length).trim();
-  return token.length ? token : null;
-}
-
-async function verifyUser(request: Request) {
-  const token = bearerTokenFrom(request);
-  if (!token) return null;
-
-  const admin = await import('firebase-admin/auth');
-  const app = await import('firebase-admin/app');
-
-  assertExternalAccountAdc();
-  if (!app.getApps().length) {
-    app.initializeApp({ credential: app.applicationDefault() });
-  }
-
-  try {
-    const decoded = await admin.getAuth().verifyIdToken(token);
-    return decoded.uid;
-  } catch {
-    return null;
-  }
-}
-
+// Next.js 15 GET Route Handlers are dynamic by default. Keep the production
+// entitlement path request-bound without forcing a segment mode that makes the
+// explicit static-reference export fail. Static exports return the truthful 503
+// below before any request-bound authentication or entitlement read occurs.
 export async function GET(request: Request) {
   if (process.env.URAI_FIREBASE_STATIC_EXPORT === 'true') {
     return NextResponse.json(
@@ -39,7 +14,7 @@ export async function GET(request: Request) {
     );
   }
 
-  const uid = await verifyUser(request);
+  const uid = await verifyFirebaseUser(request);
   if (!uid) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }

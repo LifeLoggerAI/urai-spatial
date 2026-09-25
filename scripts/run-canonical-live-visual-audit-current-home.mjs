@@ -18,8 +18,10 @@ for (const [label, marker] of [
   ['Focus public identity expectation', `const expectedPublicMemoryId = 'quiet-reset'`],
   ['Focus fixture identity expectation', `const expectedFixtureMemoryId = 'demo:quiet-reset'`],
   ['retired Mirror audit marker', `markers: ['Mirror does not judge.']`],
-  ['legacy Ground copy marker', `markers: ['URAI Ground', 'Private infrastructure, embodied.']`],
+  ['legacy Ground route', `{ id: 'ground', path: '/ground/', selector: '.ground-spatial-root', markers: ['URAI Ground', 'Private infrastructure, embodied.'] },`],
+  ['legacy Life Map disclosure', `{ id: 'life-map', path: '/life-map/?demo=1&manifestId=replay-recovery-thread&overview=1', selector: '[data-testid="urai-true-3d-life-map"]', markers: ['Disclosed sample universe'] },`],
   ['legacy Life Map click', `await focus.click()`],
+  ['legacy XR chamber audit marker', `{ id: 'spatial-ar-vr', path: '/spatial/ar-vr', selector: 'body', markers: ['URAI AR / VR / XR entry chamber', 'Explorable entry chamber'] },`],
 ]) {
   if (!original.includes(marker)) throw new Error(`${label} is not present in the canonical audit authority`)
 }
@@ -35,14 +37,21 @@ patched = replaceOnce(
 patched = replaceOnce(
   patched,
   `{ id: 'ground', path: '/ground/', selector: '.ground-spatial-root', markers: ['URAI Ground', 'Private infrastructure, embodied.'] },`,
-  `{ id: 'ground', path: '/ground/', selector: '.ground-spatial-root', markers: ['URAI Ground', 'Private infrastructure beneath the living world'] },`,
-  'current Ground product copy',
+  `{ id: 'ground', path: '/ground/', selector: '[data-testid="urai-ground-lived-world"]', markers: [] },`,
+  'current Ground structural owner',
+)
+
+patched = replaceOnce(
+  patched,
+  `{ id: 'life-map', path: '/life-map/?demo=1&manifestId=replay-recovery-thread&overview=1', selector: '[data-testid="urai-true-3d-life-map"]', markers: ['Disclosed sample universe'] },`,
+  `{ id: 'life-map', path: '/life-map/?demo=1&manifestId=replay-recovery-thread&overview=1', selector: '[data-testid="urai-true-3d-life-map"]', markers: ['Disclosed sample · not your memories'] },`,
+  'current Life Map disclosed sample copy',
 )
 
 patched = replaceOnce(
   patched,
   `{ id: 'replay', path: '/replay?memoryId=quiet-reset&manifestId=replay-recovery-thread&node=quiet-reset&returnNode=quiet-reset&demo=1&from=life-map', selector: 'main', markers: ['The Quiet Reset'] },`,
-  `{ id: 'replay', path: '/replay?memoryId=quiet-reset&manifestId=replay-recovery-thread&node=quiet-reset&returnNode=quiet-reset&demo=1&from=life-map', selector: '[data-testid="cinematic-replay-client"][data-replay-spatial-owner="r3f-memory-theater"]', markers: [] },`,
+  `{ id: 'replay', path: '/replay?memoryId=quiet-reset&manifestId=replay-recovery-thread&node=quiet-reset&returnNode=quiet-reset&demo=1&from=life-map', selector: '[data-testid="cinematic-replay-client"][data-replay-spatial-owner="r3f-lived-memory-environment"]', markers: [] },`,
   'current Replay spatial owner',
 )
 
@@ -51,6 +60,13 @@ patched = replaceOnce(
   `{ id: 'mirror', path: '/mirror', selector: 'main', markers: ['Mirror does not judge.'] },`,
   `{ id: 'mirror', path: '/mirror', selector: '[data-testid="mirror-bare-entry"]', markers: ['Choose what Mirror may open.', 'Open disclosed demo', 'Open Passport'] },`,
   'current Mirror bare entry',
+)
+
+patched = replaceOnce(
+  patched,
+  `{ id: 'spatial-ar-vr', path: '/spatial/ar-vr', selector: 'body', markers: ['URAI AR / VR / XR entry chamber', 'Explorable entry chamber'] },`,
+  `{ id: 'spatial-ar-vr', path: '/spatial/ar-vr', selector: 'main.urai-system-state', markers: ['This place isn’t part of your world', 'Return home'] },`,
+  'current pre-launch XR fail-closed boundary',
 )
 
 const oldHomeSettlement = `  if (route.id === 'home') {
@@ -76,33 +92,30 @@ const currentHomeSettlement = `  if (route.id === 'home') {
         const canvas = assetOwner.querySelector('canvas')
         const rect = canvas?.getBoundingClientRect()
         return assetOwner.getAttribute('data-home-assets-ready') === 'true'
-          && Boolean(rect && rect.width >= 240 && rect.height >= 240)
+          && assetOwner.getAttribute('data-home-visible-world') === 'cinematic-lived-world-threshold'
+          && Boolean(rect && rect.width >= 240 && rect.height >= 240 && canvas.width > 0 && canvas.height > 0)
       }
-
-      const webglOwner = document.querySelector('.urai-final-home-world[data-home-spatial-renderer="webgl"]')
-      if (webglOwner) {
-        const canvas = webglOwner.querySelector('canvas')
-        const rect = canvas?.getBoundingClientRect()
-        return webglOwner.getAttribute('data-home-ready') === 'true'
-          && webglOwner.getAttribute('data-home-visible-world') === 'final-physical-sanctuary-memory-rooms'
-          && Boolean(rect && rect.width >= 240 && rect.height >= 240)
-      }
-
-      const authoredThreshold = document.querySelector('main.urai-home-spatial-world-final')
       const fallback = document.querySelector('[data-testid="urai-home-accessible-fallback"]')
-      const owner = authoredThreshold || fallback
-      const rect = owner?.getBoundingClientRect()
-      const body = document.body.innerText || ''
-      return Boolean(owner
-        && rect
-        && rect.width >= 240
-        && rect.height >= 240
-        && body.includes('Own your life.')
-        && body.includes('Threshold online'))
-    }, null, { timeout: 45_000, polling: 50 })
+      const rect = fallback?.getBoundingClientRect()
+      return Boolean(fallback && rect && rect.width >= 240 && rect.height >= 240)
+    }, null, { timeout: 90_000, polling: 50 })
   }`
-
 patched = replaceOnce(patched, oldHomeSettlement, currentHomeSettlement, 'current Home readiness')
+
+const oldRouteSettlement = `    await page.locator(route.selector).first().waitFor({ state: 'visible', timeout: 45_000 })
+    await settleSpatialRoute(page, route)`
+const currentRouteSettlement = `    const settleCurrentRoute = async () => {
+      await page.locator(route.selector).first().waitFor({ state: 'visible', timeout: route.id === 'home' ? 90_000 : 45_000 })
+      await settleSpatialRoute(page, route)
+    }
+    try {
+      await settleCurrentRoute()
+    } catch (error) {
+      if (route.id !== 'home') throw error
+      await page.reload({ waitUntil: 'domcontentloaded', timeout: 60_000 })
+      await settleCurrentRoute()
+    }`
+patched = replaceOnce(patched, oldRouteSettlement, currentRouteSettlement, 'bounded Home cold-start retry')
 
 const oldGroundSettlement = `  if (route.id === 'ground') {
     await page.waitForFunction(() => {
@@ -112,34 +125,49 @@ const oldGroundSettlement = `  if (route.id === 'ground') {
   }`
 const currentGroundSettlement = `  if (route.id === 'ground') {
     await page.waitForFunction(() => {
-      const root = document.querySelector('[data-testid="urai-ground-private-workforce-world"]')
+      const root = document.querySelector('[data-testid="urai-ground-lived-world"]')
       const canvas = root?.querySelector('canvas')
       const rect = canvas?.getBoundingClientRect()
-      return root?.getAttribute('data-ground-ready') === 'true'
+      return root instanceof HTMLElement
+        && root.dataset.groundRuntimeOwner === 'first-person-lived-world'
+        && root.dataset.groundVisualOwner === 'atmospheric-living-environment'
+        && root.dataset.groundExploration === 'first-person-no-visible-body'
+        && canvas instanceof HTMLCanvasElement
         && Boolean(rect && rect.width >= 240 && rect.height >= 240)
-    }, null, { timeout: 30_000, polling: 50 })
+        && canvas.width > 0
+        && canvas.height > 0
+    }, null, { timeout: 45_000, polling: 50 })
   }`
-patched = replaceOnce(patched, oldGroundSettlement, currentGroundSettlement, 'current Ground readiness')
+patched = replaceOnce(patched, oldGroundSettlement, currentGroundSettlement, 'current Ground rendered authority')
 
 const oldLifeMapSettlement = `  if (route.id === 'life-map') {
     await page.waitForFunction(() => document.querySelector('[data-testid="urai-true-3d-life-map"]')?.getAttribute('data-life-map-mode') === 'overview', null, { timeout: 30_000, polling: 50 })
   }`
 const currentLifeMapAndReplaySettlement = `  if (route.id === 'life-map') {
-    await page.waitForFunction(() => document.querySelector('[data-testid="urai-true-3d-life-map"]')?.getAttribute('data-life-map-mode') === 'overview', null, { timeout: 60_000, polling: 50 })
+    await page.waitForFunction(() => {
+      const root = document.querySelector('[data-testid="urai-true-3d-life-map"]')
+      const canvas = root?.querySelector('canvas')
+      const rect = canvas?.getBoundingClientRect()
+      return root?.getAttribute('data-life-map-mode') === 'overview'
+        && canvas instanceof HTMLCanvasElement
+        && Boolean(rect && rect.width >= 240 && rect.height >= 240)
+        && canvas.width > 0
+        && canvas.height > 0
+    }, null, { timeout: 60_000, polling: 50 })
   }
   if (route.id === 'replay') {
     await page.waitForFunction(() => {
-      const root = document.querySelector('[data-testid="cinematic-replay-client"][data-replay-spatial-owner="r3f-memory-theater"]')
+      const root = document.querySelector('[data-testid="cinematic-replay-client"][data-replay-spatial-owner="r3f-lived-memory-environment"]')
       return root?.getAttribute('data-memory-status') === 'demo'
         && root?.getAttribute('data-memory-id') === 'demo:quiet-reset'
         && root?.getAttribute('data-manifest-id') === 'replay-recovery-thread'
         && root?.querySelector('canvas') !== null
     }, null, { timeout: 45_000, polling: 50 })
   }`
-patched = replaceOnce(patched, oldLifeMapSettlement, currentLifeMapAndReplaySettlement, 'current Replay semantic readiness')
+patched = replaceOnce(patched, oldLifeMapSettlement, currentLifeMapAndReplaySettlement, 'current Life Map and Replay rendered readiness')
 
 const oldScreenshot = `    await page.screenshot({ path: path.join(outputDir, screenshot), fullPage: false, animations: 'disabled', caret: 'hide' })`
-const currentScreenshot = `    if (route.id === 'life-map' && viewport.width === 1440) {
+const currentScreenshot = `    if (['home', 'ground', 'life-map'].includes(route.id)) {
       const cdp = await context.newCDPSession(page)
       try {
         const capture = await cdp.send('Page.captureScreenshot', { format: 'png', fromSurface: true, captureBeyondViewport: false })
@@ -148,7 +176,7 @@ const currentScreenshot = `    if (route.id === 'life-map' && viewport.width ===
         await cdp.detach()
       }
     } else {
-      await page.screenshot({ path: path.join(outputDir, screenshot), fullPage: false, animations: 'disabled', caret: 'hide' })
+      await page.screenshot({ path: path.join(outputDir, screenshot), fullPage: false, animations: 'disabled', caret: 'hide', timeout: 60_000 })
     }`
 patched = replaceOnce(patched, oldScreenshot, currentScreenshot, 'Life Map viewport capture')
 
@@ -182,18 +210,31 @@ patched = replaceOnce(
 )
 
 for (const [label, marker] of [
-  ['Ground current owner readiness', `root?.getAttribute('data-ground-ready') === 'true'`],
+  ['Home current visible-world authority', `data-home-visible-world') === 'cinematic-lived-world-threshold'`],
+  ['Bounded Home cold-start retry', `if (route.id !== 'home') throw error`],
+  ['Ground current structural owner', `data-testid="urai-ground-lived-world"`],
+  ['Ground current runtime owner', `groundRuntimeOwner === 'first-person-lived-world'`],
+  ['Ground current visual owner', `groundVisualOwner === 'atmospheric-living-environment'`],
+  ['Ground first-person authority', `groundExploration === 'first-person-no-visible-body'`],
   ['Ground canvas geometry', `rect.width >= 240 && rect.height >= 240`],
-  ['Ground current product copy', `Private infrastructure beneath the living world`],
-  ['Replay current spatial owner', `data-replay-spatial-owner="r3f-memory-theater"`],
+  ['Life Map current sample disclosure', `Disclosed sample · not your memories`],
+  ['Replay current spatial owner', `data-replay-spatial-owner="r3f-lived-memory-environment"`],
   ['Replay fixture memory identity', `data-memory-id') === 'demo:quiet-reset'`],
   ['Replay manifest identity', `data-manifest-id') === 'replay-recovery-thread'`],
-  ['Life Map CDP viewport evidence', `Page.captureScreenshot`],
+  ['Life Map rendered canvas evidence', `data-life-map-mode') === 'overview'`],
+  ['WebGL-heavy CDP viewport evidence', `['home', 'ground', 'life-map'].includes(route.id)`],
+  ['CDP screenshot authority', `Page.captureScreenshot`],
+  ['XR pre-launch fail-closed copy', `This place isn’t part of your world`],
   ['Focus DOM geometry', `document.querySelector(selector)`],
   ['Focus direct DOM click', `element.click()`],
 ]) {
   if (!patched.includes(marker)) throw new Error(`${label} was not materialized in current visual audit`)
 }
+if (patched.includes(`root?.getAttribute('data-ground-ready') === 'true'`)) throw new Error('stale Ground readiness marker survived current visual audit')
+if (patched.includes('Private infrastructure beneath the living world')) throw new Error('stale Ground copy survived current visual audit')
+if (patched.includes('urai-ground-private-workforce-world')) throw new Error('retired Ground owner survived current visual audit')
+if (patched.includes('Disclosed sample universe')) throw new Error('retired Life Map disclosure survived current visual audit')
+if (patched.includes(`markers: ['URAI AR / VR / XR entry chamber', 'Explorable entry chamber']`)) throw new Error('post-launch XR chamber expectation survived pre-launch visual audit')
 
 await writeFile(runtimeUrl, patched, 'utf8')
 try {

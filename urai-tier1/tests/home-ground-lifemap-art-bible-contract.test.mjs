@@ -5,160 +5,63 @@ import test from 'node:test'
 const read = (path) => fs.readFileSync(path, 'utf8')
 const homeRuntime = read('src/app/HomeSpatialRuntimeLayer.tsx')
 const assetHome = read('src/app/AssetDrivenHomeWorld.tsx')
-const homeProductionEntry = read('src/spatial/layout/HomeWorldProduction.tsx')
-const homeProduction = read('src/spatial/layout/HomeWorldProductionSacred.tsx')
-const homeCss = read('src/spatial/layout/HomeWorldProduction.module.css')
-const fallbackHome = read('src/app/FinalHomeWorld.tsx')
+const homeEntry = read('src/spatial/layout/HomeWorldProduction.tsx')
+const currentHome = read('src/spatial/layout/HomeWorldProductionV223.tsx')
+const currentHomeVisualAuthority = JSON.parse(read('src/app/currentHomeVisualAuthority.json'))
 const groundGateway = read('src/spatial/world/GroundGateway.tsx')
 const groundOwner = read('src/app/GroundSpatialWorldClean.tsx')
-const groundModel = read('src/app/ground/GroundWorldModel.ts')
 const lifeMap = read('src/spatial/lifemap/SpatialLifeMapCanonical.tsx')
-const lifeMapWorld = read('src/components/lifemap/LifeMapProductionWorld.tsx')
 
-const homeGraph = `${homeRuntime}\n${assetHome}\n${homeProductionEntry}\n${homeProduction}\n${homeCss}\n${fallbackHome}`
-const groundGraph = `${groundOwner}\n${groundModel}`
+const has = (source, marker) => assert.ok(source.includes(marker), `missing marker: ${marker}`)
 
-test('Home is one coherent authored Sacred-Tech 3D environment with final physical assets', () => {
+test('Home is direct bodyless camera-only first-person without changing Ground or Sky ownership', () => {
   for (const marker of [
-    'AssetDrivenHomeWorld',
-    'HomeWorldProduction',
-    'data-home-primary-owner="asset-driven"',
-    'data-home-visible-world="moonlit-sacred-tech-sanctuary"',
-    'data-home-world-character="premium-cinematic-sacred-tech"',
-    'data-home-physical-base="authored-obsidian-ritual-platform"',
-    'data-home-visual-ownership="three-dimensional-geometry"',
-    'data-home-desktop-mobile-world="same-scene"',
-    'data-home-embodied-self="makehuman-v4"',
-    'data-home-movement="walk-keyboard-click-touch"',
-    'home-visible-navigable-sanctuary-world',
-    'data-testid="urai-home-embodied-avatar"',
-    'data-testid="urai-home-webgl-orb"',
-    'home-authored-terrain',
-    'home-mountain-horizon',
-    'home-living-vegetation',
-    'home-sanctuary-pavilion',
-    'home-orb-sanctuary',
-    'home-ground-environmental-threshold',
-    'home-life-map-sky-lookout',
-    'home-life-map-physical-portal',
-    'stepEmbodiedMotion',
-    'useMovementInput',
-    'MobileMovementPad',
-  ]) assert.ok(homeGraph.includes(marker), `missing Sacred Home convergence marker: ${marker}`)
+    'bodyless-first-person-home',
+    'direct-first-person-camera-only-no-hands-body-rig',
+    'data-home-avatar-activation-gate="none-direct-first-person-home"',
+    'data-home-ground-entry="physical-world-surface"',
+    'data-home-life-map-entry="visible-sky-broad-interaction"',
+    'home-first-person',
+    'home-living-memory-orb',
+    '/assets/urai/generated/models/urai-orb-avatar-v1.glb',
+    'physicalWorldClick',
+    'event.point.clone()',
+  ]) has(currentHome, marker)
+  assert.doesNotMatch(currentHome, /import\s+\{?\s*HomeEmbodiedAvatar|<HomeEmbodiedAvatar\b|home-human-makehuman-v4\.glb|visible-avatar-presentation-activation-gate|home-avatar-presentation/)
+  assert.match(currentHome, /\/urai-home-user-avatar\//)
+  assert.match(currentHome, /function RetireLegacyHomeHotspots\(\)/)
+  assert.match(currentHome, /data-home-art-revision="v293-direct-bodyless-first-person-convergence"/)
+  assert.match(currentHome, /CURRENT_HOME_PRESENCE_ROOTS = new Set\(\['home-living-memory-orb', 'home-orb-v288-visible-authority'\]\)/)
+})
 
-  assert.match(homeProductionEntry, /export \{ HomeWorldProductionSacred as HomeWorldProduction \} from "\.\/HomeWorldProductionSacred"/)
-  assert.match(groundGateway, /aria-label="Open the ground and descend into Hidden Infrastructure"/)
-  assert.match(homeProduction, /SANCTUARY = '\/assets\/urai\/generated\/models\/home-entry-chamber-v1\.glb'/)
-  assert.match(homeProduction, /ORB_MODEL = '\/assets\/urai\/generated\/models\/urai-orb-avatar-v1\.glb'/)
-  assert.match(homeProduction, /PORTAL_MODEL = '\/assets\/urai\/generated\/models\/portal-ring-master-v1\.glb'/)
-  assert.match(homeProduction, /HUMAN = '\/assets\/urai\/generated\/human-makehuman-v4\/home-human-makehuman-v4\.glb'/)
-  assert.match(homeProduction, /function cloneAuthoredModel\(/)
-  assert.match(homeProduction, /cloneAuthoredMaterial/)
-  assert.match(homeProduction, /object\.castShadow = true/)
-  assert.match(homeProduction, /object\.receiveShadow = true/)
-  assert.match(homeProduction, /function RitualFloor\(/)
-  assert.match(homeProduction, /useGLTF\(SANCTUARY\)/)
-  assert.match(homeProduction, /function MoonAndMist\(/)
-  assert.match(homeProduction, /function SacredOrb\(/)
-  assert.match(homeProduction, /useGLTF\(ORB_MODEL\)/)
-  assert.match(homeProduction, /useAnimations\(orb\.animations, authoredOrb\)/)
-  for (const clip of ['Orb_Resting','Orb_Idle','Orb_Attention','Orb_Listening','Orb_Thinking','Orb_Speaking','Orb_Guiding','Orb_Reflecting','Orb_Calming','Orb_Privacy','Orb_Degraded','Orb_Transition']) {
-    assert.ok(homeProduction.includes(clip), `missing authored Orb state clip: ${clip}`)
-  }
-  assert.match(homeProduction, /if \(reducedMotion\) \{[\s\S]*allActions\.forEach\(\(action\) => action\.stop\(\)\)/)
-  assert.match(homeProduction, /function HumanPresence\(/)
-  assert.match(homeProduction, /useGLTF\(HUMAN\)/)
-  assert.match(homeProduction, /function LifeMapPortal\(/)
-  assert.match(homeProduction, /useGLTF\(PORTAL_MODEL\)/)
-  assert.match(homeProduction, /function Thresholds\(/)
-  assert.match(homeProduction, /function PlayerRig\(/)
-  assert.match(homeProduction, /function SceneReady\(/)
-  assert.match(homeProduction, /\['orb',ORB,2\.5\],\['ground',GROUND,2\.8\],\['life-map',LIFE_MAP,2\.8\]/)
-  assert.match(homeProduction, /prefers-reduced-motion: reduce/)
-  assert.match(homeProduction, /pointer: coarse/)
-  assert.match(homeProduction, /cameraCheckpoint:'home-ground-descent'/)
-  assert.match(homeProduction, /cameraCheckpoint:'home-sky-ascent-complete'/)
-  assert.match(homeProduction, /href:'\/life-map\/\?from=home-sky'/)
+test('Home runtime keeps V288 Orb morphology over V291 interaction semantics', () => {
+  assert.match(assetHome, /cinematic-home-ground-threshold-convergence/)
+  assert.match(currentHome, /home-living-memory-orb/)
+  assert.equal(currentHomeVisualAuthority.artRevision, 'v293-direct-bodyless-first-person-convergence')
+  assert.equal(currentHomeVisualAuthority.currentRuntimeCandidate.homePresentationAuthority, 'direct-bodyless-first-person')
+  assert.equal(currentHomeVisualAuthority.orbVisualAuthority, 'v288-grounded-biomorphic-reliquary')
+  assert.equal(currentHomeVisualAuthority.currentRuntimeCandidate.orbInteractionAuthority, 'v291-current-home-orb-state-and-speech-runtime')
+  assert.match(homeEntry, /HomeWorldProductionV223 as HomeWorldProduction/)
+  assert.match(groundGateway, /aria-label="Enter Ground — explore your physical lived world in first person"/)
   assert.match(homeRuntime, /aria-label="Open Life Map directly"/)
-  assert.match(homeRuntime, /href: '\/life-map\/'/)
-  assert.match(homeProduction, /data-home-runtime-assets="home-entry-chamber-v1\.glb home-human-makehuman-v4\.glb urai-orb-avatar-v1\.glb portal-ring-master-v1\.glb authored-sacred-tech-composite"/)
-  assert.match(homeProduction, /data-home-orb-model-clip=/)
-  assert.doesNotMatch(homeRuntime, /EmbodiedHomeSpatialCanvas|HomeSanctuaryWorld/)
-  assert.doesNotMatch(homeGraph, /genesis-orb-placeholder\.svg|fallback-sky-bloom-12\.webp|fallback-ground-bloom-12\.png|TRANSPARENT_PIXEL/)
-  assert.doesNotMatch(homeGraph, /requestPointerLock|OrbitControls/)
+  assert.match(homeRuntime, /aria-label="Open Ground directly"/)
 })
 
-test('Ground is one embodied cinematic infrastructure world', () => {
+test('Ground remains bodyless first-person and fail-closed around canopy assets', () => {
   for (const marker of [
-    'data-ground-visual-owner="shared-continuity-architecture"',
-    'data-ground-no-compositing-bands="true"',
-    'data-ground-exploration="walkable"',
-    'data-ground-pointer-lock="false"',
-    'data-ground-destination',
-    'ground-continuity-architectural-shell',
-    'ground-walkable-navigation-surface',
-    'ground-walkable-path-network',
-    'ground-central-nexus',
-    'ground-enterable-threshold-',
-    'ground-workforce-and-council-presences',
-    'stepEmbodiedMotion',
-    'useMovementInput',
-    'MobileMovementPad',
-    'EffectComposer',
-    '<Bloom',
-    '<Vignette',
-    'liftedMaterial',
-    'camera.position.lerp',
-  ]) assert.ok(groundGraph.includes(marker), `missing Ground architectural-owner marker: ${marker}`)
-
-  for (const form of ['pavilion', 'sanctuary', 'council', 'transit', 'restorative', 'archive', 'reflection', 'vault', 'observatory', 'aperture', 'theater']) {
-    assert.ok(groundModel.includes(`"${form}"`) || groundModel.includes(`'${form}'`), `missing Ground chamber form: ${form}`)
-  }
-  for (const signature of ['Arrival Horizon', 'Boundary Model', 'Decision Field', 'Movement Table', 'Quiet Pool', 'Provenance Spine', 'Many-Sided Mirror', 'Sovereignty Ledger', 'Consent Thread', 'Relational Weather Field', 'Memory Aperture', 'Replay Gate']) {
-    assert.ok(groundModel.includes(signature), `missing chamber signature: ${signature}`)
-  }
-
-  assert.match(groundOwner, /min-height:48px/)
-  assert.match(groundOwner, /scrollIntoView\(\{ block: "nearest", inline: "nearest" \}\)/)
-  assert.match(groundOwner, /gl=\{\{[^}]*alpha:\s*false/s)
-  assert.match(groundOwner, /<color attach="background" args=\{\["#102b38"\]\} \/>/)
-  assert.match(groundOwner, /<fogExp2 attach="fog" args=\{\["#173843", 0\.012\]\}/)
-  assert.match(groundOwner, /gl\.setClearColor\(0x102b38, 1\)/)
-  assert.match(groundOwner, /gl\.toneMappingExposure = 1\.35/)
-  assert.match(groundOwner, /camera=\{\{ position: \[0, 8\.8, 25\], fov: 52/)
-  assert.match(groundOwner, /\.ground-spatial-root\{[^}]*background:#102b38/)
-  assert.doesNotMatch(groundGraph, /data-ground-visual-owner="authored-provider-art"/)
-  assert.doesNotMatch(groundGraph, /assetCssStack\(groundAssets\.|ground-authored-art|--ground-provider-/)
+    'data-ground-exploration="first-person-no-visible-body"',
+    'data-ground-visible-avatar="false"',
+    'data-ground-visible-hands="false"',
+    'GROUND_BROADLEAF_CANOPY = "/assets/urai/ground-production/cc0/polyhaven-jacaranda-web-v1.glb"',
+    'class GroundCanopyBoundary extends Component',
+    'scanned-understory-remains-if-canopy-load-fails',
+    'new KTX2Loader().setTranscoderPath("/basis/").detectSupport(gl)',
+  ]) has(groundOwner, marker)
+  assert.doesNotMatch(groundOwner, /ground-natural-canopy-v3\.glb|CanopyLeafInstances|makeOrganicTaperedTube/)
 })
 
-test('Life Map is a layered cinematic memory universe with truthful private fallbacks', () => {
-  for (const marker of [
-    'life-map-white-gold-life-core',
-    'life-map-authored-chapter-regions',
-    'life-map-light-bridges',
-    'life-map-curved-semantic-paths',
-    'life-map-foreground-observatory',
-    'life-map-relationship-observatory',
-    'life-map-goal-horizon',
-    'life-map-achievement-monument',
-    'life-map-privacy-vault',
-    'life-map-emotional-weather',
-    'life-map-archive-particles',
-    'life-map-far-future-horizon',
-    'life-map-selected-arrival-sanctuary',
-    'CinematicPostProcessing',
-  ]) assert.match(lifeMapWorld, new RegExp(marker))
-
+test('Life Map keeps its private default boundary', () => {
   assert.match(lifeMap, /data-testid="urai-life-map-authored-fallback"/)
-  assert.match(lifeMap, /data-life-map-fallback="authored-semantic"/)
-  assert.match(lifeMap, /assetCssStack\(lifeMapAssets\.primary\)/)
-  assert.match(lifeMap, /Your life has depth\./)
-  assert.match(lifeMap, /WebGL is unavailable\. Semantic navigation remains available/)
-  assert.match(lifeMap, /data-testid="urai-life-map-signed-out-threshold"/)
   assert.match(lifeMap, /data-private-memory-mounted="false"/)
   assert.match(lifeMap, /No private memory data is mounted\./)
-  assert.match(lifeMap, /Open disclosed sample/)
-  assert.match(lifeMap, /if \(current\.get\("demo"\) === "1"\) \{ setMode\("explicit-demo"\); return; \}/)
-  assert.match(lifeMap, /Return Home/)
-  assert.doesNotMatch(lifeMap, /FALLBACK_MEMORIES|Restoring Life Map|Loading home experience/)
 })

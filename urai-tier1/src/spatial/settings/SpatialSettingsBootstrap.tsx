@@ -1,57 +1,38 @@
-"use client";
+'use client'
 
-import { useEffect, useMemo, useState } from "react";
-import { readSpatialSettings, writeSpatialSettings } from "@/spatial/settings/spatialSettingsIO";
-import { useSpatialSettingsStore } from "@/spatial/settings/spatialSettingsStore";
-import type { SpatialSettings } from "@/spatial/settings/spatialSettingsTypes";
-
-type SettingsWindow = Window & {
-};
+import { useEffect, useMemo, useState } from 'react'
+import { readSpatialSettings, writeSpatialSettings } from '@/spatial/settings/spatialSettingsIO'
+import { useSpatialSettingsStore } from '@/spatial/settings/spatialSettingsStore'
 
 export default function SpatialSettingsBootstrap() {
-  const hydrate = useSpatialSettingsStore((s) => s.hydrate);
-
-  const reducedMotion = useSpatialSettingsStore((s) => s.reducedMotion);
-  const showImportExport = useSpatialSettingsStore((s) => s.showImportExport);
-  const telemetryEnabled = useSpatialSettingsStore((s) => s.telemetryEnabled);
-  const showTelemetryPanel = useSpatialSettingsStore((s) => s.showTelemetryPanel);
-  const persistSnapshots = useSpatialSettingsStore((s) => s.persistSnapshots);
-
-  const [ready, setReady] = useState(false);
+  const hydrate = useSpatialSettingsStore((state) => state.hydrate)
+  const reducedMotion = useSpatialSettingsStore((state) => state.reducedMotion)
+  const showImportExport = useSpatialSettingsStore((state) => state.showImportExport)
+  const telemetryEnabled = useSpatialSettingsStore((state) => state.telemetryEnabled)
+  const showTelemetryPanel = useSpatialSettingsStore((state) => state.showTelemetryPanel)
+  const persistSnapshots = useSpatialSettingsStore((state) => state.persistSnapshots)
+  const [ready, setReady] = useState(false)
 
   useEffect(() => {
-    hydrate(readSpatialSettings());
-    setReady(true);
-  }, [hydrate]);
+    hydrate(readSpatialSettings())
+    setReady(true)
+  }, [hydrate])
 
-  const settings = useMemo(
-    () => ({
-      schema: "urai.spatial.settings.v1" as const,
-      reducedMotion,
-      showImportExport,
-      telemetryEnabled,
-      showTelemetryPanel,
-      persistSnapshots,
-    }),
-    [
-      reducedMotion,
-      showImportExport,
-      telemetryEnabled,
-      showTelemetryPanel,
-      persistSnapshots,
-    ],
-  );
+  const settings = useMemo(() => ({
+    schema: 'urai.spatial.settings.v1' as const,
+    reducedMotion,
+    showImportExport,
+    telemetryEnabled,
+    showTelemetryPanel,
+    persistSnapshots,
+  }), [reducedMotion, showImportExport, telemetryEnabled, showTelemetryPanel, persistSnapshots])
 
   useEffect(() => {
-    if (!ready) return;
-    writeSpatialSettings(settings);
-    const target = window as SettingsWindow;
-    window.dispatchEvent(
-      new CustomEvent("urai:spatial-settings", {
-        detail: settings,
-      }),
-    );
-  }, [ready, settings]);
+    if (!ready) return
+    writeSpatialSettings(settings)
+    document.documentElement.dataset.uraiReducedMotion = reducedMotion ? 'true' : 'false'
+    window.dispatchEvent(new CustomEvent('urai:spatial-settings', { detail: settings }))
+  }, [ready, reducedMotion, settings])
 
-  return null;
+  return null
 }

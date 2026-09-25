@@ -4,22 +4,19 @@
 
 This change replaces node-only and recycled placeholder glTF files with deterministic, self-contained glTF 2.0 models containing real vertices, faces, normals, indices, materials, and embedded buffers.
 
-The first modular pack contains 14 runtime fallback assets:
+The current canon-compatible modular pack contains 11 runtime fallback assets:
 
 1. Entry chamber shell
 2. Entry floor ring
 3. Central orb
-4. Universal portal ring
 5. Ground descent hatch
 6. Ground room shell
 7. Ground terminal
 8. Agent source station
 9. Life Map sky dome
 10. Memory star node
-11. Focus star tunnel
-12. Replay film portal
-13. Passport identity plinth
-14. Status control board
+10. Passport identity plinth
+11. Status control board
 
 ## Runtime and authority boundary
 
@@ -56,18 +53,18 @@ The generated receipt is written to:
 
 The workflow fails unless:
 
-- all 14 model paths exist;
+- all 11 canon-compatible model paths exist;
 - every model has non-zero vertices and faces;
-- the pack contains at least 20,000 vertices;
-- the pack contains at least 40,000 faces;
+- the pack contains at least 15,000 vertices;
+- the pack contains at least 30,000 faces;
 - receipt byte counts match files on disk;
 - the fallback inventory exists and identifies the generated namespace as selected production authority.
 
-The locally verified deterministic output contains 23,712 vertices and 46,776 faces across the 14-model pack.
+The locally verified deterministic output contains 15,532 vertices and 30,504 faces across the 11-model pack.
 
 ## Status language
 
-These are real modular first-pass proof/fallback models. They replace empty geometry and prove the complete runtime loading path, but they are not final art and must not be described as selected production assets.
+These are real modular first-pass proof/fallback models. Portal-ring, Focus-tunnel, and Replay-film-portal geometry are deliberately excluded because current canon rejects those visual grammars. The remaining models replace empty geometry and prove the complete runtime loading path, but they are not final art and must not be described as selected production assets.
 
 Authored textures, UVs, animation rigs, LOD variants, collision variants, baked lighting, device-specific optimization, route-level visual review, compression, provenance receipts and final selection remain separate production-art gates.
 

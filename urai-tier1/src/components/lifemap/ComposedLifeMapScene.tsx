@@ -6,15 +6,18 @@ import { Suspense, useCallback, useEffect, useLayoutEffect, useMemo, useRef, use
 import * as THREE from "three";
 import { useAdaptiveSpatialQuality } from "@/spatial/performance/useAdaptiveSpatialQuality";
 import { useLifeMapEvents, type LifeMapSourceMode } from "./useLifeMapEvents";
+import { lifeMapOverviewCamera, lifeMapWorldPoint } from "./lifeMapSpatialLayout";
 import type { LifeMapNode } from "./lifeMapData";
 import { LifeMapProductionWorld, type LifeMapJourneyPhase } from "./LifeMapProductionWorld";
+import { LifeMapGoldMasterOverlay } from "./LifeMapGoldMasterOverlay";
 import { artifactFamilyLabel, resolveArtifactFamily } from "./lifeMapVisualSystem";
+import { LIFE_MAP_SELECTION_EVENT, readLifeMapSelection } from "./lifeMapSelection";
 
-const OVERVIEW_POSITION: [number, number, number] = [0, 1.55, 13.4];
-const OVERVIEW_TARGET: [number, number, number] = [0, 0.12, -4.5];
+const OVERVIEW_POSITION: [number, number, number] = [0, 6.2, 18.5];
+const OVERVIEW_TARGET: [number, number, number] = [0, -0.9, -18.0];
 const DEFAULT_MANIFEST_ID = "replay-recovery-thread";
-const SELECTED_MEMORY_STANDOFF = 5.8;
-const PHASE_DURATION_MS = { departure: 280, travel: 720, approach: 820 } as const;
+const SELECTED_MEMORY_STANDOFF = 7.4;
+const PHASE_DURATION_MS = { departure: 900, travel: 1500, approach: 2200 } as const;
 
 type JourneyPhase = "overview" | "departure" | "travel" | "approach" | "arrival";
 type WebGLState = "ready" | "lost" | "recovering" | "failed";
@@ -28,59 +31,65 @@ function tuple(vector: THREE.Vector3): [number, number, number] {
   return [vector.x, vector.y, vector.z];
 }
 
-function selectedStagePoint(node: LifeMapNode, portrait: boolean) {
-  const scale = portrait ? new THREE.Vector3(0.92, 0.96, 0.92) : new THREE.Vector3(1.12, 1.12, 1.08);
-  const position = portrait ? new THREE.Vector3(0, -0.08, 0.9) : new THREE.Vector3(0, -0.16, 0.62);
-  return new THREE.Vector3(...node.position).multiply(scale).add(position);
+function selectedStagePoint(node: LifeMapNode, portrait: boolean, selectedIndex: number) {
+  return new THREE.Vector3(...lifeMapWorldPoint(node, selectedIndex, portrait));
 }
 
-function goalForNode(node: LifeMapNode, phase: JourneyPhase, portrait: boolean): CameraGoal {
-  const target = selectedStagePoint(node, portrait);
+function goalForNode(node: LifeMapNode, phase: JourneyPhase, portrait: boolean, selectedIndex: number): CameraGoal {
+  const target = selectedStagePoint(node, portrait, selectedIndex);
   const overview = new THREE.Vector3(...OVERVIEW_POSITION);
   const direction = overview.clone().sub(target);
   if (direction.lengthSq() < 0.01) direction.set(0, 0.1, 1);
   direction.normalize();
+  const lateral = new THREE.Vector3(direction.z, 0, -direction.x).normalize();
+  const side = Math.sign(target.x) || 1;
   const arrival = target.clone().addScaledVector(direction, SELECTED_MEMORY_STANDOFF);
   arrival.y += 0.34;
-  if (phase === "departure") return { position: OVERVIEW_POSITION, target: tuple(target) };
+  if (phase === "departure") {
+    const departure = overview.clone().addScaledVector(lateral, -side * 2.4);
+    departure.y += 1.7;
+    departure.z += 1.4;
+    const departureTarget = overview.clone().lerp(target, .32);
+    departureTarget.y -= 1.1;
+    return { position: tuple(departure), target: tuple(departureTarget) };
+  }
   if (phase === "travel") {
-    const travel = overview.clone().lerp(arrival, 0.5);
-    travel.x += (Math.sign(target.x) || 1) * 1.25;
-    travel.y += 1.2;
-    return { position: tuple(travel), target: tuple(target) };
+    const travel = target.clone().addScaledVector(direction, SELECTED_MEMORY_STANDOFF + 12.4).addScaledVector(lateral, side * 3.4);
+    travel.y += 3.4;
+    const travelTarget = target.clone().addScaledVector(direction, -2.2);
+    travelTarget.y -= .42;
+    return { position: tuple(travel), target: tuple(travelTarget) };
   }
   if (phase === "approach") {
-    const approach = target.clone().addScaledVector(direction, SELECTED_MEMORY_STANDOFF + 2.1);
-    approach.y += 0.7;
+    const approach = target.clone().addScaledVector(direction, SELECTED_MEMORY_STANDOFF + 4.4).addScaledVector(lateral, side * 1.25);
+    approach.y += 1.45;
     return { position: tuple(approach), target: tuple(target) };
   }
   return { position: tuple(arrival), target: tuple(target) };
 }
 
-function CameraRig({ selected, phase, reducedMotion }: { selected: LifeMapNode | null; phase: JourneyPhase; reducedMotion: boolean }) {
+function CameraRig({ nodes, selected, selectedIndex, phase, reducedMotion }: { nodes: LifeMapNode[]; selectedIndex: number; selected: LifeMapNode | null; phase: JourneyPhase; reducedMotion: boolean }) {
   const { camera, size } = useThree();
   const initialized = useRef(false);
   const positionGoal = useRef(new THREE.Vector3());
   const targetGoal = useRef(new THREE.Vector3());
   const lookTarget = useRef(new THREE.Vector3(...OVERVIEW_TARGET));
+  const overviewGoal = useMemo(() => lifeMapOverviewCamera(nodes, size.height > size.width, size.width / Math.max(size.height, 1)), [nodes, size.height, size.width]);
 
   const resolve = useCallback(() => {
     const portrait = size.height > size.width;
-    const goal = selected ? goalForNode(selected, phase, portrait) : { position: OVERVIEW_POSITION, target: OVERVIEW_TARGET };
+    const goal = selected ? goalForNode(selected, phase, portrait, selectedIndex) : overviewGoal;
     positionGoal.current.set(...goal.position);
     targetGoal.current.set(...goal.target);
     if (portrait) {
-      if (phase === "overview") {
-        positionGoal.current.set(0, 2.15, 16.6);
-        targetGoal.current.set(0, 0.2, -4.6);
-      } else {
-        const offset = positionGoal.current.clone().sub(targetGoal.current).multiplyScalar(1.34);
+      if (phase !== "overview") {
+        const offset = positionGoal.current.clone().sub(targetGoal.current).multiplyScalar(1.08);
         positionGoal.current.copy(targetGoal.current).add(offset);
-        positionGoal.current.y += 0.42;
+        positionGoal.current.y += 0.22;
       }
     }
     return portrait;
-  }, [phase, selected, size.height, size.width]);
+  }, [overviewGoal, phase, selected, selectedIndex, size.height, size.width]);
 
   useLayoutEffect(() => {
     if (initialized.current) return;
@@ -89,7 +98,7 @@ function CameraRig({ selected, phase, reducedMotion }: { selected: LifeMapNode |
     lookTarget.current.copy(targetGoal.current);
     camera.lookAt(lookTarget.current);
     if (camera instanceof THREE.PerspectiveCamera) {
-      camera.fov = portrait ? (phase === "overview" ? 55 : 57) : (phase === "arrival" ? 44 : 46);
+      camera.fov = portrait ? (phase === "overview" ? 50 : 54) : phase === "departure" ? 56 : phase === "travel" ? 51 : phase === "approach" ? 48 : 46;
       camera.updateProjectionMatrix();
     }
     initialized.current = true;
@@ -98,17 +107,17 @@ function CameraRig({ selected, phase, reducedMotion }: { selected: LifeMapNode |
   useFrame(({ pointer }, delta) => {
     const portrait = resolve();
     if (phase === "overview" && !reducedMotion) {
-      positionGoal.current.x += pointer.x * (portrait ? 0.45 : 1.05);
-      positionGoal.current.y += pointer.y * (portrait ? 0.24 : 0.42);
-      targetGoal.current.x += pointer.x * 0.34;
-      targetGoal.current.y += pointer.y * 0.16;
+      positionGoal.current.x += pointer.x * (portrait ? 1.25 : 4.2);
+      positionGoal.current.y += pointer.y * (portrait ? 0.62 : 1.1);
+      targetGoal.current.x += pointer.x * (portrait ? 0.55 : 1.45);
+      targetGoal.current.y += pointer.y * (portrait ? 0.28 : 0.44);
     }
-    const fov = portrait ? (phase === "overview" ? 55 : 57) : (phase === "arrival" ? 44 : 46);
+    const fov = portrait ? (phase === "overview" ? 50 : 54) : phase === "departure" ? 56 : phase === "travel" ? 51 : phase === "approach" ? 48 : 46;
     if (reducedMotion) {
       camera.position.copy(positionGoal.current);
       lookTarget.current.copy(targetGoal.current);
     } else {
-      const rate = phase === "travel" ? 1.9 : phase === "approach" ? 2.9 : phase === "arrival" ? 5.2 : 4.1;
+      const rate = phase === "departure" ? 2.4 : phase === "travel" ? 2.15 : phase === "approach" ? 3.1 : phase === "arrival" ? 5.2 : 4.1;
       camera.position.x = THREE.MathUtils.damp(camera.position.x, positionGoal.current.x, rate, delta);
       camera.position.y = THREE.MathUtils.damp(camera.position.y, positionGoal.current.y, rate, delta);
       camera.position.z = THREE.MathUtils.damp(camera.position.z, positionGoal.current.z, rate, delta);
@@ -181,20 +190,22 @@ function SoftwareRendererCadence({ active, documentVisible }: { active: boolean;
       return;
     }
 
-    // SwiftShader/software WebGL must remain truly 3D without monopolizing the main thread.
-    // Bootstrap enough real frames for render proof, then sustain a bounded ten-FPS cadence.
     setFrameloop("demand");
     let disposed = false;
     const bootstrap = [0, 40, 80, 120, 180, 260].map((delay) => window.setTimeout(() => {
       if (!disposed) invalidate();
     }, delay));
-    const interval = window.setInterval(() => {
-      if (!disposed) invalidate();
-    }, 100);
+    let cadenceTimer = 0;
+    const renderNext = () => {
+      if (disposed) return;
+      invalidate();
+      cadenceTimer = window.setTimeout(renderNext, 250);
+    };
+    cadenceTimer = window.setTimeout(renderNext, 250);
     return () => {
       disposed = true;
       bootstrap.forEach((timer) => window.clearTimeout(timer));
-      window.clearInterval(interval);
+      window.clearTimeout(cadenceTimer);
     };
   }, [active, documentVisible, invalidate, setFrameloop]);
   return null;
@@ -210,38 +221,43 @@ function truthLabel(sourceMode: LifeMapSourceMode) {
 }
 
 function phaseLabel(phase: JourneyPhase) {
-  if (phase === "overview") return "Cosmic overview";
-  if (phase === "departure") return "Leaving overview";
-  if (phase === "travel") return "Traveling the memory field";
-  if (phase === "approach") return "Entering the chapter";
-  return "Intimate memory chamber";
+  if (phase === "overview") return "Living galaxy overview";
+  if (phase === "departure") return "Leaving the overview";
+  if (phase === "travel") return "Crossing the memory cluster";
+  if (phase === "approach") return "Approaching selected Memory Star";
+  return "Selected Memory Star";
 }
 
 export default function ComposedLifeMapScene() {
   const router = useRouter();
   const params = useSearchParams();
   const adaptiveProfile = useAdaptiveSpatialQuality();
-  const [softwareRenderer, setSoftwareRenderer] = useState(false);
+  const [softwareRenderer, setSoftwareRenderer] = useState<boolean | null>(null);
   const profile = useMemo(() => ({
     ...adaptiveProfile,
-    tier: softwareRenderer ? "low" as const : adaptiveProfile.tier === "high" ? "medium" as const : adaptiveProfile.tier,
-    pixelRatioMax: softwareRenderer ? 1 : Math.min(adaptiveProfile.pixelRatioMax, 1.25),
-    shadows: false,
-    postprocessing: false,
-    antialias: false,
+    tier: softwareRenderer === true ? "low" as const : adaptiveProfile.tier,
+    pixelRatioMax: softwareRenderer !== false ? 1 : Math.min(adaptiveProfile.pixelRatioMax, adaptiveProfile.tier === "high" ? 1.5 : 1.25),
+    shadows: softwareRenderer === false && adaptiveProfile.tier === "high" && !adaptiveProfile.reducedMotion,
+    postprocessing: softwareRenderer === false && adaptiveProfile.tier === "high" && !adaptiveProfile.reducedMotion,
+    antialias: true,
   }), [adaptiveProfile, softwareRenderer]);
   const explicitDemoRequested = params.get("demo") === "1";
   const overviewRequested = params.get("overview") === "1";
+  const memoryStarReview = explicitDemoRequested ? safeToken(params.get("memoryStarReview")) : "";
+  const memoryStarReviewActive = ["isolated", "hover", "near-cluster"].includes(memoryStarReview);
   const { nodes, loading, sourceMode } = useLifeMapEvents(explicitDemoRequested ? "demo-user" : undefined);
   const queryNode = safeToken(params.get("node") || params.get("memoryId"));
   const manifestId = safeToken(params.get("manifestId"), DEFAULT_MANIFEST_ID);
   const [selectedId, setSelectedId] = useState<string | null>(overviewRequested ? null : queryNode || null);
-  const [phase, setPhase] = useState<JourneyPhase>("overview");
+  const [phase, setPhase] = useState<JourneyPhase>(() => !overviewRequested && queryNode ? "arrival" : "overview");
   const [webglState, setWebglState] = useState<WebGLState>("ready");
   const journeyToken = useRef(0);
   const overviewPending = useRef(overviewRequested);
+  const selectionRoutePending = useRef(false);
   const restoredRoutePending = useRef(Boolean(!overviewRequested && queryNode));
   const selected = useMemo(() => nodes.find((node) => node.id === selectedId) || null, [nodes, selectedId]);
+  const reviewSelected = memoryStarReviewActive ? nodes[0] ?? null : selected;
+  const reviewPhase: JourneyPhase = memoryStarReviewActive ? "arrival" : phase;
 
   const withIdentity = useCallback((next: URLSearchParams) => {
     if (explicitDemoRequested) next.set("demo", "1");
@@ -270,6 +286,7 @@ export default function ComposedLifeMapScene() {
     restoredRoutePending.current = false;
     overviewPending.current = false;
     journeyToken.current += 1;
+    selectionRoutePending.current = true;
     setSelectedId(node.id);
     if (profile.reducedMotion) setPhase("arrival");
     else setPhase("departure");
@@ -279,6 +296,20 @@ export default function ComposedLifeMapScene() {
     if (node.eraId) next.set("era", node.eraId);
     router.replace(`/life-map?${next.toString()}`, { scroll: false });
   }, [profile.reducedMotion, router, withIdentity]);
+
+  // Own semantic selection outside the suspended WebGL subtree. Keyboard and
+  // assistive-technology activation must update the selected memory even while
+  // software WebGL is still loading assets or has not published render-ready.
+  useEffect(() => {
+    const handleSelectionRequest = (event: Event) => {
+      const detail = readLifeMapSelection(event);
+      if (!detail) return;
+      const node = nodes.find((candidate) => candidate.id === detail.nodeId);
+      if (node) selectNode(node);
+    };
+    window.addEventListener(LIFE_MAP_SELECTION_EVENT, handleSelectionRequest);
+    return () => window.removeEventListener(LIFE_MAP_SELECTION_EVENT, handleSelectionRequest);
+  }, [nodes, selectNode]);
 
   const overview = useCallback(() => {
     const retainedId = selectedId || queryNode;
@@ -308,6 +339,8 @@ export default function ComposedLifeMapScene() {
   }, [selected, withIdentity]);
 
   useEffect(() => {
+    if (!overviewRequested) selectionRoutePending.current = false;
+    if (selectionRoutePending.current) return;
     if (!overviewRequested) return;
     restoredRoutePending.current = false;
     overviewPending.current = false;
@@ -334,20 +367,24 @@ export default function ComposedLifeMapScene() {
     setPhase("arrival");
   }, [nodes, overviewRequested, phase, queryNode, selectedId]);
 
+  const returnHome = useCallback(() => {
+    router.push(explicitDemoRequested ? "/home?demo=1" : "/home");
+  }, [explicitDemoRequested, router]);
+
   useEffect(() => {
     const handler = (event: KeyboardEvent) => {
       if (event.defaultPrevented || event.key !== "Escape" || (event.target instanceof HTMLElement && event.target.matches("input,textarea,select,[role='textbox']"))) return;
       event.preventDefault();
-      if (selectedId) overview(); else router.push("/home");
+      if (selectedId) overview(); else returnHome();
     };
     window.addEventListener("keydown", handler, true);
     return () => window.removeEventListener("keydown", handler, true);
-  }, [overview, router, selectedId]);
+  }, [overview, returnHome, selectedId]);
 
   useEffect(() => () => { document.body.style.cursor = ""; }, []);
 
   const recovery = webglState !== "ready";
-  const thresholdsVisible = Boolean(selected);
+  const thresholdsVisible = Boolean(selected && phase === "arrival");
   return <main
     className="life-map-root"
     style={{ position: "fixed", inset: 0, width: "100vw", height: "100svh", minWidth: "100vw", minHeight: "100svh", overflow: "hidden", opacity: 1, visibility: "visible", background: "#02050b" }}
@@ -358,9 +395,14 @@ export default function ComposedLifeMapScene() {
     data-life-map-mode={selected ? "selected" : "overview"}
     data-life-map-scale={selected ? phase === "arrival" ? "intimate" : "regional" : "cosmic"}
     data-life-map-production-world="true"
+    data-life-map-art-revision="v294-z-separated-layered-galaxy-stellar-review"
+    data-life-map-reference-form="astronomical-layered-personal-galaxy"
+    data-life-map-reference-depth="v294-z-separated-selected-memory-star-preserved-galaxy-depth"
+    data-life-map-memory-star-review={memoryStarReviewActive ? memoryStarReview : "none"}
     data-webgl-state={webglState}
-    data-software-renderer={softwareRenderer ? "true" : "false"}
-    data-software-render-cadence={softwareRenderer ? "bounded-demand-10fps" : "continuous"}
+    data-software-renderer={softwareRenderer === null ? "detecting" : softwareRenderer ? "true" : "false"}
+    data-software-render-cadence={softwareRenderer !== false || profile.reducedMotion ? "bounded-demand-4fps" : "continuous"}
+    data-life-map-quality={profile.tier}
     data-home-companion-owned="false"
   >
     <h1 className="sr-only">URAI Life Map private universe</h1>
@@ -368,10 +410,10 @@ export default function ComposedLifeMapScene() {
     <span className="life-map-depth-contract" data-depth-band="middle" aria-hidden="true" />
     <span className="life-map-depth-contract" data-depth-band="far" aria-hidden="true" />
     <Canvas
-      camera={{ position: OVERVIEW_POSITION, fov: 46, near: 0.08, far: 140 }}
+      camera={{ position: OVERVIEW_POSITION, fov: 52, near: 0.08, far: 160 }}
       dpr={[1, profile.pixelRatioMax]}
       shadows={profile.shadows}
-      frameloop={profile.documentVisible ? "always" : "never"}
+      frameloop={profile.documentVisible ? "demand" : "never"}
       gl={{ antialias: profile.antialias, powerPreference: "high-performance", alpha: false }}
       onCreated={({ gl }) => {
         setSoftwareRenderer(isSoftwareWebGLRenderer(gl));
@@ -381,18 +423,19 @@ export default function ComposedLifeMapScene() {
         gl.setClearColor("#02050b", 1);
       }}
     >
-      <SoftwareRendererCadence active={softwareRenderer} documentVisible={profile.documentVisible} />
+      <SoftwareRendererCadence active={softwareRenderer !== false || profile.reducedMotion} documentVisible={profile.documentVisible} />
       <WebGLRecoveryBridge onStateChange={setWebglState} />
       <Suspense fallback={null}>
         <LifeMapProductionWorld
           nodes={nodes}
-          selected={selected}
-          phase={phase as LifeMapJourneyPhase}
+          selected={reviewSelected}
+          phase={reviewPhase}
           profile={profile}
           onSelect={selectNode}
-          cameraRig={<CameraRig selected={selected} phase={phase} reducedMotion={profile.reducedMotion} />}
+          cameraRig={<CameraRig nodes={nodes} selectedIndex={Math.max(0, nodes.findIndex(node => node.id === reviewSelected?.id))} selected={reviewSelected} phase={reviewPhase} reducedMotion={profile.reducedMotion} />}
           webglRecovery={null}
         />
+        <LifeMapGoldMasterOverlay nodes={nodes} selected={selected} phase={phase as LifeMapJourneyPhase} reducedMotion={profile.reducedMotion} onSelect={selectNode} />
       </Suspense>
     </Canvas>
 
@@ -407,6 +450,13 @@ export default function ComposedLifeMapScene() {
       <small>{selected ? `${artifactFamilyLabel(selected)} · ${selected.dateLabel}` : "Identity · chapters · relationships · future"}</small>
     </div>
 
+    {!selected && !recovery ? <button
+      type="button"
+      className="life-map-home-return"
+      data-life-map-overview-home-return="true"
+      aria-label="Return Home"
+      onClick={returnHome}
+    >Home</button> : null}
     {thresholdsVisible ? <nav className="life-map-thresholds" aria-label="Selected memory actions" data-family={resolveArtifactFamily(selected!)}>
       <button className="focus-threshold" onClick={() => router.push(destinationHref("focus"))}>
         <span>Inspect</span><strong>Enter Focus</strong>
@@ -421,11 +471,11 @@ export default function ComposedLifeMapScene() {
       <h2>{webglState === "lost" ? "Visual field paused safely" : "Restoring visual field"}</h2>
       <p>Your selected memory, privacy state, and return position remain preserved.</p>
       <button onClick={overview}>Open semantic overview</button>
-      <button onClick={() => router.push("/home")}>Return Home</button>
+      <button onClick={returnHome}>Return Home</button>
     </section> : null}
 
     <style jsx>{`
-      .life-map-root{position:fixed;inset:0;z-index:100;overflow:hidden;background:#02050b;color:#f8fbff;font-family:Inter,system-ui;isolation:isolate}.life-map-root :global(canvas){position:absolute!important;inset:0;width:100%!important;height:100%!important;opacity:1!important;visibility:visible!important}.life-map-depth-contract{display:none}.life-map-title{position:absolute;z-index:12;top:max(22px,env(safe-area-inset-top));left:max(22px,env(safe-area-inset-left));display:grid;gap:5px;max-width:min(520px,calc(100vw - 44px));pointer-events:none;text-shadow:0 10px 34px #000}.life-map-title span,.life-map-title em{font:800 10px/1.2 Inter,system-ui;letter-spacing:.22em;text-transform:uppercase;color:rgba(211,243,255,.76);font-style:normal}.life-map-title strong{font:750 clamp(25px,4vw,48px)/.96 Inter,system-ui;letter-spacing:-.05em;max-width:12ch}.life-map-status{position:absolute;z-index:12;right:max(20px,env(safe-area-inset-right));top:max(20px,env(safe-area-inset-top));display:grid;justify-items:end;gap:4px;padding:10px 13px;border-right:1px solid rgba(225,243,255,.34);text-shadow:0 6px 20px #000;pointer-events:none}.life-map-status span{font:800 9px/1 Inter,system-ui;letter-spacing:.17em;text-transform:uppercase;color:#e9f8ff}.life-map-status small{font-size:10px;color:rgba(220,240,251,.62)}.life-map-thresholds{position:absolute;z-index:16;left:50%;bottom:max(24px,calc(env(safe-area-inset-bottom) + 14px));transform:translateX(-50%);display:grid;grid-template-columns:minmax(148px,1fr) minmax(148px,1fr) auto;gap:10px;width:min(560px,calc(100vw - 40px));align-items:stretch}.life-map-thresholds button,.life-map-recovery button{min-height:58px;border:1px solid rgba(220,248,255,.24);border-radius:18px;background:linear-gradient(145deg,rgba(8,22,35,.86),rgba(2,8,16,.78));color:#f8fbff;padding:9px 16px;font-weight:800;cursor:pointer;box-shadow:0 18px 50px rgba(0,0,0,.38),inset 0 1px rgba(255,255,255,.05)}.life-map-thresholds button span{display:block;font-size:8px;letter-spacing:.16em;text-transform:uppercase;color:rgba(211,239,251,.62)}.life-map-thresholds button strong{display:block;margin-top:3px;font-size:14px}.life-map-thresholds .focus-threshold{border-color:rgba(159,231,255,.48)}.life-map-thresholds .replay-threshold{border-color:rgba(244,214,152,.48)}.life-map-thresholds .overview-return{min-width:58px;padding:0 12px;border-radius:999px;font-size:10px;letter-spacing:.08em;text-transform:uppercase}.life-map-thresholds button:disabled{opacity:.36;cursor:not-allowed}.life-map-recovery{position:absolute;z-index:30;inset:0;display:grid;place-content:center;justify-items:center;gap:12px;padding:24px;text-align:center;background:rgba(1,3,10,.92)}.life-map-recovery h2,.life-map-recovery p{margin:0}.life-map-recovery p{max-width:42ch;color:rgba(231,244,252,.74)}:global(.life-map-world-label){display:grid;gap:3px;min-width:142px;padding:9px 11px;border:1px solid rgba(205,244,255,.18);border-radius:14px;background:rgba(2,7,18,.64);backdrop-filter:blur(12px);color:#fff;text-align:left;cursor:pointer;box-shadow:0 12px 34px rgba(0,0,0,.32)}:global(.life-map-world-label[data-active='true']){border-color:rgba(245,226,174,.74);background:rgba(14,30,43,.86)}:global(.life-map-world-label strong){font-size:12px}:global(.life-map-world-label span){font-size:9px;color:rgba(221,241,255,.68)}:global(.life-map-chapter-label){display:block;padding:5px 8px;border-left:1px solid rgba(210,240,255,.3);font:800 9px/1 Inter,system-ui;letter-spacing:.18em;text-transform:uppercase;color:rgba(222,244,255,.72);text-shadow:0 8px 28px #000}:global(.life-map-chapter-label[data-muted='true']){opacity:.42}@media(max-width:700px){.life-map-title{top:max(14px,env(safe-area-inset-top));left:14px;max-width:calc(100vw - 28px)}.life-map-title strong{font-size:28px;max-width:10ch}.life-map-status{top:max(15px,env(safe-area-inset-top));right:12px;max-width:44vw}.life-map-status small{display:none}.life-map-thresholds{bottom:max(12px,env(safe-area-inset-bottom));grid-template-columns:1fr 1fr;width:calc(100vw - 24px);gap:8px}.life-map-thresholds .overview-return{grid-column:1/-1;justify-self:center;min-height:44px;width:108px}.life-map-thresholds button{min-height:56px;padding:8px 10px}:global(.life-map-world-label){min-width:118px;padding:7px 8px}:global(.life-map-chapter-label){font-size:8px;letter-spacing:.14em}}@media(prefers-reduced-motion:reduce){.life-map-root *{transition:none!important;animation:none!important}}@media(forced-colors:active){.life-map-title,.life-map-status,.life-map-thresholds,.life-map-recovery{forced-color-adjust:auto}.life-map-thresholds button,.life-map-recovery button,:global(.life-map-world-label){border:2px solid CanvasText;background:Canvas;color:CanvasText}}
+      .life-map-root{position:fixed;inset:0;z-index:100;overflow:hidden;background:#02050b;color:#f8fbff;font-family:Inter,system-ui;isolation:isolate}.life-map-root :global(canvas){position:absolute!important;inset:0;width:100%!important;height:100%!important;opacity:1!important;visibility:visible!important}.life-map-depth-contract{display:none}.life-map-title{position:absolute;z-index:12;top:max(22px,env(safe-area-inset-top));left:max(22px,env(safe-area-inset-left));display:grid;gap:5px;max-width:min(520px,calc(100vw - 44px));pointer-events:none;text-shadow:0 10px 34px #000}.life-map-title span,.life-map-title em{font:800 10px/1.2 Inter,system-ui;letter-spacing:.22em;text-transform:uppercase;color:rgba(211,243,255,.76);font-style:normal}.life-map-title strong{font:750 clamp(25px,4vw,48px)/.96 Inter,system-ui;letter-spacing:-.05em;max-width:12ch}.life-map-status{position:absolute;z-index:12;right:max(20px,env(safe-area-inset-right));top:max(20px,env(safe-area-inset-top));display:grid;justify-items:end;gap:4px;padding:10px 13px;border-right:1px solid rgba(225,243,255,.34);text-shadow:0 6px 20px #000;pointer-events:none}.life-map-status span{font:800 9px/1 Inter,system-ui;letter-spacing:.17em;text-transform:uppercase;color:#e9f8ff}.life-map-status small{font-size:10px;color:rgba(220,240,251,.62)}.life-map-thresholds{position:absolute;z-index:16;left:50%;bottom:max(24px,calc(env(safe-area-inset-bottom) + 14px));transform:translateX(-50%);display:grid;grid-template-columns:minmax(148px,1fr) minmax(148px,1fr) auto;gap:10px;width:min(560px,calc(100vw - 40px));align-items:stretch}.life-map-thresholds button,.life-map-recovery button{min-height:58px;border:1px solid rgba(220,248,255,.24);border-radius:18px;background:linear-gradient(145deg,rgba(8,22,35,.86),rgba(2,8,16,.78));color:#f8fbff;padding:9px 16px;font-weight:800;cursor:pointer;box-shadow:0 18px 50px rgba(0,0,0,.38),inset 0 1px rgba(255,255,255,.05)}.life-map-thresholds button span{display:block;font-size:8px;letter-spacing:.16em;text-transform:uppercase;color:rgba(211,239,251,.62)}.life-map-thresholds button strong{display:block;margin-top:3px;font-size:14px}.life-map-thresholds .focus-threshold{border-color:rgba(159,231,255,.48)}.life-map-thresholds .replay-threshold{border-color:rgba(244,214,152,.48)}.life-map-thresholds .overview-return{min-width:58px;padding:0 12px;border-radius:999px;font-size:10px;letter-spacing:.08em;text-transform:uppercase}.life-map-thresholds button:disabled{opacity:.36;cursor:not-allowed}.life-map-recovery{position:absolute;z-index:30;inset:0;display:grid;place-content:center;justify-items:center;gap:12px;padding:24px;text-align:center;background:rgba(1,3,10,.92)}.life-map-recovery h2,.life-map-recovery p{margin:0}.life-map-recovery p{max-width:42ch;color:rgba(231,244,252,.74)}:global(.life-map-world-label){display:grid;gap:3px;min-width:142px;padding:9px 11px;border:1px solid rgba(205,244,255,.18);border-radius:14px;background:rgba(2,7,18,.64);backdrop-filter:blur(12px);color:#fff;text-align:left;cursor:pointer;box-shadow:0 12px 34px rgba(0,0,0,.32)}:global(.life-map-world-label[data-active='true']){border-color:rgba(245,226,174,.74);background:rgba(14,30,43,.86)}:global(.life-map-world-label strong){font-size:12px}:global(.life-map-world-label span){font-size:9px;color:rgba(221,241,255,.68)}:global(.life-map-chapter-label){display:block;padding:5px 8px;border-left:1px solid rgba(210,240,255,.3);font:800 9px/1 Inter,system-ui;letter-spacing:.18em;text-transform:uppercase;color:rgba(222,244,255,.72);text-shadow:0 8px 28px #000}:global(.life-map-chapter-label[data-muted='true']){opacity:.42}.life-map-home-return{position:absolute;z-index:16;left:max(18px,env(safe-area-inset-left));bottom:max(18px,calc(env(safe-area-inset-bottom) + 8px));min-width:72px;min-height:48px;padding:0 14px;border:1px solid rgba(220,248,255,.24);border-radius:999px;background:rgba(2,8,16,.68);backdrop-filter:blur(10px);color:#f8fbff;font:800 10px/1 Inter,system-ui;letter-spacing:.08em;text-transform:uppercase;cursor:pointer}.life-map-home-return:focus-visible{outline:3px solid #fff;outline-offset:3px}}@media(max-width:700px){.life-map-title{top:max(14px,env(safe-area-inset-top));left:14px;max-width:calc(100vw - 28px)}.life-map-title strong{font-size:28px;max-width:10ch}.life-map-status{top:max(15px,env(safe-area-inset-top));right:12px;max-width:44vw}.life-map-status small{display:none}.life-map-thresholds{bottom:max(12px,env(safe-area-inset-bottom));grid-template-columns:1fr 1fr;width:calc(100vw - 24px);gap:8px}.life-map-thresholds .overview-return{grid-column:1/-1;justify-self:center;min-height:44px;width:108px}.life-map-thresholds button{min-height:56px;padding:8px 10px}:global(.life-map-world-label){min-width:118px;padding:7px 8px}:global(.life-map-chapter-label){font-size:8px;letter-spacing:.14em}}@media(prefers-reduced-motion:reduce){.life-map-root *{transition:none!important;animation:none!important}}@media(forced-colors:active){.life-map-title,.life-map-status,.life-map-thresholds,.life-map-recovery{forced-color-adjust:auto}.life-map-thresholds button,.life-map-recovery button,.life-map-home-return,:global(.life-map-world-label){border:2px solid CanvasText;background:Canvas;color:CanvasText}}
     `}</style>
   </main>;
 }

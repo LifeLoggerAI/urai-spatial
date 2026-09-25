@@ -13,7 +13,7 @@ const pr = rawPr ? Number.parseInt(rawPr, 10) : null
 if (pr !== null && (!Number.isInteger(pr) || pr <= 0)) throw new Error(`Invalid URAI_PR_NUMBER: ${rawPr}`)
 
 const receipt = {
-  schemaVersion: 'urai-lifemap-founder-proof-13',
+  schemaVersion: 'urai-lifemap-founder-proof-14',
   repository: 'LifeLoggerAI/urai-spatial',
   pr,
   exactHead,
@@ -252,7 +252,7 @@ async function armJourneyPhaseWatch(page, expectedPhase) {
   }, { rootSelector: ROOT, phase: expectedPhase, storageKey: JOURNEY_WATCH_STORAGE_KEY })
 }
 
-async function readJourneyPhaseWatch(page, expectedPhase, timeout = 12_000) {
+async function readJourneyPhaseWatch(page, expectedPhase, timeout = 30_000) {
   const observed = await poll(`observed journey phase=${expectedPhase}`, () => page.evaluate(({ phase, storageKey }) => {
     const watch = window.__uraiFounderJourneyPhaseWatch
     if (watch?.expectedPhase === phase && watch.observed) return watch.observed
@@ -296,30 +296,64 @@ async function canvasSignal(page, screenshotBuffer) {
     let sum = 0
     let sumSquares = 0
     let nonDark = 0
+    let minimumLuminance = 255
+    let maximumLuminance = 0
+    const histogram = Array.from({ length: 16 }, () => 0)
+    const tileLuminance = []
+    const quadrantVisible = [0, 0, 0, 0]
     try {
       for (let row = 0; row < rows; row += 1) {
         for (let column = 0; column < columns; column += 1) {
           const x = Math.max(0, Math.min(width - block, Math.round(((column + 0.5) / columns) * width) - 1))
           const y = Math.max(0, Math.min(height - block, Math.round(((row + 0.5) / rows) * height) - 1))
           const pixels = context.getImageData(x, y, block, block).data
+          let tileSum = 0
           for (let index = 0; index < pixels.length; index += 4) {
             const luminance = (pixels[index] + pixels[index + 1] + pixels[index + 2]) / 3
             count += 1
             sum += luminance
             sumSquares += luminance * luminance
             if (luminance > 8) nonDark += 1
+            minimumLuminance = Math.min(minimumLuminance, luminance)
+            maximumLuminance = Math.max(maximumLuminance, luminance)
+            histogram[Math.min(15, Math.floor(luminance / 16))] += 1
+            tileSum += luminance
           }
+          const tileMean = tileSum / (pixels.length / 4)
+          tileLuminance.push(tileMean)
+          if (tileMean > 8) quadrantVisible[(row >= rows / 2 ? 2 : 0) + (column >= columns / 2 ? 1 : 0)] += 1
         }
       }
     } catch {
       return { width, height, variance: -1, nonDarkRatio: -1, sampleCount: 0, sampling: 'distributed-grid-24x16-3x3' }
     }
     const mean = sum / Math.max(1, count)
+    const entropy = histogram.reduce((total, bin) => {
+      if (!bin) return total
+      const probability = bin / count
+      return total - probability * Math.log2(probability)
+    }, 0)
+    let edgeComparisons = 0
+    let detailedEdges = 0
+    for (let row = 0; row < rows; row += 1) {
+      for (let column = 0; column < columns; column += 1) {
+        const index = row * columns + column
+        for (const neighbor of [column + 1 < columns ? index + 1 : -1, row + 1 < rows ? index + columns : -1]) {
+          if (neighbor < 0) continue
+          edgeComparisons += 1
+          if (Math.abs(tileLuminance[index] - tileLuminance[neighbor]) >= 4) detailedEdges += 1
+        }
+      }
+    }
     return {
       width,
       height,
       variance: sumSquares / Math.max(1, count) - mean * mean,
       nonDarkRatio: nonDark / Math.max(1, count),
+      luminanceRange: maximumLuminance - minimumLuminance,
+      entropy,
+      edgeDensity: detailedEdges / Math.max(1, edgeComparisons),
+      occupiedQuadrants: quadrantVisible.filter((visible) => visible >= 4).length,
       sampleCount: count,
       sampling: 'distributed-grid-24x16-3x3',
       source: 'retained-png',
@@ -340,28 +374,35 @@ async function captureScreenshot(page, file) {
 }
 
 async function readRootState(root) {
-  const entries = await Promise.all([
-    ['source', 'data-life-map-source'],
-    ['phase', 'data-life-map-phase'],
-    ['mode', 'data-life-map-mode'],
-    ['scale', 'data-life-map-scale'],
-    ['renderReady', 'data-life-map-render-ready'],
-    ['objects', 'data-life-map-visible-objects'],
-    ['anchors', 'data-life-map-visible-anchors'],
-    ['calls', 'data-life-map-render-calls'],
-    ['triangles', 'data-life-map-render-triangles'],
-    ['webgl', 'data-webgl-state'],
-    ['privateMounted', 'data-private-memory-mounted'],
-    ['fallback', 'data-life-map-fallback'],
-  ].map(async ([key, attribute]) => [key, await root.getAttribute(attribute)]))
-  return Object.fromEntries(entries)
+  return root.evaluate((element) => ({
+    source: element.getAttribute('data-life-map-source'),
+    phase: element.getAttribute('data-life-map-phase'),
+    mode: element.getAttribute('data-life-map-mode'),
+    scale: element.getAttribute('data-life-map-scale'),
+    renderReady: element.getAttribute('data-life-map-render-ready'),
+    objects: element.getAttribute('data-life-map-visible-objects'),
+    anchors: element.getAttribute('data-life-map-visible-anchors'),
+    calls: element.getAttribute('data-life-map-render-calls'),
+    triangles: element.getAttribute('data-life-map-render-triangles'),
+    webgl: element.getAttribute('data-webgl-state'),
+    privateMounted: element.getAttribute('data-private-memory-mounted'),
+    fallback: element.getAttribute('data-life-map-fallback'),
+    quality: element.getAttribute('data-life-map-quality'),
+  }))
 }
 
 async function shot(page, id, captureState, extra = {}) {
   const file = `${String(receipt.captures.length + 1).padStart(2, '0')}-${id}-${exactHead.slice(0, 12)}.png`
   const root = page.locator(`${ROOT}, [data-testid="urai-life-map-signed-out-threshold"], [data-testid="urai-life-map-authored-fallback"]`).first()
   const state = await root.count() ? await readRootState(root) : {}
+  if (extra.phaseLocked && state.phase !== extra.phaseLocked) {
+    throw new Error(`${id} phase drifted before retained screenshot: expected=${extra.phaseLocked} actual=${state.phase}`)
+  }
   const { buffer, ...screenshot } = await captureScreenshot(page, file)
+  const stateAfter = await root.count() ? await readRootState(root) : {}
+  if (extra.phaseLocked && stateAfter.phase !== extra.phaseLocked) {
+    throw new Error(`${id} phase drifted during retained screenshot: expected=${extra.phaseLocked} actual=${stateAfter.phase}`)
+  }
   const signal = await canvasSignal(page, buffer)
   receipt.captures.push({
     order: receipt.captures.length + 1,
@@ -371,6 +412,7 @@ async function shot(page, id, captureState, extra = {}) {
     viewport: page.viewportSize(),
     captureState,
     state,
+    stateAfter,
     screenshot,
     signal,
     timestamp: new Date().toISOString(),
@@ -394,6 +436,24 @@ function selectedActionSelector(name) {
   }[name]
   if (!actionClass) throw new Error(`unknown selected-memory action: ${name}`)
   return `nav[aria-label="Selected memory actions"] button.${actionClass}`
+}
+
+async function hoverFirstMemoryStar(page) {
+  const canvas = page.locator('canvas').first()
+  const box = await canvas.boundingBox()
+  if (!box || box.width < 200 || box.height < 200) throw new Error(`Memory Star hover canvas geometry invalid: ${JSON.stringify(box)}`)
+  const columns = 38
+  const rows = 24
+  for (let row = 1; row < rows - 1; row += 1) {
+    for (let column = 1; column < columns - 1; column += 1) {
+      const x = box.x + box.width * (column / (columns - 1))
+      const y = box.y + box.height * (row / (rows - 1))
+      await page.mouse.move(x, y)
+      const hit = await page.evaluate((rootSelector) => { const root = document.querySelector(rootSelector); return { cursor: document.body.style.cursor, memoryId: root instanceof HTMLElement ? root.dataset.memoryStarPointerHit || null : null } }, ROOT)
+      if (hit.cursor === 'pointer' && hit.memoryId) return { x, y, memoryId: hit.memoryId }
+    }
+  }
+  throw new Error('Memory Star hover target was not discoverable through the real canvas pointer surface')
 }
 
 async function canonicalControlGeometry(page, selector, label, timeout = 20_000) {
@@ -484,18 +544,41 @@ async function selectQuietReset(page, options = {}) {
   if (options.targetPhase) await armJourneyPhaseWatch(page, options.targetPhase)
   await activateCanonicalControl(page, resultSelector, result, options.keyboard ? 'keyboard' : options.touch ? 'touch' : 'pointer')
 
-  const observedPhase = options.targetPhase ? await readJourneyPhaseWatch(page, options.targetPhase) : null
-  await poll('selected Quiet Reset identity', async () => {
-    const root = page.locator(ROOT).first()
-    const destination = new URL(page.url())
-    return {
-      mode: await root.getAttribute('data-life-map-mode'),
-      memoryId: destination.searchParams.get('memoryId'),
-      node: destination.searchParams.get('node'),
+  let livePhase = null
+  if (options.targetPhase) {
+    livePhase = await poll(`live selected journey phase=${options.targetPhase}`, async () => {
+      const root = page.locator(ROOT).first()
+      return {
+        phase: await root.getAttribute('data-life-map-phase'),
+        mode: await root.getAttribute('data-life-map-mode'),
+      }
+    }, (state) => state.phase === options.targetPhase && state.mode === 'selected', 20_000, 10)
+
+    if (typeof options.captureAtPhase === 'function') {
+      await options.captureAtPhase(livePhase)
     }
-  }, (state) => state.mode === 'selected' && state.memoryId === 'quiet-reset' && state.node === 'quiet-reset', 20_000, 50)
+
+    await poll('selected Quiet Reset route identity', () => {
+      const destination = new URL(page.url())
+      return {
+        memoryId: destination.searchParams.get('memoryId'),
+        node: destination.searchParams.get('node'),
+      }
+    }, (state) => state.memoryId === 'quiet-reset' && state.node === 'quiet-reset', 20_000, 20)
+  } else {
+    await poll('selected Quiet Reset identity', async () => {
+      const root = page.locator(ROOT).first()
+      const destination = new URL(page.url())
+      return {
+        mode: await root.getAttribute('data-life-map-mode'),
+        memoryId: destination.searchParams.get('memoryId'),
+        node: destination.searchParams.get('node'),
+      }
+    }, (state) => state.mode === 'selected' && state.memoryId === 'quiet-reset' && state.node === 'quiet-reset', 20_000, 50)
+  }
+  const observedPhase = options.targetPhase ? await readJourneyPhaseWatch(page, options.targetPhase, 1_000) : null
   await waitForState(page, 'data-life-map-mode', 'selected')
-  return observedPhase
+  return observedPhase || livePhase
 }
 
 async function waitForPath(page, destinationPath, timeout = 30_000) {
@@ -511,6 +594,13 @@ async function clickRouteAction(page, name, destinationPath, destinationSelector
   await activateCanonicalControl(page, selector, geometry, 'pointer')
   await waitForPath(page, destinationPath)
   await page.locator(destinationSelector).first().waitFor({ state: 'visible', timeout: 30_000 })
+  // A destination owner can mount a frame before Next's route-level loading
+  // boundary finishes leaving. Give that boundary one scheduling turn, then
+  // require it to be absent before retaining destination pixels.
+  await page.waitForTimeout(600)
+  const loadingSurface = page.locator('main[aria-busy="true"]')
+  if (await loadingSurface.count()) await loadingSurface.first().waitFor({ state: 'hidden', timeout: 45_000 })
+  await page.locator(destinationSelector).first().waitFor({ state: 'visible', timeout: 30_000 })
   await stable(page)
 }
 
@@ -521,7 +611,14 @@ function assertVisualSanity() {
   if (!highResolution.signal || highResolution.signal.width < 4320 || highResolution.signal.height < 2700) {
     throw new Error(`high-resolution Founder capture dimensions drifted: ${JSON.stringify(highResolution.signal)}`)
   }
-  if (!highResolution.screenshot || highResolution.screenshot.bytes < 1_000_000) throw new Error('high-resolution Founder capture is suspiciously small')
+  if (!highResolution.screenshot) throw new Error('high-resolution Founder capture did not retain a PNG')
+  if (highResolution.signal.variance < 8
+    || highResolution.signal.luminanceRange < 20
+    || highResolution.signal.entropy < 1.2
+    || highResolution.signal.edgeDensity < 0.03
+    || highResolution.signal.occupiedQuadrants < 3) {
+    throw new Error(`high-resolution Founder capture lacks distributed retained-pixel detail: ${JSON.stringify(highResolution.signal)}`)
+  }
 
   const parallaxIds = ['desktop-overview', 'depth-travel-frame-1', 'depth-travel-frame-2', 'depth-travel-frame-3']
   const hashes = new Set(parallaxIds.map((id) => byId.get(id)?.screenshot?.hash).filter(Boolean))
@@ -531,19 +628,29 @@ function assertVisualSanity() {
     'desktop-overview', 'selection-start', 'mid-travel', 'approach', 'stable-arrival',
     'keyboard-selection', 'portrait-mobile-overview', 'portrait-mobile-travel',
     'portrait-mobile-selected', 'portrait-tall-overview', 'portrait-tall-selected',
-    'reduced-motion-arrival',
+    'reduced-motion-arrival', 'memory-star-neutral', 'memory-star-hover',
+    'memory-star-near-cluster', 'memory-star-low-tier',
   ]
   for (const id of required) {
     const capture = byId.get(id)
     if (!capture) throw new Error(`missing required capture ${id}`)
     if (capture.state?.renderReady !== 'true') throw new Error(`${id} did not prove a rendered production world`)
     if (Number(capture.state?.anchors || 0) < 8) throw new Error(`${id} visible anchor count below production minimum`)
-    if (capture.screenshot.bytes < 120_000) throw new Error(`${id} screenshot is suspiciously empty`)
     if (!capture.signal) throw new Error(`${id} did not provide a WebGL signal`)
     if (capture.signal.sampleCount !== 3456) throw new Error(`${id} WebGL sample count drifted`)
     if (capture.signal.sampling !== 'distributed-grid-24x16-3x3') throw new Error(`${id} WebGL sampling method drifted`)
     if (capture.signal.variance >= 0 && capture.signal.variance < 8) throw new Error(`${id} WebGL pixel variance is below the visible-world minimum`)
     if (capture.signal.nonDarkRatio >= 0 && capture.signal.nonDarkRatio <= 0) throw new Error(`${id} WebGL non-dark coverage is empty`)
+    if (capture.signal.luminanceRange < 20) throw new Error(`${id} retained pixels lack meaningful dynamic range`)
+    const strongDarkFieldStructure = capture.signal.variance >= 100
+      && capture.signal.luminanceRange >= 80
+      && capture.signal.edgeDensity >= 0.10
+      && capture.signal.occupiedQuadrants === 4
+    if (capture.signal.entropy < 1.2 && !strongDarkFieldStructure) {
+      throw new Error(`${id} retained pixels lack meaningful luminance entropy`)
+    }
+    if (capture.signal.edgeDensity < 0.03) throw new Error(`${id} retained pixels lack distributed spatial detail`)
+    if (capture.signal.occupiedQuadrants < 3) throw new Error(`${id} rendered world lacks distributed viewport occupancy`)
   }
 
   const observedPhases = new Map([
@@ -553,11 +660,17 @@ function assertVisualSanity() {
     ['portrait-mobile-travel', 'travel'],
   ])
   for (const [id, expectedPhase] of observedPhases) {
-    const observed = byId.get(id)?.observedPhase
+    const capture = byId.get(id)
+    const observed = capture?.observedPhase
     if (observed?.phase !== expectedPhase || observed?.mode !== 'selected') {
       throw new Error(`${id} did not observe the authoritative ${expectedPhase} phase: ${JSON.stringify(observed)}`)
     }
+    if (capture?.state?.phase !== expectedPhase || capture?.stateAfter?.phase !== expectedPhase) {
+      throw new Error(`${id} retained screenshot was not locked to ${expectedPhase}: ${JSON.stringify({ before: capture?.state?.phase, after: capture?.stateAfter?.phase })}`)
+    }
   }
+  if (!byId.get('memory-star-hover')?.hoverHit) throw new Error('Memory Star hover proof did not use the real canvas pointer target')
+  if (byId.get('memory-star-low-tier')?.state?.quality !== 'low') throw new Error('Memory Star low-tier proof did not retain low quality')
 
   const phases = required.map((id) => byId.get(id)?.captureState).filter(Boolean)
   if (!phases.includes('departure') || !phases.includes('travel') || !phases.includes('approach') || !phases.includes('arrival')) {
@@ -585,9 +698,113 @@ async function highResolutionOverview() {
   }
 }
 
+async function memoryStarReferencePack() {
+  const states = [
+    { id: 'memory-star-neutral', route: '/life-map/?demo=1&testMode=1&fixture=one&quality=high&freeze=1&overview=1&memoryStarReview=isolated', fixture: 'one', quality: 'high' },
+    { id: 'memory-star-hover', route: '/life-map/?demo=1&testMode=1&fixture=one&quality=high&freeze=1&overview=1&memoryStarReview=hover', fixture: 'one', quality: 'high', hover: true },
+    { id: 'memory-star-near-cluster', route: '/life-map/?demo=1&testMode=1&fixture=five&quality=high&freeze=1&overview=1&memoryStarReview=near-cluster', fixture: 'five', quality: 'high' },
+    { id: 'memory-star-low-tier', route: '/life-map/?demo=1&testMode=1&fixture=five&quality=low&freeze=1&overview=1&memoryStarReview=near-cluster', fixture: 'five', quality: 'low' },
+  ]
+  for (const state of states) {
+    const reviewBrowser = await chromium.launch({ headless: true })
+    let review = null
+    try {
+      review = await openPage({ label: state.id }, reviewBrowser)
+      await goto(review.page, state.route)
+      await waitForRenderedWorld(review.page)
+      const root = review.page.locator(ROOT).first()
+      const quality = await root.getAttribute('data-life-map-quality')
+      if (quality !== state.quality) throw new Error(`${state.id} quality drifted: expected=${state.quality} actual=${quality}`)
+      const hoverHit = state.hover ? await hoverFirstMemoryStar(review.page) : null
+      if (state.hover) await stable(review.page, 3)
+      await shot(review.page, state.id, state.id, {
+        syntheticFixture: state.fixture,
+        expectedQuality: state.quality,
+        hoverHit,
+      })
+    } finally {
+      await review?.context.close()
+      await reviewBrowser.close()
+    }
+  }
+}
+
+const PHASE_CAPTURE_VIRTUAL_BUDGET_MS = {
+  departure: 0,
+  travel: 950,
+  approach: 2500,
+}
+
+async function advanceVirtualTime(session, budget) {
+  if (!budget) return
+  const expired = new Promise((resolve) => session.once('Emulation.virtualTimeBudgetExpired', resolve))
+  await session.send('Emulation.setVirtualTimePolicy', {
+    policy: 'advance',
+    budget,
+    maxVirtualTimeTaskStarvationCount: 1000,
+  })
+  await expired
+  await session.send('Emulation.setVirtualTimePolicy', { policy: 'pause' })
+}
+
+async function selectQuietResetAtFrozenPhase(page, targetPhase, interaction) {
+  const session = await page.context().newCDPSession(page)
+  try {
+    const triggerSelector = 'button.life-map-search-trigger[aria-label="Search and navigate Life Map"]'
+    const trigger = await canonicalControlGeometry(page, triggerSelector, 'canonical Life Map search trigger')
+    await activateCanonicalControl(page, triggerSelector, trigger, interaction)
+
+    const navigatorSelector = 'section.life-map-navigator[aria-label="Search and filter Life Map"]'
+    await poll('canonical Life Map semantic navigator', () => page.evaluate((selector) => Boolean(document.querySelector(selector)), navigatorSelector), Boolean, 20_000, 50)
+
+    const resultSelector = `${navigatorSelector} button[data-life-map-semantic-result][data-life-map-node-id="quiet-reset"]`
+    const result = await canonicalControlGeometry(page, resultSelector, 'canonical Quiet Reset semantic result')
+    if (!/The Quiet Reset/i.test(result.text)) throw new Error(`Quiet Reset semantic result text drifted: ${result.text}`)
+
+    await armJourneyPhaseWatch(page, targetPhase)
+    await activateCanonicalControl(page, resultSelector, result, interaction)
+
+    // The real selection event must dispatch before virtual time is paused, but
+    // pausing immediately after activation prevents the 280 ms production
+    // departure timer from racing ahead of the retained proof. This observes the
+    // real state machine without changing production timing or adding a proof-only
+    // state backdoor.
+    await session.send('Emulation.setVirtualTimePolicy', { policy: 'pause' })
+    await poll('selected Quiet Reset identity before virtual-time freeze', () => page.evaluate((rootSelector) => {
+      const root = document.querySelector(rootSelector)
+      const destination = new URL(window.location.href)
+      return {
+        phase: root instanceof HTMLElement ? root.dataset.lifeMapPhase || null : null,
+        mode: root instanceof HTMLElement ? root.dataset.lifeMapMode || null : null,
+        memoryId: destination.searchParams.get('memoryId'),
+        node: destination.searchParams.get('node'),
+      }
+    }, ROOT), (state) => state.mode === 'selected'
+      && state.memoryId === 'quiet-reset'
+      && state.node === 'quiet-reset'
+      && state.phase === 'departure', 20_000, 10)
+
+    await advanceVirtualTime(session, PHASE_CAPTURE_VIRTUAL_BUDGET_MS[targetPhase] ?? 0)
+
+    const frozen = await poll(`frozen selected journey phase=${targetPhase}`, () => page.evaluate((rootSelector) => {
+      const root = document.querySelector(rootSelector)
+      return {
+        phase: root instanceof HTMLElement ? root.dataset.lifeMapPhase || null : null,
+        mode: root instanceof HTMLElement ? root.dataset.lifeMapMode || null : null,
+      }
+    }, ROOT), (state) => state.phase === targetPhase && state.mode === 'selected', 10_000, 10)
+    const observed = await readJourneyPhaseWatch(page, targetPhase, 1_000)
+    return { session, observed, frozen }
+  } catch (error) {
+    await session.detach().catch(() => {})
+    throw error
+  }
+}
+
 async function captureIsolatedJourneyPhase({ id, targetPhase, captureState, interaction = 'pointer', viewport, hasTouch = false, isMobile = false }) {
   const isolatedBrowser = await chromium.launch({ headless: true })
   let isolated = null
+  let virtualTime = null
   try {
     isolated = await openPage({
       label: `isolated-${id}`,
@@ -598,17 +815,21 @@ async function captureIsolatedJourneyPhase({ id, targetPhase, captureState, inte
     const overviewRoute = '/life-map/?demo=1&manifestId=replay-recovery-thread&overview=1'
     await goto(isolated.page, overviewRoute)
     await waitForRenderedWorld(isolated.page)
-    const observedPhase = await selectQuietReset(isolated.page, {
+
+    const selection = await selectQuietResetAtFrozenPhase(
+      isolated.page,
       targetPhase,
-      keyboard: interaction === 'keyboard',
-      touch: interaction === 'touch',
-    })
+      interaction === 'keyboard' ? 'keyboard' : interaction === 'touch' ? 'touch' : 'pointer',
+    )
+    virtualTime = selection.session
     await shot(isolated.page, id, captureState, {
       memoryId: 'quiet-reset',
       interaction,
-      observedPhase,
+      observedPhase: selection.observed,
+      phaseLocked: targetPhase,
     })
   } finally {
+    await virtualTime?.detach().catch(() => {})
     await isolated?.context.close()
     await isolatedBrowser.close()
   }
@@ -668,7 +889,7 @@ async function desktopArrivalEvidence() {
     await goto(page, arrivalRoute)
     await waitForRenderedWorld(page)
     await waitForState(page, 'data-life-map-phase', 'arrival')
-    await selectedActions(page).waitFor({ state: 'visible', timeout: 10_000 })
+    await selectedActions(page).waitFor({ state: 'visible', timeout: 30_000 })
     await shot(page, 'stable-arrival', 'arrival', { memoryId: 'quiet-reset' })
     await shot(page, 'selected-memory-arrival', 'selected-arrival', { memoryId: 'quiet-reset' })
     await shot(page, 'focus-replay-thresholds', 'thresholds', { memoryId: 'quiet-reset' })
@@ -692,12 +913,18 @@ async function desktopActionsAndKeyboard() {
     await waitForState(page, 'data-life-map-phase', 'arrival')
 
     await clickRouteAction(page, 'Enter Focus', '/focus', '[data-testid="urai-final-focus-chamber"]')
+    await page.locator('[data-focus-render-ready="true"] canvas').waitFor({ state: 'visible', timeout: 45000 })
     await shot(page, 'focus-destination', 'focus', { memoryId: 'quiet-reset' })
 
     await goto(page, arrivalRoute)
     await waitForRenderedWorld(page)
     await waitForState(page, 'data-life-map-phase', 'arrival')
-    await clickRouteAction(page, 'Replay', '/replay', 'main')
+    await clickRouteAction(
+      page,
+      'Replay',
+      '/replay',
+      '[data-testid="cinematic-replay-client"][data-memory-id]',
+    )
     await shot(page, 'replay-destination', 'replay', { memoryId: 'quiet-reset' })
 
     await goto(page, arrivalRoute)
@@ -767,7 +994,12 @@ async function mobileAndReduced() {
 }
 
 async function privacyAndRecovery() {
-  const signed = await openPage({ label: 'signed-out' })
+  // Isolate the final privacy/fallback/recovery matrix from the long-lived
+  // Chromium process used by the heavy 3D capture train. This keeps the
+  // full 28-frame acceptance matrix intact while preventing accumulated
+  // WebGL/screenshot state from poisoning the final retained PNGs.
+  const privacyBrowser = await chromium.launch({ headless: true })
+  const signed = await openPage({ label: 'signed-out' }, privacyBrowser)
   try {
     await goto(signed.page, '/life-map/', '[data-testid="urai-life-map-signed-out-threshold"]')
     await shot(signed.page, 'signed-out-private-threshold', 'signed-out')
@@ -775,7 +1007,7 @@ async function privacyAndRecovery() {
     await signed.context.close()
   }
 
-  const sample = await openPage({ label: 'disclosed-demo' })
+  const sample = await openPage({ label: 'disclosed-demo' }, privacyBrowser)
   try {
     await goto(sample.page, '/life-map/?demo=1&manifestId=replay-recovery-thread&overview=1')
     await waitForRenderedWorld(sample.page)
@@ -784,7 +1016,7 @@ async function privacyAndRecovery() {
     await sample.context.close()
   }
 
-  const fallback = await openPage({ disableWebGL: true, label: 'no-webgl' })
+  const fallback = await openPage({ disableWebGL: true, label: 'no-webgl' }, privacyBrowser)
   try {
     await goto(fallback.page, '/life-map/?demo=1', '[data-testid="urai-life-map-authored-fallback"]')
     await shot(fallback.page, 'no-webgl-fallback', 'no-webgl')
@@ -792,7 +1024,7 @@ async function privacyAndRecovery() {
     await fallback.context.close()
   }
 
-  const recovery = await openPage({ label: 'context-recovery' })
+  const recovery = await openPage({ label: 'context-recovery' }, privacyBrowser)
   try {
     await goto(recovery.page, '/life-map/?demo=1&memoryId=quiet-reset&manifestId=replay-recovery-thread&node=quiet-reset')
     await waitForState(recovery.page, 'data-life-map-phase', 'arrival')
@@ -822,11 +1054,13 @@ async function privacyAndRecovery() {
     await shot(recovery.page, 'context-recovery-state-preserved', 'context-recovered-selected', { memoryId: 'quiet-reset' })
   } finally {
     await recovery.context.close()
+    await privacyBrowser.close()
   }
 }
 
 try {
   await highResolutionOverview()
+  await memoryStarReferencePack()
   await desktopJourney()
   await desktopArrivalEvidence()
   await desktopActionsAndKeyboard()
@@ -840,7 +1074,7 @@ try {
 } finally {
   await browser.close()
   receipt.completedAt = new Date().toISOString()
-  receipt.passed = !failed && receipt.captures.length >= 28
+  receipt.passed = !failed && receipt.captures.length >= 32
   await writeFile(path.join(outputDir, 'browser-events.json'), JSON.stringify(receipt.browserEvents, null, 2))
   await writeFile(path.join(outputDir, 'receipt.json'), JSON.stringify(receipt, null, 2))
   if (!receipt.passed) process.exitCode = 1

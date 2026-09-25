@@ -1,0 +1,21 @@
+{
+  "asset": "life-map-memory-sanctuary-v210.glb",
+  "sha256": "bb08584a9364a011248886f97ee8d147bab0c5b0470afc0fb96becd7a02ee081",
+  "generator": "urai-tier1/scripts/generate-life-map-sanctuary-v210.sh",
+  "blenderGenerator": "urai-tier1/scripts/blender/generate-life-map-sanctuary-v210.py",
+  "generatorSeed": 1177210,
+  "authoringTool": "Blender 4.0.2",
+  "sourceMaster": "07_3D_SOURCE_MODELS/PR-1177/life-map-v210/life-map-memory-sanctuary-v210.blend",
+  "sourceMasterDriveFolderId": "1UZkAmVNG_rgti2qt_13rPvkvfVvw3KPr",
+  "license": "Original work created for the private LifeLoggerAI repository; no third-party assets",
+  "externalAssets": [],
+  "coordinateContract": "Three.js Y-up authored through deterministic Blender Z-up conversion",
+  "runtimeContents": {
+    "meshes": 16,
+    "materials": 7,
+    "embeddedTextures": 1,
+    "collision": "source-master only",
+    "lod": "single optimized web delivery level; editable high-authority source retained in .blend",
+    "optimization": "glTF Transform 4.2.1 simplify, weld, prune, WebP texture compression, and Meshopt geometry compression"
+  }
+}

@@ -8,6 +8,7 @@ export const URAI_DESTINATIONS = [
   'passport',
   'privacy-controls',
   'location-map',
+  'possible-futures',
   'focus',
   'replay',
 ] as const
@@ -15,7 +16,6 @@ export const URAI_DESTINATIONS = [
 export type UraiDestination = (typeof URAI_DESTINATIONS)[number]
 
 export type UraiWorldLayer = 'living-world' | 'transition' | 'infrastructure-world'
-
 export type UraiPrivacyMode = 'private' | 'revealing' | 'held-private'
 
 export type UraiWorldState = {
@@ -33,20 +33,17 @@ export type UraiWorldState = {
   demo?: boolean
 }
 
-export type UraiWorldContextPatch = Partial<
-  Pick<
-    UraiWorldState,
-    | 'entryPortal'
-    | 'cameraCheckpoint'
-    | 'memoryId'
-    | 'threadId'
-    | 'personId'
-    | 'placeId'
-    | 'replayManifestId'
-    | 'privacyMode'
-    | 'demo'
-  >
->
+export type UraiWorldContextPatch = Partial<Pick<UraiWorldState,
+  | 'entryPortal'
+  | 'cameraCheckpoint'
+  | 'memoryId'
+  | 'threadId'
+  | 'personId'
+  | 'placeId'
+  | 'replayManifestId'
+  | 'privacyMode'
+  | 'demo'
+>>
 
 export type UraiWorldTravelRequest = {
   destination: UraiDestination

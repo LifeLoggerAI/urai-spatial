@@ -1,0 +1,47 @@
+name: URAI Discoverability Boundary
+
+on:
+  pull_request:
+    paths:
+      - 'urai-tier1/src/app/layout.tsx'
+      - 'urai-tier1/src/app/robots.ts'
+      - 'urai-tier1/src/app/sitemap.ts'
+      - 'urai-tier1/src/app/manifest.ts'
+      - 'urai-tier1/src/app/manifest.webmanifest'
+      - 'urai-tier1/src/lib/discoverability-boundary.ts'
+      - 'tests/discoverability-boundary.test.mjs'
+      - '.github/workflows/discoverability-boundary.yml'
+  push:
+    branches:
+      - main
+    paths:
+      - 'urai-tier1/src/app/layout.tsx'
+      - 'urai-tier1/src/app/robots.ts'
+      - 'urai-tier1/src/app/sitemap.ts'
+      - 'urai-tier1/src/app/manifest.ts'
+      - 'urai-tier1/src/app/manifest.webmanifest'
+      - 'urai-tier1/src/lib/discoverability-boundary.ts'
+      - 'tests/discoverability-boundary.test.mjs'
+      - '.github/workflows/discoverability-boundary.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  fail-closed-discoverability:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout exact head
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Verify fail-closed indexing and metadata boundary
+        run: node --test tests/discoverability-boundary.test.mjs

@@ -16,6 +16,8 @@ import {
   type PrivacyRow,
 } from '@/lib/privacy/operationalPrivacyClient'
 import { demoPassportSnapshot, redactPassportSnapshot, type PassportSnapshot } from './passportModel'
+import { requestUraiWorldReturn } from '@/spatial/world/worldEvents'
+import GlobalEmotionalFieldConsentCard from './GlobalEmotionalFieldConsentCard'
 import './passport-vault.css'
 
 type LoadState = 'loading' | 'private' | 'demo' | 'signed-out' | 'empty' | 'offline' | 'unavailable'
@@ -55,6 +57,22 @@ function VaultWorld({ selected, keyState, onSelect, reducedMotion }: { selected:
         <circleGeometry args={[10, 72]} />
         <meshStandardMaterial color="#090d14" metalness={0.3} roughness={0.72} />
       </mesh>
+      <group position={[0, 1.2, -0.15]} rotation={[-0.08, 0.16, -0.03]} onClick={(event) => { event.stopPropagation(); onSelect('identity') }}>
+        <RoundedBox args={[2.7, 3.8, 0.34]} radius={0.14} smoothness={5}>
+          <meshStandardMaterial color="#112f4f" metalness={0.28} roughness={0.5} />
+        </RoundedBox>
+        <RoundedBox position={[0, 0, 0.2]} args={[2.42, 3.5, 0.08]} radius={0.1} smoothness={4}>
+          <meshStandardMaterial color="#f2e6c9" metalness={0.05} roughness={0.78} />
+        </RoundedBox>
+        <mesh position={[0, 0.58, 0.28]}>
+          <torusGeometry args={[0.42, 0.035, 18, 64]} />
+          <meshStandardMaterial color="#d6b66f" emissive="#8a6d2f" emissiveIntensity={0.35} metalness={0.7} roughness={0.26} />
+        </mesh>
+        <mesh position={[0, -0.45, 0.28]}>
+          <boxGeometry args={[1.2, 0.055, 0.04]} />
+          <meshStandardMaterial color="#d6b66f" emissive="#8a6d2f" emissiveIntensity={0.25} metalness={0.72} roughness={0.28} />
+        </mesh>
+      </group>
       {ZONES.map(([id], index) => {
         const angle = ((index - 1) / ZONES.length) * Math.PI * 2
         const radius = index === 0 ? 0 : 6.2
@@ -73,7 +91,7 @@ function VaultWorld({ selected, keyState, onSelect, reducedMotion }: { selected:
           </group>
         )
       })}
-      <group position={[0, 1.35, 0]}>
+      <group position={[3.15, 1.15, 0.65]}>
         <Float speed={reducedMotion ? 0 : 0.8} rotationIntensity={reducedMotion ? 0 : 0.22} floatIntensity={reducedMotion ? 0 : 0.28}>
           <mesh rotation={[0, 0, Math.PI / 4]}>
             <torusGeometry args={[0.72, 0.16, 20, 64]} />
@@ -111,9 +129,10 @@ const record = (value: unknown): Record<string, unknown> => value && typeof valu
 export default function PassportVaultClient() {
   const params = useMemo(() => typeof window === 'undefined' ? new URLSearchParams() : new URLSearchParams(window.location.search), [])
   const explicitDemo = params.get('demo') === '1'
+  const reviewState = params.get('assetReview') === '1' ? params.get('passportReview') : null
   const [user, setUser] = useState<User | null>(null)
   const [state, setState] = useState<LoadState>('loading')
-  const [snapshot, setSnapshot] = useState<SnapshotPayload>(() => toDemoPayload())
+  const [snapshot, setSnapshot] = useState<SnapshotPayload>({})
   const [selectedZone, setSelectedZone] = useState('identity')
   const [message, setMessage] = useState('Opening your Ownership Vault…')
   const [webglAvailable, setWebglAvailable] = useState(true)
@@ -141,6 +160,22 @@ export default function PassportVaultClient() {
   }, [])
 
   useEffect(() => {
+    if (reviewState === 'recent-auth-locked') {
+      setSnapshot({
+        owner: { displayName: 'Reference review', ownershipStatus: 'verified', keyState: 'locked', ownerReference: 'not-mounted' },
+        consent: { revision: 0, enforcement: { state: 'unavailable', providerState: 'not-mounted' }, domains: {} },
+        sources: [], devices: [], providers: [], exports: [], deletions: [], receipts: [], recovery: { status: 'clear', supportAvailable: true },
+      })
+      setState('empty')
+      setMessage('REFERENCE REVIEW — recent-auth locked. No private owner data is mounted; sensitive actions remain locked until recent authentication is proven.')
+      return
+    }
+    if (reviewState === 'unavailable') {
+      setSnapshot({})
+      setState('unavailable')
+      setMessage('REFERENCE REVIEW — ownership data unavailable. No private data or demonstration records were substituted.')
+      return
+    }
     if (explicitDemo) {
       setSnapshot(toDemoPayload())
       setState('demo')
@@ -161,7 +196,7 @@ export default function PassportVaultClient() {
       }
       setState(navigator.onLine ? 'loading' : 'offline')
     })
-  }, [explicitDemo])
+  }, [explicitDemo, reviewState])
 
   useEffect(() => {
     if (!user || explicitDemo || state === 'offline') return
@@ -247,18 +282,19 @@ export default function PassportVaultClient() {
   }
 
   return (
-    <main className="passportVault" data-route-owner="passport-ownership-vault" data-passport-source={state} data-key-state={keyState}>
+    <main className="passportVault" data-route-owner="passport-ownership-vault" data-passport-source={state} data-key-state={keyState} data-passport-review-state={reviewState ?? 'none'}>
       <a href="#passport-controls" className="passportSkip">Skip to vault controls</a>
       <div className="passportWorld" aria-hidden="true">{webglAvailable ? <Suspense fallback={null}><VaultWorld selected={selectedZone} keyState={keyState} onSelect={setSelectedZone} reducedMotion={reducedMotion} /></Suspense> : <div className="passportFallback"><strong>Ownership Vault</strong><span>All records and actions remain available without WebGL.</span></div>}</div>
-      <header className="passportHeader"><p>UrAi Passport</p><h1>Your life remains in your possession.</h1><div role="status" aria-live="polite" className="passportStatus">{message}</div>{state === 'demo' && <span className="passportDisclosure">DEMONSTRATION — sample data only</span>}</header>
+      <header className="passportHeader"><p>UrAi Passport</p><h1>Your life remains in your possession.</h1><div role="status" aria-live="polite" className="passportStatus">{message}</div>{state === 'demo' && <span className="passportDisclosure">DEMONSTRATION — sample data only</span>}{reviewState && <span className="passportDisclosure">REFERENCE REVIEW — synthetic no-data state</span>}</header>
       <nav className="passportZones" aria-label="Ownership Vault zones">{ZONES.map(([id, label]) => <button key={id} type="button" aria-pressed={selectedZone === id} onClick={() => setSelectedZone(id)}>{label}</button>)}</nav>
       <section id="passport-controls" tabIndex={-1} className="passportPanel">
         <div className="passportPanelHeading"><div><p>Owner reference {String(owner.ownerReference ?? 'not available')}</p><h2>{ZONES.find(([id]) => id === selectedZone)?.[1]}</h2></div><span data-state={keyState} className="passportKeyState">{keyState}</span></div>
         <p><strong>Ownership:</strong> {String(owner.ownershipStatus ?? 'unavailable')}. <strong>Consent revision:</strong> {String(consent.revision ?? 0)}. <strong>Enforcement:</strong> {String(enforcement.state ?? 'unavailable')}.</p>
         <div className="passportRows">{(zoneRows[selectedZone] ?? []).length ? (zoneRows[selectedZone] ?? []).map((row, index) => <article key={String(row.id ?? index)}><h3>{String(row.label ?? row.kind ?? row.id ?? `Record ${index + 1}`)}</h3><dl>{Object.entries(row).filter(([key]) => !['id', 'ownerId', 'uid', 'token', 'secret'].includes(key)).slice(0, 8).map(([key, value]) => <div key={key}><dt>{key}</dt><dd>{Array.isArray(value) ? value.join(', ') : typeof value === 'object' && value ? 'Protected structured record' : String(value ?? 'not available')}</dd></div>)}</dl></article>) : <p>No owner-scoped records exist in this zone.</p>}</div>
-        <div className="passportActions"><a href="/privacy-controls">Enter Consent Sanctuary</a><a href="/mirror">Return to Mirror</a><a href="/ground">Return to Ground</a></div>
+        <div className="passportActions"><button type="button" data-testid="passport-return-origin" onClick={requestUraiWorldReturn}>Return to origin</button><a href="/privacy-controls">Enter Consent Sanctuary</a><a href="/mirror">Return to Mirror</a><a href="/ground">Return to Ground</a></div>
         <section className="passportOperation"><h3>Export chamber</h3><p>Exports exclude credentials, provider secrets, raw secret fields, and legally excepted records. The ownership key must be authorized by a recent sign-in.</p><div className="passportCheckGrid">{['profile', 'consent', 'memories', 'spatial', 'audit'].map((scope) => <label key={scope}><input type="checkbox" checked={exportScopes.includes(scope)} disabled={state !== 'private' || busy} onChange={(event) => setExportScopes((items) => event.target.checked ? [...new Set([...items, scope])] : items.filter((item) => item !== scope))} />{scope}</label>)}</div><button type="button" disabled={state !== 'private' || busy || exportScopes.length === 0} onClick={() => void requestExport()}>Unlock and request export</button><ol>{exports.slice(0, 6).map((job) => <li key={job.id}><strong>{String(job.state)}</strong> — {Array.isArray(job.scopes) ? job.scopes.join(', ') : 'scope unavailable'} {job.state === 'ready' && <button type="button" onClick={async () => { try { const result = await getOperationalExportDownloadUrl({ jobId: job.id }); window.location.assign(String(result.url)) } catch { setMessage('Secure export download could not be authorized.') } }}>Secure download</button>} {['queued', 'preparing'].includes(String(job.state)) && <button type="button" onClick={() => void cancelOperationalExportRequest(job.id)}>Cancel</button>}</li>)}</ol></section>
         <section className="passportOperation passportDanger"><h3>Deletion chamber</h3><p>Deletion is scoped, revision-safe, queued through the trusted backend, and leaves an append-only privacy-safe receipt. Provider and legal retention exceptions are disclosed rather than hidden.</p><label>Scope<select value={deletionScope} disabled={state !== 'private' || busy} onChange={(event) => { setDeletionScope(event.target.value); setConfirmation('') }}>{DELETION_SCOPES.map(([scope, label]) => <option key={scope} value={scope}>{label}</option>)}</select></label><label>Type {requiredText}<input value={confirmation} disabled={state !== 'private' || busy} onChange={(event) => setConfirmation(event.target.value)} /></label><button type="button" disabled={state !== 'private' || busy} onClick={() => void requestDeletion()}>Unlock and create deletion request</button><ol>{deletions.slice(0, 6).map((job) => <li key={job.id}><strong>{String(job.state)}</strong> — {String(job.scope)} {['queued', 'awaiting-grace'].includes(String(job.state)) && <button type="button" onClick={() => void cancelOperationalDeletionRequest(job.id)}>Cancel</button>}</li>)}</ol></section>
+        <GlobalEmotionalFieldConsentCard />
       </section>
       <aside className="passportKey" aria-label="Ownership key status"><strong>Ownership key: {keyState}</strong><span>{keyState === 'authorized' ? 'Sensitive actions may proceed under the trusted recent-auth window.' : 'Sensitive actions remain locked until recent authentication is proven.'}</span></aside>
     </main>

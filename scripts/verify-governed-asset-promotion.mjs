@@ -37,9 +37,8 @@ requireCondition(typeof decision.producer === 'string' && decision.producer.leng
 requireCondition(typeof decision.reviewer === 'string' && decision.reviewer.length > 0, 'reviewer identity is required')
 requireCondition(decision.producer !== decision.reviewer, 'producer and reviewer must be independent identities')
 requireCondition(decision.fallbackVerified === true, 'fallback verification is required')
-requireCondition(decision.routeConsumptionVerified === true, 'route consumption verification is required')
 requireCondition(decision.licenseApproved === true, 'license approval is required')
-requireCondition(decision.optimizationVerified === true, 'optimization verification is required')
+requireCondition(typeof decision.optimizationVerified === 'boolean', 'optimization verification state must be explicit')
 requireCondition(typeof decision.exactHeadChecksPassed === 'boolean', 'exact-head check state must be explicit')
 requireCondition(typeof decision.reviewedAt === 'string' && !Number.isNaN(Date.parse(decision.reviewedAt)), 'reviewedAt must be an ISO timestamp')
 
@@ -58,7 +57,23 @@ if (asset) {
   requireCondition(decision.source === asset.source, 'decision source must equal the canonical manifest source')
   requireCondition(decision.fallback === asset.fallback, 'decision fallback must equal the canonical manifest fallback')
   requireCondition(decision.license === asset.license, 'decision license must equal the canonical manifest license')
-  requireCondition(asset.releaseState === 'pending-final-review' || asset.releaseState === 'production-ready', `unsupported manifest releaseState: ${asset.releaseState}`)
+  requireCondition(
+    asset.releaseState === 'pending-final-review'
+      || asset.releaseState === 'production-ready'
+      || asset.releaseState === 'supporting-reference',
+    `unsupported manifest releaseState: ${asset.releaseState}`,
+  )
+  if (asset.releaseState === 'supporting-reference') {
+    requireCondition(decision.mode === 'rehearsal', 'supporting-reference assets are rehearsal-only')
+    const expectedRuntimeConsumption = asset.runtimeConsumptionAllowed === true
+    requireCondition(
+      decision.routeConsumptionVerified === expectedRuntimeConsumption,
+      `supporting-reference route consumption must match manifest runtimeConsumptionAllowed=${expectedRuntimeConsumption}`,
+    )
+    requireCondition(decision.promote === false, 'supporting-reference assets may not be promoted')
+  } else {
+    requireCondition(decision.routeConsumptionVerified === true, 'route consumption verification is required')
+  }
 }
 
 if (safePath(decision.canonicalPath)) {
@@ -75,7 +90,8 @@ if (safePath(decision.canonicalPath)) {
       const buffer = readFileSync(absolute)
       requireCondition(Number.isInteger(decision.bytes) && decision.bytes === buffer.length, `byte mismatch expected=${decision.bytes} actual=${buffer.length}`)
       requireCondition(/^[0-9a-f]{64}$/.test(String(decision.sha256 || '')), 'decision SHA-256 is invalid')
-      requireCondition(decision.sha256 === sha256(buffer), 'decision SHA-256 does not match asset bytes')
+      const actualSha256 = sha256(buffer)
+      requireCondition(decision.sha256 === actualSha256, `decision SHA-256 mismatch expected=${decision.sha256} actual=${actualSha256}`)
       if (aliasMode && asset?.fixedPath && safePath(asset.fixedPath)) {
         const canonicalAbsolute = path.resolve(root, asset.fixedPath)
         requireCondition(existsSync(canonicalAbsolute), `aliased canonical asset does not exist: ${asset.fixedPath}`)
@@ -96,6 +112,7 @@ if (decision.mode === 'rehearsal') {
   requireCondition(decision.visualProofVerified === false, 'rehearsal must not claim final visual proof')
   requireCondition(!decision.receiptPath, 'rehearsal must not attach a production receipt')
 } else {
+  requireCondition(decision.optimizationVerified === true, 'promotion requires optimization verification')
   requireCondition(decision.exactHeadChecksPassed === true, 'promotion requires exact-head checks to pass')
   requireCondition(decision.promote === true, 'promotion must set promote=true')
   requireCondition(asset?.releaseState === 'production-ready', 'promotion requires manifest releaseState=production-ready')

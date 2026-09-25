@@ -24,7 +24,7 @@ function LifeMapLoading({ label = "Opening your memory universe" }: { label?: st
     window.addEventListener("keydown", onKeyDown, true);
     return () => window.removeEventListener("keydown", onKeyDown, true);
   }, []);
-  return <main aria-label="Life Map authored fallback" data-testid="urai-life-map-authored-fallback" data-life-map-fallback="authored-semantic" style={{ position:"relative", minHeight:"100svh", overflow:"hidden", color:"#f8fbff", background:"radial-gradient(circle at 30% 30%,rgba(103,232,249,.16),transparent 26%),radial-gradient(circle at 72% 54%,rgba(196,181,253,.14),transparent 28%),#01030a" }}>
+  return <main aria-label="Life Map authored fallback" data-testid="urai-life-map-authored-fallback" data-urai-canonical-lifemap="urai-r3f-canonical-lifemap" data-life-map-fallback="authored-semantic" style={{ position:"relative", minHeight:"100svh", overflow:"hidden", color:"#f8fbff", background:"radial-gradient(circle at 30% 30%,rgba(103,232,249,.16),transparent 26%),radial-gradient(circle at 72% 54%,rgba(196,181,253,.14),transparent 28%),#01030a" }}>
     <div aria-hidden="true" style={{ position:"absolute", inset:0, backgroundImage:assetCssStack(lifeMapAssets.primary), backgroundSize:"cover", backgroundPosition:"center", opacity:.12 }} />
     <section style={{ position:"absolute", left:"50%", top:"50%", transform:"translate(-50%,-50%)", width:"min(560px,calc(100% - 36px))", padding:28, border:"1px solid rgba(180,239,255,.2)", borderRadius:28, background:"rgba(2,7,18,.74)", backdropFilter:"blur(22px)", textAlign:"center" }}>
       <p style={{ margin:0, fontSize:10, fontWeight:900, letterSpacing:".24em", textTransform:"uppercase", color:"#a5f3fc" }}>URAI · LIFE MAP</p>
@@ -41,7 +41,7 @@ function SignedOutLifeMap({ onOpenDemo, onReturnHome }: { onOpenDemo: () => void
     return () => window.clearTimeout(timer);
   }, [onOpenDemo]);
 
-  return <main aria-label="Signed-out Life Map threshold" data-testid="urai-life-map-signed-out-threshold" data-life-map-source="signed-out" data-private-memory-mounted="false" style={{ position:"relative", minHeight:"100svh", overflow:"hidden", color:"#f8fbff", background:"#01030a" }}>
+  return <main aria-label="Signed-out Life Map threshold" data-testid="urai-life-map-signed-out-threshold" data-urai-canonical-lifemap="urai-r3f-canonical-lifemap" data-life-map-source="signed-out" data-private-memory-mounted="false" style={{ position:"relative", minHeight:"100svh", overflow:"hidden", color:"#f8fbff", background:"#01030a" }}>
     <picture aria-hidden="true" style={{ position:"absolute", inset:0 }}><source media="(max-width:700px)" srcSet={lifeMapAssets.mobile.src} /><img src={lifeMapAssets.primary.src} alt="" draggable={false} style={{ width:"100%", height:"100%", objectFit:"cover", filter:"saturate(1.05) contrast(1.08) brightness(.62)" }} /></picture>
     <div aria-hidden="true" style={{ position:"absolute", inset:0, background:"radial-gradient(circle at 50% 42%,rgba(16,48,73,.04),rgba(1,3,10,.76) 88%)" }} />
     <section style={{ position:"absolute", left:"max(16px,env(safe-area-inset-left))", bottom:"max(18px,env(safe-area-inset-bottom))", width:"min(420px,calc(100% - 32px))", padding:18, border:"1px solid rgba(183,239,255,.2)", borderRadius:22, background:"rgba(2,7,17,.8)", backdropFilter:"blur(20px)" }}>
@@ -100,7 +100,7 @@ function LifeMapAccessGate() {
   if (mode === "checking" || webglAvailable === null) return <LifeMapLoading label="Checking the private threshold" />;
   if (mode === "signed-out") return <SignedOutLifeMap onOpenDemo={openDemo} onReturnHome={() => router.push("/home")} />;
   if (!webglAvailable) return <LifeMapLoading label="WebGL is unavailable. Semantic navigation remains available" />;
-  return <section data-testid="urai-r3f-canonical-lifemap" data-canonical-asset={lifeMapAssets.primary.src} data-selected-memory-owner="spatial-lens-only" data-life-map-access={mode} aria-label="URAI canonical spatial Life Map" style={{ position:"fixed", inset:0, zIndex:100, width:"100vw", height:"100svh", minHeight:"100svh", overflow:"hidden", background:"#01030a" }}><LifeMapRouteBoundary /></section>;
+  return <section data-testid="urai-r3f-canonical-lifemap" data-urai-canonical-lifemap="urai-r3f-canonical-lifemap" data-canonical-asset={lifeMapAssets.primary.src} data-selected-memory-owner="spatial-lens-only" data-life-map-access={mode} aria-label="URAI canonical spatial Life Map" style={{ position:"fixed", inset:0, zIndex:100, width:"100vw", height:"100svh", minHeight:"100svh", overflow:"hidden", background:"#01030a" }}><LifeMapRouteBoundary /></section>;
 }
 
 export default function SpatialLifeMapCanonical() {

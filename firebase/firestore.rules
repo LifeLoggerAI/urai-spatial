@@ -58,7 +58,7 @@ service cloud.firestore {
         && request.resource.data.groundTier in [1,2,3,4,5]
         && request.resource.data.orbTier in [1,2,3,4,5]
         && request.resource.data.skyTier in [1,2,3,4,5]
-        && request.resource.data.moodState in ['calm','low','recovery','dream','shadow','focused','joy']
+        && request.resource.data.moodState in ['calm','reflective','energized','heavy','uncertain','hopeful']
         && request.resource.data.recoveryState in ['dormant','recovering','stable','growing','awakened']
         && request.resource.data.updatedAt == request.time;
     }

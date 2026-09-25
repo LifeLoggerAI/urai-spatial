@@ -45,6 +45,14 @@ export function applyOperationalConsentPolicy(payload: { domain: string; next: R
   return callOperationalPrivacyFunction('applyConsentPolicy', { ...payload, operationId: payload.operationId ?? operationId('consent') })
 }
 
+export function getGlobalEmotionalFieldConsent() {
+  return callOperationalPrivacyFunction('getGlobalEmotionalFieldConsent')
+}
+
+export function applyGlobalEmotionalFieldConsent(payload: { mode: 'off' | 'limited' | 'on'; precision: 'country' | 'multi-region' | 'coarse-region'; expectedRevision: number; operationId?: string }) {
+  return callOperationalPrivacyFunction('applyGlobalEmotionalFieldConsent', { ...payload, operationId: payload.operationId ?? operationId('publicgood') })
+}
+
 export function getOperationalPassportSnapshot() { return callOperationalPrivacyFunction('getPassportSnapshot') }
 export function createOperationalExportRequest(scopes: string[], suppliedOperationId?: string) {
   return callOperationalPrivacyFunction('createExportRequest', { scopes, operationId: suppliedOperationId ?? operationId('export') })

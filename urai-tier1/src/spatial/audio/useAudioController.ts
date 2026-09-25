@@ -8,8 +8,10 @@ import type {
   SpatialAudioPhase,
   VoiceEngine,
 } from "./audioTypes";
+import { createMirrorSonicIdentity, type MirrorSonicIdentity } from "./mirrorSonicIdentity";
 
 const DEFAULT_ENGINE: VoiceEngine = "elevenlabs";
+type FileAmbientTrack = Exclude<AmbientTrack, "mirror">;
 
 const PHASE_TO_AMBIENT: Record<SpatialAudioPhase, AmbientTrack> = {
   HOME: "home",
@@ -18,9 +20,10 @@ const PHASE_TO_AMBIENT: Record<SpatialAudioPhase, AmbientTrack> = {
   LIFEMAP: "lifemap",
   FOCUS: "focus",
   REPLAY: "replay",
+  MIRROR: "mirror",
 };
 
-const AMBIENT_SRC: Record<AmbientTrack, string> = {
+const AMBIENT_SRC: Record<FileAmbientTrack, string> = {
   home: "/assets/urai/generated/audio/home-ambient-v1.opus",
   ground: "/assets/urai/generated/audio/ground-ambient-v1.opus",
   lifemap: "/assets/urai/generated/audio/life-map-ambient-v1.opus",
@@ -28,9 +31,11 @@ const AMBIENT_SRC: Record<AmbientTrack, string> = {
   replay: "/assets/urai/generated/audio/replay-ambient-v1.opus",
 };
 
-const CUE_SRC: Record<SpatialAudioCue, string> = {
+const CUE_SRC: Partial<Record<SpatialAudioCue, string>> = {
   transition: "/assets/urai/generated/audio/portal-transition-v1.opus",
   "orb-confirm": "/assets/urai/generated/audio/orb-confirm-v1.opus",
+  confirm: "/assets/urai/generated/audio/orb-confirm-v1.opus",
+  permission: "/assets/urai/generated/audio/orb-confirm-v1.opus",
   error: "/assets/urai/generated/audio/ui-error-v1.opus",
 };
 
@@ -45,10 +50,10 @@ export function useAudioController() {
   const lastPlayedIdRef = useRef<string | undefined>(undefined);
 
   const voiceAudioRef = useRef<HTMLAudioElement | null>(null);
-  const ambientARef = useRef<HTMLAudioElement | null>(null);
-  const ambientBRef = useRef<HTMLAudioElement | null>(null);
+  const ambientLayersRef = useRef(new Map<FileAmbientTrack, HTMLAudioElement>());
   const cueAudioRef = useRef<HTMLAudioElement | null>(null);
-  const activeAmbientRef = useRef<"A" | "B">("A");
+  const mirrorIdentityRef = useRef<MirrorSonicIdentity | null>(null);
+
   const ambientTrackRef = useRef<AmbientTrack | null>(null);
   const fadeRafRef = useRef<number | null>(null);
   const abortRef = useRef<AbortController | null>(null);
@@ -72,13 +77,16 @@ export function useAudioController() {
       cancelAnimationFrame(fadeRafRef.current);
       fadeRafRef.current = null;
     }
-    for (const audio of [ambientARef.current, ambientBRef.current]) {
+    for (const audio of ambientLayersRef.current.values()) {
       if (!audio) continue;
       audio.pause();
       audio.currentTime = 0;
       audio.src = "";
       audio.volume = 0;
     }
+    ambientLayersRef.current.clear();
+    mirrorIdentityRef.current?.stop(0.35);
+    mirrorIdentityRef.current = null;
     ambientTrackRef.current = null;
   }, []);
 
@@ -97,78 +105,119 @@ export function useAudioController() {
   }, [stopAmbient, stopCue, stopVoice]);
 
   const duckAmbient = useCallback((ducked: boolean) => {
+    const track = ambientTrackRef.current;
+    if (!track) return;
+    if (track === "mirror") {
+      mirrorIdentityRef.current?.setLevel(ducked ? 0.045 : 0.12, 0.32);
+      return;
+    }
     const target = ducked ? 0.18 : 0.56;
-    const a = ambientARef.current;
-    const b = ambientBRef.current;
-    const active = activeAmbientRef.current === "A" ? a : b;
+    const active = ambientLayersRef.current.get(track);
     if (active) active.volume = target;
-  }, []);
-
-  const ensureAmbient = useCallback(() => {
-    if (!hasWindow()) return;
-    if (!ambientARef.current) {
-      ambientARef.current = new Audio();
-      ambientARef.current.loop = true;
-      ambientARef.current.preload = "auto";
-      ambientARef.current.volume = 0;
-    }
-    if (!ambientBRef.current) {
-      ambientBRef.current = new Audio();
-      ambientBRef.current.loop = true;
-      ambientBRef.current.preload = "auto";
-      ambientBRef.current.volume = 0;
-    }
   }, []);
 
   const setAmbientPhase = useCallback(
     (phase: SpatialAudioPhase, intensity = 1) => {
       if (!hasWindow()) return;
-      ensureAmbient();
       const nextTrack = PHASE_TO_AMBIENT[phase];
       if (ambientTrackRef.current === nextTrack) return;
-      const nextSrc = AMBIENT_SRC[nextTrack];
-      const current = activeAmbientRef.current === "A" ? ambientARef.current : ambientBRef.current;
-      const nextKey = activeAmbientRef.current === "A" ? "B" : "A";
-      const next = nextKey === "A" ? ambientARef.current : ambientBRef.current;
-      if (!next) return;
-      if (fadeRafRef.current) cancelAnimationFrame(fadeRafRef.current);
-      next.src = nextSrc;
-      next.loop = true;
-      next.volume = 0;
-      void next.play().catch(() => undefined);
+      if (fadeRafRef.current !== null) cancelAnimationFrame(fadeRafRef.current);
+
+      if (nextTrack === "mirror") {
+        const starts = new Map([...ambientLayersRef.current].map(([track, audio]) => [track, audio.volume]));
+        const AudioContextCtor = window.AudioContext || (window as typeof window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+        if (!AudioContextCtor) {
+          stopAmbient();
+          return;
+        }
+        mirrorIdentityRef.current?.stop(0.2);
+        const context = new AudioContextCtor();
+        const identity = createMirrorSonicIdentity(context);
+        mirrorIdentityRef.current = identity;
+        ambientTrackRef.current = "mirror";
+        void context.resume().catch(() => undefined);
+        identity.setLevel(isSpeakingRef.current ? 0.045 : Math.min(0.14, 0.08 + intensity * 0.04), 1.8);
+        const started = performance.now();
+        const duration = 1800;
+        const tick = () => {
+          const t = Math.min(1, (performance.now() - started) / duration);
+          const eased = 1 - Math.pow(1 - t, 3);
+          for (const [track, audio] of ambientLayersRef.current) {
+            const start = starts.get(track) ?? 0;
+            audio.volume = Math.max(0, start * (1 - eased));
+            if (t === 1) {
+              audio.pause();
+              audio.currentTime = 0;
+              audio.src = "";
+              ambientLayersRef.current.delete(track);
+            }
+          }
+          if (t < 1) fadeRafRef.current = requestAnimationFrame(tick);
+          else fadeRafRef.current = null;
+        };
+        fadeRafRef.current = requestAnimationFrame(tick);
+        return;
+      }
+
+      const retiringMirror = mirrorIdentityRef.current;
+      if (retiringMirror) {
+        retiringMirror.setLevel(0, 1.3);
+        window.setTimeout(() => retiringMirror.stop(0.1), 1320);
+        mirrorIdentityRef.current = null;
+      }
+
+      const layers = ambientLayersRef.current;
+      let next = layers.get(nextTrack);
+      if (!next) {
+        next = new Audio(AMBIENT_SRC[nextTrack]);
+        next.loop = true;
+        next.preload = "auto";
+        next.load();
+        next.volume = 0;
+        layers.set(nextTrack, next);
+      }
+      const incoming = next;
+      const starts = new Map([...layers].map(([track, audio]) => [track, audio.volume]));
+      ambientTrackRef.current = nextTrack;
+      void incoming.play().catch(() => {
+        if (ambientTrackRef.current === nextTrack) ambientTrackRef.current = null;
+      });
       const started = performance.now();
       const duration = phase === "REPLAY" ? 2000 : phase === "FOCUS" ? 1600 : 1300;
-      const target = isSpeakingRef.current ? 0.18 : Math.min(0.62, 0.28 + intensity * 0.34);
       const tick = () => {
         const t = Math.min(1, (performance.now() - started) / duration);
         const eased = 1 - Math.pow(1 - t, 3);
-        next.volume = target * eased;
-        if (current) current.volume = Math.max(0, current.volume * (1 - eased));
+        const target = isSpeakingRef.current ? 0.18 : Math.min(0.62, 0.28 + intensity * 0.34);
+        for (const [track, audio] of layers) {
+          const start = starts.get(track) ?? 0;
+          audio.volume = Math.max(0, Math.min(1, start + ((track === nextTrack ? target : 0) - start) * eased));
+        }
         if (t < 1) {
           fadeRafRef.current = requestAnimationFrame(tick);
           return;
         }
-        if (current) {
-          current.pause();
-          current.currentTime = 0;
-          current.src = "";
-          current.volume = 0;
+        for (const [track, audio] of layers) {
+          if (track === nextTrack) continue;
+          audio.pause();
+          audio.currentTime = 0;
+          audio.src = "";
+          layers.delete(track);
         }
-        activeAmbientRef.current = nextKey;
-        ambientTrackRef.current = nextTrack;
         fadeRafRef.current = null;
       };
       fadeRafRef.current = requestAnimationFrame(tick);
     },
-    [ensureAmbient],
+    [stopAmbient],
   );
 
   const playCue = useCallback((cue: SpatialAudioCue) => {
     if (!hasWindow()) return;
     stopCue();
-    const audio = new Audio(CUE_SRC[cue]);
+    const src = CUE_SRC[cue];
+    if (!src) return;
+    const audio = new Audio(src);
     audio.preload = "auto";
-    audio.volume = cue === "error" ? 0.42 : 0.5;
+    audio.volume = cue === "error" ? 0.42 : cue === "permission" ? 0.28 : 0.5;
     cueAudioRef.current = audio;
     audio.onended = () => {
       if (cueAudioRef.current === audio) cueAudioRef.current = null;

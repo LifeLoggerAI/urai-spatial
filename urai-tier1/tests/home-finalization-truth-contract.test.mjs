@@ -6,11 +6,16 @@ const read = (path) => fs.readFileSync(path, 'utf8')
 const authority = read('../docs/home/HOME_FINALIZATION_AUTHORITY_2026-07-23.md')
 const personalization = read('src/app/home/homePersonalizationModel.ts')
 const personalizationHook = read('src/app/home/useHomePersonalizedScene.ts')
+const assetDrivenHome = read('src/app/AssetDrivenHomeWorld.tsx')
+const homeStateProof = read('../scripts/capture-home-state-proof.mjs')
 const orb = read('src/app/home/orbStateController.ts')
 const manifest = read('src/spatial/assets/assetManifest.ts')
 const runtime = read('src/app/HomeSpatialRuntimeLayer.tsx')
 const productionEntry = read('src/spatial/layout/HomeWorldProduction.tsx')
-const production = read('src/spatial/layout/HomeWorldProductionPolished.tsx')
+const production = read('src/spatial/layout/HomeWorldProductionV223.tsx')
+const productionV223 = production
+const atmosphericSky = read('src/spatial/assets/HomeAtmosphericSky.tsx')
+const emotionalWeather = read('src/spatial/environment/HomeEmotionalWeatherState.ts')
 const selectedMemoryContract = read('src/spatial/memory/selectedMemoryContract.ts')
 const forge = read('../scripts/author-final-glb-pack.mjs')
 const verifier = read('../scripts/verify-final-glb-pack.mjs')
@@ -36,6 +41,32 @@ test('private personalization remains fail-closed and never invents memories', (
   assert.match(personalizationHook, /safePrivate: true/)
   assert.match(personalizationHook, /if \(isolatedReviewMode\)/)
   assert.match(personalizationHook, /setSignedIn\(false\)/)
+  assert.match(personalizationHook, /if \(!permissionsAvailable\)/)
+  assert.match(personalizationHook, /window\.localStorage\.getItem\('urai:homePermissionsAvailable'\) !== 'false'/)
+  assert.match(personalization, /fixture-emotional-weather/)
+  assert.match(assetDrivenHome, /data-home-emotional-weather-tone/)
+  assert.match(assetDrivenHome, /disclosed-safe-private-synthetic-review-fixture/)
+  assert.match(homeStateProof, /home-first-person-passport-earth-emotional-weather/)
+  assert.match(homeStateProof, /Global Emotional Field: aggregate signal is currently unavailable/)
+  assert.match(homeStateProof, /destination === 'PASSPORT'/)
+  assert.match(homeStateProof, /returnFrameConsumed/)
+})
+
+
+test('personal emotional weather binds permitted Home state into the canonical atmosphere without fabricating a second world', () => {
+  assert.match(productionV223, /useHomePersonalizedScene/)
+  assert.match(productionV223, /homeWeatherToneToAtmosphere/)
+  for (const [tone, state] of [['clear','calm'], ['soft','reflective'], ['active','energized'], ['heavy','heavy'], ['recovering','hopeful'], ['forming','uncertain']]) {
+    assert.match(productionV223, new RegExp(`case ['"]${tone}['"]: return ['"]${state}['"]`))
+  }
+  assert.match(productionV223, /weatherState=\{personalWeatherState\}/)
+  assert.match(productionV223, /data-home-personal-weather-tone=\{personalizedHomeScene\.environment\.weatherTone\}/)
+  assert.match(productionV223, /data-home-personal-weather-synthetic-review=\{personalizedHomeScene\.disclosedSample/)
+  assert.match(atmosphericSky, /weatherState\?: HomeEmotionalWeatherName/)
+  assert.match(atmosphericSky, /const initial = weatherState \?\? resolveHomeEmotionalWeather/)
+  assert.match(emotionalWeather, /URAI_HOME_EMOTIONAL_WEATHER_EVENT/)
+  assert.match(personalization, /weatherTone: deriveWeatherTone\(evidence\)/)
+  assert.match(personalization, /These signals are synthetic review inputs, not user records/)
 })
 
 test('selected memory timestamps remain canonical before rendering', () => {
@@ -46,19 +77,22 @@ test('selected memory timestamps remain canonical before rendering', () => {
   assert.match(selectedMemoryContract, /return canonical === value \? canonical : null/)
 })
 
-test('all eight final GLB assets are selected while degraded fallbacks remain available', () => {
+test('current selected GLB assets exclude quarantined portal geometry while degraded fallbacks remain available', () => {
   const ids = [
     'home-entry-chamber-model-v1',
-    'portal-ring-master-glb-v1',
     'ground-world-terrain-glb-v1',
     'life-map-memory-star-glb-v1',
-    'focus-memory-chamber-glb-v1',
-    'replay-memory-environment-glb-v1',
     'urai-orb-avatar-glb-v1',
     'passport-status-room-glb-v1',
   ]
   for (const id of ids) assert.match(manifest, new RegExp(`finalGlb\\('${id}'`))
+  for (const id of ['focus-memory-chamber-glb-v1', 'replay-memory-environment-glb-v1']) {
+    assert.match(manifest, new RegExp(`supportingGlb\\('${id}'`))
+  }
   assert.match(manifest, /status: 'ready'/)
+  assert.match(manifest, /status: 'candidate'/)
+  assert.match(manifest, /Retained supporting reference only/)
+  assert.doesNotMatch(manifest, /portal-ring-master-glb-v1|portal-ring-proof-fallback/)
   assert.match(manifest, /fallbackAssetId/)
   assert.match(manifest, /Emergency degraded geometry only/)
   assert.match(manifest, /Rendered visual acceptance remains an exact-head review gate/)
@@ -67,7 +101,6 @@ test('all eight final GLB assets are selected while degraded fallbacks remain av
 test('the deterministic forge owns the complete final binary pack', () => {
   const files = [
     'home-entry-chamber-v1.glb',
-    'portal-ring-master-v1.glb',
     'ground-world-terrain-v1.glb',
     'life-map-memory-star-v1.glb',
     'focus-memory-chamber-v1.glb',
@@ -98,11 +131,13 @@ test('production builds always materialize and verify the final pack', () => {
 
 test('Home keeps one live camera authority and canonical ascent', () => {
   assert.match(runtime, /AssetDrivenHomeWorld/)
-  assert.match(productionEntry, /export \{ HomeWorldProductionPolished as HomeWorldProduction \} from "\.\/HomeWorldProductionPolished"/)
-  assert.match(production, /HomeWorldProductionPolished/)
-  assert.match(production, /store\.phase === 'ASCENT'/)
-  assert.match(production, /store\.setProgress\(t\)/)
+  assert.match(productionEntry, /export \{ HomeWorldProductionV223 as HomeWorldProduction \} from ['"]\.\/HomeWorldProductionV223['"]/)
+  assert.match(production, /HomeWorldProductionV223/)
+  assert.match(production, /homeApi\.activateSky\(\)/)
+  assert.match(production, /data-home-life-map-entry="visible-sky-broad-interaction"/)
   assert.match(production, /cameraCheckpoint: 'home-sky-ascent-complete'/)
+  assert.match(production, /data-home-ground-entry="physical-world-surface"/)
+  assert.match(production, /data-home-non-xr-body-policy="camera-only-no-hands-body-rig"/)
   assert.doesNotMatch(production, /<CinematicCameraRig|<SpatialSceneClient/)
 })
 

@@ -1,14 +1,18 @@
 #!/usr/bin/env node
 const baseUrl = (process.env.URAI_DEPLOY_URL || process.env.LIVE_URL || 'https://urai-4dc1d.web.app').replace(/\/$/, '')
+const expectXrEnabled = process.env.URAI_EXPECT_XR_ENABLED === 'true'
 
 const checks = [
   { route: '/', markers: [/URAI|Urai/i] },
   { route: '/home', markers: [/URAI|Urai|Life Map|Home/i] },
   { route: '/spatial', markers: [/URAI|Urai|Spatial|Life Map/i] },
   { route: '/spatial/v1', markers: [/URAI|Urai|Spatial|World|Life Map/i] },
-  { route: '/spatial/ar-vr', markers: [/URAI|Urai|XR|AR|VR|Spatial|fallback/i] },
   { route: '/api/system/urai-spatial-lock', markers: [/urai|spatial|lock|ok/i] },
   { route: '/api/system/urai-spatial-3d-world', markers: [/urai|spatial|world|ok/i] },
+]
+
+const conditionalChecks = [
+  { route: '/spatial/ar-vr', markers: [/URAI|Urai|XR|AR|VR|Spatial|fallback/i], enabled: expectXrEnabled },
 ]
 
 const forbiddenPatterns = [
@@ -44,6 +48,30 @@ for (const check of checks) {
   }
 }
 
+for (const check of conditionalChecks) {
+  const url = `${baseUrl}${check.route}`
+  try {
+    const response = await fetch(url, {
+      headers: {
+        'user-agent': 'urai-spatial-live-smoke/1.2',
+        accept: 'text/html,application/json,*/*;q=0.8',
+      },
+    })
+    const body = await response.text()
+    const forbidden = forbiddenPatterns.find((marker) => marker.test(body))
+    const missingMarker = check.enabled ? check.markers.find((marker) => !marker.test(body)) : null
+    const enabledFailure = check.enabled && (!response.ok || missingMarker)
+    const gatedFailure = !check.enabled && response.status !== 404
+    if (enabledFailure || gatedFailure || forbidden) {
+      failures.push(`${url} conditional status=${response.status} expectedEnabled=${check.enabled} missing=${missingMarker?.source || 'none'} forbidden=${forbidden?.source || 'none'}`)
+      continue
+    }
+    console.log(`OK conditional ${response.status} ${url} expectedEnabled=${check.enabled}`)
+  } catch (error) {
+    failures.push(`${url} conditional failed: ${error instanceof Error ? error.message : String(error)}`)
+  }
+}
+
 if (failures.length > 0) {
   console.error('[smoke:home-xr:live] failed:')
   for (const failure of failures) console.error(`- ${failure}`)
@@ -54,5 +82,6 @@ console.log(JSON.stringify({
   ok: true,
   service: 'urai-spatial-live-smoke',
   baseUrl,
-  checkedRoutes: checks.length,
+  checkedRoutes: checks.length + conditionalChecks.length,
+  expectXrEnabled,
 }, null, 2))

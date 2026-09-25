@@ -1,0 +1,32 @@
+{
+  "schema": "urai-third-party-runtime-dependency-receipt@1",
+  "dependencyId": "three-r183-basis-transcoder",
+  "status": "integrated-runtime-dependency",
+  "source": {
+    "publisher": "three.js / mrdoob",
+    "repository": "mrdoob/three.js",
+    "tag": "r183",
+    "license": "MIT",
+    "paths": [
+      "examples/jsm/libs/basis/basis_transcoder.js",
+      "examples/jsm/libs/basis/basis_transcoder.wasm"
+    ],
+    "gitBlobShas": {
+      "basis_transcoder.js": "6f02a4ac8504ea07512bd1106e7fe98012aecd6a",
+      "basis_transcoder.wasm": "bc64682561438128604ac550da774f8cc6617460"
+    }
+  },
+  "integration": {
+    "runtimePaths": [
+      "/basis/basis_transcoder.js",
+      "/basis/basis_transcoder.wasm"
+    ],
+    "repositoryPaths": [
+      "urai-tier1/public/basis/basis_transcoder.js",
+      "urai-tier1/public/basis/basis_transcoder.wasm"
+    ],
+    "consumer": "KTX2Loader in urai-tier1/src/app/GroundSpatialWorldClean.tsx",
+    "purpose": "Decode KTX2 textures used by the governed Ground Jacaranda canopy without a CDN dependency.",
+    "offlineLocalRuntime": true
+  }
+}

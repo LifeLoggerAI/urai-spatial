@@ -101,8 +101,8 @@ function OrbReflection({ reflectionMode }: { reflectionMode: UraiReflectionMode 
   )
 }
 
-function EngravedStoneVeins({ reducedMotion }: { reducedMotion: boolean }) {
-  const count = reducedMotion ? 8 : 16
+function EngravedStoneVeins({ reducedMotion, reducedStimulation }: { reducedMotion: boolean; reducedStimulation: boolean }) {
+  const count = reducedStimulation ? 4 : reducedMotion ? 8 : 16
 
   return (
     <group>
@@ -115,7 +115,7 @@ function EngravedStoneVeins({ reducedMotion }: { reducedMotion: boolean }) {
         return (
           <mesh key={index} position={[x, -0.506, z]} rotation={[-Math.PI / 2, 0, angle + Math.PI / 2]}>
             <planeGeometry args={[0.012, 0.54 + (index % 3) * 0.16]} />
-            <meshBasicMaterial color={index % 4 === 0 ? PALETTE.softGold : PALETTE.paleCyan} transparent opacity={0.055} depthWrite={false} blending={THREE.AdditiveBlending} />
+            <meshBasicMaterial color={index % 4 === 0 ? PALETTE.softGold : PALETTE.paleCyan} transparent opacity={reducedStimulation ? 0.02 : 0.055} depthWrite={false} blending={THREE.AdditiveBlending} />
           </mesh>
         )
       })}
@@ -125,10 +125,12 @@ function EngravedStoneVeins({ reducedMotion }: { reducedMotion: boolean }) {
 
 export default function RitualPlatform({
   reducedMotion,
+  reducedStimulation = false,
   reflectionMode,
   budget,
 }: {
   reducedMotion?: boolean
+  reducedStimulation?: boolean
   reflectionMode?: UraiReflectionMode
   budget?: SpatialRenderBudget
 }) {
@@ -139,7 +141,8 @@ export default function RitualPlatform({
     () => budget ?? sharedVisualBudget?.budget ?? resolveSpatialRenderBudget({ reducedMotion: effectiveReducedMotion, qualityTier: effectiveReducedMotion ? 'low' : 'high' }),
     [budget, sharedVisualBudget, effectiveReducedMotion],
   )
-  const effectiveReflectionMode = reflectionMode ?? resolvedBudget.reflectionMode
+  const effectiveReflectionMode = reducedStimulation ? 'off' : (reflectionMode ?? resolvedBudget.reflectionMode)
+  const stimulationScale = reducedStimulation ? 0.28 : 1
   const platformRef = useRef<THREE.Group>(null)
   const normalMap = useMemo(() => makeProceduralStoneNormalTexture(), [])
 
@@ -173,7 +176,7 @@ export default function RitualPlatform({
           normalMap={normalMap}
           normalScale={new THREE.Vector2(0.08, 0.08)}
           emissive="#071126"
-          emissiveIntensity={0.18}
+          emissiveIntensity={0.18 * stimulationScale}
         />
       </mesh>
 
@@ -184,20 +187,20 @@ export default function RitualPlatform({
 
       <mesh position={[0, -0.512, -1.2]} rotation={[-Math.PI / 2, 0, 0]}>
         <ringGeometry args={[0.58, 0.62, 160]} />
-        <SacredGlassMaterial color={PALETTE.softGold} opacity={0.2} emissiveIntensity={0.32} />
+        <SacredGlassMaterial color={PALETTE.softGold} opacity={0.2 * stimulationScale} emissiveIntensity={0.32 * stimulationScale} />
       </mesh>
 
       <mesh position={[0, -0.505, -1.2]} rotation={[-Math.PI / 2, 0, 0]}>
         <ringGeometry args={[2.2, 2.33, 192]} />
-        <SacredGlassMaterial color={PALETTE.moonSilver} opacity={0.045} emissiveIntensity={0.18} />
+        <SacredGlassMaterial color={PALETTE.moonSilver} opacity={0.045 * stimulationScale} emissiveIntensity={0.18 * stimulationScale} />
       </mesh>
 
       <OrbReflection reflectionMode={effectiveReflectionMode} />
-      <EngravedStoneVeins reducedMotion={effectiveReducedMotion} />
-      <RuneRing radius={0.88} color={PALETTE.softGold} opacity={0.2} speed={0.026} reducedMotion={effectiveReducedMotion} />
-      <RuneRing radius={1.24} color={PALETTE.moonSilver} opacity={0.16} speed={-0.018} reducedMotion={effectiveReducedMotion} />
-      <RuneRing radius={1.66} color={PALETTE.paleCyan} opacity={0.11} speed={0.014} reducedMotion={effectiveReducedMotion} />
-      <RuneRing radius={2.14} color={PALETTE.softGold} opacity={0.09} speed={-0.009} reducedMotion={effectiveReducedMotion} />
+      <EngravedStoneVeins reducedMotion={effectiveReducedMotion} reducedStimulation={reducedStimulation} />
+      <RuneRing radius={0.88} color={PALETTE.softGold} opacity={0.2 * stimulationScale} speed={0.026} reducedMotion={effectiveReducedMotion} />
+      <RuneRing radius={1.24} color={PALETTE.moonSilver} opacity={0.16 * stimulationScale} speed={-0.018} reducedMotion={effectiveReducedMotion} />
+      <RuneRing radius={1.66} color={PALETTE.paleCyan} opacity={0.11 * stimulationScale} speed={0.014} reducedMotion={effectiveReducedMotion} />
+      <RuneRing radius={2.14} color={PALETTE.softGold} opacity={0.09 * stimulationScale} speed={-0.009} reducedMotion={effectiveReducedMotion} />
       <SealedProgressionMarks reducedMotion={effectiveReducedMotion} />
     </group>
   )

@@ -57,6 +57,9 @@ jobs:
           corepack enable
           pnpm install --frozen-lockfile
 
+      - name: Prove Mirror exact-origin contract
+        run: node tests/mirror-release-canonical-origin-contract.test.mjs
+
       - name: Build exact static candidate
         run: pnpm build:static
 
@@ -90,4 +93,6 @@ jobs:
           name: mirror-release-proof-${{ env.URAI_PROOF_SOURCE_SHA }}
           path: mirror-release-proof
           if-no-files-found: error
+          # Public-repository GitHub artifact retention is capped at 90 days.
+          # Longer-lived evidence requires a separately verified durable archive.
           retention-days: 90

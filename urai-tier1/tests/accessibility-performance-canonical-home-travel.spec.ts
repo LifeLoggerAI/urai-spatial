@@ -23,7 +23,7 @@ const destinations = [
     params: {
       from: 'home-sky',
       entryPortal: 'home-sky',
-      cameraCheckpoint: 'home-sky-ascent',
+      cameraCheckpoint: 'home-sky-ascent-complete',
     },
   },
 ] as const
@@ -124,13 +124,17 @@ async function waitForAuthorizedSettledIdentity(page: Page, destination: Destina
 }
 
 async function activate(page: Page, destination: Destination, activation: Activation) {
-  const navigation = page.getByRole('navigation', { name: 'Direct Home destinations' })
-  await expect(navigation).toBeVisible({ timeout: 30_000 })
-  const target = navigation.getByRole('button', { name: destination.label, exact: true })
-  await expect(target).toBeVisible()
-  await expect(target).toBeEnabled()
-  await target.scrollIntoViewIfNeeded()
+  const navigation = page.locator('.home-semantic-navigation[data-home-navigation-owner="runtime-boundary"]').first()
+  await expect(navigation).toHaveCount(1)
+  await expect(navigation).toHaveAttribute('data-home-navigation-non-dominant', 'true')
+  const target = navigation.getByTestId(`home-semantic-${destination.id}`)
+  await expect(target).toHaveCount(1)
+  await expect(target).toHaveAccessibleName(destination.label)
 
+  // click/tap/press already enforce enabled/actionable state. Avoid a second
+  // full WebGL-era actionability/scroll pass here: under CI SwiftShader those
+  // redundant locator operations can consume the entire per-test budget before
+  // the trusted activation is dispatched.
   if (activation.method === 'keyboard') {
     await target.focus()
     await expect(target).toBeFocused()
@@ -208,7 +212,7 @@ async function proveCanonicalTravel(
 for (const destination of destinations) {
   for (const activation of activations) {
     test(`${activation.id} to ${destination.id} converges on canonical context and Back remains stable`, async ({ browser }, testInfo) => {
-      test.setTimeout(180_000)
+      test.setTimeout(300_000)
       const context = await browser.newContext({ baseURL, ...activation.context })
       try {
         const report = await proveCanonicalTravel(context, destination, activation)

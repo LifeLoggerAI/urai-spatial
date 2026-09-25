@@ -105,18 +105,19 @@ function deriveMoodRecovery(signals: SignalScoreBundle): MoodRecoveryResult {
   const shadowScore = signals.stress * 0.46 + (100 - signals.sleep) * 0.24 + (100 - signals.socialWarmth) * 0.14 + signals.memory * 0.16;
   const focusScore = signals.movement * 0.18 + signals.sleep * 0.22 + (100 - signals.stress) * 0.32 + signals.streaks * 0.28;
 
-  let moodState: HomeMoodState = "calm";
+  const reflectiveScore = dreamScore * 0.54 + focusScore * 0.46;
   const contenders: Array<[HomeMoodState, number]> = [
-    ["joy", joyScore],
-    ["dream", dreamScore],
-    ["shadow", shadowScore],
-    ["focused", focusScore],
-    ["recovery", recoveryScore],
+    ["energized", joyScore],
+    ["reflective", reflectiveScore],
+    ["heavy", shadowScore],
+    ["hopeful", recoveryScore],
     ["calm", calmScore],
   ];
-  const top = contenders.sort((a, b) => b[1] - a[1])[0];
-  moodState = top[0];
-  if (top[1] < 48) moodState = "low";
+  const ranked = contenders.sort((a, b) => b[1] - a[1]);
+  const top = ranked[0];
+  const runnerUp = ranked[1];
+  let moodState: HomeMoodState = top[0];
+  if (signals.confidence < 0.42 || top[1] < 48 || top[1] - runnerUp[1] < 3.5) moodState = "uncertain";
 
   let recoveryState: HomeRecoveryState = "dormant";
   if (recoveryScore >= 84) recoveryState = "awakened";

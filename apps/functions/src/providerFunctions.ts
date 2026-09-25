@@ -195,6 +195,7 @@ export const openAiOrbProvider = onRequest({
       method: 'POST',
       headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({ model: 'omni-moderation-latest', input: message }),
+      redirect: 'error',
       signal: moderationController.signal,
     }).finally(() => clearTimeout(moderationTimeout))
     if (!moderation.ok) throw new ProviderError(503, 'MODERATION_UNAVAILABLE', 'The live Orb safety check is unavailable.')
@@ -213,6 +214,7 @@ export const openAiOrbProvider = onRequest({
         Accept: 'text/event-stream',
         'Idempotency-Key': randomUUID(),
       },
+      redirect: 'error',
       body: JSON.stringify({
         model: process.env.OPENAI_ORB_MODEL || 'gpt-5',
         instructions: [
@@ -252,7 +254,10 @@ export const openAiOrbProvider = onRequest({
         if (!payload || payload === '[DONE]') continue
         let event: JsonMap
         try { event = JSON.parse(payload) as JsonMap } catch { continue }
-        if (event.type === 'response.output_text.delta') output += String(event.delta ?? '')
+        if (event.type === 'response.output_text.delta') {
+          output += String(event.delta ?? '')
+          if (output.length > 8_192) throw new ProviderError(502, 'OPENAI_RESPONSE_TOO_LARGE', 'The live Orb provider returned an oversized response.')
+        }
         if (event.type === 'response.completed') completed = true
         if (event.type === 'response.failed' || event.type === 'error') throw new ProviderError(502, 'OPENAI_RESPONSE_FAILED', 'The live Orb provider could not complete the response.')
       }
@@ -317,12 +322,19 @@ export const elevenLabsVoiceProvider = onRequest({
       headers: { 'xi-api-key': ELEVENLABS_API_KEY.value(), 'Content-Type': 'application/json', Accept: 'audio/mpeg' },
       body: JSON.stringify({
         text,
-        model_id: process.env.ELEVENLABS_MODEL_ID || 'eleven_multilingual_v2',
+        model_id: process.env.ELEVENLABS_MODEL_ID || 'eleven_v3',
         voice_settings: { stability: 0.66, similarity_boost: 0.78, style: 0.18, use_speaker_boost: true },
       }),
+      redirect: 'error',
       signal: controller.signal,
     }).finally(() => clearTimeout(timeout))
     if (!upstream.ok || !upstream.body) throw new ProviderError(upstream.status === 429 ? 429 : 503, 'ELEVENLABS_REQUEST_FAILED', 'The voice provider is unavailable.')
+
+    const maximumAudioBytes = Math.max(1, Math.min(32 * 1024 * 1024, Number(process.env.ELEVENLABS_MAX_RESPONSE_BYTES ?? 8 * 1024 * 1024)))
+    const declaredAudioBytes = Number(upstream.headers.get('content-length'))
+    if (Number.isFinite(declaredAudioBytes) && declaredAudioBytes > maximumAudioBytes) {
+      throw new ProviderError(502, 'ELEVENLABS_RESPONSE_TOO_LARGE', 'The voice provider returned an oversized audio response.')
+    }
 
     response.status(200)
     response.setHeader('Content-Type', upstream.headers.get('content-type') || 'audio/mpeg')
@@ -330,9 +342,16 @@ export const elevenLabsVoiceProvider = onRequest({
     response.setHeader('X-Content-Type-Options', 'nosniff')
     response.setHeader('X-URAI-Provider', 'elevenlabs')
     const reader = upstream.body.getReader()
+    let streamedAudioBytes = 0
     while (true) {
       const { value, done } = await reader.read()
       if (done) break
+      if (!value) continue
+      streamedAudioBytes += value.byteLength
+      if (streamedAudioBytes > maximumAudioBytes) {
+        await reader.cancel('ElevenLabs response exceeded configured maximum').catch(() => undefined)
+        throw new ProviderError(502, 'ELEVENLABS_RESPONSE_TOO_LARGE', 'The voice provider returned an oversized audio response.')
+      }
       response.write(Buffer.from(value))
     }
     response.end()

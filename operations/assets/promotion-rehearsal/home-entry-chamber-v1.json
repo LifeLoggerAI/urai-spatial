@@ -4,14 +4,14 @@
   "repository": "LifeLoggerAI/urai-spatial",
   "assetId": "home-entry-chamber-v1",
   "canonicalPath": "urai-tier1/public/assets/urai/generated/models/home-entry-chamber-v1.glb",
-  "bytes": 1786808,
-  "sha256": "73f2a49ed2cfd6cd7ae9baed7b3908d53e0cac75b9f36ff1b8be9654e3d3e2f2",
+  "bytes": 1785372,
+  "sha256": "e0c5bbc70d04b5988abd8f30b34b9ff20fcbe3171ee339473bab6e1eb8030210",
   "source": "URAI Labs deterministic authored sanctuary v3 pipeline; replaceable only by a separately reviewed provider asset",
   "fallback": "procedural-home-threshold",
   "license": "URAI Labs internal proprietary production asset",
   "producer": "URAI deterministic authored sanctuary v3 pipeline",
   "reviewer": "governed-replacement-rehearsal",
-  "reviewedAt": "2026-08-08T23:04:50.713Z",
+  "reviewedAt": "2026-09-25T15:28:19.196Z",
   "promote": false,
   "humanReviewApproved": false,
   "fallbackVerified": true,
@@ -20,5 +20,5 @@
   "optimizationVerified": true,
   "visualProofVerified": false,
   "exactHeadChecksPassed": true,
-  "notes": "Fail-closed exact-binary replacement rehearsal rebound to the bounded Home pole-normal repair. Only two invalid pole NORMAL vectors on embodied-presence-face-light-geometry and the corresponding NORMAL accessor Y bounds numeric lexemes are corrected in place; GLB byte length and all unrelated JSON/BIN bytes remain unchanged. This record binds candidate identity only; promote=false, humanReviewApproved=false, and visualProofVerified=false remain unchanged pending exact-head visual proof and founder acceptance."
+  "notes": "Fail-closed exact-binary replacement rehearsal rebound to the bounded Home pole-normal repair. Only two invalid pole NORMAL vectors on embodied-presence-face-light-geometry and the corresponding NORMAL accessor Y bounds numeric lexemes are corrected in place; GLB byte length and all unrelated JSON/BIN bytes remain unchanged. This record binds candidate identity only; promote=false, humanReviewApproved=false, and visualProofVerified=false remain unchanged pending exact-head visual proof and founder acceptance. Bounded glTF repair removed alphaCutoff from non-MASK materials; promotion remains false."
 }

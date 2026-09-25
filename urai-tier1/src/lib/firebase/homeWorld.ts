@@ -22,7 +22,15 @@ import type {
 const HOME_WORLD_DOC_ID = "state";
 const HOME_WORLD_EXPLAIN_DOC_ID = "latest";
 const tierValues: HomeWorldTier[] = [1, 2, 3, 4, 5];
-const moodValues: HomeMoodState[] = ["calm", "low", "recovery", "dream", "shadow", "focused", "joy"];
+const moodValues: HomeMoodState[] = ["calm", "reflective", "energized", "heavy", "uncertain", "hopeful"];
+const legacyMoodValues: Record<string, HomeMoodState> = {
+  low: "uncertain",
+  recovery: "hopeful",
+  dream: "reflective",
+  shadow: "heavy",
+  focused: "reflective",
+  joy: "energized",
+};
 const recoveryValues: HomeRecoveryState[] = ["dormant", "recovering", "stable", "growing", "awakened"];
 
 function homeWorldRef(userId: string) {
@@ -50,6 +58,7 @@ function tier(value: unknown, fallback: HomeWorldTier): HomeWorldTier {
 }
 
 function mood(value: unknown, fallback: HomeMoodState): HomeMoodState {
+  if (typeof value === "string" && value in legacyMoodValues) return legacyMoodValues[value];
   return moodValues.includes(value as HomeMoodState) ? (value as HomeMoodState) : fallback;
 }
 

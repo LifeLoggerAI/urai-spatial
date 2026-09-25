@@ -1,0 +1,135 @@
+# URAI Visual Gold Master Manifest V1
+
+Authority date: 2026-09-25
+Repository: LifeLoggerAI/urai-spatial
+Authority branch: converge/final-canon-spatial-20260922 / PR #1296
+Status: CURRENT VISUAL-AUTHORITY MANIFEST / NOT GOLD MASTER / PR #1296 OPEN / UNMERGED
+
+## Rule
+
+This manifest replaces fixed historical image-count definitions of completion. Earlier frame counts remain provenance only unless reclassified here or in the machine-readable mirror. Visual authority is derived from current product canon, current source, current runtime evidence, accessibility/privacy/truth constraints, and literal-pixel inspection.
+
+A workflow named visual proof is not visual acceptance. A head move invalidates predecessor CI, retained pixels, review, approval, governance, Gold-Master, deployment, and live evidence.
+
+## Source hierarchy
+
+1. PR #1296 / `converge/final-canon-spatial-20260922` is the current runtime + visual-control-plane authority. Its live head must be resolved immediately before action; no predecessor SHA, screenshot, review, CI result, deployment receipt, or pixel acceptance transfers to a successor head.
+2. Ordinary non-XR Home is currently direct persistent bodyless first-person. Legacy visible-Avatar presentation / embodiment-gate behavior is historical compatibility provenance only and is not current Home authority.
+3. PR #1237 / `unified-spatial-convergence-20260916` is a historical unified predecessor. It remains useful provenance but no longer outranks the active #1296 successor.
+4. Personalized Lived World, Passport exact-origin return semantics, Global Emotional Field fail-closed truth, and Personal Emotional Weather authority carried into the current convergence lane remain subject to fresh exact-head proof on #1296.
+5. PR #1241 remains historical/selective donor provenance for any uncarried scope, not whole-tree authority.
+6. PR #1243 remains a selective donor for Possible Futures + truth model + AI self-ledger scope not yet converged.
+7. PR #1252 remains historical mechanical-conflict evidence proving donor trees cannot be wholesale-merged safely.
+8. Visual sidecar restacks #1255/#1256/#1258/#1260, sync probes, PR #1177, and older Home/Orb/Ground/Focus lanes are superseded or supporting historical provenance only where not explicitly reconverged on #1296.
+
+## First-person Home master reference package
+
+`docs/URAI_HOME_FPV_MASTER_VISUAL_REFERENCE_V1.md` and `docs/URAI_HOME_FPV_TERMINAL_VISUAL_PACKAGE_V1.md` are the current candidate reference contracts for direct bodyless first-person Home continuity, the candidate production-reference package, Orb state continuity, Passport placement, camera/lens rules, accessibility variants, failure criteria, implementation handoff, Global Emotional Field visual truth, and Personal Emotional Weather grammar. Historical visible-Avatar/presentation sequences are provenance only.
+
+They are subordinate to this manifest and do not convert concept/reference art into accepted runtime pixels. The fixed 16-frame set is a production working set, not a replacement for the VGM inventory or Gold-Master completion boundary. The previously generated marketing/luxury-villa master and later montage board are rejected as `URAI_HOME_FPV_MASTER_01`; they remain supporting/historical reference only.
+
+## Locked current visual/product canon
+
+### Home
+- Ordinary non-XR Home initializes directly in persistent `AVATAR_HOME_FIRST_PERSON`; legacy `HOME_PRESENTATION` remains compatibility/provenance only.
+- The first stable desktop/mobile Home view is camera-only and bodyless: no visible Avatar, hands, arms, torso, legs, feet, or tool rig.
+- No Avatar-target or Avatar-activation step is part of the current non-XR Home journey.
+- Broad Sky owns Life Map ascent. No portal/ring/white dot/doorway/hotspot.
+- Terrain owns Ground descent. No portal/doorway/radial tunnel.
+- Mobile first-person Home uses governed shared movement controls.
+
+### Ground
+- First-person terrestrial lived world.
+- No visible non-XR body/hands, shooter HUD, forced head bob, or follower Orb.
+- Personalized Lived World source boundary is now mounted on #1237 and reuses only already-saved, currently authorized geographic pins as partial private Place anchors; it performs no new location request and fails closed.
+- Personalized elements require provenance and fidelity: `confirmed` / `partial` / `unknown`.
+- Generic fallback remains explicitly non-autobiographical.
+- Final art still rejects primitive trees, box-city architecture, flat blue water, obvious tiling, fog walls, repeated scatter, portal spectacle, and generic sci-fi signage.
+
+### Orb
+- Home-owned physical conversational intelligence.
+- Acoustic speaking is bound to actual playback; text-only must not fake speaking.
+- No visual claims of transcription/retrieval unless a governed producer exists.
+- Reduced motion preserves semantic light/state while suppressing macro transient motion.
+
+### Life Map
+- Layered explorable personal universe, not dashboard/graph/timeline/star wallpaper/solar system.
+- Memories are not planets or ringed collectibles.
+
+### Focus
+- Life Map selects one stellar Memory Star; Focus resolves that same selected object at close range.
+- Current source authority is V323 `selected-memory-star-with-contained-memory`: the authorized memory is visibly inside/through the star and Replay crosses that same memory boundary.
+- Terrain, sanctuary ground, cavities, stone banks, fissures, biomes, and walkable Ground-like composition are explicitly superseded/rejected as Focus visual ownership.
+- Source image/video is shown inside the star only when legitimately authorized; explicit demo/no-source states use truthful generated visualization rather than fabricated personal media.
+- Desktop, mobile, reduced-motion, keyboard/touch, and no-WebGL states must preserve selected-star identity and the Focus → Replay semantic transition.
+
+### Replay
+- Source-first spatial-temporal memory interior.
+- Distinguish captured evidence, supported reconstruction/context, interpretation/possible pattern, and unknown/unresolved.
+- Missing source remains unresolved; do not fabricate media.
+- Non-XR first-person witness has no floating body/hands.
+
+### Passport
+- First-person-Home-only physical ownership/authority artifact; not a portal.
+- Current #1237 source mounts the candidate physical object only in unlocked `AVATAR_HOME_FIRST_PERSON`.
+- Current visual form is `protected-custody-stone-v2`; it remains visually uncertified until exact-head pixels pass.
+- Before Passport travel, Home captures the exact current FP origin into the governed return-frame authority; Passport return may restore that camera/state via the `PASSPORT` destination.
+- Source implementation is therefore CURRENT_CANDIDATE; literal pixels, responsive/a11y behavior, full round-trip browser proof, and final physical art acceptance remain required.
+
+### Global Emotional Field Earth
+- Separate physical first-person Home Earth system, distinct from Location Map and Personal Emotional Weather.
+- A deterministic current source candidate now exists at `HomeGlobalEmotionalFieldEarth.tsx` and is mounted from `HomeAAAVisualRepair.tsx`.
+- Current mounted publication state is deliberately `unavailable`; provider state remains `not-activated`.
+- Truth states remain unavailable / suppressed / safely published aggregate where authorized.
+- No individual dots, exact locations, raw emotion, private-map aliasing, or fake activity.
+- The candidate is not production-authoritative until literal pixels, accessibility/performance, aggregate-provider, threshold/privacy/security, and governance evidence pass on one unchanged exact head.
+
+### Personal Emotional Weather
+- Private, uncertainty-aware, visually distinct from ordinary weather and Global Emotional Field.
+- Current visual grammar is specified but runtime production art remains incomplete.
+- Never presented as diagnosis.
+
+### Possible Futures
+- Scenario World is visually distinct from Replay/reality.
+- Relevant surfaces carry `POSSIBLE FUTURE · NOT A MEMORY`.
+- Maximum three launch branches where current authority applies; unranked.
+- PR #1243 implementation remains donor-only until selectively reconciled to unified Spatial.
+
+## Visual authority inventory
+
+| Canonical ID | Experience / system | Status | Required next action |
+|---|---|---|---|
+| VGM-HOME-001 | Direct bodyless Home entry | CURRENT_CANDIDATE | Fresh exact-head desktop/mobile/reduced-motion pixels + literal inspection |
+| VGM-HOME-002 | Legacy Avatar embodiment transition | SUPERSEDED | No current non-XR capture required; retain predecessor sequence as historical provenance only |
+| VGM-HOME-003 | Bodyless FP Home | CURRENT_CANDIDATE | Capture/inspect exact-head FP Home; verify no visible body/hands; clean master reference still required |
+| VGM-AVATAR-001 | Separately governed likeness/self-view/XR body component | MISSING_REPLACEMENT_REQUIRED | Requires explicit surface authority plus authorized likeness/source provenance; never gates ordinary non-XR Home |
+| VGM-ORB-001 | Orb | CURRENT_CANDIDATE | Fresh exact-head state captures and literal inspection |
+| VGM-SKY-001 | Home Sky / ascent | CURRENT_CANDIDATE | Capture broad-sky ascent; reject localized portal language |
+| VGM-LIFEMAP-001 | Life Map | CURRENT_CANDIDATE | Fresh overview/selected/approach/portrait/mobile/reduced pack |
+| VGM-MEMSTAR-001 | Memory Star | MISSING_REPLACEMENT_REQUIRED | Derive far/mid/near/selection/approach component reference |
+| VGM-FOCUS-001 | Focus | CURRENT_CANDIDATE | Capture/open fresh exact-head V323 selected-Memory-Star pixels; verify contained memory, mobile/reduced/no-WebGL, and Focus → Replay continuity |
+| VGM-REPLAY-001 | Replay | CURRENT_CANDIDATE | Fresh source-present/source-absent/mobile/reduced/offline pixels |
+| VGM-GROUND-001 | Ground descent/return | CURRENT_CANDIDATE | Fresh exact-head sequence + reduced-motion capture |
+| VGM-GROUND-002 | Ground generic fallback art | REJECTED | Add governed natural canopy/world-depth art without restoring portal terrain |
+| VGM-GROUND-003 | Personalized lived world source boundary | CURRENT_CANDIDATE | Source is converged fail-closed; create/accept confirmed/partial/unknown visuals and prove revocation/degradation |
+| VGM-PASSPORT-001 | Physical Home Passport | CURRENT_CANDIDATE | Accept protected-custody-stone-v2 physical art, activation, round-trip, mobile/reduced/a11y pixels |
+| VGM-PASSPORT-002 | Passport UI | CURRENT_CANDIDATE | Responsive/accessibility/receipt-state audit |
+| VGM-GEF-001 | Global Emotional Field Earth | CURRENT_CANDIDATE | Inspect unavailable Earth pixels; prove mobile/reduced/a11y; add suppressed/aggregate only when governed provider truth exists |
+| VGM-PEW-001 | Personal Emotional Weather | CURRENT_CANDIDATE | Source/state authority is implemented and bound to Home; create/inspect the dedicated WEATHER-001…018 pack, mobile/reduced/no-WebGL states, audio listening evidence, and exact-head literal acceptance |
+| VGM-MIRROR-001 | Mirror | CURRENT_CANDIDATE | Re-audit current source/retained assets; derive current state pack |
+| VGM-SHADOW-001 | Shadow | MISSING_REPLACEMENT_REQUIRED | Re-derive reference/storyboard authority |
+| VGM-LEGACY-001 | Legacy | MISSING_REPLACEMENT_REQUIRED | Re-derive reference/storyboard authority |
+| VGM-COUNCIL-001 | Council | MISSING_REPLACEMENT_REQUIRED | Reconcile source then create current visual package |
+| VGM-RITUAL-001 | Rituals | MISSING_REPLACEMENT_REQUIRED | Re-derive current visual package |
+| VGM-FUTURES-001 | Possible Futures | MISSING_REPLACEMENT_REQUIRED | Selectively reconcile + dedicated Scenario World pack |
+| VGM-SETTINGS-001 | Conventional support surfaces | CURRENT_CANDIDATE | Responsive/a11y/loading/error audit |
+
+Status vocabulary: `CURRENT_AUTHORITY`, `CURRENT_CANDIDATE`, `REUSABLE_SUPPORTING_REFERENCE`, `HISTORICAL_PROVENANCE_ONLY`, `SUPERSEDED`, `REJECTED`, `MISSING_REPLACEMENT_REQUIRED`.
+
+## Literal-pixel release rule
+
+No row can become `CURRENT_AUTHORITY` from source or CI alone. Required visual systems must have current exact-head capture, human literal inspection, and documented decision. Any source move resets affected rows to `CURRENT_CANDIDATE`.
+
+## Completion boundary
+
+Gold Master requires one unchanged reconciled head containing all required current product authority, accepted literal pixels, accessibility/performance/privacy/security acceptance, independent review where required, governance, protected merge/deploy, deployed-SHA readback, live verification, and recovery/rollback evidence. This manifest remains fail-closed until those conditions are met.

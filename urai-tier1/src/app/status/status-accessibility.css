@@ -1,0 +1,6 @@
+/* Route actions retain a measured 48 CSS-pixel hit target independent of rem
+   scaling or typography overrides from the spatial shell. */
+nav[aria-label='Status route navigation'] a {
+  min-height: 48px;
+  min-width: 48px;
+}

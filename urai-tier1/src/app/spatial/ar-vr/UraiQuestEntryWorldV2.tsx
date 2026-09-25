@@ -3,11 +3,13 @@
 import {
   useCallback,
   useEffect,
+  useMemo,
   useRef,
   useState,
 } from 'react'
 import { useRouter } from 'next/navigation'
-import QuestVrEntryButton from './QuestVrEntryButton'
+import { useSelectedMemory } from '@/spatial/memory/useSelectedMemory'
+import QuestVrEntryButton, { type XrMode } from './QuestVrEntryButton'
 import styles from './UraiQuestEntryWorld.module.css'
 import {
   UraiXrWorldRuntime,
@@ -70,6 +72,9 @@ function runtimeSessionForRightHandTurning(
 
 export default function UraiQuestEntryWorldV2() {
   const router = useRouter()
+  const selectedMemory = useSelectedMemory()
+  const memory = selectedMemory.memory
+  const requestedMode = useRef<XrMode>('immersive-vr')
 
   const mountRef = useRef<HTMLDivElement>(null)
   const runtimeRef = useRef<UraiXrWorldRuntime | null>(null)
@@ -78,8 +83,15 @@ export default function UraiQuestEntryWorldV2() {
     'Building the explorable entry chamber…',
   )
   const [reducedMotion, setReducedMotion] = useState(false)
-  const [vrActive, setVrActive] = useState(false)
+  const [activeMode, setActiveMode] = useState<XrMode | null>(null)
   const [rendererReady, setRendererReady] = useState(false)
+
+  const replayHref = useMemo(() => {
+    if (!memory) return '/replay'
+    const next = new URLSearchParams({ memoryId: memory.id, manifestId: memory.replayManifest.id, node: memory.star.id, from: 'xr' })
+    if (memory.demo) next.set('demo', '1')
+    return '/replay?' + next.toString()
+  }, [memory])
 
   const openRoute = useCallback(
     async (route: string, label: string) => {
@@ -98,7 +110,7 @@ export default function UraiQuestEntryWorldV2() {
           // the immersive session.
         } finally {
           runtime.session = null
-          setVrActive(false)
+          setActiveMode(null)
         }
       }
 
@@ -174,12 +186,23 @@ export default function UraiQuestEntryWorldV2() {
     } catch {
       runtimeRef.current = null
       setRendererReady(false)
-      setVrActive(false)
+      setActiveMode(null)
       setMessage(
         'Real-time 3D is unavailable on this device. The accessible portal controls remain active.',
       )
     }
   }, [openRoute])
+
+  useEffect(() => {
+    const runtime = runtimeRef.current
+    if (!runtime || !rendererReady) return
+    if (memory) {
+      runtime.setMemoryExperience(memory)
+      setMessage('Selected memory ready. Enter it in VR or place its recorded moment into your space with AR.')
+    } else if (selectedMemory.status !== 'loading') {
+      runtime.clearMemoryExperience()
+    }
+  }, [memory, rendererReady, selectedMemory.status])
 
   useEffect(() => {
     const runtime = runtimeRef.current
@@ -201,19 +224,23 @@ export default function UraiQuestEntryWorldV2() {
 
       runtime.session =
         runtimeSessionForRightHandTurning(nativeSession)
+      runtime.setImmersiveMode(requestedMode.current)
 
       try {
         await runtime.renderer.xr.setSession(
           session as never,
         )
 
-        setVrActive(true)
-        setMessage(
-          'Immersive world active. Aim and select a portal, or select the floor to teleport.',
-        )
+        setActiveMode(requestedMode.current)
+        setMessage(memory
+          ? requestedMode.current === 'immersive-ar'
+            ? 'AR memory active. The recorded moment is anchored in your space.'
+            : 'VR memory active. Move inside the selected memory experience.'
+          : 'Immersive world active. Explore the XR world safely.')
       } catch (error) {
         runtime.session = null
-        setVrActive(false)
+        runtime.setImmersiveMode(null)
+        setActiveMode(null)
 
         throw error
       }
@@ -226,13 +253,14 @@ export default function UraiQuestEntryWorldV2() {
 
     if (runtime) {
       runtime.session = null
+      runtime.setImmersiveMode(null)
 
       HELD_CONTROL_CODES.forEach((code) => {
         runtime.setKey(code, false)
       })
     }
 
-    setVrActive(false)
+    setActiveMode(null)
     setMessage(
       'Immersive session ended safely. Your chamber remains available.',
     )
@@ -277,7 +305,9 @@ export default function UraiQuestEntryWorldV2() {
       data-renderer-ready={
         rendererReady ? 'true' : 'false'
       }
-      aria-label="URAI explorable XR entry world"
+      data-immersive-memory={memory ? 'true' : 'false'}
+      data-memory-id={memory?.id}
+      aria-label={memory ? 'URAI immersive selected memory' : 'URAI explorable XR entry world'}
     >
       <div
         ref={mountRef}
@@ -285,8 +315,8 @@ export default function UraiQuestEntryWorldV2() {
       />
 
       <header className={styles.hud}>
-        <p>URAI XR ENTRY · LIVE 3D</p>
-        <strong>Explorable entry chamber</strong>
+        <p>{memory ? 'URAI IMMERSIVE MEMORY · SOURCE-BOUND' : 'URAI XR ENTRY · LIVE 3D'}</p>
+        <strong>{memory?.title ?? 'Explorable entry chamber'}</strong>
         <span aria-live="polite">{message}</span>
       </header>
 
@@ -295,18 +325,20 @@ export default function UraiQuestEntryWorldV2() {
         aria-label="XR and comfort controls"
       >
         <QuestVrEntryButton
+          memoryMode={Boolean(memory)}
+          onModeRequested={(mode) => { requestedMode.current = mode }}
           onSessionRequested={attachSession}
           onSessionEnded={handleSessionEnded}
         />
 
-        {vrActive ? (
+        {activeMode ? (
           <button
             type="button"
             onClick={() => {
               void exitVr()
             }}
           >
-            Exit VR safely
+            {activeMode === 'immersive-ar' ? 'Exit AR safely' : 'Exit VR safely'}
           </button>
         ) : null}
 
@@ -334,9 +366,9 @@ export default function UraiQuestEntryWorldV2() {
 
       <nav
         className={styles.portals}
-        aria-label="Accessible portal equivalents"
+        aria-label={memory ? 'Selected memory navigation' : 'Accessible destination controls'}
       >
-        {XR_PORTALS.map((portal) => (
+        {memory ? <button type="button" onClick={() => { void openRoute(replayHref, 'Replay') }}>Return to Replay</button> : XR_PORTALS.map((portal) => (
           <button
             key={portal.id}
             type="button"

@@ -11,7 +11,7 @@ import {
 export type HomeRuntimeAssetMode = 'ready' | 'review-candidate' | 'fallback' | 'unavailable'
 
 export type HomeReviewCandidate = {
-  readonly assetId: 'home-entry-chamber-model-v1' | 'portal-ring-master-glb-v1' | 'urai-orb-avatar-glb-v1'
+  readonly assetId: 'home-entry-chamber-model-v1' | 'urai-orb-avatar-glb-v1'
   readonly candidateId: string
   readonly path: string
   readonly sha256: string
@@ -32,19 +32,6 @@ export const homeReviewCandidates: readonly HomeReviewCandidate[] = [
     sha256: '0a3c3c2da53c5fe25958e57954c8337d7a27d9c4f94ae0967de21ae84e3e8883',
     bytes: 45904,
     triangleCount: 2132,
-    disposition: 'review-candidate',
-    artifactId: 8577690093,
-    artifactDigest: 'sha256:6c0c5b0e0207086e0f254434e7310f5c2fdaebfb3f969dae9a58a281ef477ca0',
-    source: 'URAI deterministic candidate forge, exact Actions run 30042154450',
-    license: 'URAI Labs internal production asset',
-  },
-  {
-    assetId: 'portal-ring-master-glb-v1',
-    candidateId: 'portal-ring-master-v1@forge-2026-07-23',
-    path: '/assets/urai/generated/models/portal-ring-master-v1.glb',
-    sha256: '578bcc59ac90d7df5193fc67cf94efbd4b663a2035a1cd807d494a294c3af00f',
-    bytes: 32912,
-    triangleCount: 1560,
     disposition: 'review-candidate',
     artifactId: 8577690093,
     artifactDigest: 'sha256:6c0c5b0e0207086e0f254434e7310f5c2fdaebfb3f969dae9a58a281ef477ca0',

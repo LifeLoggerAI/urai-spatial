@@ -25,9 +25,9 @@ if (!Number.isInteger(retryBaseMs) || retryBaseMs < 100 || retryBaseMs > 10_000)
 const contracts = [
   ['/', ['aaa-final-home-sky-ground-orb-body-portals', 'Own your life.', 'Ground', 'Life Map'], []],
   ['/home', ['aaa-final-home-sky-ground-orb-body-portals', 'Own your life.'], []],
-  ['/ground', ['walkable-first-person-ground-layer', 'urai-ground-private-workforce-world', 'ground-destination-compass', 'data-ground-destination', 'URAI Ground embodied private infrastructure'], ['Street-level city world']],
+  ['/ground', ['walkable-first-person-ground-layer', 'urai-ground-lived-world', 'ground-lived-world-v2-canon-lock', 'first-person-lived-world', 'first-person-no-visible-body', 'eye-level-terrain-following-no-authored-bob', 'terrain-plus-authored-obstacle-field', 'consent-aware-empty-by-default'], ['URAI Ground embodied private infrastructure', 'ground-destination-compass', 'Walk deeper. Approach a chamber.', 'Street-level city world']],
   ['/life-map', ['URAI Life Map', 'URAI Life Map — step inside your private constellation'], []],
-  ['/focus?memoryId=quiet-reset&manifestId=replay-recovery-thread&node=quiet-reset', ['urai-final-focus-chamber', 'Selected memory chamber.'], ['Focus loading']],
+  ['/focus?memoryId=quiet-reset&manifestId=replay-recovery-thread&node=quiet-reset', ['urai-final-focus-chamber', 'URAI Focus selected memory star'], ['Focus loading']],
   ['/replay?memoryId=quiet-reset&manifestId=replay-recovery-thread&node=quiet-reset', ['replay-route-launch-fingerprint', 'Replay the thread. Film beats. Cinematic memory camera film.'], []],
   ['/mirror', ['urai-final-mirror-realm', 'See the pattern clearly.'], []],
   ['/passport', ['passport-ownership-vault', 'UrAi Passport', 'Ownership key'], ['urai-final-passport-vault', 'Your life stays yours.']],

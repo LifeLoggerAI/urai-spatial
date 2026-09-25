@@ -1,4 +1,4 @@
-export const STUDIO_SPATIAL_HANDOFF_CONTRACT_VERSION = '0.1.0' as const
+export const STUDIO_SPATIAL_HANDOFF_CONTRACT_VERSION = '0.2.0' as const
 
 export type UraiSpatialRuntimeTarget =
   | 'web-spatial'
@@ -63,6 +63,15 @@ export type UraiSpatialSafetyBoundary = {
   humanReviewRequired?: boolean
 }
 
+export type StudioSpatialReleaseEvidence = {
+  studioBuildSha: string
+  spatialBuildSha: string
+  validatorName: string
+  validatorVersion: string
+  validatedAt: string
+  liveSmokeUrl: string
+}
+
 export type StudioSpatialExport = {
   contractVersion: typeof STUDIO_SPATIAL_HANDOFF_CONTRACT_VERSION
   producer: 'urai-studio'
@@ -76,6 +85,7 @@ export type StudioSpatialExport = {
   consentReceipt: UraiSpatialConsentReceipt
   safetyBoundaries: UraiSpatialSafetyBoundary[]
   runtimeTargets: UraiSpatialRuntimeTarget[]
+  releaseEvidence: StudioSpatialReleaseEvidence
 }
 
 export type UraiSpatialHandoffValidation = {
@@ -134,6 +144,38 @@ function uriIsSafe(uri: string) {
 
 function mimeTypeIsSafe(mimeType: string) {
   return allowedMimePrefixes.some((prefix) => mimeType === prefix || mimeType.startsWith(prefix))
+}
+
+function commitShaIsValid(value: unknown) {
+  return isNonEmptyString(value) && /^(?:[a-f0-9]{40}|[a-f0-9]{64})$/i.test(value)
+}
+
+function isoDateIsValid(value: unknown) {
+  return isNonEmptyString(value) && !Number.isNaN(Date.parse(value))
+}
+
+function httpsUrlIsValid(value: unknown) {
+  if (!isNonEmptyString(value)) return false
+  try {
+    return new URL(value).protocol === 'https:'
+  } catch {
+    return false
+  }
+}
+
+function validateReleaseEvidence(value: unknown, errors: string[]) {
+  if (!isRecord(value)) {
+    errors.push('releaseEvidence is required')
+    return
+  }
+  if (!commitShaIsValid(value.studioBuildSha)) errors.push('releaseEvidence.studioBuildSha must be an exact commit SHA')
+  if (!commitShaIsValid(value.spatialBuildSha)) errors.push('releaseEvidence.spatialBuildSha must be an exact commit SHA')
+  if (!isNonEmptyString(value.validatorName)) errors.push('releaseEvidence.validatorName is required')
+  if (value.validatorVersion !== STUDIO_SPATIAL_HANDOFF_CONTRACT_VERSION) {
+    errors.push('releaseEvidence.validatorVersion must match contractVersion')
+  }
+  if (!isoDateIsValid(value.validatedAt)) errors.push('releaseEvidence.validatedAt must be an ISO timestamp')
+  if (!httpsUrlIsValid(value.liveSmokeUrl)) errors.push('releaseEvidence.liveSmokeUrl must use https')
 }
 
 export function validateStudioSpatialExport(input: unknown): UraiSpatialHandoffValidation {
@@ -235,6 +277,8 @@ export function validateStudioSpatialExport(input: unknown): UraiSpatialHandoffV
       errors.push('consentReceipt.grantedCategories must be a non-empty array')
     }
   }
+
+  validateReleaseEvidence(input.releaseEvidence, errors)
 
   if (!Array.isArray(input.safetyBoundaries)) {
     errors.push('safetyBoundaries must be an array')

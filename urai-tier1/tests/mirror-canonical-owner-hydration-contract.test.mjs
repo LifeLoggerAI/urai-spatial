@@ -14,7 +14,7 @@ test('canonical embodied Mirror suppresses the retired autonomous overlay owner'
 test('Mirror fixture state is hydration-safe, post-mount, and acceptance-gated', () => {
   assert.match(mirrorClient, /const \[fixture, setFixture\] = useState<string \| null>\(null\)/)
   assert.match(mirrorClient, /const ACCEPTANCE_FIXTURES_ENABLED = process\.env\.NEXT_PUBLIC_URAI_ACCEPTANCE_FIXTURES === '1'/)
-  assert.match(mirrorClient, /useEffect\(\(\) => \{\s*const requestedFixture = new URLSearchParams\(window\.location\.search\)\.get\('mirrorFixture'\)\s*setFixture\(ACCEPTANCE_FIXTURES_ENABLED \? requestedFixture : null\)\s*\}, \[\]\)/)
+  assert.match(mirrorClient, /useEffect\(\(\) => \{\s*const requestedFixture = new URLSearchParams\(window\.location\.search\)\.get\('mirrorFixture'\);?\s*setFixture\(ACCEPTANCE_FIXTURES_ENABLED \? requestedFixture : null\);?\s*\}, \[\]\)/)
   assert.doesNotMatch(mirrorClient, /typeof window === 'undefined' \? null : new URLSearchParams/)
   assert.doesNotMatch(mirrorClient, /setFixture\(new URLSearchParams\(window\.location\.search\)\.get\('mirrorFixture'\)\)/)
 })

@@ -1,5 +1,6 @@
 'use client'
 
+import { usePathname } from 'next/navigation'
 import type { ReactNode } from 'react'
 import SpatialAmbientRuntime from '@/spatial/audio/SpatialAmbientRuntime'
 import SpatialPositionedAudioRuntime from '@/spatial/audio/SpatialPositionedAudioRuntime'
@@ -31,8 +32,10 @@ import './lifeMapSelectedActionInvariant.css'
 import './lifeMapProductionIsolation.css'
 
 export function UraiWorldShell({ children }: { children: ReactNode }) {
+  const pathname = usePathname() ?? '/'
   const { world, phase } = useUraiWorldState()
-  const showWorldCompanion = world.destination !== 'life-map' && world.destination !== 'location-map'
+  const flatControlRoute = pathname === '/settings' || pathname.startsWith('/settings/')
+  const showWorldCompanion = !flatControlRoute && world.destination !== 'life-map' && world.destination !== 'location-map'
 
   return (
     <div
@@ -45,15 +48,16 @@ export function UraiWorldShell({ children }: { children: ReactNode }) {
       data-entry-portal={world.entryPortal ?? ''}
       data-camera-checkpoint={world.cameraCheckpoint ?? ''}
       data-companion-owned={showWorldCompanion ? 'true' : 'false'}
+      data-flat-control-route={flatControlRoute ? 'true' : 'false'}
     >
       <SpatialAmbientRuntime />
       <SpatialPositionedAudioRuntime />
       <HapticRuntime />
       <MotionOrchestrator />
       <LifeMapSelectedActionRuntimeInvariant />
-      <PersistentRealmAtmosphere />
+      {!flatControlRoute ? <PersistentRealmAtmosphere /> : null}
       {children}
-      <GroundGateway />
+      {!flatControlRoute ? <GroundGateway /> : null}
       {world.destination === 'life-map' ? <LifeMapRouteTransactionBridge /> : null}
       {world.destination === 'life-map' ? <LifeMapIndependentInputBoundary /> : null}
       {showWorldCompanion ? <PersistentWorldCompanion /> : null}

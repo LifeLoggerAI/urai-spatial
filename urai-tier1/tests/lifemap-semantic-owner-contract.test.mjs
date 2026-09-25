@@ -3,8 +3,7 @@ import { readFile } from 'node:fs/promises'
 import test from 'node:test'
 
 const navigator = await readFile(new URL('../src/components/lifemap/LifeMapSemanticNavigator.tsx', import.meta.url), 'utf8')
-const scene = await readFile(new URL('../src/components/lifemap/ComposedLifeMapScene.tsx', import.meta.url), 'utf8')
-const world = await readFile(new URL('../src/components/lifemap/LifeMapProductionWorld.tsx', import.meta.url), 'utf8')
+const scene = await readFile(new URL('../src/components/lifemap/CosmicComposedLifeMapScene.tsx', import.meta.url), 'utf8')
 const selection = await readFile(new URL('../src/components/lifemap/lifeMapSelection.ts', import.meta.url), 'utf8')
 const founder = await readFile(new URL('../../scripts/capture-lifemap-founder-proof-fixed.mjs', import.meta.url), 'utf8')
 
@@ -14,9 +13,10 @@ test('semantic navigator invokes the authoritative world selection transaction w
   assert.match(navigator, /requestLifeMapSelection\(node\.id, source\)/)
   assert.match(selection, /LIFE_MAP_SELECTION_EVENT = 'urai:life-map-select-node'/)
   assert.match(selection, /window\.dispatchEvent\(new CustomEvent<LifeMapSelectionDetail>/)
-  assert.match(world, /window\.addEventListener\(LIFE_MAP_SELECTION_EVENT, handleSelectionRequest\)/)
-  assert.match(world, /const node = nodes\.find\(\(candidate\) => candidate\.id === detail\.nodeId\)/)
-  assert.match(world, /if \(node\) onSelect\(node\)/)
+  assert.match(scene, /window\.addEventListener\(LIFE_MAP_SELECTION_EVENT, handler\)/)
+  assert.match(scene, /const detail = readLifeMapSelection\(event\)/)
+  assert.match(scene, /const node = nodes\.find\(\(candidate\) => candidate\.id === detail\.nodeId\)/)
+  assert.match(scene, /if \(node\) selectNode\(node\)/)
   assert.match(scene, /onSelect=\{selectNode\}/)
 })
 
@@ -36,13 +36,16 @@ test('semantic selection emits one authoritative event and synchronizes route id
   assert.equal((navigator.match(/requestLifeMapSelection\(node\.id, source\)/g) || []).length, 1)
 })
 
-test('mounted 3D artifacts retain independent pointer activation ownership', () => {
-  assert.doesNotMatch(world, /life-map-world-label|handleWorldLabelClick|document\.addEventListener\("click"/)
-  assert.match(world, /name=\{`life-map-artifact-\$\{resolveArtifactFamily\(node\)\}-\$\{node\.id\}`\}/)
-  assert.match(world, /userData=\{\{ artifactFamily: resolveArtifactFamily\(node\), importance: importance\.toFixed\(2\), semanticLabel, chapterId: chapter\.id, runtimeAsset: MEMORY_STAR_MODEL \}\}/)
-  assert.doesNotMatch(world, /data-artifact-family=/)
-  assert.match(world, /onClick=\{\(event\) => \{ event\.stopPropagation\(\); onSelect\(node\); \}\}/)
-  assert.match(world, /if \(node\) onSelect\(node\)/)
+test('mounted cosmic Memory Stars retain independent pointer activation ownership', () => {
+  assert.doesNotMatch(scene, /life-map-world-label|handleWorldLabelClick|document\.addEventListener\("click"/)
+  assert.match(scene, /name=\{`life-map-memory-star-\$\{node\.id\}`\}/)
+  assert.match(scene, /visualAuthority: "stellar-memory-not-node-graph"/)
+  assert.match(scene, /stellarMorphology: "point-photosphere-layered-corona-no-visible-sphere"/)
+  assert.match(scene, /onClick=\{\(event\) => \{ event\.stopPropagation\(\); onSelect\(node\); \}\}/)
+  assert.match(scene, /root\.dataset\.memoryStarPointerHit = node\.id/)
+  assert.match(scene, /<mesh scale=\{active \? 1\.15 : overview \? 1\.08 : \.92\}>/)
+  assert.match(scene, /<sphereGeometry args=\{\[\.30, 8, 6\]\} \/>/)
+  assert.match(scene, /<meshBasicMaterial transparent opacity=\{0\} depthWrite=\{false\} colorWrite=\{false\} \/>/)
 })
 
 test('pointer keyboard and touch semantic paths converge on one single-fire selection transaction', () => {
@@ -75,11 +78,15 @@ test('semantic navigator is opt-in, semantically controlled, and keyboard access
 
 test('Founder proof observes the real selected world state and real journey phases', () => {
   assert.match(founder, /waitForState\(page, 'data-life-map-mode', 'selected'\)/)
-  assert.match(founder, /armJourneyPhaseWatch\(page, options\.targetPhase\)/)
-  assert.match(founder, /readJourneyPhaseWatch\(page, options\.targetPhase\)/)
-  assert.match(founder, /\['selection-start', 'departure'\]/)
-  assert.match(founder, /\['mid-travel', 'travel'\]/)
-  assert.match(founder, /\['approach', 'approach'\]/)
+  assert.match(founder, /selectQuietResetAtFrozenPhase\(/)
+  assert.match(founder, /await armJourneyPhaseWatch\(page, targetPhase\)/)
+  assert.match(founder, /await readJourneyPhaseWatch\(page, targetPhase, 1_000\)/)
+  assert.match(founder, /Emulation\.setVirtualTimePolicy/)
+  assert.match(founder, /policy: 'pause'/)
+  assert.match(founder, /policy: 'advance'/)
+  assert.match(founder, /captureIsolatedJourneyPhase\(\{ id: 'selection-start', targetPhase: 'departure', captureState: 'departure' \}\)/)
+  assert.match(founder, /captureIsolatedJourneyPhase\(\{ id: 'mid-travel', targetPhase: 'travel', captureState: 'travel' \}\)/)
+  assert.match(founder, /captureIsolatedJourneyPhase\(\{ id: 'approach', targetPhase: 'approach', captureState: 'approach' \}\)/)
   assert.match(founder, /waitForState\(page, 'data-life-map-phase', 'arrival'\)/)
   assert.doesNotMatch(founder, /synthetic-selected|test-only-selected|forceSelected|window\.setTimeout\s*=|captureTimingFactor/)
 })

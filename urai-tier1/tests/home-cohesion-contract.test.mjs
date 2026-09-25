@@ -15,8 +15,9 @@ const runtime = read('src/app/HomeSpatialRuntimeLayer.tsx')
 const world = read('src/app/HomeSpatialWorldFinal.tsx')
 
 test('Home has one canonical route entry and no retired multi-mode shell', () => {
-  assert.match(threshold, /HomeSpatialWorldFinal/)
+  assert.match(threshold, /HomeSemanticFallback/)
   assert.match(threshold, /useWebGLAvailable/)
+  assert.doesNotMatch(threshold, /HomeSpatialWorldFinal/)
   assert.doesNotMatch(threshold, /TierOneExperience|UraiV1Experience|RootModeExperience|UraiSpatialStage/)
   for (const retired of [
     'src/spatial/layout/TierOneExperience.tsx',
@@ -40,15 +41,17 @@ test('Home keeps one capability-aware accessible fallback', () => {
   assert.match(runtime, /data-testid="urai-home-accessible-fallback"/)
   assert.match(runtime, /aria-label="Spatial Home fallback"/)
   assert.match(runtime, /<HomeSemanticNavigation \/>/)
-  assert.match(runtime, /<HomeSpatialWorldFinal \/>/)
+  assert.match(runtime, /<HomeSemanticFallback \/>/)
+  assert.match(runtime, /AssetDrivenHomeWorld/)
 })
 
 test('Home keeps direct semantic Ground, Orb, and Life Map navigation in the runtime boundary', () => {
   assert.match(runtime, /requestUraiWorldOrbOpen/)
-  assert.match(runtime, /href: '\/ground\/'/)
+  assert.match(runtime, /ground: \{ travelHref: '\/ground\/\?entryPortal=home-ground&cameraCheckpoint=home-ground-descent' \}/)
+  assert.match(runtime, /lifeMap: \{ travelHref: '\/life-map\/\?from=home-sky&entryPortal=home-sky&cameraCheckpoint=home-sky-ascent-complete' \}/)
+  assert.match(runtime, /data-testid="home-semantic-ground" href=\{HOME_SEMANTIC_DESTINATIONS\.ground\.travelHref\}/)
   assert.match(runtime, /aria-label="Open Life Map directly"/)
-  assert.match(runtime, /href: '\/life-map\/'/)
-  assert.match(runtime, /entryPortal: 'home-ground'/)
+  assert.match(runtime, /data-testid="home-semantic-life-map" href=\{HOME_SEMANTIC_DESTINATIONS\.lifeMap\.travelHref\}/)
 })
 
 test('Home world preserves separate bounded cinematic ascent and reduced-motion behavior', () => {
@@ -63,5 +66,6 @@ test('Home runtime handles WebGL loss and one recovery attempt before semantic f
   assert.match(runtime, /webglcontextlost/)
   assert.match(runtime, /webglcontextrestored/)
   assert.match(runtime, /recoveryAttemptsRef\.current >= 1/)
-  assert.match(runtime, /setRendererState\('failed'\)/)
+  assert.match(runtime, /commitRendererState\('failed'\)/)
+  assert.match(runtime, /data-webgl-recovery-attempts=/)
 })

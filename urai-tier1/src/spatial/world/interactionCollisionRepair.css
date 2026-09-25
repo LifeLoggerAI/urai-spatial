@@ -124,6 +124,16 @@
   z-index: 32 !important;
 }
 
+.urai-world-runtime[data-world-destination='infrastructure-hub'] .urai-world-companion__orb {
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+.urai-world-runtime[data-world-destination='infrastructure-hub'] .urai-world-companion__orb:focus-visible {
+  opacity: 1 !important;
+  pointer-events: auto !important;
+}
+
 .urai-world-runtime[data-world-destination='infrastructure-hub'] .urai-world-companion__menu {
   transform-origin: bottom right;
 }

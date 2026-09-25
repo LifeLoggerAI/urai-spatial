@@ -33,7 +33,26 @@ async function saveEvidence(name: string, evidence: RuntimeEvidence) {
   await fs.writeFile(path.join(evidenceRoot, `${name}.json`), JSON.stringify(evidence, null, 2))
 }
 
+async function expectSanctuaryOwnsScroll(page: Page) {
+  const metrics = await page.evaluate(() => {
+    const root = document.querySelector<HTMLElement>('main[data-route-owner="consent-sanctuary"]')
+    return {
+      documentHeight: document.documentElement.scrollHeight,
+      viewportHeight: window.innerHeight,
+      rootClientHeight: root?.clientHeight ?? 0,
+      rootScrollHeight: root?.scrollHeight ?? 0,
+    }
+  })
+  expect(metrics.documentHeight).toBeLessThanOrEqual(metrics.viewportHeight + 2)
+  expect(metrics.rootScrollHeight).toBeGreaterThan(metrics.rootClientHeight)
+}
+
 async function openSanctuary(page: Page, suffix = '') {
+  await page.addInitScript(() => {
+    localStorage.setItem('urai:onboarding:v2:complete', '1')
+    localStorage.setItem('urai:onboarding:v3:setup-complete', '1')
+    localStorage.removeItem('urai:onboarding:v3:setup-step')
+  })
   const response = await page.goto(`${baseURL}/privacy-controls/${suffix}`, {
     waitUntil: 'domcontentloaded',
     timeout: 45_000,
@@ -109,6 +128,9 @@ test('portrait mobile remains usable without spatial movement', async ({ page })
   await page.keyboard.press('Enter')
   await expect(page.getByRole('region', { name: /Memory controls/i })).toBeFocused()
   await expect(page.getByRole('button', { name: /Models/i })).toBeVisible()
+  await expectSanctuaryOwnsScroll(page)
+  await page.getByRole('heading', { name: 'Scoped deletion' }).scrollIntoViewIfNeeded()
+  await expect(page.getByRole('heading', { name: 'Scoped deletion' })).toBeVisible()
   await page.screenshot({ path: path.join(evidenceRoot, 'portrait-mobile-controls.png'), fullPage: true })
   await saveEvidence('mobile-runtime', runtime)
   expect(runtime.consoleErrors).toEqual([])

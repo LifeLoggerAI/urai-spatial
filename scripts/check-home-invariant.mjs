@@ -5,7 +5,13 @@ const files = {
   root: 'urai-tier1/src/app/page.tsx',
   home: 'urai-tier1/src/app/home/page.tsx',
   threshold: 'urai-tier1/src/app/FinalHomeThreshold.tsx',
-  world: 'urai-tier1/src/app/HomeSpatialWorldFinal.tsx',
+  world: 'urai-tier1/src/app/HomeSpatialRuntimeLayer.tsx',
+  fallback: 'urai-tier1/src/app/HomeSemanticFallback.tsx',
+  template: 'urai-tier1/src/app/template.tsx',
+  product: 'urai-tier1/src/spatial/layout/HomeWorldProductionV223.tsx',
+  avatar: 'urai-tier1/src/spatial/home/HomeEmbodiedAvatar.tsx',
+  state: 'urai-tier1/src/spatial/home/homeExperienceState.ts',
+  controller: 'urai-tier1/src/spatial/home/useHomeExperienceController.ts',
 }
 
 const failures = []
@@ -33,28 +39,61 @@ for (const [path, source] of [[files.root, root], [files.home, home]]) {
   }
 }
 
-if (threshold && !threshold.includes('HomeSpatialWorldFinal')) {
-  failures.push('FinalHomeThreshold must render HomeSpatialWorldFinal')
+// The route threshold only owns pre-hydration/capability detection. The template
+// owns the settled spatial world and its renderer-failure fallback.
+const fallback = read('fallback')
+const template = read('template')
+const product = read('product')
+const avatar = read('avatar')
+const state = read('state')
+const controller = read('controller')
+for (const [label, source, signals] of [
+  ['FinalHomeThreshold', threshold, ['<HomeSemanticFallback />', 'if (mounted && webglAvailable !== null) return null']],
+  ['AppTemplate', template, ['<HomeSpatialRuntimeLayer />', '{children}']],
+  ['HomeSpatialRuntimeLayer', world, [
+    "normalizedPathname === '/' || normalizedPathname === '/home'",
+    "if (!homeRouteActive) return null",
+    "if (webglAvailable === false || rendererState === 'failed')",
+    '<HomeSemanticFallback />', '<AssetDrivenHomeWorld', '<HomeSemanticNavigation />',
+    'webglcontextlost', 'webglcontextrestored', 'prefers-reduced-motion:reduce',
+    'aria-label="Open UrAi Orb companion"',
+    'aria-label="Open Ground directly"', 'aria-label="Open Life Map directly"',
+    'href={HOME_SEMANTIC_DESTINATIONS.ground.travelHref}',
+    'href={HOME_SEMANTIC_DESTINATIONS.lifeMap.travelHref}',
+  ]],
+  ['HomeSemanticFallback', fallback, [
+    'aria-label="UrAi Home semantic fallback"', 'aria-label="Home semantic destinations"',
+    'href="/ground/?entryPortal=home-ground&cameraCheckpoint=home-ground-descent"', 'href="/life-map/?from=home-sky&entryPortal=home-sky&cameraCheckpoint=home-sky-ascent-complete"',
+    'href="/passport"', 'href="/privacy"',
+  ]],
+]) {
+  for (const signal of signals) {
+    if (!source.includes(signal)) failures.push(`${label} missing invariant: ${signal}`)
+  }
+}
+if (threshold.includes('<HomeSpatialWorldFinal')) {
+  failures.push('FinalHomeThreshold must not mount the retired parallel Home world')
 }
 
-const requiredWorldSignals = [
-  'className="urai-genesis-home urai-home-spatial-world-final"',
-  'aria-label="URAI Home World threshold"',
-  'urai-genesis-home__sky',
-  'urai-genesis-home__ground',
-  'urai-genesis-home__body',
-  'urai-genesis-home__orb',
-  'href="/ground?from=home"',
-  'href="/life-map?from=home-sky"',
-  "window.matchMedia('(prefers-reduced-motion: reduce)')",
-  'Skip to world routes',
-  'onPointerMove={handlePointerMove}',
-  'event.key.toLowerCase() === "o"',
-  'event.key === "Escape"',
-]
-
-for (const signal of requiredWorldSignals) {
-  if (world && !world.includes(signal)) failures.push(`HomeSpatialWorldFinal missing invariant: ${signal}`)
+for (const marker of [
+  "homeState.stableState === 'AVATAR_HOME_FIRST_PERSON'",
+  'bodyless-first-person-home',
+  'data-home-presence-policy="direct-first-person-camera-only-no-hands-body-rig"',
+  'data-home-avatar-activation-gate="none-direct-first-person-home"',
+  'direct-bodyless-first-person-authored-living-memory-orb-sculpted-sanctuary-and-broad-sky-threshold',
+  'home-physical-world home-camera-only-first-person home-living-memory-orb home-life-map-sky-threshold',
+  'aria-label="Open Avatar Self View"',
+]) {
+  if (!product.includes(marker)) failures.push(`HomeWorldProductionV223 missing direct-first-person Home invariant: ${marker}`)
+}
+for (const retired of ['HomeEmbodiedAvatar','visible-avatar-presentation-activation-gate','presentation-avatar-then-first-person-camera-only-no-hands-body-rig','data-testid="urai-home-avatar-enter-first-person"']) {
+  if (product.includes(retired)) failures.push(`HomeWorldProductionV223 restored retired Avatar-first authority: ${retired}`)
+}
+for (const marker of ["makeHomeOriginSnapshot('AVATAR_HOME_FIRST_PERSON')","stableState: 'AVATAR_HOME_FIRST_PERSON'"]) {
+  if (!state.includes(marker)) failures.push(`homeExperienceState missing direct-first-person state invariant: ${marker}`)
+}
+for (const marker of ['openSelfView','completeEmbodiment']) {
+  if (!controller.includes(marker)) failures.push(`useHomeExperienceController missing direct-first-person continuity invariant: ${marker}`)
 }
 
 const forbiddenPatterns = [
@@ -77,4 +116,4 @@ if (failures.length > 0) {
   process.exit(1)
 }
 
-console.log('Tier-1 Home invariant passed: / and /home use FinalHomeThreshold -> HomeSpatialWorldFinal with sky, ground, body, orb, portals, keyboard access, and reduced-motion safety.')
+console.log('Tier-1 Home invariant passed: threshold/template runtime -> Avatar Home presentation -> activation/embodiment -> bodyless non-XR first-person Home, with accessible fallback and renderer recovery.')

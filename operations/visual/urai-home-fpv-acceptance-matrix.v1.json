@@ -1,0 +1,63 @@
+{
+  "schemaVersion": 1,
+  "authorityDate": "2026-09-16",
+  "repository": "LifeLoggerAI/urai-spatial",
+  "branch": "unified-spatial-convergence-20260916",
+  "pr": 1237,
+  "status": "CURRENT_CANDIDATE_MATRIX_NOT_GOLD_MASTER",
+  "rules": {
+    "exactHeadRequired": true,
+    "literalHumanPixelInspectionRequired": true,
+    "generatedReferenceIsNotRuntimeProof": true,
+    "headMoveInvalidatesAffectedProof": true
+  },
+  "referenceAssets": [
+    {"id":"URAI_HOME_FPV_MASTER_01","vgm":"VGM-HOME-003","status":"REPLACEMENT_REQUIRED","reason":"prior generated master and later montage board rejected; clean current-geography zero-UI runtime-style master still required"},
+    {"id":"URAI_HOME_FPV_ORB_PRESENCE_02","vgm":"VGM-ORB-001","status":"REFERENCE_REQUIRED","orbState":"idle"},
+    {"id":"URAI_HOME_FPV_ORB_LISTEN_03","vgm":"VGM-ORB-001","status":"REFERENCE_REQUIRED","orbState":"listening"},
+    {"id":"URAI_HOME_FPV_ORB_THINK_04","vgm":"VGM-ORB-001","status":"REFERENCE_REQUIRED","orbState":"thinking"},
+    {"id":"URAI_HOME_FPV_PERSONAL_ARCH_05","vgm":"VGM-HOME-003","status":"REFERENCE_REQUIRED","truthClass":"source-governed-personalization-only"},
+    {"id":"URAI_HOME_FPV_PURPOSE_06","vgm":"VGM-HOME-003","status":"REFERENCE_REQUIRED","truthClass":"source-governed-personalization-only"},
+    {"id":"URAI_HOME_FPV_SKY_07","vgm":"VGM-SKY-001","status":"REFERENCE_REQUIRED","ownership":"broad-visible-sky"},
+    {"id":"URAI_HOME_FPV_GROUND_08","vgm":"VGM-GROUND-001","status":"REFERENCE_REQUIRED","ownership":"physical-terrain-material-crossing"},
+    {"id":"URAI_HOME_FPV_GEF_EARTH_09","vgm":"VGM-GEF-001","status":"SOURCE_IMPLEMENTED_PIXEL_PROOF_REQUIRED","runtimeState":"unavailable","providerState":"not-activated","truthStates":["unavailable","suppressed","aggregate"]},
+    {"id":"URAI_HOME_FPV_NIGHT_10","vgm":"VGM-HOME-003","status":"REFERENCE_REQUIRED"},
+    {"id":"URAI_HOME_FPV_PERSONAL_WEATHER_11","vgm":"VGM-PEW-001","status":"MISSING_REPLACEMENT_REQUIRED"},
+    {"id":"URAI_HOME_FPV_REDUCED_STIM_12","vgm":"VGM-HOME-003","status":"REFERENCE_REQUIRED","accessibility":"reduced-stimulation"},
+    {"id":"URAI_HOME_FPV_CONTEXT_UI_13","vgm":"VGM-HOME-003","status":"REFERENCE_REQUIRED","ui":"contextual-world-preserving"},
+    {"id":"URAI_HOME_FPV_PASSPORT_14","vgm":"VGM-PASSPORT-001","status":"SOURCE_IMPLEMENTED_PIXEL_PROOF_REQUIRED","visualForm":"protected-custody-stone-v2"},
+    {"id":"URAI_HOME_FPV_WIDE_15","vgm":"VGM-HOME-003","status":"REFERENCE_REQUIRED"},
+    {"id":"URAI_HOME_FPV_IDLE_16","vgm":"VGM-HOME-003","status":"REFERENCE_REQUIRED","test":"stillness-zero-ui"}
+  ],
+  "runtimeAcceptance": [
+    {"capture":"home-presentation-desktop","state":"HOME_PRESENTATION","device":"desktop","required":true,"status":"FRESH_EXACT_HEAD_REQUIRED"},
+    {"capture":"avatar-targeted-desktop","state":"HOME_PRESENTATION","device":"desktop","required":true,"status":"FRESH_EXACT_HEAD_REQUIRED"},
+    {"capture":"avatar-embodiment-sequence","state":"AVATAR_EMBODIMENT_TRANSITION","device":"desktop","required":true,"status":"FRESH_EXACT_HEAD_REQUIRED"},
+    {"capture":"fp-home-desktop","state":"AVATAR_HOME_FIRST_PERSON","device":"desktop","fov":58,"required":true,"status":"FRESH_EXACT_HEAD_REQUIRED"},
+    {"capture":"fp-home-mobile","state":"AVATAR_HOME_FIRST_PERSON","device":"portrait-mobile","fov":66,"required":true,"status":"FRESH_EXACT_HEAD_REQUIRED"},
+    {"capture":"orb-idle","state":"AVATAR_HOME_FIRST_PERSON","orbState":"idle","required":true,"status":"FRESH_EXACT_HEAD_REQUIRED"},
+    {"capture":"orb-listening","state":"AVATAR_HOME_FIRST_PERSON","orbState":"listening","required":true,"status":"FRESH_EXACT_HEAD_REQUIRED"},
+    {"capture":"orb-thinking","state":"AVATAR_HOME_FIRST_PERSON","orbState":"thinking","required":true,"status":"FRESH_EXACT_HEAD_REQUIRED"},
+    {"capture":"passport-rest","state":"AVATAR_HOME_FIRST_PERSON","required":true,"status":"FRESH_EXACT_HEAD_REQUIRED"},
+    {"capture":"passport-round-trip","state":"AVATAR_HOME_FIRST_PERSON","required":true,"status":"FRESH_BROWSER_PROOF_REQUIRED"},
+    {"capture":"global-field-earth-unavailable","state":"AVATAR_HOME_FIRST_PERSON","required":true,"status":"FRESH_EXACT_HEAD_REQUIRED","truth":"no aggregate activity"},
+    {"capture":"broad-sky-ascent","state":"SKY_ASCENT","required":true,"status":"FRESH_EXACT_HEAD_REQUIRED"},
+    {"capture":"ground-material-crossing","state":"GROUND_DESCENT","required":true,"status":"FRESH_EXACT_HEAD_REQUIRED"},
+    {"capture":"reduced-motion-fp","state":"AVATAR_HOME_FIRST_PERSON","accessibility":"reduced-motion","required":true,"status":"FRESH_EXACT_HEAD_REQUIRED"},
+    {"capture":"reduced-stimulation-fp","state":"AVATAR_HOME_FIRST_PERSON","accessibility":"reduced-stimulation","required":true,"status":"FRESH_EXACT_HEAD_REQUIRED"}
+  ],
+  "hardFailures": [
+    "visible flat-screen hands or body",
+    "localized Life Map portal/ring/white-dot gateway",
+    "Ground glowing doorway/hole/radial tunnel",
+    "marketing typography or slogans inside runtime master",
+    "unverified personal content presented as fact",
+    "fake Global Emotional Field activity",
+    "individual or exact-location dots on Global Emotional Field Earth",
+    "generic glass-ball Orb identity",
+    "Passport tablet/kiosk/device-stand language",
+    "cross-frame geography drift",
+    "bloom or fog hiding geometry",
+    "desktop crop used as portrait authority"
+  ]
+}

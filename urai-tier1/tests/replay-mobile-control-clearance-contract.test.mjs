@@ -7,10 +7,14 @@ const clearance = fs.readFileSync('src/app/replay-mobile-control-clearance.css',
 
 test('mobile Replay controls reserve the persistent lower-left world-control corner', () => {
   assert.match(layout, /import '\.\/replay-mobile-control-clearance\.css'/)
-  assert.match(clearance, /@media \(max-width: 760px\)/)
+  assert.match(clearance, /@media \(pointer: coarse\), \(max-width: 760px\)/)
   assert.match(clearance, /\.uraiAutoReplay \.uraiReplayControls/)
-  assert.match(clearance, /left: max\(58px, calc\(env\(safe-area-inset-left, 0px\) \+ 46px\)\)/)
-  assert.match(clearance, /right: max\(6px, env\(safe-area-inset-right, 0px\)\)/)
+  assert.match(clearance, /\.replayWorld \.memoryPacing/)
+  assert.match(clearance, /left: max\(64px, calc\(env\(safe-area-inset-left, 0px\) \+ 54px\)\)/)
+  assert.match(clearance, /right: max\(12px, env\(safe-area-inset-right, 0px\)\)/)
+  assert.match(clearance, /bottom: max\(92px, calc\(env\(safe-area-inset-bottom, 0px\) \+ 86px\)\)/)
   assert.match(clearance, /width: auto/)
   assert.match(clearance, /transform: none/)
+  assert.match(clearance, /opacity: \.96/)
+  assert.match(clearance, /pointer: coarse/)
 })

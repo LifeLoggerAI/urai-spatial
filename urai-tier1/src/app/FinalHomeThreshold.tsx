@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import HomeSpatialWorldFinal from './HomeSpatialWorldFinal'
+import HomeSemanticFallback from './HomeSemanticFallback'
 import { useWebGLAvailable } from './HomeSpatialCanvas'
 
 /**
@@ -22,10 +22,11 @@ export default function FinalHomeThreshold() {
 
   return (
     <div
-      data-testid="urai-home-accessible-fallback"
+      data-testid="urai-home-threshold-placeholder"
+      data-urai-home-threshold="pre-hydration-or-capability-detecting"
       data-webgl-state={!mounted || webglAvailable === null ? 'detecting' : 'unavailable'}
     >
-      <HomeSpatialWorldFinal />
+      <HomeSemanticFallback />
     </div>
   )
 }

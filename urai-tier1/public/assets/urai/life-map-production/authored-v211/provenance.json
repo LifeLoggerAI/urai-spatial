@@ -1,0 +1,14 @@
+{
+  "schemaVersion": "urai-authored-spatial-asset-provenance-1",
+  "asset": "life-map-memory-sanctuary-v211.glb",
+  "sha256": "7990fae5ff5ca602fdac4485cbffa0035e76122dec1227754dcd0c58e79534ea",
+  "generator": "scripts/blender/generate-life-map-sanctuary-v211.py",
+  "generatorSeed": 1177211,
+  "authoringTool": "Blender 4.0.2",
+  "optimization": "@gltf-transform/cli 4.2.1; meshopt; WebP; simplify error 0.0005",
+  "license": "Original work created for the private LifeLoggerAI/urai-spatial repository",
+  "externalAssets": [],
+  "sourceMasterDriveFolderId": "1UZkAmVNG_rgti2qt_13rPvkvfVvw3KPr",
+  "editableMaster": "life-map-memory-sanctuary-v211.blend",
+  "designIntent": "Continuous canyon-scale inhabited memory landscape with eroded traversal, asymmetrical archive walls, lineage terraces, accumulated-life ridge, embedded emissions, and no diagram paths, bowls, gates, rings, slabs, token fields, or repeated crystal language."
+}

@@ -2,6 +2,7 @@ import UraiFinalAssetSpineBridge from './UraiFinalAssetSpineBridge'
 import './home-spatial-world-final.css'
 import './home-one-world-owner.css'
 import type { Metadata, Viewport } from 'next'
+import { URAI_INDEXING_STATE, URAI_PUBLIC_ORIGIN } from '@/lib/discoverability-boundary'
 import './globals.css'
 import './launch-home-polish.css'
 import './life-map-production-3d.css'
@@ -56,6 +57,9 @@ import './native-doorway-final-fix.css'
 import './location-map-header-evidence-fix.css'
 import './urai-production-system.css'
 import WorldRuntimeBoundary from '@/spatial/world/WorldRuntimeBoundary'
+import SpatialSettingsBootstrap from '@/spatial/settings/SpatialSettingsBootstrap'
+import LocaleBootstrap from '@/i18n/LocaleBootstrap'
+import { URAI_LOCALE_RUNTIME_STATUS } from '@/i18n/localeRegistry'
 
 const configuredBuildSha = process.env.NEXT_PUBLIC_URAI_BUILD_SHA ?? process.env.GITHUB_SHA ?? ''
 const deployedSha = /^[0-9a-f]{40}$/.test(configuredBuildSha) ? configuredBuildSha : 'unverified'
@@ -64,14 +68,24 @@ const previewChannel = process.env.NEXT_PUBLIC_URAI_PREVIEW_CHANNEL?.trim() || '
 const embeddedIcon = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%2307111c'/%3E%3Cpath d='M6 44c9-8 43-8 52 0v14H6z' fill='%23152f28'/%3E%3Ccircle cx='32' cy='27' r='14' fill='%238ce7ee'/%3E%3Ccircle cx='32' cy='27' r='19' fill='none' stroke='%238ce7ee' stroke-opacity='.22' stroke-width='2'/%3E%3C/svg%3E"
 
 export const metadata: Metadata = {
-  title: previewMode ? 'PREVIEW — URAI Spatial' : 'URAI Spatial',
+  metadataBase: new URL(URAI_PUBLIC_ORIGIN),
+  title: previewMode ? 'PREVIEW — UrAi Spatial' : 'UrAi Spatial',
   description: 'A private spatial world for memory, reflection, relationships, and personal intelligence.',
-  icons: {
-    icon: embeddedIcon,
+  icons: { icon: embeddedIcon },
+  robots: {
+    index: false,
+    follow: false,
+    nocache: true,
+    googleBot: {
+      index: false,
+      follow: false,
+      noimageindex: true,
+    },
   },
   other: {
     'urai-deployed-sha': deployedSha,
     'urai-preview-mode': previewMode ? 'true' : 'false',
+    'urai-indexing-state': URAI_INDEXING_STATE,
   },
 }
 
@@ -87,6 +101,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html
       lang="en"
+      data-urai-locale-runtime-status={URAI_LOCALE_RUNTIME_STATUS}
+      data-urai-locale-native-review="source"
       data-urai-domain="app"
       data-urai-surface="spatial"
       data-urai-preview={previewMode ? 'true' : 'false'}
@@ -98,6 +114,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         data-deployed-sha={deployedSha}
         data-deployment-evidence={deployedSha === 'unverified' ? 'missing' : 'embedded'}
         data-production-certification={previewMode ? 'not-certified-preview' : 'fingerprint-gated'}
+        data-indexing-state={URAI_INDEXING_STATE}
         style={{ margin: 0, background: '#07101a', overflowX: 'hidden' }}
       >
         {previewMode ? (
@@ -106,27 +123,19 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             aria-label="Preview environment. Not production certified."
             data-testid="urai-global-preview-banner"
             style={{
-              position: 'fixed',
-              inset: '0 0 auto 0',
-              zIndex: 2147483647,
-              padding: '8px 12px',
-              background: 'rgba(126, 34, 206, 0.96)',
-              color: '#ffffff',
-              fontFamily: 'system-ui, sans-serif',
-              fontSize: '12px',
-              fontWeight: 900,
-              letterSpacing: '0.12em',
-              lineHeight: 1.2,
-              textAlign: 'center',
-              textTransform: 'uppercase',
-              pointerEvents: 'none',
-              boxShadow: '0 1px 18px rgba(0, 0, 0, 0.45)',
+              position: 'fixed', inset: '0 0 auto 0', zIndex: 2147483647,
+              padding: '8px 12px', background: 'rgba(126, 34, 206, 0.96)', color: '#ffffff',
+              fontFamily: 'system-ui, sans-serif', fontSize: '12px', fontWeight: 900,
+              letterSpacing: '0.12em', lineHeight: 1.2, textAlign: 'center', textTransform: 'uppercase',
+              pointerEvents: 'none', boxShadow: '0 1px 18px rgba(0, 0, 0, 0.45)',
             }}
           >
             PREVIEW — NOT PRODUCTION CERTIFIED · {previewChannel} · {deployedSha.slice(0, 12)}
           </div>
         ) : null}
+        <LocaleBootstrap />
         <WorldRuntimeBoundary>
+          <SpatialSettingsBootstrap />
           <UraiAAAARoutePolish />
           <UraiFinalAssetSpineBridge />
           {children}

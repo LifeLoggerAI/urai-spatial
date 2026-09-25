@@ -2,119 +2,87 @@
 
 ## 1. Runtime app root
 
-The deployed Next.js app is `urai-tier1`.
+The canonical Next.js app root is `urai-tier1`.
 
-Root scripts delegate to that package with `pnpm --filter urai-tier1 ...`, so production routes and environment files should be validated against `urai-tier1`, not the legacy root `src` tree.
+Root verification scripts delegate to that package. Validate current release source against `urai-tier1`, not the superseded root `src` tree.
 
-## 2. Local setup
+## 2. Current deployment truth
+
+Production mutation is currently **quarantined**.
+
+The workflow named `URAI Canonical Production Release Verification` in `.github/workflows/spatial-live-deploy.yml` is verification-only despite the historical filename. It can verify source and prove a short-lived read-only WIF identity on canonical `main`; it does not deploy Firebase Hosting, App Hosting, Functions, Firestore rules, Vercel, Stripe, or another provider.
+
+The package `live:deploy` path intentionally refuses production mutation. Do not replace that refusal with a local CLI deployment or long-lived credential.
+
+## 3. Local source verification
 
 ```bash
-pnpm install
-pnpm --filter urai-tier1 dev
-```
-
-Before release, run:
-
-```bash
+pnpm install --frozen-lockfile
 pnpm --filter urai-tier1 typecheck
 pnpm --filter urai-tier1 build
 pnpm --filter urai-tier1 test:unit
+pnpm launch:check
+pnpm live:check
 ```
 
-## 3. Environment setup
+These checks do not establish deployment, live runtime identity, provider revision, monitoring, recovery, or rollback.
 
-Use `urai-tier1/.env.example` as the source of truth for required environment variables.
+## 4. Environment and credential boundary
 
-Required production keys include:
+Use `urai-tier1/.env.example` and `ENVIRONMENT.md` for current non-secret configuration guidance.
 
-- `NEXT_PUBLIC_FIREBASE_API_KEY`
-- `NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN`
-- `NEXT_PUBLIC_FIREBASE_PROJECT_ID`
-- `NEXT_PUBLIC_FIREBASE_APP_ID`
+Do not provision or document these as production authority:
+
 - `FIREBASE_SERVICE_ACCOUNT_JSON`
-- `NEXT_PUBLIC_APP_URL`
-- `STRIPE_SECRET_KEY`
-- `STRIPE_WEBHOOK_SECRET`
-- `NEXT_PUBLIC_STRIPE_PRICE_PRO`
-- `NEXT_PUBLIC_STRIPE_PRICE_THERAPIST`
-- `NEXT_PUBLIC_STRIPE_PRICE_FOUNDER`
+- `FIREBASE_CLIENT_EMAIL`
+- `FIREBASE_PRIVATE_KEY`
+- `FIREBASE_TOKEN`
+- downloaded Google service-account JSON
+- authorized-user ADC
+- interactive local Firebase login
 
-Optional narrator keys:
+Provider/model/Stripe secrets belong in protected provider/environment secret storage only when the relevant capability is explicitly authorized.
 
-- `ELEVENLABS_API_KEY`
-- `ELEVENLABS_VOICE_ID`
+## 5. Stripe boundary
 
-## 4. Stripe local testing
+Local/test-mode Stripe work remains separate from production commerce authority. This guide does not authorize:
 
-Test Stripe locally using Stripe CLI:
+- switching the account or app to live mode;
+- creating or promoting live products/prices;
+- production checkout activation;
+- production webhook creation;
+- real customer charging.
 
-```bash
-stripe listen --forward-to localhost:3000/api/stripe/webhook-v2
-```
+Any future production activation requires verified account security, legal/operator authority, settlement banking, correct protected secrets, webhook/runtime proof, monitoring, recovery, and distinct rollback.
 
-The deployed app exposes both:
+## 6. Future protected hosting
 
-- `/api/stripe/webhook`
-- `/api/stripe/webhook-v2`
+If production mutation is re-enabled, the deployment authority must be separately source-reviewed and must require at minimum:
 
-Use `/api/stripe/webhook-v2` for production configuration because it is the documented endpoint and aliases the hardened webhook handler.
+- exact canonical `main` SHA;
+- protected environment approval;
+- short-lived OIDC/WIF or explicitly approved managed identity;
+- least-privilege project/resource IAM;
+- immutable/reproducible artifact identity;
+- exact provider revision/source readback;
+- no user-managed private key or Firebase CLI token.
 
-## 5. Production hosting
+Do not infer that Firebase Hosting, App Hosting, Vercel, or another host is authorized merely because the app can build for it.
 
-Recommended:
+## 7. Post-deploy verification
 
-- Vercel
-- Firebase Hosting
+After a future authorized deployment, prove against the exact provider revision:
 
-Make sure the hosting project builds `urai-tier1` or uses the root scripts that delegate to it.
+- canonical routes and health;
+- positive authenticated behavior;
+- unauthenticated and cross-user/cross-tenant denial;
+- privacy and destructive-operation boundaries;
+- critical accessibility behavior;
+- literal release visuals;
+- monitoring/log visibility and alert owner;
+- recovery procedure; and
+- rollback to a different known-good revision with provider and live readback.
 
-## 6. Stripe production setup
+## 8. Status rule
 
-- Switch to live mode.
-- Create live products/prices.
-- Set the price ID env values.
-- Recreate webhook endpoint for the production URL at `/api/stripe/webhook-v2`.
-- Verify checkout session metadata includes `planId` and authenticated `userId`.
-
-## 7. Firebase production setup
-
-- Confirm Auth providers.
-- Enable Email/Password if using the built-in auth flow.
-- Confirm Firestore is enabled.
-- Confirm Firestore rules match the launch posture.
-- Add `FIREBASE_SERVICE_ACCOUNT_JSON` as a production secret.
-
-## 8. Post-deploy verification
-
-- `/spatial` renders.
-- `/api/entitlement` returns 401 without token.
-- Authenticated `/api/entitlement` returns the user's entitlement.
-- Checkout works for signed-in users.
-- Webhook fires.
-- Firestore updates `userEntitlements/{uid}`.
-- UI unlocks features after entitlement refresh.
-
-## 9. Monitoring
-
-- Enable Stripe event logs.
-- Enable Firebase logs.
-- Add console/error monitoring such as Sentry if available.
-
-## 10. Rollback plan
-
-- Keep previous deployment version.
-- Disable Stripe webhook if needed.
-- Revert env variables if misconfigured.
-- Roll back the hosting build to the last known-good `urai-tier1` deployment.
-
-## 11. Performance notes
-
-- Firestore entitlement reads are lightweight.
-- Entitlement calls should be cached client-side briefly.
-- Avoid refetch loops.
-
-## 12. Security reminders
-
-- Never expose Stripe secret key.
-- Never expose Firebase service account JSON.
-- Only backend routes write Firestore entitlements.
+Until those conditions are met, source may be classified as verified or release-candidate quality where evidence supports it, but production deployment remains **NO-GO / QUARANTINED**.

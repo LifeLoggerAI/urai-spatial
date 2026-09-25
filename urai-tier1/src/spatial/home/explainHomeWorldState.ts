@@ -96,11 +96,13 @@ export function explainHomeWorldState(
     orb: `Orb is shaped by ${derived ? topSummary(derived, "orb") : "still gathering signal"}.`,
     sky: `Sky is shaped by ${derived ? topSummary(derived, "sky") : "still gathering signal"}.`,
     mood:
-      state.moodState === "shadow"
-        ? "The mood layer looks clouded, so the sky holds a little more weight."
-        : state.moodState === "recovery"
-          ? "The mood layer is reading recovery cues and keeping the world steadier."
-          : `The mood layer is ${state.moodState}, based only on derived pattern buckets.`,
+      state.moodState === "heavy"
+        ? "The mood layer is carrying more weight from derived signals; this is a symbolic reflection, not a diagnosis."
+        : state.moodState === "hopeful"
+          ? "The mood layer is reading stronger recovery cues and keeping the world gently brighter."
+          : state.moodState === "uncertain"
+            ? "The mood layer is intentionally restrained because the available derived signals do not support a confident state."
+            : `The mood layer is ${state.moodState}, based only on derived pattern buckets.`,
     recovery:
       state.recoveryState === "dormant"
         ? "Recovery cues are quiet, so growth stays protected while URAI keeps gathering signal."

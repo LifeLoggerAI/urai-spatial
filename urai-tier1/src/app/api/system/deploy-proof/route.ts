@@ -19,6 +19,10 @@ const publicRoutes = [
   '/privacy-controls',
   '/location-map',
   '/status',
+] as const;
+
+const conditionalRoutes = [
+  '/xr',
   '/spatial/ar-vr',
 ] as const;
 
@@ -54,10 +58,14 @@ export async function GET() {
     sourceSurface,
     publicRoutes,
     requiredSmokeRoutes: publicRoutes,
-    forbiddenLiveCopy,
+    conditionalRoutes,
+    forbiddenLiveCopyPolicy: {
+      enforced: true,
+      count: forbiddenLiveCopy.length,
+    },
     claimBoundaries: {
       spatialWebPreview: 'live-preview',
-      webxr: 'progressive-enhancement',
+      webxr: 'governed-post-launch-gated',
       questBrowser: 'unverified-until-device-proof',
       lifeMapData: 'demo-or-local-fallback-until-authenticated-persistence-is-proven',
     },

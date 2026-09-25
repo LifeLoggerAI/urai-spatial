@@ -7,6 +7,22 @@ const repoRoot = process.cwd()
 const modelPath = path.join(repoRoot, 'urai-tier1/public/assets/urai/generated/models/focus-memory-chamber-v1.glb')
 const receiptPath = path.join(repoRoot, 'operations/assets/generated-receipts/focus-memory-chamber-v1.json')
 
+const receipt = JSON.parse(fs.readFileSync(receiptPath, 'utf8'))
+if (
+  receipt.compressionStatus === 'candidate-uncompressed-canon-v1'
+  && receipt.releaseState === 'candidate-not-production-ready'
+  && String(receipt.source ?? '').includes('canon-clean deterministic convergence candidate')
+) {
+  console.log(JSON.stringify({
+    ok: true,
+    changed: false,
+    skipped: 'canon-clean-focus-candidate-supersedes-retired-accessor-bounds-repair',
+    sha256: receipt.sha256,
+    bytes: receipt.bytes,
+  }, null, 2))
+  process.exit(0)
+}
+
 const original = fs.readFileSync(modelPath)
 if (original.readUInt32LE(0) !== 0x46546c67 || original.readUInt32LE(4) !== 2) {
   throw new Error('Focus model is not a GLB v2 payload')
@@ -58,7 +74,6 @@ header.writeUInt32LE(repaired.length, 8)
 header.copy(repaired, 0)
 fs.writeFileSync(modelPath, repaired)
 
-const receipt = JSON.parse(fs.readFileSync(receiptPath, 'utf8'))
 receipt.bytes = repaired.length
 receipt.sha256 = crypto.createHash('sha256').update(repaired).digest('hex')
 receipt.generatedBy = 'URAI Labs Final GLB Forge 1.0; reconciled to urai-final-glb-production-pack-v1; exact accessor bounds metadata repaired without geometry or animation changes'

@@ -1,7 +1,9 @@
+import { notFound } from 'next/navigation'
+import { postLaunchSpatialRealmsEnabled } from '@/lib/release/postLaunchRealmGate'
 import { CouncilRealm } from '@/spatial/council/CouncilRealm'
 import { getSceneDefinition } from '@/spatial/realms/sceneRegistry'
 
-// Migration note: SpatialRealmRuntime previously owned this route as realm="council".
+// Migration note: the superseded generic realm owner previously handled the Council route.
 // CouncilRealm now owns the canonical embodied scene so the committed V3 humans are actually visible.
 
 export const metadata = {
@@ -10,6 +12,7 @@ export const metadata = {
 }
 
 export default function CouncilRoutePage() {
+  if (!postLaunchSpatialRealmsEnabled()) notFound()
   const scene = getSceneDefinition('council')
 
   return (

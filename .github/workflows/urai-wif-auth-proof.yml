@@ -117,4 +117,6 @@ jobs:
           name: urai-wif-auth-proof-${{ github.sha }}
           path: wif-proof/
           if-no-files-found: error
-          retention-days: 365
+          # Public-repository GitHub artifact retention is capped at 90 days.
+          # Longer-lived evidence requires a separately verified durable archive.
+          retention-days: 90

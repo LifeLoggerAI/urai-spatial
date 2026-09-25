@@ -1,4 +1,5 @@
 import PreviewBuildIdentity from './PreviewBuildIdentity'
+import './status-accessibility.css'
 import StatusReleaseAuthority from './StatusReleaseAuthority'
 import { assetCssStack, statusAssets } from '@/spatial/assets/uraiAssets'
 

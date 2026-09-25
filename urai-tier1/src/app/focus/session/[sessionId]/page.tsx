@@ -3,7 +3,6 @@ import Link from 'next/link'
 
 import { DEMO_MEMORY_STAR_NODES, resolveDemoMemoryStar, type MemoryStarResolution } from '@/spatial/memory/memoryStarSchema'
 
-
 export function generateStaticParams() {
   return DEMO_MEMORY_STAR_NODES.map((star) => ({
     sessionId: star.id,
@@ -23,8 +22,8 @@ function isUnavailableMemoryStarResolution(resolution: MemoryStarResolution): re
 function UnavailableFocusSession({ resolution }: { resolution: UnavailableMemoryStarResolution }) {
   return (
     <main data-testid="urai-focus-session-direct-route" data-status={resolution.status} data-reason={resolution.reason}>
-      <h1>Focus session unavailable</h1>
-      <p>This focus session is unavailable, private, locked, deleted, or not part of the launch-safe demo set.</p>
+      <h1>Selected memory unavailable</h1>
+      <p>This memory cannot be opened in Focus because it is unavailable, private, locked, deleted, or not part of the launch-safe demo set.</p>
       <Link href={resolution.safeHref}>Return to Life Map</Link>
     </main>
   )

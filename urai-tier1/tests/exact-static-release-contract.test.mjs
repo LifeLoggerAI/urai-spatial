@@ -81,8 +81,8 @@ test('live verification binds canonical routes, origin, SHA, authority, and fing
   hasAll(verifier, ['URAI_EXPECTED_DEPLOYED_SHA','URAI_EXPECTED_ROLLBACK_SHA','release-fingerprint.json','urai-release-fingerprint-1',"redirect: 'manual'",'finalUrl.origin === canonicalOrigin','payload?.authoritySha === expectedAuthoritySha','sha === expectedSha','live-content-parity-3','hydratedIdentityProof'], 'live verifier')
 })
 
-test('Focus live verification requires the real static chamber and rejects the obsolete loading shell', () => {
-  const expected = "['/focus?memoryId=quiet-reset&manifestId=replay-recovery-thread&node=quiet-reset', ['urai-final-focus-chamber', 'Selected memory chamber.'], ['Focus loading']]"
+test('Focus live verification requires the selected Memory Star surface and rejects the obsolete loading shell', () => {
+  const expected = "['/focus?memoryId=quiet-reset&manifestId=replay-recovery-thread&node=quiet-reset', ['urai-final-focus-chamber', 'URAI Focus selected memory star'], ['Focus loading']]"
   const obsolete = "['/focus?memoryId=quiet-reset&manifestId=replay-recovery-thread&node=quiet-reset', ['Focus loading'], []]"
   assert.ok(verifier.includes(expected))
   assert.ok(!verifier.includes(obsolete))

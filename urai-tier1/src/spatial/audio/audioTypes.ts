@@ -6,16 +6,18 @@ export type SpatialAudioPhase =
   | "ASCENT"
   | "LIFEMAP"
   | "FOCUS"
-  | "REPLAY";
+  | "REPLAY"
+  | "MIRROR";
 
 export type AmbientTrack =
   | "home"
   | "ground"
   | "lifemap"
   | "focus"
-  | "replay";
+  | "replay"
+  | "mirror";
 
-export type SpatialAudioCue = "transition" | "orb-confirm" | "error";
+export type SpatialAudioCue = "transition" | "orb-confirm" | "confirm" | "permission" | "error";
 
 export interface NarratorAudioLine {
   id: string;

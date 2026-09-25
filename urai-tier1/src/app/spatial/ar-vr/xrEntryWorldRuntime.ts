@@ -1,4 +1,5 @@
 import * as THREE from 'three'
+import type { SelectedMemory } from '@/spatial/memory/selectedMemoryContract'
 
 export const XR_PORTALS = [
   { id: 'ground', label: 'Ground headquarters', route: '/ground?mode=xr-camera', position: [-4.2, 1.55, -6.2] as const, color: 0x63e6be },
@@ -87,17 +88,29 @@ export class UraiXrWorldRuntime {
   private orb: THREE.Mesh
   private orbRing: THREE.Mesh
   private stars: THREE.Points
+  private readonly navigationPortalGroups: THREE.Group[] = []
+  private readonly memoryStage = new THREE.Group()
+  private memoryVideo: HTMLVideoElement | null = null
+  private memoryTexture: THREE.Texture | null = null
+  private memoryGeneration = 0
+  private memoryActive = false
+  private immersiveMode: 'immersive-vr' | 'immersive-ar' | null = null
+  private readonly worldBackground = new THREE.Color(0x050816)
+  private readonly worldFog = new THREE.Color(0x071125)
+  private worldFogDensity = 0.028
 
   constructor(private mount: HTMLDivElement, private announce: (message: string) => void, private openRoute: (route: string, label: string) => void) {
-    this.scene.background = new THREE.Color(0x050816)
-    this.scene.fog = new THREE.FogExp2(0x071125, 0.028)
+    this.scene.background = this.worldBackground.clone()
+    this.scene.fog = new THREE.FogExp2(this.worldFog.clone(), this.worldFogDensity)
+    this.memoryStage.name = 'xr-selected-memory-stage'
+    this.scene.add(this.memoryStage)
     this.camera.position.set(0, 1.65, 0)
     this.camera.rotation.order = 'YXZ'
     this.rig.position.set(0, 0, SPAWN_Z)
     this.rig.add(this.camera)
     this.scene.add(this.rig)
 
-    this.renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' })
+    this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: 'high-performance' })
     this.renderer.outputColorSpace = THREE.SRGBColorSpace
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping
     this.renderer.toneMappingExposure = 1.05
@@ -145,7 +158,11 @@ export class UraiXrWorldRuntime {
     this.orbRing.rotation.x = Math.PI / 2.6
     this.scene.add(this.orbRing)
 
-    XR_PORTALS.forEach((portal) => this.scene.add(makePortal(portal, this.portalTargets)))
+    XR_PORTALS.forEach((portal) => {
+      const group = makePortal(portal, this.portalTargets)
+      this.navigationPortalGroups.push(group)
+      this.scene.add(group)
+    })
     this.stars = this.makeStars()
     this.scene.add(this.stars)
     this.bind()
@@ -290,6 +307,103 @@ export class UraiXrWorldRuntime {
     this.renderer.render(this.scene, this.camera)
   }
 
+  private disposeMemoryStage() {
+    this.memoryGeneration += 1
+    this.memoryVideo?.pause()
+    if (this.memoryVideo) { this.memoryVideo.removeAttribute('src'); this.memoryVideo.load() }
+    this.memoryVideo = null
+    this.memoryTexture?.dispose()
+    this.memoryTexture = null
+    this.memoryStage.traverse((object) => {
+      if (!(object instanceof THREE.Mesh)) return
+      object.geometry?.dispose()
+      const materials = Array.isArray(object.material) ? object.material : [object.material]
+      materials.forEach((material) => material?.dispose())
+    })
+    this.memoryStage.clear()
+    this.memoryStage.userData = {}
+  }
+
+  private applyImmersivePresentation() {
+    const ar = this.immersiveMode === 'immersive-ar'
+    this.scene.background = ar ? null : this.worldBackground.clone()
+    this.scene.fog = ar ? null : new THREE.FogExp2(this.worldFog.clone(), this.worldFogDensity)
+    this.floor.visible = !ar
+    this.stars.visible = !ar
+  }
+
+  setMemoryExperience(memory: SelectedMemory) {
+    this.disposeMemoryStage()
+    this.memoryActive = true
+    this.navigationPortalGroups.forEach((group) => { group.visible = false })
+    this.orb.visible = false
+    this.orbRing.visible = false
+    this.worldBackground.set(memory.visuals.sky)
+    this.worldFog.set(memory.visuals.sky)
+    this.worldFogDensity = THREE.MathUtils.lerp(0.012, 0.032, THREE.MathUtils.clamp(memory.visuals.fog, 0, 1))
+    ;(this.floor.material as THREE.MeshStandardMaterial).color.set(memory.visuals.ground)
+    ;(this.stars.material as THREE.PointsMaterial).color.set(memory.visuals.accent)
+    this.memoryStage.userData = { memoryId: memory.id, manifestId: memory.replayManifest.id, truthRole: memory.sourceMedia.length ? 'recorded-source' : 'context-only' }
+    this.applyImmersivePresentation()
+
+    const media = memory.sourceMedia.find((item) => item.kind === 'video') ?? memory.sourceMedia.find((item) => item.kind === 'image')
+    if (!media) return
+    const geometry = new THREE.PlaneGeometry(8.4, 4.7, 40, 22)
+    const positions = geometry.getAttribute('position') as THREE.BufferAttribute
+    for (let index = 0; index < positions.count; index += 1) {
+      const nx = positions.getX(index) / 4.2
+      positions.setZ(index, -0.58 * nx * nx)
+    }
+    positions.needsUpdate = true
+    geometry.computeVertexNormals()
+    const material = new THREE.MeshBasicMaterial({ color: 0x10181d, side: THREE.DoubleSide, toneMapped: false })
+    const surface = new THREE.Mesh(geometry, material)
+    surface.position.set(0, 2.55, -5.9)
+    surface.userData = { memoryId: memory.id, truthRole: 'recorded-source', sourceKind: media.kind }
+    this.memoryStage.add(surface)
+    const generation = this.memoryGeneration
+    if (media.kind === 'video') {
+      const video = document.createElement('video')
+      video.src = media.url; video.crossOrigin = 'anonymous'; video.playsInline = true; video.muted = true; video.loop = true; video.preload = 'metadata'
+      this.memoryVideo = video
+      const texture = new THREE.VideoTexture(video)
+      texture.colorSpace = THREE.SRGBColorSpace
+      this.memoryTexture = texture
+      material.map = texture; material.color.set(0xffffff); material.needsUpdate = true
+      if (this.immersiveMode) void video.play().catch(() => undefined)
+      return
+    }
+    const loader = new THREE.TextureLoader()
+    loader.setCrossOrigin('anonymous')
+    loader.load(media.url, (texture) => {
+      if (generation !== this.memoryGeneration || !this.memoryActive) { texture.dispose(); return }
+      texture.colorSpace = THREE.SRGBColorSpace
+      this.memoryTexture = texture
+      material.map = texture; material.color.set(0xffffff); material.needsUpdate = true
+    })
+  }
+
+  clearMemoryExperience() {
+    this.disposeMemoryStage()
+    this.memoryActive = false
+    this.navigationPortalGroups.forEach((group) => { group.visible = true })
+    this.orb.visible = true
+    this.orbRing.visible = true
+    this.worldBackground.set(0x050816); this.worldFog.set(0x071125); this.worldFogDensity = 0.028
+    ;(this.floor.material as THREE.MeshStandardMaterial).color.set(0x0c2631)
+    ;(this.stars.material as THREE.PointsMaterial).color.set(0xa8dfff)
+    this.applyImmersivePresentation()
+  }
+
+  setImmersiveMode(mode: 'immersive-vr' | 'immersive-ar' | null) {
+    this.immersiveMode = mode
+    this.applyImmersivePresentation()
+    if (this.memoryVideo) {
+      if (mode) void this.memoryVideo.play().catch(() => undefined)
+      else this.memoryVideo.pause()
+    }
+  }
+
   setKey(code: string, held: boolean) {
     if (held) this.keys.add(code)
     else this.keys.delete(code)
@@ -305,6 +419,7 @@ export class UraiXrWorldRuntime {
 
   dispose() {
     this.disposed = true
+    this.disposeMemoryStage()
     this.renderer.setAnimationLoop(null)
     window.removeEventListener('resize', this.resize)
     window.removeEventListener('keydown', this.keyDown)

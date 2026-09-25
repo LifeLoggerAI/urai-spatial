@@ -1,0 +1,147 @@
+name: Localization Preparation Proof
+
+on:
+  pull_request:
+    paths:
+      - 'urai-tier1/src/i18n/**'
+      - 'urai-tier1/src/app/layout.tsx'
+      - 'urai-tier1/tests/localization-runtime-bootstrap.test.mjs'
+      - 'urai-tier1/tests/localization-home-readiness.test.mjs'
+      - 'brand/LOCALIZATION_20_READINESS.md'
+      - 'brand/launch-asset-registry.json'
+      - 'scripts/capture-localization-preparation-proof.mjs'
+      - 'scripts/lib/localization-home-readiness.mjs'
+      - 'scripts/lib/localization-layout-metrics.mjs'
+      - 'urai-tier1/tests/localization-layout-metrics.test.mjs'
+      - '.github/workflows/localization-preparation-proof.yml'
+  workflow_dispatch:
+    inputs:
+      verification_sha:
+        description: Exact 40-character commit SHA to verify
+        required: false
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: localization-preparation-${{ github.event.pull_request.number || inputs.verification_sha || github.ref }}-${{ github.event.pull_request.head.sha || inputs.verification_sha || github.sha }}
+  cancel-in-progress: true
+
+env:
+  URAI_EXACT_HEAD: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.event_name == 'workflow_dispatch' && inputs.verification_sha || github.sha }}
+  PLAYWRIGHT_BROWSERS_PATH: '0'
+  NEXT_PUBLIC_URAI_EXPLICIT_DEMO: 'true'
+
+jobs:
+  exact-head-localization-preparation:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 50
+    steps:
+      - name: Checkout exact candidate
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ env.URAI_EXACT_HEAD }}
+          fetch-depth: 1
+          persist-credentials: false
+          show-progress: false
+
+      - name: Prove exact clean candidate
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "$URAI_EXACT_HEAD" =~ ^[0-9a-f]{40}$ ]]
+          test "$(git rev-parse HEAD)" = "$URAI_EXACT_HEAD"
+          test -z "$(git status --porcelain --untracked-files=all)"
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1
+        with:
+          version: 10.0.0
+          run_install: false
+
+      - name: Setup Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Install exact lockfile
+        shell: bash
+        run: |
+          corepack enable
+          pnpm install --frozen-lockfile
+
+      - name: Gate truthful 20+ locale bootstrap
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --test urai-tier1/tests/localization-runtime-bootstrap.test.mjs urai-tier1/tests/localization-home-readiness.test.mjs urai-tier1/tests/localization-layout-metrics.test.mjs
+          node --check scripts/capture-localization-preparation-proof.mjs
+
+      - name: Typecheck localization runtime
+        run: pnpm --dir urai-tier1 typecheck
+
+      - name: Build exact static candidate
+        shell: bash
+        env:
+          URAI_MIN_INSTALL_FREE_MB: '256'
+          URAI_FIREBASE_STATIC_EXPORT: 'true'
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/localization-preparation-proof
+          pnpm build:static 2>&1 | tee artifacts/localization-preparation-proof/build-static.log
+
+      - name: Install Chromium
+        run: pnpm --dir urai-tier1 exec playwright install --with-deps chromium
+
+      - name: Capture machine preparation evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          output=artifacts/localization-preparation-proof
+          python3 -m http.server 4173 --bind 127.0.0.1 --directory urai-tier1/out > "$output/http-server.log" 2>&1 &
+          server_pid=$!
+          trap 'kill "$server_pid" 2>/dev/null || true' EXIT
+          for attempt in $(seq 1 60); do
+            curl --fail --silent http://127.0.0.1:4173/home/ >/dev/null && break
+            sleep 1
+          done
+          curl --fail --silent --show-error http://127.0.0.1:4173/home/ >/dev/null
+          URAI_PROOF_BASE=http://127.0.0.1:4173 \
+          URAI_PROOF_DIR="$output" \
+          URAI_EXACT_HEAD="$URAI_EXACT_HEAD" \
+            node scripts/capture-localization-preparation-proof.mjs 2>&1 | tee "$output/capture.log"
+
+      - name: Prove receipt truth boundary and coverage
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --input-type=module - artifacts/localization-preparation-proof/receipt.json "$URAI_EXACT_HEAD" <<'NODE'
+          import { readFile } from 'node:fs/promises'
+          const [receiptPath, head] = process.argv.slice(2)
+          const receipt = JSON.parse(await readFile(receiptPath, 'utf8'))
+          if (receipt.schemaVersion !== 'urai-localization-preparation-proof-1') throw new Error('localization proof schema mismatch')
+          if (receipt.exactHead !== head) throw new Error('localization exact-head mismatch')
+          if (receipt.status !== 'passed') throw new Error('localization machine-preparation proof failed')
+          if (receipt.truthBoundary !== 'machine-preparation-only-native-review-required') throw new Error('localization truth boundary weakened')
+          if (receipt.cases.length !== 8 || !receipt.cases.every((entry) => entry.passed)) throw new Error('localization case matrix incomplete')
+          for (const id of ['desktop-en-home','desktop-ar-home-rtl','phone-ar-home-rtl-expanded','landscape-fa-lifemap-rtl','tablet-nl-home-expanded','reduced-motion-ar-home','no-webgl-ar-home','offline-ar-home']) {
+            if (!receipt.cases.some((entry) => entry.id === id)) throw new Error('missing localization proof case: ' + id)
+          }
+          if (!receipt.cases.filter((entry) => entry.locale !== 'en').every((entry) => entry.nativeReview === 'required')) throw new Error('machine evidence incorrectly claimed native review')
+          NODE
+
+      - name: Upload exact-head localization preparation evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: localization-preparation-proof-${{ env.URAI_EXACT_HEAD }}
+          path: artifacts/localization-preparation-proof
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 6
+
+      - name: Final clean-tree proof
+        run: test -z "$(git status --porcelain --untracked-files=all)"

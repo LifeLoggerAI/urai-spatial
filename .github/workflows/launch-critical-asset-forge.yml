@@ -11,6 +11,7 @@ on:
       - 'scripts/normalize-launch-critical-assets.mjs'
       - 'scripts/repair-home-glb-pole-normals.mjs'
       - 'scripts/repair-focus-glb-accessor-bounds.mjs'
+      - 'scripts/repair-glb-material-alpha-cutoff.mjs'
       - 'scripts/verify-launch-critical-assets.mjs'
       - 'scripts/verify-governed-asset-promotion.mjs'
       - 'scripts/audit-launch-critical-artifact.mjs'
@@ -84,7 +85,8 @@ jobs:
             urai-tier1/public/assets/urai/generated/models/home-entry-chamber-v1.glb \
             operations/assets/generated-receipts/home-entry-chamber-v1.json \
             operations/assets/generated-receipts/urai-final-glb-pack-v1.json \
-            operations/assets/promotion-rehearsal/home-entry-chamber-v1.json; then
+            operations/assets/promotion-rehearsal/home-entry-chamber-v1.json \
+            && git diff --cached --quiet; then
             echo 'mutated=false' >> "$GITHUB_OUTPUT"
             exit 0
           fi
@@ -98,7 +100,7 @@ jobs:
             operations/assets/generated-receipts/home-entry-chamber-v1.json \
             operations/assets/generated-receipts/urai-final-glb-pack-v1.json \
             operations/assets/promotion-rehearsal/home-entry-chamber-v1.json
-          git commit -m 'Repair Home GLB pole normals'
+          git commit -m 'Repair launch-critical GLB metadata'
           git push origin "HEAD:${TARGET_BRANCH}"
           echo 'mutated=true' >> "$GITHUB_OUTPUT"
 
@@ -124,6 +126,33 @@ jobs:
             urai-tier1/public/assets/urai/generated/models/focus-memory-chamber-v1.glb \
             operations/assets/generated-receipts/focus-memory-chamber-v1.json
           git commit -m 'Repair Focus GLB accessor bounds metadata'
+          git push origin "HEAD:${TARGET_BRANCH}"
+          echo 'mutated=true' >> "$GITHUB_OUTPUT"
+
+      - name: Repair invalid alphaCutoff material fields and emit successor when required
+        id: material_repair
+        if: steps.mode.outputs.promotion != 'true' && steps.mode.outputs.replacement == 'true' && steps.home_repair.outputs.mutated != 'true' && steps.focus_repair.outputs.mutated != 'true' && github.event_name == 'pull_request' && github.actor != 'github-actions[bot]'
+        shell: bash
+        run: |
+          set -euo pipefail
+          node scripts/repair-glb-material-alpha-cutoff.mjs
+          if git diff --quiet -- \
+            urai-tier1/public/assets/urai/generated/models \
+            operations/assets/generated-receipts \
+            operations/assets/promotion-rehearsal; then
+            echo 'mutated=false' >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          remote_sha="$(gh api "repos/${GITHUB_REPOSITORY}/git/ref/heads/${TARGET_BRANCH}" --jq '.object.sha')"
+          test "$remote_sha" = "$URAI_EXACT_HEAD"
+          gh auth setup-git
+          git config user.name 'urai-release-bot'
+          git config user.email 'urai-release-bot@users.noreply.github.com'
+          git add \
+            urai-tier1/public/assets/urai/generated/models \
+            operations/assets/generated-receipts \
+            operations/assets/promotion-rehearsal
+          git commit -m 'Repair invalid glTF material alpha cutoffs'
           git push origin "HEAD:${TARGET_BRANCH}"
           echo 'mutated=true' >> "$GITHUB_OUTPUT"
 
@@ -161,7 +190,7 @@ jobs:
           test -z "$(git status --porcelain)"
 
       - name: Validate exact replacement rehearsal decisions
-        if: steps.mode.outputs.promotion != 'true' && steps.mode.outputs.replacement == 'true' && steps.home_repair.outputs.mutated != 'true' && steps.focus_repair.outputs.mutated != 'true'
+        if: steps.mode.outputs.promotion != 'true' && steps.mode.outputs.replacement == 'true' && steps.home_repair.outputs.mutated != 'true' && steps.focus_repair.outputs.mutated != 'true' && steps.material_repair.outputs.mutated != 'true'
         shell: bash
         env:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
@@ -188,13 +217,13 @@ jobs:
             fi
           done
       - name: Verify exact replacement manifest, receipts and budgets
-        if: steps.mode.outputs.promotion != 'true' && steps.mode.outputs.replacement == 'true' && steps.home_repair.outputs.mutated != 'true' && steps.focus_repair.outputs.mutated != 'true'
+        if: steps.mode.outputs.promotion != 'true' && steps.mode.outputs.replacement == 'true' && steps.home_repair.outputs.mutated != 'true' && steps.focus_repair.outputs.mutated != 'true' && steps.material_repair.outputs.mutated != 'true'
         run: node scripts/verify-launch-critical-assets.mjs
       - name: Strictly decode replacement Radiance HDR scanlines
-        if: steps.mode.outputs.promotion != 'true' && steps.mode.outputs.replacement == 'true' && steps.home_repair.outputs.mutated != 'true' && steps.focus_repair.outputs.mutated != 'true'
+        if: steps.mode.outputs.promotion != 'true' && steps.mode.outputs.replacement == 'true' && steps.home_repair.outputs.mutated != 'true' && steps.focus_repair.outputs.mutated != 'true' && steps.material_repair.outputs.mutated != 'true'
         run: node scripts/validate-radiance-hdr.mjs
       - name: Validate every replacement GLB with Khronos-compatible validator
-        if: steps.mode.outputs.promotion != 'true' && steps.mode.outputs.replacement == 'true' && steps.home_repair.outputs.mutated != 'true' && steps.focus_repair.outputs.mutated != 'true'
+        if: steps.mode.outputs.promotion != 'true' && steps.mode.outputs.replacement == 'true' && steps.home_repair.outputs.mutated != 'true' && steps.focus_repair.outputs.mutated != 'true' && steps.material_repair.outputs.mutated != 'true'
         shell: bash
         run: |
           set -euo pipefail
@@ -240,7 +269,22 @@ jobs:
           const manifest = JSON.parse(fs.readFileSync(path, 'utf8'))
           const retained = manifest.assets.find((asset) => asset.id === 'passport-status-room-v1')
           if (!retained) throw new Error('passport-status-room-v1 missing from launch manifest')
-          manifest.assets = manifest.assets.filter((asset) => asset.id !== 'passport-status-room-v1')
+          const deterministicForgeOwned = new Set([
+            'home-entry-chamber-v1',
+            'ground-world-terrain-v1',
+            'life-map-memory-star-v1',
+            'focus-memory-chamber-v1',
+            'replay-memory-environment-v1',
+            'urai-orb-avatar-v1',
+            'life-map-galaxy-skybox-v1',
+            'spatial-particle-atlas-v1',
+            'global-cinematic-material-pack-v1',
+            'urai-loading-sequence-v1',
+            'urai-ambient-bed-v1',
+          ])
+          const specialistOwned = manifest.assets.filter((asset) => !deterministicForgeOwned.has(asset.id) && asset.id !== 'passport-status-room-v1')
+          if (specialistOwned.length === 0) throw new Error('expected specialist-governed launch assets outside generic forge ownership')
+          manifest.assets = manifest.assets.filter((asset) => deterministicForgeOwned.has(asset.id))
           fs.writeFileSync(path, JSON.stringify(manifest, null, 2) + '\n')
           NODE
           node scripts/forge-launch-critical-assets.mjs
@@ -304,7 +348,7 @@ jobs:
           retention-days: 14
           path: .urai-artifacts/launch-critical-candidate-bundle/
       - name: Upload exact replacement evidence
-        if: always() && steps.mode.outputs.promotion != 'true' && steps.mode.outputs.replacement == 'true' && steps.home_repair.outputs.mutated != 'true' && steps.focus_repair.outputs.mutated != 'true'
+        if: always() && steps.mode.outputs.promotion != 'true' && steps.mode.outputs.replacement == 'true' && steps.home_repair.outputs.mutated != 'true' && steps.focus_repair.outputs.mutated != 'true' && steps.material_repair.outputs.mutated != 'true'
         uses: actions/upload-artifact@v4
         with:
           name: urai-launch-critical-replacement-${{ env.URAI_EXACT_HEAD }}

@@ -9,8 +9,7 @@ const launcherPath = fileURLToPath(new URL('../../scripts/run-lifemap-founder-pr
 const runnerPath = fileURLToPath(new URL('../../scripts/capture-lifemap-founder-proof-fixed.mjs', import.meta.url))
 const launcher = await readFile(launcherPath, 'utf8')
 const runner = await readFile(runnerPath, 'utf8')
-const scene = await readFile(new URL('../src/components/lifemap/ComposedLifeMapScene.tsx', import.meta.url), 'utf8')
-const world = await readFile(new URL('../src/components/lifemap/LifeMapProductionWorld.tsx', import.meta.url), 'utf8')
+const scene = await readFile(new URL('../src/components/lifemap/CosmicComposedLifeMapScene.tsx', import.meta.url), 'utf8')
 const navigator = await readFile(new URL('../src/components/lifemap/LifeMapSemanticNavigator.tsx', import.meta.url), 'utf8')
 const routeBoundary = await readFile(new URL('../src/components/lifemap/LifeMapRouteBoundary.tsx', import.meta.url), 'utf8')
 const isolation = await readFile(new URL('../src/spatial/world/lifeMapProductionIsolation.css', import.meta.url), 'utf8')
@@ -32,7 +31,7 @@ test('Founder proof is a checked-in stable module with a mandatory syntax gate',
 })
 
 test('Founder runner retains every required real interaction and phase owner', () => {
-  for (const owner of ['openPage', 'selectQuietReset', 'clickRouteAction', 'canvasSignal', 'desktopJourney', 'desktopArrivalEvidence', 'desktopActionsAndKeyboard', 'isolatedJourneyPhases', 'mobileAndReduced', 'assertVisualSanity']) {
+  for (const owner of ['openPage', 'selectQuietReset', 'clickRouteAction', 'canvasSignal', 'hoverFirstMemoryStar', 'memoryStarReferencePack', 'desktopJourney', 'desktopArrivalEvidence', 'desktopActionsAndKeyboard', 'isolatedJourneyPhases', 'mobileAndReduced', 'assertVisualSanity']) {
     const matches = runner.match(new RegExp(`(?:async\\s+)?function\\s+${owner}\\s*\\(`, 'g')) || []
     assert.equal(matches.length, 1, `${owner} declaration count drifted`)
   }
@@ -52,13 +51,24 @@ test('Founder runner retains every required real interaction and phase owner', (
   for (const phase of ['departure', 'travel', 'approach', 'arrival']) assert.match(runner, new RegExp(`'${phase}'`))
 })
 
-test('Founder runner observes transient production phases without mutating production timing', () => {
+test('Founder runner observes and freezes real transient phases without mutating production timing', () => {
   assert.match(runner, /function armJourneyPhaseWatch\(/)
   assert.match(runner, /function readJourneyPhaseWatch\(/)
   assert.match(runner, /new MutationObserver\(inspect\)/)
   assert.match(runner, /attributeFilter:\s*\['data-life-map-phase', 'data-life-map-mode', 'data-life-map-scale'\]/)
-  assert.match(runner, /if \(options\.targetPhase\) await armJourneyPhaseWatch\(page, options\.targetPhase\)/)
-  assert.match(runner, /const observedPhase = options\.targetPhase \? await readJourneyPhaseWatch\(page, options\.targetPhase\) : null/)
+  assert.match(runner, /const PHASE_CAPTURE_VIRTUAL_BUDGET_MS = \{[\s\S]*departure: 0,[\s\S]*travel: 950,[\s\S]*approach: 2500/)
+  assert.match(runner, /async function selectQuietResetAtFrozenPhase\(/)
+  assert.match(runner, /newCDPSession\(page\)/)
+  assert.match(runner, /Emulation\.setVirtualTimePolicy/)
+  assert.match(runner, /policy: 'pause'/)
+  assert.match(runner, /policy: 'advance'/)
+  assert.match(runner, /Emulation\.virtualTimeBudgetExpired/)
+  assert.match(runner, /await armJourneyPhaseWatch\(page, targetPhase\)/)
+  assert.match(runner, /state\.phase === 'departure'/)
+  assert.match(runner, /frozen selected journey phase=\$\{targetPhase\}/)
+  assert.match(runner, /phaseLocked: targetPhase/)
+  assert.match(runner, /state\.phase !== extra\.phaseLocked/)
+  assert.match(runner, /stateAfter\.phase !== extra\.phaseLocked/)
   assert.doesNotMatch(runner, /window\.setTimeout\s*=/)
   assert.doesNotMatch(runner, /__uraiFounderOriginalSetTimeout|captureTimingFactor|installPhaseCaptureTiming|restorePhaseCaptureTiming/)
 })
@@ -77,9 +87,32 @@ test('Founder transient probes do not compete with a retained production WebGL c
   assert.match(desktopArrival, /await arrivalPage\?\.context\.close\(\)\s+await arrivalBrowser\.close\(\)/)
   assert.match(desktopActions, /const actionBrowser = await chromium\.launch\(\{ headless: true \}\)/)
   assert.match(desktopActions, /await clickRouteAction\(page, 'Enter Focus'/)
+  assert.match(desktopActions, /\[data-testid="cinematic-replay-client"\]\[data-memory-id\]/)
   assert.match(desktopActions, /await actionPage\?\.context\.close\(\)\s+await actionBrowser\.close\(\)/)
   assert.match(runner, /await desktopJourney\(\)\s+await desktopArrivalEvidence\(\)\s+await desktopActionsAndKeyboard\(\)\s+await isolatedJourneyPhases\(\)\s+await mobileAndReduced\(\)/)
   assert.match(runner, /await isolated\?\.context\.close\(\)\s+await isolatedBrowser\.close\(\)/)
+})
+
+test('Founder proof retains the missing current Memory Star state pack through real runtime surfaces', () => {
+  for (const id of ['memory-star-neutral', 'memory-star-hover', 'memory-star-near-cluster', 'memory-star-low-tier']) {
+    assert.match(runner, new RegExp(id))
+  }
+  assert.match(runner, /testMode=1&fixture=one&quality=high/)
+  assert.match(runner, /testMode=1&fixture=five&quality=high/)
+  assert.match(runner, /testMode=1&fixture=five&quality=low/)
+  assert.match(runner, /memoryStarReview=isolated/)
+  assert.match(runner, /memoryStarReview=hover/)
+  assert.match(runner, /memoryStarReview=near-cluster/)
+  assert.match(runner, /await hoverFirstMemoryStar\(review\.page\)/)
+  assert.match(runner, /return \{ cursor: document\.body\.style\.cursor, memoryId:/)
+  assert.match(runner, /hit\.cursor === 'pointer' && hit\.memoryId/)
+  assert.match(runner, /await memoryStarReferencePack\(\)\s+await desktopJourney\(\)/)
+  assert.match(scene, /data-life-map-quality=\{profile\.tier\}/)
+  assert.match(scene, /const \[hovered, setHovered\] = useState\(false\)/)
+  assert.match(scene, /const hoverEmphasis = forceHover \|\| hovered/)
+  assert.match(scene, /const pointer = \(event: ThreeEvent<PointerEvent>, value: boolean\) =>/)
+  assert.match(scene, /stellarMorphology: "point-photosphere-layered-corona-no-visible-sphere"/)
+  assert.match(scene, /root\.dataset\.memoryStarPointerHit = node\.id/)
 })
 
 test('Founder runner retains one explicit 3x high-resolution proof while the interaction matrix stays runner-feasible', () => {
@@ -89,7 +122,11 @@ test('Founder runner retains one explicit 3x high-resolution proof while the int
   assert.match(runner, /desktop-overview-high-resolution/)
   assert.match(runner, /highResolution\.signal\.width < 4320/)
   assert.match(runner, /highResolution\.signal\.height < 2700/)
-  assert.match(runner, /highResolution\.screenshot\.bytes < 1_000_000/)
+  assert.match(runner, /highResolution\.signal\.luminanceRange < 20/)
+  assert.match(runner, /highResolution\.signal\.entropy < 1\.2/)
+  assert.match(runner, /highResolution\.signal\.edgeDensity < 0\.03/)
+  assert.match(runner, /highResolution\.signal\.occupiedQuadrants < 3/)
+  assert.doesNotMatch(runner, /highResolution\.screenshot\.bytes/)
 })
 
 test('Founder runner validates retained PNG evidence with the distributed acceptance method', () => {
@@ -103,12 +140,16 @@ test('Founder runner validates retained PNG evidence with the distributed accept
   assert.match(runner, /sampleCount !== 3456/)
   assert.match(runner, /variance < 8/)
   assert.match(runner, /nonDarkRatio <= 0/)
-  assert.match(runner, /screenshot\.bytes < 120_000/)
+  assert.match(runner, /luminanceRange < 20/)
+  assert.match(runner, /entropy < 1\.2/)
+  assert.match(runner, /edgeDensity < 0\.03/)
+  assert.match(runner, /occupiedQuadrants < 3/)
+  assert.doesNotMatch(runner, /screenshot\.bytes < /)
   assert.match(runner, /distributed-grid-24x16-3x3/)
 })
 
 test('Founder proof observes the real production state machine without a production backdoor', () => {
-  assert.match(scene, /setPhase\("departure"\)/)
+  assert.match(scene, /setPhase\(profile\.reducedMotion \? "arrival" : "departure"\)/)
   assert.match(scene, /setPhase\("travel"\)/)
   assert.match(scene, /setPhase\("approach"\)/)
   assert.match(scene, /setPhase\("arrival"\)/)
@@ -120,29 +161,31 @@ test('Founder proof observes the real production state machine without a product
   assert.doesNotMatch(runner, /setPhase\(|PHASE_DURATION_MS\s*=|window\.setTimeout\s*=/)
 })
 
-test('restored Life Map route preserves URL identity but commits arrival only after that id resolves to a real node', () => {
+test('restored Life Map route preserves URL identity, initializes selected routes in arrival, and retains real-node reconciliation', () => {
   assert.match(scene, /const \[selectedId, setSelectedId\] = useState<string \| null>\(overviewRequested \? null : queryNode \|\| null\)/)
-  assert.match(scene, /const \[phase, setPhase\] = useState<JourneyPhase>\("overview"\)/)
-  assert.match(scene, /const restoredRoutePending = useRef\(Boolean\(!overviewRequested && queryNode\)\)/)
+  assert.match(scene, /const \[phase, setPhase\] = useState<Phase>\(\(\) => !overviewRequested && queryNode \? "arrival" : "overview"\)/)
+  assert.match(scene, /if \(overviewRequested \|\| !queryNode \|\| !nodes\.length\) return/)
   assert.match(scene, /const node = nodes\.find\(\(candidate\) => candidate\.id === queryNode\)/)
   assert.match(scene, /setSelectedId\(node\.id\);\s*setPhase\("arrival"\)/)
-  assert.doesNotMatch(scene, /useState<JourneyPhase>\(selectedId \? "arrival" : "overview"\)/)
+  assert.doesNotMatch(scene, /useState<Phase>\(selectedId \? "arrival" : "overview"\)/)
 })
 
-test('route boundary repairs a direct-entry state exactly once and requires a healthy authored world before overview recovery', () => {
+test('route boundary repairs a direct-entry state with bounded retries and requires a healthy authored world before overview recovery', () => {
   assert.match(routeBoundary, /const initial = new URLSearchParams\(window\.location\.search\)/)
   assert.match(routeBoundary, /if \(initial\.get\('overview'\) === '1'\) return/)
   assert.match(routeBoundary, /const nodeId = initial\.get\('node'\) \|\| initial\.get\('memoryId'\)/)
-  assert.match(routeBoundary, /let repaired = false/)
+  assert.match(routeBoundary, /const MAX_DIRECT_ROUTE_REPAIR_ATTEMPTS = 4/)
+  assert.match(routeBoundary, /let repairAttempts = 0/)
+  assert.match(routeBoundary, /if \(repairAttempts >= MAX_DIRECT_ROUTE_REPAIR_ATTEMPTS\) return false/)
+  assert.match(routeBoundary, /repairAttempts \+= 1/)
   assert.match(routeBoundary, /if \(phase === 'arrival'\)/)
   assert.match(routeBoundary, /root\.querySelector\('\.life-map-thresholds'\)/)
   assert.match(routeBoundary, /if \(phase === 'overview'\)/)
   assert.match(routeBoundary, /root\.dataset\.lifeMapRenderReady === 'true'/)
   assert.match(routeBoundary, /visibleAnchors >= MIN_DIRECT_ROUTE_RENDER_ANCHORS/)
-  assert.match(routeBoundary, /repaired = true/)
   assert.match(routeBoundary, /window\.dispatchEvent\(new CustomEvent<LifeMapSelectionDetail>\(LIFE_MAP_SELECTION_EVENT/)
   assert.equal((routeBoundary.match(/dispatchEvent\(new CustomEvent/g) || []).length, 1)
-  assert.doesNotMatch(routeBoundary, /requestLifeMapSelection|restoreSelectedRoute|maxAttempts|attempts\s*[+<=>]/)
+  assert.doesNotMatch(routeBoundary, /let repaired = false|repaired = true|requestLifeMapSelection|restoreSelectedRoute/)
   assert.match(routeBoundary, /<ComposedLifeMapScene \/>/)
   assert.match(routeBoundary, /<LifeMapSemanticNavigator \/>/)
 })
@@ -166,15 +209,16 @@ test('Founder render proof samples one atomic live-root snapshot', () => {
   assert.match(renderedWorld, /timeout, 75\)/)
 })
 
-test('render proof refuses stale invalidation writes and republishes after WebGL context restoration', () => {
-  assert.match(world, /function RenderProofRepublisher\(/)
-  assert.match(world, /webglcontextlost/)
-  assert.match(world, /webglcontextrestored/)
-  assert.match(world, /lifeMapRenderReady = "false"/)
-  assert.match(world, /const writeInvalid = \(\) => \{\s+if \(!invalidated\.current\) return;/)
-  assert.match(world, /frames\.current < 4/)
-  assert.match(world, /(?:lifeMapRenderReady =|const ready =) calls > 0 && objects > 20 && anchors >= 8(?: \? "true" : "false")?/)
-  assert.match(world, /<RenderProofRepublisher \/>/)
+test('render proof publishes live exact state and recovers after WebGL context restoration without a proof-only threshold bypass', () => {
+  assert.match(scene, /function RenderProof\(\)/)
+  assert.match(scene, /function WebGLRecovery\(/)
+  assert.match(scene, /webglcontextlost/)
+  assert.match(scene, /webglcontextrestored/)
+  assert.match(scene, /const ready = gl\.info\.render\.calls > 0 && objects > 20 && anchors >= 8/)
+  assert.match(scene, /root\.dataset\.lifeMapRenderReady = ready \? "true" : "false"/)
+  assert.ok((scene.match(/<RenderProof \/>/g) || []).length >= 2)
+  assert.match(scene, /<WebGLRecovery onState=\{onWebGLState\} \/>/)
+  assert.doesNotMatch(scene, /minObjects|minAnchors/)
 })
 
 test('collapsed semantic navigator preserves a visible pointer and touch opener', () => {

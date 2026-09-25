@@ -1,0 +1,1078 @@
+'use client'
+
+import { useRouter } from 'next/navigation'
+import { HomeAtmosphericSky } from '@/spatial/assets/HomeAtmosphericSky'
+import { HomeLaunchSanctuaryV254 } from '@/spatial/assets/HomeLaunchSanctuaryV254'
+import { useHomePersonalizedScene } from '@/app/home/useHomePersonalizedScene'
+import type { HomeSceneEnvironment } from '@/app/home/homePersonalizationModel'
+import type { HomeEmotionalWeatherName } from '@/spatial/environment/HomeEmotionalWeatherState'
+import { addAfterEffect, Canvas, useFrame, useThree, type ThreeEvent } from '@react-three/fiber'
+import { useAnimations, useGLTF } from '@react-three/drei'
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState, type MutableRefObject } from 'react'
+import * as THREE from 'three'
+import { resolveOrbSensoryOutput, URAI_ORB_STATE_EVENT, type OrbState, type OrbStateEventDetail } from '@/app/home/orbStateController'
+import { MobileMovementPad, MovementHelp, stepEmbodiedMotion, useDragLook, useMovementInput, type MovementInput } from '@/spatial/navigation/EmbodiedNavigation'
+import { useAdaptiveSpatialQuality, type SpatialQualityTier } from '@/spatial/performance/useAdaptiveSpatialQuality'
+import { createPostRenderCadence } from '@/spatial/performance/postRenderCadence'
+import { HOME_ORB_GROUND_ANCHOR } from '@/spatial/home/homeOrbPlacement'
+import { ORB_SPEECH_CLOCK_EVENT, type OrbSpeechClockDetail } from '@/spatial/orb/orbSpeechClock'
+import { requestUraiWorldOrbOpen, requestUraiWorldTravel } from '@/spatial/world/worldEvents'
+import { AvatarSelfView, type AvatarSelfViewSection } from '@/spatial/home/AvatarSelfView'
+import { useHomeExperienceController } from '@/spatial/home/useHomeExperienceController'
+import { DEFAULT_HOME_FIRST_PERSON_CAMERA, HOME_PASSPORT_ORIGIN_CAPTURE_EVENT, type HomeOriginSnapshot, type HomeStableState, type HomeTransitionState } from '@/spatial/home/homeExperienceState'
+import { height } from './HomeWorldProductionV223Geometry'
+import { HomeV225PolishV3 } from './HomeWorldProductionV225PolishV3'
+import { HomeCurrentArtRepair } from './HomeCurrentArtRepair'
+import { HomeAAAVisualRepair } from './HomeAAAVisualRepair'
+import { HomeVisualAuthority } from './HomeVisualAuthority'
+import styles from './HomeWorldProduction.module.css'
+
+type Transition = 'none' | 'ground' | 'life-map'
+type Props = { onOrbOpen?: () => void; webglAvailable?: boolean }
+type TransitionTarget = { point: THREE.Vector3; normal?: THREE.Vector3 }
+
+const ORB_MODEL = '/assets/urai/generated/models/urai-orb-avatar-v1.glb'
+const HOME_FOCUS = new THREE.Vector3(0, 1.35, -1.15)
+const ORB_POSITION = new THREE.Vector3(HOME_ORB_GROUND_ANCHOR.x, 0, HOME_ORB_GROUND_ANCHOR.z)
+const ORB_FIELD_RADIUS = .5
+const ORB_FIELD_Y_SCALE = 1.04
+const ORB_GROUND_CLEARANCE = .015
+const ORB_REST_OFFSET = ORB_FIELD_RADIUS * ORB_FIELD_Y_SCALE + ORB_GROUND_CLEARANCE
+const AVATAR_POSITION = new THREE.Vector3(-.72, 0, 5.95)
+const HOME_PASSPORT_POSITION = new THREE.Vector3(3.15, 0, 1.85)
+const HOME_PASSPORT_INTERACTION_RADIUS = 2.15
+const HOME_EYE_HEIGHT = 1.64
+const HOME_WALK_SPEED = 2.6
+const HOME_WALK_ACCELERATION = 8
+const HOME_WALK_DECELERATION = 10.5
+const HOME_WALK_RADIUS = 14
+const HOME_WALK_BOUNDS = { minX: -HOME_WALK_RADIUS, maxX: HOME_WALK_RADIUS, minZ: -HOME_WALK_RADIUS, maxZ: HOME_WALK_RADIUS }
+const ORB_CLIPS: Record<OrbState, string> = {
+  dormant: 'Orb_Resting', idle: 'Orb_Idle', attention: 'Orb_Attention', listening: 'Orb_Listening',
+  thinking: 'Orb_Thinking', speaking: 'Orb_Speaking', guiding: 'Orb_Guiding', reflecting: 'Orb_Reflecting',
+  calming: 'Orb_Calming', privacy: 'Orb_Privacy', warning: 'Orb_Degraded', transition: 'Orb_Transition',
+}
+const ORB_STATE_MOTION: Record<OrbState, { hover: number; rotation: number; coreScale: number; breath: number; ring: number }> = {
+  dormant: { hover: 0, rotation: .06, coreScale: .94, breath: .0004, ring: .08 },
+  idle: { hover: .018, rotation: 1, coreScale: 1, breath: .003, ring: 1 },
+  attention: { hover: .009, rotation: .28, coreScale: 1.03, breath: .0014, ring: .42 },
+  listening: { hover: .008, rotation: .34, coreScale: 1.015, breath: .0015, ring: .58 },
+  thinking: { hover: .011, rotation: .62, coreScale: .99, breath: .0018, ring: 1.22 },
+  speaking: { hover: .009, rotation: .46, coreScale: 1.02, breath: .0016, ring: .78 },
+  guiding: { hover: .018, rotation: 1.24, coreScale: 1.04, breath: .0022, ring: 1.3 },
+  reflecting: { hover: .006, rotation: .2, coreScale: .99, breath: .001, ring: .3 },
+  calming: { hover: .005, rotation: .14, coreScale: .98, breath: .0011, ring: .2 },
+  privacy: { hover: .002, rotation: .04, coreScale: .96, breath: .0006, ring: .06 },
+  warning: { hover: .002, rotation: .07, coreScale: .94, breath: .0008, ring: .08 },
+  transition: { hover: .03, rotation: 1.9, coreScale: 1.08, breath: .0035, ring: 2.1 },
+}
+const ORB_EFFECT_BUDGET: Record<SpatialQualityTier, { motes: number; filaments: number; membraneSegments: number }> = {
+  low: { motes: 120, filaments: 2, membraneSegments: 32 },
+  medium: { motes: 180, filaments: 5, membraneSegments: 48 },
+  high: { motes: 520, filaments: 8, membraneSegments: 64 },
+}
+
+function homeWeatherToneToAtmosphere(tone: HomeSceneEnvironment['weatherTone']): HomeEmotionalWeatherName {
+  switch (tone) {
+    case 'clear': return 'calm'
+    case 'soft': return 'reflective'
+    case 'active': return 'energized'
+    case 'heavy': return 'heavy'
+    case 'recovering': return 'hopeful'
+    case 'forming': return 'uncertain'
+  }
+}
+
+function cloneAuthoredModel(source: THREE.Object3D) {
+  const root = source.clone(true)
+  root.traverse((object) => {
+    if (!(object instanceof THREE.Mesh)) return
+    object.material = Array.isArray(object.material)
+      ? object.material.map((material) => material.clone())
+      : object.material.clone()
+    object.castShadow = true
+    object.receiveShadow = true
+  })
+  return root
+}
+
+function prepareAuthoredOrbModel(source: THREE.Object3D) {
+  const root = cloneAuthoredModel(source)
+  root.name = 'home-orb-authored-reference-core-v291'
+  root.traverse((object) => {
+    if (/ring|equatorial|polar/i.test(object.name)) {
+      object.visible = false
+      object.raycast = () => undefined
+      return
+    }
+    if (!(object instanceof THREE.Mesh)) return
+    const materials = Array.isArray(object.material) ? object.material : [object.material]
+    materials.forEach((material) => {
+      if (!(material instanceof THREE.MeshStandardMaterial)) return
+      material.color.set('#75dce4')
+      material.emissive.set('#1a7284')
+      material.emissiveIntensity = .24
+      material.roughness = .18
+      material.metalness = 0
+      material.transparent = true
+      material.opacity = .34
+      if (material instanceof THREE.MeshPhysicalMaterial) {
+        material.transmission = .54
+        material.thickness = .08
+        material.ior = 1.23
+        material.clearcoat = .72
+        material.clearcoatRoughness = .2
+      }
+      material.needsUpdate = true
+    })
+  })
+  return root
+}
+
+
+function isSoftwareWebGLRenderer(gl: THREE.WebGLRenderer) {
+  const context = gl.getContext()
+  const debugInfo = context.getExtension('WEBGL_debug_renderer_info') as { UNMASKED_RENDERER_WEBGL?: number } | null
+  const renderer = debugInfo?.UNMASKED_RENDERER_WEBGL ? context.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL) : context.getParameter(context.RENDERER)
+  return /swiftshader|llvmpipe|lavapipe|software|microsoft basic render/i.test(String(renderer || ''))
+}
+
+function Cadence({ reducedMotion }: { reducedMotion: boolean }) {
+  const { gl, invalidate, setFrameloop } = useThree()
+  const cadenceRef = useRef<ReturnType<typeof createPostRenderCadence> | null>(null)
+  useFrame(() => cadenceRef.current?.beforeRender())
+  useEffect(() => {
+    const constrained = reducedMotion || isSoftwareWebGLRenderer(gl)
+    if (!constrained) { setFrameloop('always'); return }
+    setFrameloop('demand')
+    const cadence = createPostRenderCadence({
+      invalidate,
+      intervalMs: reducedMotion ? 280 : 100,
+      schedule: (callback, delay) => window.setTimeout(callback, delay),
+      cancel: (timer) => window.clearTimeout(timer),
+    })
+    cadenceRef.current = cadence
+    const stopAfterRender = addAfterEffect(cadence.afterRender)
+    cadence.start()
+    return () => {
+      cadenceRef.current = null
+      stopAfterRender()
+      cadence.dispose()
+    }
+  }, [gl, invalidate, reducedMotion, setFrameloop])
+  return null
+}
+
+const legacyHotspotPatterns = [
+  /home-v226-ground-inhabited-hearth/,
+  /home-v231-ground-weathered-threshold/,
+  /home-current-ground-geological-descent/,
+  /home-aaa-v281-ground-recessed-geological-descent/,
+  /home-v282-ground-geology/,
+  /ground-ravine/,
+  /ground-cleft/,
+  /home-v226-root-cradle/,
+  /home-v226-rooted-single-living-memory-presence/,
+  /home-current-orb/,
+  /home-orb-/,
+  /memory-reliquary/,
+  /home-v249-organic-living-memory-presence/,
+  /home-visible-user-avatar/,
+  /urai-home-user-avatar/,
+]
+const CURRENT_HOME_PRESENCE_ROOTS = new Set(['home-living-memory-orb', 'home-orb-v288-visible-authority'])
+
+function isInsideCurrentHomePresence(object: THREE.Object3D) {
+  let current: THREE.Object3D | null = object
+  while (current) {
+    if (CURRENT_HOME_PRESENCE_ROOTS.has(current.name)) return true
+    current = current.parent
+  }
+  return false
+}
+
+/** Retire predecessor hotspot sculptures and any legacy visible-avatar roots while preserving the canonical Orb, world and broad Sky interaction. */
+function RetireLegacyHomeHotspots() {
+  const { scene } = useThree()
+  useEffect(() => {
+    const hidden = new Map<THREE.Object3D, boolean>()
+    const raycasts = new Map<THREE.Object3D, THREE.Object3D['raycast']>()
+    const retire = (root: THREE.Object3D = scene) => root.traverse((object) => {
+      if (isInsideCurrentHomePresence(object)) return
+      if (!legacyHotspotPatterns.some((pattern) => pattern.test(object.name))) return
+      if (!hidden.has(object)) hidden.set(object, object.visible)
+      object.visible = false
+      if (!raycasts.has(object)) raycasts.set(object, object.raycast)
+      object.raycast = () => undefined
+      object.traverse((child) => {
+        if (!raycasts.has(child)) raycasts.set(child, child.raycast)
+        child.raycast = () => undefined
+      })
+    })
+    let disposed = false
+    // Scanned assets can commit long after the initial loading boundary. Retire
+    // their old hotspots after React has finished attaching/unhiding the subtree.
+    const childAdded = ({ child }: { child: THREE.Object3D }) => {
+      queueMicrotask(() => {
+        if (!disposed && child.parent === scene) retire(child)
+      })
+    }
+    scene.addEventListener('childadded', childAdded)
+    retire()
+    return () => {
+      disposed = true
+      scene.removeEventListener('childadded', childAdded)
+      hidden.forEach((visible, object) => { object.visible = visible })
+      raycasts.forEach((raycast, object) => { object.raycast = raycast })
+    }
+  }, [scene])
+  return null
+}
+
+function OrbCompanion({ state, reducedMotion, onOrb }: { state: OrbState; reducedMotion: boolean; onOrb: () => void }) {
+  const root = useRef<THREE.Group>(null)
+  const fieldShell = useRef<THREE.Mesh>(null)
+  const authoredCore = useRef<THREE.Group>(null)
+  const heart = useRef<THREE.Mesh>(null)
+  const heartMaterial = useRef<THREE.MeshPhysicalMaterial>(null)
+  const activeAction = useRef<THREE.AnimationAction | null>(null)
+  const membrane = useRef<THREE.MeshPhysicalMaterial>(null)
+  const worldLight = useRef<THREE.PointLight>(null)
+  const yaw = useRef(0)
+  const speechEnergy = useRef(0)
+  const speechImpulse = useRef(0)
+  const anticipation = useRef(0)
+  const speechActive = useRef(false)
+  const orb = useGLTF(ORB_MODEL)
+  const authoredOrb = useMemo(() => prepareAuthoredOrbModel(orb.scene), [orb.scene])
+  const { actions } = useAnimations(orb.animations, authoredOrb)
+  const quality = useAdaptiveSpatialQuality()
+  const effectBudget = ORB_EFFECT_BUDGET[quality.tier]
+  const groundY = height(ORB_POSITION.x, ORB_POSITION.z)
+  const sensory = useMemo(() => resolveOrbSensoryOutput(state, reducedMotion, true), [state, reducedMotion])
+  const memoryMotes = useMemo(() => {
+    const count = Math.min(effectBudget.motes, 160)
+    const positions: number[] = []
+    for (let index = 0; index < count; index++) {
+      const t = (index + .5) / count
+      const phi = Math.acos(1 - 2 * t)
+      const theta = index * 2.399963229728653
+      const radialSeed = ((index * 37) % 97) / 96
+      const radius = .09 + .29 * Math.pow(radialSeed, .72)
+      positions.push(
+        Math.cos(theta) * Math.sin(phi) * radius,
+        Math.cos(phi) * radius * .92,
+        Math.sin(theta) * Math.sin(phi) * radius * .9,
+      )
+    }
+    const geometry = new THREE.BufferGeometry()
+    geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3))
+    return geometry
+  }, [effectBudget.motes])
+  useEffect(() => () => memoryMotes.dispose(), [memoryMotes])
+
+  useEffect(() => {
+    const listener = (event: CustomEvent<OrbSpeechClockDetail>) => {
+      const detail = event.detail
+      if (detail.phase === 'anticipation') {
+        anticipation.current = 1
+        return
+      }
+      if (detail.source === 'text') {
+        if (detail.phase === 'end' || detail.phase === 'cancel') anticipation.current = 0
+        return
+      }
+      if (detail.phase === 'start') {
+        speechActive.current = true
+        speechEnergy.current = Math.max(speechEnergy.current, .12)
+        speechImpulse.current = Math.max(speechImpulse.current, .24)
+        anticipation.current = 0
+        return
+      }
+      if (detail.phase === 'boundary') {
+        if (speechActive.current) speechImpulse.current = Math.min(1, speechImpulse.current + .28)
+        return
+      }
+      if (detail.phase === 'frame') {
+        if (!speechActive.current) return
+        const actualAmplitude = typeof detail.amplitude === 'number' ? THREE.MathUtils.clamp(detail.amplitude * 7, 0, 1) : .08
+        speechEnergy.current = Math.max(speechEnergy.current, actualAmplitude)
+        return
+      }
+      if (detail.phase === 'end') {
+        speechActive.current = false
+        anticipation.current = 0
+        return
+      }
+      if (detail.phase === 'cancel') {
+        speechActive.current = false
+        speechEnergy.current = 0
+        speechImpulse.current = 0
+        anticipation.current = 0
+      }
+    }
+    window.addEventListener(ORB_SPEECH_CLOCK_EVENT, listener)
+    return () => window.removeEventListener(ORB_SPEECH_CLOCK_EVENT, listener)
+  }, [])
+
+  useEffect(() => {
+    const allActions = Object.values(actions).filter((action): action is THREE.AnimationAction => Boolean(action))
+    if (reducedMotion) { allActions.forEach((action) => action.stop()); activeAction.current = null; return }
+    const next = actions[ORB_CLIPS[state]]
+    if (!next) return
+    const previous = activeAction.current
+    if (previous && previous !== next) previous.fadeOut(.18)
+    next.enabled = true
+    next.paused = false
+    next.reset().setLoop(THREE.LoopOnce, 1)
+    next.clampWhenFinished = true
+    next.fadeIn(.18).play()
+    activeAction.current = next
+  }, [actions, reducedMotion, state])
+  useEffect(() => () => { Object.values(actions).forEach((action) => action?.stop()) }, [actions])
+
+  useFrame(({ clock }, delta) => {
+    if (!root.current) return
+    const motion = ORB_STATE_MOTION[state]
+    const baseY = groundY + ORB_REST_OFFSET
+    speechEnergy.current = THREE.MathUtils.damp(speechEnergy.current, speechActive.current ? speechEnergy.current * .82 : 0, speechActive.current ? 5 : 8, delta)
+    speechImpulse.current = THREE.MathUtils.damp(speechImpulse.current, 0, 11, delta)
+    anticipation.current = THREE.MathUtils.damp(anticipation.current, 0, 3.8, delta)
+    const expressiveEnergy = reducedMotion ? 0 : Math.min(1, speechEnergy.current + speechImpulse.current * .58)
+    const gather = reducedMotion ? 0 : anticipation.current
+
+    if (!reducedMotion) {
+      yaw.current += delta * .015 * motion.rotation
+      root.current.rotation.y = yaw.current
+      root.current.position.y = baseY + Math.sin(clock.elapsedTime * .58) * motion.hover
+      if (authoredCore.current) {
+        const baseScale = .338 * motion.coreScale + Math.sin(clock.elapsedTime * .9) * motion.breath
+        authoredCore.current.scale.setScalar(baseScale - gather * .004 + expressiveEnergy * .006)
+      }
+      if (heart.current) {
+        const pressure = 1 - gather * .035 + expressiveEnergy * .052
+        heart.current.scale.set(.12 * pressure, .16 * pressure, .12 * pressure)
+      }
+      if (fieldShell.current) {
+        const pressure = 1 + expressiveEnergy * .004
+        fieldShell.current.scale.set(pressure, ORB_FIELD_Y_SCALE * pressure, .95 * pressure)
+      }
+    } else {
+      root.current.position.y = baseY
+      if (authoredCore.current) authoredCore.current.scale.setScalar(.338 * motion.coreScale)
+      if (heart.current) heart.current.scale.set(.12, .16, .12)
+      if (fieldShell.current) fieldShell.current.scale.set(1, ORB_FIELD_Y_SCALE, .95)
+    }
+    if (membrane.current) {
+      const stateOpacity = state === 'privacy' ? .13 : state === 'warning' ? .11 : state === 'dormant' ? .10 : .16
+      const speechPressure = reducedMotion ? 0 : expressiveEnergy * .025 + gather * .01
+      membrane.current.opacity = THREE.MathUtils.damp(membrane.current.opacity, stateOpacity + speechPressure, 8, delta)
+    }
+    if (heartMaterial.current) {
+      const target = sensory.light.intensity * .56 + (reducedMotion ? 0 : expressiveEnergy * .72 + gather * .16)
+      heartMaterial.current.emissiveIntensity = THREE.MathUtils.damp(heartMaterial.current.emissiveIntensity, target, 10, delta)
+    }
+    if (worldLight.current) {
+      const target = sensory.light.intensity * .46 + (reducedMotion ? 0 : expressiveEnergy * .22 + gather * .06)
+      worldLight.current.intensity = THREE.MathUtils.damp(worldLight.current.intensity, target, 8, delta)
+    }
+  })
+
+  const stateColor = state === 'warning' ? '#cf9b65'
+    : state === 'thinking' || state === 'reflecting' ? '#8f98c8'
+      : state === 'privacy' ? '#c8dcda'
+        : state === 'calming' ? '#71a99d'
+          : state === 'guiding' ? '#bd8b55'
+            : state === 'transition' ? '#d0e5e6'
+              : '#7fcbd0'
+  const activate = (event: ThreeEvent<MouseEvent>) => { event.stopPropagation(); onOrb() }
+
+  return <group
+    ref={root}
+    name="home-living-memory-orb"
+    position={[ORB_POSITION.x, groundY + ORB_REST_OFFSET, ORB_POSITION.z]}
+    onClick={activate}
+    userData={{
+      semanticOwner: 'orb',
+      runtimeAsset: ORB_MODEL,
+      animation: sensory.animation,
+      modelClip: ORB_CLIPS[state],
+      stateMotion: 'one-shot-entry-plus-persistent-organic-runtime',
+      speechEmbodiment: 'actual-playback-clock-with-rms-when-available',
+      qualityTier: quality.tier,
+      moteCeiling: effectBudget.motes,
+      filamentCeiling: effectBudget.filaments,
+      restHeight: 'visible-shell-radius-plus-1.5cm-terrain-clearance',
+      visualAuthority: 'v288-grounded-biomorphic-reliquary',
+      interactionAuthority: 'v291-current-home-orb-state-and-speech-runtime',
+      referenceLanguage: 'grounded-biomorphic-memory-reliquary-visible-authority-with-v291-state-and-speech-runtime',
+    }}
+  >
+    <mesh ref={fieldShell} castShadow scale={[1,ORB_FIELD_Y_SCALE,.95]} onClick={activate} name="home-orb-reference-glass-shell">
+      <sphereGeometry args={[ORB_FIELD_RADIUS,effectBudget.membraneSegments,effectBudget.membraneSegments]} />
+      <meshPhysicalMaterial ref={membrane} color="#9eeaf0" transparent opacity={.16} transmission={.78} thickness={.12} roughness={.14} metalness={0} clearcoat={.92} clearcoatRoughness={.16} ior={1.23} envMapIntensity={1.1} depthWrite={false} />
+    </mesh>
+    <mesh name="home-orb-luminous-inner-volume" scale={[.80,.84,.76]}>
+      <sphereGeometry args={[ORB_FIELD_RADIUS * .82,48,48]} />
+      <meshPhysicalMaterial color={stateColor} emissive={stateColor} emissiveIntensity={.52 + sensory.light.intensity * .28} transparent opacity={.22} transmission={.46} thickness={.08} roughness={.24} metalness={0} depthWrite={false} blending={THREE.AdditiveBlending} />
+    </mesh>
+    <points geometry={memoryMotes} name="home-orb-memory-motes">
+      <pointsMaterial color={stateColor} size={.012} transparent opacity={.42} depthWrite={false} blending={THREE.AdditiveBlending} sizeAttenuation />
+    </points>
+    <group ref={authoredCore} scale={.338} name="home-orb-authored-core"><primitive object={authoredOrb} /></group>
+    <mesh ref={heart} name="home-orb-memory-bloom-core" scale={[.12,.16,.12]} castShadow>
+      <sphereGeometry args={[1,32,24]} />
+      <meshPhysicalMaterial ref={heartMaterial} color="#e9fbfa" emissive={stateColor} emissiveIntensity={sensory.light.intensity * .72} transparent opacity={.92} roughness={.18} metalness={0} clearcoat={.74} clearcoatRoughness={.2} envMapIntensity={1.05} />
+    </mesh>
+    <mesh name="home-orb-state-light" position={[0,-.025,.265]}><sphereGeometry args={[.032,24,24]} /><meshStandardMaterial color="#f0ffff" emissive={stateColor} emissiveIntensity={sensory.light.intensity * 1.1} roughness={.24} metalness={0} /></mesh>
+    <pointLight ref={worldLight} color={stateColor} intensity={sensory.light.intensity * .46} distance={4.1} decay={2} />
+  </group>
+}
+
+function directionFromAngles(yaw: number, pitch: number, target: THREE.Vector3) {
+  const cp = Math.cos(pitch)
+  return target.set(Math.sin(yaw) * cp, Math.sin(pitch), -Math.cos(yaw) * cp).normalize()
+}
+
+function CameraRig({
+  yaw,
+  pitch,
+  transition,
+  target,
+  reducedMotion,
+  owner,
+  homeStableState,
+  homeTransition,
+  homeOrigin,
+  cameraSnapshot,
+  movementInput,
+  firstPersonVelocity,
+  firstPersonTarget,
+  onEmbodimentComplete,
+  onHomeRestoreComplete,
+  onComplete,
+}: {
+  yaw: MutableRefObject<number>
+  pitch: MutableRefObject<number>
+  transition: Transition
+  target: MutableRefObject<TransitionTarget | null>
+  reducedMotion: boolean
+  owner: MutableRefObject<HTMLElement | null>
+  homeStableState: HomeStableState
+  homeTransition: HomeTransitionState | null
+  homeOrigin: HomeOriginSnapshot
+  cameraSnapshot: MutableRefObject<THREE.Vector3>
+  movementInput: MovementInput
+  firstPersonVelocity: MutableRefObject<THREE.Vector3>
+  firstPersonTarget: MutableRefObject<THREE.Vector3 | null>
+  onEmbodimentComplete: () => void
+  onHomeRestoreComplete: () => void
+  onComplete: (transition: Exclude<Transition, 'none'>) => void
+}) {
+  const { camera, size } = useThree()
+  const elapsed = useRef(0)
+  const start = useRef(new THREE.Vector3())
+  const completed = useRef(false)
+  const desired = useRef(new THREE.Vector3())
+  const look = useRef(new THREE.Vector3())
+  const direction = useRef(new THREE.Vector3())
+
+  useEffect(() => {
+    elapsed.current = 0
+    completed.current = false
+    start.current.copy(camera.position)
+    if (homeTransition || transition !== 'none') {
+      firstPersonVelocity.current.set(0, 0, 0)
+      firstPersonTarget.current = null
+    }
+  }, [camera, firstPersonTarget, firstPersonVelocity, homeStableState, homeTransition, transition])
+
+  useFrame((_, delta) => {
+    const portrait = size.height > size.width
+    const shell = owner.current
+    const firstPersonStable = homeStableState === 'AVATAR_HOME_FIRST_PERSON' && !homeTransition
+    if (camera instanceof THREE.PerspectiveCamera) {
+      const desiredFov = firstPersonStable
+        ? (portrait ? 66 : 58)
+        : transition === 'none'
+          ? (portrait ? 66 : 58)
+          : transition === 'life-map'
+            ? (portrait ? 64 : 50)
+            : (portrait ? 60 : 48)
+      camera.fov = THREE.MathUtils.damp(camera.fov, desiredFov, 7, delta)
+      camera.updateProjectionMatrix()
+    }
+
+    const restoring = homeTransition === 'HOME_RESTORE'
+      || homeTransition === 'GROUND_UNWIND'
+      || homeTransition === 'LIFE_MAP_UNWIND'
+      || homeTransition === 'ORB_COLLAPSE'
+    if (restoring) {
+      elapsed.current += Math.min(delta, .25)
+      const duration = reducedMotion ? .22 : .92
+      const t = THREE.MathUtils.smoothstep(Math.min(1, elapsed.current / duration), 0, 1)
+      desired.current.set(...homeOrigin.camera.position)
+      camera.position.lerpVectors(start.current, desired.current, t)
+      directionFromAngles(homeOrigin.camera.yaw, homeOrigin.camera.pitch, direction.current)
+      look.current.copy(camera.position).add(direction.current)
+      camera.lookAt(look.current)
+      cameraSnapshot.current.copy(camera.position)
+      if (shell) shell.dataset.homeTransitionProgress = t.toFixed(3)
+      if (t >= .995 && !completed.current) {
+        completed.current = true
+        yaw.current = homeOrigin.camera.yaw
+        pitch.current = homeOrigin.camera.pitch
+        onHomeRestoreComplete()
+      }
+      return
+    }
+
+    if (homeTransition === 'EMBODIMENT_UNWIND') {
+      elapsed.current += Math.min(delta, .25)
+      const duration = reducedMotion ? .24 : 1.15
+      const t = THREE.MathUtils.smoothstep(Math.min(1, elapsed.current / duration), 0, 1)
+      const focus = look.current.set(HOME_FOCUS.x, height(HOME_FOCUS.x, HOME_FOCUS.z) + HOME_FOCUS.y, HOME_FOCUS.z)
+      desired.current.set(0, portrait ? 2.15 : 1.92, focus.z + (portrait ? 9.7 : 9))
+      camera.position.lerpVectors(start.current, desired.current, t)
+      camera.lookAt(focus)
+      cameraSnapshot.current.copy(camera.position)
+      if (shell) shell.dataset.homeTransitionProgress = t.toFixed(3)
+      if (t >= .995 && !completed.current) {
+        completed.current = true
+        yaw.current = 0
+        pitch.current = .02
+        onHomeRestoreComplete()
+      }
+      return
+    }
+
+    if (homeTransition === 'AVATAR_EMBODIMENT_TRANSITION') {
+      elapsed.current += Math.min(delta, .25)
+      const duration = reducedMotion ? .28 : 1.45
+      const t = THREE.MathUtils.smoothstep(Math.min(1, elapsed.current / duration), 0, 1)
+      const eye = desired.current.set(AVATAR_POSITION.x, height(AVATAR_POSITION.x, AVATAR_POSITION.z) + HOME_EYE_HEIGHT, AVATAR_POSITION.z)
+      camera.position.lerpVectors(start.current, eye, t)
+      look.current.set(eye.x, eye.y, eye.z - 4)
+      camera.lookAt(look.current)
+      cameraSnapshot.current.copy(camera.position)
+      if (shell) shell.dataset.homeTransitionProgress = t.toFixed(3)
+      if (t >= .995 && !completed.current) {
+        completed.current = true
+        firstPersonVelocity.current.set(0, 0, 0)
+        firstPersonTarget.current = null
+        yaw.current = 0
+        pitch.current = 0
+        onEmbodimentComplete()
+      }
+      return
+    }
+
+    if (transition !== 'none') {
+      elapsed.current += Math.min(delta, .25)
+      if (transition === 'ground') {
+        const duration = reducedMotion ? .24 : 1.58
+        const t = THREE.MathUtils.smoothstep(Math.min(1, elapsed.current / duration), 0, 1)
+        const hit = target.current?.point ?? new THREE.Vector3(0, height(0, -1), -1)
+        const end = desired.current.set(hit.x, hit.y - (reducedMotion ? .02 : .34), hit.z + (reducedMotion ? .55 : .16))
+        camera.position.lerpVectors(start.current, end, t)
+        look.current.set(hit.x, hit.y - .24, hit.z - .42)
+        camera.lookAt(look.current)
+        cameraSnapshot.current.copy(camera.position)
+        if (shell) shell.dataset.homeTransitionProgress = t.toFixed(3)
+        if (t >= .995 && !completed.current) { completed.current = true; onComplete('ground') }
+        return
+      }
+
+      const duration = reducedMotion ? .32 : 1.65
+      const t = THREE.MathUtils.smoothstep(Math.min(1, elapsed.current / duration), 0, 1)
+      desired.current.set(start.current.x * (1 - t), start.current.y + t * (reducedMotion ? 1.25 : 7.2), start.current.z - t * (reducedMotion ? .8 : 3.7))
+      camera.position.copy(desired.current)
+      look.current.set(0, 2.35 + t * (reducedMotion ? 2.1 : 9.4), -7.8 - t * 3.1)
+      camera.lookAt(look.current)
+      cameraSnapshot.current.copy(camera.position)
+      if (shell) shell.dataset.homeTransitionProgress = t.toFixed(3)
+      if (t >= .995 && !completed.current) { completed.current = true; onComplete('life-map') }
+      return
+    }
+
+    if (firstPersonStable) {
+      stepEmbodiedMotion({
+        position: camera.position,
+        velocity: firstPersonVelocity.current,
+        input: movementInput,
+        target: firstPersonTarget,
+        yaw: -yaw.current,
+        delta,
+        speed: HOME_WALK_SPEED,
+        acceleration: HOME_WALK_ACCELERATION,
+        deceleration: HOME_WALK_DECELERATION,
+        bounds: HOME_WALK_BOUNDS,
+        arrivalRadius: .32,
+      })
+      const radial = Math.hypot(camera.position.x, camera.position.z)
+      if (radial > HOME_WALK_RADIUS) {
+        const scale = HOME_WALK_RADIUS / radial
+        camera.position.x *= scale
+        camera.position.z *= scale
+        firstPersonVelocity.current.set(0, 0, 0)
+      }
+      camera.position.y = height(camera.position.x, camera.position.z) + HOME_EYE_HEIGHT
+      directionFromAngles(yaw.current, pitch.current, direction.current)
+      look.current.copy(camera.position).add(direction.current)
+      camera.lookAt(look.current)
+      cameraSnapshot.current.copy(camera.position)
+      if (shell) shell.dataset.homeTransitionProgress = '0.000'
+      return
+    }
+
+    const radius = portrait ? 9.70 : 9.00
+    const focus = look.current.set(HOME_FOCUS.x, height(HOME_FOCUS.x, HOME_FOCUS.z) + HOME_FOCUS.y, HOME_FOCUS.z)
+    const orbitYaw = THREE.MathUtils.clamp(yaw.current, -.34, .34)
+    const cameraY = (portrait ? 2.15 : 1.92) + THREE.MathUtils.clamp(pitch.current, -.28, .25) * 2.1
+    desired.current.set(focus.x + Math.sin(orbitYaw) * radius, cameraY, focus.z + Math.cos(orbitYaw) * radius)
+    camera.position.lerp(desired.current, 1 - Math.pow(.0009, delta))
+    camera.lookAt(focus)
+    cameraSnapshot.current.copy(camera.position)
+    if (shell) shell.dataset.homeTransitionProgress = '0.000'
+  })
+  return null
+}
+
+
+
+function HomePassportSemanticBridge({
+  interactive,
+  onNearby,
+}: {
+  interactive: boolean
+  onNearby: (nearby: boolean) => void
+}) {
+  const lastNearby = useRef(false)
+
+  useEffect(() => () => onNearby(false), [onNearby])
+
+  useFrame(({ camera }) => {
+    const distance = Math.hypot(
+      camera.position.x - HOME_PASSPORT_POSITION.x,
+      camera.position.z - HOME_PASSPORT_POSITION.z,
+    )
+    const nextNearby = interactive && distance <= HOME_PASSPORT_INTERACTION_RADIUS
+    if (nextNearby === lastNearby.current) return
+    lastNearby.current = nextNearby
+    onNearby(nextNearby)
+  })
+
+  return (
+    <group
+      visible={false}
+      position={[HOME_PASSPORT_POSITION.x, height(HOME_PASSPORT_POSITION.x, HOME_PASSPORT_POSITION.z), HOME_PASSPORT_POSITION.z]}
+      name="home-passport-semantic-bridge"
+      userData={{
+        semanticOwner: 'passport-proximity-bridge',
+        visualAuthority: false,
+        supersededBy: 'home-first-person-passport-ownership-object',
+      }}
+    />
+  )
+}
+
+function SceneAssetReadySignal({ onReady }: { onReady: () => void }) {
+  useEffect(() => onReady(), [onReady])
+  return null
+}
+
+function Scene({
+  yaw,
+  pitch,
+  transition,
+  transitionTarget,
+  reducedMotion,
+  personalWeatherState,
+  orbState,
+  homeStableState,
+  homeTransition,
+  homeOrigin,
+  cameraSnapshot,
+  movementInput,
+  firstPersonVelocity,
+  firstPersonTarget,
+  onEmbodimentComplete,
+  onHomeRestoreComplete,
+  onOrb,
+  onGround,
+  onLifeMap,
+  onPassportNearby,
+  onReady,
+  owner,
+  onComplete,
+}: {
+  yaw: MutableRefObject<number>
+  pitch: MutableRefObject<number>
+  transition: Transition
+  transitionTarget: MutableRefObject<TransitionTarget | null>
+  reducedMotion: boolean
+  personalWeatherState: HomeEmotionalWeatherName
+  orbState: OrbState
+  homeStableState: HomeStableState
+  homeTransition: HomeTransitionState | null
+  homeOrigin: HomeOriginSnapshot
+  cameraSnapshot: MutableRefObject<THREE.Vector3>
+  movementInput: MovementInput
+  firstPersonVelocity: MutableRefObject<THREE.Vector3>
+  firstPersonTarget: MutableRefObject<THREE.Vector3 | null>
+  onEmbodimentComplete: () => void
+  onHomeRestoreComplete: () => void
+  onOrb: () => void
+  onGround: (point: THREE.Vector3) => void
+  onLifeMap: () => void
+  onPassportNearby: (nearby: boolean) => void
+  onReady: () => void
+  owner: MutableRefObject<HTMLElement | null>
+  onComplete: (transition: Exclude<Transition, 'none'>) => void
+}) {
+  const retiredLocalDestination = useCallback(() => {}, [])
+  const physicalWorldClick = useCallback((event: ThreeEvent<MouseEvent>) => {
+    event.stopPropagation()
+    if (event.delta > 8 || transition !== 'none' || homeTransition || homeStableState === 'AVATAR_SELF_VIEW' || homeStableState === 'IMMERSIVE_CONVERSATION') return
+    onGround(event.point.clone())
+  }, [homeStableState, homeTransition, onGround, transition])
+  return <>
+    <Cadence reducedMotion={reducedMotion} />
+    <color attach="background" args={['#10272a']} />
+    <fogExp2 attach="fog" args={['#294946', .011]} />
+    <HomeAtmosphericSky reducedMotion={reducedMotion} active={transition === 'life-map'} weatherState={personalWeatherState} onLifeMap={onLifeMap} />
+    <ambientLight intensity={.42} color="#d2ddd5" />
+    <hemisphereLight args={['#d5e2db', '#223932', .68]} />
+    <directionalLight position={[-8, 11, 6]} intensity={2.45} color="#f1d6b1" castShadow shadow-mapSize-width={1536} shadow-mapSize-height={1536} shadow-bias={-.00018} />
+    <directionalLight position={[9, 6, -11]} intensity={.78} color="#83b8ad" />
+    <Suspense fallback={null}>
+      <HomeV225PolishV3 orbState={orbState} reducedMotion={reducedMotion} onOrb={retiredLocalDestination} onGround={retiredLocalDestination} onLifeMap={retiredLocalDestination} onWalk={physicalWorldClick} />
+      <HomeLaunchSanctuaryV254 reducedMotion={reducedMotion} />
+      <SceneAssetReadySignal onReady={onReady} />
+    </Suspense>
+    <HomeCurrentArtRepair orbState={orbState} reducedMotion={reducedMotion} onOrb={retiredLocalDestination} onGround={retiredLocalDestination} onLifeMap={retiredLocalDestination} />
+    <HomeAAAVisualRepair />
+    <RetireLegacyHomeHotspots />
+    <HomePassportSemanticBridge
+      interactive={homeStableState === 'AVATAR_HOME_FIRST_PERSON' && !homeTransition && transition === 'none'}
+      onNearby={onPassportNearby}
+    />
+    <OrbCompanion state={orbState} reducedMotion={reducedMotion} onOrb={onOrb} />
+    <HomeVisualAuthority />
+    <CameraRig
+      yaw={yaw}
+      pitch={pitch}
+      transition={transition}
+      target={transitionTarget}
+      reducedMotion={reducedMotion}
+      owner={owner}
+      homeStableState={homeStableState}
+      homeTransition={homeTransition}
+      homeOrigin={homeOrigin}
+      cameraSnapshot={cameraSnapshot}
+      movementInput={movementInput}
+      firstPersonVelocity={firstPersonVelocity}
+      firstPersonTarget={firstPersonTarget}
+      onEmbodimentComplete={onEmbodimentComplete}
+      onHomeRestoreComplete={onHomeRestoreComplete}
+      onComplete={onComplete}
+    />
+  </>
+}
+
+export function HomeWorldProductionV223({ onOrbOpen = requestUraiWorldOrbOpen, webglAvailable = true }: Props) {
+  const router = useRouter()
+  const [canvasReady, setCanvasReady] = useState(false)
+  const [softwareRenderer, setSoftwareRenderer] = useState(false)
+  const [sceneReady, setSceneReady] = useState(false)
+  const [dragging, setDragging] = useState(false)
+  const [reducedMotion, setReducedMotion] = useState(false)
+  const [orbState, setOrbState] = useState<OrbState>('idle')
+  const [passportNearby, setPassportNearby] = useState(false)
+  const [passportDeparting, setPassportDeparting] = useState(false)
+  const { scene: personalizedHomeScene, loading: personalizedHomeLoading } = useHomePersonalizedScene()
+  const personalWeatherState = useMemo(() => homeWeatherToneToAtmosphere(personalizedHomeScene.environment.weatherTone), [personalizedHomeScene.environment.weatherTone])
+  const [transition, setTransition] = useState<Transition>('none')
+  const yaw = useRef(DEFAULT_HOME_FIRST_PERSON_CAMERA.yaw)
+  const pitch = useRef(DEFAULT_HOME_FIRST_PERSON_CAMERA.pitch)
+  const transitionTarget = useRef<TransitionTarget | null>(null)
+  const cameraSnapshot = useRef(new THREE.Vector3(...DEFAULT_HOME_FIRST_PERSON_CAMERA.position))
+  const firstPersonVelocity = useRef(new THREE.Vector3())
+  const firstPersonTarget = useRef<THREE.Vector3 | null>(null)
+  const stableModeRef = useRef<'HOME_PRESENTATION' | 'AVATAR_HOME_FIRST_PERSON'>('AVATAR_HOME_FIRST_PERSON')
+  const orbStateRef = useRef<OrbState>('idle')
+  const worldRef = useRef<HTMLElement>(null)
+
+  const readRuntimeSnapshot = useCallback(() => ({
+    stableMode: stableModeRef.current,
+    cameraPosition: cameraSnapshot.current.clone(),
+    yaw: yaw.current,
+    pitch: pitch.current,
+    environment: { environmentRevision: 'home-v223-embodiment-convergence' },
+    orbState: orbStateRef.current,
+  }), [])
+
+  const destinationCommit = useCallback((destination: 'GROUND' | 'LIFE_MAP') => {
+    if (destination === 'GROUND') {
+      requestUraiWorldTravel({ destination: 'infrastructure-hub', href: '/ground/?from=home-ground', entryPortal: 'home-ground', cameraCheckpoint: 'ground-first-person-arrival' })
+      return
+    }
+    requestUraiWorldTravel({ destination: 'life-map', href: '/life-map/?from=home-sky', entryPortal: 'home-sky', cameraCheckpoint: 'home-sky-ascent-complete' })
+  }, [])
+
+  const { state: homeState, api: homeApi } = useHomeExperienceController({
+    reducedMotion,
+    readRuntimeSnapshot,
+    onDestinationCommit: destinationCommit,
+  })
+
+  useEffect(() => {
+    orbStateRef.current = orbState
+  }, [orbState])
+  useEffect(() => {
+    if (homeState.stableState === 'HOME_PRESENTATION' || homeState.stableState === 'AVATAR_HOME_FIRST_PERSON') {
+      stableModeRef.current = homeState.stableState
+    }
+  }, [homeState.stableState])
+  useEffect(() => {
+    if (
+      homeState.transition === 'HOME_RESTORE'
+      || homeState.transition === 'GROUND_UNWIND'
+      || homeState.transition === 'LIFE_MAP_UNWIND'
+      || homeState.transition === 'EMBODIMENT_UNWIND'
+      || homeState.transition === 'ORB_COLLAPSE'
+    ) {
+      setTransition('none')
+      transitionTarget.current = null
+      firstPersonVelocity.current.set(0, 0, 0)
+      firstPersonTarget.current = null
+      if (homeState.transition !== 'ORB_COLLAPSE') setOrbState('idle')
+    }
+  }, [homeState.transition])
+
+  const markReady = useCallback(() => setSceneReady(true), [])
+  const openOrb = useCallback(() => {
+    if (transition !== 'none' || homeState.inputLocked || homeState.stableState !== 'AVATAR_HOME_FIRST_PERSON') return
+    homeApi.activateOrb()
+    setOrbState('attention')
+    onOrbOpen()
+    window.queueMicrotask(() => homeApi.completeOrbTransformation())
+  }, [homeApi, homeState.inputLocked, onOrbOpen, transition])
+  const openGround = useCallback((point: THREE.Vector3) => {
+    if (transition !== 'none' || homeState.inputLocked || homeState.stableState !== 'AVATAR_HOME_FIRST_PERSON') return
+    transitionTarget.current = { point }
+    homeApi.activateGround()
+    setOrbState('transition')
+    setTransition('ground')
+  }, [homeApi, homeState.inputLocked, transition])
+  const openLifeMap = useCallback(() => {
+    if (transition !== 'none' || homeState.inputLocked || homeState.stableState !== 'AVATAR_HOME_FIRST_PERSON') return
+    transitionTarget.current = null
+    homeApi.activateSky()
+    setOrbState('transition')
+    setTransition('life-map')
+  }, [homeApi, homeState.inputLocked, transition])
+  const openPassport = useCallback(() => {
+    if (
+      passportDeparting
+      || transition !== 'none'
+      || homeState.inputLocked
+      || homeState.stableState !== 'AVATAR_HOME_FIRST_PERSON'
+    ) return
+    setPassportDeparting(true)
+    setPassportNearby(false)
+    window.dispatchEvent(new Event(HOME_PASSPORT_ORIGIN_CAPTURE_EVENT))
+    requestUraiWorldTravel({
+      destination: 'passport',
+      href: '/passport',
+      entryPortal: 'home-passport-ownership-object',
+      cameraCheckpoint: 'home-first-person-passport-origin',
+    })
+  }, [homeState.inputLocked, homeState.stableState, passportDeparting, transition])
+
+  const completeTransition = useCallback((next: Exclude<Transition, 'none'>) => {
+    homeApi.commitDestination(next === 'ground' ? 'GROUND' : 'LIFE_MAP')
+  }, [homeApi])
+
+  const firstPerson = homeState.stableState === 'AVATAR_HOME_FIRST_PERSON' && !homeState.transition
+  const movementInput = useMovementInput({
+    enabled: firstPerson && transition === 'none' && !homeState.inputLocked && !passportDeparting,
+    onInteract: () => { if (passportNearby) openPassport() },
+  })
+  const look = useDragLook({
+    yaw,
+    pitch,
+    enabled: transition === 'none' && !homeState.inputLocked && !passportDeparting && firstPerson,
+    sensitivity: .0018,
+    minPitch: -1.02,
+    maxPitch: .92,
+    onDragState: setDragging,
+  })
+
+  useEffect(() => { router.prefetch('/ground/'); router.prefetch('/life-map/'); router.prefetch('/passport') }, [router])
+  useEffect(() => {
+    const rm = window.matchMedia('(prefers-reduced-motion: reduce)')
+    const apply = () => setReducedMotion(rm.matches)
+    apply(); rm.addEventListener?.('change', apply)
+    return () => rm.removeEventListener?.('change', apply)
+  }, [])
+  useEffect(() => {
+    const listener = (event: CustomEvent<OrbStateEventDetail>) => transition === 'none' && setOrbState(event.detail.state)
+    window.addEventListener(URAI_ORB_STATE_EVENT, listener)
+    return () => window.removeEventListener(URAI_ORB_STATE_EVENT, listener)
+  }, [transition])
+
+  const selfSections = useMemo<readonly AvatarSelfViewSection[]>(() => [
+    { id: 'appearance', title: 'Appearance', fields: [{ id: 'avatar-model', label: 'Avatar', value: 'Governed human embodiment', provenance: 'Home runtime', visibility: 'private' }] },
+    { id: 'identity', title: 'Identity', fields: [{ id: 'identity-scope', label: 'Profile scope', value: 'User-approved fields only', provenance: 'Privacy boundary', visibility: 'user-approved-profile' }] },
+    { id: 'embodiment', title: 'Embodiment', fields: [{ id: 'camera-mode', label: 'View', value: 'First-person Home', provenance: 'Current Home state', visibility: 'system-state' }] },
+    { id: 'journey', title: 'Journey', fields: [{ id: 'journey-location', label: 'Current realm', value: 'Home', provenance: 'Spatial runtime', visibility: 'system-state' }] },
+    { id: 'accessibility', title: 'Accessibility', fields: [{ id: 'reduced-motion', label: 'Reduced motion', value: reducedMotion ? 'On' : 'Off', provenance: 'Device preference', visibility: 'private' }] },
+    { id: 'privacy', title: 'Privacy', fields: [{ id: 'self-view-boundary', label: 'Data boundary', value: 'Explicit safe fields only', provenance: 'UrAi privacy contract', visibility: 'private' }] },
+  ], [reducedMotion])
+
+  if (!webglAvailable) return null
+  const ready = canvasReady && sceneReady
+  const inputReady = canvasReady && !homeState.inputLocked && transition === 'none' && !passportDeparting
+  const phase = homeState.transition ?? (transition === 'ground' ? 'GROUND_DESCENT' : transition === 'life-map' ? 'SKY_ASCENT' : homeState.stableState)
+  return <main
+    ref={worldRef}
+    className={`${styles.world} urai-asset-home-world`}
+    data-urai-home-production
+    data-urai-true-3d="true"
+    data-home-primary-owner="asset-driven"
+    data-home-visible-world="cinematic-lived-world-threshold"
+    data-home-world-character="production-cinematic-modern-lived-home-stone-timber-glass"
+    data-home-physical-base="continuous-lived-physical-world"
+    data-home-visual-ownership="single-canvas-three-dimensional-geometry"
+    data-home-desktop-mobile-world="same-scene"
+    data-home-embodied-self={firstPerson ? 'camera-only-first-person-home' : 'camera-only-transition'}
+    data-home-presence-presentation={firstPerson ? 'bodyless-first-person-home' : 'camera-only-transition'}
+    data-home-movement={firstPerson ? 'shared-keyboard-touch-walk-look-interact' : 'camera-only-transition'}
+    data-home-pointer-lock="false"
+    data-home-assets-ready={ready ? 'true' : 'false'}
+    data-home-scene-assets-ready={sceneReady ? 'true' : 'false'}
+    data-home-ready={ready ? 'true' : 'warming'}
+    data-home-input-ready={inputReady ? 'true' : 'false'}
+    data-home-interaction-ready={inputReady ? 'true' : 'false'}
+    data-home-distance-ground="world-surface"
+    data-home-distance-life-map="sky-threshold"
+    data-home-ground-entry="physical-world-surface"
+    data-home-life-map-entry="visible-sky-broad-interaction"
+    data-home-camera-mode={homeState.transition ?? (firstPerson ? (dragging ? 'home-first-person-look' : 'home-first-person') : 'camera-only-transition')}
+    data-home-stable-state={homeState.stableState}
+    data-home-scene-phase={phase}
+    data-home-transition-sequence={homeState.transition ?? (transition === 'none' ? 'idle' : `${transition}:traversal`)}
+    data-home-portal-sequence="idle"
+    data-home-input-locked={homeState.inputLocked || transition !== 'none' || passportDeparting ? 'true' : 'false'}
+    data-home-passport-artifact="governed-rigid-folio-visual-plus-semantic-bridge"
+    data-home-passport-nearby={passportNearby ? 'true' : 'false'}
+    data-home-orb-state={orbState}
+    data-home-orb-clip={resolveOrbSensoryOutput(orbState, reducedMotion, true).animation}
+    data-home-orb-model-clip={reducedMotion ? 'stopped-reduced-motion' : ORB_CLIPS[orbState]}
+    data-home-orb-runtime-asset={ORB_MODEL}
+    data-home-non-xr-body-policy="camera-only-no-hands-body-rig"
+    data-home-presence-policy="direct-first-person-camera-only-no-hands-body-rig"
+    data-home-avatar-activation-gate="none-direct-first-person-home"
+    data-home-visual-grade="current-literal-pixel-candidate-not-certified"
+    data-home-art-certification="fresh-exact-head-pixels-required"
+    data-home-personal-weather-tone={personalizedHomeScene.environment.weatherTone}
+    data-home-personal-weather-atmosphere={personalWeatherState}
+    data-home-personal-weather-mode={personalizedHomeScene.mode}
+    data-home-personal-weather-loading={personalizedHomeLoading ? 'true' : 'false'}
+    data-home-personal-weather-synthetic-review={personalizedHomeScene.disclosedSample ? 'true' : 'false'}
+    data-home-scanned-composition="direct-bodyless-first-person-authored-living-memory-orb-sculpted-sanctuary-and-broad-sky-threshold"
+    data-home-art-revision="v293-direct-bodyless-first-person-convergence"
+    data-home-authored-regions="home-physical-world home-camera-only-first-person home-living-memory-orb home-life-map-sky-threshold"
+    data-testid="home-visible-navigable-sanctuary-world"
+    style={{ position: 'relative', overflow: 'hidden', backgroundColor: '#10272a' }}
+    {...look}
+  >
+    <Canvas
+      className={styles.canvas}
+      dpr={1}
+      shadows
+      frameloop={reducedMotion || softwareRenderer ? 'demand' : 'always'}
+      camera={{ position: [...DEFAULT_HOME_FIRST_PERSON_CAMERA.position], fov: 58, near: .1, far: 125 }}
+      gl={{ antialias: true, alpha: false, powerPreference: 'high-performance' }}
+      onCreated={({ gl, setFrameloop }) => {
+        const software = isSoftwareWebGLRenderer(gl)
+        setSoftwareRenderer(software)
+        if (reducedMotion || software) setFrameloop('demand')
+        gl.outputColorSpace = THREE.SRGBColorSpace
+        gl.toneMapping = THREE.ACESFilmicToneMapping
+        gl.toneMappingExposure = 1.68
+        gl.shadowMap.type = THREE.PCFSoftShadowMap
+        gl.setClearColor(0x10272a, 1)
+        setCanvasReady(true)
+      }}
+    >
+      <Scene
+        yaw={yaw}
+        pitch={pitch}
+        transition={transition}
+        transitionTarget={transitionTarget}
+        reducedMotion={reducedMotion}
+        personalWeatherState={personalWeatherState}
+        orbState={orbState}
+        homeStableState={homeState.stableState}
+        homeTransition={homeState.transition}
+        homeOrigin={homeState.origin}
+        cameraSnapshot={cameraSnapshot}
+        movementInput={movementInput}
+        firstPersonVelocity={firstPersonVelocity}
+        firstPersonTarget={firstPersonTarget}
+        onEmbodimentComplete={homeApi.completeEmbodiment}
+        onHomeRestoreComplete={homeApi.completeRestore}
+        onOrb={openOrb}
+        onGround={openGround}
+        onLifeMap={openLifeMap}
+        onPassportNearby={setPassportNearby}
+        onReady={markReady}
+        owner={worldRef}
+        onComplete={completeTransition}
+      />
+    </Canvas>
+    {firstPerson ? (
+      <>
+        <MovementHelp realm="Home" summary="Move through your Home in bodyless first person without a synthetic body overlay." controls="WASD or arrow keys move · drag to look · interact opens nearby physical objects such as Passport · Escape closes the active interaction layer while Home remains first person." />
+        <MobileMovementPad input={movementInput} label="Move through Home" />
+        {passportNearby && !passportDeparting ? (
+          <button
+            type="button"
+            aria-label="Open physical Passport"
+            data-testid="urai-home-passport-interact"
+            data-movement-ui="true"
+            onClick={openPassport}
+            style={{ position: 'absolute', left: '50%', bottom: 'max(22px, calc(env(safe-area-inset-bottom) + 18px))', transform: 'translateX(-50%)', zIndex: 36, minHeight: 48, padding: '0 18px', borderRadius: 999, border: '1px solid rgba(239,214,154,.34)', background: 'rgba(21,28,29,.72)', color: '#fff8e8', backdropFilter: 'blur(12px)', font: '700 12px/1 system-ui', cursor: 'pointer' }}
+          >
+            Open Passport
+          </button>
+        ) : null}
+        <button
+          type="button"
+          aria-label="Open Avatar Self View"
+          data-movement-ui="true"
+          onClick={homeApi.openSelfView}
+          style={{ position: 'absolute', right: 'max(16px, env(safe-area-inset-right))', bottom: 'max(16px, env(safe-area-inset-bottom))', zIndex: 35, minWidth: 48, minHeight: 48, padding: '0 16px', borderRadius: 999, border: '1px solid rgba(235,244,239,.26)', background: 'rgba(7,18,20,.56)', color: '#f4faf7', backdropFilter: 'blur(12px)', font: '600 12px/1 system-ui', cursor: 'pointer' }}
+        >
+          Self
+        </button>
+      </>
+    ) : null}
+    <AvatarSelfView open={homeState.stableState === 'AVATAR_SELF_VIEW'} sections={selfSections} onClose={homeApi.closeSelfView} />
+    <span className="sr-only" role="status" aria-live="polite">{
+      passportDeparting ? 'Opening Passport from this Home position.'
+        : transition === 'ground' ? 'Entering your physical Ground world.'
+            : transition === 'life-map' ? 'Ascending into your Life Map.'
+              : firstPerson ? 'First-person Home active.' : ''
+    }</span>
+    <span className="sr-only" data-testid="urai-home-webgl-orb">The authored living-memory Orb is physically present in Home and preserves semantic state behavior.</span>
+    <span className="sr-only" data-testid="urai-home-physical-passport">Passport is a physical object in Home. Approaching it exposes an explicit activation control and preserves the first-person return origin.</span>
+    <span className="sr-only" data-testid="urai-home-non-xr-body-policy">Non-XR Home opens directly in camera-only first person with no synthetic hands, arms, visible avatar, or body rig. Avatar Self View remains a separate explicit user-invoked surface.</span>
+  </main>
+}
+
+export const HomeWorldProduction = HomeWorldProductionV223
+
+useGLTF.preload(ORB_MODEL)

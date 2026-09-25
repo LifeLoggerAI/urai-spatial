@@ -13,8 +13,12 @@ const FOUNDER_ROOT_SELECTOR = '[data-testid="urai-true-3d-life-map"]'
 
 async function installFounderPhaseLedger(context) {
   await context.addInitScript(({ rootSelector, storageKey }) => {
-    const inspect = () => {
-      const root = document.querySelector(rootSelector)
+    const relevantAttributes = new Set(['data-life-map-phase', 'data-life-map-mode', 'data-life-map-scale'])
+
+    const inspect = (candidate = null, historicalPhase = null) => {
+      const root = candidate instanceof HTMLElement && candidate.matches(rootSelector)
+        ? candidate
+        : document.querySelector(rootSelector)
       if (!(root instanceof HTMLElement)) return
       if (root.dataset.lifeMapMode !== 'selected') return
 
@@ -25,13 +29,20 @@ async function installFounderPhaseLedger(context) {
         return
       }
       if (!record?.expectedPhase || record.observed) return
-      if (root.dataset.lifeMapPhase !== record.expectedPhase) return
+
+      const observedPhase = historicalPhase === record.expectedPhase
+        ? historicalPhase
+        : root.dataset.lifeMapPhase === record.expectedPhase
+          ? root.dataset.lifeMapPhase
+          : null
+      if (!observedPhase) return
 
       const observed = {
-        phase: root.dataset.lifeMapPhase,
-        mode: root.dataset.lifeMapMode,
+        phase: observedPhase,
+        mode: 'selected',
         scale: root.dataset.lifeMapScale || null,
         observedAt: performance.now(),
+        evidence: historicalPhase === observedPhase ? 'mutation-old-value' : 'current-dom',
       }
       try {
         sessionStorage.setItem(storageKey, JSON.stringify({ ...record, observed }))
@@ -40,12 +51,40 @@ async function installFounderPhaseLedger(context) {
       }
     }
 
-    const observer = new MutationObserver(inspect)
+    // Software WebGL can monopolize the main thread long enough for a MutationObserver
+    // callback to run after a short-lived production phase has already advanced. Keep
+    // the normal current-DOM path, but also request attributeOldValue and consume the
+    // browser's queued mutation history. If a later phase mutation reports that its old
+    // value was the expected phase, that is direct evidence the real DOM previously held
+    // that phase even when the callback itself was delayed. Production timers are not
+    // extended, mocked, or replaced.
+    const originalSetAttribute = Element.prototype.setAttribute
+    Element.prototype.setAttribute = function patchedFounderPhaseAttribute(name, value) {
+      const result = originalSetAttribute.call(this, name, value)
+      if (relevantAttributes.has(String(name))) inspect(this)
+      return result
+    }
+
+    const observer = new MutationObserver((mutations) => {
+      for (const mutation of mutations) {
+        if (
+          mutation.type === 'attributes'
+          && mutation.attributeName === 'data-life-map-phase'
+          && mutation.target instanceof HTMLElement
+          && mutation.target.matches(rootSelector)
+          && typeof mutation.oldValue === 'string'
+        ) {
+          inspect(mutation.target, mutation.oldValue)
+        }
+      }
+      inspect()
+    })
     window.__uraiFounderJourneyPhaseLedgerObserver = observer
     observer.observe(document, {
       subtree: true,
       childList: true,
       attributes: true,
+      attributeOldValue: true,
       attributeFilter: ['data-life-map-phase', 'data-life-map-mode', 'data-life-map-scale'],
     })
     inspect()

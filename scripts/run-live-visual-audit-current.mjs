@@ -4,7 +4,9 @@ const requireFromTierOne = createRequire(new URL('../urai-tier1/package.json', i
 requireFromTierOne('playwright')
 
 // Static contract traceability retained for source guards while runtime proof is owned by the canonical driver.
-// Current Ground visual copy: 'URAI GROUND', 'Private infrastructure beneath the living world', 'Walk deeper. Approach a chamber.', 'Reception', 'Archive'
+// Current Ground authority: lived first-person world; visible terrain is traversal; private place data is fail-closed by default.
+// Ground route markers: 'urai-ground-lived-world', 'ground-lived-world-v2-canon-lock', 'first-person-lived-world', 'first-person-no-visible-body', 'eye-level-terrain-following-no-authored-bob', 'terrain-plus-authored-obstacle-field'
+// Retired Ground copy/authority: 'URAI GROUND', 'Private infrastructure beneath the living world', 'Walk deeper. Approach a chamber.', 'ground-destination-compass'
 // data-world-target="focus"
 // check.name === 'life-map-to-focus'
 // .life-map-accessibility-menu is retired and is not queried by the active proof.
@@ -12,7 +14,7 @@ requireFromTierOne('playwright')
 // focusTouchTarget
 // semanticListHidden
 // firstVisible(page, check.selectors)
-// Open Orb travel controls
+// Open UrAi Orb companion
 // clickOrFollowHref(page, found.locator)
 // waitForURL((url) => url.toString().includes(check.expected), { timeout: 7000 })
 // getAttribute('data-memory-status') === 'demo'

@@ -27,11 +27,15 @@ test('duplicate-owner visual recovery and suppression rules stay retired', () =>
 test('Home transfers settled ownership to the runtime boundary after capability resolution', () => {
   assert.match(homeOwner, /useWebGLAvailable/)
   assert.match(homeOwner, /mounted && webglAvailable !== null\) return null/)
-  assert.match(homeOwner, /data-testid="urai-home-accessible-fallback"/)
+  assert.match(homeOwner, /data-testid="urai-home-threshold-placeholder"/)
+  assert.match(homeOwner, /data-urai-home-threshold="pre-hydration-or-capability-detecting"/)
+  assert.doesNotMatch(homeOwner, /data-testid="urai-home-accessible-fallback"/)
   assert.match(homeOwner, /data-webgl-state=\{!mounted \|\| webglAvailable === null \? 'detecting' : 'unavailable'\}/)
-  assert.match(homeOwner, /<HomeSpatialWorldFinal \/>/)
+  assert.doesNotMatch(homeOwner, /<HomeSpatialWorldFinal \/>/)
 
   assert.match(homeRuntime, /webglAvailable === false/)
+  assert.match(homeRuntime, /<AssetDrivenHomeWorld/)
+  assert.match(homeRuntime, /data-home-visual-owner="asset-driven-personalized-sanctuary"/)
   assert.match(homeRuntime, /data-testid="urai-home-accessible-fallback"/)
   assert.match(homeRuntime, /<section/)
   assert.match(homeRuntime, /aria-label="Spatial Home fallback"/)

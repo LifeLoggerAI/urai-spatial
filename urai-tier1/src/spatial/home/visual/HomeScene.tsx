@@ -32,7 +32,7 @@ const fallbackState: HomeWorldState = {
   groundTier: 3,
   orbTier: 3,
   skyTier: 3,
-  moodState: "recovery",
+  moodState: "hopeful",
   recoveryState: "growing",
   energyScore: 64,
   narratorSpeaking: false,
@@ -64,22 +64,20 @@ const homeControlStyle: React.CSSProperties = {
 
 const moodRgb: Record<HomeMoodState, string> = {
   calm: "114 211 255",
-  low: "88 127 172",
-  recovery: "134 239 172",
-  dream: "174 143 255",
-  shadow: "190 92 148",
-  focused: "210 244 255",
-  joy: "255 199 112",
+  reflective: "174 190 238",
+  energized: "255 199 112",
+  heavy: "157 116 154",
+  uncertain: "126 149 168",
+  hopeful: "134 239 172",
 };
 
 const skyRgb: Record<HomeMoodState, string> = {
   calm: "15 42 68",
-  low: "11 20 34",
-  recovery: "10 62 58",
-  dream: "35 28 82",
-  shadow: "39 18 48",
-  focused: "18 40 64",
-  joy: "62 45 98",
+  reflective: "32 39 72",
+  energized: "62 45 78",
+  heavy: "28 23 39",
+  uncertain: "23 31 42",
+  hopeful: "10 62 58",
 };
 
 function safeTier(value: unknown, fallback: HomeWorldTier): HomeWorldTier {
@@ -87,7 +85,16 @@ function safeTier(value: unknown, fallback: HomeWorldTier): HomeWorldTier {
 }
 
 function safeMood(value: unknown, fallback: HomeMoodState): HomeMoodState {
-  const allowed: HomeMoodState[] = ["calm", "low", "recovery", "dream", "shadow", "focused", "joy"];
+  const legacy: Record<string, HomeMoodState> = {
+    low: "uncertain",
+    recovery: "hopeful",
+    dream: "reflective",
+    shadow: "heavy",
+    focused: "reflective",
+    joy: "energized",
+  };
+  const allowed: HomeMoodState[] = ["calm", "reflective", "energized", "heavy", "uncertain", "hopeful"];
+  if (typeof value === "string" && value in legacy) return legacy[value];
   return allowed.includes(value as HomeMoodState) ? (value as HomeMoodState) : fallback;
 }
 
@@ -130,9 +137,11 @@ function defaultNarrator(state: HomeWorldState, xrRuntime?: HomeSceneXrRuntime) 
   if (xrRuntime?.enabled && xrRuntime.connected) return "XR room connected. The orb remains centered while the shared world synchronizes quietly.";
   if (xrRuntime?.enabled) return "XR mode is preparing. The home world stays cinematic if headset services fall back.";
   if (state.narratorSpeaking) return "The orb is speaking softly. Your world is listening.";
-  if (state.moodState === "shadow") return "The world is dimmer to make room for heavier weather without judgment.";
-  if (state.moodState === "recovery") return "The ground is brighter because growth signals are active.";
-  if (state.moodState === "dream") return "The sky is violet because rest and memory signals are stronger.";
+  if (state.moodState === "heavy") return "The world is quieter and dimmer to make room for heavier weather without judgment.";
+  if (state.moodState === "hopeful") return "The ground is brighter because recovery signals appear to be strengthening.";
+  if (state.moodState === "reflective") return "The world is quieter because recent signals support a reflective state.";
+  if (state.moodState === "energized") return "The horizon is warmer because recent signals support a more energized state.";
+  if (state.moodState === "uncertain") return "The world is staying restrained because the current signals do not support a confident weather state.";
   return "The home world reflects recent energy, mood, recovery, ritual, memory, and rhythm signals.";
 }
 
@@ -141,7 +150,7 @@ export default function HomeScene({ homeWorldState, state = "home", opening, ent
   const mode = opening || state === "enteringLifeMap" || state === "exitingHome" ? "enteringLifeMap" : state;
   const orbColor = moodRgb[world.moodState] ?? moodRgb.calm;
   const ambientColor = skyRgb[world.moodState] ?? skyRgb.calm;
-  const horizonColor = world.moodState === "joy" ? "255 202 143" : world.moodState === "shadow" ? "202 91 142" : world.moodState === "recovery" ? "177 235 168" : orbColor;
+  const horizonColor = world.moodState === "energized" ? "255 202 143" : world.moodState === "heavy" ? "151 118 151" : world.moodState === "hopeful" ? "177 235 168" : orbColor;
   const skyDisabled = mode === "enteringLifeMap";
 
   return (

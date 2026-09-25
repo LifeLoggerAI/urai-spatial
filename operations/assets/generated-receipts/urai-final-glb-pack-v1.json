@@ -1,14 +1,14 @@
 {
-  "schemaVersion": "2.0.0",
+  "schemaVersion": "2.2.0",
   "packId": "urai-final-glb-production-pack-v1",
-  "generatedAt": "2026-08-08T04:10:38Z",
+  "generatedAt": "2026-09-24T22:30:00Z",
   "generator": "URAI Labs Final GLB Forge 1.0",
-  "authorship": "Original non-primitive authored mesh surfaces with embedded UV-mapped PBR texture sets; no visible basic primitive stand-ins.",
+  "authorship": "Canon-clean active-candidate regeneration is limited to Memory Star and Orb. Focus and Replay GLBs are retained only as supporting references and are never regenerated or promoted by this lane. All visible assets still require rendered inspection and governed promotion.",
   "assets": [
     {
       "fileName": "home-entry-chamber-v1.glb",
-      "bytes": 1786808,
-      "sha256": "73f2a49ed2cfd6cd7ae9baed7b3908d53e0cac75b9f36ff1b8be9654e3d3e2f2",
+      "bytes": 1785372,
+      "sha256": "e0c5bbc70d04b5988abd8f30b34b9ff20fcbe3171ee339473bab6e1eb8030210",
       "triangleCount": 57352,
       "nodes": 322,
       "animations": [
@@ -22,28 +22,9 @@
       "uvMapped": true
     },
     {
-      "fileName": "portal-ring-master-v1.glb",
-      "bytes": 242072,
-      "sha256": "5b751cc6e7caa9667d48e4860e76a7b39f6cf84a60afb252497a19f323bb19c5",
-      "triangleCount": 3816,
-      "nodes": 40,
-      "animations": [
-        "Portal_Closed",
-        "Portal_Available",
-        "Portal_Attention",
-        "Portal_Active",
-        "Portal_Opening",
-        "Portal_Traversal",
-        "Portal_Closing"
-      ],
-      "materials": 8,
-      "embeddedTextures": 4,
-      "uvMapped": true
-    },
-    {
       "fileName": "ground-world-terrain-v1.glb",
-      "bytes": 740640,
-      "sha256": "b5309b854729566efcc444db029458bd4193ed18e6c83199e164ca8cb3fb2b76",
+      "bytes": 739688,
+      "sha256": "03bf36de25e1708bdd4e7e4e9920ec54aac2470cb6a05d3693c0f8e102c231cc",
       "triangleCount": 20974,
       "nodes": 114,
       "animations": [
@@ -57,10 +38,10 @@
     },
     {
       "fileName": "life-map-memory-star-v1.glb",
-      "bytes": 373236,
-      "sha256": "ae4a70d2964a69025e246e7c09394b674a3c9f7b4b44a014cde6e1bffe7e9efa",
-      "triangleCount": 8770,
-      "nodes": 30,
+      "bytes": 276224,
+      "sha256": "6e8caf75ee47af487020884c6642a56c125fcbb68d628688564356355090df96",
+      "triangleCount": 5464,
+      "nodes": 36,
       "animations": [
         "MemoryStar_Idle",
         "MemoryStar_Selected",
@@ -72,10 +53,10 @@
     },
     {
       "fileName": "focus-memory-chamber-v1.glb",
-      "bytes": 622516,
-      "sha256": "d0e8a2105927f5fc610f68edc907cbd100b8570253fab3ba942171136d54b79d",
-      "triangleCount": 17334,
-      "nodes": 35,
+      "bytes": 231284,
+      "sha256": "7f54fc9379d38436c516e6901a3ff3de084cba543cf7703aad6454f75f2f4a1b",
+      "triangleCount": 3908,
+      "nodes": 37,
       "animations": [
         "Focus_Arrival",
         "Focus_Breathing",
@@ -87,10 +68,10 @@
     },
     {
       "fileName": "replay-memory-environment-v1.glb",
-      "bytes": 435544,
-      "sha256": "fbc58c40c3b7ee18025e605aee72dfd97988747d169b923f690b363a409362b3",
-      "triangleCount": 10410,
-      "nodes": 131,
+      "bytes": 401024,
+      "sha256": "d9047661a5659dc20717ba073c41d3de6e2028cd457a6adfa34755a5f8bd2f08",
+      "triangleCount": 9258,
+      "nodes": 130,
       "animations": [
         "Replay_Idle",
         "Replay_Enter",
@@ -103,10 +84,10 @@
     },
     {
       "fileName": "urai-orb-avatar-v1.glb",
-      "bytes": 403220,
-      "sha256": "06b21ff93a2221a6367fb8b8e305a0453cb151d3a92194445d72e4d48d6c7708",
-      "triangleCount": 9380,
-      "nodes": 29,
+      "bytes": 332824,
+      "sha256": "fc8b73fabcf9c30c71afd731d35d88d9fb06cd34feb1136d975e196cfe68dd73",
+      "triangleCount": 6948,
+      "nodes": 28,
       "animations": [
         "Orb_Resting",
         "Orb_Idle",
@@ -127,8 +108,8 @@
     },
     {
       "fileName": "passport-status-room-v1.glb",
-      "bytes": 347512,
-      "sha256": "15f1f7634389994715e4f263eecf67731b52a8e9ef62a22eae889b6054213257",
+      "bytes": 347064,
+      "sha256": "c8b9713ae9e03f37c02d688de4b1d930461a58261c21ce0d0e312e9552b68087",
       "triangleCount": 7878,
       "nodes": 48,
       "animations": [
@@ -141,5 +122,11 @@
       "embeddedTextures": 4,
       "uvMapped": true
     }
-  ]
+  ],
+  "authorityNotes": {
+    "ground-natural-canopy-v3": "Historical/generated supporting reference only; not current Ground canopy runtime authority.",
+    "life-map-memory-star-v1": "Supporting/provenance reference only; not current literal Memory Star visual authority.",
+    "focus-memory-chamber-v1": "Supporting reference only; current Focus authority is V395 selected stellar photosphere with contained memory.",
+    "replay-memory-environment-v1": "Runtime-supporting geometry only; literal Replay acceptance is governed by immersive memory-interior pixels and truthful source semantics."
+  }
 }

@@ -6,8 +6,8 @@
   "canonicalPath": "urai-tier1/public/assets/urai/generated/human-makehuman-v4/home-human-makehuman-v4.glb",
   "bytes": 1708856,
   "sha256": "2c81a69e22043834f9d4d1975b7636f1bf2b5995bc1bd6c914042ffe625db76e",
-  "source": "Pinned MakeHuman CC0 base topology with URAI V4 17-joint skin and five-clip animation contract",
-  "fallback": "home-human-rig-v3",
+  "source": "Pinned MakeHuman CC0 base topology retained for explicit Avatar Self View/XR component development; not ordinary non-XR Home runtime authority",
+  "fallback": "home-human-rig-v3-supporting-reference",
   "license": "MakeHuman base topology CC0-1.0; URAI V4 rig/animation candidate",
   "producer": "URAI MakeHuman V4 Forge",
   "reviewer": "governed-replacement-rehearsal",
@@ -15,10 +15,10 @@
   "promote": false,
   "humanReviewApproved": false,
   "fallbackVerified": true,
-  "routeConsumptionVerified": true,
+  "routeConsumptionVerified": false,
   "licenseApproved": true,
   "optimizationVerified": true,
   "visualProofVerified": false,
   "exactHeadChecksPassed": false,
-  "notes": "Fail-closed V4 Home rehearsal. Exact CC0 source is pinned and the binary is below the current human triangle budget. Final garment geometry, hair/eyes, facial blendshapes, mobile LOD, rendered motion proof and steward visual approval remain required; no production promotion is claimed."
+  "notes": "Supporting-reference-only rehearsal. Ordinary non-XR Home enters directly into bodyless first-person and does not consume this asset. The binary is retained for separately governed Avatar Self View/XR component work and cannot be promoted as ordinary Home runtime authority."
 }

@@ -18,7 +18,7 @@ const contractFiles = {
   audioReceipt: 'operations/assets/production-receipts/spatial-audio-production-v1.json',
   audioRuntime: 'urai-tier1/src/spatial/audio/SpatialAmbientRuntime.tsx',
   audioController: 'urai-tier1/src/spatial/audio/useAudioController.ts',
-  homeWorld: 'urai-tier1/src/spatial/layout/HomeWorldProductionFinal.tsx',
+  homeWorld: 'urai-tier1/src/app/AssetDrivenHomeWorld.tsx',
 }
 const productionAudioFiles = [
   'home-ambient-v1.opus',

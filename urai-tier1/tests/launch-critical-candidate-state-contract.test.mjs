@@ -47,15 +47,19 @@ test('forge workflow verifies governed production and uploads the exact audited 
   const candidateVerifier = 'node scripts/verify-launch-critical-assets.mjs'
   const candidateAudit = 'node scripts/audit-launch-critical-candidate-bundle.mjs'
   const auditedBundlePath = '.urai-artifacts/launch-critical-candidate-bundle/'
-  assert.match(workflow, /Verify governed production authority before candidate generation/)
+  assert.match(workflow, /Verify fail-closed rehearsal control before candidate generation/)
   assert.match(workflow, /Run governed Home production contract before candidate generation/)
-  assert.match(workflow, /Prove governed Home binary immutable before candidate generation/)
+  assert.match(workflow, /Forge deterministic launch candidates while retaining governed Passport candidate/)
   assert.match(workflow, /Independently audit and retain exact candidate bundle/)
   assert.match(workflow, /URAI_CANDIDATE_BUNDLE_ROOT: \.urai-artifacts\/launch-critical-candidate-bundle/)
   assert.match(workflow, /Upload exact audited candidate bundle/)
   assert.ok(workflow.includes(`path: ${auditedBundlePath}`))
   assert.doesNotMatch(workflow, /path: \|\n\s+urai-tier1\/public\/assets\/urai\/generated\/\n\s+operations\/assets\/generated-receipts\/\n\s+operations\/assets\/launch-critical-assets\.json/)
   assert.match(workflow, /- 'scripts\/verify-governed-asset-promotion\.mjs'/)
+  assert.match(workflow, /const deterministicForgeOwned = new Set/)
+  assert.match(workflow, /expected specialist-governed launch assets outside generic forge ownership/)
+  assert.match(workflow, /manifest\.assets = manifest\.assets\.filter\(\(asset\) => deterministicForgeOwned\.has\(asset\.id\)\)/)
+  assert.doesNotMatch(workflow, /manifest\.assets = manifest\.assets\.filter\(\(asset\) => asset\.id !== 'passport-status-room-v1'\)/)
   assert.equal(workflow.indexOf(governedVerifier) < workflow.indexOf(candidateForge), true)
   assert.equal(workflow.indexOf(governedContract) < workflow.indexOf(candidateForge), true)
   assert.equal(workflow.indexOf(candidateAudit) > workflow.indexOf(candidateVerifier), true)

@@ -9,7 +9,7 @@
   position: absolute;
   left: 50%;
   top: 52%;
-  width: min(62vw, 660px);
+  width: min(72vw, 760px);
   aspect-ratio: 1;
   transform: translate(-50%, -50%);
   z-index: 48;
@@ -45,15 +45,7 @@
 }
 
 .memory-star-artifact__ring span {
-  position: absolute;
-  right: 10%;
-  top: 18%;
-  color: rgba(214, 246, 255, 0.42);
-  font-size: 9px;
-  font-weight: 800;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  white-space: nowrap;
+  display: none;
 }
 
 .memory-star-artifact__ring--boundary {
@@ -106,7 +98,7 @@
 .memory-star-artifact__orb {
   left: 50%;
   top: 50%;
-  width: clamp(160px, 18vw, 250px);
+  width: clamp(280px, 32vw, 460px);
   aspect-ratio: 1;
   transform: translate(-50%, -50%);
 }
@@ -120,20 +112,22 @@
 }
 
 .memory-star-artifact__halo {
-  inset: -20%;
+  inset: -30%;
   background:
-    radial-gradient(circle, rgba(255,255,255,0.08), rgba(103,232,249,calc(0.16 + var(--memory-recovery) * 0.2)) 34%, rgba(168,85,247,calc(0.1 + var(--memory-intensity) * 0.16)) 54%, transparent 75%);
-  filter: blur(10px);
+    radial-gradient(circle at 50% 50%, rgba(255,255,255,.34) 0 22%, rgba(255,224,145,.24) 30%, rgba(103,232,249,calc(.18 + var(--memory-recovery) * .22)) 48%, rgba(168,85,247,calc(.08 + var(--memory-intensity) * .16)) 61%, transparent 76%),
+    repeating-conic-gradient(from 8deg, rgba(255,244,200,.16) 0 2deg, transparent 3deg 11deg);
+  filter: blur(8px) saturate(1.12);
   animation: memoryStarBreath calc(10s - var(--memory-recovery) * 3s) ease-in-out infinite;
 }
 
 .memory-star-artifact__core {
-  inset: 28%;
+  inset: 12%;
   overflow: hidden;
   background:
-    radial-gradient(circle at 33% 28%, rgba(255,255,255,.96), rgba(230,210,255,.72) 9%, transparent 22%),
-    radial-gradient(circle at 62% 68%, rgba(103,232,249,calc(0.55 + var(--memory-recovery) * 0.35)) 0 18%, transparent 19%),
-    conic-gradient(from 218deg, rgba(120,70,255,.92), rgba(103,232,249,.82), rgba(255,255,255,.72), rgba(168,85,247,.84), rgba(120,70,255,.92));
+    radial-gradient(circle at 34% 28%, rgba(255,255,255,.99) 0 5%, rgba(255,238,181,.96) 12%, transparent 28%),
+    radial-gradient(circle at 64% 62%, rgba(255,190,92,.58) 0 11%, transparent 25%),
+    radial-gradient(circle at 48% 52%, rgba(255,226,151,.94) 0 38%, rgba(255,151,69,.88) 58%, rgba(153,65,255,.72) 78%, rgba(21,38,84,.42) 100%),
+    repeating-conic-gradient(from 16deg, rgba(255,255,255,.13) 0 4deg, rgba(255,180,74,.06) 5deg 13deg);
   box-shadow:
     inset -18px -18px 36px rgba(20, 72, 180, 0.45),
     inset 12px 10px 22px rgba(255,255,255,0.22),

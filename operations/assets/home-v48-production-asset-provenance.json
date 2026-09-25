@@ -1,0 +1,230 @@
+{
+  "schema": "urai.home.v48-production-assets.v1",
+  "purpose": "PR #1177 production sanctuary replacement for rejected procedural V47 art",
+  "importedAt": "2026-08-28T17:17:00.926Z",
+  "runtimeFetchesPolyHavenApi": false,
+  "apiUse": "materialization-time only; assets are committed into the canonical repository",
+  "attribution": "Source assets: Poly Haven (CC0). Live API used only by the governed importer.",
+  "sourceAssets": [
+    {
+      "id": "rock_face_01",
+      "role": "sanctuary-architectural-rock-face",
+      "license": "CC0-1.0",
+      "provider": "Poly Haven",
+      "providerApi": "https://api.polyhaven.com/files/rock_face_01",
+      "userAgent": "URAI-Home-V48-Production-Asset-Importer/1.0 (LifeLoggerAI/urai-spatial; PR-1177)",
+      "entrypoint": "/assets/urai/home-production/cc0/polyhaven-v48/rock_face_01/asset.gltf",
+      "sourceEntrypoint": "https://dl.polyhaven.org/file/ph-assets/Models/gltf/1k/rock_face_01/rock_face_01_1k.gltf",
+      "totalBytes": 3049988,
+      "files": [
+        {
+          "path": "urai-tier1/public/assets/urai/home-production/cc0/polyhaven-v48/rock_face_01/asset.gltf",
+          "sourceUrl": "https://dl.polyhaven.org/file/ph-assets/Models/gltf/1k/rock_face_01/rock_face_01_1k.gltf",
+          "resolution": "selected-gltf-entrypoint",
+          "bytes": 2793,
+          "sha256": "96c332c01d173a2431115f3bac29be101fba341e5500e2a08e384f4edd17299e"
+        },
+        {
+          "path": "urai-tier1/public/assets/urai/home-production/cc0/polyhaven-v48/rock_face_01/rock_face_01.bin",
+          "sourceUrl": "https://dl.polyhaven.org/file/ph-assets/Models/gltf/8k/rock_face_01/rock_face_01.bin",
+          "resolution": "polyhaven-file-map-basename",
+          "bytes": 476436,
+          "sha256": "873eac0319333e92bc96ddeedf8ebf69dc3c68ff1dfe32d8c14ddc165cdb20ac"
+        },
+        {
+          "path": "urai-tier1/public/assets/urai/home-production/cc0/polyhaven-v48/rock_face_01/textures/rock_face_01_nor_gl_1k.jpg",
+          "sourceUrl": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/rock_face_01/rock_face_01_nor_gl_1k.jpg",
+          "resolution": "polyhaven-file-map-basename",
+          "bytes": 1023400,
+          "sha256": "9a9d85b9a01f4e24fc9ceec8baf96c019f552bca69591ff544c7a725e28b1d97"
+        },
+        {
+          "path": "urai-tier1/public/assets/urai/home-production/cc0/polyhaven-v48/rock_face_01/textures/rock_face_01_diff_1k.jpg",
+          "sourceUrl": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/rock_face_01/rock_face_01_diff_1k.jpg",
+          "resolution": "polyhaven-file-map-basename",
+          "bytes": 853749,
+          "sha256": "41bd26ed2db1332b1ebb4b1326fd8af4d21f0f0eb57b8ea385033115c722cfdb"
+        },
+        {
+          "path": "urai-tier1/public/assets/urai/home-production/cc0/polyhaven-v48/rock_face_01/textures/rock_face_01_arm_1k.jpg",
+          "sourceUrl": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/rock_face_01/rock_face_01_arm_1k.jpg",
+          "resolution": "polyhaven-file-map-basename",
+          "bytes": 693610,
+          "sha256": "59128c79d207a50a69a38002986135ade3b19642d26158cec141eca41578c9ca"
+        }
+      ]
+    },
+    {
+      "id": "rock_face_02",
+      "role": "sanctuary-secondary-rock-face",
+      "license": "CC0-1.0",
+      "provider": "Poly Haven",
+      "providerApi": "https://api.polyhaven.com/files/rock_face_02",
+      "userAgent": "URAI-Home-V48-Production-Asset-Importer/1.0 (LifeLoggerAI/urai-spatial; PR-1177)",
+      "entrypoint": "/assets/urai/home-production/cc0/polyhaven-v48/rock_face_02/asset.gltf",
+      "sourceEntrypoint": "https://dl.polyhaven.org/file/ph-assets/Models/gltf/1k/rock_face_02/rock_face_02_1k.gltf",
+      "totalBytes": 3528386,
+      "files": [
+        {
+          "path": "urai-tier1/public/assets/urai/home-production/cc0/polyhaven-v48/rock_face_02/asset.gltf",
+          "sourceUrl": "https://dl.polyhaven.org/file/ph-assets/Models/gltf/1k/rock_face_02/rock_face_02_1k.gltf",
+          "resolution": "selected-gltf-entrypoint",
+          "bytes": 2794,
+          "sha256": "ebeab82d463c89eb5f894b85807da111280a73b552d694257118f3f2d47bf760"
+        },
+        {
+          "path": "urai-tier1/public/assets/urai/home-production/cc0/polyhaven-v48/rock_face_02/rock_face_02.bin",
+          "sourceUrl": "https://dl.polyhaven.org/file/ph-assets/Models/gltf/8k/rock_face_02/rock_face_02.bin",
+          "resolution": "polyhaven-file-map-basename",
+          "bytes": 702068,
+          "sha256": "cfa3dea8f0f91525b5dfe93d889acacf961d20f7174aae100eae2c6e101edf31"
+        },
+        {
+          "path": "urai-tier1/public/assets/urai/home-production/cc0/polyhaven-v48/rock_face_02/textures/rock_face_02_nor_gl_1k.jpg",
+          "sourceUrl": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/rock_face_02/rock_face_02_nor_gl_1k.jpg",
+          "resolution": "polyhaven-file-map-basename",
+          "bytes": 1082942,
+          "sha256": "a9dc200810f5488395fdc928b5a9441c007c33047d0375d946f33dcd2ff1c853"
+        },
+        {
+          "path": "urai-tier1/public/assets/urai/home-production/cc0/polyhaven-v48/rock_face_02/textures/rock_face_02_diff_1k.jpg",
+          "sourceUrl": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/rock_face_02/rock_face_02_diff_1k.jpg",
+          "resolution": "polyhaven-file-map-basename",
+          "bytes": 920193,
+          "sha256": "d777f2c9b598773c2143751c34913cf5eef0ae392af31fb73c28b98afab6fb7b"
+        },
+        {
+          "path": "urai-tier1/public/assets/urai/home-production/cc0/polyhaven-v48/rock_face_02/textures/rock_face_02_arm_1k.jpg",
+          "sourceUrl": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/rock_face_02/rock_face_02_arm_1k.jpg",
+          "resolution": "polyhaven-file-map-basename",
+          "bytes": 820389,
+          "sha256": "0f3f64b9f56e3c5cecbb99e45d8fa0d4cbf025d4455439d1c5f6672a408365ee"
+        }
+      ]
+    },
+    {
+      "id": "modular_industrial_pipes_01",
+      "role": "reliquary-mechanical-load-and-service-system",
+      "license": "CC0-1.0",
+      "provider": "Poly Haven",
+      "providerApi": "https://api.polyhaven.com/files/modular_industrial_pipes_01",
+      "userAgent": "URAI-Home-V48-Production-Asset-Importer/1.0 (LifeLoggerAI/urai-spatial; PR-1177)",
+      "entrypoint": "/assets/urai/home-production/cc0/polyhaven-v48/modular_industrial_pipes_01/asset.gltf",
+      "sourceEntrypoint": "https://dl.polyhaven.org/file/ph-assets/Models/gltf/1k/modular_industrial_pipes_01/modular_industrial_pipes_01_1k.gltf",
+      "totalBytes": 4823938,
+      "files": [
+        {
+          "path": "urai-tier1/public/assets/urai/home-production/cc0/polyhaven-v48/modular_industrial_pipes_01/asset.gltf",
+          "sourceUrl": "https://dl.polyhaven.org/file/ph-assets/Models/gltf/1k/modular_industrial_pipes_01/modular_industrial_pipes_01_1k.gltf",
+          "resolution": "selected-gltf-entrypoint",
+          "bytes": 15014,
+          "sha256": "455d3a0fe95b7900a08cbebb23cfb2c341672fcb67ae7355d776e53cfa3d0688"
+        },
+        {
+          "path": "urai-tier1/public/assets/urai/home-production/cc0/polyhaven-v48/modular_industrial_pipes_01/modular_industrial_pipes_01.bin",
+          "sourceUrl": "https://dl.polyhaven.org/file/ph-assets/Models/gltf/8k/modular_industrial_pipes_01/modular_industrial_pipes_01.bin",
+          "resolution": "polyhaven-file-map-basename",
+          "bytes": 515160,
+          "sha256": "2e11e1a7dabd56b1e158364f48b0b388bf316fcab61a01274740db75dbafa448"
+        },
+        {
+          "path": "urai-tier1/public/assets/urai/home-production/cc0/polyhaven-v48/modular_industrial_pipes_01/textures/modular_industrial_pipes_01_group01_nor_gl_1k.jpg",
+          "sourceUrl": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/modular_industrial_pipes_01/modular_industrial_pipes_01_group01_nor_gl_1k.jpg",
+          "resolution": "polyhaven-file-map-basename",
+          "bytes": 674568,
+          "sha256": "ed4728fde567efe420e3a6e1bdc4238b26c2782218737c7e2de88eeca1e91fb2"
+        },
+        {
+          "path": "urai-tier1/public/assets/urai/home-production/cc0/polyhaven-v48/modular_industrial_pipes_01/textures/modular_industrial_pipes_01_group01_diff_1k.jpg",
+          "sourceUrl": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/modular_industrial_pipes_01/modular_industrial_pipes_01_group01_diff_1k.jpg",
+          "resolution": "polyhaven-file-map-basename",
+          "bytes": 553576,
+          "sha256": "c0233f66b18e3374dfbbb8c8078a41f6571a0809d3eb14dd9d3c332265cfde7b"
+        },
+        {
+          "path": "urai-tier1/public/assets/urai/home-production/cc0/polyhaven-v48/modular_industrial_pipes_01/textures/modular_industrial_pipes_01_group01_arm_1k.jpg",
+          "sourceUrl": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/modular_industrial_pipes_01/modular_industrial_pipes_01_group01_arm_1k.jpg",
+          "resolution": "polyhaven-file-map-basename",
+          "bytes": 860825,
+          "sha256": "7fff7d4604491eeb7531ad5f7520517015c72ec7316d1e865d62f23f976dfed6"
+        },
+        {
+          "path": "urai-tier1/public/assets/urai/home-production/cc0/polyhaven-v48/modular_industrial_pipes_01/textures/modular_industrial_pipes_01_group02_nor_gl_1k.jpg",
+          "sourceUrl": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/modular_industrial_pipes_01/modular_industrial_pipes_01_group02_nor_gl_1k.jpg",
+          "resolution": "polyhaven-file-map-basename",
+          "bytes": 725187,
+          "sha256": "84a43ca11a4f1ac84f7fc8336a4e9b7b333d30c13e540f3ff42e662dc6f91b53"
+        },
+        {
+          "path": "urai-tier1/public/assets/urai/home-production/cc0/polyhaven-v48/modular_industrial_pipes_01/textures/modular_industrial_pipes_01_group02_diff_1k.jpg",
+          "sourceUrl": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/modular_industrial_pipes_01/modular_industrial_pipes_01_group02_diff_1k.jpg",
+          "resolution": "polyhaven-file-map-basename",
+          "bytes": 580676,
+          "sha256": "ef8a75c402a8871903dcaa147b023d57c640d0de4c7a8acdfdee822861656a92"
+        },
+        {
+          "path": "urai-tier1/public/assets/urai/home-production/cc0/polyhaven-v48/modular_industrial_pipes_01/textures/modular_industrial_pipes_01_group02_arm_1k.jpg",
+          "sourceUrl": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/modular_industrial_pipes_01/modular_industrial_pipes_01_group02_arm_1k.jpg",
+          "resolution": "polyhaven-file-map-basename",
+          "bytes": 898932,
+          "sha256": "4c65dcb651a3d345517fa93ad7c6e48f2388f4e8bb347446f70317c16049867b"
+        }
+      ]
+    },
+    {
+      "id": "industrial_caged_sconce",
+      "role": "sanctuary-authored-practical-light-fixture",
+      "license": "CC0-1.0",
+      "provider": "Poly Haven",
+      "providerApi": "https://api.polyhaven.com/files/industrial_caged_sconce",
+      "userAgent": "URAI-Home-V48-Production-Asset-Importer/1.0 (LifeLoggerAI/urai-spatial; PR-1177)",
+      "entrypoint": "/assets/urai/home-production/cc0/polyhaven-v48/industrial_caged_sconce/asset.gltf",
+      "sourceEntrypoint": "https://dl.polyhaven.org/file/ph-assets/Models/gltf/1k/industrial_caged_sconce/industrial_caged_sconce_1k.gltf",
+      "totalBytes": 3084199,
+      "files": [
+        {
+          "path": "urai-tier1/public/assets/urai/home-production/cc0/polyhaven-v48/industrial_caged_sconce/asset.gltf",
+          "sourceUrl": "https://dl.polyhaven.org/file/ph-assets/Models/gltf/1k/industrial_caged_sconce/industrial_caged_sconce_1k.gltf",
+          "resolution": "selected-gltf-entrypoint",
+          "bytes": 18429,
+          "sha256": "a2fa6163a5eab0e3f00815a39d0be5f75985c899ca2ed60420e8d77f9c5e086b"
+        },
+        {
+          "path": "urai-tier1/public/assets/urai/home-production/cc0/polyhaven-v48/industrial_caged_sconce/industrial_caged_sconce.bin",
+          "sourceUrl": "https://dl.polyhaven.org/file/ph-assets/Models/gltf/4k/industrial_caged_sconce/industrial_caged_sconce.bin",
+          "resolution": "polyhaven-file-map-basename",
+          "bytes": 949472,
+          "sha256": "fc14f0b5210c1de70ac25e535b676fb1e74e0c10c1901f09992b038f2139ab2a"
+        },
+        {
+          "path": "urai-tier1/public/assets/urai/home-production/cc0/polyhaven-v48/industrial_caged_sconce/textures/industrial_caged_sconce_emissive_1k.jpg",
+          "sourceUrl": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/industrial_caged_sconce/industrial_caged_sconce_emissive_1k.jpg",
+          "resolution": "polyhaven-file-map-basename",
+          "bytes": 51857,
+          "sha256": "7190b172709d4f8ce2899cccff3bc03ae25bc48bab5c4960b61a2eea5052896a"
+        },
+        {
+          "path": "urai-tier1/public/assets/urai/home-production/cc0/polyhaven-v48/industrial_caged_sconce/textures/industrial_caged_sconce_nor_gl_1k.jpg",
+          "sourceUrl": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/industrial_caged_sconce/industrial_caged_sconce_nor_gl_1k.jpg",
+          "resolution": "polyhaven-file-map-basename",
+          "bytes": 698685,
+          "sha256": "fb8eb25693c6197d30e0c4660326b1d408c6847f2150b1b4cd3478c8c0e2acd4"
+        },
+        {
+          "path": "urai-tier1/public/assets/urai/home-production/cc0/polyhaven-v48/industrial_caged_sconce/textures/industrial_caged_sconce_diff_1k.jpg",
+          "sourceUrl": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/industrial_caged_sconce/industrial_caged_sconce_diff_1k.jpg",
+          "resolution": "polyhaven-file-map-basename",
+          "bytes": 613120,
+          "sha256": "9a27babd23780b983cb631c4159e8e3a6d927c3ed4952f2d700eedf4e704e52f"
+        },
+        {
+          "path": "urai-tier1/public/assets/urai/home-production/cc0/polyhaven-v48/industrial_caged_sconce/textures/industrial_caged_sconce_arm_1k.jpg",
+          "sourceUrl": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/industrial_caged_sconce/industrial_caged_sconce_arm_1k.jpg",
+          "resolution": "polyhaven-file-map-basename",
+          "bytes": 752636,
+          "sha256": "47b71ed5fbce0d549660394dd1e295d63c532cd8810dfb100177fa6def967851"
+        }
+      ]
+    }
+  ]
+}
