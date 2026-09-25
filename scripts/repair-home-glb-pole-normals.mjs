@@ -243,7 +243,11 @@ function legacyPoleRepairSuperseded(config) {
 
 function legacyOrbRepairSuperseded(config) {
   const receipt = readJson(config.receiptPath)
-  return receipt.sha256 === '54aaa230c591d441ba6e590c3c3668ff257128521dcded67606b4c53724a6eef'
+  const acceptedCanonCleanSha = new Set([
+    '54aaa230c591d441ba6e590c3c3668ff257128521dcded67606b4c53724a6eef',
+    ...(config.acceptedRepairedSha256 ?? []),
+  ])
+  return acceptedCanonCleanSha.has(receipt.sha256)
     && receipt.compressionStatus === 'candidate-uncompressed-canon-v1'
     && receipt.releaseState === 'candidate-not-production-ready'
     && String(receipt.source ?? '').includes('canon-clean deterministic convergence candidate')
