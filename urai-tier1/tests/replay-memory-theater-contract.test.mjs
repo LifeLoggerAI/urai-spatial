@@ -16,6 +16,7 @@ const replayClient = read('src/app/replay/CinematicReplayClient.tsx')
 const finalMemorySurfaces = read('src/app/FinalMemorySurfaces.tsx')
 const replayUnwindButton = read('src/app/replay/ReplayUnwindButton.tsx')
 const replayRoute = read('src/app/replay/[replayId]/page.tsx')
+const replayProof = read('../scripts/capture-replay-gold-master-proof.mjs')
 
 test('replay route remains wired to the current spatial memory world owner', () => {
   assert.match(replayPage, /FinalReplayFilm = CinematicReplayClient/)
@@ -60,4 +61,13 @@ test('Replay owns its route directly and returns through the canonical world bou
   assert.match(replayClient, /requestUraiWorldReturn/)
   assert.doesNotMatch(replayPage + replayClient, /TierOneExperience|UraiV1Experience|UraiSpatialStage/)
   assert.equal(fs.existsSync(path.join(root, 'src/spatial/layout/TierOneExperience.tsx')), false)
+})
+
+
+test('Replay Gold Master proof requires actual rendered frames before capture acceptance', () => {
+  assert.match(replayClient, /data-replay-render-ready/)
+  assert.match(replayClient, /renderedMediaFrames\.current >= 2/)
+  assert.match(replayProof, /data-replay-render-ready/)
+  assert.match(replayProof, /renderReady: root\?\.getAttribute\('data-replay-render-ready'\) === 'true'/)
+  assert.match(replayProof, /&& result\.renderReady/)
 })
