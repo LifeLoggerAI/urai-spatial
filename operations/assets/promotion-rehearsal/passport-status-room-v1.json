@@ -11,7 +11,7 @@
   "license": "URAI Labs internal production asset",
   "producer": "URAI deterministic authored asset pack",
   "reviewer": "governed-replacement-rehearsal",
-  "reviewedAt": "2026-08-09T00:09:34.176Z",
+  "reviewedAt": "2026-09-25T15:17:46.880Z",
   "promote": false,
   "humanReviewApproved": false,
   "fallbackVerified": true,
@@ -19,6 +19,6 @@
   "licenseApproved": true,
   "optimizationVerified": true,
   "visualProofVerified": false,
-  "exactHeadChecksPassed": false,
-  "notes": "Supporting-reference rehearsal only. The generated Passport room is not current runtime authority; the governed Passport ownership-vault surface and Home physical Passport object own current product semantics. Promotion remains prohibited."
+  "exactHeadChecksPassed": true,
+  "notes": "Fail-closed exact-binary replacement rehearsal rebound to the bounded Passport identity-core pole-normal repair. Only the two invalid terminal NORMAL vectors on passport-identity-core-geometry and the corresponding NORMAL accessor Y bounds numeric lexemes are corrected in place; GLB byte length and all unrelated JSON/BIN bytes remain unchanged. This record binds candidate identity only; promote=false, humanReviewApproved=false, and visualProofVerified=false remain unchanged pending exact-head visual proof and steward acceptance."
 }
