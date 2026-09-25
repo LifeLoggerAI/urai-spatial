@@ -209,7 +209,7 @@ function GroundNexus({ reducedMotion }: { reducedMotion: boolean }) {
 function ChamberArchitecture({ destination, active, nearby }: { destination: GroundDestination; active: boolean; nearby: boolean }) {
   const color = useMemo(() => new THREE.Color(destination.color), [destination.color])
   const height = destination.layer === 'deep' ? 4.8 : destination.layer === 'continuity' ? 4.1 : 3.4
-  const width = destination.chamberForm === 'council' ? 4.4 : destination.chamberForm === 'theater' ? 4.8 : 3.4
+  const width = destination.chamberForm === 'council' ? 4.4 : 3.4
   const blocked = destination.workforceState === 'blocked'
   return (
     <group name={`ground-chamber-architecture-${destination.id}`}>

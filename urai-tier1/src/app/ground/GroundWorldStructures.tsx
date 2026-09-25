@@ -79,10 +79,6 @@ function ApertureHall({ color }: { color: THREE.Color }) {
   return <group>{[1.85, 1.38, 0.92].map((radius, index) => <mesh key={radius} position={[0, 1.8, 0]} rotation={[0, index * 0.34, Math.PI / 2]}><torusGeometry args={[radius, 0.08 - index * 0.014, 14, 96]} /><meshPhysicalMaterial color="#17182a" emissive={color} emissiveIntensity={0.35 - index * 0.06} roughness={0.16} metalness={0.65} /></mesh>)}<mesh position={[0, 1.8, 0]}><sphereGeometry args={[0.46, 40, 40]} /><meshStandardMaterial color="#f8fbff" emissive={color} emissiveIntensity={2.2} /></mesh></group>;
 }
 
-function TheaterHall({ color }: { color: THREE.Color }) {
-  return <group><mesh position={[0, 1.7, -0.6]}><boxGeometry args={[4.2, 3.4, 0.7]} /><meshPhysicalMaterial color="#211525" emissive={color} emissiveIntensity={0.11} roughness={0.22} metalness={0.58} /></mesh><mesh position={[0, 1.75, 0]}><planeGeometry args={[3.4, 2.45]} /><meshBasicMaterial color={color} transparent opacity={0.13} toneMapped={false} /></mesh>{[-1.35, -0.45, 0.45, 1.35].map((x) => <mesh key={x} position={[x, 0.45, 1.25]} rotation={[-0.25, 0, 0]}><boxGeometry args={[0.65, 0.55, 1.1]} /><meshStandardMaterial color="#19131d" emissive={color} emissiveIntensity={0.08} /></mesh>)}</group>;
-}
-
 function ChamberBody({ destination, color }: { destination: GroundDestination; color: THREE.Color }) {
   switch (destination.chamberForm) {
     case "pavilion": return <Pavilion color={color} />;
@@ -95,7 +91,6 @@ function ChamberBody({ destination, color }: { destination: GroundDestination; c
     case "vault": return <VaultHall color={color} />;
     case "observatory": return <ObservatoryHall color={color} />;
     case "aperture": return <ApertureHall color={color} />;
-    case "theater": return <TheaterHall color={color} />;
   }
 }
 

@@ -18,8 +18,7 @@ export type GroundChamberForm =
   | "reflection"
   | "vault"
   | "observatory"
-  | "aperture"
-  | "theater";
+  | "aperture";
 export type GroundLayer = "threshold" | "civic" | "continuity" | "deep";
 
 export type GroundDestination = {
@@ -242,7 +241,7 @@ export const DESTINATIONS: readonly GroundDestination[] = [
     lookAt: [9.8, 4.25, -28.5],
     workforceState: "idle",
     availability: "available",
-    chamberForm: "theater",
+    chamberForm: "aperture",
     layer: "deep",
     signature: "Replay Gate",
     emotionalSentence: "Enter the memory without surrendering the present.",
