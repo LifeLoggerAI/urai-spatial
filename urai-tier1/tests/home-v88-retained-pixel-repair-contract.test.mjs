@@ -2,7 +2,6 @@ import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import test from 'node:test'
 
-const historicalArt = readFileSync(new URL('../src/spatial/layout/HomeWorldProductionV76.tsx', import.meta.url), 'utf8')
 const currentRuntime = readFileSync(new URL('../src/spatial/layout/HomeWorldProductionV223.tsx', import.meta.url), 'utf8')
 const currentGeometry = readFileSync(new URL('../src/spatial/layout/HomeWorldProductionV223Geometry.tsx', import.meta.url), 'utf8')
 const telemetry = readFileSync(new URL('../src/app/AssetDrivenHomeWorld.tsx', import.meta.url), 'utf8')
@@ -14,20 +13,22 @@ const finalizer = readFileSync(new URL('../../.github/workflows/home-finalizatio
 
 const has = (source, marker) => assert.ok(source.includes(marker), `missing marker: ${marker}`)
 
-test('historical V185 terrain regression remains preserved without current ownership', () => {
-  for (const marker of ['function SculptedCanyonGround(','home-v125-sculpted-canyon-ground','continuous-weathered-canyon-camera-safe-destination-basins-soft-strata-no-contour-staircase','function SanctuaryTerraces(','home-v126-continuous-walkable-terrace-network']) has(historicalArt, marker)
-  assert.match(historicalArt, /const groundCameraBasin = Math\.exp/)
-  assert.match(historicalArt, /const lifeCameraBasin = Math\.exp/)
-  assert.match(historicalArt, /const cameraSafeCarve = groundCameraBasin\*1\.42 \+ lifeCameraBasin\*1\.50/)
-  assert.match(historicalArt, /name="home-v154-inlaid-stone-approach"[^>]*visible=\{false\}/)
-  assert.match(historicalArt, /name="home-v131-passive-signal-arrival-path"[^>]*visible=\{false\}/)
-})
-
-test('historical V185 destinations remain regression-covered and visibly retired', () => {
-  for (const marker of ['function FramedFissure(','home-v126-${side}-framed-fissure','terrain-flush-readable-destination-cut-clear-camera-corridor-no-door-no-ring','camera-safe-basin-wide-ground-level-signal-place-no-upright-gate','home-v175-${side}-terrain-signal-veins']) has(historicalArt, marker)
-  assert.match(historicalArt, /home-v151-\$\{side\}-retained-stone-provenance[^>]*visible=\{false\}/)
-  assert.match(historicalArt, /home-v153-\$\{side\}-retired-threshold-panel[^>]*visible=\{false\}/)
-  assert.doesNotMatch(historicalArt, /<ringGeometry|<torusGeometry|<RoundedBox/)
+test('retired V185 terrain and destination implementations do not re-enter current Home authority', () => {
+  for (const marker of [
+    'function SculptedCanyonGround(',
+    'home-v125-sculpted-canyon-ground',
+    'continuous-weathered-canyon-camera-safe-destination-basins-soft-strata-no-contour-staircase',
+    'function SanctuaryTerraces(',
+    'home-v126-continuous-walkable-terrace-network',
+    'function FramedFissure(',
+    'terrain-flush-readable-destination-cut-clear-camera-corridor-no-door-no-ring',
+    'camera-safe-basin-wide-ground-level-signal-place-no-upright-gate',
+    'home-v175-',
+    'home-v154-inlaid-stone-approach',
+    'home-v131-passive-signal-arrival-path',
+  ]) {
+    assert.equal(currentRuntime.includes(marker), false, `retired Home marker re-entered current runtime: ${marker}`)
+  }
 })
 
 test('V288 certified morphology is restored while V291 interaction semantics remain fail-closed pending current-head pixels', () => {
@@ -55,11 +56,16 @@ test('V288 certified morphology is restored while V291 interaction semantics rem
   assert.doesNotMatch(currentRuntime, /nearby\s*={2,3}\s*['"]orb['"]|distanceTo\(ORB\)|distance-orb/)
 })
 
-test('historical V185 world-space atmosphere and reduced-motion regression remain preserved', () => {
-  has(historicalArt, 'home-v183-world-space-memory-sky')
-  has(historicalArt, 'deep-teal-memory-sky-preserves-night-without-dead-black-field-or-flat-veil')
-  has(historicalArt, 'four-low-bounded-world-space-memory-weather-fields-localize-ground-life-map-and-deep-basin-no-upright-gates')
-  assert.doesNotMatch(historicalArt, /AncestralMemoryVeils|home-v183-ancestral-memory-weather-veils/)
+test('retired V185 atmosphere implementation does not re-enter current Home authority', () => {
+  for (const marker of [
+    'home-v183-world-space-memory-sky',
+    'deep-teal-memory-sky-preserves-night-without-dead-black-field-or-flat-veil',
+    'four-low-bounded-world-space-memory-weather-fields-localize-ground-life-map-and-deep-basin-no-upright-gates',
+    'AncestralMemoryVeils',
+    'home-v183-ancestral-memory-weather-veils',
+  ]) {
+    assert.equal(currentRuntime.includes(marker), false, `retired Home atmosphere marker re-entered current runtime: ${marker}`)
+  }
 })
 
 test('current Home traversal remains regression-covered without restoring retired proximity gates', () => {
@@ -79,5 +85,5 @@ test('current Home candidate remains explicitly uncertified until literal exact-
   has(telemetry, 'data-home-v225-retained-pixel-rebuild="superseded"')
   has(currentRuntime, 'data-home-visual-grade="current-literal-pixel-candidate-not-certified"')
   assert.equal(authority.currentRuntimeCandidate.certified, false)
-  assert.doesNotMatch(`${currentRuntime}\n${historicalArt}\n${currentGeometry}\n${telemetry}\n${groundedOrb}`, /PRODUCTION CERTIFIED|retained-pixel-pass|pixel-certified/)
+  assert.doesNotMatch(`${currentRuntime}\n${currentGeometry}\n${telemetry}\n${groundedOrb}`, /PRODUCTION CERTIFIED|retained-pixel-pass|pixel-certified/)
 })
