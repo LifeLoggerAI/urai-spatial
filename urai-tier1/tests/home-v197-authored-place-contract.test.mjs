@@ -32,11 +32,13 @@ test('V197 authored GLBs are committed, nontrivial and transport-safe', () => {
   }
 })
 
-test('V199 runtime composes both places and the Orb inside the initial portrait-safe frame', () => {
-  const runtime = readFileSync(new URL('../src/spatial/layout/HomeWorldProductionV76.tsx', import.meta.url), 'utf8')
-  assert.match(runtime, /home-v199-\$\{side\}-authored-memory-place/)
-  assert.match(runtime, /position=\{\[isGround\?1\.15:-1\.15,isGround\?-0\.82:-0\.84,0\]\}/)
-  assert.match(runtime, /scale=\{isGround\?\[1\.34,1\.34,1\.34\]:\[0\.82,0\.82,0\.82\]\}/)
-  assert.match(runtime, /home-v201-authored-single-connected-folded-living-memory-presence/)
-  assert.match(runtime, /scale=\{\[0\.54,0\.54,0\.54\]\}/)
+test('current Home runtime preserves one bodyless first-person world with physical Ground, sky Life Map, and authored Orb authority', () => {
+  const runtime = readFileSync(new URL('../src/spatial/layout/HomeWorldProductionV223.tsx', import.meta.url), 'utf8')
+  assert.match(runtime, /data-home-primary-owner="asset-driven"/)
+  assert.match(runtime, /data-home-presence-presentation=\{firstPerson \? 'bodyless-first-person-home' : 'camera-only-transition'\}/)
+  assert.match(runtime, /data-home-ground-entry="physical-world-surface"/)
+  assert.match(runtime, /data-home-life-map-entry="visible-sky-broad-interaction"/)
+  assert.match(runtime, /data-home-orb-runtime-asset=\{ORB_MODEL\}/)
+  assert.match(runtime, /data-home-non-xr-body-policy="camera-only-no-hands-body-rig"/)
+  assert.match(runtime, /HomeLaunchSanctuaryV254/)
 })
