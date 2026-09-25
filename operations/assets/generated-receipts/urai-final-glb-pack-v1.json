@@ -3,7 +3,7 @@
   "packId": "urai-final-glb-production-pack-v1",
   "generatedAt": "2026-09-22T06:45:00Z",
   "generator": "URAI Labs Final GLB Forge 1.0",
-  "authorship": "Canon-clean candidate pack. Memory Star, Focus, Replay and Orb are regenerated as unreviewed candidates and require rendered inspection plus compression before promotion.",
+  "authorship": "Canon-clean generated asset receipt pack retained for provenance and supporting-reference roles. Current Ground canopy authority is the governed optimized CC0 Poly Haven Jacaranda runtime asset; current visible Life Map Memory Star authority is procedural point-photosphere + layered corona. Generated binaries do not become literal visual authority by filename or existence.",
   "assets": [
     {
       "fileName": "home-entry-chamber-v1.glb",
@@ -122,5 +122,11 @@
       "embeddedTextures": 4,
       "uvMapped": true
     }
-  ]
+  ],
+  "authorityNotes": {
+    "ground-natural-canopy-v3": "Historical/generated supporting reference only; not current Ground canopy runtime authority.",
+    "life-map-memory-star-v1": "Supporting/provenance reference only; not current literal Memory Star visual authority.",
+    "focus-memory-chamber-v1": "Supporting reference only; current Focus authority is V395 selected stellar photosphere with contained memory.",
+    "replay-memory-environment-v1": "Runtime-supporting geometry only; literal Replay acceptance is governed by immersive memory-interior pixels and truthful source semantics."
+  }
 }
