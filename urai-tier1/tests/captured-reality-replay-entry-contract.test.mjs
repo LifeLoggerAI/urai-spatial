@@ -27,10 +27,11 @@ test('server entry requires release gate, dual consent, same owner binding and a
   assert.match(functions, /browserCertified|mobileCertified/)
 })
 
-test('Replay shows no captured-place action without an authorized binding', () => {
+test('Replay shows no captured-place action without an authorized binding and uses the static private shell', () => {
   assert.match(replay, /useCapturedRealityReplayEntry/)
   assert.match(replay, /capturedRealityEntry\?\.href/)
   assert.match(replay, /Enter captured place/)
+  assert.match(hook, /\/spatial\/captured-reality\?assetId=/)
 })
 
 test('captured replay bindings participate in export/deletion lifecycle', () => {
