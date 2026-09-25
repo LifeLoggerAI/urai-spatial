@@ -68,11 +68,17 @@ test('legacy support asset layer is route-bounded and cannot inject retired cros
   assert.match(assetLayer, /if \(!\/\\\.\(\?:gltf\|glb\)\$\/i\.test\(path\)\)/)
 })
 
-test('legacy world slots delegate to canonical resolution and contain no competing paths', () => {
+test('legacy world slots delegate only where canon still permits a model and fail closed elsewhere', () => {
   assert.match(worldManifest, /resolveUraiSpatialAssetPath/)
   assert.doesNotMatch(worldManifest, /\/assets\/models\//)
   assert.match(worldManifest, /resolved\('home-entry-chamber-model-v1'\)/)
   assert.match(worldManifest, /resolved\('ground-world-terrain-glb-v1'\)/)
-  assert.match(worldManifest, /Focus authority is the selected Memory Star resolving into contained memory/)
+  assert.match(worldManifest, /lifeMap\.memoryStars[\s\S]*finalModel: ''[\s\S]*status: 'missing'/)
+  assert.match(worldManifest, /current visible authority is procedural point\/photosphere plus layered corona/)
+  assert.match(worldManifest, /focus\.memoryDiorama[\s\S]*finalModel: ''[\s\S]*status: 'missing'/)
+  assert.match(worldManifest, /Focus authority is V395 selected stellar photosphere\/corona with contained memory/)
   assert.match(worldManifest, /Replay authority is an immersive memory interior with truthful source grammar/)
+  assert.match(worldManifest, /passport\.identityVault[\s\S]*finalModel: ''[\s\S]*status: 'missing'/)
+  assert.match(worldManifest, /Home physical Passport own current product authority/)
+  assert.doesNotMatch(worldManifest, /resolved\('life-map-memory-star-glb-v1'\)|resolved\('passport-status-room-glb-v1'\)/)
 })
