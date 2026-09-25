@@ -295,6 +295,26 @@ test.describe('URAI accessibility and performance evidence', () => {
     expect(failures).toEqual([])
   })
 
+  test('XR web controls meet the 48 CSS pixel minimum on narrow mobile', async ({ page }) => {
+    await page.setViewportSize({ width: 320, height: 720 })
+    await page.goto('/spatial/ar-vr', { waitUntil: 'domcontentloaded' })
+    const targets = await page.locator('button:not([disabled])').evaluateAll((elements) => elements
+      .map((element) => ({ element, rect: element.getBoundingClientRect(), style: getComputedStyle(element) }))
+      .filter(({ rect, style }) => style.visibility !== 'hidden' && style.display !== 'none' && rect.width > 0 && rect.height > 0)
+      .map(({ element, rect }) => ({
+        label: element.getAttribute('aria-label') ?? element.textContent?.trim() ?? element.tagName,
+        width: Math.round(rect.width * 100) / 100,
+        height: Math.round(rect.height * 100) / 100,
+      })))
+    const failures = targets.filter(({ width, height }) => width < 48 || height < 48)
+    await test.info().attach('xr-target-size-report.json', {
+      body: JSON.stringify({ targets, failures }, null, 2),
+      contentType: 'application/json',
+    })
+    expect(targets.length).toBeGreaterThan(0)
+    expect(failures).toEqual([])
+  })
+
   test('no-WebGL mode exposes the complete keyboard-operable Home fallback', async ({ page }) => {
     await disableWebGL(page)
     await page.goto('/', { waitUntil: 'domcontentloaded' })
