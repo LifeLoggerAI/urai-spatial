@@ -1,0 +1,87 @@
+feature: captured-reality
+repo: LifeLoggerAI/urai-spatial
+owner: URAI Spatial
+privacyGovernanceVersion: 0.1.0-draft
+status: implemented_hard_off_pending_source_and_runtime_proof
+lastReviewed: 2026-09-25
+sourceEvidence:
+  - docs/CAPTURED_REALITY_GAUSSIAN_V1.md
+  - urai-tier1/src/spatial/captured-reality/capturedReality.ts
+  - apps/functions/src/capturedReality.ts
+
+summary:
+  purpose: Reconstruct private real-world places from owner-authorized source media for private spatial memory experiences.
+  userBenefit: Lets a user revisit a real place as a source-backed, explorable part of their Lived World without presenting reconstruction as original camera-recorded truth.
+  implementationStatus: implemented_hard_off
+
+dataProcessing:
+  collectedFields:
+    - name: captured_reality_source_reference
+      collectionOrTable: users/{uid}/capturedRealityAssets
+      dataClass: L3
+      source: user
+      purpose: bind owner-authorized source media to a private real-place reconstruction
+      consentTier: C1
+      requiredConsentPurposes:
+        - memory.storage
+        - location.context
+      retentionClass: R3
+      exportable: true
+      deletable: true
+      auditRequired: true
+  derivedFields:
+    - name: captured_reality_manifest
+      collectionOrTable: users/{uid}/capturedRealityAssets
+      dataClass: L3
+      sourceFields:
+        - captured_reality_source_reference
+      purpose: record provenance, truth class, privacy, reconstruction method and runtime delivery metadata
+      consentTier: C1
+      requiredConsentPurposes:
+        - memory.storage
+        - location.context
+      retentionClass: R3
+      exportable: true
+      deletable: true
+      explainabilityRequired: true
+    - name: captured_reality_runtime_asset
+      collectionOrTable: private object storage
+      dataClass: L3
+      sourceFields:
+        - captured_reality_source_reference
+      purpose: deliver an owner-authorized optimized private spatial reconstruction
+      consentTier: C1
+      requiredConsentPurposes:
+        - memory.storage
+        - location.context
+      retentionClass: R3
+      exportable: true
+      deletable: true
+      explainabilityRequired: true
+
+userRights:
+  exportSupported: true
+  deletionSupported: true
+  consentRevocationSupported: true
+  explanationSupported: true
+
+adminAccess:
+  allowed: false
+  roles: []
+  auditEventTypes:
+    - captured_reality.asset_created
+    - captured_reality.asset_reviewed
+    - captured_reality.runtime_accessed
+    - captured_reality.consent_revoked
+    - captured_reality.asset_deleted
+
+monetization:
+  participatesInDataSharing: false
+  requiresC8Consent: false
+  anonymizationBatchRequired: false
+  minimumCohortSize: 100
+
+review:
+  reviewer: TBD
+  decision: blocked_until_source_runtime_visual_and_independent_review
+  notes: Stored reconstruction content uses C1 memory.storage as L3 personal content; runtime additionally requires C3 location.context. Exact/private locations remain owner-only. Runtime delivery is short-lived and server-authorized. XR is separately hard-off until physical-device certification.
