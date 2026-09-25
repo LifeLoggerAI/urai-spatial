@@ -121,6 +121,38 @@ test.describe('URAI accessibility and performance evidence', () => {
     await expect(page.locator('#urai-world-companion-menu')).toHaveAttribute('aria-hidden', 'true')
   })
 
+  test('Tier-One launch support and early-access targets meet 48px and stay in the mobile viewport', async ({ page }) => {
+    await page.setViewportSize({ width: 320, height: 720 })
+    for (const path of ['/support', '/early-access']) {
+      await page.goto(path, { waitUntil: 'domcontentloaded' })
+      const targets = await page.locator('main a[href], main button:not([disabled]), main input:not([disabled])').evaluateAll((elements) => {
+        const viewport = window.visualViewport
+        const left = viewport?.offsetLeft ?? 0
+        const top = viewport?.offsetTop ?? 0
+        const right = left + (viewport?.width ?? window.innerWidth)
+        const bottom = top + (viewport?.height ?? window.innerHeight)
+        return elements
+          .map((element) => ({ element, rect: element.getBoundingClientRect(), style: getComputedStyle(element) }))
+          .filter(({ rect, style }) => style.visibility !== 'hidden' && style.display !== 'none' && rect.width > 0 && rect.height > 0)
+          .map(({ element, rect }) => ({
+            label: element.getAttribute('aria-label') ?? element.getAttribute('placeholder') ?? element.textContent?.trim() ?? element.tagName,
+            width: Math.round(rect.width * 100) / 100,
+            height: Math.round(rect.height * 100) / 100,
+            contained: rect.left >= left && rect.right <= right && rect.top >= top && rect.bottom <= bottom,
+          }))
+      })
+      const undersized = targets.filter(({ width, height }) => width < 48 || height < 48)
+      const clipped = targets.filter(({ contained }) => !contained)
+      await test.info().attach(`tier-one-targets-${path.slice(1)}.json`, {
+        body: JSON.stringify({ path, targets, undersized, clipped }, null, 2),
+        contentType: 'application/json',
+      })
+      expect(targets.length).toBeGreaterThan(0)
+      expect(undersized).toEqual([])
+      expect(clipped).toEqual([])
+    }
+  })
+
   test('reduced motion removes active CSS animations from primary controls', async ({ page }) => {
     await page.emulateMedia({ reducedMotion: 'reduce' })
     for (const route of routes) {
