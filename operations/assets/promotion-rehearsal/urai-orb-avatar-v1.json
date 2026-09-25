@@ -6,7 +6,7 @@
   "canonicalPath": "urai-tier1/public/assets/urai/generated/models/urai-orb-avatar-v1.glb",
   "bytes": 332880,
   "sha256": "54aaa230c591d441ba6e590c3c3668ff257128521dcded67606b4c53724a6eef",
-  "source": "URAI canon-clean deterministic convergence candidate; requires rendered inspection and compression before promotion",
+  "source": "URAI authored Orb model consumed by the current Home Orb runtime; cross-route companion semantics are separately owned and do not make this GLB a universal route dependency",
   "fallback": "procedural-orb",
   "license": "URAI Labs internal production candidate asset",
   "producer": "URAI Labs Final GLB Forge 1.0; canon-clean convergence candidate",
@@ -20,5 +20,5 @@
   "optimizationVerified": false,
   "visualProofVerified": false,
   "exactHeadChecksPassed": false,
-  "notes": "Orb remains an uncompressed canon-clean translucent-memory candidate. Retired petal/legacy repair lineage is historical only. No production promotion is claimed. Binary identity is current. promote=false, humanReviewApproved=false, optimizationVerified=false, visualProofVerified=false, and exactHeadChecksPassed=false remain intentional until compression, rendered inspection, exact-head proof, performance validation, literal acceptance, and final Gold Master review."
+  "notes": "Home-scoped Orb rehearsal. The GLB is consumed by current Home Orb runtime only; cross-route companion semantics do not make it a universal route dependency. Promotion remains fail-closed pending exact-head proof and literal review."
 }
