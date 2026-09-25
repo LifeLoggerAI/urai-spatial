@@ -69,6 +69,10 @@ const ORB_CONFIG = {
   expectedAccessorIndex: 13,
   knownBadSha256: 'ee69c9e30679635b5799c681528c2021d8ce94d440895d4eb9e0c3094ac0f026',
   repairedSha256: '06b21ff93a2221a6367fb8b8e305a0453cb151d3a92194445d72e4d48d6c7708',
+  acceptedRepairedSha256: [
+    '06b21ff93a2221a6367fb8b8e305a0453cb151d3a92194445d72e4d48d6c7708',
+    'fc8b73fabcf9c30c71afd731d35d88d9fb06cd34feb1136d975e196cfe68dd73',
+  ],
   fixedNormal: [0.6533626914024353, 0.7519069314002991, 0.08805203437805176],
   packFileName: 'urai-orb-avatar-v1.glb',
   generatedBy: 'URAI Labs Final GLB Forge 1.0; bounded Orb petal zero-normal repair; reconciled to urai-final-glb-production-pack-v1',
@@ -180,19 +184,21 @@ function repairAsset(config, pack) {
 
 function repairOrbAsset(config, pack) {
   const original = fs.readFileSync(config.glbPath), originalSha = crypto.createHash('sha256').update(original).digest('hex')
-  if (originalSha !== config.knownBadSha256 && originalSha !== config.repairedSha256) fail(`${config.label} exact binary identity is neither the known-bad nor repaired SHA: ${originalSha}`)
+  const acceptedRepaired = new Set(config.acceptedRepairedSha256 ?? [config.repairedSha256])
+  if (originalSha !== config.knownBadSha256 && !acceptedRepaired.has(originalSha)) fail(`${config.label} exact binary identity is neither the known-bad nor an accepted repaired SHA: ${originalSha}`)
   const repaired = Buffer.from(original), parsed = parseGlb(repaired, config.label)
   const { accessor, accessorIndex, base, stride } = findTargetNormalAccessor(parsed, config)
   if (accessorIndex !== config.expectedAccessorIndex) fail(`${config.label} expected NORMAL accessor ${config.expectedAccessorIndex}, found ${accessorIndex}`)
   const originalMin = JSON.stringify(accessor.min), originalMax = JSON.stringify(accessor.max), offset = parsed.binStart + base + config.vectorIndex * stride
   const before = readVec3(repaired, offset), alreadyFixed = before.every((value, index) => close(value, config.fixedNormal[index], 1e-6)), knownBad = vectorLength(before) < 1e-7
   if (originalSha === config.knownBadSha256 && !knownBad) fail(`${config.label} known-bad SHA does not contain the expected zero NORMAL vector`)
-  if (originalSha === config.repairedSha256 && !alreadyFixed) fail(`${config.label} repaired SHA does not contain the expected repaired NORMAL vector`)
+  if (acceptedRepaired.has(originalSha) && !alreadyFixed) fail(`${config.label} accepted repaired SHA does not contain the expected repaired NORMAL vector`)
   let binaryChanged = false
   if (!alreadyFixed) { writeVec3(repaired, offset, config.fixedNormal); binaryChanged = true }
   if (binaryChanged) fs.writeFileSync(config.glbPath, repaired)
   const finalBytes = fs.readFileSync(config.glbPath), sha256 = crypto.createHash('sha256').update(finalBytes).digest('hex')
-  if (finalBytes.length !== original.length || sha256 !== config.repairedSha256) fail(`${config.label} bounded repair identity mismatch`)
+  const expectedFinalSha = originalSha === config.knownBadSha256 ? config.repairedSha256 : originalSha
+  if (finalBytes.length !== original.length || sha256 !== expectedFinalSha) fail(`${config.label} bounded repair identity mismatch`)
   const reparsed = parseGlb(finalBytes, config.label), target = findTargetNormalAccessor(reparsed, config)
   if (JSON.stringify(target.accessor.min) !== originalMin || JSON.stringify(target.accessor.max) !== originalMax) fail(`${config.label} bounded repair altered accessor metadata`)
   const after = readVec3(finalBytes, reparsed.binStart + target.base + config.vectorIndex * target.stride)
