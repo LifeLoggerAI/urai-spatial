@@ -13,8 +13,13 @@ const replayAuthority = 'v225-source-first-memory-environment-readable-phased-re
 
 const specs = [
   { id: 'desktop-16x10', width: 1440, height: 900, isMobile: false, hasTouch: false },
+  { id: 'large-desktop-16x9', width: 1920, height: 1080, isMobile: false, hasTouch: false },
+  { id: 'phone-narrow', width: 320, height: 720, isMobile: true, hasTouch: true },
   { id: 'phone-portrait', width: 390, height: 844, isMobile: true, hasTouch: true },
+  { id: 'phone-large', width: 430, height: 932, isMobile: true, hasTouch: true },
   { id: 'phone-landscape', width: 844, height: 390, isMobile: true, hasTouch: true },
+  { id: 'tablet-portrait', width: 768, height: 1024, isMobile: true, hasTouch: true },
+  { id: 'tablet-landscape', width: 1024, height: 768, isMobile: true, hasTouch: true },
   { id: 'reduced-motion-desktop-16x10', width: 1440, height: 900, isMobile: false, hasTouch: false, reducedMotion: 'reduce' },
 ]
 
