@@ -95,7 +95,7 @@ async function openHome(page, journey) {
   return home
 }
 
-async function proveRealHomeAscent(page, journey, home) {
+async function proveRealHomeAscent(page, journey, home, mode) {
   // Current non-XR Home authority is direct bodyless first person. Prove the
   // superseded Avatar presentation/activation gate is absent before sky ascent.
   await waitAttr(home, 'data-home-stable-state', 'AVATAR_HOME_FIRST_PERSON', 45_000)
@@ -107,15 +107,20 @@ async function proveRealHomeAscent(page, journey, home) {
 
   const canvas = home.locator('canvas').first()
   await canvas.waitFor({ state: 'visible', timeout: 45_000 })
-  const box = await canvas.boundingBox()
-  assert.ok(box && box.width > 200 && box.height > 200, 'Home canvas must expose the governed broad-sky interaction surface')
+  const box = await canvas.evaluate((node) => {
+    const rect = node.getBoundingClientRect()
+    return { width: rect.width, height: rect.height }
+  })
+  assert.ok(box.width > 200 && box.height > 200, 'Home canvas must expose the governed broad-sky interaction surface')
 
   // The sky interaction itself owns the validity law (upward ray direction).
   // Try several upper-sky points rather than encoding retired world geometry.
   const points = [[.50, .12], [.36, .15], [.64, .15], [.50, .22]]
   let activated = false
   for (const [x, y] of points) {
-    await canvas.click({ position: { x: box.width * x, y: box.height * y } })
+    const position = { x: box.width * x, y: box.height * y }
+    if (mode === 'touch') await canvas.tap({ position })
+    else await canvas.click({ position })
     try {
       await waitAttr(home, 'data-home-scene-phase', 'SKY_ASCENT', 2_500)
       activated = true
@@ -143,6 +148,7 @@ async function lifeMapOverview(page, journey) {
   await root.waitFor({ state: 'visible', timeout: 90_000 })
   await waitAttr(root, 'data-life-map-source', 'explicit-demo', 60_000)
   await waitAttr(root, 'data-life-map-phase', 'overview', 60_000)
+  await waitAttr(root, 'data-life-map-render-ready', 'true', 60_000)
   assert.equal(new URL(page.url()).searchParams.get('demo'), '1')
   await capture(page, journey, 'life-map-overview')
   return root
@@ -155,6 +161,7 @@ async function selectQuietReset(page, journey, mode, root) {
   const button = navigator.locator('button[data-life-map-semantic-result]').filter({ hasText: 'The Quiet Reset' }).first()
   await activate(page, button, mode)
   await waitAttr(root, 'data-life-map-phase', 'arrival', 60_000)
+  await waitAttr(root, 'data-life-map-render-ready', 'true', 60_000)
   const url = new URL(page.url())
   const identity = { memoryId: url.searchParams.get('memoryId'), node: url.searchParams.get('node'), manifestId: url.searchParams.get('manifestId') }
   assert.equal(identity.memoryId, 'quiet-reset')
@@ -178,6 +185,7 @@ async function enterFocus(page, journey, mode, identity) {
   const focus = page.getByTestId('urai-final-focus-chamber')
   await focus.waitFor({ state: 'visible', timeout: 90_000 })
   await assertRealmIdentity(focus, identity)
+  await waitAttr(focus, 'data-focus-render-ready', 'true', 60_000)
   assert.equal(new URL(page.url()).searchParams.get('demo'), '1')
   await capture(page, journey, 'focus')
 }
@@ -191,6 +199,7 @@ async function enterReplay(page, journey, mode, identity) {
   await assertRealmIdentity(replay, identity)
   await activate(page, page.getByRole('button', { name: 'Begin memory', exact: true }), mode)
   await waitAttr(replay, 'data-playing', 'true', 20_000)
+  await waitAttr(replay, 'data-replay-render-ready', 'true', 60_000)
   await capture(page, journey, 'replay')
   await activate(page, page.getByRole('button', { name: 'Hold memory', exact: true }), mode)
   await waitAttr(replay, 'data-playing', 'false', 20_000)
@@ -203,6 +212,7 @@ async function unwindReplayToFocus(page, journey, mode, identity) {
   const focus = page.getByTestId('urai-final-focus-chamber')
   await focus.waitFor({ state: 'visible', timeout: 90_000 })
   await assertRealmIdentity(focus, identity)
+  await waitAttr(focus, 'data-focus-render-ready', 'true', 60_000)
   await capture(page, journey, 'return-focus')
 }
 
@@ -215,6 +225,7 @@ async function unwindFocusToLifeMap(page, journey, mode, identity) {
   const root = page.getByTestId('urai-true-3d-life-map')
   await root.waitFor({ state: 'visible', timeout: 90_000 })
   await waitAttr(root, 'data-life-map-phase', 'arrival', 60_000)
+  await waitAttr(root, 'data-life-map-render-ready', 'true', 60_000)
   const url = new URL(page.url())
   assert.equal(url.searchParams.get('memoryId'), identity.memoryId)
   assert.equal(url.searchParams.get('node'), identity.node)
@@ -230,6 +241,7 @@ async function lifeMapToHome(page, journey, mode, root) {
     await activate(page, actions.getByRole('button', { name: /Overview/ }), mode)
   } else await page.keyboard.press('Escape')
   await waitAttr(root, 'data-life-map-phase', 'overview', 30_000)
+  await waitAttr(root, 'data-life-map-render-ready', 'true', 60_000)
   await capture(page, journey, 'return-life-map-overview')
   if (mode === 'touch') await activate(page, page.locator('[data-life-map-overview-home-return="true"]').first(), mode)
   else await page.keyboard.press('Escape')
@@ -242,7 +254,7 @@ async function lifeMapToHome(page, journey, mode, root) {
 
 const variants = [
   { id: 'desktop-pointer-keyboard-ascent', mode: 'pointer', realAscent: true, context: { viewport: { width: 1440, height: 900 } } },
-  { id: 'mobile-touch', mode: 'touch', realAscent: false, context: { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, deviceScaleFactor: 2 } },
+  { id: 'mobile-touch', mode: 'touch', realAscent: true, context: { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, deviceScaleFactor: 2 } },
   { id: 'desktop-reduced-keyboard', mode: 'keyboard', realAscent: false, context: { viewport: { width: 1280, height: 800 }, reducedMotion: 'reduce' } },
 ]
 
@@ -262,7 +274,7 @@ try {
     const readDiagnostics = diagnostics(page)
     try {
       const home = await openHome(page, journey)
-      if (variant.realAscent) await proveRealHomeAscent(page, journey, home)
+      if (variant.realAscent) await proveRealHomeAscent(page, journey, home, variant.mode)
       else await directAccessibleHomeHandoff(page, journey, variant.mode)
       const map = await lifeMapOverview(page, journey)
       const identity = await selectQuietReset(page, journey, variant.mode, map)

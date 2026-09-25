@@ -16,7 +16,7 @@ test('V280 overview owns data-derived celestial regions without wallpaper or gra
   assert.match(cosmic, /data-life-map-overview-authority="v280-data-derived-personal-universe-regions"/)
   const overview = sliceBetween(cosmic, 'function OverviewRegions', 'function SelectedTravelWeather')
   assert.match(overview, /node\.eraId \|\| node\.clusterId \|\| node\.type/)
-  assert.match(overview, /cosmicPoint\(node, index\)/)
+  assert.match(overview, /cosmicPoint\(node\)/)
   assert.match(overview, /slice\(0, 6\)/)
   assert.match(overview, /life-map-overview-personal-universe-regions/)
   assert.match(overview, /data-derived-personal-universe-geography/)

@@ -16,7 +16,7 @@ test('persistent Life Map mounts the Cosmic owner guarded by this contract', () 
 test('mounted Cosmic memory coordinates are stable across source array ordering', () => {
   assert.match(cosmic, /const COSMIC_LAYOUT_VERSION = 3;/)
   assert.match(cosmic, /const COSMIC_SEED_VERSION = 1;/)
-  assert.match(cosmic, /function cosmicPoint\(node: LifeMapNode, _index: number\): Point3/)
+  assert.match(cosmic, /function cosmicPoint\(node: LifeMapNode\): Point3/)
   assert.match(cosmic, /v\$\{COSMIC_LAYOUT_VERSION\}:s\$\{COSMIC_SEED_VERSION\}:\$\{node\.id\}/)
   assert.match(cosmic, /seeded\(seed, 17\.41\)/)
 

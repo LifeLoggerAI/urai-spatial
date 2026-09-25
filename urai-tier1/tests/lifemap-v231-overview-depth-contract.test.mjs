@@ -38,7 +38,7 @@ test('historical terrain grammar remains absent from current visual authority', 
 })
 
 test('selected world point and rendered Memory Star share the same cosmic placement function', () => {
-  assert.match(scene, /const point = useMemo\(\(\) => positionOverride \?\? cosmicPoint\(node, index\)/)
-  assert.match(scene, /const target = new THREE\.Vector3\(\.\.\.cosmicPoint\(selected, selectedIndex\)\)/)
-  assert.match(scene, /const selectedPoint = selected \? cosmicPoint\(selected, selectedIndex\) : null/)
+  assert.match(scene, /const point = useMemo\(\(\) => positionOverride \?\? cosmicPoint\(node\)/)
+  assert.match(scene, /const target = new THREE\.Vector3\(\.\.\.cosmicPoint\(selected\)\)/)
+  assert.match(scene, /const selectedPoint = selected \? cosmicPoint\(selected\) : null/)
 })

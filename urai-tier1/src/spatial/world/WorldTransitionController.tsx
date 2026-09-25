@@ -61,7 +61,11 @@ function buildTravelHref(request: UraiWorldTravelRequest) {
   const memoryId = target.searchParams.get('memoryId')
   const nodeId = target.searchParams.get('node')
   if (request.destination === 'life-map') {
-    if (!nodeId && memoryId) target.searchParams.set('node', memoryId)
+    // Life Map selection identity is the canonical node id. Internal realm memory
+    // ids (for example disclosed-demo namespaces) must not leak back into the
+    // Life Map route and destabilize Focus/Replay round-tripping.
+    if (nodeId) target.searchParams.set('memoryId', nodeId)
+    else if (memoryId) target.searchParams.set('node', memoryId)
   } else if (!memoryId && nodeId) {
     target.searchParams.set('memoryId', nodeId)
   }

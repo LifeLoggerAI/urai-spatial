@@ -74,6 +74,8 @@ test('Travel preserves context and supports deterministic reversal', () => {
   for (const key of ['memoryId', 'thread', 'personId', 'placeId', 'manifestId', 'privacyMode']) {
     assert.match(controller, new RegExp(`['"]${key}['"]`))
   }
+  assert.match(controller, /if \(nodeId\) target\.searchParams\.set\('memoryId', nodeId\)/)
+  assert.match(controller, /else if \(memoryId\) target\.searchParams\.set\('node', memoryId\)/)
   assert.match(provider, /previousDestination/)
   assert.match(provider, /cameraCheckpoint/)
   assert.match(controller, /event\.key !== ['"]Escape['"]/)

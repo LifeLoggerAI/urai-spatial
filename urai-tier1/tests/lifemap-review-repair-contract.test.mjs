@@ -28,9 +28,9 @@ test('Memory Star hover and related emphasis preserve the same mounted stellar o
 })
 
 test('selected camera goals use the same deterministic cosmic point as rendered memories', () => {
-  assert.match(scene, /const point = useMemo\(\(\) => positionOverride \?\? cosmicPoint\(node, index\)/)
-  assert.match(scene, /const target = new THREE\.Vector3\(\.\.\.cosmicPoint\(selected, selectedIndex\)\)/)
-  assert.match(scene, /const selectedPoint = selected \? cosmicPoint\(selected, selectedIndex\) : null/)
+  assert.match(scene, /const point = useMemo\(\(\) => positionOverride \?\? cosmicPoint\(node\)/)
+  assert.match(scene, /const target = new THREE\.Vector3\(\.\.\.cosmicPoint\(selected\)\)/)
+  assert.match(scene, /const selectedPoint = selected \? cosmicPoint\(selected\) : null/)
   assert.match(scene, /COSMIC_LAYOUT_VERSION = 3/)
   assert.match(scene, /COSMIC_SEED_VERSION = 1/)
 })

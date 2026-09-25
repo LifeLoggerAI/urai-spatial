@@ -35,7 +35,7 @@ test('selected Life Map mode resolves exact node identity into Focus and Replay 
   assert.match(cosmic, /const queryNode = token\(params\.get\("node"\) \|\| params\.get\("memoryId"\)\)/)
   assert.match(cosmic, /nodes\.find\(\(candidate\) => candidate\.id === queryNode\)/)
   assert.match(cosmic, /setSelectedId\(node\.id\)/)
-  assert.match(cosmic, /cosmicPoint\(selected, selectedIndex\)/)
+  assert.match(cosmic, /cosmicPoint\(selected\)/)
   assert.match(cosmic, /next\.set\("memoryId", selected\.id\)/)
   assert.match(cosmic, /next\.set\("node", selected\.id\)/)
   assert.match(cosmic, /next\.set\("returnNode", selected\.id\)/)

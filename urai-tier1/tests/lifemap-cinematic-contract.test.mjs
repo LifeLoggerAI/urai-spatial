@@ -36,7 +36,7 @@ test('Memory Stars select in place before Focus or Replay navigation', () => {
   includesAll(scene, [
     'selectedId, setSelectedId',
     'setSelectedId(node.id)',
-    'cosmicPoint(selected, selectedIndex)',
+    'cosmicPoint(selected)',
     'destinationHref("focus")',
     'destinationHref("replay")',
     'Enter Focus',
