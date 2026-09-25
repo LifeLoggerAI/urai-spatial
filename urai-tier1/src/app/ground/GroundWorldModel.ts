@@ -18,8 +18,7 @@ export type GroundChamberForm =
   | "reflection"
   | "vault"
   | "observatory"
-  | "aperture"
-  | "theater";
+  | "aperture";
 export type GroundLayer = "threshold" | "civic" | "continuity" | "deep";
 
 export type GroundDestination = {
