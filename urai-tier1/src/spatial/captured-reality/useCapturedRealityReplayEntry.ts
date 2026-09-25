@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { getAuth, onAuthStateChanged } from 'firebase/auth'
 import { httpsCallable } from 'firebase/functions'
 import { app, firebasePublicEnvReady, functions } from '@/lib/firebase/client'
+import { capturedRealityDeviceTier } from './capturedRealityRuntime'
 
 type ReplayEntryResponse = {
   available: boolean
@@ -35,12 +36,13 @@ export function useCapturedRealityReplayEntry(memoryId: string | null) {
         return
       }
 
-      const callable = httpsCallable<{ memoryId: string }, ReplayEntryResponse>(
+      const deviceTier = capturedRealityDeviceTier(navigator.userAgent)
+      const callable = httpsCallable<{ memoryId: string; deviceTier: 'desktop' | 'mobile' }, ReplayEntryResponse>(
         functions,
         'getCapturedRealityReplayEntry',
       )
 
-      void callable({ memoryId }).then((result) => {
+      void callable({ memoryId, deviceTier }).then((result) => {
         if (cancelled) return
         const data = result.data
         if (!data.available || !data.assetId || !SAFE_ASSET_ID.test(data.assetId)) {
