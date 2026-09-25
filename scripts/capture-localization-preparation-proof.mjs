@@ -154,6 +154,9 @@ try {
       }
 
       if (spec.offlineAfterLoad) {
+        await page.waitForLoadState('networkidle', { timeout: 45_000 })
+        const runtime = page.locator('.urai-home-spatial-runtime-layer[data-webgl-ready="true"]').first()
+        await runtime.waitFor({ state: 'visible', timeout: 45_000 })
         await context.setOffline(true)
         await page.evaluate(() => window.dispatchEvent(new Event('offline')))
         await page.waitForFunction(([locale, direction]) => document.documentElement.lang === locale && document.documentElement.dir === direction, [spec.locale, spec.dir], { timeout: 5000 })
