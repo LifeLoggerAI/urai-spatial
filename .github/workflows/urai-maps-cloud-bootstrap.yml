@@ -12,7 +12,7 @@ on:
   workflow_dispatch:
     inputs:
       operation:
-        description: Audit current API state or enable the two governed Maps APIs
+        description: Audit current API state or enable the governed UrAi world stack APIs
         required: true
         type: choice
         options:
@@ -33,7 +33,7 @@ concurrency:
 env:
   EXPECTED_REPOSITORY: LifeLoggerAI/urai-spatial
   EXPECTED_PROJECT_ID: urai-4dc1d
-  TARGET_SERVICES: maps-backend.googleapis.com geocoding-backend.googleapis.com
+  TARGET_SERVICES: maps-backend.googleapis.com tile.googleapis.com places-backend.googleapis.com geocoding-backend.googleapis.com routes.googleapis.com elevation-backend.googleapis.com roads.googleapis.com timezone-backend.googleapis.com weather.googleapis.com aerialview.googleapis.com arcore.googleapis.com
   CANDIDATE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
 
 jobs:
@@ -126,7 +126,8 @@ jobs:
           test -n "$active_account"
           test "$active_account" = '${{ vars.GCP_MAPS_AUDIT_SERVICE_ACCOUNT }}'
           gcloud services list --enabled --project "$EXPECTED_PROJECT_ID" --format='value(config.name)' | sort > enabled-all.txt
-          grep -E '^(maps-backend|geocoding-backend)\.googleapis\.com$' enabled-all.txt > enabled-governed.txt || true
+          printf '%s\n' $TARGET_SERVICES | sort > target-services.txt
+          grep -Fxf target-services.txt enabled-all.txt > enabled-governed.txt || true
           ACTIVE_ACCOUNT="$active_account" node <<'NODE'
           const fs = require('node:fs')
           const enabled = fs.readFileSync('enabled-governed.txt', 'utf8').split(/\r?\n/).filter(Boolean)
@@ -153,6 +154,7 @@ jobs:
           path: |
             maps-cloud-audit.json
             enabled-governed.txt
+            target-services.txt
           if-no-files-found: error
           retention-days: 90
 
@@ -216,14 +218,15 @@ jobs:
           set -euo pipefail
           test "$(gcloud config get-value project 2>/dev/null)" = "$EXPECTED_PROJECT_ID"
           gcloud services list --enabled --project "$EXPECTED_PROJECT_ID" --format='value(config.name)' | sort > enabled-before-all.txt
-          grep -E '^(maps-backend|geocoding-backend)\.googleapis\.com$' enabled-before-all.txt > enabled-before-governed.txt || true
+          printf '%s\n' $TARGET_SERVICES | sort > target-services.txt
+          grep -Fxf target-services.txt enabled-before-all.txt > enabled-before-governed.txt || true
 
       - name: Enable only the governed Maps APIs
         if: inputs.operation == 'enable'
         shell: bash
         run: |
           set -euo pipefail
-          gcloud services enable maps-backend.googleapis.com geocoding-backend.googleapis.com --project "$EXPECTED_PROJECT_ID" --quiet
+          gcloud services enable $TARGET_SERVICES --project "$EXPECTED_PROJECT_ID" --quiet
 
       - name: Verify after state and write exact receipt
         shell: bash
@@ -235,10 +238,11 @@ jobs:
           test -n "$active_account"
           test "$active_account" = '${{ vars.GCP_MAPS_ADMIN_SERVICE_ACCOUNT }}'
           gcloud services list --enabled --project "$EXPECTED_PROJECT_ID" --format='value(config.name)' | sort > enabled-after-all.txt
-          grep -E '^(maps-backend|geocoding-backend)\.googleapis\.com$' enabled-after-all.txt > enabled-after-governed.txt || true
+          grep -Fxf target-services.txt enabled-after-all.txt > enabled-after-governed.txt || true
           if [[ "$OPERATION" = enable ]]; then
-            grep -Fx 'maps-backend.googleapis.com' enabled-after-governed.txt
-            grep -Fx 'geocoding-backend.googleapis.com' enabled-after-governed.txt
+            while IFS= read -r service; do
+              grep -Fx "$service" enabled-after-governed.txt
+            done < target-services.txt
           fi
           ACTIVE_ACCOUNT="$active_account" node <<'NODE'
           const fs = require('node:fs')
@@ -272,5 +276,6 @@ jobs:
             maps-cloud-bootstrap-receipt.json
             enabled-before-governed.txt
             enabled-after-governed.txt
+            target-services.txt
           if-no-files-found: error
           retention-days: 90
