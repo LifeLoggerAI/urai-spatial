@@ -8,6 +8,8 @@ export type CapturedRealitySplatProps = {
   position?: [number, number, number]
   rotation?: [number, number, number]
   scale?: number | [number, number, number]
+  chunkSize?: number
+  alphaHash?: boolean
 }
 
 /**
@@ -25,6 +27,8 @@ export function CapturedRealitySplat({
   position = [0, 0, 0],
   rotation = [0, 0, 0],
   scale = 1,
+  chunkSize,
+  alphaHash = true,
 }: CapturedRealitySplatProps) {
   if (decision.mode !== 'gaussian-splat' || !decision.assetUrl) return null
 
@@ -39,7 +43,7 @@ export function CapturedRealitySplat({
         autobiographical: decision.autobiographical,
       }}
     >
-      <Splat src={decision.assetUrl} />
+      <Splat src={decision.assetUrl} chunkSize={chunkSize} alphaHash={alphaHash} />
     </group>
   )
 }
