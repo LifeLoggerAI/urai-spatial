@@ -54,8 +54,8 @@ export function GroundGateway() {
       </p>
       <style jsx>{`
         .urai-ground-gateway-semantic{position:fixed;z-index:2147482000;left:max(12px,env(safe-area-inset-left));bottom:max(12px,env(safe-area-inset-bottom));pointer-events:none}
-        .urai-ground-gateway-semantic__action{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0;pointer-events:auto}
-        .urai-ground-gateway-semantic__action:focus-visible{position:relative;width:auto;height:auto;min-width:48px;min-height:48px;margin:0;padding:0 14px;clip:auto;overflow:visible;border:1px solid rgba(231,248,243,.38);border-radius:999px;background:rgba(4,16,19,.88);color:#f4fbf8;font:700 12px/1 system-ui;letter-spacing:.04em;outline:3px solid #fff;outline-offset:3px;white-space:normal}
+        .urai-ground-gateway-semantic__action{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0;pointer-events:auto;opacity:0}
+        .urai-ground-gateway-semantic__action:focus-visible{position:relative;width:auto;height:auto;min-width:48px;min-height:48px;margin:0;padding:0 14px;clip:auto;overflow:visible;border:1px solid rgba(231,248,243,.38);border-radius:999px;background:rgba(4,16,19,.88);color:#f4fbf8;font:700 12px/1 system-ui;letter-spacing:.04em;outline:3px solid #fff;outline-offset:3px;white-space:normal;opacity:1}
         .urai-ground-gateway-semantic__action:disabled{display:none}
       `}</style>
     </div>
