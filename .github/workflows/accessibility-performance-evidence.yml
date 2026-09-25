@@ -40,6 +40,7 @@ on:
       - 'urai-tier1/src/app/mirror/**'
       - 'urai-tier1/src/app/passport/**'
       - 'urai-tier1/src/app/spatial/ar-vr/**'
+      - 'urai-tier1/src/lib/release/postLaunchRealmGate.ts'
       - 'urai-tier1/src/spatial/world/worldEvents.ts'
       - 'urai-tier1/src/spatial/world/WorldTransitionController.tsx'
       - 'urai-tier1/src/spatial/memory/useSelectedMemory.ts'
@@ -96,6 +97,7 @@ on:
       - 'urai-tier1/src/app/mirror/**'
       - 'urai-tier1/src/app/passport/**'
       - 'urai-tier1/src/app/spatial/ar-vr/**'
+      - 'urai-tier1/src/lib/release/postLaunchRealmGate.ts'
       - 'urai-tier1/src/spatial/world/worldEvents.ts'
       - 'urai-tier1/src/spatial/world/WorldTransitionController.tsx'
       - 'urai-tier1/src/spatial/memory/useSelectedMemory.ts'
@@ -159,6 +161,8 @@ jobs:
           pnpm install --frozen-lockfile
 
       - name: Typecheck and build exact candidate
+        env:
+          URAI_ENABLE_POST_LAUNCH_REALMS: 'true'
         run: |
           pnpm --dir urai-tier1 typecheck
           pnpm build:static

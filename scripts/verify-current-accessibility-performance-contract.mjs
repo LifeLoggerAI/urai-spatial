@@ -3,11 +3,13 @@ import { fileURLToPath } from 'node:url'
 
 const repoRoot = fileURLToPath(new URL('..', import.meta.url))
 const read = (relative) => readFile(new URL(`../${relative}`, import.meta.url), 'utf8')
-const [evidence, runtime, events, companion] = await Promise.all([
+const [evidence, runtime, events, companion, workflow, xrGate] = await Promise.all([
   read('urai-tier1/tests/accessibility-performance-evidence.spec.ts'),
   read('urai-tier1/src/app/HomeSpatialRuntimeLayer.tsx'),
   read('urai-tier1/src/spatial/world/worldEvents.ts'),
   read('urai-tier1/src/spatial/world/PersistentWorldCompanion.tsx'),
+  read('.github/workflows/accessibility-performance-evidence.yml'),
+  read('urai-tier1/src/lib/release/postLaunchRealmGate.ts'),
 ])
 
 function requireMatch(source, expression, label) {
@@ -25,6 +27,10 @@ requireMatch(evidence, /page\.keyboard\.press\(['\"]Escape['\"]\)/, 'Orb Escape 
 requireMatch(evidence, /expect\(orb\)\.toBeFocused\(\)/, 'exact Orb activator focus return assertion')
 requireMatch(evidence, /WebGL context loss recovery is bounded and preserves the route/, 'bounded WebGL recovery proof')
 requireMatch(evidence, /data-webgl-recovery-attempts', '1'/, 'single recovery attempt assertion')
+requireMatch(evidence, /XR web controls meet the 48 CSS pixel minimum on narrow mobile/, 'gated XR accessibility browser proof')
+requireMatch(workflow, /URAI_ENABLE_POST_LAUNCH_REALMS: 'true'/, 'accessibility-only XR proof opt-in')
+requireMatch(workflow, /urai-tier1\/src\/lib\/release\/postLaunchRealmGate\.ts/, 'XR release-gate source trigger')
+requireMatch(xrGate, /process\.env\.URAI_ENABLE_POST_LAUNCH_REALMS === 'true'/, 'default fail-closed XR release gate')
 
 const semanticOrbCount = (runtime.match(/data-testid=\"home-semantic-orb\"/g) || []).length
 if (semanticOrbCount !== 1) throw new Error(`Expected one canonical Home semantic Orb control; found ${semanticOrbCount}`)
