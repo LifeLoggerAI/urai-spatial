@@ -15,15 +15,15 @@ export default async function CapturedRealityRoutePage({
   params,
   searchParams,
 }: {
-  params: RouteParams | Promise<RouteParams>
-  searchParams?: RouteSearchParams | Promise<RouteSearchParams>
+  params: Promise<RouteParams>
+  searchParams?: Promise<RouteSearchParams>
 }) {
   if (!capturedRealityReleaseEnabled()) notFound()
 
-  const resolved = await Promise.resolve(params)
+  const resolved = await params
   if (!resolved?.assetId || !validAssetId(resolved.assetId)) notFound()
 
-  const query = await Promise.resolve(searchParams ?? {})
+  const query = searchParams ? await searchParams : {}
   const proofValue = Array.isArray(query.proof) ? query.proof[0] : query.proof
   const proofMode = proofValue === '1'
   if (proofMode && process.env.URAI_ENABLE_CAPTURED_REALITY_PROOF !== 'true') notFound()
