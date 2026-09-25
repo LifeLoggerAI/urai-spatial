@@ -25,34 +25,28 @@ async function waitPath(page, expected, timeout = 60_000) {
 
 async function waitAttr(locator, name, expected, timeout = 60_000) {
   const start = Date.now()
+  let lastValue = null
+  let lastReadError = null
   while (Date.now() - start < timeout) {
-    const value = await locator.evaluateAll((nodes, attributeName) => nodes[0]?.getAttribute(attributeName) ?? null, name)
-    if (value === expected) return
-    await sleep(100)
+    const remaining = timeout - (Date.now() - start)
+    if (remaining <= 0) break
+    if (await locator.count()) {
+      try {
+        lastValue = await locator.getAttribute(name, { timeout: Math.min(10_000, remaining) })
+        lastReadError = null
+        if (lastValue === expected) return
+      } catch (error) {
+        lastReadError = String(error)
+      }
+    }
+    await sleep(Math.min(100, remaining))
   }
-  throw new Error(`timeout waiting for ${name}=${expected}`)
+  throw new Error(`timeout waiting for ${name}=${expected}; lastValue=${JSON.stringify(lastValue)}; lastReadError=${lastReadError}`)
 }
 
 async function capture(page, journey, id) {
   const filename = `${journey.id}-${id}.png`
-  const candidates = page.locator(
-    '.urai-asset-home-world[data-home-primary-owner="asset-driven"], [data-testid="urai-true-3d-life-map"], [data-testid="urai-final-focus-chamber"], [data-testid="cinematic-replay-client"]',
-  )
-  let target = null
-  for (let index = 0; index < await candidates.count(); index += 1) {
-    const candidate = candidates.nth(index)
-    if (await candidate.isVisible()) { target = candidate; break }
-  }
-  if (target) {
-    const movingHome = await target.evaluate((node) => node.matches('.urai-asset-home-world[data-home-primary-owner="asset-driven"]'))
-    if (movingHome) {
-      await page.screenshot({ path: path.join(outputDir, filename), fullPage: false, animations: 'disabled', caret: 'hide', timeout: 90_000 })
-    } else {
-      await target.screenshot({ path: path.join(outputDir, filename), animations: 'disabled', caret: 'hide', timeout: 90_000 })
-    }
-  } else {
-    await page.screenshot({ path: path.join(outputDir, filename), fullPage: false, animations: 'disabled', caret: 'hide', timeout: 90_000 })
-  }
+  await page.screenshot({ path: path.join(outputDir, filename), fullPage: false, animations: 'disabled', caret: 'hide', timeout: 90_000 })
   journey.steps.push({ id, url: page.url(), filename })
 }
 
