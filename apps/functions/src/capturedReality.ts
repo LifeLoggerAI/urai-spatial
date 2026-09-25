@@ -65,6 +65,9 @@ function publicAssetState(snapshot: FirebaseFirestore.DocumentSnapshot) {
     state: String(data.state ?? 'unknown'),
     reconstructionMethod: String(data.reconstructionMethod ?? 'unknown'),
     reviewState: String(data.reviewState ?? 'unreviewed'),
+    releaseState: String(data.releaseState ?? 'hard-off'),
+    browserCertified: data.browserCertified === true,
+    mobileCertified: data.mobileCertified === true,
     sourceCount: Array.isArray(data.sourceIds) ? data.sourceIds.length : 0,
     truthLabel: String(data.truthLabel ?? 'Unknown / unresolved reconstruction').slice(0, 240),
     createdAt: data.createdAt ?? null,
@@ -99,6 +102,10 @@ export const getCapturedRealityRuntimeUrl = functions.https.onCall(async (data, 
 
   await requireLocationRuntimeConsent(uid)
   const assetId = requireToken(data?.assetId, 'assetId')
+  const deviceTier = requireToken(data?.deviceTier, 'deviceTier', 16)
+  if (deviceTier !== 'desktop' && deviceTier !== 'mobile') {
+    throw new functions.https.HttpsError('invalid-argument', 'CAPTURED_REALITY_BROWSER_DEVICE_TIER_REQUIRED')
+  }
   const snapshot = await db.doc(`users/${uid}/capturedRealityAssets/${assetId}`).get()
   if (!snapshot.exists || snapshot.get('ownerId') !== uid) {
     throw new functions.https.HttpsError('not-found', 'Captured-reality asset was not found.')
@@ -106,6 +113,16 @@ export const getCapturedRealityRuntimeUrl = functions.https.onCall(async (data, 
 
   if (snapshot.get('state') !== 'ready' || snapshot.get('reviewState') !== 'accepted') {
     throw new functions.https.HttpsError('failed-precondition', 'CAPTURED_REALITY_ASSET_NOT_ACCEPTED')
+  }
+
+  const releaseState = String(snapshot.get('releaseState') ?? 'hard-off')
+  if (!['private-pilot', 'private-beta', 'launch-enabled'].includes(releaseState)) {
+    throw new functions.https.HttpsError('failed-precondition', 'CAPTURED_REALITY_ASSET_HARD_OFF')
+  }
+
+  const certified = deviceTier === 'mobile' ? snapshot.get('mobileCertified') === true : snapshot.get('browserCertified') === true
+  if (!certified) {
+    throw new functions.https.HttpsError('failed-precondition', deviceTier === 'mobile' ? 'CAPTURED_REALITY_MOBILE_NOT_CERTIFIED' : 'CAPTURED_REALITY_BROWSER_NOT_CERTIFIED')
   }
 
   const truthClass = String(snapshot.get('truthClass') ?? 'unknown')
@@ -131,6 +148,7 @@ export const getCapturedRealityRuntimeUrl = functions.https.onCall(async (data, 
 
   return {
     assetId,
+    deviceTier,
     url,
     expiresAt: new Date(expiresAt).toISOString(),
     truthLabel: String(snapshot.get('truthLabel') ?? 'Spatial reconstruction from recorded sources').slice(0, 240),
