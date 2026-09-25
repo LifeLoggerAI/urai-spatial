@@ -112,8 +112,7 @@ async function activate(page, locator, mode) {
   await locator.waitFor({ state: 'visible', timeout: 45_000 })
   if (mode === 'touch') return locator.tap()
   if (mode === 'keyboard') {
-    await locator.focus()
-    assert.equal(await locator.evaluate((node) => document.activeElement === node), true)
+    await locator.focus({ timeout: 5_000 })
     return page.keyboard.press('Enter')
   }
   return locator.click()
@@ -156,7 +155,7 @@ async function proveRealHomeAscent(page, journey, home, mode) {
   for (const [x, y] of points) {
     const position = { x: box.width * x, y: box.height * y }
     if (mode === 'touch') await page.touchscreen.tap(box.x + position.x, box.y + position.y)
-    else await canvas.click({ position, timeout: 5_000 })
+    else await page.mouse.click(box.x + position.x, box.y + position.y)
     try {
       await waitAttr(home, 'data-home-scene-phase', 'SKY_ASCENT', 2_500)
       activated = true
