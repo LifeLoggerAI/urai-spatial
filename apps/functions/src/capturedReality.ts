@@ -25,6 +25,10 @@ function capturedRealityEnabled() {
   return process.env.URAI_ENABLE_CAPTURED_REALITY === 'true'
 }
 
+function capturedRealityProofEnabled() {
+  return process.env.URAI_ENABLE_CAPTURED_REALITY_PROOF === 'true'
+}
+
 async function requireLocationRuntimeConsent(uid: string) {
   const [policy, runtime] = await Promise.all([
     db.doc(`users/${uid}/privacyPolicy/current`).get(),
@@ -103,6 +107,10 @@ export const getCapturedRealityRuntimeUrl = functions.https.onCall(async (data, 
   await requireLocationRuntimeConsent(uid)
   const assetId = requireToken(data?.assetId, 'assetId')
   const deviceTier = requireToken(data?.deviceTier, 'deviceTier', 16)
+  const accessMode = data?.accessMode === 'proof' ? 'proof' : 'runtime'
+  if (accessMode === 'proof' && !capturedRealityProofEnabled()) {
+    throw new functions.https.HttpsError('failed-precondition', 'CAPTURED_REALITY_PROOF_DISABLED')
+  }
   if (deviceTier !== 'desktop' && deviceTier !== 'mobile') {
     throw new functions.https.HttpsError('invalid-argument', 'CAPTURED_REALITY_BROWSER_DEVICE_TIER_REQUIRED')
   }
@@ -120,8 +128,12 @@ export const getCapturedRealityRuntimeUrl = functions.https.onCall(async (data, 
     throw new functions.https.HttpsError('failed-precondition', 'CAPTURED_REALITY_ASSET_HARD_OFF')
   }
 
+  if (accessMode === 'proof' && releaseState !== 'private-pilot') {
+    throw new functions.https.HttpsError('failed-precondition', 'CAPTURED_REALITY_PROOF_REQUIRES_PRIVATE_PILOT')
+  }
+
   const certified = deviceTier === 'mobile' ? snapshot.get('mobileCertified') === true : snapshot.get('browserCertified') === true
-  if (!certified) {
+  if (accessMode === 'runtime' && !certified) {
     throw new functions.https.HttpsError('failed-precondition', deviceTier === 'mobile' ? 'CAPTURED_REALITY_MOBILE_NOT_CERTIFIED' : 'CAPTURED_REALITY_BROWSER_NOT_CERTIFIED')
   }
 
@@ -142,13 +154,16 @@ export const getCapturedRealityRuntimeUrl = functions.https.onCall(async (data, 
     kind: 'captured_reality.runtime_accessed',
     assetId,
     truthClass,
-    releaseGate: 'enabled',
+    releaseGate: accessMode === 'proof' ? 'proof-only' : 'enabled',
+    accessMode,
+    deviceTier,
     recordedAt: admin.firestore.FieldValue.serverTimestamp(),
   }, { merge: true })
 
   return {
     assetId,
     deviceTier,
+    accessMode,
     url,
     expiresAt: new Date(expiresAt).toISOString(),
     truthLabel: String(snapshot.get('truthLabel') ?? 'Spatial reconstruction from recorded sources').slice(0, 240),
