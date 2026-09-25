@@ -1,5 +1,4 @@
 import PassportVaultClient from './PassportVaultClient'
-import GlobalEmotionalFieldConsentCard from './GlobalEmotionalFieldConsentCard'
 
 export const dynamic = 'force-static'
 export const revalidate = false
@@ -10,10 +9,5 @@ export const metadata = {
 }
 
 export default function PassportRoutePage() {
-  return (
-    <>
-      <PassportVaultClient />
-      <GlobalEmotionalFieldConsentCard />
-    </>
-  )
+  return <PassportVaultClient />
 }

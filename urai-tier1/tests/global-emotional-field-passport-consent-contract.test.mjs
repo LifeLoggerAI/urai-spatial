@@ -3,13 +3,16 @@ import fs from 'node:fs'
 import test from 'node:test'
 
 const passportPage = fs.readFileSync(new URL('../src/app/passport/page.tsx', import.meta.url), 'utf8')
+const passportClient = fs.readFileSync(new URL('../src/app/passport/PassportVaultClient.tsx', import.meta.url), 'utf8')
 const publicGoodCard = fs.readFileSync(new URL('../src/app/passport/GlobalEmotionalFieldConsentCard.tsx', import.meta.url), 'utf8')
 const privacyClient = fs.readFileSync(new URL('../src/lib/privacy/operationalPrivacyClient.ts', import.meta.url), 'utf8')
 const publicGoodFunctions = fs.readFileSync(new URL('../../apps/functions/src/publicGoodConsent.ts', import.meta.url), 'utf8')
 const functionIndex = fs.readFileSync(new URL('../../apps/functions/src/index.ts', import.meta.url), 'utf8')
 
 test('Passport owns dedicated fail-closed C8 public-good consent without activating publication', () => {
-  assert.match(passportPage, /GlobalEmotionalFieldConsentCard/)
+  assert.doesNotMatch(passportPage, /GlobalEmotionalFieldConsentCard/)
+  assert.match(passportClient, /import GlobalEmotionalFieldConsentCard from '\.\/GlobalEmotionalFieldConsentCard'/)
+  assert.match(passportClient, /<GlobalEmotionalFieldConsentCard \/>/)
   assert.match(publicGoodCard, /\(\['off', 'limited', 'on'\] as const\)/)
   assert.match(publicGoodCard, /Default is <strong>Off<\/strong>/)
   assert.match(publicGoodCard, /Absolute privacy floor: \{snapshot\.minimumCohortFloor\} users/)

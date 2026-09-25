@@ -20,6 +20,20 @@ async function save(name: string, evidence: RuntimeEvidence) {
   await fs.writeFile(path.join(evidenceRoot, `${name}.json`), JSON.stringify(evidence, null, 2))
 }
 
+async function expectPassportOwnsScroll(page: Page) {
+  const metrics = await page.evaluate(() => {
+    const root = document.querySelector<HTMLElement>('main[data-route-owner="passport-ownership-vault"]')
+    return {
+      documentHeight: document.documentElement.scrollHeight,
+      viewportHeight: window.innerHeight,
+      rootClientHeight: root?.clientHeight ?? 0,
+      rootScrollHeight: root?.scrollHeight ?? 0,
+    }
+  })
+  expect(metrics.documentHeight).toBeLessThanOrEqual(metrics.viewportHeight + 2)
+  expect(metrics.rootScrollHeight).toBeGreaterThan(metrics.rootClientHeight)
+}
+
 async function openDemo(page: Page) {
   await page.goto(`${baseURL}/passport/?demo=1`, { waitUntil: 'networkidle' })
   await expect(page.locator('main[data-route-owner="passport-ownership-vault"]')).toBeVisible()
@@ -38,7 +52,12 @@ test('desktop Ownership Vault exposes every zone and transition', async ({ page 
   await expect(page.getByRole('link', { name: 'Enter Consent Sanctuary' })).toHaveAttribute('href', '/privacy-controls')
   await page.keyboard.press('Home')
   await expect(page.locator('#passport-controls')).toBeFocused()
+  await expectPassportOwnsScroll(page)
   await page.screenshot({ path: path.join(evidenceRoot, 'desktop-ownership-vault.png'), fullPage: true })
+  const publicGood = page.getByTestId('passport-global-emotional-field-consent')
+  await publicGood.scrollIntoViewIfNeeded()
+  await expect(publicGood).toBeVisible()
+  await page.screenshot({ path: path.join(evidenceRoot, 'desktop-public-good-consent.png') })
   await save('desktop-runtime', runtime)
   expect(runtime.consoleErrors).toEqual([])
   expect(runtime.pageErrors).toEqual([])
@@ -65,6 +84,7 @@ test('portrait mobile supports direct controls without spatial navigation', asyn
   await expect(page.locator('#passport-controls')).toBeFocused()
   await page.getByRole('button', { name: 'Audit corridor' }).click()
   await expect(page.getByRole('heading', { name: 'Audit corridor' })).toBeVisible()
+  await expectPassportOwnsScroll(page)
   await page.screenshot({ path: path.join(evidenceRoot, 'portrait-mobile-vault.png'), fullPage: true })
   await save('mobile-runtime', runtime)
   expect(runtime.consoleErrors).toEqual([])
