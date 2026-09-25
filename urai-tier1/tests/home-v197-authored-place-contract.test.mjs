@@ -32,11 +32,9 @@ test('V197 authored GLBs are committed, nontrivial and transport-safe', () => {
   }
 })
 
-test('V199 runtime composes both places and the Orb inside the initial portrait-safe frame', () => {
-  const runtime = readFileSync(new URL('../src/spatial/layout/HomeWorldProductionV76.tsx', import.meta.url), 'utf8')
-  assert.match(runtime, /home-v199-\$\{side\}-authored-memory-place/)
-  assert.match(runtime, /position=\{\[isGround\?1\.15:-1\.15,isGround\?-0\.82:-0\.84,0\]\}/)
-  assert.match(runtime, /scale=\{isGround\?\[1\.34,1\.34,1\.34\]:\[0\.82,0\.82,0\.82\]\}/)
-  assert.match(runtime, /home-v201-authored-single-connected-folded-living-memory-presence/)
-  assert.match(runtime, /scale=\{\[0\.54,0\.54,0\.54\]\}/)
+test('historical V197/V201 authored place prototypes do not re-enter current V293 Home runtime', () => {
+  const runtime = readFileSync(new URL('../src/spatial/layout/HomeWorldProductionV223.tsx', import.meta.url), 'utf8')
+  assert.doesNotMatch(runtime, /home-v199-\$\{side\}-authored-memory-place/)
+  assert.doesNotMatch(runtime, /home-v201-authored-single-connected-folded-living-memory-presence/)
+  assert.match(runtime, /<HomeVisualAuthority \/>/)
 })
