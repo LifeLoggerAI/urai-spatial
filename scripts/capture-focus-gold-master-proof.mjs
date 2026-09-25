@@ -170,6 +170,16 @@ async function waitForFocus(page, { selected = false, noWebGL = false } = {}) {
     await page.locator('[data-focus-fallback="semantic"]:visible').first().waitFor({ state: 'visible', timeout: 15_000 })
   } else {
     await shell.locator('canvas').first().waitFor({ state: 'visible', timeout: 45_000 })
+    await page.waitForFunction(() => {
+      const nodes = [...document.querySelectorAll('[data-testid="urai-final-focus-chamber"]')]
+      const node = nodes.find((candidate) => {
+        const style = getComputedStyle(candidate)
+        const rect = candidate.getBoundingClientRect()
+        return style.display !== 'none' && style.visibility !== 'hidden' && Number.parseFloat(style.opacity || '1') > 0.02
+          && rect.width > 100 && rect.height > 100
+      })
+      return node?.getAttribute('data-focus-render-ready') === 'true'
+    }, null, { timeout: 45_000, polling: 50 })
     await delay(850)
     await waitFrames(page, 4)
   }
@@ -213,6 +223,7 @@ async function describeFocus(page, { selected = false, noWebGL = false } = {}) {
       canvasVisible: Boolean(canvas && canvasRect && canvasRect.width > 100 && canvasRect.height > 100),
       canvasWidth: canvasRect ? Math.round(canvasRect.width) : 0,
       canvasHeight: canvasRect ? Math.round(canvasRect.height) : 0,
+      renderReady: shell?.getAttribute('data-focus-render-ready') === 'true',
       semanticFallbackVisible: Boolean(shell?.querySelector('[data-focus-fallback="semantic"]')),
       demoDisclosure: text.includes('DEMO FIXTURE · NOT PERSONAL DATA'),
       observatoryHeading: text.includes('Focus Observatory'),
@@ -234,7 +245,7 @@ async function describeFocus(page, { selected = false, noWebGL = false } = {}) {
       && result.demoDisclosure
       && result.enterReplay
     )
-    const renderOkay = noWebGLExpected ? result.semanticFallbackVisible : result.canvasVisible
+    const renderOkay = noWebGLExpected ? result.semanticFallbackVisible : (result.canvasVisible && result.renderReady)
     const observatoryOkay = selectedExpected || result.observatoryHeading
     return { ...result, passed: identityOkay && renderOkay && observatoryOkay && result.returnLifeMap && result.legacyPublicCopy.length === 0 }
   }, { selectedExpected: selected, noWebGLExpected: noWebGL })
