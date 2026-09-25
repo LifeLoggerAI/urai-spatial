@@ -58,7 +58,6 @@ const CHAMBER_PROFILE: Record<GroundDestination['chamberForm'], { width: number;
   vault: { width: 1.78, rise: 2.92, shoulder: .62, crown: 1.16, depth: 5.2 },
   observatory: { width: 2.48, rise: 2.68, shoulder: .96, crown: .88, depth: 4.1 },
   aperture: { width: 1.18, rise: 3.82, shoulder: .38, crown: 1.48, depth: 5.4 },
-  theater: { width: 2.88, rise: 1.96, shoulder: 1.12, crown: .56, depth: 4.4 },
 }
 
 function chamberArch(destination: GroundDestination, index: number) {
