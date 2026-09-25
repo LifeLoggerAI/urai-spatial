@@ -184,7 +184,7 @@ test('Life Map reads as the active full-viewport canonical stellar world', () =>
   assert.match(cosmicLifeMap, /<h1 className="sr-only">URAI Life Map private universe<\/h1>/)
   assert.match(cosmicLifeMap, /if \(selectedId\) overview\(\); else returnHome\(\)/)
   assert.match(cosmicLifeMap, /<button className="overview-return" onClick=\{overview\}>Overview<\/button>/)
-  assert.match(cosmicLifeMap, /<button onClick=\{\(\) => router\.push\("\/home"\)\}>Return Home<\/button>/)
+  assert.match(cosmicLifeMap, /const returnHome = useCallback\(\(\) => \{ router\.push\(explicitDemo \? "\/home\?demo=1" : "\/home"\); \}/)
   assert.match(cosmicLifeMap, /env\(safe-area-inset-bottom\)/)
   assert.match(cosmicLifeMap, /@media\(max-width:700px\)/)
   assert.match(cosmicLifeMap, /@media\(prefers-reduced-motion:reduce\)/)
