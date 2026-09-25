@@ -6,8 +6,8 @@
   "canonicalPath": "urai-tier1/public/assets/urai/generated/models/life-map-memory-star-v1.glb",
   "bytes": 276280,
   "sha256": "b16969261f80d7fc51b2a3efbd19cb938b503d8eaffbeb3d2df9b53baa41a181",
-  "source": "URAI canon-clean deterministic convergence candidate; requires rendered inspection and compression before promotion",
-  "fallback": "procedural-memory-star",
+  "source": "URAI historical generated Memory Star binary retained for compatibility/provenance only; current visible authority is the procedural point-photosphere layered-corona stellar Memory Star",
+  "fallback": "procedural-stellar-memory-star-is-current-runtime-authority",
   "license": "URAI Labs internal production candidate asset",
   "producer": "URAI Labs Final GLB Forge 1.0; canon-clean convergence candidate",
   "reviewer": "governed-replacement-rehearsal",
@@ -15,10 +15,10 @@
   "promote": false,
   "humanReviewApproved": false,
   "fallbackVerified": true,
-  "routeConsumptionVerified": true,
+  "routeConsumptionVerified": false,
   "licenseApproved": true,
   "optimizationVerified": false,
   "visualProofVerified": false,
   "exactHeadChecksPassed": false,
-  "notes": "Memory Star remains an uncompressed canon-clean stellar candidate. Retired shard/geology repair lineage is historical only. No production promotion is claimed. Binary identity is current. promote=false, humanReviewApproved=false, optimizationVerified=false, visualProofVerified=false, and exactHeadChecksPassed=false remain intentional until compression, rendered inspection, exact-head proof, performance validation, literal acceptance, and final Gold Master review."
+  "notes": "Supporting/provenance rehearsal only. The generated GLB is not current runtime or literal visual authority; the mounted Life Map uses procedural stellar Memory Stars. Promotion remains forbidden."
 }
