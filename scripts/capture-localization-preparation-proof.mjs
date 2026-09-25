@@ -184,9 +184,14 @@ try {
       receipt.errors.push({ id: spec.id, error: record.error })
     } finally {
       record.diagnostics = readDiagnostics()
-      if (record.diagnostics.pageErrors.length) {
+      const expectedOfflinePageErrors = spec.offlineAfterLoad
+        ? record.diagnostics.pageErrors.filter((message) => /^Error: Could not load \/assets\//.test(message))
+        : []
+      const unexpectedPageErrors = record.diagnostics.pageErrors.filter((message) => !expectedOfflinePageErrors.includes(message))
+      if (expectedOfflinePageErrors.length) record.expectedOfflinePageErrors = expectedOfflinePageErrors
+      if (unexpectedPageErrors.length) {
         record.passed = false
-        receipt.errors.push({ id: spec.id, error: 'page errors', pageErrors: record.diagnostics.pageErrors })
+        receipt.errors.push({ id: spec.id, error: 'page errors', pageErrors: unexpectedPageErrors })
       }
       await context.close()
     }
