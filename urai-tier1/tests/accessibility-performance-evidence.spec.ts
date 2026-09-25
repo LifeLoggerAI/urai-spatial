@@ -290,6 +290,19 @@ test.describe('URAI accessibility and performance evidence', () => {
     await expect(navigation.getByTestId('home-semantic-orb')).toHaveAccessibleName('Open UrAi Orb companion')
   })
 
+  test('XR route links meet the 48 CSS pixel minimum on narrow mobile', async ({ page }) => {
+    await page.setViewportSize({ width: 320, height: 720 })
+    await page.goto('/spatial/ar-vr', { waitUntil: 'domcontentloaded' })
+    const xrTargets = await targetSize(page, '.urai-xr-portal__actions a[href], .urai-xr-portal__rail a[href], .urai-xr-portal__quest-entry button')
+    expect(xrTargets.length).toBeGreaterThan(0)
+    const failures = xrTargets.filter(({ width, height }) => width < 48 || height < 48)
+    await test.info().attach('xr-target-size-report.json', {
+      body: JSON.stringify({ xrTargets, failures }, null, 2),
+      contentType: 'application/json',
+    })
+    expect(failures).toEqual([])
+  })
+
   test('WebGL context loss recovery is bounded and preserves the route', async ({ page }) => {
     test.setTimeout(90_000)
     await page.goto('/', { waitUntil: 'domcontentloaded' })
