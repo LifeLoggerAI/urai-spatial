@@ -12,6 +12,7 @@ test('Replay discovers captured places only through authenticated server authori
   assert.match(hook, /onAuthStateChanged/)
   assert.match(hook, /getCapturedRealityReplayEntry/)
   assert.match(hook, /memoryId/)
+  assert.match(hook, /capturedRealityDeviceTier/)
   assert.doesNotMatch(hook, /demo.*asset/i)
 })
 
@@ -23,6 +24,7 @@ test('server entry requires release gate, dual consent, same owner binding and a
   assert.match(functions, /ownerId/)
   assert.match(functions, /reviewState.*accepted/)
   assert.match(functions, /truthClass.*spatially-reconstructable/)
+  assert.match(functions, /browserCertified|mobileCertified/)
 })
 
 test('Replay shows no captured-place action without an authorized binding', () => {
@@ -33,6 +35,7 @@ test('Replay shows no captured-place action without an authorized binding', () =
 
 test('captured replay bindings participate in export/deletion lifecycle', () => {
   assert.match(privacy, /capturedRealityReplayBindings/)
+  assert.match(fs.readFileSync(new URL('../../privacy/data-inventory.yaml', import.meta.url), 'utf8'), /captured_reality_replay_binding/)
 })
 
 test('Functions index exports replay entry authority', () => {
