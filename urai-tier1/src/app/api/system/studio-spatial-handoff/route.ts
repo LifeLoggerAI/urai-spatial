@@ -62,6 +62,14 @@ const sampleExport: StudioSpatialExport = {
       humanReviewRequired: false,
     },
   ],
+  releaseEvidence: {
+    studioBuildSha: 'b'.repeat(40),
+    spatialBuildSha: 'c'.repeat(40),
+    validatorName: 'studio-spatial-wire-contract',
+    validatorVersion: STUDIO_SPATIAL_HANDOFF_CONTRACT_VERSION,
+    validatedAt: GENERATED_AT,
+    liveSmokeUrl: 'https://urai.app/status',
+  },
 }
 
 const validation = validateStudioSpatialExport(sampleExport)
@@ -89,6 +97,7 @@ const handoffPayload = {
     'consentReceipt',
     'safetyBoundaries',
     'runtimeTargets',
+    'releaseEvidence',
   ],
   validator: {
     source: 'urai-tier1/src/lib/studio-spatial-handoff.ts',
