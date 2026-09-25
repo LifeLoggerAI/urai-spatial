@@ -133,20 +133,21 @@ export default function CapturedRealityRouteClient({ assetId }: { assetId: strin
   const [state, setState] = useState<RouteState>({ kind: 'auth-loading' })
   const [showProvenance, setShowProvenance] = useState(false)
   const revokedRef = useRef(false)
+  const truthLabelRef = useRef<string | undefined>(undefined)
 
   const exit = useCallback(() => {
     setDelivery(null)
-    setDecision(suppressedDecision(metadata?.truthLabel))
+    setDecision(suppressedDecision(truthLabelRef.current))
     if (window.history.length > 1) router.back()
     else router.push('/replay')
-  }, [metadata?.truthLabel, router])
+  }, [router])
 
   const suppress = useCallback((message: string) => {
     revokedRef.current = true
     setDelivery(null)
-    setDecision(suppressedDecision(metadata?.truthLabel))
+    setDecision(suppressedDecision(truthLabelRef.current))
     setState({ kind: 'suppressed', message })
-  }, [metadata?.truthLabel])
+  }, [])
 
   useEffect(() => {
     if (!firebasePublicEnvReady) {
@@ -204,6 +205,7 @@ export default function CapturedRealityRouteClient({ assetId }: { assetId: strin
         const asset = await loadAssetMetadata(assetId)
         if (disposed || revokedRef.current) return
         setMetadata(asset)
+        truthLabelRef.current = asset.truthLabel
 
         const prerequisites = localBrowserPrerequisites()
         if (!prerequisites.webgl2 || !prerequisites.webWorker || !prerequisites.readableStream) {
@@ -267,6 +269,7 @@ export default function CapturedRealityRouteClient({ assetId }: { assetId: strin
           if (cancelled || revokedRef.current) return
           const prerequisites = localBrowserPrerequisites()
           const hasLength = await contentLengthAvailable(next.url)
+          if (cancelled || revokedRef.current) return
           const capability = capturedRealityBrowserCapability({ ...prerequisites, contentLengthAvailable: hasLength })
           if (!capability.supported) throw new Error('browser capability changed')
           setDelivery(next)
