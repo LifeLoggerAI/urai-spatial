@@ -4,6 +4,7 @@ import { readFileSync, statSync } from "node:fs";
 import { resolve } from "node:path";
 
 const source = readFileSync(resolve("src/app/GroundSpatialWorldClean.tsx"), "utf8");
+const proof = readFileSync(resolve("../scripts/capture-ground-goldmaster-proof.mjs"), "utf8");
 
 test("Ground natural profiles use the governed CC0 photoreal canopy and reject prior canopy stand-ins", () => {
   assert.match(source, /GROUND_BROADLEAF_CANOPY = "\/assets\/urai\/ground-production\/cc0\/polyhaven-jacaranda-web-v1\.glb"/);
@@ -40,4 +41,17 @@ test("Ground ships the exact local Basis transcoder declared by provenance", () 
   const wasm = statSync(resolve("public/basis/basis_transcoder.wasm"));
   assert.ok(js.isFile() && js.size > 50_000, `Basis JS payload missing or truncated: ${js.size}`);
   assert.ok(wasm.isFile() && wasm.size > 500_000, `Basis WASM payload missing or truncated: ${wasm.size}`);
+});
+
+
+test("Ground Gold Master proof fails closed when the governed canopy did not actually load", () => {
+  assert.match(source, /data-ground-canopy-required=\{canopyRequired \? "true" : "false"\}/);
+  assert.match(source, /data-ground-canopy-ready=\{canopyReady \? "true" : "false"\}/);
+  assert.match(source, /if \(meshCount > 0\) onReady\(profile\.id\)/);
+  assert.match(proof, /activePhase = 'wait-canopy-ready'/);
+  assert.match(proof, /data-ground-canopy-required/);
+  assert.match(proof, /data-ground-canopy-ready/);
+  assert.match(proof, /governed canopy never reached loaded\/renderable state/);
+  assert.match(proof, /canopyRequired: 'true'/);
+  assert.match(proof, /canopyReady: 'true'/);
 });
