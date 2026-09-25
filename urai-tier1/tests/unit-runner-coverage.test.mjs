@@ -10,6 +10,7 @@ const requiredFocusedTests = [
   'tests/body-biometric-contract.test.mjs',
   'tests/captured-reality-gaussian-v1-contract.test.mjs',
   'tests/captured-reality-private-runtime-contract.test.mjs',
+  'tests/captured-reality-source-preparation-contract.test.mjs',
   'tests/ground-zero-ambiguity-contract.test.mjs',
   'tests/lived-world-core-reconstruction-contract.test.mjs',
   'tests/global-emotional-field-core-contract.test.mjs',
