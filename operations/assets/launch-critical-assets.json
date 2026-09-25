@@ -138,10 +138,7 @@
       "fixedPath": "urai-tier1/public/assets/urai/generated/models/urai-orb-avatar-v1.glb",
       "targetRoutes": [
         "/",
-        "/home",
-        "/life-map",
-        "/focus",
-        "/replay"
+        "/home"
       ],
       "targetBoundsMeters": [
         1.5,
@@ -151,17 +148,17 @@
       "maxTriangles": 30000,
       "requiredCompression": "draco-or-meshopt",
       "fallback": "procedural-orb",
-      "source": "URAI canon-clean deterministic convergence candidate; requires rendered inspection and compression before promotion",
+      "source": "URAI authored Orb model consumed by the current Home Orb runtime; cross-route companion semantics are separately owned and do not make this GLB a universal route dependency",
       "license": "URAI Labs internal production candidate asset",
-      "releaseState": "pending-final-review"
+      "releaseState": "pending-final-review",
+      "authorityRole": "home-orb-runtime-model",
+      "runtimeConsumptionAllowed": true
     },
     {
       "id": "passport-status-room-v1",
       "kind": "model",
       "fixedPath": "urai-tier1/public/assets/urai/generated/models/passport-status-room-v1.glb",
-      "targetRoutes": [
-        "/passport"
-      ],
+      "targetRoutes": [],
       "targetBoundsMeters": [
         14,
         8,
@@ -169,10 +166,12 @@
       ],
       "maxTriangles": 120000,
       "requiredCompression": "draco-or-meshopt",
-      "fallback": "semantic-passport-status-room",
-      "source": "URAI deterministic candidate forge; replaceable by reviewed provider asset",
+      "fallback": "semantic-passport-vault-is-current-runtime-authority",
+      "source": "URAI deterministic Passport room candidate retained as supporting reference; current Passport authority is the governed ownership-vault surface and Home physical Passport object",
       "license": "URAI Labs internal production asset",
-      "releaseState": "pending-final-review"
+      "releaseState": "supporting-reference",
+      "authorityRole": "non-runtime-passport-room-reference",
+      "runtimeConsumptionAllowed": false
     },
     {
       "id": "home-human-rig-v3",
