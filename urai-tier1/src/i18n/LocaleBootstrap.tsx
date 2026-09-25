@@ -65,11 +65,21 @@ export default function LocaleBootstrap() {
       if (locale) applyLocale(locale)
     }
 
+    const onConnectivityChange = () => {
+      const locale = requestedLocale()
+      applyLocale(locale)
+      window.requestAnimationFrame(() => applyLocale(locale))
+    }
+
     window.addEventListener(LOCALE_EVENT, onLocaleChange)
     window.addEventListener('storage', onStorage)
+    window.addEventListener('online', onConnectivityChange)
+    window.addEventListener('offline', onConnectivityChange)
     return () => {
       window.removeEventListener(LOCALE_EVENT, onLocaleChange)
       window.removeEventListener('storage', onStorage)
+      window.removeEventListener('online', onConnectivityChange)
+      window.removeEventListener('offline', onConnectivityChange)
     }
   }, [])
 

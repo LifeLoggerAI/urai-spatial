@@ -13,6 +13,7 @@ await fs.mkdir(outputDir, { recursive: true })
 
 const normalize = (url) => new URL(url, base).pathname.replace(/\/+$/, '') || '/'
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
+const homeOwnerSelector = '[data-testid="home-visible-navigable-sanctuary-world"][data-home-art-revision="v293-direct-bodyless-first-person-convergence"][data-home-primary-owner="asset-driven"]'
 
 async function waitPath(page, expected, timeout = 60_000) {
   const start = Date.now()
@@ -93,7 +94,7 @@ async function activate(page, locator, mode) {
 async function openHome(page, journey) {
   const response = await page.goto(`${base}/home/?demo=1`, { waitUntil: 'domcontentloaded', timeout: 60_000 })
   assert.ok(response?.ok(), 'Home did not return 2xx')
-  const home = page.locator('.urai-asset-home-world[data-home-primary-owner="asset-driven"]').first()
+  const home = page.locator(homeOwnerSelector).first()
   await home.waitFor({ state: 'visible', timeout: 90_000 })
   await waitAttr(home, 'data-home-assets-ready', 'true', 90_000)
   await capture(page, journey, 'home')
@@ -250,7 +251,7 @@ async function lifeMapToHome(page, journey, mode, root) {
   else await page.keyboard.press('Escape')
   await waitPath(page, '/home', 60_000)
   assert.equal(new URL(page.url()).searchParams.get('demo'), '1', 'final Home return lost disclosed demo context')
-  const home = page.locator('.urai-asset-home-world[data-home-primary-owner="asset-driven"]').first()
+  const home = page.locator(homeOwnerSelector).first()
   await home.waitFor({ state: 'visible', timeout: 90_000 })
   await capture(page, journey, 'return-home')
 }
@@ -262,9 +263,9 @@ const variants = [
 ]
 
 const receipt = { schemaVersion: 'urai-canonical-journey-proof-1', exactHead, capturedAt: new Date().toISOString(), status: 'running', journeys: [], errors: [] }
-const browser = await chromium.launch({ headless: true, args: ['--enable-unsafe-swiftshader'] })
-try {
-  for (const variant of variants) {
+for (const variant of variants) {
+  const browser = await chromium.launch({ headless: true, args: ['--enable-unsafe-swiftshader'] })
+  try {
     const journey = { id: variant.id, mode: variant.mode, realAscent: variant.realAscent, ascentProven: null, identityStable: false, passed: false, steps: [] }
     receipt.journeys.push(journey)
     const context = await browser.newContext(variant.context)
@@ -300,9 +301,9 @@ try {
       }
       await context.close()
     }
+  } finally {
+    await browser.close()
   }
-} finally {
-  await browser.close()
 }
 
 receipt.status = receipt.journeys.every((journey) => journey.passed && journey.identityStable) && receipt.journeys.some((journey) => journey.ascentProven === true) && receipt.errors.length === 0 ? 'passed' : 'failed'
