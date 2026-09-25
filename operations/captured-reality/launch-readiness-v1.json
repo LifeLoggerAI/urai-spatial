@@ -1,0 +1,43 @@
+{
+  "schemaVersion": "urai-captured-reality-launch-readiness-1",
+  "classification": "CURRENT_MACHINE_STATE",
+  "architecture": {
+    "status": "implemented",
+    "evidence": [
+      "CapturedRealityAsset schema",
+      "private runtime callable",
+      "Replay binding",
+      "privacy manifest"
+    ]
+  },
+  "sourceAuthority": {
+    "status": "verified-private",
+    "reconstructionReady": false
+  },
+  "reconstruction": {
+    "status": "blocked-source-bytes",
+    "trainedSceneExists": false,
+    "visualQaExists": false
+  },
+  "browser": {
+    "status": "implemented-hard-off",
+    "performanceReceiptExists": false,
+    "routeMounted": false
+  },
+  "mobile": {
+    "status": "implemented-hard-off",
+    "performanceReceiptExists": false
+  },
+  "xr": {
+    "status": "hard-off-physical-device-proof-required",
+    "performanceReceiptExists": false
+  },
+  "launchClassification": "NOT_YET_LAUNCH_ENABLED",
+  "allowedClaim": "Captured Reality architecture and private runtime path are implemented behind release gates.",
+  "forbiddenClaims": [
+    "Parents House reconstruction complete",
+    "Gaussian scene production-live",
+    "mobile certified",
+    "XR certified"
+  ]
+}
