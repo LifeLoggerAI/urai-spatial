@@ -1,6 +1,6 @@
 {
   "schemaVersion": "urai-visual-gold-master-manifest-1",
-  "authorityDate": "2026-09-24",
+  "authorityDate": "2026-09-25",
   "repository": "LifeLoggerAI/urai-spatial",
   "branch": "converge/final-canon-spatial-20260922",
   "authorityPr": 1296,
@@ -118,12 +118,12 @@
       "experience": "focus",
       "system": "selected-memory",
       "status": "CURRENT_CANDIDATE",
-      "visualRevision": "V351",
-      "visualAuthority": "v351-selected-memory-star-translucent-photosphere-contained-memory",
+      "visualRevision": "V395",
+      "visualAuthority": "v395-stellar-photosphere-visible-contained-memory-no-orb",
       "visualAcceptance": false,
       "predecessorTerrainCavityLineage": "REJECTED_SUPERSEDED",
       "requiredContinuity": "life-map-selected-star-to-focus-contained-memory-to-replay",
-      "currentDiagnostic": "V350 lineage still used a 96%-opaque depth-writing photosphere and therefore first-read as a solid orange sphere/planet. V351 must be re-proven literally."
+      "currentDiagnostic": "V395 is the current source authority: a selected stellar photosphere/corona with contained memory and no terrain/planet/orb authority. Exact-head machine proof and literal retained-pixel acceptance must re-earn after every successor head move."
     },
     {
       "id": "VGM-REPLAY-001",
