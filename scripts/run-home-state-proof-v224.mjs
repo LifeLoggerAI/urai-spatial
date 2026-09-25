@@ -81,29 +81,18 @@ const readinessReplacement = `async function waitForHomeReady(page) {
 if ((derived.split(readinessSource).length - 1) !== 1) throw new Error('Home proof readiness anchor is not unique')
 derived = derived.replace(readinessSource, readinessReplacement)
 
-// Playwright locator.focus() can wait on actionability/stability for a control that is
-// already present and natively focusable while the live 3D Home continues rendering.
-// The keyboard proof must still prove actual focus and native key activation; it must not
-// click, force, or bypass accessibility. For generated proof only, focus the concrete DOM
-// element, assert document.activeElement, then dispatch the same keyboard key through the
-// page keyboard. This keeps the requirement strict while removing the unrelated 30 s
-// actionability stall observed on the semantic Orb control.
-const continuityProofReplacements = [
-  {
-    source: 'await enterFirstPerson.focus()', expected: 1,
-    replacement: "// locator.press below performs browser keyboard focus and native activation without a separate SwiftShader-sensitive focus transaction",
-  },
-  { source: "await enterFirstPerson.press('Enter')", expected: 1, replacement: "await enterFirstPerson.press('Enter', { timeout: 60_000 })" },
-  {
-    source: "await page.waitForFunction((selector) => document.querySelector(selector)?.getAttribute('data-home-stable-state') === 'AVATAR_HOME_FIRST_PERSON', ownerSelector, { timeout: 20_000 })",
-    expected: 1,
-    replacement: "await page.waitForFunction((selector) => document.querySelector(selector)?.getAttribute('data-home-stable-state') === 'AVATAR_HOME_FIRST_PERSON', ownerSelector, { timeout: 60_000 })",
-  },
-]
-for (const replacement of continuityProofReplacements) {
-  const count = derived.split(replacement.source).length - 1
-  if (count !== replacement.expected) throw new Error(`Home state proof continuity anchor mismatch for ${replacement.source}: expected ${replacement.expected}, received ${count}`)
-  derived = derived.replaceAll(replacement.source, replacement.replacement)
+// Current Home is direct bodyless first-person on initial render; there is no
+// separate enter-first-person control to patch. Fail closed if the proof source
+// regresses to the retired entry transaction or loses the current movement truth.
+if (original.includes('enterFirstPerson')) {
+  throw new Error('Home state proof unexpectedly restored the retired first-person entry transaction')
+}
+for (const marker of [
+  "record.neutralPresentationScreenshot = await screenshotRecord('direct-first-person-home')",
+  "record.firstPersonMovement = await owner.getAttribute('data-home-movement')",
+  "record.firstPersonMovement === 'shared-keyboard-touch-walk-look-interact'",
+]) {
+  if (!original.includes(marker)) throw new Error(`Home state proof direct-first-person marker missing: ${marker}`)
 }
 
 const keyboardProofReplacements = [
