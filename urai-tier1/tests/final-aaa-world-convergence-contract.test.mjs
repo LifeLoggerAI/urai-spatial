@@ -182,7 +182,7 @@ test('Life Map reads as the active full-viewport canonical stellar world', () =>
   assert.match(cosmicLifeMap, /data-life-map-ground="none"/)
   assert.match(cosmicLifeMap, /<header className="life-map-title">/)
   assert.match(cosmicLifeMap, /<h1 className="sr-only">URAI Life Map private universe<\/h1>/)
-  assert.match(cosmicLifeMap, /if \(selectedId\) overview\(\); else router\.push\("\/home"\)/)
+  assert.match(cosmicLifeMap, /if \(selectedId\) overview\(\); else returnHome\(\)/)
   assert.match(cosmicLifeMap, /<button className="overview-return" onClick=\{overview\}>Overview<\/button>/)
   assert.match(cosmicLifeMap, /<button onClick=\{\(\) => router\.push\("\/home"\)\}>Return Home<\/button>/)
   assert.match(cosmicLifeMap, /env\(safe-area-inset-bottom\)/)
@@ -256,7 +256,7 @@ test('Life Map renders the current layered galaxy and stellar Memory Star author
     /function OverviewRegions/,
     /graphEdges: false/,
     /function Constellations\(\) \{ return <group name="life-map-constellations" visible=\{false\}/,
-    /setPhase\("departure"\)/,
+    /setPhase\(profile\.reducedMotion \? "arrival" : "departure"\)/,
     /setPhase\("travel"\)/,
     /setPhase\("approach"\)/,
     /setPhase\("arrival"\)/,
