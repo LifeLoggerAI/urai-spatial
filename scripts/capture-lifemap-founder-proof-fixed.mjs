@@ -764,9 +764,12 @@ async function selectQuietResetAtFrozenPhase(page, targetPhase, interaction) {
     await armJourneyPhaseWatch(page, targetPhase)
     await activateCanonicalControl(page, resultSelector, result, interaction)
 
-    // Let the real React/router selection lifecycle commit before freezing browser
-    // time. Pausing before activation deadlocks locator/state updates and produces
-    // a false missing-phase proof.
+    // The real selection event must dispatch before virtual time is paused, but
+    // pausing immediately after activation prevents the 280 ms production
+    // departure timer from racing ahead of the retained proof. This observes the
+    // real state machine without changing production timing or adding a proof-only
+    // state backdoor.
+    await session.send('Emulation.setVirtualTimePolicy', { policy: 'pause' })
     await poll('selected Quiet Reset identity before virtual-time freeze', () => page.evaluate((rootSelector) => {
       const root = document.querySelector(rootSelector)
       const destination = new URL(window.location.href)
@@ -781,7 +784,6 @@ async function selectQuietResetAtFrozenPhase(page, targetPhase, interaction) {
       && state.node === 'quiet-reset'
       && state.phase === 'departure', 20_000, 10)
 
-    await session.send('Emulation.setVirtualTimePolicy', { policy: 'pause' })
     await advanceVirtualTime(session, PHASE_CAPTURE_VIRTUAL_BUDGET_MS[targetPhase] ?? 0)
 
     const frozen = await poll(`frozen selected journey phase=${targetPhase}`, () => page.evaluate((rootSelector) => {

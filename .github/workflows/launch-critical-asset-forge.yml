@@ -85,7 +85,8 @@ jobs:
             urai-tier1/public/assets/urai/generated/models/home-entry-chamber-v1.glb \
             operations/assets/generated-receipts/home-entry-chamber-v1.json \
             operations/assets/generated-receipts/urai-final-glb-pack-v1.json \
-            operations/assets/promotion-rehearsal/home-entry-chamber-v1.json; then
+            operations/assets/promotion-rehearsal/home-entry-chamber-v1.json \
+            && git diff --cached --quiet; then
             echo 'mutated=false' >> "$GITHUB_OUTPUT"
             exit 0
           fi
@@ -99,7 +100,7 @@ jobs:
             operations/assets/generated-receipts/home-entry-chamber-v1.json \
             operations/assets/generated-receipts/urai-final-glb-pack-v1.json \
             operations/assets/promotion-rehearsal/home-entry-chamber-v1.json
-          git commit -m 'Repair Home GLB pole normals'
+          git commit -m 'Repair launch-critical GLB metadata'
           git push origin "HEAD:${TARGET_BRANCH}"
           echo 'mutated=true' >> "$GITHUB_OUTPUT"
 
