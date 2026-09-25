@@ -10,7 +10,7 @@ const inventory = fs.readFileSync(new URL('../../privacy/data-inventory.yaml', i
 
 test('captured reality runtime is owner-only, feature-gated and C3 revocation-aware', () => {
   assert.match(source, /URAI_ENABLE_CAPTURED_REALITY/)
-  assert.match(source, /LOCATION_CONTEXT_CONSENT_REQUIRED/)
+  assert.match(source, /CAPTURED_REALITY_MEMORY_AND_LOCATION_CONSENT_REQUIRED/)
   assert.match(source, /privacyPolicy\/current/)
   assert.match(source, /privacyRuntime\/location-collection/)
   assert.match(source, /mode === 'granted' \|\| mode === 'limited'/)
