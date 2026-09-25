@@ -560,6 +560,7 @@ async function buildExport(snapshot: FirebaseFirestore.DocumentSnapshot) {
       data.transitionStates = await collectionDocuments(userRef.collection('transitionStates'))
       data.spatialAnchors = await collectionDocuments(userRef.collection('spatialAnchors'))
       data.capturedRealityAssets = await collectionDocuments(userRef.collection('capturedRealityAssets'))
+      data.capturedRealityReplayBindings = await collectionDocuments(userRef.collection('capturedRealityReplayBindings'))
     }
     if (scopes.includes('audit')) {
       data.receipts = await collectionDocuments(userRef.collection('privacyReceipts'))
@@ -762,6 +763,7 @@ const DELETION_COLLECTIONS: Record<Exclude<DeletionScope, 'account'>, string[]> 
     'userSpatialPreferences',
     'spatialSessions',
     'capturedRealityAssets',
+    'capturedRealityReplayBindings',
   ],
   'all-repository-data': [
     'exportJobs',
@@ -781,6 +783,7 @@ const DELETION_COLLECTIONS: Record<Exclude<DeletionScope, 'account'>, string[]> 
     'userSpatialPreferences',
     'spatialSessions',
     'capturedRealityAssets',
+    'capturedRealityReplayBindings',
     'providerConnections',
   ],
 }
