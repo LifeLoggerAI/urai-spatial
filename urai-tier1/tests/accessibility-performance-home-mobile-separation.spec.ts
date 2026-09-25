@@ -49,14 +49,13 @@ test.describe('Home mobile control separation evidence', () => {
         await expect(semantic).toHaveAttribute('data-home-navigation-owner', 'runtime-boundary')
         await expect(semantic).toHaveAttribute('data-home-navigation-non-dominant', 'true')
 
-        const activate = page.getByRole('button', { name: 'Enter first-person Home through your Avatar' })
-        await activate.focus()
-        await expect(activate).toBeFocused()
-        await activate.press('Enter')
+        await expect(page.getByRole('button', { name: 'Enter first-person Home through your Avatar' })).toHaveCount(0)
         await expect(home).toHaveAttribute('data-home-stable-state', 'AVATAR_HOME_FIRST_PERSON', { timeout: 45_000 })
         await expect(home).toHaveAttribute('data-home-embodied-self', 'camera-only-first-person-home')
+        await expect(home).toHaveAttribute('data-home-presence-presentation', 'bodyless-first-person-home')
         await expect(home).toHaveAttribute('data-home-non-xr-body-policy', 'camera-only-no-hands-body-rig')
-        await expect(home).toHaveAttribute('data-home-presence-policy', 'presentation-avatar-then-first-person-camera-only-no-hands-body-rig')
+        await expect(home).toHaveAttribute('data-home-presence-policy', 'direct-first-person-camera-only-no-hands-body-rig')
+        await expect(home).toHaveAttribute('data-home-avatar-activation-gate', 'none-direct-first-person-home')
         await expect(home).toHaveAttribute('data-home-movement', 'shared-keyboard-touch-walk-look-interact')
 
         const movement = page.getByRole('group', { name: 'Move through Home' })
