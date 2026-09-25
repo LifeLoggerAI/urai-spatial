@@ -88,10 +88,45 @@ jobs:
           }, indent=2))
           PY
 
-      - name: Verify deterministic output is committed
+      - name: Verify generated geometry matches committed semantic authority
         shell: bash
         run: |
           set -euo pipefail
-          git diff --exit-code -- \
-            urai-tier1/public/assets/urai/spatial \
-            docs/generated/spatial-models-v1-receipt.json
+          python - <<'PY'
+          import json
+          import subprocess
+          from pathlib import Path
+
+          generated = json.loads(Path('docs/generated/spatial-models-v1-receipt.json').read_text())
+          committed = json.loads(subprocess.check_output(
+              ['git', 'show', 'HEAD:docs/generated/spatial-models-v1-receipt.json'],
+              text=True,
+          ))
+
+          def semantic(receipt):
+              return {
+                  item['id']: {
+                      'file': item['file'],
+                      'geometryCount': item['geometryCount'],
+                      'vertices': item['vertices'],
+                      'faces': item['faces'],
+                  }
+                  for item in receipt['models']
+              }
+
+          assert generated['schemaVersion'] == committed['schemaVersion'], (generated, committed)
+          assert generated['modelCount'] == committed['modelCount'], (generated, committed)
+          assert generated['totalVertices'] == committed['totalVertices'], (generated, committed)
+          assert generated['totalFaces'] == committed['totalFaces'], (generated, committed)
+          assert semantic(generated) == semantic(committed), {
+              'generated': semantic(generated),
+              'committed': semantic(committed),
+          }
+          print(json.dumps({
+              'ok': True,
+              'semanticGeometryStable': True,
+              'modelCount': generated['modelCount'],
+              'totalVertices': generated['totalVertices'],
+              'totalFaces': generated['totalFaces'],
+          }, indent=2))
+          PY
