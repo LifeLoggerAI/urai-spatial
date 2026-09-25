@@ -72,9 +72,9 @@ export const worldAssetManifest = {
     memoryStars: {
       slotId: 'lifeMap.memoryStars',
       label: 'Memory Star Set',
-      finalModel: resolved('life-map-memory-star-glb-v1'),
-      status: 'fallback',
-      notes: 'Canonical selected memory-star model with deterministic proof fallback.',
+      finalModel: '',
+      status: 'missing',
+      notes: 'Runtime stellar system; current visible authority is procedural point/photosphere plus layered corona. Historical generated Memory Star GLBs are supporting provenance only.',
     },
     constellationLines: {
       slotId: 'lifeMap.constellationLines',
@@ -95,9 +95,9 @@ export const worldAssetManifest = {
     memoryDiorama: {
       slotId: 'focus.memoryDiorama',
       label: 'Focus Memory Diorama',
-      finalModel: resolved('life-map-memory-star-glb-v1'),
-      status: 'fallback',
-      notes: 'Uses the canonical memory-star resolution until a separate reviewed diorama asset exists.',
+      finalModel: '',
+      status: 'missing',
+      notes: 'Runtime selected-memory system; Focus authority is V395 selected stellar photosphere/corona with contained memory, not a generated Memory Star GLB.',
     },
   },
   replay: {
@@ -120,9 +120,9 @@ export const worldAssetManifest = {
     identityVault: {
       slotId: 'passport.identityVault',
       label: 'Passport Identity Vault',
-      finalModel: resolved('passport-status-room-glb-v1'),
-      status: 'fallback',
-      notes: 'Selected room is not yet available; deterministic identity-plinth fallback remains explicit.',
+      finalModel: '',
+      status: 'missing',
+      notes: 'Runtime ownership-vault surface and Home physical Passport own current product authority; the historical Passport room GLB is supporting reference only.',
     },
   },
   status: {
