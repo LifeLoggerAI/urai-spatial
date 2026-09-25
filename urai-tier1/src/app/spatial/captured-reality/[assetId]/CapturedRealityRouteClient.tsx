@@ -29,6 +29,7 @@ type AssetMetadata = {
 
 type RuntimeDelivery = {
   assetId: string
+  accessMode: 'runtime' | 'proof'
   url: string
   expiresAt: string
   truthLabel: string
@@ -118,14 +119,14 @@ async function loadAssetMetadata(assetId: string) {
   return result.data
 }
 
-async function loadRuntimeDelivery(assetId: string) {
+async function loadRuntimeDelivery(assetId: string, accessMode: 'runtime' | 'proof') {
   const deviceTier = capturedRealityDeviceTier(navigator.userAgent)
-  const callable = httpsCallable<{ assetId: string; deviceTier: 'desktop' | 'mobile' }, RuntimeDelivery>(functions, 'getCapturedRealityRuntimeUrl')
-  const result = await callable({ assetId, deviceTier })
+  const callable = httpsCallable<{ assetId: string; deviceTier: 'desktop' | 'mobile'; accessMode: 'runtime' | 'proof' }, RuntimeDelivery>(functions, 'getCapturedRealityRuntimeUrl')
+  const result = await callable({ assetId, deviceTier, accessMode })
   return result.data
 }
 
-export default function CapturedRealityRouteClient({ assetId }: { assetId: string }) {
+export default function CapturedRealityRouteClient({ assetId, accessMode }: { assetId: string; accessMode: 'runtime' | 'proof' }) {
   const router = useRouter()
   const reducedMotion = useReducedMotion()
   const [user, setUser] = useState<User | null | undefined>(undefined)
@@ -220,7 +221,7 @@ export default function CapturedRealityRouteClient({ assetId }: { assetId: strin
           return
         }
 
-        const nextDelivery = await loadRuntimeDelivery(assetId)
+        const nextDelivery = await loadRuntimeDelivery(assetId, accessMode)
         if (disposed || revokedRef.current) return
 
         const hasLength = await contentLengthAvailable(nextDelivery.url, abort.signal)
@@ -253,7 +254,7 @@ export default function CapturedRealityRouteClient({ assetId }: { assetId: strin
       for (const stop of stops) stop()
       setDelivery(null)
     }
-  }, [assetId, suppress, user])
+  }, [accessMode, assetId, suppress, user])
 
   useEffect(() => {
     if (!user || !delivery || state.kind !== 'ready') return
@@ -267,7 +268,7 @@ export default function CapturedRealityRouteClient({ assetId }: { assetId: strin
     const timer = window.setTimeout(() => {
       void (async () => {
         try {
-          const next = await loadRuntimeDelivery(assetId)
+          const next = await loadRuntimeDelivery(assetId, accessMode)
           if (cancelled || revokedRef.current) return
           const prerequisites = localBrowserPrerequisites()
           const hasLength = await contentLengthAvailable(next.url)
@@ -285,7 +286,7 @@ export default function CapturedRealityRouteClient({ assetId }: { assetId: strin
       cancelled = true
       window.clearTimeout(timer)
     }
-  }, [assetId, delivery, state.kind, suppress, user])
+  }, [accessMode, assetId, delivery, state.kind, suppress, user])
 
   const stateMessage = useMemo(() => {
     if (state.kind === 'auth-loading') return 'Checking private identity…'
@@ -308,7 +309,12 @@ export default function CapturedRealityRouteClient({ assetId }: { assetId: strin
   }
 
   return (
-    <main data-testid="captured-reality-private-route" data-state={state.kind} data-asset-id={assetId}>
+    <main data-testid="captured-reality-private-route" data-state={state.kind} data-asset-id={assetId} data-access-mode={accessMode}>
+      {accessMode === 'proof' ? (
+        <p role="status" style={{ position: 'fixed', zIndex: 20, left: 16, bottom: 16, margin: 0, padding: '8px 12px', borderRadius: 999, background: 'rgba(5,7,11,.9)', color: '#f7f7f5', fontSize: 12 }}>
+          Private proof mode · not launch runtime
+        </p>
+      ) : null}
       <CapturedRealityPrivateScene
         decision={decision}
         reducedMotion={reducedMotion}
