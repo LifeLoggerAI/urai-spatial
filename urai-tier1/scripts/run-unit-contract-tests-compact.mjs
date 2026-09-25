@@ -18,6 +18,7 @@ const tests = [
   'tests/captured-reality-gaussian-v1-contract.test.mjs',
   'tests/captured-reality-private-runtime-contract.test.mjs',
   'tests/captured-reality-source-preparation-contract.test.mjs',
+  'tests/captured-reality-runtime-budget-contract.test.mjs',
   'tests/continuous-spatial-restoration-contract.test.mjs',
   'tests/embodied-exploration-contract.test.mjs',
   'tests/exact-static-release-contract.test.mjs',
