@@ -6,6 +6,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import AssetDrivenHomeWorld from './AssetDrivenHomeWorld'
 import { useWebGLAvailable } from './HomeSpatialCanvas'
 import HomeSemanticFallback from './HomeSemanticFallback'
+import { homeSemanticHref } from '@/spatial/home/homeSemanticHref'
 import { requestUraiWorldOrbOpen } from '@/spatial/world/worldEvents'
 
 type RendererState = 'ready' | 'recovering' | 'failed'
@@ -16,11 +17,15 @@ const HOME_SEMANTIC_DESTINATIONS = {
 } as const
 
 function HomeSemanticNavigation() {
+  const pathname = usePathname()
+  const [currentSearch, setCurrentSearch] = useState('')
+  useEffect(() => { setCurrentSearch(window.location.search) }, [pathname])
+
   return (
     <nav className="home-semantic-navigation" aria-label="Accessible Home destinations" data-home-navigation-owner="runtime-boundary" data-home-navigation-non-dominant="true">
       <button type="button" aria-label="Open UrAi Orb companion" data-testid="home-semantic-orb" data-urai-audit-action="home-orb-direct" onClick={(event) => requestUraiWorldOrbOpen(event.currentTarget)}>Open UrAi Orb companion</button>
-      <a aria-label="Open Ground directly" data-testid="home-semantic-ground" href={HOME_SEMANTIC_DESTINATIONS.ground.travelHref}>Ground</a>
-      <a aria-label="Open Life Map directly" data-testid="home-semantic-life-map" href={HOME_SEMANTIC_DESTINATIONS.lifeMap.travelHref}>Life Map</a>
+      <a aria-label="Open Ground directly" data-testid="home-semantic-ground" href={homeSemanticHref(HOME_SEMANTIC_DESTINATIONS.ground.travelHref, currentSearch)}>Ground</a>
+      <a aria-label="Open Life Map directly" data-testid="home-semantic-life-map" href={homeSemanticHref(HOME_SEMANTIC_DESTINATIONS.lifeMap.travelHref, currentSearch)}>Life Map</a>
     </nav>
   )
 }

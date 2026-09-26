@@ -58,8 +58,8 @@ for (const [label, source, signals] of [
     'webglcontextlost', 'webglcontextrestored', 'prefers-reduced-motion:reduce',
     'aria-label="Open UrAi Orb companion"',
     'aria-label="Open Ground directly"', 'aria-label="Open Life Map directly"',
-    'href={HOME_SEMANTIC_DESTINATIONS.ground.travelHref}',
-    'href={HOME_SEMANTIC_DESTINATIONS.lifeMap.travelHref}',
+    'href={homeSemanticHref(HOME_SEMANTIC_DESTINATIONS.ground.travelHref, currentSearch)}',
+    'href={homeSemanticHref(HOME_SEMANTIC_DESTINATIONS.lifeMap.travelHref, currentSearch)}',
   ]],
   ['HomeSemanticFallback', fallback, [
     'aria-label="UrAi Home semantic fallback"', 'aria-label="Home semantic destinations"',

@@ -38,6 +38,7 @@ const tests = [
   'tests/home-avatar-presentation-contract.test.mjs',
   'tests/home-experience-controller-contract.test.mjs',
   'tests/home-cohesion-contract.test.mjs',
+  'tests/home-semantic-demo-context.test.mjs',
   'tests/home-current-art-repair-contract.test.mjs',
   'tests/home-emotional-weather-canon-contract.test.mjs',
   'tests/home-ground-lifemap-art-bible-contract.test.mjs',
