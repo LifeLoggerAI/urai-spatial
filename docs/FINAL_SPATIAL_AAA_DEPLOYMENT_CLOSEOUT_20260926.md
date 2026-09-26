@@ -11,7 +11,7 @@
 | Repository | [LifeLoggerAI/urai-spatial](https://github.com/LifeLoggerAI/urai-spatial) |
 | main | `4b3c7bd982865324510eb9581d9f324bd4ad6e93` |
 | PR #1325 | Open, draft, mergeable; head `2f7af37e0e234629d9d8261d19f778205c41f7e5`; pixel/scene-owned |
-| PR #1343 | Open, draft, mergeable; head `3a9ddc8d5e3e81ec375f662e0ffb34677869d622`; isolated AAA candidate lane |
+| PR #1343 | Open, draft, mergeable; head `113950712d06913aabb2842ebaa52127056a2c5f`; isolated AAA candidate lane |
 | Documentation branch | `docs/final-spatial-aaa-deployment-closeout-20260926`, based on current main |
 | Production mutation | Not performed by this closeout |
 
@@ -57,23 +57,24 @@ They are not active replacements. No active `urai-tier1/public/assets/urai/spati
 
 ## 4. PR #1343 status
 
-Current head: `3a9ddc8d5e3e81ec375f662e0ffb34677869d622`.
+Current head: `113950712d06913aabb2842ebaa52127056a2c5f`.
 
 Changed-file inspection confirms:
 
+- 48 changed paths are present in the current PR diff.
 - Eight isolated candidate GLBs are present.
 - The handoff queue exists at [docs/assets/PARALLEL_AAA_SPATIAL_HANDOFF_QUEUE_20260926.md](../docs/assets/PARALLEL_AAA_SPATIAL_HANDOFF_QUEUE_20260926.md).
 - Active Spatial fallback GLTF changes: zero.
 - Candidate manifest, receipts, shared support textures/particles, navmesh support, and contract tests remain isolated from pixel-owned scene files.
-- The latest head is a receipt-alignment follow-up after the prior handoff-queue commit.
+- The latest head is the current concurrent asset-lane authority; it advanced after the initial closeout snapshot and was re-read without overwriting it.
 
 Current exact-head Actions snapshot:
 
-- 30 workflow runs observed.
-- 23 queued.
-- 7 cancelled.
-- 0 failed conclusions in the observed current-head page.
-- No current-head green release certification is established while the required workflows remain queued/cancelled.
+- 30 workflow runs observed on the refreshed current head.
+- 29 queued.
+- 1 pending.
+- 0 completed conclusions in the observed current-head page.
+- No current-head green release certification is established while the required workflows remain queued/pending.
 
 Older inline review threads are unresolved but outdated. They identify prior candidate/canonical receipt mixing and active-fallback geometry concerns; later comments report repairs. They remain historical review context, not current-head approval.
 
@@ -113,7 +114,7 @@ These results are recorded evidence for their cited heads, not automatic certifi
 
 ### Current-head test boundary
 
-The current #1343 head has queued/cancelled remote workflows and therefore does not yet have a complete green exact-head test receipt.
+The current #1343 head has queued/pending remote workflows and therefore does not yet have a complete green exact-head test receipt.
 
 The current provider/asset verification receipt reports:
 
