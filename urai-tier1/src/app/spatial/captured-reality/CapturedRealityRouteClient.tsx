@@ -13,7 +13,7 @@ import {
   capturedRealityDeviceTier,
   CAPTURED_REALITY_QUALITY_PROFILES,
 } from '@/spatial/captured-reality/capturedRealityRuntime'
-import { capturedRealityContentLengthAvailable } from '@/spatial/captured-reality/capturedRealityDelivery'
+import { capturedRealityContentLengthAvailable, capturedRealityWebGL2Available } from '@/spatial/captured-reality/capturedRealityDelivery'
 import type { CapturedRealityRenderDecision } from '@/spatial/captured-reality/capturedReality'
 
 type AssetMetadata = {
@@ -94,9 +94,8 @@ function modeAllowed(mode: string) {
 }
 
 function localBrowserPrerequisites() {
-  const canvas = document.createElement('canvas')
   return {
-    webgl2: Boolean(canvas.getContext('webgl2')),
+    webgl2: capturedRealityWebGL2Available(),
     webWorker: typeof Worker !== 'undefined',
     readableStream: typeof ReadableStream !== 'undefined',
   }

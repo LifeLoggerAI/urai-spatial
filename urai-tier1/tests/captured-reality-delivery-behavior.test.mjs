@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { capturedRealityContentLengthAvailable, createCapturedRealityRequestAuthority } from '../src/spatial/captured-reality/capturedRealityDelivery.ts'
+import { capturedRealityContentLengthAvailable, capturedRealityWebGL2Available, createCapturedRealityRequestAuthority } from '../src/spatial/captured-reality/capturedRealityDelivery.ts'
 import { capturedRealityLaunchCertification, validateCapturedRealityPerformanceReceipt } from '../src/spatial/captured-reality/capturedRealityRuntime.ts'
 
 test('GET-signed delivery probes use the authorized method and cancel media consumption after headers', async () => {
@@ -67,4 +67,48 @@ test('one desktop performance receipt cannot certify mobile or XR devices', () =
   assert.equal(result.xrReady, false)
   assert.ok(result.mobileErrors.includes('MOBILE_RECEIPT_TIER_MISMATCH'))
   assert.ok(result.xrErrors.includes('XR_RECEIPT_TIER_MISMATCH'))
+})
+
+test('private splat delivery requires whole raw records and readable unencoded bodies', async () => {
+  for (const headers of [
+    { 'content-length': '31' },
+    { 'content-length': '33' },
+    { 'content-length': '320', 'content-encoding': 'gzip' },
+    { 'content-length': '320', 'content-encoding': 'br' },
+    { 'content-length': '320', 'content-range': 'bytes 0-319/640' },
+  ]) {
+    let cancelled = false
+    const fetcher = async () => new Response(new ReadableStream({ cancel() { cancelled = true } }), { headers })
+    assert.equal(await capturedRealityContentLengthAvailable('https://storage.example/private.splat', 1024, undefined, fetcher), false)
+    assert.equal(cancelled, true)
+  }
+  const empty = async () => new Response(null, { headers: { 'content-length': '320' } })
+  assert.equal(await capturedRealityContentLengthAvailable('https://storage.example/private.splat', 1024, undefined, empty), false)
+  const valid = async (_url, options) => {
+    assert.equal(options.redirect, 'error')
+    return new Response(new Uint8Array(320), { headers: { 'content-length': '320', 'content-encoding': 'identity' } })
+  }
+  assert.equal(await capturedRealityContentLengthAvailable('https://storage.example/private.splat', 1024, undefined, valid), true)
+})
+
+test('invalid runtime byte budgets cannot trigger a private fetch', async () => {
+  for (const budget of [NaN, Infinity, -1, 0, 31, 32.5]) {
+    assert.equal(await capturedRealityContentLengthAvailable('https://storage.example/private.splat', budget, undefined, () => { throw new Error('must not fetch') }), false)
+  }
+})
+
+test('capability checks release temporary WebGL contexts on every renewal', () => {
+  let released = 0
+  const createCanvas = () => ({ getContext(kind) {
+    assert.equal(kind, 'webgl2')
+    return { getExtension(name) {
+      assert.equal(name, 'WEBGL_lose_context')
+      return { loseContext() { released++ } }
+    } }
+  } })
+  for (let i = 0; i < 30; i++) assert.equal(capturedRealityWebGL2Available(createCanvas), true)
+  assert.equal(released, 30)
+  assert.equal(capturedRealityWebGL2Available(() => ({ getContext: () => null })), false)
+  assert.equal(capturedRealityWebGL2Available(() => { throw new Error('canvas unavailable') }), false)
+  assert.equal(capturedRealityWebGL2Available(() => ({ getContext: () => ({ getExtension: () => null }) })), true)
 })

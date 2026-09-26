@@ -80,5 +80,5 @@ test('renderer adapter accepts only authorized decision URL and bounded stream t
   assert.match(adapter, /decision\.mode !== 'gaussian-splat'/)
   assert.match(adapter, /chunkSize/)
   assert.match(adapter, /alphaHash/)
-  assert.match(adapter, /<Splat src=\{decision\.assetUrl\}/)
+  assert.match(adapter, /<OwnedCapturedRealitySplat src=\{decision\.assetUrl\}/)
 })
