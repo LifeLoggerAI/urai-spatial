@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import { publishOrbState, type OrbState } from '@/app/home/orbStateController'
 import { useHomePersonalizedScene } from '@/app/home/useHomePersonalizedScene'
 import { HomeWorldProductionV223 as HomeWorldProduction } from '@/spatial/layout/HomeWorldProductionV223'
+import { useReducedMotion } from '@/spatial/hooks/useReducedMotion'
 import currentHomeVisualAuthority from './currentHomeVisualAuthority.json'
 
 type Props = { onOrbOpen: () => void; webglAvailable: true }
@@ -21,6 +22,7 @@ const WEATHER_PRESENTATION = {
 export default function AssetDrivenHomeWorld({ onOrbOpen, webglAvailable }: Props) {
   const ownerRef = useRef<HTMLDivElement>(null)
   const { scene, loading: personalizationLoading } = useHomePersonalizedScene()
+  const reducedMotion = useReducedMotion()
   const [reviewReducedStimulation, setReviewReducedStimulation] = useState(false)
   const [reviewPlaceOverlay, setReviewPlaceOverlay] = useState(false)
   const weather = WEATHER_PRESENTATION[scene.environment.weatherTone]
@@ -34,7 +36,8 @@ export default function AssetDrivenHomeWorld({ onOrbOpen, webglAvailable }: Prop
       : scene.privateDataMounted
         ? 'permitted-private-home-signals'
         : 'none'
-  const weatherOpacity = reviewReducedStimulation ? Math.min(weather.opacity, 0.018) : weather.opacity
+  const reducedWeatherStimulation = reducedMotion || reviewReducedStimulation
+  const weatherOpacity = reducedWeatherStimulation ? Math.min(weather.opacity, 0.018) : weather.opacity
 
   useEffect(() => {
     const query = new URLSearchParams(window.location.search)
@@ -130,7 +133,7 @@ export default function AssetDrivenHomeWorld({ onOrbOpen, webglAvailable }: Prop
       data-home-emotional-weather-tone={scene.environment.weatherTone}
       data-home-emotional-weather-source={emotionalWeatherSource}
       data-home-emotional-weather-visible={emotionalWeatherVisible ? 'true' : 'false'}
-      data-home-emotional-weather-reduced-stimulation={reviewReducedStimulation ? 'true' : 'false'}
+      data-home-emotional-weather-reduced-stimulation={reducedWeatherStimulation ? 'true' : 'false'}
       data-home-emotional-weather-place-overlay={reviewPlaceOverlay ? 'disclosed-synthetic-private-location' : 'none'}
       aria-hidden="true"
       style={{
@@ -140,7 +143,7 @@ export default function AssetDrivenHomeWorld({ onOrbOpen, webglAvailable }: Prop
         pointerEvents: 'none',
         opacity: emotionalWeatherVisible ? weatherOpacity : 0,
         background: reviewPlaceOverlay ? `${weather.background}, radial-gradient(circle at 30% 68%, rgba(148,190,174,.18), transparent 18%)` : weather.background,
-        mixBlendMode: reviewReducedStimulation ? 'normal' : 'soft-light',
+        mixBlendMode: reducedWeatherStimulation ? 'normal' : 'soft-light',
       }}
     />
     <span className="sr-only" role="status" data-testid="home-personal-emotional-weather-status">{emotionalWeatherSummary}</span>
