@@ -338,9 +338,7 @@ async function captureOrbLifecycle({ reducedMotion = 'no-preference' } = {}) {
     await talk.waitFor({ state: 'visible', timeout: 10_000 })
     record.summaryFocusSteps = await focusNativeSummaryByText(page, 'Talk with Orb')
     await page.keyboard.press('Enter')
-    await companionMenu.locator('details').filter({ has: companionMenu.locator('summary').filter({ hasText: 'Talk with Orb' }) }).first().evaluate((details) => {
-      if (!(details instanceof HTMLDetailsElement) || !details.open) throw new Error('active Orb conversation details did not open')
-    })
+    await companionMenu.locator('details[open]').filter({ hasText: 'Talk with Orb' }).first().waitFor({ state: 'visible', timeout: 10_000 })
     const message = companionMenu.getByLabel('Message for Orb').first()
     await message.waitFor({ state: 'visible', timeout: 10_000 })
     await message.focus()
