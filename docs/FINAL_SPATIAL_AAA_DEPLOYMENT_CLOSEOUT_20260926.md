@@ -87,7 +87,7 @@ PR #1325 remains untouched by this closeout.
 - No files from its pixel-owned lane were modified.
 - The Home active-owner marker remains the known provider-handoff blocker:
   `data-home-visible-world="final-physical-sanctuary-memory-rooms"`.
-- Fresh exact-head workflow snapshot for `33bc2209f37c3628592e772b631e497d713aa1dc`: 18 runs; 15 queued, 3 pending, 0 completed conclusions. Earlier failures belong to the superseded pixel head and are not transferred to this new head.
+- Fresh exact-head workflow snapshot for `33bc2209f37c3628592e772b631e497d713aa1dc`: 18 runs; 17 queued, 1 pending, 0 completed conclusions.
 - Historical failed-run logs from the superseded pixel head `2f7af37e0e234629d9d8261d19f778205c41f7e5` were read-only inspected. They included the Home State Proof Orb-open lifecycle-signature mismatch, a Continuous Spatial Visual Proof desktop browser-proof failure after artifact upload, and Accessibility Performance Evidence failures. Those failures remain lane-owned; the new head `33bc2209f37c3628592e772b631e497d713aa1dc` has fresh workflows queued/pending.
 
 The pixel agent's exact handoff remains:
@@ -145,6 +145,21 @@ A live browser readback was performed against `https://urai.app` on 2026-09-26 U
 | `/spatial/ar-vr` | PASS — accessible XR fallback/entry surface rendered |
 
 This proves public route reachability and visible page rendering only. The browser evidence surface did not expose numeric HTTP status codes. It does not prove that PR #1325 or #1343 is deployed, that production matches either candidate, or that AAA+++ visual acceptance is complete.
+
+A fresh direct HTTP probe from the closeout environment recorded:
+
+| Route | HTTP result |
+| --- | --- |
+| `/` | 200 |
+| `/life-map` | 200 |
+| `/focus` | 200 |
+| `/replay` | 200 |
+| `/passport` | 200 |
+| `/privacy` | 200 |
+| `/settings/privacy` | 404 |
+| `/spatial/ar-vr` | no site status captured; the probe timed out at the network proxy |
+
+The browser-rendering readback and direct HTTP probe therefore do not agree for the last two routes. They are not treated as certified canonical live routes until the authorized deployment owner verifies them from the deployment environment.
 
 No safe merge-and-deploy action was taken because both relevant PRs remain drafts, exact-head acceptance is incomplete, and current release workflows are not green.
 
