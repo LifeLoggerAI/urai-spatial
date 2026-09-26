@@ -237,8 +237,10 @@ async function interaction(browser, { id, viewport, kind, reducedMotion = 'no-pr
       record.transition = await owner.getAttribute('data-home-transition-sequence')
       record.passed = record.pointer.phase === 'SKY_ASCENT' && record.inputLocked === 'true' && record.transition === 'SKY_ASCENT'
     } else if (kind === 'orb') {
-      const button = page.getByRole('button', { name: 'Open UrAi Orb companion' }).first()
+      const button = page.getByTestId('home-semantic-orb').first()
       await button.waitFor({ state: 'visible', timeout: 10_000 })
+      const buttonName = await button.getAttribute('aria-label')
+      if (!/^Open URAI Orb companion$/i.test(buttonName ?? '')) throw new Error(`unexpected semantic Orb label: ${buttonName ?? 'missing'}`)
       if (await button.getAttribute('data-testid') !== 'home-semantic-orb') throw new Error('unexpected semantic Orb owner')
       record.focusSteps = await activateSemanticTargetWithNativeKeyboard(page, 'home-semantic-orb')
       await page.locator('#urai-world-companion-menu[aria-hidden="false"]').waitFor({ state: 'visible', timeout: 10_000 })
