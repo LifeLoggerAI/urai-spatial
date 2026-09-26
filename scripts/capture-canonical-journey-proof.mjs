@@ -173,8 +173,27 @@ async function proveRealHomeAscent(page, journey, home, mode) {
 
 async function directAccessibleHomeHandoff(page, journey, mode) {
   const nav = page.locator('.home-semantic-navigation[data-home-navigation-owner="runtime-boundary"]').first()
-  await nav.waitFor({ state: 'visible', timeout: 45_000 })
-  await activate(page, nav.getByTestId('home-semantic-life-map'), mode)
+  const target = nav.getByTestId('home-semantic-life-map')
+  if (mode === 'keyboard') {
+    // Home keeps these destinations visually quiet until native focus reveals
+    // them. Prove keyboard reachability rather than forcing focus through the
+    // renderer while it is still loading the surrounding world.
+    await target.waitFor({ state: 'attached', timeout: 45_000 })
+    let reached = false
+    for (let step = 0; step <= 32; step += 1) {
+      if (await target.evaluate((node) => document.activeElement === node)) {
+        journey.homeKeyboardFocusSteps = step
+        reached = true
+        break
+      }
+      if (step < 32) await page.keyboard.press('Tab')
+    }
+    assert.equal(reached, true, 'Home Life Map must be reachable through native Tab focus')
+    await page.keyboard.press('Enter')
+  } else {
+    await nav.waitFor({ state: 'visible', timeout: 45_000 })
+    await activate(page, target, mode)
+  }
   await waitPath(page, '/life-map', 60_000)
   journey.ascentProven = null
 }
@@ -230,7 +249,7 @@ async function enterReplay(page, journey, mode, identity) {
   const controls = page.getByRole('navigation', { name: 'Focus controls' })
   await activate(page, controls.getByRole('button', { name: /Enter Replay for/ }), mode)
   await waitPath(page, '/replay', 60_000)
-  const replay = page.getByTestId('cinematic-replay-client')
+  const replay = page.locator('[data-testid="cinematic-replay-client"]:visible')
   await replay.waitFor({ state: 'visible', timeout: 90_000 })
   await assertRealmIdentity(replay, identity)
   await activate(page, page.getByRole('button', { name: 'Begin memory', exact: true }), mode)

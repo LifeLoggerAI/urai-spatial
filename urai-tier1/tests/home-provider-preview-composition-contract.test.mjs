@@ -20,13 +20,14 @@ test('cinematic Home does not mount the retired locomotion pad or parallax movem
   assert.match(runtime, /aria-label="Open UrAi Orb companion"/)
 })
 
-test('desktop composition retains covered canvas edges and a bounded viewport', () => {
+test('desktop canvas keeps the camera and pointer geometry inside the viewport', () => {
   const css = appFile('home-provider-preview-composition.css')
   assert.match(css, /width: 100% !important;/)
   assert.match(css, /height: 100% !important;/)
   assert.match(css, /left: 0 !important;/)
   assert.match(css, /top: 0 !important;/)
   assert.match(css, /transform: none;/)
+  assert.doesNotMatch(css, /transform:\s*scale\(/)
 })
 
 test('desktop provenance and unavailable ambience controls remain accessible but visually discreet', () => {

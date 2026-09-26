@@ -127,8 +127,12 @@ test('Orb and Home ownership preserve predecessor truth while the current candid
   assert.doesNotMatch(activeHomeVisual, /<Canvas/)
   assert.equal((activeHomeProduction.match(/<Canvas/g) ?? []).length, 1)
   assert.match(routeOwnerConvergence, /data-world-destination='home'[\s\S]*\.urai-world-companion__orb/)
-  assert.match(routeOwnerConvergence, /background:\s*transparent\s*!important/)
-  assert.match(routeOwnerConvergence, /box-shadow:\s*none\s*!important/)
+  // Home has one authored Orb and its semantic shortcut. The shared menu
+  // renders a readable Close action only while open, not an invisible clone.
+  assert.match(companion, /world\.destination !== 'home' \|\| open \? \(/)
+  assert.match(companion, /world\.destination === 'home' \? 'Close'/)
+  assert.match(routeOwnerConvergence, /background:\s*#0b2225\s*!important/)
+  assert.doesNotMatch(routeOwnerConvergence, /width:\s*96px\s*!important/)
   assert.match(routeOwnerConvergence, /outline:\s*3px solid rgba\(224,255,255,.96\)\s*!important/)
   assert.doesNotMatch(homeRuntime, /urai-home-spatial-orb-trigger|urai-home-spatial-runtime-orb/)
 })
@@ -276,4 +280,3 @@ test('Life Map renders the current layered galaxy and stellar Memory Star author
   assert.match(lifeMapSelectedCinematic, /pointer-events: auto !important/)
   assert.doesNotMatch(cosmicLifeMap, /function\s+MemoryLens|life-map-anchored-paths|sphereGeometry args=\{\[\.30 \+ node\.intensity/)
 })
-

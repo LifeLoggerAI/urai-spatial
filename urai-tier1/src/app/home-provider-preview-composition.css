@@ -24,6 +24,8 @@
   .urai-home-spatial-runtime-layer[data-webgl-ready="true"]
     .urai-asset-home-world[data-home-primary-owner="asset-driven"] canvas {
     position: absolute !important;
+    /* The Three camera owns composition. CSS overscan (112% * .9) cropped
+       the scene and displaced its pointer coordinates beyond the viewport. */
     width: 100% !important;
     height: 100% !important;
     left: 0 !important;

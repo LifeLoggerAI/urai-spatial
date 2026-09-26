@@ -118,7 +118,9 @@ test('Mirror movement help identifies the active realm and accepts authored real
   assert.match(clientSource, /<MovementHelp realm="Mirror"/)
   assert.doesNotMatch(clientSource, /<MovementHelp realm="Life Map"/)
   assert.match(navigationSource, /realm: string/)
-  assert.match(navigationSource, /<summary>Move through \{realm\}<\/summary>/)
+  assert.match(navigationSource, /<summary aria-label=\{`Move through \$\{realm\}`\}>/)
+  assert.match(navigationSource, /compactLabel \?\? `Move through \$\{realm\}`/)
+  assert.doesNotMatch(clientSource, /<MovementHelp[^>]*compactLabel=/)
 })
 
 test('Mirror acceptance fixtures, mobile scrolling, and semantic fallback fail closed', () => {

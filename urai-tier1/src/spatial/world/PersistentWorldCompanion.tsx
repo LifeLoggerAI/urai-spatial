@@ -87,12 +87,14 @@ export function PersistentWorldCompanion() {
       restoreFocusRef.current = false
       const activator = externalActivatorRef.current
       externalActivatorRef.current = null
-      if (activator?.isConnected) activator.focus()
-      else orbRef.current?.focus()
-      const focusTarget = activator?.isConnected ? activator : orbRef.current
+      const homeOrb = world.destination === 'home'
+        ? document.querySelector<HTMLButtonElement>('[data-testid="home-semantic-orb"]')
+        : null
+      const focusTarget = activator?.isConnected ? activator : homeOrb ?? orbRef.current
+      focusTarget?.focus()
       if (focusTarget && document.activeElement !== focusTarget) window.requestAnimationFrame(() => focusTarget.focus({ preventScroll: true }))
     }
-  }, [hydrated, open, phase])
+  }, [hydrated, open, phase, world.destination])
 
   useEffect(() => {
     if (!open) return
@@ -110,7 +112,7 @@ export function PersistentWorldCompanion() {
   }, [closeCompanion, phase, world.destination])
 
   return (
-    <aside className="urai-world-companion" data-open={open ? 'true' : 'false'} data-phase={phase} data-destination={world.destination} data-spatial-audio={audioEnabled ? 'on' : 'off'}>
+    <aside className="urai-world-companion" data-hydrated={hydrated ? 'true' : 'false'} data-open={open ? 'true' : 'false'} data-phase={phase} data-destination={world.destination} data-spatial-audio={audioEnabled ? 'on' : 'off'}>
       <div ref={menuRef} id="urai-world-companion-menu" className="urai-world-companion__menu" aria-hidden={open ? 'false' : 'true'} inert={!open ? true : undefined}>
         <p>UrAi Orb</p>
         <p className="urai-world-companion__purpose">Private companion conversation and sensory controls. World travel stays in the world.</p>
@@ -118,9 +120,13 @@ export function PersistentWorldCompanion() {
         <button type="button" aria-pressed={audioEnabled} aria-label={audioEnabled ? 'Mute spatial sound' : 'Enable spatial sound'} data-world-target="spatial-audio-toggle" disabled={!hydrated} onClick={toggleAudio}>{audioEnabled ? 'Sound on' : 'Sound off'}</button>
         <OrbConversationPanel />
       </div>
-      <button ref={orbRef} type="button" className="urai-world-companion__orb" aria-label={open ? 'Close UrAi Orb companion' : 'Open UrAi Orb companion'} aria-expanded={open} aria-controls="urai-world-companion-menu" data-world-target="orb-controls" data-urai-audit-action="orb-controls" disabled={!hydrated || phase !== 'idle'} onClick={toggleCompanion}>
-        <svg viewBox="0 0 48 48" aria-hidden="true" focusable="false"><path d="M23 40C8 33 7 16 15 8C24 11 28 24 23 40Z" fill="#82b4a3" fillOpacity=".5" stroke="#c8e5d6" strokeWidth="1.2" /><path d="M23 40C35 34 42 19 35 12C25 15 22 27 23 40Z" fill="#aa929e" fillOpacity=".48" stroke="#e0bbc2" strokeWidth="1.2" /><path d="M23 39C25 27 16 24 17 14M24 35C28 27 33 24 33 18" fill="none" stroke="#e9e4ca" strokeWidth="1.1" strokeLinecap="round" /></svg>
-      </button>
+      {/* Home already has the authored Orb and its native semantic shortcut.
+          A duplicate transparent button must not intercept world gestures. */}
+      {world.destination !== 'home' || open ? (
+        <button ref={orbRef} type="button" className="urai-world-companion__orb" aria-label={open ? 'Close UrAi Orb companion' : 'Open UrAi Orb companion'} aria-expanded={open} aria-controls="urai-world-companion-menu" data-world-target="orb-controls" data-urai-audit-action="orb-controls" disabled={!hydrated || phase !== 'idle'} onClick={toggleCompanion}>
+          {world.destination === 'home' ? 'Close' : <svg viewBox="0 0 48 48" aria-hidden="true" focusable="false"><path d="M23 40C8 33 7 16 15 8C24 11 28 24 23 40Z" fill="#82b4a3" fillOpacity=".5" stroke="#c8e5d6" strokeWidth="1.2" /><path d="M23 40C35 34 42 19 35 12C25 15 22 27 23 40Z" fill="#aa929e" fillOpacity=".48" stroke="#e0bbc2" strokeWidth="1.2" /><path d="M23 39C25 27 16 24 17 14M24 35C28 27 33 24 33 18" fill="none" stroke="#e9e4ca" strokeWidth="1.1" strokeLinecap="round" /></svg>}
+        </button>
+      ) : null}
     </aside>
   )
 }

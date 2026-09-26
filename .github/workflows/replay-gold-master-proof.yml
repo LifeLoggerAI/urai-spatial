@@ -8,13 +8,14 @@ on:
         required: true
         type: string
   pull_request:
-    branches: [main, home-final-v24-certify-20260826]
+    branches: [main, home-final-v24-certify-20260826, converge/final-canon-spatial-20260922, repair/spatial-complete-proof-20260926]
     paths:
       - '.github/workflows/replay-gold-master-proof.yml'
       - 'scripts/capture-replay-gold-master-proof.mjs'
       - 'scripts/run-with-ci-webgl.mjs'
       - 'tests/replay-memory-theater-contract.mjs'
       - 'urai-tier1/tests/replay-memory-theater-contract.test.mjs'
+      - 'urai-tier1/tests/replay-viewport-scroll.browser.mjs'
       - 'urai-tier1/src/app/replay/**'
       - 'urai-tier1/src/app/replay-mobile-control-clearance.css'
       - 'urai-tier1/src/lib/memory/**'
@@ -86,6 +87,7 @@ jobs:
         run: |
           set -euo pipefail
           pnpm --dir urai-tier1 exec playwright install --with-deps chromium
+          node urai-tier1/tests/replay-viewport-scroll.browser.mjs
           node --check scripts/run-with-ci-webgl.mjs
           node --check scripts/capture-replay-gold-master-proof.mjs
 

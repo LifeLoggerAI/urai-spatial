@@ -9,6 +9,7 @@ import { markFirstSpatialFrame, useAdaptiveSpatialQuality, type SpatialQualityPr
 import { useSelectedMemory } from '@/spatial/memory/useSelectedMemory'
 import type { SelectedMemory } from '@/spatial/memory/selectedMemoryContract'
 import { requestUraiWorldReturn, requestUraiWorldTravel } from '@/spatial/world/worldEvents'
+import { focusCameraPosition, focusCameraMaxRadius } from './focusCameraFraming'
 
 // Locked product authority; V395 is the current literal-pixel implementation:
 // Life Map shows stellar memory points. Focus resolves the selected point into the
@@ -84,7 +85,7 @@ function makeFocusCoronaTexture(power: number, rays = false) {
 
 
 function makeFocusPhotosphereTexture() {
-  const size = 256;
+  const size = 512;
   const data = new Uint8Array(size * size * 4);
   for (let y = 0; y < size; y += 1) for (let x = 0; x < size; x += 1) {
     const dx = ((x + .5) / size - .5) * 2;
@@ -92,10 +93,10 @@ function makeFocusPhotosphereTexture() {
     const distance = Math.sqrt(dx * dx + dy * dy);
     const angle = Math.atan2(dy, dx);
     const boundary = THREE.MathUtils.clamp(.72
-      + Math.sin(angle * 5 + .52) * .085
-      + Math.sin(angle * 11 - .81) * .055
-      + Math.sin(angle * 19 + .34) * .035
-      + Math.sin(angle * 31 - .27) * .020, .48, .96);
+      + Math.sin(angle * 5 + .52) * .012
+      + Math.sin(angle * 11 - .81) * .008
+      + Math.sin(angle * 19 + .34) * .005
+      + Math.sin(angle * 31 - .27) * .003, .68, .76);
     const offset = (y * size + x) * 4;
     if (distance >= boundary) {
       data[offset + 3] = 0;
@@ -110,11 +111,11 @@ function makeFocusPhotosphereTexture() {
       + Math.sin((x * .071) - (y * .093)) * .09;
     const activeRegion = Math.max(0, Math.sin(x * .11 - y * .07) + Math.sin(x * .031 + y * .13)) * .075;
     const coreHeat = Math.pow(Math.max(0, 1 - normalizedDistance), .55);
-    const brightness = THREE.MathUtils.clamp(.14 + limb * .22 + granulation * .40 + activeRegion + coreHeat * .24, 0, 1);
-    const edgeFade = THREE.MathUtils.clamp((boundary - distance) / .075, 0, 1);
-    data[offset] = 255;
-    data[offset + 1] = Math.round(192 + brightness * 63);
-    data[offset + 2] = Math.round(110 + brightness * 132);
+    const brightness = THREE.MathUtils.clamp(.18 + limb * .30 + granulation * .32 + activeRegion + coreHeat * .10, 0, 1);
+    const edgeFade = THREE.MathUtils.clamp((boundary - distance) / .035, 0, 1);
+    data[offset] = Math.round(180 + brightness * 75);
+    data[offset + 1] = Math.round(70 + brightness * 145);
+    data[offset + 2] = Math.round(20 + brightness * 115);
     data[offset + 3] = Math.round(edgeFade * (.88 + limb * .12) * 255);
   }
   const texture = new THREE.DataTexture(data, size, size, THREE.RGBAFormat);
@@ -389,14 +390,14 @@ function FocusMemoryStar({
     }}
   >
     <>
-    <sprite raycast={() => null} position={[-.04, .02, -.10]} scale={[3.72, 3.22, 1]} rotation={-.11} name="focus-memory-star-corona-glow">
-      <spriteMaterial map={coronaTexture} color="#fff2c6" transparent opacity={memory ? .34 : .10} depthWrite={false} depthTest={false} blending={THREE.AdditiveBlending} toneMapped={false} />
+    <sprite raycast={() => null} position={[-.04, .02, -.10]} scale={[3.72, 3.22, 1]} name="focus-memory-star-corona-glow">
+      <spriteMaterial rotation={-.11} map={coronaTexture} color="#fff2c6" transparent opacity={memory ? .34 : .10} depthWrite={false} depthTest={false} blending={THREE.AdditiveBlending} toneMapped={false} />
     </sprite>
-    <sprite raycast={() => null} position={[.02, .01, .06]} scale={[4.36, 3.58, 1]} rotation={.31} name="focus-memory-star-organic-streamer-field">
-      <spriteMaterial map={rayTexture} color="#fff9dc" transparent opacity={memory ? .18 : .06} depthWrite={false} depthTest={false} blending={THREE.AdditiveBlending} toneMapped={false} />
+    <sprite raycast={() => null} position={[.02, .01, .06]} scale={[4.36, 3.58, 1]} name="focus-memory-star-organic-streamer-field">
+      <spriteMaterial rotation={.31} map={rayTexture} color="#fff9dc" transparent opacity={memory ? .18 : .06} depthWrite={false} depthTest={false} blending={THREE.AdditiveBlending} toneMapped={false} />
     </sprite>
-    <sprite raycast={() => null} position={[-.01, .01, .18]} scale={[1.86, 1.72, 1]} rotation={.07} name="focus-memory-star-photosphere-surface">
-      <spriteMaterial map={photosphereTexture} color="#fffce8" transparent opacity={memory ? .90 : .05} depthWrite={false} depthTest={false} blending={THREE.AdditiveBlending} toneMapped={false} />
+    <sprite raycast={() => null} position={[-.01, .01, .18]} scale={[1.86, 1.72, 1]} name="focus-memory-star-photosphere-surface">
+      <spriteMaterial rotation={.07} map={photosphereTexture} color="#fffce8" transparent opacity={memory ? .90 : .05} depthWrite={false} depthTest={false} blending={THREE.AdditiveBlending} toneMapped={false} />
     </sprite>
     <mesh raycast={() => null} geometry={photosphereGeometry} scale={[.26, .245, .23]} name="focus-memory-star-photosphere-core" rotation={[0.08, -0.18, 0]}>
       <meshBasicMaterial
@@ -438,7 +439,7 @@ function FocusMemoryStar({
     </mesh>
     <pointLight color="#ffb45f" intensity={memory ? 1.2 : 1.1} distance={5.8} decay={2} />
     <pointLight position={[-1.1, 1.25, 1.7]} color="#fff0c8" intensity={memory ? 1.55 : .42} distance={6.2} decay={2} />
-    <Html center transform position={[0, 0, 0.50]} distanceFactor={2.72} zIndexRange={[20, 10]}>
+    <Html center position={[0, 0, 0.50]} zIndexRange={[20, 10]}>
       <button
         type="button"
         className="focusStarMemoryButton"
@@ -489,9 +490,11 @@ function FocusCameraRig({
   recenterSignal: number
   shellRef: RefObject<HTMLElement | null>
 }) {
-  const { camera, invalidate } = useThree()
+  const { camera, invalidate, size } = useThree()
   const keys = useRef(new Set<string>())
-  const defaultCamera = useMemo(() => new THREE.Vector3(...DEFAULT_CAMERA), [])
+  const aspect = size.width / Math.max(1, size.height)
+  const defaultCamera = useMemo(() => new THREE.Vector3(...focusCameraPosition(aspect)), [aspect])
+  const maxCameraRadius = Math.max(MAX_CAMERA_RADIUS, focusCameraMaxRadius(aspect))
   const target = useMemo(() => STAR_TARGET.clone(), [])
   const offset = useRef(new THREE.Vector3())
   const radial = useRef(new THREE.Vector3())
@@ -507,11 +510,12 @@ function FocusCameraRig({
   }, [camera, defaultCamera, shellRef])
 
   useEffect(() => {
-    camera.position.set(...DEFAULT_CAMERA)
+    camera.position.copy(defaultCamera)
     controls.current?.target.copy(target)
     controls.current?.update()
     setTelemetry(false)
-  }, [camera, controls, recenterSignal, setTelemetry, target])
+    invalidate()
+  }, [camera, controls, defaultCamera, invalidate, recenterSignal, setTelemetry, target])
 
   useEffect(() => {
     const down = (event: KeyboardEvent) => {
@@ -557,7 +561,7 @@ function FocusCameraRig({
         camera.position.copy(target).add(offset.current)
       }
       offset.current.copy(camera.position).sub(target)
-      const radius = THREE.MathUtils.clamp(offset.current.length(), MIN_CAMERA_RADIUS, MAX_CAMERA_RADIUS)
+      const radius = THREE.MathUtils.clamp(offset.current.length(), MIN_CAMERA_RADIUS, maxCameraRadius)
       if (offset.current.lengthSq() > 0.0001) camera.position.copy(target).add(offset.current.normalize().multiplyScalar(radius))
       controls.current?.target.copy(target)
       controls.current?.update()
@@ -586,6 +590,8 @@ function FocusScene({
   onWebGLState: (state: WebGLState) => void
   shellRef: RefObject<HTMLElement | null>
 }) {
+  const { size } = useThree()
+  const maximumCameraRadius = focusCameraMaxRadius(size.width / Math.max(1, size.height))
   const accent = memory?.star.aura ?? memory?.visuals.accent ?? '#79dfff'
   const light = memory?.visuals.light ?? '#e7fbff'
   return <>
@@ -607,7 +613,7 @@ function FocusScene({
       enablePan={false}
       enableZoom
       minDistance={MIN_CAMERA_RADIUS}
-      maxDistance={MAX_CAMERA_RADIUS}
+      maxDistance={maximumCameraRadius}
       zoomSpeed={0.55}
       rotateSpeed={0.28}
       minPolarAngle={0.62}

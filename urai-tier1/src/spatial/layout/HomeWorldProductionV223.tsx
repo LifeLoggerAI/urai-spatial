@@ -1051,13 +1051,14 @@ export function HomeWorldProductionV223({ onOrbOpen = requestUraiWorldOrbOpen, w
     </Canvas>
     {firstPerson ? (
       <>
-        <MovementHelp realm="Home" summary="Move through your Home in bodyless first person without a synthetic body overlay." controls="WASD or arrow keys move · drag to look · interact opens nearby physical objects such as Passport · Escape closes the active interaction layer while Home remains first person." />
+        <MovementHelp realm="Home" compactLabel="Move" summary="Move through your Home in bodyless first person without a synthetic body overlay." controls="WASD or arrow keys move · drag to look · interact opens nearby physical objects such as Passport · Escape closes the active interaction layer while Home remains first person." />
         <MobileMovementPad input={movementInput} label="Move through Home" />
         {passportNearby && !passportDeparting ? (
           <button
             type="button"
             aria-label="Open physical Passport"
             data-testid="urai-home-passport-interact"
+            className={styles.passportInteract}
             data-movement-ui="true"
             onClick={openPassport}
             style={{ position: 'absolute', left: '50%', bottom: 'max(22px, calc(env(safe-area-inset-bottom) + 18px))', transform: 'translateX(-50%)', zIndex: 36, minHeight: 48, padding: '0 18px', borderRadius: 999, border: '1px solid rgba(239,214,154,.34)', background: 'rgba(21,28,29,.72)', color: '#fff8e8', backdropFilter: 'blur(12px)', font: '700 12px/1 system-ui', cursor: 'pointer' }}

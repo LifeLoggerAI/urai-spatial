@@ -21,52 +21,28 @@ body:has(.urai-home-spatial-runtime-layer[data-webgl-ready='true']) .urai-home-s
   height: 100svh !important;
 }
 
-/* Home keeps the companion controller and menu, but the authored sanctuary image
- * owns the only visible Orb. While closed, the generic button is a transparent
- * accessible hit target aligned over that Orb. */
+/* Home opens through the authored Orb or its readable semantic shortcut.
+ * The generic controller is mounted only while open, as a visible Close button;
+ * there is no invisible, fixed-position duplicate over the 3D scene. */
 .urai-world-runtime[data-world-destination='home'] .urai-world-companion__orb,
 .urai-world-runtime[data-world-destination='home'] .urai-world-companion__orb:hover {
-  position: fixed !important;
-  left: 50% !important;
-  top: 55% !important;
-  width: 96px !important;
-  height: 96px !important;
-  transform: translate(-50%, -50%) !important;
-  border-color: transparent !important;
-  background: transparent !important;
-  box-shadow: none !important;
-  filter: none !important;
-}
-
-/* Once open, return the transparent controller to its normal grid position below
- * the menu. This preserves a pointer-close target without covering destination
- * buttons such as Life Map. */
-.urai-world-runtime[data-world-destination='home']
-  .urai-world-companion[data-open='true'] .urai-world-companion__orb,
-.urai-world-runtime[data-world-destination='home']
-  .urai-world-companion[data-open='true'] .urai-world-companion__orb:hover {
   position: relative !important;
   left: auto !important;
   top: auto !important;
   width: 64px !important;
   height: 64px !important;
   transform: none !important;
-  border-color: transparent !important;
-  background: transparent !important;
-  box-shadow: none !important;
-  filter: none !important;
-}
-
-.urai-world-runtime[data-world-destination='home'] .urai-world-companion__orb::before,
-.urai-world-runtime[data-world-destination='home'] .urai-world-companion__orb::after,
-.urai-world-runtime[data-world-destination='home'] .urai-world-companion__orb span {
-  content: none !important;
-  display: none !important;
+  border: 1px solid rgba(207, 238, 225, .6) !important;
+  border-radius: 18px;
+  background: #0b2225 !important;
+  color: #f3fbf8;
+  font: 700 12px/1 system-ui;
+  box-shadow: 0 5px 18px rgba(0,0,0,.28) !important;
 }
 
 .urai-world-runtime[data-world-destination='home'] .urai-world-companion__orb:focus-visible {
   outline: 3px solid rgba(224,255,255,.96) !important;
-  outline-offset: 8px !important;
+  outline-offset: 4px !important;
 }
 
 /* Home keeps the living sanctuary visible while the conversation surface is open.
