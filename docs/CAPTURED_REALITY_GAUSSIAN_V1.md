@@ -1,6 +1,6 @@
 # URAI Captured Reality / Gaussian Splat V1
 
-Status: IMPLEMENTED CONTRACT LANE / HARD-OFF / NOT ROUTE-MOUNTED / NOT XR-CERTIFIED
+Status: IMPLEMENTED CONTRACT LANE / PRIVATE ROUTE IN SOURCE / HARD-OFF / NOT XR-CERTIFIED
 
 ## Objective
 
@@ -94,7 +94,11 @@ Why:
 - the renderer can remain behind URAI's existing consent and feature-gate layer;
 - route integration can be reviewed separately from reconstruction creation.
 
-The component introduced by this lane is intentionally not mounted on a public route yet.
+The private `/spatial/captured-reality` static route shell now exists in source. It requires authenticated callable authority for private delivery. Source presence does not establish production deployment, successful scene rendering, or device certification; those remain unverified.
+
+The runtime checks the signed GET operation and cancels the response body after inspecting its content length. A HEAD request cannot be substituted for a URL signed for GET. Runtime byte limits apply before the splat renderer starts. Account changes invalidate pending entry requests and clear the private scene and provenance. Performance receipts must contain finite measurements and match the exact device tier being certified.
+
+The processing chain below remains a contract rather than a runnable end-to-end reconstruction worker: this repository supplies source preparation and runtime governance, but contains no invoked camera solver, training job, or trained scene artifact. Source-byte access and an authorized reconstruction execution environment are still required. Source preparation requires a fresh output directory for each run, so stale derivatives cannot contaminate a new source receipt.
 
 ## XR strategy
 

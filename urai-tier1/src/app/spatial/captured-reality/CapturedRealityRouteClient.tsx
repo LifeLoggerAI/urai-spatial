@@ -11,7 +11,9 @@ import CapturedRealityPrivateScene from '@/spatial/captured-reality/CapturedReal
 import {
   capturedRealityBrowserCapability,
   capturedRealityDeviceTier,
+  CAPTURED_REALITY_QUALITY_PROFILES,
 } from '@/spatial/captured-reality/capturedRealityRuntime'
+import { capturedRealityContentLengthAvailable } from '@/spatial/captured-reality/capturedRealityDelivery'
 import type { CapturedRealityRenderDecision } from '@/spatial/captured-reality/capturedReality'
 
 type AssetMetadata = {
@@ -101,16 +103,8 @@ function localBrowserPrerequisites() {
 }
 
 async function contentLengthAvailable(url: string, signal?: AbortSignal) {
-  const response = await fetch(url, {
-    method: 'HEAD',
-    cache: 'no-store',
-    credentials: 'omit',
-    signal,
-  })
-  if (!response.ok) return false
-  const raw = response.headers.get('content-length')
-  const length = raw ? Number(raw) : NaN
-  return Number.isFinite(length) && length > 0
+  const tier = capturedRealityDeviceTier(navigator.userAgent)
+  return capturedRealityContentLengthAvailable(url, CAPTURED_REALITY_QUALITY_PROFILES[tier].maxRuntimeBytes, signal)
 }
 
 async function loadAssetMetadata(assetId: string) {
@@ -170,8 +164,14 @@ export default function CapturedRealityRouteClient() {
       return
     }
     return onAuthStateChanged(getAuth(app), (nextUser) => {
+      revokedRef.current = true
+      setDelivery(null)
+      setMetadata(null)
+      truthLabelRef.current = undefined
+      setShowProvenance(false)
+      setDecision(suppressedDecision())
       setUser(nextUser)
-      if (!nextUser) setState({ kind: 'unauthenticated' })
+      setState({ kind: nextUser ? 'loading' : 'unauthenticated' })
     })
   }, [assetId])
 
@@ -183,6 +183,7 @@ export default function CapturedRealityRouteClient() {
     setDelivery(null)
 
     let disposed = false
+    const identityCurrent = () => getAuth(app).currentUser?.uid === user.uid
     const abort = new AbortController()
     const stops: Unsubscribe[] = []
 
@@ -217,7 +218,7 @@ export default function CapturedRealityRouteClient() {
     void (async () => {
       try {
         const asset = await loadAssetMetadata(assetId)
-        if (disposed || revokedRef.current) return
+        if (disposed || revokedRef.current || !identityCurrent()) return
         setMetadata(asset)
         truthLabelRef.current = asset.truthLabel
 
@@ -233,10 +234,10 @@ export default function CapturedRealityRouteClient() {
         }
 
         const nextDelivery = await loadRuntimeDelivery(assetId, accessMode)
-        if (disposed || revokedRef.current) return
+        if (disposed || revokedRef.current || !identityCurrent()) return
 
         const hasLength = await contentLengthAvailable(nextDelivery.url, abort.signal)
-        if (disposed || revokedRef.current) return
+        if (disposed || revokedRef.current || !identityCurrent()) return
 
         const capability = capturedRealityBrowserCapability({
           ...prerequisites,
@@ -252,7 +253,7 @@ export default function CapturedRealityRouteClient() {
         setDecision(splatDecision(nextDelivery))
         setState({ kind: 'ready' })
       } catch {
-        if (disposed || revokedRef.current || abort.signal.aborted) return
+        if (disposed || revokedRef.current || abort.signal.aborted || !identityCurrent()) return
         setDelivery(null)
         setDecision(suppressedDecision())
         setState({ kind: 'error', message: 'This private captured place could not be opened.' })
@@ -276,25 +277,28 @@ export default function CapturedRealityRouteClient() {
     }
     const refreshIn = Math.max(5_000, expires - Date.now() - 60_000)
     let cancelled = false
+    const abort = new AbortController()
+    const identityCurrent = () => getAuth(app).currentUser?.uid === user.uid
     const timer = window.setTimeout(() => {
       void (async () => {
         try {
           const next = await loadRuntimeDelivery(assetId, accessMode)
-          if (cancelled || revokedRef.current) return
+          if (cancelled || revokedRef.current || !identityCurrent()) return
           const prerequisites = localBrowserPrerequisites()
-          const hasLength = await contentLengthAvailable(next.url)
-          if (cancelled || revokedRef.current) return
+          const hasLength = await contentLengthAvailable(next.url, abort.signal)
+          if (cancelled || revokedRef.current || !identityCurrent()) return
           const capability = capturedRealityBrowserCapability({ ...prerequisites, contentLengthAvailable: hasLength })
           if (!capability.supported) throw new Error('browser capability changed')
           setDelivery(next)
           setDecision(splatDecision(next))
         } catch {
-          if (!cancelled) suppress('Captured Reality closed because private delivery could not be renewed.')
+          if (!cancelled && identityCurrent()) suppress('Captured Reality closed because private delivery could not be renewed.')
         }
       })()
     }, refreshIn)
     return () => {
       cancelled = true
+      abort.abort()
       window.clearTimeout(timer)
     }
   }, [accessMode, assetId, delivery, state.kind, suppress, user])

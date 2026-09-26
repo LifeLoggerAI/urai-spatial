@@ -5,6 +5,7 @@ import { getAuth, onAuthStateChanged } from 'firebase/auth'
 import { httpsCallable } from 'firebase/functions'
 import { app, firebasePublicEnvReady, functions } from '@/lib/firebase/client'
 import { capturedRealityDeviceTier } from './capturedRealityRuntime'
+import { createCapturedRealityRequestAuthority } from './capturedRealityDelivery'
 
 type ReplayEntryResponse = {
   available: boolean
@@ -28,9 +29,12 @@ export function useCapturedRealityReplayEntry(memoryId: string | null) {
     if (!memoryId || !firebasePublicEnvReady) return
 
     let cancelled = false
+    const authority = createCapturedRealityRequestAuthority()
     const auth = getAuth(app)
     const stop = onAuthStateChanged(auth, (user) => {
       if (cancelled) return
+      const currentRequest = authority.begin()
+      setEntry(null)
       if (!user) {
         setEntry(null)
         return
@@ -43,7 +47,7 @@ export function useCapturedRealityReplayEntry(memoryId: string | null) {
       )
 
       void callable({ memoryId, deviceTier }).then((result) => {
-        if (cancelled) return
+        if (cancelled || !currentRequest() || auth.currentUser?.uid !== user.uid) return
         const data = result.data
         if (!data.available || !data.assetId || !SAFE_ASSET_ID.test(data.assetId)) {
           setEntry(null)
@@ -55,12 +59,13 @@ export function useCapturedRealityReplayEntry(memoryId: string | null) {
           truthLabel: data.truthLabel ?? 'Spatial reconstruction from recorded sources',
         })
       }).catch(() => {
-        if (!cancelled) setEntry(null)
+        if (!cancelled && currentRequest() && auth.currentUser?.uid === user.uid) setEntry(null)
       })
     })
 
     return () => {
       cancelled = true
+      authority.invalidate()
       stop()
     }
   }, [memoryId])

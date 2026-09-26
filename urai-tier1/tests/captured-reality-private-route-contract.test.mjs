@@ -4,6 +4,7 @@ import test from 'node:test'
 
 const page = fs.readFileSync(new URL('../src/app/spatial/captured-reality/page.tsx', import.meta.url), 'utf8')
 const client = fs.readFileSync(new URL('../src/app/spatial/captured-reality/CapturedRealityRouteClient.tsx', import.meta.url), 'utf8')
+const delivery = fs.readFileSync(new URL('../src/spatial/captured-reality/capturedRealityDelivery.ts', import.meta.url), 'utf8')
 
 test('private captured reality route is a static shell and carries no private asset data at build time', () => {
   assert.match(page, /dynamic = 'force-static'/)
@@ -34,8 +35,9 @@ test('route watches both memory and location privacy authority and unmounts deli
 
 test('route fails to semantic fallback when WebGL2 streaming prerequisites are unavailable', () => {
   assert.match(client, /capturedRealityBrowserCapability/)
-  assert.match(client, /content-length/)
-  assert.match(client, /method: 'HEAD'/)
+  assert.match(delivery, /content-length/)
+  assert.match(delivery, /method: 'GET'/)
+  assert.match(client, /capturedRealityContentLengthAvailable/)
   assert.match(client, /fallbackDecision/)
 })
 
