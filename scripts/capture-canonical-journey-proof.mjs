@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import fs from 'node:fs/promises'
 import path from 'node:path'
 import { createRequire } from 'node:module'
+import { worldRealm } from './canonical-journey-realm.mjs'
 
 const requireFromTierOne = createRequire(new URL('../urai-tier1/package.json', import.meta.url))
 const { chromium } = requireFromTierOne('playwright')
@@ -236,9 +237,7 @@ async function enterFocus(page, journey, mode, identity) {
   const nav = page.getByRole('navigation', { name: 'Selected memory actions' })
   await activate(page, nav.getByRole('button', { name: /Enter Focus$/ }), mode)
   await waitPath(page, '/focus', 60_000)
-  // The route can briefly retain a hidden loading scaffold while the persistent
-  // world mounts its visible owner. Keep strict uniqueness for visible owners.
-  const focus = page.locator('[data-testid="urai-final-focus-chamber"]:visible')
+  const focus = worldRealm(page, 'urai-final-focus-chamber')
   await focus.waitFor({ state: 'visible', timeout: 90_000 })
   await assertRealmIdentity(focus, identity)
   await waitAttr(focus, 'data-focus-render-ready', 'true', 60_000)
@@ -265,7 +264,7 @@ async function unwindReplayToFocus(page, journey, mode, identity) {
   if (mode === 'touch') await activate(page, page.getByRole('button', { name: 'Focus', exact: true }), mode)
   else await page.keyboard.press('Escape')
   await waitPath(page, '/focus', 60_000)
-  const focus = page.locator('[data-testid="urai-final-focus-chamber"]:visible')
+  const focus = worldRealm(page, 'urai-final-focus-chamber')
   await focus.waitFor({ state: 'visible', timeout: 90_000 })
   await assertRealmIdentity(focus, identity)
   await waitAttr(focus, 'data-focus-render-ready', 'true', 60_000)
