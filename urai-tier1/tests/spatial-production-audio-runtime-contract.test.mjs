@@ -109,8 +109,9 @@ test('Passport remains silence-first while explicit permission and confirmation 
   assert.match(runtime, /confirm:'Action confirmed\.'/)
   assert.match(runtime, /permission:'Permission action acknowledged\.'/)
   assert.match(runtime, /if\(consented&&!muted&&\(cue==='confirm'\|\|cue==='permission'\)\)audio\.playCue\(cue\)/)
-  assert.match(runtime, /cue==='permission'\)navigator\.vibrate\(12\)/)
-  assert.match(runtime, /cue==='confirm'\|\|cue==='orb-confirm'\)navigator\.vibrate\(8\)/)
+  assert.match(runtime, /requestHapticCue\('permission-acknowledged','audio-cue'\)/)
+  assert.match(runtime, /requestHapticCue\('action-confirmed','audio-cue'\)/)
+  assert.doesNotMatch(runtime, /navigator\.vibrate/)
   assert.doesNotMatch(runtime, /destination==='passport'[^\n]*return 'MIRROR'/)
 })
 

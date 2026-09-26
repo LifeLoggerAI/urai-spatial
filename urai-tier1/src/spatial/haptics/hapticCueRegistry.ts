@@ -1,4 +1,7 @@
 export type SpatialHapticCueId =
+  | 'action-error'
+  | 'permission-acknowledged'
+  | 'action-confirmed'
   | 'enter-place'
   | 'select-object'
   | 'start-replay'
@@ -20,6 +23,9 @@ export type SpatialHapticCue = {
 }
 
 export const HAPTIC_CUE_REGISTRY: Record<SpatialHapticCueId, SpatialHapticCue> = {
+  'action-error': { id: 'action-error', label: 'Action Error', patternMs: [18, 35, 18], reducedMotionSafe: true },
+  'permission-acknowledged': { id: 'permission-acknowledged', label: 'Permission Acknowledged', patternMs: [12], reducedMotionSafe: true },
+  'action-confirmed': { id: 'action-confirmed', label: 'Action Confirmed', patternMs: [8], reducedMotionSafe: true },
   'enter-place': { id: 'enter-place', label: 'Enter Place', patternMs: [16, 24, 32], reducedMotionSafe: true },
   'select-object': { id: 'select-object', label: 'Select Object', patternMs: [12], reducedMotionSafe: true },
   'start-replay': { id: 'start-replay', label: 'Start Replay', patternMs: [18, 32, 18], reducedMotionSafe: true },
