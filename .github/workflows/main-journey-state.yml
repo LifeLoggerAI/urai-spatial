@@ -24,6 +24,8 @@ on:
       - 'scripts/capture-canonical-journey-proof.mjs'
       - 'scripts/canonical-journey-realm.mjs'
       - 'scripts/canonical-journey-realm.test.mjs'
+      - 'scripts/home-canvas-bounds.test.mjs'
+      - 'urai-tier1/src/app/home-provider-preview-composition.css'
       - '.github/workflows/main-journey-state.yml'
 
 permissions:
@@ -103,7 +105,7 @@ jobs:
         run: pnpm --dir urai-tier1 exec playwright install --with-deps chromium
 
       - name: Verify mounted realm isolation against streamed HTML
-        run: node --test scripts/canonical-journey-realm.test.mjs
+        run: node --test scripts/canonical-journey-realm.test.mjs scripts/home-canvas-bounds.test.mjs
 
       - name: Capture exact-head canonical runtime journey
         shell: bash

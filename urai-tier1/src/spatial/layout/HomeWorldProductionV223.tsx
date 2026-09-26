@@ -782,6 +782,7 @@ function Scene({
 
 export function HomeWorldProductionV223({ onOrbOpen = requestUraiWorldOrbOpen, webglAvailable = true }: Props) {
   const router = useRouter()
+  const quality = useAdaptiveSpatialQuality()
   const [canvasReady, setCanvasReady] = useState(false)
   const [softwareRenderer, setSoftwareRenderer] = useState(false)
   const [sceneReady, setSceneReady] = useState(false)
@@ -991,10 +992,10 @@ export function HomeWorldProductionV223({ onOrbOpen = requestUraiWorldOrbOpen, w
     <Canvas
       className={styles.canvas}
       dpr={1}
-      shadows
+      shadows={quality.shadows}
       frameloop={reducedMotion || softwareRenderer ? 'demand' : 'always'}
       camera={{ position: [...DEFAULT_HOME_FIRST_PERSON_CAMERA.position], fov: 58, near: .1, far: 125 }}
-      gl={{ antialias: true, alpha: false, powerPreference: 'high-performance' }}
+      gl={{ antialias: quality.antialias, alpha: false, powerPreference: 'high-performance' }}
       onCreated={({ gl, setFrameloop }) => {
         const software = isSoftwareWebGLRenderer(gl)
         setSoftwareRenderer(software)

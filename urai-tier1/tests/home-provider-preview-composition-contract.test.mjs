@@ -17,17 +17,16 @@ test('cinematic Home does not mount the retired locomotion pad or parallax movem
   assert.match(runtime, /aria-label="Accessible Home destinations"/)
   assert.match(runtime, /aria-label="Open Ground directly"/)
   assert.match(runtime, /aria-label="Open Life Map directly"/)
-  assert.match(runtime, /aria-label="Open URAI Orb companion"/)
+  assert.match(runtime, /aria-label="Open UrAi Orb companion"/)
 })
 
 test('desktop composition retains covered canvas edges and a bounded viewport', () => {
   const css = appFile('home-provider-preview-composition.css')
-  assert.match(css, /width: 112% !important;/)
-  assert.match(css, /height: 112% !important;/)
-  assert.match(css, /left: -6% !important;/)
-  assert.match(css, /top: -6% !important;/)
-  assert.match(css, /transform: scale\(0\.9\);/)
-  assert.match(css, /transform-origin: 50% 54%;/)
+  assert.match(css, /width: 100% !important;/)
+  assert.match(css, /height: 100% !important;/)
+  assert.match(css, /left: 0 !important;/)
+  assert.match(css, /top: 0 !important;/)
+  assert.match(css, /transform: none;/)
 })
 
 test('desktop provenance and unavailable ambience controls remain accessible but visually discreet', () => {
