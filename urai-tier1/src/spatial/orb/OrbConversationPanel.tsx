@@ -5,6 +5,7 @@ import { publishOrbState } from '@/app/home/orbStateController'
 import { requestExternalVoiceAudio } from '@/spatial/narrator/elevenlabsClient'
 import { URAI_VOICE_CONFIG } from '@/spatial/narrator/narratorCopy'
 import { narratorPlayback } from '@/spatial/narrator/narratorPlayback'
+import { URAI_WORLD_ORB_CLOSE_EVENT } from '@/spatial/world/worldEvents'
 import styles from './OrbConversationPanel.module.css'
 import {
   emitOrbSpeechClock,
@@ -72,6 +73,7 @@ export default function OrbConversationPanel() {
   const [voiceMuted, setVoiceMuted] = useState(false)
   const [voicePlaying, setVoicePlaying] = useState(false)
   const [micActive, setMicActive] = useState(false)
+  const mounted = useRef(true)
   const aborter = useRef<AbortController | null>(null)
   const voiceAborter = useRef<AbortController | null>(null)
   const voiceAudio = useRef<HTMLAudioElement | null>(null)
@@ -81,12 +83,15 @@ export default function OrbConversationPanel() {
   const voiceAnalyser = useRef<AnalyserNode | null>(null)
   const voiceFrame = useRef<number | null>(null)
   const voiceGeneration = useRef(0)
+  const anticipationCancel = useRef<(() => void) | null>(null)
   const stateResetTimer = useRef<number | null>(null)
   const consentStateTimer = useRef<number | null>(null)
   const speechStartedAt = useRef<number | null>(null)
   const micActiveRef = useRef(false)
+  const micGeneration = useRef(0)
   const micStream = useRef<MediaStream | null>(null)
   const micContext = useRef<AudioContext | null>(null)
+  const micSource = useRef<MediaStreamAudioSourceNode | null>(null)
   const micAnalyser = useRef<AnalyserNode | null>(null)
   const micFrame = useRef<number | null>(null)
   const speechDetectedAt = useRef<number | null>(null)
@@ -144,10 +149,13 @@ export default function OrbConversationPanel() {
 
   const startNaturalVoiceAnalysis = async (audio: HTMLAudioElement) => {
     if (typeof window === 'undefined' || voiceAudio.current !== audio) return false
+    let context: AudioContext | null = null
     try {
-      const context = new AudioContext()
+      context = new AudioContext()
+      voiceContext.current = context
       await context.resume()
-      if (context.state !== 'running' || voiceAudio.current !== audio) {
+      if (context.state !== 'running' || voiceAudio.current !== audio || voiceContext.current !== context) {
+        if (voiceContext.current === context) voiceContext.current = null
         await context.close().catch(() => undefined)
         return false
       }
@@ -157,7 +165,6 @@ export default function OrbConversationPanel() {
       analyser.smoothingTimeConstant = 0.42
       source.connect(analyser)
       analyser.connect(context.destination)
-      voiceContext.current = context
       voiceSource.current = source
       voiceAnalyser.current = analyser
       const samples = new Float32Array(analyser.fftSize)
@@ -183,12 +190,15 @@ export default function OrbConversationPanel() {
       voiceFrame.current = window.requestAnimationFrame(sample)
       return true
     } catch {
-      stopNaturalVoiceAnalysis()
+      if (voiceContext.current === context) stopNaturalVoiceAnalysis()
+      else if (context && context.state !== 'closed') void context.close().catch(() => undefined)
       return false
     }
   }
 
   const waitForResponseAnticipation = async (source: OrbSpeechSource, generation: number, signal?: AbortSignal) => {
+    if (!mounted.current || signal?.aborted || voiceGeneration.current !== generation) return false
+    anticipationCancel.current?.()
     emitOrbSpeechClock({ phase: 'anticipation', source, elapsedMs: 0, durationMs: ORB_RESPONSE_ANTICIPATION_MS })
     if (source === 'text') publishConversationState(micActiveRef.current ? 'listening' : 'attention')
     else publishConversationState('thinking')
@@ -197,17 +207,22 @@ export default function OrbConversationPanel() {
       const finish = () => {
         if (settled) return
         settled = true
+        window.clearTimeout(timer)
         signal?.removeEventListener('abort', finish)
+        if (anticipationCancel.current === finish) anticipationCancel.current = null
         resolve()
       }
       const timer = window.setTimeout(finish, ORB_RESPONSE_ANTICIPATION_MS)
-      if (signal) signal.addEventListener('abort', () => { window.clearTimeout(timer); finish() }, { once: true })
+      anticipationCancel.current = finish
+      signal?.addEventListener('abort', finish, { once: true })
+      if (signal?.aborted) finish()
     })
-    return voiceGeneration.current === generation && !signal?.aborted
+    return mounted.current && voiceGeneration.current === generation && !signal?.aborted
   }
 
   const stopVoice = (publishIdle = false) => {
     voiceGeneration.current += 1
+    anticipationCancel.current?.()
     const hadNaturalVoice = Boolean(voiceAudio.current)
     const hadDeviceVoice = typeof window !== 'undefined' && 'speechSynthesis' in window && window.speechSynthesis.speaking
 
@@ -232,7 +247,7 @@ export default function OrbConversationPanel() {
     }
 
     if (typeof window !== 'undefined' && 'speechSynthesis' in window) window.speechSynthesis.cancel()
-    setVoicePlaying(false)
+    if (mounted.current) setVoicePlaying(false)
 
     if (hadNaturalVoice || hadDeviceVoice || speechStartedAt.current !== null) {
       const started = speechStartedAt.current
@@ -244,7 +259,11 @@ export default function OrbConversationPanel() {
     if (publishIdle) publishConversationState(micActiveRef.current ? 'listening' : 'idle')
   }
 
-  const stopMicrophone = async (publishState = true) => {
+  const stopMicrophone = (publishState = true) => {
+    // Invalidate pending permission/resume continuations before any cleanup.
+    micGeneration.current += 1
+    micActiveRef.current = false
+    if (mounted.current) setMicActive(false)
     if (micFrame.current !== null) {
       window.cancelAnimationFrame(micFrame.current)
       micFrame.current = null
@@ -253,14 +272,15 @@ export default function OrbConversationPanel() {
     bargeInCommitted.current = false
     micStream.current?.getTracks().forEach((track) => track.stop())
     micStream.current = null
+    try { micSource.current?.disconnect() } catch { /* browser cleanup only */ }
+    try { micAnalyser.current?.disconnect() } catch { /* browser cleanup only */ }
+    micSource.current = null
     const context = micContext.current
     micContext.current = null
     micAnalyser.current = null
     if (context && context.state !== 'closed') {
-      try { await context.close() } catch { /* browser cleanup only */ }
+      void context.close().catch(() => undefined)
     }
-    micActiveRef.current = false
-    setMicActive(false)
     if (publishState && speechStartedAt.current === null && !busy) publishConversationState('idle')
   }
 
@@ -295,35 +315,46 @@ export default function OrbConversationPanel() {
   }
 
   const startMicrophone = async () => {
-    if (typeof window === 'undefined') return
+    if (typeof window === 'undefined' || !mounted.current) return
     if (!navigator.mediaDevices?.getUserMedia) {
       setStatus('Microphone activity detection is not available in this browser. Text conversation remains available.')
       publishConversationState('warning', 2200)
       return
     }
 
-    await stopMicrophone(false)
+    stopMicrophone(false)
+    const generation = micGeneration.current
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
         video: false,
       })
+      if (!mounted.current || micGeneration.current !== generation) {
+        stream.getTracks().forEach((track) => track.stop())
+        return
+      }
+      // Own the stream before constructing audio nodes, which can throw.
+      micStream.current = stream
       const context = new AudioContext()
+      micContext.current = context
       const source = context.createMediaStreamSource(stream)
+      micSource.current = source
       const analyser = context.createAnalyser()
+      micAnalyser.current = analyser
       analyser.fftSize = 1024
       analyser.smoothingTimeConstant = 0.35
       source.connect(analyser)
-      micStream.current = stream
-      micContext.current = context
-      micAnalyser.current = analyser
+      await context.resume()
+      if (!mounted.current || micGeneration.current !== generation) return
+      if (context.state !== 'running') throw new Error('Microphone audio context did not start')
       micActiveRef.current = true
       setMicActive(true)
       setStatus('Listening locally for voice activity. Microphone audio is not uploaded or transcribed by this control.')
       if (speechStartedAt.current === null) publishConversationState('listening')
       runVadLoop()
     } catch {
-      await stopMicrophone(false)
+      if (!mounted.current || micGeneration.current !== generation) return
+      stopMicrophone(false)
       setStatus('Microphone permission is unavailable. Text conversation remains available.')
       publishConversationState('privacy', 2200)
     }
@@ -402,8 +433,11 @@ export default function OrbConversationPanel() {
         voiceAudio.current = audio
 
         const release = (finishSpeech: boolean) => {
-          stopNaturalVoiceAnalysis()
-          if (voiceAudio.current === audio) voiceAudio.current = null
+          const ownsPlayback = voiceAudio.current === audio
+          if (ownsPlayback) {
+            stopNaturalVoiceAnalysis()
+            voiceAudio.current = null
+          }
           if (voiceObjectUrl.current === url) {
             URL.revokeObjectURL(url)
             voiceObjectUrl.current = null
@@ -412,7 +446,7 @@ export default function OrbConversationPanel() {
           audio.onended = null
           audio.onerror = null
           audio.ontimeupdate = null
-          if (finishSpeech && speechStartedAt.current !== null) endSpeakingClock('natural', 'end')
+          if (ownsPlayback && finishSpeech && speechStartedAt.current !== null) endSpeakingClock('natural', 'end')
         }
 
         audio.onended = () => release(true)
@@ -458,7 +492,8 @@ export default function OrbConversationPanel() {
         }
       }
 
-      if (voiceAborter.current === controller) voiceAborter.current = null
+      if (!mounted.current || controller.signal.aborted || voiceAborter.current !== controller) return
+      voiceAborter.current = null
       setStatus('Live Orb response ready. Natural voice is unavailable, so the device voice is being used.')
     }
 
@@ -470,28 +505,29 @@ export default function OrbConversationPanel() {
     return () => narratorPlayback.setExternalVoiceConsent(false)
   }, [externalVoiceConsent])
 
-  useEffect(() => () => {
-    voiceGeneration.current += 1
+  const suspendConversation = () => {
+    cancelDeferredConsentState()
     aborter.current?.abort()
-    voiceAborter.current?.abort()
-    stopNaturalVoiceAnalysis()
-    if (micFrame.current !== null) window.cancelAnimationFrame(micFrame.current)
-    micStream.current?.getTracks().forEach((track) => track.stop())
-    const context = micContext.current
-    if (context && context.state !== 'closed') void context.close()
-    const activeAudio = voiceAudio.current
-    if (activeAudio) {
-      activeAudio.onended = null
-      activeAudio.onerror = null
-      activeAudio.ontimeupdate = null
-      activeAudio.pause()
-      activeAudio.src = ''
-    }
-    if (voiceObjectUrl.current) URL.revokeObjectURL(voiceObjectUrl.current)
+    aborter.current = null
+    stopMicrophone(false)
+    stopVoice(false)
     if (stateResetTimer.current !== null) window.clearTimeout(stateResetTimer.current)
-    if (consentStateTimer.current !== null) window.clearTimeout(consentStateTimer.current)
-    if (typeof window !== 'undefined' && 'speechSynthesis' in window) window.speechSynthesis.cancel()
+    stateResetTimer.current = null
+    if (mounted.current) {
+      setBusy(false)
+      setStatus('Orb conversation paused. Microphone and playback are off.')
+    }
     publishOrbState('idle', 'conversation')
+  }
+
+  useEffect(() => {
+    mounted.current = true
+    window.addEventListener(URAI_WORLD_ORB_CLOSE_EVENT, suspendConversation)
+    return () => {
+      mounted.current = false
+      window.removeEventListener(URAI_WORLD_ORB_CLOSE_EVENT, suspendConversation)
+      suspendConversation()
+    }
   }, [])
 
   const stop = () => {
@@ -531,6 +567,7 @@ export default function OrbConversationPanel() {
         aiProcessingConsent: true,
         signal: controller.signal,
         onEvent: (providerEvent) => {
+          if (!mounted.current || controller.signal.aborted || aborter.current !== controller) return
           if (providerEvent.type === 'delta') {
             setStreamedText((current) => current + providerEvent.text)
           } else if (providerEvent.type === 'status') {
@@ -539,7 +576,7 @@ export default function OrbConversationPanel() {
           }
         },
       })
-      if (controller.signal.aborted) return
+      if (!mounted.current || controller.signal.aborted || aborter.current !== controller) return
 
       const resolved = liveResult ?? deterministicOrbFallback(trimmed)
       setResult(resolved)
@@ -557,7 +594,7 @@ export default function OrbConversationPanel() {
       if (resolved.provider === 'openai') void speakOrbResponse(resolved.message)
       else void playDeviceVoice(resolved.message)
     } catch (error) {
-      if (controller.signal.aborted) return
+      if (!mounted.current || controller.signal.aborted || aborter.current !== controller) return
       const fallback = error instanceof OrbProviderAttemptError
         ? attemptedExternalOrbFallback(trimmed)
         : error instanceof OrbProviderAttemptUncertainError
@@ -574,8 +611,10 @@ export default function OrbConversationPanel() {
       emitAudioCue('error')
       if (!voiceMuted) void playDeviceVoice(fallback.message)
     } finally {
-      if (aborter.current === controller) aborter.current = null
-      if (!controller.signal.aborted) setBusy(false)
+      if (aborter.current === controller) {
+        aborter.current = null
+        if (mounted.current && !controller.signal.aborted) setBusy(false)
+      }
     }
   }
 

@@ -287,16 +287,18 @@ export function stepEmbodiedMotion({
 
 export function MovementHelp({
   realm,
+  compactLabel,
   summary,
   controls,
 }: {
   realm: string
+  compactLabel?: string
   summary: string
   controls: string
 }) {
   return (
     <details className="urai-movement-help" data-movement-ui="true">
-      <summary>Move through {realm}</summary>
+      <summary aria-label={`Move through ${realm}`}>{compactLabel ?? `Move through ${realm}`}</summary>
       <p>{summary}</p>
       <span>{controls}</span>
       <style jsx>{`

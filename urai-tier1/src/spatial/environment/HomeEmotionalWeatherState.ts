@@ -69,7 +69,7 @@ export type AdaptiveBlueHour = {
 }
 
 export function resolveHomeEmotionalWeather(value: unknown): HomeEmotionalWeatherName {
-  return typeof value === 'string' && value in HOME_EMOTIONAL_WEATHER_PRESETS
+  return typeof value === 'string' && Object.prototype.hasOwnProperty.call(HOME_EMOTIONAL_WEATHER_PRESETS, value)
     ? value as HomeEmotionalWeatherName
     : 'calm'
 }
