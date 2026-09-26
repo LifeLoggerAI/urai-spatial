@@ -85,7 +85,7 @@ Keep the archival source separate from the delivery asset. The browser delivery 
 
 ## Runtime strategy
 
-V1 browser adapter: `@react-three/drei` `Splat` inside the existing React Three Fiber stack.
+V1 browser adapter: `OwnedCapturedRealitySplat` inside the existing React Three Fiber stack, using a per-mount streaming/resource session and shaders adapted from the MIT-licensed Drei splat renderer.
 
 Why:
 
@@ -96,7 +96,7 @@ Why:
 
 The private `/spatial/captured-reality` static route shell now exists in source. It requires authenticated callable authority for private delivery. Source presence does not establish production deployment, successful scene rendering, or device certification; those remain unverified.
 
-The runtime checks the signed GET operation and cancels the response body after inspecting its content length. A HEAD request cannot be substituted for a URL signed for GET. Runtime byte limits apply before the splat renderer starts. Account changes invalidate pending entry requests and clear the private scene and provenance. Performance receipts must contain finite measurements and match the exact device tier being certified.
+The runtime checks the signed GET operation and cancels the response body after inspecting its content length. A HEAD request cannot be substituted for a URL signed for GET. Runtime byte limits apply before the splat renderer starts. Account changes and explicit exits invalidate pending entry requests and clear the private scene and provenance. Performance receipts must contain finite measurements and match the exact device tier being certified.
 
 The processing chain below remains a contract rather than a runnable end-to-end reconstruction worker: this repository supplies source preparation and runtime governance, but contains no invoked camera solver, training job, or trained scene artifact. Source-byte access and an authorized reconstruction execution environment are still required. Source preparation requires a fresh output directory for each run, so stale derivatives cannot contaminate a new source receipt.
 

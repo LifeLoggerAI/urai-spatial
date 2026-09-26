@@ -17,6 +17,8 @@ const tests = [
   'tests/body-biometric-contract.test.mjs',
   'tests/captured-reality-gaussian-v1-contract.test.mjs',
   'tests/captured-reality-delivery-behavior.test.mjs',
+  'tests/captured-reality-exit-behavior.test.mjs',
+  'tests/captured-reality-owned-session.test.mjs',
   'tests/captured-reality-source-preparation-behavior.test.mjs',
   'tests/captured-reality-private-runtime-contract.test.mjs',
   'tests/captured-reality-source-preparation-contract.test.mjs',

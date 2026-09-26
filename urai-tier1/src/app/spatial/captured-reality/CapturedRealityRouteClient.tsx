@@ -138,6 +138,11 @@ export default function CapturedRealityRouteClient() {
   const truthLabelRef = useRef<string | undefined>(undefined)
 
   const exit = useCallback(() => {
+    // Revoke before scheduling navigation: a pending callable may resolve while
+    // the router is still leaving and must not reopen the private scene.
+    revokedRef.current = true
+    setShowProvenance(false)
+    setMetadata(null)
     setDelivery(null)
     setDecision(suppressedDecision(truthLabelRef.current))
     if (window.history.length > 1) router.back()

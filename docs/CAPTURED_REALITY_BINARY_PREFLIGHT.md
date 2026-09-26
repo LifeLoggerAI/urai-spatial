@@ -18,8 +18,9 @@ Unit tests use synthetic records clearly named as fixtures; they are never prese
 
 The browser's preliminary GET checks a readable HTTP 200 body, an unencoded and non-partial response, a whole number of 32-byte records, and the device byte ceiling. It cancels that preliminary stream after inspecting headers. These checks do not inspect the actual record bytes or prove that the subsequent renderer request receives the same immutable object. Configure private storage CORS to expose `Content-Length`, `Content-Encoding` and `Content-Range`; otherwise JavaScript cannot inspect hidden response headers. The runtime object must remain immutable, and the full binary inspection receipt must refer to that object's checksum.
 
-Renderer failures now leave exit and provenance controls usable, and capability probes release their temporary WebGL contexts. The installed Drei `Splat` implementation still caches data by URL and exposes no public cancellation/disposal handle for its streaming reader and worker. Unmounting the scene is therefore not proof that all private bytes or workers have been released. Its lazy reader also catches some stream errors internally. Complete private-runtime lifecycle and interrupted-stream verification remain necessary before certifying this loader for release; the error boundary does not replace those checks.
-# Private renderer ownership
+Renderer failures leave exit and provenance controls usable, and capability probes release their temporary WebGL contexts. The private route no longer mounts Drei's shared URL loader. Its replacement owns cancellation, streaming and GPU resources for each mount. Browser lifecycle and interrupted-stream verification against a real private reconstruction remain necessary before release; the error boundary and unit tests do not replace those checks.
+
+## Private renderer ownership
 
 The private route uses a per-mount splat session instead of Drei's shared URL loader cache. The actual renderer GET enforces the declared byte budget, exact body length, 32-byte records, finite positions/scales, valid rotations and visible points. Exit, account revocation and unmount abort the stream, cancel its reader, terminate any sorting worker, dispose GPU resources and erase retained CPU arrays. Alpha-hashed rendering needs no sorting worker. Shader/format adaptation retains the upstream MIT notice.
 
