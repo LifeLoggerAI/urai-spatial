@@ -53,7 +53,10 @@ test('persistent world navigation preserves canonical ownership and separate hit
   assert.doesNotMatch(ground, /padding-inline:12px 210px;scroll-padding-inline:12px 210px/)
   assert.match(ground, /<MobileMovementPad input=\{input\} label="Ground first-person movement controls" \/>/)
   assert.match(embodiedNavigation, /\.urai-mobile-movement\{[\s\S]*left:max\(12px,env\(safe-area-inset-left\)\)[\s\S]*bottom:max\(82px,calc\(env\(safe-area-inset-bottom\) \+ 72px\)\)/)
-  assert.match(embodiedNavigation, /button\{width:48px;height:48px/)
+  const movementButtonRule = embodiedNavigation.slice(embodiedNavigation.indexOf('export function MobileMovementPad')).match(/\bbutton\{([^}]+)\}/)?.[1]
+  assert.ok(movementButtonRule, 'movement button rule must exist')
+  assert.match(movementButtonRule, /(?:^|;)width:48px(?:;|$)/)
+  assert.match(movementButtonRule, /(?:^|;)height:48px(?:;|$)/)
 
   assert.match(lifeMap, /const destinationHref = useCallback\(\(route: "focus" \| "replay"\) =>/)
   assert.match(lifeMap, /next\.set\("memoryId", selected\.id\)/)

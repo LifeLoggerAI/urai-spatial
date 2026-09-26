@@ -32,10 +32,17 @@ test('shared drag-look preserves click ownership until pointer motion proves a d
 test('mobile movement controls remain touch/coarse-pointer affordances instead of permanent desktop HUD', () => {
   assert.match(travel, /\.urai-mobile-movement\{display:none;/)
   assert.match(travel, /@media\(max-width:900px\),\(pointer:coarse\)\{\.urai-mobile-movement\{display:grid\}\}/)
-  for (const marker of ['minWidth', 'MobileMovementPad']) {
-    if (marker === 'MobileMovementPad') has(travel, marker)
-  }
-  assert.match(travel, /button\{width:48px;height:48px;/)
+  has(travel, 'MobileMovementPad')
+  // CSS declaration order is not part of the target-size contract. The
+  // movement-pad repair adds pointer-events before the unchanged dimensions.
+  const padSource = travel.slice(travel.indexOf('export function MobileMovementPad'))
+  const buttonRule = padSource.match(/\bbutton\{([^}]+)\}/)?.[1]
+  assert.ok(buttonRule, 'movement buttons must have an explicit style rule')
+  const declarations = new Map(buttonRule.split(';').filter(Boolean).map((item) => item.split(':').map((part) => part.trim())))
+  assert.equal(declarations.get('width'), '48px')
+  assert.equal(declarations.get('height'), '48px')
+  assert.equal(declarations.get('pointer-events'), 'auto')
+  assert.match(padSource, /\.urai-mobile-movement\{[^}]*pointer-events:none/)
 })
 
 test('Home keeps one V223 Canvas owner with direct bodyless first-person presence, authored Orb, physical Ground and broad Sky ascent', () => {

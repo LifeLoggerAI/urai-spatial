@@ -1,3 +1,4 @@
+import assert from 'node:assert/strict'
 import { createHash } from 'node:crypto'
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { createRequire } from 'node:module'
@@ -457,7 +458,10 @@ async function captureHomeSpatialContinuity({ idSuffix = 'desktop', viewport = {
   const pageErrors = []
   page.on('pageerror', (error) => pageErrors.push(String(error)))
   const id = `home-first-person-passport-earth-emotional-weather-${idSuffix}`
-  const record = { id, pageErrors, passed: false, viewport, reducedMotion, sampleVisual }
+  const record = { id, pageErrors, passed: false, viewport, reducedMotion, sampleVisual, routeChanges: [] }
+  page.on('framenavigated', (frame) => {
+    if (frame === page.mainFrame()) record.routeChanges.push(new URL(frame.url()).pathname)
+  })
   const screenshotRecord = async (state) => {
     const file = id + '-' + state + '-' + exactHead.slice(0, 12) + '.png'
     const screenshot = await page.screenshot({ path: path.join(outputDir, file), fullPage: false, animations: 'disabled', caret: 'hide', timeout: 90_000 })
@@ -513,7 +517,9 @@ async function captureHomeSpatialContinuity({ idSuffix = 'desktop', viewport = {
     })
     record.passportScreenshot = await screenshotRecord('passport-activated')
 
+    record.phase = 'passport-history-return'
     await page.goBack({ waitUntil: 'domcontentloaded', timeout: 30_000 })
+    record.returnPathAfterBack = new URL(page.url()).pathname
     owner = await waitForHomeReady(page)
     await page.waitForFunction((selector) => {
       const node = document.querySelector(selector)
@@ -563,8 +569,18 @@ async function captureHomeSpatialContinuity({ idSuffix = 'desktop', viewport = {
       && record.returnFrameConsumed
       && record.returnScreenshot.bytes > 12_000
       && pageErrors.length === 0
+    record.phase = 'complete'
   } catch (error) {
     record.error = String(error)
+    record.failurePath = new URL(page.url()).pathname
+    record.failureState = await page.evaluate((selector) => ({
+      pathname: window.location.pathname,
+      historyLength: window.history.length,
+      homeMounted: Boolean(document.querySelector(selector)),
+      passportMounted: Boolean(document.querySelector('main.passportVault[data-route-owner="passport-ownership-vault"]')),
+      returnFramePresent: window.sessionStorage.getItem('urai:home:return-frame:v1') !== null,
+    }), ownerSelector).catch((diagnosticError) => ({ unavailable: String(diagnosticError) }))
+    record.failureScreenshot = await screenshotRecord('failure').catch((diagnosticError) => ({ unavailable: String(diagnosticError) }))
   } finally {
     receipt.captures.push(record)
     if (!record.passed) receipt.errors.push(record)
