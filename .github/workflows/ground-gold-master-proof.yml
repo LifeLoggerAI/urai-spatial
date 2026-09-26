@@ -2,7 +2,7 @@ name: Ground Gold Master Proof
 
 on:
   pull_request:
-    branches: [main, home-final-v24-certify-20260826]
+    branches: [main, home-final-v24-certify-20260826, converge/final-canon-spatial-20260922]
     paths:
       - 'scripts/capture-ground-goldmaster-proof.mjs'
       - 'scripts/lib/ground-camera-proof.mjs'
