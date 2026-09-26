@@ -509,8 +509,10 @@ function CameraRig({
       || homeTransition === 'LIFE_MAP_UNWIND'
       || homeTransition === 'ORB_COLLAPSE'
     if (restoring) {
-      elapsed.current += Math.min(delta, .25)
       const duration = reducedMotion ? .22 : .92
+      // This is bounded interpolation back to a saved pose, not motion physics.
+      // Discarding slow-frame time strands input behind additional GPU frames.
+      elapsed.current = Math.min(duration, elapsed.current + Math.max(0, delta))
       const t = THREE.MathUtils.smoothstep(Math.min(1, elapsed.current / duration), 0, 1)
       desired.current.set(...homeOrigin.camera.position)
       camera.position.lerpVectors(start.current, desired.current, t)

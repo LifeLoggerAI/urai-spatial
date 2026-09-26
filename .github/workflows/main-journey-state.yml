@@ -86,7 +86,7 @@ jobs:
         run: node --test urai-tier1/tests/lifemap-scene-behavior.test.mjs
 
       - name: Verify synchronous selection identity
-        run: node --import tsx --test urai-tier1/tests/lifemap-selection-identity.test.mjs
+        run: node --import tsx --test urai-tier1/tests/lifemap-selection-identity.test.mjs urai-tier1/tests/home-restoration-frame-timing.test.mjs
 
       - name: Typecheck current journey runtime
         run: pnpm --dir urai-tier1 typecheck
@@ -108,7 +108,7 @@ jobs:
         run: pnpm --dir urai-tier1 exec playwright install --with-deps chromium
 
       - name: Verify mounted realm isolation against streamed HTML
-        run: node --test scripts/canonical-journey-realm.test.mjs scripts/home-canvas-bounds.test.mjs scripts/mobile-movement-hit-targets.test.mjs
+        run: node --test scripts/canonical-journey-realm.test.mjs scripts/home-canvas-bounds.test.mjs scripts/mobile-movement-hit-targets.test.mjs scripts/lifemap-nebula-edge.test.mjs
 
       - name: Capture exact-head canonical runtime journey
         shell: bash

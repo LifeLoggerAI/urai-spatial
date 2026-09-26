@@ -1,0 +1,363 @@
+{
+  "schemaVersion": "urai-spatial-terminal-repair-receipt-1",
+  "recordedAt": "2026-09-26T03:07:12.280927+00:00",
+  "status": "PARTIAL_REPAIR_CHECKPOINT_NOT_RELEASE_CERTIFICATION",
+  "scope": "Factual checkpoint of published source repairs, bounded local tests, observed authority and remaining release gates. Later branch heads require fresh proof.",
+  "authority": {
+    "repository": "LifeLoggerAI/urai-spatial",
+    "mainSha": "4b3c7bd982865324510eb9581d9f324bd4ad6e93",
+    "production": {
+      "url": "https://urai.app",
+      "observedDeployedSha": "748e50398d85effeaa4ed17aaf78d4076dddbb45",
+      "method": "Live browser deployment readback reported by root execution agent"
+    },
+    "mergeShas": [],
+    "deploymentPerformed": false,
+    "deploymentMutationQuarantined": true,
+    "independentApprovalEstablished": false
+  },
+  "publishedCandidates": [
+    {
+      "pr": 1325,
+      "url": "https://github.com/LifeLoggerAI/urai-spatial/pull/1325",
+      "branch": "fix/focus-mounted-realm-proof-20260926",
+      "publishedCheckpointSha": "dac51067676d6eb717a16ac14a8d782f3f9a049a",
+      "treeSha": "15076e2df41899fc98567bad649c93b9ff9e17aa",
+      "matchingLocalCommit": "743f3c7421ee460035f2bf0a3a8a9de9fd2b6865",
+      "localTreeParityVerified": true,
+      "finalFrozenHead": false
+    },
+    {
+      "pr": 1327,
+      "url": "https://github.com/LifeLoggerAI/urai-spatial/pull/1327",
+      "publishedCheckpointSha": "e1033535d5e3e1df3e6f85e837887c9aa438cdf5",
+      "treeSha": "cbac1c3c8f8ef339391851023456dd9b3a4b3f60",
+      "matchingLocalCommit": "b77cfea712f920bdb7c737074747c72894c820f7",
+      "localTreeParityVerified": true,
+      "finalFrozenHead": false
+    }
+  ],
+  "repairs": [
+    {
+      "lane": "selection",
+      "change": "Commit complete Life Map selection identity before the reduced-motion arrival transition; retain explicit-demo authority."
+    },
+    {
+      "lane": "input",
+      "change": "Let transparent movement-control gaps pass input to the world; include hit-target regression in exact-head proof."
+    },
+    {
+      "lane": "assetProvenance",
+      "change": "Correct Ground canopy codec authority to actual embedded KTX2/Basis; bind receipt to delivered bytes and verify GLB/texture headers.",
+      "localCommit": "ce143594beab127d2ea1cf9ff74e7f9f0e762dfc",
+      "assetSha256": "62b533f9fd8f5ac59916f50eb17518b551cebb6cbbef7c0f81f024ee7e5d9092",
+      "sizeBytes": 1805940,
+      "embeddedTextureCount": 9,
+      "embeddedTextureMimeType": "image/ktx2",
+      "acceptanceUpgraded": false
+    },
+    {
+      "lane": "capturedReality",
+      "change": "Own private splat streaming and GPU/CPU resources per mount; enforce actual stream format/size; abort pending entry on explicit exit and clear private scene/provenance."
+    }
+  ],
+  "localVerification": {
+    "warning": "Local tests and matching Git trees do not establish remote exact-head CI, independent review, visual acceptance, physical-device certification, deployment or live parity.",
+    "rootReportedFocusedTests": [
+      {
+        "suite": "selection",
+        "passed": 2
+      },
+      {
+        "suite": "continuity",
+        "passed": 12
+      },
+      {
+        "suite": "cosmic",
+        "passed": 8
+      },
+      {
+        "suite": "canopy",
+        "passed": 4
+      }
+    ],
+    "capturedReality": {
+      "localCommit": "b77cfea712f920bdb7c737074747c72894c820f7",
+      "passed": 83,
+      "failed": 0,
+      "skipped": 0,
+      "fixtures": "Synthetic format fixtures for technical validation; not source-backed reconstruction proof"
+    },
+    "buildAndTypecheck": {
+      "status": "PASS",
+      "localCommit": "d44e09abd88371a4c1a2fab7ddd4542c6b3d8f4a",
+      "treeSha": "08e9d1986cef0c6e2c87b93fac260b6d344cb2f0",
+      "certifiesPublishedCheckpoint": false
+    },
+    "canonicalJourney": {
+      "status": "PASS",
+      "localCommit": "d44e09abd88371a4c1a2fab7ddd4542c6b3d8f4a",
+      "receiptCapturedAt": "2026-09-26T03:00:43.837Z",
+      "complete": true,
+      "journeys": [
+        {
+          "id": "desktop-pointer-keyboard-ascent",
+          "passed": true,
+          "ascentProven": true,
+          "identityStable": true
+        },
+        {
+          "id": "mobile-touch",
+          "passed": true,
+          "ascentProven": true,
+          "identityStable": true
+        },
+        {
+          "id": "desktop-reduced-keyboard",
+          "passed": true,
+          "ascentProven": null,
+          "identityStable": true
+        }
+      ],
+      "certifiesPublishedCheckpoint": false,
+      "scope": "All three full canonical journeys passed on d44; later movement-pad, nebula and Passport proof changes are not certified by this run."
+    }
+  },
+  "remoteVerificationCheckpoint": {
+    "status": "PENDING_NOT_GREEN",
+    "runs": [
+      {
+        "name": "Main Journey",
+        "id": 36213603764,
+        "url": "https://github.com/LifeLoggerAI/urai-spatial/actions/runs/36213603764",
+        "observedStatus": "queued"
+      },
+      {
+        "name": "Home State",
+        "id": 36213603735,
+        "url": "https://github.com/LifeLoggerAI/urai-spatial/actions/runs/36213603735",
+        "observedStatus": "queued"
+      },
+      {
+        "name": "Portal and Orb",
+        "id": 36213603762,
+        "url": "https://github.com/LifeLoggerAI/urai-spatial/actions/runs/36213603762",
+        "observedStatus": "queued"
+      },
+      {
+        "name": "Continuous Visual",
+        "id": 36213603749,
+        "url": "https://github.com/LifeLoggerAI/urai-spatial/actions/runs/36213603749",
+        "observedStatus": "queued"
+      },
+      {
+        "name": "Accessibility",
+        "id": 36213603778,
+        "url": "https://github.com/LifeLoggerAI/urai-spatial/actions/runs/36213603778",
+        "observedStatus": "queued"
+      },
+      {
+        "name": "Captured Reality Integrity",
+        "id": 36213659528,
+        "url": "https://github.com/LifeLoggerAI/urai-spatial/actions/runs/36213659528",
+        "observedStatus": "queued"
+      }
+    ]
+  },
+  "visualAcceptance": {
+    "status": "BLOCKED",
+    "sourceHeadInspected": "c0cf05efa7c44858a39372680d110e9a6a7b7c88",
+    "observationsReportedByVisualAgent": [
+      "Home materials and furnishings remain below requested final art bar.",
+      "Portrait Home screenshot crops much of the Orb core.",
+      "Life Map screenshots show rectangular translucent layer edges.",
+      "Focus screenshot does not establish accepted stellar photosphere treatment."
+    ],
+    "laterRepairsRequireFreshRenderedEvidence": true,
+    "historicalArtifactReferences": [
+      {
+        "name": "Main Journey",
+        "runId": 36209665198,
+        "artifactId": 10895581363,
+        "url": "https://github.com/LifeLoggerAI/urai-spatial/actions/runs/36209665198/artifacts/10895581363"
+      },
+      {
+        "name": "Home State",
+        "runId": 36209665230,
+        "artifactId": 10895314910,
+        "url": "https://github.com/LifeLoggerAI/urai-spatial/actions/runs/36209665230/artifacts/10895314910"
+      },
+      {
+        "name": "Portal and Orb",
+        "runId": 36209665259,
+        "artifactId": 10895995939,
+        "url": "https://github.com/LifeLoggerAI/urai-spatial/actions/runs/36209665259/artifacts/10895995939"
+      },
+      {
+        "name": "Continuous Visual",
+        "runId": 36209665249,
+        "artifactId": 10895851461,
+        "url": "https://github.com/LifeLoggerAI/urai-spatial/actions/runs/36209665249/artifacts/10895851461"
+      },
+      {
+        "name": "Accessibility",
+        "runId": 36209665247,
+        "artifactId": 10896475621,
+        "url": "https://github.com/LifeLoggerAI/urai-spatial/actions/runs/36209665247/artifacts/10896475621"
+      }
+    ]
+  },
+  "assetAcceptance": {
+    "status": "BLOCKED_PENDING_FINAL_ASSETS_AND_LITERAL_ACCEPTANCE",
+    "authorityUrl": "https://docs.google.com/spreadsheets/d/10l8UZ0mi_DrrhZU-fgAfiv2i4F0Vuqd3bvEKriudp1Y/edit",
+    "authorityTabs": [
+      "10 Current Authority",
+      "11 AAA+++ Procurement"
+    ],
+    "procurementRows": 50,
+    "notSpentRows": 50,
+    "manifest": "operations/assets/launch-critical-assets.json",
+    "candidateAssetsMayShip": false,
+    "groups": [
+      {
+        "group": "Home architecture",
+        "status": "NOT_FINAL_VERIFIED"
+      },
+      {
+        "group": "Home furnishings",
+        "status": "NOT_FINAL_VERIFIED"
+      },
+      {
+        "group": "atmosphere",
+        "status": "NOT_FINAL_VERIFIED"
+      },
+      {
+        "group": "Orb",
+        "status": "NOT_FINAL_VERIFIED"
+      },
+      {
+        "group": "Ground terrain",
+        "status": "NOT_FINAL_VERIFIED"
+      },
+      {
+        "group": "Ground canopy",
+        "status": "NOT_FINAL_VERIFIED"
+      },
+      {
+        "group": "ridge/horizon",
+        "status": "NOT_FINAL_VERIFIED"
+      },
+      {
+        "group": "Life Map",
+        "status": "NOT_FINAL_VERIFIED"
+      },
+      {
+        "group": "Memory Star",
+        "status": "NOT_FINAL_VERIFIED"
+      },
+      {
+        "group": "Focus",
+        "status": "NOT_FINAL_VERIFIED"
+      },
+      {
+        "group": "Replay environment",
+        "status": "NOT_FINAL_VERIFIED"
+      },
+      {
+        "group": "physical Passport",
+        "status": "NOT_FINAL_VERIFIED"
+      },
+      {
+        "group": "ambience",
+        "status": "NOT_FINAL_VERIFIED"
+      },
+      {
+        "group": "Orb sonic identity",
+        "status": "NOT_FINAL_VERIFIED"
+      },
+      {
+        "group": "haptics",
+        "status": "NOT_FINAL_VERIFIED"
+      },
+      {
+        "group": "transitions",
+        "status": "NOT_FINAL_VERIFIED"
+      },
+      {
+        "group": "Emotional Weather",
+        "status": "NOT_FINAL_VERIFIED"
+      }
+    ],
+    "notes": [
+      "Existing Ground CC0 geometry/PBR and procedural scene assets are integrated candidates, not newly accepted Gold Masters.",
+      "Memory Star and Focus retained GLBs are not current visible authority; their procedural stellar renderers own the scene.",
+      "Replay GLB is supporting geometry and is not independent visual acceptance.",
+      "Eight original synthesized Opus audio clips have production-integrated-candidate receipts; final listening/device acceptance remains open."
+    ]
+  },
+  "capturedRealityGoldMaster": {
+    "status": "BLOCKED",
+    "realSourcesExist": true,
+    "sourcePrivacy": "Private originals preserved; no source publication or provider submission performed.",
+    "sourceTransferAttempt": {
+      "method": "Google Drive fetch with download_raw_file=true and include_base64=false",
+      "httpStatus": 413,
+      "sourceBytes": 455441470,
+      "connectorLimitBytes": 268435456,
+      "message": "File too large to download: 455441470 bytes exceeds the 268435456-byte limit."
+    },
+    "reconstructionArtifactId": null,
+    "sourceBackedRuntimeProof": false,
+    "desktopGoldMaster": false,
+    "mobileGoldMaster": false,
+    "providerSpendPerformed": false,
+    "technicalFixtureProofIsNotRealReconstruction": true
+  },
+  "remaining": [
+    "Current published heads require complete exact-head CI and browser proof.",
+    "All three canonical journeys passed on d44; final successor requires its own full exact-head journey acceptance.",
+    "Visible scene/material/composition defects and final asset acceptance remain open.",
+    "Real capture analysis, camera solve/reconstruction, private delivery and device Gold Master are unproven.",
+    "Independent approval on the final frozen head is not established.",
+    "Protected integration/merge, authorized deployment and live parity remain unperformed."
+  ],
+  "zeroExecutableRemainder": false,
+  "localLogDigests": {
+    "buildLog": {
+      "sha256": "8b3b9e0adde968e1e94004b4d1c918f6cda204e4cad78d6bbd8f398add0b1a97",
+      "bytes": 12469,
+      "retention": "Execution workspace only; remote exact-head evidence remains required."
+    },
+    "capturedRealityTestLog": {
+      "sha256": "0cc88a0f61ce390f37a2770f0fab5d64e005a2a3d4103679b2c0bf5bf25be10d",
+      "bytes": 7833,
+      "retention": "Execution workspace only; remote exact-head evidence remains required."
+    },
+    "canonicalJourney": {
+      "sha256": "206bb501bb4dbb3b4ddfa6f704ed7de3207effa6e0920087869b30b24d4a9e6f",
+      "bytes": 21909,
+      "retention": "Execution workspace only; remote exact-head evidence remains required."
+    }
+  },
+  "additionalRepairsAfterPublishedCheckpoint": [
+    {
+      "change": "Nebula alpha fades at all quad boundaries; original shader retained opacity up to48/255 at edges",
+      "verification": "Real WebGL five-seed edge/interior regression passes; old shader reproduced failure"
+    },
+    {
+      "change": "Passport proof requires mounted destination before reading state",
+      "verification": "Syntax passes; full successor Home proof remains required"
+    },
+    {
+      "change": "Home restoration uses actual elapsed frame time; prevents prolonged input lock after GPU stalls",
+      "verification": "Production camera callback regressions plus cancellation contracts pass; old clamp fails new regressions"
+    }
+  ],
+  "reviewerStatus": {
+    "reviewer": "LimberNutz",
+    "collaboratorPermission": "read",
+    "pr1325Reviews": 0,
+    "pr1327Reviews": 0,
+    "approvalRequestedOnUnfrozenCandidate": false
+  }
+}
