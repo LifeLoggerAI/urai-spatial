@@ -1,0 +1,1413 @@
+{
+  "ok": false,
+  "schemaVersion": "urai-provider-asset-verification-5",
+  "generatedAt": "2026-09-26T03:32:42.053Z",
+  "repository": "LifeLoggerAI/urai-spatial",
+  "commit": null,
+  "producer": "LifeLoggerAI/asset-factory",
+  "handoffGeneratedAt": "2026-07-30T12:42:15Z",
+  "totalRecords": 53,
+  "coreRequired": 51,
+  "coreVerified": 51,
+  "coreRegistered": 51,
+  "providerVerified": 53,
+  "routeOwnersRequired": 8,
+  "routeOwnersVerified": 7,
+  "routeOwners": [
+    {
+      "routes": [
+        "/",
+        "/home"
+      ],
+      "files": [
+        "urai-tier1/src/app/HomeSpatialRuntimeLayer.tsx",
+        "urai-tier1/src/app/AssetDrivenHomeWorld.tsx",
+        "urai-tier1/src/spatial/layout/HomeWorldProduction.tsx",
+        "urai-tier1/src/spatial/layout/HomeWorldProductionFinal.tsx"
+      ],
+      "renderMode": "asset-driven-spatial",
+      "required": [
+        "AssetDrivenHomeWorld",
+        "HomeWorldProduction",
+        "data-urai-home-runtime=\"asset-driven-primary-with-procedural-degraded-fallback\"",
+        "data-home-visual-owner=\"asset-driven-personalized-sanctuary\"",
+        "data-home-primary-owner=\"asset-driven\"",
+        "data-home-real-world-first=\"true\"",
+        "data-home-visible-world=\"final-physical-sanctuary-memory-rooms\"",
+        "data-home-visible-portals=\"false\"",
+        "data-home-transition-affordances=\"ground-environmental-descent life-map-sky-lookout\"",
+        "data-home-embodied-self=\"privacy-preserving-shadow\"",
+        "data-home-movement=\"walk-keyboard-click-touch\"",
+        "data-home-audio=\"production-opus-consent-controlled\"",
+        "home-authored-terrain",
+        "home-mountain-horizon",
+        "home-living-vegetation",
+        "data-testid=\"urai-home-embodied-avatar\"",
+        "home-orb-sanctuary",
+        "home-ground-environmental-threshold",
+        "home-life-map-sky-lookout",
+        "aria-label=\"Open Ground directly\"",
+        "aria-label=\"Open Life Map directly\""
+      ],
+      "forbidden": [
+        "EmbodiedHomeSpatialCanvas",
+        "assetCssStack(homeAssets.",
+        "home-authored-art",
+        "--home-provider-",
+        "data-home-visual-owner=\"final-coherent-sanctuary\"",
+        "FinalHomeWorld",
+        "HomeSanctuaryWorld",
+        "data-home-asset-mode=",
+        "data-home-personalization-mode=",
+        "home-personalized-places-",
+        "home-orb-state-",
+        "name={`home-${type}-portal-world-owned`}",
+        "<WorldPortal type=\"ground\"",
+        "<WorldPortal type=\"life-map\""
+      ],
+      "active": false,
+      "failures": [
+        "missing active-owner marker: data-home-visible-world=\"final-physical-sanctuary-memory-rooms\""
+      ]
+    },
+    {
+      "routes": [
+        "/ground"
+      ],
+      "files": [
+        "urai-tier1/src/app/GroundSpatialWorldClean.tsx",
+        "urai-tier1/src/app/ground/GroundContinuityArchitecture.tsx",
+        "urai-tier1/src/app/ground/EmbodiedGroundScene.tsx"
+      ],
+      "renderMode": "procedural-spatial",
+      "required": [
+        "GroundContinuityArchitecture",
+        "EmbodiedGroundScene",
+        "data-ground-visual-owner=\"shared-continuity-architecture\"",
+        "ground-continuity-architectural-shell",
+        "ground-walkable-navigation-surface",
+        "ground-enterable-threshold-"
+      ],
+      "forbidden": [
+        "groundAssets",
+        "assetCssStack(groundAssets.",
+        "ground-authored-art",
+        "--ground-provider-"
+      ],
+      "active": true,
+      "failures": []
+    },
+    {
+      "routes": [
+        "/life-map"
+      ],
+      "files": [
+        "urai-tier1/src/spatial/lifemap/SpatialLifeMapCanonical.tsx"
+      ],
+      "renderMode": "provider",
+      "assetSet": "lifeMapAssets",
+      "active": true,
+      "failures": []
+    },
+    {
+      "routes": [
+        "/focus"
+      ],
+      "files": [
+        "urai-tier1/src/app/focus/FocusChamberClient.tsx"
+      ],
+      "renderMode": "provider",
+      "assetSet": "focusAssets",
+      "active": true,
+      "failures": []
+    },
+    {
+      "routes": [
+        "/replay"
+      ],
+      "files": [
+        "urai-tier1/src/app/replay/CinematicReplayClient.tsx"
+      ],
+      "renderMode": "provider",
+      "assetSet": "replayAssets",
+      "active": true,
+      "failures": []
+    },
+    {
+      "routes": [
+        "/passport"
+      ],
+      "files": [
+        "urai-tier1/src/app/FinalPassportVault.tsx"
+      ],
+      "renderMode": "provider",
+      "assetSet": "passportAssets",
+      "active": true,
+      "failures": []
+    },
+    {
+      "routes": [
+        "/privacy-controls"
+      ],
+      "files": [
+        "urai-tier1/src/app/privacy-controls/page.tsx",
+        "urai-tier1/src/app/privacy-controls/ConsentSanctuaryClient.tsx"
+      ],
+      "renderMode": "procedural-spatial",
+      "required": [
+        "ConsentSanctuaryClient",
+        "data-route-owner=\"consent-sanctuary\"",
+        "data-privacy-source={loadState}",
+        "data-enforcement-state={policy.enforcement.state}",
+        "<Canvas",
+        "applyOperationalConsentPolicy",
+        "createOperationalExportRequest",
+        "createOperationalDeletionRequest",
+        "DEMONSTRATION — no personal data"
+      ],
+      "forbidden": [
+        "privacyControlsAssets",
+        "assetCssStack(privacyControlsAssets.",
+        "UraiAutonomousV1Realms"
+      ],
+      "active": true,
+      "failures": []
+    },
+    {
+      "routes": [
+        "/status"
+      ],
+      "files": [
+        "urai-tier1/src/app/status/page.tsx"
+      ],
+      "renderMode": "provider",
+      "assetSet": "statusAssets",
+      "active": true,
+      "failures": []
+    }
+  ],
+  "failures": [
+    "/, /home via urai-tier1/src/app/HomeSpatialRuntimeLayer.tsx + urai-tier1/src/app/AssetDrivenHomeWorld.tsx + urai-tier1/src/spatial/layout/HomeWorldProduction.tsx + urai-tier1/src/spatial/layout/HomeWorldProductionFinal.tsx: missing active-owner marker: data-home-visible-world=\"final-physical-sanctuary-memory-rooms\""
+  ],
+  "records": [
+    {
+      "name": "home_threshold_main",
+      "canonicalPath": "home/home-threshold-main.webp",
+      "core": true,
+      "registered": true,
+      "sourcePath": "assets/urai/home/home-threshold-main_1600.png",
+      "promptVersion": "certified-v1-20260730",
+      "expected": {
+        "bytes": 359582,
+        "sha256": "0ae3fd323d357efb378d15410f60870d0debf4880e22f3e94428c2175927c294",
+        "width": 1600,
+        "height": 1000
+      },
+      "actual": {
+        "bytes": 359582,
+        "sha256": "0ae3fd323d357efb378d15410f60870d0debf4880e22f3e94428c2175927c294",
+        "width": 1600,
+        "height": 1000,
+        "codec": "VP8"
+      },
+      "ok": true,
+      "failures": []
+    },
+    {
+      "name": "home_threshold_mobile",
+      "canonicalPath": "home/home-threshold-mobile.webp",
+      "core": true,
+      "registered": true,
+      "sourcePath": "assets/urai/home/home-threshold-mobile_1536.png",
+      "promptVersion": "certified-v1-20260730",
+      "expected": {
+        "bytes": 300156,
+        "sha256": "dde63669e6a17d95d459fb64f69b6b476877def1e7928ea6283a80a4b8ea44ea",
+        "width": 1024,
+        "height": 1536
+      },
+      "actual": {
+        "bytes": 300156,
+        "sha256": "dde63669e6a17d95d459fb64f69b6b476877def1e7928ea6283a80a4b8ea44ea",
+        "width": 1024,
+        "height": 1536,
+        "codec": "VP8"
+      },
+      "ok": true,
+      "failures": []
+    },
+    {
+      "name": "home_ground_portal",
+      "canonicalPath": "home/home-ground-portal.webp",
+      "core": true,
+      "registered": true,
+      "sourcePath": "assets/urai/home/home-ground-portal_1600.png",
+      "promptVersion": "certified-v1-20260730",
+      "expected": {
+        "bytes": 367280,
+        "sha256": "7a757af2611be49ae978eba5b13ee02eba8b5c83e34ba9fda79e58a2e79190d7",
+        "width": 1600,
+        "height": 1000
+      },
+      "actual": {
+        "bytes": 367280,
+        "sha256": "7a757af2611be49ae978eba5b13ee02eba8b5c83e34ba9fda79e58a2e79190d7",
+        "width": 1600,
+        "height": 1000,
+        "codec": "VP8"
+      },
+      "ok": true,
+      "failures": []
+    },
+    {
+      "name": "home_sky_ascent",
+      "canonicalPath": "home/home-sky-ascent.webp",
+      "core": true,
+      "registered": true,
+      "sourcePath": "assets/urai/home/home-sky-ascent_1600.png",
+      "promptVersion": "certified-v1-20260730",
+      "expected": {
+        "bytes": 392244,
+        "sha256": "9b18bc5e001b288138d0040ea4052750f123e73fe9e05e1f9b65a83922cc1a4c",
+        "width": 1600,
+        "height": 1000
+      },
+      "actual": {
+        "bytes": 392244,
+        "sha256": "9b18bc5e001b288138d0040ea4052750f123e73fe9e05e1f9b65a83922cc1a4c",
+        "width": 1600,
+        "height": 1000,
+        "codec": "VP8"
+      },
+      "ok": true,
+      "failures": []
+    },
+    {
+      "name": "ground_world_main",
+      "canonicalPath": "ground/ground-world-main.webp",
+      "core": true,
+      "registered": true,
+      "sourcePath": "assets/urai/ground/ground-world-main_1600.png",
+      "promptVersion": "certified-v1-20260730",
+      "expected": {
+        "bytes": 450840,
+        "sha256": "163893a77d55c692fbeb005801c5c6385184a32a0665d44511e69e9c0999ec5b",
+        "width": 1600,
+        "height": 1000
+      },
+      "actual": {
+        "bytes": 450840,
+        "sha256": "163893a77d55c692fbeb005801c5c6385184a32a0665d44511e69e9c0999ec5b",
+        "width": 1600,
+        "height": 1000,
+        "codec": "VP8"
+      },
+      "ok": true,
+      "failures": []
+    },
+    {
+      "name": "ground_world_mobile",
+      "canonicalPath": "ground/ground-world-mobile.webp",
+      "core": true,
+      "registered": true,
+      "sourcePath": "assets/urai/ground/ground-world-mobile_1536.png",
+      "promptVersion": "certified-v1-20260730",
+      "expected": {
+        "bytes": 348534,
+        "sha256": "579ae0f4bf9c45cb4efe276cb4a5352a1614246d17e8554dd03c189d7652f56e",
+        "width": 1024,
+        "height": 1536
+      },
+      "actual": {
+        "bytes": 348534,
+        "sha256": "579ae0f4bf9c45cb4efe276cb4a5352a1614246d17e8554dd03c189d7652f56e",
+        "width": 1024,
+        "height": 1536,
+        "codec": "VP8"
+      },
+      "ok": true,
+      "failures": []
+    },
+    {
+      "name": "ground_reception",
+      "canonicalPath": "ground/ground-reception.webp",
+      "core": true,
+      "registered": true,
+      "sourcePath": "assets/urai/ground/ground-reception_1536.png",
+      "promptVersion": "certified-v1-20260730",
+      "expected": {
+        "bytes": 354994,
+        "sha256": "9801dafb83c0e7798775ff620984f7bfeb218c513d2bb2f01cd5b01ad893fdc1",
+        "width": 1536,
+        "height": 1152
+      },
+      "actual": {
+        "bytes": 354994,
+        "sha256": "9801dafb83c0e7798775ff620984f7bfeb218c513d2bb2f01cd5b01ad893fdc1",
+        "width": 1536,
+        "height": 1152,
+        "codec": "VP8"
+      },
+      "ok": true,
+      "failures": []
+    },
+    {
+      "name": "ground_privacy_sanctuary",
+      "canonicalPath": "ground/ground-privacy-sanctuary.webp",
+      "core": true,
+      "registered": true,
+      "sourcePath": "assets/urai/ground/ground-privacy-sanctuary_1536.png",
+      "promptVersion": "certified-v1-20260730",
+      "expected": {
+        "bytes": 385904,
+        "sha256": "f5f7ae30a435242186e051f9b90211c4b6fda59e5fd247a8d31ee40a3bcc2d05",
+        "width": 1536,
+        "height": 1152
+      },
+      "actual": {
+        "bytes": 385904,
+        "sha256": "f5f7ae30a435242186e051f9b90211c4b6fda59e5fd247a8d31ee40a3bcc2d05",
+        "width": 1536,
+        "height": 1152,
+        "codec": "VP8"
+      },
+      "ok": true,
+      "failures": []
+    },
+    {
+      "name": "ground_logistics",
+      "canonicalPath": "ground/ground-logistics.webp",
+      "core": true,
+      "registered": true,
+      "sourcePath": "assets/urai/ground/ground-logistics_1536.png",
+      "promptVersion": "certified-v1-20260730",
+      "expected": {
+        "bytes": 295172,
+        "sha256": "aad6158882f3c1cb21069a5377c940e591d6aced92e5a047b0daeb21f3fe3439",
+        "width": 1536,
+        "height": 1152
+      },
+      "actual": {
+        "bytes": 295172,
+        "sha256": "aad6158882f3c1cb21069a5377c940e591d6aced92e5a047b0daeb21f3fe3439",
+        "width": 1536,
+        "height": 1152,
+        "codec": "VP8"
+      },
+      "ok": true,
+      "failures": []
+    },
+    {
+      "name": "ground_wellness",
+      "canonicalPath": "ground/ground-wellness.webp",
+      "core": true,
+      "registered": true,
+      "sourcePath": "assets/urai/ground/ground-wellness_1536.png",
+      "promptVersion": "certified-v1-20260730",
+      "expected": {
+        "bytes": 310882,
+        "sha256": "d21a4dc2c695564f4f0cd27145a639b8e45c4e2fa2082f821a5fea0b3e182f96",
+        "width": 1536,
+        "height": 1152
+      },
+      "actual": {
+        "bytes": 310882,
+        "sha256": "d21a4dc2c695564f4f0cd27145a639b8e45c4e2fa2082f821a5fea0b3e182f96",
+        "width": 1536,
+        "height": 1152,
+        "codec": "VP8"
+      },
+      "ok": true,
+      "failures": []
+    },
+    {
+      "name": "ground_memory_archive",
+      "canonicalPath": "ground/ground-memory-archive.webp",
+      "core": true,
+      "registered": true,
+      "sourcePath": "assets/urai/ground/ground-memory-archive_1536.png",
+      "promptVersion": "certified-v1-20260730",
+      "expected": {
+        "bytes": 290818,
+        "sha256": "14cc7a8616aabc3d38ea73cd5b26611ec9e8a23b9bfdf0f8c9c9a81509aae4c7",
+        "width": 1536,
+        "height": 1152
+      },
+      "actual": {
+        "bytes": 290818,
+        "sha256": "14cc7a8616aabc3d38ea73cd5b26611ec9e8a23b9bfdf0f8c9c9a81509aae4c7",
+        "width": 1536,
+        "height": 1152,
+        "codec": "VP8"
+      },
+      "ok": true,
+      "failures": []
+    },
+    {
+      "name": "life_map_galaxy_main",
+      "canonicalPath": "life-map/life-map-galaxy-main.webp",
+      "core": true,
+      "registered": true,
+      "sourcePath": "assets/urai/life-map/life-map-galaxy-main_1600.png",
+      "promptVersion": "certified-v1-20260730",
+      "expected": {
+        "bytes": 559294,
+        "sha256": "45231629ddd966cd484063e1c9a17a3b9a86eb09f46250f30a49db4f8d84a61d",
+        "width": 1600,
+        "height": 1000
+      },
+      "actual": {
+        "bytes": 559294,
+        "sha256": "45231629ddd966cd484063e1c9a17a3b9a86eb09f46250f30a49db4f8d84a61d",
+        "width": 1600,
+        "height": 1000,
+        "codec": "VP8"
+      },
+      "ok": true,
+      "failures": []
+    },
+    {
+      "name": "life_map_galaxy_mobile",
+      "canonicalPath": "life-map/life-map-galaxy-mobile.webp",
+      "core": true,
+      "registered": true,
+      "sourcePath": "assets/urai/life-map/life-map-galaxy-mobile_1536.png",
+      "promptVersion": "certified-v1-20260730",
+      "expected": {
+        "bytes": 473938,
+        "sha256": "074e5c7b3cdec61cbd7888de337a9b74b427f67c5bdf737f3895f3ec8efbdeb0",
+        "width": 1024,
+        "height": 1536
+      },
+      "actual": {
+        "bytes": 473938,
+        "sha256": "074e5c7b3cdec61cbd7888de337a9b74b427f67c5bdf737f3895f3ec8efbdeb0",
+        "width": 1024,
+        "height": 1536,
+        "codec": "VP8"
+      },
+      "ok": true,
+      "failures": []
+    },
+    {
+      "name": "life_map_node_threshold",
+      "canonicalPath": "life-map/life-map-node-threshold.webp",
+      "core": true,
+      "registered": true,
+      "sourcePath": "assets/urai/life-map/life-map-node-threshold_768.png",
+      "promptVersion": "certified-v1-20260730",
+      "expected": {
+        "bytes": 221650,
+        "sha256": "d284e480625374d75356ede1d61c327fc5226baebb2f143ad54cfca4b9137569",
+        "width": 768,
+        "height": 768
+      },
+      "actual": {
+        "bytes": 221650,
+        "sha256": "d284e480625374d75356ede1d61c327fc5226baebb2f143ad54cfca4b9137569",
+        "width": 768,
+        "height": 768,
+        "codec": "VP8L"
+      },
+      "ok": true,
+      "failures": []
+    },
+    {
+      "name": "life_map_node_becoming",
+      "canonicalPath": "life-map/life-map-node-becoming.webp",
+      "core": true,
+      "registered": true,
+      "sourcePath": "assets/urai/life-map/life-map-node-becoming_768.png",
+      "promptVersion": "certified-v1-20260730",
+      "expected": {
+        "bytes": 665040,
+        "sha256": "fe953e9c10b61650e404491eb0271b9974752d073d63b56123c6bb2b088d254e",
+        "width": 768,
+        "height": 768
+      },
+      "actual": {
+        "bytes": 665040,
+        "sha256": "fe953e9c10b61650e404491eb0271b9974752d073d63b56123c6bb2b088d254e",
+        "width": 768,
+        "height": 768,
+        "codec": "VP8L"
+      },
+      "ok": true,
+      "failures": []
+    },
+    {
+      "name": "life_map_node_studio",
+      "canonicalPath": "life-map/life-map-node-studio.webp",
+      "core": true,
+      "registered": true,
+      "sourcePath": "assets/urai/life-map/life-map-node-studio_768.png",
+      "promptVersion": "certified-v1-20260730",
+      "expected": {
+        "bytes": 346160,
+        "sha256": "5783d4d964d208e40862c9c0d798de5974f3337959bb877835e4a8b94a3696e3",
+        "width": 768,
+        "height": 768
+      },
+      "actual": {
+        "bytes": 346160,
+        "sha256": "5783d4d964d208e40862c9c0d798de5974f3337959bb877835e4a8b94a3696e3",
+        "width": 768,
+        "height": 768,
+        "codec": "VP8L"
+      },
+      "ok": true,
+      "failures": []
+    },
+    {
+      "name": "focus_memory_chamber_main",
+      "canonicalPath": "focus/focus-memory-chamber-main.webp",
+      "core": true,
+      "registered": true,
+      "sourcePath": "assets/urai/focus/focus-memory-chamber-main_1600.png",
+      "promptVersion": "certified-v1-20260730",
+      "expected": {
+        "bytes": 516604,
+        "sha256": "6915c094da5f5528e12f96442f73d383be5dcef80937f86dcc5d95f0dd06b66a",
+        "width": 1600,
+        "height": 1000
+      },
+      "actual": {
+        "bytes": 516604,
+        "sha256": "6915c094da5f5528e12f96442f73d383be5dcef80937f86dcc5d95f0dd06b66a",
+        "width": 1600,
+        "height": 1000,
+        "codec": "VP8"
+      },
+      "ok": true,
+      "failures": []
+    },
+    {
+      "name": "focus_memory_chamber_mobile",
+      "canonicalPath": "focus/focus-memory-chamber-mobile.webp",
+      "core": true,
+      "registered": true,
+      "sourcePath": "assets/urai/focus/focus-memory-chamber-mobile_1536.png",
+      "promptVersion": "certified-v1-20260730",
+      "expected": {
+        "bytes": 475754,
+        "sha256": "78e152f9eae7672920e5c9bd7a3ccca7f557c24c4649deddb3356882ce83666e",
+        "width": 1024,
+        "height": 1536
+      },
+      "actual": {
+        "bytes": 475754,
+        "sha256": "78e152f9eae7672920e5c9bd7a3ccca7f557c24c4649deddb3356882ce83666e",
+        "width": 1024,
+        "height": 1536,
+        "codec": "VP8"
+      },
+      "ok": true,
+      "failures": []
+    },
+    {
+      "name": "replay_memory_film_main",
+      "canonicalPath": "replay/replay-memory-film-main.webp",
+      "core": true,
+      "registered": true,
+      "sourcePath": "assets/urai/replay/replay-memory-film-main_1600.png",
+      "promptVersion": "certified-v1-20260730",
+      "expected": {
+        "bytes": 495828,
+        "sha256": "9d054c6ecbfb2687094bc746a63d44b76ead927a2fe618ff2e1907cc1a1623f7",
+        "width": 1600,
+        "height": 1000
+      },
+      "actual": {
+        "bytes": 495828,
+        "sha256": "9d054c6ecbfb2687094bc746a63d44b76ead927a2fe618ff2e1907cc1a1623f7",
+        "width": 1600,
+        "height": 1000,
+        "codec": "VP8"
+      },
+      "ok": true,
+      "failures": []
+    },
+    {
+      "name": "replay_memory_film_mobile",
+      "canonicalPath": "replay/replay-memory-film-mobile.webp",
+      "core": true,
+      "registered": true,
+      "sourcePath": "assets/urai/replay/replay-memory-film-mobile_1536.png",
+      "promptVersion": "certified-v1-20260730",
+      "expected": {
+        "bytes": 542264,
+        "sha256": "9b282e39d157194df183e8427237ac5f1b12dc9b74bb911ae26ba4ff62db5ab9",
+        "width": 1024,
+        "height": 1536
+      },
+      "actual": {
+        "bytes": 542264,
+        "sha256": "9b282e39d157194df183e8427237ac5f1b12dc9b74bb911ae26ba4ff62db5ab9",
+        "width": 1024,
+        "height": 1536,
+        "codec": "VP8"
+      },
+      "ok": true,
+      "failures": []
+    },
+    {
+      "name": "mirror_reflection_main",
+      "canonicalPath": "mirror/mirror-reflection-main.webp",
+      "core": true,
+      "registered": true,
+      "sourcePath": "assets/urai/mirror/mirror-reflection-main_1600.png",
+      "promptVersion": "certified-v1-20260730",
+      "expected": {
+        "bytes": 335188,
+        "sha256": "529110e0686f6bd8bc8d9909d9f4a46e8baaca8dcb9c01d92442d88216f3b672",
+        "width": 1600,
+        "height": 1000
+      },
+      "actual": {
+        "bytes": 335188,
+        "sha256": "529110e0686f6bd8bc8d9909d9f4a46e8baaca8dcb9c01d92442d88216f3b672",
+        "width": 1600,
+        "height": 1000,
+        "codec": "VP8"
+      },
+      "ok": true,
+      "failures": []
+    },
+    {
+      "name": "mirror_reflection_mobile",
+      "canonicalPath": "mirror/mirror-reflection-mobile.webp",
+      "core": true,
+      "registered": true,
+      "sourcePath": "assets/urai/mirror/mirror-reflection-mobile_1536.png",
+      "promptVersion": "certified-v1-20260730",
+      "expected": {
+        "bytes": 246752,
+        "sha256": "2ef390e776e4d110b228e55d5fd18057b746aa3f2d1d2002af73fb5b0cea2b62",
+        "width": 1024,
+        "height": 1536
+      },
+      "actual": {
+        "bytes": 246752,
+        "sha256": "2ef390e776e4d110b228e55d5fd18057b746aa3f2d1d2002af73fb5b0cea2b62",
+        "width": 1024,
+        "height": 1536,
+        "codec": "VP8"
+      },
+      "ok": true,
+      "failures": []
+    },
+    {
+      "name": "mirror_pattern_glyph",
+      "canonicalPath": "mirror/mirror-pattern-glyph.webp",
+      "core": true,
+      "registered": true,
+      "sourcePath": "assets/urai/mirror/mirror-pattern-glyph_768.png",
+      "promptVersion": "certified-v1-20260730",
+      "expected": {
+        "bytes": 277644,
+        "sha256": "a1bfd1bec93b1ebafe01afa621ccbde52f1d974fa0e6edd7850063959e12397b",
+        "width": 768,
+        "height": 768
+      },
+      "actual": {
+        "bytes": 277644,
+        "sha256": "a1bfd1bec93b1ebafe01afa621ccbde52f1d974fa0e6edd7850063959e12397b",
+        "width": 768,
+        "height": 768,
+        "codec": "VP8L"
+      },
+      "ok": true,
+      "failures": []
+    },
+    {
+      "name": "passport_vault_main",
+      "canonicalPath": "passport/passport-vault-main.webp",
+      "core": true,
+      "registered": true,
+      "sourcePath": "assets/urai/passport/passport-vault-main_1600.png",
+      "promptVersion": "certified-v1-20260730",
+      "expected": {
+        "bytes": 321418,
+        "sha256": "fa6a02bbea8557cf8651e5a9ed1376b4857268cd52ebaee9646d148c653f62c2",
+        "width": 1600,
+        "height": 1000
+      },
+      "actual": {
+        "bytes": 321418,
+        "sha256": "fa6a02bbea8557cf8651e5a9ed1376b4857268cd52ebaee9646d148c653f62c2",
+        "width": 1600,
+        "height": 1000,
+        "codec": "VP8"
+      },
+      "ok": true,
+      "failures": []
+    },
+    {
+      "name": "passport_vault_mobile",
+      "canonicalPath": "passport/passport-vault-mobile.webp",
+      "core": true,
+      "registered": true,
+      "sourcePath": "assets/urai/passport/passport-vault-mobile_1536.png",
+      "promptVersion": "certified-v1-20260730",
+      "expected": {
+        "bytes": 314716,
+        "sha256": "5f4520e8d2870962c29467175ff3a0be5bfab4f700b84620841994d0cf4060c3",
+        "width": 1024,
+        "height": 1536
+      },
+      "actual": {
+        "bytes": 314716,
+        "sha256": "5f4520e8d2870962c29467175ff3a0be5bfab4f700b84620841994d0cf4060c3",
+        "width": 1024,
+        "height": 1536,
+        "codec": "VP8"
+      },
+      "ok": true,
+      "failures": []
+    },
+    {
+      "name": "passport_ownership_seal",
+      "canonicalPath": "passport/passport-ownership-seal.webp",
+      "core": true,
+      "registered": true,
+      "sourcePath": "assets/urai/passport/passport-ownership-seal_768.png",
+      "promptVersion": "certified-v1-20260730",
+      "expected": {
+        "bytes": 635366,
+        "sha256": "0428d7f5651aca9805c7192feb0414ee3891f1a4fe632231a808d5b8e041d9d3",
+        "width": 768,
+        "height": 768
+      },
+      "actual": {
+        "bytes": 635366,
+        "sha256": "0428d7f5651aca9805c7192feb0414ee3891f1a4fe632231a808d5b8e041d9d3",
+        "width": 768,
+        "height": 768,
+        "codec": "VP8L"
+      },
+      "ok": true,
+      "failures": []
+    },
+    {
+      "name": "privacy_controls_main",
+      "canonicalPath": "privacy-controls/privacy-controls-main.webp",
+      "core": true,
+      "registered": true,
+      "sourcePath": "assets/urai/privacy-controls/privacy-controls-main_1600.png",
+      "promptVersion": "certified-v1-20260730",
+      "expected": {
+        "bytes": 267688,
+        "sha256": "db56edcfbb4767f0d890a857296c5296743633630b7e2a3218fabb2fb0fe67f8",
+        "width": 1600,
+        "height": 1000
+      },
+      "actual": {
+        "bytes": 267688,
+        "sha256": "db56edcfbb4767f0d890a857296c5296743633630b7e2a3218fabb2fb0fe67f8",
+        "width": 1600,
+        "height": 1000,
+        "codec": "VP8"
+      },
+      "ok": true,
+      "failures": []
+    },
+    {
+      "name": "privacy_controls_mobile",
+      "canonicalPath": "privacy-controls/privacy-controls-mobile.webp",
+      "core": true,
+      "registered": true,
+      "sourcePath": "assets/urai/privacy-controls/privacy-controls-mobile_1536.png",
+      "promptVersion": "certified-v1-20260730",
+      "expected": {
+        "bytes": 279938,
+        "sha256": "4b27e4e5e773a064f7b6c47298ed4454823be4d653fed394c9f3a67312a3671d",
+        "width": 1024,
+        "height": 1536
+      },
+      "actual": {
+        "bytes": 279938,
+        "sha256": "4b27e4e5e773a064f7b6c47298ed4454823be4d653fed394c9f3a67312a3671d",
+        "width": 1024,
+        "height": 1536,
+        "codec": "VP8"
+      },
+      "ok": true,
+      "failures": []
+    },
+    {
+      "name": "privacy_model_access",
+      "canonicalPath": "privacy-controls/privacy-model-access.webp",
+      "core": true,
+      "registered": true,
+      "sourcePath": "assets/urai/privacy-controls/privacy-model-access_768.png",
+      "promptVersion": "certified-v1-20260730",
+      "expected": {
+        "bytes": 409394,
+        "sha256": "2857ae68e967f12490a47aa2782a231506d7365a3acc4faf9f32d56bf109d10a",
+        "width": 768,
+        "height": 768
+      },
+      "actual": {
+        "bytes": 409394,
+        "sha256": "2857ae68e967f12490a47aa2782a231506d7365a3acc4faf9f32d56bf109d10a",
+        "width": 768,
+        "height": 768,
+        "codec": "VP8L"
+      },
+      "ok": true,
+      "failures": []
+    },
+    {
+      "name": "privacy_location_precision",
+      "canonicalPath": "privacy-controls/privacy-location-precision.webp",
+      "core": true,
+      "registered": true,
+      "sourcePath": "assets/urai/privacy-controls/privacy-location-precision_768.png",
+      "promptVersion": "certified-v1-20260730",
+      "expected": {
+        "bytes": 533940,
+        "sha256": "8e262d2b9ce99590c22a85ef4c5cbf8321a16379e2cb6cfa69c1dd9f7a601101",
+        "width": 768,
+        "height": 768
+      },
+      "actual": {
+        "bytes": 533940,
+        "sha256": "8e262d2b9ce99590c22a85ef4c5cbf8321a16379e2cb6cfa69c1dd9f7a601101",
+        "width": 768,
+        "height": 768,
+        "codec": "VP8L"
+      },
+      "ok": true,
+      "failures": []
+    },
+    {
+      "name": "location_emotional_weather_main",
+      "canonicalPath": "location-map/location-emotional-weather-main.webp",
+      "core": true,
+      "registered": true,
+      "sourcePath": "assets/urai/location-map/location-emotional-weather-main_1600.png",
+      "promptVersion": "certified-v1-20260730",
+      "expected": {
+        "bytes": 573682,
+        "sha256": "c51e4973d0642d201a49b1ae50013fc0d2bc80c9ae8ebb0df7924a8b7463accd",
+        "width": 1600,
+        "height": 1000
+      },
+      "actual": {
+        "bytes": 573682,
+        "sha256": "c51e4973d0642d201a49b1ae50013fc0d2bc80c9ae8ebb0df7924a8b7463accd",
+        "width": 1600,
+        "height": 1000,
+        "codec": "VP8"
+      },
+      "ok": true,
+      "failures": []
+    },
+    {
+      "name": "location_emotional_weather_mobile",
+      "canonicalPath": "location-map/location-emotional-weather-mobile.webp",
+      "core": true,
+      "registered": true,
+      "sourcePath": "assets/urai/location-map/location-emotional-weather-mobile_1536.png",
+      "promptVersion": "certified-v1-20260730",
+      "expected": {
+        "bytes": 479658,
+        "sha256": "7cf18842ddb6114526dae6f319cdbe54b1a48045c98bcca83f72f7458fe11ee2",
+        "width": 1024,
+        "height": 1536
+      },
+      "actual": {
+        "bytes": 479658,
+        "sha256": "7cf18842ddb6114526dae6f319cdbe54b1a48045c98bcca83f72f7458fe11ee2",
+        "width": 1024,
+        "height": 1536,
+        "codec": "VP8"
+      },
+      "ok": true,
+      "failures": []
+    },
+    {
+      "name": "location_place_node",
+      "canonicalPath": "location-map/location-place-node.webp",
+      "core": true,
+      "registered": true,
+      "sourcePath": "assets/urai/location-map/location-place-node_768.png",
+      "promptVersion": "certified-v1-20260730",
+      "expected": {
+        "bytes": 514698,
+        "sha256": "27492948afdea648b02ada4b7a61b53cf9d1d0fdbd6187a5498d5c9fad4abc05",
+        "width": 768,
+        "height": 768
+      },
+      "actual": {
+        "bytes": 514698,
+        "sha256": "27492948afdea648b02ada4b7a61b53cf9d1d0fdbd6187a5498d5c9fad4abc05",
+        "width": 768,
+        "height": 768,
+        "codec": "VP8L"
+      },
+      "ok": true,
+      "failures": []
+    },
+    {
+      "name": "status_route_matrix_main",
+      "canonicalPath": "status/status-route-matrix-main.webp",
+      "core": true,
+      "registered": true,
+      "sourcePath": "assets/urai/status/status-route-matrix-main_1600.png",
+      "promptVersion": "certified-v1-20260730",
+      "expected": {
+        "bytes": 280498,
+        "sha256": "debf389e901fef6ae9f57049990003e6253abaec15e9e83c7344ddf57eb7bc53",
+        "width": 1600,
+        "height": 1000
+      },
+      "actual": {
+        "bytes": 280498,
+        "sha256": "debf389e901fef6ae9f57049990003e6253abaec15e9e83c7344ddf57eb7bc53",
+        "width": 1600,
+        "height": 1000,
+        "codec": "VP8"
+      },
+      "ok": true,
+      "failures": []
+    },
+    {
+      "name": "status_route_matrix_mobile",
+      "canonicalPath": "status/status-route-matrix-mobile.webp",
+      "core": true,
+      "registered": true,
+      "sourcePath": "assets/urai/status/status-route-matrix-mobile_1536.png",
+      "promptVersion": "certified-v1-20260730",
+      "expected": {
+        "bytes": 1023920,
+        "sha256": "d83cc5159cea286da70623281193fcddc96355599c0a7e88ba4291260aabdbc6",
+        "width": 1024,
+        "height": 1536
+      },
+      "actual": {
+        "bytes": 1023920,
+        "sha256": "d83cc5159cea286da70623281193fcddc96355599c0a7e88ba4291260aabdbc6",
+        "width": 1024,
+        "height": 1536,
+        "codec": "VP8L"
+      },
+      "ok": true,
+      "failures": []
+    },
+    {
+      "name": "status_health_pill",
+      "canonicalPath": "status/status-health-pill.webp",
+      "core": true,
+      "registered": true,
+      "sourcePath": "assets/urai/status/status-health-pill_512.png",
+      "promptVersion": "certified-v1-20260730",
+      "expected": {
+        "bytes": 53490,
+        "sha256": "1aee3c1af65ce727c555a2540c6d6cbf3d184d3b7f6090c3e67a1a6a23028f16",
+        "width": 512,
+        "height": 256
+      },
+      "actual": {
+        "bytes": 53490,
+        "sha256": "1aee3c1af65ce727c555a2540c6d6cbf3d184d3b7f6090c3e67a1a6a23028f16",
+        "width": 512,
+        "height": 256,
+        "codec": "VP8L"
+      },
+      "ok": true,
+      "failures": []
+    },
+    {
+      "name": "avatar_receptionist",
+      "canonicalPath": "avatars/receptionist.webp",
+      "core": true,
+      "registered": true,
+      "sourcePath": "assets/urai/avatars/receptionist_1536.png",
+      "promptVersion": "certified-v1-20260730",
+      "expected": {
+        "bytes": 214632,
+        "sha256": "86de23636cfdd3743b5502d796314f8beb1b2fd743908b8cdbe40bc4d9426a8e",
+        "width": 1024,
+        "height": 1536
+      },
+      "actual": {
+        "bytes": 214632,
+        "sha256": "86de23636cfdd3743b5502d796314f8beb1b2fd743908b8cdbe40bc4d9426a8e",
+        "width": 1024,
+        "height": 1536,
+        "codec": "VP8X"
+      },
+      "ok": true,
+      "failures": []
+    },
+    {
+      "name": "avatar_privacy_steward",
+      "canonicalPath": "avatars/privacy-steward.webp",
+      "core": true,
+      "registered": true,
+      "sourcePath": "assets/urai/avatars/privacy-steward_1536.png",
+      "promptVersion": "certified-v1-20260730",
+      "expected": {
+        "bytes": 201704,
+        "sha256": "5b8fa0990aa77311638a5d7c1c12e46cdbf83f684554f43b64befbbfa43002c0",
+        "width": 1024,
+        "height": 1536
+      },
+      "actual": {
+        "bytes": 201704,
+        "sha256": "5b8fa0990aa77311638a5d7c1c12e46cdbf83f684554f43b64befbbfa43002c0",
+        "width": 1024,
+        "height": 1536,
+        "codec": "VP8X"
+      },
+      "ok": true,
+      "failures": []
+    },
+    {
+      "name": "avatar_schedule_steward",
+      "canonicalPath": "avatars/schedule-steward.webp",
+      "core": true,
+      "registered": true,
+      "sourcePath": "assets/urai/avatars/schedule-steward_1024.png",
+      "promptVersion": "certified-v1-20260730",
+      "expected": {
+        "bytes": 206948,
+        "sha256": "adb5333b9340ca1e24fd231ece4e4fa3ac3074ee48e3c72ce4747f321669c1cd",
+        "width": 683,
+        "height": 1024
+      },
+      "actual": {
+        "bytes": 206948,
+        "sha256": "adb5333b9340ca1e24fd231ece4e4fa3ac3074ee48e3c72ce4747f321669c1cd",
+        "width": 683,
+        "height": 1024,
+        "codec": "VP8L"
+      },
+      "ok": true,
+      "failures": []
+    },
+    {
+      "name": "avatar_wellness_guide",
+      "canonicalPath": "avatars/wellness-guide.webp",
+      "core": true,
+      "registered": true,
+      "sourcePath": "assets/urai/avatars/wellness-guide_1024.png",
+      "promptVersion": "certified-v1-20260730",
+      "expected": {
+        "bytes": 365590,
+        "sha256": "3d281ac7b82ac4c45aa882816feeae669c8b6d1739817df417a789fd5e77935f",
+        "width": 683,
+        "height": 1024
+      },
+      "actual": {
+        "bytes": 365590,
+        "sha256": "3d281ac7b82ac4c45aa882816feeae669c8b6d1739817df417a789fd5e77935f",
+        "width": 683,
+        "height": 1024,
+        "codec": "VP8L"
+      },
+      "ok": true,
+      "failures": []
+    },
+    {
+      "name": "avatar_logistics_helper",
+      "canonicalPath": "avatars/logistics-helper.webp",
+      "core": true,
+      "registered": true,
+      "sourcePath": "assets/urai/avatars/logistics-helper_1536.png",
+      "promptVersion": "certified-v1-20260730",
+      "expected": {
+        "bytes": 303190,
+        "sha256": "2f7977487eed44820ff569cb2c47093bde73b6bc53863409570f61f8039d38e7",
+        "width": 1024,
+        "height": 1536
+      },
+      "actual": {
+        "bytes": 303190,
+        "sha256": "2f7977487eed44820ff569cb2c47093bde73b6bc53863409570f61f8039d38e7",
+        "width": 1024,
+        "height": 1536,
+        "codec": "VP8X"
+      },
+      "ok": true,
+      "failures": []
+    },
+    {
+      "name": "avatar_archivist",
+      "canonicalPath": "avatars/archivist.webp",
+      "core": true,
+      "registered": true,
+      "sourcePath": "assets/urai/avatars/archivist_1024.png",
+      "promptVersion": "certified-v1-20260730",
+      "expected": {
+        "bytes": 288678,
+        "sha256": "cd5bad6cc9d7dc9d3b36b4d9070fc6be584da48c61e840029a33a6546d4d99e9",
+        "width": 683,
+        "height": 1024
+      },
+      "actual": {
+        "bytes": 288678,
+        "sha256": "cd5bad6cc9d7dc9d3b36b4d9070fc6be584da48c61e840029a33a6546d4d99e9",
+        "width": 683,
+        "height": 1024,
+        "codec": "VP8L"
+      },
+      "ok": true,
+      "failures": []
+    },
+    {
+      "name": "avatar_relationship_liaison",
+      "canonicalPath": "avatars/relationship-liaison.webp",
+      "core": true,
+      "registered": true,
+      "sourcePath": "assets/urai/avatars/relationship-liaison_1024.png",
+      "promptVersion": "certified-v1-20260730",
+      "expected": {
+        "bytes": 290442,
+        "sha256": "a54f4cc0b7c9e491c4cc5c82072d3a9924bf4fcf296c65dc463dda7ff13789c0",
+        "width": 683,
+        "height": 1024
+      },
+      "actual": {
+        "bytes": 290442,
+        "sha256": "a54f4cc0b7c9e491c4cc5c82072d3a9924bf4fcf296c65dc463dda7ff13789c0",
+        "width": 683,
+        "height": 1024,
+        "codec": "VP8L"
+      },
+      "ok": true,
+      "failures": []
+    },
+    {
+      "name": "avatar_operator",
+      "canonicalPath": "avatars/operator.webp",
+      "core": true,
+      "registered": true,
+      "sourcePath": "assets/urai/avatars/operator_1024.png",
+      "promptVersion": "certified-v1-20260730",
+      "expected": {
+        "bytes": 197554,
+        "sha256": "dd4e36c6cd4f1aa8211235dbd3bc9ba783ab85f93d9c8ac5ad282f3ace50f794",
+        "width": 683,
+        "height": 1024
+      },
+      "actual": {
+        "bytes": 197554,
+        "sha256": "dd4e36c6cd4f1aa8211235dbd3bc9ba783ab85f93d9c8ac5ad282f3ace50f794",
+        "width": 683,
+        "height": 1024,
+        "codec": "VP8L"
+      },
+      "ok": true,
+      "failures": []
+    },
+    {
+      "name": "avatar_builder",
+      "canonicalPath": "avatars/builder.webp",
+      "core": true,
+      "registered": true,
+      "sourcePath": "assets/urai/avatars/builder_1024.png",
+      "promptVersion": "certified-v1-20260730",
+      "expected": {
+        "bytes": 239376,
+        "sha256": "2501c310c019343ec910969d9d9ebc0fcc65a31854272c83aa7576de89fdaba6",
+        "width": 683,
+        "height": 1024
+      },
+      "actual": {
+        "bytes": 239376,
+        "sha256": "2501c310c019343ec910969d9d9ebc0fcc65a31854272c83aa7576de89fdaba6",
+        "width": 683,
+        "height": 1024,
+        "codec": "VP8L"
+      },
+      "ok": true,
+      "failures": []
+    },
+    {
+      "name": "avatar_protector",
+      "canonicalPath": "avatars/protector.webp",
+      "core": true,
+      "registered": true,
+      "sourcePath": "assets/urai/avatars/protector_1024.png",
+      "promptVersion": "certified-v1-20260730",
+      "expected": {
+        "bytes": 405606,
+        "sha256": "1b6d2ab70055b643eacf2c7dde197620643dba7e86da5a7fdf9e1c5ead1b5548",
+        "width": 683,
+        "height": 1024
+      },
+      "actual": {
+        "bytes": 405606,
+        "sha256": "1b6d2ab70055b643eacf2c7dde197620643dba7e86da5a7fdf9e1c5ead1b5548",
+        "width": 683,
+        "height": 1024,
+        "codec": "VP8L"
+      },
+      "ok": true,
+      "failures": []
+    },
+    {
+      "name": "avatar_mirror",
+      "canonicalPath": "avatars/mirror.webp",
+      "core": true,
+      "registered": true,
+      "sourcePath": "assets/urai/avatars/mirror_1024.png",
+      "promptVersion": "certified-v1-20260730",
+      "expected": {
+        "bytes": 471508,
+        "sha256": "7fd5c2efb9965bbb17053c78997d3467240406ca84134d62c05c4631781ba7e8",
+        "width": 683,
+        "height": 1024
+      },
+      "actual": {
+        "bytes": 471508,
+        "sha256": "7fd5c2efb9965bbb17053c78997d3467240406ca84134d62c05c4631781ba7e8",
+        "width": 683,
+        "height": 1024,
+        "codec": "VP8L"
+      },
+      "ok": true,
+      "failures": []
+    },
+    {
+      "name": "avatar_guide",
+      "canonicalPath": "avatars/guide.webp",
+      "core": true,
+      "registered": true,
+      "sourcePath": "assets/urai/avatars/guide_1024.png",
+      "promptVersion": "certified-v1-20260730",
+      "expected": {
+        "bytes": 306498,
+        "sha256": "bdb05c0edbbfe491e9d227ef84e2515c61e5c5e667248b9aa0e269eb93ef34b5",
+        "width": 683,
+        "height": 1024
+      },
+      "actual": {
+        "bytes": 306498,
+        "sha256": "bdb05c0edbbfe491e9d227ef84e2515c61e5c5e667248b9aa0e269eb93ef34b5",
+        "width": 683,
+        "height": 1024,
+        "codec": "VP8L"
+      },
+      "ok": true,
+      "failures": []
+    },
+    {
+      "name": "orb_idle",
+      "canonicalPath": "ui/orb-idle.webp",
+      "core": true,
+      "registered": true,
+      "sourcePath": "assets/urai/ui/orb-idle_768.png",
+      "promptVersion": "certified-v1-20260730",
+      "expected": {
+        "bytes": 560498,
+        "sha256": "ed2895078da014c474a32217b7defe2012bae736e47f82ac2f8c2d8f95b1e18e",
+        "width": 768,
+        "height": 768
+      },
+      "actual": {
+        "bytes": 560498,
+        "sha256": "ed2895078da014c474a32217b7defe2012bae736e47f82ac2f8c2d8f95b1e18e",
+        "width": 768,
+        "height": 768,
+        "codec": "VP8L"
+      },
+      "ok": true,
+      "failures": []
+    },
+    {
+      "name": "orb_active",
+      "canonicalPath": "ui/orb-active.webp",
+      "core": true,
+      "registered": true,
+      "sourcePath": "assets/urai/ui/orb-active_768.png",
+      "promptVersion": "certified-v1-20260730",
+      "expected": {
+        "bytes": 560640,
+        "sha256": "dd68d89e62ebd4ff033dd77003352d2bbcc148bc156f903a49583d36c5ea41ba",
+        "width": 768,
+        "height": 768
+      },
+      "actual": {
+        "bytes": 560640,
+        "sha256": "dd68d89e62ebd4ff033dd77003352d2bbcc148bc156f903a49583d36c5ea41ba",
+        "width": 768,
+        "height": 768,
+        "codec": "VP8L"
+      },
+      "ok": true,
+      "failures": []
+    },
+    {
+      "name": "orb_listening",
+      "canonicalPath": "ui/orb-listening.webp",
+      "core": true,
+      "registered": true,
+      "sourcePath": "assets/urai/ui/orb-listening_768.png",
+      "promptVersion": "certified-v1-20260730",
+      "expected": {
+        "bytes": 514316,
+        "sha256": "5e68d42593febd4ec37e6d41d4ac645552f59fabd6a2dff8d0d7af8d5d0e30af",
+        "width": 768,
+        "height": 768
+      },
+      "actual": {
+        "bytes": 514316,
+        "sha256": "5e68d42593febd4ec37e6d41d4ac645552f59fabd6a2dff8d0d7af8d5d0e30af",
+        "width": 768,
+        "height": 768,
+        "codec": "VP8L"
+      },
+      "ok": true,
+      "failures": []
+    },
+    {
+      "name": "open_graph_launch",
+      "canonicalPath": "social/open-graph-launch.webp",
+      "core": false,
+      "registered": false,
+      "sourcePath": "assets/urai/social/open-graph-launch_1600.png",
+      "promptVersion": "certified-v1-20260730",
+      "expected": {
+        "bytes": 323928,
+        "sha256": "110e01932cbdea1ae3aa74aa7b093d9d4239fa8fb99ee9471fa2f4ccfafd79ad",
+        "width": 1600,
+        "height": 900
+      },
+      "actual": {
+        "bytes": 323928,
+        "sha256": "110e01932cbdea1ae3aa74aa7b093d9d4239fa8fb99ee9471fa2f4ccfafd79ad",
+        "width": 1600,
+        "height": 900,
+        "codec": "VP8"
+      },
+      "ok": true,
+      "failures": []
+    },
+    {
+      "name": "open_graph_life_map",
+      "canonicalPath": "social/open-graph-life-map.webp",
+      "core": false,
+      "registered": false,
+      "sourcePath": "assets/urai/social/open-graph-life-map_1600.png",
+      "promptVersion": "certified-v1-20260730",
+      "expected": {
+        "bytes": 504814,
+        "sha256": "9816a2ccb9a1826bfae62f060cc18db36e651c2f698a86dda0209ffa4e80a23e",
+        "width": 1600,
+        "height": 900
+      },
+      "actual": {
+        "bytes": 504814,
+        "sha256": "9816a2ccb9a1826bfae62f060cc18db36e651c2f698a86dda0209ffa4e80a23e",
+        "width": 1600,
+        "height": 900,
+        "codec": "VP8"
+      },
+      "ok": true,
+      "failures": []
+    }
+  ]
+}

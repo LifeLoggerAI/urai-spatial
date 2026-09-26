@@ -2,6 +2,7 @@
   "schemaVersion": 1,
   "id": "focus-memory-chamber-v1",
   "fixedPath": "urai-tier1/public/assets/urai/generated/models/focus-memory-chamber-v1.glb",
+  "targetRoutes": ["/focus"],
   "bytes": 622516,
   "sha256": "d0e8a2105927f5fc610f68edc907cbd100b8570253fab3ba942171136d54b79d",
   "measured": {
@@ -14,7 +15,7 @@
       "Focus_Exit"
     ]
   },
-  "compressionStatus": "meshopt",
+  "compressionStatus": "uncompressed-glb-candidate",
   "requiredCompression": "draco-or-meshopt",
   "fallback": "procedural-focus-chamber",
   "source": "URAI deterministic candidate forge; replaceable by reviewed provider asset",

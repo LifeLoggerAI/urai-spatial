@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-05T16:38:31.750Z",
+  "generatedAt": "2026-09-26T03:31:46.303Z",
   "decision": "V1_V6_ASSETS_ACTIVE",
   "strict": false,
   "purpose": "Keep V1-V6 code/routes/gates ready so final assets turn on by landing files at the registry paths.",

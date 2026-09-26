@@ -18,7 +18,7 @@
       "Privacy_Lock"
     ]
   },
-  "compressionStatus": "meshopt",
+  "compressionStatus": "uncompressed-glb-candidate",
   "requiredCompression": "draco-or-meshopt",
   "fallback": "semantic-passport-status-room",
   "source": "URAI deterministic candidate forge; replaceable by reviewed provider asset",

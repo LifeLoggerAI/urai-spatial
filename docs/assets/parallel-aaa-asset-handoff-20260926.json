@@ -1,0 +1,332 @@
+{
+  "handoffId": "parallel-aaa-asset-handoff-20260926",
+  "createdAt": "2026-09-26T03:08:45Z",
+  "authority": {
+    "repository": "LifeLoggerAI/urai-spatial",
+    "defaultBranch": "main",
+    "defaultBranchHead": "4b3c7bd982865324510eb9581d9f324bd4ad6e93",
+    "activePixelLane": {
+      "pullRequest": 1325,
+      "branch": "fix/focus-mounted-realm-proof-20260926",
+      "head": "dac51067676d6eb717a16ac14a8d782f3f9a049a",
+      "base": "converge/final-canon-spatial-20260922",
+      "preserved": true,
+      "doNotTouch": [
+        "urai-tier1 scene components",
+        "route visual/pixel proof scripts",
+        "Focus/Home/Ground/Replay scene styling and canvas budget files",
+        "active exact-head repair workflow files owned by the pixel lane"
+      ]
+    },
+    "capturedRealityRepairLane": [
+      {
+        "pullRequest": 1327,
+        "branch": "fix/captured-reality-authority-race-20260925",
+        "head": "e1033535d5e3e1df3e6f85e837887c9aa438cdf5"
+      },
+      {
+        "pullRequest": 1341,
+        "branch": "fix/replay-place-anchor-contract-20260926",
+        "head": "06a2f4cca89051b903b0b5d9ca0d2ebe9f1e1c3f"
+      }
+    ],
+    "fieldReconstructionAuthority": {
+      "file": "urai-tier1/src/lib/urai-field-reconstruction.ts",
+      "currentState": "renderer-safe emotional field primitives and future-splat-shaped data",
+      "notClaimed": [
+        "native production Gaussian splat renderer",
+        "trained real-world reconstruction",
+        "private user captured-reality reconstruction",
+        "provider-spend output"
+      ]
+    }
+  },
+  "ownershipMap": {
+    "thisBranchOwns": [
+      "docs/assets/parallel-aaa-asset-handoff-20260926.json",
+      "docs/assets/PARALLEL_AAA_ASSET_HANDOFF_20260926.md",
+      "docs/assets/parallel-aaa-asset-second-pass-20260926.json",
+      "operations/assets/generated-receipts/**",
+      "urai-tier1/public/assets/urai/generated/**",
+      "urai-tier1/public/assets/urai/spatial/**"
+    ],
+    "spatialPixelAgentOwns": [
+      "Focus mounted realm proof repair",
+      "Home navigation/canvas bounds/rendering budget repair",
+      "current visual/pixel route acceptance",
+      "scene file edits required to make #1325 green"
+    ],
+    "integrationPolicy": "Prepare generated candidates, receipts, and manifests only. Do not wire scene code or touch #1325 pixel-owned files until pixel lane frees target files."
+  },
+  "assetPackages": [
+    {
+      "assetId": "AAA-001",
+      "packageId": "urai-home-architecture-launch-contract-v1",
+      "purpose": "Home architecture launch asset target",
+      "scene": "home",
+      "status": "REAL ARTIFACT READY CANDIDATE",
+      "artifactType": "contract plus final candidate slot",
+      "authoritativePath": "urai-tier1/public/assets/urai/generated/models/home-entry-chamber-v1.glb",
+      "fallbackRequired": true,
+      "providerPath": "Meshy or Tripo for blockout-to-GLB, Asset Forge normalization, human visual review",
+      "scale": "meters; human camera; no ceiling; no arms or hands in first-person view",
+      "materialRequirements": [
+        "real materials",
+        "non-plastic surfaces",
+        "PBR albedo/normal/roughness",
+        "no sci-fi portal hall"
+      ],
+      "runtimeBudget": {
+        "format": "glb",
+        "compression": "meshopt or draco",
+        "mobileFirstFrame": "must retain fallback until loaded"
+      },
+      "validationRequired": [
+        "assets:validate",
+        "GLB validation",
+        "bounds",
+        "materials",
+        "fallback proof",
+        "desktop/mobile/reduced-motion visual review"
+      ],
+      "handoffState": "Actual deterministic GLB exists and passed package verification, but compression/bounds/visual acceptance remain before READY FOR SPATIAL INTEGRATION."
+    },
+    {
+      "assetId": "AAA-004",
+      "packageId": "urai-orb-avatar-sonic-identity-v1",
+      "purpose": "Orb visual and sonic identity",
+      "scene": "global/home",
+      "status": "REAL ARTIFACT READY CANDIDATE",
+      "authoritativePath": "urai-tier1/public/assets/urai/generated/models/urai-orb-avatar-v1.glb",
+      "audioPath": "urai-tier1/public/assets/urai/generated/audio/orb-sonic-identity-v1.wav",
+      "fallbackRequired": true,
+      "providerPath": "OpenAI/fal image reference if needed, Meshy/Tripo GLB, ElevenLabs/OpenAI audio via existing provider abstraction only",
+      "scale": "living memory heart; spatially centered; reduced-motion safe",
+      "materialRequirements": [
+        "subtle luminous surface",
+        "not cartoonish",
+        "no fake portal aesthetic"
+      ],
+      "runtimeBudget": {
+        "visual": "low draw-call avatar",
+        "audio": "48kHz or runtime-supported compressed variant, no clipping"
+      },
+      "validationRequired": [
+        "GLB validation",
+        "gain/clipping loop check",
+        "fallback proof",
+        "route proof"
+      ],
+      "handoffState": "Actual deterministic Orb GLB exists; sonic final mix and visual approval remain."
+    },
+    {
+      "assetId": "AAA-005",
+      "packageId": "urai-ground-terrain-canopy-ridge-v1",
+      "purpose": "Ground terrain, canopy, ridge and horizon targets",
+      "scene": "ground",
+      "status": "REAL ARTIFACT READY CANDIDATE",
+      "authoritativePath": "urai-tier1/public/assets/urai/generated/worlds/ground-world-terrain-v1.glb",
+      "fallbackRequired": true,
+      "providerPath": "procedural terrain source or photogrammetry-derived terrain if real capture becomes available; normalize through Asset Forge",
+      "scale": "walkable meters with origin and portal anchor preserved",
+      "materialRequirements": [
+        "non-repeating ground texture",
+        "roughness calibrated",
+        "no cheap tiling",
+        "reduced stimulation variant"
+      ],
+      "runtimeBudget": {
+        "lods": [
+          "high",
+          "medium",
+          "fallback"
+        ],
+        "collision": "simple collision mesh",
+        "mobile": "must not exceed route budget"
+      },
+      "validationRequired": [
+        "bounds",
+        "triangles",
+        "texture dimensions",
+        "LOD presence",
+        "fallback proof",
+        "mobile visual proof"
+      ],
+      "handoffState": "Actual deterministic terrain GLB exists; LOD/collision/material acceptance remain."
+    },
+    {
+      "assetId": "AAA-009",
+      "packageId": "urai-life-map-galaxy-memory-star-v1",
+      "purpose": "Life Map galaxy skybox and Memory Star asset package",
+      "scene": "life-map",
+      "status": "REAL ARTIFACT READY CANDIDATE",
+      "authoritativePath": "urai-tier1/public/assets/urai/generated/skyboxes/life-map-galaxy-skybox-v1.hdr",
+      "companionPath": "urai-tier1/public/assets/urai/generated/models/life-map-memory-star-v1.glb",
+      "fallbackRequired": true,
+      "providerPath": "HDR/texture generation plus deterministic star GLB; no private memory content",
+      "scale": "layered galaxy parallax; Memory Star photosphere/corona, not planet/crystal",
+      "materialRequirements": [
+        "stellar photosphere",
+        "corona",
+        "no terrain/cavity/planet/crystal"
+      ],
+      "runtimeBudget": {
+        "hdr": "validated radiance HDR or compressed sky fallback",
+        "star": "low-cost instancing-ready"
+      },
+      "validationRequired": [
+        "validate-radiance-hdr",
+        "asset validation",
+        "route proof",
+        "reduced-motion proof"
+      ],
+      "handoffState": "Actual Memory Star GLB exists; HDR skybox is not produced."
+    },
+    {
+      "assetId": "AAA-012",
+      "packageId": "urai-replay-memory-environment-v1",
+      "purpose": "Replay environment asset target",
+      "scene": "replay",
+      "status": "GENERATED VALIDATED CANDIDATE",
+      "authoritativePath": "urai-tier1/public/assets/urai/generated/models/replay-memory-environment-v1.glb",
+      "dependency": "captured reality authority repairs #1327 and #1341 must settle before final Replay integration",
+      "fallbackRequired": true,
+      "providerPath": "synthetic environment is allowed only when labeled synthetic; real captured input required for captured reality claim",
+      "scale": "inside memory; no projection/player framing",
+      "materialRequirements": [
+        "truth labels",
+        "provenance visible in manifest",
+        "stable place anchor"
+      ],
+      "validationRequired": [
+        "captured reality integrity tests",
+        "place-anchor proof",
+        "route proof",
+        "visual review"
+      ],
+      "handoffState": "Synthetic/procedural replay GLB exists; captured-reality/place-anchor dependencies remain."
+    },
+    {
+      "assetId": "AAA-013",
+      "packageId": "urai-passport-physical-object-v1",
+      "purpose": "Passport physical model target",
+      "scene": "passport",
+      "status": "REAL ARTIFACT READY CANDIDATE",
+      "authoritativePath": "urai-tier1/public/assets/urai/generated/models/passport-status-room-v1.glb",
+      "fallbackRequired": true,
+      "providerPath": "Meshy/Tripo or deterministic GLB forge; no PII embedded",
+      "scale": "physical object plus return-origin affordance",
+      "materialRequirements": [
+        "real material finish",
+        "legible without tiny text",
+        "privacy-safe metadata"
+      ],
+      "validationRequired": [
+        "GLB validation",
+        "texture review",
+        "accessibility proof",
+        "route proof"
+      ],
+      "handoffState": "Actual deterministic Passport/Status-room GLB exists; privacy-safe visual acceptance remains."
+    },
+    {
+      "assetId": "AAA-023-026",
+      "packageId": "urai-sensory-audio-haptic-pack-v1",
+      "purpose": "Ambience, transitions, Orb sonic identity and haptic patterns",
+      "scene": "global",
+      "status": "GENERATED VALIDATED CANDIDATE",
+      "authoritativePath": "urai-tier1/public/assets/urai/generated/audio/",
+      "hapticPath": "urai-tier1/src/spatial/sensory/",
+      "fallbackRequired": true,
+      "providerPath": "ElevenLabs/OpenAI/Runway only through existing abstractions; no LIVE activation or key exposure",
+      "runtimeBudget": {
+        "audio": "loop-safe, no clipping, compressed variants",
+        "haptics": "reduced-motion and hard-off respected"
+      },
+      "validationRequired": [
+        "sample rate",
+        "gain",
+        "clipping",
+        "loop seam",
+        "file size",
+        "reduced-motion/hard-off behavior"
+      ],
+      "handoffState": "Ambient WAV and haptic JSON exist; compressed production audio and listening review remain."
+    },
+    {
+      "assetId": "CAPTURED-REALITY-SPLAT-V1",
+      "packageId": "urai-captured-reality-splat-pipeline-v1",
+      "purpose": "Captured Reality / Gaussian splat pipeline handoff",
+      "scene": "replay/future captured reality",
+      "status": "BLOCKED",
+      "truthState": "No real captured input or trained reconstruction verified in this branch. Current main supports emotional field primitives and future-splat-shaped data only.",
+      "authoritativePath": "docs/assets/captured-reality-splat-pipeline-v1/",
+      "providerPath": "Use real photo/video capture when available; otherwise mark outputs TEST FIXTURE or SYNTHETIC AUGMENTATION",
+      "validationRequired": [
+        "input provenance",
+        "camera metadata",
+        "reconstruction log",
+        "hole/floater/noise review",
+        "scale/orientation proof",
+        "splat count",
+        "raw and optimized size",
+        "GPU/CPU memory",
+        "load time",
+        "mobile/desktop render proof"
+      ],
+      "blockedBy": [
+        "real captured input not present in GitHub-accessible authority",
+        "native production splat renderer not live on main",
+        "provider run not executed in this environment"
+      ],
+      "handoffState": "No accessible real captured input, trained reconstruction, or native production splat renderer verified."
+    }
+  ],
+  "handoffQueue": {
+    "readyNow": [],
+    "waitingOnDependency": [
+      "urai-replay-memory-environment-v1 waits on captured reality authority repairs #1327/#1341 and explicit truth labels",
+      "urai-captured-reality-splat-pipeline-v1 waits on real capture input/provider output/native render integration"
+    ],
+    "needsHumanVisualDecision": [
+      "Review generated Home architecture GLB candidate and decide whether to promote after compression/bounds repair.",
+      "Review generated Orb GLB plus sonic direction; final audio mix still pending.",
+      "Review Ground terrain candidate and decide collision/LOD promotion path.",
+      "Review Memory Star GLB and approve separate HDR skybox generation path.",
+      "Review Passport physical object candidate for privacy-safe material language."
+    ],
+    "blocked": [
+      "No verified real captured reality input in current accessible repo/Drive authority",
+      "No production native Gaussian splat renderer claim on main",
+      "Paid/provider-backed final AAA+++ generation requires explicit paid-run authorization and configured secret-bound runner"
+    ]
+  },
+  "providerPolicy": {
+    "secrets": "Never print or commit keys. Use existing provider abstractions/secrets only.",
+    "spend": "No unnecessary LIVE paid activation. TEST/sandbox/funded provider runs must preserve provenance and truth labels.",
+    "truthLabels": [
+      "REAL CAPTURED INPUT",
+      "REAL RECONSTRUCTION",
+      "SYNTHETIC AUGMENTATION",
+      "TEST FIXTURE",
+      "PLACEHOLDER"
+    ]
+  },
+  "verification": {
+    "performed": [
+      "Fetched default branch authority",
+      "Fetched open Spatial PR authority",
+      "Identified active pixel lane #1325 and captured-reality lanes #1327/#1341",
+      "Read asset pipeline, asset manifest, parallel asset plan, Phase 5 status and field reconstruction source",
+      "Created isolated branch without modifying scene/pixel files",
+      "Executed deterministic launch-critical forge, normalization, verification and audit in clean checkout.",
+      "Executed spatial procedural asset forge and checker.",
+      "Inspected LifeLoggerAI/asset-factory, urai-studio and urai-staging for provider routes and gates; live integration is not claimed."
+    ],
+    "notPerformed": [
+      "No local tests executed because shell commands failed before launch due missing sandbox .aws mount",
+      "No native splat training executed because no real capture input and no reconstruction runner were available through exposed tools",
+      "No paid/live provider generation executed because Asset Factory provider routes are explicitly gated by paid-run authorization and secret-bound runtime."
+    ]
+  }
+}
