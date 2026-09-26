@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync, statSync } from "node:fs";
 import { resolve } from "node:path";
+import { createHash } from "node:crypto";
 
 const source = readFileSync(resolve("src/app/GroundSpatialWorldClean.tsx"), "utf8");
 const proof = readFileSync(resolve("../scripts/capture-ground-goldmaster-proof.mjs"), "utf8");
@@ -54,4 +55,37 @@ test("Ground Gold Master proof fails closed when the governed canopy did not act
   assert.match(proof, /governed canopy never reached loaded\/renderable state/);
   assert.match(proof, /canopyRequired: 'true'/);
   assert.match(proof, /canopyReady: 'true'/);
+});
+
+
+test("Ground canopy provenance matches the delivered binary and its embedded texture codec", () => {
+  const receipt = JSON.parse(readFileSync(resolve("../operations/assets/third-party/ground-polyhaven-jacaranda-web-v1.json"), "utf8"));
+  const binary = readFileSync(resolve("..", receipt.integration.repositoryPath));
+  assert.equal(binary.length, receipt.derivative.sizeBytes);
+  assert.equal(createHash("sha256").update(binary).digest("hex"), receipt.derivative.sha256);
+  assert.equal(binary.readUInt32LE(0), 0x46546c67, "Expected GLB magic");
+  assert.equal(binary.readUInt32LE(4), 2, "Expected glTF 2");
+  assert.equal(binary.readUInt32LE(8), binary.length, "GLB length must match delivered bytes");
+  assert.equal(binary.readUInt32LE(16), 0x4e4f534a, "Expected JSON chunk");
+  const jsonLength = binary.readUInt32LE(12);
+  const document = JSON.parse(binary.subarray(20, 20 + jsonLength).toString("utf8"));
+  const binHeader = 20 + jsonLength;
+  assert.equal(binary.readUInt32LE(binHeader + 4), 0x004e4942, "Expected BIN chunk");
+  const binStart = binHeader + 8;
+  assert.equal(binStart + binary.readUInt32LE(binHeader), binary.length);
+  assert.ok(document.extensionsUsed.includes("EXT_meshopt_compression"));
+  assert.ok(document.extensionsUsed.includes("KHR_texture_basisu"));
+  assert.equal(document.images.length, receipt.derivative.embeddedTextureCount);
+  assert.deepEqual([...new Set(document.images.map((image) => image.mimeType))].sort(), receipt.derivative.embeddedTextureMimeTypes);
+  const ktx2Identifier = Buffer.from([0xab, 0x4b, 0x54, 0x58, 0x20, 0x32, 0x30, 0xbb, 0x0d, 0x0a, 0x1a, 0x0a]);
+  for (const image of document.images) {
+    assert.equal(image.uri, undefined, "Texture bytes must be delivered inside the GLB");
+    assert.equal(image.mimeType, "image/ktx2");
+    const view = document.bufferViews[image.bufferView];
+    assert.equal(view.buffer, 0);
+    assert.ok(view.byteLength >= ktx2Identifier.length);
+    const start = binStart + (view.byteOffset ?? 0);
+    assert.ok(start + view.byteLength <= binary.length, `${image.name}: out-of-bounds texture`);
+    assert.deepEqual(binary.subarray(start, start + ktx2Identifier.length), ktx2Identifier, `${image.name}: codec payload must match declared MIME type`);
+  }
 });

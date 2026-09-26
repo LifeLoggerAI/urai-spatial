@@ -49,9 +49,9 @@ test('Home keeps direct semantic Ground, Orb, and Life Map navigation in the run
   assert.match(runtime, /requestUraiWorldOrbOpen/)
   assert.match(runtime, /ground: \{ travelHref: '\/ground\/\?entryPortal=home-ground&cameraCheckpoint=home-ground-descent' \}/)
   assert.match(runtime, /lifeMap: \{ travelHref: '\/life-map\/\?from=home-sky&entryPortal=home-sky&cameraCheckpoint=home-sky-ascent-complete' \}/)
-  assert.match(runtime, /data-testid="home-semantic-ground" href=\{HOME_SEMANTIC_DESTINATIONS\.ground\.travelHref\}/)
+  assert.match(runtime, /data-testid="home-semantic-ground" href=\{homeSemanticHref\(HOME_SEMANTIC_DESTINATIONS\.ground\.travelHref, currentSearch\)\}/)
   assert.match(runtime, /aria-label="Open Life Map directly"/)
-  assert.match(runtime, /data-testid="home-semantic-life-map" href=\{HOME_SEMANTIC_DESTINATIONS\.lifeMap\.travelHref\}/)
+  assert.match(runtime, /data-testid="home-semantic-life-map" href=\{homeSemanticHref\(HOME_SEMANTIC_DESTINATIONS\.lifeMap\.travelHref, currentSearch\)\}/)
 })
 
 test('Home world preserves separate bounded cinematic ascent and reduced-motion behavior', () => {

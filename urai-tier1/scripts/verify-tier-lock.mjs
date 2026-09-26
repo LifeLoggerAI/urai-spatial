@@ -45,8 +45,8 @@ const fileNeedles = {
     'aria-label="Open Life Map directly"',
     "ground: { travelHref: '/ground/?entryPortal=home-ground&cameraCheckpoint=home-ground-descent' }",
     "lifeMap: { travelHref: '/life-map/?from=home-sky&entryPortal=home-sky&cameraCheckpoint=home-sky-ascent-complete' }",
-    'href={HOME_SEMANTIC_DESTINATIONS.ground.travelHref}',
-    'href={HOME_SEMANTIC_DESTINATIONS.lifeMap.travelHref}',
+    'href={homeSemanticHref(HOME_SEMANTIC_DESTINATIONS.ground.travelHref, currentSearch)}',
+    'href={homeSemanticHref(HOME_SEMANTIC_DESTINATIONS.lifeMap.travelHref, currentSearch)}',
   ],
   'src/spatial/layout/HomeWorldProductionV223.tsx': [
     "homeState.stableState === 'AVATAR_HOME_FIRST_PERSON'",

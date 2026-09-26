@@ -306,7 +306,7 @@ function NaturalCanopy({ profile, position, rotationY, scale, shapeSeed, onReady
       treatment: "cc0-photoreal-broadleaf-canopy-v35",
       provenance: GROUND_BROADLEAF_CANOPY,
       sourceAuthority: "poly-haven-jacaranda-tree-cc0",
-      derivativeAuthority: "web-optimized-decimated-meshopt-webp",
+      derivativeAuthority: "web-optimized-decimated-meshopt-ktx2",
       visibleAuthority: "scanned-broadleaf-canopy-candidate-v35",
       supersedesVisibleCandidate: "runtime-authored-canopy-v34",
       failClosedProofState: "requires-fresh-exact-head-ground-proof",

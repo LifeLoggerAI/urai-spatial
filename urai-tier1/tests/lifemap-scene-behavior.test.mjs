@@ -6,6 +6,7 @@ const page = fs.readFileSync(new URL('../src/app/life-map/page.tsx', import.meta
 const canonical = fs.readFileSync(new URL('../src/spatial/lifemap/SpatialLifeMapCanonical.tsx', import.meta.url), 'utf8')
 const boundary = fs.readFileSync(new URL('../src/components/lifemap/LifeMapRouteBoundary.tsx', import.meta.url), 'utf8')
 const cosmic = fs.readFileSync(new URL('../src/components/lifemap/CosmicComposedLifeMapScene.tsx', import.meta.url), 'utf8')
+const identity = fs.readFileSync(new URL('../src/components/lifemap/lifeMapIdentity.ts', import.meta.url), 'utf8')
 const demo = fs.readFileSync(new URL('../src/components/lifemap/canonicalLifeMapDemoNodes.ts', import.meta.url), 'utf8')
 const navigator = fs.readFileSync(new URL('../src/components/lifemap/LifeMapSemanticNavigator.tsx', import.meta.url), 'utf8')
 const events = fs.readFileSync(new URL('../src/components/lifemap/useLifeMapEvents.ts', import.meta.url), 'utf8')
@@ -106,7 +107,8 @@ test('Semantic navigator supports search filters keyboard travel and connected d
 
 test('Only explicit demo identity can load the coherent disclosed sample universe', () => {
   assert.match(cosmic, /useLifeMapEvents\(explicitDemo \? "demo-user" : undefined\)/)
-  assert.match(cosmic, /if \(explicitDemo\) next\.set\("demo", "1"\)/)
+  for (const owner of [cosmic, navigator]) assert.match(owner, /lifeMapIdentitySearch\(params\)/)
+  assert.match(identity, /if \(params\.get\('demo'\) === '1'\) next\.set\('demo', '1'\)/)
   assert.match(navigator, /const explicitDemo = params\.get\('demo'\) === '1'|const explicitDemo = params\.get\("demo"\) === "1"/)
   assert.match(events, /function explicitDemoEnabled\(explicitUserId\?: string\) \{\s*return explicitUserId === "demo-user";/)
   assert.doesNotMatch(events, /NEXT_PUBLIC_URAI_EXPLICIT_DEMO/)

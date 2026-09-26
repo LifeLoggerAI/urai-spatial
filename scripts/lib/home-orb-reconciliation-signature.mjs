@@ -1,5 +1,6 @@
 const EXPECTED_FAILURE = 'locator.click: Timeout 30000ms exceeded.'
 const EXPECTED_CONTROL = "getByRole('button', { name: 'Open UrAi Orb companion' })"
+const EXPECTED_CONTROL_UPPER = "getByRole('button', { name: 'Open URAI Orb companion' })"
 const CLICK_DISPATCH_MARKERS = ['performing click action', 'attempting click action']
 
 export function assertExactHomeOrbOpenTransportFailure({ failure, exactHead }) {
@@ -10,7 +11,7 @@ export function assertExactHomeOrbOpenTransportFailure({ failure, exactHead }) {
 
   const predicate = String(failure?.failedPredicate || '')
   if (!predicate.includes(EXPECTED_FAILURE)) throw new Error('original failure was not the bounded Playwright Orb-open click timeout')
-  if (!predicate.includes(EXPECTED_CONTROL)) throw new Error('original failure was not the canonical semantic Orb control')
+  if (!predicate.includes(EXPECTED_CONTROL) && !predicate.includes(EXPECTED_CONTROL_UPPER)) throw new Error('original failure was not the canonical semantic Orb control')
   if (!predicate.includes('data-testid="home-semantic-orb"')) throw new Error('original failure did not resolve the canonical semantic Orb button')
   if (!predicate.includes('element is visible, enabled and stable')) throw new Error('original failure did not establish Orb control actionability')
   if (!CLICK_DISPATCH_MARKERS.some((marker) => predicate.includes(marker))) throw new Error('original failure did not reach click dispatch')
