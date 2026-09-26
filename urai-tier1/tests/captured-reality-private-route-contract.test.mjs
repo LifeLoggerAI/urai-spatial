@@ -1,10 +1,37 @@
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import test from 'node:test'
+import vm from 'node:vm'
 
 const page = fs.readFileSync(new URL('../src/app/spatial/captured-reality/page.tsx', import.meta.url), 'utf8')
 const client = fs.readFileSync(new URL('../src/app/spatial/captured-reality/CapturedRealityRouteClient.tsx', import.meta.url), 'utf8')
 const delivery = fs.readFileSync(new URL('../src/spatial/captured-reality/capturedRealityDelivery.ts', import.meta.url), 'utf8')
+
+test('consent suppression clears private provenance as well as the rendered scene', () => {
+  // Execute the actual callback body with state setters, including an open panel.
+  const body = client.match(/const suppress = useCallback\(\(message: string\) => \{([\s\S]*?)\n  \}, \[\]\)/)?.[1]
+  assert.ok(body, 'suppression callback must exist')
+  const state = { delivery: 'signed-private-url', metadata: { label: 'Private place' }, showProvenance: true }
+  const revokedRef = { current: false }
+  const truthLabelRef = { current: 'Private reconstruction label' }
+  vm.runInNewContext(body, {
+    revokedRef, truthLabelRef, message: 'Consent revoked',
+    setDelivery: (value) => { state.delivery = value },
+    setMetadata: (value) => { state.metadata = value },
+    setShowProvenance: (value) => { state.showProvenance = value },
+    suppressedDecision: (label = 'Private captured place unavailable') => ({ mode: 'suppressed', label }),
+    setDecision: (value) => { state.decision = value },
+    setState: (value) => { state.route = value },
+  })
+  assert.equal(revokedRef.current, true)
+  assert.equal(state.delivery, null)
+  assert.equal(state.metadata, null)
+  assert.equal(state.showProvenance, false)
+  assert.equal(truthLabelRef.current, undefined)
+  assert.equal(state.decision.mode, 'suppressed')
+  assert.equal(state.decision.label, 'Private captured place unavailable')
+  assert.equal(state.route.kind, 'suppressed')
+})
 
 test('private captured reality route is a static shell and carries no private asset data at build time', () => {
   assert.match(page, /dynamic = 'force-static'/)

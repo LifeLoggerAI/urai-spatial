@@ -5,6 +5,7 @@ on:
     paths:
       - '.github/workflows/captured-reality-integrity.yml'
       - 'scripts/*captured-reality*.mjs'
+      - 'apps/functions/src/capturedReality.ts'
       - 'urai-tier1/src/spatial/captured-reality/**'
       - 'urai-tier1/src/app/spatial/captured-reality/**'
       - 'urai-tier1/tests/captured-reality-*.test.mjs'

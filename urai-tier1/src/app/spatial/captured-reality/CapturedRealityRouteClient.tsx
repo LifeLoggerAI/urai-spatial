@@ -152,7 +152,10 @@ export default function CapturedRealityRouteClient() {
   const suppress = useCallback((message: string) => {
     revokedRef.current = true
     setDelivery(null)
-    setDecision(suppressedDecision(truthLabelRef.current))
+    setMetadata(null)
+    truthLabelRef.current = undefined
+    setShowProvenance(false)
+    setDecision(suppressedDecision())
     setState({ kind: 'suppressed', message })
   }, [])
 
