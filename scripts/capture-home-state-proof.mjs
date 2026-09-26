@@ -230,7 +230,7 @@ async function capture(state, options = {}) {
       tag: control.tagName.toLowerCase(),
     })))
     record.accessibilityPassed = record.semanticControls.length >= 3
-      && record.semanticControls.some((control) => control.label === 'Open UrAi Orb companion')
+      && record.semanticControls.some((control) => /^Open URAI Orb companion$/i.test(control.label ?? ''))
       && record.semanticControls.some((control) => control.label === 'Open Ground directly')
       && record.semanticControls.some((control) => control.label === 'Open Life Map directly' || control.label === 'Ascend to Life Map')
 
@@ -320,7 +320,9 @@ async function captureOrbLifecycle({ reducedMotion = 'no-preference' } = {}) {
     const response = await page.goto(`${base}/home/?homeAssetReview=1`, { waitUntil: 'domcontentloaded', timeout: 60_000 })
     record.phase = 'home-ready'
     const owner = await waitForHomeReady(page)
-    const openOrb = page.getByRole('button', { name: 'Open UrAi Orb companion' }).first()
+    const openOrb = page.getByTestId('home-semantic-orb').first()
+    const openOrbLabel = await openOrb.getAttribute('aria-label')
+    assert(/^Open URAI Orb companion$/i.test(openOrbLabel ?? ''), `unexpected semantic Orb label: ${openOrbLabel ?? 'missing'}`)
     record.phase = 'orb-open-keyboard'
     await openOrb.focus()
     await openOrb.press('Enter')
