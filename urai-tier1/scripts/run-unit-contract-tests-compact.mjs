@@ -3,6 +3,7 @@ import fs from 'node:fs'
 
 const tests = [
   '../tests/canonical-route-compatibility.test.mjs',
+  '../tests/prune-stale-release-runs.test.mjs',
   'tests/aaa-world-artifact-contract.test.mjs',
   'tests/v1-aaa-asset-program-matrix-contract.test.mjs',
   'tests/geographic-location-vault.test.mjs',
