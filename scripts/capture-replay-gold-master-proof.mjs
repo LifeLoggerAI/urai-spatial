@@ -150,6 +150,17 @@ async function describeReplay(page, { playingExpected = false, reducedExpected =
     const captionRect = caption?.getBoundingClientRect()
     const action = root?.querySelector('.memoryPacing button')
     const actionRect = action?.getBoundingClientRect()
+    const topTargets = [...(root?.querySelectorAll('.replayTopControls > button, .replayTopControls > details > summary') ?? [])]
+    const topRects = topTargets.map(target => target.getBoundingClientRect())
+    const topControlsClear = topTargets.length >= 2 && topRects.every((rect, index) => {
+      const hit = document.elementFromPoint(rect.left + rect.width / 2, rect.top + rect.height / 2)
+      return rect.width >= 48 && rect.height >= 48
+        && rect.left >= 0 && rect.top >= 0 && rect.right <= innerWidth && rect.bottom <= innerHeight
+        && (hit === topTargets[index] || topTargets[index].contains(hit))
+        && topRects.every((other, j) => index === j
+          || rect.right <= other.left || rect.left >= other.right
+          || rect.bottom <= other.top || rect.top >= other.bottom)
+    })
     const progress = root?.querySelector('[role="progressbar"]')
     const replayProduct = root?.querySelector('.replayProduct')
     const pacingStyle = pacing ? getComputedStyle(pacing) : null
@@ -191,11 +202,13 @@ async function describeReplay(page, { playingExpected = false, reducedExpected =
       actionReadable,
       mobileActionClear,
       demoProductHidden,
+      topControlsClear,
+      topControlBounds: topRects.map(rect => ({ x: rect.x, y: rect.y, width: rect.width, height: rect.height })),
       canvasWidth: canvasRect ? Math.round(canvasRect.width) : 0,
       canvasHeight: canvasRect ? Math.round(canvasRect.height) : 0,
       renderReady: root?.getAttribute('data-replay-render-ready') === 'true',
     }
-    result.passed = result.memoryStatus === 'demo'
+    result.passed = result.topControlsClear && result.memoryStatus === 'demo'
       && result.memoryId === 'demo:quiet-reset'
       && result.manifestId === 'replay-recovery-thread'
       && result.starId === 'quiet-reset'

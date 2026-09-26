@@ -70,9 +70,9 @@ test('Orb and Home ownership preserve predecessor truth while the current candid
   assert.equal(currentHomeVisualAuthority.artRevision, 'v293-direct-bodyless-first-person-convergence')
   assert.equal(currentHomeVisualAuthority.worldIdentifier, 'cinematic-lived-world-threshold')
   assert.equal(currentHomeVisualAuthority.lastCertifiedPredecessor.orbVisualAuthority, 'v288-grounded-biomorphic-reliquary')
-  assert.equal(currentHomeVisualAuthority.currentRuntimeCandidate.orbVisualAuthority, 'v288-grounded-biomorphic-reliquary')
+  assert.equal(currentHomeVisualAuthority.currentRuntimeCandidate.orbVisualAuthority, 'living-memory-translucent-heart')
   assert.equal(currentHomeVisualAuthority.currentRuntimeCandidate.orbInteractionAuthority, 'v291-current-home-orb-state-and-speech-runtime')
-  assert.equal(currentHomeVisualAuthority.orbVisualAuthority, 'v288-grounded-biomorphic-reliquary')
+  assert.equal(currentHomeVisualAuthority.orbVisualAuthority, 'living-memory-translucent-heart')
   assert.equal(currentHomeVisualAuthority.currentRuntimeCandidate.certified, false)
   assert.ok(currentHomeVisualAuthority.lastCertifiedPredecessor.runtimeAssets.includes('HomeOrbGroundedV288.tsx'))
 
@@ -121,7 +121,7 @@ test('Orb and Home ownership preserve predecessor truth while the current candid
 
   assert.match(assetHome, /data-home-v288-certification/)
   assert.match(assetHome, /data-home-v226-retained-pixel-rebuild="superseded"/)
-  assert.match(assetHome, /data-home-v288-retained-pixel-rebuild="active"/)
+  assert.match(assetHome, /data-home-v288-retained-pixel-rebuild="superseded"/)
   assert.doesNotMatch(assetHome, /data-home-v226-certification/)
 
   assert.doesNotMatch(activeHomeVisual, /<Canvas/)

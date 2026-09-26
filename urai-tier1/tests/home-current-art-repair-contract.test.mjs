@@ -11,16 +11,16 @@ const reliquary = fs.readFileSync(new URL('../src/spatial/assets/HomeOrbReliquar
 const sky = fs.readFileSync(new URL('../src/spatial/assets/HomeAtmosphericSky.tsx', import.meta.url), 'utf8')
 const authority = JSON.parse(fs.readFileSync(new URL('../src/app/currentHomeVisualAuthority.json', import.meta.url), 'utf8'))
 
-test('Home authority keeps V288 Orb morphology while V293 direct first-person remains uncertified', () => {
+test('Home authority advances the translucent living-memory candidate while direct first-person remains uncertified', () => {
   assert.equal(authority.artRevision, 'v293-direct-bodyless-first-person-convergence')
   assert.equal(authority.currentRuntimeCandidate.homePresentationAuthority, 'direct-bodyless-first-person')
   assert.equal(authority.currentRuntimeCandidate.nonXrFirstPersonBodyPolicy, 'camera-only-no-hands-arms-visible-avatar-or-body-rig')
-  assert.equal(authority.currentRuntimeCandidate.orbVisualAuthority, 'v288-grounded-biomorphic-reliquary')
+  assert.equal(authority.currentRuntimeCandidate.orbVisualAuthority, 'living-memory-translucent-heart')
   assert.equal(authority.currentRuntimeCandidate.orbInteractionAuthority, 'v291-current-home-orb-state-and-speech-runtime')
   assert.equal(authority.currentRuntimeCandidate.certified, false)
   assert.ok(!authority.runtimeAssets.includes('HomeEmbodiedAvatar.tsx'))
-  assert.match(visualAuthority, /HomeOrbGroundedV288/)
-  assert.match(visualAuthority, /return <HomeOrbGroundedV288 \/>/)
+  assert.doesNotMatch(visualAuthority, /HomeOrbGroundedV288|HomeOrbReliquaryV286/)
+  assert.match(visualAuthority, /home-orb-living-memory-visible-authority/)
 })
 
 test('active Home is direct camera-only first-person with Passport and broad-sky ownership', () => {
@@ -32,7 +32,7 @@ test('active Home is direct camera-only first-person with Passport and broad-sky
   assert.doesNotMatch(owner, /import\s+\{?\s*HomeEmbodiedAvatar|<HomeEmbodiedAvatar\b|home-human-makehuman-v4\.glb/)
   assert.match(owner, /\/urai-home-user-avatar\//)
   assert.match(owner, /function RetireLegacyHomeHotspots\(\)/)
-  assert.match(owner, /const CURRENT_HOME_PRESENCE_ROOTS = new Set\(\['home-living-memory-orb', 'home-orb-v288-visible-authority'\]\)/)
+  assert.match(owner, /const CURRENT_HOME_PRESENCE_ROOTS = new Set\(\['home-living-memory-orb', 'home-orb-living-memory-visible-authority'\]\)/)
 })
 
 test('retired overlays remain retired while first-person Passport ownership stays active', () => {
@@ -53,7 +53,7 @@ test('visible sky is the broad Life Map interaction surface', () => {
   assert.match(sky, /onClick=\{activateSky\}/)
 })
 
-test('V288 Orb remains visible morphology over V291 interaction semantics', () => {
+test('historical V288 adapter remains preserved but is excluded from current visual authority', () => {
   assert.match(groundedOrb, /HomeOrbReliquaryV286/)
   assert.match(groundedOrb, /home-v288-grounded-biomorphic-memory-reliquary/)
   assert.match(groundedOrb, /fallbackVisualOwner: false/)

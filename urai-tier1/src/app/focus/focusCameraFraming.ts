@@ -1,5 +1,5 @@
 export const FOCUS_STAR_TARGET = [0, 0, -1.05] as const
-const BASE_RADIUS = 4.6
+const BASE_RADIUS = 5.1
 
 /** Keep the stellar subject framed by the smaller viewport dimension. */
 export function focusCameraPosition(aspect: number): [number, number, number] {

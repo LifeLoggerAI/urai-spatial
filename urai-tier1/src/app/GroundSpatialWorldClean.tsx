@@ -67,7 +67,7 @@ const TERRAIN_NORMAL = "/assets/urai/home-production/cc0/rock-tile-floor/rock-ti
 const TERRAIN_ARM = "/assets/urai/home-production/cc0/rock-tile-floor/rock-tile-floor-arm-1k.webp";
 
 function resolveProfile(raw: string | null): EnvironmentProfile {
-  if (raw && raw in PROFILES) return PROFILES[raw as EnvironmentProfileId];
+  if (typeof raw === "string" && Object.hasOwn(PROFILES, raw)) return PROFILES[raw as EnvironmentProfileId];
   return PROFILES.temperate;
 }
 

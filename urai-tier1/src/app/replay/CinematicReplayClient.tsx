@@ -12,6 +12,7 @@ import type { SelectedMemory, SelectedMemoryMedia, SelectedMemoryReplaySegment }
 import { useAdaptiveSpatialQuality } from '@/spatial/performance/useAdaptiveSpatialQuality'
 import { requestUraiWorldReturn, requestUraiWorldTravel } from '@/spatial/world/worldEvents'
 import { ReplayProductControls } from './ReplayProductControls'
+import './replay-evidence-controls.css'
 
 const REPLAY_ENVIRONMENT_MODEL = '/assets/urai/generated/models/replay-memory-environment-v1.glb'
 const REPLAY_ROCK_01 = '/assets/urai/home-production/cc0/polyhaven-v48/rock_face_01/asset.gltf'
@@ -678,7 +679,7 @@ export default function CinematicReplayClient({ immersiveEntryEnabled = false }:
       <ReplaySpatialScene memory={memory} playing={playing} progressMs={progressMs} muteVideo={Boolean(recordedAudioUrl)} />
     </Canvas> : <div className="replaySpatialFallback" role="status" data-replay-fallback="semantic">{webglAvailable === null ? 'Preparing Replay…' : 'Spatial Replay unavailable. Memory truth, pacing, transcript, and return controls remain available.'}</div>}
     <div className="replayAtmosphere" aria-hidden="true" />
-    <header><p>{memory.demo ? 'DEMO FIXTURE · NOT PERSONAL DATA' : `${memory.privacy} replay`}</p><h1>{memory.title}</h1><span>{active?.label ?? 'Replay'}</span><button className="unwind" type="button" onClick={unwind}>Focus</button>{immersiveHref ? <a className="replayImmersiveEntry" href={immersiveHref} aria-label={'Enter ' + memory.title + ' in AR, VR, or XR'}>Enter AR / VR / XR</a> : null}</header>
+    <header><p>{memory.demo ? 'DEMO FIXTURE · NOT PERSONAL DATA' : `${memory.privacy} replay`}</p><h1>{memory.title}</h1><span>{active?.label ?? 'Replay'}</span>{immersiveHref ? <a className="replayImmersiveEntry" href={immersiveHref} aria-label={'Enter ' + memory.title + ' in AR, VR, or XR'}>Enter AR / VR / XR</a> : null}</header>
     <section className="caption" aria-live="polite" data-truth-level={truth?.level ?? 'unknown'}><div className="captionMeta"><small>{active?.label ?? 'Replay'}</small>{truth ? <b>{truth.label}</b> : null}</div><strong>{active?.caption ?? memory.narrator.replay}</strong><span>{active?.narratorLine ?? memory.narrator.replay}</span></section>
     <section className="memoryPacing" aria-label="Replay pacing" data-memory-motion={playing ? 'unfolding' : 'held'} data-replay-control-grammar="memory-state-no-player-scrub">
       <button type="button" onClick={() => { if (progressMs >= duration) setProgressMs(0); setPlaying((value) => !value) }} aria-label={playing ? 'Hold memory' : 'Begin memory'}>{playing ? 'Hold memory' : progressMs >= duration ? 'Re-enter memory' : 'Begin memory'}</button>
@@ -687,8 +688,11 @@ export default function CinematicReplayClient({ immersiveEntryEnabled = false }:
       <input className="memoryPosition" type="range" min={0} max={duration} step={100} value={progressMs} onChange={(event) => setTimeline(Number(event.currentTarget.value))} aria-label={`Memory position, ${percent} percent complete`} />
     </section>
     <ReplayProductControls memory={memory} />
-    <details className="truthGuide"><summary>Truth</summary><div><strong>{truth?.label ?? 'Replay context'}</strong><p>{truth?.detail ?? 'Unknown information remains visually unresolved rather than being fabricated.'}</p><ul><li><b>Recorded</b> uses captured source media.</li><li><b>Context</b> remains less specific than recorded evidence.</li><li><b>Interpretation</b> is provisional and correctable.</li><li><b>Unknown</b> stays unbuilt.</li></ul></div></details>
-    {memory.replayManifest.transcript ? <details className="transcript"><summary>Transcript</summary><p>{memory.replayManifest.transcript}</p></details> : null}
+    <nav className="replayTopControls" aria-label="Replay navigation and source information">
+    <button className="unwind" type="button" onClick={unwind}>Focus</button>
+    <details name="replay-evidence" className="truthGuide"><summary>Truth</summary><div><strong>{truth?.label ?? 'Replay context'}</strong><p>{truth?.detail ?? 'Unknown information remains visually unresolved rather than being fabricated.'}</p><ul><li><b>Recorded</b> uses captured source media.</li><li><b>Context</b> remains less specific than recorded evidence.</li><li><b>Interpretation</b> is provisional and correctable.</li><li><b>Unknown</b> stays unbuilt.</li></ul></div></details>
+    {memory.replayManifest.transcript ? <details name="replay-evidence" className="transcript"><summary>Transcript</summary><p>{memory.replayManifest.transcript}</p></details> : null}
+    </nav>
     {recordedAudioUrl ? <audio ref={audioRef} src={recordedAudioUrl} preload="metadata" data-replay-recorded-audio="true" /> : null}
     <style>{replayCss}</style>
   </main>

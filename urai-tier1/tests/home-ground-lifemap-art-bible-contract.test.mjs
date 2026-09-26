@@ -31,15 +31,15 @@ test('Home is direct bodyless camera-only first-person without changing Ground o
   assert.match(currentHome, /\/urai-home-user-avatar\//)
   assert.match(currentHome, /function RetireLegacyHomeHotspots\(\)/)
   assert.match(currentHome, /data-home-art-revision="v293-direct-bodyless-first-person-convergence"/)
-  assert.match(currentHome, /CURRENT_HOME_PRESENCE_ROOTS = new Set\(\['home-living-memory-orb', 'home-orb-v288-visible-authority'\]\)/)
+  assert.match(currentHome, /CURRENT_HOME_PRESENCE_ROOTS = new Set\(\['home-living-memory-orb', 'home-orb-living-memory-visible-authority'\]\)/)
 })
 
-test('Home runtime keeps V288 Orb morphology over V291 interaction semantics', () => {
+test('Home runtime owns the translucent living-memory morphology and V291 interaction semantics', () => {
   assert.match(assetHome, /cinematic-home-ground-threshold-convergence/)
   assert.match(currentHome, /home-living-memory-orb/)
   assert.equal(currentHomeVisualAuthority.artRevision, 'v293-direct-bodyless-first-person-convergence')
   assert.equal(currentHomeVisualAuthority.currentRuntimeCandidate.homePresentationAuthority, 'direct-bodyless-first-person')
-  assert.equal(currentHomeVisualAuthority.orbVisualAuthority, 'v288-grounded-biomorphic-reliquary')
+  assert.equal(currentHomeVisualAuthority.orbVisualAuthority, 'living-memory-translucent-heart')
   assert.equal(currentHomeVisualAuthority.currentRuntimeCandidate.orbInteractionAuthority, 'v291-current-home-orb-state-and-speech-runtime')
   assert.match(homeEntry, /HomeWorldProductionV223 as HomeWorldProduction/)
   assert.match(groundGateway, /aria-label="Enter Ground — explore your physical lived world in first person"/)

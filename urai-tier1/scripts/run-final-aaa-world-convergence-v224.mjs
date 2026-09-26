@@ -10,20 +10,22 @@ for (const marker of [
   "const groundedOrb = read('src/spatial/assets/HomeOrbGroundedV288.tsx')",
   "cinematic-lived-world-threshold",
   "v288-grounded-biomorphic-reliquary",
+  "living-memory-translucent-heart",
+  "currentRuntimeCandidate.certified, false",
   "data-home-v288-certification",
   "data-home-v288-retained-pixel-rebuild",
   "physical-world-surface",
   "visible-sky-broad-interaction",
 ]) {
-  if (!source.includes(marker)) throw new Error(`V288 convergence marker missing: ${marker}`)
+  if (!source.includes(marker)) throw new Error(`Current convergence marker missing: ${marker}`)
 }
 
 for (const retirementAssertion of [
   "assert.doesNotMatch(assetHome, /data-home-v226-certification/)",
   "assert.match(assetHome, /data-home-v226-retained-pixel-rebuild=\"superseded\"/)",
-  "assert.match(assetHome, /data-home-v288-retained-pixel-rebuild=\"active\"/)",
+  "assert.match(assetHome, /data-home-v288-retained-pixel-rebuild=\"superseded\"/)",
 ]) {
-  if (!source.includes(retirementAssertion)) throw new Error(`V288 fail-closed retirement assertion missing: ${retirementAssertion}`)
+  if (!source.includes(retirementAssertion)) throw new Error(`Predecessor retirement assertion missing: ${retirementAssertion}`)
 }
 
 // The current Home canon intentionally owns first-person locomotion through the

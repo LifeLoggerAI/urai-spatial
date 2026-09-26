@@ -48,13 +48,13 @@ test('V286 grounds through restrained inlaid traces instead of visible root tube
   assert.doesNotMatch(orb, /orbiting|rotating halo|memoryLoop|rootTendrils/)
 })
 
-test('current Home keeps V223 Orb interaction ownership while V288/V286 own the visible candidate morphology', () => {
+test('current Home owns its living-memory visual and interaction while historical adapters remain unmounted', () => {
   assert.match(activeHome, /<HomeAAAVisualRepair \/>/)
   assert.match(activeHome, /name="home-living-memory-orb"/)
   assert.doesNotMatch(activeRepair, /import \{ HomeOrbGroundedV288 \} from '@\/spatial\/assets\/HomeOrbGroundedV288'/)
   assert.doesNotMatch(activeRepair, /<HomeOrbGroundedV288 \/>/)
   assert.match(activeRepair, /Historical V281 localized Ground\/ascent overlays remain retired/)
-  assert.match(activeRepair, /HomeVisualAuthority mounts the V288 grounded biomorphic reliquary[\s\S]*visible Orb morphology/)
+  assert.match(activeRepair, /HomeVisualAuthority contains the living-memory translucent heart[\s\S]*same visual and semantic owner/)
   assert.match(activeRepair, /Home runtime keeps Orb semantics, speech\/VAD timing and pointer\/touch ownership/)
   assert.match(activeRepair, /function HomePassportOwnershipObject/)
   assert.match(activeRepair, /visibility: 'first-person-only'/)
@@ -73,30 +73,23 @@ test('current Home keeps V223 Orb interaction ownership while V288/V286 own the 
   assert.match(adapter, /interactionOwner: true/)
 })
 
-test('certified predecessor inventory and current candidate both preserve V288 visual authority while V291 owns interaction', () => {
-  assert.match(authority, /import \{ HomeOrbGroundedV288 \} from '@\/spatial\/assets\/HomeOrbGroundedV288'/)
-  assert.match(authority, /<HomeOrbGroundedV288 \/>/)
-  assert.match(authority, /visible morphology is restored[\s\S]*V288 grounded biomorphic reliquary authority/)
+test('certified predecessor inventory is preserved while the translucent current candidate remains uncertified', () => {
+  assert.doesNotMatch(authority, /HomeOrbGroundedV288|HomeOrbReliquaryV286/)
+  assert.match(authority, /home-orb-living-memory-visible-authority/)
+  assert.match(authority, /The living-memory runtime owns its translucent shell/)
   assert.doesNotMatch(authority, /return null/)
   assert.doesNotMatch(authority, /livingHeartGeometryV253|home-v253-literal-living-memory-heart|<GroundedOrbRootsV253|<LiteralOrbAuthorityV253/)
   assert.ok(inventory.lastCertifiedPredecessor.runtimeAssets.includes('HomeOrbReliquaryV286.tsx'))
   assert.ok(inventory.lastCertifiedPredecessor.runtimeAssets.includes('HomeOrbGroundedV288.tsx'))
   assert.equal(inventory.lastCertifiedPredecessor.orbVisualAuthority, 'v288-grounded-biomorphic-reliquary')
-  assert.equal(inventory.currentRuntimeCandidate.orbVisualAuthority, 'v288-grounded-biomorphic-reliquary')
+  assert.equal(inventory.currentRuntimeCandidate.orbVisualAuthority, 'living-memory-translucent-heart')
   assert.equal(inventory.currentRuntimeCandidate.orbInteractionAuthority, 'v291-current-home-orb-state-and-speech-runtime')
-  assert.equal(inventory.orbVisualAuthority, 'v288-grounded-biomorphic-reliquary')
+  assert.equal(inventory.orbVisualAuthority, 'living-memory-translucent-heart')
   assert.equal(inventory.currentRuntimeCandidate.certified, false)
 })
 
-test('normal exact-head Portal/Orb proof preserves current V288 visual authority with V291 interaction runtime', () => {
-  assert.match(workflow, /HomeOrbReliquaryV286\.tsx/)
-  assert.match(workflow, /HomeOrbGroundedV288\.tsx/)
-  assert.match(workflow, /Verify current V288 visual authority plus V291 interaction runtime and lived-world\/broad-sky authority/)
-  assert.match(workflow, /"orbVisualAuthority": "v288-grounded-biomorphic-reliquary"/)
-  assert.match(workflow, /return <HomeOrbGroundedV288 \/>/)
-  assert.match(workflow, /interactionAuthority: 'v291-current-home-orb-state-and-speech-runtime'/)
-  assert.match(workflow, /home-orb-reference-glass-shell/)
-  assert.match(workflow, /home-orb-luminous-inner-volume/)
-  assert.match(workflow, /Retired Orb ring\/crystalline authority returned to current Home source/)
-  assert.match(workflow, /Retired heart Orb authority returned to current reliquary source/)
+test('normal exact-head Portal/Orb proof checks the current living-memory candidate with executed runtime evidence', () => {
+  assert.match(workflow, /verify-current-home-visual-authority\.mjs/)
+  assert.match(workflow, /home-living-memory-orb-runtime\.test\.mjs/)
+  assert.doesNotMatch(workflow, /grep.*return <HomeOrbGroundedV288/)
 })

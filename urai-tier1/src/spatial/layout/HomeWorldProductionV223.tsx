@@ -116,6 +116,17 @@ function prepareAuthoredOrbModel(source: THREE.Object3D) {
       material.metalness = 0
       material.transparent = true
       material.opacity = .34
+      material.depthWrite = false
+      // The generated model contributes interior folds only. Its stone textures
+      // must not turn the living-memory core into a second opaque rock shell.
+      material.map = null
+      material.normalMap = null
+      material.roughnessMap = null
+      material.metalnessMap = null
+      material.aoMap = null
+      material.emissiveMap = null
+      material.flatShading = false
+      object.castShadow = false
       if (material instanceof THREE.MeshPhysicalMaterial) {
         material.transmission = .54
         material.thickness = .08
@@ -180,7 +191,7 @@ const legacyHotspotPatterns = [
   /home-visible-user-avatar/,
   /urai-home-user-avatar/,
 ]
-const CURRENT_HOME_PRESENCE_ROOTS = new Set(['home-living-memory-orb', 'home-orb-v288-visible-authority'])
+const CURRENT_HOME_PRESENCE_ROOTS = new Set(['home-living-memory-orb', 'home-orb-living-memory-visible-authority'])
 
 function isInsideCurrentHomePresence(object: THREE.Object3D) {
   let current: THREE.Object3D | null = object
@@ -245,6 +256,13 @@ function OrbCompanion({ state, reducedMotion, onOrb }: { state: OrbState; reduce
   const speechActive = useRef(false)
   const orb = useGLTF(ORB_MODEL)
   const authoredOrb = useMemo(() => prepareAuthoredOrbModel(orb.scene), [orb.scene])
+  useEffect(() => () => {
+    authoredOrb.traverse((object) => {
+      if (!(object instanceof THREE.Mesh)) return
+      const materials = Array.isArray(object.material) ? object.material : [object.material]
+      materials.forEach((material) => material.dispose())
+    })
+  }, [authoredOrb])
   const { actions } = useAnimations(orb.animations, authoredOrb)
   const quality = useAdaptiveSpatialQuality()
   const effectBudget = ORB_EFFECT_BUDGET[quality.tier]
@@ -344,7 +362,8 @@ function OrbCompanion({ state, reducedMotion, onOrb }: { state: OrbState; reduce
     if (!reducedMotion) {
       yaw.current += delta * .015 * motion.rotation
       root.current.rotation.y = yaw.current
-      root.current.position.y = baseY + Math.sin(clock.elapsedTime * .58) * motion.hover
+      // Shell expansion is offset upward; the grounded presence never dips into terrain.
+      root.current.position.y = baseY + ORB_FIELD_RADIUS * ORB_FIELD_Y_SCALE * expressiveEnergy * .004
       if (authoredCore.current) {
         const baseScale = .338 * motion.coreScale + Math.sin(clock.elapsedTime * .9) * motion.breath
         authoredCore.current.scale.setScalar(baseScale - gather * .004 + expressiveEnergy * .006)
@@ -403,12 +422,15 @@ function OrbCompanion({ state, reducedMotion, onOrb }: { state: OrbState; reduce
       moteCeiling: effectBudget.motes,
       filamentCeiling: effectBudget.filaments,
       restHeight: 'visible-shell-radius-plus-1.5cm-terrain-clearance',
-      visualAuthority: 'v288-grounded-biomorphic-reliquary',
+      visualAuthority: 'living-memory-translucent-heart',
       interactionAuthority: 'v291-current-home-orb-state-and-speech-runtime',
-      referenceLanguage: 'grounded-biomorphic-memory-reliquary-visible-authority-with-v291-state-and-speech-runtime',
+      referenceLanguage: 'one-metre-translucent-shell-with-luminous-living-memory-interior',
+      interactionOwner: true,
+      visualOwner: true,
+      certified: false,
     }}
   >
-    <mesh ref={fieldShell} castShadow scale={[1,ORB_FIELD_Y_SCALE,.95]} onClick={activate} name="home-orb-reference-glass-shell">
+    <mesh ref={fieldShell} castShadow={false} scale={[1,ORB_FIELD_Y_SCALE,.95]} name="home-orb-reference-glass-shell">
       <sphereGeometry args={[ORB_FIELD_RADIUS,effectBudget.membraneSegments,effectBudget.membraneSegments]} />
       <meshPhysicalMaterial ref={membrane} color="#9eeaf0" transparent opacity={.16} transmission={.78} thickness={.12} roughness={.14} metalness={0} clearcoat={.92} clearcoatRoughness={.16} ior={1.23} envMapIntensity={1.1} depthWrite={false} />
     </mesh>
@@ -757,8 +779,9 @@ function Scene({
       interactive={homeStableState === 'AVATAR_HOME_FIRST_PERSON' && !homeTransition && transition === 'none'}
       onNearby={onPassportNearby}
     />
-    <OrbCompanion state={orbState} reducedMotion={reducedMotion} onOrb={onOrb} />
-    <HomeVisualAuthority />
+    <HomeVisualAuthority>
+      <OrbCompanion state={orbState} reducedMotion={reducedMotion} onOrb={onOrb} />
+    </HomeVisualAuthority>
     <CameraRig
       yaw={yaw}
       pitch={pitch}
