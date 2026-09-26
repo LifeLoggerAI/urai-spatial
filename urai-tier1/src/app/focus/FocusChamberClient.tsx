@@ -389,14 +389,14 @@ function FocusMemoryStar({
     }}
   >
     <>
-    <sprite raycast={() => null} position={[-.04, .02, -.10]} scale={[3.72, 3.22, 1]} rotation={-.11} name="focus-memory-star-corona-glow">
-      <spriteMaterial map={coronaTexture} color="#fff2c6" transparent opacity={memory ? .34 : .10} depthWrite={false} depthTest={false} blending={THREE.AdditiveBlending} toneMapped={false} />
+    <sprite raycast={() => null} position={[-.04, .02, -.10]} scale={[3.72, 3.22, 1]} name="focus-memory-star-corona-glow">
+      <spriteMaterial rotation={-.11} map={coronaTexture} color="#fff2c6" transparent opacity={memory ? .34 : .10} depthWrite={false} depthTest={false} blending={THREE.AdditiveBlending} toneMapped={false} />
     </sprite>
-    <sprite raycast={() => null} position={[.02, .01, .06]} scale={[4.36, 3.58, 1]} rotation={.31} name="focus-memory-star-organic-streamer-field">
-      <spriteMaterial map={rayTexture} color="#fff9dc" transparent opacity={memory ? .18 : .06} depthWrite={false} depthTest={false} blending={THREE.AdditiveBlending} toneMapped={false} />
+    <sprite raycast={() => null} position={[.02, .01, .06]} scale={[4.36, 3.58, 1]} name="focus-memory-star-organic-streamer-field">
+      <spriteMaterial rotation={.31} map={rayTexture} color="#fff9dc" transparent opacity={memory ? .18 : .06} depthWrite={false} depthTest={false} blending={THREE.AdditiveBlending} toneMapped={false} />
     </sprite>
-    <sprite raycast={() => null} position={[-.01, .01, .18]} scale={[1.86, 1.72, 1]} rotation={.07} name="focus-memory-star-photosphere-surface">
-      <spriteMaterial map={photosphereTexture} color="#fffce8" transparent opacity={memory ? .90 : .05} depthWrite={false} depthTest={false} blending={THREE.AdditiveBlending} toneMapped={false} />
+    <sprite raycast={() => null} position={[-.01, .01, .18]} scale={[1.86, 1.72, 1]} name="focus-memory-star-photosphere-surface">
+      <spriteMaterial rotation={.07} map={photosphereTexture} color="#fffce8" transparent opacity={memory ? .90 : .05} depthWrite={false} depthTest={false} blending={THREE.AdditiveBlending} toneMapped={false} />
     </sprite>
     <mesh raycast={() => null} geometry={photosphereGeometry} scale={[.26, .245, .23]} name="focus-memory-star-photosphere-core" rotation={[0.08, -0.18, 0]}>
       <meshBasicMaterial
