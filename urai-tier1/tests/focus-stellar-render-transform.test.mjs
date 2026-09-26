@@ -4,6 +4,7 @@ import test from 'node:test'
 import ts from 'typescript'
 import { applyProps } from '@react-three/fiber'
 import { PerspectiveCamera, Sprite, SpriteMaterial, Vector3 } from 'three'
+import { focusCameraPosition, focusCameraMaxRadius, FOCUS_STAR_TARGET } from '../src/app/focus/focusCameraFraming.ts'
 
 const source = readFileSync(new URL('../src/app/focus/FocusChamberClient.tsx', import.meta.url), 'utf8')
 const ast = ts.createSourceFile('FocusChamberClient.tsx', source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX)
@@ -53,5 +54,23 @@ test('actual Focus photosphere and corona props produce finite visible Three.js 
     } finally {
       material.dispose()
     }
+  }
+})
+
+test('default stellar photosphere stays inside portrait, landscape and ultrawide viewports', () => {
+  for (const [width, height] of [[320, 900], [390, 844], [768, 1024], [1024, 768], [844, 390], [1440, 810], [2560, 1080]]) {
+    const aspect = width / height
+    const camera = new PerspectiveCamera(44, aspect, .08, 120)
+    camera.position.set(...focusCameraPosition(aspect))
+    camera.lookAt(...FOCUS_STAR_TARGET)
+    camera.updateMatrixWorld(true)
+    // Largest authored photosphere radius, including the breathing envelope.
+    const radius = 1.86 / 2 * .76 * 2.08 * 1.01
+    for (let step = 0; step < 64; step++) {
+      const angle = step / 64 * Math.PI * 2
+      const edge = new Vector3(Math.cos(angle) * radius, Math.sin(angle) * radius, FOCUS_STAR_TARGET[2] + .18 * 2.08).project(camera)
+      assert.ok(Math.abs(edge.x) < .95 && Math.abs(edge.y) < .95, `Photosphere clipped at ${width}x${height}`)
+    }
+    assert.ok(camera.position.distanceTo(new Vector3(...FOCUS_STAR_TARGET)) < focusCameraMaxRadius(aspect), 'OrbitControls must not clamp the responsive initial position')
   }
 })
