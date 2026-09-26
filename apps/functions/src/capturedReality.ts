@@ -201,11 +201,14 @@ export const getCapturedRealityReplayEntry = functions.https.onCall(async (data,
   const asset = await db.doc(`users/${uid}/capturedRealityAssets/${assetId}`).get()
   if (!asset.exists || asset.get('ownerId') !== uid) return { available: false }
 
+  const placeEntityId = binding.get('placeEntityId')
   if (
+    typeof placeEntityId !== 'string' ||
+    !placeEntityId.trim() ||
     asset.get('state') !== 'ready' ||
     asset.get('reviewState') !== 'accepted' ||
     asset.get('truthClass') !== 'spatially-reconstructable' ||
-    asset.get('anchorEntityId') !== binding.get('placeEntityId')
+    asset.get('anchorEntityId') !== placeEntityId
   ) {
     return { available: false }
   }
