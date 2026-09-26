@@ -22,6 +22,8 @@ on:
       - 'urai-tier1/src/spatial/world/**'
       - 'scripts/audit-main-journey-state.mjs'
       - 'scripts/capture-canonical-journey-proof.mjs'
+      - 'scripts/canonical-journey-realm.mjs'
+      - 'scripts/canonical-journey-realm.test.mjs'
       - '.github/workflows/main-journey-state.yml'
 
 permissions:
@@ -99,6 +101,9 @@ jobs:
 
       - name: Install Chromium
         run: pnpm --dir urai-tier1 exec playwright install --with-deps chromium
+
+      - name: Verify mounted realm isolation against streamed HTML
+        run: node --test scripts/canonical-journey-realm.test.mjs
 
       - name: Capture exact-head canonical runtime journey
         shell: bash
