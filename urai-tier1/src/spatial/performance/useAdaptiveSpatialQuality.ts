@@ -57,27 +57,20 @@ function deriveTier(reducedMotion: boolean): SpatialQualityTier {
   return 'high'
 }
 
-function initialReducedMotion() {
-  if (typeof window === 'undefined') return false
-  const deterministic = deterministicOverride()
-  if (deterministic) return deterministic.freeze || deterministic.reducedMotion
-  return window.matchMedia('(prefers-reduced-motion: reduce)').matches
-}
-
-function initialDocumentVisible() {
-  return typeof document === 'undefined' ? true : document.visibilityState === 'visible'
-}
-
 export function useAdaptiveSpatialQuality(): SpatialQualityProfile {
-  const [reducedMotion, setReducedMotion] = useState(initialReducedMotion)
-  const [documentVisible, setDocumentVisible] = useState(initialDocumentVisible)
-  const [tier, setTier] = useState<SpatialQualityTier>(() => deriveTier(initialReducedMotion()))
+  // Server and first hydration render must share a snapshot. Device/query hints
+  // are applied immediately after mount, never read during the hydration render.
+  const [reducedMotion, setReducedMotion] = useState(false)
+  const [documentVisible, setDocumentVisible] = useState(true)
+  const [tier, setTier] = useState<SpatialQualityTier>('medium')
+  const [deterministicDpr, setDeterministicDpr] = useState<number | null>(null)
 
   useEffect(() => {
     const deterministic = deterministicOverride()
     if (deterministic) {
       setReducedMotion(deterministic.freeze || deterministic.reducedMotion)
       setTier(deterministic.quality)
+      setDeterministicDpr(deterministic.dpr)
       setDocumentVisible(true)
       return
     }
@@ -88,6 +81,10 @@ export function useAdaptiveSpatialQuality(): SpatialQualityProfile {
     const updateMotion = () => setReducedMotion(motion.matches)
     const updateVisibility = () => setDocumentVisible(document.visibilityState === 'visible')
     const updateTier = () => setTier(deriveTier(motion.matches))
+
+    updateMotion()
+    updateVisibility()
+    updateTier()
 
     motion.addEventListener('change', updateMotion)
     motion.addEventListener('change', updateTier)
@@ -107,17 +104,16 @@ export function useAdaptiveSpatialQuality(): SpatialQualityProfile {
   }, [])
 
   return useMemo(() => {
-    const deterministic = deterministicOverride()
     const base = PROFILE[tier]
-    if (!deterministic) return { tier, ...base, reducedMotion, documentVisible }
+    if (deterministicDpr === null) return { tier, ...base, reducedMotion, documentVisible }
     return {
       tier,
       ...base,
-      pixelRatioMax: deterministic.dpr,
+      pixelRatioMax: deterministicDpr,
       reducedMotion,
       documentVisible: true,
     }
-  }, [documentVisible, reducedMotion, tier])
+  }, [deterministicDpr, documentVisible, reducedMotion, tier])
 }
 
 export function markFirstSpatialFrame(route: string, tier: SpatialQualityTier) {

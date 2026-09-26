@@ -8,10 +8,12 @@ on:
         required: true
         type: string
   pull_request:
-    branches: [main, home-final-v24-certify-20260826, converge/final-canon-spatial-20260922]
+    branches: [main, home-final-v24-certify-20260826, converge/final-canon-spatial-20260922, repair/spatial-complete-proof-20260926, repair/focus-media-truth-20260926]
     paths:
       - '.github/workflows/focus-gold-master-proof.yml'
       - 'scripts/capture-focus-gold-master-proof.mjs'
+      - 'scripts/verify-focus-media-states.mjs'
+      - 'scripts/verify-spatial-quality-hydration.mjs'
       - 'scripts/run-with-ci-webgl.mjs'
       - 'urai-tier1/src/app/focus/**'
       - 'urai-tier1/src/app/replay/**'
@@ -93,6 +95,15 @@ jobs:
           node --check scripts/run-with-ci-webgl.mjs
           node --check scripts/capture-focus-gold-master-proof.mjs
           (cd urai-tier1 && node tests/focus-review-regression-contract.test.mjs)
+
+      - name: Verify source-media truth and adaptive hydration
+        shell: bash
+        run: |
+          set -euo pipefail
+          FOCUS_MEDIA_PROOF_OUT=artifacts/focus-gold-master-proof/media-states \
+            node scripts/verify-focus-media-states.mjs
+          SPATIAL_HYDRATION_PROOF_OUT=artifacts/focus-gold-master-proof/hydration \
+            node scripts/verify-spatial-quality-hydration.mjs
 
       - name: Capture exact-head Focus proof
         shell: bash
