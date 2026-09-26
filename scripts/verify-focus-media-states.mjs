@@ -3,22 +3,24 @@ import fs from 'node:fs/promises'
 import path from 'node:path'
 import os from 'node:os'
 import http from 'node:http'
-import { build } from 'esbuild'
-import { chromium } from 'playwright'
+import { createRequire } from 'node:module'
 
 // This renders the actual production component and styles with an existing,
 // explicitly disclosed repository demo SVG. It does not certify full-route pixels.
 const root = path.resolve(import.meta.dirname, '..')
+const requireTierOne = createRequire(path.join(root, 'urai-tier1/package.json'))
+const { chromium } = requireTierOne('playwright')
+const { build } = createRequire(requireTierOne.resolve('tsx/package.json'))('esbuild')
 const output = path.resolve(process.env.FOCUS_MEDIA_PROOF_OUT || path.join(os.tmpdir(), 'urai-focus-media-proof'))
 await fs.mkdir(output, { recursive: true })
 const source = await fs.readFile(path.join(root, 'urai-tier1/src/app/focus/FocusChamberClient.tsx'), 'utf8')
 const css = JSON.parse(source.match(/const focusCss = ("[^\n]*")/)[1])
 const script = await build({
   stdin: { contents: `import React from 'react'; import {createRoot} from 'react-dom/client';
-    import {MemoryVisualContent} from './urai-tier1/src/app/focus/FocusChamberClient';
+    import {MemoryVisualContent} from './src/app/focus/FocusChamberClient';
     const root=createRoot(document.getElementById('root'));
     window.renderMemory=(url,kind='image')=>root.render(<div className="focusStarMemoryButton"><MemoryVisualContent memory={{title:'Disclosed source-readiness fixture',demo:true,sourceMedia:url?[{kind,url,caption:'Existing repository demo artwork, not an archival memory'}]:[]}}/></div>);
-    window.renderMemory(null);`, resolveDir: root, loader: 'tsx' },
+    window.renderMemory(null);`, resolveDir: path.join(root, 'urai-tier1'), loader: 'tsx' },
   bundle: true, write: false, format: 'iife', jsx: 'automatic', tsconfig: path.join(root, 'urai-tier1/tsconfig.json'),
   define: { 'process.env.NODE_ENV': '"production"', 'process.env': '{}' },
 })
@@ -68,7 +70,7 @@ try {
   await page.setViewportSize({ width: 1440, height: 900 })
   await page.screenshot({ path: path.join(output, 'ready-desktop.png') })
   assert.deepEqual(errors, [])
-  const receipt = { checks, scope: 'Actual production memory component; existing project demo SVG; no full-route, stellar, archival, device, or AAA acceptance', errors }
+  const receipt = { exactHead: process.env.URAI_EXACT_HEAD || null, checks, scope: 'Actual production memory component; existing project demo SVG; no full-route, stellar, archival, device, or AAA acceptance', errors }
   await fs.writeFile(path.join(output, 'receipt.json'), JSON.stringify(receipt, null, 2))
   console.log(JSON.stringify(receipt))
 } finally { await browser?.close(); server.closeAllConnections(); await new Promise(resolve => server.close(resolve)) }
