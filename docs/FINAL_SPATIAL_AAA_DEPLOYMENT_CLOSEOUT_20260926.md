@@ -71,12 +71,11 @@ Changed-file inspection confirms:
 Current exact-head Actions snapshot:
 
 - 30 workflow runs observed on the refreshed current head.
-- 29 queued.
-- 1 pending.
+- 30 queued.
 - 0 completed conclusions in the observed current-head page.
 - No current-head green release certification is established while the required workflows remain queued/pending.
 
-Older inline review threads are unresolved but outdated. They identify prior candidate/canonical receipt mixing and active-fallback geometry concerns; later comments report repairs. They remain historical review context, not current-head approval.
+The three older inline review threads were outdated and are now resolved. They identified prior candidate/canonical receipt mixing and active-fallback geometry concerns; later comments reported repairs. Resolution is not current-head approval.
 
 ## 5. PR #1325 preservation and inspection
 
@@ -87,8 +86,8 @@ PR #1325 remains untouched by this closeout.
 - No files from its pixel-owned lane were modified.
 - The Home active-owner marker remains the known provider-handoff blocker:
   `data-home-visible-world="final-physical-sanctuary-memory-rooms"`.
-- Current observed workflow snapshot: 18 runs; 4 queued, 5 in progress, 7 successful completions, and 2 failed completions.
-- Failed run logs were read-only inspected. The failures remain lane-owned and were not repaired here.
+- Current observed workflow snapshot: 18 runs; 3 queued, 4 in progress, 8 successful completions, and 3 failed completions.
+- Failed run logs were read-only inspected. The newly failed Home State Proof attempted Orb-open lifecycle reconciliation, but the observed failure did not match the expected bounded click-timeout signature; the failure remains lane-owned and was not repaired here.
 
 The pixel agent's exact handoff remains:
 
@@ -114,7 +113,7 @@ These results are recorded evidence for their cited heads, not automatic certifi
 
 ### Current-head test boundary
 
-The current #1343 head has queued/pending remote workflows and therefore does not yet have a complete green exact-head test receipt.
+The current #1343 head has queued remote workflows and therefore does not yet have a complete green exact-head test receipt.
 
 The current provider/asset verification receipt reports:
 
