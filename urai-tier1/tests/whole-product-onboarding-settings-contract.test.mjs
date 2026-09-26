@@ -18,7 +18,9 @@ const reducedMotionHook = read('src/spatial/hooks/useReducedMotion.ts')
 const accessibilityCss = read('src/app/accessibility.css')
 
 test('first-run setup is resumable, skippable and truthfully scoped to existing authorities', () => {
-  assert.match(onboardingModel, /ONBOARDING_SETUP_STEPS = \['welcome', 'privacy', 'comfort', 'orb'\]/)
+  assert.match(onboardingModel, /ONBOARDING_SETUP_STEPS = \['welcome', 'privacy', 'history', 'comfort', 'orb'\]/)
+  assert.match(onboarding, /YOUR HISTORY, YOUR CHOICE/)
+  assert.match(onboarding, /Signing in does not import anything\./)
   assert.match(onboarding, /ONBOARDING_SETUP_STEP_KEY/)
   assert.match(onboarding, /Skip setup/)
   assert.match(onboarding, /Consent Sanctuary/)
