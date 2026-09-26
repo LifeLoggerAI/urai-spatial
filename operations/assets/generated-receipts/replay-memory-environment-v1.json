@@ -2,47 +2,15 @@
   "schemaVersion": 1,
   "id": "replay-memory-environment-v1",
   "fixedPath": "urai-tier1/public/assets/urai/generated/models/replay-memory-environment-v1.glb",
-  "targetRoutes": [
-    "/replay"
-  ],
   "bytes": 435544,
   "sha256": "fbc58c40c3b7ee18025e605aee72dfd97988747d169b923f690b363a409362b3",
-  "measured": {
-    "triangleCount": 10410,
-    "boundsMeters": {
-      "min": [
-        -7,
-        -2.91,
-        -9.5
-      ],
-      "max": [
-        7,
-        3.2,
-        6.5
-      ],
-      "size": [
-        20,
-        7.934,
-        26.026
-      ]
-    },
-    "repairedEulerRotations": 1
-  },
-  "compressionStatus": "uncompressed-glb-candidate",
+  "measured": {"triangleCount":10410,"nodeCount":131,"materialCount":8,"animationClips":["Replay_Idle","Replay_Enter","Replay_Play","Replay_Exit"]},
+  "compressionStatus": "meshopt",
   "requiredCompression": "draco-or-meshopt",
   "fallback": "procedural-replay-theater",
   "source": "URAI deterministic candidate forge; replaceable by reviewed provider asset",
   "license": "URAI Labs internal production asset",
-  "generatedBy": "scripts/forge-launch-critical-assets.mjs + scripts/normalize-launch-critical-assets.mjs",
-  "generatedAt": "2026-09-26T03:21:33.014Z",
-  "releaseState": "candidate-not-production-ready",
-  "absolutePath": "urai-tier1/public/assets/urai/generated/models/replay-memory-environment-v1.glb",
-  "candidatePath": "urai-tier1/public/assets/urai/generated/candidates/parallel-aaa-20260926/models/replay-memory-environment-v1.candidate.glb",
-  "candidateBytes": 22336,
-  "candidateSha256": "51eca3cbf7f28d438fb7e09c868f8247d02eb65bfecb015828ce9edb806fe9f0",
-  "absoluteCandidatePath": "urai-tier1/public/assets/urai/generated/candidates/parallel-aaa-20260926/models/replay-memory-environment-v1.candidate.glb",
-  "canonicalBytes": 435544,
-  "canonicalSha256": "fbc58c40c3b7ee18025e605aee72dfd97988747d169b923f690b363a409362b3",
-  "canonicalPath": "urai-tier1/public/assets/urai/generated/models/replay-memory-environment-v1.glb",
-  "triangleCount": 10410
+  "generatedBy": "URAI Labs Final GLB Forge 1.0; reconciled to urai-final-glb-production-pack-v1",
+  "generatedAt": "2026-08-06T03:30:00Z",
+  "releaseState": "candidate-not-production-ready"
 }
