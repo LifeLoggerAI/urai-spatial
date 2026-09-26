@@ -137,11 +137,12 @@ function isSoftwareWebGLRenderer(gl: THREE.WebGLRenderer) {
   return /swiftshader|llvmpipe|lavapipe|software|microsoft basic render/i.test(String(renderer || ''))
 }
 
-function Cadence({ reducedMotion }: { reducedMotion: boolean }) {
+function Cadence({ reducedMotion, ready }: { reducedMotion: boolean; ready: boolean }) {
   const { gl, invalidate, setFrameloop } = useThree()
   const cadenceRef = useRef<ReturnType<typeof createPostRenderCadence> | null>(null)
   useFrame(() => cadenceRef.current?.beforeRender())
   useEffect(() => {
+    if (!ready) { setFrameloop('never'); return }
     const constrained = reducedMotion || isSoftwareWebGLRenderer(gl)
     if (!constrained) { setFrameloop('always'); return }
     setFrameloop('demand')
@@ -159,7 +160,7 @@ function Cadence({ reducedMotion }: { reducedMotion: boolean }) {
       stopAfterRender()
       cadence.dispose()
     }
-  }, [gl, invalidate, reducedMotion, setFrameloop])
+  }, [gl, invalidate, reducedMotion, ready, setFrameloop])
   return null
 }
 
@@ -677,7 +678,18 @@ function HomePassportSemanticBridge({
 }
 
 function SceneAssetReadySignal({ onReady }: { onReady: () => void }) {
-  useEffect(() => onReady(), [onReady])
+  const { gl, scene, camera } = useThree()
+  useEffect(() => {
+    let cancelled = false
+    // Avoid synchronously waiting for shader links in the first visible draw.
+    // Keep native Home navigation responsive while the GPU prepares the scene.
+    gl.compileAsync(scene, camera).then(() => {
+      if (!cancelled) onReady()
+    }).catch((error) => {
+      if (!cancelled) console.error('Home shader preparation failed', error)
+    })
+    return () => { cancelled = true }
+  }, [gl, scene, camera, onReady])
   return null
 }
 
@@ -687,6 +699,7 @@ function Scene({
   transition,
   transitionTarget,
   reducedMotion,
+  renderReady,
   personalWeatherState,
   orbState,
   homeStableState,
@@ -711,6 +724,7 @@ function Scene({
   transition: Transition
   transitionTarget: MutableRefObject<TransitionTarget | null>
   reducedMotion: boolean
+  renderReady: boolean
   personalWeatherState: HomeEmotionalWeatherName
   orbState: OrbState
   homeStableState: HomeStableState
@@ -737,7 +751,7 @@ function Scene({
     onGround(event.point.clone())
   }, [homeStableState, homeTransition, onGround, transition])
   return <>
-    <Cadence reducedMotion={reducedMotion} />
+    <Cadence reducedMotion={reducedMotion} ready={renderReady} />
     <color attach="background" args={['#10272a']} />
     <fogExp2 attach="fog" args={['#294946', .011]} />
     <HomeAtmosphericSky reducedMotion={reducedMotion} active={transition === 'life-map'} weatherState={personalWeatherState} onLifeMap={onLifeMap} />
@@ -993,13 +1007,13 @@ export function HomeWorldProductionV223({ onOrbOpen = requestUraiWorldOrbOpen, w
       className={styles.canvas}
       dpr={1}
       shadows={quality.shadows}
-      frameloop={reducedMotion || softwareRenderer ? 'demand' : 'always'}
+      frameloop={!sceneReady ? 'never' : reducedMotion || softwareRenderer ? 'demand' : 'always'}
       camera={{ position: [...DEFAULT_HOME_FIRST_PERSON_CAMERA.position], fov: 58, near: .1, far: 125 }}
       gl={{ antialias: quality.antialias, alpha: false, powerPreference: 'high-performance' }}
       onCreated={({ gl, setFrameloop }) => {
         const software = isSoftwareWebGLRenderer(gl)
         setSoftwareRenderer(software)
-        if (reducedMotion || software) setFrameloop('demand')
+        setFrameloop('never')
         gl.outputColorSpace = THREE.SRGBColorSpace
         gl.toneMapping = THREE.ACESFilmicToneMapping
         gl.toneMappingExposure = 1.68
@@ -1014,6 +1028,7 @@ export function HomeWorldProductionV223({ onOrbOpen = requestUraiWorldOrbOpen, w
         transition={transition}
         transitionTarget={transitionTarget}
         reducedMotion={reducedMotion}
+        renderReady={sceneReady}
         personalWeatherState={personalWeatherState}
         orbState={orbState}
         homeStableState={homeState.stableState}

@@ -125,9 +125,11 @@ test('unmounting while a requested frame is pending cannot restart the cadence',
 test('Home wires the after-render lifecycle and retains software demand mode on Canvas updates', () => {
   const source = fs.readFileSync(new URL('../src/spatial/layout/HomeWorldProductionV223.tsx', import.meta.url), 'utf8')
   assert.match(source, /useFrame\(\(\) => cadenceRef\.current\?\.beforeRender\(\)\)/)
+  assert.match(source, /gl\.compileAsync\(scene, camera\)\.then/)
+  assert.match(source, /if \(!cancelled\) onReady\(\)/)
   assert.match(source, /addAfterEffect\(cadence\.afterRender\)/)
   assert.match(source, /stopAfterRender\(\)/)
-  assert.match(source, /frameloop=\{reducedMotion \|\| softwareRenderer \? 'demand' : 'always'\}/)
-  assert.match(source, /if \(reducedMotion \|\| software\) setFrameloop\('demand'\)/)
+  assert.match(source, /frameloop=\{!sceneReady \? 'never' : reducedMotion \|\| softwareRenderer \? 'demand' : 'always'\}/)
+  assert.match(source, /if \(!ready\) \{ setFrameloop\('never'\); return \}/)
   assert.doesNotMatch(source, /setTimeout\(renderNext|const bootstrap = \[/)
 })

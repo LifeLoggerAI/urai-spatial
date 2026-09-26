@@ -12,7 +12,7 @@ test('Home renderer honors the same governed quality profile as its scene effect
   assert.match(canvas, /antialias: quality\.antialias/)
   // Preserve camera framing, material/light setup, and demand-render behavior.
   assert.match(canvas, /dpr=\{1\}/)
-  assert.match(canvas, /frameloop=\{reducedMotion \|\| softwareRenderer \? 'demand' : 'always'\}/)
+  assert.match(canvas, /frameloop=\{!sceneReady \? 'never' : reducedMotion \|\| softwareRenderer \? 'demand' : 'always'\}/)
   assert.match(canvas, /fov: 58, near: \.1, far: 125/)
   assert.match(canvas, /gl\.shadowMap\.type = THREE\.PCFSoftShadowMap/)
 })
