@@ -94,3 +94,34 @@ The product-led story does not require a face. Approved factual framing may iden
 ## Localization
 
 All masters must support at least 35 percent text expansion. RTL layouts mirror reading order but do not mirror the UrAi or RuAi marks. Machine-prepared translations are labeled `native review required` until approved.
+
+## 2026 provider submission gates
+
+Verified against current Apple App Store Connect Help and Google Play Console Help on 2026-09-25. These are provider gates, not source-only claims.
+
+### Google Play
+
+- Store app icon: 512 x 512 px, 32-bit PNG with alpha, maximum 1024 KB.
+- Feature graphic: 1024 x 500 px, JPEG or 24-bit PNG with no alpha.
+- Store listing assets must accurately reflect functionality present in the submitted build.
+- The Play Data safety form and privacy policy must accurately cover the app and integrated SDK/provider behavior for every published testing/production app where required.
+- If the app enables account creation, the release package must expose the applicable account/data deletion request path and the Play Data safety deletion answers must match runtime behavior.
+- Gated/private functionality requires valid review access instructions or credentials in Play Console.
+- Android developer/app registration and verification requirements effective 2026-09-30 are a release gate; source code cannot satisfy that account-holder step.
+- The Health apps declaration is required in Play Console; wearables/health capabilities must be declared according to the actual submitted build, not roadmap intent.
+- Target API, sensitive-permission and contacts/location declarations must be re-verified immediately before submission.
+
+### Apple App Store
+
+- App icon submission follows the native app build/asset catalog or current Apple icon tooling; a source 1024 px master remains a design source, not evidence of an accepted App Store build.
+- App Store screenshots must use accepted App Store Connect screenshot dimensions/formats and show the real submitted experience. Apple currently accepts 1 to 10 screenshots per required device family; uploaded screenshots cannot contain alpha/transparency.
+- If the app runs on iPad, the required iPad screenshot family must be supplied.
+- App Privacy information and the iOS privacy policy URL must be completed accurately before submission/update.
+- Privacy answers must describe actual collection, linkage, tracking and provider behavior across the submitted app platforms.
+- Signing, agreements, App Store Connect roles, build upload, export/privacy declarations and App Review remain account-holder/provider gates.
+
+### Cross-store truth rule
+
+No store copy or screenshot may advertise a provider, wearable, health, social import, phone agent, XR device, locale, privacy/security property or other feature that is not enabled and verified in the exact submitted build.
+
+Store-ready means all of: admitted brand master, correct derivatives, certified runtime captures, localized copy for each claimed locale, accessibility review, privacy/data-safety mapping, support/contact/account-deletion paths, package/signing identity, provider review metadata and a retained submission receipt.

@@ -46,13 +46,13 @@ export interface UraiBrandProduct {
 export const URAI_BRAND_REGISTRY: Record<UraiProductKey, UraiBrandProduct> = {
   uraiCore: {
     key: "uraiCore",
-    name: "URAI",
+    name: "UrAi",
     legalName: "URAI",
     category: "core",
     accent: "#4F7CFF",
     symbolModifier: "clean-pulse",
     tagline: "The intelligence layer for lived experience.",
-    description: "The core URAI platform and identity root.",
+    description: "The core UrAi platform and identity root.",
     route: "/",
   },
   uraiLabs: {

@@ -1,8 +1,8 @@
 import FinalHomeThreshold from '../FinalHomeThreshold'
 
 export const metadata = {
-  title: 'URAI Home',
-  description: 'Open the guardian-approved Genesis Home owner before entering the spatial runtime.',
+  title: 'UrAi Home',
+  description: 'Open the canonical UrAi Home threshold before entering the private spatial world.',
 }
 
 export default function HomePage() {

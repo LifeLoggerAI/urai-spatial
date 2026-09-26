@@ -2,7 +2,7 @@ export const ONBOARDING_COMPLETION_KEY = 'urai:onboarding:v2:complete'
 export const ONBOARDING_SETUP_COMPLETE_KEY = 'urai:onboarding:v3:setup-complete'
 export const ONBOARDING_SETUP_STEP_KEY = 'urai:onboarding:v3:setup-step'
 
-export const ONBOARDING_SETUP_STEPS = ['welcome', 'privacy', 'comfort', 'orb'] as const
+export const ONBOARDING_SETUP_STEPS = ['welcome', 'privacy', 'history', 'comfort', 'orb'] as const
 export type OnboardingSetupStep = (typeof ONBOARDING_SETUP_STEPS)[number]
 
 export function isOnboardingSetupStep(value: unknown): value is OnboardingSetupStep {
