@@ -23,6 +23,7 @@ const tests = [
   'tests/captured-reality-private-route-contract.test.mjs',
   'tests/captured-reality-replay-entry-contract.test.mjs',
   'tests/captured-reality-runtime-budget-contract.test.mjs',
+  'tests/captured-reality-splat-integrity.test.mjs',
   'tests/captured-reality-replay-binding-contract.test.mjs',
   'tests/captured-reality-receipt-contract.test.mjs',
   'tests/continuous-spatial-restoration-contract.test.mjs',
