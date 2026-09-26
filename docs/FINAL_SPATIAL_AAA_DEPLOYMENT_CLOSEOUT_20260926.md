@@ -10,7 +10,7 @@
 | --- | --- |
 | Repository | [LifeLoggerAI/urai-spatial](https://github.com/LifeLoggerAI/urai-spatial) |
 | main | `4b3c7bd982865324510eb9581d9f324bd4ad6e93` |
-| PR #1325 | Open, draft, mergeable; head `2f7af37e0e234629d9d8261d19f778205c41f7e5`; pixel/scene-owned |
+| PR #1325 | Open, draft, mergeable; head `33bc2209f37c3628592e772b631e497d713aa1dc`; pixel/scene-owned; advanced by the pixel agent after the prior closeout snapshot |
 | PR #1343 | Open, draft, mergeable; head `113950712d06913aabb2842ebaa52127056a2c5f`; isolated AAA candidate lane |
 | Documentation branch | `docs/final-spatial-aaa-deployment-closeout-20260926`, based on current main |
 | Production mutation | Not performed by this closeout |
@@ -82,12 +82,12 @@ The three older inline review threads were outdated and are now resolved. They i
 PR #1325 remains untouched by this closeout.
 
 - State: open draft, mergeable.
-- Head: `2f7af37e0e234629d9d8261d19f778205c41f7e5`.
+- Head: `33bc2209f37c3628592e772b631e497d713aa1dc`.
 - No files from its pixel-owned lane were modified.
 - The Home active-owner marker remains the known provider-handoff blocker:
   `data-home-visible-world="final-physical-sanctuary-memory-rooms"`.
-- Current observed workflow snapshot: 18 runs; 2 queued, 1 in progress, 9 successful completions, 5 failed completions, and 1 cancelled completion.
-- Failed run logs were read-only inspected. In addition to the Home State Proof Orb-open lifecycle-signature mismatch, Continuous Spatial Visual Proof has a desktop browser-proof failure after artifact upload, and Accessibility Performance Evidence has an Orb Escape focus-return assertion failure plus a mobile viewport-containment timeout. These failures remain lane-owned and were not repaired here.
+- Fresh exact-head workflow snapshot for `33bc2209f37c3628592e772b631e497d713aa1dc`: 18 runs; 15 queued, 3 pending, 0 completed conclusions. Earlier failures belong to the superseded pixel head and are not transferred to this new head.
+- Historical failed-run logs from the superseded pixel head `2f7af37e0e234629d9d8261d19f778205c41f7e5` were read-only inspected. They included the Home State Proof Orb-open lifecycle-signature mismatch, a Continuous Spatial Visual Proof desktop browser-proof failure after artifact upload, and Accessibility Performance Evidence failures. Those failures remain lane-owned; the new head `33bc2209f37c3628592e772b631e497d713aa1dc` has fresh workflows queued/pending.
 
 The pixel agent's exact handoff remains:
 
