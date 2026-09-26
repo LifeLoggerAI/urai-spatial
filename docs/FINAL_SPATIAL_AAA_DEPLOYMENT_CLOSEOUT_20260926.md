@@ -11,7 +11,7 @@
 | Repository | [LifeLoggerAI/urai-spatial](https://github.com/LifeLoggerAI/urai-spatial) |
 | main | `4b3c7bd982865324510eb9581d9f324bd4ad6e93` |
 | PR #1325 | Open, draft, mergeable; head `33bc2209f37c3628592e772b631e497d713aa1dc`; pixel/scene-owned; advanced by the pixel agent after the prior closeout snapshot |
-| PR #1343 | Open, draft, mergeable; head `113950712d06913aabb2842ebaa52127056a2c5f`; isolated AAA candidate lane |
+| PR #1343 | Open, draft, mergeable; head `02069d06bb14203e25502de4af0aa197abda9eed`; isolated AAA candidate lane |
 | Documentation branch | `docs/final-spatial-aaa-deployment-closeout-20260926`, based on current main |
 | Production mutation | Not performed by this closeout |
 
@@ -57,7 +57,7 @@ They are not active replacements. No active `urai-tier1/public/assets/urai/spati
 
 ## 4. PR #1343 status
 
-Current head: `113950712d06913aabb2842ebaa52127056a2c5f`.
+Current head: `02069d06bb14203e25502de4af0aa197abda9eed`.
 
 Changed-file inspection confirms:
 
@@ -70,9 +70,10 @@ Changed-file inspection confirms:
 
 Current exact-head Actions snapshot:
 
-- 30 workflow runs observed on the refreshed current head.
-- 30 queued.
-- 0 completed conclusions in the observed current-head page.
+- 33 workflow runs observed on the repaired current head.
+- 33 queued at the latest readback.
+- 0 completed conclusions on the repaired current-head page.
+- The asset-lane repair commit added candidate-only rehearsal decisions, a deterministic forge dependency, and deferred/not-live copy wording; no candidate was promoted.
 - No current-head green release certification is established while the required workflows remain queued/pending.
 
 The three older inline review threads were outdated and are now resolved. They identified prior candidate/canonical receipt mixing and active-fallback geometry concerns; later comments reported repairs. Resolution is not current-head approval.
@@ -159,10 +160,10 @@ No safe merge-and-deploy action was taken because both relevant PRs remain draft
 - After ingestion, the required sequence is provenance validation, reconstruction/splat training, cleanup, archival output, runtime splat packaging, collision/LOD variants, and device/performance proof.
 - No private filenames, private IDs, family/source details, or secrets are published here.
 
-## 9. Provider / Asset Factory / Model Forge
+## 9. Provider / Candidate Forge / Model Forge (live provider integration not claimed)
 
 - PR #1343 is the isolated candidate handoff, not provider-backed AAA+++ acceptance.
-- Asset Factory candidate outputs are retained under the generated candidate root and are explicitly prevented from becoming production authority.
+- Candidate-forge outputs are retained under the generated candidate root and are explicitly prevented from becoming production authority; live provider integration is not claimed.
 - The canonical Spatial manifest points active model entries to existing fallback assets.
 - Model Forge/provider outputs remain candidate evidence until provider identity, licensing, compression, bounds, visual quality, route ownership, and exact-head acceptance are recorded.
 - No provider LIVE activation or production spend is claimed by this closeout.
