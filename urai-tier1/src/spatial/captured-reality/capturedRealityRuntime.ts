@@ -1,5 +1,20 @@
 export type CapturedRealityDeviceTier = 'mobile' | 'desktop' | 'xr'
 
+/** Capability probes must not retain a GPU context alongside the real scene. */
+export function capturedRealityWebGL2Available(
+  createCanvas: () => Pick<HTMLCanvasElement, 'getContext'> = () => document.createElement('canvas'),
+) {
+  let context: WebGL2RenderingContext | null = null
+  try {
+    context = createCanvas().getContext('webgl2') as WebGL2RenderingContext | null
+    return Boolean(context)
+  } catch {
+    return false
+  } finally {
+    context?.getExtension('WEBGL_lose_context')?.loseContext()
+  }
+}
+
 export type CapturedRealityQualityProfile = {
   tier: CapturedRealityDeviceTier
   maxRuntimeBytes: number

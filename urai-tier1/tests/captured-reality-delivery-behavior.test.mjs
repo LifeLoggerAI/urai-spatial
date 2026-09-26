@@ -1,7 +1,31 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import { capturedRealityContentLengthAvailable, createCapturedRealityRequestAuthority } from '../src/spatial/captured-reality/capturedRealityDelivery.ts'
-import { capturedRealityLaunchCertification, validateCapturedRealityPerformanceReceipt } from '../src/spatial/captured-reality/capturedRealityRuntime.ts'
+import { capturedRealityLaunchCertification, validateCapturedRealityPerformanceReceipt, capturedRealityWebGL2Available } from '../src/spatial/captured-reality/capturedRealityRuntime.ts'
+
+test('repeated WebGL capability probes release their temporary GPU contexts', () => {
+  let active = 0
+  let released = 0
+  const canvas = () => ({ getContext(kind) {
+    assert.equal(kind, 'webgl2')
+    active += 1
+    return { getExtension(name) {
+      assert.equal(name, 'WEBGL_lose_context')
+      return { loseContext() { active -= 1; released += 1 } }
+    } }
+  } })
+  for (let i = 0; i < 32; i += 1) {
+    assert.equal(capturedRealityWebGL2Available(canvas), true)
+    assert.equal(active, 0)
+  }
+  assert.equal(released, 32)
+})
+
+test('WebGL capability probing handles unsupported and denied contexts', () => {
+  assert.equal(capturedRealityWebGL2Available(() => ({ getContext: () => null })), false)
+  assert.equal(capturedRealityWebGL2Available(() => { throw new Error('denied') }), false)
+  assert.equal(capturedRealityWebGL2Available(() => ({ getContext: () => ({ getExtension: () => null }) })), true)
+})
 
 test('GET-signed delivery probes use the authorized method and cancel media consumption after headers', async () => {
   let cancelled = false
