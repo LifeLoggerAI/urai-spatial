@@ -1,7 +1,7 @@
 {
   "schemaVersion": "urai.spatial.asset-forge.v1",
-  "pipelineVersion": "v1-procedural-source",
-  "status": "generated-by-script",
+  "pipelineVersion": "v1-canonical-reference-plus-generated-support",
+  "status": "canonical-fallback-reference-manifest",
   "publicRoot": "/assets/urai/spatial",
   "places": {
     "entry-chamber": {
@@ -55,8 +55,8 @@
       "route": "/",
       "kind": "model",
       "file": "/assets/urai/spatial/entry-chamber/models/entry-chamber-shell-v1.gltf",
-      "generator": "chamber",
-      "status": "procedural-source"
+      "generator": "existing-spatial-canonical-asset",
+      "status": "canonical-fallback-reference"
     },
     {
       "id": "entry-floor-ring-v1",
@@ -64,8 +64,8 @@
       "route": "/",
       "kind": "model",
       "file": "/assets/urai/spatial/entry-chamber/models/entry-floor-ring-v1.gltf",
-      "generator": "ring",
-      "status": "procedural-source"
+      "generator": "existing-spatial-canonical-asset",
+      "status": "canonical-fallback-reference"
     },
     {
       "id": "central-orb-v1",
@@ -73,8 +73,8 @@
       "route": "/",
       "kind": "model",
       "file": "/assets/urai/spatial/entry-chamber/models/central-orb-v1.gltf",
-      "generator": "orb",
-      "status": "procedural-source"
+      "generator": "existing-spatial-canonical-asset",
+      "status": "canonical-fallback-reference"
     },
     {
       "id": "universal-portal-ring-v1",
@@ -82,8 +82,8 @@
       "route": "all",
       "kind": "model",
       "file": "/assets/urai/spatial/shared/models/universal-portal-ring-v1.gltf",
-      "generator": "portal",
-      "status": "procedural-source"
+      "generator": "existing-spatial-canonical-asset",
+      "status": "canonical-fallback-reference"
     },
     {
       "id": "ground-descent-hatch-v1",
@@ -91,8 +91,8 @@
       "route": "/ground",
       "kind": "model",
       "file": "/assets/urai/spatial/entry-chamber/models/ground-descent-hatch-v1.gltf",
-      "generator": "hatch",
-      "status": "procedural-source"
+      "generator": "existing-spatial-canonical-asset",
+      "status": "canonical-fallback-reference"
     },
     {
       "id": "ground-room-shell-v1",
@@ -100,8 +100,8 @@
       "route": "/ground",
       "kind": "model",
       "file": "/assets/urai/spatial/ground-room/models/ground-room-shell-v1.gltf",
-      "generator": "chamber",
-      "status": "procedural-source"
+      "generator": "existing-spatial-canonical-asset",
+      "status": "canonical-fallback-reference"
     },
     {
       "id": "ground-terminal-v1",
@@ -109,8 +109,8 @@
       "route": "/ground",
       "kind": "model",
       "file": "/assets/urai/spatial/ground-room/models/ground-terminal-v1.gltf",
-      "generator": "panel",
-      "status": "procedural-source"
+      "generator": "existing-spatial-canonical-asset",
+      "status": "canonical-fallback-reference"
     },
     {
       "id": "agent-source-station-v1",
@@ -118,8 +118,8 @@
       "route": "/ground",
       "kind": "model",
       "file": "/assets/urai/spatial/ground-room/models/agent-source-station-v1.gltf",
-      "generator": "station",
-      "status": "procedural-source"
+      "generator": "existing-spatial-canonical-asset",
+      "status": "canonical-fallback-reference"
     },
     {
       "id": "life-map-sky-dome-v1",
@@ -127,8 +127,8 @@
       "route": "/life-map",
       "kind": "model",
       "file": "/assets/urai/spatial/life-map/models/life-map-sky-dome-v1.gltf",
-      "generator": "sky",
-      "status": "procedural-source"
+      "generator": "existing-spatial-canonical-asset",
+      "status": "canonical-fallback-reference"
     },
     {
       "id": "star-memory-node-v1",
@@ -136,8 +136,8 @@
       "route": "/life-map",
       "kind": "model",
       "file": "/assets/urai/spatial/life-map/models/star-memory-node-v1.gltf",
-      "generator": "star",
-      "status": "procedural-source"
+      "generator": "existing-spatial-canonical-asset",
+      "status": "canonical-fallback-reference"
     },
     {
       "id": "focus-star-tunnel-v1",
@@ -145,8 +145,8 @@
       "route": "/focus",
       "kind": "model",
       "file": "/assets/urai/spatial/focus-star/models/focus-star-tunnel-v1.gltf",
-      "generator": "tunnel",
-      "status": "procedural-source"
+      "generator": "existing-spatial-canonical-asset",
+      "status": "canonical-fallback-reference"
     },
     {
       "id": "replay-film-portal-v1",
@@ -154,8 +154,8 @@
       "route": "/replay",
       "kind": "model",
       "file": "/assets/urai/spatial/replay-portal/models/replay-film-portal-v1.gltf",
-      "generator": "film",
-      "status": "procedural-source"
+      "generator": "existing-spatial-canonical-asset",
+      "status": "canonical-fallback-reference"
     },
     {
       "id": "passport-identity-plinth-v1",
@@ -163,8 +163,8 @@
       "route": "/passport",
       "kind": "model",
       "file": "/assets/urai/spatial/passport-room/models/passport-identity-plinth-v1.gltf",
-      "generator": "plinth",
-      "status": "procedural-source"
+      "generator": "existing-spatial-canonical-asset",
+      "status": "canonical-fallback-reference"
     },
     {
       "id": "status-control-board-v1",
@@ -172,8 +172,8 @@
       "route": "/status",
       "kind": "model",
       "file": "/assets/urai/spatial/status-room/models/status-control-board-v1.gltf",
-      "generator": "board",
-      "status": "procedural-source"
+      "generator": "existing-spatial-canonical-asset",
+      "status": "canonical-fallback-reference"
     },
     {
       "id": "hologram-panel-material-v1",
@@ -229,5 +229,6 @@
       "generator": "svg",
       "status": "procedural-source"
     }
-  ]
+  ],
+  "note": "Model entries reference existing canonical Spatial fallback assets restored after PR review; generated support assets remain limited to textures, particles, navmesh, and isolated candidate GLBs."
 }
