@@ -19,7 +19,7 @@ on:
       - 'urai-tier1/src/spatial/assets/HomeAtmosphericSky.tsx'
       - 'urai-tier1/tests/portal-orb-proof-integrity-contract.test.mjs'
   pull_request:
-    branches: [main]
+    branches: [main, converge/final-canon-spatial-20260922]
     paths:
       - '.github/workflows/portal-orb-exact-proof.yml'
       - '.github/workflows/launch-verification.yml'
