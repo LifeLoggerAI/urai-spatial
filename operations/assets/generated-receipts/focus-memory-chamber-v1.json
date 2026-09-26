@@ -2,24 +2,47 @@
   "schemaVersion": 1,
   "id": "focus-memory-chamber-v1",
   "fixedPath": "urai-tier1/public/assets/urai/generated/models/focus-memory-chamber-v1.glb",
+  "targetRoutes": [
+    "/focus"
+  ],
   "bytes": 622516,
   "sha256": "d0e8a2105927f5fc610f68edc907cbd100b8570253fab3ba942171136d54b79d",
   "measured": {
     "triangleCount": 17334,
-    "nodeCount": 35,
-    "materialCount": 8,
-    "animationClips": [
-      "Focus_Arrival",
-      "Focus_Breathing",
-      "Focus_Exit"
-    ]
+    "boundsMeters": {
+      "min": [
+        -2.59,
+        -2.59,
+        -7.2
+      ],
+      "max": [
+        2.59,
+        2.59,
+        0.09
+      ],
+      "size": [
+        18,
+        6.945,
+        18
+      ]
+    },
+    "repairedEulerRotations": 4
   },
-  "compressionStatus": "meshopt",
+  "compressionStatus": "uncompressed-glb-candidate",
   "requiredCompression": "draco-or-meshopt",
   "fallback": "procedural-focus-chamber",
   "source": "URAI deterministic candidate forge; replaceable by reviewed provider asset",
   "license": "URAI Labs internal production asset",
-  "generatedBy": "URAI Labs Final GLB Forge 1.0; reconciled to urai-final-glb-production-pack-v1; exact accessor bounds metadata repaired without geometry or animation changes",
-  "generatedAt": "2026-08-08T22:17:46.473Z",
-  "releaseState": "candidate-not-production-ready"
+  "generatedBy": "scripts/forge-launch-critical-assets.mjs + scripts/normalize-launch-critical-assets.mjs",
+  "generatedAt": "2026-09-26T03:21:33.013Z",
+  "releaseState": "candidate-not-production-ready",
+  "absolutePath": "urai-tier1/public/assets/urai/generated/models/focus-memory-chamber-v1.glb",
+  "candidatePath": "urai-tier1/public/assets/urai/generated/candidates/parallel-aaa-20260926/models/focus-memory-chamber-v1.candidate.glb",
+  "candidateBytes": 72312,
+  "candidateSha256": "fb88bf90b3757798a0cdbbd158e95c40e8e322524c9da1632be5a0ffef096d90",
+  "absoluteCandidatePath": "urai-tier1/public/assets/urai/generated/candidates/parallel-aaa-20260926/models/focus-memory-chamber-v1.candidate.glb",
+  "canonicalBytes": 622516,
+  "canonicalSha256": "d0e8a2105927f5fc610f68edc907cbd100b8570253fab3ba942171136d54b79d",
+  "canonicalPath": "urai-tier1/public/assets/urai/generated/models/focus-memory-chamber-v1.glb",
+  "triangleCount": 17334
 }

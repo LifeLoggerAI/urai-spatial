@@ -1,44 +1,36 @@
 {
   "manifestId": "urai-launch-critical-assets-v1",
-  "generatedAt": "2026-07-26T01:15:31.954Z",
+  "generatedAt": "2026-09-26T03:21:33.214Z",
   "candidateOnly": true,
   "normalized": true,
-  "assetCount": 12,
-  "totalBytes": 2263087,
+  "assetCount": 26,
+  "totalBytes": 27732347,
   "assets": [
     {
       "id": "home-entry-chamber-v1",
       "fixedPath": "urai-tier1/public/assets/urai/generated/models/home-entry-chamber-v1.glb",
-      "bytes": 184160,
-      "sha256": "b7bdced5a721598a9dfe592ee19da04d754d5b8b1d48b23cc44403a89b1ee529",
+      "bytes": 45904,
+      "sha256": "0a3c3c2da53c5fe25958e57954c8337d7a27d9c4f94ae0967de21ae84e3e8883",
       "measured": {
-        "triangleCount": 12934,
+        "triangleCount": 2132,
         "boundsMeters": {
           "min": [
-            -9.345,
-            -1.83,
-            -9.238
+            -6.5,
+            -2.61,
+            -6.5
           ],
           "max": [
-            9.345,
-            5.0844,
-            7.452
+            6.5,
+            6.39,
+            6.5
           ],
           "size": [
-            18.69,
-            6.9144,
-            16.69
+            13,
+            9,
+            13
           ]
         },
-        "repairedEulerRotations": 2,
-        "nodeCount": 160,
-        "materialCount": 13,
-        "animationClips": [
-          "Home_Breathing",
-          "Presence_Idle",
-          "Presence_Privacy",
-          "Presence_Forming"
-        ]
+        "repairedEulerRotations": 2
       }
     },
     {
@@ -152,94 +144,447 @@
     {
       "id": "urai-orb-avatar-v1",
       "fixedPath": "urai-tier1/public/assets/urai/generated/models/urai-orb-avatar-v1.glb",
-      "bytes": 83984,
-      "sha256": "34f48f2bc042458c041d738d2b68d390eab05a61f91b37a8cd30defd0753d18c",
+      "bytes": 55980,
+      "sha256": "83b252f0de613a60fffb15e07cdf4f02ca81b59aac5d5bfccce7ee716287f77d",
       "measured": {
-        "triangleCount": 8776,
+        "triangleCount": 2784,
         "boundsMeters": {
           "min": [
-            -0.765,
-            -0.73,
-            -0.4873
+            -0.745,
+            -0.745,
+            -0.56
           ],
           "max": [
-            0.756,
-            0.73,
-            0.4873
+            0.745,
+            0.745,
+            0.56
           ],
           "size": [
-            1.521,
-            1.46,
-            0.9746
+            1.49,
+            1.49,
+            1.12
           ]
         },
-        "repairedEulerRotations": 2,
-        "nodeCount": 34,
-        "materialCount": 8,
-        "animationClips": [
-          "Orb_Resting",
-          "Orb_Idle",
-          "Orb_Attention",
-          "Orb_Listening",
-          "Orb_Thinking",
-          "Orb_Speaking",
-          "Orb_Guiding",
-          "Orb_Reflecting",
-          "Orb_Calming",
-          "Orb_Privacy",
-          "Orb_Degraded",
-          "Orb_Transition"
-        ]
+        "repairedEulerRotations": 2
       }
     },
     {
       "id": "portal-ring-master-v1",
       "fixedPath": "urai-tier1/public/assets/urai/generated/models/portal-ring-master-v1.glb",
-      "bytes": 73164,
-      "sha256": "6e29acaaab0eb048ddd2e4690bf5949ef58865061574ca961bdec6b6312d80f5",
+      "bytes": 32912,
+      "sha256": "578bcc59ac90d7df5193fc67cf94efbd4b663a2035a1cd807d494a294c3af00f",
       "measured": {
-        "triangleCount": 7576,
+        "triangleCount": 1560,
         "boundsMeters": {
           "min": [
-            -1.9753,
-            -2.52,
-            -1.02
+            -2.42,
+            -2.56,
+            -0.625
           ],
           "max": [
-            2,
-            2.9579,
-            1.2349
+            2.42,
+            2.42,
+            0.625
           ],
           "size": [
-            3.9753,
-            5.4779,
-            2.2549
+            4.84,
+            4.98,
+            1.25
           ]
         },
-        "repairedEulerRotations": 2,
-        "nodeCount": 53,
-        "materialCount": 8,
-        "animationClips": [
-          "Portal_Closed",
-          "Portal_Available",
-          "Portal_Attention",
-          "Portal_Active",
-          "Portal_Opening",
-          "Portal_Traversal",
-          "Portal_Closing"
+        "repairedEulerRotations": 2
+      }
+    },
+    {
+      "id": "passport-status-room-v1",
+      "fixedPath": "urai-tier1/public/assets/urai/generated/models/passport-status-room-v1.glb",
+      "bytes": 47284,
+      "sha256": "47189faa314c4aa0bea590c70bd18c5e71feed3db41b62818e5d66e08a96e8c3",
+      "measured": {
+        "triangleCount": 2144,
+        "targetBoundsMeters": [
+          14,
+          8,
+          16
         ]
       }
     },
     {
-      "id": "life-map-galaxy-skybox-v1",
-      "fixedPath": "urai-tier1/public/assets/urai/generated/skyboxes/life-map-galaxy-skybox-v1.hdr",
-      "bytes": 1415240,
-      "sha256": "f43eef43074193370e096ad1e2e57657b7083601c18e70b5d0307e75f7f671d9",
+      "id": "home-human-rig-v3",
+      "fixedPath": "urai-tier1/public/assets/urai/generated/human-rig-v3/home-human-rigged-v3.glb",
+      "bytes": 2132712,
+      "sha256": "58b72062d473e4bc0622ddcb711008088af6c544af12e1f86acafecd84fe9baf",
       "measured": {
-        "resolution": [
-          2048,
-          1024
-        ]
+        "triangleCount": 51848,
+        "boundsMeters": {
+          "min": [
+            -0.33632,
+            -0.08736,
+            -0.13441
+          ],
+          "max": [
+            0.33632,
+            1.82,
+            0.20322
+          ],
+          "size": [
+            0.67264,
+            1.90736,
+            0.33763
+          ]
+        },
+        "repairedEulerRotations": 0
+      }
+    },
+    {
+      "id": "council-guide-human-rig-v3",
+      "fixedPath": "urai-tier1/public/assets/urai/generated/human-rig-v3/council-guide-human-rigged-v3.glb",
+      "bytes": 2172556,
+      "sha256": "dff0ecff0230f0144610eaae2a5f79172579543e88acc6fa68923a1c318a6422",
+      "measured": {
+        "triangleCount": 52864,
+        "boundsMeters": {
+          "min": [
+            -0.35448,
+            -0.08832,
+            -0.13322
+          ],
+          "max": [
+            0.35448,
+            1.84,
+            0.2054
+          ],
+          "size": [
+            0.70896,
+            1.92832,
+            0.33862
+          ]
+        },
+        "repairedEulerRotations": 0
+      }
+    },
+    {
+      "id": "council-archivist-human-rig-v3",
+      "fixedPath": "urai-tier1/public/assets/urai/generated/human-rig-v3/council-archivist-human-rigged-v3.glb",
+      "bytes": 2097288,
+      "sha256": "c5c0b6a32caa88ddf29122c5e54ab3d94fdb795563b5200db208867093ba5a71",
+      "measured": {
+        "triangleCount": 50964,
+        "boundsMeters": {
+          "min": [
+            -0.32258,
+            -0.08304,
+            -0.12924
+          ],
+          "max": [
+            0.32258,
+            1.73,
+            0.20126
+          ],
+          "size": [
+            0.64516,
+            1.81304,
+            0.3305
+          ]
+        },
+        "repairedEulerRotations": 0
+      }
+    },
+    {
+      "id": "council-guardian-human-rig-v3",
+      "fixedPath": "urai-tier1/public/assets/urai/generated/human-rig-v3/council-guardian-human-rigged-v3.glb",
+      "bytes": 2240320,
+      "sha256": "6222e038fd5578a140ecb83448bf3693a85debef8474f6177b9631633c75fa7b",
+      "measured": {
+        "triangleCount": 54560,
+        "boundsMeters": {
+          "min": [
+            -0.38731,
+            -0.09216,
+            -0.1492
+          ],
+          "max": [
+            0.38731,
+            1.92,
+            0.21681
+          ],
+          "size": [
+            0.77462,
+            2.01216,
+            0.36601
+          ]
+        },
+        "repairedEulerRotations": 0
+      }
+    },
+    {
+      "id": "council-builder-human-rig-v3",
+      "fixedPath": "urai-tier1/public/assets/urai/generated/human-rig-v3/council-builder-human-rigged-v3.glb",
+      "bytes": 2231640,
+      "sha256": "7300f14fa20b4660ad658764d79756fb3350f4fdeb4033ff5189c8e462a35834",
+      "measured": {
+        "triangleCount": 54316,
+        "boundsMeters": {
+          "min": [
+            -0.37998,
+            -0.09024,
+            -0.14604
+          ],
+          "max": [
+            0.37998,
+            1.88,
+            0.21431
+          ],
+          "size": [
+            0.75995,
+            1.97024,
+            0.36035
+          ]
+        },
+        "repairedEulerRotations": 0
+      }
+    },
+    {
+      "id": "council-mirror-human-rig-v3",
+      "fixedPath": "urai-tier1/public/assets/urai/generated/human-rig-v3/council-mirror-human-rigged-v3.glb",
+      "bytes": 2116092,
+      "sha256": "d2c865fe842113a689a803087903595e83e1e33c749ea18a83deef6c7c8c33e6",
+      "measured": {
+        "triangleCount": 51444,
+        "boundsMeters": {
+          "min": [
+            -0.33357,
+            -0.08448,
+            -0.13279
+          ],
+          "max": [
+            0.33357,
+            1.76,
+            0.20473
+          ],
+          "size": [
+            0.66713,
+            1.84448,
+            0.33752
+          ]
+        },
+        "repairedEulerRotations": 0
+      }
+    },
+    {
+      "id": "council-trickster-human-rig-v3",
+      "fixedPath": "urai-tier1/public/assets/urai/generated/human-rig-v3/council-trickster-human-rigged-v3.glb",
+      "bytes": 2092012,
+      "sha256": "d14abb64fdeef30be0af54332407932a27453f539ae7c1b97344df5d03c4631c",
+      "measured": {
+        "triangleCount": 50840,
+        "boundsMeters": {
+          "min": [
+            -0.32826,
+            -0.0864,
+            -0.12486
+          ],
+          "max": [
+            0.32826,
+            1.8,
+            0.20081
+          ],
+          "size": [
+            0.65651,
+            1.8864,
+            0.32566
+          ]
+        },
+        "repairedEulerRotations": 0
+      }
+    },
+    {
+      "id": "home-human-makehuman-v4",
+      "fixedPath": "urai-tier1/public/assets/urai/generated/human-makehuman-v4/home-human-makehuman-v4.glb",
+      "bytes": 1708652,
+      "sha256": "fa24004b428f2b96e0900b16d581018b7cd28cf54d943e9702284ce703732308",
+      "measured": {
+        "triangleCount": 36972,
+        "boundsMeters": {
+          "min": [
+            -0.52345,
+            0,
+            -0.22945
+          ],
+          "max": [
+            0.52345,
+            1.82,
+            0.22945
+          ],
+          "size": [
+            1.04691,
+            1.82,
+            0.45889
+          ]
+        },
+        "repairedEulerRotations": 0
+      }
+    },
+    {
+      "id": "council-guide-human-makehuman-v4",
+      "fixedPath": "urai-tier1/public/assets/urai/generated/human-makehuman-v4/council-guide-human-makehuman-v4.glb",
+      "bytes": 1708716,
+      "sha256": "a736745d8a8325284aaddf6ed1d3dcb2aeb559ecb0a93a6a1de41c6925cdaf87",
+      "measured": {
+        "triangleCount": 36972,
+        "boundsMeters": {
+          "min": [
+            -0.54001,
+            0,
+            -0.2367
+          ],
+          "max": [
+            0.54001,
+            1.84,
+            0.2367
+          ],
+          "size": [
+            1.08001,
+            1.84,
+            0.4734
+          ]
+        },
+        "repairedEulerRotations": 0
+      }
+    },
+    {
+      "id": "council-archivist-human-makehuman-v4",
+      "fixedPath": "urai-tier1/public/assets/urai/generated/human-makehuman-v4/council-archivist-human-makehuman-v4.glb",
+      "bytes": 1708740,
+      "sha256": "000d27170490c0bb79f193bb8a5d1d3083594a4e63df992ae392a48ad3e16ae6",
+      "measured": {
+        "triangleCount": 36972,
+        "boundsMeters": {
+          "min": [
+            -0.48741,
+            0,
+            -0.21587
+          ],
+          "max": [
+            0.48741,
+            1.73,
+            0.21587
+          ],
+          "size": [
+            0.97483,
+            1.73,
+            0.43175
+          ]
+        },
+        "repairedEulerRotations": 0
+      }
+    },
+    {
+      "id": "council-guardian-human-makehuman-v4",
+      "fixedPath": "urai-tier1/public/assets/urai/generated/human-makehuman-v4/council-guardian-human-makehuman-v4.glb",
+      "bytes": 1708464,
+      "sha256": "6710e79637c06ae046e05fb8ce6f3f0f231a4ab38ee1d58c7917af17f07f05df",
+      "measured": {
+        "triangleCount": 36972,
+        "boundsMeters": {
+          "min": [
+            -0.58602,
+            0,
+            -0.25193
+          ],
+          "max": [
+            0.58602,
+            1.92,
+            0.25193
+          ],
+          "size": [
+            1.17205,
+            1.92,
+            0.50386
+          ]
+        },
+        "repairedEulerRotations": 0
+      }
+    },
+    {
+      "id": "council-builder-human-makehuman-v4",
+      "fixedPath": "urai-tier1/public/assets/urai/generated/human-makehuman-v4/council-builder-human-makehuman-v4.glb",
+      "bytes": 1709204,
+      "sha256": "4ef5ea50998728679ce1f7b4453f6882db79f453a150c677b9f4a7a236c45cf7",
+      "measured": {
+        "triangleCount": 36972,
+        "boundsMeters": {
+          "min": [
+            -0.5683,
+            0,
+            -0.24427
+          ],
+          "max": [
+            0.5683,
+            1.88,
+            0.24427
+          ],
+          "size": [
+            1.1366,
+            1.88,
+            0.48853
+          ]
+        },
+        "repairedEulerRotations": 0
+      }
+    },
+    {
+      "id": "council-mirror-human-makehuman-v4",
+      "fixedPath": "urai-tier1/public/assets/urai/generated/human-makehuman-v4/council-mirror-human-makehuman-v4.glb",
+      "bytes": 1708664,
+      "sha256": "1e35bcc5bc89b8b375628e4eb43953f3bbe63e3a7f7afcbe972b579460620b19",
+      "measured": {
+        "triangleCount": 36972,
+        "boundsMeters": {
+          "min": [
+            -0.50103,
+            0,
+            -0.22188
+          ],
+          "max": [
+            0.50103,
+            1.76,
+            0.22188
+          ],
+          "size": [
+            1.00207,
+            1.76,
+            0.44376
+          ]
+        },
+        "repairedEulerRotations": 0
+      }
+    },
+    {
+      "id": "council-trickster-human-makehuman-v4",
+      "fixedPath": "urai-tier1/public/assets/urai/generated/human-makehuman-v4/council-trickster-human-makehuman-v4.glb",
+      "bytes": 1708668,
+      "sha256": "75cc537d7a58b0aed9953a87eb418feea1f7f58db495d89826b5fa858ca911f8",
+      "measured": {
+        "triangleCount": 36972,
+        "boundsMeters": {
+          "min": [
+            -0.50714,
+            0,
+            -0.22229
+          ],
+          "max": [
+            0.50714,
+            1.8,
+            0.22229
+          ],
+          "size": [
+            1.01427,
+            1.8,
+            0.44459
+          ]
+        },
+        "repairedEulerRotations": 0
       }
     },
     {
@@ -257,10 +602,10 @@
     {
       "id": "global-cinematic-material-pack-v1",
       "fixedPath": "urai-tier1/public/assets/urai/generated/textures/global-cinematic-material-pack-v1.json",
-      "bytes": 673,
-      "sha256": "f50f13f9e581c5253d3c046bbfd8749600864cd2669bd7bef48226c3514a6035",
+      "bytes": 695,
+      "sha256": "4fee457c73871f98fb0f1e29fce4790a3b897cf9b4554c7771cdb226c4759b6f",
       "measured": {
-        "bytes": 673
+        "bytes": 695
       }
     },
     {
@@ -283,8 +628,5 @@
         "channels": 1
       }
     }
-  ],
-  "authoredHomeAssets": true,
-  "authoredSourceReceipt": "operations/assets/sources/home-finalization-authored-source-v2.json",
-  "authoredSourceId": "urai-home-authored-sanctuary-source-v3"
+  ]
 }

@@ -1,0 +1,334 @@
+{
+  "receiptId": "parallel-aaa-asset-second-pass-20260926",
+  "createdAt": "2026-09-26T04:12:00Z",
+  "branch": "agent/parallel-aaa-asset-handoff-20260926",
+  "startsFromCommit": "9ce84dfad9194c597bdac295e0f81623cc281d51",
+  "spatialPixelLanePreserved": {
+    "pullRequest": 1325,
+    "branch": "fix/focus-mounted-realm-proof-20260926",
+    "head": "dac51067676d6eb717a16ac14a8d782f3f9a049a",
+    "touchedPixelOwnedFiles": false
+  },
+  "authoritiesInspected": {
+    "uraiSpatialMain": "4b3c7bd982865324510eb9581d9f324bd4ad6e93",
+    "assetFactoryRepository": "LifeLoggerAI/asset-factory",
+    "studioRepository": "LifeLoggerAI/urai-studio",
+    "stagingRepository": "LifeLoggerAI/urai-staging",
+    "driveFinalAssetLockMaster": "10l8UZ0mi_DrrhZU-fgAfiv2i4F0Vuqd3bvEKriudp1Y"
+  },
+  "truthBoundary": {
+    "contractOnlyIsNotReadyAsset": true,
+    "readyForSpatialIntegrationRequiresConsumableArtifactAndPassingPackageChecks": true,
+    "paidProviderFinalArtClaimed": false,
+    "nativeGaussianSplatClaimed": false,
+    "realCapturedRealityClaimed": false,
+    "canonicalProductionGlbPathsPreserved": true
+  },
+  "execution": {
+    "scriptsRun": [
+      "node scripts/forge-launch-critical-assets.mjs",
+      "node scripts/normalize-launch-critical-assets.mjs",
+      "node scripts/verify-launch-critical-assets.mjs",
+      "node scripts/audit-launch-critical-artifact.mjs",
+      "node scripts/generate-spatial-asset-forge.mjs",
+      "node scripts/check-spatial-asset-forge.mjs",
+      "node scripts/verify-aaa-asset-governance.mjs",
+      "node scripts/verify-asset-factory-handoff.mjs",
+      "node scripts/verify-production-sensory-assets.mjs",
+      "node urai-tier1/scripts/validate-assets.mjs",
+      "node scripts/check-spatial-assets.mjs",
+      "node scripts/check-v1-v6-asset-ready.mjs",
+      "node scripts/verify-provider-asset-handoff.mjs",
+      "node scripts/verify-final-glb-pack.mjs",
+      "node scripts/verify-home-finalization-authored-assets.mjs",
+      "node --test tests/field-reconstruction-phase5-contract.test.mjs",
+      "node --test urai-tier1/tests/crowdfunding-capture-authority-contract.test.mjs",
+      "node --test urai-tier1/tests/firebase-hosting-capture-workflow-contract.test.mjs"
+    ],
+    "normalization": {
+      "ok": true,
+      "normalizedAssets": 26,
+      "totalBytes": 27732347
+    },
+    "verification": {
+      "ok": true,
+      "checkedAssets": 26,
+      "expectedAssets": 26
+    },
+    "spatialForge": {
+      "ok": true,
+      "generatedModels": 14,
+      "generatedTexturesAndParticles": 6,
+      "manifest": "urai-tier1/public/assets/urai/spatial/asset-forge-manifest.json",
+      "manifestSha256": "72bae2ae3547a7fae36909b80fe3e79ca1279e074272224bd8a9a2105abe493f"
+    },
+    "audit": {
+      "ok": true,
+      "candidateOnly": true,
+      "errors": [],
+      "warnings": [
+        "Generated GLBs remain candidate assets without Draco/Meshopt production compression extensions.",
+        "home-entry-chamber-v1 exceeds one target bound on Y.",
+        "portal-ring-master-v1 exceeds one target bound on Z.",
+        "audio candidate is WAV and still needs production compressed derivative and listening review."
+      ]
+    },
+    "sensoryVerification": {
+      "ok": true,
+      "releaseState": "production-integrated-candidate",
+      "verificationResult": "pending-exact-head-ci",
+      "readyAssets": [
+        "spatial-particle-atlas-v1",
+        "global-cinematic-material-pack-v1",
+        "urai-loading-sequence-v1",
+        "production-spatial-audio-v1"
+      ],
+      "productionAudio": {
+        "assets": 8,
+        "ambient": 5,
+        "verified": true
+      },
+      "materialPackSha256": "4fee457c73871f98fb0f1e29fce4790a3b897cf9b4554c7771cdb226c4759b6f",
+      "loadingSequenceSha256": "7034eabf693fdd6701b648750cff183d104fba78adef68c9bd92ef545a574046",
+      "particleAtlasSha256": "3fb14004bc6320d1f2891a47af10f3e2c21c8a8fae2ad1a589c4d2e3b57ea1ba"
+    },
+    "assetGovernance": "GREEN",
+    "assetFactoryHandoff": "PASS",
+    "runtimeAssetValidation": {
+      "validateAssets": {
+        "ok": true,
+        "totalManifestEntries": 24,
+        "readyAssets": 8,
+        "explicitFallbackAssets": 14,
+        "futureGenerationSlots": 2,
+        "blockingFailures": 0
+      },
+      "checkSpatialAssets": {
+        "ok": true,
+        "referencedAssets": 77,
+        "missingAssets": 0,
+        "finalAssetReceipt": "STALE - NOT RELEASE EVIDENCE"
+      },
+      "v1V6AssetReady": {
+        "ok": true,
+        "decision": "V1_V6_ASSETS_ACTIVE",
+        "referencedPublicAssets": 77,
+        "missingFinal": 0,
+        "missingFallback": 0
+      },
+      "providerAssetHandoff": {
+        "ok": false,
+        "coreVerified": "51/51",
+        "routeOwnersVerified": "7/8",
+        "preservedPixelDependency": "Home active-owner marker belongs to scene/pixel lane; not modified by this branch",
+        "failure": "missing data-home-visible-world=\"final-physical-sanctuary-memory-rooms\" marker in active Home owner chain"
+      }
+    },
+    "candidatePathCorrection": {
+      "ok": true,
+      "reason": "deterministic generated candidates are isolated under generated/candidates/parallel-aaa-20260926; canonical authored GLB production paths restored and verified",
+      "candidateManifest": "operations/assets/generated-receipts/parallel-aaa-20260926-candidate-pack.json"
+    },
+    "finalGlbPack": {
+      "ok": true,
+      "packId": "urai-final-glb-production-pack-v1",
+      "assets": 8,
+      "nodes": 749,
+      "animations": 40,
+      "generatedSubstitutes": 0,
+      "visualApproval": false,
+      "visualApprovalBoundary": "Exact-head rendered inspection remains required and is not inferred from binary validation."
+    }
+  },
+  "realArtifactsCreatedOrRegenerated": [
+    {
+      "assetId": "AAA-001",
+      "packageId": "urai-home-architecture-launch-contract-v1",
+      "state": "REAL ARTIFACT READY CANDIDATE",
+      "artifact": "urai-tier1/public/assets/urai/generated/candidates/parallel-aaa-20260926/models/home-entry-chamber-v1.candidate.glb",
+      "sha256": "0a3c3c2da53c5fe25958e57954c8337d7a27d9c4f94ae0967de21ae84e3e8883",
+      "format": "glb",
+      "scene": "home",
+      "scaleUnits": "meters",
+      "handoff": "isolated deterministic candidate; canonical production GLB path preserved"
+    },
+    {
+      "assetId": "AAA-004",
+      "packageId": "urai-orb-avatar-sonic-identity-v1",
+      "state": "REAL ARTIFACT READY CANDIDATE",
+      "artifact": "urai-tier1/public/assets/urai/generated/candidates/parallel-aaa-20260926/models/urai-orb-avatar-v1.candidate.glb",
+      "sha256": "83b252f0de613a60fffb15e07cdf4f02ca81b59aac5d5bfccce7ee716287f77d",
+      "format": "glb",
+      "scene": "global/home",
+      "scaleUnits": "meters",
+      "handoff": "isolated deterministic candidate; canonical production GLB path preserved"
+    },
+    {
+      "assetId": "AAA-005",
+      "packageId": "urai-ground-terrain-canopy-ridge-v1",
+      "state": "REAL ARTIFACT READY CANDIDATE",
+      "artifact": "urai-tier1/public/assets/urai/generated/candidates/parallel-aaa-20260926/models/ground-world-terrain-v1.candidate.glb",
+      "sha256": "8068d71509d55035efeb869d827328aa5422a99f6a1f46c80db1424c8f32e1e8",
+      "format": "glb",
+      "scene": "ground",
+      "scaleUnits": "meters",
+      "handoff": "isolated deterministic candidate; canonical production GLB path preserved"
+    },
+    {
+      "assetId": "AAA-009",
+      "packageId": "urai-life-map-galaxy-memory-star-v1",
+      "state": "REAL ARTIFACT READY CANDIDATE",
+      "artifact": "urai-tier1/public/assets/urai/generated/candidates/parallel-aaa-20260926/models/life-map-memory-star-v1.candidate.glb",
+      "sha256": "6fa964e1c51b66f83ccafa7c0c774185bee528dfbb673d8b906bc2dc181f9bcf",
+      "format": "glb",
+      "scene": "life-map",
+      "scaleUnits": "meters",
+      "handoff": "isolated deterministic candidate; canonical production GLB path preserved"
+    },
+    {
+      "assetId": "AAA-012",
+      "packageId": "urai-replay-memory-environment-v1",
+      "state": "GENERATED VALIDATED CANDIDATE",
+      "artifact": "urai-tier1/public/assets/urai/generated/candidates/parallel-aaa-20260926/models/replay-memory-environment-v1.candidate.glb",
+      "sha256": "51eca3cbf7f28d438fb7e09c868f8247d02eb65bfecb015828ce9edb806fe9f0",
+      "format": "glb",
+      "scene": "replay",
+      "scaleUnits": "meters",
+      "handoff": "isolated deterministic candidate; canonical production GLB path preserved"
+    },
+    {
+      "assetId": "AAA-013",
+      "packageId": "urai-passport-physical-object-v1",
+      "state": "REAL ARTIFACT READY CANDIDATE",
+      "artifact": "urai-tier1/public/assets/urai/generated/candidates/parallel-aaa-20260926/models/passport-status-room-v1.candidate.glb",
+      "sha256": "47189faa314c4aa0bea590c70bd18c5e71feed3db41b62818e5d66e08a96e8c3",
+      "format": "glb",
+      "scene": "passport",
+      "scaleUnits": "meters",
+      "handoff": "isolated deterministic candidate; canonical production GLB path preserved"
+    },
+    {
+      "assetId": "AAA-023-026",
+      "packageId": "urai-sensory-audio-haptic-pack-v1",
+      "state": "GENERATED VALIDATED CANDIDATE",
+      "artifact": "urai-tier1/public/assets/urai/generated/audio/urai-ambient-bed-v1.wav",
+      "sha256": "148c93d429e1d2bd664756152377227d3d6e7e4b79878b26d317e7c7dfab318d",
+      "format": "wav",
+      "scene": "global",
+      "runtime": "mono 22050Hz 16-bit 8s",
+      "handoff": "candidate; needs production compressed derivative and listening review"
+    },
+    {
+      "assetId": "AAA-023-026",
+      "packageId": "urai-sensory-audio-haptic-pack-v1",
+      "state": "REAL ARTIFACT READY CANDIDATE",
+      "artifact": "urai-tier1/public/assets/urai/generated/haptics/semantic-haptic-patterns-v1.json",
+      "sha256": "27a61beeb0cd84c6a5daef98b0eb38aae9d221c2179e53e03e48a85e2e2da583",
+      "format": "json",
+      "scene": "global",
+      "handoff": "candidate; integration must preserve reduced-motion and hard-off controls"
+    }
+  ],
+  "providerPathsVerified": [
+    {
+      "provider": "deterministic-urai-forge",
+      "codePath": "scripts/forge-launch-critical-assets.mjs -> scripts/normalize-launch-critical-assets.mjs -> scripts/verify-launch-critical-assets.mjs",
+      "result": "executed locally and produced normalized, verified candidates"
+    },
+    {
+      "provider": "spatial-procedural-forge",
+      "codePath": "scripts/generate-spatial-asset-forge.mjs -> scripts/check-spatial-asset-forge.mjs",
+      "result": "executed locally and produced 20 checked procedural Spatial assets"
+    },
+    {
+      "provider": "Replicate",
+      "codePath": "LifeLoggerAI/asset-factory assetfactory-studio/apphosting.yaml and provider guard workflows",
+      "result": "configured but dormant until ASSET_FACTORY_MEDIA_PROVIDER and paid-run authorization are explicitly selected"
+    },
+    {
+      "provider": "fal.ai",
+      "codePath": "LifeLoggerAI/asset-factory assetfactory-studio/apphosting.yaml",
+      "result": "configured but dormant until selected and authorized"
+    },
+    {
+      "provider": "Studio V1 AAA Asset Forge dispatch",
+      "codePath": "LifeLoggerAI/urai-studio apps/studio/app/api/system/v1-asset-forge/route.ts",
+      "result": "dispatch path exists but requires URAI_STUDIO_CONTROL_TOKEN and URAI_WHEEL_GITHUB_TOKEN"
+    }
+  ],
+  "providerPathsBlocked": [
+    {
+      "provider": "Replicate",
+      "assetPackage": "GLB/model3d/audio candidates",
+      "requiredApiOrAction": "authorized paid Asset Factory provider run",
+      "existingCodePath": "assetfactory-studio/apphosting.yaml plus image_asset_generator/paid_request_guard.py",
+      "missingCapability": "paid-run authorization and live secret-bound execution context",
+      "smallestUnblockAction": "create explicit authorization with call and spend ceilings, then run the Asset Factory workflow in its configured environment"
+    },
+    {
+      "provider": "fal.ai",
+      "assetPackage": "image/HDR/texture candidates",
+      "requiredApiOrAction": "authorized Asset Factory media provider run",
+      "existingCodePath": "assetfactory-studio/apphosting.yaml",
+      "missingCapability": "provider selection and live secret-bound execution context",
+      "smallestUnblockAction": "select fal as ASSET_FACTORY_MEDIA_PROVIDER for a bounded job with approved budget and provenance receipt"
+    },
+    {
+      "provider": "OpenAI/Runway/ElevenLabs/Meshy/Tripo/Move AI/HeyGen",
+      "assetPackage": "visual, motion, audio or avatar packages",
+      "requiredApiOrAction": "repo-backed adapter or external provider job",
+      "existingCodePath": "no executable current adapter found in inspected Spatial/Studio/Staging authority for this package set",
+      "missingCapability": "bound executable adapter or approved external job runner",
+      "smallestUnblockAction": "add or expose the existing provider-specific runner with non-secret configuration and package-level authorization"
+    }
+  ],
+  "capturedReality": {
+    "driveSearchesPerformed": [
+      "UrAi real captured input source capture set photos video COLMAP splat reconstruction",
+      "UrAi Gaussian splat ply ksplat captured reality real reconstruction"
+    ],
+    "repositorySearchResult": "no .ply, .splat, .ksplat, COLMAP camera set or real capture source found in accessible Spatial checkout",
+    "contractValidation": {
+      "fieldReconstructionPhase5": {
+        "ok": true,
+        "command": "node --test tests/field-reconstruction-phase5-contract.test.mjs",
+        "cwd": "urai-tier1",
+        "validatedBoundary": "future-splat-shaped emotional-field-v1 contract only; no native production Gaussian splat renderer claim"
+      },
+      "captureAuthority": {
+        "ok": true,
+        "command": "node --test urai-tier1/tests/crowdfunding-capture-authority-contract.test.mjs",
+        "validatedBoundary": "capture authority remains fail-closed and tied to exact release evidence"
+      },
+      "firebaseHostingCaptureWorkflow": {
+        "ok": true,
+        "command": "node --test urai-tier1/tests/firebase-hosting-capture-workflow-contract.test.mjs",
+        "validatedBoundary": "legacy hosting recovery capture workflow contract remains present"
+      }
+    },
+    "realCapturedInputsFound": [],
+    "realReconstructionOutputsCreated": [],
+    "status": "BLOCKED",
+    "blocker": "No accessible real captured input or native production splat renderer available in this execution context; synthetic/procedural Replay candidate remains labeled as such."
+  },
+  "handoffQueueForSpatial": {
+    "readyNow": [],
+    "candidateForHumanVisualDecision": [
+      "parallel-aaa-20260926-deterministic-candidates isolated at urai-tier1/public/assets/urai/generated/candidates/parallel-aaa-20260926/models/",
+      "urai-home-architecture-launch-contract-v1",
+      "urai-orb-avatar-sonic-identity-v1",
+      "urai-ground-terrain-canopy-ridge-v1",
+      "urai-life-map-galaxy-memory-star-v1",
+      "urai-passport-physical-object-v1",
+      "urai-sensory-audio-haptic-pack-v1"
+    ],
+    "waitingOnDependency": [
+      "urai-replay-memory-environment-v1 waits on captured-reality authority repairs #1327/#1341 and explicit synthetic/real truth labels",
+      "urai-captured-reality-splat-pipeline-v1 waits on real capture input and native loader/training proof",
+      "provider asset handoff route owner 8/8 waits on pixel-lane-safe Home marker integration after #1325 frees scene ownership"
+    ],
+    "blocked": [
+      "provider-backed AAA+++ final art requires explicit paid-run authorization and configured live execution context"
+    ]
+  }
+}

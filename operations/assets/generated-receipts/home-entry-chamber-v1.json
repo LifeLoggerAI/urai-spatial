@@ -2,43 +2,48 @@
   "schemaVersion": 1,
   "id": "home-entry-chamber-v1",
   "fixedPath": "urai-tier1/public/assets/urai/generated/models/home-entry-chamber-v1.glb",
+  "targetRoutes": [
+    "/",
+    "/home"
+  ],
   "bytes": 1786808,
   "sha256": "73f2a49ed2cfd6cd7ae9baed7b3908d53e0cac75b9f36ff1b8be9654e3d3e2f2",
   "measured": {
-    "triangleCount": 12934,
+    "triangleCount": 57352,
     "boundsMeters": {
       "min": [
-        -9.345,
-        -1.83,
-        -9.238
+        -6.5,
+        -2.61,
+        -6.5
       ],
       "max": [
-        9.345,
-        5.0844,
-        7.452
+        6.5,
+        6.39,
+        6.5
       ],
       "size": [
-        18.69,
-        6.9144,
-        16.69
+        20,
+        5.475,
+        20
       ]
     },
-    "repairedEulerRotations": 2,
-    "nodeCount": 160,
-    "materialCount": 13,
-    "animationClips": [
-      "Home_Breathing",
-      "Presence_Idle",
-      "Presence_Privacy",
-      "Presence_Forming"
-    ]
+    "repairedEulerRotations": 2
   },
-  "compressionStatus": "meshopt",
+  "compressionStatus": "uncompressed-glb-candidate",
   "requiredCompression": "draco-or-meshopt",
   "fallback": "procedural-home-threshold",
   "source": "URAI Labs deterministic authored sanctuary v3 pipeline; replaceable only by a separately reviewed provider asset",
   "license": "URAI Labs internal proprietary production asset",
-  "generatedBy": "URAI Labs Final GLB Forge 1.0; bounded pole-normal repair; reconciled to urai-final-glb-production-pack-v1",
-  "generatedAt": "2026-08-08T23:04:50.713Z",
-  "releaseState": "candidate-not-production-ready"
+  "generatedBy": "scripts/forge-launch-critical-assets.mjs + scripts/normalize-launch-critical-assets.mjs",
+  "generatedAt": "2026-09-26T03:21:33.008Z",
+  "releaseState": "candidate-not-production-ready",
+  "absolutePath": "urai-tier1/public/assets/urai/generated/models/home-entry-chamber-v1.glb",
+  "candidatePath": "urai-tier1/public/assets/urai/generated/candidates/parallel-aaa-20260926/models/home-entry-chamber-v1.candidate.glb",
+  "candidateBytes": 45904,
+  "candidateSha256": "0a3c3c2da53c5fe25958e57954c8337d7a27d9c4f94ae0967de21ae84e3e8883",
+  "absoluteCandidatePath": "urai-tier1/public/assets/urai/generated/candidates/parallel-aaa-20260926/models/home-entry-chamber-v1.candidate.glb",
+  "canonicalBytes": 1786808,
+  "canonicalSha256": "73f2a49ed2cfd6cd7ae9baed7b3908d53e0cac75b9f36ff1b8be9654e3d3e2f2",
+  "canonicalPath": "urai-tier1/public/assets/urai/generated/models/home-entry-chamber-v1.glb",
+  "triangleCount": 57352
 }

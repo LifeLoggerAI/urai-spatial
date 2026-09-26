@@ -9,21 +9,34 @@
   "sha256": "15f1f7634389994715e4f263eecf67731b52a8e9ef62a22eae889b6054213257",
   "measured": {
     "triangleCount": 7878,
-    "nodeCount": 48,
-    "materialCount": 8,
-    "animationClips": [
-      "Passport_Idle",
-      "Passport_Grant",
-      "Status_Pulse",
-      "Privacy_Lock"
-    ]
+    "targetBoundsMeters": [
+      14,
+      8,
+      16
+    ],
+    "boundsMeters": {
+      "size": [
+        18,
+        6.815,
+        18
+      ]
+    }
   },
-  "compressionStatus": "meshopt",
+  "compressionStatus": "uncompressed-glb-candidate",
   "requiredCompression": "draco-or-meshopt",
   "fallback": "semantic-passport-status-room",
   "source": "URAI deterministic candidate forge; replaceable by reviewed provider asset",
   "license": "URAI Labs internal production asset",
-  "generatedBy": "URAI Labs Final GLB Forge 1.0; bounded Passport identity-core pole-normal repair; reconciled to urai-final-glb-production-pack-v1",
-  "generatedAt": "2026-08-09T00:09:34.176Z",
-  "releaseState": "candidate-not-production-ready"
+  "generatedBy": "scripts/forge-launch-critical-assets.mjs",
+  "generatedAt": "2026-09-26T03:21:20.684Z",
+  "releaseState": "candidate-not-production-ready",
+  "absolutePath": "urai-tier1/public/assets/urai/generated/models/passport-status-room-v1.glb",
+  "candidatePath": "urai-tier1/public/assets/urai/generated/candidates/parallel-aaa-20260926/models/passport-status-room-v1.candidate.glb",
+  "candidateBytes": 47284,
+  "candidateSha256": "47189faa314c4aa0bea590c70bd18c5e71feed3db41b62818e5d66e08a96e8c3",
+  "absoluteCandidatePath": "urai-tier1/public/assets/urai/generated/candidates/parallel-aaa-20260926/models/passport-status-room-v1.candidate.glb",
+  "canonicalBytes": 347512,
+  "canonicalSha256": "15f1f7634389994715e4f263eecf67731b52a8e9ef62a22eae889b6054213257",
+  "canonicalPath": "urai-tier1/public/assets/urai/generated/models/passport-status-room-v1.glb",
+  "triangleCount": 7878
 }

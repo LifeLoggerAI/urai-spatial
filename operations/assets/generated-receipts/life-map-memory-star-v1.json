@@ -2,24 +2,47 @@
   "schemaVersion": 1,
   "id": "life-map-memory-star-v1",
   "fixedPath": "urai-tier1/public/assets/urai/generated/models/life-map-memory-star-v1.glb",
+  "targetRoutes": [
+    "/life-map"
+  ],
   "bytes": 373236,
   "sha256": "ae4a70d2964a69025e246e7c09394b674a3c9f7b4b44a014cde6e1bffe7e9efa",
   "measured": {
     "triangleCount": 8770,
-    "nodeCount": 30,
-    "materialCount": 8,
-    "animationClips": [
-      "MemoryStar_Idle",
-      "MemoryStar_Selected",
-      "MemoryStar_Focus"
-    ]
+    "boundsMeters": {
+      "min": [
+        -1.105,
+        -1.105,
+        -0.8
+      ],
+      "max": [
+        1.105,
+        1.105,
+        0.8
+      ],
+      "size": [
+        5.083,
+        3.097,
+        0.972
+      ]
+    },
+    "repairedEulerRotations": 1
   },
-  "compressionStatus": "meshopt",
+  "compressionStatus": "uncompressed-glb-candidate",
   "requiredCompression": "draco-or-meshopt",
   "fallback": "procedural-memory-star",
   "source": "URAI deterministic candidate forge; replaceable by reviewed provider asset",
   "license": "URAI Labs internal production asset",
-  "generatedBy": "URAI Labs Final GLB Forge 1.0; bounded Life Map shard pole-normal repair; reconciled to urai-final-glb-production-pack-v1",
-  "generatedAt": "2026-08-08T23:57:27.724Z",
-  "releaseState": "candidate-not-production-ready"
+  "generatedBy": "scripts/forge-launch-critical-assets.mjs + scripts/normalize-launch-critical-assets.mjs",
+  "generatedAt": "2026-09-26T03:21:33.011Z",
+  "releaseState": "candidate-not-production-ready",
+  "absolutePath": "urai-tier1/public/assets/urai/generated/models/life-map-memory-star-v1.glb",
+  "candidatePath": "urai-tier1/public/assets/urai/generated/candidates/parallel-aaa-20260926/models/life-map-memory-star-v1.candidate.glb",
+  "candidateBytes": 32204,
+  "candidateSha256": "6fa964e1c51b66f83ccafa7c0c774185bee528dfbb673d8b906bc2dc181f9bcf",
+  "absoluteCandidatePath": "urai-tier1/public/assets/urai/generated/candidates/parallel-aaa-20260926/models/life-map-memory-star-v1.candidate.glb",
+  "canonicalBytes": 373236,
+  "canonicalSha256": "ae4a70d2964a69025e246e7c09394b674a3c9f7b4b44a014cde6e1bffe7e9efa",
+  "canonicalPath": "urai-tier1/public/assets/urai/generated/models/life-map-memory-star-v1.glb",
+  "triangleCount": 8770
 }
