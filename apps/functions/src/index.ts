@@ -6,6 +6,7 @@ export { evaluateSpatialTierLock } from './tierLocks'
 export { elevenLabsVoiceProvider, openAiOrbProvider } from './providerFunctions'
 export { applyGlobalEmotionalFieldConsent, getGlobalEmotionalFieldConsent } from './publicGoodConsent'
 export {
+  googleHistoricalContextPreview,
   googleOAuthCallback,
   googleOAuthDisconnect,
   googleOAuthStart,

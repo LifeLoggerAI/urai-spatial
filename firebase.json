@@ -38,6 +38,13 @@
         }
       },
       {
+        "source": "/api/google/import/preview",
+        "function": {
+          "functionId": "googleHistoricalContextPreview",
+          "region": "us-central1"
+        }
+      },
+      {
         "source": "/api/urai/orb/openai",
         "function": {
           "functionId": "openAiOrbProvider",
