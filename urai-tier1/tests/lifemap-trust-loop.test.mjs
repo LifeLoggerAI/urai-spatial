@@ -1,6 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
+import { lifeMapIdentitySearch } from '../src/components/lifemap/lifeMapIdentity.ts'
 
 const routeSource = readFileSync(new URL('../src/app/life-map/page.tsx', import.meta.url), 'utf8')
 const canonicalSource = readFileSync(new URL('../src/spatial/lifemap/SpatialLifeMapCanonical.tsx', import.meta.url), 'utf8')
@@ -29,9 +30,18 @@ test('private selected-memory state and truth boundaries remain inside the route
 test('memory identity is deterministic and explicit-demo safe', () => {
   assert.ok(sceneSource.includes('token(params.get("node") || params.get("memoryId"))'))
   assert.ok(sceneSource.includes('next.set("memoryId", node.id)'))
-  assert.ok(sceneSource.includes('next.set("manifestId", manifestId)'))
   assert.ok(sceneSource.includes('next.set("node", node.id)'))
-  assert.ok(sceneSource.includes('if (explicitDemo) next.set("demo", "1")'))
+  assert.match(sceneSource, /import\s*\{\s*lifeMapIdentitySearch\s*\}\s*from\s*["']\.\/lifeMapIdentity["']/)
+  assert.ok(sceneSource.includes('lifeMapIdentitySearch(params).forEach((value, key) => next.set(key, value))'))
+  assert.ok(sceneSource.includes('const next = withIdentity(new URLSearchParams())'))
+  for (const [query, expected] of [
+    ['demo=1&from=home-sky', { demo: '1', manifestId: 'replay-recovery-thread' }],
+    ['manifestId=private:memory_2&token=secret&demo=0&memoryId=old', { manifestId: 'private:memory_2' }],
+    ['manifestId=a%2Fb&demo=true', { manifestId: 'ab' }],
+    ['', { manifestId: 'replay-recovery-thread' }],
+  ]) {
+    assert.deepEqual(Object.fromEntries(lifeMapIdentitySearch(new URLSearchParams(query))), expected)
+  }
   assert.ok(universeSource.includes("privacyLevel: 'private'"))
 })
 
