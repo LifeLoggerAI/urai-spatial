@@ -75,7 +75,7 @@ jobs:
       - name: Verify stellar transform integrity
         run: |
           cd urai-tier1
-          node --test tests/focus-stellar-render-transform.test.mjs
+          node --import tsx --test tests/focus-stellar-render-transform.test.mjs
 
       - name: Build exact static release candidate
         shell: bash

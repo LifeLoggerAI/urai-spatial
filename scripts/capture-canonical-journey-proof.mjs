@@ -304,6 +304,8 @@ async function lifeMapToHome(page, journey, mode, root) {
   assert.equal(new URL(page.url()).searchParams.get('demo'), '1', 'final Home return lost disclosed demo context')
   const home = page.locator(homeOwnerSelector).first()
   await home.waitFor({ state: 'visible', timeout: 90_000 })
+  await waitAttr(home, 'data-home-assets-ready', 'true', 90_000)
+  await waitAttr(home, 'data-home-input-ready', 'true', 90_000)
   await capture(page, journey, 'return-home')
 }
 

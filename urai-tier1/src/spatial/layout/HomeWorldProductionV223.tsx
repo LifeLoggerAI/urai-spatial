@@ -974,7 +974,9 @@ export function HomeWorldProductionV223({ onOrbOpen = requestUraiWorldOrbOpen, w
 
   if (!webglAvailable) return null
   const ready = canvasReady && sceneReady
-  const inputReady = canvasReady && !homeState.inputLocked && transition === 'none' && !passportDeparting
+  // Never expose physical-world input while the visual scene is still forming.
+  // Semantic navigation stays available in HomeSpatialRuntimeLayer independently.
+  const inputReady = ready && !homeState.inputLocked && transition === 'none' && !passportDeparting
   const phase = homeState.transition ?? (transition === 'ground' ? 'GROUND_DESCENT' : transition === 'life-map' ? 'SKY_ASCENT' : homeState.stableState)
   return <main
     ref={worldRef}

@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 const focusProof = readFileSync(resolve("../scripts/capture-focus-gold-master-proof.mjs"), "utf8");
+const focusWorkflow = readFileSync(resolve("../.github/workflows/focus-gold-master-proof.yml"), "utf8");
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import test from 'node:test'
@@ -80,4 +81,5 @@ test('Focus Gold Master proof requires actual WebGL render readiness before visu
   assert.match(focusProof, /data-focus-render-ready/)
   assert.match(focusProof, /renderReady: shell\?\.getAttribute\('data-focus-render-ready'\) === 'true'/)
   assert.match(focusProof, /result\.canvasVisible && result\.renderReady/)
+  assert.match(focusWorkflow, /node --import tsx --test tests\/focus-stellar-render-transform\.test\.mjs/)
 })

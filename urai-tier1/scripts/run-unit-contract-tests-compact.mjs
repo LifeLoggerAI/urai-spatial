@@ -18,6 +18,7 @@ const tests = [
   'tests/post-render-cadence.test.mjs',
   'tests/home-orb-arrival-clearance.test.mjs',
   'tests/home-living-memory-orb-runtime.test.mjs',
+  'tests/home-v95-readiness-contract.test.mjs',
   'tests/home-late-hotspot-retirement.test.mjs',
   'tests/body-biometric-contract.test.mjs',
   'tests/continuous-spatial-restoration-contract.test.mjs',
