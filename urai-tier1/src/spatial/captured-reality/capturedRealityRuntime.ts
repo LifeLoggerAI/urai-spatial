@@ -71,6 +71,7 @@ export function capturedRealityDeviceTier(userAgent: string): 'mobile' | 'deskto
 
 export function validateCapturedRealityPerformanceReceipt(receipt: CapturedRealityPerformanceReceipt) {
   const errors: string[] = []
+  if (!receipt || !Object.prototype.hasOwnProperty.call(CAPTURED_REALITY_QUALITY_PROFILES, receipt.tier)) return ['DEVICE_TIER_INVALID']
   const profile = CAPTURED_REALITY_QUALITY_PROFILES[receipt.tier]
   if (!profile) return ['DEVICE_TIER_INVALID']
   if (!Number.isSafeInteger(receipt.runtimeBytes) || receipt.runtimeBytes <= 0) errors.push('RUNTIME_BYTES_REQUIRED')
@@ -79,6 +80,9 @@ export function validateCapturedRealityPerformanceReceipt(receipt: CapturedReali
   if (!Number.isFinite(receipt.sampleSeconds) || receipt.sampleSeconds < 30) errors.push('PERFORMANCE_SAMPLE_TOO_SHORT')
   if (typeof receipt.deviceLabel !== 'string' || !receipt.deviceLabel.trim()) errors.push('DEVICE_LABEL_REQUIRED')
   if (!Number.isFinite(Date.parse(receipt.measuredAt))) errors.push('MEASURED_AT_REQUIRED')
+  for (const measurement of [receipt.firstVisibleMs, receipt.peakGpuMemoryMb, receipt.peakCpuMemoryMb]) {
+    if (measurement !== undefined && (!Number.isFinite(measurement) || measurement < 0)) errors.push('OPTIONAL_MEASUREMENT_INVALID')
+  }
   return errors
 }
 

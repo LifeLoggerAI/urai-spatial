@@ -43,6 +43,15 @@ test('Drei streaming prerequisites fail closed when Content-Length or WebGL2 is 
   assert.ok(capability.missing.includes('CONTENT_LENGTH_REQUIRED_FOR_STREAMING_SPLAT'))
 })
 
+test('untrusted receipt tiers and optional measurements fail closed', () => {
+  const receipt = { tier: 'desktop', runtimeBytes: 32, sustainedFps: 60, sampleSeconds: 60, deviceLabel: 'unit fixture', measuredAt: '2026-09-25T00:00:00Z' }
+  for (const tier of ['constructor', 'toString', '__proto__', 'unknown']) assert.deepEqual(validateCapturedRealityPerformanceReceipt({ ...receipt, tier }), ['DEVICE_TIER_INVALID'])
+  assert.deepEqual(validateCapturedRealityPerformanceReceipt(null), ['DEVICE_TIER_INVALID'])
+  for (const field of ['firstVisibleMs', 'peakGpuMemoryMb', 'peakCpuMemoryMb']) {
+    for (const value of [NaN, Infinity, -1]) assert.ok(validateCapturedRealityPerformanceReceipt({ ...receipt, [field]: value }).includes('OPTIONAL_MEASUREMENT_INVALID'))
+  }
+})
+
 test('XR never inherits browser readiness without a physical-device receipt', () => {
   const desktop = {
     tier: 'desktop',
