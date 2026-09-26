@@ -233,6 +233,6 @@ test('collapsed semantic navigator preserves a visible pointer and touch opener'
 test('portrait navigator clears selected inspector and stays above the threshold action rail', () => {
   const mobileBlock = isolation.match(/@media \(max-width:700px\) \{[\s\S]*?\n\}/)?.[0] || ''
   assert.match(mobileBlock, /\.life-map-thresholds \{ width: calc\(100vw - 16px\) !important; bottom: max\(8px,env\(safe-area-inset-bottom\)\) !important;/)
-  assert.match(mobileBlock, /\.life-map-search-trigger \{ right: 12px !important; bottom: max\(12px,env\(safe-area-inset-bottom\)\) !important; \}/)
+  assert.match(mobileBlock, /\.life-map-search-trigger \{ right: max\(12px,env\(safe-area-inset-right\)\) !important; top: max\(12px,env\(safe-area-inset-top\)\) !important; bottom: auto !important; \}/)
   assert.match(mobileBlock, /\.life-map-navigator \{ right: 12px !important; bottom: max\(68px,calc\(env\(safe-area-inset-bottom\) \+ 58px\)\) !important; \}/)
 })

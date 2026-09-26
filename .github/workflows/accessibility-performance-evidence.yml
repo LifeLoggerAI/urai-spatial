@@ -62,7 +62,7 @@ on:
         required: true
         type: string
   pull_request:
-    branches: [main, home-final-v24-certify-20260826]
+    branches: [main, home-final-v24-certify-20260826, converge/final-canon-spatial-20260922]
     paths:
       - '.github/workflows/accessibility-performance-evidence.yml'
       - 'playwright.accessibility.config.ts'
@@ -174,9 +174,12 @@ jobs:
           pnpm build:static
 
       - name: Verify current accessibility proof contract
+        shell: bash
         run: |
+          set -euo pipefail
+          mkdir -p artifacts/accessibility-performance
           node --check scripts/verify-current-accessibility-performance-contract.mjs
-          node scripts/verify-current-accessibility-performance-contract.mjs
+          node scripts/verify-current-accessibility-performance-contract.mjs 2>&1 | tee artifacts/accessibility-performance/source-contract.log
 
       - name: Install Chromium
         run: pnpm --dir urai-tier1 exec playwright install --with-deps chromium

@@ -68,7 +68,7 @@ function initialDocumentVisible() {
   return typeof document === 'undefined' ? true : document.visibilityState === 'visible'
 }
 
-export function useAdaptiveSpatialQuality(): SpatialQualityProfile {
+export function useAdaptiveSpatialQuality(softwareRenderer = false): SpatialQualityProfile {
   const [reducedMotion, setReducedMotion] = useState(initialReducedMotion)
   const [documentVisible, setDocumentVisible] = useState(initialDocumentVisible)
   const [tier, setTier] = useState<SpatialQualityTier>(() => deriveTier(initialReducedMotion()))
@@ -108,8 +108,11 @@ export function useAdaptiveSpatialQuality(): SpatialQualityProfile {
 
   return useMemo(() => {
     const deterministic = deterministicOverride()
-    const base = PROFILE[tier]
-    if (!deterministic) return { tier, ...base, reducedMotion, documentVisible }
+    // CPU rendering cannot inherit a high GPU profile from host CPU/RAM hints.
+    // Explicit deterministic quality requests remain authoritative for proof.
+    const resolvedTier = softwareRenderer && !deterministic ? 'low' : tier
+    const base = PROFILE[resolvedTier]
+    if (!deterministic) return { tier: resolvedTier, ...base, reducedMotion, documentVisible }
     return {
       tier,
       ...base,
@@ -117,7 +120,7 @@ export function useAdaptiveSpatialQuality(): SpatialQualityProfile {
       reducedMotion,
       documentVisible: true,
     }
-  }, [documentVisible, reducedMotion, tier])
+  }, [documentVisible, reducedMotion, tier, softwareRenderer])
 }
 
 export function markFirstSpatialFrame(route: string, tier: SpatialQualityTier) {

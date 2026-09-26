@@ -41,7 +41,9 @@ export default function LifeMapSemanticNavigator() {
 
   const withIdentity = useCallback((next: URLSearchParams) => {
     if (explicitDemo) next.set('demo', '1')
-    const manifestId = params.get('manifestId')
+    // Match the canonical world resolver before the synchronous history commit.
+    // Otherwise an entry without a manifest briefly loses selection identity.
+    const manifestId = params.get('manifestId') || 'replay-recovery-thread'
     if (manifestId) next.set('manifestId', manifestId)
     return next
   }, [explicitDemo, params])

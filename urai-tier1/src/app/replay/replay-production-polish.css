@@ -1,6 +1,13 @@
 /* V265 Replay convergence: the memory is the environment. Memory pacing stays
    fully reachable, but the spatial canvas is allowed to fill and slightly crop the
    viewport so authentic memory media dominates instead of reading as a player card. */
+.replayWorld {
+  /* The enlarged canvas must be clipped without creating a scroll container.
+     Native focus can otherwise scroll this fixed viewport, moving Truth over
+     the independently fixed Focus return control on phones. */
+  overflow: clip !important;
+}
+
 .replayWorld .replaySpatialCanvas {
   transform: scale(1.16);
   transform-origin: 50% 48%;

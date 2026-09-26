@@ -2,6 +2,8 @@ import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import path from 'node:path'
 import test from 'node:test'
+import vm from 'node:vm'
+import ts from 'typescript'
 
 const root = path.resolve(import.meta.dirname, '..')
 const read = (relative) => fs.readFileSync(path.join(root, relative), 'utf8')
@@ -12,6 +14,27 @@ const derivation = read('src/spatial/home/signal/homeWorldSignalDerivation.ts')
 const alternate = read('src/spatial/home/deriveHomeWorldStateFromSignals.ts')
 const firebase = read('src/lib/firebase/homeWorld.ts')
 const rules = read('../firebase/firestore.rules')
+const weather = { exports: {} }
+vm.runInNewContext(ts.transpileModule(read('src/spatial/environment/HomeEmotionalWeatherState.ts'), {
+  compilerOptions: { module: ts.ModuleKind.CommonJS },
+}).outputText, weather)
+
+test('external weather values cannot resolve inherited object properties as atmosphere states', () => {
+  for (const value of ['constructor', '__proto__', 'toString', 'hasOwnProperty', '', 'Calm', 'unknown', null, undefined, {}, 7]) {
+    const state = weather.exports.resolveHomeEmotionalWeather(value)
+    assert.equal(state, 'calm', `unsafe weather input: ${String(value)}`)
+    assert.ok(Object.values(weather.exports.HOME_EMOTIONAL_WEATHER_PRESETS[state]).every(Number.isFinite))
+  }
+})
+
+test('every governed weather input retains its own finite atmosphere parameters', () => {
+  for (const state of ['calm', 'reflective', 'energized', 'heavy', 'uncertain', 'hopeful']) {
+    assert.equal(weather.exports.resolveHomeEmotionalWeather(state), state)
+    const values = Object.values(weather.exports.HOME_EMOTIONAL_WEATHER_PRESETS[state])
+    assert.equal(values.length, 6)
+    assert.ok(values.every(value => Number.isFinite(value) && value >= 0 && value <= 1))
+  }
+})
 
 test('Home Emotional Weather exposes only the current six-state canon', () => {
   for (const state of ['calm','reflective','energized','heavy','uncertain','hopeful']) {

@@ -17,11 +17,16 @@ on:
       - 'urai-tier1/src/spatial/layout/HomeWorldProductionV223.tsx'
       - 'urai-tier1/src/spatial/assets/HomeAtmosphericSky.tsx'
       - 'urai-tier1/src/spatial/home/**'
+      - 'urai-tier1/tests/home-destination-cancellation.test.mjs'
       - 'urai-tier1/src/spatial/memory/**'
       - 'urai-tier1/src/spatial/navigation/**'
       - 'urai-tier1/src/spatial/world/**'
       - 'scripts/audit-main-journey-state.mjs'
       - 'scripts/capture-canonical-journey-proof.mjs'
+      - 'scripts/canonical-journey-realm.mjs'
+      - 'scripts/canonical-journey-realm.test.mjs'
+      - 'scripts/home-canvas-bounds.test.mjs'
+      - 'urai-tier1/src/app/home-provider-preview-composition.css'
       - '.github/workflows/main-journey-state.yml'
 
 permissions:
@@ -81,6 +86,9 @@ jobs:
       - name: Gate mounted Life Map continuity contract
         run: node --test urai-tier1/tests/lifemap-scene-behavior.test.mjs
 
+      - name: Gate Home cancellation before destination commit
+        run: node --test urai-tier1/tests/home-destination-cancellation.test.mjs
+
       - name: Typecheck current journey runtime
         run: pnpm --dir urai-tier1 typecheck
 
@@ -99,6 +107,9 @@ jobs:
 
       - name: Install Chromium
         run: pnpm --dir urai-tier1 exec playwright install --with-deps chromium
+
+      - name: Verify mounted realm isolation against streamed HTML
+        run: node --test scripts/canonical-journey-realm.test.mjs scripts/home-canvas-bounds.test.mjs
 
       - name: Capture exact-head canonical runtime journey
         shell: bash

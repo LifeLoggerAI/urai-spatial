@@ -14,6 +14,7 @@ import { resolveOrbSensoryOutput, URAI_ORB_STATE_EVENT, type OrbState, type OrbS
 import { MobileMovementPad, MovementHelp, stepEmbodiedMotion, useDragLook, useMovementInput, type MovementInput } from '@/spatial/navigation/EmbodiedNavigation'
 import { useAdaptiveSpatialQuality, type SpatialQualityTier } from '@/spatial/performance/useAdaptiveSpatialQuality'
 import { createPostRenderCadence } from '@/spatial/performance/postRenderCadence'
+import { prepareHomeScene } from '@/spatial/performance/prepareHomeScene'
 import { HOME_ORB_GROUND_ANCHOR } from '@/spatial/home/homeOrbPlacement'
 import { ORB_SPEECH_CLOCK_EVENT, type OrbSpeechClockDetail } from '@/spatial/orb/orbSpeechClock'
 import { requestUraiWorldOrbOpen, requestUraiWorldTravel } from '@/spatial/world/worldEvents'
@@ -137,11 +138,12 @@ function isSoftwareWebGLRenderer(gl: THREE.WebGLRenderer) {
   return /swiftshader|llvmpipe|lavapipe|software|microsoft basic render/i.test(String(renderer || ''))
 }
 
-function Cadence({ reducedMotion }: { reducedMotion: boolean }) {
+function Cadence({ reducedMotion, ready }: { reducedMotion: boolean; ready: boolean }) {
   const { gl, invalidate, setFrameloop } = useThree()
   const cadenceRef = useRef<ReturnType<typeof createPostRenderCadence> | null>(null)
   useFrame(() => cadenceRef.current?.beforeRender())
   useEffect(() => {
+    if (!ready) { setFrameloop('never'); return }
     const constrained = reducedMotion || isSoftwareWebGLRenderer(gl)
     if (!constrained) { setFrameloop('always'); return }
     setFrameloop('demand')
@@ -159,7 +161,7 @@ function Cadence({ reducedMotion }: { reducedMotion: boolean }) {
       stopAfterRender()
       cadence.dispose()
     }
-  }, [gl, invalidate, reducedMotion, setFrameloop])
+  }, [gl, invalidate, reducedMotion, ready, setFrameloop])
   return null
 }
 
@@ -246,7 +248,9 @@ function OrbCompanion({ state, reducedMotion, onOrb }: { state: OrbState; reduce
   const orb = useGLTF(ORB_MODEL)
   const authoredOrb = useMemo(() => prepareAuthoredOrbModel(orb.scene), [orb.scene])
   const { actions } = useAnimations(orb.animations, authoredOrb)
-  const quality = useAdaptiveSpatialQuality()
+  const { gl } = useThree()
+  const softwareRenderer = useMemo(() => isSoftwareWebGLRenderer(gl), [gl])
+  const quality = useAdaptiveSpatialQuality(softwareRenderer)
   const effectBudget = ORB_EFFECT_BUDGET[quality.tier]
   const groundY = height(ORB_POSITION.x, ORB_POSITION.z)
   const sensory = useMemo(() => resolveOrbSensoryOutput(state, reducedMotion, true), [state, reducedMotion])
@@ -677,7 +681,18 @@ function HomePassportSemanticBridge({
 }
 
 function SceneAssetReadySignal({ onReady }: { onReady: () => void }) {
-  useEffect(() => onReady(), [onReady])
+  const { gl, scene, camera } = useThree()
+  useEffect(() => {
+    let cancelled = false
+    // Avoid synchronously waiting for shader links in the first visible draw.
+    // Keep native Home navigation responsive while the GPU prepares the scene.
+    prepareHomeScene(gl, scene, camera, () => cancelled).then(() => {
+      if (!cancelled) onReady()
+    }).catch((error) => {
+      if (!cancelled) console.error('Home shader preparation failed', error)
+    })
+    return () => { cancelled = true }
+  }, [gl, scene, camera, onReady])
   return null
 }
 
@@ -687,6 +702,7 @@ function Scene({
   transition,
   transitionTarget,
   reducedMotion,
+  renderReady,
   personalWeatherState,
   orbState,
   homeStableState,
@@ -711,6 +727,7 @@ function Scene({
   transition: Transition
   transitionTarget: MutableRefObject<TransitionTarget | null>
   reducedMotion: boolean
+  renderReady: boolean
   personalWeatherState: HomeEmotionalWeatherName
   orbState: OrbState
   homeStableState: HomeStableState
@@ -737,7 +754,7 @@ function Scene({
     onGround(event.point.clone())
   }, [homeStableState, homeTransition, onGround, transition])
   return <>
-    <Cadence reducedMotion={reducedMotion} />
+    <Cadence reducedMotion={reducedMotion} ready={renderReady} />
     <color attach="background" args={['#10272a']} />
     <fogExp2 attach="fog" args={['#294946', .011]} />
     <HomeAtmosphericSky reducedMotion={reducedMotion} active={transition === 'life-map'} weatherState={personalWeatherState} onLifeMap={onLifeMap} />
@@ -784,6 +801,7 @@ export function HomeWorldProductionV223({ onOrbOpen = requestUraiWorldOrbOpen, w
   const router = useRouter()
   const [canvasReady, setCanvasReady] = useState(false)
   const [softwareRenderer, setSoftwareRenderer] = useState(false)
+  const quality = useAdaptiveSpatialQuality(softwareRenderer)
   const [sceneReady, setSceneReady] = useState(false)
   const [dragging, setDragging] = useState(false)
   const [reducedMotion, setReducedMotion] = useState(false)
@@ -991,14 +1009,14 @@ export function HomeWorldProductionV223({ onOrbOpen = requestUraiWorldOrbOpen, w
     <Canvas
       className={styles.canvas}
       dpr={1}
-      shadows
-      frameloop={reducedMotion || softwareRenderer ? 'demand' : 'always'}
+      shadows={quality.shadows}
+      frameloop={!sceneReady ? 'never' : reducedMotion || softwareRenderer ? 'demand' : 'always'}
       camera={{ position: [...DEFAULT_HOME_FIRST_PERSON_CAMERA.position], fov: 58, near: .1, far: 125 }}
-      gl={{ antialias: true, alpha: false, powerPreference: 'high-performance' }}
+      gl={{ antialias: quality.antialias, alpha: false, powerPreference: 'high-performance' }}
       onCreated={({ gl, setFrameloop }) => {
         const software = isSoftwareWebGLRenderer(gl)
         setSoftwareRenderer(software)
-        if (reducedMotion || software) setFrameloop('demand')
+        setFrameloop('never')
         gl.outputColorSpace = THREE.SRGBColorSpace
         gl.toneMapping = THREE.ACESFilmicToneMapping
         gl.toneMappingExposure = 1.68
@@ -1013,6 +1031,7 @@ export function HomeWorldProductionV223({ onOrbOpen = requestUraiWorldOrbOpen, w
         transition={transition}
         transitionTarget={transitionTarget}
         reducedMotion={reducedMotion}
+        renderReady={sceneReady}
         personalWeatherState={personalWeatherState}
         orbState={orbState}
         homeStableState={homeState.stableState}
@@ -1035,13 +1054,14 @@ export function HomeWorldProductionV223({ onOrbOpen = requestUraiWorldOrbOpen, w
     </Canvas>
     {firstPerson ? (
       <>
-        <MovementHelp realm="Home" summary="Move through your Home in bodyless first person without a synthetic body overlay." controls="WASD or arrow keys move · drag to look · interact opens nearby physical objects such as Passport · Escape closes the active interaction layer while Home remains first person." />
+        <MovementHelp realm="Home" compactLabel="Move" summary="Move through your Home in bodyless first person without a synthetic body overlay." controls="WASD or arrow keys move · drag to look · interact opens nearby physical objects such as Passport · Escape closes the active interaction layer while Home remains first person." />
         <MobileMovementPad input={movementInput} label="Move through Home" />
         {passportNearby && !passportDeparting ? (
           <button
             type="button"
             aria-label="Open physical Passport"
             data-testid="urai-home-passport-interact"
+            className={styles.passportInteract}
             data-movement-ui="true"
             onClick={openPassport}
             style={{ position: 'absolute', left: '50%', bottom: 'max(22px, calc(env(safe-area-inset-bottom) + 18px))', transform: 'translateX(-50%)', zIndex: 36, minHeight: 48, padding: '0 18px', borderRadius: 999, border: '1px solid rgba(239,214,154,.34)', background: 'rgba(21,28,29,.72)', color: '#fff8e8', backdropFilter: 'blur(12px)', font: '700 12px/1 system-ui', cursor: 'pointer' }}

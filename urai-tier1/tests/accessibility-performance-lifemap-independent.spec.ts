@@ -65,6 +65,34 @@ async function openSemanticExplorer(page: Page) {
 test.describe('Life Map independent realm runtime evidence', () => {
   test.describe.configure({ timeout: 180_000 })
 
+  for (const width of [320, 390]) {
+    test(`mobile ${width}px search clears the selected memory controls`, async ({ page }) => {
+      await page.setViewportSize({ width, height: 844 })
+      await enableExplicitLifeMapDemo(page)
+      await page.goto(demoMemoryUrl(false), { waitUntil: 'domcontentloaded' })
+      const root = lifeMapRoot(page)
+      await expect(root).toHaveAttribute('data-life-map-render-ready', 'true', { timeout: 60_000 })
+      await expect(root).toHaveAttribute('data-life-map-phase', 'arrival')
+      const search = page.getByRole('button', { name: 'Search and navigate Life Map', exact: true })
+      const boxes = await Promise.all([search, selectedMemoryControls(page), page.locator('.life-map-title')].map(locator => locator.boundingBox()))
+      for (const box of boxes) expect(box).not.toBeNull()
+      const [trigger, rail, title] = boxes.map(box => box!)
+      const overlaps = (other: typeof trigger) => trigger.x < other.x + other.width && trigger.x + trigger.width > other.x && trigger.y < other.y + other.height && trigger.y + trigger.height > other.y
+      expect(trigger.width).toBeGreaterThanOrEqual(48)
+      expect(trigger.height).toBeGreaterThanOrEqual(48)
+      expect(trigger.x).toBeGreaterThanOrEqual(0)
+      expect(trigger.y).toBeGreaterThanOrEqual(0)
+      expect(trigger.x + trigger.width).toBeLessThanOrEqual(width)
+      expect(overlaps(rail)).toBe(false)
+      expect(overlaps(title)).toBe(false)
+      await test.info().attach('mobile-control-clearance.json', { body: JSON.stringify({ width, trigger, rail, title }), contentType: 'application/json' })
+      await test.info().attach('selected-memory.png', { body: await page.screenshot(), contentType: 'image/png' })
+      await selectedMemoryControls(page).getByRole('button', { name: 'Overview', exact: true }).click()
+      await expect(root).toHaveAttribute('data-life-map-phase', 'overview', { timeout: 60_000 })
+      await expect(search).toHaveAttribute('aria-expanded', 'false')
+    })
+  }
+
   test('Life Map does not mount the Home companion visually, semantically, or in the tab sequence', async ({ page }) => {
     await page.goto('/life-map', { waitUntil: 'domcontentloaded' })
     const shell = page.locator('[data-testid="urai-persistent-world-shell"]')

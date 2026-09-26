@@ -715,7 +715,7 @@ function FirstPersonPlayer({ input, yaw, pitch, target, profile, obstacles, play
   isCoarse: boolean;
   onReady: () => void;
 }) {
-  const { camera, size } = useThree();
+  const { camera, size, gl } = useThree();
   const reducedMotion = useReducedMotion();
   const position = playerPosition;
   const velocity = useRef(new THREE.Vector3());
@@ -723,6 +723,8 @@ function FirstPersonPlayer({ input, yaw, pitch, target, profile, obstacles, play
   const lookAt = useRef(new THREE.Vector3());
   const forward = useRef(new THREE.Vector3());
   const ready = useRef(false);
+  const proofOwner = useRef<HTMLElement | null>(null);
+  const lastCameraProof = useRef("");
 
   useFrame((_, delta) => {
     const terrainSlope = slopeDegrees((x, z) => groundHeight(x, z, profile.id), position.current.x, position.current.z);
@@ -751,6 +753,16 @@ function FirstPersonPlayer({ input, yaw, pitch, target, profile, obstacles, play
     lookAt.current.copy(camera.position).addScaledVector(forward.current, 12);
     lookAt.current.y += Math.tan(pitch.current) * 7.5;
     camera.lookAt(lookAt.current);
+
+    // Capture the camera that the frame actually renders; proof must not infer
+    // movement or view direction from input events or screenshot filenames.
+    proofOwner.current ??= gl.domElement.closest<HTMLElement>('[data-testid="urai-ground-lived-world"]');
+    const cameraProof = [camera.position.x, camera.position.y, camera.position.z, yaw.current, pitch.current]
+      .map((value) => value.toFixed(4)).join(",");
+    if (cameraProof !== lastCameraProof.current) {
+      proofOwner.current?.setAttribute("data-ground-rendered-camera", cameraProof);
+      lastCameraProof.current = cameraProof;
+    }
 
     if (camera instanceof THREE.PerspectiveCamera) {
       const portrait = size.height > size.width;

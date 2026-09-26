@@ -127,11 +127,6 @@ const orbSummaryReplacement = "const talk = page.locator('summary:visible').filt
 if ((derived.split(orbSummarySource).length - 1) !== 1) throw new Error('Home Orb visible summary anchor is not unique')
 derived = derived.replace(orbSummarySource, orbSummaryReplacement)
 
-const passportNavigationSource = "const passportNavigation = page.waitForURL((url) => url.pathname.replace(/\\/+$/, '') === '/passport', { timeout: 45_000 })"
-const passportNavigationReplacement = "const passportNavigation = page.waitForURL((url) => url.pathname.replace(/\\/+$/, '') === '/passport', { timeout: 60_000, waitUntil: 'domcontentloaded' })"
-if ((derived.split(passportNavigationSource).length - 1) !== 1) throw new Error('Home Passport navigation anchor is not unique')
-derived = derived.replace(passportNavigationSource, passportNavigationReplacement)
-
 const returnReadinessSource = "    }, ownerSelector, { timeout: 45_000 })\n    record.returnStableState"
 const returnReadinessReplacement = "    }, ownerSelector, { timeout: 90_000 })\n    record.returnStableState"
 if ((derived.split(returnReadinessSource).length - 1) !== 1) throw new Error('Home return readiness anchor is not unique')
