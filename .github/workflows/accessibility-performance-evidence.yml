@@ -62,7 +62,7 @@ on:
         required: true
         type: string
   pull_request:
-    branches: [main, home-final-v24-certify-20260826, converge/final-canon-spatial-20260922]
+    branches: [main, home-final-v24-certify-20260826, converge/final-canon-spatial-20260922, repair/spatial-complete-proof-20260926]
     paths:
       - '.github/workflows/accessibility-performance-evidence.yml'
       - 'playwright.accessibility.config.ts'
