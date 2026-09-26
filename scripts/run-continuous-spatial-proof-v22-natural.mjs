@@ -167,13 +167,13 @@ async function visualCapture(browser, id, viewport, query) {
     const owner = await waitHome(page)
     record.status = response?.status()
     record.presentationSnapshot = await homeSnapshot(owner, page)
-    if (!presentationSnapshotPasses(record.presentationSnapshot)) throw new Error(`Home presentation baseline mismatch: ${JSON.stringify(record.presentationSnapshot)}`)
+    if (!snapshotPasses(record.presentationSnapshot, viewport)) throw new Error(`Home presentation baseline mismatch: ${JSON.stringify(record.presentationSnapshot)}`)
     record.presentationImage = await screenshot(page, `${id}-presentation`)
     await enterFirstPersonHome(page, owner)
     record.snapshot = await homeSnapshot(owner, page)
     record.image = await screenshot(page, id)
     record.passed = record.status === 200
-      && presentationSnapshotPasses(record.presentationSnapshot)
+      && snapshotPasses(record.presentationSnapshot, viewport)
       && snapshotPasses(record.snapshot, viewport)
       && record.presentationImage.bytes > 12_000
       && record.image.bytes > 12_000
