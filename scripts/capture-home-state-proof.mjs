@@ -328,20 +328,18 @@ async function captureOrbLifecycle({ reducedMotion = 'no-preference' } = {}) {
     await openOrb.focus()
     await openOrb.press('Enter')
     record.phase = 'orb-menu-visible'
-    await page.locator('#urai-world-companion-menu[aria-hidden="false"]').waitFor({ state: 'visible', timeout: 20_000 })
+    const companionMenu = page.locator('#urai-world-companion-menu[aria-hidden="false"]:visible').first()
+    await companionMenu.waitFor({ state: 'visible', timeout: 20_000 })
     record.phase = 'orb-attention-rendered'
     await page.waitForFunction((selector) => document.querySelector(selector)?.getAttribute('data-home-orb-state') === 'attention', ownerSelector)
 
-    const talk = page.locator('summary').filter({ hasText: 'Talk with Orb' }).first()
+    const talk = companionMenu.locator('summary').filter({ hasText: 'Talk with Orb' }).first()
     record.phase = 'conversation-open-keyboard'
     await talk.waitFor({ state: 'visible', timeout: 10_000 })
     record.summaryFocusSteps = await focusNativeSummaryByText(page, 'Talk with Orb')
     await page.keyboard.press('Enter')
-    await page.waitForFunction(() => Array.from(document.querySelectorAll('details')).some((details) => {
-      const summary = details.querySelector('summary')
-      return details.open && summary?.textContent?.includes('Talk with Orb')
-    }), null, { timeout: 10_000 })
-    const message = page.getByLabel('Message for Orb').first()
+    await companionMenu.locator('details[open]').filter({ hasText: 'Talk with Orb' }).first().waitFor({ state: 'visible', timeout: 10_000 })
+    const message = companionMenu.getByLabel('Message for Orb').first()
     await message.waitFor({ state: 'visible', timeout: 10_000 })
     await message.focus()
     record.phase = 'orb-text-entry-attention-rendered'

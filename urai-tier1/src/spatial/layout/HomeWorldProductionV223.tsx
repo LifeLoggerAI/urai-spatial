@@ -901,7 +901,7 @@ export function HomeWorldProductionV223({ onOrbOpen = requestUraiWorldOrbOpen, w
     window.dispatchEvent(new Event(HOME_PASSPORT_ORIGIN_CAPTURE_EVENT))
     requestUraiWorldTravel({
       destination: 'passport',
-      href: '/passport',
+      href: '/passport/',
       entryPortal: 'home-passport-ownership-object',
       cameraCheckpoint: 'home-first-person-passport-origin',
     })

@@ -122,10 +122,11 @@ for (const replacement of keyboardProofReplacements) {
   derived = derived.replaceAll(replacement.source, replacement.replacement)
 }
 
-const orbSummarySource = "const talk = page.locator('summary').filter({ hasText: 'Talk with Orb' }).first()"
-const orbSummaryReplacement = "const talk = page.locator('summary:visible').filter({ hasText: 'Talk with Orb' }).first()"
-if ((derived.split(orbSummarySource).length - 1) !== 1) throw new Error('Home Orb visible summary anchor is not unique')
-derived = derived.replace(orbSummarySource, orbSummaryReplacement)
+const orbSummarySource = "const talk = companionMenu.locator('summary').filter({ hasText: 'Talk with Orb' }).first()"
+if ((derived.split(orbSummarySource).length - 1) !== 1) throw new Error('Home Orb active-companion summary anchor is not unique')
+if (derived.includes("const talk = page.locator('summary').filter({ hasText: 'Talk with Orb' }).first()")) {
+  throw new Error('Home Orb proof regressed to a global first-match summary selector')
+}
 
 const passportNavigationSource = "const passportNavigation = page.waitForURL((url) => url.pathname.replace(/\\/+$/, '') === '/passport', { timeout: 45_000 })"
 const passportNavigationReplacement = "const passportNavigation = page.waitForURL((url) => url.pathname.replace(/\\/+$/, '') === '/passport', { timeout: 60_000, waitUntil: 'domcontentloaded' })"
