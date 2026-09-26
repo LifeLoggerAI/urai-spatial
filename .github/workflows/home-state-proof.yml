@@ -5,6 +5,8 @@ on:
     branches: [main, home-final-v24-certify-20260826, converge/final-canon-spatial-20260922]
     paths:
       - 'scripts/capture-home-state-proof.mjs'
+      - 'scripts/lib/passport-arrival.mjs'
+      - 'scripts/test-passport-arrival.mjs'
       - 'scripts/reconcile-home-orb-consent-proof.mjs'
       - 'scripts/lib/home-orb-reconciliation-signature.mjs'
       - 'scripts/test-home-orb-reconciliation-signature.mjs'
@@ -85,6 +87,7 @@ jobs:
           node --test scripts/test-home-state-proof-bounded.mjs
           pnpm build:static
           pnpm --dir urai-tier1 exec playwright install --with-deps chromium
+          node --test scripts/test-passport-arrival.mjs
       - name: Capture exact Home state proof
         run: |
           python3 -m http.server 4173 --bind 127.0.0.1 --directory urai-tier1/out > /tmp/urai-home-state-http.log 2>&1 &

@@ -121,6 +121,8 @@ jobs:
 
       - name: Install Chromium
         run: pnpm --dir urai-tier1 exec playwright install --with-deps chromium
+      - name: Verify mobile Life Map control clearance
+        run: node urai-tier1/tests/lifemap-mobile-control-clearance.browser.mjs
 
       - name: Capture exact-head founder evidence
         shell: bash

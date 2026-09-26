@@ -45,6 +45,8 @@ const tests = [
   'tests/home-semantic-demo-context.test.mjs',
   'tests/lifemap-semantic-manifest-identity.test.mjs',
   'tests/home-canvas-quality-contract.test.mjs',
+  'tests/home-scene-preparation.test.mjs',
+  'tests/home-software-quality.test.mjs',
   'tests/home-provider-preview-composition-contract.test.mjs',
   'tests/home-current-art-repair-contract.test.mjs',
   'tests/home-emotional-weather-canon-contract.test.mjs',

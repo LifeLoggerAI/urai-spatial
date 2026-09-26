@@ -2,6 +2,7 @@ import { createHash } from 'node:crypto'
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { createRequire } from 'node:module'
 import path from 'node:path'
+import { waitForPassportArrival } from './lib/passport-arrival.mjs'
 
 const requireFromTierOne = createRequire(new URL('../urai-tier1/package.json', import.meta.url))
 const { chromium } = requireFromTierOne('playwright')
@@ -496,15 +497,11 @@ async function captureHomeSpatialContinuity({ idSuffix = 'desktop', viewport = {
     await passportControl.waitFor({ state: 'attached', timeout: 20_000 })
     if (await passportControl.getAttribute('aria-label') !== 'Passport — open ownership and consent vault') throw new Error('unexpected Home Passport semantic control')
     await focusTestIdForKeyboard(page, 'home-passport-physical-control')
-    const passportNavigation = page.waitForURL((url) => url.pathname.replace(/\/+$/, '') === '/passport', { timeout: 45_000 })
+    const passportNavigation = waitForPassportArrival(page)
     await page.keyboard.press('Enter')
-    await passportNavigation
-    record.passportPath = new URL(page.url()).pathname
-    record.passportReturnFrame = await page.evaluate(() => {
-      const raw = window.sessionStorage.getItem('urai:home:return-frame:v1')
-      if (!raw) return null
-      try { return JSON.parse(raw) } catch { return { parseError: true } }
-    })
+    const passportArrival = await passportNavigation
+    record.passportPath = passportArrival.pathname
+    record.passportReturnFrame = passportArrival.returnFrame
     record.passportScreenshot = await screenshotRecord('passport-activated')
 
     await page.goBack({ waitUntil: 'domcontentloaded', timeout: 30_000 })

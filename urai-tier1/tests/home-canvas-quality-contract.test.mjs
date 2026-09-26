@@ -6,7 +6,7 @@ const source = fs.readFileSync(new URL('../src/spatial/layout/HomeWorldProductio
 const home = source.slice(source.indexOf('export function HomeWorldProductionV223'))
 
 test('Home renderer honors the same governed quality profile as its scene effects', () => {
-  assert.match(home, /const quality = useAdaptiveSpatialQuality\(\)/)
+  assert.match(home, /const quality = useAdaptiveSpatialQuality\(softwareRenderer\)/)
   const canvas = home.slice(home.indexOf('<Canvas'), home.indexOf('<Scene'))
   assert.match(canvas, /shadows=\{quality\.shadows\}/)
   assert.match(canvas, /antialias: quality\.antialias/)

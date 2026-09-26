@@ -14,6 +14,7 @@ import { resolveOrbSensoryOutput, URAI_ORB_STATE_EVENT, type OrbState, type OrbS
 import { MobileMovementPad, MovementHelp, stepEmbodiedMotion, useDragLook, useMovementInput, type MovementInput } from '@/spatial/navigation/EmbodiedNavigation'
 import { useAdaptiveSpatialQuality, type SpatialQualityTier } from '@/spatial/performance/useAdaptiveSpatialQuality'
 import { createPostRenderCadence } from '@/spatial/performance/postRenderCadence'
+import { prepareHomeScene } from '@/spatial/performance/prepareHomeScene'
 import { HOME_ORB_GROUND_ANCHOR } from '@/spatial/home/homeOrbPlacement'
 import { ORB_SPEECH_CLOCK_EVENT, type OrbSpeechClockDetail } from '@/spatial/orb/orbSpeechClock'
 import { requestUraiWorldOrbOpen, requestUraiWorldTravel } from '@/spatial/world/worldEvents'
@@ -247,7 +248,9 @@ function OrbCompanion({ state, reducedMotion, onOrb }: { state: OrbState; reduce
   const orb = useGLTF(ORB_MODEL)
   const authoredOrb = useMemo(() => prepareAuthoredOrbModel(orb.scene), [orb.scene])
   const { actions } = useAnimations(orb.animations, authoredOrb)
-  const quality = useAdaptiveSpatialQuality()
+  const { gl } = useThree()
+  const softwareRenderer = useMemo(() => isSoftwareWebGLRenderer(gl), [gl])
+  const quality = useAdaptiveSpatialQuality(softwareRenderer)
   const effectBudget = ORB_EFFECT_BUDGET[quality.tier]
   const groundY = height(ORB_POSITION.x, ORB_POSITION.z)
   const sensory = useMemo(() => resolveOrbSensoryOutput(state, reducedMotion, true), [state, reducedMotion])
@@ -683,7 +686,7 @@ function SceneAssetReadySignal({ onReady }: { onReady: () => void }) {
     let cancelled = false
     // Avoid synchronously waiting for shader links in the first visible draw.
     // Keep native Home navigation responsive while the GPU prepares the scene.
-    gl.compileAsync(scene, camera).then(() => {
+    prepareHomeScene(gl, scene, camera, () => cancelled).then(() => {
       if (!cancelled) onReady()
     }).catch((error) => {
       if (!cancelled) console.error('Home shader preparation failed', error)
@@ -796,9 +799,9 @@ function Scene({
 
 export function HomeWorldProductionV223({ onOrbOpen = requestUraiWorldOrbOpen, webglAvailable = true }: Props) {
   const router = useRouter()
-  const quality = useAdaptiveSpatialQuality()
   const [canvasReady, setCanvasReady] = useState(false)
   const [softwareRenderer, setSoftwareRenderer] = useState(false)
+  const quality = useAdaptiveSpatialQuality(softwareRenderer)
   const [sceneReady, setSceneReady] = useState(false)
   const [dragging, setDragging] = useState(false)
   const [reducedMotion, setReducedMotion] = useState(false)
