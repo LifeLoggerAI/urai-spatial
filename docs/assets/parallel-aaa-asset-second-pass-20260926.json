@@ -22,7 +22,8 @@
     "paidProviderFinalArtClaimed": false,
     "nativeGaussianSplatClaimed": false,
     "realCapturedRealityClaimed": false,
-    "canonicalProductionGlbPathsPreserved": true
+    "canonicalProductionGlbPathsPreserved": true,
+    "activeSpatialFallbackPathsRestoredAfterReview": true
   },
   "execution": {
     "scriptsRun": [
@@ -57,10 +58,19 @@
     },
     "spatialForge": {
       "ok": true,
-      "generatedModels": 14,
+      "generatedModels": 0,
       "generatedTexturesAndParticles": 6,
       "manifest": "urai-tier1/public/assets/urai/spatial/asset-forge-manifest.json",
-      "manifestSha256": "72bae2ae3547a7fae36909b80fe3e79ca1279e074272224bd8a9a2105abe493f"
+      "manifestSha256": "superseded-by-canonical-reference-manifest-update",
+      "referencedCanonicalFallbackModels": 14,
+      "reviewRepair": {
+        "restoreCommit": "bf42aca9ea759df19689fad3163bdbdbc5a7c242",
+        "manifestClarificationCommit": "f3cfe66307dd9b7f523df6c616700be6a60551c8",
+        "restoredActiveFallbackModelPaths": 14,
+        "restoredCanonicalModelReceipts": 8,
+        "restoredForgeSummary": true,
+        "candidateArtifactsRemainIsolated": true
+      }
     },
     "audit": {
       "ok": true,
