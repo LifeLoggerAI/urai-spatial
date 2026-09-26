@@ -86,8 +86,8 @@ PR #1325 remains untouched by this closeout.
 - No files from its pixel-owned lane were modified.
 - The Home active-owner marker remains the known provider-handoff blocker:
   `data-home-visible-world="final-physical-sanctuary-memory-rooms"`.
-- Current observed workflow snapshot: 18 runs; 3 queued, 4 in progress, 8 successful completions, and 3 failed completions.
-- Failed run logs were read-only inspected. The newly failed Home State Proof attempted Orb-open lifecycle reconciliation, but the observed failure did not match the expected bounded click-timeout signature; the failure remains lane-owned and was not repaired here.
+- Current observed workflow snapshot: 18 runs; 2 queued, 1 in progress, 9 successful completions, 5 failed completions, and 1 cancelled completion.
+- Failed run logs were read-only inspected. In addition to the Home State Proof Orb-open lifecycle-signature mismatch, Continuous Spatial Visual Proof has a desktop browser-proof failure after artifact upload, and Accessibility Performance Evidence has an Orb Escape focus-return assertion failure plus a mobile viewport-containment timeout. These failures remain lane-owned and were not repaired here.
 
 The pixel agent's exact handoff remains:
 
