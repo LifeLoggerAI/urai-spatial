@@ -111,6 +111,7 @@ const tests = [
   'tests/legacy-archive-world-contract.test.mjs',
   'tests/haptic-runtime-contract.test.mjs',
   'tests/spatial-audio-behavior.test.mjs',
+  'tests/spatial-sensory-preferences-behavior.test.mjs',
   'tests/spatial-positioned-audio-contract.test.mjs',
   'tests/replay-source-audio-truth-contract.test.mjs',
   'tests/guardian/council-reference-canon.test.mjs',
