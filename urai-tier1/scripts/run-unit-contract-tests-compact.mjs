@@ -44,6 +44,7 @@ const tests = [
   'tests/home-cohesion-contract.test.mjs',
   'tests/home-current-art-repair-contract.test.mjs',
   'tests/home-emotional-weather-canon-contract.test.mjs',
+  'tests/home-private-evidence-authority.test.mjs',
   'tests/home-ground-lifemap-art-bible-contract.test.mjs',
   'tests/home-sky-lifemap-threshold-contract.test.mjs',
   'tests/home-presence-geometry-motion.test.mjs',

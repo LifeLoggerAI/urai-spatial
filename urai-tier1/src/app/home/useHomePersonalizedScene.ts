@@ -101,8 +101,14 @@ export function useHomePersonalizedScene(): { scene: HomePersonalizedScene; load
     }
 
     let cancelled = false
-    const unsubscribe = onAuthStateChanged(getAuth(app), async (user) => {
+    let generation = 0
+    const auth = getAuth(app)
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (cancelled) return
+      const request = ++generation
+      const isCurrent = () => !cancelled && request === generation && auth.currentUser?.uid === user?.uid
+      // Retire the previous owner's evidence before starting another private read.
+      setEvidence([])
       setSignedIn(Boolean(user))
       if (!user) {
         setEvidence([])
@@ -119,21 +125,22 @@ export function useHomePersonalizedScene(): { scene: HomePersonalizedScene; load
       setLoading(true)
       try {
         const snapshot = await getDocs(query(collection(getFirebaseDb(), 'users', user.uid, 'memories'), limit(12)))
-        if (!cancelled) {
+        if (isCurrent()) {
           setEvidence(snapshot.docs.map((item) => evidenceFromDocument(item.id, item.data() as Record<string, unknown>)))
           setDataAvailable(true)
         }
       } catch {
-        if (!cancelled) {
+        if (isCurrent()) {
           setEvidence([])
           setDataAvailable(false)
         }
       } finally {
-        if (!cancelled) setLoading(false)
+        if (isCurrent()) setLoading(false)
       }
     })
     return () => {
       cancelled = true
+      generation += 1
       unsubscribe()
     }
   }, [isolatedReviewMode, permissionsAvailable, requestedMode])
