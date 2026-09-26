@@ -8,7 +8,7 @@ on:
         required: true
         type: string
   pull_request:
-    branches: [main, home-final-v24-certify-20260826]
+    branches: [main, home-final-v24-certify-20260826, converge/final-canon-spatial-20260922]
     paths:
       - '.github/workflows/focus-gold-master-proof.yml'
       - 'scripts/capture-focus-gold-master-proof.mjs'
@@ -19,6 +19,7 @@ on:
       - 'urai-tier1/src/spatial/world/**'
       - 'urai-tier1/src/spatial/performance/**'
       - 'urai-tier1/tests/focus-review-regression-contract.test.mjs'
+      - 'urai-tier1/tests/focus-stellar-render-transform.test.mjs'
 
 permissions:
   contents: read
@@ -70,6 +71,11 @@ jobs:
         run: |
           corepack enable
           pnpm install --frozen-lockfile
+
+      - name: Verify stellar transform integrity
+        run: |
+          cd urai-tier1
+          node --import tsx --test tests/focus-stellar-render-transform.test.mjs
 
       - name: Build exact static release candidate
         shell: bash

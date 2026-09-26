@@ -90,7 +90,7 @@ test('active non-XR Home is direct bodyless first-person and keeps Avatar assets
     '/life-map/?from=home-sky',
   ]) has(activeHome, marker)
   assert.doesNotMatch(activeHome, /<HomeEmbodiedAvatar/)
-  assert.match(activeHome, /CURRENT_HOME_PRESENCE_ROOTS = new Set\(\['home-living-memory-orb', 'home-orb-v288-visible-authority'\]\)/)
+  assert.match(activeHome, /CURRENT_HOME_PRESENCE_ROOTS = new Set\(\['home-living-memory-orb', 'home-orb-living-memory-visible-authority'\]\)/)
   assert.doesNotMatch(activeHome, /data-testid="urai-home-avatar-enter-first-person"|visible-cinematic-avatar|visible-avatar-third-person/)
   assert.doesNotMatch(activeHome, /import\s+\{?\s*HomeEmbodiedAvatar|<HomeEmbodiedAvatar\b|home-human-makehuman-v4\.glb/)
   assert.match(activeHome, /\/urai-home-user-avatar\//)

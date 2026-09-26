@@ -10,7 +10,7 @@ if (authority.schemaVersion !== 'urai-home-visual-authority-2') fail(`unsupporte
 for (const field of ['rendererOwner','artRevision','worldIdentifier','proofSchema','orbVisualAuthority','currentRuntimeCandidate','lastCertifiedPredecessor']) if (!authority[field]) fail(`missing ${field}`)
 if (authority.artRevision !== 'v293-direct-bodyless-first-person-convergence') fail(`unexpected art revision ${authority.artRevision}`)
 if (authority.worldIdentifier !== 'cinematic-lived-world-threshold') fail(`unexpected world identifier ${authority.worldIdentifier}`)
-if (authority.orbVisualAuthority !== 'v288-grounded-biomorphic-reliquary') fail(`unexpected current Orb authority ${authority.orbVisualAuthority}`)
+if (authority.orbVisualAuthority !== 'living-memory-translucent-heart') fail(`unexpected current Orb authority ${authority.orbVisualAuthority}`)
 if (authority.certificationState !== 'candidate-requires-fresh-exact-head-pixels') fail(`unexpected certification state ${authority.certificationState}`)
 
 const predecessor = authority.lastCertifiedPredecessor
@@ -33,9 +33,9 @@ for (const required of [
   'HomeCurrentArtRepair.tsx','HomeAAAVisualRepair.tsx','HomeVisualAuthority.tsx','HomeAtmosphericSky.tsx',
   'rock-tile-floor/rock-tile-floor-diff-1k.webp','polyhaven-v48/fern_02/asset.gltf',
   'polyhaven-v48/rock_face_01/asset.gltf','polyhaven-v48/rock_face_02/asset.gltf',
-  'urai-orb-avatar-v1.glb','HomeOrbReliquaryV286.tsx','HomeOrbGroundedV288.tsx'
+  'urai-orb-avatar-v1.glb'
 ]) if (!authority.runtimeAssets.includes(required)) fail(`runtimeAssets missing ${required}`)
-for (const retired of ['HomeLaunchSanctuaryV254.tsx','HomeWorldProductionV225PolishV2.tsx']) if (authority.runtimeAssets.includes(retired)) fail(`retired runtime asset cannot be current: ${retired}`)
+for (const retired of ['HomeOrbReliquaryV286.tsx','HomeOrbGroundedV288.tsx','HomeLaunchSanctuaryV254.tsx','HomeWorldProductionV225PolishV2.tsx']) if (authority.runtimeAssets.includes(retired)) fail(`retired runtime asset cannot be current: ${retired}`)
 
 const layoutRoot = path.join(repoRoot, 'urai-tier1/src/spatial/layout')
 const assetsRoot = path.join(repoRoot, 'urai-tier1/src/spatial/assets')
@@ -56,7 +56,7 @@ for (const asset of authority.runtimeAssets) {
 const runtime = await readFile(path.join(repoRoot, 'urai-tier1/src/app/AssetDrivenHomeWorld.tsx'), 'utf8')
 for (const token of [
   'cinematic-lived-world-threshold',
-  'direct-bodyless-first-person-v288-biomorphic-orb-physical-ground-and-broad-sky-threshold',
+  'direct-bodyless-first-person-translucent-living-memory-orb-physical-ground-and-broad-sky-threshold',
   'data-home-spatial-regions="home-physical-world home-living-memory-orb home-life-map-sky-threshold"',
   'data-home-life-map-entry',
   'visible-sky-broad-interaction',
@@ -75,7 +75,7 @@ for (const token of [
   '<HomeAtmosphericSky reducedMotion={reducedMotion}',
   "const ORB_MODEL = '/assets/urai/generated/models/urai-orb-avatar-v1.glb'",
   "root.name = 'home-orb-authored-reference-core-v291'",
-  "visualAuthority: 'v288-grounded-biomorphic-reliquary'",
+  "visualAuthority: 'living-memory-translucent-heart'",
   "interactionAuthority: 'v291-current-home-orb-state-and-speech-runtime'",
   "data-home-embodied-self={firstPerson ? 'camera-only-first-person-home' : 'camera-only-transition'}",
   "data-home-presence-presentation={firstPerson ? 'bodyless-first-person-home' : 'camera-only-transition'}",
@@ -92,8 +92,10 @@ for (const retired of [
 ]) if (renderer.includes(retired)) fail(`renderer restored retired Home ownership: ${retired}`)
 
 const visualAuthority = await readFile(path.join(layoutRoot, 'HomeVisualAuthority.tsx'), 'utf8')
-for (const token of ['Current Home Orb visual authority shim','visible morphology is restored to','HomeOrbGroundedV288','export function HomeVisualAuthority()']) if (!visualAuthority.includes(token)) fail(`visual authority shim missing ${token}`)
-if (!visualAuthority.includes('return <HomeOrbGroundedV288 />')) fail('V288 visible authority is not mounted')
+for (const token of ['Current Home Orb visual authority boundary','home-orb-living-memory-visible-authority', "visualAuthority: 'living-memory-translucent-heart'", 'certified: false', '>{children}</group>']) if (!visualAuthority.includes(token)) fail(`visual authority boundary missing ${token}`)
+if (/HomeOrbGroundedV288|HomeOrbReliquaryV286|colorWrite\s*=|opacity\s*=/.test(visualAuthority)) fail('historical rock or material suppression returned to current authority')
+if (!/<HomeVisualAuthority>\s*<OrbCompanion[^>]+\/>\s*<\/HomeVisualAuthority>/.test(renderer)) fail('visual boundary must contain the single current Orb owner')
+for (const token of ['home-orb-reference-glass-shell','home-orb-luminous-inner-volume','home-orb-memory-bloom-core','home-orb-memory-motes','interactionOwner: true','visualOwner: true','transmission={.78}','depthWrite={false}']) if (!renderer.includes(token)) fail(`living-memory Orb missing ${token}`)
 
 const currentRepair = await readFile(path.join(layoutRoot, 'HomeCurrentArtRepair.tsx'), 'utf8')
 for (const retired of ['GroundThresholdV234','LifeMapThresholdV234','LivingMemoryHeartV234','home-v249-life-map-rooted-celestial-ascent']) if (currentRepair.includes(retired)) fail(`V249 localized repair returned: ${retired}`)

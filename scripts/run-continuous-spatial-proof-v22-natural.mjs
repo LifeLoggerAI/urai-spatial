@@ -113,9 +113,9 @@ function snapshotPasses(value, viewport) {
     && value.homeMovementPadVisible === expectPad
 }
 
-async function enterFirstPersonHome(page, owner) {
+async function enterFirstPersonHome(page, owner, viewport) {
   const direct = await homeSnapshot(owner, page)
-  if (!snapshotPasses(direct, { isMobile: false, width: page.viewportSize()?.width })) {
+  if (!snapshotPasses(direct, viewport)) {
     throw new Error(`Direct first-person Home baseline mismatch: ${JSON.stringify(direct)}`)
   }
   return direct
@@ -167,13 +167,13 @@ async function visualCapture(browser, id, viewport, query) {
     const owner = await waitHome(page)
     record.status = response?.status()
     record.presentationSnapshot = await homeSnapshot(owner, page)
-    if (!presentationSnapshotPasses(record.presentationSnapshot)) throw new Error(`Home presentation baseline mismatch: ${JSON.stringify(record.presentationSnapshot)}`)
+    if (!snapshotPasses(record.presentationSnapshot, viewport)) throw new Error(`Home presentation baseline mismatch: ${JSON.stringify(record.presentationSnapshot)}`)
     record.presentationImage = await screenshot(page, `${id}-presentation`)
-    await enterFirstPersonHome(page, owner)
+    await enterFirstPersonHome(page, owner, viewport)
     record.snapshot = await homeSnapshot(owner, page)
     record.image = await screenshot(page, id)
     record.passed = record.status === 200
-      && presentationSnapshotPasses(record.presentationSnapshot)
+      && snapshotPasses(record.presentationSnapshot, viewport)
       && snapshotPasses(record.snapshot, viewport)
       && record.presentationImage.bytes > 12_000
       && record.image.bytes > 12_000
@@ -221,7 +221,7 @@ async function interaction(browser, { id, viewport, kind, reducedMotion = 'no-pr
   try {
     await page.goto(url('homeAssetReview=1&homePrivateFixture=1'), { waitUntil: 'domcontentloaded', timeout: 60_000 })
     const owner = await waitHome(page)
-    record.presentationSnapshot = await enterFirstPersonHome(page, owner)
+    record.presentationSnapshot = await enterFirstPersonHome(page, owner, viewport)
     const before = await homeSnapshot(owner, page)
     if (!snapshotPasses(before, viewport)) throw new Error(`Home first-person baseline mismatch: ${JSON.stringify(before)}`)
     record.firstPersonBaseline = before
@@ -237,8 +237,11 @@ async function interaction(browser, { id, viewport, kind, reducedMotion = 'no-pr
       record.transition = await owner.getAttribute('data-home-transition-sequence')
       record.passed = record.pointer.phase === 'SKY_ASCENT' && record.inputLocked === 'true' && record.transition === 'SKY_ASCENT'
     } else if (kind === 'orb') {
-      const button = page.getByRole('button', { name: 'Open UrAi Orb companion' }).first()
-      await button.waitFor({ state: 'visible', timeout: 10_000 })
+      // The non-dominant desktop navigation becomes visible on keyboard focus.
+      // Prove native Tab reachability before asserting its focused visibility.
+      const button = page.locator('.home-semantic-navigation[data-home-navigation-owner="runtime-boundary"]')
+        .getByTestId('home-semantic-orb')
+      await button.waitFor({ state: 'attached', timeout: 10_000 })
       if (await button.getAttribute('data-testid') !== 'home-semantic-orb') throw new Error('unexpected semantic Orb owner')
       record.focusSteps = await activateSemanticTargetWithNativeKeyboard(page, 'home-semantic-orb')
       await page.locator('#urai-world-companion-menu[aria-hidden="false"]').waitFor({ state: 'visible', timeout: 10_000 })

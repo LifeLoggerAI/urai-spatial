@@ -18,8 +18,14 @@ on:
       - 'urai-tier1/src/spatial/assets/HomeOrbGroundedV288.tsx'
       - 'urai-tier1/src/spatial/assets/HomeAtmosphericSky.tsx'
       - 'urai-tier1/tests/portal-orb-proof-integrity-contract.test.mjs'
+      - 'urai-tier1/src/spatial/orb/OrbConversationPanel.tsx'
+      - 'urai-tier1/src/spatial/world/PersistentWorldCompanion.tsx'
+      - 'urai-tier1/src/spatial/world/homePhysicalOrbOwnership.css'
+      - 'urai-tier1/src/spatial/world/routeOwnerConvergence.css'
+      - 'urai-tier1/tests/orb-conversation-lifecycle.test.mjs'
+      - 'urai-tier1/tests/home-control-layout-geometry.test.mjs'
   pull_request:
-    branches: [main]
+    branches: [main, converge/final-canon-spatial-20260922]
     paths:
       - '.github/workflows/portal-orb-exact-proof.yml'
       - '.github/workflows/launch-verification.yml'
@@ -38,6 +44,12 @@ on:
       - 'urai-tier1/public/assets/urai/replay/replay-memory-film-main.webp'
       - 'urai-tier1/public/assets/urai/replay/replay-memory-film-mobile.webp'
       - 'urai-tier1/tests/portal-orb-proof-integrity-contract.test.mjs'
+      - 'urai-tier1/src/spatial/orb/OrbConversationPanel.tsx'
+      - 'urai-tier1/src/spatial/world/PersistentWorldCompanion.tsx'
+      - 'urai-tier1/src/spatial/world/homePhysicalOrbOwnership.css'
+      - 'urai-tier1/src/spatial/world/routeOwnerConvergence.css'
+      - 'urai-tier1/tests/orb-conversation-lifecycle.test.mjs'
+      - 'urai-tier1/tests/home-control-layout-geometry.test.mjs'
   workflow_dispatch:
 
 permissions:
@@ -66,53 +78,8 @@ jobs:
           set -euo pipefail
           test "$(git rev-parse HEAD)" = "$URAI_EXACT_HEAD"
           test -z "$(git status --porcelain --untracked-files=all)"
-      - name: Verify current V288 visual authority plus V291 interaction runtime and lived-world/broad-sky authority
-        run: |
-          set -euo pipefail
-          home='urai-tier1/src/spatial/layout/HomeWorldProductionV223.tsx'
-          sky='urai-tier1/src/spatial/assets/HomeAtmosphericSky.tsx'
-          asset='urai-tier1/src/app/AssetDrivenHomeWorld.tsx'
-          visual='urai-tier1/src/spatial/layout/HomeVisualAuthority.tsx'
-          adapter='urai-tier1/src/spatial/assets/HomeOrbGroundedV288.tsx'
-          reliquary='urai-tier1/src/spatial/assets/HomeOrbReliquaryV286.tsx'
-          authority='urai-tier1/src/app/currentHomeVisualAuthority.json'
-          grep -Fq '"artRevision": "v293-direct-bodyless-first-person-convergence"' "$authority"
-          grep -Fq '"orbVisualAuthority": "v288-grounded-biomorphic-reliquary"' "$authority"
-          grep -Fq '"certificationState": "candidate-requires-fresh-exact-head-pixels"' "$authority"
-          grep -Fq 'return <HomeOrbGroundedV288 />' "$visual"
-          grep -Fq 'home-orb-reference-glass-shell' "$home"
-          grep -Fq 'home-orb-luminous-inner-volume' "$home"
-          grep -Fq 'home-orb-memory-bloom-core' "$home"
-          grep -Fq 'home-orb-memory-motes' "$home"
-          grep -Fq "visualAuthority: 'v288-grounded-biomorphic-reliquary'" "$home"
-          grep -Fq "interactionAuthority: 'v291-current-home-orb-state-and-speech-runtime'" "$home"
-          if grep -Eq 'home-orb-stabilizer-ring|home-orb-crystalline-fragments' "$home"; then
-            echo 'Retired Orb ring/crystalline authority returned to current Home source' >&2
-            exit 1
-          fi
-          if grep -Fq 'home-v253-literal-living-memory-heart' "$reliquary"; then
-            echo 'Retired heart Orb authority returned to current reliquary source' >&2
-            exit 1
-          fi
-          grep -Fq 'home-visible-user-avatar' "$home"
-          grep -Fq 'home-living-memory-orb' "$home"
-          grep -Fq 'data-home-orb-runtime-asset={ORB_MODEL}' "$home"
-          grep -Fq 'RetireLegacyHomeHotspots' "$home"
-          grep -Fq "data-home-ground-entry=\"physical-world-surface\"" "$home"
-          grep -Fq "data-home-life-map-entry=\"visible-sky-broad-interaction\"" "$home"
-          grep -Fq "data-home-portal-sequence=\"idle\"" "$home"
-          grep -Fq 'home-sky-life-map-threshold' "$sky"
-          grep -Fq "threshold: 'broad-visible-sky'" "$sky"
-          grep -Fq 'localGroundPortal: false' "$sky"
-          grep -Fq 'home-life-map-sky-threshold' "$asset"
-          if grep -Fq 'home-life-map-physical-portal' "$asset"; then
-            echo 'Localized Life Map ground portal returned to live Home authority' >&2
-            exit 1
-          fi
-          if grep -Eq "nearby.?===.?['\"]life-map['\"]|HOME_LIFE_MAP" "$home" "$asset"; then
-            echo 'Fixed/proximity Life Map ownership returned to live Home authority' >&2
-            exit 1
-          fi
+      - name: Verify current living-memory Orb and bodyless Home authority
+        run: node scripts/verify-current-home-visual-authority.mjs
       - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1
         with:
           version: 10.0.0
@@ -124,6 +91,9 @@ jobs:
           cache-dependency-path: pnpm-lock.yaml
       - name: Install exact lockfile
         run: pnpm install --frozen-lockfile
+      - name: Verify living-memory Orb ownership and material behavior
+        working-directory: urai-tier1
+        run: node --test tests/home-living-memory-orb-runtime.test.mjs
       - name: Validate authored Home assets
         run: node scripts/verify-home-finalization-authored-assets.mjs
       - name: Build exact static candidate
@@ -137,7 +107,7 @@ jobs:
           node --check scripts/run-with-ci-webgl.mjs
           node --check scripts/capture-natural-home-orb-proof.mjs
           node --check scripts/capture-home-sky-interaction-proof.mjs
-          (cd urai-tier1 && node --test tests/portal-orb-proof-integrity-contract.test.mjs tests/visible-canvas-capture.test.mjs)
+          (cd urai-tier1 && node --test tests/portal-orb-proof-integrity-contract.test.mjs tests/visible-canvas-capture.test.mjs tests/orb-conversation-lifecycle.test.mjs tests/home-control-layout-geometry.test.mjs)
       - name: Capture exact Home, Orb, broad-sky interaction and reduced-motion proof
         run: |
           python3 -m http.server 4173 --bind 127.0.0.1 --directory urai-tier1/out > /tmp/urai-portal-orb-http.log 2>&1 &

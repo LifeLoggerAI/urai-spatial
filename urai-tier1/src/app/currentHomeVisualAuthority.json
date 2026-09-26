@@ -15,7 +15,7 @@
   "currentRuntimeCandidate": {
     "rendererOwner": "HomeWorldProductionV223.tsx",
     "orbRuntimeAsset": "/assets/urai/generated/models/urai-orb-avatar-v1.glb",
-    "orbVisualAuthority": "v288-grounded-biomorphic-reliquary",
+    "orbVisualAuthority": "living-memory-translucent-heart",
     "certified": false,
     "requiredEvidence": "fresh-exact-head-source-build-runtime-and-literal-pixel-acceptance",
     "homePresentationAuthority": "direct-bodyless-first-person",
@@ -34,9 +34,7 @@
     "polyhaven-v48/fern_02/asset.gltf",
     "polyhaven-v48/rock_face_01/asset.gltf",
     "polyhaven-v48/rock_face_02/asset.gltf",
-    "urai-orb-avatar-v1.glb",
-    "HomeOrbReliquaryV286.tsx",
-    "HomeOrbGroundedV288.tsx"
+    "urai-orb-avatar-v1.glb"
   ],
-  "orbVisualAuthority": "v288-grounded-biomorphic-reliquary"
+  "orbVisualAuthority": "living-memory-translucent-heart"
 }

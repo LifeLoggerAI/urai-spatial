@@ -19,7 +19,7 @@ test('Home preserves the locked bodyless first-person + Orb + Ground + Sky autho
   assert.match(currentHome, /data-home-ground-entry="physical-world-surface"/)
   assert.match(currentHome, /data-home-life-map-entry="visible-sky-broad-interaction"/)
   assert.match(currentHome, /data-home-orb-runtime-asset=\{ORB_MODEL\}/)
-  assert.match(currentHome, /CURRENT_HOME_PRESENCE_ROOTS = new Set\(\['home-living-memory-orb', 'home-orb-v288-visible-authority'\]\)/)
+  assert.match(currentHome, /CURRENT_HOME_PRESENCE_ROOTS = new Set\(\['home-living-memory-orb', 'home-orb-living-memory-visible-authority'\]\)/)
   assert.match(currentHome, /<AvatarSelfView open=\{homeState\.stableState === 'AVATAR_SELF_VIEW'\}/)
   assert.doesNotMatch(currentHome, /visible-avatar-third-person|visible-home-avatar-third-person/)
 })
@@ -64,7 +64,7 @@ test('Current authored Orb rests from visible shell geometry instead of the reti
 })
 
 test('Current Home preserves living-memory Orb descendants while keeping the default Home bodyless', () => {
-  assert.match(currentHome, /const CURRENT_HOME_PRESENCE_ROOTS = new Set\(\['home-living-memory-orb', 'home-orb-v288-visible-authority'\]\)/)
+  assert.match(currentHome, /const CURRENT_HOME_PRESENCE_ROOTS = new Set\(\['home-living-memory-orb', 'home-orb-living-memory-visible-authority'\]\)/)
   assert.match(currentHome, /function isInsideCurrentHomePresence\(object: THREE\.Object3D\)/)
   assert.match(currentHome, /while \(current\)/)
   assert.match(currentHome, /CURRENT_HOME_PRESENCE_ROOTS\.has\(current\.name\)/)

@@ -42,7 +42,8 @@ test('accessibility and performance implementation contracts cover direct first-
     'inert={!open ? true : undefined}',
     'firstControl.focus()',
     "firstControl.focus({ preventScroll: true })",
-    'orbRef.current?.focus()',
+    'const focusTarget = activator?.isConnected ? activator : homeOrb ?? orbRef.current',
+    'focusTarget?.focus()',
     "event.key !== 'Escape'",
     'onClick={toggleCompanion}',
   ]) requireText(companion, marker)

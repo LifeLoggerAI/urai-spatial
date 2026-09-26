@@ -1,4 +1,6 @@
 import { mkdir, writeFile } from 'node:fs/promises'
+import { createHash } from 'node:crypto'
+import { assertGroundCameraChange, parseGroundCamera } from './lib/ground-camera-proof.mjs'
 import { createRequire } from 'node:module'
 import path from 'node:path'
 
@@ -55,6 +57,8 @@ async function capture(page, scenario, state) {
   activePhase = `screenshot:${state}`
   console.log(`[ground-proof] scenario=${activeScenario} phase=${activePhase} start`)
 
+  const camera = await readCamera(page)
+  let sha256
   const cdp = await page.context().newCDPSession(page)
   try {
     const screenshot = await cdp.send('Page.captureScreenshot', {
@@ -62,12 +66,19 @@ async function capture(page, scenario, state) {
       fromSurface: true,
       captureBeyondViewport: false,
     })
-    await writeFile(path.join(outDir, file), Buffer.from(screenshot.data, 'base64'))
+    const png = Buffer.from(screenshot.data, 'base64')
+    sha256 = createHash('sha256').update(png).digest('hex')
+    await writeFile(path.join(outDir, file), png)
   } finally {
     await cdp.detach().catch(() => undefined)
   }
 
-  captures.push({ scenario: scenario.id, environment: scenario.environment, reducedMotion: scenario.reducedMotion, state, file })
+  const previous = captures.filter((item) => item.scenario === scenario.id)
+  for (const item of previous) {
+    if (item.sha256 === sha256) errors.push(`${scenario.id}: ${state} duplicates ${item.state}; distinct camera evidence required`)
+  }
+  assertGroundCameraChange(state, camera, previous.find((item) => item.state === 'idle')?.camera)
+  captures.push({ scenario: scenario.id, environment: scenario.environment, reducedMotion: scenario.reducedMotion, state, file, sha256, camera })
   console.log(`[ground-proof] scenario=${activeScenario} phase=${activePhase} complete`)
 }
 
@@ -83,14 +94,44 @@ async function closeWithBudget(label, closeFn, budgetMs = 10_000) {
   if (result === 'timeout') console.warn(`[ground-proof] ${label} close exceeded ${budgetMs}ms after required evidence was captured`)
 }
 
+async function readCamera(page) {
+  const raw = await page.locator('[data-testid="urai-ground-lived-world"]').getAttribute('data-ground-rendered-camera')
+  return parseGroundCamera(raw)
+}
+
 async function dragLook(page, canvasBox, dx, dy) {
   const x = canvasBox.x + canvasBox.width * 0.5
   const y = canvasBox.y + canvasBox.height * 0.5
   await page.mouse.move(x, y)
   await page.mouse.down()
-  await page.mouse.move(x + dx, y + dy)
+  // First movement activates useDragLook; subsequent movement turns the camera.
+  await page.mouse.move(x + dx, y + dy, { steps: 24 })
   await page.mouse.up()
   await page.waitForTimeout(240)
+}
+
+async function turnTo(page, canvasBox, yaw, pitch) {
+  for (let attempt = 0; attempt < 8; attempt++) {
+    const current = await readCamera(page)
+    if (Math.abs(current.yaw - yaw) < 0.08 && Math.abs(current.pitch - pitch) < 0.08) return
+    // Keep every gesture inside the viewport, including narrow landscape views.
+    const dx = Math.max(-canvasBox.width * 0.4, Math.min(canvasBox.width * 0.4, -(yaw - current.yaw) / 0.0032))
+    const dy = Math.max(-canvasBox.height * 0.4, Math.min(canvasBox.height * 0.4, -(pitch - current.pitch) / 0.0032))
+    await dragLook(page, canvasBox, dx, dy)
+  }
+  throw new Error(`Ground camera did not reach requested yaw=${yaw}, pitch=${pitch}`)
+}
+
+async function holdTouchMovement(page, analogBox) {
+  const cdp = await page.context().newCDPSession(page)
+  const point = { x: analogBox.x + analogBox.width / 2, y: analogBox.y + analogBox.height * 0.2, id: 1 }
+  try {
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [point] })
+    await page.waitForTimeout(900)
+  } finally {
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] })
+    await cdp.detach()
+  }
 }
 
 try {
@@ -240,7 +281,7 @@ try {
       if (!(await analog.isVisible())) throw new Error(`${scenario.id}: analog movement pad is not visible`)
       const analogBox = await analog.boundingBox()
       if (!analogBox) throw new Error(`${scenario.id}: analog movement pad has no bounds`)
-      await page.touchscreen.tap(analogBox.x + analogBox.width / 2, analogBox.y + analogBox.height * 0.2)
+      await holdTouchMovement(page, analogBox)
       await page.waitForTimeout(450)
       await capture(page, scenario, 'after-move')
     } else {
@@ -250,11 +291,11 @@ try {
       await page.waitForTimeout(180)
       await capture(page, scenario, 'after-move')
 
-      await dragLook(page, canvasBox, 0, 220)
+      await turnTo(page, canvasBox, 0, -0.74)
       await capture(page, scenario, 'look-down-material-gate')
-      await dragLook(page, canvasBox, 0, -420)
+      await turnTo(page, canvasBox, 0, 0.74)
       await capture(page, scenario, 'look-up-sky-gate')
-      await dragLook(page, canvasBox, 620, -180)
+      await turnTo(page, canvasBox, Math.PI, -0.04)
       await capture(page, scenario, 'look-back-world-continuity')
     }
 

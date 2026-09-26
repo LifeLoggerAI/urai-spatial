@@ -107,7 +107,12 @@ export function useHomeExperienceController({
   }, [currentOrigin])
 
   const completeOrbTransformation = useCallback(() => dispatch({ type: 'TRANSITION_COMPLETE' }), [])
-  const escape = useCallback(() => dispatch({ type: 'ESCAPE' }), [])
+  const escape = useCallback(() => {
+    // Veto a camera completion callback in the same frame, before React has
+    // rendered the cancelled destination out of the controller closure.
+    if (state.pendingDestination) transitionCommitted.current = true
+    dispatch({ type: 'ESCAPE' })
+  }, [state.pendingDestination])
   const completeRestore = useCallback(() => dispatch({ type: 'HOME_RESTORE_COMPLETE' }), [])
 
   const commitDestination = useCallback((destination: HomeDestination) => {

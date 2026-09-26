@@ -1,15 +1,18 @@
 'use client'
 
-import { HomeOrbGroundedV288 } from '@/spatial/assets/HomeOrbGroundedV288'
+import type { ReactNode } from 'react'
 
 /**
- * Current Home Orb visual authority shim.
+ * Current Home Orb visual authority boundary.
  *
- * The current Home runtime continues to own Orb semantics, pointer interaction,
- * speech/VAD timing and state telemetry. The visible morphology is restored to
- * the last certified V288 grounded biomorphic reliquary authority while fresh
- * exact-head pixels re-earn acceptance on this successor.
+ * The living-memory runtime owns its translucent shell, luminous interior,
+ * speech/state expression and single pointer action together. Historical rock
+ * adapters are not mounted and cannot suppress the current materials or lights.
+ * This is an uncertified candidate until fresh exact-head pixels are accepted.
  */
-export function HomeVisualAuthority() {
-  return <HomeOrbGroundedV288 />
+export function HomeVisualAuthority({ children }: { children: ReactNode }) {
+  return <group
+    name="home-orb-living-memory-visible-authority"
+    userData={{ visualAuthority: 'living-memory-translucent-heart', interactionOwner: false, certified: false }}
+  >{children}</group>
 }

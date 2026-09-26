@@ -46,9 +46,10 @@ requireMatch(companion, /useLayoutEffect\(\(\) => \{/, 'pre-paint Orb event subs
 requireMatch(companion, /takePendingUraiWorldOrbOpen\(\)/, 'pending Orb request consumption')
 requireMatch(companion, /flushSync\(\(\) => setOpen\(true\)\)/, 'deterministic companion opening')
 requireMatch(companion, /const activator = externalActivatorRef\.current/, 'exact activating-control snapshot')
-requireMatch(companion, /if \(activator\?\.isConnected\) activator\.focus\(\)/, 'connected exact-activator focus return')
-requireMatch(companion, /else orbRef\.current\?\.focus\(\)/, 'fallback Orb focus return')
-requireMatch(companion, /const focusTarget = activator\?\.isConnected \? activator : orbRef\.current/, 'post-focus exact target verification')
+requireMatch(companion, /const focusTarget = activator\?\.isConnected \? activator : homeOrb \?\? orbRef\.current/, 'connected exact-activator and semantic Home fallback priority')
+requireMatch(companion, /document\.querySelector<HTMLButtonElement>\('\[data-testid="home-semantic-orb"\]'\)/, 'visible semantic Home Orb fallback')
+requireMatch(companion, /focusTarget\?\.focus\(\)/, 'focus returns to the resolved control')
+requireMatch(companion, /document\.activeElement !== focusTarget[\s\S]*focusTarget\.focus\(\{ preventScroll: true \}\)/, 'post-focus exact target verification')
 
 process.stdout.write(`${JSON.stringify({
   ok: true,

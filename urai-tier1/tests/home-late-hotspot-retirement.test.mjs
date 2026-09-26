@@ -24,8 +24,8 @@ test('assets inserted after loading retire obsolete hotspots while preserving cu
   const oldGround = new THREE.Group(); oldGround.name = 'home-v226-ground-inhabited-hearth'
   const oldRaycast = oldOrb.raycast
   const terrain = new THREE.Group(); terrain.name = 'home-terrain'
-  const current = new THREE.Group(); current.name = 'home-orb-v288-visible-authority'
-  const currentShell = new THREE.Group(); currentShell.name = 'home-v288-grounded-biomorphic-memory-reliquary'
+  const current = new THREE.Group(); current.name = 'home-orb-living-memory-visible-authority'
+  const currentShell = new THREE.Group(); currentShell.name = 'home-orb-reference-glass-shell'
   current.add(currentShell)
   late.add(oldOrb, oldGround, terrain, current)
   scene.add(late)

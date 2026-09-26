@@ -116,6 +116,17 @@ function prepareAuthoredOrbModel(source: THREE.Object3D) {
       material.metalness = 0
       material.transparent = true
       material.opacity = .34
+      material.depthWrite = false
+      // The generated model contributes interior folds only. Its stone textures
+      // must not turn the living-memory core into a second opaque rock shell.
+      material.map = null
+      material.normalMap = null
+      material.roughnessMap = null
+      material.metalnessMap = null
+      material.aoMap = null
+      material.emissiveMap = null
+      material.flatShading = false
+      object.castShadow = false
       if (material instanceof THREE.MeshPhysicalMaterial) {
         material.transmission = .54
         material.thickness = .08
@@ -137,11 +148,12 @@ function isSoftwareWebGLRenderer(gl: THREE.WebGLRenderer) {
   return /swiftshader|llvmpipe|lavapipe|software|microsoft basic render/i.test(String(renderer || ''))
 }
 
-function Cadence({ reducedMotion }: { reducedMotion: boolean }) {
+function Cadence({ reducedMotion, ready }: { reducedMotion: boolean; ready: boolean }) {
   const { gl, invalidate, setFrameloop } = useThree()
   const cadenceRef = useRef<ReturnType<typeof createPostRenderCadence> | null>(null)
   useFrame(() => cadenceRef.current?.beforeRender())
   useEffect(() => {
+    if (!ready) { setFrameloop('never'); return }
     const constrained = reducedMotion || isSoftwareWebGLRenderer(gl)
     if (!constrained) { setFrameloop('always'); return }
     setFrameloop('demand')
@@ -159,7 +171,7 @@ function Cadence({ reducedMotion }: { reducedMotion: boolean }) {
       stopAfterRender()
       cadence.dispose()
     }
-  }, [gl, invalidate, reducedMotion, setFrameloop])
+  }, [gl, invalidate, reducedMotion, ready, setFrameloop])
   return null
 }
 
@@ -180,7 +192,7 @@ const legacyHotspotPatterns = [
   /home-visible-user-avatar/,
   /urai-home-user-avatar/,
 ]
-const CURRENT_HOME_PRESENCE_ROOTS = new Set(['home-living-memory-orb', 'home-orb-v288-visible-authority'])
+const CURRENT_HOME_PRESENCE_ROOTS = new Set(['home-living-memory-orb', 'home-orb-living-memory-visible-authority'])
 
 function isInsideCurrentHomePresence(object: THREE.Object3D) {
   let current: THREE.Object3D | null = object
@@ -245,6 +257,13 @@ function OrbCompanion({ state, reducedMotion, onOrb }: { state: OrbState; reduce
   const speechActive = useRef(false)
   const orb = useGLTF(ORB_MODEL)
   const authoredOrb = useMemo(() => prepareAuthoredOrbModel(orb.scene), [orb.scene])
+  useEffect(() => () => {
+    authoredOrb.traverse((object) => {
+      if (!(object instanceof THREE.Mesh)) return
+      const materials = Array.isArray(object.material) ? object.material : [object.material]
+      materials.forEach((material) => material.dispose())
+    })
+  }, [authoredOrb])
   const { actions } = useAnimations(orb.animations, authoredOrb)
   const quality = useAdaptiveSpatialQuality()
   const effectBudget = ORB_EFFECT_BUDGET[quality.tier]
@@ -344,7 +363,8 @@ function OrbCompanion({ state, reducedMotion, onOrb }: { state: OrbState; reduce
     if (!reducedMotion) {
       yaw.current += delta * .015 * motion.rotation
       root.current.rotation.y = yaw.current
-      root.current.position.y = baseY + Math.sin(clock.elapsedTime * .58) * motion.hover
+      // Shell expansion is offset upward; the grounded presence never dips into terrain.
+      root.current.position.y = baseY + ORB_FIELD_RADIUS * ORB_FIELD_Y_SCALE * expressiveEnergy * .004
       if (authoredCore.current) {
         const baseScale = .338 * motion.coreScale + Math.sin(clock.elapsedTime * .9) * motion.breath
         authoredCore.current.scale.setScalar(baseScale - gather * .004 + expressiveEnergy * .006)
@@ -403,12 +423,15 @@ function OrbCompanion({ state, reducedMotion, onOrb }: { state: OrbState; reduce
       moteCeiling: effectBudget.motes,
       filamentCeiling: effectBudget.filaments,
       restHeight: 'visible-shell-radius-plus-1.5cm-terrain-clearance',
-      visualAuthority: 'v288-grounded-biomorphic-reliquary',
+      visualAuthority: 'living-memory-translucent-heart',
       interactionAuthority: 'v291-current-home-orb-state-and-speech-runtime',
-      referenceLanguage: 'grounded-biomorphic-memory-reliquary-visible-authority-with-v291-state-and-speech-runtime',
+      referenceLanguage: 'one-metre-translucent-shell-with-luminous-living-memory-interior',
+      interactionOwner: true,
+      visualOwner: true,
+      certified: false,
     }}
   >
-    <mesh ref={fieldShell} castShadow scale={[1,ORB_FIELD_Y_SCALE,.95]} onClick={activate} name="home-orb-reference-glass-shell">
+    <mesh ref={fieldShell} castShadow={false} scale={[1,ORB_FIELD_Y_SCALE,.95]} name="home-orb-reference-glass-shell">
       <sphereGeometry args={[ORB_FIELD_RADIUS,effectBudget.membraneSegments,effectBudget.membraneSegments]} />
       <meshPhysicalMaterial ref={membrane} color="#9eeaf0" transparent opacity={.16} transmission={.78} thickness={.12} roughness={.14} metalness={0} clearcoat={.92} clearcoatRoughness={.16} ior={1.23} envMapIntensity={1.1} depthWrite={false} />
     </mesh>
@@ -508,8 +531,10 @@ function CameraRig({
       || homeTransition === 'LIFE_MAP_UNWIND'
       || homeTransition === 'ORB_COLLAPSE'
     if (restoring) {
-      elapsed.current += Math.min(delta, .25)
       const duration = reducedMotion ? .22 : .92
+      // This is bounded interpolation back to a saved pose, not motion physics.
+      // Discarding slow-frame time strands input behind additional GPU frames.
+      elapsed.current = Math.min(duration, elapsed.current + Math.max(0, delta))
       const t = THREE.MathUtils.smoothstep(Math.min(1, elapsed.current / duration), 0, 1)
       desired.current.set(...homeOrigin.camera.position)
       camera.position.lerpVectors(start.current, desired.current, t)
@@ -677,7 +702,21 @@ function HomePassportSemanticBridge({
 }
 
 function SceneAssetReadySignal({ onReady }: { onReady: () => void }) {
-  useEffect(() => onReady(), [onReady])
+  const { gl, scene, camera } = useThree()
+  useEffect(() => {
+    let cancelled = false
+    // Avoid synchronously waiting for shader links in the first visible draw.
+    // Keep native Home navigation responsive while the GPU prepares the scene.
+    gl.compileAsync(scene, camera).then(() => {
+      if (!cancelled) onReady()
+    }).catch((error) => {
+      if (!cancelled) {
+        console.error('Home shader preparation failed', error)
+        gl.domElement.dispatchEvent(new Event('urai:home-renderer-failed', { bubbles: true }))
+      }
+    })
+    return () => { cancelled = true }
+  }, [gl, scene, camera, onReady])
   return null
 }
 
@@ -687,6 +726,7 @@ function Scene({
   transition,
   transitionTarget,
   reducedMotion,
+  renderReady,
   personalWeatherState,
   orbState,
   homeStableState,
@@ -711,6 +751,7 @@ function Scene({
   transition: Transition
   transitionTarget: MutableRefObject<TransitionTarget | null>
   reducedMotion: boolean
+  renderReady: boolean
   personalWeatherState: HomeEmotionalWeatherName
   orbState: OrbState
   homeStableState: HomeStableState
@@ -737,7 +778,7 @@ function Scene({
     onGround(event.point.clone())
   }, [homeStableState, homeTransition, onGround, transition])
   return <>
-    <Cadence reducedMotion={reducedMotion} />
+    <Cadence reducedMotion={reducedMotion} ready={renderReady} />
     <color attach="background" args={['#10272a']} />
     <fogExp2 attach="fog" args={['#294946', .011]} />
     <HomeAtmosphericSky reducedMotion={reducedMotion} active={transition === 'life-map'} weatherState={personalWeatherState} onLifeMap={onLifeMap} />
@@ -757,8 +798,9 @@ function Scene({
       interactive={homeStableState === 'AVATAR_HOME_FIRST_PERSON' && !homeTransition && transition === 'none'}
       onNearby={onPassportNearby}
     />
-    <OrbCompanion state={orbState} reducedMotion={reducedMotion} onOrb={onOrb} />
-    <HomeVisualAuthority />
+    <HomeVisualAuthority>
+      <OrbCompanion state={orbState} reducedMotion={reducedMotion} onOrb={onOrb} />
+    </HomeVisualAuthority>
     <CameraRig
       yaw={yaw}
       pitch={pitch}
@@ -782,6 +824,7 @@ function Scene({
 
 export function HomeWorldProductionV223({ onOrbOpen = requestUraiWorldOrbOpen, webglAvailable = true }: Props) {
   const router = useRouter()
+  const quality = useAdaptiveSpatialQuality()
   const [canvasReady, setCanvasReady] = useState(false)
   const [softwareRenderer, setSoftwareRenderer] = useState(false)
   const [sceneReady, setSceneReady] = useState(false)
@@ -933,7 +976,9 @@ export function HomeWorldProductionV223({ onOrbOpen = requestUraiWorldOrbOpen, w
 
   if (!webglAvailable) return null
   const ready = canvasReady && sceneReady
-  const inputReady = canvasReady && !homeState.inputLocked && transition === 'none' && !passportDeparting
+  // Never expose physical-world input while the visual scene is still forming.
+  // Semantic navigation stays available in HomeSpatialRuntimeLayer independently.
+  const inputReady = ready && !homeState.inputLocked && transition === 'none' && !passportDeparting
   const phase = homeState.transition ?? (transition === 'ground' ? 'GROUND_DESCENT' : transition === 'life-map' ? 'SKY_ASCENT' : homeState.stableState)
   return <main
     ref={worldRef}
@@ -991,14 +1036,14 @@ export function HomeWorldProductionV223({ onOrbOpen = requestUraiWorldOrbOpen, w
     <Canvas
       className={styles.canvas}
       dpr={1}
-      shadows
-      frameloop={reducedMotion || softwareRenderer ? 'demand' : 'always'}
+      shadows={quality.shadows}
+      frameloop={!sceneReady ? 'never' : reducedMotion || softwareRenderer ? 'demand' : 'always'}
       camera={{ position: [...DEFAULT_HOME_FIRST_PERSON_CAMERA.position], fov: 58, near: .1, far: 125 }}
-      gl={{ antialias: true, alpha: false, powerPreference: 'high-performance' }}
+      gl={{ antialias: quality.antialias, alpha: false, powerPreference: 'high-performance' }}
       onCreated={({ gl, setFrameloop }) => {
         const software = isSoftwareWebGLRenderer(gl)
         setSoftwareRenderer(software)
-        if (reducedMotion || software) setFrameloop('demand')
+        setFrameloop('never')
         gl.outputColorSpace = THREE.SRGBColorSpace
         gl.toneMapping = THREE.ACESFilmicToneMapping
         gl.toneMappingExposure = 1.68
@@ -1013,6 +1058,7 @@ export function HomeWorldProductionV223({ onOrbOpen = requestUraiWorldOrbOpen, w
         transition={transition}
         transitionTarget={transitionTarget}
         reducedMotion={reducedMotion}
+        renderReady={sceneReady}
         personalWeatherState={personalWeatherState}
         orbState={orbState}
         homeStableState={homeState.stableState}
@@ -1035,13 +1081,14 @@ export function HomeWorldProductionV223({ onOrbOpen = requestUraiWorldOrbOpen, w
     </Canvas>
     {firstPerson ? (
       <>
-        <MovementHelp realm="Home" summary="Move through your Home in bodyless first person without a synthetic body overlay." controls="WASD or arrow keys move · drag to look · interact opens nearby physical objects such as Passport · Escape closes the active interaction layer while Home remains first person." />
+        <MovementHelp realm="Home" compactLabel="Move" summary="Move through your Home in bodyless first person without a synthetic body overlay." controls="WASD or arrow keys move · drag to look · interact opens nearby physical objects such as Passport · Escape closes the active interaction layer while Home remains first person." />
         <MobileMovementPad input={movementInput} label="Move through Home" />
         {passportNearby && !passportDeparting ? (
           <button
             type="button"
             aria-label="Open physical Passport"
             data-testid="urai-home-passport-interact"
+            className={styles.passportInteract}
             data-movement-ui="true"
             onClick={openPassport}
             style={{ position: 'absolute', left: '50%', bottom: 'max(22px, calc(env(safe-area-inset-bottom) + 18px))', transform: 'translateX(-50%)', zIndex: 36, minHeight: 48, padding: '0 18px', borderRadius: 999, border: '1px solid rgba(239,214,154,.34)', background: 'rgba(21,28,29,.72)', color: '#fff8e8', backdropFilter: 'blur(12px)', font: '700 12px/1 system-ui', cursor: 'pointer' }}

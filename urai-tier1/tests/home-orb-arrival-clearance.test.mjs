@@ -54,7 +54,7 @@ function shellAt(anchor, portrait) {
   return root
 }
 
-test('actual desktop and portrait Orb shells clear the arrival sightline and central path', () => {
+test('historical relocated desktop and portrait reliquary fixtures clear the arrival corridor', () => {
   const camera = source.DEFAULT_HOME_FIRST_PERSON_CAMERA
   const ray = new THREE.Raycaster(new THREE.Vector3(...camera.position), new THREE.Vector3(0, Math.sin(camera.pitch), -Math.cos(camera.pitch)))
   const corridor = new THREE.Box3(new THREE.Vector3(-.4, -1, -8), new THREE.Vector3(.4, 1.8, camera.position[2]))
@@ -68,18 +68,18 @@ test('actual desktop and portrait Orb shells clear the arrival sightline and cen
   }
 })
 
-test('the Orb visual and semantic interaction owners use one shared ground anchor', () => {
+test('the current Orb visual and semantic owner use one shared ground anchor', () => {
   const runtime = read('layout/HomeWorldProductionV223.tsx')
-  const visual = read('assets/HomeOrbGroundedV288.tsx')
+  const visual = read('layout/HomeVisualAuthority.tsx')
   assert.match(runtime, /new THREE\.Vector3\(HOME_ORB_GROUND_ANCHOR\.x, 0, HOME_ORB_GROUND_ANCHOR\.z\)/)
-  assert.match(visual, /HOME_ORB_GROUND_ANCHOR\.x - ORB\.x/)
-  assert.match(visual, /HOME_ORB_GROUND_ANCHOR\.z - ORB\.z/)
-  assert.match(visual, /height\(HOME_ORB_GROUND_ANCHOR\.x, HOME_ORB_GROUND_ANCHOR\.z\)/)
+  assert.match(runtime, /<HomeVisualAuthority>\s*<OrbCompanion/)
+  assert.doesNotMatch(visual, /HomeOrbGroundedV288|HomeOrbReliquaryV286|position=/)
 })
 
 test('Home mounts exactly one visible Orb and the sky owns no duplicate presence', () => {
   const runtime = read('layout/HomeWorldProductionV223.tsx')
   const sky = read('assets/HomeAtmosphericSky.tsx')
-  assert.equal((runtime.match(/<HomeVisualAuthority\s*\/>/g) ?? []).length, 1)
+  assert.equal((runtime.match(/<HomeVisualAuthority>/g) ?? []).length, 1)
+  assert.equal((runtime.match(/<OrbCompanion /g) ?? []).length, 1)
   assert.doesNotMatch(sky, /HomeVisualAuthority|HomeOrbGroundedV288|HomeOrbReliquaryV286/)
 })

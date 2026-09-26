@@ -31,19 +31,19 @@ test('retired V185 terrain and destination implementations do not re-enter curre
   }
 })
 
-test('V288 certified morphology is restored while V291 interaction semantics remain fail-closed pending current-head pixels', () => {
+test('translucent living-memory morphology preserves V291 semantics and remains uncertified pending current-head pixels', () => {
   assert.equal(authority.artRevision, 'v293-direct-bodyless-first-person-convergence')
   assert.equal(authority.lastCertifiedPredecessor.orbVisualAuthority, 'v288-grounded-biomorphic-reliquary')
   assert.ok(authority.lastCertifiedPredecessor.runtimeAssets.includes('HomeOrbGroundedV288.tsx'))
-  assert.equal(authority.orbVisualAuthority, 'v288-grounded-biomorphic-reliquary')
-  assert.equal(authority.currentRuntimeCandidate.orbVisualAuthority, 'v288-grounded-biomorphic-reliquary')
+  assert.equal(authority.orbVisualAuthority, 'living-memory-translucent-heart')
+  assert.equal(authority.currentRuntimeCandidate.orbVisualAuthority, 'living-memory-translucent-heart')
   assert.equal(authority.currentRuntimeCandidate.orbInteractionAuthority, 'v291-current-home-orb-state-and-speech-runtime')
   assert.equal(authority.currentRuntimeCandidate.homePresentationAuthority, 'direct-bodyless-first-person')
   assert.equal(authority.currentRuntimeCandidate.nonXrFirstPersonBodyPolicy, 'camera-only-no-hands-arms-visible-avatar-or-body-rig')
   assert.equal(authority.currentRuntimeCandidate.certified, false)
-  assert.match(visualAuthority, /HomeOrbGroundedV288/)
-  assert.match(visualAuthority, /return <HomeOrbGroundedV288 \/>/)
-  assert.match(currentRuntime, /<HomeVisualAuthority \/>/)
+  assert.doesNotMatch(visualAuthority, /HomeOrbGroundedV288|HomeOrbReliquaryV286/)
+  assert.match(visualAuthority, /home-orb-living-memory-visible-authority/)
+  assert.match(currentRuntime, /<HomeVisualAuthority>/)
   has(currentRuntime, 'home-orb-reference-glass-shell')
   has(currentRuntime, 'home-orb-luminous-inner-volume')
   has(currentRuntime, 'home-orb-memory-bloom-core')
@@ -78,9 +78,9 @@ test('current Home traversal remains regression-covered without restoring retire
 test('current Home candidate remains explicitly uncertified until literal exact-head retained pixels pass', () => {
   assert.match(finalizer, /home-v88-retained-pixel-repair-contract\.test\.mjs/)
   assert.match(finalizer, /embodied-exploration-contract\.test\.mjs/)
-  has(telemetry, "world.setAttribute('data-home-v288-certification', 'fresh-exact-head-pixels-required')")
+  has(telemetry, "world.setAttribute('data-home-v288-certification', 'historical-predecessor-only')")
   has(telemetry, "world.setAttribute('data-home-art-certification', 'fresh-exact-head-pixels-required')")
-  has(telemetry, 'data-home-v288-retained-pixel-rebuild="active"')
+  has(telemetry, 'data-home-v288-retained-pixel-rebuild="superseded"')
   has(telemetry, 'data-home-v226-retained-pixel-rebuild="superseded"')
   has(telemetry, 'data-home-v225-retained-pixel-rebuild="superseded"')
   has(currentRuntime, 'data-home-visual-grade="current-literal-pixel-candidate-not-certified"')

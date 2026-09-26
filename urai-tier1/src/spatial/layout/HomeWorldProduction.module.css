@@ -84,12 +84,31 @@
 
 .world :global(.urai-mobile-movement) {
   display: none;
+  /* Home has no bottom toolbar: keep locomotion in the reachable thumb corner.
+     Empty D-pad cells must pass scene gestures through to the canvas. */
+  bottom: max(16px, calc(env(safe-area-inset-bottom) + 12px)) !important;
+  pointer-events: none;
   z-index: 14;
   opacity: 1;
   transition: opacity .2s ease;
 }
 
+.world :global(.urai-movement-help:not([open])) {
+  width: 72px;
+  box-sizing: border-box;
+  opacity: 1;
+}
+
+.world :global(.urai-movement-help summary) { padding-inline: 8px; }
+
+.world :global(.urai-movement-help[open]) {
+  top: max(72px, calc(env(safe-area-inset-top) + 60px));
+  max-height: calc(100svh - max(72px, calc(env(safe-area-inset-top) + 60px)) - 16px);
+  overflow-y: auto;
+}
+
 .world :global(.urai-mobile-movement button) {
+  pointer-events: auto;
   position: relative;
   border-color: rgba(222, 242, 231, .62) !important;
   border-radius: 50% !important;
@@ -133,6 +152,9 @@
 
 @media (max-width: 700px), (pointer: coarse) {
   .world :global(.urai-mobile-movement) { display: grid; }
+  .passportInteract {
+    bottom: max(132px, calc(env(safe-area-inset-bottom) + 128px)) !important;
+  }
   .world::before {
     background:
       radial-gradient(ellipse at 50% 40%, rgba(235, 205, 164, .055) 0%, rgba(7, 18, 20, 0) 40%, rgba(3, 10, 12, .16) 70%, rgba(1, 7, 9, .46) 100%),
@@ -140,6 +162,22 @@
   }
   .world::after {
     background: linear-gradient(90deg, rgba(1,7,8,.20), transparent 18%, transparent 82%, rgba(1,7,8,.20));
+  }
+}
+
+/* A short landscape screen needs a single thumb row, not two rows covering
+   the world. All four direction targets retain their full 48px dimensions. */
+@media (max-height: 500px) and (orientation: landscape) {
+  .world :global(.urai-mobile-movement) {
+    grid-template-columns: repeat(4, 48px) !important;
+    grid-template-rows: 48px !important;
+  }
+  .world :global(.urai-mobile-movement button) {
+    grid-column: auto !important;
+    grid-row: 1 !important;
+  }
+  .passportInteract {
+    bottom: max(80px, calc(env(safe-area-inset-bottom) + 76px)) !important;
   }
 }
 

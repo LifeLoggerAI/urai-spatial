@@ -307,8 +307,8 @@ function HomePassportOwnershipObject() {
  *
  * Historical V281 localized Ground/ascent overlays remain retired. The current
  * Home runtime keeps Orb semantics, speech/VAD timing and pointer/touch ownership,
- * while HomeVisualAuthority mounts the V288 grounded biomorphic reliquary as the
- * visible Orb morphology pending fresh exact-head literal-pixel acceptance.
+ * while HomeVisualAuthority contains the living-memory translucent heart with the
+ * same visual and semantic owner, pending fresh exact-head literal-pixel acceptance.
  * Passport is a first-person-only physical ownership folio that reuses the existing
  * Passport vault and world-travel stack; it is not a portal. The current candidate
  * follows the written 260 mm × 185 mm × 18 mm rigid-folio authority with restrained

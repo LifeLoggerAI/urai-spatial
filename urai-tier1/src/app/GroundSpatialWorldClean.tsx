@@ -67,7 +67,7 @@ const TERRAIN_NORMAL = "/assets/urai/home-production/cc0/rock-tile-floor/rock-ti
 const TERRAIN_ARM = "/assets/urai/home-production/cc0/rock-tile-floor/rock-tile-floor-arm-1k.webp";
 
 function resolveProfile(raw: string | null): EnvironmentProfile {
-  if (raw && raw in PROFILES) return PROFILES[raw as EnvironmentProfileId];
+  if (typeof raw === "string" && Object.hasOwn(PROFILES, raw)) return PROFILES[raw as EnvironmentProfileId];
   return PROFILES.temperate;
 }
 
@@ -306,7 +306,7 @@ function NaturalCanopy({ profile, position, rotationY, scale, shapeSeed, onReady
       treatment: "cc0-photoreal-broadleaf-canopy-v35",
       provenance: GROUND_BROADLEAF_CANOPY,
       sourceAuthority: "poly-haven-jacaranda-tree-cc0",
-      derivativeAuthority: "web-optimized-decimated-meshopt-webp",
+      derivativeAuthority: "web-optimized-decimated-meshopt-ktx2",
       visibleAuthority: "scanned-broadleaf-canopy-candidate-v35",
       supersedesVisibleCandidate: "runtime-authored-canopy-v34",
       failClosedProofState: "requires-fresh-exact-head-ground-proof",
@@ -715,7 +715,7 @@ function FirstPersonPlayer({ input, yaw, pitch, target, profile, obstacles, play
   isCoarse: boolean;
   onReady: () => void;
 }) {
-  const { camera, size } = useThree();
+  const { camera, size, gl } = useThree();
   const reducedMotion = useReducedMotion();
   const position = playerPosition;
   const velocity = useRef(new THREE.Vector3());
@@ -723,6 +723,8 @@ function FirstPersonPlayer({ input, yaw, pitch, target, profile, obstacles, play
   const lookAt = useRef(new THREE.Vector3());
   const forward = useRef(new THREE.Vector3());
   const ready = useRef(false);
+  const proofOwner = useRef<HTMLElement | null>(null);
+  const lastCameraProof = useRef("");
 
   useFrame((_, delta) => {
     const terrainSlope = slopeDegrees((x, z) => groundHeight(x, z, profile.id), position.current.x, position.current.z);
@@ -751,6 +753,16 @@ function FirstPersonPlayer({ input, yaw, pitch, target, profile, obstacles, play
     lookAt.current.copy(camera.position).addScaledVector(forward.current, 12);
     lookAt.current.y += Math.tan(pitch.current) * 7.5;
     camera.lookAt(lookAt.current);
+
+    // Capture the camera that the frame actually renders; proof must not infer
+    // movement or view direction from input events or screenshot filenames.
+    proofOwner.current ??= gl.domElement.closest<HTMLElement>('[data-testid="urai-ground-lived-world"]');
+    const cameraProof = [camera.position.x, camera.position.y, camera.position.z, yaw.current, pitch.current]
+      .map((value) => value.toFixed(4)).join(",");
+    if (cameraProof !== lastCameraProof.current) {
+      proofOwner.current?.setAttribute("data-ground-rendered-camera", cameraProof);
+      lastCameraProof.current = cameraProof;
+    }
 
     if (camera instanceof THREE.PerspectiveCamera) {
       const portrait = size.height > size.width;
@@ -1047,7 +1059,7 @@ export default function GroundSpatialWorldClean() {
       .ground-semantic-fallback{position:absolute;inset:0;z-index:1;display:grid;place-content:center;gap:8px;padding:28px;text-align:center;background:radial-gradient(circle at 50% 42%,rgba(117,157,143,.20),transparent 34%),linear-gradient(180deg,#263c39,#152825);color:#f2faf7}.ground-semantic-fallback p{margin:0;font:500 clamp(1.2rem,3vw,2.1rem)/1.15 Georgia,serif}.ground-semantic-fallback strong{max-width:620px;color:rgba(235,247,242,.76);font:650 12px/1.5 system-ui}
       .ground-home-return{position:absolute;z-index:20;right:max(16px,env(safe-area-inset-right));top:max(16px,env(safe-area-inset-top));min-width:48px;min-height:48px;padding:0 13px;border:1px solid rgba(226,248,247,.2);border-radius:999px;background:rgba(5,20,24,.32);color:rgba(241,251,249,.88);backdrop-filter:blur(12px);font:750 9px/1 system-ui;letter-spacing:.12em;text-transform:uppercase;cursor:pointer}
       .ground-home-return:focus-visible,.ground-place-access a:focus-visible,.ground-accessible-movement summary:focus-visible{outline:3px solid #fff;outline-offset:3px}
-      .ground-place-access{position:absolute;z-index:19;left:max(16px,env(safe-area-inset-left));top:max(16px,env(safe-area-inset-top));display:flex;gap:8px;opacity:.02;transition:opacity .2s ease}
+      .ground-place-access{position:absolute;z-index:19;left:max(16px,env(safe-area-inset-left));top:max(16px,env(safe-area-inset-top));display:flex;gap:8px;opacity:1;transition:opacity .2s ease}
       .ground-place-access:focus-within{opacity:1}
       .ground-place-access a{display:grid;place-items:center;min-width:48px;min-height:48px;padding:0 12px;border:1px solid rgba(226,248,247,.18);border-radius:999px;background:rgba(5,20,24,.72);color:#f4fbfa;text-decoration:none;font:700 10px/1 system-ui}
       .ground-analog-pad{display:none;position:absolute;z-index:24;left:max(18px,env(safe-area-inset-left));bottom:max(88px,calc(env(safe-area-inset-bottom) + 76px));width:100px;height:100px;border:1px solid rgba(233,248,244,.16);border-radius:50%;background:rgba(5,17,20,.18);backdrop-filter:blur(8px);touch-action:none;opacity:.24;transition:opacity .14s ease}

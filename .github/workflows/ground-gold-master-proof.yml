@@ -2,9 +2,11 @@ name: Ground Gold Master Proof
 
 on:
   pull_request:
-    branches: [main, home-final-v24-certify-20260826]
+    branches: [main, home-final-v24-certify-20260826, converge/final-canon-spatial-20260922]
     paths:
       - 'scripts/capture-ground-goldmaster-proof.mjs'
+      - 'scripts/lib/ground-camera-proof.mjs'
+      - 'tests/ground-camera-proof.test.mjs'
       - 'urai-tier1/src/app/GroundSpatialWorldClean.tsx'
       - 'urai-tier1/public/assets/urai/generated/models/ground-natural-canopy-v3.glb'
       - 'urai-tier1/public/assets/urai/generated/models/ground-natural-canopy-v3.receipt.json'
@@ -89,6 +91,7 @@ jobs:
         run: |
           set -euo pipefail
           node --check scripts/capture-ground-goldmaster-proof.mjs
+          node --test tests/ground-camera-proof.test.mjs
           (cd urai-tier1 && node tests/home-ground-lifemap-art-bible-contract.test.mjs)
           (cd urai-tier1 && node tests/ground-cc0-canopy-contract.test.mjs)
           pnpm --dir urai-tier1 typecheck

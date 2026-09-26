@@ -35,7 +35,8 @@ test('mobile movement controls remain touch/coarse-pointer affordances instead o
   for (const marker of ['minWidth', 'MobileMovementPad']) {
     if (marker === 'MobileMovementPad') has(travel, marker)
   }
-  assert.match(travel, /button\{width:48px;height:48px;/)
+  assert.match(travel, /\.urai-mobile-movement\{[^}]*pointer-events:none/)
+  assert.match(travel, /button\{pointer-events:auto;width:48px;height:48px;/)
 })
 
 test('Home keeps one V223 Canvas owner with direct bodyless first-person presence, authored Orb, physical Ground and broad Sky ascent', () => {
@@ -81,7 +82,7 @@ test('current Home art chain keeps legacy hotspot geometry retired while preserv
     "import { HomeVisualAuthority } from './HomeVisualAuthority'",
     '<HomeCurrentArtRepair orbState={orbState}',
     '<HomeAAAVisualRepair />',
-    '<HomeVisualAuthority />',
+    '<HomeVisualAuthority>',
     'function RetireLegacyHomeHotspots()',
     '/home-v226-ground-inhabited-hearth/',
     '/home-v231-ground-weathered-threshold/',
@@ -91,7 +92,7 @@ test('current Home art chain keeps legacy hotspot geometry retired while preserv
     '/home-v226-rooted-single-living-memory-presence/',
     '/home-current-orb/',
     '/home-orb-/',
-    "const CURRENT_HOME_PRESENCE_ROOTS = new Set(['home-living-memory-orb', 'home-orb-v288-visible-authority'])",
+    "const CURRENT_HOME_PRESENCE_ROOTS = new Set(['home-living-memory-orb', 'home-orb-living-memory-visible-authority'])",
   ]) has(activeHomeRuntime3d, marker)
 
   for (const marker of [
@@ -103,10 +104,10 @@ test('current Home art chain keeps legacy hotspot geometry retired while preserv
   ]) has(homeArtRepair, marker)
 
   for (const marker of [
-    "import { HomeOrbGroundedV288 } from '@/spatial/assets/HomeOrbGroundedV288'",
-    'Current Home Orb visual authority shim.',
-    'last certified V288 grounded biomorphic reliquary authority while fresh',
-    'return <HomeOrbGroundedV288 />',
+    'Current Home Orb visual authority boundary.',
+    'The living-memory runtime owns its translucent shell',
+    'home-orb-living-memory-visible-authority',
+    '>{children}</group>',
   ]) has(homeVisualAuthority, marker)
 
   assert.match(homePolish, /name="home-v226-ground-inhabited-hearth"/)

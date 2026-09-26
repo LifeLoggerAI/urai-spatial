@@ -1,6 +1,7 @@
 import { cp, mkdir, readFile, rm, writeFile } from 'node:fs/promises'
 import { spawn } from 'node:child_process'
 import path from 'node:path'
+import { assertExactHomeOrbOpenTransportFailure } from './lib/home-orb-reconciliation-signature.mjs'
 
 const finalDir = path.resolve(process.env.URAI_PROOF_DIR || 'artifacts/home-state-proof')
 // The expanded V288 proof reaches the final responsive continuity states on the
@@ -72,12 +73,32 @@ async function runAttempt(attempt) {
   if (!timedOut && result.code !== 0) {
     try {
       const failure = JSON.parse(await readFile(path.join(attemptDir, 'runner-failure.json'), 'utf8'))
-      orbReconciliationEligible = failure?.failingRecord?.id === 'orb-lifecycle-production-ui'
-    } catch {}
+      const record = failure?.failingRecord
+      // Keep the original failing phase visible even when the screenshot archive
+      // is too large to retrieve. Do not print conversation/provider payloads.
+      console.error(`Home state proof original failure: ${JSON.stringify({
+        exactHead: failure?.exactHead ?? null,
+        id: record?.id ?? null,
+        phase: record?.phase ?? null,
+        failedPredicate: String(failure?.failedPredicate ?? 'missing-failure-predicate'),
+        pageErrorCount: Array.isArray(record?.pageErrors) ? record.pageErrors.length : null,
+        providerRequestCount: Array.isArray(record?.providerBoundaryRequests) ? record.providerBoundaryRequests.length : null,
+      })}`)
+      // Lifecycle identity alone does not establish the old pointer timeout.
+      // Keyboard, consent, speaking and rendering failures must retain their
+      // own diagnostics rather than invoking an inapplicable reconciliation.
+      try {
+        orbReconciliationEligible = assertExactHomeOrbOpenTransportFailure({ failure, exactHead: status.exactHead })
+      } catch (error) {
+        console.error(`Home Orb reconciliation not applicable: ${error.message}`)
+      }
+    } catch (error) {
+      console.error(`Home state proof original failure receipt unavailable: ${error.message}`)
+    }
   }
 
   if (!timedOut && result.code !== 0 && orbReconciliationEligible) {
-    console.error(`Home state proof attempt ${attempt} failed on the production Orb lifecycle signature; running Orb-open reconciliation as diagnostic-only evidence. It cannot convert a failed real pointer proof into release acceptance.`)
+    console.error(`Home state proof attempt ${attempt} matched the exact Orb-open pointer timeout; running reconciliation as diagnostic-only evidence. It cannot convert a failed real pointer proof into release acceptance.`)
     const reconciliation = await runChild('scripts/reconcile-home-orb-consent-proof.mjs', attemptEnv)
     const reconciliationResult = await reconciliation.result
     if (!reconciliationResult.error && reconciliationResult.code === 0 && !reconciliationResult.signal) {

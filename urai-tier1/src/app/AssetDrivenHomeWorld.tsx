@@ -74,16 +74,17 @@ export default function AssetDrivenHomeWorld({ onOrbOpen, webglAvailable }: Prop
       world.setAttribute('data-home-art-certification', 'fresh-exact-head-pixels-required')
       world.setAttribute('data-home-visual-repair', 'cinematic-home-ground-threshold-convergence')
       world.setAttribute('data-home-physical-base', 'continuous-lived-physical-world')
-      world.setAttribute('data-home-scanned-composition', 'direct-bodyless-first-person-v288-biomorphic-orb-physical-ground-and-broad-sky-threshold')
+      world.setAttribute('data-home-scanned-composition', 'direct-bodyless-first-person-translucent-living-memory-orb-physical-ground-and-broad-sky-threshold')
       world.setAttribute('data-home-runtime-assets', RUNTIME_ASSETS)
       world.setAttribute('data-home-ground-entry', 'physical-world-surface')
       world.setAttribute('data-home-life-map-entry', 'visible-sky-broad-interaction')
       world.setAttribute('data-home-audio', 'production-opus-consent-controlled')
       world.setAttribute('data-home-v223-art-layer', 'cinematic-threshold-runtime-authority')
-      world.setAttribute('data-home-v288-certification', 'fresh-exact-head-pixels-required')
+      world.setAttribute('data-home-v288-certification', 'historical-predecessor-only')
       world.setAttribute('data-home-v225-retained-pixel-rebuild', 'superseded')
       world.setAttribute('data-home-v226-retained-pixel-rebuild', 'superseded')
-      world.setAttribute('data-home-v288-retained-pixel-rebuild', 'active')
+      world.setAttribute('data-home-v288-retained-pixel-rebuild', 'superseded')
+      world.setAttribute('data-home-orb-visual-authority', 'living-memory-translucent-heart')
 
       if (reviewOrbState !== appliedReviewOrbState) {
         appliedReviewOrbState = reviewOrbState
@@ -120,7 +121,8 @@ export default function AssetDrivenHomeWorld({ onOrbOpen, webglAvailable }: Prop
     data-home-forge-scenery="suppressed"
     data-home-v225-retained-pixel-rebuild="superseded"
     data-home-v226-retained-pixel-rebuild="superseded"
-    data-home-v288-retained-pixel-rebuild="active"
+    data-home-v288-retained-pixel-rebuild="superseded"
+    data-home-orb-visual-authority="living-memory-translucent-heart"
     data-home-canvas-owner="home-world-production-v223-cinematic-threshold-authority"
     style={{ display: 'contents' }}
   >

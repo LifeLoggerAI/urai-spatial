@@ -1,0 +1,78 @@
+/* One layout owner keeps return, provenance and transcript targets separate. */
+.replayWorld .replayTopControls {
+  position: absolute;
+  z-index: 45;
+  top: max(14px, env(safe-area-inset-top));
+  right: max(14px, env(safe-area-inset-right));
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  align-items: flex-start;
+  gap: 8px;
+  max-width: calc(100vw - 28px);
+}
+
+main.replayWorld[data-replay-spatial-owner] .replayTopControls > :is(.unwind, .truthGuide, .transcript) {
+  position: static !important;
+  inset: auto !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  opacity: 1 !important;
+  width: auto;
+  max-width: none;
+  border: 1px solid rgba(235, 251, 255, .3);
+  border-radius: 999px;
+  background: rgba(2, 7, 14, .86) !important;
+  color: #fff;
+}
+
+main.replayWorld[data-replay-spatial-owner] .replayTopControls > .unwind,
+.replayWorld .replayTopControls summary {
+  box-sizing: border-box;
+  min-width: 64px;
+  min-height: 48px;
+  padding: 0 12px !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font: 700 12px/1.2 system-ui;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.replayWorld .replayTopControls summary::marker,
+.replayWorld .replayTopControls summary::-webkit-details-marker { display: none; }
+
+.replayWorld .replayTopControls details[open] > :not(summary) {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 8px);
+  box-sizing: border-box;
+  width: min(340px, calc(100vw - 28px));
+  max-height: calc(100svh - 160px);
+  overflow: auto;
+  overscroll-behavior: contain;
+  margin: 0;
+  padding: 16px;
+  border: 1px solid rgba(235, 251, 255, .3);
+  border-radius: 16px;
+  background: rgba(2, 7, 14, .96);
+  color: #fff;
+  font: 400 13px/1.5 system-ui;
+}
+
+@media (max-width: 700px) {
+  .replayWorld header {
+    top: max(126px, calc(env(safe-area-inset-top) + 112px)) !important;
+    max-width: calc(100vw - 28px) !important;
+  }
+}
+
+@media (forced-colors: active) {
+  main.replayWorld[data-replay-spatial-owner] .replayTopControls > :is(.unwind, .truthGuide, .transcript),
+  .replayWorld .replayTopControls details[open] > :not(summary) {
+    border-color: CanvasText;
+    background: Canvas !important;
+    color: CanvasText;
+  }
+}
