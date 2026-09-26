@@ -25,6 +25,7 @@ test('independent launch-critical auditor enforces manifest promotion authority'
   assert.match(auditor, /manifestReleaseState: asset\.releaseState/)
   assert.match(auditor, /receiptReleaseState/)
   assert.match(auditor, /candidateOnly: results\.length === manifest\.assets\.length/)
+  assert.match(auditor, /receipt compression status \$\{compressionStatus\} is not present in the GLB extensions/)
   assert.doesNotMatch(auditor, /const productionReady = receiptReleaseState === 'production-ready'/)
   assert.doesNotMatch(auditor, /model candidate receipt must carry candidate compression status/)
 })
@@ -40,16 +41,17 @@ test('candidate bundle audit is isolated, retainable, and rejects production rec
   assert.doesNotMatch(candidateAuditor, /fs\.writeFileSync\(path\.join\(sourceRoot, manifestRelativePath\)/)
 })
 
-test('forge workflow verifies governed production and uploads the exact audited candidate bundle', () => {
+test('forge workflow verifies fail-closed governance and uploads the exact audited candidate bundle', () => {
   const governedVerifier = 'node scripts/verify-governed-asset-promotion.mjs'
   const governedContract = 'node --test --test-concurrency=1 tests/home-entry-governed-production-contract.test.mjs'
   const candidateForge = 'node scripts/forge-launch-critical-assets.mjs'
   const candidateVerifier = 'node scripts/verify-launch-critical-assets.mjs'
   const candidateAudit = 'node scripts/audit-launch-critical-candidate-bundle.mjs'
   const auditedBundlePath = '.urai-artifacts/launch-critical-candidate-bundle/'
-  assert.match(workflow, /Verify governed production authority before candidate generation/)
+  assert.match(workflow, /Verify fail-closed rehearsal control before candidate generation/)
   assert.match(workflow, /Run governed Home production contract before candidate generation/)
-  assert.match(workflow, /Prove governed Home binary immutable before candidate generation/)
+  assert.match(workflow, /Home is pending final review; production-only Home promotion contract remains deferred\./)
+  assert.match(workflow, /Prove promoted Home binary matches its immutable decision/)
   assert.match(workflow, /Independently audit and retain exact candidate bundle/)
   assert.match(workflow, /URAI_CANDIDATE_BUNDLE_ROOT: \.urai-artifacts\/launch-critical-candidate-bundle/)
   assert.match(workflow, /Upload exact audited candidate bundle/)

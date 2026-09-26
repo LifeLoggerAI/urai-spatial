@@ -5,6 +5,7 @@
   "targetRoutes": ["/", "/home"],
   "bytes": 1708856,
   "sha256": "2c81a69e22043834f9d4d1975b7636f1bf2b5995bc1bd6c914042ffe625db76e",
+  "measured": {"triangleCount": 36972},
   "compressionStatus": "candidate-makehuman-v4",
   "requiredCompression": "draco-or-meshopt",
   "fallback": "home-human-rig-v3",
