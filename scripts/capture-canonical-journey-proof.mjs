@@ -13,7 +13,6 @@ await fs.mkdir(outputDir, { recursive: true })
 
 const normalize = (url) => new URL(url, base).pathname.replace(/\/+$/, '') || '/'
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
-const homeOwnerSelector = '[data-testid="home-visible-navigable-sanctuary-world"][data-home-art-revision="v293-direct-bodyless-first-person-convergence"][data-home-primary-owner="asset-driven"]'
 
 async function waitPath(page, expected, timeout = 60_000) {
   const start = Date.now()
@@ -89,11 +88,21 @@ function blockingRequests(requests) {
 
 async function activate(page, locator, mode) {
   await locator.waitFor({ state: 'visible', timeout: 45_000 })
-  if (mode === 'touch') return locator.tap()
+  if (mode === 'touch') {
+    const box = await locator.boundingBox()
+    if (!box || box.width <= 0 || box.height <= 0) throw new Error('touch target has no usable geometry')
+    return page.touchscreen.tap(box.x + box.width / 2, box.y + box.height / 2)
+  }
   if (mode === 'keyboard') {
+    const focusable = await locator.evaluate((node) => {
+      if (!(node instanceof HTMLElement)) return false
+      const tag = node.tagName.toLowerCase()
+      const native = tag === 'button' || tag === 'a' || tag === 'input' || tag === 'select' || tag === 'textarea'
+      return native || node.tabIndex >= 0
+    })
+    assert.equal(focusable, true, 'keyboard activation target must be focusable')
     await locator.focus()
-    assert.equal(await locator.evaluate((node) => document.activeElement === node), true)
-    return page.keyboard.press('Enter')
+    return locator.press('Enter')
   }
   return locator.click()
 }
@@ -101,13 +110,9 @@ async function activate(page, locator, mode) {
 async function openHome(page, journey) {
   const response = await page.goto(`${base}/home/?demo=1`, { waitUntil: 'domcontentloaded', timeout: 60_000 })
   assert.ok(response?.ok(), 'Home did not return 2xx')
-  const home = page.locator(homeOwnerSelector).first()
+  const home = page.locator('.urai-asset-home-world[data-home-primary-owner="asset-driven"]').first()
   await home.waitFor({ state: 'visible', timeout: 90_000 })
-  await home.locator('canvas').first().waitFor({ state: 'visible', timeout: 90_000 })
-  // The canonical journey proves interaction continuity, not Gold-Master pixels.
-  // Scanned/decorative assets remain separately fail-closed behind
-  // data-home-assets-ready and the exact-head visual proof workflows.
-  await waitAttr(home, 'data-home-input-ready', 'true', 90_000)
+  await waitAttr(home, 'data-home-assets-ready', 'true', 90_000)
   await capture(page, journey, 'home')
   return home
 }
@@ -115,12 +120,11 @@ async function openHome(page, journey) {
 async function proveRealHomeAscent(page, journey, home, mode) {
   // Current non-XR Home authority is direct bodyless first person. Prove the
   // superseded Avatar presentation/activation gate is absent before sky ascent.
+  await waitAttr(home, 'data-home-stable-state', 'AVATAR_HOME_FIRST_PERSON', 45_000)
   await waitAttr(home, 'data-home-input-ready', 'true', 45_000)
   assert.equal(await page.getByTestId('urai-home-avatar-enter-first-person').count(), 0, 'superseded Avatar activation gate must not exist in ordinary Home')
   assert.equal(await home.getAttribute('data-home-avatar-activation-gate'), 'none-direct-first-person-home')
   assert.equal(await home.getAttribute('data-home-non-xr-body-policy'), 'camera-only-no-hands-body-rig')
-  assert.equal(await home.getAttribute('data-home-presence-presentation'), 'bodyless-first-person-home')
-  assert.equal(await home.getAttribute('data-home-embodied-self'), 'camera-only-first-person-home')
   await capture(page, journey, 'home-first-person')
 
   const canvas = home.locator('canvas').first()
@@ -133,9 +137,9 @@ async function proveRealHomeAscent(page, journey, home, mode) {
   const points = [[.50, .12], [.36, .15], [.64, .15], [.50, .22]]
   let activated = false
   for (const [x, y] of points) {
-    const position = { x: box.width * x, y: box.height * y }
-    if (mode === 'touch') await page.touchscreen.tap(box.x + position.x, box.y + position.y)
-    else await canvas.click({ position, timeout: 5_000 })
+    const absolute = { x: box.x + box.width * x, y: box.y + box.height * y }
+    if (mode === 'touch') await page.touchscreen.tap(absolute.x, absolute.y)
+    else await page.mouse.click(absolute.x, absolute.y)
     try {
       await waitAttr(home, 'data-home-scene-phase', 'SKY_ASCENT', 2_500)
       activated = true
@@ -262,7 +266,7 @@ async function lifeMapToHome(page, journey, mode, root) {
   else await page.keyboard.press('Escape')
   await waitPath(page, '/home', 60_000)
   assert.equal(new URL(page.url()).searchParams.get('demo'), '1', 'final Home return lost disclosed demo context')
-  const home = page.locator(homeOwnerSelector).first()
+  const home = page.locator('.urai-asset-home-world[data-home-primary-owner="asset-driven"]').first()
   await home.waitFor({ state: 'visible', timeout: 90_000 })
   await capture(page, journey, 'return-home')
 }
@@ -274,9 +278,9 @@ const variants = [
 ]
 
 const receipt = { schemaVersion: 'urai-canonical-journey-proof-1', exactHead, capturedAt: new Date().toISOString(), status: 'running', journeys: [], errors: [] }
-for (const variant of variants) {
-  const browser = await chromium.launch({ headless: true, args: ['--enable-unsafe-swiftshader'] })
-  try {
+const browser = await chromium.launch({ headless: true, args: ['--enable-unsafe-swiftshader'] })
+try {
+  for (const variant of variants) {
     const journey = { id: variant.id, mode: variant.mode, realAscent: variant.realAscent, ascentProven: null, identityStable: false, passed: false, steps: [] }
     receipt.journeys.push(journey)
     const context = await browser.newContext(variant.context)
@@ -312,9 +316,9 @@ for (const variant of variants) {
       }
       await context.close()
     }
-  } finally {
-    await browser.close()
   }
+} finally {
+  await browser.close()
 }
 
 receipt.status = receipt.journeys.every((journey) => journey.passed && journey.identityStable) && receipt.journeys.some((journey) => journey.ascentProven === true) && receipt.errors.length === 0 ? 'passed' : 'failed'

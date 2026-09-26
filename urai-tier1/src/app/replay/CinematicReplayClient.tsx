@@ -8,6 +8,7 @@ import { assetCssStack, replayAssets } from '@/spatial/assets/uraiAssets'
 import { createMineralMaps } from '@/spatial/assets/naturalSurfaceMaps'
 import { useReducedMotion } from '@/spatial/hooks/useReducedMotion'
 import { useSelectedMemory } from '@/spatial/memory/useSelectedMemory'
+import { useCapturedRealityReplayEntry } from '@/spatial/captured-reality/useCapturedRealityReplayEntry'
 import type { SelectedMemory, SelectedMemoryMedia, SelectedMemoryReplaySegment } from '@/spatial/memory/selectedMemoryContract'
 import { useAdaptiveSpatialQuality } from '@/spatial/performance/useAdaptiveSpatialQuality'
 import { requestUraiWorldReturn, requestUraiWorldTravel } from '@/spatial/world/worldEvents'
@@ -592,6 +593,7 @@ function ReplayNeutralSpatialScene() {
 export default function CinematicReplayClient({ immersiveEntryEnabled = false }: { immersiveEntryEnabled?: boolean }) {
   const result = useSelectedMemory()
   const memory = result.memory
+  const capturedRealityEntry = useCapturedRealityReplayEntry(memory?.id ?? null)
   const reducedMotion = useReducedMotion()
   const quality = useAdaptiveSpatialQuality()
   const webglAvailable = useWebGLAvailable()
@@ -678,7 +680,7 @@ export default function CinematicReplayClient({ immersiveEntryEnabled = false }:
       <ReplaySpatialScene memory={memory} playing={playing} progressMs={progressMs} muteVideo={Boolean(recordedAudioUrl)} />
     </Canvas> : <div className="replaySpatialFallback" role="status" data-replay-fallback="semantic">{webglAvailable === null ? 'Preparing Replay…' : 'Spatial Replay unavailable. Memory truth, pacing, transcript, and return controls remain available.'}</div>}
     <div className="replayAtmosphere" aria-hidden="true" />
-    <header><p>{memory.demo ? 'DEMO FIXTURE · NOT PERSONAL DATA' : `${memory.privacy} replay`}</p><h1>{memory.title}</h1><span>{active?.label ?? 'Replay'}</span><button className="unwind" type="button" onClick={unwind}>Focus</button>{immersiveHref ? <a className="replayImmersiveEntry" href={immersiveHref} aria-label={'Enter ' + memory.title + ' in AR, VR, or XR'}>Enter AR / VR / XR</a> : null}</header>
+    <header><p>{memory.demo ? 'DEMO FIXTURE · NOT PERSONAL DATA' : `${memory.privacy} replay`}</p><h1>{memory.title}</h1><span>{active?.label ?? 'Replay'}</span><button className="unwind" type="button" onClick={unwind}>Focus</button>{capturedRealityEntry?.href ? <a className="replayImmersiveEntry" href={capturedRealityEntry.href} aria-label={'Enter captured place for ' + memory.title} title={capturedRealityEntry.truthLabel}>Enter captured place</a> : null}{immersiveHref ? <a className="replayImmersiveEntry" href={immersiveHref} aria-label={'Enter ' + memory.title + ' in AR, VR, or XR'}>Enter AR / VR / XR</a> : null}</header>
     <section className="caption" aria-live="polite" data-truth-level={truth?.level ?? 'unknown'}><div className="captionMeta"><small>{active?.label ?? 'Replay'}</small>{truth ? <b>{truth.label}</b> : null}</div><strong>{active?.caption ?? memory.narrator.replay}</strong><span>{active?.narratorLine ?? memory.narrator.replay}</span></section>
     <section className="memoryPacing" aria-label="Replay pacing" data-memory-motion={playing ? 'unfolding' : 'held'} data-replay-control-grammar="memory-state-no-player-scrub">
       <button type="button" onClick={() => { if (progressMs >= duration) setProgressMs(0); setPlaying((value) => !value) }} aria-label={playing ? 'Hold memory' : 'Begin memory'}>{playing ? 'Hold memory' : progressMs >= duration ? 'Re-enter memory' : 'Begin memory'}</button>

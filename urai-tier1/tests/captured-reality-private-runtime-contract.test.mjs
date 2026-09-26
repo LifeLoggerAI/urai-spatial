@@ -52,10 +52,19 @@ test('privacy package classifies captured reality as L3 C1 content with addition
   assert.match(manifest, /consentRevocationSupported: true/)
   assert.match(inventory, /name: captured_reality_manifest/)
   assert.match(inventory, /name: captured_reality_runtime_asset/)
+  assert.match(inventory, /name: captured_reality_replay_binding/)
 })
 
 test('privacy export and deletion lifecycle includes captured reality records and private object cleanup', () => {
   assert.match(privacy, /capturedRealityAssets/)
   assert.match(privacy, /private-captured-reality/)
   assert.match(privacy, /deleteFiles/)
+})
+
+test('proof delivery is separately gated and can never masquerade as certified runtime', () => {
+  assert.match(source, /URAI_ENABLE_CAPTURED_REALITY_PROOF/)
+  assert.match(source, /CAPTURED_REALITY_PROOF_DISABLED/)
+  assert.match(source, /CAPTURED_REALITY_PROOF_REQUIRES_PRIVATE_PILOT/)
+  assert.match(source, /accessMode === 'runtime' && !certified/)
+  assert.match(source, /releaseGate: accessMode === 'proof' \? 'proof-only' : 'enabled'/)
 })
