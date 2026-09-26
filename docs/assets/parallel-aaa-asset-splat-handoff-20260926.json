@@ -1,0 +1,204 @@
+{
+  "schemaVersion": "urai-parallel-aaa-asset-splat-handoff-1",
+  "recordedAt": "2026-09-26T03:19:27Z",
+  "repository": "LifeLoggerAI/urai-spatial",
+  "branch": "agent/parallel-aaa-asset-splat-handoff-20260926",
+  "baseAuthority": {
+    "defaultBranch": "main",
+    "mainSha": "4b3c7bd982865324510eb9581d9f324bd4ad6e93",
+    "note": "Live GitHub readback at start of this lane. Remembered SHAs are pointers only."
+  },
+  "preservedConcurrentWork": [
+    {
+      "pr": 1325,
+      "branch": "fix/focus-mounted-realm-proof-20260926",
+      "headSha": "2f7af37e0e234629d9d8261d19f778205c41f7e5",
+      "title": "Repair Focus proof, Home navigation, canvas bounds and rendering budget",
+      "ownership": "Spatial pixel / scene finishing / visual proof lane",
+      "doNotTouch": [
+        ".github/workflows/accessibility-performance-evidence.yml",
+        ".github/workflows/continuous-spatial-visual-proof.yml",
+        ".github/workflows/home-state-proof.yml",
+        ".github/workflows/lifemap-founder-visual-proof.yml",
+        ".github/workflows/main-journey-state.yml",
+        ".github/workflows/portal-orb-exact-proof.yml",
+        "docs/evidence/2026-09-26-spatial-terminal-repairs/**",
+        "operations/assets/third-party/ground-polyhaven-jacaranda-web-v1.json",
+        "scripts/canonical-journey-realm.mjs",
+        "scripts/capture-canonical-journey-proof.mjs",
+        "urai-tier1/src/app/GroundSpatialWorldClean.tsx",
+        "urai-tier1/src/app/home-provider-preview-composition.css",
+        "urai-tier1/src/spatial/layout/HomeWorldProductionV223.tsx",
+        "urai-tier1/src/spatial/home/homeSemanticHref.ts",
+        "urai-tier1/src/components/lifemap/**",
+        "urai-tier1/tests/** pixel/proof files touched by PR #1325"
+      ]
+    },
+    {
+      "pr": 1327,
+      "branch": "fix/captured-reality-authority-race-20260925",
+      "headSha": "e1033535d5e3e1df3e6f85e837887c9aa438cdf5",
+      "title": "Repair captured reality delivery and private replay cancellation",
+      "ownership": "Captured Reality private delivery, streaming, resource disposal, source preparation and technical splat validation",
+      "doNotTouch": [
+        ".github/workflows/captured-reality-integrity.yml",
+        "docs/CAPTURED_REALITY_BINARY_PREFLIGHT.md",
+        "docs/CAPTURED_REALITY_GAUSSIAN_V1.md",
+        "operations/captured-reality/**",
+        "scripts/*captured-reality*.mjs",
+        "scripts/inspect-captured-reality-splat.mjs",
+        "urai-tier1/src/app/spatial/captured-reality/**",
+        "urai-tier1/src/spatial/captured-reality/**",
+        "urai-tier1/tests/captured-reality-*.test.mjs"
+      ]
+    },
+    {
+      "pr": 1341,
+      "branch": "fix/captured-replay-anchor-20260926",
+      "headSha": "06a2f4cca89051b903b0b5d9ca0d2ebe9f1e1c3f",
+      "title": "Reject captured Replay entries without explicit place anchors",
+      "ownership": "Captured Reality replay callable anchor integrity",
+      "doNotTouch": [
+        "apps/functions/src/capturedReality.ts",
+        "urai-tier1/tests/captured-reality-replay-entry-behavior.test.mjs",
+        "urai-tier1/scripts/run-unit-contract-tests-compact.mjs"
+      ]
+    },
+    {
+      "pr": 1342,
+      "branch": "repair/focus-hydration-proof-20260926",
+      "headSha": "fffa2523aadc07aa0cf59c33b0a159f876e7c92c",
+      "title": "Fix adaptive Spatial quality hydration and gate Focus media proof",
+      "ownership": "Adaptive quality hydration and Focus media proof",
+      "doNotTouch": [
+        ".github/workflows/focus-gold-master-proof.yml",
+        "scripts/verify-focus-media-states.mjs",
+        "scripts/verify-spatial-quality-hydration.mjs",
+        "urai-tier1/src/spatial/performance/useAdaptiveSpatialQuality.ts",
+        "urai-tier1/src/app/focus/FocusSourceMedia.tsx",
+        "urai-tier1/src/app/focus/FocusChamberClient.tsx",
+        "urai-tier1/tests/selected-memory-production-contract.test.mjs"
+      ]
+    }
+  ],
+  "assetPackages": [
+    {
+      "assetId": "AAA-001",
+      "packageId": "AAA-001-home-architecture-integration-spec-v1",
+      "purpose": "Home architecture production package handoff",
+      "scene": "Home",
+      "status": "READY FOR INTEGRATION",
+      "artifact": "docs/assets/PARALLEL_AAA_ASSET_SPLAT_HANDOFF_20260926.md#aaa-001-home-architecture",
+      "providerPath": "provider-ready-specification",
+      "sourceProvider": "No paid provider execution in this lane; specification prepared for Meshy/Tripo/fal/OpenAI image-to-3D or vendor handoff.",
+      "runtimeBudget": { "targetFormat": "glb", "maxPrimaryMeshTriangles": 120000, "lodsRequired": true, "maxTextureSet": "4k desktop / 2k mobile", "mobileFallbackRequired": true },
+      "validationResult": "Spec/manifest only; no generated mesh acceptance claimed.",
+      "handoffState": "READY FOR INTEGRATION"
+    },
+    {
+      "assetId": "AAA-003",
+      "packageId": "AAA-003-home-atmosphere-integration-spec-v1",
+      "scene": "Home",
+      "status": "READY FOR INTEGRATION",
+      "artifact": "docs/assets/PARALLEL_AAA_ASSET_SPLAT_HANDOFF_20260926.md#aaa-003-home-atmosphere",
+      "runtimeBudget": { "targetFormat": "ktx2-hdr-or-procedural-profile", "mobileFallbackRequired": true },
+      "validationResult": "Canon constraints packaged: sky dominant, no ceiling, real material atmosphere, no sci-fi portal hall.",
+      "handoffState": "READY FOR INTEGRATION"
+    },
+    {
+      "assetId": "AAA-004",
+      "packageId": "AAA-004-orb-identity-integration-spec-v1",
+      "scene": "Orb",
+      "status": "READY FOR INTEGRATION",
+      "artifact": "docs/assets/PARALLEL_AAA_ASSET_SPLAT_HANDOFF_20260926.md#aaa-004-orb",
+      "runtimeBudget": { "targetFormat": "shader-profile-plus-audio-stems", "maxDrawCalls": 8, "mobileFallbackRequired": true },
+      "validationResult": "Prepared as living-memory-heart identity package; no replacement shader committed over pixel lane.",
+      "handoffState": "READY FOR INTEGRATION"
+    },
+    {
+      "assetId": "AAA-005",
+      "packageId": "AAA-005-ground-terrain-integration-spec-v1",
+      "scene": "Ground",
+      "status": "READY FOR INTEGRATION",
+      "artifact": "docs/assets/PARALLEL_AAA_ASSET_SPLAT_HANDOFF_20260926.md#aaa-005-ground-terrain",
+      "runtimeBudget": { "targetFormat": "glb-plus-ktx2", "lodsRequired": true, "collisionRequired": true },
+      "validationResult": "Prepared for terrain normalization and collision handoff; existing canopy provenance remains owned by PR #1325.",
+      "handoffState": "READY FOR INTEGRATION"
+    },
+    {
+      "assetId": "AAA-009",
+      "packageId": "AAA-009-life-map-layered-galaxy-spec-v1",
+      "scene": "Life Map",
+      "status": "READY FOR INTEGRATION",
+      "artifact": "docs/assets/PARALLEL_AAA_ASSET_SPLAT_HANDOFF_20260926.md#aaa-009-life-map",
+      "runtimeBudget": { "targetFormat": "shader-profile-plus-instanced-points", "mobileFallbackRequired": true },
+      "validationResult": "Layered galaxy/parallax spec prepared without touching active Life Map pixel files.",
+      "handoffState": "READY FOR INTEGRATION"
+    },
+    {
+      "assetId": "AAA-010",
+      "packageId": "AAA-010-memory-star-photosphere-spec-v1",
+      "scene": "Memory Star / Focus dependency",
+      "status": "READY FOR INTEGRATION",
+      "artifact": "docs/assets/PARALLEL_AAA_ASSET_SPLAT_HANDOFF_20260926.md#aaa-010-memory-star",
+      "runtimeBudget": { "targetFormat": "shader-profile-plus-source-media-proof", "mobileFallbackRequired": true },
+      "validationResult": "Photosphere/corona treatment spec packaged; no Focus art redesign committed over #1342.",
+      "handoffState": "READY FOR INTEGRATION"
+    },
+    {
+      "assetId": "AAA-012",
+      "packageId": "AAA-012-replay-environment-spec-v1",
+      "scene": "Replay",
+      "status": "READY FOR INTEGRATION",
+      "artifact": "docs/assets/PARALLEL_AAA_ASSET_SPLAT_HANDOFF_20260926.md#aaa-012-replay-environment",
+      "runtimeBudget": { "targetFormat": "glb-or-captured-reality-private-scene", "provenanceLabelsRequired": true },
+      "validationResult": "Replay environment spec separates real reconstruction, synthetic augmentation and fixture paths.",
+      "handoffState": "READY FOR INTEGRATION"
+    },
+    {
+      "assetId": "CR-GS-001",
+      "packageId": "captured-reality-gaussian-splat-readiness-v1",
+      "scene": "Captured Reality / Replay",
+      "status": "REPAIR REQUIRED",
+      "artifact": "PR #1327 runtime + docs/assets/PARALLEL_AAA_ASSET_SPLAT_HANDOFF_20260926.md#captured-reality-gaussian-splat",
+      "truthClass": "NO_REAL_RECONSTRUCTION_CLAIMED",
+      "externalBlocker": "Smallest known private original reported at 455441470 bytes, above connected Drive transfer limit 268435456 bytes; no smaller derivative or trained artifact found in current evidence.",
+      "validationResult": "Technical splat validation lane exists in PR #1327, but no real trained reconstruction has been ingested, optimized, packaged, rendered, navigated or device-certified.",
+      "handoffState": "BLOCKED"
+    }
+  ],
+  "audioMotionHapticPackages": [
+    { "assetId": "AAA-023", "packageId": "ambience-loop-map-v1", "status": "READY FOR INTEGRATION", "requirements": ["48kHz", "-16 LUFS target", "seamless loops", "no clipping", "spatial metadata"] },
+    { "assetId": "AAA-024", "packageId": "orb-sonic-identity-v1", "status": "READY FOR INTEGRATION", "requirements": ["48kHz stems", "low-frequency haptic companion", "calm/reflective/energized/heavy/uncertain/hopeful variants"] },
+    { "assetId": "AAA-026", "packageId": "haptic-pattern-library-v1", "status": "READY FOR INTEGRATION", "requirements": ["reduced-stimulation variants", "PTSD/TBI safe mode", "haptic off switch honored"] },
+    { "assetId": "AAA-028", "packageId": "transition-sound-and-motion-v1", "status": "READY FOR INTEGRATION", "requirements": ["Home-Ascent-LifeMap-Focus-Replay unwind flow", "no abrupt peaks", "reduced-motion alternative"] }
+  ],
+  "handoffQueue": {
+    "readyNow": [
+      "AAA-001-home-architecture-integration-spec-v1",
+      "AAA-003-home-atmosphere-integration-spec-v1",
+      "AAA-004-orb-identity-integration-spec-v1",
+      "AAA-005-ground-terrain-integration-spec-v1",
+      "AAA-009-life-map-layered-galaxy-spec-v1",
+      "AAA-010-memory-star-photosphere-spec-v1",
+      "AAA-012-replay-environment-spec-v1",
+      "ambience-loop-map-v1",
+      "orb-sonic-identity-v1",
+      "haptic-pattern-library-v1",
+      "transition-sound-and-motion-v1"
+    ],
+    "waitingOnDependency": [
+      { "packageId": "AAA-002-home-furnishings", "dependency": "AAA-001 final Home architecture dimensions/material language" },
+      { "packageId": "AAA-011-focus-environment", "dependency": "AAA-010 accepted Memory Star photosphere" },
+      { "packageId": "AAA-021-emotional-weather", "dependency": "AAA-003 accepted atmosphere color/lighting system" }
+    ],
+    "blocked": [
+      { "packageId": "captured-reality-gaussian-splat-readiness-v1", "blocker": "No accessible real source derivative/trained splat artifact inside connector limits; provider execution would require source upload path or smaller derivative." }
+    ]
+  },
+  "testsAndVerification": {
+    "performedInThisLane": ["GitHub authority readback", "Open PR changed-file ownership mapping", "Machine-readable manifest creation"],
+    "notPerformed": ["Paid provider generation", "Mesh normalization", "Binary asset optimization", "Real splat training", "Runtime visual acceptance", "Device performance measurement"],
+    "reason": "This branch intentionally avoids active pixel/runtime files and does not fabricate assets or real reconstruction evidence."
+  }
+}
