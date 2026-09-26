@@ -23,10 +23,16 @@
     "modifications": [
       "decimated",
       "welded",
-      "textures resized and re-encoded to WebP",
+      "textures resized and encoded as embedded KTX2/Basis textures",
       "Meshopt encoded"
     ],
-    "provenanceAuthority": "ASSET_LICENSES.md at the pinned derivative commit"
+    "provenanceAuthority": "ASSET_LICENSES.md at the pinned derivative commit",
+    "sha256": "62b533f9fd8f5ac59916f50eb17518b551cebb6cbbef7c0f81f024ee7e5d9092",
+    "embeddedTextureMimeTypes": [
+      "image/ktx2"
+    ],
+    "embeddedTextureCount": 9,
+    "textureEncodingEvidence": "The pinned GLB JSON declares nine image/ktx2 images and KHR_texture_basisu; each embedded payload has the KTX2 identifier. EXT_texture_webp is declared but no embedded image uses WebP."
   },
   "integration": {
     "runtimePath": "/assets/urai/ground-production/cc0/polyhaven-jacaranda-web-v1.glb",

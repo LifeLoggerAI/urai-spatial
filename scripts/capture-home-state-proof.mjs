@@ -499,6 +499,10 @@ async function captureHomeSpatialContinuity({ idSuffix = 'desktop', viewport = {
     const passportNavigation = page.waitForURL((url) => url.pathname.replace(/\/+$/, '') === '/passport', { timeout: 45_000 })
     await page.keyboard.press('Enter')
     await passportNavigation
+    // Next can commit the URL before its destination mounts; a static-export
+    // fallback may then replace that document. Bind storage/pixels to the
+    // visible Passport owner rather than reading the departing Home context.
+    await page.locator('main.passportVault[data-route-owner="passport-ownership-vault"]:visible').waitFor({ state: 'visible', timeout: 45_000 })
     record.passportPath = new URL(page.url()).pathname
     record.passportReturnFrame = await page.evaluate(() => {
       const raw = window.sessionStorage.getItem('urai:home:return-frame:v1')

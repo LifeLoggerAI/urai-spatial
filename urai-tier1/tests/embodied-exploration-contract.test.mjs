@@ -35,7 +35,8 @@ test('mobile movement controls remain touch/coarse-pointer affordances instead o
   for (const marker of ['minWidth', 'MobileMovementPad']) {
     if (marker === 'MobileMovementPad') has(travel, marker)
   }
-  assert.match(travel, /button\{width:48px;height:48px;/)
+  assert.match(travel, /\.urai-mobile-movement\{[^}]*pointer-events:none/)
+  assert.match(travel, /button\{pointer-events:auto;width:48px;height:48px;/)
 })
 
 test('Home keeps one V223 Canvas owner with direct bodyless first-person presence, authored Orb, physical Ground and broad Sky ascent', () => {

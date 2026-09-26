@@ -4,6 +4,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { lifeMapTypeLabels, type LifeMapNode, type LifeMapNodeType } from './lifeMapData'
 import { requestLifeMapSelection } from './lifeMapSelection'
+import { lifeMapIdentitySearch } from './lifeMapIdentity'
 import { useLifeMapEvents } from './useLifeMapEvents'
 
 const TYPE_FILTERS: readonly (LifeMapNodeType | 'all')[] = ['all', 'memory', 'relationship', 'season', 'recovery', 'threshold', 'ritual', 'forecast', 'legacy']
@@ -40,11 +41,11 @@ export default function LifeMapSemanticNavigator() {
   )
 
   const withIdentity = useCallback((next: URLSearchParams) => {
-    if (explicitDemo) next.set('demo', '1')
-    const manifestId = params.get('manifestId')
-    if (manifestId) next.set('manifestId', manifestId)
+    // Commit the same complete identity as the world before dispatching selection.
+    // Reduced motion can reach arrival before the world's router.replace commits.
+    lifeMapIdentitySearch(params).forEach((value, key) => next.set(key, value))
     return next
-  }, [explicitDemo, params])
+  }, [params])
 
   const commitBrowserIdentity = useCallback((next: URLSearchParams) => {
     const destination = `/life-map?${next.toString()}`
