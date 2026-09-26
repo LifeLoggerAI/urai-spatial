@@ -309,8 +309,10 @@ test.describe('URAI accessibility and performance evidence', () => {
   test('XR web controls meet the 48 CSS pixel minimum on narrow mobile', async ({ page }) => {
     await page.setViewportSize({ width: 320, height: 720 })
     await page.goto('/spatial/ar-vr', { waitUntil: 'domcontentloaded' })
-    await expect(page.locator('button:not([disabled])').first()).toBeVisible({ timeout: 30_000 })
-    const targets = await page.locator('button:not([disabled])').evaluateAll((elements) => elements
+    const xrWorld = page.getByTestId('urai-quest-explorable-world')
+    await expect(xrWorld).toBeVisible({ timeout: 30_000 })
+    await expect(xrWorld.locator('button:not([disabled])').first()).toBeVisible({ timeout: 30_000 })
+    const targets = await xrWorld.locator('button:not([disabled])').evaluateAll((elements) => elements
       .map((element) => ({ element, rect: element.getBoundingClientRect(), style: getComputedStyle(element) }))
       .filter(({ rect, style }) => style.visibility !== 'hidden' && style.display !== 'none' && rect.width > 0 && rect.height > 0)
       .map(({ element, rect }) => ({
