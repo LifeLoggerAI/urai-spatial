@@ -61,9 +61,14 @@ const probeJson = JSON.parse(command('ffprobe', [
 fs.mkdirSync(outDir, { recursive: true })
 const base = path.basename(source, path.extname(source)).replace(/[^A-Za-z0-9._-]+/g, '_')
 const pattern = path.join(outDir, `${base}_PART%03d.mp4`)
+const receiptPath = path.join(outDir, `${base}_DERIVATIVE_RECEIPT.json`)
+const existing = fs.readdirSync(outDir).some((name) =>
+  name === path.basename(receiptPath) || (name.startsWith(`${base}_PART`) && name.endsWith('.mp4')),
+)
+if (existing) fail('output contains prior derivatives or receipt for this source; select a fresh --out-dir to preserve provenance')
 
 command('ffmpeg', [
-  '-hide_banner', '-loglevel', 'error', '-y',
+  '-hide_banner', '-loglevel', 'error', '-n',
   '-i', source,
   '-map', '0:v:0', '-map', '0:a?',
   '-c:v', 'libx264', '-preset', 'slow', '-crf', '18',
@@ -119,6 +124,5 @@ const receipt = {
   derivatives,
 }
 
-const receiptPath = path.join(outDir, `${base}_DERIVATIVE_RECEIPT.json`)
 fs.writeFileSync(receiptPath, JSON.stringify(receipt, null, 2) + '\n')
 console.log(JSON.stringify({ ok: true, receiptPath, derivativeCount: derivatives.length, originalSha256 }, null, 2))

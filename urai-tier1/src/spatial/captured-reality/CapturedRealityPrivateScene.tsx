@@ -6,6 +6,7 @@ import { OrbitControls } from '@react-three/drei'
 import type { CapturedRealityRenderDecision } from './capturedReality'
 import { CAPTURED_REALITY_QUALITY_PROFILES, capturedRealityDeviceTier } from './capturedRealityRuntime'
 import CapturedRealitySplat from './CapturedRealitySplat'
+import { CapturedRealityRenderBoundary } from './CapturedRealityRenderBoundary'
 
 export type CapturedRealityPrivateSceneProps = {
   decision: CapturedRealityRenderDecision
@@ -41,18 +42,20 @@ export function CapturedRealityPrivateScene({
 
       {decision.mode === 'gaussian-splat' ? (
         <div aria-label="Explorable captured place" style={{ minHeight: 0 }}>
-          <Canvas camera={{ position: [0, 1.6, 4], fov: 62 }} dpr={tier === 'mobile' ? [1, 1.25] : [1, 1.75]}>
-            <Suspense fallback={null}>
-              <CapturedRealitySplat decision={decision} chunkSize={quality.chunkSize} alphaHash={quality.alphaHash} />
-            </Suspense>
-            <OrbitControls
-              enableDamping={!reducedMotion}
-              enablePan
-              enableZoom
-              minDistance={0.25}
-              maxDistance={12}
-            />
-          </Canvas>
+          <CapturedRealityRenderBoundary resetKey={decision.assetUrl}>
+            <Canvas camera={{ position: [0, 1.6, 4], fov: 62 }} dpr={tier === 'mobile' ? [1, 1.25] : [1, 1.75]}>
+              <Suspense fallback={null}>
+                <CapturedRealitySplat decision={decision} maxBytes={quality.maxRuntimeBytes} chunkSize={quality.chunkSize} alphaHash={quality.alphaHash} />
+              </Suspense>
+              <OrbitControls
+                enableDamping={!reducedMotion}
+                enablePan
+                enableZoom
+                minDistance={0.25}
+                maxDistance={12}
+              />
+            </Canvas>
+          </CapturedRealityRenderBoundary>
         </div>
       ) : (
         <div style={{ display: 'grid', placeItems: 'center', padding: '2rem' }}>

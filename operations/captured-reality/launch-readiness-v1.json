@@ -22,7 +22,11 @@
   "browser": {
     "status": "implemented-hard-off",
     "performanceReceiptExists": false,
-    "routeMounted": false
+    "routeMounted": true,
+    "routePath": "/spatial/captured-reality",
+    "routeEvidenceScope": "source-only-static-private-shell",
+    "productionDeploymentVerified": false,
+    "privateSceneDeliveryVerified": false
   },
   "mobile": {
     "status": "implemented-hard-off",
