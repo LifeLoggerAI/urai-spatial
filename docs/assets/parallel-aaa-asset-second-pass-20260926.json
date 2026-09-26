@@ -12,6 +12,7 @@
   "authoritiesInspected": {
     "uraiSpatialMain": "4b3c7bd982865324510eb9581d9f324bd4ad6e93",
     "assetFactoryRepository": "LifeLoggerAI/asset-factory",
+    "providerIntegrationStatus": "not live",
     "studioRepository": "LifeLoggerAI/urai-studio",
     "stagingRepository": "LifeLoggerAI/urai-staging",
     "driveFinalAssetLockMaster": "10l8UZ0mi_DrrhZU-fgAfiv2i4F0Vuqd3bvEKriudp1Y"
@@ -35,6 +36,7 @@
       "node scripts/check-spatial-asset-forge.mjs",
       "node scripts/verify-aaa-asset-governance.mjs",
       "node scripts/verify-asset-factory-handoff.mjs",
+      "Asset Factory integration is deferred and not live",
       "node scripts/verify-production-sensory-assets.mjs",
       "node urai-tier1/scripts/validate-assets.mjs",
       "node scripts/check-spatial-assets.mjs",
@@ -253,11 +255,13 @@
     {
       "provider": "Replicate",
       "codePath": "LifeLoggerAI/asset-factory assetfactory-studio/apphosting.yaml and provider guard workflows",
+      "providerIntegrationStatus": "not live",
       "result": "configured but dormant until ASSET_FACTORY_MEDIA_PROVIDER and paid-run authorization are explicitly selected"
     },
     {
       "provider": "fal.ai",
       "codePath": "LifeLoggerAI/asset-factory assetfactory-studio/apphosting.yaml",
+      "providerIntegrationStatus": "not live",
       "result": "configured but dormant until selected and authorized"
     },
     {
@@ -270,18 +274,18 @@
     {
       "provider": "Replicate",
       "assetPackage": "GLB/model3d/audio candidates",
-      "requiredApiOrAction": "authorized paid Asset Factory provider run",
+      "requiredApiOrAction": "authorized paid Asset Factory provider run (deferred; not live)",
       "existingCodePath": "assetfactory-studio/apphosting.yaml plus image_asset_generator/paid_request_guard.py",
       "missingCapability": "paid-run authorization and live secret-bound execution context",
-      "smallestUnblockAction": "create explicit authorization with call and spend ceilings, then run the Asset Factory workflow in its configured environment"
+      "smallestUnblockAction": "create explicit authorization with call and spend ceilings, then run the Asset Factory workflow in its configured environment (future; not live)"
     },
     {
       "provider": "fal.ai",
       "assetPackage": "image/HDR/texture candidates",
-      "requiredApiOrAction": "authorized Asset Factory media provider run",
+      "requiredApiOrAction": "authorized Asset Factory media provider run (deferred; not live)",
       "existingCodePath": "assetfactory-studio/apphosting.yaml",
       "missingCapability": "provider selection and live secret-bound execution context",
-      "smallestUnblockAction": "select fal as ASSET_FACTORY_MEDIA_PROVIDER for a bounded job with approved budget and provenance receipt"
+      "smallestUnblockAction": "select fal as ASSET_FACTORY_MEDIA_PROVIDER for a bounded job with approved budget and provenance receipt (future; not live)"
     },
     {
       "provider": "OpenAI/Runway/ElevenLabs/Meshy/Tripo/Move AI/HeyGen",

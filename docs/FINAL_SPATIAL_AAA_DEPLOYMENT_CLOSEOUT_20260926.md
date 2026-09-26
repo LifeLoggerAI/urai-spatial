@@ -66,12 +66,12 @@ The following packages are candidate-only until the pixel lane or a later integr
 - Splat contracts and captured-reality workflow contracts pass locally.
 - Public status: blocked on private derivative creation, not blocked on unknown source existence.
 
-## Provider / Asset Factory / Model Forge Status
+## Provider / Candidate Forge / Model Forge Status (live provider integration not claimed)
 
 - Provider evidence file exists and verifies 51/51 core records.
 - Provider handoff still reports 7/8 route owners because the Home active-owner marker is missing from pixel-owned Home files.
 - This branch does not patch the Home marker because PR #1325 owns active scene/pixel finishing.
-- Asset Factory/Model Forge normalization evidence remains represented by the candidate pack and asset receipts; generated provider files are not left as unmanaged loose artifacts in this lane.
+- Candidate-forge provenance evidence is represented by the candidate pack and asset receipts; live provider integration is not claimed and generated files remain candidate-only.
 
 ## Exact-Head Local Test Results
 
