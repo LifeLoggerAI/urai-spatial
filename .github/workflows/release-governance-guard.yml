@@ -2,10 +2,11 @@ name: Release Governance Guard
 
 on:
   pull_request:
-    branches: [main, home-final-v24-certify-20260826]
+    branches: [main, home-final-v24-certify-20260826, converge/final-canon-spatial-20260922]
     paths:
       - '.github/workflows/**'
       - '.github/CODEOWNERS'
+      - 'tests/release-governance-evidence.test.mjs'
       - 'docs/release-governance/**'
       - 'evidence/release/**'
   pull_request_review:
@@ -55,7 +56,8 @@ jobs:
                   . == ".github/CODEOWNERS"
                   or startswith(".github/workflows/")
                   or startswith("docs/release-governance/")
-                  or startswith("evidence/release/");
+                  or startswith("evidence/release/")
+                  or . == "tests/release-governance-evidence.test.mjs";
                 any(.[];
                   ((.filename // "") | governed)
                   or ((.previous_filename // "") | governed))
@@ -73,6 +75,7 @@ jobs:
           echo "applies=$applies" >> "$GITHUB_OUTPUT"
 
       - name: Checkout exact source
+        id: checkout
         if: steps.scope.outputs.applies == 'true'
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
@@ -82,6 +85,7 @@ jobs:
           show-progress: false
 
       - name: Prove exact clean tree
+        id: tree
         if: steps.scope.outputs.applies == 'true'
         shell: bash
         run: |
@@ -89,7 +93,13 @@ jobs:
           test "$(git rev-parse HEAD)" = "$EXACT_SHA"
           test -z "$(git status --porcelain --untracked-files=all)"
 
+      - name: Verify governance evidence behavior
+        id: contract
+        if: steps.scope.outputs.applies == 'true'
+        run: node --test tests/release-governance-evidence.test.mjs
+
       - name: Require exact-head governed approval
+        id: approval
         if: steps.scope.outputs.applies == 'true' && (github.event_name == 'pull_request' || github.event_name == 'pull_request_review')
         shell: bash
         env:
@@ -99,11 +109,21 @@ jobs:
           REPOSITORY: ${{ github.repository }}
         run: |
           set -euo pipefail
-          reviews="$(curl --fail --silent --show-error \
-            --header 'Accept: application/vnd.github+json' \
-            --header "Authorization: Bearer $GH_TOKEN" \
-            --header 'X-GitHub-Api-Version: 2022-11-28' \
-            "$GITHUB_API_URL/repos/$REPOSITORY/pulls/$PR_NUMBER/reviews?per_page=100")"
+          # Later pages may revoke an earlier approval; inspect the entire review history.
+          reviews='[]'
+          page=1
+          while :; do
+            review_page="$(curl --fail --silent --show-error \
+              --header 'Accept: application/vnd.github+json' \
+              --header "Authorization: Bearer $GH_TOKEN" \
+              --header 'X-GitHub-Api-Version: 2022-11-28' \
+              "$GITHUB_API_URL/repos/$REPOSITORY/pulls/$PR_NUMBER/reviews?per_page=100&page=$page")"
+            jq -e 'type == "array"' <<<"$review_page" >/dev/null
+            reviews="$(jq -cs '.[0] + .[1]' <(printf '%s' "$reviews") <(printf '%s' "$review_page"))"
+            count="$(jq 'length' <<<"$review_page")"
+            if [ "$count" -lt 100 ]; then break; fi
+            page=$((page + 1))
+          done
 
           mapfile -t candidates < <(
             jq -r \
@@ -148,6 +168,7 @@ jobs:
           exit 1
 
       - name: Reject temporary dispatchers on canonical source
+        id: dispatchers
         if: steps.scope.outputs.applies == 'true'
         shell: bash
         run: |
@@ -165,6 +186,7 @@ jobs:
           fi
 
       - name: Require permanent release ownership
+        id: ownership
         if: steps.scope.outputs.applies == 'true'
         shell: bash
         run: |
@@ -174,6 +196,7 @@ jobs:
           grep -Fq '/evidence/release/** @release-governance' .github/CODEOWNERS
 
       - name: Validate changed release workflows are exact-head and clean-tree bound
+        id: workflows
         if: steps.scope.outputs.applies == 'true'
         shell: bash
         run: |
@@ -203,6 +226,7 @@ jobs:
           done < artifacts/release-governance/changed-files.txt
 
       - name: Reject unsupported production authorization records
+        id: records
         if: steps.scope.outputs.applies == 'true'
         shell: bash
         run: |
@@ -222,6 +246,7 @@ jobs:
           fi
 
       - name: Require incident record and fail-closed release boundary
+        id: boundary
         if: steps.scope.outputs.applies == 'true'
         shell: bash
         run: |
@@ -238,37 +263,49 @@ jobs:
           grep -Fq 'Rollback authority: evidence not found' "$incident"
 
       - name: Retain guard receipt
-        if: steps.scope.outputs.applies == 'true'
+        if: always() && steps.scope.outputs.applies != 'false'
         shell: bash
+        env:
+          GUARD_STEPS: ${{ toJSON(steps) }}
         run: |
           set -euo pipefail
           mkdir -p artifacts/release-governance
-          changed_release_count="$(wc -l < artifacts/release-governance/validated-release-workflows.txt | tr -d ' ')"
-          production_record_count="$(wc -l < artifacts/release-governance/validated-production-records.txt | tr -d ' ')"
           approval_mode="$(cat artifacts/release-governance/approval-mode.txt 2>/dev/null || true)"
           approved_reviewer="$(cat artifacts/release-governance/approved-reviewer.txt 2>/dev/null || true)"
-          approved_steward="$(cat artifacts/release-governance/approved-steward.txt 2>/dev/null || true)"
-          cat > artifacts/release-governance/receipt.json <<EOF
-          {
-            "schemaVersion": "urai-release-governance-guard-6",
-            "repository": "$GITHUB_REPOSITORY",
-            "exactSha": "$EXACT_SHA",
-            "baseSha": "$BASE_SHA",
-            "governanceScopeApplied": true,
-            "temporaryDispatcherPresent": false,
-            "workflowCodeownerRequired": true,
-            "incidentRecordPresent": true,
-            "approvalMode": "$approval_mode",
-            "independentApprovedReviewer": "$approved_reviewer",
-            "soloSteward": "$approved_steward",
-            "changedReleaseWorkflowsValidated": $changed_release_count,
-            "productionAuthorizationRecordsValidated": $production_record_count,
-            "productionAuthorized": false
-          }
-          EOF
+          # Missing or unexecuted validation is unknown, never a fabricated zero/pass.
+          workflow_count=null
+          record_count=null
+          if jq -e '.workflows.outcome == "success"' <<<"$GUARD_STEPS" >/dev/null; then
+            workflow_count="$(wc -l < artifacts/release-governance/validated-release-workflows.txt | tr -d ' ')"
+          fi
+          if jq -e '.records.outcome == "success"' <<<"$GUARD_STEPS" >/dev/null; then
+            record_count="$(wc -l < artifacts/release-governance/validated-production-records.txt | tr -d ' ')"
+          fi
+          jq -n \
+            --arg repository "$GITHUB_REPOSITORY" --arg exactSha "$EXACT_SHA" --arg baseSha "$BASE_SHA" \
+            --arg approvalMode "$approval_mode" --arg reviewer "$approved_reviewer" \
+            --argjson steps "$GUARD_STEPS" \
+            --argjson workflowCount "$workflow_count" --argjson recordCount "$record_count" '
+            def outcome($id): $steps[$id].outcome // "not-run";
+            {
+              schemaVersion: "urai-release-governance-guard-7",
+              repository: $repository, exactSha: $exactSha, baseSha: $baseSha,
+              governanceScopeApplied: ($steps.scope.outputs.applies == "true"),
+              gateOutcomes: (["scope", "checkout", "tree", "contract", "approval", "dispatchers", "ownership", "workflows", "records", "boundary"]
+                | map({key: ., value: outcome(.)}) | from_entries),
+              temporaryDispatcherPresent: (if outcome("dispatchers") == "success" then false else null end),
+              workflowCodeownerRequired: true,
+              workflowCodeownerVerified: (outcome("ownership") == "success"),
+              incidentRecordPresent: (if outcome("boundary") == "success" then true else null end),
+              approvalMode: $approvalMode, independentApprovedReviewer: $reviewer,
+              independentApprovalVerified: (outcome("approval") == "success" and $reviewer != ""),
+              changedReleaseWorkflowsValidated: $workflowCount,
+              productionAuthorizationRecordsValidated: $recordCount,
+              productionAuthorized: false
+            }' > artifacts/release-governance/receipt.json
 
       - name: Upload governance receipt
-        if: steps.scope.outputs.applies == 'true'
+        if: always() && steps.scope.outputs.applies != 'false'
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: release-governance-${{ env.EXACT_SHA }}
