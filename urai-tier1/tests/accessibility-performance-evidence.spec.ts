@@ -19,6 +19,24 @@ const interactiveSelector = [
   '[tabindex]:not([tabindex="-1"])',
 ].join(',')
 
+// A clipped, transparent keyboard gateway has no painted pointer target until focus.
+// Retain it in the report and test its focused size separately; never exempt a class.
+function measureButtonTargets(elements: Element[]) {
+  return elements.map((element, index) => {
+    const rect = element.getBoundingClientRect()
+    const style = getComputedStyle(element)
+    const collapsedClip = /^rect\(0px[, ]+0px[, ]+0px[, ]+0px\)$/.test(style.clip)
+    return {
+      index,
+      label: element.getAttribute('aria-label') ?? element.textContent?.trim() ?? element.tagName,
+      width: Math.round(rect.width * 100) / 100,
+      height: Math.round(rect.height * 100) / 100,
+      displayed: style.visibility !== 'hidden' && style.display !== 'none' && rect.width > 0 && rect.height > 0,
+      visuallyCollapsed: collapsedClip && Number(style.opacity) === 0,
+    }
+  })
+}
+
 async function disableWebGL(page: Page) {
   await page.addInitScript(() => {
     const original = HTMLCanvasElement.prototype.getContext
@@ -306,18 +324,52 @@ test.describe('URAI accessibility and performance evidence', () => {
     expect(failures).toEqual([])
   })
 
+  test('target measurement retains undersized controls and checks clipped gateways after focus', async ({ page }) => {
+    await page.setContent(`<style>
+      button { box-sizing: border-box; }
+      .gateway { position:absolute; width:1px; height:1px; padding:0; overflow:hidden; clip:rect(0,0,0,0); opacity:0; }
+      .gateway:focus-visible { width:48px; height:48px; clip:auto; opacity:1; }
+      .undersized { width:24px; height:24px; padding:0; }
+      .broken:focus-visible { width:24px; height:24px; }
+    </style><button class="gateway">Keyboard gateway</button>
+    <button class="undersized sr-only">Undersized visible control</button>
+    <button class="gateway broken">Broken focused gateway</button>`)
+    const controls = page.locator('button')
+    const initial = await controls.evaluateAll(measureButtonTargets)
+    expect(initial.filter((target) => target.visuallyCollapsed).map((target) => target.label))
+      .toEqual(['Keyboard gateway', 'Broken focused gateway'])
+    expect(initial.filter((target) => target.displayed && !target.visuallyCollapsed && (target.width < 48 || target.height < 48)).map((target) => target.label))
+      .toEqual(['Undersized visible control'])
+    await page.keyboard.press('Tab')
+    await expect(controls.nth(0)).toBeFocused()
+    const [focused] = await controls.nth(0).evaluateAll(measureButtonTargets)
+    expect(focused.visuallyCollapsed).toBe(false)
+    expect(focused.width).toBeGreaterThanOrEqual(48)
+    expect(focused.height).toBeGreaterThanOrEqual(48)
+    await controls.nth(2).focus()
+    const [broken] = await controls.nth(2).evaluateAll(measureButtonTargets)
+    expect(broken.visuallyCollapsed).toBe(false)
+    expect(broken.width < 48 || broken.height < 48).toBe(true)
+  })
+
   test('XR web controls meet the 48 CSS pixel minimum on narrow mobile', async ({ page }) => {
     await page.setViewportSize({ width: 320, height: 720 })
     await page.goto('/spatial/ar-vr', { waitUntil: 'domcontentloaded' })
     await expect(page.locator('button:not([disabled])').first()).toBeVisible({ timeout: 30_000 })
-    const targets = await page.locator('button:not([disabled])').evaluateAll((elements) => elements
-      .map((element) => ({ element, rect: element.getBoundingClientRect(), style: getComputedStyle(element) }))
-      .filter(({ rect, style }) => style.visibility !== 'hidden' && style.display !== 'none' && rect.width > 0 && rect.height > 0)
-      .map(({ element, rect }) => ({
-        label: element.getAttribute('aria-label') ?? element.textContent?.trim() ?? element.tagName,
-        width: Math.round(rect.width * 100) / 100,
-        height: Math.round(rect.height * 100) / 100,
-      })))
+    const buttons = page.locator('button:not([disabled])')
+    const measured = await buttons.evaluateAll(measureButtonTargets)
+    const targets = measured.filter((target) => target.displayed && !target.visuallyCollapsed)
+    const focusedGateways = []
+    for (const hidden of measured.filter((target) => target.displayed && target.visuallyCollapsed)) {
+      const target = buttons.nth(hidden.index)
+      await target.focus()
+      await expect(target).toBeFocused()
+      const [focused] = await target.evaluateAll(measureButtonTargets)
+      expect(focused.displayed).toBe(true)
+      expect(focused.visuallyCollapsed).toBe(false)
+      focusedGateways.push(focused)
+    }
+    targets.push(...focusedGateways)
     const failures = targets.filter(({ width, height }) => width < 48 || height < 48)
     await test.info().attach('xr-target-size-report.json', {
       body: JSON.stringify({ targets, failures }, null, 2),
