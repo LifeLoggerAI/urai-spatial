@@ -21,6 +21,7 @@ test('accessibility and performance implementation contracts cover direct first-
   const companionCss = read('src/spatial/world/persistentWorldCompanion.css')
   const routeOwnerCss = read('src/spatial/world/routeOwnerConvergence.css')
   const homeCapability = read('src/app/HomeSpatialCanvas.tsx')
+  const webglCapabilityProbe = read('src/spatial/runtime/probeWebGLSupport.ts')
   const homeRuntime = read('src/app/HomeSpatialRuntimeLayer.tsx')
   const currentHome = read('src/spatial/layout/HomeWorldProductionV223.tsx')
   const focus = read('src/app/focus/FocusChamberClient.tsx')
@@ -60,7 +61,10 @@ test('accessibility and performance implementation contracts cover direct first-
   requireText(companionCss, '@media (prefers-reduced-motion: reduce)')
   requireText(routeOwnerCss, 'outline: 3px solid rgba(224,255,255,.96) !important;')
 
-  requireNormalizedPattern(homeCapability, /canvas\.getContext\('webgl2'(?:,\s*\{[^)]*\})?\)\s*\?\?\s*canvas\.getContext\('webgl'(?:,\s*\{[^)]*\})?\)/, 'Home must test WebGL2 and WebGL capability')
+  requireText(homeCapability, "import { probeWebGLSupport } from '@/spatial/runtime/probeWebGLSupport'")
+  requireText(homeCapability, 'cachedWebGLAvailable = probeWebGLSupport()')
+  requireNormalizedPattern(webglCapabilityProbe, /canvas\.getContext\('webgl2'\)\s*\?\?\s*canvas\.getContext\('webgl'\)/, 'Shared Home capability probe must test WebGL2, then WebGL')
+  requireText(webglCapabilityProbe, "context.getExtension('WEBGL_lose_context')?.loseContext()")
   requireText(homeRuntime, 'AssetDrivenHomeWorld')
   for (const marker of [
     'aria-label="Open UrAi Orb companion"',
