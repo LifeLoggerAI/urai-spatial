@@ -39,6 +39,7 @@ function harness(file = 'PassportVaultClient.tsx', search = '') {
     '@/spatial/world/worldEvents': { requestUraiWorldReturn() { returned++ } },
     '@/spatial/home/homeExperienceState': { stageHomeReturnFrameForHomeNavigation() { stagedHomeReturn++ } },
     '@/spatial/hooks/useReducedMotion': { useReducedMotion: () => userMotion },
+    '@/spatial/runtime/probeWebGLSupport': { probeWebGLSupport: () => true },
     './GlobalEmotionalFieldConsentCard': { default: 'consent-card' }, './passport-vault.css': {},
   }
   const exports = {}, navigator = { onLine: true }
