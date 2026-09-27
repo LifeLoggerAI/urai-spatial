@@ -5,6 +5,43 @@ import path from 'node:path'
 const baseURL = process.env.PLAYWRIGHT_BASE_URL || 'http://127.0.0.1:3000'
 const evidenceRoot = path.resolve('test-results/passport-evidence')
 
+test('mobile Settings motion preference reaches loaded Home', async ({ page }) => {
+  test.setTimeout(180_000)
+  const runtime = await observe(page)
+  await page.setViewportSize({ width: 390, height: 844 })
+  await page.emulateMedia({ reducedMotion: 'no-preference' })
+  await page.addInitScript(() => {
+    localStorage.setItem('urai:onboarding:v2:complete', '1')
+    localStorage.setItem('urai:onboarding:v3:setup-complete', '1')
+  })
+  try {
+    await page.goto(`${baseURL}/settings/`, { waitUntil: 'domcontentloaded' })
+    const motion = page.getByRole('checkbox', { name: 'Reduce motion', exact: true })
+    await expect(motion).not.toBeChecked()
+    await motion.focus()
+    await page.keyboard.press('Space')
+    await expect(motion).toBeChecked()
+    for (const name of ['Reduce motion', 'Haptics', 'World audio']) {
+      const target = page.getByRole('checkbox', { name, exact: true }).locator('..')
+      const bounds = await target.boundingBox()
+      expect(bounds).not.toBeNull()
+      expect(bounds!.height).toBeGreaterThanOrEqual(48)
+      expect(bounds!.width).toBeGreaterThanOrEqual(48)
+    }
+    await fs.mkdir(evidenceRoot, { recursive: true })
+    await page.screenshot({ path: path.join(evidenceRoot, 'settings-mobile-motion.png'), fullPage: true })
+    await page.getByRole('navigation', { name: 'Settings navigation' }).getByRole('link', { name: 'Home' }).click()
+    const home = page.locator('.urai-asset-home-world[data-home-primary-owner="asset-driven"]')
+    await expect(home).toHaveAttribute('data-home-assets-ready', 'true', { timeout: 60_000 })
+    await expect(home).toHaveAttribute('data-home-orb-model-clip', 'stopped-reduced-motion')
+    await expect(page.getByTestId('home-passport-physical-control')).toHaveAttribute('data-home-passport-reduced-motion', 'true')
+    await page.screenshot({ path: path.join(evidenceRoot, 'settings-mobile-loaded-home.png') })
+    expect(runtime.pageErrors).toEqual([])
+  } finally {
+    await save('settings-motion-runtime', runtime)
+  }
+})
+
 type RuntimeEvidence = { consoleErrors: string[]; pageErrors: string[]; failedRequests: string[] }
 
 async function observe(page: Page): Promise<RuntimeEvidence> {

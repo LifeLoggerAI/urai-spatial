@@ -1,6 +1,7 @@
 import { chromium } from 'playwright'
 import fs from 'node:fs/promises'
 import path from 'node:path'
+import { referenceEstateShard } from './reference-estate-shards.mjs'
 
 const exactSha = String(process.env.URAI_EXACT_HEAD || '').trim()
 const baseUrl = String(process.env.URAI_REFERENCE_BASE_URL || 'http://127.0.0.1:4173').replace(/\/$/, '')
@@ -448,7 +449,12 @@ const selectedStates = [
   },
 ]
 
-const states = [...simple, ...selectedStates]
+const { selected: states, plan: shard } = referenceEstateShard(
+  [...simple, ...selectedStates], process.env.URAI_REFERENCE_SHARD_INDEX, process.env.URAI_REFERENCE_SHARD_COUNT,
+)
+receipt.shard = shard
+receipt.scope = shard.count === 1 ? 'complete-estate' : 'shard-only-requires-all-sibling-shards'
+await fs.writeFile(path.join(outDir, 'receipt.json'), JSON.stringify({ ...receipt, status: 'capturing', complete: false }, null, 2) + '\n')
 const browserBatchSize = 8
 for (let offset = 0; offset < states.length; offset += browserBatchSize) {
   const browser = await chromium.launch({ headless:true, args:['--no-sandbox','--disable-dev-shm-usage','--use-angle=swiftshader','--enable-webgl'] })

@@ -5,7 +5,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useFrame, type ThreeEvent } from '@react-three/fiber'
 import * as THREE from 'three'
 import { requestUraiWorldTravel } from '@/spatial/world/worldEvents'
-import { HOME_PASSPORT_ORIGIN_CAPTURE_EVENT } from '@/spatial/home/homeExperienceState'
+import { DEFAULT_HOME_FIRST_PERSON_CAMERA, HOME_PASSPORT_ORIGIN_CAPTURE_EVENT } from '@/spatial/home/homeExperienceState'
 import { HomeGlobalEmotionalFieldEarth } from '@/spatial/home/HomeGlobalEmotionalFieldEarth'
 import type { GlobalFieldState } from '@/spatial/lived-world/globalEmotionalField'
 import RitualPlatform from '@/scene/RitualPlatform'
@@ -88,7 +88,7 @@ function PassportPhysicalReferenceSheet() {
   }, [])
   if (!visible || !mode) return null
   if (mode === 'neutral-model-sheet') return (
-    <group name="passport-physical-reference-neutral-sheet" position={[-0.72, 1.58, 4.58]}>
+    <group name="passport-physical-reference-neutral-sheet" position={[0, DEFAULT_HOME_FIRST_PERSON_CAMERA.position[1], DEFAULT_HOME_FIRST_PERSON_CAMERA.position[2] - 2.2]}>
       <mesh position={[0, 0, -0.08]}><planeGeometry args={[1.22, 0.62]} /><meshStandardMaterial color="#101816" roughness={1} /></mesh>
       <PassportReferenceFolio position={[-0.42, 0, 0]} />
       <PassportReferenceFolio position={[-0.14, 0, 0]} rotation={[0, Math.PI, 0]} />
@@ -98,7 +98,7 @@ function PassportPhysicalReferenceSheet() {
     </group>
   )
   return (
-    <group name="passport-physical-reference-human-scale" position={[-0.72, 0, 2.9]}>
+    <group name="passport-physical-reference-human-scale" position={[0, DEFAULT_HOME_FIRST_PERSON_CAMERA.position[1] - .9, DEFAULT_HOME_FIRST_PERSON_CAMERA.position[2] - 3]}>
       <mesh position={[0, 0.88, -0.1]}><planeGeometry args={[1.55, 2.08]} /><meshStandardMaterial color="#101816" roughness={1} /></mesh>
       <PassportReferenceFolio position={[-0.42, 1.34, 0]} />
       <PassportScaleReference />
