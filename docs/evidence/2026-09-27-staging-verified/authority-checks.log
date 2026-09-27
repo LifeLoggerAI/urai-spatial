@@ -1,0 +1,23 @@
+$ node scripts/validate-staging-deploy-workflow.mjs
+PASS staging deploy workflow definition and WIF-only credential boundary
+exit=0
+
+$ node scripts/validate-staging-wif-bootstrap.mjs
+PASS staging WIF bootstrap is keyless, staging-only, repository/ref/environment bound, and effective-IAM-read capable
+exit=0
+
+$ node scripts/validate-private-consumer-ref-workflow.mjs
+protected private consumer ref verification workflow contract OK
+exit=0
+
+$ node scripts/validate-staging-twilio-proof-iam.mjs
+staging Twilio proof IAM contract OK
+exit=0
+
+$ node scripts/validate-staging-twilio-function-deploy-iam.mjs
+staging function deploy IAM promotion contract OK
+exit=0
+
+$ node scripts/validate-staging-billing-guard.mjs
+staging billing contract OK
+exit=0

@@ -1,0 +1,138 @@
+{
+  "repo": "LifeLoggerAI/urai-staging",
+  "kind": "staging-bootstrap",
+  "sourceSha": "c38c9bc9fc9f3d9c074bbe72a13402eefb2a1bbf",
+  "projectId": "urai-staging",
+  "environment": "staging",
+  "productionAllowed": false,
+  "activeConsumers": [
+    {
+      "id": "urai-spatial-pr1296-stripe-test-readiness",
+      "repository": "LifeLoggerAI/urai-spatial",
+      "repositoryId": 1167675641,
+      "pullRequest": 1296,
+      "exactSha": "1b14dcbd9ce3a811e4d117921cbd8a00c7c42e66",
+      "sourceRef": "refs/pull/1296/head",
+      "mode": "stripe-test-provider-readiness",
+      "dataPolicy": "synthetic-only",
+      "providerProject": "urai-staging",
+      "allowedEnvironment": "staging",
+      "productionDeploymentAuthorized": false,
+      "productionDataAuthorized": false,
+      "longLivedCredentialsAuthorized": false
+    },
+    {
+      "id": "urai-communications-pr58-twilio-trial-e2e",
+      "repository": "LifeLoggerAI/urai-communications",
+      "repositoryId": 1169785707,
+      "pullRequest": 58,
+      "exactSha": "17e14efa97f40e18ad67aaec03ec4c37512a3507",
+      "sourceRef": "refs/pull/58/head",
+      "mode": "twilio-trial-protected-staging-e2e",
+      "dataPolicy": "synthetic-only",
+      "providerProject": "urai-staging",
+      "allowedEnvironment": "staging",
+      "productionDeploymentAuthorized": false,
+      "productionDataAuthorized": false,
+      "longLivedCredentialsAuthorized": false
+    }
+  ],
+  "workflowRunId": "36314127277",
+  "cloudDeploymentPerformed": false,
+  "liveSmokePerformed": false,
+  "providerMutationPerformed": false,
+  "startedAt": "2026-09-27T10:58:53.106Z",
+  "finishedAt": "2026-09-27T10:59:20.363Z",
+  "status": "passed",
+  "sourceBootstrapScore": 100,
+  "commandCount": 12,
+  "passedCount": 12,
+  "failedCount": 0,
+  "skipped": [],
+  "commands": [
+    {
+      "command": "npm --prefix functions ci --ignore-scripts",
+      "startedAt": "2026-09-27T10:58:53.107Z",
+      "finishedAt": "2026-09-27T10:59:05.466Z",
+      "status": "passed",
+      "exitCode": 0
+    },
+    {
+      "command": "npm run doctor",
+      "startedAt": "2026-09-27T10:59:05.467Z",
+      "finishedAt": "2026-09-27T10:59:05.601Z",
+      "status": "passed",
+      "exitCode": 0
+    },
+    {
+      "command": "npm run test:workstream-c-root",
+      "startedAt": "2026-09-27T10:59:05.601Z",
+      "finishedAt": "2026-09-27T10:59:05.935Z",
+      "status": "passed",
+      "exitCode": 0
+    },
+    {
+      "command": "npm run test:workstream-c-confinement",
+      "startedAt": "2026-09-27T10:59:05.936Z",
+      "finishedAt": "2026-09-27T10:59:06.084Z",
+      "status": "passed",
+      "exitCode": 0
+    },
+    {
+      "command": "npm run check:deploy",
+      "startedAt": "2026-09-27T10:59:06.084Z",
+      "finishedAt": "2026-09-27T10:59:06.213Z",
+      "status": "passed",
+      "exitCode": 0
+    },
+    {
+      "command": "npm run check:lockfile",
+      "startedAt": "2026-09-27T10:59:06.214Z",
+      "finishedAt": "2026-09-27T10:59:06.343Z",
+      "status": "passed",
+      "exitCode": 0
+    },
+    {
+      "command": "npm run check:types",
+      "startedAt": "2026-09-27T10:59:06.344Z",
+      "finishedAt": "2026-09-27T10:59:08.036Z",
+      "status": "passed",
+      "exitCode": 0
+    },
+    {
+      "command": "npm run lint",
+      "startedAt": "2026-09-27T10:59:08.036Z",
+      "finishedAt": "2026-09-27T10:59:09.524Z",
+      "status": "passed",
+      "exitCode": 0
+    },
+    {
+      "command": "npm run test:unit",
+      "startedAt": "2026-09-27T10:59:09.524Z",
+      "finishedAt": "2026-09-27T10:59:10.990Z",
+      "status": "passed",
+      "exitCode": 0
+    },
+    {
+      "command": "npm run test:rules",
+      "startedAt": "2026-09-27T10:59:10.991Z",
+      "finishedAt": "2026-09-27T10:59:18.510Z",
+      "status": "passed",
+      "exitCode": 0
+    },
+    {
+      "command": "npm run build",
+      "startedAt": "2026-09-27T10:59:18.511Z",
+      "finishedAt": "2026-09-27T10:59:20.104Z",
+      "status": "passed",
+      "exitCode": 0
+    },
+    {
+      "command": "npm run launch:p0",
+      "startedAt": "2026-09-27T10:59:20.105Z",
+      "finishedAt": "2026-09-27T10:59:20.363Z",
+      "status": "passed",
+      "exitCode": 0
+    }
+  ]
+}
