@@ -12,6 +12,7 @@ export type CapturedRealitySplatProps = {
   maxBytes?: number
   chunkSize?: number
   alphaHash?: boolean
+  onRenderReady?: () => void
 }
 
 /**
@@ -21,8 +22,9 @@ export type CapturedRealitySplatProps = {
  * than raw private source data. Consent, provenance and release gating happen
  * before the renderer is allowed to see a URL.
  *
- * It is not mounted by any launch route in V1. Route integration remains a
- * separate exact-head visual/performance/privacy gate.
+ * The private captured-reality route mounts this adapter only after owner,
+ * consent, release and signed-delivery gates succeed. Visual acceptance and
+ * device certification remain separate exact-head gates.
  */
 export function CapturedRealitySplat({
   decision,
@@ -32,6 +34,7 @@ export function CapturedRealitySplat({
   maxBytes = CAPTURED_REALITY_QUALITY_PROFILES.mobile.maxRuntimeBytes,
   chunkSize,
   alphaHash = true,
+  onRenderReady,
 }: CapturedRealitySplatProps) {
   if (decision.mode !== 'gaussian-splat' || !decision.assetUrl) return null
 
@@ -46,7 +49,7 @@ export function CapturedRealitySplat({
         autobiographical: decision.autobiographical,
       }}
     >
-      <OwnedCapturedRealitySplat src={decision.assetUrl} maxBytes={maxBytes} chunkSize={chunkSize} alphaHash={alphaHash} />
+      <OwnedCapturedRealitySplat src={decision.assetUrl} maxBytes={maxBytes} chunkSize={chunkSize} alphaHash={alphaHash} onRenderReady={onRenderReady} />
     </group>
   )
 }
