@@ -57,10 +57,20 @@ test('privacy package classifies captured reality as L3 C1 content with addition
   assert.match(inventory, /name: captured_reality_replay_binding/)
 })
 
-test('privacy export and deletion lifecycle includes captured reality records and private object cleanup', () => {
+test('privacy export and deletion lifecycle includes captured reality records, runtime bytes and private object cleanup', () => {
   assert.match(privacy, /capturedRealityAssets/)
+  assert.match(privacy, /copyCapturedRealityRuntimeExports/)
+  assert.match(privacy, /capturedRealityRuntimeAssets/)
+  assert.match(privacy, /runtimeExports/)
+  assert.match(privacy, /data\?\.file === 'runtime'/)
   assert.match(privacy, /private-captured-reality/)
+  assert.match(privacy, /private-exports/)
   assert.match(privacy, /deleteFiles/)
+})
+
+test('runtime access audit appends distinct events instead of overwriting one asset record', () => {
+  assert.match(source, /collection\(`users\/\$\{uid\}\/privacyAudit`\)\.add\(/)
+  assert.doesNotMatch(source, /privacyAudit\/captured-reality-runtime-\$\{assetId\}/)
 })
 
 test('proof delivery is separately gated and can never masquerade as certified runtime', () => {
