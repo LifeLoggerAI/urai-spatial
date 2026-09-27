@@ -161,3 +161,37 @@ Consolidates PR1357 ritual annotation repair with PR1356 normal-motion Orb trace
 Permitted browser access is restored. Fresh public navigation to urai.app, urai.app/home/ and urai-4dc1d.web.app shows Firebase Site Not Found. Public screenshot: [live Home outage](urai-live-home-20260927-0550.jpg), SHA-256 `fb77bf91b07dcd0f79b9f04b937bed398936a42e227c4633fd9ceaf388fba19e`. Authenticated console shows urai.app Connected and current Hosting release aa4653, displayed July 23, 2026 6:16 AM. No Git revision or outage cause can be inferred from that legacy version. No private console image is published.
 
 Fresh main 4b3c7bd982865324510eb9581d9f324bd4ad6e93 explicitly quarantines production and Hosting recovery in spatial-live-deploy.yml. Required independently verified short-lived identity, WIF/IAM trust, least privilege, runtime read-back, rollback and historical key revocation evidence cannot be replaced by green UI builds. No release workflow was weakened or bypassed. No merge, deployment or UrAi live pass is claimed. Home/mobile Orb art and runtime responsiveness remain unfinished implementation work. Accepted final art, real private Gaussian reconstruction and independent release proof remain separate dependencies.
+
+## 2026-09-27 reference packaging continuation
+
+Fresh authority: PR1362 at `c58df391cf97fa3f1bd0005b112f6611967e59c7`.
+Reference Estate run36302153148 failed before build/capture in all four shards:
+`Active image candidate count drifted: expected 789, found 790`.
+Job108571675119 identifies the packaging step, not a visual assertion, as the failure.
+The only tracked image in `docs/evidence/` is the retained Firebase outage screenshot.
+This repair excludes runtime evidence from the art-candidate package, records the
+exclusion in its manifest, and preserves the strict 789-candidate requirement.
+Local packaging now copies/hashes all789 files (119605367 bytes); no art is promoted,
+removed, relabeled, or replaced. The outage screenshot remains tracked.
+
+Current-parent journey run36302153149 succeeded. Artifact10926580187 was downloaded;
+SHA256 `7e13120ee21113416216a502e46be5205d6006d553e76aa8a6dc387a063f1157`
+verified. All31 PNGs inspected in three contact sheets: desktop real Ascent,
+simulated mobile touch and reduced-motion keyboard complete the canonical journey.
+Portrait Home still clips the Orb, and coarse Home materials remain unaccepted.
+Software-rendering pixel reduction is not hardware/device certification.
+
+Production Verify run36302153137 attempt1 failed at Replay heading/unwind geometry
+with a missing bounding box. Artifact10925847049 retained (SHA256
+`2f07138f65415487e482058715148e0ce4b50f677b1393fdc803f2e4fc6232ed`).
+Its failure screenshot was opened: heading and Focus return control are visible
+and separated in that later image. Report records aborted navigation requests;
+no trace is present, so a navigation race is a hypothesis, not a proven cause.
+A single unchanged exact-head job retry was requested; original failure is retained.
+No assertion, timeout or release safeguard changed.
+
+Fresh live browser navigation to https://urai.app shows Firebase Site Not Found.
+Production quarantine/recovery PR1361 remains separate. Current UI is not live
+accepted. This isolated packaging repair preserves active parent captures and
+Gaussian work. Independent review, merge, deployment, final art acceptance and
+real-scene Gaussian verification remain pending; UI defects remain unfinished.
