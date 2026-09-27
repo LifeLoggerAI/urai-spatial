@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict'
+import fs from 'node:fs'
 import test from 'node:test'
 import {
   decideCapturedRealityRender,
@@ -211,4 +212,18 @@ test('likeness-bearing reconstruction requires biometric identity authority', ()
   })
   const errors = validateCapturedRealityAsset(candidate, graph())
   assert.ok(errors.includes('LIKENESS_REQUIRES_BIOMETRIC_AUTHORITY'))
+})
+
+
+test('private Gaussian visual proof can wait for a completed resource update and first rendered frame', () => {
+  const owned = fs.readFileSync(new URL('../src/spatial/captured-reality/OwnedCapturedRealitySplat.tsx', import.meta.url), 'utf8')
+  const adapter = fs.readFileSync(new URL('../src/spatial/captured-reality/CapturedRealitySplat.tsx', import.meta.url), 'utf8')
+  const scene = fs.readFileSync(new URL('../src/spatial/captured-reality/CapturedRealityPrivateScene.tsx', import.meta.url), 'utf8')
+
+  assert.match(owned, /onRenderReady\?: \(\) => void/)
+  assert.match(owned, /loaded\.resource\.update\(camera, viewport\.current\)[\s\S]*complete && !renderReadySent\.current[\s\S]*onRenderReadyRef\.current\?\.\(\)/)
+  assert.match(adapter, /onRenderReady=\{onRenderReady\}/)
+  assert.match(scene, /data-captured-reality-render-ready=\{renderReady \? 'true' : 'false'\}/)
+  assert.match(scene, /onRenderReady=\{\(\) => setRenderReady\(true\)\}/)
+  assert.match(scene, /setRenderReady\(false\)[\s\S]*decision\.assetUrl, decision\.mode/)
 })
