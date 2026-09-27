@@ -29,7 +29,11 @@ if (receipt?.schemaVersion === 'urai-captured-reality-launch-readiness-1') {
   }
   if (receipt.launchClassification === 'LAUNCH_READY') {
     need(receipt.sourceAuthority?.reconstructionReady === true, 'launch requires reconstruction-ready source authority')
+    need(receipt.reconstruction?.completeSceneExists === true, 'launch requires a complete reconstructed scene')
     need(receipt.reconstruction?.visualQaExists === true, 'launch requires reconstruction visual QA')
+    need(receipt.reconstruction?.visualAcceptance === true, 'launch requires independent reconstruction visual acceptance')
+    need(receipt.reconstruction?.metricScaleEstablished === true, 'launch requires established metric scale')
+    need(Array.isArray(receipt.reconstruction?.remainingGates) && receipt.reconstruction.remainingGates.length === 0, 'launch requires an explicit empty reconstruction remaining-gates list')
     need(receipt.browser?.routeMounted === true && receipt.browser?.performanceReceiptExists === true, 'launch requires mounted browser runtime and performance evidence')
     need(receipt.browser?.productionDeploymentVerified === true && receipt.browser?.privateSceneDeliveryVerified === true, 'launch requires deployed private scene delivery')
     need(receipt.mobile?.performanceReceiptExists === true, 'launch requires mobile performance evidence')

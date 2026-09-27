@@ -24,7 +24,13 @@ test('parents-house boundary receipt is explicit about the current byte gate and
 })
 
 test('launch readiness refuses to call the scene or device layers complete before evidence exists', () => {
-  assert.equal(readiness.reconstruction.trainedSceneExists, false)
+  assert.equal(readiness.reconstruction.status, 'local-experimental-candidate-not-integrated')
+  assert.equal(readiness.reconstruction.trainedSceneExists, true)
+  assert.equal(readiness.reconstruction.completeSceneExists, false)
+  assert.equal(readiness.reconstruction.visualQaExists, true)
+  assert.equal(readiness.reconstruction.visualAcceptance, false)
+  assert.equal(readiness.reconstruction.metricScaleEstablished, false)
+  assert.ok(readiness.reconstruction.remainingGates.length > 0)
   assert.equal(readiness.browser.routeMounted, true)
   assert.equal(readiness.browser.routeEvidenceScope, 'source-only-static-private-shell')
   assert.equal(readiness.browser.productionDeploymentVerified, false)
