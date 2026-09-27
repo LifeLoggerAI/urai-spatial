@@ -248,7 +248,7 @@ function MemoryTraces({ memory, accent, reducedMotion }: { memory: SelectedMemor
       group.rotation.y = clock.elapsedTime * 0.08 + index * 0.7
     })
   })
-  return <group name="focus-grounded-memory-traces">{positions.map((position, index) => <group key={index} ref={(value) => { refs.current[index] = value }} position={position}><mesh><octahedronGeometry args={[0.18, 1]} /><meshStandardMaterial color="#07121e" emissive={accent} emissiveIntensity={1.4} roughness={0.24} metalness={0.52} /></mesh><mesh><sphereGeometry args={[0.46, 18, 18]} /><meshBasicMaterial color={accent} transparent opacity={0.045} depthWrite={false} blending={THREE.AdditiveBlending} /></mesh></group>)}</group>
+  return <group name="focus-grounded-memory-traces">{positions.map((position, index) => <group key={index} ref={(value) => { refs.current[index] = value }} position={position}><mesh><sphereGeometry args={[0.12, 24, 24]} /><meshBasicMaterial color={accent} transparent opacity={0.82} depthWrite={false} blending={THREE.AdditiveBlending} /></mesh><mesh><sphereGeometry args={[0.46, 18, 18]} /><meshBasicMaterial color={accent} transparent opacity={0.045} depthWrite={false} blending={THREE.AdditiveBlending} /></mesh></group>)}</group>
 }
 
 function MemoryStarInteraction({ memory, accent, light, reducedMotion, onActivate }: { memory: SelectedMemory | null; accent: string; light: string; reducedMotion: boolean; onActivate: () => void }) {
