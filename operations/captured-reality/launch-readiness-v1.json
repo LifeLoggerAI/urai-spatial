@@ -15,9 +15,21 @@
     "reconstructionReady": false
   },
   "reconstruction": {
-    "status": "blocked-source-bytes",
-    "trainedSceneExists": false,
-    "visualQaExists": false
+    "status": "local-experimental-candidate-not-integrated",
+    "trainedSceneExists": true,
+    "completeSceneExists": false,
+    "visualQaExists": true,
+    "visualAcceptance": false,
+    "metricScaleEstablished": false,
+    "evidenceScope": "Private reconstruction receipt reports trained/exported partial candidate; binary and source media remain private.",
+    "remainingGates": [
+      "complete-source-backed-scene-coverage",
+      "metric-scale-and-camera-quality",
+      "private-owner-authorized-delivery",
+      "in-app-webgl-render-and-navigation",
+      "collision-and-device-performance",
+      "independent-visual-and-release-acceptance"
+    ]
   },
   "browser": {
     "status": "implemented-hard-off",
@@ -37,7 +49,7 @@
     "performanceReceiptExists": false
   },
   "launchClassification": "NOT_YET_LAUNCH_ENABLED",
-  "allowedClaim": "Captured Reality architecture and private runtime path are implemented behind release gates.",
+  "allowedClaim": "Captured Reality architecture and private runtime path are implemented behind release gates; a partial experimental trained candidate is recorded privately, not accepted or app-integrated.",
   "forbiddenClaims": [
     "Parents House reconstruction complete",
     "Gaussian scene production-live",
