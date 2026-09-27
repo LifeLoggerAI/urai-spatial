@@ -20,6 +20,20 @@ test('V286 remains the authored biomorphic layered reliquary rather than a heart
   assert.doesNotMatch(orb, /livingHeart|living-memory-heart|new THREE\.SphereGeometry|<sphereGeometry|wireframe|DoubleSide/)
 })
 
+test('V288 shell materials stay readable in blue-hour lighting without harsh metallic glare', () => {
+  const swatches = [...orb.matchAll(/new THREE\.Color\('(#[0-9a-fA-F]{6})'\)/g)].map((match) => match[1])
+  const luminance = (hex) => {
+    const channels = [1, 3, 5].map((start) => parseInt(hex.slice(start, start + 2), 16) / 255)
+      .map((value) => value <= .04045 ? value / 12.92 : ((value + .055) / 1.055) ** 2.4)
+    return channels[0] * .2126 + channels[1] * .7152 + channels[2] * .0722
+  }
+  assert.equal(swatches.length, 4, 'Keep the authored mineral palette explicit')
+  assert.ok(Math.min(...swatches.map(luminance)) > .12, 'Shell base colors must not sink into near-black in blue-hour light')
+  assert.match(orb, /const radial = \.965 \+ fracture \* \.028 \+ grain \* \.015/)
+  assert.match(orb, /emissiveIntensity=\{\.075 \+ visual\.activity \* \.035\}/)
+  assert.match(orb, /roughness=\{\.68 - \(index % 3\) \* \.025\} metalness=\{index % 4 === 0 \? \.025 : \.012\} clearcoat=\{\.12\}/)
+})
+
 test('V286 memory nervous system is embedded, branching, local, and visual-only', () => {
   assert.match(orb, /reliquaryFilamentGeometriesV286/)
   assert.match(orb, /new THREE\.TubeGeometry/)

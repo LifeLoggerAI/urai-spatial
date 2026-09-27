@@ -63,10 +63,10 @@ function reliquaryPlateGeometryV286(seed: number) {
   const geometry = new THREE.IcosahedronGeometry(1, 4)
   const position = geometry.getAttribute('position') as THREE.BufferAttribute
   const colors = new Float32Array(position.count * 3)
-  const graphite = new THREE.Color('#383b37')
-  const mineral = new THREE.Color('#69665b')
-  const bronze = new THREE.Color('#8b7158')
-  const ash = new THREE.Color('#a29783')
+  const graphite = new THREE.Color('#5d7069')
+  const mineral = new THREE.Color('#84918a')
+  const bronze = new THREE.Color('#aa8f70')
+  const ash = new THREE.Color('#c5c1ad')
 
   for (let index = 0; index < position.count; index++) {
     const x = position.getX(index), y = position.getY(index), z = position.getZ(index)
@@ -76,13 +76,13 @@ function reliquaryPlateGeometryV286(seed: number) {
     const fracture = seededWave(seed, longitude + ny * 1.8)
     const grain = seededWave(seed + 2.7, nx * 2.2 + ny * 1.3 - nz * .8)
     const chipped = Math.abs(Math.sin((nx * 2.8 + ny * 3.9 - nz * 2.1 + seed) * 2.2))
-    const radial = .94 + fracture * .06 + grain * .035 - Math.pow(chipped, 13) * .025
-    const lateral = 1 + .035 * Math.sin(ny * 5.4 + seed)
-    position.setXYZ(index, nx * radial * lateral, ny * radial * (1 + .04 * grain), nz * radial * (.78 + .07 * fracture))
+    const radial = .965 + fracture * .028 + grain * .015 - Math.pow(chipped, 13) * .012
+    const lateral = 1 + .018 * Math.sin(ny * 5.4 + seed)
+    position.setXYZ(index, nx * radial * lateral, ny * radial * (1 + .025 * grain), nz * radial * (.88 + .035 * fracture))
 
     const exposed = THREE.MathUtils.smoothstep(nz, -.55, .76)
     const edge = THREE.MathUtils.clamp(Math.abs(fracture) * .9 + chipped * .18, 0, 1)
-    const color = graphite.clone().lerp(mineral, .28 + exposed * .24).lerp(bronze, .05 + Math.max(0, fracture) * .22).lerp(ash, edge * .10)
+    const color = graphite.clone().lerp(mineral, .32 + exposed * .30).lerp(bronze, .035 + Math.max(0, fracture) * .11).lerp(ash, edge * .20)
     colors.set([color.r, color.g, color.b], index * 3)
   }
   position.needsUpdate = true
@@ -237,7 +237,7 @@ export function HomeOrbReliquaryV286() {
           name={`home-v286-weathered-shell-plate-${index}`}
           userData={{ visualOnly: true, interactionOwner: false, shellLayer: index }}
         >
-          <meshStandardMaterial vertexColors color={spec.tint} emissive={visual.shellEmissive} emissiveIntensity={.035 + visual.activity * .045} roughness={.88 - (index % 3) * .035} metalness={index % 4 === 0 ? .035 : .012} />
+          <meshPhysicalMaterial vertexColors color={spec.tint} emissive={visual.shellEmissive} emissiveIntensity={.075 + visual.activity * .035} roughness={.68 - (index % 3) * .025} metalness={index % 4 === 0 ? .025 : .012} clearcoat={.12} clearcoatRoughness={.56} />
         </mesh>
       })}
 
