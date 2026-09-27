@@ -6,8 +6,9 @@ const proof = await readFile(new URL('./native-doorway-proof.mjs', import.meta.u
 const homeRuntime = await readFile(new URL('../urai-tier1/src/app/HomeSpatialRuntimeLayer.tsx', import.meta.url), 'utf8')
 
 test('semantic destinations are browser-native anchors', () => {
-  assert.match(homeRuntime, /data-testid="home-semantic-ground" href=\{HOME_SEMANTIC_DESTINATIONS\.ground\.travelHref\}/)
-  assert.match(homeRuntime, /data-testid="home-semantic-life-map" href=\{HOME_SEMANTIC_DESTINATIONS\.lifeMap\.travelHref\}/)
+  assert.match(homeRuntime, /<a aria-label="Open Ground directly" data-testid="home-semantic-ground" href=\{homeSemanticHref\(HOME_SEMANTIC_DESTINATIONS\.ground\.travelHref, currentSearch\)\}/)
+  assert.match(homeRuntime, /<a aria-label="Open Life Map directly" data-testid="home-semantic-life-map" href=\{homeSemanticHref\(HOME_SEMANTIC_DESTINATIONS\.lifeMap\.travelHref, currentSearch\)\}/)
+  assert.doesNotMatch(homeRuntime, /<a[^>]*data-testid="home-semantic-(?:ground|life-map)"[^>]*onClick/)
   assert.doesNotMatch(homeRuntime, /directHomeSemanticTravel/)
   assert.match(proof, /semantic target must own native href/)
   assert.match(proof, /semantic target must be a browser-native anchor/)
