@@ -38,7 +38,7 @@ test('app template mounts current WebGL owners without certified-route redirects
   assert.match(assetHome, /HomeWorldProduction/)
   assert.match(homeProductionEntry, /export \{ HomeWorldProductionSacred as HomeWorldProduction \} from "\.\/HomeWorldProductionSacred"/)
   assert.match(homeProduction, /data-home-primary-owner="asset-driven"/)
-  assert.match(homeProduction, /data-home-visible-world="moonlit-sacred-tech-sanctuary"/)
+  assert.match(homeProduction, /data-home-visible-world="open-sky-inhabited-natural-sanctuary"/)
   assert.match(groundOwner, /GroundSpatialWorldClean/)
   assert.match(lifeMapOwner, /SpatialLifeMapCanonical/)
   assert.doesNotMatch(template, /focus|replay/i)
@@ -49,19 +49,18 @@ test('Home remains one embodied authored sacred-tech 3D environment with accessi
     'HomeWorldProductionSacred',
     'Stars',
     'home-entry-chamber-v1.glb',
-    'home-human-makehuman-v4.glb',
     'urai-orb-avatar-v1.glb',
     'portal-ring-master-v1.glb',
     'data-home-primary-owner="asset-driven"',
-    'data-home-visible-world="moonlit-sacred-tech-sanctuary"',
-    'data-home-world-character="premium-cinematic-sacred-tech"',
-    'data-home-physical-base="authored-obsidian-ritual-platform"',
+    'data-home-visible-world="open-sky-inhabited-natural-sanctuary"',
+    'data-home-world-character="human-scale-grounded-real-place"',
+    'data-home-physical-base="natural-flagstone-clearing"',
     'data-home-visual-ownership="three-dimensional-geometry"',
     'data-home-desktop-mobile-world="same-scene"',
-    'data-home-embodied-self="makehuman-v4"',
+    'data-home-embodied-self="bodyless-first-person-camera"',
     'data-home-movement="walk-keyboard-click-touch"',
     'data-testid="urai-home-webgl-orb"',
-    'data-testid="urai-home-embodied-avatar"',
+    'data-testid="urai-home-first-person-presence"',
     'home-authored-terrain',
     'home-mountain-horizon',
     'home-living-vegetation',
@@ -115,7 +114,7 @@ test('Home Life Map entry is one canonical sky ascent transaction with one camer
   assert.match(homeProduction, /transition==='life-map'/)
   assert.match(homeProduction, /setProgress\(t\)/)
   assert.match(homeProduction, /cameraCheckpoint:'home-sky-ascent-complete'/)
-  assert.match(homeProduction, /data-home-camera-mode=\{transition!=='none'\?transition:dragging\?'look':'embodied-third-person'\}/)
+  assert.match(homeProduction, /data-home-camera-mode=\{transition!=='none'\?transition:dragging\?'first-person-look':'embodied-first-person'\}/)
   assert.match(homeProduction, /data-home-input-locked=\{transition!=='none'\?'true':'false'\}/)
   assert.match(homeProduction, /store\.setPhase\('HOME'\)/)
   assert.match(homeProduction, /store\.unlock\(\)/)
