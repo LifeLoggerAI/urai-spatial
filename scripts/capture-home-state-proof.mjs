@@ -174,16 +174,18 @@ async function waitForHomeReady(page) {
   return owner
 }
 
-async function focusNativeSummaryByText(page, text, maxSteps = 24) {
+async function focusNativeSummaryByText(page, text, scopeSelector = null, maxSteps = 24) {
   for (let step = 0; step <= maxSteps; step += 1) {
-    const focused = await page.evaluate((expected) => {
+    const focused = await page.evaluate(({ expected, scope }) => {
       const active = document.activeElement
-      return active instanceof HTMLElement && active.tagName === 'SUMMARY' && active.textContent?.includes(expected)
-    }, text)
+      if (!(active instanceof HTMLElement) || active.tagName !== 'SUMMARY' || !active.textContent?.includes(expected)) return false
+      if (!scope) return true
+      return Boolean(active.closest(scope))
+    }, { expected: text, scope: scopeSelector })
     if (focused) return step
     await page.keyboard.press('Tab')
   }
-  throw new Error(`native summary "${text}" did not receive browser-native Tab focus`)
+  throw new Error(`native summary "${text}" did not receive browser-native Tab focus in the active companion surface`)
 }
 
 async function focusTestIdForKeyboard(page, testId) {
@@ -336,7 +338,7 @@ async function captureOrbLifecycle({ reducedMotion = 'no-preference' } = {}) {
     const talk = companionMenu.locator('summary').filter({ hasText: 'Talk with Orb' }).first()
     record.phase = 'conversation-open-keyboard'
     await talk.waitFor({ state: 'visible', timeout: 10_000 })
-    record.summaryFocusSteps = await focusNativeSummaryByText(page, 'Talk with Orb')
+    record.summaryFocusSteps = await focusNativeSummaryByText(page, 'Talk with Orb', '#urai-world-companion-menu[aria-hidden="false"]')
     await page.keyboard.press('Enter')
     await companionMenu.locator('details[open]').filter({ hasText: 'Talk with Orb' }).first().waitFor({ state: 'visible', timeout: 10_000 })
     const message = companionMenu.getByLabel('Message for Orb').first()
@@ -515,8 +517,13 @@ async function captureHomeSpatialContinuity({ idSuffix = 'desktop', viewport = {
     })
     record.passportScreenshot = await screenshotRecord('passport-activated')
 
-    record.phase = 'passport-history-return'
-    await page.goBack({ waitUntil: 'domcontentloaded', timeout: 30_000 })
+    record.phase = 'passport-origin-return'
+    const passportReturnControl = page.getByTestId('passport-return-origin')
+    await passportReturnControl.waitFor({ state: 'visible', timeout: 20_000 })
+    const passportReturnNavigation = page.waitForURL((url) => url.pathname.replace(/\/+$/, '') === '/home', { timeout: 45_000 })
+    await passportReturnControl.click()
+    await passportReturnNavigation
+    record.returnMechanism = 'passport-return-origin'
     record.returnPathAfterBack = new URL(page.url()).pathname
     owner = await waitForHomeReady(page)
     await page.waitForFunction((selector) => {
