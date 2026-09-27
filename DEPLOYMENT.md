@@ -1,5 +1,12 @@
 # URAI Spatial Deployment
 
+This V1 guide is historical context, not current release authorization. The
+canonical [release verification workflow](.github/workflows/spatial-live-deploy.yml)
+and [release operator](scripts/live-release.mjs) currently quarantine production
+mutation as NO-GO. Existing independent review, WIF identity, protected-environment,
+artifact, rollback and live-verification requirements remain mandatory. Commands
+below do not authorize bypassing that quarantine or enabling providers or billing.
+
 URAI-Spatial V1 deploys as the `urai-tier1` Next.js app through Firebase Hosting / App Hosting.
 
 ## Prerequisites
@@ -31,7 +38,9 @@ corepack pnpm build
 corepack pnpm --filter urai-tier1 test
 ```
 
-`corepack pnpm test` also runs the legacy replay-tier5 browser lock. Treat a replay-tier5 failure about `seed memory bloom node is not visible` as Tier-3 until that older LifeMap replay flow is intentionally cleaned up; it does not block the active V1 home spine when build and V1 smoke pass.
+`corepack pnpm test` also runs the replay-tier5 browser lock. A failing required
+check remains blocking; build or smoke success does not waive it. Any claimed
+inapplicability must be established by the current governing policy and evidence.
 
 Release gates:
 
@@ -55,17 +64,22 @@ NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID=
 NEXT_PUBLIC_URAI_DEMO_USER_ID=demo-user
 ```
 
-Server-only secrets:
+Server-only configuration and secrets:
 
 ```bash
-FIREBASE_SERVICE_ACCOUNT_JSON=
+GOOGLE_APPLICATION_CREDENTIALS=/protected/path/external-account-wif.json
 STRIPE_SECRET_KEY=
 STRIPE_WEBHOOK_SECRET=
 ELEVENLABS_API_KEY=
 ELEVENLABS_VOICE_ID=
 ```
 
-Do not commit `.env.local` or service account JSON.
+The ADC path must reference a protected, readable, regular, non-symlinked
+`external_account` Workload Identity Federation configuration accepted by
+`urai-tier1/src/lib/server/google-adc.ts`. Ambient provider-managed ADC without
+that file is not supported by this runtime. Do not create, encode, configure or
+commit Firebase service-account JSON, private keys, Firebase CI tokens or
+`.env.local`. Do not place credential material in evidence or logs.
 
 ## Deploy Commands
 
@@ -112,4 +126,6 @@ Expected V1 behavior:
 
 ## Deployment Status Rule
 
-Only call the release live when a deploy command returns a live URL and the smoke routes pass. Otherwise report the build as deploy-ready and list the missing credentials or verification step.
+Only call a revision live after its authorized protected deployment and subsequent
+exact-revision live verification are evidenced. A successful build does not establish
+merge or protected-deploy eligibility. Report each unsatisfied requirement explicitly.

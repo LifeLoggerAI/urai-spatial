@@ -1,5 +1,11 @@
 # URAI Spatial Deploy Guide
 
+Current release authority is the quarantined NO-GO
+[canonical verification workflow](../.github/workflows/spatial-live-deploy.yml)
+and [release operator](../scripts/live-release.mjs). The setup sections below do
+not authorize a deployment, provider activation or live billing. Protected release
+requirements and independent approval must be satisfied before any later action.
+
 ## 1. Runtime app root
 
 The deployed Next.js app is `urai-tier1`.
@@ -31,7 +37,7 @@ Required production keys include:
 - `NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN`
 - `NEXT_PUBLIC_FIREBASE_PROJECT_ID`
 - `NEXT_PUBLIC_FIREBASE_APP_ID`
-- `GOOGLE_APPLICATION_CREDENTIALS` pointing only to a protected `external_account` Workload Identity Federation configuration, or provider-managed ADC
+- `GOOGLE_APPLICATION_CREDENTIALS` pointing only to a protected, readable, regular, non-symlinked `external_account` Workload Identity Federation configuration accepted by `urai-tier1/src/lib/server/google-adc.ts`. Ambient provider-managed ADC without that file is not supported by the canonical runtime.
 - `NEXT_PUBLIC_APP_URL`
 - `STRIPE_SECRET_KEY`
 - `STRIPE_WEBHOOK_SECRET`
