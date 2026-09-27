@@ -8,7 +8,6 @@ export const URAI_HOME_ASCENT_EVENT = 'urai:home-ascent'
 
 const WORLD_TRAVEL_DEBOUNCE_MS = 1500
 const WORLD_TRAVEL_FALLBACK_MS = 2400
-const WORLD_TRAVEL_OBSERVE_MS = 50
 let lastTravelFingerprint = ''
 let lastTravelAt = 0
 
@@ -80,7 +79,6 @@ export function requestUraiWorldTravel(request: UraiWorldTravelRequest) {
   if (fingerprint === lastTravelFingerprint && now - lastTravelAt < WORLD_TRAVEL_DEBOUNCE_MS) return
   lastTravelFingerprint = fingerprint
   lastTravelAt = now
-  const startingLocation = `${window.location.pathname}${window.location.search}${window.location.hash}`
   dispatchSpatialAudioCue('transition')
   window.dispatchEvent(new CustomEvent<UraiWorldTravelRequest>(URAI_WORLD_TRAVEL_EVENT, { detail: request }))
 
@@ -89,23 +87,12 @@ export function requestUraiWorldTravel(request: UraiWorldTravelRequest) {
 
   const fallbackTarget = new URL(fallbackHref, window.location.origin)
   const targetPathname = fallbackTarget.pathname.replace(/\/+$/, '') || '/'
-  let settled = false
-  let observer = 0
-  const fallback = window.setTimeout(() => {
-    if (settled) return
-    settled = true
-    if (observer) window.clearInterval(observer)
+  window.setTimeout(() => {
+    // Do not disarm this safety net on a transient client-router pathname.
+    // Only the destination actually present at the deadline counts as settled.
     const currentPathname = window.location.pathname.replace(/\/+$/, '') || '/'
     if (currentPathname !== targetPathname) commitHardFallback(fallbackHref)
   }, WORLD_TRAVEL_FALLBACK_MS)
-
-  observer = window.setInterval(() => {
-    const currentPathname = window.location.pathname.replace(/\/+$/, '') || '/'
-    if (currentPathname !== targetPathname) return
-    settled = true
-    window.clearTimeout(fallback)
-    window.clearInterval(observer)
-  }, WORLD_TRAVEL_OBSERVE_MS)
 }
 
 export function requestUraiWorldReturn() {
