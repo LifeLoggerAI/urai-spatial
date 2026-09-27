@@ -88,6 +88,7 @@ test('uses the official Hosting endpoints and confines recovery receipts', () =>
 
 test('recovery credential authority is short-lived WIF only', () => {
   assert.match(source, /GOOGLE_WIF_ACCESS_TOKEN/)
+  assert.doesNotMatch(source, /GOOGLE_OAUTH_ACCESS_TOKEN/)
   assert.match(source, /short-lived-github-oidc-google-wif-access-token/)
   assert.match(source, /Refusing long-lived Google\/Firebase credential environment variable/)
   assert.doesNotMatch(source, /createSign/)
@@ -102,6 +103,9 @@ test('federated token helper refuses legacy credential fallback', () => {
   const original = Object.fromEntries(names.map((name) => [name, process.env[name]]))
   try {
     for (const name of names) delete process.env[name]
+    process.env.GOOGLE_OAUTH_ACCESS_TOKEN = 'generic-oauth-token'
+    assert.throws(() => accessTokenFromFederatedEnvironment(), /GOOGLE_WIF_ACCESS_TOKEN/)
+
     process.env.GOOGLE_WIF_ACCESS_TOKEN = 'short-lived-test-token'
     assert.equal(accessTokenFromFederatedEnvironment(), 'short-lived-test-token')
 
