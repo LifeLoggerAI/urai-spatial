@@ -2,7 +2,7 @@ name: Release Security Path Guard
 
 on:
   pull_request:
-    branches: [main, repair/home-passport-orb-runtime-proof-20260926]
+    branches: [main, repair/home-passport-orb-runtime-proof-20260926, repair/settings-scroll-20260927, repair/pixel-polish-20260927]
     paths:
       - 'scripts/live-release.mjs'
       - 'scripts/create-static-release-bundle.mjs'

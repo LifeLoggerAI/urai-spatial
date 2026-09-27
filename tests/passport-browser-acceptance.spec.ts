@@ -29,7 +29,25 @@ test('mobile Settings motion preference reaches loaded Home', async ({ page }) =
       expect(bounds!.width).toBeGreaterThanOrEqual(48)
     }
     await fs.mkdir(evidenceRoot, { recursive: true })
-    await page.screenshot({ path: path.join(evidenceRoot, 'settings-mobile-motion.png'), fullPage: true })
+    await page.screenshot({ path: path.join(evidenceRoot, 'settings-mobile-motion.png') })
+    const settings = page.locator('main[data-route-owner="device-settings"]')
+    for (const width of [390, 320]) {
+      await page.setViewportSize({ width, height: 844 })
+      const privacy = page.getByRole('link', { name: /Permissions & consent/ })
+      await privacy.scrollIntoViewIfNeeded()
+      await expect(privacy).toBeInViewport()
+      const metrics = await settings.evaluate(element => ({
+        height: element.clientHeight, scrollHeight: element.scrollHeight,
+        width: element.clientWidth, scrollWidth: element.scrollWidth,
+        scrollTop: element.scrollTop, documentHeight: document.documentElement.scrollHeight,
+      }))
+      expect(metrics.scrollTop).toBeGreaterThan(0)
+      expect(metrics.scrollHeight).toBeGreaterThan(metrics.height)
+      expect(metrics.scrollWidth).toBeLessThanOrEqual(metrics.width + 1)
+      expect(metrics.documentHeight).toBeLessThanOrEqual(846)
+      await page.screenshot({ path: path.join(evidenceRoot, `settings-bottom-${width}.png`) })
+    }
+    await page.setViewportSize({ width: 390, height: 844 })
     await page.getByRole('navigation', { name: 'Settings navigation' }).getByRole('link', { name: 'Home' }).click()
     const home = page.locator('.urai-asset-home-world[data-home-primary-owner="asset-driven"]')
     await expect(home).toHaveAttribute('data-home-assets-ready', 'true', { timeout: 60_000 })
@@ -143,6 +161,13 @@ test('reduced motion and WebGL fallback preserve records and actions', async ({ 
   await openDemo(page)
   await expect(page.locator('main')).toHaveAttribute('data-passport-reduced-motion', 'true')
   await expect(page.getByText('All records and actions remain available without WebGL.')).toBeVisible()
+  const fallbackNotice = page.getByTestId('passport-renderer-fallback')
+  expect(await fallbackNotice.evaluate(element => Boolean(element.closest('[aria-hidden="true"]')))).toBe(false)
+  const noticeBounds = await fallbackNotice.boundingBox()
+  const headingBounds = await page.getByRole('heading', { level: 1 }).boundingBox()
+  expect(noticeBounds).not.toBeNull()
+  expect(headingBounds).not.toBeNull()
+  expect(noticeBounds!.y).toBeGreaterThanOrEqual(headingBounds!.y + headingBounds!.height)
   await expect(page.getByRole('heading', { name: 'Export chamber' })).toBeVisible()
   await expect(page.getByRole('heading', { name: 'Deletion chamber' })).toBeVisible()
   await page.screenshot({ path: path.join(evidenceRoot, 'reduced-motion-webgl-fallback.png'), fullPage: true })
@@ -226,10 +251,8 @@ test('reduced-motion Home Orb and Passport preserve keyboard origin return', asy
     await page.waitForURL(url => url.pathname.replace(/\/+$/, '') === '/home')
     await expect(page.locator('.urai-asset-home-world[data-home-primary-owner="asset-driven"]')).toHaveAttribute('data-home-stable-state', 'AVATAR_HOME_FIRST_PERSON', { timeout: 30_000 })
     await expect(home).toHaveAttribute('data-home-assets-ready', 'true', { timeout: 60_000 })
-    // Home's WebGL warm-up can block the browser main thread for >5s even after
-    // the ready attributes settle. Keep the strict null predicate, but give the
-    // storage read enough time to return under that measured render stall.
-    await expect.poll(() => page.evaluate(() => sessionStorage.getItem('urai:home:return-frame:v1')), { timeout: 15_000 }).toBeNull()
+    // Preserve the original response deadline; fix render stalls in the runtime.
+    await expect.poll(() => page.evaluate(() => sessionStorage.getItem('urai:home:return-frame:v1'))).toBeNull()
     expect(runtime.pageErrors).toEqual([])
   } finally {
     await fs.mkdir(evidenceRoot, { recursive: true })

@@ -6,11 +6,13 @@ export function createPostRenderCadence<Timer>({
   intervalMs,
   schedule,
   cancel,
+  shouldContinue = () => true,
 }: {
   invalidate: () => void
   intervalMs: number
   schedule: (callback: () => void, delay: number) => Timer
   cancel: (timer: Timer) => void
+  shouldContinue?: () => boolean
 }) {
   let timer: Timer | undefined
   let renderedThisFrame = false
@@ -39,6 +41,7 @@ export function createPostRenderCadence<Timer>({
       // addAfterEffect is global: unrelated canvases must not drive this root.
       if (disposed || !renderedThisFrame) return
       renderedThisFrame = false
+      if (!shouldContinue()) return
       timer = schedule(() => {
         timer = undefined
         if (!disposed) invalidate()

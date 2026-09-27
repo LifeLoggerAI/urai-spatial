@@ -419,8 +419,11 @@ export function stageHomeReturnFrameForHomeNavigation() {
       stagedHomeReturnFrame = frame
       window.sessionStorage.setItem(HOME_RETURN_STAGED_SESSION_KEY, serialized)
     }
-    // The origin key is one-shot on a Passport return even when an old or
-    // partially written payload fails validation; never leave it stale.
-    window.sessionStorage.removeItem(HOME_RETURN_SESSION_KEY)
   } catch { /* session storage is best effort */ }
+  finally {
+    // Passport's source frame is one-shot. Even if preserving the staged copy
+    // fails (for example storage quota/security policy), never leave the legacy
+    // source key behind to be misread as a future origin.
+    try { window.sessionStorage.removeItem(HOME_RETURN_SESSION_KEY) } catch { /* best effort */ }
+  }
 }
