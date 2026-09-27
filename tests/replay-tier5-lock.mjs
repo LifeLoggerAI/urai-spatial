@@ -154,10 +154,14 @@ async function validateReplay(page, report, screenshotName) {
   await expectAttribute(client, 'data-memory-status', 'demo');
   await expectAttribute(client, 'data-manifest-id', MANIFEST_ID);
   await expectAttribute(client, 'data-playing', 'false');
+  // Mounted controls alone can precede the Suspense-owned memory environment.
+  // Require the runtime's rendered-frame signal before geometry and capture.
+  await expectAttribute(client, 'data-replay-render-ready', 'true');
   await expectVisible(pacing, 'Replay pacing');
   if (await productControls.isVisible()) throw new Error('Demo/read-only Replay memory mutation controls must remain hidden');
   await expectVisible(companion, 'persistent Orb companion control');
   await expectVisible(caption, 'Replay caption');
+  await expectVisible(heading, 'Replay heading');
   await expectVisible(unwind, 'Replay unwind control');
   await expectNoOverlap(heading, unwind, 'Replay heading and unwind control', 4);
   const operationStatus = client.locator('.replayOperationStatus').first();
@@ -206,6 +210,7 @@ async function run() {
     // Capability checks and recovery UI remain active; no forced clicks or skips.
     browser = await chromium.launch({ args: process.env.GITHUB_ACTIONS === 'true' ? ['--enable-unsafe-swiftshader'] : [] });
     page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
+    await page.context().tracing.start({ screenshots: true, snapshots: true, sources: false });
     page.on('console', (message) => {
       const entry = { type: message.type(), text: message.text() };
       report.console.push(entry);
@@ -264,6 +269,11 @@ async function run() {
     }
     throw error;
   } finally {
+    if (page) {
+      await page.context().tracing.stop({ path: `${ARTIFACT_DIR}/replay-tier5.trace.zip` })
+        .then(() => { report.trace = 'replay-tier5.trace.zip'; })
+        .catch((error) => { report.traceError = String(error); });
+    }
     writeFileSync(`${ARTIFACT_DIR}/replay-tier5-report.json`, JSON.stringify(report, null, 2));
     if (browser) await browser.close().catch(() => {});
     await stopServer(server.child);
