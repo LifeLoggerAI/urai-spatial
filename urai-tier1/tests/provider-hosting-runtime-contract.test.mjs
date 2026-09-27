@@ -7,6 +7,7 @@ const functionsIndex = fs.readFileSync(new URL('../../apps/functions/src/index.t
 const providerFunctions = fs.readFileSync(new URL('../../apps/functions/src/providerFunctions.ts', import.meta.url), 'utf8')
 const openAiClient = fs.readFileSync(new URL('../src/spatial/orb/openaiClient.ts', import.meta.url), 'utf8')
 const narratorClient = fs.readFileSync(new URL('../src/spatial/narrator/elevenlabsClient.ts', import.meta.url), 'utf8')
+const transcriptionClient = fs.readFileSync(new URL('../src/spatial/audio/openaiTranscriptionClient.ts', import.meta.url), 'utf8')
 const staticProviderRoutes = [
   new URL('../src/app/api/google/oauth/start/route.ts', import.meta.url),
   new URL('../src/app/api/google/oauth/callback/route.ts', import.meta.url),
@@ -58,5 +59,10 @@ test('provider functions bind secrets, auth, consent, throttling, privacy and ca
 test('browser clients are same-origin and no static route can shadow provider rewrites', () => {
   assert.match(openAiClient, /fetch\('\/api\/urai\/orb\/openai'/)
   assert.match(narratorClient, /fetch\("\/api\/urai\/narrator\/elevenlabs"/)
+  assert.match(transcriptionClient, /fetch\('\/api\/audio\/transcribe'/)
+  assert.match(transcriptionClient, /getAuth\(app\)\.currentUser/)
+  assert.match(transcriptionClient, /getIdToken\(\)/)
+  assert.match(transcriptionClient, /externalProcessingConsent/)
+  assert.doesNotMatch(transcriptionClient, /caches\.open|cache\.put/)
   for (const route of staticProviderRoutes) assert.equal(fs.existsSync(route), false)
 })
