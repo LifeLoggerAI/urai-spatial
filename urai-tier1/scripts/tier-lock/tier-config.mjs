@@ -76,7 +76,7 @@ export const envKeys = [
   { name: 'NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN', requiredFor: 'firebase' },
   { name: 'NEXT_PUBLIC_FIREBASE_PROJECT_ID', requiredFor: 'firebase' },
   { name: 'NEXT_PUBLIC_FIREBASE_APP_ID', requiredFor: 'firebase' },
-  { name: 'FIREBASE_SERVICE_ACCOUNT_JSON', requiredFor: 'server-entitlements' },
+  { name: 'GOOGLE_APPLICATION_CREDENTIALS', requiredFor: 'server-entitlements-wif-adc' },
   { name: 'URAI_STRIPE_MODE', requiredFor: 'stripe' },
   { name: 'STRIPE_SECRET_KEY', requiredFor: 'stripe' },
   { name: 'STRIPE_WEBHOOK_SECRET', requiredFor: 'stripe' },
