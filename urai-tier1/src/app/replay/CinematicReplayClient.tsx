@@ -118,7 +118,7 @@ function RecordedMemoryField({ media, playing, progressMs, muteVideo }: { media:
   }, [gl])
   useEffect(() => readiness.connect(), [readiness])
   useEffect(() => { readiness.reset() }, [texture, readiness])
-  useFrame(() => { readiness.frame(gl.info.render.calls) })
+  useFrame(() => { readiness.frame(gl.info.render.frame) })
 
   const surfaceGeometry = useMemo(() => {
     const geometry = new THREE.PlaneGeometry(15.2, 8.6, 88, 48)
