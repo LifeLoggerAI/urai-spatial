@@ -35,6 +35,9 @@ test('Passport return restores Home origin without masquerading as Ground or Lif
   assert.ok(returnRequest.indexOf('stageHomeReturnFrameForHomeNavigation()') < returnRequest.indexOf('window.dispatchEvent(new Event(URAI_WORLD_RETURN_EVENT))'))
   assert.ok(worldController.indexOf('stageHomeReturnFrameForActiveRoute()') < worldController.indexOf('router.push(href)'))
   assert.ok(controller.includes('consumeHomeReturnFrameForActiveHome()'))
+  assert.ok(worldEvents.includes("request.destination === 'passport'"))
+  assert.ok(worldEvents.includes('main[data-route-owner="passport-ownership-vault"]'))
+  assert.ok(worldEvents.includes('const WORLD_TRAVEL_FALLBACK_MS = 2400'))
 })
 
 test('Passport does not widen the existing Ground/Life Map destination commit contract', () => {
