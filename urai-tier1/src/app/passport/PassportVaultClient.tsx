@@ -5,6 +5,7 @@ import { Float, OrbitControls, RoundedBox } from '@react-three/drei'
 import { getAuth, onAuthStateChanged, type User } from 'firebase/auth'
 import { Suspense, useCallback, useEffect, useRef, useState } from 'react'
 import { app, firebasePublicEnvReady } from '@/lib/firebase/client'
+import { probeWebGLSupport } from '@/spatial/runtime/probeWebGLSupport'
 import {
   cancelOperationalDeletionRequest,
   cancelOperationalExportRequest,
@@ -158,12 +159,7 @@ export default function PassportVaultClient() {
   }, [])
 
   useEffect(() => {
-    try {
-      const canvas = document.createElement('canvas')
-      setWebglAvailable(Boolean(canvas.getContext('webgl2') || canvas.getContext('webgl')))
-    } catch {
-      setWebglAvailable(false)
-    }
+    setWebglAvailable(probeWebGLSupport())
     setOnline(navigator.onLine)
     const onOffline = () => setOnline(false)
     const onOnline = () => setOnline(true)

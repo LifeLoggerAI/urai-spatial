@@ -5,6 +5,7 @@ import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import { ContactShadows, PerspectiveCamera } from '@react-three/drei'
 import { useEffect, useRef, useState, type MutableRefObject } from 'react'
 import * as THREE from 'three'
+import { probeWebGLSupport } from '@/spatial/runtime/probeWebGLSupport'
 import { demoShadowRealmEvent } from '@/lib/spatial/publicSafeSpatialData'
 import {
   MobileMovementPad,
@@ -39,8 +40,7 @@ const SHADOW_REVIEW_POSITIONS: Record<ShadowReviewState, [number, number, number
 
 function detectShadowWebGL() {
   if (typeof document === 'undefined') return true
-  const canvas = document.createElement('canvas')
-  return Boolean(canvas.getContext('webgl2') || canvas.getContext('webgl'))
+  return probeWebGLSupport()
 }
 
 function ShadowCamera({

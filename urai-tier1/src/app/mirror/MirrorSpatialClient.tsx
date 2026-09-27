@@ -4,6 +4,7 @@ import { Canvas, useFrame, useThree, type ThreeEvent } from '@react-three/fiber'
 import { Stars } from '@react-three/drei'
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState, type MutableRefObject } from 'react'
 import * as THREE from 'three'
+import { probeWebGLSupport } from '@/spatial/runtime/probeWebGLSupport'
 import { MemorySurfaceMaterial } from '@/spatial/assets/MemorySurfaceMaterial'
 import { memoryFoldGeometry } from '@/spatial/assets/memoryFoldGeometry'
 import { createMineralMaps } from '@/spatial/assets/naturalSurfaceMaps'
@@ -30,12 +31,7 @@ type CameraProps = {
 function useWebGLAvailable() {
   const [available, setAvailable] = useState<boolean | null>(null)
   useEffect(() => {
-    try {
-      const canvas = document.createElement('canvas')
-      setAvailable(Boolean(canvas.getContext('webgl2') ?? canvas.getContext('webgl')))
-    } catch {
-      setAvailable(false)
-    }
+    setAvailable(probeWebGLSupport())
   }, [])
   return available
 }

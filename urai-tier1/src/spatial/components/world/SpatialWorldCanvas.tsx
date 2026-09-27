@@ -6,6 +6,7 @@ import { Bloom, EffectComposer, Vignette } from '@react-three/postprocessing'
 import dynamic from 'next/dynamic'
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import * as THREE from 'three'
+import { probeWebGLSupport } from '@/spatial/runtime/probeWebGLSupport'
 import SpatialWorldAssetLayer from '../../scene/SpatialWorldAssetLayer'
 import {
   markFirstSpatialFrame,
@@ -27,13 +28,7 @@ function useWebGLAvailable() {
   const [available, setAvailable] = useState(true)
 
   useEffect(() => {
-    try {
-      const canvas = document.createElement('canvas')
-      const context = canvas.getContext('webgl2') ?? canvas.getContext('webgl')
-      setAvailable(Boolean(context))
-    } catch {
-      setAvailable(false)
-    }
+    setAvailable(probeWebGLSupport())
   }, [])
 
   return available

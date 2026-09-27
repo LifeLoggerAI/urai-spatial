@@ -2,6 +2,7 @@ import { chromium } from '@playwright/test';
 import { spawn } from 'node:child_process';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import process from 'node:process';
+import sharp from 'sharp';
 
 const REQUESTED_BASE_URL = process.env.URAI_SPATIAL_BASE_URL || 'http://127.0.0.1:3000';
 const USE_EXISTING = process.env.URAI_SPATIAL_USE_EXISTING_SERVER === 'true';
@@ -157,6 +158,30 @@ async function validateReplay(page, report, screenshotName) {
   // Mounted controls alone can precede the Suspense-owned memory environment.
   // Require the runtime's rendered-frame signal before geometry and capture.
   await expectAttribute(client, 'data-replay-render-ready', 'true');
+  const sceneCanvas = client.locator('canvas.replaySpatialCanvas').first();
+  await expectVisible(sceneCanvas, 'Replay spatial canvas');
+  const contextLost = await sceneCanvas.evaluate((canvas) => {
+    const gl = canvas.getContext('webgl2') ?? canvas.getContext('webgl');
+    return !gl || gl.isContextLost();
+  });
+  if (contextLost) throw new Error('Replay render-ready was reported after the spatial WebGL context was lost');
+  const scenePng = await sceneCanvas.screenshot({ timeout: 30000 });
+  const { data: scenePixels, info: sceneInfo } = await sharp(scenePng)
+    .resize({ width: 64, height: 36, fit: 'fill' })
+    .removeAlpha()
+    .raw()
+    .toBuffer({ resolveWithObject: true });
+  const sceneColors = new Set();
+  for (let offset = 0; offset < scenePixels.length; offset += sceneInfo.channels) {
+    const red = scenePixels[offset] >> 4;
+    const green = scenePixels[offset + 1] >> 4;
+    const blue = scenePixels[offset + 2] >> 4;
+    sceneColors.add(`${red}:${green}:${blue}`);
+  }
+  if (sceneColors.size < 24) {
+    throw new Error(`Replay reports render-ready but its canvas is visually blank (${sceneColors.size} coarse color bins)`);
+  }
+  report.audits.push(`Replay canvas is live and spatially visible: ${sceneColors.size} distinct coarse color bins at 64x36`);
   await expectVisible(pacing, 'Replay pacing');
   if (await productControls.isVisible()) throw new Error('Demo/read-only Replay memory mutation controls must remain hidden');
   await expectVisible(companion, 'persistent Orb companion control');

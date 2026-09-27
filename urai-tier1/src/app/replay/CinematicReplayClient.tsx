@@ -9,6 +9,7 @@ import { createMineralMaps } from '@/spatial/assets/naturalSurfaceMaps'
 import { useReducedMotion } from '@/spatial/hooks/useReducedMotion'
 import { useSelectedMemory } from '@/spatial/memory/useSelectedMemory'
 import type { SelectedMemory, SelectedMemoryMedia, SelectedMemoryReplaySegment } from '@/spatial/memory/selectedMemoryContract'
+import { probeWebGLSupport } from '@/spatial/runtime/probeWebGLSupport'
 import { useAdaptiveSpatialQuality } from '@/spatial/performance/useAdaptiveSpatialQuality'
 import { requestUraiWorldReturn, requestUraiWorldTravel } from '@/spatial/world/worldEvents'
 import { ReplayProductControls } from './ReplayProductControls'
@@ -563,12 +564,7 @@ function ReplaySpatialScene({ memory, playing, progressMs, muteVideo }: { memory
 function useWebGLAvailable() {
   const [available, setAvailable] = useState<boolean | null>(null)
   useEffect(() => {
-    try {
-      const canvas = document.createElement('canvas')
-      setAvailable(Boolean(canvas.getContext('webgl2') ?? canvas.getContext('webgl')))
-    } catch {
-      setAvailable(false)
-    }
+    setAvailable(probeWebGLSupport())
   }, [])
   return available
 }
