@@ -2,7 +2,7 @@ name: Native Doorway Proof
 
 on:
   pull_request:
-    branches: [main, repair/hosting-recovery-main-reconcile-20260927]
+    branches: [main, repair/hosting-recovery-main-reconcile-20260927, repair/native-doorway-keyboard-trace-20260927]
   workflow_dispatch:
 
 permissions:

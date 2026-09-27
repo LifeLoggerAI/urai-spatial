@@ -1,6 +1,7 @@
 import { chromium } from 'playwright'
 import fs from 'node:fs/promises'
 import path from 'node:path'
+import { installDoorwayEventTrace } from './native-doorway-event-trace.mjs'
 
 const baseUrl = (process.env.URAI_AUDIT_BASE_URL || 'http://127.0.0.1:3000').replace(/\/$/, '')
 const exactSha = String(process.env.URAI_PROOF_SOURCE_SHA || process.env.URAI_EXACT_HEAD || '').trim()
@@ -75,22 +76,6 @@ async function resolveTarget(page, doorway) {
   const visibleLegacyDoorways = await page.locator('.urai-final-home-doorways:visible').count()
   if (visibleLegacyDoorways !== 0) throw new Error(`legacy visible doorway bars remain: ${visibleLegacyDoorways}`)
   return target
-}
-
-function installDoorwayEventTrace() {
-  const append = (record) => { void window.__uraiRecordDoorwayEvent(record).catch(() => {}) }
-  for (const type of ['keydown', 'keyup', 'click', 'focusin']) {
-    window.addEventListener(type, (event) => {
-      const target = event.target instanceof Element ? event.target.closest('[data-testid]') : null
-      const testId = target?.getAttribute('data-testid') || ''
-      if (!testId.startsWith('home-semantic-')) return
-      const record = { type, testId, key: ['Enter', ' '].includes(event.key) ? event.key : '', defaultPrevented: event.defaultPrevented }
-      queueMicrotask(() => append({ ...record, defaultPrevented: event.defaultPrevented, activeTestId: document.activeElement?.getAttribute('data-testid') || '', pathname: location.pathname }))
-    }, true)
-  }
-  window.addEventListener('urai:world-travel', (event) => {
-    append({ type: 'world-travel', destination: event.detail?.destination || '', pathname: location.pathname })
-  })
 }
 
 async function prove(browser, doorway, testCase) {
