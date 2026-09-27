@@ -5,13 +5,17 @@ on:
     branches:
       - main
       - release/final-public-beta-stable-20260710
-    paths:
-      - .github/workflows/prune-stale-release-runs.yml
   workflow_dispatch:
+    inputs:
+      closed_pr_number:
+        description: 'Optional closed, unmerged same-repository PR whose verification runs are obsolete'
+        required: false
+        type: string
 
 permissions:
   actions: write
   contents: read
+  pull-requests: read
 
 concurrency:
   group: urai-spatial-release-queue-pruner-${{ github.ref }}
@@ -19,62 +23,89 @@ concurrency:
 
 jobs:
   prune:
-    name: Cancel superseded runs for this branch
+    name: Cancel only obsolete verification runs
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - name: Cancel stale runs from the same branch
+      - name: Prune with fresh branch and pull-request authority
         uses: actions/github-script@v7
         with:
           script: |
-            const statuses = ['queued', 'in_progress', 'waiting', 'pending', 'requested'];
-            const keepSha = context.sha;
-            const keepRun = context.runId;
-            const keepBranch = context.ref.replace('refs/heads/', '');
+            const repo = { owner: context.repo.owner, repo: context.repo.repo };
+            const fullName = `${repo.owner}/${repo.repo}`;
+            const branch = context.ref.replace('refs/heads/', '');
+            const input = String(context.payload.inputs?.closed_pr_number || '').trim();
+            if (input && !/^[1-9][0-9]*$/.test(input)) throw new Error('Invalid closed PR number');
+            const closedNumber = input ? Number(input) : null;
+            const activeStatuses = new Set(['queued', 'in_progress', 'waiting', 'pending', 'requested']);
+            const verificationNames = new Set([
+              'URAI Spatial CI', 'Patch Check', 'Privacy adoption check',
+              'URAI Production Verify', 'URAI Spatial Verify',
+              'Reference Estate Exact-Head Capture', 'Continuous Spatial Visual Proof',
+              'Passport Ownership Vault Verification', 'Mirror Release Proof',
+            ]);
+            async function authority() {
+              const open = await github.paginate(github.rest.pulls.list, { ...repo, state: 'open', per_page: 100 });
+              const protectedShas = new Set(open.flatMap(pr => [pr.head.sha, pr.base.sha]));
+              if (closedNumber) {
+                const { data: pr } = await github.rest.pulls.get({ ...repo, pull_number: closedNumber });
+                if (pr.state !== 'closed' || pr.merged || pr.head.repo?.full_name !== fullName) {
+                  throw new Error('Closed-PR pruning requires a closed, unmerged same-repository PR');
+                }
+                if (open.some(other => other.head.ref === pr.head.ref || other.base.ref === pr.head.ref)) {
+                  throw new Error('An open PR still uses the closed PR branch');
+                }
+                return { branch: pr.head.ref, obsoleteSha: pr.head.sha, protectedShas };
+              }
+              if (!context.ref.startsWith('refs/heads/')) throw new Error('Branch ref required');
+              const { data: current } = await github.rest.repos.getBranch({ ...repo, branch });
+              protectedShas.add(current.commit.sha);
+              protectedShas.add(context.sha);
+              return { branch, protectedShas };
+            }
+            function eligible(run, current) {
+              return run.id !== context.runId
+                && activeStatuses.has(run.status)
+                && verificationNames.has(run.name)
+                && ['push', 'pull_request'].includes(run.event)
+                && run.repository?.full_name === fullName
+                && run.head_repository?.full_name === fullName
+                && run.head_branch === current.branch
+                && !current.protectedShas.has(run.head_sha)
+                && (!current.obsoleteSha || (run.event === 'pull_request' && run.head_sha === current.obsoleteSha));
+            }
+            const initial = await authority();
             let inspected = 0;
             let cancelled = 0;
+            const seen = new Set();
             const failures = [];
-
-            for (const status of statuses) {
-              const runs = await github.paginate(
-                github.rest.actions.listWorkflowRunsForRepo,
-                {
-                  owner: context.repo.owner,
-                  repo: context.repo.repo,
-                  status,
-                  per_page: 100,
-                },
-              );
-
-              for (const run of runs) {
-                if (run.id === keepRun) continue;
-                if (run.head_branch !== keepBranch) continue;
-                if (run.head_sha === keepSha) continue;
-                inspected += 1;
+            for (const status of activeStatuses) {
+              const runs = await github.paginate(github.rest.actions.listWorkflowRunsForRepo, {
+                ...repo, branch: initial.branch, status, per_page: 100,
+              });
+              for (const candidate of runs) {
+                if (seen.has(candidate.id)) continue;
+                seen.add(candidate.id);
+                if (!eligible(candidate, initial)) continue;
+                inspected++;
+                // Re-read both authorities before mutation: a PR can reopen, a
+                // branch can advance, or a run can finish while pagination runs.
+                const current = await authority();
+                const { data: run } = await github.rest.actions.getWorkflowRun({ ...repo, run_id: candidate.id });
+                if (!eligible(run, current)) continue;
                 try {
-                  await github.rest.actions.cancelWorkflowRun({
-                    owner: context.repo.owner,
-                    repo: context.repo.repo,
-                    run_id: run.id,
-                  });
-                  cancelled += 1;
+                  await github.rest.actions.cancelWorkflowRun({ ...repo, run_id: run.id });
+                  cancelled++;
                 } catch (error) {
-                  if (error?.status !== 409) {
-                    failures.push(`${run.id}:${error?.status || 'unknown'}`);
-                  }
+                  if (error?.status !== 409) failures.push(`${run.id}:${error?.status || 'unknown'}`);
                 }
               }
             }
-
             await core.summary
-              .addHeading('URAI Spatial branch queue pruning')
-              .addRaw(`Branch preserved: ${keepBranch}\n`)
-              .addRaw(`Exact SHA preserved: ${keepSha}\n`)
-              .addRaw(`Superseded runs inspected: ${inspected}\n`)
-              .addRaw(`Superseded runs cancelled: ${cancelled}\n`)
+              .addHeading('URAI verified obsolete-run pruning')
+              .addRaw(`Scope: ${initial.branch}; closed PR: ${closedNumber || 'none'}\n`)
+              .addRaw(`Candidates inspected: ${inspected}; cancellation requests accepted: ${cancelled}\n`)
+              .addRaw('Current branch heads, open PR heads/bases, manual/provider/deployment work and completed evidence are preserved.\n')
               .addRaw(`Unexpected failures: ${failures.length}\n`)
               .write();
-
-            if (failures.length) {
-              core.setFailed(`Unexpected cancellation failures: ${failures.join(', ')}`);
-            }
+            if (failures.length) core.setFailed(`Cancellation failures: ${failures.join(', ')}`);

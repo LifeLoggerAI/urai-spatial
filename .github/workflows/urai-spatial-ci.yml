@@ -60,6 +60,8 @@ jobs:
         run: pnpm install --frozen-lockfile
       - name: Source integrity
         run: pnpm check:source-integrity
+      - name: Verification queue safety regressions
+        run: node --test tests/release-queue-pruner.test.mjs
       - name: Production route exposure
         run: pnpm check:production-routes
       - name: Preflight
