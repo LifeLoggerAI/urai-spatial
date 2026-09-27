@@ -31,7 +31,7 @@ const oldOrbClips = `const orbClips = {
 }`
 const newOrbClips = `const orbClips = {
   dormant: 'orb-rest', idle: 'orb-breathe', attention: 'orb-attention', listening: 'orb-listening',
-  thinking: 'orb-thinking', speaking: 'orb-speaking', guiding: 'orb-guiding', reflecting: 'orb-reflecting',
+  thinking: 'orb-thinking', speaking: 'orb-speaking', guiding: 'orb-guide', reflecting: 'orb-reflect',
   calming: 'orb-calm', privacy: 'orb-privacy', warning: 'orb-warning', transition: 'orb-transition',
 }`
 if (original.split(oldOrbClips).length - 1 !== 1) throw new Error('Continuous proof Orb sensory-output contract changed')
