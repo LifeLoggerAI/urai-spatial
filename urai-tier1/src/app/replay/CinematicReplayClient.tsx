@@ -1,7 +1,6 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
-import { useGLTF } from '@react-three/drei'
 import { Canvas, useFrame } from '@react-three/fiber'
 import * as THREE from 'three'
 import { assetCssStack, replayAssets } from '@/spatial/assets/uraiAssets'
@@ -12,21 +11,7 @@ import { useAdaptiveSpatialQuality } from '@/spatial/performance/useAdaptiveSpat
 import { requestUraiWorldReturn, requestUraiWorldTravel } from '@/spatial/world/worldEvents'
 import { ReplayProductControls } from './ReplayProductControls'
 
-const REPLAY_ENVIRONMENT_MODEL = '/assets/urai/generated/models/replay-memory-environment-v1.glb'
-const REPLAY_SCREEN_POSITION: [number, number, number] = [0, 0.58, -6.0]
-
 function clamp(value: number, max: number) { return Math.max(0, Math.min(max, value)) }
-
-function prepareReplayModel(source: THREE.Object3D) {
-  const clone = source.clone(true)
-  clone.traverse((object) => {
-    if (!(object instanceof THREE.Mesh)) return
-    object.castShadow = true
-    object.receiveShadow = true
-    object.frustumCulled = true
-  })
-  return clone
-}
 
 function ReplayCameraRig({ progress, reducedMotion }: { progress: number; reducedMotion: boolean }) {
   const target = useRef(new THREE.Vector3(0, 0.32, -5.9))
@@ -43,7 +28,7 @@ function ReplayCameraRig({ progress, reducedMotion }: { progress: number; reduce
   return null
 }
 
-function MemoryMediaSurface({ media, playing }: { media: SelectedMemoryMedia | undefined; playing: boolean }) {
+function MemoryMediaDome({ media, playing }: { media: SelectedMemoryMedia | undefined; playing: boolean }) {
   const [texture, setTexture] = useState<THREE.Texture | null>(null)
   const videoRef = useRef<HTMLVideoElement | null>(null)
 
@@ -105,16 +90,16 @@ function MemoryMediaSurface({ media, playing }: { media: SelectedMemoryMedia | u
   }, [playing])
 
   return (
-    <group name="replay-memory-media-surface">
-      <mesh position={REPLAY_SCREEN_POSITION}>
-        <planeGeometry args={[7.25, 4.08]} />
+    <group name="replay-immersive-memory-field" userData={{ presentation: 'inside-memory-environment-not-screen' }}>
+      <mesh>
+        <sphereGeometry args={[24, 96, 64]} />
         {texture
-          ? <meshBasicMaterial map={texture} toneMapped={false} side={THREE.DoubleSide} />
-          : <meshPhysicalMaterial color="#06131c" emissive="#1f8094" emissiveIntensity={0.18} roughness={0.34} metalness={0.16} />}
+          ? <meshBasicMaterial map={texture} toneMapped={false} side={THREE.BackSide} transparent opacity={0.82} />
+          : <meshBasicMaterial color="#06131c" side={THREE.BackSide} />}
       </mesh>
-      <mesh position={[0, 0.58, -5.96]}>
-        <planeGeometry args={[7.5, 4.32]} />
-        <meshBasicMaterial color="#bff8ff" transparent opacity={0.035} depthWrite={false} />
+      <mesh scale={0.985}>
+        <sphereGeometry args={[24, 72, 48]} />
+        <meshBasicMaterial color="#75d9e9" transparent opacity={0.035} side={THREE.BackSide} depthWrite={false} blending={THREE.AdditiveBlending} />
       </mesh>
     </group>
   )
@@ -146,8 +131,6 @@ function ReplayTimelineField({ memory, progress }: { memory: SelectedMemory; pro
 }
 
 function ReplaySpatialScene({ memory, playing, progressMs }: { memory: SelectedMemory; playing: boolean; progressMs: number }) {
-  const gltf = useGLTF(REPLAY_ENVIRONMENT_MODEL)
-  const model = useMemo(() => prepareReplayModel(gltf.scene), [gltf.scene])
   const reducedMotion = useReducedMotion()
   const progress = memory.replayManifest.durationMs > 0 ? progressMs / memory.replayManifest.durationMs : 0
   const media = memory.sourceMedia.find((item) => item.kind === 'video' || item.kind === 'image')
@@ -161,8 +144,7 @@ function ReplaySpatialScene({ memory, playing, progressMs }: { memory: SelectedM
       <directionalLight position={[-4, 7, 6]} intensity={1.3} color={memory.visuals.light} castShadow />
       <directionalLight position={[4, 2, -3]} intensity={0.42} color={memory.visuals.accent} />
       <pointLight position={[0, 1.4, -4.6]} intensity={3.4} distance={14} color={memory.visuals.accent} />
-      <primitive object={model} name="replay-memory-environment-v1" />
-      <MemoryMediaSurface media={media} playing={playing} />
+      <MemoryMediaDome media={media} playing={playing} />
       <ReplayTimelineField memory={memory} progress={progress} />
       <ReplayCameraRig progress={progress} reducedMotion={reducedMotion} />
     </>
@@ -170,8 +152,6 @@ function ReplaySpatialScene({ memory, playing, progressMs }: { memory: SelectedM
 }
 
 function ReplayNeutralSpatialScene() {
-  const gltf = useGLTF(REPLAY_ENVIRONMENT_MODEL)
-  const model = useMemo(() => prepareReplayModel(gltf.scene), [gltf.scene])
   return (
     <>
       <color attach="background" args={['#02060d']} />
@@ -179,7 +159,14 @@ function ReplayNeutralSpatialScene() {
       <ambientLight intensity={0.24} />
       <hemisphereLight intensity={0.44} color="#bff8ff" groundColor="#07121d" />
       <pointLight position={[0, 1.4, -5]} intensity={2.8} distance={14} color="#70dcec" />
-      <primitive object={model} name="replay-memory-horizon-environment" />
+      <mesh name="replay-neutral-memory-field">
+        <sphereGeometry args={[24, 72, 48]} />
+        <meshBasicMaterial color="#07121d" side={THREE.BackSide} />
+      </mesh>
+      <mesh scale={0.985}>
+        <sphereGeometry args={[24, 48, 32]} />
+        <meshBasicMaterial color="#70dcec" transparent opacity={0.025} side={THREE.BackSide} depthWrite={false} blending={THREE.AdditiveBlending} />
+      </mesh>
       <ReplayCameraRig progress={0} reducedMotion />
     </>
   )
@@ -220,7 +207,7 @@ export default function CinematicReplayClient() {
   }, [memory, unwind])
 
   if (!memory) return (
-    <main className="replayState" data-testid="cinematic-replay-client" data-memory-status={result.status} data-canonical-asset={replayAssets.primary.src} data-replay-neutral="memory-horizon" data-replay-spatial-owner="r3f-memory-theater">
+    <main className="replayState" data-testid="cinematic-replay-client" data-memory-status={result.status} data-canonical-asset={replayAssets.primary.src} data-replay-neutral="memory-horizon" data-replay-spatial-owner="r3f-immersive-memory-field">
       <Canvas className="replaySpatialCanvas" dpr={[1, quality.pixelRatioMax]} frameloop={quality.documentVisible ? 'always' : 'never'} camera={{ position: [0, 0.42, 8.4], fov: 46, near: 0.05, far: 120 }} gl={{ antialias: quality.antialias, powerPreference: 'high-performance' }}>
         <ReplayNeutralSpatialScene />
       </Canvas>
@@ -239,7 +226,7 @@ export default function CinematicReplayClient() {
     '--replay-progress': `${percent}%`,
   } as CSSProperties
 
-  return <main className="replayWorld" style={style} data-testid="cinematic-replay-client" data-memory-status={result.status} data-memory-id={memory.id} data-star-id={memory.star.id} data-manifest-id={memory.replayManifest.id} data-node={memory.star.id} data-playing={playing ? 'true' : 'false'} data-canonical-asset={replayAssets.primary.src} data-replay-spatial-owner="r3f-memory-theater" data-replay-environment={REPLAY_ENVIRONMENT_MODEL}>
+  return <main className="replayWorld" style={style} data-testid="cinematic-replay-client" data-memory-status={result.status} data-memory-id={memory.id} data-star-id={memory.star.id} data-manifest-id={memory.replayManifest.id} data-node={memory.star.id} data-playing={playing ? 'true' : 'false'} data-canonical-asset={replayAssets.primary.src} data-replay-spatial-owner="r3f-immersive-memory-field">
     <Canvas className="replaySpatialCanvas" shadows={quality.shadows} dpr={[1, quality.pixelRatioMax]} frameloop={quality.documentVisible ? 'always' : 'never'} camera={{ position: [0, 0.42, 8.4], fov: 46, near: 0.05, far: 120 }} gl={{ antialias: quality.antialias, powerPreference: 'high-performance' }} onCreated={({ gl }) => { gl.outputColorSpace = THREE.SRGBColorSpace; gl.toneMapping = THREE.ACESFilmicToneMapping; gl.toneMappingExposure = 1.05 }}>
       <ReplaySpatialScene memory={memory} playing={playing} progressMs={progressMs} />
     </Canvas>
@@ -261,4 +248,3 @@ const stateCss = `.replayState{position:fixed;inset:0;overflow:hidden;display:gr
 
 const replayCss = `.replayWorld{position:fixed;inset:0;overflow:hidden;color:#fff;background:var(--replay-sky);isolation:isolate}.replaySpatialCanvas{position:absolute!important;inset:0;width:100%!important;height:100%!important}.replayAtmosphere{position:absolute;inset:0;background:radial-gradient(circle at 50% 42%,transparent 0 30%,rgba(0,0,0,.12) 58%,rgba(0,0,0,.78) 100%);pointer-events:none}.replayWorld header{position:absolute;z-index:5;left:max(18px,env(safe-area-inset-left));top:max(18px,env(safe-area-inset-top));max-width:min(360px,calc(100vw - 36px));text-shadow:0 3px 24px #000}.replayWorld header p{margin:0;color:var(--replay-light);font-size:10px;font-weight:900;letter-spacing:.18em;text-transform:uppercase}.replayWorld header h1{margin:5px 0;font-size:clamp(1.25rem,4vw,2.4rem);line-height:.95}.replayWorld header span{font-size:11px;color:rgba(255,255,255,.7)}.caption{position:absolute;z-index:5;left:50%;bottom:clamp(280px,32svh,350px);transform:translateX(-50%);width:min(820px,86vw);text-align:center;text-shadow:0 3px 30px #000}.caption small{display:block;color:var(--replay-light);font-size:10px;font-weight:900;letter-spacing:.2em;text-transform:uppercase}.caption strong{display:block;margin-top:8px;font:500 clamp(1.25rem,4vw,2.8rem)/1.08 var(--font-sans);letter-spacing:-.035em}.caption span{display:block;margin:8px auto 0;max-width:620px;font-size:12px;color:rgba(255,255,255,.72)}.controls{position:absolute;z-index:7;left:50%;bottom:max(180px,calc(env(safe-area-inset-bottom) + 174px));transform:translateX(-50%);width:min(680px,calc(100vw - 32px));display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:12px;padding:12px 14px;border:1px solid rgba(255,255,255,.22);border-radius:24px;background:rgba(2,7,14,.74);backdrop-filter:blur(16px)}.controls button{min-width:72px;min-height:44px;border:0;border-radius:999px;background:linear-gradient(135deg,var(--replay-light),var(--replay-accent));color:#041019;font-weight:900}.controls input{width:100%;min-height:44px}.controls output{min-width:42px;font-size:12px}.transcript{position:absolute;z-index:8;right:max(16px,env(safe-area-inset-right));top:max(16px,env(safe-area-inset-top));max-width:340px;padding:8px 12px;border:1px solid rgba(255,255,255,.18);border-radius:14px;background:rgba(2,7,14,.7);font-size:12px}.transcript p{margin:8px 0 0;line-height:1.5}.unwind{display:block;min-height:44px;margin-top:10px;padding:0 16px;border-radius:999px;border:1px solid rgba(255,255,255,.28);background:rgba(2,7,12,.72);color:#fff;font-weight:800}.controls button:focus-visible,.unwind:focus-visible,.transcript summary:focus-visible{outline:3px solid #fff;outline-offset:3px}@media(max-width:700px){.caption{bottom:31svh;width:90vw}.caption strong{font-size:1.35rem}.caption span{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}.transcript{top:max(76px,calc(env(safe-area-inset-top) + 70px));right:14px;bottom:auto;max-width:180px}.unwind{margin-top:9px}.controls{grid-template-columns:auto 1fr auto;padding:9px 10px}.controls button{min-width:64px}.replayWorld header{max-width:250px}.replayWorld header h1{font-size:1.35rem}}@media(max-height:720px){.caption{bottom:28svh}}@media(prefers-reduced-motion:reduce){.controls{backdrop-filter:none}}@media(forced-colors:active){.controls,.unwind,.transcript{border:2px solid CanvasText}}`
 
-useGLTF.preload(REPLAY_ENVIRONMENT_MODEL)
