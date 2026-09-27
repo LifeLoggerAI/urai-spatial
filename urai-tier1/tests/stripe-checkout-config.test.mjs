@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import { readFile } from 'node:fs/promises';
 import { resolveApprovedReturnUrl } from '../src/lib/server/approved-return-url.ts';
 import {
   checkoutModeForPlan,
@@ -72,4 +73,29 @@ test('approved return URL accepts relative and same-origin destinations', () => 
 test('approved return URL rejects foreign origins and embedded credentials', () => {
   assert.throws(() => resolveApprovedReturnUrl('https://evil.example/account', 'https://staging.example.test'));
   assert.throws(() => resolveApprovedReturnUrl('https://user:pass@staging.example.test/account', 'https://staging.example.test'));
+});
+
+
+const webhookSource = await readFile(new URL('../src/app/api/stripe/webhook/route.ts', import.meta.url), 'utf8');
+
+test('webhook handles delayed Founder payment settlement and failure', () => {
+  assert.match(webhookSource, /checkout\.session\.async_payment_succeeded/);
+  assert.match(webhookSource, /checkout\.session\.async_payment_failed/);
+  assert.match(webhookSource, /async_payment_succeeded'[\s\S]*stripeStatus = 'active'/);
+  assert.match(webhookSource, /async_payment_failed'[\s\S]*stripeStatus = 'none'/);
+});
+
+test('invoice provider lookup failures stay retryable instead of being acknowledged as skipped', () => {
+  assert.match(webhookSource, /Stripe provider state could not be resolved/);
+  assert.match(webhookSource, /status: 500/);
+  assert.doesNotMatch(webhookSource, /could not fetch invoice subscription/);
+});
+
+test('Founder refunds and disputes revoke entitlement through PaymentIntent metadata', () => {
+  assert.match(webhookSource, /charge\.refunded/);
+  assert.match(webhookSource, /charge\.dispute\.created/);
+  assert.match(webhookSource, /charge\.dispute\.closed/);
+  assert.match(webhookSource, /paymentIntents\.retrieve/);
+  assert.match(webhookSource, /stripeStatus = 'canceled'/);
+  assert.match(webhookSource, /dispute\.status === 'won' \? 'active' : 'canceled'/);
 });
