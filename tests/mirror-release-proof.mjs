@@ -182,6 +182,17 @@ async function proveOverview(browser, deviceName) {
     const inspector = page.locator('aside[aria-label="Body rhythm evidence"]')
     await inspector.waitFor({ state: 'visible' })
     if (deviceName === 'mobile') {
+      const blockedThresholds = await page.locator('.mirrorThresholds button').evaluateAll((buttons) => buttons.flatMap((button) => {
+        const rect = button.getBoundingClientRect()
+        const x = rect.left + rect.width / 2
+        const y = rect.top + rect.height / 2
+        const hit = document.elementFromPoint(x, y)
+        return hit instanceof Element && (hit === button || button.contains(hit)) ? [] : [{
+          label: button.textContent?.trim() || 'unnamed transition',
+          hit: hit instanceof Element ? hit.outerHTML.slice(0, 240) : String(hit),
+        }]
+      }))
+      if (blockedThresholds.length) throw new Error(`mobile Mirror transition hit targets are covered: ${JSON.stringify(blockedThresholds)}`)
       const geometry = await inspector.evaluate((element) => ({ clientHeight: element.clientHeight, scrollHeight: element.scrollHeight }))
       if (geometry.scrollHeight <= geometry.clientHeight) throw new Error(`mobile inspector is not scrollable: ${geometry.clientHeight}/${geometry.scrollHeight}`)
       await inspector.evaluate((element) => { element.scrollTop = element.scrollHeight })
