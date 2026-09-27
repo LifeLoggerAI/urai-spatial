@@ -106,6 +106,15 @@ async function capture(browser, cfg) {
   } catch (error) {
     record.finalUrl = page.url()
     record.error = String(error?.message || error)
+    // Retain the failed frame without replacing the original assertion failure.
+    // A stalled renderer must not make diagnostic collection wait indefinitely.
+    const failureFile = path.join('screenshots', `${slug(cfg.id)}-failure.png`)
+    try {
+      await page.screenshot({ path: path.join(outDir, failureFile), fullPage: false, animations: 'allow', caret: 'hide', scale: 'css', timeout: 5000 })
+      record.failureScreenshot = failureFile
+    } catch (diagnosticError) {
+      record.failureScreenshotError = String(diagnosticError?.message || diagnosticError)
+    }
     receipt.failures.push(record)
     console.error('REFERENCE_CAPTURE_FAIL', cfg.id, record.error)
   } finally {
