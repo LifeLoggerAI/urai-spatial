@@ -65,6 +65,17 @@ test('proof delivery is separately gated and can never masquerade as certified r
   assert.match(source, /URAI_ENABLE_CAPTURED_REALITY_PROOF/)
   assert.match(source, /CAPTURED_REALITY_PROOF_DISABLED/)
   assert.match(source, /CAPTURED_REALITY_PROOF_REQUIRES_PRIVATE_PILOT/)
+  assert.match(source, /accessMode === 'runtime' && \(state !== 'ready' \|\| reviewState !== 'accepted'\)/)
   assert.match(source, /accessMode === 'runtime' && !certified/)
   assert.match(source, /releaseGate: accessMode === 'proof' \? 'proof-only' : 'enabled'/)
+})
+
+test('technical proof may retain visual rejection but requires explicit integrity and privacy authorization', () => {
+  assert.match(source, /state !== 'proof-ready' && state !== 'ready'/)
+  assert.match(source, /proofState !== 'technical-preview'/)
+  assert.match(source, /proofIntegrityVerified.*!== true/)
+  assert.match(source, /proofPrivacyReviewed.*!== true/)
+  assert.match(source, /CAPTURED_REALITY_PROOF_ASSET_NOT_READY/)
+  assert.match(source, /CAPTURED_REALITY_PROOF_ASSET_NOT_AUTHORIZED/)
+  assert.doesNotMatch(source, /accessMode === 'proof'[\s\S]{0,300}reviewState !== 'accepted'/)
 })
