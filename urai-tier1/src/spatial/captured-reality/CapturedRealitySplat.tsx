@@ -12,7 +12,7 @@ export type CapturedRealitySplatProps = {
   maxBytes?: number
   chunkSize?: number
   alphaHash?: boolean
-  onRenderReady?: () => void
+  onRenderReady?: (src: string) => void
 }
 
 /**
