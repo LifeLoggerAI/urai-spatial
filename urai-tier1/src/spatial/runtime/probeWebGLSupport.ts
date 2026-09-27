@@ -3,7 +3,10 @@
  * Several launch surfaces mount real R3F canvases after this capability check;
  * a detached test canvas must release its context immediately.
  */
+let cachedWebGLSupport: boolean | null = null
+
 export function probeWebGLSupport(): boolean {
+  if (cachedWebGLSupport === true) return true
   if (typeof document === 'undefined') return false
 
   try {
@@ -19,6 +22,7 @@ export function probeWebGLSupport(): boolean {
 
     canvas.width = 1
     canvas.height = 1
+    cachedWebGLSupport = true
     return true
   } catch {
     return false
