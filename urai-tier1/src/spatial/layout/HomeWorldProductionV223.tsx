@@ -988,6 +988,7 @@ export function HomeWorldProductionV223({ onOrbOpen = requestUraiWorldOrbOpen, w
     data-home-orb-clip={resolveOrbSensoryOutput(orbState, reducedMotion, true).animation}
     data-home-orb-model-clip={reducedMotion ? 'stopped-reduced-motion' : ORB_CLIPS[orbState]}
     data-home-orb-runtime-asset={ORB_MODEL}
+    data-home-animation-owner="canonical-sanctuary-plus-cc0-fern-plus-living-orb"
     data-home-non-xr-body-policy="camera-only-no-hands-body-rig"
     data-home-presence-policy="direct-first-person-camera-only-no-hands-body-rig"
     data-home-avatar-activation-gate="none-direct-first-person-home"
