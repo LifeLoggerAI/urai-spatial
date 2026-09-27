@@ -158,16 +158,46 @@ function FocusChamber({ active }: { active: boolean }) {
   if (!active) return null
 
   return (
-    <group name="urai-focus-chamber-object" userData={{ testId: 'urai-focus-chamber-object' }} position={[0, 0.28, -2.4]}>
+    <group
+      name="urai-focus-stellar-photosphere"
+      userData={{ testId: 'urai-focus-stellar-photosphere', canon: 'stellar-photosphere-corona' }}
+      position={[0, 0.28, -2.4]}
+    >
       <mesh>
-        <icosahedronGeometry args={[0.92, 3]} />
-        <meshPhysicalMaterial color="#172554" emissive="#8b5cf6" emissiveIntensity={0.24} metalness={0.34} roughness={0.18} clearcoat={0.86} transparent opacity={0.78} />
+        <sphereGeometry args={[0.82, 96, 96]} />
+        <meshPhysicalMaterial
+          color="#fff7df"
+          emissive="#f8b4ff"
+          emissiveIntensity={1.6}
+          roughness={0.5}
+          metalness={0}
+          clearcoat={0}
+        />
       </mesh>
-      <mesh rotation={[Math.PI / 2, 0, 0]}>
-        <torusGeometry args={[1.32, 0.012, 16, 128]} />
-        <meshBasicMaterial color="#f0abfc" transparent opacity={0.38} blending={THREE.AdditiveBlending} />
+      <mesh scale={[1.08, 1.08, 1.08]}>
+        <sphereGeometry args={[0.82, 96, 96]} />
+        <meshBasicMaterial
+          color="#f0abfc"
+          transparent
+          opacity={0.18}
+          side={THREE.BackSide}
+          depthWrite={false}
+          blending={THREE.AdditiveBlending}
+        />
       </mesh>
-      <pointLight color="#f0abfc" intensity={1.5} distance={5.2} />
+      <mesh scale={[1.34, 1.34, 1.34]}>
+        <sphereGeometry args={[0.82, 64, 64]} />
+        <meshBasicMaterial
+          color="#93c5fd"
+          transparent
+          opacity={0.07}
+          side={THREE.BackSide}
+          depthWrite={false}
+          blending={THREE.AdditiveBlending}
+        />
+      </mesh>
+      <pointLight color="#f5d0fe" intensity={2.4} distance={6.4} />
+      <pointLight position={[0, 0, 0.7]} color="#bfdbfe" intensity={1.2} distance={5.2} />
     </group>
   )
 }
