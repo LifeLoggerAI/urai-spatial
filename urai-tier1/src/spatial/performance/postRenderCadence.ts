@@ -1,3 +1,22 @@
+export function shouldContinueHomeInteractiveCadence({
+  reducedMotion,
+  softwareRenderer,
+  companionOpen,
+  orbState,
+  motionActive,
+}: {
+  reducedMotion: boolean
+  softwareRenderer: boolean
+  companionOpen: boolean
+  orbState: string
+  motionActive: boolean
+}) {
+  if (motionActive) return true
+  if (reducedMotion) return false
+  if (softwareRenderer && companionOpen && !['thinking', 'speaking'].includes(orbState)) return false
+  return true
+}
+
 /** Demand-render pacing measured from a completed draw, not its request.
  * The caller must pair this root's useFrame with R3F's global after-render hook.
  */
@@ -6,11 +25,13 @@ export function createPostRenderCadence<Timer>({
   intervalMs,
   schedule,
   cancel,
+  shouldContinue = () => true,
 }: {
   invalidate: () => void
   intervalMs: number
   schedule: (callback: () => void, delay: number) => Timer
   cancel: (timer: Timer) => void
+  shouldContinue?: () => boolean
 }) {
   let timer: Timer | undefined
   let renderedThisFrame = false
@@ -39,6 +60,7 @@ export function createPostRenderCadence<Timer>({
       // addAfterEffect is global: unrelated canvases must not drive this root.
       if (disposed || !renderedThisFrame) return
       renderedThisFrame = false
+      if (!shouldContinue()) return
       timer = schedule(() => {
         timer = undefined
         if (!disposed) invalidate()
