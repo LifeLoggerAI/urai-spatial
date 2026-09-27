@@ -5,8 +5,34 @@ on:
     paths:
       - 'operations/intelligence/**'
       - 'scripts/verify-intelligence-release-gate.mjs'
+      - 'scripts/run-intelligence-provider-eval.mjs'
       - '.github/workflows/intelligence-release-gate.yml'
   workflow_dispatch:
+    inputs:
+      evaluation_mode:
+        description: 'Evaluation mode. Provider mode requires a declared HTTPS adapter endpoint.'
+        required: true
+        type: choice
+        default: synthetic
+        options:
+          - synthetic
+          - provider
+      endpoint_url:
+        description: 'HTTPS semantic-evaluation adapter endpoint; required only for provider mode.'
+        required: false
+        type: string
+      provider:
+        description: 'Provider identity; required only for provider mode.'
+        required: false
+        type: string
+      model:
+        description: 'Exact model/version identity; required only for provider mode.'
+        required: false
+        type: string
+      configuration:
+        description: 'Exact provider/model configuration identity; required only for provider mode.'
+        required: false
+        type: string
 
 permissions:
   contents: read
@@ -16,7 +42,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout exact candidate
-        uses: actions/checkout@v4
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
           persist-credentials: false
@@ -29,8 +55,32 @@ jobs:
           test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
           test -z "$(git status --porcelain)"
       - name: Set up Node 22
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with:
           node-version: '22'
-      - name: Verify deterministic intelligence release gate
+      - name: Verify deterministic structural intelligence release gate
         run: node scripts/verify-intelligence-release-gate.mjs
+      - name: Execute exact-head semantic self-test
+        if: github.event_name == 'pull_request' || inputs.evaluation_mode == 'synthetic'
+        env:
+          URAI_EXACT_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
+          URAI_INTELLIGENCE_EVAL_MODE: synthetic
+        run: node scripts/run-intelligence-provider-eval.mjs
+      - name: Execute declared provider/model semantic evaluation
+        if: github.event_name == 'workflow_dispatch' && inputs.evaluation_mode == 'provider'
+        env:
+          URAI_EXACT_HEAD: ${{ github.sha }}
+          URAI_INTELLIGENCE_EVAL_MODE: provider
+          URAI_INTELLIGENCE_EVAL_URL: ${{ inputs.endpoint_url }}
+          URAI_INTELLIGENCE_EVAL_PROVIDER: ${{ inputs.provider }}
+          URAI_INTELLIGENCE_EVAL_MODEL: ${{ inputs.model }}
+          URAI_INTELLIGENCE_EVAL_CONFIGURATION: ${{ inputs.configuration }}
+          URAI_INTELLIGENCE_EVAL_TOKEN: ${{ secrets.URAI_INTELLIGENCE_EVAL_TOKEN }}
+        run: node scripts/run-intelligence-provider-eval.mjs
+      - name: Retain exact-head intelligence receipt
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: intelligence-eval-${{ github.event.pull_request.head.sha || github.sha }}
+          path: artifacts/intelligence-eval/*.json
+          if-no-files-found: error
+          retention-days: 30
