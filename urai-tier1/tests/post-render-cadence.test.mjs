@@ -3,7 +3,7 @@ import fs from 'node:fs'
 import test from 'node:test'
 import vm from 'node:vm'
 import * as THREE from 'three'
-import { createPostRenderCadence } from '../src/spatial/performance/postRenderCadence.ts'
+import { createPostRenderCadence, shouldContinueHomeInteractiveCadence } from '../src/spatial/performance/postRenderCadence.ts'
 
 function fixture(intervalMs = 100, shouldContinue) {
   let now = 0
@@ -58,6 +58,18 @@ test('a reduced-motion scene sleeps at rest and resumes through input-driven fra
   f.tick(30_000)
   assert.equal(f.invalidations.length, 2, 'settled movement returns to sleep')
   assert.equal(f.timers.size, 0)
+})
+
+test('software Home yields at rest while Orb text controls own interaction', () => {
+  const base = { reducedMotion: false, softwareRenderer: true, companionOpen: true, motionActive: false }
+  assert.equal(shouldContinueHomeInteractiveCadence({ ...base, orbState: 'attention' }), false)
+  assert.equal(shouldContinueHomeInteractiveCadence({ ...base, orbState: 'privacy' }), false)
+  assert.equal(shouldContinueHomeInteractiveCadence({ ...base, orbState: 'thinking' }), true)
+  assert.equal(shouldContinueHomeInteractiveCadence({ ...base, orbState: 'speaking' }), true)
+  assert.equal(shouldContinueHomeInteractiveCadence({ ...base, orbState: 'attention', motionActive: true }), true)
+  assert.equal(shouldContinueHomeInteractiveCadence({ ...base, orbState: 'attention', companionOpen: false }), true)
+  assert.equal(shouldContinueHomeInteractiveCadence({ ...base, orbState: 'attention', softwareRenderer: false }), true)
+  assert.equal(shouldContinueHomeInteractiveCadence({ ...base, orbState: 'speaking', reducedMotion: true }), false)
 })
 
 test('a slow render receives a full idle interval after completion without timer backlog', () => {
