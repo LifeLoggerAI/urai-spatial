@@ -1,7 +1,9 @@
 #!/usr/bin/env node
 import fs from 'node:fs'
 import crypto from 'node:crypto'
-import * as admin from 'firebase-admin'
+import { getApps, initializeApp } from 'firebase-admin/app'
+import { FieldValue, getFirestore } from 'firebase-admin/firestore'
+import { getStorage } from 'firebase-admin/storage'
 
 const MAX_DESKTOP_BYTES = 160 * 1024 * 1024
 const TOKEN = /^[A-Za-z0-9._-]{1,128}$/
@@ -88,22 +90,20 @@ async function main() {
     return
   }
 
-  if (!admin.apps.length) admin.initializeApp({ storageBucket: process.env.FIREBASE_STORAGE_BUCKET })
-  const db = admin.firestore()
-  const bucket = admin.storage().bucket()
+  if (!getApps().length) initializeApp({ storageBucket: process.env.FIREBASE_STORAGE_BUCKET })
+  const db = getFirestore()
+  const bucket = getStorage().bucket()
   const assetRef = db.doc(`users/${args.ownerUid}/capturedRealityAssets/${args.assetId}`)
   const existing = await assetRef.get()
   if (existing.exists) throw new Error('Captured Reality asset already exists; proof import is create-only')
 
   const object = bucket.file(runtimeObject)
-  const [exists] = await object.exists()
-  if (exists) throw new Error('Private runtime object already exists; proof import will not overwrite it')
-
-  let uploaded = false
+  let uploadedGeneration = null
   try {
     await object.save(bytes, {
       resumable: false,
       validation: 'crc32c',
+      preconditionOpts: { ifGenerationMatch: 0 },
       metadata: {
         contentType: 'application/octet-stream',
         cacheControl: 'private, no-store, max-age=0',
@@ -114,8 +114,6 @@ async function main() {
         },
       },
     })
-    uploaded = true
-
     const [metadata] = await object.getMetadata()
     const storageGeneration = String(metadata.generation ?? '')
     const storedSha256 = String(metadata.metadata?.uraiRuntimeSha256 ?? '').toLowerCase()
@@ -123,6 +121,7 @@ async function main() {
       throw new Error('Uploaded proof object did not return the expected immutable generation/hash metadata')
     }
 
+    uploadedGeneration = storageGeneration
     receipt.runtimeStorageGeneration = storageGeneration
     receipt.proofApprovedRuntimeSha256 = sha256
     receipt.proofApprovedStorageGeneration = storageGeneration
@@ -152,11 +151,13 @@ async function main() {
       proofApprovedRuntimeSha256: sha256,
       proofApprovedStorageGeneration: storageGeneration,
       truthLabel: args.truthLabel.trim(),
-      createdAt: admin.firestore.FieldValue.serverTimestamp(),
-      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      createdAt: FieldValue.serverTimestamp(),
+      updatedAt: FieldValue.serverTimestamp(),
     })
   } catch (error) {
-    if (uploaded) await object.delete({ ignoreNotFound: true })
+    if (uploadedGeneration) {
+      await bucket.file(runtimeObject, { generation: uploadedGeneration }).delete({ ignoreNotFound: true })
+    }
     throw error
   }
 
