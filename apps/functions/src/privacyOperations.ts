@@ -483,6 +483,76 @@ async function collectionDocuments(ref: FirebaseFirestore.CollectionReference) {
   return snapshot.docs.map((item) => ({ id: item.id, ...redactSecrets(item.data()) as JsonMap }))
 }
 
+type CapturedRealityRuntimeExport = {
+  assetId: string
+  objectPath: string
+  relativePath: string
+  runtimeSha256: string
+  storageGeneration: string
+  runtimeBytes: number
+}
+
+function requireCapturedRealityExportObject(uid: string, assetId: string, value: unknown): string {
+  const objectPath = String(value ?? '')
+  const prefix = `private-captured-reality/${uid}/${assetId}/runtime/`
+  if (!objectPath.startsWith(prefix) || objectPath.includes('..')) {
+    throw new Error('CAPTURED_REALITY_EXPORT_OBJECT_BOUNDARY_INVALID')
+  }
+  return objectPath
+}
+
+async function copyCapturedRealityRuntimeExports(
+  userRef: FirebaseFirestore.DocumentReference,
+  uid: string,
+  bucket: ReturnType<typeof admin.storage> extends { bucket: (...args: never[]) => infer T } ? T : never,
+  basePath: string,
+): Promise<CapturedRealityRuntimeExport[]> {
+  const assets = await userRef.collection('capturedRealityAssets').limit(MAX_EXPORT_DOCUMENTS_PER_COLLECTION).get()
+  const exports: CapturedRealityRuntimeExport[] = []
+  for (const asset of assets.docs) {
+    if (asset.get('ownerId') !== uid) continue
+    const runtimeObject = asset.get('runtimeObject')
+    if (typeof runtimeObject !== 'string' || !runtimeObject) continue
+    const objectPath = requireCapturedRealityExportObject(uid, asset.id, runtimeObject)
+    const runtimeSha256 = String(asset.get('runtimeSha256') ?? '').toLowerCase()
+    if (!/^[a-f0-9]{64}$/.test(runtimeSha256) || !objectPath.endsWith(`/${runtimeSha256}.splat`)) {
+      throw new Error('CAPTURED_REALITY_EXPORT_HASH_BINDING_INVALID')
+    }
+
+    const sourceFile = bucket.file(objectPath)
+    const [metadata] = await sourceFile.getMetadata()
+    const storageGeneration = String(metadata.generation ?? '')
+    const storedSha256 = String(metadata.metadata?.uraiRuntimeSha256 ?? '').toLowerCase()
+    const expectedGeneration = String(asset.get('runtimeStorageGeneration') ?? '')
+    if (
+      !/^\d+$/.test(storageGeneration) ||
+      storedSha256 !== runtimeSha256 ||
+      (expectedGeneration && expectedGeneration !== storageGeneration)
+    ) {
+      throw new Error('CAPTURED_REALITY_EXPORT_RUNTIME_CHANGED')
+    }
+
+    const runtimeBytes = Number(metadata.size ?? 0)
+    if (!Number.isSafeInteger(runtimeBytes) || runtimeBytes <= 0) {
+      throw new Error('CAPTURED_REALITY_EXPORT_RUNTIME_SIZE_INVALID')
+    }
+
+    const relativePath = `spatial/captured-reality/${asset.id}/${runtimeSha256}.splat`
+    const destination = bucket.file(`${basePath}/${relativePath}`)
+    const immutableSource = bucket.file(objectPath, { generation: storageGeneration })
+    await immutableSource.copy(destination)
+    exports.push({
+      assetId: asset.id,
+      objectPath: `${basePath}/${relativePath}`,
+      relativePath,
+      runtimeSha256,
+      storageGeneration,
+      runtimeBytes,
+    })
+  }
+  return exports
+}
+
 export const createExportRequest = functions.https.onCall(async (data, context) => {
   const uid = requireUid(context)
   requireRecentAuthentication(context)
@@ -527,6 +597,8 @@ async function buildExport(snapshot: FirebaseFirestore.DocumentSnapshot) {
   const uid = job.uid
   const scopes = parseExportScopes(job.scopes)
   const receiptRef = db.doc(`users/${uid}/privacyReceipts/${String(job.receiptId)}`)
+  const bucket = admin.storage().bucket()
+  const basePath = `private-exports/${uid}/${snapshot.id}`
   try {
     await snapshot.ref.update({ state: 'preparing', progress: 10, updatedAt: fieldValue.serverTimestamp() })
     const userRef = db.doc(`users/${uid}`)
@@ -554,6 +626,7 @@ async function buildExport(snapshot: FirebaseFirestore.DocumentSnapshot) {
       data.replayEvents = await collectionDocuments(userRef.collection('replayEvents'))
       data.spatialMemories = await collectionDocuments(userRef.collection('spatialMemories'))
     }
+    let capturedRealityRuntimeExports: CapturedRealityRuntimeExport[] = []
     if (scopes.includes('spatial')) {
       data.homeWorld = await collectionDocuments(userRef.collection('homeWorld'))
       data.focusStates = await collectionDocuments(userRef.collection('focusStates'))
@@ -561,6 +634,8 @@ async function buildExport(snapshot: FirebaseFirestore.DocumentSnapshot) {
       data.spatialAnchors = await collectionDocuments(userRef.collection('spatialAnchors'))
       data.capturedRealityAssets = await collectionDocuments(userRef.collection('capturedRealityAssets'))
       data.capturedRealityReplayBindings = await collectionDocuments(userRef.collection('capturedRealityReplayBindings'))
+      capturedRealityRuntimeExports = await copyCapturedRealityRuntimeExports(userRef, uid, bucket, basePath)
+      data.capturedRealityRuntimeAssets = capturedRealityRuntimeExports.map(({ objectPath: _privateObject, ...entry }) => entry)
     }
     if (scopes.includes('audit')) {
       data.receipts = await collectionDocuments(userRef.collection('privacyReceipts'))
@@ -574,10 +649,9 @@ async function buildExport(snapshot: FirebaseFirestore.DocumentSnapshot) {
       checksumAlgorithm: 'sha256',
       checksum,
       scopes,
+      runtimeAssets: capturedRealityRuntimeExports.map(({ objectPath: _privateObject, ...entry }) => entry),
       createdAt: new Date().toISOString(),
     }, null, 2)
-    const bucket = admin.storage().bucket()
-    const basePath = `private-exports/${uid}/${snapshot.id}`
     await Promise.all([
       bucket.file(`${basePath}/export.json`).save(Buffer.from(json), {
         resumable: false,
@@ -599,6 +673,7 @@ async function buildExport(snapshot: FirebaseFirestore.DocumentSnapshot) {
         checksumAlgorithm: 'sha256',
         exportObject: `${basePath}/export.json`,
         manifestObject: `${basePath}/manifest.json`,
+        runtimeExports: capturedRealityRuntimeExports,
         expiresAt,
         completedAt: fieldValue.serverTimestamp(),
         updatedAt: fieldValue.serverTimestamp(),
@@ -614,6 +689,7 @@ async function buildExport(snapshot: FirebaseFirestore.DocumentSnapshot) {
     ])
   } catch (error) {
     const failure = error instanceof Error ? error.message.slice(0, 240) : 'UNKNOWN_EXPORT_FAILURE'
+    await bucket.deleteFiles({ prefix: `${basePath}/` }).catch(() => undefined)
     await Promise.all([
       snapshot.ref.set({ state: 'failed', failureCode: failure, updatedAt: fieldValue.serverTimestamp() }, { merge: true }),
       receiptRef.set({ result: 'failed', failureCode: failure, updatedAt: fieldValue.serverTimestamp() }, { merge: true }),
@@ -630,7 +706,7 @@ export const getExportDownloadUrl = functions.https.onCall(async (data, context)
   const uid = requireUid(context)
   requireRecentAuthentication(context)
   const jobId = requireString(data?.jobId, 'jobId', 80)
-  const file = data?.file === 'manifest' ? 'manifest' : 'export'
+  const file = data?.file === 'manifest' ? 'manifest' : data?.file === 'runtime' ? 'runtime' : 'export'
   const job = await db.doc(`users/${uid}/exportJobs/${jobId}`).get()
   if (!job.exists || job.get('uid') !== uid) {
     throw new functions.https.HttpsError('not-found', 'Export request was not found.')
@@ -643,7 +719,21 @@ export const getExportDownloadUrl = functions.https.onCall(async (data, context)
     await job.ref.update({ state: 'expired', updatedAt: fieldValue.serverTimestamp() })
     throw new functions.https.HttpsError('failed-precondition', 'Export has expired.')
   }
-  const objectPath = String(job.get(file === 'manifest' ? 'manifestObject' : 'exportObject') ?? '')
+  let objectPath = ''
+  let assetId: string | null = null
+  if (file === 'runtime') {
+    assetId = requireString(data?.assetId, 'assetId', 128)
+    const runtimeExports = job.get('runtimeExports')
+    const match = Array.isArray(runtimeExports)
+      ? runtimeExports.find((entry) => isRecord(entry) && entry.assetId === assetId)
+      : undefined
+    objectPath = isRecord(match) ? String(match.objectPath ?? '') : ''
+    if (!objectPath) {
+      throw new functions.https.HttpsError('not-found', 'Captured Reality runtime export was not found.')
+    }
+  } else {
+    objectPath = String(job.get(file === 'manifest' ? 'manifestObject' : 'exportObject') ?? '')
+  }
   if (!objectPath.startsWith(`private-exports/${uid}/${jobId}/`)) {
     throw new functions.https.HttpsError('permission-denied', 'Invalid export object boundary.')
   }
@@ -654,6 +744,7 @@ export const getExportDownloadUrl = functions.https.onCall(async (data, context)
   return {
     jobId,
     file,
+    assetId,
     url,
     expiresAt: new Date(Date.now() + EXPORT_EXPIRY_MS).toISOString(),
     checksum: job.get('checksum') ?? null,
