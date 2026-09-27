@@ -1,7 +1,8 @@
 'use client'
 
-import { useRouter } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import { useCallback, useEffect, useLayoutEffect, useRef } from 'react'
+import { stageHomeReturnFrameForActiveRoute } from '../home/homeExperienceState'
 import { definitionForDestination } from './destinationRegistry'
 import { useUraiWorldState } from './WorldStateProvider'
 import {
@@ -95,6 +96,7 @@ function canonicalReturnDestination(
 
 export function WorldTransitionController() {
   const router = useRouter()
+  const pathname = usePathname()
   const { world, phase, pendingTravel, beginTravel } = useUraiWorldState()
   const timer = useRef<number | null>(null)
   const navigationWatchdog = useRef<number | null>(null)
@@ -105,6 +107,10 @@ export function WorldTransitionController() {
   useEffect(() => { worldRef.current = world }, [world])
   useEffect(() => { phaseRef.current = phase }, [phase])
   useEffect(() => { beginTravelRef.current = beginTravel }, [beginTravel])
+  useEffect(() => {
+    const route = pathname?.replace(/\/+$/, '') || '/'
+    if (route === '/' || route === '/home') stageHomeReturnFrameForActiveRoute()
+  }, [pathname])
 
   const clearTimer = useCallback(() => {
     if (timer.current !== null) {

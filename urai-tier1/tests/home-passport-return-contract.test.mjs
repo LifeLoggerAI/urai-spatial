@@ -4,6 +4,7 @@ import fs from 'node:fs'
 
 const state = fs.readFileSync(new URL('../src/spatial/home/homeExperienceState.ts', import.meta.url), 'utf8')
 const controller = fs.readFileSync(new URL('../src/spatial/home/useHomeExperienceController.ts', import.meta.url), 'utf8')
+const worldController = fs.readFileSync(new URL('../src/spatial/world/WorldTransitionController.tsx', import.meta.url), 'utf8')
 const homeRepair = fs.readFileSync(new URL('../src/spatial/layout/HomeAAAVisualRepair.tsx', import.meta.url), 'utf8')
 
 test('Passport captures exact first-person Home origin before world travel', () => {
@@ -21,6 +22,10 @@ test('Passport return restores Home origin without masquerading as Ground or Lif
   assert.ok(state.includes("event.destination === 'LIFE_MAP'"))
   assert.ok(state.includes(": 'HOME_RESTORE'"))
   assert.ok(controller.includes("dispatch({ type: 'DESTINATION_RETURN', destination: returned.destination, snapshot: returned.origin })"))
+  assert.ok(state.includes('stageHomeReturnFrameForActiveRoute'))
+  assert.ok(state.includes('consumeHomeReturnFrameForActiveHome'))
+  assert.ok(worldController.includes('stageHomeReturnFrameForActiveRoute()'))
+  assert.ok(controller.includes('consumeHomeReturnFrameForActiveHome()'))
 })
 
 test('Passport does not widen the existing Ground/Life Map destination commit contract', () => {

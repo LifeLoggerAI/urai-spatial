@@ -47,7 +47,7 @@ test('destination handoff persists only the validated semantic return frame befo
 })
 
 test('destination return is consumed from session bridge into reducer authority', () => {
-  assert.match(source, /consumeHomeReturnFrame\(\)/)
+  assert.match(source, /consumeHomeReturnFrameForActiveHome\(\)/)
   assert.match(source, /type: 'DESTINATION_RETURN'/)
 })
 

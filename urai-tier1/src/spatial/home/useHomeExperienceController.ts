@@ -6,7 +6,7 @@ import * as THREE from 'three'
 import { URAI_WORLD_ORB_CLOSE_EVENT } from '@/spatial/world/worldEvents'
 import {
   HOME_PASSPORT_ORIGIN_CAPTURE_EVENT,
-  consumeHomeReturnFrame,
+  consumeHomeReturnFrameForActiveHome,
   createInitialHomeExperienceState,
   homeExperienceReducer,
   makeHomeOriginSnapshot,
@@ -62,7 +62,7 @@ export function useHomeExperienceController({
   useEffect(() => {
     const route = pathname?.replace(/\/+$/, '') || '/'
     if (route !== '/' && route !== '/home') return
-    const returned = consumeHomeReturnFrame()
+    const returned = consumeHomeReturnFrameForActiveHome()
     if (!returned || returned.kind !== 'destination' || !returned.destination) return
     dispatch({ type: 'DESTINATION_RETURN', destination: returned.destination, snapshot: returned.origin })
   }, [pathname])
