@@ -504,9 +504,9 @@ function requireCapturedRealityExportObject(uid: string, assetId: string, value:
 async function copyCapturedRealityRuntimeExports(
   userRef: FirebaseFirestore.DocumentReference,
   uid: string,
-  bucket: ReturnType<typeof admin.storage> extends { bucket: (...args: never[]) => infer T } ? T : never,
   basePath: string,
 ): Promise<CapturedRealityRuntimeExport[]> {
+  const bucket = admin.storage().bucket()
   const assets = await userRef.collection('capturedRealityAssets').limit(MAX_EXPORT_DOCUMENTS_PER_COLLECTION).get()
   const exports: CapturedRealityRuntimeExport[] = []
   for (const asset of assets.docs) {
@@ -634,7 +634,7 @@ async function buildExport(snapshot: FirebaseFirestore.DocumentSnapshot) {
       data.spatialAnchors = await collectionDocuments(userRef.collection('spatialAnchors'))
       data.capturedRealityAssets = await collectionDocuments(userRef.collection('capturedRealityAssets'))
       data.capturedRealityReplayBindings = await collectionDocuments(userRef.collection('capturedRealityReplayBindings'))
-      capturedRealityRuntimeExports = await copyCapturedRealityRuntimeExports(userRef, uid, bucket, basePath)
+      capturedRealityRuntimeExports = await copyCapturedRealityRuntimeExports(userRef, uid, basePath)
       data.capturedRealityRuntimeAssets = capturedRealityRuntimeExports.map(({ objectPath: _privateObject, ...entry }) => entry)
     }
     if (scopes.includes('audit')) {
