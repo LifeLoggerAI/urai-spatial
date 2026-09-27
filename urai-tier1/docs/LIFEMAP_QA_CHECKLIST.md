@@ -17,11 +17,11 @@ cd urai-tier1
 FIREBASE_PROJECT_ID=<project-id> pnpm seed:lifemap -- --user=demo-user
 ```
 
-If using a service account JSON:
+For authenticated Firestore seeding, use Application Default Credentials. On developer machines, authenticate with an approved short-lived/provider-managed ADC flow. In CI or production-like environments, use the protected external-account Workload Identity Federation path. Do not use service-account JSON/private-key credentials.
 
 ```bash
 cd urai-tier1
-FIREBASE_PROJECT_ID=<project-id> FIREBASE_SERVICE_ACCOUNT_JSON='<json>' pnpm seed:lifemap -- --user=demo-user
+FIREBASE_PROJECT_ID=<project-id> GOOGLE_APPLICATION_CREDENTIALS=/path/to/protected-external-account.json pnpm seed:lifemap -- --user=demo-user
 ```
 
 ## Route Smoke Test
