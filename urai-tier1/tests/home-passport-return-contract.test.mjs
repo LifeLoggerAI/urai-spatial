@@ -25,6 +25,7 @@ test('Passport return restores Home origin without masquerading as Ground or Lif
   assert.ok(state.includes('stageHomeReturnFrameForActiveRoute'))
   assert.ok(state.includes('consumeHomeReturnFrameForActiveHome'))
   assert.ok(worldController.includes('stageHomeReturnFrameForActiveRoute()'))
+  assert.ok(worldController.indexOf('stageHomeReturnFrameForActiveRoute()') < worldController.indexOf('router.push(href)'))
   assert.ok(controller.includes('consumeHomeReturnFrameForActiveHome()'))
 })
 

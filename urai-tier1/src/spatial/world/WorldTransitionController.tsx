@@ -125,6 +125,9 @@ export function WorldTransitionController() {
 
   const executeTravel = useCallback((request: UraiWorldTravelRequest) => {
     clearTimer()
+    // Capture while Home's Passport frame is still available; the route owner
+    // stays mounted even if the Home renderer is replaced by App Router.
+    stageHomeReturnFrameForActiveRoute()
     const currentWorld = worldRef.current
     beginTravelRef.current(request)
 
