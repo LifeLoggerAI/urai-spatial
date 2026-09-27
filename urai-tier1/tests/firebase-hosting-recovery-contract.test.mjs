@@ -4,6 +4,7 @@ import { readFileSync } from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import {
+  accessTokenFromFederatedEnvironment,
   assertSiteId,
   assertVersionName,
   selectCurrentLiveRelease,
@@ -83,4 +84,33 @@ test('uses the official Hosting endpoints and confines recovery receipts', () =>
   assert.match(source, /mkdirSync\(runnerTemp, \{ recursive: true \}\)/)
   assert.match(source, /Hosting recovery receipt must remain inside RUNNER_TEMP/)
   assert.doesNotMatch(source, /firebase deploy/)
+})
+
+test('recovery credential authority is short-lived WIF only', () => {
+  assert.match(source, /GOOGLE_WIF_ACCESS_TOKEN/)
+  assert.match(source, /short-lived-github-oidc-google-wif-access-token/)
+  assert.match(source, /Refusing long-lived Google\/Firebase credential environment variable/)
+  assert.doesNotMatch(source, /createSign/)
+  assert.doesNotMatch(source, /createServiceAccountAssertion/)
+  assert.doesNotMatch(source, /serviceAccountFromEnvironment/)
+  assert.doesNotMatch(source, /accessTokenFromServiceAccount/)
+  assert.doesNotMatch(source, /\.private_key/)
+})
+
+test('federated token helper refuses legacy credential fallback', () => {
+  const names = ['FIREBASE_SERVICE_ACCOUNT_JSON', 'FIREBASE_PRIVATE_KEY', 'FIREBASE_CLIENT_EMAIL', 'FIREBASE_TOKEN', 'GOOGLE_APPLICATION_CREDENTIALS', 'GOOGLE_WIF_ACCESS_TOKEN', 'GOOGLE_OAUTH_ACCESS_TOKEN']
+  const original = Object.fromEntries(names.map((name) => [name, process.env[name]]))
+  try {
+    for (const name of names) delete process.env[name]
+    process.env.GOOGLE_WIF_ACCESS_TOKEN = 'short-lived-test-token'
+    assert.equal(accessTokenFromFederatedEnvironment(), 'short-lived-test-token')
+
+    process.env.FIREBASE_SERVICE_ACCOUNT_JSON = '{"private_key":"forbidden"}'
+    assert.throws(() => accessTokenFromFederatedEnvironment(), /Refusing long-lived Google\/Firebase credential environment variable/)
+  } finally {
+    for (const name of names) {
+      if (original[name] === undefined) delete process.env[name]
+      else process.env[name] = original[name]
+    }
+  }
 })

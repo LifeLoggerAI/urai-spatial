@@ -1,6 +1,5 @@
 #!/usr/bin/env node
 
-import { createSign } from 'node:crypto'
 import {
   existsSync,
   lstatSync,
@@ -13,10 +12,15 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const apiRoot = 'https://firebasehosting.googleapis.com/v1beta1'
-const hostingScope = 'https://www.googleapis.com/auth/firebase.hosting'
 const expectedSiteId = 'urai-4dc1d'
 const restoreConfirmation = 'RESTORE_EXACT_HOSTING_VERSION'
-const managedCredentialFilename = 'urai-firebase-service-account.json'
+const forbiddenLongLivedCredentialEnv = [
+  'FIREBASE_SERVICE_ACCOUNT_JSON',
+  'FIREBASE_PRIVATE_KEY',
+  'FIREBASE_CLIENT_EMAIL',
+  'FIREBASE_TOKEN',
+  'GOOGLE_APPLICATION_CREDENTIALS',
+]
 
 function requireString(label, value) {
   const normalized = String(value || '').trim()
@@ -86,45 +90,31 @@ export function selectCurrentLiveRelease(releases, siteId = expectedSiteId) {
     .filter((release) => release.type !== 'SITE_DISABLE')
     .map((release) => {
       const releaseTimeMs = Date.parse(String(release.releaseTime || ''))
-      if (!Number.isFinite(releaseTimeMs)) {
-        throw new Error(`Invalid releaseTime for live Firebase Hosting release: ${release.name}`)
-      }
+      if (!Number.isFinite(releaseTimeMs)) throw new Error(`Invalid releaseTime for live Firebase Hosting release: ${release.name}`)
       return { ...release, releaseTimeMs }
     })
     .sort((left, right) => right.releaseTimeMs - left.releaseTimeMs)
 
   if (!candidates.length) throw new Error(`No active live Firebase Hosting release found for ${siteId}`)
   const selected = candidates[0]
-  return {
-    ...selected,
-    versionName: assertVersionName(selected.version?.name, siteId),
+  return { ...selected, versionName: assertVersionName(selected.version?.name, siteId) }
+}
+
+function assertNoLongLivedCredentialEnvironment() {
+  for (const name of forbiddenLongLivedCredentialEnv) {
+    if (String(process.env[name] || '').trim()) {
+      throw new Error(`Refusing long-lived Google/Firebase credential environment variable: ${name}`)
+    }
   }
 }
 
-function base64UrlJson(value) {
-  return Buffer.from(JSON.stringify(value)).toString('base64url')
-}
-
-export function createServiceAccountAssertion(serviceAccount, nowSeconds = Math.floor(Date.now() / 1000)) {
-  const clientEmail = requireString('service account client_email', serviceAccount?.client_email)
-  const privateKey = requireString('service account private_key', serviceAccount?.private_key)
-  const tokenUri = requireString('service account token_uri', serviceAccount?.token_uri)
-  const header = base64UrlJson({ alg: 'RS256', typ: 'JWT' })
-  const claims = base64UrlJson({
-    iss: clientEmail,
-    scope: hostingScope,
-    aud: tokenUri,
-    iat: nowSeconds,
-    exp: nowSeconds + 3600,
-  })
-  const unsigned = `${header}.${claims}`
-  const signer = createSign('RSA-SHA256')
-  signer.update(unsigned)
-  signer.end()
-  return {
-    assertion: `${unsigned}.${signer.sign(privateKey).toString('base64url')}`,
-    tokenUri,
+export function accessTokenFromFederatedEnvironment() {
+  assertNoLongLivedCredentialEnvironment()
+  const accessToken = String(process.env.GOOGLE_WIF_ACCESS_TOKEN || process.env.GOOGLE_OAUTH_ACCESS_TOKEN || '').trim()
+  if (!accessToken) {
+    throw new Error('Short-lived federated access token is required via GOOGLE_WIF_ACCESS_TOKEN or GOOGLE_OAUTH_ACCESS_TOKEN')
   }
+  return accessToken
 }
 
 async function requestJson(url, options = {}) {
@@ -145,63 +135,10 @@ async function requestJson(url, options = {}) {
   return body
 }
 
-async function accessTokenFromServiceAccount(serviceAccount) {
-  const { assertion, tokenUri } = createServiceAccountAssertion(serviceAccount)
-  const body = new URLSearchParams({
-    grant_type: 'urn:ietf:params:oauth:grant-type:jwt-bearer',
-    assertion,
-  })
-  const token = await requestJson(tokenUri, {
-    method: 'POST',
-    headers: { 'content-type': 'application/x-www-form-urlencoded' },
-    body,
-  })
-  return requireString('OAuth access_token', token.access_token)
-}
-
-function parseServiceAccount(raw) {
-  let parsed
-  try {
-    parsed = JSON.parse(raw)
-  } catch {
-    throw new Error('Firebase service-account material must contain valid JSON')
-  }
-  if (!parsed || typeof parsed !== 'object' || parsed.project_id !== expectedSiteId) {
-    throw new Error(`Service-account project mismatch: ${parsed?.project_id || 'missing'}`)
-  }
-  return parsed
-}
-
-function managedCredentialPath() {
-  const runnerTemp = resolveRunnerTemp()
-  const requested = String(process.env.GOOGLE_APPLICATION_CREDENTIALS || '').trim()
-    || path.join(runnerTemp, managedCredentialFilename)
-  const resolved = assertPathInsideRunnerTemp('Managed Firebase credential path', requested)
-  if (path.basename(resolved) !== managedCredentialFilename) {
-    throw new Error(`Managed Firebase credential path must use ${managedCredentialFilename}`)
-  }
-  return resolved
-}
-
-function serviceAccountFromEnvironment() {
-  const raw = String(process.env.FIREBASE_SERVICE_ACCOUNT_JSON || '').trim()
-  if (raw) return parseServiceAccount(raw)
-
-  const credentialPath = managedCredentialPath()
-  if (!existsSync(credentialPath)) {
-    throw new Error(`Managed Firebase credential file is missing: ${credentialPath}`)
-  }
-  const stats = lstatSync(credentialPath)
-  if (!stats.isFile() || stats.isSymbolicLink()) {
-    throw new Error('Managed Firebase credential must be a regular non-symlinked file')
-  }
-  return parseServiceAccount(readFileSync(credentialPath, 'utf8'))
-}
-
 function resolveReceiptPath() {
   const runnerTemp = resolveRunnerTemp()
   const requested = process.env.URAI_HOSTING_RECOVERY_RECEIPT?.trim()
-    || path.join(runnerTemp, 'hosting-recovery', 'legacy-live-release.json')
+    || path.join(runnerTemp, 'hosting-recovery', 'live-release.json')
   return assertPathInsideRunnerTemp('Hosting recovery receipt', requested)
 }
 
@@ -236,12 +173,8 @@ async function listAllReleases(accessToken, siteId) {
     const url = new URL(`${apiRoot}/sites/${siteId}/releases`)
     url.searchParams.set('pageSize', '100')
     if (pageToken) url.searchParams.set('pageToken', pageToken)
-    const body = await requestJson(url, {
-      headers: { authorization: `Bearer ${accessToken}` },
-    })
-    if (body.releases !== undefined && !Array.isArray(body.releases)) {
-      throw new Error('Firebase Hosting releases response has an invalid releases field')
-    }
+    const body = await requestJson(url, { headers: { authorization: `Bearer ${accessToken}` } })
+    if (body.releases !== undefined && !Array.isArray(body.releases)) throw new Error('Firebase Hosting releases response has an invalid releases field')
     releases.push(...(body.releases || []))
     pageToken = String(body.nextPageToken || '')
     if (!pageToken) return releases
@@ -250,21 +183,18 @@ async function listAllReleases(accessToken, siteId) {
 }
 
 async function fetchVersion(accessToken, versionName) {
-  return requestJson(`${apiRoot}/${versionName}`, {
-    headers: { authorization: `Bearer ${accessToken}` },
-  })
+  return requestJson(`${apiRoot}/${versionName}`, { headers: { authorization: `Bearer ${accessToken}` } })
 }
 
-async function currentLiveRelease(serviceAccount, siteId) {
-  const accessToken = await accessTokenFromServiceAccount(serviceAccount)
+async function currentLiveRelease(accessToken, siteId) {
   const release = selectCurrentLiveRelease(await listAllReleases(accessToken, siteId), siteId)
   return { accessToken, release }
 }
 
 export async function discoverCurrentLiveRelease() {
   const siteId = assertSiteId(process.env.FIREBASE_SITE_ID || expectedSiteId)
-  const serviceAccount = serviceAccountFromEnvironment()
-  const { accessToken, release } = await currentLiveRelease(serviceAccount, siteId)
+  const accessToken = accessTokenFromFederatedEnvironment()
+  const { release } = await currentLiveRelease(accessToken, siteId)
   const version = await fetchVersion(accessToken, release.versionName)
   const restorable = assertRestorableVersion(version, release.versionName)
   const receiptPath = resolveReceiptPath()
@@ -282,6 +212,7 @@ export async function discoverCurrentLiveRelease() {
     releaseTime: release.releaseTime,
     releaseType: release.type || 'TYPE_UNSPECIFIED',
     sourceApi: 'firebasehosting.googleapis.com/v1beta1/sites.releases.list+sites.versions.get',
+    credentialClass: 'short-lived-github-oidc-google-wif-access-token',
     deployment: false,
   }
   writeFileSync(receiptPath, `${JSON.stringify(receipt, null, 2)}\n`, { mode: 0o600 })
@@ -294,20 +225,14 @@ export async function restoreDiscoveredVersion() {
     throw new Error(`Restore requires URAI_HOSTING_RESTORE_CONFIRM=${restoreConfirmation}`)
   }
   const { receiptPath, receipt, siteId, versionName } = readRecoveryReceipt()
-  const serviceAccount = serviceAccountFromEnvironment()
-  const accessToken = await accessTokenFromServiceAccount(serviceAccount)
+  const accessToken = accessTokenFromFederatedEnvironment()
   assertRestorableVersion(await fetchVersion(accessToken, versionName), versionName)
   const url = new URL(`${apiRoot}/sites/${siteId}/releases`)
   url.searchParams.set('versionName', versionName)
   const restored = await requestJson(url, {
     method: 'POST',
-    headers: {
-      authorization: `Bearer ${accessToken}`,
-      'content-type': 'application/json',
-    },
-    body: JSON.stringify({
-      message: `URAI exact Hosting recovery from workflow ${process.env.GITHUB_RUN_ID || 'unknown'}`,
-    }),
+    headers: { authorization: `Bearer ${accessToken}`, 'content-type': 'application/json' },
+    body: JSON.stringify({ message: `URAI exact Hosting recovery from workflow ${process.env.GITHUB_RUN_ID || 'unknown'}` }),
   })
   if (restored?.version?.name !== versionName) throw new Error('Firebase Hosting restore response version does not match the recovery receipt')
   const resultPath = path.join(path.dirname(receiptPath), 'restore-result.json')
@@ -319,10 +244,8 @@ export async function restoreDiscoveredVersion() {
 export async function verifyRestoredVersion({ attempts = 12, delayMs = 1000 } = {}) {
   if (!Number.isInteger(attempts) || attempts < 1 || attempts > 60) throw new Error('Restore verification attempts must be between 1 and 60')
   if (!Number.isInteger(delayMs) || delayMs < 0 || delayMs > 10_000) throw new Error('Restore verification delay must be between 0 and 10000 ms')
-
   const { receiptPath, receipt, siteId, versionName } = readRecoveryReceipt()
-  const serviceAccount = serviceAccountFromEnvironment()
-  const accessToken = await accessTokenFromServiceAccount(serviceAccount)
+  const accessToken = accessTokenFromFederatedEnvironment()
   let observed = null
   for (let attempt = 1; attempt <= attempts; attempt += 1) {
     const release = selectCurrentLiveRelease(await listAllReleases(accessToken, siteId), siteId)
@@ -341,6 +264,7 @@ export async function verifyRestoredVersion({ attempts = 12, delayMs = 1000 } = 
         observedVersionName: release.versionName,
         attemptsUsed: attempt,
         restored: true,
+        credentialClass: 'short-lived-github-oidc-google-wif-access-token',
         sourceReceipt: receipt,
       }
       writeFileSync(resultPath, `${JSON.stringify(result, null, 2)}\n`, { mode: 0o600 })
@@ -354,67 +278,21 @@ export async function verifyRestoredVersion({ attempts = 12, delayMs = 1000 } = 
 
 export function selfTest() {
   const releases = [
-    {
-      name: 'sites/urai-4dc1d/channels/preview/releases/preview-newer',
-      version: { name: 'sites/urai-4dc1d/versions/preview-v2' },
-      releaseTime: '2026-07-14T18:00:00Z',
-      type: 'DEPLOY',
-    },
-    {
-      name: 'sites/urai-4dc1d/releases/live-disabled',
-      version: { name: 'sites/urai-4dc1d/versions/disabled-v1' },
-      releaseTime: '2026-07-14T17:00:00Z',
-      type: 'SITE_DISABLE',
-    },
-    {
-      name: 'sites/urai-4dc1d/releases/live-current',
-      version: { name: 'sites/urai-4dc1d/versions/live-v1' },
-      releaseTime: '2026-07-14T16:00:00Z',
-      type: 'DEPLOY',
-    },
+    { name: 'sites/urai-4dc1d/channels/preview/releases/preview-newer', version: { name: 'sites/urai-4dc1d/versions/preview-v2' }, releaseTime: '2026-07-14T18:00:00Z', type: 'DEPLOY' },
+    { name: 'sites/urai-4dc1d/releases/live-disabled', version: { name: 'sites/urai-4dc1d/versions/disabled-v1' }, releaseTime: '2026-07-14T17:00:00Z', type: 'SITE_DISABLE' },
+    { name: 'sites/urai-4dc1d/releases/live-current', version: { name: 'sites/urai-4dc1d/versions/live-v1' }, releaseTime: '2026-07-14T16:00:00Z', type: 'DEPLOY' },
   ]
   const selected = selectCurrentLiveRelease(releases)
   if (selected.name !== 'sites/urai-4dc1d/releases/live-current') throw new Error('Self-test selected the wrong live release')
   if (selected.versionName !== 'sites/urai-4dc1d/versions/live-v1') throw new Error('Self-test selected the wrong live version')
   const restorable = assertRestorableVersion({ name: selected.versionName, status: 'FINALIZED' }, selected.versionName)
+  const receipt = { schemaVersion: 'urai-firebase-hosting-recovery-1', siteId: expectedSiteId, releaseName: selected.name, versionName: selected.versionName, versionStatus: 'FINALIZED' }
+  validateRecoveryReceipt(receipt)
   if (restorable.status !== 'FINALIZED') throw new Error('Self-test failed to accept a finalized recovery version')
-
-  const legacyReceipt = {
-    schemaVersion: 'urai-firebase-hosting-recovery-1',
-    siteId: expectedSiteId,
-    releaseName: 'sites/urai-4dc1d/releases/live-current',
-    versionName: selected.versionName,
-  }
-  const validatedLegacy = validateRecoveryReceipt(legacyReceipt)
-  if (validatedLegacy.versionName !== selected.versionName) throw new Error('Self-test failed to accept a legacy receipt for live revalidation')
-
-  const finalizedReceipt = { ...legacyReceipt, versionStatus: 'FINALIZED' }
-  validateRecoveryReceipt(finalizedReceipt)
-
-  let explicitExpiredReceiptRejected = false
-  try {
-    validateRecoveryReceipt({ ...legacyReceipt, versionStatus: 'EXPIRED' })
-  } catch {
-    explicitExpiredReceiptRejected = true
-  }
-  if (!explicitExpiredReceiptRejected) throw new Error('Self-test failed to reject an explicitly expired recovery receipt')
-
   let expiredRejected = false
-  try {
-    assertRestorableVersion({ name: selected.versionName, status: 'EXPIRED' }, selected.versionName)
-  } catch {
-    expiredRejected = true
-  }
+  try { assertRestorableVersion({ name: selected.versionName, status: 'EXPIRED' }, selected.versionName) } catch { expiredRejected = true }
   if (!expiredRejected) throw new Error('Self-test failed to reject an expired recovery version')
-  console.log(JSON.stringify({
-    ok: true,
-    action: 'self-test',
-    selected: selected.name,
-    versionName: selected.versionName,
-    versionStatus: restorable.status,
-    legacyReceiptAcceptedForLiveRevalidation: true,
-    explicitExpiredReceiptRejected: true,
-  }, null, 2))
+  console.log(JSON.stringify({ ok: true, action: 'self-test', selected: selected.name, versionName: selected.versionName, credentialClass: 'short-lived-github-oidc-google-wif-access-token', expiredRejected: true }, null, 2))
 }
 
 const invokedPath = path.resolve(process.argv[1] || '')
