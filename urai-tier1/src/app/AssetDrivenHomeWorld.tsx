@@ -85,8 +85,8 @@ export default function AssetDrivenHomeWorld({ onOrbOpen, webglAvailable }: Prop
     <div
       ref={ownerRef}
       data-home-authored-region-contract="true"
-      data-home-visible-world="moonlit-sacred-tech-sanctuary"
-      data-home-route-owner="asset-driven-sacred-home"
+      data-home-visible-world="open-sky-inhabited-natural-sanctuary"
+      data-home-route-owner="asset-driven-open-sky-home"
       data-home-spatial-regions="home-authored-terrain home-mountain-horizon home-living-vegetation home-sanctuary-pavilion home-life-map-physical-portal"
       data-home-forge-scenery="suppressed"
       style={{ display: 'contents' }}
