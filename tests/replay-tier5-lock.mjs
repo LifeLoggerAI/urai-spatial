@@ -158,7 +158,8 @@ async function validateReplay(page, report, screenshotName) {
   // Mounted controls alone can precede the Suspense-owned memory environment.
   // Require the runtime's rendered-frame signal before geometry and capture.
   await expectAttribute(client, 'data-replay-render-ready', 'true');
-  const sceneCanvas = client.locator('canvas.replaySpatialCanvas').first();
+  // React Three Fiber applies Canvas className to its wrapper; inspect the real WebGL canvas inside it.
+  const sceneCanvas = client.locator('.replaySpatialCanvas canvas').first();
   await expectVisible(sceneCanvas, 'Replay spatial canvas');
   const contextLost = await sceneCanvas.evaluate((canvas) => {
     const gl = canvas.getContext('webgl2') ?? canvas.getContext('webgl');
