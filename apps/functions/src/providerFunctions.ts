@@ -169,6 +169,106 @@ function parseOrbOutput(raw: string) {
   return { message, caption, disclosure, suggestedActions, provider: 'openai' as const }
 }
 
+
+function decodeAudioBase64(value: unknown) {
+  const audioBase64 = String(value ?? '').trim()
+  if (!audioBase64 || audioBase64.length > 11_200_000 || !/^[A-Za-z0-9+/=]+$/.test(audioBase64)) {
+    throw new ProviderError(400, 'INVALID_AUDIO', 'A valid bounded base64 audio payload is required.')
+  }
+  const audio = Buffer.from(audioBase64, 'base64')
+  if (!audio.length || audio.length > 8 * 1024 * 1024) {
+    throw new ProviderError(413, 'AUDIO_TOO_LARGE', 'Audio must be no larger than 8 MiB.')
+  }
+  return audio
+}
+
+function transcriptionFilename(mimeType: string) {
+  const normalized = mimeType.split(';')[0]?.trim().toLowerCase()
+  const extensions: Record<string, string> = {
+    'audio/mpeg': 'mp3',
+    'audio/mp3': 'mp3',
+    'audio/mp4': 'm4a',
+    'audio/x-m4a': 'm4a',
+    'audio/wav': 'wav',
+    'audio/x-wav': 'wav',
+    'audio/webm': 'webm',
+    'audio/ogg': 'ogg',
+  }
+  const extension = extensions[normalized]
+  if (!extension) throw new ProviderError(415, 'UNSUPPORTED_AUDIO_TYPE', 'Audio format is not supported.')
+  return { normalized, filename: `urai-audio.${extension}` }
+}
+
+export const openAiTranscriptionProvider = onRequest({
+  region: REGION,
+  timeoutSeconds: 60,
+  memory: '512MiB',
+  cors: false,
+  secrets: [OPENAI_API_KEY],
+}, async (request, response) => {
+  const startedAt = Date.now()
+  let uid = ''
+  try {
+    if (request.method !== 'POST') throw new ProviderError(405, 'METHOD_NOT_ALLOWED', 'POST is required.')
+    uid = await authenticatedUid(request)
+    const body = readBody(request, 11_500_000)
+    await requireProviderConsent(uid, 'openai', body.externalProcessingConsent === true)
+    await consumeRateLimit(uid, 'openai', 6)
+
+    const audio = decodeAudioBase64(body.audioBase64)
+    const { normalized, filename } = transcriptionFilename(String(body.mimeType ?? ''))
+    const language = body.language === undefined ? '' : String(body.language).trim()
+    if (language && !/^[A-Za-z]{2,3}(?:-[A-Za-z0-9]{2,8})?$/.test(language)) {
+      throw new ProviderError(400, 'INVALID_LANGUAGE', 'Language hint is invalid.')
+    }
+
+    const form = new FormData()
+    form.append('file', new Blob([audio], { type: normalized }), filename)
+    form.append('model', process.env.OPENAI_TRANSCRIPTION_MODEL || 'gpt-transcribe')
+    form.append('response_format', 'json')
+    if (language) form.append('language', language)
+
+    const controller = new AbortController()
+    const timeout = setTimeout(() => controller.abort(), 45_000)
+    request.on('close', () => controller.abort())
+    const upstream = await fetch('https://api.openai.com/v1/audio/transcriptions', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${OPENAI_API_KEY.value()}`,
+        'Idempotency-Key': randomUUID(),
+      },
+      body: form,
+      signal: controller.signal,
+    }).finally(() => clearTimeout(timeout))
+
+    if (!upstream.ok) {
+      throw new ProviderError(upstream.status === 429 ? 429 : 503, 'OPENAI_TRANSCRIPTION_FAILED', 'Transcription provider is unavailable.')
+    }
+    const payload = await upstream.json() as { text?: unknown }
+    const text = String(payload.text ?? '').trim()
+    if (!text || text.length > 100_000) {
+      throw new ProviderError(502, 'INVALID_TRANSCRIPTION_RESPONSE', 'Transcription provider returned an invalid response.')
+    }
+
+    response.setHeader('Cache-Control', 'private, no-store, max-age=0')
+    response.setHeader('X-Content-Type-Options', 'nosniff')
+    response.setHeader('X-URAI-Provider', 'openai')
+    response.status(200).json({ text, provider: 'openai', synthetic: false })
+    await recordTelemetry({
+      uid,
+      provider: 'openai',
+      outcome: 'transcription_success',
+      inputUnits: audio.length,
+      outputUnits: text.length,
+      latencyMs: Date.now() - startedAt,
+      upstreamRequestId: upstream.headers.get('x-request-id'),
+    })
+  } catch (error) {
+    if (uid) await recordTelemetry({ uid, provider: 'openai', outcome: 'transcription_failure', inputUnits: 0, latencyMs: Date.now() - startedAt })
+    sendError(response, error)
+  }
+})
+
 export const openAiOrbProvider = onRequest({
   region: REGION,
   timeoutSeconds: 60,
