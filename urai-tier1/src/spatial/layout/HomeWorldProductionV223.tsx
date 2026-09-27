@@ -1042,7 +1042,7 @@ export function HomeWorldProductionV223({ onOrbOpen = requestUraiWorldOrbOpen, w
     <Canvas
       className={styles.canvas}
       dpr={1}
-      shadows={quality.shadows}
+      shadows={quality.shadows && !softwareRenderer}
       frameloop={!sceneReady ? 'never' : reducedMotion || softwareRenderer ? 'demand' : 'always'}
       camera={{ position: [...DEFAULT_HOME_FIRST_PERSON_CAMERA.position], fov: 58, near: .1, far: 125 }}
       gl={{ antialias: quality.antialias, alpha: false, powerPreference: 'high-performance' }}
