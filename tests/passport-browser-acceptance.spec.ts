@@ -213,6 +213,11 @@ test('offline state is explicit and sensitive operations remain disabled', async
   expect(runtime.pageErrors).toEqual([])
 })
 
+// Keep the first failure as well as retries: on-first-retry loses the stall
+// that the unchanged five-second return assertion is intended to diagnose.
+test.describe('Home origin return diagnostics', () => {
+  test.use({ trace: 'on' })
+
 test('reduced-motion Home Orb and Passport preserve keyboard origin return', async ({ page }) => {
   test.setTimeout(180_000)
   const runtime = await observe(page)
@@ -264,4 +269,6 @@ test('reduced-motion Home Orb and Passport preserve keyboard origin return', asy
     await fs.writeFile(path.join(evidenceRoot, 'reduced-orb-controls.json'), JSON.stringify(controls, null, 2))
     await page.screenshot({ path: path.join(evidenceRoot, 'reduced-orb-keyboard.png'), timeout: 30_000 })
   }
+})
+
 })
