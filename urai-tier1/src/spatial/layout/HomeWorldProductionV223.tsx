@@ -13,6 +13,7 @@ import * as THREE from 'three'
 import { resolveOrbSensoryOutput, URAI_ORB_STATE_EVENT, type OrbState, type OrbStateEventDetail } from '@/app/home/orbStateController'
 import { MobileMovementPad, MovementHelp, stepEmbodiedMotion, useDragLook, useMovementInput, type MovementInput } from '@/spatial/navigation/EmbodiedNavigation'
 import { useAdaptiveSpatialQuality, type SpatialQualityTier } from '@/spatial/performance/useAdaptiveSpatialQuality'
+import { softwarePixelRatio } from '@/spatial/performance/softwarePixelBudget'
 import { createPostRenderCadence, shouldContinueHomeInteractiveCadence } from '@/spatial/performance/postRenderCadence'
 import { HOME_ORB_GROUND_ANCHOR } from '@/spatial/home/homeOrbPlacement'
 import { ORB_SPEECH_CLOCK_EVENT, type OrbSpeechClockDetail } from '@/spatial/orb/orbSpeechClock'
@@ -840,6 +841,14 @@ export function HomeWorldProductionV223({ onOrbOpen = requestUraiWorldOrbOpen, w
   const quality = useAdaptiveSpatialQuality()
   const [canvasReady, setCanvasReady] = useState(false)
   const [softwareRenderer, setSoftwareRenderer] = useState(false)
+  const [softwareDpr, setSoftwareDpr] = useState(1)
+  useEffect(() => {
+    if (!softwareRenderer) return
+    const resize = () => setSoftwareDpr(softwarePixelRatio(window.innerWidth, window.innerHeight))
+    resize()
+    window.addEventListener('resize', resize)
+    return () => window.removeEventListener('resize', resize)
+  }, [softwareRenderer])
   const [sceneReady, setSceneReady] = useState(false)
   const [dragging, setDragging] = useState(false)
   const reducedMotion = useReducedMotion()
@@ -1041,7 +1050,7 @@ export function HomeWorldProductionV223({ onOrbOpen = requestUraiWorldOrbOpen, w
   >
     <Canvas
       className={styles.canvas}
-      dpr={1}
+      dpr={softwareRenderer ? softwareDpr : 1}
       shadows={quality.shadows && !softwareRenderer}
       frameloop={!sceneReady ? 'never' : reducedMotion || softwareRenderer ? 'demand' : 'always'}
       camera={{ position: [...DEFAULT_HOME_FIRST_PERSON_CAMERA.position], fov: 58, near: .1, far: 125 }}
