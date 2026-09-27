@@ -15,8 +15,9 @@ export const tierOneRoutes = [
 
 export const serverApiRoutes = [
   { route: '/api/entitlement', file: 'src/app/api/entitlement/route.ts', mustInclude: ['verifyIdToken', 'readEntitlement'] },
-  { route: '/api/stripe/create-checkout-session', file: 'src/app/api/stripe/create-checkout-session/route.ts', mustInclude: ['checkout.sessions.create', 'verifyIdToken'] },
-  { route: '/api/stripe/webhook', file: 'src/app/api/stripe/webhook/route.ts', mustInclude: ['constructEvent', 'upsertEntitlement'] },
+  { route: '/api/stripe/create-checkout-session', file: 'src/app/api/stripe/create-checkout-session/route.ts', mustInclude: ['checkout.sessions.create', 'verifyFirebaseUser'] },
+  { route: '/api/stripe/create-portal-session', file: 'src/app/api/stripe/create-portal-session/route.ts', mustInclude: ['billingPortal.sessions.create', 'verifyFirebaseUser', 'readEntitlement'] },
+  { route: '/api/stripe/webhook', file: 'src/app/api/stripe/webhook/route.ts', mustInclude: ['constructEvent', 'applyStripeEntitlementEvent'] },
   { route: '/api/stripe/webhook-v2', file: 'src/app/api/stripe/webhook-v2/route.ts', mustInclude: ['../webhook/route'] },
 ]
 
@@ -55,6 +56,8 @@ export const requiredTierOneFiles = [
 
 export const requiredServerFiles = [
   'src/lib/entitlementStore.ts',
+  'src/lib/server/stripe-event-order.ts',
+  'src/lib/server/stripe-runtime-config.ts',
   ...serverApiRoutes.map((route) => route.file),
 ]
 
@@ -74,11 +77,13 @@ export const envKeys = [
   { name: 'NEXT_PUBLIC_FIREBASE_PROJECT_ID', requiredFor: 'firebase' },
   { name: 'NEXT_PUBLIC_FIREBASE_APP_ID', requiredFor: 'firebase' },
   { name: 'FIREBASE_SERVICE_ACCOUNT_JSON', requiredFor: 'server-entitlements' },
+  { name: 'URAI_STRIPE_MODE', requiredFor: 'stripe' },
   { name: 'STRIPE_SECRET_KEY', requiredFor: 'stripe' },
   { name: 'STRIPE_WEBHOOK_SECRET', requiredFor: 'stripe' },
   { name: 'NEXT_PUBLIC_STRIPE_PRICE_PRO', requiredFor: 'stripe' },
   { name: 'NEXT_PUBLIC_STRIPE_PRICE_THERAPIST', requiredFor: 'stripe' },
   { name: 'NEXT_PUBLIC_STRIPE_PRICE_FOUNDER', requiredFor: 'stripe' },
+  { name: 'STRIPE_BILLING_PORTAL_CONFIGURATION', requiredFor: 'stripe', optional: true },
   { name: 'ELEVENLABS_API_KEY', requiredFor: 'elevenlabs', optional: true },
   { name: 'ELEVENLABS_VOICE_ID', requiredFor: 'elevenlabs', optional: true },
 ]
