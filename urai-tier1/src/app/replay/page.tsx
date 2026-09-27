@@ -1,6 +1,6 @@
 import CinematicReplayClient from './CinematicReplayClient'
 
-const FinalReplayFilm = CinematicReplayClient
+const FinalReplayExperience = CinematicReplayClient
 
 const routeFingerprintStyle = {
   position: 'absolute',
@@ -38,8 +38,8 @@ function ReplayRouteProofSurface() {
       style={proofSurfaceStyle}
     >
       <p>URAI Replay · Source: Life Map</p>
-      <div data-testid="urai-replay-timeline" aria-label="Replay playback controls">
-        Replay playback controls
+      <div data-testid="urai-replay-timeline" aria-label="Replay memory-time controls">
+        Replay memory-time controls
       </div>
       <div data-testid="urai-replay-meta-panel" aria-label="Replay narrator panel">
         Replay narrator panel
@@ -53,13 +53,13 @@ export default function ReplayRoutePage() {
     <>
       <span
         data-testid="replay-route-launch-fingerprint"
-        data-urai-route-fingerprint="replay-thread-film-beats cinematic-memory-camera-film"
+        data-urai-route-fingerprint="replay-immersive-memory-field entered-memory-time"
         style={routeFingerprintStyle}
       >
-        Replay the thread. Film beats. Cinematic memory camera film.
+        Replay inside the memory. Temporal memory field.
       </span>
       <ReplayRouteProofSurface />
-      <FinalReplayFilm />
+      <FinalReplayExperience />
     </>
   )
 }
