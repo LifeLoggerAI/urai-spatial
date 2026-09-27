@@ -99,3 +99,8 @@ Literal inspection of d30a21dc artifact 10921578557 exposed clipped Settings con
 The d30a21 retry trace call@66 started at 280308.594 ms and returned null at 288280.791 ms: 7.972197 seconds. The failed five-second poll does not establish that the source key remained. Runtime responsiveness remains unresolved and the strict test is retained. All four d30a21 reference shards were inspected: 28/132 planned captures retained, one Passport handoff timeout, all incomplete after successor cancellation. The two repaired first-person Passport reference sheets are visible. No complete-estate acceptance.
 
 Direct live browser inspection was rejected by automatic approval review because workspace credits are exhausted. No workaround or new charge was attempted. Live verification needs restored browser access; private Gaussian integration still needs its authorized real scene. This repair is not merged, deployed, independently accepted or AAA+++ certified.
+
+
+### Ritual reference label repair
+
+Completed e15a3b4 reference run 36289842442 retained 129 of 132 planned images; all four shards finished. Literal inspection exposed an oversized, clipped ritual reference annotation on desktop and mobile. This isolated change anchors that review-only annotation to the viewport, gives it a 16px gutter, bounds its width, and removes perspective scaling. The ritual model and production launch boundaries are unchanged. Every ritual capture now also checks that the annotation bounds fit fully inside the viewport; no capture case or assertion was removed. Runtime TypeScript, affected Home source contracts and capture script syntax pass. Fresh rendered evidence is required; no art acceptance, merge or deployment is claimed.

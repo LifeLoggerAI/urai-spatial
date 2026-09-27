@@ -198,6 +198,12 @@ async function enterRitualReview(page, expectedState) {
   if (actual !== expectedState) throw new Error(`Expected Ritual reference state ${expectedState}, got ${actual}`)
   const fixture = await review.getAttribute('data-home-ritual-fixture')
   if (fixture !== 'disclosed-synthetic-no-personal-data') throw new Error(`Unexpected Ritual fixture disclosure ${fixture}`)
+  const bounds = await review.boundingBox()
+  const viewport = page.viewportSize()
+  if (!bounds || !viewport || bounds.x < 0 || bounds.y < 0 || bounds.x + bounds.width > viewport.width || bounds.y + bounds.height > viewport.height) {
+    throw new Error(`Ritual review label clips outside viewport: ${JSON.stringify({ bounds, viewport })}`)
+  }
+
 }
 
 async function enterGlobalFieldEarth(page, expectedState) {
