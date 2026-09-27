@@ -2,7 +2,7 @@ name: Native Doorway Proof
 
 on:
   pull_request:
-    branches: [main]
+    branches: [main, repair/hosting-recovery-main-reconcile-20260927]
   workflow_dispatch:
 
 permissions:
