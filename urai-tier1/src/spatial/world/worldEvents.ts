@@ -47,7 +47,11 @@ function commitHardFallback(href: string) {
 
 function destinationRouteOwnerReady(request: UraiWorldTravelRequest) {
   if (request.destination === 'passport') {
-    return Boolean(document.querySelector('main[data-route-owner="passport-ownership-vault"]'))
+    return Array.from(document.querySelectorAll<HTMLElement>('main[data-route-owner="passport-ownership-vault"]')).some((owner) => {
+      if (!owner.isConnected || owner.getClientRects().length === 0) return false
+      const style = window.getComputedStyle(owner)
+      return style.display !== 'none' && style.visibility !== 'hidden' && style.visibility !== 'collapse'
+    })
   }
   return true
 }
