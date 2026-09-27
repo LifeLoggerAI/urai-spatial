@@ -77,15 +77,22 @@ Canonical routes:
 The handler requires raw request bytes, `Stripe-Signature`, `STRIPE_WEBHOOK_SECRET`, and Stripe signature verification. Supported state-bearing events are:
 
 - `checkout.session.completed`
+- `checkout.session.async_payment_succeeded`
+- `checkout.session.async_payment_failed`
 - `customer.subscription.created`
 - `customer.subscription.updated`
 - `customer.subscription.deleted`
 - `invoice.paid`
 - `invoice.payment_failed`
+- `charge.refunded`
+- `charge.dispute.created`
+- `charge.dispute.closed`
 
-Durable event receipts are keyed by Stripe `event.id`. Processing records keep provider event creation time distinct from local processing time. Older events do not overwrite newer entitlement state, and same-timestamp cancellation cannot be resurrected by a non-cancellation event.
+Provider lookups required to resolve entitlement state are retry-safe: a transient Stripe lookup failure returns non-2xx so Stripe can retry rather than silently acknowledging an unresolved transition.
 
-Founder one-time access is considered paid only when the verified Checkout Session reports `payment_status=paid`.
+Durable event receipts are keyed by Stripe `event.id`. Processing records keep provider event creation time distinct from local processing time. Older events do not overwrite newer entitlement state. Equal-second events use deterministic status precedence so delivery order cannot downgrade a stronger state such as `active` to `past_due`, and `canceled` remains terminal at the same provider timestamp.
+
+Founder one-time access is considered paid only after verified settlement. Immediate payments use `checkout.session.completed` with `payment_status=paid`; delayed payment methods are finalized by `checkout.session.async_payment_succeeded` or revoked by `checkout.session.async_payment_failed`. Founder refunds and disputes revoke access through the PaymentIntent metadata path; a won dispute can restore access.
 
 ## Entitlement authority
 
