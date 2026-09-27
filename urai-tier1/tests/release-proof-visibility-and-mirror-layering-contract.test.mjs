@@ -72,10 +72,12 @@ test('Mirror selected evidence remains camera-safe inside grounded reflection ge
   assert.doesNotMatch(mirrorWorld, /selected \? \[1\.32,1\.12,1\.22\]/)
 })
 
-test('world travel watchdog only settles after the requested route pathname commits', () => {
+test('world travel settles after the destination route owner mounts, with a hard fallback for a URL-only commit', () => {
   assert.match(worldEvents, /const targetPathname = new URL\(fallbackHref, window\.location\.origin\)\.pathname/)
-  assert.match(worldEvents, /if \(currentPathname !== targetPathname\) commitHardFallback\(fallbackHref\)/)
-  assert.match(worldEvents, /if \(currentPathname !== targetPathname\) return/)
+  assert.match(worldEvents, /function destinationRouteOwnerReady\(request: UraiWorldTravelRequest\)/)
+  assert.match(worldEvents, /request.destination === 'passport'/)
+  assert.match(worldEvents, /main\[data-route-owner="passport-ownership-vault"\]/)
+  assert.match(worldEvents, /currentPathname !== targetPathname \|\| !destinationRouteOwnerReady\(request\)/)
   assert.doesNotMatch(worldEvents, /if \(currentLocation === startingLocation\) commitHardFallback/)
 })
 
