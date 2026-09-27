@@ -41,7 +41,11 @@ jobs:
       - name: Install Android 36 SDK
         shell: bash
         run: |
+          set +o pipefail
           yes | sdkmanager --licenses >/dev/null
+          LICENSE_STATUS=${PIPESTATUS[1]}
+          set -o pipefail
+          test "$LICENSE_STATUS" -eq 0
           sdkmanager "platforms;android-36" "build-tools;36.0.0"
 
       - name: Enable Corepack
