@@ -76,6 +76,9 @@ async function main() {
     proofState: 'technical-preview',
     proofIntegrityVerified: true,
     proofPrivacyReviewed: args.apply && args.privacyAccepted,
+    runtimeStorageGeneration: null,
+    proofApprovedRuntimeSha256: null,
+    proofApprovedStorageGeneration: null,
     releaseState: 'private-pilot',
     sourceCount: args.sourceIds.length,
   }
@@ -96,21 +99,34 @@ async function main() {
   const [exists] = await object.exists()
   if (exists) throw new Error('Private runtime object already exists; proof import will not overwrite it')
 
-  await object.save(bytes, {
-    resumable: false,
-    validation: 'crc32c',
-    metadata: {
-      contentType: 'application/octet-stream',
-      cacheControl: 'private, no-store, max-age=0',
-      metadata: {
-        uraiAssetId: args.assetId,
-        uraiRuntimeSha256: sha256,
-        uraiClassification: 'private-technical-proof',
-      },
-    },
-  })
-
+  let uploaded = false
   try {
+    await object.save(bytes, {
+      resumable: false,
+      validation: 'crc32c',
+      metadata: {
+        contentType: 'application/octet-stream',
+        cacheControl: 'private, no-store, max-age=0',
+        metadata: {
+          uraiAssetId: args.assetId,
+          uraiRuntimeSha256: sha256,
+          uraiClassification: 'private-technical-proof',
+        },
+      },
+    })
+    uploaded = true
+
+    const [metadata] = await object.getMetadata()
+    const storageGeneration = String(metadata.generation ?? '')
+    const storedSha256 = String(metadata.metadata?.uraiRuntimeSha256 ?? '').toLowerCase()
+    if (!/^\\d+$/.test(storageGeneration) || storedSha256 !== sha256) {
+      throw new Error('Uploaded proof object did not return the expected immutable generation/hash metadata')
+    }
+
+    receipt.runtimeStorageGeneration = storageGeneration
+    receipt.proofApprovedRuntimeSha256 = sha256
+    receipt.proofApprovedStorageGeneration = storageGeneration
+
     await assetRef.create({
       ownerId: args.ownerUid,
       label: 'Private captured-place technical proof',
@@ -132,12 +148,15 @@ async function main() {
       runtimeObject,
       runtimeSha256: sha256,
       runtimeBytes: bytes.length,
+      runtimeStorageGeneration: storageGeneration,
+      proofApprovedRuntimeSha256: sha256,
+      proofApprovedStorageGeneration: storageGeneration,
       truthLabel: args.truthLabel.trim(),
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
       updatedAt: admin.firestore.FieldValue.serverTimestamp(),
     })
   } catch (error) {
-    await object.delete({ ignoreNotFound: true })
+    if (uploaded) await object.delete({ ignoreNotFound: true })
     throw error
   }
 
