@@ -74,6 +74,7 @@ export type HomeExperienceEvent =
   | { type: 'SET_REDUCED_MOTION'; value: boolean }
 
 export const HOME_RETURN_SESSION_KEY = 'urai:home:return-frame:v1'
+const HOME_RETURN_STAGED_SESSION_KEY = 'urai:home:return-frame:staged:v1'
 export const HOME_PASSPORT_ORIGIN_CAPTURE_EVENT = 'urai:home-passport-origin-capture' as const
 
 let stagedHomeReturnFrame: HomeReturnFrame | null = null
@@ -398,5 +399,26 @@ export function consumeHomeReturnFrameForActiveHome() {
   const staged = stagedHomeReturnFrame
   stagedHomeReturnFrame = null
   const stored = consumeHomeReturnFrame()
-  return stored ?? staged
+  if (typeof window === 'undefined') return stored ?? staged
+  try {
+    const routed = parseHomeReturnFrame(window.sessionStorage.getItem(HOME_RETURN_STAGED_SESSION_KEY))
+    window.sessionStorage.removeItem(HOME_RETURN_STAGED_SESSION_KEY)
+    return stored ?? routed ?? staged
+  } catch {
+    return stored ?? staged
+  }
+}
+
+/** Move Passport's origin into a one-shot navigation slot before Home remounts. */
+export function stageHomeReturnFrameForHomeNavigation() {
+  if (typeof window === 'undefined') return
+  try {
+    const serialized = window.sessionStorage.getItem(HOME_RETURN_SESSION_KEY)
+    const frame = parseHomeReturnFrame(serialized)
+    if (frame?.kind === 'destination' && frame.destination === 'PASSPORT' && serialized) {
+      stagedHomeReturnFrame = frame
+      window.sessionStorage.setItem(HOME_RETURN_STAGED_SESSION_KEY, serialized)
+      window.sessionStorage.removeItem(HOME_RETURN_SESSION_KEY)
+    }
+  } catch { /* session storage is best effort */ }
 }

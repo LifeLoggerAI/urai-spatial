@@ -2,7 +2,7 @@
 
 import { usePathname, useRouter } from 'next/navigation'
 import { useCallback, useEffect, useLayoutEffect, useRef } from 'react'
-import { stageHomeReturnFrameForActiveRoute } from '../home/homeExperienceState'
+import { stageHomeReturnFrameForActiveRoute, stageHomeReturnFrameForHomeNavigation } from '../home/homeExperienceState'
 import { definitionForDestination } from './destinationRegistry'
 import { useUraiWorldState } from './WorldStateProvider'
 import {
@@ -159,6 +159,7 @@ export function WorldTransitionController() {
     const currentWorld = worldRef.current
     if (phaseRef.current !== 'idle') return
     const destination = canonicalReturnDestination(currentWorld.destination, currentWorld.previousDestination)
+    if (destination === 'home') stageHomeReturnFrameForHomeNavigation()
     const definition = definitionForDestination(destination)
     executeTravel({
       destination,
