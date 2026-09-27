@@ -1,0 +1,91 @@
+{
+  "schemaVersion": "urai-replay-tier5-report-4",
+  "screenshots": [
+    "failure-replay-route.png"
+  ],
+  "console": [
+    {
+      "type": "info",
+      "text": "%cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold"
+    },
+    {
+      "type": "warning",
+      "text": "THREE.THREE.Clock: This module has been deprecated. Please use THREE.Timer instead."
+    },
+    {
+      "type": "warning",
+      "text": "[.WebGL-0x1bbc06941a00]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels"
+    },
+    {
+      "type": "warning",
+      "text": "[.WebGL-0x1bbc06941a00]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels"
+    },
+    {
+      "type": "warning",
+      "text": "[.WebGL-0x1bbc06941a00]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels"
+    },
+    {
+      "type": "warning",
+      "text": "[.WebGL-0x1bbc06941a00]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels (this message will no longer repeat)"
+    },
+    {
+      "type": "log",
+      "text": "[Fast Refresh] rebuilding"
+    },
+    {
+      "type": "info",
+      "text": "%cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold"
+    },
+    {
+      "type": "warning",
+      "text": "THREE.THREE.Clock: This module has been deprecated. Please use THREE.Timer instead."
+    },
+    {
+      "type": "warning",
+      "text": "THREE.WebGLShadowMap: PCFSoftShadowMap has been deprecated. Using PCFShadowMap instead."
+    },
+    {
+      "type": "warning",
+      "text": "THREE.WebGLShadowMap: PCFSoftShadowMap has been deprecated. Using PCFShadowMap instead."
+    },
+    {
+      "type": "log",
+      "text": "THREE.WebGLRenderer: Context Lost."
+    }
+  ],
+  "pageErrors": [],
+  "requestFailures": [
+    {
+      "url": "http://127.0.0.1:3001/replay?memoryId=demo%3Aseed-memory-bloom&manifestId=demo-manifest&node=demo%3Aseed-memory-bloom&from=focus-artifact&demo=1&entryPortal=focus-memory-aperture&cameraCheckpoint=focus%3Ademo%3Aseed-memory-bloom&privacyMode=held-private",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "url": "http://127.0.0.1:3001/_next/static/webpack/webpack.04b1f8ec7372e9f8.hot-update.js",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "url": "http://127.0.0.1:3001/replay?memoryId=demo%3Aseed-memory-bloom&manifestId=demo-manifest&node=demo%3Aseed-memory-bloom&from=focus-artifact&demo=1&privacyMode=held-private&entryPortal=focus-memory-aperture&cameraCheckpoint=focus%3Ademo%3Aseed-memory-bloom&_rsc=vruup",
+      "error": "net::ERR_ABORTED"
+    }
+  ],
+  "audits": [],
+  "selectors": {
+    "proofSurface": 1,
+    "cinematicClient": 1,
+    "replayPacing": 1,
+    "nextError": 1
+  },
+  "finalUrl": "http://127.0.0.1:3001/replay?memoryId=demo%3Aseed-memory-bloom&manifestId=demo-manifest&node=demo%3Aseed-memory-bloom&from=focus-artifact&demo=1&privacyMode=held-private&entryPortal=focus-memory-aperture&cameraCheckpoint=focus%3Ademo%3Aseed-memory-bloom",
+  "baseUrl": "http://127.0.0.1:3001",
+  "failure": "Error: Expected data-replay-render-ready=true, received false\n    at expectAttribute (file:///home/runner/work/urai-spatial/urai-spatial/tests/replay-tier5-lock.mjs:90:9)\n    at async validateReplay (file:///home/runner/work/urai-spatial/urai-spatial/tests/replay-tier5-lock.mjs:160:3)\n    at async run (file:///home/runner/work/urai-spatial/urai-spatial/tests/replay-tier5-lock.mjs:255:5)\n    at async file:///home/runner/work/urai-spatial/urai-spatial/tests/replay-tier5-lock.mjs:309:1",
+  "trace": "replay-tier5.trace.zip",
+  "sourceArtifact": {
+    "id": 10929093394,
+    "run": 36310310852,
+    "job": 108594841947,
+    "head": "2a536c2552657f3874e2cfd57c1e3a08a8d6f438",
+    "sha256": "63187b66131251b9a3d350ad2a85bf982b74680efa9f59ce9413f7de77a819bc",
+    "bytes": 10854627
+  },
+  "inspectedScreenshotSha256": "eb356cfea24ecaf8b426214557835018763f8c25aa27ac97c2b67182c4341ae1"
+}
