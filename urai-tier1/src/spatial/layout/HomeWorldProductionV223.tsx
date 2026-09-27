@@ -13,7 +13,7 @@ import * as THREE from 'three'
 import { resolveOrbSensoryOutput, URAI_ORB_STATE_EVENT, type OrbState, type OrbStateEventDetail } from '@/app/home/orbStateController'
 import { MobileMovementPad, MovementHelp, stepEmbodiedMotion, useDragLook, useMovementInput, type MovementInput } from '@/spatial/navigation/EmbodiedNavigation'
 import { useAdaptiveSpatialQuality, type SpatialQualityTier } from '@/spatial/performance/useAdaptiveSpatialQuality'
-import { createPostRenderCadence } from '@/spatial/performance/postRenderCadence'
+import { createPostRenderCadence, shouldContinueHomeInteractiveCadence } from '@/spatial/performance/postRenderCadence'
 import { HOME_ORB_GROUND_ANCHOR } from '@/spatial/home/homeOrbPlacement'
 import { ORB_SPEECH_CLOCK_EVENT, type OrbSpeechClockDetail } from '@/spatial/orb/orbSpeechClock'
 import { requestUraiWorldOrbOpen, requestUraiWorldTravel } from '@/spatial/world/worldEvents'
@@ -138,8 +138,8 @@ function isSoftwareWebGLRenderer(gl: THREE.WebGLRenderer) {
   return /swiftshader|llvmpipe|lavapipe|software|microsoft basic render/i.test(String(renderer || ''))
 }
 
-function Cadence({ reducedMotion, ready, activityRevision, needsMotionFrame }: {
-  reducedMotion: boolean; ready: boolean; activityRevision: string; needsMotionFrame: () => boolean
+function Cadence({ reducedMotion, ready, activityRevision, orbState, needsMotionFrame }: {
+  reducedMotion: boolean; ready: boolean; activityRevision: string; orbState: OrbState; needsMotionFrame: () => boolean
 }) {
   const { gl, invalidate, setFrameloop } = useThree()
   const cadenceRef = useRef<ReturnType<typeof createPostRenderCadence> | null>(null)
@@ -151,15 +151,22 @@ function Cadence({ reducedMotion, ready, activityRevision, needsMotionFrame }: {
   }, [activityRevision, invalidate, ready])
   useEffect(() => {
     if (!ready) { setFrameloop('never'); return }
-    const constrained = reducedMotion || isSoftwareWebGLRenderer(gl)
+    const softwareRenderer = isSoftwareWebGLRenderer(gl)
+    const constrained = reducedMotion || softwareRenderer
     if (!constrained) { setFrameloop('always'); return }
     setFrameloop('demand')
     const cadence = createPostRenderCadence({
       invalidate,
       intervalMs: reducedMotion ? 280 : 100,
-      // A motion-comfort scene should be still at rest. Keep drawing only while
-      // navigation, camera input or its deceleration actually needs another frame.
-      shouldContinue: () => !reducedMotion || motionFrameRef.current(),
+      // Yield expensive software rendering while the DOM companion owns text
+      // interaction, but preserve movement and visible thinking/speaking motion.
+      shouldContinue: () => shouldContinueHomeInteractiveCadence({
+        reducedMotion,
+        softwareRenderer,
+        companionOpen: document.querySelector('#urai-world-companion-menu')?.getAttribute('aria-hidden') === 'false',
+        orbState,
+        motionActive: motionFrameRef.current(),
+      }),
       schedule: (callback, delay) => window.setTimeout(callback, delay),
       cancel: (timer) => window.clearTimeout(timer),
     })
@@ -171,7 +178,7 @@ function Cadence({ reducedMotion, ready, activityRevision, needsMotionFrame }: {
       stopAfterRender()
       cadence.dispose()
     }
-  }, [gl, invalidate, reducedMotion, ready, setFrameloop])
+  }, [gl, invalidate, orbState, reducedMotion, ready, setFrameloop])
   return null
 }
 
@@ -770,6 +777,7 @@ function Scene({
       reducedMotion={reducedMotion}
       ready={renderReady}
       activityRevision={`${dragging}:${movementInput.revision}:${homeTransition}:${transition}:${homeStableState}:${orbState}`}
+      orbState={orbState}
       needsMotionFrame={() => dragging || Boolean(homeTransition) || transition !== 'none'
         || movementInput.keys.current.size > 0 || movementInput.virtualX.current !== 0 || movementInput.virtualZ.current !== 0
         || firstPersonTarget.current !== null || firstPersonVelocity.current.lengthSq() > 0.000001}
