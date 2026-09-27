@@ -13,21 +13,20 @@ function read(relativePath) {
 
 const replayPage = read('src/app/replay/page.tsx')
 const replayClient = read('src/app/replay/CinematicReplayClient.tsx')
-const finalMemorySurfaces = read('src/app/FinalMemorySurfaces.tsx')
 const replayUnwindButton = read('src/app/replay/ReplayUnwindButton.tsx')
 const replayRoute = read('src/app/replay/[replayId]/page.tsx')
 
-test('replay route remains wired to the final cinematic memory film owner', () => {
-  assert.match(replayPage, /FinalReplayFilm/)
+test('replay route remains wired to the canonical immersive inside-memory owner', () => {
+  assert.match(replayPage, /CinematicReplayClient/)
+  assert.match(replayPage, /FinalReplayExperience = CinematicReplayClient/)
   assert.match(replayPage, /replay-route-launch-fingerprint/)
-  assert.match(replayPage, /replay-thread-film-beats/)
-  assert.match(finalMemorySurfaces, /export function FinalReplayFilm/)
-  assert.match(finalMemorySurfaces, /cinematic-memory-camera-film/)
-  assert.match(finalMemorySurfaces, /Memory film\./)
-  assert.match(finalMemorySurfaces, /Replay thread active/)
-  assert.match(finalMemorySurfaces, /Film beats/)
-  assert.match(finalMemorySurfaces, /Open Mirror/)
-  assert.match(finalMemorySurfaces, /Unwind to Focus/)
+  assert.match(replayPage, /replay-immersive-memory-field/)
+  assert.match(replayPage, /<FinalReplayExperience \/>/)
+  assert.match(replayClient, /data-replay-spatial-owner="r3f-immersive-memory-field"/)
+  assert.match(replayClient, /function MemoryMediaDome/)
+  assert.match(replayClient, /inside-memory-environment-not-screen/)
+  assert.match(replayClient, /className="memoryTempo" aria-label="Memory time"/)
+  assert.doesNotMatch(replayPage + replayClient, /r3f-memory-theater|replay-memory-environment-v1\.glb|replay-film-portal/)
 })
 
 test('replay direct route resolves only demo-safe replay ids and fails closed', () => {
