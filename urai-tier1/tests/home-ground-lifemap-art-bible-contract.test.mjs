@@ -145,7 +145,7 @@ test('Life Map is a layered cinematic memory universe with truthful private fall
     'life-map-emotional-weather',
     'life-map-archive-particles',
     'life-map-far-future-horizon',
-    'life-map-selected-arrival-sanctuary',
+    'life-map-selected-arrival-memory-star',
     'CinematicPostProcessing',
   ]) assert.match(lifeMapWorld, new RegExp(marker))
 
@@ -160,5 +160,6 @@ test('Life Map is a layered cinematic memory universe with truthful private fall
   assert.match(lifeMap, /Open disclosed sample/)
   assert.match(lifeMap, /if \(current\.get\("demo"\) === "1"\) \{ setMode\("explicit-demo"\); return; \}/)
   assert.match(lifeMap, /Return Home/)
+  assert.doesNotMatch(lifeMapWorld, /life-map-selected-arrival-sanctuary|life-map-intimate-memory-chamber|focus-memory-chamber-v1\.glb/)
   assert.doesNotMatch(lifeMap, /FALLBACK_MEMORIES|Restoring Life Map|Loading home experience/)
 })
