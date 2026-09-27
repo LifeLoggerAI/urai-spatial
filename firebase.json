@@ -57,6 +57,13 @@
           "functionId": "elevenLabsVoiceProvider",
           "region": "us-central1"
         }
+      },
+      {
+        "source": "/api/audio/transcribe",
+        "function": {
+          "functionId": "openAiTranscriptionProvider",
+          "region": "us-central1"
+        }
       }
     ],
     "predeploy": [
