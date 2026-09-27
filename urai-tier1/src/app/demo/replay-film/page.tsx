@@ -60,16 +60,16 @@ const scenes = [
   {
     number: '05',
     eyebrow: 'Focus',
-    title: 'One memory becomes a chamber.',
-    copy: 'Image, title, memory signal, and one clear doorway isolate the selected memory without losing its place in the world.',
+    title: 'One memory becomes a stellar field.',
+    copy: 'The selected Memory Star opens into a stellar field while its identity and place in the larger Life Map remain intact.',
     asset: focusAssets.primary,
     href: demoFocusHref,
   },
   {
     number: '06',
     eyebrow: 'Replay',
-    title: 'The memory becomes a film thread.',
-    copy: 'The moment, the signal, the world around it, what changed afterward, and what remains unfold as one continuous experience.',
+    title: 'The memory becomes an inhabited world.',
+    copy: 'The moment, its atmosphere, the world around it, what changed afterward, and what remains unfold as one entered spatial experience.',
     asset: replayAssets.primary,
     href: demoReplayHref,
   },
@@ -103,7 +103,7 @@ export default function CutOneReplayFilmPage() {
   if (publicDemoRouteExplicitlyDisabled()) notFound()
 
   return (
-    <main className="relative min-h-screen overflow-hidden bg-[#03020a] text-white" data-launch-surface="cinematic-replay-film-proof" data-demo-disclosure="not-personal-data">
+    <main className="relative min-h-screen overflow-hidden bg-[#03020a] text-white" data-launch-surface="immersive-memory-journey-proof" data-demo-disclosure="not-personal-data">
       <div className="fixed inset-0 bg-[radial-gradient(circle_at_18%_10%,rgba(167,139,250,.2),transparent_28rem),radial-gradient(circle_at_82%_18%,rgba(56,189,248,.16),transparent_28rem),linear-gradient(180deg,#05020b,#090314_54%,#020106)]" />
 
       <section className="relative isolate flex min-h-[100svh] items-end overflow-hidden px-5 pb-24 pt-28 md:px-10 lg:px-16">
@@ -118,7 +118,7 @@ export default function CutOneReplayFilmPage() {
             A disclosed cinematic proof of the complete journey: pressure to portal, Ground to sky, Life Map to Focus, Replay to Mirror, and ownership through Passport.
           </p>
           <div className="mt-8 flex flex-wrap gap-3">
-            <a href="#film" className="rounded-full bg-white px-6 py-3 text-sm font-black text-slate-950 no-underline transition hover:-translate-y-0.5">Play the proof rail</a>
+            <a href="#film" className="rounded-full bg-white px-6 py-3 text-sm font-black text-slate-950 no-underline transition hover:-translate-y-0.5">Enter the proof rail</a>
             <Link href="/home" className="rounded-full border border-white/20 bg-black/35 px-6 py-3 text-sm font-black text-white no-underline backdrop-blur-xl transition hover:bg-white/10">Enter Home</Link>
           </div>
         </div>
