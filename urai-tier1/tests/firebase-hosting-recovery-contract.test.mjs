@@ -114,3 +114,11 @@ test('federated token helper refuses legacy credential fallback', () => {
     }
   }
 })
+
+
+test('strict-smoke rollback caller does not inject long-lived credentials', () => {
+  const caller = readFileSync(path.join(repositoryRoot, 'scripts/urai-release-control-smoke.mjs'), 'utf8')
+  assert.doesNotMatch(caller, /process\.env\.GOOGLE_APPLICATION_CREDENTIALS\s*=|managedCredentialFilename/)
+  assert.match(caller, /delete process\.env\.GOOGLE_APPLICATION_CREDENTIALS/)
+  assert.match(caller, /hosting-recovery', 'live-release\.json'/)
+})
