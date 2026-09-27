@@ -177,6 +177,15 @@ async function proveCanonicalTravel(
   activation: Activation,
 ) {
   const page = await context.newPage()
+  // Canonical travel starts from an already-set-up Home session. The first-run
+  // onboarding flow has its own accessibility coverage; leaving it active here
+  // places a recovery card over Home navigation and makes trusted touch input
+  // target the overlay instead of the semantic destination control.
+  await page.addInitScript(() => {
+    localStorage.setItem('urai:onboarding:v2:complete', '1')
+    localStorage.setItem('urai:onboarding:v3:setup-complete', '1')
+    localStorage.removeItem('urai:onboarding:v3:setup-step')
+  })
   await page.goto('/home/', { waitUntil: 'domcontentloaded' })
   await page.waitForLoadState('networkidle', { timeout: 15_000 }).catch(() => {})
 

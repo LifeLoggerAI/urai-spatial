@@ -1,6 +1,6 @@
 "use client";
 
-import { Canvas, useFrame, useThree, type ThreeEvent } from "@react-three/fiber";
+import { addAfterEffect, Canvas, useFrame, useThree, type ThreeEvent } from "@react-three/fiber";
 import { KTX2Loader } from "three-stdlib";
 import { Environment, useGLTF, useTexture } from "@react-three/drei";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -17,6 +17,7 @@ import {
   type MovementObstacle,
 } from "@/spatial/navigation/EmbodiedNavigation";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
+import { createPostRenderCadence } from "@/spatial/performance/postRenderCadence";
 import { useAdaptiveSpatialQuality } from "@/spatial/performance/useAdaptiveSpatialQuality";
 import {
   DEFAULT_GROUND_WEATHER,
@@ -680,6 +681,7 @@ export function GroundSubstrateWorld({ profile }: { profile: EnvironmentProfile 
 }
 
 function LivedGroundWorld({ profile, target, onCanopyReady }: { profile: EnvironmentProfile; target: MutableRefObject<THREE.Vector3 | null>; onCanopyReady: (profileId: EnvironmentProfileId) => void }) {
+  const invalidate = useThree((state) => state.invalidate);
   const geometry = useMemo(() => buildTerrainGeometry(profile), [profile]);
   useEffect(() => () => geometry.dispose(), [geometry]);
 
@@ -691,6 +693,7 @@ function LivedGroundWorld({ profile, target, onCanopyReady }: { profile: Environ
       0,
       THREE.MathUtils.clamp(event.point.z, BOUNDS.minZ, BOUNDS.maxZ),
     );
+    invalidate();
     window.dispatchEvent(new CustomEvent('urai:ground-surface-commit', { detail: { x: event.point.x, z: event.point.z } }));
   };
 
@@ -704,7 +707,7 @@ function LivedGroundWorld({ profile, target, onCanopyReady }: { profile: Environ
   </group>;
 }
 
-function FirstPersonPlayer({ input, yaw, pitch, target, profile, obstacles, playerPosition, isCoarse, onReady }: {
+function FirstPersonPlayer({ input, yaw, pitch, target, profile, obstacles, playerPosition, isCoarse, onReady, dragging, documentVisible, constrained, activityRevision }: {
   input: MovementInput;
   yaw: MutableRefObject<number>;
   pitch: MutableRefObject<number>;
@@ -714,8 +717,12 @@ function FirstPersonPlayer({ input, yaw, pitch, target, profile, obstacles, play
   playerPosition: MutableRefObject<THREE.Vector3>;
   isCoarse: boolean;
   onReady: () => void;
+  dragging: boolean;
+  documentVisible: boolean;
+  constrained: boolean;
+  activityRevision: number;
 }) {
-  const { camera, size } = useThree();
+  const { camera, size, invalidate } = useThree();
   const reducedMotion = useReducedMotion();
   const position = playerPosition;
   const velocity = useRef(new THREE.Vector3());
@@ -723,12 +730,38 @@ function FirstPersonPlayer({ input, yaw, pitch, target, profile, obstacles, play
   const lookAt = useRef(new THREE.Vector3());
   const forward = useRef(new THREE.Vector3());
   const ready = useRef(false);
+  const needsMotionFrame = useRef(false);
+  const cadenceRef = useRef<ReturnType<typeof createPostRenderCadence> | null>(null);
+
+  useEffect(() => {
+    if (documentVisible) invalidate();
+  }, [activityRevision, input.revision, dragging, documentVisible, invalidate]);
+
+  useEffect(() => {
+    if (!documentVisible || !constrained) return;
+    const cadence = createPostRenderCadence({
+      invalidate,
+      intervalMs: reducedMotion ? 280 : 100,
+      shouldContinue: () => needsMotionFrame.current,
+      schedule: (callback, delay) => window.setTimeout(callback, delay),
+      cancel: (timer) => window.clearTimeout(timer),
+    });
+    cadenceRef.current = cadence;
+    const stopAfterRender = addAfterEffect(cadence.afterRender);
+    cadence.start();
+    return () => {
+      cadenceRef.current = null;
+      stopAfterRender();
+      cadence.dispose();
+    };
+  }, [constrained, documentVisible, invalidate, reducedMotion]);
 
   useFrame((_, delta) => {
+    cadenceRef.current?.beforeRender();
     const terrainSlope = slopeDegrees((x, z) => groundHeight(x, z, profile.id), position.current.x, position.current.z);
     const slopeMultiplier = slopeSpeedMultiplier(terrainSlope);
     const baseSpeed = isCoarse ? GROUND_MOBILE_SPEED_MPS : GROUND_DESKTOP_SPEED_MPS;
-    stepEmbodiedMotion({
+    const motion = stepEmbodiedMotion({
       position: position.current,
       velocity: velocity.current,
       input,
@@ -751,6 +784,12 @@ function FirstPersonPlayer({ input, yaw, pitch, target, profile, obstacles, play
     lookAt.current.copy(camera.position).addScaledVector(forward.current, 12);
     lookAt.current.y += Math.tan(pitch.current) * 7.5;
     camera.lookAt(lookAt.current);
+    // Keep braking and camera settling alive after input ends; stop expensive
+    // idle software draws so DOM navigation and focus can receive input.
+    needsMotionFrame.current = dragging || motion.moving || motion.hasTarget
+      || input.keys.current.size > 0
+      || Math.abs(input.virtualX.current) > 0.01 || Math.abs(input.virtualZ.current) > 0.01
+      || camera.position.distanceToSquared(desired.current) > 0.000001;
 
     if (camera instanceof THREE.PerspectiveCamera) {
       const portrait = size.height > size.width;
@@ -819,7 +858,7 @@ function AtmosphericGroundSky({ profile }: { profile: EnvironmentProfile }) {
   </mesh>;
 }
 
-function GroundScene({ profile, input, yaw, pitch, target, obstacles, playerPosition, isCoarse, onReady, onCanopyReady }: {
+function GroundScene({ profile, input, yaw, pitch, target, obstacles, playerPosition, isCoarse, onReady, onCanopyReady, dragging, documentVisible, constrained, activityRevision }: {
   profile: EnvironmentProfile;
   input: MovementInput;
   yaw: MutableRefObject<number>;
@@ -830,6 +869,10 @@ function GroundScene({ profile, input, yaw, pitch, target, obstacles, playerPosi
   isCoarse: boolean;
   onReady: () => void;
   onCanopyReady: (profileId: EnvironmentProfileId) => void;
+  dragging: boolean;
+  documentVisible: boolean;
+  constrained: boolean;
+  activityRevision: number;
 }) {
   const reducedMotion = useReducedMotion();
   const heightAt = useCallback((x: number, z: number) => groundHeight(x, z, profile.id), [profile.id]);
@@ -845,7 +888,7 @@ function GroundScene({ profile, input, yaw, pitch, target, obstacles, playerPosi
     <Suspense fallback={null}>
       <LivedGroundWorld profile={profile} target={target} onCanopyReady={onCanopyReady} />
     </Suspense>
-    <FirstPersonPlayer input={input} yaw={yaw} pitch={pitch} target={target} profile={profile} obstacles={obstacles} playerPosition={playerPosition} isCoarse={isCoarse} onReady={onReady} />
+    <FirstPersonPlayer input={input} yaw={yaw} pitch={pitch} target={target} profile={profile} obstacles={obstacles} playerPosition={playerPosition} isCoarse={isCoarse} onReady={onReady} dragging={dragging} documentVisible={documentVisible} constrained={constrained} activityRevision={activityRevision} />
   </>;
 }
 
@@ -935,6 +978,9 @@ export default function GroundSpatialWorldClean() {
   const webglAvailable = useGroundWebGLAvailable();
   const quality = useAdaptiveSpatialQuality();
   const [ready, setReady] = useState(false);
+  const reducedMotion = useReducedMotion();
+  const [softwareRenderer, setSoftwareRenderer] = useState(false);
+  const [activityRevision, setActivityRevision] = useState(0);
   const [canopyReadyProfile, setCanopyReadyProfile] = useState<EnvironmentProfileId | null>(null);
   const [dragging, setDragging] = useState(false);
   const [isCoarse, setIsCoarse] = useState(() => {
@@ -977,6 +1023,7 @@ export default function GroundSpatialWorldClean() {
     pitch.current = -0.04;
     target.current = SPAWN.clone();
     playerPosition.current.copy(SPAWN);
+    setActivityRevision((revision) => revision + 1);
   }, []);
   const input = useMovementInput({ onEscape: () => router.push("/home?returnFrom=ground"), onReset: reset });
   const look = useDragLook({ yaw, pitch, sensitivity: 0.0032, minPitch: -0.96, maxPitch: 0.96, onDragState: setDragging });
@@ -1014,18 +1061,22 @@ export default function GroundSpatialWorldClean() {
     {...look}
   >
     {webglAvailable === true ? <Canvas
-      shadows={quality.shadows}
+      shadows={quality.shadows && !softwareRenderer}
       dpr={[1, quality.pixelRatioMax]}
-      frameloop={quality.documentVisible ? "always" : "never"}
+      frameloop={!quality.documentVisible ? "never" : reducedMotion || softwareRenderer ? "demand" : "always"}
       camera={{ position: [0, GROUND_EYE_HEIGHT_M, 6], fov: GROUND_LANDSCAPE_FOV_DEG, near: GROUND_NEAR_PLANE_M, far: 800 }}
       gl={{ antialias: quality.antialias, alpha: false, powerPreference: quality.tier === "low" ? "low-power" : "high-performance" }}
       onCreated={({ gl }) => {
+        const context = gl.getContext();
+        const debugInfo = context.getExtension("WEBGL_debug_renderer_info");
+        const renderer = context.getParameter(debugInfo?.UNMASKED_RENDERER_WEBGL ?? context.RENDERER);
+        setSoftwareRenderer(/swiftshader|llvmpipe|lavapipe|software|microsoft basic render/i.test(String(renderer || "")));
         gl.outputColorSpace = THREE.SRGBColorSpace;
         gl.toneMapping = THREE.ACESFilmicToneMapping;
         gl.toneMappingExposure = 0.84;
       }}
     >
-      <GroundScene profile={profile} input={input} yaw={yaw} pitch={pitch} target={target} obstacles={obstacles} playerPosition={playerPosition} isCoarse={isCoarse} onReady={() => setReady(true)} onCanopyReady={onCanopyReady} />
+      <GroundScene profile={profile} input={input} yaw={yaw} pitch={pitch} target={target} obstacles={obstacles} playerPosition={playerPosition} isCoarse={isCoarse} onReady={() => setReady(true)} onCanopyReady={onCanopyReady} dragging={dragging} documentVisible={quality.documentVisible} constrained={reducedMotion || softwareRenderer} activityRevision={activityRevision} />
     </Canvas> : <section className="ground-semantic-fallback" role="status" data-testid="urai-ground-semantic-fallback">
       <p>{webglAvailable === null ? "Preparing Ground…" : "Three-dimensional Ground is unavailable on this device."}</p>
       <strong>{webglAvailable === false ? "Home, Places, Privacy, and semantic navigation remain available." : "Checking spatial rendering capability."}</strong>

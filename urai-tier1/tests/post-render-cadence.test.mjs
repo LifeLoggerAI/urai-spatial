@@ -3,7 +3,7 @@ import fs from 'node:fs'
 import test from 'node:test'
 import vm from 'node:vm'
 import * as THREE from 'three'
-import { createPostRenderCadence } from '../src/spatial/performance/postRenderCadence.ts'
+import { createPostRenderCadence, shouldContinueHomeInteractiveCadence } from '../src/spatial/performance/postRenderCadence.ts'
 
 function fixture(intervalMs = 100, shouldContinue) {
   let now = 0
@@ -199,4 +199,42 @@ test('normal-motion atmosphere retains interpolation instead of jumping to targe
   assert.equal(s.cloudMaterials[0].uniforms.uCloudCover.value, 0)
   assert.equal(s.atmosphereMaterial.uniforms.uFocus.value, 0)
   assert.equal(s.scene.fog.density, .01)
+})
+
+
+test('software Orb text interaction sleeps, speech and motion resume, and closing restores animation', () => {
+  const activity = { reducedMotion: false, softwareRenderer: true, companionOpen: true, orbState: 'attention', motionActive: false }
+  const f = fixture(100, () => shouldContinueHomeInteractiveCadence(activity))
+  f.cadence.start()
+  f.cadence.beforeRender()
+  f.cadence.afterRender()
+  f.tick(10_000)
+  assert.equal(f.invalidations.length, 1)
+  for (const orbState of ['thinking', 'speaking']) {
+    activity.orbState = orbState
+    f.cadence.beforeRender()
+    f.cadence.afterRender()
+    f.tick(100)
+  }
+  assert.equal(f.invalidations.length, 3)
+  activity.orbState = 'attention'
+  activity.motionActive = true
+  f.cadence.beforeRender()
+  f.cadence.afterRender()
+  f.tick(100)
+  assert.equal(f.invalidations.length, 4)
+  activity.motionActive = false
+  activity.companionOpen = false
+  f.cadence.beforeRender()
+  f.cadence.afterRender()
+  f.tick(100)
+  assert.equal(f.invalidations.length, 5)
+  f.cadence.dispose()
+})
+
+test('interactive cadence preserves hardware animation and reduced-motion stillness', () => {
+  const activity = { reducedMotion: false, softwareRenderer: false, companionOpen: true, orbState: 'attention', motionActive: false }
+  assert.equal(shouldContinueHomeInteractiveCadence(activity), true)
+  assert.equal(shouldContinueHomeInteractiveCadence({ ...activity, reducedMotion: true, orbState: 'speaking' }), false)
+  assert.equal(shouldContinueHomeInteractiveCadence({ ...activity, reducedMotion: true, motionActive: true }), true)
 })

@@ -1,3 +1,22 @@
+export function shouldContinueHomeInteractiveCadence({
+  reducedMotion,
+  softwareRenderer,
+  companionOpen,
+  orbState,
+  motionActive,
+}: {
+  reducedMotion: boolean
+  softwareRenderer: boolean
+  companionOpen: boolean
+  orbState: string
+  motionActive: boolean
+}) {
+  if (motionActive) return true
+  if (reducedMotion) return false
+  if (softwareRenderer && companionOpen && !['thinking', 'speaking'].includes(orbState)) return false
+  return true
+}
+
 /** Demand-render pacing measured from a completed draw, not its request.
  * The caller must pair this root's useFrame with R3F's global after-render hook.
  */

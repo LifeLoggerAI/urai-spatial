@@ -198,6 +198,19 @@ async function enterRitualReview(page, expectedState) {
   if (actual !== expectedState) throw new Error(`Expected Ritual reference state ${expectedState}, got ${actual}`)
   const fixture = await review.getAttribute('data-home-ritual-fixture')
   if (fixture !== 'disclosed-synthetic-no-personal-data') throw new Error(`Unexpected Ritual fixture disclosure ${fixture}`)
+  const presentation = await review.evaluate((element) => {
+    const filters = []
+    for (let parent = element.parentElement; parent; parent = parent.parentElement) {
+      const style = getComputedStyle(parent)
+      if (style.filter !== 'none' || Number(style.opacity) < 1) filters.push({ tag: parent.tagName, filter: style.filter, opacity: style.opacity })
+    }
+    const world = element.closest('.urai-asset-home-world')
+    const overlay = element.parentElement?.parentElement
+    return { filters, aboveSceneEffects: Boolean(world && overlay?.parentElement === world && Number(getComputedStyle(overlay).zIndex) > 5) }
+  })
+  if (presentation.filters.length || !presentation.aboveSceneEffects) {
+    throw new Error(`Ritual text is dimmed by scene presentation: ${JSON.stringify(presentation)}`)
+  }
   const bounds = await review.boundingBox()
   const viewport = page.viewportSize()
   if (!bounds || !viewport || bounds.x < 0 || bounds.y < 0 || bounds.x + bounds.width > viewport.width || bounds.y + bounds.height > viewport.height) {

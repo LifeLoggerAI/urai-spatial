@@ -13,10 +13,11 @@ import * as THREE from 'three'
 import { resolveOrbSensoryOutput, URAI_ORB_STATE_EVENT, type OrbState, type OrbStateEventDetail } from '@/app/home/orbStateController'
 import { MobileMovementPad, MovementHelp, stepEmbodiedMotion, useDragLook, useMovementInput, type MovementInput } from '@/spatial/navigation/EmbodiedNavigation'
 import { useAdaptiveSpatialQuality, type SpatialQualityTier } from '@/spatial/performance/useAdaptiveSpatialQuality'
-import { createPostRenderCadence } from '@/spatial/performance/postRenderCadence'
+import { softwarePixelRatio } from '@/spatial/performance/softwarePixelBudget'
+import { createPostRenderCadence, shouldContinueHomeInteractiveCadence } from '@/spatial/performance/postRenderCadence'
 import { HOME_ORB_GROUND_ANCHOR } from '@/spatial/home/homeOrbPlacement'
 import { ORB_SPEECH_CLOCK_EVENT, type OrbSpeechClockDetail } from '@/spatial/orb/orbSpeechClock'
-import { requestUraiWorldOrbOpen, requestUraiWorldTravel } from '@/spatial/world/worldEvents'
+import { requestUraiWorldOrbOpen, requestUraiWorldTravel, URAI_WORLD_ORB_OPEN_EVENT, URAI_WORLD_ORB_CLOSE_EVENT } from '@/spatial/world/worldEvents'
 import { AvatarSelfView, type AvatarSelfViewSection } from '@/spatial/home/AvatarSelfView'
 import { useHomeExperienceController } from '@/spatial/home/useHomeExperienceController'
 import { useReducedMotion } from '@/spatial/hooks/useReducedMotion'
@@ -138,20 +139,34 @@ function isSoftwareWebGLRenderer(gl: THREE.WebGLRenderer) {
   return /swiftshader|llvmpipe|lavapipe|software|microsoft basic render/i.test(String(renderer || ''))
 }
 
-function Cadence({ reducedMotion, ready, activityRevision, needsMotionFrame }: {
-  reducedMotion: boolean; ready: boolean; activityRevision: string; needsMotionFrame: () => boolean
+function Cadence({ reducedMotion, ready, activityRevision, needsMotionFrame, orbState }: {
+  reducedMotion: boolean; ready: boolean; activityRevision: string; needsMotionFrame: () => boolean; orbState: OrbState
 }) {
   const { gl, invalidate, setFrameloop } = useThree()
+  const [companionOpen, setCompanionOpen] = useState(false)
+  const interactionRef = useRef({ companionOpen, orbState })
+  interactionRef.current = { companionOpen, orbState }
+  useEffect(() => {
+    const opened = () => setCompanionOpen(true)
+    const closed = () => setCompanionOpen(false)
+    window.addEventListener(URAI_WORLD_ORB_OPEN_EVENT, opened)
+    window.addEventListener(URAI_WORLD_ORB_CLOSE_EVENT, closed)
+    return () => {
+      window.removeEventListener(URAI_WORLD_ORB_OPEN_EVENT, opened)
+      window.removeEventListener(URAI_WORLD_ORB_CLOSE_EVENT, closed)
+    }
+  }, [])
   const cadenceRef = useRef<ReturnType<typeof createPostRenderCadence> | null>(null)
   const motionFrameRef = useRef(needsMotionFrame)
   motionFrameRef.current = needsMotionFrame
   useFrame(() => cadenceRef.current?.beforeRender())
   useEffect(() => {
     if (ready) invalidate()
-  }, [activityRevision, invalidate, ready])
+  }, [activityRevision, companionOpen, invalidate, ready])
   useEffect(() => {
     if (!ready) { setFrameloop('never'); return }
-    const constrained = reducedMotion || isSoftwareWebGLRenderer(gl)
+    const softwareRenderer = isSoftwareWebGLRenderer(gl)
+    const constrained = reducedMotion || softwareRenderer
     if (!constrained) { setFrameloop('always'); return }
     setFrameloop('demand')
     const cadence = createPostRenderCadence({
@@ -159,7 +174,11 @@ function Cadence({ reducedMotion, ready, activityRevision, needsMotionFrame }: {
       intervalMs: reducedMotion ? 280 : 100,
       // A motion-comfort scene should be still at rest. Keep drawing only while
       // navigation, camera input or its deceleration actually needs another frame.
-      shouldContinue: () => !reducedMotion || motionFrameRef.current(),
+      shouldContinue: () => shouldContinueHomeInteractiveCadence({
+        reducedMotion, softwareRenderer,
+        ...interactionRef.current,
+        motionActive: motionFrameRef.current(),
+      }),
       schedule: (callback, delay) => window.setTimeout(callback, delay),
       cancel: (timer) => window.clearTimeout(timer),
     })
@@ -767,6 +786,7 @@ function Scene({
   }, [homeStableState, homeTransition, onGround, transition])
   return <>
     <Cadence
+      orbState={orbState}
       reducedMotion={reducedMotion}
       ready={renderReady}
       activityRevision={`${dragging}:${movementInput.revision}:${homeTransition}:${transition}:${homeStableState}:${orbState}`}
@@ -821,6 +841,14 @@ export function HomeWorldProductionV223({ onOrbOpen = requestUraiWorldOrbOpen, w
   const quality = useAdaptiveSpatialQuality()
   const [canvasReady, setCanvasReady] = useState(false)
   const [softwareRenderer, setSoftwareRenderer] = useState(false)
+  const [softwareDpr, setSoftwareDpr] = useState(1)
+  useEffect(() => {
+    if (!softwareRenderer) return
+    const resize = () => setSoftwareDpr(softwarePixelRatio(window.innerWidth, window.innerHeight))
+    resize()
+    window.addEventListener('resize', resize)
+    return () => window.removeEventListener('resize', resize)
+  }, [softwareRenderer])
   const [sceneReady, setSceneReady] = useState(false)
   const [dragging, setDragging] = useState(false)
   const reducedMotion = useReducedMotion()
@@ -1022,7 +1050,7 @@ export function HomeWorldProductionV223({ onOrbOpen = requestUraiWorldOrbOpen, w
   >
     <Canvas
       className={styles.canvas}
-      dpr={1}
+      dpr={softwareRenderer ? softwareDpr : 1}
       shadows={quality.shadows && !softwareRenderer}
       frameloop={!sceneReady ? 'never' : reducedMotion || softwareRenderer ? 'demand' : 'always'}
       camera={{ position: [...DEFAULT_HOME_FIRST_PERSON_CAMERA.position], fov: 58, near: .1, far: 125 }}
