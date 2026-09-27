@@ -45,6 +45,13 @@ function commitHardFallback(href: string) {
   window.location.assign(href)
 }
 
+function destinationRouteOwnerReady(request: UraiWorldTravelRequest) {
+  if (request.destination === 'passport') {
+    return Boolean(document.querySelector('main[data-route-owner="passport-ownership-vault"]'))
+  }
+  return true
+}
+
 function shouldBeginHomeAscent(request: UraiWorldTravelRequest) {
   if (request.destination !== 'life-map') return false
   if (request.entryPortal !== 'home-sky' || request.cameraCheckpoint !== 'home-sky-ascent') return false
@@ -96,12 +103,12 @@ export function requestUraiWorldTravel(request: UraiWorldTravelRequest) {
     settled = true
     if (observer) window.clearInterval(observer)
     const currentPathname = window.location.pathname.replace(/\/+$/, '') || '/'
-    if (currentPathname !== targetPathname) commitHardFallback(fallbackHref)
+    if (currentPathname !== targetPathname || !destinationRouteOwnerReady(request)) commitHardFallback(fallbackHref)
   }, WORLD_TRAVEL_FALLBACK_MS)
 
   observer = window.setInterval(() => {
     const currentPathname = window.location.pathname.replace(/\/+$/, '') || '/'
-    if (currentPathname !== targetPathname) return
+    if (currentPathname !== targetPathname || !destinationRouteOwnerReady(request)) return
     settled = true
     window.clearTimeout(fallback)
     window.clearInterval(observer)
