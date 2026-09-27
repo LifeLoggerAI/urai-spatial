@@ -7,7 +7,7 @@ import ts from 'typescript'
 function harness(file = 'PassportVaultClient.tsx', search = '') {
   const slots = [], pendingEffects = [], listeners = new Map(), requests = [], subscriptions = [], navigations = []
   const auth = { currentUser: null }
-  let cursor = 0, dirty = false, tree, firstTree, authCallback, returned = 0, userMotion = false
+  let cursor = 0, dirty = false, tree, firstTree, authCallback, returned = 0, stagedHomeReturn = 0, userMotion = false
   const react = {
     Suspense: 'suspense',
     useCallback(fn, deps) { return react.useMemo(() => fn, deps) },
@@ -37,6 +37,7 @@ function harness(file = 'PassportVaultClient.tsx', search = '') {
     '@/lib/privacy/operationalPrivacyClient': bridge,
     './passportModel': { demoPassportSnapshot: () => ({}), redactPassportSnapshot: value => value },
     '@/spatial/world/worldEvents': { requestUraiWorldReturn() { returned++ } },
+    '@/spatial/home/homeExperienceState': { stageHomeReturnFrameForHomeNavigation() { stagedHomeReturn++ } },
     '@/spatial/hooks/useReducedMotion': { useReducedMotion: () => userMotion },
     './GlobalEmotionalFieldConsentCard': { default: 'consent-card' }, './passport-vault.css': {},
   }
@@ -61,7 +62,8 @@ function harness(file = 'PassportVaultClient.tsx', search = '') {
     swapBeforeCallback(uid) { auth.currentUser = uid ? {uid} : null },
     async settle() { for(let i=0;i<5;i++) await Promise.resolve(); render() },
     button(label) { return nodes(tree).find(node => node.type==='button' && node.props.children===label) },
-    key(key, target={}) { let prevented=false; listeners.get('keydown')({key,target,preventDefault(){prevented=true}}); render(); return {prevented,returned} },
+    clickButton(label) { const button = nodes(tree).find(node => node.type==='button' && node.props.children===label); button?.props.onClick?.(); render(); return { returned, stagedHomeReturn } },
+    key(key, target={}) { let prevented=false; listeners.get('keydown')({key,target,preventDefault(){prevented=true}}); render(); return {prevented,returned,stagedHomeReturn} },
     setMotion(value) { userMotion=value; render(); return nodes(tree).find(node=>typeof node.type==='function' && node.type.name==='VaultWorld')?.props.reducedMotion },
     offline(value) { navigator.onLine=!value; listeners.get(value?'offline':'online')(); render() },
     unmount() { slots.forEach(slot => slot?.cleanup?.()) },
@@ -114,7 +116,12 @@ test('late secure download cannot navigate after sign-out', async () => {
 test('Escape uses semantic origin return and Home does not hijack editable fields', () => {
   const h=harness()
   assert.equal(h.key('Home',{tagName:'INPUT',isContentEditable:false}).prevented,false)
-  assert.equal(h.key('Escape').returned,1); assert.deepEqual(h.navigations,[])
+  const returned=h.key('Escape')
+  assert.equal(returned.returned,1); assert.equal(returned.stagedHomeReturn,1); assert.deepEqual(h.navigations,[])
+})
+test('Passport return button stages the Home frame before routing', () => {
+  const h=harness()
+  assert.deepEqual(h.clickButton('Return to origin'),{returned:1,stagedHomeReturn:1})
 })
 test('vault motion responds to the in-app preference', () => {
   const h=harness(); assert.equal(h.setMotion(true),true); assert.equal(h.setMotion(false),false)
