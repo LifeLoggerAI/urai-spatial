@@ -63,14 +63,14 @@ export const lifeMapAssets = {
 } satisfies RouteAssetSet;
 
 export const focusAssets = {
-  primary: image(webp("/focus/focus-memory-chamber-main.webp"), fallback("/focus/focus-memory-chamber-fallback.svg"), "Selected memory Focus chamber"),
-  mobile: image(webp("/focus/focus-memory-chamber-mobile.webp"), fallback("/focus/focus-memory-chamber-fallback.svg"), "Focus chamber mobile crop"),
+  primary: image(webp("/life-map/life-map-galaxy-main.webp"), fallback("/life-map/life-map-galaxy-fallback.svg"), "Stellar field behind the selected Memory Star"),
+  mobile: image(webp("/life-map/life-map-galaxy-mobile.webp"), fallback("/life-map/life-map-galaxy-fallback.svg"), "Stellar Focus field mobile crop"),
   accents: {},
 } satisfies RouteAssetSet;
 
 export const replayAssets = {
-  primary: image(webp("/replay/replay-memory-film-main.webp"), fallback("/replay/replay-memory-film-fallback.svg"), "Living memory film Replay scene"),
-  mobile: image(webp("/replay/replay-memory-film-mobile.webp"), fallback("/replay/replay-memory-film-fallback.svg"), "Replay memory film mobile crop"),
+  primary: image(webp("/life-map/life-map-galaxy-main.webp"), fallback("/life-map/life-map-galaxy-fallback.svg"), "Neutral immersive memory field"),
+  mobile: image(webp("/life-map/life-map-galaxy-mobile.webp"), fallback("/life-map/life-map-galaxy-fallback.svg"), "Immersive Replay field mobile crop"),
   accents: {},
 } satisfies RouteAssetSet;
 
