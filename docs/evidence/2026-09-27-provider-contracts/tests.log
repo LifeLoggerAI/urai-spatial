@@ -1,0 +1,44 @@
+✔ OpenAI Orb is authenticated, moderated, non-stored, structured and cancellation-bounded (6.758955ms)
+✔ Orb UI keeps external consent off and excludes rejected provider turns from future context (1.019481ms)
+✔ Orb fallback disclosure distinguishes local-only, definite external, and uncertain transport states (1.030273ms)
+✔ portal proof only ignores exact settled lifecycle aborts for bounded destination resources (0.38547ms)
+✔ ElevenLabs is rights-bound, duration-bounded, single-attempt and session-consented (0.67981ms)
+✔ static Hosting rewrites every live provider URL to secret-bound Firebase Functions (4.907263ms)
+✔ provider functions bind secrets, auth, consent, throttling, privacy and cancellation (1.213623ms)
+✔ browser clients are same-origin and no static route can shadow provider rewrites (0.798196ms)
+✔ governed Firebase preview routes every live Orb and voice provider request to Functions (1.948899ms)
+✔ provider preview routing remains same-origin and contains no direct provider URL (0.969102ms)
+✔ static provider paths cannot shadow authenticated Firebase rewrites (3.157788ms)
+✔ Firebase provider functions require revoked-token checks, saved consent, durable throttling and private responses (0.976404ms)
+✔ active narrator client and controller fail closed until session consent (0.670212ms)
+✔ Firebase bearer verification checks revoked tokens through external-account ADC (0.436452ms)
+✔ Stripe checkout permits only the configured application origin (1.726844ms)
+✔ Stripe customer portal is authenticated, server-bound and same-origin (0.67448ms)
+✔ Passport static render fails closed and sample identity requires explicit demo mode (0.61469ms)
+✔ spatial launch boundary remains fallback-demo until providers are verified (3.078755ms)
+✔ deferred provider capabilities are explicitly listed in code and docs (1.070124ms)
+✔ live-provider requirements remain consent, secrets, fallback, and test gated (0.926958ms)
+✔ system routes expose launch boundaries without secret/provider activation (0.963097ms)
+✔ launch contract documentation keeps go-no-go checks visible (0.714303ms)
+✔ paid plan allowlist rejects free and arbitrary caller values (1.964378ms)
+✔ price identifiers are selected through server-owned environment keys (1.481765ms)
+✔ runtime mode fails closed unless explicitly test or production (0.339657ms)
+✔ Stripe secret key mode must agree with declared runtime mode (0.353502ms)
+✔ Stripe event and provider object livemode must agree with declared runtime mode (0.296869ms)
+✔ plan billing modes are fixed server-side (0.231741ms)
+✔ approved return URL accepts relative and same-origin destinations (0.415668ms)
+✔ approved return URL rejects foreign origins and embedded credentials (0.707191ms)
+✔ newer lifecycle events apply in order (3.261088ms)
+✔ a delayed update cannot resurrect a canceled entitlement (0.333638ms)
+✔ cancellation wins when processor timestamps tie (0.463759ms)
+✔ a later paid recovery may restore access after a prior failure (0.361001ms)
+✔ a stale payment failure cannot override a newer paid state (0.378144ms)
+✔ same-timestamp non-cancellation transitions remain deterministic and applicable (0.294817ms)
+ℹ tests 36
+ℹ suites 0
+ℹ pass 36
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 828.980303
