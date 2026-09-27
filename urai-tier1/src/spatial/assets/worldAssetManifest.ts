@@ -87,10 +87,10 @@ export const worldAssetManifest = {
   focus: {
     starPortalShell: {
       slotId: 'focus.starPortalShell',
-      label: 'Focus Memory Chamber',
-      finalModel: resolved('focus-memory-chamber-glb-v1'),
-      status: 'fallback',
-      notes: 'Canonical Focus selection with deterministic tunnel fallback.',
+      label: 'Focus Stellar Memory Star',
+      finalModel: resolved('life-map-memory-star-glb-v1'),
+      status: 'ready',
+      notes: 'Focus shares the governed Memory Star model; photosphere/corona presentation is owned by the Focus runtime rather than a chamber shell.',
     },
     memoryDiorama: {
       slotId: 'focus.memoryDiorama',
@@ -103,10 +103,10 @@ export const worldAssetManifest = {
   replay: {
     memoryThreadTunnel: {
       slotId: 'replay.memoryThreadTunnel',
-      label: 'Replay Memory Environment',
-      finalModel: resolved('replay-memory-environment-glb-v1'),
-      status: 'fallback',
-      notes: 'Canonical Replay selection with deterministic film-portal fallback.',
+      label: 'Replay Immersive Memory Runtime',
+      finalModel: '',
+      status: 'missing',
+      notes: 'Replay visual authority is the runtime immersive memory field. No theater, film-portal, or independent tunnel model is authorized.',
     },
     beatMarkers: {
       slotId: 'replay.beatMarkers',
