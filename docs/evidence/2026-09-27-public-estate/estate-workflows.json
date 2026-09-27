@@ -1,0 +1,1117 @@
+{
+  "schema": "urai-estate-exact-head-readback-v1",
+  "inspectionWindowUtc": {
+    "from": "2026-09-27T09:08:40Z",
+    "to": "2026-09-27T09:14:59Z",
+    "precision": "Session inspection window; individual API calls were not independently timestamped."
+  },
+  "limitations": [
+    "Workflow wrapper filters to pull-request-triggered runs and returns the first page only; counts describe returned runs, not an independently enumerated full required-check matrix.",
+    "Successful workflows do not certify independent review, runtime deployment, provider readiness, visual acceptance or release eligibility.",
+    "Heads are snapshots and must be refreshed before integration; no predecessor approval transfers."
+  ],
+  "totalCandidates": 21,
+  "totalReturnedRuns": 120,
+  "candidates": [
+    {
+      "repository": "LifeLoggerAI/urai-admin",
+      "pullRequest": 75,
+      "url": "https://github.com/LifeLoggerAI/urai-admin/pull/75",
+      "headSha": "f1cbf77ae4ce7e230007c7d0c361e048f595838a",
+      "returnedRuns": 4,
+      "successfulRuns": 4,
+      "approvedReviews": 0,
+      "reviewStates": [],
+      "runs": [
+        {
+          "id": 36271335296,
+          "name": "Validate URAI Admin",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/LifeLoggerAI/urai-admin/actions/runs/36271335296"
+        },
+        {
+          "id": 36271335291,
+          "name": "URAI Production Verify",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/LifeLoggerAI/urai-admin/actions/runs/36271335291"
+        },
+        {
+          "id": 36271335316,
+          "name": "Admin Analytics Visual Truth Proof",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/LifeLoggerAI/urai-admin/actions/runs/36271335316"
+        },
+        {
+          "id": 36271335312,
+          "name": "URAI Admin CI",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/LifeLoggerAI/urai-admin/actions/runs/36271335312"
+        }
+      ]
+    },
+    {
+      "repository": "LifeLoggerAI/urai-labs-llc",
+      "pullRequest": 102,
+      "url": "https://github.com/LifeLoggerAI/urai-labs-llc/pull/102",
+      "headSha": "a902dd50a917a641839e9d2d350af381a98c2784",
+      "returnedRuns": 5,
+      "successfulRuns": 5,
+      "approvedReviews": 0,
+      "reviewStates": [],
+      "runs": [
+        {
+          "id": 36266369245,
+          "name": "Canon Authority Check",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/LifeLoggerAI/urai-labs-llc/actions/runs/36266369245"
+        },
+        {
+          "id": 36266369357,
+          "name": "URAI Labs public site CI",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/LifeLoggerAI/urai-labs-llc/actions/runs/36266369357"
+        },
+        {
+          "id": 36266369258,
+          "name": "URAI Production Verify",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/LifeLoggerAI/urai-labs-llc/actions/runs/36266369258"
+        },
+        {
+          "id": 36266369329,
+          "name": "IP Holdings Bootstrap Verify",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/LifeLoggerAI/urai-labs-llc/actions/runs/36266369329"
+        },
+        {
+          "id": 36266369336,
+          "name": "URAI Labs Visual Proof",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/LifeLoggerAI/urai-labs-llc/actions/runs/36266369336"
+        }
+      ]
+    },
+    {
+      "repository": "LifeLoggerAI/urai-labs-llc",
+      "pullRequest": 110,
+      "url": "https://github.com/LifeLoggerAI/urai-labs-llc/pull/110",
+      "headSha": "f3d21dd3c773e313ad3f1d57c6ae8d01a400af43",
+      "returnedRuns": 3,
+      "successfulRuns": 3,
+      "approvedReviews": 0,
+      "reviewStates": [
+        "COMMENTED"
+      ],
+      "runs": [
+        {
+          "id": 36273963831,
+          "name": "Distribution Copy Verify",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/LifeLoggerAI/urai-labs-llc/actions/runs/36273963831"
+        },
+        {
+          "id": 36273963851,
+          "name": "URAI Labs public site CI",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/LifeLoggerAI/urai-labs-llc/actions/runs/36273963851"
+        },
+        {
+          "id": 36273963934,
+          "name": "URAI Production Verify",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/LifeLoggerAI/urai-labs-llc/actions/runs/36273963934"
+        }
+      ]
+    },
+    {
+      "repository": "LifeLoggerAI/urai-communications",
+      "pullRequest": 58,
+      "url": "https://github.com/LifeLoggerAI/urai-communications/pull/58",
+      "headSha": "17e14efa97f40e18ad67aaec03ec4c37512a3507",
+      "returnedRuns": 3,
+      "successfulRuns": 3,
+      "approvedReviews": 0,
+      "reviewStates": [],
+      "runs": [
+        {
+          "id": 36266596358,
+          "name": "CI",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/LifeLoggerAI/urai-communications/actions/runs/36266596358"
+        },
+        {
+          "id": 36266596408,
+          "name": "URAI Production Verify",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/LifeLoggerAI/urai-communications/actions/runs/36266596408"
+        },
+        {
+          "id": 36266596381,
+          "name": "Communications Visual Proof",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/LifeLoggerAI/urai-communications/actions/runs/36266596381"
+        }
+      ]
+    },
+    {
+      "repository": "LifeLoggerAI/urai-foundation",
+      "pullRequest": 45,
+      "url": "https://github.com/LifeLoggerAI/urai-foundation/pull/45",
+      "headSha": "26a39cfb8b4313d118b31fba85804fbb42396fa9",
+      "returnedRuns": 2,
+      "successfulRuns": 2,
+      "approvedReviews": 0,
+      "reviewStates": [],
+      "runs": [
+        {
+          "id": 36150869860,
+          "name": "Foundation Visual Proof",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/LifeLoggerAI/urai-foundation/actions/runs/36150869860"
+        },
+        {
+          "id": 36150869919,
+          "name": "Check",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/LifeLoggerAI/urai-foundation/actions/runs/36150869919"
+        }
+      ]
+    },
+    {
+      "repository": "LifeLoggerAI/urai-studio",
+      "pullRequest": 114,
+      "url": "https://github.com/LifeLoggerAI/urai-studio/pull/114",
+      "headSha": "b4b9f23c86d92a1684057cfe6c6b1f049b3168c0",
+      "returnedRuns": 6,
+      "successfulRuns": 6,
+      "approvedReviews": 0,
+      "reviewStates": [],
+      "runs": [
+        {
+          "id": 36095503740,
+          "name": "Studio Audit",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/LifeLoggerAI/urai-studio/actions/runs/36095503740"
+        },
+        {
+          "id": 36095503786,
+          "name": "Studio Visual Proof",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/LifeLoggerAI/urai-studio/actions/runs/36095503786"
+        },
+        {
+          "id": 36095503755,
+          "name": "Studio Health Guard",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/LifeLoggerAI/urai-studio/actions/runs/36095503755"
+        },
+        {
+          "id": 36095503812,
+          "name": "URAI Studio Video Factory Verification",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/LifeLoggerAI/urai-studio/actions/runs/36095503812"
+        },
+        {
+          "id": 36095503781,
+          "name": "Studio CI",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/LifeLoggerAI/urai-studio/actions/runs/36095503781"
+        },
+        {
+          "id": 36095503806,
+          "name": "URAI Production Verify",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/LifeLoggerAI/urai-studio/actions/runs/36095503806"
+        }
+      ]
+    },
+    {
+      "repository": "LifeLoggerAI/urai-studio",
+      "pullRequest": 118,
+      "url": "https://github.com/LifeLoggerAI/urai-studio/pull/118",
+      "headSha": "ea4b64cb7ee5827dc024b397509ee1fada0fc66e",
+      "returnedRuns": 6,
+      "successfulRuns": 6,
+      "approvedReviews": 0,
+      "reviewStates": [
+        "COMMENTED"
+      ],
+      "runs": [
+        {
+          "id": 36305912549,
+          "name": "Studio Visual Proof",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/LifeLoggerAI/urai-studio/actions/runs/36305912549"
+        },
+        {
+          "id": 36305912560,
+          "name": "URAI Production Verify",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/LifeLoggerAI/urai-studio/actions/runs/36305912560"
+        },
+        {
+          "id": 36305912439,
+          "name": "Studio Audit",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/LifeLoggerAI/urai-studio/actions/runs/36305912439"
+        },
+        {
+          "id": 36305912434,
+          "name": "Studio Health Guard",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/LifeLoggerAI/urai-studio/actions/runs/36305912434"
+        },
+        {
+          "id": 36305912527,
+          "name": "Studio CI",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/LifeLoggerAI/urai-studio/actions/runs/36305912527"
+        },
+        {
+          "id": 36305912534,
+          "name": "URAI Studio Video Factory Verification",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/LifeLoggerAI/urai-studio/actions/runs/36305912534"
+        }
+      ]
+    },
+    {
+      "repository": "LifeLoggerAI/urai-staging",
+      "pullRequest": 44,
+      "url": "https://github.com/LifeLoggerAI/urai-staging/pull/44",
+      "headSha": "936a79e937b9feccbf48ba47b071faad9ae717dd",
+      "returnedRuns": 2,
+      "successfulRuns": 2,
+      "approvedReviews": 0,
+      "reviewStates": [],
+      "runs": [
+        {
+          "id": 36260828940,
+          "name": "CI",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/LifeLoggerAI/urai-staging/actions/runs/36260828940"
+        },
+        {
+          "id": 36260828898,
+          "name": "URAI Production Verify",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/LifeLoggerAI/urai-staging/actions/runs/36260828898"
+        }
+      ]
+    },
+    {
+      "repository": "LifeLoggerAI/urai-jobs",
+      "pullRequest": 105,
+      "url": "https://github.com/LifeLoggerAI/urai-jobs/pull/105",
+      "headSha": "1559dbe5671adc09535c33dffb318398ae66719a",
+      "returnedRuns": 13,
+      "successfulRuns": 13,
+      "approvedReviews": 0,
+      "reviewStates": [],
+      "runs": [
+        {
+          "id": 36305486701,
+          "name": "Firebase CLI Pin Guard",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/LifeLoggerAI/urai-jobs/actions/runs/36305486701"
+        },
+        {
+          "id": 36305486698,
+          "name": "Defined Gitlink Guard",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/LifeLoggerAI/urai-jobs/actions/runs/36305486698"
+        },
+        {
+          "id": 36305486728,
+          "name": "URAI Jobs CI",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/LifeLoggerAI/urai-jobs/actions/runs/36305486728"
+        },
+        {
+          "id": 36305486694,
+          "name": "Career Surfaces CI",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/LifeLoggerAI/urai-jobs/actions/runs/36305486694"
+        },
+        {
+          "id": 36305486741,
+          "name": "CI",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/LifeLoggerAI/urai-jobs/actions/runs/36305486741"
+        },
+        {
+          "id": 36305486700,
+          "name": "production-verification",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/LifeLoggerAI/urai-jobs/actions/runs/36305486700"
+        },
+        {
+          "id": 36305486739,
+          "name": "UrAiProd Gitlink Removal Guard",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/LifeLoggerAI/urai-jobs/actions/runs/36305486739"
+        },
+        {
+          "id": 36305486707,
+          "name": "URAI Jobs System Audit",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/LifeLoggerAI/urai-jobs/actions/runs/36305486707"
+        },
+        {
+          "id": 36305486759,
+          "name": "URAI Jobs Typecheck Diagnostics",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/LifeLoggerAI/urai-jobs/actions/runs/36305486759"
+        },
+        {
+          "id": 36305486724,
+          "name": "URAI Jobs Visual Proof",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/LifeLoggerAI/urai-jobs/actions/runs/36305486724"
+        },
+        {
+          "id": 36305486710,
+          "name": "URAI Production Verify",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/LifeLoggerAI/urai-jobs/actions/runs/36305486710"
+        },
+        {
+          "id": 36305486718,
+          "name": "URAI Jobs Runtime CI",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/LifeLoggerAI/urai-jobs/actions/runs/36305486718"
+        },
+        {
+          "id": 36305486714,
+          "name": "URAI Jobs Final CI",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/LifeLoggerAI/urai-jobs/actions/runs/36305486714"
+        }
+      ]
+    },
+    {
+      "repository": "LifeLoggerAI/urai-jobs",
+      "pullRequest": 109,
+      "url": "https://github.com/LifeLoggerAI/urai-jobs/pull/109",
+      "headSha": "0c24091850408b7477f8696c1b4ebeeb766f84a9",
+      "returnedRuns": 10,
+      "successfulRuns": 10,
+      "approvedReviews": 0,
+      "reviewStates": [],
+      "runs": [
+        {
+          "id": 36148856954,
+          "name": "URAI Jobs Visual Proof",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/LifeLoggerAI/urai-jobs/actions/runs/36148856954"
+        },
+        {
+          "id": 36148856303,
+          "name": "Firebase CLI Pin Guard",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/LifeLoggerAI/urai-jobs/actions/runs/36148856303"
+        },
+        {
+          "id": 36148856290,
+          "name": "URAI Jobs System Audit",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/LifeLoggerAI/urai-jobs/actions/runs/36148856290"
+        },
+        {
+          "id": 36148856333,
+          "name": "URAI Jobs Typecheck Diagnostics",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/LifeLoggerAI/urai-jobs/actions/runs/36148856333"
+        },
+        {
+          "id": 36148856291,
+          "name": "Defined Gitlink Guard",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/LifeLoggerAI/urai-jobs/actions/runs/36148856291"
+        },
+        {
+          "id": 36148856329,
+          "name": "URAI Production Verify",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/LifeLoggerAI/urai-jobs/actions/runs/36148856329"
+        },
+        {
+          "id": 36148856328,
+          "name": "Career Surfaces CI",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/LifeLoggerAI/urai-jobs/actions/runs/36148856328"
+        },
+        {
+          "id": 36148856433,
+          "name": "CI",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/LifeLoggerAI/urai-jobs/actions/runs/36148856433"
+        },
+        {
+          "id": 36148856334,
+          "name": "URAI Jobs Runtime CI",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/LifeLoggerAI/urai-jobs/actions/runs/36148856334"
+        },
+        {
+          "id": 36148856381,
+          "name": "URAI Jobs Final CI",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/LifeLoggerAI/urai-jobs/actions/runs/36148856381"
+        }
+      ]
+    },
+    {
+      "repository": "LifeLoggerAI/urai-storytime",
+      "pullRequest": 57,
+      "url": "https://github.com/LifeLoggerAI/urai-storytime/pull/57",
+      "headSha": "c89be89dbf6a2dc9748d5a5063d92f287a509e36",
+      "returnedRuns": 4,
+      "successfulRuns": 4,
+      "approvedReviews": 0,
+      "reviewStates": [
+        "COMMENTED"
+      ],
+      "runs": [
+        {
+          "id": 36277374313,
+          "name": "URAI Storytime CI",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/LifeLoggerAI/urai-storytime/actions/runs/36277374313"
+        },
+        {
+          "id": 36277374312,
+          "name": "URAI Storytime Verify",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/LifeLoggerAI/urai-storytime/actions/runs/36277374312"
+        },
+        {
+          "id": 36277374338,
+          "name": "Storytime Authorization Rules Emulator",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/LifeLoggerAI/urai-storytime/actions/runs/36277374338"
+        },
+        {
+          "id": 36277374321,
+          "name": "URAI Storytime Visual Proof",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/LifeLoggerAI/urai-storytime/actions/runs/36277374321"
+        }
+      ]
+    },
+    {
+      "repository": "LifeLoggerAI/urai-privacy",
+      "pullRequest": 135,
+      "url": "https://github.com/LifeLoggerAI/urai-privacy/pull/135",
+      "headSha": "a9c04667ec201a0f29cb4df8bac74cfd8c3c9ed3",
+      "returnedRuns": 10,
+      "successfulRuns": 10,
+      "approvedReviews": 0,
+      "reviewStates": [],
+      "runs": [
+        {
+          "id": 36145720211,
+          "name": "Website validation",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/LifeLoggerAI/urai-privacy/actions/runs/36145720211"
+        },
+        {
+          "id": 36145719979,
+          "name": "Consent Export and Deletion Branch Validation",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/LifeLoggerAI/urai-privacy/actions/runs/36145719979"
+        },
+        {
+          "id": 36145720049,
+          "name": "Release Verification",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/LifeLoggerAI/urai-privacy/actions/runs/36145720049"
+        },
+        {
+          "id": 36145720025,
+          "name": "URAI Privacy Visual Proof",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/LifeLoggerAI/urai-privacy/actions/runs/36145720025"
+        },
+        {
+          "id": 36145720179,
+          "name": "URAI Privacy Release Verification",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/LifeLoggerAI/urai-privacy/actions/runs/36145720179"
+        },
+        {
+          "id": 36145720051,
+          "name": "Privacy package validation",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/LifeLoggerAI/urai-privacy/actions/runs/36145720051"
+        },
+        {
+          "id": 36145720277,
+          "name": "Privacy Reconstruction Diagnostic",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/LifeLoggerAI/urai-privacy/actions/runs/36145720277"
+        },
+        {
+          "id": 36145720152,
+          "name": "URAI Production Verify",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/LifeLoggerAI/urai-privacy/actions/runs/36145720152"
+        },
+        {
+          "id": 36145720103,
+          "name": "URAI Privacy Release Verification",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/LifeLoggerAI/urai-privacy/actions/runs/36145720103"
+        },
+        {
+          "id": 36145720201,
+          "name": "Dependency remediation candidate",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/LifeLoggerAI/urai-privacy/actions/runs/36145720201"
+        }
+      ]
+    },
+    {
+      "repository": "LifeLoggerAI/urai-analytics",
+      "pullRequest": 61,
+      "url": "https://github.com/LifeLoggerAI/urai-analytics/pull/61",
+      "headSha": "5ef3c609dd1f253145cf9530602daf9b41391ae7",
+      "returnedRuns": 2,
+      "successfulRuns": 2,
+      "approvedReviews": 0,
+      "reviewStates": [],
+      "runs": [
+        {
+          "id": 36282325604,
+          "name": "Privacy adoption check",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/LifeLoggerAI/urai-analytics/actions/runs/36282325604"
+        },
+        {
+          "id": 36282325603,
+          "name": "URAI Analytics CI",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/LifeLoggerAI/urai-analytics/actions/runs/36282325603"
+        }
+      ]
+    },
+    {
+      "repository": "LifeLoggerAI/B2Bportal",
+      "pullRequest": 36,
+      "url": "https://github.com/LifeLoggerAI/B2Bportal/pull/36",
+      "headSha": "e780518af195fe41c279c3a4747f76fc4f1aa248",
+      "returnedRuns": 4,
+      "successfulRuns": 4,
+      "approvedReviews": 0,
+      "reviewStates": [
+        "COMMENTED"
+      ],
+      "runs": [
+        {
+          "id": 36266938285,
+          "name": "Automation Verification",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/LifeLoggerAI/B2Bportal/actions/runs/36266938285"
+        },
+        {
+          "id": 36266938240,
+          "name": "URAI Production Verify",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/LifeLoggerAI/B2Bportal/actions/runs/36266938240"
+        },
+        {
+          "id": 36266938340,
+          "name": "B2B Visual Proof",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/LifeLoggerAI/B2Bportal/actions/runs/36266938340"
+        },
+        {
+          "id": 36266938248,
+          "name": "CI",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/LifeLoggerAI/B2Bportal/actions/runs/36266938248"
+        }
+      ]
+    },
+    {
+      "repository": "LifeLoggerAI/urai-marketing",
+      "pullRequest": 37,
+      "url": "https://github.com/LifeLoggerAI/urai-marketing/pull/37",
+      "headSha": "8aa8b5fd1fb00d731b1b448e8dcbbec234a02280",
+      "returnedRuns": 3,
+      "successfulRuns": 3,
+      "approvedReviews": 0,
+      "reviewStates": [],
+      "runs": [
+        {
+          "id": 36151363842,
+          "name": "Verify URAI Marketing Production Readiness",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/LifeLoggerAI/urai-marketing/actions/runs/36151363842"
+        },
+        {
+          "id": 36151363745,
+          "name": "Marketing Visual Proof",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/LifeLoggerAI/urai-marketing/actions/runs/36151363745"
+        },
+        {
+          "id": 36151363656,
+          "name": "Marketing Launch Verification",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/LifeLoggerAI/urai-marketing/actions/runs/36151363656"
+        }
+      ]
+    },
+    {
+      "repository": "LifeLoggerAI/urai-investors",
+      "pullRequest": 34,
+      "url": "https://github.com/LifeLoggerAI/urai-investors/pull/34",
+      "headSha": "5342decd8771338698e6479a8f9b1107d0cf77c0",
+      "returnedRuns": 6,
+      "successfulRuns": 6,
+      "approvedReviews": 0,
+      "reviewStates": [],
+      "runs": [
+        {
+          "id": 36153836640,
+          "name": "Investor Visual Proof",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/LifeLoggerAI/urai-investors/actions/runs/36153836640"
+        },
+        {
+          "id": 36153836487,
+          "name": "Investor rules emulator verification",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/LifeLoggerAI/urai-investors/actions/runs/36153836487"
+        },
+        {
+          "id": 36153836513,
+          "name": "Investor dependency lock repair",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/LifeLoggerAI/urai-investors/actions/runs/36153836513"
+        },
+        {
+          "id": 36153836632,
+          "name": "CI",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/LifeLoggerAI/urai-investors/actions/runs/36153836632"
+        },
+        {
+          "id": 36153836788,
+          "name": "Verify investor portal",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/LifeLoggerAI/urai-investors/actions/runs/36153836788"
+        },
+        {
+          "id": 36153836383,
+          "name": "URAI Production Verify",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/LifeLoggerAI/urai-investors/actions/runs/36153836383"
+        }
+      ]
+    },
+    {
+      "repository": "LifeLoggerAI/urai-content",
+      "pullRequest": 84,
+      "url": "https://github.com/LifeLoggerAI/urai-content/pull/84",
+      "headSha": "8dd4eb8d19ccd2600d8d4c5f19fac35b65ece748",
+      "returnedRuns": 10,
+      "successfulRuns": 10,
+      "approvedReviews": 0,
+      "reviewStates": [],
+      "runs": [
+        {
+          "id": 36267003350,
+          "name": "URAI Production Verify",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/LifeLoggerAI/urai-content/actions/runs/36267003350"
+        },
+        {
+          "id": 36267003446,
+          "name": "Prompt library validation",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/LifeLoggerAI/urai-content/actions/runs/36267003446"
+        },
+        {
+          "id": 36267003364,
+          "name": "Prompt release source receipt",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/LifeLoggerAI/urai-content/actions/runs/36267003364"
+        },
+        {
+          "id": 36267003365,
+          "name": "Content Visual Proof",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/LifeLoggerAI/urai-content/actions/runs/36267003365"
+        },
+        {
+          "id": 36267003467,
+          "name": "Content Dependency Audit Evidence",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/LifeLoggerAI/urai-content/actions/runs/36267003467"
+        },
+        {
+          "id": 36267003424,
+          "name": "Governance validation",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/LifeLoggerAI/urai-content/actions/runs/36267003424"
+        },
+        {
+          "id": 36267003402,
+          "name": "Content rules emulator verification",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/LifeLoggerAI/urai-content/actions/runs/36267003402"
+        },
+        {
+          "id": 36267003439,
+          "name": "Content Web Frozen Lockfile",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/LifeLoggerAI/urai-content/actions/runs/36267003439"
+        },
+        {
+          "id": 36267003428,
+          "name": "Web E2E",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/LifeLoggerAI/urai-content/actions/runs/36267003428"
+        },
+        {
+          "id": 36267003522,
+          "name": "ci",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/LifeLoggerAI/urai-content/actions/runs/36267003522"
+        }
+      ]
+    },
+    {
+      "repository": "LifeLoggerAI/asset-factory",
+      "pullRequest": 284,
+      "url": "https://github.com/LifeLoggerAI/asset-factory/pull/284",
+      "headSha": "cfe9f6077b7db15994a516f21a9565baf7d17dc7",
+      "returnedRuns": 7,
+      "successfulRuns": 7,
+      "approvedReviews": 0,
+      "reviewStates": [],
+      "runs": [
+        {
+          "id": 36199795448,
+          "name": "URAI Production Verify",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/LifeLoggerAI/asset-factory/actions/runs/36199795448"
+        },
+        {
+          "id": 36199795370,
+          "name": "Critical Workflow Integrity",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/LifeLoggerAI/asset-factory/actions/runs/36199795370"
+        },
+        {
+          "id": 36199795374,
+          "name": "Image Asset Validation",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/LifeLoggerAI/asset-factory/actions/runs/36199795374"
+        },
+        {
+          "id": 36199795385,
+          "name": "Asset Factory Pipeline Proof",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/LifeLoggerAI/asset-factory/actions/runs/36199795385"
+        },
+        {
+          "id": 36199795411,
+          "name": "Asset Factory Production Checks",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/LifeLoggerAI/asset-factory/actions/runs/36199795411"
+        },
+        {
+          "id": 36199795372,
+          "name": "URAI Model Forge Proof",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/LifeLoggerAI/asset-factory/actions/runs/36199795372"
+        },
+        {
+          "id": 36199795457,
+          "name": "URAI Model Forge Blender Runtime Proof",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/LifeLoggerAI/asset-factory/actions/runs/36199795457"
+        }
+      ]
+    },
+    {
+      "repository": "LifeLoggerAI/asset-factory",
+      "pullRequest": 302,
+      "url": "https://github.com/LifeLoggerAI/asset-factory/pull/302",
+      "headSha": "dddefee0ac4d78345945c814adfe12c569b10699",
+      "returnedRuns": 5,
+      "successfulRuns": 5,
+      "approvedReviews": 0,
+      "reviewStates": [],
+      "runs": [
+        {
+          "id": 36207878250,
+          "name": "URAI Model Forge Blender Runtime Proof",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/LifeLoggerAI/asset-factory/actions/runs/36207878250"
+        },
+        {
+          "id": 36207878292,
+          "name": "URAI Production Verify",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/LifeLoggerAI/asset-factory/actions/runs/36207878292"
+        },
+        {
+          "id": 36207878399,
+          "name": "Asset Factory Production Checks",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/LifeLoggerAI/asset-factory/actions/runs/36207878399"
+        },
+        {
+          "id": 36207878249,
+          "name": "URAI Model Forge Proof",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/LifeLoggerAI/asset-factory/actions/runs/36207878249"
+        },
+        {
+          "id": 36207878264,
+          "name": "Asset Factory Pipeline Proof",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/LifeLoggerAI/asset-factory/actions/runs/36207878264"
+        }
+      ]
+    },
+    {
+      "repository": "LifeLoggerAI/asset-factory",
+      "pullRequest": 303,
+      "url": "https://github.com/LifeLoggerAI/asset-factory/pull/303",
+      "headSha": "a163aef8599b0c6aa928d3f5533d1731804f4087",
+      "returnedRuns": 6,
+      "successfulRuns": 6,
+      "approvedReviews": 0,
+      "reviewStates": [],
+      "runs": [
+        {
+          "id": 36208491275,
+          "name": "Asset Factory Pipeline Proof",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/LifeLoggerAI/asset-factory/actions/runs/36208491275"
+        },
+        {
+          "id": 36208491300,
+          "name": "Multimodal Provider Contract",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/LifeLoggerAI/asset-factory/actions/runs/36208491300"
+        },
+        {
+          "id": 36208491233,
+          "name": "URAI Model Forge Blender Runtime Proof",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/LifeLoggerAI/asset-factory/actions/runs/36208491233"
+        },
+        {
+          "id": 36208491264,
+          "name": "URAI Production Verify",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/LifeLoggerAI/asset-factory/actions/runs/36208491264"
+        },
+        {
+          "id": 36208491262,
+          "name": "Asset Factory Production Checks",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/LifeLoggerAI/asset-factory/actions/runs/36208491262"
+        },
+        {
+          "id": 36208491240,
+          "name": "URAI Model Forge Proof",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/LifeLoggerAI/asset-factory/actions/runs/36208491240"
+        }
+      ]
+    },
+    {
+      "repository": "LifeLoggerAI/asset-factory",
+      "pullRequest": 304,
+      "url": "https://github.com/LifeLoggerAI/asset-factory/pull/304",
+      "headSha": "32e3bf2315542771acb868b815bb97562d3bcaff",
+      "returnedRuns": 9,
+      "successfulRuns": 9,
+      "approvedReviews": 0,
+      "reviewStates": [],
+      "runs": [
+        {
+          "id": 36281148267,
+          "name": "Image Asset Validation",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/LifeLoggerAI/asset-factory/actions/runs/36281148267"
+        },
+        {
+          "id": 36281148230,
+          "name": "Adam Digital Human Authority",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/LifeLoggerAI/asset-factory/actions/runs/36281148230"
+        },
+        {
+          "id": 36281148189,
+          "name": "Critical Workflow Integrity",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/LifeLoggerAI/asset-factory/actions/runs/36281148189"
+        },
+        {
+          "id": 36281148200,
+          "name": "URAI Model Forge Proof",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/LifeLoggerAI/asset-factory/actions/runs/36281148200"
+        },
+        {
+          "id": 36281148203,
+          "name": "URAI Production Verify",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/LifeLoggerAI/asset-factory/actions/runs/36281148203"
+        },
+        {
+          "id": 36281148205,
+          "name": "URAI Model Forge Blender Runtime Proof",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/LifeLoggerAI/asset-factory/actions/runs/36281148205"
+        },
+        {
+          "id": 36281148238,
+          "name": "Multimodal Provider Contract",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/LifeLoggerAI/asset-factory/actions/runs/36281148238"
+        },
+        {
+          "id": 36281148226,
+          "name": "Asset Factory Pipeline Proof",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/LifeLoggerAI/asset-factory/actions/runs/36281148226"
+        },
+        {
+          "id": 36281148325,
+          "name": "Asset Factory Production Checks",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/LifeLoggerAI/asset-factory/actions/runs/36281148325"
+        }
+      ]
+    }
+  ]
+}

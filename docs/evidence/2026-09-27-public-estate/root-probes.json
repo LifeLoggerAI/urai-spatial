@@ -1,0 +1,229 @@
+{
+  "checkedAt": "2026-09-27T09:12:21.972799+00:00",
+  "method": "Read-only HTTPS GET with redirects; verified TLS; body hash and title only; no cookies retained",
+  "scope": "17 root URLs only; not full journey or visual acceptance",
+  "certified": false,
+  "results": [
+    {
+      "requestedUrl": "https://urai.app",
+      "exitCode": 0,
+      "status": "404",
+      "finalUrl": "https://urai.app/",
+      "bytes": 21265,
+      "sha256": "dd7c22b3f25d3c331abc00a714b9672396f01a14648bd3ed99f45ceeb64a2642",
+      "title": [
+        "Site Not Found"
+      ],
+      "placeholder": true,
+      "error": ""
+    },
+    {
+      "requestedUrl": "https://urailabs.com",
+      "exitCode": 0,
+      "status": "200",
+      "finalUrl": "https://urailabs.com/",
+      "bytes": 3133,
+      "sha256": "a624adc80535aaaa3c8250fba35d23e766862eb7a44e0f672d40a2b8d792e1fa",
+      "title": [
+        "Coming Soon"
+      ],
+      "placeholder": true,
+      "error": ""
+    },
+    {
+      "requestedUrl": "https://uraiadmin.com",
+      "exitCode": 0,
+      "status": "404",
+      "finalUrl": "https://uraiadmin.com/",
+      "bytes": 21265,
+      "sha256": "dd7c22b3f25d3c331abc00a714b9672396f01a14648bd3ed99f45ceeb64a2642",
+      "title": [
+        "Site Not Found"
+      ],
+      "placeholder": true,
+      "error": ""
+    },
+    {
+      "requestedUrl": "https://uraianalytics.com",
+      "exitCode": 0,
+      "status": "404",
+      "finalUrl": "https://uraianalytics.com/",
+      "bytes": 21265,
+      "sha256": "dd7c22b3f25d3c331abc00a714b9672396f01a14648bd3ed99f45ceeb64a2642",
+      "title": [
+        "Site Not Found"
+      ],
+      "placeholder": true,
+      "error": ""
+    },
+    {
+      "requestedUrl": "https://uraiassetfactory.com",
+      "exitCode": 0,
+      "status": "404",
+      "finalUrl": "https://uraiassetfactory.com/",
+      "bytes": 21265,
+      "sha256": "dd7c22b3f25d3c331abc00a714b9672396f01a14648bd3ed99f45ceeb64a2642",
+      "title": [
+        "Site Not Found"
+      ],
+      "placeholder": true,
+      "error": ""
+    },
+    {
+      "requestedUrl": "https://uraib2bportal.com",
+      "exitCode": 0,
+      "status": "200",
+      "finalUrl": "https://uraib2bportal.com/",
+      "bytes": 3138,
+      "sha256": "9c96726d199025585bc600151b08d2af4746e5a2e3c9f602a8a8f91294aa25d0",
+      "title": [
+        "Coming Soon"
+      ],
+      "placeholder": true,
+      "error": ""
+    },
+    {
+      "requestedUrl": "https://uraicommunications.com",
+      "exitCode": 0,
+      "status": "200",
+      "finalUrl": "https://uraicommunications.com/",
+      "bytes": 3143,
+      "sha256": "8b7b62f05c44413dc337217218f624ac717495734dd9207d3bdf47de1a31b0ee",
+      "title": [
+        "Coming Soon"
+      ],
+      "placeholder": true,
+      "error": ""
+    },
+    {
+      "requestedUrl": "https://uraiinvestors.com",
+      "exitCode": 0,
+      "status": "200",
+      "finalUrl": "https://uraiinvestors.com/",
+      "bytes": 3138,
+      "sha256": "6617ee1125a2af9f87e888fe308c52d89373b53000003b14114f7d95f5cc3ee2",
+      "title": [
+        "Coming Soon"
+      ],
+      "placeholder": true,
+      "error": ""
+    },
+    {
+      "requestedUrl": "https://uraijobs.com",
+      "exitCode": 0,
+      "status": "200",
+      "finalUrl": "https://uraijobs.com/",
+      "bytes": 3133,
+      "sha256": "75a36ad904b3454264d310413debe58148cedb919ad41de0834b640467b2d535",
+      "title": [
+        "Coming Soon"
+      ],
+      "placeholder": true,
+      "error": ""
+    },
+    {
+      "requestedUrl": "https://uraimarketing.com",
+      "exitCode": 0,
+      "status": "200",
+      "finalUrl": "https://uraimarketing.com/",
+      "bytes": 3138,
+      "sha256": "46162f94d75afc77463b5ede33c4fca82e6c1bb2eeec694816fc75ed819a6c07",
+      "title": [
+        "Coming Soon"
+      ],
+      "placeholder": true,
+      "error": ""
+    },
+    {
+      "requestedUrl": "https://uraiprivacy.com",
+      "exitCode": 0,
+      "status": "200",
+      "finalUrl": "https://uraiprivacy.com/",
+      "bytes": 3136,
+      "sha256": "ca3e3f7c1899617eba150dd18e25438ddb483c64f6248a4fe84c8fe01d947922",
+      "title": [
+        "Coming Soon"
+      ],
+      "placeholder": true,
+      "error": ""
+    },
+    {
+      "requestedUrl": "https://uraispatial.com",
+      "exitCode": 0,
+      "status": "200",
+      "finalUrl": "https://uraispatial.com/",
+      "bytes": 3136,
+      "sha256": "b6e11ca8123ef37dc3e2cad920eeaa36dc3e3288581ec6841af01d0b42b1a51a",
+      "title": [
+        "Coming Soon"
+      ],
+      "placeholder": true,
+      "error": ""
+    },
+    {
+      "requestedUrl": "https://uraistorytime.com",
+      "exitCode": 0,
+      "status": "200",
+      "finalUrl": "https://uraistorytime.com/",
+      "bytes": 3138,
+      "sha256": "207565dd0dd5ead57b982ea04de8064c42ca1685d58ad0b8497820b12b77a0f7",
+      "title": [
+        "Coming Soon"
+      ],
+      "placeholder": true,
+      "error": ""
+    },
+    {
+      "requestedUrl": "https://uraicontent.com",
+      "exitCode": 0,
+      "status": "200",
+      "finalUrl": "https://uraicontent.com/",
+      "bytes": 3136,
+      "sha256": "827f6d8889435a0dcd57f394731b54e4415a5a7f8255a019b510ed580dfe1d0c",
+      "title": [
+        "Coming Soon"
+      ],
+      "placeholder": true,
+      "error": ""
+    },
+    {
+      "requestedUrl": "https://uraifoundation.com",
+      "exitCode": 0,
+      "status": "200",
+      "finalUrl": "https://uraifoundation.org/",
+      "bytes": 3139,
+      "sha256": "96a136b84a0cbbb621a8b1b60217ec262b4ba68d656890d7d4faf5cd90685e13",
+      "title": [
+        "Coming Soon"
+      ],
+      "placeholder": true,
+      "error": ""
+    },
+    {
+      "requestedUrl": "https://uraistudio.com",
+      "exitCode": 0,
+      "status": "200",
+      "finalUrl": "https://uraistudio.com/",
+      "bytes": 3135,
+      "sha256": "5a46ea8f6c257906c7ef125af33e832c6f9b58e225eb49cf7b8d06d5b8e46ed2",
+      "title": [
+        "Coming Soon"
+      ],
+      "placeholder": true,
+      "error": ""
+    },
+    {
+      "requestedUrl": "https://uraiipholdings.com",
+      "exitCode": 0,
+      "status": "200",
+      "finalUrl": "https://uraiipholdings.com/",
+      "bytes": 3139,
+      "sha256": "5102bfce03432cea60aca5066fc4cbf7d7e041cee1c48fef95f19692ca55cd8f",
+      "title": [
+        "Coming Soon"
+      ],
+      "placeholder": true,
+      "error": ""
+    }
+  ]
+}

@@ -1,0 +1,114 @@
+{
+  "checkedAt": "2026-09-27T09:10:15.227485+00:00",
+  "sourceCommit": "5e98f96e56c49010e44a6d60807ed70364a2ebf0",
+  "sourceTree": "32d0278692b2243a8ceac06548f22bdffa01ada7",
+  "checks": [
+    {
+      "command": [
+        "node",
+        "scripts/verify-aaa-asset-governance.mjs"
+      ],
+      "exitCode": 0,
+      "log": "check-1.log"
+    },
+    {
+      "command": [
+        "node",
+        "scripts/verify-launch-critical-assets.mjs"
+      ],
+      "exitCode": 0,
+      "log": "check-2.log"
+    },
+    {
+      "command": [
+        "node",
+        "scripts/verify-governed-asset-promotion.mjs"
+      ],
+      "exitCode": 0,
+      "log": "check-3.log"
+    },
+    {
+      "command": [
+        "python",
+        "scripts/certify-v2-runtime-assets.py"
+      ],
+      "exitCode": 0,
+      "log": "check-4.log"
+    },
+    {
+      "command": [
+        "python",
+        "scripts/certify-v2-provenance.py"
+      ],
+      "exitCode": 0,
+      "log": "check-5.log"
+    },
+    {
+      "command": [
+        "node",
+        "--test",
+        "urai-tier1/tests/field-reconstruction-phase5-contract.test.mjs"
+      ],
+      "exitCode": 1,
+      "log": "check-6.log"
+    },
+    {
+      "command": [
+        "node",
+        "--test",
+        "tests/field-reconstruction-phase5-contract.test.mjs"
+      ],
+      "cwd": "urai-tier1",
+      "exitCode": 0,
+      "log": "check-7.log",
+      "corrects": "check-6 used repository root rather than test-required urai-tier1 cwd"
+    }
+  ],
+  "newProviderCalls": 0,
+  "newSpendUsd": 0,
+  "visualAcceptance": false,
+  "independentApproval": false,
+  "productionCertification": false,
+  "files": [
+    {
+      "path": "check-1.log",
+      "sha256": "b95ab1e229f601532fa34fd0f33179e8d2a1c222e3ff7e7db9203518648fdd12"
+    },
+    {
+      "path": "check-2.log",
+      "sha256": "3022e4f273fcd6e0e6c2b6df0e83905f04af340aec7bed58598674caabcdc8ae"
+    },
+    {
+      "path": "check-3.log",
+      "sha256": "982b4a1d3d802f7eb690959e2506a8eac4ce2de17c4a0e56eb9c0fe1b7c912c8"
+    },
+    {
+      "path": "check-4.log",
+      "sha256": "1bdb744dab0c8ade691068f6a5c4b5f95a6f3bf24509bd1782af988c964a988d"
+    },
+    {
+      "path": "check-5.log",
+      "sha256": "ec0db4eee735bbd68cb474f01e0a6d6f8ac9a278492fd31cb0e5d2c200890df3"
+    },
+    {
+      "path": "check-6.log",
+      "sha256": "5f8bcb86211ede7df43bce84690ebd95ed378a39672ef70a4947d4272125c0bc"
+    },
+    {
+      "path": "check-7.log",
+      "sha256": "caf7bfcd3d1a48f78cb78cca52e7bea0477e34e8d579c3bc324790f522a5b028"
+    },
+    {
+      "path": "v2-certification.json",
+      "sha256": "4e21a7d209da5ea7d4ea43f14d86901165b08f9d7854bf9e91249ff9acb5a069"
+    },
+    {
+      "path": "v2-provenance-certification.json",
+      "sha256": "ba1b120c11f5e88a11f32bd1f09db53c4ecb3a59ef797bf880fb9f7821bc930d"
+    },
+    {
+      "path": "v2-sha256-inventory.json",
+      "sha256": "5c89fff05c2008b829f4e2ba260f06d32c4f403ab71358e4ad3b40012f64b1bc"
+    }
+  ]
+}

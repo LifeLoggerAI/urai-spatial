@@ -1,0 +1,5 @@
+{"accepted": 0, "expected": 80, "present": 80, "provenanceIncomplete": 80, "providerCalls": 0, "rejected": 0, "spendUsd": "0.00", "technicallyNoncompliant": 0, "technicallyPassed": 80}
+/workspace/scratch/18bebbbebb60/urai-assets-receipts/scripts/certify-v2-runtime-assets.py:71: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+  for red, green, blue, alpha in rgba.getdata():
+/workspace/scratch/18bebbbebb60/urai-assets-receipts/scripts/certify-v2-runtime-assets.py:57: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+  values = list(gray.getdata())

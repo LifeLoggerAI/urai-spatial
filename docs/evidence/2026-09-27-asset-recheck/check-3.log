@@ -1,0 +1,6 @@
+GOVERNED_ASSET_PROMOTION=GREEN
+MODE=rehearsal
+ASSET_ID=spatial-particle-atlas-v1
+CANONICAL_PATH=urai-tier1/public/assets/urai/generated/textures/spatial-particle-atlas-v1.svg
+EXACT_HEAD_CHECKS_PASSED=true
+PROMOTE=false

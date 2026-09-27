@@ -1,0 +1,13 @@
+✔ Phase 5 field module defines renderer-safe field contracts (1.743641ms)
+✔ Phase 5 field module adapts memory stars into primitives and splats (0.347884ms)
+✔ Phase 5 fallback path suppresses non-renderable states and limits private identifiers (0.457754ms)
+✔ Phase 5 field state remains deterministic for demo mode (0.344443ms)
+✔ Phase 5 field module is local and does not touch remote data stores (0.596978ms)
+ℹ tests 5
+ℹ suites 0
+ℹ pass 5
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 346.534365

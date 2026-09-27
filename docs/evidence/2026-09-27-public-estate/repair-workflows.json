@@ -1,0 +1,208 @@
+{
+  "checkedAt": "2026-09-27T09:18:34.369Z",
+  "scope": "Connector first page of PR-triggered workflow runs only; not independent approval or deployment certification",
+  "repairs": [
+    {
+      "repository": "LifeLoggerAI/urai-labs-llc",
+      "head": "bfc61166757d79de22a32fc3fca9bbbc2e8584ed",
+      "result": {
+        "workflow_runs": [
+          {
+            "id": 36308636096,
+            "name": "URAI Labs public site CI",
+            "status": "queued",
+            "conclusion": null,
+            "run_number": 702,
+            "jobs_url": "https://api.github.com/repos/LifeLoggerAI/urai-labs-llc/actions/runs/36308636096/jobs",
+            "logs_url": "https://api.github.com/repos/LifeLoggerAI/urai-labs-llc/actions/runs/36308636096/logs",
+            "workflow_id": 278276775
+          },
+          {
+            "id": 36308636152,
+            "name": "Distribution Copy Verify",
+            "status": "completed",
+            "conclusion": "success",
+            "run_number": 2,
+            "jobs_url": "https://api.github.com/repos/LifeLoggerAI/urai-labs-llc/actions/runs/36308636152/jobs",
+            "logs_url": "https://api.github.com/repos/LifeLoggerAI/urai-labs-llc/actions/runs/36308636152/logs",
+            "workflow_id": 367965389
+          },
+          {
+            "id": 36308636110,
+            "name": "URAI Production Verify",
+            "status": "in_progress",
+            "conclusion": null,
+            "run_number": 508,
+            "jobs_url": "https://api.github.com/repos/LifeLoggerAI/urai-labs-llc/actions/runs/36308636110/jobs",
+            "logs_url": "https://api.github.com/repos/LifeLoggerAI/urai-labs-llc/actions/runs/36308636110/logs",
+            "workflow_id": 286203691
+          }
+        ]
+      }
+    },
+    {
+      "repository": "LifeLoggerAI/urai-studio",
+      "head": "8354d190bedad59bf048697a49f37183395ced65",
+      "result": {
+        "workflow_runs": [
+          {
+            "id": 36308890374,
+            "name": "Studio Audit",
+            "status": "queued",
+            "conclusion": null,
+            "run_number": 743,
+            "jobs_url": "https://api.github.com/repos/LifeLoggerAI/urai-studio/actions/runs/36308890374/jobs",
+            "logs_url": "https://api.github.com/repos/LifeLoggerAI/urai-studio/actions/runs/36308890374/logs",
+            "workflow_id": 273858353
+          },
+          {
+            "id": 36308890372,
+            "name": "Studio CI",
+            "status": "queued",
+            "conclusion": null,
+            "run_number": 844,
+            "jobs_url": "https://api.github.com/repos/LifeLoggerAI/urai-studio/actions/runs/36308890372/jobs",
+            "logs_url": "https://api.github.com/repos/LifeLoggerAI/urai-studio/actions/runs/36308890372/logs",
+            "workflow_id": 270471988
+          },
+          {
+            "id": 36308890405,
+            "name": "URAI Studio Video Factory Verification",
+            "status": "queued",
+            "conclusion": null,
+            "run_number": 712,
+            "jobs_url": "https://api.github.com/repos/LifeLoggerAI/urai-studio/actions/runs/36308890405/jobs",
+            "logs_url": "https://api.github.com/repos/LifeLoggerAI/urai-studio/actions/runs/36308890405/logs",
+            "workflow_id": 300618773
+          },
+          {
+            "id": 36308890425,
+            "name": "Studio Health Guard",
+            "status": "queued",
+            "conclusion": null,
+            "run_number": 458,
+            "jobs_url": "https://api.github.com/repos/LifeLoggerAI/urai-studio/actions/runs/36308890425/jobs",
+            "logs_url": "https://api.github.com/repos/LifeLoggerAI/urai-studio/actions/runs/36308890425/logs",
+            "workflow_id": 297175514
+          },
+          {
+            "id": 36308890418,
+            "name": "Studio Visual Proof",
+            "status": "queued",
+            "conclusion": null,
+            "run_number": 134,
+            "jobs_url": "https://api.github.com/repos/LifeLoggerAI/urai-studio/actions/runs/36308890418/jobs",
+            "logs_url": "https://api.github.com/repos/LifeLoggerAI/urai-studio/actions/runs/36308890418/logs",
+            "workflow_id": 358382828
+          },
+          {
+            "id": 36308890420,
+            "name": "URAI Production Verify",
+            "status": "completed",
+            "conclusion": "success",
+            "run_number": 384,
+            "jobs_url": "https://api.github.com/repos/LifeLoggerAI/urai-studio/actions/runs/36308890420/jobs",
+            "logs_url": "https://api.github.com/repos/LifeLoggerAI/urai-studio/actions/runs/36308890420/logs",
+            "workflow_id": 286205407
+          }
+        ]
+      }
+    },
+    {
+      "repository": "LifeLoggerAI/urai-storytime",
+      "head": "5a4d03a14787d87e392e18ebde75294fc3decc15",
+      "result": {
+        "workflow_runs": [
+          {
+            "id": 36308921925,
+            "name": "URAI Storytime Visual Proof",
+            "status": "queued",
+            "conclusion": null,
+            "run_number": 159,
+            "jobs_url": "https://api.github.com/repos/LifeLoggerAI/urai-storytime/actions/runs/36308921925/jobs",
+            "logs_url": "https://api.github.com/repos/LifeLoggerAI/urai-storytime/actions/runs/36308921925/logs",
+            "workflow_id": 358418986
+          },
+          {
+            "id": 36308921959,
+            "name": "URAI Storytime Verify",
+            "status": "queued",
+            "conclusion": null,
+            "run_number": 315,
+            "jobs_url": "https://api.github.com/repos/LifeLoggerAI/urai-storytime/actions/runs/36308921959/jobs",
+            "logs_url": "https://api.github.com/repos/LifeLoggerAI/urai-storytime/actions/runs/36308921959/logs",
+            "workflow_id": 287555892
+          },
+          {
+            "id": 36308921978,
+            "name": "URAI Storytime CI",
+            "status": "queued",
+            "conclusion": null,
+            "run_number": 808,
+            "jobs_url": "https://api.github.com/repos/LifeLoggerAI/urai-storytime/actions/runs/36308921978/jobs",
+            "logs_url": "https://api.github.com/repos/LifeLoggerAI/urai-storytime/actions/runs/36308921978/logs",
+            "workflow_id": 271426565
+          }
+        ]
+      }
+    },
+    {
+      "repository": "LifeLoggerAI/urai-spatial",
+      "head": "5fa01009a15d2187c2c53218a3f7c74aef2fe581",
+      "result": {
+        "workflow_runs": [
+          {
+            "id": 36308605627,
+            "name": "Reference Estate Exact-Head Capture",
+            "status": "queued",
+            "conclusion": null,
+            "run_number": 1433,
+            "jobs_url": "https://api.github.com/repos/LifeLoggerAI/urai-spatial/actions/runs/36308605627/jobs",
+            "logs_url": "https://api.github.com/repos/LifeLoggerAI/urai-spatial/actions/runs/36308605627/logs",
+            "workflow_id": 362272708
+          },
+          {
+            "id": 36308605617,
+            "name": "URAI Production Verify",
+            "status": "queued",
+            "conclusion": null,
+            "run_number": 9495,
+            "jobs_url": "https://api.github.com/repos/LifeLoggerAI/urai-spatial/actions/runs/36308605617/jobs",
+            "logs_url": "https://api.github.com/repos/LifeLoggerAI/urai-spatial/actions/runs/36308605617/logs",
+            "workflow_id": 287533319
+          },
+          {
+            "id": 36308605619,
+            "name": "URAI Spatial CI",
+            "status": "queued",
+            "conclusion": null,
+            "run_number": 12807,
+            "jobs_url": "https://api.github.com/repos/LifeLoggerAI/urai-spatial/actions/runs/36308605619/jobs",
+            "logs_url": "https://api.github.com/repos/LifeLoggerAI/urai-spatial/actions/runs/36308605619/logs",
+            "workflow_id": 270603254
+          },
+          {
+            "id": 36308605643,
+            "name": "Patch Check",
+            "status": "queued",
+            "conclusion": null,
+            "run_number": 11243,
+            "jobs_url": "https://api.github.com/repos/LifeLoggerAI/urai-spatial/actions/runs/36308605643/jobs",
+            "logs_url": "https://api.github.com/repos/LifeLoggerAI/urai-spatial/actions/runs/36308605643/logs",
+            "workflow_id": 288967227
+          },
+          {
+            "id": 36308605632,
+            "name": "Privacy adoption check",
+            "status": "completed",
+            "conclusion": "success",
+            "run_number": 11813,
+            "jobs_url": "https://api.github.com/repos/LifeLoggerAI/urai-spatial/actions/runs/36308605632/jobs",
+            "logs_url": "https://api.github.com/repos/LifeLoggerAI/urai-spatial/actions/runs/36308605632/logs",
+            "workflow_id": 273955547
+          }
+        ]
+      }
+    }
+  ]
+}
