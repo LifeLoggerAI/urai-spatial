@@ -319,7 +319,7 @@ const simple = [
   { id:'LEGACY-003', system:'Legacy', state:'reading-table-pause', route:'/legacy?legacyReview=reading-pause', marker:'[data-legacy-review-state="reading-pause"]', text:'reading-table pause' },
   { id:'LEGACY-004', system:'Legacy', state:'continuity-selected', route:'/legacy?legacyReview=continuity-selected', marker:'[data-legacy-review-state="continuity-selected"]', text:'continuity handoff selected' },
   { id:'LEGACY-005', system:'Legacy', state:'life-map-handoff', route:'/legacy?legacyReview=handoff', marker:'[data-legacy-review-state="handoff"]', action: async (page) => { await page.getByRole('link', { name:'Open continuity in Life Map' }).click(); await page.waitForURL(/\/life-map/) } },
-  { id:'LEGACY-006', system:'Legacy', state:'return-home', route:'/legacy?legacyReview=return', marker:'[data-legacy-review-state="return"]', action: async (page) => { await page.getByRole('link', { name:'Return Home' }).click(); await page.waitForURL(/\/home/) } },
+  { id:'LEGACY-006', system:'Legacy', state:'return-home', route:'/legacy?legacyReview=return', marker:'[data-legacy-review-state="return"]', action: async (page) => { await page.getByRole('link', { name:'Return Home' }).click(); await page.waitForURL(/\/home/); await enterFirstPersonHome(page) } },
   { id:'LEGACY-007', system:'Legacy', state:'mobile', route:'/legacy?legacyReview=mobile', marker:'[data-legacy-review-state="mobile"]', device:'mobile' },
   { id:'LEGACY-008', system:'Legacy', state:'reduced-motion', route:'/legacy?legacyReview=reduced-motion', marker:'[data-legacy-review-state="reduced-motion"]', reducedMotion:true },
   { id:'LEGACY-009', system:'Legacy', state:'low-quality-tier', route:'/legacy?legacyReview=low-tier', marker:'[data-spatial-quality-tier="review-low"]' },
@@ -332,7 +332,7 @@ const simple = [
   { id:'COUNCIL-005', system:'Council', state:'speaking', route:'/council?councilReview=speaking', marker:'[data-council-review-state="speaking"]', text:'transcript is authoritative' },
   { id:'COUNCIL-006', system:'Council', state:'acknowledgement', route:'/council?councilReview=acknowledge', marker:'[data-council-review-state="acknowledge"]', text:'bounded acknowledgement state' },
   { id:'COUNCIL-007', system:'Council', state:'cancel-interruption', route:'/council?councilReview=cancelled', marker:'[data-council-review-state="cancelled"]', text:'selection cancelled' },
-  { id:'COUNCIL-008', system:'Council', state:'home-handoff', route:'/council?councilReview=observer', marker:'[data-council-review-state="observer"]', action: async (page) => { await page.getByRole('button', { name:'Return Home' }).click(); await page.waitForURL(/\/home/) } },
+  { id:'COUNCIL-008', system:'Council', state:'home-handoff', route:'/council?councilReview=observer', marker:'[data-council-review-state="observer"]', action: async (page) => { await page.getByRole('button', { name:'Return Home' }).click(); await page.waitForURL(/\/home/); await enterFirstPersonHome(page) } },
   { id:'COUNCIL-009', system:'Council', state:'mirror-handoff', route:'/council?councilReview=observer', marker:'[data-council-review-state="observer"]', action: async (page) => { await page.getByRole('button', { name:'Mirror' }).click(); await page.waitForURL(/\/mirror/) } },
   { id:'COUNCIL-010', system:'Council', state:'passport-handoff', route:'/council?councilReview=observer', marker:'[data-council-review-state="observer"]', action: async (page) => { await page.getByRole('button', { name:'Passport' }).click(); await page.waitForURL(/\/passport/) } },
   { id:'COUNCIL-011', system:'Council', state:'mobile', route:'/council?councilReview=observer', marker:'[data-council-review-state="observer"]', device:'mobile' },
@@ -346,8 +346,8 @@ const simple = [
   { id:'FUTURES-PROVIDER-UNAVAILABLE', system:'Possible Futures', state:'provider-unavailable-disclosure', route:'/possible-futures', marker:'[data-testid="urai-possible-futures"]', text:'provider is unavailable' },
   { id:'FUTURES-NOWEBGL', system:'Possible Futures', state:'no-webgl-conventional-fallback', route:'/possible-futures', marker:'[data-testid="urai-possible-futures"]', noWebGL:true },
 
-  { id:'ONBOARDING-DESKTOP', system:'Onboarding', state:'first-run', route:'/onboarding' },
-  { id:'ONBOARDING-MOBILE', system:'Onboarding', state:'first-run-mobile', route:'/onboarding', device:'mobile' },
+  { id:'ONBOARDING-DESKTOP', system:'Onboarding', state:'first-run', route:'/onboarding', action: async (page) => { await enterFirstPersonHome(page); await page.locator('.uraiV2OnboardingSetup[data-setup="true"]').waitFor({ state:'visible' }) } },
+  { id:'ONBOARDING-MOBILE', system:'Onboarding', state:'first-run-mobile', route:'/onboarding', device:'mobile', action: async (page) => { await enterFirstPersonHome(page); await page.locator('.uraiV2OnboardingSetup[data-setup="true"]').waitFor({ state:'visible' }) } },
   { id:'SETTINGS-PRIVACY-DESKTOP', system:'Privacy', state:'settings-privacy', route:'/settings/privacy' },
   { id:'SETTINGS-PRIVACY-MOBILE', system:'Privacy', state:'settings-privacy-mobile', route:'/settings/privacy', device:'mobile' },
 ]
