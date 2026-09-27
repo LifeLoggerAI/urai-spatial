@@ -161,10 +161,38 @@ export const getCapturedRealityRuntimeUrl = functions.https.onCall(async (data, 
   }
 
   const objectPath = requirePrivateRuntimeObject(uid, assetId, snapshot.get('runtimeObject'))
+  const runtimeFile = admin.storage().bucket().file(objectPath)
+  let proofGeneration: string | null = null
+
+  if (accessMode === 'proof') {
+    const runtimeSha256 = String(snapshot.get('runtimeSha256') ?? '').toLowerCase()
+    const approvedSha256 = String(snapshot.get('proofApprovedRuntimeSha256') ?? '').toLowerCase()
+    const approvedGeneration = String(snapshot.get('proofApprovedStorageGeneration') ?? '')
+
+    if (
+      !/^[a-f0-9]{64}$/.test(runtimeSha256) ||
+      runtimeSha256 !== approvedSha256 ||
+      !/^\\d+$/.test(approvedGeneration) ||
+      !objectPath.endsWith(`/${runtimeSha256}.splat`)
+    ) {
+      throw new functions.https.HttpsError('failed-precondition', 'CAPTURED_REALITY_PROOF_ARTIFACT_NOT_BOUND')
+    }
+
+    const [metadata] = await runtimeFile.getMetadata()
+    const liveGeneration = String(metadata.generation ?? '')
+    const storedSha256 = String(metadata.metadata?.uraiRuntimeSha256 ?? '').toLowerCase()
+    if (liveGeneration !== approvedGeneration || storedSha256 !== runtimeSha256) {
+      throw new functions.https.HttpsError('failed-precondition', 'CAPTURED_REALITY_PROOF_ARTIFACT_CHANGED')
+    }
+    proofGeneration = approvedGeneration
+  }
+
   const expiresAt = Date.now() + RUNTIME_URL_TTL_MS
-  const [url] = await admin.storage().bucket().file(objectPath).getSignedUrl({
+  const [url] = await runtimeFile.getSignedUrl({
+    version: 'v4',
     action: 'read',
     expires: expiresAt,
+    ...(proofGeneration ? { queryParams: { generation: proofGeneration } } : {}),
   })
 
   await db.doc(`users/${uid}/privacyAudit/captured-reality-runtime-${assetId}`).set({
