@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
 import { useGLTF, useTexture } from '@react-three/drei'
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import * as THREE from 'three'
@@ -647,7 +647,7 @@ export default function CinematicReplayClient({ immersiveEntryEnabled = false }:
   if (!memory) return (
     <main className="replayState" data-testid="cinematic-replay-client" data-memory-status={result.status} data-canonical-asset={replayAssets.primary.src} data-replay-neutral="memory-horizon" data-replay-spatial-owner="r3f-lived-memory-environment">
       {webglAvailable === true ? <Canvas className="replaySpatialCanvas" dpr={[1, quality.pixelRatioMax]} frameloop={quality.documentVisible ? 'always' : 'never'} camera={{ position: [0, 0.42, 8.4], fov: 46, near: 0.05, far: 120 }} gl={{ antialias: quality.antialias, powerPreference: 'high-performance' }}>
-        <ReplayNeutralSpatialScene />
+        <Suspense fallback={null}><ReplayNeutralSpatialScene /></Suspense>
       </Canvas> : <div className="replaySpatialFallback" role="status" data-replay-fallback="semantic">{webglAvailable === null ? 'Preparing Replay…' : 'Spatial Replay unavailable. Semantic memory controls remain available.'}</div>}
       <section role={result.status === 'loading' ? 'status' : 'region'} aria-label="Replay memory horizon"><p>{result.status === 'loading' ? 'Opening memory field' : 'Memory horizon'}</p><h1>{result.status === 'loading' ? 'A memory is coming into view.' : 'Choose a memory to enter its reconstruction.'}</h1><span>{result.status === 'loading' ? 'The spatial field will open as soon as the selected memory is ready.' : 'Replay begins from a memory in Life Map, so you always arrive with context.'}</span>{result.status === 'loading' ? null : <button type="button" onClick={chooseMemory}>Choose a memory</button>}</section>
       <style>{stateCss}</style>
@@ -672,7 +672,7 @@ export default function CinematicReplayClient({ immersiveEntryEnabled = false }:
 
   return <main className="replayWorld" style={style} data-testid="cinematic-replay-client" data-memory-status={result.status} data-memory-id={memory.id} data-star-id={memory.star.id} data-manifest-id={memory.replayManifest.id} data-node={memory.star.id} data-playing={playing ? 'true' : 'false'} data-canonical-asset={replayAssets.primary.src} data-replay-spatial-owner="r3f-lived-memory-environment" data-replay-environment={REPLAY_ENVIRONMENT_MODEL} data-replay-composition="v225-source-first-memory-environment-readable-phased-return" data-replay-demo-art="v242-authored-cinematic-memory-valley-clean-frame" data-replay-camera="anchored-first-person-witness" data-replay-truth={truth?.level ?? 'unknown'} data-replay-immersive-entry={immersiveHref ? 'available' : 'unavailable'} data-webgl-state={webglAvailable === null ? 'detecting' : webglAvailable ? 'ready' : 'unavailable'}>
     {webglAvailable === true ? <Canvas className="replaySpatialCanvas" shadows={quality.shadows} dpr={[1, quality.pixelRatioMax]} frameloop={quality.documentVisible ? "always" : "never"} camera={{ position: [0, 0.42, 8.4], fov: 46, near: 0.05, far: 120 }} gl={{ antialias: quality.antialias, powerPreference: "high-performance" }} onCreated={({ gl }) => { gl.outputColorSpace = THREE.SRGBColorSpace; gl.toneMapping = THREE.ACESFilmicToneMapping; gl.toneMappingExposure = memory.demo ? 1.32 : 1.92 }}>
-      <ReplaySpatialScene memory={memory} playing={playing} progressMs={progressMs} muteVideo={Boolean(recordedAudioUrl)} />
+      <Suspense fallback={null}><ReplaySpatialScene memory={memory} playing={playing} progressMs={progressMs} muteVideo={Boolean(recordedAudioUrl)} /></Suspense>
     </Canvas> : <div className="replaySpatialFallback" role="status" data-replay-fallback="semantic">{webglAvailable === null ? 'Preparing Replay…' : 'Spatial Replay unavailable. Memory truth, pacing, transcript, and return controls remain available.'}</div>}
     <div className="replayAtmosphere" aria-hidden="true" />
     <header><p>{memory.demo ? 'DEMO FIXTURE · NOT PERSONAL DATA' : `${memory.privacy} replay`}</p><h1>{memory.title}</h1><span>{active?.label ?? 'Replay'}</span><button className="unwind" type="button" onClick={unwind}>Focus</button>{immersiveHref ? <a className="replayImmersiveEntry" href={immersiveHref} aria-label={'Enter ' + memory.title + ' in AR, VR, or XR'}>Enter AR / VR / XR</a> : null}</header>
