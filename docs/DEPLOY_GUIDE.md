@@ -31,7 +31,7 @@ Required production keys include:
 - `NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN`
 - `NEXT_PUBLIC_FIREBASE_PROJECT_ID`
 - `NEXT_PUBLIC_FIREBASE_APP_ID`
-- `FIREBASE_SERVICE_ACCOUNT_JSON`
+- `GOOGLE_APPLICATION_CREDENTIALS` pointing only to a protected `external_account` Workload Identity Federation configuration, or provider-managed ADC
 - `NEXT_PUBLIC_APP_URL`
 - `STRIPE_SECRET_KEY`
 - `STRIPE_WEBHOOK_SECRET`
@@ -82,7 +82,7 @@ Make sure the hosting project builds `urai-tier1` or uses the root scripts that 
 - Enable Email/Password if using the built-in auth flow.
 - Confirm Firestore is enabled.
 - Confirm Firestore rules match the launch posture.
-- Add `FIREBASE_SERVICE_ACCOUNT_JSON` as a production secret.
+- Do not add Firebase service-account JSON, private keys, or Firebase CI tokens. Use the protected Workload Identity Federation / external-account ADC path required by the canonical runtime.
 
 ## 8. Post-deploy verification
 
@@ -116,5 +116,5 @@ Make sure the hosting project builds `urai-tier1` or uses the root scripts that 
 ## 12. Security reminders
 
 - Never expose Stripe secret key.
-- Never expose Firebase service account JSON.
+- Never create, restore, or deploy long-lived Firebase service-account JSON/private-key credentials for the canonical production path.
 - Only backend routes write Firestore entitlements.
