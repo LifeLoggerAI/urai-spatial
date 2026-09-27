@@ -17,7 +17,7 @@ function capturePassportOrigin() {
 function commitPassportTravel() {
   requestUraiWorldTravel({
     destination: 'passport',
-    href: '/passport',
+    href: '/passport/',
     entryPortal: 'home-passport-ownership-object',
     cameraCheckpoint: 'home-first-person-passport-origin',
   })

@@ -217,7 +217,7 @@ async function verifyHome(page, expected) {
     && result.assetMode === requiredMode && result.personalizationMode === expected.mode
     && result.reviewFixture === (expected.fixture || 'none') && result.orbState === expected.orbState
     && result.orbClip === orbSensoryClips[expected.orbState] && result.orbModelClip === orbModelClips[expected.orbState]
-    && result.animationOwner === 'authored-sanctuary-plus-gltf-interactions'
+    && result.animationOwner === 'canonical-sanctuary-plus-cc0-fern-plus-living-orb'
     && result.assetsReady === 'true' && result.fallbackVisible === 0
     && result.semanticButtons === 3 && result.semanticVisible === 0 && result.discreetControls === 2
   return { ...result, passed }

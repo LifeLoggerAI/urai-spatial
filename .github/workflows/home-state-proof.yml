@@ -2,7 +2,7 @@ name: Home State Proof
 
 on:
   pull_request:
-    branches: [main, home-final-v24-certify-20260826, converge/final-canon-spatial-20260922, fix/focus-mounted-realm-proof-20260926]
+    branches: [main, home-final-v24-certify-20260826, converge/final-canon-spatial-20260922, fix/focus-mounted-realm-proof-20260926, repair/pixel-contract-continuation-20260926]
     paths:
       - 'scripts/capture-home-state-proof.mjs'
       - 'scripts/reconcile-home-orb-consent-proof.mjs'
