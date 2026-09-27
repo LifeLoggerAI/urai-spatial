@@ -9,7 +9,7 @@ type Props = {
   webglAvailable: true
 }
 
-const HOME_SPAWN = { x: 0, z: 6.9 } as const
+const HOME_SPAWN = { x: 2.35, z: 7.9 } as const
 const HOME_ORB = { x: 0, z: -2.65 } as const
 const HOME_GROUND = { x: -5.2, z: -8.4 } as const
 const HOME_LIFE_MAP = { x: 5.2, z: -8.4 } as const
@@ -54,10 +54,18 @@ export default function AssetDrivenHomeWorld({ onOrbOpen, webglAvailable }: Prop
       const reviewOrbState = reviewMode && privateFixture && requestedOrbState && REVIEW_ORB_STATES.has(requestedOrbState as OrbState)
         ? requestedOrbState as OrbState
         : null
+      const assetsReady = world.dataset.homeAssetsReady === 'true'
 
       world.setAttribute('data-home-asset-mode', reviewMode ? 'disclosed-review-candidate' : 'ready')
       world.setAttribute('data-home-personalization-mode', privateFixture ? 'private-personalized' : 'standard')
       world.setAttribute('data-home-review-fixture', reviewMode && privateFixture ? 'safe-private' : 'none')
+      world.setAttribute('data-home-animation-owner', 'canonical-sanctuary-plus-cc0-fern-plus-living-orb')
+      world.setAttribute('data-home-input-owner', 'window-capture-movement')
+      world.setAttribute('data-home-telemetry-owner', 'embodied-motion-kernel')
+      world.setAttribute('data-home-pointer-lock', 'false')
+      world.setAttribute('data-home-input-ready', 'true')
+      world.setAttribute('data-home-interaction-ready', assetsReady ? 'true' : 'false')
+      if (assetsReady) world.setAttribute('data-home-ready', 'true')
       synchronizeCanonicalHomeTelemetry(world)
 
       if (reviewOrbState !== appliedReviewOrbState) {
@@ -70,7 +78,7 @@ export default function AssetDrivenHomeWorld({ onOrbOpen, webglAvailable }: Prop
     const observer = new MutationObserver(hardenHomeOwnership)
     observer.observe(owner, {
       attributes: true,
-      attributeFilter: ['data-home-player-x', 'data-home-player-z'],
+      attributeFilter: ['data-home-player-x', 'data-home-player-z', 'data-home-assets-ready'],
       childList: true,
       subtree: true,
     })

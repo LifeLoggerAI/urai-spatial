@@ -54,7 +54,10 @@ export async function GET() {
     sourceSurface,
     publicRoutes,
     requiredSmokeRoutes: publicRoutes,
-    forbiddenLiveCopy,
+    forbiddenLiveCopyPolicy: {
+      enforced: true,
+      count: forbiddenLiveCopy.length,
+    },
     claimBoundaries: {
       spatialWebPreview: 'live-preview',
       webxr: 'progressive-enhancement',

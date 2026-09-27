@@ -31,6 +31,8 @@ test('runtime invariant applies important geometry and pointer ownership when th
   assert.match(runtimeInvariant, /\['z-index', '2147483646'\]/)
   assert.match(runtimeInvariant, /nav\.querySelectorAll<HTMLElement>\('button'\)/)
   assert.match(runtimeInvariant, /pointer-events', 'none'/)
+  assert.match(runtimeInvariant, /attributeFilter:\s*\['data-life-map-mode'\]/)
+  assert.doesNotMatch(runtimeInvariant, /observer\.observe\(document\.body,\s*\{\s*childList:\s*true,\s*subtree:\s*true,\s*attributes:\s*true\s*\}\)/)
   assert.match(shell, /import \{ LifeMapSelectedActionRuntimeInvariant \}/)
   assert.match(shell, /<LifeMapSelectedActionRuntimeInvariant \/>/)
 })
