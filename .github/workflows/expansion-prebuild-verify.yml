@@ -1,0 +1,53 @@
+name: Expansion Prebuild Verify
+
+on:
+  pull_request:
+    paths:
+      - "expansion/**"
+      - ".github/workflows/expansion-prebuild-verify.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  synthetic-contracts:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Verify hard-off expansion registry
+        run: node expansion/registry/validate-registry.mjs
+      - name: Verify EWI synthetic conformance
+        run: node expansion/ewi/conformance.test.mjs
+      - name: Verify V2 Living World dormant state contract
+        run: node expansion/v2-living-world/state-machine.test.mjs
+      - name: Verify V3 relationship controls
+        run: node expansion/v3-relationships/relationship-graph.test.mjs
+      - name: Verify offline local-first contract
+        run: node expansion/offline/local-first.test.mjs
+      - name: Verify native device simulator contract
+        run: node expansion/device/native-simulator.test.mjs
+      - name: Verify haptic accessibility translation
+        run: node expansion/haptics/haptic-translator.test.mjs
+      - name: Verify notification policy fabric
+        run: node expansion/notifications/notification-policy.test.mjs
+      - name: Verify V5 becoming controls
+        run: node expansion/v5-becoming/identity-timeline.test.mjs
+      - name: Verify wearable signal boundary
+        run: node expansion/wearables/wearable-signals.test.mjs
+      - name: Verify location context boundary
+        run: node expansion/location/location-context.test.mjs
+      - name: Verify safe world command policy
+        run: node expansion/iot/safe-world-command.test.mjs
+      - name: Verify XR engineering harness
+        run: node expansion/xr/xr-session-simulator.test.mjs
+      - name: Verify V7 scene provenance receipts
+        run: node expansion/v7-scene/scene-receipt.test.mjs
+      - name: Verify V8 read-only observer
+        run: node expansion/v8-observer/product-observer.test.mjs
+      - name: Verify V9 read-only ecosystem registry
+        run: node expansion/v9-ecosystem/system-registry.test.mjs

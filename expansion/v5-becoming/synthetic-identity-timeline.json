@@ -1,0 +1,39 @@
+{
+  "version": "1.0.0",
+  "timelineId": "synthetic-becoming-001",
+  "synthetic": true,
+  "revision": 1,
+  "events": [
+    {
+      "eventId": "identity-event-001",
+      "kind": "memory_observed",
+      "label": "Synthetic first milestone",
+      "summary": "Synthetic fixture only",
+      "occurredAt": "2026-01-01T00:00:00.000Z",
+      "status": "active",
+      "inference": false,
+      "provenance": [
+        {
+          "type": "synthetic_fixture",
+          "ref": "fixture:identity-001"
+        }
+      ]
+    },
+    {
+      "eventId": "identity-event-002",
+      "kind": "goal",
+      "label": "Synthetic goal",
+      "summary": "No real user inference",
+      "occurredAt": "2026-02-01T00:00:00.000Z",
+      "status": "active",
+      "inference": false,
+      "provenance": [
+        {
+          "type": "synthetic_fixture",
+          "ref": "fixture:identity-002"
+        }
+      ]
+    }
+  ],
+  "corrections": []
+}
