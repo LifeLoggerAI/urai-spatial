@@ -78,6 +78,7 @@ test('Life Map uses deterministic sequential travel compositions with a safe sel
   assert.ok(source.includes('THREE.MathUtils.damp'))
   assert.ok(source.includes('data-life-map-phase={phase}'))
   assert.ok(source.includes('data-life-map-scale='))
+  assert.ok(source.includes('useState<JourneyPhase>(overviewRequested || !queryNode ? "overview" : "arrival")'))
   assert.doesNotMatch(source, /setTimeout\(\(\) => setPhase\("approach"\), 1050\)/)
 })
 
