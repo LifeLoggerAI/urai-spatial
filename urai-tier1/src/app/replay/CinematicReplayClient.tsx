@@ -7,6 +7,7 @@ import * as THREE from 'three'
 import { assetCssStack, replayAssets } from '@/spatial/assets/uraiAssets'
 import { useReducedMotion } from '@/spatial/hooks/useReducedMotion'
 import { useSelectedMemory } from '@/spatial/memory/useSelectedMemory'
+import { useCapturedRealityReplayEntry } from '@/spatial/captured-reality/useCapturedRealityReplayEntry'
 import type { SelectedMemory, SelectedMemoryMedia } from '@/spatial/memory/selectedMemoryContract'
 import { useAdaptiveSpatialQuality } from '@/spatial/performance/useAdaptiveSpatialQuality'
 import { requestUraiWorldReturn, requestUraiWorldTravel } from '@/spatial/world/worldEvents'
@@ -188,6 +189,7 @@ function ReplayNeutralSpatialScene() {
 export default function CinematicReplayClient() {
   const result = useSelectedMemory()
   const memory = result.memory
+  const capturedRealityEntry = useCapturedRealityReplayEntry(memory?.id ?? null)
   const reducedMotion = useReducedMotion()
   const quality = useAdaptiveSpatialQuality()
   const [playing, setPlaying] = useState(false)
@@ -244,7 +246,7 @@ export default function CinematicReplayClient() {
       <ReplaySpatialScene memory={memory} playing={playing} progressMs={progressMs} />
     </Canvas>
     <div className="replayAtmosphere" aria-hidden="true" />
-    <header><p>{memory.demo ? 'DEMO FIXTURE · NOT PERSONAL DATA' : `${memory.privacy} replay`}</p><h1>{memory.title}</h1><span>{active?.label ?? 'Replay'}</span><button className="unwind" type="button" onClick={unwind}>← Focus</button></header>
+    <header><p>{memory.demo ? 'DEMO FIXTURE · NOT PERSONAL DATA' : `${memory.privacy} replay`}</p><h1>{memory.title}</h1><span>{active?.label ?? 'Replay'}</span><button className="unwind" type="button" onClick={unwind}>← Focus</button>{capturedRealityEntry?.href ? <a className="replayImmersiveEntry" href={capturedRealityEntry.href} aria-label={'Enter captured place for ' + memory.title} title={capturedRealityEntry.truthLabel}>Enter captured place</a> : null}</header>
     <section className="caption" aria-live="polite"><small>{active?.label ?? 'Replay'}</small><strong>{active?.caption ?? memory.narrator.replay}</strong><span>{active?.narratorLine ?? memory.narrator.replay}</span></section>
     <section className="controls" aria-label="Replay controls">
       <button type="button" onClick={() => { if (progressMs >= duration) setProgressMs(0); setPlaying((value) => !value) }} aria-label={playing ? 'Pause replay' : 'Play replay'}>{playing ? 'Pause' : 'Play'}</button>
