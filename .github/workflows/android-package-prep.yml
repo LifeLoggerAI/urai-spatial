@@ -59,7 +59,7 @@ jobs:
 
       - name: Install pinned Capacitor tooling
         working-directory: distribution/android-shell
-        run: npm install --no-audit --no-fund
+        run: pnpm install --frozen-lockfile
 
       - name: Generate and sync Android project
         working-directory: distribution/android-shell
