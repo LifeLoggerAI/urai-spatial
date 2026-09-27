@@ -63,10 +63,10 @@ function reliquaryPlateGeometryV286(seed: number) {
   const geometry = new THREE.IcosahedronGeometry(1, 4)
   const position = geometry.getAttribute('position') as THREE.BufferAttribute
   const colors = new Float32Array(position.count * 3)
-  const graphite = new THREE.Color('#282b29')
-  const mineral = new THREE.Color('#4a4a43')
-  const bronze = new THREE.Color('#6d5843')
-  const ash = new THREE.Color('#82796a')
+  const graphite = new THREE.Color('#383b37')
+  const mineral = new THREE.Color('#69665b')
+  const bronze = new THREE.Color('#8b7158')
+  const ash = new THREE.Color('#a29783')
 
   for (let index = 0; index < position.count; index++) {
     const x = position.getX(index), y = position.getY(index), z = position.getZ(index)
@@ -76,8 +76,8 @@ function reliquaryPlateGeometryV286(seed: number) {
     const fracture = seededWave(seed, longitude + ny * 1.8)
     const grain = seededWave(seed + 2.7, nx * 2.2 + ny * 1.3 - nz * .8)
     const chipped = Math.abs(Math.sin((nx * 2.8 + ny * 3.9 - nz * 2.1 + seed) * 2.2))
-    const radial = .91 + fracture * .10 + grain * .055 - Math.pow(chipped, 13) * .045
-    const lateral = 1 + .06 * Math.sin(ny * 5.4 + seed)
+    const radial = .94 + fracture * .06 + grain * .035 - Math.pow(chipped, 13) * .025
+    const lateral = 1 + .035 * Math.sin(ny * 5.4 + seed)
     position.setXYZ(index, nx * radial * lateral, ny * radial * (1 + .04 * grain), nz * radial * (.78 + .07 * fracture))
 
     const exposed = THREE.MathUtils.smoothstep(nz, -.55, .76)
@@ -221,7 +221,7 @@ export function HomeOrbReliquaryV286() {
   })
 
   return <group name="home-v286-biomorphic-memory-reliquary" userData={{ artRevision: 'v286-biomorphic-memory-reliquary', visualIntent: 'asymmetric-layered-fractured-memory-vessel-with-open-interior-architecture', visualOnly: true, interactionOwner: false, state }}>
-    <group ref={shellRoot} position={[ORB.x, y + (portrait ? 1.12 : 1.05), ORB.z]} rotation={[.055, -.18, -.055]} scale={portrait ? [1.62, 1.68, 1.50] : [1.34, 1.38, 1.24]} name={`home-v286-reliquary-state-${state}`}>
+    <group ref={shellRoot} position={[ORB.x, y + (portrait ? 1.12 : 1.05), ORB.z]} rotation={[.055, -.18, -.055]} scale={portrait ? [1.22, 1.30, 1.18] : [1.34, 1.38, 1.24]} name={`home-v286-reliquary-state-${state}`}>
       {plates.map((geometry, index) => {
         const spec = plateSpecsV286[index]
         return <mesh
@@ -237,7 +237,7 @@ export function HomeOrbReliquaryV286() {
           name={`home-v286-weathered-shell-plate-${index}`}
           userData={{ visualOnly: true, interactionOwner: false, shellLayer: index }}
         >
-          <meshStandardMaterial vertexColors color={spec.tint} emissive={visual.shellEmissive} emissiveIntensity={.018 + visual.activity * .025} roughness={.88 - (index % 3) * .035} metalness={index % 4 === 0 ? .035 : .012} />
+          <meshStandardMaterial vertexColors color={spec.tint} emissive={visual.shellEmissive} emissiveIntensity={.035 + visual.activity * .045} roughness={.88 - (index % 3) * .035} metalness={index % 4 === 0 ? .035 : .012} />
         </mesh>
       })}
 
@@ -261,8 +261,8 @@ export function HomeOrbReliquaryV286() {
           <pointsMaterial ref={fieldMaterial} color={visual.field} size={.022 + visual.activity * .005} sizeAttenuation transparent opacity={visual.fieldOpacity} depthWrite={false} />
         </points>
 
-        <pointLight position={[-.10, .20, .36]} color={visual.light} intensity={.30 + visual.activity * .54} distance={3.0} decay={2} />
-        <pointLight position={[.35, -.28, .20]} color={visual.secondary} intensity={.12 + visual.activity * .24} distance={2.2} decay={2} />
+        <pointLight position={[-.10, .20, .36]} color={visual.light} intensity={.48 + visual.activity * .60} distance={3.0} decay={2} />
+        <pointLight position={[.35, -.28, .20]} color={visual.secondary} intensity={.20 + visual.activity * .30} distance={2.2} decay={2} />
       </group>
     </group>
 
