@@ -18,20 +18,20 @@ const lifeMapWorld = read('src/components/lifemap/LifeMapProductionWorld.tsx')
 const homeGraph = `${homeRuntime}\n${assetHome}\n${homeProductionEntry}\n${homeProduction}\n${homeCss}\n${fallbackHome}`
 const groundGraph = `${groundOwner}\n${groundModel}`
 
-test('Home is one coherent authored Sacred-Tech 3D environment with final physical assets', () => {
+test('Home is one coherent bodyless first-person open-sky 3D environment with final physical assets', () => {
   for (const marker of [
     'AssetDrivenHomeWorld',
     'HomeWorldProduction',
     'data-home-primary-owner="asset-driven"',
-    'data-home-visible-world="moonlit-sacred-tech-sanctuary"',
-    'data-home-world-character="premium-cinematic-sacred-tech"',
-    'data-home-physical-base="authored-obsidian-ritual-platform"',
+    'data-home-visible-world="open-sky-inhabited-natural-sanctuary"',
+    'data-home-world-character="human-scale-grounded-real-place"',
+    'data-home-physical-base="natural-flagstone-clearing"',
     'data-home-visual-ownership="three-dimensional-geometry"',
     'data-home-desktop-mobile-world="same-scene"',
-    'data-home-embodied-self="makehuman-v4"',
+    'data-home-embodied-self="bodyless-first-person-camera"',
     'data-home-movement="walk-keyboard-click-touch"',
     'home-visible-navigable-sanctuary-world',
-    'data-testid="urai-home-embodied-avatar"',
+    'data-testid="urai-home-first-person-presence"',
     'data-testid="urai-home-webgl-orb"',
     'home-authored-terrain',
     'home-mountain-horizon',
@@ -51,7 +51,6 @@ test('Home is one coherent authored Sacred-Tech 3D environment with final physic
   assert.match(homeProduction, /SANCTUARY = '\/assets\/urai\/generated\/models\/home-entry-chamber-v1\.glb'/)
   assert.match(homeProduction, /ORB_MODEL = '\/assets\/urai\/generated\/models\/urai-orb-avatar-v1\.glb'/)
   assert.match(homeProduction, /PORTAL_MODEL = '\/assets\/urai\/generated\/models\/portal-ring-master-v1\.glb'/)
-  assert.match(homeProduction, /HUMAN = '\/assets\/urai\/generated\/human-makehuman-v4\/home-human-makehuman-v4\.glb'/)
   assert.match(homeProduction, /function cloneAuthoredModel\(/)
   assert.match(homeProduction, /cloneAuthoredMaterial/)
   assert.match(homeProduction, /object\.castShadow = true/)
@@ -66,8 +65,8 @@ test('Home is one coherent authored Sacred-Tech 3D environment with final physic
     assert.ok(homeProduction.includes(clip), `missing authored Orb state clip: ${clip}`)
   }
   assert.match(homeProduction, /if \(reducedMotion\) \{[\s\S]*allActions\.forEach\(\(action\) => action\.stop\(\)\)/)
-  assert.match(homeProduction, /function HumanPresence\(/)
-  assert.match(homeProduction, /useGLTF\(HUMAN\)/)
+  assert.match(homeProduction, /function BodylessCameraAnchor\(/)
+  assert.match(homeProduction, /name="home-first-person-camera-anchor"/)
   assert.match(homeProduction, /function LifeMapPortal\(/)
   assert.match(homeProduction, /useGLTF\(PORTAL_MODEL\)/)
   assert.match(homeProduction, /function Thresholds\(/)
@@ -81,11 +80,12 @@ test('Home is one coherent authored Sacred-Tech 3D environment with final physic
   assert.match(homeProduction, /href:'\/life-map\/\?from=home-sky'/)
   assert.match(homeRuntime, /aria-label="Open Life Map directly"/)
   assert.match(homeRuntime, /href: '\/life-map\/'/)
-  assert.match(homeProduction, /data-home-runtime-assets="home-entry-chamber-v1\.glb home-human-makehuman-v4\.glb urai-orb-avatar-v1\.glb portal-ring-master-v1\.glb authored-sacred-tech-composite"/)
+  assert.match(homeProduction, /data-home-runtime-assets="home-entry-chamber-v1\.glb urai-orb-avatar-v1\.glb portal-ring-master-v1\.glb"/)
   assert.match(homeProduction, /data-home-orb-model-clip=/)
   assert.doesNotMatch(homeRuntime, /EmbodiedHomeSpatialCanvas|HomeSanctuaryWorld/)
   assert.doesNotMatch(homeGraph, /genesis-orb-placeholder\.svg|fallback-sky-bloom-12\.webp|fallback-ground-bloom-12\.png|TRANSPARENT_PIXEL/)
   assert.doesNotMatch(homeGraph, /requestPointerLock|OrbitControls/)
+  assert.doesNotMatch(homeProduction, /home-human-makehuman-v4\.glb|embodied-third-person|sacred-tech/i)
 })
 
 test('Ground is one embodied cinematic infrastructure world', () => {
