@@ -20,9 +20,9 @@ const orbClips = {
 }
 
 const destinationTelemetry = {
-  orb: { x: 0, z: -0.65, radius: 1.8, attribute: 'data-home-distance-orb' },
-  ground: { x: -4.55, z: -6.55, radius: 2.2, attribute: 'data-home-distance-ground' },
-  'life-map': { x: 4.55, z: -6.65, radius: 2.2, attribute: 'data-home-distance-life-map' },
+  orb: { x: 0, z: -2.65, radius: 2.5, attribute: 'data-home-distance-orb' },
+  ground: { x: -5.2, z: -8.4, radius: 2.8, attribute: 'data-home-distance-ground' },
+  'life-map': { x: 5.2, z: -8.4, radius: 2.8, attribute: 'data-home-distance-life-map' },
 }
 const movementKeys = { forward: 'w', back: 's', left: 'a', right: 'd' }
 const movementButtonNames = { forward: 'Move forward', back: 'Move backward', left: 'Move left', right: 'Move right' }
