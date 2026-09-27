@@ -22,7 +22,7 @@ const canonicalSceneOwners = new Map([
   ['/demo', ['CutOneReplayFilmPage']],
   ['/demo/life-map', ['redirect(', '/life-map?demo=1&from=demo-life-map']],
   ['/focus', ['FinalFocusChamber']],
-  ['/replay', ['FinalReplayFilm']],
+  ['/replay', ['CinematicReplayClient', 'FinalReplayExperience', 'replay-immersive-memory-field']],
 ])
 
 function read(file) {
