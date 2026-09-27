@@ -1,8 +1,8 @@
 'use client'
 
 import { Html } from '@react-three/drei'
-import { useEffect, useRef, useState } from 'react'
-import { useFrame, type ThreeEvent } from '@react-three/fiber'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { useFrame, useThree, type ThreeEvent } from '@react-three/fiber'
 import * as THREE from 'three'
 import { requestUraiWorldTravel } from '@/spatial/world/worldEvents'
 import { DEFAULT_HOME_FIRST_PERSON_CAMERA, HOME_PASSPORT_ORIGIN_CAPTURE_EVENT } from '@/spatial/home/homeExperienceState'
@@ -124,6 +124,9 @@ const RITUAL_REFERENCE_COPY: Record<RitualReferenceState,{title:string;detail:st
   'semantic-fallback':{title:'Ritual semantic fallback',detail:'Optional symbolic moment · text carries all essential meaning without visual bloom'},
 }
 function HomeRitualReferenceReview() {
+  const gl = useThree((state) => state.gl)
+  // Keep readable DOM text outside the canvas filter and scene-only vignettes.
+  const annotationPortal = useMemo(() => ({ current: gl.domElement.closest<HTMLElement>('.urai-asset-home-world') ?? gl.domElement.parentElement ?? gl.domElement }), [gl])
   const [reviewState,setReviewState]=useState<RitualReferenceState|null>(null)
   useEffect(()=>{const p=new URLSearchParams(window.location.search); if(p.get('homeAssetReview')!=='1') return setReviewState(null); const r=p.get('homeRitualReview') as RitualReferenceState|null; setReviewState(r&&RITUAL_REFERENCE_STATES.has(r)?r:null)},[])
   if(!reviewState) return null
@@ -132,7 +135,7 @@ function HomeRitualReferenceReview() {
   const copy=RITUAL_REFERENCE_COPY[reviewState]
   return <group name="home-ritual-reference-review" userData={{reviewState,personalData:false,supernaturalClaim:false}}>
     {reviewState!=='semantic-fallback'?<RitualPlatform reducedMotion={reducedMotion} reducedStimulation={reducedStimulation}/>:null}
-    <Html calculatePosition={(_, __, size) => [16, size.height - 16]} style={{pointerEvents:'none'}}><div data-testid="home-ritual-reference" data-home-ritual-reference-state={reviewState} data-home-ritual-fixture="disclosed-synthetic-no-personal-data" data-home-ritual-reduced-motion={reducedMotion?'true':'false'} data-home-ritual-reduced-stimulation={reducedStimulation?'true':'false'} style={{width:'min(360px, calc(100vw - 32px))',boxSizing:'border-box',transform:'translateY(-100%)',color:'#edf5f1',background:'rgba(7,15,19,.88)',border:'1px solid rgba(214,225,219,.24)',borderRadius:16,padding:'14px 16px',font:'500 13px/1.45 system-ui',boxShadow:'0 18px 48px rgba(0,0,0,.26)'}}><div style={{fontWeight:700,letterSpacing:'.04em'}}>{copy.title}</div><div style={{marginTop:6,opacity:.88}}>{copy.detail}</div><div style={{marginTop:9,fontSize:11,opacity:.68}}>REFERENCE REVIEW · disclosed synthetic fixture · no personal memory or supernatural certainty</div></div></Html>
+    <Html portal={annotationPortal} zIndexRange={[20, 20]} calculatePosition={(_, __, size) => [16, size.height - 16]} style={{pointerEvents:'none'}}><div data-testid="home-ritual-reference" data-home-ritual-reference-state={reviewState} data-home-ritual-fixture="disclosed-synthetic-no-personal-data" data-home-ritual-reduced-motion={reducedMotion?'true':'false'} data-home-ritual-reduced-stimulation={reducedStimulation?'true':'false'} style={{width:'min(360px, calc(100vw - 32px))',boxSizing:'border-box',transform:'translateY(-100%)',color:'#edf5f1',background:'rgba(7,15,19,.88)',border:'1px solid rgba(214,225,219,.24)',borderRadius:16,padding:'14px 16px',font:'500 13px/1.45 system-ui',boxShadow:'0 18px 48px rgba(0,0,0,.26)'}}><div style={{fontWeight:700,letterSpacing:'.04em'}}>{copy.title}</div><div style={{marginTop:6,opacity:.88}}>{copy.detail}</div><div style={{marginTop:9,fontSize:11,opacity:.68}}>REFERENCE REVIEW · disclosed synthetic fixture · no personal memory or supernatural certainty</div></div></Html>
   </group>
 }
 
