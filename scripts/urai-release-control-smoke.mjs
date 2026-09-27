@@ -11,7 +11,6 @@ const { chromium } = requireFromTarget('playwright')
 const out = 'release-control-evidence'
 const canonicalWorkflow = 'URAI Canonical Production Release'
 const canonicalRepository = 'LifeLoggerAI/urai-spatial'
-const managedCredentialFilename = 'urai-firebase-service-account.json'
 
 function protectedDeployRecoveryContext() {
   return process.env.GITHUB_ACTIONS === 'true'
@@ -27,8 +26,8 @@ function configureRecoveryEnvironment() {
   const runnerTemp = String(process.env.RUNNER_TEMP || '').trim()
   if (!runnerTemp) throw new Error('RUNNER_TEMP is required for strict-smoke Hosting recovery')
   process.env.FIREBASE_SITE_ID = 'urai-4dc1d'
-  process.env.GOOGLE_APPLICATION_CREDENTIALS = path.join(runnerTemp, managedCredentialFilename)
-  process.env.URAI_HOSTING_RECOVERY_RECEIPT = path.join(runnerTemp, 'hosting-recovery', 'legacy-live-release.json')
+  delete process.env.GOOGLE_APPLICATION_CREDENTIALS
+  process.env.URAI_HOSTING_RECOVERY_RECEIPT = path.join(runnerTemp, 'hosting-recovery', 'live-release.json')
   process.env.URAI_HOSTING_RESTORE_CONFIRM = 'RESTORE_EXACT_HOSTING_VERSION'
   return runnerTemp
 }
