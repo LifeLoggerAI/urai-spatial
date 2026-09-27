@@ -108,13 +108,22 @@ function RecordedMemoryField({ media, playing, progressMs, muteVideo }: { media:
   const [texture, setTexture] = useState<THREE.Texture | null>(null)
   const videoRef = useRef<HTMLVideoElement | null>(null)
   const renderedMediaFrames = useRef(0)
-  useEffect(() => { renderedMediaFrames.current = 0 }, [texture])
+  const lastCompletedRenderFrame = useRef(0)
+  useEffect(() => {
+    renderedMediaFrames.current = 0
+    lastCompletedRenderFrame.current = 0
+  }, [texture])
   useFrame(({ gl }) => {
     const owner = gl.domElement.closest('[data-testid="cinematic-replay-client"]')
-    if (gl.info.render.calls === 0) {
+    const completedRenderFrame = gl.info.render.frame
+    if (completedRenderFrame <= 0) {
+      renderedMediaFrames.current = 0
+      lastCompletedRenderFrame.current = 0
       owner?.setAttribute('data-replay-render-ready', 'false')
       return
     }
+    if (completedRenderFrame === lastCompletedRenderFrame.current) return
+    lastCompletedRenderFrame.current = completedRenderFrame
     renderedMediaFrames.current++
     if (renderedMediaFrames.current >= 2) owner?.setAttribute('data-replay-render-ready', 'true')
   })
