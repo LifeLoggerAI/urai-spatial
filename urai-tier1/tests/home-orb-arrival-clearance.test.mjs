@@ -48,7 +48,7 @@ function visit(node) {
 visit(ast)
 assert.ok(shellAttributes, 'Use the actual visible shell transform')
 
-function shellAt(anchor, portrait) {
+function shellAt(anchor, portrait, legacyScale) {
   const root = new THREE.Group()
   root.position.set(anchor.x - source.ORB.x, source.height(anchor.x, anchor.z) - source.height(source.ORB.x, source.ORB.z), anchor.z - source.ORB.z)
   const shell = new THREE.Group()
@@ -56,7 +56,7 @@ function shellAt(anchor, portrait) {
   const expression = (name) => vm.runInNewContext(`(${shellAttributes[name]})`, context)
   shell.position.fromArray(expression('position'))
   shell.rotation.fromArray(expression('rotation'))
-  shell.scale.fromArray(expression('scale'))
+  shell.scale.fromArray(legacyScale ?? expression('scale'))
   root.add(shell)
   for (const spec of source.plateSpecsV286) {
     const plate = new THREE.Mesh(source.reliquaryPlateGeometryV286(spec.seed), new THREE.MeshBasicMaterial())
@@ -75,7 +75,7 @@ test('actual desktop and portrait Orb shells clear the arrival sightline and cen
   const corridor = new THREE.Box3(new THREE.Vector3(-.4, -1, -8), new THREE.Vector3(.4, 1.8, camera.position[2]))
   for (const portrait of [false, true]) {
     const current = shellAt(source.HOME_ORB_GROUND_ANCHOR, portrait)
-    const former = shellAt({ x: 1.02, z: .72 }, portrait)
+    const former = shellAt({ x: 1.02, z: .72 }, portrait, portrait ? [1.62, 1.68, 1.50] : [1.34, 1.38, 1.24])
     assert.equal(ray.intersectObject(current, true).length, 0, 'Current shell blocks the initial view')
     assert.equal(new THREE.Box3().setFromObject(current, true).expandByScalar(.05).intersectsBox(corridor), false, 'Shell and motion margin enter the central path')
     assert.ok(ray.intersectObject(former, true).length > 0, 'Regression fixture must detect the retained-pixel obstruction')
