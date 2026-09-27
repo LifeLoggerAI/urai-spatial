@@ -418,7 +418,9 @@ export function stageHomeReturnFrameForHomeNavigation() {
     if (frame?.kind === 'destination' && frame.destination === 'PASSPORT' && serialized) {
       stagedHomeReturnFrame = frame
       window.sessionStorage.setItem(HOME_RETURN_STAGED_SESSION_KEY, serialized)
-      window.sessionStorage.removeItem(HOME_RETURN_SESSION_KEY)
     }
+    // The origin key is one-shot on a Passport return even when an old or
+    // partially written payload fails validation; never leave it stale.
+    window.sessionStorage.removeItem(HOME_RETURN_SESSION_KEY)
   } catch { /* session storage is best effort */ }
 }
