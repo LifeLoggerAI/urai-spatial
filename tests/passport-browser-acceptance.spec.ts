@@ -5,6 +5,10 @@ import path from 'node:path'
 const baseURL = process.env.PLAYWRIGHT_BASE_URL || 'http://127.0.0.1:3000'
 const evidenceRoot = path.resolve('test-results/passport-evidence')
 
+// Retain the first failed attempt as well as retries. Playwright requires
+// this worker-scoped trace option at file level, not inside a describe block.
+test.use({ trace: 'on' })
+
 test('mobile Settings motion preference reaches loaded Home', async ({ page }) => {
   test.setTimeout(180_000)
   const runtime = await observe(page)
