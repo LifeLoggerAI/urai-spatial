@@ -69,6 +69,7 @@ function publicAssetState(snapshot: FirebaseFirestore.DocumentSnapshot) {
     state: String(data.state ?? 'unknown'),
     reconstructionMethod: String(data.reconstructionMethod ?? 'unknown'),
     reviewState: String(data.reviewState ?? 'unreviewed'),
+    proofState: String(data.proofState ?? 'hard-off'),
     releaseState: String(data.releaseState ?? 'hard-off'),
     browserCertified: data.browserCertified === true,
     mobileCertified: data.mobileCertified === true,
@@ -119,8 +120,25 @@ export const getCapturedRealityRuntimeUrl = functions.https.onCall(async (data, 
     throw new functions.https.HttpsError('not-found', 'Captured-reality asset was not found.')
   }
 
-  if (snapshot.get('state') !== 'ready' || snapshot.get('reviewState') !== 'accepted') {
+  const state = String(snapshot.get('state') ?? 'unknown')
+  const reviewState = String(snapshot.get('reviewState') ?? 'unreviewed')
+  const proofState = String(snapshot.get('proofState') ?? 'hard-off')
+
+  if (accessMode === 'runtime' && (state !== 'ready' || reviewState !== 'accepted')) {
     throw new functions.https.HttpsError('failed-precondition', 'CAPTURED_REALITY_ASSET_NOT_ACCEPTED')
+  }
+
+  if (accessMode === 'proof') {
+    if (state !== 'proof-ready' && state !== 'ready') {
+      throw new functions.https.HttpsError('failed-precondition', 'CAPTURED_REALITY_PROOF_ASSET_NOT_READY')
+    }
+    if (
+      proofState !== 'technical-preview' ||
+      snapshot.get('proofIntegrityVerified') !== true ||
+      snapshot.get('proofPrivacyReviewed') !== true
+    ) {
+      throw new functions.https.HttpsError('failed-precondition', 'CAPTURED_REALITY_PROOF_ASSET_NOT_AUTHORIZED')
+    }
   }
 
   const releaseState = String(snapshot.get('releaseState') ?? 'hard-off')
