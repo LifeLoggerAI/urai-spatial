@@ -5,6 +5,7 @@
   "targetRoutes": ["/council"],
   "bytes": 1708944,
   "sha256": "d5017492a51d7c96b4156eeb9339812a9e2edfabd73d929898ebb5ce7c9bfaaf",
+  "measured": {"triangleCount": 36972},
   "compressionStatus": "candidate-makehuman-v4",
   "requiredCompression": "draco-or-meshopt",
   "fallback": "council-archivist-human-rig-v3",

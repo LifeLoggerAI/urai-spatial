@@ -5,6 +5,7 @@
   "targetRoutes": ["/council"],
   "bytes": 1708872,
   "sha256": "41447d012af9fd8abd181135a43cc2877c1318bde1fad6879916cc66c79fda9e",
+  "measured": {"triangleCount": 36972},
   "compressionStatus": "candidate-makehuman-v4",
   "requiredCompression": "draco-or-meshopt",
   "fallback": "council-mirror-human-rig-v3",

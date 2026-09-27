@@ -83,6 +83,10 @@ for (const asset of manifest.assets) {
       else warnings.push(message)
     }
     const compressed = measured.extensionsUsed.includes('KHR_draco_mesh_compression') || measured.extensionsUsed.includes('EXT_meshopt_compression')
+    const claimsCompressed = /(?:^|[-_])(draco|meshopt)(?:[-_]|$)/i.test(compressionStatus) && !/uncompressed/i.test(compressionStatus)
+    if (claimsCompressed && !compressed) {
+      errors.push(`${asset.id}: receipt compression status ${compressionStatus} is not present in the GLB extensions`)
+    }
     if (asset.requiredCompression === 'draco-or-meshopt' && !compressed) {
       const message = `${asset.id}: GLB has no Draco or Meshopt extension`
       if (productionReady) errors.push(message)

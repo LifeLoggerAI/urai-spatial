@@ -10,10 +10,10 @@
     "/focus",
     "/replay"
   ],
-  "bytes": 673,
-  "sha256": "f50f13f9e581c5253d3c046bbfd8749600864cd2669bd7bef48226c3514a6035",
+  "bytes": 695,
+  "sha256": "4fee457c73871f98fb0f1e29fce4790a3b897cf9b4554c7771cdb226c4759b6f",
   "measured": {
-    "bytes": 673
+    "bytes": 695
   },
   "compressionStatus": "json",
   "requiredCompression": "json",
@@ -21,7 +21,7 @@
   "source": "URAI deterministic candidate forge",
   "license": "URAI Labs internal production asset",
   "generatedBy": "scripts/forge-launch-critical-assets.mjs + scripts/normalize-launch-critical-assets.mjs",
-  "generatedAt": "2026-07-23T21:41:50.579Z",
+  "generatedAt": "2026-09-26T03:21:33.213Z",
   "releaseState": "candidate-not-production-ready",
   "absolutePath": "urai-tier1/public/assets/urai/generated/textures/global-cinematic-material-pack-v1.json"
 }

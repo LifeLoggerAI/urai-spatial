@@ -2,6 +2,7 @@
   "schemaVersion": 1,
   "id": "life-map-memory-star-v1",
   "fixedPath": "urai-tier1/public/assets/urai/generated/models/life-map-memory-star-v1.glb",
+  "targetRoutes": ["/life-map"],
   "bytes": 373236,
   "sha256": "ae4a70d2964a69025e246e7c09394b674a3c9f7b4b44a014cde6e1bffe7e9efa",
   "measured": {
@@ -14,7 +15,7 @@
       "MemoryStar_Focus"
     ]
   },
-  "compressionStatus": "meshopt",
+  "compressionStatus": "uncompressed-glb-candidate",
   "requiredCompression": "draco-or-meshopt",
   "fallback": "procedural-memory-star",
   "source": "URAI deterministic candidate forge; replaceable by reviewed provider asset",

@@ -1,0 +1,65 @@
+{
+  "schemaVersion": "urai.parallel-aaa-candidate-pack.1",
+  "packageId": "parallel-aaa-20260926-deterministic-candidates",
+  "createdAt": "2026-09-26T03:34:00Z",
+  "source": "scripts/forge-launch-critical-assets.mjs before canonical path restoration",
+  "canonicalPathsRestored": true,
+  "candidates": [
+    {
+      "id": "home-entry-chamber-v1",
+      "candidatePath": "urai-tier1/public/assets/urai/generated/candidates/parallel-aaa-20260926/models/home-entry-chamber-v1.candidate.glb",
+      "bytes": 45904,
+      "sha256": "0a3c3c2da53c5fe25958e57954c8337d7a27d9c4f94ae0967de21ae84e3e8883",
+      "format": "glb"
+    },
+    {
+      "id": "ground-world-terrain-v1",
+      "candidatePath": "urai-tier1/public/assets/urai/generated/candidates/parallel-aaa-20260926/models/ground-world-terrain-v1.candidate.glb",
+      "bytes": 24936,
+      "sha256": "8068d71509d55035efeb869d827328aa5422a99f6a1f46c80db1424c8f32e1e8",
+      "format": "glb"
+    },
+    {
+      "id": "life-map-memory-star-v1",
+      "candidatePath": "urai-tier1/public/assets/urai/generated/candidates/parallel-aaa-20260926/models/life-map-memory-star-v1.candidate.glb",
+      "bytes": 32204,
+      "sha256": "6fa964e1c51b66f83ccafa7c0c774185bee528dfbb673d8b906bc2dc181f9bcf",
+      "format": "glb"
+    },
+    {
+      "id": "focus-memory-chamber-v1",
+      "candidatePath": "urai-tier1/public/assets/urai/generated/candidates/parallel-aaa-20260926/models/focus-memory-chamber-v1.candidate.glb",
+      "bytes": 72312,
+      "sha256": "fb88bf90b3757798a0cdbbd158e95c40e8e322524c9da1632be5a0ffef096d90",
+      "format": "glb"
+    },
+    {
+      "id": "replay-memory-environment-v1",
+      "candidatePath": "urai-tier1/public/assets/urai/generated/candidates/parallel-aaa-20260926/models/replay-memory-environment-v1.candidate.glb",
+      "bytes": 22336,
+      "sha256": "51eca3cbf7f28d438fb7e09c868f8247d02eb65bfecb015828ce9edb806fe9f0",
+      "format": "glb"
+    },
+    {
+      "id": "urai-orb-avatar-v1",
+      "candidatePath": "urai-tier1/public/assets/urai/generated/candidates/parallel-aaa-20260926/models/urai-orb-avatar-v1.candidate.glb",
+      "bytes": 55980,
+      "sha256": "83b252f0de613a60fffb15e07cdf4f02ca81b59aac5d5bfccce7ee716287f77d",
+      "format": "glb"
+    },
+    {
+      "id": "portal-ring-master-v1",
+      "candidatePath": "urai-tier1/public/assets/urai/generated/candidates/parallel-aaa-20260926/models/portal-ring-master-v1.candidate.glb",
+      "bytes": 32912,
+      "sha256": "578bcc59ac90d7df5193fc67cf94efbd4b663a2035a1cd807d494a294c3af00f",
+      "format": "glb"
+    },
+    {
+      "id": "passport-status-room-v1",
+      "candidatePath": "urai-tier1/public/assets/urai/generated/candidates/parallel-aaa-20260926/models/passport-status-room-v1.candidate.glb",
+      "bytes": 47284,
+      "sha256": "47189faa314c4aa0bea590c70bd18c5e71feed3db41b62818e5d66e08a96e8c3",
+      "format": "glb"
+    }
+  ]
+}
