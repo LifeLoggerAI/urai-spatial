@@ -3,5 +3,6 @@ packages:
   - "apps/functions"
   - "packages/tier-locks"
   - "packages/release-tools"
+  - "distribution/android-shell"
   - "!**/_audit/**"
   - "!**/.next/**"

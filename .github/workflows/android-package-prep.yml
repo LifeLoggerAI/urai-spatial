@@ -52,21 +52,17 @@ jobs:
         run: corepack enable
 
       - name: Install canonical dependencies
-        run: pnpm install --frozen-lockfile
+        run: corepack pnpm install --frozen-lockfile
 
       - name: Build governed static export
-        run: pnpm build:static
-
-      - name: Install pinned Capacitor tooling
-        working-directory: distribution/android-shell
-        run: pnpm install --frozen-lockfile
+        run: corepack pnpm build:static
 
       - name: Generate and sync Android project
         working-directory: distribution/android-shell
         run: |
           rm -rf android
-          pnpm exec cap add android
-          pnpm exec cap sync android
+          corepack pnpm exec cap add android
+          corepack pnpm exec cap sync android
 
       - name: Build release bundle without signing credentials
         working-directory: distribution/android-shell/android
