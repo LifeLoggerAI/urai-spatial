@@ -1,6 +1,7 @@
 import { chromium } from 'playwright'
 import fs from 'node:fs/promises'
 import path from 'node:path'
+import { installDoorwayEventTrace } from './native-doorway-event-trace.mjs'
 
 const baseUrl = (process.env.URAI_AUDIT_BASE_URL || 'http://127.0.0.1:3000').replace(/\/$/, '')
 const exactSha = String(process.env.URAI_PROOF_SOURCE_SHA || process.env.URAI_EXACT_HEAD || '').trim()
@@ -109,6 +110,11 @@ async function waitForHomeActionsReady(page, timeout) {
 
 async function prove(browser, doorway, testCase) {
   const context = await browser.newContext({ viewport: testCase.viewport, isMobile: !!testCase.isMobile, hasTouch: !!testCase.hasTouch, deviceScaleFactor: testCase.isMobile ? 2 : 1 })
+  const eventTrace = []
+  await context.exposeFunction('__uraiRecordDoorwayEvent', (record) => {
+    if (eventTrace.length < 80) eventTrace.push(record)
+  })
+  await context.addInitScript(installDoorwayEventTrace)
   const page = await context.newPage()
   const screenshot = `screenshots/${testCase.device}-${testCase.method}-home-to-${doorway.id}.png`
   const record = { exactSha, sourceRoute: '/home', destinationRoute: doorway.destination, device: testCase.device, activationMethod: testCase.method, inputDispatch: testCase.method === 'keyboard' ? 'focused-enter' : 'browser-coordinate-hit', viewport: testCase.viewport, targetAccessibleName: doorway.name, targetTestId: doorway.testId, resultingUrl: '', screenshot, semanticNavigationOwner: 'runtime-boundary', semanticNavigationNonDominant: false, legacyVisibleDoorways: 0, targetOwnsHitPoint: false, hitPoint: null, success: false, failureReason: '' }
@@ -142,6 +148,7 @@ async function prove(browser, doorway, testCase) {
     record.resultingUrl = page.url()
     record.failureReason = String(error?.message || error)
   } finally {
+    record.eventTrace = eventTrace
     await page.screenshot({ path: path.join(outDir, screenshot), animations: 'disabled' }).catch(() => {})
     await context.close()
   }
