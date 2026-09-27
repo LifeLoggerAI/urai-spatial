@@ -29,9 +29,7 @@ async function getAdminFirestore() {
   const firestore = await import('firebase-admin/firestore');
 
   if (!app.getApps().length) {
-    const raw = process.env.FIREBASE_SERVICE_ACCOUNT_JSON;
-    if (!raw) throw new Error('Missing FIREBASE_SERVICE_ACCOUNT_JSON for Firestore entitlement persistence.');
-    app.initializeApp({ credential: app.cert(JSON.parse(raw)) });
+    app.initializeApp({ credential: app.applicationDefault() });
   }
 
   return firestore.getFirestore();
