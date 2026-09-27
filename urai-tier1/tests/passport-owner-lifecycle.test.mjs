@@ -36,7 +36,8 @@ function harness(file = 'PassportVaultClient.tsx', search = '') {
     '@/lib/firebase/client': { app: {}, firebasePublicEnvReady: true },
     '@/lib/privacy/operationalPrivacyClient': bridge,
     './passportModel': { demoPassportSnapshot: () => ({}), redactPassportSnapshot: value => value },
-    '@/spatial/world/worldEvents': { requestUraiWorldReturn() { returned++; stagedHomeReturn++ } },
+    '@/spatial/world/worldEvents': { requestUraiWorldReturn() { returned++ } },
+    '@/spatial/home/homeExperienceState': { stageHomeReturnFrameForHomeNavigation() { stagedHomeReturn++ } },
     '@/spatial/hooks/useReducedMotion': { useReducedMotion: () => userMotion },
     './GlobalEmotionalFieldConsentCard': { default: 'consent-card' }, './passport-vault.css': {},
   }
