@@ -29,7 +29,7 @@ for (const [surface, file] of Object.entries(files)) check(surface, file, 'sourc
 const sourceChecks = [
   ['root', 'root', 'Home threshold owner', 'FinalHomeThreshold'],
   ['home', 'homeWrapper', 'final Home wrapper', 'urai-home-accessible-fallback'],
-  ['home', 'home', 'Home launch marker', 'data-launch-surface="aaa-final-home-sky-ground-orb-body-portals"'],
+  ['home', 'home', 'Home launch marker', 'data-launch-surface="aaa-final-home-open-sky-ground-orb-camera-portals"'],
   ['home', 'home', 'Ground threshold', '/ground?from=home'],
   ['home', 'home', 'Life Map threshold', '/life-map?from=home-sky'],
   ['home', 'home', 'Own your life copy', 'Own your life.'],
