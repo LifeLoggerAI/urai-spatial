@@ -21,7 +21,7 @@ test('V286 remains the authored biomorphic layered reliquary rather than a heart
 })
 
 test('V288 shell materials stay readable in blue-hour lighting without harsh metallic glare', () => {
-  const swatches = [...orb.matchAll(/new THREE\\.Color\\('(#[0-9a-fA-F]{6})'\\)/g)].map((match) => match[1])
+  const swatches = [...orb.matchAll(/new THREE\.Color\('(#[0-9a-fA-F]{6})'\)/g)].map((match) => match[1])
   const luminance = (hex) => {
     const channels = [1, 3, 5].map((start) => parseInt(hex.slice(start, start + 2), 16) / 255)
       .map((value) => value <= .04045 ? value / 12.92 : ((value + .055) / 1.055) ** 2.4)
