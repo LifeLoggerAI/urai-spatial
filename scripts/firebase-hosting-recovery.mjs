@@ -110,9 +110,9 @@ function assertNoLongLivedCredentialEnvironment() {
 
 export function accessTokenFromFederatedEnvironment() {
   assertNoLongLivedCredentialEnvironment()
-  const accessToken = String(process.env.GOOGLE_WIF_ACCESS_TOKEN || process.env.GOOGLE_OAUTH_ACCESS_TOKEN || '').trim()
+  const accessToken = String(process.env.GOOGLE_WIF_ACCESS_TOKEN || '').trim()
   if (!accessToken) {
-    throw new Error('Short-lived federated access token is required via GOOGLE_WIF_ACCESS_TOKEN or GOOGLE_OAUTH_ACCESS_TOKEN')
+    throw new Error('Short-lived GitHub OIDC/Google WIF access token is required via GOOGLE_WIF_ACCESS_TOKEN')
   }
   return accessToken
 }
