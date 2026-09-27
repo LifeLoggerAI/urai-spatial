@@ -204,7 +204,7 @@ export const getCapturedRealityRuntimeUrl = functions.https.onCall(async (data, 
     queryParams: { generation: approvedGeneration },
   })
 
-  await db.doc(`users/${uid}/privacyAudit/captured-reality-runtime-${assetId}`).set({
+  await db.collection(`users/${uid}/privacyAudit`).add({
     ownerId: uid,
     kind: 'captured_reality.runtime_accessed',
     assetId,
@@ -213,7 +213,7 @@ export const getCapturedRealityRuntimeUrl = functions.https.onCall(async (data, 
     accessMode,
     deviceTier,
     recordedAt: admin.firestore.FieldValue.serverTimestamp(),
-  }, { merge: true })
+  })
 
   return {
     assetId,
