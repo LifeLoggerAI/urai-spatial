@@ -150,3 +150,14 @@ Local validation: capture script syntax and runtime TypeScript pass after correc
 Ten affected Home/restoration proof contracts pass; capture syntax and runtime TypeScript pass. Home/accessibility stacked-base registration and exact build identity are shared with diagnostic PR #1356. That candidate is left unchanged so its ongoing captures finish.
 
 Pinned-pnpm-10 production build completed successfully. Existing protobuf dynamic-import and missing Next ESLint plugin warnings remain; no lint certification is claimed. No dependencies or lockfile changed.
+
+
+## Consolidated interaction candidate and public outage — 2026-09-27
+
+Consolidates PR1357 ritual annotation repair with PR1356 normal-motion Orb trace retention. Incorporates the interactive cadence helper introduced by PR1353 dab14551ffb90ec7e0947697056aa0e07149819a, and wires it into Home: when software-rendered Home's companion text UI is open and idle, stop decorative draws; continue during navigation and active thinking/speech, and resume after close. Compact Orb activation uses the same open/close event path. Reduced-motion stillness and hardware animation retain their policies. PR1353 07a398dfff33eaa7d16f3ced28980584a8fa17c1 adds helper tests only; its earlier mobile 90-to-180-second change and PR1354 a2a71d6's 15-second Passport poll are excluded. Original five-second return assertion remains.
+
+22 affected cadence/accessibility/restoration checks pass after correcting the test invocation working directory; runtime TypeScript and pinned-pnpm-10 production build pass. These are implementation checks, not rendered acceptance. Candidate must receive its own Home, journey, Passport, accessibility and whole-estate proof and independent review. Existing PR1356/1357 captures remain untouched.
+
+Permitted browser access is restored. Fresh public navigation to urai.app, urai.app/home/ and urai-4dc1d.web.app shows Firebase Site Not Found. Public screenshot: [live Home outage](urai-live-home-20260927-0550.jpg), SHA-256 `fb77bf91b07dcd0f79b9f04b937bed398936a42e227c4633fd9ceaf388fba19e`. Authenticated console shows urai.app Connected and current Hosting release aa4653, displayed July 23, 2026 6:16 AM. No Git revision or outage cause can be inferred from that legacy version. No private console image is published.
+
+Fresh main 4b3c7bd982865324510eb9581d9f324bd4ad6e93 explicitly quarantines production and Hosting recovery in spatial-live-deploy.yml. Required independently verified short-lived identity, WIF/IAM trust, least privilege, runtime read-back, rollback and historical key revocation evidence cannot be replaced by green UI builds. No release workflow was weakened or bypassed. No merge, deployment or UrAi live pass is claimed. Home/mobile Orb art and runtime responsiveness remain unfinished implementation work. Accepted final art, real private Gaussian reconstruction and independent release proof remain separate dependencies.

@@ -6,6 +6,7 @@ import { publishOrbState } from '@/app/home/orbStateController'
 import OrbConversationPanel from '@/spatial/orb/OrbConversationPanel'
 import {
   publishUraiWorldOrbClose,
+  requestUraiWorldOrbOpen,
   requestUraiWorldReturn,
   takePendingUraiWorldOrbOpen,
   URAI_WORLD_ORB_OPEN_EVENT,
@@ -48,8 +49,8 @@ export function PersistentWorldCompanion() {
 
   const toggleCompanion = useCallback(() => {
     if (open) closeCompanion(true)
-    else { externalActivatorRef.current = null; setOpen(true); publishCompanionAttention() }
-  }, [closeCompanion, open, publishCompanionAttention])
+    else requestUraiWorldOrbOpen(orbRef.current ?? undefined)
+  }, [closeCompanion, open])
 
   const toggleAudio = useCallback(() => {
     const enabled = !audioEnabled
