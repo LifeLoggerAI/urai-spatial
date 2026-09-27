@@ -23,8 +23,8 @@ if (!Number.isInteger(maxAttempts) || maxAttempts < 1 || maxAttempts > 8) throw 
 if (!Number.isInteger(retryBaseMs) || retryBaseMs < 100 || retryBaseMs > 10_000) throw new Error('URAI_SMOKE_RETRY_BASE_MS must be an integer from 100 to 10000')
 
 const contracts = [
-  ['/', ['aaa-final-home-sky-ground-orb-body-portals', 'Own your life.', 'Ground', 'Life Map'], []],
-  ['/home', ['aaa-final-home-sky-ground-orb-body-portals', 'Own your life.'], []],
+  ['/', ['aaa-final-home-open-sky-ground-orb-camera-portals', 'Own your life.', 'Ground', 'Life Map'], []],
+  ['/home', ['aaa-final-home-open-sky-ground-orb-camera-portals', 'Own your life.'], []],
   ['/ground', ['walkable-first-person-ground-layer', 'urai-ground-private-workforce-world', 'ground-destination-compass', 'data-ground-destination', 'URAI Ground embodied private infrastructure'], ['Street-level city world']],
   ['/life-map', ['URAI Life Map', 'URAI Life Map — step inside your private constellation'], []],
   ['/focus?memoryId=quiet-reset&manifestId=replay-recovery-thread&node=quiet-reset', ['urai-final-focus-chamber', 'Selected memory chamber.'], ['Focus loading']],
