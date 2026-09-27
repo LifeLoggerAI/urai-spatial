@@ -14,9 +14,10 @@ test('a delayed update cannot resurrect a canceled entitlement', () => {
   assert.deepEqual(decide(200, 'canceled', 199, 'active'), { apply: false, reason: 'stale-event' });
 });
 
-test('cancellation wins when processor timestamps tie', () => {
-  assert.deepEqual(decide(300, 'canceled', 300, 'active'), { apply: false, reason: 'cancellation-precedence' });
-  assert.deepEqual(decide(300, 'canceled', 300, 'past_due'), { apply: false, reason: 'cancellation-precedence' });
+test('equal-second precedence prevents cancellation or active state from being downgraded by delivery order', () => {
+  assert.deepEqual(decide(300, 'canceled', 300, 'active'), { apply: false, reason: 'equal-time-precedence' });
+  assert.deepEqual(decide(300, 'active', 300, 'past_due'), { apply: false, reason: 'equal-time-precedence' });
+  assert.deepEqual(decide(300, 'past_due', 300, 'active'), { apply: true, reason: 'applied' });
 });
 
 test('a later paid recovery may restore access after a prior failure', () => {
@@ -27,6 +28,6 @@ test('a stale payment failure cannot override a newer paid state', () => {
   assert.deepEqual(decide(500, 'active', 499, 'past_due'), { apply: false, reason: 'stale-event' });
 });
 
-test('same-timestamp non-cancellation transitions remain deterministic and applicable', () => {
-  assert.deepEqual(decide(600, 'past_due', 600, 'active'), { apply: true, reason: 'applied' });
+test('equal statuses at the same processor second remain idempotently applicable', () => {
+  assert.deepEqual(decide(600, 'active', 600, 'active'), { apply: true, reason: 'applied' });
 });
