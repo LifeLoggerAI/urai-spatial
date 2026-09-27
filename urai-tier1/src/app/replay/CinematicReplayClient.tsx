@@ -9,6 +9,7 @@ import { createMineralMaps } from '@/spatial/assets/naturalSurfaceMaps'
 import { useReducedMotion } from '@/spatial/hooks/useReducedMotion'
 import { useSelectedMemory } from '@/spatial/memory/useSelectedMemory'
 import type { SelectedMemory, SelectedMemoryMedia, SelectedMemoryReplaySegment } from '@/spatial/memory/selectedMemoryContract'
+import { probeWebGLSupport } from '@/spatial/runtime/probeWebGLSupport'
 import { useAdaptiveSpatialQuality } from '@/spatial/performance/useAdaptiveSpatialQuality'
 import { requestUraiWorldReturn, requestUraiWorldTravel } from '@/spatial/world/worldEvents'
 import { ReplayProductControls } from './ReplayProductControls'
@@ -563,14 +564,9 @@ function ReplaySpatialScene({ memory, playing, progressMs, muteVideo }: { memory
 function useWebGLAvailable() {
   const [available, setAvailable] = useState<boolean | null>(null)
   useEffect(() => {
-    try {
-      const canvas = document.createElement('canvas')
-      setAvailable(Boolean(canvas.getContext('webgl2') ?? canvas.getContext('webgl')))
-    } catch {
-      setAvailable(false)
-    }
+    setAvailable(probeWebGLSupport())
   }, [])
-  return available
+  return [available, setAvailable] as const
 }
 
 function ReplayNeutralSpatialScene() {
@@ -594,7 +590,7 @@ export default function CinematicReplayClient({ immersiveEntryEnabled = false }:
   const memory = result.memory
   const reducedMotion = useReducedMotion()
   const quality = useAdaptiveSpatialQuality()
-  const webglAvailable = useWebGLAvailable()
+  const [webglAvailable, setWebglAvailable] = useWebGLAvailable()
   const [playing, setPlaying] = useState(false)
   const [progressMs, setProgressMs] = useState(0)
   const audioRef = useRef<HTMLAudioElement | null>(null)
@@ -611,6 +607,18 @@ export default function CinematicReplayClient({ immersiveEntryEnabled = false }:
   }, [immersiveEntryEnabled, memory])
   const unwind = useCallback(() => requestUraiWorldReturn(), [])
   const chooseMemory = useCallback(() => requestUraiWorldTravel({ destination: 'life-map', href: '/life-map/', entryPortal: 'replay-memory-horizon', cameraCheckpoint: 'life-map-overview' }), [])
+  const configureReplayRenderer = useCallback((gl: THREE.WebGLRenderer, exposure?: number) => {
+    gl.outputColorSpace = THREE.SRGBColorSpace
+    gl.toneMapping = THREE.ACESFilmicToneMapping
+    if (typeof exposure === 'number') gl.toneMappingExposure = exposure
+    const canvas = gl.domElement
+    const revokeReadiness = (event: Event) => {
+      event.preventDefault()
+      canvas.closest('[data-testid="cinematic-replay-client"]')?.setAttribute('data-replay-render-ready', 'false')
+      setWebglAvailable(false)
+    }
+    canvas.addEventListener('webglcontextlost', revokeReadiness, { once: true })
+  }, [setWebglAvailable])
 
   useEffect(() => {
     if (!memory || !playing) return
@@ -649,7 +657,7 @@ export default function CinematicReplayClient({ immersiveEntryEnabled = false }:
 
   if (!memory) return (
     <main className="replayState" data-testid="cinematic-replay-client" data-memory-status={result.status} data-canonical-asset={replayAssets.primary.src} data-replay-neutral="memory-horizon" data-replay-spatial-owner="r3f-lived-memory-environment">
-      {webglAvailable === true ? <Canvas className="replaySpatialCanvas" dpr={[1, quality.pixelRatioMax]} frameloop={quality.documentVisible ? 'always' : 'never'} camera={{ position: [0, 0.42, 8.4], fov: 46, near: 0.05, far: 120 }} gl={{ antialias: quality.antialias, powerPreference: 'high-performance' }}>
+      {webglAvailable === true ? <Canvas className="replaySpatialCanvas" dpr={1} frameloop={quality.documentVisible ? 'always' : 'never'} camera={{ position: [0, 0.42, 8.4], fov: 46, near: 0.05, far: 120 }} gl={{ antialias: quality.antialias, powerPreference: 'high-performance' }} onCreated={({ gl }) => configureReplayRenderer(gl)}>
         <ReplayNeutralSpatialScene />
       </Canvas> : <div className="replaySpatialFallback" role="status" data-replay-fallback="semantic">{webglAvailable === null ? 'Preparing Replay…' : 'Spatial Replay unavailable. Semantic memory controls remain available.'}</div>}
       <section role={result.status === 'loading' ? 'status' : 'region'} aria-label="Replay memory horizon"><p>{result.status === 'loading' ? 'Opening memory field' : 'Memory horizon'}</p><h1>{result.status === 'loading' ? 'A memory is coming into view.' : 'Choose a memory to enter its reconstruction.'}</h1><span>{result.status === 'loading' ? 'The spatial field will open as soon as the selected memory is ready.' : 'Replay begins from a memory in Life Map, so you always arrive with context.'}</span>{result.status === 'loading' ? null : <button type="button" onClick={chooseMemory}>Choose a memory</button>}</section>
@@ -674,7 +682,7 @@ export default function CinematicReplayClient({ immersiveEntryEnabled = false }:
   }
 
   return <main className="replayWorld" style={style} data-testid="cinematic-replay-client" data-memory-status={result.status} data-memory-id={memory.id} data-star-id={memory.star.id} data-manifest-id={memory.replayManifest.id} data-node={memory.star.id} data-playing={playing ? 'true' : 'false'} data-canonical-asset={replayAssets.primary.src} data-replay-spatial-owner="r3f-lived-memory-environment" data-replay-environment={REPLAY_ENVIRONMENT_MODEL} data-replay-composition="v225-source-first-memory-environment-readable-phased-return" data-replay-demo-art="v242-authored-cinematic-memory-valley-clean-frame" data-replay-camera="anchored-first-person-witness" data-replay-truth={truth?.level ?? 'unknown'} data-replay-immersive-entry={immersiveHref ? 'available' : 'unavailable'} data-webgl-state={webglAvailable === null ? 'detecting' : webglAvailable ? 'ready' : 'unavailable'}>
-    {webglAvailable === true ? <Canvas className="replaySpatialCanvas" shadows={quality.shadows} dpr={[1, quality.pixelRatioMax]} frameloop={quality.documentVisible ? "always" : "never"} camera={{ position: [0, 0.42, 8.4], fov: 46, near: 0.05, far: 120 }} gl={{ antialias: quality.antialias, powerPreference: "high-performance" }} onCreated={({ gl }) => { gl.outputColorSpace = THREE.SRGBColorSpace; gl.toneMapping = THREE.ACESFilmicToneMapping; gl.toneMappingExposure = memory.demo ? 1.32 : 1.92 }}>
+    {webglAvailable === true ? <Canvas className="replaySpatialCanvas" shadows={memory.demo ? false : quality.shadows} dpr={memory.demo ? 1 : [1, quality.pixelRatioMax]} frameloop={quality.documentVisible ? "always" : "never"} camera={{ position: [0, 0.42, 8.4], fov: 46, near: 0.05, far: 120 }} gl={{ antialias: quality.antialias, powerPreference: "high-performance" }} onCreated={({ gl }) => configureReplayRenderer(gl, memory.demo ? 1.32 : 1.92)}>
       <ReplaySpatialScene memory={memory} playing={playing} progressMs={progressMs} muteVideo={Boolean(recordedAudioUrl)} />
     </Canvas> : <div className="replaySpatialFallback" role="status" data-replay-fallback="semantic">{webglAvailable === null ? 'Preparing Replay…' : 'Spatial Replay unavailable. Memory truth, pacing, transcript, and return controls remain available.'}</div>}
     <div className="replayAtmosphere" aria-hidden="true" />

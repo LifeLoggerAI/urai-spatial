@@ -5,6 +5,7 @@ import { Canvas, useFrame, useThree, type ThreeEvent } from '@react-three/fiber'
 import { useCallback, useEffect, useRef, useState, type CSSProperties } from 'react'
 import * as THREE from 'three'
 import { assetCssStack, homeAssets } from '@/spatial/assets/uraiAssets'
+import { probeWebGLSupport } from '@/spatial/runtime/probeWebGLSupport'
 import { requestUraiWorldTravel } from '@/spatial/world/worldEvents'
 
 type HomeSpatialCanvasProps = {
@@ -139,12 +140,7 @@ export function useWebGLAvailable() {
       setAvailable(cachedWebGLAvailable)
       return
     }
-    try {
-      const canvas = document.createElement('canvas')
-      cachedWebGLAvailable = Boolean(canvas.getContext('webgl2') ?? canvas.getContext('webgl'))
-    } catch {
-      cachedWebGLAvailable = false
-    }
+    cachedWebGLAvailable = probeWebGLSupport()
     setAvailable(cachedWebGLAvailable)
   }, [])
   return available

@@ -6,6 +6,7 @@ import { getAuth, onAuthStateChanged, type User } from 'firebase/auth'
 import { doc, onSnapshot } from 'firebase/firestore'
 import { Suspense, useEffect, useMemo, useRef, useState } from 'react'
 import { app, firebasePublicEnvReady, getFirebaseDb } from '@/lib/firebase/client'
+import { probeWebGLSupport } from '@/spatial/runtime/probeWebGLSupport'
 import {
   applyOperationalConsentPolicy,
   cancelOperationalDeletionRequest,
@@ -177,10 +178,7 @@ export default function ConsentSanctuaryClient() {
   }, [])
 
   useEffect(() => {
-    try {
-      const canvas = document.createElement('canvas')
-      setWebglAvailable(Boolean(canvas.getContext('webgl2') || canvas.getContext('webgl')))
-    } catch { setWebglAvailable(false) }
+    setWebglAvailable(probeWebGLSupport())
   }, [])
 
   useEffect(() => {

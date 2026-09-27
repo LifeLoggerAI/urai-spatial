@@ -8,6 +8,7 @@ import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib'
 import { markFirstSpatialFrame, useAdaptiveSpatialQuality, type SpatialQualityProfile } from '@/spatial/performance/useAdaptiveSpatialQuality'
 import { useSelectedMemory } from '@/spatial/memory/useSelectedMemory'
 import type { SelectedMemory } from '@/spatial/memory/selectedMemoryContract'
+import { probeWebGLSupport } from '@/spatial/runtime/probeWebGLSupport'
 import { requestUraiWorldReturn, requestUraiWorldTravel } from '@/spatial/world/worldEvents'
 
 // Locked product authority; V395 is the current literal-pixel implementation:
@@ -200,12 +201,7 @@ function focusMemoryVisualKind(memory: SelectedMemory | null) {
 function useWebGLAvailable() {
   const [available, setAvailable] = useState<boolean | null>(null)
   useEffect(() => {
-    try {
-      const canvas = document.createElement('canvas')
-      setAvailable(Boolean(canvas.getContext('webgl2') ?? canvas.getContext('webgl')))
-    } catch {
-      setAvailable(false)
-    }
+    setAvailable(probeWebGLSupport())
   }, [])
   return available
 }

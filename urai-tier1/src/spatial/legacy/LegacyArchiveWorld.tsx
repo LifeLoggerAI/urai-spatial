@@ -8,6 +8,7 @@ import * as THREE from 'three'
 import { MobileMovementPad, MovementHelp, stepEmbodiedMotion, useDragLook, useMovementInput, type MovementInput } from '@/spatial/navigation/EmbodiedNavigation'
 import { useReducedMotion } from '@/spatial/hooks/useReducedMotion'
 import { useAdaptiveSpatialQuality } from '@/spatial/performance/useAdaptiveSpatialQuality'
+import { probeWebGLSupport } from '@/spatial/runtime/probeWebGLSupport'
 
 const LEGACY_MODEL = '/assets/urai/generated/models/legacy-archive-foundation-v1.glb'
 const LIFE_MAP_DESTINATION = '/life-map?from=legacy&overview=1'
@@ -113,8 +114,7 @@ function LegacyScene({ input, yaw, pitch, reducedMotion, reviewState, shellRef }
 
 function detectLegacyWebGL() {
   if (typeof document === 'undefined') return true
-  const canvas = document.createElement('canvas')
-  return Boolean(canvas.getContext('webgl2') || canvas.getContext('webgl'))
+  return probeWebGLSupport()
 }
 
 function LegacySemanticFallback() {

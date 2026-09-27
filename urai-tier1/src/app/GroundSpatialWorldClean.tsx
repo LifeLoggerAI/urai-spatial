@@ -6,6 +6,7 @@ import { Environment, useGLTF, useTexture } from "@react-three/drei";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Component, Suspense, useCallback, useEffect, useMemo, useRef, useState, type MutableRefObject, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
 import * as THREE from "three";
+import { probeWebGLSupport } from "@/spatial/runtime/probeWebGLSupport";
 import {
   MobileMovementPad,
   clearVirtualMovement,
@@ -962,12 +963,7 @@ function GroundAnalogPad({ input }: { input: MovementInput }) {
 function useGroundWebGLAvailable() {
   const [available, setAvailable] = useState<boolean | null>(null);
   useEffect(() => {
-    try {
-      const canvas = document.createElement("canvas");
-      setAvailable(Boolean(canvas.getContext("webgl2") ?? canvas.getContext("webgl")));
-    } catch {
-      setAvailable(false);
-    }
+    setAvailable(probeWebGLSupport());
   }, []);
   return available;
 }

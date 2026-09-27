@@ -7,6 +7,7 @@ import * as THREE from 'three'
 import { DEMO_COUNCIL_AGENTS } from './councilAgentSchema'
 import { useReducedMotion } from '@/spatial/hooks/useReducedMotion'
 import { useAdaptiveSpatialQuality } from '@/spatial/performance/useAdaptiveSpatialQuality'
+import { probeWebGLSupport } from '@/spatial/runtime/probeWebGLSupport'
 import {
   MobileMovementPad,
   MovementHelp,
@@ -311,8 +312,7 @@ function CouncilStage() {
 
 function detectCouncilWebGL() {
   if (typeof document === 'undefined') return true
-  const canvas = document.createElement('canvas')
-  return Boolean(canvas.getContext('webgl2') || canvas.getContext('webgl'))
+  return probeWebGLSupport()
 }
 
 function CouncilSemanticFallback() {
