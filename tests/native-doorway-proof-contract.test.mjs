@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict'
 import { readFile } from 'node:fs/promises'
 import test from 'node:test'
+import { runInNewContext } from 'node:vm'
+import { installDoorwayEventTrace } from './native-doorway-event-trace.mjs'
 
 const proof = await readFile(new URL('./native-doorway-proof.mjs', import.meta.url), 'utf8')
 
@@ -33,4 +35,55 @@ test('doorway activation uses a single unchanged 20-second budget for readiness 
   assert.match(proof, /const navigationDeadline = Date\.now\(\) \+ 20000/)
   assert.match(proof, /waitForHomeActionsReady\(page, Math\.max\(1, navigationDeadline - Date\.now\(\)\)\)/)
   assert.match(proof, /timeout: Math\.max\(1, navigationDeadline - Date\.now\(\)\)/)
+})
+
+
+function traceHarness() {
+  const listeners = new Map()
+  const records = []
+  class Target {
+    closest() { return this }
+    getAttribute() { return 'home-semantic-ground' }
+  }
+  const target = new Target()
+  runInNewContext(`(${installDoorwayEventTrace.toString()})()`, {
+    window: {
+      addEventListener: (type, listener) => listeners.set(type, listener),
+      __uraiRecordDoorwayEvent: async (record) => { records.push(record) },
+    },
+    Element: Target,
+    document: { activeElement: target },
+    location: { pathname: '/home/' },
+    queueMicrotask,
+    setTimeout,
+  })
+  return { listeners, records, target }
+}
+
+test('trace observes late cancellation after a microtask checkpoint between event listeners', async () => {
+  for (const type of ['keydown', 'click']) {
+    const { listeners, records, target } = traceHarness()
+    const event = new Event(type, { cancelable: true })
+    Object.defineProperties(event, { target: { value: target }, key: { value: 'Enter' } })
+    listeners.get(type)(event)
+    await Promise.resolve()
+    assert.equal(records.length, 0, 'capture must not finalize cancellation before propagation')
+    event.preventDefault()
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    assert.equal(records.length, 1)
+    assert.equal(records[0].defaultPrevented, true)
+    assert.equal(records[0].testId, 'home-semantic-ground')
+  }
+})
+
+test('trace preserves uncancelled input and observes travel without intercepting it', async () => {
+  const { listeners, records, target } = traceHarness()
+  const event = new Event('click', { cancelable: true })
+  Object.defineProperty(event, 'target', { value: target })
+  listeners.get('click')(event)
+  listeners.get('urai:world-travel')({ detail: { destination: '/ground' } })
+  await new Promise((resolve) => setTimeout(resolve, 0))
+  assert.equal(event.defaultPrevented, false)
+  assert.equal(records.find((record) => record.type === 'click').defaultPrevented, false)
+  assert.equal(records.find((record) => record.type === 'world-travel').destination, '/ground')
 })
