@@ -222,7 +222,7 @@ function HomeHud({
 
       <section className="urai-home-canon-hud" data-testid="urai-home-canon-hud" data-urai-home-hud="true" aria-label="URAI launch home">
         <div className="urai-home-canon-hud__hero">
-          <div className="urai-home-canon-hud__kicker">URAI V1 · Private world online</div>
+          <div className="urai-home-canon-hud__kicker">URAI · Private world online</div>
           <h1>Step inside yourself.</h1>
           <p className="urai-home-canon-hud__lead">
             URAI turns memories, moods, places, and reflections into a private emotional universe you can enter.
