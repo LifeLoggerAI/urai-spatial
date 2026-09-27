@@ -43,6 +43,7 @@ const tests = [
   'tests/home-provider-preview-composition-contract.test.mjs',
   'tests/home-current-art-repair-contract.test.mjs',
   'tests/home-passport-motion-behavior.test.mjs',
+  'tests/passport-owner-lifecycle.test.mjs',
   'tests/home-emotional-weather-canon-contract.test.mjs',
   'tests/home-ground-lifemap-art-bible-contract.test.mjs',
   'tests/home-sky-lifemap-threshold-contract.test.mjs',

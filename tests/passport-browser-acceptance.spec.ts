@@ -102,11 +102,36 @@ test('reduced motion and WebGL fallback preserve records and actions', async ({ 
     }
   })
   await openDemo(page)
+  await expect(page.locator('main')).toHaveAttribute('data-passport-reduced-motion', 'true')
   await expect(page.getByText('All records and actions remain available without WebGL.')).toBeVisible()
   await expect(page.getByRole('heading', { name: 'Export chamber' })).toBeVisible()
   await expect(page.getByRole('heading', { name: 'Deletion chamber' })).toBeVisible()
   await page.screenshot({ path: path.join(evidenceRoot, 'reduced-motion-webgl-fallback.png'), fullPage: true })
   await save('fallback-runtime', runtime)
+  expect(runtime.pageErrors).toEqual([])
+})
+
+test('review hydration and orientation changes preserve readable controls', async ({ page }) => {
+  const runtime = await observe(page)
+  await page.setViewportSize({ width: 390, height: 844 })
+  await page.goto(`${baseURL}/passport/?assetReview=1&passportReview=unavailable`, { waitUntil: 'networkidle' })
+  const root = page.locator('main[data-route-owner="passport-ownership-vault"]')
+  await expect(root).toHaveAttribute('data-passport-review-state', 'unavailable')
+  await expect(root).toHaveAttribute('data-passport-source', 'unavailable')
+  await expect(page.getByText('DEMONSTRATION — sample data only', { exact: true })).toHaveCount(0)
+  for (const viewport of [{ width: 390, height: 844 }, { width: 844, height: 390 }, { width: 320, height: 568 }]) {
+    await page.setViewportSize(viewport)
+    const controls = page.locator('#passport-controls')
+    await controls.scrollIntoViewIfNeeded()
+    const bounds = await controls.boundingBox()
+    expect(bounds).not.toBeNull()
+    expect(bounds!.x).toBeGreaterThanOrEqual(0)
+    expect(bounds!.x + bounds!.width).toBeLessThanOrEqual(viewport.width + 1)
+    await expect(page.getByTestId('passport-return-origin')).toBeEnabled()
+    await page.screenshot({ path: path.join(evidenceRoot, `review-${viewport.width}x${viewport.height}.png`) })
+  }
+  await save('review-orientation-runtime', runtime)
+  expect(runtime.consoleErrors).toEqual([])
   expect(runtime.pageErrors).toEqual([])
 })
 
