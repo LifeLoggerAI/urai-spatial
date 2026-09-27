@@ -107,7 +107,7 @@ Do not use browser success as XR proof.
 Current URAI XR uses a separate Three.js WebGLRenderer path and remains hard-off. A later XR promotion must prove:
 
 - supported physical headset/device;
-- real WebXR session entry;
+- future provider-gated WebXR session entry on an explicitly supported physical device;
 - splat renderer compatibility on that device;
 - stable locomotion and recentering;
 - performance budget;
