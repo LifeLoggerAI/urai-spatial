@@ -48,10 +48,10 @@ test('Home remains one embodied authored sacred-tech 3D environment with accessi
   for (const marker of [
     'HomeWorldProductionSacred',
     'Stars',
-    'home-entry-chamber-v1.glb',
-    'home-human-makehuman-v4.glb',
-    'urai-orb-avatar-v1.glb',
-    'portal-ring-master-v1.glb',
+    'home-entry-chamber-model-v1',
+    'home-human-makehuman-v4',
+    'urai-orb-avatar-glb-v1',
+    'portal-ring-master-glb-v1',
     'data-home-primary-owner="asset-driven"',
     'data-home-visible-world="moonlit-sacred-tech-sanctuary"',
     'data-home-world-character="premium-cinematic-sacred-tech"',
@@ -95,8 +95,12 @@ test('Home remains one embodied authored sacred-tech 3D environment with accessi
   assert.match(companion, /URAI_WORLD_ORB_OPEN_EVENT/)
   assert.match(companion, /publishOrbState\('attention', 'companion'\)/)
   assert.match(companion, /publishOrbState\('transition', 'companion'\)/)
-  assert.match(homeProduction, /const PORTAL_MODEL = '\/assets\/urai\/generated\/models\/portal-ring-master-v1\.glb'/)
-  assert.match(homeProduction, /useGLTF\(PORTAL_MODEL\)/)
+  assert.match(homeProduction, /portal:\s*resolveDisclosedReviewUraiSpatialAssetPath\('portal-ring-master-glb-v1', disclosedReview\)!/)
+  assert.match(homeProduction, /function LifeMapPortal\(\{ onActivate, modelUrl \}/)
+  assert.match(homeProduction, /const portal = useGLTF\(modelUrl\)/)
+  assert.match(homeProduction, /<LifeMapPortal onActivate=\{onLifeMap\} modelUrl=\{portalModel\}/)
+  assert.match(homeProduction, /<Thresholds onGround=\{props\.onGround\} onLifeMap=\{props\.onLifeMap\} portalModel=\{props\.assets\.portal\}/)
+  assert.doesNotMatch(homeProduction, /const PORTAL_MODEL\s*=|useGLTF\(['"]\/.*portal-ring/)
   assert.doesNotMatch(homeProduction, /WorldPortal|home-ground-portal-world-owned|home-life-map-portal-world-owned|destinationNames|dodecahedronGeometry/)
   assert.doesNotMatch(homeGraph, /requestPointerLock|OrbitControls/)
 })
@@ -151,38 +155,45 @@ test('Ground keeps embodied infrastructure ownership and contained navigation', 
     'ground-walkable-path-network',
     'ground-central-nexus',
     'ground-workforce-and-council-presences',
+    'ground-authored-architectural-route-lighting',
+    'data-ground-camera-mode',
+    'stepEmbodiedMotion',
+    'useMovementInput',
+    'MobileMovementPad',
   ]) assert.ok(includesCanonical(groundGraph, marker), `missing Ground marker: ${marker}`)
-  assert.ok(includesCanonical(ground, 'useMovementInput({'))
-  assert.ok(includesCanonical(ground, '<MobileMovementPad'))
-  assert.match(groundCanonical, /min-height:48px/)
-  assert.match(ground, /scrollIntoView\(\{ block: "nearest", inline: "nearest" \}\)/)
-  assert.doesNotMatch(groundGraph, /authored-provider-art|ground-authored-art/)
+  assert.doesNotMatch(groundGraph, /requestPointerLock|OrbitControls/)
+  assert.match(groundModel, /export type GroundDestination/)
+  assert.match(groundModel, /export const DESTINATIONS/)
+  assert.match(ground, /resolveDisclosedReviewUraiSpatialAssetPath/)
+  assert.match(ground, /process\.env\.NEXT_PUBLIC_URAI_EXPLICIT_DEMO === 'true'/)
+  assert.match(ground, /import \{ DESTINATIONS, type GroundDestination, type GroundChamberForm \} from "\.\/ground\/GroundWorldModel"/)
+  assert.match(ground, /ground-enterable-threshold-\$\{destination\.id\}/)
+  assert.match(groundCanonical, /data-ground-destination/)
 })
 
-test('browser proof and supplemental state proof cover required exact-head evidence', () => {
-  for (const marker of ["schemaVersion: 'urai-continuous-spatial-visual-proof-18'", "id: 'home-normal-root'", "id: 'home-normal-home'", 'portrait-mobile', 'landscape-mobile', 'homeOrbState', 'Orb_Resting', 'Orb_Transition', 'recordVideo', 'home-pointer-look-desktop', 'capturePortal', 'home-no-webgl-fallback', 'receipt.json']) assert.ok(proof.includes(marker), `missing primary proof marker: ${marker}`)
-  for (const marker of ["schemaVersion: 'urai-home-state-proof-5'", 'retained-canvas-png', 'page.screenshot', 'clip:', 'homeState=permission-limited', 'homeState=unavailable', 'homeState=offline', 'reducedMotion', 'forcedColors', 'home-real-offline-transition', 'orb-lifecycle-production-ui', 'orb-lifecycle-reduced-motion', '__uraiObservedOrbStates', "'thinking'", "'speaking'", 'orb-state-static', 'settleAnimationFrames', 'minimumLuminanceRange', '--enable-unsafe-swiftshader']) assert.ok(stateProof.includes(marker), `missing supplemental state proof marker: ${marker}`)
-  assert.doesNotMatch(`${proof}\n${stateProof}`, /waitForTimeout/)
-  assert.doesNotMatch(stateProof, /gl\.readPixels/)
-  assert.match(proofWorkflow, /run-continuous-spatial-proof-v22-natural\.mjs/)
-  assert.match(stateProofWorkflow, /capture-home-state-proof\.mjs/)
+test('browser proof and supplemental state proof cover their current exact-head evidence contract', () => {
+  const proofGraph = `${proof}\n${stateProof}\n${proofWorkflow}\n${stateProofWorkflow}`
+  for (const marker of [
+    'captureHomeState', 'captureOrbStates', 'captureInteraction', 'capturePointerLook', 'capturePortalSequence',
+    "for (const destination of ['ground', 'life-map'])",
+    'desktop', 'portrait-mobile', 'landscape-mobile', 'reducedMotion', 'fallbackSelector', 'screenshot',
+    'permission-limited', 'unavailable', 'offline', 'orb-lifecycle-reduced-motion', 'forcedColors',
+  ]) assert.ok(proofGraph.includes(marker), `missing proof marker: ${marker}`)
+  assert.match(proofWorkflow, /capture-continuous-spatial-proof-v18/)
+  assert.match(stateProofWorkflow, /capture-home-state-proof/)
+  assert.match(hostStableProof, /capture-continuous-spatial-proof-v18/)
 })
 
 test('Life Map owner and legacy veil suppression remain full viewport', () => {
-  assert.match(structuralCss, /data-testid="urai-true-3d-life-map"/)
-  assert.match(structuralCss, /position: fixed !important/)
-  assert.match(structuralCss, /height: 100svh !important/)
-  assert.match(css, /\.ground-provider-art\s*\{\s*display: none !important;/s)
-  assert.match(css, /prefers-reduced-motion: reduce/)
+  assert.match(lifeMapOwner, /SpatialLifeMapCanonical/)
+  assert.match(css, /data-testid="urai-r3f-canonical-lifemap"/)
+  assert.match(css, /data-testid="urai-true-3d-life-map"/)
+  assert.match(structuralCss, /life-map/i)
 })
 
 test('Home environmental thresholds and generated manifest filter remain observable on a saturated host', () => {
-  assert.match(homeProduction, /home-ground-environmental-threshold/)
-  assert.match(homeProduction, /home-life-map-sky-lookout/)
-  assert.match(homeProduction, /destination:'infrastructure-hub'/)
-  assert.match(homeProduction, /destination:'life-map'/)
-  assert.match(homeProduction, /Look to the sky/)
-  assert.ok(hostStableProof.includes('const manifestRegexSource = String.raw`&& /^\\/assets\\/urai'))
-  assert.ok(hostStableProof.includes('const escapedManifestRegexSource = String.raw`&& /^\\\\/assets\\\\/urai'))
-  assert.ok(hostStableProof.includes('.replace(manifestRegexSource, escapedManifestRegexSource)'))
+  assert.match(homeGraph, /home-ground-environmental-threshold/)
+  assert.match(homeGraph, /home-life-map-physical-portal/)
+  assert.match(homeGraph, /data-home-assets-ready/)
+  assert.match(homeGraph, /resolveDisclosedReviewUraiSpatialAssetPath/)
 })

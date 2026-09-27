@@ -46,7 +46,7 @@ test('selected memory timestamps remain canonical before rendering', () => {
   assert.match(selectedMemoryContract, /return canonical === value \? canonical : null/)
 })
 
-test('all eight final GLB assets are selected while degraded fallbacks remain available', () => {
+test('all eight final GLB assets remain candidates while governed fallbacks stay available', () => {
   const ids = [
     'home-entry-chamber-model-v1',
     'portal-ring-master-glb-v1',
@@ -58,10 +58,11 @@ test('all eight final GLB assets are selected while degraded fallbacks remain av
     'passport-status-room-glb-v1',
   ]
   for (const id of ids) assert.match(manifest, new RegExp(`finalGlb\\('${id}'`))
-  assert.match(manifest, /status: 'ready'/)
+  assert.match(manifest, /status: 'candidate'/)
+  assert.match(manifest, /runtime selection remains fallback-first until canonical promotion/)
   assert.match(manifest, /fallbackAssetId/)
   assert.match(manifest, /Emergency degraded geometry only/)
-  assert.match(manifest, /Rendered visual acceptance remains an exact-head review gate/)
+  assert.match(manifest, /until canonical promotion and exact-head visual acceptance/)
 })
 
 test('the deterministic forge owns the complete final binary pack', () => {

@@ -16,15 +16,15 @@ import {
   type MovementInput,
 } from '@/spatial/navigation/EmbodiedNavigation'
 import { requestUraiWorldReturn, requestUraiWorldTravel } from '@/spatial/world/worldEvents'
+import { resolvePromotedUraiSpatialAssetPath } from '@/spatial/assets/promotedAssetResolver'
 
-const HUMAN_ROOT = '/assets/urai/generated/human-makehuman-v4'
 const HUMAN_MODELS = [
-  `${HUMAN_ROOT}/council-guide-human-makehuman-v4.glb`,
-  `${HUMAN_ROOT}/council-archivist-human-makehuman-v4.glb`,
-  `${HUMAN_ROOT}/council-guardian-human-makehuman-v4.glb`,
-  `${HUMAN_ROOT}/council-builder-human-makehuman-v4.glb`,
-  `${HUMAN_ROOT}/council-mirror-human-makehuman-v4.glb`,
-  `${HUMAN_ROOT}/council-trickster-human-makehuman-v4.glb`,
+  resolvePromotedUraiSpatialAssetPath('council-guide-human-makehuman-v4'),
+  resolvePromotedUraiSpatialAssetPath('council-archivist-human-makehuman-v4'),
+  resolvePromotedUraiSpatialAssetPath('council-guardian-human-makehuman-v4'),
+  resolvePromotedUraiSpatialAssetPath('council-builder-human-makehuman-v4'),
+  resolvePromotedUraiSpatialAssetPath('council-mirror-human-makehuman-v4'),
+  resolvePromotedUraiSpatialAssetPath('council-trickster-human-makehuman-v4'),
 ] as const
 
 const POSITIONS: [number, number, number][] = [
@@ -166,6 +166,34 @@ function RiggedCouncilHuman({
   )
 }
 
+function SemanticCouncilPresence({ index, selected, onSelect }: { index: number; selected: boolean; onSelect: () => void }) {
+  return (
+    <group
+      name={`council-semantic-presence-${DEMO_COUNCIL_AGENTS[index]?.id ?? index}`}
+      position={POSITIONS[index] ?? [0, 0, -2]}
+      rotation={ROTATIONS[index] ?? [0, 0, 0]}
+      onClick={(event) => {
+        event.stopPropagation()
+        onSelect()
+      }}
+      userData={{ fallback: 'semantic-interactive-presence', agentId: DEMO_COUNCIL_AGENTS[index]?.id }}
+    >
+      <mesh position={[0, 0.9, 0]} castShadow receiveShadow>
+        <capsuleGeometry args={[0.22, 1.12, 8, 16]} />
+        <meshStandardMaterial color={selected ? '#d8c29e' : '#66747a'} roughness={0.78} metalness={0.04} />
+      </mesh>
+      <mesh position={[0, 1.72, 0]} castShadow receiveShadow>
+        <sphereGeometry args={[0.2, 20, 16]} />
+        <meshStandardMaterial color={selected ? '#ead9bd' : '#7a878c'} roughness={0.82} metalness={0.02} />
+      </mesh>
+      <mesh position={[0, 0.015, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+        <ringGeometry args={[0.28, 0.36, 48]} />
+        <meshBasicMaterial color={selected ? '#e9d6b7' : '#b8c7cf'} transparent opacity={selected ? 0.34 : 0.08} depthWrite={false} />
+      </mesh>
+    </group>
+  )
+}
+
 function CouncilStage() {
   const [selected, setSelected] = useState(0)
   const [dragging, setDragging] = useState(false)
@@ -242,14 +270,23 @@ function CouncilStage() {
             </mesh>
 
             {DEMO_COUNCIL_AGENTS.map((agent, index) => (
-              <RiggedCouncilHuman
-                key={agent.id}
-                modelUrl={HUMAN_MODELS[index] ?? HUMAN_MODELS[0]}
-                index={index}
-                selected={selected === index}
-                reducedMotion={reducedMotion}
-                onSelect={() => setSelected(index)}
-              />
+              HUMAN_MODELS[index] ? (
+                <RiggedCouncilHuman
+                  key={agent.id}
+                  modelUrl={HUMAN_MODELS[index]}
+                  index={index}
+                  selected={selected === index}
+                  reducedMotion={reducedMotion}
+                  onSelect={() => setSelected(index)}
+                />
+              ) : (
+                <SemanticCouncilPresence
+                  key={agent.id}
+                  index={index}
+                  selected={selected === index}
+                  onSelect={() => setSelected(index)}
+                />
+              )
             ))}
 
             {quality.tier === 'low' ? null : <ContactShadows position={[0, 0.01, -0.8]} opacity={0.48} scale={10} blur={2.7} far={7} />}
@@ -280,4 +317,4 @@ export function CouncilRealm() {
   return <CouncilStage />
 }
 
-for (const model of HUMAN_MODELS) useGLTF.preload(model)
+for (const model of HUMAN_MODELS) if (model) useGLTF.preload(model)

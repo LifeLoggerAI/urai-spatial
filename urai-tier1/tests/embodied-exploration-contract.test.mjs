@@ -8,6 +8,7 @@ const homeRuntime = read('src/app/HomeSpatialRuntimeLayer.tsx')
 const assetHome = read('src/app/AssetDrivenHomeWorld.tsx')
 const homeProductionEntry = read('src/spatial/layout/HomeWorldProduction.tsx')
 const homeProduction = read('src/spatial/layout/HomeWorldProductionSacred.tsx')
+const promotedAssetResolver = read('src/spatial/assets/promotedAssetResolver.ts')
 const finalHome = read('src/app/FinalHomeWorld.tsx')
 const ground = read('src/app/GroundSpatialWorldClean.tsx')
 const groundModel = read('src/app/ground/GroundWorldModel.ts')
@@ -53,8 +54,11 @@ test('Home is the live embodied sacred-tech sanctuary with an explicit degraded 
   assert.match(homeProductionEntry, /export \{ HomeWorldProductionSacred as HomeWorldProduction \} from "\.\/HomeWorldProductionSacred"/)
 
   for (const marker of [
-    "const SANCTUARY = '/assets/urai/generated/models/home-entry-chamber-v1.glb'",
-    "const HUMAN = '/assets/urai/generated/human-makehuman-v4/home-human-makehuman-v4.glb'",
+    'resolveDisclosedReviewUraiSpatialAssetPath',
+    "home-entry-chamber-model-v1",
+    "urai-orb-avatar-glb-v1",
+    "portal-ring-master-glb-v1",
+    "home-human-makehuman-v4",
     'data-home-primary-owner="asset-driven"',
     'data-home-visible-world="moonlit-sacred-tech-sanctuary"',
     'data-home-world-character="premium-cinematic-sacred-tech"',
@@ -85,18 +89,30 @@ test('Home is the live embodied sacred-tech sanctuary with an explicit degraded 
     'resolveOrbSensoryOutput',
     '<Canvas',
   ]) has(homeProduction, marker)
-  assert.match(homeProduction, /useGLTF\(SANCTUARY\)/)
-  assert.match(homeProduction, /useGLTF\(HUMAN\)/)
-  assert.match(homeProduction, /function RitualFloor\(/)
+  for (const marker of [
+    'if (!disclosedReview) return resolvePromotedUraiSpatialAssetPath(assetId)',
+    'getUraiSpatialAsset(assetId)?.path ?? resolvePromotedUraiSpatialAssetPath(assetId)',
+  ]) has(promotedAssetResolver, marker)
+  assert.match(homeProduction, /function RitualFloor\(\{ target, modelUrl \}/)
+  assert.match(homeProduction, /const sanctuary = useGLTF\(modelUrl\)/)
+  assert.match(homeProduction, /function SacredOrb\(\{ state, reducedMotion, onOpen, modelUrl \}/)
+  assert.match(homeProduction, /const orb = useGLTF\(modelUrl\)/)
+  assert.match(homeProduction, /function HumanPresence\(\{ root, modelUrl \}/)
+  assert.match(homeProduction, /const human = useGLTF\(modelUrl\)/)
+  assert.match(homeProduction, /function LifeMapPortal\(\{ onActivate, modelUrl \}/)
+  assert.match(homeProduction, /const portal = useGLTF\(modelUrl\)/)
+  assert.match(homeProduction, /<RitualFloor target=\{props\.target\} modelUrl=\{props\.assets\.sanctuary\} \/>/)
+  assert.match(homeProduction, /<SacredOrb state=\{props\.orbState\} reducedMotion=\{props\.reducedMotion\} onOpen=\{props\.onOrb\} modelUrl=\{props\.assets\.orb\} \/>/)
+  assert.match(homeProduction, /<HumanPresence root=\{props\.avatar\} modelUrl=\{props\.assets\.human\} \/>/)
+  assert.match(homeProduction, /<Thresholds onGround=\{props\.onGround\} onLifeMap=\{props\.onLifeMap\} portalModel=\{props\.assets\.portal\} \/>/)
   assert.match(homeProduction, /function MoonAndMist\(/)
-  assert.match(homeProduction, /function SacredOrb\(/)
-  assert.match(homeProduction, /function HumanPresence\(/)
   assert.match(homeProduction, /function Thresholds\(/)
   assert.match(homeProduction, /function PlayerRig\(/)
   assert.match(homeProduction, /const duration=reducedMotion\?0\.45:/)
   assert.match(homeProduction, /transition==='life-map'\?3\.4:2\.6/)
   assert.match(homeProduction, /destination:'infrastructure-hub'/)
   assert.match(homeProduction, /destination:'life-map'/)
+  assert.doesNotMatch(homeProduction, /const SANCTUARY\s*=|const HUMAN\s*=|useGLTF\(SANCTUARY\)|useGLTF\(HUMAN\)/)
   assert.doesNotMatch(homeProduction, /requestPointerLock|sprint|jump|crouch/i)
 
   for (const marker of [
@@ -115,7 +131,7 @@ test('Home keeps one physical stateful Orb owner and semantic access parity', ()
   assert.match(homeProduction, /const ORB = new THREE\.Vector3\(/)
   has(homeProduction, 'name="home-orb-sanctuary"')
   has(homeProduction, 'data-testid="urai-home-webgl-orb"')
-  assert.match(homeProduction, /<SacredOrb state=\{props\.orbState\} reducedMotion=\{props\.reducedMotion\} onOpen=\{props\.onOrb\} \/>/)
+  assert.match(homeProduction, /<SacredOrb state=\{props\.orbState\} reducedMotion=\{props\.reducedMotion\} onOpen=\{props\.onOrb\} modelUrl=\{props\.assets\.orb\} \/>/)
   assert.match(homeProduction, /resolveOrbSensoryOutput\(state, reducedMotion, true\)/)
   assert.match(homeProduction, /window\.addEventListener\(URAI_ORB_STATE_EVENT,\s*listener\)/)
   assert.match(homeProduction, /onClick=\{\(event\) => \{ event\.stopPropagation\(\); onOpen\(\) \}\}/)

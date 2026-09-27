@@ -5,6 +5,7 @@ import { useGLTF } from '@react-three/drei'
 import { Canvas, useFrame } from '@react-three/fiber'
 import * as THREE from 'three'
 import { assetCssStack, replayAssets } from '@/spatial/assets/uraiAssets'
+import { resolvePromotedUraiSpatialAssetPath } from '@/spatial/assets/promotedAssetResolver'
 import { useReducedMotion } from '@/spatial/hooks/useReducedMotion'
 import { useSelectedMemory } from '@/spatial/memory/useSelectedMemory'
 import type { SelectedMemory, SelectedMemoryMedia } from '@/spatial/memory/selectedMemoryContract'
@@ -12,7 +13,7 @@ import { useAdaptiveSpatialQuality } from '@/spatial/performance/useAdaptiveSpat
 import { requestUraiWorldReturn, requestUraiWorldTravel } from '@/spatial/world/worldEvents'
 import { ReplayProductControls } from './ReplayProductControls'
 
-const REPLAY_ENVIRONMENT_MODEL = '/assets/urai/generated/models/replay-memory-environment-v1.glb'
+const REPLAY_ENVIRONMENT_MODEL = resolvePromotedUraiSpatialAssetPath('replay-memory-environment-glb-v1')!
 const REPLAY_SCREEN_POSITION: [number, number, number] = [0, 0.58, -6.0]
 
 function clamp(value: number, max: number) { return Math.max(0, Math.min(max, value)) }

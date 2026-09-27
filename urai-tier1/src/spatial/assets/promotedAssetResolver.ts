@@ -35,3 +35,12 @@ export function resolvePromotedUraiSpatialAsset(assetId: string): UraiSpatialAss
 export function resolvePromotedUraiSpatialAssetPath(assetId: string): string | null {
   return resolvePromotedUraiSpatialAsset(assetId).path
 }
+
+/** Resolve selected bytes only for an explicitly disclosed pre-promotion review. */
+export function resolveDisclosedReviewUraiSpatialAssetPath(
+  assetId: string,
+  disclosedReview: boolean,
+): string | null {
+  if (!disclosedReview) return resolvePromotedUraiSpatialAssetPath(assetId)
+  return getUraiSpatialAsset(assetId)?.path ?? resolvePromotedUraiSpatialAssetPath(assetId)
+}

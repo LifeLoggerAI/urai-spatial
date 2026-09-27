@@ -30,8 +30,8 @@ test('semantic result requests the authoritative world owner without hidden-labe
 })
 
 test('pattern memories retain authored settling geometry inside the selected arrival sanctuary', () => {
-  assert.match(world, /const MEMORY_STAR_MODEL = "\/assets\/urai\/generated\/models\/life-map-memory-star-v1\.glb"/)
-  assert.match(world, /const MEMORY_CHAMBER_MODEL = "\/assets\/urai\/generated\/models\/focus-memory-chamber-v1\.glb"/)
+  assert.match(world, /const MEMORY_STAR_MODEL = resolvePromotedUraiSpatialAssetPath\('life-map-memory-star-glb-v1'\)!/)
+  assert.match(world, /const MEMORY_CHAMBER_MODEL = resolvePromotedUraiSpatialAssetPath\('focus-memory-chamber-glb-v1'\)!/)
   assert.match(world, /function PatternArtifact/)
   assert.match(world, /family === "pattern"\) return <PatternArtifact/)
   assert.match(world, /function ArrivalSanctuary/)

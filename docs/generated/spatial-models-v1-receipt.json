@@ -3,8 +3,8 @@
   "generator": "URAI deterministic spatial model forge v1",
   "productionClass": "modular-first-pass",
   "modelCount": 14,
-  "totalVertices": 23712,
-  "totalFaces": 46776,
+  "totalVertices": 23624,
+  "totalFaces": 46644,
   "models": [
     {
       "id": "agent-source-station-v1",
@@ -57,10 +57,10 @@
     {
       "id": "ground-room-shell-v1",
       "file": "/assets/urai/spatial/ground-room/models/ground-room-shell-v1.gltf",
-      "bytes": 9211,
-      "geometryCount": 12,
-      "vertices": 96,
-      "faces": 144
+      "bytes": 3562,
+      "geometryCount": 1,
+      "vertices": 8,
+      "faces": 12
     },
     {
       "id": "ground-terminal-v1",

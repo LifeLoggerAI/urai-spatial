@@ -6,10 +6,12 @@ on:
       - 'operations/assets/launch-critical-assets.json'
       - 'operations/assets/promotion-decisions/**'
       - 'operations/assets/promotion-rehearsal/**'
+      - 'operations/assets/authority-supersessions/**'
       - 'operations/assets/generated-receipts/**'
       - 'operations/assets/production-receipts/**'
       - 'urai-tier1/public/assets/urai/generated/**'
       - 'scripts/verify-governed-asset-promotion.mjs'
+      - 'scripts/verify-asset-authority-consistency.mjs'
       - '.github/workflows/governed-asset-promotion.yml'
   workflow_dispatch:
     inputs:
@@ -55,6 +57,7 @@ jobs:
           mapfile -t changed < <(git diff --name-only --diff-filter=ACMR "$BASE_SHA" "$HEAD_SHA")
           mapfile -t deleted_decisions < <(git diff --name-only --diff-filter=D "$BASE_SHA" "$HEAD_SHA" | grep -E '^operations/assets/(promotion-decisions|promotion-rehearsal)/.*\.json$' || true)
           mapfile -t decisions < <(printf '%s\n' "${changed[@]}" | grep -E '^operations/assets/(promotion-decisions|promotion-rehearsal)/.*\.json$' || true)
+          mapfile -t supersessions < <(printf '%s\n' "${changed[@]}" | grep -E '^operations/assets/authority-supersessions/.*\.json$' || true)
           mapfile -t assets < <(printf '%s\n' "${changed[@]}" | grep -E '^urai-tier1/public/assets/urai/generated/' | grep -Ev '^urai-tier1/public/assets/urai/generated/audio/' || true)
           mapfile -t governed_evidence < <(printf '%s\n' "${changed[@]}" | grep -E '^operations/assets/(launch-critical-assets\.json|generated-receipts/|production-receipts/)' | grep -Ev '^operations/assets/production-receipts/(spatial-audio-production-v1|sensory-layer-v1)\.json$' || true)
 
@@ -64,9 +67,19 @@ jobs:
           fi
 
           if ((${#decisions[@]} == 0)); then
-            if ((${#assets[@]} > 0 || ${#governed_evidence[@]} > 0)); then
-              echo 'Changed governed assets or evidence require a changed promotion decision.' >&2
+            if ((${#assets[@]} > 0)); then
+              echo 'Changed generated assets require a matching changed promotion decision; authority supersession cannot promote binary bytes.' >&2
               exit 1
+            fi
+            if ((${#governed_evidence[@]} > 0)); then
+              if ((${#supersessions[@]} == 0)); then
+                echo 'Changed governed evidence requires either a changed promotion decision or a changed authority-supersession record.' >&2
+                exit 1
+              fi
+              # Evidence-only demotion/supersession is allowed only when the repository's
+              # fail-closed current-authority validator proves that no historical receipt,
+              # decision, or runtime registry can authorize current candidate bytes.
+              node scripts/verify-asset-authority-consistency.mjs
             fi
             decisions=("$rehearsal")
           fi
