@@ -1,0 +1,76 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 1200" role="img" aria-labelledby="title desc">
+  <title id="title">URAI system glyph sprite</title>
+  <desc id="desc">Zero-budget deterministic vector identity marks for URAI systems. These are working identity primitives, not final human-approved brand masters.</desc>
+  <defs>
+    <style>
+      .g{fill:none;stroke:currentColor;stroke-width:10;stroke-linecap:round;stroke-linejoin:round}.f{fill:currentColor;stroke:none}.t{font:24px system-ui,sans-serif;fill:currentColor}.s{font:18px system-ui,sans-serif;fill:currentColor;opacity:.72}
+    </style>
+    <symbol id="glyph-genesis" viewBox="0 0 100 100"><path class="g" d="M50 8v22M50 70v22M8 50h22M70 50h22M20 20l16 16M64 64l16 16M80 20L64 36M36 64L20 80"/><circle class="g" cx="50" cy="50" r="14"/></symbol>
+    <symbol id="glyph-home" viewBox="0 0 100 100"><circle class="g" cx="50" cy="50" r="36"/><path class="g" d="M25 55 50 32l25 23v23H25z"/></symbol>
+    <symbol id="glyph-ground" viewBox="0 0 100 100"><path class="g" d="M12 66c16-18 28-5 40-18 12-13 22-2 36-17M10 78h80"/><circle class="g" cx="72" cy="28" r="8"/></symbol>
+    <symbol id="glyph-life-map" viewBox="0 0 100 100"><circle class="f" cx="25" cy="28" r="6"/><circle class="f" cx="72" cy="22" r="5"/><circle class="f" cx="52" cy="54" r="7"/><circle class="f" cx="22" cy="76" r="5"/><circle class="f" cx="79" cy="73" r="6"/><path class="g" d="M29 30 47 50M57 50 68 27M48 60 27 73M59 58 74 69"/></symbol>
+    <symbol id="glyph-focus" viewBox="0 0 100 100"><circle class="g" cx="50" cy="50" r="31"/><circle class="g" cx="50" cy="50" r="11"/><path class="g" d="M50 9v14M50 77v14M9 50h14M77 50h14"/></symbol>
+    <symbol id="glyph-replay" viewBox="0 0 100 100"><path class="g" d="M27 29a31 31 0 1 1-7 38M27 29H12m15 0V14"/><path class="f" d="m43 34 25 16-25 16z"/></symbol>
+    <symbol id="glyph-mirror" viewBox="0 0 100 100"><path class="g" d="M50 10v80M39 17C19 25 15 40 16 52c2 18 14 29 23 34M61 17c20 8 24 23 23 35-2 18-14 29-23 34"/></symbol>
+    <symbol id="glyph-shadow" viewBox="0 0 100 100"><circle class="g" cx="48" cy="50" r="34"/><path class="f" d="M53 17a34 34 0 1 0 0 66c-18-9-21-22-21-33s3-24 21-33z"/></symbol>
+    <symbol id="glyph-legacy" viewBox="0 0 100 100"><path class="g" d="M22 18c20 0 22 18 28 32 6 14 9 32 28 32M22 82c20 0 22-18 28-32 6-14 9-32 28-32"/><circle class="f" cx="22" cy="18" r="5"/><circle class="f" cx="22" cy="82" r="5"/><circle class="f" cx="78" cy="18" r="5"/><circle class="f" cx="78" cy="82" r="5"/></symbol>
+    <symbol id="glyph-passport" viewBox="0 0 100 100"><rect class="g" x="19" y="14" width="62" height="72" rx="10"/><circle class="g" cx="50" cy="43" r="15"/><path class="g" d="M35 43h30M50 28c7 8 7 22 0 30M50 28c-7 8-7 22 0 30M31 70h38"/></symbol>
+    <symbol id="glyph-council" viewBox="0 0 100 100"><circle class="g" cx="50" cy="50" r="13"/><circle class="f" cx="50" cy="12" r="6"/><circle class="f" cx="83" cy="31" r="6"/><circle class="f" cx="83" cy="69" r="6"/><circle class="f" cx="50" cy="88" r="6"/><circle class="f" cx="17" cy="69" r="6"/><circle class="f" cx="17" cy="31" r="6"/><circle class="g" cx="50" cy="50" r="38"/></symbol>
+    <symbol id="glyph-orb" viewBox="0 0 100 100"><circle class="g" cx="50" cy="50" r="29"/><path class="g" d="M17 50c8-8 15-11 22-11 12 0 16 22 26 22 7 0 13-4 18-11"/></symbol>
+    <symbol id="glyph-privacy" viewBox="0 0 100 100"><path class="g" d="M50 9 80 21v25c0 22-12 35-30 45-18-10-30-23-30-45V21z"/><circle class="g" cx="50" cy="45" r="9"/><path class="g" d="M50 54v14"/></symbol>
+    <symbol id="glyph-location" viewBox="0 0 100 100"><path class="g" d="M50 90S22 65 22 39a28 28 0 1 1 56 0c0 26-28 51-28 51z"/><circle class="g" cx="50" cy="39" r="10"/></symbol>
+    <symbol id="glyph-status" viewBox="0 0 100 100"><path class="g" d="M9 53h18l9-22 15 42 11-28 7 8h22"/></symbol>
+    <symbol id="glyph-spatial" viewBox="0 0 100 100"><path class="g" d="m50 10 34 20v40L50 90 16 70V30zM16 30l34 20 34-20M50 50v40"/></symbol>
+    <symbol id="glyph-studio" viewBox="0 0 100 100"><rect class="g" x="17" y="17" width="66" height="66" rx="8"/><path class="g" d="M35 65 65 35M35 35h16M65 65H49"/></symbol>
+    <symbol id="glyph-motion" viewBox="0 0 100 100"><path class="g" d="M13 65c17-35 39-41 74-28M16 78c24-19 45-20 70-10"/><circle class="f" cx="82" cy="37" r="6"/></symbol>
+    <symbol id="glyph-cinema" viewBox="0 0 100 100"><rect class="g" x="14" y="24" width="72" height="52" rx="8"/><path class="g" d="M14 40h72M28 24l10 16M48 24l10 16M68 24l10 16"/></symbol>
+    <symbol id="glyph-music" viewBox="0 0 100 100"><path class="g" d="M38 72V28l37-8v44"/><circle class="g" cx="28" cy="73" r="10"/><circle class="g" cx="65" cy="65" r="10"/></symbol>
+    <symbol id="glyph-visuals" viewBox="0 0 100 100"><path class="g" d="M10 50s16-25 40-25 40 25 40 25-16 25-40 25-40-25-40-25z"/><circle class="g" cx="50" cy="50" r="12"/><path class="g" d="M50 38 63 63M38 50l25 13"/></symbol>
+    <symbol id="glyph-labs" viewBox="0 0 100 100"><path class="g" d="M38 12h24M44 12v22L25 72c-4 8 1 16 11 16h28c10 0 15-8 11-16L56 34V12M34 61h32"/></symbol>
+    <symbol id="glyph-foundation" viewBox="0 0 100 100"><path class="g" d="M15 57c13-7 22-3 35 9M85 57c-13-7-22-3-35 9M28 76c10 7 34 7 44 0"/><path class="g" d="M50 19c10 11 14 18 14 25a14 14 0 0 1-28 0c0-7 4-14 14-25z"/></symbol>
+    <symbol id="glyph-admin" viewBox="0 0 100 100"><rect class="g" x="14" y="14" width="72" height="72" rx="8"/><path class="g" d="M14 38h72M38 14v72M62 14v72"/></symbol>
+    <symbol id="glyph-analytics" viewBox="0 0 100 100"><path class="g" d="M16 79V22M16 79h70M26 67l16-18 14 10 20-28"/><circle class="f" cx="26" cy="67" r="5"/><circle class="f" cx="42" cy="49" r="5"/><circle class="f" cx="56" cy="59" r="5"/><circle class="f" cx="76" cy="31" r="5"/></symbol>
+    <symbol id="glyph-communications" viewBox="0 0 100 100"><path class="g" d="M17 20h66v46H44L26 82V66h-9z"/><path class="g" d="M31 39h38M31 51h27"/></symbol>
+    <symbol id="glyph-content" viewBox="0 0 100 100"><rect class="g" x="22" y="16" width="56" height="68" rx="6"/><path class="g" d="M31 33h38M31 47h38M31 61h28"/></symbol>
+    <symbol id="glyph-jobs" viewBox="0 0 100 100"><rect class="g" x="16" y="31" width="68" height="49" rx="7"/><path class="g" d="M36 31V20h28v11M16 49h68M42 49v8h16v-8"/></symbol>
+    <symbol id="glyph-b2b" viewBox="0 0 100 100"><circle class="g" cx="26" cy="50" r="13"/><circle class="g" cx="74" cy="50" r="13"/><path class="g" d="M39 50h22M50 39v22"/></symbol>
+  </defs>
+
+  <rect width="1200" height="1200" fill="none"/>
+  <g transform="translate(40 40)" color="#ffffff">
+    <g transform="translate(0 0)"><use href="#glyph-genesis" width="100" height="100"/><text class="t" x="0" y="128">Genesis</text></g>
+    <g transform="translate(180 0)"><use href="#glyph-home" width="100" height="100"/><text class="t" x="0" y="128">Home</text></g>
+    <g transform="translate(360 0)"><use href="#glyph-ground" width="100" height="100"/><text class="t" x="0" y="128">Ground</text></g>
+    <g transform="translate(540 0)"><use href="#glyph-life-map" width="100" height="100"/><text class="t" x="0" y="128">Life Map</text></g>
+    <g transform="translate(720 0)"><use href="#glyph-focus" width="100" height="100"/><text class="t" x="0" y="128">Focus</text></g>
+    <g transform="translate(900 0)"><use href="#glyph-replay" width="100" height="100"/><text class="t" x="0" y="128">Replay</text></g>
+
+    <g transform="translate(0 180)"><use href="#glyph-mirror" width="100" height="100"/><text class="t" x="0" y="128">Mirror</text></g>
+    <g transform="translate(180 180)"><use href="#glyph-shadow" width="100" height="100"/><text class="t" x="0" y="128">Shadow</text></g>
+    <g transform="translate(360 180)"><use href="#glyph-legacy" width="100" height="100"/><text class="t" x="0" y="128">Legacy</text></g>
+    <g transform="translate(540 180)"><use href="#glyph-passport" width="100" height="100"/><text class="t" x="0" y="128">Passport</text></g>
+    <g transform="translate(720 180)"><use href="#glyph-council" width="100" height="100"/><text class="t" x="0" y="128">Council</text></g>
+    <g transform="translate(900 180)"><use href="#glyph-orb" width="100" height="100"/><text class="t" x="0" y="128">Orb</text></g>
+
+    <g transform="translate(0 360)"><use href="#glyph-privacy" width="100" height="100"/><text class="t" x="0" y="128">Privacy</text></g>
+    <g transform="translate(180 360)"><use href="#glyph-location" width="100" height="100"/><text class="t" x="0" y="128">Location</text></g>
+    <g transform="translate(360 360)"><use href="#glyph-status" width="100" height="100"/><text class="t" x="0" y="128">Status</text></g>
+    <g transform="translate(540 360)"><use href="#glyph-spatial" width="100" height="100"/><text class="t" x="0" y="128">Spatial/XR</text></g>
+    <g transform="translate(720 360)"><use href="#glyph-studio" width="100" height="100"/><text class="t" x="0" y="128">Studio</text></g>
+    <g transform="translate(900 360)"><use href="#glyph-motion" width="100" height="100"/><text class="t" x="0" y="128">Motion</text></g>
+
+    <g transform="translate(0 540)"><use href="#glyph-cinema" width="100" height="100"/><text class="t" x="0" y="128">Cinema</text></g>
+    <g transform="translate(180 540)"><use href="#glyph-music" width="100" height="100"/><text class="t" x="0" y="128">Music</text></g>
+    <g transform="translate(360 540)"><use href="#glyph-visuals" width="100" height="100"/><text class="t" x="0" y="128">Visuals</text></g>
+    <g transform="translate(540 540)"><use href="#glyph-labs" width="100" height="100"/><text class="t" x="0" y="128">Labs</text></g>
+    <g transform="translate(720 540)"><use href="#glyph-foundation" width="100" height="100"/><text class="t" x="0" y="128">Foundation</text></g>
+    <g transform="translate(900 540)"><use href="#glyph-admin" width="100" height="100"/><text class="t" x="0" y="128">Admin</text></g>
+
+    <g transform="translate(0 720)"><use href="#glyph-analytics" width="100" height="100"/><text class="t" x="0" y="128">Analytics</text></g>
+    <g transform="translate(180 720)"><use href="#glyph-communications" width="100" height="100"/><text class="t" x="0" y="128">Comms</text></g>
+    <g transform="translate(360 720)"><use href="#glyph-content" width="100" height="100"/><text class="t" x="0" y="128">Content</text></g>
+    <g transform="translate(540 720)"><use href="#glyph-jobs" width="100" height="100"/><text class="t" x="0" y="128">Jobs</text></g>
+    <g transform="translate(720 720)"><use href="#glyph-b2b" width="100" height="100"/><text class="t" x="0" y="128">B2B</text></g>
+    <text class="s" x="0" y="1030">Working deterministic identity primitives — human brand-master approval still required.</text>
+  </g>
+</svg>

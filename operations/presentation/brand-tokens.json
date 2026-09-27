@@ -1,0 +1,15 @@
+{
+  "schemaVersion": "1.0.0",
+  "brand": "URAI",
+  "principles": ["spatial-first","quiet-magic","evidence-truthful","accessible-by-default","privacy-visible","no-placeholder-language"],
+  "typography": {"display":"system-ui","body":"system-ui","mono":"ui-monospace"},
+  "shape": {"radiusSmall":18,"radiusMedium":32,"radiusLarge":56,"stroke":2,"glyphStroke":10},
+  "spacing": {"xs":8,"sm":16,"md":24,"lg":40,"xl":64,"xxl":96},
+  "palette": {
+    "ink":"#071018","night":"#0B1320","mist":"#D9E7F2","paper":"#F7FAFC","aura":"#9EE7FF","violet":"#B6A5FF","earth":"#8FB996","ember":"#FFB36B","danger":"#FF6B6B"
+  },
+  "contrast": {"minimumText":"WCAG-AA","meaningMayDependOnColorAlone":false},
+  "motion": {"default":"slow-organic","reducedMotion":"static-equivalent","criticalInformationAnimationOnly":false},
+  "depth": {"product":"true-3d-allowed","publicDerivative":"flat-vector-equivalent"},
+  "truth": {"generatedUiMayBeCalledProductCapture":false,"exactShaRequiredForProductCapture":true,"humanApprovalRequiredForFinalBrandMaster":true}
+}
