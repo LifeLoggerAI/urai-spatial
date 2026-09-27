@@ -71,10 +71,10 @@ for (const [label, file] of [
 ]) check('assets', file, label)
 
 for (const [label, file, token] of [
-  ['Focus selector', 'urai-tier1/src/app/aaa-launch-proof-layer.css', 'selected-memory-camera-chamber'],
-  ['Replay selector', 'urai-tier1/src/app/aaa-launch-proof-layer.css', 'cinematic-memory-camera-film'],
+  ['Focus runtime owner', 'urai-tier1/src/app/focus/FocusChamberClient.tsx', 'data-focus-spatial="inside-memory-star"'],
+  ['Replay runtime owner', 'urai-tier1/src/app/replay/CinematicReplayClient.tsx', 'data-replay-spatial-owner="r3f-immersive-memory-field"'],
   ['Home ascent transition', 'urai-tier1/src/app/urai-canon-camera-transitions.css', 'uraiCanonHomeAscendToLifeMap'],
-]) check('css', file, label, token)
+]) check('canon', file, label, token)
 
 const failed = results.filter((result) => !result.ok)
 const rows = results.map((result) => `| ${result.ok ? 'PASS' : 'FAIL'} | ${result.surface} | ${result.label} | ${result.file} |`)
