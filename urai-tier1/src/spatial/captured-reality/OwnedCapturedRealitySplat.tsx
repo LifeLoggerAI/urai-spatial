@@ -10,7 +10,7 @@ import type { CapturedSplatResources } from './capturedRealitySplatResources'
 /** Private splat renderer: every mount owns and releases its complete session. */
 export function OwnedCapturedRealitySplat({
   src, maxBytes, chunkSize = 25_000, alphaHash = true, onRenderReady,
-}: { src: string; maxBytes: number; chunkSize?: number; alphaHash?: boolean; onRenderReady?: () => void }) {
+}: { src: string; maxBytes: number; chunkSize?: number; alphaHash?: boolean; onRenderReady?: (src: string) => void }) {
   const gl = useThree((state) => state.gl)
   const [loaded, setLoaded] = useState<{ src: string; resource: CapturedSplatResources } | null>(null)
   const [progress, setProgress] = useState(0)
@@ -20,6 +20,7 @@ export function OwnedCapturedRealitySplat({
   const renderReadySent = useRef(false)
   const onRenderReadyRef = useRef(onRenderReady)
   onRenderReadyRef.current = onRenderReady
+
   useEffect(() => {
     let active = true
     setLoaded(null)
@@ -43,20 +44,29 @@ export function OwnedCapturedRealitySplat({
       session.dispose()
     }
   }, [src, maxBytes, chunkSize, alphaHash, gl])
+
   useFrame(({ camera }) => {
     if (loaded?.src === src && !loaded.resource.disposed) {
       gl.getCurrentViewport(viewport.current)
       loaded.resource.update(camera, viewport.current)
-      if (complete && !renderReadySent.current) {
-        renderReadySent.current = true
-        onRenderReadyRef.current?.()
-      }
     }
   })
+
   if (failure?.src === src) throw failure.error
+
   return (
     <>
-      {loaded?.src === src && !loaded.resource.disposed ? <primitive object={loaded.resource.mesh} dispose={null} /> : null}
+      {loaded?.src === src && !loaded.resource.disposed ? (
+        <primitive
+          object={loaded.resource.mesh}
+          dispose={null}
+          onAfterRender={() => {
+            if (!complete || renderReadySent.current || gl.getContext().isContextLost()) return
+            renderReadySent.current = true
+            queueMicrotask(() => onRenderReadyRef.current?.(src))
+          }}
+        />
+      ) : null}
       {!complete ? <Html center><p role="status" style={{ color: '#f7f7f5', whiteSpace: 'nowrap' }}>Loading captured place… {progress}%</p></Html> : null}
     </>
   )
