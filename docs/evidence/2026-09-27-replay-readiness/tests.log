@@ -1,0 +1,22 @@
+✔ replay route remains wired to the current spatial memory world owner (1.926425ms)
+✔ legacy FinalReplayFilm lineage remains historical rather than active route authority (0.449115ms)
+✔ replay direct route resolves only demo-safe replay ids and fails closed (0.334279ms)
+✔ replay unwind affordance preserves safe return behavior (0.318803ms)
+✔ Replay owns its route directly and returns through the canonical world boundary (0.969551ms)
+✔ Replay Gold Master proof requires actual rendered frames before capture acceptance (0.443702ms)
+(node:13) ExperimentalWarning: stripTypeScriptTypes is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ fresh renderer requires two rendered frames (1.848705ms)
+✔ loss clears readiness immediately even without another animation frame (0.33262ms)
+✔ lost context cannot regain readiness from stale nonzero draw counts (0.402643ms)
+✔ restoration requires fresh frames and zero draw counts reset accumulation (0.414992ms)
+✔ unmount clears readiness and detached callbacks cannot republish success (0.348188ms)
+✔ texture replacement resets prior media readiness (0.307969ms)
+ℹ tests 12
+ℹ suites 0
+ℹ pass 12
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 496.250966

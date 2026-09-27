@@ -66,7 +66,12 @@ test('Replay owns its route directly and returns through the canonical world bou
 
 test('Replay Gold Master proof requires actual rendered frames before capture acceptance', () => {
   assert.match(replayClient, /data-replay-render-ready/)
-  assert.match(replayClient, /renderedMediaFrames\.current >= 2/)
+  assert.match(replayClient, /createReplayRenderReadiness/)
+  assert.match(replayClient, /readiness\.frame\(gl\.info\.render\.calls\)/)
+  const readiness = fs.readFileSync(path.join(root, 'src/spatial/runtime/replayRenderReadiness.ts'), 'utf8')
+  assert.match(readiness, /frames >= 2/)
+  assert.match(readiness, /contextLost\(\)/)
+  assert.match(readiness, /webglcontextlost/)
   assert.match(replayProof, /data-replay-render-ready/)
   assert.match(replayProof, /renderReady: root\?\.getAttribute\('data-replay-render-ready'\) === 'true'/)
   assert.match(replayProof, /&& result\.renderReady/)
