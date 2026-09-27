@@ -44,6 +44,15 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - name: Verify private delivery, binary integrity and source preservation
         working-directory: urai-tier1
-        run: node --import tsx --test tests/captured-reality-*.test.mjs
+        shell: bash
+        run: |
+          set -euo pipefail
+          mapfile -t captured_reality_tests < <(find tests -maxdepth 1 -type f -name 'captured-reality-*.test.mjs' -print | sort)
+          if [ "${#captured_reality_tests[@]}" -eq 0 ]; then
+            echo "::error::No Captured Reality tests were found."
+            exit 66
+          fi
+          printf 'Captured Reality tests: %s\n' "${#captured_reality_tests[@]}"
+          node --import tsx --test "${captured_reality_tests[@]}"
       - name: Typecheck runtime
         run: pnpm --dir urai-tier1 typecheck
