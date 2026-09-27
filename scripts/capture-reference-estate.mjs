@@ -108,6 +108,8 @@ async function capture(browser, cfg) {
     receipt.failures.push(record)
     console.error('REFERENCE_CAPTURE_FAIL', cfg.id, record.error)
   } finally {
+    // Preserve a truthful partial receipt if a later capture is interrupted.
+    await fs.writeFile(path.join(outDir, 'receipt.json'), JSON.stringify({ ...receipt, status: 'capturing', complete: false }, null, 2) + '\n')
     await context.close()
   }
 }
@@ -169,7 +171,7 @@ async function activatePhysicalPassport(page) {
   const passport = await enterPhysicalPassport(page, 'dormant')
   await passport.focus()
   await passport.press('Enter')
-  await page.waitForURL(/\/passport(?:\?|$)/, { timeout:30000 })
+  await page.waitForURL((url) => url.pathname.replace(/\/+$/, '') === '/passport', { timeout:30000 })
   await page.locator('main[data-route-owner="passport-ownership-vault"]').waitFor({ state:'visible', timeout:30000 })
 }
 
@@ -230,7 +232,7 @@ const simple = [
   { id:'PASSPORT-PHYS-008', system:'Physical Home Passport', state:'trust-handoff-to-passport', route:'/home?homeAssetReview=1', marker:'.urai-asset-home-world[data-home-primary-owner="asset-driven"]', action: activatePhysicalPassport },
   { id:'PASSPORT-PHYS-009', system:'Physical Home Passport', state:'recent-auth-locked', route:'/passport?assetReview=1&passportReview=recent-auth-locked', marker:'main[data-route-owner="passport-ownership-vault"]', text:'REFERENCE REVIEW — recent-auth locked' },
   { id:'PASSPORT-PHYS-010', system:'Physical Home Passport', state:'unavailable-data-not-mounted', route:'/passport?assetReview=1&passportReview=unavailable', marker:'main[data-route-owner="passport-ownership-vault"]', text:'REFERENCE REVIEW — ownership data unavailable' },
-  { id:'PASSPORT-PHYS-011', system:'Physical Home Passport', state:'return-to-exact-home-origin', route:'/home?homeAssetReview=1', marker:'.urai-asset-home-world[data-home-primary-owner="asset-driven"]', action: async (page) => { await activatePhysicalPassport(page); await page.goBack({ waitUntil:'networkidle' }); await page.waitForFunction(() => document.querySelector('.urai-asset-home-world[data-home-primary-owner="asset-driven"]')?.getAttribute('data-home-stable-state') === 'AVATAR_HOME_FIRST_PERSON', null, { timeout:30000 }); await page.getByTestId('home-passport-physical-control').waitFor({ state:'attached', timeout:30000 }) } },
+  { id:'PASSPORT-PHYS-011', system:'Physical Home Passport', state:'return-to-exact-home-origin', route:'/home?homeAssetReview=1', marker:'.urai-asset-home-world[data-home-primary-owner="asset-driven"]', action: async (page) => { await activatePhysicalPassport(page); await page.getByTestId('passport-return-origin').click(); await page.waitForURL((url) => url.pathname.replace(/\/+$/, '') === '/home', { timeout:30000 }); await enterFirstPersonHome(page); await page.waitForFunction(() => window.sessionStorage.getItem('urai:home:return-frame:v1') === null, null, { timeout:30000 }); await page.getByTestId('home-passport-physical-control').waitFor({ state:'attached', timeout:30000 }) } },
   { id:'PASSPORT-PHYS-012', system:'Physical Home Passport', state:'phone-touch-adaptation', route:'/home?homeAssetReview=1&homePassportReviewState=dormant', marker:'.urai-asset-home-world[data-home-primary-owner="asset-driven"]', device:'mobile', action: async (page) => enterPhysicalPassport(page, 'dormant') },
   { id:'PASSPORT-PHYS-013', system:'Physical Home Passport', state:'reduced-motion', route:'/home?homeAssetReview=1&homePassportReviewState=dormant', marker:'.urai-asset-home-world[data-home-primary-owner="asset-driven"]', reducedMotion:true, action: async (page) => enterPhysicalPassport(page, 'dormant') },
   { id:'PASSPORT-PHYS-014', system:'Physical Home Passport', state:'reduced-stimulation', route:'/home?homeAssetReview=1&homePassportReviewState=dormant&homeReducedStimulation=1', marker:'.urai-asset-home-world[data-home-primary-owner="asset-driven"]', action: async (page) => { const passport = await enterPhysicalPassport(page, 'dormant'); const reduced = await passport.getAttribute('data-home-passport-reduced-stimulation'); if (reduced !== 'true') throw new Error(`Expected Passport reduced stimulation, got ${reduced}`) } },
@@ -458,6 +460,7 @@ for (let offset = 0; offset < states.length; offset += browserBatchSize) {
 }
 
 receipt.completedAt = new Date().toISOString()
+receipt.complete = true
 receipt.status = receipt.failures.length ? 'partial' : 'captured'
 await fs.writeFile(path.join(outDir, 'receipt.json'), JSON.stringify(receipt, null, 2) + '\n')
 console.log(JSON.stringify({ exactSha, captures:receipt.captures.length, failures:receipt.failures.length, status:receipt.status }))

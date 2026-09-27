@@ -151,7 +151,7 @@ test('offline state is explicit and sensitive operations remain disabled', async
   expect(runtime.pageErrors).toEqual([])
 })
 
-test('reduced-motion Home Orb exposes keyboard conversation before Passport travel', async ({ page }) => {
+test('reduced-motion Home Orb and Passport preserve keyboard origin return', async ({ page }) => {
   test.setTimeout(120_000)
   const runtime = await observe(page)
   await page.setViewportSize({ width: 1440, height: 900 })
@@ -177,6 +177,15 @@ test('reduced-motion Home Orb exposes keyboard conversation before Passport trav
     await page.keyboard.press('Escape')
     await expect(menu).toHaveCount(0)
     await expect(orb).toBeFocused()
+    const passport = page.getByTestId('home-passport-physical-control')
+    await expect(passport).toHaveAttribute('data-home-passport-reduced-motion', 'true')
+    await passport.focus()
+    await passport.press('Enter')
+    await page.waitForURL(url => url.pathname.replace(/\/+$/, '') === '/passport')
+    await page.getByTestId('passport-return-origin').click()
+    await page.waitForURL(url => url.pathname.replace(/\/+$/, '') === '/home')
+    await expect(page.locator('.urai-asset-home-world[data-home-primary-owner="asset-driven"]')).toHaveAttribute('data-home-stable-state', 'AVATAR_HOME_FIRST_PERSON', { timeout: 30_000 })
+    await expect.poll(() => page.evaluate(() => sessionStorage.getItem('urai:home:return-frame:v1'))).toBeNull()
     expect(runtime.pageErrors).toEqual([])
   } finally {
     await fs.mkdir(evidenceRoot, { recursive: true })
