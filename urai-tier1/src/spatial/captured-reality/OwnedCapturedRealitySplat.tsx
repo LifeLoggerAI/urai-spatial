@@ -9,20 +9,24 @@ import type { CapturedSplatResources } from './capturedRealitySplatResources'
 
 /** Private splat renderer: every mount owns and releases its complete session. */
 export function OwnedCapturedRealitySplat({
-  src, maxBytes, chunkSize = 25_000, alphaHash = true,
-}: { src: string; maxBytes: number; chunkSize?: number; alphaHash?: boolean }) {
+  src, maxBytes, chunkSize = 25_000, alphaHash = true, onRenderReady,
+}: { src: string; maxBytes: number; chunkSize?: number; alphaHash?: boolean; onRenderReady?: () => void }) {
   const gl = useThree((state) => state.gl)
   const [loaded, setLoaded] = useState<{ src: string; resource: CapturedSplatResources } | null>(null)
   const [progress, setProgress] = useState(0)
   const [complete, setComplete] = useState(false)
   const [failure, setFailure] = useState<{ src: string; error: Error } | null>(null)
   const viewport = useRef(new Vector4())
+  const renderReadySent = useRef(false)
+  const onRenderReadyRef = useRef(onRenderReady)
+  onRenderReadyRef.current = onRenderReady
   useEffect(() => {
     let active = true
     setLoaded(null)
     setFailure(null)
     setComplete(false)
     setProgress(0)
+    renderReadySent.current = false
     const session = createCapturedRealitySplatSession({
       url: src, maxBytes, chunkSize, alphaHash, maxTextureSize: gl.capabilities.maxTextureSize,
       onResource(resource) { if (active) setLoaded({ src, resource }) },
@@ -43,6 +47,10 @@ export function OwnedCapturedRealitySplat({
     if (loaded?.src === src && !loaded.resource.disposed) {
       gl.getCurrentViewport(viewport.current)
       loaded.resource.update(camera, viewport.current)
+      if (complete && !renderReadySent.current) {
+        renderReadySent.current = true
+        onRenderReadyRef.current?.()
+      }
     }
   })
   if (failure?.src === src) throw failure.error
