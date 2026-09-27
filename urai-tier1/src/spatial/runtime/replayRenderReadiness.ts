@@ -7,8 +7,9 @@ export function createReplayRenderReadiness(
   publish: (ready: boolean) => void,
 ) {
   let frames = 0
+  let lastRenderFrame = 0
   let connected = false
-  const reset = () => { frames = 0; publish(false) }
+  const reset = () => { frames = 0; lastRenderFrame = 0; publish(false) }
   return {
     reset,
     connect() {
@@ -23,8 +24,10 @@ export function createReplayRenderReadiness(
         reset()
       }
     },
-    frame(renderCalls: number) {
-      if (!connected || contextLost() || renderCalls <= 0) { reset(); return }
+    frame(renderFrame: number) {
+      if (!connected || contextLost() || renderFrame <= 0) { reset(); return }
+      if (renderFrame === lastRenderFrame) return
+      lastRenderFrame = renderFrame
       frames += 1
       publish(frames >= 2)
     },
