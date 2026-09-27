@@ -1,6 +1,6 @@
 import { resolveUraiSpatialAssetPath } from './assetManifest'
 
-export type WorldAssetStatus = 'fallback' | 'candidate' | 'ready' | 'missing'
+export type WorldAssetStatus = 'fallback' | 'candidate' | 'ready' | 'runtime' | 'missing'
 
 export type WorldAssetSlot = {
   slotId: string
@@ -80,8 +80,8 @@ export const worldAssetManifest = {
       slotId: 'lifeMap.constellationLines',
       label: 'Constellation Line System',
       finalModel: '',
-      status: 'missing',
-      notes: 'Shader/runtime system; no independent model namespace is authorized.',
+      status: 'runtime',
+      notes: 'Runtime-owned shader/geometry system; no independent model namespace is authorized or required.',
     },
   },
   focus: {
@@ -105,15 +105,15 @@ export const worldAssetManifest = {
       slotId: 'replay.memoryThreadTunnel',
       label: 'Replay Immersive Memory Runtime',
       finalModel: '',
-      status: 'missing',
-      notes: 'Replay visual authority is the runtime immersive memory field. No theater, film-portal, or independent tunnel model is authorized.',
+      status: 'runtime',
+      notes: 'Replay visual authority is the implemented runtime immersive memory field. No theater, film-portal, or independent tunnel model is authorized or required.',
     },
     beatMarkers: {
       slotId: 'replay.beatMarkers',
       label: 'Replay Beat Markers',
       finalModel: '',
-      status: 'missing',
-      notes: 'Runtime timeline system; no independent model namespace is authorized.',
+      status: 'runtime',
+      notes: 'Implemented runtime temporal-marker system; no independent model namespace is authorized or required.',
     },
   },
   passport: {
