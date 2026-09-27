@@ -9,6 +9,7 @@ on:
         type: string
   pull_request:
     paths:
+      - 'urai-tier1/src/app/GroundSpatialWorldClean.tsx'
       - 'urai-tier1/src/app/focus/**'
       - 'urai-tier1/src/app/replay/**'
       - 'urai-tier1/src/app/home/**'
