@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import test from 'node:test'
+import vm from 'node:vm'
+import * as THREE from 'three'
 import { createPostRenderCadence } from '../src/spatial/performance/postRenderCadence.ts'
 
 function fixture(intervalMs = 100, shouldContinue) {
@@ -156,4 +158,45 @@ test('Home wires the after-render lifecycle and retains software demand mode on 
   assert.match(source, /frameloop=\{!sceneReady \? 'never' : reducedMotion \|\| softwareRenderer \? 'demand' : 'always'\}/)
   assert.match(source, /if \(!ready\) \{ setFrameloop\('never'\); return \}/)
   assert.doesNotMatch(source, /setTimeout\(renderNext|const bootstrap = \[/)
+})
+
+function atmosphereFrame(reducedMotion) {
+  const source = fs.readFileSync(new URL('../src/spatial/assets/HomeAtmosphericSky.tsx', import.meta.url), 'utf8')
+  const body = source.match(/useFrame\((\(\{ camera, clock \}, delta\) => \{[\s\S]*?)\n  \}\)\n\n  const validSkyRay/)
+  assert.ok(body, 'exercise the actual atmosphere frame callback')
+  const material = () => ({ uniforms: new Proxy({}, { get: (target, key) => target[key] ??= { value: 0 } }) })
+  const weather = { clarity: .2, cloudCover: .8, aerosolDensity: .7, windCoherence: .4, horizonTransmission: .3, celestialVisibility: .1 }
+  const time = { luminance: .3, temperatureBias: .2, celestialMultiplier: .8 }
+  const zero = (object) => Object.fromEntries(Object.keys(object).map(key => [key, 0]))
+  const state = {
+    THREE, reducedMotion, active: false, focused: true,
+    atmosphere: { current: null },
+    weatherTarget: { current: weather }, weatherCurrent: { current: zero(weather) },
+    blueHourTarget: { current: time }, blueHourCurrent: { current: zero(time) },
+    atmosphereMaterial: material(), starMaterial: material(), cloudMaterials: [material()],
+    scene: { fog: new THREE.FogExp2('#ffffff', .01) }, fogTargetColor: new THREE.Color(),
+    gl: { getPixelRatio: () => 1 },
+  }
+  const frame = vm.runInNewContext(`(${body[1]}\n})`, state)
+  frame({ camera: { position: new THREE.Vector3() }, clock: { elapsedTime: 0 } }, 0)
+  return state
+}
+
+test('one reduced-motion frame applies weather, time, focus and fog without continuation', () => {
+  const s = atmosphereFrame(true)
+  assert.equal(s.atmosphereMaterial.uniforms.uClarity.value, .2)
+  assert.equal(s.atmosphereMaterial.uniforms.uTimeLuminance.value, .3)
+  assert.equal(s.cloudMaterials[0].uniforms.uCloudCover.value, .8)
+  assert.equal(s.atmosphereMaterial.uniforms.uFocus.value, .55)
+  assert.equal(s.starMaterial.uniforms.uTimeStars.value, .8)
+  assert.equal(s.scene.fog.density, .01 + .7 * .009 - .2 * .0025)
+})
+
+test('normal-motion atmosphere retains interpolation instead of jumping to targets', () => {
+  const s = atmosphereFrame(false)
+  assert.equal(s.atmosphereMaterial.uniforms.uClarity.value, 0)
+  assert.equal(s.atmosphereMaterial.uniforms.uTimeLuminance.value, 0)
+  assert.equal(s.cloudMaterials[0].uniforms.uCloudCover.value, 0)
+  assert.equal(s.atmosphereMaterial.uniforms.uFocus.value, 0)
+  assert.equal(s.scene.fog.density, .01)
 })
