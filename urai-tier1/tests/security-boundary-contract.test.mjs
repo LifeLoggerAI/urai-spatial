@@ -13,6 +13,7 @@ const narratorPlayback = fs.readFileSync(new URL("../src/spatial/narrator/narrat
 const checkoutRoute = fs.readFileSync(new URL("../src/app/api/stripe/create-checkout-session/route.ts", import.meta.url), "utf8");
 const firebaseUser = fs.readFileSync(new URL("../src/lib/server/firebase-user.ts", import.meta.url), "utf8");
 const approvedReturnUrl = fs.readFileSync(new URL("../src/lib/server/approved-return-url.ts", import.meta.url), "utf8");
+const lifeMapSeed = fs.readFileSync(new URL("../scripts/seed-life-map.mjs", import.meta.url), "utf8");
 
 test("static provider paths cannot shadow authenticated Firebase rewrites", () => {
   for (const route of staticProviderRoutes) assert.equal(fs.existsSync(route), false);
@@ -55,4 +56,13 @@ test("Stripe checkout permits only the configured application origin", () => {
   assert.match(approvedReturnUrl, /resolved\.origin !== approvedOrigin\.origin/);
   assert.match(approvedReturnUrl, /resolved\.username \|\| resolved\.password/);
   assert.doesNotMatch(checkoutRoute, /const redirectBase = returnUrl \|\| appUrl/);
+});
+
+
+test("Life Map seed rejects long-lived Google credentials before Firestore writes", () => {
+  assert.match(lifeMapSeed, /assertExternalAccountAdc\(\)/);
+  assert.match(lifeMapSeed, /record\.type !== 'external_account'/);
+  assert.match(lifeMapSeed, /FIREBASE_SERVICE_ACCOUNT_JSON/);
+  assert.match(lifeMapSeed, /GOOGLE_APPLICATION_CREDENTIALS/);
+  assert.match(lifeMapSeed, /applicationDefault\(\)/);
 });
