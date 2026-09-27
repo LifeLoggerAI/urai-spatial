@@ -1,6 +1,6 @@
 'use client'
 
-import { Suspense, useEffect, useMemo, useState } from 'react'
+import { Suspense, useMemo, useRef, useState } from 'react'
 import { Canvas } from '@react-three/fiber'
 import { OrbitControls } from '@react-three/drei'
 import type { CapturedRealityRenderDecision } from './capturedReality'
@@ -25,11 +25,17 @@ export function CapturedRealityPrivateScene({
 }: CapturedRealityPrivateSceneProps) {
   const tier = useMemo(() => capturedRealityDeviceTier(userAgent), [userAgent])
   const quality = CAPTURED_REALITY_QUALITY_PROFILES[tier]
-  const [renderReady, setRenderReady] = useState(false)
-
-  useEffect(() => {
-    setRenderReady(false)
-  }, [decision.assetUrl, decision.mode])
+  const decisionIdentity = `${decision.mode}\u0000${decision.assetUrl ?? ''}`
+  const identityRef = useRef({ value: decisionIdentity, generation: 0 })
+  if (identityRef.current.value !== decisionIdentity) {
+    identityRef.current = { value: decisionIdentity, generation: identityRef.current.generation + 1 }
+  }
+  const generation = identityRef.current.generation
+  const [renderReadyFor, setRenderReadyFor] = useState<{ generation: number; src: string } | null>(null)
+  const renderReady = decision.mode === 'gaussian-splat'
+    && typeof decision.assetUrl === 'string'
+    && renderReadyFor?.generation === generation
+    && renderReadyFor.src === decision.assetUrl
 
   return (
     <section
@@ -51,7 +57,13 @@ export function CapturedRealityPrivateScene({
           <CapturedRealityRenderBoundary resetKey={decision.assetUrl}>
             <Canvas camera={{ position: [0, 1.6, 4], fov: 62 }} dpr={tier === 'mobile' ? [1, 1.25] : [1, 1.75]}>
               <Suspense fallback={null}>
-                <CapturedRealitySplat decision={decision} maxBytes={quality.maxRuntimeBytes} chunkSize={quality.chunkSize} alphaHash={quality.alphaHash} onRenderReady={() => setRenderReady(true)} />
+                <CapturedRealitySplat
+                  decision={decision}
+                  maxBytes={quality.maxRuntimeBytes}
+                  chunkSize={quality.chunkSize}
+                  alphaHash={quality.alphaHash}
+                  onRenderReady={(src) => setRenderReadyFor({ generation, src })}
+                />
               </Suspense>
               <OrbitControls
                 enableDamping={!reducedMotion}
