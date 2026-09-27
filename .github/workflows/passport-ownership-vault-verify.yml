@@ -7,7 +7,7 @@ on:
       - feat/passport-ownership-vault-891-20260721
       - feat/passport-ownership-vault-891-rebased-20260722
   pull_request:
-    branches: [main, repair/home-passport-orb-runtime-proof-20260926]
+    branches: [main, repair/home-passport-orb-runtime-proof-20260926, repair/pixel-polish-20260927, repair/settings-scroll-20260927]
   workflow_dispatch:
 
 permissions:

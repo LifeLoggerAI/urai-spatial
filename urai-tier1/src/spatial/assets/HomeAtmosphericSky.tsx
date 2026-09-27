@@ -472,7 +472,7 @@ function OrbLocalAir({ reducedMotion }: { reducedMotion: boolean }) {
   useEffect(() => () => { geometry.dispose(); material.dispose() }, [geometry, material])
 
   useFrame(({ clock }, delta) => {
-    currentIntensity.current = THREE.MathUtils.damp(currentIntensity.current, targetIntensity.current, 1.4, delta)
+    currentIntensity.current = reducedMotion ? targetIntensity.current : THREE.MathUtils.damp(currentIntensity.current, targetIntensity.current, 1.4, delta)
     material.uniforms.uIntensity.value = currentIntensity.current
     material.uniforms.uTime.value = reducedMotion ? 0 : clock.elapsedTime
     material.uniforms.uMotion.value = reducedMotion ? 0 : 1
@@ -500,7 +500,7 @@ function OrbLocalAir({ reducedMotion }: { reducedMotion: boolean }) {
 export function HomeAtmosphericSky({ reducedMotion, active = false, weatherState, onLifeMap }: { reducedMotion: boolean; active?: boolean; weatherState?: HomeEmotionalWeatherName; onLifeMap: () => void }) {
   const atmosphere = useRef<THREE.Mesh>(null)
   const [focused, setFocused] = useState(false)
-  const { gl, scene } = useThree()
+  const { gl, scene, invalidate } = useThree()
   const starGeometry = useMemo(celestialMemoryGeometry, [])
   const starMaterial = useMemo(makeStarMaterial, [])
   const atmosphereMaterial = useMemo(makeAtmosphereMaterial, [])
@@ -517,24 +517,27 @@ export function HomeAtmosphericSky({ reducedMotion, active = false, weatherState
     if (reviewBlueHour) {
       blueHourTarget.current = reviewBlueHour
       blueHourCurrent.current = { ...reviewBlueHour }
+      invalidate()
       return
     }
-    const updateTime = () => { blueHourTarget.current = resolveAdaptiveBlueHour() }
+    const updateTime = () => { blueHourTarget.current = resolveAdaptiveBlueHour(); invalidate() }
     updateTime()
     const timer = window.setInterval(updateTime, 5 * 60 * 1000)
     return () => window.clearInterval(timer)
-  }, [])
+  }, [invalidate])
 
   useEffect(() => {
     const initial = weatherState ?? resolveHomeEmotionalWeather(new URLSearchParams(window.location.search).get('homeWeather'))
     weatherTarget.current = HOME_EMOTIONAL_WEATHER_PRESETS[initial]
+    invalidate()
     const onWeather = (event: Event) => {
       const state = resolveHomeEmotionalWeather((event as CustomEvent<{ state?: unknown }>).detail?.state)
       weatherTarget.current = HOME_EMOTIONAL_WEATHER_PRESETS[state]
+      invalidate()
     }
     window.addEventListener(URAI_HOME_EMOTIONAL_WEATHER_EVENT, onWeather)
     return () => window.removeEventListener(URAI_HOME_EMOTIONAL_WEATHER_EVENT, onWeather)
-  }, [weatherState])
+  }, [invalidate, weatherState])
 
   useEffect(() => () => {
     atmosphereMaterial.dispose()
@@ -545,14 +548,16 @@ export function HomeAtmosphericSky({ reducedMotion, active = false, weatherState
 
   useEffect(() => {
     document.body.style.cursor = focused && !active ? 'pointer' : 'default'
+    invalidate()
     return () => { document.body.style.cursor = 'default' }
-  }, [active, focused])
+  }, [active, focused, invalidate])
 
   useFrame(({ camera, clock }, delta) => {
     atmosphere.current?.position.copy(camera.position)
     const t = reducedMotion ? 0 : clock.elapsedTime
     const target = weatherTarget.current
     const current = weatherCurrent.current
+    if (reducedMotion) Object.assign(current, target)
     const weatherSpeed = reducedMotion ? .70 : .42
     current.clarity = THREE.MathUtils.damp(current.clarity, target.clarity, weatherSpeed, delta)
     current.cloudCover = THREE.MathUtils.damp(current.cloudCover, target.cloudCover, weatherSpeed, delta)
@@ -563,12 +568,14 @@ export function HomeAtmosphericSky({ reducedMotion, active = false, weatherState
 
     const timeTarget = blueHourTarget.current
     const timeCurrent = blueHourCurrent.current
+    if (reducedMotion) Object.assign(timeCurrent, timeTarget)
     timeCurrent.luminance = THREE.MathUtils.damp(timeCurrent.luminance, timeTarget.luminance, .08, delta)
     timeCurrent.temperatureBias = THREE.MathUtils.damp(timeCurrent.temperatureBias, timeTarget.temperatureBias, .08, delta)
     timeCurrent.celestialMultiplier = THREE.MathUtils.damp(timeCurrent.celestialMultiplier, timeTarget.celestialMultiplier, .08, delta)
 
-    const focusValue = THREE.MathUtils.damp(atmosphereMaterial.uniforms.uFocus.value, active ? 1 : focused ? .55 : 0, 5.5, delta)
-    const activeValue = THREE.MathUtils.damp(atmosphereMaterial.uniforms.uActive.value, active ? 1 : 0, 4.4, delta)
+    const focusTarget = active ? 1 : focused ? .55 : 0
+    const focusValue = reducedMotion ? focusTarget : THREE.MathUtils.damp(atmosphereMaterial.uniforms.uFocus.value, focusTarget, 5.5, delta)
+    const activeValue = reducedMotion ? Number(active) : THREE.MathUtils.damp(atmosphereMaterial.uniforms.uActive.value, active ? 1 : 0, 4.4, delta)
     atmosphereMaterial.uniforms.uTime.value = t
     atmosphereMaterial.uniforms.uFocus.value = focusValue
     atmosphereMaterial.uniforms.uActive.value = activeValue
@@ -597,13 +604,13 @@ export function HomeAtmosphericSky({ reducedMotion, active = false, weatherState
 
     if (scene.fog instanceof THREE.FogExp2) {
       const densityTarget = active ? .0045 : .0100 + current.aerosolDensity * .009 - current.clarity * .0025
-      scene.fog.density = THREE.MathUtils.damp(scene.fog.density, densityTarget, 1.3, delta)
+      scene.fog.density = reducedMotion ? densityTarget : THREE.MathUtils.damp(scene.fog.density, densityTarget, 1.3, delta)
       fogTargetColor.setRGB(
         .13 + current.horizonTransmission * .08,
         .25 + current.clarity * .075,
         .25 + current.clarity * .075,
       )
-      scene.fog.color.lerp(fogTargetColor, 1 - Math.pow(.05, delta))
+      scene.fog.color.lerp(fogTargetColor, reducedMotion ? 1 : 1 - Math.pow(.05, delta))
     }
   })
 
