@@ -44,6 +44,7 @@ test('desktop Ownership Vault exposes every zone and transition', async ({ page 
   const runtime = await observe(page)
   await page.setViewportSize({ width: 1440, height: 1000 })
   await openDemo(page)
+  await page.screenshot({ path: path.join(evidenceRoot, 'desktop-initial-vault.png') })
   for (const label of ['Identity core', 'Connected sources', 'Devices and sessions', 'Provenance archive', 'Permission history', 'Export chamber', 'Deletion chamber', 'Audit corridor', 'Recovery threshold']) {
     await expect(page.getByRole('button', { name: label })).toBeVisible()
   }
@@ -79,6 +80,7 @@ test('portrait mobile supports direct controls without spatial navigation', asyn
   const runtime = await observe(page)
   await page.setViewportSize({ width: 390, height: 844 })
   await openDemo(page)
+  await page.screenshot({ path: path.join(evidenceRoot, 'portrait-initial-vault.png') })
   await page.getByRole('link', { name: 'Skip to vault controls' }).focus()
   await page.keyboard.press('Enter')
   await expect(page.locator('#passport-controls')).toBeFocused()
@@ -147,4 +149,43 @@ test('offline state is explicit and sensitive operations remain disabled', async
   await context.setOffline(false)
   await save('offline-runtime', runtime)
   expect(runtime.pageErrors).toEqual([])
+})
+
+test('reduced-motion Home Orb exposes keyboard conversation before Passport travel', async ({ page }) => {
+  test.setTimeout(120_000)
+  const runtime = await observe(page)
+  await page.setViewportSize({ width: 1440, height: 900 })
+  await page.emulateMedia({ reducedMotion: 'reduce' })
+  await page.addInitScript(() => {
+    localStorage.setItem('urai:onboarding:v2:complete', '1')
+    localStorage.setItem('urai:onboarding:v3:setup-complete', '1')
+    localStorage.removeItem('urai:onboarding:v3:setup-step')
+  })
+  try {
+    await page.goto(`${baseURL}/home/?homeAssetReview=1`, { waitUntil: 'domcontentloaded' })
+    const orb = page.getByTestId('home-semantic-orb').first()
+    await expect(orb).toBeEnabled({ timeout: 60_000 })
+    await orb.focus()
+    await orb.press('Enter')
+    const menu = page.locator('#urai-world-companion-menu[aria-hidden="false"]')
+    await expect(menu).toBeVisible({ timeout: 20_000 })
+    const talk = menu.locator('summary').filter({ hasText: 'Talk with Orb' })
+    await expect(talk).toBeVisible({ timeout: 20_000 })
+    await talk.focus()
+    await talk.press('Enter')
+    await expect(menu.getByLabel('Message for Orb')).toBeVisible()
+    await page.keyboard.press('Escape')
+    await expect(menu).toHaveCount(0)
+    await expect(orb).toBeFocused()
+    expect(runtime.pageErrors).toEqual([])
+  } finally {
+    await fs.mkdir(evidenceRoot, { recursive: true })
+    await save('reduced-orb-runtime', runtime)
+    const controls = await page.locator('#urai-world-companion-menu, #urai-world-companion-menu summary').evaluateAll(elements => elements.map(element => {
+      const style = getComputedStyle(element), bounds = element.getBoundingClientRect()
+      return { tag: element.tagName, text: element.tagName === 'SUMMARY' ? element.textContent : null, hidden: element.getAttribute('aria-hidden'), display: style.display, visibility: style.visibility, opacity: style.opacity, width: bounds.width, height: bounds.height }
+    }))
+    await fs.writeFile(path.join(evidenceRoot, 'reduced-orb-controls.json'), JSON.stringify(controls, null, 2))
+    await page.screenshot({ path: path.join(evidenceRoot, 'reduced-orb-keyboard.png'), timeout: 30_000 })
+  }
 })

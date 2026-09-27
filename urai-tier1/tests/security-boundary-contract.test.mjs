@@ -72,7 +72,7 @@ test("Stripe customer portal is authenticated, server-bound and same-origin", ()
 
 test("Passport static render fails closed and sample identity requires explicit demo mode", () => {
   assert.match(passportVault, /const \[snapshot, setSnapshot\] = useState<SnapshotPayload>\(\{\}\)/);
-  assert.match(passportVault, /const explicitDemo = params\.get\('demo'\) === '1'/);
+  assert.match(passportVault, /const explicitDemo = params\??\.get\('demo'\) === '1'/);
   assert.match(passportVault, /if \(explicitDemo\) \{\s*setSnapshot\(toDemoPayload\(\)\)/);
   assert.match(passportVault, /Demo data was not substituted\./);
   assert.doesNotMatch(passportVault, /useState<SnapshotPayload>\(\(\) => toDemoPayload\(\)\)/);

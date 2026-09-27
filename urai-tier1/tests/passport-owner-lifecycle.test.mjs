@@ -176,3 +176,24 @@ test('review query preserves the initial hydration attributes before resolving i
   assert.equal(h.state(),'unavailable')
   assert.doesNotMatch(h.text(), /sample-owner/)
 })
+
+
+test('only explicit demo=1 can mount sample records after hydration', () => {
+  for (const search of ['', '?demo=0', '?demo=true']) {
+    const h=harness('PassportVaultClient.tsx', search)
+    assert.equal(h.firstTree.props['data-passport-source'], 'loading')
+    assert.equal(h.state(), 'signed-out')
+    assert.doesNotMatch(h.text(), /sample-owner/)
+  }
+  const demo=harness('PassportVaultClient.tsx', '?demo=1')
+  assert.equal(demo.firstTree.props['data-passport-source'], 'loading')
+  assert.equal(demo.state(), 'demo')
+  assert.match(demo.text(), /sample-owner/)
+  assert.equal(demo.subscriptions.length, 0)
+  assert.equal(demo.requests.length, 0)
+  demo.offline(true)
+  assert.match(demo.text(), /Offline\./)
+  assert.equal(demo.button('Unlock and request export').props.disabled, true)
+  demo.offline(false)
+  assert.match(demo.text(), /DEMONSTRATION/)
+})
