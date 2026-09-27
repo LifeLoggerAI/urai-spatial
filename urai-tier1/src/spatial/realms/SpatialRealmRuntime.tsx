@@ -5,6 +5,7 @@ import SpatialRealmExperience, { type SpatialRealmKind } from '@/spatial/realms/
 import { useReducedMotion } from '@/spatial/hooks/useReducedMotion'
 import { requestUraiWorldTravel } from '@/spatial/world/worldEvents'
 import type { UraiDestination } from '@/spatial/world/worldTypes'
+import { probeWebGLSupport } from '@/spatial/runtime/probeWebGLSupport'
 
 type FallbackDestination = {
   label: string
@@ -46,25 +47,13 @@ const FALLBACK_REALMS: Record<SpatialRealmKind, FallbackDefinition> = {
   },
 }
 
-function detectWebGL(): boolean {
-  const canvas = document.createElement('canvas')
-  const context = (canvas.getContext('webgl2') || canvas.getContext('webgl')) as WebGLRenderingContext | WebGL2RenderingContext | null
-  if (!context) return false
-  try {
-    context.getExtension('WEBGL_lose_context')?.loseContext()
-  } catch {
-    // Capability detection must remain non-fatal when a browser blocks context cleanup.
-  }
-  return true
-}
-
 export default function SpatialRealmRuntime({ realm }: { realm: SpatialRealmKind }) {
   const definition = FALLBACK_REALMS[realm]
   const reducedMotion = useReducedMotion()
   const [webglAvailable, setWebglAvailable] = useState<boolean | null>(null)
 
   useEffect(() => {
-    setWebglAvailable(detectWebGL())
+    setWebglAvailable(probeWebGLSupport())
   }, [])
 
   if (webglAvailable === null) {
