@@ -49,6 +49,14 @@ test('active spatial model layer resolves asset ids instead of hardcoded paths',
   assert.match(assetLayer, /if \(!\/\\\.\(\?:gltf\|glb\)\$\/i\.test\(path\)\)/)
 })
 
+test('runtime-owned visual systems are not misclassified as missing model assets', () => {
+  assert.match(worldManifest, /WorldAssetStatus = 'fallback' \| 'candidate' \| 'ready' \| 'runtime' \| 'missing'/)
+  assert.match(worldManifest, /slotId: 'lifeMap\.constellationLines'[\s\S]*status: 'runtime'/)
+  assert.match(worldManifest, /slotId: 'replay\.memoryThreadTunnel'[\s\S]*status: 'runtime'/)
+  assert.match(worldManifest, /slotId: 'replay\.beatMarkers'[\s\S]*status: 'runtime'/)
+  assert.doesNotMatch(worldManifest, /slotId: 'replay\.memoryThreadTunnel'[\s\S]{0,260}status: 'missing'/)
+})
+
 test('legacy world slots delegate to canonical resolution and contain no competing paths', () => {
   assert.match(worldManifest, /resolveUraiSpatialAssetPath/)
   assert.doesNotMatch(worldManifest, /\/assets\/models\//)
