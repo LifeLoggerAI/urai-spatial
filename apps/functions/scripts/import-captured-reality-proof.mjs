@@ -117,11 +117,11 @@ async function main() {
     const [metadata] = await object.getMetadata()
     const storageGeneration = String(metadata.generation ?? '')
     const storedSha256 = String(metadata.metadata?.uraiRuntimeSha256 ?? '').toLowerCase()
-    if (!/^\\d+$/.test(storageGeneration) || storedSha256 !== sha256) {
+    uploadedGeneration = storageGeneration || null
+    if (!/^\d+$/.test(storageGeneration) || storedSha256 !== sha256) {
       throw new Error('Uploaded proof object did not return the expected immutable generation/hash metadata')
     }
 
-    uploadedGeneration = storageGeneration
     receipt.runtimeStorageGeneration = storageGeneration
     receipt.proofApprovedRuntimeSha256 = sha256
     receipt.proofApprovedStorageGeneration = storageGeneration
