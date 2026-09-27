@@ -1,0 +1,57 @@
+{
+  "schema": "urai-scoped-release-checkpoint-v1",
+  "date": "2026-09-27",
+  "scope": "Replay1380, Staging48 and Studio119 only; not whole-estate certification",
+  "candidates": [
+    {
+      "repository": "LifeLoggerAI/urai-spatial",
+      "pr": 1380,
+      "head": "992ace1b7c40a7388a6fb9b8b9907006064f3454",
+      "base": "c406106dd10e90a92e7f4f0e72617ad6662c0487",
+      "mergeable": true,
+      "merged": false,
+      "exactHeadApproved": false,
+      "deploymentVerified": false
+    },
+    {
+      "repository": "LifeLoggerAI/urai-staging",
+      "pr": 48,
+      "head": "c38c9bc9fc9f3d9c074bbe72a13402eefb2a1bbf",
+      "base": "936a79e937b9feccbf48ba47b071faad9ae717dd",
+      "mergeable": true,
+      "merged": false,
+      "exactHeadApproved": false,
+      "deploymentVerified": false
+    },
+    {
+      "repository": "LifeLoggerAI/urai-studio",
+      "pr": 119,
+      "head": "b864ee48b1988e3a2af8105df612642c8cae2d76",
+      "base": "559cef26d09e6547d32d20a6fb393b6afa6fd50c",
+      "mergeable": true,
+      "merged": false,
+      "exactHeadApproved": false,
+      "deploymentVerified": false
+    }
+  ],
+  "pendingRuns": [
+    36313491180,
+    36313491205,
+    36314127271
+  ],
+  "passedReplayRuns": [
+    36313491163,
+    36313491212,
+    36313491156
+  ],
+  "passedStagingRun": 36314127277,
+  "blockers": [
+    "Remaining applicable CI/capture evidence",
+    "Independent approval of exact candidate commits",
+    "Provider WIF/IAM and historical credential containment proof",
+    "Protected deployment and live verification",
+    "Visual and functional defects tracked in authoritative audit; other sessions own active fixes"
+  ],
+  "authorityAudit": "https://docs.google.com/document/d/1gFW_IxsfjDBX7UbGrUWcBimRgO9NFnit94gNMpM59wY/edit",
+  "noGo": true
+}
