@@ -1,6 +1,6 @@
 'use client'
 
-import { Suspense, useMemo } from 'react'
+import { Suspense, useEffect, useMemo, useState } from 'react'
 import { Canvas } from '@react-three/fiber'
 import { OrbitControls } from '@react-three/drei'
 import type { CapturedRealityRenderDecision } from './capturedReality'
@@ -25,6 +25,11 @@ export function CapturedRealityPrivateScene({
 }: CapturedRealityPrivateSceneProps) {
   const tier = useMemo(() => capturedRealityDeviceTier(userAgent), [userAgent])
   const quality = CAPTURED_REALITY_QUALITY_PROFILES[tier]
+  const [renderReady, setRenderReady] = useState(false)
+
+  useEffect(() => {
+    setRenderReady(false)
+  }, [decision.assetUrl, decision.mode])
 
   return (
     <section
@@ -32,6 +37,7 @@ export function CapturedRealityPrivateScene({
       data-captured-reality-mode={decision.mode}
       data-captured-reality-device-tier={tier}
       data-captured-reality-reduced-motion={reducedMotion ? 'true' : 'false'}
+      data-captured-reality-render-ready={renderReady ? 'true' : 'false'}
       style={{ minHeight: '100svh', background: '#05070b', color: '#f7f7f5', display: 'grid', gridTemplateRows: 'auto 1fr' }}
     >
       <header style={{ display: 'flex', flexWrap: 'wrap', gap: '.75rem', alignItems: 'center', padding: '1rem', zIndex: 2 }}>
@@ -45,7 +51,7 @@ export function CapturedRealityPrivateScene({
           <CapturedRealityRenderBoundary resetKey={decision.assetUrl}>
             <Canvas camera={{ position: [0, 1.6, 4], fov: 62 }} dpr={tier === 'mobile' ? [1, 1.25] : [1, 1.75]}>
               <Suspense fallback={null}>
-                <CapturedRealitySplat decision={decision} maxBytes={quality.maxRuntimeBytes} chunkSize={quality.chunkSize} alphaHash={quality.alphaHash} />
+                <CapturedRealitySplat decision={decision} maxBytes={quality.maxRuntimeBytes} chunkSize={quality.chunkSize} alphaHash={quality.alphaHash} onRenderReady={() => setRenderReady(true)} />
               </Suspense>
               <OrbitControls
                 enableDamping={!reducedMotion}
