@@ -74,7 +74,10 @@ export type HomeExperienceEvent =
   | { type: 'SET_REDUCED_MOTION'; value: boolean }
 
 export const HOME_RETURN_SESSION_KEY = 'urai:home:return-frame:v1'
+const HOME_RETURN_STAGED_SESSION_KEY = 'urai:home:return-frame:staged:v1'
 export const HOME_PASSPORT_ORIGIN_CAPTURE_EVENT = 'urai:home-passport-origin-capture' as const
+
+let stagedHomeReturnFrame: HomeReturnFrame | null = null
 
 // The direct first-person arrival is inside the open-air pavilion. The legacy
 // z=7.85 presentation camera stood behind its back wall (z=3.55), making the
@@ -377,4 +380,47 @@ export function consumeHomeReturnFrame(): HomeReturnFrame | null {
   } catch {
     return null
   }
+}
+
+/**
+ * The world shell survives App Router transitions while Home's renderer may
+ * unmount. Stage a return frame at the persistent route owner so a Home mount
+ * can consume it even when the Passport return crosses a client navigation.
+ */
+export function stageHomeReturnFrameForActiveRoute() {
+  if (typeof window === 'undefined') return
+  try {
+    const frame = parseHomeReturnFrame(window.sessionStorage.getItem(HOME_RETURN_SESSION_KEY))
+    if (frame?.kind === 'destination' && frame.destination) stagedHomeReturnFrame = frame
+  } catch { /* session storage is best effort */ }
+}
+
+export function consumeHomeReturnFrameForActiveHome() {
+  const staged = stagedHomeReturnFrame
+  stagedHomeReturnFrame = null
+  const stored = consumeHomeReturnFrame()
+  if (typeof window === 'undefined') return stored ?? staged
+  try {
+    const routed = parseHomeReturnFrame(window.sessionStorage.getItem(HOME_RETURN_STAGED_SESSION_KEY))
+    window.sessionStorage.removeItem(HOME_RETURN_STAGED_SESSION_KEY)
+    return stored ?? routed ?? staged
+  } catch {
+    return stored ?? staged
+  }
+}
+
+/** Move Passport's origin into a one-shot navigation slot before Home remounts. */
+export function stageHomeReturnFrameForHomeNavigation() {
+  if (typeof window === 'undefined') return
+  try {
+    const serialized = window.sessionStorage.getItem(HOME_RETURN_SESSION_KEY)
+    const frame = parseHomeReturnFrame(serialized)
+    if (frame?.kind === 'destination' && frame.destination === 'PASSPORT' && serialized) {
+      stagedHomeReturnFrame = frame
+      window.sessionStorage.setItem(HOME_RETURN_STAGED_SESSION_KEY, serialized)
+    }
+    // The origin key is one-shot on a Passport return even when an old or
+    // partially written payload fails validation; never leave it stale.
+    window.sessionStorage.removeItem(HOME_RETURN_SESSION_KEY)
+  } catch { /* session storage is best effort */ }
 }

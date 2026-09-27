@@ -5,10 +5,11 @@ import { useEffect, useRef, useState } from 'react'
 import { useFrame, type ThreeEvent } from '@react-three/fiber'
 import * as THREE from 'three'
 import { requestUraiWorldTravel } from '@/spatial/world/worldEvents'
-import { HOME_PASSPORT_ORIGIN_CAPTURE_EVENT } from '@/spatial/home/homeExperienceState'
+import { DEFAULT_HOME_FIRST_PERSON_CAMERA, HOME_PASSPORT_ORIGIN_CAPTURE_EVENT } from '@/spatial/home/homeExperienceState'
 import { HomeGlobalEmotionalFieldEarth } from '@/spatial/home/HomeGlobalEmotionalFieldEarth'
 import type { GlobalFieldState } from '@/spatial/lived-world/globalEmotionalField'
 import RitualPlatform from '@/scene/RitualPlatform'
+import { useReducedMotion } from '@/spatial/hooks/useReducedMotion'
 
 function capturePassportOrigin() {
   window.dispatchEvent(new Event(HOME_PASSPORT_ORIGIN_CAPTURE_EVENT))
@@ -87,7 +88,7 @@ function PassportPhysicalReferenceSheet() {
   }, [])
   if (!visible || !mode) return null
   if (mode === 'neutral-model-sheet') return (
-    <group name="passport-physical-reference-neutral-sheet" position={[-0.72, 1.58, 4.58]}>
+    <group name="passport-physical-reference-neutral-sheet" position={[0, DEFAULT_HOME_FIRST_PERSON_CAMERA.position[1], DEFAULT_HOME_FIRST_PERSON_CAMERA.position[2] - 2.2]}>
       <mesh position={[0, 0, -0.08]}><planeGeometry args={[1.22, 0.62]} /><meshStandardMaterial color="#101816" roughness={1} /></mesh>
       <PassportReferenceFolio position={[-0.42, 0, 0]} />
       <PassportReferenceFolio position={[-0.14, 0, 0]} rotation={[0, Math.PI, 0]} />
@@ -97,7 +98,7 @@ function PassportPhysicalReferenceSheet() {
     </group>
   )
   return (
-    <group name="passport-physical-reference-human-scale" position={[-0.72, 0, 2.9]}>
+    <group name="passport-physical-reference-human-scale" position={[0, DEFAULT_HOME_FIRST_PERSON_CAMERA.position[1] - .9, DEFAULT_HOME_FIRST_PERSON_CAMERA.position[2] - 3]}>
       <mesh position={[0, 0.88, -0.1]}><planeGeometry args={[1.55, 2.08]} /><meshStandardMaterial color="#101816" roughness={1} /></mesh>
       <PassportReferenceFolio position={[-0.42, 1.34, 0]} />
       <PassportScaleReference />
@@ -137,6 +138,7 @@ function HomeRitualReferenceReview() {
 
 function HomePassportOwnershipObject() {
   const visible = useFirstPersonHomePresence()
+  const reducedMotion = useReducedMotion()
   const [artifactState, setArtifactState] = useState<PassportArtifactState>('dormant')
   const [reviewPinned, setReviewPinned] = useState(false)
   const [reducedStimulation, setReducedStimulation] = useState(false)
@@ -166,6 +168,11 @@ function HomePassportOwnershipObject() {
   }, [visible])
 
   useFrame((_, delta) => {
+    if (reducedMotion) {
+      if (leftCover.current) leftCover.current.rotation.y = 0
+      if (rightCover.current) rightCover.current.rotation.y = 0
+      return
+    }
     const targetAngle = artifactState === 'opening' ? 0.72 : artifactState === 'selected' ? 0.12 : artifactState === 'focused' ? 0.035 : 0
     if (leftCover.current) leftCover.current.rotation.y = THREE.MathUtils.damp(leftCover.current.rotation.y, targetAngle, 7.5, delta)
     if (rightCover.current) rightCover.current.rotation.y = THREE.MathUtils.damp(rightCover.current.rotation.y, -targetAngle, 7.5, delta)
@@ -176,11 +183,15 @@ function HomePassportOwnershipObject() {
   const beginOpen = (event?: ThreeEvent<MouseEvent>) => {
     event?.stopPropagation()
     if (reviewPinned || artifactState === 'opening') return
-    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
     capturePassportOrigin()
+    if (reducedMotion) {
+      setArtifactState('opening')
+      commitPassportTravel()
+      return
+    }
     setArtifactState('selected')
-    timers.current.push(window.setTimeout(() => setArtifactState('opening'), reducedMotion ? 45 : 220))
-    timers.current.push(window.setTimeout(commitPassportTravel, reducedMotion ? 140 : 700))
+    timers.current.push(window.setTimeout(() => setArtifactState('opening'), 220))
+    timers.current.push(window.setTimeout(commitPassportTravel, 700))
   }
 
   const focus = () => {
@@ -290,6 +301,7 @@ function HomePassportOwnershipObject() {
           data-home-passport-artifact-state={artifactState}
           data-home-passport-dimensions-mm="185x260x18"
           data-home-passport-reduced-stimulation={reducedStimulation ? 'true' : 'false'}
+          data-home-passport-reduced-motion={reducedMotion ? 'true' : 'false'}
           onFocus={focus}
           onBlur={blur}
           onClick={() => beginOpen()}

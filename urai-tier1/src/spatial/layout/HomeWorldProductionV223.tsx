@@ -19,6 +19,7 @@ import { ORB_SPEECH_CLOCK_EVENT, type OrbSpeechClockDetail } from '@/spatial/orb
 import { requestUraiWorldOrbOpen, requestUraiWorldTravel } from '@/spatial/world/worldEvents'
 import { AvatarSelfView, type AvatarSelfViewSection } from '@/spatial/home/AvatarSelfView'
 import { useHomeExperienceController } from '@/spatial/home/useHomeExperienceController'
+import { useReducedMotion } from '@/spatial/hooks/useReducedMotion'
 import { DEFAULT_HOME_FIRST_PERSON_CAMERA, HOME_PASSPORT_ORIGIN_CAPTURE_EVENT, type HomeOriginSnapshot, type HomeStableState, type HomeTransitionState } from '@/spatial/home/homeExperienceState'
 import { height } from './HomeWorldProductionV223Geometry'
 import { HomeV225PolishV3 } from './HomeWorldProductionV225PolishV3'
@@ -803,7 +804,7 @@ export function HomeWorldProductionV223({ onOrbOpen = requestUraiWorldOrbOpen, w
   const [softwareRenderer, setSoftwareRenderer] = useState(false)
   const [sceneReady, setSceneReady] = useState(false)
   const [dragging, setDragging] = useState(false)
-  const [reducedMotion, setReducedMotion] = useState(false)
+  const reducedMotion = useReducedMotion()
   const [orbState, setOrbState] = useState<OrbState>('idle')
   const [passportNearby, setPassportNearby] = useState(false)
   const [passportDeparting, setPassportDeparting] = useState(false)
@@ -928,12 +929,6 @@ export function HomeWorldProductionV223({ onOrbOpen = requestUraiWorldOrbOpen, w
 
   useEffect(() => { router.prefetch('/ground/'); router.prefetch('/life-map/'); router.prefetch('/passport') }, [router])
   useEffect(() => {
-    const rm = window.matchMedia('(prefers-reduced-motion: reduce)')
-    const apply = () => setReducedMotion(rm.matches)
-    apply(); rm.addEventListener?.('change', apply)
-    return () => rm.removeEventListener?.('change', apply)
-  }, [])
-  useEffect(() => {
     const listener = (event: CustomEvent<OrbStateEventDetail>) => transition === 'none' && setOrbState(event.detail.state)
     window.addEventListener(URAI_ORB_STATE_EVENT, listener)
     return () => window.removeEventListener(URAI_ORB_STATE_EVENT, listener)
@@ -944,7 +939,7 @@ export function HomeWorldProductionV223({ onOrbOpen = requestUraiWorldOrbOpen, w
     { id: 'identity', title: 'Identity', fields: [{ id: 'identity-scope', label: 'Profile scope', value: 'User-approved fields only', provenance: 'Privacy boundary', visibility: 'user-approved-profile' }] },
     { id: 'embodiment', title: 'Embodiment', fields: [{ id: 'camera-mode', label: 'View', value: 'First-person Home', provenance: 'Current Home state', visibility: 'system-state' }] },
     { id: 'journey', title: 'Journey', fields: [{ id: 'journey-location', label: 'Current realm', value: 'Home', provenance: 'Spatial runtime', visibility: 'system-state' }] },
-    { id: 'accessibility', title: 'Accessibility', fields: [{ id: 'reduced-motion', label: 'Reduced motion', value: reducedMotion ? 'On' : 'Off', provenance: 'Device preference', visibility: 'private' }] },
+    { id: 'accessibility', title: 'Accessibility', fields: [{ id: 'reduced-motion', label: 'Reduced motion', value: reducedMotion ? 'On' : 'Off', provenance: 'Device and UrAi preferences', visibility: 'private' }] },
     { id: 'privacy', title: 'Privacy', fields: [{ id: 'self-view-boundary', label: 'Data boundary', value: 'Explicit safe fields only', provenance: 'UrAi privacy contract', visibility: 'private' }] },
   ], [reducedMotion])
 

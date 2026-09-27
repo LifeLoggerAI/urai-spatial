@@ -41,6 +41,7 @@ export function HomeOrbGroundedV288() {
     const legacyY = height(ORB.x, ORB.z)
     const companionY = height(HOME_ORB_GROUND_ANCHOR.x, HOME_ORB_GROUND_ANCHOR.z)
     const materialState = new Map<THREE.Material, {
+      visible: boolean
       colorWrite: boolean
       depthWrite: boolean
       transparent: boolean
@@ -103,12 +104,17 @@ export function HomeOrbGroundedV288() {
           const materials = Array.isArray(object.material) ? object.material : [object.material]
           for (const material of materials) {
             if (!materialState.has(material)) materialState.set(material, {
+              visible: material.visible,
               colorWrite: material.colorWrite,
               depthWrite: material.depthWrite,
               transparent: material.transparent,
               opacity: material.opacity,
             })
-            if (!material.colorWrite && !material.depthWrite && material.transparent && material.opacity === 0) continue
+            if (!material.visible && !material.colorWrite && !material.depthWrite && material.transparent && material.opacity === 0) continue
+            // colorWrite/opacity alone still submit hidden transmission meshes
+            // and shadow work. Material visibility skips rendering while keeping
+            // the object's raycast available to the one interaction owner.
+            material.visible = false
             material.colorWrite = false
             material.depthWrite = false
             material.transparent = true
@@ -135,6 +141,7 @@ export function HomeOrbGroundedV288() {
       reconcileFrame.current = null
       scene.removeEventListener('childadded', childAdded)
       materialState.forEach((state, material) => {
+        material.visible = state.visible
         material.colorWrite = state.colorWrite
         material.depthWrite = state.depthWrite
         material.transparent = state.transparent

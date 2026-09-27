@@ -12,6 +12,8 @@ on:
       - 'urai-tier1/src/app/focus/**'
       - 'urai-tier1/src/app/replay/**'
       - 'urai-tier1/src/app/home/**'
+      - 'urai-tier1/src/app/passport/**'
+      - 'urai-tier1/src/spatial/layout/HomeAAAVisualRepair.tsx'
       - 'urai-tier1/src/app/HomeSpatialRuntimeLayer.tsx'
       - 'urai-tier1/src/components/lifemap/**'
       - 'urai-tier1/src/spatial/layout/HomeWorldProductionV223.tsx'

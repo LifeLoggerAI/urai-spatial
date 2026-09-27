@@ -7,7 +7,7 @@ on:
       - feat/passport-ownership-vault-891-20260721
       - feat/passport-ownership-vault-891-rebased-20260722
   pull_request:
-    branches: [main]
+    branches: [main, repair/home-passport-orb-runtime-proof-20260926]
   workflow_dispatch:
 
 permissions:
@@ -56,7 +56,10 @@ jobs:
           corepack enable
           pnpm install --frozen-lockfile
       - name: Run Passport contract
-        run: node urai-tier1/tests/passport-ownership-vault-contract.test.mjs
+        run: |
+          node urai-tier1/tests/passport-ownership-vault-contract.test.mjs
+          node urai-tier1/tests/passport-owner-lifecycle.test.mjs
+          node urai-tier1/tests/home-passport-motion-behavior.test.mjs
       - name: Build exact static candidate
         env:
           NEXT_PUBLIC_URAI_BUILD_SHA: ${{ env.EXACT_HEAD_SHA }}

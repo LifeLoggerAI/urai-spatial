@@ -1,7 +1,7 @@
 'use client'
 
 import { getAuth, onAuthStateChanged, type User } from 'firebase/auth'
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { app, firebasePublicEnvReady } from '@/lib/firebase/client'
 import { applyGlobalEmotionalFieldConsent, getGlobalEmotionalFieldConsent } from '@/lib/privacy/operationalPrivacyClient'
 
@@ -71,6 +71,9 @@ export default function GlobalEmotionalFieldConsentCard() {
   const [loading, setLoading] = useState(true)
   const [busy, setBusy] = useState(false)
   const [message, setMessage] = useState('Loading dedicated public-good consent…')
+  const ownerEpoch = useRef(0)
+  const [ownerSession, setOwnerSession] = useState(0)
+  const hasCurrentOwner = useCallback((epoch: number) => Boolean(user && epoch === ownerEpoch.current && getAuth(app).currentUser?.uid === user.uid), [user])
 
   useEffect(() => {
     if (!firebasePublicEnvReady) {
@@ -78,7 +81,12 @@ export default function GlobalEmotionalFieldConsentCard() {
       setMessage('Public-good consent service is unavailable. Contribution remains Off.')
       return
     }
-    return onAuthStateChanged(getAuth(app), (nextUser) => {
+    const unsubscribe = onAuthStateChanged(getAuth(app), (nextUser) => {
+      setOwnerSession(++ownerEpoch.current)
+      setSnapshot(DEFAULT)
+      setBusy(false)
+      setLoading(Boolean(nextUser))
+      setMessage('Loading dedicated public-good consent…')
       setUser(nextUser)
       if (!nextUser) {
         setSnapshot(DEFAULT)
@@ -86,29 +94,33 @@ export default function GlobalEmotionalFieldConsentCard() {
         setMessage('Sign in to inspect or change public-good contribution. Default is Off.')
       }
     })
+    return () => { ++ownerEpoch.current; unsubscribe() }
   }, [])
 
   useEffect(() => {
     if (!user) return
     let active = true
+    const epoch = ownerEpoch.current
+    const current = () => active && hasCurrentOwner(epoch)
     setLoading(true)
     void getGlobalEmotionalFieldConsent().then((payload) => {
-      if (!active) return
+      if (!current()) return
       const next = normalize(payload)
       setSnapshot(next)
       setMessage(next.mode === 'off' ? 'Contribution is Off.' : `Contribution is ${next.mode === 'limited' ? 'Limited' : 'On'}, but publication remains provider/governance blocked.`)
     }).catch(() => {
-      if (!active) return
+      if (!current()) return
       setSnapshot(DEFAULT)
       setMessage('Consent state could not be verified. Contribution is treated as Off.')
-    }).finally(() => { if (active) setLoading(false) })
+    }).finally(() => { if (current()) setLoading(false) })
     return () => { active = false }
-  }, [user])
+  }, [user, ownerSession, hasCurrentOwner])
 
   const contributionSummary = useMemo(() => snapshot.contributes.length ? snapshot.contributes.join('; ') : 'Nothing while Off.', [snapshot.contributes])
 
   const apply = async (mode: Mode) => {
-    if (!user || busy || loading) return
+    if (!user || busy || loading || !hasCurrentOwner(ownerSession)) return
+    const epoch = ownerEpoch.current
     setBusy(true)
     setMessage('Applying consent change…')
     try {
@@ -117,6 +129,7 @@ export default function GlobalEmotionalFieldConsentCard() {
         precision: mode === 'limited' ? 'country' : snapshot.precision,
         expectedRevision: snapshot.revision,
       })
+      if (!hasCurrentOwner(epoch)) return
       const next = normalize(result)
       setSnapshot(next)
       emitPermissionCue()
@@ -124,9 +137,9 @@ export default function GlobalEmotionalFieldConsentCard() {
         ? 'Contribution revoked. Future public-good contribution is disabled.'
         : `${mode === 'limited' ? 'Limited' : 'On'} consent recorded. No public signal is published until governed aggregate infrastructure is approved and active.`)
     } catch {
-      setMessage('Consent change was not confirmed. The previous verified state remains authoritative.')
+      if (hasCurrentOwner(epoch)) setMessage('Consent change was not confirmed. The previous verified state remains authoritative.')
     } finally {
-      setBusy(false)
+      if (hasCurrentOwner(epoch)) setBusy(false)
     }
   }
 

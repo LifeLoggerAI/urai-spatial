@@ -1,11 +1,12 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useReducer, useRef } from 'react'
+import { usePathname } from 'next/navigation'
 import * as THREE from 'three'
 import { URAI_WORLD_ORB_CLOSE_EVENT } from '@/spatial/world/worldEvents'
 import {
   HOME_PASSPORT_ORIGIN_CAPTURE_EVENT,
-  consumeHomeReturnFrame,
+  consumeHomeReturnFrameForActiveHome,
   createInitialHomeExperienceState,
   homeExperienceReducer,
   makeHomeOriginSnapshot,
@@ -50,6 +51,7 @@ export function useHomeExperienceController({
   onDestinationCommit: (destination: HomeDestination, origin: HomeOriginSnapshot) => void
   onStableRestore?: (origin: HomeOriginSnapshot) => void
 }) {
+  const pathname = usePathname()
   const [state, dispatch] = useReducer(homeExperienceReducer, reducedMotion, createInitialHomeExperienceState)
   const transitionCommitted = useRef(false)
 
@@ -58,10 +60,12 @@ export function useHomeExperienceController({
   }, [reducedMotion])
 
   useEffect(() => {
-    const returned = consumeHomeReturnFrame()
+    const route = pathname?.replace(/\/+$/, '') || '/'
+    if (route !== '/' && route !== '/home') return
+    const returned = consumeHomeReturnFrameForActiveHome()
     if (!returned || returned.kind !== 'destination' || !returned.destination) return
     dispatch({ type: 'DESTINATION_RETURN', destination: returned.destination, snapshot: returned.origin })
-  }, [])
+  }, [pathname])
 
   useEffect(() => {
     if (state.transition) return

@@ -500,6 +500,8 @@ async function captureHomeSpatialContinuity({ idSuffix = 'desktop', viewport = {
 
     const passportControl = page.getByTestId('home-passport-physical-control')
     await passportControl.waitFor({ state: 'attached', timeout: 20_000 })
+    record.passportReducedMotion = await passportControl.getAttribute('data-home-passport-reduced-motion')
+    if (reducedMotion === 'reduce' && record.passportReducedMotion !== 'true') throw new Error('Home Passport did not honor reduced motion')
     if (await passportControl.getAttribute('aria-label') !== 'Passport — open ownership and consent vault') throw new Error('unexpected Home Passport semantic control')
     await focusTestIdForKeyboard(page, 'home-passport-physical-control')
     const passportNavigation = page.waitForURL((url) => url.pathname.replace(/\/+$/, '') === '/passport', { timeout: 45_000 })

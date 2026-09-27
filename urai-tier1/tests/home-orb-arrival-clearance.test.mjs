@@ -4,6 +4,7 @@ import test from 'node:test'
 import vm from 'node:vm'
 import ts from 'typescript'
 import * as THREE from 'three'
+import { mergeVertices } from 'three/examples/jsm/utils/BufferGeometryUtils.js'
 
 const read = (file) => fs.readFileSync(new URL(`../src/spatial/${file}`, import.meta.url), 'utf8')
 function declarations(file, names) {
@@ -16,10 +17,24 @@ const selected = declarations('layout/HomeWorldProductionV223Geometry.tsx', ['OR
   + '\n' + declarations('assets/HomeOrbReliquaryV286.tsx', ['plateSpecsV286', 'seededWave', 'reliquaryPlateGeometryV286'])
   + '\n' + declarations('home/homeOrbPlacement.ts', ['HOME_ORB_GROUND_ANCHOR'])
   + '\n' + declarations('home/homeExperienceState.ts', ['DEFAULT_HOME_FIRST_PERSON_CAMERA'])
-const scope = { THREE, module: { exports: {} } }
+const scope = { THREE, mergeVertices, module: { exports: {} } }
 const program = selected + '\nmodule.exports = { ORB, height, plateSpecsV286, reliquaryPlateGeometryV286, HOME_ORB_GROUND_ANCHOR, DEFAULT_HOME_FIRST_PERSON_CAMERA }'
 vm.runInNewContext(ts.transpileModule(program, { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS } }).outputText, scope)
 const source = scope.module.exports
+
+test('shell surface shares vertices for continuous normals without changing triangle count', () => {
+  const original = new THREE.IcosahedronGeometry(1, 4)
+  for (const spec of source.plateSpecsV286) {
+    const geometry = source.reliquaryPlateGeometryV286(spec.seed)
+    assert.ok(geometry.index, 'The shell must not use disconnected triangles')
+    assert.equal(geometry.index.count, original.getAttribute('position').count)
+    assert.ok(geometry.getAttribute('position').count < geometry.index.count / 2)
+    const normals = geometry.getAttribute('normal')
+    for (let i = 0; i < normals.count; i++) assert.ok(Math.abs(Math.hypot(normals.getX(i), normals.getY(i), normals.getZ(i)) - 1) < 1e-5)
+    geometry.dispose()
+  }
+  original.dispose()
+})
 const orbSource = read('assets/HomeOrbReliquaryV286.tsx')
 const ast = ts.createSourceFile('orb.tsx', orbSource, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX)
 let shellAttributes
