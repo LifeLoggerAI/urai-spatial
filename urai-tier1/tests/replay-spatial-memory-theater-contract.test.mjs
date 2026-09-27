@@ -26,10 +26,17 @@ test('Replay maps source media into the inside-facing memory environment and pre
   assert.match(source, /else video\.pause\(\)/)
 })
 
-test('Replay retains temporal reconstruction controls without turning the scene back into a media screen', () => {
+test('Replay retains diegetic temporal reconstruction controls without turning the scene back into a media player', () => {
   assert.match(source, /ReplayTimelineField/)
   assert.match(source, /ReplayCameraRig/)
-  assert.match(source, /aria-label=\{playing \? 'Pause replay' : 'Play replay'\}/)
-  assert.match(source, /type="range"/)
+  assert.match(source, /ReplayMemoryAtmosphere/)
+  assert.match(source, /name="replay-living-memory-atmosphere"/)
+  assert.match(source, /className="memoryTempo" aria-label="Memory time"/)
+  assert.match(source, /aria-label=\{playing \? 'Pause memory' : 'Continue memory'\}/)
+  assert.match(source, /className="memoryTrace"/)
+  assert.match(source, /className="memorySeek" type="range"/)
+  assert.match(source, /\.memorySeek\{position:absolute;width:1px;height:1px;opacity:\.001;pointer-events:none\}/)
+  assert.match(source, /\.memorySeek:focus-visible\{position:relative/)
+  assert.doesNotMatch(source, /className="controls"|aria-label="Replay controls"|aria-label=\{playing \? 'Pause replay' : 'Play replay'\}/)
   assert.doesNotMatch(source, /<video|<img|<iframe/)
 })
