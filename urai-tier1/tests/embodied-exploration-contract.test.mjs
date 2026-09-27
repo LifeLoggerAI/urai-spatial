@@ -164,7 +164,7 @@ test('Life Map keeps independent non-Orb travel, semantic depth and overview rec
 })
 
 test('travel infrastructure preserves fallback, route ownership and canonical ascent capability', () => {
-  for (const marker of ['URAI_WORLD_TRAVEL_EVENT', 'buildFallbackHref', 'commitHardFallback', 'WORLD_TRAVEL_FALLBACK_MS', 'markHomeAscentClosing', 'targetPathname', 'currentPathname !== targetPathname']) has(worldEvents, marker)
+  for (const marker of ['URAI_WORLD_TRAVEL_EVENT', 'buildFallbackHref', 'commitHardFallback', 'WORLD_TRAVEL_FALLBACK_MS', 'markHomeAscentClosing', 'targetPathname', 'currentPathname !== targetPathname', 'Only the destination actually present at the deadline counts as settled']) has(worldEvents, marker)
   for (const marker of ['beginTravelRef.current(request)', 'transitionDuration(request.destination)', 'router.push(href)', 'navigationWatchdog']) has(worldTransitions, marker)
   for (const marker of ['enterLifeMap: () => set({ mode: "ASCENT"', 'phase: "ASCENT"', 'isTransitioning: true', 'inputLocked: true', 'progress: 0']) has(sceneStore, marker)
   assert.match(worldTransitions, /currentWorld\.destination === 'life-map' \|\| currentWorld\.destination === 'location-map'/)
