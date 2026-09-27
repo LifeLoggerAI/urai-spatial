@@ -167,6 +167,9 @@ test('travel infrastructure preserves fallback, route ownership and canonical as
   for (const marker of ['URAI_WORLD_TRAVEL_EVENT', 'buildFallbackHref', 'commitHardFallback', 'WORLD_TRAVEL_FALLBACK_MS', 'markHomeAscentClosing']) has(worldEvents, marker)
   for (const marker of ['beginTravelRef.current(request)', 'transitionDuration(request.destination)', 'router.push(href)', 'navigationWatchdog']) has(worldTransitions, marker)
   for (const marker of ['enterLifeMap: () => set({ mode: "ASCENT"', 'phase: "ASCENT"', 'isTransitioning: true', 'inputLocked: true', 'progress: 0']) has(sceneStore, marker)
+  assert.match(worldEvents, /const targetPathname = new URL\(fallbackHref, window\.location\.origin\)\.pathname/)
+  assert.match(worldEvents, /if \(currentPathname !== targetPathname\) commitHardFallback\(fallbackHref\)/)
+  assert.match(worldEvents, /if \(currentPathname !== targetPathname\) return/)
   assert.match(worldTransitions, /currentWorld\.destination === 'life-map' \|\| currentWorld\.destination === 'location-map'/)
 })
 
