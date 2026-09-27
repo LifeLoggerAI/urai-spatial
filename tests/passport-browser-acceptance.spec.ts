@@ -29,7 +29,25 @@ test('mobile Settings motion preference reaches loaded Home', async ({ page }) =
       expect(bounds!.width).toBeGreaterThanOrEqual(48)
     }
     await fs.mkdir(evidenceRoot, { recursive: true })
-    await page.screenshot({ path: path.join(evidenceRoot, 'settings-mobile-motion.png'), fullPage: true })
+    await page.screenshot({ path: path.join(evidenceRoot, 'settings-mobile-motion.png') })
+    const settings = page.locator('main[data-route-owner="device-settings"]')
+    for (const width of [390, 320]) {
+      await page.setViewportSize({ width, height: 844 })
+      const privacy = page.getByRole('link', { name: /Permissions & consent/ })
+      await privacy.scrollIntoViewIfNeeded()
+      await expect(privacy).toBeInViewport()
+      const metrics = await settings.evaluate(element => ({
+        height: element.clientHeight, scrollHeight: element.scrollHeight,
+        width: element.clientWidth, scrollWidth: element.scrollWidth,
+        scrollTop: element.scrollTop, documentHeight: document.documentElement.scrollHeight,
+      }))
+      expect(metrics.scrollTop).toBeGreaterThan(0)
+      expect(metrics.scrollHeight).toBeGreaterThan(metrics.height)
+      expect(metrics.scrollWidth).toBeLessThanOrEqual(metrics.width + 1)
+      expect(metrics.documentHeight).toBeLessThanOrEqual(846)
+      await page.screenshot({ path: path.join(evidenceRoot, `settings-bottom-${width}.png`) })
+    }
+    await page.setViewportSize({ width: 390, height: 844 })
     await page.getByRole('navigation', { name: 'Settings navigation' }).getByRole('link', { name: 'Home' }).click()
     const home = page.locator('.urai-asset-home-world[data-home-primary-owner="asset-driven"]')
     await expect(home).toHaveAttribute('data-home-assets-ready', 'true', { timeout: 60_000 })

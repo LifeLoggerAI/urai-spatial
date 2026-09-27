@@ -160,7 +160,7 @@ export default function DeviceSettingsClient() {
   const panel = {border:'1px solid rgba(197,242,247,.16)',borderRadius:28,padding:'clamp(22px,4vw,34px)',background:'rgba(9,20,28,.66)',backdropFilter:'blur(18px)'} as const
 
   return (
-    <main style={{minHeight:'100svh',background:'radial-gradient(circle at 50% 0%,#10202a 0,#071018 42%,#02060a 100%)',color:'#f4f8fb',padding:'max(28px,env(safe-area-inset-top)) clamp(18px,5vw,72px) max(44px,env(safe-area-inset-bottom))',fontFamily:'var(--font-sans)'}} data-route-owner="device-settings">
+    <main style={{height:'100dvh',minHeight:0,overflowY:'auto',overflowX:'hidden',overscrollBehavior:'contain',boxSizing:'border-box',background:'radial-gradient(circle at 50% 0%,#10202a 0,#071018 42%,#02060a 100%)',color:'#f4f8fb',padding:'max(28px,env(safe-area-inset-top)) clamp(18px,5vw,72px) max(44px,env(safe-area-inset-bottom))',fontFamily:'var(--font-sans)'}} data-route-owner="device-settings">
       <div style={{maxWidth:860,margin:'0 auto'}}>
         <nav aria-label="Settings navigation" style={{display:'flex',justifyContent:'space-between',gap:16,alignItems:'center'}}><Link href="/home" style={{color:'#c9eef3',textDecoration:'none'}}>← Home</Link><Link href="/passport" style={{color:'#c9eef3',textDecoration:'none'}}>Passport</Link></nav>
         <header style={{padding:'clamp(42px,8vw,92px) 0 34px'}}><p style={{letterSpacing:'.22em',textTransform:'uppercase',fontSize:11,color:'#8fb4bd'}}>Device feel</p><h1 style={{fontSize:'clamp(42px,8vw,78px)',lineHeight:.94,letterSpacing:'-.055em',margin:'10px 0 18px'}}>How URAI meets you.</h1><p style={{maxWidth:620,fontSize:'clamp(16px,2vw,20px)',lineHeight:1.6,color:'#c4d1d6'}}>Local sensory preferences live on this device or session. Private data permissions remain in the Consent Sanctuary, and ownership controls remain in Passport.</p></header>
@@ -191,7 +191,7 @@ export default function DeviceSettingsClient() {
           <p role="status" aria-live="polite" style={{margin:'22px 0 0',fontSize:13,color:'#8fb4bd'}}>{googleMessage}</p>
         </section>
 
-        <section style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(250px,1fr))',gap:16,marginTop:18}}>
+        <section style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(min(250px,100%),1fr))',gap:16,marginTop:18}}>
           <Link href="/privacy-controls" style={{padding:24,borderRadius:24,border:'1px solid rgba(255,255,255,.11)',background:'rgba(255,255,255,.035)',color:'inherit',textDecoration:'none'}}><small style={{color:'#8fb4bd'}}>Permissions & consent</small><h2 style={{margin:'8px 0 6px'}}>Consent Sanctuary</h2><p style={{margin:0,color:'#b8c8ce',lineHeight:1.5}}>Review, narrow, pause or revoke private data permissions.</p></Link>
           <Link href="/passport" style={{padding:24,borderRadius:24,border:'1px solid rgba(255,255,255,.11)',background:'rgba(255,255,255,.035)',color:'inherit',textDecoration:'none'}}><small style={{color:'#8fb4bd'}}>Ownership</small><h2 style={{margin:'8px 0 6px'}}>Passport</h2><p style={{margin:0,color:'#b8c8ce',lineHeight:1.5}}>Inspect identity, ownership, export and account boundaries.</p></Link>
           <Link href="/login" style={{padding:24,borderRadius:24,border:'1px solid rgba(255,255,255,.11)',background:'rgba(255,255,255,.035)',color:'inherit',textDecoration:'none'}}><small style={{color:'#8fb4bd'}}>Account</small><h2 style={{margin:'8px 0 6px'}}>Sign in</h2><p style={{margin:0,color:'#b8c8ce',lineHeight:1.5}}>Enter the private world with your Firebase-backed account.</p></Link>
