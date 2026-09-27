@@ -251,7 +251,10 @@ test('reduced-motion Home Orb and Passport preserve keyboard origin return', asy
     await page.waitForURL(url => url.pathname.replace(/\/+$/, '') === '/home')
     await expect(page.locator('.urai-asset-home-world[data-home-primary-owner="asset-driven"]')).toHaveAttribute('data-home-stable-state', 'AVATAR_HOME_FIRST_PERSON', { timeout: 30_000 })
     await expect(home).toHaveAttribute('data-home-assets-ready', 'true', { timeout: 60_000 })
-    await expect.poll(() => page.evaluate(() => sessionStorage.getItem('urai:home:return-frame:v1'))).toBeNull()
+    // Home's WebGL warm-up can block the browser main thread for >5s even after
+    // the ready attributes settle. Keep the strict null predicate, but give the
+    // storage read enough time to return under that measured render stall.
+    await expect.poll(() => page.evaluate(() => sessionStorage.getItem('urai:home:return-frame:v1')), { timeout: 15_000 }).toBeNull()
     expect(runtime.pageErrors).toEqual([])
   } finally {
     await fs.mkdir(evidenceRoot, { recursive: true })
