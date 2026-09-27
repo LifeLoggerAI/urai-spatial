@@ -172,7 +172,7 @@ export const getCapturedRealityRuntimeUrl = functions.https.onCall(async (data, 
     if (
       !/^[a-f0-9]{64}$/.test(runtimeSha256) ||
       runtimeSha256 !== approvedSha256 ||
-      !/^\\d+$/.test(approvedGeneration) ||
+      !/^\d+$/.test(approvedGeneration) ||
       !objectPath.endsWith(`/${runtimeSha256}.splat`)
     ) {
       throw new functions.https.HttpsError('failed-precondition', 'CAPTURED_REALITY_PROOF_ARTIFACT_NOT_BOUND')
