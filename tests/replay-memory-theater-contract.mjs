@@ -88,6 +88,10 @@ for (const token of [
   assertIncludes(replayClientPath, replayClient, token)
 }
 
+assertIncludes(replayClientPath, replayClient, 'gl.info.render.frame')
+assertIncludes(replayClientPath, replayClient, 'lastCompletedRenderFrame')
+assertNotIncludes(replayClientPath, replayClient, 'gl.info.render.calls')
+
 for (const legacyRouteToken of ['replay-thread-film-beats', 'Cinematic memory camera film.']) {
   assertNotIncludes(replayPagePath, replayPage, legacyRouteToken)
 }
