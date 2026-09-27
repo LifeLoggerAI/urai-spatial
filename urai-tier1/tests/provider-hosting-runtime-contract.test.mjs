@@ -7,6 +7,7 @@ const functionsIndex = fs.readFileSync(new URL('../../apps/functions/src/index.t
 const providerFunctions = fs.readFileSync(new URL('../../apps/functions/src/providerFunctions.ts', import.meta.url), 'utf8')
 const openAiClient = fs.readFileSync(new URL('../src/spatial/orb/openaiClient.ts', import.meta.url), 'utf8')
 const narratorClient = fs.readFileSync(new URL('../src/spatial/narrator/elevenlabsClient.ts', import.meta.url), 'utf8')
+const transcriptionClient = fs.readFileSync(new URL('../src/spatial/audio/openaiTranscriptionClient.ts', import.meta.url), 'utf8')
 const staticProviderRoutes = [
   new URL('../src/app/api/google/oauth/start/route.ts', import.meta.url),
   new URL('../src/app/api/google/oauth/callback/route.ts', import.meta.url),
@@ -15,6 +16,7 @@ const staticProviderRoutes = [
   new URL('../src/app/api/urai/orb/openai/route.ts', import.meta.url),
   new URL('../src/app/api/urai/narrator/elevenlabs/route.ts', import.meta.url),
   new URL('../src/app/api/voice/elevenlabs/route.ts', import.meta.url),
+  new URL('../src/app/api/audio/transcribe/route.ts', import.meta.url),
 ]
 
 test('static Hosting rewrites every live provider URL to secret-bound Firebase Functions', () => {
@@ -26,8 +28,9 @@ test('static Hosting rewrites every live provider URL to secret-bound Firebase F
     { source: '/api/urai/orb/openai', function: { functionId: 'openAiOrbProvider', region: 'us-central1' } },
     { source: '/api/urai/narrator/elevenlabs', function: { functionId: 'elevenLabsVoiceProvider', region: 'us-central1' } },
     { source: '/api/voice/elevenlabs', function: { functionId: 'elevenLabsVoiceProvider', region: 'us-central1' } },
+    { source: '/api/audio/transcribe', function: { functionId: 'openAiTranscriptionProvider', region: 'us-central1' } },
   ])
-  assert.match(functionsIndex, /elevenLabsVoiceProvider, openAiOrbProvider/)
+  assert.match(functionsIndex, /elevenLabsVoiceProvider, openAiOrbProvider, openAiTranscriptionProvider/)
   for (const handler of ['googleOAuthCallback', 'googleOAuthDisconnect', 'googleOAuthStart', 'googleOAuthStatus']) {
     assert.match(functionsIndex, new RegExp(`\\b${handler}\\b`))
   }
@@ -38,11 +41,16 @@ test('provider functions bind secrets, auth, consent, throttling, privacy and ca
   assert.match(providerFunctions, /defineSecret\('ELEVENLABS_API_KEY'\)/)
   assert.match(providerFunctions, /secrets: \[OPENAI_API_KEY\]/)
   assert.match(providerFunctions, /secrets: \[ELEVENLABS_API_KEY\]/)
-  assert.equal((providerFunctions.match(/cors: false/g) ?? []).length, 2)
+  assert.equal((providerFunctions.match(/cors: false/g) ?? []).length, 3)
   assert.match(providerFunctions, /verifyIdToken\([^,]+, true\)/)
   assert.match(providerFunctions, /privacyPolicy\/current/)
   assert.match(providerFunctions, /providerRateLimits/)
   assert.match(providerFunctions, /store: false/)
+  assert.match(providerFunctions, /openAiTranscriptionProvider/)
+  assert.match(providerFunctions, /https:\/\/api\.openai\.com\/v1\/audio\/transcriptions/)
+  assert.match(providerFunctions, /gpt-transcribe/)
+  assert.match(providerFunctions, /AUDIO_TOO_LARGE/)
+  assert.match(providerFunctions, /EXPLICIT_CONSENT_REQUIRED/)
   assert.match(providerFunctions, /request\.on\('close', \(\) => controller\.abort\(\)\)/)
   assert.match(providerFunctions, /private, no-store, max-age=0/)
   assert.doesNotMatch(providerFunctions, /console\.(log|info|warn|error)\([^)]*(message|text|context)/)
@@ -51,5 +59,10 @@ test('provider functions bind secrets, auth, consent, throttling, privacy and ca
 test('browser clients are same-origin and no static route can shadow provider rewrites', () => {
   assert.match(openAiClient, /fetch\('\/api\/urai\/orb\/openai'/)
   assert.match(narratorClient, /fetch\("\/api\/urai\/narrator\/elevenlabs"/)
+  assert.match(transcriptionClient, /fetch\('\/api\/audio\/transcribe'/)
+  assert.match(transcriptionClient, /getAuth\(app\)\.currentUser/)
+  assert.match(transcriptionClient, /getIdToken\(\)/)
+  assert.match(transcriptionClient, /externalProcessingConsent/)
+  assert.doesNotMatch(transcriptionClient, /caches\.open|cache\.put/)
   for (const route of staticProviderRoutes) assert.equal(fs.existsSync(route), false)
 })

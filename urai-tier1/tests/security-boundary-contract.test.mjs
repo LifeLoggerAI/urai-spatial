@@ -7,6 +7,7 @@ const staticProviderRoutes = [
   new URL("../src/app/api/voice/elevenlabs/route.ts", import.meta.url),
   new URL("../src/app/api/urai/narrator/elevenlabs/route.ts", import.meta.url),
   new URL("../src/app/api/urai/orb/openai/route.ts", import.meta.url),
+  new URL("../src/app/api/audio/transcribe/route.ts", import.meta.url),
 ];
 const narratorClient = fs.readFileSync(new URL("../src/spatial/narrator/elevenlabsClient.ts", import.meta.url), "utf8");
 const narratorPlayback = fs.readFileSync(new URL("../src/spatial/narrator/narratorPlayback.ts", import.meta.url), "utf8");
@@ -25,6 +26,9 @@ test("Firebase provider functions require revoked-token checks, saved consent, d
   assert.match(providerFunctions, /providerRateLimits/);
   assert.match(providerFunctions, /defineSecret\('OPENAI_API_KEY'\)/);
   assert.match(providerFunctions, /defineSecret\('ELEVENLABS_API_KEY'\)/);
+  assert.match(providerFunctions, /openAiTranscriptionProvider/);
+  assert.match(providerFunctions, /AUDIO_TOO_LARGE/);
+  assert.match(providerFunctions, /externalProcessingConsent === true/);
   assert.match(providerFunctions, /private, no-store, max-age=0/);
   assert.doesNotMatch(providerFunctions, /NEXT_PUBLIC_(OPENAI|ELEVENLABS)/);
 });
