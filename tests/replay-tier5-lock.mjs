@@ -158,7 +158,8 @@ async function validateReplay(page, report, screenshotName) {
   // Mounted controls alone can precede the Suspense-owned memory environment.
   // Require the runtime's rendered-frame signal before geometry and capture.
   await expectAttribute(client, 'data-replay-render-ready', 'true');
-  const sceneCanvas = client.locator('canvas.replaySpatialCanvas').first();
+  // R3F applies Canvas className to its sizing wrapper, not the HTML canvas.
+  const sceneCanvas = client.locator('.replaySpatialCanvas canvas').first();
   await expectVisible(sceneCanvas, 'Replay spatial canvas');
   const contextLost = await sceneCanvas.evaluate((canvas) => {
     const gl = canvas.getContext('webgl2') ?? canvas.getContext('webgl');
