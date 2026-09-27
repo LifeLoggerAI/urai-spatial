@@ -18,6 +18,11 @@ const orbClips = {
   thinking: 'orb-thinking', speaking: 'orb-speaking', guiding: 'orb-guide', reflecting: 'orb-reflect',
   calming: 'orb-calm', privacy: 'orb-privacy', warning: 'orb-warning', transition: 'orb-transition',
 }
+const orbModelClips = {
+  dormant: 'Orb_Resting', idle: 'Orb_Idle', attention: 'Orb_Attention', listening: 'Orb_Listening',
+  thinking: 'Orb_Thinking', speaking: 'Orb_Speaking', guiding: 'Orb_Guiding', reflecting: 'Orb_Reflecting',
+  calming: 'Orb_Calming', privacy: 'Orb_Privacy', warning: 'Orb_Degraded', transition: 'Orb_Transition',
+}
 
 const destinationTelemetry = {
   orb: { x: 0, z: -2.65, radius: 2.5, attribute: 'data-home-distance-orb' },
@@ -156,6 +161,7 @@ async function verifyHome(page, expected) {
     reviewFixture: await owner.getAttribute('data-home-review-fixture'),
     orbState: await owner.getAttribute('data-home-orb-state'),
     orbClip: await owner.getAttribute('data-home-orb-clip'),
+    orbModelClip: await owner.getAttribute('data-home-orb-model-clip'),
     animationOwner: await owner.getAttribute('data-home-animation-owner'),
     assetsReady: await owner.getAttribute('data-home-assets-ready'),
     fallbackVisible: await visibleCount(page.locator(fallbackSelector)),
@@ -167,7 +173,8 @@ async function verifyHome(page, expected) {
   const passed = result.ownerCount === 1 && result.canvasVisible && result.canvasWidth >= 240 && result.canvasHeight >= 240
     && result.assetMode === requiredMode && result.personalizationMode === expected.mode
     && result.reviewFixture === (expected.fixture || 'none') && result.orbState === expected.orbState
-    && result.orbClip === orbClips[expected.orbState] && result.animationOwner === 'authored-sanctuary-plus-gltf-interactions'
+    && result.orbClip === orbClips[expected.orbState] && result.orbModelClip === orbModelClips[expected.orbState]
+    && result.animationOwner === 'authored-sanctuary-plus-gltf-interactions'
     && result.assetsReady === 'true' && result.fallbackVisible === 0
     && result.semanticButtons === 3 && result.semanticVisible === 0 && result.discreetControls === 2
   return { ...result, passed }
