@@ -14,7 +14,9 @@ test('focus and replay render real static surfaces instead of Suspense loading s
   assert.doesNotMatch(focusPage, /Suspense|Focus loading/)
   assert.match(focusPage, /return <FinalFocusChamber \/>/)
   assert.doesNotMatch(replayPage, /Suspense|Replay loading/)
-  assert.match(replayPage, /<FinalReplayFilm \/>/)
+  assert.match(replayPage, /const FinalReplayExperience = CinematicReplayClient/)
+  assert.match(replayPage, /<FinalReplayExperience \/>/)
+  assert.match(replayPage, /replay-immersive-memory-field/)
 })
 
 test('memory routes hydrate exact query identity without useSearchParams', () => {
