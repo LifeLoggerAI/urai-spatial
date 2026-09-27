@@ -161,6 +161,7 @@ async function validateReplay(page, report, screenshotName) {
   if (await productControls.isVisible()) throw new Error('Demo/read-only Replay memory mutation controls must remain hidden');
   await expectVisible(companion, 'persistent Orb companion control');
   await expectVisible(caption, 'Replay caption');
+  await expectVisible(heading, 'Replay heading');
   await expectVisible(unwind, 'Replay unwind control');
   await expectNoOverlap(heading, unwind, 'Replay heading and unwind control', 4);
   const operationStatus = client.locator('.replayOperationStatus').first();
