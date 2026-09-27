@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
 import { useGLTF, useTexture } from '@react-three/drei'
-import { Canvas, useFrame } from '@react-three/fiber'
+import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import * as THREE from 'three'
 import { assetCssStack, replayAssets } from '@/spatial/assets/uraiAssets'
 import { createMineralMaps } from '@/spatial/assets/naturalSurfaceMaps'
@@ -10,6 +10,7 @@ import { useReducedMotion } from '@/spatial/hooks/useReducedMotion'
 import { useSelectedMemory } from '@/spatial/memory/useSelectedMemory'
 import type { SelectedMemory, SelectedMemoryMedia, SelectedMemoryReplaySegment } from '@/spatial/memory/selectedMemoryContract'
 import { probeWebGLSupport } from '@/spatial/runtime/probeWebGLSupport'
+import { createReplayRenderReadiness } from '@/spatial/runtime/replayRenderReadiness'
 import { useAdaptiveSpatialQuality } from '@/spatial/performance/useAdaptiveSpatialQuality'
 import { requestUraiWorldReturn, requestUraiWorldTravel } from '@/spatial/world/worldEvents'
 import { ReplayProductControls } from './ReplayProductControls'
@@ -107,17 +108,17 @@ function ReplayCameraRig({ progress, reducedMotion }: { progress: number; reduce
 function RecordedMemoryField({ media, playing, progressMs, muteVideo }: { media: SelectedMemoryMedia | undefined; playing: boolean; progressMs: number; muteVideo: boolean }) {
   const [texture, setTexture] = useState<THREE.Texture | null>(null)
   const videoRef = useRef<HTMLVideoElement | null>(null)
-  const renderedMediaFrames = useRef(0)
-  useEffect(() => { renderedMediaFrames.current = 0 }, [texture])
-  useFrame(({ gl }) => {
-    const owner = gl.domElement.closest('[data-testid="cinematic-replay-client"]')
-    if (gl.info.render.calls === 0) {
-      owner?.setAttribute('data-replay-render-ready', 'false')
-      return
-    }
-    renderedMediaFrames.current++
-    if (renderedMediaFrames.current >= 2) owner?.setAttribute('data-replay-render-ready', 'true')
-  })
+  const gl = useThree((state) => state.gl)
+  const readiness = useMemo(() => {
+    let owner: Element | null = null
+    return createReplayRenderReadiness(gl.domElement, () => gl.getContext().isContextLost(), (ready) => {
+      owner = gl.domElement.closest('[data-testid="cinematic-replay-client"]') ?? owner
+      owner?.setAttribute('data-replay-render-ready', String(ready))
+    })
+  }, [gl])
+  useEffect(() => readiness.connect(), [readiness])
+  useEffect(() => { readiness.reset() }, [texture, readiness])
+  useFrame(() => { readiness.frame(gl.info.render.frame) })
 
   const surfaceGeometry = useMemo(() => {
     const geometry = new THREE.PlaneGeometry(15.2, 8.6, 88, 48)
