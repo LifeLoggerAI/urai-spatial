@@ -77,8 +77,29 @@ async function resolveTarget(page, doorway) {
   return target
 }
 
+function installDoorwayEventTrace() {
+  const append = (record) => { void window.__uraiRecordDoorwayEvent(record).catch(() => {}) }
+  for (const type of ['keydown', 'keyup', 'click', 'focusin']) {
+    window.addEventListener(type, (event) => {
+      const target = event.target instanceof Element ? event.target.closest('[data-testid]') : null
+      const testId = target?.getAttribute('data-testid') || ''
+      if (!testId.startsWith('home-semantic-')) return
+      const record = { type, testId, key: ['Enter', ' '].includes(event.key) ? event.key : '', defaultPrevented: event.defaultPrevented }
+      queueMicrotask(() => append({ ...record, defaultPrevented: event.defaultPrevented, activeTestId: document.activeElement?.getAttribute('data-testid') || '', pathname: location.pathname }))
+    }, true)
+  }
+  window.addEventListener('urai:world-travel', (event) => {
+    append({ type: 'world-travel', destination: event.detail?.destination || '', pathname: location.pathname })
+  })
+}
+
 async function prove(browser, doorway, testCase) {
   const context = await browser.newContext({ viewport: testCase.viewport, isMobile: !!testCase.isMobile, hasTouch: !!testCase.hasTouch, deviceScaleFactor: testCase.isMobile ? 2 : 1 })
+  const eventTrace = []
+  await context.exposeFunction('__uraiRecordDoorwayEvent', (record) => {
+    if (eventTrace.length < 80) eventTrace.push(record)
+  })
+  await context.addInitScript(installDoorwayEventTrace)
   const page = await context.newPage()
   const screenshot = `screenshots/${testCase.device}-${testCase.method}-home-to-${doorway.id}.png`
   const record = { exactSha, sourceRoute: '/home', destinationRoute: doorway.destination, device: testCase.device, activationMethod: testCase.method, inputDispatch: testCase.method === 'keyboard' ? 'focused-enter' : 'browser-coordinate-hit', viewport: testCase.viewport, targetAccessibleName: doorway.name, targetTestId: doorway.testId, resultingUrl: '', screenshot, semanticNavigationOwner: 'runtime-boundary', semanticNavigationNonDominant: false, legacyVisibleDoorways: 0, targetOwnsHitPoint: false, hitPoint: null, success: false, failureReason: '' }
@@ -110,6 +131,7 @@ async function prove(browser, doorway, testCase) {
     record.resultingUrl = page.url()
     record.failureReason = String(error?.message || error)
   } finally {
+    record.eventTrace = eventTrace
     await page.screenshot({ path: path.join(outDir, screenshot), animations: 'disabled' }).catch(() => {})
     await context.close()
   }
