@@ -137,3 +137,16 @@ PR #1354 at 020cfd1b30b6ecf1bbbfd86b0b67ed8713f72c37 has a visually inspected re
 Home/Orb material quality, mobile Orb framing, deferred-realm placeholders, current-head Home/accessibility/reference evidence and independent exact-head review remain open. No new final art, merge, deployment or live verification. Main was reread as 4b3c7bd982865324510eb9581d9f324bd4ad6e93. Full private artifact copies to Drive were rejected by automatic approval review for unverified payload/destination scope; no retry or alternate transfer occurred. Original GitHub artifacts retain the screenshots/traces; the existing Drive receipt retains IDs and checksums. Direct live browser access still requires restoration after the workspace-credit rejection.
 
 During integration, active parent #1351 advanced to a34c4dea6e77bd28d922667c9a609240b92d4533. Its only new change raises the Passport return poll from five to fifteen seconds to tolerate the measured main-thread stall. That parent branch is preserved. This isolated candidate incorporates its history but explicitly retains the original five-second poll, following the user's no-limit-relaxation requirement. The 6e8c5a0 predecessor already passed that original deadline once; the combined source must prove it afresh.
+
+
+## 2026-09-27 05:30 UTC — retained failure diagnosis
+
+Candidate 1316cf843282787aa2be2349cba68af726da0ccf completed its captures. Passport run 36294240215 failed; artifact 10923731468 (SHA256 9e15abef63fec8ed20698fb71c8e81e0bb9e086c3c287e513e40f5a8210f1a10) contains retry trace call@69: the source-key read returns null after 6.382158 seconds. The original five-second gate remains unchanged. This is evidence of delayed browser response, not evidence of a stale return key or a proven GPU cause.
+
+Home run 36294240252 failed normal-motion Orb response visibility (20 seconds); artifact 10922874600 SHA256 05b791276c28a06bffb42c0e1a393cad73f9b91dcaa9bf8a6cadfb7eb660d3cc. Twelve other receipt cases pass. Add a retained normal-motion Orb action trace with sources disabled to diagnose the failure; no deadline or assertion is relaxed.
+
+Accessibility run 36294240229 failed; artifact 10923981791 SHA256 26381f4f3fcb8a375fb2623230ea92831d3626d8f281b5a8f4d0e33ab10d8af1. Recorded failures include Orb Escape/focus, Ground control access and mobile Life Map travel. The exact-checkout workflow builds without an explicit NEXT_PUBLIC_URAI_BUILD_SHA, allowing layout metadata to fall back to the event merge SHA. Bind this metadata to the checked-out candidate in Home and accessibility workflows. This corrects identification, not the interaction failures.
+
+Journey run 36294240216 reports success; artifact 10923113417 SHA256 c38a2b98999e7e5f7bf36642dc5a9b013858f8f64c6d8f9009d9296dd46e4589; screenshots not yet re-inspected for this head. Reference estate run 36294240221 failed overall. Shard zero artifact 10923943091 SHA256 cb1a3da079bae9b0363873dc706fe8e11b113aac3d2c7ac2428f5b45130341d4 has no failed captures; ritual-003 opened: label now fits, but text is dim and Home materials remain unfinished. No estate acceptance claimed.
+
+Concurrent integration head a6cd884c184358921965f5f370e6c613126dd6ba is preserved. Diagnostic changes are isolated on repair/ui-proof-diagnostics-20260927. No merge, deployment, independent acceptance or live verification performed. Gaussian work untouched.

@@ -278,6 +278,8 @@ async function capture(state, options = {}) {
 async function captureOrbLifecycle({ reducedMotion = 'no-preference' } = {}) {
   const context = await sharedBrowser.newContext({ viewport: { width: 1440, height: 900 }, reducedMotion })
   await prepareHomeProofContext(context)
+  const retainTrace = reducedMotion === 'no-preference'
+  if (retainTrace) await context.tracing.start({ screenshots: true, snapshots: true, sources: false })
   const page = await context.newPage()
   const pageErrors = []
   page.on('pageerror', (error) => pageErrors.push(String(error)))
@@ -444,6 +446,15 @@ async function captureOrbLifecycle({ reducedMotion = 'no-preference' } = {}) {
   } catch (error) {
     record.error = String(error)
   } finally {
+    if (retainTrace) {
+      record.trace = `${id}-${exactHead.slice(0, 12)}.trace.zip`
+      try {
+        await context.tracing.stop({ path: path.join(outputDir, record.trace) })
+      } catch (error) {
+        record.traceError = String(error)
+        record.trace = null
+      }
+    }
     receipt.captures.push(record)
     if (!record.passed) receipt.errors.push(record)
     await checkpointReceipt()
