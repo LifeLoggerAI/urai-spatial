@@ -1,0 +1,73 @@
+'use client'
+
+import { useEffect, useRef, useState } from 'react'
+import { useFrame, useThree } from '@react-three/fiber'
+import { Html } from '@react-three/drei'
+import { Vector4 } from 'three'
+import { createCapturedRealitySplatSession } from './capturedRealitySplatSession'
+import type { CapturedSplatResources } from './capturedRealitySplatResources'
+
+/** Private splat renderer: every mount owns and releases its complete session. */
+export function OwnedCapturedRealitySplat({
+  src, maxBytes, chunkSize = 25_000, alphaHash = true, onRenderReady,
+}: { src: string; maxBytes: number; chunkSize?: number; alphaHash?: boolean; onRenderReady?: (src: string) => void }) {
+  const gl = useThree((state) => state.gl)
+  const [loaded, setLoaded] = useState<{ src: string; resource: CapturedSplatResources } | null>(null)
+  const [progress, setProgress] = useState(0)
+  const [complete, setComplete] = useState(false)
+  const [failure, setFailure] = useState<{ src: string; error: Error } | null>(null)
+  const viewport = useRef(new Vector4())
+  const renderReadySent = useRef(false)
+  const onRenderReadyRef = useRef(onRenderReady)
+  onRenderReadyRef.current = onRenderReady
+
+  useEffect(() => {
+    let active = true
+    setLoaded(null)
+    setFailure(null)
+    setComplete(false)
+    setProgress(0)
+    renderReadySent.current = false
+    const session = createCapturedRealitySplatSession({
+      url: src, maxBytes, chunkSize, alphaHash, maxTextureSize: gl.capabilities.maxTextureSize,
+      onResource(resource) { if (active) setLoaded({ src, resource }) },
+      onProgress(bytes, total) { if (active) setProgress(Math.floor(bytes / total * 100)) },
+      onFailure() { if (active) setFailure({ src, error: new Error('Captured place rendering stopped.') }) },
+    })
+    void session.completion.then(() => {
+      if (active) setComplete(true)
+    }).catch((error) => {
+      if (active && error.name !== 'AbortError') setFailure({ src, error })
+    })
+    return () => {
+      active = false
+      session.dispose()
+    }
+  }, [src, maxBytes, chunkSize, alphaHash, gl])
+
+  useFrame(({ camera }) => {
+    if (loaded?.src === src && !loaded.resource.disposed) {
+      gl.getCurrentViewport(viewport.current)
+      loaded.resource.update(camera, viewport.current)
+    }
+  })
+
+  if (failure?.src === src) throw failure.error
+
+  return (
+    <>
+      {loaded?.src === src && !loaded.resource.disposed ? (
+        <primitive
+          object={loaded.resource.mesh}
+          dispose={null}
+          onAfterRender={() => {
+            if (!complete || renderReadySent.current || gl.getContext().isContextLost()) return
+            renderReadySent.current = true
+            queueMicrotask(() => onRenderReadyRef.current?.(src))
+          }}
+        />
+      ) : null}
+      {!complete ? <Html center><p role="status" style={{ color: '#f7f7f5', whiteSpace: 'nowrap' }}>Loading captured place… {progress}%</p></Html> : null}
+    </>
+  )
+}
