@@ -88,8 +88,18 @@ test('technical proof may retain visual rejection but requires explicit integrit
   assert.match(source, /storedSha256 !== runtimeSha256/)
   assert.match(source, /CAPTURED_REALITY_PROOF_ARTIFACT_NOT_BOUND/)
   assert.match(source, /CAPTURED_REALITY_PROOF_ARTIFACT_CHANGED/)
-  assert.match(source, /queryParams: \{ generation: proofGeneration \}/)
+  assert.match(source, /queryParams: \{ generation: approvedGeneration \}/)
   assert.doesNotMatch(source, /accessMode === 'proof'[\s\S]{0,300}reviewState !== 'accepted'/)
+})
+
+test('accepted runtime delivery is independently bound to the reviewed immutable artifact generation', () => {
+  assert.match(source, /reviewApprovedRuntimeSha256/)
+  assert.match(source, /reviewApprovedStorageGeneration/)
+  assert.match(source, /CAPTURED_REALITY_RUNTIME_ARTIFACT_NOT_BOUND/)
+  assert.match(source, /CAPTURED_REALITY_RUNTIME_ARTIFACT_CHANGED/)
+  assert.match(source, /accessMode === 'proof' \? 'proofApprovedRuntimeSha256' : 'reviewApprovedRuntimeSha256'/)
+  assert.match(source, /accessMode === 'proof' \? 'proofApprovedStorageGeneration' : 'reviewApprovedStorageGeneration'/)
+  assert.match(source, /queryParams: \{ generation: approvedGeneration \}/)
 })
 
 
