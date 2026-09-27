@@ -17,11 +17,13 @@ function assertNotIncludes(path, content, forbidden) {
 }
 
 const replayPagePath = 'urai-tier1/src/app/replay/page.tsx'
+const replayBrowserPath = 'tests/replay-tier5-lock.mjs'
 const replayClientPath = 'urai-tier1/src/app/replay/CinematicReplayClient.tsx'
 const replayStatePath = 'urai-tier1/src/spatial/scene/replayState.ts'
 const autonomousIsolationPath = 'urai-tier1/src/app/urai-autonomous-v1-isolation.css'
 
 const replayPage = read(replayPagePath)
+const replayBrowser = read(replayBrowserPath)
 const replayClient = read(replayClientPath)
 const replayState = read(replayStatePath)
 const autonomousIsolation = read(autonomousIsolationPath)
@@ -40,6 +42,14 @@ for (const token of [
   'style={proofSurfaceStyle}',
 ]) {
   assertIncludes(replayPagePath, replayPage, token)
+}
+
+for (const token of [
+  'async function warmReplayRoutes(baseUrl, report)',
+  'await warmReplayRoutes(server.baseUrl, report)',
+  'serverWarmup.push({ route, status: response.status })',
+]) {
+  assertIncludes(replayBrowserPath, replayBrowser, token)
 }
 
 for (const token of [
