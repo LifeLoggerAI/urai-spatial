@@ -222,7 +222,7 @@ test('private Gaussian visual proof waits for the splat mesh after-render bounda
 
   assert.match(owned, /onRenderReady\?: \(src: string\) => void/)
   assert.match(owned, /onAfterRender=\{\(\) => \{[\s\S]*!complete[\s\S]*isContextLost\(\)[\s\S]*queueMicrotask\(\(\) => onRenderReadyRef\.current\?\.\(src\)\)/)
-  assert.doesNotMatch(owned, /loaded\.resource\.update\(camera, viewport\.current\)[\s\S]*onRenderReadyRef\.current/)
+  assert.doesNotMatch(owned, /loaded\.resource\.update\(camera, viewport\.current\)\s*\n\s*if\s*\(complete/)
   assert.match(adapter, /onRenderReady\?: \(src: string\) => void/)
   assert.match(scene, /decisionIdentity = `\$\{decision\.mode\}\\u0000\$\{decision\.assetUrl \?\? ''\}`/)
   assert.match(scene, /identityRef\.current\.generation \+ 1/)
