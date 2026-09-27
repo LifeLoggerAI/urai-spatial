@@ -87,19 +87,21 @@ export function requestUraiWorldTravel(request: UraiWorldTravelRequest) {
   const fallbackHref = buildFallbackHref(request)
   if (!fallbackHref) return
 
+  const fallbackTarget = new URL(fallbackHref, window.location.origin)
+  const targetPathname = fallbackTarget.pathname.replace(/\/+$/, '') || '/'
   let settled = false
   let observer = 0
   const fallback = window.setTimeout(() => {
     if (settled) return
     settled = true
     if (observer) window.clearInterval(observer)
-    const currentLocation = `${window.location.pathname}${window.location.search}${window.location.hash}`
-    if (currentLocation === startingLocation) commitHardFallback(fallbackHref)
+    const currentPathname = window.location.pathname.replace(/\/+$/, '') || '/'
+    if (currentPathname !== targetPathname) commitHardFallback(fallbackHref)
   }, WORLD_TRAVEL_FALLBACK_MS)
 
   observer = window.setInterval(() => {
-    const currentLocation = `${window.location.pathname}${window.location.search}${window.location.hash}`
-    if (currentLocation === startingLocation) return
+    const currentPathname = window.location.pathname.replace(/\/+$/, '') || '/'
+    if (currentPathname !== targetPathname) return
     settled = true
     window.clearTimeout(fallback)
     window.clearInterval(observer)
