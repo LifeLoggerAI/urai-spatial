@@ -5,6 +5,10 @@ import path from 'node:path'
 const baseURL = process.env.PLAYWRIGHT_BASE_URL || 'http://127.0.0.1:3000'
 const evidenceRoot = path.resolve('test-results/passport-evidence')
 
+// Retain the first failed attempt as well as retries. Playwright requires
+// this worker-scoped trace option at file level, not inside a describe block.
+test.use({ trace: 'on' })
+
 test('mobile Settings motion preference reaches loaded Home', async ({ page }) => {
   test.setTimeout(180_000)
   const runtime = await observe(page)
@@ -213,11 +217,6 @@ test('offline state is explicit and sensitive operations remain disabled', async
   expect(runtime.pageErrors).toEqual([])
 })
 
-// Keep the first failure as well as retries: on-first-retry loses the stall
-// that the unchanged five-second return assertion is intended to diagnose.
-test.describe('Home origin return diagnostics', () => {
-  test.use({ trace: 'on' })
-
 test('reduced-motion Home Orb and Passport preserve keyboard origin return', async ({ page }) => {
   test.setTimeout(180_000)
   const runtime = await observe(page)
@@ -269,6 +268,4 @@ test('reduced-motion Home Orb and Passport preserve keyboard origin return', asy
     await fs.writeFile(path.join(evidenceRoot, 'reduced-orb-controls.json'), JSON.stringify(controls, null, 2))
     await page.screenshot({ path: path.join(evidenceRoot, 'reduced-orb-keyboard.png'), timeout: 30_000 })
   }
-})
-
 })
