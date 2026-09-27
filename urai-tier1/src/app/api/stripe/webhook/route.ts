@@ -15,11 +15,16 @@ import {
 
 const WEBHOOK_EVENTS = new Set([
   'checkout.session.completed',
+  'checkout.session.async_payment_succeeded',
+  'checkout.session.async_payment_failed',
   'customer.subscription.created',
   'customer.subscription.updated',
   'customer.subscription.deleted',
   'invoice.paid',
   'invoice.payment_failed',
+  'charge.refunded',
+  'charge.dispute.created',
+  'charge.dispute.closed',
 ]);
 
 function isPlanId(value: unknown): value is InsightPlanId {
@@ -31,13 +36,7 @@ function stringValue(value: unknown): string | null {
   return null;
 }
 
-function customerIdFrom(value: string | Stripe.Customer | Stripe.DeletedCustomer | null | undefined): string | null {
-  if (!value) return null;
-  if (typeof value === 'string') return value;
-  return value.id ?? null;
-}
-
-function subscriptionIdFromUnknown(value: unknown): string | null {
+function idFromUnknown(value: unknown): string | null {
   if (!value) return null;
   if (typeof value === 'string') return value;
   if (typeof value === 'object' && 'id' in value) {
@@ -47,15 +46,38 @@ function subscriptionIdFromUnknown(value: unknown): string | null {
   return null;
 }
 
+function customerIdFrom(value: string | Stripe.Customer | Stripe.DeletedCustomer | null | undefined): string | null {
+  return idFromUnknown(value);
+}
+
 function invoiceSubscriptionId(invoice: Stripe.Invoice): string | null {
-  const legacy = subscriptionIdFromUnknown((invoice as unknown as { subscription?: unknown }).subscription);
+  const legacy = idFromUnknown((invoice as unknown as { subscription?: unknown }).subscription);
   if (legacy) return legacy;
-  return subscriptionIdFromUnknown(
+  return idFromUnknown(
     (invoice as unknown as { parent?: { subscription_details?: { subscription?: unknown } } }).parent?.subscription_details?.subscription,
   );
 }
 
-async function resolveSubscription(
+function disputePaymentIntent(dispute: Stripe.Dispute): unknown {
+  const direct = (dispute as unknown as { payment_intent?: unknown }).payment_intent;
+  if (direct) return direct;
+  return (dispute as unknown as { charge?: { payment_intent?: unknown } | string }).charge;
+}
+
+async function paymentIntentMetadata(
+  stripe: Stripe,
+  value: unknown,
+): Promise<{ metadata: Stripe.Metadata; customerId: string | null }> {
+  const paymentIntentId = idFromUnknown(value);
+  if (!paymentIntentId) throw new Error('Stripe entitlement event is missing payment intent identity');
+  const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
+  return {
+    metadata: paymentIntent.metadata ?? {},
+    customerId: customerIdFrom(paymentIntent.customer as string | Stripe.Customer | Stripe.DeletedCustomer | null),
+  };
+}
+
+async function resolveEntitlementEvent(
   stripe: Stripe,
   eventType: string,
   payload: Stripe.Event.Data.Object,
@@ -71,39 +93,48 @@ async function resolveSubscription(
   let subscriptionId: string | null = null;
   let stripeStatus: string | null = null;
 
-  if (eventType === 'checkout.session.completed') {
+  if (
+    eventType === 'checkout.session.completed'
+    || eventType === 'checkout.session.async_payment_succeeded'
+    || eventType === 'checkout.session.async_payment_failed'
+  ) {
     const session = payload as Stripe.Checkout.Session;
     metadata = session.metadata ?? undefined;
     customerId = customerIdFrom(session.customer as string | Stripe.Customer | Stripe.DeletedCustomer | null);
-    subscriptionId = subscriptionIdFromUnknown(session.subscription);
+    subscriptionId = idFromUnknown(session.subscription);
 
     if (subscriptionId) {
-      try {
-        const subscription = await stripe.subscriptions.retrieve(subscriptionId);
-        metadata = { ...(subscription.metadata ?? {}), ...(metadata ?? {}) };
-        customerId = customerId ?? customerIdFrom(subscription.customer as string | Stripe.Customer | Stripe.DeletedCustomer);
-        stripeStatus = subscription.status;
-      } catch (error) {
-        console.warn('Stripe webhook could not fetch checkout subscription', { subscriptionId, error });
-      }
+      const subscription = await stripe.subscriptions.retrieve(subscriptionId);
+      metadata = { ...(subscription.metadata ?? {}), ...(metadata ?? {}) };
+      customerId = customerId ?? customerIdFrom(subscription.customer as string | Stripe.Customer | Stripe.DeletedCustomer);
+      stripeStatus = eventType === 'checkout.session.async_payment_failed' ? 'past_due' : subscription.status;
     } else if (metadata?.planId === 'founder') {
-      stripeStatus = session.payment_status === 'paid' ? 'active' : 'none';
+      if (eventType === 'checkout.session.async_payment_succeeded') stripeStatus = 'active';
+      else if (eventType === 'checkout.session.async_payment_failed') stripeStatus = 'none';
+      else stripeStatus = session.payment_status === 'paid' ? 'active' : 'none';
     }
   } else if (eventType === 'invoice.paid' || eventType === 'invoice.payment_failed') {
     const invoice = payload as Stripe.Invoice;
     customerId = customerIdFrom(invoice.customer as string | Stripe.Customer | Stripe.DeletedCustomer | null);
     subscriptionId = invoiceSubscriptionId(invoice);
+    if (!subscriptionId) throw new Error('Stripe invoice entitlement event is missing subscription identity');
 
-    if (subscriptionId) {
-      try {
-        const subscription = await stripe.subscriptions.retrieve(subscriptionId);
-        metadata = subscription.metadata ?? undefined;
-        customerId = customerId ?? customerIdFrom(subscription.customer as string | Stripe.Customer | Stripe.DeletedCustomer);
-        stripeStatus = eventType === 'invoice.payment_failed' ? 'past_due' : subscription.status;
-      } catch (error) {
-        console.warn('Stripe webhook could not fetch invoice subscription', { subscriptionId, error });
-      }
-    }
+    const subscription = await stripe.subscriptions.retrieve(subscriptionId);
+    metadata = subscription.metadata ?? undefined;
+    customerId = customerId ?? customerIdFrom(subscription.customer as string | Stripe.Customer | Stripe.DeletedCustomer);
+    stripeStatus = eventType === 'invoice.payment_failed' ? 'past_due' : subscription.status;
+  } else if (eventType === 'charge.refunded') {
+    const charge = payload as Stripe.Charge;
+    const resolved = await paymentIntentMetadata(stripe, charge.payment_intent);
+    metadata = resolved.metadata;
+    customerId = customerIdFrom(charge.customer as string | Stripe.Customer | Stripe.DeletedCustomer | null) ?? resolved.customerId;
+    stripeStatus = 'canceled';
+  } else if (eventType === 'charge.dispute.created' || eventType === 'charge.dispute.closed') {
+    const dispute = payload as Stripe.Dispute;
+    const resolved = await paymentIntentMetadata(stripe, disputePaymentIntent(dispute));
+    metadata = resolved.metadata;
+    customerId = resolved.customerId;
+    stripeStatus = eventType === 'charge.dispute.closed' && dispute.status === 'won' ? 'active' : 'canceled';
   } else {
     const subscription = payload as Stripe.Subscription;
     metadata = subscription.metadata ?? undefined;
@@ -118,12 +149,8 @@ async function resolveSubscription(
   let resolvedUserId = userIdFromMetadata;
 
   if (!resolvedUserId && customerId) {
-    try {
-      const existing = await findEntitlementByStripeCustomer(customerId);
-      resolvedUserId = existing?.userId ?? null;
-    } catch (error) {
-      console.warn('Stripe webhook could not resolve entitlement by customer', { customerId, error });
-    }
+    const existing = await findEntitlementByStripeCustomer(customerId);
+    resolvedUserId = existing?.userId ?? null;
   }
 
   return {
@@ -171,7 +198,17 @@ export async function POST(request: Request) {
     return NextResponse.json({ received: true, ignored: true });
   }
 
-  const resolved = await resolveSubscription(stripe, event.type, event.data.object);
+  let resolved;
+  try {
+    resolved = await resolveEntitlementEvent(stripe, event.type, event.data.object);
+  } catch (error) {
+    console.error('Stripe webhook could not resolve provider state; returning retryable failure', {
+      eventId: event.id,
+      type: event.type,
+      error,
+    });
+    return NextResponse.json({ error: 'Stripe provider state could not be resolved' }, { status: 500 });
+  }
 
   if (!resolved.userId) {
     console.warn('Stripe webhook skipped event without resolvable userId', {
