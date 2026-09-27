@@ -152,7 +152,7 @@ test('offline state is explicit and sensitive operations remain disabled', async
 })
 
 test('reduced-motion Home Orb and Passport preserve keyboard origin return', async ({ page }) => {
-  test.setTimeout(120_000)
+  test.setTimeout(180_000)
   const runtime = await observe(page)
   await page.setViewportSize({ width: 1440, height: 900 })
   await page.emulateMedia({ reducedMotion: 'reduce' })
@@ -163,6 +163,9 @@ test('reduced-motion Home Orb and Passport preserve keyboard origin return', asy
   })
   try {
     await page.goto(`${baseURL}/home/?homeAssetReview=1`, { waitUntil: 'domcontentloaded' })
+    const home = page.locator('.urai-asset-home-world[data-home-primary-owner="asset-driven"]')
+    await expect(home).toHaveAttribute('data-home-assets-ready', 'true', { timeout: 60_000 })
+    await expect(home).toHaveAttribute('data-home-stable-state', 'AVATAR_HOME_FIRST_PERSON')
     const orb = page.getByTestId('home-semantic-orb').first()
     await expect(orb).toBeEnabled({ timeout: 60_000 })
     await orb.focus()
@@ -185,6 +188,7 @@ test('reduced-motion Home Orb and Passport preserve keyboard origin return', asy
     await page.getByTestId('passport-return-origin').click()
     await page.waitForURL(url => url.pathname.replace(/\/+$/, '') === '/home')
     await expect(page.locator('.urai-asset-home-world[data-home-primary-owner="asset-driven"]')).toHaveAttribute('data-home-stable-state', 'AVATAR_HOME_FIRST_PERSON', { timeout: 30_000 })
+    await expect(home).toHaveAttribute('data-home-assets-ready', 'true', { timeout: 60_000 })
     await expect.poll(() => page.evaluate(() => sessionStorage.getItem('urai:home:return-frame:v1'))).toBeNull()
     expect(runtime.pageErrors).toEqual([])
   } finally {
