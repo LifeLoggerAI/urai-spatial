@@ -122,6 +122,19 @@ async function expectInsideViewport(locator, page, label, padding = 2) {
   }
 }
 
+async function warmReplayRoutes(baseUrl, report) {
+  const routes = [
+    `/focus?memoryId=${encodeURIComponent(MEMORY_ID)}&demo=1`,
+    `/replay?memoryId=${encodeURIComponent(MEMORY_ID)}&manifestId=${MANIFEST_ID}&node=${encodeURIComponent(MEMORY_ID)}&from=focus-artifact&demo=1&entryPortal=focus-memory-aperture&cameraCheckpoint=focus%3A${encodeURIComponent(MEMORY_ID)}&privacyMode=held-private`,
+  ]
+  for (const route of routes) {
+    const response = await fetch(new URL(route, baseUrl))
+    await response.arrayBuffer()
+    if (!response.ok) throw new Error(`Replay browser prewarm failed for ${route}: HTTP ${response.status}`)
+    report.serverWarmup.push({ route, status: response.status })
+  }
+}
+
 async function openDemoReplay(page, baseUrl) {
   const focusUrl = `${baseUrl}/focus?memoryId=${encodeURIComponent(MEMORY_ID)}&demo=1`;
   await page.goto(focusUrl, { waitUntil: 'domcontentloaded' });
@@ -220,6 +233,7 @@ async function run() {
     pageErrors: [],
     requestFailures: [],
     audits: [],
+    serverWarmup: [],
     selectors: {},
     bodyHtml: '',
     finalUrl: null,
@@ -232,6 +246,9 @@ async function run() {
 
   try {
     await waitForServer(server.baseUrl);
+    // Compile both route bundles before the browser mounts WebGL, so Next dev's
+    // first-route Fast Refresh cannot tear down the scene during the journey.
+    await warmReplayRoutes(server.baseUrl, report);
     // Match the repository's supported software-WebGL renderer on GitHub runners.
     // Capability checks and recovery UI remain active; no forced clicks or skips.
     browser = await chromium.launch({ args: process.env.GITHUB_ACTIONS === 'true' ? ['--enable-unsafe-swiftshader'] : [] });
