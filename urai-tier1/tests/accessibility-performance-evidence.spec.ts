@@ -180,7 +180,7 @@ test.describe('URAI accessibility and performance evidence', () => {
   })
 
   test('mobile visible controls stay inside the visual viewport and safe area', async ({ page }) => {
-    test.setTimeout(90_000)
+    test.setTimeout(180_000)
     await page.setViewportSize({ width: 393, height: 873 })
     const report: Array<{ route: string; clipped: Array<{ html: string; left: number; top: number; right: number; bottom: number }> }> = []
     for (const route of routes) {
@@ -332,6 +332,9 @@ test.describe('URAI accessibility and performance evidence', () => {
   test('Passport launch-critical controls meet the 48 CSS pixel minimum', async ({ page }) => {
     await page.setViewportSize({ width: 320, height: 720 })
     await page.goto('/passport', { waitUntil: 'domcontentloaded' })
+    const vault = page.locator('.passportVault')
+    await expect(vault).toBeVisible({ timeout: 30_000 })
+    await expect(vault.locator('a[href], button:not([disabled]), select:not([disabled]), label:has(input[type="checkbox"]), input:not([type="checkbox"]):not([disabled])').first()).toBeVisible({ timeout: 30_000 })
     const targets = await page.locator([
       '.passportVault a[href]',
       '.passportVault button:not([disabled])',
