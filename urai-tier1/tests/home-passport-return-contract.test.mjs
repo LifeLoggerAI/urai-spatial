@@ -44,3 +44,8 @@ test('Passport does not widen the existing Ground/Life Map destination commit co
   assert.ok(state.includes("export type HomeDestination = 'GROUND' | 'LIFE_MAP'"))
   assert.ok(controller.includes('onDestinationCommit: (destination: HomeDestination'))
 })
+
+
+test('Passport readiness rejects hidden streamed owners in runtime behavior', async () => {
+  await import('./passport-owner-readiness.test.cjs')
+})
