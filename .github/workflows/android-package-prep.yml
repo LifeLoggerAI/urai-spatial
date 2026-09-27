@@ -65,8 +65,8 @@ jobs:
         working-directory: distribution/android-shell
         run: |
           rm -rf android
-          npx cap add android
-          npx cap sync android
+          pnpm exec cap add android
+          pnpm exec cap sync android
 
       - name: Build release bundle without signing credentials
         working-directory: distribution/android-shell/android
