@@ -125,9 +125,9 @@ async function openHome(page, journey) {
   const home = page.locator(homeOwnerSelector).first()
   await home.waitFor({ state: 'visible', timeout: 90_000 })
   await home.locator('canvas').first().waitFor({ state: 'visible', timeout: 90_000 })
-  // The canonical journey proves interaction continuity, not Gold-Master pixels.
-  // Scanned/decorative assets remain separately fail-closed behind
-  // data-home-assets-ready and the exact-head visual proof workflows.
+  // Interaction readiness precedes loaded scene readiness. Retained journey
+  // frames must show the actual world, not its forming overlay.
+  await waitAttr(home, 'data-home-assets-ready', 'true', 90_000)
   await waitAttr(home, 'data-home-input-ready', 'true', 90_000)
   await capture(page, journey, 'home')
   return home
@@ -285,6 +285,8 @@ async function lifeMapToHome(page, journey, mode, root) {
   assert.equal(new URL(page.url()).searchParams.get('demo'), '1', 'final Home return lost disclosed demo context')
   const home = page.locator(homeOwnerSelector).first()
   await home.waitFor({ state: 'visible', timeout: 90_000 })
+  await waitAttr(home, 'data-home-assets-ready', 'true', 90_000)
+  await waitAttr(home, 'data-home-input-ready', 'true', 90_000)
   await capture(page, journey, 'return-home')
 }
 

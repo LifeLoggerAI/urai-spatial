@@ -96,7 +96,7 @@ test('accessibility and performance implementation contracts cover direct first-
     '(portrait ? 66 : 58)',
     'aria-label="Open Avatar Self View"',
     'THREE.LoopOnce',
-    'prefers-reduced-motion: reduce',
+    'const reducedMotion = useReducedMotion()',
   ]) requireText(currentHome, marker)
   assert.doesNotMatch(currentHome, /<HomeEmbodiedAvatar|visible-avatar-presentation-activation-gate|data-testid="urai-home-avatar-enter-first-person"|presentation-avatar-then-first-person-camera-only-no-hands-body-rig/, 'Non-XR Home must stay direct bodyless first person')
   assert.doesNotMatch(currentHome, /visible-cinematic-avatar|visible-avatar-third-person|hidden-exterior-avatar-first-person/i, 'Home must not restore retired third-person/avatar modes')

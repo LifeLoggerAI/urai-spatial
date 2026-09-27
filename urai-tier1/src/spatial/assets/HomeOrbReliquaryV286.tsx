@@ -3,6 +3,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useFrame, useThree } from '@react-three/fiber'
 import * as THREE from 'three'
+import { mergeVertices } from 'three/examples/jsm/utils/BufferGeometryUtils.js'
+import { useReducedMotion } from '@/spatial/hooks/useReducedMotion'
 import { URAI_ORB_STATE_EVENT, type OrbState, type OrbStateEventDetail } from '@/app/home/orbStateController'
 import { ORB, height } from '../layout/HomeWorldProductionV223Geometry'
 
@@ -85,9 +87,17 @@ function reliquaryPlateGeometryV286(seed: number) {
   }
   position.needsUpdate = true
   geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3))
-  geometry.computeVertexNormals()
-  geometry.computeBoundingSphere()
-  return geometry
+  // IcosahedronGeometry duplicates triangle vertices. Recomputing normals on
+  // that triangle soup produces the coarse facets seen in the retained Home
+  // capture. Weld the untextured shell before computing its surface normals;
+  // retain the authored silhouette, weathering colors and open interior.
+  geometry.deleteAttribute('normal')
+  geometry.deleteAttribute('uv')
+  const welded = mergeVertices(geometry)
+  geometry.dispose()
+  welded.computeVertexNormals()
+  welded.computeBoundingSphere()
+  return welded
 }
 
 function reliquaryFilamentGeometriesV286() {
@@ -167,21 +177,9 @@ function useOrbStateV286() {
   return state
 }
 
-function useReducedMotionV286() {
-  const [reducedMotion, setReducedMotion] = useState(false)
-  useEffect(() => {
-    const media = window.matchMedia('(prefers-reduced-motion: reduce)')
-    const apply = () => setReducedMotion(media.matches)
-    apply()
-    media.addEventListener?.('change', apply)
-    return () => media.removeEventListener?.('change', apply)
-  }, [])
-  return reducedMotion
-}
-
 export function HomeOrbReliquaryV286() {
   const state = useOrbStateV286()
-  const reducedMotion = useReducedMotionV286()
+  const reducedMotion = useReducedMotion()
   const { size } = useThree()
   const portrait = size.height > size.width
   const visual = stateVisualsV286[state]

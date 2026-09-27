@@ -65,6 +65,7 @@ function owner() {
 }
 
 function hidden(material) {
+  assert.equal(material.visible, false)
   assert.equal(material.colorWrite, false)
   assert.equal(material.depthWrite, false)
   assert.equal(material.transparent, true)
@@ -96,6 +97,7 @@ test('late Orb mount is hidden after 40 seconds; motes and lines are suppressed 
   assert.equal(f.searches(), searches, 'Rendering frames never rescan the full Scene')
   f.cleanup()
   assert.equal(o.mesh.material.colorWrite, true)
+  assert.equal(o.mesh.material.visible, true)
   assert.equal(o.mesh.material.opacity, .16)
   assert.equal(o.motes.material.opacity, .42)
   assert.equal(o.light.visible, true)
@@ -128,4 +130,20 @@ test('late replacement material and remounted owner are suppressed, unchanged ma
   f.scene.add(afterCleanup.group)
   f.frame()
   assert.equal(afterCleanup.mesh.material.colorWrite, true)
+})
+
+test('suppressed transmission materials retain real pointer intersections and restore their original visibility', () => {
+  const f = fixture(), o = owner()
+  o.mesh.material = new THREE.MeshPhysicalMaterial({ transmission: .78, transparent: true, opacity: .16 })
+  const initiallyHidden = new THREE.MeshBasicMaterial({ visible: false })
+  o.line.material = initiallyHidden
+  f.scene.add(o.group)
+  f.mount()
+  f.scene.updateMatrixWorld(true)
+  hidden(o.mesh.material)
+  const ray = new THREE.Raycaster(new THREE.Vector3(0, 0, 2), new THREE.Vector3(0, 0, -1))
+  assert.ok(ray.intersectObject(o.mesh).length > 0, 'Hiding render work must preserve Orb pointer activation')
+  f.cleanup()
+  assert.equal(o.mesh.material.visible, true)
+  assert.equal(initiallyHidden.visible, false)
 })
