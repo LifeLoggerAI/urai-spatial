@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 import process from 'node:process';
+import { lstatSync, readFileSync } from 'node:fs';
 import { applicationDefault, getApps, initializeApp } from 'firebase-admin/app';
 import { getFirestore, Timestamp } from 'firebase-admin/firestore';
 
@@ -11,6 +12,25 @@ const userId = process.argv.find((arg) => arg.startsWith('--user='))?.slice('--u
 const projectId = process.env.FIREBASE_PROJECT_ID
   || process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID
   || 'urai';
+
+function assertExternalAccountAdc() {
+  for (const name of ['FIREBASE_SERVICE_ACCOUNT_JSON', 'FIREBASE_PRIVATE_KEY', 'FIREBASE_CLIENT_EMAIL', 'FIREBASE_TOKEN']) {
+    if (String(process.env[name] || '').trim()) throw new Error('Long-lived Google/Firebase credential variable is prohibited: ' + name);
+  }
+
+  const adcPath = String(process.env.GOOGLE_APPLICATION_CREDENTIALS || '').trim();
+  if (!adcPath) throw new Error('GOOGLE_APPLICATION_CREDENTIALS must reference a protected external-account Workload Identity Federation configuration.');
+  const stat = lstatSync(adcPath);
+  if (!stat.isFile() || stat.isSymbolicLink()) throw new Error('GOOGLE_APPLICATION_CREDENTIALS must reference a regular non-symlinked external-account configuration.');
+  const record = JSON.parse(readFileSync(adcPath, 'utf8'));
+  if (!record || typeof record !== 'object' || Array.isArray(record) || record.type !== 'external_account') throw new Error('Only external-account Workload Identity Federation ADC is accepted.');
+  if (!record.credential_source || typeof record.credential_source !== 'object' || Array.isArray(record.credential_source)) throw new Error('External-account ADC must define a credential_source object.');
+  for (const field of ['private_key', 'private_key_id', 'client_email']) {
+    if (record[field]) throw new Error('Long-lived service-account field is prohibited in ADC configuration: ' + field);
+  }
+}
+
+assertExternalAccountAdc();
 
 if (!getApps().length) {
   initializeApp({
