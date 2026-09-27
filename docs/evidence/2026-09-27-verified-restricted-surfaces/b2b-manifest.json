@@ -1,0 +1,195 @@
+{
+  "sha": "874d0ac3b33848a1fc4b4942f334d32772e9b83d",
+  "manifest": [
+    {
+      "route": "/",
+      "viewport": "mobile-390",
+      "status": 200,
+      "screenshot": "mobile-390__access.png",
+      "h1Count": 1,
+      "consoleErrors": [],
+      "pageErrors": []
+    },
+    {
+      "route": "/dashboard",
+      "viewport": "mobile-390",
+      "status": 200,
+      "screenshot": "mobile-390__dashboard.png",
+      "h1Count": 1,
+      "consoleErrors": [],
+      "pageErrors": []
+    },
+    {
+      "route": "/ecosystem",
+      "viewport": "mobile-390",
+      "status": 200,
+      "screenshot": "mobile-390__ecosystem.png",
+      "h1Count": 1,
+      "consoleErrors": [],
+      "pageErrors": []
+    },
+    {
+      "route": "/intelligence",
+      "viewport": "mobile-390",
+      "status": 200,
+      "screenshot": "mobile-390__intelligence.png",
+      "h1Count": 1,
+      "consoleErrors": [],
+      "pageErrors": []
+    },
+    {
+      "route": "/governance",
+      "viewport": "mobile-390",
+      "status": 200,
+      "screenshot": "mobile-390__governance.png",
+      "h1Count": 1,
+      "consoleErrors": [],
+      "pageErrors": []
+    },
+    {
+      "route": "/privacy",
+      "viewport": "mobile-390",
+      "status": 200,
+      "screenshot": "mobile-390__privacy.png",
+      "h1Count": 1,
+      "consoleErrors": [],
+      "pageErrors": []
+    },
+    {
+      "route": "/admin",
+      "viewport": "mobile-390",
+      "status": 200,
+      "screenshot": "mobile-390__admin.png",
+      "h1Count": 1,
+      "consoleErrors": [],
+      "pageErrors": []
+    },
+    {
+      "route": "/",
+      "viewport": "tablet-768",
+      "status": 200,
+      "screenshot": "tablet-768__access.png",
+      "h1Count": 1,
+      "consoleErrors": [],
+      "pageErrors": []
+    },
+    {
+      "route": "/dashboard",
+      "viewport": "tablet-768",
+      "status": 200,
+      "screenshot": "tablet-768__dashboard.png",
+      "h1Count": 1,
+      "consoleErrors": [],
+      "pageErrors": []
+    },
+    {
+      "route": "/ecosystem",
+      "viewport": "tablet-768",
+      "status": 200,
+      "screenshot": "tablet-768__ecosystem.png",
+      "h1Count": 1,
+      "consoleErrors": [],
+      "pageErrors": []
+    },
+    {
+      "route": "/intelligence",
+      "viewport": "tablet-768",
+      "status": 200,
+      "screenshot": "tablet-768__intelligence.png",
+      "h1Count": 1,
+      "consoleErrors": [],
+      "pageErrors": []
+    },
+    {
+      "route": "/governance",
+      "viewport": "tablet-768",
+      "status": 200,
+      "screenshot": "tablet-768__governance.png",
+      "h1Count": 1,
+      "consoleErrors": [],
+      "pageErrors": []
+    },
+    {
+      "route": "/privacy",
+      "viewport": "tablet-768",
+      "status": 200,
+      "screenshot": "tablet-768__privacy.png",
+      "h1Count": 1,
+      "consoleErrors": [],
+      "pageErrors": []
+    },
+    {
+      "route": "/admin",
+      "viewport": "tablet-768",
+      "status": 200,
+      "screenshot": "tablet-768__admin.png",
+      "h1Count": 1,
+      "consoleErrors": [],
+      "pageErrors": []
+    },
+    {
+      "route": "/",
+      "viewport": "desktop-1440",
+      "status": 200,
+      "screenshot": "desktop-1440__access.png",
+      "h1Count": 1,
+      "consoleErrors": [],
+      "pageErrors": []
+    },
+    {
+      "route": "/dashboard",
+      "viewport": "desktop-1440",
+      "status": 200,
+      "screenshot": "desktop-1440__dashboard.png",
+      "h1Count": 1,
+      "consoleErrors": [],
+      "pageErrors": []
+    },
+    {
+      "route": "/ecosystem",
+      "viewport": "desktop-1440",
+      "status": 200,
+      "screenshot": "desktop-1440__ecosystem.png",
+      "h1Count": 1,
+      "consoleErrors": [],
+      "pageErrors": []
+    },
+    {
+      "route": "/intelligence",
+      "viewport": "desktop-1440",
+      "status": 200,
+      "screenshot": "desktop-1440__intelligence.png",
+      "h1Count": 1,
+      "consoleErrors": [],
+      "pageErrors": []
+    },
+    {
+      "route": "/governance",
+      "viewport": "desktop-1440",
+      "status": 200,
+      "screenshot": "desktop-1440__governance.png",
+      "h1Count": 1,
+      "consoleErrors": [],
+      "pageErrors": []
+    },
+    {
+      "route": "/privacy",
+      "viewport": "desktop-1440",
+      "status": 200,
+      "screenshot": "desktop-1440__privacy.png",
+      "h1Count": 1,
+      "consoleErrors": [],
+      "pageErrors": []
+    },
+    {
+      "route": "/admin",
+      "viewport": "desktop-1440",
+      "status": 200,
+      "screenshot": "desktop-1440__admin.png",
+      "h1Count": 1,
+      "consoleErrors": [],
+      "pageErrors": []
+    }
+  ],
+  "failures": []
+}

@@ -1,0 +1,114 @@
+{
+  "exactHead": "b864ee48b1988e3a2af8105df612642c8cae2d76",
+  "routes": [
+    {
+      "route": "/",
+      "viewport": "desktop-1440",
+      "status": 200,
+      "fatal": false,
+      "overflow": false,
+      "errors": [],
+      "screenshot": "desktop-1440-home.png"
+    },
+    {
+      "route": "/studio",
+      "viewport": "desktop-1440",
+      "status": 200,
+      "fatal": false,
+      "overflow": false,
+      "errors": [],
+      "screenshot": "desktop-1440-studio.png"
+    },
+    {
+      "route": "/cinema",
+      "viewport": "desktop-1440",
+      "status": 200,
+      "fatal": false,
+      "overflow": false,
+      "errors": [],
+      "screenshot": "desktop-1440-cinema.png"
+    },
+    {
+      "route": "/privacy",
+      "viewport": "desktop-1440",
+      "status": 200,
+      "fatal": false,
+      "overflow": false,
+      "errors": [],
+      "screenshot": "desktop-1440-privacy.png"
+    },
+    {
+      "route": "/dashboard",
+      "viewport": "desktop-1440",
+      "status": 200,
+      "fatal": false,
+      "overflow": false,
+      "errors": [],
+      "screenshot": "desktop-1440-dashboard.png"
+    },
+    {
+      "route": "/admin",
+      "viewport": "desktop-1440",
+      "status": 200,
+      "fatal": false,
+      "overflow": false,
+      "errors": [],
+      "screenshot": "desktop-1440-admin.png"
+    },
+    {
+      "route": "/",
+      "viewport": "mobile-430",
+      "status": 200,
+      "fatal": false,
+      "overflow": false,
+      "errors": [],
+      "screenshot": "mobile-430-home.png"
+    },
+    {
+      "route": "/studio",
+      "viewport": "mobile-430",
+      "status": 200,
+      "fatal": false,
+      "overflow": false,
+      "errors": [],
+      "screenshot": "mobile-430-studio.png"
+    },
+    {
+      "route": "/cinema",
+      "viewport": "mobile-430",
+      "status": 200,
+      "fatal": false,
+      "overflow": false,
+      "errors": [],
+      "screenshot": "mobile-430-cinema.png"
+    },
+    {
+      "route": "/privacy",
+      "viewport": "mobile-430",
+      "status": 200,
+      "fatal": false,
+      "overflow": false,
+      "errors": [],
+      "screenshot": "mobile-430-privacy.png"
+    },
+    {
+      "route": "/dashboard",
+      "viewport": "mobile-430",
+      "status": 200,
+      "fatal": false,
+      "overflow": false,
+      "errors": [],
+      "screenshot": "mobile-430-dashboard.png"
+    },
+    {
+      "route": "/admin",
+      "viewport": "mobile-430",
+      "status": 200,
+      "fatal": false,
+      "overflow": false,
+      "errors": [],
+      "screenshot": "mobile-430-admin.png"
+    }
+  ],
+  "findings": []
+}
