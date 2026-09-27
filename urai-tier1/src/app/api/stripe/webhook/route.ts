@@ -58,10 +58,15 @@ function invoiceSubscriptionId(invoice: Stripe.Invoice): string | null {
   );
 }
 
-function disputePaymentIntent(dispute: Stripe.Dispute): unknown {
+async function disputePaymentIntent(stripe: Stripe, dispute: Stripe.Dispute): Promise<unknown> {
   const direct = (dispute as unknown as { payment_intent?: unknown }).payment_intent;
   if (direct) return direct;
-  return (dispute as unknown as { charge?: { payment_intent?: unknown } | string }).charge;
+
+  const chargeId = idFromUnknown(dispute.charge);
+  if (!chargeId) throw new Error('Stripe dispute is missing charge identity');
+  const charge = await stripe.charges.retrieve(chargeId);
+  if (!charge.payment_intent) throw new Error('Stripe disputed charge is missing payment intent identity');
+  return charge.payment_intent;
 }
 
 async function paymentIntentMetadata(
@@ -131,7 +136,7 @@ async function resolveEntitlementEvent(
     stripeStatus = 'canceled';
   } else if (eventType === 'charge.dispute.created' || eventType === 'charge.dispute.closed') {
     const dispute = payload as Stripe.Dispute;
-    const resolved = await paymentIntentMetadata(stripe, disputePaymentIntent(dispute));
+    const resolved = await paymentIntentMetadata(stripe, await disputePaymentIntent(stripe, dispute));
     metadata = resolved.metadata;
     customerId = resolved.customerId;
     stripeStatus = eventType === 'charge.dispute.closed' && dispute.status === 'won' ? 'active' : 'canceled';
