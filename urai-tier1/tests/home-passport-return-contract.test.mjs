@@ -7,6 +7,7 @@ const controller = fs.readFileSync(new URL('../src/spatial/home/useHomeExperienc
 const worldController = fs.readFileSync(new URL('../src/spatial/world/WorldTransitionController.tsx', import.meta.url), 'utf8')
 const homeRepair = fs.readFileSync(new URL('../src/spatial/layout/HomeAAAVisualRepair.tsx', import.meta.url), 'utf8')
 const passportClient = fs.readFileSync(new URL('../src/app/passport/PassportVaultClient.tsx', import.meta.url), 'utf8')
+const worldEvents = fs.readFileSync(new URL('../src/spatial/world/worldEvents.ts', import.meta.url), 'utf8')
 
 test('Passport captures exact first-person Home origin before world travel', () => {
   assert.ok(state.includes("HOME_PASSPORT_ORIGIN_CAPTURE_EVENT = 'urai:home-passport-origin-capture'"))
@@ -29,8 +30,9 @@ test('Passport return restores Home origin without masquerading as Ground or Lif
   assert.ok(state.includes("'urai:home:return-frame:staged:v1'"))
   assert.ok(worldController.includes('stageHomeReturnFrameForActiveRoute()'))
   assert.ok(worldController.includes('stageHomeReturnFrameForHomeNavigation()'))
-  assert.ok(passportClient.includes('stageHomeReturnFrameForHomeNavigation()'))
   assert.ok(passportClient.includes('onClick={returnToOrigin}'))
+  const returnRequest = worldEvents.slice(worldEvents.indexOf('export function requestUraiWorldReturn()'))
+  assert.ok(returnRequest.indexOf('stageHomeReturnFrameForHomeNavigation()') < returnRequest.indexOf('window.dispatchEvent(new Event(URAI_WORLD_RETURN_EVENT))'))
   assert.ok(worldController.indexOf('stageHomeReturnFrameForActiveRoute()') < worldController.indexOf('router.push(href)'))
   assert.ok(controller.includes('consumeHomeReturnFrameForActiveHome()'))
 })

@@ -1,4 +1,5 @@
 import { useSceneStore } from '../store/useSceneStore'
+import { stageHomeReturnFrameForHomeNavigation } from '../home/homeExperienceState'
 import type { UraiWorldTravelRequest } from './worldTypes'
 
 export const URAI_WORLD_TRAVEL_EVENT = 'urai:world-travel'
@@ -109,6 +110,8 @@ export function requestUraiWorldTravel(request: UraiWorldTravelRequest) {
 
 export function requestUraiWorldReturn() {
   if (typeof window === 'undefined') return
+  const pathname = window.location.pathname.replace(/\/+$/, '') || '/'
+  if (pathname === '/passport') stageHomeReturnFrameForHomeNavigation()
   dispatchSpatialAudioCue('transition')
   window.dispatchEvent(new Event(URAI_WORLD_RETURN_EVENT))
 }

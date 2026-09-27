@@ -17,7 +17,6 @@ import {
 } from '@/lib/privacy/operationalPrivacyClient'
 import { demoPassportSnapshot, redactPassportSnapshot, type PassportSnapshot } from './passportModel'
 import { requestUraiWorldReturn } from '@/spatial/world/worldEvents'
-import { stageHomeReturnFrameForHomeNavigation } from '@/spatial/home/homeExperienceState'
 import { useReducedMotion } from '@/spatial/hooks/useReducedMotion'
 import GlobalEmotionalFieldConsentCard from './GlobalEmotionalFieldConsentCard'
 import './passport-vault.css'
@@ -153,7 +152,6 @@ export default function PassportVaultClient() {
   const hasCurrentOwner = useCallback((epoch: number) => Boolean(user && epoch === ownerEpoch.current && getAuth(app).currentUser?.uid === user.uid), [user])
 
   const returnToOrigin = useCallback(() => {
-    stageHomeReturnFrameForHomeNavigation()
     requestUraiWorldReturn()
   }, [])
 
