@@ -236,7 +236,11 @@ export default function ComposedLifeMapScene() {
   const queryNode = safeToken(params.get("node") || params.get("memoryId"));
   const manifestId = safeToken(params.get("manifestId"), DEFAULT_MANIFEST_ID);
   const [selectedId, setSelectedId] = useState<string | null>(overviewRequested ? null : queryNode || null);
-  const [phase, setPhase] = useState<JourneyPhase>("overview");
+  // A direct selected-memory URL is already a restored journey checkpoint. Hydrate
+  // it at arrival immediately instead of flashing overview and depending on a
+  // post-render repair effect; in-app selection still owns departure -> travel ->
+  // approach -> arrival.
+  const [phase, setPhase] = useState<JourneyPhase>(overviewRequested || !queryNode ? "overview" : "arrival");
   const [webglState, setWebglState] = useState<WebGLState>("ready");
   const journeyToken = useRef(0);
   const overviewPending = useRef(overviewRequested);
