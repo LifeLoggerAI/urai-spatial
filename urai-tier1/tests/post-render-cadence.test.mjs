@@ -3,13 +3,14 @@ import fs from 'node:fs'
 import test from 'node:test'
 import { createPostRenderCadence } from '../src/spatial/performance/postRenderCadence.ts'
 
-function fixture(intervalMs = 100) {
+function fixture(intervalMs = 100, shouldContinue) {
   let now = 0
   let sequence = 0
   const timers = new Map()
   const invalidations = []
   const cadence = createPostRenderCadence({
     intervalMs,
+    shouldContinue,
     invalidate: () => invalidations.push(now),
     schedule(callback, delay) {
       const id = ++sequence
@@ -33,6 +34,29 @@ function fixture(intervalMs = 100) {
     },
   }
 }
+
+test('a reduced-motion scene sleeps at rest and resumes through input-driven frames', () => {
+  let moving = false
+  const f = fixture(280, () => moving)
+  f.cadence.start()
+  f.cadence.beforeRender()
+  f.cadence.afterRender()
+  f.tick(30_000)
+  assert.deepEqual(f.invalidations, [0], 'idle scene must not submit repeated expensive draws')
+  assert.equal(f.timers.size, 0)
+  moving = true
+  // The input owner invalidates a new draw; held movement needs continuation.
+  f.cadence.beforeRender()
+  f.cadence.afterRender()
+  f.tick(280)
+  assert.equal(f.invalidations.length, 2)
+  f.cadence.beforeRender()
+  moving = false
+  f.cadence.afterRender()
+  f.tick(30_000)
+  assert.equal(f.invalidations.length, 2, 'settled movement returns to sleep')
+  assert.equal(f.timers.size, 0)
+})
 
 test('a slow render receives a full idle interval after completion without timer backlog', () => {
   const f = fixture()

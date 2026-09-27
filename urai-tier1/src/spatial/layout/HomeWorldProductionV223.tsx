@@ -138,10 +138,17 @@ function isSoftwareWebGLRenderer(gl: THREE.WebGLRenderer) {
   return /swiftshader|llvmpipe|lavapipe|software|microsoft basic render/i.test(String(renderer || ''))
 }
 
-function Cadence({ reducedMotion, ready }: { reducedMotion: boolean; ready: boolean }) {
+function Cadence({ reducedMotion, ready, activityRevision, needsMotionFrame }: {
+  reducedMotion: boolean; ready: boolean; activityRevision: string; needsMotionFrame: () => boolean
+}) {
   const { gl, invalidate, setFrameloop } = useThree()
   const cadenceRef = useRef<ReturnType<typeof createPostRenderCadence> | null>(null)
+  const motionFrameRef = useRef(needsMotionFrame)
+  motionFrameRef.current = needsMotionFrame
   useFrame(() => cadenceRef.current?.beforeRender())
+  useEffect(() => {
+    if (ready) invalidate()
+  }, [activityRevision, invalidate, ready])
   useEffect(() => {
     if (!ready) { setFrameloop('never'); return }
     const constrained = reducedMotion || isSoftwareWebGLRenderer(gl)
@@ -150,6 +157,9 @@ function Cadence({ reducedMotion, ready }: { reducedMotion: boolean; ready: bool
     const cadence = createPostRenderCadence({
       invalidate,
       intervalMs: reducedMotion ? 280 : 100,
+      // A motion-comfort scene should be still at rest. Keep drawing only while
+      // navigation, camera input or its deceleration actually needs another frame.
+      shouldContinue: () => !reducedMotion || motionFrameRef.current(),
       schedule: (callback, delay) => window.setTimeout(callback, delay),
       cancel: (timer) => window.clearTimeout(timer),
     })
@@ -501,7 +511,7 @@ function CameraRig({
           : transition === 'life-map'
             ? (portrait ? 64 : 50)
             : (portrait ? 60 : 48)
-      camera.fov = THREE.MathUtils.damp(camera.fov, desiredFov, 7, delta)
+      camera.fov = reducedMotion ? desiredFov : THREE.MathUtils.damp(camera.fov, desiredFov, 7, delta)
       camera.updateProjectionMatrix()
     }
 
@@ -697,6 +707,7 @@ function SceneAssetReadySignal({ onReady }: { onReady: () => void }) {
 }
 
 function Scene({
+  dragging,
   yaw,
   pitch,
   transition,
@@ -722,6 +733,7 @@ function Scene({
   owner,
   onComplete,
 }: {
+  dragging: boolean
   yaw: MutableRefObject<number>
   pitch: MutableRefObject<number>
   transition: Transition
@@ -754,7 +766,14 @@ function Scene({
     onGround(event.point.clone())
   }, [homeStableState, homeTransition, onGround, transition])
   return <>
-    <Cadence reducedMotion={reducedMotion} ready={renderReady} />
+    <Cadence
+      reducedMotion={reducedMotion}
+      ready={renderReady}
+      activityRevision={`${dragging}:${movementInput.revision}:${homeTransition}:${transition}:${homeStableState}:${orbState}`}
+      needsMotionFrame={() => dragging || Boolean(homeTransition) || transition !== 'none'
+        || movementInput.keys.current.size > 0 || movementInput.virtualX.current !== 0 || movementInput.virtualZ.current !== 0
+        || firstPersonTarget.current !== null || firstPersonVelocity.current.lengthSq() > 0.000001}
+    />
     <color attach="background" args={['#10272a']} />
     <fogExp2 attach="fog" args={['#294946', .011]} />
     <HomeAtmosphericSky reducedMotion={reducedMotion} active={transition === 'life-map'} weatherState={personalWeatherState} onLifeMap={onLifeMap} />
@@ -1021,6 +1040,7 @@ export function HomeWorldProductionV223({ onOrbOpen = requestUraiWorldOrbOpen, w
       }}
     >
       <Scene
+        dragging={dragging}
         yaw={yaw}
         pitch={pitch}
         transition={transition}
