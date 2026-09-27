@@ -1,0 +1,169 @@
+# URAI Zero-Ambiguity Coverage Report
+
+Date: 2026-09-19
+Status: BROAD CANON RECOVERED / REMAINING GAPS EXPLICIT / TOTAL HISTORICAL EXHAUSTION NOT YET PROVABLE
+
+## What now exists
+
+The docs-only canon-recovery branch now contains a navigable recovery layer covering:
+- source authority and mixed-era precedence;
+- product universe;
+- experience architecture;
+- information architecture;
+- route/surface inventory;
+- UI surface inventory;
+- UX/function coverage;
+- functional dependency maps;
+- copy and edge-state copy;
+- accessibility;
+- privacy/consent;
+- platform/device matrix;
+- system-of-systems and institutional systems;
+- EWI;
+- Storytime;
+- RuAI;
+- Visual Gold Master recovery;
+- visual language;
+- reference-image manifests and missing-reference briefs;
+- storyboard manifests, state specs and frame specifications;
+- memory system;
+- Orb;
+- Life Map;
+- Focus;
+- Replay;
+- Passport;
+- Mirror;
+- secondary realms;
+- Personal Emotional Weather;
+- audio/voice/haptics;
+- asset authority;
+- roadmap/expansion maturity;
+- launch/future classification;
+- historical concept lineage;
+- master/document coverage matrices;
+- source-provenance register;
+- canon-to-implementation traceability;
+- decision/conflict log;
+- open canon questions;
+- missing-artifact manifest.
+
+## Completion tests
+
+### PRODUCT
+Do we know every major UrAi system currently discovered from project history?
+**YES FOR THE MAJOR RECOVERED UNIVERSE; TOTAL HISTORICAL EXHAUSTION REMAINS UNPROVEN.**
+Core, secondary, intelligence, institutional, professional, media-production and platform/device systems are mapped. Continued discovery must still add any genuinely new historical system.
+
+### VISUAL
+Does every visually significant system have adequate authoritative reference imagery or an explicit missing-reference requirement?
+**YES AT THE REQUIREMENT/MANIFEST LEVEL; NO AT FINAL GOLD-MASTER ACCEPTANCE LEVEL.**
+Explicit missing packs now exist for Memory Star, Personal Emotional Weather, physical Home Passport, Shadow, Legacy, Council, Rituals, Possible Futures, provenance-backed Lived World and final Avatar likeness. Institutional/future platform packs remain partial.
+
+### STORY
+Does every major experience have a storyboard or equivalent state/transition specification?
+**SUBSTANTIALLY YES AT TEXT-STATE LEVEL; VISUAL STORYBOARD FRAMES REMAIN INCOMPLETE.**
+First launch, Shadow, Legacy, Council, Rituals, Possible Futures, Emotional Weather, Mirror, Passport, offline/resync, permission denied and empty state now have frame/state specifications. Core launch flows already had stronger source/proof lineage. Native-device/XR and several relationship/goal/family/professional flows still need dedicated visual storyboards.
+
+### UI
+Is every major interface documented?
+**YES AT SURFACE-INVENTORY LEVEL; PER-CONTROL FINAL SPECS REMAIN PARTIAL.**
+Core and institutional surfaces are enumerated with universal state requirements.
+
+### UX
+Is every important journey and interaction documented?
+**PARTIAL TO STRONG.**
+Core continuity, secondary realms and important edge states are documented. Shared-memory/family, professional/RuAI, some native-device and future-XR journeys remain incomplete.
+
+### COPY
+Do we know what language each experience needs?
+**YES AT MANIFEST/SPEC LEVEL; FINAL COPY DECKS REMAIN PARTIAL.**
+Product, privacy, evidence/uncertainty, edge-state and institutional copy requirements are explicit.
+
+### FUNCTION
+Are underlying capabilities documented rather than merely screens?
+**YES AT SYSTEM/DEPENDENCY LEVEL; SOME STATE/DATA CONTRACTS REMAIN DISTRIBUTED.**
+Functional dependency maps now cover core realms, passive capture and EWI.
+
+### ACCESSIBILITY
+Does every major experience define accessible behavior?
+**YES AT CANON/MATRIX LEVEL; COMPLETE PER-DEVICE PROOF IS NOT YET PRESENT.**
+
+### PRIVACY
+Does every signal/data-sensitive feature define privacy/consent behavior?
+**YES AT BASELINE POLICY/CONTRACT LEVEL; IMPLEMENTATION ADOPTION VARIES.**
+
+### TECHNICAL
+Can canonical concepts be traced into architecture/implementation where implementation exists?
+**PARTIAL TO STRONG.**
+Launch spine and major standalone systems have source owners. Some broader realm/future concepts still need row-level component/service/test pointers.
+
+### ASSETS
+Do we know what production assets each experience requires?
+**YES FOR THE MAIN SPATIAL PROGRAM AT REQUIREMENT LEVEL; LEDGER SEMANTICS ARE NORMALIZED.**
+The 53-row independent ledger is normalized in `47-LAUNCH-ASSET-LEDGER-NORMALIZATION.md`. The Final Asset Lock's current 220 tracked rows are normalized row-by-row in `57-FINAL-ASSET-LOCK-ROW-NORMALIZATION.md` against the stable current authority families. Missing packs and visual promotion remain separate evidence states.
+
+### ROADMAP
+Are launch, post-launch, long-range, research, experimental and rejected concepts separated?
+**YES.**
+No invented +30/+90 dates were added where no controlling commitment was recovered.
+
+### DOCUMENTATION
+Can another capable team or future AI understand UrAi without reconstructing years of chat history?
+**YES TO A PRACTICAL WORKING LEVEL; NOT YET PERFECTLY SELF-CONTAINED.**
+The recovery index and source maps now provide a coherent entry point. Remaining source normalization and visual packs prevent a truthful claim of absolute completeness.
+
+### SOURCE TRUTH
+Can every significant canonical assertion be traced back to reliable project authority?
+**MOST MAJOR ASSERTIONS: YES. EVERY ROW/FRAME: NOT YET.**
+The source-provenance register and authority map exist; item-level normalization is still being expanded.
+
+### COMPLETENESS
+Have we searched deeply enough that major features are not stranded in old conversations, forgotten Drive documents, obsolete repositories, screenshots or earlier names?
+**MAJOR HISTORICAL LINEAGE HAS BEEN RECOVERED, BUT ABSOLUTE EXHAUSTION CANNOT BE PROVEN.**
+Recovered predecessor concepts now include Life OS/LifeLogger, Mirror of Becoming, Threshold Mode, Recovery Blooms, Weekly Scrolls, Emotional Time Travel, Cognitive/Chrono Mirror, Obscura/Shadow lineage, Soul Thread and RuAI.
+
+## Material decisions resolved in this pass
+
+- Current runtime authority remains `urai-spatial/urai-tier1`; older UrAi/UrAiProd/Dev runtime claims are historical.
+- Narrow launch scope does not erase broader future canon.
+- URAI-JOBS is resolved as the internal asynchronous execution fabric. The older recruiting/hiring bible is historical/superseded for current Jobs identity.
+- Mirror of Becoming is predecessor/functional lineage for current Mirror rather than a second competing primary product.
+- Threshold Mode is historical/partially absorbed adaptive-state lineage; do not automatically re-create it as a separate launch realm.
+- Emotional Time Travel is predecessor UX lineage feeding Replay/timeline/emotional-context behavior, not a separate current launch route.
+- RuAI is a separate governed clinician/research/authorized-data portal, not a back door into consumer memories.
+- Personal Emotional Weather has a current written six-state truth model and an explicit WEATHER-001..018 missing reference pack.
+- Shadow, Legacy, Council, Rituals and Possible Futures each have dedicated written state/interaction authority.
+- Historical portalized Ground/ascent, visible flat-screen FP hands, faceless cyan Avatar, fake emotional-globe activity, generic fantasy chambers, crystal/geode Focus and invented identity imagery remain rejected/superseded.
+
+## Remaining internally executable work inside this docs-only recovery PR
+
+No additional source-resolvable documentation gap is currently identified after the present reconciliation pass. Continue to re-open this section if new source evidence or a moving authority exposes a concrete docs defect.
+
+The open-question register is intentionally limited to genuinely unresolved founder/legal/external/product-authority decisions.
+
+Completed in this recovery:
+- current #1237 Home/Ground/Life Map/Focus/Replay/Orb exact-head proof run pointers are bound to stable IDs in `59-CURRENT-SPATIAL-PROOF-POINTERS.md` without transferring predecessor acceptance;
+- standalone system implementation/source pointers are retained in `58-STANDALONE-SYSTEM-IMPLEMENTATION-POINTERS.md`;
+- requirement-level copy authority is reconciled through `11-COPY-MANIFEST.md`, `55-EDGE-STATE-COPY-SPEC.md`, and `56-COMMERCIAL-ENTITLEMENT-AUTHORITY.md`; final public/content-pack wording remains appropriately versioned/gated rather than invented here.
+
+The following are **downstream execution/evidence work, not unfinished documentation mutations for this PR**:
+- generating the explicitly missing visual/storyboard packs;
+- professional/RuAI, native-device, wearable/IoT, family/shared-memory and XR implementation/reference production;
+- real-device/listening/haptic acceptance;
+- provider activation, deployment, independent review and visual promotion.
+
+## External / future / human boundaries
+
+- final Avatar likeness waits for valid likeness authority/candidate;
+- production provider activation remains separately gated;
+- legal/entity/assignment/signature questions require controlling executed records/authorized review;
+- independent visual acceptance and physical sensory review remain human evidence where required;
+- future implementation work is not a canon-recovery failure.
+
+## Current truth
+
+This recovery is now a real, source-backed, cross-linked body of canon rather than a loose audit. It is still not truthful to say every historical byte or every final visual exists.
+
+The docs-only recovery has no currently identified source-resolvable normalization gap. Remaining work is downstream evidence/production (including the specifically missing visual/story packs and real-device/provider/visual-review proof) plus the small set of genuinely external, legal, founder or product-authority decisions retained in the open-question register.
+
+Recover first; invent last.
