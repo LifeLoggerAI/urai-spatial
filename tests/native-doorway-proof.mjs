@@ -135,7 +135,7 @@ async function prove(browser, doorway, testCase) {
     const activation = await activate(page, target, testCase.method)
     record.targetOwnsHitPoint = activation.targetOwnsHitPoint
     record.hitPoint = activation.hitPoint
-    await page.waitForURL((url) => normalize(url.toString()) === doorway.destination, { timeout: Math.max(1, navigationDeadline - Date.now()) })
+    await page.waitForURL((url) => normalize(url.toString()) === doorway.destination, { waitUntil: 'commit', timeout: Math.max(1, navigationDeadline - Date.now()) })
     record.resultingUrl = page.url()
     record.success = normalize(record.resultingUrl) === doorway.destination
   } catch (error) {
