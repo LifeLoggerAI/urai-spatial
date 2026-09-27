@@ -221,7 +221,7 @@ export function HomeOrbReliquaryV286() {
   })
 
   return <group name="home-v286-biomorphic-memory-reliquary" userData={{ artRevision: 'v286-biomorphic-memory-reliquary', visualIntent: 'asymmetric-layered-fractured-memory-vessel-with-open-interior-architecture', visualOnly: true, interactionOwner: false, state }}>
-    <group ref={shellRoot} position={[ORB.x, y + (portrait ? 1.12 : 1.05), ORB.z]} rotation={[.055, -.18, -.055]} scale={portrait ? [1.22, 1.30, 1.18] : [1.34, 1.38, 1.24]} name={`home-v286-reliquary-state-${state}`}>
+    <group ref={shellRoot} position={[ORB.x, y + (portrait ? 1.12 : 1.05), ORB.z]} rotation={[.055, -.18, -.055]} scale={portrait ? [.85, .90, .82] : [1.34, 1.38, 1.24]} name={`home-v286-reliquary-state-${state}`}>
       {plates.map((geometry, index) => {
         const spec = plateSpecsV286[index]
         return <mesh
