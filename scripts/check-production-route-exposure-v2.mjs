@@ -103,8 +103,10 @@ for (const token of [
   'replayManifestId: memory.replayManifest.id',
   'requestUraiWorldReturn()',
   'aria-label={`Open Replay for ${memory.title}`}',
-  'No personal memory is displayed in this neutral observatory.',
+  'No personal memory is displayed in this neutral stellar field.',
   'data-chamber-state={chamberState}',
+  'data-focus-spatial="inside-memory-star"',
+  'data-focus-composition="stellar-photosphere-corona-with-living-memory-vfx"',
 ]) {
   if (!focusClientSource.includes(token)) failures.push(`${focusClientPath} is missing: ${token}`)
 }
