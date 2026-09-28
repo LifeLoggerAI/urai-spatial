@@ -29,89 +29,111 @@ const repairedPortal = `async function capturePortalSequence(browser) {
   const spec = viewports[0]
 
   async function movePortalToNearby(page, destination) {
-    try {
-      return await moveToNearby(page, destination, 'keyboard')
-    } catch (initialError) {
-      const initial = initialError?.evidence || null
-      const target = destinationTelemetry[destination]
-      const active = new Set()
-      const correctiveSamples = []
-      const correctivePhases = []
-      const correctiveStartedAt = Date.now()
-      const maxPulses = 12
+    const target = destinationTelemetry[destination]
+    const focus = await clearEditableFocus(page)
+    if (focus.afterEditable) throw new Error('Home portal proof could not clear editable focus before movement: ' + JSON.stringify(focus))
+    const start = await readMovementTelemetry(page, destination)
+    if (start.playerX == null || start.playerZ == null || start.distanceToTarget == null) {
+      throw new Error('Home portal steering telemetry was incomplete for ' + destination + ': ' + JSON.stringify(start))
+    }
 
+    const active = new Set()
+    const samples = [start]
+    const phases = []
+    const startedAt = Date.now()
+    const movementBudgetMs = 40_000
+    const pulseMs = 450
+    let bestDistance = start.distanceToTarget
+    let lastProgressAt = startedAt
+    let reached = start.nearby === destination
+
+    async function pulse(directions, label) {
+      const before = await readMovementTelemetry(page, destination)
+      if (before.nearby === destination) return { before, after: before }
+      const desired = new Set(directions)
+      if (!desired.size) return { before, after: before }
+      await setKeyboardDirections(page, active, desired)
+      const pulseStartedAt = Date.now()
       try {
-        for (let pulse = 0; pulse < maxPulses; pulse += 1) {
-          const before = await readMovementTelemetry(page, destination)
-          correctiveSamples.push(before)
-          if (before.nearby === destination) break
-          if (before.playerX == null || before.playerZ == null || before.distanceToTarget == null) {
-            throw new Error(\`Home portal corrective steering telemetry was incomplete for \${destination}: \${JSON.stringify(before)}\`)
-          }
-
-          const dx = target.x - before.playerX
-          const dz = target.z - before.playerZ
-          const direction = Math.abs(dx) >= Math.abs(dz)
-            ? (dx < 0 ? 'left' : 'right')
-            : (dz < 0 ? 'forward' : 'back')
-
-          await setKeyboardDirections(page, active, new Set([direction]))
-          await waitFrames(page, 1)
-          await releaseDirections(page, 'keyboard', active)
-          await waitFrames(page, 1)
-
-          const after = await readMovementTelemetry(page, destination)
-          correctiveSamples.push(after)
-          correctivePhases.push({ pulse, direction, before, after })
-          if (after.nearby === destination) break
-        }
+        await delay(pulseMs)
       } finally {
         await releaseDirections(page, 'keyboard', active).catch(() => {})
       }
-
-      const end = await readMovementTelemetry(page, destination)
-      correctiveSamples.push(end)
-      const allSamples = [...(initial?.samples || []), ...correctiveSamples]
-      const start = initial?.start || allSamples[0] || null
-      const distances = allSamples
-        .map((sample) => sample?.distanceToTarget)
-        .filter((value) => Number.isFinite(value))
-      const evidence = {
-        method: 'keyboard',
-        target: { destination, ...target },
-        focus: initial?.focus || null,
-        start,
-        end,
-        elapsedMs: (initial?.elapsedMs || 0) + (Date.now() - correctiveStartedAt),
-        distanceTravelled: start?.playerX != null && start?.playerZ != null && end.playerX != null && end.playerZ != null
-          ? Math.hypot(end.playerX - start.playerX, end.playerZ - start.playerZ)
-          : null,
-        bestDistanceToTarget: distances.length ? Math.min(...distances) : null,
-        reached: end.nearby === destination,
-        phases: [
-          ...(initial?.phases || []),
-          {
-            label: 'portal-bounded-corrective-steering',
-            maxPulses,
-            elapsedMs: Date.now() - correctiveStartedAt,
-            initialFailure: String(initialError),
-            pulses: correctivePhases,
-          },
-        ],
-        samples: allSamples,
-      }
-
-      if (!evidence.reached
-        || evidence.distanceTravelled == null
-        || evidence.distanceTravelled < 0.25
-        || end.distanceToTarget == null
-        || end.distanceToTarget > target.radius) {
-        const error = new Error(\`Home portal corrective steering did not reach \${destination}: \${JSON.stringify(evidence)}\`)
-        error.evidence = evidence
-        throw error
-      }
-      return evidence
+      await waitFrames(page, 2)
+      const after = await readMovementTelemetry(page, destination)
+      samples.push(after)
+      phases.push({ label, directions: [...desired], elapsedMs: Date.now() - pulseStartedAt, before, after })
+      return { before, after }
     }
+
+    while (!reached && Date.now() - startedAt < movementBudgetMs) {
+      const before = await readMovementTelemetry(page, destination)
+      if (before.nearby === destination) { reached = true; break }
+      const directions = desiredDirections(before, destination)
+      if (!directions.length) break
+
+      let { after } = await pulse(directions, 'portal-adaptive-steering')
+      if (after.nearby === destination) { reached = true; break }
+
+      if (after.distanceToTarget != null && after.distanceToTarget < bestDistance - 0.025) {
+        bestDistance = after.distanceToTarget
+        lastProgressAt = Date.now()
+        continue
+      }
+
+      if (Date.now() - lastProgressAt >= 2_000) {
+        const dx = target.x - (after.playerX ?? target.x)
+        const dz = target.z - (after.playerZ ?? target.z)
+        const correctiveDirection = Math.abs(dx) >= Math.abs(dz)
+          ? (dx < 0 ? 'left' : 'right')
+          : (dz < 0 ? 'forward' : 'back')
+        ;({ after } = await pulse([correctiveDirection], 'portal-adaptive-corrective-axis'))
+        if (after.nearby === destination) { reached = true; break }
+        if (after.distanceToTarget != null && after.distanceToTarget < bestDistance - 0.025) {
+          bestDistance = after.distanceToTarget
+          lastProgressAt = Date.now()
+        }
+      }
+
+      if (Date.now() - lastProgressAt > 8_000) break
+    }
+
+    await releaseDirections(page, 'keyboard', active).catch(() => {})
+    await waitFrames(page, 3)
+    const end = await readMovementTelemetry(page, destination)
+    samples.push(end)
+    reached ||= end.nearby === destination
+    if (end.distanceToTarget != null) bestDistance = Math.min(bestDistance, end.distanceToTarget)
+
+    const evidence = {
+      method: 'keyboard',
+      target: { destination, ...target },
+      focus,
+      start,
+      end,
+      elapsedMs: Date.now() - startedAt,
+      movementBudgetMs,
+      pulseMs,
+      distanceTravelled: start.playerX != null && start.playerZ != null && end.playerX != null && end.playerZ != null
+        ? Math.hypot(end.playerX - start.playerX, end.playerZ - start.playerZ)
+        : null,
+      bestDistanceToTarget: Number.isFinite(bestDistance) ? bestDistance : null,
+      reached,
+      phases,
+      samples,
+    }
+
+    if (!evidence.reached
+      || evidence.distanceTravelled == null
+      || evidence.distanceTravelled < 0.25
+      || end.nearby !== destination
+      || end.distanceToTarget == null
+      || end.distanceToTarget > target.radius) {
+      const error = new Error('Home portal adaptive steering did not reach ' + destination + ': ' + JSON.stringify(evidence))
+      error.evidence = evidence
+      throw error
+    }
+    return evidence
   }
 
   for (const destination of ['ground', 'life-map']) {
