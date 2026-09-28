@@ -23,6 +23,7 @@ const deploymentGuide = fs.readFileSync(new URL("../../DEPLOYMENT.md", import.me
 const productionAudit = fs.readFileSync(new URL("../../docs/PRODUCTION_AUDIT.md", import.meta.url), "utf8");
 const releaseManagerRunbook = fs.readFileSync(new URL("../../docs/release/URAI_SPATIAL_RELEASE_MANAGER_RUNBOOK.md", import.meta.url), "utf8");
 const productionReadiness = fs.readFileSync(new URL("../../docs/PRODUCTION_READINESS.md", import.meta.url), "utf8");
+const launchLock = fs.readFileSync(new URL("../../verification/launch-lock.json", import.meta.url), "utf8");
 
 test("static provider paths cannot shadow authenticated Firebase rewrites", () => {
   for (const route of staticProviderRoutes) assert.equal(fs.existsSync(route), false);
@@ -78,7 +79,7 @@ test("Life Map seed rejects long-lived Google credentials before Firestore write
 
 
 test("WIF operator documentation matches the file-backed external-account runtime guard", () => {
-  for (const source of [deployGuide, lifeMapChecklist, envExample, rootEnvExample, productionSecretsGuide, deploymentGuide, productionAudit, releaseManagerRunbook, productionReadiness]) {
+  for (const source of [deployGuide, lifeMapChecklist, envExample, rootEnvExample, productionSecretsGuide, deploymentGuide, productionAudit, releaseManagerRunbook, productionReadiness, launchLock]) {
     assert.match(source, /external[_ -]account/i);
     assert.doesNotMatch(source, /provider-managed ADC/i);
   }
@@ -93,6 +94,8 @@ test("WIF operator documentation matches the file-backed external-account runtim
   assert.doesNotMatch(productionReadiness, /managed ADC|provider-managed ADC/i);
   assert.match(releaseManagerRunbook, /file-backed external-account Workload Identity Federation/);
   assert.match(productionReadiness, /file-backed external-account Workload Identity Federation/);
+  assert.match(launchLock, /file-backed external_account Workload Identity Federation/);
+  assert.doesNotMatch(launchLock, /managed ADC|provider-managed ADC/i);
   assert.match(rootEnvExample, /GOOGLE_APPLICATION_CREDENTIALS=/);
   assert.match(rootEnvExample, /file-backed external_account Workload Identity Federation/);
   assert.doesNotMatch(rootEnvExample, /managed ADC|provider-managed ADC/i);
