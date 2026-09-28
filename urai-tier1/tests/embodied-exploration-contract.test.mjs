@@ -123,7 +123,8 @@ test('Home keeps one physical stateful Orb owner and semantic access parity', ()
   assert.match(routeOwner, /data-world-destination='home'[\s\S]*\.urai-world-companion__orb/)
   assert.match(routeOwner, /background:\s*transparent\s*!important/)
   assert.match(homeRuntime, />Ground<\/button>/)
-  assert.match(homeRuntime, /<a href="\/life-map\/" aria-label="Open Life Map directly" data-testid="home-semantic-life-map">Life Map<\/a>/)
+  assert.match(homeRuntime, /data-testid="home-semantic-life-map"/)
+  assert.match(homeRuntime, /cameraCheckpoint: 'home-sky-ascent-complete'/)
 })
 
 test('Ground remains walkable infrastructure with paths, boundaries and semantic exits', () => {
