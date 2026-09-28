@@ -88,25 +88,6 @@ async function resolveTarget(page, doorway) {
   return target
 }
 
-async function waitForHomeActionsReady(page, timeout) {
-  await page.waitForFunction(() => {
-    const fallback = document.querySelector('[data-testid="urai-home-accessible-fallback"]')
-    if (fallback instanceof HTMLElement && getComputedStyle(fallback).display !== 'none') {
-      return Boolean(fallback.querySelector('.home-semantic-navigation button, .home-semantic-navigation a'))
-    }
-
-    const owner = document.querySelector('.urai-asset-home-world[data-home-primary-owner="asset-driven"]')
-    if (!(owner instanceof HTMLElement) || owner.dataset.homeAssetsReady !== 'true') return false
-    const loading = [...document.querySelectorAll('.home-runtime-loading, .home-world-loading, .home-world-loading-canvas')]
-    return !loading.some((node) => {
-      const style = getComputedStyle(node)
-      const rect = node.getBoundingClientRect()
-      return style.display !== 'none' && style.visibility !== 'hidden'
-        && Number.parseFloat(style.opacity || '1') > .02 && rect.width > 4 && rect.height > 4
-    })
-  }, null, { timeout, polling: 50 })
-}
-
 async function prove(browser, doorway, testCase) {
   const context = await browser.newContext({ viewport: testCase.viewport, isMobile: !!testCase.isMobile, hasTouch: !!testCase.hasTouch, deviceScaleFactor: testCase.isMobile ? 2 : 1 })
   const page = await context.newPage()
@@ -117,7 +98,6 @@ async function prove(browser, doorway, testCase) {
     await page.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => {})
     const target = await resolveTarget(page, doorway)
     const navigationDeadline = Date.now() + 20000
-    await waitForHomeActionsReady(page, Math.max(1, navigationDeadline - Date.now()))
     record.legacyVisibleDoorways = await page.locator('.urai-final-home-doorways:visible').count()
     record.semanticNavigationNonDominant = await target.evaluate((node) => {
       const nav = node.closest('nav')
