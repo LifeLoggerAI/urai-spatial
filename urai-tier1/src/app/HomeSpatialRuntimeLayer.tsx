@@ -188,7 +188,7 @@ export default function HomeSpatialRuntimeLayer() {
       data-urai-home-runtime="asset-driven-primary-with-procedural-degraded-fallback"
       data-home-visual-owner="asset-driven-personalized-sanctuary"
       data-home-authored-terrain="home-authored-terrain"
-      data-home-authored-embodied-self="home-authored-embodied-self"
+      data-home-first-person-camera-anchor="home-first-person-camera-anchor"
       data-home-exploration="walkable"
       data-home-ground-affordance="home-ground-environmental-threshold"
       data-home-life-map-affordance="home-life-map-sky-lookout"
