@@ -82,7 +82,7 @@ Make sure the hosting project builds `urai-tier1` or uses the root scripts that 
 - Enable Email/Password if using the built-in auth flow.
 - Confirm Firestore is enabled.
 - Confirm Firestore rules match the launch posture.
-- Do not add Firebase service-account JSON, private keys, or Firebase CI tokens. Use the protected file-backed Workload Identity Federation / `external_account` ADC path required by the canonical runtime. Provider-managed/metadata ADC is not supported by this hardened runtime because the credential-type guard requires an inspectable external-account configuration file.
+- Do not add Firebase service-account JSON, private keys, or Firebase CI tokens. Use the protected file-backed Workload Identity Federation / `external_account` ADC path required by the canonical runtime. Metadata-backed implicit ADC is not supported by this hardened runtime because the credential-type guard requires an inspectable external-account configuration file.
 
 ## 8. Post-deploy verification
 
