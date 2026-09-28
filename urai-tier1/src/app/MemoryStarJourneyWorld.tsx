@@ -30,15 +30,15 @@ function copyFor(mode: JourneyMode) {
     return {
       eyebrow: 'URAI Focus',
       title: 'Inside the selected star',
-      body: 'The camera has crossed the Life Map shell. The selected memory opens as a private Focus chamber.',
+      body: 'The camera has crossed the Life Map shell. The selected memory opens as a private Focus stellar field.',
       status: 'Focus layer inside star',
     }
   }
   if (mode === 'replay') {
     return {
       eyebrow: 'URAI Replay',
-      title: 'Memory film inside the star',
-      body: 'Replay moves deeper through the same selected star, from chamber into living memory film.',
+      title: 'Immersive memory inside the star',
+      body: 'Replay moves deeper through the same selected star, from chamber into living immersive memory.',
       status: 'Replay layer inside star',
     }
   }
@@ -87,7 +87,7 @@ function MemoryLayer({ mode }: { mode: JourneyMode }) {
     <section className="msj-memory-layer" data-replay={replay ? 'true' : 'false'} aria-label={replay ? 'Replay inside selected memory star' : 'Focus inside selected memory star'}>
       <div className="msj-memory-glass" />
       <div className="msj-memory-copy">
-        <p>{replay ? 'Memory film' : 'Selected memory'}</p>
+        <p>{replay ? 'Immersive memory' : 'Selected memory'}</p>
         <h2>{selectedMemory.title}</h2>
         <span>{replay ? 'The film opens deeper inside the same star.' : `${selectedMemory.date} · ${selectedMemory.reason}`}</span>
         <div>

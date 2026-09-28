@@ -62,15 +62,23 @@ export const lifeMapAssets = {
   },
 } satisfies RouteAssetSet;
 
+// Preserve the exact certified V1 handoff paths as historical provenance only.
+export const retiredV1HandoffRouteArt = {
+  focusPrimary: image(webp("/focus/focus-memory-chamber-main.webp"), fallback("/focus/focus-memory-chamber-fallback.svg"), "Retired V1 Focus chamber handoff asset"),
+  focusMobile: image(webp("/focus/focus-memory-chamber-mobile.webp"), fallback("/focus/focus-memory-chamber-fallback.svg"), "Retired V1 Focus chamber mobile handoff asset"),
+  replayPrimary: image(webp("/replay/replay-memory-film-main.webp"), fallback("/replay/replay-memory-film-fallback.svg"), "Retired V1 Replay film handoff asset"),
+  replayMobile: image(webp("/replay/replay-memory-film-mobile.webp"), fallback("/replay/replay-memory-film-fallback.svg"), "Retired V1 Replay film mobile handoff asset"),
+} as const;
+
 export const focusAssets = {
-  primary: image(webp("/focus/focus-memory-chamber-main.webp"), fallback("/focus/focus-memory-chamber-fallback.svg"), "Selected memory Focus chamber"),
-  mobile: image(webp("/focus/focus-memory-chamber-mobile.webp"), fallback("/focus/focus-memory-chamber-fallback.svg"), "Focus chamber mobile crop"),
+  primary: lifeMapAssets.primary,
+  mobile: lifeMapAssets.mobile,
   accents: {},
 } satisfies RouteAssetSet;
 
 export const replayAssets = {
-  primary: image(webp("/replay/replay-memory-film-main.webp"), fallback("/replay/replay-memory-film-fallback.svg"), "Living memory film Replay scene"),
-  mobile: image(webp("/replay/replay-memory-film-mobile.webp"), fallback("/replay/replay-memory-film-fallback.svg"), "Replay memory film mobile crop"),
+  primary: lifeMapAssets.primary,
+  mobile: lifeMapAssets.mobile,
   accents: {},
 } satisfies RouteAssetSet;
 

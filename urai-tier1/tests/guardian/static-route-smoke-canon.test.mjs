@@ -11,7 +11,7 @@ const canonicalRoutes = [
   ['src/app/home/page.tsx', /FinalHomeThreshold/],
   ['src/app/life-map/page.tsx', /SpatialLifeMapCanonical/],
   ['src/app/focus/page.tsx', /FinalFocusChamber/],
-  ['src/app/replay/page.tsx', /FinalReplayFilm/],
+  ['src/app/replay/page.tsx', /FinalReplayExperience = CinematicReplayClient/],
   ['src/app/location-map/page.tsx', /LocationMapAcceptanceBoundary/],
   ['src/app/passport/page.tsx', /PassportVaultClient/],
   ['src/app/shadow/page.tsx', /SpatialRealmRuntime/],

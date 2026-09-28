@@ -55,17 +55,18 @@ NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID=
 NEXT_PUBLIC_URAI_DEMO_USER_ID=demo-user
 ```
 
-Server-only secrets:
+Server-only configuration/secrets:
 
 ```bash
-FIREBASE_SERVICE_ACCOUNT_JSON=
+# Must point to a protected file-backed external_account Workload Identity Federation config.
+GOOGLE_APPLICATION_CREDENTIALS=/path/to/protected-external-account.json
 STRIPE_SECRET_KEY=
 STRIPE_WEBHOOK_SECRET=
 ELEVENLABS_API_KEY=
 ELEVENLABS_VOICE_ID=
 ```
 
-Do not commit `.env.local` or service account JSON.
+Do not commit `.env.local`, service-account JSON, private keys, Firebase CI tokens, or the protected WIF credential configuration. The canonical runtime rejects long-lived Firebase service-account credentials and metadata-backed implicit ADC.
 
 ## Deploy Commands
 

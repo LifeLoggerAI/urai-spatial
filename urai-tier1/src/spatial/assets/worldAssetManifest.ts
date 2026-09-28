@@ -1,6 +1,6 @@
 import { resolveUraiSpatialAssetPath } from './assetManifest'
 
-export type WorldAssetStatus = 'fallback' | 'candidate' | 'ready' | 'missing'
+export type WorldAssetStatus = 'fallback' | 'candidate' | 'ready' | 'runtime' | 'missing'
 
 export type WorldAssetSlot = {
   slotId: string
@@ -80,17 +80,17 @@ export const worldAssetManifest = {
       slotId: 'lifeMap.constellationLines',
       label: 'Constellation Line System',
       finalModel: '',
-      status: 'missing',
-      notes: 'Shader/runtime system; no independent model namespace is authorized.',
+      status: 'runtime',
+      notes: 'Runtime-owned shader/geometry system; no independent model namespace is authorized or required.',
     },
   },
   focus: {
     starPortalShell: {
       slotId: 'focus.starPortalShell',
-      label: 'Focus Memory Chamber',
-      finalModel: resolved('focus-memory-chamber-glb-v1'),
-      status: 'fallback',
-      notes: 'Canonical Focus selection with deterministic tunnel fallback.',
+      label: 'Focus Stellar Memory Star',
+      finalModel: resolved('life-map-memory-star-glb-v1'),
+      status: 'ready',
+      notes: 'Focus shares the governed Memory Star model; photosphere/corona presentation is owned by the Focus runtime rather than a chamber shell.',
     },
     memoryDiorama: {
       slotId: 'focus.memoryDiorama',
@@ -103,17 +103,17 @@ export const worldAssetManifest = {
   replay: {
     memoryThreadTunnel: {
       slotId: 'replay.memoryThreadTunnel',
-      label: 'Replay Memory Environment',
-      finalModel: resolved('replay-memory-environment-glb-v1'),
-      status: 'fallback',
-      notes: 'Canonical Replay selection with deterministic film-portal fallback.',
+      label: 'Replay Immersive Memory Runtime',
+      finalModel: '',
+      status: 'runtime',
+      notes: 'Replay visual authority is the implemented runtime immersive memory field. No theater, film-portal, or independent tunnel model is authorized or required.',
     },
     beatMarkers: {
       slotId: 'replay.beatMarkers',
       label: 'Replay Beat Markers',
       finalModel: '',
-      status: 'missing',
-      notes: 'Runtime timeline system; no independent model namespace is authorized.',
+      status: 'runtime',
+      notes: 'Implemented runtime temporal-marker system; no independent model namespace is authorized or required.',
     },
   },
   passport: {

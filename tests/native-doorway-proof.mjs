@@ -19,10 +19,21 @@ const normalize = (value) => new URL(value).pathname.replace(/\/$/, '') || '/'
 
 async function activate(page, target, method) {
   if (method === 'keyboard') {
-    await target.focus()
-    if (!await target.evaluate((node) => node === document.activeElement)) throw new Error('semantic target did not receive focus')
-    await target.press('Enter')
-    return { targetOwnsHitPoint: true, hitPoint: null }
+    for (let focusSteps = 1; focusSteps <= 64; focusSteps += 1) {
+      await page.keyboard.press('Tab')
+      const focus = await target.evaluate((node) => {
+        const nav = node.closest('nav')
+        return {
+          active: node === document.activeElement,
+          keyboardVisible: node.matches(':focus-visible') && Number.parseFloat(getComputedStyle(nav).opacity || '1') >= .95,
+        }
+      })
+      if (!focus.active) continue
+      if (!focus.keyboardVisible) throw new Error('keyboard-focused destination does not visibly expose its focus state')
+      await page.keyboard.press('Enter')
+      return { targetOwnsHitPoint: true, hitPoint: null, focusSteps }
+    }
+    throw new Error('semantic target did not receive visible browser-native Tab focus within 64 steps')
   }
 
   await target.evaluate((node) => node.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: 'auto' }))
@@ -103,7 +114,13 @@ async function prove(browser, doorway, testCase) {
     const activation = await activate(page, target, testCase.method)
     record.targetOwnsHitPoint = activation.targetOwnsHitPoint
     record.hitPoint = activation.hitPoint
-    await page.waitForURL((url) => normalize(url.toString()) === doorway.destination, { timeout: 20000 })
+    const navigationDeadline = Date.now() + 20000
+    if (normalize(page.url()) !== doorway.destination) {
+      await page.waitForURL(
+        (url) => normalize(url.toString()) === doorway.destination,
+        { waitUntil: 'commit', timeout: Math.max(1, navigationDeadline - Date.now()) },
+      )
+    }
     record.resultingUrl = page.url()
     record.success = normalize(record.resultingUrl) === doorway.destination
   } catch (error) {

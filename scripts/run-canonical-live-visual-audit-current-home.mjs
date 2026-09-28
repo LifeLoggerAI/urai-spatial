@@ -42,7 +42,7 @@ patched = replaceOnce(
 patched = replaceOnce(
   patched,
   `{ id: 'replay', path: '/replay?memoryId=quiet-reset&manifestId=replay-recovery-thread&node=quiet-reset&returnNode=quiet-reset&demo=1&from=life-map', selector: 'main', markers: ['The Quiet Reset'] },`,
-  `{ id: 'replay', path: '/replay?memoryId=quiet-reset&manifestId=replay-recovery-thread&node=quiet-reset&returnNode=quiet-reset&demo=1&from=life-map', selector: '[data-testid="cinematic-replay-client"][data-replay-spatial-owner="r3f-memory-theater"]', markers: [] },`,
+  `{ id: 'replay', path: '/replay?memoryId=quiet-reset&manifestId=replay-recovery-thread&node=quiet-reset&returnNode=quiet-reset&demo=1&from=life-map', selector: '[data-testid="cinematic-replay-client"][data-replay-spatial-owner="r3f-immersive-memory-field"]', markers: [] },`,
   'current Replay spatial owner',
 )
 
@@ -129,7 +129,7 @@ const currentLifeMapAndReplaySettlement = `  if (route.id === 'life-map') {
   }
   if (route.id === 'replay') {
     await page.waitForFunction(() => {
-      const root = document.querySelector('[data-testid="cinematic-replay-client"][data-replay-spatial-owner="r3f-memory-theater"]')
+      const root = document.querySelector('[data-testid="cinematic-replay-client"][data-replay-spatial-owner="r3f-immersive-memory-field"]')
       return root?.getAttribute('data-memory-status') === 'demo'
         && root?.getAttribute('data-memory-id') === 'demo:quiet-reset'
         && root?.getAttribute('data-manifest-id') === 'replay-recovery-thread'
@@ -185,7 +185,7 @@ for (const [label, marker] of [
   ['Ground current owner readiness', `root?.getAttribute('data-ground-ready') === 'true'`],
   ['Ground canvas geometry', `rect.width >= 240 && rect.height >= 240`],
   ['Ground current product copy', `Private infrastructure beneath the living world`],
-  ['Replay current spatial owner', `data-replay-spatial-owner="r3f-memory-theater"`],
+  ['Replay current spatial owner', `data-replay-spatial-owner="r3f-immersive-memory-field"`],
   ['Replay fixture memory identity', `data-memory-id') === 'demo:quiet-reset'`],
   ['Replay manifest identity', `data-manifest-id') === 'replay-recovery-thread'`],
   ['Life Map CDP viewport evidence', `Page.captureScreenshot`],

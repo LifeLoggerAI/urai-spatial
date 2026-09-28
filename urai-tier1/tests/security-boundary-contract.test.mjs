@@ -13,6 +13,16 @@ const narratorPlayback = fs.readFileSync(new URL("../src/spatial/narrator/narrat
 const checkoutRoute = fs.readFileSync(new URL("../src/app/api/stripe/create-checkout-session/route.ts", import.meta.url), "utf8");
 const firebaseUser = fs.readFileSync(new URL("../src/lib/server/firebase-user.ts", import.meta.url), "utf8");
 const approvedReturnUrl = fs.readFileSync(new URL("../src/lib/server/approved-return-url.ts", import.meta.url), "utf8");
+const lifeMapSeed = fs.readFileSync(new URL("../scripts/seed-life-map.mjs", import.meta.url), "utf8");
+const deployGuide = fs.readFileSync(new URL("../../docs/DEPLOY_GUIDE.md", import.meta.url), "utf8");
+const lifeMapChecklist = fs.readFileSync(new URL("../docs/LIFEMAP_QA_CHECKLIST.md", import.meta.url), "utf8");
+const envExample = fs.readFileSync(new URL("../.env.example", import.meta.url), "utf8");
+const productionSecretsGuide = fs.readFileSync(new URL("../../docs/PRODUCTION_SECRETS.md", import.meta.url), "utf8");
+const deploymentGuide = fs.readFileSync(new URL("../../DEPLOYMENT.md", import.meta.url), "utf8");
+const productionAudit = fs.readFileSync(new URL("../../docs/PRODUCTION_AUDIT.md", import.meta.url), "utf8");
+const releaseManagerRunbook = fs.readFileSync(new URL("../../docs/release/URAI_SPATIAL_RELEASE_MANAGER_RUNBOOK.md", import.meta.url), "utf8");
+const productionReadiness = fs.readFileSync(new URL("../../docs/PRODUCTION_READINESS.md", import.meta.url), "utf8");
+const launchLock = fs.readFileSync(new URL("../../verification/launch-lock.json", import.meta.url), "utf8");
 
 test("static provider paths cannot shadow authenticated Firebase rewrites", () => {
   for (const route of staticProviderRoutes) assert.equal(fs.existsSync(route), false);
@@ -55,4 +65,34 @@ test("Stripe checkout permits only the configured application origin", () => {
   assert.match(approvedReturnUrl, /resolved\.origin !== approvedOrigin\.origin/);
   assert.match(approvedReturnUrl, /resolved\.username \|\| resolved\.password/);
   assert.doesNotMatch(checkoutRoute, /const redirectBase = returnUrl \|\| appUrl/);
+});
+
+
+test("Life Map seed rejects long-lived Google credentials before Firestore writes", () => {
+  assert.match(lifeMapSeed, /assertExternalAccountAdc\(\)/);
+  assert.match(lifeMapSeed, /record\.type !== 'external_account'/);
+  assert.match(lifeMapSeed, /FIREBASE_SERVICE_ACCOUNT_JSON/);
+  assert.match(lifeMapSeed, /GOOGLE_APPLICATION_CREDENTIALS/);
+  assert.match(lifeMapSeed, /applicationDefault\(\)/);
+});
+
+
+test("WIF operator documentation matches the file-backed external-account runtime guard", () => {
+  for (const source of [deployGuide, lifeMapChecklist, envExample, productionSecretsGuide, deploymentGuide, productionAudit, releaseManagerRunbook, productionReadiness, launchLock]) {
+    assert.match(source, /external[_ -]account/i);
+    assert.doesNotMatch(source, /provider-managed ADC/i);
+  }
+  assert.match(lifeMapChecklist, /GOOGLE_APPLICATION_CREDENTIALS=\/path\/to\/protected-external-account\.json/);
+  assert.doesNotMatch(lifeMapChecklist, /FIREBASE_PROJECT_ID=<project-id> pnpm seed:lifemap/);
+  assert.match(deploymentGuide, /GOOGLE_APPLICATION_CREDENTIALS=\/path\/to\/protected-external-account\.json/);
+  assert.doesNotMatch(deploymentGuide, /FIREBASE_SERVICE_ACCOUNT_JSON/);
+  assert.doesNotMatch(productionAudit, /Add `FIREBASE_SERVICE_ACCOUNT_JSON`/);
+  assert.doesNotMatch(productionAudit, /FIREBASE_SERVICE_ACCOUNT_JSON must be valid JSON/);
+  assert.match(productionSecretsGuide, /Metadata-backed implicit ADC is not supported/);
+  assert.doesNotMatch(releaseManagerRunbook, /managed ADC|provider-managed ADC/i);
+  assert.doesNotMatch(productionReadiness, /managed ADC|provider-managed ADC/i);
+  assert.match(releaseManagerRunbook, /file-backed external-account Workload Identity Federation/);
+  assert.match(productionReadiness, /file-backed external-account Workload Identity Federation/);
+  assert.match(launchLock, /file-backed external_account Workload Identity Federation/);
+  assert.doesNotMatch(launchLock, /managed ADC|provider-managed ADC/i);
 });

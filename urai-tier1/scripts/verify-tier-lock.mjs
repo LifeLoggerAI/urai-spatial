@@ -46,7 +46,12 @@ const fileNeedles = {
     'LifeMapRouteBoundary',
   ],
   'src/app/focus/page.tsx': ['FinalFocusChamber'],
-  'src/app/replay/page.tsx': ['FinalReplayFilm'],
+  'src/app/replay/page.tsx': [
+    "import CinematicReplayClient from './CinematicReplayClient'",
+    'const FinalReplayExperience = CinematicReplayClient',
+    '<FinalReplayExperience />',
+    'replay-immersive-memory-field',
+  ],
   'docs/audits/TIER_LOCK_VISUAL_CLOSEOUT.md': [
     'Tier-1 locked',
     'Tier-2 completed locked',

@@ -8,7 +8,16 @@ export const URAI_HOME_ASCENT_EVENT = 'urai:home-ascent'
 
 const WORLD_TRAVEL_DEBOUNCE_MS = 1500
 const WORLD_TRAVEL_FALLBACK_MS = 2400
-const WORLD_TRAVEL_OBSERVE_MS = 50
+const CONTEXT_KEYS = [
+  'memoryId',
+  'node',
+  'thread',
+  'personId',
+  'placeId',
+  'manifestId',
+  'privacyMode',
+  'demo',
+] as const
 let lastTravelFingerprint = ''
 let lastTravelAt = 0
 
@@ -19,6 +28,14 @@ function dispatchSpatialAudioCue(cue: 'transition' | 'orb-confirm' | 'error') {
 function buildFallbackHref(request: UraiWorldTravelRequest) {
   if (!request.href || typeof window === 'undefined') return request.href
   const target = new URL(request.href, window.location.origin)
+  const current = new URLSearchParams(window.location.search)
+
+  for (const key of CONTEXT_KEYS) {
+    if (!target.searchParams.has(key) && current.has(key)) {
+      target.searchParams.set(key, current.get(key) ?? '')
+    }
+  }
+
   if (request.entryPortal) target.searchParams.set('entryPortal', request.entryPortal)
   if (request.cameraCheckpoint) target.searchParams.set('cameraCheckpoint', request.cameraCheckpoint)
 
@@ -29,6 +46,15 @@ function buildFallbackHref(request: UraiWorldTravelRequest) {
   if (context?.placeId) target.searchParams.set('placeId', context.placeId)
   if (context?.replayManifestId) target.searchParams.set('manifestId', context.replayManifestId)
   if (context?.privacyMode) target.searchParams.set('privacyMode', context.privacyMode)
+  if (context?.demo) target.searchParams.set('demo', '1')
+
+  const memoryId = target.searchParams.get('memoryId')
+  const nodeId = target.searchParams.get('node')
+  if (request.destination === 'life-map') {
+    if (!nodeId && memoryId) target.searchParams.set('node', memoryId)
+  } else if (!memoryId && nodeId) {
+    target.searchParams.set('memoryId', nodeId)
+  }
 
   return `${target.pathname}${target.search}${target.hash}`
 }
@@ -59,7 +85,7 @@ function markHomeAscentClosing(request: UraiWorldTravelRequest) {
   owner.setAttribute('data-home-portal-sequence', 'life-map:closing')
 }
 
-export function requestUraiWorldTravel(request: UraiWorldTravelRequest) {
+function requestUraiWorldTravelWithMode(request: UraiWorldTravelRequest, mode: 'transitioned' | 'direct') {
   if (typeof window === 'undefined') return
 
   if (shouldBeginHomeAscent(request)) {
@@ -80,30 +106,33 @@ export function requestUraiWorldTravel(request: UraiWorldTravelRequest) {
   if (fingerprint === lastTravelFingerprint && now - lastTravelAt < WORLD_TRAVEL_DEBOUNCE_MS) return
   lastTravelFingerprint = fingerprint
   lastTravelAt = now
-  const startingLocation = `${window.location.pathname}${window.location.search}${window.location.hash}`
   dispatchSpatialAudioCue('transition')
   window.dispatchEvent(new CustomEvent<UraiWorldTravelRequest>(URAI_WORLD_TRAVEL_EVENT, { detail: request }))
 
   const fallbackHref = buildFallbackHref(request)
   if (!fallbackHref) return
 
-  let settled = false
-  let observer = 0
-  const fallback = window.setTimeout(() => {
-    if (settled) return
-    settled = true
-    if (observer) window.clearInterval(observer)
-    const currentLocation = `${window.location.pathname}${window.location.search}${window.location.hash}`
-    if (currentLocation === startingLocation) commitHardFallback(fallbackHref)
-  }, WORLD_TRAVEL_FALLBACK_MS)
+  if (mode === 'direct') {
+    commitHardFallback(fallbackHref)
+    return
+  }
 
-  observer = window.setInterval(() => {
-    const currentLocation = `${window.location.pathname}${window.location.search}${window.location.hash}`
-    if (currentLocation === startingLocation) return
-    settled = true
-    window.clearTimeout(fallback)
-    window.clearInterval(observer)
-  }, WORLD_TRAVEL_OBSERVE_MS)
+  const fallbackTarget = new URL(fallbackHref, window.location.origin)
+  const targetPathname = fallbackTarget.pathname.replace(/\/+$/, '') || '/'
+  window.setTimeout(() => {
+    // Do not disarm this safety net on a transient client-router pathname.
+    // Only the destination actually present at the deadline counts as settled.
+    const currentPathname = window.location.pathname.replace(/\/+$/, '') || '/'
+    if (currentPathname !== targetPathname) commitHardFallback(fallbackHref)
+  }, WORLD_TRAVEL_FALLBACK_MS)
+}
+
+export function requestUraiWorldTravel(request: UraiWorldTravelRequest) {
+  requestUraiWorldTravelWithMode(request, 'transitioned')
+}
+
+export function requestUraiWorldDirectTravel(request: UraiWorldTravelRequest) {
+  requestUraiWorldTravelWithMode(request, 'direct')
 }
 
 export function requestUraiWorldReturn() {

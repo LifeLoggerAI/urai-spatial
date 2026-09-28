@@ -78,6 +78,13 @@ test('Life Map uses deterministic sequential travel compositions with a safe sel
   assert.ok(source.includes('THREE.MathUtils.damp'))
   assert.ok(source.includes('data-life-map-phase={phase}'))
   assert.ok(source.includes('data-life-map-scale='))
+  assert.ok(source.includes('const [phase, setPhase] = useState<JourneyPhase>("overview")'))
+  assert.match(source, /const \[selectedId, setSelectedId\] = useState<string \| null>\(overviewRequested \? null : queryNode \|\| null\)/)
+  assert.match(source, /if \(overviewRequested \|\| overviewPending\.current \|\| !queryNode \|\| !nodes\.length\) return/)
+  assert.match(source, /const node = nodes\.find\(\(candidate\) => candidate\.id === queryNode\)/)
+  assert.match(source, /if \(!node\) return/)
+  assert.match(source, /if \(selectedId === node\.id\)[\s\S]*setPhase\("arrival"\)/)
+  assert.match(source, /setSelectedId\(node\.id\)[\s\S]*setPhase\("arrival"\)/)
   assert.doesNotMatch(source, /setTimeout\(\(\) => setPhase\("approach"\), 1050\)/)
 })
 

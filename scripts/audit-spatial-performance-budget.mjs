@@ -90,7 +90,7 @@ requireMatch('Active Life Map sequential phase timing', lifeMap, /PHASE_DURATION
 forbidMatch('Active Life Map hardcoded legacy DPR', lifeMap, /dpr=\{\[1,\s*1\.85\]\}/)
 forbidMatch('Active Life Map retained high-resolution memory canvases', lifeMap, /canvas\.width\s*=\s*768|canvas\.height\s*=\s*768/)
 
-for (const marker of ['life-map-white-gold-life-core', 'life-map-authored-chapter-regions', 'life-map-curved-semantic-paths', 'life-map-memory-artifact-families', 'life-map-achievement-monument', 'life-map-goal-horizon', 'life-map-privacy-vault', 'life-map-emotional-weather', 'life-map-archive-particles', 'life-map-intimate-memory-chamber']) requireMatch(`Production world ${marker}`, productionWorld, new RegExp(marker))
+for (const marker of ['life-map-white-gold-life-core', 'life-map-authored-chapter-regions', 'life-map-curved-semantic-paths', 'life-map-memory-artifact-families', 'life-map-achievement-monument', 'life-map-goal-horizon', 'life-map-privacy-vault', 'life-map-emotional-weather', 'life-map-archive-particles', 'life-map-intimate-memory-star']) requireMatch(`Production world ${marker}`, productionWorld, new RegExp(marker))
 for (const family of ['visual', 'audio', 'relationship', 'place', 'emotion', 'pattern', 'achievement', 'goal', 'future', 'everyday', 'archive', 'protected']) requireMatch(`Visual system artifact family ${family}`, visualSystem, new RegExp(`"${family}"`))
 requireMatch('Production world adaptive particle tiers', productionWorld, /qualityTier === "low" \? 80 : qualityTier === "medium" \? 150 : 240/)
 requireMatch('Production world adaptive star tiers', productionWorld, /profile\.tier === "low" \? 420 : profile\.tier === "medium" \? 760 : 1160/)

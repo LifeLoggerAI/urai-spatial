@@ -9,7 +9,7 @@ URAI Spatial is the 3D/galaxy memory interface for URAI. This checklist locks pr
 - `apps/functions` is the Firebase Functions package.
 - `firebase.json` deploys Hosting, Firestore rules/indexes, and Functions.
 - Firestore rules include admin/founder gates and deny-by-default spatial access.
-- Canonical server-side Google/Firebase authentication is fail-closed against long-lived service-account JSON and requires managed ADC or protected external-account Workload Identity Federation.
+- Canonical server-side Google/Firebase authentication is fail-closed against long-lived service-account JSON and requires a protected file-backed external-account Workload Identity Federation configuration.
 
 ## Required CI gates
 
@@ -26,7 +26,7 @@ URAI Spatial is the 3D/galaxy memory interface for URAI. This checklist locks pr
 ## Required production identity and configuration
 
 - `URAI_SPATIAL_FIREBASE_PROJECT_ID` set to the approved production project.
-- A least-privilege production Workload Identity Federation / managed ADC identity with independently verified IAM bindings and runtime read-back.
+- A least-privilege production file-backed external-account Workload Identity Federation identity with independently verified IAM bindings and runtime read-back.
 - No long-lived Firebase service-account JSON, private key, or Firebase CI token in the canonical production path.
 
 Optional repository/environment variable:
@@ -35,7 +35,7 @@ Optional repository/environment variable:
 
 ## Current release posture
 
-Production mutation remains `NO-GO` while historical provider-side key revocation, production WIF/IAM trust, runtime identity read-back, rollback evidence, and final release signoffs remain unproven. Source-side WIF/ADC guards do not by themselves prove provider closure.
+Production mutation remains `NO-GO` while historical provider-side key revocation, production WIF/IAM trust, runtime identity read-back, rollback evidence, and final release signoffs remain unproven. Source-side external-account WIF guards do not by themselves prove provider closure.
 
 ## Manual signoffs
 
@@ -64,7 +64,7 @@ Before launch, manually verify:
 Before launch, verify:
 
 - Historical user-managed Google service-account keys implicated by the credential incident have been inventoried and revoked only after dependencies are migrated and tested.
-- Production identity uses least-privilege WIF/ADC and has a retained non-secret verification receipt.
+- Production identity uses least-privilege external-account WIF and has a retained non-secret verification receipt.
 - User profile access is self/admin only.
 - `spatial/{doc=**}` remains admin-only unless explicitly opened with a reviewed rule.
 - Feature flags are read-only to public clients and writable only by admin/founder.

@@ -1,0 +1,143 @@
+import assert from 'node:assert/strict'
+import fs from 'node:fs'
+import test from 'node:test'
+
+const source = fs.readFileSync(new URL('../../apps/functions/src/capturedReality.ts', import.meta.url), 'utf8')
+const index = fs.readFileSync(new URL('../../apps/functions/src/index.ts', import.meta.url), 'utf8')
+const privacy = fs.readFileSync(new URL('../../apps/functions/src/privacyOperations.ts', import.meta.url), 'utf8')
+const manifest = fs.readFileSync(new URL('../../privacy/feature-manifests/captured-reality.privacy.yaml', import.meta.url), 'utf8')
+const inventory = fs.readFileSync(new URL('../../privacy/data-inventory.yaml', import.meta.url), 'utf8')
+const proofImporter = fs.readFileSync(new URL('../../apps/functions/scripts/import-captured-reality-proof.mjs', import.meta.url), 'utf8')
+const functionsPackage = fs.readFileSync(new URL('../../apps/functions/package.json', import.meta.url), 'utf8')
+
+test('captured reality runtime is owner-only, feature-gated and C3 revocation-aware', () => {
+  assert.match(source, /URAI_ENABLE_CAPTURED_REALITY/)
+  assert.match(source, /CAPTURED_REALITY_MEMORY_AND_LOCATION_CONSENT_REQUIRED/)
+  assert.match(source, /privacyPolicy\/current/)
+  assert.match(source, /privacyRuntime\/location-collection/)
+  assert.match(source, /locationMode === 'granted' \|\| locationMode === 'limited'/)
+  assert.match(source, /memoryMode === 'granted' \|\| memoryMode === 'limited'/)
+  assert.match(source, /runtime\.get\('enabled'\) === true/)
+  assert.match(source, /users\/\$\{uid\}\/capturedRealityAssets/)
+  assert.match(source, /ownerId.*uid/)
+})
+
+test('runtime delivery accepts only reviewed source-backed reconstruction and a private owner path', () => {
+  assert.match(source, /state.*ready/)
+  assert.match(source, /reviewState.*accepted/)
+  assert.match(source, /truthClass.*spatially-reconstructable/)
+  assert.match(source, /private-captured-reality/)
+  assert.match(source, /getSignedUrl/)
+  assert.match(source, /RUNTIME_URL_TTL_MS = 10 \* 60 \* 1000/)
+  assert.doesNotMatch(source, /makePublic\(/)
+})
+
+test('owner metadata response omits exact location and raw source locators', () => {
+  assert.match(source, /Raw source locators, exact location, storage object/)
+  assert.doesNotMatch(source, /exactLocation:\s*data/)
+  assert.doesNotMatch(source, /runtimeObject:\s*data/)
+})
+
+test('functions index exports captured reality owner APIs', () => {
+  assert.match(index, /getCapturedRealityAsset/)
+  assert.match(index, /getCapturedRealityRuntimeUrl/)
+})
+
+test('privacy package classifies captured reality as L3 C1 content with additional memory and location purpose gates', () => {
+  assert.match(manifest, /feature: captured-reality/)
+  assert.match(manifest, /dataClass: L3/)
+  assert.match(manifest, /consentTier: C1/)
+  assert.match(manifest, /requiredConsentPurposes:/)
+  assert.match(manifest, /memory\.storage/)
+  assert.match(manifest, /location\.context/)
+  assert.match(manifest, /deletionSupported: true/)
+  assert.match(manifest, /consentRevocationSupported: true/)
+  assert.match(inventory, /name: captured_reality_manifest/)
+  assert.match(inventory, /name: captured_reality_runtime_asset/)
+  assert.match(inventory, /name: captured_reality_replay_binding/)
+})
+
+test('privacy export and deletion lifecycle includes captured reality records, runtime bytes and private object cleanup', () => {
+  assert.match(privacy, /capturedRealityAssets/)
+  assert.match(privacy, /copyCapturedRealityRuntimeExports/)
+  assert.match(privacy, /capturedRealityRuntimeAssets/)
+  assert.match(privacy, /runtimeExports/)
+  assert.match(privacy, /data\?\.file === 'runtime'/)
+  assert.match(privacy, /private-captured-reality/)
+  assert.match(privacy, /private-exports/)
+  assert.match(privacy, /deleteFiles/)
+})
+
+test('runtime access audit appends distinct events instead of overwriting one asset record', () => {
+  assert.match(source, /collection\(`users\/\$\{uid\}\/privacyAudit`\)\.add\(/)
+  assert.doesNotMatch(source, /privacyAudit\/captured-reality-runtime-\$\{assetId\}/)
+})
+
+test('proof delivery is separately gated and can never masquerade as certified runtime', () => {
+  assert.match(source, /URAI_ENABLE_CAPTURED_REALITY_PROOF/)
+  assert.match(source, /CAPTURED_REALITY_PROOF_DISABLED/)
+  assert.match(source, /CAPTURED_REALITY_PROOF_REQUIRES_PRIVATE_PILOT/)
+  assert.match(source, /accessMode === 'runtime' && \(state !== 'ready' \|\| reviewState !== 'accepted'\)/)
+  assert.match(source, /accessMode === 'runtime' && !certified/)
+  assert.match(source, /releaseGate: accessMode === 'proof' \? 'proof-only' : 'enabled'/)
+})
+
+test('technical proof may retain visual rejection but requires explicit integrity and privacy authorization', () => {
+  assert.match(source, /state !== 'proof-ready' && state !== 'ready'/)
+  assert.match(source, /proofState !== 'technical-preview'/)
+  assert.match(source, /proofIntegrityVerified.*!== true/)
+  assert.match(source, /proofPrivacyReviewed.*!== true/)
+  assert.match(source, /CAPTURED_REALITY_PROOF_ASSET_NOT_READY/)
+  assert.match(source, /CAPTURED_REALITY_PROOF_ASSET_NOT_AUTHORIZED/)
+  assert.match(source, /proofApprovedRuntimeSha256/)
+  assert.match(source, /proofApprovedStorageGeneration/)
+  assert.match(source, /runtimeSha256 !== approvedSha256/)
+  assert.match(source, /objectPath\.endsWith\(.*runtimeSha256.*\.splat/)
+  assert.match(source, /runtimeFile\.getMetadata\(\)/)
+  assert.match(source, /liveGeneration !== approvedGeneration/)
+  assert.match(source, /storedSha256 !== runtimeSha256/)
+  assert.match(source, /CAPTURED_REALITY_PROOF_ARTIFACT_NOT_BOUND/)
+  assert.match(source, /CAPTURED_REALITY_PROOF_ARTIFACT_CHANGED/)
+  assert.match(source, /queryParams: \{ generation: approvedGeneration \}/)
+  assert.doesNotMatch(source, /accessMode === 'proof'[\s\S]{0,300}reviewState !== 'accepted'/)
+})
+
+test('accepted runtime delivery is independently bound to the reviewed immutable artifact generation', () => {
+  assert.match(source, /reviewApprovedRuntimeSha256/)
+  assert.match(source, /reviewApprovedStorageGeneration/)
+  assert.match(source, /CAPTURED_REALITY_RUNTIME_ARTIFACT_NOT_BOUND/)
+  assert.match(source, /CAPTURED_REALITY_RUNTIME_ARTIFACT_CHANGED/)
+  assert.match(source, /accessMode === 'proof' \? 'proofApprovedRuntimeSha256' : 'reviewApprovedRuntimeSha256'/)
+  assert.match(source, /accessMode === 'proof' \? 'proofApprovedStorageGeneration' : 'reviewApprovedStorageGeneration'/)
+  assert.match(source, /queryParams: \{ generation: approvedGeneration \}/)
+})
+
+
+test('private proof importer is create-only, hash and generation bound, and cannot self-authorize acceptance', () => {
+  assert.match(functionsPackage, /captured-reality:proof-import/)
+  assert.match(proofImporter, /--expected-sha256/)
+  assert.match(proofImporter, /bytes\.length % 32 !== 0/)
+  assert.match(proofImporter, /FIREBASE_STORAGE_BUCKET must be set explicitly/)
+  assert.match(proofImporter, /private-captured-reality\/\$\{args\.ownerUid\}\/\$\{args\.assetId\}\/runtime\//)
+  assert.match(proofImporter, /reviewState: 'rejected'/)
+  assert.match(proofImporter, /visualAcceptance: false/)
+  assert.match(proofImporter, /browserCertified: false/)
+  assert.match(proofImporter, /mobileCertified: false/)
+  assert.match(proofImporter, /xrCertified: false/)
+  assert.match(proofImporter, /proofState: 'technical-preview'/)
+  assert.match(proofImporter, /--apply requires --privacy-review-accepted/)
+  assert.match(proofImporter, /proofPrivacyReceiptRef/)
+  assert.match(proofImporter, /object\.getMetadata\(\)/)
+  assert.match(proofImporter, /runtimeStorageGeneration: storageGeneration/)
+  assert.match(proofImporter, /proofApprovedRuntimeSha256: sha256/)
+  assert.match(proofImporter, /proofApprovedStorageGeneration: storageGeneration/)
+  assert.match(proofImporter, /assetRef\.create\(/)
+  assert.match(proofImporter, /if \(existing\.exists\).*create-only/)
+  assert.match(proofImporter, /getApps, initializeApp/)
+  assert.match(proofImporter, /getFirestore/)
+  assert.match(proofImporter, /getStorage/)
+  assert.match(proofImporter, /preconditionOpts: \{ ifGenerationMatch: 0 \}/)
+  assert.match(proofImporter, /uploadedGeneration = storageGeneration/)
+  assert.match(proofImporter, /bucket\.file\(runtimeObject, \{ generation: uploadedGeneration \}\)\.delete\(\{ ignoreNotFound: true \}\)/)
+  assert.doesNotMatch(proofImporter, /makePublic\(/)
+})
