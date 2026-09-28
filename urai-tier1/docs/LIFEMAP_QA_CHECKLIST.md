@@ -17,7 +17,7 @@ cd urai-tier1
 FIREBASE_PROJECT_ID=<project-id> GOOGLE_APPLICATION_CREDENTIALS=/path/to/protected-external-account.json pnpm seed:lifemap -- --user=demo-user
 ```
 
-The seed script intentionally rejects credentialless/provider-managed ADC and any service-account JSON/private-key credential. Use only a protected `external_account` Workload Identity Federation configuration file.
+The seed script intentionally rejects credentialless or metadata-backed implicit ADC and any service-account JSON/private-key credential. Use only a protected `external_account` Workload Identity Federation configuration file.
 
 ## Route Smoke Test
 
