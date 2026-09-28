@@ -168,7 +168,7 @@ const repairedPortal = `async function capturePortalSequence(browser) {
       const traversalStateEvidence = await traversalState.jsonValue()
       await page.evaluate(({ key, destination, traversalStateEvidence }) => {
         const current = JSON.parse(sessionStorage.getItem(key) || '{"phases":[]}')
-        const traversal = `${destination}:traversal`
+        const traversal = destination + ':traversal'
         if (!current.phases.some((entry) => entry.phase === traversal)) {
           current.phases.push({ phase: traversal, at: Date.now(), source: 'runtime-state', ...traversalStateEvidence })
         }
