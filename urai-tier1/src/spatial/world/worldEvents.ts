@@ -8,7 +8,6 @@ export const URAI_HOME_ASCENT_EVENT = 'urai:home-ascent'
 
 const WORLD_TRAVEL_DEBOUNCE_MS = 1500
 const WORLD_TRAVEL_FALLBACK_MS = 2400
-const WORLD_TRAVEL_OBSERVE_MS = 50
 const CONTEXT_KEYS = [
   'memoryId',
   'node',
@@ -107,7 +106,6 @@ function requestUraiWorldTravelWithMode(request: UraiWorldTravelRequest, mode: '
   if (fingerprint === lastTravelFingerprint && now - lastTravelAt < WORLD_TRAVEL_DEBOUNCE_MS) return
   lastTravelFingerprint = fingerprint
   lastTravelAt = now
-  const startingLocation = `${window.location.pathname}${window.location.search}${window.location.hash}`
   dispatchSpatialAudioCue('transition')
   window.dispatchEvent(new CustomEvent<UraiWorldTravelRequest>(URAI_WORLD_TRAVEL_EVENT, { detail: request }))
 
@@ -119,23 +117,14 @@ function requestUraiWorldTravelWithMode(request: UraiWorldTravelRequest, mode: '
     return
   }
 
-  let settled = false
-  let observer = 0
-  const fallback = window.setTimeout(() => {
-    if (settled) return
-    settled = true
-    if (observer) window.clearInterval(observer)
-    const currentLocation = `${window.location.pathname}${window.location.search}${window.location.hash}`
-    if (currentLocation === startingLocation) commitHardFallback(fallbackHref)
+  const fallbackTarget = new URL(fallbackHref, window.location.origin)
+  const targetPathname = fallbackTarget.pathname.replace(/\\/+$/, '') || '/'
+  window.setTimeout(() => {
+    // Do not disarm this safety net on a transient client-router pathname.
+    // Only the destination actually present at the deadline counts as settled.
+    const currentPathname = window.location.pathname.replace(/\\/+$/, '') || '/'
+    if (currentPathname !== targetPathname) commitHardFallback(fallbackHref)
   }, WORLD_TRAVEL_FALLBACK_MS)
-
-  observer = window.setInterval(() => {
-    const currentLocation = `${window.location.pathname}${window.location.search}${window.location.hash}`
-    if (currentLocation === startingLocation) return
-    settled = true
-    window.clearTimeout(fallback)
-    window.clearInterval(observer)
-  }, WORLD_TRAVEL_OBSERVE_MS)
 }
 
 export function requestUraiWorldTravel(request: UraiWorldTravelRequest) {
