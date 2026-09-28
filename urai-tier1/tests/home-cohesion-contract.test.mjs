@@ -47,7 +47,7 @@ test('Home keeps direct semantic Ground, Orb, and Life Map navigation in the run
   assert.match(runtime, /requestUraiWorldOrbOpen/)
   assert.match(runtime, /href: '\/ground\/'/)
   assert.match(runtime, /aria-label="Open Life Map directly"/)
-  assert.match(runtime, /href: '\/life-map\/'/)
+  assert.match(runtime, /<a href="\/life-map\/" aria-label="Open Life Map directly" data-testid="home-semantic-life-map">Life Map<\/a>/)
   assert.match(runtime, /entryPortal: 'home-ground'/)
 })
 
