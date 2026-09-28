@@ -501,7 +501,7 @@ async function capturePointerLook(browser) {
   const video = await closeAndRecordVideo(context, page, id)
   const record = { id, cameraMode, screenshot: path.relative(outputDir, screenshot), video, diagnostics: diagnosticResult }
   receipt.interactions.push(record)
-  if (cameraMode !== 'look' || diagnosticResult.pageErrors.length || diagnosticResult.consoleErrors.length || diagnosticResult.failedRequests.length) receipt.errors.push(record)
+  if (cameraMode !== 'first-person-look' || diagnosticResult.pageErrors.length || diagnosticResult.consoleErrors.length || diagnosticResult.failedRequests.length) receipt.errors.push(record)
 }
 
 async function capturePortalSequence(browser) {
