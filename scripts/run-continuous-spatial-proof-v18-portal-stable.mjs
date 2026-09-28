@@ -155,6 +155,25 @@ const repairedPortal = `async function capturePortalSequence(browser) {
       }, { selector: ownerSelector, key: historyKey })
 
       await page.keyboard.press('Enter')
+      const traversalState = await page.waitForFunction(({ selector, destination }) => {
+        const owner = document.querySelector(selector)
+        if (!owner) return false
+        const cameraMode = owner.getAttribute('data-home-camera-mode')
+        const scenePhase = owner.getAttribute('data-home-scene-phase')
+        const traversing = destination === 'ground'
+          ? cameraMode === 'descent' && scenePhase === 'GROUND_DESCENT'
+          : cameraMode === 'ascent' && scenePhase === 'ASCENT'
+        return traversing ? { cameraMode, scenePhase } : false
+      }, { selector: ownerSelector, destination }, { timeout: 30_000, polling: 50 })
+      const traversalStateEvidence = await traversalState.jsonValue()
+      await page.evaluate(({ key, destination, traversalStateEvidence }) => {
+        const current = JSON.parse(sessionStorage.getItem(key) || '{"phases":[]}')
+        const traversal = `${destination}:traversal`
+        if (!current.phases.some((entry) => entry.phase === traversal)) {
+          current.phases.push({ phase: traversal, at: Date.now(), source: 'runtime-state', ...traversalStateEvidence })
+        }
+        sessionStorage.setItem(key, JSON.stringify(current))
+      }, { key: historyKey, destination, traversalStateEvidence })
       await page.waitForFunction(({ expected, key, destination }) => {
         const url = new URL(location.href)
         const history = JSON.parse(sessionStorage.getItem(key) || '{"phases":[]}')
