@@ -118,11 +118,11 @@ function requestUraiWorldTravelWithMode(request: UraiWorldTravelRequest, mode: '
   }
 
   const fallbackTarget = new URL(fallbackHref, window.location.origin)
-  const targetPathname = fallbackTarget.pathname.replace(/\\/+$/, '') || '/'
+  const targetPathname = fallbackTarget.pathname.replace(/\/+$/, '') || '/'
   window.setTimeout(() => {
     // Do not disarm this safety net on a transient client-router pathname.
     // Only the destination actually present at the deadline counts as settled.
-    const currentPathname = window.location.pathname.replace(/\\/+$/, '') || '/'
+    const currentPathname = window.location.pathname.replace(/\/+$/, '') || '/'
     if (currentPathname !== targetPathname) commitHardFallback(fallbackHref)
   }, WORLD_TRAVEL_FALLBACK_MS)
 }
