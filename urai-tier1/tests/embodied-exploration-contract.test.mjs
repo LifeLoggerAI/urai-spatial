@@ -33,7 +33,7 @@ test('shared movement kernel owns stable input, calm motion, boundaries and coll
   assert.doesNotMatch(kernel, /requestPointerLock|pointerlockchange|movementX|movementY|sprint|jump|crouch/i)
 })
 
-test('Home is the live embodied sacred-tech sanctuary with an explicit degraded fallback', () => {
+test('Home is the live bodyless first-person open-sky sanctuary with an explicit degraded fallback', () => {
   for (const marker of [
     'AssetDrivenHomeWorld',
     'data-urai-home-runtime="asset-driven-primary-with-procedural-degraded-fallback"',
@@ -54,25 +54,24 @@ test('Home is the live embodied sacred-tech sanctuary with an explicit degraded 
 
   for (const marker of [
     "const SANCTUARY = '/assets/urai/generated/models/home-entry-chamber-v1.glb'",
-    "const HUMAN = '/assets/urai/generated/human-makehuman-v4/home-human-makehuman-v4.glb'",
     'data-home-primary-owner="asset-driven"',
-    'data-home-visible-world="moonlit-sacred-tech-sanctuary"',
-    'data-home-world-character="premium-cinematic-sacred-tech"',
-    'data-home-physical-base="authored-obsidian-ritual-platform"',
+    'data-home-visible-world="open-sky-inhabited-natural-sanctuary"',
+    'data-home-world-character="human-scale-grounded-real-place"',
+    'data-home-physical-base="natural-flagstone-clearing"',
     'data-home-visual-ownership="three-dimensional-geometry"',
     'data-home-desktop-mobile-world="same-scene"',
-    'data-home-embodied-self="makehuman-v4"',
+    'data-home-embodied-self="bodyless-first-person-camera"',
     'data-home-movement="walk-keyboard-click-touch"',
     'data-home-camera-mode={transition',
     'data-home-orb-state={orbState}',
     'data-testid="home-visible-navigable-sanctuary-world"',
     'data-testid="urai-home-webgl-orb"',
-    'data-testid="urai-home-embodied-avatar"',
+    'data-testid="urai-home-first-person-presence"',
     'home-authored-terrain',
     'home-mountain-horizon',
     'home-living-vegetation',
     'home-orb-sanctuary',
-    'home-authored-embodied-self',
+    'home-first-person-camera-anchor',
     'home-ground-environmental-threshold',
     'home-life-map-sky-lookout',
     'home-sanctuary-pavilion',
@@ -86,18 +85,17 @@ test('Home is the live embodied sacred-tech sanctuary with an explicit degraded 
     '<Canvas',
   ]) has(homeProduction, marker)
   assert.match(homeProduction, /useGLTF\(SANCTUARY\)/)
-  assert.match(homeProduction, /useGLTF\(HUMAN\)/)
   assert.match(homeProduction, /function RitualFloor\(/)
   assert.match(homeProduction, /function MoonAndMist\(/)
   assert.match(homeProduction, /function SacredOrb\(/)
-  assert.match(homeProduction, /function HumanPresence\(/)
+  assert.match(homeProduction, /function BodylessCameraAnchor\(/)
   assert.match(homeProduction, /function Thresholds\(/)
   assert.match(homeProduction, /function PlayerRig\(/)
   assert.match(homeProduction, /const duration=reducedMotion\?0\.45:/)
   assert.match(homeProduction, /transition==='life-map'\?3\.4:2\.6/)
   assert.match(homeProduction, /destination:'infrastructure-hub'/)
   assert.match(homeProduction, /destination:'life-map'/)
-  assert.doesNotMatch(homeProduction, /requestPointerLock|sprint|jump|crouch/i)
+  assert.doesNotMatch(homeProduction, /requestPointerLock|sprint|jump|crouch|home-human-makehuman-v4\.glb/i)
 
   for (const marker of [
     'data-home-visible-world="final-physical-sanctuary-memory-rooms"',
@@ -164,7 +162,7 @@ test('Life Map keeps independent non-Orb travel, semantic depth and overview rec
 })
 
 test('travel infrastructure preserves fallback, route ownership and canonical ascent capability', () => {
-  for (const marker of ['URAI_WORLD_TRAVEL_EVENT', 'buildFallbackHref', 'commitHardFallback', 'WORLD_TRAVEL_FALLBACK_MS', 'markHomeAscentClosing', 'requestUraiWorldDirectTravel', "mode === 'direct'", 'CONTEXT_KEYS', "target.searchParams.set(key, current.get(key) ?? '')", "context?.demo", "request.destination === 'life-map'", "target.searchParams.set('node', memoryId)", "target.searchParams.set('memoryId', nodeId)"]) has(worldEvents, marker)
+  for (const marker of ['URAI_WORLD_TRAVEL_EVENT', 'buildFallbackHref', 'commitHardFallback', 'WORLD_TRAVEL_FALLBACK_MS', 'markHomeAscentClosing', 'targetPathname', 'currentPathname !== targetPathname', 'Only the destination actually present at the deadline counts as settled', 'requestUraiWorldDirectTravel', "mode === 'direct'", 'CONTEXT_KEYS', "target.searchParams.set(key, current.get(key) ?? '')", "context?.demo", "request.destination === 'life-map'", "target.searchParams.set('node', memoryId)", "target.searchParams.set('memoryId', nodeId)"]) has(worldEvents, marker)
   for (const marker of ['beginTravelRef.current(request)', 'transitionDuration(request.destination)', 'router.push(href)', 'navigationWatchdog']) has(worldTransitions, marker)
   for (const marker of ['enterLifeMap: () => set({ mode: "ASCENT"', 'phase: "ASCENT"', 'isTransitioning: true', 'inputLocked: true', 'progress: 0']) has(sceneStore, marker)
   assert.match(worldTransitions, /currentWorld\.destination === 'life-map' \|\| currentWorld\.destination === 'location-map'/)
