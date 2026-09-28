@@ -35,21 +35,18 @@ export default function LifeMapRouteBoundary() {
       router.replace(`/life-map?${current.toString()}`, { scroll: false })
     }
 
-    const handoffSoftwareThreshold = (event: MouseEvent) => {
-      const target = event.target
-      if (!(target instanceof Element)) return
-      const button = target.closest<HTMLButtonElement>('.life-map-thresholds button')
-      if (!button || button.disabled) return
+    const handoffSoftwareThresholdButton = (button: HTMLButtonElement) => {
+      if (button.disabled) return false
       const root = button.closest<HTMLElement>('[data-testid="urai-true-3d-life-map"]')
-      if (root?.dataset.softwareRenderer !== 'true') return
+      if (root?.dataset.softwareRenderer !== 'true') return false
 
       const label = button.textContent?.trim() || ''
       const route = label.includes('Enter Focus') ? 'focus' : label.includes('Replay') ? 'replay' : null
-      if (!route) return
+      if (!route) return false
 
       const current = new URLSearchParams(window.location.search)
       const memoryId = current.get('memoryId') || current.get('node')
-      if (!memoryId) return
+      if (!memoryId) return false
       current.delete('overview')
       current.set('memoryId', memoryId)
       current.set('node', memoryId)
@@ -61,9 +58,29 @@ export default function LifeMapRouteBoundary() {
       // Native navigation tears down software WebGL immediately. Keeping a stalled
       // SwiftShader scene alive while Next streams the next realm can otherwise delay
       // an already-authorized keyboard/pointer transition for many seconds.
+      window.location.assign(`/${route}?${current.toString()}`)
+      return true
+    }
+
+    const handoffSoftwareThreshold = (event: MouseEvent) => {
+      const target = event.target
+      if (!(target instanceof Element)) return
+      const button = target.closest<HTMLButtonElement>('.life-map-thresholds button')
+      if (!button) return
+      if (!handoffSoftwareThresholdButton(button)) return
       event.preventDefault()
       event.stopImmediatePropagation()
-      window.location.assign(`/${route}?${current.toString()}`)
+    }
+
+    const handoffSoftwareThresholdKeyboard = (event: KeyboardEvent) => {
+      if (event.key !== 'Enter' && event.key !== ' ') return
+      const target = event.target
+      if (!(target instanceof Element)) return
+      const button = target.closest<HTMLButtonElement>('.life-map-thresholds button')
+      if (!button) return
+      if (!handoffSoftwareThresholdButton(button)) return
+      event.preventDefault()
+      event.stopImmediatePropagation()
     }
 
     const primeOverview = (event: MouseEvent) => {
@@ -76,11 +93,13 @@ export default function LifeMapRouteBoundary() {
     }
 
     document.addEventListener('click', handoffSoftwareThreshold, true)
+    document.addEventListener('keydown', handoffSoftwareThresholdKeyboard, true)
     document.addEventListener('click', primeOverview, true)
     return () => {
       window.cancelAnimationFrame(firstFrame)
       if (secondFrame) window.cancelAnimationFrame(secondFrame)
       document.removeEventListener('click', handoffSoftwareThreshold, true)
+      document.removeEventListener('keydown', handoffSoftwareThresholdKeyboard, true)
       document.removeEventListener('click', primeOverview, true)
     }
   }, [router])

@@ -86,7 +86,7 @@ test.describe('Focus exact-head accessibility and movement evidence', () => {
     await expect(focus).toHaveAttribute('data-memory-id', 'demo:quiet-reset')
     await expect(focus.locator('[data-focus-fallback="semantic"]')).toBeVisible()
     await expect(focus.getByText('Spatial view unavailable', { exact: true })).toBeVisible()
-    await expect(focus.getByText('Held in context. Nothing leaves this chamber.', { exact: true })).toBeVisible()
+    await expect(focus.getByText('Held in context. Nothing leaves this memory field.', { exact: true })).toBeVisible()
     const controls = page.getByRole('navigation', { name: 'Focus chamber controls' })
     await expect(controls.getByRole('button', { name: 'Recenter', exact: true })).toBeVisible()
     await expect(controls.getByRole('button', { name: /Open Replay for|Enter Replay/i })).toBeVisible()

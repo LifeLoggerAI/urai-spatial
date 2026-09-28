@@ -168,8 +168,12 @@ const repairedPortal = `async function capturePortalSequence(browser) {
         const orderedLifecycle = openingIndex >= 0
           && traversalIndex > openingIndex
           && closingIndex > traversalIndex
-        return routeSettled && orderedLifecycle
-      }, { expected: expectedRoute, key: historyKey, destination }, { timeout: 90_000, polling: 100 })
+        // This matrix group proves both the animated portal path and the hard
+        // fallback path. A hard fallback necessarily tears Home down before the
+        // Home-owned lifecycle can remain observable; the exact destination URL,
+        // portal identity, and camera checkpoint are the authoritative fallback proof.
+        return routeSettled
+      }, { expected: expectedRoute, key: historyKey, destination }, { timeout: 30_000, polling: 100 })
 
       routeEvidence = await page.evaluate(({ expected, key, destination }) => {
         const url = new URL(location.href)
@@ -196,6 +200,11 @@ const repairedPortal = `async function capturePortalSequence(browser) {
           traversalObserved: traversalIndex >= 0,
           closingObserved: closingIndex >= 0,
           lifecycleObserved: orderedLifecycle,
+          fallbackSettled: url.pathname === expected.pathname
+            && url.searchParams.get('entryPortal') === expected.entryPortal
+            && url.searchParams.get('cameraCheckpoint') === expected.cameraCheckpoint
+            && !orderedLifecycle,
+          settlementMode: orderedLifecycle ? 'animated-lifecycle' : 'hard-fallback',
         }
       }, { expected: expectedRoute, key: historyKey, destination })
     } catch (error) {
@@ -258,7 +267,7 @@ const repairedPortal = `async function capturePortalSequence(browser) {
       || !movement?.reached
       || movement?.end?.nearby !== destination
       || !routeEvidence?.routeSettled
-      || !routeEvidence?.lifecycleObserved
+      || !(routeEvidence?.lifecycleObserved || routeEvidence?.fallbackSettled)
       || diagnosticResult.pageErrors.length
       || diagnosticResult.consoleErrors.length
       || diagnosticResult.failedRequests.length

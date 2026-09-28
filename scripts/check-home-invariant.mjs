@@ -42,7 +42,7 @@ const requiredWorldSignals = [
   'aria-label="URAI Home World threshold"',
   'urai-genesis-home__sky',
   'urai-genesis-home__ground',
-  'urai-genesis-home__body',
+  'urai-genesis-home__open-sky-stars',
   'urai-genesis-home__orb',
   'href="/ground?from=home"',
   'href="/life-map?from=home-sky"',
@@ -65,6 +65,10 @@ const forbiddenPatterns = [
   /loading\s+urai\s+spatial/i,
 ]
 
+if (world.includes('urai-genesis-home__ceiling')) failures.push('Home fallback must not render a ceiling layer')
+if (world.includes('urai-genesis-home__body')) failures.push('Home fallback must not render a visible body in first person')
+if (!world.includes('data-launch-surface="aaa-final-home-open-sky-ground-orb-camera-portals"')) failures.push('Home fallback must expose the open-sky first-person launch marker')
+
 for (const pattern of forbiddenPatterns) {
   for (const [path, source] of [[files.root, root], [files.home, home], [files.threshold, threshold], [files.world, world]]) {
     if (pattern.test(source)) failures.push(`Home invariant violation in ${path}: ${pattern}`)
@@ -77,4 +81,4 @@ if (failures.length > 0) {
   process.exit(1)
 }
 
-console.log('Tier-1 Home invariant passed: / and /home use FinalHomeThreshold -> HomeSpatialWorldFinal with sky, ground, body, orb, portals, keyboard access, and reduced-motion safety.')
+console.log('Tier-1 Home invariant passed: / and /home use FinalHomeThreshold -> HomeSpatialWorldFinal with open sky, ground, camera-only first-person presence, orb, portals, keyboard access, and reduced-motion safety.')

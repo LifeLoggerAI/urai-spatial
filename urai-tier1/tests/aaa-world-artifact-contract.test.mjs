@@ -25,7 +25,9 @@ test('Focus and Replay retain dedicated canonical route owners without a multi-m
   const replayClient = await source('src/app/replay/CinematicReplayClient.tsx')
 
   assert.match(focusPage, /FinalFocusChamber/)
-  assert.match(replayPage, /FinalReplayFilm/)
+  assert.match(replayPage, /CinematicReplayClient/)
+  assert.match(replayPage, /FinalReplayExperience = CinematicReplayClient/)
+  assert.match(replayPage, /replay-immersive-memory-field/)
   assert.match(focusClient, /requestUraiWorldReturn/)
   assert.match(replayClient, /requestUraiWorldReturn/)
   assert.equal(existsSync(new URL('../src/spatial/layout/TierOneExperience.tsx', import.meta.url)), false)

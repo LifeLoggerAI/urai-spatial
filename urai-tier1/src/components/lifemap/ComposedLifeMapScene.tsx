@@ -214,7 +214,7 @@ function phaseLabel(phase: JourneyPhase) {
   if (phase === "departure") return "Leaving overview";
   if (phase === "travel") return "Traveling the memory field";
   if (phase === "approach") return "Entering the chapter";
-  return "Intimate memory chamber";
+  return "Inside the memory star";
 }
 
 export default function ComposedLifeMapScene() {
@@ -236,6 +236,9 @@ export default function ComposedLifeMapScene() {
   const queryNode = safeToken(params.get("node") || params.get("memoryId"));
   const manifestId = safeToken(params.get("manifestId"), DEFAULT_MANIFEST_ID);
   const [selectedId, setSelectedId] = useState<string | null>(overviewRequested ? null : queryNode || null);
+  // A direct selected-memory URL preserves its identity immediately, but does not
+  // claim arrival until that URL id resolves to a real node from the governed data set.
+  // In-app selection still owns departure -> travel -> approach -> arrival.
   const [phase, setPhase] = useState<JourneyPhase>("overview");
   const [webglState, setWebglState] = useState<WebGLState>("ready");
   const journeyToken = useRef(0);

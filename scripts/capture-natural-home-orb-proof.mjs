@@ -26,10 +26,10 @@ const cases = [
 
 await mkdir(outputDir, { recursive: true })
 const receipt = {
-  schemaVersion: 'urai-sacred-home-orb-proof-3',
+  schemaVersion: 'urai-natural-home-orb-proof-4',
   exactHead,
   capturedAt: new Date().toISOString(),
-  runtimeContract: 'sacred-tech-home-real-glb-makehuman-orb-portal-semantic-and-visual-proof',
+  runtimeContract: 'open-sky-bodyless-first-person-home-real-glb-orb-portal-semantic-and-visual-proof',
   orbIdentity: { path: orbPath, bytes: orbBytes.length, sha256: orbSha256, verified: true },
   portalIdentity: { path: portalPath, requiredRuntimeRequest: true },
   cases: [],
@@ -99,7 +99,7 @@ for (const spec of cases) {
     record.orbState = await owner.getAttribute('data-home-orb-state')
     record.orbClip = await owner.getAttribute('data-home-orb-clip')
     record.orbMarkers = await owner.getByTestId('urai-home-webgl-orb').count()
-    record.embodimentMarkers = await owner.getByTestId('urai-home-embodied-avatar').count()
+    record.firstPersonPresenceMarkers = await owner.getByTestId('urai-home-first-person-presence').count()
     const semanticNav = page.getByRole('navigation', { name: 'Accessible Home destinations' })
     record.semanticButtons = await semanticNav.getByRole('button').count()
     record.semanticOwner = await semanticNav.getAttribute('data-home-navigation-owner')
@@ -116,15 +116,14 @@ for (const spec of cases) {
     record.luminanceRange = visual.luminanceRange
     record.visibleSamples = visual.visibleSamples
     record.passed = record.status === 200
-      && record.visibleWorld === 'moonlit-sacred-tech-sanctuary'
-      && record.worldCharacter === 'premium-cinematic-sacred-tech'
-      && record.physicalBase === 'authored-obsidian-ritual-platform'
+      && record.visibleWorld === 'open-sky-inhabited-natural-sanctuary'
+      && record.worldCharacter === 'human-scale-grounded-real-place'
+      && record.physicalBase === 'natural-flagstone-clearing'
       && record.visualOwnership === 'three-dimensional-geometry'
       && record.desktopMobileWorld === 'same-scene'
-      && record.embodiedSelf === 'makehuman-v4'
+      && record.embodiedSelf === 'bodyless-first-person-camera'
       && record.movement === 'walk-keyboard-click-touch'
       && record.runtimeAssets?.includes('home-entry-chamber-v1.glb')
-      && record.runtimeAssets?.includes('home-human-makehuman-v4.glb')
       && record.runtimeAssets?.includes(path.basename(orbPath))
       && record.runtimeAssets?.includes(path.basename(portalPath))
       && record.authoredRegions?.includes('home-sanctuary-pavilion')
@@ -133,7 +132,7 @@ for (const spec of cases) {
       && record.orbState !== null
       && (spec.reducedMotion !== 'reduce' || record.orbClip === 'orb-state-static')
       && record.orbMarkers === 1
-      && record.embodimentMarkers === 1
+      && record.firstPersonPresenceMarkers === 1
       && record.semanticButtons === 3
       && record.semanticOwner === 'runtime-boundary'
       && record.semanticNonDominant === 'true'

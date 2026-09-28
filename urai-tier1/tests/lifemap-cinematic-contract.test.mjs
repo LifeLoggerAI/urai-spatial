@@ -101,13 +101,15 @@ test('Life Map adapts expensive rendering for software GPUs without weakening pr
   assert.equal((world.match(/function RenderProofRepublisher/g) || []).length, 1)
 })
 
-test('Focus and Replay use final static-export-safe cinematic owners', () => {
+test('Focus and Replay use final static-export-safe canonical owners', () => {
   assert.match(focusPage, /FinalFocusChamber/)
-  assert.match(replayPage, /FinalReplayFilm/)
-  assert.match(memorySurfaces, /selected-memory-camera-chamber/)
-  assert.match(memorySurfaces, /cinematic-memory-camera-film/)
+  assert.match(replayPage, /CinematicReplayClient/)
+  assert.match(replayPage, /FinalReplayExperience = CinematicReplayClient/)
+  assert.match(replayPage, /replay-immersive-memory-field/)
+  assert.match(memorySurfaces, /stellar-memory-star-field/)
+  assert.match(memorySurfaces, /immersive-memory-field/)
   assert.match(memorySurfaces, /Camera into Replay/)
-  assert.match(memorySurfaces, /Film beats/)
+  assert.match(memorySurfaces, /Memory beats/)
   assert.doesNotMatch(focusPage, /\[memoryId\]/)
   assert.doesNotMatch(replayPage, /\[memoryId\]/)
 })
