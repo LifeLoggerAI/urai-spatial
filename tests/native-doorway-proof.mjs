@@ -60,7 +60,8 @@ async function resolveTarget(page, doorway) {
     const node = document.querySelector(`[data-testid="${testId}"]`)
     if (!node) return false
     const reactOwned = Object.keys(node).some((key) => key.startsWith('__reactProps') && typeof node[key]?.onClick === 'function')
-    const nativeAnchorOwned = node instanceof HTMLAnchorElement && normalize(node.href) === destination
+    const nativeAnchorOwned = node instanceof HTMLAnchorElement
+      && (new URL(node.href).pathname.replace(/\/$/, '') || '/') === destination
     return reactOwned || nativeAnchorOwned
   }, { testId: doorway.testId, destination: doorway.destination }, { timeout: 45000 })
   const ownership = await target.evaluate((node) => {
