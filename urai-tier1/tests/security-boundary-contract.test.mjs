@@ -14,6 +14,9 @@ const checkoutRoute = fs.readFileSync(new URL("../src/app/api/stripe/create-chec
 const firebaseUser = fs.readFileSync(new URL("../src/lib/server/firebase-user.ts", import.meta.url), "utf8");
 const approvedReturnUrl = fs.readFileSync(new URL("../src/lib/server/approved-return-url.ts", import.meta.url), "utf8");
 const lifeMapSeed = fs.readFileSync(new URL("../scripts/seed-life-map.mjs", import.meta.url), "utf8");
+const deployGuide = fs.readFileSync(new URL("../../docs/DEPLOY_GUIDE.md", import.meta.url), "utf8");
+const lifeMapChecklist = fs.readFileSync(new URL("../docs/LIFEMAP_QA_CHECKLIST.md", import.meta.url), "utf8");
+const envExample = fs.readFileSync(new URL("../.env.example", import.meta.url), "utf8");
 
 test("static provider paths cannot shadow authenticated Firebase rewrites", () => {
   for (const route of staticProviderRoutes) assert.equal(fs.existsSync(route), false);
@@ -65,4 +68,14 @@ test("Life Map seed rejects long-lived Google credentials before Firestore write
   assert.match(lifeMapSeed, /FIREBASE_SERVICE_ACCOUNT_JSON/);
   assert.match(lifeMapSeed, /GOOGLE_APPLICATION_CREDENTIALS/);
   assert.match(lifeMapSeed, /applicationDefault\(\)/);
+});
+
+
+test("WIF operator documentation matches the file-backed external-account runtime guard", () => {
+  for (const source of [deployGuide, lifeMapChecklist, envExample]) {
+    assert.match(source, /external[_ -]account/i);
+    assert.doesNotMatch(source, /provider-managed ADC/i);
+  }
+  assert.match(lifeMapChecklist, /GOOGLE_APPLICATION_CREDENTIALS=\/path\/to\/protected-external-account\.json/);
+  assert.doesNotMatch(lifeMapChecklist, /FIREBASE_PROJECT_ID=<project-id> pnpm seed:lifemap/);
 });
