@@ -31,10 +31,10 @@ const repairedPortal = `async function capturePortalSequence(browser) {
   async function movePortalToNearby(page, destination) {
     const target = destinationTelemetry[destination]
     const focus = await clearEditableFocus(page)
-    if (focus.afterEditable) throw new Error(`Home portal proof could not clear editable focus before movement: ${JSON.stringify(focus)}`)
+    if (focus.afterEditable) throw new Error('Home portal proof could not clear editable focus before movement: ' + JSON.stringify(focus))
     const start = await readMovementTelemetry(page, destination)
     if (start.playerX == null || start.playerZ == null || start.distanceToTarget == null) {
-      throw new Error(`Home portal steering telemetry was incomplete for ${destination}: ${JSON.stringify(start)}`)
+      throw new Error('Home portal steering telemetry was incomplete for ' + destination + ': ' + JSON.stringify(start))
     }
 
     const active = new Set()
@@ -129,7 +129,7 @@ const repairedPortal = `async function capturePortalSequence(browser) {
       || end.nearby !== destination
       || end.distanceToTarget == null
       || end.distanceToTarget > target.radius) {
-      const error = new Error(`Home portal adaptive steering did not reach ${destination}: ${JSON.stringify(evidence)}`)
+      const error = new Error('Home portal adaptive steering did not reach ' + destination + ': ' + JSON.stringify(evidence))
       error.evidence = evidence
       throw error
     }
