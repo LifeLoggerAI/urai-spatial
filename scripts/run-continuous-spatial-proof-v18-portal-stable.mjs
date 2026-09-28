@@ -135,24 +135,57 @@ const repairedPortal = `async function capturePortalSequence(browser) {
       const focus = await clearEditableFocus(page)
       if (focus.afterEditable) throw new Error(\`Home portal proof retained editable focus before \${destination}: \${JSON.stringify(focus)}\`)
 
-      await page.evaluate(({ selector, key }) => {
+      await page.evaluate(({ selector, key, destination }) => {
         const owner = document.querySelector(selector)
         if (!owner) throw new Error('Home portal proof owner is missing before activation')
-        const write = (phase) => {
+        const write = (phase, evidence = {}) => {
           const current = JSON.parse(sessionStorage.getItem(key) || '{"phases":[]}')
-          if (phase && current.phases.at(-1)?.phase !== phase) current.phases.push({ phase, at: Date.now() })
+          if (phase && current.phases.at(-1)?.phase !== phase) current.phases.push({ phase, at: Date.now(), ...evidence })
           current.lastUrl = location.href
           sessionStorage.setItem(key, JSON.stringify(current))
         }
+        const recordRuntimeTraversal = () => {
+          const cameraMode = owner.getAttribute('data-home-camera-mode')
+          const scenePhase = owner.getAttribute('data-home-scene-phase')
+          const traversing = destination === 'ground'
+            ? cameraMode === 'ground' && scenePhase === 'GROUND'
+            : cameraMode === 'life-map' && scenePhase === 'LIFE-MAP'
+          if (!traversing) return
+          const current = JSON.parse(sessionStorage.getItem(key) || '{"phases":[]}')
+          const traversal = destination + ':traversal'
+          if (!current.phases.some((entry) => entry.phase === traversal)) {
+            current.phases.push({ phase: traversal, at: Date.now(), source: 'runtime-state-sync', cameraMode, scenePhase })
+            current.lastUrl = location.href
+            sessionStorage.setItem(key, JSON.stringify(current))
+          }
+        }
         sessionStorage.setItem(key, JSON.stringify({ phases: [], startedAt: Date.now(), lastUrl: location.href }))
         write(owner.getAttribute('data-home-portal-sequence'))
-        const observer = new MutationObserver(() => write(owner.getAttribute('data-home-portal-sequence')))
-        observer.observe(owner, { attributes: true, attributeFilter: ['data-home-portal-sequence'] })
+        recordRuntimeTraversal()
+
+        const originalSetAttribute = Element.prototype.setAttribute
+        Element.prototype.setAttribute = function(name, value) {
+          originalSetAttribute.call(this, name, value)
+          if (this !== owner) return
+          if (name === 'data-home-portal-sequence') write(String(value))
+          if (name === 'data-home-camera-mode' || name === 'data-home-scene-phase') recordRuntimeTraversal()
+        }
+
+        const observer = new MutationObserver(() => {
+          write(owner.getAttribute('data-home-portal-sequence'))
+          recordRuntimeTraversal()
+        })
+        observer.observe(owner, {
+          attributes: true,
+          attributeFilter: ['data-home-portal-sequence', 'data-home-camera-mode', 'data-home-scene-phase'],
+        })
         window.addEventListener('pagehide', () => {
           write(owner.getAttribute('data-home-portal-sequence'))
+          recordRuntimeTraversal()
           observer.disconnect()
+          Element.prototype.setAttribute = originalSetAttribute
         }, { once: true })
-      }, { selector: ownerSelector, key: historyKey })
+      }, { selector: ownerSelector, key: historyKey, destination })
 
       await page.keyboard.press('Enter')
       await page.waitForFunction(({ expected, key, destination }) => {
@@ -168,12 +201,8 @@ const repairedPortal = `async function capturePortalSequence(browser) {
         const orderedLifecycle = openingIndex >= 0
           && traversalIndex > openingIndex
           && closingIndex > traversalIndex
-        // This matrix group proves both the animated portal path and the hard
-        // fallback path. A hard fallback necessarily tears Home down before the
-        // Home-owned lifecycle can remain observable; the exact destination URL,
-        // portal identity, and camera checkpoint are the authoritative fallback proof.
-        return routeSettled
-      }, { expected: expectedRoute, key: historyKey, destination }, { timeout: 30_000, polling: 100 })
+        return routeSettled && orderedLifecycle
+      }, { expected: expectedRoute, key: historyKey, destination }, { timeout: 90_000, polling: 100 })
 
       routeEvidence = await page.evaluate(({ expected, key, destination }) => {
         const url = new URL(location.href)
@@ -200,11 +229,6 @@ const repairedPortal = `async function capturePortalSequence(browser) {
           traversalObserved: traversalIndex >= 0,
           closingObserved: closingIndex >= 0,
           lifecycleObserved: orderedLifecycle,
-          fallbackSettled: url.pathname === expected.pathname
-            && url.searchParams.get('entryPortal') === expected.entryPortal
-            && url.searchParams.get('cameraCheckpoint') === expected.cameraCheckpoint
-            && !orderedLifecycle,
-          settlementMode: orderedLifecycle ? 'animated-lifecycle' : 'hard-fallback',
         }
       }, { expected: expectedRoute, key: historyKey, destination })
     } catch (error) {
@@ -267,7 +291,7 @@ const repairedPortal = `async function capturePortalSequence(browser) {
       || !movement?.reached
       || movement?.end?.nearby !== destination
       || !routeEvidence?.routeSettled
-      || !(routeEvidence?.lifecycleObserved || routeEvidence?.fallbackSettled)
+      || !routeEvidence?.lifecycleObserved
       || diagnosticResult.pageErrors.length
       || diagnosticResult.consoleErrors.length
       || diagnosticResult.failedRequests.length

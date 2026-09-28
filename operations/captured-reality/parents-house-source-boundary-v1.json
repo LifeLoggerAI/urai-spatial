@@ -1,0 +1,19 @@
+{
+  "schemaVersion": "urai-captured-reality-source-boundary-receipt-1",
+  "classification": "VERIFIED_SOURCE_BOUNDARY_NOT_RECONSTRUCTION_RECEIPT",
+  "privateSourceSet": "parents-house-september-16",
+  "exactDriveIdsStoredOnlyInPrivateDriveAuthority": true,
+  "sourceCount": 3,
+  "observedByteSizes": [
+    852565850,
+    455441470,
+    921752576
+  ],
+  "observedVisibility": "owner-only",
+  "rawConnectorDownloadCeilingBytes": 268435456,
+  "smallestSourceExceedsConnectorCeiling": true,
+  "rawTransferAttemptResult": "HTTP_413_FILE_TOO_LARGE",
+  "originalMutationPerformed": false,
+  "reconstructionClaimed": false,
+  "requiredNextEvidence": "authorized derivatives below transfer ceiling or direct reconstruction workstation access to originals"
+}

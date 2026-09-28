@@ -98,10 +98,25 @@ function rectanglesOverlap(a, b, gap = 0) {
   );
 }
 
-async function expectNoOverlap(first, second, label, gap = 2) {
-  const firstBox = await first.boundingBox();
-  const secondBox = await second.boundingBox();
-  if (!firstBox || !secondBox) throw new Error(`${label}: missing measurable bounding box`);
+async function expectNoOverlap(first, second, label, gap = 2, timeout = 10000) {
+  const started = Date.now();
+  let firstBox = null;
+  let secondBox = null;
+  while (Date.now() - started < timeout) {
+    [firstBox, secondBox] = await Promise.all([
+      first.boundingBox().catch(() => null),
+      second.boundingBox().catch(() => null),
+    ]);
+    if (
+      firstBox && secondBox
+      && firstBox.width > 0 && firstBox.height > 0
+      && secondBox.width > 0 && secondBox.height > 0
+    ) break;
+    await sleep(100);
+  }
+  if (!firstBox || !secondBox || firstBox.width <= 0 || firstBox.height <= 0 || secondBox.width <= 0 || secondBox.height <= 0) {
+    throw new Error(`${label}: missing stable measurable bounding box`);
+  }
   if (rectanglesOverlap(firstBox, secondBox, gap)) {
     throw new Error(`${label}: controls overlap (${JSON.stringify({ firstBox, secondBox, gap })})`);
   }
@@ -156,6 +171,7 @@ async function validateReplay(page, report, screenshotName) {
   await expectAttribute(client, 'data-playing', 'false');
   await expectVisible(controls, 'Replay memory-time controls');
   await expectVisible(productControls, 'Replay memory controls');
+  await expectVisible(heading, 'Replay heading');
   await expectVisible(companion, 'persistent Orb travel control');
   await expectVisible(caption, 'Replay caption');
   await expectVisible(unwind, 'Replay unwind control');
