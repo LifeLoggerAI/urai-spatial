@@ -97,7 +97,6 @@ async function prove(browser, doorway, testCase) {
     await page.goto(`${baseUrl}/home`, { waitUntil: 'domcontentloaded', timeout: 60000 })
     await page.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => {})
     const target = await resolveTarget(page, doorway)
-    const navigationDeadline = Date.now() + 20000
     record.legacyVisibleDoorways = await page.locator('.urai-final-home-doorways:visible').count()
     record.semanticNavigationNonDominant = await target.evaluate((node) => {
       const nav = node.closest('nav')
@@ -115,7 +114,13 @@ async function prove(browser, doorway, testCase) {
     const activation = await activate(page, target, testCase.method)
     record.targetOwnsHitPoint = activation.targetOwnsHitPoint
     record.hitPoint = activation.hitPoint
-    await page.waitForURL((url) => normalize(url.toString()) === doorway.destination, { waitUntil: 'commit', timeout: Math.max(1, navigationDeadline - Date.now()) })
+    const navigationDeadline = Date.now() + 20000
+    if (normalize(page.url()) !== doorway.destination) {
+      await page.waitForURL(
+        (url) => normalize(url.toString()) === doorway.destination,
+        { waitUntil: 'commit', timeout: Math.max(1, navigationDeadline - Date.now()) },
+      )
+    }
     record.resultingUrl = page.url()
     record.success = normalize(record.resultingUrl) === doorway.destination
   } catch (error) {
