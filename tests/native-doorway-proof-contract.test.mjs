@@ -28,8 +28,10 @@ test('pointer and touch retain real browser-coordinate hit ownership', () => {
 })
 
 
-test('doorway activation preserves the unchanged 20-second route handoff budget after control hydration', () => {
-  assert.match(proof, /const navigationDeadline = Date\.now\(\) \+ 20000/)
+test('doorway activation preserves the unchanged 20-second route handoff budget from actual activation', () => {
+  assert.match(proof, /const activation = await activate\(page, target, testCase\.method\)[\s\S]*const navigationDeadline = Date\.now\(\) \+ 20000/)
+  assert.doesNotMatch(proof, /const navigationDeadline = Date\.now\(\) \+ 20000[\s\S]*const activation = await activate\(page, target, testCase\.method\)/)
+  assert.match(proof, /if \(normalize\(page\.url\(\)\) !== doorway\.destination\)/)
   assert.match(proof, /timeout: Math\.max\(1, navigationDeadline - Date\.now\(\)\)/)
   assert.match(proof, /typeof node\[key\]\?\.onClick === 'function'/)
 })
