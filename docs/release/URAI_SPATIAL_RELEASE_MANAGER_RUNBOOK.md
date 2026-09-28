@@ -6,7 +6,7 @@ Provide the controlled procedure for attempting a live release of `LifeLoggerAI/
 
 ## Current release posture
 
-`NO-GO` until production Workload Identity Federation / managed ADC, least-privilege IAM, runtime identity read-back, historical key revocation, rollback evidence, and required signoffs are independently verified.
+`NO-GO` until production file-backed external-account Workload Identity Federation, least-privilege IAM, runtime identity read-back, historical key revocation, rollback evidence, and required signoffs are independently verified.
 
 Long-lived Firebase service-account JSON, private keys, and Firebase CI tokens are prohibited in the canonical production path.
 
@@ -23,7 +23,7 @@ Before execution mode:
 - rollback owner
 - deploy scope
 - release candidate SHA
-- approved production WIF/ADC service identity
+- approved production external-account WIF service identity
 
 ## Required Tools / Access
 
@@ -31,7 +31,7 @@ Before execution mode:
 - approved runner or workstation
 - Node/pnpm runtime matching repo requirements
 - GitHub Actions access if workflow dispatch is used
-- Google Cloud/Firebase access through managed ADC or Workload Identity Federation
+- Google Cloud/Firebase access through the protected file-backed external-account Workload Identity Federation path
 - artifact storage for logs and release evidence
 
 ## Required Repo Variables / Identity
@@ -41,8 +41,8 @@ Non-secret configuration:
 - `URAI_SPATIAL_PRODUCTION_URL` when the default smoke URL is not appropriate
 
 Production authentication:
-- protected WIF provider configuration and a least-privilege workflow-specific service account, or provider-managed ADC in the production runtime
-- `GOOGLE_APPLICATION_CREDENTIALS` may point only to a protected `external_account` configuration when a file-backed ADC configuration is required
+- protected WIF provider configuration, a least-privilege workflow-specific service account, and a protected file-backed `external_account` configuration
+- `GOOGLE_APPLICATION_CREDENTIALS` may point only to a protected `external_account` configuration for the canonical production runtime
 
 Prohibited credential paths:
 - `FIREBASE_SERVICE_ACCOUNT`
@@ -64,7 +64,7 @@ Prohibited credential paths:
 
 Before any production mutation:
 1. Prove no prohibited long-lived credential variable is present.
-2. Authenticate through approved WIF/managed ADC.
+2. Authenticate through approved file-backed external-account WIF.
 3. Confirm the active Google identity exactly matches the approved production service account.
 4. Confirm project ID equals the approved production project.
 5. Verify least-privilege IAM bindings.
@@ -87,7 +87,7 @@ Deployment remains prohibited until the current quarantine workflow is intention
 
 When that change is approved:
 1. Verify all non-deploying gates passed on the locked SHA.
-2. Verify approved project and active WIF/ADC identity.
+2. Verify approved project and active external-account WIF identity.
 3. Execute only the approved deploy scope.
 4. Preserve full deploy logs.
 5. Record SHA, project ID, active service identity, deploy method, deploy scope, timestamp, and result.
@@ -106,7 +106,7 @@ When that change is approved:
 Source removal is containment only. Provider closure requires:
 1. inventory the current user-managed service-account keys;
 2. map dependencies where evidence is available;
-3. migrate workloads to WIF/managed ADC;
+3. migrate workloads to file-backed external-account WIF;
 4. verify production/staging behavior without the target key;
 5. disable the target key first;
 6. verify no regression and verify old-key authentication fails;
@@ -119,7 +119,7 @@ A `GO` requires all of the following:
 - execution mode explicitly approved;
 - one locked release SHA;
 - release gates pass on that SHA;
-- approved WIF/ADC identity and least-privilege IAM proven;
+- approved external-account WIF identity and least-privilege IAM proven;
 - historical compromised-key closure proven;
 - deploy completes from the locked SHA;
 - live smoke passes;
