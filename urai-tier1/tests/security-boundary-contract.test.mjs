@@ -20,6 +20,8 @@ const envExample = fs.readFileSync(new URL("../.env.example", import.meta.url), 
 const productionSecretsGuide = fs.readFileSync(new URL("../../docs/PRODUCTION_SECRETS.md", import.meta.url), "utf8");
 const deploymentGuide = fs.readFileSync(new URL("../../DEPLOYMENT.md", import.meta.url), "utf8");
 const productionAudit = fs.readFileSync(new URL("../../docs/PRODUCTION_AUDIT.md", import.meta.url), "utf8");
+const releaseManagerRunbook = fs.readFileSync(new URL("../../docs/release/URAI_SPATIAL_RELEASE_MANAGER_RUNBOOK.md", import.meta.url), "utf8");
+const productionReadiness = fs.readFileSync(new URL("../../docs/PRODUCTION_READINESS.md", import.meta.url), "utf8");
 
 test("static provider paths cannot shadow authenticated Firebase rewrites", () => {
   for (const route of staticProviderRoutes) assert.equal(fs.existsSync(route), false);
@@ -75,7 +77,7 @@ test("Life Map seed rejects long-lived Google credentials before Firestore write
 
 
 test("WIF operator documentation matches the file-backed external-account runtime guard", () => {
-  for (const source of [deployGuide, lifeMapChecklist, envExample, productionSecretsGuide, deploymentGuide, productionAudit]) {
+  for (const source of [deployGuide, lifeMapChecklist, envExample, productionSecretsGuide, deploymentGuide, productionAudit, releaseManagerRunbook, productionReadiness]) {
     assert.match(source, /external[_ -]account/i);
     assert.doesNotMatch(source, /provider-managed ADC/i);
   }
@@ -86,4 +88,8 @@ test("WIF operator documentation matches the file-backed external-account runtim
   assert.doesNotMatch(productionAudit, /Add `FIREBASE_SERVICE_ACCOUNT_JSON`/);
   assert.doesNotMatch(productionAudit, /FIREBASE_SERVICE_ACCOUNT_JSON must be valid JSON/);
   assert.match(productionSecretsGuide, /Metadata-backed implicit ADC is not supported/);
+  assert.doesNotMatch(releaseManagerRunbook, /managed ADC|provider-managed ADC/i);
+  assert.doesNotMatch(productionReadiness, /managed ADC|provider-managed ADC/i);
+  assert.match(releaseManagerRunbook, /file-backed external-account Workload Identity Federation/);
+  assert.match(productionReadiness, /file-backed external-account Workload Identity Federation/);
 });
