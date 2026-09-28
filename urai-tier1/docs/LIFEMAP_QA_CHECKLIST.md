@@ -10,19 +10,14 @@ pnpm --filter urai-tier1 build
 pnpm --filter urai-tier1 test:lifemap
 ```
 
-Optional Firestore demo seed:
-
-```bash
-cd urai-tier1
-FIREBASE_PROJECT_ID=<project-id> pnpm seed:lifemap -- --user=demo-user
-```
-
-For authenticated Firestore seeding, use Application Default Credentials. On developer machines, authenticate with an approved short-lived/provider-managed ADC flow. In CI or production-like environments, use the protected external-account Workload Identity Federation path. Do not use service-account JSON/private-key credentials.
+Optional Firestore demo seed (requires the same protected file-backed external-account WIF configuration as the hardened server runtime):
 
 ```bash
 cd urai-tier1
 FIREBASE_PROJECT_ID=<project-id> GOOGLE_APPLICATION_CREDENTIALS=/path/to/protected-external-account.json pnpm seed:lifemap -- --user=demo-user
 ```
+
+The seed script intentionally rejects credentialless/provider-managed ADC and any service-account JSON/private-key credential. Use only a protected `external_account` Workload Identity Federation configuration file.
 
 ## Route Smoke Test
 
