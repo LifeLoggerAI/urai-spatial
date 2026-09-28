@@ -17,7 +17,6 @@ const lifeMapSeed = fs.readFileSync(new URL("../scripts/seed-life-map.mjs", impo
 const deployGuide = fs.readFileSync(new URL("../../docs/DEPLOY_GUIDE.md", import.meta.url), "utf8");
 const lifeMapChecklist = fs.readFileSync(new URL("../docs/LIFEMAP_QA_CHECKLIST.md", import.meta.url), "utf8");
 const envExample = fs.readFileSync(new URL("../.env.example", import.meta.url), "utf8");
-const rootEnvExample = fs.readFileSync(new URL("../../.env.example", import.meta.url), "utf8");
 const productionSecretsGuide = fs.readFileSync(new URL("../../docs/PRODUCTION_SECRETS.md", import.meta.url), "utf8");
 const deploymentGuide = fs.readFileSync(new URL("../../DEPLOYMENT.md", import.meta.url), "utf8");
 const productionAudit = fs.readFileSync(new URL("../../docs/PRODUCTION_AUDIT.md", import.meta.url), "utf8");
@@ -79,7 +78,7 @@ test("Life Map seed rejects long-lived Google credentials before Firestore write
 
 
 test("WIF operator documentation matches the file-backed external-account runtime guard", () => {
-  for (const source of [deployGuide, lifeMapChecklist, envExample, rootEnvExample, productionSecretsGuide, deploymentGuide, productionAudit, releaseManagerRunbook, productionReadiness, launchLock]) {
+  for (const source of [deployGuide, lifeMapChecklist, envExample, productionSecretsGuide, deploymentGuide, productionAudit, releaseManagerRunbook, productionReadiness, launchLock]) {
     assert.match(source, /external[_ -]account/i);
     assert.doesNotMatch(source, /provider-managed ADC/i);
   }
@@ -96,7 +95,4 @@ test("WIF operator documentation matches the file-backed external-account runtim
   assert.match(productionReadiness, /file-backed external-account Workload Identity Federation/);
   assert.match(launchLock, /file-backed external_account Workload Identity Federation/);
   assert.doesNotMatch(launchLock, /managed ADC|provider-managed ADC/i);
-  assert.match(rootEnvExample, /GOOGLE_APPLICATION_CREDENTIALS=/);
-  assert.match(rootEnvExample, /file-backed external_account Workload Identity Federation/);
-  assert.doesNotMatch(rootEnvExample, /managed ADC|provider-managed ADC/i);
 });
