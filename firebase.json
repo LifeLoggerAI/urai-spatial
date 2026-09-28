@@ -74,5 +74,8 @@
     "predeploy": [
       "pnpm --filter urai-functions build"
     ]
+  },
+  "storage": {
+    "rules": "firebase/storage.rules"
   }
 }
