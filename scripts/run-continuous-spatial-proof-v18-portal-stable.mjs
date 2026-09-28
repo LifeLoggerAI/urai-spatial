@@ -152,7 +152,9 @@ const repairedPortal = `async function capturePortalSequence(browser) {
             : cameraMode === 'life-map' && scenePhase === 'LIFE-MAP'
           if (!traversing) return
           const current = JSON.parse(sessionStorage.getItem(key) || '{"phases":[]}')
+          const opening = destination + ':opening'
           const traversal = destination + ':traversal'
+          if (!current.phases.some((entry) => entry.phase === opening)) return
           if (!current.phases.some((entry) => entry.phase === traversal)) {
             current.phases.push({ phase: traversal, at: Date.now(), source: 'runtime-state-sync', cameraMode, scenePhase })
             current.lastUrl = location.href
