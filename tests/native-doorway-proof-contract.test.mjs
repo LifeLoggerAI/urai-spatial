@@ -4,9 +4,8 @@ import test from 'node:test'
 
 const proof = await readFile(new URL('./native-doorway-proof.mjs', import.meta.url), 'utf8')
 
-test('keyboard doorway activation waits for Home readiness and uses visible browser-native focus', () => {
-  assert.match(proof, /async function waitForHomeActionsReady/)
-  assert.match(proof, /owner\.dataset\.homeAssetsReady !== 'true'/)
+test('keyboard doorway activation uses hydrated semantic controls and visible browser-native focus', () => {
+  assert.doesNotMatch(proof, /waitForHomeActionsReady/)
   assert.match(proof, /navigationDeadline = Date\.now\(\) \+ 20000/)
   assert.match(proof, /async function activate\(page, target, method\)[\s\S]*page\.keyboard\.press\('Tab'\)/)
   assert.match(proof, /node\.matches\(':focus-visible'\)/)
@@ -29,8 +28,10 @@ test('pointer and touch retain real browser-coordinate hit ownership', () => {
 })
 
 
-test('doorway activation uses a single unchanged 20-second budget for readiness and route handoff', () => {
-  assert.match(proof, /const navigationDeadline = Date\.now\(\) \+ 20000/)
-  assert.match(proof, /waitForHomeActionsReady\(page, Math\.max\(1, navigationDeadline - Date\.now\(\)\)\)/)
+test('doorway activation preserves the unchanged 20-second route handoff budget from actual activation', () => {
+  assert.match(proof, /const activation = await activate\(page, target, testCase\.method\)[\s\S]*const navigationDeadline = Date\.now\(\) \+ 20000/)
+  assert.doesNotMatch(proof, /const navigationDeadline = Date\.now\(\) \+ 20000[\s\S]*const activation = await activate\(page, target, testCase\.method\)/)
+  assert.match(proof, /if \(normalize\(page\.url\(\)\) !== doorway\.destination\)/)
   assert.match(proof, /timeout: Math\.max\(1, navigationDeadline - Date\.now\(\)\)/)
+  assert.match(proof, /typeof node\[key\]\?\.onClick === 'function'/)
 })

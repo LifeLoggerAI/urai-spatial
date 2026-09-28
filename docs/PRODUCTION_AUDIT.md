@@ -53,7 +53,7 @@ These cannot be completed inside the repository alone:
 - Create/verify Firebase project.
 - Enable Firebase Auth Email/Password provider.
 - Enable Firestore.
-- Add `FIREBASE_SERVICE_ACCOUNT_JSON` as a production secret.
+- Configure `GOOGLE_APPLICATION_CREDENTIALS` to a protected file-backed `external_account` Workload Identity Federation configuration; do not use service-account JSON/private keys.
 - Create Stripe products/prices.
 - Add Stripe webhook endpoint to `/api/stripe/webhook-v2`.
 - Add all hosting environment variables.
@@ -75,9 +75,9 @@ This audit did not run a live `pnpm build` or `pnpm typecheck` against the repos
 
 Root `src/...` contains an older parallel SaaS surface. Runtime scripts currently build `urai-tier1`; future cleanup should either delete the root duplicate or explicitly mark it as non-runtime to avoid confusion.
 
-### RISK: Service account env formatting
+### RISK: Google/Firebase runtime identity
 
-`FIREBASE_SERVICE_ACCOUNT_JSON` must be valid JSON in the hosting environment. If newline escaping causes deployment failure, convert to a base64-based secret in a future hardening pass.
+The historical service-account JSON path is prohibited. Production must provide a protected file-backed `external_account` Workload Identity Federation configuration through `GOOGLE_APPLICATION_CREDENTIALS`. The runtime guard rejects service-account/private-key material and metadata-backed implicit ADC; verify the WIF audience, provider, least-privilege service account, file protection, token exchange, and revocation/rollback path before launch.
 
 ### RISK: Local insight persistence
 

@@ -45,6 +45,7 @@ test('Home keeps one capability-aware accessible fallback', () => {
 
 test('Home keeps direct semantic Ground, Orb, and Life Map navigation in the runtime boundary', () => {
   assert.match(runtime, /requestUraiWorldOrbOpen/)
+  assert.match(runtime, /requestUraiWorldDirectTravel/)
   assert.match(runtime, /href: '\/ground\/'/)
   assert.match(runtime, /aria-label="Open Life Map directly"/)
   assert.match(runtime, /href: '\/life-map\/'/)
