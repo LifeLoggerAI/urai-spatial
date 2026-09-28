@@ -115,7 +115,7 @@ test('Home Life Map entry is one canonical sky ascent transaction with one camer
   assert.match(homeProduction, /transition==='life-map'/)
   assert.match(homeProduction, /setProgress\(t\)/)
   assert.match(homeProduction, /cameraCheckpoint:'home-sky-ascent-complete'/)
-  assert.match(homeProduction, /data-home-camera-mode=\{transition!=='none'\?transition:dragging\?'look':'embodied-third-person'\}/)
+  assert.match(homeProduction, /data-home-camera-mode=\{transition!=='none'\?transition:dragging\?'look':'embodied-first-person'\}/)
   assert.match(homeProduction, /data-home-input-locked=\{transition!=='none'\?'true':'false'\}/)
   assert.match(homeProduction, /store\.setPhase\('HOME'\)/)
   assert.match(homeProduction, /store\.unlock\(\)/)
