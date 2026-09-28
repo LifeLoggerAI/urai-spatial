@@ -59,7 +59,7 @@ function markHomeAscentClosing(request: UraiWorldTravelRequest) {
   owner.setAttribute('data-home-portal-sequence', 'life-map:closing')
 }
 
-export function requestUraiWorldTravel(request: UraiWorldTravelRequest) {
+function requestUraiWorldTravelWithMode(request: UraiWorldTravelRequest, mode: 'transitioned' | 'direct') {
   if (typeof window === 'undefined') return
 
   if (shouldBeginHomeAscent(request)) {
@@ -87,6 +87,11 @@ export function requestUraiWorldTravel(request: UraiWorldTravelRequest) {
   const fallbackHref = buildFallbackHref(request)
   if (!fallbackHref) return
 
+  if (mode === 'direct') {
+    commitHardFallback(fallbackHref)
+    return
+  }
+
   let settled = false
   let observer = 0
   const fallback = window.setTimeout(() => {
@@ -104,6 +109,14 @@ export function requestUraiWorldTravel(request: UraiWorldTravelRequest) {
     window.clearTimeout(fallback)
     window.clearInterval(observer)
   }, WORLD_TRAVEL_OBSERVE_MS)
+}
+
+export function requestUraiWorldTravel(request: UraiWorldTravelRequest) {
+  requestUraiWorldTravelWithMode(request, 'transitioned')
+}
+
+export function requestUraiWorldDirectTravel(request: UraiWorldTravelRequest) {
+  requestUraiWorldTravelWithMode(request, 'direct')
 }
 
 export function requestUraiWorldReturn() {
