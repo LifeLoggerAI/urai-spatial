@@ -11,7 +11,7 @@ test.describe('URAI visual ownership and containment evidence', () => {
     await expect(navigation).toBeVisible({ timeout: 30_000 })
     await expect(navigation).toHaveAttribute('data-home-navigation-non-dominant', 'true')
     await expect(navigation.getByRole('button', { name: 'Open Ground directly', exact: true })).toBeVisible()
-    await expect(navigation.getByRole('button', { name: 'Open Life Map directly', exact: true })).toBeVisible()
+    await expect(navigation.getByRole('link', { name: 'Open Life Map directly', exact: true })).toBeVisible()
   })
 
   test('Life Map movement help is keyboard-operable', async ({ page }) => {
