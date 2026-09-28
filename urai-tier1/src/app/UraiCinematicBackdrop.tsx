@@ -31,15 +31,15 @@ const routeArt = {
   },
   focus: {
     surface: 'focus',
-    label: 'Focus chamber bespoke final',
-    primary: '/assets/urai/bespoke/focus/focus-memory-chamber-bespoke-final.svg',
-    mobile: '/assets/urai/bespoke/focus/focus-memory-chamber-bespoke-final-mobile.svg',
+    label: 'Focus stellar Memory Star field',
+    primary: '/assets/urai/life-map/life-map-galaxy-main.webp',
+    mobile: '/assets/urai/life-map/life-map-galaxy-mobile.webp',
   },
   replay: {
     surface: 'replay',
-    label: 'Replay film bespoke final',
-    primary: '/assets/urai/bespoke/replay/replay-memory-film-bespoke-final.svg',
-    mobile: '/assets/urai/bespoke/replay/replay-memory-film-bespoke-final-mobile.svg',
+    label: 'Replay immersive memory field',
+    primary: '/assets/urai/life-map/life-map-galaxy-main.webp',
+    mobile: '/assets/urai/life-map/life-map-galaxy-mobile.webp',
   },
   mirror: {
     surface: 'mirror',

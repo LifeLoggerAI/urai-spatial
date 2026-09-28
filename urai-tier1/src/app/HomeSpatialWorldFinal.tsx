@@ -144,7 +144,7 @@ export default function HomeSpatialWorldFinal() {
       className="urai-genesis-home urai-home-spatial-world-final"
       aria-label="URAI Home World threshold"
       data-urai-route="genesis-home-world"
-      data-launch-surface="aaa-final-home-sky-ground-orb-body-portals"
+      data-launch-surface="aaa-final-home-open-sky-ground-orb-camera-portals"
       data-transition-target={transitionTarget ?? 'idle'}
       data-home-avatar-orb="anchored-at-home"
       onPointerMove={handlePointerMove}
@@ -159,7 +159,7 @@ export default function HomeSpatialWorldFinal() {
         <div className="urai-genesis-home__aurora urai-genesis-home__aurora--one" />
         <div className="urai-genesis-home__aurora urai-genesis-home__aurora--two" />
         <div className="urai-genesis-home__aurora urai-genesis-home__aurora--three" />
-        <div className="urai-genesis-home__ceiling">
+        <div className="urai-genesis-home__open-sky-stars">
           {stars.map((star) => <span key={star} className={`urai-genesis-home__star urai-genesis-home__star--${(star % 18) + 1}`} />)}
         </div>
         <div className="urai-genesis-home__memory-dust">
@@ -185,15 +185,6 @@ export default function HomeSpatialWorldFinal() {
         <div className="urai-genesis-home__plinth" />
         <div className="urai-genesis-home__plinth-light" />
         <div className="urai-genesis-home__reflection" />
-        <div className="urai-genesis-home__body">
-          <span className="urai-genesis-home__body-aura" />
-          <span className="urai-genesis-home__body-orbit urai-genesis-home__body-orbit--one" />
-          <span className="urai-genesis-home__body-orbit urai-genesis-home__body-orbit--two" />
-          <span className="urai-genesis-home__body-core" />
-          <span className="urai-genesis-home__body-column" />
-          <span className="urai-genesis-home__body-feet" />
-          <span className="urai-genesis-home__body-shadow" />
-        </div>
         <div className="urai-genesis-home__world-vignette" />
       </div>
 
@@ -237,7 +228,7 @@ export default function HomeSpatialWorldFinal() {
         </div>
       </section>
 
-      <div className="urai-genesis-home__memory-orbit" aria-label="Home threshold status"><strong>Threshold online</strong><span>body grounded · camera travels</span></div>
+      <div className="urai-genesis-home__memory-orbit" aria-label="Home threshold status"><strong>Threshold online</strong><span>grounded presence · camera travels</span></div>
 
       <button type="button" className="urai-genesis-home__orb" aria-label="Open URAI orb companion" aria-expanded={orbOpen} aria-controls="urai-orb-companion-panel" onClick={() => { primeTransition('orb'); setOrbOpen((open) => !open); }}>
         <span className="urai-genesis-home__orb-aura" />

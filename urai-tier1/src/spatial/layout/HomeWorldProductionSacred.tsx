@@ -13,7 +13,6 @@ import styles from './HomeWorldProduction.module.css'
 const SANCTUARY = '/assets/urai/generated/models/home-entry-chamber-v1.glb'
 const ORB_MODEL = '/assets/urai/generated/models/urai-orb-avatar-v1.glb'
 const PORTAL_MODEL = '/assets/urai/generated/models/portal-ring-master-v1.glb'
-const HUMAN = '/assets/urai/generated/human-makehuman-v4/home-human-makehuman-v4.glb'
 const FERN_MODEL = '/assets/urai/home-production/cc0/polyhaven-fern-02-geometry-v1.glb'
 const SPAWN = new THREE.Vector3(2.35, 0.04, 7.9)
 const ORB = new THREE.Vector3(0, 1.62, -2.65)
@@ -27,7 +26,7 @@ const ORB_CLIPS: Record<OrbState, string> = {
 }
 
 const SANCTUARY_REQUIRED_OBJECTS = [
-  'home-authored-terrain', 'home-authored-embodied-self', 'home-orb-sanctuary',
+  'home-authored-terrain', 'home-first-person-camera-anchor', 'home-orb-sanctuary',
   'home-ground-environmental-threshold', 'home-life-map-sky-lookout', 'home-life-map-physical-portal',
   'home-mountain-horizon', 'home-living-vegetation', 'home-sanctuary-pavilion',
 ] as const
@@ -622,10 +621,8 @@ function OrbPlatform() {
   </group>
 }
 
-function HumanPresence({ root }: { root: MutableRefObject<THREE.Group | null> }) {
-  const human = useGLTF(HUMAN)
-  const model = useMemo(() => cloneAuthoredModel(human.scene), [human.scene])
-  return <group ref={root} name="home-authored-embodied-self" position={SPAWN} rotation={[0,Math.PI,0]} userData={{ presentation: 'privacy-preserving-first-person-presence' }}><primitive object={model} visible={false} scale={0.72} /></group>
+function BodylessCameraAnchor({ root }: { root: MutableRefObject<THREE.Group | null> }) {
+  return <group ref={root} name="home-first-person-camera-anchor" position={SPAWN} userData={{ presentation: 'bodyless-first-person-camera-anchor', visibleBody: false }} />
 }
 
 function PortalMembrane({ color }: { color: string }) {
@@ -749,7 +746,7 @@ function SacredScene(props:{input:MovementInput;yaw:MutableRefObject<number>;pit
     <MoonAndMist reducedMotion={props.reducedMotion} />
     <OrbPlatform />
     <SacredOrb state={props.orbState} reducedMotion={props.reducedMotion} onOpen={props.onOrb} />
-    <HumanPresence root={props.avatar} />
+    <BodylessCameraAnchor root={props.avatar} />
     <Thresholds onGround={props.onGround} onLifeMap={props.onLifeMap} />
     <ContactShadows position={[0,0.05,-2.2]} opacity={0.38} scale={20} blur={2.8} far={7} resolution={256} frames={1} color="#171b17" />
     <PlayerRig input={props.input} yaw={props.yaw} pitch={props.pitch} target={props.target} avatar={props.avatar} onNearby={props.nearby} transition={props.transition} reducedMotion={props.reducedMotion} onTransitionComplete={props.onTransitionComplete} />
@@ -817,19 +814,18 @@ export function HomeWorldProductionSacred({onOrbOpen=requestUraiWorldOrbOpen,web
     else if(transition==='life-map')requestUraiWorldTravel({destination:'life-map',href:'/life-map/?from=home-sky',entryPortal:'home-sky',cameraCheckpoint:'home-sky-ascent-complete'})
   }
 
-  return <main className={`${styles.world} urai-asset-home-world`} data-urai-home-production data-urai-true-3d="true" data-home-primary-owner="asset-driven" data-home-visible-world="moonlit-sacred-tech-sanctuary" data-home-world-character="premium-cinematic-sacred-tech" data-home-physical-base="authored-obsidian-ritual-platform" data-home-visual-ownership="three-dimensional-geometry" data-home-desktop-mobile-world="same-scene" data-home-embodied-self="makehuman-v4" data-home-presence-presentation="privacy-preserving-first-person" data-home-movement="walk-keyboard-click-touch" data-home-audio="production-opus-consent-controlled" data-home-visual-grade="cinematic-pbr-v12-natural-sanctuary" data-home-pbr-environment="local-lightformer-ibl" data-home-assets-ready={ready?'true':'false'} data-home-runtime-assets="home-entry-chamber-v1.glb home-human-makehuman-v4.glb urai-orb-avatar-v1.glb portal-ring-master-v1.glb authored-sacred-tech-composite" data-home-scenery-assets="polyhaven-fern-02-geometry-v1.glb generated-terrain-pbr-v1 authored-irregular-masonry eroded-mountain-terrain" data-home-authored-regions="home-authored-terrain home-mountain-horizon home-living-vegetation home-sanctuary-pavilion home-life-map-physical-portal" data-home-nearby={nearby??'none'} data-home-camera-mode={transition!=='none'?transition:dragging?'look':'embodied-third-person'} data-home-scene-phase={transition==='none'?'HOME':transition.toUpperCase()} data-home-input-locked={transition!=='none'?'true':'false'} data-home-orb-state={orbState} data-home-orb-clip={resolveOrbSensoryOutput(orbState,reducedMotion,true).animation} data-home-orb-model-clip={reducedMotion?'stopped-reduced-motion':ORB_CLIPS[orbState]} data-testid="home-visible-navigable-sanctuary-world" style={{position:'relative',overflow:'hidden',background:'#18313a'}} {...look}>
+  return <main className={`${styles.world} urai-asset-home-world`} data-urai-home-production data-urai-true-3d="true" data-home-primary-owner="asset-driven" data-home-visible-world="open-sky-inhabited-natural-sanctuary" data-home-world-character="human-scale-grounded-real-place" data-home-physical-base="natural-flagstone-clearing" data-home-visual-ownership="three-dimensional-geometry" data-home-desktop-mobile-world="same-scene" data-home-embodied-self="bodyless-first-person-camera" data-home-presence-presentation="privacy-preserving-first-person" data-home-movement="walk-keyboard-click-touch" data-home-audio="production-opus-consent-controlled" data-home-visual-grade="cinematic-pbr-v12-natural-sanctuary" data-home-pbr-environment="local-lightformer-ibl" data-home-assets-ready={ready?'true':'false'} data-home-runtime-assets="home-entry-chamber-v1.glb urai-orb-avatar-v1.glb portal-ring-master-v1.glb" data-home-scenery-assets="polyhaven-fern-02-geometry-v1.glb generated-terrain-pbr-v1 authored-irregular-masonry eroded-mountain-terrain" data-home-authored-regions="home-authored-terrain home-mountain-horizon home-living-vegetation home-sanctuary-pavilion home-life-map-physical-portal" data-home-nearby={nearby??'none'} data-home-camera-mode={transition!=='none'?transition:dragging?'first-person-look':'embodied-first-person'} data-home-scene-phase={transition==='none'?'HOME':transition.toUpperCase()} data-home-input-locked={transition!=='none'?'true':'false'} data-home-orb-state={orbState} data-home-orb-clip={resolveOrbSensoryOutput(orbState,reducedMotion,true).animation} data-home-orb-model-clip={reducedMotion?'stopped-reduced-motion':ORB_CLIPS[orbState]} data-home-animation-owner="authored-sanctuary-plus-gltf-interactions" data-testid="home-visible-navigable-sanctuary-world" style={{position:'relative',overflow:'hidden',background:'#18313a'}} {...look}>
     <Canvas className={styles.canvas} dpr={[1,1.35]} shadows camera={{position:[2.42,1.72,8.12],fov:43,near:0.1,far:240}} gl={{antialias:true,alpha:false,powerPreference:'high-performance'}} onCreated={({gl})=>{gl.outputColorSpace=THREE.SRGBColorSpace;gl.toneMapping=THREE.ACESFilmicToneMapping;gl.toneMappingExposure=1.28;gl.shadowMap.type=THREE.PCFSoftShadowMap;setCanvasReady(true)}}>
       <SacredScene input={input} yaw={yaw} pitch={pitch} target={target} avatar={avatar} nearby={setNearby} orbState={orbState} reducedMotion={reducedMotion} transition={transition} onOrb={openOrb} onGround={ground} onLifeMap={lifeMap} onTransitionComplete={complete} onReady={markSceneReady} />
     </Canvas>
     {context?<div className={`${styles.worldHint} home-world-context`} role="status" aria-live="polite">{context}</div>:null}
     {transition==='none'&&mobile?<MobileMovementPad input={input} label="Home movement controls" />:null}
-    <span className="sr-only" data-testid="urai-home-webgl-orb">The sacred-tech Orb companion is physically present in the Home sanctuary and consumes the final authored Orb GLB.</span>
-    <span className="sr-only" data-testid="urai-home-embodied-avatar">Your embodied Home presence uses the real skinned V4 human candidate.</span>
+    <span className="sr-only" data-testid="urai-home-webgl-orb">The living-memory Orb is physically present in the open-sky Home sanctuary and consumes the final authored Orb GLB.</span>
+    <span className="sr-only" data-testid="urai-home-first-person-presence">Home uses a bodyless first-person camera; no avatar, hands, arms, or body are rendered.</span>
   </main>
 }
 
 useGLTF.preload(SANCTUARY)
 useGLTF.preload(ORB_MODEL)
 useGLTF.preload(PORTAL_MODEL)
-useGLTF.preload(HUMAN)
 useGLTF.preload(FERN_MODEL)

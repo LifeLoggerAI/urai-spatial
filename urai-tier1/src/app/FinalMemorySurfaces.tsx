@@ -186,7 +186,7 @@ function SharedStyles() {
 
       .memoryStarCore { position: absolute; left: 50%; top: 25%; z-index: 8; width: 18px; height: 18px; transform: translate(-50%,-50%); }
       .memoryStarCore span { position: absolute; left: 50%; top: 50%; pointer-events: none; }
-      .memoryStarCore .halo { width: 180px; height: 180px; transform: translate(-50%,-50%); border-radius: 999px; background: radial-gradient(circle, rgba(255,255,255,.9) 0 3%, #9ff7ff 12%, rgba(159,247,255,.12) 34%, transparent 70%); filter: blur(4px); opacity: .78; animation: chamberBreath 4.6s ease-in-out infinite alternate; }
+      .memoryStarCore .halo { width: 180px; height: 180px; transform: translate(-50%,-50%); border-radius: 999px; background: radial-gradient(circle, rgba(255,255,255,.9) 0 3%, #9ff7ff 12%, rgba(159,247,255,.12) 34%, transparent 70%); filter: blur(4px); opacity: .78; animation: stellarBreath 4.6s ease-in-out infinite alternate; }
       .memoryStarCore .core { width: 16px; height: 16px; transform: translate(-50%,-50%); border-radius: 999px; background: radial-gradient(circle, white 0 20%, #bffcff 22% 48%, #52bfff 50% 70%, transparent 72%); box-shadow: 0 0 18px white, 0 0 52px #7df8ff, 0 0 120px rgba(125,248,255,.42); }
       .memoryStarCore .spike { width: 2px; height: 78px; transform: translate(-50%,-50%); border-radius: 999px; background: linear-gradient(180deg, transparent, rgba(255,255,255,.72), transparent); opacity: .48; }
       .memoryStarCore .two { transform: translate(-50%,-50%) rotate(90deg); opacity: .3; }
@@ -218,7 +218,7 @@ function SharedStyles() {
       .memoryNav a { border: 1px solid rgba(207,250,254,.12); border-radius: 999px; padding: .52rem .82rem; color: rgba(236,254,255,.86); font-size: 11px; font-weight: 950; text-decoration: none; white-space: nowrap; }
       .memoryNav a[data-active='true'] { background: rgba(207,250,254,.95); color: #020617; }
 
-      @keyframes chamberBreath { from { transform: translate(-50%,-50%) scale(.9); opacity: .62; } to { transform: translate(-50%,-50%) scale(1.1); opacity: .88; } }
+      @keyframes stellarBreath { from { transform: translate(-50%,-50%) scale(.9); opacity: .62; } to { transform: translate(-50%,-50%) scale(1.1); opacity: .88; } }
 
       @media (max-width: 850px) {
         .memoryStage { grid-template-columns: 1fr; padding: 4.75rem .75rem 9rem; align-items: start; }
@@ -239,14 +239,14 @@ function SharedStyles() {
 
 export function FinalFocusChamber() {
   return (
-    <main className="memorySurface" style={routeStyle(assetCssStack(focusAssets.primary))} data-testid="urai-final-focus-chamber" data-route-polish="selected-memory-camera-chamber" data-canon="camera-from-life-map-no-avatar-orb">
+    <main className="memorySurface" style={routeStyle(assetCssStack(focusAssets.primary))} data-testid="urai-final-focus-chamber" data-route-polish="stellar-memory-star-field" data-canon="camera-from-life-map-no-avatar-orb">
       <GalaxyField />
       <span className="orbEcho" aria-hidden="true" />
       <section className="memoryStage">
         <div className="memoryTitle">
           <p>URAI · Focus</p>
-          <h1>Selected memory chamber.</h1>
-          <span>The Life Map camera is now inside one private star. Focus holds the image, signal, and one clear doorway into Replay.</span>
+          <h1>Inside the memory star.</h1>
+          <span>The Life Map camera is now inside one private star. Focus holds the signal, stellar atmosphere, and one clear threshold into Replay.</span>
           <div className="actions">
             <Link href="/replay?memoryId=quiet-reset&manifestId=replay-recovery-thread&from=focus-camera">Camera into Replay</Link>
             <Link href="/life-map?unwind=focus">Unwind to Life Map</Link>
@@ -256,7 +256,7 @@ export function FinalFocusChamber() {
           <div className="memoryCard" aria-label="The Quiet Reset selected memory image"><MemoryStar /></div>
           <p>Memory readout</p>
           <h2>The Quiet Reset</h2>
-          <span>Image, body signal, and context stay in one spatial chamber. Replay is one camera move away.</span>
+          <span>Image, body signal, and context remain inside the stellar memory field. Replay is one camera move deeper.</span>
           <div className="beatRail">
             <span data-active="true">Private star selected</span>
             <span>Ground and orb stay behind</span>
@@ -272,14 +272,14 @@ export function FinalFocusChamber() {
 
 export function FinalReplayFilm() {
   return (
-    <main className="memorySurface" style={routeStyle(assetCssStack(replayAssets.primary))} data-testid="urai-final-replay-film" data-route-polish="cinematic-memory-camera-film" data-canon="camera-from-focus-no-avatar-orb">
+    <main className="memorySurface" style={routeStyle(assetCssStack(replayAssets.primary))} data-testid="urai-final-replay-film" data-route-polish="immersive-memory-field" data-canon="camera-from-focus-no-avatar-orb">
       <GalaxyField />
       <span className="orbEcho" aria-hidden="true" />
       <section className="memoryStage">
         <div className="memoryTitle">
           <p>URAI · Replay</p>
-          <h1>Memory film.</h1>
-          <span>Replay keeps the same galaxy language and moves deeper through the selected memory as a cinematic sequence.</span>
+          <h1>Inside the memory.</h1>
+          <span>Replay keeps the same memory identity while the camera moves deeper into an inhabited temporal world.</span>
           <div className="actions">
             <Link href="/mirror">Open Mirror</Link>
             <Link href="/focus?memoryId=quiet-reset&unwind=replay">Unwind to Focus</Link>
@@ -290,7 +290,7 @@ export function FinalReplayFilm() {
           <p>Replay thread active</p>
           <h2>The Quiet Reset</h2>
           <span>The memory opens as atmosphere, rhythm, and return path — not a static poster.</span>
-          <div className="beatRail" aria-label="Film beats">
+          <div className="beatRail" aria-label="Memory beats">
             {replayBeats.map((beat, index) => <span key={beat} data-active={index === 2 ? 'true' : 'false'}>{index + 1}. {beat}</span>)}
           </div>
         </aside>

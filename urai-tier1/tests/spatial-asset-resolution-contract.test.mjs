@@ -41,10 +41,20 @@ test('active spatial model layer resolves asset ids instead of hardcoded paths',
   assert.match(assetLayer, /assetId="home-entry-chamber-model-v1"/)
   assert.match(assetLayer, /assetId="ground-world-terrain-glb-v1"/)
   assert.match(assetLayer, /assetId="life-map-memory-star-glb-v1"/)
-  assert.match(assetLayer, /assetId="focus-memory-chamber-glb-v1"/)
-  assert.match(assetLayer, /assetId="replay-memory-environment-glb-v1"/)
+  assert.match(assetLayer, /name="focus-selected-memory-star-v1"/)
+  assert.match(assetLayer, /assetId="life-map-memory-star-glb-v1"/)
+  assert.match(assetLayer, /name="replay-immersive-memory-runtime-owned"/)
+  assert.doesNotMatch(assetLayer, /assetId="focus-memory-chamber-glb-v1"|assetId="replay-memory-environment-glb-v1"/)
   assert.doesNotMatch(assetLayer, /src="\/assets\/urai\/spatial/)
   assert.match(assetLayer, /if \(!\/\\\.\(\?:gltf\|glb\)\$\/i\.test\(path\)\)/)
+})
+
+test('runtime-owned visual systems are not misclassified as missing model assets', () => {
+  assert.match(worldManifest, /WorldAssetStatus = 'fallback' \| 'candidate' \| 'ready' \| 'runtime' \| 'missing'/)
+  assert.match(worldManifest, /slotId: 'lifeMap\.constellationLines'[\s\S]*status: 'runtime'/)
+  assert.match(worldManifest, /slotId: 'replay\.memoryThreadTunnel'[\s\S]*status: 'runtime'/)
+  assert.match(worldManifest, /slotId: 'replay\.beatMarkers'[\s\S]*status: 'runtime'/)
+  assert.doesNotMatch(worldManifest, /slotId: 'replay\.memoryThreadTunnel'[\s\S]{0,260}status: 'missing'/)
 })
 
 test('legacy world slots delegate to canonical resolution and contain no competing paths', () => {
@@ -52,6 +62,17 @@ test('legacy world slots delegate to canonical resolution and contain no competi
   assert.doesNotMatch(worldManifest, /\/assets\/models\//)
   assert.match(worldManifest, /resolved\('home-entry-chamber-model-v1'\)/)
   assert.match(worldManifest, /resolved\('ground-world-terrain-glb-v1'\)/)
-  assert.match(worldManifest, /resolved\('focus-memory-chamber-glb-v1'\)/)
-  assert.match(worldManifest, /resolved\('replay-memory-environment-glb-v1'\)/)
+  assert.match(worldManifest, /label: 'Focus Stellar Memory Star'/)
+  assert.match(worldManifest, /resolved\('life-map-memory-star-glb-v1'\)/)
+  assert.match(worldManifest, /label: 'Replay Immersive Memory Runtime'/)
+  assert.doesNotMatch(worldManifest, /resolved\('focus-memory-chamber-glb-v1'\)|resolved\('replay-memory-environment-glb-v1'\)/)
+})
+
+
+test('retired chamber and theater assets remain historical but cannot resolve as ready runtime authority', () => {
+  assert.match(manifest, /retiredModel\('focus-memory-chamber-glb-v1'/)
+  assert.match(manifest, /retiredModel\('replay-memory-environment-glb-v1'/)
+  assert.match(manifest, /status: 'retired'/)
+  assert.match(manifest, /Retired Focus Star Tunnel Proof Fallback/)
+  assert.match(manifest, /Retired Replay Film Portal Proof Fallback/)
 })
