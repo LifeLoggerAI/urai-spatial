@@ -123,9 +123,9 @@ service cloud.firestore {
         allow write: if false;
       }
       match /capturedRealityAssets/{assetId} {
-        // Asset state is observable only by its owner for immediate revocation.
-        // All authority changes remain server-only.
-        allow read: if isSelf(uid) || isAdmin();
+        // Full Captured Reality manifests contain private provenance/storage metadata.
+        // They are owner-only; administrative operations use server authority and redacted evidence surfaces.
+        allow read: if isSelf(uid);
         allow write: if false;
       }
       match /exportJobs/{jobId} {
