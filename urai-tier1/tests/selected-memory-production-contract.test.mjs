@@ -134,8 +134,10 @@ test('direct Focus entry remains a truthful neutral stellar field and never moun
 test('Focus retains a deterministic visible stellar photosphere/corona in exact-head proof rendering', () => {
   assert.match(focus, /className="focusPhotosphereVisual"/)
   assert.match(focus, /data-focus-visual-owner="stellar-photosphere-corona"/)
-  assert.match(focus, /repeating-conic-gradient/)
-  assert.match(focus, /radial-gradient\(circle at 50% 50%,#fff3a7/)
+  assert.doesNotMatch(focus, /repeating-conic-gradient/)
+  assert.match(focus, /radial-gradient\(circle at 31% 27%,rgba\(255,255,226,.92\)/)
+  assert.match(focus, /radial-gradient\(ellipse at 62% 57%,rgba\(173,62,10,.2\)/)
+  assert.match(focus, /radial-gradient\(circle at 50% 48%,#fff5b0/)
   assert.match(focus, /box-shadow:0 0 18px rgba\(255,238,158,.96\),0 0 52px/)
   assert.match(focus, /\.focusPhotosphereVisual::before,\.focusPhotosphereVisual::after/)
   assert.doesNotMatch(focus, /focusPhotosphereVisual[^}]*url\(/)
