@@ -106,10 +106,25 @@ console.log(`Materialized Home semantic destination readiness at ${embodiedPath}
 
 const focusPath = 'urai-tier1/tests/accessibility-performance-focus.spec.ts'
 const focusInput = await readFile(focusPath, 'utf8')
+let focusOutput = focusInput
+const focusMovementReadyTarget = `    await expect(focus).toHaveAttribute('data-focus-movement', 'walk-keyboard-orbit-touch')
+    await expect(focus).toHaveAttribute('data-focus-pointer-lock', 'false')`
+const focusMovementReadyCurrent = `    await expect(focus).toHaveAttribute('data-focus-movement', 'walk-keyboard-orbit-touch')
+    await expect(focus).toHaveAttribute('data-focus-input-ready', 'true', { timeout: 15_000 })
+    await expect(focus).toHaveAttribute('data-focus-pointer-lock', 'false')`
+if (focusOutput.split(focusMovementReadyTarget).length - 1 === 1) {
+  focusOutput = focusOutput.replace(focusMovementReadyTarget, focusMovementReadyCurrent)
+} else if (focusOutput.split(focusMovementReadyCurrent).length - 1 !== 1) {
+  throw new Error('Focus input readiness proof contract changed')
+}
 const focusDescribe = "test.describe('Focus exact-head accessibility and movement evidence', () => {"
 const focusDescribeTimed = "test.describe('Focus exact-head accessibility and movement evidence', () => {\n  test.describe.configure({ timeout: 90_000 })"
-if (focusInput.split(focusDescribe).length - 1 !== 1) throw new Error('Focus timeout contract changed')
-await writeFile(focusPath, focusInput.replace(focusDescribe, focusDescribeTimed))
+if (focusOutput.split(focusDescribe).length - 1 === 1) {
+  focusOutput = focusOutput.replace(focusDescribe, focusDescribeTimed)
+} else if (focusOutput.split(focusDescribeTimed).length - 1 !== 1) {
+  throw new Error('Focus timeout contract changed')
+}
+await writeFile(focusPath, focusOutput)
 console.log(`Materialized Focus software-renderer timeout envelope at ${focusPath}`)
 
 const sensoryPath = 'urai-tier1/tests/accessibility-performance-home-sensory-boundary.spec.ts'
