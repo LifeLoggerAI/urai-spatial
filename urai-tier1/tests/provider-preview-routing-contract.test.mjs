@@ -5,6 +5,7 @@ import test from 'node:test'
 const previewConfig = JSON.parse(fs.readFileSync(new URL('../../.github/firebase.preview.json', import.meta.url), 'utf8'))
 
 const requiredProviderRewrites = [
+  { source: '/api/urai/providers/canary', function: { functionId: 'providerCanaryRouter', region: 'us-central1' } },
   { source: '/api/urai/orb/openai', function: { functionId: 'openAiOrbProvider', region: 'us-central1' } },
   { source: '/api/urai/narrator/elevenlabs', function: { functionId: 'elevenLabsVoiceProvider', region: 'us-central1' } },
   { source: '/api/voice/elevenlabs', function: { functionId: 'elevenLabsVoiceProvider', region: 'us-central1' } },
@@ -29,4 +30,5 @@ test('provider preview routing remains same-origin and contains no direct provid
   const serialized = JSON.stringify(previewConfig)
   assert.doesNotMatch(serialized, /api\.openai\.com/i)
   assert.doesNotMatch(serialized, /api\.elevenlabs\.io/i)
+  assert.doesNotMatch(serialized, /inference\.do-ai\.run/i)
 })
