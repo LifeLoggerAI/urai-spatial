@@ -25,7 +25,8 @@
     "/support",
     "/account-deletion",
     "/onboarding",
-    "/signup"
+    "/signup",
+    "/privacy-policy"
   ],
   "classification": {
     "servicePrefixes": [
@@ -94,7 +95,8 @@
       "/settings/privacy",
       "/support",
       "/account-deletion",
-      "/signup"
+      "/signup",
+      "/privacy-policy"
     ],
     "publicPrefixes": [
       "/demo/",
