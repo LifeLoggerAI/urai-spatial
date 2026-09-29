@@ -131,6 +131,16 @@ test('direct Focus entry remains a truthful neutral stellar field and never moun
   assert.doesNotMatch(focus, /buildExplicitDemoMemory|buildNamedExplicitDemoMemory|URAI_SPATIAL_DEMO_DATA/)
 })
 
+test('Focus retains a deterministic visible stellar photosphere/corona in exact-head proof rendering', () => {
+  assert.match(focus, /className="focusPhotosphereVisual"/)
+  assert.match(focus, /data-focus-visual-owner="stellar-photosphere-corona"/)
+  assert.match(focus, /repeating-conic-gradient/)
+  assert.match(focus, /radial-gradient\(circle at 50% 50%,#fff3a7/)
+  assert.match(focus, /box-shadow:0 0 18px rgba\(255,238,158,.96\),0 0 52px/)
+  assert.match(focus, /\.focusPhotosphereVisual::before,\.focusPhotosphereVisual::after/)
+  assert.doesNotMatch(focus, /focusPhotosphereVisual[^}]*url\(/)
+})
+
 test('Focus stellar body preserves visible photosphere granulation instead of a smooth orb wash', () => {
   assert.match(focus, /float pores = smoothstep\(\.68, \.92, noise\(p \* 52\.0/)
   assert.match(focus, /float mottling = \.58 \+ cells \* \.62 - filament \* \.22 - pores \* \.12/)
