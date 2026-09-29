@@ -14,6 +14,7 @@
     "/life-map",
     "/focus",
     "/replay",
+    "/life-movie",
     "/mirror",
     "/passport",
     "/privacy-controls",
@@ -55,7 +56,8 @@
       "/replay/",
       "/passport/",
       "/spatial/memory/",
-      "/spatial/captured-reality"
+      "/spatial/captured-reality",
+      "/life-movie/"
     ],
     "publicExact": [
       "/",
@@ -64,6 +66,7 @@
       "/life-map",
       "/focus",
       "/replay",
+      "/life-movie",
       "/mirror",
       "/shadow",
       "/legacy",
