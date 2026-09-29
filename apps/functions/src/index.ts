@@ -22,3 +22,5 @@ export {
 } from './privacyOperations'
 
 export { getCapturedRealityAsset, getCapturedRealityRuntimeUrl, getCapturedRealityReplayEntry } from './capturedReality'
+
+export { recordPassiveSignal } from './passiveSignals'
