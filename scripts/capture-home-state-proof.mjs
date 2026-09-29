@@ -235,9 +235,16 @@ async function captureOrbLifecycle({ reducedMotion = 'no-preference' } = {}) {
     })
     const response = await page.goto(`${base}/home/?homeAssetReview=1`, { waitUntil: 'domcontentloaded', timeout: 60_000 })
     const owner = await waitForHomeReady(page)
-    const openOrb = page.locator('.home-semantic-navigation button[aria-label="Open URAI Orb companion"]').first()
+    const openOrbSelector = '.home-semantic-navigation button[aria-label="Open URAI Orb companion"]'
+    const openOrb = page.locator(openOrbSelector).first()
     await openOrb.waitFor({ state: 'attached', timeout: 20_000 })
-    await openOrb.evaluate((element) => element.focus())
+    const orbFocused = await page.evaluate((selector) => {
+      const element = document.querySelector(selector)
+      if (!(element instanceof HTMLElement)) return false
+      element.focus()
+      return document.activeElement === element
+    }, openOrbSelector)
+    if (!orbFocused) throw new Error('Home Orb semantic control could not receive keyboard focus.')
     await page.keyboard.press('Enter')
     await page.locator('#urai-world-companion-menu[aria-hidden="false"]').waitFor({ state: 'visible', timeout: 20_000 })
     await page.waitForFunction((selector) => document.querySelector(selector)?.getAttribute('data-home-orb-state') === 'attention', ownerSelector)
