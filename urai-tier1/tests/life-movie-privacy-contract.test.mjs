@@ -6,6 +6,7 @@ const lifeMovie = fs.readFileSync('src/app/life-movie/LifeMovieClient.tsx', 'utf
 const rules = fs.readFileSync('../firebase/firestore.rules', 'utf8')
 const privacy = fs.readFileSync('../apps/functions/src/privacyOperations.ts', 'utf8')
 const inventory = fs.readFileSync('../privacy/data-inventory.md', 'utf8')
+const manifest = fs.readFileSync('../privacy/feature-manifests/life-movie.privacy.yaml', 'utf8')
 
 test('Life Movie reads the canonical owner-scoped private memories collection', () => {
   assert.match(lifeMovie, /collection\(getFirebaseDb\(\), 'users', user\.uid, 'memories'\)/)
@@ -31,4 +32,16 @@ test('canonical memories are portable and included in deletion scopes', () => {
 test('privacy inventory declares memory text and media as exportable and deletable', () => {
   assert.match(inventory, /\| Memory text \| `memories` \|[^\n]*\| Yes \| Yes \|/)
   assert.match(inventory, /\| Memory media \| `memories\/storage` \|[^\n]*\| Yes \| Yes \|/)
+})
+
+
+test('Life Movie privacy manifest maps the canonical memory authority without inventing a new data class', () => {
+  assert.match(manifest, /feature: life-movie/)
+  assert.match(manifest, /collectionOrTable: memories/)
+  assert.match(manifest, /consentTier: C2/)
+  assert.match(manifest, /exportable: true/)
+  assert.match(manifest, /deletable: true/)
+  assert.match(manifest, /newInferenceCreated: false/)
+  assert.match(manifest, /clientWriteAllowed: false/)
+  assert.match(manifest, /decision: blocked_until_reviewed/)
 })
