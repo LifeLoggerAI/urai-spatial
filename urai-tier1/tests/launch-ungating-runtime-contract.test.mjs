@@ -13,6 +13,11 @@ const councilPanel = read('src/spatial/council/CouncilConversationPanel.tsx')
 const councilAgents = read('src/spatial/council/councilAgentSchema.ts')
 const deployProof = read('src/app/api/system/deploy-proof/route.ts')
 const routeManifest = JSON.parse(fs.readFileSync(new URL('../../release/route-manifest.json', import.meta.url), 'utf8'))
+const passiveRuntime = read('src/spatial/signals/PassiveSignalRuntime.tsx')
+const passiveServer = fs.readFileSync(new URL('../../apps/functions/src/passiveSignals.ts', import.meta.url), 'utf8')
+const functionsIndex = fs.readFileSync(new URL('../../apps/functions/src/index.ts', import.meta.url), 'utf8')
+const firestoreRules = fs.readFileSync(new URL('../../firebase/firestore.rules', import.meta.url), 'utf8')
+const layout = read('src/app/layout.tsx')
 
 test('Life Movie is an authenticated owner-memory runtime, not a legacy demo shell', () => {
   assert.match(moviePage, /LifeMovieClient/)
@@ -53,4 +58,29 @@ test('release authority declares the newly exposed launch surfaces', () => {
   assert.match(deployProof, /authenticated-private-firestore-or-explicit-demo-only/)
   assert.match(deployProof, /authenticated-owner-memories/)
   assert.match(deployProof, /authenticated-consented-openai-with-disclosed-local-fallback/)
+})
+
+
+test('passive signal runtime is consent-bound, server-owned, and does not silently activate camera or microphone', () => {
+  assert.match(layout, /PassiveSignalRuntime/)
+  assert.match(passiveRuntime, /privacyRuntime', 'workforce-actions'/)
+  assert.match(passiveRuntime, /automationEnabled/)
+  assert.match(passiveRuntime, /permission\.state !== 'granted'/)
+  assert.match(passiveRuntime, /record\('stillness'/)
+  assert.match(passiveRuntime, /record\('quick-cancel'/)
+  assert.match(passiveRuntime, /record\('motion'/)
+  assert.doesNotMatch(passiveRuntime, /getUserMedia|mediaDevices|requestPermission\(/)
+
+  assert.match(passiveServer, /PASSIVE_SIGNAL_AUTOMATION_CONSENT_REQUIRED/)
+  assert.match(passiveServer, /PASSIVE_SIGNAL_LOCATION_CONSENT_REQUIRED/)
+  assert.match(passiveServer, /PASSIVE_SIGNAL_MODEL_CONTEXT_CONSENT_REQUIRED/)
+  assert.match(passiveServer, /PASSIVE_SIGNAL_LIKENESS_CONSENT_REQUIRED/)
+  assert.match(passiveServer, /rawAudioStored: false/)
+  assert.match(passiveServer, /rawImageStored: false/)
+  assert.match(functionsIndex, /recordPassiveSignal/)
+
+  for (const collectionName of ['behaviorSignals', 'voiceEvents', 'locations']) {
+    assert.match(firestoreRules, new RegExp(`match /${collectionName}/\\{`))
+  }
+  assert.match(firestoreRules, /match \/behaviorSignals\/\{signalId\}[\s\S]*allow write: if false;/)
 })
