@@ -249,7 +249,7 @@ function MemoryAperture({ memory, accent, light, reducedMotion, onActivate }: { 
       <meshStandardMaterial color={light} emissive={accent} emissiveIntensity={memory ? (hovered ? 5.4 : 4.2) : 0.8} roughness={0.94} metalness={0} toneMapped={false} />
     </mesh>
     <mesh scale={1.1}>
-      <icosahedronGeometry args={[1.08, 5]} />
+      <sphereGeometry args={[1.08, 36, 28]} />
       <meshBasicMaterial color={light} wireframe transparent opacity={memory ? (hovered ? 0.2 : 0.12) : 0.05} depthWrite={false} blending={THREE.AdditiveBlending} />
     </mesh>
     <mesh scale={hovered ? 1.72 : 1.58}>
