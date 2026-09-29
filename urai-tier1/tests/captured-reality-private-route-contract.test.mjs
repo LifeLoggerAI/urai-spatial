@@ -18,8 +18,9 @@ test('consent suppression clears private provenance as well as the rendered scen
   const state = { delivery: 'signed-private-url', metadata: { label: 'Private place' }, showProvenance: true }
   const revokedRef = { current: false }
   const truthLabelRef = { current: 'Private reconstruction label' }
+  const renewedDeliveryRef = { current: { url: 'renewed-private-url' } }
   vm.runInNewContext(body, {
-    revokedRef, truthLabelRef, message: 'Consent revoked',
+    revokedRef, truthLabelRef, renewedDeliveryRef, message: 'Consent revoked',
     setDelivery: (value) => { state.delivery = value },
     setMetadata: (value) => { state.metadata = value },
     setShowProvenance: (value) => { state.showProvenance = value },
@@ -32,6 +33,7 @@ test('consent suppression clears private provenance as well as the rendered scen
   assert.equal(state.metadata, null)
   assert.equal(state.showProvenance, false)
   assert.equal(truthLabelRef.current, undefined)
+  assert.equal(renewedDeliveryRef.current, null)
   assert.equal(state.decision.mode, 'suppressed')
   assert.equal(state.decision.label, 'Private captured place unavailable')
   assert.equal(state.route.kind, 'suppressed')
