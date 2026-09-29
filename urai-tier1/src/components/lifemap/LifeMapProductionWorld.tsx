@@ -340,16 +340,16 @@ function AuthoredMemoryStar({ aura, active, scale = 1, rotation = [0, 0, 0], cli
         float limb = pow(viewFacing, .58);
         float spot = smoothstep(.20, .48, noise(p * 1.38 + vec3(13.7, 4.1, -8.2)));
         float filament = smoothstep(.56, .92, granule * .62 + convection * .55);
-        vec3 ember = vec3(.72, .105, .018);
-        vec3 gold = vec3(1.0, .47, .055);
-        vec3 cream = vec3(1.0, .80, .30);
-        vec3 hot = mix(ember, gold, clamp(convection * .86 + granule * .18, 0.0, 1.0));
-        hot = mix(hot, cream, filament * .46);
-        hot *= mix(.58, 1.0, spot);
-        vec3 tinted = mix(hot, uAura, .07);
-        float energy = .72 + .16 * convection + .07 * granule + uActive * .05;
-        float limbFalloff = .55 + .45 * limb;
-        gl_FragColor = vec4(clamp(tinted * energy * limbFalloff, 0.0, .98), 1.0);
+        vec3 amber = vec3(1.0, .52, .08);
+        vec3 whiteGold = vec3(1.0, .84, .40);
+        vec3 stellarWhite = vec3(1.0, .985, .92);
+        float heat = clamp(convection * .72 + granule * .08 + filament * .34, 0.0, 1.0);
+        vec3 hot = mix(whiteGold, stellarWhite, .46 + heat * .42);
+        hot = mix(hot, amber, (1.0 - spot) * .12);
+        vec3 tinted = mix(hot, uAura, .025);
+        float energy = .94 + .13 * convection + .08 * filament + uActive * .08;
+        float limbFalloff = .72 + .28 * limb;
+        gl_FragColor = vec4(clamp(tinted * energy * limbFalloff, 0.0, 1.0), 1.0);
         #include <colorspace_fragment>
       }
     `,
@@ -388,15 +388,15 @@ function AuthoredMemoryStar({ aura, active, scale = 1, rotation = [0, 0, 0], cli
     >
       <primitive object={model} visible={false} />
       <mesh name="memory-star-photosphere" castShadow={false} scale={active ? 1.24 : 1.07}>
-        <sphereGeometry args={[0.58, 64, 48]} />
+        <sphereGeometry args={[0.38, 72, 56]} />
         <primitive object={photosphere} attach="material" />
       </mesh>
       <mesh name="memory-star-inner-corona" scale={active ? 1.34 : 1.25} raycast={() => null}>
-        <sphereGeometry args={[0.58, 48, 32]} />
+        <sphereGeometry args={[0.38, 56, 40]} />
         <meshBasicMaterial
-          color="#ffb347"
+          color="#fff0c2"
           transparent
-          opacity={active ? 0.12 : 0.055}
+          opacity={active ? 0.24 : 0.11}
           blending={THREE.AdditiveBlending}
           depthWrite={false}
           toneMapped={false}
@@ -404,11 +404,11 @@ function AuthoredMemoryStar({ aura, active, scale = 1, rotation = [0, 0, 0], cli
         />
       </mesh>
       <mesh name="memory-star-outer-corona" scale={active ? 1.82 : 1.52} raycast={() => null}>
-        <sphereGeometry args={[0.58, 48, 32]} />
+        <sphereGeometry args={[0.38, 56, 40]} />
         <meshBasicMaterial
           color={aura}
           transparent
-          opacity={active ? 0.045 : 0.022}
+          opacity={active ? 0.095 : 0.045}
           blending={THREE.AdditiveBlending}
           depthWrite={false}
           toneMapped={false}
@@ -437,7 +437,7 @@ function LifeCore({ hidden, reducedMotion, tier }: { hidden: boolean; reducedMot
   });
   return (
     <group ref={root} name="life-map-white-gold-life-core" position={LIFE_MAP_CORE_POSITION} visible={!hidden}>
-      <AuthoredMemoryStar aura={GOLD} active scale={2.35} clip="MemoryStar_Focus" />
+      <AuthoredMemoryStar aura={GOLD} active scale={1.82} clip="MemoryStar_Focus" />
       <Current points={[[-5.6, 0.15, 0.5], [-2.7, 1.6, -0.7], [0, 0.4, -1.2], [2.8, -1.2, -0.6], [5.8, 0.18, 0.4]]} color={GOLD} opacity={0.42} width={0.025} />
       <Current points={[[0.4, -4.8, 0.8], [-1.4, -2.1, -0.5], [0, 0, -1.4], [1.6, 2.2, -0.4], [-0.2, 5, 0.7]]} color={ICE} opacity={0.32} width={0.018} />
       <Sparkles count={tier === "low" ? 26 : 58} scale={[8, 6, 8]} size={2.4} speed={reducedMotion ? 0 : 0.12} opacity={0.6} color={GOLD} />

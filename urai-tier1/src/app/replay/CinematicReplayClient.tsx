@@ -95,7 +95,7 @@ function MemoryMediaDome({ media, playing }: { media: SelectedMemoryMedia | unde
       <mesh>
         <sphereGeometry args={[24, 96, 64]} />
         {texture
-          ? <meshBasicMaterial map={texture} toneMapped={false} side={THREE.BackSide} transparent opacity={0.82} />
+          ? <meshBasicMaterial map={texture} toneMapped={false} side={THREE.BackSide} transparent opacity={0.94} />
           : <meshBasicMaterial color="#06131c" side={THREE.BackSide} />}
       </mesh>
       <mesh scale={0.985}>
@@ -174,7 +174,10 @@ function ReplayTimelineField({ memory, progress }: { memory: SelectedMemory; pro
 function ReplaySpatialScene({ memory, playing, progressMs }: { memory: SelectedMemory; playing: boolean; progressMs: number }) {
   const reducedMotion = useReducedMotion()
   const progress = memory.replayManifest.durationMs > 0 ? progressMs / memory.replayManifest.durationMs : 0
-  const media = memory.sourceMedia.find((item) => item.kind === 'video' || item.kind === 'image')
+  const sourceMedia = memory.sourceMedia.find((item) => item.kind === 'video' || item.kind === 'image')
+  const media: SelectedMemoryMedia | undefined = sourceMedia ?? (memory.demo
+    ? { kind: 'image', url: replayAssets.primary.src, caption: 'Disclosed demonstration memory environment' }
+    : undefined)
 
   return (
     <>
