@@ -2,11 +2,16 @@ import { NextResponse } from 'next/server';
 import type Stripe from 'stripe';
 import type { InsightPlanId } from '@/lib/entitlementStore';
 import {
+  parseStripeRuntimeMode,
+  stripeLivemodeMatchesRuntime,
+  stripeRuntimeMatchesSecret,
+} from '@/lib/server/stripe-runtime-config';
+import {
+  applyStripeEventEntitlement,
   defaultEntitlement,
   findEntitlementByStripeCustomer,
   mapStripeStatus,
   type SubscriptionStatus,
-  upsertEntitlement,
 } from '@/lib/entitlementStore';
 
 const WEBHOOK_EVENTS = new Set([
@@ -122,12 +127,13 @@ async function resolveChargeLifecycle(
   stripe: Stripe,
   eventType: string,
   payload: Stripe.Event.Data.Object,
-): Promise<ResolvedEntitlementEvent> {
+): Promise<ResolvedEntitlementEvent | null> {
   let charge: Stripe.Charge;
   let stripeStatus: string;
 
   if (eventType === 'charge.refunded') {
     charge = payload as Stripe.Charge;
+    if (charge.refunded !== true) return null;
     stripeStatus = 'canceled';
   } else {
     const dispute = payload as Stripe.Dispute;
@@ -148,6 +154,7 @@ async function resolveChargeLifecycle(
     paymentIntent.customer as string | Stripe.Customer | Stripe.DeletedCustomer | null,
   ) ?? customerIdFrom(charge.customer as string | Stripe.Customer | Stripe.DeletedCustomer | null);
   const identity = await resolveMetadataIdentity(paymentIntent.metadata ?? undefined, customerId);
+  if (identity.planId !== 'founder') return null;
 
   return {
     ...identity,
@@ -165,9 +172,14 @@ export async function POST(request: Request) {
   const signature = request.headers.get('stripe-signature');
   const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
   const secretKey = process.env.STRIPE_SECRET_KEY;
+  const runtimeMode = parseStripeRuntimeMode(process.env.URAI_STRIPE_MODE);
 
-  if (!signature || !webhookSecret || !secretKey) {
-    return NextResponse.json({ error: 'Missing Stripe webhook configuration' }, { status: 400 });
+  if (!signature || !webhookSecret || !secretKey || !runtimeMode) {
+    return NextResponse.json({ error: 'Missing or invalid Stripe webhook configuration' }, { status: 400 });
+  }
+  if (!stripeRuntimeMatchesSecret(runtimeMode, secretKey)) {
+    console.error('Stripe webhook refused mismatched secret key mode', { runtimeMode });
+    return NextResponse.json({ error: 'Stripe mode mismatch' }, { status: 503 });
   }
 
   const stripeModule = await import('stripe');
@@ -183,11 +195,16 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Invalid signature' }, { status: 400 });
   }
 
+  if (!stripeLivemodeMatchesRuntime(event.livemode, runtimeMode)) {
+    console.error('Stripe webhook refused event from wrong livemode', { runtimeMode, eventLivemode: event.livemode, type: event.type });
+    return NextResponse.json({ error: 'Stripe event mode mismatch' }, { status: 400 });
+  }
+
   if (!WEBHOOK_EVENTS.has(event.type)) {
     return NextResponse.json({ received: true, ignored: true });
   }
 
-  let resolved: ResolvedEntitlementEvent;
+  let resolved: ResolvedEntitlementEvent | null;
   try {
     resolved = isChargeLifecycleEvent(event.type)
       ? await resolveChargeLifecycle(stripe, event.type, event.data.object)
@@ -195,6 +212,10 @@ export async function POST(request: Request) {
   } catch (error) {
     console.warn('Stripe provider state could not be resolved', { type: event.type, error });
     return NextResponse.json({ error: 'Stripe provider state could not be resolved' }, { status: 500 });
+  }
+
+  if (!resolved) {
+    return NextResponse.json({ received: true, ignored: true, reason: 'no-entitlement-transition' });
   }
 
   if (!resolved.userId) {
@@ -216,7 +237,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ received: true, skipped: 'missing-plan' });
   }
 
-  await upsertEntitlement({
+  const application = await applyStripeEventEntitlement({
     ...defaultEntitlement(resolved.userId),
     userId: resolved.userId,
     planId: resolved.planId,
@@ -224,7 +245,14 @@ export async function POST(request: Request) {
     stripeSubscriptionId: resolved.subscriptionId,
     subscriptionStatus: resolved.subscriptionStatus,
     updatedAt: Date.now(),
+  }, {
+    id: event.id,
+    created: event.created,
   });
 
-  return NextResponse.json({ received: true });
+  return NextResponse.json({
+    received: true,
+    applied: application.applied,
+    reason: application.reason,
+  });
 }
