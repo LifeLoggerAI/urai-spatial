@@ -25,7 +25,6 @@ type ArtifactProps = { node: LifeMapNode; active: boolean };
 
 const LifeMapReducedMotionContext = createContext(false);
 const MEMORY_STAR_MODEL = "/assets/urai/generated/models/life-map-memory-star-v1.glb";
-const MEMORY_CHAMBER_MODEL = "/assets/urai/generated/models/focus-memory-chamber-v1.glb";
 const DEEP = "#01030a";
 const GOLD = "#ffd98a";
 const ICE = "#dff8ff";
@@ -664,60 +663,33 @@ function LivingPaths({ nodes, selected, reducedMotion, phase }: { nodes: LifeMap
   );
 }
 
-function ArrivalSanctuary({ selected, phase, reducedMotion }: { selected: LifeMapNode | null; phase: LifeMapJourneyPhase; reducedMotion: boolean }) {
-  const { scene, animations } = useGLTF(MEMORY_CHAMBER_MODEL);
+function SelectedMemoryArrival({ selected, phase, reducedMotion }: { selected: LifeMapNode | null; phase: LifeMapJourneyPhase; reducedMotion: boolean }) {
   const group = useRef<THREE.Group>(null);
-  const chamber = useMemo(() => selected ? prepareAuthoredModel(scene, selected.aura) : scene.clone(true), [scene, selected]);
-  const { actions } = useAnimations(animations, group);
-  useEffect(() => {
-    if (!selected || phase !== "arrival") return;
-    const arrival = actions.Focus_Arrival;
-    const breathing = actions.Focus_Breathing;
-    if (arrival) {
-      arrival.reset().setLoop(THREE.LoopOnce, 1).play();
-      arrival.clampWhenFinished = true;
-      arrival.setEffectiveTimeScale(reducedMotion ? 0 : 1);
-      arrival.paused = reducedMotion;
-      if (reducedMotion) arrival.time = arrival.getClip().duration;
-      else arrival.fadeIn(0.2);
-    }
-    if (breathing) {
-      breathing.reset().play();
-      breathing.setEffectiveTimeScale(reducedMotion ? 0 : 1);
-      breathing.paused = reducedMotion;
-      if (reducedMotion) breathing.time = breathing.getClip().duration * 0.35;
-      else breathing.fadeIn(0.65);
-    }
-    return () => {
-      arrival?.fadeOut(0.18);
-      breathing?.fadeOut(0.25);
-      arrival?.stop();
-      breathing?.stop();
-    };
-  }, [actions, phase, reducedMotion, selected]);
   useFrame(({ clock }) => {
     if (!group.current || reducedMotion) return;
     group.current.rotation.y = Math.sin(clock.elapsedTime * 0.07) * 0.035;
+    const pulse = 1 + Math.sin(clock.elapsedTime * 0.48) * 0.018;
+    group.current.scale.setScalar(pulse);
   });
   if (!selected || phase !== "arrival") return null;
   return (
     <group
       ref={group}
-      name="life-map-selected-arrival-sanctuary"
-      userData={{ scaleMode: "intimate", depthBand: "near", semanticOwner: "life-map-intimate-memory-chamber", runtimeAsset: MEMORY_CHAMBER_MODEL }}
+      name="life-map-selected-arrival-memory-star"
+      userData={{
+        scaleMode: "intimate",
+        depthBand: "near",
+        semanticOwner: "life-map-intimate-memory-star",
+        runtimeAsset: MEMORY_STAR_MODEL,
+      }}
       position={selected.position}
-      scale={1.18}
     >
-      <primitive object={chamber} />
+      <AuthoredMemoryStar aura={selected.aura} active scale={2.18} clip="MemoryStar_Focus" />
       <FieldParticles seed={996} count={160} radius={5.4} depth={8.2} height={7.6} color={selected.aura} opacity={0.42} size={0.065} />
       <Sparkles count={96} scale={[10, 8, 10]} size={2.6} speed={reducedMotion ? 0 : 0.08} opacity={0.48} color={ICE} />
       <pointLight color={selected.aura} intensity={16} distance={32} decay={2} />
     </group>
   );
-}
-
-function IntimateMemoryChamber(props: { selected: LifeMapNode | null; phase: LifeMapJourneyPhase; reducedMotion: boolean }) {
-  return <ArrivalSanctuary {...props} />;
 }
 
 function ArchiveParticles({ qualityTier, reducedMotion }: { qualityTier: SpatialQualityProfile["tier"]; reducedMotion: boolean }) {
@@ -784,7 +756,7 @@ export function LifeMapProductionWorld({ nodes, selected, phase, profile, onSele
             {nodes.map((node, index) => <MemoryArtifact key={node.id} node={node} index={index} selected={selected} phase={phase} reducedMotion={profile.reducedMotion} onSelect={onSelect} />)}
           </group>
           <group name="life-map-selected-relationship-context" />
-          <IntimateMemoryChamber selected={selected} phase={phase} reducedMotion={profile.reducedMotion} />
+          <SelectedMemoryArrival selected={selected} phase={phase} reducedMotion={profile.reducedMotion} />
         </group>
         <MemoryWeather reducedMotion={profile.reducedMotion} />
         <ArchiveParticles qualityTier={profile.tier} reducedMotion={profile.reducedMotion} />
@@ -799,4 +771,3 @@ export function LifeMapProductionWorld({ nodes, selected, phase, profile, onSele
 }
 
 useGLTF.preload(MEMORY_STAR_MODEL);
-useGLTF.preload(MEMORY_CHAMBER_MODEL);
