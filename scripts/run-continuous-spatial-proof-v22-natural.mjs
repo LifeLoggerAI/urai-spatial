@@ -16,6 +16,18 @@ function convergeSingle(source, stale, current, label) {
   throw new Error(`${label} contract changed: stale=${staleCount}, current=${currentCount}`)
 }
 
+function convergeOneOf(source, staleValues, current, label) {
+  const currentCount = count(source, current)
+  const staleCounts = staleValues.map((value) => ({ value, count: count(source, value) }))
+  const staleTotal = staleCounts.reduce((total, item) => total + item.count, 0)
+  if (currentCount === 1 && staleTotal === 0) return source
+  if (currentCount === 0 && staleTotal === 1) {
+    const active = staleCounts.find((item) => item.count === 1)
+    return source.replace(active.value, current)
+  }
+  throw new Error(`${label} contract changed: stale=${staleTotal}, current=${currentCount}`)
+}
+
 function convergeRepeated(source, stale, current, expectedCount, label) {
   const staleCount = count(source, stale)
   const currentCount = count(source, current)
@@ -50,8 +62,12 @@ const newOrbClips = `const orbClips = {
 let patched = original
 patched = convergeSingle(patched, oldOwner, newOwner, 'Continuous proof animation-owner')
 patched = convergeRepeated(patched, staleEnvironmentalRadius, runtimeEnvironmentalRadius, 2, 'Continuous proof environmental-threshold proximity')
-patched = convergeSingle(patched, staleOrbRadius, transitionalOrbRadius, 'Continuous proof Orb legacy-position transition')
-patched = convergeSingle(patched, transitionalOrbRadius, runtimeOrbRadius, 'Continuous proof Orb interaction-zone')
+patched = convergeOneOf(
+  patched,
+  [staleOrbRadius, transitionalOrbRadius],
+  runtimeOrbRadius,
+  'Continuous proof Orb interaction-zone',
+)
 patched = convergeSingle(patched, staleGroundTarget, runtimeGroundTarget, 'Continuous proof Ground target')
 patched = convergeSingle(patched, staleLifeMapTarget, runtimeLifeMapTarget, 'Continuous proof Life Map target')
 patched = convergeSingle(patched, oldOrbClips, newOrbClips, 'Continuous proof Orb sensory-output')
