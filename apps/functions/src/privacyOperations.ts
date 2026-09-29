@@ -900,3 +900,173 @@ async function processDeletion(snapshot: FirebaseFirestore.DocumentSnapshot) {
   const receiptId = String(job.receiptId)
   const userReceiptRef = db.doc(`users/${uid}/privacyReceipts/${receiptId}`)
   const durableReceiptRef = db.doc(`deletionReceipts/${receiptId}`)
+  try {
+    await Promise.all([
+      snapshot.ref.update({ state: 'in-progress', startedAt: fieldValue.serverTimestamp(), updatedAt: fieldValue.serverTimestamp() }),
+      userJobRef.set({ state: 'in-progress', startedAt: fieldValue.serverTimestamp(), updatedAt: fieldValue.serverTimestamp() }, { merge: true }),
+    ])
+    const userRef = db.doc(`users/${uid}`)
+    const deletedCollections: string[] = []
+    if (scope === 'account') {
+      await deleteCapturedRealityStorage(uid)
+      await db.recursiveDelete(userRef)
+      await admin.auth().deleteUser(uid)
+    } else {
+      if (scope === 'spatial-state' || scope === 'all-repository-data') {
+        await deleteCapturedRealityStorage(uid)
+      }
+      for (const collectionName of DELETION_COLLECTIONS[scope]) {
+        await db.recursiveDelete(userRef.collection(collectionName))
+        deletedCollections.push(collectionName)
+      }
+    }
+    const finalReceipt = {
+      receiptId,
+      ownerDigest: ownerDigest(uid),
+      kind: 'deletion',
+      scope,
+      result: 'completed',
+      deletedCollections,
+      retainedExceptions: Array.isArray(job.retainedExceptions) ? job.retainedExceptions : [],
+      completedAt: fieldValue.serverTimestamp(),
+      createdAt: fieldValue.serverTimestamp(),
+    }
+    await durableReceiptRef.set(finalReceipt)
+    if (scope !== 'account') {
+      await Promise.all([
+        snapshot.ref.update({ state: 'completed', deletedCollections, completedAt: fieldValue.serverTimestamp(), updatedAt: fieldValue.serverTimestamp() }),
+        userJobRef.set({ state: 'completed', deletedCollections, completedAt: fieldValue.serverTimestamp(), updatedAt: fieldValue.serverTimestamp() }, { merge: true }),
+        userReceiptRef.set({ result: 'completed', deletedCollections, completedAt: fieldValue.serverTimestamp(), updatedAt: fieldValue.serverTimestamp() }, { merge: true }),
+      ])
+    } else {
+      await snapshot.ref.delete()
+    }
+  } catch (error) {
+    const failure = error instanceof Error ? error.message.slice(0, 240) : 'UNKNOWN_DELETION_FAILURE'
+    await Promise.all([
+      snapshot.ref.set({ state: 'failed', failureCode: failure, updatedAt: fieldValue.serverTimestamp() }, { merge: true }),
+      userJobRef.set({ state: 'failed', failureCode: failure, updatedAt: fieldValue.serverTimestamp() }, { merge: true }),
+      userReceiptRef.set({ result: 'failed', failureCode: failure, updatedAt: fieldValue.serverTimestamp() }, { merge: true }),
+    ])
+    throw error
+  }
+}
+
+export const processDeletionQueueItem = functions.firestore
+  .document('deletionQueue/{jobId}')
+  .onCreate(async (snapshot) => processDeletion(snapshot))
+
+export const processDeletionGraceQueue = functions.pubsub
+  .schedule('every 15 minutes')
+  .onRun(async () => {
+    const snapshot = await db.collection('deletionQueue').where('state', '==', 'awaiting-grace').limit(25).get()
+    for (const item of snapshot.docs) {
+      const executeAfter = item.get('executeAfter') as admin.firestore.Timestamp | undefined
+      if (executeAfter && executeAfter.toMillis() <= Date.now()) await processDeletion(item)
+    }
+  })
+
+export const cancelDeletionRequest = functions.https.onCall(async (data, context) => {
+  const uid = requireUid(context)
+  const jobId = requireString(data?.jobId, 'jobId', 80)
+  const jobRef = db.doc(`users/${uid}/deletionJobs/${jobId}`)
+  const queueRef = db.doc(`deletionQueue/${jobId}`)
+  await db.runTransaction(async (transaction) => {
+    const job = await transaction.get(jobRef)
+    if (!job.exists || job.get('uid') !== uid) {
+      throw new functions.https.HttpsError('not-found', 'Deletion request was not found.')
+    }
+    if (!['queued', 'awaiting-grace'].includes(String(job.get('state')))) {
+      throw new functions.https.HttpsError('failed-precondition', 'Deletion can no longer be cancelled.')
+    }
+    transaction.update(jobRef, { state: 'cancelled', cancelledAt: fieldValue.serverTimestamp(), updatedAt: fieldValue.serverTimestamp() })
+    transaction.set(queueRef, { state: 'cancelled', cancelledAt: fieldValue.serverTimestamp(), updatedAt: fieldValue.serverTimestamp() }, { merge: true })
+  })
+  return { jobId, state: 'cancelled' }
+})
+
+function safeTimestamp(value: unknown): string | null {
+  if (value instanceof admin.firestore.Timestamp) return value.toDate().toISOString()
+  if (typeof value === 'string') return value
+  return null
+}
+
+function safeRows(snapshot: FirebaseFirestore.QuerySnapshot, kind: string) {
+  return snapshot.docs.map((item) => ({
+    id: item.id,
+    kind,
+    label: String(item.get('label') ?? item.get('provider') ?? item.get('sourceType') ?? kind),
+    status: String(item.get('status') ?? item.get('state') ?? 'unknown'),
+    sourceType: String(item.get('sourceType') ?? item.get('channel') ?? kind),
+    permission: String(item.get('permission') ?? item.get('mode') ?? 'unknown'),
+    firstSeen: safeTimestamp(item.get('firstSeen') ?? item.get('createdAt')),
+    lastUpdated: safeTimestamp(item.get('lastUpdated') ?? item.get('updatedAt')),
+    provenance: String(item.get('provenance') ?? 'partial'),
+    contributesTo: Array.isArray(item.get('contributesTo'))
+      ? item.get('contributesTo').filter((value: unknown): value is string => typeof value === 'string').slice(0, 12)
+      : [],
+  }))
+}
+
+export const getPassportSnapshot = functions.https.onCall(async (_data, context) => {
+  const uid = requireUid(context)
+  const userRef = db.doc(`users/${uid}`)
+  const [user, policy, sources, devices, providers, exports, deletions, receipts] = await Promise.all([
+    userRef.get(),
+    userRef.collection('privacyPolicy').doc('current').get(),
+    userRef.collection('dataSources').limit(100).get(),
+    userRef.collection('devices').limit(100).get(),
+    userRef.collection('providerConnections').limit(100).get(),
+    userRef.collection('exportJobs').orderBy('createdAt', 'desc').limit(25).get(),
+    userRef.collection('deletionJobs').orderBy('createdAt', 'desc').limit(25).get(),
+    userRef.collection('privacyReceipts').orderBy('createdAt', 'desc').limit(50).get(),
+  ])
+  const claims = (context.auth?.token ?? {}) as Record<string, unknown>
+  const authTime = Number(claims.auth_time ?? 0)
+  const keyState = Math.floor(Date.now() / 1000) - authTime <= REAUTH_WINDOW_SECONDS ? 'authorized' : 'available'
+  const displayName = String(user.get('displayName') ?? context.auth?.token.name ?? 'Private owner').slice(0, 120)
+  const consentPolicy = policy.exists ? parseStoredPolicy(policy.data(), uid) : defaultPolicy(uid)
+  return {
+    schema: 'urai-passport-snapshot-v1',
+    owner: {
+      displayName,
+      ownershipStatus: user.exists ? 'verified' : 'limited',
+      keyState,
+      ownerReference: ownerDigest(uid).slice(0, 12),
+    },
+    consent: {
+      revision: consentPolicy.revision,
+      enforcement: consentPolicy.enforcement,
+      domains: consentPolicy.domains,
+    },
+    sources: safeRows(sources, 'source'),
+    devices: safeRows(devices, 'device'),
+    providers: safeRows(providers, 'provider'),
+    exports: exports.docs.map((item) => ({
+      id: item.id,
+      state: String(item.get('state') ?? 'unknown'),
+      scopes: Array.isArray(item.get('scopes')) ? item.get('scopes') : [],
+      checksum: typeof item.get('checksum') === 'string' ? item.get('checksum') : null,
+      createdAt: safeTimestamp(item.get('createdAt')),
+      expiresAt: safeTimestamp(item.get('expiresAt')),
+    })),
+    deletions: deletions.docs.map((item) => ({
+      id: item.id,
+      state: String(item.get('state') ?? 'unknown'),
+      scope: String(item.get('scope') ?? 'unknown'),
+      createdAt: safeTimestamp(item.get('createdAt')),
+      executeAfter: safeTimestamp(item.get('executeAfter')),
+    })),
+    receipts: receipts.docs.map((item) => ({
+      id: item.id,
+      kind: String(item.get('kind') ?? 'unknown'),
+      result: String(item.get('result') ?? 'unknown'),
+      summary: String(item.get('summary') ?? `${String(item.get('kind') ?? 'Privacy')} operation ${String(item.get('result') ?? 'recorded')}`).slice(0, 240),
+      createdAt: safeTimestamp(item.get('createdAt')),
+    })),
+    recovery: {
+      status: String(user.get('recoveryStatus') ?? 'clear'),
+      supportAvailable: true,
+    },
+  }
+})
