@@ -21,6 +21,8 @@ const publicRoutes = [
   '/privacy-controls',
   '/settings/privacy',
   '/support',
+  '/onboarding',
+  '/signup',
   '/location-map',
   '/status',
   '/spatial/ar-vr',
