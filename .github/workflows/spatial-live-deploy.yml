@@ -10,7 +10,10 @@ on:
       - 'scripts/verify-release-credential-boundary.mjs'
       - 'scripts/verify-release-credential-boundary-static.mjs'
       - 'scripts/audit-production-workflow-authority.mjs'
+      - 'scripts/write-release-fingerprint.mjs'
+      - 'distribution/android-shell/**'
       - 'package.json'
+      - 'pnpm-lock.yaml'
       - '.github/workflows/spatial-live-deploy.yml'
   push:
     branches: [main]
@@ -21,16 +24,44 @@ on:
       - 'scripts/verify-release-credential-boundary.mjs'
       - 'scripts/verify-release-credential-boundary-static.mjs'
       - 'scripts/audit-production-workflow-authority.mjs'
+      - 'scripts/write-release-fingerprint.mjs'
+      - 'distribution/android-shell/**'
       - 'package.json'
+      - 'pnpm-lock.yaml'
       - '.github/workflows/spatial-live-deploy.yml'
   workflow_dispatch:
+    inputs:
+      source_pr:
+        description: Merged source PR whose exact head received independent approval
+        required: true
+        type: string
+      approved_source_sha:
+        description: Exact independently approved PR head SHA
+        required: true
+        type: string
+      release_sha:
+        description: Exact current main SHA to deploy
+        required: true
+        type: string
+      rollback_sha:
+        description: Distinct proven live rollback source SHA
+        required: true
+        type: string
+      android_upload_cert_sha256:
+        description: Optional real Android upload certificate SHA-256 for assetlinks.json
+        required: false
+        type: string
+      confirm:
+        description: Must equal DEPLOY_URAI_APP
+        required: true
+        type: string
 
 permissions:
   contents: read
 
 concurrency:
-  group: urai-app-production-verification-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: true
+  group: urai-app-production-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: false
 
 env:
   NODE_VERSION: '22'
@@ -39,16 +70,17 @@ env:
 
 jobs:
   verify:
-    name: Verify canonical source with production release quarantined
-    runs-on: ubuntu-latest
+    name: Verify canonical source and governed release boundary
+    runs-on: ubuntu-24.04
     timeout-minutes: 60
     steps:
       - name: Checkout exact source
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
           ref: ${{ env.EXACT_HEAD_SHA }}
           fetch-depth: 0
           persist-credentials: false
+          show-progress: false
 
       - name: Prove exact clean source
         shell: bash
@@ -58,7 +90,7 @@ jobs:
           test -z "$(git status --porcelain --untracked-files=all)"
 
       - name: Set up Node
-        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with:
           node-version: ${{ env.NODE_VERSION }}
 
@@ -73,16 +105,13 @@ jobs:
       - name: Install frozen dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Verify production authority is fail-closed
-        shell: bash
+      - name: Verify governed credential and deployment boundary
         run: |
-          set -euo pipefail
           node scripts/audit-production-workflow-authority.mjs
           node scripts/verify-release-credential-boundary.mjs
           node scripts/verify-release-credential-boundary-static.mjs
-          # Failure contract: Long-lived Google/Firebase credential material remains in the canonical production release boundary.
-          # Failure contract: Production mutation is forbidden while provider WIF/IAM and runtime identity remain unproven.
-          # Short-lived WIF proof is isolated to the main-only proof job below and exposes no deploy command.
+          node scripts/firebase-hosting-recovery.mjs --self-test
+          node scripts/live-release.mjs --check
 
       - name: Verify canonical Tier1 source
         run: |
@@ -91,7 +120,7 @@ jobs:
           pnpm --dir urai-tier1 verify:aaa-world
           pnpm --dir urai-tier1 xr:verify
 
-      - name: Record NO-GO release classification
+      - name: Record prepared release classification
         shell: bash
         run: |
           set -euo pipefail
@@ -99,97 +128,239 @@ jobs:
           {
             echo '# URAI Spatial production release status'
             echo
-            echo 'Classification: NO-GO'
-            echo 'Production release and Hosting recovery are intentionally quarantined.'
-            echo 'A short-lived main-only WIF identity proof may run after source verification; it grants no production mutation path.'
-            echo 'Re-enable only after short-lived provider identity, WIF/IAM trust, least privilege, runtime read-back, rollback evidence, and historical credential revocation are independently verified.'
-            echo 'Even after the WIF identity sub-gate passes, remaining provider, revocation, governance, live and device gates must still close before mutation.'
+            echo 'Classification: PREPARED / FAIL-CLOSED'
+            echo 'Pull requests and ordinary pushes perform verification only.'
+            echo 'Production mutation exists only on explicit workflow_dispatch from current main after exact-source governance approval.'
+            echo 'Credential class: short-lived GitHub OIDC -> Google Workload Identity Federation.'
+            echo 'Long-lived Firebase service-account credentials: prohibited.'
             echo "Commit: $EXACT_HEAD_SHA"
-          } > release-control-evidence/spatial-production-quarantine.md
+          } > release-control-evidence/spatial-production-prepared.md
 
       - name: Upload verification evidence
         if: always()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
-          name: urai-spatial-production-quarantine-${{ env.EXACT_HEAD_SHA }}
+          name: urai-spatial-production-prepared-${{ env.EXACT_HEAD_SHA }}
           path: release-control-evidence/
           if-no-files-found: warn
           retention-days: 90
 
-  prove-wif-runtime-identity:
-    name: Prove short-lived Google WIF identity
+  deploy:
+    name: Governed production deploy
+    if: github.event_name == 'workflow_dispatch'
     needs: verify
-    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-24.04
-    timeout-minutes: 10
+    timeout-minutes: 60
+    environment: production
     permissions:
       contents: read
+      checks: read
+      pull-requests: read
       id-token: write
+    env:
+      SOURCE_PR: ${{ inputs.source_pr }}
+      APPROVED_SOURCE_SHA: ${{ inputs.approved_source_sha }}
+      RELEASE_SHA: ${{ inputs.release_sha }}
+      ROLLBACK_SHA: ${{ inputs.rollback_sha }}
+      CONFIRM: ${{ inputs.confirm }}
+      ANDROID_UPLOAD_CERT_SHA256: ${{ inputs.android_upload_cert_sha256 }}
+      FIREBASE_SITE_ID: urai-4dc1d
+      URAI_EXPECTED_FIREBASE_PROJECT: urai-4dc1d
+      URAI_LIVE_BASE_URL: https://urai.app
+      NEXT_PUBLIC_URAI_API_ORIGIN: https://urai.app
+      URAI_HOSTING_RECOVERY_RECEIPT: ${{ runner.temp }}/hosting-recovery/legacy-live-release.json
     steps:
-      - name: Checkout exact main source
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - name: Checkout exact current main release
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
-          ref: ${{ github.sha }}
-          fetch-depth: 1
+          ref: ${{ env.RELEASE_SHA }}
+          fetch-depth: 0
           persist-credentials: false
           show-progress: false
 
-      - name: Prove exact main source
+      - name: Authorize exact merged release and independent source approval
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          test "$GITHUB_REF" = 'refs/heads/main'
+          test "$CONFIRM" = 'DEPLOY_URAI_APP'
+          [[ "$SOURCE_PR" =~ ^[1-9][0-9]*$ ]]
+          [[ "$APPROVED_SOURCE_SHA" =~ ^[0-9a-f]{40}$ ]]
+          [[ "$RELEASE_SHA" =~ ^[0-9a-f]{40}$ ]]
+          [[ "$ROLLBACK_SHA" =~ ^[0-9a-f]{40}$ ]]
+          test "$RELEASE_SHA" = "$GITHUB_SHA"
+          test "$RELEASE_SHA" = "$(git rev-parse HEAD)"
+          test "$ROLLBACK_SHA" != "$RELEASE_SHA"
+          git merge-base --is-ancestor "$ROLLBACK_SHA" "$RELEASE_SHA"
+
+          pr_json="$(curl --fail --silent --show-error \
+            --header 'Accept: application/vnd.github+json' \
+            --header "Authorization: Bearer $GH_TOKEN" \
+            --header 'X-GitHub-Api-Version: 2022-11-28' \
+            "$GITHUB_API_URL/repos/$REPOSITORY/pulls/$SOURCE_PR")"
+          test "$(jq -r '.merged' <<<"$pr_json")" = 'true'
+          test "$(jq -r '.base.ref' <<<"$pr_json")" = 'main'
+          test "$(jq -r '.head.sha' <<<"$pr_json")" = "$APPROVED_SOURCE_SHA"
+          test "$(jq -r '.merge_commit_sha' <<<"$pr_json")" = "$RELEASE_SHA"
+
+          checks="$(curl --fail --silent --show-error \
+            --header 'Accept: application/vnd.github+json' \
+            --header "Authorization: Bearer $GH_TOKEN" \
+            --header 'X-GitHub-Api-Version: 2022-11-28' \
+            "$GITHUB_API_URL/repos/$REPOSITORY/commits/$APPROVED_SOURCE_SHA/check-runs?per_page=100")"
+          jq -e --arg sha "$APPROVED_SOURCE_SHA" '
+            any(.check_runs[];
+              .name == "Release Governance Guard"
+              and .head_sha == $sha
+              and .status == "completed"
+              and .conclusion == "success")
+          ' <<<"$checks" >/dev/null
+
+      - name: Set up Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Enable exact pnpm and install frozen dependencies
         shell: bash
         run: |
           set -euo pipefail
-          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
-          test "$GITHUB_REPOSITORY" = 'LifeLoggerAI/urai-spatial'
-          test "$GITHUB_REF" = 'refs/heads/main'
-          test -z "$(git status --porcelain --untracked-files=all)"
+          corepack enable
+          corepack prepare "pnpm@${PNPM_VERSION}" --activate
+          pnpm install --frozen-lockfile
 
       - id: google-auth
-        name: Exchange GitHub OIDC for short-lived Google identity
-        uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3
+        name: Exchange GitHub OIDC for short-lived Google deployment identity
+        uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093
         with:
           project_id: 'urai-4dc1d'
           workload_identity_provider: 'projects/952723774155/locations/global/workloadIdentityPools/urai-github-prod/providers/github-actions'
           service_account: 'urai-spatial-github-deployer@urai-4dc1d.iam.gserviceaccount.com'
           token_format: 'access_token'
           access_token_lifetime: '300s'
-          access_token_scopes: 'https://www.googleapis.com/auth/cloud-platform.read-only'
-          create_credentials_file: false
-          export_environment_variables: false
-          request_reason: 'URAI keyless WIF runtime identity proof'
+          access_token_scopes: 'https://www.googleapis.com/auth/cloud-platform'
+          create_credentials_file: true
+          export_environment_variables: true
+          request_reason: 'URAI governed exact-main production deployment'
 
-      - name: Record keyless runtime identity receipt
+      - name: Capture live Hosting rollback authority
         shell: bash
         env:
           GOOGLE_WIF_ACCESS_TOKEN: ${{ steps.google-auth.outputs.access_token }}
         run: |
           set -euo pipefail
-          test -n "${GOOGLE_WIF_ACCESS_TOKEN:-}"
+          test -n "$GOOGLE_WIF_ACCESS_TOKEN"
           echo "::add-mask::$GOOGLE_WIF_ACCESS_TOKEN"
-          mkdir -p release-control-evidence
-          {
-            echo '# URAI Google WIF runtime identity proof'
-            echo
-            echo 'Result: PASS'
-            echo 'Token exchange: completed'
-            echo 'Service-account impersonation: completed'
-            echo "Commit: $GITHUB_SHA"
-            echo "Repository: $GITHUB_REPOSITORY"
-            echo "Ref: $GITHUB_REF"
-            echo 'Workflow: .github/workflows/spatial-live-deploy.yml'
-            echo 'Provider: projects/952723774155/locations/global/workloadIdentityPools/urai-github-prod/providers/github-actions'
-            echo 'Service account: urai-spatial-github-deployer@urai-4dc1d.iam.gserviceaccount.com'
-            echo 'Credential class: short-lived GitHub OIDC via Google Workload Identity Federation'
-            echo 'OAuth scope: https://www.googleapis.com/auth/cloud-platform.read-only'
-            echo 'Requested access-token lifetime: 300s'
-            echo 'Production mutation command: none'
-            echo 'Token value: not persisted'
-          } > release-control-evidence/google-wif-runtime-identity.md
+          node scripts/firebase-hosting-recovery.mjs discover
+          test -s "$URAI_HOSTING_RECOVERY_RECEIPT"
 
-      - name: Upload WIF identity proof
+      - name: Load canonical Firebase public configuration
+        shell: bash
+        run: |
+          set -euo pipefail
+          config="$(curl --fail --silent --show-error --location --proto '=https' --tlsv1.2 https://urai.app/__/firebase/init.json)"
+          test "$(jq -r '.projectId // empty' <<<"$config")" = 'urai-4dc1d'
+          for pair in \
+            "NEXT_PUBLIC_FIREBASE_API_KEY apiKey" \
+            "NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN authDomain" \
+            "NEXT_PUBLIC_FIREBASE_PROJECT_ID projectId" \
+            "NEXT_PUBLIC_FIREBASE_APP_ID appId" \
+            "NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET storageBucket" \
+            "NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID messagingSenderId" \
+            "NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID measurementId"; do
+            env_name="${pair%% *}"
+            json_name="${pair#* }"
+            value="$(jq -r --arg key "$json_name" '.[$key] // empty' <<<"$config")"
+            test -n "$value"
+            printf '%s=%s\n' "$env_name" "$value" >> "$GITHUB_ENV"
+          done
+
+      - name: Write exact release fingerprint
+        shell: bash
+        env:
+          NEXT_PUBLIC_URAI_BUILD_SHA: ${{ env.RELEASE_SHA }}
+          CURRENT_MAIN_SHA: ${{ env.RELEASE_SHA }}
+          URAI_ROLLBACK_SHA: ${{ env.ROLLBACK_SHA }}
+        run: node scripts/write-release-fingerprint.mjs
+
+      - name: Build exact governed static release
+        shell: bash
+        env:
+          NEXT_PUBLIC_URAI_BUILD_SHA: ${{ env.RELEASE_SHA }}
+        run: pnpm build:static
+
+      - name: Publish Android App Link association when signing identity is supplied
+        if: inputs.android_upload_cert_sha256 != ''
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p urai-tier1/out/.well-known
+          ANDROID_UPLOAD_CERT_SHA256="$ANDROID_UPLOAD_CERT_SHA256" \
+          ANDROID_ASSETLINKS_OUTPUT="urai-tier1/out/.well-known/assetlinks.json" \
+            node distribution/android-shell/render-assetlinks.mjs
+          test -s urai-tier1/out/.well-known/assetlinks.json
+
+      - name: Deploy exact prebuilt Hosting release
+        shell: bash
+        env:
+          URAI_GOVERNED_DEPLOY_AUTHORIZED: DEPLOY_URAI_APP
+          URAI_RELEASE_SHA: ${{ env.RELEASE_SHA }}
+        run: node scripts/live-release.mjs --deploy-prebuilt
+
+      - name: Verify deployed fingerprint and public smoke
+        shell: bash
+        env:
+          URAI_DEPLOY_URL: https://urai.app
+          URAI_EXPECTED_DEPLOYED_SHA: ${{ env.RELEASE_SHA }}
+          URAI_EXPECTED_ROLLBACK_SHA: ${{ env.ROLLBACK_SHA }}
+          URAI_EXPECTED_AUTHORITY_SHA: ${{ env.RELEASE_SHA }}
+        run: |
+          set -euo pipefail
+          pnpm smoke:deployed
+          pnpm smoke:live
+
+      - name: Retain governed deployment receipt
+        if: success()
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p release-control-evidence
+          cp "$URAI_HOSTING_RECOVERY_RECEIPT" release-control-evidence/predeploy-hosting-rollback.json
+          {
+            echo "source_pr=$SOURCE_PR"
+            echo "approved_source_sha=$APPROVED_SOURCE_SHA"
+            echo "release_sha=$RELEASE_SHA"
+            echo "rollback_sha=$ROLLBACK_SHA"
+            echo "firebase_project=urai-4dc1d"
+            echo "hosting_site=urai-4dc1d"
+            echo "live_url=https://urai.app"
+            echo "credential_class=short-lived-github-oidc-wif"
+            echo "workflow_run=$GITHUB_RUN_ID"
+          } > release-control-evidence/governed-production-deploy.txt
+
+      - name: Restore predeploy Hosting version on failed deploy or smoke
+        if: failure() && steps.google-auth.outcome == 'success'
+        shell: bash
+        env:
+          GOOGLE_WIF_ACCESS_TOKEN: ${{ steps.google-auth.outputs.access_token }}
+          URAI_HOSTING_RESTORE_CONFIRM: RESTORE_EXACT_HOSTING_VERSION
+        run: |
+          set -euo pipefail
+          if test -s "$URAI_HOSTING_RECOVERY_RECEIPT"; then
+            node scripts/firebase-hosting-recovery.mjs restore
+            node scripts/firebase-hosting-recovery.mjs verify-restored
+          fi
+
+      - name: Upload deployment and rollback evidence
         if: always()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
-          name: urai-google-wif-proof-${{ github.sha }}
-          path: release-control-evidence/google-wif-runtime-identity.md
-          if-no-files-found: error
+          name: urai-governed-production-${{ env.RELEASE_SHA }}
+          path: |
+            release-control-evidence/
+            ${{ runner.temp }}/hosting-recovery/
+          if-no-files-found: warn
           retention-days: 90
