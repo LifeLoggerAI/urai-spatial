@@ -49,7 +49,11 @@ async function activate(page, target, method) {
   if (!targetOwnsHitPoint) throw new Error('semantic target does not own its browser-coordinate hit point')
 
   if (method === 'semantic-touch') await page.touchscreen.tap(hitPoint.center.x, hitPoint.center.y)
-  else await page.mouse.click(hitPoint.center.x, hitPoint.center.y)
+  else {
+    await page.mouse.move(hitPoint.center.x, hitPoint.center.y)
+    await page.waitForTimeout(16)
+    await page.mouse.click(hitPoint.center.x, hitPoint.center.y)
+  }
   return { targetOwnsHitPoint, hitPoint }
 }
 
