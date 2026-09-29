@@ -363,9 +363,15 @@ function cloneAuthoredModel(source: THREE.Object3D) {
 
 function cloneSanctuary(source: THREE.Object3D) {
   const root = cloneAuthoredModel(source)
-  root.visible = false
-  root.userData.retainedForGovernedCompatibilityOnly = true
-  root.userData.visibleWorldOwner = 'home-grounded-material-sanctuary-v11'
+  const suppressed = /ground-alcove|life-map-alcove|portal|horizon-|embodied-presence|memory-place-anchor|sanctuary-firefly/i
+  root.visible = true
+  root.traverse((object) => {
+    if (object === root) return
+    if (suppressed.test(object.name)) object.visible = false
+  })
+  root.userData.retainedForGovernedCompatibilityOnly = false
+  root.userData.visibleWorldOwner = 'governed-home-entry-chamber-v1'
+  root.userData.visualTreatment = 'reviewed-authored-sanctuary-with-hidden-portal-and-embodied-nodes'
   return root
 }
 
@@ -468,18 +474,22 @@ function AuthoredMasonryGarden({ source }: { source: THREE.Object3D }) {
 function RitualFloor({ target }: { target: MutableRefObject<THREE.Vector3 | null> }) {
   const sanctuary = useGLTF(SANCTUARY)
   const retainedModel = useMemo(() => cloneSanctuary(sanctuary.scene), [sanctuary.scene])
-  const flagstone = useFlagstoneTexturePack(4.5, 31)
   const onWalk = (event: ThreeEvent<MouseEvent>) => {
     event.stopPropagation()
     if (useSceneStore.getState().inputLocked) return
-    target.current = new THREE.Vector3(THREE.MathUtils.clamp(event.point.x, BOUNDS.minX, BOUNDS.maxX), 0, THREE.MathUtils.clamp(event.point.z, BOUNDS.minZ, BOUNDS.maxZ))
+    target.current = new THREE.Vector3(
+      THREE.MathUtils.clamp(event.point.x, BOUNDS.minX, BOUNDS.maxX),
+      0,
+      THREE.MathUtils.clamp(event.point.z, BOUNDS.minZ, BOUNDS.maxZ),
+    )
   }
-  return <group name="home-authored-terrain">
+  return <group
+    name="home-authored-terrain"
+    onClick={onWalk}
+    userData={{ visualOwner: 'governed-home-entry-chamber-v1', runtimeAsset: SANCTUARY }}
+  >
     <primitive object={retainedModel} />
-    <GroundClearing pack={flagstone} />
-    <ApproachPath pack={flagstone} />
-    <AuthoredMasonryGarden source={sanctuary.scene} />
-    <mesh name="home-walkable-navigation-surface" position={[0, 0.22, -1.8]} rotation={[-Math.PI / 2, 0, 0]} onClick={onWalk}>
+    <mesh name="home-walkable-navigation-surface" position={[0, 0.28, -1.8]} rotation={[-Math.PI / 2, 0, 0]} onClick={onWalk}>
       <planeGeometry args={[21, 21]} />
       <meshBasicMaterial transparent opacity={0} depthWrite={false} colorWrite={false} />
     </mesh>
@@ -836,7 +846,6 @@ function SacredScene(props:{input:MovementInput;yaw:MutableRefObject<number>;pit
     <directionalLight position={[-5,5,10]} intensity={0.54} color="#d2b27a" />
     <spotLight position={[1,11,8]} intensity={0.9} color="#f5eee0" distance={38} angle={0.5} penumbra={0.98} decay={2} castShadow />
     <ArchitecturalPracticals />
-    <SanctuaryLivingArchitecture />
     <RitualFloor target={props.target} />
     <MoonAndMist reducedMotion={props.reducedMotion} />
     <OrbPlatform />
