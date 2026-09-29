@@ -6,6 +6,7 @@ const root = process.cwd()
 const normalize = (value) => value.replace(/\r\n?/g, '\n')
 const workflow = normalize(readFileSync(path.join(root, '.github', 'workflows', 'spatial-live-deploy.yml'), 'utf8'))
 const operator = normalize(readFileSync(path.join(root, 'scripts', 'live-release.mjs'), 'utf8'))
+const recovery = normalize(readFileSync(path.join(root, 'scripts', 'firebase-hosting-recovery.mjs'), 'utf8'))
 const failures = []
 
 const requireMarker = (label, source, marker) => {
@@ -17,58 +18,85 @@ const forbidPattern = (label, source, pattern, description) => {
 
 for (const marker of [
   'name: URAI Canonical Production Release Verification',
-  'permissions:\n  contents: read',
-  'EXACT_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}',
-  'name: Verify canonical source with production release quarantined',
-  'name: Prove short-lived Google WIF identity',
-  "if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'",
+  'workflow_dispatch:',
+  'source_pr:',
+  'approved_source_sha:',
+  'release_sha:',
+  'rollback_sha:',
+  'confirm:',
+  "if: github.event_name == 'workflow_dispatch'",
+  'environment: production',
+  'checks: read',
+  'pull-requests: read',
   'id-token: write',
+  'name: Authorize exact merged release and independent source approval',
+  'Release Governance Guard',
+  "test \"$CONFIRM\" = 'DEPLOY_URAI_APP'",
+  'git merge-base --is-ancestor "$ROLLBACK_SHA" "$RELEASE_SHA"',
   'google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093',
   "workload_identity_provider: 'projects/952723774155/locations/global/workloadIdentityPools/urai-github-prod/providers/github-actions'",
   "service_account: 'urai-spatial-github-deployer@urai-4dc1d.iam.gserviceaccount.com'",
-  "access_token_scopes: 'https://www.googleapis.com/auth/cloud-platform.read-only'",
-  'create_credentials_file: false',
-  'export_environment_variables: false',
-  'Production mutation command: none',
+  "access_token_scopes: 'https://www.googleapis.com/auth/cloud-platform'",
+  'create_credentials_file: true',
+  'export_environment_variables: true',
+  'node scripts/firebase-hosting-recovery.mjs discover',
+  'node scripts/write-release-fingerprint.mjs',
+  'node scripts/live-release.mjs --deploy-prebuilt',
+  'RESTORE_EXACT_HOSTING_VERSION',
+  'node scripts/firebase-hosting-recovery.mjs restore',
+  'node scripts/firebase-hosting-recovery.mjs verify-restored',
   'persist-credentials: false',
-  'Classification: NO-GO',
-  'Production release and Hosting recovery are intentionally quarantined.',
-]) requireMarker('Release verification workflow', workflow, marker)
+  'Classification: PREPARED / FAIL-CLOSED',
+]) requireMarker('Release workflow', workflow, marker)
 
 for (const marker of [
   "process.argv.includes('--deploy')",
   "process.argv.includes('--deploy-prebuilt')",
   'forbiddenCredentialEnv',
-  'Refusing long-lived Firebase credential environment variable:',
-  'URAI Spatial production release is NO-GO',
-  'No provider credentials were loaded and no production mutation was attempted.',
+  "process.env.GITHUB_ACTIONS !== 'true'",
+  "process.env.GITHUB_REF !== 'refs/heads/main'",
+  "URAI_GOVERNED_DEPLOY_AUTHORIZED",
+  'DEPLOY_URAI_APP',
+  'Production deployment requires short-lived external_account WIF ADC',
+  'URAI_HOSTING_RECOVERY_RECEIPT',
+  'firebase.static.json',
+  '--only',
+  'hosting',
 ]) requireMarker('Fail-closed release operator', operator, marker)
 
-forbidPattern('Release verification workflow', workflow, /\bsecrets\s*\./, 'repository secret reference')
-forbidPattern('Release verification workflow', workflow, /environment\s*:\s*production/, 'production environment')
-forbidPattern('Release verification workflow', workflow, /contents\s*:\s*write|actions\s*:\s*write/, 'repository write authority')
-if ((workflow.match(/id-token\s*:\s*write/g) || []).length !== 1) failures.push('Release verification workflow must expose exactly one OIDC write permission for the main-only WIF proof job')
-forbidPattern('Release verification workflow', workflow, /live-release\.mjs\s+--deploy(?:-prebuilt)?/, 'release mutation command')
-forbidPattern('Release verification workflow', workflow, /firebase(?:-tools)?(?:@[^\s]+)?\s+deploy|pnpm\s+live:deploy|gcloud\s+deploy/, 'provider mutation command')
-forbidPattern('Fail-closed release operator', operator, /deployHostingWithTemporaryCredentials|writeTemporaryServiceAccount|createSign\s*\(/, 'credential materialization or provider mutation implementation')
+for (const marker of [
+  'function accessTokenFromWif()',
+  'GOOGLE_WIF_ACCESS_TOKEN',
+  'Long-lived Google/Firebase credential variable is prohibited',
+]) requireMarker('Hosting recovery', recovery, marker)
+
+forbidPattern('Release workflow', workflow, /\bsecrets\s*\./, 'repository secret reference')
+forbidPattern('Release workflow', workflow, /contents\s*:\s*write|actions\s*:\s*write/, 'repository write permission')
+forbidPattern('Release operator', operator, /FIREBASE_SERVICE_ACCOUNT_JSON[^\n]*\|\||process\.env\.FIREBASE_SERVICE_ACCOUNT_JSON[^\n]*deploy/i, 'service-account deployment fallback')
+
+if ((workflow.match(/id-token\s*:\s*write/g) || []).length !== 1) {
+  failures.push('Release workflow must expose OIDC write authority exactly once')
+}
 
 const pinnedActions = [...workflow.matchAll(/uses:\s+([^\s]+)/g)].map((match) => match[1])
 for (const action of pinnedActions) {
-  if (/^[^/]+\/[^@]+@/.test(action) && !/@[0-9a-f]{40}$/.test(action)) failures.push(`Release verification workflow contains non-immutable action reference: ${action}`)
+  if (/^[^/]+\/[^@]+@/.test(action) && !/@[0-9a-f]{40}$/.test(action)) {
+    failures.push(`Release workflow contains non-immutable action reference: ${action}`)
+  }
 }
 
 const report = {
-  schemaVersion: 'urai-release-credential-boundary-static-9',
+  schemaVersion: 'urai-release-credential-boundary-static-10',
   ok: failures.length === 0,
-  mode: 'quarantine-no-go-with-main-only-read-only-wif-proof',
+  mode: 'governed-main-only-wif-deploy',
   exactHeadVerificationOnly: true,
-  productionMutationAvailable: false,
+  productionMutationAvailable: true,
+  productionMutationManualDispatchOnly: true,
   longLivedProductionCredentialsAvailable: false,
-  mainOnlyReadOnlyWifProofConfigured: true,
-  repositorySecretsReferenced: false,
-  providerWifIamProofRequiredBeforeMutation: true,
+  shortLivedWifDeploymentConfigured: true,
+  rollbackCaptureRequiredBeforeMutation: true,
   independentReviewRequiredBeforeMutation: true,
-  releaseClassification: 'NO-GO',
+  releaseClassification: 'PREPARED',
   failures,
 }
 
