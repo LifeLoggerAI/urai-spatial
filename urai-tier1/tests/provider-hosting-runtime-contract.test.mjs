@@ -7,6 +7,8 @@ const functionsIndex = fs.readFileSync(new URL('../../apps/functions/src/index.t
 const providerFunctions = fs.readFileSync(new URL('../../apps/functions/src/providerFunctions.ts', import.meta.url), 'utf8')
 const openAiClient = fs.readFileSync(new URL('../src/spatial/orb/openaiClient.ts', import.meta.url), 'utf8')
 const narratorClient = fs.readFileSync(new URL('../src/spatial/narrator/elevenlabsClient.ts', import.meta.url), 'utf8')
+const providerCanaryRouter = fs.readFileSync(new URL('../../apps/functions/src/providerCanaryRouter.ts', import.meta.url), 'utf8')
+const providerCanaryClient = fs.readFileSync(new URL('../src/spatial/providers/providerCanaryClient.ts', import.meta.url), 'utf8')
 const staticProviderRoutes = [
   new URL('../src/app/api/google/oauth/start/route.ts', import.meta.url),
   new URL('../src/app/api/google/oauth/callback/route.ts', import.meta.url),
@@ -23,11 +25,13 @@ test('static Hosting rewrites every live provider URL to secret-bound Firebase F
     { source: '/api/google/oauth/callback', function: { functionId: 'googleOAuthCallback', region: 'us-central1' } },
     { source: '/api/google/oauth/status', function: { functionId: 'googleOAuthStatus', region: 'us-central1' } },
     { source: '/api/google/oauth/disconnect', function: { functionId: 'googleOAuthDisconnect', region: 'us-central1' } },
+    { source: '/api/urai/providers/canary', function: { functionId: 'providerCanaryRouter', region: 'us-central1' } },
     { source: '/api/urai/orb/openai', function: { functionId: 'openAiOrbProvider', region: 'us-central1' } },
     { source: '/api/urai/narrator/elevenlabs', function: { functionId: 'elevenLabsVoiceProvider', region: 'us-central1' } },
     { source: '/api/voice/elevenlabs', function: { functionId: 'elevenLabsVoiceProvider', region: 'us-central1' } },
   ])
   assert.match(functionsIndex, /elevenLabsVoiceProvider, openAiOrbProvider/)
+  assert.match(functionsIndex, /providerCanaryRouter/)
   for (const handler of ['googleOAuthCallback', 'googleOAuthDisconnect', 'googleOAuthStart', 'googleOAuthStatus']) {
     assert.match(functionsIndex, new RegExp(`\\b${handler}\\b`))
   }
@@ -48,8 +52,22 @@ test('provider functions bind secrets, auth, consent, throttling, privacy and ca
   assert.doesNotMatch(providerFunctions, /console\.(log|info|warn|error)\([^)]*(message|text|context)/)
 })
 
+test('DigitalOcean canary keeps secrets server-side, consented, synthetic-only and same-origin', () => {
+  assert.match(providerCanaryRouter, /defineSecret\('DIGITALOCEAN_MODEL_ACCESS_KEY'\)/)
+  assert.match(providerCanaryRouter, /URAI_ENABLE_DIGITALOCEAN !== 'true'/)
+  assert.match(providerCanaryRouter, /verifyIdToken\([^,]+, true\)/)
+  assert.match(providerCanaryRouter, /privacyPolicy\/current/)
+  assert.match(providerCanaryRouter, /syntheticTest !== true/)
+  assert.match(providerCanaryRouter, /dataClass !== 'synthetic'/)
+  assert.match(providerCanaryRouter, /providerRateLimits/)
+  assert.match(providerCanaryRouter, /private, no-store, max-age=0/)
+  assert.match(providerCanaryClient, /fetch\('\/api\/urai\/providers\/canary'/)
+  assert.doesNotMatch(providerCanaryClient, /inference\.do-ai\.run/)
+})
+
 test('browser clients are same-origin and no static route can shadow provider rewrites', () => {
   assert.match(openAiClient, /fetch\('\/api\/urai\/orb\/openai'/)
   assert.match(narratorClient, /fetch\("\/api\/urai\/narrator\/elevenlabs"/)
+  assert.match(providerCanaryClient, /fetch\('\/api\/urai\/providers\/canary'/)
   for (const route of staticProviderRoutes) assert.equal(fs.existsSync(route), false)
 })
