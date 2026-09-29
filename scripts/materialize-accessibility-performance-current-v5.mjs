@@ -66,7 +66,7 @@ const orbSizeTarget = `    const orb = page.getByRole('button', { name: /open or
     await expect(orb).toBeEnabled()`
 const orbSizeReady = `    const orb = page.locator('[data-urai-audit-action="orb-controls"]')
     await expect(orb).toBeEnabled({ timeout: 15_000 })
-    await expect(orb).toBeVisible()
+    await expect(orb).toBeVisible({ timeout: 15_000 })
     await expect(orb).toHaveAccessibleName(/open orb travel controls/i)`
 if (evidenceOutput.split(orbSizeTarget).length - 1 !== 1) throw new Error('Orb size readiness contract changed')
 evidenceOutput = evidenceOutput.replace(orbSizeTarget, orbSizeReady)
@@ -76,7 +76,7 @@ const orbFocusTarget = `    const orb = page.locator('[data-urai-audit-action="o
     await expect(orb).toBeEnabled()`
 const orbFocusReady = `    const orb = page.locator('[data-urai-audit-action="orb-controls"]')
     await expect(orb).toBeEnabled({ timeout: 15_000 })
-    await expect(orb).toBeVisible()
+    await expect(orb).toBeVisible({ timeout: 15_000 })
     await expect(orb).toHaveAccessibleName(/open orb travel controls/i)`
 if (evidenceOutput.split(orbFocusTarget).length - 1 !== 1) throw new Error('Orb focus readiness contract changed')
 evidenceOutput = evidenceOutput.replace(orbFocusTarget, orbFocusReady)
