@@ -4,8 +4,20 @@ const captureUrl = new URL('./capture-continuous-spatial-proof-v18.mjs', import.
 const groupedUrl = new URL('./run-continuous-spatial-proof-v21-grouped.mjs', import.meta.url)
 const original = await readFile(captureUrl, 'utf8')
 const oldOwner = "result.animationOwner === 'authored-sanctuary-plus-gltf-interactions'"
-const newOwner = "result.animationOwner === 'canonical-sanctuary-plus-cc0-fern-plus-living-orb'"
+const newOwner = "result.animationOwner === 'sacred-tech-sanctuary-v12'"
 if (original.split(oldOwner).length - 1 !== 1) throw new Error('Continuous proof animation-owner contract changed')
+
+const staleOrbClips = `const orbClips = {
+  dormant: 'Orb_Resting', idle: 'Orb_Idle', attention: 'Orb_Attention', listening: 'Orb_Listening',
+  thinking: 'Orb_Thinking', speaking: 'Orb_Speaking', guiding: 'Orb_Guiding', reflecting: 'Orb_Reflecting',
+  calming: 'Orb_Calming', privacy: 'Orb_Privacy', warning: 'Orb_Degraded', transition: 'Orb_Transition',
+}`
+const sacredOrbClips = `const orbClips = {
+  dormant: 'orb-rest', idle: 'orb-breathe', attention: 'orb-attention', listening: 'orb-listening',
+  thinking: 'orb-thinking', speaking: 'orb-speaking', guiding: 'orb-guide', reflecting: 'orb-reflect',
+  calming: 'orb-calm', privacy: 'orb-privacy', warning: 'orb-warning', transition: 'orb-transition',
+}`
+if (original.split(staleOrbClips).length - 1 !== 1) throw new Error('Continuous proof Orb sensory-output contract changed')
 
 const staleEnvironmentalRadius = 'radius: 2.2'
 const runtimeEnvironmentalRadius = 'radius: 2.8'
@@ -26,6 +38,7 @@ if (original.split(staleLifeMapTarget).length - 1 !== 1) throw new Error('Contin
 
 const patched = original
   .replace(oldOwner, newOwner)
+  .replace(staleOrbClips, sacredOrbClips)
   .replaceAll(staleEnvironmentalRadius, runtimeEnvironmentalRadius)
   .replace(staleOrbRadius, runtimeOrbRadius)
   .replace(staleGroundTarget, runtimeGroundTarget)

@@ -38,6 +38,13 @@
         }
       },
       {
+        "source": "/api/urai/providers/canary",
+        "function": {
+          "functionId": "providerCanaryRouter",
+          "region": "us-central1"
+        }
+      },
+      {
         "source": "/api/urai/orb/openai",
         "function": {
           "functionId": "openAiOrbProvider",
