@@ -172,7 +172,78 @@ function FocusCameraRig({ controls, recenterSignal, shellRef }: { controls: RefO
 
 function StellarPhotosphere({ accent, light, reducedMotion }: { accent: string; light: string; reducedMotion: boolean }) {
   const corona = useRef<THREE.Group>(null)
+  const photosphere = useMemo(() => new THREE.ShaderMaterial({
+    uniforms: {
+      uTime: { value: 0 },
+      uAccent: { value: new THREE.Color(accent) },
+      uLight: { value: new THREE.Color(light) },
+    },
+    vertexShader: `
+      varying vec3 vObjectPosition;
+      varying vec3 vNormalView;
+      void main() {
+        vObjectPosition = position;
+        vNormalView = normalize(normalMatrix * normal);
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+      }
+    `,
+    fragmentShader: `
+      uniform float uTime;
+      uniform vec3 uAccent;
+      uniform vec3 uLight;
+      varying vec3 vObjectPosition;
+      varying vec3 vNormalView;
+
+      float hash(vec3 p) {
+        p = fract(p * .3183099 + .113);
+        p *= 17.0;
+        return fract(p.x * p.y * p.z * (p.x + p.y + p.z));
+      }
+
+      float noise(vec3 x) {
+        vec3 i = floor(x);
+        vec3 f = fract(x);
+        f = f * f * (3.0 - 2.0 * f);
+        return mix(
+          mix(mix(hash(i), hash(i + vec3(1,0,0)), f.x),
+              mix(hash(i + vec3(0,1,0)), hash(i + vec3(1,1,0)), f.x), f.y),
+          mix(mix(hash(i + vec3(0,0,1)), hash(i + vec3(1,0,1)), f.x),
+              mix(hash(i + vec3(0,1,1)), hash(i + vec3(1,1,1)), f.x), f.y),
+          f.z
+        );
+      }
+
+      void main() {
+        vec3 p = normalize(vObjectPosition);
+        float t = uTime * .055;
+        float large = noise(p * 4.3 + vec3(t, -t * .52, t * .31));
+        float medium = noise(p * 10.5 - vec3(t * .34, t * .21, -t * .18));
+        float fine = noise(p * 28.0 + vec3(-t * .2, t * .26, t * .11));
+        float granulation = clamp(large * .48 + medium * .36 + fine * .16, 0.0, 1.0);
+        float cells = smoothstep(.28, .82, granulation);
+        float filament = smoothstep(.58, .91, abs(sin((p.x - p.y * .7 + p.z * .44) * 17.0 + medium * 8.0)));
+        float viewFacing = clamp(vNormalView.z * .5 + .5, 0.0, 1.0);
+        float limb = pow(viewFacing, .38);
+        float mottling = .72 + cells * .42 - filament * .14;
+        vec3 whiteGold = vec3(1.0, .89, .56);
+        vec3 hotWhite = vec3(1.0, .995, .94);
+        vec3 amber = vec3(1.0, .42, .06);
+        vec3 surface = mix(amber, whiteGold, .58 + cells * .34);
+        surface = mix(surface, hotWhite, fine * .48 + limb * .22);
+        surface = mix(surface, uLight, .08);
+        surface = mix(surface, uAccent, .035);
+        float radiance = (1.02 + granulation * .26) * (.72 + limb * .42) * mottling;
+        gl_FragColor = vec4(clamp(surface * radiance, 0.0, 1.0), 1.0);
+        #include <colorspace_fragment>
+      }
+    `,
+    toneMapped: false,
+  }), [accent, light])
+
+  useEffect(() => () => photosphere.dispose(), [photosphere])
+
   useFrame(({ clock }) => {
+    photosphere.uniforms.uTime.value = reducedMotion ? 0 : clock.elapsedTime
     if (!corona.current || reducedMotion) return
     corona.current.rotation.y = clock.elapsedTime * 0.035
     corona.current.rotation.z = Math.sin(clock.elapsedTime * 0.18) * 0.045
@@ -182,56 +253,28 @@ function StellarPhotosphere({ accent, light, reducedMotion }: { accent: string; 
     <group
       ref={corona}
       name="focus-stellar-photosphere-corona"
-      userData={{ canon: 'memory-star-stellar-photosphere-corona' }}
+      userData={{ canon: 'memory-star-stellar-photosphere-corona', surface: 'procedural-granulation-filaments-limb-darkening' }}
       position={[0, 0.35, -1.55]}
     >
       <mesh>
-        <sphereGeometry args={[1.15, 96, 96]} />
-        <meshStandardMaterial
-          color="#fff5d6"
-          emissive={light}
-          emissiveIntensity={4.2}
-          roughness={0.72}
-          metalness={0}
-          toneMapped={false}
-        />
+        <sphereGeometry args={[1.15, 112, 96]} />
+        <primitive object={photosphere} attach="material" />
       </mesh>
-      <mesh scale={1.09}>
+      <mesh scale={1.075}>
         <sphereGeometry args={[1.15, 80, 80]} />
-        <meshBasicMaterial
-          color={light}
-          transparent
-          opacity={0.16}
-          side={THREE.BackSide}
-          depthWrite={false}
-          blending={THREE.AdditiveBlending}
-        />
+        <meshBasicMaterial color="#fff0b5" transparent opacity={0.23} side={THREE.BackSide} depthWrite={false} blending={THREE.AdditiveBlending} toneMapped={false} />
       </mesh>
-      <mesh scale={1.28}>
+      <mesh scale={1.22}>
         <sphereGeometry args={[1.15, 64, 64]} />
-        <meshBasicMaterial
-          color={accent}
-          transparent
-          opacity={0.075}
-          side={THREE.BackSide}
-          depthWrite={false}
-          blending={THREE.AdditiveBlending}
-        />
+        <meshBasicMaterial color={light} transparent opacity={0.105} side={THREE.BackSide} depthWrite={false} blending={THREE.AdditiveBlending} toneMapped={false} />
       </mesh>
-      <mesh scale={1.58}>
+      <mesh scale={1.52}>
         <sphereGeometry args={[1.15, 48, 48]} />
-        <meshBasicMaterial
-          color={accent}
-          transparent
-          opacity={0.025}
-          side={THREE.BackSide}
-          depthWrite={false}
-          blending={THREE.AdditiveBlending}
-        />
+        <meshBasicMaterial color={accent} transparent opacity={0.042} side={THREE.BackSide} depthWrite={false} blending={THREE.AdditiveBlending} toneMapped={false} />
       </mesh>
-      <Sparkles count={reducedMotion ? 26 : 72} scale={[4.2, 4.2, 4.2]} size={reducedMotion ? 1.6 : 2.25} speed={reducedMotion ? 0 : 0.12} opacity={0.62} color={light} />
-      <pointLight color={light} intensity={10.5} distance={18} decay={2} />
-      <pointLight color={accent} intensity={4.4} distance={13} decay={2} />
+      <Sparkles count={reducedMotion ? 34 : 96} scale={[4.6, 4.6, 4.6]} size={reducedMotion ? 1.7 : 2.4} speed={reducedMotion ? 0 : 0.14} opacity={0.7} color="#fff0ba" />
+      <pointLight color="#fff0ba" intensity={12.5} distance={20} decay={2} />
+      <pointLight color={accent} intensity={4.8} distance={14} decay={2} />
     </group>
   )
 }
