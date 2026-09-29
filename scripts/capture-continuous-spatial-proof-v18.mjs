@@ -536,11 +536,12 @@ async function captureFallback(browser) {
     screenshot: path.relative(outputDir, screenshot),
     fallbackVisible: await fallback.isVisible(),
     semanticButtons: await semantic.getByRole('button').count(),
+    semanticLinks: await semantic.getByRole('link').count(),
     diagnostics: diagnostics(),
   }
   record.video = await closeAndRecordVideo(context, page, record.id)
   receipt.captures.push(record)
-  if (!record.fallbackVisible || record.semanticButtons !== 3 || record.diagnostics.pageErrors.length || record.diagnostics.consoleErrors.length) receipt.errors.push(record)
+  if (!record.fallbackVisible || record.semanticButtons !== 2 || record.semanticLinks !== 1 || record.diagnostics.pageErrors.length || record.diagnostics.consoleErrors.length || record.diagnostics.failedRequests.length) receipt.errors.push(record)
 }
 
 const browser = await chromium.launch({ headless: true })
