@@ -10,20 +10,20 @@ import { requestUraiWorldOrbOpen, requestUraiWorldTravel } from '@/spatial/world
 type RendererState = 'ready' | 'recovering' | 'failed'
 
 function HomeSemanticNavigation() {
-  const activateWithKeyboard = (event: ReactKeyboardEvent<HTMLButtonElement>, action: () => void) => {
+  const activateWithKeyboard = (event: ReactKeyboardEvent<HTMLButtonElement>) => {
     if (event.key !== 'Enter' && event.key !== ' ') return
     event.preventDefault()
     event.stopPropagation()
-    action()
+    event.currentTarget.click()
   }
   const openGround = () => requestUraiWorldTravel({ destination: 'infrastructure-hub', href: '/ground/', entryPortal: 'home-ground', cameraCheckpoint: 'home-ground-descent' })
   const openLifeMap = () => requestUraiWorldTravel({ destination: 'life-map', href: '/life-map/?from=home-sky', entryPortal: 'home-sky', cameraCheckpoint: 'home-sky-ascent-complete' })
 
   return (
     <nav className="home-semantic-navigation" aria-label="Accessible Home destinations" data-home-navigation-owner="runtime-boundary" data-home-navigation-non-dominant="true">
-      <button type="button" aria-label="Open URAI Orb companion" data-testid="home-semantic-orb" onClick={requestUraiWorldOrbOpen} onKeyDown={(event) => activateWithKeyboard(event, requestUraiWorldOrbOpen)}>Open URAI Orb companion</button>
-      <button type="button" aria-label="Open Ground directly" data-testid="home-semantic-ground" onClick={openGround} onKeyDown={(event) => activateWithKeyboard(event, openGround)}>Ground</button>
-      <button type="button" aria-label="Open Life Map directly" data-testid="home-semantic-life-map" onClick={openLifeMap} onKeyDown={(event) => activateWithKeyboard(event, openLifeMap)}>Life Map</button>
+      <button type="button" aria-label="Open URAI Orb companion" data-testid="home-semantic-orb" onClick={requestUraiWorldOrbOpen} onKeyDown={activateWithKeyboard}>Open URAI Orb companion</button>
+      <button type="button" aria-label="Open Ground directly" data-testid="home-semantic-ground" onClick={openGround} onKeyDown={activateWithKeyboard}>Ground</button>
+      <button type="button" aria-label="Open Life Map directly" data-testid="home-semantic-life-map" onClick={openLifeMap} onKeyDown={activateWithKeyboard}>Life Map</button>
     </nav>
   )
 }
