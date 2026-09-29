@@ -191,21 +191,21 @@ function AuthoredFocusChamber() {
 }
 
 function ChamberArchitecture({ accent, light, reducedMotion }: { accent: string; light: string; reducedMotion: boolean }) {
-  const outer = useRef<THREE.Group>(null)
-  const inner = useRef<THREE.Group>(null)
+  const veil = useRef<THREE.Group>(null)
   useFrame(({ clock }) => {
-    if (reducedMotion) return
-    if (outer.current) outer.current.rotation.z = clock.elapsedTime * 0.018
-    if (inner.current) inner.current.rotation.z = -clock.elapsedTime * 0.027
+    if (reducedMotion || !veil.current) return
+    veil.current.rotation.y = Math.sin(clock.elapsedTime * 0.11) * 0.05
   })
-  return <group name="focus-observatory-atmosphere">
-    <group ref={outer} rotation={[Math.PI / 2.18, 0, 0]}>
-      <mesh><torusGeometry args={[5.6, 0.025, 12, 180]} /><meshBasicMaterial color={light} transparent opacity={0.18} depthWrite={false} /></mesh>
-      <mesh rotation={[0.35, 0.2, 0.5]}><torusGeometry args={[4.45, 0.018, 10, 160]} /><meshBasicMaterial color={accent} transparent opacity={0.24} depthWrite={false} /></mesh>
+  return <group name="focus-observatory-atmosphere" userData={{ visualCanon: 'stellar-light-field-no-rings' }}>
+    <group ref={veil}>
+      {[-4.8, -2.4, 0, 2.4, 4.8].map((x, index) => (
+        <mesh key={x} position={[x, 1.3 + (index % 2) * 0.45, -5.8 - Math.abs(x) * 0.12]} rotation={[0, x * -0.035, 0]}>
+          <planeGeometry args={[1.5, 9.6]} />
+          <meshBasicMaterial color={index % 2 ? accent : light} transparent opacity={0.026} depthWrite={false} blending={THREE.AdditiveBlending} side={THREE.DoubleSide} />
+        </mesh>
+      ))}
     </group>
-    <group ref={inner} rotation={[Math.PI / 2.8, 0.35, 0.1]}><mesh><torusGeometry args={[3.2, 0.014, 10, 140]} /><meshBasicMaterial color={accent} transparent opacity={0.3} depthWrite={false} /></mesh></group>
-    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -1.51, -1.2]}><ringGeometry args={[2.2, 11.4, 128]} /><meshBasicMaterial color={accent} transparent opacity={0.08} side={THREE.DoubleSide} depthWrite={false} /></mesh>
-    {[-5.4, 5.4].map((x) => <pointLight key={x} position={[x, 1.8, -3.8]} color={accent} intensity={1.6} distance={7} />)}
+    {[-5.4, 0, 5.4].map((x, index) => <pointLight key={x} position={[x, index === 1 ? 3.4 : 1.8, -3.8]} color={index === 1 ? light : accent} intensity={index === 1 ? 2.2 : 1.25} distance={9} />)}
   </group>
 }
 
@@ -243,11 +243,20 @@ function MemoryAperture({ memory, accent, light, reducedMotion, onActivate }: { 
     setHovered(state)
     document.body.style.cursor = state && memory ? 'pointer' : ''
   }
-  return <group ref={group} position={[0, 0.35, -1.55]} name="focus-memory-aperture">
-    <mesh onClick={(event) => { event.stopPropagation(); if (memory) onActivate() }} onPointerOver={(event) => pointer(event, true)} onPointerOut={(event) => pointer(event, false)}><icosahedronGeometry args={[1.18, 3]} /><meshPhysicalMaterial color="#07131f" emissive={accent} emissiveIntensity={memory ? (hovered ? 2.8 : 1.55) : 0.42} transmission={0.38} thickness={0.7} roughness={0.12} metalness={0.18} transparent opacity={memory ? 0.92 : 0.55} clearcoat={1} /></mesh>
-    <mesh scale={1.42}><icosahedronGeometry args={[1.18, 2]} /><meshBasicMaterial color={accent} wireframe transparent opacity={memory ? 0.16 : 0.08} depthWrite={false} /></mesh>
-    <mesh rotation={[Math.PI / 2, 0, 0]}><torusGeometry args={[1.75, 0.025, 12, 120]} /><meshBasicMaterial color={light} transparent opacity={hovered ? 0.72 : 0.28} depthWrite={false} /></mesh>
-    <pointLight color={accent} intensity={memory ? 6.5 : 2.1} distance={11} decay={2} />
+  return <group ref={group} position={[0, 0.35, -1.55]} name="focus-memory-aperture" userData={{ visualCanon: 'stellar-photosphere-reveals-memory' }}>
+    <mesh onClick={(event) => { event.stopPropagation(); if (memory) onActivate() }} onPointerOver={(event) => pointer(event, true)} onPointerOut={(event) => pointer(event, false)}>
+      <sphereGeometry args={[1.08, 56, 42]} />
+      <meshStandardMaterial color={light} emissive={accent} emissiveIntensity={memory ? (hovered ? 5.4 : 4.2) : 0.8} roughness={0.94} metalness={0} toneMapped={false} />
+    </mesh>
+    <mesh scale={1.1}>
+      <icosahedronGeometry args={[1.08, 5]} />
+      <meshBasicMaterial color={light} wireframe transparent opacity={memory ? (hovered ? 0.2 : 0.12) : 0.05} depthWrite={false} blending={THREE.AdditiveBlending} />
+    </mesh>
+    <mesh scale={hovered ? 1.72 : 1.58}>
+      <sphereGeometry args={[1.08, 44, 32]} />
+      <meshBasicMaterial color={accent} transparent opacity={memory ? (hovered ? 0.12 : 0.08) : 0.035} depthWrite={false} side={THREE.BackSide} blending={THREE.AdditiveBlending} />
+    </mesh>
+    <pointLight color={accent} intensity={memory ? 8.2 : 2.1} distance={13} decay={2} />
     <Html center position={[0, -2.25, 0]} transform distanceFactor={7.6}><button type="button" className="focus-spatial-aperture-button" disabled={!memory} onClick={onActivate} aria-label={memory ? `Open Replay for ${memory.title}` : 'Select a memory in Life Map to open Replay'}>{memory ? 'Enter Replay' : 'Awaiting a selected star'}</button></Html>
   </group>
 }
