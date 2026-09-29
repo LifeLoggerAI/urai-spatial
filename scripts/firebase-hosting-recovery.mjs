@@ -1,6 +1,5 @@
 #!/usr/bin/env node
 
-import { createSign } from 'node:crypto'
 import {
   existsSync,
   lstatSync,
@@ -13,10 +12,8 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const apiRoot = 'https://firebasehosting.googleapis.com/v1beta1'
-const hostingScope = 'https://www.googleapis.com/auth/firebase.hosting'
 const expectedSiteId = 'urai-4dc1d'
 const restoreConfirmation = 'RESTORE_EXACT_HOSTING_VERSION'
-const managedCredentialFilename = 'urai-firebase-service-account.json'
 
 function requireString(label, value) {
   const normalized = String(value || '').trim()
@@ -101,32 +98,6 @@ export function selectCurrentLiveRelease(releases, siteId = expectedSiteId) {
   }
 }
 
-function base64UrlJson(value) {
-  return Buffer.from(JSON.stringify(value)).toString('base64url')
-}
-
-export function createServiceAccountAssertion(serviceAccount, nowSeconds = Math.floor(Date.now() / 1000)) {
-  const clientEmail = requireString('service account client_email', serviceAccount?.client_email)
-  const privateKey = requireString('service account private_key', serviceAccount?.private_key)
-  const tokenUri = requireString('service account token_uri', serviceAccount?.token_uri)
-  const header = base64UrlJson({ alg: 'RS256', typ: 'JWT' })
-  const claims = base64UrlJson({
-    iss: clientEmail,
-    scope: hostingScope,
-    aud: tokenUri,
-    iat: nowSeconds,
-    exp: nowSeconds + 3600,
-  })
-  const unsigned = `${header}.${claims}`
-  const signer = createSign('RSA-SHA256')
-  signer.update(unsigned)
-  signer.end()
-  return {
-    assertion: `${unsigned}.${signer.sign(privateKey).toString('base64url')}`,
-    tokenUri,
-  }
-}
-
 async function requestJson(url, options = {}) {
   const response = await fetch(url, options)
   const text = await response.text()
@@ -145,57 +116,13 @@ async function requestJson(url, options = {}) {
   return body
 }
 
-async function accessTokenFromServiceAccount(serviceAccount) {
-  const { assertion, tokenUri } = createServiceAccountAssertion(serviceAccount)
-  const body = new URLSearchParams({
-    grant_type: 'urn:ietf:params:oauth:grant-type:jwt-bearer',
-    assertion,
-  })
-  const token = await requestJson(tokenUri, {
-    method: 'POST',
-    headers: { 'content-type': 'application/x-www-form-urlencoded' },
-    body,
-  })
-  return requireString('OAuth access_token', token.access_token)
-}
-
-function parseServiceAccount(raw) {
-  let parsed
-  try {
-    parsed = JSON.parse(raw)
-  } catch {
-    throw new Error('Firebase service-account material must contain valid JSON')
+function accessTokenFromWif() {
+  for (const name of ['FIREBASE_SERVICE_ACCOUNT_JSON', 'FIREBASE_PRIVATE_KEY', 'FIREBASE_CLIENT_EMAIL', 'FIREBASE_TOKEN']) {
+    if (String(process.env[name] || '').trim()) {
+      throw new Error(`Long-lived Google/Firebase credential variable is prohibited: ${name}`)
+    }
   }
-  if (!parsed || typeof parsed !== 'object' || parsed.project_id !== expectedSiteId) {
-    throw new Error(`Service-account project mismatch: ${parsed?.project_id || 'missing'}`)
-  }
-  return parsed
-}
-
-function managedCredentialPath() {
-  const runnerTemp = resolveRunnerTemp()
-  const requested = String(process.env.GOOGLE_APPLICATION_CREDENTIALS || '').trim()
-    || path.join(runnerTemp, managedCredentialFilename)
-  const resolved = assertPathInsideRunnerTemp('Managed Firebase credential path', requested)
-  if (path.basename(resolved) !== managedCredentialFilename) {
-    throw new Error(`Managed Firebase credential path must use ${managedCredentialFilename}`)
-  }
-  return resolved
-}
-
-function serviceAccountFromEnvironment() {
-  const raw = String(process.env.FIREBASE_SERVICE_ACCOUNT_JSON || '').trim()
-  if (raw) return parseServiceAccount(raw)
-
-  const credentialPath = managedCredentialPath()
-  if (!existsSync(credentialPath)) {
-    throw new Error(`Managed Firebase credential file is missing: ${credentialPath}`)
-  }
-  const stats = lstatSync(credentialPath)
-  if (!stats.isFile() || stats.isSymbolicLink()) {
-    throw new Error('Managed Firebase credential must be a regular non-symlinked file')
-  }
-  return parseServiceAccount(readFileSync(credentialPath, 'utf8'))
+  return requireString('GOOGLE_WIF_ACCESS_TOKEN', process.env.GOOGLE_WIF_ACCESS_TOKEN)
 }
 
 function resolveReceiptPath() {
@@ -255,16 +182,15 @@ async function fetchVersion(accessToken, versionName) {
   })
 }
 
-async function currentLiveRelease(serviceAccount, siteId) {
-  const accessToken = await accessTokenFromServiceAccount(serviceAccount)
+async function currentLiveRelease(accessToken, siteId) {
   const release = selectCurrentLiveRelease(await listAllReleases(accessToken, siteId), siteId)
   return { accessToken, release }
 }
 
 export async function discoverCurrentLiveRelease() {
   const siteId = assertSiteId(process.env.FIREBASE_SITE_ID || expectedSiteId)
-  const serviceAccount = serviceAccountFromEnvironment()
-  const { accessToken, release } = await currentLiveRelease(serviceAccount, siteId)
+  const accessToken = accessTokenFromWif()
+  const { release } = await currentLiveRelease(accessToken, siteId)
   const version = await fetchVersion(accessToken, release.versionName)
   const restorable = assertRestorableVersion(version, release.versionName)
   const receiptPath = resolveReceiptPath()
@@ -294,8 +220,7 @@ export async function restoreDiscoveredVersion() {
     throw new Error(`Restore requires URAI_HOSTING_RESTORE_CONFIRM=${restoreConfirmation}`)
   }
   const { receiptPath, receipt, siteId, versionName } = readRecoveryReceipt()
-  const serviceAccount = serviceAccountFromEnvironment()
-  const accessToken = await accessTokenFromServiceAccount(serviceAccount)
+  const accessToken = accessTokenFromWif()
   assertRestorableVersion(await fetchVersion(accessToken, versionName), versionName)
   const url = new URL(`${apiRoot}/sites/${siteId}/releases`)
   url.searchParams.set('versionName', versionName)
@@ -321,8 +246,7 @@ export async function verifyRestoredVersion({ attempts = 12, delayMs = 1000 } = 
   if (!Number.isInteger(delayMs) || delayMs < 0 || delayMs > 10_000) throw new Error('Restore verification delay must be between 0 and 10000 ms')
 
   const { receiptPath, receipt, siteId, versionName } = readRecoveryReceipt()
-  const serviceAccount = serviceAccountFromEnvironment()
-  const accessToken = await accessTokenFromServiceAccount(serviceAccount)
+  const accessToken = accessTokenFromWif()
   let observed = null
   for (let attempt = 1; attempt <= attempts; attempt += 1) {
     const release = selectCurrentLiveRelease(await listAllReleases(accessToken, siteId), siteId)

@@ -1,0 +1,167 @@
+name: Android Package Prep
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - "distribution/android-shell/**"
+      - "urai-tier1/**"
+      - "package.json"
+      - "pnpm-lock.yaml"
+      - "scripts/**"
+      - ".github/workflows/android-package-prep.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  unsigned-aab:
+    name: Build unsigned Android App Bundle
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      URAI_EXACT_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
+      NEXT_PUBLIC_URAI_API_ORIGIN: https://urai.app
+      ANDROID_VERSION_CODE: ${{ github.run_number }}
+      ANDROID_VERSION_NAME: 0.1.${{ github.run_number }}-unsigned
+
+    steps:
+      - name: Checkout exact head
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ env.URAI_EXACT_HEAD }}
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Prove exact clean checkout
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$URAI_EXACT_HEAD"
+          test -z "$(git status --porcelain --untracked-files=all)"
+
+      - name: Setup Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v4
+
+      - name: Install Android 36 SDK
+        shell: bash
+        run: |
+          set +o pipefail
+          yes | sdkmanager --licenses >/dev/null
+          LICENSE_STATUS=${PIPESTATUS[1]}
+          set -o pipefail
+          test "$LICENSE_STATUS" -eq 0
+          sdkmanager "platforms;android-36" "build-tools;36.0.0"
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Install canonical dependencies
+        run: corepack pnpm install --frozen-lockfile
+
+      - name: Load canonical Firebase public configuration
+        shell: bash
+        run: |
+          set -euo pipefail
+          config="$(curl --fail --silent --show-error --location --proto '=https' --tlsv1.2 https://urai.app/__/firebase/init.json)"
+          test "$(jq -r '.projectId // empty' <<<"$config")" = "urai-4dc1d"
+          test "$(jq -r '.authDomain // empty' <<<"$config")" = "urai-4dc1d.firebaseapp.com"
+          for pair in \
+            "NEXT_PUBLIC_FIREBASE_API_KEY apiKey" \
+            "NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN authDomain" \
+            "NEXT_PUBLIC_FIREBASE_PROJECT_ID projectId" \
+            "NEXT_PUBLIC_FIREBASE_APP_ID appId" \
+            "NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET storageBucket" \
+            "NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID messagingSenderId" \
+            "NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID measurementId"; do
+            env_name="${pair%% *}"
+            json_name="${pair#* }"
+            value="$(jq -r --arg key "$json_name" '.[$key] // empty' <<<"$config")"
+            test -n "$value" || { echo "Canonical Firebase config is missing: $json_name" >&2; exit 1; }
+            printf '%s=%s\n' "$env_name" "$value" >> "$GITHUB_ENV"
+          done
+
+      - name: Require release public configuration
+        shell: bash
+        run: |
+          set -euo pipefail
+          for name in NEXT_PUBLIC_FIREBASE_API_KEY NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN NEXT_PUBLIC_FIREBASE_PROJECT_ID NEXT_PUBLIC_FIREBASE_APP_ID; do
+            test -n "${!name}" || { echo "Missing required public build variable: $name" >&2; exit 1; }
+          done
+          test "$NEXT_PUBLIC_FIREBASE_PROJECT_ID" = "urai-4dc1d"
+          test "$NEXT_PUBLIC_URAI_API_ORIGIN" = "https://urai.app"
+          [[ "$ANDROID_VERSION_CODE" =~ ^[1-9][0-9]*$ ]]
+
+      - name: Build governed static export
+        run: corepack pnpm build:static
+
+      - name: Generate and sync Android project
+        working-directory: distribution/android-shell
+        run: |
+          rm -rf android
+          corepack pnpm exec cap add android
+          corepack pnpm exec cap sync android
+
+      - name: Configure verified Android App Link
+        working-directory: distribution/android-shell
+        run: node configure-app-links.mjs
+
+      - name: Apply governed Android version
+        working-directory: distribution/android-shell/android
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import os, pathlib, re
+          path = pathlib.Path("app/build.gradle")
+          text = path.read_text()
+          text, code_count = re.subn(r"versionCode\s+\d+", f"versionCode {os.environ['ANDROID_VERSION_CODE']}", text, count=1)
+          text, name_count = re.subn(r'versionName\s+"[^"]+"', f'versionName "{os.environ["ANDROID_VERSION_NAME"]}"', text, count=1)
+          if code_count != 1 or name_count != 1:
+              raise SystemExit("Generated Gradle version fields not found exactly once.")
+          path.write_text(text)
+          PY
+          grep -F "versionCode $ANDROID_VERSION_CODE" app/build.gradle
+          grep -F "versionName \"$ANDROID_VERSION_NAME\"" app/build.gradle
+
+      - name: Build release bundle without signing credentials
+        working-directory: distribution/android-shell/android
+        run: ./gradlew bundleRelease --stacktrace
+
+      - name: Prove bundle exists and remains non-authoritative
+        shell: bash
+        run: |
+          AAB="distribution/android-shell/android/app/build/outputs/bundle/release/app-release.aab"
+          test -s "$AAB"
+          sha256sum "$AAB" | tee android-aab.sha256
+          {
+            echo "status=UNSIGNED_BUILD_EVIDENCE_ONLY"
+            echo "candidate_package=com.urailabs.urai"
+            echo "source_sha=$URAI_EXACT_HEAD"
+            echo "version_code=$ANDROID_VERSION_CODE"
+            echo "version_name=$ANDROID_VERSION_NAME"
+            echo "api_origin=$NEXT_PUBLIC_URAI_API_ORIGIN"
+            echo "firebase_project=$NEXT_PUBLIC_FIREBASE_PROJECT_ID"
+            echo "aab_path=$AAB"
+          } | tee android-package-receipt.txt
+
+      - name: Retain unsigned package evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: urai-android-unsigned-aab-${{ env.URAI_EXACT_HEAD }}
+          path: |
+            distribution/android-shell/android/app/build/outputs/bundle/release/app-release.aab
+            android-aab.sha256
+            android-package-receipt.txt
+          retention-days: 30

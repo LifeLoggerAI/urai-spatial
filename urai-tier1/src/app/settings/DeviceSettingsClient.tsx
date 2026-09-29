@@ -6,6 +6,8 @@ import { getAuth, onAuthStateChanged, type User } from 'firebase/auth'
 import { app, firebasePublicEnvReady } from '@/lib/firebase/client'
 import { setHapticsEnabled, URAI_HAPTICS_STORAGE_KEY } from '@/spatial/haptics/HapticRuntime'
 import { sensorySafeEnabled, setSensorySafeEnabled } from '@/spatial/accessibility/SensorySafeRuntime'
+import { clientApiUrl } from '@/lib/clientApiUrl'
+import { openNativeGoogleAuthorization, registerNativeGoogleOAuthReturn, type NativeGoogleOAuthResult } from '@/lib/nativeGoogleOAuth'
 
 function readHapticsPreference() {
   if (typeof window === 'undefined') return true
@@ -25,9 +27,16 @@ type GoogleConnection = {
 
 type GoogleUiState = 'checking' | 'signed-out' | 'ready' | 'working' | 'error'
 
+function googleResultMessage(result: NativeGoogleOAuthResult) {
+  if (result === 'connected') return 'Google Workspace connected successfully.'
+  if (result === 'denied') return 'Google connection was not approved. Nothing was connected.'
+  if (result === 'invalid-state') return 'Google connection expired before completion. Try connecting again.'
+  return 'Google could not complete the connection. Try again when ready.'
+}
+
 async function googleRequest<T>(path: string, user: User): Promise<T> {
   const token = await user.getIdToken()
-  const response = await fetch(path, {
+  const response = await fetch(clientApiUrl(path), {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${token}`,
@@ -87,13 +96,48 @@ export default function DeviceSettingsClient() {
 
   useEffect(() => {
     if (typeof window === 'undefined') return
-    const result = new URLSearchParams(window.location.search).get('google')
-    if (!result) return
-    if (result === 'connected') setGoogleMessage('Google Workspace connected successfully.')
-    else if (result === 'denied') setGoogleMessage('Google connection was not approved. Nothing was connected.')
-    else if (result === 'invalid-state') setGoogleMessage('Google connection expired before completion. Try connecting again.')
-    else if (result === 'error') setGoogleMessage('Google could not complete the connection. Try again when ready.')
+    const result = new URLSearchParams(window.location.search).get('google') as NativeGoogleOAuthResult | null
+    if (!result || !['connected', 'denied', 'invalid-state', 'error'].includes(result)) return
+    setGoogleMessage(googleResultMessage(result))
   }, [])
+
+  useEffect(() => {
+    let disposed = false
+    let cleanup: (() => Promise<void>) | null = null
+
+    void registerNativeGoogleOAuthReturn((result) => {
+      if (disposed) return
+      setGoogleMessage(googleResultMessage(result))
+      if (!user) return
+      setGoogleState('checking')
+      void googleRequest<GoogleConnection>('/api/google/oauth/status', user)
+        .then((status) => {
+          if (disposed) return
+          setGoogleConnection(status)
+          setGoogleState('ready')
+        })
+        .catch(() => {
+          if (disposed) return
+          setGoogleState('error')
+        })
+    }).then((remove) => {
+      if (disposed) {
+        void remove()
+        return
+      }
+      cleanup = remove
+    }).catch(() => {
+      if (!disposed) {
+        setGoogleState('error')
+        setGoogleMessage('Native Google return handling is temporarily unavailable.')
+      }
+    })
+
+    return () => {
+      disposed = true
+      if (cleanup) void cleanup()
+    }
+  }, [user])
 
   const updateHaptics = (enabled: boolean) => {
     setHaptics(enabled)
@@ -112,7 +156,8 @@ export default function DeviceSettingsClient() {
     try {
       const result = await googleRequest<{ authorizationUrl: string }>('/api/google/oauth/start', user)
       if (!result.authorizationUrl.startsWith('https://accounts.google.com/')) throw new Error('Unexpected Google authorization URL.')
-      window.location.assign(result.authorizationUrl)
+      const openedNative = await openNativeGoogleAuthorization(result.authorizationUrl)
+      if (!openedNative) window.location.assign(result.authorizationUrl)
     } catch {
       setGoogleState('error')
       setGoogleMessage('Google Workspace connection could not start. Your account remains unchanged.')

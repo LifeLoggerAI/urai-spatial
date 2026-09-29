@@ -1,0 +1,293 @@
+name: Android Governed Signing Prep
+
+on:
+  workflow_dispatch:
+    inputs:
+      source_sha:
+        description: Exact reviewed source SHA to package and sign
+        required: true
+        type: string
+      pull_request:
+        description: Merged PR number whose exact approved head is being signed
+        required: true
+        type: string
+      version_code:
+        description: Monotonically increasing Google Play versionCode
+        required: true
+        type: string
+      version_name:
+        description: User-visible Android versionName
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  authorize:
+    name: Authorize exact reviewed signing source
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+    env:
+      SOURCE_SHA: ${{ inputs.source_sha }}
+      PR_NUMBER: ${{ inputs.pull_request }}
+    steps:
+      - name: Validate exact source and review authority
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const sourceSha = process.env.SOURCE_SHA;
+            const prNumber = Number(process.env.PR_NUMBER);
+            if (!/^[0-9a-f]{40}$/.test(sourceSha)) core.setFailed('source_sha_invalid');
+            if (!Number.isInteger(prNumber) || prNumber <= 0) core.setFailed('pull_request_invalid');
+            if (process.exitCode) return;
+
+            const { owner, repo } = context.repo;
+            const { data: pr } = await github.rest.pulls.get({ owner, repo, pull_number: prNumber });
+            if (!pr.merged) return core.setFailed('signing_source_pr_not_merged');
+            if (pr.head.sha !== sourceSha) return core.setFailed('signing_source_not_exact_pr_head');
+
+            const checks = await github.paginate(github.rest.checks.listForRef, {
+              owner,
+              repo,
+              ref: sourceSha,
+              check_name: 'Release Governance Guard',
+              per_page: 100,
+            });
+            const governanceGreen = checks.some((check) =>
+              check.name === 'Release Governance Guard'
+              && check.head_sha === sourceSha
+              && check.status === 'completed'
+              && check.conclusion === 'success'
+            );
+            if (!governanceGreen) core.setFailed('exact_head_release_governance_guard_not_green');
+
+  sign-aab:
+    needs: authorize
+    environment: production
+    name: Build and sign exact Android App Bundle
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      EXPECTED_PACKAGE: com.urailabs.urai
+      SOURCE_SHA: ${{ inputs.source_sha }}
+      ANDROID_VERSION_CODE: ${{ inputs.version_code }}
+      ANDROID_VERSION_NAME: ${{ inputs.version_name }}
+      NEXT_PUBLIC_URAI_API_ORIGIN: https://urai.app
+
+    steps:
+      - name: Validate exact SHA input
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "$SOURCE_SHA" =~ ^[0-9a-f]{40}$ ]]
+
+      - name: Checkout exact requested source
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ env.SOURCE_SHA }}
+
+      - name: Prove exact checkout
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$SOURCE_SHA"
+          test -z "$(git status --porcelain --untracked-files=all)"
+
+      - name: Require deliberate signing credentials
+        shell: bash
+        env:
+          KEYSTORE_B64: ${{ secrets.ANDROID_UPLOAD_KEYSTORE_B64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.ANDROID_UPLOAD_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_UPLOAD_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_UPLOAD_KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          test -n "$KEYSTORE_B64"
+          test -n "$KEYSTORE_PASSWORD"
+          test -n "$KEY_ALIAS"
+          test -n "$KEY_PASSWORD"
+          echo "::add-mask::$KEYSTORE_PASSWORD"
+          echo "::add-mask::$KEY_PASSWORD"
+
+      - name: Setup Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v4
+
+      - name: Install Android 36 SDK
+        shell: bash
+        run: |
+          set +o pipefail
+          yes | sdkmanager --licenses >/dev/null
+          LICENSE_STATUS=${PIPESTATUS[1]}
+          set -o pipefail
+          test "$LICENSE_STATUS" -eq 0
+          sdkmanager "platforms;android-36" "build-tools;36.0.0"
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Install canonical dependencies
+        run: corepack pnpm install --frozen-lockfile
+
+      - name: Verify candidate package identity
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -F "appId: '$EXPECTED_PACKAGE'" distribution/android-shell/capacitor.config.ts
+
+      - name: Load canonical Firebase public configuration
+        shell: bash
+        run: |
+          set -euo pipefail
+          config="$(curl --fail --silent --show-error --location --proto '=https' --tlsv1.2 https://urai.app/__/firebase/init.json)"
+          test "$(jq -r '.projectId // empty' <<<"$config")" = "urai-4dc1d"
+          test "$(jq -r '.authDomain // empty' <<<"$config")" = "urai-4dc1d.firebaseapp.com"
+          for pair in \
+            "NEXT_PUBLIC_FIREBASE_API_KEY apiKey" \
+            "NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN authDomain" \
+            "NEXT_PUBLIC_FIREBASE_PROJECT_ID projectId" \
+            "NEXT_PUBLIC_FIREBASE_APP_ID appId" \
+            "NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET storageBucket" \
+            "NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID messagingSenderId" \
+            "NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID measurementId"; do
+            env_name="${pair%% *}"
+            json_name="${pair#* }"
+            value="$(jq -r --arg key "$json_name" '.[$key] // empty' <<<"$config")"
+            test -n "$value" || { echo "Canonical Firebase config is missing: $json_name" >&2; exit 1; }
+            printf '%s=%s\n' "$env_name" "$value" >> "$GITHUB_ENV"
+          done
+
+      - name: Require release public configuration and version
+        shell: bash
+        run: |
+          set -euo pipefail
+          for name in NEXT_PUBLIC_FIREBASE_API_KEY NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN NEXT_PUBLIC_FIREBASE_PROJECT_ID NEXT_PUBLIC_FIREBASE_APP_ID; do
+            test -n "${!name}" || { echo "Missing required public build variable: $name" >&2; exit 1; }
+          done
+          test "$NEXT_PUBLIC_FIREBASE_PROJECT_ID" = "urai-4dc1d"
+          test "$NEXT_PUBLIC_URAI_API_ORIGIN" = "https://urai.app"
+          [[ "$ANDROID_VERSION_CODE" =~ ^[1-9][0-9]*$ ]]
+          [[ "$ANDROID_VERSION_NAME" =~ ^[0-9A-Za-z][0-9A-Za-z._+-]{0,63}$ ]]
+
+      - name: Build governed static export
+        run: corepack pnpm build:static
+
+      - name: Generate and sync Android project
+        working-directory: distribution/android-shell
+        run: |
+          set -euo pipefail
+          rm -rf android
+          corepack pnpm exec cap add android
+          corepack pnpm exec cap sync android
+
+      - name: Configure verified Android App Link
+        working-directory: distribution/android-shell
+        run: node configure-app-links.mjs
+
+      - name: Apply governed Android version
+        working-directory: distribution/android-shell/android
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import os, pathlib, re
+          path = pathlib.Path("app/build.gradle")
+          text = path.read_text()
+          text, code_count = re.subn(r"versionCode\s+\d+", f"versionCode {os.environ['ANDROID_VERSION_CODE']}", text, count=1)
+          text, name_count = re.subn(r'versionName\s+"[^"]+"', f'versionName "{os.environ["ANDROID_VERSION_NAME"]}"', text, count=1)
+          if code_count != 1 or name_count != 1:
+              raise SystemExit("Generated Gradle version fields not found exactly once.")
+          path.write_text(text)
+          PY
+          grep -F "versionCode $ANDROID_VERSION_CODE" app/build.gradle
+          grep -F "versionName \"$ANDROID_VERSION_NAME\"" app/build.gradle
+
+      - name: Build unsigned release AAB
+        working-directory: distribution/android-shell/android
+        run: ./gradlew bundleRelease --stacktrace
+
+      - name: Materialize durable upload keystore
+        shell: bash
+        env:
+          KEYSTORE_B64: ${{ secrets.ANDROID_UPLOAD_KEYSTORE_B64 }}
+        run: |
+          set -euo pipefail
+          printf '%s' "$KEYSTORE_B64" | base64 --decode > "$RUNNER_TEMP/urai-upload-key.jks"
+          test -s "$RUNNER_TEMP/urai-upload-key.jks"
+          chmod 600 "$RUNNER_TEMP/urai-upload-key.jks"
+
+      - name: Sign exact AAB
+        shell: bash
+        env:
+          KEYSTORE_PASSWORD: ${{ secrets.ANDROID_UPLOAD_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_UPLOAD_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_UPLOAD_KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          AAB="distribution/android-shell/android/app/build/outputs/bundle/release/app-release.aab"
+          test -s "$AAB"
+          jarsigner \
+            -keystore "$RUNNER_TEMP/urai-upload-key.jks" \
+            -storepass "$KEYSTORE_PASSWORD" \
+            -keypass "$KEY_PASSWORD" \
+            "$AAB" "$KEY_ALIAS"
+          jarsigner -verify -strict "$AAB"
+          sha256sum "$AAB" | tee android-signed-aab.sha256
+          keytool -list -v \
+            -keystore "$RUNNER_TEMP/urai-upload-key.jks" \
+            -storepass "$KEYSTORE_PASSWORD" \
+            -alias "$KEY_ALIAS" \
+            | awk '/SHA256:/{print "upload_certificate_sha256=" $2}' \
+            | tee android-upload-certificate.txt
+          {
+            echo "status=SIGNED_BUILD_EVIDENCE_ONLY"
+            echo "play_upload_performed=false"
+            echo "candidate_package=$EXPECTED_PACKAGE"
+            echo "source_sha=$SOURCE_SHA"
+            echo "workflow_sha=$GITHUB_SHA"
+            echo "version_code=$ANDROID_VERSION_CODE"
+            echo "version_name=$ANDROID_VERSION_NAME"
+            echo "api_origin=$NEXT_PUBLIC_URAI_API_ORIGIN"
+            echo "firebase_project=$NEXT_PUBLIC_FIREBASE_PROJECT_ID"
+            echo "aab_path=$AAB"
+          } | tee android-signed-package-receipt.txt
+
+      - name: Render verified App Link association
+        shell: bash
+        run: |
+          set -euo pipefail
+          fingerprint="$(sed -n 's/^upload_certificate_sha256=//p' android-upload-certificate.txt | tail -n 1)"
+          test -n "$fingerprint"
+          ANDROID_UPLOAD_CERT_SHA256="$fingerprint" ANDROID_ASSETLINKS_OUTPUT=android-assetlinks.json \
+            node distribution/android-shell/render-assetlinks.mjs
+          grep -F '"package_name": "com.urailabs.urai"' android-assetlinks.json
+
+      - name: Retain signed package evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: urai-android-signed-aab-${{ env.SOURCE_SHA }}
+          path: |
+            distribution/android-shell/android/app/build/outputs/bundle/release/app-release.aab
+            android-signed-aab.sha256
+            android-upload-certificate.txt
+            android-assetlinks.json
+            android-signed-package-receipt.txt
+          retention-days: 30
+
+      - name: Remove local keystore
+        if: always()
+        shell: bash
+        run: rm -f "$RUNNER_TEMP/urai-upload-key.jks"

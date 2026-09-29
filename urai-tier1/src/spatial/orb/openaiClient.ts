@@ -1,6 +1,7 @@
 import { buildOrbCompanionResponse } from '@/lib/orb-companion-contract'
 import { getAuth } from 'firebase/auth'
 import { app, firebasePublicEnvReady } from '@/lib/firebase/client'
+import { clientApiUrl } from '@/lib/clientApiUrl'
 
 export type OrbConversationMessage = {
   role: 'user' | 'assistant'
@@ -97,7 +98,7 @@ export async function requestOpenAIOrb(input: {
 
   let response: Response
   try {
-    response = await fetch('/api/urai/orb/openai', {
+    response = await fetch(clientApiUrl('/api/urai/orb/openai'), {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${token}`,
