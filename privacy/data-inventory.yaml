@@ -1,7 +1,7 @@
 repo: LifeLoggerAI/urai-spatial
 privacyGovernanceVersion: 0.1.0-draft
 owner: TBD
-lastReviewed: 2026-09-25
+lastReviewed: 2026-09-29
 status: draft_real_inventory_from_repo_audit
 sourceEvidence:
   - URAI_ECOSYSTEM_AUDIT.md
@@ -86,7 +86,7 @@ fields:
     collectionOrTable: voiceEvents
     source: user_voice_interaction
     dataClass: L5
-    purpose: planned voice interaction storage
+    purpose: store explicitly consented bounded voice-interaction transcript/tone metadata without raw audio
     consentTier: C5
     retentionClass: R6
     exportable: true
@@ -95,13 +95,13 @@ fields:
     aiTrainingAllowed: false
     adminAccessible: false
     auditRequired: true
-    implementationStatus: stubbed_per_repo_audit
+    implementationStatus: partial_consent_bound_ingestion_no_implicit_microphone
 
   - name: behavior_signal
     collectionOrTable: behaviorSignals
     source: system_collected
     dataClass: L4
-    purpose: planned behavioral signal capture for AI analysis
+    purpose: consent-bound behavioral signal capture for user-facing adaptation
     consentTier: C4
     retentionClass: R3
     exportable: true
@@ -110,13 +110,13 @@ fields:
     aiTrainingAllowed: false
     adminAccessible: false
     auditRequired: true
-    implementationStatus: stubbed_per_repo_audit
+    implementationStatus: implemented_consent_bound_server_owned_runtime
 
   - name: location_record
     collectionOrTable: locations
     source: device_or_user_provided
     dataClass: L3
-    purpose: planned location context associated with memories
+    purpose: consent-bound location context associated with memories and captured reality
     consentTier: C1
     requiredConsentPurposes:
       - location.context
@@ -127,7 +127,7 @@ fields:
     aiTrainingAllowed: false
     adminAccessible: false
     auditRequired: true
-    implementationStatus: partial_current_runtime
+    implementationStatus: partial_consent_bound_browser_snapshot_requires_preexisting_device_permission
 
   - name: captured_reality_manifest
     collectionOrTable: users/{uid}/capturedRealityAssets
@@ -190,7 +190,7 @@ processors:
     reviewStatus: needs_privacy_review
   - name: Firestore
     role: primary_database
-    status: mixed_complete_partial_stubbed_per_repo_audit
+    status: mixed_complete_partial_consent_bound_runtime
     reviewStatus: needs_privacy_review
   - name: Firebase Storage
     role: media_storage
