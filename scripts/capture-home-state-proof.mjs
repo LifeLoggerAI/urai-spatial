@@ -237,14 +237,16 @@ async function captureOrbLifecycle({ reducedMotion = 'no-preference' } = {}) {
     const owner = await waitForHomeReady(page)
     const openOrb = page.locator('.home-semantic-navigation button[aria-label="Open URAI Orb companion"]').first()
     await openOrb.waitFor({ state: 'attached', timeout: 20_000 })
-    await openOrb.evaluate((element) => element.focus())
-    await page.keyboard.press('Enter')
+    // This proof validates the semantic control and resulting application state.
+    // Dispatch directly instead of relying on Playwright pointer/actionability
+    // heuristics while the WebGL scene is continuously repainting.
+    await openOrb.dispatchEvent('click')
     await page.locator('#urai-world-companion-menu[aria-hidden="false"]').waitFor({ state: 'visible', timeout: 20_000 })
     await page.waitForFunction((selector) => document.querySelector(selector)?.getAttribute('data-home-orb-state') === 'attention', ownerSelector)
 
     const talk = page.locator('summary').filter({ hasText: 'Talk with Orb' }).first()
     await talk.waitFor({ state: 'attached', timeout: 20_000 })
-    await talk.evaluate((element) => element.click())
+    await talk.dispatchEvent('click')
     const message = page.getByLabel('Message for Orb').first()
     await message.focus()
     await page.waitForFunction((selector) => document.querySelector(selector)?.getAttribute('data-home-orb-state') === 'listening', ownerSelector)
@@ -275,7 +277,9 @@ async function captureOrbLifecycle({ reducedMotion = 'no-preference' } = {}) {
     await consent.check()
     await message.fill('Give me a short grounded reflection.')
     await message.focus()
-    await page.getByRole('button', { name: 'Send' }).click()
+    const send = page.getByRole('button', { name: 'Send' }).first()
+    await send.waitFor({ state: 'attached', timeout: 20_000 })
+    await send.dispatchEvent('click')
     await page.locator('section[aria-label="Orb response"]').waitFor({ state: 'visible', timeout: 20_000 })
     await page.waitForFunction((selector) => document.querySelector(selector)?.getAttribute('data-home-orb-state') === 'speaking', ownerSelector)
     record.respondingState = await owner.getAttribute('data-home-orb-state')
