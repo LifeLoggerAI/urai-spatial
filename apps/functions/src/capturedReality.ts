@@ -173,7 +173,12 @@ export const getCapturedRealityRuntimeUrl = functions.https.onCall(async (data, 
   }
 
   const objectPath = requirePrivateRuntimeObject(uid, assetId, snapshot.get('runtimeObject'))
-  const runtimeFile = admin.storage().bucket().file(objectPath)
+  const storageBucket = String(snapshot.get('storageBucket') ?? '')
+  const configuredBucket = admin.storage().bucket().name
+  if (!storageBucket || storageBucket !== configuredBucket) {
+    throw new functions.https.HttpsError('failed-precondition', 'CAPTURED_REALITY_STORAGE_BUCKET_MISMATCH')
+  }
+  const runtimeFile = admin.storage().bucket(storageBucket).file(objectPath)
   const runtimeSha256 = String(snapshot.get('runtimeSha256') ?? '').toLowerCase()
   const approvedSha256 = String(snapshot.get(
     accessMode === 'proof' ? 'proofApprovedRuntimeSha256' : 'reviewApprovedRuntimeSha256',

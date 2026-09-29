@@ -92,6 +92,15 @@ async function main() {
     proofApprovedRuntimeSha256: null,
     proofApprovedStorageGeneration: null,
     releaseState: 'private-pilot',
+    schemaVersion: 'urai-captured-reality-runtime-1',
+    runtimeFormat: 'splat',
+    runtimeContentType: 'application/octet-stream',
+    runtimeGaussianCount: bytes.length / 32,
+    storageBucket: args.apply ? process.env.FIREBASE_STORAGE_BUCKET : null,
+    privacyState: args.apply && args.privacyAccepted ? 'private-owner-authorized' : 'dry-run',
+    consentAuthority: args.privacyReceiptRef,
+    revocationState: 'active',
+    qualityClassification: 'technical-proof-visual-not-accepted',
     sourceCount: args.sourceIds.length,
   }
 
@@ -105,7 +114,46 @@ async function main() {
   const bucket = getStorage().bucket()
   const assetRef = db.doc(`users/${args.ownerUid}/capturedRealityAssets/${args.assetId}`)
   const existing = await assetRef.get()
-  if (existing.exists) throw new Error('Captured Reality asset already exists; proof import is create-only')
+  if (existing.exists) {
+    const existingBucket = String(existing.get('storageBucket') ?? '')
+    const existingObject = String(existing.get('runtimeObject') ?? '')
+    const existingSha = String(existing.get('runtimeSha256') ?? '').toLowerCase()
+    const existingBytes = Number(existing.get('runtimeBytes'))
+    const existingGeneration = String(existing.get('runtimeStorageGeneration') ?? '')
+    const identicalRecord =
+      existing.get('ownerId') === args.ownerUid &&
+      existingBucket === bucket.name &&
+      existingObject === runtimeObject &&
+      existingSha === sha256 &&
+      existingBytes === bytes.length &&
+      /^\d+$/.test(existingGeneration)
+
+    if (!identicalRecord) {
+      throw new Error('Captured Reality asset already exists with different authority; refusing to overwrite')
+    }
+
+    const existingObjectRef = bucket.file(runtimeObject, { generation: existingGeneration })
+    const [existingMetadata] = await existingObjectRef.getMetadata()
+    const liveGeneration = String(existingMetadata.generation ?? '')
+    const liveSha256 = String(existingMetadata.metadata?.uraiRuntimeSha256 ?? '').toLowerCase()
+    if (
+      liveGeneration !== existingGeneration ||
+      liveSha256 !== sha256 ||
+      Number(existingMetadata.size) !== bytes.length
+    ) {
+      throw new Error('Existing Captured Reality asset record does not match immutable Storage authority')
+    }
+
+    Object.assign(receipt, {
+      classification: 'PRIVATE_TECHNICAL_PROOF_ALREADY_PRESENT',
+      runtimeStorageGeneration: existingGeneration,
+      proofApprovedRuntimeSha256: sha256,
+      proofApprovedStorageGeneration: existingGeneration,
+      storageBucket: bucket.name,
+    })
+    process.stdout.write(JSON.stringify(receipt, null, 2) + '\n')
+    return
+  }
 
   const object = bucket.file(runtimeObject)
   let uploadedGeneration = null
@@ -135,6 +183,7 @@ async function main() {
     receipt.runtimeStorageGeneration = storageGeneration
     receipt.proofApprovedRuntimeSha256 = sha256
     receipt.proofApprovedStorageGeneration = storageGeneration
+    receipt.storageBucket = bucket.name
 
     await assetRef.create({
       ownerId: args.ownerUid,
@@ -154,10 +203,19 @@ async function main() {
       browserCertified: false,
       mobileCertified: false,
       xrCertified: false,
+      schemaVersion: 'urai-captured-reality-runtime-1',
+      runtimeFormat: 'splat',
+      runtimeContentType: 'application/octet-stream',
+      runtimeGaussianCount: bytes.length / 32,
+      storageBucket: bucket.name,
       runtimeObject,
       runtimeSha256: sha256,
       runtimeBytes: bytes.length,
       runtimeStorageGeneration: storageGeneration,
+      privacyState: 'private-owner-authorized',
+      consentAuthority: args.privacyReceiptRef,
+      revocationState: 'active',
+      qualityClassification: 'technical-proof-visual-not-accepted',
       proofApprovedRuntimeSha256: sha256,
       proofApprovedStorageGeneration: storageGeneration,
       truthLabel: args.truthLabel.trim(),
