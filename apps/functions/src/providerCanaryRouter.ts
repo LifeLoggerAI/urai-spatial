@@ -37,9 +37,13 @@ function bearerToken(value: unknown) {
 }
 
 async function authenticatedUid(request: { headers: Record<string, unknown> }) {
-  const decoded = await admin.auth().verifyIdToken(bearerToken(request.headers.authorization), true)
-  if (!decoded.uid) throw new ProviderBoundaryError(401, 'UNAUTHORIZED', 'Authentication is required.')
-  return decoded.uid
+  try {
+    const decoded = await admin.auth().verifyIdToken(bearerToken(request.headers.authorization), true)
+    if (!decoded.uid) throw new ProviderBoundaryError(401, 'UNAUTHORIZED', 'Authentication is required.')
+    return decoded.uid
+  } catch {
+    throw new ProviderBoundaryError(401, 'UNAUTHORIZED', 'Authentication is required.')
+  }
 }
 
 async function requireProviderConsent(uid: string, provider: CanaryProvider, explicitConsent: boolean) {
@@ -147,6 +151,14 @@ export const providerCanaryRouter = onRequest({
 }, async (request, response) => {
   const startedAt = Date.now()
   let uid = ''
+  const controller = new AbortController()
+  request.on('aborted', () => controller.abort())
+  response.on('close', () => {
+    if (!response.writableEnded) {
+      controller.abort()
+    }
+  })
+
   try {
     if (request.method !== 'POST') throw new ProviderBoundaryError(405, 'METHOD_NOT_ALLOWED', 'POST is required.')
     if (process.env.URAI_ENABLE_DIGITALOCEAN !== 'true') {
@@ -163,8 +175,9 @@ export const providerCanaryRouter = onRequest({
     await requireProviderConsent(uid, 'digitalocean', body.externalProcessingConsent === true)
     await consumeRateLimit(uid, 'digitalocean', 4)
 
-    const controller = new AbortController()
-    request.on('close', () => controller.abort())
+    if (request.aborted || response.destroyed || controller.signal.aborted) {
+      throw new ProviderBoundaryError(499, 'CLIENT_DISCONNECTED', 'Client disconnected before provider invocation.')
+    }
     const result = await runDigitalOceanSyntheticCanary({
       apiKey: DIGITALOCEAN_MODEL_ACCESS_KEY.value(),
       model: process.env.DIGITALOCEAN_MODEL_ID || 'openai-gpt-oss-20b',
