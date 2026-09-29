@@ -39,7 +39,7 @@ function harness(pendingStage) {
         : null
       const listener = { ref, fn, onError, authority }
       listeners.push(listener)
-      fn({ get: key => authority?.[key] ?? (key === 'enabled' ? true : 'granted'), exists: () => true })
+      fn({ get: key => authority ? authority[key] : key === 'enabled' ? true : 'granted', exists: () => true })
       return () => {}
     } },
     'firebase/functions': { httpsCallable: (_, name) => async () => ({ data: await stage(name === 'getCapturedRealityAsset' ? 'metadata' : 'delivery', name === 'getCapturedRealityAsset' ? metadata : delivery) }) },
