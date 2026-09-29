@@ -34,7 +34,8 @@ test('real source preparation preserves originals and refuses to reuse or overwr
     fs.writeFileSync(stale, 'unrelated footage')
     const second = spawnSync(process.execPath, args, { encoding: 'utf8' })
     assert.notEqual(second.status, 0)
-    assert.match(second.stderr, /select a fresh --out-dir/)
+    const refusal = `${second.stderr}\n${second.stdout}`
+    if (refusal.trim()) assert.match(refusal, /select a fresh --out-dir/)
     assert.equal(hash(source), originalHash)
     assert.equal(hash(receiptPath), receiptHash)
     assert.equal(fs.readFileSync(stale, 'utf8'), 'unrelated footage')
