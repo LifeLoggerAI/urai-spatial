@@ -69,6 +69,7 @@ export function PersistentWorldCompanion() {
   const current = definitionForDestination(world.destination)
   const menuRef = useRef<HTMLDivElement>(null)
   const orbRef = useRef<HTMLButtonElement>(null)
+  const externalOpenerRef = useRef<HTMLElement | null>(null)
   const restoreFocusRef = useRef(false)
   const primaryDestinations = useMemo(() => PRIMARY_DESTINATIONS.map((id) => URAI_DESTINATION_REGISTRY[id]), [])
   const secondaryDestinations = useMemo(() => SECONDARY_DESTINATIONS.map((id) => URAI_DESTINATION_REGISTRY[id]), [])
@@ -89,6 +90,7 @@ export function PersistentWorldCompanion() {
   }, [])
 
   const toggleCompanion = useCallback(() => {
+    externalOpenerRef.current = null
     if (open) closeCompanion(true)
     else {
       setOpen(true)
@@ -106,6 +108,9 @@ export function PersistentWorldCompanion() {
 
   useEffect(() => {
     const openCompanion = () => {
+      externalOpenerRef.current = document.activeElement instanceof HTMLElement && document.activeElement !== document.body
+        ? document.activeElement
+        : null
       setOpen(true)
       publishOrbState('attention', 'companion')
     }
@@ -126,7 +131,10 @@ export function PersistentWorldCompanion() {
     }
     if (restoreFocusRef.current) {
       restoreFocusRef.current = false
-      orbRef.current?.focus()
+      const externalOpener = externalOpenerRef.current
+      externalOpenerRef.current = null
+      if (externalOpener?.isConnected) externalOpener.focus()
+      else orbRef.current?.focus()
     }
   }, [open])
 
