@@ -299,7 +299,7 @@ function AuthoredMemoryStar({ aura, active, scale = 1, rotation = [0, 0, 0], cli
         />
       </mesh>
       <mesh name="memory-star-chromosphere" scale={1.09}>
-        <icosahedronGeometry args={[0.62, 5]} />
+        <sphereGeometry args={[0.62, 32, 24]} />
         <meshBasicMaterial
           color={aura}
           transparent
