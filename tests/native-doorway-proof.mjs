@@ -94,8 +94,9 @@ async function prove(browser, doorway, testCase) {
     await page.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => {})
     const target = await resolveTarget(page, doorway)
     record.legacyVisibleDoorways = await page.locator('.urai-final-home-doorways:visible').count()
-    record.semanticNavigationNonDominant = await target.evaluate((node) => {
-      const nav = node.closest('nav')
+    record.semanticNavigationNonDominant = await page.evaluate((testId) => {
+      const node = document.querySelector(`[data-testid="${testId}"]`)
+      const nav = node?.closest('nav')
       if (!nav) return false
       const style = getComputedStyle(nav)
       const rect = nav.getBoundingClientRect()
@@ -105,7 +106,7 @@ async function prove(browser, doorway, testCase) {
       const visuallyQuiet = Number.parseFloat(style.opacity || '1') <= 0.05
       const spatiallyBounded = rect.width <= 64 && navAreaRatio <= 0.03
       return declaredNonDominant && visuallyQuiet && spatiallyBounded
-    })
+    }, doorway.testId)
     if (!record.semanticNavigationNonDominant) throw new Error('semantic navigation became visually dominant')
     const activation = await activate(page, target, testCase.method)
     record.targetOwnsHitPoint = activation.targetOwnsHitPoint
