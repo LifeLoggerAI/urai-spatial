@@ -21,6 +21,7 @@ jobs:
     timeout-minutes: 45
     env:
       URAI_EXACT_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
+      NEXT_PUBLIC_URAI_BUILD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
       NEXT_PUBLIC_URAI_API_ORIGIN: https://urai.app
       ANDROID_VERSION_CODE: ${{ github.run_number }}
       ANDROID_VERSION_NAME: 0.1.${{ github.run_number }}-unsigned
