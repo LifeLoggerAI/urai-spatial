@@ -7,6 +7,12 @@ import { app, firebasePublicEnvReady } from '@/lib/firebase/client'
 import { setHapticsEnabled, URAI_HAPTICS_STORAGE_KEY } from '@/spatial/haptics/HapticRuntime'
 import { clientApiUrl } from '@/lib/clientApiUrl'
 
+function isNativeAppShell() {
+  if (typeof window === 'undefined') return false
+  const capacitor = (window as typeof window & { Capacitor?: { isNativePlatform?: () => boolean } }).Capacitor
+  return Boolean(capacitor?.isNativePlatform?.())
+}
+
 function readHapticsPreference() {
   if (typeof window === 'undefined') return true
   try {
@@ -45,6 +51,7 @@ export default function DeviceSettingsClient() {
   const [haptics, setHaptics] = useState(true)
   const [supportsVibration, setSupportsVibration] = useState(false)
   const [supportsGamepad, setSupportsGamepad] = useState(false)
+  const [nativeShell, setNativeShell] = useState(false)
   const [user, setUser] = useState<User | null>(null)
   const [googleState, setGoogleState] = useState<GoogleUiState>(firebasePublicEnvReady ? 'checking' : 'signed-out')
   const [googleConnection, setGoogleConnection] = useState<GoogleConnection | null>(null)
@@ -54,6 +61,9 @@ export default function DeviceSettingsClient() {
     setHaptics(readHapticsPreference())
     setSupportsVibration(typeof navigator !== 'undefined' && typeof navigator.vibrate === 'function')
     setSupportsGamepad(typeof navigator !== 'undefined' && typeof navigator.getGamepads === 'function')
+    const native = isNativeAppShell()
+    setNativeShell(native)
+    if (native) setGoogleMessage('Google Workspace connection is temporarily available on the web app only while the governed Android app-link return path is completed.')
   }, [])
 
   useEffect(() => {
@@ -99,6 +109,10 @@ export default function DeviceSettingsClient() {
   }
 
   const connectGoogle = async () => {
+    if (nativeShell) {
+      setGoogleMessage('Open URAI on the web to connect Google Workspace. No native OAuth request was started.')
+      return
+    }
     if (!user || googleState === 'working') return
     setGoogleState('working')
     setGoogleMessage('Opening Google permission controls...')
@@ -143,9 +157,10 @@ export default function DeviceSettingsClient() {
             <div style={{maxWidth:590}}><p style={{margin:0,fontSize:11,letterSpacing:'.18em',textTransform:'uppercase',color:'#87aab3'}}>Connected data</p><h2 id="google-workspace-heading" style={{fontSize:30,margin:'8px 0'}}>Google Workspace</h2><p style={{margin:0,color:'#b8c8ce',lineHeight:1.55}}>Connect Gmail read access, Calendar events, Contacts, and user-selected Drive files through Google’s permission screen. The connection is optional and revocable.</p></div>
             {user ? (
               googleConnection?.connected ? <button type="button" disabled={googleState==='working'} onClick={() => void disconnectGoogle()} style={{padding:'11px 16px',borderRadius:999,border:'1px solid rgba(255,255,255,.17)',background:'transparent',color:'#edf7f9',fontWeight:700,cursor:'pointer'}}>Disconnect</button>
-                : <button type="button" disabled={googleState==='working'||googleState==='checking'} onClick={() => void connectGoogle()} style={{padding:'11px 16px',borderRadius:999,border:0,background:'#e9fbfd',color:'#071116',fontWeight:800,cursor:'pointer'}}>Connect Google</button>
+                : <button type="button" disabled={nativeShell||googleState==='working'||googleState==='checking'} onClick={() => void connectGoogle()} aria-describedby={nativeShell?'google-native-boundary':undefined} style={{padding:'11px 16px',borderRadius:999,border:0,background:'#e9fbfd',color:'#071116',fontWeight:800,cursor:nativeShell?'not-allowed':'pointer'}}>Connect Google</button>
             ) : <Link href="/login" style={{padding:'11px 16px',borderRadius:999,background:'#e9fbfd',color:'#071116',fontWeight:800,textDecoration:'none'}}>Sign in first</Link>}
           </div>
+          {nativeShell && !googleConnection?.connected ? <p id="google-native-boundary" style={{margin:'18px 0 0',fontSize:13,color:'#b8c8ce',lineHeight:1.5}}>Native Google connection is intentionally unavailable until the Android app-link return path is verified. Existing connections can still be revoked here.</p> : null}
           <p role="status" aria-live="polite" style={{margin:'22px 0 0',fontSize:13,color:'#8fb4bd'}}>{googleMessage}</p>
         </section>
 
