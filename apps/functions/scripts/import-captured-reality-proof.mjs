@@ -4,6 +4,7 @@ import crypto from 'node:crypto'
 import { getApps, initializeApp } from 'firebase-admin/app'
 import { FieldValue, getFirestore } from 'firebase-admin/firestore'
 import { getStorage } from 'firebase-admin/storage'
+import { inspectSplat } from '../../../scripts/inspect-captured-reality-splat.mjs'
 
 const MAX_DESKTOP_BYTES = 160 * 1024 * 1024
 const TOKEN = /^[A-Za-z0-9._-]{1,128}$/
@@ -50,14 +51,23 @@ function validateArgs(args) {
 }
 
 function hashFile(path) {
+  const before = fs.statSync(path)
+  if (!before.isFile()) throw new Error('--file must name an existing regular file')
+  if (before.size <= 0 || before.size > MAX_DESKTOP_BYTES) throw new Error('Runtime splat exceeds the governed desktop byte budget')
+  if (before.size % 32 !== 0 || before.size / 32 > 5_000_000) throw new Error('Runtime splat exceeds the governed record budget or has incomplete records')
   const bytes = fs.readFileSync(path)
+  if (bytes.length !== before.size) throw new Error('Runtime splat changed while it was being read')
   return { bytes, sha256: crypto.createHash('sha256').update(bytes).digest('hex') }
 }
 
 async function main() {
   const args = parseArgs(process.argv.slice(2))
   validateArgs(args)
+  const inspected = inspectSplat(args.file, { maxBytes: MAX_DESKTOP_BYTES, maxPoints: 5_000_000 })
   const { bytes, sha256 } = hashFile(args.file)
+  if (inspected.sha256 !== sha256 || inspected.byteSize !== bytes.length || inspected.pointCount !== bytes.length / 32) {
+    throw new Error('Runtime splat changed between binary validation and import')
+  }
   if (sha256 !== args.expectedSha256) throw new Error(`SHA-256 mismatch: expected ${args.expectedSha256}, got ${sha256}`)
   if (bytes.length <= 0 || bytes.length % 32 !== 0) throw new Error('Runtime splat must contain complete 32-byte records')
   if (bytes.length > MAX_DESKTOP_BYTES) throw new Error('Runtime splat exceeds the governed desktop byte budget')

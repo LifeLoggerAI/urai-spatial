@@ -119,6 +119,9 @@ test('accepted runtime delivery is independently bound to the reviewed immutable
 test('private proof importer is create-only, hash and generation bound, and cannot self-authorize acceptance', () => {
   assert.match(functionsPackage, /captured-reality:proof-import/)
   assert.match(proofImporter, /--expected-sha256/)
+  assert.match(proofImporter, /inspectSplat\(args\.file, \{ maxBytes: MAX_DESKTOP_BYTES, maxPoints: 5_000_000 \}\)/)
+  assert.match(proofImporter, /before\.size > MAX_DESKTOP_BYTES/)
+  assert.match(proofImporter, /inspected\.sha256 !== sha256/)
   assert.match(proofImporter, /bytes\.length % 32 !== 0/)
   assert.match(proofImporter, /FIREBASE_STORAGE_BUCKET must be set explicitly/)
   assert.match(proofImporter, /private-captured-reality\/\$\{args\.ownerUid\}\/\$\{args\.assetId\}\/runtime\//)
