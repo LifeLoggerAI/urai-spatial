@@ -14,7 +14,6 @@ import { requestUraiWorldReturn, requestUraiWorldTravel } from '@/spatial/world/
 import { ReplayProductControls } from './ReplayProductControls'
 
 const REPLAY_ENVIRONMENT_MODEL = '/assets/urai/generated/models/replay-memory-environment-v1.glb'
-const REPLAY_SCREEN_POSITION: [number, number, number] = [0, 0.58, -6.0]
 
 function clamp(value: number, max: number) { return Math.max(0, Math.min(max, value)) }
 
@@ -30,13 +29,13 @@ function prepareReplayModel(source: THREE.Object3D) {
 }
 
 function ReplayCameraRig({ progress, reducedMotion }: { progress: number; reducedMotion: boolean }) {
-  const target = useRef(new THREE.Vector3(0, 0.32, -5.9))
+  const target = useRef(new THREE.Vector3(0, 0.5, -2.65))
   const desired = useRef(new THREE.Vector3())
 
   useFrame(({ camera, clock }, delta) => {
-    const breathe = reducedMotion ? 0 : Math.sin(clock.elapsedTime * 0.22) * 0.045
-    const arc = reducedMotion ? 0 : (progress - 0.5) * 0.34
-    desired.current.set(arc, 0.42 + breathe, 8.4 - progress * 0.75)
+    const breathe = reducedMotion ? 0 : Math.sin(clock.elapsedTime * 0.22) * 0.035
+    const arc = reducedMotion ? 0 : (progress - 0.5) * 0.24
+    desired.current.set(arc, 0.72 + breathe, 2.55 - progress * 0.42)
     camera.position.lerp(desired.current, Math.min(1, delta * (reducedMotion ? 8 : 2.4)))
     camera.lookAt(target.current)
   })
@@ -106,16 +105,16 @@ function MemoryMediaSurface({ media, playing }: { media: SelectedMemoryMedia | u
   }, [playing])
 
   return (
-    <group name="replay-memory-media-surface">
-      <mesh position={REPLAY_SCREEN_POSITION}>
-        <planeGeometry args={[7.25, 4.08]} />
+    <group name="replay-memory-environmental-media" position={[0, 0.62, -2.75]} userData={{ presentation: 'inside-memory-environmental-wrap', sourceTruth: media?.kind ?? 'none' }}>
+      <mesh rotation={[0, Math.PI, 0]}>
+        <cylinderGeometry args={[6.2, 6.2, 4.55, 96, 1, true, Math.PI * 0.66, Math.PI * 0.68]} />
         {texture
-          ? <meshBasicMaterial map={texture} toneMapped={false} side={THREE.DoubleSide} />
-          : <meshPhysicalMaterial color="#06131c" emissive="#1f8094" emissiveIntensity={0.18} roughness={0.34} metalness={0.16} />}
+          ? <meshBasicMaterial map={texture} toneMapped={false} side={THREE.BackSide} transparent opacity={0.96} />
+          : <meshStandardMaterial color="#07131c" emissive="#1f8094" emissiveIntensity={0.28} roughness={0.9} metalness={0} side={THREE.BackSide} />}
       </mesh>
-      <mesh position={[0, 0.58, -5.96]}>
-        <planeGeometry args={[7.5, 4.32]} />
-        <meshBasicMaterial color="#bff8ff" transparent opacity={0.035} depthWrite={false} />
+      <mesh scale={[1.025, 1.03, 1.025]} rotation={[0, Math.PI, 0]}>
+        <cylinderGeometry args={[6.2, 6.2, 4.55, 96, 1, true, Math.PI * 0.66, Math.PI * 0.68]} />
+        <meshBasicMaterial color="#bff8ff" transparent opacity={0.025} depthWrite={false} side={THREE.BackSide} blending={THREE.AdditiveBlending} />
       </mesh>
     </group>
   )
@@ -223,7 +222,7 @@ export default function CinematicReplayClient() {
 
   if (!memory) return (
     <main className="replayState" data-testid="cinematic-replay-client" data-memory-status={result.status} data-canonical-asset={replayAssets.primary.src} data-replay-neutral="memory-horizon" data-replay-spatial-owner="r3f-memory-theater">
-      <Canvas className="replaySpatialCanvas" dpr={[1, quality.pixelRatioMax]} frameloop={quality.documentVisible ? 'always' : 'never'} camera={{ position: [0, 0.42, 8.4], fov: 46, near: 0.05, far: 120 }} gl={{ antialias: quality.antialias, powerPreference: 'high-performance' }}>
+      <Canvas className="replaySpatialCanvas" dpr={[1, quality.pixelRatioMax]} frameloop={quality.documentVisible ? 'always' : 'never'} camera={{ position: [0, 0.72, 2.55], fov: 58, near: 0.05, far: 120 }} gl={{ antialias: quality.antialias, powerPreference: 'high-performance' }}>
         <ReplayNeutralSpatialScene />
       </Canvas>
       <section role={result.status === 'loading' ? 'status' : 'region'} aria-label="Replay memory horizon"><p>{result.status === 'loading' ? 'Opening memory field' : 'Memory horizon'}</p><h1>{result.status === 'loading' ? 'A memory is coming into view.' : 'Choose a memory to enter its reconstruction.'}</h1><span>{result.status === 'loading' ? 'The spatial field will open as soon as the selected memory is ready.' : 'Replay begins from a memory in Life Map, so you always arrive with context.'}</span>{result.status === 'loading' ? null : <button type="button" onClick={chooseMemory}>Choose a memory</button>}</section>
