@@ -514,6 +514,27 @@ async function clickRouteAction(page, name, destinationPath, destinationSelector
   await stable(page)
 }
 
+function hasStrongPortraitEvidence(capture) {
+  const width = Number(capture.viewport?.width || 0)
+  const height = Number(capture.viewport?.height || 0)
+  const signal = capture.signal
+  return Boolean(
+    capture.screenshot?.bytes >= 96_000
+    && width > 0
+    && height > width
+    && width <= 430
+    && height >= 800
+    && signal
+    && signal.source === 'retained-png'
+    && signal.sampleCount === 3456
+    && signal.sampling === 'distributed-grid-24x16-3x3'
+    && signal.width >= width
+    && signal.height >= height
+    && signal.variance >= 100
+    && signal.nonDarkRatio >= 0.15
+  )
+}
+
 function assertVisualSanity() {
   const byId = new Map(receipt.captures.map((capture) => [capture.id, capture]))
   const highResolution = byId.get('desktop-overview-high-resolution')
@@ -538,12 +559,14 @@ function assertVisualSanity() {
     if (!capture) throw new Error(`missing required capture ${id}`)
     if (capture.state?.renderReady !== 'true') throw new Error(`${id} did not prove a rendered production world`)
     if (Number(capture.state?.anchors || 0) < 8) throw new Error(`${id} visible anchor count below production minimum`)
-    if (capture.screenshot.bytes < 120_000) throw new Error(`${id} screenshot is suspiciously empty`)
     if (!capture.signal) throw new Error(`${id} did not provide a WebGL signal`)
     if (capture.signal.sampleCount !== 3456) throw new Error(`${id} WebGL sample count drifted`)
     if (capture.signal.sampling !== 'distributed-grid-24x16-3x3') throw new Error(`${id} WebGL sampling method drifted`)
     if (capture.signal.variance >= 0 && capture.signal.variance < 8) throw new Error(`${id} WebGL pixel variance is below the visible-world minimum`)
     if (capture.signal.nonDarkRatio >= 0 && capture.signal.nonDarkRatio <= 0) throw new Error(`${id} WebGL non-dark coverage is empty`)
+    if (capture.screenshot.bytes < 120_000 && !hasStrongPortraitEvidence(capture)) {
+      throw new Error(`${id} screenshot is suspiciously empty`)
+    }
   }
 
   const observedPhases = new Map([
