@@ -124,6 +124,7 @@ jobs:
           external_sshsig_b64="$(field INDEPENDENT_SSHSIG_B64)"
 
           test -n "$external_reviewer" || { echo 'eligible_exact_head_approval_missing' >&2; exit 1; }
+          test "$external_reviewer" = 'LimberNutz0' || { echo 'external_reviewer_must_be_LimberNutz0' >&2; exit 1; }
           test "$external_reviewer" != "$pr_author" || { echo 'external_reviewer_matches_pr_author' >&2; exit 1; }
           test "$external_sha" = "$SOURCE_SHA" || { echo 'external_approval_sha_mismatch' >&2; exit 1; }
           test "$external_decision" = 'APPROVED' || { echo 'external_approval_decision_invalid' >&2; exit 1; }
