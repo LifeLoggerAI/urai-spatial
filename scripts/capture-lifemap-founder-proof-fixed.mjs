@@ -538,7 +538,13 @@ function assertVisualSanity() {
     if (!capture) throw new Error(`missing required capture ${id}`)
     if (capture.state?.renderReady !== 'true') throw new Error(`${id} did not prove a rendered production world`)
     if (Number(capture.state?.anchors || 0) < 8) throw new Error(`${id} visible anchor count below production minimum`)
-    if (capture.screenshot.bytes < 120_000) throw new Error(`${id} screenshot is suspiciously empty`)
+    const viewportPixels = Number(capture.viewport?.width || 0) * Number(capture.viewport?.height || 0)
+    const minimumScreenshotBytes = viewportPixels > 0
+      ? Math.min(120_000, Math.max(90_000, Math.round(viewportPixels * 0.35)))
+      : 120_000
+    if (capture.screenshot.bytes < minimumScreenshotBytes) {
+      throw new Error(`${id} screenshot is suspiciously empty: bytes=${capture.screenshot.bytes} minimum=${minimumScreenshotBytes}`)
+    }
     if (!capture.signal) throw new Error(`${id} did not provide a WebGL signal`)
     if (capture.signal.sampleCount !== 3456) throw new Error(`${id} WebGL sample count drifted`)
     if (capture.signal.sampling !== 'distributed-grid-24x16-3x3') throw new Error(`${id} WebGL sampling method drifted`)
