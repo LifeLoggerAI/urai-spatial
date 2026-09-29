@@ -15,7 +15,7 @@ const STATE_COLLECTION = 'providerOAuthStates'
 const PROVIDER_ID = 'google-workspace'
 const DEFAULT_REDIRECT_URI = 'https://urai.app/api/google/oauth/callback'
 const DEFAULT_APP_ORIGIN = 'https://urai.app'
-const WEB_CLIENT_ORIGINS = ['https://urai.app', 'https://www.urai.app', /^https:\/\/localhost(?::\\d+)?$/]
+const WEB_CLIENT_ORIGINS = ['https://urai.app', 'https://www.urai.app', /^https:\/\/localhost(?::\d+)?$/]
 
 const GOOGLE_WORKSPACE_SCOPES = [
   'openid',
