@@ -46,6 +46,19 @@ The system APIs expose the launch boundary through:
 
 Use `/api/system/launch-boundary` when another URAI repo needs a focused provider-readiness check without parsing the full integration contract.
 
+## Sensitive-provider consent and audit gates
+
+The rollout gate is now explicit even while these providers remain disabled. Any future activation must pass the code contract in `spatialSensitiveProviderConsentGates` before provider-backed writes are permitted.
+
+| Capability | Runtime target | Required consent | Retention boundary | Audit boundary |
+| --- | --- | --- | --- | --- |
+| `live-ar-webxr-session` | Browser WebXR | Explicit per-session consent plus enforced location policy where persistent spatial/location data is introduced | Browser entry is session-only | `privacyAudit` before any provider-backed persistence |
+| `live-camera-biometric-provider` | Server provider adapter | Explicit session consent plus enforced identity/models policy | Purpose-bound configured retention | `privacyAudit` |
+| `live-wearable-provider` | Native provider bridge | Explicit session consent plus enforced identity/memory policy | Purpose-bound configured retention | `privacyAudit` |
+| `live-memory-grounded-orb` | Server provider adapter | Explicit session consent plus enforced memory/models policy | No raw provider copy without a separate grant | `privacyAudit` |
+
+All four gates remain `providerWritesAllowed: false` in the launch contract. The Quest browser entry additionally requires a local session-consent checkbox before `requestSession('immersive-vr')`; that consent is cleared when the immersive session ends. This defines the rollout boundary without claiming provider-backed AR, biometric, wearable, or memory persistence is live.
+
 ## Deferred capabilities
 
 The following must remain deferred until explicitly implemented and verified:
