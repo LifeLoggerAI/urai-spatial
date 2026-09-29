@@ -167,6 +167,7 @@ jobs:
           external_attestation_uri="$(field INDEPENDENT_ATTESTATION_URI)"
           external_witness="$(field INDEPENDENT_WITNESS)"
           external_signature_b64="$(field INDEPENDENT_SIGNATURE_B64)"
+          external_sshsig_b64="$(field INDEPENDENT_SSHSIG_B64)"
 
           test -n "$external_reviewer" || {
             echo "No native exact-head approval and no signed external reviewer identity is recorded." >&2
@@ -200,16 +201,13 @@ jobs:
             echo "Independent approval denied: witness identity is required." >&2
             exit 1
           }
-          test -n "$external_signature_b64" || {
+          if test -z "$external_signature_b64" && test -z "$external_sshsig_b64"; then
             echo "Independent approval denied: reviewer signature is required." >&2
             exit 1
-          }
+          fi
 
           key_path="docs/release-governance/reviewers/$external_reviewer-public.pem"
-          test -f "$key_path" || {
-            echo "Independent approval denied: trusted reviewer public key not found: $key_path" >&2
-            exit 1
-          }
+          ssh_key_path="docs/release-governance/reviewers/$external_reviewer-public.ssh"
 
           cat > artifacts/release-governance/external-review-message.txt <<EOF
           URAI-INDEPENDENT-RELEASE-APPROVAL-V1
@@ -224,22 +222,45 @@ jobs:
           witness=$external_witness
           EOF
 
-          printf '%s' "$external_signature_b64" | base64 --decode > artifacts/release-governance/external-review-signature.bin
-          openssl pkeyutl -verify \
-            -pubin \
-            -inkey "$key_path" \
-            -rawin \
-            -in artifacts/release-governance/external-review-message.txt \
-            -sigfile artifacts/release-governance/external-review-signature.bin
+          if test -n "$external_sshsig_b64"; then
+            test -f "$ssh_key_path" || {
+              echo "Independent approval denied: trusted reviewer SSH public key not found: $ssh_key_path" >&2
+              exit 1
+            }
+            printf '%s' "$external_sshsig_b64" | base64 --decode > artifacts/release-governance/external-review-signature.sshsig
+            printf '%s %s\n' "$external_reviewer" "$(cat "$ssh_key_path")" > artifacts/release-governance/allowed-signers
+            ssh-keygen -Y verify \
+              -f artifacts/release-governance/allowed-signers \
+              -I "$external_reviewer" \
+              -n urai-release \
+              -s artifacts/release-governance/external-review-signature.sshsig \
+              < artifacts/release-governance/external-review-message.txt
+            approval_mode='external-independent-ssh-signature'
+            public_key_hash_source="$ssh_key_path"
+          else
+            test -f "$key_path" || {
+              echo "Independent approval denied: trusted reviewer public key not found: $key_path" >&2
+              exit 1
+            }
+            printf '%s' "$external_signature_b64" | base64 --decode > artifacts/release-governance/external-review-signature.bin
+            openssl pkeyutl -verify \
+              -pubin \
+              -inkey "$key_path" \
+              -rawin \
+              -in artifacts/release-governance/external-review-message.txt \
+              -sigfile artifacts/release-governance/external-review-signature.bin
+            approval_mode='external-independent-cryptographic-signature'
+            public_key_hash_source="$key_path"
+          fi
 
-          printf '%s\n' 'external-independent-cryptographic-signature' > artifacts/release-governance/approval-mode.txt
+          printf '%s\n' "$approval_mode" > artifacts/release-governance/approval-mode.txt
           printf '%s\n' "$external_reviewer" > artifacts/release-governance/approved-reviewer.txt
           : > artifacts/release-governance/approved-steward.txt
           printf '%s\n' "$external_reviewed_at" > artifacts/release-governance/external-review-reviewed-at.txt
           printf '%s\n' "$external_attestation_sha256" > artifacts/release-governance/external-review-attestation-sha256.txt
           printf '%s\n' "$external_attestation_uri" > artifacts/release-governance/external-review-attestation-uri.txt
           printf '%s\n' "$external_witness" > artifacts/release-governance/external-review-witness.txt
-          sha256sum "$key_path" | awk '{print $1}' > artifacts/release-governance/external-review-public-key-sha256.txt
+          sha256sum "$public_key_hash_source" | awk '{print $1}' > artifacts/release-governance/external-review-public-key-sha256.txt
 
       - name: Reject temporary dispatchers on canonical source
         if: steps.scope.outputs.applies == 'true'

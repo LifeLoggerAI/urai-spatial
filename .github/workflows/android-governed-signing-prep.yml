@@ -121,6 +121,7 @@ jobs:
           external_attestation_uri="$(field INDEPENDENT_ATTESTATION_URI)"
           external_witness="$(field INDEPENDENT_WITNESS)"
           external_signature_b64="$(field INDEPENDENT_SIGNATURE_B64)"
+          external_sshsig_b64="$(field INDEPENDENT_SSHSIG_B64)"
 
           test -n "$external_reviewer" || { echo 'eligible_exact_head_approval_missing' >&2; exit 1; }
           test "$external_reviewer" != "$pr_author" || { echo 'external_reviewer_matches_pr_author' >&2; exit 1; }
@@ -130,10 +131,13 @@ jobs:
           [[ "$external_attestation_sha256" =~ ^[0-9a-fA-F]{64}$ ]] || { echo 'external_attestation_sha256_invalid' >&2; exit 1; }
           test -n "$external_attestation_uri" || { echo 'external_attestation_uri_missing' >&2; exit 1; }
           test -n "$external_witness" || { echo 'external_witness_missing' >&2; exit 1; }
-          test -n "$external_signature_b64" || { echo 'external_signature_missing' >&2; exit 1; }
+          if test -z "$external_signature_b64" && test -z "$external_sshsig_b64"; then
+            echo 'external_signature_missing' >&2
+            exit 1
+          fi
 
           key_path="docs/release-governance/reviewers/$external_reviewer-public.pem"
-          test -f "$key_path" || { echo "trusted_reviewer_public_key_missing:$key_path" >&2; exit 1; }
+          ssh_key_path="docs/release-governance/reviewers/$external_reviewer-public.ssh"
 
           message="$RUNNER_TEMP/external-review-message.txt"
           signature="$RUNNER_TEMP/external-review-signature.bin"
@@ -149,14 +153,30 @@ jobs:
           attestation_uri=$external_attestation_uri
           witness=$external_witness
           EOF
-          printf '%s' "$external_signature_b64" | base64 --decode > "$signature"
-          openssl pkeyutl -verify \
-            -pubin \
-            -inkey "$key_path" \
-            -rawin \
-            -in "$message" \
-            -sigfile "$signature"
-          echo "Signing authorized by cryptographically verified external independent exact-head approval."
+          if test -n "$external_sshsig_b64"; then
+            test -f "$ssh_key_path" || { echo "trusted_reviewer_ssh_public_key_missing:$ssh_key_path" >&2; exit 1; }
+            ssh_signature="$RUNNER_TEMP/external-review-signature.sshsig"
+            allowed_signers="$RUNNER_TEMP/external-review-allowed-signers"
+            printf '%s' "$external_sshsig_b64" | base64 --decode > "$ssh_signature"
+            printf '%s %s\n' "$external_reviewer" "$(cat "$ssh_key_path")" > "$allowed_signers"
+            ssh-keygen -Y verify \
+              -f "$allowed_signers" \
+              -I "$external_reviewer" \
+              -n urai-release \
+              -s "$ssh_signature" \
+              < "$message"
+            echo "Signing authorized by cryptographically verified external independent SSH exact-head approval."
+          else
+            test -f "$key_path" || { echo "trusted_reviewer_public_key_missing:$key_path" >&2; exit 1; }
+            printf '%s' "$external_signature_b64" | base64 --decode > "$signature"
+            openssl pkeyutl -verify \
+              -pubin \
+              -inkey "$key_path" \
+              -rawin \
+              -in "$message" \
+              -sigfile "$signature"
+            echo "Signing authorized by cryptographically verified external independent exact-head approval."
+          fi
 
 
   sign-aab:
