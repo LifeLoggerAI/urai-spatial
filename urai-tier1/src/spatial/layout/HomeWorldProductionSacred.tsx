@@ -1,7 +1,7 @@
 'use client'
 
 import { Canvas, useFrame, useThree, type ThreeEvent } from '@react-three/fiber'
-import { ContactShadows, Environment, Lightformer, Stars, useAnimations, useGLTF } from '@react-three/drei'
+import { ContactShadows, Environment, Lightformer, RoundedBox, Sparkles, Stars, useAnimations, useGLTF } from '@react-three/drei'
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type MutableRefObject } from 'react'
 import * as THREE from 'three'
 import { resolveOrbSensoryOutput, URAI_ORB_STATE_EVENT, type OrbState, type OrbStateEventDetail } from '@/app/home/orbStateController'
@@ -513,16 +513,48 @@ function ArchitecturalPracticals() {
   return <group name="home-cinematic-practical-lighting">{fixtures.map((fixture, index) => <Lantern key={index} position={fixture.p} scale={fixture.s} yaw={fixture.y} />)}</group>
 }
 
-function MountainRange() {
-  const near = useMemo(() => makeRidgeGeometry(76, 38, 11, 10.5), [])
-  const far = useMemo(() => makeRidgeGeometry(104, 48, 29, 14.5), [])
-  useEffect(() => () => { near.dispose(); far.dispose() }, [far, near])
-  return <group name="home-distant-natural-horizon" userData={{ geometry: 'layered-eroded-mountain-terrain' }}>
-    <mesh geometry={far} position={[-8,-2.8,-60]} rotation={[-Math.PI/2,0,0]} receiveShadow>
-      <meshStandardMaterial color="#9aa99b" vertexColors roughness={1} metalness={0} envMapIntensity={0.38} side={THREE.DoubleSide} />
+function SanctuaryLivingArchitecture() {
+  const stone = <meshPhysicalMaterial color="#4b514d" roughness={0.84} metalness={0.015} clearcoat={0.035} clearcoatRoughness={0.9} envMapIntensity={0.74} />
+  const timber = <meshPhysicalMaterial color="#38291f" roughness={0.66} metalness={0.01} clearcoat={0.08} clearcoatRoughness={0.7} envMapIntensity={0.58} />
+  return <group name="home-inhabited-open-sanctuary" userData={{ treatment: 'open-air-inhabited-real-materials', ceiling: false }}>
+    <group position={[-5.65,0.02,-1.15]} rotation={[0,0.08,0]}>
+      <RoundedBox args={[0.46,2.3,8.8]} radius={0.09} smoothness={5} position={[0,1.05,0]} castShadow receiveShadow>{stone}</RoundedBox>
+      <RoundedBox args={[1.95,0.24,0.7]} radius={0.08} smoothness={5} position={[1.45,0.44,2.2]} castShadow receiveShadow>{timber}</RoundedBox>
+      <RoundedBox args={[1.72,0.16,0.58]} radius={0.07} smoothness={5} position={[1.45,0.92,2.2]} castShadow receiveShadow>{timber}</RoundedBox>
+      <RoundedBox args={[2.0,0.38,1.1]} radius={0.12} smoothness={5} position={[1.1,0.2,-2.15]} castShadow receiveShadow>
+        <meshPhysicalMaterial color="#292f2b" roughness={0.92} metalness={0.01} envMapIntensity={0.5} />
+      </RoundedBox>
+    </group>
+    <group position={[5.65,0.02,-1.15]} rotation={[0,-0.08,0]}>
+      <RoundedBox args={[0.46,2.3,8.8]} radius={0.09} smoothness={5} position={[0,1.05,0]} castShadow receiveShadow>{stone}</RoundedBox>
+      <RoundedBox args={[1.95,0.24,0.7]} radius={0.08} smoothness={5} position={[-1.45,0.44,2.2]} castShadow receiveShadow>{timber}</RoundedBox>
+      <RoundedBox args={[1.72,0.16,0.58]} radius={0.07} smoothness={5} position={[-1.45,0.92,2.2]} castShadow receiveShadow>{timber}</RoundedBox>
+      <RoundedBox args={[2.0,0.38,1.1]} radius={0.12} smoothness={5} position={[-1.1,0.2,-2.15]} castShadow receiveShadow>
+        <meshPhysicalMaterial color="#292f2b" roughness={0.92} metalness={0.01} envMapIntensity={0.5} />
+      </RoundedBox>
+    </group>
+    <RoundedBox args={[5.2,0.12,1.45]} radius={0.08} smoothness={5} position={[0,0.08,3.25]} receiveShadow>
+      <meshPhysicalMaterial color="#5b5143" roughness={0.76} metalness={0.01} clearcoat={0.045} clearcoatRoughness={0.82} envMapIntensity={0.64} />
+    </RoundedBox>
+    <mesh position={[0,0.155,3.25]} rotation={[-Math.PI/2,0,0]} receiveShadow>
+      <planeGeometry args={[4.7,1.02]} />
+      <meshPhysicalMaterial color="#9b8061" roughness={0.82} metalness={0} clearcoat={0.02} />
     </mesh>
-    <mesh geometry={near} position={[8,-2.2,-40]} rotation={[-Math.PI/2,0,0]} receiveShadow>
-      <meshStandardMaterial color="#aab09b" vertexColors roughness={0.99} metalness={0} envMapIntensity={0.46} side={THREE.DoubleSide} />
+    <pointLight position={[-4.7,1.45,1.3]} color="#e8b878" intensity={0.62} distance={7} decay={2} />
+    <pointLight position={[4.7,1.45,1.3]} color="#e8b878" intensity={0.62} distance={7} decay={2} />
+  </group>
+}
+
+function MountainRange() {
+  const near = useMemo(() => makeRidgeGeometry(88, 44, 11, 7.2), [])
+  const far = useMemo(() => makeRidgeGeometry(128, 58, 29, 9.4), [])
+  useEffect(() => () => { near.dispose(); far.dispose() }, [far, near])
+  return <group name="home-distant-natural-horizon" userData={{ geometry: 'atmospheric-distant-ridges-not-primary-world-owner' }}>
+    <mesh geometry={far} position={[-10,-5.4,-78]} rotation={[-Math.PI/2,0,0]} receiveShadow>
+      <meshStandardMaterial color="#31474a" vertexColors roughness={1} metalness={0} envMapIntensity={0.18} side={THREE.DoubleSide} transparent opacity={0.54} />
+    </mesh>
+    <mesh geometry={near} position={[10,-4.6,-56]} rotation={[-Math.PI/2,0,0]} receiveShadow>
+      <meshStandardMaterial color="#405653" vertexColors roughness={1} metalness={0} envMapIntensity={0.24} side={THREE.DoubleSide} transparent opacity={0.62} />
     </mesh>
   </group>
 }
@@ -636,24 +668,29 @@ function SacredOrb({ state, reducedMotion, onOpen }: { state: OrbState; reducedM
     root.current.rotation.y = clock.elapsedTime * 0.018
     root.current.position.y = ORB.y + Math.sin(clock.elapsedTime * 0.62) * 0.025
     if (authoredCore.current) {
-      const pulse = state === 'speaking' ? 0.13 : state === 'listening' ? 0.125 : 0.12 + Math.sin(clock.elapsedTime * 0.95) * 0.003
+      const pulse = state === 'speaking' ? 0.34 : state === 'listening' ? 0.325 : 0.31 + Math.sin(clock.elapsedTime * 0.95) * 0.008
       authoredCore.current.scale.setScalar(pulse)
     }
   })
 
-  return <group ref={root} name="home-orb-sanctuary" position={ORB} onClick={(event) => { event.stopPropagation(); onOpen() }} userData={{ orbState: state, animation: sensory.animation, modelClip: ORB_CLIPS[state], runtimeAsset: ORB_MODEL }}>
+  return <group ref={root} name="home-orb-sanctuary" position={ORB} onClick={(event) => { event.stopPropagation(); onOpen() }} userData={{ orbState: state, animation: sensory.animation, modelClip: ORB_CLIPS[state], runtimeAsset: ORB_MODEL, materialLanguage: 'translucent-living-glass-not-flat-white-disk' }}>
     <mesh castShadow>
-      <sphereGeometry args={[0.49,64,64]} />
-      <meshPhysicalMaterial color="#a8f4f8" transparent opacity={0.16} transmission={0.74} thickness={0.2} roughness={0.1} metalness={0} clearcoat={0.82} clearcoatRoughness={0.12} ior={1.2} envMapIntensity={1.3} />
+      <sphereGeometry args={[0.46,72,72]} />
+      <meshPhysicalMaterial color="#8bd8dc" transparent opacity={0.22} transmission={0.86} thickness={0.34} roughness={0.17} metalness={0} clearcoat={1} clearcoatRoughness={0.08} ior={1.28} envMapIntensity={1.65} />
     </mesh>
-    <mesh><sphereGeometry args={[0.34,56,56]} /><meshStandardMaterial color="#a9f8fb" emissive="#54dfe8" emissiveIntensity={state === 'speaking' ? 2.1 : 1.5} roughness={0.24} metalness={0.02} /></mesh>
-    <group ref={authoredCore} scale={0.12}><primitive object={authoredOrb} /></group>
-    <mesh><sphereGeometry args={[0.06,28,28]} /><meshStandardMaterial color="#fff8e8" emissive="#f4d590" emissiveIntensity={1.6} roughness={0.38} metalness={0} /></mesh>
-    <mesh rotation={[0.32,0.5,0.18]}><torusGeometry args={[0.45,0.004,8,96]} /><meshStandardMaterial color="#d6fbfd" emissive="#7cebf0" emissiveIntensity={0.34} metalness={0.08} roughness={0.52} transparent opacity={0.72} /></mesh>
-    <pointLight color="#9ff7f8" intensity={state === 'speaking' ? 3.1 : 2.15} distance={8} decay={2} />
+    <mesh scale={0.78}>
+      <sphereGeometry args={[0.35,64,64]} />
+      <meshPhysicalMaterial color="#68c3c9" emissive="#1a6670" emissiveIntensity={state === 'speaking' ? 0.82 : 0.54} transparent opacity={0.58} transmission={0.18} roughness={0.3} metalness={0.02} clearcoat={0.58} clearcoatRoughness={0.2} />
+    </mesh>
+    <group ref={authoredCore} scale={0.31}><primitive object={authoredOrb} /></group>
+    <mesh scale={0.28}><sphereGeometry args={[0.12,32,32]} /><meshStandardMaterial color="#f6e8c6" emissive="#d7a95f" emissiveIntensity={1.05} roughness={0.42} metalness={0} /></mesh>
+    <mesh rotation={[0.32,0.5,0.18]}><torusGeometry args={[0.49,0.005,10,128]} /><meshStandardMaterial color="#c6edf0" emissive="#5fc9d0" emissiveIntensity={0.22} metalness={0.05} roughness={0.56} transparent opacity={0.56} /></mesh>
+    <mesh rotation={[-0.18,-0.28,0.4]}><torusGeometry args={[0.54,0.0035,10,128]} /><meshStandardMaterial color="#e0cda4" emissive="#a88754" emissiveIntensity={0.14} metalness={0.04} roughness={0.62} transparent opacity={0.36} /></mesh>
+    <Sparkles count={reducedMotion ? 10 : 22} scale={[1.45,1.45,1.45]} size={1.15} speed={reducedMotion ? 0 : 0.08} opacity={0.42} color="#d9f8f7" />
+    <pointLight color="#9fe7e7" intensity={state === 'speaking' ? 1.65 : 1.12} distance={7} decay={2} />
+    <spotLight position={[0,2.8,1.7]} target-position={[0,0,0]} color="#f2d9aa" intensity={0.52} distance={7} angle={0.48} penumbra={0.94} />
   </group>
 }
-
 function OrbPlatform() {
   const pack = useFlagstoneTexturePack(1.7, 49)
   const platform = useMemo(() => makeIrregularShape(1.08, 29, 72), [])
@@ -788,17 +825,18 @@ function SacredScene(props:{input:MovementInput;yaw:MutableRefObject<number>;pit
   const cosmic=props.transition==='life-map'
   return <>
     <color attach="background" args={[cosmic?'#01030a':'#18313a']} />
-    <fogExp2 attach="fog" args={[cosmic?'#060918':'#536d73',cosmic?0.0022:0.0046]} />
+    <fogExp2 attach="fog" args={[cosmic?'#060918':'#30484b',cosmic?0.0022:0.0082]} />
     {!cosmic?<SkyDome />:null}
     <Stars radius={190} depth={100} count={cosmic?2800:180} factor={cosmic?3:0.65} saturation={0.05} fade speed={props.reducedMotion?0:0.008} />
     <PhysicalEnvironment />
-    <ambientLight intensity={0.62} color="#d7ddd3" />
+    <ambientLight intensity={0.46} color="#c8d8d0" />
     <hemisphereLight args={['#c8e0e5','#3a3328',1.28]} />
-    <directionalLight position={[-12,17,9]} intensity={3.4} color="#ffe5b8" castShadow shadow-mapSize-width={2048} shadow-mapSize-height={2048} shadow-bias={-0.00012} />
+    <directionalLight position={[-12,17,9]} intensity={2.35} color="#ffe0ae" castShadow shadow-mapSize-width={2048} shadow-mapSize-height={2048} shadow-bias={-0.00012} />
     <directionalLight position={[12,8,-14]} intensity={0.72} color="#89a9bd" />
     <directionalLight position={[-5,5,10]} intensity={0.54} color="#d2b27a" />
     <spotLight position={[1,11,8]} intensity={0.9} color="#f5eee0" distance={38} angle={0.5} penumbra={0.98} decay={2} castShadow />
     <ArchitecturalPracticals />
+    <SanctuaryLivingArchitecture />
     <RitualFloor target={props.target} />
     <MoonAndMist reducedMotion={props.reducedMotion} />
     <OrbPlatform />
