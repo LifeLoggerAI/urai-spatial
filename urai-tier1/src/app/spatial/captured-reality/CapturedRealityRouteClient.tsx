@@ -222,12 +222,19 @@ export default function CapturedRealityRouteClient() {
     let resolveAssetAuthority!: (active: boolean) => void
     const assetAuthority = new Promise<boolean>((resolve) => { resolveAssetAuthority = resolve })
     let firstAssetSnapshot = true
+    const assetAuthorityTimeout = window.setTimeout(() => {
+      if (firstAssetSnapshot) {
+        firstAssetSnapshot = false
+        resolveAssetAuthority(false)
+      }
+    }, 15_000)
     stops.push(onSnapshot(
       doc(db, 'users', user.uid, 'capturedRealityAssets', assetId),
       (snapshot) => {
         const active = assetAuthorityActive(snapshot, user.uid, accessMode)
         if (firstAssetSnapshot) {
           firstAssetSnapshot = false
+          window.clearTimeout(assetAuthorityTimeout)
           resolveAssetAuthority(active)
         }
         if (!active) stopForPrivacy('Captured Reality closed because this asset is unavailable or revoked.')
@@ -235,6 +242,7 @@ export default function CapturedRealityRouteClient() {
       () => {
         if (firstAssetSnapshot) {
           firstAssetSnapshot = false
+          window.clearTimeout(assetAuthorityTimeout)
           resolveAssetAuthority(false)
         }
         stopForPrivacy('Captured Reality closed because asset authority could not be observed.')
@@ -313,6 +321,7 @@ export default function CapturedRealityRouteClient() {
 
     return () => {
       disposed = true
+      window.clearTimeout(assetAuthorityTimeout)
       abort.abort()
       for (const stop of stops) stop()
       setDelivery(null)

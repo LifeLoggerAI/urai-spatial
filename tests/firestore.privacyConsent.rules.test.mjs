@@ -21,6 +21,7 @@ const ownerDocuments = [
   ['privacyRuntime', 'location-precision', { ownerId, enabled: false }],
   ['privacyAudit', 'audit-a', { ownerId, result: 'fully-enforced' }],
   ['privacyReceipts', 'receipt-a', { ownerId, result: 'fully-enforced' }],
+  ['capturedRealityAssets', 'asset-a', { ownerId, state: 'ready', releaseState: 'private-pilot', revocationState: 'active' }],
   ['exportJobs', 'export-a', { uid: ownerId, state: 'ready' }],
   ['deletionJobs', 'deletion-a', { uid: ownerId, state: 'queued' }],
   ['dataSources', 'source-a', { ownerId, status: 'active' }],

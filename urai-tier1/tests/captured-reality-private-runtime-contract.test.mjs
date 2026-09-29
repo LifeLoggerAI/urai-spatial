@@ -30,6 +30,9 @@ test('runtime delivery accepts only reviewed source-backed reconstruction and a 
   assert.match(source, /getSignedUrl/)
   assert.match(source, /RUNTIME_URL_TTL_MS = 10 \* 60 \* 1000/)
   assert.doesNotMatch(source, /makePublic\(/)
+  assert.match(source, /function assetRevoked\(/)
+  assert.match(source, /if \(assetRevoked\(snapshot\)\)[\s\S]*CAPTURED_REALITY_ASSET_REVOKED/)
+  assert.match(source, /if \(assetRevoked\(asset\)\) return \{ available: false \}/)
 })
 
 test('owner metadata response omits exact location and raw source locators', () => {
