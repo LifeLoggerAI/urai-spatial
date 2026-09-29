@@ -881,9 +881,19 @@ const DELETION_COLLECTIONS: Record<Exclude<DeletionScope, 'account'>, string[]> 
   ],
 }
 
-async function deleteCapturedRealityStorage(uid: string) {
+async function deleteCapturedRealityStorage(uid: string, options: { deleteAllExports?: boolean } = {}) {
   const bucket = admin.storage().bucket()
   await bucket.deleteFiles({ prefix: `private-captured-reality/${uid}/` })
+
+  const exportPrefix = `private-exports/${uid}/`
+  if (options.deleteAllExports) {
+    await bucket.deleteFiles({ prefix: exportPrefix })
+    return
+  }
+
+  const [exportFiles] = await bucket.getFiles({ prefix: exportPrefix })
+  const capturedRealityExports = exportFiles.filter((file) => file.name.includes('/spatial/captured-reality/'))
+  await Promise.all(capturedRealityExports.map((file) => file.delete({ ignoreNotFound: true })))
 }
 
 async function processDeletion(snapshot: FirebaseFirestore.DocumentSnapshot) {
@@ -908,12 +918,14 @@ async function processDeletion(snapshot: FirebaseFirestore.DocumentSnapshot) {
     const userRef = db.doc(`users/${uid}`)
     const deletedCollections: string[] = []
     if (scope === 'account') {
-      await deleteCapturedRealityStorage(uid)
+      await deleteCapturedRealityStorage(uid, { deleteAllExports: true })
       await db.recursiveDelete(userRef)
       await admin.auth().deleteUser(uid)
     } else {
-      if (scope === 'spatial-state' || scope === 'all-repository-data') {
+      if (scope === 'spatial-state') {
         await deleteCapturedRealityStorage(uid)
+      } else if (scope === 'all-repository-data' || scope === 'export-history') {
+        await deleteCapturedRealityStorage(uid, { deleteAllExports: true })
       }
       for (const collectionName of DELETION_COLLECTIONS[scope]) {
         await db.recursiveDelete(userRef.collection(collectionName))
