@@ -194,6 +194,15 @@ test('privacy-safe denied, deleted, unavailable, and corrupt states exist', () =
   assert.match(contract, /replay manifest is incomplete/i)
 })
 
+test('Replay keeps the user inside the memory environment and subordinates presentation chrome', () => {
+  assert.match(replay, /data-replay-spatial-owner="r3f-immersive-memory-field"/)
+  assert.match(replay, /data-replay-composition="inside-memory-environment-ui-subordinate"/)
+  assert.match(replay, /data-replay-environment-fallback="approved-memory-asset"/)
+  assert.match(replay, /background-image:linear-gradient\([^}]*var\(--replay-asset\)/)
+  assert.match(replay, /width:min\(680px,74vw\)/)
+  assert.doesNotMatch(replay, /projection|projector|movie screen/i)
+})
+
 test('Focus and Replay share exact selected memory and manifest identity', () => {
   assert.match(focus, /useSelectedMemory/)
   assert.match(replay, /useSelectedMemory/)
