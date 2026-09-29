@@ -47,7 +47,7 @@ Production authentication:
 Prohibited credential paths:
 - `FIREBASE_SERVICE_ACCOUNT`
 - `FIREBASE_SERVICE_ACCOUNT_URAI_SPATIAL`
-- `FIREBASE_SERVICE_ACCOUNT_JSON`
+- `GOOGLE_APPLICATION_CREDENTIALS` pointing to a protected `external_account` WIF configuration
 - `FIREBASE_PRIVATE_KEY`
 - `FIREBASE_CLIENT_EMAIL`
 - `FIREBASE_TOKEN`
