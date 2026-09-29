@@ -11,6 +11,14 @@ on:
         description: Merged PR number whose exact approved head is being signed
         required: true
         type: string
+      version_code:
+        description: Monotonically increasing Google Play versionCode
+        required: true
+        type: string
+      version_name:
+        description: User-visible Android versionName
+        required: true
+        type: string
 
 permissions:
   contents: read
@@ -67,6 +75,16 @@ jobs:
     env:
       EXPECTED_PACKAGE: com.urailabs.urai
       SOURCE_SHA: ${{ inputs.source_sha }}
+      ANDROID_VERSION_CODE: ${{ inputs.version_code }}
+      ANDROID_VERSION_NAME: ${{ inputs.version_name }}
+      NEXT_PUBLIC_FIREBASE_API_KEY: ${{ vars.NEXT_PUBLIC_FIREBASE_API_KEY }}
+      NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: ${{ vars.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN }}
+      NEXT_PUBLIC_FIREBASE_PROJECT_ID: ${{ vars.NEXT_PUBLIC_FIREBASE_PROJECT_ID }}
+      NEXT_PUBLIC_FIREBASE_APP_ID: ${{ vars.NEXT_PUBLIC_FIREBASE_APP_ID }}
+      NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET: ${{ vars.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET }}
+      NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: ${{ vars.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID }}
+      NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID: ${{ vars.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID }}
+      NEXT_PUBLIC_URAI_API_ORIGIN: https://urai.app
 
     steps:
       - name: Validate exact SHA input
@@ -139,6 +157,18 @@ jobs:
           set -euo pipefail
           grep -F "appId: '$EXPECTED_PACKAGE'" distribution/android-shell/capacitor.config.ts
 
+      - name: Require release public configuration and version
+        shell: bash
+        run: |
+          set -euo pipefail
+          for name in NEXT_PUBLIC_FIREBASE_API_KEY NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN NEXT_PUBLIC_FIREBASE_PROJECT_ID NEXT_PUBLIC_FIREBASE_APP_ID; do
+            test -n "${!name}" || { echo "Missing required public build variable: $name" >&2; exit 1; }
+          done
+          test "$NEXT_PUBLIC_FIREBASE_PROJECT_ID" = "urai-4dc1d"
+          test "$NEXT_PUBLIC_URAI_API_ORIGIN" = "https://urai.app"
+          [[ "$ANDROID_VERSION_CODE" =~ ^[1-9][0-9]*$ ]]
+          [[ "$ANDROID_VERSION_NAME" =~ ^[0-9A-Za-z][0-9A-Za-z._+-]{0,63}$ ]]
+
       - name: Build governed static export
         run: corepack pnpm build:static
 
@@ -149,6 +179,24 @@ jobs:
           rm -rf android
           corepack pnpm exec cap add android
           corepack pnpm exec cap sync android
+
+      - name: Apply governed Android version
+        working-directory: distribution/android-shell/android
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import os, pathlib, re
+          path = pathlib.Path("app/build.gradle")
+          text = path.read_text()
+          text, code_count = re.subn(r"versionCode\s+\d+", f"versionCode {os.environ['ANDROID_VERSION_CODE']}", text, count=1)
+          text, name_count = re.subn(r'versionName\s+"[^"]+"', f'versionName "{os.environ["ANDROID_VERSION_NAME"]}"', text, count=1)
+          if code_count != 1 or name_count != 1:
+              raise SystemExit("Generated Gradle version fields not found exactly once.")
+          path.write_text(text)
+          PY
+          grep -F "versionCode $ANDROID_VERSION_CODE" app/build.gradle
+          grep -F "versionName \"$ANDROID_VERSION_NAME\"" app/build.gradle
 
       - name: Build unsigned release AAB
         working-directory: distribution/android-shell/android
@@ -193,6 +241,10 @@ jobs:
             echo "candidate_package=$EXPECTED_PACKAGE"
             echo "source_sha=$SOURCE_SHA"
             echo "workflow_sha=$GITHUB_SHA"
+            echo "version_code=$ANDROID_VERSION_CODE"
+            echo "version_name=$ANDROID_VERSION_NAME"
+            echo "api_origin=$NEXT_PUBLIC_URAI_API_ORIGIN"
+            echo "firebase_project=$NEXT_PUBLIC_FIREBASE_PROJECT_ID"
             echo "aab_path=$AAB"
           } | tee android-signed-package-receipt.txt
 
