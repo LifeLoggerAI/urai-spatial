@@ -10,6 +10,7 @@ const OPENAI_API_KEY = defineSecret('OPENAI_API_KEY')
 const ELEVENLABS_API_KEY = defineSecret('ELEVENLABS_API_KEY')
 const REGION = 'us-central1'
 const RATE_WINDOW_MS = 60_000
+const WEB_CLIENT_ORIGINS = ['https://urai.app', 'https://www.urai.app', /^https:\/\/localhost(?::\\d+)?$/]
 
 type Provider = 'openai' | 'elevenlabs'
 type JsonMap = Record<string, unknown>
@@ -173,7 +174,7 @@ export const openAiOrbProvider = onRequest({
   region: REGION,
   timeoutSeconds: 60,
   memory: '512MiB',
-  cors: false,
+  cors: WEB_CLIENT_ORIGINS,
   secrets: [OPENAI_API_KEY],
 }, async (request, response) => {
   const startedAt = Date.now()
@@ -286,7 +287,7 @@ export const elevenLabsVoiceProvider = onRequest({
   region: REGION,
   timeoutSeconds: 30,
   memory: '256MiB',
-  cors: false,
+  cors: WEB_CLIENT_ORIGINS,
   secrets: [ELEVENLABS_API_KEY],
 }, async (request, response) => {
   const startedAt = Date.now()
