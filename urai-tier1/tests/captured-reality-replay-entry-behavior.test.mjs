@@ -26,8 +26,15 @@ function callable({ place = 'place-1', anchor = 'place-1', missingAnchors = fals
   }
   const db = { doc: path => ({ get: async () => ({ exists: Boolean(documents[path]), get: key => documents[path]?.[key] }) }) }
   class HttpsError extends Error { constructor(code, message) { super(message); this.code = code } }
+  const https = { onCall: handler => handler, HttpsError }
   const modules = {
-    'firebase-functions/v1': { https: { onCall: handler => handler, HttpsError } },
+    'firebase-functions/v1': {
+      https,
+      region: region => {
+        assert.equal(region, 'us-central1')
+        return { https }
+      },
+    },
     'firebase-admin': { apps: [{}], firestore: () => db },
   }
   const context = { exports: {}, process: { env: { URAI_ENABLE_CAPTURED_REALITY: String(release) } }, require: name => {
