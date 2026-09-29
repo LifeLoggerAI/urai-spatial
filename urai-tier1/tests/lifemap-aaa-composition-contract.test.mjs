@@ -84,7 +84,7 @@ test('authored animation clips honor reduced motion with stable readable poses',
   assert.match(arrival, /if \(!group\.current \|\| reducedMotion\) return/)
   assert.match(arrival, /if \(!selected \|\| phase !== "arrival"\) return null/)
   assert.match(arrival, /<AuthoredMemoryStar aura=\{selected\.aura\} active scale=\{1\.84\} clip="MemoryStar_Focus" \/>/)
-  assert.match(arrival, /speed=\{reducedMotion \? 0 : 0\.08\}/)
+  assert.match(arrival, /speed=\{reducedMotion \? 0 : 0\.07\}/)
   assert.match(arrival, /name="life-map-selected-arrival-memory-star"/)
 })
 
