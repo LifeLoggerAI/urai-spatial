@@ -285,8 +285,50 @@ function AuthoredMemoryStar({ aura, active, scale = 1, rotation = [0, 0, 0], cli
     return () => { chosen.fadeOut(0.18); chosen.stop(); };
   }, [actions, active, clip, reducedMotion]);
   return (
-    <group ref={root} scale={scale} rotation={rotation} userData={{ runtimeAsset: MEMORY_STAR_MODEL, authored: true }}>
-      <primitive object={model} />
+    <group ref={root} scale={scale} rotation={rotation} userData={{ runtimeAsset: MEMORY_STAR_MODEL, authored: true, visualCanon: "stellar-photosphere-corona" }}>
+      <primitive object={model} visible={false} />
+      <mesh name="memory-star-photosphere">
+        <sphereGeometry args={[0.62, 48, 36]} />
+        <meshStandardMaterial
+          color={aura}
+          emissive={aura}
+          emissiveIntensity={active ? 4.8 : 3.2}
+          roughness={0.96}
+          metalness={0}
+          toneMapped={false}
+        />
+      </mesh>
+      <mesh name="memory-star-chromosphere" scale={1.09}>
+        <icosahedronGeometry args={[0.62, 5]} />
+        <meshBasicMaterial
+          color={aura}
+          transparent
+          opacity={active ? 0.22 : 0.13}
+          depthWrite={false}
+          blending={THREE.AdditiveBlending}
+          wireframe
+        />
+      </mesh>
+      <mesh name="memory-star-corona" scale={active ? 1.72 : 1.5}>
+        <sphereGeometry args={[0.62, 40, 30]} />
+        <meshBasicMaterial
+          color={aura}
+          transparent
+          opacity={active ? 0.105 : 0.065}
+          depthWrite={false}
+          side={THREE.BackSide}
+          blending={THREE.AdditiveBlending}
+        />
+      </mesh>
+      <Sparkles
+        count={active ? 34 : 16}
+        scale={[2.1, 2.1, 2.1]}
+        size={active ? 2.4 : 1.7}
+        speed={reducedMotion ? 0 : active ? 0.16 : 0.08}
+        opacity={active ? 0.82 : 0.48}
+        color={aura}
+      />
+      <pointLight color={aura} intensity={active ? 5.8 : 2.6} distance={active ? 8 : 5.5} decay={2} />
     </group>
   );
 }
