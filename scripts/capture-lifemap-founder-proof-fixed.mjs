@@ -514,6 +514,34 @@ async function clickRouteAction(page, name, destinationPath, destinationSelector
   await stable(page)
 }
 
+async function waitForReplayImmersiveWorld(page, expectedMemoryId = 'demo:quiet-reset', timeout = 30_000) {
+  return poll('immersive Replay world', () => page.evaluate(() => {
+    const root = document.querySelector('[data-testid="cinematic-replay-client"]')
+    const canvas = root?.querySelector('canvas')
+    if (!(root instanceof HTMLElement) || !(canvas instanceof HTMLCanvasElement)) return null
+    return {
+      status: root.dataset.memoryStatus || null,
+      owner: root.dataset.replaySpatialOwner || null,
+      ready: root.dataset.replayRenderReady || null,
+      renderedMemoryId: root.dataset.replayRenderedMemoryId || null,
+      calls: Number(root.dataset.replayRenderCalls || 0),
+      objects: Number(root.dataset.replaySceneObjects || 0),
+      canvasWidth: canvas.width,
+      canvasHeight: canvas.height,
+    }
+  }), (state) => Boolean(
+    state
+    && (state.status === 'demo' || state.status === 'ready')
+    && state.owner === 'r3f-immersive-memory-environment'
+    && state.ready === 'true'
+    && state.renderedMemoryId === expectedMemoryId
+    && state.calls > 0
+    && state.objects > 0
+    && state.canvasWidth > 0
+    && state.canvasHeight > 0
+  ), timeout, 75)
+}
+
 function assertVisualSanity() {
   const byId = new Map(receipt.captures.map((capture) => [capture.id, capture]))
   const highResolution = byId.get('desktop-overview-high-resolution')
@@ -703,8 +731,10 @@ async function desktopActionsAndKeyboard() {
     await goto(page, arrivalRoute)
     await waitForRenderedWorld(page)
     await waitForState(page, 'data-life-map-phase', 'arrival')
-    await clickRouteAction(page, 'Replay', '/replay', 'main')
-    await shot(page, 'replay-destination', 'replay', { memoryId: 'quiet-reset' })
+    await clickRouteAction(page, 'Replay', '/replay', '[data-testid="cinematic-replay-client"]')
+    const replayState = await waitForReplayImmersiveWorld(page)
+    await stable(page, 12)
+    await shot(page, 'replay-destination', 'replay', { memoryId: 'quiet-reset', replayState })
 
     await goto(page, arrivalRoute)
     await waitForRenderedWorld(page)
