@@ -120,7 +120,8 @@ test('spatial deletion removes exported private splat copies as well as source r
   assert.match(privacyOperations, /private-captured-reality\/\$\{uid\}\//)
   assert.match(privacyOperations, /const exportPrefix = `private-exports\/\$\{uid\}\//)
   assert.match(privacyOperations, /file\.name\.includes\('\/spatial\/captured-reality\/'\)/)
-  assert.match(privacyOperations, /deleteCapturedRealityStorage\(uid, \{ deleteAllExports: true \}\)/)
+  assert.match(privacyOperations, /scope === 'all-repository-data'[\s\S]*deleteCapturedRealityStorage\(uid, \{ deleteAllExports: true \}\)/)
+  assert.match(privacyOperations, /scope === 'export-history'[\s\S]*deleteCapturedRealityStorage\(uid, \{ deleteAllExports: true, deleteSource: false \}\)/)
 })
 
 test('create-only proof import cleans up a successfully-created object after metadata failure', () => {
