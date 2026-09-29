@@ -230,12 +230,13 @@ function StellarPhotosphere({ accent, light, reducedMotion }: { accent: string; 
         vec3 whiteGold = vec3(1.0, .76, .28);
         vec3 hotWhite = vec3(1.0, .98, .78);
         vec3 surface = mix(ember, whiteGold, .28 + cells * .55);
-        surface = mix(surface, hotWhite, fine * .22 + limb * .14);
-        surface = mix(surface, uLight, .06);
-        surface = mix(surface, uAccent, .025);
+        surface = mix(surface, hotWhite, .12 + fine * .28 + limb * .18);
+        surface = mix(surface, uLight, .08);
+        surface = mix(surface, uAccent, .03);
         surface *= 1.0 - pores * .16;
-        float radiance = (.96 + granulation * .62) * (.68 + limb * .42) * mottling;
-        gl_FragColor = vec4(clamp(surface * radiance, 0.0, 1.0), 1.0);
+        float radiance = (1.12 + granulation * .78) * (.82 + limb * .36) * mottling;
+        vec3 emitted = surface * radiance + hotWhite * (.07 + cells * .11);
+        gl_FragColor = vec4(clamp(emitted, 0.0, 1.0), 1.0);
         #include <colorspace_fragment>
       }
     `,
@@ -264,19 +265,19 @@ function StellarPhotosphere({ accent, light, reducedMotion }: { accent: string; 
       </mesh>
       <mesh name="focus-stellar-photosphere-luminance-floor" scale={1.012} renderOrder={3}>
         <sphereGeometry args={[1.15, 96, 96]} />
-        <meshBasicMaterial color="#ffd66b" transparent opacity={0.12} depthWrite={false} blending={THREE.AdditiveBlending} toneMapped={false} />
+        <meshBasicMaterial color="#ffd66b" transparent opacity={0.24} depthWrite={false} blending={THREE.AdditiveBlending} toneMapped={false} />
       </mesh>
       <mesh scale={1.075}>
         <sphereGeometry args={[1.15, 80, 80]} />
-        <meshBasicMaterial color="#ffb53f" transparent opacity={0.16} side={THREE.BackSide} depthWrite={false} blending={THREE.AdditiveBlending} toneMapped={false} />
+        <meshBasicMaterial color="#ffb53f" transparent opacity={0.22} side={THREE.BackSide} depthWrite={false} blending={THREE.AdditiveBlending} toneMapped={false} />
       </mesh>
       <mesh scale={1.22}>
         <sphereGeometry args={[1.15, 64, 64]} />
-        <meshBasicMaterial color={light} transparent opacity={0.085} side={THREE.BackSide} depthWrite={false} blending={THREE.AdditiveBlending} toneMapped={false} />
+        <meshBasicMaterial color={light} transparent opacity={0.12} side={THREE.BackSide} depthWrite={false} blending={THREE.AdditiveBlending} toneMapped={false} />
       </mesh>
       <mesh scale={1.52}>
         <sphereGeometry args={[1.15, 48, 48]} />
-        <meshBasicMaterial color={accent} transparent opacity={0.032} side={THREE.BackSide} depthWrite={false} blending={THREE.AdditiveBlending} toneMapped={false} />
+        <meshBasicMaterial color={accent} transparent opacity={0.045} side={THREE.BackSide} depthWrite={false} blending={THREE.AdditiveBlending} toneMapped={false} />
       </mesh>
       <Sparkles count={reducedMotion ? 42 : 124} scale={[4.2, 4.2, 4.2]} size={reducedMotion ? 1.55 : 2.15} speed={reducedMotion ? 0 : 0.11} opacity={0.58} color="#ffd36c" />
       <pointLight color="#fff0ba" intensity={15.5} distance={20} decay={2} />
