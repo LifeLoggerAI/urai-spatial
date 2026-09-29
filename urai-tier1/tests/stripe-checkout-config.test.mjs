@@ -99,3 +99,23 @@ test('Founder refunds and disputes revoke entitlement through PaymentIntent meta
   assert.match(webhookSource, /stripeStatus = 'canceled'/);
   assert.match(webhookSource, /dispute\.status === 'won' \? 'active' : 'canceled'/);
 });
+
+
+test('webhook rejects secret/event mode mismatches before entitlement writes', () => {
+  assert.match(webhookSource, /parseStripeRuntimeMode\(process\.env\.URAI_STRIPE_MODE\)/);
+  assert.match(webhookSource, /stripeRuntimeMatchesSecret\(runtimeMode, secretKey\)/);
+  assert.match(webhookSource, /stripeLivemodeMatchesRuntime\(event\.livemode, runtimeMode\)/);
+  assert.match(webhookSource, /Stripe event mode mismatch/);
+});
+
+test('webhook applies events through durable provider ordering', () => {
+  assert.match(webhookSource, /applyStripeEventEntitlement/);
+  assert.match(webhookSource, /id: event\.id/);
+  assert.match(webhookSource, /created: event\.created/);
+  assert.doesNotMatch(webhookSource, /await upsertEntitlement\(/);
+});
+
+test('charge revocation is Founder-only and full-refund-only', () => {
+  assert.match(webhookSource, /if \(charge\.refunded !== true\) return null/);
+  assert.match(webhookSource, /if \(identity\.planId !== 'founder'\) return null/);
+});
