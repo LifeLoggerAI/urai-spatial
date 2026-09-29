@@ -56,7 +56,10 @@ async function settleAnimationFrames(page, frameCount, timeoutMs = 15_000) {
 async function readVisualEvidence(page) {
   const canvas = page.locator('.urai-asset-home-world canvas').first()
   await canvas.waitFor({ state: 'visible', timeout: 45_000 })
-  const bounds = await canvas.boundingBox()
+  const bounds = await canvas.evaluate((element) => {
+    const rect = element.getBoundingClientRect()
+    return { x: rect.x, y: rect.y, width: rect.width, height: rect.height }
+  })
   const viewport = page.viewportSize()
   if (!bounds || !viewport) return { available: false, reason: 'missing-canvas-bounds' }
   const clipX = Math.max(0, bounds.x)
@@ -231,7 +234,9 @@ async function captureOrbLifecycle({ reducedMotion = 'no-preference' } = {}) {
     const response = await page.goto(`${base}/home/?homeAssetReview=1`, { waitUntil: 'domcontentloaded', timeout: 60_000 })
     const owner = await waitForHomeReady(page)
     const openOrb = page.getByRole('button', { name: 'Open URAI Orb companion' }).first()
-    await openOrb.press('Enter')
+    await openOrb.waitFor({ state: 'visible', timeout: 20_000 })
+    await openOrb.evaluate((element) => element.focus())
+    await page.keyboard.press('Enter')
     await page.locator('#urai-world-companion-menu[aria-hidden="false"]').waitFor({ state: 'visible', timeout: 20_000 })
     await page.waitForFunction((selector) => document.querySelector(selector)?.getAttribute('data-home-orb-state') === 'attention', ownerSelector)
 
