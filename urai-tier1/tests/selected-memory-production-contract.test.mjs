@@ -130,6 +130,17 @@ test('direct Focus entry remains a truthful neutral stellar field and never moun
   assert.doesNotMatch(focus, /buildExplicitDemoMemory|buildNamedExplicitDemoMemory|URAI_SPATIAL_DEMO_DATA/)
 })
 
+test('Focus stellar body preserves visible photosphere granulation instead of a smooth orb wash', () => {
+  assert.match(focus, /float pores = smoothstep\(\.68, \.92, noise\(p \* 52\.0/)
+  assert.match(focus, /float mottling = \.58 \+ cells \* \.62 - filament \* \.22 - pores \* \.12/)
+  assert.match(focus, /focus-stellar-photosphere-luminance-floor/)
+  assert.match(focus, /color="#ffd66b" transparent opacity=\{0\.12\}/)
+  assert.match(focus, /color="#ffb53f" transparent opacity=\{0\.16\}/)
+  assert.match(focus, /opacity=\{0\.085\}/)
+  assert.match(focus, /opacity=\{0\.032\}/)
+  assert.doesNotMatch(focus, /color="#ffe8a8" transparent opacity=\{0\.48\}/)
+})
+
 test('Focus retains adaptive quality, reduced motion, visibility pausing, and WebGL fallback', () => {
   assert.match(focus, /useAdaptiveSpatialQuality/)
   assert.match(focus, /profile\.pixelRatioMax/)

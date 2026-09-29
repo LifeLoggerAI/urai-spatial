@@ -220,19 +220,21 @@ function StellarPhotosphere({ accent, light, reducedMotion }: { accent: string; 
         float medium = noise(p * 10.5 - vec3(t * .34, t * .21, -t * .18));
         float fine = noise(p * 28.0 + vec3(-t * .2, t * .26, t * .11));
         float granulation = clamp(large * .48 + medium * .36 + fine * .16, 0.0, 1.0);
-        float cells = smoothstep(.28, .82, granulation);
-        float filament = smoothstep(.58, .91, abs(sin((p.x - p.y * .7 + p.z * .44) * 17.0 + medium * 8.0)));
+        float cells = smoothstep(.22, .78, granulation);
+        float filament = smoothstep(.54, .88, abs(sin((p.x - p.y * .7 + p.z * .44) * 17.0 + medium * 8.0)));
+        float pores = smoothstep(.68, .92, noise(p * 52.0 - vec3(t * .11, -t * .07, t * .05)));
         float viewFacing = clamp(vNormalView.z * .5 + .5, 0.0, 1.0);
-        float limb = pow(viewFacing, .38);
-        float mottling = .72 + cells * .42 - filament * .14;
-        vec3 whiteGold = vec3(1.0, .89, .56);
-        vec3 hotWhite = vec3(1.0, .995, .94);
-        vec3 amber = vec3(1.0, .42, .06);
-        vec3 surface = mix(amber, whiteGold, .58 + cells * .34);
-        surface = mix(surface, hotWhite, fine * .48 + limb * .22);
-        surface = mix(surface, uLight, .08);
-        surface = mix(surface, uAccent, .035);
-        float radiance = (1.02 + granulation * .26) * (.72 + limb * .42) * mottling;
+        float limb = pow(viewFacing, .42);
+        float mottling = .58 + cells * .62 - filament * .22 - pores * .12;
+        vec3 ember = vec3(.92, .18, .015);
+        vec3 whiteGold = vec3(1.0, .76, .28);
+        vec3 hotWhite = vec3(1.0, .98, .78);
+        vec3 surface = mix(ember, whiteGold, .28 + cells * .55);
+        surface = mix(surface, hotWhite, fine * .22 + limb * .14);
+        surface = mix(surface, uLight, .06);
+        surface = mix(surface, uAccent, .025);
+        surface *= 1.0 - pores * .16;
+        float radiance = (.96 + granulation * .62) * (.68 + limb * .42) * mottling;
         gl_FragColor = vec4(clamp(surface * radiance, 0.0, 1.0), 1.0);
         #include <colorspace_fragment>
       }
@@ -262,21 +264,21 @@ function StellarPhotosphere({ accent, light, reducedMotion }: { accent: string; 
       </mesh>
       <mesh name="focus-stellar-photosphere-luminance-floor" scale={1.012} renderOrder={3}>
         <sphereGeometry args={[1.15, 96, 96]} />
-        <meshBasicMaterial color="#ffe8a8" transparent opacity={0.48} depthWrite={false} blending={THREE.AdditiveBlending} toneMapped={false} />
+        <meshBasicMaterial color="#ffd66b" transparent opacity={0.12} depthWrite={false} blending={THREE.AdditiveBlending} toneMapped={false} />
       </mesh>
       <mesh scale={1.075}>
         <sphereGeometry args={[1.15, 80, 80]} />
-        <meshBasicMaterial color="#fff0b5" transparent opacity={0.34} side={THREE.BackSide} depthWrite={false} blending={THREE.AdditiveBlending} toneMapped={false} />
+        <meshBasicMaterial color="#ffb53f" transparent opacity={0.16} side={THREE.BackSide} depthWrite={false} blending={THREE.AdditiveBlending} toneMapped={false} />
       </mesh>
       <mesh scale={1.22}>
         <sphereGeometry args={[1.15, 64, 64]} />
-        <meshBasicMaterial color={light} transparent opacity={0.16} side={THREE.BackSide} depthWrite={false} blending={THREE.AdditiveBlending} toneMapped={false} />
+        <meshBasicMaterial color={light} transparent opacity={0.085} side={THREE.BackSide} depthWrite={false} blending={THREE.AdditiveBlending} toneMapped={false} />
       </mesh>
       <mesh scale={1.52}>
         <sphereGeometry args={[1.15, 48, 48]} />
-        <meshBasicMaterial color={accent} transparent opacity={0.072} side={THREE.BackSide} depthWrite={false} blending={THREE.AdditiveBlending} toneMapped={false} />
+        <meshBasicMaterial color={accent} transparent opacity={0.032} side={THREE.BackSide} depthWrite={false} blending={THREE.AdditiveBlending} toneMapped={false} />
       </mesh>
-      <Sparkles count={reducedMotion ? 34 : 96} scale={[4.6, 4.6, 4.6]} size={reducedMotion ? 1.7 : 2.4} speed={reducedMotion ? 0 : 0.14} opacity={0.7} color="#fff0ba" />
+      <Sparkles count={reducedMotion ? 42 : 124} scale={[4.2, 4.2, 4.2]} size={reducedMotion ? 1.55 : 2.15} speed={reducedMotion ? 0 : 0.11} opacity={0.58} color="#ffd36c" />
       <pointLight color="#fff0ba" intensity={15.5} distance={20} decay={2} />
       <pointLight color={accent} intensity={4.8} distance={14} decay={2} />
     </group>
