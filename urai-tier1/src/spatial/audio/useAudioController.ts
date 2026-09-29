@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef } from "react";
+import { clientApiUrl } from "@/lib/clientApiUrl";
 import type {
   AmbientTrack,
   NarratorAudioLine,
@@ -198,7 +199,7 @@ export function useAudioController() {
 
   const playElevenLabs = useCallback(async (line: NarratorAudioLine, signal: AbortSignal) => {
     if (!hasWindow()) return;
-    const res = await fetch("/api/voice/elevenlabs", {
+    const res = await fetch(clientApiUrl("/api/voice/elevenlabs"), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ id: line.id, text: line.text, tone: line.tone, voiceHint: line.voiceHint }),

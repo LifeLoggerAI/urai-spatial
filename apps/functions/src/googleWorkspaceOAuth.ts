@@ -15,6 +15,7 @@ const STATE_COLLECTION = 'providerOAuthStates'
 const PROVIDER_ID = 'google-workspace'
 const DEFAULT_REDIRECT_URI = 'https://urai.app/api/google/oauth/callback'
 const DEFAULT_APP_ORIGIN = 'https://urai.app'
+const WEB_CLIENT_ORIGINS = ['https://urai.app', 'https://www.urai.app', /^https:\/\/localhost(?::\d+)?$/]
 
 const GOOGLE_WORKSPACE_SCOPES = [
   'openid',
@@ -219,7 +220,7 @@ export const googleOAuthStart = onRequest({
   region: REGION,
   timeoutSeconds: 30,
   memory: '256MiB',
-  cors: false,
+  cors: WEB_CLIENT_ORIGINS,
   secrets: [GOOGLE_OAUTH_CLIENT_ID],
 }, async (request, response) => {
   try {
@@ -269,7 +270,7 @@ export const googleOAuthStatus = onRequest({
   region: REGION,
   timeoutSeconds: 15,
   memory: '256MiB',
-  cors: false,
+  cors: WEB_CLIENT_ORIGINS,
 }, async (request, response) => {
   try {
     if (request.method !== 'POST') throw new OAuthError(405, 'METHOD_NOT_ALLOWED', 'POST is required.')
@@ -293,7 +294,7 @@ export const googleOAuthDisconnect = onRequest({
   region: REGION,
   timeoutSeconds: 20,
   memory: '256MiB',
-  cors: false,
+  cors: WEB_CLIENT_ORIGINS,
   secrets: [GOOGLE_OAUTH_TOKEN_ENCRYPTION_KEY],
 }, async (request, response) => {
   try {

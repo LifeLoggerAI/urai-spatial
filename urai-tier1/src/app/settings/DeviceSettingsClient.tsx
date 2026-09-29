@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react'
 import { getAuth, onAuthStateChanged, type User } from 'firebase/auth'
 import { app, firebasePublicEnvReady } from '@/lib/firebase/client'
 import { setHapticsEnabled, URAI_HAPTICS_STORAGE_KEY } from '@/spatial/haptics/HapticRuntime'
+import { clientApiUrl } from '@/lib/clientApiUrl'
 
 function readHapticsPreference() {
   if (typeof window === 'undefined') return true
@@ -26,7 +27,7 @@ type GoogleUiState = 'checking' | 'signed-out' | 'ready' | 'working' | 'error'
 
 async function googleRequest<T>(path: string, user: User): Promise<T> {
   const token = await user.getIdToken()
-  const response = await fetch(path, {
+  const response = await fetch(clientApiUrl(path), {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${token}`,
