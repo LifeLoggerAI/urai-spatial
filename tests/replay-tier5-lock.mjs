@@ -178,6 +178,8 @@ async function validateReplay(page, report, screenshotName) {
   await expectVisible(unwind, 'Replay unwind control');
   await expectNoOverlap(heading, unwind, 'Replay heading and unwind control', 4);
   await expectNoOverlap(productControls, companion, 'Replay memory controls and persistent Orb', 4);
+  await controls.click();
+  await productControls.waitFor({ state: 'hidden', timeout: 10000 });
 
   const play = page.getByRole('button', { name: 'Continue memory' }).first();
   await expectVisible(play, 'Continue memory control');
