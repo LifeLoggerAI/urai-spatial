@@ -91,6 +91,10 @@ const editableFocusTarget = `      const editableControl = page.locator('.home-d
 const editableFocusReplacement = `      const editableControl = page.getByRole('navigation', { name: 'Accessible Home destinations' }).getByRole('button').first()`
 if (original.split(editableFocusTarget).length - 1 !== 1) throw new Error('Home editable-focus regression contract changed')
 
+const editableFocusAssertionTarget = `      editableFocusProven = await editableControl.evaluate((node) => node === document.activeElement)`
+const editableFocusAssertionReplacement = `      editableFocusProven = await page.evaluate(() => document.activeElement?.getAttribute('data-testid') === 'home-semantic-orb')`
+if (original.split(editableFocusAssertionTarget).length - 1 !== 1) throw new Error('Home editable-focus assertion contract changed')
+
 const executionStart = `const browser = await chromium.launch({ headless: true })`
 const originalExecutionIndex = original.indexOf(executionStart)
 if (originalExecutionIndex < 0 || original.indexOf(executionStart, originalExecutionIndex + 1) >= 0) throw new Error('Execution contract changed')
@@ -136,6 +140,7 @@ const patchedPrefix = original
   .replace(discreetPassTarget, semanticPassReplacement)
   .replace(reviewModePassTarget, reviewModePassReplacement)
   .replace(editableFocusTarget, editableFocusReplacement)
+  .replace(editableFocusAssertionTarget, editableFocusAssertionReplacement)
 const patchedExecutionIndex = patchedPrefix.indexOf(executionStart)
 if (patchedExecutionIndex < 0 || patchedPrefix.indexOf(executionStart, patchedExecutionIndex + 1) >= 0) throw new Error('Patched execution contract changed')
 const grouped = patchedPrefix.slice(0, patchedExecutionIndex) + execution
@@ -154,6 +159,7 @@ const requiredSemanticGuards = [
   ['disclosed review asset mode', 'result.assetMode === requiredMode'],
   ['truthful personalization mode', 'result.personalizationMode === expected.mode'],
   ['editable focus regression owner', "Accessible Home destinations"],
+  ['editable focus regression assertion', "document.activeElement?.getAttribute('data-testid') === 'home-semantic-orb'"],
 ]
 for (const [label, marker] of requiredSemanticGuards) {
   if (!grouped.includes(marker)) throw new Error(`Visual assertion missing after grouping (${label}): ${marker}`)
