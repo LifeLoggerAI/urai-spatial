@@ -623,6 +623,7 @@ async function buildExport(snapshot: FirebaseFirestore.DocumentSnapshot) {
       data.privacyRuntime = await collectionDocuments(userRef.collection('privacyRuntime'))
     }
     if (scopes.includes('memories')) {
+      data.memories = await collectionDocuments(userRef.collection('memories'))
       data.replayEvents = await collectionDocuments(userRef.collection('replayEvents'))
       data.spatialMemories = await collectionDocuments(userRef.collection('spatialMemories'))
     }
@@ -847,7 +848,7 @@ export const createDeletionRequest = functions.https.onCall(async (data, context
 const DELETION_COLLECTIONS: Record<Exclude<DeletionScope, 'account'>, string[]> = {
   'export-history': ['exportJobs'],
   'privacy-history': ['privacyAudit'],
-  memories: ['replayEvents', 'spatialMemories', 'canonChains'],
+  memories: ['memories', 'replayEvents', 'spatialMemories', 'canonChains'],
   'spatial-state': [
     'homeWorld',
     'homeWorldExplainability',
@@ -869,6 +870,7 @@ const DELETION_COLLECTIONS: Record<Exclude<DeletionScope, 'account'>, string[]> 
     'privacyAudit',
     'privacyPolicy',
     'privacyRuntime',
+    'memories',
     'replayEvents',
     'spatialMemories',
     'canonChains',

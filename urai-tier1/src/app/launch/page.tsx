@@ -17,7 +17,7 @@ export default function LaunchPage() {
   return (
     <main className="launchHub" aria-labelledby="launch-heading">
       <section className="launchHero">
-        <p>URAI · LAUNCH</p>
+        <p><span>URAI</span> · LAUNCH</p>
         <h1 id="launch-heading">Your private world is the interface.</h1>
         <p>
           UrAi connects Home, Life Map, Replay, Life Movie, Council, XR, Passport, and privacy controls
@@ -45,9 +45,10 @@ export default function LaunchPage() {
       <section className="launchTruth" aria-labelledby="launch-truth">
         <h2 id="launch-truth">Launch truth</h2>
         <p>
-          Public and private experiences are intentionally distinct. Demo content is disclosed as demo.
-          Signed-in experiences use owner-authorized data and fail closed when identity, consent, provider,
-          device, or release requirements are not satisfied. UrAi does not diagnose or decide what a life means.
+          Public and private experiences are intentionally distinct. This demo uses sample data where explicitly labeled.
+          Production-certification pending until exact live receipts are complete. Signed-in experiences use owner-authorized
+          data and fail closed when identity, consent, provider, device, or release requirements are not satisfied.
+          UrAi does not diagnose or decide what a life means, and this experience does not prove persistent personal memory.
         </p>
       </section>
 

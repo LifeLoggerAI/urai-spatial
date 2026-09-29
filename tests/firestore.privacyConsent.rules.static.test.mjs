@@ -15,6 +15,7 @@ const ownerReadOnlyCollections = [
   'dataSources',
   'devices',
   'providerConnections',
+  'memories',
 ]
 
 const trustedCollections = [
