@@ -5,6 +5,7 @@ import test from 'node:test'
 const unsignedWorkflow = fs.readFileSync(new URL('../../.github/workflows/android-package-prep.yml', import.meta.url), 'utf8')
 const signedWorkflow = fs.readFileSync(new URL('../../.github/workflows/android-governed-signing-prep.yml', import.meta.url), 'utf8')
 const apiHelper = fs.readFileSync(new URL('../src/lib/clientApiUrl.ts', import.meta.url), 'utf8')
+const deviceSettings = fs.readFileSync(new URL('../src/app/settings/DeviceSettingsClient.tsx', import.meta.url), 'utf8')
 
 const requiredPublicVars = [
   'NEXT_PUBLIC_FIREBASE_API_KEY',
@@ -44,4 +45,12 @@ test('native API routing allows only HTTPS configured origins and API paths', ()
   assert.match(apiHelper, /candidate\.username/)
   assert.match(apiHelper, /candidate\.password/)
   assert.match(apiHelper, /path\.startsWith\('\/api\/'\)/)
+})
+
+test('native shell fails closed on Google OAuth until a verified app-link return exists', () => {
+  assert.match(deviceSettings, /isNativeAppShell/)
+  assert.match(deviceSettings, /Capacitor/)
+  assert.match(deviceSettings, /disabled=\{nativeShell\|\|googleState/)
+  assert.match(deviceSettings, /No native OAuth request was started/)
+  assert.match(deviceSettings, /Android app-link return path is verified/)
 })
