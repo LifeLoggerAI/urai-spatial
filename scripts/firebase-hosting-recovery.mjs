@@ -183,6 +183,15 @@ function managedCredentialPath() {
   return resolved
 }
 
+function accessTokenFromWif() {
+  for (const name of ['FIREBASE_SERVICE_ACCOUNT_JSON', 'FIREBASE_PRIVATE_KEY', 'FIREBASE_CLIENT_EMAIL', 'FIREBASE_TOKEN']) {
+    if (String(process.env[name] || '').trim()) {
+      throw new Error(`Long-lived Google/Firebase credential variable is prohibited: ${name}`)
+    }
+  }
+  return requireString('GOOGLE_WIF_ACCESS_TOKEN', process.env.GOOGLE_WIF_ACCESS_TOKEN)
+}
+
 function serviceAccountFromEnvironment() {
   const raw = String(process.env.FIREBASE_SERVICE_ACCOUNT_JSON || '').trim()
   if (raw) return parseServiceAccount(raw)
@@ -255,16 +264,15 @@ async function fetchVersion(accessToken, versionName) {
   })
 }
 
-async function currentLiveRelease(serviceAccount, siteId) {
-  const accessToken = await accessTokenFromServiceAccount(serviceAccount)
+async function currentLiveRelease(accessToken, siteId) {
   const release = selectCurrentLiveRelease(await listAllReleases(accessToken, siteId), siteId)
   return { accessToken, release }
 }
 
 export async function discoverCurrentLiveRelease() {
   const siteId = assertSiteId(process.env.FIREBASE_SITE_ID || expectedSiteId)
-  const serviceAccount = serviceAccountFromEnvironment()
-  const { accessToken, release } = await currentLiveRelease(serviceAccount, siteId)
+  const accessToken = accessTokenFromWif()
+  const { release } = await currentLiveRelease(accessToken, siteId)
   const version = await fetchVersion(accessToken, release.versionName)
   const restorable = assertRestorableVersion(version, release.versionName)
   const receiptPath = resolveReceiptPath()
@@ -294,8 +302,7 @@ export async function restoreDiscoveredVersion() {
     throw new Error(`Restore requires URAI_HOSTING_RESTORE_CONFIRM=${restoreConfirmation}`)
   }
   const { receiptPath, receipt, siteId, versionName } = readRecoveryReceipt()
-  const serviceAccount = serviceAccountFromEnvironment()
-  const accessToken = await accessTokenFromServiceAccount(serviceAccount)
+  const accessToken = accessTokenFromWif()
   assertRestorableVersion(await fetchVersion(accessToken, versionName), versionName)
   const url = new URL(`${apiRoot}/sites/${siteId}/releases`)
   url.searchParams.set('versionName', versionName)
@@ -321,8 +328,7 @@ export async function verifyRestoredVersion({ attempts = 12, delayMs = 1000 } = 
   if (!Number.isInteger(delayMs) || delayMs < 0 || delayMs > 10_000) throw new Error('Restore verification delay must be between 0 and 10000 ms')
 
   const { receiptPath, receipt, siteId, versionName } = readRecoveryReceipt()
-  const serviceAccount = serviceAccountFromEnvironment()
-  const accessToken = await accessTokenFromServiceAccount(serviceAccount)
+  const accessToken = accessTokenFromWif()
   let observed = null
   for (let attempt = 1; attempt <= attempts; attempt += 1) {
     const release = selectCurrentLiveRelease(await listAllReleases(accessToken, siteId), siteId)
