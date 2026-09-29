@@ -17,7 +17,7 @@ function HomeSemanticNavigation() {
     action()
   }
   const openGround = () => requestUraiWorldTravel({ destination: 'infrastructure-hub', href: '/ground/', entryPortal: 'home-ground', cameraCheckpoint: 'home-ground-descent' })
-  const openLifeMap = () => requestUraiWorldTravel({ destination: 'life-map', href: '/life-map/' })
+  const openLifeMap = () => requestUraiWorldTravel({ destination: 'life-map', href: '/life-map/?from=home-sky', entryPortal: 'home-sky', cameraCheckpoint: 'home-sky-ascent-complete' })
 
   return (
     <nav className="home-semantic-navigation" aria-label="Accessible Home destinations" data-home-navigation-owner="runtime-boundary" data-home-navigation-non-dominant="true">
