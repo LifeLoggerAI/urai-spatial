@@ -166,8 +166,8 @@ service cloud.firestore {
       }
       match /memories/{memoryId} {
         // Canonical private memory documents used by Home personalization and Life Movie.
-        // Writes are server-authoritative; owners can read only their own memory records.
-        allow read: if isSelf(uid) || isAdmin();
+        // Full memory records stay owner-only; trusted server operations use Admin SDK authority.
+        allow read: if isSelf(uid);
         allow write: if false;
       }
 
