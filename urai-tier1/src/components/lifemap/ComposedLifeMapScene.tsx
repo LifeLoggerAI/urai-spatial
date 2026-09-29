@@ -214,7 +214,7 @@ function phaseLabel(phase: JourneyPhase) {
   if (phase === "departure") return "Leaving overview";
   if (phase === "travel") return "Traveling the memory field";
   if (phase === "approach") return "Entering the chapter";
-  return "Intimate memory chamber";
+  return "Inside the Memory Star";
 }
 
 export default function ComposedLifeMapScene() {

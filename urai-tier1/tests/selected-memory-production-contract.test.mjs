@@ -8,6 +8,8 @@ const contract = read('src/spatial/memory/selectedMemoryContract.ts')
 const hook = read('src/spatial/memory/useSelectedMemory.ts')
 const focus = read('src/app/focus/FocusChamberClient.tsx')
 const replay = read('src/app/replay/CinematicReplayClient.tsx')
+const lifeMapScene = read('src/components/lifemap/ComposedLifeMapScene.tsx')
+const explicitDemoMemory = read('src/spatial/memory/explicitDemoMemory.ts')
 const demoPage = read('src/app/demo/page.tsx')
 const demoFilm = read('src/app/demo/replay-film/page.tsx')
 const visualAudit = readRoot('scripts/run-live-visual-audit-current.mjs')
@@ -93,7 +95,10 @@ test('Focus is an explorable stellar memory-star field rather than a static cham
   assert.match(focus, /data-star-id=\{memory\?\.star\.id\}/)
   assert.match(focus, /data-node=\{memory\?\.star\.id\}/)
 
-  assert.match(focus, /aria-label="Focus chamber controls"/)
+  assert.match(focus, /aria-label="Focus memory controls"/)
+  assert.match(focus, /focus-stellar-photosphere-luminance-floor/)
+  assert.match(focus, /opacity=\{0\.48\}/)
+  assert.doesNotMatch(focus, /aria-label="Focus chamber controls"/)
   assert.match(focus, /<button type="button" onClick=\{\(\) => setRecenterSignal/)
   assert.match(focus, /aria-label=\{`Open Replay for \$\{memory\.title\}`\}/)
   assert.match(focus, /<details className="focusHelp">/)
@@ -106,6 +111,14 @@ test('Focus is an explorable stellar memory-star field rather than a static cham
 
   assert.doesNotMatch(focus, /className="artifactImage"/, 'the retired static artifact-image owner must not return')
   assert.doesNotMatch(focus, /\.artifactImage\{/, 'the retired static artifact-image CSS owner must not return')
+})
+
+test('selected Memory Star copy rejects the retired chamber language', () => {
+  assert.match(lifeMapScene, /return "Inside the Memory Star";/)
+  assert.doesNotMatch(lifeMapScene, /Intimate memory chamber/i)
+  assert.match(explicitDemoMemory, /Selected memory star\./)
+  assert.match(explicitDemoMemory, /Return to the explicit demo Focus star\./)
+  assert.doesNotMatch(explicitDemoMemory, /Selected memory chamber|Focus chamber/i)
 })
 
 test('direct Focus entry remains a truthful neutral stellar field and never mounts fake personal data', () => {

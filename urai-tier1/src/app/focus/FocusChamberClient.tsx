@@ -260,20 +260,24 @@ function StellarPhotosphere({ accent, light, reducedMotion }: { accent: string; 
         <sphereGeometry args={[1.15, 112, 96]} />
         <primitive object={photosphere} attach="material" />
       </mesh>
+      <mesh name="focus-stellar-photosphere-luminance-floor" scale={1.012} renderOrder={3}>
+        <sphereGeometry args={[1.15, 96, 96]} />
+        <meshBasicMaterial color="#ffe8a8" transparent opacity={0.48} depthWrite={false} blending={THREE.AdditiveBlending} toneMapped={false} />
+      </mesh>
       <mesh scale={1.075}>
         <sphereGeometry args={[1.15, 80, 80]} />
-        <meshBasicMaterial color="#fff0b5" transparent opacity={0.23} side={THREE.BackSide} depthWrite={false} blending={THREE.AdditiveBlending} toneMapped={false} />
+        <meshBasicMaterial color="#fff0b5" transparent opacity={0.34} side={THREE.BackSide} depthWrite={false} blending={THREE.AdditiveBlending} toneMapped={false} />
       </mesh>
       <mesh scale={1.22}>
         <sphereGeometry args={[1.15, 64, 64]} />
-        <meshBasicMaterial color={light} transparent opacity={0.105} side={THREE.BackSide} depthWrite={false} blending={THREE.AdditiveBlending} toneMapped={false} />
+        <meshBasicMaterial color={light} transparent opacity={0.16} side={THREE.BackSide} depthWrite={false} blending={THREE.AdditiveBlending} toneMapped={false} />
       </mesh>
       <mesh scale={1.52}>
         <sphereGeometry args={[1.15, 48, 48]} />
-        <meshBasicMaterial color={accent} transparent opacity={0.042} side={THREE.BackSide} depthWrite={false} blending={THREE.AdditiveBlending} toneMapped={false} />
+        <meshBasicMaterial color={accent} transparent opacity={0.072} side={THREE.BackSide} depthWrite={false} blending={THREE.AdditiveBlending} toneMapped={false} />
       </mesh>
       <Sparkles count={reducedMotion ? 34 : 96} scale={[4.6, 4.6, 4.6]} size={reducedMotion ? 1.7 : 2.4} speed={reducedMotion ? 0 : 0.14} opacity={0.7} color="#fff0ba" />
-      <pointLight color="#fff0ba" intensity={12.5} distance={20} decay={2} />
+      <pointLight color="#fff0ba" intensity={15.5} distance={20} decay={2} />
       <pointLight color={accent} intensity={4.8} distance={14} decay={2} />
     </group>
   )
@@ -418,7 +422,7 @@ export default function FocusChamberClient() {
     <header className="focusHeading"><p>{memory ? (memory.demo ? 'DEMO FIXTURE · NOT PERSONAL DATA' : `${memory.privacy} memory`) : 'URAI · FOCUS MEMORY STAR'}</p><h2>{heading}</h2>{memory ? <span>{dateLabel(memory.occurredAt)}</span> : null}<div className="focusNarration"><small>{memory ? 'Selected memory' : 'Memory star threshold'}</small><strong>{description}</strong></div></header>
     <section className="artifactStage" aria-label={memory ? `Selected memory ${memory.title}` : 'Neutral stellar Focus field'}><span className="apertureOrbit apertureOrbitOuter" aria-hidden="true" /><span className="apertureOrbit apertureOrbitInner" aria-hidden="true" /></section>
     <aside className="memoryMeaning" aria-label="Selected memory context"><p>{memory ? 'Held in context. Nothing leaves this memory field.' : result.status === 'loading' ? 'Opening the selected memory safely.' : 'No personal memory is displayed in this neutral stellar field.'}</p>{memory ? <dl><div><dt>Emotion</dt><dd>{memory.emotionalState}</dd></div><div><dt>Place</dt><dd>{memory.place?.label ?? 'Not recorded'}</dd></div><div><dt>People</dt><dd>{memory.people.map((person) => person.relationship ? `${person.label} · ${person.relationship}` : person.label).join(', ') || 'Not recorded'}</dd></div><div><dt>Privacy</dt><dd>{memory.privacy}</dd></div></dl> : <div className="neutralActions"><button type="button" onClick={unwind}>Open Life Map</button><span>{result.status === 'loading' ? 'Loading' : result.message}</span></div>}</aside>
-    <nav className="focusControls" aria-label="Focus chamber controls"><button type="button" onClick={() => setRecenterSignal((value) => value + 1)}>Recenter</button>{memory ? <button type="button" className="primary" disabled={committed} onClick={enterReplay} aria-label={`Open Replay for ${memory.title}`}>{committed ? 'Opening…' : 'Enter Replay'}</button> : null}<button className="unwind" type="button" onClick={unwind}>← Life Map</button></nav>
+    <nav className="focusControls" aria-label="Focus memory controls"><button type="button" onClick={() => setRecenterSignal((value) => value + 1)}>Recenter</button>{memory ? <button type="button" className="primary" disabled={committed} onClick={enterReplay} aria-label={`Open Replay for ${memory.title}`}>{committed ? 'Opening…' : 'Enter Replay'}</button> : null}<button className="unwind" type="button" onClick={unwind}>← Life Map</button></nav>
     <details className="focusHelp"><summary>Explore</summary><p>Drag to orbit. Scroll or pinch to move through depth. Use W A S D or arrow keys to travel. Recenter restores the arrival view. Escape returns to Life Map.</p></details>
     {webglState !== 'ready' && webglState !== 'failed' ? <section className="webglRecovery" role="status" aria-live="assertive"><strong>{webglState === 'lost' ? 'Visual field paused safely' : 'Restoring visual field'}</strong><span>Your selected memory and privacy state remain preserved.</span><button type="button" onClick={() => setRecenterSignal((value) => value + 1)}>Recenter when restored</button></section> : null}
     <div className="focusStatus" role={result.status === 'loading' ? 'status' : 'note'} aria-live="polite">{memory ? 'Stellar memory field ready' : result.status === 'loading' ? 'Opening selected memory' : directEntry ? 'Neutral stellar field' : result.message}</div>
