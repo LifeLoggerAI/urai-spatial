@@ -148,6 +148,12 @@ service cloud.firestore {
         allow read: if isSelf(uid) || isAdmin();
         allow write: if false;
       }
+      // Canonical private memory records used by Life Map, Focus, Replay and Life Movie.
+      // Clients may read only their own records. Trusted server writers use Admin SDK authority.
+      match /memories/{memoryId} {
+        allow read: if isSelf(uid);
+        allow write: if false;
+      }
       match /tierLockAudit/{auditId} {
         allow read: if isSelf(uid) || isAdmin();
         allow write: if false;
