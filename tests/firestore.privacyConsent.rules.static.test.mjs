@@ -34,6 +34,14 @@ test('owner privacy records are readable only inside users/{uid} and remain serv
   }
 })
 
+test('canonical private memories are owner-readable and never client-writable', () => {
+  const match = rules.match(/match \/memories\/\{memoryId\} \{([\s\S]*?)\n\s*\}/)
+  assert.ok(match, 'missing canonical memories rules block')
+  assert.match(match[1], /allow read: if isSelf\(uid\);/)
+  assert.match(match[1], /allow write: if false;/)
+  assert.doesNotMatch(match[1], /isAdmin\(\)/)
+})
+
 test('trusted queues and durable receipts are globally closed to clients', () => {
   for (const collectionName of trustedCollections) {
     assert.match(rules, new RegExp(`match \\/${collectionName}\\/\\{docId\\} \\{ allow read, write: if false; \\}`))
