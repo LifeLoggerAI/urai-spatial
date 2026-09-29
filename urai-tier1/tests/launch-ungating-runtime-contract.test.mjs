@@ -18,6 +18,7 @@ const passiveServer = fs.readFileSync(new URL('../../apps/functions/src/passiveS
 const functionsIndex = fs.readFileSync(new URL('../../apps/functions/src/index.ts', import.meta.url), 'utf8')
 const firestoreRules = fs.readFileSync(new URL('../../firebase/firestore.rules', import.meta.url), 'utf8')
 const layout = read('src/app/layout.tsx')
+const privacyOperations = fs.readFileSync(new URL('../../apps/functions/src/privacyOperations.ts', import.meta.url), 'utf8')
 
 test('Life Movie is an authenticated owner-memory runtime, not a legacy demo shell', () => {
   assert.match(moviePage, /LifeMovieClient/)
@@ -83,4 +84,8 @@ test('passive signal runtime is consent-bound, server-owned, and does not silent
     assert.match(firestoreRules, new RegExp(`match /${collectionName}/\\{`))
   }
   assert.match(firestoreRules, /match \/behaviorSignals\/\{signalId\}[\s\S]*allow write: if false;/)
+  for (const collectionName of ['behaviorSignals', 'voiceEvents', 'locations']) {
+    assert.match(privacyOperations, new RegExp(`collection\\('${collectionName}'\\)`))
+    assert.match(privacyOperations, new RegExp(`'${collectionName}'`))
+  }
 })
