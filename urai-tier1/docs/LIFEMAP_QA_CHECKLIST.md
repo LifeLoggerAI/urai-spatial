@@ -21,7 +21,7 @@ If using a service account JSON:
 
 ```bash
 cd urai-tier1
-FIREBASE_PROJECT_ID=<project-id> FIREBASE_SERVICE_ACCOUNT_JSON='<json>' pnpm seed:lifemap -- --user=demo-user
+FIREBASE_PROJECT_ID=<project-id> GOOGLE_APPLICATION_CREDENTIALS=/path/to/external-account-wif.json pnpm seed:lifemap -- --user=demo-user
 ```
 
 ## Route Smoke Test
