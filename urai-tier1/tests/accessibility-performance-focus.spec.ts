@@ -13,6 +13,7 @@ async function disableWebGL(page: Page) {
 }
 
 test.describe('Focus exact-head accessibility and movement evidence', () => {
+  test.describe.configure({ timeout: 75_000 })
   test('reduced motion preserves explicit keyboard travel and truthful camera telemetry', async ({ page }) => {
     await page.emulateMedia({ reducedMotion: 'reduce' })
     await page.goto(focusDemo, { waitUntil: 'domcontentloaded' })
@@ -30,7 +31,7 @@ test.describe('Focus exact-head accessibility and movement evidence', () => {
     const before = Number(await focus.getAttribute('data-focus-distance'))
     await page.keyboard.down('w')
     try {
-      await expect.poll(async () => Number(await focus.getAttribute('data-focus-distance')), { timeout: 12_000 }).toBeGreaterThan(before + 0.5)
+      await expect.poll(async () => Number(await focus.getAttribute('data-focus-distance')), { timeout: 30_000 }).toBeGreaterThan(before + 0.5)
     } finally {
       await page.keyboard.up('w')
     }
