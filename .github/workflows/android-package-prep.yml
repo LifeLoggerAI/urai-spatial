@@ -113,6 +113,10 @@ jobs:
           corepack pnpm exec cap add android
           corepack pnpm exec cap sync android
 
+      - name: Configure verified Android App Link
+        working-directory: distribution/android-shell
+        run: node configure-app-links.mjs
+
       - name: Apply governed Android version
         working-directory: distribution/android-shell/android
         shell: bash
