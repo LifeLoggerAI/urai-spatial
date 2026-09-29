@@ -10,7 +10,7 @@ const OPENAI_API_KEY = defineSecret('OPENAI_API_KEY')
 const ELEVENLABS_API_KEY = defineSecret('ELEVENLABS_API_KEY')
 const REGION = 'us-central1'
 const RATE_WINDOW_MS = 60_000
-const WEB_CLIENT_ORIGINS = ['https://urai.app', 'https://www.urai.app', /^https:\/\/localhost(?::\\d+)?$/]
+const WEB_CLIENT_ORIGINS = ['https://urai.app', 'https://www.urai.app', /^https:\/\/localhost(?::\d+)?$/]
 
 type Provider = 'openai' | 'elevenlabs'
 type JsonMap = Record<string, unknown>
