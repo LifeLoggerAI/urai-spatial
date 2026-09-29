@@ -12,7 +12,7 @@ const settle = async () => { for (let i = 0; i < 12; i++) await Promise.resolve(
 // Run the production route callbacks/effects with controlled identity and async
 // delivery. Navigation deliberately stays pending, as it can in a real browser.
 function harness(pendingStage) {
-  const states = [], refs = [], effects = [], memos = [], queued = [], calls = [], navigations = []
+  const states = [], refs = [], effects = [], memos = [], queued = [], calls = [], navigations = [], listeners = []
   let stateIndex = 0, refIndex = 0, effectIndex = 0, memoIndex = 0, release
   const blocked = new Promise(resolve => { release = resolve })
   const user = { uid: 'owner' }
@@ -32,7 +32,16 @@ function harness(pendingStage) {
     react,
     'react/jsx-runtime': { jsx: (type, props) => ({ type, props }), jsxs: (type, props) => ({ type, props }) },
     'firebase/auth': { getAuth: () => ({ currentUser: user }), onAuthStateChanged: (_, fn) => { fn(user); return () => {} } },
-    'firebase/firestore': { doc: (...args) => args, onSnapshot: (_, fn) => { fn({ get: key => key === 'enabled' ? true : 'granted', exists: () => true }); return () => {} } },
+    'firebase/firestore': { doc: (...args) => args, onSnapshot: (ref, fn, onError) => {
+      const isAsset = ref.includes('capturedRealityAssets')
+      const authority = isAsset
+        ? { ownerId: 'owner', state: 'ready', reviewState: 'accepted', releaseState: 'private-pilot' }
+        : null
+      const listener = { ref, fn, onError, authority }
+      listeners.push(listener)
+      fn({ get: key => authority?.[key] ?? (key === 'enabled' ? true : 'granted'), exists: () => true })
+      return () => {}
+    } },
     'firebase/functions': { httpsCallable: (_, name) => async () => ({ data: await stage(name === 'getCapturedRealityAsset' ? 'metadata' : 'delivery', name === 'getCapturedRealityAsset' ? metadata : delivery) }) },
     'next/navigation': { useRouter: () => router, useSearchParams: () => new URLSearchParams('assetId=place') },
     '@/lib/firebase/client': { app: {}, firebasePublicEnvReady: true, functions: {}, getFirebaseDb: () => ({}) },
@@ -49,7 +58,7 @@ function harness(pendingStage) {
     if (tree?.type === 'button' && tree.props.children === 'Return to Replay') return tree.props.onClick
     for (const child of [tree?.props?.children].flat()) { const found = exitFrom(child); if (found) return found }
   }
-  return { render, states, calls, navigations, release, exitFrom, cleanup() { effects.forEach(effect => effect.cleanup?.()) } }
+  return { render, states, calls, navigations, listeners, release, exitFrom, cleanup() { effects.forEach(effect => effect.cleanup?.()) } }
 }
 
 for (const pending of ['metadata', 'delivery', 'header']) {
@@ -67,6 +76,28 @@ for (const pending of ['metadata', 'delivery', 'header']) {
     assert.equal(h.states[3].mode, 'suppressed', 'late response must not remount a splat')
     assert.equal(h.states[5], false, 'provenance must close on exit')
     assert.equal(h.calls.at(-1), pending, 'no downstream delivery stage may start after exit')
+    h.cleanup()
+  })
+}
+
+for (const stage of ['metadata', null]) {
+  test(`asset revocation closes the private scene${stage ? ' during metadata load' : ' after authorization'}`, async () => {
+    const h = harness(stage)
+    h.render(); h.render(); await settle()
+    if (stage) assert.equal(h.calls.at(-1), 'metadata')
+    else {
+      for (let i = 0; i < 8; i++) { h.render(); await settle() }
+      assert.ok(h.calls.includes('delivery'))
+    }
+    const assetListener = h.listeners.find(listener => listener.ref.includes('capturedRealityAssets'))
+    assert.ok(assetListener)
+    assetListener.fn({ exists: () => true, get: key => ({ ownerId: 'owner', state: 'revoked', reviewState: 'accepted', releaseState: 'private-pilot' }[key]) })
+    assert.equal(h.states[2], null)
+    assert.equal(h.states[3].mode, 'suppressed')
+    if (stage) {
+      h.release(); await settle()
+      assert.equal(h.calls.at(-1), 'metadata', 'revocation during metadata load must stop delivery')
+    }
     h.cleanup()
   })
 }
