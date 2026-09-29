@@ -121,7 +121,8 @@ test.describe('Life Map independent realm runtime evidence', () => {
     await expect(lifeMapRoot(page)).toHaveAttribute('data-life-map-mode', 'overview')
     await expect(selectedMemoryControls(page)).toHaveCount(0)
 
-    await page.reload({ waitUntil: 'domcontentloaded' })
+    await page.reload({ waitUntil: 'commit', timeout: 30_000 })
+    await expect(page.locator(lifeMapOwnerSelector)).toHaveCount(1, { timeout: 30_000 })
     expect(new URL(page.url()).searchParams.get('overview')).toBe('1')
     await expect(lifeMapRoot(page)).toHaveAttribute('data-life-map-mode', 'overview')
 
