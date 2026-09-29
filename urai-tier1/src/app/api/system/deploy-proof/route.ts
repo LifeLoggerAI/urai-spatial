@@ -17,6 +17,7 @@ const publicRoutes = [
   '/mirror',
   '/passport',
   '/privacy',
+  '/privacy-policy',
   '/account-deletion',
   '/privacy-controls',
   '/settings/privacy',
