@@ -32,6 +32,21 @@ test('DigitalOcean router is authenticated, consented, throttled and disabled by
   assert.match(router, /private, no-store, max-age=0/)
   assert.match(router, /X-URAI-Provider/)
   assert.doesNotMatch(router, /console\.(log|info|warn|error)\(/)
+  assert.match(
+    router,
+    /catch \{\s+throw new ProviderBoundaryError\(401, 'UNAUTHORIZED', 'Authentication is required\.'\)/,
+  )
+  assert.match(router, /request\.on\('aborted', \(\) => controller\.abort\(\)\)/)
+  assert.match(
+    router,
+    /response\.on\('close', \(\) => \{\s+if \(!response\.writableEnded\) \{\s+controller\.abort\(\)/,
+  )
+  assert.match(
+    router,
+    /if \(request\.aborted \|\| response\.destroyed \|\| controller\.signal\.aborted\) \{\s+throw new ProviderBoundaryError\(499, 'CLIENT_DISCONNECTED'/,
+  )
+  assert.ok(router.indexOf("request.on('aborted'") < router.indexOf('await authenticatedUid(request)'))
+  assert.ok(router.indexOf('controller.signal.aborted') < router.indexOf('runDigitalOceanSyntheticCanary({'))
 })
 
 test('browser canary client is same-origin, authenticated and never carries arbitrary user content', () => {
