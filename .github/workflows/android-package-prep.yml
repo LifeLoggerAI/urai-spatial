@@ -21,6 +21,16 @@ jobs:
     timeout-minutes: 45
     env:
       URAI_EXACT_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
+      NEXT_PUBLIC_FIREBASE_API_KEY: ${{ vars.NEXT_PUBLIC_FIREBASE_API_KEY }}
+      NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: ${{ vars.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN }}
+      NEXT_PUBLIC_FIREBASE_PROJECT_ID: ${{ vars.NEXT_PUBLIC_FIREBASE_PROJECT_ID }}
+      NEXT_PUBLIC_FIREBASE_APP_ID: ${{ vars.NEXT_PUBLIC_FIREBASE_APP_ID }}
+      NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET: ${{ vars.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET }}
+      NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: ${{ vars.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID }}
+      NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID: ${{ vars.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID }}
+      NEXT_PUBLIC_URAI_API_ORIGIN: https://urai.app
+      ANDROID_VERSION_CODE: ${{ github.run_number }}
+      ANDROID_VERSION_NAME: 0.1.${{ github.run_number }}-unsigned
 
     steps:
       - name: Checkout exact head
@@ -67,6 +77,17 @@ jobs:
       - name: Install canonical dependencies
         run: corepack pnpm install --frozen-lockfile
 
+      - name: Require release public configuration
+        shell: bash
+        run: |
+          set -euo pipefail
+          for name in NEXT_PUBLIC_FIREBASE_API_KEY NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN NEXT_PUBLIC_FIREBASE_PROJECT_ID NEXT_PUBLIC_FIREBASE_APP_ID; do
+            test -n "${!name}" || { echo "Missing required public build variable: $name" >&2; exit 1; }
+          done
+          test "$NEXT_PUBLIC_FIREBASE_PROJECT_ID" = "urai-4dc1d"
+          test "$NEXT_PUBLIC_URAI_API_ORIGIN" = "https://urai.app"
+          [[ "$ANDROID_VERSION_CODE" =~ ^[1-9][0-9]*$ ]]
+
       - name: Build governed static export
         run: corepack pnpm build:static
 
@@ -76,6 +97,24 @@ jobs:
           rm -rf android
           corepack pnpm exec cap add android
           corepack pnpm exec cap sync android
+
+      - name: Apply governed Android version
+        working-directory: distribution/android-shell/android
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import os, pathlib, re
+          path = pathlib.Path("app/build.gradle")
+          text = path.read_text()
+          text, code_count = re.subn(r"versionCode\s+\d+", f"versionCode {os.environ['ANDROID_VERSION_CODE']}", text, count=1)
+          text, name_count = re.subn(r'versionName\s+"[^"]+"', f'versionName "{os.environ["ANDROID_VERSION_NAME"]}"', text, count=1)
+          if code_count != 1 or name_count != 1:
+              raise SystemExit("Generated Gradle version fields not found exactly once.")
+          path.write_text(text)
+          PY
+          grep -F "versionCode $ANDROID_VERSION_CODE" app/build.gradle
+          grep -F "versionName \"$ANDROID_VERSION_NAME\"" app/build.gradle
 
       - name: Build release bundle without signing credentials
         working-directory: distribution/android-shell/android
@@ -91,6 +130,10 @@ jobs:
             echo "status=UNSIGNED_BUILD_EVIDENCE_ONLY"
             echo "candidate_package=com.urailabs.urai"
             echo "source_sha=$URAI_EXACT_HEAD"
+            echo "version_code=$ANDROID_VERSION_CODE"
+            echo "version_name=$ANDROID_VERSION_NAME"
+            echo "api_origin=$NEXT_PUBLIC_URAI_API_ORIGIN"
+            echo "firebase_project=$NEXT_PUBLIC_FIREBASE_PROJECT_ID"
             echo "aab_path=$AAB"
           } | tee android-package-receipt.txt
 
