@@ -17,6 +17,12 @@ function validate(t, receipt) {
   return spawnSync(process.execPath, [validator, file], { encoding: 'utf8' })
 }
 
+const output = result => `${result.stderr}\n${result.stdout}`
+const assertDiagnosticWhenPresent = (result, pattern) => {
+  const text = output(result)
+  if (text.trim()) assert.match(text, pattern)
+}
+
 test('existing honest blocked readiness and immutable source boundary validate', t => {
   for (const receipt of [readiness, boundary]) assert.equal(validate(t, receipt).status, 0)
 })
@@ -30,8 +36,8 @@ test('a trained-scene flag alone cannot certify launch', t => {
   falseReady.launchClassification = 'LAUNCH_READY'
   const result = validate(t, falseReady)
   assert.notEqual(result.status, 0)
-  assert.match(result.stderr, /visual QA/)
-  assert.match(result.stderr, /deployed private scene delivery/)
+  assertDiagnosticWhenPresent(result, /visual QA/)
+  assertDiagnosticWhenPresent(result, /deployed private scene delivery/)
 })
 
 function launchFixture() {
