@@ -44,6 +44,13 @@ export function CapturedRealityPrivateScene({
       data-captured-reality-device-tier={tier}
       data-captured-reality-reduced-motion={reducedMotion ? 'true' : 'false'}
       data-captured-reality-draw-submitted={renderReady ? 'true' : 'false'}
+      data-captured-reality-render-state={
+        decision.mode === 'gaussian-splat'
+          ? (renderReady ? 'GAUSSIAN_RENDERED' : 'LOADING_OR_BLANK')
+          : decision.mode === 'generic-fallback' || decision.mode === 'mesh-fallback'
+            ? 'FALLBACK_RENDERED'
+            : decision.mode.toUpperCase()
+      }
       style={{ minHeight: '100svh', background: '#05070b', color: '#f7f7f5', display: 'grid', gridTemplateRows: 'auto 1fr' }}
     >
       <header style={{ display: 'flex', flexWrap: 'wrap', gap: '.75rem', alignItems: 'center', padding: '1rem', zIndex: 2 }}>

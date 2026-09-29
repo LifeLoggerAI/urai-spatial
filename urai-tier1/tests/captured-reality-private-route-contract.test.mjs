@@ -6,6 +6,8 @@ import vm from 'node:vm'
 const page = fs.readFileSync(new URL('../src/app/spatial/captured-reality/page.tsx', import.meta.url), 'utf8')
 const client = fs.readFileSync(new URL('../src/app/spatial/captured-reality/CapturedRealityRouteClient.tsx', import.meta.url), 'utf8')
 const delivery = fs.readFileSync(new URL('../src/spatial/captured-reality/capturedRealityDelivery.ts', import.meta.url), 'utf8')
+const scene = fs.readFileSync(new URL('../src/spatial/captured-reality/CapturedRealityPrivateScene.tsx', import.meta.url), 'utf8')
+const ownedSplat = fs.readFileSync(new URL('../src/spatial/captured-reality/OwnedCapturedRealitySplat.tsx', import.meta.url), 'utf8')
 
 test('consent suppression clears private provenance as well as the rendered scene', () => {
   // Execute the actual callback body with state setters, including an open panel.
@@ -92,4 +94,14 @@ test('proof mode remains visibly separate while callable authority enforces the 
   assert.match(client, /accessMode: 'runtime' \| 'proof'/)
   assert.match(client, /Private proof mode · not launch runtime/)
   assert.match(client, /capturedRealityDeviceTier/)
+})
+
+
+test('technical render readiness requires meaningful non-background Gaussian pixels', () => {
+  assert.match(ownedSplat, /capturedRealityFrameHasMeaningfulPixels/)
+  assert.match(ownedSplat, /getClearColor/)
+  assert.match(ownedSplat, /gl\.domElement\.width/)
+  assert.match(scene, /GAUSSIAN_RENDERED/)
+  assert.match(scene, /LOADING_OR_BLANK/)
+  assert.match(scene, /FALLBACK_RENDERED/)
 })

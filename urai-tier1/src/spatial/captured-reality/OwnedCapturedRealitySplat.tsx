@@ -3,13 +3,15 @@
 import { useEffect, useRef, useState } from 'react'
 import { useFrame, useThree } from '@react-three/fiber'
 import { Html } from '@react-three/drei'
-import { Vector4 } from 'three'
+import { Color, Vector4 } from 'three'
 import { createCapturedRealitySplatSession } from './capturedRealitySplatSession'
 import type { CapturedSplatResources } from './capturedRealitySplatResources'
+import { capturedRealityFrameHasMeaningfulPixels } from './capturedRealityRenderProof'
 
 /** Private splat renderer: every mount owns and releases its complete session.
- * The callback means a completed splat mesh reached WebGL's after-render hook;
- * it is not visual acceptance or proof of meaningful non-background pixels.
+ * Readiness is emitted only after a completed splat draw produces meaningful
+ * non-background framebuffer samples. This is technical render proof only,
+ * never artistic/visual-fidelity acceptance.
  */
 export function OwnedCapturedRealitySplat({
   src, maxBytes, chunkSize = 25_000, alphaHash = true, onRenderReady,
@@ -20,6 +22,7 @@ export function OwnedCapturedRealitySplat({
   const [complete, setComplete] = useState(false)
   const [failure, setFailure] = useState<{ src: string; error: Error } | null>(null)
   const viewport = useRef(new Vector4())
+  const clearColor = useRef(new Color())
   const renderReadySent = useRef(false)
   const onRenderReadyRef = useRef(onRenderReady)
   onRenderReadyRef.current = onRenderReady
@@ -64,7 +67,21 @@ export function OwnedCapturedRealitySplat({
           object={loaded.resource.mesh}
           dispose={null}
           onAfterRender={() => {
-            if (!complete || renderReadySent.current || gl.getContext().isContextLost()) return
+            const context = gl.getContext()
+            if (!complete || renderReadySent.current || context.isContextLost()) return
+            gl.getClearColor(clearColor.current)
+            const background: [number, number, number, number] = [
+              Math.round(clearColor.current.r * 255),
+              Math.round(clearColor.current.g * 255),
+              Math.round(clearColor.current.b * 255),
+              Math.round(gl.getClearAlpha() * 255),
+            ]
+            if (!capturedRealityFrameHasMeaningfulPixels({
+              context,
+              width: gl.domElement.width,
+              height: gl.domElement.height,
+              background,
+            })) return
             renderReadySent.current = true
             queueMicrotask(() => onRenderReadyRef.current?.(src))
           }}
