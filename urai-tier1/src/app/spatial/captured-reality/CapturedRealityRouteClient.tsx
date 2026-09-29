@@ -154,6 +154,7 @@ export default function CapturedRealityRouteClient() {
   const [showProvenance, setShowProvenance] = useState(false)
   const revokedRef = useRef(false)
   const truthLabelRef = useRef<string | undefined>(undefined)
+  const renewedDeliveryRef = useRef<RuntimeDelivery | null>(null)
 
   const exit = useCallback(() => {
     // Revoke before scheduling navigation: a pending callable may resolve while
@@ -162,6 +163,7 @@ export default function CapturedRealityRouteClient() {
     setShowProvenance(false)
     setMetadata(null)
     setDelivery(null)
+    renewedDeliveryRef.current = null
     setDecision(suppressedDecision(truthLabelRef.current))
     if (window.history.length > 1) router.back()
     else router.push('/replay')
@@ -170,6 +172,7 @@ export default function CapturedRealityRouteClient() {
   const suppress = useCallback((message: string) => {
     revokedRef.current = true
     setDelivery(null)
+    renewedDeliveryRef.current = null
     setMetadata(null)
     truthLabelRef.current = undefined
     setShowProvenance(false)
@@ -330,36 +333,49 @@ export default function CapturedRealityRouteClient() {
 
   useEffect(() => {
     if (!user || !assetId || !delivery || state.kind !== 'ready') return
-    const expires = Date.parse(delivery.expiresAt)
-    if (!Number.isFinite(expires)) {
-      suppress('Captured Reality closed because the private delivery expiry was invalid.')
-      return
-    }
-    const refreshIn = Math.max(5_000, expires - Date.now() - 60_000)
     let cancelled = false
-    const abort = new AbortController()
+    let timer: number | null = null
+    let activeAbort: AbortController | null = null
     const identityCurrent = () => getAuth(app).currentUser?.uid === user.uid
-    const timer = window.setTimeout(() => {
-      void (async () => {
-        try {
-          const next = await loadRuntimeDelivery(assetId, accessMode)
-          if (cancelled || revokedRef.current || !identityCurrent()) return
-          const prerequisites = localBrowserPrerequisites()
-          const hasLength = await contentLengthAvailable(next.url, abort.signal)
-          if (cancelled || revokedRef.current || !identityCurrent()) return
-          const capability = capturedRealityBrowserCapability({ ...prerequisites, contentLengthAvailable: hasLength })
-          if (!capability.supported) throw new Error('browser capability changed')
-          setDelivery(next)
-          setDecision(splatDecision(next))
-        } catch {
-          if (!cancelled && identityCurrent()) suppress('Captured Reality closed because private delivery could not be renewed.')
-        }
-      })()
-    }, refreshIn)
+
+    const scheduleRenewal = (expiresAt: string) => {
+      const expires = Date.parse(expiresAt)
+      if (!Number.isFinite(expires)) {
+        suppress('Captured Reality closed because the private delivery expiry was invalid.')
+        return
+      }
+      const refreshIn = Math.max(5_000, expires - Date.now() - 60_000)
+      timer = window.setTimeout(() => {
+        void (async () => {
+          activeAbort = new AbortController()
+          try {
+            const next = await loadRuntimeDelivery(assetId, accessMode)
+            if (cancelled || revokedRef.current || !identityCurrent()) return
+            const prerequisites = localBrowserPrerequisites()
+            const hasLength = await contentLengthAvailable(next.url, activeAbort.signal)
+            if (cancelled || revokedRef.current || !identityCurrent()) return
+            const capability = capturedRealityBrowserCapability({ ...prerequisites, contentLengthAvailable: hasLength })
+            if (!capability.supported) throw new Error('browser capability changed')
+
+            // Do not swap the active URL: the already-loaded GPU resource remains
+            // valid after its signed fetch URL expires. Cache the renewed authority
+            // only for a future recovery/new fetch so URL rotation cannot remount a
+            // 160 MiB splat in the middle of an open memory.
+            renewedDeliveryRef.current = next
+            scheduleRenewal(next.expiresAt)
+          } catch {
+            if (!cancelled && identityCurrent()) suppress('Captured Reality closed because private delivery could not be renewed.')
+          }
+        })()
+      }, refreshIn)
+    }
+
+    renewedDeliveryRef.current = null
+    scheduleRenewal(delivery.expiresAt)
     return () => {
       cancelled = true
-      abort.abort()
-      window.clearTimeout(timer)
+      activeAbort?.abort()
+      if (timer !== null) window.clearTimeout(timer)
     }
   }, [accessMode, assetId, delivery, state.kind, suppress, user])
 
