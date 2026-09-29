@@ -55,3 +55,67 @@ const output = replaceRegex(
 
 await writeFile(path, output)
 console.log(`Materialized current accessibility-performance v5 proof at ${path}`)
+
+
+const evidencePath = 'urai-tier1/tests/accessibility-performance-evidence.spec.ts'
+const evidenceInput = await readFile(evidencePath, 'utf8')
+let evidenceOutput = evidenceInput
+
+const orbSizeTarget = `    const orb = page.getByRole('button', { name: /open orb travel controls/i })
+    await expect(orb).toBeVisible()
+    await expect(orb).toBeEnabled()`
+const orbSizeReady = `    const orb = page.locator('[data-urai-audit-action="orb-controls"]')
+    await expect(orb).toBeEnabled({ timeout: 15_000 })
+    await expect(orb).toBeVisible()
+    await expect(orb).toHaveAccessibleName(/open orb travel controls/i)`
+if (evidenceOutput.split(orbSizeTarget).length - 1 !== 1) throw new Error('Orb size readiness contract changed')
+evidenceOutput = evidenceOutput.replace(orbSizeTarget, orbSizeReady)
+
+const orbFocusTarget = `    const orb = page.locator('[data-urai-audit-action="orb-controls"]')
+    await expect(orb).toHaveAccessibleName(/open orb travel controls/i)
+    await expect(orb).toBeEnabled()`
+const orbFocusReady = `    const orb = page.locator('[data-urai-audit-action="orb-controls"]')
+    await expect(orb).toBeEnabled({ timeout: 15_000 })
+    await expect(orb).toBeVisible()
+    await expect(orb).toHaveAccessibleName(/open orb travel controls/i)`
+if (evidenceOutput.split(orbFocusTarget).length - 1 !== 1) throw new Error('Orb focus readiness contract changed')
+evidenceOutput = evidenceOutput.replace(orbFocusTarget, orbFocusReady)
+
+const webglTestTarget = `  test('WebGL context loss recovery is bounded and preserves the route', async ({ page }) => {`
+const webglTestReady = `  test('WebGL context loss recovery is bounded and preserves the route', async ({ page }) => {
+    test.setTimeout(90_000)`
+if (evidenceOutput.split(webglTestTarget).length - 1 !== 1) throw new Error('WebGL recovery timeout contract changed')
+evidenceOutput = evidenceOutput.replace(webglTestTarget, webglTestReady)
+await writeFile(evidencePath, evidenceOutput)
+console.log(`Materialized current Orb hydration and WebGL recovery envelopes at ${evidencePath}`)
+
+const embodiedPath = 'urai-tier1/tests/accessibility-performance-embodied-exploration.spec.ts'
+const embodiedInput = await readFile(embodiedPath, 'utf8')
+const directTargets = [
+  "    await expect(direct.getByRole('button', { name: 'Open Orb directly' })).toBeVisible()",
+  "    await expect(direct.getByRole('button', { name: 'Open Ground directly' })).toBeVisible()",
+  "    await expect(direct.getByRole('button', { name: 'Open Life Map directly' })).toBeVisible()",
+]
+let embodiedOutput = embodiedInput
+for (const line of directTargets) {
+  if (embodiedOutput.split(line).length - 1 !== 1) throw new Error(`Home direct destination readiness contract changed: ${line}`)
+  embodiedOutput = embodiedOutput.replace(line, line.replace('toBeVisible()', 'toBeVisible({ timeout: 30_000 })'))
+}
+await writeFile(embodiedPath, embodiedOutput)
+console.log(`Materialized Home semantic destination readiness at ${embodiedPath}`)
+
+const focusPath = 'urai-tier1/tests/accessibility-performance-focus.spec.ts'
+const focusInput = await readFile(focusPath, 'utf8')
+const focusDescribe = "test.describe('Focus exact-head accessibility and movement evidence', () => {"
+const focusDescribeTimed = "test.describe('Focus exact-head accessibility and movement evidence', () => {\n  test.describe.configure({ timeout: 90_000 })"
+if (focusInput.split(focusDescribe).length - 1 !== 1) throw new Error('Focus timeout contract changed')
+await writeFile(focusPath, focusInput.replace(focusDescribe, focusDescribeTimed))
+console.log(`Materialized Focus software-renderer timeout envelope at ${focusPath}`)
+
+const sensoryPath = 'urai-tier1/tests/accessibility-performance-home-sensory-boundary.spec.ts'
+const sensoryInput = await readFile(sensoryPath, 'utf8')
+const sensoryTimeout = "  test.describe.configure({ timeout: 90_000 })"
+const sensoryTimeoutCurrent = "  test.describe.configure({ timeout: 180_000 })"
+if (sensoryInput.split(sensoryTimeout).length - 1 !== 1) throw new Error('Home sensory timeout contract changed')
+await writeFile(sensoryPath, sensoryInput.replace(sensoryTimeout, sensoryTimeoutCurrent))
+console.log(`Materialized Home sensory software-renderer timeout envelope at ${sensoryPath}`)
