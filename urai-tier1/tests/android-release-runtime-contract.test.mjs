@@ -5,6 +5,7 @@ import test from 'node:test'
 const unsignedWorkflow = fs.readFileSync(new URL('../../.github/workflows/android-package-prep.yml', import.meta.url), 'utf8')
 const signedWorkflow = fs.readFileSync(new URL('../../.github/workflows/android-governed-signing-prep.yml', import.meta.url), 'utf8')
 const apiHelper = fs.readFileSync(new URL('../src/lib/clientApiUrl.ts', import.meta.url), 'utf8')
+const deviceSettings = fs.readFileSync(new URL('../src/app/settings/DeviceSettingsClient.tsx', import.meta.url), 'utf8')
 
 const requiredPublicVars = [
   'NEXT_PUBLIC_FIREBASE_API_KEY',
@@ -44,4 +45,13 @@ test('native API routing allows only HTTPS configured origins and API paths', ()
   assert.match(apiHelper, /candidate\.username/)
   assert.match(apiHelper, /candidate\.password/)
   assert.match(apiHelper, /path\.startsWith\('\/api\/'\)/)
+})
+
+
+test('native Android fails closed for optional Google Workspace OAuth until app return is certified', () => {
+  assert.match(deviceSettings, /isNativeCapacitorRuntime/)
+  assert.match(deviceSettings, /googleNativeBlocked/)
+  assert.match(deviceSettings, /Use web to connect/)
+  assert.match(deviceSettings, /Android system-browser return path is being certified/)
+  assert.match(deviceSettings, /disabled=\{googleState==='working'\|\|googleState==='checking'\|\|googleNativeBlocked\}/)
 })
