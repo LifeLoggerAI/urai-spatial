@@ -26,6 +26,17 @@ type GoogleConnection = {
 
 type GoogleUiState = 'checking' | 'signed-out' | 'ready' | 'working' | 'error'
 
+type CapacitorWindow = Window & {
+  Capacitor?: {
+    isNativePlatform?: () => boolean
+  }
+}
+
+function isNativeCapacitorRuntime() {
+  if (typeof window === 'undefined') return false
+  return Boolean((window as CapacitorWindow).Capacitor?.isNativePlatform?.())
+}
+
 async function googleRequest<T>(path: string, user: User): Promise<T> {
   const token = await user.getIdToken()
   const response = await fetch(clientApiUrl(path), {
@@ -50,6 +61,7 @@ export default function DeviceSettingsClient() {
   const [user, setUser] = useState<User | null>(null)
   const [googleState, setGoogleState] = useState<GoogleUiState>(firebasePublicEnvReady ? 'checking' : 'signed-out')
   const [googleConnection, setGoogleConnection] = useState<GoogleConnection | null>(null)
+  const [googleNativeBlocked, setGoogleNativeBlocked] = useState(false)
   const [googleMessage, setGoogleMessage] = useState('Sign in to connect Gmail, Calendar, Contacts, and Drive.')
 
   useEffect(() => {
@@ -57,6 +69,11 @@ export default function DeviceSettingsClient() {
     setSensorySafe(sensorySafeEnabled())
     setSupportsVibration(typeof navigator !== 'undefined' && typeof navigator.vibrate === 'function')
     setSupportsGamepad(typeof navigator !== 'undefined' && typeof navigator.getGamepads === 'function')
+    const nativeGoogleBlocked = isNativeCapacitorRuntime()
+    setGoogleNativeBlocked(nativeGoogleBlocked)
+    if (nativeGoogleBlocked) {
+      setGoogleMessage('Google Workspace connection is temporarily available on the web while the Android system-browser return path is being certified. Your account remains unchanged.')
+    }
   }, [])
 
   useEffect(() => {
@@ -107,7 +124,13 @@ export default function DeviceSettingsClient() {
   }
 
   const connectGoogle = async () => {
-    if (!user || googleState === 'working') return
+    if (!user || googleState === 'working' || googleNativeBlocked) {
+      if (googleNativeBlocked) {
+        setGoogleState('ready')
+        setGoogleMessage('Google Workspace connection is temporarily available on the web while the Android system-browser return path is being certified. Your account remains unchanged.')
+      }
+      return
+    }
     setGoogleState('working')
     setGoogleMessage('Opening Google permission controls...')
     try {
@@ -159,7 +182,7 @@ export default function DeviceSettingsClient() {
             <div style={{maxWidth:590}}><p style={{margin:0,fontSize:11,letterSpacing:'.18em',textTransform:'uppercase',color:'#87aab3'}}>Connected data</p><h2 id="google-workspace-heading" style={{fontSize:30,margin:'8px 0'}}>Google Workspace</h2><p style={{margin:0,color:'#b8c8ce',lineHeight:1.55}}>Connect Gmail read access, Calendar events, Contacts, and user-selected Drive files through Google’s permission screen. The connection is optional and revocable.</p></div>
             {user ? (
               googleConnection?.connected ? <button type="button" disabled={googleState==='working'} onClick={() => void disconnectGoogle()} style={{padding:'11px 16px',borderRadius:999,border:'1px solid rgba(255,255,255,.17)',background:'transparent',color:'#edf7f9',fontWeight:700,cursor:'pointer'}}>Disconnect</button>
-                : <button type="button" disabled={googleState==='working'||googleState==='checking'} onClick={() => void connectGoogle()} style={{padding:'11px 16px',borderRadius:999,border:0,background:'#e9fbfd',color:'#071116',fontWeight:800,cursor:'pointer'}}>Connect Google</button>
+                : <button type="button" disabled={googleState==='working'||googleState==='checking'||googleNativeBlocked} onClick={() => void connectGoogle()} style={{padding:'11px 16px',borderRadius:999,border:0,background:'#e9fbfd',color:'#071116',fontWeight:800,cursor:'pointer'}}>{googleNativeBlocked ? 'Use web to connect' : 'Connect Google'}</button>
             ) : <Link href="/login" style={{padding:'11px 16px',borderRadius:999,background:'#e9fbfd',color:'#071116',fontWeight:800,textDecoration:'none'}}>Sign in first</Link>}
           </div>
           <p role="status" aria-live="polite" style={{margin:'22px 0 0',fontSize:13,color:'#8fb4bd'}}>{googleMessage}</p>
