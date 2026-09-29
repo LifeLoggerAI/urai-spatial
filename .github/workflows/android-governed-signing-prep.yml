@@ -252,7 +252,10 @@ jobs:
             -storepass "$KEYSTORE_PASSWORD" \
             -keypass "$KEY_PASSWORD" \
             "$AAB" "$KEY_ALIAS"
-          jarsigner -verify -strict "$AAB"
+          jarsigner -verify -strict \
+            -keystore "$RUNNER_TEMP/urai-upload-key.jks" \
+            -storepass "$KEYSTORE_PASSWORD" \
+            "$AAB"
           sha256sum "$AAB" | tee android-signed-aab.sha256
           keytool -list -v \
             -keystore "$RUNNER_TEMP/urai-upload-key.jks" \
