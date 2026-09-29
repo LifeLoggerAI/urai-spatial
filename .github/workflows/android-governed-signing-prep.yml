@@ -1,0 +1,164 @@
+name: Android Governed Signing Prep
+
+on:
+  workflow_dispatch:
+    inputs:
+      source_sha:
+        description: Exact reviewed source SHA to package and sign
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  sign-aab:
+    name: Build and sign exact Android App Bundle
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      EXPECTED_PACKAGE: com.urailabs.urai
+
+    steps:
+      - name: Validate exact SHA input
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "${{ inputs.source_sha }}" =~ ^[0-9a-f]{40}$ ]]
+
+      - name: Checkout exact requested source
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.source_sha }}
+
+      - name: Prove exact checkout
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "${{ inputs.source_sha }}"
+          test -z "$(git status --porcelain --untracked-files=all)"
+
+      - name: Require deliberate signing credentials
+        shell: bash
+        env:
+          KEYSTORE_B64: ${{ secrets.ANDROID_UPLOAD_KEYSTORE_B64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.ANDROID_UPLOAD_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_UPLOAD_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_UPLOAD_KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          test -n "$KEYSTORE_B64"
+          test -n "$KEYSTORE_PASSWORD"
+          test -n "$KEY_ALIAS"
+          test -n "$KEY_PASSWORD"
+          echo "::add-mask::$KEYSTORE_PASSWORD"
+          echo "::add-mask::$KEY_PASSWORD"
+
+      - name: Setup Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v4
+
+      - name: Install Android 36 SDK
+        shell: bash
+        run: |
+          set +o pipefail
+          yes | sdkmanager --licenses >/dev/null
+          LICENSE_STATUS=${PIPESTATUS[1]}
+          set -o pipefail
+          test "$LICENSE_STATUS" -eq 0
+          sdkmanager "platforms;android-36" "build-tools;36.0.0"
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Install canonical dependencies
+        run: corepack pnpm install --frozen-lockfile
+
+      - name: Verify candidate package identity
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -F "appId: '$EXPECTED_PACKAGE'" distribution/android-shell/capacitor.config.ts
+
+      - name: Build governed static export
+        run: corepack pnpm build:static
+
+      - name: Generate and sync Android project
+        working-directory: distribution/android-shell
+        run: |
+          set -euo pipefail
+          rm -rf android
+          corepack pnpm exec cap add android
+          corepack pnpm exec cap sync android
+
+      - name: Build unsigned release AAB
+        working-directory: distribution/android-shell/android
+        run: ./gradlew bundleRelease --stacktrace
+
+      - name: Materialize durable upload keystore
+        shell: bash
+        env:
+          KEYSTORE_B64: ${{ secrets.ANDROID_UPLOAD_KEYSTORE_B64 }}
+        run: |
+          set -euo pipefail
+          printf '%s' "$KEYSTORE_B64" | base64 --decode > "$RUNNER_TEMP/urai-upload-key.jks"
+          test -s "$RUNNER_TEMP/urai-upload-key.jks"
+          chmod 600 "$RUNNER_TEMP/urai-upload-key.jks"
+
+      - name: Sign exact AAB
+        shell: bash
+        env:
+          KEYSTORE_PASSWORD: ${{ secrets.ANDROID_UPLOAD_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_UPLOAD_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_UPLOAD_KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          AAB="distribution/android-shell/android/app/build/outputs/bundle/release/app-release.aab"
+          test -s "$AAB"
+          jarsigner \
+            -keystore "$RUNNER_TEMP/urai-upload-key.jks" \
+            -storepass "$KEYSTORE_PASSWORD" \
+            -keypass "$KEY_PASSWORD" \
+            "$AAB" "$KEY_ALIAS"
+          jarsigner -verify -strict "$AAB"
+          sha256sum "$AAB" | tee android-signed-aab.sha256
+          keytool -list -v \
+            -keystore "$RUNNER_TEMP/urai-upload-key.jks" \
+            -storepass "$KEYSTORE_PASSWORD" \
+            -alias "$KEY_ALIAS" \
+            | awk '/SHA256:/{print "upload_certificate_sha256=" $2}' \
+            | tee android-upload-certificate.txt
+          {
+            echo "status=SIGNED_BUILD_EVIDENCE_ONLY"
+            echo "play_upload_performed=false"
+            echo "candidate_package=$EXPECTED_PACKAGE"
+            echo "source_sha=${{ inputs.source_sha }}"
+            echo "workflow_sha=$GITHUB_SHA"
+            echo "aab_path=$AAB"
+          } | tee android-signed-package-receipt.txt
+
+      - name: Retain signed package evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: urai-android-signed-aab-${{ inputs.source_sha }}
+          path: |
+            distribution/android-shell/android/app/build/outputs/bundle/release/app-release.aab
+            android-signed-aab.sha256
+            android-upload-certificate.txt
+            android-signed-package-receipt.txt
+          retention-days: 30
+
+      - name: Remove local keystore
+        if: always()
+        shell: bash
+        run: rm -f "$RUNNER_TEMP/urai-upload-key.jks"

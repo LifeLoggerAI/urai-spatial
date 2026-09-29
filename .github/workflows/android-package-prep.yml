@@ -1,0 +1,105 @@
+name: Android Package Prep
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - "distribution/android-shell/**"
+      - "urai-tier1/**"
+      - "package.json"
+      - "pnpm-lock.yaml"
+      - "scripts/**"
+      - ".github/workflows/android-package-prep.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  unsigned-aab:
+    name: Build unsigned Android App Bundle
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      URAI_EXACT_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
+
+    steps:
+      - name: Checkout exact head
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ env.URAI_EXACT_HEAD }}
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Prove exact clean checkout
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$URAI_EXACT_HEAD"
+          test -z "$(git status --porcelain --untracked-files=all)"
+
+      - name: Setup Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v4
+
+      - name: Install Android 36 SDK
+        shell: bash
+        run: |
+          set +o pipefail
+          yes | sdkmanager --licenses >/dev/null
+          LICENSE_STATUS=${PIPESTATUS[1]}
+          set -o pipefail
+          test "$LICENSE_STATUS" -eq 0
+          sdkmanager "platforms;android-36" "build-tools;36.0.0"
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Install canonical dependencies
+        run: corepack pnpm install --frozen-lockfile
+
+      - name: Build governed static export
+        run: corepack pnpm build:static
+
+      - name: Generate and sync Android project
+        working-directory: distribution/android-shell
+        run: |
+          rm -rf android
+          corepack pnpm exec cap add android
+          corepack pnpm exec cap sync android
+
+      - name: Build release bundle without signing credentials
+        working-directory: distribution/android-shell/android
+        run: ./gradlew bundleRelease --stacktrace
+
+      - name: Prove bundle exists and remains non-authoritative
+        shell: bash
+        run: |
+          AAB="distribution/android-shell/android/app/build/outputs/bundle/release/app-release.aab"
+          test -s "$AAB"
+          sha256sum "$AAB" | tee android-aab.sha256
+          {
+            echo "status=UNSIGNED_BUILD_EVIDENCE_ONLY"
+            echo "candidate_package=com.urailabs.urai"
+            echo "source_sha=$URAI_EXACT_HEAD"
+            echo "aab_path=$AAB"
+          } | tee android-package-receipt.txt
+
+      - name: Retain unsigned package evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: urai-android-unsigned-aab-${{ env.URAI_EXACT_HEAD }}
+          path: |
+            distribution/android-shell/android/app/build/outputs/bundle/release/app-release.aab
+            android-aab.sha256
+            android-package-receipt.txt
+          retention-days: 30
