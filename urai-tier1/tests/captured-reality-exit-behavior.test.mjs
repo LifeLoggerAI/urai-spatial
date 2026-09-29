@@ -33,7 +33,8 @@ function harness(pendingStage) {
     'react/jsx-runtime': { jsx: (type, props) => ({ type, props }), jsxs: (type, props) => ({ type, props }) },
     'firebase/auth': { getAuth: () => ({ currentUser: user }), onAuthStateChanged: (_, fn) => { fn(user); return () => {} } },
     'firebase/firestore': { doc: (...args) => args, onSnapshot: (ref, fn, onError) => {
-      const isAsset = ref.includes('capturedRealityAssets')
+      const refParts = Array.isArray(ref) ? ref : [ref]
+      const isAsset = refParts.some(part => String(part).includes('capturedRealityAssets'))
       const authority = isAsset
         ? { ownerId: 'owner', state: 'ready', reviewState: 'accepted', releaseState: 'private-pilot' }
         : null
@@ -89,7 +90,7 @@ for (const stage of ['metadata', null]) {
       for (let i = 0; i < 8; i++) { h.render(); await settle() }
       assert.ok(h.calls.includes('delivery'))
     }
-    const assetListener = h.listeners.find(listener => listener.ref.includes('capturedRealityAssets'))
+    const assetListener = h.listeners.find(listener => (Array.isArray(listener.ref) ? listener.ref : [listener.ref]).some(part => String(part).includes('capturedRealityAssets')))
     assert.ok(assetListener)
     assetListener.fn({ exists: () => true, get: key => ({ ownerId: 'owner', state: 'revoked', reviewState: 'accepted', releaseState: 'private-pilot' }[key]) })
     assert.equal(h.states[2], null)
