@@ -146,7 +146,7 @@ test('Life Map is a layered cinematic memory universe with truthful private fall
     'life-map-emotional-weather',
     'life-map-archive-particles',
     'life-map-far-future-horizon',
-    'life-map-selected-arrival-sanctuary',
+    'life-map-selected-arrival-memory-star',
     'CinematicPostProcessing',
   ]) assert.match(lifeMapWorld, new RegExp(marker))
 
