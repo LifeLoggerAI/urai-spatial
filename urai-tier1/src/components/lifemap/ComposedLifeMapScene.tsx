@@ -239,6 +239,7 @@ export default function ComposedLifeMapScene() {
   const [phase, setPhase] = useState<JourneyPhase>("overview");
   const [webglState, setWebglState] = useState<WebGLState>("ready");
   const journeyToken = useRef(0);
+  const localSelectionId = useRef<string | null>(null);
   const overviewPending = useRef(overviewRequested);
   const restoredRoutePending = useRef(Boolean(!overviewRequested && queryNode));
   const selected = useMemo(() => nodes.find((node) => node.id === selectedId) || null, [nodes, selectedId]);
@@ -269,6 +270,7 @@ export default function ComposedLifeMapScene() {
   const selectNode = useCallback((node: LifeMapNode) => {
     restoredRoutePending.current = false;
     overviewPending.current = false;
+    localSelectionId.current = node.id;
     journeyToken.current += 1;
     setSelectedId(node.id);
     if (profile.reducedMotion) setPhase("arrival");
@@ -284,6 +286,7 @@ export default function ComposedLifeMapScene() {
     const retainedId = selectedId || queryNode;
     restoredRoutePending.current = false;
     overviewPending.current = true;
+    localSelectionId.current = null;
     journeyToken.current += 1;
     setSelectedId(null);
     setPhase("overview");
@@ -320,6 +323,11 @@ export default function ComposedLifeMapScene() {
     if (overviewRequested || overviewPending.current || !queryNode || !nodes.length) return;
     const node = nodes.find((candidate) => candidate.id === queryNode);
     if (!node) return;
+    if (localSelectionId.current === node.id) {
+      // Same-route URL synchronization for a locally initiated selection must not
+      // collapse departure/travel/approach into restored-route arrival.
+      return;
+    }
     if (selectedId === node.id) {
       if (phase === "overview") {
         journeyToken.current += 1;
