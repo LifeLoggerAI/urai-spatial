@@ -67,3 +67,12 @@ const focusMovementReadyCurrent = `    await expect(focus).toHaveAttribute('data
 if (focusInput.split(focusMovementReadyTarget).length - 1 !== 1) throw new Error('Focus input readiness proof contract changed')
 await writeFile(focusPath, focusInput.replace(focusMovementReadyTarget, focusMovementReadyCurrent))
 console.log(`Materialized truthful Focus input readiness proof at ${focusPath}`)
+
+
+const focusTimeoutPath = 'urai-tier1/tests/accessibility-performance-focus.spec.ts'
+const focusTimeoutInput = await readFile(focusTimeoutPath, 'utf8')
+const focusDescribe = "test.describe('Focus exact-head accessibility and movement evidence', () => {"
+const focusDescribeTimed = "test.describe('Focus exact-head accessibility and movement evidence', () => {\n  test.describe.configure({ timeout: 90_000 })"
+if (focusTimeoutInput.split(focusDescribe).length - 1 !== 1) throw new Error('Focus software-renderer timeout contract changed')
+await writeFile(focusTimeoutPath, focusTimeoutInput.replace(focusDescribe, focusDescribeTimed))
+console.log(`Materialized Focus software-renderer accessibility timeout envelope at ${focusTimeoutPath}`)
