@@ -25,12 +25,9 @@ The production release path must not be re-enabled until its own least-privilege
 
 ## Runtime authentication
 
-Server-side Google/Firebase access must use one of:
+Server-side Google/Firebase access must use a protected file-backed `external_account` Workload Identity Federation configuration referenced by `GOOGLE_APPLICATION_CREDENTIALS`.
 
-- managed Application Default Credentials supplied by the hosting/runtime platform; or
-- a protected `external_account` Workload Identity Federation configuration referenced by `GOOGLE_APPLICATION_CREDENTIALS`.
-
-The canonical ADC guard rejects long-lived credential environment variables and rejects service-account private-key fields in ADC configuration.
+Metadata-backed implicit ADC is not supported by the hardened runtime because the credential-type guard must inspect the external-account configuration before Firebase initialization. The canonical ADC guard rejects long-lived credential environment variables and rejects service-account private-key fields in ADC configuration.
 
 ## Optional variables
 
