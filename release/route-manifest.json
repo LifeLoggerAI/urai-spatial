@@ -22,7 +22,8 @@
     "/terms",
     "/status",
     "/settings/privacy",
-    "/support"
+    "/support",
+    "/privacy-policy"
   ],
   "classification": {
     "servicePrefixes": [
@@ -89,7 +90,8 @@
       "/demo",
       "/technology",
       "/settings/privacy",
-      "/support"
+      "/support",
+      "/privacy-policy"
     ],
     "publicPrefixes": [
       "/demo/",
