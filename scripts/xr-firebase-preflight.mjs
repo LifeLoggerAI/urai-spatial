@@ -55,7 +55,7 @@ if (rootPackage.scripts?.['live:deploy'] !== 'node scripts/live-release.mjs --de
 }
 
 const expectedSecretNames = [
-  'FIREBASE_SERVICE_ACCOUNT_JSON',
+  'GOOGLE_APPLICATION_CREDENTIALS',
   'FIREBASE_PROJECT_ID',
   'URAI_XR_SESSION_SECRET',
   'URAI_XR_ICE_SERVERS_JSON',
