@@ -122,6 +122,12 @@ service cloud.firestore {
         allow read: if isSelf(uid) || isAdmin();
         allow write: if false;
       }
+      match /capturedRealityAssets/{assetId} {
+        // Asset state is observable only by its owner for immediate revocation.
+        // All authority changes remain server-only.
+        allow read: if isSelf(uid) || isAdmin();
+        allow write: if false;
+      }
       match /exportJobs/{jobId} {
         allow read: if isSelf(uid) || isAdmin();
         allow write: if false;

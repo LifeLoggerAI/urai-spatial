@@ -9,6 +9,7 @@ const ownerReadOnlyCollections = [
   'privacyRuntime',
   'privacyAudit',
   'privacyReceipts',
+  'capturedRealityAssets',
   'exportJobs',
   'deletionJobs',
   'dataSources',
@@ -41,5 +42,7 @@ test('trusted queues and durable receipts are globally closed to clients', () =>
 
 test('privacy rules end in a default-deny boundary', () => {
   assert.match(rules, /match \/\{document=\*\*\} \{ allow read, write: if false; \}/)
-  assert.doesNotMatch(rules, /allow\s+(read|write|create|update|delete)[^;]*:\s*if\s+true\s*;/i)
+  const publicFeatureFlags = /match \/features\/\{flagId\} \{[\s\S]*?\n    \}/
+  assert.match(rules, /match \/features\/\{flagId\} \{\s*allow read: if true;\s*allow write: if isAdmin\(\);\s*\}/)
+  assert.doesNotMatch(rules.replace(publicFeatureFlags, ''), /allow\s+(read|write|create|update|delete)[^;]*:\s*if\s+true\s*;/i)
 })
