@@ -28,6 +28,23 @@ function prepareReplayModel(source: THREE.Object3D) {
   return clone
 }
 
+function ReplayRenderReadyMarker({ memoryId }: { memoryId: string | null }) {
+  const frames = useRef(0)
+  useFrame(({ gl, scene }) => {
+    frames.current += 1
+    const root = document.querySelector('[data-testid="cinematic-replay-client"]')
+    if (!(root instanceof HTMLElement)) return
+    const calls = gl.info.render.calls
+    const objects = scene.children.length
+    root.dataset.replayRenderCalls = String(calls)
+    root.dataset.replaySceneObjects = String(objects)
+    root.dataset.replayRenderReady = frames.current >= 4 && calls > 0 && objects > 0 ? 'true' : 'false'
+    if (memoryId) root.dataset.replayRenderedMemoryId = memoryId
+    else delete root.dataset.replayRenderedMemoryId
+  })
+  return null
+}
+
 function ReplayCameraRig({ progress, reducedMotion }: { progress: number; reducedMotion: boolean }) {
   const target = useRef(new THREE.Vector3(0, 0.5, -2.65))
   const desired = useRef(new THREE.Vector3())
@@ -221,9 +238,10 @@ export default function CinematicReplayClient() {
   }, [memory, unwind])
 
   if (!memory) return (
-    <main className="replayState" data-testid="cinematic-replay-client" data-memory-status={result.status} data-canonical-asset={replayAssets.primary.src} data-replay-neutral="memory-horizon" data-replay-spatial-owner="r3f-immersive-memory-environment">
+    <main className="replayState" data-testid="cinematic-replay-client" data-memory-status={result.status} data-replay-render-ready="false" data-replay-render-calls="0" data-replay-scene-objects="0" data-canonical-asset={replayAssets.primary.src} data-replay-neutral="memory-horizon" data-replay-spatial-owner="r3f-immersive-memory-environment">
       <Canvas className="replaySpatialCanvas" dpr={[1, quality.pixelRatioMax]} frameloop={quality.documentVisible ? 'always' : 'never'} camera={{ position: [0, 0.72, 2.55], fov: 58, near: 0.05, far: 120 }} gl={{ antialias: quality.antialias, powerPreference: 'high-performance' }}>
         <ReplayNeutralSpatialScene />
+        <ReplayRenderReadyMarker memoryId={null} />
       </Canvas>
       <section role={result.status === 'loading' ? 'status' : 'region'} aria-label="Replay memory horizon"><p>{result.status === 'loading' ? 'Opening memory field' : 'Memory horizon'}</p><h1>{result.status === 'loading' ? 'A memory is coming into view.' : 'Choose a memory to enter its reconstruction.'}</h1><span>{result.status === 'loading' ? 'The spatial field will open as soon as the selected memory is ready.' : 'Replay begins from a memory in Life Map, so you always arrive with context.'}</span>{result.status === 'loading' ? null : <button type="button" onClick={chooseMemory}>Choose a memory</button>}</section>
       <style>{stateCss}</style>
@@ -240,9 +258,10 @@ export default function CinematicReplayClient() {
     '--replay-progress': `${percent}%`,
   } as CSSProperties
 
-  return <main className="replayWorld" style={style} data-testid="cinematic-replay-client" data-memory-status={result.status} data-memory-id={memory.id} data-star-id={memory.star.id} data-manifest-id={memory.replayManifest.id} data-node={memory.star.id} data-playing={playing ? 'true' : 'false'} data-canonical-asset={replayAssets.primary.src} data-replay-spatial-owner="r3f-immersive-memory-environment" data-replay-environment={REPLAY_ENVIRONMENT_MODEL}>
+  return <main className="replayWorld" style={style} data-testid="cinematic-replay-client" data-memory-status={result.status} data-memory-id={memory.id} data-star-id={memory.star.id} data-manifest-id={memory.replayManifest.id} data-node={memory.star.id} data-playing={playing ? 'true' : 'false'} data-replay-render-ready="false" data-replay-render-calls="0" data-replay-scene-objects="0" data-canonical-asset={replayAssets.primary.src} data-replay-spatial-owner="r3f-immersive-memory-environment" data-replay-environment={REPLAY_ENVIRONMENT_MODEL}>
     <Canvas className="replaySpatialCanvas" shadows={quality.shadows} dpr={[1, quality.pixelRatioMax]} frameloop={quality.documentVisible ? 'always' : 'never'} camera={{ position: [0, 0.72, 2.55], fov: 58, near: 0.05, far: 120 }} gl={{ antialias: quality.antialias, powerPreference: 'high-performance' }} onCreated={({ gl }) => { gl.outputColorSpace = THREE.SRGBColorSpace; gl.toneMapping = THREE.ACESFilmicToneMapping; gl.toneMappingExposure = 1.05 }}>
       <ReplaySpatialScene memory={memory} playing={playing} progressMs={progressMs} />
+      <ReplayRenderReadyMarker memoryId={memory.id} />
     </Canvas>
     <div className="replayAtmosphere" aria-hidden="true" />
     <header><p>{memory.demo ? 'DEMO FIXTURE · NOT PERSONAL DATA' : `${memory.privacy} replay`}</p><h1>{memory.title}</h1><span>{active?.label ?? 'Replay'}</span><button className="unwind" type="button" onClick={unwind}>← Focus</button>{capturedRealityEntry?.href ? <a className="replayImmersiveEntry" href={capturedRealityEntry.href} aria-label={'Enter captured place for ' + memory.title} title={capturedRealityEntry.truthLabel}>Enter captured place</a> : null}</header>
