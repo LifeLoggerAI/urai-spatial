@@ -194,6 +194,7 @@ export default function CapturedRealityRouteClient() {
     return onAuthStateChanged(getAuth(app), (nextUser) => {
       revokedRef.current = true
       setDelivery(null)
+      renewedDeliveryRef.current = null
       setMetadata(null)
       truthLabelRef.current = undefined
       setShowProvenance(false)
