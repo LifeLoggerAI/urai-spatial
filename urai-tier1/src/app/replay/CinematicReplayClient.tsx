@@ -1,7 +1,8 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
 import { Canvas, useFrame } from '@react-three/fiber'
+import { useTexture } from '@react-three/drei'
 import * as THREE from 'three'
 import { assetCssStack, replayAssets } from '@/spatial/assets/uraiAssets'
 import { useReducedMotion } from '@/spatial/hooks/useReducedMotion'
@@ -29,59 +30,52 @@ function ReplayCameraRig({ progress, reducedMotion }: { progress: number; reduce
   return null
 }
 
-function MemoryMediaDome({ media, playing }: { media: SelectedMemoryMedia | undefined; playing: boolean }) {
+function MemoryImageDome({ url }: { url: string }) {
+  const texture = useTexture(url)
+  texture.colorSpace = THREE.SRGBColorSpace
+  texture.minFilter = THREE.LinearFilter
+  texture.magFilter = THREE.LinearFilter
+
+  return (
+    <group name="replay-immersive-memory-field" userData={{ presentation: 'inside-memory-environment-not-screen', mediaReady: true, mediaKind: 'image' }}>
+      <mesh>
+        <sphereGeometry args={[24, 96, 64]} />
+        <meshBasicMaterial map={texture} toneMapped={false} side={THREE.BackSide} />
+      </mesh>
+      <mesh scale={0.985}>
+        <sphereGeometry args={[24, 72, 48]} />
+        <meshBasicMaterial color="#ffd9a8" transparent opacity={0.028} side={THREE.BackSide} depthWrite={false} blending={THREE.AdditiveBlending} />
+      </mesh>
+    </group>
+  )
+}
+
+function MemoryVideoDome({ media, playing }: { media: SelectedMemoryMedia; playing: boolean }) {
   const [texture, setTexture] = useState<THREE.Texture | null>(null)
   const videoRef = useRef<HTMLVideoElement | null>(null)
 
   useEffect(() => {
-    let disposed = false
-    let localTexture: THREE.Texture | null = null
-    let localVideo: HTMLVideoElement | null = null
-
-    setTexture(null)
-    if (!media) return
-
-    if (media.kind === 'image') {
-      const loader = new THREE.TextureLoader()
-      loader.setCrossOrigin('anonymous')
-      loader.load(media.url, (loaded) => {
-        if (disposed) {
-          loaded.dispose()
-          return
-        }
-        loaded.colorSpace = THREE.SRGBColorSpace
-        loaded.minFilter = THREE.LinearFilter
-        localTexture = loaded
-        setTexture(loaded)
-      })
-    }
-
-    if (media.kind === 'video') {
-      const video = document.createElement('video')
-      video.src = media.url
-      video.crossOrigin = 'anonymous'
-      video.playsInline = true
-      video.muted = true
-      video.loop = false
-      video.preload = 'metadata'
-      localVideo = video
-      videoRef.current = video
-      const videoTexture = new THREE.VideoTexture(video)
-      videoTexture.colorSpace = THREE.SRGBColorSpace
-      videoTexture.minFilter = THREE.LinearFilter
-      videoTexture.magFilter = THREE.LinearFilter
-      localTexture = videoTexture
-      setTexture(videoTexture)
-    }
+    const video = document.createElement('video')
+    video.src = media.url
+    video.crossOrigin = 'anonymous'
+    video.playsInline = true
+    video.muted = true
+    video.loop = false
+    video.preload = 'metadata'
+    videoRef.current = video
+    const videoTexture = new THREE.VideoTexture(video)
+    videoTexture.colorSpace = THREE.SRGBColorSpace
+    videoTexture.minFilter = THREE.LinearFilter
+    videoTexture.magFilter = THREE.LinearFilter
+    setTexture(videoTexture)
 
     return () => {
-      disposed = true
-      localVideo?.pause()
-      if (localVideo) localVideo.removeAttribute('src')
-      if (videoRef.current === localVideo) videoRef.current = null
-      localTexture?.dispose()
+      video.pause()
+      video.removeAttribute('src')
+      if (videoRef.current === video) videoRef.current = null
+      videoTexture.dispose()
     }
-  }, [media])
+  }, [media.url])
 
   useEffect(() => {
     const video = videoRef.current
@@ -91,16 +85,29 @@ function MemoryMediaDome({ media, playing }: { media: SelectedMemoryMedia | unde
   }, [playing])
 
   return (
-    <group name="replay-immersive-memory-field" userData={{ presentation: 'inside-memory-environment-not-screen' }}>
+    <group name="replay-immersive-memory-field" userData={{ presentation: 'inside-memory-environment-not-screen', mediaReady: Boolean(texture), mediaKind: 'video' }}>
       <mesh>
         <sphereGeometry args={[24, 96, 64]} />
         {texture
-          ? <meshBasicMaterial map={texture} toneMapped={false} side={THREE.BackSide} transparent opacity={0.94} />
+          ? <meshBasicMaterial map={texture} toneMapped={false} side={THREE.BackSide} />
           : <meshBasicMaterial color="#06131c" side={THREE.BackSide} />}
       </mesh>
       <mesh scale={0.985}>
         <sphereGeometry args={[24, 72, 48]} />
         <meshBasicMaterial color="#75d9e9" transparent opacity={0.035} side={THREE.BackSide} depthWrite={false} blending={THREE.AdditiveBlending} />
+      </mesh>
+    </group>
+  )
+}
+
+function MemoryMediaDome({ media, playing }: { media: SelectedMemoryMedia | undefined; playing: boolean }) {
+  if (media?.kind === 'image') return <MemoryImageDome url={media.url} />
+  if (media?.kind === 'video') return <MemoryVideoDome media={media} playing={playing} />
+  return (
+    <group name="replay-immersive-memory-field" userData={{ presentation: 'inside-memory-environment-not-screen', mediaReady: false }}>
+      <mesh>
+        <sphereGeometry args={[24, 96, 64]} />
+        <meshBasicMaterial color="#06131c" side={THREE.BackSide} />
       </mesh>
     </group>
   )
@@ -274,7 +281,7 @@ export default function CinematicReplayClient() {
 
   return <main className="replayWorld" style={style} data-testid="cinematic-replay-client" data-memory-status={result.status} data-memory-id={memory.id} data-star-id={memory.star.id} data-manifest-id={memory.replayManifest.id} data-node={memory.star.id} data-playing={playing ? 'true' : 'false'} data-canonical-asset={replayAssets.primary.src} data-replay-spatial-owner="r3f-immersive-memory-field">
     <Canvas className="replaySpatialCanvas" shadows={quality.shadows} dpr={[1, quality.pixelRatioMax]} frameloop={quality.documentVisible ? 'always' : 'never'} camera={{ position: [0, 0.42, 8.4], fov: 46, near: 0.05, far: 120 }} gl={{ antialias: quality.antialias, powerPreference: 'high-performance' }} onCreated={({ gl }) => { gl.outputColorSpace = THREE.SRGBColorSpace; gl.toneMapping = THREE.ACESFilmicToneMapping; gl.toneMappingExposure = 1.05 }}>
-      <ReplaySpatialScene memory={memory} playing={playing} progressMs={progressMs} />
+      <Suspense fallback={null}><ReplaySpatialScene memory={memory} playing={playing} progressMs={progressMs} /></Suspense>
     </Canvas>
     <div className="replayAtmosphere" aria-hidden="true" />
     <header><p>{memory.demo ? 'DEMO FIXTURE · NOT PERSONAL DATA' : `${memory.privacy} replay`}</p><h1>{memory.title}</h1><span>{active?.label ?? 'Replay'}</span><button className="unwind" type="button" onClick={unwind}>← Focus</button>{capturedRealityEntry?.href ? <a className="replayImmersiveEntry" href={capturedRealityEntry.href} aria-label={'Enter captured place for ' + memory.title} title={capturedRealityEntry.truthLabel}>Enter captured place</a> : null}</header>
