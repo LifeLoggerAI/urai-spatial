@@ -157,6 +157,7 @@ async function main() {
 
   const object = bucket.file(runtimeObject)
   let uploadedGeneration = null
+  let objectCreated = false
   try {
     await object.save(bytes, {
       resumable: false,
@@ -172,6 +173,7 @@ async function main() {
         },
       },
     })
+    objectCreated = true
     const [metadata] = await object.getMetadata()
     const storageGeneration = String(metadata.generation ?? '')
     const storedSha256 = String(metadata.metadata?.uraiRuntimeSha256 ?? '').toLowerCase()
@@ -225,6 +227,21 @@ async function main() {
   } catch (error) {
     if (uploadedGeneration) {
       await bucket.file(runtimeObject, { generation: uploadedGeneration }).delete({ ignoreNotFound: true })
+    } else if (objectCreated) {
+      // The create-only upload succeeded, so this object is ours even if the
+      // metadata read failed. Remove it before returning the error so a retry
+      // can satisfy ifGenerationMatch:0 instead of becoming permanently wedged.
+      try {
+        const [metadata] = await object.getMetadata()
+        const recoveredGeneration = String(metadata.generation ?? '')
+        if (/^\d+$/.test(recoveredGeneration)) {
+          await bucket.file(runtimeObject, { generation: recoveredGeneration }).delete({ ignoreNotFound: true })
+        } else {
+          await object.delete({ ignoreNotFound: true })
+        }
+      } catch {
+        await object.delete({ ignoreNotFound: true })
+      }
     }
     throw error
   }
