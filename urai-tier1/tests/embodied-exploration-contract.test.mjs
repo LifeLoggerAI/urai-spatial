@@ -124,7 +124,7 @@ test('Home keeps one physical stateful Orb owner and semantic access parity', ()
   assert.match(routeOwner, /background:\s*transparent\s*!important/)
   assert.match(homeRuntime, />Ground<\/button>/)
   assert.match(homeRuntime, /data-testid="home-semantic-life-map"/)
-  assert.match(homeRuntime, /cameraCheckpoint: 'home-sky-ascent-complete'/)
+  assert.match(homeRuntime, /href="\/life-map\/\?from=home-sky&entryPortal=home-sky&cameraCheckpoint=home-sky-ascent-complete"/)
 })
 
 test('Ground remains walkable infrastructure with paths, boundaries and semantic exits', () => {
