@@ -195,7 +195,7 @@ function useTerrainTexturePack(repeat = 7.4, seed = 109) {
 }
 
 function makeGroundGeometry() {
-  const geometry = new THREE.PlaneGeometry(52, 64, 56, 72)
+  const geometry = new THREE.PlaneGeometry(52, 64, 112, 144)
   const position = geometry.getAttribute('position')
   const colors = new Float32Array(position.count * 3)
   const low = new THREE.Color('#63775a')
@@ -223,7 +223,7 @@ function makeGroundGeometry() {
 }
 
 function makeRidgeGeometry(width: number, depth: number, seed: number, amplitude: number) {
-  const geometry = new THREE.PlaneGeometry(width, depth, 56, 30)
+  const geometry = new THREE.PlaneGeometry(width, depth, 96, 48)
   const position = geometry.getAttribute('position')
   const colors = new Float32Array(position.count * 3)
   const valley = new THREE.Color('#30464a')
@@ -256,6 +256,48 @@ function makeRidgeGeometry(width: number, depth: number, seed: number, amplitude
   geometry.computeVertexNormals()
   return geometry
 }
+
+function makeNaturalBoulderGeometry(seed: number, rings = 12, segments = 24) {
+  const positions: number[] = []
+  const indices: number[] = []
+  for (let ring = 0; ring <= rings; ring += 1) {
+    const v = ring / rings
+    const phi = v * Math.PI
+    for (let segment = 0; segment < segments; segment += 1) {
+      const u = segment / segments
+      const theta = u * Math.PI * 2
+      const broadNoise =
+        Math.sin(theta * 2.4 + seed * 0.31) * 0.055 +
+        Math.cos(phi * 2.1 - seed * 0.17) * 0.045
+      const fineNoise = (seededNoise(ring * segments + segment, seed, 131) - 0.5) * 0.095
+      const radial = 0.92 + broadNoise + fineNoise
+      const taper = 0.9 + Math.sin(phi) * 0.1
+      positions.push(
+        Math.sin(phi) * Math.cos(theta) * radial * taper,
+        Math.cos(phi) * radial * 0.82,
+        Math.sin(phi) * Math.sin(theta) * radial * (1.02 - broadNoise * 0.35),
+      )
+    }
+  }
+  for (let ring = 0; ring < rings; ring += 1) {
+    for (let segment = 0; segment < segments; segment += 1) {
+      const next = (segment + 1) % segments
+      const a = ring * segments + segment
+      const b = ring * segments + next
+      const d = (ring + 1) * segments + next
+      const e = (ring + 1) * segments + segment
+      indices.push(a, e, b, b, e, d)
+    }
+  }
+  const geometry = new THREE.BufferGeometry()
+  geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3))
+  geometry.setIndex(indices)
+  geometry.computeVertexNormals()
+  return geometry
+}
+
+const THRESHOLD_BOULDER_LEFT = makeNaturalBoulderGeometry(211)
+const THRESHOLD_BOULDER_RIGHT = makeNaturalBoulderGeometry(257)
 
 function makeApproachShape() {
   const shape = new THREE.Shape()
@@ -436,7 +478,7 @@ function RitualFloor({ target }: { target: MutableRefObject<THREE.Vector3 | null
     <primitive object={retainedModel} />
     <GroundClearing pack={flagstone} />
     <ApproachPath pack={flagstone} />
-    <group visible={false}><AuthoredMasonryGarden source={sanctuary.scene} /></group>
+    <AuthoredMasonryGarden source={sanctuary.scene} />
     <mesh name="home-walkable-navigation-surface" position={[0, 0.22, -1.8]} rotation={[-Math.PI / 2, 0, 0]} onClick={onWalk}>
       <planeGeometry args={[21, 21]} />
       <meshBasicMaterial transparent opacity={0} depthWrite={false} colorWrite={false} />
@@ -639,9 +681,13 @@ function PortalMembrane({ color }: { color: string }) {
 
 function DestinationArch({ tone }: { tone: 'ground' | 'life-map' }) {
   const color = tone === 'ground' ? '#5ba8b1' : '#7770b5'
-  return <group userData={{ treatment: 'environmental-threshold-not-hero-arch' }}>
-    <mesh position={[-0.84,0.28,0.08]} rotation={[0.18,0.42,0.12]} scale={[0.74,0.42,0.58]} castShadow receiveShadow><icosahedronGeometry args={[1,2]} /><meshStandardMaterial color="#72796f" roughness={1} metalness={0} /></mesh>
-    <mesh position={[0.79,0.22,-0.04]} rotation={[-0.08,-0.3,-0.16]} scale={[0.62,0.34,0.5]} castShadow receiveShadow><icosahedronGeometry args={[1,2]} /><meshStandardMaterial color="#667068" roughness={1} metalness={0} /></mesh>
+  return <group userData={{ treatment: 'weathered-natural-stone-threshold' }}>
+    <mesh geometry={THRESHOLD_BOULDER_LEFT} position={[-0.92,0.3,0.1]} rotation={[0.16,0.48,0.08]} scale={[0.82,0.48,0.66]} castShadow receiveShadow>
+      <meshStandardMaterial color="#6d756b" roughness={0.98} metalness={0} envMapIntensity={0.54} />
+    </mesh>
+    <mesh geometry={THRESHOLD_BOULDER_RIGHT} position={[0.88,0.25,-0.08]} rotation={[-0.1,-0.36,-0.12]} scale={[0.72,0.42,0.6]} castShadow receiveShadow>
+      <meshStandardMaterial color="#616c64" roughness={0.99} metalness={0} envMapIntensity={0.5} />
+    </mesh>
     <PortalMembrane color={color} />
   </group>
 }
