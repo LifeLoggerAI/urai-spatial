@@ -3,6 +3,8 @@ import fs from "node:fs";
 import test from "node:test";
 
 const providerFunctions = fs.readFileSync(new URL("../../apps/functions/src/providerFunctions.ts", import.meta.url), "utf8");
+const digitalOceanProvider = fs.readFileSync(new URL("../../apps/functions/src/digitalOceanProvider.ts", import.meta.url), "utf8");
+const providerCanaryRouter = fs.readFileSync(new URL("../../apps/functions/src/providerCanaryRouter.ts", import.meta.url), "utf8");
 const staticProviderRoutes = [
   new URL("../src/app/api/voice/elevenlabs/route.ts", import.meta.url),
   new URL("../src/app/api/urai/narrator/elevenlabs/route.ts", import.meta.url),
@@ -27,6 +29,12 @@ test("Firebase provider functions require revoked-token checks, saved consent, d
   assert.match(providerFunctions, /defineSecret\('ELEVENLABS_API_KEY'\)/);
   assert.match(providerFunctions, /private, no-store, max-age=0/);
   assert.doesNotMatch(providerFunctions, /NEXT_PUBLIC_(OPENAI|ELEVENLABS)/);
+  assert.match(providerCanaryRouter, /defineSecret\('DIGITALOCEAN_MODEL_ACCESS_KEY'\)/);
+  assert.match(providerCanaryRouter, /verifyIdToken\([^,]+, true\)/);
+  assert.match(providerCanaryRouter, /fully-enforced/);
+  assert.match(providerCanaryRouter, /dataClass !== 'synthetic'/);
+  assert.doesNotMatch(providerCanaryRouter, /NEXT_PUBLIC_DIGITALOCEAN/);
+  assert.doesNotMatch(digitalOceanProvider, /console\.(log|info|warn|error)\(/);
 });
 
 test("active narrator client and controller fail closed until session consent", () => {
