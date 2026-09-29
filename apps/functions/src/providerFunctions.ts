@@ -1,4 +1,4 @@
-import { createHash, randomUUID } from 'node:crypto'
+import { createHash } from 'node:crypto'
 import * as admin from 'firebase-admin'
 import { defineSecret } from 'firebase-functions/params'
 import { onRequest } from 'firebase-functions/v2/https'
@@ -127,6 +127,18 @@ function sendError(response: { status: (code: number) => { json: (value: unknown
   response.status(boundary.status).json({ error: boundary.code, message: boundary.message })
 }
 
+function requireRequestId(value: unknown) {
+  const requestId = String(value ?? '').trim().toLowerCase()
+  if (!/^[a-f0-9]{64}$/.test(requestId)) {
+    throw new ProviderError(400, 'INVALID_REQUEST_ID', 'A stable provider request identity is required.')
+  }
+  return requestId
+}
+
+function providerIdempotencyKey(uid: string, requestId: string) {
+  return createHash('sha256').update(`urai-openai-provider:${uid}:${requestId}`).digest('hex')
+}
+
 function boundedContext(value: unknown) {
   if (value === undefined) return [] as Array<{ role: 'user' | 'assistant'; content: string }>
   if (!Array.isArray(value) || value.length > 8) throw new ProviderError(400, 'INVALID_CONTEXT', 'Conversation context is invalid.')
@@ -184,6 +196,8 @@ export const openAiOrbProvider = onRequest({
     const body = readBody(request, 32_768)
     const message = String(body.message ?? '').trim()
     if (!message || message.length > 2_000) throw new ProviderError(400, 'INVALID_MESSAGE', 'Message is missing or too long.')
+    const requestId = requireRequestId(body.requestId)
+    const upstreamIdempotencyKey = providerIdempotencyKey(uid, requestId)
     const context = boundedContext(body.context)
     await requireProviderConsent(uid, 'openai', body.aiProcessingConsent === true)
     await consumeRateLimit(uid, 'openai', 8)
@@ -211,7 +225,7 @@ export const openAiOrbProvider = onRequest({
         Authorization: `Bearer ${apiKey}`,
         'Content-Type': 'application/json',
         Accept: 'text/event-stream',
-        'Idempotency-Key': randomUUID(),
+        'Idempotency-Key': upstreamIdempotencyKey,
       },
       body: JSON.stringify({
         model: process.env.OPENAI_ORB_MODEL || 'gpt-5',

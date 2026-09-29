@@ -65,7 +65,7 @@ export default function LifeMovieClient() {
         const snapshot = await getDocs(query(collection(getFirebaseDb(), 'users', user.uid, 'memories'), limit(36)))
         if (cancelled) return
         const parsed = snapshot.docs.flatMap((item) => {
-          const result = parseSelectedMemory(item.data(), user.uid, item.id)
+          const result = parseSelectedMemory(item.data(), user.uid, item.id, process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET)
           return result.memory && result.status === 'ready' ? [result.memory] : []
         })
         parsed.sort((left, right) => safeOccurredAt(right) - safeOccurredAt(left))

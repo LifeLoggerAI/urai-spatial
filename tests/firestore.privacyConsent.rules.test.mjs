@@ -70,6 +70,11 @@ test('signed-out and cross-user reads fail closed', async () => {
   }
 })
 
+test('administrative client claims cannot read full private memory records', async () => {
+  const adminDb = env.authenticatedContext('admin-a', { admin: true }).firestore()
+  await assertFails(getDoc(doc(adminDb, 'users', ownerId, 'memories', 'memory-a')))
+})
+
 test('clients cannot mutate trusted privacy authority or lifecycle records', async () => {
   const db = env.authenticatedContext(ownerId).firestore()
   for (const [collectionName, documentId] of ownerDocuments) {
