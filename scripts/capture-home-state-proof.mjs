@@ -108,8 +108,10 @@ async function readVisualEvidence(page) {
 
 async function waitForVisualEvidence(page, frameBudget = 240) {
   let evidence = null
-  for (let elapsed = 0; elapsed < frameBudget; elapsed += 30) {
-    await settleAnimationFrames(page, 30)
+  const sampleInterval = Math.max(1, Math.ceil(frameBudget / 2))
+  for (let elapsed = 0; elapsed < frameBudget; elapsed += sampleInterval) {
+    const frames = Math.min(sampleInterval, frameBudget - elapsed)
+    await settleAnimationFrames(page, frames)
     evidence = await readVisualEvidence(page)
     if (evidence.available === true
       && evidence.viewportCoverage >= receipt.visualGate.minimumViewportCoverage
