@@ -49,3 +49,19 @@ Before Play upload, establish durable upload-key custody in an approved secret s
 ## Runtime authority
 
 This lane packages the exact branch checkout. It does not certify the visual/runtime state as final launch authority. If the canonical Spatial release candidate changes, rebuild from the accepted successor head and treat predecessor Android artifacts as historical.
+
+
+## Governed signing preparation
+
+The repository includes a manual-only `Android Governed Signing Prep` workflow. It does not generate signing identity and it does not upload to Google Play.
+
+It requires an exact source SHA plus four deliberately provisioned repository secrets:
+
+- `ANDROID_UPLOAD_KEYSTORE_B64`
+- `ANDROID_UPLOAD_KEYSTORE_PASSWORD`
+- `ANDROID_UPLOAD_KEY_ALIAS`
+- `ANDROID_UPLOAD_KEY_PASSWORD`
+
+The workflow fails closed when any credential is absent, rebuilds from the exact requested source SHA, confirms the candidate package identity, signs the AAB, verifies the signature, records the public upload-certificate SHA-256 fingerprint, retains the signed AAB as evidence, removes the runner-local keystore, and records `play_upload_performed=false`.
+
+Provisioning the durable upload key and registering the first accepted package/signing identity remain deliberate owner/provider actions. Do not use the workflow with a disposable key merely to satisfy an account deadline.
