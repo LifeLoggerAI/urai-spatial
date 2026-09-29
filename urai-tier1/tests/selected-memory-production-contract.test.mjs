@@ -174,6 +174,15 @@ test('AAA receipt records disclosed demo routes and current semantic markers', (
   assert.doesNotMatch(aaaProof, /markers: \['URAI'\]/)
 })
 
+test('production memory media is restricted to the configured Firebase Storage bucket', () => {
+  assert.match(contract, /function trustedMemoryMediaUrl/)
+  assert.match(contract, /parsed\.protocol !== 'https:'/)
+  assert.match(contract, /firebasestorage\.googleapis\.com/)
+  assert.match(contract, /storage\.googleapis\.com/)
+  assert.match(contract, /trustedStorageBucket/)
+  assert.match(hook, /NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET/)
+})
+
 test('privacy-safe denied, deleted, unavailable, and corrupt states exist', () => {
   for (const state of ['unavailable', 'deleted', 'unauthorized', 'corrupt']) assert.match(contract, new RegExp(`'${state}'`))
   assert.match(contract, /ownerId !== expectedOwnerId/)
