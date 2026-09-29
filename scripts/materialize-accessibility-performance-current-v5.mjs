@@ -55,3 +55,15 @@ const output = replaceRegex(
 
 await writeFile(path, output)
 console.log(`Materialized current accessibility-performance v5 proof at ${path}`)
+
+
+const focusPath = 'urai-tier1/tests/accessibility-performance-focus.spec.ts'
+const focusInput = await readFile(focusPath, 'utf8')
+const focusMovementReadyTarget = `    await expect(focus).toHaveAttribute('data-focus-movement', 'walk-keyboard-orbit-touch')
+    await expect(focus).toHaveAttribute('data-focus-pointer-lock', 'false')`
+const focusMovementReadyCurrent = `    await expect(focus).toHaveAttribute('data-focus-movement', 'walk-keyboard-orbit-touch')
+    await expect(focus).toHaveAttribute('data-focus-input-ready', 'true', { timeout: 15_000 })
+    await expect(focus).toHaveAttribute('data-focus-pointer-lock', 'false')`
+if (focusInput.split(focusMovementReadyTarget).length - 1 !== 1) throw new Error('Focus input readiness proof contract changed')
+await writeFile(focusPath, focusInput.replace(focusMovementReadyTarget, focusMovementReadyCurrent))
+console.log(`Materialized truthful Focus input readiness proof at ${focusPath}`)
