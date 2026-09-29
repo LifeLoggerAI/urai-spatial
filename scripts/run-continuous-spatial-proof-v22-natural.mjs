@@ -29,6 +29,7 @@ const newOwner = "result.animationOwner === 'canonical-sanctuary-plus-cc0-fern-p
 const staleEnvironmentalRadius = 'radius: 2.2'
 const runtimeEnvironmentalRadius = 'radius: 2.8'
 const staleOrbRadius = "orb: { x: 0, z: -0.65, radius: 1.8"
+const transitionalOrbRadius = "orb: { x: 0, z: -2.65, radius: 1.8"
 const runtimeOrbRadius = "orb: { x: 0, z: -2.65, radius: 2.5"
 const staleGroundTarget = "ground: { x: -4.55, z: -6.55"
 const runtimeGroundTarget = "ground: { x: -5.2, z: -8.4"
@@ -49,7 +50,8 @@ const newOrbClips = `const orbClips = {
 let patched = original
 patched = convergeSingle(patched, oldOwner, newOwner, 'Continuous proof animation-owner')
 patched = convergeRepeated(patched, staleEnvironmentalRadius, runtimeEnvironmentalRadius, 2, 'Continuous proof environmental-threshold proximity')
-patched = convergeSingle(patched, staleOrbRadius, runtimeOrbRadius, 'Continuous proof Orb interaction-zone')
+patched = convergeSingle(patched, staleOrbRadius, transitionalOrbRadius, 'Continuous proof Orb legacy-position transition')
+patched = convergeSingle(patched, transitionalOrbRadius, runtimeOrbRadius, 'Continuous proof Orb interaction-zone')
 patched = convergeSingle(patched, staleGroundTarget, runtimeGroundTarget, 'Continuous proof Ground target')
 patched = convergeSingle(patched, staleLifeMapTarget, runtimeLifeMapTarget, 'Continuous proof Life Map target')
 patched = convergeSingle(patched, oldOrbClips, newOrbClips, 'Continuous proof Orb sensory-output')
