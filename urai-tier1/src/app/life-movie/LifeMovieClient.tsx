@@ -153,7 +153,7 @@ export default function LifeMovieClient() {
     >
       <header className="lifeMovieHeader">
         <div><p>URAI · LIFE MOVIE</p><h1>Your life, played as a private film.</h1></div>
-        <nav aria-label="Life Movie destinations"><a href="/life-map">Life Map</a><a href="/replay?memoryId=${encodeURIComponent(active.id)}">Replay</a><a href="/passport">Passport</a></nav>
+        <nav aria-label="Life Movie destinations"><a href="/life-map">Life Map</a><a href={`/replay?memoryId=${encodeURIComponent(active.id)}`}>Replay</a><a href="/passport">Passport</a></nav>
       </header>
 
       <section className="lifeMovieStage" aria-label="Current Life Movie chapter">
