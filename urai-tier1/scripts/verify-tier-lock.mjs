@@ -39,7 +39,7 @@ const fileNeedles = {
     'data-testid="urai-home-accessible-fallback"',
     'aria-label="Open Life Map directly"',
     'data-testid="home-semantic-life-map"',
-    "cameraCheckpoint: 'home-sky-ascent-complete'",
+    'href="/life-map/?from=home-sky&entryPortal=home-sky&cameraCheckpoint=home-sky-ascent-complete"',
   ],
   'src/spatial/lifemap/SpatialLifeMapCanonical.tsx': [
     'data-testid="urai-r3f-canonical-lifemap"',
