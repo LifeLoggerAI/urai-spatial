@@ -39,30 +39,28 @@ test('demo memory is explicit, disclosed, and retained through Life Map camera t
   assert.match(replay, /DEMO FIXTURE · NOT PERSONAL DATA/)
 })
 
-test('Focus is an explorable authored living memory chamber rather than a static composited page', () => {
-  const cameraRig = focus.match(/function FocusCameraRig[\s\S]*?\n}\n\nfunction cloneAuthoredFocusModel/)?.[0]
+test('Focus is an explorable stellar memory-star field rather than a static chamber or composited page', () => {
+  const cameraRig = focus.match(/function FocusCameraRig[\s\S]*?\n}\n\nfunction StellarPhotosphere/)?.[0]
   assert.ok(cameraRig, 'FocusCameraRig must remain a mounted camera controller')
 
   assert.match(focus, /from '@react-three\/fiber'/)
   assert.match(focus, /import \* as THREE from 'three'/)
-  assert.match(focus, /FOCUS_CHAMBER_MODEL = '\/assets\/urai\/generated\/models\/focus-memory-chamber-v1\.glb'/)
-  assert.match(focus, /function cloneAuthoredFocusModel/)
-  assert.match(focus, /function AuthoredFocusChamber/)
-  assert.match(focus, /useGLTF\(FOCUS_CHAMBER_MODEL\)/)
-  assert.match(focus, /object\.castShadow = true/)
-  assert.match(focus, /object\.receiveShadow = true/)
-  assert.match(focus, /function FocusScene/)
-  assert.match(focus, /function ChamberArchitecture/)
+  assert.match(focus, /function StellarPhotosphere/)
+  assert.match(focus, /focus-stellar-photosphere-corona/)
+  assert.match(focus, /memory-star-stellar-photosphere-corona/)
   assert.match(focus, /function MemoryTraces/)
-  assert.match(focus, /function MemoryAperture/)
+  assert.match(focus, /function MemoryStarInteraction/)
   assert.match(focus, /<Canvas[\s\S]*?<FocusScene/)
-  assert.match(focus, /<AuthoredFocusChamber \/>/)
+  assert.match(focus, /<StellarPhotosphere accent=\{accent\} light=\{light\}/)
   assert.match(focus, /<OrbitControls/)
-  assert.match(focus, /data-focus-composition="authored-final-chamber-with-living-memory-vfx"/)
-  assert.match(focus, /data-focus-physical-asset=\{FOCUS_CHAMBER_MODEL\}/)
-  assert.match(focus, /data-focus-spatial="explorable-observatory"/)
+  assert.match(focus, /data-focus-composition="stellar-photosphere-corona-with-living-memory-vfx"/)
+  assert.match(focus, /data-focus-spatial="inside-memory-star"/)
   assert.match(focus, /data-focus-movement="walk-keyboard-orbit-touch"/)
+  assert.match(focus, /data-focus-input-ready="false"/)
+  assert.match(focus, /shell\.dataset\.focusInputReady = 'true'/)
   assert.match(focus, /data-focus-pointer-lock="false"/)
+  assert.doesNotMatch(focus, /focus-memory-chamber-v1\.glb|AuthoredFocusChamber|ChamberArchitecture|MemoryAperture|icosahedronGeometry|octahedronGeometry|torusGeometry/)
+  assert.doesNotMatch(focus, /data-focus-physical-asset=/)
 
   assert.match(cameraRig, /useFrame\(\(_, delta\) =>/)
   for (const key of ['KeyW', 'KeyA', 'KeyS', 'KeyD', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight']) {
@@ -101,8 +99,8 @@ test('Focus is an explorable authored living memory chamber rather than a static
   assert.match(focus, /<details className="focusHelp">/)
   assert.match(focus, /data-focus-fallback="semantic"/)
   assert.match(focus, /Spatial view unavailable/)
-  assert.match(focus, /No personal memory is displayed in this neutral observatory/)
-  assert.match(focus, /Held in context\. Nothing leaves this chamber\./)
+  assert.match(focus, /No personal memory is displayed in this neutral stellar field/)
+  assert.match(focus, /Held in context\. Nothing leaves this memory field\./)
   assert.match(focus, /prefers-reduced-motion:reduce/)
   assert.match(focus, /@media\(max-width:\d+px\)/)
 
@@ -110,9 +108,9 @@ test('Focus is an explorable authored living memory chamber rather than a static
   assert.doesNotMatch(focus, /\.artifactImage\{/, 'the retired static artifact-image CSS owner must not return')
 })
 
-test('direct Focus entry remains a truthful neutral observatory and never mounts fake personal data', () => {
-  assert.match(focus, /Focus Observatory/)
-  assert.match(focus, /No personal memory is displayed in this neutral observatory/)
+test('direct Focus entry remains a truthful neutral stellar field and never mounts fake personal data', () => {
+  assert.match(focus, /Focus Memory Star/)
+  assert.match(focus, /No personal memory is displayed in this neutral stellar field/)
   assert.match(focus, /Choose a star in Life Map/)
   assert.match(focus, /Open Life Map/)
   assert.match(focus, /Awaiting a selected star/)
