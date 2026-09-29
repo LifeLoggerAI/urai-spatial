@@ -8,6 +8,8 @@ const client = fs.readFileSync(new URL('../src/app/spatial/captured-reality/Capt
 const delivery = fs.readFileSync(new URL('../src/spatial/captured-reality/capturedRealityDelivery.ts', import.meta.url), 'utf8')
 const scene = fs.readFileSync(new URL('../src/spatial/captured-reality/CapturedRealityPrivateScene.tsx', import.meta.url), 'utf8')
 const ownedSplat = fs.readFileSync(new URL('../src/spatial/captured-reality/OwnedCapturedRealitySplat.tsx', import.meta.url), 'utf8')
+const privacyOperations = fs.readFileSync(new URL('../../apps/functions/src/privacyOperations.ts', import.meta.url), 'utf8')
+const proofImporter = fs.readFileSync(new URL('../../apps/functions/scripts/import-captured-reality-proof.mjs', import.meta.url), 'utf8')
 
 test('consent suppression clears private provenance as well as the rendered scene', () => {
   // Execute the actual callback body with state setters, including an open panel.
@@ -104,4 +106,27 @@ test('technical render readiness requires meaningful non-background Gaussian pix
   assert.match(scene, /GAUSSIAN_RENDERED/)
   assert.match(scene, /LOADING_OR_BLANK/)
   assert.match(scene, /FALLBACK_RENDERED/)
+})
+
+test('signed URL renewal preserves the already-loaded splat resource', () => {
+  const renewal = client.match(/const scheduleRenewal = \(expiresAt: string\) => \{([\s\S]*?)\n    renewedDeliveryRef\.current = null/)?.[1]
+  assert.ok(renewal, 'renewal scheduler must exist')
+  assert.match(renewal, /renewedDeliveryRef\.current = next/)
+  assert.match(renewal, /scheduleRenewal\(next\.expiresAt\)/)
+  assert.doesNotMatch(renewal, /setDelivery\(next\)|setDecision\(splatDecision\(next\)\)/)
+})
+
+test('spatial deletion removes exported private splat copies as well as source runtime objects', () => {
+  assert.match(privacyOperations, /private-captured-reality\/\$\{uid\}\//)
+  assert.match(privacyOperations, /const exportPrefix = `private-exports\/\$\{uid\}\//)
+  assert.match(privacyOperations, /file\.name\.includes\('\/spatial\/captured-reality\/'\)/)
+  assert.match(privacyOperations, /deleteCapturedRealityStorage\(uid, \{ deleteAllExports: true \}\)/)
+})
+
+test('create-only proof import cleans up a successfully-created object after metadata failure', () => {
+  assert.match(proofImporter, /let objectCreated = false/)
+  assert.match(proofImporter, /objectCreated = true/)
+  assert.match(proofImporter, /else if \(objectCreated\)/)
+  assert.match(proofImporter, /recoveredGeneration/)
+  assert.match(proofImporter, /object\.delete\(\{ ignoreNotFound: true \}\)/)
 })
