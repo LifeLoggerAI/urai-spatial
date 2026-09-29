@@ -77,13 +77,6 @@ jobs:
       SOURCE_SHA: ${{ inputs.source_sha }}
       ANDROID_VERSION_CODE: ${{ inputs.version_code }}
       ANDROID_VERSION_NAME: ${{ inputs.version_name }}
-      NEXT_PUBLIC_FIREBASE_API_KEY: ${{ vars.NEXT_PUBLIC_FIREBASE_API_KEY }}
-      NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: ${{ vars.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN }}
-      NEXT_PUBLIC_FIREBASE_PROJECT_ID: ${{ vars.NEXT_PUBLIC_FIREBASE_PROJECT_ID }}
-      NEXT_PUBLIC_FIREBASE_APP_ID: ${{ vars.NEXT_PUBLIC_FIREBASE_APP_ID }}
-      NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET: ${{ vars.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET }}
-      NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: ${{ vars.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID }}
-      NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID: ${{ vars.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID }}
       NEXT_PUBLIC_URAI_API_ORIGIN: https://urai.app
 
     steps:
@@ -156,6 +149,28 @@ jobs:
         run: |
           set -euo pipefail
           grep -F "appId: '$EXPECTED_PACKAGE'" distribution/android-shell/capacitor.config.ts
+
+      - name: Load canonical Firebase public configuration
+        shell: bash
+        run: |
+          set -euo pipefail
+          config="$(curl --fail --silent --show-error --location --proto '=https' --tlsv1.2 https://urai.app/__/firebase/init.json)"
+          test "$(jq -r '.projectId // empty' <<<"$config")" = "urai-4dc1d"
+          test "$(jq -r '.authDomain // empty' <<<"$config")" = "urai-4dc1d.firebaseapp.com"
+          for pair in \
+            "NEXT_PUBLIC_FIREBASE_API_KEY apiKey" \
+            "NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN authDomain" \
+            "NEXT_PUBLIC_FIREBASE_PROJECT_ID projectId" \
+            "NEXT_PUBLIC_FIREBASE_APP_ID appId" \
+            "NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET storageBucket" \
+            "NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID messagingSenderId" \
+            "NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID measurementId"; do
+            env_name="${pair%% *}"
+            json_name="${pair#* }"
+            value="$(jq -r --arg key "$json_name" '.[$key] // empty' <<<"$config")"
+            test -n "$value" || { echo "Canonical Firebase config is missing: $json_name" >&2; exit 1; }
+            printf '%s=%s\n' "$env_name" "$value" >> "$GITHUB_ENV"
+          done
 
       - name: Require release public configuration and version
         shell: bash
