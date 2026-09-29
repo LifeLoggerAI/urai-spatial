@@ -127,6 +127,28 @@ if (focusOutput.split(focusDescribe).length - 1 === 1) {
 await writeFile(focusPath, focusOutput)
 console.log(`Materialized Focus software-renderer timeout envelope at ${focusPath}`)
 
+const focusTelemetryPath = 'urai-tier1/tests/accessibility-performance-focus.spec.ts'
+const focusTelemetryInput = await readFile(focusTelemetryPath, 'utf8')
+const focusTelemetryBlock = `    await expect(focus).toHaveAttribute('data-focus-camera-x', /-?\\d+\\.\\d{3}/)
+    await expect(focus).toHaveAttribute('data-focus-camera-y', /-?\\d+\\.\\d{3}/)
+    await expect(focus).toHaveAttribute('data-focus-camera-z', /-?\\d+\\.\\d{3}/)
+    await expect(focus).toHaveAttribute('data-focus-moving', 'false')`
+const focusTelemetryAtomic = `    const telemetry = await focus.evaluate((element) => ({
+      x: element.getAttribute('data-focus-camera-x'),
+      y: element.getAttribute('data-focus-camera-y'),
+      z: element.getAttribute('data-focus-camera-z'),
+      distance: element.getAttribute('data-focus-distance'),
+      moving: element.getAttribute('data-focus-moving'),
+    }))
+    for (const axis of [telemetry.x, telemetry.y, telemetry.z]) {
+      expect(axis).toMatch(/-?\\d+\\.\\d{3}/)
+    }
+    expect(Number(telemetry.distance)).toBeGreaterThan(before + 0.5)
+    expect(telemetry.moving).toBe('false')`
+if (focusTelemetryInput.split(focusTelemetryBlock).length - 1 !== 1) throw new Error('Focus telemetry proof contract changed')
+await writeFile(focusTelemetryPath, focusTelemetryInput.replace(focusTelemetryBlock, focusTelemetryAtomic))
+console.log(`Materialized atomic Focus camera telemetry proof at ${focusTelemetryPath}`)
+
 const sensoryPath = 'urai-tier1/tests/accessibility-performance-home-sensory-boundary.spec.ts'
 const sensoryInput = await readFile(sensoryPath, 'utf8')
 const sensoryTimeout = "  test.describe.configure({ timeout: 90_000 })"
