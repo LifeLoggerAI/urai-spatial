@@ -632,6 +632,9 @@ async function buildExport(snapshot: FirebaseFirestore.DocumentSnapshot) {
       data.focusStates = await collectionDocuments(userRef.collection('focusStates'))
       data.transitionStates = await collectionDocuments(userRef.collection('transitionStates'))
       data.spatialAnchors = await collectionDocuments(userRef.collection('spatialAnchors'))
+      data.behaviorSignals = await collectionDocuments(userRef.collection('behaviorSignals'))
+      data.voiceEvents = await collectionDocuments(userRef.collection('voiceEvents'))
+      data.locations = await collectionDocuments(userRef.collection('locations'))
       data.capturedRealityAssets = await collectionDocuments(userRef.collection('capturedRealityAssets'))
       data.capturedRealityReplayBindings = await collectionDocuments(userRef.collection('capturedRealityReplayBindings'))
       capturedRealityRuntimeExports = await copyCapturedRealityRuntimeExports(userRef, uid, basePath)
@@ -855,6 +858,9 @@ const DELETION_COLLECTIONS: Record<Exclude<DeletionScope, 'account'>, string[]> 
     'spatialAnchors',
     'userSpatialPreferences',
     'spatialSessions',
+    'behaviorSignals',
+    'voiceEvents',
+    'locations',
     'capturedRealityAssets',
     'capturedRealityReplayBindings',
   ],
@@ -875,6 +881,9 @@ const DELETION_COLLECTIONS: Record<Exclude<DeletionScope, 'account'>, string[]> 
     'spatialAnchors',
     'userSpatialPreferences',
     'spatialSessions',
+    'behaviorSignals',
+    'voiceEvents',
+    'locations',
     'capturedRealityAssets',
     'capturedRealityReplayBindings',
     'providerConnections',
