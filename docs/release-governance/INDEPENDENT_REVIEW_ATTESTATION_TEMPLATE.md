@@ -86,6 +86,8 @@ INDEPENDENT_WITNESS=Adam Clamp
 INDEPENDENT_SIGNATURE_B64=[BASE64_SIGNATURE_OF_CANONICAL_MESSAGE]
 ```
 
+The Release Governance Guard and Android Governed Signing Prep use the same verified external approval metadata. After governed merge, Android signing accepts this same exact-head cryptographic approval rather than requiring a different reviewer mechanism.
+
 The Release Governance Guard constructs this canonical message:
 
 ```text
