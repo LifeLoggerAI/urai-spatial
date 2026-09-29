@@ -274,6 +274,90 @@ function AuthoredMemoryStar({ aura, active, scale = 1, rotation = [0, 0, 0], cli
   const root = useRef<THREE.Group>(null);
   const model = useMemo(() => prepareAuthoredModel(scene, aura), [aura, scene]);
   const { actions } = useAnimations(animations, root);
+  const seed = useMemo(
+    () => (aura + ":" + rotation.join(",")).split("").reduce((sum, char) => sum + char.charCodeAt(0), 0),
+    [aura, rotation],
+  );
+  const photosphere = useMemo(() => new THREE.ShaderMaterial({
+    transparent: false,
+    toneMapped: false,
+    uniforms: {
+      uTime: { value: 0 },
+      uAura: { value: new THREE.Color(aura) },
+      uActive: { value: active ? 1 : 0 },
+      uSeed: { value: seed * 0.013 },
+    },
+    vertexShader: `
+      varying vec3 vNormalW;
+      varying vec3 vPos;
+      void main() {
+        vPos = position;
+        vNormalW = normalize(normalMatrix * normal);
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+      }
+    `,
+    fragmentShader: `
+      uniform float uTime;
+      uniform float uActive;
+      uniform float uSeed;
+      uniform vec3 uAura;
+      varying vec3 vNormalW;
+      varying vec3 vPos;
+
+      float hash(vec3 p) {
+        p = fract(p * .3183099 + uSeed);
+        p *= 17.0;
+        return fract(p.x * p.y * p.z * (p.x + p.y + p.z));
+      }
+
+      float noise(vec3 x) {
+        vec3 i = floor(x);
+        vec3 f = fract(x);
+        f = f * f * (3.0 - 2.0 * f);
+        return mix(
+          mix(
+            mix(hash(i + vec3(0,0,0)), hash(i + vec3(1,0,0)), f.x),
+            mix(hash(i + vec3(0,1,0)), hash(i + vec3(1,1,0)), f.x),
+            f.y
+          ),
+          mix(
+            mix(hash(i + vec3(0,0,1)), hash(i + vec3(1,0,1)), f.x),
+            mix(hash(i + vec3(0,1,1)), hash(i + vec3(1,1,1)), f.x),
+            f.y
+          ),
+          f.z
+        );
+      }
+
+      void main() {
+        vec3 p = normalize(vPos) * 5.2;
+        float t = uTime * .045;
+        float n1 = noise(p + vec3(t, -t * .62, t * .28));
+        float n2 = noise(p * 2.35 - vec3(t * .26, t * .54, 0.0));
+        float n3 = noise(p * 5.4 + vec3(-t * .18, t * .22, t * .14));
+        float convection = clamp(n1 * .56 + n2 * .30 + n3 * .14, 0.0, 1.0);
+        float granule = .5 + .5 * sin((p.x + p.y * .72 - p.z * .41) * 8.2 + convection * 9.2 + t * 4.0);
+        float viewFacing = clamp(dot(normalize(vNormalW), vec3(0.0, 0.0, 1.0)) * .5 + .5, 0.0, 1.0);
+        float limb = pow(viewFacing, .58);
+        float spot = smoothstep(.20, .48, noise(p * 1.38 + vec3(13.7, 4.1, -8.2)));
+        float filament = smoothstep(.56, .92, granule * .62 + convection * .55);
+        vec3 ember = vec3(.72, .105, .018);
+        vec3 gold = vec3(1.0, .47, .055);
+        vec3 cream = vec3(1.0, .80, .30);
+        vec3 hot = mix(ember, gold, clamp(convection * .86 + granule * .18, 0.0, 1.0));
+        hot = mix(hot, cream, filament * .46);
+        hot *= mix(.58, 1.0, spot);
+        vec3 tinted = mix(hot, uAura, .07);
+        float energy = .72 + .16 * convection + .07 * granule + uActive * .05;
+        float limbFalloff = .55 + .45 * limb;
+        gl_FragColor = vec4(clamp(tinted * energy * limbFalloff, 0.0, .98), 1.0);
+        #include <colorspace_fragment>
+      }
+    `,
+  }), [active, aura, seed]);
+
+  useEffect(() => () => photosphere.dispose(), [photosphere]);
+
   useEffect(() => {
     const chosen = actions[clip || (active ? "MemoryStar_Selected" : "MemoryStar_Idle")] || actions.MemoryStar_Idle;
     if (!chosen) return;
@@ -284,51 +368,63 @@ function AuthoredMemoryStar({ aura, active, scale = 1, rotation = [0, 0, 0], cli
     else chosen.fadeIn(0.28);
     return () => { chosen.fadeOut(0.18); chosen.stop(); };
   }, [actions, active, clip, reducedMotion]);
+
+  useFrame(({ clock }) => {
+    photosphere.uniforms.uTime.value = reducedMotion ? 0 : clock.elapsedTime;
+    photosphere.uniforms.uActive.value = active ? 1 : 0;
+  });
+
   return (
-    <group ref={root} scale={scale} rotation={rotation} userData={{ runtimeAsset: MEMORY_STAR_MODEL, authored: true, visualCanon: "stellar-photosphere-corona" }}>
+    <group
+      ref={root}
+      scale={scale}
+      rotation={rotation}
+      userData={{
+        runtimeAsset: MEMORY_STAR_MODEL,
+        authored: true,
+        visualCanon: "stellar-photosphere-corona",
+        artRevision: "v300-stellar-photosphere-corona",
+        visualAuthority: "stellar-body-not-geology",
+      }}
+    >
       <primitive object={model} visible={false} />
-      <mesh name="memory-star-photosphere">
-        <sphereGeometry args={[0.62, 48, 36]} />
-        <meshStandardMaterial
-          color={aura}
-          emissive={aura}
-          emissiveIntensity={active ? 4.8 : 3.2}
-          roughness={0.96}
-          metalness={0}
+      <mesh name="memory-star-photosphere" castShadow={false} scale={active ? 1.24 : 1.07}>
+        <sphereGeometry args={[0.58, 64, 48]} />
+        <primitive object={photosphere} attach="material" />
+      </mesh>
+      <mesh name="memory-star-inner-corona" scale={active ? 1.34 : 1.25} raycast={() => null}>
+        <sphereGeometry args={[0.58, 48, 32]} />
+        <meshBasicMaterial
+          color="#ffb347"
+          transparent
+          opacity={active ? 0.12 : 0.055}
+          blending={THREE.AdditiveBlending}
+          depthWrite={false}
           toneMapped={false}
-        />
-      </mesh>
-      <mesh name="memory-star-chromosphere" scale={1.09}>
-        <sphereGeometry args={[0.62, 32, 24]} />
-        <meshBasicMaterial
-          color={aura}
-          transparent
-          opacity={active ? 0.22 : 0.13}
-          depthWrite={false}
-          blending={THREE.AdditiveBlending}
-          wireframe
-        />
-      </mesh>
-      <mesh name="memory-star-corona" scale={active ? 1.72 : 1.5}>
-        <sphereGeometry args={[0.62, 40, 30]} />
-        <meshBasicMaterial
-          color={aura}
-          transparent
-          opacity={active ? 0.105 : 0.065}
-          depthWrite={false}
           side={THREE.BackSide}
+        />
+      </mesh>
+      <mesh name="memory-star-outer-corona" scale={active ? 1.82 : 1.52} raycast={() => null}>
+        <sphereGeometry args={[0.58, 48, 32]} />
+        <meshBasicMaterial
+          color={aura}
+          transparent
+          opacity={active ? 0.045 : 0.022}
           blending={THREE.AdditiveBlending}
+          depthWrite={false}
+          toneMapped={false}
+          side={THREE.BackSide}
         />
       </mesh>
       <Sparkles
-        count={active ? 34 : 16}
-        scale={[2.1, 2.1, 2.1]}
-        size={active ? 2.4 : 1.7}
-        speed={reducedMotion ? 0 : active ? 0.16 : 0.08}
-        opacity={active ? 0.82 : 0.48}
+        count={active ? 28 : 10}
+        scale={[active ? 2.2 : 1.6, active ? 2.2 : 1.6, active ? 2.2 : 1.6]}
+        size={active ? 2.1 : 1.45}
+        speed={reducedMotion ? 0 : active ? 0.11 : 0.05}
+        opacity={active ? 0.54 : 0.28}
         color={aura}
       />
-      <pointLight color={aura} intensity={active ? 5.8 : 2.6} distance={active ? 8 : 5.5} decay={2} />
+      <pointLight color={aura} intensity={active ? 3.2 : 1.25} distance={active ? 9 : 5} decay={2} />
     </group>
   );
 }
