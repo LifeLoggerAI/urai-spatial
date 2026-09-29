@@ -32,16 +32,25 @@ const receipt = {
   errors: [],
 }
 
-async function settleAnimationFrames(page, frameCount) {
-  await page.evaluate((frames) => new Promise((resolve) => {
+async function settleAnimationFrames(page, frameCount, timeoutMs = 15_000) {
+  return page.evaluate(({ frames, timeoutMs }) => new Promise((resolve) => {
     let completed = 0
+    let settled = false
+    const finish = (timedOut) => {
+      if (settled) return
+      settled = true
+      window.clearTimeout(timer)
+      resolve({ completed, requested: frames, timedOut })
+    }
+    const timer = window.setTimeout(() => finish(true), timeoutMs)
     const advance = () => {
+      if (settled) return
       completed += 1
-      if (completed >= frames) resolve()
+      if (completed >= frames) finish(false)
       else window.requestAnimationFrame(advance)
     }
     window.requestAnimationFrame(advance)
-  }), frameCount)
+  }), { frames: frameCount, timeoutMs })
 }
 
 async function readVisualEvidence(page) {
