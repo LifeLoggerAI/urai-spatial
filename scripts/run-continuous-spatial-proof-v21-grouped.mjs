@@ -143,7 +143,7 @@ const grouped = patchedPrefix.slice(0, patchedExecutionIndex) + execution
 const requiredSemanticGuards = [
   ['diagnostic failure guard', 'diagnosticResult.failedRequests.length'],
   ['fallback visibility guard', 'record.fallbackVisible'],
-  ['fallback semantic destination count', 'record.semanticButtons !== 3'],
+  ['fallback semantic destination contract', 'record.semanticButtons !== 2 || record.semanticLinks !== 1'],
   ['interaction proof failure guard', 'Home interaction proof failed for'],
   ['direct canvas geometry measurement', 'element.getBoundingClientRect()'],
   ['ancestor-aware loading visibility', "node.checkVisibility"],
