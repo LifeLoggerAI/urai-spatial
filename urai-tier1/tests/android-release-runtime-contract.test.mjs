@@ -5,6 +5,10 @@ import test from 'node:test'
 const unsignedWorkflow = fs.readFileSync(new URL('../../.github/workflows/android-package-prep.yml', import.meta.url), 'utf8')
 const signedWorkflow = fs.readFileSync(new URL('../../.github/workflows/android-governed-signing-prep.yml', import.meta.url), 'utf8')
 const apiHelper = fs.readFileSync(new URL('../src/lib/clientApiUrl.ts', import.meta.url), 'utf8')
+const nativeOAuthSource = fs.readFileSync(new URL('../src/lib/nativeGoogleOAuth.ts', import.meta.url), 'utf8')
+const settingsSource = fs.readFileSync(new URL('../src/app/settings/DeviceSettingsClient.tsx', import.meta.url), 'utf8')
+const shellPackage = fs.readFileSync(new URL('../../distribution/android-shell/package.json', import.meta.url), 'utf8')
+const shellConfigScript = fs.readFileSync(new URL('../../distribution/android-shell/configure-app-links.mjs', import.meta.url), 'utf8')
 
 const requiredPublicVars = [
   'NEXT_PUBLIC_FIREBASE_API_KEY',
@@ -44,4 +48,32 @@ test('native API routing allows only HTTPS configured origins and API paths', ()
   assert.match(apiHelper, /candidate\.username/)
   assert.match(apiHelper, /candidate\.password/)
   assert.match(apiHelper, /path\.startsWith\('\/api\/'\)/)
+})
+
+
+test('native Google OAuth uses the system browser and exact HTTPS return boundary', () => {
+  assert.match(nativeOAuthSource, /@capacitor\/browser/)
+  assert.match(nativeOAuthSource, /@capacitor\/app/)
+  assert.match(nativeOAuthSource, /Capacitor\.isNativePlatform\(\)/)
+  assert.match(nativeOAuthSource, /https:\/\/accounts\.google\.com/)
+  assert.match(nativeOAuthSource, /https:\/\/urai\.app/)
+  assert.match(nativeOAuthSource, /appUrlOpen/)
+  assert.match(nativeOAuthSource, /Browser\.close/)
+  assert.match(settingsSource, /openNativeGoogleAuthorization/)
+  assert.match(settingsSource, /registerNativeGoogleOAuthReturn/)
+  assert.match(shellPackage, /"@capacitor\/app": "8\.1\.1"/)
+  assert.match(shellPackage, /"@capacitor\/browser": "8\.0\.4"/)
+})
+
+test('generated Android shell receives a verified HTTPS settings App Link', () => {
+  assert.match(shellConfigScript, /android:autoVerify="true"/)
+  assert.match(shellConfigScript, /android:scheme="https"/)
+  assert.match(shellConfigScript, /android:host="urai\.app"/)
+  assert.match(shellConfigScript, /android:pathPrefix="\/settings"/)
+  assert.match(shellConfigScript, /singleTask/)
+  assert.match(unsignedWorkflow, /Configure verified Android App Link/)
+  assert.match(signedWorkflow, /Configure verified Android App Link/)
+  assert.match(signedWorkflow, /Render verified App Link association/)
+  assert.match(signedWorkflow, /android-assetlinks\.json/)
+  assert.match(signedWorkflow, /exact_head_release_governance_guard_not_green/)
 })
