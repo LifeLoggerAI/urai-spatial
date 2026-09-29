@@ -25,6 +25,8 @@ const publicRoutes = [
   '/onboarding',
   '/signup',
   '/location-map',
+  '/waitlist',
+  '/system',
   '/status',
   '/spatial/ar-vr',
 ] as const;
