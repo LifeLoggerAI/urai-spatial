@@ -881,9 +881,11 @@ const DELETION_COLLECTIONS: Record<Exclude<DeletionScope, 'account'>, string[]> 
   ],
 }
 
-async function deleteCapturedRealityStorage(uid: string, options: { deleteAllExports?: boolean } = {}) {
+async function deleteCapturedRealityStorage(uid: string, options: { deleteAllExports?: boolean; deleteSource?: boolean } = {}) {
   const bucket = admin.storage().bucket()
-  await bucket.deleteFiles({ prefix: `private-captured-reality/${uid}/` })
+  if (options.deleteSource !== false) {
+    await bucket.deleteFiles({ prefix: `private-captured-reality/${uid}/` })
+  }
 
   const exportPrefix = `private-exports/${uid}/`
   if (options.deleteAllExports) {
@@ -924,8 +926,10 @@ async function processDeletion(snapshot: FirebaseFirestore.DocumentSnapshot) {
     } else {
       if (scope === 'spatial-state') {
         await deleteCapturedRealityStorage(uid)
-      } else if (scope === 'all-repository-data' || scope === 'export-history') {
+      } else if (scope === 'all-repository-data') {
         await deleteCapturedRealityStorage(uid, { deleteAllExports: true })
+      } else if (scope === 'export-history') {
+        await deleteCapturedRealityStorage(uid, { deleteAllExports: true, deleteSource: false })
       }
       for (const collectionName of DELETION_COLLECTIONS[scope]) {
         await db.recursiveDelete(userRef.collection(collectionName))
