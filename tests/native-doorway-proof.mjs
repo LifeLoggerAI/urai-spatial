@@ -11,8 +11,20 @@ const cases = [
   { device: 'mobile', method: 'semantic-touch', viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true },
 ]
 const doorways = [
-  { id: 'ground', destination: '/ground', name: 'Open Ground directly', testId: 'home-semantic-ground' },
-  { id: 'life-map', destination: '/life-map', name: 'Open Life Map directly', testId: 'home-semantic-life-map' },
+  {
+    id: 'ground',
+    destination: '/ground',
+    name: 'Open Ground directly',
+    testId: 'home-semantic-ground',
+    params: { entryPortal: 'home-ground', cameraCheckpoint: 'home-ground-descent' },
+  },
+  {
+    id: 'life-map',
+    destination: '/life-map',
+    name: 'Open Life Map directly',
+    testId: 'home-semantic-life-map',
+    params: { from: 'home-sky', entryPortal: 'home-sky', cameraCheckpoint: 'home-sky-ascent-complete' },
+  },
 ]
 if (!/^[0-9a-f]{40}$/.test(exactSha)) throw new Error('Exact source SHA required')
 const normalize = (value) => new URL(value).pathname.replace(/\/$/, '') || '/'
@@ -105,6 +117,11 @@ async function prove(browser, doorway, testCase) {
     record.hitPoint = activation.hitPoint
     await page.waitForURL((url) => normalize(url.toString()) === doorway.destination, { timeout: 20000 })
     record.resultingUrl = page.url()
+    const resultingUrl = new URL(record.resultingUrl)
+    for (const [key, expected] of Object.entries(doorway.params)) {
+      const actual = resultingUrl.searchParams.get(key)
+      if (actual !== expected) throw new Error(`canonical ${doorway.id} context mismatch for ${key}: expected ${expected}, received ${actual ?? 'null'}`)
+    }
     record.success = normalize(record.resultingUrl) === doorway.destination
   } catch (error) {
     record.resultingUrl = page.url()
