@@ -64,22 +64,48 @@ let evidenceOutput = evidenceInput
 const orbSizeTarget = `    const orb = page.getByRole('button', { name: /open orb travel controls/i })
     await expect(orb).toBeVisible()
     await expect(orb).toBeEnabled()`
-const orbSizeReady = `    const orb = page.locator('[data-urai-audit-action="orb-controls"]')
+const orbSizeReady = `    const orb = page.getByTestId('home-semantic-orb')
     await expect(orb).toBeEnabled({ timeout: 15_000 })
     await expect(orb).toBeVisible({ timeout: 15_000 })
-    await expect(orb).toHaveAccessibleName(/open orb travel controls/i)`
+    await expect(orb).toHaveAccessibleName(/open urai orb companion/i)`
 if (evidenceOutput.split(orbSizeTarget).length - 1 !== 1) throw new Error('Orb size readiness contract changed')
 evidenceOutput = evidenceOutput.replace(orbSizeTarget, orbSizeReady)
 
 const orbFocusTarget = `    const orb = page.locator('[data-urai-audit-action="orb-controls"]')
     await expect(orb).toHaveAccessibleName(/open orb travel controls/i)
     await expect(orb).toBeEnabled()`
-const orbFocusReady = `    const orb = page.locator('[data-urai-audit-action="orb-controls"]')
+const orbFocusReady = `    const orb = page.getByTestId('home-semantic-orb')
     await expect(orb).toBeEnabled({ timeout: 15_000 })
     await expect(orb).toBeVisible({ timeout: 15_000 })
-    await expect(orb).toHaveAccessibleName(/open orb travel controls/i)`
+    await expect(orb).toHaveAccessibleName(/open urai orb companion/i)`
 if (evidenceOutput.split(orbFocusTarget).length - 1 !== 1) throw new Error('Orb focus readiness contract changed')
 evidenceOutput = evidenceOutput.replace(orbFocusTarget, orbFocusReady)
+
+const orbFocusFlowTarget = `    await orb.focus()
+    await orb.press('Enter')
+    await expect(orb).toHaveAttribute('aria-expanded', 'true')
+    await expect(orb).toHaveAccessibleName(/close orb travel controls/i)
+    const firstDestination = page.locator('#urai-world-companion-menu button:not([disabled])').first()
+    await expect(firstDestination).toBeFocused()
+    await page.keyboard.press('Escape')
+    await expect(orb).toBeFocused()
+    await expect(orb).toHaveAttribute('aria-expanded', 'false')
+    await expect(orb).toHaveAccessibleName(/open orb travel controls/i)
+    await expect(page.locator('#urai-world-companion-menu')).toHaveAttribute('aria-hidden', 'true')`
+const orbFocusFlowCurrent = `    const controller = page.locator('[data-urai-audit-action="orb-controls"]')
+    await orb.focus()
+    await orb.press('Enter')
+    await expect(controller).toHaveAttribute('aria-expanded', 'true')
+    await expect(controller).toHaveAccessibleName(/close orb travel controls/i)
+    const firstDestination = page.locator('#urai-world-companion-menu button:not([disabled])').first()
+    await expect(firstDestination).toBeFocused()
+    await page.keyboard.press('Escape')
+    await expect(orb).toBeFocused()
+    await expect(controller).toHaveAttribute('aria-expanded', 'false')
+    await expect(orb).toHaveAccessibleName(/open urai orb companion/i)
+    await expect(page.locator('#urai-world-companion-menu')).toHaveAttribute('aria-hidden', 'true')`
+if (evidenceOutput.split(orbFocusFlowTarget).length - 1 !== 1) throw new Error('Orb focus-return flow contract changed')
+evidenceOutput = evidenceOutput.replace(orbFocusFlowTarget, orbFocusFlowCurrent)
 
 const webglTestTarget = `  test('WebGL context loss recovery is bounded and preserves the route', async ({ page }) => {`
 const webglTestReady = `  test('WebGL context loss recovery is bounded and preserves the route', async ({ page }) => {
@@ -91,16 +117,29 @@ console.log(`Materialized current Orb hydration and WebGL recovery envelopes at 
 
 const embodiedPath = 'urai-tier1/tests/accessibility-performance-embodied-exploration.spec.ts'
 const embodiedInput = await readFile(embodiedPath, 'utf8')
-const directTargets = [
+const directButtonTargets = [
   "    await expect(direct.getByRole('button', { name: 'Open URAI Orb companion' })).toBeVisible()",
   "    await expect(direct.getByRole('button', { name: 'Open Ground directly' })).toBeVisible()",
-  "    await expect(direct.getByRole('button', { name: 'Open Life Map directly' })).toBeVisible()",
 ]
 let embodiedOutput = embodiedInput
-for (const line of directTargets) {
+for (const line of directButtonTargets) {
   if (embodiedOutput.split(line).length - 1 !== 1) throw new Error(`Home direct destination readiness contract changed: ${line}`)
   embodiedOutput = embodiedOutput.replace(line, line.replace('toBeVisible()', 'toBeVisible({ timeout: 30_000 })'))
 }
+const lifeMapButtonTarget = "    await expect(direct.getByRole('button', { name: 'Open Life Map directly' })).toBeVisible()"
+const lifeMapLinkTarget = "    await expect(direct.getByRole('link', { name: 'Open Life Map directly' })).toBeVisible({ timeout: 30_000 })"
+if (embodiedOutput.split(lifeMapButtonTarget).length - 1 !== 1) throw new Error('Home Life Map semantic destination contract changed')
+embodiedOutput = embodiedOutput.replace(lifeMapButtonTarget, lifeMapLinkTarget)
+
+const countTarget = "    await expect(direct.getByRole('button')).toHaveCount(3)"
+const countCurrent = "    await expect(direct.locator(':scope > :is(button,a)')).toHaveCount(3)"
+if (embodiedOutput.split(countTarget).length - 1 !== 1) throw new Error('Home semantic destination count contract changed')
+embodiedOutput = embodiedOutput.replace(countTarget, countCurrent)
+
+const loopTarget = "      const target = direct.getByRole('button', { name })"
+const loopCurrent = "      const target = direct.getByRole(name.source.includes('Life Map') ? 'link' : 'button', { name })"
+if (embodiedOutput.split(loopTarget).length - 1 !== 1) throw new Error('Home semantic destination focus contract changed')
+embodiedOutput = embodiedOutput.replace(loopTarget, loopCurrent)
 await writeFile(embodiedPath, embodiedOutput)
 console.log(`Materialized Home semantic destination readiness at ${embodiedPath}`)
 
