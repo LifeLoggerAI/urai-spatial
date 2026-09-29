@@ -97,7 +97,7 @@ test('Focus is an explorable stellar memory-star field rather than a static cham
 
   assert.match(focus, /aria-label="Focus memory controls"/)
   assert.match(focus, /focus-stellar-photosphere-luminance-floor/)
-  assert.match(focus, /color="#ffd66b" transparent opacity=\{0\.24\}/)
+  assert.match(focus, /color="#ffd66b" transparent opacity=\{0\.12\}/)
   assert.doesNotMatch(focus, /color="#ffe8a8" transparent opacity=\{0\.48\}/)
   assert.doesNotMatch(focus, /aria-label="Focus chamber controls"/)
   assert.match(focus, /<button type="button" onClick=\{\(\) => setRecenterSignal/)
@@ -148,9 +148,9 @@ test('Focus stellar body preserves visible photosphere granulation instead of a 
   assert.match(focus, /vec3 emitted = surface \* radiance \+ hotWhite \* \(\.07 \+ cells \* \.11\)/)
   assert.match(focus, /focus-stellar-photosphere-luminance-floor/)
   assert.match(focus, /color="#ffd66b" transparent opacity=\{0\.24\}/)
-  assert.match(focus, /color="#ffb53f" transparent opacity=\{0\.22\}/)
-  assert.match(focus, /opacity=\{0\.12\}/)
-  assert.match(focus, /opacity=\{0\.045\}/)
+  assert.match(focus, /color="#ffb53f" transparent opacity=\{0\.16\}/)
+  assert.match(focus, /opacity=\{0\.085\}/)
+  assert.match(focus, /opacity=\{0\.032\}/)
   assert.doesNotMatch(focus, /color="#ffe8a8" transparent opacity=\{0\.48\}/)
 })
 
