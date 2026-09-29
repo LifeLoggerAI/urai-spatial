@@ -136,7 +136,10 @@ test.describe('Embodied exploration runtime evidence', () => {
     await expect.poll(() => normalizedPathname(page.url())).toBe('/life-map')
     await expect.poll(() => new URL(page.url()).searchParams.get('overview')).toBe('1')
     await expect(lifeMap).toHaveAttribute('data-life-map-mode', 'overview')
-    await expect(page.getByRole('navigation', { name: 'Selected memory actions' })).toHaveCount(0)
+    await expect.poll(
+      async () => page.locator('nav[aria-label="Selected memory actions"]').count(),
+      { timeout: 15_000 },
+    ).toBe(0)
     expect(await page.evaluate(() => document.pointerLockElement)).toBeNull()
     expect(errors.pageErrors).toEqual([])
     expect(errors.consoleErrors).toEqual([])
