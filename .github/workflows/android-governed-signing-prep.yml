@@ -195,6 +195,10 @@ jobs:
           corepack pnpm exec cap add android
           corepack pnpm exec cap sync android
 
+      - name: Configure verified Android App Link
+        working-directory: distribution/android-shell
+        run: node configure-app-links.mjs
+
       - name: Apply governed Android version
         working-directory: distribution/android-shell/android
         shell: bash
@@ -263,6 +267,16 @@ jobs:
             echo "aab_path=$AAB"
           } | tee android-signed-package-receipt.txt
 
+      - name: Render verified App Link association
+        shell: bash
+        run: |
+          set -euo pipefail
+          fingerprint="$(sed -n 's/^upload_certificate_sha256=//p' android-upload-certificate.txt | tail -n 1)"
+          test -n "$fingerprint"
+          ANDROID_UPLOAD_CERT_SHA256="$fingerprint" ANDROID_ASSETLINKS_OUTPUT=android-assetlinks.json \
+            node distribution/android-shell/render-assetlinks.mjs
+          grep -F '"package_name": "com.urailabs.urai"' android-assetlinks.json
+
       - name: Retain signed package evidence
         uses: actions/upload-artifact@v4
         with:
@@ -271,6 +285,7 @@ jobs:
             distribution/android-shell/android/app/build/outputs/bundle/release/app-release.aab
             android-signed-aab.sha256
             android-upload-certificate.txt
+            android-assetlinks.json
             android-signed-package-receipt.txt
           retention-days: 30
 
