@@ -6,6 +6,8 @@ if (!admin.apps.length) admin.initializeApp()
 const db = admin.firestore()
 const RUNTIME_URL_TTL_MS = 10 * 60 * 1000
 const PRIVATE_CAPTURE_PREFIX = 'private-captured-reality'
+const CAPTURED_REALITY_REGION = 'us-central1'
+const capturedRealityFunctions = functions.region(CAPTURED_REALITY_REGION)
 
 function requireUid(context: functions.https.CallableContext) {
   const uid = context.auth?.uid
@@ -90,7 +92,7 @@ function publicAssetState(snapshot: FirebaseFirestore.DocumentSnapshot) {
  * Owner-only metadata read. Raw source locators, exact location, storage object
  * names and provider credentials are deliberately omitted from the response.
  */
-export const getCapturedRealityAsset = functions.https.onCall(async (data, context) => {
+export const getCapturedRealityAsset = capturedRealityFunctions.https.onCall(async (data, context) => {
   const uid = requireUid(context)
   const assetId = requireToken(data?.assetId, 'assetId')
   const snapshot = await db.doc(`users/${uid}/capturedRealityAssets/${assetId}`).get()
@@ -108,7 +110,7 @@ export const getCapturedRealityAsset = functions.https.onCall(async (data, conte
  * owner still has effective location consent, and the asset is explicitly
  * reviewed/ready for private runtime delivery.
  */
-export const getCapturedRealityRuntimeUrl = functions.https.onCall(async (data, context) => {
+export const getCapturedRealityRuntimeUrl = capturedRealityFunctions.https.onCall(async (data, context) => {
   const uid = requireUid(context)
   if (!capturedRealityEnabled()) {
     throw new functions.https.HttpsError('failed-precondition', 'CAPTURED_REALITY_RELEASE_DISABLED')
@@ -174,7 +176,10 @@ export const getCapturedRealityRuntimeUrl = functions.https.onCall(async (data, 
 
   const objectPath = requirePrivateRuntimeObject(uid, assetId, snapshot.get('runtimeObject'))
   const storageBucket = String(snapshot.get('storageBucket') ?? '')
-  const configuredBucket = admin.storage().bucket().name
+  const configuredBucket = String(process.env.FIREBASE_STORAGE_BUCKET ?? '').trim()
+  if (!configuredBucket) {
+    throw new functions.https.HttpsError('failed-precondition', 'CAPTURED_REALITY_STORAGE_BUCKET_UNCONFIGURED')
+  }
   if (!storageBucket || storageBucket !== configuredBucket) {
     throw new functions.https.HttpsError('failed-precondition', 'CAPTURED_REALITY_STORAGE_BUCKET_MISMATCH')
   }
@@ -248,7 +253,7 @@ export const getCapturedRealityRuntimeUrl = functions.https.onCall(async (data, 
  * Reality asset. No source IDs, storage locators, exact location, or provider
  * details are returned to the client.
  */
-export const getCapturedRealityReplayEntry = functions.https.onCall(async (data, context) => {
+export const getCapturedRealityReplayEntry = capturedRealityFunctions.https.onCall(async (data, context) => {
   const uid = requireUid(context)
   if (!capturedRealityEnabled()) return { available: false }
 

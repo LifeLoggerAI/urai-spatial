@@ -34,10 +34,12 @@ test('valid binary returns exact identity and bounds without claiming reconstruc
 for (const [name, mutate, error] of [
   ['NaN position', b => b.writeFloatLE(NaN, 0), /position/],
   ['infinite position', b => b.writeFloatLE(Infinity, 4), /position/],
+  ['extreme position', b => b.writeFloatLE(1e8, 8), /position/],
   ['zero scale', b => b.writeFloatLE(0, 12), /scale/],
   ['negative scale', b => b.writeFloatLE(-1, 16), /scale/],
   ['GPU covariance overflow', b => b.writeFloatLE(1e30, 20), /scale/],
   ['GPU covariance underflow', b => b.writeFloatLE(1e-30, 20), /scale/],
+  ['extreme scale', b => b.writeFloatLE(1e5, 20), /scale/],
   ['zero quaternion', b => b.fill(128, 28, 32), /quaternion/],
   ['unnormalized quaternion', b => b.fill(255, 28, 32), /quaternion/],
   ['invisible scene', b => { b[27] = 0 }, /nontransparent/],

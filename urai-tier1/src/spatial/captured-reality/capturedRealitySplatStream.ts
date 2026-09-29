@@ -1,3 +1,7 @@
+const MAX_ABS_POSITION = 1e7
+const MAX_GAUSSIAN_SCALE = 1e4
+const MIN_GAUSSIAN_SCALE = 1e-7
+
 /** Streaming validation for the actual renderer GET, with bounded staging memory. */
 export async function streamCapturedRealitySplat({
   url, maxBytes, chunkSize, signal, onHeader, onChunk, fetcher = fetch,
@@ -84,7 +88,14 @@ export function validateSplatRecords(bytes: Uint8Array) {
     for (let axis = 0; axis < 3; axis++) {
       const position = view.getFloat32(offset + axis * 4, true)
       const scale = view.getFloat32(offset + 12 + axis * 4, true)
-      if (!Number.isFinite(position) || !Number.isFinite(scale) || scale <= 0 || !Number.isFinite(Math.fround(scale * scale)) || Math.fround(scale * scale) === 0) throw new Error('SPLAT_RECORD_NONFINITE_OR_INVALID_SCALE')
+      if (!Number.isFinite(position) || Math.abs(position) > MAX_ABS_POSITION) throw new Error('SPLAT_RECORD_INVALID_OR_EXTREME_POSITION')
+      if (
+        !Number.isFinite(scale) ||
+        scale < MIN_GAUSSIAN_SCALE ||
+        scale > MAX_GAUSSIAN_SCALE ||
+        !Number.isFinite(Math.fround(scale * scale)) ||
+        Math.fround(scale * scale) === 0
+      ) throw new Error('SPLAT_RECORD_INVALID_OR_EXTREME_SCALE')
     }
     let norm = 0
     for (let axis = 0; axis < 4; axis++) norm += ((view.getUint8(offset + 28 + axis) - 128) / 128) ** 2

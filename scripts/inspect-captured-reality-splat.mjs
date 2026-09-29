@@ -7,6 +7,10 @@ import { fileURLToPath } from 'node:url'
 // The installed Drei Splat loader consumes 32-byte little-endian records:
 // xyz float32, scale xyz float32, RGBA uint8, quaternion wxyz uint8.
 // This is a technical preflight, never source/visual/privacy acceptance.
+const MAX_ABS_POSITION = 1e7
+const MAX_GAUSSIAN_SCALE = 1e4
+const MIN_GAUSSIAN_SCALE = 1e-7
+
 export function inspectSplat(file, { maxBytes, maxPoints }) {
   for (const [name, value] of Object.entries({ maxBytes, maxPoints })) {
     if (!Number.isSafeInteger(value) || value <= 0) throw new Error(`${name} must be a positive safe integer`)
@@ -37,8 +41,14 @@ export function inspectSplat(file, { maxBytes, maxPoints }) {
         for (let axis = 0; axis < 3; axis++) {
           const position = buffer.readFloatLE(offset + axis * 4)
           const scale = buffer.readFloatLE(offset + 12 + axis * 4)
-          if (!Number.isFinite(position)) throw new Error(`Point ${index}: non-finite position`)
-          if (!Number.isFinite(scale) || scale <= 0 || !Number.isFinite(Math.fround(scale * scale)) || Math.fround(scale * scale) === 0) throw new Error(`Point ${index}: invalid scale`)
+          if (!Number.isFinite(position) || Math.abs(position) > MAX_ABS_POSITION) throw new Error(`Point ${index}: invalid or extreme position`)
+          if (
+            !Number.isFinite(scale) ||
+            scale < MIN_GAUSSIAN_SCALE ||
+            scale > MAX_GAUSSIAN_SCALE ||
+            !Number.isFinite(Math.fround(scale * scale)) ||
+            Math.fround(scale * scale) === 0
+          ) throw new Error(`Point ${index}: invalid or extreme scale`)
           minimum[axis] = Math.min(minimum[axis], position)
           maximum[axis] = Math.max(maximum[axis], position)
         }

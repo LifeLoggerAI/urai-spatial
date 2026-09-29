@@ -37,11 +37,13 @@ test('stream batches split network records, enforce exact lengths and erase stag
   assert.equal(fetched[0].credentials, 'omit')
 })
 
-test('actual renderer GET rejects oversized, truncated, invalid and wholly invisible records', async () => {
+test('actual renderer GET rejects oversized, truncated, invalid, extreme and wholly invisible records', async () => {
   const valid = fixture()
   const invalid = fixture(); new DataView(invalid.buffer).setFloat32(12, NaN, true)
+  const extremePosition = fixture(); new DataView(extremePosition.buffer).setFloat32(0, 1e8, true)
+  const extremeScale = fixture(); new DataView(extremeScale.buffer).setFloat32(12, 1e5, true)
   const invisible = fixture(); for (let i = 27; i < invisible.length; i += 32) invisible[i] = 0
-  for (const [bytes, declared] of [[valid, 64], [valid, 128], [invalid, 96], [invisible, 96]]) {
+  for (const [bytes, declared] of [[valid, 64], [valid, 128], [invalid, 96], [extremePosition, 96], [extremeScale, 96], [invisible, 96]]) {
     const session = createCapturedRealitySplatSession(config({ fetcher: async () => response(bytes, declared) }))
     await assert.rejects(session.completion, /could not be displayed/)
     assert.equal(session.disposed, true)
