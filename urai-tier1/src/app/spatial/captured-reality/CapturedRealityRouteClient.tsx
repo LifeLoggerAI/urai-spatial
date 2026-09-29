@@ -348,12 +348,13 @@ export default function CapturedRealityRouteClient() {
       const refreshIn = Math.max(5_000, expires - Date.now() - 60_000)
       timer = window.setTimeout(() => {
         void (async () => {
-          activeAbort = new AbortController()
+          const renewalAbort = new AbortController()
+          activeAbort = renewalAbort
           try {
             const next = await loadRuntimeDelivery(assetId, accessMode)
             if (cancelled || revokedRef.current || !identityCurrent()) return
             const prerequisites = localBrowserPrerequisites()
-            const hasLength = await contentLengthAvailable(next.url, activeAbort.signal)
+            const hasLength = await contentLengthAvailable(next.url, renewalAbort.signal)
             if (cancelled || revokedRef.current || !identityCurrent()) return
             const capability = capturedRealityBrowserCapability({ ...prerequisites, contentLengthAvailable: hasLength })
             if (!capability.supported) throw new Error('browser capability changed')
