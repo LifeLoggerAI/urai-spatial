@@ -215,7 +215,7 @@ test('likeness-bearing reconstruction requires biometric identity authority', ()
 })
 
 
-test('private Gaussian visual proof waits for the splat mesh after-render boundary and current decision identity', () => {
+test('runtime draw submission waits for the splat mesh after-render boundary and current decision identity', () => {
   const owned = fs.readFileSync(new URL('../src/spatial/captured-reality/OwnedCapturedRealitySplat.tsx', import.meta.url), 'utf8')
   const adapter = fs.readFileSync(new URL('../src/spatial/captured-reality/CapturedRealitySplat.tsx', import.meta.url), 'utf8')
   const scene = fs.readFileSync(new URL('../src/spatial/captured-reality/CapturedRealityPrivateScene.tsx', import.meta.url), 'utf8')
@@ -229,4 +229,7 @@ test('private Gaussian visual proof waits for the splat mesh after-render bounda
   assert.match(scene, /renderReadyFor\?\.generation === generation/)
   assert.match(scene, /renderReadyFor\.src === decision\.assetUrl/)
   assert.match(scene, /onRenderReady=\{\(src\) => setRenderReadyFor\(\{ generation, src \}\)\}/)
+  assert.match(scene, /data-captured-reality-draw-submitted=/)
+  assert.doesNotMatch(scene, /data-captured-reality-render-ready=/)
+  assert.match(scene, /enablePan=\{false\}/)
 })

@@ -43,7 +43,7 @@ export function CapturedRealityPrivateScene({
       data-captured-reality-mode={decision.mode}
       data-captured-reality-device-tier={tier}
       data-captured-reality-reduced-motion={reducedMotion ? 'true' : 'false'}
-      data-captured-reality-render-ready={renderReady ? 'true' : 'false'}
+      data-captured-reality-draw-submitted={renderReady ? 'true' : 'false'}
       style={{ minHeight: '100svh', background: '#05070b', color: '#f7f7f5', display: 'grid', gridTemplateRows: 'auto 1fr' }}
     >
       <header style={{ display: 'flex', flexWrap: 'wrap', gap: '.75rem', alignItems: 'center', padding: '1rem', zIndex: 2 }}>
@@ -67,7 +67,9 @@ export function CapturedRealityPrivateScene({
               </Suspense>
               <OrbitControls
                 enableDamping={!reducedMotion}
-                enablePan
+                // The source has no authoritative metric scale or walkable bounds.
+                // Orbit and bounded zoom are safe; translation is not.
+                enablePan={false}
                 enableZoom
                 minDistance={0.25}
                 maxDistance={12}

@@ -60,6 +60,12 @@ function requirePrivateRuntimeObject(uid: string, assetId: string, value: unknow
   return objectPath
 }
 
+function assetRevoked(snapshot: FirebaseFirestore.DocumentSnapshot) {
+  return snapshot.get('revokedAt') != null
+    || snapshot.get('revocationState') === 'revoked'
+    || snapshot.get('state') === 'revoked'
+}
+
 function publicAssetState(snapshot: FirebaseFirestore.DocumentSnapshot) {
   const data = snapshot.data() ?? {}
   return {
@@ -91,6 +97,9 @@ export const getCapturedRealityAsset = functions.https.onCall(async (data, conte
   if (!snapshot.exists || snapshot.get('ownerId') !== uid) {
     throw new functions.https.HttpsError('not-found', 'Captured-reality asset was not found.')
   }
+  if (assetRevoked(snapshot)) {
+    throw new functions.https.HttpsError('failed-precondition', 'CAPTURED_REALITY_ASSET_REVOKED')
+  }
   return publicAssetState(snapshot)
 })
 
@@ -118,6 +127,9 @@ export const getCapturedRealityRuntimeUrl = functions.https.onCall(async (data, 
   const snapshot = await db.doc(`users/${uid}/capturedRealityAssets/${assetId}`).get()
   if (!snapshot.exists || snapshot.get('ownerId') !== uid) {
     throw new functions.https.HttpsError('not-found', 'Captured-reality asset was not found.')
+  }
+  if (assetRevoked(snapshot)) {
+    throw new functions.https.HttpsError('failed-precondition', 'CAPTURED_REALITY_ASSET_REVOKED')
   }
 
   const state = String(snapshot.get('state') ?? 'unknown')
@@ -255,6 +267,7 @@ export const getCapturedRealityReplayEntry = functions.https.onCall(async (data,
   const assetId = requireToken(binding.get('capturedRealityAssetId'), 'capturedRealityAssetId')
   const asset = await db.doc(`users/${uid}/capturedRealityAssets/${assetId}`).get()
   if (!asset.exists || asset.get('ownerId') !== uid) return { available: false }
+  if (assetRevoked(asset)) return { available: false }
 
   const placeEntityId = binding.get('placeEntityId')
   if (

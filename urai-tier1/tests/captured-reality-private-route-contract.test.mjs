@@ -58,6 +58,10 @@ test('route watches both memory and location privacy authority and unmounts deli
   assert.match(client, /location/)
   assert.match(client, /setDelivery\(null\)/)
   assert.match(client, /setDecision\(suppressedDecision/)
+  assert.match(client, /capturedRealityAssets', assetId/)
+  assert.match(client, /assetAuthorityActive\(snapshot, user\.uid, accessMode\)/)
+  assert.match(client, /revocationState/)
+  assert.match(client, /resolveAssetAuthority\(active\)/)
 })
 
 test('route fails to semantic fallback when WebGL2 streaming prerequisites are unavailable', () => {

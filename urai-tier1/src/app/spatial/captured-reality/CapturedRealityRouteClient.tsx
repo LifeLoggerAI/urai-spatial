@@ -93,6 +93,24 @@ function modeAllowed(mode: string) {
   return mode === 'granted' || mode === 'limited'
 }
 
+function assetAuthorityActive(snapshot: { exists(): boolean; get(field: string): unknown }, uid: string, accessMode: 'runtime' | 'proof') {
+  if (!snapshot.exists() || snapshot.get('ownerId') !== uid) return false
+  const state = String(snapshot.get('state') ?? '')
+  const releaseState = String(snapshot.get('releaseState') ?? '')
+  const activeRelease = ['private-pilot', 'private-beta', 'launch-enabled'].includes(releaseState)
+  const explicitlyRevoked = snapshot.get('revokedAt') != null
+    || snapshot.get('revocationState') === 'revoked'
+    || snapshot.get('state') === 'revoked'
+  if (explicitlyRevoked || !activeRelease) return false
+  if (accessMode === 'runtime') {
+    return state === 'ready' && snapshot.get('reviewState') === 'accepted'
+  }
+  return (state === 'proof-ready' || state === 'ready')
+    && snapshot.get('proofState') === 'technical-preview'
+    && snapshot.get('proofIntegrityVerified') === true
+    && snapshot.get('proofPrivacyReviewed') === true
+}
+
 function localBrowserPrerequisites() {
   return {
     webgl2: capturedRealityWebGL2Available(),
@@ -201,6 +219,27 @@ export default function CapturedRealityRouteClient() {
     }
 
     const db = getFirebaseDb()
+    let resolveAssetAuthority!: (active: boolean) => void
+    const assetAuthority = new Promise<boolean>((resolve) => { resolveAssetAuthority = resolve })
+    let firstAssetSnapshot = true
+    stops.push(onSnapshot(
+      doc(db, 'users', user.uid, 'capturedRealityAssets', assetId),
+      (snapshot) => {
+        const active = assetAuthorityActive(snapshot, user.uid, accessMode)
+        if (firstAssetSnapshot) {
+          firstAssetSnapshot = false
+          resolveAssetAuthority(active)
+        }
+        if (!active) stopForPrivacy('Captured Reality closed because this asset is unavailable or revoked.')
+      },
+      () => {
+        if (firstAssetSnapshot) {
+          firstAssetSnapshot = false
+          resolveAssetAuthority(false)
+        }
+        stopForPrivacy('Captured Reality closed because asset authority could not be observed.')
+      },
+    ))
     stops.push(onSnapshot(
       doc(db, 'users', user.uid, 'privacyPolicy', 'current'),
       (snapshot) => {
@@ -224,6 +263,11 @@ export default function CapturedRealityRouteClient() {
 
     void (async () => {
       try {
+        if (!(await assetAuthority)) {
+          stopForPrivacy('Captured Reality closed because this asset is unavailable or revoked.')
+          return
+        }
+        if (disposed || revokedRef.current || !identityCurrent()) return
         const asset = await loadAssetMetadata(assetId)
         if (disposed || revokedRef.current || !identityCurrent()) return
         setMetadata(asset)

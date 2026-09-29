@@ -7,7 +7,10 @@ import { Vector4 } from 'three'
 import { createCapturedRealitySplatSession } from './capturedRealitySplatSession'
 import type { CapturedSplatResources } from './capturedRealitySplatResources'
 
-/** Private splat renderer: every mount owns and releases its complete session. */
+/** Private splat renderer: every mount owns and releases its complete session.
+ * The callback means a completed splat mesh reached WebGL's after-render hook;
+ * it is not visual acceptance or proof of meaningful non-background pixels.
+ */
 export function OwnedCapturedRealitySplat({
   src, maxBytes, chunkSize = 25_000, alphaHash = true, onRenderReady,
 }: { src: string; maxBytes: number; chunkSize?: number; alphaHash?: boolean; onRenderReady?: (src: string) => void }) {
