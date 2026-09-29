@@ -173,6 +173,10 @@ jobs:
             echo "No native exact-head approval and no signed external reviewer identity is recorded." >&2
             exit 1
           }
+          test "$external_reviewer" = 'LimberNutz0' || {
+            echo "Independent approval denied: offline reviewer must be LimberNutz0 for this release." >&2
+            exit 1
+          }
           test "$external_reviewer" != "$PR_AUTHOR" || {
             echo "Independent approval denied: external reviewer matches PR author." >&2
             exit 1
