@@ -25,7 +25,7 @@ test('Replay controls expose truthful accessible pending offline error and recov
   assert.match(controls, /next\.error/)
   assert.match(controls, /aria-pressed=\{operations\.saved\}/)
   assert.match(controls, /aria-pressed=\{operations\.hidden\}/)
-  assert.match(controls, /min-height:44px/)
+  assert.match(controls, /min-height:48px/)
   assert.match(controls, /safe-area-inset-bottom/)
   assert.match(controls, /prefers-reduced-motion:reduce/)
   assert.match(controls, /forced-colors:active/)
