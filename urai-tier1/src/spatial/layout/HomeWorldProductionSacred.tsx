@@ -664,7 +664,8 @@ function SacredOrb({ state, reducedMotion, onOpen }: { state: OrbState; reducedM
       <meshPhysicalMaterial color="#b6e3df" transparent opacity={0.14} depthWrite={false} emissive="#163f42" emissiveIntensity={state === 'speaking' ? 0.16 : 0.08} roughness={0.18} metalness={0} clearcoat={0.45} clearcoatRoughness={0.2} envMapIntensity={0.72} />
     </mesh>
     <group ref={authoredCore} scale={0.36}><primitive object={authoredOrb} /></group>
-    <mesh scale={0.18}><icosahedronGeometry args={[0.16,2]} /><meshStandardMaterial color="#d5bf8c" emissive="#7e5d2c" emissiveIntensity={0.34} roughness={0.7} metalness={0.08} /></mesh>
+    <mesh name="orb-luminous-memory-volume"><sphereGeometry args={[0.23,32,24]} /><meshStandardMaterial color="#64d5cd" transparent opacity={0.72} depthWrite={false} emissive="#48c6c5" emissiveIntensity={state === 'speaking' ? 1.8 : 1.4} roughness={0.28} metalness={0} toneMapped={false} /></mesh>
+    <mesh name="orb-warm-memory-heart" position={[0.06,-0.03,0.08]}><sphereGeometry args={[0.1,24,16]} /><meshStandardMaterial color="#ffe1a3" emissive="#efbe64" emissiveIntensity={1.1} roughness={0.3} metalness={0} toneMapped={false} /></mesh>
     <Sparkles count={reducedMotion ? 4 : 8} scale={[1.08,1.08,1.08]} size={0.65} speed={reducedMotion ? 0 : 0.05} opacity={0.2} color="#d9f8f7" />
     <pointLight color="#91c6c5" intensity={state === 'speaking' ? 0.9 : 0.56} distance={4.6} decay={2} />
     <spotLight position={[0,2.8,1.7]} target-position={[0,0,0]} color="#f2d9aa" intensity={0.52} distance={7} angle={0.48} penumbra={0.94} />
