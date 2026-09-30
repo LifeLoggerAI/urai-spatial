@@ -5,6 +5,7 @@ import path from 'node:path'
 const root = process.cwd()
 const workflowsDir = path.join(root, '.github', 'workflows')
 const canonicalWorkflowPath = '.github/workflows/spatial-live-deploy.yml'
+const governedDeployWorkflowPath = '.github/workflows/spatial-governed-wif-deploy.yml'
 const securityWorkflowPath = '.github/workflows/release-security-path-guard.yml'
 const adcGuardPath = 'urai-tier1/src/lib/server/google-adc.ts'
 const failures = []
@@ -48,9 +49,13 @@ if (!existsSync(workflowsDir)) {
     if (workflowExecutesProductionMutation(source)) productionWorkflows.push(`.github/workflows/${name}`)
   }
 }
-if (productionWorkflows.length !== 0) failures.push(`Production mutation must remain quarantined; found ${productionWorkflows.sort().join(', ')}`)
+const expectedProductionWorkflows = [governedDeployWorkflowPath]
+if (JSON.stringify(productionWorkflows.sort()) !== JSON.stringify(expectedProductionWorkflows)) {
+  failures.push(`Production mutation is restricted to ${governedDeployWorkflowPath}; found ${productionWorkflows.sort().join(', ') || 'none'}`)
+}
 
 const workflow = read(canonicalWorkflowPath)
+const governedDeployWorkflow = read(governedDeployWorkflowPath)
 const securityWorkflow = read(securityWorkflowPath)
 const adcGuard = read(adcGuardPath)
 
@@ -76,6 +81,50 @@ requireAll('Canonical production verification workflow', workflow, [
   'Classification: NO-GO',
   'Production release and Hosting recovery are intentionally quarantined.',
 ])
+
+requireAll('Governed WIF production workflow', governedDeployWorkflow, [
+  'name: URAI Governed WIF Production Deploy',
+  'workflow_dispatch:',
+  'release_sha:',
+  'rollback_sha:',
+  'pull_request:',
+  'confirm:',
+  "environment: production",
+  'id-token: write',
+  'actions: read',
+  'pull-requests: read',
+  'Release Governance Guard',
+  'release-governance-guard.yml/runs?event=pull_request&status=success&head_sha=$RELEASE_SHA',
+  'ref: ${{ env.RELEASE_SHA }}',
+  'persist-credentials: false',
+  'git merge-base --is-ancestor "$ROLLBACK_SHA" "$RELEASE_SHA"',
+  'node scripts/create-static-release-bundle.mjs',
+  'google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093',
+  'projects/952723774155/locations/global/workloadIdentityPools/urai-github-prod/providers/github-actions',
+  'urai-spatial-github-deployer@urai-4dc1d.iam.gserviceaccount.com',
+  'create_credentials_file: true',
+  'external_account',
+  'firebase-tools@15.22.3 deploy',
+  '--only hosting',
+  'node scripts/urai-post-deploy-smoke.mjs',
+  'firebasehosting.googleapis.com/v1beta1/sites/$FIREBASE_PROJECT/releases',
+  'Roll back Hosting if live certification fails',
+  'DEPLOY_URAI_APP',
+])
+
+const governedTrigger = governedDeployWorkflow.split(/\n\s*permissions\s*:/)[0]
+if (/\n\s*(pull_request|push)\s*:/.test(governedTrigger)) failures.push('Governed WIF production workflow must be manual-only')
+if (/\bsecrets\s*\./.test(governedDeployWorkflow)) failures.push('Governed WIF production workflow must not reference repository secrets')
+if (/FIREBASE_SERVICE_ACCOUNT_JSON|FIREBASE_PRIVATE_KEY|FIREBASE_CLIENT_EMAIL|FIREBASE_TOKEN/.test(governedDeployWorkflow)) {
+  failures.push('Governed WIF production workflow must not reference long-lived Firebase credential material')
+}
+if (/contents\s*:\s*write|actions\s*:\s*write|deployments\s*:\s*write|packages\s*:\s*write/.test(governedDeployWorkflow)) {
+  failures.push('Governed WIF production workflow must not gain repository mutation permissions')
+}
+if ((governedDeployWorkflow.match(/id-token\s*:\s*write/g) || []).length !== 1) {
+  failures.push('Governed WIF production workflow must expose id-token: write exactly once')
+}
+
 requireAll('Release security workflow', securityWorkflow, [
   'name: Release Security Path Guard',
   'permissions:\n  contents: read',
@@ -107,17 +156,19 @@ for (const forbiddenAlias of ['studio:deploy:static', 'deploy:xr:firebase', 'dep
 }
 
 const report = {
-  schemaVersion: 'urai-production-authority-audit-11',
+  schemaVersion: 'urai-production-authority-audit-12',
   ok: failures.length === 0,
   canonicalWorkflow: canonicalWorkflowPath,
   canonicalAdcGuard: adcGuardPath,
-  productionMutationQuarantined: productionWorkflows.length === 0,
+  productionMutationQuarantined: false,
+  governedWifProductionMutationAvailable: productionWorkflows.length === 1 && productionWorkflows[0] === governedDeployWorkflowPath,
   productionWorkflows: productionWorkflows.sort(),
+  governedDeployWorkflow: governedDeployWorkflowPath,
   longLivedRepositoryCredentialAuthorityAllowed: false,
   mainOnlyReadOnlyWifProofConfigured: true,
   providerWifIamProofRequiredBeforeMutation: true,
   independentReviewRequiredBeforeMutation: true,
-  releaseClassification: 'NO-GO',
+  releaseClassification: 'GOVERNED-PATH-AVAILABLE',
   failures,
 }
 
