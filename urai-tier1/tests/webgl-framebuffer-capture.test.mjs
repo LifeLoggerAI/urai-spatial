@@ -2,12 +2,12 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import { captureWebGLFramebuffer } from '../../scripts/capture-webgl-framebuffer.mjs'
 
-function harness({ lost = false, binding = null, error = 0, width = 1, height = 2 } = {}) {
+function harness({ lost = false, binding = null, error = 0, width = 1, height = 2, blankFrames = 0 } = {}) {
   let image, reads = 0
   const oldFrame = globalThis.requestAnimationFrame, oldDocument = globalThis.document
   globalThis.requestAnimationFrame = fn => queueMicrotask(fn)
   globalThis.document = { createElement: () => ({ getContext: () => ({ createImageData: () => ({ data: new Uint8ClampedArray(width * height * 4) }), putImageData: value => { image = value }, }), toDataURL: () => 'data:image/png;base64,cG5n' }) }
-  const gl = { drawingBufferWidth: width, drawingBufferHeight: height, FRAMEBUFFER_BINDING: 1, NO_ERROR: 0, RGBA: 2, UNSIGNED_BYTE: 3, isContextLost: () => lost, getParameter: () => binding, getError: () => error, readPixels: (...args) => { reads++; args[6].set([10,20,30,255,40,50,60,255]) } }
+  const gl = { drawingBufferWidth: width, drawingBufferHeight: height, FRAMEBUFFER_BINDING: 1, NO_ERROR: 0, RGBA: 2, UNSIGNED_BYTE: 3, isContextLost: () => lost, getParameter: () => binding, getError: () => error, readPixels: (...args) => { reads++; if (reads > blankFrames) args[6].set([10,20,30,255,40,50,60,255]) } }
   return { canvas: { getContext: type => type === 'webgl2' ? gl : null }, image: () => image, reads: () => reads, restore() { globalThis.requestAnimationFrame = oldFrame; globalThis.document = oldDocument } }
 }
 test('retained framebuffer pixels exclude DOM overlays and preserve upright row order', async () => {
@@ -25,4 +25,12 @@ test('unavailable, non-default, oversized and errored framebuffers cannot produc
     const h = harness(spec)
     try { await assert.rejects(captureWebGLFramebuffer(h.canvas)); assert.equal(h.reads(), 0) } finally { h.restore() }
   }
+})
+test('initial blank frames retry actual GPU reads and persist only the painted frame', async () => {
+  const h = harness({ blankFrames: 2 })
+  try { await captureWebGLFramebuffer(h.canvas); assert.equal(h.reads(), 3); assert.deepEqual([...h.image().data], [40,50,60,255,10,20,30,255]) } finally { h.restore() }
+})
+test('permanently blank framebuffers fail after the bounded wait', async () => {
+  const h = harness({ blankFrames: 100 })
+  try { await assert.rejects(captureWebGLFramebuffer(h.canvas), /remained blank for 60 frames/); assert.equal(h.reads(), 60); assert.equal(h.image(), undefined) } finally { h.restore() }
 })
