@@ -30,7 +30,7 @@ Do not approve or sign a predecessor SHA. If #1462 moves after review begins, st
 
 ### Incorporated / historical authorities
 - Memory World PR #1477: merged into the #1462 lineage; not a separate final approval target.
-- Asset Factory Higgsfield PR #309: merged; superseded by open hardening PR #312 for current Higgsfield source review.
+- Asset Factory Higgsfield PR #309: merged; superseded by open hardening PR #312 for current Higgsfield source review; live integration is not claimed.
 - Predecessor #1462 SHAs and their exact-head proof are HISTORICAL when the source moves.
 
 ## Satellite review dashboard
@@ -38,7 +38,7 @@ Do not approve or sign a predecessor SHA. If #1462 moves after review begins, st
 | System / repository | Current review target | Exact head | Machine evidence at preparation | Classification / reviewer action |
 |---|---|---|---|---|
 | Spatial | PR #1462 | this packet commit | successor proof required after this commit | BLOCKED BY EXECUTABLE PREPARATION until exact-head matrix and pixels complete |
-| Asset Factory / Higgsfield | PR #312 | 9ad1dbeaa5992c1474a0135f978365beadbae57e | 9/9 current-head workflows successful | READY FOR PRELIMINARY REVIEW, NOT FINAL SIGNING; PR is draft and live Higgsfield provider behavior remains unverified |
+| Asset Factory / Higgsfield | PR #312 | 9ad1dbeaa5992c1474a0135f978365beadbae57e | 9/9 current-head workflows successful | READY FOR PRELIMINARY REVIEW, NOT FINAL SIGNING; PR is draft; live provider integration is not claimed and remains separately gated |
 | Jobs / Captured Reality worker | PR #122 | 46153d1eba2dc70fd7bc7fa42f8d79f8e886f694 | 10/10 current-head workflows successful | READY FOR PRELIMINARY REVIEW, NOT FINAL SIGNING; stacked on terminal Jobs branch |
 | Studio | PR #114 | f9da66199660613a857048ffc4c92c62e39d4be6 | 7/7 current-head workflows successful | READY FOR REVIEW AND DECISION, subject to repository-specific governance |
 | Privacy | PR #135 | 157ff7b2dd936ac6db26b5ec18fba40394df7295 | 10/10 current-head workflows successful | READY FOR REVIEW AND DECISION, subject to repository-specific governance |
