@@ -18,14 +18,14 @@ const lifeMapWorld = read('src/components/lifemap/LifeMapProductionWorld.tsx')
 const homeGraph = `${homeRuntime}\n${assetHome}\n${homeProductionEntry}\n${homeProduction}\n${homeCss}\n${fallbackHome}`
 const groundGraph = `${groundOwner}\n${groundModel}`
 
-test('Home is one coherent authored Sacred-Tech 3D environment with final physical assets', () => {
+test('Home is one coherent authored natural 3D sanctuary with final physical assets', () => {
   for (const marker of [
     'AssetDrivenHomeWorld',
     'HomeWorldProduction',
     'data-home-primary-owner="asset-driven"',
-    'data-home-visible-world="moonlit-sacred-tech-sanctuary"',
-    'data-home-world-character="premium-cinematic-sacred-tech"',
-    'data-home-physical-base="authored-obsidian-ritual-platform"',
+    'data-home-visible-world="moonlit-natural-inhabited-sanctuary"',
+    'data-home-world-character="premium-cinematic-natural-sanctuary"',
+    'data-home-physical-base="grounded-flagstone-clearing"',
     'data-home-visual-ownership="three-dimensional-geometry"',
     'data-home-desktop-mobile-world="same-scene"',
     'data-home-embodied-self="makehuman-v4"',
@@ -44,7 +44,7 @@ test('Home is one coherent authored Sacred-Tech 3D environment with final physic
     'stepEmbodiedMotion',
     'useMovementInput',
     'MobileMovementPad',
-  ]) assert.ok(homeGraph.includes(marker), `missing Sacred Home convergence marker: ${marker}`)
+  ]) assert.ok(homeGraph.includes(marker), `missing natural Home convergence marker: ${marker}`)
 
   assert.match(homeProductionEntry, /export \{ HomeWorldProductionSacred as HomeWorldProduction \} from "\.\/HomeWorldProductionSacred"/)
   assert.match(groundGateway, /aria-label="Open the ground and descend into Hidden Infrastructure"/)
@@ -82,7 +82,7 @@ test('Home is one coherent authored Sacred-Tech 3D environment with final physic
   assert.match(homeRuntime, /aria-label="Open Life Map directly"/)
   assert.match(homeRuntime, /data-testid="home-semantic-life-map"/)
   assert.match(homeRuntime, /href="\/life-map\/\?from=home-sky&entryPortal=home-sky&cameraCheckpoint=home-sky-ascent-complete"/)
-  assert.match(homeProduction, /data-home-runtime-assets="home-entry-chamber-v1\.glb home-human-makehuman-v4\.glb urai-orb-avatar-v1\.glb portal-ring-master-v1\.glb authored-sacred-tech-composite"/)
+  assert.match(homeProduction, /data-home-runtime-assets="home-entry-chamber-v1\.glb home-human-makehuman-v4\.glb urai-orb-avatar-v1\.glb portal-ring-master-v1\.glb authored-natural-sanctuary-composite"/)
   assert.match(homeProduction, /data-home-orb-model-clip=/)
   assert.doesNotMatch(homeRuntime, /EmbodiedHomeSpatialCanvas|HomeSanctuaryWorld/)
   assert.doesNotMatch(homeGraph, /genesis-orb-placeholder\.svg|fallback-sky-bloom-12\.webp|fallback-ground-bloom-12\.png|TRANSPARENT_PIXEL/)
