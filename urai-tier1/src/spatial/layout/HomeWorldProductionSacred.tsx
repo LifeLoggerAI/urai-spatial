@@ -643,7 +643,7 @@ function SkyDome() {
   </mesh>
 }
 
-function MoonAndMist({ reducedMotion }: { reducedMotion: boolean }) {
+function MoonAndMist({ reducedMotion: _reducedMotion }: { reducedMotion: boolean }) {
   return <>
     <group name="home-mountain-horizon">
       <MountainRange />
@@ -652,7 +652,6 @@ function MoonAndMist({ reducedMotion }: { reducedMotion: boolean }) {
         <mesh position={[0.34,0.05,0.22]}><sphereGeometry args={[0.86,48,48]} /><meshBasicMaterial color="#173039" /></mesh>
       </group>
     </group>
-    <group name="home-living-vegetation"><FernGarden reducedMotion={reducedMotion} /></group>
   </>
 }
 
