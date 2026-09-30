@@ -809,14 +809,14 @@ function GalaxyVolume({ tier }: { tier: SpatialQualityProfile["tier"] }) {
 }
 
 function GalaxyDepth({ tier, reducedMotion }: { tier: SpatialQualityProfile["tier"]; reducedMotion: boolean }) {
-  const farCount = tier === "low" ? 540 : tier === "medium" ? 1320 : 2480;
-  const middleCount = tier === "low" ? 240 : tier === "medium" ? 560 : 980;
-  const foregroundCount = tier === "low" ? 84 : tier === "medium" ? 190 : 340;
+  const farCount = tier === "low" ? 2400 : tier === "medium" ? 6000 : 12000;
+  const middleCount = tier === "low" ? 720 : tier === "medium" ? 1600 : 3200;
+  const foregroundCount = tier === "low" ? 144 : tier === "medium" ? 320 : 600;
   return (
     <group name="life-map-layered-galaxy-depth" userData={{ visualCanon: "foreground-middle-far-stellar-atlas" }}>
       <GalaxyVolume tier={tier} />
-      <FieldParticles seed={2107} count={farCount} radius={66} depth={94} height={42} color="#9dbfff" opacity={0.42} size={0.034} />
-      <FieldParticles seed={2311} count={middleCount} radius={39} depth={44} height={18} color="#a88bff" opacity={0.46} size={0.055} />
+      <FieldParticles seed={2107} count={farCount} radius={66} depth={94} height={42} color="#c5d8ff" opacity={0.72} size={0.034} />
+      <FieldParticles seed={2311} count={middleCount} radius={39} depth={44} height={18} color="#b4a3ff" opacity={0.62} size={0.055} />
       <FieldParticles seed={2573} count={foregroundCount} radius={18} depth={18} height={9} color="#d9f7ff" opacity={0.52} size={0.075} />
       <Sparkles count={tier === "low" ? 72 : 176} scale={[44, 22, 58]} position={[0, 2.5, -18]} size={1.35} speed={reducedMotion ? 0 : 0.035} opacity={0.34} color="#d9f7ff" />
     </group>
