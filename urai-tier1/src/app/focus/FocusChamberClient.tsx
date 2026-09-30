@@ -1,5 +1,7 @@
 'use client'
 
+import StellarCorona from '@/spatial/stellar/StellarCorona'
+
 import { Html, OrbitControls, Sparkles, Stars } from '@react-three/drei'
 import { Canvas, useFrame, useThree, type ThreeEvent } from '@react-three/fiber'
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type RefObject } from 'react'
@@ -267,6 +269,7 @@ function StellarPhotosphere({ accent, light, reducedMotion }: { accent: string; 
         <sphereGeometry args={[1.15, 112, 96]} />
         <primitive object={photosphere} attach="material" />
       </mesh>
+      <StellarCorona radius={1.15} color={accent} reducedMotion={reducedMotion} intensity={1.1} />
       <mesh name="focus-stellar-photosphere-luminance-floor" scale={1.012} renderOrder={3}>
         <sphereGeometry args={[1.15, 96, 96]} />
         <meshBasicMaterial color="#ffd66b" transparent opacity={0.055} depthWrite={false} blending={THREE.AdditiveBlending} toneMapped={false} />

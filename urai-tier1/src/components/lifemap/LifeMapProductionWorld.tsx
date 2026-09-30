@@ -4,6 +4,7 @@ import { Line, Sparkles, Stars, useAnimations, useGLTF } from "@react-three/drei
 import { useFrame, useThree } from "@react-three/fiber";
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, type ReactNode } from "react";
 import * as THREE from "three";
+import StellarCorona from "@/spatial/stellar/StellarCorona";
 import CinematicPostProcessing from "@/spatial/cinematic/CinematicPostProcessing";
 import type { SpatialQualityProfile } from "@/spatial/performance/useAdaptiveSpatialQuality";
 import type { LifeMapNode } from "./lifeMapData";
@@ -379,23 +380,23 @@ function AuthoredMemoryStar({ aura, active, scale = 1, rotation = [0, 0, 0], cli
         float n2 = noise(p * 2.35 - vec3(t * .26, t * .54, 0.0));
         float n3 = noise(p * 5.4 + vec3(-t * .18, t * .22, t * .14));
         float convection = clamp(n1 * .56 + n2 * .30 + n3 * .14, 0.0, 1.0);
-        float granule = .5 + .5 * sin((p.x + p.y * .72 - p.z * .41) * 8.2 + convection * 9.2 + t * 4.0);
+        float granule = noise(p * 12.0 + vec3(t * .18, -t * .11, t * .09));
         float viewFacing = clamp(dot(normalize(vNormalW), vec3(0.0, 0.0, 1.0)) * .5 + .5, 0.0, 1.0);
         float limb = pow(viewFacing, .58);
         float spot = smoothstep(.20, .48, noise(p * 1.38 + vec3(13.7, 4.1, -8.2)));
         float filament = smoothstep(.56, .92, granule * .62 + convection * .55);
-        vec3 amber = vec3(1.0, .36, .025);
-        vec3 whiteGold = vec3(1.0, .68, .22);
-        vec3 stellarWhite = vec3(1.0, .94, .72);
-        float heat = clamp(convection * .72 + granule * .12 + filament * .38, 0.0, 1.0);
-        vec3 hot = mix(whiteGold, stellarWhite, .20 + heat * .26);
-        hot = mix(hot, amber, (1.0 - spot) * .20);
-        // Preserve a hot stellar core but let each memory keep a real chromatic identity.
-        // The old near-zero tint made every memory read as the same UI-yellow disk.
-        vec3 tinted = mix(hot, uAura, .36);
-        float energy = .86 + .18 * convection + .12 * filament + uActive * .05;
-        float limbFalloff = .66 + .34 * limb;
-        gl_FragColor = vec4(clamp(tinted * energy * limbFalloff, 0.0, 1.0), 1.0);
+        vec3 amber = vec3(.62, .07, .008);
+        vec3 whiteGold = vec3(1.0, .43, .055);
+        vec3 stellarWhite = vec3(1.0, .83, .40);
+        float heat = smoothstep(.28, .74, convection * .70 + granule * .30);
+        vec3 hot = mix(amber, whiteGold, heat);
+        hot = mix(hot, stellarWhite, pow(heat, 4.0) * .72);
+        // Keep dark intergranular lanes and rare hot cells instead of bleaching the entire body.
+        vec3 tinted = mix(hot, uAura, .08);
+        float energy = .60 + .54 * heat + .16 * filament + uActive * .05;
+        float limbFalloff = .48 + .52 * limb;
+        float intergranular = .64 + .36 * smoothstep(.30, .63, granule);
+        gl_FragColor = vec4(tinted * energy * limbFalloff * intergranular, 1.0);
         #include <colorspace_fragment>
       }
     `,
@@ -433,6 +434,7 @@ function AuthoredMemoryStar({ aura, active, scale = 1, rotation = [0, 0, 0], cli
       }}
     >
       <primitive object={model} visible={false} />
+      <StellarCorona radius={0.38 * (active ? 1.12 : 1.08)} color={aura} reducedMotion={reducedMotion} intensity={active ? 1.15 : 0.8} />
       <mesh name="memory-star-photosphere" castShadow={false} scale={active ? 1.12 : 1.08}>
         <sphereGeometry args={[0.38, 72, 56]} />
         <primitive object={photosphere} attach="material" />
