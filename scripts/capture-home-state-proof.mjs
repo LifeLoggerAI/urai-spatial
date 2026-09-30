@@ -226,6 +226,7 @@ async function captureOrbLifecycle({ reducedMotion = 'no-preference' } = {}) {
   page.on('pageerror', (error) => pageErrors.push(String(error)))
   const id = reducedMotion === 'reduce' ? 'orb-lifecycle-reduced-motion' : 'orb-lifecycle-production-ui'
   const record = { id, pageErrors, passed: false, reducedMotion }
+  let stage = 'initialize'
   try {
     await page.addInitScript(() => {
       window.__uraiObservedOrbStates = []
@@ -233,6 +234,7 @@ async function captureOrbLifecycle({ reducedMotion = 'no-preference' } = {}) {
         window.__uraiObservedOrbStates.push(event?.detail?.state ?? 'unknown')
       })
     })
+    stage = 'home-ready'
     const response = await page.goto(`${base}/home/?homeAssetReview=1`, { waitUntil: 'domcontentloaded', timeout: 60_000 })
     const owner = await waitForHomeReady(page)
     await page.waitForFunction(
@@ -244,6 +246,7 @@ async function captureOrbLifecycle({ reducedMotion = 'no-preference' } = {}) {
     const openOrb = page.locator('.urai-home-spatial-runtime-layer > .home-semantic-navigation [data-testid="home-semantic-orb"]')
     await openOrb.waitFor({ state: 'attached', timeout: 20_000 })
     await openOrb.focus()
+    stage = 'open-companion'
     await openOrb.press('Enter')
     await page.locator('#urai-world-companion-menu[aria-hidden="false"]').waitFor({ state: 'visible', timeout: 20_000 })
     await page.waitForFunction(
@@ -252,11 +255,13 @@ async function captureOrbLifecycle({ reducedMotion = 'no-preference' } = {}) {
       { timeout: 20_000 },
     )
 
+    stage = 'open-conversation'
     const talk = page.locator('summary').filter({ hasText: 'Talk with Orb' }).first()
     await talk.waitFor({ state: 'attached', timeout: 20_000 })
     await talk.evaluate((element) => element.click())
     const message = page.getByLabel('Message for Orb').first()
     await message.waitFor({ state: 'visible', timeout: 20_000 })
+    stage = 'focus-message'
     await message.focus()
     await page.waitForFunction(
       (selector) => document.querySelector(selector)?.getAttribute('data-home-orb-state') === 'listening',
@@ -290,6 +295,7 @@ async function captureOrbLifecycle({ reducedMotion = 'no-preference' } = {}) {
     await consent.check()
     await message.fill('Give me a short grounded reflection.')
     await message.focus()
+    stage = 'send-response'
     await page.getByRole('button', { name: 'Send' }).click()
     await page.locator('section[aria-label="Orb response"]').waitFor({ state: 'visible', timeout: 20_000 })
     await page.waitForFunction((selector) => document.querySelector(selector)?.getAttribute('data-home-orb-state') === 'speaking', ownerSelector)
@@ -298,6 +304,7 @@ async function captureOrbLifecycle({ reducedMotion = 'no-preference' } = {}) {
     record.observedStates = await page.evaluate(() => window.__uraiObservedOrbStates || [])
     record.lifecyclePassed = ['attention', 'listening', 'thinking', 'speaking'].every((state) => record.observedStates.includes(state))
 
+    stage = 'revoke-consent'
     await consent.uncheck()
     await page.waitForFunction((selector) => document.querySelector(selector)?.getAttribute('data-home-orb-state') === 'privacy', ownerSelector)
     record.privacyState = await owner.getAttribute('data-home-orb-state')
@@ -309,6 +316,7 @@ async function captureOrbLifecycle({ reducedMotion = 'no-preference' } = {}) {
     record.screenshotBytes = screenshot.length
     record.screenshotSha256 = createHash('sha256').update(screenshot).digest('hex')
 
+    stage = 'close-companion'
     await page.keyboard.press('Escape')
     await page.waitForFunction((selector) => document.querySelector(selector)?.getAttribute('data-home-orb-state') === 'idle', ownerSelector)
     record.closedState = await owner.getAttribute('data-home-orb-state')
@@ -332,6 +340,13 @@ async function captureOrbLifecycle({ reducedMotion = 'no-preference' } = {}) {
       && pageErrors.length === 0
   } catch (error) {
     record.error = String(error)
+    record.failedStage = stage
+    record.observedStates = await page.evaluate(() => window.__uraiObservedOrbStates || []).catch(() => [])
+    record.ownerState = await page.locator(ownerSelector).getAttribute('data-home-orb-state').catch(() => null)
+    record.ownerClip = await page.locator(ownerSelector).getAttribute('data-home-orb-clip').catch(() => null)
+    record.errorStack = error instanceof Error ? error.stack : null
+    record.failureScreenshot = `${id}-failure-${exactHead.slice(0, 12)}.png`
+    await page.screenshot({ path: path.join(outputDir, record.failureScreenshot), timeout: 30_000 }).catch(() => {})
   } finally {
     receipt.captures.push(record)
     if (!record.passed) receipt.errors.push(record)
