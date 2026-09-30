@@ -8,10 +8,37 @@ import test from 'node:test'
 const validator = new URL('../../scripts/validate-interpretive-world-receipt.mjs', import.meta.url)
 const pendingReceipt = new URL('../../operations/captured-reality/worlds/URAI-IW-001-QUIET-RESET/reconstruction-receipt.pending.json', import.meta.url)
 
+function acceptedVisualReceipt(receipt) {
+  const generation = receipt.generation
+  return {
+    schemaVersion: 'urai-interpretive-world-visual-acceptance-1',
+    worldId: receipt.worldId,
+    truthClass: 'interpretive',
+    autobiographical: false,
+    classification: 'ACCEPTED',
+    review: {
+      overallAccepted: true,
+      geometryConsistencyAccepted: true,
+      reviewer: receipt.visual.reviewer ?? 'independent-reviewer',
+      reviewedAt: receipt.visual.reviewedAt ?? '2026-09-30T00:00:00Z',
+      notes: 'Unit fixture for accepted visual-review binding.',
+    },
+    items: [
+      { role: 'hero', id: 'H00', taskId: generation.heroTaskId, status: 'accepted', notes: '' },
+      ...generation.anchorTaskIds.map((taskId, index) => ({ role: 'anchor', id: `A0${index + 1}`, taskId, status: 'accepted', notes: '' })),
+      ...generation.surveyTaskIds.map((taskId, index) => ({ role: 'survey', id: `S${String(index + 1).padStart(2, '0')}`, taskId, status: 'accepted', notes: '' })),
+    ],
+    allowedClaim: 'Visual accepted for interpretive reconstruction input.',
+  }
+}
+
 function run(receipt) {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'urai-iw-receipt-'))
   const file = path.join(dir, 'receipt.json')
   fs.writeFileSync(file, JSON.stringify(receipt))
+  if (receipt.visual?.literalAcceptance === true && typeof receipt.visual?.receiptRef === 'string') {
+    fs.writeFileSync(path.join(dir, receipt.visual.receiptRef), JSON.stringify(acceptedVisualReceipt(receipt)))
+  }
   const result = spawnSync(process.execPath, [validator.pathname, file], { encoding: 'utf8' })
   fs.rmSync(dir, { recursive: true, force: true })
   return result
