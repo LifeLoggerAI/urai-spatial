@@ -163,7 +163,7 @@ function Current({ points, color, opacity = 0.4, width = 0.014 }: { points: Poin
   return (
     <mesh>
       <tubeGeometry args={[path, 72, width, 10, false]} />
-      <meshStandardMaterial color={color} emissive={color} emissiveIntensity={1.2} transparent opacity={opacity} depthWrite={false} blending={THREE.AdditiveBlending} />
+      <meshStandardMaterial color={color} emissive={color} emissiveIntensity={0.5} transparent opacity={Math.min(opacity, 0.055)} depthWrite={false} blending={THREE.AdditiveBlending} />
     </mesh>
   );
 }
@@ -387,16 +387,16 @@ function AuthoredMemoryStar({ aura, active, scale = 1, rotation = [0, 0, 0], cli
       }}
     >
       <primitive object={model} visible={false} />
-      <mesh name="memory-star-photosphere" castShadow={false} scale={active ? 1.16 : 1.05}>
+      <mesh name="memory-star-photosphere" castShadow={false} scale={active ? 1.22 : 1.18}>
         <sphereGeometry args={[0.38, 72, 56]} />
         <primitive object={photosphere} attach="material" />
       </mesh>
-      <mesh name="memory-star-inner-corona" scale={active ? 1.34 : 1.22} raycast={() => null}>
+      <mesh name="memory-star-inner-corona" scale={active ? 1.55 : 1.40} raycast={() => null}>
         <sphereGeometry args={[0.38, 56, 40]} />
         <meshBasicMaterial
           color="#fff0c2"
           transparent
-          opacity={active ? 0.18 : 0.095}
+          opacity={active ? 0.10 : 0.07}
           blending={THREE.AdditiveBlending}
           depthWrite={false}
           toneMapped={false}
@@ -408,7 +408,7 @@ function AuthoredMemoryStar({ aura, active, scale = 1, rotation = [0, 0, 0], cli
         <meshBasicMaterial
           color={aura}
           transparent
-          opacity={active ? 0.075 : 0.038}
+          opacity={active ? 0.032 : 0.025}
           blending={THREE.AdditiveBlending}
           depthWrite={false}
           toneMapped={false}
@@ -629,7 +629,8 @@ function SemanticPath({ source, target, active, reducedMotion, index }: { source
   const color = LIFE_MAP_PATH_PALETTE[kind];
   return (
     <group>
-      <Line points={curve.getPoints(48)} color={color} lineWidth={active ? 1.35 : 0.62} transparent opacity={kind === "protected" ? 0.08 : active ? 0.7 : 0.23} dashed={kind === "inferred" || kind === "corrected" || kind === "protected"} />
+      {/* Relationships remain discoverable, but should not own the composition as bright dashboard edges. */}
+      <Line points={curve.getPoints(48)} color={color} lineWidth={active ? 0.72 : 0.3} transparent opacity={kind === "protected" ? 0.035 : active ? 0.22 : 0.045} dashed={kind === "inferred" || kind === "corrected" || kind === "protected"} />
       {active && kind !== "protected" ? <PathPulse curve={curve} color={color} reducedMotion={reducedMotion} offset={(index * 0.19) % 1} /> : null}
     </group>
   );
@@ -684,7 +685,7 @@ function SelectedMemoryArrival({ selected, phase, reducedMotion }: { selected: L
       }}
       position={selected.position}
     >
-      <AuthoredMemoryStar aura={selected.aura} active scale={1.56} clip="MemoryStar_Focus" />
+      <AuthoredMemoryStar aura={selected.aura} active scale={1.84} clip="MemoryStar_Focus" />
       <FieldParticles seed={996} count={160} radius={5.4} depth={8.2} height={7.6} color={selected.aura} opacity={0.42} size={0.065} />
       <Sparkles count={72} scale={[8.4, 7.2, 8.4]} size={2.15} speed={reducedMotion ? 0 : 0.07} opacity={0.34} color={ICE} />
       <pointLight color={selected.aura} intensity={9} distance={26} decay={2} />
@@ -743,7 +744,8 @@ export function LifeMapProductionWorld({ nodes, selected, phase, profile, onSele
           <FieldParticles seed={1220} count={profile.tier === "low" ? 120 : 320} radius={42} depth={70} height={32} color={VIOLET} opacity={0.16} size={0.065} />
         </group>
         <group name="life-map-temporal-horizon">
-          <Current points={[[-28, 8, -42], [-12, 10, -48], [0, 7, -54], [13, 11, -48], [28, 8, -42]]} color={CYAN} opacity={0.08} width={0.18} />
+          <FieldParticles seed={1441} count={profile.tier === "low" ? 180 : 520} radius={54} depth={24} height={7.5} color="#bfdfff" opacity={0.22} size={0.042} />
+          <FieldParticles seed={1771} count={profile.tier === "low" ? 90 : 260} radius={35} depth={11} height={3.4} color={VIOLET} opacity={0.24} size={0.058} />
         </group>
         <EmotionalTerrain reducedMotion={profile.reducedMotion} selected={Boolean(selected)} />
         <group name="life-map-world-stage" scale={stageScale} position={stagePosition}>

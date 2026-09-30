@@ -1,7 +1,7 @@
 'use client'
 
 import { Canvas, useFrame, useThree, type ThreeEvent } from '@react-three/fiber'
-import { ContactShadows, Environment, Lightformer, RoundedBox, Sparkles, Stars, useAnimations, useGLTF } from '@react-three/drei'
+import { ContactShadows, Environment, Lightformer, Sparkles, Stars, useAnimations, useGLTF } from '@react-three/drei'
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type MutableRefObject } from 'react'
 import * as THREE from 'three'
 import { resolveOrbSensoryOutput, URAI_ORB_STATE_EVENT, type OrbState, type OrbStateEventDetail } from '@/app/home/orbStateController'
@@ -529,35 +529,11 @@ function ArchitecturalPracticals() {
 }
 
 function SanctuaryLivingArchitecture() {
-  const stone = <meshPhysicalMaterial color="#4b514d" roughness={0.84} metalness={0.015} clearcoat={0.035} clearcoatRoughness={0.9} envMapIntensity={0.74} />
-  const timber = <meshPhysicalMaterial color="#38291f" roughness={0.66} metalness={0.01} clearcoat={0.08} clearcoatRoughness={0.7} envMapIntensity={0.58} />
-  return <group name="home-inhabited-open-sanctuary" userData={{ treatment: 'open-air-inhabited-real-materials', ceiling: false }}>
-    <group position={[-5.65,0.02,-1.15]} rotation={[0,0.08,0]}>
-      <RoundedBox args={[0.46,2.3,8.8]} radius={0.09} smoothness={5} position={[0,1.05,0]} castShadow receiveShadow>{stone}</RoundedBox>
-      <RoundedBox args={[1.95,0.24,0.7]} radius={0.08} smoothness={5} position={[1.45,0.44,2.2]} castShadow receiveShadow>{timber}</RoundedBox>
-      <RoundedBox args={[1.72,0.16,0.58]} radius={0.07} smoothness={5} position={[1.45,0.92,2.2]} castShadow receiveShadow>{timber}</RoundedBox>
-      <RoundedBox args={[2.0,0.38,1.1]} radius={0.12} smoothness={5} position={[1.1,0.2,-2.15]} castShadow receiveShadow>
-        <meshPhysicalMaterial color="#292f2b" roughness={0.92} metalness={0.01} envMapIntensity={0.5} />
-      </RoundedBox>
-    </group>
-    <group position={[5.65,0.02,-1.15]} rotation={[0,-0.08,0]}>
-      <RoundedBox args={[0.46,2.3,8.8]} radius={0.09} smoothness={5} position={[0,1.05,0]} castShadow receiveShadow>{stone}</RoundedBox>
-      <RoundedBox args={[1.95,0.24,0.7]} radius={0.08} smoothness={5} position={[-1.45,0.44,2.2]} castShadow receiveShadow>{timber}</RoundedBox>
-      <RoundedBox args={[1.72,0.16,0.58]} radius={0.07} smoothness={5} position={[-1.45,0.92,2.2]} castShadow receiveShadow>{timber}</RoundedBox>
-      <RoundedBox args={[2.0,0.38,1.1]} radius={0.12} smoothness={5} position={[-1.1,0.2,-2.15]} castShadow receiveShadow>
-        <meshPhysicalMaterial color="#292f2b" roughness={0.92} metalness={0.01} envMapIntensity={0.5} />
-      </RoundedBox>
-    </group>
-    <RoundedBox args={[5.2,0.12,1.45]} radius={0.08} smoothness={5} position={[0,0.08,3.25]} receiveShadow>
-      <meshPhysicalMaterial color="#5b5143" roughness={0.76} metalness={0.01} clearcoat={0.045} clearcoatRoughness={0.82} envMapIntensity={0.64} />
-    </RoundedBox>
-    <mesh position={[0,0.155,3.25]} rotation={[-Math.PI/2,0,0]} receiveShadow>
-      <planeGeometry args={[4.7,1.02]} />
-      <meshPhysicalMaterial color="#9b8061" roughness={0.82} metalness={0} clearcoat={0.02} />
-    </mesh>
-    <pointLight position={[-4.7,1.45,1.3]} color="#e8b878" intensity={0.62} distance={7} decay={2} />
-    <pointLight position={[4.7,1.45,1.3]} color="#e8b878" intensity={0.62} distance={7} decay={2} />
-  </group>
+  // The sanctuary is an open, inhabited clearing. The prior symmetric block walls,
+  // benches, and raised slab made the first read a game lobby rather than a place.
+  // Authored vegetation, masonry and practical lanterns supply the human trace without
+  // introducing a ceiling, architecture corridor, or competing focal object.
+  return <group name="home-inhabited-open-sanctuary" userData={{ treatment: 'open-air-inhabited-natural-clearing', ceiling: false }} />
 }
 
 function MountainRange() {
@@ -706,15 +682,9 @@ function SacredOrb({ state, reducedMotion, onOpen }: { state: OrbState; reducedM
   </group>
 }
 function OrbPlatform() {
-  const pack = useFlagstoneTexturePack(1.7, 49)
-  const platform = useMemo(() => makeIrregularShape(1.08, 29, 72), [])
-  return <group name="home-sanctuary-pavilion" position={[0,0,-2.65]} userData={{ visualOwner: 'grounded-natural-sanctuary-v12' }}>
-    <mesh position={[0,0.2,0]} rotation={[Math.PI/2,0,0]} castShadow receiveShadow>
-      <extrudeGeometry args={[platform,{depth:0.14,bevelEnabled:true,bevelSize:0.05,bevelThickness:0.04,bevelSegments:3,curveSegments:3}]} />
-      <FlagstoneMaterial pack={pack} tint="#777b73" bumpScale={0.09} />
-    </mesh>
-    <mesh position={[0,0.225,0]} rotation={[Math.PI/2,0,0]}><torusGeometry args={[0.74,0.008,8,96]} /><meshStandardMaterial color="#b8a57b" emissive="#665334" emissiveIntensity={0.05} metalness={0.14} roughness={0.76} /></mesh>
-  </group>
+  // Keep the authored companion grounded in the clearing. A raised flagstone dais and
+  // torus read as a portal altar in retained pixels and contradict the material-led Orb.
+  return <group name="home-sanctuary-pavilion" position={[0,0,-2.65]} userData={{ visualOwner: 'grounded-natural-sanctuary-v13', treatment: 'level-natural-clearing-no-pedestal-or-ring' }} />
 }
 
 function HumanPresence({ root }: { root: MutableRefObject<THREE.Group | null> }) {
@@ -801,7 +771,9 @@ function PlayerRig({ input, yaw, pitch, target, avatar, onNearby, transition, re
     started.current=null
     issued.current=false
     if(lastTransitionSequence.current!=='idle'){lastTransitionSequence.current='idle';onTransitionSequence('idle')}
-    stepEmbodiedMotion({delta,input,yaw:yaw.current,position:pos.current,velocity:velocity.current,target,bounds:BOUNDS,speed:2.7,acceleration:8,deceleration:11})
+    // The real threshold is intentionally deep in the sanctuary. Keep it reachable
+    // with bounded keyboard and touch travel even when a device renders sparse frames.
+    stepEmbodiedMotion({delta,input,yaw:yaw.current,position:pos.current,velocity:velocity.current,target,bounds:BOUNDS,speed:reducedMotion?3.1:4.2,acceleration:10,deceleration:13})
     if(avatar.current){avatar.current.position.copy(pos.current);avatar.current.rotation.y=yaw.current+Math.PI}
     const portrait=size.height>size.width
     const backDistance=portrait?0.14:0.24
