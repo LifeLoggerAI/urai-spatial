@@ -178,6 +178,8 @@ function FieldParticles({ seed, count, radius, depth, height, color, opacity = 0
   opacity?: number;
   size?: number;
 }) {
+  const viewport = useThree((state) => state.size);
+  const gl = useThree((state) => state.gl);
   const geometry = useMemo(() => {
     const positions = new Float32Array(count * 3);
     for (let index = 0; index < count; index += 1) {
@@ -191,10 +193,45 @@ function FieldParticles({ seed, count, radius, depth, height, color, opacity = 0
     next.setAttribute("position", new THREE.BufferAttribute(positions, 3));
     return next;
   }, [count, depth, height, radius, seed]);
+  const stellarPoints = useMemo(() => new THREE.ShaderMaterial({
+    uniforms: {
+      uColor: { value: new THREE.Color(color) },
+      uOpacity: { value: opacity },
+      uPointScale: { value: 1 },
+    },
+    transparent: true,
+    depthWrite: false,
+    blending: THREE.AdditiveBlending,
+    toneMapped: false,
+    vertexShader: `
+      uniform float uPointScale;
+      void main() {
+        vec4 viewPosition = modelViewMatrix * vec4(position, 1.0);
+        gl_Position = projectionMatrix * viewPosition;
+        gl_PointSize = clamp(uPointScale / max(0.2, -viewPosition.z), 1.0, 24.0);
+      }
+    `,
+    fragmentShader: `
+      uniform vec3 uColor;
+      uniform float uOpacity;
+      void main() {
+        float radius = length(gl_PointCoord - vec2(0.5)) * 2.0;
+        if (radius > 1.0) discard;
+        float core = exp(-radius * radius * 18.0);
+        float corona = exp(-radius * radius * 4.5) * (1.0 - smoothstep(0.7, 1.0, radius));
+        gl_FragColor = vec4(mix(uColor, vec3(1.0), core * 0.28), (core + corona * 0.35) * uOpacity);
+        #include <colorspace_fragment>
+      }
+    `,
+  }), [color, opacity]);
+  useEffect(() => {
+    stellarPoints.uniforms.uPointScale.value = size * viewport.height * gl.getPixelRatio();
+  }, [gl, size, stellarPoints, viewport.height]);
   useEffect(() => () => geometry.dispose(), [geometry]);
+  useEffect(() => () => stellarPoints.dispose(), [stellarPoints]);
   return (
     <points geometry={geometry}>
-      <pointsMaterial color={color} size={size} sizeAttenuation transparent opacity={opacity} depthWrite={false} blending={THREE.AdditiveBlending} toneMapped={false} />
+      <primitive object={stellarPoints} attach="material" />
     </points>
   );
 }
@@ -446,7 +483,7 @@ function LifeCore({ hidden, reducedMotion, tier }: { hidden: boolean; reducedMot
   });
   return (
     <group ref={root} name="life-map-white-gold-life-core" position={LIFE_MAP_CORE_POSITION} visible={!hidden}>
-      <AuthoredMemoryStar aura={GOLD} active scale={1.82} clip="MemoryStar_Focus" />
+      <FieldParticles seed={203} count={tier === "low" ? 90 : 240} radius={3.2} depth={7.6} height={3.6} color={GOLD} opacity={0.72} size={0.085} />
       <FieldParticles seed={204} count={tier === "low" ? 68 : 168} radius={8.6} depth={9.4} height={5.8} color={GOLD} opacity={0.34} size={0.042} />
       <Sparkles count={tier === "low" ? 26 : 58} scale={[8, 6, 8]} size={2.4} speed={reducedMotion ? 0 : 0.12} opacity={0.6} color={GOLD} />
       <pointLight color={GOLD} intensity={tier === "low" ? 9 : 18} distance={34} decay={2} />
@@ -457,7 +494,7 @@ function LifeCore({ hidden, reducedMotion, tier }: { hidden: boolean; reducedMot
 function ChapterAnchor({ aura, index }: { aura: string; index: number }) {
   return (
     <group rotation={[index * 0.18, index * 0.33, index * 0.11]}>
-      <AuthoredMemoryStar aura={aura} active={false} scale={0.82 + index * 0.035} />
+      <FieldParticles seed={index * 59 + 6} count={72} radius={1.4} depth={4.8} height={1.9} color={aura} opacity={0.7} size={0.075} />
       <FieldParticles seed={index * 59 + 7} count={32} radius={2.9} depth={3.9} height={2.5} color={aura} opacity={0.42} size={0.05} />
     </group>
   );
