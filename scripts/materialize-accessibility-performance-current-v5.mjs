@@ -125,7 +125,7 @@ const directButtonTargets = [
 let embodiedOutput = embodiedInput
 for (const line of directButtonTargets) {
   if (embodiedOutput.split(line).length - 1 !== 1) throw new Error(`Home direct destination readiness contract changed: ${line}`)
-  embodiedOutput = embodiedOutput.replace(line, line.replace('toBeVisible()', 'toBeVisible({ timeout: 30_000 })'))
+  embodiedOutput = embodiedOutput.replace(line, line.replace(line.includes('Open Ground directly') ? "getByRole('button'" : '__no_role_change__', "getByRole('link'").replace('toBeVisible()', 'toBeVisible({ timeout: 30_000 })'))
 }
 const lifeMapButtonTarget = "    await expect(direct.getByRole('button', { name: 'Open Life Map directly' })).toBeVisible()"
 const lifeMapLinkTarget = "    await expect(direct.getByRole('link', { name: 'Open Life Map directly' })).toBeVisible({ timeout: 30_000 })"
@@ -138,7 +138,7 @@ if (embodiedOutput.split(countTarget).length - 1 !== 1) throw new Error('Home se
 embodiedOutput = embodiedOutput.replace(countTarget, countCurrent)
 
 const loopTarget = "      const target = direct.getByRole('button', { name })"
-const loopCurrent = "      const target = direct.getByRole(name.source.includes('Life Map') ? 'link' : 'button', { name })"
+const loopCurrent = "      const target = direct.getByRole(name.source.includes('Orb') ? 'button' : 'link', { name })"
 if (embodiedOutput.split(loopTarget).length - 1 !== 1) throw new Error('Home semantic destination focus contract changed')
 embodiedOutput = embodiedOutput.replace(loopTarget, loopCurrent)
 await writeFile(embodiedPath, embodiedOutput)

@@ -16,7 +16,7 @@ test.describe('URAI visual ownership and containment evidence', () => {
     await expect(ground).toHaveAttribute('href', '/ground/?entryPortal=home-ground&cameraCheckpoint=home-ground-descent')
     await expect(lifeMap).toBeVisible()
     await expect(lifeMap).toHaveAttribute('href', '/life-map/?from=home-sky&entryPortal=home-sky&cameraCheckpoint=home-sky-ascent-complete')
-    await expect(ground).toEvaluate((node) => node instanceof HTMLAnchorElement && !node.hasAttribute('onclick'))
+    expect(await ground.evaluate((node) => node instanceof HTMLAnchorElement && !node.hasAttribute('onclick'))).toBe(true)
     await expect(navigation.getByRole('button', { name: 'Open Ground directly', exact: true })).toHaveCount(0)
     await ground.focus()
     await expect(ground).toBeFocused()

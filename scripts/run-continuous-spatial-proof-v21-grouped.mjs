@@ -131,7 +131,12 @@ await writeFile(path.join(outputDir, 'receipt.json'), \`${'${'}JSON.stringify(re
 console.log(JSON.stringify(receipt, null, 2))
 if (receipt.errors.length) process.exit(1)`
 
+const fallbackPassTarget = 'record.semanticButtons !== 2 || record.semanticLinks !== 1'
+const fallbackPassReplacement = 'record.semanticButtons !== 1 || record.semanticLinks !== 2'
+if (original.split(fallbackPassTarget).length - 1 !== 1) throw new Error('Home fallback native-link contract changed')
+
 const patchedPrefix = original
+  .replace(fallbackPassTarget, fallbackPassReplacement)
   .replace(openTarget, openReplacement)
   .replace(receiptTarget, receiptReplacement)
   .replace(canvasRectTarget, canvasRectReplacement)
