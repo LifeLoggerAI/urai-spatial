@@ -524,11 +524,45 @@ function ArchitecturalPracticals() {
 }
 
 function SanctuaryLivingArchitecture() {
-  // The sanctuary is an open, inhabited clearing. The prior symmetric block walls,
-  // benches, and raised slab made the first read a game lobby rather than a place.
-  // Authored vegetation, masonry and practical lanterns supply the human trace without
-  // introducing a ceiling, architecture corridor, or competing focal object.
-  return <group name="home-inhabited-open-sanctuary" userData={{ treatment: 'open-air-inhabited-natural-clearing', ceiling: false }} />
+  // Keep the sky dominant and the center traversal open, but make the clearing read as
+  // a place somebody actually lives in. These are low, peripheral human-scale objects:
+  // weathered timber seating, a small shared table, ceramic planters and a stone hearth.
+  // Nothing closes overhead, forms a corridor, or competes with the landscape.
+  const wood = '#4a3728'
+  const woodEdge = '#6a5037'
+  const stone = '#6b7068'
+  const ceramic = '#8d7358'
+  return <group
+    name="home-inhabited-open-sanctuary"
+    userData={{ treatment: 'open-air-inhabited-natural-clearing-with-human-trace', ceiling: false, skyDominant: true }}
+  >
+    <group name="home-lived-in-seating-left" position={[-4.45,0.18,-3.9]} rotation={[0,0.34,0]}>
+      <mesh castShadow receiveShadow position={[0,0.42,0]}><boxGeometry args={[2.45,0.18,0.58]} /><meshStandardMaterial color={wood} roughness={0.88} metalness={0} /></mesh>
+      <mesh castShadow position={[-0.92,0.2,0]}><boxGeometry args={[0.14,0.42,0.46]} /><meshStandardMaterial color={woodEdge} roughness={0.9} /></mesh>
+      <mesh castShadow position={[0.92,0.2,0]}><boxGeometry args={[0.14,0.42,0.46]} /><meshStandardMaterial color={woodEdge} roughness={0.9} /></mesh>
+      <mesh castShadow position={[0,0.78,0.24]} rotation={[-0.12,0,0]}><boxGeometry args={[2.38,0.62,0.12]} /><meshStandardMaterial color={wood} roughness={0.9} /></mesh>
+    </group>
+    <group name="home-lived-in-seating-right" position={[4.65,0.18,-4.65]} rotation={[0,-0.3,0]}>
+      <mesh castShadow receiveShadow position={[0,0.42,0]}><boxGeometry args={[2.2,0.18,0.56]} /><meshStandardMaterial color={wood} roughness={0.88} metalness={0} /></mesh>
+      <mesh castShadow position={[-0.82,0.2,0]}><boxGeometry args={[0.14,0.42,0.44]} /><meshStandardMaterial color={woodEdge} roughness={0.9} /></mesh>
+      <mesh castShadow position={[0.82,0.2,0]}><boxGeometry args={[0.14,0.42,0.44]} /><meshStandardMaterial color={woodEdge} roughness={0.9} /></mesh>
+      <mesh castShadow position={[0,0.76,0.23]} rotation={[-0.12,0,0]}><boxGeometry args={[2.12,0.58,0.12]} /><meshStandardMaterial color={wood} roughness={0.9} /></mesh>
+    </group>
+    <group name="home-shared-side-table" position={[-2.72,0.16,-4.9]}>
+      <mesh castShadow receiveShadow position={[0,0.48,0]}><cylinderGeometry args={[0.62,0.68,0.14,28]} /><meshStandardMaterial color={woodEdge} roughness={0.86} /></mesh>
+      <mesh castShadow position={[0,0.24,0]}><cylinderGeometry args={[0.12,0.18,0.48,18]} /><meshStandardMaterial color={wood} roughness={0.9} /></mesh>
+      <mesh castShadow position={[0.2,0.62,-0.08]}><cylinderGeometry args={[0.1,0.13,0.22,18]} /><meshStandardMaterial color={ceramic} roughness={0.92} /></mesh>
+    </group>
+    <group name="home-stone-hearth" position={[2.75,0.08,-5.6]}>
+      <mesh castShadow receiveShadow><cylinderGeometry args={[0.68,0.82,0.22,18]} /><meshStandardMaterial color={stone} roughness={0.98} /></mesh>
+      <mesh position={[0,0.16,0]}><cylinderGeometry args={[0.44,0.46,0.08,20]} /><meshStandardMaterial color="#302d28" roughness={1} /></mesh>
+      <pointLight position={[0,0.55,0]} color="#d88d55" intensity={0.22} distance={3.2} decay={2} />
+    </group>
+    <group name="home-ceramic-planters">
+      <mesh castShadow receiveShadow position={[-5.8,0.3,-2.15]}><cylinderGeometry args={[0.34,0.26,0.58,20]} /><meshStandardMaterial color={ceramic} roughness={0.96} /></mesh>
+      <mesh castShadow receiveShadow position={[5.7,0.28,-2.45]}><cylinderGeometry args={[0.32,0.25,0.54,20]} /><meshStandardMaterial color="#6e604f" roughness={0.96} /></mesh>
+    </group>
+  </group>
 }
 
 function MountainRange() {
