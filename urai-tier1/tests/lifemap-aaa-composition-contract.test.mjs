@@ -102,6 +102,13 @@ test('overview composition is opaque, authored, and independently framed for por
   const chapterTerritories = sliceBetween(world, 'function ChapterTerritories', 'function ForegroundObservatory')
   assert.match(chapterAnchor, /<AuthoredMemoryStar aura=\{aura\}/)
   assert.match(chapterTerritories, /<ChapterAnchor aura=\{chapter\.aura\} index=\{index\} \/>/)
+  const artifact = sliceBetween(world, 'function MemoryArtifact', 'function PathPulse')
+  assert.match(artifact, /const overviewAnchor = active \|\| selected !== null \|\| index % 3 === 0 \|\| importance >= 0\.82/)
+  assert.match(artifact, /overviewAnchor \? <ArtifactShape node=\{node\} active=\{active\} \/> : <FieldParticles/)
+  const galaxy = sliceBetween(world, 'function GalaxyDepth', 'export function LifeMapProductionWorld')
+  assert.match(galaxy, /2480/)
+  assert.match(galaxy, /980/)
+  assert.match(galaxy, /340/)
 })
 
 test('visual repair preserves adaptive performance and evidence budgets', () => {
