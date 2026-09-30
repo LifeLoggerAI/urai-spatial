@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import { governedWorkflowIsManualOnly } from './governed-workflow-trigger.mjs'
 import { existsSync, readFileSync, readdirSync } from 'node:fs'
 import path from 'node:path'
 
@@ -112,11 +113,7 @@ requireAll('Governed WIF production workflow', governedDeployWorkflow, [
   'DEPLOY_URAI_APP',
 ])
 
-const governedTriggerMatch = governedDeployWorkflow.match(/^on:\s*\n([\s\S]*?)^permissions\s*:/m)
-const governedTrigger = governedTriggerMatch?.[1] ?? ''
-if (!governedTriggerMatch) failures.push('Governed WIF production workflow trigger block could not be parsed')
-if (/^\s*(pull_request|push)\s*:/m.test(governedTrigger)) failures.push('Governed WIF production workflow must be manual-only')
-if (!/^\s*workflow_dispatch\s*:/m.test(governedTrigger)) failures.push('Governed WIF production workflow must require workflow_dispatch')
+if (!governedWorkflowIsManualOnly(governedDeployWorkflow)) failures.push('Governed WIF production workflow must declare only the top-level workflow_dispatch event')
 if (/\bsecrets\s*\./.test(governedDeployWorkflow)) failures.push('Governed WIF production workflow must not reference repository secrets')
 if (/FIREBASE_SERVICE_ACCOUNT_JSON|FIREBASE_PRIVATE_KEY|FIREBASE_CLIENT_EMAIL|FIREBASE_TOKEN/.test(governedDeployWorkflow)) {
   failures.push('Governed WIF production workflow must not reference long-lived Firebase credential material')
