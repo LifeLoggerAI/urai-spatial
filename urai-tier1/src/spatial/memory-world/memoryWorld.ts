@@ -152,6 +152,7 @@ export type MemoryWorldAsset = {
   dependencies: readonly string[]
   optimizationTier?: 'desktop' | 'mobile' | 'xr' | 'multi'
   checksum?: string
+  metadata?: Readonly<Record<string, string | number | boolean | null>>
   status: 'reference' | 'blockout' | 'bronze' | 'silver' | 'gold' | 'gold-master'
 }
 
