@@ -89,7 +89,12 @@ test('Founder runner retains one explicit 3x high-resolution proof while the int
   assert.match(runner, /desktop-overview-high-resolution/)
   assert.match(runner, /highResolution\.signal\.width < 4320/)
   assert.match(runner, /highResolution\.signal\.height < 2700/)
-  assert.match(runner, /highResolution\.screenshot\.bytes < 1_000_000/)
+  assert.match(runner, /highResolution\.screenshot\.bytes < 250_000/)
+  assert.match(runner, /highResolution\.signal\.source !== 'retained-png'/)
+  assert.match(runner, /highResolution\.signal\.sampleCount !== 3456/)
+  assert.match(runner, /highResolution\.signal\.sampling !== 'distributed-grid-24x16-3x3'/)
+  assert.match(runner, /highResolution\.signal\.variance >= 0 && highResolution\.signal\.variance < 8/)
+  assert.match(runner, /highResolution\.signal\.nonDarkRatio >= 0 && highResolution\.signal\.nonDarkRatio <= 0/)
 })
 
 test('Founder runner validates retained PNG evidence with the distributed acceptance method', () => {
