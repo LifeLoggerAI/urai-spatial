@@ -7,7 +7,7 @@ import { buildBoundedTemplateMemoryWorld } from '@/spatial/memory-world/template
 import MemoryWorldRuntime from '@/spatial/memory-world/MemoryWorldRuntime'
 import { MemoryWorldAuthoringTools } from '@/spatial/memory-world/MemoryWorldAuthoringTools'
 import type { MemoryWorld } from '@/spatial/memory-world/memoryWorld'
-import { requestUraiWorldReturn } from '@/spatial/world/worldEvents'
+import { memoryWorldReplayReturnHref } from '@/spatial/memory-world/memoryWorldReplay'
 
 export default function MemoryWorldRouteClient() {
   const router = useRouter()
@@ -17,9 +17,20 @@ export default function MemoryWorldRouteClient() {
   const [world, setWorld] = useState<MemoryWorld | null>(baseWorld)
   useEffect(() => { setWorld(baseWorld) }, [baseWorld?.worldId])
   const exit = useCallback(() => {
-    requestUraiWorldReturn()
-    if (window.history.length <= 1) router.push('/replay')
-  }, [router])
+    router.push(memory ? memoryWorldReplayReturnHref(memory) : '/replay')
+  }, [memory, router])
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.defaultPrevented || event.key !== 'Escape') return
+      const target = event.target
+      if (target instanceof HTMLElement && (target.isContentEditable || target.matches('input,textarea,select,[role="textbox"]'))) return
+      event.preventDefault()
+      event.stopPropagation()
+      exit()
+    }
+    window.addEventListener('keydown', onKeyDown, true)
+    return () => window.removeEventListener('keydown', onKeyDown, true)
+  }, [exit])
 
   if (!world) {
     return <main data-testid="memory-world-route" data-memory-world-state={result.status} style={{minHeight:'100svh',display:'grid',placeItems:'center',padding:24,background:'#05070b',color:'#fff'}}><section><h1>Memory World</h1><p>{result.message}</p><button type="button" onClick={exit}>Return to Replay</button></section></main>

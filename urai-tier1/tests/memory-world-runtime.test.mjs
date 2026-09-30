@@ -4,8 +4,20 @@ import test from 'node:test'
 import { buildNamedExplicitDemoMemory } from '../src/spatial/memory/explicitDemoMemory.ts'
 import { buildBoundedTemplateMemoryWorld, selectBoundedTemplateArchetype } from '../src/spatial/memory-world/templateWorld.ts'
 import { buildMemoryWorldRuntimePlan } from '../src/spatial/memory-world/runtimePlan.ts'
-import { memoryWorldReplayHref } from '../src/spatial/memory-world/memoryWorldReplay.ts'
+import { memoryWorldReplayHref, memoryWorldReplayReturnHref } from '../src/spatial/memory-world/memoryWorldReplay.ts'
 import { capturedRealityMemoryWorldLayer, memoryTruthFromCapturedReality } from '../src/spatial/memory-world/capturedRealityAdapter.ts'
+
+test('explicit Replay exit preserves selected identity without depending on browser history', () => {
+  const memory = buildNamedExplicitDemoMemory('demo:exit-continuity')
+  const url = new URL(memoryWorldReplayReturnHref(memory), 'https://example.test')
+  assert.equal(url.pathname, '/replay')
+  assert.equal(url.searchParams.get('memoryId'), memory.id)
+  assert.equal(url.searchParams.get('manifestId'), memory.replayManifest.id)
+  assert.equal(url.searchParams.get('node'), memory.star.id)
+  assert.equal(url.searchParams.get('returnNode'), memory.star.id)
+  assert.equal(url.searchParams.get('demo'), '1')
+  assert.equal(new URL(memoryWorldReplayReturnHref({ ...memory, demo: false }), 'https://example.test').searchParams.has('demo'), false)
+})
 
 test('bounded template world never promotes contextual geometry to autobiography', () => {
   const memory = buildNamedExplicitDemoMemory('demo:quiet-reset')

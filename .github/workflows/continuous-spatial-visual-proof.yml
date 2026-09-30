@@ -12,6 +12,7 @@ on:
     paths:
       - '.github/workflows/continuous-spatial-visual-proof.yml'
       - 'scripts/capture-continuous-spatial-proof-v18.mjs'
+      - 'scripts/capture-memory-world-runtime-proof.mjs'
       - 'scripts/run-continuous-spatial-proof-v18-stable.mjs'
       - 'scripts/run-continuous-spatial-proof-v18-portal-stable.mjs'
       - 'scripts/run-continuous-spatial-proof-v19-portal-stable.mjs'
@@ -97,6 +98,7 @@ jobs:
           pnpm --dir urai-tier1 exec playwright --version
           node --check scripts/run-with-ci-webgl.mjs
           node --check scripts/run-continuous-spatial-proof-v22-natural.mjs
+          node --check scripts/capture-memory-world-runtime-proof.mjs
 
       - name: Capture bounded spatial proof group
         shell: bash
@@ -118,6 +120,11 @@ jobs:
           URAI_PROOF_GROUP="$URAI_PROOF_GROUP" \
           URAI_PROOF_RECORD_VIDEO="$URAI_PROOF_RECORD_VIDEO" \
             node scripts/run-with-ci-webgl.mjs scripts/run-continuous-spatial-proof-v22-natural.mjs 2>&1 | tee "$output/capture.log"
+          if [ "$URAI_PROOF_GROUP" = 'portal-fallback' ]; then
+            URAI_PROOF_BASE=http://127.0.0.1:4173 \
+            URAI_PROOF_DIR="$output/memory-world" \
+              node scripts/run-with-ci-webgl.mjs scripts/capture-memory-world-runtime-proof.mjs 2>&1 | tee "$output/memory-world-capture.log"
+          fi
 
       - name: Prove complete group receipt
         shell: bash
