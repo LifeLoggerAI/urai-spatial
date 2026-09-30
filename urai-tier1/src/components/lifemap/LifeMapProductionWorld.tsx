@@ -163,7 +163,7 @@ function Current({ points, color, opacity = 0.4, width = 0.014 }: { points: Poin
   return (
     <mesh>
       <tubeGeometry args={[path, 72, width, 10, false]} />
-      <meshStandardMaterial color={color} emissive={color} emissiveIntensity={1.2} transparent opacity={opacity} depthWrite={false} blending={THREE.AdditiveBlending} />
+      <meshStandardMaterial color={color} emissive={color} emissiveIntensity={0.5} transparent opacity={Math.min(opacity, 0.055)} depthWrite={false} blending={THREE.AdditiveBlending} />
     </mesh>
   );
 }
