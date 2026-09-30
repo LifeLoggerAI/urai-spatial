@@ -46,7 +46,9 @@ const ROTATIONS: [number, number, number][] = [
   [0, 2.65, 0],
 ]
 
-type CouncilHumanPerformance = CouncilConversationPerformance | 'idle'\n\nconst COUNCIL_BOUNDS = { minX: -5.2, maxX: 5.2, minZ: -4.6, maxZ: 6.2 }
+type CouncilHumanPerformance = CouncilConversationPerformance | 'idle'
+
+const COUNCIL_BOUNDS = { minX: -5.2, maxX: 5.2, minZ: -4.6, maxZ: 6.2 }
 const COUNCIL_OBSTACLES = [
   { x: 0, z: -0.9, radius: 1.75 },
   ...POSITIONS.map(([x, , z]) => ({ x, z, radius: 0.42 })),
@@ -182,7 +184,8 @@ function RiggedCouncilHuman({
 
 function CouncilStage() {
   const [selected, setSelected] = useState(0)
-  const [dragging, setDragging] = useState(false)\n  const [performance, setPerformance] = useState<CouncilHumanPerformance>('listening')
+  const [dragging, setDragging] = useState(false)
+  const [performance, setPerformance] = useState<CouncilHumanPerformance>('listening')
   const selectedAgent = COUNCIL_AGENTS[selected] ?? COUNCIL_AGENTS[0]
   const reducedMotion = useReducedMotion()
   const quality = useAdaptiveSpatialQuality()
@@ -262,7 +265,9 @@ function CouncilStage() {
                 key={agent.id}
                 modelUrl={HUMAN_MODELS[index] ?? HUMAN_MODELS[0]}
                 index={index}
-                selected={selected === index}\n                performance={selected === index ? performance : 'idle'}\n                reducedMotion={reducedMotion}
+                selected={selected === index}
+                performance={selected === index ? performance : 'idle'}
+                reducedMotion={reducedMotion}
                 onSelect={() => { setSelected(index); setPerformance('listening') }}
               />
             ))}
