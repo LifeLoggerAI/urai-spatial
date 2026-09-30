@@ -199,9 +199,9 @@ function makeGroundGeometry() {
   const geometry = new THREE.PlaneGeometry(52, 64, 112, 144)
   const position = geometry.getAttribute('position')
   const colors = new Float32Array(position.count * 3)
-  const low = new THREE.Color('#63775a')
-  const high = new THREE.Color('#9aa27a')
-  const stone = new THREE.Color('#a39778')
+  const low = new THREE.Color('#bcc7ae')
+  const high = new THREE.Color('#ecedd3')
+  const stone = new THREE.Color('#dbcdb0')
   for (let index = 0; index < position.count; index += 1) {
     const x = position.getX(index)
     const z = -position.getY(index) - 4
@@ -414,7 +414,7 @@ function GroundClearing({ pack }: { pack: FlagstonePack }) {
   useEffect(() => () => terrain.dispose(), [terrain])
   return <group name="home-grounded-flagstone-clearing">
     <mesh name="home-natural-walkable-terrain" geometry={terrain} position={[0, -0.05, -4]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
-      <meshStandardMaterial color="#d5d7b4" vertexColors map={terrainPack.color} bumpMap={terrainPack.height} bumpScale={0.13} roughnessMap={terrainPack.roughness} roughness={0.94} metalness={0} envMapIntensity={0.78} />
+      <meshStandardMaterial color="#ffffff" vertexColors map={terrainPack.color} bumpMap={terrainPack.height} bumpScale={0.13} roughnessMap={terrainPack.roughness} roughness={0.94} metalness={0} envMapIntensity={0.78} />
     </mesh>
   </group>
 }
@@ -536,10 +536,10 @@ function MountainRange() {
   const far = useMemo(() => makeRidgeGeometry(128, 58, 29, 9.4), [])
   useEffect(() => () => { near.dispose(); far.dispose() }, [far, near])
   return <group name="home-distant-natural-horizon" userData={{ geometry: 'atmospheric-distant-ridges-not-primary-world-owner' }}>
-    <mesh geometry={far} position={[-10,-5.4,-78]} rotation={[-Math.PI/2,0,0]} receiveShadow>
+    <mesh geometry={far} position={[-10,1.5,-78]} rotation={[-Math.PI/2,0,0]} receiveShadow>
       <meshStandardMaterial color="#31474a" vertexColors roughness={1} metalness={0} envMapIntensity={0.18} side={THREE.DoubleSide} transparent opacity={0.54} />
     </mesh>
-    <mesh geometry={near} position={[10,-4.6,-56]} rotation={[-Math.PI/2,0,0]} receiveShadow>
+    <mesh geometry={near} position={[10,2.2,-56]} rotation={[-Math.PI/2,0,0]} receiveShadow>
       <meshStandardMaterial color="#405653" vertexColors roughness={1} metalness={0} envMapIntensity={0.24} side={THREE.DoubleSide} transparent opacity={0.62} />
     </mesh>
   </group>
