@@ -471,9 +471,9 @@ function AuthoredMasonryGarden({ source }: { source: THREE.Object3D }) {
   return <group name="home-authored-masonry-garden">{stones.map((stone, index) => stone ? <primitive key={index} object={stone} /> : null)}</group>
 }
 
-function RitualFloor({ target }: { target: MutableRefObject<THREE.Vector3 | null> }) {
+function RitualFloor({ target, reducedMotion }: { target: MutableRefObject<THREE.Vector3 | null>; reducedMotion: boolean }) {
   const sanctuary = useGLTF(SANCTUARY)
-  const retainedModel = useMemo(() => cloneSanctuary(sanctuary.scene), [sanctuary.scene])
+  const flagstone = useFlagstoneTexturePack(4.2, 31)
   const onWalk = (event: ThreeEvent<MouseEvent>) => {
     event.stopPropagation()
     if (useSceneStore.getState().inputLocked) return
@@ -486,9 +486,13 @@ function RitualFloor({ target }: { target: MutableRefObject<THREE.Vector3 | null
   return <group
     name="home-authored-terrain"
     onClick={onWalk}
-    userData={{ visualOwner: 'governed-home-entry-chamber-v1', runtimeAsset: SANCTUARY }}
+    userData={{ visualOwner: 'grounded-natural-inhabited-sanctuary-v13', runtimeAsset: SANCTUARY, sourceUse: 'authored-masonry-donor-and-governed-asset-authority' }}
   >
-    <primitive object={retainedModel} />
+    <GroundClearing pack={flagstone} />
+    <ApproachPath pack={flagstone} />
+    <SanctuaryLivingArchitecture />
+    <FernGarden reducedMotion={reducedMotion} />
+    <AuthoredMasonryGarden source={sanctuary.scene} />
     <mesh name="home-walkable-navigation-surface" position={[0, 0.28, -1.8]} rotation={[-Math.PI / 2, 0, 0]} onClick={onWalk}>
       <planeGeometry args={[21, 21]} />
       <meshBasicMaterial transparent opacity={0} depthWrite={false} colorWrite={false} />
@@ -603,7 +607,7 @@ function FernGarden({ reducedMotion }: { reducedMotion: boolean }) {
     })
     return object
   }), [fern.scene, materials])
-  return <group userData={{ reducedMotion, treatment: 'scanned-natural-perimeter-garden' }}>{plants.map((plant) => <primitive key={plant.name} object={plant} />)}</group>
+  return <group name="home-living-vegetation" userData={{ reducedMotion, treatment: 'scanned-natural-perimeter-garden' }}>{plants.map((plant) => <primitive key={plant.name} object={plant} />)}</group>
 }
 
 const SKY_VERTEX = `
@@ -846,7 +850,7 @@ function SacredScene(props:{input:MovementInput;yaw:MutableRefObject<number>;pit
     <directionalLight position={[-5,5,10]} intensity={0.54} color="#d2b27a" />
     <spotLight position={[1,11,8]} intensity={0.9} color="#f5eee0" distance={38} angle={0.5} penumbra={0.98} decay={2} castShadow />
     <ArchitecturalPracticals />
-    <RitualFloor target={props.target} />
+    <RitualFloor target={props.target} reducedMotion={props.reducedMotion} />
     <MoonAndMist reducedMotion={props.reducedMotion} />
     <OrbPlatform />
     <SacredOrb state={props.orbState} reducedMotion={props.reducedMotion} onOpen={props.onOrb} />
@@ -920,13 +924,13 @@ export function HomeWorldProductionSacred({onOrbOpen=requestUraiWorldOrbOpen,web
     else if(transition==='life-map')requestUraiWorldTravel({destination:'life-map',href:'/life-map/?from=home-sky',entryPortal:'home-sky',cameraCheckpoint:'home-sky-ascent-complete'})
   }
 
-  return <main className={`${styles.world} urai-asset-home-world`} data-urai-home-production data-urai-true-3d="true" data-home-primary-owner="asset-driven" data-home-visible-world="moonlit-sacred-tech-sanctuary" data-home-world-character="premium-cinematic-sacred-tech" data-home-physical-base="authored-obsidian-ritual-platform" data-home-visual-ownership="three-dimensional-geometry" data-home-desktop-mobile-world="same-scene" data-home-embodied-self="makehuman-v4" data-home-presence-presentation="privacy-preserving-first-person" data-home-movement="walk-keyboard-click-touch" data-home-audio="production-opus-consent-controlled" data-home-visual-grade="cinematic-pbr-v12-natural-sanctuary" data-home-pbr-environment="local-lightformer-ibl" data-home-assets-ready={ready?'true':'false'} data-home-runtime-assets="home-entry-chamber-v1.glb home-human-makehuman-v4.glb urai-orb-avatar-v1.glb portal-ring-master-v1.glb authored-sacred-tech-composite" data-home-scenery-assets="polyhaven-fern-02-geometry-v1.glb generated-terrain-pbr-v1 authored-irregular-masonry eroded-mountain-terrain" data-home-authored-regions="home-authored-terrain home-mountain-horizon home-living-vegetation home-sanctuary-pavilion home-life-map-physical-portal" data-home-nearby={nearby??'none'} data-home-portal-sequence={transitionSequence} data-home-camera-mode={transition!=='none'?transition:dragging?'look':'embodied-first-person'} data-home-scene-phase={transition==='none'?'HOME':transition.toUpperCase()} data-home-input-locked={transition!=='none'?'true':'false'} data-home-portal-lifecycle="environmental-approach-traversal-arrival" data-home-animation-owner={HOME_RUNTIME_COMPOSITION} data-home-orb-state={orbState} data-home-orb-clip={resolveOrbSensoryOutput(orbState,reducedMotion,true).animation} data-home-orb-model-clip={reducedMotion?'stopped-reduced-motion':ORB_CLIPS[orbState]} data-testid="home-visible-navigable-sanctuary-world" style={{position:'relative',overflow:'hidden',background:'#18313a'}} {...look}>
+  return <main className={`${styles.world} urai-asset-home-world`} data-urai-home-production data-urai-true-3d="true" data-home-primary-owner="asset-driven" data-home-visible-world="moonlit-natural-inhabited-sanctuary" data-home-world-character="premium-cinematic-natural-sanctuary" data-home-physical-base="grounded-flagstone-clearing" data-home-visual-ownership="three-dimensional-geometry" data-home-desktop-mobile-world="same-scene" data-home-embodied-self="makehuman-v4" data-home-presence-presentation="privacy-preserving-first-person" data-home-movement="walk-keyboard-click-touch" data-home-audio="production-opus-consent-controlled" data-home-visual-grade="cinematic-pbr-v12-natural-sanctuary" data-home-pbr-environment="local-lightformer-ibl" data-home-assets-ready={ready?'true':'false'} data-home-runtime-assets="home-entry-chamber-v1.glb home-human-makehuman-v4.glb urai-orb-avatar-v1.glb portal-ring-master-v1.glb authored-natural-sanctuary-composite" data-home-scenery-assets="polyhaven-fern-02-geometry-v1.glb generated-terrain-pbr-v1 authored-irregular-masonry eroded-mountain-terrain" data-home-authored-regions="home-authored-terrain home-mountain-horizon home-living-vegetation home-sanctuary-pavilion home-life-map-physical-portal" data-home-nearby={nearby??'none'} data-home-portal-sequence={transitionSequence} data-home-camera-mode={transition!=='none'?transition:dragging?'look':'embodied-first-person'} data-home-scene-phase={transition==='none'?'HOME':transition.toUpperCase()} data-home-input-locked={transition!=='none'?'true':'false'} data-home-portal-lifecycle="environmental-approach-traversal-arrival" data-home-animation-owner={HOME_RUNTIME_COMPOSITION} data-home-orb-state={orbState} data-home-orb-clip={resolveOrbSensoryOutput(orbState,reducedMotion,true).animation} data-home-orb-model-clip={reducedMotion?'stopped-reduced-motion':ORB_CLIPS[orbState]} data-testid="home-visible-navigable-sanctuary-world" style={{position:'relative',overflow:'hidden',background:'#18313a'}} {...look}>
     <Canvas className={styles.canvas} dpr={[1,1.35]} shadows camera={{position:[2.42,1.72,8.12],fov:43,near:0.1,far:240}} gl={{antialias:true,alpha:false,powerPreference:'high-performance'}} onCreated={({gl})=>{gl.outputColorSpace=THREE.SRGBColorSpace;gl.toneMapping=THREE.ACESFilmicToneMapping;gl.toneMappingExposure=1.28;gl.shadowMap.type=THREE.PCFSoftShadowMap;setCanvasReady(true)}}>
       <SacredScene input={input} yaw={yaw} pitch={pitch} target={target} avatar={avatar} nearby={setNearby} orbState={orbState} reducedMotion={reducedMotion} transition={transition} onOrb={openOrb} onGround={ground} onLifeMap={lifeMap} onTransitionComplete={complete} onTransitionSequence={setTransitionSequence} onReady={markSceneReady} />
     </Canvas>
     {context?<div className={`${styles.worldHint} home-world-context`} role="status" aria-live="polite">{context}</div>:null}
     {transition==='none'&&mobile?<MobileMovementPad input={input} label="Home movement controls" />:null}
-    <span className="sr-only" data-testid="urai-home-webgl-orb">The sacred-tech Orb companion is physically present in the Home sanctuary and consumes the final authored Orb GLB.</span>
+    <span className="sr-only" data-testid="urai-home-webgl-orb">The living Orb companion is physically present in the Home sanctuary and consumes the final authored Orb GLB.</span>
     <span className="sr-only" data-testid="urai-home-embodied-avatar">Your embodied Home presence uses the real skinned V4 human candidate.</span>
   </main>
 }
