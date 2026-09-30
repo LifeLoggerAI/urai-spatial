@@ -44,6 +44,8 @@ export function InterpretiveWorldSplat({
         maxBytes={maxBytes}
         chunkSize={chunkSize}
         alphaHash={alphaHash}
+        loadingLabel="Loading interpretive world"
+        failureMessage="Interpretive world rendering stopped."
         onRenderReady={onRenderReady}
       />
     </group>
