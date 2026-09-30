@@ -235,24 +235,21 @@ async function captureOrbLifecycle({ reducedMotion = 'no-preference' } = {}) {
     })
     const response = await page.goto(`${base}/home/?homeAssetReview=1`, { waitUntil: 'domcontentloaded', timeout: 60_000 })
     const owner = await waitForHomeReady(page)
-    const openOrbSelector = '.home-semantic-navigation button[aria-label="Open URAI Orb companion"]'
-    const openOrb = page.locator(openOrbSelector).first()
-    await openOrb.waitFor({ state: 'attached', timeout: 20_000 })
-    const orbFocused = await page.evaluate((selector) => {
-      const element = document.querySelector(selector)
-      if (!(element instanceof HTMLElement)) return false
-      element.focus()
-      return document.activeElement === element
-    }, openOrbSelector)
-    if (!orbFocused) throw new Error('Home Orb semantic control could not receive keyboard focus.')
+    const openOrb = page.locator('[data-testid="home-semantic-orb"], [data-world-target="orb-controls"]').first()
+    await openOrb.waitFor({ state: 'visible', timeout: 20_000 })
+    await openOrb.focus()
+    const orbFocused = await openOrb.evaluate((element) => document.activeElement === element)
+    if (!orbFocused) throw new Error('Home Orb production control could not receive keyboard focus.')
     await page.keyboard.press('Enter')
     await page.locator('#urai-world-companion-menu[aria-hidden="false"]').waitFor({ state: 'visible', timeout: 20_000 })
     await page.waitForFunction((selector) => document.querySelector(selector)?.getAttribute('data-home-orb-state') === 'attention', ownerSelector)
 
     const talk = page.locator('summary').filter({ hasText: 'Talk with Orb' }).first()
-    await talk.waitFor({ state: 'attached', timeout: 20_000 })
-    await talk.dispatchEvent('click')
+    await talk.waitFor({ state: 'visible', timeout: 20_000 })
+    await talk.focus()
+    await page.keyboard.press('Enter')
     const message = page.getByLabel('Message for Orb').first()
+    await message.waitFor({ state: 'visible', timeout: 10_000 })
     await message.focus()
     await page.waitForFunction((selector) => document.querySelector(selector)?.getAttribute('data-home-orb-state') === 'listening', ownerSelector)
 
