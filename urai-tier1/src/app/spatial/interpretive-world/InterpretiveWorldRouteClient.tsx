@@ -74,7 +74,7 @@ function splatDecision(delivery: RuntimeDelivery): InterpretiveWorldRenderDecisi
   }
 }
 
-function assetAuthorityActive(snapshot: { exists(): boolean; get(field: string): unknown }, uid: string) {
+function assetAuthorityActive(snapshot: { exists(): boolean; get(field: string): unknown }, uid: string, deviceTier: 'desktop' | 'mobile') {
   if (!snapshot.exists() || snapshot.get('ownerId') !== uid) return false
   const sourceIds = snapshot.get('sourceIds')
   const releaseState = String(snapshot.get('releaseState') ?? '')
@@ -83,8 +83,13 @@ function assetAuthorityActive(snapshot: { exists(): boolean; get(field: string):
     || snapshot.get('revocationState') === 'revoked'
     || snapshot.get('state') === 'revoked'
 
+  const certified = deviceTier === 'mobile'
+    ? snapshot.get('mobileCertified') === true
+    : snapshot.get('browserCertified') === true
+
   return !revoked
     && activeRelease
+    && certified
     && snapshot.get('state') === 'ready'
     && snapshot.get('reviewState') === 'accepted'
     && snapshot.get('visualAcceptance') === 'accepted'
@@ -196,10 +201,11 @@ export default function InterpretiveWorldRouteClient() {
     }, 15_000)
 
     const db = getFirebaseDb()
+    const deviceTier = capturedRealityDeviceTier(navigator.userAgent)
     stops.push(onSnapshot(
       doc(db, 'users', user.uid, 'interpretiveWorldAssets', assetId),
       (snapshot) => {
-        const active = assetAuthorityActive(snapshot, user.uid)
+        const active = assetAuthorityActive(snapshot, user.uid, deviceTier)
         if (firstSnapshot) {
           firstSnapshot = false
           window.clearTimeout(authorityTimeout)
