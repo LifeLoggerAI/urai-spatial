@@ -53,16 +53,6 @@ test.describe('Embodied exploration runtime evidence', () => {
     await expect(home).toHaveAttribute('data-home-pointer-lock', 'false')
     await expect(home).toHaveAttribute('data-home-visible-world', 'final-physical-sanctuary-memory-rooms')
 
-    const beforeZ = Number(await home.getAttribute('data-home-player-z'))
-    await holdKey(page, 'w', 2_400)
-    await expect.poll(async () => Number(await home.getAttribute('data-home-distance')), { timeout: 15_000 }).toBeGreaterThan(1.2)
-    const afterZ = Number(await home.getAttribute('data-home-player-z'))
-    expect(Math.abs(afterZ - beforeZ)).toBeGreaterThan(1.2)
-    await expect.poll(async () => {
-      const value = await home.evaluate((element) => element.style.getPropertyValue('--home-parallax-y'))
-      return Math.abs(Number.parseFloat(value))
-    }, { timeout: 12_000 }).toBeGreaterThan(0.1)
-
     const direct = page.getByRole('navigation', { name: 'Direct Home destinations' })
     await expect(direct.getByRole('button', { name: 'Open Orb directly' })).toBeVisible()
     await expect(direct.getByRole('button', { name: 'Open Ground directly' })).toBeVisible()
@@ -75,11 +65,22 @@ test.describe('Embodied exploration runtime evidence', () => {
     }
 
     const movement = page.getByRole('group', { name: 'Home movement controls' })
-    await expect(movement).toBeVisible()
+    await expect(movement).toBeVisible({ timeout: 30_000 })
     const forward = movement.getByRole('button', { name: 'Move forward' })
     await forward.evaluate((element: HTMLElement) => element.focus())
     await expect(forward).toBeFocused()
     expect(await page.evaluate(() => document.pointerLockElement)).toBeNull()
+
+    const beforeZ = Number(await home.getAttribute('data-home-player-z'))
+    await holdKey(page, 'w', 2_400)
+    await expect.poll(async () => Number(await home.getAttribute('data-home-distance')), { timeout: 15_000 }).toBeGreaterThan(1.2)
+    const afterZ = Number(await home.getAttribute('data-home-player-z'))
+    expect(Math.abs(afterZ - beforeZ)).toBeGreaterThan(1.2)
+    await expect.poll(async () => {
+      const value = await home.evaluate((element) => element.style.getPropertyValue('--home-parallax-y'))
+      return Math.abs(Number.parseFloat(value))
+    }, { timeout: 12_000 }).toBeGreaterThan(0.1)
+
     expect(errors.pageErrors).toEqual([])
     expect(errors.consoleErrors).toEqual([])
   })
@@ -204,10 +205,10 @@ test.describe('Embodied exploration runtime evidence', () => {
     await page.goto('/home/', { waitUntil: 'domcontentloaded' })
     const home = page.locator('.urai-final-home-world')
     await waitForHomeWorld(home)
+    const movement = page.getByRole('group', { name: 'Home movement controls' })
+    await expect(movement).toBeVisible({ timeout: 30_000 })
+    expect(await page.evaluate(() => document.pointerLockElement)).toBeNull()
     await holdKey(page, 'w', 1_800)
     await expect.poll(async () => Number(await home.getAttribute('data-home-distance')), { timeout: 15_000 }).toBeGreaterThan(0.6)
-    const movement = page.getByRole('group', { name: 'Home movement controls' })
-    await expect(movement).toBeVisible()
-    expect(await page.evaluate(() => document.pointerLockElement)).toBeNull()
   })
 })

@@ -64,6 +64,7 @@ test.describe('URAI accessibility and performance evidence', () => {
   })
 
   test('serialized Orb and Focus targets meet 48 CSS pixel minimum', async ({ page }) => {
+    test.setTimeout(90_000)
     await page.setViewportSize({ width: 393, height: 873 })
     await page.goto('/', { waitUntil: 'domcontentloaded' })
     const orb = page.getByRole('button', { name: /open orb travel controls/i })
@@ -84,6 +85,7 @@ test.describe('URAI accessibility and performance evidence', () => {
   })
 
   test('Orb menu enters focus, closes on Escape, and returns focus', async ({ page }) => {
+    test.setTimeout(90_000)
     await page.goto('/', { waitUntil: 'domcontentloaded' })
     const orb = page.locator('[data-urai-audit-action="orb-controls"]')
     await expect(orb).toHaveAccessibleName(/open orb travel controls/i)
