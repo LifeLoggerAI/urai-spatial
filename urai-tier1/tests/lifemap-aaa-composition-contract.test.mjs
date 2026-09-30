@@ -117,13 +117,17 @@ test('overview composition is opaque, authored, and independently framed for por
   assert.match(artifact, /overviewCluster \? <FieldParticles/)
   assert.match(artifact, /: <ArtifactShape node=\{node\} active=\{active\} \/>/)
   const galaxy = sliceBetween(world, 'function GalaxyDepth', 'export function LifeMapProductionWorld')
-  const density = galaxy.match(/const farCount = tier === "low" \\? (\\d+) : tier === "medium" \\? (\\d+) : (\\d+)/)
+  const density = galaxy.match(/const farCount = tier === "low" \? (\d+) : tier === "medium" \? (\d+) : (\d+)/)
   assert.ok(density, 'galaxy must retain bounded low/medium/high stellar density')
   const [, low, medium, high] = density.map(Number)
   assert.ok(low >= 2400 && low < medium && medium < high, 'depth field must remain dense and scale by device tier')
   assert.ok(high >= 12000 && high <= 16000, 'high-tier field must meet density without unbounded particle growth')
-  assert.match(galaxy, /980/)
-  assert.match(galaxy, /340/)
+  for (const [field, minimum, maximum] of [['middleCount', 720, 3200], ['foregroundCount', 144, 600]]) {
+    const tiers = galaxy.match(new RegExp(`const ${field} = tier === "low" [ ?] ([0-9]+) : tier === "medium" [ ?] ([0-9]+) : ([0-9]+)`))
+    assert.ok(tiers, `${field} must retain adaptive tier counts`)
+    const [, lower, middle, upper] = tiers.map(Number)
+    assert.ok(lower >= minimum && lower < middle && middle < upper && upper <= maximum, `${field} must preserve bounded layered density`)
+  }
 })
 
 test('visual repair preserves adaptive performance and evidence budgets', () => {
