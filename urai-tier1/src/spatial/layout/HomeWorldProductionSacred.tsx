@@ -801,7 +801,9 @@ function PlayerRig({ input, yaw, pitch, target, avatar, onNearby, transition, re
     started.current=null
     issued.current=false
     if(lastTransitionSequence.current!=='idle'){lastTransitionSequence.current='idle';onTransitionSequence('idle')}
-    stepEmbodiedMotion({delta,input,yaw:yaw.current,position:pos.current,velocity:velocity.current,target,bounds:BOUNDS,speed:2.7,acceleration:8,deceleration:11})
+    // The real threshold is intentionally deep in the sanctuary. Keep it reachable
+    // with bounded keyboard and touch travel even when a device renders sparse frames.
+    stepEmbodiedMotion({delta,input,yaw:yaw.current,position:pos.current,velocity:velocity.current,target,bounds:BOUNDS,speed:reducedMotion?3.1:4.2,acceleration:10,deceleration:13})
     if(avatar.current){avatar.current.position.copy(pos.current);avatar.current.rotation.y=yaw.current+Math.PI}
     const portrait=size.height>size.width
     const backDistance=portrait?0.14:0.24
