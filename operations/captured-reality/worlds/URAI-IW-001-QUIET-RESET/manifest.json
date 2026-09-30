@@ -104,10 +104,11 @@
     "meanReprojectionErrorPxMax": 1.5,
     "heldOutPsnrDbTarget": 24,
     "heldOutSsimMin": 0.85,
-    "heldOutLpipsMax": 0.25
+    "heldOutLpipsMax": 0.25,
+    "blocker": "literal-visual-review-required-before-frame-acceptance"
   },
   "runtime": {
-    "featureFlag": "URAI_ENABLE_CAPTURED_REALITY",
+    "featureFlag": "URAI_ENABLE_INTERPRETIVE_WORLDS",
     "promotionState": "hard-off",
     "mobile": {
       "maxBytes": 67108864,
@@ -124,6 +125,21 @@
       "targetFps": 72,
       "chunkSize": 16000,
       "certification": "separate-physical-device-proof-required"
+    },
+    "deliverySpine": "source-complete",
+    "route": "/spatial/interpretive-world",
+    "backendCallables": [
+      "getInterpretiveWorldAsset",
+      "getInterpretiveWorldRuntimeUrl",
+      "getInterpretiveWorldReplayEntry"
+    ],
+    "truthBoundary": {
+      "truthClass": "interpretive",
+      "autobiographical": false,
+      "generatedOnly": true,
+      "sourceTruthEligible": false,
+      "sourceIds": [],
+      "exactPrivateLocationEmbedded": false
     }
   },
   "spend": {
@@ -143,7 +159,11 @@
   "github": {
     "trackingIssue": 1472,
     "parentReleasePr": 1462,
-    "childBranch": "captured-reality-world001-20260929"
+    "childBranch": "captured-reality-world001-20260929",
+    "childPr": 1473,
+    "exactChildHead": "01da1a5b768793557e414d6d87811c920d867189",
+    "parentBaseSha": "30986337f2ecd5b5abe54b1a22d169ceb732ede1",
+    "exactHeadRequired": true
   },
   "releaseGates": [
     "all-generation-tasks-terminal-success",
@@ -164,6 +184,18 @@
   "generationSet": {
     "state": "complete-awaiting-literal-visual-review",
     "surveyPassCount": 8,
-    "anchorCount": 3
-  }
+    "anchorCount": 3,
+    "allSurveyTasksTerminalSuccess": true,
+    "literalVisualAcceptance": "pending"
+  },
+  "blockers": [
+    "literal-visual-review-of-H00-A01-A02-A03-and-S01-S08",
+    "accepted-frame-extraction",
+    "colmap-camera-solve",
+    "3dgs-training",
+    "archival-runtime-splat-export",
+    "collision-proxy",
+    "desktop-mobile-performance-receipts",
+    "xr-separate-physical-device-certification"
+  ]
 }
