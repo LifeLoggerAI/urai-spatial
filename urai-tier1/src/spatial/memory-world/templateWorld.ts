@@ -20,6 +20,14 @@ const rules: readonly { tokens: readonly string[]; archetypeId: string }[] = [
   { tokens: ['car'], archetypeId: 'scene:everydayTransitional:back-seat-car' },
 ]
 
+function eraPackForDate(value: string) {
+  const year = Number(value.slice(0, 4))
+  if (!Number.isFinite(year)) return undefined
+  if (year < 1900) return 'era:pre-1900'
+  const start = Math.min(2020, Math.floor(year / 10) * 10)
+  return `era:${start}s`
+}
+
 function explicitContext(memory: SelectedMemory) {
   return [memory.place?.label, memory.place?.region, memory.title].filter(Boolean).join(' ').toLowerCase()
 }
@@ -75,6 +83,7 @@ export function buildBoundedTemplateMemoryWorld(memory: SelectedMemory, exactSou
     context: {
       geography: memory.place?.region ? { region: memory.place.region } : undefined,
       representedDate: memory.occurredAt,
+      eraPackId: eraPackForDate(memory.occurredAt),
       culturalContext: [],
       languages: [],
       emotionalWeather: 'Reflective',

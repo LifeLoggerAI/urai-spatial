@@ -5,39 +5,65 @@ import { OrbitControls } from '@react-three/drei'
 import type { MemoryWorld } from './memoryWorld'
 import { buildMemoryWorldRuntimePlan } from './runtimePlan'
 import { useAdaptiveSpatialQuality } from '@/spatial/performance/useAdaptiveSpatialQuality'
+import { blockoutPresetForWorld, type MemoryWorldBlockoutProp } from './blockoutPresets'
 
-function archetypeDomain(world: MemoryWorld) {
-  return world.archetypeId.split(':')[1] ?? 'unknown'
+function materialColor(materialClass: MemoryWorldBlockoutProp['materialClass']) {
+  if (materialClass === 'wood') return '#6d5844'
+  if (materialClass === 'fabric') return '#56626d'
+  if (materialClass === 'metal') return '#8b969c'
+  if (materialClass === 'glass') return '#7d9eab'
+  if (materialClass === 'stone') return '#77756d'
+  if (materialClass === 'vegetation') return '#36563b'
+  return '#7a736b'
+}
+
+function SemanticBlockoutProp({ prop }: { prop: MemoryWorldBlockoutProp }) {
+  return (
+    <mesh position={prop.position} castShadow receiveShadow userData={{ semanticTag: prop.semanticTag, blockoutAssetId: prop.id, truthClass: 'T4_CONTEXT_TEMPLATE', autobiographical: false }}>
+      <boxGeometry args={prop.size} />
+      <meshStandardMaterial color={materialColor(prop.materialClass)} roughness={prop.materialClass === 'glass' ? .34 : .86} metalness={prop.materialClass === 'metal' ? .4 : 0} transparent={prop.materialClass === 'glass'} opacity={prop.materialClass === 'glass' ? .72 : 1} />
+    </mesh>
+  )
 }
 
 function BoundedTemplateGeometry({ world }: { world: MemoryWorld }) {
-  const domain = archetypeDomain(world)
-  const outdoor = domain === 'nature' || domain === 'agricultureRural' || domain === 'communityCivicRetail'
-  if (outdoor) {
+  const preset = blockoutPresetForWorld(world)
+  const environment = preset?.environment ?? 'interior'
+  const floorColor = preset?.floorColor ?? '#3b3936'
+  const wallColor = preset?.wallColor ?? '#58534e'
+  const props = preset?.props ?? []
+
+  if (environment === 'outdoor') {
     return (
-      <group name="memory-world-bounded-template-outdoor" userData={{ truthClass: 'T4_CONTEXT_TEMPLATE', autobiographical: false }}>
-        <mesh rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
+      <group name="memory-world-blockout-outdoor" userData={{ truthClass: 'T4_CONTEXT_TEMPLATE', autobiographical: false, maturity: 'blockout', presetId: preset?.id ?? 'generic' }}>
+        <mesh rotation={[-Math.PI / 2, 0, 0]} receiveShadow userData={{ semanticTag: 'surface:ground' }}>
           <planeGeometry args={[34, 34, 1, 1]} />
-          <meshStandardMaterial color="#26352e" roughness={0.95} />
+          <meshStandardMaterial color={floorColor} roughness={0.95} />
         </mesh>
-        {[[-4,0,-5],[3,0,-7],[-7,0,-10],[7,0,-11]].map((position,index) => (
-          <group key={index} position={position as [number,number,number]}>
-            <mesh position={[0,1.1,0]} castShadow><cylinderGeometry args={[0.16,0.24,2.2,10]} /><meshStandardMaterial color="#443526" roughness={1} /></mesh>
-            <mesh position={[0,2.5,0]} castShadow><sphereGeometry args={[1.1,20,14]} /><meshStandardMaterial color="#314a37" roughness={1} /></mesh>
-          </group>
-        ))}
+        {props.map((prop) => <SemanticBlockoutProp key={prop.id} prop={prop} />)}
       </group>
     )
   }
+
+  if (environment === 'vehicle') {
+    return (
+      <group name="memory-world-blockout-vehicle" userData={{ truthClass: 'T4_CONTEXT_TEMPLATE', autobiographical: false, maturity: 'blockout', presetId: preset?.id ?? 'generic' }}>
+        <mesh position={[0,-1,-2]} receiveShadow userData={{ semanticTag: 'surface:vehicle-floor' }}><boxGeometry args={[4,.18,7]} /><meshStandardMaterial color={floorColor} roughness={.9} /></mesh>
+        <mesh position={[0,1.1,-5]} userData={{ semanticTag: 'structure:windshield-frame' }}><boxGeometry args={[4,3,.16]} /><meshStandardMaterial color={wallColor} roughness={.8} /></mesh>
+        <mesh position={[-2,1,-2]} userData={{ semanticTag: 'structure:left-door' }}><boxGeometry args={[.16,3,6]} /><meshStandardMaterial color={wallColor} roughness={.8} /></mesh>
+        <mesh position={[2,1,-2]} userData={{ semanticTag: 'structure:right-door' }}><boxGeometry args={[.16,3,6]} /><meshStandardMaterial color={wallColor} roughness={.8} /></mesh>
+        {props.map((prop) => <SemanticBlockoutProp key={prop.id} prop={prop} />)}
+      </group>
+    )
+  }
+
   return (
-    <group name="memory-world-bounded-template-interior" userData={{ truthClass: 'T4_CONTEXT_TEMPLATE', autobiographical: false }}>
-      <mesh position={[0,-1.2,-2]} receiveShadow><boxGeometry args={[10,.2,10]} /><meshStandardMaterial color="#3b3936" roughness={.86} /></mesh>
-      <mesh position={[0,2.4,-7]} receiveShadow><boxGeometry args={[10,7,.18]} /><meshStandardMaterial color="#58534e" roughness={.92} /></mesh>
-      <mesh position={[-5,2.4,-2]} receiveShadow><boxGeometry args={[.18,7,10]} /><meshStandardMaterial color="#4e4b47" roughness={.92} /></mesh>
-      <mesh position={[5,2.4,-2]} receiveShadow><boxGeometry args={[.18,7,10]} /><meshStandardMaterial color="#4e4b47" roughness={.92} /></mesh>
-      <mesh position={[0,-.45,-3.8]} castShadow><boxGeometry args={[2.6,.35,1.1]} /><meshStandardMaterial color="#62574b" roughness={.8} /></mesh>
-      <mesh position={[-2.7,-.35,-2.2]} castShadow><boxGeometry args={[1.5,.55,1.5]} /><meshStandardMaterial color="#48525b" roughness={.88} /></mesh>
-      <mesh position={[2.65,-.55,-2.4]} castShadow><boxGeometry args={[1.4,.25,1.4]} /><meshStandardMaterial color="#514a43" roughness={.9} /></mesh>
+    <group name="memory-world-blockout-interior" userData={{ truthClass: 'T4_CONTEXT_TEMPLATE', autobiographical: false, maturity: 'blockout', presetId: preset?.id ?? 'generic' }}>
+      <mesh position={[0,-1.2,-2]} receiveShadow userData={{ semanticTag: 'surface:floor' }}><boxGeometry args={[10,.2,10]} /><meshStandardMaterial color={floorColor} roughness={.86} /></mesh>
+      <mesh position={[0,2.4,-7]} receiveShadow userData={{ semanticTag: 'structure:back-wall' }}><boxGeometry args={[10,7,.18]} /><meshStandardMaterial color={wallColor} roughness={.92} /></mesh>
+      <mesh position={[-5,2.4,-2]} receiveShadow userData={{ semanticTag: 'structure:left-wall' }}><boxGeometry args={[.18,7,10]} /><meshStandardMaterial color={wallColor} roughness={.92} /></mesh>
+      <mesh position={[5,2.4,-2]} receiveShadow userData={{ semanticTag: 'structure:right-wall' }}><boxGeometry args={[.18,7,10]} /><meshStandardMaterial color={wallColor} roughness={.92} /></mesh>
+      {props.map((prop) => <SemanticBlockoutProp key={prop.id} prop={prop} />)}
     </group>
   )
 }
