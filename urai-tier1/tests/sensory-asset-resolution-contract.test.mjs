@@ -97,11 +97,11 @@ test('loading animation timing is relative to the mounted sensory layer', () => 
   assert.doesNotMatch(sensoryLayer, /\(clock\.elapsedTime \* 1000\) \/ loadingDurationMs/)
 })
 
-test('production audio remains consent-controlled on the live Sacred Home owner', () => {
+test('production audio remains consent-controlled on the live natural Home owner', () => {
   const liveHome = `${homeRouteOwner}\n${homeWorldEntry}\n${homeWorld}`
   assert.match(homeRouteOwner, /HomeWorldProduction/)
   assert.match(homeWorldEntry, /export \{ HomeWorldProductionSacred as HomeWorldProduction \} from "\.\/HomeWorldProductionSacred"/)
-  assert.match(homeWorld, /data-home-visible-world="moonlit-sacred-tech-sanctuary"/)
+  assert.match(homeWorld, /data-home-visible-world="moonlit-natural-inhabited-sanctuary"/)
   assert.doesNotMatch(sensoryLayer, /urai-ambient-bed-v1/)
   assert.doesNotMatch(worldLayer, /urai-ambient-bed-v1/)
   assert.doesNotMatch(liveHome, /urai-ambient-bed-v1\.opus/)
