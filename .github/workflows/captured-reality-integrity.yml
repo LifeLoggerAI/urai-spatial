@@ -60,6 +60,7 @@ jobs:
           fi
           printf 'Spatial reconstruction integrity tests: %s\n' "${#spatial_reconstruction_tests[@]}"
           node --import tsx --test "${spatial_reconstruction_tests[@]}"
+          node ../scripts/validate-interpretive-world-visual-acceptance.mjs ../operations/captured-reality/worlds/URAI-IW-001-QUIET-RESET/visual-acceptance.current.json
           node ../scripts/validate-interpretive-world-receipt.mjs ../operations/captured-reality/worlds/URAI-IW-001-QUIET-RESET/reconstruction-receipt.pending.json
       - name: Typecheck runtime
         run: pnpm --dir urai-tier1 typecheck
