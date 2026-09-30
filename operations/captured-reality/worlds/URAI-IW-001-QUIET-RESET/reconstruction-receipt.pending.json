@@ -16,7 +16,7 @@
     "acceptedTaskIds": [],
     "reviewer": null,
     "reviewedAt": null,
-    "receiptRef": null
+    "receiptRef": "visual-acceptance.current.json"
   },
   "frames": {
     "acceptedFrameCount": 0,
