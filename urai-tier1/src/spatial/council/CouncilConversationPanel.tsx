@@ -1,6 +1,6 @@
 'use client'
 
-import { useRef, useState, type FormEvent } from 'react'
+import { useEffect, useRef, useState, type FormEvent } from 'react'
 import type { CouncilAgent } from './councilAgentSchema'
 import {
   attemptedExternalOrbFallback,
@@ -13,7 +13,15 @@ import {
   type OrbProviderResult,
 } from '@/spatial/orb/openaiClient'
 
-export default function CouncilConversationPanel({ agent }: { agent: CouncilAgent }) {
+export type CouncilConversationPerformance = 'listening' | 'thinking' | 'replying-text'
+
+export default function CouncilConversationPanel({
+  agent,
+  onPerformanceStateChange,
+}: {
+  agent: CouncilAgent
+  onPerformanceStateChange?: (state: CouncilConversationPerformance) => void
+}) {
   const [message, setMessage] = useState('')
   const [history, setHistory] = useState<OrbConversationMessage[]>([])
   const [result, setResult] = useState<OrbProviderResult | null>(null)
@@ -21,6 +29,18 @@ export default function CouncilConversationPanel({ agent }: { agent: CouncilAgen
   const [busy, setBusy] = useState(false)
   const [consent, setConsent] = useState(false)
   const aborter = useRef<AbortController | null>(null)
+
+  useEffect(() => {
+    onPerformanceStateChange?.(busy ? 'thinking' : result ? 'replying-text' : 'listening')
+  }, [busy, onPerformanceStateChange, result])
+
+  useEffect(() => {
+    aborter.current?.abort()
+    aborter.current = null
+    setBusy(false)
+    setResult(null)
+    setStatus('Council conversation is idle.')
+  }, [agent.id])
 
   const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -84,7 +104,12 @@ export default function CouncilConversationPanel({ agent }: { agent: CouncilAgen
   }
 
   return (
-    <section className="councilConversation" aria-label="Live Council conversation" data-provider={result?.provider ?? 'idle'}>
+    <section
+      className="councilConversation"
+      aria-label="Live Council conversation"
+      data-provider={result?.provider ?? 'idle'}
+      data-avatar-response-modality="text-only"
+    >
       <form onSubmit={submit} aria-busy={busy}>
         <label htmlFor="urai-council-message">Ask {agent.name}</label>
         <textarea
