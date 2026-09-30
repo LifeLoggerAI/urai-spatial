@@ -2,9 +2,9 @@
 import fs from 'node:fs'
 import nodePath from 'node:path'
 
-const path = process.argv[2]
-if (!path) throw new Error('usage: validate-interpretive-world-receipt.mjs <receipt.json>')
-const receipt = JSON.parse(fs.readFileSync(path, 'utf8'))
+const inputPath = process.argv[2]
+if (!inputPath) throw new Error('usage: validate-interpretive-world-receipt.mjs <receipt.json>')
+const receipt = JSON.parse(fs.readFileSync(inputPath, 'utf8'))
 const failures = []
 const need = (ok, message) => { if (!ok) failures.push(message) }
 
