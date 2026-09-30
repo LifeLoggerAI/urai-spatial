@@ -98,7 +98,7 @@ export default function MemoryWorldRuntime({ world, onExit }: MemoryWorldRuntime
         <p style={{margin:0,fontSize:11,letterSpacing:'.14em',textTransform:'uppercase',color:'#b7f7ee'}}>Memory World · bounded runtime</p>
         <h1 style={{margin:'7px 0 6px',fontSize:'clamp(1.4rem,4vw,2.5rem)'}}>{world.label}</h1>
         <strong>{plan.truthLabel}</strong>
-        <p style={{fontSize:12,lineHeight:1.5,color:'rgba(255,255,255,.72)'}}>This view uses a contextual template unless source-backed reconstruction is explicitly available. It does not claim missing geometry or events were recorded.</p>
+        <p style={{fontSize:12,lineHeight:1.5,color:'rgba(255,255,255,.72)'}}>Context template: this view uses a contextual template unless source-backed reconstruction is explicitly available. It does not claim missing geometry or events were recorded.</p>
         <button type="button" onClick={onExit} style={{minHeight:48,padding:'0 16px',borderRadius:999}}>← Replay</button>
         <details style={{marginTop:10,fontSize:12}}><summary>Truth & provenance</summary><p>Archetype: {world.archetypeId}</p><p>Correction revision: {world.provenance.userCorrectionRevision}</p><p>Runtime: {plan.runtimeVersion}</p></details>
       </header>
