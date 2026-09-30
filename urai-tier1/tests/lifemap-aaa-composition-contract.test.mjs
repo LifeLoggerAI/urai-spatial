@@ -35,7 +35,7 @@ test('pattern memories retain authored settling geometry inside the selected arr
   assert.match(world, /function PatternArtifact/)
   assert.match(world, /family === "pattern"\) return <PatternArtifact/)
   assert.match(world, /function SelectedMemoryArrival/)
-  assert.match(world, /name="life-map-selected-arrival-memory-star"/)
+  assert.match(world, /name="life-map-intimate-memory-chamber"/)
   assert.match(world, /semanticOwner: "life-map-intimate-memory-star"/)
   assert.match(world, /runtimeAsset: MEMORY_STAR_MODEL/)
   const pattern = sliceBetween(world, 'function PatternArtifact', 'function AchievementArtifact')
@@ -90,7 +90,7 @@ test('authored animation clips honor reduced motion with stable readable poses',
   assert.match(arrival, /if \(!selected \|\| phase !== "arrival"\) return null/)
   assert.match(arrival, /<AuthoredMemoryStar aura=\{selected\.aura\} active scale=\{1\.38\} clip="MemoryStar_Focus" \/>/)
   assert.match(arrival, /speed=\{reducedMotion \? 0 : 0\.07\}/)
-  assert.match(arrival, /name="life-map-selected-arrival-memory-star"/)
+  assert.match(arrival, /name="life-map-intimate-memory-chamber"/)
 })
 
 test('overview composition is opaque, authored, and independently framed for portrait', () => {
@@ -142,5 +142,5 @@ test('visual repair preserves adaptive performance and evidence budgets', () => 
   assert.match(world, /if \(!root\.current \|\| reducedMotion\) return/)
   assert.match(world, /useGLTF\.preload\(MEMORY_STAR_MODEL\)/)
   assert.doesNotMatch(world, /<torusGeometry|<ringGeometry|<icosahedronGeometry|<octahedronGeometry|<tetrahedronGeometry/)
-  for (const marker of ['life-map-white-gold-life-core', 'life-map-curved-semantic-paths', 'life-map-memory-artifact-families', 'life-map-selected-arrival-memory-star']) assert.match(world, new RegExp(marker))
+  for (const marker of ['life-map-white-gold-life-core', 'life-map-curved-semantic-paths', 'life-map-memory-artifact-families', 'life-map-intimate-memory-chamber']) assert.match(world, new RegExp(marker))
 })
