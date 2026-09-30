@@ -38,13 +38,13 @@ test('app template mounts current WebGL owners without certified-route redirects
   assert.match(assetHome, /HomeWorldProduction/)
   assert.match(homeProductionEntry, /export \{ HomeWorldProductionSacred as HomeWorldProduction \} from "\.\/HomeWorldProductionSacred"/)
   assert.match(homeProduction, /data-home-primary-owner="asset-driven"/)
-  assert.match(homeProduction, /data-home-visible-world="moonlit-sacred-tech-sanctuary"/)
+  assert.match(homeProduction, /data-home-visible-world="moonlit-natural-inhabited-sanctuary"/)
   assert.match(groundOwner, /GroundSpatialWorldClean/)
   assert.match(lifeMapOwner, /SpatialLifeMapCanonical/)
   assert.doesNotMatch(template, /focus|replay/i)
 })
 
-test('Home remains one embodied authored sacred-tech 3D environment with accessible thresholds and recovery', () => {
+test('Home remains one embodied authored natural sanctuary 3D environment with accessible thresholds and recovery', () => {
   for (const marker of [
     'HomeWorldProductionSacred',
     'Stars',
@@ -53,9 +53,9 @@ test('Home remains one embodied authored sacred-tech 3D environment with accessi
     'urai-orb-avatar-v1.glb',
     'portal-ring-master-v1.glb',
     'data-home-primary-owner="asset-driven"',
-    'data-home-visible-world="moonlit-sacred-tech-sanctuary"',
-    'data-home-world-character="premium-cinematic-sacred-tech"',
-    'data-home-physical-base="authored-obsidian-ritual-platform"',
+    'data-home-visible-world="moonlit-natural-inhabited-sanctuary"',
+    'data-home-world-character="premium-cinematic-natural-sanctuary"',
+    'data-home-physical-base="grounded-flagstone-clearing"',
     'data-home-visual-ownership="three-dimensional-geometry"',
     'data-home-desktop-mobile-world="same-scene"',
     'data-home-embodied-self="makehuman-v4"',
