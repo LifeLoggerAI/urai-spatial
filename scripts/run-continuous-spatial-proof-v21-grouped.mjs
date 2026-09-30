@@ -80,7 +80,7 @@ const semanticOwnershipReplacement = `    semanticLinks: await semantic.getByRol
 if (original.split(discreetControlsTarget).length - 1 !== 1) throw new Error('Home semantic navigation measurement contract changed')
 
 const discreetPassTarget = `    && result.semanticButtons === 3 && result.semanticVisible === 0 && result.discreetControls === 2`
-const semanticPassReplacement = `    && result.semanticButtons === 2 && result.semanticVisible === 2\n    && result.semanticLinks === 1 && result.semanticLinkVisible === 1\n    && result.semanticNavigationOwner === 'runtime-boundary' && result.semanticNavigationNonDominant === 'true'\n    && Number.isFinite(result.semanticNavigationOpacity) && result.semanticNavigationOpacity <= 0.02`
+const semanticPassReplacement = `    && result.semanticButtons === 1 && result.semanticVisible === 1\n    && result.semanticLinks === 2 && result.semanticLinkVisible === 2\n    && result.semanticNavigationOwner === 'runtime-boundary' && result.semanticNavigationNonDominant === 'true'\n    && Number.isFinite(result.semanticNavigationOpacity) && result.semanticNavigationOpacity <= 0.02`
 if (original.split(discreetPassTarget).length - 1 !== 1) throw new Error('Home semantic navigation pass contract changed')
 
 const reviewModePassTarget = `    && result.assetMode === requiredMode && result.personalizationMode === expected.mode`
@@ -148,7 +148,7 @@ const grouped = patchedPrefix.slice(0, patchedExecutionIndex) + execution
 const requiredSemanticGuards = [
   ['diagnostic failure guard', 'diagnosticResult.failedRequests.length'],
   ['fallback visibility guard', 'record.fallbackVisible'],
-  ['fallback semantic destination contract', 'record.semanticButtons !== 2 || record.semanticLinks !== 1'],
+  ['fallback semantic destination contract', 'record.semanticButtons !== 1 || record.semanticLinks !== 2'],
   ['interaction proof failure guard', 'Home interaction proof failed for'],
   ['direct canvas geometry measurement', 'element.getBoundingClientRect()'],
   ['ancestor-aware loading visibility', "node.checkVisibility"],
