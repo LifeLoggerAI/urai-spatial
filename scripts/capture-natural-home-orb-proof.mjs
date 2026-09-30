@@ -140,8 +140,8 @@ for (const spec of cases) {
       && (spec.reducedMotion !== 'reduce' || record.orbClip === 'orb-state-static')
       && record.orbMarkers === 1
       && record.embodimentMarkers === 1
-      && record.semanticButtons === 2
-      && record.semanticLinks === 1
+      && record.semanticButtons === 1
+      && record.semanticLinks === 2
       && record.semanticVisibleActions === 3
       && record.semanticOwner === 'runtime-boundary'
       && record.semanticNonDominant === 'true'
