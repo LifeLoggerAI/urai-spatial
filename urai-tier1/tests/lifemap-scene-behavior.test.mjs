@@ -93,7 +93,7 @@ test('Production artifacts are differentiated by meaning rather than generic bub
   }
   assert.doesNotMatch(world.slice(world.indexOf('function MemoryArtifact'), world.indexOf('function SemanticPath')), /sphereGeometry/)
   assert.match(world, /name={`life-map-artifact-\${resolveArtifactFamily\(node\)}-\${node\.id}`}/)
-  assert.match(world, /scale={active \? 1\.72 : 0\.9 \+ importance \* 0\.38}/)
+  assert.match(world, /scale={active \? 1\.46 : 0\.58 \+ importance \* 0\.22}/)
   assert.match(world, /artifactFamilyLabel\(node\)/)
 })
 

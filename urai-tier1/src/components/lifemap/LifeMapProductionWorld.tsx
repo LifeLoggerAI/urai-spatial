@@ -163,7 +163,7 @@ function Current({ points, color, opacity = 0.4, width = 0.014 }: { points: Poin
   return (
     <mesh>
       <tubeGeometry args={[path, 72, width, 10, false]} />
-      <meshStandardMaterial color={color} emissive={color} emissiveIntensity={0.5} transparent opacity={Math.min(opacity, 0.055)} depthWrite={false} blending={THREE.AdditiveBlending} />
+      <meshStandardMaterial color={color} emissive={color} emissiveIntensity={0.5} transparent opacity={Math.min(opacity, 0.015)} depthWrite={false} blending={THREE.AdditiveBlending} />
     </mesh>
   );
 }
@@ -287,12 +287,19 @@ function AuthoredMemoryStar({ aura, active, scale = 1, rotation = [0, 0, 0], cli
       uSeed: { value: seed * 0.013 },
     },
     vertexShader: `
+      uniform float uTime;
+      uniform float uActive;
+      uniform float uSeed;
       varying vec3 vNormalW;
       varying vec3 vPos;
       void main() {
-        vPos = position;
+        float shimmer = sin(position.x * 13.0 + uSeed + uTime * .13) * sin(position.y * 11.0 - uSeed * .7 - uTime * .08);
+        float granule = sin(position.z * 17.0 + position.x * 7.0 + uSeed * 1.9);
+        float prominence = (shimmer * .55 + granule * .45) * (.026 + uActive * .014);
+        vec3 displaced = position + normal * prominence;
+        vPos = displaced;
         vNormalW = normalize(normalMatrix * normal);
-        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(displaced, 1.0);
       }
     `,
     fragmentShader: `
@@ -384,33 +391,33 @@ function AuthoredMemoryStar({ aura, active, scale = 1, rotation = [0, 0, 0], cli
         runtimeAsset: MEMORY_STAR_MODEL,
         authored: true,
         visualCanon: "stellar-photosphere-corona",
-        artRevision: "v300-stellar-photosphere-corona",
+        artRevision: "v301-irregular-photosphere-galaxy-depth",
         visualAuthority: "stellar-body-not-geology",
       }}
     >
       <primitive object={model} visible={false} />
-      <mesh name="memory-star-photosphere" castShadow={false} scale={active ? 1.22 : 1.18}>
+      <mesh name="memory-star-photosphere" castShadow={false} scale={active ? 1.12 : 1.08}>
         <sphereGeometry args={[0.38, 72, 56]} />
         <primitive object={photosphere} attach="material" />
       </mesh>
-      <mesh name="memory-star-inner-corona" scale={active ? 1.55 : 1.40} raycast={() => null}>
+      <mesh name="memory-star-inner-corona" scale={active ? 1.42 : 1.30} raycast={() => null}>
         <sphereGeometry args={[0.38, 56, 40]} />
         <meshBasicMaterial
           color="#fff0c2"
           transparent
-          opacity={active ? 0.075 : 0.045}
+          opacity={active ? 0.04 : 0.022}
           blending={THREE.AdditiveBlending}
           depthWrite={false}
           toneMapped={false}
           side={THREE.BackSide}
         />
       </mesh>
-      <mesh name="memory-star-outer-corona" scale={active ? 1.82 : 1.52} raycast={() => null}>
+      <mesh name="memory-star-outer-corona" scale={active ? 1.66 : 1.44} raycast={() => null}>
         <sphereGeometry args={[0.38, 56, 40]} />
         <meshBasicMaterial
           color={aura}
           transparent
-          opacity={active ? 0.018 : 0.012}
+          opacity={active ? 0.008 : 0.005}
           blending={THREE.AdditiveBlending}
           depthWrite={false}
           toneMapped={false}
@@ -440,8 +447,7 @@ function LifeCore({ hidden, reducedMotion, tier }: { hidden: boolean; reducedMot
   return (
     <group ref={root} name="life-map-white-gold-life-core" position={LIFE_MAP_CORE_POSITION} visible={!hidden}>
       <AuthoredMemoryStar aura={GOLD} active scale={1.82} clip="MemoryStar_Focus" />
-      <Current points={[[-5.6, 0.15, 0.5], [-2.7, 1.6, -0.7], [0, 0.4, -1.2], [2.8, -1.2, -0.6], [5.8, 0.18, 0.4]]} color={GOLD} opacity={0.42} width={0.025} />
-      <Current points={[[0.4, -4.8, 0.8], [-1.4, -2.1, -0.5], [0, 0, -1.4], [1.6, 2.2, -0.4], [-0.2, 5, 0.7]]} color={ICE} opacity={0.32} width={0.018} />
+      <FieldParticles seed={204} count={tier === "low" ? 68 : 168} radius={8.6} depth={9.4} height={5.8} color={GOLD} opacity={0.34} size={0.042} />
       <Sparkles count={tier === "low" ? 26 : 58} scale={[8, 6, 8]} size={2.4} speed={reducedMotion ? 0 : 0.12} opacity={0.6} color={GOLD} />
       <pointLight color={GOLD} intensity={tier === "low" ? 9 : 18} distance={34} decay={2} />
     </group>
@@ -452,7 +458,7 @@ function ChapterAnchor({ aura, index }: { aura: string; index: number }) {
   return (
     <group rotation={[index * 0.18, index * 0.33, index * 0.11]}>
       <AuthoredMemoryStar aura={aura} active={false} scale={0.82 + index * 0.035} />
-      <Current points={[[-2.3, -0.25, 0.7], [-1.2, 0.6, -0.45], [0.15, 0.95, -0.85], [2.45, 0.15, 0.35]]} color={aura} opacity={0.4} width={0.023} />
+      <FieldParticles seed={index * 59 + 7} count={32} radius={2.9} depth={3.9} height={2.5} color={aura} opacity={0.42} size={0.05} />
     </group>
   );
 }
@@ -475,9 +481,7 @@ function ForegroundObservatory({ selected }: { selected: LifeMapNode | null }) {
   if (selected) return null;
   return (
     <group name="life-map-foreground-observatory" position={[0, -1.5, 4.1]}>
-      <Current points={[[-10, 0.1, 0.4], [-5.2, 0.72, -1.3], [0, 0.2, -2.6], [5.1, 0.78, -1.2], [10.2, 0.08, 0.3]]} color={CYAN} opacity={0.26} width={0.038} />
-      <Current points={[[-7.4, -0.45, -0.4], [-3.4, 0.25, -1.8], [0.2, -0.2, -2.8], [3.8, 0.3, -1.7], [7.6, -0.42, -0.3]]} color={VIOLET} opacity={0.18} width={0.025} />
-      <FieldParticles seed={730} count={90} radius={9.5} depth={3} height={1.9} color={ICE} opacity={0.22} size={0.04} />
+      <FieldParticles seed={730} count={180} radius={10.8} depth={5.8} height={3.4} color={ICE} opacity={0.26} size={0.04} />
     </group>
   );
 }
@@ -531,7 +535,7 @@ function AudioArtifact({ node, active }: ArtifactProps) {
   return <group><AuthoredMemoryStar aura={node.aura} active={active} scale={active ? 1.08 : 0.82} />{[-0.34, 0, 0.34].map((z, index) => <Current key={z} points={[[-0.78, 0, z], [-0.3, index * 0.2, z], [0.18, -index * 0.14, z], [0.82, 0.04, z]]} color={index === 1 ? ICE : node.aura} opacity={active ? 0.82 : 0.42} width={0.025} />)}</group>;
 }
 function RelationshipArtifact({ node, active }: ArtifactProps) {
-  return <group><AuthoredMemoryStar aura={node.aura} active={active} scale={active ? 1.1 : 0.82} /><Line points={[[-0.72, 0.02, 0.18], [0, 0.72, -0.4], [0.72, 0.08, 0.12]]} color={node.aura} lineWidth={active ? 1.4 : 0.8} /></group>;
+  return <group><AuthoredMemoryStar aura={node.aura} active={active} scale={active ? 1.1 : 0.82} /><FieldParticles seed={node.id.length * 41} count={active ? 30 : 14} radius={1.7} depth={2.4} height={1.8} color={node.aura} opacity={active ? 0.5 : 0.24} size={0.042} /></group>;
 }
 function PlaceArtifact({ node, active }: ArtifactProps) {
   return <group><AuthoredMemoryStar aura={node.aura} active={active} scale={active ? 1.2 : 0.9} rotation={[-0.25, 0.18, 0.08]} /><Current points={[[-1.1, -0.35, 0.4], [-0.45, -0.1, -0.35], [0.35, -0.15, -0.6], [1.1, -0.32, 0.2]]} color={node.aura} opacity={active ? 0.66 : 0.3} width={0.022} /></group>;
@@ -596,7 +600,7 @@ function MemoryArtifact({ node, index, selected, phase, reducedMotion, onSelect 
       ref={root}
       position={node.position}
       visible={visible}
-      scale={active ? 1.72 : 0.9 + importance * 0.38}
+      scale={active ? 1.46 : 0.58 + importance * 0.22}
       name={`life-map-artifact-${resolveArtifactFamily(node)}-${node.id}`}
       userData={{ artifactFamily: resolveArtifactFamily(node), importance: importance.toFixed(2), semanticLabel, chapterId: chapter.id, runtimeAsset: MEMORY_STAR_MODEL }}
       onClick={(event) => { event.stopPropagation(); onSelect(node); }}
@@ -655,6 +659,7 @@ function LivingPaths({ nodes, selected, reducedMotion, phase }: { nodes: LifeMap
     }
     return result;
   }, [nodes]);
+  if (!selected) return <group name="life-map-curved-semantic-paths" />;
   return (
     <group name="life-map-curved-semantic-paths">
       {links.map((link, index) => {
@@ -687,7 +692,7 @@ function SelectedMemoryArrival({ selected, phase, reducedMotion }: { selected: L
       }}
       position={selected.position}
     >
-      <AuthoredMemoryStar aura={selected.aura} active scale={1.84} clip="MemoryStar_Focus" />
+      <AuthoredMemoryStar aura={selected.aura} active scale={1.38} clip="MemoryStar_Focus" />
       <FieldParticles seed={996} count={160} radius={5.4} depth={8.2} height={7.6} color={selected.aura} opacity={0.42} size={0.065} />
       <Sparkles count={72} scale={[8.4, 7.2, 8.4]} size={2.15} speed={reducedMotion ? 0 : 0.07} opacity={0.34} color={ICE} />
       <pointLight color={selected.aura} intensity={9} distance={26} decay={2} />
