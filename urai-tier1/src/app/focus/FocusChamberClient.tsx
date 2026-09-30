@@ -179,12 +179,16 @@ function StellarPhotosphere({ accent, light, reducedMotion }: { accent: string; 
       uLight: { value: new THREE.Color(light) },
     },
     vertexShader: `
+      uniform float uTime;
       varying vec3 vObjectPosition;
       varying vec3 vNormalView;
       void main() {
-        vObjectPosition = position;
+        float macro = sin(position.x * 9.0 + position.y * 5.0 + uTime * .12) * sin(position.z * 11.0 - position.x * 4.0 - uTime * .08);
+        float grain = sin((position.x - position.z) * 23.0 + uTime * .18);
+        vec3 displaced = position + normal * (macro * .046 + grain * .014);
+        vObjectPosition = displaced;
         vNormalView = normalize(normalMatrix * normal);
-        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(displaced, 1.0);
       }
     `,
     fragmentShader: `
