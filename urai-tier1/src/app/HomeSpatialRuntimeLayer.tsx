@@ -25,12 +25,6 @@ function HomeSemanticNavigation() {
         aria-label="Open Ground directly"
         data-testid="home-semantic-ground"
         onClick={openGround}
-        onKeyDown={(event) => {
-          if (event.key !== 'Enter' && event.key !== ' ') return
-          event.preventDefault()
-          event.stopPropagation()
-          openGround()
-        }}
       >
         Ground
       </button>
