@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import fs from 'node:fs'
+import nodePath from 'node:path'
 
 const path = process.argv[2]
 if (!path) throw new Error('usage: validate-interpretive-world-receipt.mjs <receipt.json>')
@@ -76,8 +77,25 @@ if (reconstructionAccepted) {
   need(typeof receipt.visual.reviewer === 'string' && receipt.visual.reviewer.trim().length > 0, 'visual acceptance reviewer required')
   need(Number.isFinite(Date.parse(receipt.visual.reviewedAt)), 'visual acceptance reviewedAt required')
   need(typeof receipt.visual.receiptRef === 'string' && receipt.visual.receiptRef.trim().length > 0, 'visual acceptance receiptRef required')
+  const visualReceiptPath = typeof receipt.visual.receiptRef === 'string'
+    ? nodePath.resolve(nodePath.dirname(inputPath), receipt.visual.receiptRef)
+    : ''
+  need(Boolean(visualReceiptPath) && fs.existsSync(visualReceiptPath), 'visual acceptance receipt file required')
+  let visualReceipt = null
+  if (visualReceiptPath && fs.existsSync(visualReceiptPath)) {
+    visualReceipt = JSON.parse(fs.readFileSync(visualReceiptPath, 'utf8'))
+    need(visualReceipt.worldId === receipt.worldId, 'visual acceptance worldId mismatch')
+    need(visualReceipt.classification === 'ACCEPTED', 'reconstruction promotion requires ACCEPTED visual receipt')
+    need(visualReceipt.review?.overallAccepted === true && visualReceipt.review?.geometryConsistencyAccepted === true, 'visual receipt must accept overall geometry consistency')
+  }
   const acceptedTaskIds = Array.isArray(receipt.visual.acceptedTaskIds) ? receipt.visual.acceptedTaskIds : []
   need(acceptedTaskIds.length === generationTaskIds.length && generationTaskIds.every((id) => acceptedTaskIds.includes(id)), 'visual acceptance must bind the complete generated task set')
+  if (visualReceipt) {
+    const visualAcceptedTaskIds = Array.isArray(visualReceipt.items)
+      ? visualReceipt.items.filter((item) => item.status === 'accepted').map((item) => item.taskId)
+      : []
+    need(visualAcceptedTaskIds.length === generationTaskIds.length && generationTaskIds.every((id) => visualAcceptedTaskIds.includes(id)), 'accepted visual receipt must cover the complete generated task set')
+  }
   need(receipt.frames.acceptedFrameCount >= 120, 'accepted reconstruction requires at least 120 accepted frames')
   need(receipt.frames.heldOutFrameCount >= Math.ceil(receipt.frames.acceptedFrameCount * 0.10), 'held-out frame set must be at least 10% of accepted frames')
 
