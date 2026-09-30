@@ -588,11 +588,11 @@ function MemoryArtifact({ node, index, selected, phase, reducedMotion, onSelect 
   const related = Boolean(selected && (selected.connectedTo.includes(node.id) || node.connectedTo.includes(selected.id)));
   const visible = !selected || active || (related && phase !== "arrival");
   const importance = artifactImportance(node);
-  // The atlas owns the overview.  Keep only a sparse set of large, navigable
-  // stellar anchors in the foreground; the rest resolve as dense stellar
-  // weather until a memory is selected.  This preserves semantic selection
-  // without rendering a screenful of equal-sized UI-like balls.
-  const overviewAnchor = active || selected !== null || index % 3 === 0 || importance >= 0.82;
+  // The atlas owns the overview. Memory identity resolves into stellar
+  // clusters at a distance; a physical photosphere only appears after a
+  // memory is selected. This removes the dashboard-like field of equal balls
+  // while retaining semantic selection through the navigator and world event.
+  const overviewCluster = selected === null;
   const chapter = chapterForNode(node, index);
   const semanticLabel = artifactFamilyLabel(node);
   useFrame(({ clock }) => {
@@ -610,9 +610,9 @@ function MemoryArtifact({ node, index, selected, phase, reducedMotion, onSelect 
       userData={{ artifactFamily: resolveArtifactFamily(node), importance: importance.toFixed(2), semanticLabel, chapterId: chapter.id, runtimeAsset: MEMORY_STAR_MODEL }}
       onClick={(event) => { event.stopPropagation(); onSelect(node); }}
     >
-      {overviewAnchor ? <ArtifactShape node={node} active={active} /> : <FieldParticles seed={index * 137 + node.id.length * 17} count={28} radius={1.5} depth={3.8} height={2.6} color={node.aura} opacity={0.34} size={0.044} />}
-      <Sparkles count={active ? 34 : overviewAnchor ? 10 : 5} scale={active ? [3.4, 3.8, 3.4] : overviewAnchor ? [1.8, 2.2, 1.8] : [2.7, 2.9, 3.4]} size={active ? 2.4 : overviewAnchor ? 1.3 : 0.72} speed={reducedMotion ? 0 : 0.11} opacity={active ? 0.72 : overviewAnchor ? 0.34 : 0.2} color={node.aura} />
-      <pointLight color={node.aura} intensity={active ? 8 : 2.8} distance={active ? 15 : 7} decay={2} />
+      {overviewCluster ? <FieldParticles seed={index * 137 + node.id.length * 17} count={44} radius={2.25} depth={5.8} height={3.8} color={node.aura} opacity={0.42} size={0.052} /> : <ArtifactShape node={node} active={active} />}
+      <Sparkles count={active ? 34 : overviewCluster ? 14 : 10} scale={active ? [3.4, 3.8, 3.4] : overviewCluster ? [3.8, 4.3, 5.1] : [1.8, 2.2, 1.8]} size={active ? 2.4 : overviewCluster ? 0.92 : 1.3} speed={reducedMotion ? 0 : 0.11} opacity={active ? 0.72 : overviewCluster ? 0.28 : 0.34} color={node.aura} />
+      <pointLight color={node.aura} intensity={active ? 8 : overviewCluster ? 1.2 : 2.8} distance={active ? 15 : overviewCluster ? 5 : 7} decay={2} />
     </group>
   );
 }
