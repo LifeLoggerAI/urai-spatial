@@ -209,7 +209,7 @@ function FieldParticles({ seed, count, radius, depth, height, color, opacity = 0
       void main() {
         vec4 viewPosition = modelViewMatrix * vec4(position, 1.0);
         gl_Position = projectionMatrix * viewPosition;
-        gl_PointSize = clamp(uPointScale / max(0.2, -viewPosition.z), 1.0, 24.0);
+        gl_PointSize = clamp(uPointScale / max(0.2, -viewPosition.z), 2.0, 24.0);
       }
     `,
     fragmentShader: `
@@ -752,12 +752,69 @@ function ArchiveParticles({ qualityTier, reducedMotion }: { qualityTier: Spatial
   );
 }
 
+/** Distributed emissive dust in world space: camera travel changes its parallax
+ * and occlusion. No screen overlay, connector diagram, or pulsing billboard. */
+function GalaxyVolume({ tier }: { tier: SpatialQualityProfile["tier"] }) {
+  const { size, gl } = useThree();
+  const count = tier === "low" ? 720 : tier === "medium" ? 1440 : 2160;
+  const geometry = useMemo(() => {
+    const positions = new Float32Array(count * 3);
+    const colors = new Float32Array(count * 3);
+    for (let i = 0; i < count; i += 1) {
+      const r = 5 + Math.sqrt(seeded(i, 303)) * 49;
+      const arm = (i % 3) * Math.PI * 2 / 3;
+      const angle = arm + r * 0.083 + (seeded(i, 307) - 0.5) * 0.72;
+      positions[i * 3] = Math.cos(angle) * r;
+      positions[i * 3 + 1] = Math.sin(angle * 1.7) * 5 + (seeded(i, 311) - 0.5) * (3 + r * 0.13);
+      positions[i * 3 + 2] = Math.sin(angle) * r - 22;
+      const color = new THREE.Color().lerpColors(new THREE.Color("#416baf"), new THREE.Color("#9e598e"), seeded(i, 313));
+      colors.set([color.r, color.g, color.b], i * 3);
+    }
+    const result = new THREE.BufferGeometry();
+    result.setAttribute("position", new THREE.BufferAttribute(positions, 3));
+    result.setAttribute("color", new THREE.BufferAttribute(colors, 3));
+    return result;
+  }, [count]);
+  const material = useMemo(() => new THREE.ShaderMaterial({
+    transparent: true, depthTest: true, depthWrite: false,
+    blending: THREE.AdditiveBlending, toneMapped: false,
+    uniforms: { uScale: { value: 1 } },
+    vertexShader: `
+      attribute vec3 color;
+      varying vec3 vColor;
+      uniform float uScale;
+      void main() {
+        vColor = color;
+        vec4 p = modelViewMatrix * vec4(position, 1.0);
+        gl_Position = projectionMatrix * p;
+        gl_PointSize = clamp(uScale / max(1.0, -p.z), 5.0, 96.0);
+      }
+    `,
+    fragmentShader: `
+      varying vec3 vColor;
+      void main() {
+        vec2 p = gl_PointCoord - 0.5;
+        float r = length(p) * 2.0;
+        if (r > 1.0) discard;
+        float haze = exp(-r * r * 5.0) * (1.0 - smoothstep(0.6, 1.0, r));
+        gl_FragColor = vec4(vColor, haze * 0.035);
+        #include <colorspace_fragment>
+      }
+    `,
+  }), []);
+  useEffect(() => { material.uniforms.uScale.value = size.height * gl.getPixelRatio() * 2.8; }, [material, size.height, gl]);
+  useEffect(() => () => geometry.dispose(), [geometry]);
+  useEffect(() => () => material.dispose(), [material]);
+  return <points name="life-map-volumetric-galactic-dust" geometry={geometry} raycast={() => null}><primitive object={material} attach="material" /></points>;
+}
+
 function GalaxyDepth({ tier, reducedMotion }: { tier: SpatialQualityProfile["tier"]; reducedMotion: boolean }) {
   const farCount = tier === "low" ? 540 : tier === "medium" ? 1320 : 2480;
   const middleCount = tier === "low" ? 240 : tier === "medium" ? 560 : 980;
   const foregroundCount = tier === "low" ? 84 : tier === "medium" ? 190 : 340;
   return (
     <group name="life-map-layered-galaxy-depth" userData={{ visualCanon: "foreground-middle-far-stellar-atlas" }}>
+      <GalaxyVolume tier={tier} />
       <FieldParticles seed={2107} count={farCount} radius={66} depth={94} height={42} color="#9dbfff" opacity={0.42} size={0.034} />
       <FieldParticles seed={2311} count={middleCount} radius={39} depth={44} height={18} color="#a88bff" opacity={0.46} size={0.055} />
       <FieldParticles seed={2573} count={foregroundCount} radius={18} depth={18} height={9} color="#d9f7ff" opacity={0.52} size={0.075} />
