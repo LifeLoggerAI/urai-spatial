@@ -17,7 +17,7 @@ test('interpretive generated world can never claim autobiographical recorded-sou
 test('world 001 remains hard-off until literal review and reconstruction gates are complete', () => {
   assert.equal(manifest.canonicalVisualSeed.visualAcceptance, 'pending-literal-review')
   assert.equal(manifest.reconstruction.state, 'not-started')
-  assert.equal(manifest.runtime.featureFlag, 'URAI_ENABLE_CAPTURED_REALITY')
+  assert.equal(manifest.runtime.featureFlag, 'URAI_ENABLE_INTERPRETIVE_WORLDS')
   assert.equal(manifest.runtime.promotionState, 'hard-off')
 })
 
