@@ -1,0 +1,34 @@
+{
+  "schemaVersion": "urai-memory-world-foundation-receipt-1",
+  "status": "IMPLEMENTED_SOURCE_UNVERIFIED_RUNTIME",
+  "parentAuthority": {
+    "repository": "LifeLoggerAI/urai-spatial",
+    "pullRequest": 1462,
+    "exactParentHead": "a86e17b5cf1fd8e085db202f32a2361b7b1a32bc",
+    "branch": "converge/android-wif-terminal-20260929"
+  },
+  "childBranch": "feat/memory-world-foundation-20260930-v2",
+  "implemented": [
+    "324-archetype foundational scene ontology",
+    "MVP / Phase 2 / mature quantitative library targets",
+    "Memory World schema with 20-layer hybrid representation authority",
+    "T0-T7 truth classes and source/reuse permission registry",
+    "cultural-governance and licensing fail-closed validation",
+    "deterministic personal-evidence override assembly",
+    "25-world diverse QA corpus",
+    "unit-contract coverage for ontology, precedence, truth and cultural escalation"
+  ],
+  "nonClaims": [
+    "No Gold Master claim",
+    "No production-live scene claim",
+    "No complete 10,000-object mature library claim",
+    "No independent approval claim",
+    "No browser/mobile/XR runtime certification claim",
+    "No private Parents House reconstruction claim"
+  ],
+  "supersedes": {
+    "branch": "feat/memory-world-foundation-20260930",
+    "pullRequest": 1475,
+    "reason": "parent release authority advanced during implementation; successor re-anchored without force-push"
+  }
+}
