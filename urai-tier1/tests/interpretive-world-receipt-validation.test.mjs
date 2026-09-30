@@ -35,7 +35,14 @@ test('PRE_RECONSTRUCTION cannot claim certification or accepted reconstruction',
 test('accepted reconstruction enforces visual, frame, camera, training, QA and archival gates', () => {
   const source = JSON.parse(fs.readFileSync(pendingReceipt, 'utf8'))
   source.classification = 'RECONSTRUCTION_ACCEPTED'
-  source.visual = { literalAcceptance: true, receiptRef: 'visual-acceptance.json' }
+  source.visual = {
+    literalAcceptance: true,
+    geometryConsistencyAccepted: true,
+    acceptedTaskIds: [source.generation.heroTaskId, ...source.generation.anchorTaskIds, ...source.generation.surveyTaskIds],
+    reviewer: 'independent-reviewer',
+    reviewedAt: '2026-09-30T00:00:00Z',
+    receiptRef: 'visual-acceptance.json',
+  }
   source.frames = { acceptedFrameCount: 140, heldOutFrameCount: 14, frameManifestRef: 'frames.json' }
   source.cameraSolve = {
     engine: 'colmap',
