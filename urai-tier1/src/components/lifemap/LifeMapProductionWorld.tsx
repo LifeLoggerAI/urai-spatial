@@ -387,16 +387,16 @@ function AuthoredMemoryStar({ aura, active, scale = 1, rotation = [0, 0, 0], cli
       }}
     >
       <primitive object={model} visible={false} />
-      <mesh name="memory-star-photosphere" castShadow={false} scale={active ? 1.16 : 1.05}>
+      <mesh name="memory-star-photosphere" castShadow={false} scale={active ? 1.22 : 1.18}>
         <sphereGeometry args={[0.38, 72, 56]} />
         <primitive object={photosphere} attach="material" />
       </mesh>
-      <mesh name="memory-star-inner-corona" scale={active ? 1.34 : 1.22} raycast={() => null}>
+      <mesh name="memory-star-inner-corona" scale={active ? 1.55 : 1.40} raycast={() => null}>
         <sphereGeometry args={[0.38, 56, 40]} />
         <meshBasicMaterial
           color="#fff0c2"
           transparent
-          opacity={active ? 0.18 : 0.095}
+          opacity={active ? 0.10 : 0.07}
           blending={THREE.AdditiveBlending}
           depthWrite={false}
           toneMapped={false}
@@ -408,7 +408,7 @@ function AuthoredMemoryStar({ aura, active, scale = 1, rotation = [0, 0, 0], cli
         <meshBasicMaterial
           color={aura}
           transparent
-          opacity={active ? 0.075 : 0.038}
+          opacity={active ? 0.032 : 0.025}
           blending={THREE.AdditiveBlending}
           depthWrite={false}
           toneMapped={false}
@@ -684,7 +684,7 @@ function SelectedMemoryArrival({ selected, phase, reducedMotion }: { selected: L
       }}
       position={selected.position}
     >
-      <AuthoredMemoryStar aura={selected.aura} active scale={1.56} clip="MemoryStar_Focus" />
+      <AuthoredMemoryStar aura={selected.aura} active scale={1.84} clip="MemoryStar_Focus" />
       <FieldParticles seed={996} count={160} radius={5.4} depth={8.2} height={7.6} color={selected.aura} opacity={0.42} size={0.065} />
       <Sparkles count={72} scale={[8.4, 7.2, 8.4]} size={2.15} speed={reducedMotion ? 0 : 0.07} opacity={0.34} color={ICE} />
       <pointLight color={selected.aura} intensity={9} distance={26} decay={2} />
