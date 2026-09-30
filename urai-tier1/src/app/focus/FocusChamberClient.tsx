@@ -245,6 +245,8 @@ function StellarPhotosphere({ accent, light, reducedMotion }: { accent: string; 
         surface = mix(surface, uAccent, .015);
         surface *= 1.0 - pores * .16;
         float radiance = (.54 + granulation * .58) * (.5 + limb * .42) * mottling;
+        // Preserve dark granulation while giving the photosphere its own stellar emission.
+        radiance *= 1.85;
         vec3 emitted = surface * radiance + hotWhite * (.012 + cells * .035);
         gl_FragColor = vec4(clamp(emitted, 0.0, 1.0), 1.0);
         #include <colorspace_fragment>
