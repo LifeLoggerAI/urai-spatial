@@ -47,7 +47,7 @@
       "id": "S02_PULLBACK",
       "taskId": "894905a7-9c8a-4955-94b1-1be38ce12869",
       "seconds": 6,
-      "state": "submitted",
+      "state": "generated",
       "acceptance": "pending"
     },
     {
@@ -68,28 +68,28 @@
       "id": "S05_CW_ARC",
       "taskId": "3be52a25-dfa0-45c7-abdf-3ccc02aacbe7",
       "seconds": 7,
-      "state": "submitted",
+      "state": "generated",
       "acceptance": "pending"
     },
     {
       "id": "S06_CCW_ARC",
       "taskId": "77a33ac6-f598-4b56-98fd-0386e4e4719b",
       "seconds": 7,
-      "state": "submitted",
+      "state": "generated",
       "acceptance": "pending"
     },
     {
       "id": "S07_ELEVATION",
       "taskId": "4b0d49a6-4f24-4b56-9585-933b481a66ce",
       "seconds": 6,
-      "state": "submitted",
+      "state": "generated",
       "acceptance": "pending"
     },
     {
       "id": "S08_DIAGONAL",
       "taskId": "32ffb018-6f5c-4d50-b1c6-7a572abd7e50",
       "seconds": 6,
-      "state": "submitted",
+      "state": "generated",
       "acceptance": "pending"
     }
   ],
@@ -131,7 +131,10 @@
     "packetStartCredits": 9366,
     "authoritativeRefreshBeforeFinalFive": 9113,
     "lowestObservedReservedBalanceAfterSubmission": 8601,
-    "topUpPerformed": false
+    "topUpPerformed": false,
+    "settledBalanceAfterSurveyCredits": 8601,
+    "totalPilotCreditsConsumed": 765,
+    "withinPilotCeiling": true
   },
   "drive": {
     "productionRootFolderId": "14TXUDrNi16DcyB4tL2KSu50GYPpX_vKL",
@@ -157,5 +160,10 @@
     "fallback-and-revocation-proof",
     "exact-head-ci",
     "independent-review"
-  ]
+  ],
+  "generationSet": {
+    "state": "complete-awaiting-literal-visual-review",
+    "surveyPassCount": 8,
+    "anchorCount": 3
+  }
 }
