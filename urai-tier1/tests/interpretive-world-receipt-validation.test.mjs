@@ -63,7 +63,14 @@ test('accepted reconstruction enforces visual, frame, camera, training, QA and a
 test('browser readiness requires bounded splat plus a 45 fps 30-second desktop receipt', () => {
   const source = JSON.parse(fs.readFileSync(pendingReceipt, 'utf8'))
   source.classification = 'BROWSER_RUNTIME_READY'
-  source.visual = { literalAcceptance: true, receiptRef: 'visual-acceptance.json' }
+  source.visual = {
+    literalAcceptance: true,
+    geometryConsistencyAccepted: true,
+    acceptedTaskIds: [source.generation.heroTaskId, ...source.generation.anchorTaskIds, ...source.generation.surveyTaskIds],
+    reviewer: 'independent-reviewer',
+    reviewedAt: '2026-09-30T00:00:00Z',
+    receiptRef: 'visual-acceptance.json',
+  }
   source.frames = { acceptedFrameCount: 140, heldOutFrameCount: 14, frameManifestRef: 'frames.json' }
   source.cameraSolve = {
     engine: 'colmap', registeredImages: 126, totalInputImages: 140,
@@ -91,7 +98,14 @@ test('browser readiness requires bounded splat plus a 45 fps 30-second desktop r
 test('XR can never inherit browser or mobile readiness without its own physical-device receipt', () => {
   const source = JSON.parse(fs.readFileSync(pendingReceipt, 'utf8'))
   source.classification = 'XR_RUNTIME_READY'
-  source.visual = { literalAcceptance: true, receiptRef: 'visual-acceptance.json' }
+  source.visual = {
+    literalAcceptance: true,
+    geometryConsistencyAccepted: true,
+    acceptedTaskIds: [source.generation.heroTaskId, ...source.generation.anchorTaskIds, ...source.generation.surveyTaskIds],
+    reviewer: 'independent-reviewer',
+    reviewedAt: '2026-09-30T00:00:00Z',
+    receiptRef: 'visual-acceptance.json',
+  }
   source.frames = { acceptedFrameCount: 140, heldOutFrameCount: 14, frameManifestRef: 'frames.json' }
   source.cameraSolve = {
     engine: 'colmap', registeredImages: 126, totalInputImages: 140,
