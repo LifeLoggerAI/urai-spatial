@@ -45,6 +45,7 @@ const tests = [
   'tests/memory-star-phase4-contract.test.mjs',
   'tests/memory-world-foundation.test.mjs',
   'tests/memory-world-authoring.test.mjs',
+  'tests/memory-world-runtime.test.mjs',
   'tests/mirror-spatial-realm-contract.test.mjs',
   'tests/mirror-canonical-owner-hydration-contract.test.mjs',
   'tests/orb-companion-contract.test.mjs',
