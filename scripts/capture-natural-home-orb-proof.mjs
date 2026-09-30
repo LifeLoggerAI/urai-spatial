@@ -29,7 +29,7 @@ const receipt = {
   schemaVersion: 'urai-sacred-home-orb-proof-3',
   exactHead,
   capturedAt: new Date().toISOString(),
-  runtimeContract: 'sacred-tech-home-real-glb-makehuman-orb-portal-semantic-and-visual-proof',
+  runtimeContract: 'natural-home-real-glb-makehuman-orb-portal-semantic-and-visual-proof',
   orbIdentity: { path: orbPath, bytes: orbBytes.length, sha256: orbSha256, verified: true },
   portalIdentity: { path: portalPath, requiredRuntimeRequest: true },
   cases: [],
@@ -122,9 +122,9 @@ for (const spec of cases) {
     record.luminanceRange = visual.luminanceRange
     record.visibleSamples = visual.visibleSamples
     record.passed = record.status === 200
-      && record.visibleWorld === 'moonlit-sacred-tech-sanctuary'
-      && record.worldCharacter === 'premium-cinematic-sacred-tech'
-      && record.physicalBase === 'authored-obsidian-ritual-platform'
+      && record.visibleWorld === 'moonlit-natural-inhabited-sanctuary'
+      && record.worldCharacter === 'premium-cinematic-natural-sanctuary'
+      && record.physicalBase === 'grounded-flagstone-clearing'
       && record.visualOwnership === 'three-dimensional-geometry'
       && record.desktopMobileWorld === 'same-scene'
       && record.embodiedSelf === 'makehuman-v4'
