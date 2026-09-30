@@ -588,6 +588,11 @@ function MemoryArtifact({ node, index, selected, phase, reducedMotion, onSelect 
   const related = Boolean(selected && (selected.connectedTo.includes(node.id) || node.connectedTo.includes(selected.id)));
   const visible = !selected || active || (related && phase !== "arrival");
   const importance = artifactImportance(node);
+  // The atlas owns the overview.  Keep only a sparse set of large, navigable
+  // stellar anchors in the foreground; the rest resolve as dense stellar
+  // weather until a memory is selected.  This preserves semantic selection
+  // without rendering a screenful of equal-sized UI-like balls.
+  const overviewAnchor = active || selected !== null || index % 3 === 0 || importance >= 0.82;
   const chapter = chapterForNode(node, index);
   const semanticLabel = artifactFamilyLabel(node);
   useFrame(({ clock }) => {
@@ -605,8 +610,8 @@ function MemoryArtifact({ node, index, selected, phase, reducedMotion, onSelect 
       userData={{ artifactFamily: resolveArtifactFamily(node), importance: importance.toFixed(2), semanticLabel, chapterId: chapter.id, runtimeAsset: MEMORY_STAR_MODEL }}
       onClick={(event) => { event.stopPropagation(); onSelect(node); }}
     >
-      <ArtifactShape node={node} active={active} />
-      <Sparkles count={active ? 34 : 10} scale={active ? [3.4, 3.8, 3.4] : [1.8, 2.2, 1.8]} size={active ? 2.4 : 1.3} speed={reducedMotion ? 0 : 0.11} opacity={active ? 0.72 : 0.34} color={node.aura} />
+      {overviewAnchor ? <ArtifactShape node={node} active={active} /> : <FieldParticles seed={index * 137 + node.id.length * 17} count={28} radius={1.5} depth={3.8} height={2.6} color={node.aura} opacity={0.34} size={0.044} />}
+      <Sparkles count={active ? 34 : overviewAnchor ? 10 : 5} scale={active ? [3.4, 3.8, 3.4] : overviewAnchor ? [1.8, 2.2, 1.8] : [2.7, 2.9, 3.4]} size={active ? 2.4 : overviewAnchor ? 1.3 : 0.72} speed={reducedMotion ? 0 : 0.11} opacity={active ? 0.72 : overviewAnchor ? 0.34 : 0.2} color={node.aura} />
       <pointLight color={node.aura} intensity={active ? 8 : 2.8} distance={active ? 15 : 7} decay={2} />
     </group>
   );
@@ -709,15 +714,15 @@ function ArchiveParticles({ qualityTier, reducedMotion }: { qualityTier: Spatial
 }
 
 function GalaxyDepth({ tier, reducedMotion }: { tier: SpatialQualityProfile["tier"]; reducedMotion: boolean }) {
-  const farCount = tier === "low" ? 360 : tier === "medium" ? 820 : 1480;
-  const middleCount = tier === "low" ? 150 : tier === "medium" ? 320 : 560;
-  const foregroundCount = tier === "low" ? 56 : tier === "medium" ? 120 : 210;
+  const farCount = tier === "low" ? 540 : tier === "medium" ? 1320 : 2480;
+  const middleCount = tier === "low" ? 240 : tier === "medium" ? 560 : 980;
+  const foregroundCount = tier === "low" ? 84 : tier === "medium" ? 190 : 340;
   return (
     <group name="life-map-layered-galaxy-depth" userData={{ visualCanon: "foreground-middle-far-stellar-atlas" }}>
-      <FieldParticles seed={2107} count={farCount} radius={66} depth={94} height={42} color="#9dbfff" opacity={0.28} size={0.026} />
-      <FieldParticles seed={2311} count={middleCount} radius={39} depth={44} height={18} color="#a88bff" opacity={0.32} size={0.042} />
-      <FieldParticles seed={2573} count={foregroundCount} radius={18} depth={18} height={9} color="#d9f7ff" opacity={0.4} size={0.06} />
-      <Sparkles count={tier === "low" ? 48 : 118} scale={[44, 22, 58]} position={[0, 2.5, -18]} size={1.1} speed={reducedMotion ? 0 : 0.035} opacity={0.22} color="#d9f7ff" />
+      <FieldParticles seed={2107} count={farCount} radius={66} depth={94} height={42} color="#9dbfff" opacity={0.42} size={0.034} />
+      <FieldParticles seed={2311} count={middleCount} radius={39} depth={44} height={18} color="#a88bff" opacity={0.46} size={0.055} />
+      <FieldParticles seed={2573} count={foregroundCount} radius={18} depth={18} height={9} color="#d9f7ff" opacity={0.52} size={0.075} />
+      <Sparkles count={tier === "low" ? 72 : 176} scale={[44, 22, 58]} position={[0, 2.5, -18]} size={1.35} speed={reducedMotion ? 0 : 0.035} opacity={0.34} color="#d9f7ff" />
     </group>
   );
 }
