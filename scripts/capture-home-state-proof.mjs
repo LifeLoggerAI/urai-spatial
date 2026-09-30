@@ -20,7 +20,7 @@ const receipt = {
   schemaVersion: 'urai-home-state-proof-5',
   exactHead,
   capturedAt: new Date().toISOString(),
-  runtimeContract: 'sacred-home-live-owner-orb-lifecycle-stability-accessibility-and-retained-canvas-evidence',
+  runtimeContract: 'natural-home-live-owner-orb-lifecycle-stability-accessibility-and-retained-canvas-evidence',
   visualGate: {
     source: 'retained-canvas-png',
     sampling: 'distributed-3x3-neighborhood',
@@ -198,7 +198,7 @@ async function capture(state, options = {}) {
     record.passed = record.status === 200
       && record.canvasReady === 'true'
       && record.primaryOwner === 'asset-driven'
-      && record.visibleWorld === 'moonlit-sacred-tech-sanctuary'
+      && record.visibleWorld === 'moonlit-natural-inhabited-sanctuary'
       && record.movement === 'walk-keyboard-click-touch'
       && record.runtimeAssets?.includes('home-entry-chamber-v1.glb')
       && record.runtimeAssets?.includes('urai-orb-avatar-v1.glb')
@@ -366,7 +366,7 @@ try {
   transition.passed = transition.status === 200
     && transition.canvasReady === 'true'
     && transition.primaryOwner === 'asset-driven'
-    && transition.visibleWorld === 'moonlit-sacred-tech-sanctuary'
+    && transition.visibleWorld === 'moonlit-natural-inhabited-sanctuary'
     && transition.pointerLock
     && transitionErrors.length === 0
 } catch (error) {
