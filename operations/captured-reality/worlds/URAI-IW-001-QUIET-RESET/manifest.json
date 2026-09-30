@@ -1,0 +1,161 @@
+{
+  "schemaVersion": "urai-interpretive-world-1",
+  "id": "URAI-IW-001-QUIET-RESET",
+  "name": "Quiet Reset Sanctuary",
+  "truthClass": "interpretive",
+  "truthLabel": "Interpretive generated world — not camera-recorded history.",
+  "autobiographical": false,
+  "generatedOnly": true,
+  "sourceTruthEligible": false,
+  "sourceIds": [],
+  "exactPrivateLocationEmbedded": false,
+  "canonicalVisualSeed": {
+    "provider": "runway",
+    "taskId": "ebe33ba1-ccc1-4ff1-a329-8e619f51590a",
+    "state": "generated",
+    "visualAcceptance": "pending-literal-review"
+  },
+  "anchorViews": [
+    {
+      "id": "A01_LEFT",
+      "taskId": "0d73cca1-892c-45c0-a009-79337a539b20",
+      "state": "generated",
+      "acceptance": "pending"
+    },
+    {
+      "id": "A02_RIGHT",
+      "taskId": "17de7ff2-db78-4fb4-babb-f4af30e34615",
+      "state": "generated",
+      "acceptance": "pending"
+    },
+    {
+      "id": "A03_TREE",
+      "taskId": "14edc580-87db-4e7f-8e98-1343a0b86214",
+      "state": "generated",
+      "acceptance": "pending"
+    }
+  ],
+  "surveyPasses": [
+    {
+      "id": "S01_PUSH",
+      "taskId": "613f748d-5c8f-49fa-baa7-e8366ce94270",
+      "seconds": 6,
+      "state": "generated",
+      "acceptance": "pending"
+    },
+    {
+      "id": "S02_PULLBACK",
+      "taskId": "894905a7-9c8a-4955-94b1-1be38ce12869",
+      "seconds": 6,
+      "state": "submitted",
+      "acceptance": "pending"
+    },
+    {
+      "id": "S03_LEFT",
+      "taskId": "c4d0c381-336a-41d4-aa76-7139e7921992",
+      "seconds": 6,
+      "state": "generated",
+      "acceptance": "pending"
+    },
+    {
+      "id": "S04_RIGHT",
+      "taskId": "67b988f1-aaaf-4b1f-afe0-f003bebf10c4",
+      "seconds": 6,
+      "state": "generated",
+      "acceptance": "pending"
+    },
+    {
+      "id": "S05_CW_ARC",
+      "taskId": "3be52a25-dfa0-45c7-abdf-3ccc02aacbe7",
+      "seconds": 7,
+      "state": "submitted",
+      "acceptance": "pending"
+    },
+    {
+      "id": "S06_CCW_ARC",
+      "taskId": "77a33ac6-f598-4b56-98fd-0386e4e4719b",
+      "seconds": 7,
+      "state": "submitted",
+      "acceptance": "pending"
+    },
+    {
+      "id": "S07_ELEVATION",
+      "taskId": "4b0d49a6-4f24-4b56-9585-933b481a66ce",
+      "seconds": 6,
+      "state": "submitted",
+      "acceptance": "pending"
+    },
+    {
+      "id": "S08_DIAGONAL",
+      "taskId": "32ffb018-6f5c-4d50-b1c6-7a572abd7e50",
+      "seconds": 6,
+      "state": "submitted",
+      "acceptance": "pending"
+    }
+  ],
+  "reconstruction": {
+    "state": "not-started",
+    "cameraSolveEngine": "colmap",
+    "gaussianTrainer": "nerfstudio-splatfacto",
+    "archiveFormat": "ply-3dgs",
+    "runtimePreferredFormat": "spz-or-current-renderer-supported-splat",
+    "registrationHardFloor": 0.7,
+    "registrationTarget": 0.85,
+    "meanReprojectionErrorPxMax": 1.5,
+    "heldOutPsnrDbTarget": 24,
+    "heldOutSsimMin": 0.85,
+    "heldOutLpipsMax": 0.25
+  },
+  "runtime": {
+    "featureFlag": "URAI_ENABLE_CAPTURED_REALITY",
+    "promotionState": "hard-off",
+    "mobile": {
+      "maxBytes": 67108864,
+      "targetFps": 30,
+      "chunkSize": 16000
+    },
+    "desktop": {
+      "maxBytes": 167772160,
+      "targetFps": 45,
+      "chunkSize": 25000
+    },
+    "xr": {
+      "maxBytes": 100663296,
+      "targetFps": 72,
+      "chunkSize": 16000,
+      "certification": "separate-physical-device-proof-required"
+    }
+  },
+  "spend": {
+    "pilotCeilingCredits": 1200,
+    "packetStartCredits": 9366,
+    "authoritativeRefreshBeforeFinalFive": 9113,
+    "lowestObservedReservedBalanceAfterSubmission": 8601,
+    "topUpPerformed": false
+  },
+  "drive": {
+    "productionRootFolderId": "14TXUDrNi16DcyB4tL2KSu50GYPpX_vKL",
+    "packetDocumentId": "1NI_3TEhjhJPmscVUJ-Vd6Cc3feBvLMbETxRlZkasAy8"
+  },
+  "github": {
+    "trackingIssue": 1472,
+    "parentReleasePr": 1462,
+    "childBranch": "captured-reality-world001-20260929"
+  },
+  "releaseGates": [
+    "all-generation-tasks-terminal-success",
+    "literal-visual-review",
+    "accepted-frame-set",
+    "camera-solve-pass",
+    "3dgs-trained",
+    "archival-and-runtime-derivatives",
+    "collision-proxy",
+    "truth-label-proof",
+    "desktop-performance-receipt",
+    "mobile-performance-receipt",
+    "replay-return-continuity",
+    "fallback-and-revocation-proof",
+    "exact-head-ci",
+    "independent-review"
+  ]
+}
