@@ -4,10 +4,10 @@
   "parentAuthority": {
     "repository": "LifeLoggerAI/urai-spatial",
     "pullRequest": 1462,
-    "exactParentHead": "b723e600b1e0881630e8d209a334d8e2a0249703",
+    "exactParentHead": "a86e17b5cf1fd8e085db202f32a2361b7b1a32bc",
     "branch": "converge/android-wif-terminal-20260929"
   },
-  "childBranch": "feat/memory-world-foundation-20260930",
+  "childBranch": "feat/memory-world-foundation-20260930-v2",
   "implemented": [
     "324-archetype foundational scene ontology",
     "MVP / Phase 2 / mature quantitative library targets",
@@ -25,5 +25,10 @@
     "No independent approval claim",
     "No browser/mobile/XR runtime certification claim",
     "No private Parents House reconstruction claim"
-  ]
+  ],
+  "supersedes": {
+    "branch": "feat/memory-world-foundation-20260930",
+    "pullRequest": 1475,
+    "reason": "parent release authority advanced during implementation; successor re-anchored without force-push"
+  }
 }
