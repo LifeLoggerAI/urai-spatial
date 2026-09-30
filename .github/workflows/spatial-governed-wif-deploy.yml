@@ -298,7 +298,7 @@ jobs:
             --request POST \
             --header "Authorization: Bearer $GOOGLE_WIF_ACCESS_TOKEN" \
             --header 'Content-Type: application/json' \
-            --data "{"message":"URAI automatic rollback after failed exact-head live certification run $GITHUB_RUN_ID"}" \
+            --data "$(jq -nc --arg message "URAI automatic rollback after failed exact-head live certification run $GITHUB_RUN_ID" '{message:$message}')" \
             "https://firebasehosting.googleapis.com/v1beta1/sites/$FIREBASE_PROJECT/releases?versionName=$version_name" \
             > deployment-receipt/rollback/restore-result.json
           test "$(jq -r '.version.name // empty' deployment-receipt/rollback/restore-result.json)" = "$version_name"
