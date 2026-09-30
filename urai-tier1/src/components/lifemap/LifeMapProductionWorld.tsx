@@ -629,7 +629,8 @@ function SemanticPath({ source, target, active, reducedMotion, index }: { source
   const color = LIFE_MAP_PATH_PALETTE[kind];
   return (
     <group>
-      <Line points={curve.getPoints(48)} color={color} lineWidth={active ? 1.35 : 0.62} transparent opacity={kind === "protected" ? 0.08 : active ? 0.7 : 0.23} dashed={kind === "inferred" || kind === "corrected" || kind === "protected"} />
+      {/* Relationships remain discoverable, but should not own the composition as bright dashboard edges. */}
+      <Line points={curve.getPoints(48)} color={color} lineWidth={active ? 0.72 : 0.3} transparent opacity={kind === "protected" ? 0.035 : active ? 0.22 : 0.045} dashed={kind === "inferred" || kind === "corrected" || kind === "protected"} />
       {active && kind !== "protected" ? <PathPulse curve={curve} color={color} reducedMotion={reducedMotion} offset={(index * 0.19) % 1} /> : null}
     </group>
   );
@@ -743,7 +744,8 @@ export function LifeMapProductionWorld({ nodes, selected, phase, profile, onSele
           <FieldParticles seed={1220} count={profile.tier === "low" ? 120 : 320} radius={42} depth={70} height={32} color={VIOLET} opacity={0.16} size={0.065} />
         </group>
         <group name="life-map-temporal-horizon">
-          <Current points={[[-28, 8, -42], [-12, 10, -48], [0, 7, -54], [13, 11, -48], [28, 8, -42]]} color={CYAN} opacity={0.08} width={0.18} />
+          <FieldParticles seed={1441} count={profile.tier === "low" ? 180 : 520} radius={54} depth={24} height={7.5} color="#bfdfff" opacity={0.22} size={0.042} />
+          <FieldParticles seed={1771} count={profile.tier === "low" ? 90 : 260} radius={35} depth={11} height={3.4} color={VIOLET} opacity={0.24} size={0.058} />
         </group>
         <EmotionalTerrain reducedMotion={profile.reducedMotion} selected={Boolean(selected)} />
         <group name="life-map-world-stage" scale={stageScale} position={stagePosition}>
