@@ -40,7 +40,7 @@ export function InterpretiveWorldScene({
       data-interpretive-world-device-tier={tier}
       data-interpretive-world-autobiographical="false"
       data-interpretive-world-draw-submitted={rendered ? 'true' : 'false'}
-      data-interpretive-world-embodied-movement={decision.embodiedMovementAllowed ? 'enabled' : 'bounded-orbit'}
+      data-interpretive-world-embodied-movement={decision.embodiedMovementAllowed ? 'collision-authorized' : 'bounded-orbit'}
       style={{ minHeight: '100svh', background: '#05070b', color: '#f7f7f5', display: 'grid', gridTemplateRows: 'auto 1fr' }}
     >
       <header style={{ display: 'flex', flexWrap: 'wrap', gap: '.75rem', alignItems: 'center', padding: '1rem', zIndex: 2 }}>
