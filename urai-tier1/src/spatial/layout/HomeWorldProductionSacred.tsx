@@ -411,15 +411,10 @@ function FlagstoneMaterial({ pack, tint = '#657073', bumpScale = 0.09 }: { pack:
 function GroundClearing({ pack }: { pack: FlagstonePack }) {
   const terrainPack = useTerrainTexturePack(8.6, 109)
   const terrain = useMemo(() => makeGroundGeometry(), [])
-  const clearing = useMemo(() => makeIrregularShape(2.72, 13, 112), [])
   useEffect(() => () => terrain.dispose(), [terrain])
   return <group name="home-grounded-flagstone-clearing">
     <mesh name="home-natural-walkable-terrain" geometry={terrain} position={[0, -0.05, -4]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
       <meshStandardMaterial color="#d5d7b4" vertexColors map={terrainPack.color} bumpMap={terrainPack.height} bumpScale={0.13} roughnessMap={terrainPack.roughness} roughness={0.94} metalness={0} envMapIntensity={0.78} />
-    </mesh>
-    <mesh position={[0, -0.04, -2.65]} rotation={[Math.PI / 2, 0, 0]} castShadow receiveShadow>
-      <extrudeGeometry args={[clearing, { depth: 0.08, bevelEnabled: true, bevelSize: 0.05, bevelThickness: 0.04, bevelSegments: 3, curveSegments: 3 }]} />
-      <FlagstoneMaterial pack={pack} tint="#6a716d" bumpScale={0.1} />
     </mesh>
   </group>
 }
@@ -429,7 +424,7 @@ function ApproachPath({ pack }: { pack: FlagstonePack }) {
   return <group name="home-sanctuary-approach">
     <mesh position={[0, 0.018, 0]} rotation={[Math.PI / 2, 0, 0]} castShadow receiveShadow>
       <extrudeGeometry args={[shape, { depth: 0.045, bevelEnabled: true, bevelSize: 0.035, bevelThickness: 0.02, bevelSegments: 2, curveSegments: 3 }]} />
-      <FlagstoneMaterial pack={pack} tint="#747873" bumpScale={0.075} />
+      <FlagstoneMaterial pack={pack} tint="#8b7659" bumpScale={0.075} />
     </mesh>
   </group>
 }
@@ -663,21 +658,15 @@ function SacredOrb({ state, reducedMotion, onOpen }: { state: OrbState; reducedM
     }
   })
 
-  return <group ref={root} name="home-orb-sanctuary" position={ORB} onClick={(event) => { event.stopPropagation(); onOpen() }} userData={{ orbState: state, animation: sensory.animation, modelClip: ORB_CLIPS[state], runtimeAsset: ORB_MODEL, materialLanguage: 'translucent-living-glass-not-flat-white-disk' }}>
-    <mesh castShadow>
-      <sphereGeometry args={[0.46,72,72]} />
-      <meshPhysicalMaterial color="#8bd8dc" transparent opacity={0.22} transmission={0.86} thickness={0.34} roughness={0.17} metalness={0} clearcoat={1} clearcoatRoughness={0.08} ior={1.28} envMapIntensity={1.65} />
+  return <group ref={root} name="home-orb-sanctuary" position={ORB} scale={1.16} onClick={(event) => { event.stopPropagation(); onOpen() }} userData={{ orbState: state, animation: sensory.animation, modelClip: ORB_CLIPS[state], runtimeAsset: ORB_MODEL, materialLanguage: 'authored-rough-mineral-and-ceramic-companion-not-glass-or-ring' }}>
+    <mesh castShadow receiveShadow rotation={[0.24, 0.5, -0.12]}>
+      <icosahedronGeometry args={[0.43, 3]} />
+      <meshPhysicalMaterial color="#466c6d" emissive="#0b2529" emissiveIntensity={state === 'speaking' ? 0.34 : 0.18} roughness={0.72} metalness={0.18} clearcoat={0.16} clearcoatRoughness={0.58} envMapIntensity={0.72} />
     </mesh>
-    <mesh scale={0.78}>
-      <sphereGeometry args={[0.35,64,64]} />
-      <meshPhysicalMaterial color="#68c3c9" emissive="#1a6670" emissiveIntensity={state === 'speaking' ? 0.82 : 0.54} transparent opacity={0.58} transmission={0.18} roughness={0.3} metalness={0.02} clearcoat={0.58} clearcoatRoughness={0.2} />
-    </mesh>
-    <group ref={authoredCore} scale={0.31}><primitive object={authoredOrb} /></group>
-    <mesh scale={0.28}><sphereGeometry args={[0.12,32,32]} /><meshStandardMaterial color="#f6e8c6" emissive="#d7a95f" emissiveIntensity={1.05} roughness={0.42} metalness={0} /></mesh>
-    <mesh rotation={[0.32,0.5,0.18]}><torusGeometry args={[0.49,0.005,10,128]} /><meshStandardMaterial color="#c6edf0" emissive="#5fc9d0" emissiveIntensity={0.22} metalness={0.05} roughness={0.56} transparent opacity={0.56} /></mesh>
-    <mesh rotation={[-0.18,-0.28,0.4]}><torusGeometry args={[0.54,0.0035,10,128]} /><meshStandardMaterial color="#e0cda4" emissive="#a88754" emissiveIntensity={0.14} metalness={0.04} roughness={0.62} transparent opacity={0.36} /></mesh>
-    <Sparkles count={reducedMotion ? 10 : 22} scale={[1.45,1.45,1.45]} size={1.15} speed={reducedMotion ? 0 : 0.08} opacity={0.42} color="#d9f8f7" />
-    <pointLight color="#9fe7e7" intensity={state === 'speaking' ? 1.65 : 1.12} distance={7} decay={2} />
+    <group ref={authoredCore} scale={0.36}><primitive object={authoredOrb} /></group>
+    <mesh scale={0.18}><icosahedronGeometry args={[0.16,2]} /><meshStandardMaterial color="#d5bf8c" emissive="#7e5d2c" emissiveIntensity={0.34} roughness={0.7} metalness={0.08} /></mesh>
+    <Sparkles count={reducedMotion ? 4 : 8} scale={[1.08,1.08,1.08]} size={0.65} speed={reducedMotion ? 0 : 0.05} opacity={0.2} color="#d9f8f7" />
+    <pointLight color="#91c6c5" intensity={state === 'speaking' ? 0.9 : 0.56} distance={4.6} decay={2} />
     <spotLight position={[0,2.8,1.7]} target-position={[0,0,0]} color="#f2d9aa" intensity={0.52} distance={7} angle={0.48} penumbra={0.94} />
   </group>
 }
