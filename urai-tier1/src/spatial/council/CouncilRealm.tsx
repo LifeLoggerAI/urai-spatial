@@ -5,7 +5,7 @@ import { ContactShadows, Environment, PerspectiveCamera, useAnimations, useGLTF 
 import { Suspense, useEffect, useRef, useState, type MutableRefObject } from 'react'
 import * as THREE from 'three'
 import { COUNCIL_AGENTS } from './councilAgentSchema'
-import CouncilConversationPanel from './CouncilConversationPanel'
+import CouncilConversationPanel, { type CouncilConversationPerformance } from './CouncilConversationPanel'
 import { useReducedMotion } from '@/spatial/hooks/useReducedMotion'
 import { useAdaptiveSpatialQuality } from '@/spatial/performance/useAdaptiveSpatialQuality'
 import {
@@ -46,7 +46,7 @@ const ROTATIONS: [number, number, number][] = [
   [0, 2.65, 0],
 ]
 
-const COUNCIL_BOUNDS = { minX: -5.2, maxX: 5.2, minZ: -4.6, maxZ: 6.2 }
+type CouncilHumanPerformance = CouncilConversationPerformance | 'idle'\n\nconst COUNCIL_BOUNDS = { minX: -5.2, maxX: 5.2, minZ: -4.6, maxZ: 6.2 }
 const COUNCIL_OBSTACLES = [
   { x: 0, z: -0.9, radius: 1.75 },
   ...POSITIONS.map(([x, , z]) => ({ x, z, radius: 0.42 })),
@@ -110,6 +110,7 @@ function RiggedCouncilHuman({
   modelUrl,
   index,
   selected,
+  performance,
   reducedMotion,
   onSelect,
 }: {
@@ -124,13 +125,25 @@ function RiggedCouncilHuman({
   const { actions } = useAnimations(model.animations, root)
 
   useEffect(() => {
-    if (reducedMotion) return
-    const clip = selected ? (actions.listen_acknowledge ?? actions.idle_breath) : actions.idle_breath
+    if (reducedMotion) {
+      Object.values(actions).forEach((action) => action?.stop())
+      return
+    }
+    const actionByState = {
+      idle: actions.idle_breath,
+      listening: actions.listen_acknowledge ?? actions.idle_breath,
+      thinking: actions.gaze_shift ?? actions.idle_breath,
+      'replying-text': actions.gesture_open ?? actions.idle_breath,
+    } as const
+    const clip = selected ? actionByState[performance] : actions.idle_breath
+    Object.values(actions).forEach((action) => {
+      if (action && action !== clip) action.fadeOut(0.18).stop()
+    })
     clip?.reset().fadeIn(0.25).play()
     return () => {
       clip?.fadeOut(0.2)
     }
-  }, [actions, reducedMotion, selected])
+  }, [actions, performance, reducedMotion, selected])
 
   useEffect(() => {
     model.scene.traverse((object) => {
@@ -156,7 +169,7 @@ function RiggedCouncilHuman({
         event.stopPropagation()
         onSelect()
       }}
-      userData={{ representation: 'skinned-animated-human-v4-preview', modelUrl, lighting: 'physical-scene' }}
+      userData={{ representation: 'skinned-animated-human-v4-preview', modelUrl, lighting: 'physical-scene', performance, responseModality: 'text-only' }}
     >
       <primitive object={model.scene} />
       <mesh position={[0, 0.015, 0]} rotation={[-Math.PI / 2, 0, 0]}>
@@ -169,7 +182,7 @@ function RiggedCouncilHuman({
 
 function CouncilStage() {
   const [selected, setSelected] = useState(0)
-  const [dragging, setDragging] = useState(false)
+  const [dragging, setDragging] = useState(false)\n  const [performance, setPerformance] = useState<CouncilHumanPerformance>('listening')
   const selectedAgent = COUNCIL_AGENTS[selected] ?? COUNCIL_AGENTS[0]
   const reducedMotion = useReducedMotion()
   const quality = useAdaptiveSpatialQuality()
@@ -202,6 +215,8 @@ function CouncilStage() {
       data-council-human-authority="human-makehuman-v4-preview"
       data-council-lighting-authority="physical-pbr-v1"
       data-council-embodied="true"
+      data-council-human-performance={performance}
+      data-council-avatar-response-modality="text-only"
       data-spatial-quality-tier={quality.tier}
       data-camera-mode={dragging ? 'look' : 'embodied'}
       {...dragLook}
@@ -247,9 +262,8 @@ function CouncilStage() {
                 key={agent.id}
                 modelUrl={HUMAN_MODELS[index] ?? HUMAN_MODELS[0]}
                 index={index}
-                selected={selected === index}
-                reducedMotion={reducedMotion}
-                onSelect={() => setSelected(index)}
+                selected={selected === index}\n                performance={selected === index ? performance : 'idle'}\n                reducedMotion={reducedMotion}
+                onSelect={() => { setSelected(index); setPerformance('listening') }}
               />
             ))}
 
@@ -264,7 +278,7 @@ function CouncilStage() {
         <h1 className="mt-2 text-3xl font-medium tracking-tight md:text-4xl">{selectedAgent.name}</h1>
         <p className="mt-1 text-xs uppercase tracking-[0.18em] text-[#e8d8b9]/80">{selectedAgent.role}</p>
         <p className="mt-3 max-w-[38ch] text-sm leading-6 text-white/72">{selectedAgent.focus}</p>
-        <CouncilConversationPanel agent={selectedAgent} />
+        <CouncilConversationPanel agent={selectedAgent} onPerformanceStateChange={setPerformance} />
         <div className="pointer-events-auto mt-4 flex flex-wrap gap-2">
           <button className="rounded-full bg-white px-4 py-2 text-xs font-semibold text-slate-950" type="button" onClick={() => travel('home', '/home?returnFrom=council')}>Return Home</button>
           <button className="rounded-full border border-white/20 px-4 py-2 text-xs text-white" type="button" onClick={() => travel('mirror', '/mirror?from=council')}>Mirror</button>
