@@ -233,6 +233,15 @@ const repairedPortal = `async function capturePortalSequence(browser) {
           lifecycleObserved: orderedLifecycle,
         }
       }, { expected: expectedRoute, key: historyKey, destination })
+      // URL and transition phases do not establish destination rendering.
+      // Require the destination runtime owner and canvas before a settled capture.
+      const destinationOwner = destination === 'ground'
+        ? '[data-ground-ready="true"][data-ground-renderer="webgl"]'
+        : '[data-testid="urai-true-3d-life-map"][data-life-map-render-ready="true"]'
+      await page.locator(destinationOwner).first().waitFor({ state: 'visible', timeout: 90_000 })
+      await page.locator(destinationOwner + ' canvas').first().waitFor({ state: 'visible', timeout: 30_000 })
+      await waitFrames(page, 4)
+      routeEvidence.destinationRendered = true
     } catch (error) {
       activationFailure = { message: String(error), stack: error?.stack || null, evidence: error?.evidence || null }
       routeEvidence = await page.evaluate(({ key, destination }) => {
@@ -293,6 +302,7 @@ const repairedPortal = `async function capturePortalSequence(browser) {
       || !movement?.reached
       || movement?.end?.nearby !== destination
       || !routeEvidence?.routeSettled
+      || !routeEvidence?.destinationRendered
       || !routeEvidence?.lifecycleObserved
       || diagnosticResult.pageErrors.length
       || diagnosticResult.consoleErrors.length
@@ -311,3 +321,4 @@ try {
 } finally {
   await writeFile(sourceUrl, original, 'utf8').catch(() => {})
 }
+
