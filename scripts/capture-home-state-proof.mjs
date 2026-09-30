@@ -235,17 +235,34 @@ async function captureOrbLifecycle({ reducedMotion = 'no-preference' } = {}) {
     })
     const response = await page.goto(`${base}/home/?homeAssetReview=1`, { waitUntil: 'domcontentloaded', timeout: 60_000 })
     const owner = await waitForHomeReady(page)
-    const openOrb = page.getByRole('button', { name: 'Open URAI Orb companion' }).first()
-    await openOrb.click()
+    await page.waitForFunction(
+      (selector) => Boolean(document.querySelector(selector)?.getAttribute('data-home-orb-state')),
+      ownerSelector,
+      { timeout: 20_000 },
+    )
+
+    const openOrb = page.locator('.urai-home-spatial-runtime-layer > .home-semantic-navigation [data-testid="home-semantic-orb"]')
+    await openOrb.waitFor({ state: 'attached', timeout: 20_000 })
+    await openOrb.focus()
+    await openOrb.press('Enter')
     await page.locator('#urai-world-companion-menu[aria-hidden="false"]').waitFor({ state: 'visible', timeout: 20_000 })
-    await page.waitForFunction((selector) => document.querySelector(selector)?.getAttribute('data-home-orb-state') === 'attention', ownerSelector)
+    await page.waitForFunction(
+      (selector) => document.querySelector(selector)?.getAttribute('data-home-orb-state') === 'attention',
+      ownerSelector,
+      { timeout: 20_000 },
+    )
 
     const talk = page.locator('summary').filter({ hasText: 'Talk with Orb' }).first()
     await talk.waitFor({ state: 'attached', timeout: 20_000 })
     await talk.evaluate((element) => element.click())
     const message = page.getByLabel('Message for Orb').first()
+    await message.waitFor({ state: 'visible', timeout: 20_000 })
     await message.focus()
-    await page.waitForFunction((selector) => document.querySelector(selector)?.getAttribute('data-home-orb-state') === 'listening', ownerSelector)
+    await page.waitForFunction(
+      (selector) => document.querySelector(selector)?.getAttribute('data-home-orb-state') === 'listening',
+      ownerSelector,
+      { timeout: 20_000 },
+    )
 
     record.listeningState = await owner.getAttribute('data-home-orb-state')
     record.listeningClip = await owner.getAttribute('data-home-orb-clip')
