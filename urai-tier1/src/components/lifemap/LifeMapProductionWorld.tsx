@@ -346,7 +346,9 @@ function AuthoredMemoryStar({ aura, active, scale = 1, rotation = [0, 0, 0], cli
         float heat = clamp(convection * .72 + granule * .12 + filament * .38, 0.0, 1.0);
         vec3 hot = mix(whiteGold, stellarWhite, .20 + heat * .26);
         hot = mix(hot, amber, (1.0 - spot) * .20);
-        vec3 tinted = mix(hot, uAura, .018);
+        // Preserve a hot stellar core but let each memory keep a real chromatic identity.
+        // The old near-zero tint made every memory read as the same UI-yellow disk.
+        vec3 tinted = mix(hot, uAura, .36);
         float energy = .86 + .18 * convection + .12 * filament + uActive * .05;
         float limbFalloff = .66 + .34 * limb;
         gl_FragColor = vec4(clamp(tinted * energy * limbFalloff, 0.0, 1.0), 1.0);
@@ -396,7 +398,7 @@ function AuthoredMemoryStar({ aura, active, scale = 1, rotation = [0, 0, 0], cli
         <meshBasicMaterial
           color="#fff0c2"
           transparent
-          opacity={active ? 0.10 : 0.07}
+          opacity={active ? 0.075 : 0.045}
           blending={THREE.AdditiveBlending}
           depthWrite={false}
           toneMapped={false}
@@ -408,7 +410,7 @@ function AuthoredMemoryStar({ aura, active, scale = 1, rotation = [0, 0, 0], cli
         <meshBasicMaterial
           color={aura}
           transparent
-          opacity={active ? 0.032 : 0.025}
+          opacity={active ? 0.018 : 0.012}
           blending={THREE.AdditiveBlending}
           depthWrite={false}
           toneMapped={false}
@@ -630,7 +632,7 @@ function SemanticPath({ source, target, active, reducedMotion, index }: { source
   return (
     <group>
       {/* Relationships remain discoverable, but should not own the composition as bright dashboard edges. */}
-      <Line points={curve.getPoints(48)} color={color} lineWidth={active ? 0.72 : 0.3} transparent opacity={kind === "protected" ? 0.035 : active ? 0.22 : 0.045} dashed={kind === "inferred" || kind === "corrected" || kind === "protected"} />
+      <Line points={curve.getPoints(48)} color={color} lineWidth={active ? 0.52 : 0.18} transparent opacity={kind === "protected" ? 0.008 : active ? 0.14 : 0.012} dashed={kind === "inferred" || kind === "corrected" || kind === "protected"} />
       {active && kind !== "protected" ? <PathPulse curve={curve} color={color} reducedMotion={reducedMotion} offset={(index * 0.19) % 1} /> : null}
     </group>
   );
@@ -701,6 +703,20 @@ function ArchiveParticles({ qualityTier, reducedMotion }: { qualityTier: Spatial
   );
 }
 
+function GalaxyDepth({ tier, reducedMotion }: { tier: SpatialQualityProfile["tier"]; reducedMotion: boolean }) {
+  const farCount = tier === "low" ? 360 : tier === "medium" ? 820 : 1480;
+  const middleCount = tier === "low" ? 150 : tier === "medium" ? 320 : 560;
+  const foregroundCount = tier === "low" ? 56 : tier === "medium" ? 120 : 210;
+  return (
+    <group name="life-map-layered-galaxy-depth" userData={{ visualCanon: "foreground-middle-far-stellar-atlas" }}>
+      <FieldParticles seed={2107} count={farCount} radius={66} depth={94} height={42} color="#9dbfff" opacity={0.28} size={0.026} />
+      <FieldParticles seed={2311} count={middleCount} radius={39} depth={44} height={18} color="#a88bff" opacity={0.32} size={0.042} />
+      <FieldParticles seed={2573} count={foregroundCount} radius={18} depth={18} height={9} color="#d9f7ff" opacity={0.4} size={0.06} />
+      <Sparkles count={tier === "low" ? 48 : 118} scale={[44, 22, 58]} position={[0, 2.5, -18]} size={1.1} speed={reducedMotion ? 0 : 0.035} opacity={0.22} color="#d9f7ff" />
+    </group>
+  );
+}
+
 export function LifeMapProductionWorld({ nodes, selected, phase, profile, onSelect, cameraRig, webglRecovery }: {
   nodes: LifeMapNode[];
   selected: LifeMapNode | null;
@@ -743,6 +759,7 @@ export function LifeMapProductionWorld({ nodes, selected, phase, profile, onSele
           <mesh><sphereGeometry args={[86, 48, 36]} /><meshBasicMaterial color="#020713" side={THREE.BackSide} /></mesh>
           <FieldParticles seed={1220} count={profile.tier === "low" ? 120 : 320} radius={42} depth={70} height={32} color={VIOLET} opacity={0.16} size={0.065} />
         </group>
+        <GalaxyDepth tier={profile.tier} reducedMotion={profile.reducedMotion} />
         <group name="life-map-temporal-horizon">
           <FieldParticles seed={1441} count={profile.tier === "low" ? 180 : 520} radius={54} depth={24} height={7.5} color="#bfdfff" opacity={0.22} size={0.042} />
           <FieldParticles seed={1771} count={profile.tier === "low" ? 90 : 260} radius={35} depth={11} height={3.4} color={VIOLET} opacity={0.24} size={0.058} />
