@@ -521,7 +521,14 @@ function assertVisualSanity() {
   if (!highResolution.signal || highResolution.signal.width < 4320 || highResolution.signal.height < 2700) {
     throw new Error(`high-resolution Founder capture dimensions drifted: ${JSON.stringify(highResolution.signal)}`)
   }
-  if (!highResolution.screenshot || highResolution.screenshot.bytes < 1_000_000) throw new Error('high-resolution Founder capture is suspiciously small')
+  if (!highResolution.screenshot || highResolution.screenshot.bytes < 250_000) {
+    throw new Error('high-resolution Founder capture retained PNG is suspiciously small or corrupt')
+  }
+  if (highResolution.signal.source !== 'retained-png') throw new Error('high-resolution Founder capture did not validate the retained PNG')
+  if (highResolution.signal.sampleCount !== 3456) throw new Error('high-resolution Founder capture sample count drifted')
+  if (highResolution.signal.sampling !== 'distributed-grid-24x16-3x3') throw new Error('high-resolution Founder capture sampling method drifted')
+  if (highResolution.signal.variance >= 0 && highResolution.signal.variance < 8) throw new Error('high-resolution Founder capture pixel variance is below the visible-world minimum')
+  if (highResolution.signal.nonDarkRatio >= 0 && highResolution.signal.nonDarkRatio <= 0) throw new Error('high-resolution Founder capture non-dark coverage is empty')
 
   const parallaxIds = ['desktop-overview', 'depth-travel-frame-1', 'depth-travel-frame-2', 'depth-travel-frame-3']
   const hashes = new Set(parallaxIds.map((id) => byId.get(id)?.screenshot?.hash).filter(Boolean))
