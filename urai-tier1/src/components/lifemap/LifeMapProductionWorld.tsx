@@ -333,7 +333,7 @@ function AuthoredMemoryStar({ aura, active, scale = 1, rotation = [0, 0, 0], cli
       void main() {
         float shimmer = sin(position.x * 13.0 + uSeed + uTime * .13) * sin(position.y * 11.0 - uSeed * .7 - uTime * .08);
         float granule = sin(position.z * 17.0 + position.x * 7.0 + uSeed * 1.9);
-        float prominence = (shimmer * .55 + granule * .45) * (.026 + uActive * .014);
+        float prominence = (shimmer * .55 + granule * .45) * (.0026 + uActive * .0014);
         vec3 displaced = position + normal * prominence;
         vPos = displaced;
         vNormalW = normalize(normalMatrix * normal);
@@ -429,7 +429,7 @@ function AuthoredMemoryStar({ aura, active, scale = 1, rotation = [0, 0, 0], cli
         runtimeAsset: MEMORY_STAR_MODEL,
         authored: true,
         visualCanon: "stellar-photosphere-corona",
-        artRevision: "v301-irregular-photosphere-galaxy-depth",
+        artRevision: "v302-stellar-limb-galaxy-depth",
         visualAuthority: "stellar-body-not-geology",
       }}
     >
@@ -797,7 +797,7 @@ function GalaxyVolume({ tier }: { tier: SpatialQualityProfile["tier"] }) {
         float r = length(p) * 2.0;
         if (r > 1.0) discard;
         float haze = exp(-r * r * 5.0) * (1.0 - smoothstep(0.6, 1.0, r));
-        gl_FragColor = vec4(vColor, haze * 0.035);
+        gl_FragColor = vec4(vColor, haze * 0.10);
         #include <colorspace_fragment>
       }
     `,

@@ -53,7 +53,7 @@ test('pattern memories retain authored settling geometry inside the selected arr
 test('Memory Stars use a convective stellar photosphere with layered corona and reject flat wireframe authority', () => {
   const star = sliceBetween(world, 'function AuthoredMemoryStar', 'function LifeCore')
   assert.match(star, /new THREE\.ShaderMaterial/)
-  assert.match(star, /artRevision: "v301-irregular-photosphere-galaxy-depth"/)
+  assert.match(star, /artRevision: "v302-stellar-limb-galaxy-depth"/)
   assert.match(star, /visualAuthority: "stellar-body-not-geology"/)
   assert.match(star, /name="memory-star-photosphere"/)
   assert.match(star, /name="memory-star-inner-corona"/)
@@ -61,7 +61,11 @@ test('Memory Stars use a convective stellar photosphere with layered corona and 
   assert.match(star, /convection/)
   assert.match(star, /granule/)
   assert.match(star, /limbFalloff/)
-  assert.match(star, /float prominence = \(shimmer \* \.55 \+ granule \* \.45\) \* \(\.026 \+ uActive \* \.014\)/)
+  const prominence = star.match(/float prominence = .*?\* \(([.0-9]+) \+ uActive \* ([.0-9]+)\)/)
+  assert.ok(prominence, 'stellar surface must bound its radial displacement')
+  const maximumDisplacement = Number(prominence[1]) + Number(prominence[2])
+  assert.ok(maximumDisplacement > 0 && maximumDisplacement <= 0.38 * 0.012,
+    'convection must preserve the stellar limb rather than deform it into geology')
   assert.match(star, /active \? 1\.12 : 1\.08/)
   assert.match(star, /active \? 0\.04 : 0\.022/)
   assert.match(star, /active \? 1\.42 : 1\.30/)
