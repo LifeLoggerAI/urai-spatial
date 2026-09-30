@@ -119,6 +119,7 @@ function RiggedCouncilHuman({
   modelUrl: string
   index: number
   selected: boolean
+  performance: CouncilHumanPerformance
   reducedMotion: boolean
   onSelect: () => void
 }) {
