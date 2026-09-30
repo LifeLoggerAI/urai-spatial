@@ -8,6 +8,7 @@ const route = fs.readFileSync(new URL('../src/app/spatial/interpretive-world/Int
 const scene = fs.readFileSync(new URL('../src/spatial/interpretive-world/InterpretiveWorldScene.tsx', import.meta.url), 'utf8')
 const adapter = fs.readFileSync(new URL('../src/spatial/interpretive-world/InterpretiveWorldSplat.tsx', import.meta.url), 'utf8')
 const replay = fs.readFileSync(new URL('../src/app/replay/CinematicReplayClient.tsx', import.meta.url), 'utf8')
+const envExample = fs.readFileSync(new URL('../../.env.example', import.meta.url), 'utf8')
 
 test('generated-world callables are exported under a separate provider surface', () => {
   assert.match(functionsIndex, /getInterpretiveWorldAsset/)
@@ -41,6 +42,8 @@ test('route observes revocation authority and never claims autobiography', () =>
   assert.match(route, /autobiographical !== false/)
   assert.match(route, /sourceTruthEligible !== false/)
   assert.match(route, /sourceCount !== 0/)
+  assert.match(route, /mobileCertified/)
+  assert.match(route, /browserCertified/)
   assert.match(route, /data-autobiographical="false"/)
 })
 
@@ -57,4 +60,11 @@ test('Replay gives real captured places precedence over interpretive worlds', ()
   assert.match(replay, /const generatedWorldEntry = capturedRealityEntry \? null : interpretiveWorldEntry/)
   assert.match(replay, /Enter captured place/)
   assert.match(replay, /Enter interpretive world/)
+})
+
+
+test('release flags default hard-off in the repository environment example', () => {
+  assert.match(envExample, /URAI_ENABLE_CAPTURED_REALITY=false/)
+  assert.match(envExample, /URAI_ENABLE_CAPTURED_REALITY_PROOF=false/)
+  assert.match(envExample, /URAI_ENABLE_INTERPRETIVE_WORLDS=false/)
 })
