@@ -49,6 +49,7 @@ const tests = [
   'tests/memory-world-library-pipeline.test.mjs',
   'tests/memory-world-blockout-presets.test.mjs',
   'tests/memory-world-owner-correction.test.mjs',
+  'tests/memory-world-coverage-audit.test.mjs',
   'tests/mirror-spatial-realm-contract.test.mjs',
   'tests/mirror-canonical-owner-hydration-contract.test.mjs',
   'tests/orb-companion-contract.test.mjs',
