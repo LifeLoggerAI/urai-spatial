@@ -1,0 +1,65 @@
+{
+  "schemaVersion": "urai-interpretive-world-reconstruction-receipt-1",
+  "worldId": "URAI-IW-001-QUIET-RESET",
+  "truth": {
+    "truthClass": "interpretive",
+    "autobiographical": false,
+    "generatedOnly": true,
+    "sourceTruthEligible": false,
+    "sourceIds": [],
+    "exactPrivateLocationEmbedded": false
+  },
+  "classification": "PRE_RECONSTRUCTION",
+  "visual": {
+    "literalAcceptance": false,
+    "receiptRef": null
+  },
+  "frames": {
+    "acceptedFrameCount": 0,
+    "heldOutFrameCount": 0,
+    "frameManifestRef": null
+  },
+  "cameraSolve": null,
+  "training": {
+    "state": "not-started",
+    "engine": "nerfstudio-splatfacto",
+    "receiptRef": null
+  },
+  "qa": {
+    "reviewState": "unreviewed",
+    "psnrDb": null,
+    "ssim": null,
+    "lpips": null,
+    "knownArtifactCount": 0,
+    "receiptRef": null
+  },
+  "artifacts": {
+    "archival": null,
+    "runtime": null,
+    "collisionProxy": null
+  },
+  "embodiedMovementRequested": false,
+  "performance": {
+    "desktop": null,
+    "mobile": null,
+    "xr": null
+  },
+  "certification": {
+    "browserCertified": false,
+    "mobileCertified": false,
+    "xrCertified": false
+  },
+  "remainingGates": [
+    "literal-visual-review",
+    "accepted-frame-extraction",
+    "colmap-camera-solve",
+    "3dgs-training",
+    "held-out-qa",
+    "archival-runtime-export",
+    "collision-proxy-if-embodied-movement",
+    "desktop-performance-receipt",
+    "mobile-performance-receipt",
+    "xr-physical-device-receipt"
+  ],
+  "allowedClaim": "Eight generated survey passes exist for an interpretive world. Literal visual acceptance and 3D reconstruction have not yet occurred."
+}
