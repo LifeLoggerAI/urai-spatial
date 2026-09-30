@@ -97,7 +97,7 @@ test('Focus is an explorable stellar memory-star field rather than a static cham
 
   assert.match(focus, /aria-label="Focus memory controls"/)
   assert.match(focus, /focus-stellar-photosphere-luminance-floor/)
-  assert.match(focus, /color="#ffd66b" transparent opacity=\{0\.24\}/)
+  assert.match(focus, /color="#ffd66b" transparent opacity=\{0\.055\}/)
   assert.doesNotMatch(focus, /color="#ffe8a8" transparent opacity=\{0\.48\}/)
   assert.doesNotMatch(focus, /aria-label="Focus chamber controls"/)
   assert.match(focus, /<button type="button" onClick=\{\(\) => setRecenterSignal/)
@@ -134,6 +134,7 @@ test('direct Focus entry remains a truthful neutral stellar field and never moun
 test('Focus retains a deterministic visible stellar photosphere/corona in exact-head proof rendering', () => {
   assert.match(focus, /className="focusPhotosphereVisual"/)
   assert.match(focus, /data-focus-visual-owner="stellar-photosphere-corona"/)
+  assert.match(focus, /\.artifactStage\{position:absolute;z-index:0/)
   assert.doesNotMatch(focus, /repeating-conic-gradient/, 'retired radial UI spokes must not mask the spatial star')
   assert.match(focus, /border-radius:52% 48% 46% 54%\/44% 55% 45% 56%/)
   assert.match(focus, /radial-gradient\(ellipse at 30% 28%/)
@@ -145,14 +146,14 @@ test('Focus retains a deterministic visible stellar photosphere/corona in exact-
 
 test('Focus stellar body preserves visible photosphere granulation instead of a smooth orb wash', () => {
   assert.match(focus, /float pores = smoothstep\(\.68, \.92, noise\(p \* 52\.0/)
-  assert.match(focus, /float mottling = \.58 \+ cells \* \.62 - filament \* \.22 - pores \* \.12/)
-  assert.match(focus, /float radiance = \(1\.12 \+ granulation \* \.78\)/)
-  assert.match(focus, /vec3 emitted = surface \* radiance \+ hotWhite \* \(\.07 \+ cells \* \.11\)/)
+  assert.match(focus, /float mottling = \.42 \+ cells \* \.7 - filament \* \.31 - pores \* \.2/)
+  assert.match(focus, /float radiance = \(\.54 \+ granulation \* \.58\)/)
+  assert.match(focus, /vec3 emitted = surface \* radiance \+ hotWhite \* \(\.012 \+ cells \* \.035\)/)
   assert.match(focus, /focus-stellar-photosphere-luminance-floor/)
-  assert.match(focus, /color="#ffd66b" transparent opacity=\{0\.24\}/)
-  assert.match(focus, /color="#ffb53f" transparent opacity=\{0\.22\}/)
-  assert.match(focus, /opacity=\{0\.12\}/)
-  assert.match(focus, /opacity=\{0\.045\}/)
+  assert.match(focus, /color="#ffd66b" transparent opacity=\{0\.055\}/)
+  assert.match(focus, /color="#ffb53f" transparent opacity=\{0\.045\}/)
+  assert.match(focus, /opacity=\{0\.018\}/)
+  assert.match(focus, /opacity=\{0\.008\}/)
   assert.doesNotMatch(focus, /color="#ffe8a8" transparent opacity=\{0\.48\}/)
 })
 
