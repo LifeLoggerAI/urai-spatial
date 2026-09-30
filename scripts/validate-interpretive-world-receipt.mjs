@@ -26,6 +26,15 @@ need(Array.isArray(receipt?.truth?.sourceIds) && receipt.truth.sourceIds.length 
 need(receipt?.truth?.exactPrivateLocationEmbedded === false, 'generated world cannot embed exact private-location authority')
 need(classifications.includes(receipt?.classification), 'recognized classification required')
 need(typeof receipt?.visual?.literalAcceptance === 'boolean', 'visual.literalAcceptance boolean required')
+need(typeof receipt?.visual?.geometryConsistencyAccepted === 'boolean', 'visual.geometryConsistencyAccepted boolean required')
+
+const taskIdPattern = /^[0-9a-f-]{36}$/i
+const generation = receipt?.generation ?? {}
+need(typeof generation.heroTaskId === 'string' && taskIdPattern.test(generation.heroTaskId), 'generation.heroTaskId required')
+need(Array.isArray(generation.anchorTaskIds) && generation.anchorTaskIds.length === 3 && generation.anchorTaskIds.every((id) => taskIdPattern.test(id)), 'exact three generated anchor task IDs required')
+need(Array.isArray(generation.surveyTaskIds) && generation.surveyTaskIds.length === 8 && generation.surveyTaskIds.every((id) => taskIdPattern.test(id)), 'exact eight generated survey task IDs required')
+const generationTaskIds = [generation.heroTaskId, ...(generation.anchorTaskIds ?? []), ...(generation.surveyTaskIds ?? [])]
+need(new Set(generationTaskIds).size === generationTaskIds.length, 'generation task IDs must be unique')
 need(Number.isSafeInteger(receipt?.frames?.acceptedFrameCount) && receipt.frames.acceptedFrameCount >= 0, 'acceptedFrameCount must be a non-negative integer')
 need(Number.isSafeInteger(receipt?.frames?.heldOutFrameCount) && receipt.frames.heldOutFrameCount >= 0, 'heldOutFrameCount must be a non-negative integer')
 
@@ -41,6 +50,8 @@ const reconstructionAccepted = rank >= classifications.indexOf('RECONSTRUCTION_A
 if (!reconstructionAccepted) {
   need(receipt.classification === 'PRE_RECONSTRUCTION', 'unaccepted reconstruction must remain PRE_RECONSTRUCTION')
   need(receipt.visual.literalAcceptance === false, 'PRE_RECONSTRUCTION must not claim literal visual acceptance')
+  need(receipt.visual.geometryConsistencyAccepted === false, 'PRE_RECONSTRUCTION must not claim geometry consistency acceptance')
+  need(Array.isArray(receipt.visual.acceptedTaskIds) && receipt.visual.acceptedTaskIds.length === 0, 'PRE_RECONSTRUCTION acceptedTaskIds must be empty')
   need(certification.browserCertified === false && certification.mobileCertified === false && certification.xrCertified === false, 'PRE_RECONSTRUCTION cannot claim device certification')
   need(!/(reconstruction accepted|runtime ready|browser certified|mobile certified|xr certified|launch ready)/i.test(claim), 'PRE_RECONSTRUCTION allowedClaim overstates readiness')
 }
@@ -61,7 +72,12 @@ function validPerformance(receiptValue, tier, maxBytes, minFps) {
 
 if (reconstructionAccepted) {
   need(receipt.visual.literalAcceptance === true, 'accepted reconstruction requires literal visual acceptance')
+  need(receipt.visual.geometryConsistencyAccepted === true, 'accepted reconstruction requires geometry consistency acceptance')
+  need(typeof receipt.visual.reviewer === 'string' && receipt.visual.reviewer.trim().length > 0, 'visual acceptance reviewer required')
+  need(Number.isFinite(Date.parse(receipt.visual.reviewedAt)), 'visual acceptance reviewedAt required')
   need(typeof receipt.visual.receiptRef === 'string' && receipt.visual.receiptRef.trim().length > 0, 'visual acceptance receiptRef required')
+  const acceptedTaskIds = Array.isArray(receipt.visual.acceptedTaskIds) ? receipt.visual.acceptedTaskIds : []
+  need(acceptedTaskIds.length === generationTaskIds.length && generationTaskIds.every((id) => acceptedTaskIds.includes(id)), 'visual acceptance must bind the complete generated task set')
   need(receipt.frames.acceptedFrameCount >= 120, 'accepted reconstruction requires at least 120 accepted frames')
   need(receipt.frames.heldOutFrameCount >= Math.ceil(receipt.frames.acceptedFrameCount * 0.10), 'held-out frame set must be at least 10% of accepted frames')
 
