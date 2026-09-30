@@ -705,7 +705,33 @@ async function desktopActionsAndKeyboard() {
     await waitForState(page, 'data-life-map-phase', 'arrival')
 
     await clickRouteAction(page, 'Enter Focus', '/focus', '[data-testid="urai-final-focus-chamber"]')
-    await shot(page, 'focus-destination', 'focus', { memoryId: 'quiet-reset' })
+    const focusCanvas = page.locator('.focusCanvas canvas[data-focus-first-frame="true"]')
+    await focusCanvas.waitFor({ state: 'visible', timeout: 60_000 })
+    await stable(page, 4)
+    const focusCanvasFile = `focus-rendered-canvas-${exactHead.slice(0, 12)}.png`
+    const focusCanvasBuffer = await focusCanvas.screenshot({ path: path.join(outputDir, focusCanvasFile), timeout: 90_000 })
+    const focusPixelSignal = await page.evaluate(async (dataUrl) => {
+      const image = new Image()
+      await new Promise((resolve, reject) => {
+        image.onload = resolve
+        image.onerror = () => reject(new Error('Focus canvas PNG could not be decoded'))
+        image.src = dataUrl
+      })
+      const probe = document.createElement('canvas')
+      probe.width = 80
+      probe.height = 80
+      const context = probe.getContext('2d')
+      if (!context) throw new Error('Focus retained pixel sampler unavailable')
+      context.drawImage(image, image.width * .4, image.height * .35, image.width * .2, image.height * .3, 0, 0, 80, 80)
+      const pixels = context.getImageData(0, 0, 80, 80).data
+      let warm = 0
+      for (let i = 0; i < pixels.length; i += 4) {
+        if (pixels[i] > 30 && pixels[i] > pixels[i + 1] * 1.08 && pixels[i] > pixels[i + 2] * 1.3) warm += 1
+      }
+      return { warmRatio: warm / 6400, samples: 6400, source: 'retained-focus-canvas-png' }
+    }, `data:image/png;base64,${focusCanvasBuffer.toString('base64')}`)
+    if (focusPixelSignal.warmRatio < .05) throw new Error(`Focus photosphere absent from retained canvas: ${JSON.stringify(focusPixelSignal)}`)
+    await shot(page, 'focus-destination', 'focus', { memoryId: 'quiet-reset', renderedFirstFrame: true, focusCanvasFile, focusCanvasSha256: createHash('sha256').update(focusCanvasBuffer).digest('hex'), focusPixelSignal })
 
     await goto(page, arrivalRoute)
     await waitForRenderedWorld(page)
@@ -858,3 +884,4 @@ try {
   await writeFile(path.join(outputDir, 'receipt.json'), JSON.stringify(receipt, null, 2))
   if (!receipt.passed) process.exitCode = 1
 }
+
