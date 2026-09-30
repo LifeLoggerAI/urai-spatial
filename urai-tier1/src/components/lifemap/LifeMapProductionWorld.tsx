@@ -727,7 +727,7 @@ function SelectedMemoryArrival({ selected, phase, reducedMotion }: { selected: L
   return (
     <group
       ref={group}
-      name="life-map-selected-arrival-memory-star"
+      name="life-map-intimate-memory-chamber"
       userData={{
         scaleMode: "intimate",
         depthBand: "near",
