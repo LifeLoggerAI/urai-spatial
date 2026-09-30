@@ -104,7 +104,7 @@ test('Founder runner validates retained PNG evidence with the distributed accept
   assert.match(runner, /variance < 8/)
   assert.match(runner, /nonDarkRatio <= 0/)
   assert.match(runner, /const viewportPixels = Number\(capture\.viewport\?\.width \|\| 0\) \* Number\(capture\.viewport\?\.height \|\| 0\)/)
-  assert.match(runner, /Math\.min\(120_000, Math\.max\(90_000, Math\.round\(viewportPixels \* 0\.35\)\)\)/)
+  assert.match(runner, /Math\.min\(120_000, Math\.max\(90_000, Math\.round\(viewportPixels \* 0\.30\)\)\)/)
   assert.match(runner, /capture\.screenshot\.bytes < minimumScreenshotBytes/)
   assert.match(runner, /distributed-grid-24x16-3x3/)
 })

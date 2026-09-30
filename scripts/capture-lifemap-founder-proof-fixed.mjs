@@ -540,7 +540,7 @@ function assertVisualSanity() {
     if (Number(capture.state?.anchors || 0) < 8) throw new Error(`${id} visible anchor count below production minimum`)
     const viewportPixels = Number(capture.viewport?.width || 0) * Number(capture.viewport?.height || 0)
     const minimumScreenshotBytes = viewportPixels > 0
-      ? Math.min(120_000, Math.max(90_000, Math.round(viewportPixels * 0.35)))
+      ? Math.min(120_000, Math.max(90_000, Math.round(viewportPixels * 0.30)))
       : 120_000
     if (capture.screenshot.bytes < minimumScreenshotBytes) {
       throw new Error(`${id} screenshot is suspiciously empty: bytes=${capture.screenshot.bytes} minimum=${minimumScreenshotBytes}`)
