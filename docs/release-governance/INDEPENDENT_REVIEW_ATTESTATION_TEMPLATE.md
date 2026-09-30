@@ -20,7 +20,7 @@ I, LimberNutz0, confirm that I independently reviewed the UrAi release candidate
 
 My review applies only to this exact SHA and the evidence associated with it. It does not automatically transfer to a later commit, branch head, merge commit, deployment, or modified release candidate.
 
-I was provided sufficient access to inspect the release candidate and its relevant evidence without being required to hold permanent access to the private GitHub repository.
+I was provided sufficient access to inspect the release candidate and its relevant evidence without being required to hold permanent write access to the private GitHub repository.
 
 I understand that this review provides an independent human release judgment separate from the founder's own acceptance.
 
@@ -71,9 +71,9 @@ Date/time: _____________________________
 
 ## Machine-verifiable approval metadata
 
-After signing the attestation file, compute its SHA-256 and retain its evidence location.
+After the reviewer has independently decided, complete the signed attestation, compute its SHA-256, and retain it at the evidence location referenced below.
 
-The PR body must then contain exactly one line for each field below:
+The PR body must then contain exactly one line for each required field:
 
 ```text
 INDEPENDENT_REVIEWER_ID=LimberNutz0
@@ -83,12 +83,12 @@ INDEPENDENT_REVIEWED_AT=[ISO_8601_TIMESTAMP_WITH_TIMEZONE]
 INDEPENDENT_ATTESTATION_SHA256=[64_HEX_SHA256_OF_SIGNED_ATTESTATION]
 INDEPENDENT_ATTESTATION_URI=[RETAINED_EVIDENCE_LOCATION]
 INDEPENDENT_WITNESS=Adam Clamp
-INDEPENDENT_SIGNATURE_B64=[BASE64_SIGNATURE_OF_CANONICAL_MESSAGE]
+INDEPENDENT_SSHSIG_B64=[BASE64_OPENSSH_SSHSIG]
 ```
 
-The Release Governance Guard and Android Governed Signing Prep use the same verified external approval metadata. After governed merge, Android signing accepts this same exact-head cryptographic approval rather than requiring a different reviewer mechanism.
+For the current LimberNutz0 trust anchor, use `INDEPENDENT_SSHSIG_B64`. The repository contains `docs/release-governance/reviewers/LimberNutz0-public.ssh`; it does not require or imply a LimberNutz0 PEM private/public-key pair. Do not put a private key in this repository or give it to the founder.
 
-The Release Governance Guard constructs this canonical message:
+The Release Governance Guard constructs this canonical message exactly:
 
 ```text
 URAI-INDEPENDENT-RELEASE-APPROVAL-V1
@@ -103,13 +103,15 @@ attestation_uri=[RETAINED_EVIDENCE_LOCATION]
 witness=Adam Clamp
 ```
 
-LimberNutz0 signs the exact bytes of that canonical message with the private key corresponding to `docs/release-governance/reviewers/LimberNutz0-public.pem`.
+After deciding to approve, LimberNutz0 signs the exact bytes of that canonical message with the private key that corresponds to the already-trusted public SSH key. The SSHSIG namespace is `urai-release`.
 
-Example:
+Example on a reviewer-controlled machine:
 
 ```bash
-openssl pkeyutl -sign -inkey LimberNutz0-private.pem -rawin -in approval-message.txt -out approval-signature.bin
-base64 < approval-signature.bin
+ssh-keygen -Y sign -f <REVIEWER_PRIVATE_KEY_PATH> -n urai-release approval-message.txt
+base64 < approval-message.txt.sig
 ```
 
-Do not sign before the release SHA is frozen.
+Copy the resulting base64 as `INDEPENDENT_SSHSIG_B64`. The guard verifies it against `docs/release-governance/reviewers/LimberNutz0-public.ssh` using identity `LimberNutz0` and namespace `urai-release`.
+
+Do not sign before the exact release SHA and evidence packet are frozen. A later source change makes the approval historical and requires a new decision on the successor.
