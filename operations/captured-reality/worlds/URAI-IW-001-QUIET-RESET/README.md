@@ -76,3 +76,13 @@ XR requires separate physical-device proof and never inherits browser certificat
 - Production packet: Google Doc id `1NI_3TEhjhJPmscVUJ-Vd6Cc3feBvLMbETxRlZkasAy8`
 
 This child lane is intentionally non-colliding with #1462. It does not authorize merge, production deployment, store release, or launch certification.
+
+## Reconstruction receipt gate
+
+The checked-in `reconstruction-receipt.pending.json` is intentionally classified `PRE_RECONSTRUCTION` and must remain so until literal visual review accepts the generated survey set.
+
+Validate any promotion receipt with:
+
+`node scripts/validate-interpretive-world-receipt.mjs <receipt.json>`
+
+Promotion is progressive: visual/frame/camera/training/held-out QA establish reconstruction acceptance; browser, mobile, and XR each require their own runtime/performance evidence. XR never inherits browser/mobile readiness.
