@@ -658,10 +658,10 @@ function SacredOrb({ state, reducedMotion, onOpen }: { state: OrbState; reducedM
     }
   })
 
-  return <group ref={root} name="home-orb-sanctuary" position={ORB} scale={1.16} onClick={(event) => { event.stopPropagation(); onOpen() }} userData={{ orbState: state, animation: sensory.animation, modelClip: ORB_CLIPS[state], runtimeAsset: ORB_MODEL, materialLanguage: 'authored-rough-mineral-and-ceramic-companion-not-glass-or-ring' }}>
+  return <group ref={root} name="home-orb-sanctuary" position={ORB} scale={1.16} onClick={(event) => { event.stopPropagation(); onOpen() }} userData={{ orbState: state, animation: sensory.animation, modelClip: ORB_CLIPS[state], runtimeAsset: ORB_MODEL, materialLanguage: 'translucent-living-memory-heart-with-visible-authored-core' }}>
     <mesh castShadow receiveShadow rotation={[0.24, 0.5, -0.12]}>
       <icosahedronGeometry args={[0.43, 3]} />
-      <meshPhysicalMaterial color="#466c6d" emissive="#0b2529" emissiveIntensity={state === 'speaking' ? 0.34 : 0.18} roughness={0.72} metalness={0.18} clearcoat={0.16} clearcoatRoughness={0.58} envMapIntensity={0.72} />
+      <meshPhysicalMaterial color="#b6e3df" transparent opacity={0.14} depthWrite={false} emissive="#163f42" emissiveIntensity={state === 'speaking' ? 0.16 : 0.08} roughness={0.18} metalness={0} clearcoat={0.45} clearcoatRoughness={0.2} envMapIntensity={0.72} />
     </mesh>
     <group ref={authoredCore} scale={0.36}><primitive object={authoredOrb} /></group>
     <mesh scale={0.18}><icosahedronGeometry args={[0.16,2]} /><meshStandardMaterial color="#d5bf8c" emissive="#7e5d2c" emissiveIntensity={0.34} roughness={0.7} metalness={0.08} /></mesh>

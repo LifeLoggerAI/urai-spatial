@@ -62,6 +62,11 @@ test('Home is one coherent authored natural 3D sanctuary with final physical ass
   assert.match(homeProduction, /function SacredOrb\(/)
   assert.match(homeProduction, /useGLTF\(ORB_MODEL\)/)
   assert.match(homeProduction, /useAnimations\(orb\.animations, authoredOrb\)/)
+  const orb = homeProduction.slice(homeProduction.indexOf('function SacredOrb('), homeProduction.indexOf('function OrbPlatform('))
+  assert.match(orb, /translucent-living-memory-heart-with-visible-authored-core/)
+  assert.match(orb, /transparent opacity=\{0\.14\} depthWrite=\{false\}/)
+  assert.doesNotMatch(orb, /color="#466c6d"/)
+
   for (const clip of ['Orb_Resting','Orb_Idle','Orb_Attention','Orb_Listening','Orb_Thinking','Orb_Speaking','Orb_Guiding','Orb_Reflecting','Orb_Calming','Orb_Privacy','Orb_Degraded','Orb_Transition']) {
     assert.ok(homeProduction.includes(clip), `missing authored Orb state clip: ${clip}`)
   }
