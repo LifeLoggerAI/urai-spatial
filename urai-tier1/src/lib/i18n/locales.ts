@@ -8,6 +8,11 @@ export type UraiTextDirection = 'ltr' | 'rtl'
 
 export const URAI_RTL_LOCALES = new Set<UraiLaunchLocale>(['ar','ur','fa'])
 
+// Runtime language/direction may activate only after the locale is complete and
+// explicitly native-reviewed. Keep an unreviewed preference separate from the
+// DOM language so assistive technology is not told English fallback copy is translated.
+export const URAI_NATIVE_REVIEWED_LOCALES = new Set<UraiLaunchLocale>(['en'])
+
 const BASE_LANGUAGE: Partial<Record<string, UraiLaunchLocale>> = {
   zh: 'zh-Hans',
   pt: 'pt-BR',
@@ -84,7 +89,18 @@ export function messageFor(locale: UraiLaunchLocale, id: UraiMessageId) {
 export function localizationCompleteness(locale: UraiLaunchLocale) {
   const total = Object.keys(URAI_SOURCE_MESSAGES).length
   const translated = Object.keys(URAI_CATALOGS[locale]).length
-  return { locale, translated, total, complete: translated === total, nativeReviewRequired: locale !== 'en' }
+  return {
+    locale,
+    translated,
+    total,
+    complete: translated === total,
+    nativeReviewRequired: !URAI_NATIVE_REVIEWED_LOCALES.has(locale),
+  }
+}
+
+export function runtimeUraiLocale(requested: UraiLaunchLocale): UraiLaunchLocale {
+  const status = localizationCompleteness(requested)
+  return status.complete && !status.nativeReviewRequired ? requested : 'en'
 }
 
 export function formatUraiDate(locale: UraiLaunchLocale, value: Date | number | string, options: Intl.DateTimeFormatOptions = {}) {

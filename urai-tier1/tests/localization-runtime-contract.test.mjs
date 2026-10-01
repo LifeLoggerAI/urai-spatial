@@ -6,6 +6,7 @@ import {
   messageFor,
   negotiateUraiLocale,
   normalizeUraiLocale,
+  runtimeUraiLocale,
   uraiTextDirection,
 } from '../src/lib/i18n/locales.ts'
 
@@ -40,4 +41,11 @@ test('unreviewed locales fail safely to English source copy and remain review-re
   assert.equal(localizationCompleteness('fr').nativeReviewRequired, true)
   assert.equal(localizationCompleteness('en').complete, true)
   assert.equal(localizationCompleteness('en').nativeReviewRequired, false)
+})
+
+test('unreviewed locale preferences do not mislabel English fallback copy or force RTL runtime', () => {
+  assert.equal(runtimeUraiLocale('fr'), 'en')
+  assert.equal(runtimeUraiLocale('ar'), 'en')
+  assert.equal(uraiTextDirection(runtimeUraiLocale('ar')), 'ltr')
+  assert.equal(runtimeUraiLocale('en'), 'en')
 })
