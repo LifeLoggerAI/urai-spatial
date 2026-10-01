@@ -48,8 +48,16 @@ try {
       await page.getByRole('heading', { level:1, name:heading }).waitFor({ state:'visible', timeout:15000 })
       const main = page.locator('main')
       await main.waitFor({ state:'visible', timeout:15000 })
-      const actionCount = await page.getByRole('navigation', { name:'Page actions' }).getByRole('link').count()
+      const actionNav = page.getByRole('navigation', { name:'Page actions' })
+      const actionCount = await actionNav.getByRole('link').count()
       if (actionCount < 2) throw new Error(`${route} has fewer than two actions`)
+      await actionNav.scrollIntoViewIfNeeded()
+      const actionBox = await actionNav.boundingBox()
+      if (!actionBox || actionBox.height < 1 || actionBox.y < -1 || actionBox.y + actionBox.height > vp.height + 1) throw new Error(`${route} actions cannot be brought into the ${vp.id} viewport`)
+      const footer = page.locator('footer')
+      await footer.scrollIntoViewIfNeeded()
+      const footerBox = await footer.boundingBox()
+      if (!footerBox || footerBox.height < 1 || footerBox.y < -1 || footerBox.y + footerBox.height > vp.height + 1) throw new Error(`${route} footer cannot be brought into the ${vp.id} viewport`)
       const geometry = await main.evaluate(el => {
         const r = el.getBoundingClientRect()
         return { left:r.left, right:r.right, viewportWidth:innerWidth, scrollWidth:document.documentElement.scrollWidth }
@@ -58,7 +66,7 @@ try {
       if (diagnostics.consoleErrors.length || diagnostics.pageErrors.length || diagnostics.failedRequests.length) throw new Error(`${route} diagnostics failed: ${JSON.stringify(diagnostics)}`)
       const file = `${fileSafe(route)}-${vp.id}-${exactHead.slice(0,12)}.png`
       await page.screenshot({ path:path.join(outputDir,file), fullPage:true })
-      receipt.captures.push({ route, heading, viewport:vp.id, file, actionCount, geometry, diagnostics })
+      receipt.captures.push({ route, heading, viewport:vp.id, file, actionCount, actionBox, footerBox, geometry, diagnostics })
       await page.close()
     }
     await context.close()
