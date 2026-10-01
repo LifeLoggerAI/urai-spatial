@@ -32,10 +32,23 @@ function explicitContext(memory: SelectedMemory) {
   return [memory.place?.label, memory.place?.region, memory.title].filter(Boolean).join(' ').toLowerCase()
 }
 
+function contextIncludesToken(context: string, token: string) {
+  const escaped = token.replace(/[.*+?^${}()|[\]\\]/g, '\\function explicitContext(memory: SelectedMemory) {
+  return [memory.place?.label, memory.place?.region, memory.title].filter(Boolean).join(' ').toLowerCase()
+}
+
 export function selectBoundedTemplateArchetype(memory: SelectedMemory) {
   const context = explicitContext(memory)
   for (const rule of rules) {
     if (rule.tokens.some((token) => context.includes(token))) return rule.archetypeId
+  }')
+  return new RegExp(`(?:^|[^a-z0-9])${escaped}(?:$|[^a-z0-9])`, 'i').test(context)
+}
+
+export function selectBoundedTemplateArchetype(memory: SelectedMemory) {
+  const context = explicitContext(memory)
+  for (const rule of rules) {
+    if (rule.tokens.some((token) => contextIncludesToken(context, token))) return rule.archetypeId
   }
   // Unknown context remains a neutral threshold, not a fabricated remembered place.
   return 'scene:everydayTransitional:hallway-transition'
