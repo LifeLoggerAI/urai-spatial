@@ -57,7 +57,15 @@ const authoredOrbClips = `const orbClips = {
   calming: 'Orb_Calming', privacy: 'Orb_Privacy', warning: 'Orb_Degraded', transition: 'Orb_Transition',
 }`
 
+const staleHomeReadyWait = `    }, ownerSelector, { timeout: 45_000 })
+  }
+  await waitFrames(page, 3)`
+const boundedHomeReadyWait = `    }, ownerSelector, { timeout: 90_000 })
+  }
+  await waitFrames(page, 3)`
+
 let patched = original
+patched = convergeSingle(patched, staleHomeReadyWait, boundedHomeReadyWait, 'Continuous proof Home readiness timeout')
 patched = convergeSingle(patched, oldOwner, newOwner, 'Continuous proof animation-owner')
 patched = convergeRepeated(patched, staleEnvironmentalRadius, runtimeEnvironmentalRadius, 2, 'Continuous proof environmental-threshold proximity')
 patched = convergeOneOf(
