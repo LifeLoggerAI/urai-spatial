@@ -129,11 +129,11 @@ export const launchTruth = {
     },
     {
       path: '/focus',
-      label: 'Selected memory chamber',
+      label: 'Stellar memory focus',
       group: 'Launch spine',
       state: 'certification-pending',
       proofBoundary: 'Demo identity source contracts exist; final live redirect/hydration certification must bind to the exact deployed release.',
-      publicClaim: 'Fingerprint-gated Focus chamber for disclosed demo identity.',
+      publicClaim: 'Fingerprint-gated stellar Focus for disclosed demo identity.',
     },
     {
       path: '/replay',
