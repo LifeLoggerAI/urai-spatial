@@ -82,6 +82,8 @@ test('Home Gold Master ground detail preserves density with bounded instanced re
   assert.match(homeProduction, /mesh\.setColorAt\(localIndex, color\)/)
   assert.match(homeProduction, /STONE_SCATTER\.slice\(0, 12\)/)
   assert.match(homeProduction, /STONE_SCATTER\.slice\(12\)/)
+  assert.match(homeProduction, /castShadow=\{castShadow\}/)
+  assert.match(homeProduction, /receiveShadow/)
   assert.doesNotMatch(homeProduction, /STONE_SCATTER\.map\([\s\S]{0,220}<mesh/)
 })
 
