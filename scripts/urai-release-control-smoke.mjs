@@ -132,7 +132,7 @@ async function runReleaseControlSmoke() {
   }
   mkdirSync(out, { recursive: true })
 
-  const routes = ['/', '/home', '/ground', '/life-map', '/focus', '/replay', '/mirror', '/passport', '/privacy-controls', '/location-map', '/status']
+  const routes = ['/', '/home', '/ground', '/life-map', '/focus', '/replay', '/mirror', '/passport', '/privacy-controls', '/location-map', '/status', '/support', '/about', '/contact', '/event', '/glass', '/offline', '/report-bug']
   const identity = {
     memoryId: 'demo:quiet-reset',
     manifestId: 'replay-recovery-thread',
@@ -143,6 +143,11 @@ async function runReleaseControlSmoke() {
     ['manifestId', 'replay-recovery-thread'],
     ['overview', '1'],
   ].sort(([leftKey, leftValue], [rightKey, rightValue]) => leftKey.localeCompare(rightKey) || leftValue.localeCompare(rightValue))
+  const compatibilityBrowserRoutes = new Map([
+    ['/privacy', { pathname: '/privacy-controls', searchEntries: [['from', 'privacy']] }],
+    ['/ascent/life-map', { pathname: '/life-map', searchEntries: [['from', 'ascent-life-map']] }],
+  ])
+
   const requiredQueryTokens = [
     'demo=1',
     `memoryId=${identity.memoryId}`,
@@ -150,7 +155,7 @@ async function runReleaseControlSmoke() {
     `node=${identity.node}`,
   ]
   const report = {
-    schemaVersion: 'urai-release-control-smoke-5',
+    schemaVersion: 'urai-release-control-smoke-6',
     generatedAt: new Date().toISOString(),
     base,
     expectedSha,
@@ -182,6 +187,27 @@ async function runReleaseControlSmoke() {
     const requested = new URL(requestedUrl)
     const final = new URL(finalUrl)
     if (final.origin !== canonicalOrigin) throw new Error(`${label} escaped canonical origin: ${final.toString()}`)
+    const compatibility = compatibilityBrowserRoutes.get(route)
+    if (compatibility) {
+      if (normalizePath(final.pathname) !== normalizePath(compatibility.pathname)) {
+        throw new Error(`${label} compatibility path changed: expected ${compatibility.pathname}, final ${final.pathname}`)
+      }
+      const observedEntries = sortedSearchEntries(final.toString())
+      const expectedEntries = [...compatibility.searchEntries].sort(([leftKey, leftValue], [rightKey, rightValue]) =>
+        leftKey.localeCompare(rightKey) || leftValue.localeCompare(rightValue))
+      if (JSON.stringify(observedEntries) !== JSON.stringify(expectedEntries)) {
+        throw new Error(`${label} compatibility query changed: expected ${JSON.stringify(expectedEntries)}, final ${JSON.stringify(observedEntries)}`)
+      }
+      report.canonicalBrowserTransitions.push({
+        profile: profileName,
+        route,
+        requested: requested.toString(),
+        observed: final.toString(),
+        transition: 'compatibility-route',
+        privateMemoryMounted: false,
+      })
+      return
+    }
     if (normalizePath(final.pathname) !== normalizePath(requested.pathname)) {
       throw new Error(`${label} path changed: requested ${requested.pathname}, final ${final.pathname}`)
     }
@@ -220,7 +246,7 @@ async function runReleaseControlSmoke() {
           redirect,
           cache: 'no-store',
           signal: AbortSignal.timeout(20_000),
-          headers: { 'cache-control': 'no-cache', 'user-agent': 'urai-release-control-smoke/5' },
+          headers: { 'cache-control': 'no-cache', 'user-agent': 'urai-release-control-smoke/6' },
         })
         const body = await response.text()
         return {
@@ -378,7 +404,7 @@ async function runReleaseControlSmoke() {
           report.consoleErrors.push({ profile: profileName, url: page.url(), message: message.text() })
         }
       })
-      const browserRoutes = ['/', '/life-map', queryCases[0].path, queryCases[1].path, '/privacy-controls', '/status']
+      const browserRoutes = ['/', '/life-map', queryCases[0].path, queryCases[1].path, '/privacy-controls', '/status', '/support', '/about', '/contact', '/event', '/glass', '/offline', '/report-bug', '/privacy', '/ascent/life-map']
       for (const route of browserRoutes) {
         const requestedUrl = new URL(route, `${base}/`).toString()
         const response = await page.goto(requestedUrl, { waitUntil: 'domcontentloaded', timeout: 60000 })

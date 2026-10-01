@@ -27,13 +27,20 @@ const contracts = [
   ['/home', ['aaa-final-home-sky-ground-orb-body-portals', 'Own your life.'], []],
   ['/ground', ['walkable-first-person-ground-layer', 'urai-ground-private-workforce-world', 'ground-destination-compass', 'data-ground-destination', 'URAI Ground embodied private infrastructure'], ['Street-level city world']],
   ['/life-map', ['URAI Life Map', 'URAI Life Map — step inside your private constellation'], []],
-  ['/focus?memoryId=quiet-reset&manifestId=replay-recovery-thread&node=quiet-reset', ['urai-final-focus-chamber', 'Selected memory chamber.'], ['Focus loading']],
-  ['/replay?memoryId=quiet-reset&manifestId=replay-recovery-thread&node=quiet-reset', ['replay-route-launch-fingerprint', 'Replay the thread. Film beats. Cinematic memory camera film.'], []],
+  ['/focus?memoryId=quiet-reset&manifestId=replay-recovery-thread&node=quiet-reset', ['urai-final-focus-chamber', 'URAI Focus stellar memory field', 'data-focus-spatial'], ['Focus loading']],
+  ['/replay?memoryId=quiet-reset&manifestId=replay-recovery-thread&node=quiet-reset', ['replay-route-launch-fingerprint', 'cinematic-replay-client', 'r3f-immersive-memory-field'], []],
   ['/mirror', ['urai-final-mirror-realm', 'See the pattern clearly.'], []],
   ['/passport', ['passport-ownership-vault', 'UrAi Passport', 'Ownership key'], ['urai-final-passport-vault', 'Your life stays yours.']],
   ['/privacy-controls', ['consent-sanctuary', 'UrAi Consent Sanctuary', 'Choose what the world may hold.', 'Enforcement:'], ['privacy-consent-console', 'Choose what the world can hold.', 'Home threshold']],
   ['/location-map', ['premium-emotional-weather-atlas'], []],
   ['/status', ['urai-final-status-control-room', 'Launch locked. Proof before expansion.', 'fingerprint-gated', 'Production certification remains hidden until the protected fingerprint is validated.'], ['Pending proof', 'World online. Route matrix visible.']],
+  ['/support', ['Help when you need it.', 'Email support', 'Report an issue'], []],
+  ['/about', ['A life you can move through.', 'Memory becomes navigable.', 'Privacy stays explicit.'], []],
+  ['/contact', ['Reach the right door.', 'Product support', 'Privacy-sensitive requests:'], []],
+  ['/event', ['See the system without overstating it.', 'Open demo', 'View release status'], []],
+  ['/glass', ['Move from screen to space.', 'Open XR preview', 'Open spatial web'], []],
+  ['/offline', ['Your way back stays visible.', 'Return Home', 'Check status'], []],
+  ['/report-bug', ['Tell us what broke.', 'Email support', 'Check status first'], []],
 ]
 
 function normalizePath(value) {
@@ -184,7 +191,7 @@ try {
 
 const passed = results.every((result) => result.passed) && fingerprint.passed
 const receipt = {
-  schemaVersion: 'urai-live-content-parity-3',
+  schemaVersion: 'urai-live-content-parity-4',
   generatedAt: new Date().toISOString(),
   baseUrl,
   expectedDeployedSha: expectedSha,
@@ -194,6 +201,7 @@ const receipt = {
   checkedVariants: results.length,
   fetchPolicy: { maxAttempts, retryBaseMs },
   hydratedIdentityProof: 'scripts/urai-release-control-smoke.mjs',
+  browserCompatibilityRoutes: ['/privacy', '/ascent/life-map'],
   fingerprint,
   passed,
   results,

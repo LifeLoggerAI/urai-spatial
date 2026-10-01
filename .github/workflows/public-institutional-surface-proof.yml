@@ -2,7 +2,7 @@ name: Public Institutional Surface Proof
 
 on:
   pull_request:
-    branches: [main, 'converge/**', 'polish/**']
+    branches: [main, 'converge/**', 'polish/**', 'integration/**']
     paths:
       - '.github/workflows/public-institutional-surface-proof.yml'
       - 'scripts/capture-public-surface-proof.mjs'

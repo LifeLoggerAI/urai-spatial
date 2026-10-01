@@ -45,6 +45,6 @@ test('browser console, page, and blocked-network evidence fail the retained rece
   assert.match(source, /page\.on\('pageerror'/)
   assert.match(source, /message\.type\(\) === 'error'/)
   assert.match(source, /smoke-report\.json/)
-  assert.match(source, /urai-release-control-smoke-5/)
+  assert.match(source, /urai-release-control-smoke-6/)
   assert.match(source, /if \(failures\.length\) throw new Error/)
 })
