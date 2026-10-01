@@ -226,28 +226,28 @@ function StellarPhotosphere({ accent, light, reducedMotion }: { accent: string; 
       void main() {
         vec3 p = normalize(vObjectPosition);
         float t = uTime * .055;
-        float large = noise(p * 4.3 + vec3(t, -t * .52, t * .31));
-        float medium = noise(p * 10.5 - vec3(t * .34, t * .21, -t * .18));
-        float fine = noise(p * 28.0 + vec3(-t * .2, t * .26, t * .11));
-        float granulation = clamp(large * .48 + medium * .36 + fine * .16, 0.0, 1.0);
-        float cells = smoothstep(.22, .78, granulation);
-        float filament = smoothstep(.54, .88, abs(sin((p.x - p.y * .7 + p.z * .44) * 17.0 + medium * 8.0)));
-        float pores = smoothstep(.68, .92, noise(p * 52.0 - vec3(t * .11, -t * .07, t * .05)));
+        // Keep the dominant signal at photospheric granule scale. Broad low-frequency
+        // bands read as planetary terrain, which is explicitly outside Focus canon.
+        float broad = noise(p * 7.0 + vec3(t, -t * .38, t * .27));
+        float medium = noise(p * 19.0 - vec3(t * .31, t * .19, -t * .15));
+        float fine = noise(p * 54.0 + vec3(-t * .16, t * .22, t * .09));
+        float granulation = clamp(broad * .16 + medium * .52 + fine * .32, 0.0, 1.0);
+        float cells = smoothstep(.34, .74, medium * .68 + fine * .32);
+        float faculae = smoothstep(.72, .94, noise(p * 33.0 + vec3(t * .08, -t * .06, t * .04)));
+        float pores = smoothstep(.80, .96, noise(p * 71.0 - vec3(t * .09, -t * .05, t * .04)));
         float viewFacing = clamp(vNormalView.z * .5 + .5, 0.0, 1.0);
-        float limb = pow(viewFacing, .76);
-        float mottling = .42 + cells * .7 - filament * .31 - pores * .2;
-        vec3 ember = vec3(.48, .045, .004);
-        vec3 whiteGold = vec3(1.0, .48, .08);
-        vec3 hotWhite = vec3(1.0, .82, .42);
-        vec3 surface = mix(ember, whiteGold, .18 + cells * .62);
-        surface = mix(surface, hotWhite, .04 + fine * .14 + limb * .08);
-        surface = mix(surface, uLight, .025);
-        surface = mix(surface, uAccent, .015);
-        surface *= 1.0 - pores * .16;
-        float radiance = (.54 + granulation * .58) * (.5 + limb * .42) * mottling;
-        // Preserve dark granulation while giving the photosphere its own stellar emission.
-        radiance *= 1.85;
-        vec3 emitted = surface * radiance + hotWhite * (.012 + cells * .035);
+        float limb = pow(viewFacing, .72);
+        vec3 solarOrange = vec3(1.0, .20, .018);
+        vec3 solarGold = vec3(1.0, .56, .075);
+        vec3 hotWhite = vec3(1.0, .88, .50);
+        vec3 surface = mix(solarOrange, solarGold, .34 + cells * .52);
+        surface = mix(surface, hotWhite, .08 + fine * .12 + faculae * .16 + limb * .08);
+        surface = mix(surface, uLight, .018);
+        surface = mix(surface, uAccent, .008);
+        float radiance = (.82 + granulation * .42 + faculae * .16) * (.66 + limb * .34);
+        radiance *= 1.72;
+        radiance *= 1.0 - pores * .16;
+        vec3 emitted = surface * radiance + hotWhite * (.018 + cells * .038 + faculae * .05);
         gl_FragColor = vec4(clamp(emitted, 0.0, 1.0), 1.0);
         #include <colorspace_fragment>
       }
