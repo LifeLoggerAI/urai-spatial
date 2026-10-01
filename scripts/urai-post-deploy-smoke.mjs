@@ -29,6 +29,12 @@ const contracts = [
   ['/life-map', ['URAI Life Map', 'URAI Life Map — step inside your private constellation'], []],
   ['/focus?memoryId=quiet-reset&manifestId=replay-recovery-thread&node=quiet-reset', ['urai-final-focus-chamber', 'URAI Focus stellar memory field', 'data-focus-spatial'], ['Focus loading']],
   ['/replay?memoryId=quiet-reset&manifestId=replay-recovery-thread&node=quiet-reset', ['replay-route-launch-fingerprint', 'cinematic-replay-client', 'r3f-immersive-memory-field'], []],
+  ['/life-movie', ['life-movie-runtime', 'Life Movie'], []],
+  ['/council', ['urai-council-route', 'rigged-embodied-council'], []],
+  ['/spatial/memory-world', ['memory-world-route'], []],
+  ['/spatial/interpretive-world', ['interpretive-world-route'], []],
+  ['/spatial/captured-reality', ['captured-reality-private-route'], []],
+  ['/spatial/ar-vr', ['urai-quest-explorable-world', 'URAI AR / VR / XR entry chamber'], []],
   ['/mirror', ['urai-final-mirror-realm', 'See the pattern clearly.'], []],
   ['/passport', ['passport-ownership-vault', 'UrAi Passport', 'Ownership key'], ['urai-final-passport-vault', 'Your life stays yours.']],
   ['/privacy-controls', ['consent-sanctuary', 'UrAi Consent Sanctuary', 'Choose what the world may hold.', 'Enforcement:'], ['privacy-consent-console', 'Choose what the world can hold.', 'Home threshold']],
@@ -191,7 +197,7 @@ try {
 
 const passed = results.every((result) => result.passed) && fingerprint.passed
 const receipt = {
-  schemaVersion: 'urai-live-content-parity-4',
+  schemaVersion: 'urai-live-content-parity-5',
   generatedAt: new Date().toISOString(),
   baseUrl,
   expectedDeployedSha: expectedSha,
