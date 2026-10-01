@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react'
 import styles from './InstitutionalPublicSurface.module.css'
 
 type PublicSurfaceLink = {
@@ -12,7 +13,7 @@ type InstitutionalPublicSurfaceProps = {
   lede: string
   note?: string
   links: PublicSurfaceLink[]
-  children?: React.ReactNode
+  children?: ReactNode
 }
 
 export default function InstitutionalPublicSurface({
