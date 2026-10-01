@@ -145,10 +145,13 @@ test('Focus retains a deterministic visible stellar photosphere/corona in exact-
 })
 
 test('Focus stellar body preserves visible photosphere granulation instead of a smooth orb wash', () => {
-  assert.match(focus, /float pores = smoothstep\(\.68, \.92, noise\(p \* 52\.0/)
-  assert.match(focus, /float mottling = \.42 \+ cells \* \.7 - filament \* \.31 - pores \* \.2/)
-  assert.match(focus, /float radiance = \(\.54 \+ granulation \* \.58\)/)
-  assert.match(focus, /vec3 emitted = surface \* radiance \+ hotWhite \* \(\.012 \+ cells \* \.035\)/)
+  assert.match(focus, /float broad = noise\(p \* 7\.0/)
+  assert.match(focus, /float medium = noise\(p \* 19\.0/)
+  assert.match(focus, /float fine = noise\(p \* 54\.0/)
+  assert.match(focus, /float pores = smoothstep\(\.80, \.96, noise\(p \* 71\.0/)
+  assert.match(focus, /float radiance = \(\.82 \+ granulation \* \.42 \+ faculae \* \.16\)/)
+  assert.match(focus, /vec3 emitted = surface \* radiance \+ hotWhite \* \(\.018 \+ cells \* \.038 \+ faculae \* \.05\)/)
+  assert.doesNotMatch(focus, /float filament = /, 'broad contour bands must not make the stellar photosphere read as planetary terrain')
   assert.match(focus, /focus-stellar-photosphere-luminance-floor/)
   assert.match(focus, /color="#ffd66b" transparent opacity=\{0\.055\}/)
   assert.match(focus, /color="#ffb53f" transparent opacity=\{0\.045\}/)
