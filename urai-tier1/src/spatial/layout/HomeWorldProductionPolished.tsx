@@ -1,7 +1,7 @@
 'use client'
 
 import { Canvas, useFrame, useThree, type ThreeEvent } from '@react-three/fiber'
-import { Stars, useGLTF } from '@react-three/drei'
+import { Stars, useAnimations, useGLTF } from '@react-three/drei'
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type MutableRefObject } from 'react'
 import * as THREE from 'three'
 import { resolveOrbSensoryOutput, URAI_ORB_STATE_EVENT, type OrbState, type OrbStateEventDetail } from '@/app/home/orbStateController'
@@ -13,6 +13,7 @@ import styles from './HomeWorldProduction.module.css'
 const HOME_PROVIDER_ENVIRONMENT = '/assets/urai/replay/replay-memory-film-main.webp'
 const HOME_SANCTUARY_MODEL = '/assets/urai/generated/models/home-entry-chamber-v1.glb'
 const HOME_FERN_MODEL = '/assets/urai/home-production/cc0/polyhaven-fern-02-geometry-v1.glb'
+const ORB_MODEL = '/assets/urai/generated/models/urai-orb-avatar-v1.glb'
 const HOME_SCANNED_COMPOSITION_V1 = 'canonical-sanctuary-plus-cc0-fern-plus-living-orb'
 const HOME_BOUNDS = { minX: -14, maxX: 14, minZ: -18, maxZ: 12 }
 const SPAWN = new THREE.Vector3(-0.85, 0, 8.4)
@@ -347,40 +348,90 @@ function OrbGroundGlow({ state }: { state: OrbState }) {
   return <group position={[ORB.x, terrainHeight(ORB.x, ORB.z) + .032, ORB.z]} rotation={[-Math.PI / 2, 0, 0]}>
     <mesh><circleGeometry args={[1.34, 64]} /><meshBasicMaterial color={palette.aura} transparent opacity={.042} depthWrite={false} blending={THREE.AdditiveBlending} toneMapped={false} /></mesh>
     <mesh position={[0,0,.008]}><ringGeometry args={[.82,.86,64]} /><meshBasicMaterial color={palette.light} transparent opacity={.18} depthWrite={false} toneMapped={false} /></mesh>
-    <mesh position={[0,0,.012]}><ringGeometry args={[1.12,1.15,64]} /><meshBasicMaterial color={palette.aura} transparent opacity={.07} depthWrite={false} toneMapped={false} /></mesh>
-  </group>
-}
-
-function Orb({ onOpen, reducedMotion, state }: { onOpen: () => void; reducedMotion: boolean; state: OrbState }) {
+    <mesh position={[0,0,.012]}><ringGeometry args={[1.12,1.15,64]} /><meshBasicMaterial color={palette.aura} function SacredOrb({ state, reducedMotion, onOpen }: { state: OrbState; reducedMotion: boolean; onOpen: () => void }) {
   const root = useRef<THREE.Group>(null)
+  const authoredCore = useRef<THREE.Group>(null)
+  const activeAction = useRef<THREE.AnimationAction | null>(null)
   const light = useRef<THREE.PointLight>(null)
+  const orb = useGLTF(ORB_MODEL)
+  const authoredOrb = useMemo(() => {
+    const clone = orb.scene.clone(true)
+    clone.traverse((object) => {
+      if (!(object instanceof THREE.Mesh)) return
+      object.castShadow = true
+      object.receiveShadow = true
+      object.material = Array.isArray(object.material)
+        ? object.material.map((material) => material.clone())
+        : object.material.clone()
+    })
+    return clone
+  }, [orb.scene])
+  const { actions } = useAnimations(orb.animations, authoredOrb)
   const sensory = useMemo(() => resolveOrbSensoryOutput(state, reducedMotion, true), [reducedMotion, state])
   const palette = ORB_PALETTE[state]
+
+  useEffect(() => {
+    const allActions = Object.values(actions).filter((action): action is THREE.AnimationAction => Boolean(action))
+    if (reducedMotion) {
+      allActions.forEach((action) => action.stop())
+      activeAction.current = null
+      return
+    }
+    const next = actions[ORB_CLIPS[state]]
+    if (!next) return
+    const previous = activeAction.current
+    if (previous && previous !== next) previous.fadeOut(0.18)
+    next.reset().setLoop(THREE.LoopRepeat, Infinity).fadeIn(0.18).play()
+    activeAction.current = next
+  }, [actions, reducedMotion, state])
+
+  useEffect(() => () => {
+    Object.values(actions).forEach((action) => action?.stop())
+  }, [actions])
+
   useFrame(({ clock }) => {
     if (!root.current) return
     const speed = state === 'speaking' ? 2.4 : state === 'thinking' ? 1.8 : state === 'listening' ? 1.25 : state === 'transition' ? 1.45 : .82
-    const amplitude = state === 'speaking' ? .035 : state === 'thinking' ? .03 : state === 'listening' ? .026 : .022
     if (reducedMotion) {
       root.current.position.y = ORB.y
       root.current.rotation.y = 0
       root.current.scale.setScalar(1)
     } else {
       root.current.position.y = ORB.y + Math.sin(clock.elapsedTime * speed) * .028
-      root.current.rotation.y = clock.elapsedTime * (.065 + speed * .02)
-      root.current.scale.setScalar(1 + Math.sin(clock.elapsedTime * speed) * amplitude)
+      root.current.rotation.y = clock.elapsedTime * .018
+      root.current.scale.setScalar(1)
+    }
+    if (authoredCore.current) {
+      const pulse = reducedMotion ? .34 : state === 'speaking' ? .37 : state === 'listening' ? .355 : .34 + Math.sin(clock.elapsedTime * .95) * .008
+      authoredCore.current.scale.setScalar(pulse)
     }
     if (light.current) {
       const pulse = reducedMotion ? 0 : Math.sin(clock.elapsedTime * speed) * .13
       light.current.intensity = sensory.light.intensity * 2.28 + pulse
     }
   })
-  return <group ref={root} name="home-orb-sanctuary" position={ORB} onClick={(event) => { event.stopPropagation(); onOpen() }} userData={{ orbState: state, animation: sensory.animation, material: sensory.material, movement: sensory.movement }}>
-    <mesh castShadow scale={.5}><sphereGeometry args={[1, 64, 64]} /><meshPhysicalMaterial color={palette.core} emissive={palette.emissive} emissiveIntensity={state === 'speaking' ? 1.26 : state === 'thinking' ? 1.02 : .9} roughness={.2} metalness={.03} clearcoat={1} clearcoatRoughness={.13} /></mesh>
-    <mesh scale={.29}><sphereGeometry args={[1, 48, 48]} /><meshBasicMaterial color={palette.light} transparent opacity={state === 'speaking' ? .5 : .37} depthWrite={false} toneMapped={false} /></mesh>
-    <mesh scale={state === 'listening' ? .68 : state === 'speaking' ? .71 : .65}><sphereGeometry args={[1, 48, 48]} /><meshBasicMaterial color={palette.aura} transparent opacity={state === 'warning' ? .07 : state === 'speaking' ? .06 : .034} depthWrite={false} toneMapped={false} /></mesh>
-    <mesh rotation={[Math.PI / 2, .12, 0]}><torusGeometry args={[.66,.008,8,96]} /><meshBasicMaterial color={palette.light} transparent opacity={.14} depthWrite={false} toneMapped={false} /></mesh>
+
+  return <group ref={root} name="home-orb-sanctuary" position={ORB} onClick={(event) => { event.stopPropagation(); onOpen() }} userData={{ orbState: state, animation: sensory.animation, modelClip: ORB_CLIPS[state], runtimeAsset: ORB_MODEL, material: sensory.material, movement: sensory.movement, materialLanguage: 'translucent-living-memory-heart-with-visible-authored-core' }}>
+    <mesh castShadow receiveShadow rotation={[.24,.5,-.12]}>
+      <icosahedronGeometry args={[.43,3]} />
+      <meshPhysicalMaterial color={palette.core} transparent opacity={0.14} depthWrite={false} emissive={palette.emissive} emissiveIntensity={state === 'speaking' ? .3 : .18} roughness={.18} metalness={0} clearcoat={.45} clearcoatRoughness={.2} envMapIntensity={.72} />
+    </mesh>
+    <group ref={authoredCore} scale={.34}><primitive object={authoredOrb} /></group>
+    <mesh name="orb-luminous-memory-volume"><sphereGeometry args={[.23,32,24]} /><meshStandardMaterial color={palette.aura} transparent opacity={.62} depthWrite={false} emissive={palette.emissive} emissiveIntensity={state === 'speaking' ? 1.8 : 1.4} roughness={.28} metalness={0} toneMapped={false} /></mesh>
+    <mesh name="orb-warm-memory-heart" position={[.06,-.03,.08]}><sphereGeometry args={[.1,24,16]} /><meshStandardMaterial color="#ffe1a3" emissive="#efbe64" emissiveIntensity={1.1} roughness={.3} metalness={0} toneMapped={false} /></mesh>
     <OrbMotes reducedMotion={reducedMotion} color={palette.light} />
     <pointLight ref={light} color={palette.light} intensity={sensory.light.intensity * 2.28} distance={state === 'speaking' ? 12 : 10} decay={2} />
+  </group>
+}
+
+function Orb({ onOpen, reducedMotion, state }: { onOpen: () => void; reducedMotion: boolean; state: OrbState }) {
+  return <SacredOrb onOpen={onOpen} reducedMotion={reducedMotion} state={state} />
+}
+
+function OrbPlatform() {
+  return <group name="home-orb-grounded-clearing-marker" position={[ORB.x, terrainHeight(ORB.x, ORB.z), ORB.z]} userData={{ treatment: 'level-natural-clearing-no-pedestal-or-ring' }} />
+}
+t.intensity * 2.28} distance={state === 'speaking' ? 12 : 10} decay={2} />
   </group>
 }
 
@@ -485,6 +536,7 @@ function Scene(props: { input: MovementInput; yaw: MutableRefObject<number>; pit
     <Vegetation />
     <SanctuaryPavilion />
     <Water />
+    <OrbPlatform />
     <OrbGroundGlow state={props.orbState} />
     <Orb onOpen={props.onOrbOpen} reducedMotion={props.reducedMotion} state={props.orbState} />
     <EmbodiedPresence root={props.avatar} />
@@ -555,3 +607,4 @@ export function HomeWorldProductionPolished({ onOrbOpen = requestUraiWorldOrbOpe
 
 useGLTF.preload(HOME_SANCTUARY_MODEL)
 useGLTF.preload(HOME_FERN_MODEL)
+useGLTF.preload(ORB_MODEL)
