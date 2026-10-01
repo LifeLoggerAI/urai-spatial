@@ -42,16 +42,17 @@ test('Council UI routes through provider-neutral dispatcher and publishes live/p
   const panel = fs.readFileSync(new URL('../src/spatial/council/CouncilConversationPanel.tsx', import.meta.url), 'utf8')
   const registry = fs.readFileSync(new URL('../src/spatial/council/councilProviderRegistry.ts', import.meta.url), 'utf8')
 
-  assert.match(panel, /ACTIVE_COUNCIL_PROVIDER = 'openai'/)
-  assert.match(panel, /requestCouncilProvider({[sS]*provider: ACTIVE_COUNCIL_PROVIDER/)
-  assert.match(panel, /data-live-council-providers=/)
-  assert.match(panel, /data-pending-council-providers=/)
-  assert.match(panel, /COUNCIL_PROVIDER_REGISTRY[ACTIVE_COUNCIL_PROVIDER].label/)
-  assert.doesNotMatch(panel, /requestOpenAIOrb(/)
+  assert.ok(panel.includes("ACTIVE_COUNCIL_PROVIDER = 'openai'"))
+  assert.ok(panel.includes('requestCouncilProvider({'))
+  assert.ok(panel.includes('provider: ACTIVE_COUNCIL_PROVIDER'))
+  assert.ok(panel.includes('data-live-council-providers='))
+  assert.ok(panel.includes('data-pending-council-providers='))
+  assert.ok(panel.includes('COUNCIL_PROVIDER_REGISTRY[ACTIVE_COUNCIL_PROVIDER].label'))
+  assert.equal(panel.includes('requestOpenAIOrb('), false)
 
-  assert.match(registry, /case 'openai':[sS]*requestOpenAIOrb/)
-  assert.doesNotMatch(registry, /case 'anthropic':[sS]*requestOpenAIOrb/)
-  assert.doesNotMatch(registry, /case 'gemini':[sS]*requestOpenAIOrb/)
-  assert.doesNotMatch(registry, /case 'xai':[sS]*requestOpenAIOrb/)
-  assert.doesNotMatch(registry, /case 'mistral':[sS]*requestOpenAIOrb/)
+  assert.ok(registry.includes("case 'openai':"))
+  assert.ok(registry.includes('requestOpenAIOrb({'))
+  for (const id of ['anthropic', 'gemini', 'xai', 'mistral']) {
+    assert.equal(registry.includes(`case '${id}':`), false)
+  }
 })
