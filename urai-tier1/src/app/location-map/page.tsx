@@ -21,7 +21,7 @@ export default async function LocationMapPage() {
       <LocationMapNativeWheelBridge />
       <aside className="locationMapGeographicBridge" aria-label="Geographic location layer">
         <span>Optional supporting layer</span>
-        <Link href="/location-map/geographic/">Open consent-gated geographic places</Link>
+        <Link href="/location-map/geographic/" prefetch={false}>Open consent-gated geographic places</Link>
       </aside>
       <Suspense fallback={null}>
         <LocationMapAcceptanceBoundary

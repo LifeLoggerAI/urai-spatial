@@ -5,7 +5,7 @@ export const revalidate = false;
 
 const releaseMarker = 'urai-spatial-public-surface-2026-06-29-homeworldproduction';
 const proofSchemaVersion = 'urai-spatial-deploy-proof-v2-2026-06-30';
-const sourceSurface = 'TierOneExperience:HomeWorldProduction';
+const sourceSurface = 'HomeSpatialRuntimeLayer:AssetDrivenHomeWorld';
 
 const publicRoutes = [
   '/',
@@ -14,10 +14,23 @@ const publicRoutes = [
   '/life-map',
   '/focus?memoryId=quiet-reset',
   '/replay?memoryId=quiet-reset&manifestId=replay-recovery-thread',
+  '/life-movie',
+  '/council',
+  '/xr',
   '/mirror',
   '/passport',
+  '/privacy',
+  '/privacy-policy',
+  '/account-deletion',
   '/privacy-controls',
+  '/settings/privacy',
+  '/support',
+  '/onboarding',
+  '/signup',
+  '/login',
   '/location-map',
+  '/waitlist',
+  '/system',
   '/status',
   '/spatial/ar-vr',
 ] as const;
@@ -59,7 +72,10 @@ export async function GET() {
       spatialWebPreview: 'live-preview',
       webxr: 'progressive-enhancement',
       questBrowser: 'unverified-until-device-proof',
-      lifeMapData: 'demo-or-local-fallback-until-authenticated-persistence-is-proven',
+      lifeMapData: 'authenticated-private-firestore-or-explicit-demo-only',
+      lifeMovieData: 'authenticated-owner-memories',
+      councilProvider: 'authenticated-consented-openai-with-disclosed-local-fallback',
+      capturedReality: 'private-owner-consent-and-release-gated',
     },
     deploymentFreshness: {
       commitSha,
@@ -69,9 +85,11 @@ export async function GET() {
     environment: {
       commitSha,
       firebaseProject:
+        process.env.URAI_SPATIAL_FIREBASE_PROJECT_ID ||
         process.env.FIREBASE_PROJECT_ID ||
         process.env.GCLOUD_PROJECT ||
         process.env.GOOGLE_CLOUD_PROJECT ||
+        process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID ||
         'unknown',
     },
   });

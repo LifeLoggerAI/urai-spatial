@@ -41,8 +41,10 @@ assert.equal(hasAuthorizedReplayGuard, true, "Final Focus chamber must fail clos
 assert.equal(hasCommittedDebounce, true, "Final Focus chamber must debounce an already committed Replay transition.");
 
 assert.match(focusClient, /requestUraiWorldReturn\(\)/, "Final Focus chamber must retain deterministic world return.");
-assert.match(focusClient, /data-focus-spatial="explorable-observatory"/, "Final Focus chamber must expose the spatial observatory contract.");
+assert.match(focusClient, /data-focus-spatial="inside-memory-star"/, "Final Focus must expose the inside-memory-star spatial contract.");
+assert.match(focusClient, /data-focus-composition="stellar-photosphere-corona-with-living-memory-vfx"/, "Final Focus must retain the stellar photosphere/corona composition contract.");
+assert.doesNotMatch(focusClient, /data-focus-spatial="explorable-observatory"/, "Retired observatory authority must not return to canonical Focus.");
 assert.match(focusClient, /<OrbitControls/, "Final Focus chamber must retain bounded pointer and touch exploration.");
 assert.match(memoryStar, /canEnterMemoryPlace/, "Memory star schema must define canEnterMemoryPlace.");
 
-console.log("URAI focus place doorway canon passed: place door remains available and authenticated Focus uses the spatial selected-memory Replay portal contract.");
+console.log("URAI focus place doorway canon passed: place door remains available and authenticated stellar Focus preserves the selected-memory Replay portal contract.");

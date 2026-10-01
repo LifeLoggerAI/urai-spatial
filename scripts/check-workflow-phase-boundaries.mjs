@@ -11,6 +11,7 @@ const releaseWorkflows = [
   '.github/workflows/spatial-live-deploy.yml',
 ]
 
+const governedDeployPath = '.github/workflows/spatial-governed-wif-deploy.yml'
 const failures = []
 
 const readRequired = (file) => {
@@ -111,6 +112,8 @@ if (phaseVerifyIndex < 0 || phaseProofIndex <= phaseVerifyIndex) failures.push(`
 const deployPath = '.github/workflows/spatial-live-deploy.yml'
 const deploy = readRequired(deployPath)
 const deployTrigger = triggerBlockFor(deploy)
+const governedDeploy = readRequired(governedDeployPath)
+const governedDeployTrigger = triggerBlockFor(governedDeploy)
 
 for (const marker of [
   'name: URAI Canonical Production Release Verification',
@@ -167,6 +170,31 @@ if (/\bfirebase(?:-tools)?(?:@[^\s]+)?\s+deploy\b/i.test(deploy) || /\bgcloud\s+
   failures.push(`${deployPath} quarantine workflow must not execute production deployment`)
 }
 
+for (const marker of [
+  'name: URAI Governed WIF Production Deploy',
+  'workflow_dispatch:',
+  'release_sha:',
+  'rollback_sha:',
+  'pull_request:',
+  'confirm:',
+  'environment: production',
+  'Release Governance Guard',
+  'firebase-tools@15.22.3 deploy',
+  '--only hosting',
+  'node scripts/urai-post-deploy-smoke.mjs',
+  'Roll back Hosting if live certification fails',
+  'DEPLOY_URAI_APP',
+]) {
+  if (!governedDeploy.includes(marker)) failures.push(`${governedDeployPath} must retain governed production marker: ${marker}`)
+}
+if (/\n\s*push\s*:/.test(governedDeployTrigger) || /\n\s*pull_request\s*:/.test(governedDeployTrigger)) {
+  failures.push(`${governedDeployPath} must remain manual-only and must not auto-trigger from push or pull_request`)
+}
+if (!/\n\s*workflow_dispatch\s*:/.test(governedDeployTrigger)) failures.push(`${governedDeployPath} must expose workflow_dispatch`)
+if (/actions\s*:\s*write|contents\s*:\s*write|deployments\s*:\s*write/.test(governedDeploy)) {
+  failures.push(`${governedDeployPath} must not gain repository mutation permissions`)
+}
+
 if (failures.length) {
   console.error('Workflow phase-boundary check failed:')
   for (const failure of failures) console.error(`- ${failure}`)
@@ -190,5 +218,5 @@ for (const file of retainedSourceFiles) {
 }
 
 console.log(`Workflow phase-boundary check passed for ${releaseWorkflows.length} release workflows.`)
-console.log('Production authority remains verification-only and NO-GO; exactly one main-only read-only WIF identity proof is permitted while provider IAM remains independently gated.')
+console.log('Canonical verification remains read-only/NO-GO; the separate governed WIF production workflow is manual-only and exact-approval gated.')
 console.log(`Retained ${retainedSourceFiles.length} bounded Life Map source files for exact-head repair.`)

@@ -1,3 +1,3 @@
 "use client";
 
-export { HomeWorldProductionSacred as HomeWorldProduction } from "./HomeWorldProductionSacred";
+export { HomeWorldProductionPolished as HomeWorldProduction } from "./HomeWorldProductionPolished";

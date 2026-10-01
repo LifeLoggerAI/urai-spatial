@@ -7,7 +7,8 @@
     "build": "tsc -p tsconfig.json",
     "test": "node scripts/run-tests.mjs",
     "release:check": "corepack pnpm --dir ../.. release:check",
-    "release:p1": "corepack pnpm --dir ../.. release:p1"
+    "release:p1": "corepack pnpm --dir ../.. release:p1",
+    "captured-reality:proof-import": "node scripts/import-captured-reality-proof.mjs"
   },
   "dependencies": {
     "firebase-admin": "^13.7.0",
