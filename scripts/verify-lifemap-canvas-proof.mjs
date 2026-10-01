@@ -70,6 +70,15 @@ async function signalFromCanvasPng(page, buffer) {
 
 async function capture(spec) {
   const context = await browser.newContext({ viewport: spec.viewport, deviceScaleFactor: 2, reducedMotion: spec.reducedMotion || 'no-preference', hasTouch: Boolean(spec.touch), isMobile: Boolean(spec.touch) })
+  await context.addInitScript(() => {
+    const originalGetContext = HTMLCanvasElement.prototype.getContext
+    HTMLCanvasElement.prototype.getContext = function patchedGetContext(type, attributes) {
+      if (type === 'webgl' || type === 'webgl2' || type === 'experimental-webgl') {
+        return originalGetContext.call(this, type, { ...(attributes || {}), preserveDrawingBuffer: true })
+      }
+      return originalGetContext.call(this, type, attributes)
+    }
+  })
   const page = await context.newPage()
   recordEvents(page, spec.id)
   try {
