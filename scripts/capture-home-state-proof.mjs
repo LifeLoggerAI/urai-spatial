@@ -300,10 +300,20 @@ async function captureOrbLifecycle({ reducedMotion = 'no-preference' } = {}) {
     stage = 'send-response'
     await page.getByRole('button', { name: 'Send' }).click()
     await page.locator('section[aria-label="Orb response"]').waitFor({ state: 'visible', timeout: 20_000 })
-    await page.waitForFunction((selector) => document.querySelector(selector)?.getAttribute('data-home-orb-state') === 'speaking', ownerSelector)
-    record.respondingState = await owner.getAttribute('data-home-orb-state')
-    record.respondingClip = await owner.getAttribute('data-home-orb-clip')
-    record.respondingAnimation = await owner.getAttribute('data-home-orb-animation')
+    const speakingSnapshotHandle = await page.waitForFunction((selector) => {
+      const element = document.querySelector(selector)
+      if (!(element instanceof HTMLElement) || element.getAttribute('data-home-orb-state') !== 'speaking') return false
+      return {
+        state: element.getAttribute('data-home-orb-state'),
+        clip: element.getAttribute('data-home-orb-clip'),
+        animation: element.getAttribute('data-home-orb-animation'),
+      }
+    }, ownerSelector, { timeout: 20_000 })
+    const speakingSnapshot = await speakingSnapshotHandle.jsonValue()
+    await speakingSnapshotHandle.dispose()
+    record.respondingState = speakingSnapshot.state
+    record.respondingClip = speakingSnapshot.clip
+    record.respondingAnimation = speakingSnapshot.animation
     record.observedStates = await page.evaluate(() => window.__uraiObservedOrbStates || [])
     record.lifecyclePassed = ['attention', 'listening', 'thinking', 'speaking'].every((state) => record.observedStates.includes(state))
 
