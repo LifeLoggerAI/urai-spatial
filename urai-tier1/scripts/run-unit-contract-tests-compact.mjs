@@ -4,7 +4,8 @@ import fs from 'node:fs'
 const tests = [
   'tests/aaa-world-artifact-contract.test.mjs',
   'tests/v1-aaa-asset-program-matrix-contract.test.mjs',
-  'tests/geographic-location-vault.test.mjs',\n  'tests/global-emotional-weather-privacy.test.mjs',
+  'tests/geographic-location-vault.test.mjs',
+  'tests/global-emotional-weather-privacy.test.mjs',
   'tests/geographic-location-client-contract.test.mjs',
   'tests/geographic-maps-launch-policy.test.mjs',
   'tests/maps-cloud-bootstrap-contract.test.mjs',
