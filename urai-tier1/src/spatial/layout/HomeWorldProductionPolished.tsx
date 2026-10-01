@@ -1,7 +1,7 @@
 'use client'
 
 import { Canvas, useFrame, useThree, type ThreeEvent } from '@react-three/fiber'
-import { Stars, useAnimations, useGLTF } from '@react-three/drei'
+import { ContactShadows, Environment, Lightformer, Stars, useAnimations, useGLTF } from '@react-three/drei'
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type MutableRefObject } from 'react'
 import * as THREE from 'three'
 import { resolveOrbSensoryOutput, URAI_ORB_STATE_EVENT, type OrbState, type OrbStateEventDetail } from '@/app/home/orbStateController'
@@ -68,7 +68,7 @@ function cloneNaturalSanctuaryMaterial(material: THREE.Material, grounded: boole
 
 function prepareNaturalSanctuary(source: THREE.Object3D) {
   const world = source.clone(true)
-  const rejected = /portal|ring|threshold|village|mannequin|avatar|debug|marker|label|embodied|presence|memory-place-anchor|living-growth|vault|monolith|bridge|grove|firefly|alcove|veil|waterfall|sculpture|pedestal|rib/i
+  const rejected = /portal|ring|threshold|village|mannequin|avatar|debug|marker|label|embodied|presence|memory-place-anchor|living-growth|vault|monolith|bridge|grove|firefly|alcove|veil|waterfall|sculpture|pedestal|rib|mountain|ridge|peak|horizon|low[-_ ]?poly|prototype|blockout|proof/i
   let visibleMeshCount = 0
   world.traverse((object) => {
     if (!(object instanceof THREE.Mesh)) return
@@ -313,50 +313,41 @@ function Horizon() {
 }
 
 function SanctuaryPavilion() {
-  const wood = '#4a3728'
-  const woodEdge = '#6a5037'
-  const stone = '#6b7068'
-  const ceramic = '#8d7358'
-  return <group name="home-sanctuary-pavilion" userData={{ role: 'open-air-inhabited-weathered-stone-resting-place', ceiling: false, skyDominant: true }}>
-    <mesh geometry={ORB_CLEARING_GEOMETRY} receiveShadow><meshStandardMaterial color="#566356" roughness={1} metalness={0} /></mesh>
+  const stone = '#777a70'
+  const warmStone = '#8a7966'
+  const ceramic = '#8a6d52'
+  return <group name="home-sanctuary-pavilion" userData={{ role: 'open-air-inhabited-resting-place-without-ceiling', ceiling: false, skyDominant: true }}>
+    <mesh geometry={ORB_CLEARING_GEOMETRY} receiveShadow>
+      <meshPhysicalMaterial color="#526458" roughness={.92} metalness={0} clearcoat={.06} clearcoatRoughness={.84} />
+    </mesh>
     <mesh geometry={SANCTUARY_BOULDER_LEFT} position={[-2.85, terrainHeight(-2.85,-6.15) + .42, -6.15]} rotation={[.18,.38,-.14]} scale={[1.2,.58,.82]} castShadow receiveShadow>
-      <meshStandardMaterial color="#687469" roughness={1} metalness={0} />
+      <meshStandardMaterial color="#727b70" roughness={.96} metalness={0} />
     </mesh>
     <mesh geometry={SANCTUARY_BOULDER_RIGHT} position={[2.75, terrainHeight(2.75,-6.35) + .4, -6.35]} rotation={[-.12,-.42,.17]} scale={[1.08,.52,.76]} castShadow receiveShadow>
-      <meshStandardMaterial color="#5f6d62" roughness={1} metalness={0} />
+      <meshStandardMaterial color="#68756b" roughness={.97} metalness={0} />
     </mesh>
-    <mesh geometry={SANCTUARY_BOULDER_CENTER} position={[-.25, terrainHeight(-.25,-7.1) + .31, -7.1]} rotation={[.15,.12,-.09]} scale={[.76,.4,.58]} castShadow receiveShadow>
-      <meshStandardMaterial color="#53635a" roughness={1} metalness={0} />
-    </mesh>
-    <group name="home-lived-in-seating-left" position={[-4.1, terrainHeight(-4.1,-3.9) + .18, -3.9]} rotation={[0,.32,0]}>
-      <mesh castShadow receiveShadow position={[0,.42,0]}><boxGeometry args={[2.35,.18,.58]} /><meshStandardMaterial color={wood} roughness={.88} metalness={0} /></mesh>
-      <mesh castShadow position={[-.88,.2,0]}><boxGeometry args={[.14,.42,.46]} /><meshStandardMaterial color={woodEdge} roughness={.9} /></mesh>
-      <mesh castShadow position={[.88,.2,0]}><boxGeometry args={[.14,.42,.46]} /><meshStandardMaterial color={woodEdge} roughness={.9} /></mesh>
-      <mesh castShadow position={[0,.77,.24]} rotation={[-.12,0,0]}><boxGeometry args={[2.28,.58,.12]} /><meshStandardMaterial color={wood} roughness={.9} /></mesh>
+    <group name="home-lived-in-stone-seating">
+      <mesh castShadow receiveShadow position={[-4.25, terrainHeight(-4.25,-4.2) + .32, -4.2]} rotation={[0,0,.03]}>
+        <cylinderGeometry args={[1.3,1.5,.5,48]} /><meshStandardMaterial color={stone} roughness={.94} metalness={0} />
+      </mesh>
+      <mesh castShadow receiveShadow position={[4.35, terrainHeight(4.35,-4.45) + .3, -4.45]} rotation={[0,0,-.025]}>
+        <cylinderGeometry args={[1.16,1.34,.46,48]} /><meshStandardMaterial color={warmStone} roughness={.94} metalness={0} />
+      </mesh>
+      <mesh castShadow receiveShadow position={[-2.55, terrainHeight(-2.55,-5.0) + .36, -5.0]}>
+        <cylinderGeometry args={[.62,.68,.58,48]} /><meshStandardMaterial color="#66594c" roughness={.9} metalness={0} />
+      </mesh>
+      <mesh castShadow position={[-2.4, terrainHeight(-2.4,-5.0) + .76, -5.0]}>
+        <cylinderGeometry args={[.1,.12,.23,32]} /><meshStandardMaterial color={ceramic} roughness={.9} metalness={0} />
+      </mesh>
     </group>
-    <group name="home-lived-in-seating-right" position={[4.3, terrainHeight(4.3,-4.2) + .18, -4.2]} rotation={[0,-.3,0]}>
-      <mesh castShadow receiveShadow position={[0,.42,0]}><boxGeometry args={[2.12,.18,.56]} /><meshStandardMaterial color={wood} roughness={.88} metalness={0} /></mesh>
-      <mesh castShadow position={[-.8,.2,0]}><boxGeometry args={[.14,.42,.44]} /><meshStandardMaterial color={woodEdge} roughness={.9} /></mesh>
-      <mesh castShadow position={[.8,.2,0]}><boxGeometry args={[.14,.42,.44]} /><meshStandardMaterial color={woodEdge} roughness={.9} /></mesh>
-      <mesh castShadow position={[0,.75,.23]} rotation={[-.12,0,0]}><boxGeometry args={[2.04,.56,.12]} /><meshStandardMaterial color={wood} roughness={.9} /></mesh>
-    </group>
-    <group name="home-shared-side-table" position={[-2.65, terrainHeight(-2.65,-4.9) + .16, -4.9]}>
-      <mesh castShadow receiveShadow position={[0,.48,0]}><cylinderGeometry args={[.58,.64,.14,28]} /><meshStandardMaterial color={woodEdge} roughness={.86} /></mesh>
-      <mesh castShadow position={[0,.24,0]}><cylinderGeometry args={[.12,.18,.48,18]} /><meshStandardMaterial color={wood} roughness={.9} /></mesh>
-      <mesh castShadow position={[.2,.62,-.08]}><cylinderGeometry args={[.1,.13,.22,18]} /><meshStandardMaterial color={ceramic} roughness={.92} /></mesh>
-    </group>
-    <group name="home-stone-hearth" position={[2.65, terrainHeight(2.65,-5.35) + .08, -5.35]}>
-      <mesh castShadow receiveShadow><cylinderGeometry args={[.64,.78,.22,24]} /><meshStandardMaterial color={stone} roughness={.98} /></mesh>
-      <mesh position={[0,.16,0]}><cylinderGeometry args={[.4,.43,.08,24]} /><meshStandardMaterial color="#302d28" roughness={1} /></mesh>
-      <pointLight position={[0,.52,0]} color="#d88d55" intensity={.2} distance={3.2} decay={2} />
-    </group>
-    <group name="home-ceramic-planters">
-      <mesh castShadow receiveShadow position={[-5.6, terrainHeight(-5.6,-2.2) + .3, -2.2]}><cylinderGeometry args={[.34,.26,.58,20]} /><meshStandardMaterial color={ceramic} roughness={.96} /></mesh>
-      <mesh castShadow receiveShadow position={[5.45, terrainHeight(5.45,-2.5) + .28, -2.5]}><cylinderGeometry args={[.32,.25,.54,20]} /><meshStandardMaterial color="#6e604f" roughness={.96} /></mesh>
+    <group name="home-stone-hearth" position={[2.55, terrainHeight(2.55,-5.55) + .09, -5.55]}>
+      <mesh castShadow receiveShadow><cylinderGeometry args={[.7,.78,.2,56]} /><meshStandardMaterial color="#666961" roughness={.98} /></mesh>
+      <mesh position={[0,.14,0]}><cylinderGeometry args={[.43,.46,.07,56]} /><meshStandardMaterial color="#292824" roughness={1} /></mesh>
+      <mesh position={[0,.25,0]}><sphereGeometry args={[.16,32,20]} /><meshBasicMaterial color="#d38a54" transparent opacity={.42} toneMapped={false} /></mesh>
+      <pointLight position={[0,.56,0]} color="#e7a46c" intensity={.42} distance={4.5} decay={2} />
     </group>
   </group>
 }
-
 function Water() {
   return <group name="home-reflecting-water" userData={{ role: 'integrated-natural-pond' }}>
     <mesh geometry={POND_GEOMETRY} receiveShadow><meshStandardMaterial color="#40564e" roughness={1} metalness={0} /></mesh>
@@ -571,6 +562,11 @@ function Scene(props: { input: MovementInput; yaw: MutableRefObject<number>; pit
     <hemisphereLight args={['#c8dddc','#1e2b20',cosmic ? .22 : 1.05]} />
     <directionalLight position={[8,18,7]} intensity={cosmic ? .34 : 2.35} color="#f2ecd8" castShadow />
     <directionalLight position={[-10,7,-8]} intensity={cosmic ? .1 : .54} color="#87b7ad" />
+    {!cosmic ? <Environment resolution={128} frames={1} background={false}>
+      <Lightformer form="rect" intensity={1.7} color="#f0dfbd" position={[0,8,5]} scale={[18,8,1]} />
+      <Lightformer form="rect" intensity={1.15} color="#8fbeb7" position={[-8,4,-6]} rotation={[0,Math.PI/3,0]} scale={[10,5,1]} />
+      <Lightformer form="ring" intensity={.75} color="#d7ece7" position={[7,5,-8]} scale={6} />
+    </Environment> : null}
     {!cosmic ? <>
       <pointLight position={[-4.1,2.2,-3.9]} color="#d6a56c" intensity={.3} distance={6} decay={2} />
       <pointLight position={[4.3,2.1,-4.2]} color="#a5c9c3" intensity={.22} distance={6} decay={2} />
@@ -581,6 +577,7 @@ function Scene(props: { input: MovementInput; yaw: MutableRefObject<number>; pit
     <Vegetation />
     <SanctuaryPavilion />
     <Water />
+    {!cosmic ? <ContactShadows position={[0, terrainHeight(0,-4.4) + .04, -4.4]} opacity={.32} scale={22} blur={2.8} far={8} frames={1} /> : null}
     <OrbPlatform />
     <OrbGroundGlow state={props.orbState} />
     <Orb onOpen={props.onOrbOpen} reducedMotion={props.reducedMotion} state={props.orbState} />
