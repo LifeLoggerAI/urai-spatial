@@ -1,0 +1,142 @@
+name: Public Institutional Surfaces Proof
+
+on:
+  push:
+    branches:
+      - proof/public-institutional-surfaces-20261001
+  pull_request:
+    paths:
+      - '.github/workflows/public-institutional-surfaces-proof.yml'
+      - 'tests/public-institutional-surfaces.spec.ts'
+      - 'urai-tier1/src/app/InstitutionalPublicSurface.tsx'
+      - 'urai-tier1/src/app/InstitutionalPublicSurface.module.css'
+      - 'urai-tier1/src/app/about/**'
+      - 'urai-tier1/src/app/contact/**'
+      - 'urai-tier1/src/app/event/**'
+      - 'urai-tier1/src/app/glass/**'
+      - 'urai-tier1/src/app/offline/**'
+      - 'urai-tier1/src/app/report-bug/**'
+      - 'urai-tier1/src/app/support/**'
+      - 'urai-tier1/src/app/ascent/life-map/**'
+      - 'release/route-manifest.json'
+      - 'urai-tier1/tests/public-route-manifest-ownership.test.mjs'
+
+permissions:
+  contents: read
+  pull-requests: read
+
+env:
+  EXACT_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+
+concurrency:
+  group: public-institutional-surfaces-${{ github.event.pull_request.number || github.ref }}-${{ github.event.pull_request.head.sha || github.sha }}
+  cancel-in-progress: true
+
+jobs:
+  browser-proof:
+    name: Exact-head institutional route browser proof
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout exact candidate
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ env.EXACT_HEAD_SHA }}
+          fetch-depth: 1
+          persist-credentials: false
+          show-progress: false
+
+      - name: Assert exact clean candidate
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$EXACT_HEAD_SHA"
+          test -z "$(git status --porcelain --untracked-files=all)"
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1
+        with:
+          version: 10.0.0
+          run_install: false
+
+      - name: Setup Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Install exact lockfile
+        run: |
+          corepack enable
+          pnpm install --frozen-lockfile
+
+      - name: Prove governed public route ownership
+        run: node urai-tier1/tests/public-route-manifest-ownership.test.mjs
+
+      - name: Build exact static release candidate
+        env:
+          NEXT_PUBLIC_URAI_BUILD_SHA: ${{ env.EXACT_HEAD_SHA }}
+          URAI_FIREBASE_STATIC_EXPORT: 'true'
+        run: pnpm build:static
+
+      - name: Serve exact static candidate locally
+        shell: bash
+        run: |
+          set -euo pipefail
+          for page in about contact event glass offline report-bug support ascent/life-map; do
+            test -f "urai-tier1/out/$page/index.html"
+          done
+          python3 -m http.server 4176 --directory urai-tier1/out > public-institutional-local-server.log 2>&1 &
+          echo $! > public-institutional-local-server.pid
+          for attempt in $(seq 1 30); do
+            if curl --fail --silent --show-error http://127.0.0.1:4176/about/ > public-institutional-about.html; then
+              break
+            fi
+            sleep 1
+          done
+          grep -q 'A life you can move through.' public-institutional-about.html
+          grep -q "$EXACT_HEAD_SHA" public-institutional-about.html
+
+      - name: Install Chromium
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Run rendered route acceptance
+        env:
+          PLAYWRIGHT_BASE_URL: http://127.0.0.1:4176
+        run: pnpm exec playwright test tests/public-institutional-surfaces.spec.ts --config=playwright.config.ts
+
+      - name: Build exact evidence manifest
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p public-institutional-evidence
+          cp -f public-institutional-local-server.log public-institutional-about.html public-institutional-evidence/ 2>/dev/null || true
+          {
+            printf 'schema_version=urai-public-institutional-surfaces-proof-1\n'
+            printf 'exact_sha=%s\n' "$EXACT_HEAD_SHA"
+            printf 'run_id=%s\n' "$GITHUB_RUN_ID"
+            printf 'workflow=%s\n' "$GITHUB_WORKFLOW"
+            printf 'mode=local-static-no-secrets\n'
+            printf 'production_targeted=false\n'
+            printf 'routes=/about,/contact,/event,/glass,/offline,/report-bug,/support,/ascent/life-map\n'
+            printf 'captured_at=%s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          } > public-institutional-evidence/manifest.txt
+          evidence_paths=(public-institutional-evidence)
+          test -d test-results && evidence_paths+=(test-results)
+          test -d playwright-report && evidence_paths+=(playwright-report)
+          find "${evidence_paths[@]}" -type f ! -name SHA256SUMS -print0 | sort -z | xargs -0 -r sha256sum > public-institutional-evidence/SHA256SUMS
+
+      - name: Retain exact-head evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: public-institutional-surfaces-${{ env.EXACT_HEAD_SHA }}
+          path: |
+            public-institutional-evidence
+            test-results
+            playwright-report
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 90
