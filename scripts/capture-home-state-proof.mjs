@@ -294,8 +294,9 @@ async function captureOrbLifecycle({ reducedMotion = 'no-preference' } = {}) {
 
     stage = 'open-conversation'
     const talk = page.locator('summary').filter({ hasText: 'Talk with Orb' }).first()
-    await talk.waitFor({ state: 'attached', timeout: 20_000 })
-    await talk.evaluate((element) => element.click())
+    await talk.waitFor({ state: 'visible', timeout: 20_000 })
+    await talk.focus()
+    await page.keyboard.press('Enter')
     const message = page.getByLabel('Message for Orb').first()
     await message.waitFor({ state: 'visible', timeout: 20_000 })
     stage = 'focus-message'
