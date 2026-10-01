@@ -234,6 +234,15 @@ test.describe('Embodied exploration runtime evidence', () => {
     await expect(movement).toBeVisible({ timeout: 30_000 })
     expect(await page.evaluate(() => document.pointerLockElement)).toBeNull()
     await holdKey(page, 'w', 1_800)
-    await expect.poll(async () => Number(await home.getAttribute('data-home-distance')), { timeout: 15_000 }).toBeGreaterThan(0.6)
+    // Poll within the browser: retained traces show a successful 7.790-unit
+    // displacement, but locator snapshot overhead outlived the outer poll.
+    // Keep the same displacement predicate and 15-second observation budget.
+    const displacement = await page.waitForFunction((selector) => {
+      const raw = document.querySelector(selector)?.getAttribute('data-home-distance')
+      const distance = raw === null || raw === undefined ? NaN : Number(raw)
+      return Number.isFinite(distance) && distance > 0.6 ? distance : false
+    }, homeOwnerSelector, { timeout: 15_000 })
+    expect(await displacement.jsonValue()).toBeGreaterThan(0.6)
+    await displacement.dispose()
   })
 })

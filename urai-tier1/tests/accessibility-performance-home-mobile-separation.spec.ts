@@ -23,13 +23,14 @@ function rectanglesOverlap(
 test.describe('Home mobile control separation evidence', () => {
   test.describe.configure({ timeout: 240_000 })
 
-  test('movement and semantic destinations remain independently operable inside portrait and landscape safe areas', async ({ browser }) => {
-    const viewports = [
-      { width: 390, height: 844, label: 'portrait' },
-      { width: 844, height: 390, label: 'landscape' },
-    ]
-
-    for (const viewport of viewports) {
+  // Each orientation is a separate acceptance case with the same bounded
+  // deadline. Both retained attempts reached layout/focus assertions before
+  // the combined case exhausted its deadline during the final DOM snapshot.
+  for (const viewport of [
+    { width: 390, height: 844, label: 'portrait' },
+    { width: 844, height: 390, label: 'landscape' },
+  ]) {
+    test(`movement and semantic destinations remain independently operable inside ${viewport.label} safe areas`, async ({ browser }) => {
       const context = await browser.newContext({
         baseURL,
         viewport: { width: viewport.width, height: viewport.height },
@@ -82,12 +83,13 @@ test.describe('Home mobile control separation evidence', () => {
         await expect(firstDestination).toBeFocused()
         const focused = await semantic.evaluate((element) => ({
           opacity: Number.parseFloat(getComputedStyle(element).opacity || '1'),
-          buttons: [...element.querySelectorAll<HTMLButtonElement>('button')].map((button) => {
+          buttons: [...element.querySelectorAll<HTMLElement>(':scope > :is(button,a)')].map((button) => {
             const rect = button.getBoundingClientRect()
             return { width: rect.width, height: rect.height }
           }),
         }))
         expect(focused.opacity, `${viewport.label} focus reveal`).toBeGreaterThan(0.9)
+        expect(focused.buttons, `${viewport.label} all destinations`).toHaveLength(3)
         for (const button of focused.buttons) {
           expect(button.width, `${viewport.label} destination width`).toBeGreaterThanOrEqual(48)
           expect(button.height, `${viewport.label} destination height`).toBeGreaterThanOrEqual(48)
@@ -95,6 +97,6 @@ test.describe('Home mobile control separation evidence', () => {
       } finally {
         await context.close()
       }
-    }
-  })
+    })
+  }
 })
