@@ -35,7 +35,19 @@
     "/onboarding",
     "/login",
     "/signup",
-    "/privacy-policy"
+    "/privacy-policy",
+    "/about",
+    "/ascent",
+    "/contact",
+    "/event",
+    "/glass",
+    "/launch",
+    "/offline",
+    "/report-bug",
+    "/settings",
+    "/spatial",
+    "/unwind",
+    "/xr"
   ],
   "classification": {
     "servicePrefixes": [
