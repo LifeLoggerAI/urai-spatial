@@ -9,6 +9,8 @@ import { requestUraiWorldOrbOpen } from '@/spatial/world/worldEvents'
 
 type RendererState = 'ready' | 'recovering' | 'failed'
 
+const HOME_TELEMETRY_SELECTOR = '.urai-asset-home-world[data-home-primary-owner="asset-driven"], .urai-final-home-world'
+
 function HomeSemanticNavigation() {
   return (
     <nav className="home-semantic-navigation" aria-label="Accessible Home destinations" data-home-navigation-owner="runtime-boundary" data-home-navigation-non-dominant="true">
@@ -117,13 +119,13 @@ export default function HomeSpatialRuntimeLayer() {
     }
 
     const synchronizeAllHomes = () => {
-      runtimeRef.current?.querySelectorAll<HTMLElement>('.urai-final-home-world').forEach(synchronizeHome)
+      runtimeRef.current?.querySelectorAll<HTMLElement>(HOME_TELEMETRY_SELECTOR).forEach(synchronizeHome)
     }
 
     synchronizeAllHomes()
     const observer = new MutationObserver((records) => {
       records.forEach((record) => {
-        if (record.type === 'attributes' && record.target instanceof HTMLElement && record.target.matches('.urai-final-home-world')) {
+        if (record.type === 'attributes' && record.target instanceof HTMLElement && record.target.matches(HOME_TELEMETRY_SELECTOR)) {
           synchronizeHome(record.target)
           return
         }
