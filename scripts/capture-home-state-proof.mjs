@@ -284,7 +284,7 @@ async function captureOrbLifecycle({ reducedMotion = 'no-preference' } = {}) {
     await openOrb.waitFor({ state: 'attached', timeout: 20_000 })
     await openOrb.focus()
     stage = 'open-companion'
-    await openOrb.press('Enter')
+    await page.keyboard.press('Enter')
     await page.locator('#urai-world-companion-menu[aria-hidden="false"]').waitFor({ state: 'visible', timeout: 20_000 })
     await page.waitForFunction(
       (selector) => document.querySelector(selector)?.getAttribute('data-home-orb-state') === 'attention',
