@@ -47,6 +47,7 @@ const tests = [
   'tests/lifemap-scene-behavior.test.mjs',
   'tests/life-movie-privacy-contract.test.mjs',
   'tests/localization-runtime-contract.test.mjs',
+  'tests/localization-readiness-evidence-contract.test.mjs',
   'tests/memory-star-phase4-contract.test.mjs',
   'tests/memory-world-foundation.test.mjs',
   'tests/memory-world-authoring.test.mjs',
