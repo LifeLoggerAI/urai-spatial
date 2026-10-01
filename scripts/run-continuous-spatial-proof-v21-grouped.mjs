@@ -50,7 +50,7 @@ const receiptReplacement = `  expectReady,\n  group: ${JSON.stringify(group)},\n
 if (original.split(receiptTarget).length - 1 !== 1) throw new Error('Receipt contract changed')
 
 const canvasRectTarget = `  const rect = await canvas.boundingBox()`
-const canvasRectReplacement = `  const rect = await canvas.evaluate((element) => {\n    const bounds = element.getBoundingClientRect()\n    return { width: bounds.width, height: bounds.height }\n  })`
+const canvasRectReplacement = `  const rect = await page.evaluate((selector) => {\n    const element = document.querySelector(\`\${selector} canvas\`)\n    if (!(element instanceof HTMLCanvasElement)) return null\n    const bounds = element.getBoundingClientRect()\n    return { width: bounds.width, height: bounds.height }\n  }, ownerSelector)`
 if (original.split(canvasRectTarget).length - 1 !== 1) throw new Error('Canvas measurement contract changed')
 
 const loadingVisibilityTarget = `      const loadingVisible = [...document.querySelectorAll('.home-runtime-loading, .home-world-loading, .home-world-loading-canvas')]
@@ -156,6 +156,7 @@ const requiredSemanticGuards = [
   ['fallback semantic destination contract', 'record.semanticButtons !== 1 || record.semanticLinks !== 2'],
   ['interaction proof failure guard', 'Home interaction proof failed for'],
   ['direct canvas geometry measurement', 'element.getBoundingClientRect()'],
+  ['page-level canvas query', 'document.querySelector(\`\${selector} canvas\`)'],
   ['ancestor-aware loading visibility', "node.checkVisibility"],
   ['canonical runtime loading owner', "document.querySelectorAll('.home-runtime-loading')"],
   ['semantic navigation owner', "semanticNavigationOwner === 'runtime-boundary'"],
