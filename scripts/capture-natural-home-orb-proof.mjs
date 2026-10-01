@@ -122,19 +122,19 @@ for (const spec of cases) {
     record.luminanceRange = visual.luminanceRange
     record.visibleSamples = visual.visibleSamples
     record.passed = record.status === 200
-      && record.visibleWorld === 'moonlit-natural-inhabited-sanctuary'
-      && record.worldCharacter === 'premium-cinematic-natural-sanctuary'
-      && record.physicalBase === 'grounded-flagstone-clearing'
+      && record.visibleWorld === 'authored-coherent-three-dimensional-sanctuary'
+      && record.worldCharacter === 'believable-natural-inhabitable-environment'
+      && record.physicalBase === 'authored-coherent-world'
       && record.visualOwnership === 'three-dimensional-geometry'
       && record.desktopMobileWorld === 'same-scene'
-      && record.embodiedSelf === 'makehuman-v4'
+      && record.embodiedSelf === 'privacy-preserving-shadow'
       && record.movement === 'walk-keyboard-click-touch'
       && record.runtimeAssets?.includes('home-entry-chamber-v1.glb')
-      && record.runtimeAssets?.includes('home-human-makehuman-v4.glb')
-      && record.runtimeAssets?.includes(path.basename(orbPath))
-      && record.runtimeAssets?.includes(path.basename(portalPath))
+      && record.runtimeAssets?.includes('polyhaven-fern-02-geometry-v1.glb')
+      && record.runtimeAssets?.includes('living-orb')
+      && record.runtimeAssets?.includes('reflecting-water')
       && record.authoredRegions?.includes('home-sanctuary-pavilion')
-      && record.authoredRegions?.includes('home-life-map-physical-portal')
+      && record.authoredRegions?.includes('home-reflecting-water')
       && record.cameraMode !== null
       && record.orbState !== null
       && (spec.reducedMotion !== 'reduce' || record.orbClip === 'orb-state-static')
