@@ -271,6 +271,7 @@ async function captureOrbLifecycle({ reducedMotion = 'no-preference' } = {}) {
 
     record.listeningState = await owner.getAttribute('data-home-orb-state')
     record.listeningClip = await owner.getAttribute('data-home-orb-clip')
+    record.listeningAnimation = await owner.getAttribute('data-home-orb-animation')
 
     if (reducedMotion === 'reduce') {
       record.visual = await waitForVisualEvidence(page)
@@ -281,7 +282,8 @@ async function captureOrbLifecycle({ reducedMotion = 'no-preference' } = {}) {
       record.observedStates = await page.evaluate(() => window.__uraiObservedOrbStates || [])
       record.passed = response?.status() === 200
         && record.listeningState === 'listening'
-        && record.listeningClip === 'orb-state-static'
+        && record.listeningClip === 'Orb_Listening'
+        && record.listeningAnimation === 'orb-state-static'
         && record.visual?.available === true
         && record.visual.viewportCoverage >= receipt.visualGate.minimumViewportCoverage
         && record.visual.luminanceRange >= receipt.visualGate.minimumLuminanceRange
@@ -301,6 +303,7 @@ async function captureOrbLifecycle({ reducedMotion = 'no-preference' } = {}) {
     await page.waitForFunction((selector) => document.querySelector(selector)?.getAttribute('data-home-orb-state') === 'speaking', ownerSelector)
     record.respondingState = await owner.getAttribute('data-home-orb-state')
     record.respondingClip = await owner.getAttribute('data-home-orb-clip')
+    record.respondingAnimation = await owner.getAttribute('data-home-orb-animation')
     record.observedStates = await page.evaluate(() => window.__uraiObservedOrbStates || [])
     record.lifecyclePassed = ['attention', 'listening', 'thinking', 'speaking'].every((state) => record.observedStates.includes(state))
 
@@ -309,6 +312,7 @@ async function captureOrbLifecycle({ reducedMotion = 'no-preference' } = {}) {
     await page.waitForFunction((selector) => document.querySelector(selector)?.getAttribute('data-home-orb-state') === 'privacy', ownerSelector)
     record.privacyState = await owner.getAttribute('data-home-orb-state')
     record.privacyClip = await owner.getAttribute('data-home-orb-clip')
+    record.privacyAnimation = await owner.getAttribute('data-home-orb-animation')
 
     record.visual = await waitForVisualEvidence(page)
     record.screenshot = `${id}-${exactHead.slice(0, 12)}.png`
@@ -321,16 +325,21 @@ async function captureOrbLifecycle({ reducedMotion = 'no-preference' } = {}) {
     await page.waitForFunction((selector) => document.querySelector(selector)?.getAttribute('data-home-orb-state') === 'idle', ownerSelector)
     record.closedState = await owner.getAttribute('data-home-orb-state')
     record.closedClip = await owner.getAttribute('data-home-orb-clip')
+    record.closedAnimation = await owner.getAttribute('data-home-orb-animation')
 
     record.passed = response?.status() === 200
       && record.listeningState === 'listening'
-      && record.listeningClip === 'orb-listening'
+      && record.listeningClip === 'Orb_Listening'
+      && record.listeningAnimation === 'orb-listening'
       && record.respondingState === 'speaking'
-      && record.respondingClip === 'orb-speaking'
+      && record.respondingClip === 'Orb_Speaking'
+      && record.respondingAnimation === 'orb-speaking'
       && record.privacyState === 'privacy'
-      && record.privacyClip === 'orb-privacy'
+      && record.privacyClip === 'Orb_Privacy'
+      && record.privacyAnimation === 'orb-privacy'
       && record.closedState === 'idle'
-      && record.closedClip === 'orb-breathe'
+      && record.closedClip === 'Orb_Idle'
+      && record.closedAnimation === 'orb-breathe'
       && record.lifecyclePassed
       && record.visual?.available === true
       && record.visual.viewportCoverage >= receipt.visualGate.minimumViewportCoverage
