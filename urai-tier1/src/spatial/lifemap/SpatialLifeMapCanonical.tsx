@@ -15,6 +15,7 @@ function isEditableTarget(target: EventTarget | null) {
 }
 
 function LifeMapLoading({ label = "Opening your memory universe" }: { label?: string }) {
+  const router = useRouter();
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.defaultPrevented || event.key !== "Escape" || isEditableTarget(event.target)) return;
@@ -30,7 +31,7 @@ function LifeMapLoading({ label = "Opening your memory universe" }: { label?: st
       <p style={{ margin:0, fontSize:10, fontWeight:900, letterSpacing:".24em", textTransform:"uppercase", color:"#a5f3fc" }}>URAI · LIFE MAP</p>
       <h1 style={{ margin:"10px 0 0", fontSize:"clamp(34px,7vw,74px)", lineHeight:.9, letterSpacing:"-.06em" }}>Your life has depth.</h1>
       <p role="status" aria-live="polite" style={{ margin:"18px 0 0", color:"rgba(235,244,255,.75)" }}>{label} · Escape remains available</p>
-      <button type="button" onClick={() => requestUraiWorldReturn()} style={{ minHeight:48, marginTop:20, padding:"0 20px", border:"1px solid rgba(232,251,255,.22)", borderRadius:999, background:"rgba(8,24,38,.82)", color:"#fff", fontWeight:900, cursor:"pointer" }}>Return Home</button>
+      <button type="button" onClick={() => router.push("/home")} style={{ minHeight:48, marginTop:20, padding:"0 20px", border:"1px solid rgba(232,251,255,.22)", borderRadius:999, background:"rgba(8,24,38,.82)", color:"#fff", fontWeight:900, cursor:"pointer" }}>Return Home</button>
     </section>
   </main>;
 }

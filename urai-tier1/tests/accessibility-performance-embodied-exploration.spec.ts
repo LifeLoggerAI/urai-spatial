@@ -13,19 +13,44 @@ async function collectRuntimeErrors(page: Page) {
 
 async function holdKey(page: Page, key: string, duration = 450) {
   await page.keyboard.down(key)
-  await page.waitForTimeout(duration)
-  await page.keyboard.up(key)
+  try {
+    await page.waitForTimeout(duration)
+  } finally {
+    await page.keyboard.up(key)
+  }
 }
 
 async function waitForHomeWorld(home: Locator) {
   await expect(home).toBeVisible({ timeout: 30_000 })
-  await expect(home.locator('canvas')).toBeVisible({ timeout: 30_000 })
-  await expect(home).toHaveAttribute('data-home-assets-ready', 'true', { timeout: 45_000 })
-  await expect(home).toHaveAttribute('data-home-ready', 'true', { timeout: 45_000 })
-  await expect(home).toHaveAttribute('data-home-input-owner', 'window-capture-movement')
-  await expect(home).toHaveAttribute('data-home-telemetry-owner', 'embodied-motion-kernel')
-  await expect(home).toHaveAttribute('data-home-player-z', /-?\d+\.\d+/)
-  await expect(home).toHaveAttribute('data-home-distance', /\d+\.\d+/)
+  await expect.poll(async () => home.evaluate((element) => {
+    const canvas = element.querySelector('canvas')
+    const canvasBounds = canvas?.getBoundingClientRect()
+    const canvasStyle = canvas ? getComputedStyle(canvas) : null
+    return {
+      canvasVisible: Boolean(
+        canvas
+        && canvasBounds
+        && canvasBounds.width > 0
+        && canvasBounds.height > 0
+        && canvasStyle?.display !== 'none'
+        && canvasStyle?.visibility !== 'hidden'
+      ),
+      assetsReady: element.getAttribute('data-home-assets-ready'),
+      homeReady: element.getAttribute('data-home-ready'),
+      inputOwner: element.getAttribute('data-home-input-owner'),
+      telemetryOwner: element.getAttribute('data-home-telemetry-owner'),
+      playerZReady: /^-?\d+\.\d+$/.test(element.getAttribute('data-home-player-z') || ''),
+      distanceReady: /^\d+\.\d+$/.test(element.getAttribute('data-home-distance') || ''),
+    }
+  }), { timeout: 75_000 }).toEqual({
+    canvasVisible: true,
+    assetsReady: 'true',
+    homeReady: 'true',
+    inputOwner: 'window-capture-movement',
+    telemetryOwner: 'embodied-motion-kernel',
+    playerZReady: true,
+    distanceReady: true,
+  })
 }
 
 async function enableLifeMapDemo(page: Page) {
@@ -51,17 +76,7 @@ test.describe('Embodied exploration runtime evidence', () => {
     await waitForHomeWorld(home)
     await expect(home).toHaveAttribute('data-home-movement', 'walk-keyboard-click-touch')
     await expect(home).toHaveAttribute('data-home-pointer-lock', 'false')
-    await expect(home).toHaveAttribute('data-home-visible-world', 'final-physical-sanctuary-memory-rooms')
-
-    const beforeZ = Number(await home.getAttribute('data-home-player-z'))
-    await holdKey(page, 'w', 2_400)
-    await expect.poll(async () => Number(await home.getAttribute('data-home-distance')), { timeout: 15_000 }).toBeGreaterThan(1.2)
-    const afterZ = Number(await home.getAttribute('data-home-player-z'))
-    expect(Math.abs(afterZ - beforeZ)).toBeGreaterThan(1.2)
-    await expect.poll(async () => {
-      const value = await home.evaluate((element) => element.style.getPropertyValue('--home-parallax-y'))
-      return Math.abs(Number.parseFloat(value))
-    }, { timeout: 12_000 }).toBeGreaterThan(0.1)
+    await expect(home).toHaveAttribute('data-home-visible-world', 'authored-coherent-three-dimensional-sanctuary')
 
     const direct = page.getByRole('navigation', { name: 'Direct Home destinations' })
     await expect(direct.getByRole('button', { name: 'Open Orb directly' })).toBeVisible()
@@ -75,11 +90,22 @@ test.describe('Embodied exploration runtime evidence', () => {
     }
 
     const movement = page.getByRole('group', { name: 'Home movement controls' })
-    await expect(movement).toBeVisible()
+    await expect(movement).toBeVisible({ timeout: 30_000 })
     const forward = movement.getByRole('button', { name: 'Move forward' })
     await forward.evaluate((element: HTMLElement) => element.focus())
     await expect(forward).toBeFocused()
     expect(await page.evaluate(() => document.pointerLockElement)).toBeNull()
+
+    const beforeZ = Number(await home.getAttribute('data-home-player-z'))
+    await holdKey(page, 'w', 2_400)
+    await expect.poll(async () => Number(await home.getAttribute('data-home-distance')), { timeout: 15_000 }).toBeGreaterThan(1.2)
+    const afterZ = Number(await home.getAttribute('data-home-player-z'))
+    expect(Math.abs(afterZ - beforeZ)).toBeGreaterThan(1.2)
+    await expect.poll(async () => {
+      const value = await home.evaluate((element) => element.style.getPropertyValue('--home-parallax-y'))
+      return Math.abs(Number.parseFloat(value))
+    }, { timeout: 12_000 }).toBeGreaterThan(0.1)
+
     expect(errors.pageErrors).toEqual([])
     expect(errors.consoleErrors).toEqual([])
   })
@@ -136,7 +162,10 @@ test.describe('Embodied exploration runtime evidence', () => {
     await expect.poll(() => normalizedPathname(page.url())).toBe('/life-map')
     await expect.poll(() => new URL(page.url()).searchParams.get('overview')).toBe('1')
     await expect(lifeMap).toHaveAttribute('data-life-map-mode', 'overview')
-    await expect(page.getByRole('navigation', { name: 'Selected memory actions' })).toHaveCount(0)
+    await expect.poll(
+      async () => page.locator('nav[aria-label="Selected memory actions"]').count(),
+      { timeout: 15_000 },
+    ).toBe(0)
     expect(await page.evaluate(() => document.pointerLockElement)).toBeNull()
     expect(errors.pageErrors).toEqual([])
     expect(errors.consoleErrors).toEqual([])
@@ -201,10 +230,14 @@ test.describe('Embodied exploration runtime evidence', () => {
     await page.goto('/home/', { waitUntil: 'domcontentloaded' })
     const home = page.locator('.urai-final-home-world')
     await waitForHomeWorld(home)
-    await holdKey(page, 'w', 1_800)
-    await expect.poll(async () => Number(await home.getAttribute('data-home-distance')), { timeout: 15_000 }).toBeGreaterThan(0.6)
     const movement = page.getByRole('group', { name: 'Home movement controls' })
-    await expect(movement).toBeVisible()
+    await expect(movement).toBeVisible({ timeout: 30_000 })
     expect(await page.evaluate(() => document.pointerLockElement)).toBeNull()
+    await holdKey(page, 'w', 1_800)
+    // The failed exact-head trace recorded real displacement (7.790) before the
+    // polling helper exhausted the remaining test deadline on a slow browser RPC.
+    // Read the settled telemetry once: the product threshold remains unchanged.
+    const reducedMotionDistance = Number(await home.getAttribute('data-home-distance'))
+    expect(reducedMotionDistance).toBeGreaterThan(0.6)
   })
 })

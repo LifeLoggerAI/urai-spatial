@@ -1,0 +1,81 @@
+{
+  "schemaVersion": "urai-memory-world-reference-catalog-1",
+  "verifiedAt": "2026-09-30",
+  "policy": "Catalog entries classify institution-level default handling only. Every individual asset still requires item-level rights/provenance review before production use.",
+  "sources": [
+    {
+      "id": "smithsonian-open-access",
+      "authorityClass": "cc0",
+      "institution": "Smithsonian Institution",
+      "policyUrl": "https://www.si.edu/openaccess/faq",
+      "termsUrl": "https://www.si.edu/termsofuse",
+      "defaultUse": "production-candidate",
+      "itemLevelRightsCheck": true,
+      "productionAssetPermittedByDefaultForMarkedItems": true,
+      "attributionRequiredByCopyright": false,
+      "thirdPartyRightsReview": true,
+      "notes": "Only items explicitly carrying the Smithsonian CC0 designation qualify. Trademark, privacy, publicity, cultural and other third-party rights may still apply."
+    },
+    {
+      "id": "library-of-congress",
+      "authorityClass": "reference-only-until-item-reviewed",
+      "institution": "Library of Congress",
+      "policyUrl": "https://www.loc.gov/legal/security-copyright-and-privacy/understanding-copyright/",
+      "defaultUse": "reference-only",
+      "itemLevelRightsCheck": true,
+      "productionAssetPermittedByDefaultForMarkedItems": false,
+      "attributionRequiredByCopyright": null,
+      "thirdPartyRightsReview": true,
+      "notes": "Use each item's Rights and Access / Rights Advisory. LOC generally does not own rights to collection material."
+    },
+    {
+      "id": "us-national-archives",
+      "authorityClass": "government-open-conditional",
+      "institution": "U.S. National Archives and Records Administration",
+      "policyUrl": "https://www.archives.gov/research/still-pictures/permissions",
+      "defaultUse": "reference-only-until-item-reviewed",
+      "itemLevelRightsCheck": true,
+      "productionAssetPermittedByDefaultForMarkedItems": false,
+      "attributionRequiredByCopyright": null,
+      "thirdPartyRightsReview": true,
+      "notes": "Federal employee works created within official duties are generally public domain in the U.S.; NARA holdings also include restricted and third-party material."
+    },
+    {
+      "id": "europeana",
+      "authorityClass": "rights-statement-per-object",
+      "institution": "Europeana Foundation",
+      "policyUrl": "https://pro.europeana.eu/page/available-rights-statements",
+      "defaultUse": "reference-only",
+      "itemLevelRightsCheck": true,
+      "productionAssetPermittedByDefaultForMarkedItems": false,
+      "attributionRequiredByCopyright": null,
+      "thirdPartyRightsReview": true,
+      "notes": "Every object carries a standardized rights statement. Metadata may be CC0 while media reuse conditions differ."
+    },
+    {
+      "id": "wikimedia-commons",
+      "authorityClass": "license-per-file",
+      "institution": "Wikimedia Commons",
+      "policyUrl": "https://commons.wikimedia.org/wiki/Commons:Reusing_content_outside_Wikimedia",
+      "defaultUse": "reference-only-until-file-reviewed",
+      "itemLevelRightsCheck": true,
+      "productionAssetPermittedByDefaultForMarkedItems": false,
+      "attributionRequiredByCopyright": null,
+      "thirdPartyRightsReview": true,
+      "notes": "License and attribution obligations vary by file. Verify the file page, author, license version and non-copyright rights."
+    },
+    {
+      "id": "openstreetmap",
+      "authorityClass": "licensed-open-data",
+      "institution": "OpenStreetMap contributors / OpenStreetMap Foundation",
+      "policyUrl": "https://www.openstreetmap.org/copyright",
+      "defaultUse": "geospatial-context-with-license-compliance",
+      "itemLevelRightsCheck": false,
+      "productionAssetPermittedByDefaultForMarkedItems": true,
+      "attributionRequiredByCopyright": true,
+      "shareAlikeOrDatabaseObligations": true,
+      "thirdPartyRightsReview": false,
+      "notes": "ODbL attribution and database/share-alike obligations can apply. Do not treat rendered map tiles and raw OSM data as the same licensed artifact."
+    }
+  ]
+}

@@ -13,6 +13,7 @@ type Fingerprint = {
   firebaseProject: string
   liveUrl: string
   deploymentScope: 'hosting-only'
+  certification: string
   workflowRunId: string | number
 }
 
@@ -49,6 +50,8 @@ function validate(value: unknown): Fingerprint {
   if (item.firebaseProject !== 'urai-4dc1d') throw new Error('Firebase project is not canonical.')
   if (item.liveUrl !== 'https://urai.app') throw new Error('Public origin is not canonical.')
   if (item.deploymentScope !== 'hosting-only') throw new Error('Deployment scope is not the protected hosting-only boundary.')
+  if (item.certification === 'pending-post-deploy-smoke') throw new Error('Release fingerprint certification is pending post-deploy smoke.')
+  if (item.certification !== 'verified-post-deploy-smoke') throw new Error('Release fingerprint certification state is not recognized.')
   const runId = item.workflowRunId
   const validRunId = (typeof runId === 'number' && Number.isSafeInteger(runId) && runId > 0) || (typeof runId === 'string' && runIdPattern.test(runId))
   if (!validRunId) throw new Error('Workflow run ID is invalid.')

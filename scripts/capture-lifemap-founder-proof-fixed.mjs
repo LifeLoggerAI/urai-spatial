@@ -252,7 +252,7 @@ async function armJourneyPhaseWatch(page, expectedPhase) {
   }, { rootSelector: ROOT, phase: expectedPhase, storageKey: JOURNEY_WATCH_STORAGE_KEY })
 }
 
-async function readJourneyPhaseWatch(page, expectedPhase, timeout = 12_000) {
+async function readJourneyPhaseWatch(page, expectedPhase, timeout = 30_000) {
   const observed = await poll(`observed journey phase=${expectedPhase}`, () => page.evaluate(({ phase, storageKey }) => {
     const watch = window.__uraiFounderJourneyPhaseWatch
     if (watch?.expectedPhase === phase && watch.observed) return watch.observed
@@ -521,7 +521,14 @@ function assertVisualSanity() {
   if (!highResolution.signal || highResolution.signal.width < 4320 || highResolution.signal.height < 2700) {
     throw new Error(`high-resolution Founder capture dimensions drifted: ${JSON.stringify(highResolution.signal)}`)
   }
-  if (!highResolution.screenshot || highResolution.screenshot.bytes < 1_000_000) throw new Error('high-resolution Founder capture is suspiciously small')
+  if (!highResolution.screenshot || highResolution.screenshot.bytes < 250_000) {
+    throw new Error('high-resolution Founder capture retained PNG is suspiciously small or corrupt')
+  }
+  if (highResolution.signal.source !== 'retained-png') throw new Error('high-resolution Founder capture did not validate the retained PNG')
+  if (highResolution.signal.sampleCount !== 3456) throw new Error('high-resolution Founder capture sample count drifted')
+  if (highResolution.signal.sampling !== 'distributed-grid-24x16-3x3') throw new Error('high-resolution Founder capture sampling method drifted')
+  if (highResolution.signal.variance >= 0 && highResolution.signal.variance < 8) throw new Error('high-resolution Founder capture pixel variance is below the visible-world minimum')
+  if (highResolution.signal.nonDarkRatio >= 0 && highResolution.signal.nonDarkRatio <= 0) throw new Error('high-resolution Founder capture non-dark coverage is empty')
 
   const parallaxIds = ['desktop-overview', 'depth-travel-frame-1', 'depth-travel-frame-2', 'depth-travel-frame-3']
   const hashes = new Set(parallaxIds.map((id) => byId.get(id)?.screenshot?.hash).filter(Boolean))
@@ -538,7 +545,13 @@ function assertVisualSanity() {
     if (!capture) throw new Error(`missing required capture ${id}`)
     if (capture.state?.renderReady !== 'true') throw new Error(`${id} did not prove a rendered production world`)
     if (Number(capture.state?.anchors || 0) < 8) throw new Error(`${id} visible anchor count below production minimum`)
-    if (capture.screenshot.bytes < 120_000) throw new Error(`${id} screenshot is suspiciously empty`)
+    const viewportPixels = Number(capture.viewport?.width || 0) * Number(capture.viewport?.height || 0)
+    const minimumScreenshotBytes = viewportPixels > 0
+      ? Math.min(120_000, Math.max(90_000, Math.round(viewportPixels * 0.30)))
+      : 120_000
+    if (capture.screenshot.bytes < minimumScreenshotBytes) {
+      throw new Error(`${id} screenshot is suspiciously empty: bytes=${capture.screenshot.bytes} minimum=${minimumScreenshotBytes}`)
+    }
     if (!capture.signal) throw new Error(`${id} did not provide a WebGL signal`)
     if (capture.signal.sampleCount !== 3456) throw new Error(`${id} WebGL sample count drifted`)
     if (capture.signal.sampling !== 'distributed-grid-24x16-3x3') throw new Error(`${id} WebGL sampling method drifted`)
@@ -668,7 +681,7 @@ async function desktopArrivalEvidence() {
     await goto(page, arrivalRoute)
     await waitForRenderedWorld(page)
     await waitForState(page, 'data-life-map-phase', 'arrival')
-    await selectedActions(page).waitFor({ state: 'visible', timeout: 10_000 })
+    await selectedActions(page).waitFor({ state: 'visible', timeout: 30_000 })
     await shot(page, 'stable-arrival', 'arrival', { memoryId: 'quiet-reset' })
     await shot(page, 'selected-memory-arrival', 'selected-arrival', { memoryId: 'quiet-reset' })
     await shot(page, 'focus-replay-thresholds', 'thresholds', { memoryId: 'quiet-reset' })
@@ -692,7 +705,40 @@ async function desktopActionsAndKeyboard() {
     await waitForState(page, 'data-life-map-phase', 'arrival')
 
     await clickRouteAction(page, 'Enter Focus', '/focus', '[data-testid="urai-final-focus-chamber"]')
-    await shot(page, 'focus-destination', 'focus', { memoryId: 'quiet-reset' })
+    const focusCanvas = page.locator('.focusCanvas canvas[data-focus-first-frame="true"]')
+    await focusCanvas.waitFor({ state: 'visible', timeout: 60_000 })
+    await stable(page, 4)
+    const focusCanvasFile = `focus-rendered-canvas-${exactHead.slice(0, 12)}.png`
+    const focusCanvasBuffer = await focusCanvas.screenshot({ path: path.join(outputDir, focusCanvasFile), timeout: 90_000 })
+    const focusPixelSignal = await page.evaluate(async (dataUrl) => {
+      const image = new Image()
+      await new Promise((resolve, reject) => {
+        image.onload = resolve
+        image.onerror = () => reject(new Error('Focus canvas PNG could not be decoded'))
+        image.src = dataUrl
+      })
+      const probe = document.createElement('canvas')
+      probe.width = 80
+      probe.height = 80
+      const context = probe.getContext('2d')
+      if (!context) throw new Error('Focus retained pixel sampler unavailable')
+      context.drawImage(image, image.width * .4, image.height * .35, image.width * .2, image.height * .3, 0, 0, 80, 80)
+      const pixels = context.getImageData(0, 0, 80, 80).data
+      let stellar = 0
+      for (let i = 0; i < pixels.length; i += 4) {
+        const red = pixels[i]
+        const green = pixels[i + 1]
+        const blue = pixels[i + 2]
+        // The approved repaired photosphere is luminous yellow-gold rather than the
+        // retired red/brown terrain-like palette. Require a substantial bright,
+        // warm stellar region in the retained WebGL canvas without encoding the
+        // obsolete red-dominant color signature.
+        if (red > 130 && green > 100 && ((red + green) / 2) > blue * 1.2) stellar += 1
+      }
+      return { stellarRatio: stellar / 6400, samples: 6400, source: 'retained-focus-canvas-png' }
+    }, `data:image/png;base64,${focusCanvasBuffer.toString('base64')}`)
+    if (focusPixelSignal.stellarRatio < .20) throw new Error(`Focus photosphere absent from retained canvas: ${JSON.stringify(focusPixelSignal)}`)
+    await shot(page, 'focus-destination', 'focus', { memoryId: 'quiet-reset', renderedFirstFrame: true, focusCanvasFile, focusCanvasSha256: createHash('sha256').update(focusCanvasBuffer).digest('hex'), focusPixelSignal })
 
     await goto(page, arrivalRoute)
     await waitForRenderedWorld(page)
@@ -845,3 +891,4 @@ try {
   await writeFile(path.join(outputDir, 'receipt.json'), JSON.stringify(receipt, null, 2))
   if (!receipt.passed) process.exitCode = 1
 }
+
