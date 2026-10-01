@@ -78,7 +78,7 @@ test('authority bundle remains deterministic and credential verifier binds quara
 })
 
 test('live verification binds canonical routes, origin, SHA, authority, and fingerprint', () => {
-  hasAll(verifier, ['URAI_EXPECTED_DEPLOYED_SHA','URAI_EXPECTED_ROLLBACK_SHA','release-fingerprint.json','urai-release-fingerprint-1',"redirect: 'manual'",'finalUrl.origin === canonicalOrigin','payload?.authoritySha === expectedAuthoritySha','sha === expectedSha','live-content-parity-4','hydratedIdentityProof'], 'live verifier')
+  hasAll(verifier, ['URAI_EXPECTED_DEPLOYED_SHA','URAI_EXPECTED_ROLLBACK_SHA','release-fingerprint.json','urai-release-fingerprint-1',"redirect: 'manual'",'finalUrl.origin === canonicalOrigin','payload?.authoritySha === expectedAuthoritySha','sha === expectedSha','live-content-parity-5','hydratedIdentityProof'], 'live verifier')
 })
 
 test('Focus live verification requires the real static chamber and rejects the obsolete loading shell', () => {
