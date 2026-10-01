@@ -60,5 +60,5 @@ monetization:
 
 review:
   reviewer: TBD
-  decision: blocked_until_implemented_and_reviewed
-  notes: Consent-bound browser activity/stillness/quick-cancel/device-motion metadata now ingests through a server-owned callable only when workforce automation consent is active. Location is separately consent-bound and only sampled when browser permission is already granted. Client writes are denied; owner reads, export, and deletion are wired. Raw camera/audio are never captured by this runtime. Privacy review and deployed runtime proof remain required.
+  decision: blocked_until_privacy_review_and_deployed_runtime_proof
+  notes: Consent-bound browser activity/stillness/quick-cancel/device-motion metadata now ingests through a server-owned callable only when workforce automation consent is active. Location is separately consent-bound and only sampled when browser permission is already granted. Client writes are denied; owner reads, export, and deletion are wired. Raw camera/audio are never captured by this runtime. Implementation is present; privacy review and deployed runtime proof remain required.
