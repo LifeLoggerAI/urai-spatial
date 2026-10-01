@@ -22,7 +22,10 @@ test('post-deploy parity includes current Focus, Replay and institutional public
   }
 
   assert.ok(postDeploy.includes("schemaVersion: 'urai-live-content-parity-5'"))
-  assert.ok(postDeploy.includes("browserCompatibilityRoutes: ['/privacy', '/ascent/life-map']"))
+  const compatibilityRoutes = postDeploy.match(/browserCompatibilityRoutes:\s*\[([^\]]*)\]/)?.[1] || ''
+  for (const route of ['/privacy', '/ascent/life-map', '/waitlist', '/system', '/settings/privacy', '/onboarding', '/signup']) {
+    assert.ok(compatibilityRoutes.includes("'" + route + "'"), 'missing static post-deploy compatibility route ' + route)
+  }
 })
 
 test('release-control browser smoke covers public routes and compatibility redirects', () => {
