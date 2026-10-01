@@ -8,7 +8,7 @@ export type InsightPlan = {
   priceLabel: string;
   description: string;
   unlockedFeatures: string[];
-  reportDepth: 'snapshot' | 'weekly' | 'clinical-style' | 'founder-archive';
+  reportDepth: 'snapshot' | 'weekly' | 'guided' | 'founder-archive';
   maxInsights: number;
 };
 
@@ -54,11 +54,11 @@ export const INSIGHT_PLANS: InsightPlan[] = [
   },
   {
     id: 'therapist',
-    title: 'Therapist Replay Pack',
+    title: 'Care Team Replay Pack',
     priceLabel: 'Care team plan',
-    description: 'Structured evidence trails for coaching, therapy, and guided self-review.',
-    unlockedFeatures: ['Clinical-style pattern report', 'Evidence trails', 'Resolution tracking', 'Replay prompts'],
-    reportDepth: 'clinical-style',
+    description: 'Structured evidence trails for guided reflection, sharing, and self-review.',
+    unlockedFeatures: ['Structured pattern report', 'Evidence trails', 'Resolution tracking', 'Replay prompts'],
+    reportDepth: 'guided',
     maxInsights: 24,
   },
   {
@@ -163,7 +163,7 @@ export function buildInsightReport(
       'Mark patterns resolved only when they feel genuinely softened or complete.',
       'Use evidence trails to understand why each insight appeared.',
     ],
-    upgradePrompt: plan.id === 'free' ? 'Upgrade to unlock weekly reports, deeper evidence trails, and therapist-ready replay summaries.' : null,
+    upgradePrompt: plan.id === 'free' ? 'Upgrade to unlock weekly reports, deeper evidence trails, and shareable replay summaries.' : null,
   };
 }
 

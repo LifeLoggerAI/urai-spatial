@@ -20,3 +20,8 @@ export {
   processExportJob,
   processPrivacyEnforcementJob,
 } from './privacyOperations'
+
+export { getCapturedRealityAsset, getCapturedRealityRuntimeUrl, getCapturedRealityReplayEntry } from './capturedReality'
+export { getInterpretiveWorldAsset, getInterpretiveWorldRuntimeUrl, getInterpretiveWorldReplayEntry } from './interpretiveWorld'
+
+export { recordPassiveSignal } from './passiveSignals'

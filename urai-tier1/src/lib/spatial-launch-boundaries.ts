@@ -29,6 +29,64 @@ export const spatialDeferredCapabilities = [
   "live-cross-repo-user-memory-sync"
 ] as const;
 
+export const spatialSensitiveProviderConsentGates = {
+  "live-ar-webxr-session": {
+    runtimeTarget: "browser-webxr",
+    consentDomains: ["location"],
+    explicitSessionConsentRequired: true,
+    policyEnforcementRequired: "fully-enforced",
+    retention: "ephemeral-session-only",
+    auditCollection: "privacyAudit",
+    providerWritesAllowed: false,
+  },
+  "live-camera-biometric-provider": {
+    runtimeTarget: "server-provider-adapter",
+    consentDomains: ["identity", "models"],
+    explicitSessionConsentRequired: true,
+    policyEnforcementRequired: "fully-enforced",
+    retention: "purpose-bound-configured-retention",
+    auditCollection: "privacyAudit",
+    providerWritesAllowed: false,
+  },
+  "live-wearable-provider": {
+    runtimeTarget: "native-provider-bridge",
+    consentDomains: ["identity", "memory"],
+    explicitSessionConsentRequired: true,
+    policyEnforcementRequired: "fully-enforced",
+    retention: "purpose-bound-configured-retention",
+    auditCollection: "privacyAudit",
+    providerWritesAllowed: false,
+  },
+  "live-memory-grounded-orb": {
+    runtimeTarget: "server-provider-adapter",
+    consentDomains: ["memory", "models"],
+    explicitSessionConsentRequired: true,
+    policyEnforcementRequired: "fully-enforced",
+    retention: "no-raw-provider-copy-without-separate-grant",
+    auditCollection: "privacyAudit",
+    providerWritesAllowed: false,
+  },
+} as const;
+
+export type SpatialSensitiveProviderCapability = keyof typeof spatialSensitiveProviderConsentGates;
+
+export type SpatialProviderConsentSnapshot = {
+  explicitSessionConsent: boolean;
+  enforcementState: "pending" | "partially-enforced" | "fully-enforced" | "failed" | "conflicted";
+  grantedDomains: readonly string[];
+};
+
+export function canActivateSensitiveSpatialProvider(
+  capability: SpatialSensitiveProviderCapability,
+  consent: SpatialProviderConsentSnapshot,
+) {
+  const gate = spatialSensitiveProviderConsentGates[capability];
+  if (!consent.explicitSessionConsent) return false;
+  if (consent.enforcementState !== gate.policyEnforcementRequired) return false;
+  if (!gate.consentDomains.every((domain) => consent.grantedDomains.includes(domain))) return false;
+  return true;
+}
+
 export function assertSpatialFallbackMode() {
   return {
     ok: true,

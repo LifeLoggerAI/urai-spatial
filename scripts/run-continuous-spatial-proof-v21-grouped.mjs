@@ -50,7 +50,7 @@ const receiptReplacement = `  expectReady,\n  group: ${JSON.stringify(group)},\n
 if (original.split(receiptTarget).length - 1 !== 1) throw new Error('Receipt contract changed')
 
 const canvasRectTarget = `  const rect = await canvas.boundingBox()`
-const canvasRectReplacement = `  const rect = await canvas.evaluate((element) => {\n    const bounds = element.getBoundingClientRect()\n    return { width: bounds.width, height: bounds.height }\n  })`
+const canvasRectReplacement = `  const rect = await page.evaluate((selector) => {\n    const element = document.querySelector(\`\${selector} canvas\`)\n    if (!(element instanceof HTMLCanvasElement)) return null\n    const bounds = element.getBoundingClientRect()\n    return { width: bounds.width, height: bounds.height }\n  }, ownerSelector)`
 if (original.split(canvasRectTarget).length - 1 !== 1) throw new Error('Canvas measurement contract changed')
 
 const loadingVisibilityTarget = `      const loadingVisible = [...document.querySelectorAll('.home-runtime-loading, .home-world-loading, .home-world-loading-canvas')]
@@ -76,11 +76,11 @@ const loadingVisibilityReplacement = `      const loadingVisible = [...document.
 if (original.split(loadingVisibilityTarget).length - 1 !== 1) throw new Error('Loading visibility contract changed')
 
 const discreetControlsTarget = `    discreetControls: await visibleCount(page.locator('.home-discreet-controls button')),`
-const semanticOwnershipReplacement = `    semanticNavigationOwner: await semantic.getAttribute('data-home-navigation-owner'),\n    semanticNavigationNonDominant: await semantic.getAttribute('data-home-navigation-non-dominant'),\n    semanticNavigationOpacity: await semantic.evaluate((node) => Number.parseFloat(getComputedStyle(node).opacity || '1')),`
+const semanticOwnershipReplacement = `    semanticLinks: await semantic.getByRole('link').count(),\n    semanticLinkVisible: await visibleCount(semantic.getByRole('link')),\n    semanticNavigationOwner: await semantic.getAttribute('data-home-navigation-owner'),\n    semanticNavigationNonDominant: await semantic.getAttribute('data-home-navigation-non-dominant'),\n    semanticNavigationOpacity: await semantic.evaluate((node) => Number.parseFloat(getComputedStyle(node).opacity || '1')),`
 if (original.split(discreetControlsTarget).length - 1 !== 1) throw new Error('Home semantic navigation measurement contract changed')
 
 const discreetPassTarget = `    && result.semanticButtons === 3 && result.semanticVisible === 0 && result.discreetControls === 2`
-const semanticPassReplacement = `    && result.semanticButtons === 3 && result.semanticVisible === 3\n    && result.semanticNavigationOwner === 'runtime-boundary' && result.semanticNavigationNonDominant === 'true'\n    && Number.isFinite(result.semanticNavigationOpacity) && result.semanticNavigationOpacity <= 0.02`
+const semanticPassReplacement = `    && result.semanticButtons === 1 && result.semanticVisible === 1\n    && result.semanticLinks === 2 && result.semanticLinkVisible === 2\n    && result.semanticNavigationOwner === 'runtime-boundary' && result.semanticNavigationNonDominant === 'true'\n    && Number.isFinite(result.semanticNavigationOpacity) && result.semanticNavigationOpacity <= 0.02`
 if (original.split(discreetPassTarget).length - 1 !== 1) throw new Error('Home semantic navigation pass contract changed')
 
 const reviewModePassTarget = `    && result.assetMode === requiredMode && result.personalizationMode === expected.mode`
@@ -90,6 +90,10 @@ if (original.split(reviewModePassTarget).length - 1 !== 1) throw new Error('Home
 const editableFocusTarget = `      const editableControl = page.locator('.home-discreet-controls button').first()`
 const editableFocusReplacement = `      const editableControl = page.getByRole('navigation', { name: 'Accessible Home destinations' }).getByRole('button').first()`
 if (original.split(editableFocusTarget).length - 1 !== 1) throw new Error('Home editable-focus regression contract changed')
+
+const editableFocusAssertionTarget = `      editableFocusProven = await editableControl.evaluate((node) => node === document.activeElement)`
+const editableFocusAssertionReplacement = `      editableFocusProven = await page.evaluate(() => document.activeElement?.getAttribute('data-testid') === 'home-semantic-orb')`
+if (original.split(editableFocusAssertionTarget).length - 1 !== 1) throw new Error('Home editable-focus assertion contract changed')
 
 const executionStart = `const browser = await chromium.launch({ headless: true })`
 const originalExecutionIndex = original.indexOf(executionStart)
@@ -127,7 +131,12 @@ await writeFile(path.join(outputDir, 'receipt.json'), \`${'${'}JSON.stringify(re
 console.log(JSON.stringify(receipt, null, 2))
 if (receipt.errors.length) process.exit(1)`
 
-const patchedPrefix = original
+const fallbackPassTarget = 'record.semanticButtons !== 2 || record.semanticLinks !== 1'
+const fallbackPassReplacement = 'record.semanticButtons !== 1 || record.semanticLinks !== 2'
+if (original.split(fallbackPassTarget).length - 1 !== 1) throw new Error('Home fallback native-link contract changed')
+
+let patchedPrefix = original
+  .replace(fallbackPassTarget, fallbackPassReplacement)
   .replace(openTarget, openReplacement)
   .replace(receiptTarget, receiptReplacement)
   .replace(canvasRectTarget, canvasRectReplacement)
@@ -136,6 +145,57 @@ const patchedPrefix = original
   .replace(discreetPassTarget, semanticPassReplacement)
   .replace(reviewModePassTarget, reviewModePassReplacement)
   .replace(editableFocusTarget, editableFocusReplacement)
+  .replace(editableFocusAssertionTarget, editableFocusAssertionReplacement)
+
+// Keep the pass predicate below intact, but collect its DOM evidence in one
+// renderer round trip. Serial reads stalled at canvas.evaluate on SwiftShader.
+const snapshotStart = patchedPrefix.indexOf('async function verifyHome(page, expected) {')
+const snapshotEnd = patchedPrefix.indexOf('  const requiredMode = ', snapshotStart)
+if (snapshotStart < 0 || snapshotEnd < 0 || patchedPrefix.indexOf('async function verifyHome(page, expected) {', snapshotStart + 1) >= 0) {
+  throw new Error('Home snapshot contract changed; refusing an unbounded replacement')
+}
+const atomicSnapshot = `async function verifyHome(page, expected) {
+  const result = await page.evaluate(({ ownerSelector, fallbackSelector }) => {
+    const owners = document.querySelectorAll(ownerSelector)
+    const owner = owners[0]
+    const canvas = owner?.querySelector('canvas')
+    const semantic = document.querySelector('nav[aria-label="Accessible Home destinations"]')
+    const buttons = [...(semantic?.querySelectorAll('button') || [])]
+    const links = [...(semantic?.querySelectorAll('a[href]') || [])]
+    const element = canvas
+    const rect = element?.getBoundingClientRect()
+    const visible = (node) => {
+      if (node.closest('.sr-only')) return false
+      const style = getComputedStyle(node)
+      const bounds = node.getBoundingClientRect()
+      return style.display !== 'none' && style.visibility !== 'hidden' && Number.parseFloat(style.opacity || '1') > 0.02
+        && bounds.width > 4 && bounds.height > 4 && bounds.bottom > 0 && bounds.right > 0 && bounds.top < innerHeight && bounds.left < innerWidth
+    }
+    const attr = (name) => owner?.getAttribute(name) ?? null
+    return {
+      ownerCount: owners.length,
+      canvasVisible: canvas?.checkVisibility({ checkOpacity: true, checkVisibilityCSS: true }) ?? false,
+      canvasWidth: rect ? Math.round(rect.width) : 0,
+      canvasHeight: rect ? Math.round(rect.height) : 0,
+      assetMode: attr('data-home-asset-mode'),
+      personalizationMode: attr('data-home-personalization-mode'),
+      reviewFixture: attr('data-home-review-fixture'),
+      orbState: attr('data-home-orb-state'),
+      orbClip: attr('data-home-orb-clip'),
+      animationOwner: attr('data-home-animation-owner'),
+      assetsReady: attr('data-home-assets-ready'),
+      fallbackVisible: [...document.querySelectorAll(fallbackSelector)].filter(visible).length,
+      semanticButtons: buttons.length,
+      semanticVisible: buttons.filter(visible).length,
+      semanticLinks: links.length,
+      semanticLinkVisible: links.filter(visible).length,
+      semanticNavigationOwner: semantic?.getAttribute('data-home-navigation-owner') ?? null,
+      semanticNavigationNonDominant: semantic?.getAttribute('data-home-navigation-non-dominant') ?? null,
+      semanticNavigationOpacity: semantic ? Number.parseFloat(getComputedStyle(semantic).opacity || '1') : null,
+    }
+  }, { ownerSelector, fallbackSelector })
+`
+patchedPrefix = patchedPrefix.slice(0, snapshotStart) + atomicSnapshot + patchedPrefix.slice(snapshotEnd)
 const patchedExecutionIndex = patchedPrefix.indexOf(executionStart)
 if (patchedExecutionIndex < 0 || patchedPrefix.indexOf(executionStart, patchedExecutionIndex + 1) >= 0) throw new Error('Patched execution contract changed')
 const grouped = patchedPrefix.slice(0, patchedExecutionIndex) + execution
@@ -143,9 +203,10 @@ const grouped = patchedPrefix.slice(0, patchedExecutionIndex) + execution
 const requiredSemanticGuards = [
   ['diagnostic failure guard', 'diagnosticResult.failedRequests.length'],
   ['fallback visibility guard', 'record.fallbackVisible'],
-  ['fallback semantic destination count', 'record.semanticButtons !== 3'],
+  ['fallback semantic destination contract', 'record.semanticButtons !== 1 || record.semanticLinks !== 2'],
   ['interaction proof failure guard', 'Home interaction proof failed for'],
-  ['direct canvas geometry measurement', 'element.getBoundingClientRect()'],
+  ['direct canvas geometry measurement', 'element?.getBoundingClientRect()'],
+  ['page-level owner query', 'document.querySelectorAll(ownerSelector)'],
   ['ancestor-aware loading visibility', "node.checkVisibility"],
   ['canonical runtime loading owner', "document.querySelectorAll('.home-runtime-loading')"],
   ['semantic navigation owner', "semanticNavigationOwner === 'runtime-boundary'"],
@@ -154,6 +215,7 @@ const requiredSemanticGuards = [
   ['disclosed review asset mode', 'result.assetMode === requiredMode'],
   ['truthful personalization mode', 'result.personalizationMode === expected.mode'],
   ['editable focus regression owner', "Accessible Home destinations"],
+  ['editable focus regression assertion', "document.activeElement?.getAttribute('data-testid') === 'home-semantic-orb'"],
 ]
 for (const [label, marker] of requiredSemanticGuards) {
   if (!grouped.includes(marker)) throw new Error(`Visual assertion missing after grouping (${label}): ${marker}`)

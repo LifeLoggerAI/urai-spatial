@@ -2,35 +2,67 @@ name: URAI Spatial Launch Verification
 
 on:
   workflow_dispatch:
+    inputs:
+      verification_sha:
+        description: Exact 40-character commit SHA to verify; defaults to the dispatched ref
+        required: false
+        type: string
   push:
     paths:
       - 'urai-tier1/**'
       - 'scripts/**'
+      - 'tests/launch-verification-evidence-contract.test.mjs'
       - 'package.json'
       - 'pnpm-lock.yaml'
-      - '_audit/20260623_launch_route_chain/**'
       - '.github/workflows/launch-verification.yml'
+
+permissions:
+  contents: read
+
+env:
+  URAI_EXACT_HEAD: ${{ inputs.verification_sha || github.sha }}
 
 jobs:
   verify-spatial-launch:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Node
-        uses: actions/setup-node@v4
+      - name: Checkout exact candidate
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
-          node-version: '22'
+          ref: ${{ env.URAI_EXACT_HEAD }}
+          fetch-depth: 1
+          persist-credentials: false
+          show-progress: false
+
+      - name: Prove exact clean candidate
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "$URAI_EXACT_HEAD" =~ ^[0-9a-f]{40}$ ]]
+          test "$(git rev-parse HEAD)" = "$URAI_EXACT_HEAD"
+          test -z "$(git status --porcelain --untracked-files=all)"
 
       - name: Setup pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1
         with:
           version: '10.0.0'
+          run_install: false
 
-      - name: Install
-        run: pnpm install --no-frozen-lockfile
+      - name: Setup Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '22'
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Install exact lockfile
+        run: |
+          corepack enable
+          pnpm install --frozen-lockfile
+
+      - name: Verify launch evidence contract
+        run: node --test tests/launch-verification-evidence-contract.test.mjs
 
       - name: Typecheck
         run: pnpm run typecheck
@@ -39,33 +71,92 @@ jobs:
         run: pnpm run build
 
       - name: Start local server
+        shell: bash
         run: |
-          pnpm run dev:3001 > /tmp/urai-spatial-dev.log 2>&1 &
-          echo $! > /tmp/urai-spatial-dev.pid
+          set -euo pipefail
+          evidence_dir="$RUNNER_TEMP/urai-spatial-launch-evidence"
+          mkdir -p "$evidence_dir"
+          pnpm run dev:3001 > "$evidence_dir/local-server.log" 2>&1 &
+          echo $! > "$evidence_dir/server.pid"
           for attempt in $(seq 1 90); do
             if curl -fsS http://127.0.0.1:3001/ >/dev/null; then
               exit 0
             fi
             sleep 2
           done
-          cat /tmp/urai-spatial-dev.log
+          cat "$evidence_dir/local-server.log"
           exit 1
 
-      - name: Smoke launch route chain
+      - name: Smoke exact-head launch route chain
+        shell: bash
         run: |
-          mkdir -p _audit/20260623_launch_route_chain
-          : > _audit/20260623_launch_route_chain/route-smoke.tsv
+          set -euo pipefail
+          evidence_dir="$RUNNER_TEMP/urai-spatial-launch-evidence"
+          : > "$evidence_dir/route-smoke.tsv"
           for route in / /home /ground /life-map /focus /replay /mirror /passport /status /privacy-controls /demo /receipts /technology /proof /memory; do
-            code=$(curl -sS -o /tmp/urai-route.html -w '%{http_code}' "http://127.0.0.1:3001${route}")
-            printf '%s\t%s\n' "$route" "$code" | tee -a _audit/20260623_launch_route_chain/route-smoke.tsv
+            code=$(curl -sS -o "$RUNNER_TEMP/urai-route.html" -w '%{http_code}' "http://127.0.0.1:3001${route}")
+            printf '%s\t%s\n' "$route" "$code" | tee -a "$evidence_dir/route-smoke.tsv"
             test "$code" = "200"
           done
+          test "$(wc -l < "$evidence_dir/route-smoke.tsv" | tr -d ' ')" = "15"
+          test -z "$(awk '$2 != 200 { print }' "$evidence_dir/route-smoke.tsv")"
 
-      - name: Upload route evidence
+      - name: Seal exact-head launch receipt
+        shell: bash
+        env:
+          URAI_REPOSITORY: ${{ github.repository }}
+          URAI_WORKFLOW_RUN_ID: ${{ github.run_id }}
+          URAI_WORKFLOW_RUN_ATTEMPT: ${{ github.run_attempt }}
+          URAI_EVENT_NAME: ${{ github.event_name }}
+        run: |
+          set -euo pipefail
+          evidence_dir="$RUNNER_TEMP/urai-spatial-launch-evidence"
+          route_sha256="$(sha256sum "$evidence_dir/route-smoke.tsv" | awk '{print $1}')"
+          cat > "$evidence_dir/exact-head-receipt.json" <<JSON
+          {
+            "schemaVersion": "urai-spatial-launch-route-evidence-1",
+            "repository": "$URAI_REPOSITORY",
+            "verification_sha": "$URAI_EXACT_HEAD",
+            "git_head": "$(git rev-parse HEAD)",
+            "workflow_run_id": "$URAI_WORKFLOW_RUN_ID",
+            "workflow_run_attempt": "$URAI_WORKFLOW_RUN_ATTEMPT",
+            "event": "$URAI_EVENT_NAME",
+            "mode": "local-exact-head-no-production-mutation",
+            "production_targeted": false,
+            "deployment_attempted": false,
+            "route_count": 15,
+            "route_smoke_sha256": "$route_sha256",
+            "captured_at": "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          }
+          JSON
+          printf '%s\n' "$URAI_EXACT_HEAD" > "$evidence_dir/verified-head.txt"
+
+      - name: Stop local server
         if: always()
-        uses: actions/upload-artifact@v4
+        shell: bash
+        run: |
+          evidence_dir="$RUNNER_TEMP/urai-spatial-launch-evidence"
+          if test -s "$evidence_dir/server.pid"; then
+            kill "$(cat "$evidence_dir/server.pid")" 2>/dev/null || true
+          fi
+
+      - name: Verify exact-head evidence and clean source
+        shell: bash
+        run: |
+          set -euo pipefail
+          evidence_dir="$RUNNER_TEMP/urai-spatial-launch-evidence"
+          test "$(git rev-parse HEAD)" = "$URAI_EXACT_HEAD"
+          test -z "$(git status --porcelain --untracked-files=all)"
+          test "$(cat "$evidence_dir/verified-head.txt")" = "$URAI_EXACT_HEAD"
+          grep -F "\"verification_sha\": \"$URAI_EXACT_HEAD\"" "$evidence_dir/exact-head-receipt.json"
+          test -s "$evidence_dir/route-smoke.tsv"
+          test -s "$evidence_dir/local-server.log"
+
+      - name: Upload exact-head launch evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
-          name: urai-spatial-launch-evidence
-          path: |
-            _audit/20260623_launch_route_chain/**
-            /tmp/urai-spatial-dev.log
+          name: urai-spatial-launch-evidence-${{ env.URAI_EXACT_HEAD }}
+          path: ${{ runner.temp }}/urai-spatial-launch-evidence/**
+          if-no-files-found: error
+          retention-days: 90
