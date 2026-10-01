@@ -51,7 +51,7 @@ test.describe('Embodied exploration runtime evidence', () => {
     await waitForHomeWorld(home)
     await expect(home).toHaveAttribute('data-home-movement', 'walk-keyboard-click-touch')
     await expect(home).toHaveAttribute('data-home-pointer-lock', 'false')
-    await expect(home).toHaveAttribute('data-home-visible-world', 'final-physical-sanctuary-memory-rooms')
+    await expect(home).toHaveAttribute('data-home-visible-world', 'authored-coherent-three-dimensional-sanctuary')
 
     const direct = page.getByRole('navigation', { name: 'Direct Home destinations' })
     await expect(direct.getByRole('button', { name: 'Open Orb directly' })).toBeVisible()
