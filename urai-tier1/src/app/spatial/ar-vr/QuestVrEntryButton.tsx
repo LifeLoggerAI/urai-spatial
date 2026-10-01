@@ -22,8 +22,13 @@ export default function QuestVrEntryButton({ onSessionRequested, onSessionEnded 
   const [copy, setCopy] = useState(idleCopy)
   const [busy, setBusy] = useState(false)
   const [active, setActive] = useState(false)
+  const [sessionConsent, setSessionConsent] = useState(false)
 
   async function enterQuestVr() {
+    if (!sessionConsent) {
+      setCopy('Choose the session-consent checkbox before starting immersive VR.')
+      return
+    }
     setBusy(true)
     setCopy('Checking this browser for immersive VR support…')
     const xr = (navigator as QuestXrNavigator).xr
@@ -50,7 +55,8 @@ export default function QuestVrEntryButton({ onSessionRequested, onSessionEnded 
       session.addEventListener?.('end', () => {
         sessionEnded = true
         setActive(false)
-        setCopy('Immersive session ended safely. The chamber remains available.')
+        setSessionConsent(false)
+        setCopy('Immersive session ended safely. Session consent was cleared; the chamber remains available.')
         onSessionEnded?.()
       }, { once: true })
       await onSessionRequested?.(session)
@@ -71,6 +77,15 @@ export default function QuestVrEntryButton({ onSessionRequested, onSessionEnded 
 
   return (
     <div className="urai-xr-portal__quest-entry" data-testid="urai-quest-vr-entry-control">
+      <label>
+        <input
+          type="checkbox"
+          checked={sessionConsent}
+          onChange={(event) => setSessionConsent(event.currentTarget.checked)}
+          disabled={busy || active}
+        />
+        I consent to start this browser-local immersive VR session. Headset pose and input remain session-scoped on this entry path; provider-backed recording or persistence is not enabled here.
+      </label>
       <button type="button" onClick={enterQuestVr} disabled={busy || active}>
         {busy ? 'Entering VR…' : active ? 'VR active' : 'Enter VR in Quest'}
       </button>
