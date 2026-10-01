@@ -13,8 +13,6 @@ const receipt = { schemaVersion: 'urai-lifemap-webgl-canvas-proof-2', exactHead,
 let failed = false
 
 await mkdir(outputDir, { recursive: true })
-const browser = await chromium.launch({ headless: true })
-
 function recordEvents(page, label) {
   page.on('pageerror', (error) => receipt.browserEvents.push({ label, kind: 'pageerror', text: String(error) }))
   page.on('requestfailed', (request) => receipt.browserEvents.push({ label, kind: 'requestfailed', text: `${request.method()} ${request.url()} ${request.failure()?.errorText || ''}` }))
@@ -69,6 +67,7 @@ async function signalFromCanvasPng(page, buffer) {
 }
 
 async function capture(spec) {
+  const browser = await chromium.launch({ headless: true })
   const context = await browser.newContext({ viewport: spec.viewport, deviceScaleFactor: 2, reducedMotion: spec.reducedMotion || 'no-preference', hasTouch: Boolean(spec.touch), isMobile: Boolean(spec.touch) })
   await context.addInitScript(() => {
     const originalGetContext = HTMLCanvasElement.prototype.getContext
@@ -104,7 +103,8 @@ async function capture(spec) {
     if (signal.nonDarkRatio <= 0.02) throw new Error(`${spec.id} WebGL canvas non-dark coverage below minimum: ${signal.nonDarkRatio}`)
     receipt.captures.push({ id: spec.id, route: page.url(), viewport: spec.viewport, phase: spec.phase, file, bytes: buffer.length, sha256: createHash('sha256').update(buffer).digest('hex'), signal })
   } finally {
-    await context.close()
+    await context.close().catch(() => {})
+    await browser.close().catch(() => {})
   }
 }
 
@@ -121,7 +121,6 @@ try {
   failed = true
   receipt.error = String(error)
 } finally {
-  await browser.close()
   receipt.completedAt = new Date().toISOString()
   receipt.passed = !failed && receipt.captures.length === 4
   await writeFile(path.join(outputDir, 'receipt.json'), JSON.stringify(receipt, null, 2))
