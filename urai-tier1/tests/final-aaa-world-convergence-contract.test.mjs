@@ -74,6 +74,17 @@ test('Orb ownership follows destination canon without visual duplication', () =>
   assert.doesNotMatch(homeRuntime, /urai-home-spatial-orb-trigger|urai-home-spatial-runtime-orb/)
 })
 
+test('Home Gold Master ground detail preserves density with bounded instanced rendering', () => {
+  assert.match(homeProduction, /const STONE_SCATTER = Array\.from\(\{ length: 34 \}/)
+  assert.match(homeProduction, /function StoneBatch/)
+  assert.match(homeProduction, /<instancedMesh/)
+  assert.match(homeProduction, /mesh\.setMatrixAt\(localIndex, transform\.matrix\)/)
+  assert.match(homeProduction, /mesh\.setColorAt\(localIndex, color\)/)
+  assert.match(homeProduction, /STONE_SCATTER\.slice\(0, 12\)/)
+  assert.match(homeProduction, /STONE_SCATTER\.slice\(12\)/)
+  assert.doesNotMatch(homeProduction, /STONE_SCATTER\.map\([\s\S]{0,220}<mesh/)
+})
+
 test('one environmental continuity layer persists across every route transition', () => {
   assert.match(shell, /PersistentRealmAtmosphere/)
   assert.match(shell, /<PersistentRealmAtmosphere\s*\/>/)
