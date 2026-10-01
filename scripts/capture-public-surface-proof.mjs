@@ -25,7 +25,7 @@ const viewports = [
 ]
 
 const receipt = { schemaVersion:'urai-public-surface-proof-1', exactHead, capturedAt:new Date().toISOString(), captures:[], redirects:[], errors:[] }
-const fileSafe = route => route.replace(/^\\/+|\\/+$/g,'').replaceAll('/','-') || 'root'
+const fileSafe = route => route.split('/').filter(Boolean).join('-') || 'root'
 const browser = await chromium.launch({ headless:true })
 
 try {
