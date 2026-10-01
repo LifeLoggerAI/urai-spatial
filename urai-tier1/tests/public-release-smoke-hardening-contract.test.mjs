@@ -16,11 +16,11 @@ test('post-deploy parity includes current Focus, Replay and institutional public
   assert.ok(postDeploy.includes("'cinematic-replay-client'"))
   assert.ok(postDeploy.includes("'r3f-immersive-memory-field'"))
 
-  for (const route of publicRoutes) {
+  for (const route of [...publicRoutes, ...fullVisionRoutes]) {
     assert.ok(postDeploy.includes(`['${route}',`), `missing static post-deploy contract for ${route}`)
   }
 
-  assert.ok(postDeploy.includes("schemaVersion: 'urai-live-content-parity-4'"))
+  assert.ok(postDeploy.includes("schemaVersion: 'urai-live-content-parity-5'"))
   assert.ok(postDeploy.includes("browserCompatibilityRoutes: ['/privacy', '/ascent/life-map']"))
 })
 
