@@ -2,12 +2,13 @@
 
 This file is the current repository evidence authority for URAI Spatial. Historical SHA-bound evidence remains available in Git history, workflow artifacts, release receipts, and the existing Drive execution receipts; it must not be transferred to a newer candidate.
 
-## Current release authority — 2026-08-08
+## Current release authority — 2026-10-01
 
 - Runtime app root: `urai-tier1`.
-- Controlling release lane: PR #1069, `agent/real-world-home-production-completion-20260808`.
-- Controlling product gate: GitHub issue #863.
-- Production-live status: **not verified**.
+- Controlling pre-review lane: the newest open full-vision successor PR against `main`, currently sourced from `repair/current-authority-docs-on-final-candidate-20261001`; always resolve its live head before using SHA-bound evidence.
+- Controlling Home visual gate: GitHub issue #863 remains open.
+- Production-live status for the current candidate: **not verified**.
+- Current `.github/workflows/spatial-live-deploy.yml` status: **verification-only / production mutation quarantined / NO-GO**.
 - Candidate evidence rule: resolve the live PR head before using any CI, proof, visual acceptance, governance authorization, or receipt as current.
 - Preview deployments and PR verification runs are not production deployments.
 
@@ -76,19 +77,22 @@ The visual result must show one coherent geometry-owned 3D Home; consistent desk
 
 No founder/steward visual approval is inferred from continuation instructions. Human approval must bind to the exact frozen SHA after non-human gates and direct visual inspection are ready. Any later source commit invalidates it.
 
-Release Governance Guard must then pass on the same SHA using the repository-prescribed review or exact-head solo-steward mechanism. Branch protection and governance tests must not be weakened.
+Release Governance Guard must then pass on the same SHA through the independent-review contract: either a qualifying native exact-head collaborator approval or the repository-prescribed signed external reviewer attestation. Solo-steward self-approval is not accepted. Branch protection and governance tests must not be weakened.
 
-## Canonical production deployment contract
+## Canonical production deployment boundary
 
-The sole current production workflow authority is `.github/workflows/spatial-live-deploy.yml` (`URAI Canonical Production Release`). For a normal production release, it is manually dispatched on protected `main` with the live inputs:
+The file `.github/workflows/spatial-live-deploy.yml` is currently named **URAI Canonical Production Release Verification** and is deliberately verification-only. It:
 
-| Input | Required normal deploy value |
-| --- | --- |
-| `release_sha` | exact current `main` SHA to ship |
-| `rollback_sha` | distinct proven ancestor/recovery SHA |
-| `confirm` | `DEPLOY_URAI_APP` |
+- checks exact clean source;
+- audits the release credential boundary;
+- records `Classification: NO-GO`;
+- states that production release and Hosting recovery are quarantined;
+- may prove short-lived Google WIF identity on `main` with a read-only cloud-platform OAuth scope;
+- records `Production mutation command: none`.
 
-The workflow validates exact identity, current-main binding, rollback ancestry, frozen install, asset validation, typecheck, AAA/XR contracts, live release checks, rollback viability, build identity, and the protected production deployment path. Do not substitute an ad-hoc Firebase deploy for this authority.
+Therefore no current repository workflow in this authority may be described as an available production deploy path merely because older documentation used the same filename for a deploy-capable workflow.
+
+Before production mutation can be restored, the governed release path must separately prove and review short-lived provider identity, WIF/IAM trust, least privilege, runtime identity read-back, rollback evidence, historical credential revocation, governance, live and device prerequisites. Restoring mutation is itself a reviewed source change and would create a new candidate SHA requiring fresh evidence.
 
 ## Production verification evidence
 
@@ -107,4 +111,4 @@ After the protected workflow succeeds, production is still not complete until in
 
 ## Current release decision
 
-**NO production completion claim yet.** PR #1069 remains release-gated until the successor/final candidate completes production audio, current exact-head CI, direct rendered inspection, exact-SHA human acceptance, governance authorization, merge, protected production deployment, independent live verification, final Drive receipt update, and issue #863 closure.
+**NO production completion claim yet.** The current successor candidate remains pre-review gated until its exact head completes current exact-head CI, direct rendered inspection, legitimate independent exact-SHA approval, governance authorization and merge. Production then remains separately blocked until a reviewed mutation authority is restored, followed by exact deployment, strict post-deploy verification and rollback evidence. Issue #863 remains open until the founder manually approves the exact deployed public desktop and mobile Home result under that issue's no-placeholder acceptance standard.
