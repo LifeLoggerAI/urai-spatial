@@ -234,6 +234,10 @@ test.describe('Embodied exploration runtime evidence', () => {
     await expect(movement).toBeVisible({ timeout: 30_000 })
     expect(await page.evaluate(() => document.pointerLockElement)).toBeNull()
     await holdKey(page, 'w', 1_800)
-    await expect.poll(async () => Number(await home.getAttribute('data-home-distance')), { timeout: 15_000 }).toBeGreaterThan(0.6)
+    // The failed exact-head trace recorded real displacement (7.790) before the
+    // polling helper exhausted the remaining test deadline on a slow browser RPC.
+    // Read the settled telemetry once: the product threshold remains unchanged.
+    const reducedMotionDistance = Number(await home.getAttribute('data-home-distance'))
+    expect(reducedMotionDistance).toBeGreaterThan(0.6)
   })
 })
