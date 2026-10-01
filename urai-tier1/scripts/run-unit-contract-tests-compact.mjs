@@ -32,6 +32,7 @@ const tests = [
   'tests/captured-reality-receipt-validation.test.mjs',
   'tests/continuous-spatial-restoration-contract.test.mjs',
   'tests/embodied-exploration-contract.test.mjs',
+  'tests/emotional-weather-contract.test.mjs',
   'tests/exact-static-release-contract.test.mjs',
   'tests/field-reconstruction-phase5-contract.test.mjs',
   'tests/final-aaa-world-convergence-contract.test.mjs',
