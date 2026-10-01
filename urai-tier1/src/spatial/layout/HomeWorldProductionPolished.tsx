@@ -317,25 +317,67 @@ function Vegetation() {
   return <group name="home-living-vegetation" userData={{ role: 'edge-clustered-scanned-cc0-nature', source: 'Poly Haven fern_02 CC0' }}>{instances.map((object) => <primitive key={object.name} object={object} />)}</group>
 }
 
+type StonePlacement = (typeof STONE_SCATTER)[number]
+
+function StoneBatch({
+  placements,
+  indexOffset,
+  castShadow,
+}: {
+  placements: readonly StonePlacement[]
+  indexOffset: number
+  castShadow: boolean
+}) {
+  const meshRef = useRef<THREE.InstancedMesh>(null)
+  const transform = useMemo(() => new THREE.Object3D(), [])
+  const color = useMemo(() => new THREE.Color(), [])
+  const material = useMemo(() => new THREE.MeshStandardMaterial({
+    color: '#ffffff',
+    roughness: .98,
+    metalness: 0,
+  }), [])
+
+  useLayoutEffect(() => {
+    const mesh = meshRef.current
+    if (!mesh) return
+
+    placements.forEach(([x,z,scale,rotation], localIndex) => {
+      const index = indexOffset + localIndex
+      transform.position.set(x, terrainHeight(x,z) + scale * .32, z)
+      transform.rotation.set(seeded(index, 206) * .35, rotation, (seeded(index, 207) - .5) * .3)
+      transform.scale.set(
+        scale * (1.15 + seeded(index, 208) * .5),
+        scale * (.65 + seeded(index, 209) * .35),
+        scale,
+      )
+      transform.updateMatrix()
+      mesh.setMatrixAt(localIndex, transform.matrix)
+      color.set(index % 3 === 0 ? '#687067' : index % 3 === 1 ? '#76776d' : '#5e6860')
+      mesh.setColorAt(localIndex, color)
+    })
+
+    mesh.instanceMatrix.needsUpdate = true
+    if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true
+    mesh.computeBoundingSphere()
+  }, [color, indexOffset, placements, transform])
+
+  useEffect(() => () => material.dispose(), [material])
+
+  return (
+    <instancedMesh
+      ref={meshRef}
+      args={[SANCTUARY_BOULDER_CENTER, material, placements.length]}
+      castShadow={castShadow}
+      receiveShadow
+      dispose={null}
+    />
+  )
+}
+
 function GroundDetail() {
-  return <group name="home-ground-detail" userData={{ role: 'deterministic-natural-stone-scatter' }}>
-    {STONE_SCATTER.map(([x,z,scale,rotation], index) => (
-      <mesh
-        key={`home-stone-detail-${index + 1}`}
-        geometry={SANCTUARY_BOULDER_CENTER}
-        position={[x, terrainHeight(x,z) + scale * .32, z]}
-        rotation={[seeded(index, 206) * .35, rotation, (seeded(index, 207) - .5) * .3]}
-        scale={[scale * (1.15 + seeded(index, 208) * .5), scale * (.65 + seeded(index, 209) * .35), scale]}
-        castShadow={index < 12}
-        receiveShadow
-      >
-        <meshStandardMaterial
-          color={index % 3 === 0 ? '#687067' : index % 3 === 1 ? '#76776d' : '#5e6860'}
-          roughness={.98}
-          metalness={0}
-        />
-      </mesh>
-    ))}
+  return <group name="home-ground-detail" userData={{ role: 'deterministic-natural-stone-scatter-instanced' }}>
+    <StoneBatch placements={STONE_SCATTER.slice(0, 12)} indexOffset={0} castShadow />
+    <StoneBatch placements={STONE_SCATTER.slice(12)} indexOffset={12} castShadow={false} />
   </group>
 }
 
