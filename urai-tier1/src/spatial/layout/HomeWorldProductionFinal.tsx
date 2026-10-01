@@ -84,7 +84,11 @@ function prepareAuthoredSanctuary(source: THREE.Object3D) {
     if (!object.visible) return;
     // Keep the promoted asset's authored PBR material authority rather than
     // flattening every visible surface into two procedural green/stone values.
-    const materials = Array.isArray(object.material) ? object.material : [object.material];
+    // clone(true) preserves material object identity, so isolate materials
+    // before tuning them; this keeps the cached GLTF/source scene immutable.
+    const hadMaterialArray = Array.isArray(object.material);
+    const materials = (hadMaterialArray ? object.material : [object.material]).map((material) => material.clone());
+    object.material = hadMaterialArray ? materials : materials[0];
     for (const material of materials) {
       if (material instanceof THREE.MeshStandardMaterial || material instanceof THREE.MeshPhysicalMaterial) {
         material.roughness = Math.max(0.28, Math.min(0.92, material.roughness));
