@@ -1,0 +1,90 @@
+name: Public Institutional Surface Proof
+
+on:
+  pull_request:
+    branches: [main, 'converge/**']
+    paths:
+      - '.github/workflows/public-institutional-surface-proof.yml'
+      - 'scripts/capture-public-surface-proof.mjs'
+      - 'urai-tier1/src/app/about/**'
+      - 'urai-tier1/src/app/contact/**'
+      - 'urai-tier1/src/app/event/**'
+      - 'urai-tier1/src/app/glass/**'
+      - 'urai-tier1/src/app/offline/**'
+      - 'urai-tier1/src/app/report-bug/**'
+      - 'urai-tier1/src/app/support/**'
+      - 'urai-tier1/src/app/ascent/life-map/**'
+      - 'urai-tier1/src/app/InstitutionalPublicSurface*'
+  workflow_dispatch:
+    inputs:
+      verification_sha:
+        description: Exact 40-character commit SHA to verify
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: public-institutional-surface-proof-${{ github.event.pull_request.number || inputs.verification_sha || github.ref }}
+  cancel-in-progress: true
+
+env:
+  URAI_EXACT_HEAD: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.event_name == 'workflow_dispatch' && inputs.verification_sha || github.sha }}
+  PLAYWRIGHT_BROWSERS_PATH: '0'
+
+jobs:
+  proof:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ env.URAI_EXACT_HEAD }}
+          fetch-depth: 1
+          persist-credentials: false
+      - name: Prove exact clean candidate
+        run: |
+          set -euo pipefail
+          [[ "$URAI_EXACT_HEAD" =~ ^[0-9a-f]{40}$ ]]
+          test "$(git rev-parse HEAD)" = "$URAI_EXACT_HEAD"
+          test -z "$(git status --porcelain --untracked-files=all)"
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1
+        with:
+          version: 10.0.0
+          run_install: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+      - name: Install exact lockfile
+        run: pnpm install --frozen-lockfile
+      - name: Build exact static candidate
+        env:
+          NEXT_PUBLIC_URAI_BUILD_SHA: ${{ env.URAI_EXACT_HEAD }}
+          URAI_FIREBASE_STATIC_EXPORT: 'true'
+        run: pnpm build:static
+      - name: Install Chromium
+        run: |
+          pnpm --dir urai-tier1 exec playwright install --with-deps chromium
+          node --check scripts/capture-public-surface-proof.mjs
+      - name: Capture public institutional surfaces
+        run: |
+          set -euo pipefail
+          output=artifacts/public-institutional-surface-proof
+          mkdir -p "$output"
+          python3 -m http.server 4176 --bind 127.0.0.1 --directory urai-tier1/out > "$output/http-server.log" 2>&1 &
+          server_pid=$!
+          trap 'kill "$server_pid" 2>/dev/null || true' EXIT
+          for attempt in $(seq 1 60); do curl -fsS http://127.0.0.1:4176/about/ >/dev/null && break; sleep 1; done
+          curl -fsS http://127.0.0.1:4176/about/ >/dev/null
+          URAI_PUBLIC_SURFACE_BASE=http://127.0.0.1:4176           URAI_PUBLIC_SURFACE_OUTPUT="$output"           URAI_EXACT_HEAD="$URAI_EXACT_HEAD"             node scripts/capture-public-surface-proof.mjs
+      - name: Retain exact public surface proof
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: public-institutional-surface-proof-${{ env.URAI_EXACT_HEAD }}
+          path: artifacts/public-institutional-surface-proof
+          if-no-files-found: error
+          retention-days: 365
