@@ -8,7 +8,7 @@ const publicProof = fs.readFileSync(new URL('../../.github/workflows/public-inst
 
 const publicRoutes = ['/support', '/about', '/contact', '/event', '/glass', '/offline', '/report-bug']
 const fullVisionRoutes = ['/life-movie', '/council', '/spatial/memory-world', '/spatial/interpretive-world', '/spatial/captured-reality', '/spatial/ar-vr']
-const directCriticalRoutes = ['/terms', '/login', '/account-deletion', '/privacy-policy']
+const directCriticalRoutes = ['/terms', '/login', '/account-deletion', '/privacy-policy', '/xr', '/settings', '/launch']
 
 test('post-deploy parity includes current Focus, Replay and institutional public owners', () => {
   assert.ok(postDeploy.includes("'URAI Focus stellar memory field'"))
@@ -21,9 +21,9 @@ test('post-deploy parity includes current Focus, Replay and institutional public
     assert.ok(postDeploy.includes(`['${route}',`), `missing static post-deploy contract for ${route}`)
   }
 
-  assert.ok(postDeploy.includes("schemaVersion: 'urai-live-content-parity-5'"))
+  assert.ok(postDeploy.includes("schemaVersion: 'urai-live-content-parity-6'"))
   const compatibilityRoutes = postDeploy.match(/browserCompatibilityRoutes:\s*\[([^\]]*)\]/)?.[1] || ''
-  for (const route of ['/privacy', '/ascent/life-map', '/waitlist', '/system', '/settings/privacy', '/onboarding', '/signup']) {
+  for (const route of ['/privacy', '/ascent/life-map', '/waitlist', '/system', '/settings/privacy', '/onboarding', '/signup', '/ascent', '/spatial', '/unwind']) {
     assert.ok(compatibilityRoutes.includes("'" + route + "'"), 'missing static post-deploy compatibility route ' + route)
   }
 })
@@ -40,8 +40,11 @@ test('release-control browser smoke covers public routes and compatibility redir
   assert.ok(releaseControl.includes("['/settings/privacy', { pathname: '/privacy-controls', searchEntries: [['from', 'settings-privacy']] }]"))
   assert.ok(releaseControl.includes("['/onboarding', { pathname: '/', searchEntries: [['onboarding', '1']] }]"))
   assert.ok(releaseControl.includes("['/signup', { pathname: '/login', searchEntries: [['intent', 'signup']] }]"))
+  assert.ok(releaseControl.includes("['/ascent', { pathname: '/home', searchEntries: [['from', 'ascent']] }]"))
+  assert.ok(releaseControl.includes("['/spatial', { pathname: '/home', searchEntries: [['from', 'spatial']] }]"))
+  assert.ok(releaseControl.includes("['/unwind', { pathname: '/life-map', searchEntries: [['from', 'unwind'], ['overview', '1']] }]"))
   assert.ok(releaseControl.includes("transition: 'compatibility-route'"))
-  assert.ok(releaseControl.includes("schemaVersion: 'urai-release-control-smoke-8'"))
+  assert.ok(releaseControl.includes("schemaVersion: 'urai-release-control-smoke-9'"))
 })
 
 test('public institutional proof is eligible on integration branches', () => {
