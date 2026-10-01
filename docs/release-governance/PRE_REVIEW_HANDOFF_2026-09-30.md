@@ -1,5 +1,7 @@
 # UrAi Pre-Review Handoff — 2026-09-30
 
+> **Historical packet.** This file predates the converged full-vision pre-review candidate and must not be used as the current review request or exact-head authority. Discover the current open full-vision pre-review PR and exact SHA first. Any SHA, workflow count, satellite PR head, or reviewer-readiness statement below is historical unless independently re-fetched and rebound to the current candidate.
+
 Classification: INTERNAL ACCEPTANCE / PRE-REVIEW VALIDATION  
 Independent approval: NOT YET ISSUED  
 Primary release candidate: LifeLoggerAI/urai-spatial PR #1462  
