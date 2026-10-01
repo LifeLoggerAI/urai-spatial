@@ -8,7 +8,7 @@ Canonical public application: `LifeLoggerAI/urai-spatial/urai-tier1` on `main`.
 
 Current release lane: the newest open full-vision successor PR against `main`, currently sourced from `repair/current-authority-docs-on-final-candidate-20261001`, is the pre-independent-review candidate. Resolve its live head before using any SHA-bound evidence because active hardening may still advance it.
 
-Production-live status for the current candidate: **not verified**. GitHub issue #863 remains open for Home visual acceptance. The current `.github/workflows/spatial-live-deploy.yml` is verification-only and explicitly classifies production mutation as NO-GO; no deploy authority exists in that workflow until the governed credential/IAM/runtime/rollback/revocation gates are deliberately restored and re-verified.
+Production-live status for the current candidate: **not verified**. GitHub issue #863 remains open for Home visual acceptance. `.github/workflows/spatial-live-deploy.yml` is verification-only / NO-GO; the separate manual `.github/workflows/spatial-governed-wif-deploy.yml` is the governed Hosting mutation path, but it is not authorized or executed by this audit.
 
 ## Current verified source and asset posture
 
@@ -33,11 +33,18 @@ Required release progression remains:
 5. obtain legitimate independent exact-SHA release approval through the repository governance contract;
 6. satisfy Release Governance Guard on that same SHA;
 7. merge without head drift;
-8. separately restore a governed production-mutation workflow only after its WIF/IAM, least-privilege runtime identity, rollback, historical-credential-revocation, and release-security prerequisites are proven; that source change creates a new SHA requiring fresh exact-head evidence and review;
-9. deploy only through that subsequently reviewed protected authority;
-10. run strict post-deploy parity, fingerprint, route, privacy, accessibility, and rollback certification, then obtain the issue #863 founder acceptance on the exact deployed public Home before any final live-certification or Home-closure claim.
+8. after merge, obtain separate explicit deployment authorization before any production mutation;
+9. dispatch only `.github/workflows/spatial-governed-wif-deploy.yml` manually with the exact merged approved SHA, distinct rollback ancestor, merged PR number, and `DEPLOY_URAI_APP` confirmation;
+10. require the workflow's exact post-deploy smoke and automatic rollback behavior, then independently verify parity/fingerprint/routes/privacy/accessibility and obtain issue #863 founder acceptance on the exact deployed public Home before any final live-certification or Home-closure claim.
 
-The currently committed `.github/workflows/spatial-live-deploy.yml` is **URAI Canonical Production Release Verification**, not a deploy workflow. It has read-only repository permissions, records `Classification: NO-GO`, and its WIF job uses a read-only cloud scope with `Production mutation command: none`. Older docs or receipts that describe manual `DEPLOY_URAI_APP` inputs are historical and are not current authority.
+The current release controls are split deliberately:
+
+- `.github/workflows/spatial-live-deploy.yml`: verification-only / NO-GO, read-only, no production mutation command.
+- `.github/workflows/spatial-governed-wif-deploy.yml`: sole manual governed Hosting mutation path. It requires an exact merged independently approved PR head, successful exact-head Governance, rollback ancestry, production environment approval, short-lived WIF/OIDC identity, post-deploy smoke, and automatic rollback on failed certification.
+- legacy automatic dispatch workflows are retired and cannot launch production.
+
+Source availability of the governed deploy workflow is not deployment authorization. This audit stops before dispatch.
+
 
 ## Version posture
 
@@ -57,4 +64,4 @@ Historical receipts remain historical. New exact-head evidence supersedes older 
 
 ## Done definition
 
-Do not mark this repository production-live until all applicable evidence is recorded for the shipped SHA, including frozen dependencies, source integrity, exact-head CI/proof, direct rendered-product inspection, legitimate independent exact-SHA approval, governance authorization, a separately restored and reviewed protected production mutation authority, exact deployment identity, live route/interaction verification, asset/audio loading, privacy controls, rollback viability, founder acceptance of the exact deployed public Home under issue #863, and issue #863 closure.
+Do not mark this repository production-live until all applicable evidence is recorded for the shipped SHA, including frozen dependencies, source integrity, exact-head CI/proof, direct rendered-product inspection, legitimate independent exact-SHA approval, governance authorization, the reviewed manual governed WIF production mutation authority, exact deployment identity, live route/interaction verification, asset/audio loading, privacy controls, rollback viability, founder acceptance of the exact deployed public Home under issue #863, and issue #863 closure.

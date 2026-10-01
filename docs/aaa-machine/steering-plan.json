@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "principle": "The machine runs proof-only checks and proposes the next target. Production deployment stays exclusively in the protected canonical workflow, and human review is required for final visual taste claims.",
+  "principle": "The machine runs proof-only checks and proposes the next target. Production verification is read-only; production mutation stays exclusively in the manual governed WIF workflow after independent exact-head approval, merge, and separate deployment authorization. Human review is required for final visual taste claims.",
   "proofRequirements": {
     "routesOk": 14,
     "screenshotsPng": 28,
@@ -13,7 +13,7 @@
     "directoryPrefix": "aaa-launch-proof-",
     "receiptFile": "receipt.json",
     "screenshotDirectory": "live-visual-audit/screenshots",
-    "productionAuthority": ".github/workflows/spatial-live-deploy.yml"
+    "productionAuthority": ".github/workflows/spatial-governed-wif-deploy.yml"
   },
   "loops": [
     {
@@ -21,8 +21,17 @@
       "title": "Kill Life Map and Location Map blank screenshot tails",
       "stage": "v1-layout",
       "priority": 5,
-      "machineCanJudge": ["typecheck", "build", "route proof", "28 screenshots", "proof receipt"],
-      "humanMustJudge": ["Life Map no longer has blank lower tail", "Location Map mobile no longer has blank lower tail"],
+      "machineCanJudge": [
+        "typecheck",
+        "build",
+        "route proof",
+        "28 screenshots",
+        "proof receipt"
+      ],
+      "humanMustJudge": [
+        "Life Map no longer has blank lower tail",
+        "Location Map mobile no longer has blank lower tail"
+      ],
       "paths": [
         "urai-tier1/src/components/lifemap/RealLifeMapGalaxy.tsx",
         "urai-tier1/src/spatial/places/LocationMapScene.tsx"
@@ -35,8 +44,19 @@
       "title": "Make Ground feel like a real private operations floor",
       "stage": "v1-art",
       "priority": 6,
-      "machineCanJudge": ["asset files present", "build", "route proof", "28 screenshots", "proof receipt"],
-      "humanMustJudge": ["walkable floor impression", "real-world objects", "private workforce presence", "not a dashboard"],
+      "machineCanJudge": [
+        "asset files present",
+        "build",
+        "route proof",
+        "28 screenshots",
+        "proof receipt"
+      ],
+      "humanMustJudge": [
+        "walkable floor impression",
+        "real-world objects",
+        "private workforce presence",
+        "not a dashboard"
+      ],
       "paths": [
         "urai-tier1/public/assets/urai/ground/ground-world-main.webp",
         "urai-tier1/public/assets/urai/ground/ground-world-mobile.webp",
@@ -54,8 +74,19 @@
       "title": "Make Replay feel like a cinematic memory film, not a static player",
       "stage": "v1-art-motion",
       "priority": 7,
-      "machineCanJudge": ["build", "route proof", "28 screenshots", "Replay route 200", "proof receipt"],
-      "humanMustJudge": ["inside-memory feeling", "cinematic depth", "emotional beats are visible", "not poster/player only"],
+      "machineCanJudge": [
+        "build",
+        "route proof",
+        "28 screenshots",
+        "Replay route 200",
+        "proof receipt"
+      ],
+      "humanMustJudge": [
+        "inside-memory feeling",
+        "cinematic depth",
+        "emotional beats are visible",
+        "not poster/player only"
+      ],
       "paths": [
         "urai-tier1/public/assets/urai/replay/replay-memory-film-main.webp",
         "urai-tier1/public/assets/urai/replay/replay-memory-film-mobile.webp",
@@ -69,8 +100,19 @@
       "title": "Make Focus feel like a selected memory chamber",
       "stage": "v1-art-motion",
       "priority": 8,
-      "machineCanJudge": ["build", "route proof", "28 screenshots", "Focus route 200", "proof receipt"],
-      "humanMustJudge": ["selected star is dominant", "memory chamber depth", "Replay affordance is clear", "not static dashboard"],
+      "machineCanJudge": [
+        "build",
+        "route proof",
+        "28 screenshots",
+        "Focus route 200",
+        "proof receipt"
+      ],
+      "humanMustJudge": [
+        "selected star is dominant",
+        "memory chamber depth",
+        "Replay affordance is clear",
+        "not static dashboard"
+      ],
       "paths": [
         "urai-tier1/public/assets/urai/focus/focus-memory-chamber-main.webp",
         "urai-tier1/public/assets/urai/focus/focus-memory-chamber-mobile.webp",
@@ -84,8 +126,18 @@
       "title": "Final mobile crop and panel stacking pass",
       "stage": "v1-mobile",
       "priority": 9,
-      "machineCanJudge": ["28 screenshots", "mobile screenshots present", "route proof", "proof receipt"],
-      "humanMustJudge": ["no nav blocked", "no giant blank tails", "no clipped title", "no unreadable panels"],
+      "machineCanJudge": [
+        "28 screenshots",
+        "mobile screenshots present",
+        "route proof",
+        "proof receipt"
+      ],
+      "humanMustJudge": [
+        "no nav blocked",
+        "no giant blank tails",
+        "no clipped title",
+        "no unreadable panels"
+      ],
       "paths": [
         "urai-tier1/src/app/UraiAAAARoutePolish.tsx",
         "urai-tier1/src/components/lifemap/RealLifeMapGalaxy.tsx",
@@ -99,9 +151,19 @@
       "title": "Record V1 final visual receipt",
       "stage": "v1-final",
       "priority": 10,
-      "machineCanJudge": ["all previous verdict files exist", "28 screenshots", "asset wall green", "route proof green", "proof receipt"],
-      "humanMustJudge": ["V1 can be called final public visual pass"],
-      "paths": ["docs/receipts"],
+      "machineCanJudge": [
+        "all previous verdict files exist",
+        "28 screenshots",
+        "asset wall green",
+        "route proof green",
+        "proof receipt"
+      ],
+      "humanMustJudge": [
+        "V1 can be called final public visual pass"
+      ],
+      "paths": [
+        "docs/receipts"
+      ],
       "runCommand": "LOOP_NAME=loop10-v1-final-receipt node scripts/aaa-launch-proof.mjs --screenshots",
       "verdictFile": "docs/receipts/visual-verdicts/loop10-v1-final-receipt.md"
     }

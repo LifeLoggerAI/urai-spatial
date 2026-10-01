@@ -47,9 +47,13 @@ Historical evidence remains valid for what it proved at its recorded SHA, but it
 
 ## Production release boundary
 
-The current `.github/workflows/spatial-live-deploy.yml` is a **verification-only** workflow named `URAI Canonical Production Release Verification`. It intentionally records production as NO-GO and exposes no production mutation command. Its main-only WIF proof uses a read-only cloud scope and does not authorize deployment.
+The repository intentionally separates verification from mutation:
 
-Older receipts and docs that describe this filename as a deploy-capable manual workflow are historical. Production mutation may be restored only by a separately reviewed governed change after the current WIF/IAM, least-privilege identity, revocation, rollback, governance and release-security gates are proven. A preview, PR verification run, WIF identity proof or green CI subset is not production completion.
+- `.github/workflows/spatial-live-deploy.yml` is verification-only and cannot deploy.
+- `.github/workflows/spatial-governed-wif-deploy.yml` is the sole governed production mutation workflow. It is manual-only and requires an exact merged PR head with successful exact-head Release Governance Guard, a distinct rollback ancestor, protected-production approval, short-lived Google WIF/OIDC identity, exact post-deploy smoke, and automatic rollback on failed live certification.
+
+Legacy automatic dispatch shims are retired. A preview, verification run, WIF identity proof, green CI subset, or source presence of the governed workflow is not production completion. The governed deploy workflow must not be dispatched without separate explicit deployment authorization.
+
 
 ## Repository authority
 

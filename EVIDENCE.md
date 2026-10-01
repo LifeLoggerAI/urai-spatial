@@ -8,7 +8,9 @@ This file is the current repository evidence authority for URAI Spatial. Histori
 - Controlling pre-review lane: the newest open full-vision successor PR against `main`, currently sourced from `repair/current-authority-docs-on-final-candidate-20261001`; always resolve its live head before using SHA-bound evidence.
 - Controlling Home visual gate: GitHub issue #863 remains open.
 - Production-live status for the current candidate: **not verified**.
-- Current `.github/workflows/spatial-live-deploy.yml` status: **verification-only / production mutation quarantined / NO-GO**.
+- Current verification lane: `.github/workflows/spatial-live-deploy.yml` is verification-only / NO-GO and cannot mutate production.
+- Governed production mutation lane: `.github/workflows/spatial-governed-wif-deploy.yml` is manual `workflow_dispatch` only and remains separately authorization-gated.
+- Deployment authorization in this audit: **not granted**; do not dispatch the governed mutation workflow.
 - Candidate evidence rule: resolve the live PR head before using any CI, proof, visual acceptance, governance authorization, or receipt as current.
 - Preview deployments and PR verification runs are not production deployments.
 
@@ -81,18 +83,23 @@ Release Governance Guard must then pass on the same SHA through the independent-
 
 ## Canonical production deployment boundary
 
-The file `.github/workflows/spatial-live-deploy.yml` is currently named **URAI Canonical Production Release Verification** and is deliberately verification-only. It:
+Two different protected workflows have different jobs and must not be conflated:
 
-- checks exact clean source;
-- audits the release credential boundary;
-- records `Classification: NO-GO`;
-- states that production release and Hosting recovery are quarantined;
-- may prove short-lived Google WIF identity on `main` with a read-only cloud-platform OAuth scope;
-- records `Production mutation command: none`.
+- `.github/workflows/spatial-live-deploy.yml` is **URAI Canonical Production Release Verification**. It is verification-only, read-only, and records `Classification: NO-GO`; it exposes no production mutation command.
+- `.github/workflows/spatial-governed-wif-deploy.yml` is the **sole production mutation authority in candidate source**. It is manual-only and requires:
+  - exact 40-character `release_sha`;
+  - distinct proven ancestor `rollback_sha`;
+  - the merged PR number whose exact approved head equals `release_sha`;
+  - `confirm=DEPLOY_URAI_APP`;
+  - successful exact-head Release Governance Guard for that merged PR;
+  - short-lived Google OIDC/WIF credentials in the protected `production` environment;
+  - exact static build/fingerprint generation;
+  - Hosting-only deploy to `urai-4dc1d`;
+  - exact post-deploy live smoke;
+  - automatic Hosting rollback to the predeploy version if live certification fails.
 
-Therefore no current repository workflow in this authority may be described as an available production deploy path merely because older documentation used the same filename for a deploy-capable workflow.
+Legacy automatic/issue/comment dispatch shims are retired and may not dispatch either protected workflow. Production deployment still requires separate explicit deployment authorization after independent approval and merge. This audit does not grant that authorization.
 
-Before production mutation can be restored, the governed release path must separately prove and review short-lived provider identity, WIF/IAM trust, least privilege, runtime identity read-back, rollback evidence, historical credential revocation, governance, live and device prerequisites. Restoring mutation is itself a reviewed source change and would create a new candidate SHA requiring fresh evidence.
 
 ## Production verification evidence
 
@@ -111,4 +118,4 @@ After the protected workflow succeeds, production is still not complete until in
 
 ## Current release decision
 
-**NO production completion claim yet.** The current successor candidate remains pre-review gated until its exact head completes current exact-head CI, direct rendered inspection, legitimate independent exact-SHA approval, governance authorization and merge. Production then remains separately blocked until a reviewed mutation authority is restored, followed by exact deployment, strict post-deploy verification and rollback evidence. Issue #863 remains open until the founder manually approves the exact deployed public desktop and mobile Home result under that issue's no-placeholder acceptance standard.
+**NO production completion claim yet.** The current successor candidate remains pre-review gated until its exact head completes current exact-head CI, direct rendered inspection, legitimate independent exact-SHA approval, governance authorization and merge. After merge, production remains separately authorization-gated: only the manual governed WIF workflow may mutate Hosting, and it has not been authorized or run in this audit. Final live certification still requires exact deployment identity, successful post-deploy smoke, rollback evidence, and founder acceptance of the exact deployed public Home under issue #863.

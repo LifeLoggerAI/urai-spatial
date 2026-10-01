@@ -19,7 +19,8 @@ Do not call the entire URAI system-of-systems fully production-locked until the 
 - Root package manager: `pnpm@10.0.0`
 - Root Node engine: `>=22`
 - Canonical public URL: `https://urai.app`
-- Sole production and rollback authority: `.github/workflows/spatial-live-deploy.yml`
+- Verification authority: `.github/workflows/spatial-live-deploy.yml` (read-only / NO-GO)
+- Sole production mutation authority in current candidate source: `.github/workflows/spatial-governed-wif-deploy.yml` (manual-only)
 
 ## Historical route observations
 
@@ -45,24 +46,15 @@ The former local commands—including `firebase deploy`, `pnpm live:deploy:stati
 Approved production dispatch after exact-head checks pass and the candidate is merged:
 
 ```bash
-gh workflow run spatial-live-deploy.yml \
+gh workflow run spatial-governed-wif-deploy.yml \
   --ref main \
-  -f release_sha=<EXACT_CURRENT_MAIN_SHA> \
+  -f release_sha=<EXACT_APPROVED_MERGED_PR_HEAD_SHA> \
   -f rollback_sha=<DISTINCT_PROVEN_PRODUCTION_SHA> \
+  -f pull_request=<MERGED_PR_NUMBER> \
   -f confirm=DEPLOY_URAI_APP
 ```
 
-Approved rollback form, using the command written into the deployment receipt:
-
-```bash
-gh workflow run spatial-live-deploy.yml \
-  --ref main \
-  -f release_sha=<PROVEN_ROLLBACK_SHA> \
-  -f rollback_sha=<PROVEN_ROLLBACK_SHA> \
-  -f confirm=ROLLBACK_URAI_APP
-```
-
-Both operations run through the protected `production` environment, verify the exact target, publish hosting-only output to project `urai-4dc1d`, and run live smoke. Never substitute a local Firebase command.
+Rollback on failed live certification is automatic inside the governed WIF workflow: it restores the exact predeploy Hosting version captured before mutation. A separate manual rollback command is not part of the current contract. Never substitute a local Firebase command.
 
 ## Original execution limitation
 
