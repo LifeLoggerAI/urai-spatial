@@ -39,20 +39,19 @@ await transformFile('urai-tier1/tests/accessibility-performance-embodied-explora
     1,
     'current Home authored visual owner contract',
   )
-  source = replaceExact(
-    source,
-    `    const afterZ = Number(await home.getAttribute('data-home-player-z'))
+  const stableMovementProof = `    const afterZ = Number(await home.getAttribute('data-home-player-z'))
     expect(Math.abs(afterZ - beforeZ)).toBeGreaterThan(1.2)
     await expect.poll(async () => {
       const value = await home.evaluate((element) => element.style.getPropertyValue('--home-parallax-y'))
       return Math.abs(Number.parseFloat(value))
-    }, { timeout: 12_000 }).toBeGreaterThan(0.1)`,
-    `    await expect.poll(async () => Math.abs(Number(await home.getAttribute('data-home-player-z')) - beforeZ), { timeout: 30_000 }).toBeGreaterThan(1.2)
-    const afterZ = Number(await home.getAttribute('data-home-player-z'))
-    expect(Math.abs(afterZ - beforeZ)).toBeGreaterThan(1.2)`,
-    1,
-    'current Home primary-owner movement telemetry',
-  )
+    }, { timeout: 12_000 }).toBeGreaterThan(0.1)`
+  if (source.split(stableMovementProof).length - 1 !== 1) {
+    throw new Error('current Home direct displacement + parallax proof contract changed')
+  }
+  const staleZPoll = `    await expect.poll(async () => Math.abs(Number(await home.getAttribute('data-home-player-z')) - beforeZ), { timeout: 30_000 }).toBeGreaterThan(1.2)`
+  if (source.includes(staleZPoll)) {
+    throw new Error('stale redundant Home Z-position polling must not be reintroduced')
+  }
   return source
 })
 
