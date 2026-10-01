@@ -72,6 +72,7 @@ const tests = [
   'tests/replay-mobile-control-clearance-contract.test.mjs',
   'tests/route-owner-exclusivity-contract.test.mjs',
   'tests/security-boundary-contract.test.mjs',
+  'tests/speaker-awareness-contract.test.mjs',
   'tests/selected-memory-production-contract.test.mjs',
   'tests/sensory-asset-resolution-contract.test.mjs',
   'tests/spatial-launch-boundaries.test.mjs',
