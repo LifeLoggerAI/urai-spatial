@@ -1,15 +1,18 @@
 # URAI Spatial Final Completion Roadmap
 
 Date: 2026-10-01
-Authority basis: frozen release candidate `2df49b538727693a9ad5714c5964a629c120330e` plus post-proof polish draft PR #1494.
+Classification: HISTORICAL CHECKPOINT / SUPERSEDED BY CURRENT PRE-REVIEW INTEGRATION
+Historical authority basis: release candidate `2df49b538727693a9ad5714c5964a629c120330e` plus post-proof polish draft PR #1494.
+
+> This document records an earlier 2026-10-01 checkpoint. It is not the current exact-head release authority. The current candidate must be discovered from the open full-vision pre-review PR and its exact head; no workflow, pixel, provider, review, or deployment conclusion in this historical checkpoint transfers automatically to that successor.
 
 ## Ground rule
 
 This is the terminal completion ledger for UrAi Spatial under the full-vision launch definition. It separates source completeness, exact-head proof, visual acceptance, provider/device acceptance, governed production deployment, and independent review. A green build or existing source file does not by itself certify a live feature.
 
-## Current exact-head release posture
+## Historical exact-head release posture
 
-Frozen candidate: `2df49b538727693a9ad5714c5964a629c120330e`.
+Historical candidate: `2df49b538727693a9ad5714c5964a629c120330e`.
 
 Confirmed exact-head successes include Home State Proof, Portal/Orb, Continuous Spatial Visual Proof, Spatial CI, Production Verify, Android package preparation, release readiness, Location Map, Privacy, XR static gates, Mirror, Native Doorway, asset-ledger checks, and core runtime contracts.
 
