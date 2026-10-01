@@ -542,7 +542,25 @@ function PlayerRig({ input, yaw, pitch, target, avatar, onNearby, groundDescent,
     const candidates: readonly [Nearby, THREE.Vector3, number][] = [['orb', ORB, 2.4], ['ground', GROUND_THRESHOLD, 2.8], ['life-map', LIFE_MAP_LOOKOUT, 2.8]]
     let next: Nearby = null, best = Infinity
     for (const [name, poi, radius] of candidates) { const distance = Math.hypot(position.current.x - poi.x, position.current.z - poi.z); if (distance < radius && distance < best) { next = name; best = distance } }
-    if (next !== lastNearby.current) { lastNearby.current = next; onNearby(next) }
+    if (next !== lastNearby.current) {
+      const previousNearby = lastNearby.current
+      lastNearby.current = next
+      if (next === 'orb' && previousNearby !== 'orb') {
+        const dx = ORB.x - position.current.x
+        const dz = ORB.z - position.current.z
+        if (Math.hypot(dx, dz) > 0.001) {
+          // Give the physical Orb one production-facing attention handoff when the
+          // user actually enters its proximity radius. This is not a camera lock:
+          // pointer/touch look remains authoritative immediately afterward.
+          yaw.current = Math.atan2(dx, -dz)
+          pitch.current = THREE.MathUtils.clamp(ORB.y - 1.22, -.42, .18)
+          forward.current.set(Math.sin(yaw.current), 0, -Math.cos(yaw.current))
+          look.current.copy(position.current).addScaledVector(forward.current, portrait ? 6 : 8)
+          camera.lookAt(look.current.x, 1.22 + pitch.current, look.current.z)
+        }
+      }
+      onNearby(next)
+    }
   })
   return null
 }
