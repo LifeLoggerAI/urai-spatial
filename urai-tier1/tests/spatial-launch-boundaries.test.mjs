@@ -75,7 +75,8 @@ test('launch contract documentation keeps go-no-go checks visible', () => {
   ]) {
     assert.ok(contractDoc.includes(command), `launch contract doc missing command: ${command}`)
   }
-  assert.match(contractDoc, /Ship URAI Spatial only if the fallback shell is stable/)
+  assert.match(contractDoc, /Ship UrAi only from the current governed exact-head candidate/)
+  assert.match(contractDoc, /source path or green unit test never authorizes a live-provider claim/)
 })
 
 
