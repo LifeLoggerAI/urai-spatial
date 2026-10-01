@@ -216,7 +216,7 @@ export const DESTINATIONS: readonly GroundDestination[] = [
   },
   {
     id: "focus",
-    label: "Focus Chamber",
+    label: "Focus Memory Star",
     detail: "Selected-memory attention",
     href: "/focus?demo=1&memoryId=demo:ground-focus&manifestId=demo-manifest&node=demo:ground-focus&from=ground",
     color: "#c4b5fd",
@@ -233,8 +233,8 @@ export const DESTINATIONS: readonly GroundDestination[] = [
   },
   {
     id: "replay",
-    label: "Replay Theater",
-    detail: "Entered-memory cinema",
+    label: "Replay",
+    detail: "Inside-memory world",
     href: "/replay?demo=1&memoryId=demo:ground-replay&manifestId=demo-manifest&node=demo:ground-replay&from=ground",
     color: "#f9a8d4",
     position: [9.8, 3.6, -28.5],

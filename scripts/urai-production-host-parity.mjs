@@ -20,7 +20,7 @@ const requiredByRoute = new Map([
   ['/home', [/Own your life\./i, /Step inside yourself\./i]],
   ['/ground', [/private workforce|reception|archive|ground/i]],
   ['/life-map', [/memory field|private stars|enter focus|life map/i]],
-  ['/focus', [/selected memory chamber|quiet reset|enter replay/i]],
+  ['/focus', [/stellar memory|memory star|stellar photosphere|quiet reset|enter replay/i]],
   ['/replay', [/replay|memory|film|thread/i]],
 ])
 
