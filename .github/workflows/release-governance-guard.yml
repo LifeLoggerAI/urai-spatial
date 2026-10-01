@@ -143,50 +143,128 @@ jobs:
             exit 0
           fi
 
-          # A repository with one writable steward cannot manufacture an independent
-          # reviewer. Preserve fail-closed governance by requiring the PR author to be
-          # the repository owner, to hold write-or-higher permission, and to place an
-          # exact-head attestation in the live PR body. The body is fetched at run time
-          # so a rerun can validate the current attestation without a no-op source commit.
-          repo="$(curl --fail --silent --show-error \
-            --header 'Accept: application/vnd.github+json' \
-            --header "Authorization: Bearer $GH_TOKEN" \
-            --header 'X-GitHub-Api-Version: 2022-11-28' \
-            "$GITHUB_API_URL/repos/$REPOSITORY")"
-          repo_owner="$(jq -r '.owner.login // empty' <<<"$repo")"
-          author_permission="$(curl --fail --silent --show-error \
-            --header 'Accept: application/vnd.github+json' \
-            --header "Authorization: Bearer $GH_TOKEN" \
-            --header 'X-GitHub-Api-Version: 2022-11-28' \
-            "$GITHUB_API_URL/repos/$REPOSITORY/collaborators/$PR_AUTHOR/permission" \
-            | jq -r '.permission // empty')"
+          # Offline independent approval is accepted only when it is cryptographically
+          # signed by the independent reviewer over this exact frozen SHA. This removes
+          # the legacy solo-steward self-approval fallback while avoiding any requirement
+          # that the reviewer receive permanent private-repository access.
           pr_body="$(curl --fail --silent --show-error \
             --header 'Accept: application/vnd.github+json' \
             --header "Authorization: Bearer $GH_TOKEN" \
             --header 'X-GitHub-Api-Version: 2022-11-28' \
             "$GITHUB_API_URL/repos/$REPOSITORY/pulls/$PR_NUMBER" \
             | jq -r '.body // ""')"
-          attestation="SOLO_STEWARD_APPROVED_SHA=$EXACT_SHA"
 
-          if test "$repo_owner" != "$PR_AUTHOR"; then
-            echo "Solo-steward fallback denied: PR author is not repository owner." >&2
+          field() {
+            local key="$1"
+            sed -n "s/^$key=//p" <<<"$pr_body" | tail -n 1
+          }
+
+          external_reviewer="$(field INDEPENDENT_REVIEWER_ID)"
+          external_sha="$(field INDEPENDENT_APPROVED_SHA)"
+          external_decision="$(field INDEPENDENT_DECISION)"
+          external_reviewed_at="$(field INDEPENDENT_REVIEWED_AT)"
+          external_attestation_sha256="$(field INDEPENDENT_ATTESTATION_SHA256)"
+          external_attestation_uri="$(field INDEPENDENT_ATTESTATION_URI)"
+          external_witness="$(field INDEPENDENT_WITNESS)"
+          external_signature_b64="$(field INDEPENDENT_SIGNATURE_B64)"
+          external_sshsig_b64="$(field INDEPENDENT_SSHSIG_B64)"
+
+          test -n "$external_reviewer" || {
+            echo "No native exact-head approval and no signed external reviewer identity is recorded." >&2
+            exit 1
+          }
+          test "$external_reviewer" = 'LimberNutz0' || {
+            echo "Independent approval denied: offline reviewer must be LimberNutz0 for this release." >&2
+            exit 1
+          }
+          test "$external_reviewer" != "$PR_AUTHOR" || {
+            echo "Independent approval denied: external reviewer matches PR author." >&2
+            exit 1
+          }
+          test "$external_sha" = "$EXACT_SHA" || {
+            echo "Independent approval denied: signed SHA does not equal exact head." >&2
+            exit 1
+          }
+          test "$external_decision" = 'APPROVED' || {
+            echo "Independent approval denied: decision must be APPROVED." >&2
+            exit 1
+          }
+          test -n "$external_reviewed_at" || {
+            echo "Independent approval denied: reviewed-at timestamp is required." >&2
+            exit 1
+          }
+          [[ "$external_attestation_sha256" =~ ^[0-9a-fA-F]{64}$ ]] || {
+            echo "Independent approval denied: attestation SHA-256 must be 64 hex characters." >&2
+            exit 1
+          }
+          test -n "$external_attestation_uri" || {
+            echo "Independent approval denied: attestation URI is required." >&2
+            exit 1
+          }
+          test -n "$external_witness" || {
+            echo "Independent approval denied: witness identity is required." >&2
+            exit 1
+          }
+          if test -z "$external_signature_b64" && test -z "$external_sshsig_b64"; then
+            echo "Independent approval denied: reviewer signature is required." >&2
             exit 1
           fi
-          case "$author_permission" in
-            admin|maintain|write) ;;
-            *)
-              echo "Solo-steward fallback denied: PR author lacks write-or-higher permission." >&2
+
+          key_path="docs/release-governance/reviewers/$external_reviewer-public.pem"
+          ssh_key_path="docs/release-governance/reviewers/$external_reviewer-public.ssh"
+
+          cat > artifacts/release-governance/external-review-message.txt <<EOF
+          URAI-INDEPENDENT-RELEASE-APPROVAL-V1
+          repository=$REPOSITORY
+          pull_request=$PR_NUMBER
+          exact_sha=$EXACT_SHA
+          reviewer=$external_reviewer
+          decision=$external_decision
+          reviewed_at=$external_reviewed_at
+          attestation_sha256=$external_attestation_sha256
+          attestation_uri=$external_attestation_uri
+          witness=$external_witness
+          EOF
+
+          if test -n "$external_sshsig_b64"; then
+            test -f "$ssh_key_path" || {
+              echo "Independent approval denied: trusted reviewer SSH public key not found: $ssh_key_path" >&2
               exit 1
-              ;;
-          esac
-          if ! grep -Fq "$attestation" <<<"$pr_body"; then
-            echo "No independent exact-head approval exists and the live PR body lacks exact-head solo-steward attestation: $attestation" >&2
-            exit 1
+            }
+            printf '%s' "$external_sshsig_b64" | base64 --decode > artifacts/release-governance/external-review-signature.sshsig
+            printf '%s %s\n' "$external_reviewer" "$(cat "$ssh_key_path")" > artifacts/release-governance/allowed-signers
+            ssh-keygen -Y verify \
+              -f artifacts/release-governance/allowed-signers \
+              -I "$external_reviewer" \
+              -n urai-release \
+              -s artifacts/release-governance/external-review-signature.sshsig \
+              < artifacts/release-governance/external-review-message.txt
+            approval_mode='external-independent-ssh-signature'
+            public_key_hash_source="$ssh_key_path"
+          else
+            test -f "$key_path" || {
+              echo "Independent approval denied: trusted reviewer public key not found: $key_path" >&2
+              exit 1
+            }
+            printf '%s' "$external_signature_b64" | base64 --decode > artifacts/release-governance/external-review-signature.bin
+            openssl pkeyutl -verify \
+              -pubin \
+              -inkey "$key_path" \
+              -rawin \
+              -in artifacts/release-governance/external-review-message.txt \
+              -sigfile artifacts/release-governance/external-review-signature.bin
+            approval_mode='external-independent-cryptographic-signature'
+            public_key_hash_source="$key_path"
           fi
 
-          printf '%s\n' 'solo-steward-exact-head' > artifacts/release-governance/approval-mode.txt
-          : > artifacts/release-governance/approved-reviewer.txt
-          printf '%s\n' "$PR_AUTHOR" > artifacts/release-governance/approved-steward.txt
+          printf '%s\n' "$approval_mode" > artifacts/release-governance/approval-mode.txt
+          printf '%s\n' "$external_reviewer" > artifacts/release-governance/approved-reviewer.txt
+          : > artifacts/release-governance/approved-steward.txt
+          printf '%s\n' "$external_reviewed_at" > artifacts/release-governance/external-review-reviewed-at.txt
+          printf '%s\n' "$external_attestation_sha256" > artifacts/release-governance/external-review-attestation-sha256.txt
+          printf '%s\n' "$external_attestation_uri" > artifacts/release-governance/external-review-attestation-uri.txt
+          printf '%s\n' "$external_witness" > artifacts/release-governance/external-review-witness.txt
+          sha256sum "$public_key_hash_source" | awk '{print $1}' > artifacts/release-governance/external-review-public-key-sha256.txt
 
       - name: Reject temporary dispatchers on canonical source
         if: steps.scope.outputs.applies == 'true'
@@ -291,7 +369,7 @@ jobs:
           approved_steward="$(cat artifacts/release-governance/approved-steward.txt 2>/dev/null || true)"
           cat > artifacts/release-governance/receipt.json <<EOF
           {
-            "schemaVersion": "urai-release-governance-guard-5",
+            "schemaVersion": "urai-release-governance-guard-6",
             "repository": "$GITHUB_REPOSITORY",
             "exactSha": "$EXACT_SHA",
             "baseSha": "$BASE_SHA",
@@ -302,6 +380,11 @@ jobs:
             "approvalMode": "$approval_mode",
             "independentApprovedReviewer": "$approved_reviewer",
             "soloSteward": "$approved_steward",
+            "externalReviewReviewedAt": "$(cat artifacts/release-governance/external-review-reviewed-at.txt 2>/dev/null || true)",
+            "externalReviewAttestationSha256": "$(cat artifacts/release-governance/external-review-attestation-sha256.txt 2>/dev/null || true)",
+            "externalReviewAttestationUri": "$(cat artifacts/release-governance/external-review-attestation-uri.txt 2>/dev/null || true)",
+            "externalReviewWitness": "$(cat artifacts/release-governance/external-review-witness.txt 2>/dev/null || true)",
+            "externalReviewPublicKeySha256": "$(cat artifacts/release-governance/external-review-public-key-sha256.txt 2>/dev/null || true)",
             "changedReleaseWorkflowsValidated": $changed_release_count,
             "productionAuthorizationRecordsValidated": $production_record_count,
             "productionAuthorized": false

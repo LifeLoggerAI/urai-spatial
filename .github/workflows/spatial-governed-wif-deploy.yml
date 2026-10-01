@@ -1,0 +1,356 @@
+name: URAI Governed WIF Production Deploy
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_sha:
+        description: Exact independently approved PR head SHA to deploy
+        required: true
+        type: string
+      rollback_sha:
+        description: Distinct proven ancestor/recovery SHA recorded in the release fingerprint
+        required: true
+        type: string
+      pull_request:
+        description: Merged PR number whose exact approved head is being deployed
+        required: true
+        type: string
+      confirm:
+        description: Type DEPLOY_URAI_APP
+        required: true
+        default: CHECK_ONLY
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: urai-governed-wif-production
+  cancel-in-progress: false
+
+env:
+  NODE_VERSION: '22'
+  PNPM_VERSION: '10.0.0'
+  FIREBASE_PROJECT: urai-4dc1d
+  LIVE_URL: https://urai.app
+  WIF_PROVIDER: projects/952723774155/locations/global/workloadIdentityPools/urai-github-prod/providers/github-actions
+  WIF_SERVICE_ACCOUNT: urai-spatial-github-deployer@urai-4dc1d.iam.gserviceaccount.com
+
+jobs:
+  deploy:
+    name: Deploy exact governed SHA with WIF
+    if: github.ref == 'refs/heads/main' && inputs.confirm == 'DEPLOY_URAI_APP'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    environment: production
+    permissions:
+      contents: read
+      actions: read
+      pull-requests: read
+      id-token: write
+    env:
+      RELEASE_SHA: ${{ inputs.release_sha }}
+      ROLLBACK_SHA: ${{ inputs.rollback_sha }}
+      PR_NUMBER: ${{ inputs.pull_request }}
+      NEXT_PUBLIC_URAI_BUILD_SHA: ${{ inputs.release_sha }}
+      URAI_TARGET_SHA: ${{ inputs.release_sha }}
+      CURRENT_MAIN_SHA: ${{ inputs.release_sha }}
+      URAI_AUTHORITY_SHA: ${{ inputs.release_sha }}
+      URAI_ROLLBACK_SHA: ${{ inputs.rollback_sha }}
+      URAI_EXPECTED_FIREBASE_PROJECT: urai-4dc1d
+      URAI_LIVE_BASE_URL: https://urai.app
+      URAI_DEPLOY_URL: https://urai.app
+      URAI_EXPECTED_DEPLOYED_SHA: ${{ inputs.release_sha }}
+      URAI_EXPECTED_ROLLBACK_SHA: ${{ inputs.rollback_sha }}
+      URAI_EXPECTED_AUTHORITY_SHA: ${{ inputs.release_sha }}
+
+    steps:
+      - name: Validate exact governed release authority
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          test "$GITHUB_EVENT_NAME" = 'workflow_dispatch'
+          test "$GITHUB_REF" = 'refs/heads/main'
+          test "$GITHUB_REPOSITORY" = 'LifeLoggerAI/urai-spatial'
+          test "${{ inputs.confirm }}" = 'DEPLOY_URAI_APP'
+          [[ "$RELEASE_SHA" =~ ^[0-9a-f]{40}$ ]]
+          [[ "$ROLLBACK_SHA" =~ ^[0-9a-f]{40}$ ]]
+          [[ "$PR_NUMBER" =~ ^[1-9][0-9]*$ ]]
+          test "$RELEASE_SHA" != "$ROLLBACK_SHA"
+
+          pr="$(curl --fail --silent --show-error \
+            --header 'Accept: application/vnd.github+json' \
+            --header "Authorization: Bearer $GH_TOKEN" \
+            --header 'X-GitHub-Api-Version: 2022-11-28' \
+            "$GITHUB_API_URL/repos/$REPOSITORY/pulls/$PR_NUMBER")"
+          test "$(jq -r '.merged' <<<"$pr")" = 'true'
+          test "$(jq -r '.base.ref' <<<"$pr")" = 'main'
+          test "$(jq -r '.head.sha' <<<"$pr")" = "$RELEASE_SHA"
+
+          guard_runs="$(curl --fail --silent --show-error \
+            --header 'Accept: application/vnd.github+json' \
+            --header "Authorization: Bearer $GH_TOKEN" \
+            --header 'X-GitHub-Api-Version: 2022-11-28' \
+            "$GITHUB_API_URL/repos/$REPOSITORY/actions/workflows/release-governance-guard.yml/runs?event=pull_request&status=success&head_sha=$RELEASE_SHA&per_page=100")"
+          jq -e --argjson pr "$PR_NUMBER" '
+            .workflow_runs
+            | any(
+                .status == "completed"
+                and .conclusion == "success"
+                and any(.pull_requests[]?; .number == $pr)
+              )
+          ' <<<"$guard_runs" >/dev/null || {
+            echo 'No successful exact-head Release Governance Guard run is associated with the merged PR.' >&2
+            exit 1
+          }
+
+      - name: Checkout exact approved source
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          ref: ${{ env.RELEASE_SHA }}
+          fetch-depth: 0
+          persist-credentials: false
+          show-progress: false
+
+      - name: Prove clean exact source and rollback ancestry
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$RELEASE_SHA"
+          test -z "$(git status --porcelain --untracked-files=all)"
+          git cat-file -e "$ROLLBACK_SHA^{commit}"
+          git merge-base --is-ancestor "$ROLLBACK_SHA" "$RELEASE_SHA"
+
+      - name: Setup Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Enable exact pnpm and install frozen dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          corepack enable
+          corepack prepare "pnpm@${PNPM_VERSION}" --activate
+          test "$(pnpm --version)" = "$PNPM_VERSION"
+          pnpm install --frozen-lockfile
+
+      - name: Load canonical Firebase public configuration
+        shell: bash
+        run: |
+          set -euo pipefail
+          config="$(curl --fail --silent --show-error --location --proto '=https' --tlsv1.2 "$LIVE_URL/__/firebase/init.json")"
+          test "$(jq -r '.projectId // empty' <<<"$config")" = "$FIREBASE_PROJECT"
+          test "$(jq -r '.authDomain // empty' <<<"$config")" = 'urai-4dc1d.firebaseapp.com'
+          for pair in \
+            "NEXT_PUBLIC_FIREBASE_API_KEY apiKey" \
+            "NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN authDomain" \
+            "NEXT_PUBLIC_FIREBASE_PROJECT_ID projectId" \
+            "NEXT_PUBLIC_FIREBASE_APP_ID appId" \
+            "NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET storageBucket" \
+            "NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID messagingSenderId" \
+            "NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID measurementId"; do
+            env_name="${pair%% *}"
+            json_name="${pair#* }"
+            value="$(jq -r --arg key "$json_name" '.[$key] // empty' <<<"$config")"
+            test -n "$value"
+            printf '%s=%s\n' "$env_name" "$value" >> "$GITHUB_ENV"
+          done
+
+      - name: Build and attest exact static release
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$NEXT_PUBLIC_FIREBASE_PROJECT_ID" = "$FIREBASE_PROJECT"
+          pnpm build:static
+          node scripts/create-static-release-bundle.mjs
+          test -s release-bundle/manifest.json
+          test -s urai-tier1/out/release-fingerprint.json
+          jq -e --arg release "$RELEASE_SHA" --arg rollback "$ROLLBACK_SHA" '
+            .schemaVersion == "urai-release-fingerprint-1"
+            and .releaseSha == $release
+            and .authoritySha == $release
+            and .rollbackSha == $rollback
+            and .firebaseProject == "urai-4dc1d"
+            and .deploymentScope == "hosting-only"
+          ' urai-tier1/out/release-fingerprint.json >/dev/null
+
+      - id: google-auth
+        name: Authenticate to Google Cloud with short-lived WIF
+        uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3
+        with:
+          project_id: urai-4dc1d
+          workload_identity_provider: ${{ env.WIF_PROVIDER }}
+          service_account: ${{ env.WIF_SERVICE_ACCOUNT }}
+          token_format: access_token
+          access_token_lifetime: 900s
+          access_token_scopes: https://www.googleapis.com/auth/cloud-platform
+          create_credentials_file: true
+          export_environment_variables: true
+          request_reason: URAI governed exact-head production deployment
+
+      - name: Verify action-managed external-account ADC
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "${GOOGLE_APPLICATION_CREDENTIALS:-}"
+          test -n "${GOOGLE_GHA_CREDS_PATH:-}"
+          test "$GOOGLE_APPLICATION_CREDENTIALS" = "$GOOGLE_GHA_CREDS_PATH"
+          case "$GOOGLE_APPLICATION_CREDENTIALS" in
+            "$GITHUB_WORKSPACE"/gha-creds-*.json) ;;
+            *) echo 'Refusing non-action-managed Google credential path' >&2; exit 1 ;;
+          esac
+          test -f "$GOOGLE_APPLICATION_CREDENTIALS"
+          test ! -L "$GOOGLE_APPLICATION_CREDENTIALS"
+          test "$(jq -r '.type // empty' "$GOOGLE_APPLICATION_CREDENTIALS")" = 'external_account'
+          test "$(jq -r 'has("private_key")' "$GOOGLE_APPLICATION_CREDENTIALS")" = 'false'
+          test "$(jq -r 'has("client_email")' "$GOOGLE_APPLICATION_CREDENTIALS")" = 'false'
+
+      - name: Capture current live Hosting rollback authority
+        shell: bash
+        env:
+          GOOGLE_WIF_ACCESS_TOKEN: ${{ steps.google-auth.outputs.access_token }}
+        run: |
+          set -euo pipefail
+          test -n "$GOOGLE_WIF_ACCESS_TOKEN"
+          echo "::add-mask::$GOOGLE_WIF_ACCESS_TOKEN"
+          mkdir -p deployment-receipt/predeploy
+          curl --fail --silent --show-error \
+            --header "Authorization: Bearer $GOOGLE_WIF_ACCESS_TOKEN" \
+            "https://firebasehosting.googleapis.com/v1beta1/sites/$FIREBASE_PROJECT/releases?pageSize=100" \
+            > deployment-receipt/predeploy/releases.json
+          jq -e '
+            .releases
+            | map(select(.type != "SITE_DISABLE"))
+            | sort_by(.releaseTime)
+            | last
+            | (.name | type == "string")
+              and (.version.name | type == "string")
+              and (.releaseTime | type == "string")
+          ' deployment-receipt/predeploy/releases.json >/dev/null
+          jq '
+            .releases
+            | map(select(.type != "SITE_DISABLE"))
+            | sort_by(.releaseTime)
+            | last
+          ' deployment-receipt/predeploy/releases.json > deployment-receipt/predeploy/live-release.json
+          jq -r '.version.name' deployment-receipt/predeploy/live-release.json > deployment-receipt/predeploy/version-name.txt
+
+          fingerprint_status='absent-or-invalid'
+          if curl --fail --silent --show-error --location --proto '=https' --tlsv1.2 \
+            "$LIVE_URL/release-fingerprint.json?predeploy=$GITHUB_RUN_ID" \
+            -o deployment-receipt/predeploy/live-fingerprint.json; then
+            if jq -e '.schemaVersion == "urai-release-fingerprint-1" and (.releaseSha | test("^[0-9a-f]{40}$"))' \
+              deployment-receipt/predeploy/live-fingerprint.json >/dev/null 2>&1; then
+              fingerprint_status='valid'
+              test "$(jq -r '.releaseSha' deployment-receipt/predeploy/live-fingerprint.json)" = "$ROLLBACK_SHA"
+            fi
+          fi
+          printf '%s\n' "$fingerprint_status" > deployment-receipt/predeploy/fingerprint-status.txt
+
+      - name: Re-prove exact deployment boundary
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$RELEASE_SHA"
+          git diff --quiet HEAD -- .
+          git diff --cached --quiet HEAD -- .
+          test "$NEXT_PUBLIC_FIREBASE_PROJECT_ID" = "$FIREBASE_PROJECT"
+          test -s urai-tier1/out/release-fingerprint.json
+          test -s deployment-receipt/predeploy/version-name.txt
+          test -n "${GOOGLE_APPLICATION_CREDENTIALS:-}"
+          test "$GOOGLE_APPLICATION_CREDENTIALS" = "$GOOGLE_GHA_CREDS_PATH"
+
+      - name: Deploy exact Hosting release with WIF ADC
+        shell: bash
+        run: |
+          set -euo pipefail
+          npx --yes firebase-tools@15.22.3 deploy \
+            --only hosting \
+            --project "$FIREBASE_PROJECT" \
+            --config firebase.static.json \
+            --non-interactive
+
+      - id: live-smoke
+        name: Verify exact live SHA, fingerprint, and canonical routes
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p deployment-receipt/postdeploy
+          URAI_LIVE_RECEIPT_PATH=deployment-receipt/postdeploy/live-content-parity.json \
+            node scripts/urai-post-deploy-smoke.mjs
+
+      - name: Roll back Hosting if live certification fails
+        if: steps.live-smoke.outcome == 'failure'
+        shell: bash
+        env:
+          GOOGLE_WIF_ACCESS_TOKEN: ${{ steps.google-auth.outputs.access_token }}
+        run: |
+          set -euo pipefail
+          version_name="$(cat deployment-receipt/predeploy/version-name.txt)"
+          test -n "$version_name"
+          mkdir -p deployment-receipt/rollback
+          curl --fail --silent --show-error \
+            --request POST \
+            --header "Authorization: Bearer $GOOGLE_WIF_ACCESS_TOKEN" \
+            --header 'Content-Type: application/json' \
+            --data "$(jq -nc --arg message "URAI automatic rollback after failed exact-head live certification run $GITHUB_RUN_ID" '{message:$message}')" \
+            "https://firebasehosting.googleapis.com/v1beta1/sites/$FIREBASE_PROJECT/releases?versionName=$version_name" \
+            > deployment-receipt/rollback/restore-result.json
+          test "$(jq -r '.version.name // empty' deployment-receipt/rollback/restore-result.json)" = "$version_name"
+          sleep 5
+          curl --fail --silent --show-error \
+            --header "Authorization: Bearer $GOOGLE_WIF_ACCESS_TOKEN" \
+            "https://firebasehosting.googleapis.com/v1beta1/sites/$FIREBASE_PROJECT/releases?pageSize=20" \
+            > deployment-receipt/rollback/releases-after-restore.json
+          observed="$(jq -r '
+            .releases
+            | map(select(.type != "SITE_DISABLE"))
+            | sort_by(.releaseTime)
+            | last
+            | .version.name // empty
+          ' deployment-receipt/rollback/releases-after-restore.json)"
+          test "$observed" = "$version_name"
+
+      - name: Write governed deployment receipt
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p deployment-receipt
+          {
+            echo "repository=$GITHUB_REPOSITORY"
+            echo "release_sha=$RELEASE_SHA"
+            echo "rollback_sha=$ROLLBACK_SHA"
+            echo "pull_request=$PR_NUMBER"
+            echo "workflow_run_id=$GITHUB_RUN_ID"
+            echo "firebase_project=$FIREBASE_PROJECT"
+            echo "live_url=$LIVE_URL"
+            echo "credential_class=github-oidc-wif-external-account"
+            echo "deployment_scope=hosting-only"
+            echo "live_smoke_outcome=${{ steps.live-smoke.outcome }}"
+            echo "deployed_at_utc=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          } > deployment-receipt/release.env
+
+      - name: Retain governed deployment evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: urai-governed-wif-production-${{ env.RELEASE_SHA }}
+          path: |
+            deployment-receipt/
+            release-bundle/manifest.json
+            urai-tier1/out/release-fingerprint.json
+          if-no-files-found: warn
+          retention-days: 90
+
+      - name: Fail release after rollback when live certification failed
+        if: steps.live-smoke.outcome == 'failure'
+        shell: bash
+        run: |
+          echo 'Live certification failed. Hosting rollback was attempted and the release remains NO-GO.' >&2
+          exit 1

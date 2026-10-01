@@ -71,6 +71,9 @@ test('Life Map uses deterministic sequential travel compositions with a safe sel
   assert.ok(source.includes('setPhase("arrival")'))
   assert.ok(source.includes('PHASE_DURATION_MS[phase]'))
   assert.ok(source.includes('journeyToken.current'))
+  assert.ok(source.includes('localSelectionId.current = node.id'))
+  assert.ok(source.includes('if (localSelectionId.current === node.id)'))
+  assert.ok(source.includes('localSelectionId.current = null'))
   assert.ok(source.includes('goalForNode'))
   assert.match(source, /const SELECTED_MEMORY_STANDOFF = 5\.[0-9]+/)
   assert.ok(source.includes('addScaledVector(direction, SELECTED_MEMORY_STANDOFF)'))
@@ -90,7 +93,7 @@ test('Production artifacts are differentiated by meaning rather than generic bub
   }
   assert.doesNotMatch(world.slice(world.indexOf('function MemoryArtifact'), world.indexOf('function SemanticPath')), /sphereGeometry/)
   assert.match(world, /name={`life-map-artifact-\${resolveArtifactFamily\(node\)}-\${node\.id}`}/)
-  assert.match(world, /scale={active \? 1\.72 : 0\.9 \+ importance \* 0\.38}/)
+  assert.match(world, /scale={active \? 1\.46 : 0\.58 \+ importance \* 0\.22}/)
   assert.match(world, /artifactFamilyLabel\(node\)/)
 })
 

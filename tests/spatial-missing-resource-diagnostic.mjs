@@ -49,6 +49,20 @@ function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+async function waitForExactPageUrl(page, expectedUrl, timeoutMs = 60_000) {
+  const deadline = Date.now() + timeoutMs;
+  let lastUrl = page.url();
+  while (Date.now() < deadline) {
+    if (page.isClosed()) {
+      throw new Error(`Spatial diagnostic page closed before canonical redirect settled: expected ${expectedUrl}, last ${lastUrl}`);
+    }
+    lastUrl = page.url();
+    if (lastUrl === expectedUrl) return;
+    await sleep(100);
+  }
+  throw new Error(`Spatial diagnostic canonical redirect timed out: expected ${expectedUrl}, last ${lastUrl}`);
+}
+
 async function waitForServer() {
   for (let attempt = 0; attempt < 90; attempt += 1) {
     try {
@@ -120,6 +134,7 @@ let context;
 const httpFailures = [];
 const failedRequests = [];
 const blockedExternalRequests = [];
+const routeFailures = [];
 
 try {
   await waitForServer();
@@ -195,16 +210,23 @@ try {
 
       const canonicalTarget = canonicalRedirectTargets.get(route);
       if (canonicalTarget) {
-        await page.waitForURL(`${baseUrl}${canonicalTarget}`, {
-          waitUntil: 'domcontentloaded',
-          timeout: 60_000,
-        });
-        if (page.url() !== `${baseUrl}${canonicalTarget}`) {
+        const expectedUrl = `${baseUrl}${canonicalTarget}`;
+        await waitForExactPageUrl(page, expectedUrl);
+        if (page.url() !== expectedUrl) {
           throw new Error(`Spatial diagnostic canonical redirect failed: ${route} -> ${page.url()}`);
         }
       }
 
       await page.waitForTimeout(1_000);
+    } catch (error) {
+      routeFailures.push({
+        kind: 'route-navigation-error',
+        status: 0,
+        url: `${baseUrl}${route}`,
+        method: 'GET',
+        resourceType: 'document',
+        failure: error instanceof Error ? error.message : String(error),
+      });
     } finally {
       await page.close().catch(() => undefined);
     }
@@ -221,6 +243,7 @@ try {
     ...httpFailures,
     ...blockedExternalRequests,
     ...actionableFailedRequests,
+    ...routeFailures,
   ].map((entry) => [key(entry), entry])).values()];
 
   const report = {
@@ -245,6 +268,7 @@ try {
     },
     actionable,
     ignored,
+    routeFailures,
   };
   writeFileSync(`${artifactDir}/missing-resources.json`, `${JSON.stringify(report, null, 2)}\n`);
 

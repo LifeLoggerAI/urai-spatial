@@ -41,10 +41,28 @@ test('retained evidence filenames are portable across artifact filesystems', () 
   assert.doesNotMatch(source, /route\.replace\(\/\[\/\?=&\]\+\/g/)
 })
 
+test('critical direct and compatibility routes stay in the browser proof surface', () => {
+  for (const route of ['/terms', '/login', '/account-deletion', '/privacy-policy', '/xr', '/settings', '/launch']) {
+    assert.ok(source.includes(`'${route}'`), `missing direct critical route ${route}`)
+  }
+  for (const transition of [
+    "['/waitlist', { pathname: '/status', searchEntries: [['from', 'waitlist']] }]",
+    "['/system', { pathname: '/status', searchEntries: [['from', 'system']] }]",
+    "['/settings/privacy', { pathname: '/privacy-controls', searchEntries: [['from', 'settings-privacy']] }]",
+    "['/onboarding', { pathname: '/', searchEntries: [['onboarding', '1']] }]",
+    "['/signup', { pathname: '/login', searchEntries: [['intent', 'signup']] }]",
+    "['/ascent', { pathname: '/home', searchEntries: [['from', 'ascent']] }]",
+    "['/spatial', { pathname: '/home', searchEntries: [['from', 'spatial']] }]",
+    "['/unwind', { pathname: '/life-map', searchEntries: [['from', 'unwind'], ['overview', '1']] }]",
+  ]) {
+    assert.ok(source.includes(transition), `missing compatibility transition ${transition}`)
+  }
+})
+
 test('browser console, page, and blocked-network evidence fail the retained receipt', () => {
   assert.match(source, /page\.on\('pageerror'/)
   assert.match(source, /message\.type\(\) === 'error'/)
   assert.match(source, /smoke-report\.json/)
-  assert.match(source, /urai-release-control-smoke-5/)
+  assert.match(source, /urai-release-control-smoke-9/)
   assert.match(source, /if \(failures\.length\) throw new Error/)
 })

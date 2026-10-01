@@ -1,0 +1,390 @@
+{
+  "schemaVersion": "urai-memory-world-reference-worlds-1",
+  "purpose": "Diverse QA corpus for scene grammar, provenance, accessibility, cultural-context and representation testing. Each entry is a validation target, not a claim to represent an entire culture.",
+  "worlds": [
+    {
+      "id": "qa-east-texas-kitchen-1997",
+      "archetypeId": "scene:residential:kitchen",
+      "label": "1990s East Texas family kitchen",
+      "region": "US-TX",
+      "era": "1990s",
+      "climate": "humid-subtropical",
+      "context": [
+        "family-home",
+        "holiday-possible"
+      ],
+      "accessibility": [
+        "reduced-motion",
+        "seated-navigation"
+      ]
+    },
+    {
+      "id": "qa-us-suburban-living-1970s",
+      "archetypeId": "scene:residential:living-room",
+      "label": "1970s US suburban living room",
+      "region": "US",
+      "era": "1970s",
+      "climate": "variable",
+      "context": [
+        "family-home"
+      ],
+      "accessibility": [
+        "reduced-motion"
+      ]
+    },
+    {
+      "id": "qa-rural-mexico-courtyard",
+      "archetypeId": "scene:residential:courtyard-house",
+      "label": "Rural Mexican family courtyard",
+      "region": "MX",
+      "era": "contemporary",
+      "climate": "varies-by-region",
+      "context": [
+        "family-home",
+        "rural"
+      ],
+      "accessibility": [
+        "seated-navigation"
+      ]
+    },
+    {
+      "id": "qa-mumbai-diwali-apartment",
+      "archetypeId": "scene:residential:apartment-highrise",
+      "label": "Mumbai apartment during Diwali",
+      "region": "IN-MH",
+      "era": "contemporary",
+      "climate": "tropical-wet-dry",
+      "context": [
+        "urban",
+        "festival-explicit"
+      ],
+      "accessibility": [
+        "reduced-stimulation"
+      ]
+    },
+    {
+      "id": "qa-seoul-classroom",
+      "archetypeId": "scene:education:secondary-classroom",
+      "label": "Seoul classroom",
+      "region": "KR-11",
+      "era": "contemporary",
+      "climate": "humid-continental-subtropical-transition",
+      "context": [
+        "education",
+        "urban"
+      ],
+      "accessibility": [
+        "keyboard",
+        "captions"
+      ]
+    },
+    {
+      "id": "qa-lagos-wedding",
+      "archetypeId": "scene:lifeEvents:wedding",
+      "label": "Lagos wedding environment",
+      "region": "NG-LA",
+      "era": "contemporary",
+      "climate": "tropical",
+      "context": [
+        "wedding-explicit",
+        "urban"
+      ],
+      "accessibility": [
+        "captions",
+        "reduced-stimulation"
+      ]
+    },
+    {
+      "id": "qa-polish-rural-farmhouse",
+      "archetypeId": "scene:residential:farmhouse",
+      "label": "Polish rural farmhouse",
+      "region": "PL",
+      "era": "mid-late-20c",
+      "climate": "temperate",
+      "context": [
+        "rural",
+        "family-home"
+      ],
+      "accessibility": [
+        "seated-navigation"
+      ]
+    },
+    {
+      "id": "qa-tokyo-apartment",
+      "archetypeId": "scene:residential:apartment-highrise",
+      "label": "Tokyo apartment",
+      "region": "JP-13",
+      "era": "contemporary",
+      "climate": "humid-subtropical",
+      "context": [
+        "urban",
+        "residential"
+      ],
+      "accessibility": [
+        "keyboard"
+      ]
+    },
+    {
+      "id": "qa-caribbean-neighborhood-home",
+      "archetypeId": "scene:residential:detached-house",
+      "label": "Caribbean neighborhood home",
+      "region": "Caribbean-unspecified",
+      "era": "contemporary",
+      "climate": "tropical",
+      "context": [
+        "residential"
+      ],
+      "accessibility": [
+        "seated-navigation"
+      ]
+    },
+    {
+      "id": "qa-gulf-multigenerational-home",
+      "archetypeId": "scene:residential:multigenerational-compound",
+      "label": "Gulf-region multigenerational household",
+      "region": "Gulf-unspecified",
+      "era": "contemporary",
+      "climate": "arid",
+      "context": [
+        "family-home",
+        "multigenerational"
+      ],
+      "accessibility": [
+        "keyboard",
+        "captions"
+      ]
+    },
+    {
+      "id": "qa-nordic-winter-cabin",
+      "archetypeId": "scene:residential:cabin",
+      "label": "Nordic winter cabin",
+      "region": "Nordic-unspecified",
+      "era": "contemporary",
+      "climate": "cold-temperate",
+      "context": [
+        "rural",
+        "winter"
+      ],
+      "accessibility": [
+        "reduced-motion"
+      ]
+    },
+    {
+      "id": "qa-north-african-market",
+      "archetypeId": "scene:communityCivicRetail:open-market",
+      "label": "North African market street",
+      "region": "North-Africa-unspecified",
+      "era": "contemporary",
+      "climate": "arid-semiarid",
+      "context": [
+        "market",
+        "urban"
+      ],
+      "accessibility": [
+        "captions",
+        "reduced-stimulation"
+      ]
+    },
+    {
+      "id": "qa-andean-village-home",
+      "archetypeId": "scene:residential:detached-house",
+      "label": "Andean mountain village home",
+      "region": "Andes-unspecified",
+      "era": "contemporary",
+      "climate": "highland",
+      "context": [
+        "rural",
+        "mountain"
+      ],
+      "accessibility": [
+        "seated-navigation"
+      ]
+    },
+    {
+      "id": "qa-seasia-stilt-home",
+      "archetypeId": "scene:residential:stilt-house",
+      "label": "Southeast Asian stilt-house context",
+      "region": "Southeast-Asia-unspecified",
+      "era": "contemporary",
+      "climate": "tropical",
+      "context": [
+        "residential",
+        "rural"
+      ],
+      "accessibility": [
+        "navigation-warning"
+      ]
+    },
+    {
+      "id": "qa-west-african-urban-neighborhood",
+      "archetypeId": "scene:communityCivicRetail:neighborhood-street",
+      "label": "West African urban neighborhood",
+      "region": "West-Africa-unspecified",
+      "era": "contemporary",
+      "climate": "tropical",
+      "context": [
+        "urban",
+        "residential"
+      ],
+      "accessibility": [
+        "captions"
+      ]
+    },
+    {
+      "id": "qa-australian-suburban-home",
+      "archetypeId": "scene:residential:detached-house",
+      "label": "Australian suburban home",
+      "region": "AU",
+      "era": "contemporary",
+      "climate": "varies-by-region",
+      "context": [
+        "suburban"
+      ],
+      "accessibility": [
+        "keyboard"
+      ]
+    },
+    {
+      "id": "qa-canadian-winter-neighborhood",
+      "archetypeId": "scene:communityCivicRetail:neighborhood-street",
+      "label": "Canadian winter neighborhood",
+      "region": "CA",
+      "era": "contemporary",
+      "climate": "cold",
+      "context": [
+        "residential",
+        "winter"
+      ],
+      "accessibility": [
+        "reduced-motion"
+      ]
+    },
+    {
+      "id": "qa-mediterranean-village-square",
+      "archetypeId": "scene:communityCivicRetail:town-square",
+      "label": "Mediterranean village square",
+      "region": "Mediterranean-unspecified",
+      "era": "contemporary",
+      "climate": "mediterranean",
+      "context": [
+        "village",
+        "public-space"
+      ],
+      "accessibility": [
+        "seated-navigation"
+      ]
+    },
+    {
+      "id": "qa-south-asian-rail-journey",
+      "archetypeId": "scene:transportation:long-distance-train",
+      "label": "South Asian railway journey",
+      "region": "South-Asia-unspecified",
+      "era": "contemporary",
+      "climate": "varies-by-route",
+      "context": [
+        "travel",
+        "transit"
+      ],
+      "accessibility": [
+        "captions",
+        "seated-navigation"
+      ]
+    },
+    {
+      "id": "qa-east-african-farm",
+      "archetypeId": "scene:agricultureRural:crop-field",
+      "label": "Rural East African farming context",
+      "region": "East-Africa-unspecified",
+      "era": "contemporary",
+      "climate": "varies-by-region",
+      "context": [
+        "rural",
+        "agriculture"
+      ],
+      "accessibility": [
+        "reduced-motion"
+      ]
+    },
+    {
+      "id": "qa-nyc-apartment",
+      "archetypeId": "scene:residential:apartment-highrise",
+      "label": "New York apartment",
+      "region": "US-NY",
+      "era": "contemporary",
+      "climate": "humid-subtropical-continental-transition",
+      "context": [
+        "urban",
+        "residential"
+      ],
+      "accessibility": [
+        "keyboard"
+      ]
+    },
+    {
+      "id": "qa-military-barracks",
+      "archetypeId": "scene:militaryPublicSafety:barracks",
+      "label": "Military barracks",
+      "region": "unspecified",
+      "era": "contemporary",
+      "climate": "unspecified",
+      "context": [
+        "military",
+        "non-combat"
+      ],
+      "accessibility": [
+        "captions",
+        "reduced-stimulation"
+      ]
+    },
+    {
+      "id": "qa-nursing-home-room",
+      "archetypeId": "scene:residential:retirement-residence",
+      "label": "Nursing-home room",
+      "region": "unspecified",
+      "era": "contemporary",
+      "climate": "unspecified",
+      "context": [
+        "aging",
+        "care"
+      ],
+      "accessibility": [
+        "seated-navigation",
+        "captions"
+      ]
+    },
+    {
+      "id": "qa-hospital-memory",
+      "archetypeId": "scene:healthcare:hospital-room",
+      "label": "Hospital memory",
+      "region": "unspecified",
+      "era": "contemporary",
+      "climate": "indoor",
+      "context": [
+        "healthcare",
+        "sensitive"
+      ],
+      "accessibility": [
+        "explicit-entry",
+        "safe-exit",
+        "reduced-stimulation"
+      ]
+    },
+    {
+      "id": "qa-remembrance-cemetery",
+      "archetypeId": "scene:agingGrief:cemetery-visit",
+      "label": "Cemetery/remembrance environment",
+      "region": "unspecified",
+      "era": "contemporary",
+      "climate": "varies",
+      "context": [
+        "grief",
+        "memorial"
+      ],
+      "accessibility": [
+        "explicit-entry",
+        "safe-exit",
+        "captions"
+      ]
+    }
+  ]
+}
