@@ -332,11 +332,17 @@ async function captureOrbLifecycle({ reducedMotion = 'no-preference' } = {}) {
     }
 
     const consent = page.getByLabel('Allow this message and bounded recent context to be processed by OpenAI.').first()
-    await consent.check()
+    stage = 'grant-consent-keyboard'
+    await consent.focus()
+    await page.keyboard.press('Space')
+    if (!await consent.isChecked()) throw new Error('Native keyboard consent grant did not check the checkbox')
+    record.consentInput = 'native-keyboard'
+    record.consentGranted = true
     await message.fill('Give me a short grounded reflection.')
     await message.focus()
     stage = 'send-response'
-    await page.getByRole('button', { name: 'Send' }).click()
+    await page.getByRole('button', { name: 'Send' }).focus()
+    await page.keyboard.press('Enter')
     await page.locator('section[aria-label="Orb response"]').waitFor({ state: 'visible', timeout: 20_000 })
     const speakingSnapshotHandle = await page.waitForFunction(() => {
       const mutationHistory = window.__uraiObservedOrbLifecycle || []
@@ -363,7 +369,10 @@ async function captureOrbLifecycle({ reducedMotion = 'no-preference' } = {}) {
     record.lifecyclePassed = ['attention', 'listening', 'thinking', 'speaking'].every((state) => record.observedStates.includes(state))
 
     stage = 'revoke-consent'
-    await consent.uncheck()
+    await consent.focus()
+    await page.keyboard.press('Space')
+    if (await consent.isChecked()) throw new Error('Native keyboard consent revocation left the checkbox checked')
+    record.consentRevoked = true
     await page.waitForFunction((selector) => document.querySelector(selector)?.getAttribute('data-home-orb-state') === 'privacy', ownerSelector)
     record.privacyState = await owner.getAttribute('data-home-orb-state')
     record.privacyClip = await owner.getAttribute('data-home-orb-clip')
