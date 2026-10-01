@@ -2,13 +2,15 @@ name: Home State Proof
 
 on:
   pull_request:
-    branches: [main]
+    branches: [main, 'converge/**', 'integration/**']
     paths:
       - 'scripts/capture-home-state-proof.mjs'
       - 'urai-tier1/tests/continuous-spatial-restoration-contract.test.mjs'
       - '.github/workflows/home-state-proof.yml'
       - 'urai-tier1/src/app/AssetDrivenHomeWorld.tsx'
       - 'urai-tier1/src/app/home/**'
+      - 'urai-tier1/src/spatial/layout/HomeWorldProductionPolished.tsx'
+      - 'urai-tier1/src/spatial/home/**'
   workflow_dispatch:
 
 permissions:
