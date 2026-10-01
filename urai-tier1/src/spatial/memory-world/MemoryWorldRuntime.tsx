@@ -128,7 +128,7 @@ export default function MemoryWorldRuntime({ world, onExit }: MemoryWorldRuntime
         const lost = (event: Event) => { event.preventDefault(); setRendererState('lost') }
         canvas.addEventListener('webglcontextlost', lost)
         cleanupRenderer.current = () => canvas.removeEventListener('webglcontextlost', lost)
-      }} shadows={quality.shadows} dpr={[1,quality.pixelRatioMax]} frameloop={quality.documentVisible?'always':'never'} camera={{position:[0,1.35,7.8],fov:52,near:.05,far:120}}>
+      }} style={{position:'absolute',inset:0,width:'100%',height:'100%',minWidth:300,minHeight:300}} shadows={quality.shadows} dpr={[1,quality.pixelRatioMax]} frameloop={quality.documentVisible?'always':'never'} camera={{position:[0,1.35,7.8],fov:52,near:.05,far:120}}>
         <color attach="background" args={['#071018']} />
         <fog attach="fog" args={['#071018',8,34]} />
         <ambientLight intensity={.42} />
