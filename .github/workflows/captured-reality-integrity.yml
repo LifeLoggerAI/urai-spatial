@@ -5,10 +5,16 @@ on:
     paths:
       - '.github/workflows/captured-reality-integrity.yml'
       - 'scripts/*captured-reality*.mjs'
+      - 'scripts/*interpretive-world*.mjs'
       - 'apps/functions/src/capturedReality.ts'
+      - 'apps/functions/src/interpretiveWorld.ts'
       - 'urai-tier1/src/spatial/captured-reality/**'
       - 'urai-tier1/src/app/spatial/captured-reality/**'
+      - 'urai-tier1/src/spatial/interpretive-world/**'
+      - 'urai-tier1/src/app/spatial/interpretive-world/**'
+      - 'urai-tier1/src/app/replay/CinematicReplayClient.tsx'
       - 'urai-tier1/tests/captured-reality-*.test.mjs'
+      - 'urai-tier1/tests/interpretive-world-*.test.mjs'
       - 'operations/captured-reality/**'
   workflow_dispatch:
 
@@ -42,17 +48,19 @@ jobs:
           cache: pnpm
           cache-dependency-path: pnpm-lock.yaml
       - run: pnpm install --frozen-lockfile
-      - name: Verify private delivery, binary integrity and source preservation
+      - name: Verify private delivery, generated-world integrity and source preservation
         working-directory: urai-tier1
         shell: bash
         run: |
           set -euo pipefail
-          mapfile -t captured_reality_tests < <(find tests -maxdepth 1 -type f -name 'captured-reality-*.test.mjs' -print | sort)
-          if [ "${#captured_reality_tests[@]}" -eq 0 ]; then
-            echo "::error::No Captured Reality tests were found."
+          mapfile -t spatial_reconstruction_tests < <(find tests -maxdepth 1 -type f \( -name 'captured-reality-*.test.mjs' -o -name 'interpretive-world-*.test.mjs' \) -print | sort)
+          if [ "${#spatial_reconstruction_tests[@]}" -eq 0 ]; then
+            echo "::error::No spatial reconstruction integrity tests were found."
             exit 66
           fi
-          printf 'Captured Reality tests: %s\n' "${#captured_reality_tests[@]}"
-          node --import tsx --test "${captured_reality_tests[@]}"
+          printf 'Spatial reconstruction integrity tests: %s\n' "${#spatial_reconstruction_tests[@]}"
+          node --import tsx --test "${spatial_reconstruction_tests[@]}"
+          node ../scripts/validate-interpretive-world-visual-acceptance.mjs ../operations/captured-reality/worlds/URAI-IW-001-QUIET-RESET/visual-acceptance.current.json
+          node ../scripts/validate-interpretive-world-receipt.mjs ../operations/captured-reality/worlds/URAI-IW-001-QUIET-RESET/reconstruction-receipt.pending.json
       - name: Typecheck runtime
         run: pnpm --dir urai-tier1 typecheck
