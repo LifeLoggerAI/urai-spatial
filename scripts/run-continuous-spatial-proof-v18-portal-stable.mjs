@@ -148,8 +148,8 @@ const repairedPortal = `async function capturePortalSequence(browser) {
           const cameraMode = owner.getAttribute('data-home-camera-mode')
           const scenePhase = owner.getAttribute('data-home-scene-phase')
           const traversing = destination === 'ground'
-            ? cameraMode === 'ground' && scenePhase === 'GROUND'
-            : cameraMode === 'life-map' && scenePhase === 'LIFE-MAP'
+            ? (cameraMode === 'ground' || cameraMode === 'descent') && (scenePhase === 'GROUND' || scenePhase === 'GROUND_DESCENT')
+            : (cameraMode === 'life-map' || cameraMode === 'ascent') && (scenePhase === 'LIFE-MAP' || scenePhase === 'ASCENT')
           if (!traversing) return
           const current = JSON.parse(sessionStorage.getItem(key) || '{"phases":[]}')
           const opening = destination + ':opening'
