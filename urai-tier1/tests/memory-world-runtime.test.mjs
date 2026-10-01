@@ -31,6 +31,8 @@ test('bounded template world never promotes contextual geometry to autobiography
 test('unrecognized place context resolves to neutral threshold rather than fabricated culture or location', () => {
   const memory = buildNamedExplicitDemoMemory('demo:unknown-context')
   assert.equal(selectBoundedTemplateArchetype({...memory, title:'Unspecified memory', place:{label:'Somewhere'}}), 'scene:everydayTransitional:hallway-transition')
+  assert.equal(selectBoundedTemplateArchetype({...memory, title:"Oscar's birthday", place:{label:'Parker family home'}}), 'scene:everydayTransitional:hallway-transition')
+  assert.equal(selectBoundedTemplateArchetype({...memory, title:'Business conference', place:{label:'Convention hall'}}), 'scene:everydayTransitional:hallway-transition')
 })
 
 test('runtime plan supplies canonical system layers and bounded navigation', () => {
@@ -41,6 +43,14 @@ test('runtime plan supplies canonical system layers and bounded navigation', () 
   for (const kind of ['world-coordinates','lighting','accessibility','semantic-metadata','provenance','truth','interaction-navigation','runtime-optimization']) {
     assert.ok(plan.layers.some((layer) => layer.kind === kind), kind)
   }
+})
+
+test('captured-reality worlds require and accept the matching validation registry', () => {
+  const base = buildBoundedTemplateMemoryWorld(buildNamedExplicitDemoMemory('demo:captured-runtime'))
+  const world = { ...base, capturedRealityAssetIds: ['capture-1'] }
+  const capture = { id:'capture-1', ownerId:world.ownerId }
+  assert.equal(buildMemoryWorldRuntimePlan(world).valid, false)
+  assert.equal(buildMemoryWorldRuntimePlan(world, { capturedReality: { 'capture-1': capture } }).valid, true)
 })
 
 test('captured reality adapter preserves reconstruction truth and does not turn a splat into source capture', () => {
@@ -76,6 +86,7 @@ test('Replay Memory World href preserves selected identity and disclosed demo st
 test('runtime source mounts actual Canvas and Replay uses captured-place-first Memory World fallback', () => {
   const runtime=fs.readFileSync(new URL('../src/spatial/memory-world/MemoryWorldRuntime.tsx',import.meta.url),'utf8')
   const replay=fs.readFileSync(new URL('../src/app/replay/CinematicReplayClient.tsx',import.meta.url),'utf8')
+  const capturedLookup=fs.readFileSync(new URL('../src/spatial/captured-reality/useCapturedRealityReplayEntry.ts',import.meta.url),'utf8')
   assert.match(runtime, /<Canvas/)
   assert.match(runtime, /Context template/)
   assert.match(runtime, /Truth & provenance/)
@@ -85,5 +96,7 @@ test('runtime source mounts actual Canvas and Replay uses captured-place-first M
   assert.match(runtime, /style=\{\{display:'block',width:'100%',height:'100%',minWidth:300,minHeight:300\}\}/)
   assert.match(replay, /memoryWorldReplayHref/)
   assert.match(replay, /capturedRealityEntry\?\.href \?\? memoryWorldHref/)
+  assert.match(replay, /capturedRealityLookup\.status === 'loading'/)
+  assert.match(capturedLookup, /status: 'loading'/)
   assert.match(replay, /Enter Memory World/)
 })
