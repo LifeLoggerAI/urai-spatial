@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from 'react'
 import type { SpatialAudioCue } from './audioTypes'
+import { sensorySafeEnabled, URAI_SENSORY_SAFE_EVENT } from '@/spatial/accessibility/SensorySafeRuntime'
 
 const SESSION_KEY = 'urai:spatial-audio-consent-v1'
 const MUTE_KEY = 'urai:spatial-audio-muted-v1'
@@ -68,11 +69,13 @@ export default function SpatialPositionedAudioRuntime() {
   const stateRef = useRef<AudioState | null>(null)
   const enabledRef = useRef(false)
   const mutedRef = useRef(true)
+  const sensorySafeRef = useRef(false)
 
   useEffect(() => {
     try {
       enabledRef.current = sessionStorage.getItem(SESSION_KEY) === 'true'
       mutedRef.current = sessionStorage.getItem(MUTE_KEY) !== 'false'
+      sensorySafeRef.current = sensorySafeEnabled()
     } catch {
       enabledRef.current = false
       mutedRef.current = true
@@ -94,19 +97,22 @@ export default function SpatialPositionedAudioRuntime() {
       if (enabledRef.current) void ensure().context.resume().catch(() => undefined)
     }
     const onMute = (event: Event) => { mutedRef.current = Boolean((event as CustomEvent<{ muted?: boolean }>).detail?.muted) }
+    const onSensory = (event: Event) => { sensorySafeRef.current = (event as CustomEvent<{ enabled?: boolean }>).detail?.enabled === true }
     const onCue = (event: Event) => {
       const cue = (event as CustomEvent<{ cue?: SpatialAudioCue }>).detail?.cue
-      if (!cue || !enabledRef.current || mutedRef.current) return
+      if (!cue || !enabledRef.current || mutedRef.current || sensorySafeRef.current) return
       void playPositioned(ensure(), cue).catch(() => undefined)
     }
 
     window.addEventListener('urai:audio-consent', onConsent)
     window.addEventListener('urai:audio-mute', onMute)
     window.addEventListener('urai:audio-cue', onCue)
+    window.addEventListener(URAI_SENSORY_SAFE_EVENT, onSensory)
     return () => {
       window.removeEventListener('urai:audio-consent', onConsent)
       window.removeEventListener('urai:audio-mute', onMute)
       window.removeEventListener('urai:audio-cue', onCue)
+      window.removeEventListener(URAI_SENSORY_SAFE_EVENT, onSensory)
       const state = stateRef.current
       stateRef.current = null
       if (state) void state.context.close().catch(() => undefined)

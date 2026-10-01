@@ -77,3 +77,26 @@ test('launch contract documentation keeps go-no-go checks visible', () => {
   }
   assert.match(contractDoc, /Ship URAI Spatial only if the fallback shell is stable/)
 })
+
+
+test('sensitive provider rollout gates fail closed on consent, enforcement, retention and audit requirements', () => {
+  for (const token of [
+    'spatialSensitiveProviderConsentGates',
+    '"live-ar-webxr-session"',
+    '"live-camera-biometric-provider"',
+    '"live-wearable-provider"',
+    '"live-memory-grounded-orb"',
+    'explicitSessionConsentRequired: true',
+    'policyEnforcementRequired: "fully-enforced"',
+    'auditCollection: "privacyAudit"',
+    'providerWritesAllowed: false',
+    'canActivateSensitiveSpatialProvider',
+  ]) {
+    assert.ok(launchBoundary.includes(token), `launch boundary missing sensitive-provider gate token: ${token}`)
+  }
+  assert.match(launchBoundary, /retention: "ephemeral-session-only"/)
+  assert.match(launchBoundary, /retention: "no-raw-provider-copy-without-separate-grant"/)
+  assert.match(launchBoundary, /if \(!consent\.explicitSessionConsent\) return false/)
+  assert.match(launchBoundary, /consent\.enforcementState !== gate\.policyEnforcementRequired/)
+  assert.match(launchBoundary, /gate\.consentDomains\.every/)
+})

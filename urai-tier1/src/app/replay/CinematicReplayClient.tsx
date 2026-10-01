@@ -1,32 +1,21 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
-import { useGLTF } from '@react-three/drei'
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
 import { Canvas, useFrame } from '@react-three/fiber'
+import { useTexture } from '@react-three/drei'
 import * as THREE from 'three'
 import { assetCssStack, replayAssets } from '@/spatial/assets/uraiAssets'
 import { useReducedMotion } from '@/spatial/hooks/useReducedMotion'
 import { useSelectedMemory } from '@/spatial/memory/useSelectedMemory'
+import { useCapturedRealityReplayLookup } from '@/spatial/captured-reality/useCapturedRealityReplayEntry'
+import { useInterpretiveWorldReplayEntry } from '@/spatial/interpretive-world/useInterpretiveWorldReplayEntry'
+import { memoryWorldReplayHref } from '@/spatial/memory-world/memoryWorldReplay'
 import type { SelectedMemory, SelectedMemoryMedia } from '@/spatial/memory/selectedMemoryContract'
 import { useAdaptiveSpatialQuality } from '@/spatial/performance/useAdaptiveSpatialQuality'
 import { requestUraiWorldReturn, requestUraiWorldTravel } from '@/spatial/world/worldEvents'
 import { ReplayProductControls } from './ReplayProductControls'
 
-const REPLAY_ENVIRONMENT_MODEL = '/assets/urai/generated/models/replay-memory-environment-v1.glb'
-const REPLAY_SCREEN_POSITION: [number, number, number] = [0, 0.58, -6.0]
-
 function clamp(value: number, max: number) { return Math.max(0, Math.min(max, value)) }
-
-function prepareReplayModel(source: THREE.Object3D) {
-  const clone = source.clone(true)
-  clone.traverse((object) => {
-    if (!(object instanceof THREE.Mesh)) return
-    object.castShadow = true
-    object.receiveShadow = true
-    object.frustumCulled = true
-  })
-  return clone
-}
 
 function ReplayCameraRig({ progress, reducedMotion }: { progress: number; reducedMotion: boolean }) {
   const target = useRef(new THREE.Vector3(0, 0.32, -5.9))
@@ -43,59 +32,52 @@ function ReplayCameraRig({ progress, reducedMotion }: { progress: number; reduce
   return null
 }
 
-function MemoryMediaSurface({ media, playing }: { media: SelectedMemoryMedia | undefined; playing: boolean }) {
+function MemoryImageDome({ url }: { url: string }) {
+  const texture = useTexture(url)
+  texture.colorSpace = THREE.SRGBColorSpace
+  texture.minFilter = THREE.LinearFilter
+  texture.magFilter = THREE.LinearFilter
+
+  return (
+    <group name="replay-immersive-memory-field" userData={{ presentation: 'inside-memory-environment-not-screen', mediaReady: true, mediaKind: 'image' }}>
+      <mesh>
+        <sphereGeometry args={[24, 96, 64]} />
+        <meshBasicMaterial map={texture} toneMapped={false} side={THREE.BackSide} />
+      </mesh>
+      <mesh scale={0.985}>
+        <sphereGeometry args={[24, 72, 48]} />
+        <meshBasicMaterial color="#ffd9a8" transparent opacity={0.028} side={THREE.BackSide} depthWrite={false} blending={THREE.AdditiveBlending} />
+      </mesh>
+    </group>
+  )
+}
+
+function MemoryVideoDome({ media, playing }: { media: SelectedMemoryMedia; playing: boolean }) {
   const [texture, setTexture] = useState<THREE.Texture | null>(null)
   const videoRef = useRef<HTMLVideoElement | null>(null)
 
   useEffect(() => {
-    let disposed = false
-    let localTexture: THREE.Texture | null = null
-    let localVideo: HTMLVideoElement | null = null
-
-    setTexture(null)
-    if (!media) return
-
-    if (media.kind === 'image') {
-      const loader = new THREE.TextureLoader()
-      loader.setCrossOrigin('anonymous')
-      loader.load(media.url, (loaded) => {
-        if (disposed) {
-          loaded.dispose()
-          return
-        }
-        loaded.colorSpace = THREE.SRGBColorSpace
-        loaded.minFilter = THREE.LinearFilter
-        localTexture = loaded
-        setTexture(loaded)
-      })
-    }
-
-    if (media.kind === 'video') {
-      const video = document.createElement('video')
-      video.src = media.url
-      video.crossOrigin = 'anonymous'
-      video.playsInline = true
-      video.muted = true
-      video.loop = false
-      video.preload = 'metadata'
-      localVideo = video
-      videoRef.current = video
-      const videoTexture = new THREE.VideoTexture(video)
-      videoTexture.colorSpace = THREE.SRGBColorSpace
-      videoTexture.minFilter = THREE.LinearFilter
-      videoTexture.magFilter = THREE.LinearFilter
-      localTexture = videoTexture
-      setTexture(videoTexture)
-    }
+    const video = document.createElement('video')
+    video.src = media.url
+    video.crossOrigin = 'anonymous'
+    video.playsInline = true
+    video.muted = true
+    video.loop = false
+    video.preload = 'metadata'
+    videoRef.current = video
+    const videoTexture = new THREE.VideoTexture(video)
+    videoTexture.colorSpace = THREE.SRGBColorSpace
+    videoTexture.minFilter = THREE.LinearFilter
+    videoTexture.magFilter = THREE.LinearFilter
+    setTexture(videoTexture)
 
     return () => {
-      disposed = true
-      localVideo?.pause()
-      if (localVideo) localVideo.removeAttribute('src')
-      if (videoRef.current === localVideo) videoRef.current = null
-      localTexture?.dispose()
+      video.pause()
+      video.removeAttribute('src')
+      if (videoRef.current === video) videoRef.current = null
+      videoTexture.dispose()
     }
-  }, [media])
+  }, [media.url])
 
   useEffect(() => {
     const video = videoRef.current
@@ -105,16 +87,69 @@ function MemoryMediaSurface({ media, playing }: { media: SelectedMemoryMedia | u
   }, [playing])
 
   return (
-    <group name="replay-memory-media-surface">
-      <mesh position={REPLAY_SCREEN_POSITION}>
-        <planeGeometry args={[7.25, 4.08]} />
+    <group name="replay-immersive-memory-field" userData={{ presentation: 'inside-memory-environment-not-screen', mediaReady: Boolean(texture), mediaKind: 'video' }}>
+      <mesh>
+        <sphereGeometry args={[24, 96, 64]} />
         {texture
-          ? <meshBasicMaterial map={texture} toneMapped={false} side={THREE.DoubleSide} />
-          : <meshPhysicalMaterial color="#06131c" emissive="#1f8094" emissiveIntensity={0.18} roughness={0.34} metalness={0.16} />}
+          ? <meshBasicMaterial map={texture} toneMapped={false} side={THREE.BackSide} />
+          : <meshBasicMaterial color="#06131c" side={THREE.BackSide} />}
       </mesh>
-      <mesh position={[0, 0.58, -5.96]}>
-        <planeGeometry args={[7.5, 4.32]} />
-        <meshBasicMaterial color="#bff8ff" transparent opacity={0.035} depthWrite={false} />
+      <mesh scale={0.985}>
+        <sphereGeometry args={[24, 72, 48]} />
+        <meshBasicMaterial color="#75d9e9" transparent opacity={0.035} side={THREE.BackSide} depthWrite={false} blending={THREE.AdditiveBlending} />
+      </mesh>
+    </group>
+  )
+}
+
+function MemoryMediaDome({ media, playing }: { media: SelectedMemoryMedia | undefined; playing: boolean }) {
+  if (media?.kind === 'image') return <MemoryImageDome url={media.url} />
+  if (media?.kind === 'video') return <MemoryVideoDome media={media} playing={playing} />
+  return (
+    <group name="replay-immersive-memory-field" userData={{ presentation: 'inside-memory-environment-not-screen', mediaReady: false }}>
+      <mesh>
+        <sphereGeometry args={[24, 96, 64]} />
+        <meshBasicMaterial color="#06131c" side={THREE.BackSide} />
+      </mesh>
+    </group>
+  )
+}
+
+function ReplayMemoryAtmosphere({ memory, reducedMotion }: { memory: SelectedMemory; reducedMotion: boolean }) {
+  const root = useRef<THREE.Group>(null)
+  const points = useMemo(() => {
+    const positions = new Float32Array(180 * 3)
+    for (let index = 0; index < 180; index += 1) {
+      const angle = index * 2.399963229728653
+      const radius = 4.5 + ((index * 37) % 100) / 100 * 10
+      positions[index * 3] = Math.cos(angle) * radius
+      positions[index * 3 + 1] = Math.sin(index * 0.71) * 4.2
+      positions[index * 3 + 2] = -4 + Math.sin(angle) * radius * 0.72
+    }
+    return positions
+  }, [])
+
+  useFrame(({ clock }) => {
+    if (!root.current || reducedMotion) return
+    root.current.rotation.y = clock.elapsedTime * 0.012
+    root.current.rotation.z = Math.sin(clock.elapsedTime * 0.08) * 0.025
+  })
+
+  return (
+    <group ref={root} name="replay-living-memory-atmosphere">
+      <points>
+        <bufferGeometry>
+          <bufferAttribute attach="attributes-position" args={[points, 3]} />
+        </bufferGeometry>
+        <pointsMaterial color={memory.visuals.light} size={0.055} transparent opacity={0.48} depthWrite={false} blending={THREE.AdditiveBlending} />
+      </points>
+      <mesh position={[-4.2, 1.8, -8.5]} scale={[2.8, 1.4, 2.8]}>
+        <sphereGeometry args={[1, 48, 32]} />
+        <meshBasicMaterial color={memory.visuals.accent} transparent opacity={0.055} depthWrite={false} blending={THREE.AdditiveBlending} />
+      </mesh>
+      <mesh position={[4.8, -1.2, -11]} scale={[3.4, 1.8, 3.4]}>
+        <sphereGeometry args={[1, 48, 32]} />
+        <meshBasicMaterial color={memory.visuals.light} transparent opacity={0.04} depthWrite={false} blending={THREE.AdditiveBlending} />
       </mesh>
     </group>
   )
@@ -146,11 +181,12 @@ function ReplayTimelineField({ memory, progress }: { memory: SelectedMemory; pro
 }
 
 function ReplaySpatialScene({ memory, playing, progressMs }: { memory: SelectedMemory; playing: boolean; progressMs: number }) {
-  const gltf = useGLTF(REPLAY_ENVIRONMENT_MODEL)
-  const model = useMemo(() => prepareReplayModel(gltf.scene), [gltf.scene])
   const reducedMotion = useReducedMotion()
   const progress = memory.replayManifest.durationMs > 0 ? progressMs / memory.replayManifest.durationMs : 0
-  const media = memory.sourceMedia.find((item) => item.kind === 'video' || item.kind === 'image')
+  const sourceMedia = memory.sourceMedia.find((item) => item.kind === 'video' || item.kind === 'image')
+  const media: SelectedMemoryMedia | undefined = sourceMedia ?? (memory.demo
+    ? { kind: 'image', url: replayAssets.primary.src, caption: 'Disclosed demonstration memory environment' }
+    : undefined)
 
   return (
     <>
@@ -161,8 +197,8 @@ function ReplaySpatialScene({ memory, playing, progressMs }: { memory: SelectedM
       <directionalLight position={[-4, 7, 6]} intensity={1.3} color={memory.visuals.light} castShadow />
       <directionalLight position={[4, 2, -3]} intensity={0.42} color={memory.visuals.accent} />
       <pointLight position={[0, 1.4, -4.6]} intensity={3.4} distance={14} color={memory.visuals.accent} />
-      <primitive object={model} name="replay-memory-environment-v1" />
-      <MemoryMediaSurface media={media} playing={playing} />
+      <MemoryMediaDome media={media} playing={playing} />
+      <ReplayMemoryAtmosphere memory={memory} reducedMotion={reducedMotion} />
       <ReplayTimelineField memory={memory} progress={progress} />
       <ReplayCameraRig progress={progress} reducedMotion={reducedMotion} />
     </>
@@ -170,8 +206,6 @@ function ReplaySpatialScene({ memory, playing, progressMs }: { memory: SelectedM
 }
 
 function ReplayNeutralSpatialScene() {
-  const gltf = useGLTF(REPLAY_ENVIRONMENT_MODEL)
-  const model = useMemo(() => prepareReplayModel(gltf.scene), [gltf.scene])
   return (
     <>
       <color attach="background" args={['#02060d']} />
@@ -179,7 +213,14 @@ function ReplayNeutralSpatialScene() {
       <ambientLight intensity={0.24} />
       <hemisphereLight intensity={0.44} color="#bff8ff" groundColor="#07121d" />
       <pointLight position={[0, 1.4, -5]} intensity={2.8} distance={14} color="#70dcec" />
-      <primitive object={model} name="replay-memory-horizon-environment" />
+      <mesh name="replay-neutral-memory-field">
+        <sphereGeometry args={[24, 72, 48]} />
+        <meshBasicMaterial color="#07121d" side={THREE.BackSide} />
+      </mesh>
+      <mesh scale={0.985}>
+        <sphereGeometry args={[24, 48, 32]} />
+        <meshBasicMaterial color="#70dcec" transparent opacity={0.025} side={THREE.BackSide} depthWrite={false} blending={THREE.AdditiveBlending} />
+      </mesh>
       <ReplayCameraRig progress={0} reducedMotion />
     </>
   )
@@ -188,6 +229,11 @@ function ReplayNeutralSpatialScene() {
 export default function CinematicReplayClient() {
   const result = useSelectedMemory()
   const memory = result.memory
+  const capturedRealityLookup = useCapturedRealityReplayLookup(memory?.id ?? null)
+  const capturedRealityEntry = capturedRealityLookup.entry
+  const interpretiveWorldEntry = useInterpretiveWorldReplayEntry(memory?.id ?? null)
+  const generatedWorldEntry = capturedRealityEntry ? null : interpretiveWorldEntry
+  const memoryWorldHref = useMemo(() => memory ? memoryWorldReplayHref(memory) : null, [memory])
   const reducedMotion = useReducedMotion()
   const quality = useAdaptiveSpatialQuality()
   const [playing, setPlaying] = useState(false)
@@ -220,7 +266,7 @@ export default function CinematicReplayClient() {
   }, [memory, unwind])
 
   if (!memory) return (
-    <main className="replayState" data-testid="cinematic-replay-client" data-memory-status={result.status} data-canonical-asset={replayAssets.primary.src} data-replay-neutral="memory-horizon" data-replay-spatial-owner="r3f-memory-theater">
+    <main className="replayState" data-testid="cinematic-replay-client" data-memory-status={result.status} data-canonical-asset={replayAssets.primary.src} data-replay-neutral="memory-horizon" data-replay-spatial-owner="r3f-immersive-memory-field">
       <Canvas className="replaySpatialCanvas" dpr={[1, quality.pixelRatioMax]} frameloop={quality.documentVisible ? 'always' : 'never'} camera={{ position: [0, 0.42, 8.4], fov: 46, near: 0.05, far: 120 }} gl={{ antialias: quality.antialias, powerPreference: 'high-performance' }}>
         <ReplayNeutralSpatialScene />
       </Canvas>
@@ -239,17 +285,20 @@ export default function CinematicReplayClient() {
     '--replay-progress': `${percent}%`,
   } as CSSProperties
 
-  return <main className="replayWorld" style={style} data-testid="cinematic-replay-client" data-memory-status={result.status} data-memory-id={memory.id} data-star-id={memory.star.id} data-manifest-id={memory.replayManifest.id} data-node={memory.star.id} data-playing={playing ? 'true' : 'false'} data-canonical-asset={replayAssets.primary.src} data-replay-spatial-owner="r3f-memory-theater" data-replay-environment={REPLAY_ENVIRONMENT_MODEL}>
+  return <main className="replayWorld" style={style} data-testid="cinematic-replay-client" data-memory-status={result.status} data-memory-id={memory.id} data-star-id={memory.star.id} data-manifest-id={memory.replayManifest.id} data-node={memory.star.id} data-playing={playing ? 'true' : 'false'} data-canonical-asset={replayAssets.primary.src} data-replay-spatial-owner="r3f-immersive-memory-field" data-replay-composition="inside-memory-environment-ui-subordinate" data-replay-environment-fallback="approved-memory-asset">
     <Canvas className="replaySpatialCanvas" shadows={quality.shadows} dpr={[1, quality.pixelRatioMax]} frameloop={quality.documentVisible ? 'always' : 'never'} camera={{ position: [0, 0.42, 8.4], fov: 46, near: 0.05, far: 120 }} gl={{ antialias: quality.antialias, powerPreference: 'high-performance' }} onCreated={({ gl }) => { gl.outputColorSpace = THREE.SRGBColorSpace; gl.toneMapping = THREE.ACESFilmicToneMapping; gl.toneMappingExposure = 1.05 }}>
-      <ReplaySpatialScene memory={memory} playing={playing} progressMs={progressMs} />
+      <Suspense fallback={null}><ReplaySpatialScene memory={memory} playing={playing} progressMs={progressMs} /></Suspense>
     </Canvas>
     <div className="replayAtmosphere" aria-hidden="true" />
-    <header><p>{memory.demo ? 'DEMO FIXTURE · NOT PERSONAL DATA' : `${memory.privacy} replay`}</p><h1>{memory.title}</h1><span>{active?.label ?? 'Replay'}</span><button className="unwind" type="button" onClick={unwind}>← Focus</button></header>
+    <header><p>{memory.demo ? 'DEMO FIXTURE · NOT PERSONAL DATA' : `${memory.privacy} replay`}</p><h1>{memory.title}</h1><span>{active?.label ?? 'Replay'}</span><button className="unwind" type="button" onClick={unwind}>← Focus</button>{memoryWorldHref ? capturedRealityLookup.status === 'loading' ? <span className="replayImmersiveEntry" role="status" aria-live="polite">Checking captured place…</span> : <a className="replayImmersiveEntry" href={capturedRealityEntry?.href ?? generatedWorldEntry?.href ?? memoryWorldHref} aria-label={(capturedRealityEntry ? 'Enter captured place for ' : generatedWorldEntry ? 'Enter interpretive world for ' : 'Enter Memory World for ') + memory.title} title={capturedRealityEntry?.truthLabel ?? generatedWorldEntry?.truthLabel ?? 'Context template · not recorded history'}>{capturedRealityEntry ? 'Enter captured place' : generatedWorldEntry ? 'Enter interpretive world' : 'Enter Memory World'}</a> : null}</header>
     <section className="caption" aria-live="polite"><small>{active?.label ?? 'Replay'}</small><strong>{active?.caption ?? memory.narrator.replay}</strong><span>{active?.narratorLine ?? memory.narrator.replay}</span></section>
-    <section className="controls" aria-label="Replay controls">
-      <button type="button" onClick={() => { if (progressMs >= duration) setProgressMs(0); setPlaying((value) => !value) }} aria-label={playing ? 'Pause replay' : 'Play replay'}>{playing ? 'Pause' : 'Play'}</button>
-      <input type="range" min={0} max={duration} step={100} value={progressMs} onChange={(event) => setProgressMs(Number(event.currentTarget.value))} aria-label={`Replay timeline, ${percent} percent complete`} />
-      <output>{percent}%</output>
+    <section className="memoryTempo" aria-label="Memory time">
+      <button type="button" className="memoryPulse" onClick={() => { if (progressMs >= duration) setProgressMs(0); setPlaying((value) => !value) }} aria-label={playing ? 'Pause memory' : 'Continue memory'} aria-pressed={playing}>
+        <span aria-hidden="true">{playing ? 'Ⅱ' : '›'}</span>{playing ? 'Pause memory' : 'Continue memory'}
+      </button>
+      <span className="memoryTrace" aria-hidden="true"><i style={{ width: `${percent}%` }} /></span>
+      <input className="memorySeek" type="range" min={0} max={duration} step={100} value={progressMs} onChange={(event) => setProgressMs(Number(event.currentTarget.value))} aria-label={`Move through memory time, ${percent} percent complete`} />
+      <output className="srOnly" aria-live="polite">{percent}% through memory</output>
     </section>
     <ReplayProductControls memory={memory} />
     {memory.replayManifest.transcript ? <details className="transcript"><summary>Transcript</summary><p>{memory.replayManifest.transcript}</p></details> : null}
@@ -259,6 +308,5 @@ export default function CinematicReplayClient() {
 
 const stateCss = `.replayState{position:fixed;inset:0;overflow:hidden;display:grid;place-items:center;padding:24px;background:#02060d;color:#fff;isolation:isolate}.replaySpatialCanvas{position:absolute!important;inset:0;width:100%!important;height:100%!important}.replayState:after{content:'';position:absolute;inset:0;background:radial-gradient(circle at 50% 45%,transparent 0 22%,rgba(1,5,12,.28) 48%,rgba(1,5,12,.8) 100%);pointer-events:none}.replayState section{z-index:2;text-align:center;max-width:620px;padding:28px 30px;border:1px solid rgba(220,248,255,.12);border-radius:28px;background:linear-gradient(145deg,rgba(2,8,16,.7),rgba(2,8,16,.24));backdrop-filter:blur(18px);text-shadow:0 3px 24px #000}.replayState section p{margin:0 0 9px;color:#c9f7ff;font-size:10px;font-weight:900;letter-spacing:.22em;text-transform:uppercase}.replayState section h1{margin:0;font:500 clamp(1.7rem,4.6vw,3.6rem)/1.02 var(--font-sans);letter-spacing:-.045em}.replayState section span{display:block;max-width:520px;margin:12px auto 0;color:rgba(235,247,255,.72);font-size:13px;line-height:1.55}.replayState button{min-height:48px;margin-top:20px;padding:0 22px;border-radius:999px;border:1px solid rgba(210,248,255,.32);background:linear-gradient(135deg,#dffbff,#8fe5ef);color:#041019;font-weight:900}.replayState button:focus-visible{outline:3px solid #fff;outline-offset:4px}@media(max-width:700px){.replayState section{max-width:calc(100vw - 32px);padding:24px 20px}}@media(prefers-reduced-motion:reduce){.replayState section{backdrop-filter:none}}@media(forced-colors:active){.replayState section,.replayState button{border:2px solid CanvasText}}`
 
-const replayCss = `.replayWorld{position:fixed;inset:0;overflow:hidden;color:#fff;background:var(--replay-sky);isolation:isolate}.replaySpatialCanvas{position:absolute!important;inset:0;width:100%!important;height:100%!important}.replayAtmosphere{position:absolute;inset:0;background:radial-gradient(circle at 50% 42%,transparent 0 30%,rgba(0,0,0,.12) 58%,rgba(0,0,0,.78) 100%);pointer-events:none}.replayWorld header{position:absolute;z-index:5;left:max(18px,env(safe-area-inset-left));top:max(18px,env(safe-area-inset-top));max-width:min(360px,calc(100vw - 36px));text-shadow:0 3px 24px #000}.replayWorld header p{margin:0;color:var(--replay-light);font-size:10px;font-weight:900;letter-spacing:.18em;text-transform:uppercase}.replayWorld header h1{margin:5px 0;font-size:clamp(1.25rem,4vw,2.4rem);line-height:.95}.replayWorld header span{font-size:11px;color:rgba(255,255,255,.7)}.caption{position:absolute;z-index:5;left:50%;bottom:clamp(280px,32svh,350px);transform:translateX(-50%);width:min(820px,86vw);text-align:center;text-shadow:0 3px 30px #000}.caption small{display:block;color:var(--replay-light);font-size:10px;font-weight:900;letter-spacing:.2em;text-transform:uppercase}.caption strong{display:block;margin-top:8px;font:500 clamp(1.25rem,4vw,2.8rem)/1.08 var(--font-sans);letter-spacing:-.035em}.caption span{display:block;margin:8px auto 0;max-width:620px;font-size:12px;color:rgba(255,255,255,.72)}.controls{position:absolute;z-index:7;left:50%;bottom:max(180px,calc(env(safe-area-inset-bottom) + 174px));transform:translateX(-50%);width:min(680px,calc(100vw - 32px));display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:12px;padding:12px 14px;border:1px solid rgba(255,255,255,.22);border-radius:24px;background:rgba(2,7,14,.74);backdrop-filter:blur(16px)}.controls button{min-width:72px;min-height:44px;border:0;border-radius:999px;background:linear-gradient(135deg,var(--replay-light),var(--replay-accent));color:#041019;font-weight:900}.controls input{width:100%;min-height:44px}.controls output{min-width:42px;font-size:12px}.transcript{position:absolute;z-index:8;right:max(16px,env(safe-area-inset-right));top:max(16px,env(safe-area-inset-top));max-width:340px;padding:8px 12px;border:1px solid rgba(255,255,255,.18);border-radius:14px;background:rgba(2,7,14,.7);font-size:12px}.transcript p{margin:8px 0 0;line-height:1.5}.unwind{display:block;min-height:44px;margin-top:10px;padding:0 16px;border-radius:999px;border:1px solid rgba(255,255,255,.28);background:rgba(2,7,12,.72);color:#fff;font-weight:800}.controls button:focus-visible,.unwind:focus-visible,.transcript summary:focus-visible{outline:3px solid #fff;outline-offset:3px}@media(max-width:700px){.caption{bottom:31svh;width:90vw}.caption strong{font-size:1.35rem}.caption span{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}.transcript{top:max(76px,calc(env(safe-area-inset-top) + 70px));right:14px;bottom:auto;max-width:180px}.unwind{margin-top:9px}.controls{grid-template-columns:auto 1fr auto;padding:9px 10px}.controls button{min-width:64px}.replayWorld header{max-width:250px}.replayWorld header h1{font-size:1.35rem}}@media(max-height:720px){.caption{bottom:28svh}}@media(prefers-reduced-motion:reduce){.controls{backdrop-filter:none}}@media(forced-colors:active){.controls,.unwind,.transcript{border:2px solid CanvasText}}`
+const replayCss = `.replayWorld{position:fixed;inset:0;overflow:hidden;color:#fff;background:var(--replay-sky);isolation:isolate}.replaySpatialCanvas{position:absolute!important;inset:0;width:100%!important;height:100%!important}.replayAtmosphere{position:absolute;z-index:1;inset:-2%;background-image:linear-gradient(180deg,rgba(1,5,12,.06),rgba(1,5,12,.18) 58%,rgba(1,5,12,.62)),var(--replay-asset);background-size:cover;background-position:center;background-repeat:no-repeat;opacity:.86;filter:saturate(1.06) contrast(1.04);transform:scale(1.025);box-shadow:inset 0 0 170px rgba(0,0,0,.58);pointer-events:none}.replayWorld header{position:absolute;z-index:5;left:max(18px,env(safe-area-inset-left));top:max(18px,env(safe-area-inset-top));max-width:min(360px,calc(100vw - 36px));text-shadow:0 3px 24px #000}.replayWorld header p{margin:0;color:var(--replay-light);font-size:10px;font-weight:900;letter-spacing:.18em;text-transform:uppercase}.replayWorld header h1{margin:5px 0;font-size:clamp(1.25rem,4vw,2.4rem);line-height:.95}.replayWorld header span{font-size:11px;color:rgba(255,255,255,.7)}.caption{position:absolute;z-index:5;left:50%;bottom:clamp(150px,18svh,220px);transform:translateX(-50%);width:min(680px,74vw);text-align:center;text-shadow:0 3px 30px #000}.caption small{display:block;color:var(--replay-light);font-size:10px;font-weight:900;letter-spacing:.2em;text-transform:uppercase}.caption strong{display:block;margin-top:8px;font:500 clamp(1.05rem,2.6vw,2.15rem)/1.1 var(--font-sans);letter-spacing:-.028em}.caption span{display:block;margin:8px auto 0;max-width:620px;font-size:12px;color:rgba(255,255,255,.72)}.memoryTempo{position:absolute;z-index:7;left:50%;bottom:max(112px,calc(env(safe-area-inset-bottom) + 106px));transform:translateX(-50%);width:min(560px,calc(100vw - 40px));display:flex;align-items:center;justify-content:center;gap:12px}.memoryPulse{min-height:48px;padding:0 15px;border:1px solid rgba(222,248,255,.24);border-radius:999px;background:rgba(3,10,18,.46);backdrop-filter:blur(12px);color:#eefcff;font-size:11px;font-weight:850;letter-spacing:.04em}.memoryPulse span{display:inline-grid;place-items:center;width:18px;height:18px;margin-right:7px;border-radius:50%;background:color-mix(in srgb,var(--replay-accent) 32%,transparent);color:var(--replay-light)}.memoryTrace{position:relative;width:min(280px,35vw);height:2px;overflow:hidden;border-radius:999px;background:rgba(230,249,255,.12)}.memoryTrace i{position:absolute;inset:0 auto 0 0;background:linear-gradient(90deg,var(--replay-accent),var(--replay-light));box-shadow:0 0 18px var(--replay-accent)}.memorySeek{position:absolute;width:1px;height:1px;opacity:.001;pointer-events:none}.memorySeek:focus-visible{position:relative;width:min(220px,34vw);height:44px;opacity:1;pointer-events:auto;outline:3px solid #fff;outline-offset:3px}.srOnly{position:absolute!important;width:1px!important;height:1px!important;padding:0!important;margin:-1px!important;overflow:hidden!important;clip:rect(0,0,0,0)!important;white-space:nowrap!important;border:0!important}.transcript{position:absolute;z-index:8;right:max(16px,env(safe-area-inset-right));top:max(16px,env(safe-area-inset-top));max-width:340px;padding:8px 12px;border:1px solid rgba(255,255,255,.18);border-radius:14px;background:rgba(2,7,14,.7);font-size:12px}.transcript p{margin:8px 0 0;line-height:1.5}.unwind{display:block;min-height:48px;margin-top:10px;padding:0 16px;border-radius:999px;border:1px solid rgba(255,255,255,.28);background:rgba(2,7,12,.72);color:#fff;font-weight:800}.replayImmersiveEntry{display:inline-flex;align-items:center;min-height:48px;margin-top:8px;padding:0 15px;border:1px solid color-mix(in srgb,var(--replay-light) 28%,transparent);border-radius:999px;background:rgba(2,7,12,.46);color:rgba(244,252,255,.86);font-size:11px;font-weight:800;text-decoration:none;backdrop-filter:blur(10px)}.memoryPulse:focus-visible,.memorySeek:focus-visible,.unwind:focus-visible,.replayImmersiveEntry:focus-visible,.transcript summary:focus-visible{outline:3px solid #fff;outline-offset:3px}@media(max-width:700px){.caption{bottom:22svh;width:86vw}.caption strong{font-size:1.2rem}.caption span{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}.transcript{top:max(76px,calc(env(safe-area-inset-top) + 70px));right:14px;bottom:auto;max-width:180px}.unwind{margin-top:9px}.memoryTempo{bottom:max(96px,calc(env(safe-area-inset-bottom) + 90px));width:calc(100vw - 28px);gap:8px}.memoryPulse{padding:0 12px}.memoryTrace{flex:1;width:auto}.replayWorld header{max-width:250px}.replayWorld header h1{font-size:1.35rem}}@media(max-height:720px){.caption{bottom:28svh}}@media(prefers-reduced-motion:reduce){.memoryPulse{backdrop-filter:none}}@media(forced-colors:active){.memoryPulse,.unwind,.replayImmersiveEntry,.transcript{border:2px solid CanvasText}.memoryTrace{border:1px solid CanvasText}}`
 
-useGLTF.preload(REPLAY_ENVIRONMENT_MODEL)

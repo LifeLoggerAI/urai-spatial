@@ -1,4 +1,5 @@
 import { assertExternalAccountAdc } from '@/lib/server/google-adc';
+import { decideStripeEventApplication } from '@/lib/server/stripe-event-order';
 
 export type InsightPlanId = 'free' | 'pro' | 'therapist' | 'founder';
 
@@ -10,6 +11,8 @@ export type StoredEntitlement = {
   stripeCustomerId: string | null;
   stripeSubscriptionId: string | null;
   subscriptionStatus: SubscriptionStatus;
+  stripeLastEventCreated?: number;
+  stripeLastEventId?: string | null;
   updatedAt: number;
 };
 
@@ -22,6 +25,8 @@ export function defaultEntitlement(userId = 'local'): StoredEntitlement {
     stripeCustomerId: null,
     stripeSubscriptionId: null,
     subscriptionStatus: 'none',
+    stripeLastEventCreated: 0,
+    stripeLastEventId: null,
     updatedAt: Date.now(),
   };
 }
@@ -50,6 +55,49 @@ export async function upsertEntitlement(record: StoredEntitlement): Promise<Stor
   const next = { ...record, updatedAt: record.updatedAt || Date.now() };
   await db.collection(COLLECTION).doc(record.userId).set(next, { merge: true });
   return next;
+}
+
+export type StripeEventApplicationResult = {
+  applied: boolean;
+  reason: 'applied' | 'duplicate-event' | 'stale-event' | 'equal-time-precedence';
+  entitlement: StoredEntitlement;
+};
+
+export async function applyStripeEventEntitlement(
+  record: StoredEntitlement,
+  event: { id: string; created: number },
+): Promise<StripeEventApplicationResult> {
+  const db = await getAdminFirestore();
+  const ref = db.collection(COLLECTION).doc(record.userId);
+  return db.runTransaction(async (transaction) => {
+    const snapshot = await transaction.get(ref);
+    const current = snapshot.exists
+      ? { ...defaultEntitlement(record.userId), ...(snapshot.data() as Partial<StoredEntitlement>), userId: record.userId }
+      : defaultEntitlement(record.userId);
+
+    if (current.stripeLastEventId === event.id) {
+      return { applied: false, reason: 'duplicate-event' as const, entitlement: current };
+    }
+
+    const decision = decideStripeEventApplication({
+      currentEventCreated: current.stripeLastEventCreated ?? 0,
+      currentStatus: current.subscriptionStatus,
+      incomingEventCreated: event.created,
+      incomingStatus: record.subscriptionStatus,
+    });
+    if (!decision.apply) {
+      return { applied: false, reason: decision.reason, entitlement: current };
+    }
+
+    const next: StoredEntitlement = {
+      ...record,
+      stripeLastEventCreated: event.created,
+      stripeLastEventId: event.id,
+      updatedAt: Date.now(),
+    };
+    transaction.set(ref, next, { merge: true });
+    return { applied: true, reason: 'applied' as const, entitlement: next };
+  });
 }
 
 export async function findEntitlementByStripeCustomer(stripeCustomerId: string): Promise<StoredEntitlement | null> {
