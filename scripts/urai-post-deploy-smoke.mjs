@@ -47,6 +47,10 @@ const contracts = [
   ['/glass', ['Move from screen to space.', 'Open XR preview', 'Open spatial web'], []],
   ['/offline', ['Your way back stays visible.', 'Return Home', 'Check status'], []],
   ['/report-bug', ['Tell us what broke.', 'Email support', 'Check status first'], []],
+  ['/terms', ['URAI Spatial Terms', 'No medical, diagnostic, or emergency use'], []],
+  ['/login', ['canonical-auth-entry', 'Enter your world.'], []],
+  ['/account-deletion', ['account-deletion-heading', 'Delete your account on your terms.'], []],
+  ['/privacy-policy', ['privacy-policy-heading', 'Privacy policy candidate'], []],
 ]
 
 function normalizePath(value) {
@@ -207,7 +211,7 @@ const receipt = {
   checkedVariants: results.length,
   fetchPolicy: { maxAttempts, retryBaseMs },
   hydratedIdentityProof: 'scripts/urai-release-control-smoke.mjs',
-  browserCompatibilityRoutes: ['/privacy', '/ascent/life-map'],
+  browserCompatibilityRoutes: ['/privacy', '/ascent/life-map', '/waitlist', '/system', '/settings/privacy', '/onboarding', '/signup'],
   fingerprint,
   passed,
   results,
