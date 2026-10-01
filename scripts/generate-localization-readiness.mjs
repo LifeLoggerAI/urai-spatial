@@ -41,7 +41,11 @@ const locales = URAI_LAUNCH_LOCALES.map((locale) => {
     runtimeAdmitted,
     productionAdmission: runtimeAdmitted ? 'admitted' : 'blocked',
     rtlVisualQaRequired: URAI_RTL_LOCALES.has(locale),
-    translationAuthority: locale === 'en' ? 'authoritative-source' : 'not-yet-provided',
+    translationAuthority: locale === 'en'
+      ? 'authoritative-source'
+      : completeness.complete
+        ? 'machine-prepared-native-review-required'
+        : 'not-yet-provided',
     blockingReasons,
   }
 })
