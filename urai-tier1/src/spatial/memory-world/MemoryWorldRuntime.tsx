@@ -5,7 +5,7 @@ import { OrbitControls } from '@react-three/drei'
 import { Component, useEffect, useRef, useState, type ReactNode } from 'react'
 import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib'
 import type { PerspectiveCamera } from 'three'
-import type { MemoryWorld } from './memoryWorld'
+import type { MemoryWorld, MemoryWorldValidationContext } from './memoryWorld'
 import { buildMemoryWorldRuntimePlan } from './runtimePlan'
 import { useAdaptiveSpatialQuality } from '@/spatial/performance/useAdaptiveSpatialQuality'
 import { blockoutPresetForWorld, type MemoryWorldBlockoutProp } from './blockoutPresets'
@@ -74,6 +74,7 @@ function BoundedTemplateGeometry({ world }: { world: MemoryWorld }) {
 export type MemoryWorldRuntimeProps = {
   world: MemoryWorld
   onExit: () => void
+  validationContext?: MemoryWorldValidationContext
 }
 
 class MemoryWorldRendererBoundary extends Component<{ children: ReactNode; fallback: ReactNode; onFailure: () => void }, { failed: boolean }> {
@@ -83,7 +84,7 @@ class MemoryWorldRendererBoundary extends Component<{ children: ReactNode; fallb
   render() { return this.state.failed ? this.props.fallback : this.props.children }
 }
 
-export default function MemoryWorldRuntime({ world, onExit }: MemoryWorldRuntimeProps) {
+export default function MemoryWorldRuntime({ world, onExit, validationContext }: MemoryWorldRuntimeProps) {
   const quality = useAdaptiveSpatialQuality()
   const controls = useRef<OrbitControlsImpl>(null)
   const camera = useRef<PerspectiveCamera | null>(null)
@@ -98,7 +99,7 @@ export default function MemoryWorldRuntime({ world, onExit }: MemoryWorldRuntime
     } catch { setRendererState('unavailable') }
     return () => cleanupRenderer.current?.()
   }, [])
-  const plan = buildMemoryWorldRuntimePlan(world)
+  const plan = buildMemoryWorldRuntimePlan(world, validationContext)
   const accent = world.context.emotionalWeather === 'Heavy' ? '#90a6bb' : '#9de5db'
 
   if (!plan.valid) {
