@@ -68,12 +68,15 @@ export function useMovementInput({
   useEffect(() => {
     if (!enabled) return
     const onKeyDown = (event: KeyboardEvent) => {
-      if (isEditableTarget(event.target)) return
+      const editableTarget = isEditableTarget(event.target)
+      const movementControl = event.target instanceof Element && Boolean(event.target.closest('[data-movement-ui="true"]'))
       if (MOVEMENT_KEYS.has(event.code)) {
+        if (editableTarget && !movementControl) return
         keys.current.add(event.code)
         event.preventDefault()
         return
       }
+      if (editableTarget) return
       if (event.code === 'Enter' || event.code === 'Space') {
         event.preventDefault()
         callbacksRef.current.onInteract?.()
