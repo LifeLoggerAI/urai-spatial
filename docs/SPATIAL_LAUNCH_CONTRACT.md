@@ -81,4 +81,4 @@ pnpm launch:check
 
 ## Go/no-go rule
 
-Ship UrAi only from the current governed exact-head candidate after all applicable internal gates, literal visual acceptance, independent review, and subsequent protected deployment requirements are satisfied. A source path or green unit test never authorizes a live-provider claim. Provider rollout still requires consent, exact runtime evidence, route smoke coverage, truthful attribution, and deployment evidence.
+Ship URAI Spatial only if the fallback shell is stable when providers or optional assets are unavailable. Ship UrAi only from the current governed exact-head candidate after all applicable internal gates, literal visual acceptance, independent review, and subsequent protected deployment requirements are satisfied. A source path or green unit test never authorizes a live-provider claim. Provider rollout still requires consent, exact runtime evidence, route smoke coverage, truthful attribution, and deployment evidence.
