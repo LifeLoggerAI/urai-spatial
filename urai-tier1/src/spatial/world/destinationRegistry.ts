@@ -96,21 +96,21 @@ export const URAI_DESTINATION_REGISTRY: Record<UraiDestination, UraiDestinationD
   },
   focus: {
     id: 'focus',
-    label: 'Focus Chamber',
+    label: 'Focus Memory Star',
     href: '/focus',
     layer: 'infrastructure-world',
     entryPortal: 'memory-focus',
     cameraCheckpoint: 'focus-arrival',
-    environmentalForm: 'selected-memory-chamber',
+    environmentalForm: 'stellar-memory-photosphere',
   },
   replay: {
     id: 'replay',
-    label: 'Replay Theater',
+    label: 'Replay',
     href: '/replay',
     layer: 'infrastructure-world',
     entryPortal: 'memory-replay',
     cameraCheckpoint: 'replay-arrival',
-    environmentalForm: 'cinematic-memory-theater',
+    environmentalForm: 'immersive-memory-world',
   },
 }
 
