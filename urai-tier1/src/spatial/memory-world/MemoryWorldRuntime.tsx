@@ -122,7 +122,7 @@ export default function MemoryWorldRuntime({ world, onExit }: MemoryWorldRuntime
   return (
     <main data-testid="memory-world-runtime" data-memory-world-state={rendererState === 'ready' ? 'rendered' : 'semantic-fallback'} data-memory-world-renderer={rendererState} data-memory-world-id={world.worldId} data-memory-world-archetype={world.archetypeId} data-memory-world-truth={plan.truthLabel} data-memory-world-navigation={plan.navigation} style={{position:'fixed',inset:0,overflow:'hidden',background:'#071018',color:'#fff'}}>
       <MemoryWorldRendererBoundary fallback={fallback} onFailure={() => setRendererState('unavailable')}>
-      {rendererState === 'ready' ? <Canvas style={{position:'absolute',inset:0,width:'100%',height:'100%'}} fallback={fallback} onCreated={({ gl, camera: view }) => {
+      {rendererState === 'ready' ? <Canvas fallback={fallback} onCreated={({ gl, camera: view }) => {
         camera.current = view as PerspectiveCamera
         const canvas = gl.domElement
         const lost = (event: Event) => { event.preventDefault(); setRendererState('lost') }
