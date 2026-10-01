@@ -34,7 +34,7 @@ await transformFile('urai-tier1/tests/accessibility-performance-embodied-explora
   )
   source = replaceExact(
     source,
-    "    await expect(home).toHaveAttribute('data-home-visible-world', 'final-physical-sanctuary-memory-rooms')",
+    "    await expect(home).toHaveAttribute('data-home-visible-world', 'authored-coherent-three-dimensional-sanctuary')",
     "    await expect(home).toHaveAttribute('data-home-animation-owner', 'authored-sanctuary-plus-gltf-interactions')",
     1,
     'current Home authored visual owner contract',
