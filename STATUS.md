@@ -6,7 +6,7 @@ Runtime app root: `urai-tier1`.
 
 Canonical public application: `LifeLoggerAI/urai-spatial/urai-tier1` on `main`.
 
-Current release lane: the newest open full-vision successor PR against `main`, currently sourced from `repair/current-authority-docs-on-final-candidate-20261001`, is the pre-independent-review candidate. Resolve its live head before using any SHA-bound evidence because active hardening may still advance it.
+Current release lane: PR #1508 (`integration/full-vision-terminal-20261001`) is the pre-independent-review candidate. Resolve its live head before using any SHA-bound evidence because active hardening may still advance it.
 
 Production-live status for the current candidate: **not verified**. GitHub issue #863 remains open for Home visual acceptance. `.github/workflows/spatial-live-deploy.yml` is verification-only / NO-GO; the separate manual `.github/workflows/spatial-governed-wif-deploy.yml` is the governed Hosting mutation path, but it is not authorized or executed by this audit.
 

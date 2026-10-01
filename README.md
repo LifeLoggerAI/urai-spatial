@@ -6,7 +6,7 @@ URAI Spatial is the canonical public URAI application repository.
 - Canonical repository: `LifeLoggerAI/urai-spatial`
 - Runtime root: `urai-tier1`
 - Canonical branch: `main`
-- Current pre-review lane: the newest open full-vision successor PR against `main`, currently sourced from `repair/current-authority-docs-on-final-candidate-20261001`; re-fetch its live head before any SHA-bound claim
+- Current pre-review lane: PR #1508 (`integration/full-vision-terminal-20261001`); re-fetch its live head before any SHA-bound claim
 - Production mutation: currently quarantined; the canonical release workflow is verification-only / NO-GO
 - Production certification: incomplete until exact-head acceptance, independent approval, governed mutation authority, protected deploy, and post-deploy verification
 

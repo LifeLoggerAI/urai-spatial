@@ -5,7 +5,7 @@ This file is the current repository evidence authority for URAI Spatial. Histori
 ## Current release authority — 2026-10-01
 
 - Runtime app root: `urai-tier1`.
-- Controlling pre-review lane: the newest open full-vision successor PR against `main`, currently sourced from `repair/current-authority-docs-on-final-candidate-20261001`; always resolve its live head before using SHA-bound evidence.
+- Controlling pre-review lane: PR #1508, `integration/full-vision-terminal-20261001`; always resolve its live head before using SHA-bound evidence.
 - Controlling Home visual gate: GitHub issue #863 remains open.
 - Production-live status for the current candidate: **not verified**.
 - Current verification lane: `.github/workflows/spatial-live-deploy.yml` is verification-only / NO-GO and cannot mutate production.
