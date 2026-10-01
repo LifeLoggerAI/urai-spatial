@@ -132,7 +132,7 @@ async function runReleaseControlSmoke() {
   }
   mkdirSync(out, { recursive: true })
 
-  const routes = ['/', '/home', '/ground', '/life-map', '/focus', '/replay', '/life-movie', '/council', '/mirror', '/passport', '/privacy-controls', '/location-map', '/spatial/memory-world', '/spatial/interpretive-world', '/spatial/captured-reality', '/spatial/ar-vr', '/status', '/support', '/about', '/contact', '/event', '/glass', '/offline', '/report-bug', '/terms', '/login', '/account-deletion', '/privacy-policy']
+  const routes = ['/', '/home', '/ground', '/life-map', '/focus', '/replay', '/life-movie', '/council', '/mirror', '/passport', '/privacy-controls', '/location-map', '/spatial/memory-world', '/spatial/interpretive-world', '/spatial/captured-reality', '/spatial/ar-vr', '/xr', '/settings', '/launch', '/status', '/support', '/about', '/contact', '/event', '/glass', '/offline', '/report-bug', '/terms', '/login', '/account-deletion', '/privacy-policy']
   const identity = {
     memoryId: 'demo:quiet-reset',
     manifestId: 'replay-recovery-thread',
@@ -151,6 +151,9 @@ async function runReleaseControlSmoke() {
     ['/settings/privacy', { pathname: '/privacy-controls', searchEntries: [['from', 'settings-privacy']] }],
     ['/onboarding', { pathname: '/', searchEntries: [['onboarding', '1']] }],
     ['/signup', { pathname: '/login', searchEntries: [['intent', 'signup']] }],
+    ['/ascent', { pathname: '/home', searchEntries: [['from', 'ascent']] }],
+    ['/spatial', { pathname: '/home', searchEntries: [['from', 'spatial']] }],
+    ['/unwind', { pathname: '/life-map', searchEntries: [['from', 'unwind'], ['overview', '1']] }],
   ])
 
   const requiredQueryTokens = [
@@ -160,7 +163,7 @@ async function runReleaseControlSmoke() {
     `node=${identity.node}`,
   ]
   const report = {
-    schemaVersion: 'urai-release-control-smoke-8',
+    schemaVersion: 'urai-release-control-smoke-9',
     generatedAt: new Date().toISOString(),
     base,
     expectedSha,
@@ -251,7 +254,7 @@ async function runReleaseControlSmoke() {
           redirect,
           cache: 'no-store',
           signal: AbortSignal.timeout(20_000),
-          headers: { 'cache-control': 'no-cache', 'user-agent': 'urai-release-control-smoke/8' },
+          headers: { 'cache-control': 'no-cache', 'user-agent': 'urai-release-control-smoke/9' },
         })
         const body = await response.text()
         return {
@@ -409,7 +412,7 @@ async function runReleaseControlSmoke() {
           report.consoleErrors.push({ profile: profileName, url: page.url(), message: message.text() })
         }
       })
-      const browserRoutes = ['/', '/life-map', queryCases[0].path, queryCases[1].path, '/life-movie', '/council', '/privacy-controls', '/spatial/memory-world', '/spatial/interpretive-world', '/spatial/captured-reality', '/spatial/ar-vr', '/status', '/support', '/about', '/contact', '/event', '/glass', '/offline', '/report-bug', '/terms', '/login', '/account-deletion', '/privacy-policy', '/privacy', '/ascent/life-map', '/waitlist', '/system', '/settings/privacy', '/onboarding', '/signup']
+      const browserRoutes = ['/', '/life-map', queryCases[0].path, queryCases[1].path, '/life-movie', '/council', '/privacy-controls', '/spatial/memory-world', '/spatial/interpretive-world', '/spatial/captured-reality', '/spatial/ar-vr', '/xr', '/settings', '/launch', '/status', '/support', '/about', '/contact', '/event', '/glass', '/offline', '/report-bug', '/terms', '/login', '/account-deletion', '/privacy-policy', '/privacy', '/ascent/life-map', '/waitlist', '/system', '/settings/privacy', '/onboarding', '/signup', '/ascent', '/spatial', '/unwind']
       for (const route of browserRoutes) {
         const requestedUrl = new URL(route, `${base}/`).toString()
         const response = await page.goto(requestedUrl, { waitUntil: 'domcontentloaded', timeout: 60000 })
