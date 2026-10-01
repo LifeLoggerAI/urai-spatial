@@ -259,6 +259,17 @@ const FERN_PLACEMENTS = Array.from({ length: 72 }, (_, index) => {
   return [x, z, scale, rotation] as const
 })
 
+const STONE_SCATTER = Array.from({ length: 34 }, (_, index) => {
+  const lane = index % 3
+  const t = (index + 1) / 35
+  const z = THREE.MathUtils.lerp(6.9, -10.4, t) + (seeded(index, 201) - .5) * 1.25
+  const center = lane === 0 ? -2.7 : lane === 1 ? 2.9 : (seeded(index, 202) - .5) * 7.4
+  const x = center + (seeded(index, 203) - .5) * 2.2
+  const scale = .11 + seeded(index, 204) * .22
+  const rotation = seeded(index, 205) * Math.PI * 2
+  return [x, z, scale, rotation] as const
+})
+
 function Terrain({ target }: { target: MutableRefObject<THREE.Vector3 | null> }) {
   const sanctuary = useGLTF(HOME_SANCTUARY_MODEL)
   const authored = useMemo(() => prepareNaturalSanctuary(sanctuary.scene), [sanctuary.scene])
@@ -270,7 +281,7 @@ function Terrain({ target }: { target: MutableRefObject<THREE.Vector3 | null> })
   return <group name="home-authored-terrain" userData={{ geometryOwner: 'canonical-sanctuary-plus-natural-terrain' }}>
     <primitive object={authored} />
     <mesh name="home-natural-terrain" geometry={TERRAIN_GEOMETRY} receiveShadow onClick={onWalk}>
-      <meshStandardMaterial color="#ffffff" vertexColors roughness={.98} metalness={0} />
+      <meshStandardMaterial color="#dfe5d6" vertexColors roughness={.96} metalness={0} envMapIntensity={.58} />
     </mesh>
     <mesh name="home-walkable-navigation-surface" rotation={[-Math.PI / 2, 0, 0]} position={[0, .7, -2]} onClick={onWalk}>
       <planeGeometry args={[28, 34]} /><meshBasicMaterial transparent opacity={0} depthWrite={false} colorWrite={false} />
@@ -280,26 +291,52 @@ function Terrain({ target }: { target: MutableRefObject<THREE.Vector3 | null> })
 
 function SanctuaryPath() {
   return <group name="home-sanctuary-path" userData={{ role: 'walkable-natural-stone-thread' }}>
-    <mesh geometry={MAIN_PATH_GEOMETRY} receiveShadow><meshStandardMaterial color="#667164" roughness={.98} metalness={0} /></mesh>
-    <mesh geometry={GROUND_PATH_GEOMETRY} receiveShadow><meshStandardMaterial color="#58695e" roughness={1} metalness={0} /></mesh>
-    <mesh geometry={LIFE_MAP_PATH_GEOMETRY} receiveShadow><meshStandardMaterial color="#597069" roughness={1} metalness={0} /></mesh>
+    <mesh geometry={MAIN_PATH_GEOMETRY} receiveShadow><meshStandardMaterial color="#7b7b6f" roughness={.94} metalness={0} envMapIntensity={.42} /></mesh>
+    <mesh geometry={GROUND_PATH_GEOMETRY} receiveShadow><meshStandardMaterial color="#6d756b" roughness={.96} metalness={0} envMapIntensity={.4} /></mesh>
+    <mesh geometry={LIFE_MAP_PATH_GEOMETRY} receiveShadow><meshStandardMaterial color="#6b7971" roughness={.96} metalness={0} envMapIntensity={.4} /></mesh>
   </group>
 }
 
 function Vegetation() {
   const fern = useGLTF(HOME_FERN_MODEL)
-  const material = useMemo(() => new THREE.MeshStandardMaterial({ color: '#76946f', roughness: .94, metalness: 0, side: THREE.DoubleSide }), [])
-  useEffect(() => () => material.dispose(), [material])
+  const materials = useMemo(() => [
+    new THREE.MeshStandardMaterial({ color: '#6f8d68', roughness: .96, metalness: 0, side: THREE.DoubleSide }),
+    new THREE.MeshStandardMaterial({ color: '#819b72', roughness: .94, metalness: 0, side: THREE.DoubleSide }),
+    new THREE.MeshStandardMaterial({ color: '#5f7c61', roughness: .97, metalness: 0, side: THREE.DoubleSide }),
+  ], [])
+  useEffect(() => () => materials.forEach((material) => material.dispose()), [materials])
   const instances = useMemo(() => FERN_PLACEMENTS.map(([x,z,scale,rotation], index) => {
     const object = fern.scene.clone(true)
     object.name = `home-scanned-fern-${index + 1}`
     object.position.set(x, terrainHeight(x,z) + .025, z)
     object.rotation.y = rotation
     object.scale.set(scale * (1 + seeded(index, 16) * .08), scale * (.9 + seeded(index, 22) * .18), scale * (1 + seeded(index, 29) * .08))
-    object.traverse((child) => { if (child instanceof THREE.Mesh) { child.material = material; child.castShadow = index < 24; child.receiveShadow = true } })
+    object.traverse((child) => { if (child instanceof THREE.Mesh) { child.material = materials[index % materials.length]; child.castShadow = index < 24; child.receiveShadow = true } })
     return object
-  }), [fern.scene, material])
+  }), [fern.scene, materials])
   return <group name="home-living-vegetation" userData={{ role: 'edge-clustered-scanned-cc0-nature', source: 'Poly Haven fern_02 CC0' }}>{instances.map((object) => <primitive key={object.name} object={object} />)}</group>
+}
+
+function GroundDetail() {
+  return <group name="home-ground-detail" userData={{ role: 'deterministic-natural-stone-scatter' }}>
+    {STONE_SCATTER.map(([x,z,scale,rotation], index) => (
+      <mesh
+        key={`home-stone-detail-${index + 1}`}
+        geometry={SANCTUARY_BOULDER_CENTER}
+        position={[x, terrainHeight(x,z) + scale * .32, z]}
+        rotation={[seeded(index, 206) * .35, rotation, (seeded(index, 207) - .5) * .3]}
+        scale={[scale * (1.15 + seeded(index, 208) * .5), scale * (.65 + seeded(index, 209) * .35), scale]}
+        castShadow={index < 12}
+        receiveShadow
+      >
+        <meshStandardMaterial
+          color={index % 3 === 0 ? '#687067' : index % 3 === 1 ? '#76776d' : '#5e6860'}
+          roughness={.98}
+          metalness={0}
+        />
+      </mesh>
+    ))}
+  </group>
 }
 
 function Horizon() {
@@ -542,7 +579,25 @@ function PlayerRig({ input, yaw, pitch, target, avatar, onNearby, groundDescent,
     const candidates: readonly [Nearby, THREE.Vector3, number][] = [['orb', ORB, 2.4], ['ground', GROUND_THRESHOLD, 2.8], ['life-map', LIFE_MAP_LOOKOUT, 2.8]]
     let next: Nearby = null, best = Infinity
     for (const [name, poi, radius] of candidates) { const distance = Math.hypot(position.current.x - poi.x, position.current.z - poi.z); if (distance < radius && distance < best) { next = name; best = distance } }
-    if (next !== lastNearby.current) { lastNearby.current = next; onNearby(next) }
+    if (next !== lastNearby.current) {
+      const previousNearby = lastNearby.current
+      lastNearby.current = next
+      if (next === 'orb' && previousNearby !== 'orb') {
+        const dx = ORB.x - position.current.x
+        const dz = ORB.z - position.current.z
+        if (Math.hypot(dx, dz) > 0.001) {
+          // Give the physical Orb one production-facing attention handoff when the
+          // user actually enters its proximity radius. This is not a camera lock:
+          // pointer/touch look remains authoritative immediately afterward.
+          yaw.current = Math.atan2(dx, -dz)
+          pitch.current = THREE.MathUtils.clamp(ORB.y - 1.22, -.42, .18)
+          forward.current.set(Math.sin(yaw.current), 0, -Math.cos(yaw.current))
+          look.current.copy(position.current).addScaledVector(forward.current, portrait ? 6 : 8)
+          camera.lookAt(look.current.x, 1.22 + pitch.current, look.current.z)
+        }
+      }
+      onNearby(next)
+    }
   })
   return null
 }
@@ -557,9 +612,9 @@ function Scene(props: { input: MovementInput; yaw: MutableRefObject<number>; pit
   const phase = useSceneStore((state) => state.phase)
   const cosmic = phase === 'ASCENT'
   return <>
-    <color attach="background" args={[cosmic ? '#01050b' : '#496866']} />
+    <color attach="background" args={[cosmic ? '#01050b' : '#304f4b']} />
     <Stars radius={190} depth={90} count={cosmic ? 2200 : 220} factor={cosmic ? 2.7 : .58} saturation={.12} fade speed={props.reducedMotion ? 0 : .02} />
-    <fogExp2 attach="fog" args={[cosmic ? '#050b14' : '#314f49', cosmic ? .0017 : .0062]} />
+    <fogExp2 attach="fog" args={[cosmic ? '#050b14' : '#2a4540', cosmic ? .0017 : .0048]} />
     <ambientLight intensity={cosmic ? .13 : .72} color="#d9e7dc" />
     <hemisphereLight args={['#c8dddc','#1e2b20',cosmic ? .22 : 1.05]} />
     <directionalLight position={[8,18,7]} intensity={cosmic ? .34 : 2.35} color="#f2ecd8" castShadow />
@@ -578,6 +633,7 @@ function Scene(props: { input: MovementInput; yaw: MutableRefObject<number>; pit
     <SanctuaryPath />
     <Horizon />
     <Vegetation />
+    <GroundDetail />
     <SanctuaryPavilion />
     <Water />
     {!cosmic ? <ContactShadows position={[0, terrainHeight(0,-4.4) + .04, -4.4]} opacity={.32} scale={22} blur={2.8} far={8} frames={1} /> : null}
