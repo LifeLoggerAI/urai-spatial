@@ -63,7 +63,7 @@ test('Home is the live embodied sacred-tech sanctuary with an explicit degraded 
     'data-home-desktop-mobile-world="same-scene"',
     'data-home-embodied-self="privacy-preserving-shadow"',
     'data-home-movement="walk-keyboard-click-touch"',
-    'data-home-camera-mode={transition',
+    "data-home-camera-mode={groundDescent ? 'descent' : phase === 'ASCENT' ? 'ascent' : dragging ? 'look' : 'embodied-first-person'}",
     'data-home-orb-state={orbState}',
     'data-testid="home-visible-navigable-sanctuary-world"',
     'data-testid="urai-home-webgl-orb"',
@@ -95,8 +95,8 @@ test('Home is the live embodied sacred-tech sanctuary with an explicit degraded 
   assert.match(homeProduction, /function PlayerRig\(/)
   assert.match(homeProduction, /const duration = reducedMotion \? \.42 : ascending \? ASCENT_DURATION_SECONDS : GROUND_DESCENT_DURATION_SECONDS/)
   assert.match(homeProduction, /const ASCENT_DURATION_SECONDS = 3\.4/)
-  assert.match(homeProduction, /destination:'infrastructure-hub'/)
-  assert.match(homeProduction, /destination:'life-map'/)
+  has(homeProduction, "destination: 'infrastructure-hub'")
+  has(homeProduction, "destination: 'life-map'")
   assert.doesNotMatch(homeProduction, /requestPointerLock|sprint|jump|crouch/i)
 
   for (const marker of [
@@ -117,7 +117,7 @@ test('Home keeps one physical stateful Orb owner and semantic access parity', ()
   has(homeProduction, 'data-testid="urai-home-webgl-orb"')
   assert.match(homeProduction, /<Orb onOpen=\{props\.onOrbOpen\} reducedMotion=\{props\.reducedMotion\} state=\{props\.orbState\} \/>/)
   assert.match(homeProduction, /resolveOrbSensoryOutput\(state, reducedMotion, true\)/)
-  assert.match(homeProduction, /window\.addEventListener\(URAI_ORB_STATE_EVENT,\s*listener\)/)
+  assert.match(homeProduction, /window\.addEventListener\(URAI_ORB_STATE_EVENT,\s*onOrbState\)/)
   assert.match(homeProduction, /onClick=\{\(event\) => \{ event\.stopPropagation\(\); onOpen\(\) \}\}/)
   assert.match(worldShell, /const showWorldCompanion = world\.destination !== 'life-map'/)
   assert.match(routeOwner, /data-world-destination='home'[\s\S]*\.urai-world-companion__orb/)
