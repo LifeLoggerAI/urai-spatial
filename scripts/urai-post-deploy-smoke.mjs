@@ -35,6 +35,9 @@ const contracts = [
   ['/spatial/interpretive-world', ['interpretive-world-route'], []],
   ['/spatial/captured-reality', ['captured-reality-private-route'], []],
   ['/spatial/ar-vr', ['urai-quest-explorable-world', 'URAI AR / VR / XR entry chamber'], []],
+  ['/xr', ['urai-quest-explorable-world', 'URAI XR World'], []],
+  ['/settings', ['device-settings', 'How URAI meets you.'], []],
+  ['/launch', ['Your private world is the interface.', 'Launch destinations', 'Launch truth'], []],
   ['/mirror', ['urai-final-mirror-realm', 'See the pattern clearly.'], []],
   ['/passport', ['passport-ownership-vault', 'UrAi Passport', 'Ownership key'], ['urai-final-passport-vault', 'Your life stays yours.']],
   ['/privacy-controls', ['consent-sanctuary', 'UrAi Consent Sanctuary', 'Choose what the world may hold.', 'Enforcement:'], ['privacy-consent-console', 'Choose what the world can hold.', 'Home threshold']],
@@ -201,7 +204,7 @@ try {
 
 const passed = results.every((result) => result.passed) && fingerprint.passed
 const receipt = {
-  schemaVersion: 'urai-live-content-parity-5',
+  schemaVersion: 'urai-live-content-parity-6',
   generatedAt: new Date().toISOString(),
   baseUrl,
   expectedDeployedSha: expectedSha,
@@ -211,7 +214,7 @@ const receipt = {
   checkedVariants: results.length,
   fetchPolicy: { maxAttempts, retryBaseMs },
   hydratedIdentityProof: 'scripts/urai-release-control-smoke.mjs',
-  browserCompatibilityRoutes: ['/privacy', '/ascent/life-map', '/waitlist', '/system', '/settings/privacy', '/onboarding', '/signup'],
+  browserCompatibilityRoutes: ['/privacy', '/ascent/life-map', '/waitlist', '/system', '/settings/privacy', '/onboarding', '/signup', '/ascent', '/spatial', '/unwind'],
   fingerprint,
   passed,
   results,
