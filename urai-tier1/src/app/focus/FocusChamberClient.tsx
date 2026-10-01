@@ -244,8 +244,9 @@ function StellarPhotosphere({ accent, light, reducedMotion }: { accent: string; 
         surface = mix(surface, hotWhite, .08 + fine * .12 + faculae * .16 + limb * .08);
         surface = mix(surface, uLight, .018);
         surface = mix(surface, uAccent, .008);
-        float radiance = (.82 + granulation * .42 + faculae * .16) * (.66 + limb * .34);
-        radiance *= 1.72;
+        // Preserve hot-cell / intergranular contrast before sRGB conversion.
+        // Uniform amplification clipped most of the surface to pale yellow.
+        float radiance = (.34 + cells * .82 + fine * .24 + faculae * .28) * (.50 + limb * .50);
         radiance *= 1.0 - pores * .16;
         vec3 emitted = surface * radiance + hotWhite * (.018 + cells * .038 + faculae * .05);
         gl_FragColor = vec4(clamp(emitted, 0.0, 1.0), 1.0);
@@ -321,7 +322,7 @@ function MemoryImprint({ url }: { url: string }) {
         vec3 image = texture2D(uMemory, vUv).rgb;
         float luminance = dot(image, vec3(.2126, .7152, .0722));
         vec3 solarMemory = mix(image, vec3(1.0, .48, .08), .16 + (1.0 - luminance) * .12);
-        float alpha = veil * (.12 + luminance * .20 + core * .05);
+        float alpha = veil * (.26 + luminance * .24 + core * .16);
         gl_FragColor = vec4(solarMemory, alpha);
         #include <colorspace_fragment>
       }
