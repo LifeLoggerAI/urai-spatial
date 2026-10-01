@@ -1,4 +1,4 @@
-import type { MemoryTruthClass, MemoryWorld, MemoryWorldLayerKind, MemoryWorldRepresentation } from './memoryWorld'
+import type { MemoryTruthClass, MemoryWorld, MemoryWorldLayerKind, MemoryWorldRepresentation, MemoryWorldValidationContext } from './memoryWorld'
 import { validateMemoryWorld } from './memoryWorld'
 
 export const MEMORY_WORLD_RUNTIME_VERSION = 'urai-memory-world-runtime-1' as const
@@ -72,8 +72,8 @@ function hasSafeWalkableProxy(world: MemoryWorld) {
   )
 }
 
-export function buildMemoryWorldRuntimePlan(world: MemoryWorld): MemoryWorldRuntimePlan {
-  const errors = validateMemoryWorld(world)
+export function buildMemoryWorldRuntimePlan(world: MemoryWorld, validationContext: MemoryWorldValidationContext = {}): MemoryWorldRuntimePlan {
+  const errors = validateMemoryWorld(world, validationContext)
   const existingKinds = new Set(world.layers.map((layer) => layer.kind))
   const layers: MemoryWorldRuntimeLayerPlan[] = world.layers.map((layer) => ({
     id: layer.id,
