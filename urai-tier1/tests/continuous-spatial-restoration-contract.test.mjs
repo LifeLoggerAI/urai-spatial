@@ -11,7 +11,7 @@ const template = read('src/app/template.tsx')
 const homeRuntime = read('src/app/HomeSpatialRuntimeLayer.tsx')
 const assetHome = read('src/app/AssetDrivenHomeWorld.tsx')
 const homeProductionEntry = read('src/spatial/layout/HomeWorldProduction.tsx')
-const homeProduction = read('src/spatial/layout/HomeWorldProductionSacred.tsx')
+const homeProduction = read('src/spatial/layout/HomeWorldProductionPolished.tsx')
 const homeCss = read('src/spatial/layout/HomeWorldProduction.module.css')
 const worldEvents = read('src/spatial/world/worldEvents.ts')
 const sceneStore = read('src/spatial/store/useSceneStore.ts')
@@ -36,9 +36,9 @@ test('app template mounts current WebGL owners without certified-route redirects
   for (const marker of ['HomeSpatialRuntimeLayer', 'spatial-runtime-restoration.css', 'continuous-spatial-proof-defects.css']) assert.match(template, new RegExp(marker.replace('.', '\\.')))
   for (const marker of ['asset-driven-primary-with-procedural-degraded-fallback', 'asset-driven-personalized-sanctuary', 'data-home-exploration="walkable"', 'AssetDrivenHomeWorld']) assert.ok(homeRuntime.includes(marker))
   assert.match(assetHome, /HomeWorldProduction/)
-  assert.match(homeProductionEntry, /export \{ HomeWorldProductionSacred as HomeWorldProduction \} from "\.\/HomeWorldProductionSacred"/)
+  assert.match(homeProductionEntry, /export \{ HomeWorldProductionPolished as HomeWorldProduction \} from "\.\/HomeWorldProductionPolished"/)
   assert.match(homeProduction, /data-home-primary-owner="asset-driven"/)
-  assert.match(homeProduction, /data-home-visible-world="moonlit-natural-inhabited-sanctuary"/)
+  assert.match(homeProduction, /data-home-visible-world="authored-coherent-three-dimensional-sanctuary"/)
   assert.match(groundOwner, /GroundSpatialWorldClean/)
   assert.match(lifeMapOwner, /SpatialLifeMapCanonical/)
   assert.doesNotMatch(template, /focus|replay/i)
@@ -46,19 +46,19 @@ test('app template mounts current WebGL owners without certified-route redirects
 
 test('Home remains one embodied authored natural sanctuary 3D environment with accessible thresholds and recovery', () => {
   for (const marker of [
-    'HomeWorldProductionSacred',
+    'HomeWorldProductionPolished',
     'Stars',
     'home-entry-chamber-v1.glb',
-    'home-human-makehuman-v4.glb',
-    'urai-orb-avatar-v1.glb',
-    'portal-ring-master-v1.glb',
+    'polyhaven-fern-02-geometry-v1.glb',
+    'living-orb',
+    'reflecting-water',
     'data-home-primary-owner="asset-driven"',
-    'data-home-visible-world="moonlit-natural-inhabited-sanctuary"',
-    'data-home-world-character="premium-cinematic-natural-sanctuary"',
-    'data-home-physical-base="grounded-flagstone-clearing"',
+    'data-home-visible-world="authored-coherent-three-dimensional-sanctuary"',
+    'data-home-world-character="believable-natural-inhabitable-environment"',
+    'data-home-physical-base="authored-coherent-world"',
     'data-home-visual-ownership="three-dimensional-geometry"',
     'data-home-desktop-mobile-world="same-scene"',
-    'data-home-embodied-self="makehuman-v4"',
+    'data-home-embodied-self="privacy-preserving-shadow"',
     'data-home-movement="walk-keyboard-click-touch"',
     'data-testid="urai-home-webgl-orb"',
     'data-testid="urai-home-embodied-avatar"',
@@ -69,7 +69,7 @@ test('Home remains one embodied authored natural sanctuary 3D environment with a
     'home-orb-sanctuary',
     'home-ground-environmental-threshold',
     'home-life-map-sky-lookout',
-    'home-life-map-physical-portal',
+    'home-reflecting-water',
     'stepEmbodiedMotion',
     'useMovementInput',
     'MobileMovementPad',
@@ -79,12 +79,12 @@ test('Home remains one embodied authored natural sanctuary 3D environment with a
     '<Canvas',
   ]) assert.ok(homeGraph.includes(marker), `missing Home marker: ${marker}`)
   assert.doesNotMatch(homeCss, /replay-memory-film-mobile\.webp/)
-  assert.match(homeProduction, /function RitualFloor\(/)
-  assert.match(homeProduction, /function MoonAndMist\(/)
-  assert.match(homeProduction, /function SacredOrb\(/)
-  assert.match(homeProduction, /function OrbPlatform\(/)
-  assert.match(homeProduction, /function HumanPresence\(/)
-  assert.match(homeProduction, /function LifeMapPortal\(/)
+  assert.match(homeProduction, /function SanctuaryPath\(/)
+  assert.match(homeProduction, /function Horizon\(/)
+  assert.match(homeProduction, /function Orb\(/)
+  assert.match(homeProduction, /function OrbGroundGlow\(/)
+  assert.match(homeProduction, /function EmbodiedPresence\(/)
+  assert.match(homeProduction, /function Water\(/)
   assert.match(homeProduction, /function Thresholds\(/)
   assert.match(homeProduction, /function PlayerRig\(/)
   assert.match(homeProduction, /requestUraiWorldTravel/)
@@ -95,8 +95,8 @@ test('Home remains one embodied authored natural sanctuary 3D environment with a
   assert.match(companion, /URAI_WORLD_ORB_OPEN_EVENT/)
   assert.match(companion, /publishOrbState\('attention', 'companion'\)/)
   assert.match(companion, /publishOrbState\('transition', 'companion'\)/)
-  assert.match(homeProduction, /const PORTAL_MODEL = '\/assets\/urai\/generated\/models\/portal-ring-master-v1\.glb'/)
-  assert.match(homeProduction, /useGLTF\(PORTAL_MODEL\)/)
+  assert.match(homeProduction, /const HOME_FERN_MODEL = '\/assets\/urai\/home-production\/cc0\/polyhaven-fern-02-geometry-v1\.glb'/)
+  assert.match(homeProduction, /useGLTF\(HOME_FERN_MODEL\)/)
   assert.doesNotMatch(homeProduction, /WorldPortal|home-ground-portal-world-owned|home-life-map-portal-world-owned|destinationNames|dodecahedronGeometry/)
   assert.doesNotMatch(homeGraph, /requestPointerLock|OrbitControls/)
 })
@@ -112,7 +112,7 @@ test('Home Life Map entry is one canonical sky ascent transaction with one camer
   assert.match(worldEvents, /if \(scene\.phase !== 'ASCENT'\) scene\.enterLifeMap\(\)/)
   assert.match(worldEvents, /window\.dispatchEvent\(new CustomEvent<UraiWorldTravelRequest>\(URAI_HOME_ASCENT_EVENT/)
   assert.match(worldEvents, /return\s*\n\s*}/)
-  assert.match(homeProduction, /transition==='life-map'/)
+  assert.match(homeProduction, /const ascending = store\.phase === 'ASCENT'/)
   assert.match(homeProduction, /setProgress\(t\)/)
   assert.match(homeProduction, /cameraCheckpoint:'home-sky-ascent-complete'/)
   assert.match(homeProduction, /data-home-camera-mode=\{transition!=='none'\?transition:dragging\?'look':'embodied-first-person'\}/)
