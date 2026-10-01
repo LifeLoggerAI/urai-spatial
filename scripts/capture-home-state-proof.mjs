@@ -230,8 +230,23 @@ async function captureOrbLifecycle({ reducedMotion = 'no-preference' } = {}) {
   try {
     await page.addInitScript(() => {
       window.__uraiObservedOrbStates = []
+      window.__uraiObservedOrbEventSnapshots = []
       window.addEventListener('urai:orb-state', (event) => {
-        window.__uraiObservedOrbStates.push(event?.detail?.state ?? 'unknown')
+        const state = event?.detail?.state ?? 'unknown'
+        window.__uraiObservedOrbStates.push(state)
+        const retain = (phase) => {
+          const owner = document.querySelector('.urai-asset-home-world[data-home-primary-owner="asset-driven"]')
+          window.__uraiObservedOrbEventSnapshots.push({
+            state,
+            phase,
+            ownerState: owner?.getAttribute('data-home-orb-state') ?? null,
+            clip: owner?.getAttribute('data-home-orb-clip') ?? null,
+            animation: owner?.getAttribute('data-home-orb-animation') ?? null,
+            at: performance.now(),
+          })
+        }
+        queueMicrotask(() => retain('microtask'))
+        window.requestAnimationFrame(() => retain('animation-frame'))
       })
     })
     stage = 'home-ready'
@@ -323,9 +338,15 @@ async function captureOrbLifecycle({ reducedMotion = 'no-preference' } = {}) {
     await page.getByRole('button', { name: 'Send' }).click()
     await page.locator('section[aria-label="Orb response"]').waitFor({ state: 'visible', timeout: 20_000 })
     const speakingSnapshotHandle = await page.waitForFunction(() => {
-      const history = window.__uraiObservedOrbLifecycle || []
-      return history.find((snapshot) =>
+      const mutationHistory = window.__uraiObservedOrbLifecycle || []
+      const eventHistory = window.__uraiObservedOrbEventSnapshots || []
+      return mutationHistory.find((snapshot) =>
         snapshot?.state === 'speaking'
+        && snapshot?.clip === 'Orb_Speaking'
+        && snapshot?.animation === 'orb-speaking'
+      ) || eventHistory.find((snapshot) =>
+        snapshot?.state === 'speaking'
+        && snapshot?.ownerState === 'speaking'
         && snapshot?.clip === 'Orb_Speaking'
         && snapshot?.animation === 'orb-speaking'
       ) || false
@@ -333,7 +354,8 @@ async function captureOrbLifecycle({ reducedMotion = 'no-preference' } = {}) {
     const speakingSnapshot = await speakingSnapshotHandle.jsonValue()
     await speakingSnapshotHandle.dispose()
     record.observedLifecycle = await page.evaluate(() => window.__uraiObservedOrbLifecycle || [])
-    record.respondingState = speakingSnapshot.state
+    record.observedEventSnapshots = await page.evaluate(() => window.__uraiObservedOrbEventSnapshots || [])
+    record.respondingState = speakingSnapshot.ownerState ?? speakingSnapshot.state
     record.respondingClip = speakingSnapshot.clip
     record.respondingAnimation = speakingSnapshot.animation
     record.observedStates = await page.evaluate(() => window.__uraiObservedOrbStates || [])
