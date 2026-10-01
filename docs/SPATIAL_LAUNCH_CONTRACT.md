@@ -1,20 +1,20 @@
 # URAI Spatial Launch Contract
 
-URAI Spatial is currently a fallback/demo spatial shell. It previews the immersive URAI interface while keeping live provider claims disabled until integration work is implemented and verified.
+URAI Spatial now contains the converged source paths for the core immersive journey plus gated Life Movie, Council, Memory World, Interpretive World, Captured Reality, Android, and XR surfaces. Source presence is not provider, device, Gold Master, deployment, or production certification. Live-provider and sensitive-runtime claims remain fail-closed until their own exact runtime evidence exists.
 
 ## Current launch mode
 
 | Area | Status |
 | --- | --- |
-| Spatial home shell | Live demo shell |
-| LifeMap starfield/replay shell | Live demo shell |
-| Orb companion | Local fallback/scaffold |
+| Spatial home shell | Integrated candidate; final literal Gold Master acceptance remains separate |
+| Life Map / Focus / Replay | Integrated candidate; exact-head runtime and pixel evidence required |
+| Orb / Council | OpenAI path plus disclosed local fallback; other Council providers remain not-connected until separately verified |
 | Body biometric panel | Privacy-safe fallback/scaffold |
-| AR/WebXR session provider | Deferred |
+| AR/WebXR session | Browser/session source implemented; physical-device certification remains separate |
 | Wearable provider | Deferred |
 | Live biometric/camera provider | Deferred |
 | Memory-grounded orb provider | Deferred |
-| Asset-factory spatial jobs | Deferred |
+| Captured / interpretive spatial jobs | Source/runtime contracts implemented behind release gates; accepted reconstruction/runtime receipts remain separate |
 | Cross-repo user memory sync | Deferred |
 
 ## Required boundary
@@ -81,4 +81,4 @@ pnpm launch:check
 
 ## Go/no-go rule
 
-Ship URAI Spatial only if the fallback shell is stable and all copy, APIs, and docs agree that live providers are not active. Provider rollout requires a separate implementation PR with consent, tests, route smoke coverage, and deployment evidence.
+Ship UrAi only from the current governed exact-head candidate after all applicable internal gates, literal visual acceptance, independent review, and subsequent protected deployment requirements are satisfied. A source path or green unit test never authorizes a live-provider claim. Provider rollout still requires consent, exact runtime evidence, route smoke coverage, truthful attribution, and deployment evidence.
