@@ -28,14 +28,14 @@ await transformFile('urai-tier1/tests/accessibility-performance-embodied-explora
   source = replaceExact(
     source,
     "    await expect(home).toHaveAttribute('data-home-pointer-lock', 'false')",
-    "    await expect(home).toHaveAttribute('data-home-camera-mode', 'embodied')",
+    "    await expect(home).toHaveAttribute('data-home-camera-mode', 'embodied-first-person')",
     1,
     'current Home embodied camera contract',
   )
   source = replaceExact(
     source,
-    "    await expect(home).toHaveAttribute('data-home-visible-world', 'final-physical-sanctuary-memory-rooms')",
-    "    await expect(home).toHaveAttribute('data-home-animation-owner', 'authored-sanctuary-plus-gltf-interactions')",
+    "    await expect(home).toHaveAttribute('data-home-visible-world', 'authored-coherent-three-dimensional-sanctuary')",
+    "    await expect(home).toHaveAttribute('data-home-animation-owner', 'canonical-sanctuary-plus-cc0-fern-plus-living-orb')",
     1,
     'current Home authored visual owner contract',
   )
