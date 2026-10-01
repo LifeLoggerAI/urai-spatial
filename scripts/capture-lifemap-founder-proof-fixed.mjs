@@ -724,13 +724,20 @@ async function desktopActionsAndKeyboard() {
       if (!context) throw new Error('Focus retained pixel sampler unavailable')
       context.drawImage(image, image.width * .4, image.height * .35, image.width * .2, image.height * .3, 0, 0, 80, 80)
       const pixels = context.getImageData(0, 0, 80, 80).data
-      let warm = 0
+      let stellar = 0
       for (let i = 0; i < pixels.length; i += 4) {
-        if (pixels[i] > 30 && pixels[i] > pixels[i + 1] * 1.08 && pixels[i] > pixels[i + 2] * 1.3) warm += 1
+        const red = pixels[i]
+        const green = pixels[i + 1]
+        const blue = pixels[i + 2]
+        // The approved repaired photosphere is luminous yellow-gold rather than the
+        // retired red/brown terrain-like palette. Require a substantial bright,
+        // warm stellar region in the retained WebGL canvas without encoding the
+        // obsolete red-dominant color signature.
+        if (red > 130 && green > 100 && ((red + green) / 2) > blue * 1.2) stellar += 1
       }
-      return { warmRatio: warm / 6400, samples: 6400, source: 'retained-focus-canvas-png' }
+      return { stellarRatio: stellar / 6400, samples: 6400, source: 'retained-focus-canvas-png' }
     }, `data:image/png;base64,${focusCanvasBuffer.toString('base64')}`)
-    if (focusPixelSignal.warmRatio < .05) throw new Error(`Focus photosphere absent from retained canvas: ${JSON.stringify(focusPixelSignal)}`)
+    if (focusPixelSignal.stellarRatio < .20) throw new Error(`Focus photosphere absent from retained canvas: ${JSON.stringify(focusPixelSignal)}`)
     await shot(page, 'focus-destination', 'focus', { memoryId: 'quiet-reset', renderedFirstFrame: true, focusCanvasFile, focusCanvasSha256: createHash('sha256').update(focusCanvasBuffer).digest('hex'), focusPixelSignal })
 
     await goto(page, arrivalRoute)
