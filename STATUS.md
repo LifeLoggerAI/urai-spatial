@@ -6,9 +6,9 @@ Runtime app root: `urai-tier1`.
 
 Canonical public application: `LifeLoggerAI/urai-spatial/urai-tier1` on `main`.
 
-Current release lane: PR #1069 (`agent/real-world-home-production-completion-20260808`) is a production candidate under exact-head verification. Resolve the live PR head before using any SHA-bound evidence.
+Current release lane: PR #1508 (`integration/full-vision-terminal-20261001`) is the full-vision pre-independent-review candidate. Resolve its live head before using any SHA-bound evidence because active hardening PRs may still advance it.
 
-Production-live status: **not yet verified**. GitHub issue #863 remains the controlling visual acceptance gate until the exact accepted result is merged, deployed through the protected production workflow, and independently verified live.
+Production-live status for the current candidate: **not verified**. GitHub issue #863 remains open for Home visual acceptance. The current `.github/workflows/spatial-live-deploy.yml` is verification-only and explicitly classifies production mutation as NO-GO; no deploy authority exists in that workflow until the governed credential/IAM/runtime/rollback/revocation gates are deliberately restored and re-verified.
 
 ## Current verified source and asset posture
 
@@ -22,28 +22,22 @@ Production-live status: **not yet verified**. GitHub issue #863 remains the cont
 
 ## Current release boundary
 
-PR #1069 must remain unmerged until the genuinely final head satisfies all applicable repository-required exact-head checks and issue #863's rendered-product standard.
+PR #1508 must remain unmerged and draft until the genuinely final integrated head satisfies all applicable repository-required exact-head checks and issue #863's rendered-product standard.
 
 Required release progression remains:
 
-1. complete source and production audio;
-2. reconcile release-critical authority;
-3. freeze one exact candidate SHA;
-4. obtain all applicable exact-head non-human CI/proof gates;
-5. directly inspect desktop, portrait-mobile, movement/proximity, Orb, Ground, Life Map, and reduced-motion proof;
-6. obtain human exact-SHA visual/steward acceptance without transferring approval from an older SHA;
-7. satisfy Release Governance Guard on that same SHA;
-8. merge without head drift;
-9. deploy only through `.github/workflows/spatial-live-deploy.yml` on `main` using its live manual contract;
-10. independently verify production and record rollback provenance before closing #863.
+1. finish all safe internal source, route, localization-preparation, visual, accessibility, privacy, and evidence hardening;
+2. freeze one exact integrated candidate SHA;
+3. obtain all applicable exact-head non-human CI/proof gates;
+4. directly inspect retained desktop/mobile/reduced-motion/world/media evidence;
+5. obtain legitimate independent exact-SHA approval through the repository governance contract;
+6. satisfy Release Governance Guard on that same SHA;
+7. merge without head drift;
+8. separately restore a governed production-mutation workflow only after its WIF/IAM, least-privilege runtime identity, rollback, historical-credential-revocation, and release-security prerequisites are proven;
+9. deploy only through that subsequently reviewed protected authority;
+10. run strict post-deploy parity, fingerprint, route, privacy, accessibility, and rollback certification before any live-certification claim.
 
-The canonical production workflow's normal deploy contract is a manual `workflow_dispatch` on `main` with:
-
-- `release_sha`: exact current `main` release SHA;
-- `rollback_sha`: a distinct proven ancestor/recovery SHA;
-- `confirm`: `DEPLOY_URAI_APP`.
-
-Preview deployments, PR verification runs, queued checks, or intermediate receipts are not production completion.
+The currently committed `.github/workflows/spatial-live-deploy.yml` is **URAI Canonical Production Release Verification**, not a deploy workflow. It has read-only repository permissions, records `Classification: NO-GO`, and its WIF job uses a read-only cloud scope with `Production mutation command: none`. Older docs or receipts that describe manual `DEPLOY_URAI_APP` inputs are historical and are not current authority.
 
 ## Version posture
 
@@ -63,4 +57,4 @@ Historical receipts remain historical. New exact-head evidence supersedes older 
 
 ## Done definition
 
-Do not mark this repository production-live until all applicable evidence is recorded for the shipped SHA, including frozen dependencies, source integrity, exact-head CI/proof, direct rendered-product inspection, human exact-SHA acceptance, governance authorization, protected production deployment, live route/interaction verification, asset/audio loading, privacy controls, rollback viability, canonical Drive receipt update, and issue #863 closure.
+Do not mark this repository production-live until all applicable evidence is recorded for the shipped SHA, including frozen dependencies, source integrity, exact-head CI/proof, direct rendered-product inspection, independent exact-SHA acceptance, governance authorization, a separately restored and reviewed protected production mutation authority, exact deployment identity, live route/interaction verification, asset/audio loading, privacy controls, rollback viability, and issue #863 closure.
