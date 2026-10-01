@@ -2,12 +2,12 @@
 
 import StellarCorona from '@/spatial/stellar/StellarCorona'
 
-import { Html, OrbitControls, Sparkles, Stars } from '@react-three/drei'
+import { Billboard, Html, OrbitControls, Sparkles, Stars, useTexture } from '@react-three/drei'
 import { Canvas, useFrame, useThree, type ThreeEvent } from '@react-three/fiber'
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type RefObject } from 'react'
 import * as THREE from 'three'
 import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib'
-import { assetCssStack, focusAssets } from '@/spatial/assets/uraiAssets'
+import { assetCssStack, focusAssets, replayAssets } from '@/spatial/assets/uraiAssets'
 import { markFirstSpatialFrame, useAdaptiveSpatialQuality, type SpatialQualityProfile } from '@/spatial/performance/useAdaptiveSpatialQuality'
 import { useSelectedMemory } from '@/spatial/memory/useSelectedMemory'
 import type { SelectedMemory } from '@/spatial/memory/selectedMemoryContract'
@@ -299,6 +299,58 @@ function StellarPhotosphere({ accent, light, reducedMotion }: { accent: string; 
   )
 }
 
+function MemoryImprint({ url }: { url: string }) {
+  const texture = useTexture(url)
+  const material = useMemo(() => new THREE.ShaderMaterial({
+    uniforms: { uMemory: { value: texture } },
+    vertexShader: `
+      varying vec2 vUv;
+      void main() {
+        vUv = uv;
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+      }
+    `,
+    fragmentShader: `
+      uniform sampler2D uMemory;
+      varying vec2 vUv;
+      void main() {
+        vec2 centered = vUv - vec2(.5);
+        float radius = length(centered);
+        float veil = 1.0 - smoothstep(.20, .50, radius);
+        float core = 1.0 - smoothstep(.05, .42, radius);
+        vec3 image = texture2D(uMemory, vUv).rgb;
+        float luminance = dot(image, vec3(.2126, .7152, .0722));
+        vec3 solarMemory = mix(image, vec3(1.0, .48, .08), .16 + (1.0 - luminance) * .12);
+        float alpha = veil * (.12 + luminance * .20 + core * .05);
+        gl_FragColor = vec4(solarMemory, alpha);
+        #include <colorspace_fragment>
+      }
+    `,
+    transparent: true,
+    depthWrite: false,
+    depthTest: false,
+    toneMapped: false,
+    blending: THREE.NormalBlending,
+  }), [texture])
+
+  useEffect(() => {
+    texture.colorSpace = THREE.SRGBColorSpace
+    texture.wrapS = THREE.ClampToEdgeWrapping
+    texture.wrapT = THREE.ClampToEdgeWrapping
+    texture.needsUpdate = true
+    return () => material.dispose()
+  }, [material, texture])
+
+  return (
+    <Billboard follow position={[0, 0.35, -0.28]} name="focus-memory-imprint-billboard">
+      <mesh renderOrder={6} name="focus-memory-imprint">
+        <planeGeometry args={[1.72, 1.72]} />
+        <primitive object={material} attach="material" />
+      </mesh>
+    </Billboard>
+  )
+}
+
 function MemoryTraces({ memory, accent, reducedMotion }: { memory: SelectedMemory | null; accent: string; reducedMotion: boolean }) {
   const count = memory ? Math.min(7, Math.max(3, memory.people.length + memory.emotionalArc.length + (memory.place ? 1 : 0))) : 5
   const refs = useRef<Array<THREE.Group | null>>([])
@@ -315,7 +367,7 @@ function MemoryTraces({ memory, accent, reducedMotion }: { memory: SelectedMemor
       group.rotation.y = clock.elapsedTime * 0.08 + index * 0.7
     })
   })
-  return <group name="focus-grounded-memory-traces">{positions.map((position, index) => <group key={index} ref={(value) => { refs.current[index] = value }} position={position}><mesh><sphereGeometry args={[0.12, 24, 24]} /><meshBasicMaterial color={accent} transparent opacity={0.82} depthWrite={false} blending={THREE.AdditiveBlending} /></mesh><mesh><sphereGeometry args={[0.46, 18, 18]} /><meshBasicMaterial color={accent} transparent opacity={0.045} depthWrite={false} blending={THREE.AdditiveBlending} /></mesh></group>)}</group>
+  return <group name="focus-grounded-memory-traces">{positions.map((position, index) => <group key={index} ref={(value) => { refs.current[index] = value }} position={position}><mesh><sphereGeometry args={[0.045, 20, 20]} /><meshBasicMaterial color="#fff0b8" transparent opacity={0.86} depthWrite={false} blending={THREE.AdditiveBlending} /></mesh><mesh><sphereGeometry args={[0.16, 18, 18]} /><meshBasicMaterial color={accent} transparent opacity={0.055} depthWrite={false} blending={THREE.AdditiveBlending} /></mesh></group>)}</group>
 }
 
 function MemoryStarInteraction({ memory, accent, light, reducedMotion, onActivate }: { memory: SelectedMemory | null; accent: string; light: string; reducedMotion: boolean; onActivate: () => void }) {
@@ -362,6 +414,7 @@ function MemoryStarInteraction({ memory, accent, light, reducedMotion, onActivat
 function FocusScene({ memory, profile, recenterSignal, onActivate, controls, onWebGLState, shellRef }: { memory: SelectedMemory | null; profile: SpatialQualityProfile; recenterSignal: number; onActivate: () => void; controls: RefObject<OrbitControlsImpl | null>; onWebGLState: (state: WebGLState) => void; shellRef: RefObject<HTMLElement | null> }) {
   const accent = memory?.visuals.accent ?? '#79dfff'
   const light = memory?.visuals.light ?? '#e7fbff'
+  const memoryImageUrl = memory?.sourceMedia.find((media) => media.kind === 'image')?.url ?? (memory?.demo ? replayAssets.primary.src : null)
   return <>
     <FirstFrame profile={profile} />
     <WebGLRecoveryBridge onStateChange={onWebGLState} />
@@ -373,6 +426,7 @@ function FocusScene({ memory, profile, recenterSignal, onActivate, controls, onW
     <pointLight position={[0, 1, -1.5]} intensity={3.4} color={accent} distance={14} />
     <Stars radius={65} depth={45} count={profile.reducedMotion ? 500 : profile.particleCount * 3} factor={2.5} saturation={0.25} fade speed={profile.reducedMotion ? 0 : 0.12} />
     <StellarPhotosphere accent={accent} light={light} reducedMotion={profile.reducedMotion} />
+    {memoryImageUrl ? <MemoryImprint url={memoryImageUrl} /> : null}
     <MemoryTraces memory={memory} accent={accent} reducedMotion={profile.reducedMotion} />
     <MemoryStarInteraction memory={memory} accent={accent} light={light} reducedMotion={profile.reducedMotion} onActivate={onActivate} />
     <OrbitControls ref={controls} makeDefault enableDamping={!profile.reducedMotion} dampingFactor={0.07} enablePan={false} enableZoom minDistance={3.4} maxDistance={11.5} zoomSpeed={0.55} rotateSpeed={0.32} minPolarAngle={0.58} maxPolarAngle={1.9} target={DEFAULT_TARGET} />
