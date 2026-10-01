@@ -6,8 +6,9 @@ URAI Spatial is the canonical public URAI application repository.
 - Canonical repository: `LifeLoggerAI/urai-spatial`
 - Runtime root: `urai-tier1`
 - Canonical branch: `main`
-- Current release lane: exact current `main` through the protected production workflow
-- Production certification: incomplete until exact-head acceptance, protected deploy, and live verification
+- Current pre-review lane: PR #1508 (`integration/full-vision-terminal-20261001`), live head must be re-fetched before SHA-bound claims
+- Production mutation: currently quarantined; the canonical release workflow is verification-only / NO-GO
+- Production certification: incomplete until exact-head acceptance, independent approval, governed mutation authority, protected deploy, and post-deploy verification
 
 The canonical experience chain is Home → Ground → Life Map → Focus → Replay, with the broader product surface including Mirror, Passport, Privacy Controls, Location Map, and Status.
 
@@ -44,15 +45,11 @@ Historical evidence remains valid for what it proved at its recorded SHA, but it
 - **V4 — Spatial Computing:** 39 runtime images ready / 0 missing; paid generation passed. WebXR/browser and physical-device certification remain separate gates.
 - **V5 — Mirror of Becoming:** 27 runtime images ready / 0 missing; paid generation passed. Identity/legacy/provenance/privacy behavior and production deployment remain separately gated.
 
-## Production release contract
+## Production release boundary
 
-The canonical protected production workflow is `.github/workflows/spatial-live-deploy.yml`. A normal production deploy is manual on `main` and requires the live workflow inputs:
+The current `.github/workflows/spatial-live-deploy.yml` is a **verification-only** workflow named `URAI Canonical Production Release Verification`. It intentionally records production as NO-GO and exposes no production mutation command. Its main-only WIF proof uses a read-only cloud scope and does not authorize deployment.
 
-- `release_sha`: exact current main SHA;
-- `rollback_sha`: distinct proven ancestor/recovery SHA;
-- `confirm`: `DEPLOY_URAI_APP`.
-
-A preview, PR verification run, green subset of CI, or intermediate receipt is not production completion.
+Older receipts and docs that describe this filename as a deploy-capable manual workflow are historical. Production mutation may be restored only by a separately reviewed governed change after the current WIF/IAM, least-privilege identity, revocation, rollback, governance and release-security gates are proven. A preview, PR verification run, WIF identity proof or green CI subset is not production completion.
 
 ## Repository authority
 
