@@ -1,7 +1,7 @@
 'use client'
 
 import { Canvas, useFrame, useThree, type ThreeEvent } from '@react-three/fiber'
-import { ContactShadows, Environment, Lightformer, Stars, useAnimations, useGLTF } from '@react-three/drei'
+import { ContactShadows, Environment, Lightformer, RoundedBox, Stars, useAnimations, useGLTF } from '@react-three/drei'
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type MutableRefObject } from 'react'
 import * as THREE from 'three'
 import { resolveOrbSensoryOutput, URAI_ORB_STATE_EVENT, type OrbState, type OrbStateEventDetail } from '@/app/home/orbStateController'
@@ -301,51 +301,143 @@ function Vegetation() {
 }
 
 function Horizon() {
-  return <group name="home-mountain-horizon">
-    <mesh geometry={RIDGE_FAR} position={[0, -1.05, -54]}><meshBasicMaterial color="#29454b" side={THREE.DoubleSide} /></mesh>
-    <mesh geometry={RIDGE_MID} position={[0, -1.35, -46]}><meshBasicMaterial color="#31514f" side={THREE.DoubleSide} /></mesh>
-    <mesh geometry={RIDGE_NEAR} position={[0, -1.65, -39]}><meshBasicMaterial color="#385b50" side={THREE.DoubleSide} /></mesh>
+  return <group name="home-mountain-horizon" userData={{ role: 'soft-atmospheric-landform-without-polygon-ridge-silhouettes' }}>
+    <mesh position={[-25, -8.4, -58]} scale={[32, 9.5, 7]} receiveShadow>
+      <sphereGeometry args={[1, 64, 32]} />
+      <meshStandardMaterial color="#48615b" roughness={1} metalness={0} transparent opacity={.34} />
+    </mesh>
+    <mesh position={[22, -9.2, -62]} scale={[36, 10.5, 8]} receiveShadow>
+      <sphereGeometry args={[1, 64, 32]} />
+      <meshStandardMaterial color="#405851" roughness={1} metalness={0} transparent opacity={.3} />
+    </mesh>
+    <mesh position={[0, -11.2, -70]} scale={[48, 12, 9]} receiveShadow>
+      <sphereGeometry args={[1, 64, 32]} />
+      <meshStandardMaterial color="#385049" roughness={1} metalness={0} transparent opacity={.24} />
+    </mesh>
     <group position={[-17, 13.5, -52]}>
-      <mesh><sphereGeometry args={[1.5, 32, 32]} /><meshBasicMaterial color="#e5eee4" toneMapped={false} /></mesh>
-      <mesh scale={1.7}><sphereGeometry args={[1.5, 24, 24]} /><meshBasicMaterial color="#d9ede4" transparent opacity={.035} depthWrite={false} toneMapped={false} /></mesh>
+      <mesh><sphereGeometry args={[1.5, 48, 32]} /><meshBasicMaterial color="#e5eee4" toneMapped={false} /></mesh>
+      <mesh scale={1.7}><sphereGeometry args={[1.5, 32, 24]} /><meshBasicMaterial color="#d9ede4" transparent opacity={.035} depthWrite={false} toneMapped={false} /></mesh>
     </group>
   </group>
 }
 
 function SanctuaryPavilion() {
-  const stone = '#777a70'
-  const warmStone = '#8a7966'
-  const ceramic = '#8a6d52'
-  return <group name="home-sanctuary-pavilion" userData={{ role: 'open-air-inhabited-resting-place-without-ceiling', ceiling: false, skyDominant: true }}>
-    <mesh geometry={ORB_CLEARING_GEOMETRY} receiveShadow>
-      <meshPhysicalMaterial color="#526458" roughness={.92} metalness={0} clearcoat={.06} clearcoatRoughness={.84} />
+  const floorY = terrainHeight(0, -1.5) + .16
+  const stone = '#827d70'
+  const warmStone = '#9a8a76'
+  const timber = '#74543a'
+  const timberDark = '#493527'
+  const fabric = '#b6aa98'
+  const ceramic = '#92745b'
+  return <group
+    name="home-sanctuary-pavilion"
+    userData={{
+      role: 'open-sky-modern-inhabited-residential-sanctuary',
+      ceiling: false,
+      skyDominant: true,
+      materialLanguage: 'stone-timber-glass-fabric-planting',
+    }}
+  >
+    <RoundedBox args={[12.4, .28, 9.4]} radius={.12} smoothness={6} position={[0, floorY, -1.55]} receiveShadow>
+      <meshPhysicalMaterial color="#8a877e" roughness={.78} metalness={0} clearcoat={.08} clearcoatRoughness={.72} />
+    </RoundedBox>
+    <RoundedBox args={[10.8, .09, 4.4]} radius={.045} smoothness={5} position={[0, floorY + .19, -.4]} receiveShadow>
+      <meshPhysicalMaterial color={timberDark} roughness={.68} metalness={0} clearcoat={.12} clearcoatRoughness={.6} />
+    </RoundedBox>
+
+    <RoundedBox args={[.62, 4.45, 8.5]} radius={.09} smoothness={6} position={[-5.78, floorY + 2.28, -1.7]} castShadow receiveShadow>
+      <meshPhysicalMaterial color={stone} roughness={.84} metalness={0} clearcoat={.04} />
+    </RoundedBox>
+    <RoundedBox args={[4.35, 3.25, .62]} radius={.09} smoothness={6} position={[3.55, floorY + 1.68, -5.78]} castShadow receiveShadow>
+      <meshPhysicalMaterial color={warmStone} roughness={.82} metalness={0} clearcoat={.05} />
+    </RoundedBox>
+    <RoundedBox args={[11.25, .4, .42]} radius={.08} smoothness={6} position={[0, floorY + 4.35, -5.72]} castShadow receiveShadow>
+      <meshPhysicalMaterial color={timberDark} roughness={.7} metalness={0} clearcoat={.1} />
+    </RoundedBox>
+
+    <mesh position={[-.9, floorY + 2.15, -5.75]} receiveShadow>
+      <boxGeometry args={[6.9, 3.8, .075]} />
+      <meshPhysicalMaterial
+        color="#b9d0ca"
+        roughness={.08}
+        metalness={0}
+        transmission={.74}
+        thickness={.12}
+        transparent
+        opacity={.42}
+        envMapIntensity={1.1}
+      />
     </mesh>
-    <mesh geometry={SANCTUARY_BOULDER_LEFT} position={[-2.85, terrainHeight(-2.85,-6.15) + .42, -6.15]} rotation={[.18,.38,-.14]} scale={[1.2,.58,.82]} castShadow receiveShadow>
-      <meshStandardMaterial color="#727b70" roughness={.96} metalness={0} />
-    </mesh>
-    <mesh geometry={SANCTUARY_BOULDER_RIGHT} position={[2.75, terrainHeight(2.75,-6.35) + .4, -6.35]} rotation={[-.12,-.42,.17]} scale={[1.08,.52,.76]} castShadow receiveShadow>
-      <meshStandardMaterial color="#68756b" roughness={.97} metalness={0} />
-    </mesh>
-    <group name="home-lived-in-stone-seating">
-      <mesh castShadow receiveShadow position={[-4.25, terrainHeight(-4.25,-4.2) + .32, -4.2]} rotation={[0,0,.03]}>
-        <cylinderGeometry args={[1.3,1.5,.5,48]} /><meshStandardMaterial color={stone} roughness={.94} metalness={0} />
-      </mesh>
-      <mesh castShadow receiveShadow position={[4.35, terrainHeight(4.35,-4.45) + .3, -4.45]} rotation={[0,0,-.025]}>
-        <cylinderGeometry args={[1.16,1.34,.46,48]} /><meshStandardMaterial color={warmStone} roughness={.94} metalness={0} />
-      </mesh>
-      <mesh castShadow receiveShadow position={[-2.55, terrainHeight(-2.55,-5.0) + .36, -5.0]}>
-        <cylinderGeometry args={[.62,.68,.58,48]} /><meshStandardMaterial color="#66594c" roughness={.9} metalness={0} />
-      </mesh>
-      <mesh castShadow position={[-2.4, terrainHeight(-2.4,-5.0) + .76, -5.0]}>
-        <cylinderGeometry args={[.1,.12,.23,32]} /><meshStandardMaterial color={ceramic} roughness={.9} metalness={0} />
-      </mesh>
+    {[-4.15, -2.55, -.95, .65, 2.25].map((x) => (
+      <RoundedBox key={x} args={[.14, 4.05, .16]} radius={.035} smoothness={4} position={[x, floorY + 2.18, -5.68]} castShadow>
+        <meshPhysicalMaterial color={timber} roughness={.72} metalness={0} />
+      </RoundedBox>
+    ))}
+
+    <group name="home-lived-in-sofa" position={[-2.65, floorY + .22, -1.7]} rotation={[0, .12, 0]}>
+      <RoundedBox args={[3.45, .5, 1.25]} radius={.2} smoothness={8} position={[0, .48, 0]} castShadow receiveShadow>
+        <meshPhysicalMaterial color={fabric} roughness={.96} metalness={0} />
+      </RoundedBox>
+      <RoundedBox args={[3.4, 1.1, .42]} radius={.18} smoothness={8} position={[0, 1.18, -.43]} rotation={[-.08, 0, 0]} castShadow receiveShadow>
+        <meshPhysicalMaterial color="#a89b89" roughness={.97} metalness={0} />
+      </RoundedBox>
+      <RoundedBox args={[.4, .75, 1.18]} radius={.17} smoothness={8} position={[-1.66, .72, 0]} castShadow>
+        <meshPhysicalMaterial color="#a99d8c" roughness={.96} metalness={0} />
+      </RoundedBox>
+      <RoundedBox args={[.4, .75, 1.18]} radius={.17} smoothness={8} position={[1.66, .72, 0]} castShadow>
+        <meshPhysicalMaterial color="#a99d8c" roughness={.96} metalness={0} />
+      </RoundedBox>
+      <RoundedBox args={[1.35, .16, .72]} radius={.09} smoothness={6} position={[-.82, .82, .08]} castShadow>
+        <meshPhysicalMaterial color="#c8bcaa" roughness={.98} metalness={0} />
+      </RoundedBox>
+      <RoundedBox args={[1.35, .16, .72]} radius={.09} smoothness={6} position={[.82, .82, .08]} castShadow>
+        <meshPhysicalMaterial color="#bdae9c" roughness={.98} metalness={0} />
+      </RoundedBox>
     </group>
-    <group name="home-stone-hearth" position={[2.55, terrainHeight(2.55,-5.55) + .09, -5.55]}>
-      <mesh castShadow receiveShadow><cylinderGeometry args={[.7,.78,.2,56]} /><meshStandardMaterial color="#666961" roughness={.98} /></mesh>
-      <mesh position={[0,.14,0]}><cylinderGeometry args={[.43,.46,.07,56]} /><meshStandardMaterial color="#292824" roughness={1} /></mesh>
-      <mesh position={[0,.25,0]}><sphereGeometry args={[.16,32,20]} /><meshBasicMaterial color="#d38a54" transparent opacity={.42} toneMapped={false} /></mesh>
-      <pointLight position={[0,.56,0]} color="#e7a46c" intensity={.42} distance={4.5} decay={2} />
+
+    <group name="home-coffee-table" position={[1.15, floorY + .28, -1.65]}>
+      <RoundedBox args={[2.2, .16, 1.15]} radius={.1} smoothness={6} position={[0, .62, 0]} castShadow receiveShadow>
+        <meshPhysicalMaterial color={timber} roughness={.66} metalness={0} clearcoat={.14} clearcoatRoughness={.58} />
+      </RoundedBox>
+      <mesh position={[-.72, .31, 0]} castShadow><cylinderGeometry args={[.09, .1, .62, 24]} /><meshStandardMaterial color={timberDark} roughness={.78} /></mesh>
+      <mesh position={[.72, .31, 0]} castShadow><cylinderGeometry args={[.09, .1, .62, 24]} /><meshStandardMaterial color={timberDark} roughness={.78} /></mesh>
+      <mesh position={[.42, .82, -.18]} castShadow><cylinderGeometry args={[.11, .14, .22, 32]} /><meshStandardMaterial color={ceramic} roughness={.9} /></mesh>
     </group>
+
+    <group name="home-reading-chair" position={[3.8, floorY + .2, -.45]} rotation={[0, -.62, 0]}>
+      <RoundedBox args={[1.25, .46, 1.25]} radius={.2} smoothness={8} position={[0, .52, 0]} castShadow receiveShadow>
+        <meshPhysicalMaterial color="#918677" roughness={.96} metalness={0} />
+      </RoundedBox>
+      <RoundedBox args={[1.2, 1.1, .38]} radius={.18} smoothness={8} position={[0, 1.2, -.42]} rotation={[-.09, 0, 0]} castShadow>
+        <meshPhysicalMaterial color="#867b6d" roughness={.97} metalness={0} />
+      </RoundedBox>
+    </group>
+
+    <group name="home-integrated-hearth" position={[3.8, floorY + .12, -3.9]}>
+      <RoundedBox args={[2.35, .28, 1.12]} radius={.12} smoothness={6} receiveShadow castShadow>
+        <meshPhysicalMaterial color="#706c64" roughness={.9} metalness={0} />
+      </RoundedBox>
+      <mesh position={[0, .28, 0]}><cylinderGeometry args={[.43, .48, .08, 48]} /><meshStandardMaterial color="#292824" roughness={1} /></mesh>
+      <mesh position={[0, .47, 0]}><sphereGeometry args={[.18, 36, 24]} /><meshBasicMaterial color="#dc9a61" transparent opacity={.46} toneMapped={false} /></mesh>
+      <pointLight position={[0, .78, 0]} color="#efb37b" intensity={.58} distance={5.5} decay={2} />
+    </group>
+
+    <group name="home-architectural-planters">
+      {[
+        [-4.9, floorY + .42, 1.55, '#7f6952'],
+        [4.85, floorY + .42, 1.25, '#6f6253'],
+        [-4.8, floorY + .42, -4.7, '#8b735b'],
+      ].map(([x, y, z, color], index) => (
+        <group key={index} position={[x as number, y as number, z as number]}>
+          <mesh castShadow receiveShadow><cylinderGeometry args={[.42, .34, .78, 36]} /><meshStandardMaterial color={color as string} roughness={.94} /></mesh>
+          <mesh position={[0, .86, 0]} scale={[.78, 1.35, .78]} castShadow><sphereGeometry args={[.48, 36, 28]} /><meshStandardMaterial color="#587257" roughness={.96} /></mesh>
+        </group>
+      ))}
+    </group>
+
+    <mesh geometry={ORB_CLEARING_GEOMETRY} receiveShadow position={[0, .012, 0]}>
+      <meshPhysicalMaterial color="#5f6d61" roughness={.9} metalness={0} clearcoat={.05} clearcoatRoughness={.82} />
+    </mesh>
   </group>
 }
 function Water() {
@@ -647,7 +739,7 @@ export function HomeWorldProductionPolished({ onOrbOpen = requestUraiWorldOrbOpe
   const orbSensory = resolveOrbSensoryOutput(orbState, reducedMotion, true)
   const context = phase === 'ASCENT' ? 'Ascending through the sky' : groundDescent ? 'Descending into Ground' : nearby === 'orb' ? 'The Orb is here' : nearby === 'ground' ? 'The path descends' : nearby === 'life-map' ? 'Look to the sky' : null
 
-  return <main className={`${styles.world} urai-asset-home-world`} data-urai-home-production data-urai-true-3d="true" data-home-primary-owner="asset-driven" data-home-real-world-first="true" data-home-visible-world="authored-coherent-three-dimensional-sanctuary" data-home-world-character="believable-natural-inhabitable-environment" data-home-visible-portals="false" data-home-transition-affordances="ground-environmental-descent life-map-sky-lookout" data-home-provider-environment={HOME_PROVIDER_ENVIRONMENT} data-home-provider-role="atmospheric-support-only" data-home-provider-regions="home-atmospheric-horizon" data-home-generated-scenery="suppressed" data-home-physical-base="authored-coherent-world" data-home-visual-ownership="three-dimensional-geometry" data-home-desktop-mobile-world="same-scene" data-home-embodied-self="privacy-preserving-shadow" data-home-movement="walk-keyboard-click-touch" data-home-pointer-lock="false" data-home-audio="production-opus-consent-controlled" data-home-assets-ready={ready ? 'true' : 'false'} data-home-runtime-assets="home-entry-chamber-v1.glb polyhaven-fern-02-geometry-v1.glb local-three-dimensional-terrain living-orb reflecting-water" data-home-authored-regions="home-canonical-sanctuary-structure home-sanctuary-geometry home-mountain-horizon home-living-vegetation home-reflecting-water" data-home-nearby={nearby ?? 'none'} data-home-camera-mode={groundDescent ? 'descent' : phase === 'ASCENT' ? 'ascent' : dragging ? 'look' : 'embodied-first-person'} data-home-scene-phase={groundDescent ? 'GROUND_DESCENT' : phase} data-home-ascent-progress={phase === 'ASCENT' ? progress.toFixed(3) : '0.000'} data-home-input-locked={transitioning || inputLocked ? 'true' : 'false'} data-home-portal-sequence={portalSequence} data-home-portal-lifecycle="environmental-approach-traversal-arrival" data-home-review-fixture={reviewFixture} data-home-orb-state={orbState} data-home-orb-clip={ORB_CLIPS[orbState]} data-home-orb-animation={orbSensory.animation} data-home-orb-material={orbSensory.material} data-home-orb-movement={orbSensory.movement} data-home-orb-caption={orbSensory.caption} data-home-orb-reduced-motion={reducedMotion ? 'true' : 'false'} data-home-animation-owner={HOME_SCANNED_COMPOSITION_V1} data-testid="home-visible-navigable-sanctuary-world" style={{ position:'relative', overflow:'hidden', background:'#172c27' }} {...look}>
+  return <main className={`${styles.world} urai-asset-home-world`} data-urai-home-production data-urai-true-3d="true" data-home-primary-owner="asset-driven" data-home-real-world-first="true" data-home-visible-world="authored-coherent-three-dimensional-sanctuary" data-home-world-character="believable-natural-inhabitable-environment" data-home-visible-portals="false" data-home-transition-affordances="ground-environmental-descent life-map-sky-lookout" data-home-provider-environment={HOME_PROVIDER_ENVIRONMENT} data-home-provider-role="atmospheric-support-only" data-home-provider-regions="home-atmospheric-horizon" data-home-generated-scenery="suppressed" data-home-physical-base="authored-coherent-world" data-home-visual-ownership="three-dimensional-geometry" data-home-desktop-mobile-world="same-scene" data-home-embodied-self="privacy-preserving-shadow" data-home-movement="walk-keyboard-click-touch" data-home-pointer-lock="false" data-home-audio="production-opus-consent-controlled" data-home-assets-ready={ready ? 'true' : 'false'} data-home-input-ready={ready ? 'true' : 'false'} data-home-interaction-ready={ready ? 'true' : 'false'} data-home-ready={ready ? 'true' : 'false'} data-home-input-owner="window-capture-movement" data-home-telemetry-owner="embodied-motion-kernel" data-home-runtime-assets="home-entry-chamber-v1.glb polyhaven-fern-02-geometry-v1.glb local-three-dimensional-terrain living-orb reflecting-water" data-home-authored-regions="home-canonical-sanctuary-structure home-sanctuary-geometry home-mountain-horizon home-living-vegetation home-reflecting-water" data-home-nearby={nearby ?? 'none'} data-home-camera-mode={groundDescent ? 'descent' : phase === 'ASCENT' ? 'ascent' : dragging ? 'look' : 'embodied-first-person'} data-home-scene-phase={groundDescent ? 'GROUND_DESCENT' : phase} data-home-ascent-progress={phase === 'ASCENT' ? progress.toFixed(3) : '0.000'} data-home-input-locked={transitioning || inputLocked ? 'true' : 'false'} data-home-portal-sequence={portalSequence} data-home-portal-lifecycle="environmental-approach-traversal-arrival" data-home-review-fixture={reviewFixture} data-home-orb-state={orbState} data-home-orb-clip={ORB_CLIPS[orbState]} data-home-orb-animation={orbSensory.animation} data-home-orb-material={orbSensory.material} data-home-orb-movement={orbSensory.movement} data-home-orb-caption={orbSensory.caption} data-home-orb-reduced-motion={reducedMotion ? 'true' : 'false'} data-home-animation-owner={HOME_SCANNED_COMPOSITION_V1} data-testid="home-visible-navigable-sanctuary-world" style={{ position:'relative', overflow:'hidden', background:'#172c27' }} {...look}>
     <div style={{ position:'absolute', inset:0, zIndex:1 }}><Canvas className={styles.canvas} dpr={[1,1.35]} shadows camera={{ position:[SPAWN.x,1.68,SPAWN.z], fov:50, near:.05, far:300 }} gl={{ antialias:true, alpha:false, powerPreference:'high-performance' }} onCreated={({ gl }) => { gl.outputColorSpace = THREE.SRGBColorSpace; gl.toneMapping = THREE.ACESFilmicToneMapping; gl.toneMappingExposure = 1.22; gl.shadowMap.type = THREE.PCFSoftShadowMap; setCanvasReady(true) }}><Scene input={input} yaw={yaw} pitch={pitch} target={target} avatar={avatar} onNearby={setNearby} onOrbOpen={openOrb} onGround={startGround} onGroundComplete={finishGround} onLifeMap={startLifeMap} onReady={() => setSceneReady(true)} onTransitionSequence={setPortalSequence} groundDescent={groundDescent} reducedMotion={reducedMotion} orbState={orbState} /></Canvas></div>
     <header className={styles.brand} aria-label="URAI" style={{ zIndex:3 }}><strong>URAI</strong></header>
     {context ? <div className={`${styles.worldHint} home-world-context`} role="status" aria-live="polite" style={{ zIndex:3 }}>{context}</div> : null}
