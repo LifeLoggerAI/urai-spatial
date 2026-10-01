@@ -55,9 +55,10 @@ async function verifySurface(page: Page, surface: Surface, viewportLabel: string
   await expect(page.getByRole('link', { name: 'Return to URAI Home' })).toBeVisible()
   await expect(page.getByRole('navigation', { name: 'Page actions' })).toBeVisible()
   await expect(page.getByRole('link', { name: surface.primaryAction })).toBeVisible()
-  await expect(page.getByRole('link', { name: 'Privacy & consent' })).toBeVisible()
-  await expect(page.getByRole('link', { name: 'Support' })).toBeVisible()
-  await expect(page.getByRole('link', { name: 'Status' })).toBeVisible()
+  const footer = page.locator('footer')
+  await expect(footer.getByRole('link', { name: 'Privacy & consent', exact: true })).toBeVisible()
+  await expect(footer.getByRole('link', { name: 'Support', exact: true })).toBeVisible()
+  await expect(footer.getByRole('link', { name: 'Status', exact: true })).toBeVisible()
 
   const geometry = await page.evaluate(() => {
     const actions = Array.from(document.querySelectorAll<HTMLElement>('nav[aria-label="Page actions"] a'))
