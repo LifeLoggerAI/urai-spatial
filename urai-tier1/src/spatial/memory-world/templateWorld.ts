@@ -33,16 +33,10 @@ function explicitContext(memory: SelectedMemory) {
 }
 
 function contextIncludesToken(context: string, token: string) {
-  const escaped = token.replace(/[.*+?^${}()|[\]\\]/g, '\\function explicitContext(memory: SelectedMemory) {
-  return [memory.place?.label, memory.place?.region, memory.title].filter(Boolean).join(' ').toLowerCase()
-}
-
-export function selectBoundedTemplateArchetype(memory: SelectedMemory) {
-  const context = explicitContext(memory)
-  for (const rule of rules) {
-    if (rule.tokens.some((token) => context.includes(token))) return rule.archetypeId
-  }')
-  return new RegExp(`(?:^|[^a-z0-9])${escaped}(?:$|[^a-z0-9])`, 'i').test(context)
+  const normalized = context.replace(/[^a-z0-9]+/gi, ' ').trim()
+  const padded = ` ${normalized} `
+  const normalizedToken = token.toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim()
+  return normalizedToken.length > 0 && padded.includes(` ${normalizedToken} `)
 }
 
 export function selectBoundedTemplateArchetype(memory: SelectedMemory) {
