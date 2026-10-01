@@ -42,20 +42,7 @@ await transformFile('urai-tier1/tests/accessibility-performance-home-sensory-bou
 ))
 
 await transformFile('urai-tier1/tests/accessibility-performance-embodied-exploration.spec.ts', (input) => {
-  let source = replaceExact(
-    input,
-    "    await expect(home).toHaveAttribute('data-home-camera-mode', 'embodied')",
-    "    await expect(home).toHaveAttribute('data-home-camera-mode', 'embodied-first-person')",
-    1,
-    'current Home camera mode',
-  )
-  source = replaceExact(
-    source,
-    "    await expect(home).toHaveAttribute('data-home-animation-owner', 'authored-sanctuary-plus-gltf-interactions')",
-    "    await expect(home).toHaveAttribute('data-home-animation-owner', 'canonical-sanctuary-plus-cc0-fern-plus-living-orb')",
-    1,
-    'current Home canonical composition owner',
-  )
+  let source = input
   source = replaceExact(
     source,
     "    const privacyCard = destinations.getByRole('button', { name: /^Privacy Sanctuary\\./i })",
