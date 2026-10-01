@@ -348,7 +348,11 @@ function OrbGroundGlow({ state }: { state: OrbState }) {
   return <group position={[ORB.x, terrainHeight(ORB.x, ORB.z) + .032, ORB.z]} rotation={[-Math.PI / 2, 0, 0]}>
     <mesh><circleGeometry args={[1.34, 64]} /><meshBasicMaterial color={palette.aura} transparent opacity={.042} depthWrite={false} blending={THREE.AdditiveBlending} toneMapped={false} /></mesh>
     <mesh position={[0,0,.008]}><ringGeometry args={[.82,.86,64]} /><meshBasicMaterial color={palette.light} transparent opacity={.18} depthWrite={false} toneMapped={false} /></mesh>
-    <mesh position={[0,0,.012]}><ringGeometry args={[1.12,1.15,64]} /><meshBasicMaterial color={palette.aura} function SacredOrb({ state, reducedMotion, onOpen }: { state: OrbState; reducedMotion: boolean; onOpen: () => void }) {
+    <mesh position={[0,0,.012]}><ringGeometry args={[1.12,1.15,64]} /><meshBasicMaterial color={palette.aura} transparent opacity={.07} depthWrite={false} toneMapped={false} /></mesh>
+  </group>
+}
+
+function SacredOrb({ state, reducedMotion, onOpen }: { state: OrbState; reducedMotion: boolean; onOpen: () => void }) {
   const root = useRef<THREE.Group>(null)
   const authoredCore = useRef<THREE.Group>(null)
   const activeAction = useRef<THREE.AnimationAction | null>(null)
@@ -430,9 +434,6 @@ function Orb({ onOpen, reducedMotion, state }: { onOpen: () => void; reducedMoti
 
 function OrbPlatform() {
   return <group name="home-orb-grounded-clearing-marker" position={[ORB.x, terrainHeight(ORB.x, ORB.z), ORB.z]} userData={{ treatment: 'level-natural-clearing-no-pedestal-or-ring' }} />
-}
-t.intensity * 2.28} distance={state === 'speaking' ? 12 : 10} decay={2} />
-  </group>
 }
 
 function EmbodiedPresence({ root }: { root: MutableRefObject<THREE.Group | null> }) {
