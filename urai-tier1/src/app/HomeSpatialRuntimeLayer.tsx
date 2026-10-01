@@ -108,11 +108,11 @@ export default function HomeSpatialRuntimeLayer() {
 
     const synchronizeHome = (home: HTMLElement) => {
       const playerX = Number.parseFloat(home.dataset.homePlayerX ?? '0')
-      const playerZ = Number.parseFloat(home.dataset.homePlayerZ ?? '7.6')
+      const playerZ = Number.parseFloat(home.dataset.homePlayerZ ?? '8.4')
       const distance = Number.parseFloat(home.dataset.homeDistance ?? '0')
       if (Number.isFinite(playerX)) home.style.setProperty('--home-parallax-x', `${(-playerX * 3.2).toFixed(1)}px`)
       if (Number.isFinite(playerZ)) {
-        const zOffset = playerZ - 7.6
+        const zOffset = playerZ - 8.4
         const movementOffset = Math.abs(zOffset) > 0.001 ? zOffset : -Math.abs(distance)
         home.style.setProperty('--home-parallax-y', `${(movementOffset * 1.35).toFixed(1)}px`)
       }

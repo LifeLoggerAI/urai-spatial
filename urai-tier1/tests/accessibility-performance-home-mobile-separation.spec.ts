@@ -45,18 +45,48 @@ async function verifyViewport(
     await expect(semantic).toHaveAttribute('data-home-navigation-owner', 'runtime-boundary')
     await expect(semantic).toHaveAttribute('data-home-navigation-non-dominant', 'true')
 
-    const layout = await page.evaluate(() => {
-      const movementRect = document.querySelector<HTMLElement>('.urai-mobile-movement')?.getBoundingClientRect()
+    // Capture layout, touch-target bounds, and focus behavior in one browser
+    // round-trip. The full production Home is intentionally exercised here;
+    // repeated locator/boundingBox protocol calls can starve behind the
+    // software-rendered WebGL main thread in CI without changing the product
+    // state being asserted.
+    const layout = await page.evaluate(async () => {
+      const movementNode = document.querySelector<HTMLElement>('.urai-mobile-movement')
       const semanticNode = document.querySelector<HTMLElement>('.urai-home-spatial-runtime-layer > .home-semantic-navigation')
-      const semanticRect = semanticNode?.getBoundingClientRect()
       const viewport = window.visualViewport
-      if (!movementRect || !semanticRect || !semanticNode) return null
+      const destinations = [
+        semanticNode?.querySelector<HTMLElement>('[data-testid="home-semantic-orb"]'),
+        semanticNode?.querySelector<HTMLElement>('[data-testid="home-semantic-ground"]'),
+        semanticNode?.querySelector<HTMLElement>('[data-testid="home-semantic-life-map"]'),
+      ]
+      if (!movementNode || !semanticNode || destinations.some((destination) => !destination)) return null
+
+      const rect = (element: HTMLElement) => {
+        const bounds = element.getBoundingClientRect()
+        return {
+          left: bounds.left,
+          top: bounds.top,
+          right: bounds.right,
+          bottom: bounds.bottom,
+          width: bounds.width,
+          height: bounds.height,
+        }
+      }
+
+      const semanticOpacity = Number.parseFloat(getComputedStyle(semanticNode).opacity || '1')
+      destinations[0]!.focus()
+      await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()))
+
       return {
-        movement: { left: movementRect.left, top: movementRect.top, right: movementRect.right, bottom: movementRect.bottom },
-        semantic: { left: semanticRect.left, top: semanticRect.top, right: semanticRect.right, bottom: semanticRect.bottom },
-        semanticOpacity: Number.parseFloat(getComputedStyle(semanticNode).opacity || '1'),
+        movement: rect(movementNode),
+        semantic: rect(semanticNode),
+        semanticOpacity,
         viewport: { width: viewport?.width ?? innerWidth, height: viewport?.height ?? innerHeight },
         documentWidth: document.documentElement.scrollWidth,
+        destinationCount: semanticNode.querySelectorAll(':is(button,a)').length,
+        destinations: destinations.map((destination) => rect(destination!)),
+        focusedDestination: document.activeElement?.getAttribute('data-testid') ?? null,
+        focusedOpacity: Number.parseFloat(getComputedStyle(semanticNode).opacity || '1'),
       }
     })
 
@@ -70,24 +100,13 @@ async function verifyViewport(
     }
     expect(layout!.semanticOpacity, `${viewport.label} non-dominant opacity`).toBeLessThanOrEqual(0.02)
     expect(layout!.documentWidth, `${viewport.label} document width`).toBeLessThanOrEqual(layout!.viewport.width + 1)
-
-    const destinations = [
-      semantic.getByTestId('home-semantic-orb'),
-      semantic.getByTestId('home-semantic-ground'),
-      semantic.getByTestId('home-semantic-life-map'),
-    ]
-    await expect(semantic.locator(':is(button,a)')).toHaveCount(3)
-    for (const destination of destinations) {
-      const rect = await destination.boundingBox()
-      expect(rect, `${viewport.label} destination bounds`).not.toBeNull()
-      expect(rect!.width, `${viewport.label} destination width`).toBeGreaterThanOrEqual(48)
-      expect(rect!.height, `${viewport.label} destination height`).toBeGreaterThanOrEqual(48)
+    expect(layout!.destinationCount, `${viewport.label} destination count`).toBe(3)
+    for (const rect of layout!.destinations) {
+      expect(rect.width, `${viewport.label} destination width`).toBeGreaterThanOrEqual(48)
+      expect(rect.height, `${viewport.label} destination height`).toBeGreaterThanOrEqual(48)
     }
-
-    await destinations[0].focus()
-    await expect(destinations[0]).toBeFocused()
-    const focusedOpacity = await semantic.evaluate((element) => Number.parseFloat(getComputedStyle(element).opacity || '1'))
-    expect(focusedOpacity, `${viewport.label} focus reveal`).toBeGreaterThan(0.9)
+    expect(layout!.focusedDestination, `${viewport.label} focused destination`).toBe('home-semantic-orb')
+    expect(layout!.focusedOpacity, `${viewport.label} focus reveal`).toBeGreaterThan(0.9)
   } finally {
     await context.close()
   }
