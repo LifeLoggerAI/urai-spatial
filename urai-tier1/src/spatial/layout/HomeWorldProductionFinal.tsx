@@ -201,7 +201,7 @@ function cubicPoint(target: THREE.Vector3, p0: THREE.Vector3, p1: THREE.Vector3,
   target.set(0, 0, 0).addScaledVector(p0, i * i * i).addScaledVector(p1, 3 * i * i * t).addScaledVector(p2, 3 * i * t * t).addScaledVector(p3, t * t * t);
 }
 
-function PlayerRig({ input, yaw, pitch, target, avatar, onNearby, groundDescent, onGroundComplete, reducedMotion }: { input: MovementInput; yaw: MutableRefObject<number>; pitch: MutableRefObject<number>; target: MutableRefObject<THREE.Vector3 | null>; avatar: MutableRefObject<THREE.Group | null>; onNearby: (value: Nearby) => void; groundDescent: boolean; onGroundComplete: () => void; reducedMotion: boolean; }) {
+function PlayerRig({ input, yaw, pitch, target, avatar, onNearby, groundDescent, onGroundComplete, onAscentStart, reducedMotion }: { input: MovementInput; yaw: MutableRefObject<number>; pitch: MutableRefObject<number>; target: MutableRefObject<THREE.Vector3 | null>; avatar: MutableRefObject<THREE.Group | null>; onNearby: (value: Nearby) => void; groundDescent: boolean; onGroundComplete: () => void; onAscentStart: () => void; reducedMotion: boolean; }) {
   const { camera, size } = useThree();
   const position = useRef(SPAWN.clone());
   const velocity = useRef(new THREE.Vector3());
@@ -243,7 +243,13 @@ function PlayerRig({ input, yaw, pitch, target, avatar, onNearby, groundDescent,
     }
     if (groundStarted.current !== null) { groundStarted.current = null; groundIssued.current = false; }
     if (store.phase === "ASCENT") {
-      if (ascentStarted.current === null) { ascentStarted.current = clock.elapsedTime; cameraStart.current.copy(camera.position); target.current = null; onNearby(null); }
+      if (ascentStarted.current === null) {
+        ascentStarted.current = clock.elapsedTime;
+        cameraStart.current.copy(camera.position);
+        target.current = null;
+        onNearby(null);
+        onAscentStart();
+      }
       const duration = reducedMotion ? 0.45 : ASCENT_DURATION_SECONDS;
       const linear = THREE.MathUtils.clamp((clock.elapsedTime - ascentStarted.current) / duration, 0, 1);
       const eased = THREE.MathUtils.smootherstep(linear, 0, 1);
@@ -293,7 +299,7 @@ function SceneReadiness({ onReady }: { onReady: () => void }) {
   return null;
 }
 
-function HomeScene(props: { input: MovementInput; yaw: MutableRefObject<number>; pitch: MutableRefObject<number>; target: MutableRefObject<THREE.Vector3 | null>; avatar: MutableRefObject<THREE.Group | null>; onNearby: (value: Nearby) => void; onOrbOpen: () => void; onGround: () => void; onGroundComplete: () => void; onLifeMap: () => void; onSceneReady: () => void; groundDescent: boolean; reducedMotion: boolean; }) {
+function HomeScene(props: { input: MovementInput; yaw: MutableRefObject<number>; pitch: MutableRefObject<number>; target: MutableRefObject<THREE.Vector3 | null>; avatar: MutableRefObject<THREE.Group | null>; onNearby: (value: Nearby) => void; onOrbOpen: () => void; onGround: () => void; onGroundComplete: () => void; onLifeMap: () => void; onAscentStart: () => void; onSceneReady: () => void; groundDescent: boolean; reducedMotion: boolean; }) {
   const phase = useSceneStore((state) => state.phase);
   const cosmic = phase === "ASCENT";
   return (
@@ -316,7 +322,7 @@ function HomeScene(props: { input: MovementInput; yaw: MutableRefObject<number>;
       <EmbodiedPresence root={props.avatar} />
       <GroundThresholdLandmark onEnter={props.onGround} />
       <LifeMapSkyLookout onEnter={props.onLifeMap} />
-      <PlayerRig input={props.input} yaw={props.yaw} pitch={props.pitch} target={props.target} avatar={props.avatar} onNearby={props.onNearby} groundDescent={props.groundDescent} onGroundComplete={props.onGroundComplete} reducedMotion={props.reducedMotion} />
+      <PlayerRig input={props.input} yaw={props.yaw} pitch={props.pitch} target={props.target} avatar={props.avatar} onNearby={props.onNearby} groundDescent={props.groundDescent} onGroundComplete={props.onGroundComplete} onAscentStart={props.onAscentStart} reducedMotion={props.reducedMotion} />
       <SceneReadiness onReady={props.onSceneReady} />
       {!cosmic ? <ContactShadows position={[0, -0.08, -2.5]} opacity={0.2} scale={28} blur={4.5} far={14} resolution={512} frames={1} /> : null}
     </>
@@ -352,13 +358,10 @@ export function HomeWorldProductionFinal({ onOrbOpen = requestUraiWorldOrbOpen, 
     setOrbState("transition");
     setTransitionSequence("life-map:opening");
     store.enterLifeMap();
-    // Opening is a distinct user-perceivable state. Advance to traversal on the
-    // next animation frame so evidence, assistive state, and visual transition
-    // consumers cannot have opening and traversal collapsed into one React batch.
-    window.requestAnimationFrame(() => {
-      if (useSceneStore.getState().phase === "ASCENT") setTransitionSequence("life-map:traversal");
-    });
   }, [groundDescent]);
+  const markLifeMapTraversalStarted = useCallback(() => {
+    if (useSceneStore.getState().phase === "ASCENT") setTransitionSequence("life-map:traversal");
+  }, []);
   const interaction = useCallback(() => { if (useSceneStore.getState().inputLocked || groundDescent) return; if (nearby === "orb") openOrb(); if (nearby === "ground") startGroundDescent(); if (nearby === "life-map") startLifeMapAscent(); }, [groundDescent, nearby, openOrb, startGroundDescent, startLifeMapAscent]);
   const reset = useCallback(() => { if (groundDescent) return; yaw.current = 0; pitch.current = -0.045; target.current = SPAWN.clone(); setTransitionSequence("idle"); }, [groundDescent]);
   const input = useMovementInput({ enabled: !groundDescent, onInteract: interaction, onReset: reset });
@@ -399,7 +402,7 @@ export function HomeWorldProductionFinal({ onOrbOpen = requestUraiWorldOrbOpen, 
       <CinematicBackdrop />
       <div style={{ position: "absolute", inset: 0, zIndex: 1 }}>
         <Canvas className={styles.canvas} dpr={[1, 1.3]} shadows camera={{ position: [0, 1.7, 8], fov: 50, near: 0.05, far: 300 }} gl={{ antialias: true, alpha: true, powerPreference: "high-performance" }} onCreated={({ gl }) => { gl.outputColorSpace = THREE.SRGBColorSpace; gl.toneMapping = THREE.ACESFilmicToneMapping; gl.toneMappingExposure = 1.06; gl.shadowMap.type = THREE.PCFSoftShadowMap; gl.setClearColor(0x000000, 0); setCanvasReady(true); }}>
-          <HomeScene input={input} yaw={yaw} pitch={pitch} target={target} avatar={avatar} onNearby={setNearby} onOrbOpen={openOrb} onGround={startGroundDescent} onGroundComplete={finishGroundDescent} onLifeMap={startLifeMapAscent} onSceneReady={() => setSceneReady(true)} groundDescent={groundDescent} reducedMotion={reducedMotion} />
+          <HomeScene input={input} yaw={yaw} pitch={pitch} target={target} avatar={avatar} onNearby={setNearby} onOrbOpen={openOrb} onGround={startGroundDescent} onGroundComplete={finishGroundDescent} onLifeMap={startLifeMapAscent} onAscentStart={markLifeMapTraversalStarted} onSceneReady={() => setSceneReady(true)} groundDescent={groundDescent} reducedMotion={reducedMotion} />
         </Canvas>
       </div>
       <header className={styles.brand} aria-label="URAI" style={{ zIndex: 3 }}><strong>URAI</strong></header>
