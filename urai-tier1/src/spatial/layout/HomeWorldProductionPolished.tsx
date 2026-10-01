@@ -566,7 +566,17 @@ export function HomeWorldProductionPolished({ onOrbOpen = requestUraiWorldOrbOpe
   const openOrb = useCallback(() => { if (!useSceneStore.getState().inputLocked && !groundDescent) { setOrbState('attention'); onOrbOpen() } }, [groundDescent, onOrbOpen])
   const startGround = useCallback(() => { if (useSceneStore.getState().inputLocked || groundDescent) return; target.current = null; setOrbState('transition'); setPortalSequence('ground:opening'); setGroundDescent(true) }, [groundDescent])
   const finishGround = useCallback(() => requestUraiWorldTravel({ destination: 'infrastructure-hub', href: '/ground/', entryPortal: 'home-ground', cameraCheckpoint: 'home-ground-descent' }), [])
-  const startLifeMap = useCallback(() => { const store = useSceneStore.getState(); if (store.inputLocked || groundDescent || store.phase === 'ASCENT') return; target.current = null; setOrbState('transition'); setPortalSequence('life-map:opening'); store.enterLifeMap() }, [groundDescent])
+  const startLifeMap = useCallback(() => {
+    const store = useSceneStore.getState()
+    if (store.inputLocked || groundDescent || store.phase === 'ASCENT') return
+    target.current = null
+    setOrbState('transition')
+    setPortalSequence('life-map:opening')
+    store.enterLifeMap()
+    window.requestAnimationFrame(() => {
+      if (useSceneStore.getState().phase === 'ASCENT') setPortalSequence('life-map:traversal')
+    })
+  }, [groundDescent])
   const interact = useCallback(() => { if (nearby === 'orb') openOrb(); else if (nearby === 'ground') startGround(); else if (nearby === 'life-map') startLifeMap() }, [nearby, openOrb, startGround, startLifeMap])
   const reset = useCallback(() => { if (!groundDescent) { yaw.current = .055; pitch.current = -.04; target.current = SPAWN.clone() } }, [groundDescent])
   const input = useMovementInput({ enabled: !groundDescent, onInteract: interact, onReset: reset })
