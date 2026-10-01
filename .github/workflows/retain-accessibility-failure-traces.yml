@@ -22,7 +22,7 @@ jobs:
           set -euo pipefail
           gh api /repos/LifeLoggerAI/urai-spatial/actions/artifacts/11161588041/zip > "$RUNNER_TEMP/accessibility.zip"
           python3 - <<'PY'
-          import json, os, zipfile, hashlib
+          import json, os, zipfile, hashlib, io
           from pathlib import Path
           source = Path(os.environ['RUNNER_TEMP']) / 'accessibility.zip'
           output = Path('bounded-failure-evidence')
@@ -35,13 +35,21 @@ jobs:
                   group = next((key for key, token in groups.items() if token in name), None)
                   if group is None or not name.endswith(('/trace.zip', '/error-context.md', '.png')):
                       continue
-                  if info.file_size > 30 * 1024 * 1024:
-                      raise RuntimeError('Selected evidence exceeds transfer budget')
                   data = archive.read(info)
+                  original_sha = hashlib.sha256(data).hexdigest()
+                  if name.endswith('/trace.zip'):
+                      bounded = io.BytesIO()
+                      with zipfile.ZipFile(io.BytesIO(data)) as trace, zipfile.ZipFile(bounded, 'w', zipfile.ZIP_DEFLATED) as selected:
+                          for member in trace.infolist():
+                              if member.filename.endswith(('.trace', '.network', '.stacks')):
+                                  selected.writestr(member.filename, trace.read(member))
+                      data = bounded.getvalue()
+                  if len(data) > 30 * 1024 * 1024:
+                      raise RuntimeError('Derived evidence exceeds transfer budget')
                   folder = output / group / Path(name).parent.name
                   folder.mkdir(parents=True, exist_ok=True)
                   (folder / Path(name).name).write_bytes(data)
-                  manifest['files'].append({'path': str(folder / Path(name).name), 'bytes': len(data), 'sha256': hashlib.sha256(data).hexdigest()})
+                  manifest['files'].append({'path': str(folder / Path(name).name), 'bytes': len(data), 'sha256': hashlib.sha256(data).hexdigest(), 'original_sha256': original_sha, 'transformation': 'structured trace events only; binary resources omitted' if name.endswith('/trace.zip') else 'unchanged'})
           if not any('trace.zip' in entry['path'] for entry in manifest['files']):
               raise RuntimeError('No failed-test traces found')
           (output / 'manifest.json').write_text(json.dumps(manifest, indent=2))
