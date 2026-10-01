@@ -13,8 +13,11 @@ async function collectRuntimeErrors(page: Page) {
 
 async function holdKey(page: Page, key: string, duration = 450) {
   await page.keyboard.down(key)
-  await page.waitForTimeout(duration)
-  await page.keyboard.up(key)
+  try {
+    await page.waitForTimeout(duration)
+  } finally {
+    await page.keyboard.up(key)
+  }
 }
 
 async function waitForHomeWorld(home: Locator) {

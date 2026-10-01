@@ -135,7 +135,7 @@ const fallbackPassTarget = 'record.semanticButtons !== 2 || record.semanticLinks
 const fallbackPassReplacement = 'record.semanticButtons !== 1 || record.semanticLinks !== 2'
 if (original.split(fallbackPassTarget).length - 1 !== 1) throw new Error('Home fallback native-link contract changed')
 
-const patchedPrefix = original
+let patchedPrefix = original
   .replace(fallbackPassTarget, fallbackPassReplacement)
   .replace(openTarget, openReplacement)
   .replace(receiptTarget, receiptReplacement)
@@ -146,6 +146,56 @@ const patchedPrefix = original
   .replace(reviewModePassTarget, reviewModePassReplacement)
   .replace(editableFocusTarget, editableFocusReplacement)
   .replace(editableFocusAssertionTarget, editableFocusAssertionReplacement)
+
+// Keep the pass predicate below intact, but collect its DOM evidence in one
+// renderer round trip. Serial reads stalled at canvas.evaluate on SwiftShader.
+const snapshotStart = patchedPrefix.indexOf('async function verifyHome(page, expected) {')
+const snapshotEnd = patchedPrefix.indexOf('  const requiredMode = ', snapshotStart)
+if (snapshotStart < 0 || snapshotEnd < 0 || patchedPrefix.indexOf('async function verifyHome(page, expected) {', snapshotStart + 1) >= 0) {
+  throw new Error('Home snapshot contract changed; refusing an unbounded replacement')
+}
+const atomicSnapshot = `async function verifyHome(page, expected) {
+  const result = await page.evaluate(({ ownerSelector, fallbackSelector }) => {
+    const owners = document.querySelectorAll(ownerSelector)
+    const owner = owners[0]
+    const canvas = owner?.querySelector('canvas')
+    const semantic = document.querySelector('nav[aria-label="Accessible Home destinations"]')
+    const buttons = [...(semantic?.querySelectorAll('button') || [])]
+    const links = [...(semantic?.querySelectorAll('a[href]') || [])]
+    const element = canvas
+    const rect = element?.getBoundingClientRect()
+    const visible = (node) => {
+      if (node.closest('.sr-only')) return false
+      const style = getComputedStyle(node)
+      const bounds = node.getBoundingClientRect()
+      return style.display !== 'none' && style.visibility !== 'hidden' && Number.parseFloat(style.opacity || '1') > 0.02
+        && bounds.width > 4 && bounds.height > 4 && bounds.bottom > 0 && bounds.right > 0 && bounds.top < innerHeight && bounds.left < innerWidth
+    }
+    const attr = (name) => owner?.getAttribute(name) ?? null
+    return {
+      ownerCount: owners.length,
+      canvasVisible: canvas?.checkVisibility({ checkOpacity: true, checkVisibilityCSS: true }) ?? false,
+      canvasWidth: rect ? Math.round(rect.width) : 0,
+      canvasHeight: rect ? Math.round(rect.height) : 0,
+      assetMode: attr('data-home-asset-mode'),
+      personalizationMode: attr('data-home-personalization-mode'),
+      reviewFixture: attr('data-home-review-fixture'),
+      orbState: attr('data-home-orb-state'),
+      orbClip: attr('data-home-orb-clip'),
+      animationOwner: attr('data-home-animation-owner'),
+      assetsReady: attr('data-home-assets-ready'),
+      fallbackVisible: [...document.querySelectorAll(fallbackSelector)].filter(visible).length,
+      semanticButtons: buttons.length,
+      semanticVisible: buttons.filter(visible).length,
+      semanticLinks: links.length,
+      semanticLinkVisible: links.filter(visible).length,
+      semanticNavigationOwner: semantic?.getAttribute('data-home-navigation-owner') ?? null,
+      semanticNavigationNonDominant: semantic?.getAttribute('data-home-navigation-non-dominant') ?? null,
+      semanticNavigationOpacity: semantic ? Number.parseFloat(getComputedStyle(semantic).opacity || '1') : null,
+    }
+  }, { ownerSelector, fallbackSelector })
+`
+patchedPrefix = patchedPrefix.slice(0, snapshotStart) + atomicSnapshot + patchedPrefix.slice(snapshotEnd)
 const patchedExecutionIndex = patchedPrefix.indexOf(executionStart)
 if (patchedExecutionIndex < 0 || patchedPrefix.indexOf(executionStart, patchedExecutionIndex + 1) >= 0) throw new Error('Patched execution contract changed')
 const grouped = patchedPrefix.slice(0, patchedExecutionIndex) + execution
@@ -155,8 +205,8 @@ const requiredSemanticGuards = [
   ['fallback visibility guard', 'record.fallbackVisible'],
   ['fallback semantic destination contract', 'record.semanticButtons !== 1 || record.semanticLinks !== 2'],
   ['interaction proof failure guard', 'Home interaction proof failed for'],
-  ['direct canvas geometry measurement', 'element.getBoundingClientRect()'],
-  ['page-level canvas query', 'document.querySelector(\`\${selector} canvas\`)'],
+  ['direct canvas geometry measurement', 'element?.getBoundingClientRect()'],
+  ['page-level owner query', 'document.querySelectorAll(ownerSelector)'],
   ['ancestor-aware loading visibility', "node.checkVisibility"],
   ['canonical runtime loading owner', "document.querySelectorAll('.home-runtime-loading')"],
   ['semantic navigation owner', "semanticNavigationOwner === 'runtime-boundary'"],
