@@ -59,3 +59,15 @@ test('revocation deletes biometric templates and prevents matching',()=>{
   const result=verifyKnownSpeaker({sample:embedding([1,0,0,0,0,0,0,0]),enrollments:[revoked],consented:true,policy:{enabled:true}})
   assert.equal(result.status,'revoked')
 })
+
+test('near-tied biometric candidates fail closed instead of naming a speaker',()=> {
+  const twin={...enrollment,speakerId:'known-speaker-2'}
+  const result=verifyKnownSpeaker({
+    sample:embedding([1,.001,0,0,0,0,0,0]),
+    enrollments:[enrollment,twin],
+    consented:true,
+    policy:{enabled:true},
+  })
+  assert.equal(result.status,'uncertain')
+  assert.equal('speakerId' in result,false)
+})

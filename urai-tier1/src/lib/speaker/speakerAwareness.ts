@@ -39,6 +39,8 @@ export type SpeakerVerificationResult =
 
 function clamp(value:number,min:number,max:number){ return Math.min(max,Math.max(min,value)) }
 
+const SPEAKER_MATCH_MARGIN = 0.04
+
 export function normalizeSpeakerPolicy(input: Partial<SpeakerAwarenessPolicy> = {}): SpeakerAwarenessPolicy {
   const accept = Number.isFinite(input.acceptThreshold) ? input.acceptThreshold! : DEFAULT_SPEAKER_AWARENESS_POLICY.acceptThreshold
   const reject = Number.isFinite(input.rejectThreshold) ? input.rejectThreshold! : DEFAULT_SPEAKER_AWARENESS_POLICY.rejectThreshold
@@ -122,8 +124,16 @@ export function verifyKnownSpeaker(input: {
 
   const best=candidates[0]
   if (!best) return { status:'invalid-sample', confidence:0 }
+  const runnerUp=candidates[1]
   const confidence=clamp((best.score+1)/2,0,1)
-  if (best.score >= policy.acceptThreshold) return { status:'match', speakerId:best.speakerId, confidence }
+  if (best.score >= policy.acceptThreshold) {
+    // Fail closed when two enrolled speakers are too close to distinguish safely.
+    // A near-tie must never be converted into a named biometric identity.
+    if (runnerUp && best.score-runnerUp.score < SPEAKER_MATCH_MARGIN) {
+      return { status:'uncertain', confidence }
+    }
+    return { status:'match', speakerId:best.speakerId, confidence }
+  }
   if (best.score <= policy.rejectThreshold) return { status:'unknown', confidence }
   return { status:'uncertain', candidateSpeakerId:best.speakerId, confidence }
 }
