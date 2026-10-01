@@ -8,6 +8,7 @@ import { resolveOrbSensoryOutput, URAI_ORB_STATE_EVENT, type OrbState, type OrbS
 import { MobileMovementPad, stepEmbodiedMotion, useDragLook, useMovementInput, type MovementInput } from '@/spatial/navigation/EmbodiedNavigation'
 import { useSceneStore } from '@/spatial/store/useSceneStore'
 import { requestUraiWorldOrbOpen, requestUraiWorldTravel } from '@/spatial/world/worldEvents'
+import { HomeInterpretiveSplatEnvironment, resolveHomeInterpretiveSplatAsset } from '@/spatial/home/HomeInterpretiveSplat'
 import styles from './HomeWorldProduction.module.css'
 
 const HOME_PROVIDER_ENVIRONMENT = '/assets/urai/replay/replay-memory-film-main.webp'
@@ -15,6 +16,7 @@ const HOME_SANCTUARY_MODEL = '/assets/urai/generated/models/home-entry-chamber-v
 const HOME_FERN_MODEL = '/assets/urai/home-production/cc0/polyhaven-fern-02-geometry-v1.glb'
 const ORB_MODEL = '/assets/urai/generated/models/urai-orb-avatar-v1.glb'
 const HOME_SCANNED_COMPOSITION_V1 = 'canonical-sanctuary-plus-cc0-fern-plus-living-orb'
+const HOME_INTERPRETIVE_SPLAT_ASSET = resolveHomeInterpretiveSplatAsset(process.env.NEXT_PUBLIC_URAI_HOME_INTERPRETIVE_SPLAT_ASSET)
 const HOME_BOUNDS = { minX: -14, maxX: 14, minZ: -18, maxZ: 12 }
 const SPAWN = new THREE.Vector3(-0.85, 0, 8.4)
 const ORB = new THREE.Vector3(0, 0.82, -4.25)
@@ -571,6 +573,7 @@ function Scene(props: { input: MovementInput; yaw: MutableRefObject<number>; pit
       <pointLight position={[-4.1,2.2,-3.9]} color="#d6a56c" intensity={.3} distance={6} decay={2} />
       <pointLight position={[4.3,2.1,-4.2]} color="#a5c9c3" intensity={.22} distance={6} decay={2} />
     </> : null}
+    {HOME_INTERPRETIVE_SPLAT_ASSET ? <HomeInterpretiveSplatEnvironment src={HOME_INTERPRETIVE_SPLAT_ASSET} /> : null}
     <Terrain target={props.target} />
     <SanctuaryPath />
     <Horizon />
