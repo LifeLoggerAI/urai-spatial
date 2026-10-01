@@ -10,4 +10,5 @@ test('localization readiness generator stays exact-head, fail-closed and non-pri
   assert.ok(source.includes("productionAdmission: runtimeAdmitted ? 'admitted' : 'blocked'"))
   assert.ok(source.includes('RTL_VISUAL_QA_REQUIRED_BEFORE_ADMISSION'))
   assert.ok(source.includes('URAI_EXACT_HEAD must be a full lowercase SHA'))
+  assert.ok(source.includes('machine-prepared-native-review-required'))
 })
