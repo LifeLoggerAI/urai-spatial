@@ -232,6 +232,7 @@ export default function CinematicReplayClient() {
   const capturedRealityLookup = useCapturedRealityReplayLookup(memory?.id ?? null)
   const capturedRealityEntry = capturedRealityLookup.entry
   const interpretiveWorldEntry = useInterpretiveWorldReplayEntry(memory?.id ?? null)
+  const generatedWorldEntry = capturedRealityEntry ? null : interpretiveWorldEntry
   const memoryWorldHref = useMemo(() => memory ? memoryWorldReplayHref(memory) : null, [memory])
   const reducedMotion = useReducedMotion()
   const quality = useAdaptiveSpatialQuality()
@@ -289,7 +290,7 @@ export default function CinematicReplayClient() {
       <Suspense fallback={null}><ReplaySpatialScene memory={memory} playing={playing} progressMs={progressMs} /></Suspense>
     </Canvas>
     <div className="replayAtmosphere" aria-hidden="true" />
-    <header><p>{memory.demo ? 'DEMO FIXTURE · NOT PERSONAL DATA' : `${memory.privacy} replay`}</p><h1>{memory.title}</h1><span>{active?.label ?? 'Replay'}</span><button className="unwind" type="button" onClick={unwind}>← Focus</button>{memoryWorldHref ? capturedRealityLookup.status === 'loading' ? <span className="replayImmersiveEntry" role="status" aria-live="polite">Checking captured place…</span> : <a className="replayImmersiveEntry" href={capturedRealityEntry?.href ?? interpretiveWorldEntry?.href ?? memoryWorldHref} aria-label={(capturedRealityEntry ? 'Enter captured place for ' : interpretiveWorldEntry ? 'Enter interpretive world for ' : 'Enter Memory World for ') + memory.title} title={capturedRealityEntry?.truthLabel ?? interpretiveWorldEntry?.truthLabel ?? 'Context template · not recorded history'}>{capturedRealityEntry ? 'Enter captured place' : interpretiveWorldEntry ? 'Enter interpretive world' : 'Enter Memory World'}</a> : null}</header>
+    <header><p>{memory.demo ? 'DEMO FIXTURE · NOT PERSONAL DATA' : `${memory.privacy} replay`}</p><h1>{memory.title}</h1><span>{active?.label ?? 'Replay'}</span><button className="unwind" type="button" onClick={unwind}>← Focus</button>{memoryWorldHref ? capturedRealityLookup.status === 'loading' ? <span className="replayImmersiveEntry" role="status" aria-live="polite">Checking captured place…</span> : <a className="replayImmersiveEntry" href={capturedRealityEntry?.href ?? generatedWorldEntry?.href ?? memoryWorldHref} aria-label={(capturedRealityEntry ? 'Enter captured place for ' : generatedWorldEntry ? 'Enter interpretive world for ' : 'Enter Memory World for ') + memory.title} title={capturedRealityEntry?.truthLabel ?? generatedWorldEntry?.truthLabel ?? 'Context template · not recorded history'}>{capturedRealityEntry ? 'Enter captured place' : generatedWorldEntry ? 'Enter interpretive world' : 'Enter Memory World'}</a> : null}</header>
     <section className="caption" aria-live="polite"><small>{active?.label ?? 'Replay'}</small><strong>{active?.caption ?? memory.narrator.replay}</strong><span>{active?.narratorLine ?? memory.narrator.replay}</span></section>
     <section className="memoryTempo" aria-label="Memory time">
       <button type="button" className="memoryPulse" onClick={() => { if (progressMs >= duration) setProgressMs(0); setPlaying((value) => !value) }} aria-label={playing ? 'Pause memory' : 'Continue memory'} aria-pressed={playing}>
