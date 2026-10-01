@@ -15,7 +15,17 @@ import { capturedRealityFrameHasMeaningfulPixels } from './capturedRealityRender
  */
 export function OwnedCapturedRealitySplat({
   src, maxBytes, chunkSize = 25_000, alphaHash = true, onRenderReady,
-}: { src: string; maxBytes: number; chunkSize?: number; alphaHash?: boolean; onRenderReady?: (src: string) => void }) {
+  loadingLabel = 'Loading captured place',
+  failureMessage = 'Captured place rendering stopped.',
+}: {
+  src: string
+  maxBytes: number
+  chunkSize?: number
+  alphaHash?: boolean
+  onRenderReady?: (src: string) => void
+  loadingLabel?: string
+  failureMessage?: string
+}) {
   const gl = useThree((state) => state.gl)
   const [loaded, setLoaded] = useState<{ src: string; resource: CapturedSplatResources } | null>(null)
   const [progress, setProgress] = useState(0)
@@ -38,7 +48,7 @@ export function OwnedCapturedRealitySplat({
       url: src, maxBytes, chunkSize, alphaHash, maxTextureSize: gl.capabilities.maxTextureSize,
       onResource(resource) { if (active) setLoaded({ src, resource }) },
       onProgress(bytes, total) { if (active) setProgress(Math.floor(bytes / total * 100)) },
-      onFailure() { if (active) setFailure({ src, error: new Error('Captured place rendering stopped.') }) },
+      onFailure() { if (active) setFailure({ src, error: new Error(failureMessage) }) },
     })
     void session.completion.then(() => {
       if (active) setComplete(true)
@@ -49,7 +59,7 @@ export function OwnedCapturedRealitySplat({
       active = false
       session.dispose()
     }
-  }, [src, maxBytes, chunkSize, alphaHash, gl])
+  }, [src, maxBytes, chunkSize, alphaHash, gl, failureMessage])
 
   useFrame(({ camera }) => {
     if (loaded?.src === src && !loaded.resource.disposed) {
@@ -87,7 +97,7 @@ export function OwnedCapturedRealitySplat({
           }}
         />
       ) : null}
-      {!complete ? <Html center><p role="status" style={{ color: '#f7f7f5', whiteSpace: 'nowrap' }}>Loading captured place… {progress}%</p></Html> : null}
+      {!complete ? <Html center><p role="status" style={{ color: '#f7f7f5', whiteSpace: 'nowrap' }}>{loadingLabel}… {progress}%</p></Html> : null}
     </>
   )
 }
