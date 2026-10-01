@@ -2,6 +2,7 @@
 
 import { copyFileSync, mkdirSync, readFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
+import { governedWorkflowIsManualOnly } from './governed-workflow-trigger.mjs'
 
 const releaseWorkflows = [
   '.github/workflows/spatial-production-lock.yml',
@@ -187,10 +188,9 @@ for (const marker of [
 ]) {
   if (!governedDeploy.includes(marker)) failures.push(`${governedDeployPath} must retain governed production marker: ${marker}`)
 }
-if (/\n\s*push\s*:/.test(governedDeployTrigger) || /\n\s*pull_request\s*:/.test(governedDeployTrigger)) {
-  failures.push(`${governedDeployPath} must remain manual-only and must not auto-trigger from push or pull_request`)
+if (!governedWorkflowIsManualOnly(governedDeploy)) {
+  failures.push(`${governedDeployPath} must remain manual-only with exactly one top-level workflow_dispatch event`)
 }
-if (!/\n\s*workflow_dispatch\s*:/.test(governedDeployTrigger)) failures.push(`${governedDeployPath} must expose workflow_dispatch`)
 if (/actions\s*:\s*write|contents\s*:\s*write|deployments\s*:\s*write/.test(governedDeploy)) {
   failures.push(`${governedDeployPath} must not gain repository mutation permissions`)
 }
