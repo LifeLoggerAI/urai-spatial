@@ -12,6 +12,7 @@ const homeRuntime = read('src/app/HomeSpatialRuntimeLayer.tsx')
 const assetHome = read('src/app/AssetDrivenHomeWorld.tsx')
 const homeProductionEntry = read('src/spatial/layout/HomeWorldProduction.tsx')
 const homeProduction = read('src/spatial/layout/HomeWorldProductionPolished.tsx')
+const embodiedNavigation = read('src/spatial/navigation/EmbodiedNavigation.tsx')
 const homeCss = read('src/spatial/layout/HomeWorldProduction.module.css')
 const worldEvents = read('src/spatial/world/worldEvents.ts')
 const sceneStore = read('src/spatial/store/useSceneStore.ts')
@@ -99,6 +100,42 @@ test('Home remains one embodied authored natural sanctuary 3D environment with a
   assert.match(homeProduction, /useGLTF\(HOME_FERN_MODEL\)/)
   assert.doesNotMatch(homeProduction, /WorldPortal|home-ground-portal-world-owned|home-life-map-portal-world-owned|destinationNames|dodecahedronGeometry/)
   assert.doesNotMatch(homeGraph, /requestPointerLock|OrbitControls/)
+})
+
+
+test('Home telemetry and continuous proof stay aligned to the polished interaction geometry', () => {
+  const runtimeMarkers = [
+    "const SPAWN = new THREE.Vector3(-0.85, 0, 8.4)",
+    "const ORB = new THREE.Vector3(0, 0.82, -4.25)",
+    "const GROUND_THRESHOLD = new THREE.Vector3(-5.4, 0, -10.8)",
+    "const LIFE_MAP_LOOKOUT = new THREE.Vector3(5.4, 0, -10.8)",
+    "['orb', ORB, 2.4]",
+    "['ground', GROUND_THRESHOLD, 2.8]",
+    "['life-map', LIFE_MAP_LOOKOUT, 2.8]",
+  ]
+  for (const marker of runtimeMarkers) assert.ok(includesCanonical(homeProduction, marker), `missing polished Home geometry marker: ${marker}`)
+
+  for (const marker of [
+    "HOME_SPAWN = { x: -0.85, z: 8.4 }",
+    "HOME_ORB = { x: 0, z: -4.25 }",
+    "HOME_GROUND = { x: -5.4, z: -10.8 }",
+    "HOME_LIFE_MAP = { x: 5.4, z: -10.8 }",
+  ]) assert.ok(includesCanonical(assetHome, marker), `stale AssetDrivenHomeWorld telemetry: ${marker}`)
+
+  for (const marker of [
+    "const spawnX = -0.85",
+    "const spawnZ = 8.4",
+    "position.z + 4.25",
+    "position.x + 5.4, position.z + 10.8",
+    "position.x - 5.4, position.z + 10.8",
+  ]) assert.ok(includesCanonical(embodiedNavigation, marker), `stale movement telemetry: ${marker}`)
+
+  for (const marker of [
+    "orb: { x: 0, z: -4.25, radius: 2.4",
+    "ground: { x: -5.4, z: -10.8, radius: 2.8",
+    "'life-map': { x: 5.4, z: -10.8, radius: 2.8",
+    "result.orbClip === orbClips[expected.orbState]",
+  ]) assert.ok(includesCanonical(proof, marker), `stale continuous proof geometry: ${marker}`)
 })
 
 test('Home Life Map entry is one canonical sky ascent transaction with one camera authority and a closing handoff', () => {
