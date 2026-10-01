@@ -9,7 +9,7 @@ const { chromium } = requireFromTierOne('playwright')
 const base = process.env.URAI_PROOF_BASE || 'http://127.0.0.1:4173'
 const outputDir = path.resolve(process.env.URAI_CANVAS_PROOF_DIR || 'artifacts/lifemap-founder-proof/canvas-proof')
 const exactHead = process.env.URAI_EXACT_HEAD || 'local'
-const receipt = { schemaVersion: 'urai-lifemap-webgl-canvas-proof-2', exactHead, captures: [], browserEvents: [], capturedAt: new Date().toISOString() }
+const receipt = { schemaVersion: 'urai-lifemap-webgl-canvas-proof-3', exactHead, framebufferPolicy: 'raw-default-framebuffer-readPixels-with-proof-context-retention', captures: [], browserEvents: [], capturedAt: new Date().toISOString() }
 let failed = false
 
 await mkdir(outputDir, { recursive: true })
@@ -70,6 +70,18 @@ async function signalFromCanvasPng(page, buffer) {
 
 async function capture(spec) {
   const context = await browser.newContext({ viewport: spec.viewport, deviceScaleFactor: 2, reducedMotion: spec.reducedMotion || 'no-preference', hasTouch: Boolean(spec.touch), isMobile: Boolean(spec.touch) })
+  await context.addInitScript(() => {
+    const originalGetContext = HTMLCanvasElement.prototype.getContext
+    HTMLCanvasElement.prototype.getContext = function retainedWebGLContext(type, attributes) {
+      if (type === 'webgl' || type === 'webgl2' || type === 'experimental-webgl') {
+        const options = attributes && typeof attributes === 'object'
+          ? { ...attributes, preserveDrawingBuffer: true }
+          : { preserveDrawingBuffer: true }
+        return originalGetContext.call(this, type, options)
+      }
+      return originalGetContext.call(this, type, attributes)
+    }
+  })
   const page = await context.newPage()
   recordEvents(page, spec.id)
   try {
@@ -83,6 +95,11 @@ async function capture(spec) {
     }, { phase: spec.phase }, { timeout: 45_000, polling: 50 })
     const canvas = root.locator('canvas').first()
     await canvas.waitFor({ state: 'visible', timeout: 20_000 })
+    const retainedDefaultFramebuffer = await canvas.evaluate((element) => {
+      const gl = element.getContext('webgl2') || element.getContext('webgl')
+      return gl?.getContextAttributes()?.preserveDrawingBuffer === true
+    })
+    if (!retainedDefaultFramebuffer) throw new Error(`${spec.id} proof context did not retain the default WebGL framebuffer`)
     const file = `${spec.id}-${exactHead.slice(0, 12)}.png`
     const framebuffer = await canvas.evaluate(captureWebGLFramebuffer)
     if (framebuffer.source !== 'webgl-default-framebuffer-readPixels') throw new Error(`${spec.id} missing framebuffer provenance`)
@@ -93,7 +110,7 @@ async function capture(spec) {
     if (signal.source !== 'webgl-default-framebuffer-readPixels' || signal.width !== framebuffer.width || signal.height !== framebuffer.height) throw new Error(`${spec.id} did not sample the exact framebuffer PNG`)
     if (signal.variance < 8) throw new Error(`${spec.id} WebGL canvas variance below minimum: ${signal.variance}`)
     if (signal.nonDarkRatio <= 0.02) throw new Error(`${spec.id} WebGL canvas non-dark coverage below minimum: ${signal.nonDarkRatio}`)
-    receipt.captures.push({ id: spec.id, route: page.url(), viewport: spec.viewport, phase: spec.phase, file, bytes: buffer.length, sha256: createHash('sha256').update(buffer).digest('hex'), signal })
+    receipt.captures.push({ id: spec.id, route: page.url(), viewport: spec.viewport, phase: spec.phase, file, bytes: buffer.length, sha256: createHash('sha256').update(buffer).digest('hex'), retainedDefaultFramebuffer, signal })
   } finally {
     await context.close()
   }
