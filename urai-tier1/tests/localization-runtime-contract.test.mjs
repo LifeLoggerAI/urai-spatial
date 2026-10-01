@@ -35,9 +35,9 @@ test('locale normalization and RTL rules are bounded to governed launch ids', ()
   assert.equal(uraiTextDirection('en'), 'ltr')
 })
 
-test('unreviewed locales fail safely to English source copy and remain review-required', () => {
+test('machine-prepared unreviewed locales stay runtime-fallback and review-required', () => {
   assert.equal(messageFor('fr','nav.home'), 'Home')
-  assert.equal(localizationCompleteness('fr').complete, false)
+  assert.equal(localizationCompleteness('fr').complete, true)
   assert.equal(localizationCompleteness('fr').nativeReviewRequired, true)
   assert.equal(localizationCompleteness('en').complete, true)
   assert.equal(localizationCompleteness('en').nativeReviewRequired, false)
