@@ -122,22 +122,24 @@ export default function MemoryWorldRuntime({ world, onExit }: MemoryWorldRuntime
   return (
     <main data-testid="memory-world-runtime" data-memory-world-state={rendererState === 'ready' ? 'rendered' : 'semantic-fallback'} data-memory-world-renderer={rendererState} data-memory-world-id={world.worldId} data-memory-world-archetype={world.archetypeId} data-memory-world-truth={plan.truthLabel} data-memory-world-navigation={plan.navigation} style={{position:'fixed',inset:0,overflow:'hidden',background:'#071018',color:'#fff'}}>
       <MemoryWorldRendererBoundary fallback={fallback} onFailure={() => setRendererState('unavailable')}>
-      {rendererState === 'ready' ? <Canvas fallback={fallback} onCreated={({ gl, camera: view }) => {
-        camera.current = view as PerspectiveCamera
-        const canvas = gl.domElement
-        const lost = (event: Event) => { event.preventDefault(); setRendererState('lost') }
-        canvas.addEventListener('webglcontextlost', lost)
-        cleanupRenderer.current = () => canvas.removeEventListener('webglcontextlost', lost)
-      }} style={{position:'absolute',inset:0,width:'100%',height:'100%',minWidth:300,minHeight:300}} shadows={quality.shadows} dpr={[1,quality.pixelRatioMax]} frameloop={quality.documentVisible?'always':'never'} camera={{position:[0,1.35,7.8],fov:52,near:.05,far:120}}>
-        <color attach="background" args={['#071018']} />
-        <fog attach="fog" args={['#071018',8,34]} />
-        <ambientLight intensity={.42} />
-        <hemisphereLight intensity={.62} color="#d7f5ff" groundColor="#172019" />
-        <directionalLight position={[5,8,4]} intensity={1.5} color="#fff1d6" castShadow={quality.shadows} />
-        <pointLight position={[0,2,-4]} intensity={2.3} color={accent} distance={18} />
-        <BoundedTemplateGeometry world={world} />
-        <OrbitControls ref={controls} enablePan={false} enableDamping={!quality.reducedMotion} minDistance={2.5} maxDistance={12} target={[0,.4,-3]} />
-      </Canvas> : fallback}
+      {rendererState === 'ready' ? <div data-testid="memory-world-canvas-shell" style={{position:'absolute',inset:0,width:'100%',height:'100%',minWidth:300,minHeight:300}}>
+        <Canvas fallback={fallback} onCreated={({ gl, camera: view }) => {
+          camera.current = view as PerspectiveCamera
+          const canvas = gl.domElement
+          const lost = (event: Event) => { event.preventDefault(); setRendererState('lost') }
+          canvas.addEventListener('webglcontextlost', lost)
+          cleanupRenderer.current = () => canvas.removeEventListener('webglcontextlost', lost)
+        }} style={{display:'block',width:'100%',height:'100%'}} shadows={quality.shadows} dpr={[1,quality.pixelRatioMax]} frameloop={quality.documentVisible?'always':'never'} camera={{position:[0,1.35,7.8],fov:52,near:.05,far:120}}>
+          <color attach="background" args={['#071018']} />
+          <fog attach="fog" args={['#071018',8,34]} />
+          <ambientLight intensity={.42} />
+          <hemisphereLight intensity={.62} color="#d7f5ff" groundColor="#172019" />
+          <directionalLight position={[5,8,4]} intensity={1.5} color="#fff1d6" castShadow={quality.shadows} />
+          <pointLight position={[0,2,-4]} intensity={2.3} color={accent} distance={18} />
+          <BoundedTemplateGeometry world={world} />
+          <OrbitControls ref={controls} enablePan={false} enableDamping={!quality.reducedMotion} minDistance={2.5} maxDistance={12} target={[0,.4,-3]} />
+        </Canvas>
+      </div> : fallback}
       </MemoryWorldRendererBoundary>
       <header style={{position:'absolute',zIndex:5,left:20,top:20,maxWidth:'min(440px,calc(100% - 40px))',maxHeight:'calc(100svh - 130px)',overflow:'auto',boxSizing:'border-box',padding:'14px 16px',border:'1px solid rgba(255,255,255,.18)',borderRadius:18,background:'rgba(4,10,16,.74)',backdropFilter:'blur(12px)'}}>
         <p style={{margin:0,fontSize:11,letterSpacing:'.14em',textTransform:'uppercase',color:'#b7f7ee'}}>Memory World · bounded runtime</p>
