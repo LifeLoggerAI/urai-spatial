@@ -29,9 +29,9 @@ const receipt = {
   schemaVersion: 'urai-sacred-home-orb-proof-3',
   exactHead,
   capturedAt: new Date().toISOString(),
-  runtimeContract: 'natural-home-real-glb-makehuman-orb-portal-semantic-and-visual-proof',
+  runtimeContract: 'natural-home-real-glb-orb-environmental-threshold-semantic-and-visual-proof',
   orbIdentity: { path: orbPath, bytes: orbBytes.length, sha256: orbSha256, verified: true },
-  portalIdentity: { path: portalPath, requiredRuntimeRequest: true },
+  portalIdentity: { path: portalPath, requiredRuntimeRequest: false, homeVisiblePortal: false },
   cases: [],
   errors: [],
 }
@@ -98,6 +98,8 @@ for (const spec of cases) {
     record.cameraMode = await owner.getAttribute('data-home-camera-mode')
     record.orbState = await owner.getAttribute('data-home-orb-state')
     record.orbClip = await owner.getAttribute('data-home-orb-clip')
+    record.orbReducedMotion = await owner.getAttribute('data-home-orb-reduced-motion')
+    record.visiblePortals = await owner.getAttribute('data-home-visible-portals')
     record.orbMarkers = await owner.getByTestId('urai-home-webgl-orb').count()
     record.embodimentMarkers = await owner.getByTestId('urai-home-embodied-avatar').count()
     const semanticNav = page.getByRole('navigation', { name: 'Accessible Home destinations' })
@@ -133,11 +135,12 @@ for (const spec of cases) {
       && record.runtimeAssets?.includes('polyhaven-fern-02-geometry-v1.glb')
       && record.runtimeAssets?.includes('living-orb')
       && record.runtimeAssets?.includes('reflecting-water')
-      && record.authoredRegions?.includes('home-sanctuary-pavilion')
+      && record.authoredRegions?.includes('home-sanctuary-geometry')
+      && record.authoredRegions?.includes('home-canonical-sanctuary-structure')
       && record.authoredRegions?.includes('home-reflecting-water')
       && record.cameraMode !== null
       && record.orbState !== null
-      && (spec.reducedMotion !== 'reduce' || record.orbClip === 'orb-state-static')
+      && (spec.reducedMotion !== 'reduce' || record.orbReducedMotion === 'true')
       && record.orbMarkers === 1
       && record.embodimentMarkers === 1
       && record.semanticButtons === 1
@@ -146,7 +149,8 @@ for (const spec of cases) {
       && record.semanticOwner === 'runtime-boundary'
       && record.semanticNonDominant === 'true'
       && Number.isFinite(record.semanticOpacity) && record.semanticOpacity <= .02
-      && record.portalRequests.length >= 1
+      && record.visiblePortals === 'false'
+      && record.portalRequests.length === 0
       && record.screenshotBytes > 12000
       && record.luminanceRange >= 16
       && record.visibleSamples >= 5
