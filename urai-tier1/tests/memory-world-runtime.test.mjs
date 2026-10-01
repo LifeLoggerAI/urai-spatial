@@ -82,7 +82,7 @@ test('runtime source mounts actual Canvas and Replay uses captured-place-first M
   assert.match(runtime, /enablePan=\{false\}/)
   assert.match(runtime, /data-testid="memory-world-canvas-shell"/)
   assert.match(runtime, /minWidth:300,minHeight:300/)
-  assert.match(runtime, /style=\{\{display:'block',width:'100%',height:'100%'\}\}/)
+  assert.match(runtime, /style=\{\{display:'block',width:'100%',height:'100%',minWidth:300,minHeight:300\}\}/)
   assert.match(replay, /memoryWorldReplayHref/)
   assert.match(replay, /capturedRealityEntry\?\.href \?\? memoryWorldHref/)
   assert.match(replay, /Enter Memory World/)
