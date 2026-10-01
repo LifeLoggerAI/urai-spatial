@@ -61,6 +61,7 @@ const tests = [
   'tests/provider-hosting-runtime-contract.test.mjs',
   'tests/provider-preview-routing-contract.test.mjs',
   'tests/public-estate-constellation-contract.test.mjs',
+  'tests/public-route-manifest-ownership.test.mjs',
   'tests/post-deploy-ground-smoke-contract.test.mjs',
   'tests/persistent-world-doorway-regression.test.mjs',
   'tests/quest-entry-lifecycle.test.mjs',
