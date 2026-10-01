@@ -49,7 +49,7 @@ export function getOperationalPassportSnapshot() { return callOperationalPrivacy
 export function createOperationalExportRequest(scopes: string[], suppliedOperationId?: string) {
   return callOperationalPrivacyFunction('createExportRequest', { scopes, operationId: suppliedOperationId ?? operationId('export') })
 }
-export function getOperationalExportDownloadUrl(payload: { jobId: string; file?: 'export' | 'manifest' }) { return callOperationalPrivacyFunction('getExportDownloadUrl', payload) }
+export function getOperationalExportDownloadUrl(payload: { jobId: string; file?: 'export' | 'manifest' | 'runtime'; assetId?: string }) { return callOperationalPrivacyFunction('getExportDownloadUrl', payload) }
 export function cancelOperationalExportRequest(jobId: string) { return callOperationalPrivacyFunction('cancelExportRequest', { jobId }) }
 export function createOperationalDeletionRequest(payload: { scope: string; confirmation: string; reason?: string; operationId?: string }) {
   return callOperationalPrivacyFunction('createDeletionRequest', { ...payload, operationId: payload.operationId ?? operationId('deletion') })

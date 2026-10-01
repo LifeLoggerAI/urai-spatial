@@ -1,0 +1,88 @@
+{
+  "schemaVersion": "urai-interpretive-world-reconstruction-receipt-1",
+  "worldId": "URAI-IW-001-QUIET-RESET",
+  "truth": {
+    "truthClass": "interpretive",
+    "autobiographical": false,
+    "generatedOnly": true,
+    "sourceTruthEligible": false,
+    "sourceIds": [],
+    "exactPrivateLocationEmbedded": false
+  },
+  "classification": "PRE_RECONSTRUCTION",
+  "visual": {
+    "literalAcceptance": false,
+    "geometryConsistencyAccepted": false,
+    "acceptedTaskIds": [],
+    "reviewer": null,
+    "reviewedAt": null,
+    "receiptRef": "visual-acceptance.current.json"
+  },
+  "frames": {
+    "acceptedFrameCount": 0,
+    "heldOutFrameCount": 0,
+    "frameManifestRef": null
+  },
+  "cameraSolve": null,
+  "training": {
+    "state": "not-started",
+    "engine": "nerfstudio-splatfacto",
+    "receiptRef": null
+  },
+  "qa": {
+    "reviewState": "unreviewed",
+    "psnrDb": null,
+    "ssim": null,
+    "lpips": null,
+    "knownArtifactCount": 0,
+    "receiptRef": null
+  },
+  "artifacts": {
+    "archival": null,
+    "runtime": null,
+    "collisionProxy": null
+  },
+  "embodiedMovementRequested": false,
+  "performance": {
+    "desktop": null,
+    "mobile": null,
+    "xr": null
+  },
+  "certification": {
+    "browserCertified": false,
+    "mobileCertified": false,
+    "xrCertified": false
+  },
+  "remainingGates": [
+    "literal-visual-review",
+    "accepted-frame-extraction",
+    "colmap-camera-solve",
+    "3dgs-training",
+    "held-out-qa",
+    "archival-runtime-export",
+    "collision-proxy-if-embodied-movement",
+    "desktop-performance-receipt",
+    "mobile-performance-receipt",
+    "xr-physical-device-receipt"
+  ],
+  "allowedClaim": "Eight generated survey passes exist for an interpretive world. Literal visual acceptance and 3D reconstruction have not yet occurred.",
+  "generation": {
+    "provider": "runway",
+    "heroTaskId": "ebe33ba1-ccc1-4ff1-a329-8e619f51590a",
+    "anchorTaskIds": [
+      "0d73cca1-892c-45c0-a009-79337a539b20",
+      "17de7ff2-db78-4fb4-babb-f4af30e34615",
+      "14edc580-87db-4e7f-8e98-1343a0b86214"
+    ],
+    "surveyTaskIds": [
+      "613f748d-5c8f-49fa-baa7-e8366ce94270",
+      "894905a7-9c8a-4955-94b1-1be38ce12869",
+      "c4d0c381-336a-41d4-aa76-7139e7921992",
+      "67b988f1-aaaf-4b1f-afe0-f003bebf10c4",
+      "3be52a25-dfa0-45c7-abdf-3ccc02aacbe7",
+      "77a33ac6-f598-4b56-98fd-0386e4e4719b",
+      "4b0d49a6-4f24-4b56-9585-933b481a66ce",
+      "32ffb018-6f5c-4d50-b1c6-7a572abd7e50"
+    ]
+  }
+}

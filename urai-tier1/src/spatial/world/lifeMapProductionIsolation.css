@@ -45,3 +45,10 @@ html.urai-route-life-map [data-testid='urai-true-3d-life-map'][data-life-map-mod
   html.urai-route-life-map .life-map-search-trigger,
   html.urai-route-life-map .life-map-navigator { border: 2px solid CanvasText !important; background: Canvas !important; color: CanvasText !important; }
 }
+/* Provider device collages are retired plates, not part of the canonical galaxy. */
+[data-testid='urai-true-3d-life-map'][data-life-map-production-world='true']::before,
+[data-testid='urai-true-3d-life-map'][data-life-map-production-world='true']::after {
+  content: none !important;
+  display: none !important;
+  background-image: none !important;
+}

@@ -69,12 +69,14 @@ export function PersistentWorldCompanion() {
   const current = definitionForDestination(world.destination)
   const menuRef = useRef<HTMLDivElement>(null)
   const orbRef = useRef<HTMLButtonElement>(null)
+  const externalTriggerRef = useRef<HTMLElement | null>(null)
   const restoreFocusRef = useRef(false)
   const primaryDestinations = useMemo(() => PRIMARY_DESTINATIONS.map((id) => URAI_DESTINATION_REGISTRY[id]), [])
   const secondaryDestinations = useMemo(() => SECONDARY_DESTINATIONS.map((id) => URAI_DESTINATION_REGISTRY[id]), [])
 
   const closeCompanion = useCallback((restoreFocus = true) => {
     restoreFocusRef.current = restoreFocus
+    if (!restoreFocus) externalTriggerRef.current = null
     setOpen(false)
     publishOrbState('idle', 'companion')
   }, [])
@@ -106,6 +108,10 @@ export function PersistentWorldCompanion() {
 
   useEffect(() => {
     const openCompanion = () => {
+      const active = document.activeElement
+      externalTriggerRef.current = active instanceof HTMLElement && active !== document.body && active !== orbRef.current
+        ? active
+        : null
       setOpen(true)
       publishOrbState('attention', 'companion')
     }
@@ -126,9 +132,15 @@ export function PersistentWorldCompanion() {
     }
     if (restoreFocusRef.current) {
       restoreFocusRef.current = false
-      orbRef.current?.focus()
+      const externalTrigger = externalTriggerRef.current
+      externalTriggerRef.current = null
+      const homeSemanticOrb = world.destination === 'home'
+        ? document.querySelector<HTMLElement>('[data-testid="home-semantic-orb"]')
+        : null
+      const focusTarget = externalTrigger?.isConnected ? externalTrigger : homeSemanticOrb ?? orbRef.current
+      focusTarget?.focus()
     }
-  }, [open])
+  }, [open, world.destination])
 
   useEffect(() => {
     if (!open) return
