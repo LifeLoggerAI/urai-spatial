@@ -20,9 +20,9 @@ const orbClips = {
 }
 
 const destinationTelemetry = {
-  orb: { x: 0, z: -2.65, radius: 2.5, attribute: 'data-home-distance-orb' },
-  ground: { x: -5.2, z: -8.4, radius: 2.8, attribute: 'data-home-distance-ground' },
-  'life-map': { x: 5.2, z: -8.4, radius: 2.8, attribute: 'data-home-distance-life-map' },
+  orb: { x: 0, z: -4.25, radius: 2.4, attribute: 'data-home-distance-orb' },
+  ground: { x: -5.4, z: -10.8, radius: 2.8, attribute: 'data-home-distance-ground' },
+  'life-map': { x: 5.4, z: -10.8, radius: 2.8, attribute: 'data-home-distance-life-map' },
 }
 const movementKeys = { forward: 'w', back: 's', left: 'a', right: 'd' }
 const movementButtonNames = { forward: 'Move forward', back: 'Move backward', left: 'Move left', right: 'Move right' }
@@ -167,7 +167,7 @@ async function verifyHome(page, expected) {
   const passed = result.ownerCount === 1 && result.canvasVisible && result.canvasWidth >= 240 && result.canvasHeight >= 240
     && result.assetMode === requiredMode && result.personalizationMode === expected.mode
     && result.reviewFixture === (expected.fixture || 'none') && result.orbState === expected.orbState
-    && result.orbClip === orbClips[expected.orbState] && result.animationOwner === 'authored-sanctuary-plus-gltf-interactions'
+    && result.orbClip === orbClips[expected.orbState] && result.animationOwner === 'canonical-sanctuary-plus-cc0-fern-plus-living-orb'
     && result.assetsReady === 'true' && result.fallbackVisible === 0
     && result.semanticButtons === 3 && result.semanticVisible === 0 && result.discreetControls === 2
   return { ...result, passed }
