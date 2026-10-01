@@ -345,7 +345,20 @@ export function HomeWorldProductionFinal({ onOrbOpen = requestUraiWorldOrbOpen, 
   const openOrb = useCallback(() => { if (!useSceneStore.getState().inputLocked && !groundDescent) onOrbOpen(); }, [groundDescent, onOrbOpen]);
   const startGroundDescent = useCallback(() => { if (useSceneStore.getState().inputLocked || groundDescent) return; target.current = null; setOrbState("transition"); setTransitionSequence("ground:opening"); setGroundDescent(true); }, [groundDescent]);
   const finishGroundDescent = useCallback(() => { setTransitionSequence("ground:closing"); requestUraiWorldTravel({ destination: "infrastructure-hub", href: "/ground/", entryPortal: "home-ground", cameraCheckpoint: "home-ground-descent" }); }, []);
-  const startLifeMapAscent = useCallback(() => { const store = useSceneStore.getState(); if (store.inputLocked || groundDescent || store.phase === "ASCENT") return; target.current = null; setOrbState("transition"); setTransitionSequence("life-map:opening"); store.enterLifeMap(); }, [groundDescent]);
+  const startLifeMapAscent = useCallback(() => {
+    const store = useSceneStore.getState();
+    if (store.inputLocked || groundDescent || store.phase === "ASCENT") return;
+    target.current = null;
+    setOrbState("transition");
+    setTransitionSequence("life-map:opening");
+    store.enterLifeMap();
+    // Opening is a distinct user-perceivable state. Advance to traversal on the
+    // next animation frame so evidence, assistive state, and visual transition
+    // consumers cannot have opening and traversal collapsed into one React batch.
+    window.requestAnimationFrame(() => {
+      if (useSceneStore.getState().phase === "ASCENT") setTransitionSequence("life-map:traversal");
+    });
+  }, [groundDescent]);
   const interaction = useCallback(() => { if (useSceneStore.getState().inputLocked || groundDescent) return; if (nearby === "orb") openOrb(); if (nearby === "ground") startGroundDescent(); if (nearby === "life-map") startLifeMapAscent(); }, [groundDescent, nearby, openOrb, startGroundDescent, startLifeMapAscent]);
   const reset = useCallback(() => { if (groundDescent) return; yaw.current = 0; pitch.current = -0.045; target.current = SPAWN.clone(); setTransitionSequence("idle"); }, [groundDescent]);
   const input = useMovementInput({ enabled: !groundDescent, onInteract: interaction, onReset: reset });
@@ -364,7 +377,6 @@ export function HomeWorldProductionFinal({ onOrbOpen = requestUraiWorldOrbOpen, 
     mobile.addEventListener?.("change", apply);
     return () => { reduced.removeEventListener?.("change", apply); mobile.removeEventListener?.("change", apply); };
   }, []);
-  useEffect(() => { if (phase === "ASCENT") setTransitionSequence("life-map:traversal"); }, [phase]);
   useEffect(() => { if (groundDescent) setTransitionSequence("ground:traversal"); }, [groundDescent]);
   useEffect(() => {
     const cancel = (event: KeyboardEvent) => {
