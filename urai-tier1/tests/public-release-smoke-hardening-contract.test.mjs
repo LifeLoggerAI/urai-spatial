@@ -7,6 +7,7 @@ const releaseControl = fs.readFileSync(new URL('../../scripts/urai-release-contr
 const publicProof = fs.readFileSync(new URL('../../.github/workflows/public-institutional-surface-proof.yml', import.meta.url), 'utf8')
 
 const publicRoutes = ['/support', '/about', '/contact', '/event', '/glass', '/offline', '/report-bug']
+const fullVisionRoutes = ['/life-movie', '/council', '/spatial/memory-world', '/spatial/interpretive-world', '/spatial/captured-reality', '/spatial/ar-vr']
 
 test('post-deploy parity includes current Focus, Replay and institutional public owners', () => {
   assert.ok(postDeploy.includes("'URAI Focus stellar memory field'"))
@@ -24,14 +25,14 @@ test('post-deploy parity includes current Focus, Replay and institutional public
 })
 
 test('release-control browser smoke covers public routes and compatibility redirects', () => {
-  for (const route of publicRoutes) {
+  for (const route of [...publicRoutes, ...fullVisionRoutes]) {
     assert.ok(releaseControl.includes(`'${route}'`), `missing browser release route ${route}`)
   }
 
   assert.ok(releaseControl.includes("['/privacy', { pathname: '/privacy-controls', searchEntries: [['from', 'privacy']] }]"))
   assert.ok(releaseControl.includes("['/ascent/life-map', { pathname: '/life-map', searchEntries: [['from', 'ascent-life-map']] }]"))
   assert.ok(releaseControl.includes("transition: 'compatibility-route'"))
-  assert.ok(releaseControl.includes("schemaVersion: 'urai-release-control-smoke-6'"))
+  assert.ok(releaseControl.includes("schemaVersion: 'urai-release-control-smoke-7'"))
 })
 
 test('public institutional proof is eligible on integration branches', () => {
