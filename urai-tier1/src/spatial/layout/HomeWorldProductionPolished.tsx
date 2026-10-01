@@ -52,6 +52,20 @@ function seeded(index: number, salt = 0) {
   return value - Math.floor(value)
 }
 
+function cloneNaturalSanctuaryMaterial(material: THREE.Material, grounded: boolean) {
+  const clone = material.clone()
+  if (clone instanceof THREE.MeshStandardMaterial) {
+    // Keep the authored base-color/normal/roughness maps. The previous candidate
+    // replaced every material with flat green, which made retained pixels read
+    // like a low-poly proof scene instead of a material-rich inhabited place.
+    clone.roughness = THREE.MathUtils.clamp(Math.max(clone.roughness, grounded ? .72 : .64), .64, .96)
+    clone.metalness = Math.min(clone.metalness, .08)
+    clone.envMapIntensity = THREE.MathUtils.clamp(Math.max(clone.envMapIntensity, .72), .72, 1.08)
+    clone.needsUpdate = true
+  }
+  return clone
+}
+
 function prepareNaturalSanctuary(source: THREE.Object3D) {
   const world = source.clone(true)
   const rejected = /portal|ring|threshold|village|mannequin|avatar|debug|marker|label|embodied|presence|memory-place-anchor|living-growth|vault|monolith|bridge|grove|firefly|alcove|veil|waterfall|sculpture|pedestal|rib/i
@@ -62,11 +76,9 @@ function prepareNaturalSanctuary(source: THREE.Object3D) {
     if (!object.visible) return
     const name = object.name.toLowerCase()
     const grounded = /basin|path|ground|terrain|stone|floor/.test(name)
-    object.material = new THREE.MeshStandardMaterial({
-      color: grounded ? '#58665b' : '#40554a',
-      roughness: grounded ? .92 : .96,
-      metalness: .01,
-    })
+    object.material = Array.isArray(object.material)
+      ? object.material.map((material) => cloneNaturalSanctuaryMaterial(material, grounded))
+      : cloneNaturalSanctuaryMaterial(object.material, grounded)
     object.castShadow = true
     object.receiveShadow = true
     visibleMeshCount += 1
@@ -301,7 +313,11 @@ function Horizon() {
 }
 
 function SanctuaryPavilion() {
-  return <group name="home-sanctuary-pavilion" userData={{ role: 'open-air-weathered-stone-resting-place' }}>
+  const wood = '#4a3728'
+  const woodEdge = '#6a5037'
+  const stone = '#6b7068'
+  const ceramic = '#8d7358'
+  return <group name="home-sanctuary-pavilion" userData={{ role: 'open-air-inhabited-weathered-stone-resting-place', ceiling: false, skyDominant: true }}>
     <mesh geometry={ORB_CLEARING_GEOMETRY} receiveShadow><meshStandardMaterial color="#566356" roughness={1} metalness={0} /></mesh>
     <mesh geometry={SANCTUARY_BOULDER_LEFT} position={[-2.85, terrainHeight(-2.85,-6.15) + .42, -6.15]} rotation={[.18,.38,-.14]} scale={[1.2,.58,.82]} castShadow receiveShadow>
       <meshStandardMaterial color="#687469" roughness={1} metalness={0} />
@@ -312,6 +328,32 @@ function SanctuaryPavilion() {
     <mesh geometry={SANCTUARY_BOULDER_CENTER} position={[-.25, terrainHeight(-.25,-7.1) + .31, -7.1]} rotation={[.15,.12,-.09]} scale={[.76,.4,.58]} castShadow receiveShadow>
       <meshStandardMaterial color="#53635a" roughness={1} metalness={0} />
     </mesh>
+    <group name="home-lived-in-seating-left" position={[-4.1, terrainHeight(-4.1,-3.9) + .18, -3.9]} rotation={[0,.32,0]}>
+      <mesh castShadow receiveShadow position={[0,.42,0]}><boxGeometry args={[2.35,.18,.58]} /><meshStandardMaterial color={wood} roughness={.88} metalness={0} /></mesh>
+      <mesh castShadow position={[-.88,.2,0]}><boxGeometry args={[.14,.42,.46]} /><meshStandardMaterial color={woodEdge} roughness={.9} /></mesh>
+      <mesh castShadow position={[.88,.2,0]}><boxGeometry args={[.14,.42,.46]} /><meshStandardMaterial color={woodEdge} roughness={.9} /></mesh>
+      <mesh castShadow position={[0,.77,.24]} rotation={[-.12,0,0]}><boxGeometry args={[2.28,.58,.12]} /><meshStandardMaterial color={wood} roughness={.9} /></mesh>
+    </group>
+    <group name="home-lived-in-seating-right" position={[4.3, terrainHeight(4.3,-4.2) + .18, -4.2]} rotation={[0,-.3,0]}>
+      <mesh castShadow receiveShadow position={[0,.42,0]}><boxGeometry args={[2.12,.18,.56]} /><meshStandardMaterial color={wood} roughness={.88} metalness={0} /></mesh>
+      <mesh castShadow position={[-.8,.2,0]}><boxGeometry args={[.14,.42,.44]} /><meshStandardMaterial color={woodEdge} roughness={.9} /></mesh>
+      <mesh castShadow position={[.8,.2,0]}><boxGeometry args={[.14,.42,.44]} /><meshStandardMaterial color={woodEdge} roughness={.9} /></mesh>
+      <mesh castShadow position={[0,.75,.23]} rotation={[-.12,0,0]}><boxGeometry args={[2.04,.56,.12]} /><meshStandardMaterial color={wood} roughness={.9} /></mesh>
+    </group>
+    <group name="home-shared-side-table" position={[-2.65, terrainHeight(-2.65,-4.9) + .16, -4.9]}>
+      <mesh castShadow receiveShadow position={[0,.48,0]}><cylinderGeometry args={[.58,.64,.14,28]} /><meshStandardMaterial color={woodEdge} roughness={.86} /></mesh>
+      <mesh castShadow position={[0,.24,0]}><cylinderGeometry args={[.12,.18,.48,18]} /><meshStandardMaterial color={wood} roughness={.9} /></mesh>
+      <mesh castShadow position={[.2,.62,-.08]}><cylinderGeometry args={[.1,.13,.22,18]} /><meshStandardMaterial color={ceramic} roughness={.92} /></mesh>
+    </group>
+    <group name="home-stone-hearth" position={[2.65, terrainHeight(2.65,-5.35) + .08, -5.35]}>
+      <mesh castShadow receiveShadow><cylinderGeometry args={[.64,.78,.22,24]} /><meshStandardMaterial color={stone} roughness={.98} /></mesh>
+      <mesh position={[0,.16,0]}><cylinderGeometry args={[.4,.43,.08,24]} /><meshStandardMaterial color="#302d28" roughness={1} /></mesh>
+      <pointLight position={[0,.52,0]} color="#d88d55" intensity={.2} distance={3.2} decay={2} />
+    </group>
+    <group name="home-ceramic-planters">
+      <mesh castShadow receiveShadow position={[-5.6, terrainHeight(-5.6,-2.2) + .3, -2.2]}><cylinderGeometry args={[.34,.26,.58,20]} /><meshStandardMaterial color={ceramic} roughness={.96} /></mesh>
+      <mesh castShadow receiveShadow position={[5.45, terrainHeight(5.45,-2.5) + .28, -2.5]}><cylinderGeometry args={[.32,.25,.54,20]} /><meshStandardMaterial color="#6e604f" roughness={.96} /></mesh>
+    </group>
   </group>
 }
 
@@ -345,10 +387,8 @@ function OrbMotes({ reducedMotion, color }: { reducedMotion: boolean; color: str
 
 function OrbGroundGlow({ state }: { state: OrbState }) {
   const palette = ORB_PALETTE[state]
-  return <group position={[ORB.x, terrainHeight(ORB.x, ORB.z) + .032, ORB.z]} rotation={[-Math.PI / 2, 0, 0]}>
-    <mesh><circleGeometry args={[1.34, 64]} /><meshBasicMaterial color={palette.aura} transparent opacity={.042} depthWrite={false} blending={THREE.AdditiveBlending} toneMapped={false} /></mesh>
-    <mesh position={[0,0,.008]}><ringGeometry args={[.82,.86,64]} /><meshBasicMaterial color={palette.light} transparent opacity={.18} depthWrite={false} toneMapped={false} /></mesh>
-    <mesh position={[0,0,.012]}><ringGeometry args={[1.12,1.15,64]} /><meshBasicMaterial color={palette.aura} transparent opacity={.07} depthWrite={false} toneMapped={false} /></mesh>
+  return <group position={[ORB.x, terrainHeight(ORB.x, ORB.z) + .032, ORB.z]} rotation={[-Math.PI / 2, 0, 0]} userData={{ treatment: 'soft-grounded-light-no-rings' }}>
+    <mesh><circleGeometry args={[1.18, 64]} /><meshBasicMaterial color={palette.aura} transparent opacity={.032} depthWrite={false} blending={THREE.AdditiveBlending} toneMapped={false} /></mesh>
   </group>
 }
 
@@ -417,7 +457,7 @@ function SacredOrb({ state, reducedMotion, onOpen }: { state: OrbState; reducedM
 
   return <group ref={root} name="home-orb-sanctuary" position={ORB} onClick={(event) => { event.stopPropagation(); onOpen() }} userData={{ orbState: state, animation: sensory.animation, modelClip: ORB_CLIPS[state], runtimeAsset: ORB_MODEL, material: sensory.material, movement: sensory.movement, materialLanguage: 'translucent-living-memory-heart-with-visible-authored-core' }}>
     <mesh castShadow receiveShadow rotation={[.24,.5,-.12]}>
-      <icosahedronGeometry args={[.43,3]} />
+      <sphereGeometry args={[.43,48,32]} />
       <meshPhysicalMaterial color={palette.core} transparent opacity={0.14} depthWrite={false} emissive={palette.emissive} emissiveIntensity={state === 'speaking' ? .3 : .18} roughness={.18} metalness={0} clearcoat={.45} clearcoatRoughness={.2} envMapIntensity={.72} />
     </mesh>
     <group ref={authoredCore} scale={.34}><primitive object={authoredOrb} /></group>
@@ -531,6 +571,10 @@ function Scene(props: { input: MovementInput; yaw: MutableRefObject<number>; pit
     <hemisphereLight args={['#c8dddc','#1e2b20',cosmic ? .22 : 1.05]} />
     <directionalLight position={[8,18,7]} intensity={cosmic ? .34 : 2.35} color="#f2ecd8" castShadow />
     <directionalLight position={[-10,7,-8]} intensity={cosmic ? .1 : .54} color="#87b7ad" />
+    {!cosmic ? <>
+      <pointLight position={[-4.1,2.2,-3.9]} color="#d6a56c" intensity={.3} distance={6} decay={2} />
+      <pointLight position={[4.3,2.1,-4.2]} color="#a5c9c3" intensity={.22} distance={6} decay={2} />
+    </> : null}
     <Terrain target={props.target} />
     <SanctuaryPath />
     <Horizon />
