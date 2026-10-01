@@ -5,6 +5,7 @@ const requiredFiles = [
   'firebase.json',
   'firebase.static.json',
   '.github/workflows/spatial-live-deploy.yml',
+  '.github/workflows/spatial-governed-wif-deploy.yml',
   'urai-tier1/package.json',
   'urai-tier1/tests/xr-runtime-contract.test.mjs',
   'urai-tier1/src/spatial/xr/uraiXrRoomRuntime.ts',
@@ -69,5 +70,6 @@ console.log(JSON.stringify({
   requiredFiles: requiredFiles.length,
   requiredScripts,
   expectedSecretNames,
-  productionAuthority: '.github/workflows/spatial-live-deploy.yml',
+  productionVerificationAuthority: '.github/workflows/spatial-live-deploy.yml',
+  productionAuthority: '.github/workflows/spatial-governed-wif-deploy.yml',
 }, null, 2))

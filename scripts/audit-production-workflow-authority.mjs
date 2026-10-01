@@ -42,17 +42,30 @@ for (const retired of [
 }
 
 const productionWorkflows = []
+const forbiddenWorkflowDispatchers = []
 if (!existsSync(workflowsDir)) {
   failures.push('Missing .github/workflows directory')
 } else {
   for (const name of readdirSync(workflowsDir).filter((entry) => /\.ya?ml$/.test(entry))) {
     const source = normalize(readFileSync(path.join(workflowsDir, name), 'utf8'))
-    if (workflowExecutesProductionMutation(source)) productionWorkflows.push(`.github/workflows/${name}`)
+    const workflowPath = `.github/workflows/${name}`
+    if (workflowExecutesProductionMutation(source)) productionWorkflows.push(workflowPath)
+    const dispatchesAnotherWorkflow = /createWorkflowDispatch\s*\(|\/actions\/workflows\//.test(source)
+    const targetsProtectedReleaseWorkflow =
+      source.includes('spatial-live-deploy.yml') || source.includes('spatial-governed-wif-deploy.yml')
+    if (
+      workflowPath !== governedDeployWorkflowPath &&
+      dispatchesAnotherWorkflow &&
+      targetsProtectedReleaseWorkflow
+    ) forbiddenWorkflowDispatchers.push(workflowPath)
   }
 }
 const expectedProductionWorkflows = [governedDeployWorkflowPath]
 if (JSON.stringify(productionWorkflows.sort()) !== JSON.stringify(expectedProductionWorkflows)) {
   failures.push(`Production mutation is restricted to ${governedDeployWorkflowPath}; found ${productionWorkflows.sort().join(', ') || 'none'}`)
+}
+if (forbiddenWorkflowDispatchers.length) {
+  failures.push(`Protected release workflows must remain manual/non-chained; obsolete workflow dispatchers found: ${forbiddenWorkflowDispatchers.sort().join(', ')}`)
 }
 
 const workflow = read(canonicalWorkflowPath)
@@ -164,6 +177,7 @@ const report = {
   governedWifProductionMutationAvailable: productionWorkflows.length === 1 && productionWorkflows[0] === governedDeployWorkflowPath,
   productionWorkflows: productionWorkflows.sort(),
   governedDeployWorkflow: governedDeployWorkflowPath,
+  legacyAutoDispatchersRetired: forbiddenWorkflowDispatchers.length === 0,
   longLivedRepositoryCredentialAuthorityAllowed: false,
   mainOnlyReadOnlyWifProofConfigured: true,
   providerWifIamProofRequiredBeforeMutation: true,
