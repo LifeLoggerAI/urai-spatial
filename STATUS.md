@@ -17,7 +17,7 @@ Production-live status for the current candidate: **not verified**. GitHub issue
 - Seven launch-critical model assets are recorded as promoted with zero pending in `docs/release-evidence/SPATIAL_ASSET_COMPLETION_LEDGER_2026-08-01.json`.
 - The paid V2-V5 provider program is complete at the asset-promotion layer: **151 generated / 151 passed / 0 failed**, with `promotionAuthorized: true`, in `docs/release-evidence/URAI-SPATIAL-20260730-V2-V5-EXACT-PAID-PROMOTION.json`.
 - Duplicate paid regeneration is not authorized merely to satisfy stale status text; accepted retained hashes should remain stable unless a real product defect requires replacement.
-- Production spatial audio is an eight-asset Opus candidate lane. It is not final until the canonical forge produces the exact-forge-input-head receipt and the resulting binaries/receipt are committed and verified on the controlling PR branch.
+- Production spatial audio is complete at the candidate source/runtime-contract layer: all eight Opus assets and the exact-forge-input-head receipt are committed, runtime-referenced, and verification-marked PASS. Live production playback remains separately deployment/post-deploy gated.
 - AR/WebXR, physical Quest/device certification, wearable/body-signal providers, and other provider/device claims remain separately evidence-gated. Asset presence does not certify those claims.
 
 ## Current release boundary
