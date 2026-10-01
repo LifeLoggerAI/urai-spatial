@@ -8,6 +8,8 @@ const contract = read('src/spatial/memory/selectedMemoryContract.ts')
 const hook = read('src/spatial/memory/useSelectedMemory.ts')
 const focus = read('src/app/focus/FocusChamberClient.tsx')
 const replay = read('src/app/replay/CinematicReplayClient.tsx')
+const lifeMapScene = read('src/components/lifemap/ComposedLifeMapScene.tsx')
+const explicitDemoMemory = read('src/spatial/memory/explicitDemoMemory.ts')
 const demoPage = read('src/app/demo/page.tsx')
 const demoFilm = read('src/app/demo/replay-film/page.tsx')
 const visualAudit = readRoot('scripts/run-live-visual-audit-current.mjs')
@@ -39,30 +41,28 @@ test('demo memory is explicit, disclosed, and retained through Life Map camera t
   assert.match(replay, /DEMO FIXTURE · NOT PERSONAL DATA/)
 })
 
-test('Focus is an explorable authored living memory chamber rather than a static composited page', () => {
-  const cameraRig = focus.match(/function FocusCameraRig[\s\S]*?\n}\n\nfunction cloneAuthoredFocusModel/)?.[0]
+test('Focus is an explorable stellar memory-star field rather than a static chamber or composited page', () => {
+  const cameraRig = focus.match(/function FocusCameraRig[\s\S]*?\n}\n\nfunction StellarPhotosphere/)?.[0]
   assert.ok(cameraRig, 'FocusCameraRig must remain a mounted camera controller')
 
   assert.match(focus, /from '@react-three\/fiber'/)
   assert.match(focus, /import \* as THREE from 'three'/)
-  assert.match(focus, /FOCUS_CHAMBER_MODEL = '\/assets\/urai\/generated\/models\/focus-memory-chamber-v1\.glb'/)
-  assert.match(focus, /function cloneAuthoredFocusModel/)
-  assert.match(focus, /function AuthoredFocusChamber/)
-  assert.match(focus, /useGLTF\(FOCUS_CHAMBER_MODEL\)/)
-  assert.match(focus, /object\.castShadow = true/)
-  assert.match(focus, /object\.receiveShadow = true/)
-  assert.match(focus, /function FocusScene/)
-  assert.match(focus, /function ChamberArchitecture/)
+  assert.match(focus, /function StellarPhotosphere/)
+  assert.match(focus, /focus-stellar-photosphere-corona/)
+  assert.match(focus, /memory-star-stellar-photosphere-corona/)
   assert.match(focus, /function MemoryTraces/)
-  assert.match(focus, /function MemoryAperture/)
+  assert.match(focus, /function MemoryStarInteraction/)
   assert.match(focus, /<Canvas[\s\S]*?<FocusScene/)
-  assert.match(focus, /<AuthoredFocusChamber \/>/)
+  assert.match(focus, /<StellarPhotosphere accent=\{accent\} light=\{light\}/)
   assert.match(focus, /<OrbitControls/)
-  assert.match(focus, /data-focus-composition="authored-final-chamber-with-living-memory-vfx"/)
-  assert.match(focus, /data-focus-physical-asset=\{FOCUS_CHAMBER_MODEL\}/)
-  assert.match(focus, /data-focus-spatial="explorable-observatory"/)
+  assert.match(focus, /data-focus-composition="stellar-photosphere-corona-with-living-memory-vfx"/)
+  assert.match(focus, /data-focus-spatial="inside-memory-star"/)
   assert.match(focus, /data-focus-movement="walk-keyboard-orbit-touch"/)
+  assert.match(focus, /data-focus-input-ready="false"/)
+  assert.match(focus, /shell\.dataset\.focusInputReady = 'true'/)
   assert.match(focus, /data-focus-pointer-lock="false"/)
+  assert.doesNotMatch(focus, /focus-memory-chamber-v1\.glb|AuthoredFocusChamber|ChamberArchitecture|MemoryAperture|icosahedronGeometry|octahedronGeometry|torusGeometry/)
+  assert.doesNotMatch(focus, /data-focus-physical-asset=/)
 
   assert.match(cameraRig, /useFrame\(\(_, delta\) =>/)
   for (const key of ['KeyW', 'KeyA', 'KeyS', 'KeyD', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight']) {
@@ -95,14 +95,18 @@ test('Focus is an explorable authored living memory chamber rather than a static
   assert.match(focus, /data-star-id=\{memory\?\.star\.id\}/)
   assert.match(focus, /data-node=\{memory\?\.star\.id\}/)
 
-  assert.match(focus, /aria-label="Focus chamber controls"/)
+  assert.match(focus, /aria-label="Focus memory controls"/)
+  assert.match(focus, /focus-stellar-photosphere-luminance-floor/)
+  assert.match(focus, /color="#ffd66b" transparent opacity=\{0\.055\}/)
+  assert.doesNotMatch(focus, /color="#ffe8a8" transparent opacity=\{0\.48\}/)
+  assert.doesNotMatch(focus, /aria-label="Focus chamber controls"/)
   assert.match(focus, /<button type="button" onClick=\{\(\) => setRecenterSignal/)
   assert.match(focus, /aria-label=\{`Open Replay for \$\{memory\.title\}`\}/)
   assert.match(focus, /<details className="focusHelp">/)
   assert.match(focus, /data-focus-fallback="semantic"/)
   assert.match(focus, /Spatial view unavailable/)
-  assert.match(focus, /No personal memory is displayed in this neutral observatory/)
-  assert.match(focus, /Held in context\. Nothing leaves this chamber\./)
+  assert.match(focus, /No personal memory is displayed in this neutral stellar field/)
+  assert.match(focus, /Held in context\. Nothing leaves this memory field\./)
   assert.match(focus, /prefers-reduced-motion:reduce/)
   assert.match(focus, /@media\(max-width:\d+px\)/)
 
@@ -110,13 +114,51 @@ test('Focus is an explorable authored living memory chamber rather than a static
   assert.doesNotMatch(focus, /\.artifactImage\{/, 'the retired static artifact-image CSS owner must not return')
 })
 
-test('direct Focus entry remains a truthful neutral observatory and never mounts fake personal data', () => {
-  assert.match(focus, /Focus Observatory/)
-  assert.match(focus, /No personal memory is displayed in this neutral observatory/)
+test('selected Memory Star copy rejects the retired chamber language', () => {
+  assert.match(lifeMapScene, /return "Inside the Memory Star";/)
+  assert.doesNotMatch(lifeMapScene, /Intimate memory chamber/i)
+  assert.match(explicitDemoMemory, /Selected memory star\./)
+  assert.match(explicitDemoMemory, /Return to the explicit demo Focus star\./)
+  assert.doesNotMatch(explicitDemoMemory, /Selected memory chamber|Focus chamber/i)
+})
+
+test('direct Focus entry remains a truthful neutral stellar field and never mounts fake personal data', () => {
+  assert.match(focus, /Focus Memory Star/)
+  assert.match(focus, /No personal memory is displayed in this neutral stellar field/)
   assert.match(focus, /Choose a star in Life Map/)
   assert.match(focus, /Open Life Map/)
   assert.match(focus, /Awaiting a selected star/)
   assert.doesNotMatch(focus, /buildExplicitDemoMemory|buildNamedExplicitDemoMemory|URAI_SPATIAL_DEMO_DATA/)
+})
+
+test('Focus retains a deterministic visible stellar photosphere/corona in exact-head proof rendering', () => {
+  assert.match(focus, /className="focusPhotosphereVisual"/)
+  assert.match(focus, /data-focus-visual-owner="stellar-photosphere-corona"/)
+  assert.match(focus, /\.artifactStage\{position:absolute;z-index:0/)
+  assert.doesNotMatch(focus, /repeating-conic-gradient/, 'retired radial UI spokes must not mask the spatial star')
+  assert.match(focus, /border-radius:52% 48% 46% 54%\/44% 55% 45% 56%/)
+  assert.match(focus, /radial-gradient\(ellipse at 30% 28%/)
+  assert.match(focus, /radial-gradient\(ellipse at 50% 4%/)
+  assert.match(focus, /mix-blend-mode:screen;opacity:\.58/)
+  assert.match(focus, /\.focusPhotosphereVisual::before,\.focusPhotosphereVisual::after/)
+  assert.doesNotMatch(focus, /focusPhotosphereVisual[^}]*url\(/)
+})
+
+test('Focus stellar body preserves visible photosphere granulation instead of a smooth orb wash', () => {
+  assert.match(focus, /float broad = noise\(p \* 7\.0/)
+  assert.match(focus, /float medium = noise\(p \* 19\.0/)
+  assert.match(focus, /float fine = noise\(p \* 54\.0/)
+  assert.match(focus, /float pores = smoothstep\(\.80, \.96, noise\(p \* 71\.0/)
+  assert.match(focus, /float radiance = \(\.34 \+ cells \* \.82 \+ fine \* \.24 \+ faculae \* \.28\) \* \(\.50 \+ limb \* \.50\)/)
+  assert.doesNotMatch(focus, /radiance \*= 1\.72/, 'uniform amplification must not clip away stellar granulation contrast')
+  assert.match(focus, /vec3 emitted = surface \* radiance \+ hotWhite \* \(\.018 \+ cells \* \.038 \+ faculae \* \.05\)/)
+  assert.doesNotMatch(focus, /float filament = /, 'broad contour bands must not make the stellar photosphere read as planetary terrain')
+  assert.match(focus, /focus-stellar-photosphere-luminance-floor/)
+  assert.match(focus, /color="#ffd66b" transparent opacity=\{0\.055\}/)
+  assert.match(focus, /color="#ffb53f" transparent opacity=\{0\.045\}/)
+  assert.match(focus, /opacity=\{0\.018\}/)
+  assert.match(focus, /opacity=\{0\.008\}/)
+  assert.doesNotMatch(focus, /color="#ffe8a8" transparent opacity=\{0\.48\}/)
 })
 
 test('Focus retains adaptive quality, reduced motion, visibility pausing, and WebGL fallback', () => {
@@ -181,6 +223,15 @@ test('privacy-safe denied, deleted, unavailable, and corrupt states exist', () =
   assert.match(contract, /ownerId !== expectedOwnerId/)
   assert.match(contract, /raw\.deleted === true/)
   assert.match(contract, /replay manifest is incomplete/i)
+})
+
+test('Replay keeps the user inside the memory environment and subordinates presentation chrome', () => {
+  assert.match(replay, /data-replay-spatial-owner="r3f-immersive-memory-field"/)
+  assert.match(replay, /data-replay-composition="inside-memory-environment-ui-subordinate"/)
+  assert.match(replay, /data-replay-environment-fallback="approved-memory-asset"/)
+  assert.match(replay, /background-image:linear-gradient\([^}]*var\(--replay-asset\)/)
+  assert.match(replay, /width:min\(680px,74vw\)/)
+  assert.doesNotMatch(replay, /projection|projector|movie screen/i)
 })
 
 test('Focus and Replay share exact selected memory and manifest identity', () => {

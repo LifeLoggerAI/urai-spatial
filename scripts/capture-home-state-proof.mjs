@@ -20,7 +20,7 @@ const receipt = {
   schemaVersion: 'urai-home-state-proof-5',
   exactHead,
   capturedAt: new Date().toISOString(),
-  runtimeContract: 'sacred-home-live-owner-orb-lifecycle-stability-accessibility-and-retained-canvas-evidence',
+  runtimeContract: 'natural-home-live-owner-orb-lifecycle-stability-accessibility-and-retained-canvas-evidence',
   visualGate: {
     source: 'retained-canvas-png',
     sampling: 'distributed-3x3-neighborhood',
@@ -32,22 +32,36 @@ const receipt = {
   errors: [],
 }
 
-async function settleAnimationFrames(page, frameCount) {
-  await page.evaluate((frames) => new Promise((resolve) => {
+async function settleAnimationFrames(page, frameCount, timeoutMs = 15_000) {
+  return page.evaluate(({ frames, timeoutMs }) => new Promise((resolve) => {
     let completed = 0
+    let settled = false
+    const finish = (timedOut) => {
+      if (settled) return
+      settled = true
+      window.clearTimeout(timer)
+      resolve({ completed, requested: frames, timedOut })
+    }
+    const timer = window.setTimeout(() => finish(true), timeoutMs)
     const advance = () => {
+      if (settled) return
       completed += 1
-      if (completed >= frames) resolve()
+      if (completed >= frames) finish(false)
       else window.requestAnimationFrame(advance)
     }
     window.requestAnimationFrame(advance)
-  }), frameCount)
+  }), { frames: frameCount, timeoutMs })
 }
 
 async function readVisualEvidence(page) {
   const canvas = page.locator('.urai-asset-home-world canvas').first()
   await canvas.waitFor({ state: 'visible', timeout: 45_000 })
-  const bounds = await canvas.boundingBox()
+  const bounds = await page.evaluate(() => {
+    const element = document.querySelector('.urai-asset-home-world canvas')
+    if (!element) return null
+    const rect = element.getBoundingClientRect()
+    return { x: rect.x, y: rect.y, width: rect.width, height: rect.height }
+  })
   const viewport = page.viewportSize()
   if (!bounds || !viewport) return { available: false, reason: 'missing-canvas-bounds' }
   const clipX = Math.max(0, bounds.x)
@@ -108,8 +122,10 @@ async function readVisualEvidence(page) {
 
 async function waitForVisualEvidence(page, frameBudget = 240) {
   let evidence = null
-  for (let elapsed = 0; elapsed < frameBudget; elapsed += 30) {
-    await settleAnimationFrames(page, 30)
+  const sampleInterval = Math.max(1, Math.ceil(frameBudget / 2))
+  for (let elapsed = 0; elapsed < frameBudget; elapsed += sampleInterval) {
+    const frames = Math.min(sampleInterval, frameBudget - elapsed)
+    await settleAnimationFrames(page, frames)
     evidence = await readVisualEvidence(page)
     if (evidence.available === true
       && evidence.viewportCoverage >= receipt.visualGate.minimumViewportCoverage
@@ -155,7 +171,7 @@ async function capture(state, options = {}) {
     record.runtimeAssets = await owner.getAttribute('data-home-runtime-assets')
     record.pointerLock = await page.evaluate(() => document.pointerLockElement === null)
     record.accessibleRuntimeText = (await owner.textContent()) || ''
-    record.semanticControls = await page.locator('.home-semantic-navigation button').evaluateAll((buttons) => buttons.map((button) => ({
+    record.semanticControls = await page.locator('.home-semantic-navigation :is(button,a)').evaluateAll((buttons) => buttons.map((button) => ({
       label: button.getAttribute('aria-label'),
       text: button.textContent,
     })))
@@ -182,11 +198,11 @@ async function capture(state, options = {}) {
     record.passed = record.status === 200
       && record.canvasReady === 'true'
       && record.primaryOwner === 'asset-driven'
-      && record.visibleWorld === 'moonlit-sacred-tech-sanctuary'
+      && record.visibleWorld === 'authored-coherent-three-dimensional-sanctuary'
       && record.movement === 'walk-keyboard-click-touch'
       && record.runtimeAssets?.includes('home-entry-chamber-v1.glb')
-      && record.runtimeAssets?.includes('urai-orb-avatar-v1.glb')
-      && record.runtimeAssets?.includes('portal-ring-master-v1.glb')
+      && record.runtimeAssets?.includes('living-orb')
+      && record.runtimeAssets?.includes('reflecting-water')
       && record.pointerLock
       && record.accessibilityPassed
       && record.visualPassed
@@ -210,28 +226,90 @@ async function captureOrbLifecycle({ reducedMotion = 'no-preference' } = {}) {
   page.on('pageerror', (error) => pageErrors.push(String(error)))
   const id = reducedMotion === 'reduce' ? 'orb-lifecycle-reduced-motion' : 'orb-lifecycle-production-ui'
   const record = { id, pageErrors, passed: false, reducedMotion }
+  let stage = 'initialize'
   try {
     await page.addInitScript(() => {
       window.__uraiObservedOrbStates = []
+      window.__uraiObservedOrbEventSnapshots = []
       window.addEventListener('urai:orb-state', (event) => {
-        window.__uraiObservedOrbStates.push(event?.detail?.state ?? 'unknown')
+        const state = event?.detail?.state ?? 'unknown'
+        window.__uraiObservedOrbStates.push(state)
+        const retain = (phase) => {
+          const owner = document.querySelector('.urai-asset-home-world[data-home-primary-owner="asset-driven"]')
+          window.__uraiObservedOrbEventSnapshots.push({
+            state,
+            phase,
+            ownerState: owner?.getAttribute('data-home-orb-state') ?? null,
+            clip: owner?.getAttribute('data-home-orb-clip') ?? null,
+            animation: owner?.getAttribute('data-home-orb-animation') ?? null,
+            at: performance.now(),
+          })
+        }
+        queueMicrotask(() => retain('microtask'))
+        window.requestAnimationFrame(() => retain('animation-frame'))
       })
     })
+    stage = 'home-ready'
     const response = await page.goto(`${base}/home/?homeAssetReview=1`, { waitUntil: 'domcontentloaded', timeout: 60_000 })
     const owner = await waitForHomeReady(page)
-    const openOrb = page.getByRole('button', { name: 'Open URAI Orb companion' }).first()
-    await openOrb.click()
-    await page.locator('#urai-world-companion-menu[aria-hidden="false"]').waitFor({ state: 'visible', timeout: 20_000 })
-    await page.waitForFunction((selector) => document.querySelector(selector)?.getAttribute('data-home-orb-state') === 'attention', ownerSelector)
+    await page.waitForFunction(
+      (selector) => Boolean(document.querySelector(selector)?.getAttribute('data-home-orb-state')),
+      ownerSelector,
+      { timeout: 20_000 },
+    )
+    await page.evaluate((selector) => {
+      const owner = document.querySelector(selector)
+      if (!(owner instanceof HTMLElement)) throw new Error('Home Orb lifecycle owner is missing')
+      window.__uraiObservedOrbLifecycle = []
+      const recordLifecycle = () => {
+        const snapshot = {
+          state: owner.getAttribute('data-home-orb-state'),
+          clip: owner.getAttribute('data-home-orb-clip'),
+          animation: owner.getAttribute('data-home-orb-animation'),
+        }
+        const history = window.__uraiObservedOrbLifecycle
+        const previous = history.at(-1)
+        if (!previous || previous.state !== snapshot.state || previous.clip !== snapshot.clip || previous.animation !== snapshot.animation) history.push(snapshot)
+      }
+      recordLifecycle()
+      const observer = new MutationObserver(recordLifecycle)
+      observer.observe(owner, {
+        attributes: true,
+        attributeFilter: ['data-home-orb-state', 'data-home-orb-clip', 'data-home-orb-animation'],
+      })
+      window.__uraiOrbLifecycleObserver = observer
+    }, ownerSelector)
 
+    const openOrb = page.locator('.urai-home-spatial-runtime-layer > .home-semantic-navigation [data-testid="home-semantic-orb"]')
+    await openOrb.waitFor({ state: 'attached', timeout: 20_000 })
+    await openOrb.focus()
+    stage = 'open-companion'
+    await page.keyboard.press('Enter')
+    await page.locator('#urai-world-companion-menu[aria-hidden="false"]').waitFor({ state: 'visible', timeout: 20_000 })
+    await page.waitForFunction(
+      (selector) => document.querySelector(selector)?.getAttribute('data-home-orb-state') === 'attention',
+      ownerSelector,
+      { timeout: 20_000 },
+    )
+
+    stage = 'open-conversation'
     const talk = page.locator('summary').filter({ hasText: 'Talk with Orb' }).first()
-    await talk.click()
+    await talk.waitFor({ state: 'visible', timeout: 20_000 })
+    await talk.focus()
+    await page.keyboard.press('Enter')
     const message = page.getByLabel('Message for Orb').first()
+    await message.waitFor({ state: 'visible', timeout: 20_000 })
+    stage = 'focus-message'
     await message.focus()
-    await page.waitForFunction((selector) => document.querySelector(selector)?.getAttribute('data-home-orb-state') === 'listening', ownerSelector)
+    await page.waitForFunction(
+      (selector) => document.querySelector(selector)?.getAttribute('data-home-orb-state') === 'listening',
+      ownerSelector,
+      { timeout: 20_000 },
+    )
 
     record.listeningState = await owner.getAttribute('data-home-orb-state')
     record.listeningClip = await owner.getAttribute('data-home-orb-clip')
+    record.listeningAnimation = await owner.getAttribute('data-home-orb-animation')
 
     if (reducedMotion === 'reduce') {
       record.visual = await waitForVisualEvidence(page)
@@ -242,7 +320,8 @@ async function captureOrbLifecycle({ reducedMotion = 'no-preference' } = {}) {
       record.observedStates = await page.evaluate(() => window.__uraiObservedOrbStates || [])
       record.passed = response?.status() === 200
         && record.listeningState === 'listening'
-        && record.listeningClip === 'orb-state-static'
+        && record.listeningClip === 'Orb_Listening'
+        && record.listeningAnimation === 'orb-state-static'
         && record.visual?.available === true
         && record.visual.viewportCoverage >= receipt.visualGate.minimumViewportCoverage
         && record.visual.luminanceRange >= receipt.visualGate.minimumLuminanceRange
@@ -253,21 +332,51 @@ async function captureOrbLifecycle({ reducedMotion = 'no-preference' } = {}) {
     }
 
     const consent = page.getByLabel('Allow this message and bounded recent context to be processed by OpenAI.').first()
-    await consent.check()
+    stage = 'grant-consent-keyboard'
+    await consent.focus()
+    await page.keyboard.press('Space')
+    if (!await consent.isChecked()) throw new Error('Native keyboard consent grant did not check the checkbox')
+    record.consentInput = 'native-keyboard'
+    record.consentGranted = true
     await message.fill('Give me a short grounded reflection.')
     await message.focus()
-    await page.getByRole('button', { name: 'Send' }).click()
+    stage = 'send-response'
+    await page.getByRole('button', { name: 'Send' }).focus()
+    await page.keyboard.press('Enter')
     await page.locator('section[aria-label="Orb response"]').waitFor({ state: 'visible', timeout: 20_000 })
-    await page.waitForFunction((selector) => document.querySelector(selector)?.getAttribute('data-home-orb-state') === 'speaking', ownerSelector)
-    record.respondingState = await owner.getAttribute('data-home-orb-state')
-    record.respondingClip = await owner.getAttribute('data-home-orb-clip')
+    const speakingSnapshotHandle = await page.waitForFunction(() => {
+      const mutationHistory = window.__uraiObservedOrbLifecycle || []
+      const eventHistory = window.__uraiObservedOrbEventSnapshots || []
+      return mutationHistory.find((snapshot) =>
+        snapshot?.state === 'speaking'
+        && snapshot?.clip === 'Orb_Speaking'
+        && snapshot?.animation === 'orb-speaking'
+      ) || eventHistory.find((snapshot) =>
+        snapshot?.state === 'speaking'
+        && snapshot?.ownerState === 'speaking'
+        && snapshot?.clip === 'Orb_Speaking'
+        && snapshot?.animation === 'orb-speaking'
+      ) || false
+    }, null, { timeout: 20_000 })
+    const speakingSnapshot = await speakingSnapshotHandle.jsonValue()
+    await speakingSnapshotHandle.dispose()
+    record.observedLifecycle = await page.evaluate(() => window.__uraiObservedOrbLifecycle || [])
+    record.observedEventSnapshots = await page.evaluate(() => window.__uraiObservedOrbEventSnapshots || [])
+    record.respondingState = speakingSnapshot.ownerState ?? speakingSnapshot.state
+    record.respondingClip = speakingSnapshot.clip
+    record.respondingAnimation = speakingSnapshot.animation
     record.observedStates = await page.evaluate(() => window.__uraiObservedOrbStates || [])
     record.lifecyclePassed = ['attention', 'listening', 'thinking', 'speaking'].every((state) => record.observedStates.includes(state))
 
-    await consent.uncheck()
+    stage = 'revoke-consent'
+    await consent.focus()
+    await page.keyboard.press('Space')
+    if (await consent.isChecked()) throw new Error('Native keyboard consent revocation left the checkbox checked')
+    record.consentRevoked = true
     await page.waitForFunction((selector) => document.querySelector(selector)?.getAttribute('data-home-orb-state') === 'privacy', ownerSelector)
     record.privacyState = await owner.getAttribute('data-home-orb-state')
     record.privacyClip = await owner.getAttribute('data-home-orb-clip')
+    record.privacyAnimation = await owner.getAttribute('data-home-orb-animation')
 
     record.visual = await waitForVisualEvidence(page)
     record.screenshot = `${id}-${exactHead.slice(0, 12)}.png`
@@ -275,20 +384,26 @@ async function captureOrbLifecycle({ reducedMotion = 'no-preference' } = {}) {
     record.screenshotBytes = screenshot.length
     record.screenshotSha256 = createHash('sha256').update(screenshot).digest('hex')
 
+    stage = 'close-companion'
     await page.keyboard.press('Escape')
     await page.waitForFunction((selector) => document.querySelector(selector)?.getAttribute('data-home-orb-state') === 'idle', ownerSelector)
     record.closedState = await owner.getAttribute('data-home-orb-state')
     record.closedClip = await owner.getAttribute('data-home-orb-clip')
+    record.closedAnimation = await owner.getAttribute('data-home-orb-animation')
 
     record.passed = response?.status() === 200
       && record.listeningState === 'listening'
-      && record.listeningClip === 'orb-listening'
+      && record.listeningClip === 'Orb_Listening'
+      && record.listeningAnimation === 'orb-listening'
       && record.respondingState === 'speaking'
-      && record.respondingClip === 'orb-speaking'
+      && record.respondingClip === 'Orb_Speaking'
+      && record.respondingAnimation === 'orb-speaking'
       && record.privacyState === 'privacy'
-      && record.privacyClip === 'orb-privacy'
+      && record.privacyClip === 'Orb_Privacy'
+      && record.privacyAnimation === 'orb-privacy'
       && record.closedState === 'idle'
-      && record.closedClip === 'orb-breathe'
+      && record.closedClip === 'Orb_Idle'
+      && record.closedAnimation === 'orb-breathe'
       && record.lifecyclePassed
       && record.visual?.available === true
       && record.visual.viewportCoverage >= receipt.visualGate.minimumViewportCoverage
@@ -298,6 +413,13 @@ async function captureOrbLifecycle({ reducedMotion = 'no-preference' } = {}) {
       && pageErrors.length === 0
   } catch (error) {
     record.error = String(error)
+    record.failedStage = stage
+    record.observedStates = await page.evaluate(() => window.__uraiObservedOrbStates || []).catch(() => [])
+    record.ownerState = await page.locator(ownerSelector).getAttribute('data-home-orb-state').catch(() => null)
+    record.ownerClip = await page.locator(ownerSelector).getAttribute('data-home-orb-clip').catch(() => null)
+    record.errorStack = error instanceof Error ? error.stack : null
+    record.failureScreenshot = `${id}-failure-${exactHead.slice(0, 12)}.png`
+    await page.screenshot({ path: path.join(outputDir, record.failureScreenshot), timeout: 30_000 }).catch(() => {})
   } finally {
     receipt.captures.push(record)
     if (!record.passed) receipt.errors.push(record)
@@ -332,7 +454,7 @@ try {
   transition.passed = transition.status === 200
     && transition.canvasReady === 'true'
     && transition.primaryOwner === 'asset-driven'
-    && transition.visibleWorld === 'moonlit-sacred-tech-sanctuary'
+    && transition.visibleWorld === 'authored-coherent-three-dimensional-sanctuary'
     && transition.pointerLock
     && transitionErrors.length === 0
 } catch (error) {

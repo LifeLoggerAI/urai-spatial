@@ -226,7 +226,11 @@ async function desktopJourney() {
     await shot(page, 'focus-replay-thresholds', 'thresholds', { memoryId: 'quiet-reset' })
 
     await clickRouteAction(page, 'Enter Focus', '/focus', '[data-testid="urai-final-focus-chamber"]')
-    await shot(page, 'focus-destination', 'focus', { memoryId: 'quiet-reset' })
+    // Route hydration is not rendered stellar evidence. Wait for a completed
+    // WebGL frame before capturing; CSS/loading illustrations cannot satisfy it.
+    await page.locator('.focusCanvas canvas[data-focus-first-frame="true"]').waitFor({ state: 'visible', timeout: 60_000 })
+    await stable(page, 4)
+    await shot(page, 'focus-destination', 'focus', { memoryId: 'quiet-reset', renderedFirstFrame: true })
     await goto(page, '/life-map/?demo=1&memoryId=quiet-reset&manifestId=replay-recovery-thread&node=quiet-reset')
     await waitForState(page, 'data-life-map-mode', 'selected')
     await waitForState(page, 'data-life-map-phase', 'arrival')
@@ -323,3 +327,4 @@ try {
   await writeFile(path.join(outputDir, 'receipt.json'), JSON.stringify(receipt, null, 2))
   if (!receipt.passed) process.exitCode = 1
 }
+

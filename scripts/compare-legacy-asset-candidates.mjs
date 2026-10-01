@@ -36,11 +36,6 @@ const pairs = [
     legacy: 'urai-tier1/public/assets/urai/generated/models/portal-ring-master-v1.glb',
   },
   {
-    id: 'life-map-galaxy-skybox',
-    current: 'urai-tier1/public/assets/urai/generated/skyboxes/life-map-galaxy-skybox-v1.hdr',
-    legacy: 'urai-tier1/public/assets/urai/generated/skyboxes/life-map-galaxy-skybox-v1.hdr',
-  },
-  {
     id: 'global-cinematic-material-pack',
     current: 'urai-tier1/public/assets/urai/generated/textures/global-cinematic-material-pack-v1.json',
     legacy: 'urai-tier1/public/assets/urai/generated/textures/global-cinematic-material-pack-v1.json',
@@ -57,6 +52,7 @@ const unmatchedCurrent = [
 
 const unmatchedLegacy = [
   'urai-tier1/public/assets/urai/generated/models/passport-status-room-v1.glb',
+  'urai-tier1/public/assets/urai/generated/skyboxes/life-map-galaxy-skybox-v1.hdr',
 ]
 
 fs.mkdirSync(outputRoot, { recursive: true })

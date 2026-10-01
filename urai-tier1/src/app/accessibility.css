@@ -30,3 +30,30 @@ a {
     transition-duration: 0.001ms !important;
   }
 }
+
+
+html[data-urai-sensory-safe="true"] *,
+html[data-urai-sensory-safe="true"] *::before,
+html[data-urai-sensory-safe="true"] *::after {
+  animation-duration: 0.001ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.001ms !important;
+  scroll-behavior: auto !important;
+}
+
+html[data-urai-sensory-safe="true"] :is(
+  [class*="glow"],
+  [class*="particle"],
+  [class*="shimmer"],
+  [class*="pulse"],
+  [class*="blur"]
+) {
+  filter: none !important;
+  text-shadow: none !important;
+  box-shadow: none !important;
+}
+
+html[data-urai-sensory-safe="true"] body {
+  --urai-sensory-intensity: 0;
+  --urai-ambient-opacity: 0.35;
+}

@@ -1,0 +1,65 @@
+name: Localization Readiness Evidence
+
+on:
+  pull_request:
+    branches: [main, 'converge/**', 'integration/**']
+    paths:
+      - '.github/workflows/localization-readiness-evidence.yml'
+      - 'scripts/generate-localization-readiness.mjs'
+      - 'urai-tier1/src/lib/i18n/**'
+      - 'urai-tier1/tests/localization-runtime-contract.test.mjs'
+      - 'brand/LOCALIZATION_20_READINESS.md'
+  workflow_dispatch:
+    inputs:
+      verification_sha:
+        description: Exact 40-character commit SHA to verify
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+env:
+  URAI_EXACT_HEAD: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.event_name == 'workflow_dispatch' && inputs.verification_sha || github.sha }}
+
+jobs:
+  readiness:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ env.URAI_EXACT_HEAD }}
+          fetch-depth: 1
+          persist-credentials: false
+      - name: Prove exact clean candidate
+        run: |
+          set -euo pipefail
+          [[ "$URAI_EXACT_HEAD" =~ ^[0-9a-f]{40}$ ]]
+          test "$(git rev-parse HEAD)" = "$URAI_EXACT_HEAD"
+          test -z "$(git status --porcelain --untracked-files=all)"
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1
+        with:
+          version: 10.0.0
+          run_install: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+      - name: Install exact lockfile
+        run: pnpm install --frozen-lockfile
+      - name: Generate fail-closed localization readiness receipt
+        run: |
+          node --check scripts/generate-localization-readiness.mjs
+          URAI_LOCALIZATION_OUTPUT=artifacts/localization-readiness             node --import tsx scripts/generate-localization-readiness.mjs
+      - name: Verify locale runtime contract
+        run: pnpm --dir urai-tier1 exec node --import tsx --test tests/localization-runtime-contract.test.mjs
+      - name: Retain exact localization readiness evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: localization-readiness-${{ env.URAI_EXACT_HEAD }}
+          path: artifacts/localization-readiness
+          if-no-files-found: error
+          retention-days: 365
