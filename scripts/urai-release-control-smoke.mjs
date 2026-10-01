@@ -132,7 +132,7 @@ async function runReleaseControlSmoke() {
   }
   mkdirSync(out, { recursive: true })
 
-  const routes = ['/', '/home', '/ground', '/life-map', '/focus', '/replay', '/mirror', '/passport', '/privacy-controls', '/location-map', '/status', '/support', '/about', '/contact', '/event', '/glass', '/offline', '/report-bug']
+  const routes = ['/', '/home', '/ground', '/life-map', '/focus', '/replay', '/life-movie', '/council', '/mirror', '/passport', '/privacy-controls', '/location-map', '/spatial/memory-world', '/spatial/interpretive-world', '/spatial/captured-reality', '/spatial/ar-vr', '/status', '/support', '/about', '/contact', '/event', '/glass', '/offline', '/report-bug']
   const identity = {
     memoryId: 'demo:quiet-reset',
     manifestId: 'replay-recovery-thread',
@@ -155,7 +155,7 @@ async function runReleaseControlSmoke() {
     `node=${identity.node}`,
   ]
   const report = {
-    schemaVersion: 'urai-release-control-smoke-6',
+    schemaVersion: 'urai-release-control-smoke-7',
     generatedAt: new Date().toISOString(),
     base,
     expectedSha,
@@ -246,7 +246,7 @@ async function runReleaseControlSmoke() {
           redirect,
           cache: 'no-store',
           signal: AbortSignal.timeout(20_000),
-          headers: { 'cache-control': 'no-cache', 'user-agent': 'urai-release-control-smoke/6' },
+          headers: { 'cache-control': 'no-cache', 'user-agent': 'urai-release-control-smoke/7' },
         })
         const body = await response.text()
         return {
@@ -404,7 +404,7 @@ async function runReleaseControlSmoke() {
           report.consoleErrors.push({ profile: profileName, url: page.url(), message: message.text() })
         }
       })
-      const browserRoutes = ['/', '/life-map', queryCases[0].path, queryCases[1].path, '/privacy-controls', '/status', '/support', '/about', '/contact', '/event', '/glass', '/offline', '/report-bug', '/privacy', '/ascent/life-map']
+      const browserRoutes = ['/', '/life-map', queryCases[0].path, queryCases[1].path, '/life-movie', '/council', '/privacy-controls', '/spatial/memory-world', '/spatial/interpretive-world', '/spatial/captured-reality', '/spatial/ar-vr', '/status', '/support', '/about', '/contact', '/event', '/glass', '/offline', '/report-bug', '/privacy', '/ascent/life-map']
       for (const route of browserRoutes) {
         const requestedUrl = new URL(route, `${base}/`).toString()
         const response = await page.goto(requestedUrl, { waitUntil: 'domcontentloaded', timeout: 60000 })
