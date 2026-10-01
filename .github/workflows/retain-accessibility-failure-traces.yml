@@ -1,0 +1,67 @@
+name: Retain bounded accessibility failure traces
+
+on:
+  pull_request:
+    branches: [main, 'converge/**']
+    paths: ['.github/workflows/retain-accessibility-failure-traces.yml']
+
+permissions:
+  actions: read
+  contents: read
+
+jobs:
+  retain:
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Download existing failed-run artifact without executing candidate code
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh api /repos/LifeLoggerAI/urai-spatial/actions/artifacts/11161588041/zip > "$RUNNER_TEMP/accessibility.zip"
+          python3 - <<'PY'
+          import json, os, zipfile, hashlib
+          from pathlib import Path
+          source = Path(os.environ['RUNNER_TEMP']) / 'accessibility.zip'
+          output = Path('bounded-failure-evidence')
+          output.mkdir()
+          groups = {'reduced-motion': 'fc70a', 'mobile-separation': '2996b'}
+          manifest = {'source_artifact': 11161588041, 'source_run': 36853914684, 'source_sha': 'ebde2fbb5847350745a19c9ff7dc8baff13d2513', 'files': []}
+          with zipfile.ZipFile(source) as archive:
+              for info in archive.infolist():
+                  name = info.filename
+                  group = next((key for key, token in groups.items() if token in name), None)
+                  if group is None or not name.endswith(('/trace.zip', '/error-context.md', '.png')):
+                      continue
+                  if info.file_size > 30 * 1024 * 1024:
+                      raise RuntimeError('Selected evidence exceeds transfer budget')
+                  data = archive.read(info)
+                  folder = output / group / Path(name).parent.name
+                  folder.mkdir(parents=True, exist_ok=True)
+                  (folder / Path(name).name).write_bytes(data)
+                  manifest['files'].append({'path': str(folder / Path(name).name), 'bytes': len(data), 'sha256': hashlib.sha256(data).hexdigest()})
+          if not any('trace.zip' in entry['path'] for entry in manifest['files']):
+              raise RuntimeError('No failed-test traces found')
+          (output / 'manifest.json').write_text(json.dumps(manifest, indent=2))
+          print('Selected failed-test evidence files:', len(manifest['files']))
+          PY
+      - name: Retain reduced-motion trace
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: reduced-motion-failure-ebde2fbb
+          path: bounded-failure-evidence/reduced-motion
+          if-no-files-found: error
+      - name: Retain mobile separation trace
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: mobile-separation-failure-ebde2fbb
+          path: bounded-failure-evidence/mobile-separation
+          if-no-files-found: error
+      - name: Retain original-artifact mapping
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: accessibility-failure-subset-manifest-ebde2fbb
+          path: bounded-failure-evidence/manifest.json
+          if-no-files-found: error
