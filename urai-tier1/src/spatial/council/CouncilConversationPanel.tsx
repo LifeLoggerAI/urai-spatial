@@ -7,11 +7,18 @@ import {
   deterministicOrbFallback,
   OrbProviderAttemptError,
   OrbProviderAttemptUncertainError,
-  requestOpenAIOrb,
   uncertainExternalOrbFallback,
   type OrbConversationMessage,
   type OrbProviderResult,
 } from '@/spatial/orb/openaiClient'
+import {
+  COUNCIL_PROVIDER_REGISTRY,
+  LIVE_COUNCIL_PROVIDER_IDS,
+  PENDING_COUNCIL_PROVIDER_IDS,
+  requestCouncilProvider,
+} from './councilProviderRegistry'
+
+const ACTIVE_COUNCIL_PROVIDER = 'openai' as const
 
 export default function CouncilConversationPanel({ agent }: { agent: CouncilAgent }) {
   const [message, setMessage] = useState('')
@@ -48,7 +55,8 @@ export default function CouncilConversationPanel({ agent }: { agent: CouncilAgen
     ].join('\n')
 
     try {
-      const live = await requestOpenAIOrb({
+      const live = await requestCouncilProvider({
+        provider: ACTIVE_COUNCIL_PROVIDER,
         message: councilMessage,
         context: history,
         aiProcessingConsent: true,
@@ -84,7 +92,13 @@ export default function CouncilConversationPanel({ agent }: { agent: CouncilAgen
   }
 
   return (
-    <section className="councilConversation" aria-label="Live Council conversation" data-provider={result?.provider ?? 'idle'}>
+    <section
+      className="councilConversation"
+      aria-label="Live Council conversation"
+      data-provider={result?.provider ?? 'idle'}
+      data-live-council-providers={LIVE_COUNCIL_PROVIDER_IDS.join(' ')}
+      data-pending-council-providers={PENDING_COUNCIL_PROVIDER_IDS.join(' ')}
+    >
       <form onSubmit={submit} aria-busy={busy}>
         <label htmlFor="urai-council-message">Ask {agent.name}</label>
         <textarea
@@ -97,7 +111,7 @@ export default function CouncilConversationPanel({ agent }: { agent: CouncilAgen
         />
         <label className="councilConsent">
           <input type="checkbox" checked={consent} disabled={busy} onChange={(event) => setConsent(event.currentTarget.checked)} />
-          Allow this message and bounded recent Council context to be processed by OpenAI.
+          Allow this message and bounded recent Council context to be processed by {COUNCIL_PROVIDER_REGISTRY[ACTIVE_COUNCIL_PROVIDER].label}.
         </label>
         <div className="councilConversationActions">
           <button type="submit" disabled={busy || !consent || !message.trim()}>{busy ? 'Considering…' : 'Ask Council'}</button>
