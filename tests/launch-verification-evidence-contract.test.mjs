@@ -26,4 +26,8 @@ test('launch verification uses pinned immutable action identities', () => {
   assert.match(workflow, /pnpm\/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1/)
   assert.match(workflow, /actions\/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02/)
   assert.doesNotMatch(workflow, /uses:\s+[^\n]+@v\d+/)
+  assert.ok(
+    workflow.indexOf('name: Setup pnpm') < workflow.indexOf('name: Setup Node'),
+    'pnpm must be installed before setup-node requests pnpm cache metadata',
+  )
 })
