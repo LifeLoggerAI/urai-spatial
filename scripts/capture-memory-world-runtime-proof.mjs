@@ -47,8 +47,14 @@ try {
         assert.equal(await runtime.getAttribute('data-memory-world-renderer'), 'ready')
         const canvas = runtime.locator('canvas')
         await canvas.waitFor({ state: 'visible' })
+        await page.waitForFunction(() => {
+          const element = document.querySelector('[data-testid="memory-world-runtime"] canvas')
+          if (!(element instanceof HTMLCanvasElement)) return false
+          const rect = element.getBoundingClientRect()
+          return rect.width >= 300 && rect.height >= 300
+        }, null, { timeout: 15000 })
         const rect = await canvas.boundingBox()
-        assert.ok(rect.width >= 300 && rect.height >= 300)
+        assert.ok(rect && rect.width >= 300 && rect.height >= 300, `Memory World canvas must settle at >=300x300; got ${rect ? `${rect.width}x${rect.height}` : 'no box'}`)
         const left = page.getByRole('button', { name: 'Look left', exact: true })
         await left.focus()
         await left.press('Enter')
