@@ -185,7 +185,7 @@ fields:
 
 
   - name: life_causal_graph
-    collectionOrTable: users/{uid}/lifeEntities + lifeClaims + lifeRelationships + lifeEvents
+    collectionOrTable: users/{uid}/lifeEntities + lifeClaims + lifeRelationships + lifeEvents + lifeCausalEdges + lifeGraphSnapshots
     source: user_source_and_system_derived
     dataClass: L5
     purpose: preserve owner-private provenance-linked people, places, objects, relationships and events through time
