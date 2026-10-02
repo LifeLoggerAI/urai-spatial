@@ -430,3 +430,54 @@ export const revokeLifeEntity = lifeModelFunctions.https.onCall(async (data, con
   const invalidated = await invalidateDependency(uid, entityId, `revocation:${reasonId}`, true)
   return { entityId, revoked: true, invalidated }
 })
+
+export const getReplayLifeModelAuthority = lifeModelFunctions.https.onCall(async (data, context) => {
+  const uid = requireUid(context)
+  const memoryId = requireToken(data?.memoryId, 'memoryId')
+  const memory = await db.doc(`users/${uid}/memories/${memoryId}`).get()
+  if (!memory.exists || (memory.get('ownerId') ?? memory.get('userId')) !== uid || memory.get('deleted') === true) {
+    return { available: false, reason: 'MEMORY_UNAVAILABLE' }
+  }
+  const lifeMovie = isRecord(memory.get('lifeMovie')) ? memory.get('lifeMovie') as JsonMap : {}
+  const sceneTruthPacketId = typeof lifeMovie.sceneTruthPacketId === 'string' ? lifeMovie.sceneTruthPacketId : ''
+  const personModelBundleIds = Array.isArray(lifeMovie.personModelBundleIds)
+    ? [...new Set(lifeMovie.personModelBundleIds.filter((value): value is string => typeof value === 'string' && SAFE_TOKEN.test(value)))]
+    : []
+  if (!SAFE_TOKEN.test(sceneTruthPacketId)) {
+    return { available: false, reason: 'SCENE_TRUTH_REQUIRED' }
+  }
+  const [scene, bundles] = await Promise.all([
+    db.doc(`users/${uid}/sceneTruthPackets/${sceneTruthPacketId}`).get(),
+    personModelBundleIds.length
+      ? db.getAll(...personModelBundleIds.map((id) => db.doc(`users/${uid}/personModelBundles/${id}`)))
+      : [],
+  ])
+  if (
+    !scene.exists
+    || scene.get('ownerId') !== uid
+    || scene.get('schemaVersion') !== 'urai-life-model-v1'
+    || scene.get('state') !== 'current'
+    || scene.get('syntheticOutputMayBecomeHistoricalSource') !== false
+    || !['READY','READY_WITH_OCCLUSION','READY_INTERPRETIVE'].includes(String(scene.get('decision') ?? ''))
+  ) {
+    return { available: false, reason: 'SCENE_TRUTH_UNAVAILABLE' }
+  }
+  if (!bundles.every((bundle) =>
+    bundle.exists
+    && bundle.get('ownerId') === uid
+    && bundle.get('schemaVersion') === 'urai-life-model-v1'
+    && bundle.get('state') === 'current'
+    && bundle.get('synthetic') === false
+  )) {
+    return { available: false, reason: 'PERSON_MODEL_UNAVAILABLE' }
+  }
+  return {
+    available: true,
+    schemaVersion: 'urai-life-model-v1',
+    sceneTruthPacketId,
+    personModelBundleIds,
+    decision: String(scene.get('decision')),
+    presentationClass: String(scene.get('presentationClass')),
+    syntheticOutputMayBecomeHistoricalSource: false,
+  }
+})
