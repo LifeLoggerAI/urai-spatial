@@ -31,7 +31,8 @@ test('Life Movie preserves governed chapter order and does not re-sort manifest 
   const manifestBranch = client.match(/if \(requestedMovieId\) \{[\s\S]*?\} else \{/)?.[0]
   assert.ok(manifestBranch)
   assert.doesNotMatch(manifestBranch, /safeOccurredAt/)
-  assert.match(client, /runtimeManifest\.manifest\.chapters\[activeIndex\]/)
+  assert.match(client, /runtimeManifest\.manifest\.chapters\.find\(\(chapter\) => chapter\.memoryId === active\.id\)/)
+  assert.doesNotMatch(client, /runtimeManifest\.manifest\.chapters\[activeIndex\]/)
 })
 
 test('Life Movie Replay handoff uses chapter-bound runtime contract when available', () => {
@@ -65,6 +66,7 @@ test('Life Movie owner controls persist only chapter identity and order', () => 
   assert.match(client, /chapters: memories\.map/)
   assert.match(client, /memoryId: memory\.id/)
   assert.match(client, /order: index/)
+  assert.match(client, /chapters\.find\(\(chapter\) => chapter\.memoryId === memory\.id\)\?\.id/)
   assert.match(client, /Save sequence/)
   assert.match(client, /Update sequence/)
   assert.match(client, /Remove saved sequence/)
