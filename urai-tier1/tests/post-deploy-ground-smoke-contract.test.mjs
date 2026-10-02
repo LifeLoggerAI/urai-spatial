@@ -46,8 +46,8 @@ const expectedGroundMarkers = [
   'Ownership Vault',
   'Consent Sanctuary',
   'Emotional Atlas',
-  'Focus Chamber',
-  'Replay Theater',
+  'Focus Memory Star',
+  'Replay',
 ]
 
 const liveGroundMarkers = [
