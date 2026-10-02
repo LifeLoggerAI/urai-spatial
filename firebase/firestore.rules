@@ -231,6 +231,9 @@ service cloud.firestore {
         allow read: if isSelf(uid);
         allow write: if false;
       }
+      match /personRenderBindings/{docId} {
+        allow read, write: if false;
+      }
 
       match /homeWorld/{docId} {
         allow read: if isSelf(uid) || isAdmin();
