@@ -10,6 +10,7 @@ import { useReducedMotion } from '@/spatial/hooks/useReducedMotion'
 import { lifeMovieReplayHref, type LifeMovieRuntimeChapter } from '@/spatial/life-movie/lifeMovieRuntimeContract'
 import { useLifeMovieRuntimeManifest } from '@/spatial/life-movie/useLifeMovieRuntimeManifest'
 import { revokeLifeMovieManifest, saveLifeMovieManifest } from '@/spatial/life-movie/lifeMovieManifestOperations'
+import { requestUraiWorldTravel } from '@/spatial/world/worldEvents'
 
 type MovieState =
   | { kind: 'auth-loading'; message: string }
@@ -172,6 +173,26 @@ export default function LifeMovieClient() {
     return <main className="lifeMovieState" data-testid="life-movie-runtime" data-state={state.kind}><section><h1>Life Movie</h1><p>{state.message}</p><div className="lifeMovieStateActions"><a href="/life-map">Open Life Map</a><a href="/home">Return Home</a></div></section><style>{css}</style></main>
   }
 
+  const enterReplay = () => {
+    if (!active) return
+    const href = activeChapter
+      ? lifeMovieReplayHref(activeChapter)
+      : `/replay?memoryId=${encodeURIComponent(active.id)}&from=life-movie`
+    requestUraiWorldTravel({
+      destination: 'replay',
+      href,
+      entryPortal: 'life-movie-memory-threshold',
+      cameraCheckpoint: `life-movie:${requestedMovieId ?? 'ad-hoc'}:${activeChapter?.id ?? active.id}`,
+      context: {
+        memoryId: active.id,
+        replayManifestId: active.replayManifest.id,
+        movieId: requestedMovieId ?? undefined,
+        chapterId: activeChapter?.id,
+        privacyMode: active.privacy === 'private' ? 'held-private' : 'private',
+      },
+    })
+  }
+
   const saveSequence = async () => {
     if (!memories.length || manifestAction.kind === 'working') return
     const movieId = requestedMovieId ?? `life-movie-${Date.now().toString(36)}`
@@ -229,7 +250,7 @@ export default function LifeMovieClient() {
     >
       <header className="lifeMovieHeader">
         <div><p>URAI · LIFE MOVIE</p><h1>Your life, played as a private film.</h1></div>
-        <nav aria-label="Life Movie destinations"><a href="/life-map">Life Map</a><a href={activeChapter ? lifeMovieReplayHref(activeChapter) : `/replay?memoryId=${encodeURIComponent(active.id)}&from=life-movie`}>Replay</a><a href="/passport">Passport</a></nav>
+        <nav aria-label="Life Movie destinations"><a href="/life-map">Life Map</a><button type="button" onClick={enterReplay}>Enter memory</button><a href="/passport">Passport</a></nav>
       </header>
 
       <section className="lifeMovieStage" aria-label="Current Life Movie chapter">
@@ -277,7 +298,7 @@ export default function LifeMovieClient() {
 const css = `
 .lifeMovie,.lifeMovieState{min-height:100svh;box-sizing:border-box;background:radial-gradient(circle at 50% 20%,#17273c 0,#07101b 38%,#02050a 78%);color:#f7fbff;font-family:Inter,ui-sans-serif,system-ui}
 .lifeMovieState{display:grid;place-items:center;padding:24px;text-align:center}.lifeMovieState section{max-width:620px}.lifeMovieState h1{font:600 clamp(2.5rem,8vw,5.5rem)/.9 Georgia,serif}.lifeMovieState p{color:#b8c8d6;line-height:1.6}.lifeMovieState a,.lifeMovieStateActions a{display:inline-flex;min-height:48px;align-items:center;padding:0 18px;border:1px solid #b9ecff55;border-radius:999px;color:#effbff;text-decoration:none}.lifeMovieStateActions{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
-.lifeMovie{padding:clamp(18px,3vw,42px);display:grid;gap:22px}.lifeMovieHeader{display:flex;align-items:flex-end;justify-content:space-between;gap:24px}.lifeMovieHeader p{margin:0;color:#9ee9ff;font-size:11px;font-weight:900;letter-spacing:.26em}.lifeMovieHeader h1{max-width:760px;margin:8px 0 0;font:500 clamp(2.2rem,6vw,5.7rem)/.92 Georgia,serif}.lifeMovieHeader nav{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}.lifeMovieHeader a{display:grid;place-items:center;min-height:48px;padding:0 16px;border:1px solid #ffffff24;border-radius:999px;color:#fff;text-decoration:none}
+.lifeMovie{padding:clamp(18px,3vw,42px);display:grid;gap:22px}.lifeMovieHeader{display:flex;align-items:flex-end;justify-content:space-between;gap:24px}.lifeMovieHeader p{margin:0;color:#9ee9ff;font-size:11px;font-weight:900;letter-spacing:.26em}.lifeMovieHeader h1{max-width:760px;margin:8px 0 0;font:500 clamp(2.2rem,6vw,5.7rem)/.92 Georgia,serif}.lifeMovieHeader nav{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}.lifeMovieHeader a,.lifeMovieHeader button{display:grid;place-items:center;min-height:48px;padding:0 16px;border:1px solid #ffffff24;border-radius:999px;background:transparent;color:#fff;text-decoration:none;font:inherit;cursor:pointer}
 .lifeMovieStage{position:relative;min-height:min(64svh,760px);overflow:hidden;border:1px solid #ffffff24;border-radius:32px;background:#03070c;box-shadow:0 40px 120px #0008}.lifeMovieMedia{position:absolute;inset:0;display:grid;place-items:center;overflow:hidden}.lifeMovieMedia img,.lifeMovieMedia video{width:100%;height:100%;object-fit:cover}.lifeMovieMedia:after{content:'';position:absolute;inset:0;background:linear-gradient(180deg,#0001 30%,#02050be8 100%);pointer-events:none}.lifeMovieAudio{width:100%;height:100%;display:grid;place-items:center;gap:18px}.lifeMovieAudioField,.lifeMovieMemoryField{position:absolute;inset:0;background:radial-gradient(circle at 50% 42%,#8adfff33,transparent 24%),radial-gradient(circle at 25% 68%,#a980ff24,transparent 20%),linear-gradient(180deg,#07182a,#02050a)}.lifeMovieAudio audio{position:relative;z-index:2;width:min(620px,calc(100% - 48px))}.lifeMovieMemoryField span{position:absolute;border:1px solid #a7efff44;border-radius:50%;left:50%;top:50%;transform:translate(-50%,-50%)}.lifeMovieMemoryField span:nth-child(1){width:18vmin;height:18vmin;box-shadow:0 0 80px #8adfff55}.lifeMovieMemoryField span:nth-child(2){width:36vmin;height:36vmin}.lifeMovieMemoryField span:nth-child(3){width:58vmin;height:58vmin;opacity:.45}
 .lifeMovieCaption{position:absolute;z-index:3;left:clamp(18px,4vw,54px);right:clamp(18px,4vw,54px);bottom:clamp(18px,4vw,46px);max-width:780px}.lifeMovieCaption>p:first-child{margin:0;color:#9ee9ff;font-size:10px;font-weight:900;letter-spacing:.18em;text-transform:uppercase}.lifeMovieCaption h2{margin:8px 0 4px;font:500 clamp(2rem,5vw,5rem)/.95 Georgia,serif}.lifeMovieCaption time,.lifeMovieCaption small{color:#a9bac9}.lifeMovieCaption>p{max-width:62ch;color:#d8e4ee;line-height:1.55}.lifeMovieCaption blockquote{margin:14px 0;padding-left:14px;border-left:2px solid #9ee9ff88;color:#eefaff;font-size:clamp(1rem,2vw,1.3rem)}
 .lifeMovieControls{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}.lifeMovieControls button,.lifeMovieChapters button{min-height:48px;border:1px solid #ffffff26;border-radius:999px;background:#091522;color:#fff;font-weight:800;cursor:pointer}.lifeMovieControls button{padding:0 20px}.lifeMovieControls button[aria-pressed=true]{border-color:#9ee9ff;box-shadow:0 0 24px #8adfff33}.lifeMovieControls button:disabled{opacity:.38}
