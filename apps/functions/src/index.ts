@@ -39,10 +39,12 @@ export {
 
 export {
   applyLifeCorrection,
+  compileLifeCausalGraphSnapshot,
   compilePersonModelBundle,
   compileSceneTruthPacket,
   getReplayLifeModelAuthority,
   revokeLifeEntity,
+  upsertLifeCausalEdge,
   upsertLifeClaim,
   upsertLifeEntity,
   upsertLifeEntityState,
