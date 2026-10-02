@@ -29,7 +29,7 @@ function prefersReducedMotion() {
 
 function transitionDuration(destination: UraiDestination) {
   if (prefersReducedMotion()) return 260
-  if (destination === 'replay' || destination === 'location-map') return 1900
+  if (destination === 'replay' || destination === 'life-movie' || destination === 'location-map') return 1900
   return 1100
 }
 
