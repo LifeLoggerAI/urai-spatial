@@ -1,7 +1,8 @@
 import { getAuth } from 'firebase/auth'
 import { app, firebasePublicEnvReady } from '@/lib/firebase/client'
 import { clientApiUrl } from '@/lib/clientApiUrl'
-import type { OrbConversationMessage } from '@/spatial/orb/openaiClient'
+import { buildOrbCompanionResponse } from '@/lib/orb-companion-contract'
+import type { OrbConversationMessage, OrbProviderResult } from '@/spatial/orb/openaiClient'
 
 export type ExternalCouncilProviderId = 'anthropic' | 'gemini' | 'xai' | 'mistral'
 
@@ -12,6 +13,77 @@ export type ExternalCouncilProviderResult = {
   suggestedActions: string[]
   provider: ExternalCouncilProviderId
   model: string
+}
+
+const PRE_EXTERNAL_FAILURE_CODES = new Set([
+  'UNAUTHORIZED',
+  'EXPLICIT_CONSENT_REQUIRED',
+  'CONSENT_POLICY_REQUIRED',
+  'MODEL_PROCESSING_NOT_AUTHORIZED',
+  'CONSENT_ENFORCEMENT_PENDING',
+  'PROVIDER_PROCESSING_REVOKED',
+  'RATE_LIMITED',
+  'COUNCIL_PROVIDER_DISABLED',
+  'COUNCIL_MODEL_NOT_CONFIGURED',
+  'COUNCIL_PROVIDER_CREDENTIAL_MISSING',
+  'INVALID_BODY',
+  'REQUEST_TOO_LARGE',
+  'INVALID_MESSAGE',
+  'INVALID_CONTEXT',
+  'INVALID_REQUEST_ID',
+])
+
+const DEFINITE_EXTERNAL_FAILURE_CODES = new Set([
+  'ANTHROPIC_REQUEST_FAILED',
+  'GEMINI_REQUEST_FAILED',
+  'XAI_REQUEST_FAILED',
+  'MISTRAL_REQUEST_FAILED',
+  'INVALID_PROVIDER_RESPONSE',
+])
+
+export class CouncilExternalProviderAttemptError extends Error {
+  constructor(readonly provider: ExternalCouncilProviderId, readonly code: string) {
+    super(`${provider} Council provider was attempted but no external answer was used.`)
+    this.name = 'CouncilExternalProviderAttemptError'
+  }
+}
+
+export class CouncilExternalProviderAttemptUncertainError extends Error {
+  constructor(readonly provider: ExternalCouncilProviderId) {
+    super(`${provider} Council provider may have been attempted, but its processing state is uncertain.`)
+    this.name = 'CouncilExternalProviderAttemptUncertainError'
+  }
+}
+
+function providerLabel(provider: ExternalCouncilProviderId) {
+  if (provider === 'xai') return 'xAI'
+  if (provider === 'gemini') return 'Google Gemini'
+  return provider[0].toUpperCase() + provider.slice(1)
+}
+
+function councilFallback(message: string, disclosure: string): OrbProviderResult {
+  const fallback = buildOrbCompanionResponse({ message })
+  return {
+    message: fallback.reply,
+    caption: fallback.reply,
+    disclosure,
+    suggestedActions: fallback.routeHint ? [`Open ${fallback.routeHint}`, 'Review privacy controls'] : ['Pause here', 'Review privacy controls'],
+    provider: 'fallback',
+  }
+}
+
+export function attemptedCouncilProviderFallback(message: string, provider: ExternalCouncilProviderId) {
+  return councilFallback(
+    message,
+    `A ${providerLabel(provider)} Council request was attempted with your consent, but no external answer was used. This response is a deterministic local fallback.`,
+  )
+}
+
+export function uncertainCouncilProviderFallback(message: string, provider: ExternalCouncilProviderId) {
+  return councilFallback(
+    message,
+    `A consented ${providerLabel(provider)} Council request may have been attempted, but its processing state could not be confirmed. No external answer was used; this response is a deterministic local fallback.`,
+  )
 }
 
 const ENDPOINTS: Record<ExternalCouncilProviderId, string> = {
@@ -61,7 +133,7 @@ export async function requestExternalCouncilProvider(input: {
     })
   } catch (error) {
     if (input.signal.aborted) throw error
-    throw new Error('COUNCIL_PROVIDER_NETWORK_UNCERTAIN')
+    throw new CouncilExternalProviderAttemptUncertainError(input.provider)
   }
 
   if (!response.ok) {
@@ -72,7 +144,11 @@ export async function requestExternalCouncilProvider(input: {
     } catch {
       // Preserve generic provider boundary.
     }
-    throw new Error(code)
+    if (PRE_EXTERNAL_FAILURE_CODES.has(code)) return null
+    if (DEFINITE_EXTERNAL_FAILURE_CODES.has(code)) {
+      throw new CouncilExternalProviderAttemptError(input.provider, code)
+    }
+    throw new CouncilExternalProviderAttemptUncertainError(input.provider)
   }
 
   const result = await response.json() as Partial<ExternalCouncilProviderResult>

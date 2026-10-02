@@ -24,8 +24,15 @@ export type CouncilProviderDescriptor = {
   modelVersionRequiredForCertification: boolean
 }
 
-function sourceReadyState(environmentKey: string): CouncilProviderRuntimeState {
-  return process.env[environmentKey] === 'true' ? 'live' : 'source-ready'
+const PUBLIC_PROVIDER_ADMISSION = {
+  anthropic: process.env.NEXT_PUBLIC_URAI_COUNCIL_ANTHROPIC_ENABLED === 'true',
+  gemini: process.env.NEXT_PUBLIC_URAI_COUNCIL_GEMINI_ENABLED === 'true',
+  xai: process.env.NEXT_PUBLIC_URAI_COUNCIL_XAI_ENABLED === 'true',
+  mistral: process.env.NEXT_PUBLIC_URAI_COUNCIL_MISTRAL_ENABLED === 'true',
+} as const
+
+function sourceReadyState(provider: ExternalCouncilProviderId): CouncilProviderRuntimeState {
+  return PUBLIC_PROVIDER_ADMISSION[provider] ? 'live' : 'source-ready'
 }
 
 export const COUNCIL_PROVIDER_REGISTRY: Readonly<Record<CouncilProviderId, CouncilProviderDescriptor>> = {
@@ -40,28 +47,28 @@ export const COUNCIL_PROVIDER_REGISTRY: Readonly<Record<CouncilProviderId, Counc
     id: 'anthropic',
     label: 'Anthropic',
     externalProcessing: true,
-    runtimeState: sourceReadyState('NEXT_PUBLIC_URAI_COUNCIL_ANTHROPIC_ENABLED'),
+    runtimeState: sourceReadyState('anthropic'),
     modelVersionRequiredForCertification: true,
   },
   gemini: {
     id: 'gemini',
     label: 'Google Gemini',
     externalProcessing: true,
-    runtimeState: sourceReadyState('NEXT_PUBLIC_URAI_COUNCIL_GEMINI_ENABLED'),
+    runtimeState: sourceReadyState('gemini'),
     modelVersionRequiredForCertification: true,
   },
   xai: {
     id: 'xai',
     label: 'xAI',
     externalProcessing: true,
-    runtimeState: sourceReadyState('NEXT_PUBLIC_URAI_COUNCIL_XAI_ENABLED'),
+    runtimeState: sourceReadyState('xai'),
     modelVersionRequiredForCertification: true,
   },
   mistral: {
     id: 'mistral',
     label: 'Mistral',
     externalProcessing: true,
-    runtimeState: sourceReadyState('NEXT_PUBLIC_URAI_COUNCIL_MISTRAL_ENABLED'),
+    runtimeState: sourceReadyState('mistral'),
     modelVersionRequiredForCertification: true,
   },
   'local-fallback': {

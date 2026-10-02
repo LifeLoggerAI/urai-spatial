@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto'
 import * as admin from 'firebase-admin'
-import { defineSecret, type SecretParam } from 'firebase-functions/params'
+import { defineSecret } from 'firebase-functions/params'
 import { onRequest } from 'firebase-functions/v2/https'
 
 if (!admin.apps.length) admin.initializeApp()
@@ -276,7 +276,7 @@ async function callCompatible(provider: 'xai' | 'mistral', apiKey: string, model
   return { message: validateProviderText(textFromCompatibleCompletion(payload)), requestId: response.headers.get('x-request-id') ?? response.headers.get('request-id') }
 }
 
-function providerHandler(provider: CouncilProvider, secret: SecretParam) {
+function providerHandler(provider: CouncilProvider, secret: ReturnType<typeof defineSecret>) {
   return async (request: any, response: any) => {
     const startedAt = Date.now()
     let uid = ''

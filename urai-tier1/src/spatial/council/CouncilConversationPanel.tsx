@@ -18,6 +18,12 @@ import {
   type CouncilProviderId,
   type CouncilProviderResult,
 } from './councilProviderRegistry'
+import {
+  attemptedCouncilProviderFallback,
+  CouncilExternalProviderAttemptError,
+  CouncilExternalProviderAttemptUncertainError,
+  uncertainCouncilProviderFallback,
+} from './councilClient'
 
 export default function CouncilConversationPanel({ agent }: { agent: CouncilAgent }) {
   const [message, setMessage] = useState('')
@@ -83,7 +89,11 @@ export default function CouncilConversationPanel({ agent }: { agent: CouncilAgen
         ? attemptedExternalOrbFallback(trimmed)
         : error instanceof OrbProviderAttemptUncertainError
           ? uncertainExternalOrbFallback(trimmed)
-          : deterministicOrbFallback(trimmed)
+          : error instanceof CouncilExternalProviderAttemptError
+            ? attemptedCouncilProviderFallback(trimmed, error.provider)
+            : error instanceof CouncilExternalProviderAttemptUncertainError
+              ? uncertainCouncilProviderFallback(trimmed, error.provider)
+              : deterministicOrbFallback(trimmed)
       setResult(fallback)
       setStatus('The live Council provider did not return a usable answer; a disclosed local fallback is shown.')
     } finally {

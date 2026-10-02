@@ -38,6 +38,11 @@ test('Council provider request formats match the governed provider families', ()
 test('Council registry is truthful: source-ready does not become live without explicit public runtime admission', () => {
   assert.match(registry, /'source-ready'/)
   assert.match(registry, /sourceReadyState/)
+  assert.match(registry, /process\.env\.NEXT_PUBLIC_URAI_COUNCIL_ANTHROPIC_ENABLED === 'true'/)
+  assert.match(registry, /process\.env\.NEXT_PUBLIC_URAI_COUNCIL_GEMINI_ENABLED === 'true'/)
+  assert.match(registry, /process\.env\.NEXT_PUBLIC_URAI_COUNCIL_XAI_ENABLED === 'true'/)
+  assert.match(registry, /process\.env\.NEXT_PUBLIC_URAI_COUNCIL_MISTRAL_ENABLED === 'true'/)
+  assert.doesNotMatch(registry, /process\.env\[environmentKey\]/)
   assert.match(registry, /descriptor\.runtimeState !== 'live'/)
   assert.match(registry, /PENDING_COUNCIL_PROVIDER_IDS/)
   assert.match(panel, /Council provider changed\. Prior provider context was cleared\./)
@@ -63,4 +68,18 @@ test('Firebase hosting exposes only the protected server provider boundaries', (
   for (const name of ['anthropicCouncilProvider', 'geminiCouncilProvider', 'xaiCouncilProvider', 'mistralCouncilProvider']) {
     assert.match(functionsIndex, new RegExp(name))
   }
+})
+
+test('Council fallback truth distinguishes pre-provider, definite provider attempt, and uncertain transport states', () => {
+  assert.match(client, /PRE_EXTERNAL_FAILURE_CODES/)
+  assert.match(client, /DEFINITE_EXTERNAL_FAILURE_CODES/)
+  assert.match(client, /CouncilExternalProviderAttemptError/)
+  assert.match(client, /CouncilExternalProviderAttemptUncertainError/)
+  assert.match(client, /attemptedCouncilProviderFallback/)
+  assert.match(client, /uncertainCouncilProviderFallback/)
+  assert.match(client, /if \(PRE_EXTERNAL_FAILURE_CODES\.has\(code\)\) return null/)
+  assert.match(panel, /error instanceof CouncilExternalProviderAttemptError/)
+  assert.match(panel, /error instanceof CouncilExternalProviderAttemptUncertainError/)
+  assert.match(panel, /attemptedCouncilProviderFallback\(trimmed, error\.provider\)/)
+  assert.match(panel, /uncertainCouncilProviderFallback\(trimmed, error\.provider\)/)
 })
