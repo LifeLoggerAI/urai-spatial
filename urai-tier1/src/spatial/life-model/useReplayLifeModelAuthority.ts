@@ -5,19 +5,25 @@ import { getAuth, onAuthStateChanged } from 'firebase/auth'
 import { httpsCallable } from 'firebase/functions'
 import { app, firebasePublicEnvReady, functions } from '@/lib/firebase/client'
 
+export type ReplayLifeModelAvailable = {
+  status: 'available'
+  available: true
+  schemaVersion: 'urai-life-model-v1'
+  sceneTruthPacketId: string
+  personModelBundleIds: string[]
+  people: Array<{ bundleId:string; personId:string; label:string; asOf:string; knowledgeCutoff:string|null }>
+  decision: 'READY' | 'READY_WITH_OCCLUSION' | 'READY_INTERPRETIVE'
+  presentationClass: string
+  syntheticOutputMayBecomeHistoricalSource: false
+}
+
 export type ReplayLifeModelAuthority =
   | { status: 'loading' | 'unavailable'; available: false; reason?: string }
-  | {
-      status: 'available'
-      available: true
-      schemaVersion: 'urai-life-model-v1'
-      sceneTruthPacketId: string
-      personModelBundleIds: string[]
-      people: Array<{ bundleId:string; personId:string; label:string; asOf:string; knowledgeCutoff:string|null }>
-      decision: 'READY' | 'READY_WITH_OCCLUSION' | 'READY_INTERPRETIVE'
-      presentationClass: string
-      syntheticOutputMayBecomeHistoricalSource: false
-    }
+  | ReplayLifeModelAvailable
+
+type ReplayLifeModelLookupResponse =
+  | { available:false; reason?:string }
+  | Omit<ReplayLifeModelAvailable,'status'>
 
 const unavailable: ReplayLifeModelAuthority = { status: 'unavailable', available: false }
 const loading: ReplayLifeModelAuthority = { status: 'loading', available: false }
@@ -39,7 +45,7 @@ export function useReplayLifeModelAuthority(memoryId: string | null, demo = fals
         return
       }
       setAuthority(loading)
-      const callable = httpsCallable<{ memoryId: string }, Omit<ReplayLifeModelAuthority, 'status'>>(
+      const callable = httpsCallable<{ memoryId: string }, ReplayLifeModelLookupResponse>(
         functions,
         'getReplayLifeModelAuthority',
       )
