@@ -30,3 +30,12 @@ test('Person Presence is keyboard\/accessibility reachable',()=>{
   assert.match(component,/:focus-visible/)
   assert.match(component,/prefers-reduced-motion/)
 })
+
+
+test('Replay Person Presence uses only accepted voice capability and preserves text fallback',()=>{
+  assert.match(component,/getPersonPresenceCapabilities/)
+  assert.match(component,/requestPersonPresenceVoice/)
+  assert.match(component,/accepted private voice/)
+  assert.match(component,/Text simulation remains available/)
+  assert.match(component,/audioRef\.current\?\.pause/)
+})
