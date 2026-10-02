@@ -93,7 +93,7 @@ test('Adam route authority remains explicit and unknown routes stay fail-closed'
   assert.equal(routeManifest.unknownRoutePolicy, 'fail-release')
 })
 
-test('Adam launcher vacates the canonical Life Map semantic-control hit area', () => {
-  assert.match(adamStyles, /:global\(html\.urai-route-life-map\) \.launcher/)
-  assert.match(adamStyles, /bottom: max\(82px, calc\(env\(safe-area-inset-bottom\) \+ 64px\)\)/)
+test('Adam launcher vacates canonical bottom-right control ownership across spatial routes', () => {
+  assert.match(adamStyles, /\.launcher\s*\{[\s\S]*top:\s*50%[\s\S]*bottom:\s*auto[\s\S]*transform:\s*translateY\(-50%\)/)
+  assert.doesNotMatch(adamStyles, /:global\(html\.urai-route-life-map\) \.launcher/)
 })
