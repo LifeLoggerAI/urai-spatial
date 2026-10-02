@@ -7,6 +7,7 @@ const layout = fs.readFileSync(new URL('src/app/layout.tsx', root), 'utf8')
 const runtime = fs.readFileSync(new URL('src/spatial/adam/AdamPresenceRuntime.tsx', root), 'utf8')
 const client = fs.readFileSync(new URL('src/spatial/adam/adamClient.ts', root), 'utf8')
 const surfaces = fs.readFileSync(new URL('src/spatial/adam/adamSurfaceContext.ts', root), 'utf8')
+const adamRoute = fs.readFileSync(new URL('src/app/adam/page.tsx', root), 'utf8')
 const functions = fs.readFileSync(new URL('../../apps/functions/src/adamPresenceFunctions.ts', import.meta.url), 'utf8')
 const functionsIndex = fs.readFileSync(new URL('../../apps/functions/src/index.ts', import.meta.url), 'utf8')
 const firebaseConfig = JSON.parse(fs.readFileSync(new URL('../../firebase.json', import.meta.url), 'utf8'))
@@ -23,6 +24,8 @@ test('Adam is one governed runtime mounted at the product shell', () => {
   assert.match(surfaces, /'support'/)
   assert.match(surfaces, /'onboarding'/)
   assert.match(surfaces, /'institutional-demo'/)
+  assert.match(adamRoute, /data-urai-adam-route="canonical"/)
+  assert.match(runtime, /pathname === '\/adam'/)
 })
 
 test('Adam conversation and Founder voice use dedicated protected server boundaries', () => {
