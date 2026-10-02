@@ -112,6 +112,15 @@ export const URAI_DESTINATION_REGISTRY: Record<UraiDestination, UraiDestinationD
     cameraCheckpoint: 'replay-arrival',
     environmentalForm: 'immersive-memory-world',
   },
+  'life-movie': {
+    id: 'life-movie',
+    label: 'Life Movie',
+    href: '/life-movie',
+    layer: 'infrastructure-world',
+    entryPortal: 'life-movie-threshold',
+    cameraCheckpoint: 'life-movie-arrival',
+    environmentalForm: 'cinematic-memory-continuum',
+  },
 }
 
 const PATH_DESTINATIONS: readonly [string, UraiDestination][] = [
