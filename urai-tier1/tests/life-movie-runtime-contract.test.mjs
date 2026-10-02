@@ -16,7 +16,7 @@ test('Life Movie chapter identity and ordering are deterministic', () => {
   assert.match(contract, /chapterIds.size !== validChapters.length/)
   assert.match(contract, /memoryIds.size !== validChapters.length/)
   assert.match(contract, /orders.size !== validChapters.length/)
-  assert.match(contract, /validChapters.sort((left, right) => left.order - right.order)/)
+  assert.match(contract, /validChapters\.sort\(\(left, right\) => left\.order - right\.order\)/)
 })
 
 test('Life Movie truth classes are explicit and confidence is bounded', () => {
