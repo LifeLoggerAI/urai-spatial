@@ -51,6 +51,7 @@ export {
 
 export {
   closePersonPresenceSession,
+  getPersonPresenceCapabilities,
   preparePersonPresenceSession,
 } from './personPresenceFunctions'
 
