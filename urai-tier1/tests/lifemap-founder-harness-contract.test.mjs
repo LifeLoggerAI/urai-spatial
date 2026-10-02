@@ -199,3 +199,13 @@ test('portrait navigator clears selected inspector and stays above the threshold
   assert.match(mobileBlock, /\.life-map-search-trigger \{ right: 12px !important; bottom: max\(12px,env\(safe-area-inset-bottom\)\) !important; \}/)
   assert.match(mobileBlock, /\.life-map-navigator \{ right: 12px !important; bottom: max\(68px,calc\(env\(safe-area-inset-bottom\) \+ 58px\)\) !important; \}/)
 })
+
+
+test('semantic navigator portals its hit surface above the canonical WebGL stacking context', () => {
+  assert.match(navigator, /import \{ createPortal \} from 'react-dom'/)
+  assert.match(navigator, /const \[portalReady, setPortalReady\] = useState\(false\)/)
+  assert.match(navigator, /useEffect\(\(\) => \{ setPortalReady\(true\) \}, \[\]\)/)
+  assert.match(navigator, /if \(!portalReady\) return null/)
+  assert.match(navigator, /return createPortal\(<>/)
+  assert.match(navigator, /<\/>[,] document\.body\)/)
+})
