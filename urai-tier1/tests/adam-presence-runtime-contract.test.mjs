@@ -19,6 +19,7 @@ test('Adam is one governed runtime mounted at the product shell', () => {
   assert.match(runtime, /data-urai-adam-presence="runtime-v1"/)
   assert.match(runtime, /Adam is UrAi’s digital Founder presence/)
   assert.match(runtime, /Human founder required/)
+  assert.match(runtime, /Founder digital presence/)
   assert.match(surfaces, /'home'/)
   assert.match(surfaces, /'council'/)
   assert.match(surfaces, /'support'/)
@@ -43,6 +44,11 @@ test('Adam conversation and Founder voice use dedicated protected server boundar
   assert.doesNotMatch(functions, /pNInz6obpgDQGcFmaJgB/)
   assert.match(functions, /not the live human Adam/)
   assert.match(functions, /requiresHumanFounder/)
+  assert.match(functions, /INVALID_REQUEST_ID/)
+  assert.match(functions, /urai-adam-provider/)
+  assert.match(functions, /Idempotency-Key': upstreamIdempotencyKey/)
+  assert.match(client, /stableAdamRequestId/)
+  assert.match(client, /requestId,/)
 })
 
 test('Founder voice cannot silently fall back to a stock identity', () => {
