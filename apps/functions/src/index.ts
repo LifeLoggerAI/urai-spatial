@@ -40,6 +40,7 @@ export {
 export {
   applyLifeCorrection,
   compilePersonModelBundle,
+  compileSceneTruthPacket,
   revokeLifeEntity,
   upsertLifeClaim,
   upsertLifeEntity,
