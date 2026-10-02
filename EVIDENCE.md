@@ -40,7 +40,7 @@ Do not regenerate accepted paid assets merely because older status text said the
 
 ## Production spatial audio evidence
 
-The production audio lane is not complete until the canonical forge has generated, verified, and committed the eight production Opus assets plus `operations/assets/production-receipts/spatial-audio-production-v1.json`.
+The production spatial-audio asset/runtime lane is complete in candidate source: the canonical forge generated, verified, and committed all eight production Opus assets plus `operations/assets/production-receipts/spatial-audio-production-v1.json`. This does not by itself certify production deployment or live playback.
 
 Required assets:
 
