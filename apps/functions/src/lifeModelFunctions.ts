@@ -15,6 +15,7 @@ const EVIDENCE_CLASSES = new Set([
 ])
 const CONFIDENCE = new Set(['confirmed','probable','approximate','unknown'])
 const CLAIM_STATUS = new Set(['accepted','disputed'])
+const PRESENTATION_CLASSES = new Set(['ARCHIVAL','RECONSTRUCTED','INTERPRETIVE','SIMULATED','COUNTERFACTUAL'])
 const MAX_CLAIMS_PER_STATE = 256
 const MAX_DEPENDENCY_INVALIDATIONS = 100
 
@@ -51,6 +52,14 @@ function tokenArray(value: unknown, maximum = 128) {
 function optionalTokenArray(value: unknown, maximum = 128) {
   if (value === undefined) return [] as string[]
   return tokenArray(value, maximum)
+}
+
+function boundedStringArray(value: unknown, maximum = 128, maxLength = 320) {
+  if (value === undefined) return [] as string[]
+  if (!Array.isArray(value) || value.length > maximum) {
+    throw new functions.https.HttpsError('invalid-argument', 'String array is invalid.')
+  }
+  return [...new Set(value.map((item) => requireString(item, 'string', maxLength)))]
 }
 
 function isRecord(value: unknown): value is JsonMap {
@@ -284,6 +293,97 @@ export const compilePersonModelBundle = lifeModelFunctions.https.onCall(async (d
     compiledAt: fieldValue.serverTimestamp(),
   }, { merge: true })
   return { bundleId, bundleHash, evidenceCoverage: bundleBody.evidenceCoverage }
+})
+
+export const compileSceneTruthPacket = lifeModelFunctions.https.onCall(async (data, context) => {
+  const uid = requireUid(context)
+  await requireModelConsent(uid)
+  const sceneId = requireToken(data?.sceneId, 'sceneId')
+  const presentationClass = String(data?.presentationClass ?? '')
+  if (!PRESENTATION_CLASSES.has(presentationClass)) {
+    throw new functions.https.HttpsError('invalid-argument', 'Presentation class is invalid.')
+  }
+
+  const personModelBundleIds = optionalTokenArray(data?.personModelBundleIds, 64)
+  const knownClaimIds = optionalTokenArray(data?.knownClaimIds, 256)
+  const sourceIds = tokenArray(data?.sourceIds, 256)
+  const unknowns = boundedStringArray(data?.unknowns, 128)
+  const contradictions = boundedStringArray(data?.contradictions, 128)
+  const criticalUnknowns = boundedStringArray(data?.criticalUnknowns, 128)
+  const forbiddenAssertions = boundedStringArray(data?.forbiddenAssertions, 128)
+
+  const [bundles, claims] = await Promise.all([
+    personModelBundleIds.length
+      ? db.getAll(...personModelBundleIds.map((id) => db.doc(`users/${uid}/personModelBundles/${id}`)))
+      : [],
+    knownClaimIds.length
+      ? db.getAll(...knownClaimIds.map((id) => db.doc(`users/${uid}/lifeClaims/${id}`)))
+      : [],
+  ])
+
+  const dependencyIds = new Set<string>([...personModelBundleIds, ...knownClaimIds])
+  for (const bundle of bundles) {
+    if (
+      !bundle.exists
+      || bundle.get('ownerId') !== uid
+      || bundle.get('schemaVersion') !== 'urai-life-model-v1'
+      || bundle.get('state') !== 'current'
+      || bundle.get('synthetic') !== false
+    ) {
+      throw new functions.https.HttpsError('failed-precondition', 'Scene Person Model authority is unavailable.')
+    }
+    for (const dependency of Array.isArray(bundle.get('dependencyIds')) ? bundle.get('dependencyIds') : []) {
+      dependencyIds.add(String(dependency))
+    }
+  }
+
+  for (const claim of claims) {
+    if (!claim.exists || claim.get('ownerId') !== uid || claim.get('synthetic') === true) {
+      throw new functions.https.HttpsError('failed-precondition', 'Scene claim authority is unavailable.')
+    }
+    if (claim.get('status') !== 'accepted' || claim.get('evidenceClass') === 'UNKNOWN') {
+      throw new functions.https.HttpsError('failed-precondition', 'Scene known claims must be accepted and evidence-backed.')
+    }
+    for (const sourceId of Array.isArray(claim.get('sourceIds')) ? claim.get('sourceIds') : []) {
+      dependencyIds.add(String(sourceId))
+    }
+  }
+
+  let decision: 'READY' | 'READY_WITH_OCCLUSION' | 'READY_INTERPRETIVE' | 'BLOCKED'
+  if (contradictions.length || criticalUnknowns.length) decision = 'BLOCKED'
+  else if (presentationClass === 'INTERPRETIVE') decision = 'READY_INTERPRETIVE'
+  else if (unknowns.length) decision = 'READY_WITH_OCCLUSION'
+  else decision = 'READY'
+
+  if ((presentationClass === 'SIMULATED' || presentationClass === 'COUNTERFACTUAL') && decision === 'READY') {
+    decision = 'READY_INTERPRETIVE'
+  }
+
+  const body = {
+    schemaVersion: 'urai-life-model-v1',
+    ownerId: uid,
+    sceneId,
+    presentationClass,
+    personModelBundleIds,
+    knownClaimIds,
+    sourceIds,
+    unknowns,
+    contradictions,
+    criticalUnknowns,
+    forbiddenAssertions,
+    decision,
+    dependencyIds: [...dependencyIds],
+    syntheticOutputMayBecomeHistoricalSource: false,
+    state: 'current',
+  }
+  const packetHash = stableDigest(body)
+  await db.doc(`users/${uid}/sceneTruthPackets/${sceneId}`).set({
+    ...body,
+    packetHash,
+    compiledAt: fieldValue.serverTimestamp(),
+    updatedAt: fieldValue.serverTimestamp(),
+  }, { merge: true })
+  return { sceneId, decision, packetHash }
 })
 
 export const applyLifeCorrection = lifeModelFunctions.https.onCall(async (data, context) => {
