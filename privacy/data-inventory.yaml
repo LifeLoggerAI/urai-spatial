@@ -183,6 +183,67 @@ fields:
     auditRequired: true
     implementationStatus: implemented_hard_off
 
+
+  - name: life_causal_graph
+    collectionOrTable: users/{uid}/lifeEntities + lifeClaims + lifeRelationships + lifeEvents + lifeCausalEdges + lifeGraphSnapshots
+    source: user_source_and_system_derived
+    dataClass: L5
+    purpose: preserve owner-private provenance-linked people, places, objects, relationships and events through time
+    consentTier: C5
+    retentionClass: R3
+    exportable: true
+    deletable: true
+    monetizable: false
+    aiTrainingAllowed: false
+    adminAccessible: false
+    auditRequired: true
+    implementationStatus: implementation_started_server_authoritative
+
+  - name: person_model_bundle
+    collectionOrTable: users/{uid}/personModelBundles
+    source: system_derived
+    dataClass: L5
+    purpose: compile evidence-constrained temporal person state for governed rendering and interaction
+    consentTier: C5
+    retentionClass: R3
+    exportable: true
+    deletable: true
+    monetizable: false
+    aiTrainingAllowed: false
+    adminAccessible: false
+    auditRequired: true
+    implementationStatus: implementation_started_provider_neutral
+
+  - name: simulation_session
+    collectionOrTable: users/{uid}/simulationSessions
+    source: user_interaction_and_model
+    dataClass: L5
+    purpose: isolate simulated/counterfactual interactions from historical source authority
+    consentTier: C5
+    retentionClass: R3
+    exportable: true
+    deletable: true
+    monetizable: false
+    aiTrainingAllowed: false
+    adminAccessible: false
+    auditRequired: true
+    implementationStatus: implementation_started_synthetic_firewall
+
+  - name: person_render_binding
+    collectionOrTable: users/{uid}/personRenderBindings
+    source: human_reviewed_provider_binding
+    dataClass: L5
+    purpose: bind an accepted private voice visual or motion provider resource to an exact compiled person state
+    consentTier: C5
+    retentionClass: R3
+    exportable: true
+    deletable: true
+    monetizable: false
+    aiTrainingAllowed: false
+    adminAccessible: false
+    auditRequired: true
+    implementationStatus: implemented_server_only_promotion_and_revocation
+
 processors:
   - name: Firebase Authentication
     role: authentication

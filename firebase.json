@@ -66,6 +66,20 @@
         }
       },
       {
+        "source": "/api/urai/person-presence/conversation",
+        "function": {
+          "functionId": "personPresenceProvider",
+          "region": "us-central1"
+        }
+      },
+      {
+        "source": "/api/urai/person-presence/voice",
+        "function": {
+          "functionId": "personPresenceVoiceProvider",
+          "region": "us-central1"
+        }
+      },
+      {
         "source": "/api/urai/adam/voice",
         "function": {
           "functionId": "adamFounderVoiceProvider",

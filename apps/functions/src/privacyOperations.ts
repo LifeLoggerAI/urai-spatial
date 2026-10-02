@@ -10,12 +10,13 @@ const timestamp = admin.firestore.Timestamp
 
 const CONSENT_DOMAINS = ['memory', 'location', 'models', 'exports', 'workforce', 'identity'] as const
 const CONSENT_MODES = ['granted', 'limited', 'paused', 'denied'] as const
-const EXPORT_SCOPES = ['profile', 'consent', 'memories', 'spatial', 'audit'] as const
+const EXPORT_SCOPES = ['profile', 'consent', 'memories', 'spatial', 'life-model', 'audit'] as const
 const DELETION_SCOPES = [
   'export-history',
   'privacy-history',
   'memories',
   'spatial-state',
+  'life-model',
   'all-repository-data',
   'account',
 ] as const
@@ -332,6 +333,23 @@ export const applyConsentPolicy = functions.https.onCall(async (data, context) =
   return result
 })
 
+async function revokeLifeModelDerivativesForConsent(uid: string, reasonId: string) {
+  const collections = ['personModelBundles', 'personRenderBindings', 'sceneTruthPackets', 'renderManifests']
+  for (const collectionName of collections) {
+    const snapshot = await db.collection(`users/${uid}/${collectionName}`).limit(500).get()
+    if (snapshot.empty) continue
+    const batch = db.batch()
+    for (const item of snapshot.docs) {
+      batch.set(item.ref, {
+        state: 'revoked',
+        invalidatedBy: reasonId,
+        invalidatedAt: fieldValue.serverTimestamp(),
+      }, { merge: true })
+    }
+    await batch.commit()
+  }
+}
+
 async function enforceConsentJob(snapshot: FirebaseFirestore.DocumentSnapshot) {
   const job = snapshot.data() as JsonMap | undefined
   if (!job || typeof job.uid !== 'string' || typeof job.domain !== 'string') return
@@ -433,6 +451,9 @@ async function enforceConsentJob(snapshot: FirebaseFirestore.DocumentSnapshot) {
       updatedAt: fieldValue.serverTimestamp(),
     })
     await batch.commit()
+    if (revoking && (domain === 'models' || domain === 'identity')) {
+      await revokeLifeModelDerivativesForConsent(uid, `consent:${jobId}:${domain}`)
+    }
   } catch (error) {
     const failure = error instanceof Error ? error.message.slice(0, 240) : 'UNKNOWN_ENFORCEMENT_FAILURE'
     await Promise.all([
@@ -628,6 +649,24 @@ async function buildExport(snapshot: FirebaseFirestore.DocumentSnapshot) {
       data.spatialMemories = await collectionDocuments(userRef.collection('spatialMemories'))
     }
     let capturedRealityRuntimeExports: CapturedRealityRuntimeExport[] = []
+    if (scopes.includes('life-model')) {
+      data.lifeEntities = await collectionDocuments(userRef.collection('lifeEntities'))
+      data.lifeEntityStates = await collectionDocuments(userRef.collection('lifeEntityStates'))
+      data.lifeClaims = await collectionDocuments(userRef.collection('lifeClaims'))
+      data.lifeRelationships = await collectionDocuments(userRef.collection('lifeRelationships'))
+      data.lifeEvents = await collectionDocuments(userRef.collection('lifeEvents'))
+      data.lifeCausalEdges = await collectionDocuments(userRef.collection('lifeCausalEdges'))
+      data.lifeGraphSnapshots = await collectionDocuments(userRef.collection('lifeGraphSnapshots'))
+      data.lifeCorrections = await collectionDocuments(userRef.collection('lifeCorrections'))
+      data.lifeConflicts = await collectionDocuments(userRef.collection('lifeConflicts'))
+      data.knowledgeGaps = await collectionDocuments(userRef.collection('knowledgeGaps'))
+      data.personModelBundles = await collectionDocuments(userRef.collection('personModelBundles'))
+      data.personRenderBindings = await collectionDocuments(userRef.collection('personRenderBindings'))
+      data.sceneTruthPackets = await collectionDocuments(userRef.collection('sceneTruthPackets'))
+      data.renderManifests = await collectionDocuments(userRef.collection('renderManifests'))
+      data.simulationSessions = await collectionDocuments(userRef.collection('simulationSessions'))
+      data.lifeModelReceipts = await collectionDocuments(userRef.collection('lifeModelReceipts'))
+    }
     if (scopes.includes('spatial')) {
       data.homeWorld = await collectionDocuments(userRef.collection('homeWorld'))
       data.focusStates = await collectionDocuments(userRef.collection('focusStates'))
@@ -849,6 +888,24 @@ const DELETION_COLLECTIONS: Record<Exclude<DeletionScope, 'account'>, string[]> 
   'export-history': ['exportJobs'],
   'privacy-history': ['privacyAudit'],
   memories: ['memories', 'replayEvents', 'spatialMemories', 'canonChains'],
+  'life-model': [
+    'lifeEntities',
+    'lifeEntityStates',
+    'lifeClaims',
+    'lifeRelationships',
+    'lifeEvents',
+    'lifeCausalEdges',
+    'lifeGraphSnapshots',
+    'lifeCorrections',
+    'lifeConflicts',
+    'knowledgeGaps',
+    'personModelBundles',
+    'personRenderBindings',
+    'sceneTruthPackets',
+    'renderManifests',
+    'simulationSessions',
+    'lifeModelReceipts',
+  ],
   'spatial-state': [
     'homeWorld',
     'homeWorldExplainability',
@@ -889,6 +946,19 @@ const DELETION_COLLECTIONS: Record<Exclude<DeletionScope, 'account'>, string[]> 
     'capturedRealityAssets',
     'capturedRealityReplayBindings',
     'providerConnections',
+    'lifeEntities',
+    'lifeEntityStates',
+    'lifeClaims',
+    'lifeRelationships',
+    'lifeEvents',
+    'lifeCorrections',
+    'lifeConflicts',
+    'knowledgeGaps',
+    'personModelBundles',
+    'sceneTruthPackets',
+    'renderManifests',
+    'simulationSessions',
+    'lifeModelReceipts',
   ],
 }
 
