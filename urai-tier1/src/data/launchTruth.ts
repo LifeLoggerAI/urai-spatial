@@ -144,6 +144,14 @@ export const launchTruth = {
       publicClaim: 'Fingerprint-gated Replay route for disclosed demo identity.',
     },
     {
+      path: '/life-movie',
+      label: 'Private Life Movie continuum',
+      group: 'Launch spine',
+      state: 'certification-pending',
+      proofBoundary: 'Private owner manifest, chapter truth/provenance, consent, and Replay handoff are source-verified; live certification requires the exact deployed release and does not imply any private family film is publicly published.',
+      publicClaim: 'Fingerprint-gated private Life Movie runtime; private source material remains owner-scoped.',
+    },
+    {
       path: '/mirror',
       label: 'Reflection realm',
       group: 'Launch spine',
