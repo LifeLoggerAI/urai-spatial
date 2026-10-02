@@ -1,20 +1,20 @@
 # URAI Spatial Launch Contract
 
-URAI Spatial is currently a fallback/demo spatial shell. It previews the immersive URAI interface while keeping live provider claims disabled until integration work is implemented and verified.
+URAI Spatial now contains the converged source paths for the core immersive journey plus gated Life Movie, Council, Memory World, Interpretive World, Captured Reality, Android, and XR surfaces. Source presence is not provider, device, Gold Master, deployment, or production certification. Live-provider and sensitive-runtime claims remain fail-closed until their own exact runtime evidence exists.
 
 ## Current launch mode
 
 | Area | Status |
 | --- | --- |
-| Spatial home shell | Live demo shell |
-| LifeMap starfield/replay shell | Live demo shell |
-| Orb companion | Local fallback/scaffold |
+| Spatial home shell | Integrated candidate; final literal Gold Master acceptance remains separate |
+| Life Map / Focus / Replay | Integrated candidate; exact-head runtime and pixel evidence required |
+| Orb / Council | OpenAI path plus disclosed local fallback; other Council providers remain not-connected until separately verified |
 | Body biometric panel | Privacy-safe fallback/scaffold |
-| AR/WebXR session provider | Deferred |
+| AR/WebXR session | Browser/session source implemented; physical-device certification remains separate |
 | Wearable provider | Deferred |
 | Live biometric/camera provider | Deferred |
 | Memory-grounded orb provider | Deferred |
-| Asset-factory spatial jobs | Deferred |
+| Captured / interpretive spatial jobs | Source/runtime contracts implemented behind release gates; accepted reconstruction/runtime receipts remain separate |
 | Cross-repo user memory sync | Deferred |
 
 ## Required boundary
@@ -46,6 +46,19 @@ The system APIs expose the launch boundary through:
 
 Use `/api/system/launch-boundary` when another URAI repo needs a focused provider-readiness check without parsing the full integration contract.
 
+## Sensitive-provider consent and audit gates
+
+The rollout gate is now explicit even while these providers remain disabled. Any future activation must pass the code contract in `spatialSensitiveProviderConsentGates` before provider-backed writes are permitted.
+
+| Capability | Runtime target | Required consent | Retention boundary | Audit boundary |
+| --- | --- | --- | --- | --- |
+| `live-ar-webxr-session` | Browser WebXR | Explicit per-session consent plus enforced location policy where persistent spatial/location data is introduced | Browser entry is session-only | `privacyAudit` before any provider-backed persistence |
+| `live-camera-biometric-provider` | Server provider adapter | Explicit session consent plus enforced identity/models policy | Purpose-bound configured retention | `privacyAudit` |
+| `live-wearable-provider` | Native provider bridge | Explicit session consent plus enforced identity/memory policy | Purpose-bound configured retention | `privacyAudit` |
+| `live-memory-grounded-orb` | Server provider adapter | Explicit session consent plus enforced memory/models policy | No raw provider copy without a separate grant | `privacyAudit` |
+
+All four gates remain `providerWritesAllowed: false` in the launch contract. The Quest browser entry additionally requires a local session-consent checkbox before `requestSession('immersive-vr')`; that consent is cleared when the immersive session ends. This defines the rollout boundary without claiming provider-backed AR, biometric, wearable, or memory persistence is live.
+
 ## Deferred capabilities
 
 The following must remain deferred until explicitly implemented and verified:
@@ -68,4 +81,4 @@ pnpm launch:check
 
 ## Go/no-go rule
 
-Ship URAI Spatial only if the fallback shell is stable and all copy, APIs, and docs agree that live providers are not active. Provider rollout requires a separate implementation PR with consent, tests, route smoke coverage, and deployment evidence.
+Ship URAI Spatial only if the fallback shell is stable when providers or optional assets are unavailable. Ship UrAi only from the current governed exact-head candidate after all applicable internal gates, literal visual acceptance, independent review, and subsequent protected deployment requirements are satisfied. A source path or green unit test never authorizes a live-provider claim. Provider rollout still requires consent, exact runtime evidence, route smoke coverage, truthful attribution, and deployment evidence.

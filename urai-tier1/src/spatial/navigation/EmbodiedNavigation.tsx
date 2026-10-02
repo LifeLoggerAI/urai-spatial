@@ -68,12 +68,15 @@ export function useMovementInput({
   useEffect(() => {
     if (!enabled) return
     const onKeyDown = (event: KeyboardEvent) => {
-      if (isEditableTarget(event.target)) return
+      const editableTarget = isEditableTarget(event.target)
+      const movementControl = event.target instanceof Element && Boolean(event.target.closest('[data-movement-ui="true"]'))
       if (MOVEMENT_KEYS.has(event.code)) {
+        if (editableTarget && !movementControl) return
         keys.current.add(event.code)
         event.preventDefault()
         return
       }
+      if (editableTarget) return
       if (event.code === 'Enter' || event.code === 'Space') {
         event.preventDefault()
         callbacksRef.current.onInteract?.()
@@ -252,8 +255,8 @@ export function stepEmbodiedMotion({
   if (typeof document !== 'undefined') {
     const owner = document.querySelector<HTMLElement>('.urai-asset-home-world[data-home-primary-owner="asset-driven"]')
     if (owner) {
-      const spawnX = 0
-      const spawnZ = 6.9
+      const spawnX = -0.85
+      const spawnZ = 8.4
       owner.dataset.homeInputOwner = 'window-capture-movement'
       owner.dataset.homeTelemetryOwner = 'embodied-motion-kernel'
       owner.dataset.homeInputReady = 'true'
@@ -263,9 +266,9 @@ export function stepEmbodiedMotion({
       owner.dataset.homePlayerX = position.x.toFixed(3)
       owner.dataset.homePlayerZ = position.z.toFixed(3)
       owner.dataset.homeDistance = Math.hypot(position.x - spawnX, position.z - spawnZ).toFixed(3)
-      owner.dataset.homeDistanceOrb = Math.hypot(position.x, position.z + 2.65).toFixed(3)
-      owner.dataset.homeDistanceGround = Math.hypot(position.x + 5.2, position.z + 8.4).toFixed(3)
-      owner.dataset.homeDistanceLifeMap = Math.hypot(position.x - 5.2, position.z + 8.4).toFixed(3)
+      owner.dataset.homeDistanceOrb = Math.hypot(position.x, position.z + 4.25).toFixed(3)
+      owner.dataset.homeDistanceGround = Math.hypot(position.x + 5.4, position.z + 10.8).toFixed(3)
+      owner.dataset.homeDistanceLifeMap = Math.hypot(position.x - 5.4, position.z + 10.8).toFixed(3)
       owner.dataset.homeMoving = moving ? 'true' : 'false'
       owner.dataset.homePressedKeys = [...input.keys.current].sort().join(',')
       owner.dataset.homeMovementVector = `${strafeInput.toFixed(3)},${forwardInput.toFixed(3)}`

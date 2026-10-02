@@ -8,11 +8,11 @@ const transport = fs.readFileSync('src/spatial/replay/replayServerTransport.ts',
 const operations = fs.readFileSync('src/spatial/replay/replayOperations.ts', 'utf8')
 const rules = fs.readFileSync('../firebase/firestore.rules', 'utf8')
 
-test('Replay preserves current cinematic identity while exposing Save Hide Correct and History', () => {
+test('Replay preserves cinematic identity while keeping Save Hide Correct and History behind memory controls', () => {
   for (const marker of ['assetCssStack', 'replayAssets', 'data-node={memory.star.id}', 'data-canonical-asset={replayAssets.primary.src}', '<ReplayProductControls memory={memory} />']) {
     assert.ok(client.includes(marker), `missing current-main Replay marker: ${marker}`)
   }
-  for (const marker of ['Replay memory controls', "operations.saved ? 'Saved' : 'Save'", "operations.hidden ? 'Unhide' : 'Hide'", "pendingCorrection ? 'Correcting…' : 'Correct'", '>History<', 'data-replay-saved', 'data-replay-hidden', 'data-pending-operations']) {
+  for (const marker of ['<details className="replayProduct"', 'aria-label="Replay memory controls">Memory controls</summary>', 'replayProductActions', "operations.saved ? 'Saved' : 'Save'", "operations.hidden ? 'Unhide' : 'Hide'", "pendingCorrection ? 'Correcting…' : 'Correct'", '>History<', 'data-replay-saved', 'data-replay-hidden', 'data-pending-operations']) {
     assert.ok(controls.includes(marker), `missing Replay product marker: ${marker}`)
   }
 })
@@ -25,13 +25,16 @@ test('Replay controls expose truthful accessible pending offline error and recov
   assert.match(controls, /next\.error/)
   assert.match(controls, /aria-pressed=\{operations\.saved\}/)
   assert.match(controls, /aria-pressed=\{operations\.hidden\}/)
-  assert.match(controls, /min-height:44px/)
+  assert.match(controls, /min-height:48px/)
   assert.match(controls, /safe-area-inset-bottom/)
   assert.match(controls, /prefers-reduced-motion:reduce/)
   assert.match(controls, /forced-colors:active/)
   assert.match(client, /<header>.*className="unwind".*<\/header>/s)
-  assert.match(client, /bottom:max\(180px,calc\(env\(safe-area-inset-bottom\) \+ 174px\)\)/)
-  assert.match(controls, /bottom:max\(102px,calc\(env\(safe-area-inset-bottom\) \+ 96px\)\)/)
+  assert.match(client, /\.memoryPulse\{min-height:48px/)
+  assert.match(client, /\.memorySeek:focus-visible\{position:relative/)
+  assert.match(controls, /\.replayProduct>summary\{[^}]*min-height:48px/)
+  assert.match(controls, /\.replayProductActions\{[^}]*bottom:54px/)
+  assert.match(controls, /data-attention=\{operations\.pending\.length \|\| operations\.error \? 'true' : 'false'\}/)
 })
 
 test('correction workflow preserves original history and unsent owner-scoped drafts', () => {

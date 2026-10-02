@@ -2,25 +2,28 @@ import './materialize-accessibility-performance-current-v3.mjs'
 import { readFile, writeFile } from 'node:fs/promises'
 
 function replaceExact(source, from, to, expectedCount, label) {
-  const count = source.split(from).length - 1
-  if (count !== expectedCount) {
-    throw new Error(`${label} expected ${expectedCount} audited occurrence(s); found ${count}`)
-  }
-  return source.split(from).join(to)
+  const staleCount = source.split(from).length - 1
+  if (staleCount === expectedCount) return source.split(from).join(to)
+  const currentCount = source.split(to).length - 1
+  if (staleCount === 0 && currentCount === expectedCount) return source
+  throw new Error(`${label} expected ${expectedCount} stale or current audited occurrence(s); found stale=${staleCount} current=${currentCount}`)
 }
 
 function replaceRegex(source, pattern, replacement, expectedCount, label) {
-  const count = [...source.matchAll(pattern)].length
-  if (count !== expectedCount) {
-    throw new Error(`${label} expected ${expectedCount} audited occurrence(s); found ${count}`)
-  }
-  return source.replace(pattern, replacement)
+  const staleCount = [...source.matchAll(pattern)].length
+  if (staleCount === expectedCount) return source.replace(pattern, replacement)
+  const currentCount = source.split(replacement).length - 1
+  if (staleCount === 0 && currentCount === expectedCount) return source
+  throw new Error(`${label} expected ${expectedCount} stale or current audited occurrence(s); found stale=${staleCount} current=${currentCount}`)
 }
 
 async function transformFile(path, transform) {
   const source = await readFile(path, 'utf8')
   const next = transform(source)
-  if (next === source) throw new Error(`${path} v4 materializer made no change`)
+  if (next === source) {
+    console.log(`Accessibility-performance v4 proof already current at ${path}`)
+    return
+  }
   await writeFile(path, next)
   console.log(`Materialized current accessibility-performance v4 proof at ${path}`)
 }
@@ -42,20 +45,7 @@ await transformFile('urai-tier1/tests/accessibility-performance-home-sensory-bou
 ))
 
 await transformFile('urai-tier1/tests/accessibility-performance-embodied-exploration.spec.ts', (input) => {
-  let source = replaceExact(
-    input,
-    "    await expect(home).toHaveAttribute('data-home-camera-mode', 'embodied')",
-    "    await expect(home).toHaveAttribute('data-home-camera-mode', 'embodied-first-person')",
-    1,
-    'current Home camera mode',
-  )
-  source = replaceExact(
-    source,
-    "    await expect(home).toHaveAttribute('data-home-animation-owner', 'authored-sanctuary-plus-gltf-interactions')",
-    "    await expect(home).toHaveAttribute('data-home-animation-owner', 'canonical-sanctuary-plus-cc0-fern-plus-living-orb')",
-    1,
-    'current Home canonical composition owner',
-  )
+  let source = input
   source = replaceExact(
     source,
     "    const privacyCard = destinations.getByRole('button', { name: /^Privacy Sanctuary\\./i })",

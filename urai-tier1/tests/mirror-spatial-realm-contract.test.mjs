@@ -135,3 +135,9 @@ test('mobile inspection transfers pointer ownership from all overlays to thresho
   assert.match(mobileInspectionCss, /\.mirrorWorld:has\(\.mirrorInspection\) \.mirrorThresholds\s*\{[^}]*z-index:\s*100\s*!important[^}]*pointer-events:\s*auto/s)
   assert.match(mobileInspectionCss, /\.mirrorWorld:has\(\.mirrorInspection\) \.mirrorThresholds button\s*\{[^}]*pointer-events:\s*auto/s)
 })
+
+
+test('Mirror threshold navigation reserves the global Adam launcher footprint', () => {
+  assert.match(clientSource, /\.mirrorThresholds\{[^}]*right:max\(82px,calc\(env\(safe-area-inset-right\) \+ 64px\)\)[^}]*bottom:max\(18px,env\(safe-area-inset-bottom\)\)/)
+  assert.match(clientSource, /@media\(max-width:760px\)[\s\S]*?\.mirrorThresholds\{left:12px;right:max\(82px,calc\(env\(safe-area-inset-right\) \+ 70px\)\)/)
+})
