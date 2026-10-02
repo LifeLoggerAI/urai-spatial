@@ -35,3 +35,13 @@ export {
   mistralCouncilProvider,
   xaiCouncilProvider,
 } from './councilProviderFunctions'
+
+
+export {
+  applyLifeCorrection,
+  compilePersonModelBundle,
+  revokeLifeEntity,
+  upsertLifeClaim,
+  upsertLifeEntity,
+  upsertLifeEntityState,
+} from './lifeModelFunctions'
