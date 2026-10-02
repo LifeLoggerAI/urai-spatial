@@ -144,3 +144,7 @@
 @media (prefers-reduced-motion: reduce) {
   .launcher, .panel, .presence { transition: none !important; animation: none !important; }
 }
+
+:global(html.urai-route-life-map) .launcher {
+  bottom: max(82px, calc(env(safe-area-inset-bottom) + 64px));
+}
