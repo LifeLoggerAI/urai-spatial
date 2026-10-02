@@ -104,6 +104,9 @@ function trustedChapterFromMemory(requested: RequestedChapter, snapshot: Firebas
   if (consentState === 'revoked') {
     throw new functions.https.HttpsError('failed-precondition', 'Life Movie memory consent was revoked.')
   }
+  if (consentState === 'pending') {
+    throw new functions.https.HttpsError('failed-precondition', 'Life Movie memory consent is pending.')
+  }
 
   const lifeMovie = snapshot.get('lifeMovie') as Record<string, unknown> | undefined
   const rawTruthClass = String(lifeMovie?.truthClass ?? snapshot.get('truthClass') ?? 'UNKNOWN_UNRESOLVED')
@@ -133,7 +136,7 @@ function trustedChapterFromMemory(requested: RequestedChapter, snapshot: Firebas
     order: requested.order,
     truthClass,
     confidence,
-    consentState: consentState === 'pending' ? 'pending' : 'authorized',
+    consentState: 'authorized',
     ...(cinematicAssetId ? { cinematicAssetId } : {}),
     ...(spatialAssetId ? { spatialAssetId } : {}),
     ...(captionTrackId ? { captionTrackId } : {}),
