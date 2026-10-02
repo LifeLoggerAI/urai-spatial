@@ -62,15 +62,16 @@ export default function LifeMapSemanticNavigator() {
     if (node.eraId) next.set('era', node.eraId)
 
     // Same-route selection identity must become observable before the spatial world begins
-    // its potentially expensive camera/render transition. The world selection event remains
-    // the single authoritative state transaction and owns the normal Next router replacement.
-    commitBrowserIdentity(next)
+    // its potentially expensive camera/render transition.
+    const destination = commitBrowserIdentity(next)
     requestLifeMapSelection(node.id, source)
 
-    // Defensive fallback for any future reuse outside the canonical /life-map owner.
-    if (window.location.pathname.replace(/\/+$/, '') !== '/life-map') {
-      router.replace(`/life-map?${next.toString()}`, { scroll: false })
-    }
+    // Keep the event as the immediate world-animation owner, but always synchronize
+    // the same canonical URL through Next as a durable fallback. If the R3F listener
+    // is still mounting, the route-param owner restores the selected node at arrival.
+    // If the listener already handled the event, localSelectionId preserves the
+    // departure/travel/approach sequence and this replace is idempotent.
+    router.replace(destination, { scroll: false })
   }, [commitBrowserIdentity, router, withIdentity])
 
   const overview = useCallback(() => {
