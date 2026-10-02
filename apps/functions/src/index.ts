@@ -28,3 +28,10 @@ export { getInterpretiveWorldAsset, getInterpretiveWorldRuntimeUrl, getInterpret
 export { recordPassiveSignal } from './passiveSignals'
 
 export { upsertLifeMovieManifest, revokeLifeMovieManifest } from './lifeMovie'
+
+export {
+  anthropicCouncilProvider,
+  geminiCouncilProvider,
+  mistralCouncilProvider,
+  xaiCouncilProvider,
+} from './councilProviderFunctions'
