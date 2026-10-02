@@ -15,6 +15,18 @@ const functionsIndex = fs.readFileSync(new URL('../../apps/functions/src/index.t
 const firebaseConfig = JSON.parse(fs.readFileSync(new URL('../../firebase.json', import.meta.url), 'utf8'))
 const previewConfig = JSON.parse(fs.readFileSync(new URL('../../.github/firebase.preview.json', import.meta.url), 'utf8'))
 
+test('Adam exposes the required governed one-brain surface contract', () => {
+  for (const surface of ['labs', 'marketing', 'investors', 'b2b', 'studio', 'foundation']) {
+    assert.match(surfaces, new RegExp(`'?${surface}'?`))
+    assert.match(functions, new RegExp(`\\b${surface}:|'\\b${surface}'`))
+  }
+  assert.match(functions, /authenticated UrAi investor surface/)
+  assert.match(functions, /authenticated UrAi B2B surface/)
+  assert.match(functions, /surface identity alone/)
+  assert.match(functions, /Never imply a contract/)
+  assert.match(functions, /Never imply grants/)
+})
+
 test('Adam is one governed runtime mounted at the product shell', () => {
   assert.match(layout, /AdamPresenceRuntime/)
   assert.match(layout, /Suspense/)

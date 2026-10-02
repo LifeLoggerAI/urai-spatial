@@ -4,6 +4,12 @@ export type AdamSurfaceId =
   | 'support'
   | 'onboarding'
   | 'institutional-demo'
+  | 'labs'
+  | 'marketing'
+  | 'investors'
+  | 'b2b'
+  | 'studio'
+  | 'foundation'
   | 'general-product'
 
 export type AdamSurfaceContext = {
@@ -37,6 +43,36 @@ const SURFACES: Record<AdamSurfaceId, AdamSurfaceContext> = {
     id: 'institutional-demo',
     label: 'Institutional demo',
     description: 'A bounded synthetic/sample-data demonstration for institutional visitors.',
+  },
+  labs: {
+    id: 'labs',
+    label: 'UrAi Labs',
+    description: 'Technology, research, press, and partnership orientation.',
+  },
+  marketing: {
+    id: 'marketing',
+    label: 'UrAi Marketing',
+    description: 'Product positioning and onboarding orientation.',
+  },
+  investors: {
+    id: 'investors',
+    label: 'UrAi Investors',
+    description: 'Authorized investor orientation with gated context only.',
+  },
+  b2b: {
+    id: 'b2b',
+    label: 'UrAi B2B',
+    description: 'Authorized enterprise orientation with gated context only.',
+  },
+  studio: {
+    id: 'studio',
+    label: 'UrAi Studio',
+    description: 'Creative-system and production-workflow orientation.',
+  },
+  foundation: {
+    id: 'foundation',
+    label: 'UrAi Foundation',
+    description: 'Stewardship and public-interest orientation with limited authority.',
   },
   'general-product': {
     id: 'general-product',
