@@ -655,6 +655,8 @@ async function buildExport(snapshot: FirebaseFirestore.DocumentSnapshot) {
       data.lifeClaims = await collectionDocuments(userRef.collection('lifeClaims'))
       data.lifeRelationships = await collectionDocuments(userRef.collection('lifeRelationships'))
       data.lifeEvents = await collectionDocuments(userRef.collection('lifeEvents'))
+      data.lifeCausalEdges = await collectionDocuments(userRef.collection('lifeCausalEdges'))
+      data.lifeGraphSnapshots = await collectionDocuments(userRef.collection('lifeGraphSnapshots'))
       data.lifeCorrections = await collectionDocuments(userRef.collection('lifeCorrections'))
       data.lifeConflicts = await collectionDocuments(userRef.collection('lifeConflicts'))
       data.knowledgeGaps = await collectionDocuments(userRef.collection('knowledgeGaps'))
@@ -891,6 +893,8 @@ const DELETION_COLLECTIONS: Record<Exclude<DeletionScope, 'account'>, string[]> 
     'lifeClaims',
     'lifeRelationships',
     'lifeEvents',
+    'lifeCausalEdges',
+    'lifeGraphSnapshots',
     'lifeCorrections',
     'lifeConflicts',
     'knowledgeGaps',
