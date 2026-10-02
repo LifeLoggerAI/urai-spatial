@@ -57,6 +57,8 @@ function contextFromLocation(): UraiWorldContextPatch {
   const personId = params.get('personId') ?? undefined
   const placeId = params.get('placeId') ?? undefined
   const replayManifestId = params.get('manifestId') ?? undefined
+  const movieId = params.get('movieId') ?? undefined
+  const chapterId = params.get('chapterId') ?? undefined
   const privacyMode = privacyModeFrom(params.get('privacyMode') ?? params.get('state'))
   const entryPortal = params.get('entryPortal') ?? params.get('from') ?? undefined
   const demo = params.get('demo') === '1'
@@ -67,6 +69,8 @@ function contextFromLocation(): UraiWorldContextPatch {
     ...(personId ? { personId } : {}),
     ...(placeId ? { placeId } : {}),
     ...(replayManifestId ? { replayManifestId } : {}),
+    ...(movieId ? { movieId } : {}),
+    ...(chapterId ? { chapterId } : {}),
     ...(privacyMode ? { privacyMode } : {}),
     ...(entryPortal ? { entryPortal } : {}),
     ...(demo ? { demo: true } : {}),

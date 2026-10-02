@@ -60,7 +60,8 @@
 
 .urai-world-atmosphere[data-realm='life-map'] .urai-world-atmosphere__weather,
 .urai-world-atmosphere[data-realm='focus'] .urai-world-atmosphere__weather,
-.urai-world-atmosphere[data-realm='replay'] .urai-world-atmosphere__weather {
+.urai-world-atmosphere[data-realm='replay'] .urai-world-atmosphere__weather,
+.urai-world-atmosphere[data-realm='life-movie'] .urai-world-atmosphere__weather {
   opacity: .72;
   filter: saturate(1.2);
 }
@@ -70,7 +71,8 @@
   background: linear-gradient(90deg, transparent, rgba(255,255,255,.9), transparent);
 }
 
-.urai-world-atmosphere[data-realm='replay'] .urai-world-atmosphere__sky {
+.urai-world-atmosphere[data-realm='replay'] .urai-world-atmosphere__sky,
+.urai-world-atmosphere[data-realm='life-movie'] .urai-world-atmosphere__sky {
   background:
     radial-gradient(circle at 50% 42%, rgba(255, 219, 151, .12), transparent 20rem),
     radial-gradient(circle at 68% 32%, rgba(180, 112, 255, .14), transparent 27rem),

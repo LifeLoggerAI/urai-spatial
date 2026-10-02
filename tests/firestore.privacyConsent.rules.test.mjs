@@ -28,6 +28,7 @@ const ownerDocuments = [
   ['devices', 'device-a', { ownerId, status: 'active' }],
   ['providerConnections', 'provider-a', { ownerId, status: 'active' }],
   ['memories', 'memory-a', { ownerId, title: 'Private memory', occurredAt: '2026-09-29T00:00:00.000Z' }],
+  ['lifeMovies', 'movie-a', { ownerId, id: 'movie-a', version: 1, status: 'ready', chapters: [] }],
 ]
 
 test.before(async () => {
@@ -73,6 +74,7 @@ test('signed-out and cross-user reads fail closed', async () => {
 test('administrative client claims cannot read full private memory records', async () => {
   const adminDb = env.authenticatedContext('admin-a', { admin: true }).firestore()
   await assertFails(getDoc(doc(adminDb, 'users', ownerId, 'memories', 'memory-a')))
+  await assertFails(getDoc(doc(adminDb, 'users', ownerId, 'lifeMovies', 'movie-a')))
 })
 
 test('clients cannot mutate trusted privacy authority or lifecycle records', async () => {

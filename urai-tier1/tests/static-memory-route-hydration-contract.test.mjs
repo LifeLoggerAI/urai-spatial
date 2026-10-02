@@ -6,15 +6,19 @@ const focusPage = readFileSync(new URL('../src/app/focus/page.tsx', import.meta.
 const focusClient = readFileSync(new URL('../src/app/focus/FocusChamberClient.tsx', import.meta.url), 'utf8')
 const replayPage = readFileSync(new URL('../src/app/replay/page.tsx', import.meta.url), 'utf8')
 const replayClient = readFileSync(new URL('../src/app/replay/CinematicReplayClient.tsx', import.meta.url), 'utf8')
+const lifeMoviePage = readFileSync(new URL('../src/app/life-movie/page.tsx', import.meta.url), 'utf8')
+const lifeMovieClient = readFileSync(new URL('../src/app/life-movie/LifeMovieClient.tsx', import.meta.url), 'utf8')
 const visibleLayer = readFileSync(new URL('../src/app/UraiAutonomousV1Layer.tsx', import.meta.url), 'utf8')
 const smoke = readFileSync(new URL('../../scripts/urai-release-control-smoke.mjs', import.meta.url), 'utf8')
 
 // Static export must expose the real surfaces before client-side query hydration begins.
-test('focus and replay render real static surfaces instead of Suspense loading shells', () => {
+test('focus, replay, and Life Movie render real static surfaces instead of Suspense loading shells', () => {
   assert.doesNotMatch(focusPage, /Suspense|Focus loading/)
   assert.match(focusPage, /return <FinalFocusChamber \/>/)
   assert.doesNotMatch(replayPage, /Suspense|Replay loading/)
   assert.match(replayPage, /<FinalReplayFilm \/>/)
+  assert.doesNotMatch(lifeMoviePage, /Suspense|Life Movie loading/)
+  assert.match(lifeMoviePage, /return <LifeMovieClient \/>/)
 })
 
 test('memory routes hydrate exact query identity without useSearchParams', () => {
@@ -23,6 +27,16 @@ test('memory routes hydrate exact query identity without useSearchParams', () =>
     assert.match(source, /new URLSearchParams\(window\.location\.search\)/)
     assert.match(source, /setIdentity\(\{ memoryId: nextMemoryId, manifestId: nextManifestId, node: nextNode \}\)/)
   }
+})
+
+test('Life Movie hydrates memory and movie identity without useSearchParams', () => {
+  assert.doesNotMatch(lifeMovieClient, /useSearchParams/)
+  assert.match(lifeMovieClient, /new URLSearchParams\(window\.location\.search\)/)
+  assert.match(lifeMovieClient, /memoryId: sanitizeMemoryId\(params\.get\('memoryId'\)\)/)
+  assert.match(lifeMovieClient, /movieId: sanitizeMemoryId\(params\.get\('movieId'\)\)/)
+  assert.match(lifeMovieClient, /setIdentityReady\(true\)/)
+  assert.match(lifeMovieClient, /window\.addEventListener\('popstate', hydrateIdentity\)/)
+  assert.match(lifeMovieClient, /window\.removeEventListener\('popstate', hydrateIdentity\)/)
 })
 
 test('visible Focus owner hydrates and exposes the same exact query identity', () => {

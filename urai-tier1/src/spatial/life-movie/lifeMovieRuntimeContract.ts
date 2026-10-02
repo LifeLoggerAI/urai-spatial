@@ -14,7 +14,7 @@ export type LifeMovieRuntimeChapter = {
   title?: string
   truthClass: LifeMovieTruthClass
   confidence: number
-  consentState: 'authorized' | 'pending'
+  consentState: 'authorized'
   cinematicAssetId?: string
   spatialAssetId?: string
   captionTrackId?: string
@@ -100,14 +100,14 @@ function internalMemoryHref(value: unknown) {
 function parseChapter(raw: unknown): LifeMovieRuntimeChapter | null {
   if (!raw || typeof raw !== 'object') return null
   const value = raw as Record<string, unknown>
-  if (value.consentState === 'revoked') return null
+  if (value.consentState !== 'authorized') return null
 
   const id = safeToken(value.id)
   const memoryId = sanitizeMemoryId(text(value.memoryId))
   const order = value.order
   const chapterTruth = truthClass(value.truthClass)
   const confidence = value.confidence
-  const consentState = value.consentState === 'pending' ? 'pending' : 'authorized'
+  const consentState = 'authorized' as const
   if (
     !id
     || !memoryId
@@ -157,8 +157,8 @@ export function parseLifeMovieRuntimeManifest(
   if (!ownerId || ownerId !== expectedOwnerId) {
     return { status: 'unauthorized', manifest: null, message: 'Life Movie is not available to this account.' }
   }
-  if (raw.consentState === 'revoked') {
-    return { status: 'unauthorized', manifest: null, message: 'Consent for this Life Movie was revoked.' }
+  if (raw.consentState !== 'authorized') {
+    return { status: 'unauthorized', manifest: null, message: 'Life Movie consent is not authorized.' }
   }
 
   const id = safeToken(raw.id)

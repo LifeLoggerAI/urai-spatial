@@ -25,3 +25,5 @@ export { getCapturedRealityAsset, getCapturedRealityRuntimeUrl, getCapturedReali
 export { getInterpretiveWorldAsset, getInterpretiveWorldRuntimeUrl, getInterpretiveWorldReplayEntry } from './interpretiveWorld'
 
 export { recordPassiveSignal } from './passiveSignals'
+
+export { upsertLifeMovieManifest, revokeLifeMovieManifest } from './lifeMovie'
