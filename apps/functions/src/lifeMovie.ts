@@ -95,7 +95,9 @@ function requestedChapters(value: unknown): RequestedChapter[] {
 }
 
 function trustedChapterFromMemory(requested: RequestedChapter, snapshot: FirebaseFirestore.DocumentSnapshot) {
-  if (!snapshot.exists || snapshot.get('ownerId') !== snapshot.ref.parent.parent?.id || snapshot.get('deleted') === true) {
+  const expectedOwnerId = snapshot.ref.parent.parent?.id
+  const ownerId = snapshot.get('ownerId') ?? snapshot.get('userId')
+  if (!snapshot.exists || !expectedOwnerId || ownerId !== expectedOwnerId || snapshot.get('deleted') === true) {
     throw new functions.https.HttpsError('failed-precondition', 'Life Movie memory is unavailable.')
   }
   const consentState = snapshot.get('consentState')
