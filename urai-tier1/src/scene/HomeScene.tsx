@@ -189,14 +189,14 @@ function HomeHud({
 }) {
   const primaryActions = [
     { label: 'Open My World', detail: 'Enter the Life Map from the sky field.', action: onLifeMap, tone: 'primary' },
-    { label: 'Preview Spark', detail: 'Step into the focused memory chamber.', action: onFocus, tone: 'secondary' },
-    { label: 'Replay Theater', detail: 'Open a private cinematic memory pass.', action: onReplay, tone: 'secondary' },
+    { label: 'Preview Spark', detail: 'Step into the stellar memory focus.', action: onFocus, tone: 'secondary' },
+    { label: 'Replay', detail: 'Open a private cinematic memory pass.', action: onReplay, tone: 'secondary' },
   ]
 
   const entryPoints = [
     { label: 'Life Map', detail: 'Memory constellation and seeded demo paths.', action: onLifeMap, status: 'Ready' },
-    { label: 'Replay', detail: 'Private cinematic theater shell.', action: onReplay, status: 'Ready' },
-    { label: 'Focus', detail: 'Stable chamber for one memory signal.', action: onFocus, status: 'Ready' },
+    { label: 'Replay', detail: 'Entered-memory world.', action: onReplay, status: 'Ready' },
+    { label: 'Focus', detail: 'Stellar focus around one memory signal.', action: onFocus, status: 'Ready' },
     { label: 'Mirror', detail: 'Reflection and becoming surface.', action: onMirror, status: 'Ready' },
     { label: 'Passport', detail: 'Permission and provenance foundation.', action: onPassport, status: 'Shell' },
     { label: 'Status', detail: 'Launch route and system readiness.', action: onStatus, status: 'Live' },
@@ -310,9 +310,9 @@ function ModeGuidance({ sceneMode: mode, onUnwind, onLifeMap, onFocus, onReplay 
   const copy = sceneMode === 'life-map'
     ? 'Memory Galaxy · seeded demo constellation · select a star or enter focus'
     : sceneMode === 'focus'
-      ? 'Focus chamber · selected star is stable · replay can open privately'
+      ? 'Focus memory star · selected memory is stable · Replay can open privately'
       : sceneMode === 'replay'
-        ? 'Private cinematic memory theater · evidence placeholders only'
+        ? 'Inside the memory · evidence placeholders only'
         : sceneMode === 'ascent'
           ? 'Camera ascent into the Life Map'
           : 'Safe unwind path active'
@@ -575,7 +575,7 @@ export default function HomeScene({ sceneMode = 'home' }: { sceneMode?: SceneMod
 
       {isFocusMode ? (
         <section className="urai-focus-action-panel" data-testid="urai-focus-action-panel" aria-label="Selected memory focus">
-          <div className="urai-focus-action-panel__eyebrow">Focus Chamber</div>
+          <div className="urai-focus-action-panel__eyebrow">Focus Memory Star</div>
           <h2>{morphology.title}</h2>
           <p>{loading ? 'Opening selected memory star...' : `${morphology.poeticLine} Seeded demo evidence only; no private backend data is required.`}</p>
           <div className="urai-focus-action-panel__actions">

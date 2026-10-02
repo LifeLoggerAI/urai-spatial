@@ -1,4 +1,4 @@
-import { createHash, randomUUID } from 'node:crypto'
+import { createHash } from 'node:crypto'
 import * as admin from 'firebase-admin'
 import { defineSecret } from 'firebase-functions/params'
 import { onRequest } from 'firebase-functions/v2/https'
@@ -10,6 +10,7 @@ const OPENAI_API_KEY = defineSecret('OPENAI_API_KEY')
 const ELEVENLABS_API_KEY = defineSecret('ELEVENLABS_API_KEY')
 const REGION = 'us-central1'
 const RATE_WINDOW_MS = 60_000
+const WEB_CLIENT_ORIGINS = ['https://urai.app', 'https://www.urai.app', /^https:\/\/localhost(?::\d+)?$/]
 
 type Provider = 'openai' | 'elevenlabs'
 type JsonMap = Record<string, unknown>
@@ -127,6 +128,18 @@ function sendError(response: { status: (code: number) => { json: (value: unknown
   response.status(boundary.status).json({ error: boundary.code, message: boundary.message })
 }
 
+function requireRequestId(value: unknown) {
+  const requestId = String(value ?? '').trim().toLowerCase()
+  if (!/^[a-f0-9]{64}$/.test(requestId)) {
+    throw new ProviderError(400, 'INVALID_REQUEST_ID', 'A stable provider request identity is required.')
+  }
+  return requestId
+}
+
+function providerIdempotencyKey(uid: string, requestId: string) {
+  return createHash('sha256').update(`urai-openai-provider:${uid}:${requestId}`).digest('hex')
+}
+
 function boundedContext(value: unknown) {
   if (value === undefined) return [] as Array<{ role: 'user' | 'assistant'; content: string }>
   if (!Array.isArray(value) || value.length > 8) throw new ProviderError(400, 'INVALID_CONTEXT', 'Conversation context is invalid.')
@@ -153,19 +166,68 @@ const ORB_SCHEMA = {
   },
 } as const
 
+function partialJsonStringField(raw: string, field: string) {
+  const marker = JSON.stringify(field)
+  const keyIndex = raw.indexOf(marker)
+  if (keyIndex < 0) return null
+  let index = keyIndex + marker.length
+  while (index < raw.length && /\s/.test(raw[index])) index += 1
+  if (raw[index] !== ':') return null
+  index += 1
+  while (index < raw.length && /\s/.test(raw[index])) index += 1
+  if (raw[index] !== '"') return null
+  index += 1
+
+  let value = ''
+  while (index < raw.length) {
+    const character = raw[index]
+    if (character === '"') return { value, complete: true }
+    if (character !== '\\') {
+      value += character
+      index += 1
+      continue
+    }
+    if (index + 1 >= raw.length) break
+    const escape = raw[index + 1]
+    if (escape === 'u') {
+      if (index + 5 >= raw.length) break
+      const hex = raw.slice(index + 2, index + 6)
+      if (!/^[0-9a-fA-F]{4}$/.test(hex)) return null
+      value += String.fromCharCode(Number.parseInt(hex, 16))
+      index += 6
+      continue
+    }
+    const escapes: Record<string, string> = {
+      '"': '"',
+      '\\': '\\',
+      '/': '/',
+      b: '\b',
+      f: '\f',
+      n: '\n',
+      r: '\r',
+      t: '\t',
+    }
+    if (!Object.prototype.hasOwnProperty.call(escapes, escape)) return null
+    value += escapes[escape]
+    index += 2
+  }
+  return { value, complete: false }
+}
+
 function parseOrbOutput(raw: string) {
   let value: unknown
   try { value = JSON.parse(raw) } catch { throw new ProviderError(502, 'INVALID_PROVIDER_RESPONSE', 'The live Orb returned an invalid response.') }
   if (!isRecord(value)) throw new ProviderError(502, 'INVALID_PROVIDER_RESPONSE', 'The live Orb returned an invalid response.')
   const message = String(value.message ?? '').trim()
-  const caption = String(value.caption ?? '').trim()
+  const providerCaption = String(value.caption ?? '').trim()
   const disclosure = String(value.disclosure ?? '').trim()
   const suggestedActions = Array.isArray(value.suggestedActions)
     ? value.suggestedActions.map((item) => String(item).trim()).filter(Boolean)
     : []
-  if (!message || message.length > 1_600 || !caption || caption.length > 1_600 || !disclosure || disclosure.length > 240 || suggestedActions.length > 3) {
+  if (!message || message.length > 1_600 || !providerCaption || providerCaption.length > 1_600 || !disclosure || disclosure.length > 240 || suggestedActions.length > 3) {
     throw new ProviderError(502, 'INVALID_PROVIDER_RESPONSE', 'The live Orb returned an invalid response.')
   }
+  const caption = message
   return { message, caption, disclosure, suggestedActions, provider: 'openai' as const }
 }
 
@@ -173,7 +235,7 @@ export const openAiOrbProvider = onRequest({
   region: REGION,
   timeoutSeconds: 60,
   memory: '512MiB',
-  cors: false,
+  cors: WEB_CLIENT_ORIGINS,
   secrets: [OPENAI_API_KEY],
 }, async (request, response) => {
   const startedAt = Date.now()
@@ -184,6 +246,8 @@ export const openAiOrbProvider = onRequest({
     const body = readBody(request, 32_768)
     const message = String(body.message ?? '').trim()
     if (!message || message.length > 2_000) throw new ProviderError(400, 'INVALID_MESSAGE', 'Message is missing or too long.')
+    const requestId = requireRequestId(body.requestId)
+    const upstreamIdempotencyKey = providerIdempotencyKey(uid, requestId)
     const context = boundedContext(body.context)
     await requireProviderConsent(uid, 'openai', body.aiProcessingConsent === true)
     await consumeRateLimit(uid, 'openai', 8)
@@ -203,7 +267,7 @@ export const openAiOrbProvider = onRequest({
 
     const controller = new AbortController()
     const timeout = setTimeout(() => controller.abort(), 30_000)
-    request.on('close', () => controller.abort())
+    response.on('close', () => { if (!response.writableEnded) controller.abort() })
     const recent = context.map((item, index) => `${index + 1}. ${item.role}: ${item.content}`).join('\n')
     const upstream = await fetch('https://api.openai.com/v1/responses', {
       method: 'POST',
@@ -211,7 +275,7 @@ export const openAiOrbProvider = onRequest({
         Authorization: `Bearer ${apiKey}`,
         'Content-Type': 'application/json',
         Accept: 'text/event-stream',
-        'Idempotency-Key': randomUUID(),
+        'Idempotency-Key': upstreamIdempotencyKey,
       },
       body: JSON.stringify({
         model: process.env.OPENAI_ORB_MODEL || 'gpt-5',
@@ -234,10 +298,18 @@ export const openAiOrbProvider = onRequest({
     }).finally(() => clearTimeout(timeout))
     if (!upstream.ok || !upstream.body) throw new ProviderError(upstream.status === 429 ? 429 : 503, 'OPENAI_REQUEST_FAILED', 'The live Orb provider is unavailable.')
 
+    response.status(200)
+    response.setHeader('Content-Type', 'application/x-ndjson; charset=utf-8')
+    response.setHeader('Cache-Control', 'private, no-store, max-age=0')
+    response.setHeader('X-Content-Type-Options', 'nosniff')
+    response.setHeader('X-URAI-Provider', 'openai')
+    response.write(`${JSON.stringify({ type: 'status', status: 'streaming' })}\n`)
+
     const reader = upstream.body.getReader()
     const decoder = new TextDecoder()
     let buffer = ''
     let output = ''
+    let emittedMessageLength = 0
     let completed = false
     while (true) {
       const { value, done } = await reader.read()
@@ -252,29 +324,35 @@ export const openAiOrbProvider = onRequest({
         if (!payload || payload === '[DONE]') continue
         let event: JsonMap
         try { event = JSON.parse(payload) as JsonMap } catch { continue }
-        if (event.type === 'response.output_text.delta') output += String(event.delta ?? '')
+        if (event.type === 'response.output_text.delta') {
+          output += String(event.delta ?? '')
+          const partial = partialJsonStringField(output, 'message')
+          if (partial && partial.value.length > emittedMessageLength) {
+            const text = partial.value.slice(emittedMessageLength)
+            emittedMessageLength = partial.value.length
+            response.write(`${JSON.stringify({ type: 'delta', text })}\n`)
+          }
+        }
         if (event.type === 'response.completed') completed = true
         if (event.type === 'response.failed' || event.type === 'error') throw new ProviderError(502, 'OPENAI_RESPONSE_FAILED', 'The live Orb provider could not complete the response.')
       }
     }
     if (!completed || !output) throw new ProviderError(502, 'OPENAI_RESPONSE_INCOMPLETE', 'The live Orb provider returned an incomplete response.')
     const result = parseOrbOutput(output)
-
-    response.status(200)
-    response.setHeader('Content-Type', 'application/x-ndjson; charset=utf-8')
-    response.setHeader('Cache-Control', 'private, no-store, max-age=0')
-    response.setHeader('X-Content-Type-Options', 'nosniff')
-    response.setHeader('X-URAI-Provider', 'openai')
-    response.write(`${JSON.stringify({ type: 'status', status: 'validated' })}\n`)
-    for (let offset = 0; offset < result.message.length; offset += 96) {
-      response.write(`${JSON.stringify({ type: 'delta', text: result.message.slice(offset, offset + 96) })}\n`)
+    if (result.message.length > emittedMessageLength) {
+      response.write(`${JSON.stringify({ type: 'delta', text: result.message.slice(emittedMessageLength) })}\n`)
     }
     response.end(`${JSON.stringify({ type: 'done', ...result })}\n`)
     await recordTelemetry({ uid, provider: 'openai', outcome: 'success', inputUnits: message.length, outputUnits: result.message.length, latencyMs: Date.now() - startedAt, upstreamRequestId: upstream.headers.get('x-request-id') })
   } catch (error) {
     if (uid) await recordTelemetry({ uid, provider: 'openai', outcome: 'failure', inputUnits: 0, latencyMs: Date.now() - startedAt })
     if (!response.headersSent) sendError(response, error)
-    else response.end()
+    else {
+      const boundary = error instanceof ProviderError
+        ? error
+        : new ProviderError(500, 'PROVIDER_BOUNDARY_FAILURE', 'Provider boundary is unavailable.')
+      response.end(`${JSON.stringify({ type: 'error', code: boundary.code, message: boundary.message })}\n`)
+    }
   }
 })
 
@@ -286,7 +364,7 @@ export const elevenLabsVoiceProvider = onRequest({
   region: REGION,
   timeoutSeconds: 30,
   memory: '256MiB',
-  cors: false,
+  cors: WEB_CLIENT_ORIGINS,
   secrets: [ELEVENLABS_API_KEY],
 }, async (request, response) => {
   const startedAt = Date.now()
@@ -311,7 +389,7 @@ export const elevenLabsVoiceProvider = onRequest({
     if (process.env.ELEVENLABS_ZERO_RETENTION === 'true') endpoint.searchParams.set('enable_logging', 'false')
     const controller = new AbortController()
     const timeout = setTimeout(() => controller.abort(), 15_000)
-    request.on('close', () => controller.abort())
+    response.on('close', () => { if (!response.writableEnded) controller.abort() })
     const upstream = await fetch(endpoint, {
       method: 'POST',
       headers: { 'xi-api-key': ELEVENLABS_API_KEY.value(), 'Content-Type': 'application/json', Accept: 'audio/mpeg' },

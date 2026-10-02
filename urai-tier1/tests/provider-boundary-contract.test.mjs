@@ -22,6 +22,13 @@ test('OpenAI Orb is authenticated, moderated, non-stored, structured and cancell
   assert.match(providerFunctions, /strict: true/)
   assert.match(providerFunctions, /response\.output_text\.delta/)
   assert.match(providerFunctions, /Idempotency-Key/)
+  assert.doesNotMatch(providerFunctions, /request\.on\('close', \(\) => controller\.abort\(\)\)/)
+  assert.equal((providerFunctions.match(/response\.on\('close', \(\) => \{ if \(!response\.writableEnded\) controller\.abort\(\) \}\)/g) ?? []).length, 2)
+  assert.match(providerFunctions, /partialJsonStringField\(output, 'message'\)/)
+  assert.match(providerFunctions, /status: 'streaming'/)
+  assert.doesNotMatch(providerFunctions, /for \(let offset = 0; offset < result\.message\.length; offset \+= 96\)/)
+  assert.match(providerFunctions, /const caption = message/)
+  assert.match(providerFunctions, /type: 'error', code: boundary\.code/)
 })
 
 test('Orb UI keeps external consent off and excludes rejected provider turns from future context', () => {
