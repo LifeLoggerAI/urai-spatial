@@ -3,6 +3,7 @@ import fs from 'node:fs'
 
 const tests = [
   'tests/aaa-world-artifact-contract.test.mjs',
+  'tests/adam-presence-runtime-contract.test.mjs',
   'tests/v1-aaa-asset-program-matrix-contract.test.mjs',
   'tests/geographic-location-vault.test.mjs',
   'tests/global-emotional-weather-privacy.test.mjs',
