@@ -20,6 +20,7 @@ const lifeMapPage = read('src/app/life-map/page.tsx')
 const lifeMapCanonical = read('src/spatial/lifemap/SpatialLifeMapCanonical.tsx')
 const lifeMapBoundary = read('src/components/lifemap/LifeMapRouteBoundary.tsx')
 const focusPage = read('src/app/focus/page.tsx')
+const focusClient = read('src/app/focus/FocusChamberClient.tsx')
 const replayPage = read('src/app/replay/page.tsx')
 
 test('memory star schema keeps final privacy and route fields', () => {
@@ -63,4 +64,15 @@ test('canonical LifeMap, Focus, and Replay final owners remain present', () => {
   assert.ok(lifeMapBoundary.includes('ComposedLifeMapScene'), 'Life Map route boundary must use ComposedLifeMapScene')
   assert.ok(focusPage.includes('FinalFocusChamber'), 'Focus route must use FinalFocusChamber')
   assert.ok(replayPage.includes('FinalReplayFilm'), 'Replay route must use FinalReplayFilm')
+})
+
+
+test('Focus photosphere rejects planetary low-frequency terrain and exposes the memory imprint', () => {
+  assert.ok(focusClient.includes('Low-frequency continents/terrain are suppressed so Focus cannot read as a planet.'))
+  assert.ok(focusClient.includes('noise(p * 93.0'))
+  assert.ok(focusClient.includes('noise(p * 151.0'))
+  assert.ok(!focusClient.includes('noise(p * 7.0'))
+  assert.ok(focusClient.includes('intensity={1.75}'))
+  assert.ok(focusClient.includes('float alpha = veil * (.42 + luminance * .30 + core * .24);'))
+  assert.ok(focusClient.includes('<planeGeometry args={[1.86, 1.86]} />'))
 })
