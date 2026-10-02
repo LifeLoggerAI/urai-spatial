@@ -2,11 +2,13 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { getAuth, onAuthStateChanged, type User } from 'firebase/auth'
-import { collection, getDocs, limit, query } from 'firebase/firestore'
+import { collection, doc, getDoc, getDocs, limit, query } from 'firebase/firestore'
 import { useSearchParams } from 'next/navigation'
 import { app, firebasePublicEnvReady, getFirebaseDb } from '@/lib/firebase/client'
 import { parseSelectedMemory, sanitizeMemoryId, type SelectedMemory } from '@/spatial/memory/selectedMemoryContract'
 import { useReducedMotion } from '@/spatial/hooks/useReducedMotion'
+import { lifeMovieReplayHref, type LifeMovieRuntimeChapter } from '@/spatial/life-movie/lifeMovieRuntimeContract'
+import { useLifeMovieRuntimeManifest } from '@/spatial/life-movie/useLifeMovieRuntimeManifest'
 
 type MovieState =
   | { kind: 'auth-loading'; message: string }
@@ -31,6 +33,8 @@ function safeOccurredAt(memory: SelectedMemory) {
 export default function LifeMovieClient() {
   const params = useSearchParams()
   const requestedMemoryId = sanitizeMemoryId(params.get('memoryId'))
+  const requestedMovieId = sanitizeMemoryId(params.get('movieId'))
+  const runtimeManifest = useLifeMovieRuntimeManifest(requestedMovieId)
   const reducedMotion = useReducedMotion()
   const [user, setUser] = useState<User | null | undefined>(undefined)
   const [memories, setMemories] = useState<SelectedMemory[]>([])
@@ -54,6 +58,7 @@ export default function LifeMovieClient() {
 
   useEffect(() => {
     if (!user) return
+    if (requestedMovieId && runtimeManifest.status === 'loading') return
     let cancelled = false
     setMemories([])
     setActiveIndex(0)
@@ -62,20 +67,41 @@ export default function LifeMovieClient() {
 
     void (async () => {
       try {
-        const snapshot = await getDocs(query(collection(getFirebaseDb(), 'users', user.uid, 'memories'), limit(36)))
-        if (cancelled) return
-        const parsed = snapshot.docs.flatMap((item) => {
-          const result = parseSelectedMemory(item.data(), user.uid, item.id, process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET)
-          return result.memory && result.status === 'ready' ? [result.memory] : []
-        })
-        parsed.sort((left, right) => safeOccurredAt(right) - safeOccurredAt(left))
-        if (requestedMemoryId) {
-          parsed.sort((left, right) => Number(right.id === requestedMemoryId) - Number(left.id === requestedMemoryId))
+        let parsed: SelectedMemory[] = []
+
+        if (requestedMovieId) {
+          if (runtimeManifest.status !== 'ready' || !runtimeManifest.manifest) {
+            if (!cancelled) setState({ kind: 'error', message: runtimeManifest.message })
+            return
+          }
+
+          const ordered = await Promise.all(runtimeManifest.manifest.chapters.map(async (chapter: LifeMovieRuntimeChapter) => {
+            const snapshot = await getDoc(doc(getFirebaseDb(), 'users', user.uid, 'memories', chapter.memoryId))
+            if (!snapshot.exists()) return null
+            const result = parseSelectedMemory(snapshot.data(), user.uid, chapter.memoryId, process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET)
+            return result.memory && result.status === 'ready' ? { memory: result.memory, chapter } : null
+          }))
+          if (cancelled) return
+          parsed = ordered.flatMap((entry) => entry ? [entry.memory] : [])
+        } else {
+          const snapshot = await getDocs(query(collection(getFirebaseDb(), 'users', user.uid, 'memories'), limit(36)))
+          if (cancelled) return
+          parsed = snapshot.docs.flatMap((item) => {
+            const result = parseSelectedMemory(item.data(), user.uid, item.id, process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET)
+            return result.memory && result.status === 'ready' ? [result.memory] : []
+          })
+          parsed.sort((left, right) => safeOccurredAt(right) - safeOccurredAt(left))
+          if (requestedMemoryId) {
+            parsed.sort((left, right) => Number(right.id === requestedMemoryId) - Number(left.id === requestedMemoryId))
+          }
         }
+
         setMemories(parsed)
         setState(parsed.length
           ? { kind: 'ready', message: `${parsed.length} private memor${parsed.length === 1 ? 'y' : 'ies'} available for this Life Movie.` }
-          : { kind: 'empty', message: 'No complete private memories are available for a Life Movie yet.' })
+          : { kind: 'empty', message: requestedMovieId
+              ? 'No authorized chapters in this Life Movie are currently playable.'
+              : 'No complete private memories are available for a Life Movie yet.' })
       } catch (error) {
         if (cancelled) return
         setState({ kind: 'error', message: error instanceof Error ? error.message : 'Your Life Movie could not be assembled.' })
@@ -83,9 +109,12 @@ export default function LifeMovieClient() {
     })()
 
     return () => { cancelled = true }
-  }, [requestedMemoryId, user])
+  }, [requestedMemoryId, requestedMovieId, runtimeManifest, user])
 
   const active = memories[activeIndex] ?? null
+  const activeChapter = requestedMovieId && runtimeManifest.status === 'ready' && runtimeManifest.manifest
+    ? runtimeManifest.manifest.chapters[activeIndex] ?? null
+    : null
   const media = active ? mediaFor(active) : null
   const chapterDurationMs = useMemo(() => {
     if (!active) return 8000
@@ -147,13 +176,16 @@ export default function LifeMovieClient() {
       className="lifeMovie"
       data-testid="life-movie-runtime"
       data-state="ready"
-      data-source="authenticated-owner-memories"
+      data-source={requestedMovieId ? 'governed-life-movie-manifest' : 'authenticated-owner-memories'}
+      data-movie-id={requestedMovieId ?? undefined}
+      data-chapter-id={activeChapter?.id}
+      data-truth-class={activeChapter?.truthClass}
       data-provider-render="not-required"
       data-reduced-motion={reducedMotion ? 'true' : 'false'}
     >
       <header className="lifeMovieHeader">
         <div><p>URAI · LIFE MOVIE</p><h1>Your life, played as a private film.</h1></div>
-        <nav aria-label="Life Movie destinations"><a href="/life-map">Life Map</a><a href={`/replay?memoryId=${encodeURIComponent(active.id)}`}>Replay</a><a href="/passport">Passport</a></nav>
+        <nav aria-label="Life Movie destinations"><a href="/life-map">Life Map</a><a href={activeChapter ? lifeMovieReplayHref(activeChapter) : `/replay?memoryId=${encodeURIComponent(active.id)}&from=life-movie`}>Replay</a><a href="/passport">Passport</a></nav>
       </header>
 
       <section className="lifeMovieStage" aria-label="Current Life Movie chapter">
@@ -169,7 +201,7 @@ export default function LifeMovieClient() {
           <time dateTime={active.occurredAt}>{new Date(active.occurredAt).toLocaleDateString()}</time>
           <p>{active.summary}</p>
           <blockquote>{currentSegment?.caption || active.narrator.replay}</blockquote>
-          <small>Private owner memory · {active.privacy} · no synthetic provider render required for this playback</small>
+          <small>Private owner memory · {active.privacy}{activeChapter ? ` · ${activeChapter.truthClass.replaceAll('_', ' ').toLowerCase()} · confidence ${Math.round(activeChapter.confidence * 100)}%` : ''} · no silent provider substitution</small>
         </div>
       </section>
 
@@ -189,7 +221,7 @@ export default function LifeMovieClient() {
           </li>
         ))}
       </ol>
-      <p className="lifeMovieDisclosure">This runtime assembles only memories authorized to the signed-in owner. External generation is not silently substituted. Provider-rendered exports can be added only when an exact render job is separately authorized and receipted.</p>
+      <p className="lifeMovieDisclosure">This runtime assembles only memories authorized to the signed-in owner. Governed Life Movie manifests preserve chapter order, truth class, confidence, consent, and provenance without exposing private source pointers. External generation is not silently substituted.</p>
       <style>{css}</style>
     </main>
   )
