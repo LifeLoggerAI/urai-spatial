@@ -41,7 +41,7 @@ export default function CouncilConversationPanel({ agent }: { agent: CouncilAgen
     const trimmed = message.trim()
     if (!trimmed || busy) return
     if (!consent) {
-      setStatus('Allow OpenAI processing for this Council message before sending.')
+      setStatus(`Allow ${COUNCIL_PROVIDER_REGISTRY[providerId].label} processing for this Council message before sending.`)
       return
     }
 
