@@ -199,6 +199,14 @@ service cloud.firestore {
         allow read: if isSelf(uid);
         allow write: if false;
       }
+      match /lifeCausalEdges/{docId} {
+        allow read: if isSelf(uid);
+        allow write: if false;
+      }
+      match /lifeGraphSnapshots/{docId} {
+        allow read: if isSelf(uid);
+        allow write: if false;
+      }
       match /lifeCorrections/{docId} {
         allow read: if isSelf(uid);
         allow write: if false;
