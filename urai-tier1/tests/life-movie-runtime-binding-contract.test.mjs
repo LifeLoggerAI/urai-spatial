@@ -53,3 +53,25 @@ test('Life Movie Firestore authority is owner-readable and server-write-only', (
   const rules = read('../firebase/firestore.rules')
   assert.match(rules, /match \/lifeMovies\/\{movieId\} \{[\s\S]*?allow read: if isSelf\(uid\);[\s\S]*?allow write: if false;/)
 })
+
+test('Life Movie owner controls persist only chapter identity and order', () => {
+  const operations = read('src/spatial/life-movie/lifeMovieManifestOperations.ts')
+  assert.match(client, /saveLifeMovieManifest/)
+  assert.match(client, /chapters: memories\.map/)
+  assert.match(client, /memoryId: memory\.id/)
+  assert.match(client, /order: index/)
+  assert.match(client, /Save sequence/)
+  assert.match(client, /Update sequence/)
+  assert.match(client, /Remove saved sequence/)
+  assert.match(operations, /movieId: string/)
+  assert.match(operations, /memoryId: string/)
+  assert.doesNotMatch(operations, /truthClass|confidence|sourceIds|providerTaskIds|cinematicAssetId|spatialAssetId/)
+})
+
+test('Life Movie save and revoke use canonical callable names', () => {
+  const operations = read('src/spatial/life-movie/lifeMovieManifestOperations.ts')
+  assert.match(operations, /'upsertLifeMovieManifest'/)
+  assert.match(operations, /'revokeLifeMovieManifest'/)
+  assert.match(client, /window\.location\.assign\(next\.pathname \+ next\.search\)/)
+  assert.match(client, /window\.location\.assign\('\/life-movie'\)/)
+})
