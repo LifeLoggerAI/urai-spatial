@@ -9,6 +9,7 @@ import { parseSelectedMemory, sanitizeMemoryId, type SelectedMemory } from '@/sp
 import { useReducedMotion } from '@/spatial/hooks/useReducedMotion'
 import { lifeMovieReplayHref, type LifeMovieRuntimeChapter } from '@/spatial/life-movie/lifeMovieRuntimeContract'
 import { useLifeMovieRuntimeManifest } from '@/spatial/life-movie/useLifeMovieRuntimeManifest'
+import { revokeLifeMovieManifest, saveLifeMovieManifest } from '@/spatial/life-movie/lifeMovieManifestOperations'
 
 type MovieState =
   | { kind: 'auth-loading'; message: string }
@@ -41,6 +42,7 @@ export default function LifeMovieClient() {
   const [state, setState] = useState<MovieState>({ kind: 'auth-loading', message: 'Checking private identity…' })
   const [activeIndex, setActiveIndex] = useState(0)
   const [playing, setPlaying] = useState(false)
+  const [manifestAction, setManifestAction] = useState<{ kind: 'idle' | 'working' | 'error'; message: string }>({ kind: 'idle', message: '' })
 
   useEffect(() => {
     if (!firebasePublicEnvReady) {
@@ -170,6 +172,48 @@ export default function LifeMovieClient() {
     return <main className="lifeMovieState" data-testid="life-movie-runtime" data-state={state.kind}><section><h1>Life Movie</h1><p>{state.message}</p><div className="lifeMovieStateActions"><a href="/life-map">Open Life Map</a><a href="/home">Return Home</a></div></section><style>{css}</style></main>
   }
 
+  const saveSequence = async () => {
+    if (!memories.length || manifestAction.kind === 'working') return
+    const movieId = requestedMovieId ?? `life-movie-${Date.now().toString(36)}`
+    setPlaying(false)
+    setManifestAction({ kind: 'working', message: requestedMovieId ? 'Updating private Life Movie…' : 'Saving private Life Movie…' })
+    try {
+      await saveLifeMovieManifest({
+        movieId,
+        status: 'ready',
+        chapters: memories.map((memory, index) => ({
+          id: activeChapter && runtimeManifest.status === 'ready' && runtimeManifest.manifest
+            ? runtimeManifest.manifest.chapters[index]?.id ?? `chapter:${index}:${memory.id}`
+            : `chapter:${index}:${memory.id}`,
+          memoryId: memory.id,
+          order: index,
+        })),
+      })
+      if (!requestedMovieId) {
+        const next = new URL('/life-movie', window.location.origin)
+        next.searchParams.set('movieId', movieId)
+        next.searchParams.set('memoryId', active.id)
+        window.location.assign(next.pathname + next.search)
+        return
+      }
+      setManifestAction({ kind: 'idle', message: 'Private Life Movie updated.' })
+    } catch (error) {
+      setManifestAction({ kind: 'error', message: error instanceof Error ? error.message : 'Life Movie could not be saved.' })
+    }
+  }
+
+  const revokeSequence = async () => {
+    if (!requestedMovieId || manifestAction.kind === 'working') return
+    setPlaying(false)
+    setManifestAction({ kind: 'working', message: 'Removing private Life Movie manifest…' })
+    try {
+      await revokeLifeMovieManifest(requestedMovieId)
+      window.location.assign('/life-movie')
+    } catch (error) {
+      setManifestAction({ kind: 'error', message: error instanceof Error ? error.message : 'Life Movie could not be removed.' })
+    }
+  }
+
   const currentSegment = active.replayManifest.segments[0]
   return (
     <main
@@ -209,7 +253,10 @@ export default function LifeMovieClient() {
         <button type="button" onClick={() => { setPlaying(false); setActiveIndex((index) => Math.max(0, index - 1)) }} disabled={activeIndex === 0}>Previous</button>
         <button type="button" aria-pressed={playing} onClick={() => setPlaying((value) => !value)}>{playing ? 'Pause film' : 'Play film'}</button>
         <button type="button" onClick={() => { setPlaying(false); setActiveIndex((index) => Math.min(memories.length - 1, index + 1)) }} disabled={activeIndex === memories.length - 1}>Next</button>
+        <button type="button" onClick={() => void saveSequence()} disabled={manifestAction.kind === 'working'}>{requestedMovieId ? 'Update sequence' : 'Save sequence'}</button>
+        {requestedMovieId ? <button type="button" onClick={() => void revokeSequence()} disabled={manifestAction.kind === 'working'}>Remove saved sequence</button> : null}
       </section>
+      {manifestAction.message ? <p className="lifeMovieActionStatus" role="status">{manifestAction.message}</p> : null}
 
       <ol className="lifeMovieChapters" aria-label="Life Movie chapters">
         {memories.map((memory, index) => (
@@ -235,6 +282,7 @@ const css = `
 .lifeMovieCaption{position:absolute;z-index:3;left:clamp(18px,4vw,54px);right:clamp(18px,4vw,54px);bottom:clamp(18px,4vw,46px);max-width:780px}.lifeMovieCaption>p:first-child{margin:0;color:#9ee9ff;font-size:10px;font-weight:900;letter-spacing:.18em;text-transform:uppercase}.lifeMovieCaption h2{margin:8px 0 4px;font:500 clamp(2rem,5vw,5rem)/.95 Georgia,serif}.lifeMovieCaption time,.lifeMovieCaption small{color:#a9bac9}.lifeMovieCaption>p{max-width:62ch;color:#d8e4ee;line-height:1.55}.lifeMovieCaption blockquote{margin:14px 0;padding-left:14px;border-left:2px solid #9ee9ff88;color:#eefaff;font-size:clamp(1rem,2vw,1.3rem)}
 .lifeMovieControls{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}.lifeMovieControls button,.lifeMovieChapters button{min-height:48px;border:1px solid #ffffff26;border-radius:999px;background:#091522;color:#fff;font-weight:800;cursor:pointer}.lifeMovieControls button{padding:0 20px}.lifeMovieControls button[aria-pressed=true]{border-color:#9ee9ff;box-shadow:0 0 24px #8adfff33}.lifeMovieControls button:disabled{opacity:.38}
 .lifeMovieChapters{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:9px;margin:0;padding:0;list-style:none}.lifeMovieChapters button{width:100%;display:grid;grid-template-columns:auto 1fr;gap:10px;align-items:center;padding:0 14px;text-align:left}.lifeMovieChapters button[aria-current=step]{border-color:#9ee9ff;background:#0d2634}.lifeMovieChapters span{color:#8adfff;font-size:11px}.lifeMovieChapters strong{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.lifeMovieDisclosure{max-width:80ch;margin:0 auto;color:#89a0b3;font-size:12px;line-height:1.55;text-align:center}
+.lifeMovieActionStatus{margin:-10px auto 0;color:#bfeeff;font-size:12px;text-align:center}.lifeMovieActionStatus:empty{display:none}
 .lifeMovie :is(button,a,audio,video):focus-visible,.lifeMovieState a:focus-visible{outline:3px solid #fff;outline-offset:3px}
 @media(max-width:760px){.lifeMovieHeader{align-items:flex-start;flex-direction:column}.lifeMovieHeader nav{justify-content:flex-start}.lifeMovieStage{min-height:66svh;border-radius:24px}.lifeMovieCaption{bottom:22px}.lifeMovieChapters{grid-template-columns:1fr 1fr}}
 @media(prefers-reduced-motion:reduce){.lifeMovie *{scroll-behavior:auto!important;transition:none!important;animation:none!important}}
