@@ -13,6 +13,7 @@ export type ReplayLifeModelAuthority =
       schemaVersion: 'urai-life-model-v1'
       sceneTruthPacketId: string
       personModelBundleIds: string[]
+      people: Array<{ bundleId:string; personId:string; label:string; asOf:string; knowledgeCutoff:string|null }>
       decision: 'READY' | 'READY_WITH_OCCLUSION' | 'READY_INTERPRETIVE'
       presentationClass: string
       syntheticOutputMayBecomeHistoricalSource: false
@@ -50,6 +51,7 @@ export function useReplayLifeModelAuthority(memoryId: string | null, demo = fals
           && data.schemaVersion === 'urai-life-model-v1'
           && data.syntheticOutputMayBecomeHistoricalSource === false
           && Array.isArray(data.personModelBundleIds)
+          && Array.isArray(data.people)
           && typeof data.sceneTruthPacketId === 'string'
         ) {
           setAuthority({ ...data, status: 'available' } as ReplayLifeModelAuthority)
