@@ -23,3 +23,10 @@ test('model or identity consent revocation revokes compiled derivatives', () => 
   assert.match(source, /domain === 'models' \|\| domain === 'identity'/)
   assert.match(source, /state: 'revoked'/)
 })
+
+
+test('accepted voice/visual/motion bindings participate in owner rights and consent revocation',()=>{
+  assert.match(source,/data\.personRenderBindings/)
+  assert.match(source,/'personRenderBindings'/)
+  assert.match(source,/\['personModelBundles', 'personRenderBindings', 'sceneTruthPackets', 'renderManifests'\]/)
+})
