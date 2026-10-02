@@ -30,3 +30,13 @@ export async function closePersonPresenceSession(sessionId:string){
   const callable=httpsCallable<{sessionId:string},{sessionId:string;state:'closed'}>(functions,'closePersonPresenceSession')
   return (await callable({sessionId})).data
 }
+
+
+export async function getPersonPresenceCapabilities(sessionId:string){
+  const callable=httpsCallable<{sessionId:string},{
+    sessionId:string;bundleId:string;voice:boolean;visual:boolean;motion:boolean;providerIdentifiersExposed:false
+  }>(functions,'getPersonPresenceCapabilities')
+  const result=(await callable({sessionId})).data
+  if(result.providerIdentifiersExposed!==false)throw new Error('PERSON_PRESENCE_CAPABILITY_BOUNDARY_FAILED')
+  return result
+}
