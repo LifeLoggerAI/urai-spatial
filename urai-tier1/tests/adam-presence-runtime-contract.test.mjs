@@ -5,6 +5,7 @@ import test from 'node:test'
 const root = new URL('../', import.meta.url)
 const layout = fs.readFileSync(new URL('src/app/layout.tsx', root), 'utf8')
 const runtime = fs.readFileSync(new URL('src/spatial/adam/AdamPresenceRuntime.tsx', root), 'utf8')
+const adamStyles = fs.readFileSync(new URL('src/spatial/adam/AdamPresenceRuntime.module.css', root), 'utf8')
 const client = fs.readFileSync(new URL('src/spatial/adam/adamClient.ts', root), 'utf8')
 const surfaces = fs.readFileSync(new URL('src/spatial/adam/adamSurfaceContext.ts', root), 'utf8')
 const adamRoute = fs.readFileSync(new URL('src/app/adam/page.tsx', root), 'utf8')
@@ -83,4 +84,16 @@ test('Hosting and preview route Adam APIs only to secret-bound functions', () =>
     assert.ok(firebaseConfig.hosting.rewrites.some((entry) => JSON.stringify(entry) === JSON.stringify(expected)))
     assert.ok(previewConfig.hosting.rewrites.some((entry) => JSON.stringify(entry) === JSON.stringify(expected)))
   }
+})
+
+
+test('Adam route authority remains explicit and unknown routes stay fail-closed', () => {
+  assert.ok(routeManifest.criticalRoutes.includes('/adam'))
+  assert.ok(routeManifest.classification.publicExact.includes('/adam'))
+  assert.equal(routeManifest.unknownRoutePolicy, 'fail-release')
+})
+
+test('Adam launcher vacates the canonical Life Map semantic-control hit area', () => {
+  assert.match(adamStyles, /:global\(html\.urai-route-life-map\) \.launcher/)
+  assert.match(adamStyles, /bottom: max\(82px, calc\(env\(safe-area-inset-bottom\) \+ 64px\)\)/)
 })
