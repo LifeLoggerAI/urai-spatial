@@ -51,10 +51,23 @@ async function verifyViewport(
       const semanticRect = semanticNode?.getBoundingClientRect()
       const viewport = window.visualViewport
       if (!movementRect || !semanticRect || !semanticNode) return null
+      const destinationRects = [
+        'home-semantic-orb',
+        'home-semantic-ground',
+        'home-semantic-life-map',
+      ].map((testId) => {
+        const node = semanticNode.querySelector<HTMLElement>(`[data-testid="${testId}"]`)
+        const rect = node?.getBoundingClientRect()
+        return rect
+          ? { left: rect.left, top: rect.top, right: rect.right, bottom: rect.bottom, width: rect.width, height: rect.height }
+          : null
+      })
+
       return {
         movement: { left: movementRect.left, top: movementRect.top, right: movementRect.right, bottom: movementRect.bottom },
         semantic: { left: semanticRect.left, top: semanticRect.top, right: semanticRect.right, bottom: semanticRect.bottom },
         semanticOpacity: Number.parseFloat(getComputedStyle(semanticNode).opacity || '1'),
+        destinationRects,
         viewport: { width: viewport?.width ?? innerWidth, height: viewport?.height ?? innerHeight },
         documentWidth: document.documentElement.scrollWidth,
       }
@@ -77,8 +90,8 @@ async function verifyViewport(
       semantic.getByTestId('home-semantic-life-map'),
     ]
     await expect(semantic.locator(':is(button,a)')).toHaveCount(3)
-    for (const destination of destinations) {
-      const rect = await destination.boundingBox()
+    expect(layout!.destinationRects, `${viewport.label} destination count`).toHaveLength(3)
+    for (const rect of layout!.destinationRects) {
       expect(rect, `${viewport.label} destination bounds`).not.toBeNull()
       expect(rect!.width, `${viewport.label} destination width`).toBeGreaterThanOrEqual(48)
       expect(rect!.height, `${viewport.label} destination height`).toBeGreaterThanOrEqual(48)
