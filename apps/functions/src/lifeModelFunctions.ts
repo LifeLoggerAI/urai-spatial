@@ -90,7 +90,7 @@ async function requireModelConsent(uid: string) {
 }
 
 async function invalidateDependency(uid: string, dependencyId: string, reasonId: string, revoked = false) {
-  const collections = ['personModelBundles','sceneTruthPackets','renderManifests']
+  const collections = ['personModelBundles','sceneTruthPackets','renderManifests','lifeMovies']
   const batch = db.batch()
   let count = 0
   for (const collection of collections) {
