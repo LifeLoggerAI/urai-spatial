@@ -67,3 +67,10 @@ test('Passport does not leak private identifiers into public presentation state'
   assert.doesNotMatch(client, /window\.location\.search.*uid|[?&]uid=/)
   assert.doesNotMatch(client, /providerSecret|accessToken|refreshToken/)
 })
+
+
+test('desktop vault keeps long owner controls reachable instead of clipping at one viewport', () => {
+  const css = read('src/app/passport/passport-vault.css')
+  assert.match(css, /\.passportVault\{[^}]*overflow-x:hidden;overflow-y:auto;/)
+  assert.doesNotMatch(css, /\.passportVault\{[^}]*overflow:hidden;/)
+})
