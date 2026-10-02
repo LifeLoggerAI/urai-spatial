@@ -319,13 +319,16 @@ function MemoryImprint({ url }: { url: string }) {
       void main() {
         vec2 centered = vUv - vec2(.5);
         float radius = length(centered);
-        float veil = 1.0 - smoothstep(.20, .50, radius);
-        float core = 1.0 - smoothstep(.05, .42, radius);
+        float veil = 1.0 - smoothstep(.28, .53, radius);
+        float core = 1.0 - smoothstep(.04, .46, radius);
         vec3 image = texture2D(uMemory, vUv).rgb;
         float luminance = dot(image, vec3(.2126, .7152, .0722));
-        vec3 solarMemory = mix(image, vec3(1.0, .48, .08), .16 + (1.0 - luminance) * .12);
-        float alpha = veil * (.42 + luminance * .30 + core * .24);
-        gl_FragColor = vec4(solarMemory, alpha);
+        float localContrast = smoothstep(.08, .92, luminance);
+        vec3 warmMemory = mix(image, vec3(1.0, .48, .08), .06 + (1.0 - luminance) * .05);
+        vec3 revealedMemory = mix(warmMemory, image * (.92 + localContrast * .20), .80);
+        vec3 solarVeil = vec3(1.0, .34, .02) * (1.0 - core) * .08;
+        float alpha = veil * (.52 + luminance * .26 + core * .18);
+        gl_FragColor = vec4(revealedMemory + solarVeil, alpha);
         #include <colorspace_fragment>
       }
     `,
@@ -345,9 +348,9 @@ function MemoryImprint({ url }: { url: string }) {
   }, [material, texture])
 
   return (
-    <Billboard follow position={[0, 0.35, -0.18]} name="focus-memory-imprint-billboard">
+    <Billboard follow position={[0, 0.35, -0.26]} name="focus-memory-imprint-billboard">
       <mesh renderOrder={6} name="focus-memory-imprint">
-        <planeGeometry args={[1.86, 1.86]} />
+        <planeGeometry args={[2.08, 2.08]} />
         <primitive object={material} attach="material" />
       </mesh>
     </Billboard>
