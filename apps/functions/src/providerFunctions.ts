@@ -1,4 +1,4 @@
-import { createHash, randomUUID } from 'node:crypto'
+import { createHash } from 'node:crypto'
 import * as admin from 'firebase-admin'
 import { defineSecret } from 'firebase-functions/params'
 import { onRequest } from 'firebase-functions/v2/https'
@@ -10,6 +10,7 @@ const OPENAI_API_KEY = defineSecret('OPENAI_API_KEY')
 const ELEVENLABS_API_KEY = defineSecret('ELEVENLABS_API_KEY')
 const REGION = 'us-central1'
 const RATE_WINDOW_MS = 60_000
+const WEB_CLIENT_ORIGINS = ['https://urai.app', 'https://www.urai.app', /^https:\/\/localhost(?::\d+)?$/]
 
 type Provider = 'openai' | 'elevenlabs'
 type JsonMap = Record<string, unknown>
@@ -127,6 +128,18 @@ function sendError(response: { status: (code: number) => { json: (value: unknown
   response.status(boundary.status).json({ error: boundary.code, message: boundary.message })
 }
 
+function requireRequestId(value: unknown) {
+  const requestId = String(value ?? '').trim().toLowerCase()
+  if (!/^[a-f0-9]{64}$/.test(requestId)) {
+    throw new ProviderError(400, 'INVALID_REQUEST_ID', 'A stable provider request identity is required.')
+  }
+  return requestId
+}
+
+function providerIdempotencyKey(uid: string, requestId: string) {
+  return createHash('sha256').update(`urai-openai-provider:${uid}:${requestId}`).digest('hex')
+}
+
 function boundedContext(value: unknown) {
   if (value === undefined) return [] as Array<{ role: 'user' | 'assistant'; content: string }>
   if (!Array.isArray(value) || value.length > 8) throw new ProviderError(400, 'INVALID_CONTEXT', 'Conversation context is invalid.')
@@ -173,7 +186,7 @@ export const openAiOrbProvider = onRequest({
   region: REGION,
   timeoutSeconds: 60,
   memory: '512MiB',
-  cors: false,
+  cors: WEB_CLIENT_ORIGINS,
   secrets: [OPENAI_API_KEY],
 }, async (request, response) => {
   const startedAt = Date.now()
@@ -184,6 +197,8 @@ export const openAiOrbProvider = onRequest({
     const body = readBody(request, 32_768)
     const message = String(body.message ?? '').trim()
     if (!message || message.length > 2_000) throw new ProviderError(400, 'INVALID_MESSAGE', 'Message is missing or too long.')
+    const requestId = requireRequestId(body.requestId)
+    const upstreamIdempotencyKey = providerIdempotencyKey(uid, requestId)
     const context = boundedContext(body.context)
     await requireProviderConsent(uid, 'openai', body.aiProcessingConsent === true)
     await consumeRateLimit(uid, 'openai', 8)
@@ -211,7 +226,7 @@ export const openAiOrbProvider = onRequest({
         Authorization: `Bearer ${apiKey}`,
         'Content-Type': 'application/json',
         Accept: 'text/event-stream',
-        'Idempotency-Key': randomUUID(),
+        'Idempotency-Key': upstreamIdempotencyKey,
       },
       body: JSON.stringify({
         model: process.env.OPENAI_ORB_MODEL || 'gpt-5',
@@ -286,7 +301,7 @@ export const elevenLabsVoiceProvider = onRequest({
   region: REGION,
   timeoutSeconds: 30,
   memory: '256MiB',
-  cors: false,
+  cors: WEB_CLIENT_ORIGINS,
   secrets: [ELEVENLABS_API_KEY],
 }, async (request, response) => {
   const startedAt = Date.now()

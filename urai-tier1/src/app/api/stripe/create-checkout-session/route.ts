@@ -57,6 +57,12 @@ export async function POST(request: Request) {
       planId,
       userId: uid,
     },
+    payment_intent_data: planId === 'founder' ? {
+      metadata: {
+        planId,
+        userId: uid,
+      },
+    } : undefined,
     subscription_data: planId === 'founder' ? undefined : {
       metadata: {
         planId,

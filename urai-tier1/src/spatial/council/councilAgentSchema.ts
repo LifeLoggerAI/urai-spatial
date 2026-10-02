@@ -11,7 +11,7 @@ export type CouncilAgent = {
   canSuggestNextSteps: boolean
 }
 
-export const DEMO_COUNCIL_AGENTS: CouncilAgent[] = [
+export const COUNCIL_AGENTS: CouncilAgent[] = [
   {
     id: 'council-cartographer',
     name: 'The Cartographer',
@@ -73,3 +73,6 @@ export const DEMO_COUNCIL_AGENTS: CouncilAgent[] = [
     canSuggestNextSteps: true,
   },
 ]
+
+// Compatibility alias for older proof harnesses; runtime uses COUNCIL_AGENTS.
+export const DEMO_COUNCIL_AGENTS = COUNCIL_AGENTS

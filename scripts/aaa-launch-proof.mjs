@@ -19,12 +19,12 @@ if (args.has('--help') || args.has('-h')) {
 Usage:
   node scripts/aaa-launch-proof.mjs [--screenshots] [--skip-install] [--skip-assets] [--skip-test] [--skip-build] [--skip-typecheck] [--base=https://urai.app]
 
-This command is proof-only. It requires an exact clean Git commit. Production deployment is available only through .github/workflows/spatial-live-deploy.yml.`)
+This command is proof-only. It requires an exact clean Git commit. Production deployment is available only through the manual governed `.github/workflows/spatial-governed-wif-deploy.yml` after independent exact-head approval, merge, and separate deployment authorization.`)
   process.exit(0)
 }
 
 if (args.has('--deploy')) {
-  console.error('Direct deployment is disabled. Use the protected URAI Canonical Production Release workflow.')
+  console.error('Direct deployment is disabled. Use the manual URAI Governed WIF Production Deploy workflow only after independent exact-head approval, merge, and separate deployment authorization.')
   process.exit(64)
 }
 
@@ -115,12 +115,12 @@ const writeReceipt = (status, failedStep = '') => {
     finishedAt: new Date().toISOString(),
     baseUrl,
     productionDeploymentAttempted: false,
-    productionDeploymentAuthority: '.github/workflows/spatial-live-deploy.yml',
+    productionDeploymentAuthority: '.github/workflows/spatial-governed-wif-deploy.yml',
     routeExpectations,
     commands,
   }
   writeFileSync(join(receiptDir, 'receipt.json'), `${JSON.stringify(receipt, null, 2)}\n`)
-  writeFileSync(join(receiptDir, 'README.md'), `# URAI AAA proof receipt\n\n- Status: ${status}\n- Loop: ${loopName}\n- Source SHA: ${sourceSha}\n- Expected source SHA: ${expectedSourceSha || 'not provided'}\n- Clean working tree: ${cleanWorkingTree ? 'yes' : 'no'}\n- Source identity verified: ${sourceIdentityVerified ? 'yes' : 'no'}\n- Started: ${startedAt}\n- Base URL: ${baseUrl}\n- Production deployment attempted: no\n- Production authority: \`.github/workflows/spatial-live-deploy.yml\`\n${failedStep ? `- Failed step: ${failedStep}\n` : ''}\n`)
+  writeFileSync(join(receiptDir, 'README.md'), `# URAI AAA proof receipt\n\n- Status: ${status}\n- Loop: ${loopName}\n- Source SHA: ${sourceSha}\n- Expected source SHA: ${expectedSourceSha || 'not provided'}\n- Clean working tree: ${cleanWorkingTree ? 'yes' : 'no'}\n- Source identity verified: ${sourceIdentityVerified ? 'yes' : 'no'}\n- Started: ${startedAt}\n- Base URL: ${baseUrl}\n- Production deployment attempted: no\n- Production authority: \`.github/workflows/spatial-governed-wif-deploy.yml\`\n${failedStep ? `- Failed step: ${failedStep}\n` : ''}\n`)
 }
 
 if (!sourceIdentityVerified) {

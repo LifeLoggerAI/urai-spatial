@@ -29,9 +29,9 @@ const receipt = {
   schemaVersion: 'urai-sacred-home-orb-proof-3',
   exactHead,
   capturedAt: new Date().toISOString(),
-  runtimeContract: 'sacred-tech-home-real-glb-makehuman-orb-portal-semantic-and-visual-proof',
+  runtimeContract: 'natural-home-real-glb-orb-environmental-threshold-semantic-and-visual-proof',
   orbIdentity: { path: orbPath, bytes: orbBytes.length, sha256: orbSha256, verified: true },
-  portalIdentity: { path: portalPath, requiredRuntimeRequest: true },
+  portalIdentity: { path: portalPath, requiredRuntimeRequest: false, homeVisiblePortal: false },
   cases: [],
   errors: [],
 }
@@ -98,10 +98,18 @@ for (const spec of cases) {
     record.cameraMode = await owner.getAttribute('data-home-camera-mode')
     record.orbState = await owner.getAttribute('data-home-orb-state')
     record.orbClip = await owner.getAttribute('data-home-orb-clip')
+    record.orbReducedMotion = await owner.getAttribute('data-home-orb-reduced-motion')
+    record.visiblePortals = await owner.getAttribute('data-home-visible-portals')
     record.orbMarkers = await owner.getByTestId('urai-home-webgl-orb').count()
     record.embodimentMarkers = await owner.getByTestId('urai-home-embodied-avatar').count()
     const semanticNav = page.getByRole('navigation', { name: 'Accessible Home destinations' })
     record.semanticButtons = await semanticNav.getByRole('button').count()
+    record.semanticLinks = await semanticNav.getByRole('link').count()
+    record.semanticVisibleActions = await semanticNav.locator('button,a[href]').evaluateAll((elements) => elements.filter((element) => {
+      const style = getComputedStyle(element)
+      const rect = element.getBoundingClientRect()
+      return style.display !== 'none' && style.visibility !== 'hidden' && rect.width > 0 && rect.height > 0
+    }).length)
     record.semanticOwner = await semanticNav.getAttribute('data-home-navigation-owner')
     record.semanticNonDominant = await semanticNav.getAttribute('data-home-navigation-non-dominant')
     record.semanticOpacity = await page.evaluate(() => {
@@ -116,29 +124,33 @@ for (const spec of cases) {
     record.luminanceRange = visual.luminanceRange
     record.visibleSamples = visual.visibleSamples
     record.passed = record.status === 200
-      && record.visibleWorld === 'moonlit-sacred-tech-sanctuary'
-      && record.worldCharacter === 'premium-cinematic-sacred-tech'
-      && record.physicalBase === 'authored-obsidian-ritual-platform'
+      && record.visibleWorld === 'authored-coherent-three-dimensional-sanctuary'
+      && record.worldCharacter === 'believable-natural-inhabitable-environment'
+      && record.physicalBase === 'authored-coherent-world'
       && record.visualOwnership === 'three-dimensional-geometry'
       && record.desktopMobileWorld === 'same-scene'
-      && record.embodiedSelf === 'makehuman-v4'
+      && record.embodiedSelf === 'privacy-preserving-shadow'
       && record.movement === 'walk-keyboard-click-touch'
       && record.runtimeAssets?.includes('home-entry-chamber-v1.glb')
-      && record.runtimeAssets?.includes('home-human-makehuman-v4.glb')
-      && record.runtimeAssets?.includes(path.basename(orbPath))
-      && record.runtimeAssets?.includes(path.basename(portalPath))
-      && record.authoredRegions?.includes('home-sanctuary-pavilion')
-      && record.authoredRegions?.includes('home-life-map-physical-portal')
+      && record.runtimeAssets?.includes('polyhaven-fern-02-geometry-v1.glb')
+      && record.runtimeAssets?.includes('living-orb')
+      && record.runtimeAssets?.includes('reflecting-water')
+      && record.authoredRegions?.includes('home-sanctuary-geometry')
+      && record.authoredRegions?.includes('home-canonical-sanctuary-structure')
+      && record.authoredRegions?.includes('home-reflecting-water')
       && record.cameraMode !== null
       && record.orbState !== null
-      && (spec.reducedMotion !== 'reduce' || record.orbClip === 'orb-state-static')
+      && (spec.reducedMotion !== 'reduce' || record.orbReducedMotion === 'true')
       && record.orbMarkers === 1
       && record.embodimentMarkers === 1
-      && record.semanticButtons === 3
+      && record.semanticButtons === 1
+      && record.semanticLinks === 2
+      && record.semanticVisibleActions === 3
       && record.semanticOwner === 'runtime-boundary'
       && record.semanticNonDominant === 'true'
       && Number.isFinite(record.semanticOpacity) && record.semanticOpacity <= .02
-      && record.portalRequests.length >= 1
+      && record.visiblePortals === 'false'
+      && record.portalRequests.length === 0
       && record.screenshotBytes > 12000
       && record.luminanceRange >= 16
       && record.visibleSamples >= 5
