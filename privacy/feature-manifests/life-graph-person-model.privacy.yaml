@@ -1,0 +1,40 @@
+feature: life-graph-person-model
+repo: LifeLoggerAI/urai-spatial
+privacyGovernanceVersion: 0.1.0-draft
+status: implementation_started_pending_privacy_review
+sourceEvidence:
+  - urai-tier1/src/spatial/life-model/lifeModel.ts
+  - docs/architecture/LIFE_CAUSAL_GRAPH_PERSON_MODEL_V1.md
+
+summary:
+  purpose: Build owner-private provenance-preserving temporal models of people, places, objects, relationships and events for memory reconstruction and interaction.
+  syntheticMemoryFirewallRequired: true
+  providerNeutralIdentityRequired: true
+
+dataProcessing:
+  ownerScoped: true
+  serverAuthoritativeWrites: true
+  rawPrivateMediaInPublicLogsAllowed: false
+  syntheticOutputMayBecomeHistoricalSource: false
+  exactLocationRequiresSeparatePurpose: true
+  biometricOrLikenessRequiresSeparatePurpose: true
+
+requiredPurposes:
+  - archive
+  - analysis
+  - identity-model
+  - visual-likeness
+  - voice-model
+  - motion-model
+  - interactive-presence
+  - private-film
+  - provider-processing
+
+revocation:
+  dependentBundlesInvalidated: true
+  dependentRendersUnloaded: true
+  historicalSourceRecordDestroyedByCorrection: false
+
+review:
+  reviewer: TBD
+  decision: blocked_until_reviewed
