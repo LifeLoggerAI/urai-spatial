@@ -7,6 +7,8 @@ const layout = fs.readFileSync(new URL('src/app/layout.tsx', root), 'utf8')
 const runtime = fs.readFileSync(new URL('src/spatial/adam/AdamPresenceRuntime.tsx', root), 'utf8')
 const client = fs.readFileSync(new URL('src/spatial/adam/adamClient.ts', root), 'utf8')
 const surfaces = fs.readFileSync(new URL('src/spatial/adam/adamSurfaceContext.ts', root), 'utf8')
+const styles = fs.readFileSync(new URL('src/spatial/adam/AdamPresenceRuntime.module.css', root), 'utf8')
+const routeManifest = JSON.parse(fs.readFileSync(new URL('../release/route-manifest.json', root), 'utf8'))
 const adamRoute = fs.readFileSync(new URL('src/app/adam/page.tsx', root), 'utf8')
 const functions = fs.readFileSync(new URL('../../apps/functions/src/adamPresenceFunctions.ts', import.meta.url), 'utf8')
 const functionsIndex = fs.readFileSync(new URL('../../apps/functions/src/index.ts', import.meta.url), 'utf8')
@@ -82,4 +84,13 @@ test('Hosting and preview route Adam APIs only to secret-bound functions', () =>
     assert.ok(firebaseConfig.hosting.rewrites.some((entry) => JSON.stringify(entry) === JSON.stringify(expected)))
     assert.ok(previewConfig.hosting.rewrites.some((entry) => JSON.stringify(entry) === JSON.stringify(expected)))
   }
+})
+
+
+test('Adam canonical route is release-classified and its Life Map launcher cannot cover primary navigation', () => {
+  assert.ok(routeManifest.criticalRoutes.includes('/adam'))
+  assert.ok(routeManifest.classification.publicExact.includes('/adam'))
+  assert.match(runtime, /pathname === '\\/life-map'/)
+  assert.match(runtime, /styles\.lifeMapLauncher/)
+  assert.match(styles, /\.lifeMapLauncher\s*\{[\s\S]*top:[\s\S]*bottom:\s*auto/)
 })
