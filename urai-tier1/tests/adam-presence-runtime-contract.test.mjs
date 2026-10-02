@@ -12,6 +12,7 @@ const functions = fs.readFileSync(new URL('../../apps/functions/src/adamPresence
 const functionsIndex = fs.readFileSync(new URL('../../apps/functions/src/index.ts', import.meta.url), 'utf8')
 const firebaseConfig = JSON.parse(fs.readFileSync(new URL('../../firebase.json', import.meta.url), 'utf8'))
 const previewConfig = JSON.parse(fs.readFileSync(new URL('../../.github/firebase.preview.json', import.meta.url), 'utf8'))
+const routeManifest = JSON.parse(fs.readFileSync(new URL('../../release/route-manifest.json', import.meta.url), 'utf8'))
 
 test('Adam is one governed runtime mounted at the product shell', () => {
   assert.match(layout, /AdamPresenceRuntime/)
