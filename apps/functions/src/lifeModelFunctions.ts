@@ -471,11 +471,30 @@ export const getReplayLifeModelAuthority = lifeModelFunctions.https.onCall(async
   )) {
     return { available: false, reason: 'PERSON_MODEL_UNAVAILABLE' }
   }
+  const personIds = [...new Set(bundles.map((bundle) => String(bundle.get('personId') ?? '')).filter((id) => SAFE_TOKEN.test(id)))]
+  const personSnapshots = personIds.length
+    ? await db.getAll(...personIds.map((id) => db.doc(`users/${uid}/lifeEntities/${id}`)))
+    : []
+  const labels = new Map(personSnapshots
+    .filter((person) => person.exists && person.get('ownerId') === uid && person.get('kind') === 'person' && person.get('revoked') !== true)
+    .map((person) => [person.id, String(person.get('canonicalLabel') ?? 'Person').slice(0, 180)]))
+  const people = bundles.flatMap((bundle) => {
+    const personId = String(bundle.get('personId') ?? '')
+    const label = labels.get(personId)
+    return label ? [{
+      bundleId: bundle.id,
+      personId,
+      label,
+      asOf: String(bundle.get('asOf') ?? ''),
+      knowledgeCutoff: typeof bundle.get('knowledgeCutoff') === 'string' ? bundle.get('knowledgeCutoff') : null,
+    }] : []
+  })
   return {
     available: true,
     schemaVersion: 'urai-life-model-v1',
     sceneTruthPacketId,
     personModelBundleIds,
+    people,
     decision: String(scene.get('decision')),
     presentationClass: String(scene.get('presentationClass')),
     syntheticOutputMayBecomeHistoricalSource: false,
