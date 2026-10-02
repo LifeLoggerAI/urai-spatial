@@ -42,6 +42,7 @@ const destinationIds = [
   'location-map',
   'focus',
   'replay',
+  'life-movie',
 ]
 
 test('final animation manifest contains exactly the thirteen governed cues', () => {
