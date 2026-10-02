@@ -255,7 +255,7 @@ export const adamPresenceProvider = onRequest({
     const recent = context.map((item, index) => `${index + 1}. ${item.role}: ${item.content}`).join('\n')
     const controller = new AbortController()
     const timeout = setTimeout(() => controller.abort(), 32_000)
-    request.on('close', () => controller.abort())
+    response.on('close', () => { if (!response.writableEnded) controller.abort() })
     const upstream = await fetch('https://api.openai.com/v1/responses', {
       method: 'POST',
       headers: {
@@ -382,7 +382,7 @@ export const adamFounderVoiceProvider = onRequest({
     if (process.env.ELEVENLABS_ZERO_RETENTION === 'true') endpoint.searchParams.set('enable_logging', 'false')
     const controller = new AbortController()
     const timeout = setTimeout(() => controller.abort(), 15_000)
-    request.on('close', () => controller.abort())
+    response.on('close', () => { if (!response.writableEnded) controller.abort() })
     const upstream = await fetch(endpoint, {
       method: 'POST',
       headers: { 'xi-api-key': ELEVENLABS_API_KEY.value(), 'Content-Type': 'application/json', Accept: 'audio/mpeg' },

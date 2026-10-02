@@ -43,6 +43,8 @@ test('Adam conversation and Founder voice use dedicated protected server boundar
   assert.doesNotMatch(functions, /pNInz6obpgDQGcFmaJgB/)
   assert.match(functions, /not the live human Adam/)
   assert.match(functions, /requiresHumanFounder/)
+  assert.doesNotMatch(functions, /request\.on\('close', \(\) => controller\.abort\(\)\)/)
+  assert.equal((functions.match(/response\.on\('close', \(\) => \{ if \(!response\.writableEnded\) controller\.abort\(\) \}\)/g) ?? []).length, 2)
 })
 
 test('Founder voice cannot silently fall back to a stock identity', () => {
