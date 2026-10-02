@@ -9,6 +9,7 @@
   "indexingDefault": false,
   "criticalRoutes": [
     "/",
+    "/adam",
     "/home",
     "/ground",
     "/life-map",
@@ -80,6 +81,7 @@
     "publicExact": [
       "/",
       "/about",
+      "/adam",
       "/account-deletion",
       "/ascent",
       "/ascent/life-map",
