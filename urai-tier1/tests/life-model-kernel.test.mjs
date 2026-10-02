@@ -103,6 +103,13 @@ test('synthetic output cannot be promoted to recorded historical source authorit
     }),
     /SIMULATION_CANNOT_CREATE_HISTORICAL_EVIDENCE/,
   )
+  assert.throws(
+    () => assertHistoricalSourceAuthority({
+      synthetic: true,
+      evidenceClass: 'DIRECT_SUBJECT_TESTIMONY',
+    }),
+    /SYNTHETIC_OUTPUT_CANNOT_BECOME_HISTORICAL_EVIDENCE/,
+  )
 })
 
 test('unknown noncritical detail becomes occlusion, contradiction becomes block', () => {
@@ -163,4 +170,14 @@ test('owner boundary fails closed', () => {
     claims,
     consentPurposes: [],
   }), /OWNER_BOUNDARY_VIOLATION/)
+})
+
+test('person compilation requires explicit identity-model consent', () => {
+  assert.throws(() => compilePersonModel({
+    ownerId: 'owner:fixture',
+    person,
+    state,
+    claims,
+    consentPurposes: ['archive'],
+  }), /IDENTITY_MODEL_CONSENT_REQUIRED/)
 })
