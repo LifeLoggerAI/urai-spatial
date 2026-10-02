@@ -228,27 +228,29 @@ function StellarPhotosphere({ accent, light, reducedMotion }: { accent: string; 
         float t = uTime * .055;
         // Keep the dominant signal at photospheric granule scale. Broad low-frequency
         // bands read as planetary terrain, which is explicitly outside Focus canon.
-        float broad = noise(p * 7.0 + vec3(t, -t * .38, t * .27));
-        float medium = noise(p * 19.0 - vec3(t * .31, t * .19, -t * .15));
-        float fine = noise(p * 54.0 + vec3(-t * .16, t * .22, t * .09));
-        float granulation = clamp(broad * .16 + medium * .52 + fine * .32, 0.0, 1.0);
-        float cells = smoothstep(.34, .74, medium * .68 + fine * .32);
-        float faculae = smoothstep(.72, .94, noise(p * 33.0 + vec3(t * .08, -t * .06, t * .04)));
-        float pores = smoothstep(.80, .96, noise(p * 71.0 - vec3(t * .09, -t * .05, t * .04)));
+        float coarse = noise(p * 17.0 + vec3(t * .34, -t * .21, t * .15));
+        float medium = noise(p * 41.0 - vec3(t * .19, t * .14, -t * .11));
+        float fine = noise(p * 93.0 + vec3(-t * .11, t * .16, t * .07));
+        float micro = noise(p * 151.0 - vec3(t * .05, -t * .08, t * .04));
+        // The visible surface is intentionally dominated by small photospheric cells.
+        // Low-frequency continents/terrain are suppressed so Focus cannot read as a planet.
+        float cells = smoothstep(.40, .68, coarse * .18 + medium * .50 + fine * .32);
+        float intergranular = smoothstep(.10, .42, abs(medium - fine));
+        float faculae = smoothstep(.74, .94, noise(p * 57.0 + vec3(t * .07, -t * .05, t * .03)));
+        float pores = smoothstep(.86, .975, noise(p * 127.0 - vec3(t * .06, -t * .04, t * .03)));
         float viewFacing = clamp(vNormalView.z * .5 + .5, 0.0, 1.0);
-        float limb = pow(viewFacing, .72);
-        vec3 solarOrange = vec3(1.0, .20, .018);
-        vec3 solarGold = vec3(1.0, .56, .075);
-        vec3 hotWhite = vec3(1.0, .88, .50);
-        vec3 surface = mix(solarOrange, solarGold, .34 + cells * .52);
-        surface = mix(surface, hotWhite, .08 + fine * .12 + faculae * .16 + limb * .08);
-        surface = mix(surface, uLight, .018);
-        surface = mix(surface, uAccent, .008);
-        // Preserve hot-cell / intergranular contrast before sRGB conversion.
-        // Uniform amplification clipped most of the surface to pale yellow.
-        float radiance = (.34 + cells * .82 + fine * .24 + faculae * .28) * (.50 + limb * .50);
-        radiance *= 1.0 - pores * .16;
-        vec3 emitted = surface * radiance + hotWhite * (.018 + cells * .038 + faculae * .05);
+        float limb = pow(viewFacing, .55);
+        vec3 solarOrange = vec3(1.0, .18, .012);
+        vec3 solarGold = vec3(1.0, .60, .085);
+        vec3 hotWhite = vec3(1.0, .93, .64);
+        vec3 surface = mix(solarOrange, solarGold, .42 + cells * .46);
+        surface = mix(surface, hotWhite, .10 + fine * .14 + micro * .08 + faculae * .22 + limb * .06);
+        surface = mix(surface, uLight, .012);
+        surface = mix(surface, uAccent, .004);
+        float radiance = (.48 + cells * .84 + micro * .18 + faculae * .34) * (.68 + limb * .32);
+        radiance *= .90 + intergranular * .12;
+        radiance *= 1.0 - pores * .12;
+        vec3 emitted = surface * radiance + hotWhite * (.022 + cells * .055 + faculae * .07);
         gl_FragColor = vec4(clamp(emitted, 0.0, 1.0), 1.0);
         #include <colorspace_fragment>
       }
@@ -276,7 +278,7 @@ function StellarPhotosphere({ accent, light, reducedMotion }: { accent: string; 
         <sphereGeometry args={[1.15, 112, 96]} />
         <primitive object={photosphere} attach="material" />
       </mesh>
-      <StellarCorona radius={1.15} color={accent} reducedMotion={reducedMotion} intensity={1.1} />
+      <StellarCorona radius={1.15} color={accent} reducedMotion={reducedMotion} intensity={1.75} />
       <mesh name="focus-stellar-photosphere-luminance-floor" scale={1.012} renderOrder={3}>
         <sphereGeometry args={[1.15, 96, 96]} />
         <meshBasicMaterial color="#ffd66b" transparent opacity={0.055} depthWrite={false} blending={THREE.AdditiveBlending} toneMapped={false} />
@@ -322,7 +324,7 @@ function MemoryImprint({ url }: { url: string }) {
         vec3 image = texture2D(uMemory, vUv).rgb;
         float luminance = dot(image, vec3(.2126, .7152, .0722));
         vec3 solarMemory = mix(image, vec3(1.0, .48, .08), .16 + (1.0 - luminance) * .12);
-        float alpha = veil * (.26 + luminance * .24 + core * .16);
+        float alpha = veil * (.42 + luminance * .30 + core * .24);
         gl_FragColor = vec4(solarMemory, alpha);
         #include <colorspace_fragment>
       }
@@ -343,9 +345,9 @@ function MemoryImprint({ url }: { url: string }) {
   }, [material, texture])
 
   return (
-    <Billboard follow position={[0, 0.35, -0.28]} name="focus-memory-imprint-billboard">
+    <Billboard follow position={[0, 0.35, -0.18]} name="focus-memory-imprint-billboard">
       <mesh renderOrder={6} name="focus-memory-imprint">
-        <planeGeometry args={[1.72, 1.72]} />
+        <planeGeometry args={[1.86, 1.86]} />
         <primitive object={material} attach="material" />
       </mesh>
     </Billboard>
