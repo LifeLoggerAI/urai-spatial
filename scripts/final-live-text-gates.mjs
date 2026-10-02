@@ -11,6 +11,7 @@ const routes = [
   ['life-map', '/life-map', /Life Map|constellation|star|Focus|Replay/i],
   ['focus', '/focus?memoryId=quiet-reset', /Focus|memory chamber|Life Map|Replay/i],
   ['replay', '/replay?manifestId=replay-recovery-thread', /Replay|cinematic|thread|Life Map/i],
+  ['life-movie', '/life-movie', /Life Movie|private film|Sign in to open your private Life Movie/i],
   ['mirror', '/mirror', /Mirror|pattern|reflection|Life Map/i],
   ['passport', '/passport', /Passport|Own your life|Identity|Provenance|Control/i],
   ['status', '/status', /World online|Routes alive|Smoke|Export Safe/i],
