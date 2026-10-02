@@ -16,6 +16,7 @@ const EVIDENCE_CLASSES = new Set([
 const CONFIDENCE = new Set(['confirmed','probable','approximate','unknown'])
 const CLAIM_STATUS = new Set(['accepted','disputed'])
 const PRESENTATION_CLASSES = new Set(['ARCHIVAL','RECONSTRUCTED','INTERPRETIVE','SIMULATED','COUNTERFACTUAL'])
+const CAUSAL_EDGE_KINDS = new Set(['PARTICIPATED_IN','OCCURRED_AT','INVOLVES_OBJECT','RELATES_TO','CAUSED','CHANGED','EVIDENCED_BY','BEFORE','AFTER','OWNED','LIVED_AT'])
 const MAX_CLAIMS_PER_STATE = 256
 const MAX_DEPENDENCY_INVALIDATIONS = 100
 
@@ -99,7 +100,7 @@ async function requireModelConsent(uid: string) {
 }
 
 async function invalidateDependency(uid: string, dependencyId: string, reasonId: string, revoked = false) {
-  const collections = ['personModelBundles','sceneTruthPackets','renderManifests','lifeMovies']
+  const collections = ['lifeGraphSnapshots','personModelBundles','sceneTruthPackets','renderManifests','lifeMovies']
   const batch = db.batch()
   let count = 0
   for (const collection of collections) {
@@ -196,6 +197,96 @@ export const upsertLifeClaim = lifeModelFunctions.https.onCall(async (data, cont
   }, { merge: true })
   await invalidateDependency(uid, id, `claim-update:${id}`)
   return { id, subjectEntityId, evidenceClass }
+})
+
+export const upsertLifeCausalEdge = lifeModelFunctions.https.onCall(async (data, context) => {
+  const uid = requireUid(context)
+  const id = requireToken(data?.id, 'edgeId')
+  const fromEntityId = requireToken(data?.fromEntityId, 'fromEntityId')
+  const toEntityId = requireToken(data?.toEntityId, 'toEntityId')
+  const kind = String(data?.kind ?? '')
+  const evidenceClass = String(data?.evidenceClass ?? '')
+  const confidence = String(data?.confidence ?? '')
+  const status = String(data?.status ?? '')
+  if (!CAUSAL_EDGE_KINDS.has(kind)) throw new functions.https.HttpsError('invalid-argument', 'Causal edge kind is invalid.')
+  if (!EVIDENCE_CLASSES.has(evidenceClass) || evidenceClass === 'UNKNOWN') {
+    throw new functions.https.HttpsError('invalid-argument', 'Causal edges require evidence-backed classification.')
+  }
+  if (!CONFIDENCE.has(confidence) || confidence === 'unknown') throw new functions.https.HttpsError('invalid-argument', 'Causal edge confidence is invalid.')
+  if (!CLAIM_STATUS.has(status)) throw new functions.https.HttpsError('invalid-argument', 'Causal edge status is invalid.')
+  if (data?.synthetic === true) throw new functions.https.HttpsError('failed-precondition', 'SYNTHETIC_OUTPUT_CANNOT_ENTER_LIFE_CAUSAL_GRAPH')
+  const sourceIds = tokenArray(data?.sourceIds, 128)
+  if (!sourceIds.length) throw new functions.https.HttpsError('invalid-argument', 'Causal edges require source IDs.')
+  const [fromEntity, toEntity] = await Promise.all([
+    db.doc(`users/${uid}/lifeEntities/${fromEntityId}`).get(),
+    db.doc(`users/${uid}/lifeEntities/${toEntityId}`).get(),
+  ])
+  if (
+    !fromEntity.exists || !toEntity.exists
+    || fromEntity.get('ownerId') !== uid || toEntity.get('ownerId') !== uid
+    || fromEntity.get('revoked') === true || toEntity.get('revoked') === true
+  ) throw new functions.https.HttpsError('failed-precondition', 'Causal edge entities are unavailable.')
+
+  await db.doc(`users/${uid}/lifeCausalEdges/${id}`).set({
+    id, ownerId: uid, fromEntityId, toEntityId, kind, evidenceClass, sourceIds, confidence, status,
+    synthetic: false,
+    updatedAt: fieldValue.serverTimestamp(),
+    createdAt: fieldValue.serverTimestamp(),
+  }, { merge: true })
+  await invalidateDependency(uid, id, `causal-edge-update:${id}`)
+  return { id, fromEntityId, toEntityId, kind }
+})
+
+export const compileLifeCausalGraphSnapshot = lifeModelFunctions.https.onCall(async (data, context) => {
+  const uid = requireUid(context)
+  await requireModelConsent(uid)
+  const snapshotId = requireToken(data?.snapshotId, 'snapshotId')
+  const entityIds = tokenArray(data?.entityIds, 512)
+  const claimIds = optionalTokenArray(data?.claimIds, 1024)
+  const edgeIds = optionalTokenArray(data?.edgeIds, 1024)
+  if (!entityIds.length) throw new functions.https.HttpsError('invalid-argument', 'Graph snapshot requires entities.')
+
+  const [entities, claims, edges] = await Promise.all([
+    db.getAll(...entityIds.map((id) => db.doc(`users/${uid}/lifeEntities/${id}`))),
+    claimIds.length ? db.getAll(...claimIds.map((id) => db.doc(`users/${uid}/lifeClaims/${id}`))) : [],
+    edgeIds.length ? db.getAll(...edgeIds.map((id) => db.doc(`users/${uid}/lifeCausalEdges/${id}`))) : [],
+  ])
+  if (!entities.every((entity) => entity.exists && entity.get('ownerId') === uid && entity.get('revoked') !== true)) {
+    throw new functions.https.HttpsError('failed-precondition', 'Graph entities are unavailable.')
+  }
+  if (!claims.every((claim) =>
+    claim.exists && claim.get('ownerId') === uid && claim.get('synthetic') === false && ['accepted','disputed'].includes(String(claim.get('status') ?? ''))
+  )) throw new functions.https.HttpsError('failed-precondition', 'Graph claims are unavailable.')
+  if (!edges.every((edge) =>
+    edge.exists && edge.get('ownerId') === uid && edge.get('synthetic') === false && ['accepted','disputed'].includes(String(edge.get('status') ?? ''))
+  )) throw new functions.https.HttpsError('failed-precondition', 'Graph causal edges are unavailable.')
+
+  const sourceIds = new Set<string>()
+  for (const item of [...entities, ...claims, ...edges]) {
+    const field = item.ref.parent.id === 'lifeEntities' ? 'createdFromSourceIds' : 'sourceIds'
+    for (const sourceId of Array.isArray(item.get(field)) ? item.get(field) : []) sourceIds.add(String(sourceId))
+  }
+  const dependencyIds = [...new Set([...entityIds, ...claimIds, ...edgeIds])]
+  const graphBody = {
+    schemaVersion: 'urai-life-model-v1',
+    ownerId: uid,
+    id: snapshotId,
+    entityIds,
+    claimIds,
+    edgeIds,
+    sourceIds: [...sourceIds],
+    dependencyIds,
+    syntheticOutputMayBecomeHistoricalSource: false,
+    state: 'current',
+  }
+  const graphHash = stableDigest(graphBody)
+  await db.doc(`users/${uid}/lifeGraphSnapshots/${snapshotId}`).set({
+    ...graphBody,
+    graphHash,
+    compiledAt: fieldValue.serverTimestamp(),
+    updatedAt: fieldValue.serverTimestamp(),
+  }, { merge: true })
+  return { snapshotId, graphHash, entityCount: entityIds.length, claimCount: claimIds.length, edgeCount: edgeIds.length }
 })
 
 export const upsertLifeEntityState = lifeModelFunctions.https.onCall(async (data, context) => {
@@ -299,6 +390,7 @@ export const compileSceneTruthPacket = lifeModelFunctions.https.onCall(async (da
   const uid = requireUid(context)
   await requireModelConsent(uid)
   const sceneId = requireToken(data?.sceneId, 'sceneId')
+  const graphSnapshotId = requireToken(data?.graphSnapshotId, 'graphSnapshotId')
   const presentationClass = String(data?.presentationClass ?? '')
   if (!PRESENTATION_CLASSES.has(presentationClass)) {
     throw new functions.https.HttpsError('invalid-argument', 'Presentation class is invalid.')
@@ -312,7 +404,8 @@ export const compileSceneTruthPacket = lifeModelFunctions.https.onCall(async (da
   const criticalUnknowns = boundedStringArray(data?.criticalUnknowns, 128)
   const forbiddenAssertions = boundedStringArray(data?.forbiddenAssertions, 128)
 
-  const [bundles, claims] = await Promise.all([
+  const [graphSnapshot, bundles, claims] = await Promise.all([
+    db.doc(`users/${uid}/lifeGraphSnapshots/${graphSnapshotId}`).get(),
     personModelBundleIds.length
       ? db.getAll(...personModelBundleIds.map((id) => db.doc(`users/${uid}/personModelBundles/${id}`)))
       : [],
@@ -320,8 +413,18 @@ export const compileSceneTruthPacket = lifeModelFunctions.https.onCall(async (da
       ? db.getAll(...knownClaimIds.map((id) => db.doc(`users/${uid}/lifeClaims/${id}`)))
       : [],
   ])
+  if (
+    !graphSnapshot.exists
+    || graphSnapshot.get('ownerId') !== uid
+    || graphSnapshot.get('schemaVersion') !== 'urai-life-model-v1'
+    || graphSnapshot.get('state') !== 'current'
+    || graphSnapshot.get('syntheticOutputMayBecomeHistoricalSource') !== false
+  ) throw new functions.https.HttpsError('failed-precondition', 'Current Life Causal Graph snapshot is required.')
 
-  const dependencyIds = new Set<string>([...personModelBundleIds, ...knownClaimIds])
+  const dependencyIds = new Set<string>([graphSnapshotId, ...personModelBundleIds, ...knownClaimIds])
+  for (const dependency of Array.isArray(graphSnapshot.get('dependencyIds')) ? graphSnapshot.get('dependencyIds') : []) {
+    dependencyIds.add(String(dependency))
+  }
   for (const bundle of bundles) {
     if (
       !bundle.exists
@@ -363,6 +466,7 @@ export const compileSceneTruthPacket = lifeModelFunctions.https.onCall(async (da
     schemaVersion: 'urai-life-model-v1',
     ownerId: uid,
     sceneId,
+    graphSnapshotId,
     presentationClass,
     personModelBundleIds,
     knownClaimIds,
