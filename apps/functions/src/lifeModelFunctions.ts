@@ -494,33 +494,75 @@ export const applyLifeCorrection = lifeModelFunctions.https.onCall(async (data, 
   const uid = requireUid(context)
   const correctionId = requireToken(data?.correctionId, 'correctionId')
   const targetClaimId = requireToken(data?.targetClaimId, 'targetClaimId')
+  const replacementClaimId = requireToken(data?.replacementClaimId, 'replacementClaimId')
   const sourceIds = tokenArray(data?.sourceIds, 32)
   if (!sourceIds.length) throw new functions.https.HttpsError('invalid-argument', 'Correction source is required.')
+  const evidenceClass = String(data?.evidenceClass ?? '')
+  if (!['DIRECT_SUBJECT_TESTIMONY','ATTRIBUTED_TESTIMONY'].includes(evidenceClass)) {
+    throw new functions.https.HttpsError('invalid-argument', 'Correction evidence class must be testimony.')
+  }
+  const confidence = String(data?.confidence ?? 'confirmed')
+  if (!['confirmed','probable','approximate'].includes(confidence)) {
+    throw new functions.https.HttpsError('invalid-argument', 'Correction confidence is invalid.')
+  }
+  const replacementValue = boundedJson(data?.replacementValue)
   const targetRef = db.doc(`users/${uid}/lifeClaims/${targetClaimId}`)
-  const target = await targetRef.get()
-  if (!target.exists || target.get('ownerId') !== uid) throw new functions.https.HttpsError('not-found', 'Target claim is unavailable.')
-
+  const replacementRef = db.doc(`users/${uid}/lifeClaims/${replacementClaimId}`)
   const correctionRef = db.doc(`users/${uid}/lifeCorrections/${correctionId}`)
+  const target = await targetRef.get()
+  if (!target.exists || target.get('ownerId') !== uid || target.get('synthetic') === true) {
+    throw new functions.https.HttpsError('not-found', 'Target claim is unavailable.')
+  }
+  if (replacementClaimId === targetClaimId) {
+    throw new functions.https.HttpsError('invalid-argument', 'Correction replacement claim must have a new identity.')
+  }
+
   await db.runTransaction(async (transaction) => {
-    const existing = await transaction.get(correctionRef)
-    if (existing.exists) throw new functions.https.HttpsError('already-exists', 'Correction already exists.')
+    const [existingCorrection, existingReplacement] = await Promise.all([
+      transaction.get(correctionRef),
+      transaction.get(replacementRef),
+    ])
+    if (existingCorrection.exists || existingReplacement.exists) {
+      throw new functions.https.HttpsError('already-exists', 'Correction or replacement claim already exists.')
+    }
+    transaction.create(replacementRef, {
+      id: replacementClaimId,
+      ownerId: uid,
+      subjectEntityId: target.get('subjectEntityId'),
+      predicate: target.get('predicate'),
+      value: replacementValue,
+      evidenceClass,
+      sourceIds,
+      confidence,
+      status: 'accepted',
+      synthetic: false,
+      valueDigest: stableDigest(replacementValue),
+      correctsClaimId: targetClaimId,
+      correctionId,
+      createdAt: fieldValue.serverTimestamp(),
+      updatedAt: fieldValue.serverTimestamp(),
+    })
     transaction.create(correctionRef, {
       id: correctionId,
       ownerId: uid,
       targetClaimId,
+      replacementClaimId,
       sourceIds,
+      evidenceClass,
+      confidence,
       note: data?.note ? requireString(data.note, 'note', 1000) : '',
-      replacementValue: data?.replacementValue === undefined ? null : boundedJson(data.replacementValue),
+      replacementValue,
       createdAt: fieldValue.serverTimestamp(),
     })
     transaction.set(targetRef, {
       status: 'superseded',
       supersededByCorrectionId: correctionId,
+      supersededByClaimId: replacementClaimId,
       supersededAt: fieldValue.serverTimestamp(),
     }, { merge: true })
   })
   const invalidated = await invalidateDependency(uid, targetClaimId, `correction:${correctionId}`)
-  return { correctionId, targetClaimId, invalidated }
+  return { correctionId, targetClaimId, replacementClaimId, invalidated }
 })
 
 export const revokeLifeEntity = lifeModelFunctions.https.onCall(async (data, context) => {
