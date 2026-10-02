@@ -11,7 +11,7 @@ import { requestUraiWorldOrbOpen, requestUraiWorldTravel } from '@/spatial/world
 import { HomeInterpretiveSplatEnvironment, resolveHomeInterpretiveSplatAsset } from '@/spatial/home/HomeInterpretiveSplat'
 import styles from './HomeWorldProduction.module.css'
 
-const HOME_PROVIDER_ENVIRONMENT = '/assets/urai/replay/replay-memory-film-main.webp'
+const HOME_PROVIDER_ENVIRONMENT = '/assets/urai/home/home-threshold-main.webp'
 const HOME_SANCTUARY_MODEL = '/assets/urai/generated/models/home-entry-chamber-v1.glb'
 const HOME_FERN_MODEL = '/assets/urai/home-production/cc0/polyhaven-fern-02-geometry-v1.glb'
 const ORB_MODEL = '/assets/urai/generated/models/urai-orb-avatar-v1.glb'

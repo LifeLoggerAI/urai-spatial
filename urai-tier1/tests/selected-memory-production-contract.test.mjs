@@ -228,6 +228,10 @@ test('privacy-safe denied, deleted, unavailable, and corrupt states exist', () =
   for (const state of ['unavailable', 'deleted', 'unauthorized', 'corrupt']) assert.match(contract, new RegExp(`'${state}'`))
   assert.match(contract, /ownerId !== expectedOwnerId/)
   assert.match(contract, /raw\.deleted === true/)
+  assert.match(contract, /raw\.consentState === 'revoked'/)
+  assert.match(contract, /Consent for this memory was revoked/)
+  assert.match(contract, /raw\.consentState === 'pending'/)
+  assert.match(contract, /Consent for this memory is pending/)
   assert.match(contract, /replay manifest is incomplete/i)
 })
 

@@ -81,7 +81,7 @@ test('every registered world destination travels through a governed motion path'
   }
   assert.match(orchestrator, /pendingTravel\.destination === 'life-map'/)
   assert.match(orchestrator, /activate\('map_enter_zoom', 'world-transition'\)/)
-  assert.match(orchestrator, /pendingTravel\.destination === 'replay'/)
+  assert.match(orchestrator, /pendingTravel\.destination === 'replay' \|\| pendingTravel\.destination === 'life-movie'/)
   assert.match(orchestrator, /activate\('replay_enter_curtain', 'world-transition'\)/)
   assert.match(orchestrator, /phase === 'descending'/)
   assert.match(orchestrator, /activate\('body_thin_fade', 'world-transition'\)/)

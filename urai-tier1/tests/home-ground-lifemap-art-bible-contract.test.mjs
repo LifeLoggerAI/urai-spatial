@@ -50,6 +50,8 @@ test('Home is one coherent authored natural 3D sanctuary with final physical ass
   assert.match(groundGateway, /aria-label="Open the ground and descend into Hidden Infrastructure"/)
   assert.match(homeProduction, /HOME_SANCTUARY_MODEL = '\/assets\/urai\/generated\/models\/home-entry-chamber-v1\.glb'/)
   assert.match(homeProduction, /HOME_FERN_MODEL = '\/assets\/urai\/home-production\/cc0\/polyhaven-fern-02-geometry-v1\.glb'/)
+  assert.match(homeProduction, /HOME_PROVIDER_ENVIRONMENT = '\/assets\/urai\/home\/home-threshold-main\.webp'/)
+  assert.doesNotMatch(homeProduction, /HOME_PROVIDER_ENVIRONMENT = '\/assets\/urai\/replay\//)
   assert.match(homeProduction, /object\.castShadow = true/)
   assert.match(homeProduction, /object\.receiveShadow = true/)
   assert.match(homeProduction, /function SanctuaryPath\(/)

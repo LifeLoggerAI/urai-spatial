@@ -3,7 +3,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { getAuth, onAuthStateChanged, type User } from 'firebase/auth'
 import { collection, doc, getDoc, getDocs, limit, query } from 'firebase/firestore'
-import { useSearchParams } from 'next/navigation'
 import { app, firebasePublicEnvReady, getFirebaseDb } from '@/lib/firebase/client'
 import { parseSelectedMemory, sanitizeMemoryId, type SelectedMemory } from '@/spatial/memory/selectedMemoryContract'
 import { useReducedMotion } from '@/spatial/hooks/useReducedMotion'
@@ -33,10 +32,11 @@ function safeOccurredAt(memory: SelectedMemory) {
 }
 
 export default function LifeMovieClient() {
-  const params = useSearchParams()
-  const requestedMemoryId = sanitizeMemoryId(params.get('memoryId'))
-  const requestedMovieId = sanitizeMemoryId(params.get('movieId'))
-  const runtimeManifest = useLifeMovieRuntimeManifest(requestedMovieId)
+  const [identity, setIdentity] = useState<{ memoryId: string | null; movieId: string | null }>({ memoryId: null, movieId: null })
+  const [identityReady, setIdentityReady] = useState(false)
+  const requestedMemoryId = identity.memoryId
+  const requestedMovieId = identity.movieId
+  const runtimeManifest = useLifeMovieRuntimeManifest(identityReady ? requestedMovieId : null)
   const reducedMotion = useReducedMotion()
   const [user, setUser] = useState<User | null | undefined>(undefined)
   const [memories, setMemories] = useState<SelectedMemory[]>([])
@@ -44,6 +44,20 @@ export default function LifeMovieClient() {
   const [activeIndex, setActiveIndex] = useState(0)
   const [playing, setPlaying] = useState(false)
   const [manifestAction, setManifestAction] = useState<{ kind: 'idle' | 'working' | 'error'; message: string }>({ kind: 'idle', message: '' })
+
+  useEffect(() => {
+    const hydrateIdentity = () => {
+      const params = new URLSearchParams(window.location.search)
+      setIdentity({
+        memoryId: sanitizeMemoryId(params.get('memoryId')),
+        movieId: sanitizeMemoryId(params.get('movieId')),
+      })
+      setIdentityReady(true)
+    }
+    hydrateIdentity()
+    window.addEventListener('popstate', hydrateIdentity)
+    return () => window.removeEventListener('popstate', hydrateIdentity)
+  }, [])
 
   useEffect(() => {
     if (!firebasePublicEnvReady) {
@@ -60,7 +74,7 @@ export default function LifeMovieClient() {
   }, [])
 
   useEffect(() => {
-    if (!user) return
+    if (!identityReady || !user) return
     if (requestedMovieId && runtimeManifest.status === 'loading') return
     let cancelled = false
     setMemories([])
@@ -100,6 +114,10 @@ export default function LifeMovieClient() {
         }
 
         setMemories(parsed)
+        if (requestedMovieId && requestedMemoryId) {
+          const resumeIndex = parsed.findIndex((memory) => memory.id === requestedMemoryId)
+          if (resumeIndex >= 0) setActiveIndex(resumeIndex)
+        }
         setState(parsed.length
           ? { kind: 'ready', message: `${parsed.length} private memor${parsed.length === 1 ? 'y' : 'ies'} available for this Life Movie.` }
           : { kind: 'empty', message: requestedMovieId
@@ -112,11 +130,11 @@ export default function LifeMovieClient() {
     })()
 
     return () => { cancelled = true }
-  }, [requestedMemoryId, requestedMovieId, runtimeManifest, user])
+  }, [identityReady, requestedMemoryId, requestedMovieId, runtimeManifest, user])
 
   const active = memories[activeIndex] ?? null
-  const activeChapter = requestedMovieId && runtimeManifest.status === 'ready' && runtimeManifest.manifest
-    ? runtimeManifest.manifest.chapters[activeIndex] ?? null
+  const activeChapter = requestedMovieId && active && runtimeManifest.status === 'ready' && runtimeManifest.manifest
+    ? runtimeManifest.manifest.chapters.find((chapter) => chapter.memoryId === active.id) ?? null
     : null
   const media = active ? mediaFor(active) : null
   const chapterDurationMs = useMemo(() => {
@@ -161,7 +179,7 @@ export default function LifeMovieClient() {
     return () => window.removeEventListener('keydown', onKeyDown)
   }, [memories.length])
 
-  if (user === undefined || state.kind === 'auth-loading' || state.kind === 'loading') {
+  if (!identityReady || user === undefined || state.kind === 'auth-loading' || state.kind === 'loading') {
     return <main className="lifeMovieState" data-testid="life-movie-runtime" data-state={state.kind}><p role="status">{state.message}</p><style>{css}</style></main>
   }
 
@@ -203,8 +221,8 @@ export default function LifeMovieClient() {
         movieId,
         status: 'ready',
         chapters: memories.map((memory, index) => ({
-          id: activeChapter && runtimeManifest.status === 'ready' && runtimeManifest.manifest
-            ? runtimeManifest.manifest.chapters[index]?.id ?? `chapter:${index}:${memory.id}`
+          id: runtimeManifest.status === 'ready' && runtimeManifest.manifest
+            ? runtimeManifest.manifest.chapters.find((chapter) => chapter.memoryId === memory.id)?.id ?? `chapter:${index}:${memory.id}`
             : `chapter:${index}:${memory.id}`,
           memoryId: memory.id,
           order: index,

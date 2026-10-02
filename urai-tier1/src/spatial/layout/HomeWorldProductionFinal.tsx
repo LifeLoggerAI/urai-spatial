@@ -9,7 +9,7 @@ import { useSceneStore } from "@/spatial/store/useSceneStore";
 import { requestUraiWorldOrbOpen, requestUraiWorldTravel } from "@/spatial/world/worldEvents";
 import styles from "./HomeWorldProduction.module.css";
 
-const HOME_PROVIDER_ENVIRONMENT = "/assets/urai/replay/replay-memory-film-main.webp";
+const HOME_PROVIDER_ENVIRONMENT = "/assets/urai/home/home-threshold-main.webp";
 const HOME_SANCTUARY_MODEL = "/assets/urai/generated/models/home-entry-chamber-v1.glb";
 const HOME_FERN_MODEL = "/assets/urai/home-production/cc0/polyhaven-fern-02-geometry-v1.glb";
 const HOME_SCANNED_COMPOSITION_V1 = "owned-sanctuary-plus-cc0-fern";
