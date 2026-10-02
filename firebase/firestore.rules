@@ -171,6 +171,12 @@ service cloud.firestore {
         allow write: if false;
       }
 
+      match /lifeMovies/{movieId} {
+        // Canonical private Life Movie manifests. Server-authoritative; owner-only reads.
+        allow read: if isSelf(uid);
+        allow write: if false;
+      }
+
       match /homeWorld/{docId} {
         allow read: if isSelf(uid) || isAdmin();
         allow create, update: if isAdmin() || (docId == 'state' && isValidHomeWorldStateWrite(uid));
