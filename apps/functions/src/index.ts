@@ -45,3 +45,9 @@ export {
   upsertLifeEntity,
   upsertLifeEntityState,
 } from './lifeModelFunctions'
+
+
+export {
+  closePersonPresenceSession,
+  preparePersonPresenceSession,
+} from './personPresenceFunctions'
