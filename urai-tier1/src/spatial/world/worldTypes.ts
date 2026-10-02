@@ -10,6 +10,7 @@ export const URAI_DESTINATIONS = [
   'location-map',
   'focus',
   'replay',
+  'life-movie',
 ] as const
 
 export type UraiDestination = (typeof URAI_DESTINATIONS)[number]
@@ -29,6 +30,8 @@ export type UraiWorldState = {
   personId?: string
   placeId?: string
   replayManifestId?: string
+  movieId?: string
+  chapterId?: string
   privacyMode?: UraiPrivacyMode
   demo?: boolean
 }
@@ -43,6 +46,8 @@ export type UraiWorldContextPatch = Partial<
     | 'personId'
     | 'placeId'
     | 'replayManifestId'
+    | 'movieId'
+    | 'chapterId'
     | 'privacyMode'
     | 'demo'
   >
