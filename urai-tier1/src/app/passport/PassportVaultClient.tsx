@@ -5,6 +5,7 @@ import { Float, OrbitControls, RoundedBox } from '@react-three/drei'
 import { getAuth, onAuthStateChanged, type User } from 'firebase/auth'
 import { Suspense, useEffect, useMemo, useState } from 'react'
 import { app, firebasePublicEnvReady } from '@/lib/firebase/client'
+import { assetCssStack, passportAssets } from '@/spatial/assets/uraiAssets'
 import {
   cancelOperationalDeletionRequest,
   cancelOperationalExportRequest,
@@ -55,8 +56,7 @@ function runtimeExportAssetIds(job: PrivacyRow): string[] {
 function VaultWorld({ selected, keyState, onSelect, reducedMotion }: { selected: string; keyState: string; onSelect: (zone: string) => void; reducedMotion: boolean }) {
   const keyColor = keyState === 'authorized' ? '#ffe0a3' : keyState === 'failed' ? '#ff8f78' : '#8edce5'
   return (
-    <Canvas camera={{ position: [0, 5.2, 12], fov: 47 }} dpr={[1, 1.5]} gl={{ antialias: true, alpha: false }}>
-      <color attach="background" args={['#020409']} />
+    <Canvas camera={{ position: [0, 5.2, 12], fov: 47 }} dpr={[1, 1.5]} gl={{ antialias: true, alpha: true }}>
       <fog attach="fog" args={['#020409', 10, 28]} />
       <ambientLight intensity={0.35} />
       <directionalLight position={[5, 8, 4]} intensity={1.2} color="#fff4d4" />
@@ -259,7 +259,14 @@ export default function PassportVaultClient() {
   return (
     <main className="passportVault" data-route-owner="passport-ownership-vault" data-passport-source={state} data-key-state={keyState}>
       <a href="#passport-controls" className="passportSkip">Skip to vault controls</a>
-      <div className="passportWorld" aria-hidden="true">{webglAvailable ? <Suspense fallback={null}><VaultWorld selected={selectedZone} keyState={keyState} onSelect={setSelectedZone} reducedMotion={reducedMotion} /></Suspense> : <div className="passportFallback"><strong>Ownership Vault</strong><span>All records and actions remain available without WebGL.</span></div>}</div>
+      <div className="passportWorld" aria-hidden="true">
+        <div
+          className="passportEnvironmentArt"
+          data-passport-environment-role="governed-visual-support"
+          style={{ backgroundImage: assetCssStack(passportAssets.primary) }}
+        />
+        {webglAvailable ? <Suspense fallback={null}><VaultWorld selected={selectedZone} keyState={keyState} onSelect={setSelectedZone} reducedMotion={reducedMotion} /></Suspense> : <div className="passportFallback"><strong>Ownership Vault</strong><span>All records and actions remain available without WebGL.</span></div>}
+      </div>
       <header className="passportHeader"><p>UrAi Passport</p><h1>Your life remains in your possession.</h1><div role="status" aria-live="polite" className="passportStatus">{message}</div>{state === 'demo' && <span className="passportDisclosure">DEMONSTRATION — sample data only</span>}</header>
       <nav className="passportZones" aria-label="Ownership Vault zones">{ZONES.map(([id, label]) => <button key={id} type="button" aria-pressed={selectedZone === id} onClick={() => setSelectedZone(id)}>{label}</button>)}</nav>
       <section id="passport-controls" tabIndex={-1} className="passportPanel">
