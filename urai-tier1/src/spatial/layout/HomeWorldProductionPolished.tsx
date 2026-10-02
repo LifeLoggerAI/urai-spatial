@@ -407,23 +407,35 @@ function SanctuaryPavilion() {
     <mesh geometry={SANCTUARY_BOULDER_RIGHT} position={[2.75, terrainHeight(2.75,-6.35) + .4, -6.35]} rotation={[-.12,-.42,.17]} scale={[1.08,.52,.76]} castShadow receiveShadow>
       <meshStandardMaterial color="#68756b" roughness={.97} metalness={0} />
     </mesh>
-    <group name="home-lived-in-stone-seating">
-      <mesh castShadow receiveShadow position={[-4.25, terrainHeight(-4.25,-4.2) + .32, -4.2]} rotation={[0,0,.03]}>
-        <cylinderGeometry args={[1.3,1.5,.5,48]} /><meshStandardMaterial color={stone} roughness={.94} metalness={0} />
+    <group name="home-lived-in-stone-seating" userData={{ treatment: 'irregular-authored-stone-no-proof-cylinders' }}>
+      <mesh geometry={SANCTUARY_BOULDER_LEFT} castShadow receiveShadow position={[-4.25, terrainHeight(-4.25,-4.2) + .34, -4.2]} rotation={[.08,.28,.02]} scale={[1.48,.38,1.18]}>
+        <meshStandardMaterial color={stone} roughness={.96} metalness={0} />
       </mesh>
-      <mesh castShadow receiveShadow position={[4.35, terrainHeight(4.35,-4.45) + .3, -4.45]} rotation={[0,0,-.025]}>
-        <cylinderGeometry args={[1.16,1.34,.46,48]} /><meshStandardMaterial color={warmStone} roughness={.94} metalness={0} />
+      <mesh geometry={SANCTUARY_BOULDER_RIGHT} castShadow receiveShadow position={[4.35, terrainHeight(4.35,-4.45) + .31, -4.45]} rotation={[-.06,-.34,-.04]} scale={[1.34,.36,1.06]}>
+        <meshStandardMaterial color={warmStone} roughness={.96} metalness={0} />
       </mesh>
-      <mesh castShadow receiveShadow position={[-2.55, terrainHeight(-2.55,-5.0) + .36, -5.0]}>
-        <cylinderGeometry args={[.62,.68,.58,48]} /><meshStandardMaterial color="#66594c" roughness={.9} metalness={0} />
+      <mesh geometry={SANCTUARY_BOULDER_CENTER} castShadow receiveShadow position={[-2.55, terrainHeight(-2.55,-5.0) + .31, -5.0]} rotation={[.04,.72,-.03]} scale={[.72,.38,.66]}>
+        <meshStandardMaterial color="#66594c" roughness={.94} metalness={0} />
       </mesh>
-      <mesh castShadow position={[-2.4, terrainHeight(-2.4,-5.0) + .76, -5.0]}>
+      <mesh castShadow position={[-2.4, terrainHeight(-2.4,-5.0) + .72, -5.0]}>
         <cylinderGeometry args={[.1,.12,.23,32]} /><meshStandardMaterial color={ceramic} roughness={.9} metalness={0} />
       </mesh>
     </group>
-    <group name="home-stone-hearth" position={[2.55, terrainHeight(2.55,-5.55) + .09, -5.55]}>
-      <mesh castShadow receiveShadow><cylinderGeometry args={[.7,.78,.2,56]} /><meshStandardMaterial color="#666961" roughness={.98} /></mesh>
-      <mesh position={[0,.14,0]}><cylinderGeometry args={[.43,.46,.07,56]} /><meshStandardMaterial color="#292824" roughness={1} /></mesh>
+    <group name="home-stone-hearth" position={[2.55, terrainHeight(2.55,-5.55) + .09, -5.55]} userData={{ treatment: 'irregular-stone-ring' }}>
+      {Array.from({ length: 10 }, (_, index) => {
+        const angle = index / 10 * Math.PI * 2
+        const radius = .58 + Math.sin(index * 2.17) * .035
+        return <mesh
+          key={index}
+          geometry={SANCTUARY_BOULDER_CENTER}
+          castShadow
+          receiveShadow
+          position={[Math.cos(angle) * radius, .12 + (index % 2) * .018, Math.sin(angle) * radius]}
+          rotation={[(index % 3) * .07, angle + .24, (index % 2 ? -.08 : .06)]}
+          scale={[.23 + (index % 3) * .018, .14 + (index % 2) * .015, .19 + ((index + 1) % 3) * .012]}
+        ><meshStandardMaterial color={index % 2 ? "#626860" : "#707269"} roughness={.98} metalness={0} /></mesh>
+      })}
+      <mesh position={[0,.105,0]} rotation={[-Math.PI / 2,0,0]}><circleGeometry args={[.43,48]} /><meshStandardMaterial color="#292824" roughness={1} /></mesh>
       <mesh position={[0,.25,0]}><sphereGeometry args={[.16,32,20]} /><meshBasicMaterial color="#d38a54" transparent opacity={.42} toneMapped={false} /></mesh>
       <pointLight position={[0,.56,0]} color="#e7a46c" intensity={.42} distance={4.5} decay={2} />
     </group>
