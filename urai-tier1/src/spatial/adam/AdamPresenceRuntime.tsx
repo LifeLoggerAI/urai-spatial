@@ -56,7 +56,7 @@ function nextSpeakableChunk(buffer: string, final: boolean): [string | null, str
 }
 
 export default function AdamPresenceRuntime() {
-  const pathname = usePathname()
+  const pathname = usePathname() ?? '/'
   const surface = resolveAdamSurface(pathname)
   const [open, setOpen] = useState(false)
   const [message, setMessage] = useState('')
