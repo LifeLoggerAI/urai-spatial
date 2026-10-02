@@ -145,7 +145,7 @@ test('canonical route clients own Focus and Replay', () => {
   assert.match(replayClient, /requestUraiWorldReturn/)
   assert.doesNotMatch(replayClient, /uraiAutoReplay|quiet-reset|replay-recovery-thread|seed-memory-bloom/)
   assert.match(lifeMovieClient, /data-testid="life-movie-runtime"/)
-  assert.match(lifeMovieClient, /useLifeMovieRuntimeManifest\(requestedMovieId\)/)
+  assert.match(lifeMovieClient, /useLifeMovieRuntimeManifest\(identityReady \? requestedMovieId : null\)/)
   assert.match(lifeMovieClient, /requestUraiWorldTravel\(\{/)
   assert.match(lifeMovieClient, /destination: 'replay'/)
   assert.match(replayClient, /destination: 'life-movie'/)
