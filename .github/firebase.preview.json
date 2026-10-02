@@ -29,6 +29,20 @@
           "functionId": "elevenLabsVoiceProvider",
           "region": "us-central1"
         }
+      },
+      {
+        "source": "/api/urai/adam/conversation",
+        "function": {
+          "functionId": "adamPresenceProvider",
+          "region": "us-central1"
+        }
+      },
+      {
+        "source": "/api/urai/adam/voice",
+        "function": {
+          "functionId": "adamFounderVoiceProvider",
+          "region": "us-central1"
+        }
       }
     ]
   }
