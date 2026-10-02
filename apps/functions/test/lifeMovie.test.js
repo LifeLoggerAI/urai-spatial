@@ -13,10 +13,13 @@ test('Life Movie manifest writes are authenticated and server-authoritative', ()
   assert.doesNotMatch(source, /data\?\.confidence/)
 })
 
-test('Life Movie manifest builder fails closed on ambiguous identity and revoked memory consent', () => {
+test('Life Movie manifest builder fails closed on ambiguous identity and non-authorized memory consent', () => {
   assert.match(source, /Life Movie chapter identity is ambiguous/)
   assert.match(source, /consentState === 'revoked'/)
   assert.match(source, /Life Movie memory consent was revoked/)
+  assert.match(source, /consentState === 'pending'/)
+  assert.match(source, /Life Movie memory consent is pending/)
+  assert.match(source, /consentState: 'authorized'/)
 })
 
 test('Life Movie manifests cannot carry arbitrary URLs from the request', () => {
