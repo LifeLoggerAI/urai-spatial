@@ -24,6 +24,10 @@ assert.match(production, /This is not a camera lock/)
 assert.match(production, /home-ground-environmental-threshold/)
 assert.match(production, /home-life-map-sky-lookout/)
 assert.doesNotMatch(production, /home-ground-portal-world-owned|home-life-map-portal-world-owned|<WorldPortal/)
+assert.match(production, /irregular-authored-stone-no-proof-cylinders/)
+assert.match(production, /irregular-stone-ring/)
+assert.doesNotMatch(production, /cylinderGeometry args=\{\[1\.3,1\.5,\.5,48\]\}/)
+assert.doesNotMatch(production, /cylinderGeometry args=\{\[\.7,\.78,\.2,56\]\}/)
 
 for (const id of [
   'home-entry-chamber-model-v1',
