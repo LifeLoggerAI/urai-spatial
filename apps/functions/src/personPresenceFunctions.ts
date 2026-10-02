@@ -119,3 +119,34 @@ export const closePersonPresenceSession = personPresenceFunctions.https.onCall(a
   }, { merge: true })
   return { sessionId, state: 'closed' }
 })
+
+export const getPersonPresenceCapabilities = personPresenceFunctions.https.onCall(async (data, context) => {
+  const uid = requireUid(context)
+  const sessionId = requireToken(data?.sessionId, 'sessionId')
+  const session = await db.doc(`users/${uid}/simulationSessions/${sessionId}`).get()
+  if (!session.exists || session.get('ownerId') !== uid || session.get('state') !== 'active') {
+    throw new functions.https.HttpsError('not-found', 'Presence session was not found.')
+  }
+  const bundleId = requireToken(session.get('bundleId'), 'bundleId')
+  const personId = requireToken(session.get('personId'), 'personId')
+  const refs = ['voice','visual','motion'].map((modality) => db.doc(`users/${uid}/personRenderBindings/${bundleId}:${modality}`))
+  const snapshots = await db.getAll(...refs)
+  const accepted = (snapshot: FirebaseFirestore.DocumentSnapshot, modality: string) =>
+    snapshot.exists
+    && snapshot.get('ownerId') === uid
+    && snapshot.get('personId') === personId
+    && snapshot.get('bundleId') === bundleId
+    && snapshot.get('modality') === modality
+    && snapshot.get('reviewState') === 'ACCEPTED'
+    && snapshot.get('consentState') === 'authorized'
+    && snapshot.get('state') === 'current'
+
+  return {
+    sessionId,
+    bundleId,
+    voice: accepted(snapshots[0], 'voice'),
+    visual: accepted(snapshots[1], 'visual'),
+    motion: accepted(snapshots[2], 'motion'),
+    providerIdentifiersExposed: false,
+  }
+})
