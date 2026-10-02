@@ -41,6 +41,7 @@ export {
   applyLifeCorrection,
   compilePersonModelBundle,
   compileSceneTruthPacket,
+  getReplayLifeModelAuthority,
   revokeLifeEntity,
   upsertLifeClaim,
   upsertLifeEntity,
