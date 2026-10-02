@@ -47,7 +47,7 @@ test('Council registry is truthful: source-ready does not become live without ex
   assert.match(registry, /PENDING_COUNCIL_PROVIDER_IDS/)
   assert.match(panel, /Council provider changed\. Prior provider context was cleared\./)
   assert.match(panel, /setHistory\(\[\]\)/)
-  assert.match(panel, /Allow \\${COUNCIL_PROVIDER_REGISTRY\[providerId\]\.label} processing for this Council message before sending\./)
+  assert.ok(panel.includes('COUNCIL_PROVIDER_REGISTRY[providerId].label} processing for this Council message before sending.'))
   assert.doesNotMatch(panel, /Allow OpenAI processing for this Council message before sending\./)
 })
 
