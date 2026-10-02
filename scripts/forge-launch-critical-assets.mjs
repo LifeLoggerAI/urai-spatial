@@ -80,8 +80,13 @@ const generators = {
 const generated = []
 for (const asset of manifest.assets) {
   const generator = generators[asset.id]
-  if (!generator) throw new Error(`No generator registered for ${asset.id}`)
   const absolutePath = path.join(repoRoot, asset.fixedPath)
+  if (!generator) {
+    const receipt = loadGovernedRetainedAsset(asset, absolutePath)
+    generated.push(receipt)
+    console.log(`${asset.id}: retained governed output ${receipt.bytes} bytes ${receipt.sha256}`)
+    continue
+  }
   fs.mkdirSync(path.dirname(absolutePath), { recursive: true })
   const payload = generator()
   fs.writeFileSync(absolutePath, payload)
@@ -90,6 +95,26 @@ for (const asset of manifest.assets) {
   fs.writeFileSync(receiptPath, JSON.stringify(receipt, null, 2) + '\n')
   generated.push(receipt)
   console.log(`${asset.id}: ${receipt.bytes} bytes ${receipt.sha256}`)
+}
+
+function loadGovernedRetainedAsset(asset, absolutePath) {
+  const receiptPath = path.join(receiptRoot, `${asset.id}.json`)
+  if (!fs.existsSync(absolutePath)) throw new Error(`No generator registered and governed asset is missing for ${asset.id}: ${asset.fixedPath}`)
+  if (!fs.existsSync(receiptPath)) throw new Error(`No generator registered and governed receipt is missing for ${asset.id}`)
+
+  const payload = fs.readFileSync(absolutePath)
+  const receipt = JSON.parse(fs.readFileSync(receiptPath, 'utf8'))
+  const sha256 = crypto.createHash('sha256').update(payload).digest('hex')
+
+  if (receipt.id !== asset.id) throw new Error(`Governed receipt id mismatch for ${asset.id}`)
+  if (receipt.fixedPath !== asset.fixedPath) throw new Error(`Governed receipt path mismatch for ${asset.id}`)
+  if (receipt.sha256 !== sha256) throw new Error(`Governed receipt SHA-256 mismatch for ${asset.id}`)
+  if (receipt.bytes !== payload.length) throw new Error(`Governed receipt byte count mismatch for ${asset.id}`)
+  if (!receipt.releaseState || !receipt.compressionStatus) throw new Error(`Governed receipt state/compression missing for ${asset.id}`)
+  if (!receipt.source || !receipt.license) throw new Error(`Governed receipt source/license missing for ${asset.id}`)
+  if (receipt.source !== asset.source || receipt.license !== asset.license) throw new Error(`Governed receipt provenance mismatch for ${asset.id}`)
+
+  return receipt
 }
 
 const summary = {

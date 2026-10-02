@@ -4,7 +4,8 @@ import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import { ContactShadows, Environment, PerspectiveCamera, useAnimations, useGLTF } from '@react-three/drei'
 import { Suspense, useEffect, useRef, useState, type MutableRefObject } from 'react'
 import * as THREE from 'three'
-import { DEMO_COUNCIL_AGENTS } from './councilAgentSchema'
+import { COUNCIL_AGENTS } from './councilAgentSchema'
+import CouncilConversationPanel from './CouncilConversationPanel'
 import { useReducedMotion } from '@/spatial/hooks/useReducedMotion'
 import { useAdaptiveSpatialQuality } from '@/spatial/performance/useAdaptiveSpatialQuality'
 import {
@@ -169,7 +170,7 @@ function RiggedCouncilHuman({
 function CouncilStage() {
   const [selected, setSelected] = useState(0)
   const [dragging, setDragging] = useState(false)
-  const selectedAgent = DEMO_COUNCIL_AGENTS[selected] ?? DEMO_COUNCIL_AGENTS[0]
+  const selectedAgent = COUNCIL_AGENTS[selected] ?? COUNCIL_AGENTS[0]
   const reducedMotion = useReducedMotion()
   const quality = useAdaptiveSpatialQuality()
   const shadowMapSize = quality.tier === 'high' ? 2048 : 1024
@@ -241,7 +242,7 @@ function CouncilStage() {
               <meshStandardMaterial color="#443a31" roughness={0.6} metalness={0.12} />
             </mesh>
 
-            {DEMO_COUNCIL_AGENTS.map((agent, index) => (
+            {COUNCIL_AGENTS.map((agent, index) => (
               <RiggedCouncilHuman
                 key={agent.id}
                 modelUrl={HUMAN_MODELS[index] ?? HUMAN_MODELS[0]}
@@ -263,6 +264,7 @@ function CouncilStage() {
         <h1 className="mt-2 text-3xl font-medium tracking-tight md:text-4xl">{selectedAgent.name}</h1>
         <p className="mt-1 text-xs uppercase tracking-[0.18em] text-[#e8d8b9]/80">{selectedAgent.role}</p>
         <p className="mt-3 max-w-[38ch] text-sm leading-6 text-white/72">{selectedAgent.focus}</p>
+        <CouncilConversationPanel agent={selectedAgent} />
         <div className="pointer-events-auto mt-4 flex flex-wrap gap-2">
           <button className="rounded-full bg-white px-4 py-2 text-xs font-semibold text-slate-950" type="button" onClick={() => travel('home', '/home?returnFrom=council')}>Return Home</button>
           <button className="rounded-full border border-white/20 px-4 py-2 text-xs text-white" type="button" onClick={() => travel('mirror', '/mirror?from=council')}>Mirror</button>

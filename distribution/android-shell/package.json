@@ -1,0 +1,18 @@
+{
+  "name": "urai-android-shell-prep",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Isolated Android packaging preparation for the current UrAi static export.",
+  "scripts": {
+    "android:add": "cap add android",
+    "android:sync": "cap sync android"
+  },
+  "dependencies": {
+    "@capacitor/android": "8.5.2",
+    "@capacitor/core": "8.5.2"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "8.5.2",
+    "typescript": "6.0.3"
+  }
+}

@@ -18,3 +18,16 @@ test('Quest entry registers end handling before renderer attachment', async () =
   assert.ok(cleanupAfterAttach > endedAfterAttach)
   assert.match(source, /requestedSession\?\.end\?\.\(\)/)
 })
+
+
+test('Quest entry requires explicit session consent before requesting WebXR', async () => {
+  const source = await readFile(entryUrl, 'utf8')
+  const consentGate = source.indexOf('if (!sessionConsent)')
+  const requestSession = source.indexOf("xr.requestSession('immersive-vr'")
+  assert.ok(consentGate >= 0)
+  assert.ok(requestSession > consentGate)
+  assert.match(source, /type="checkbox"/)
+  assert.match(source, /browser-local immersive VR session/)
+  assert.match(source, /provider-backed recording or persistence is not enabled here/)
+  assert.match(source, /setSessionConsent\(false\)/)
+})

@@ -44,6 +44,16 @@ const DELETION_SCOPES = [
   ['account', 'Entire account after a grace period', 'DELETE MY URAI ACCOUNT'],
 ] as const
 
+function runtimeExportAssetIds(job: PrivacyRow): string[] {
+  const entries = job.runtimeExports
+  if (!Array.isArray(entries)) return []
+  return entries.flatMap((entry) => {
+    if (!entry || typeof entry !== 'object' || Array.isArray(entry)) return []
+    const assetId = (entry as Record<string, unknown>).assetId
+    return typeof assetId === 'string' && assetId ? [assetId] : []
+  })
+}
+
 function consentColor(mode: ConsentMode) {
   if (mode === 'granted') return '#8ce7ee'
   if (mode === 'limited') return '#e9cb88'
@@ -348,7 +358,7 @@ export default function ConsentSanctuaryClient() {
         <p>Choose scope. Tokens, credentials, raw secret fields and legally excepted records are excluded.</p>
         <div className="consentToggleGrid">{EXPORT_SCOPES.map((scope) => <label key={scope}><input type="checkbox" disabled={loadState !== 'private' || operationBusy} checked={exportScopes.includes(scope)} onChange={(event) => setExportScopes((items) => event.target.checked ? [...new Set([...items, scope])] : items.filter((item) => item !== scope))} /><span>{scope}</span></label>)}</div>
         <div className="consentActions"><button type="button" disabled={loadState !== 'private' || operationBusy || exportScopes.length === 0} onClick={() => void requestExport()}>Request export</button></div>
-        <ol>{exports.slice(0, 5).map((job) => <li key={job.id}><strong>{String(job.state)}</strong> — {Array.isArray(job.scopes) ? job.scopes.join(', ') : 'scope unavailable'} {job.state === 'ready' && <button type="button" onClick={async () => { try { const result = await getOperationalExportDownloadUrl({ jobId: job.id }); window.location.assign(String(result.url)) } catch { setMessage('Secure download could not be authorized.') } }}>Secure download</button>} {['queued', 'preparing'].includes(String(job.state)) && <button type="button" onClick={() => void cancelOperationalExportRequest(job.id)}>Cancel</button>}</li>)}</ol>
+        <ol>{exports.slice(0, 5).map((job) => <li key={job.id}><strong>{String(job.state)}</strong> — {Array.isArray(job.scopes) ? job.scopes.join(', ') : 'scope unavailable'} {job.state === 'ready' && <button type="button" onClick={async () => { try { const result = await getOperationalExportDownloadUrl({ jobId: job.id }); window.location.assign(String(result.url)) } catch { setMessage('Secure download could not be authorized.') } }}>Secure download</button>} {job.state === 'ready' && runtimeExportAssetIds(job).map((assetId) => <button key={assetId} type="button" onClick={async () => { try { const result = await getOperationalExportDownloadUrl({ jobId: job.id, file: 'runtime', assetId }); window.location.assign(String(result.url)) } catch { setMessage('Secure runtime download could not be authorized.') } }}>Runtime {assetId.slice(0, 8)}</button>)} {['queued', 'preparing'].includes(String(job.state)) && <button type="button" onClick={() => void cancelOperationalExportRequest(job.id)}>Cancel</button>}</li>)}</ol>
 
         <hr />
         <h3>Scoped deletion</h3>
