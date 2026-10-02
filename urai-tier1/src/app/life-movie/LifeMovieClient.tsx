@@ -114,6 +114,10 @@ export default function LifeMovieClient() {
         }
 
         setMemories(parsed)
+        if (requestedMovieId && requestedMemoryId) {
+          const resumeIndex = parsed.findIndex((memory) => memory.id === requestedMemoryId)
+          if (resumeIndex >= 0) setActiveIndex(resumeIndex)
+        }
         setState(parsed.length
           ? { kind: 'ready', message: `${parsed.length} private memor${parsed.length === 1 ? 'y' : 'ies'} available for this Life Movie.` }
           : { kind: 'empty', message: requestedMovieId
