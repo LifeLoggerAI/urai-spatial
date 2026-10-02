@@ -198,6 +198,55 @@ const ADAM_SCHEMA = {
   },
 } as const
 
+function partialJsonStringField(raw: string, field: string) {
+  const marker = JSON.stringify(field)
+  const keyIndex = raw.indexOf(marker)
+  if (keyIndex < 0) return null
+  let index = keyIndex + marker.length
+  while (index < raw.length && /\s/.test(raw[index])) index += 1
+  if (raw[index] !== ':') return null
+  index += 1
+  while (index < raw.length && /\s/.test(raw[index])) index += 1
+  if (raw[index] !== '"') return null
+  index += 1
+
+  let value = ''
+  while (index < raw.length) {
+    const character = raw[index]
+    if (character === '"') return { value, complete: true }
+    if (character !== '\\') {
+      value += character
+      index += 1
+      continue
+    }
+
+    if (index + 1 >= raw.length) break
+    const escape = raw[index + 1]
+    if (escape === 'u') {
+      if (index + 5 >= raw.length) break
+      const hex = raw.slice(index + 2, index + 6)
+      if (!/^[0-9a-fA-F]{4}$/.test(hex)) return null
+      value += String.fromCharCode(Number.parseInt(hex, 16))
+      index += 6
+      continue
+    }
+    const escapes: Record<string, string> = {
+      '"': '"',
+      '\\': '\\',
+      '/': '/',
+      b: '\b',
+      f: '\f',
+      n: '\n',
+      r: '\r',
+      t: '\t',
+    }
+    if (!Object.prototype.hasOwnProperty.call(escapes, escape)) return null
+    value += escapes[escape]
+    index += 2
+  }
+  return { value, complete: false }
+}
+
 function parseAdamOutput(raw: string) {
   let value: unknown
   try { value = JSON.parse(raw) } catch { throw new ProviderError(502, 'INVALID_PROVIDER_RESPONSE', 'Adam returned an invalid response.') }
@@ -291,10 +340,19 @@ export const adamPresenceProvider = onRequest({
     }).finally(() => clearTimeout(timeout))
     if (!upstream.ok || !upstream.body) throw new ProviderError(upstream.status === 429 ? 429 : 503, 'OPENAI_REQUEST_FAILED', 'Adam reasoning is unavailable.')
 
+    response.status(200)
+    response.setHeader('Content-Type', 'application/x-ndjson; charset=utf-8')
+    response.setHeader('Cache-Control', 'private, no-store, max-age=0')
+    response.setHeader('X-Content-Type-Options', 'nosniff')
+    response.setHeader('X-URAI-Provider', 'openai')
+    response.setHeader('X-URAI-Presence', 'adam')
+    response.write(`${JSON.stringify({ type: 'status', status: 'streaming', surface })}\n`)
+
     const reader = upstream.body.getReader()
     const decoder = new TextDecoder()
     let buffer = ''
     let output = ''
+    let emittedMessageLength = 0
     let completed = false
     while (true) {
       const { value, done } = await reader.read()
@@ -309,7 +367,15 @@ export const adamPresenceProvider = onRequest({
         if (!payload || payload === '[DONE]') continue
         let event: JsonMap
         try { event = JSON.parse(payload) as JsonMap } catch { continue }
-        if (event.type === 'response.output_text.delta') output += String(event.delta ?? '')
+        if (event.type === 'response.output_text.delta') {
+          output += String(event.delta ?? '')
+          const partial = partialJsonStringField(output, 'message')
+          if (partial && partial.value.length > emittedMessageLength) {
+            const text = partial.value.slice(emittedMessageLength)
+            emittedMessageLength = partial.value.length
+            response.write(`${JSON.stringify({ type: 'delta', text })}\n`)
+          }
+        }
         if (event.type === 'response.completed') completed = true
         if (event.type === 'response.failed' || event.type === 'error') {
           throw new ProviderError(502, 'OPENAI_RESPONSE_FAILED', 'Adam reasoning could not complete.')
@@ -318,16 +384,8 @@ export const adamPresenceProvider = onRequest({
     }
     if (!completed || !output) throw new ProviderError(502, 'OPENAI_RESPONSE_INCOMPLETE', 'Adam returned an incomplete response.')
     const result = parseAdamOutput(output)
-
-    response.status(200)
-    response.setHeader('Content-Type', 'application/x-ndjson; charset=utf-8')
-    response.setHeader('Cache-Control', 'private, no-store, max-age=0')
-    response.setHeader('X-Content-Type-Options', 'nosniff')
-    response.setHeader('X-URAI-Provider', 'openai')
-    response.setHeader('X-URAI-Presence', 'adam')
-    response.write(`${JSON.stringify({ type: 'status', status: 'validated', surface })}\n`)
-    for (let offset = 0; offset < result.message.length; offset += 96) {
-      response.write(`${JSON.stringify({ type: 'delta', text: result.message.slice(offset, offset + 96) })}\n`)
+    if (result.message.length > emittedMessageLength) {
+      response.write(`${JSON.stringify({ type: 'delta', text: result.message.slice(emittedMessageLength) })}\n`)
     }
     response.end(`${JSON.stringify({ type: 'done', ...result })}\n`)
     await recordTelemetry({
@@ -343,7 +401,12 @@ export const adamPresenceProvider = onRequest({
   } catch (error) {
     if (uid) await recordTelemetry({ uid, provider: 'openai', lane: 'adam', outcome: 'failure', inputUnits, latencyMs: Date.now() - startedAt })
     if (!response.headersSent) sendError(response, error)
-    else response.end()
+    else {
+      const boundary = error instanceof ProviderError
+        ? error
+        : new ProviderError(500, 'ADAM_PROVIDER_BOUNDARY_FAILURE', 'Adam is temporarily unavailable.')
+      response.end(`${JSON.stringify({ type: 'error', code: boundary.code, message: boundary.message })}\n`)
+    }
   }
 })
 

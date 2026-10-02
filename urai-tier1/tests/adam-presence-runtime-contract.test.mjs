@@ -55,6 +55,14 @@ test('Founder voice cannot silently fall back to a stock identity', () => {
   assert.doesNotMatch(runtime, /speechSynthesis/)
 })
 
+test('Adam streams provider text before the structured response is fully complete', () => {
+  assert.match(functions, /partialJsonStringField\(output, 'message'\)/)
+  assert.match(functions, /status: 'streaming'/)
+  assert.match(functions, /response\.write\(.*type: 'delta'/s)
+  assert.doesNotMatch(functions, /for \(let offset = 0; offset < result\.message\.length; offset \+= 96\)/)
+  assert.match(functions, /type: 'error', code: boundary\.code/)
+})
+
 test('Adam runtime includes interruption, voice input, captions and text fallback behavior', () => {
   assert.match(runtime, /SpeechRecognition/)
   assert.match(runtime, /stopVoice/)
