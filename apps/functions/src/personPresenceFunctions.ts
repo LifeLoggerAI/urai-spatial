@@ -150,3 +150,111 @@ export const getPersonPresenceCapabilities = personPresenceFunctions.https.onCal
     providerIdentifiersExposed: false,
   }
 })
+
+function requireSha256(value: unknown, label: string) {
+  const digest = String(value ?? '').trim().toLowerCase()
+  if (!/^[a-f0-9]{64}$/.test(digest)) throw new functions.https.HttpsError('invalid-argument', `${label} is invalid.`)
+  return digest
+}
+
+function requireAssetPromoter(context: functions.https.CallableContext) {
+  if (context.auth?.token?.uraiAssetPromoter !== true) {
+    throw new functions.https.HttpsError('permission-denied', 'ASSET_PROMOTER_AUTHORITY_REQUIRED')
+  }
+}
+
+export const promotePersonRenderBinding = personPresenceFunctions.https.onCall(async (data, context) => {
+  requireAssetPromoter(context)
+  const ownerId = requireToken(data?.ownerId, 'ownerId')
+  const bundleId = requireToken(data?.bundleId, 'bundleId')
+  const modality = String(data?.modality ?? '')
+  if (!['voice','visual','motion'].includes(modality)) throw new functions.https.HttpsError('invalid-argument', 'Render modality is invalid.')
+  const provider = requireToken(data?.provider, 'provider')
+  const providerResourceId = requireToken(data?.providerResourceId, 'providerResourceId')
+  const providerModelId = data?.providerModelId ? requireToken(data.providerModelId, 'providerModelId') : null
+  const reviewReceiptHash = requireSha256(data?.reviewReceiptHash, 'reviewReceiptHash')
+  const sourceAuthorityHash = requireSha256(data?.sourceAuthorityHash, 'sourceAuthorityHash')
+  const consentRefs = tokenArray(data?.consentRefs, 32)
+  if (!consentRefs.length) throw new functions.https.HttpsError('failed-precondition', 'Person render binding requires consent references.')
+
+  const [bundle, policy] = await Promise.all([
+    db.doc(`users/${ownerId}/personModelBundles/${bundleId}`).get(),
+    db.doc(`users/${ownerId}/privacyPolicy/current`).get(),
+  ])
+  if (!bundle.exists || bundle.get('ownerId') !== ownerId || bundle.get('state') !== 'current' || bundle.get('synthetic') !== false) {
+    throw new functions.https.HttpsError('failed-precondition', 'Person model bundle is unavailable.')
+  }
+  if (!policy.exists) throw new functions.https.HttpsError('failed-precondition', 'CONSENT_POLICY_REQUIRED')
+  const policyData = policy.data() ?? {}
+  const domains = isRecord(policyData.domains) ? policyData.domains : {}
+  const identity = isRecord(domains.identity) ? domains.identity : {}
+  const enforcement = isRecord(policyData.enforcement) ? policyData.enforcement : {}
+  if (!['granted','limited'].includes(String(identity.mode ?? '')) || identity.likenessEnabled !== true || enforcement.state !== 'fully-enforced') {
+    throw new functions.https.HttpsError('permission-denied', 'IDENTITY_LIKENESS_NOT_AUTHORIZED')
+  }
+
+  const personId = requireToken(bundle.get('personId'), 'personId')
+  const bindingId = `${bundleId}:${modality}`
+  const bindingBody = {
+    schemaVersion: 'urai-person-render-binding-v1',
+    ownerId,
+    personId,
+    bundleId,
+    modality,
+    provider,
+    providerResourceId,
+    ...(providerModelId ? { providerModelId } : {}),
+    reviewState: 'ACCEPTED',
+    consentState: 'authorized',
+    state: 'current',
+    reviewReceiptHash,
+    sourceAuthorityHash,
+    consentRefs,
+    promotedByUid: context.auth?.uid ?? null,
+  }
+  const bindingHash = stableDigest(bindingBody)
+  await db.doc(`users/${ownerId}/personRenderBindings/${bindingId}`).set({
+    ...bindingBody,
+    bindingHash,
+    promotedAt: fieldValue.serverTimestamp(),
+    updatedAt: fieldValue.serverTimestamp(),
+  }, { merge: false })
+  await db.collection(`users/${ownerId}/privacyAudit`).add({
+    ownerId,
+    kind: 'person_render_binding.promoted',
+    bundleId,
+    personId,
+    modality,
+    provider,
+    bindingHash,
+    reviewReceiptHash,
+    sourceAuthorityHash,
+    recordedAt: fieldValue.serverTimestamp(),
+  })
+  return { bindingId, bundleId, personId, modality, bindingHash }
+})
+
+export const revokePersonRenderBinding = personPresenceFunctions.https.onCall(async (data, context) => {
+  const uid = requireUid(context)
+  const bundleId = requireToken(data?.bundleId, 'bundleId')
+  const modality = String(data?.modality ?? '')
+  if (!['voice','visual','motion'].includes(modality)) throw new functions.https.HttpsError('invalid-argument', 'Render modality is invalid.')
+  const bindingId = `${bundleId}:${modality}`
+  const ref = db.doc(`users/${uid}/personRenderBindings/${bindingId}`)
+  const binding = await ref.get()
+  if (!binding.exists || binding.get('ownerId') !== uid) throw new functions.https.HttpsError('not-found', 'Person render binding was not found.')
+  await ref.set({
+    state: 'revoked',
+    consentState: 'revoked',
+    revokedAt: fieldValue.serverTimestamp(),
+    updatedAt: fieldValue.serverTimestamp(),
+  }, { merge: true })
+  await db.collection(`users/${uid}/privacyAudit`).add({
+    ownerId: uid,
+    kind: 'person_render_binding.revoked',
+    bundleId,
+    modality,
+    recordedAt: fieldValue.serverTimestamp(),
+  })
+  return { bindingId, revoked: true }
+})
