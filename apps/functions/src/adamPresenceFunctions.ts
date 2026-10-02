@@ -252,15 +252,18 @@ function parseAdamOutput(raw: string) {
   try { value = JSON.parse(raw) } catch { throw new ProviderError(502, 'INVALID_PROVIDER_RESPONSE', 'Adam returned an invalid response.') }
   if (!isRecord(value)) throw new ProviderError(502, 'INVALID_PROVIDER_RESPONSE', 'Adam returned an invalid response.')
   const message = String(value.message ?? '').trim()
-  const caption = String(value.caption ?? '').trim()
+  const providerCaption = String(value.caption ?? '').trim()
   const suggestedActions = Array.isArray(value.suggestedActions)
     ? value.suggestedActions.map((item) => String(item).trim()).filter(Boolean)
     : []
   const requiresHumanFounder = value.requiresHumanFounder === true
   const handoffReason = String(value.handoffReason ?? '').trim()
-  if (!message || message.length > 1_800 || !caption || caption.length > 1_800 || suggestedActions.length > 3 || handoffReason.length > 240) {
+  if (!message || message.length > 1_800 || !providerCaption || providerCaption.length > 1_800 || suggestedActions.length > 3 || handoffReason.length > 240) {
     throw new ProviderError(502, 'INVALID_PROVIDER_RESPONSE', 'Adam returned an invalid response.')
   }
+  // Captions are an accessibility equivalent, not a second model-authored narrative.
+  // Bind them to the exact validated message so speech/display/caption text cannot drift.
+  const caption = message
   return { message, caption, suggestedActions, requiresHumanFounder, handoffReason, provider: 'openai' as const }
 }
 

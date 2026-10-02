@@ -57,6 +57,12 @@ test('Founder voice cannot silently fall back to a stock identity', () => {
   assert.doesNotMatch(runtime, /speechSynthesis/)
 })
 
+test('Adam captions are exact text equivalents of the validated message', () => {
+  assert.match(functions, /const providerCaption = String\(value\.caption/)
+  assert.match(functions, /const caption = message/)
+  assert.doesNotMatch(functions, /return \{ message, providerCaption,/)
+})
+
 test('Adam streams provider text before the structured response is fully complete', () => {
   assert.match(functions, /partialJsonStringField\(output, 'message'\)/)
   assert.match(functions, /status: 'streaming'/)
