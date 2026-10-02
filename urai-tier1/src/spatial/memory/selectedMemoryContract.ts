@@ -198,6 +198,8 @@ export function buildExplicitDemoMemory(id: string): SelectedMemory {
 
 export function parseSelectedMemory(raw: Record<string, unknown>, expectedOwnerId: string, id: string, trustedStorageBucket?: string | null): SelectedMemoryResult {
   if (raw.deleted === true) return { status: 'deleted', memory: null, message: 'This memory was deleted.' }
+  if (raw.consentState === 'revoked') return { status: 'unauthorized', memory: null, message: 'Consent for this memory was revoked.' }
+  if (raw.consentState === 'pending') return { status: 'unauthorized', memory: null, message: 'Consent for this memory is pending.' }
   const ownerId = stringValue(raw.ownerId ?? raw.userId)
   if (!ownerId || ownerId !== expectedOwnerId) return { status: 'unauthorized', memory: null, message: 'This memory is not available to this account.' }
 
