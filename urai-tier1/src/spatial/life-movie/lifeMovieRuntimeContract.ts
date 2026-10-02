@@ -157,8 +157,8 @@ export function parseLifeMovieRuntimeManifest(
   if (!ownerId || ownerId !== expectedOwnerId) {
     return { status: 'unauthorized', manifest: null, message: 'Life Movie is not available to this account.' }
   }
-  if (raw.consentState === 'revoked') {
-    return { status: 'unauthorized', manifest: null, message: 'Consent for this Life Movie was revoked.' }
+  if (raw.consentState !== 'authorized') {
+    return { status: 'unauthorized', manifest: null, message: 'Life Movie consent is not authorized.' }
   }
 
   const id = safeToken(raw.id)
