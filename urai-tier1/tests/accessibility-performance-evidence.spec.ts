@@ -6,6 +6,7 @@ const routes = [
   { name: 'life-map', path: '/life-map' },
   { name: 'focus', path: '/focus?memoryId=seed-memory-bloom&manifestId=seed-memory-bloom&node=seed-memory-bloom&demo=1' },
   { name: 'replay', path: '/replay?memoryId=seed-memory-bloom&manifestId=seed-memory-bloom&node=seed-memory-bloom&demo=1' },
+  { name: 'life-movie', path: '/life-movie' },
 ] as const
 
 const interactiveSelector = [
