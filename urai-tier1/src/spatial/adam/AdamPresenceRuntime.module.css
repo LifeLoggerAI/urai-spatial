@@ -1,7 +1,9 @@
 .launcher {
   position: fixed;
   right: max(18px, env(safe-area-inset-right));
-  bottom: max(18px, env(safe-area-inset-bottom));
+  top: 50%;
+  bottom: auto;
+  transform: translateY(-50%);
   z-index: 1900;
   border: 1px solid rgba(255,255,255,.24);
   border-radius: 999px;
@@ -16,8 +18,7 @@
   box-shadow: 0 14px 42px rgba(0,0,0,.38);
 }
 .lifeMapLauncher {
-  top: max(56px, calc(env(safe-area-inset-top) + 56px));
-  bottom: auto;
+  top: 50%;
 }
 .panel {
   position: fixed;
@@ -138,6 +139,7 @@
   font-size: 12px;
 }
 @media (max-width: 560px) {
+  .launcher { right: max(8px, env(safe-area-inset-right)); }
   .panel {
     right: max(8px, env(safe-area-inset-right));
     bottom: max(8px, env(safe-area-inset-bottom));
