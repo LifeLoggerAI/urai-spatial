@@ -132,8 +132,8 @@ export function assertHistoricalSourceAuthority(input: {
   evidenceClass: EvidenceClass
   presentationClass?: PresentationClass
 }) {
-  if (input.synthetic && input.evidenceClass === 'SOURCE_CAPTURED') {
-    throw new Error('SYNTHETIC_OUTPUT_CANNOT_BE_SOURCE_CAPTURED')
+  if (input.synthetic && input.evidenceClass !== 'UNKNOWN') {
+    throw new Error('SYNTHETIC_OUTPUT_CANNOT_BECOME_HISTORICAL_EVIDENCE')
   }
   if (
     input.synthetic
@@ -158,6 +158,7 @@ export function compilePersonModel(input: {
     throw new Error('PERSON_STATE_IDENTITY_MISMATCH')
   }
   if (input.person.revoked) throw new Error('PERSON_AUTHORITY_REVOKED')
+  if (!input.consentPurposes.includes('identity-model')) throw new Error('IDENTITY_MODEL_CONSENT_REQUIRED')
 
   const selected = input.claims.filter((claim) =>
     input.state.claimIds.includes(claim.id)
