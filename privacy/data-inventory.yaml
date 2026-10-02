@@ -229,6 +229,21 @@ fields:
     auditRequired: true
     implementationStatus: implementation_started_synthetic_firewall
 
+  - name: person_render_binding
+    collectionOrTable: users/{uid}/personRenderBindings
+    source: human_reviewed_provider_binding
+    dataClass: L5
+    purpose: bind an accepted private voice visual or motion provider resource to an exact compiled person state
+    consentTier: C5
+    retentionClass: R3
+    exportable: true
+    deletable: true
+    monetizable: false
+    aiTrainingAllowed: false
+    adminAccessible: false
+    auditRequired: true
+    implementationStatus: implemented_server_only_promotion_and_revocation
+
 processors:
   - name: Firebase Authentication
     role: authentication
