@@ -42,6 +42,10 @@ async function openSanctuary(page: Page, suffix = '') {
   const root = page.locator('main[data-route-owner="consent-sanctuary"]')
   await expect(root).toBeVisible({ timeout: 20_000 })
   await page.waitForFunction(() => document.readyState !== 'loading')
+  // Route semantics may become interactive before Next's visual loading boundary has
+  // actually left the viewport. Retained sanctuary pixels must prove the settled
+  // sanctuary, never a mislabeled global loading frame.
+  await expect(page.locator('main.urai-system-state')).toHaveCount(0, { timeout: 20_000 })
   return root
 }
 
