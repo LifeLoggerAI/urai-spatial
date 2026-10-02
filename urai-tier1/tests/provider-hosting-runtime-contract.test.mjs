@@ -23,6 +23,10 @@ const staticProviderRoutes = [
   new URL('../src/app/api/voice/elevenlabs/route.ts', import.meta.url),
   new URL('../src/app/api/urai/adam/conversation/route.ts', import.meta.url),
   new URL('../src/app/api/urai/adam/voice/route.ts', import.meta.url),
+  new URL('../src/app/api/urai/council/anthropic/route.ts', import.meta.url),
+  new URL('../src/app/api/urai/council/gemini/route.ts', import.meta.url),
+  new URL('../src/app/api/urai/council/xai/route.ts', import.meta.url),
+  new URL('../src/app/api/urai/council/mistral/route.ts', import.meta.url),
 ]
 
 test('static Hosting rewrites every live provider URL to secret-bound Firebase Functions', () => {
@@ -36,9 +40,16 @@ test('static Hosting rewrites every live provider URL to secret-bound Firebase F
     { source: '/api/voice/elevenlabs', function: { functionId: 'elevenLabsVoiceProvider', region: 'us-central1' } },
     { source: '/api/urai/adam/conversation', function: { functionId: 'adamPresenceProvider', region: 'us-central1' } },
     { source: '/api/urai/adam/voice', function: { functionId: 'adamFounderVoiceProvider', region: 'us-central1' } },
+    { source: '/api/urai/council/anthropic', function: { functionId: 'anthropicCouncilProvider', region: 'us-central1' } },
+    { source: '/api/urai/council/gemini', function: { functionId: 'geminiCouncilProvider', region: 'us-central1' } },
+    { source: '/api/urai/council/xai', function: { functionId: 'xaiCouncilProvider', region: 'us-central1' } },
+    { source: '/api/urai/council/mistral', function: { functionId: 'mistralCouncilProvider', region: 'us-central1' } },
   ])
   assert.match(functionsIndex, /elevenLabsVoiceProvider, openAiOrbProvider/)
   assert.match(functionsIndex, /adamFounderVoiceProvider, adamPresenceProvider/)
+  for (const handler of ['anthropicCouncilProvider', 'geminiCouncilProvider', 'mistralCouncilProvider', 'xaiCouncilProvider']) {
+    assert.match(functionsIndex, new RegExp(`\\b${handler}\\b`))
+  }
   for (const handler of ['googleOAuthCallback', 'googleOAuthDisconnect', 'googleOAuthStart', 'googleOAuthStatus']) {
     assert.match(functionsIndex, new RegExp(`\\b${handler}\\b`))
   }
