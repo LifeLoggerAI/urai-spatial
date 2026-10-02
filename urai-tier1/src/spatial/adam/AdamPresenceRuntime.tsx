@@ -104,6 +104,7 @@ export default function AdamPresenceRuntime() {
   useEffect(() => {
     stopVoice()
     setStreamedText('')
+    if (pathname === '/adam') setOpen(true)
   }, [pathname, stopVoice])
 
   const playAudio = useCallback((blob: Blob, generation: number) => new Promise<void>((resolve) => {
