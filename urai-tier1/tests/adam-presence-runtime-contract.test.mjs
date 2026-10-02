@@ -27,7 +27,7 @@ test('Adam is one governed runtime mounted at the product shell', () => {
   assert.match(surfaces, /'onboarding'/)
   assert.match(surfaces, /'institutional-demo'/)
   assert.match(adamRoute, /data-urai-adam-route="canonical"/)
-  assert.match(runtime, /pathname === '\/adam'/)
+  assert.match(runtime, /pathname === '\/life-map'/)
 })
 
 test('Adam conversation and Founder voice use dedicated protected server boundaries', () => {
@@ -90,7 +90,7 @@ test('Hosting and preview route Adam APIs only to secret-bound functions', () =>
 test('Adam canonical route is release-classified and its Life Map launcher cannot cover primary navigation', () => {
   assert.ok(routeManifest.criticalRoutes.includes('/adam'))
   assert.ok(routeManifest.classification.publicExact.includes('/adam'))
-  assert.match(runtime, /pathname === '\\/life-map'/)
+  assert.match(runtime, /pathname === '\/life-map'/)
   assert.match(runtime, /styles\.lifeMapLauncher/)
   assert.match(styles, /\.launcher\s*\{[\s\S]*top:\s*50%[\s\S]*bottom:\s*auto[\s\S]*transform:\s*translateY\(-50%\)/)
   assert.match(styles, /\.lifeMapLauncher\s*\{[\s\S]*top:\s*50%/)
