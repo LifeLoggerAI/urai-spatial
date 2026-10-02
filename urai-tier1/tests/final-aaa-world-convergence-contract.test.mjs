@@ -17,6 +17,7 @@ const homeProductionEntry = read('src/spatial/layout/HomeWorldProduction.tsx')
 const homeProduction = read('src/spatial/layout/HomeWorldProductionPolished.tsx')
 const focusClient = read('src/app/focus/FocusChamberClient.tsx')
 const replayClient = read('src/app/replay/CinematicReplayClient.tsx')
+const lifeMovieClient = read('src/app/life-movie/LifeMovieClient.tsx')
 const chrome = read('src/spatial/world/persistentWorldCompanion.css')
 const lifeMapConvergence = read('src/spatial/world/lifeMapConvergence.css')
 const lifeMapSelectedCinematic = read('src/spatial/world/lifeMapSelectedCinematic.css')
@@ -24,7 +25,7 @@ const adaptiveLifeMap = read('src/components/lifemap/AdaptiveLifeMapScene.tsx')
 const routeOwnerConvergence = read('src/spatial/world/routeOwnerConvergence.css')
 const secondaryRealmConvergence = read('src/spatial/world/secondaryRealmConvergence.css')
 
-const canonicalDestinations = ['home', 'infrastructure-hub', 'life-map', 'focus', 'replay', 'mirror', 'passport', 'privacy-controls', 'location-map']
+const canonicalDestinations = ['home', 'infrastructure-hub', 'life-map', 'focus', 'replay', 'life-movie', 'mirror', 'passport', 'privacy-controls', 'location-map']
 
 test('the full journey participates in one persistent world model', () => {
   for (const destination of canonicalDestinations) {
@@ -82,7 +83,7 @@ test('one environmental continuity layer persists across every route transition'
   assert.match(atmosphere, /data-phase=\{phase\}/)
   assert.match(atmosphere, /urai-world-atmosphere__horizon/)
   assert.match(atmosphere, /urai-world-atmosphere__threshold/)
-  for (const destination of ['infrastructure-hub', 'life-map', 'focus', 'replay', 'mirror', 'passport', 'privacy-controls', 'location-map']) assert.match(atmosphereCss, new RegExp(`data-realm=['"]${destination}['"]`))
+  for (const destination of ['infrastructure-hub', 'life-map', 'focus', 'replay', 'life-movie', 'mirror', 'passport', 'privacy-controls', 'location-map']) assert.match(atmosphereCss, new RegExp(`data-realm=['"]${destination}['"]`))
   assert.match(atmosphereCss, /pointer-events:\s*none/)
   assert.match(atmosphereCss, /data-phase/)
   assert.match(atmosphereCss, /env\(safe-area-inset-bottom\)/)
@@ -130,6 +131,12 @@ test('canonical route clients own Focus and Replay', () => {
   assert.match(replayClient, /useSelectedMemory\(\)/)
   assert.match(replayClient, /requestUraiWorldReturn/)
   assert.doesNotMatch(replayClient, /uraiAutoReplay|quiet-reset|replay-recovery-thread|seed-memory-bloom/)
+  assert.match(lifeMovieClient, /data-testid="life-movie-runtime"/)
+  assert.match(lifeMovieClient, /useLifeMovieRuntimeManifest\(requestedMovieId\)/)
+  assert.match(lifeMovieClient, /requestUraiWorldTravel\(\{/)
+  assert.match(lifeMovieClient, /destination: 'replay'/)
+  assert.match(replayClient, /destination: 'life-movie'/)
+  assert.doesNotMatch(lifeMovieClient, /drive\.google\.com|docs\.google\.com/)
   assert.doesNotMatch(routeOwnerConvergence, /\.uraiAutoFocus|\.uraiAutoReplay/)
   assert.match(routeOwnerConvergence, /data-world-destination='replay'/)
 })
