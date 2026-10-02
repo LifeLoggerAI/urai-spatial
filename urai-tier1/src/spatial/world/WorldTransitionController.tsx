@@ -17,6 +17,8 @@ const CONTEXT_KEYS = [
   'personId',
   'placeId',
   'manifestId',
+  'movieId',
+  'chapterId',
   'privacyMode',
   'demo',
 ] as const
@@ -50,6 +52,8 @@ function buildTravelHref(request: UraiWorldTravelRequest) {
   if (context?.personId) target.searchParams.set('personId', context.personId)
   if (context?.placeId) target.searchParams.set('placeId', context.placeId)
   if (context?.replayManifestId) target.searchParams.set('manifestId', context.replayManifestId)
+  if (context?.movieId) target.searchParams.set('movieId', context.movieId)
+  if (context?.chapterId) target.searchParams.set('chapterId', context.chapterId)
   if (context?.privacyMode) target.searchParams.set('privacyMode', context.privacyMode)
   if (context?.demo) target.searchParams.set('demo', '1')
   if (request.entryPortal) target.searchParams.set('entryPortal', request.entryPortal)
@@ -78,6 +82,7 @@ function isEditableTarget(target: EventTarget | null) {
 function fallbackReturnDestination(destination: UraiDestination): UraiDestination {
   if (destination === 'focus') return 'life-map'
   if (destination === 'replay') return 'focus'
+  if (destination === 'life-movie') return 'replay'
   if (destination === 'infrastructure-hub') return 'home'
   return 'infrastructure-hub'
 }
@@ -151,6 +156,8 @@ export function WorldTransitionController() {
         personId: currentWorld.personId,
         placeId: currentWorld.placeId,
         replayManifestId: currentWorld.replayManifestId,
+        movieId: currentWorld.movieId,
+        chapterId: currentWorld.chapterId,
         privacyMode: currentWorld.privacyMode,
         demo: currentWorld.demo,
       },
