@@ -16,6 +16,7 @@ import { useAdaptiveSpatialQuality } from '@/spatial/performance/useAdaptiveSpat
 import { requestUraiWorldReturn, requestUraiWorldTravel } from '@/spatial/world/worldEvents'
 import { useUraiWorldState } from '@/spatial/world/WorldStateProvider'
 import { ReplayProductControls } from './ReplayProductControls'
+import { ReplayPersonPresence } from './ReplayPersonPresence'
 
 function clamp(value: number, max: number) { return Math.max(0, Math.min(max, value)) }
 
@@ -324,6 +325,7 @@ export default function CinematicReplayClient() {
       <output className="srOnly" aria-live="polite">{percent}% through memory</output>
     </section>
     <ReplayProductControls memory={memory} />
+    {lifeModelAuthority.available ? <ReplayPersonPresence people={lifeModelAuthority.people} /> : null}
     {memory.replayManifest.transcript ? <details className="transcript"><summary>Transcript</summary><p>{memory.replayManifest.transcript}</p></details> : null}
     <style>{replayCss}</style>
   </main>
