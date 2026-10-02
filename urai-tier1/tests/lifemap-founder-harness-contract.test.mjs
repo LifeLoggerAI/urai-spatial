@@ -189,15 +189,15 @@ test('collapsed semantic navigator preserves a visible pointer and touch opener'
   assert.match(navigator, /aria-expanded=\{open\}/)
   assert.match(navigator, /width:48px;height:48px/)
   assert.match(navigator, /cursor:pointer/)
-  assert.match(isolation, /\.life-map-search-trigger \{ pointer-events: auto !important; min-width: 48px !important; min-height: 48px !important; \}/)
+  assert.match(isolation, /\.life-map-search-trigger \{ left: auto !important; pointer-events: auto !important; min-width: 48px !important; min-height: 48px !important; box-sizing: border-box !important; \}/)
   assert.doesNotMatch(isolation, /life-map-navigator:not\(\[open\]\)|> summary/)
 })
 
 test('portrait navigator clears selected inspector and stays above the threshold action rail', () => {
   const mobileBlock = isolation.match(/@media \(max-width:700px\) \{[\s\S]*?\n\}/)?.[0] || ''
   assert.match(mobileBlock, /\.life-map-thresholds \{ width: calc\(100vw - 16px\) !important; bottom: max\(8px,env\(safe-area-inset-bottom\)\) !important;/)
-  assert.match(mobileBlock, /\.life-map-search-trigger \{ right: 12px !important; bottom: max\(12px,env\(safe-area-inset-bottom\)\) !important; \}/)
-  assert.match(mobileBlock, /\.life-map-navigator \{ right: 12px !important; bottom: max\(68px,calc\(env\(safe-area-inset-bottom\) \+ 58px\)\) !important; \}/)
+  assert.match(mobileBlock, /\.life-map-search-trigger \{ left: auto !important; right: 12px !important; top: max\(12px,env\(safe-area-inset-top\)\) !important; bottom: auto !important; transform: none !important; margin: 0 !important; \}/)
+  assert.match(mobileBlock, /\.life-map-navigator \{ right: 12px !important; top: max\(68px,calc\(env\(safe-area-inset-top\) \+ 58px\)\) !important; bottom: auto !important; max-height: min\(64vh,calc\(100svh - 84px\)\) !important; \}/)
 })
 
 
