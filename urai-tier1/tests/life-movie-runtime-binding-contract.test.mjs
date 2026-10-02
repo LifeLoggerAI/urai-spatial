@@ -48,3 +48,8 @@ test('Life Movie keeps existing owner-memory fallback when no manifest is reques
   assert.match(client, /parsed\.sort\(\(left, right\) => safeOccurredAt\(right\) - safeOccurredAt\(left\)\)/)
   assert.match(client, /requestedMemoryId/)
 })
+
+test('Life Movie Firestore authority is owner-readable and server-write-only', () => {
+  const rules = read('../firebase/firestore.rules')
+  assert.match(rules, /match \/lifeMovies\/\{movieId\} \{[\s\S]*?allow read: if isSelf\(uid\);[\s\S]*?allow write: if false;/)
+})
