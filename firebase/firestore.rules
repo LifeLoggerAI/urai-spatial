@@ -177,12 +177,6 @@ service cloud.firestore {
         allow write: if false;
       }
 
-      match /lifeMovies/{movieId} {
-        // Canonical private Life Movie manifests. Server-authoritative; owner-only reads.
-        allow read: if isSelf(uid);
-        allow write: if false;
-      }
-
       // Life Causal Graph / Person-World model. All writes are server-authoritative.
       // Owners may read only their own graph and receipts; Admin SDK performs governed writes.
       match /lifeEntities/{docId} {
