@@ -56,3 +56,5 @@ export {
 
 
 export { personPresenceProvider } from './personPresenceProvider'
+
+export { personPresenceVoiceProvider } from './personPresenceVoiceProvider'
