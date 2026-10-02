@@ -7,7 +7,7 @@ const contract = read('src/spatial/life-movie/lifeMovieRuntimeContract.ts')
 
 test('Life Movie manifest fails closed on owner mismatch and non-authorized consent', () => {
   assert.match(contract, /ownerId !== expectedOwnerId/)
-  assert.match(contract, /raw\.consentState === 'revoked'/)
+  assert.match(contract, /raw\.consentState !== 'authorized'/)
   assert.match(contract, /value\.consentState !== 'authorized'/)
   assert.match(contract, /status: 'unauthorized'/)
 })
