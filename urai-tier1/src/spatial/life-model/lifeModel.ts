@@ -132,8 +132,8 @@ export function assertHistoricalSourceAuthority(input: {
   evidenceClass: EvidenceClass
   presentationClass?: PresentationClass
 }) {
-  if (input.synthetic && input.evidenceClass !== 'UNKNOWN') {
-    throw new Error('SYNTHETIC_OUTPUT_CANNOT_BECOME_HISTORICAL_EVIDENCE')
+  if (input.synthetic && input.evidenceClass === 'SOURCE_CAPTURED') {
+    throw new Error('SYNTHETIC_OUTPUT_CANNOT_BE_SOURCE_CAPTURED')
   }
   if (
     input.synthetic
@@ -141,6 +141,9 @@ export function assertHistoricalSourceAuthority(input: {
     && input.evidenceClass !== 'UNKNOWN'
   ) {
     throw new Error('SIMULATION_CANNOT_CREATE_HISTORICAL_EVIDENCE')
+  }
+  if (input.synthetic && input.evidenceClass !== 'UNKNOWN') {
+    throw new Error('SYNTHETIC_OUTPUT_CANNOT_BECOME_HISTORICAL_EVIDENCE')
   }
 }
 
