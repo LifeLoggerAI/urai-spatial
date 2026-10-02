@@ -509,19 +509,22 @@ export const applyLifeCorrection = lifeModelFunctions.https.onCall(async (data, 
   const targetRef = db.doc(`users/${uid}/lifeClaims/${targetClaimId}`)
   const replacementRef = db.doc(`users/${uid}/lifeClaims/${replacementClaimId}`)
   const correctionRef = db.doc(`users/${uid}/lifeCorrections/${correctionId}`)
-  const target = await targetRef.get()
-  if (!target.exists || target.get('ownerId') !== uid || target.get('synthetic') === true) {
-    throw new functions.https.HttpsError('not-found', 'Target claim is unavailable.')
-  }
   if (replacementClaimId === targetClaimId) {
     throw new functions.https.HttpsError('invalid-argument', 'Correction replacement claim must have a new identity.')
   }
 
   await db.runTransaction(async (transaction) => {
-    const [existingCorrection, existingReplacement] = await Promise.all([
+    const [target, existingCorrection, existingReplacement] = await Promise.all([
+      transaction.get(targetRef),
       transaction.get(correctionRef),
       transaction.get(replacementRef),
     ])
+    if (!target.exists || target.get('ownerId') !== uid || target.get('synthetic') === true) {
+      throw new functions.https.HttpsError('not-found', 'Target claim is unavailable.')
+    }
+    if (target.get('status') === 'superseded') {
+      throw new functions.https.HttpsError('failed-precondition', 'Target claim was already superseded.')
+    }
     if (existingCorrection.exists || existingReplacement.exists) {
       throw new functions.https.HttpsError('already-exists', 'Correction or replacement claim already exists.')
     }
