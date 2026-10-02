@@ -273,7 +273,7 @@ export default function AdamPresenceRuntime() {
     return (
       <button
         type="button"
-        className={styles.launcher}
+        className={`${styles.launcher} ${pathname === '/life-map' || pathname.startsWith('/life-map/') ? styles.lifeMapLauncher : ''}`}
         onClick={() => setOpen(true)}
         aria-label={`Talk with Adam in ${surface.label}`}
         data-urai-adam-launcher="true"
