@@ -62,6 +62,7 @@ const tests = [
   'tests/orb-companion-contract.test.mjs',
   'tests/orb-provider-idempotency-contract.test.mjs',
   'tests/provider-boundary-contract.test.mjs',
+  'tests/council-provider-boundary-contract.test.mjs',
   'tests/provider-hosting-runtime-contract.test.mjs',
   'tests/provider-preview-routing-contract.test.mjs',
   'tests/public-estate-constellation-contract.test.mjs',
