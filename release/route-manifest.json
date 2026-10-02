@@ -9,6 +9,7 @@
   "indexingDefault": false,
   "criticalRoutes": [
     "/",
+    "/adam",
     "/home",
     "/ground",
     "/life-map",
