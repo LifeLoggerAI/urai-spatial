@@ -334,7 +334,7 @@ export const applyConsentPolicy = functions.https.onCall(async (data, context) =
 })
 
 async function revokeLifeModelDerivativesForConsent(uid: string, reasonId: string) {
-  const collections = ['personModelBundles', 'sceneTruthPackets', 'renderManifests']
+  const collections = ['personModelBundles', 'personRenderBindings', 'sceneTruthPackets', 'renderManifests']
   for (const collectionName of collections) {
     const snapshot = await db.collection(`users/${uid}/${collectionName}`).limit(500).get()
     if (snapshot.empty) continue
@@ -661,6 +661,7 @@ async function buildExport(snapshot: FirebaseFirestore.DocumentSnapshot) {
       data.lifeConflicts = await collectionDocuments(userRef.collection('lifeConflicts'))
       data.knowledgeGaps = await collectionDocuments(userRef.collection('knowledgeGaps'))
       data.personModelBundles = await collectionDocuments(userRef.collection('personModelBundles'))
+      data.personRenderBindings = await collectionDocuments(userRef.collection('personRenderBindings'))
       data.sceneTruthPackets = await collectionDocuments(userRef.collection('sceneTruthPackets'))
       data.renderManifests = await collectionDocuments(userRef.collection('renderManifests'))
       data.simulationSessions = await collectionDocuments(userRef.collection('simulationSessions'))
@@ -899,6 +900,7 @@ const DELETION_COLLECTIONS: Record<Exclude<DeletionScope, 'account'>, string[]> 
     'lifeConflicts',
     'knowledgeGaps',
     'personModelBundles',
+    'personRenderBindings',
     'sceneTruthPackets',
     'renderManifests',
     'simulationSessions',
