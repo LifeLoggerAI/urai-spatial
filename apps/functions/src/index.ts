@@ -53,3 +53,6 @@ export {
   closePersonPresenceSession,
   preparePersonPresenceSession,
 } from './personPresenceFunctions'
+
+
+export { personPresenceProvider } from './personPresenceProvider'
