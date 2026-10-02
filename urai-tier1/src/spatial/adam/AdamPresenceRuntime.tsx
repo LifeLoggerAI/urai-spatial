@@ -299,7 +299,7 @@ export default function AdamPresenceRuntime() {
         <div className={styles.presence} aria-hidden="true">A</div>
         <div className={styles.identity}>
           <p className={styles.name}>Adam</p>
-          <p className={styles.surface}>{surface.label} · {busy ? 'thinking' : listening ? 'listening' : 'present'}</p>
+          <p className={styles.surface}>Founder digital presence · {surface.label} · {busy ? 'thinking' : listening ? 'listening' : 'present'}</p>
         </div>
         <button type="button" className={styles.close} onClick={() => { stopAll(); setOpen(false) }} aria-label="Close Adam">×</button>
       </header>
