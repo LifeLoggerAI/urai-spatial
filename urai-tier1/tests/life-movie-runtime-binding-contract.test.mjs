@@ -108,3 +108,17 @@ test('Life Movie and Replay cross the same persistent-world threshold in both di
   assert.match(replay, /chapterId: world\.chapterId/)
   assert.match(replay, /Continue Life Movie/)
 })
+
+test('Life Movie is exposed by canonical launch and live certification surfaces', () => {
+  const launchPanel = read('src/app/LaunchRoutePanel.tsx')
+  const launchTruth = read('src/data/launchTruth.ts')
+  const strictLive = read('../scripts/final-live-text-gates.mjs')
+  assert.match(launchPanel, /Life Movie/)
+  assert.match(launchPanel, /open-life-movie/)
+  assert.match(launchPanel, /\/life-movie\?memoryId=/)
+  assert.match(launchTruth, /path: '\/life-movie'/)
+  assert.match(launchTruth, /Private Life Movie continuum/)
+  assert.match(launchTruth, /private source material remains owner-scoped/)
+  assert.match(strictLive, /\['life-movie', '\/life-movie'/)
+  assert.match(strictLive, /Sign in to open your private Life Movie/)
+})
