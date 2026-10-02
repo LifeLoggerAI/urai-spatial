@@ -94,6 +94,13 @@ body[data-urai-home-spatial-shell="true"] {
   backdrop-filter: blur(12px) saturate(1.18) !important;
 }
 
+/* The CSS fallback keeps the primary route readable after the shared glass
+   treatment replaces its original bright background. */
+body:not(.urai-home-webgl-active) .urai-genesis-home__hero .urai-genesis-home__cta--primary {
+  color: #001621 !important;
+  background: #b9fbff !important;
+}
+
 .urai-genesis-home .urai-genesis-home__orb {
   z-index: 34 !important;
   transform: translateZ(340px) scale(1.08) !important;

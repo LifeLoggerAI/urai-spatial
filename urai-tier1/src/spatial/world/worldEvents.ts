@@ -28,6 +28,8 @@ function buildFallbackHref(request: UraiWorldTravelRequest) {
   if (context?.personId) target.searchParams.set('personId', context.personId)
   if (context?.placeId) target.searchParams.set('placeId', context.placeId)
   if (context?.replayManifestId) target.searchParams.set('manifestId', context.replayManifestId)
+  if (context?.movieId) target.searchParams.set('movieId', context.movieId)
+  if (context?.chapterId) target.searchParams.set('chapterId', context.chapterId)
   if (context?.privacyMode) target.searchParams.set('privacyMode', context.privacyMode)
 
   return `${target.pathname}${target.search}${target.hash}`

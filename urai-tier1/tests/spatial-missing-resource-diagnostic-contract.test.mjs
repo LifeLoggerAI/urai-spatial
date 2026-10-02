@@ -72,7 +72,8 @@ test('canonical compatibility redirects settle before route teardown', () => {
   assert.match(diagnosticSource, /const canonicalRedirectTargets = new Map/)
   assert.match(diagnosticSource, /\['\/ascent', '\/home\?from=ascent'\]/)
   assert.match(diagnosticSource, /\['\/unwind', '\/life-map\?from=unwind&overview=1'\]/)
-  assert.match(diagnosticSource, /await page\.waitForURL\(`\$\{baseUrl\}\$\{canonicalTarget\}`/)
+  assert.match(diagnosticSource, /async function waitForExactPageUrl\(page, expectedUrl, timeoutMs = 60_000\)/)
+  assert.match(diagnosticSource, /await waitForExactPageUrl\(page, expectedUrl\)/)
   assert.match(diagnosticSource, /Spatial diagnostic canonical redirect failed/)
   assert.match(diagnosticSource, /canonicalRedirectTargets: Object\.fromEntries\(canonicalRedirectTargets\)/)
 })
@@ -80,6 +81,8 @@ test('canonical compatibility redirects settle before route teardown', () => {
 test('actionable findings fail and remain in a schema-bound artifact', () => {
   assert.match(diagnosticSource, /urai-spatial-missing-resource-diagnostics-6/)
   assert.match(diagnosticSource, /missing-resources\.json/)
+  assert.match(diagnosticSource, /routeFailures/)
+  assert.match(diagnosticSource, /kind: 'route-navigation-error'/)
   assert.match(diagnosticSource, /if \(actionable\.length\)/)
   assert.match(diagnosticSource, /process\.exitCode = 1/)
 })

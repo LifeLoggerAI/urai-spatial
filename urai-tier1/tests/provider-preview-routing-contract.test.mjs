@@ -8,6 +8,8 @@ const requiredProviderRewrites = [
   { source: '/api/urai/orb/openai', function: { functionId: 'openAiOrbProvider', region: 'us-central1' } },
   { source: '/api/urai/narrator/elevenlabs', function: { functionId: 'elevenLabsVoiceProvider', region: 'us-central1' } },
   { source: '/api/voice/elevenlabs', function: { functionId: 'elevenLabsVoiceProvider', region: 'us-central1' } },
+  { source: '/api/urai/adam/conversation', function: { functionId: 'adamPresenceProvider', region: 'us-central1' } },
+  { source: '/api/urai/adam/voice', function: { functionId: 'adamFounderVoiceProvider', region: 'us-central1' } },
 ]
 
 function hasRewrite(candidate) {
@@ -18,7 +20,7 @@ function hasRewrite(candidate) {
   ))
 }
 
-test('governed Firebase preview routes every live Orb and voice provider request to Functions', () => {
+test('governed Firebase preview routes every live Orb, voice, and Adam provider request to Functions', () => {
   assert.equal(previewConfig.hosting.public, 'urai-tier1/out')
   for (const rewrite of requiredProviderRewrites) {
     assert.ok(hasRewrite(rewrite), `preview missing provider rewrite: ${rewrite.source}`)

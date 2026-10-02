@@ -2,6 +2,7 @@ import UraiFinalAssetSpineBridge from './UraiFinalAssetSpineBridge'
 import './home-spatial-world-final.css'
 import './home-one-world-owner.css'
 import type { Metadata, Viewport } from 'next'
+import { Suspense } from 'react'
 import './globals.css'
 import './launch-home-polish.css'
 import './life-map-production-3d.css'
@@ -56,6 +57,10 @@ import './native-doorway-final-fix.css'
 import './location-map-header-evidence-fix.css'
 import './urai-production-system.css'
 import WorldRuntimeBoundary from '@/spatial/world/WorldRuntimeBoundary'
+import PassiveSignalRuntime from '@/spatial/signals/PassiveSignalRuntime'
+import SensorySafeRuntime from '@/spatial/accessibility/SensorySafeRuntime'
+import LocaleRuntime from './LocaleRuntime'
+import AdamPresenceRuntime from '@/spatial/adam/AdamPresenceRuntime'
 
 const configuredBuildSha = process.env.NEXT_PUBLIC_URAI_BUILD_SHA ?? process.env.GITHUB_SHA ?? ''
 const deployedSha = /^[0-9a-f]{40}$/.test(configuredBuildSha) ? configuredBuildSha : 'unverified'
@@ -127,12 +132,18 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           </div>
         ) : null}
         <WorldRuntimeBoundary>
+          <SensorySafeRuntime />
+          <LocaleRuntime />
+          <PassiveSignalRuntime />
           <UraiAAAARoutePolish />
           <UraiFinalAssetSpineBridge />
           {children}
           <UraiAutonomousV1Layer />
           <UraiV2StateController />
           <UraiV2OnboardingLayer />
+          <Suspense fallback={null}>
+            <AdamPresenceRuntime />
+          </Suspense>
         </WorldRuntimeBoundary>
       </body>
     </html>

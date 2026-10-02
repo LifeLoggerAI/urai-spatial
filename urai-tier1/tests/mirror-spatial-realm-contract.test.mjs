@@ -135,3 +135,10 @@ test('mobile inspection transfers pointer ownership from all overlays to thresho
   assert.match(mobileInspectionCss, /\.mirrorWorld:has\(\.mirrorInspection\) \.mirrorThresholds\s*\{[^}]*z-index:\s*100\s*!important[^}]*pointer-events:\s*auto/s)
   assert.match(mobileInspectionCss, /\.mirrorWorld:has\(\.mirrorInspection\) \.mirrorThresholds button\s*\{[^}]*pointer-events:\s*auto/s)
 })
+
+
+test('Mirror threshold navigation owns the full bottom lane after Adam moves to the side dock', () => {
+  assert.match(clientSource, /\.mirrorThresholds\{[^}]*right:max\(18px,env\(safe-area-inset-right\)\)[^}]*bottom:max\(18px,env\(safe-area-inset-bottom\)\)/)
+  assert.match(clientSource, /@media\(max-width:760px\)[\s\S]*?\.mirrorThresholds\{left:12px;right:12px/)
+  assert.doesNotMatch(clientSource, /mirrorThresholds\{[^}]*right:max\(82px/)
+})

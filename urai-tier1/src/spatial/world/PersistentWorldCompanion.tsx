@@ -13,9 +13,9 @@ import {
 import { useUraiWorldState } from './WorldStateProvider'
 import type { UraiDestination, UraiWorldTravelRequest } from './worldTypes'
 
-const PRIMARY_DESTINATIONS: readonly UraiDestination[] = ['home', 'infrastructure-hub', 'life-map', 'focus', 'replay']
+const PRIMARY_DESTINATIONS: readonly UraiDestination[] = ['home', 'infrastructure-hub', 'life-map', 'focus', 'replay', 'life-movie']
 const SECONDARY_DESTINATIONS: readonly UraiDestination[] = ['mirror', 'passport', 'privacy-controls', 'location-map']
-const CONTEXT_KEYS = ['memoryId', 'node', 'thread', 'personId', 'placeId', 'manifestId', 'privacyMode'] as const
+const CONTEXT_KEYS = ['memoryId', 'node', 'thread', 'personId', 'placeId', 'manifestId', 'movieId', 'chapterId', 'privacyMode'] as const
 const AUDIO_CONSENT_KEY = 'urai:spatial-audio-consent-v1'
 const AUDIO_MUTE_KEY = 'urai:spatial-audio-muted-v1'
 
@@ -49,6 +49,8 @@ function buildCompanionTravelHref(request: UraiWorldTravelRequest) {
   if (context?.personId) target.searchParams.set('personId', context.personId)
   if (context?.placeId) target.searchParams.set('placeId', context.placeId)
   if (context?.replayManifestId) target.searchParams.set('manifestId', context.replayManifestId)
+  if (context?.movieId) target.searchParams.set('movieId', context.movieId)
+  if (context?.chapterId) target.searchParams.set('chapterId', context.chapterId)
   if (context?.privacyMode) target.searchParams.set('privacyMode', context.privacyMode)
   if (request.entryPortal) target.searchParams.set('entryPortal', request.entryPortal)
   if (request.cameraCheckpoint) target.searchParams.set('cameraCheckpoint', request.cameraCheckpoint)
@@ -69,12 +71,14 @@ export function PersistentWorldCompanion() {
   const current = definitionForDestination(world.destination)
   const menuRef = useRef<HTMLDivElement>(null)
   const orbRef = useRef<HTMLButtonElement>(null)
+  const externalTriggerRef = useRef<HTMLElement | null>(null)
   const restoreFocusRef = useRef(false)
   const primaryDestinations = useMemo(() => PRIMARY_DESTINATIONS.map((id) => URAI_DESTINATION_REGISTRY[id]), [])
   const secondaryDestinations = useMemo(() => SECONDARY_DESTINATIONS.map((id) => URAI_DESTINATION_REGISTRY[id]), [])
 
   const closeCompanion = useCallback((restoreFocus = true) => {
     restoreFocusRef.current = restoreFocus
+    if (!restoreFocus) externalTriggerRef.current = null
     setOpen(false)
     publishOrbState('idle', 'companion')
   }, [])
@@ -106,6 +110,10 @@ export function PersistentWorldCompanion() {
 
   useEffect(() => {
     const openCompanion = () => {
+      const active = document.activeElement
+      externalTriggerRef.current = active instanceof HTMLElement && active !== document.body && active !== orbRef.current
+        ? active
+        : null
       setOpen(true)
       publishOrbState('attention', 'companion')
     }
@@ -126,9 +134,15 @@ export function PersistentWorldCompanion() {
     }
     if (restoreFocusRef.current) {
       restoreFocusRef.current = false
-      orbRef.current?.focus()
+      const externalTrigger = externalTriggerRef.current
+      externalTriggerRef.current = null
+      const homeSemanticOrb = world.destination === 'home'
+        ? document.querySelector<HTMLElement>('[data-testid="home-semantic-orb"]')
+        : null
+      const focusTarget = externalTrigger?.isConnected ? externalTrigger : homeSemanticOrb ?? orbRef.current
+      focusTarget?.focus()
     }
-  }, [open])
+  }, [open, world.destination])
 
   useEffect(() => {
     if (!open) return
@@ -158,6 +172,8 @@ export function PersistentWorldCompanion() {
         personId: world.personId,
         placeId: world.placeId,
         replayManifestId: world.replayManifestId,
+        movieId: world.movieId,
+        chapterId: world.chapterId,
         privacyMode: world.privacyMode,
       },
     }

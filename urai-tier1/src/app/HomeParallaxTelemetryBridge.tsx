@@ -2,8 +2,8 @@
 
 import { useEffect } from 'react'
 
-const HOME_SELECTOR = '.urai-final-home-world'
-const HOME_SPAWN_Z = 7.6
+const HOME_SELECTOR = '.urai-asset-home-world[data-home-primary-owner="asset-driven"], .urai-final-home-world'
+const HOME_SPAWN_Z = 8.4
 
 function synchronizeHome(home: HTMLElement) {
   const playerX = Number.parseFloat(home.dataset.homePlayerX ?? '0')

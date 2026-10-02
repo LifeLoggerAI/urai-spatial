@@ -6,6 +6,7 @@ import { Bloom, EffectComposer, Vignette } from "@react-three/postprocessing";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState, type MutableRefObject } from "react";
 import * as THREE from "three";
+import { useWebGLAvailable } from "./HomeSpatialCanvas";
 import {
   MobileMovementPad,
   stepEmbodiedMotion,
@@ -294,6 +295,9 @@ export default function GroundSpatialWorldClean() {
   const router = useRouter();
   const params = useSearchParams();
   const [ready, setReady] = useState(false);
+  const webglAvailable = useWebGLAvailable();
+  const [rendererFailed, setRendererFailed] = useState(false);
+  const webglUsable = webglAvailable === true && !rendererFailed;
   const [nearby, setNearby] = useState<GroundDestination | null>(null);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [dragging, setDragging] = useState(false);
@@ -336,12 +340,13 @@ export default function GroundSpatialWorldClean() {
       data-ground-no-compositing-bands="true"
       data-ground-exploration="walkable"
       data-ground-pointer-lock="false"
-      data-ground-ready={ready ? "true" : "false"}
+      data-ground-ready={webglUsable && ready ? "true" : "false"}
+      data-ground-renderer={webglUsable ? "webgl" : webglAvailable === null ? "detecting" : "fallback"}
       data-ground-camera-mode={dragging ? "look" : "embodied-idle"}
       data-ground-enterable-thresholds={DESTINATIONS.map((destination) => `ground-enterable-threshold-${destination.id}`).join(" ")}
       {...look}
     >
-      <Canvas
+      {webglUsable ? <Canvas
         shadows
         dpr={[1, 1.3]}
         camera={{ position: [0, 8.8, 25], fov: 52, near: 0.08, far: 180 }}
@@ -351,6 +356,11 @@ export default function GroundSpatialWorldClean() {
           gl.outputColorSpace = THREE.SRGBColorSpace;
           gl.toneMapping = THREE.ACESFilmicToneMapping;
           gl.toneMappingExposure = 1.35;
+          gl.domElement.addEventListener("webglcontextlost", (event) => {
+            event.preventDefault();
+            setReady(false);
+            setRendererFailed(true);
+          }, { once: true });
           setReady(true);
         }}
       >
@@ -366,7 +376,11 @@ export default function GroundSpatialWorldClean() {
           }}
           onSelect={focusDestination}
         />
-      </Canvas>
+      </Canvas> : <section className="ground-renderer-fallback" data-testid="urai-ground-accessible-fallback" aria-label="Accessible Ground destinations">
+        <h1>{webglAvailable === null ? "Preparing Ground" : "Spatial view unavailable"}</h1>
+        <p role="status">{webglAvailable === null ? "Checking renderer availability." : "The 3D environment is unavailable. These direct routes remain accessible; this is not the rendered Ground world."}</p>
+        {webglAvailable !== null ? <nav aria-label="Direct Ground routes">{DESTINATIONS.map((destination) => <a key={destination.id} href={destination.href}>{destination.label}</a>)}</nav> : null}
+      </section>}
 
       <header className="ground-brand" aria-hidden="true">
         <span>URAI GROUND</span>
@@ -391,10 +405,19 @@ export default function GroundSpatialWorldClean() {
           </button>
         ))}
       </nav>
-      <MobileMovementPad input={input} label="Ground movement controls" />
-      <span className="sr-only" data-testid="urai-ground-walkable-surface">The authored Ground navigation surface is active.</span>
+      {webglUsable ? <MobileMovementPad input={input} label="Ground movement controls" /> : null}
+      <span className="sr-only" data-testid="urai-ground-walkable-surface">{webglUsable ? "The authored Ground navigation surface is active." : "Use direct Ground routes while the spatial renderer is unavailable."}</span>
 
       <style jsx>{`
+        .ground-renderer-fallback{position:absolute;inset:0;z-index:15;overflow:auto;padding:max(90px,calc(env(safe-area-inset-top) + 80px)) max(24px,env(safe-area-inset-right)) max(30px,env(safe-area-inset-bottom)) max(24px,env(safe-area-inset-left));background:#102b38;touch-action:pan-y;cursor:default}
+        .ground-renderer-fallback h1{font:600 clamp(24px,5vw,40px)/1.2 system-ui}
+        .ground-renderer-fallback p{max-width:680px;line-height:1.5}
+        .ground-renderer-fallback nav{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-top:24px}
+        .ground-renderer-fallback a{display:flex;align-items:center;min-height:48px;padding:12px;border:1px solid currentColor;border-radius:12px;color:inherit;text-decoration:underline}
+        .ground-renderer-fallback a:focus-visible{outline:3px solid currentColor;outline-offset:3px}
+        .ground-spatial-root[data-ground-renderer="fallback"] .ground-directory,.ground-spatial-root[data-ground-renderer="fallback"] .ground-prompt{display:none}
+        .ground-spatial-root[data-ground-renderer="fallback"] .ground-home-return{z-index:16}
+        @media(forced-colors:active){.ground-renderer-fallback{background:Canvas;color:CanvasText}.ground-renderer-fallback a{color:LinkText}}
         .ground-spatial-root{position:fixed;inset:0;width:100vw;height:100svh;overflow:hidden;background:#102b38;color:#f8fbff;isolation:isolate;outline:none;touch-action:none;cursor:${dragging ? "grabbing" : "grab"}}
         .ground-spatial-root canvas{position:absolute!important;inset:0;display:block;width:100%!important;height:100%!important;filter:saturate(1.02) contrast(1.015)}
         .ground-brand{position:absolute;z-index:10;left:max(18px,env(safe-area-inset-left));top:max(18px,env(safe-area-inset-top));display:grid;gap:4px;max-width:min(360px,62vw);pointer-events:none;text-shadow:0 10px 34px rgba(0,0,0,.58)}

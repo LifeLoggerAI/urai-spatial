@@ -3,7 +3,7 @@ repo: LifeLoggerAI/urai-spatial
 owner: TBD
 privacyGovernanceVersion: 0.1.0-draft
 status: blocked_stubbed_from_repo_audit
-lastReviewed: 2026-05-09
+lastReviewed: 2026-09-25
 sourceEvidence:
   - URAI_ECOSYSTEM_AUDIT.md
 
@@ -16,10 +16,12 @@ dataProcessing:
   collectedFields:
     - name: location_record
       collectionOrTable: locations
-      dataClass: L4
+      dataClass: L3
       source: device_or_user_provided
       purpose: associate memories with places or location context
-      consentTier: C4
+      consentTier: C1
+      requiredConsentPurposes:
+        - location.context
       retentionClass: R3
       exportable: true
       deletable: true
@@ -27,11 +29,13 @@ dataProcessing:
   derivedFields:
     - name: location_memory_context
       collectionOrTable: locations
-      dataClass: L4
+      dataClass: L3
       sourceFields:
         - location_record
       purpose: user-facing place-based memory organization
-      consentTier: C4
+      consentTier: C1
+      requiredConsentPurposes:
+        - location.context
       retentionClass: R3
       exportable: true
       deletable: true
@@ -60,4 +64,4 @@ monetization:
 review:
   reviewer: TBD
   decision: blocked_until_implemented_and_reviewed
-  notes: Repo audit marks locations as stubbed. Location data is sensitive context and must not launch until explicit consent, revocation, export, deletion, and audit behavior are implemented and tested.
+  notes: Repo audit marks locations as stubbed. Location context is governed by canonical C3 location.context authority. Exact-location use remains explicit opt-in and must preserve revocation, export, deletion, and audit behavior.
