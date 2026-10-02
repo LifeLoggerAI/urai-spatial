@@ -26,6 +26,7 @@ test('Tier-0 canon defines the required persistent-world destinations', () => {
     'location-map',
     'focus',
     'replay',
+    'life-movie',
   ]) {
     assert.match(worldTypes, new RegExp(`['"]${destination}['"]`))
     assert.match(registry, new RegExp(`['"]${destination}['"]`))
@@ -86,7 +87,7 @@ test('The root application owns one persistent world shell', () => {
 })
 
 test('Travel preserves context and supports deterministic reversal', () => {
-  for (const key of ['memoryId', 'thread', 'personId', 'placeId', 'manifestId', 'privacyMode']) {
+  for (const key of ['memoryId', 'thread', 'personId', 'placeId', 'manifestId', 'movieId', 'chapterId', 'privacyMode']) {
     assert.match(controller, new RegExp(`['"]${key}['"]`))
   }
   assert.match(provider, /previousDestination/)
