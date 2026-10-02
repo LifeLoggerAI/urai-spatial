@@ -126,6 +126,7 @@ const PATH_DESTINATIONS: readonly [string, UraiDestination][] = [
   ['/mirror', 'mirror'],
   ['/focus', 'focus'],
   ['/replay', 'replay'],
+  ['/life-movie', 'life-movie'],
   ['/home', 'home'],
   ['/', 'home'],
 ]
