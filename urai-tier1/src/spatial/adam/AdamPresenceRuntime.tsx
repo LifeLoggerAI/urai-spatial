@@ -75,6 +75,7 @@ export default function AdamPresenceRuntime() {
   const voiceQueue = useRef(Promise.resolve())
   const voiceGeneration = useRef(0)
   const streamingSpeechBuffer = useRef('')
+  const activeSurfacePath = useRef(pathname)
 
   const stopVoice = useCallback(() => {
     voiceGeneration.current += 1
@@ -102,6 +103,18 @@ export default function AdamPresenceRuntime() {
 
   useEffect(() => () => stopAll(), [stopAll])
   useEffect(() => {
+    const surfaceChanged = activeSurfacePath.current !== pathname
+    activeSurfacePath.current = pathname
+    if (surfaceChanged) {
+      conversationAborter.current?.abort()
+      conversationAborter.current = null
+      recognitionRef.current?.abort()
+      recognitionRef.current = null
+      setListening(false)
+      setBusy(false)
+      setMessages([])
+      setMessage('')
+    }
     stopVoice()
     setStreamedText('')
     if (pathname === '/adam') setOpen(true)

@@ -65,6 +65,15 @@ test('Adam streams provider text before the structured response is fully complet
   assert.match(functions, /type: 'error', code: boundary\.code/)
 })
 
+test('Adam fails closed across surface navigation boundaries', () => {
+  assert.match(runtime, /const activeSurfacePath = useRef\(pathname\)/)
+  assert.match(runtime, /const surfaceChanged = activeSurfacePath\.current !== pathname/)
+  assert.equal((runtime.match(/conversationAborter\.current\?\.abort\(\)/g) ?? []).length, 2)
+  assert.equal((runtime.match(/recognitionRef\.current\?\.abort\(\)/g) ?? []).length, 2)
+  assert.match(runtime, /setMessages\(\[\]\)/)
+  assert.match(runtime, /setMessage\(''\)/)
+})
+
 test('Adam runtime includes interruption, voice input, captions and text fallback behavior', () => {
   assert.match(runtime, /SpeechRecognition/)
   assert.match(runtime, /stopVoice/)
