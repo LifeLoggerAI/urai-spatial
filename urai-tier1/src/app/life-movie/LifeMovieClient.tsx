@@ -129,8 +129,8 @@ export default function LifeMovieClient() {
   }, [identityReady, requestedMemoryId, requestedMovieId, runtimeManifest, user])
 
   const active = memories[activeIndex] ?? null
-  const activeChapter = requestedMovieId && runtimeManifest.status === 'ready' && runtimeManifest.manifest
-    ? runtimeManifest.manifest.chapters[activeIndex] ?? null
+  const activeChapter = requestedMovieId && active && runtimeManifest.status === 'ready' && runtimeManifest.manifest
+    ? runtimeManifest.manifest.chapters.find((chapter) => chapter.memoryId === active.id) ?? null
     : null
   const media = active ? mediaFor(active) : null
   const chapterDurationMs = useMemo(() => {
@@ -217,8 +217,8 @@ export default function LifeMovieClient() {
         movieId,
         status: 'ready',
         chapters: memories.map((memory, index) => ({
-          id: activeChapter && runtimeManifest.status === 'ready' && runtimeManifest.manifest
-            ? runtimeManifest.manifest.chapters[index]?.id ?? `chapter:${index}:${memory.id}`
+          id: runtimeManifest.status === 'ready' && runtimeManifest.manifest
+            ? runtimeManifest.manifest.chapters.find((chapter) => chapter.memoryId === memory.id)?.id ?? `chapter:${index}:${memory.id}`
             : `chapter:${index}:${memory.id}`,
           memoryId: memory.id,
           order: index,
