@@ -35,3 +35,14 @@ test('entity revocation propagates a revoked derivative state', () => {
   assert.match(source, /revokeLifeEntity/)
   assert.match(source, /revoked \? 'revoked' : 'invalidated'/)
 })
+
+
+test('corrections create a new accepted testimony claim instead of deleting truth', () => {
+  assert.match(source, /replacementClaimId/)
+  assert.match(source, /DIRECT_SUBJECT_TESTIMONY/)
+  assert.match(source, /ATTRIBUTED_TESTIMONY/)
+  assert.match(source, /correctsClaimId: targetClaimId/)
+  assert.match(source, /status: 'accepted'/)
+  assert.match(source, /supersededByClaimId: replacementClaimId/)
+  assert.match(source, /synthetic: false/)
+})
