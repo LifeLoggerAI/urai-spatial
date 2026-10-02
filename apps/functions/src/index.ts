@@ -55,6 +55,8 @@ export {
   closePersonPresenceSession,
   getPersonPresenceCapabilities,
   preparePersonPresenceSession,
+  promotePersonRenderBinding,
+  revokePersonRenderBinding,
 } from './personPresenceFunctions'
 
 
