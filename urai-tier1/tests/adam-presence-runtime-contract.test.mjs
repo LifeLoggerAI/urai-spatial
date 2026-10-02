@@ -92,5 +92,6 @@ test('Adam canonical route is release-classified and its Life Map launcher canno
   assert.ok(routeManifest.classification.publicExact.includes('/adam'))
   assert.match(runtime, /pathname === '\\/life-map'/)
   assert.match(runtime, /styles\.lifeMapLauncher/)
-  assert.match(styles, /\.lifeMapLauncher\s*\{[\s\S]*top:[\s\S]*bottom:\s*auto/)
+  assert.match(styles, /\.launcher\s*\{[\s\S]*top:\s*50%[\s\S]*bottom:\s*auto[\s\S]*transform:\s*translateY\(-50%\)/)
+  assert.match(styles, /\.lifeMapLauncher\s*\{[\s\S]*top:\s*50%/)
 })
