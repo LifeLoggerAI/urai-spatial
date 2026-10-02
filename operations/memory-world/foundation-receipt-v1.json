@@ -1,0 +1,45 @@
+{
+  "schemaVersion": "urai-memory-world-foundation-receipt-1",
+  "status": "IMPLEMENTED_MOUNTED_BOUNDED_TEMPLATE_RUNTIME_UNCERTIFIED",
+  "parentAuthority": {
+    "repository": "LifeLoggerAI/urai-spatial",
+    "pullRequest": 1462,
+    "exactParentHead": "24d513c84e38e02c865c520f0f8de23be79919d2",
+    "branch": "converge/android-wif-terminal-20260929",
+    "identityScope": "Observed runtime source anchor before this receipt-only update; this receipt intentionally does not self-bind to the commit containing itself."
+  },
+  "childBranch": "feat/memory-world-runtime-20260930-v4",
+  "implemented": [
+    "324-archetype foundational scene ontology",
+    "MVP / Phase 2 / mature quantitative library targets",
+    "Memory World schema with 20-layer hybrid representation authority",
+    "T0-T7 truth classes and source/reuse permission registry",
+    "cultural-governance and licensing fail-closed validation",
+    "deterministic personal-evidence override assembly",
+    "25-world diverse QA corpus",
+    "unit-contract coverage for ontology, precedence, truth and cultural escalation"
+  ],
+  "nonClaims": [
+    "No Gold Master claim",
+    "No production-live scene claim",
+    "No complete 10,000-object mature library claim",
+    "No independent approval claim",
+    "No browser/mobile/XR runtime certification claim",
+    "No private Parents House reconstruction claim"
+  ],
+  "supersedes": {
+    "branch": "feat/memory-world-foundation-20260930-v2",
+    "pullRequest": 1476,
+    "reason": "release authority advanced during runtime integration; successor re-anchored without force-push"
+  },
+  "runtime": {
+    "mountedRoute": "/spatial/memory-world",
+    "routeOwner": "urai-tier1/src/app/spatial/memory-world/MemoryWorldRouteClient.tsx",
+    "rendererOwner": "urai-tier1/src/spatial/memory-world/MemoryWorldRuntime.tsx",
+    "state": "mounted-bounded-template-runtime",
+    "navigation": "bounded-orbit",
+    "truthBoundary": "T4 contextual templates remain non-autobiographical unless source-backed reconstruction is separately authorized.",
+    "visualMaturity": "blockout/context-template; not Gold Master",
+    "certification": "not browser/mobile/XR certified"
+  }
+}

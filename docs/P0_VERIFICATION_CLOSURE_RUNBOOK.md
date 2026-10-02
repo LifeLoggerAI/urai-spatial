@@ -13,9 +13,9 @@ This runbook turns the V1-V100 verification ledger into an executable closure pa
 
 ## Current release authority
 
-- `.github/workflows/spatial-live-deploy.yml` is the sole production deploy and rollback authority.
-- `scripts/live-release.mjs` refuses deployment outside that protected manual workflow.
-- Production and rollback both use the protected `production` environment.
+- `.github/workflows/spatial-live-deploy.yml` is verification-only / NO-GO and cannot mutate production.
+- `.github/workflows/spatial-governed-wif-deploy.yml` is the sole manual governed Hosting mutation authority in candidate source.
+- The governed workflow requires exact independent approval, merge, successful exact-head Governance, a distinct rollback ancestor, protected `production` approval, WIF/OIDC identity, post-deploy smoke, and automatic rollback on failed certification.
 - Local `firebase deploy`, `pnpm live:deploy`, and retired proof-loop deploy commands are not approved release paths.
 - An exact tested SHA, a distinct proven rollback SHA, current live smoke, and immutable workflow artifacts are required before a production claim.
 
@@ -115,10 +115,11 @@ Before dispatch:
 Approved production dispatch:
 
 ```bash
-gh workflow run spatial-live-deploy.yml \
+gh workflow run spatial-governed-wif-deploy.yml \
   --ref main \
-  -f release_sha=<EXACT_CURRENT_MAIN_SHA> \
+  -f release_sha=<EXACT_APPROVED_MERGED_PR_HEAD_SHA> \
   -f rollback_sha=<DISTINCT_PROVEN_PRODUCTION_SHA> \
+  -f pull_request=<MERGED_PR_NUMBER> \
   -f confirm=DEPLOY_URAI_APP
 ```
 
@@ -136,19 +137,12 @@ Required deployment evidence:
 - immutable deployment and provider-verification artifacts;
 - protected rollback command.
 
-### 5. Roll back through the same protected workflow
+### 5. Rollback and recovery
 
-The deployment receipt writes the exact recovery command. Its form is:
+The governed WIF deploy captures the current live Hosting version before mutation. If exact post-deploy live certification fails, the workflow automatically restores that predeploy Hosting version and then fails the release.
 
-```bash
-gh workflow run spatial-live-deploy.yml \
-  --ref main \
-  -f release_sha=<PROVEN_ROLLBACK_SHA> \
-  -f rollback_sha=<EXACT_CURRENT_MAIN_SHA> \
-  -f confirm=ROLLBACK_URAI_APP
-```
+There is no automatic legacy dispatcher and no second `spatial-live-deploy.yml` rollback mode in the current contract. Any later manual recovery or alternate release must itself use a separately reviewed, authorized governed path with exact provenance.
 
-The workflow requires the rollback target to be a non-current ancestor of `main`, requires `rollback_sha` to remain the exact current-main recovery authority, re-runs verification against the rollback target, uses the protected production environment, deploys the exact ancestor, and repeats live smoke. Never perform rollback through a local Firebase command.
 
 ### 6. Capture visual evidence
 

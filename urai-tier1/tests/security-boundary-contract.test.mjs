@@ -3,10 +3,13 @@ import fs from "node:fs";
 import test from "node:test";
 
 const providerFunctions = fs.readFileSync(new URL("../../apps/functions/src/providerFunctions.ts", import.meta.url), "utf8");
+const adamFunctions = fs.readFileSync(new URL("../../apps/functions/src/adamPresenceFunctions.ts", import.meta.url), "utf8");
 const staticProviderRoutes = [
   new URL("../src/app/api/voice/elevenlabs/route.ts", import.meta.url),
   new URL("../src/app/api/urai/narrator/elevenlabs/route.ts", import.meta.url),
   new URL("../src/app/api/urai/orb/openai/route.ts", import.meta.url),
+  new URL("../src/app/api/urai/adam/conversation/route.ts", import.meta.url),
+  new URL("../src/app/api/urai/adam/voice/route.ts", import.meta.url),
 ];
 const narratorClient = fs.readFileSync(new URL("../src/spatial/narrator/elevenlabsClient.ts", import.meta.url), "utf8");
 const narratorPlayback = fs.readFileSync(new URL("../src/spatial/narrator/narratorPlayback.ts", import.meta.url), "utf8");
@@ -27,6 +30,13 @@ test("Firebase provider functions require revoked-token checks, saved consent, d
   assert.match(providerFunctions, /defineSecret\('ELEVENLABS_API_KEY'\)/);
   assert.match(providerFunctions, /private, no-store, max-age=0/);
   assert.doesNotMatch(providerFunctions, /NEXT_PUBLIC_(OPENAI|ELEVENLABS)/);
+  assert.match(adamFunctions, /verifyIdToken\([^,]+, true\)/);
+  assert.match(adamFunctions, /privacyPolicy\/current/);
+  assert.match(adamFunctions, /providerRateLimits/);
+  assert.match(adamFunctions, /ADAM_PRESENCE_ENABLED/);
+  assert.match(adamFunctions, /FOUNDER_VOICE_ENABLED/);
+  assert.match(adamFunctions, /FOUNDER_ELEVENLABS_VOICE_ID/);
+  assert.doesNotMatch(adamFunctions, /NEXT_PUBLIC_(OPENAI|ELEVENLABS)/);
 });
 
 test("active narrator client and controller fail closed until session consent", () => {

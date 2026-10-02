@@ -129,6 +129,35 @@ export function sanitizeMemoryId(value: string | null | undefined) {
   return value && SAFE_TOKEN.test(value) ? value : null
 }
 
+function trustedMemoryMediaUrl(value: unknown, storageBucket?: string | null) {
+  const raw = stringValue(value)
+  if (!raw) return null
+  // Runtime callers pass the configured bucket. Omitting the bucket remains supported for
+  // non-runtime parsing/tests that do not dereference media.
+  if (storageBucket === undefined) return raw
+  if (!storageBucket) return null
+  try {
+    const parsed = new URL(raw)
+    if (parsed.protocol !== 'https:') return null
+    if (parsed.hostname === 'firebasestorage.googleapis.com') {
+      return parsed.pathname.startsWith(`/v0/b/${storageBucket}/o/`) ? raw : null
+    }
+    if (parsed.hostname === 'storage.googleapis.com') {
+      return parsed.pathname.startsWith(`/${storageBucket}/`)
+        || parsed.pathname.startsWith(`/download/storage/v1/b/${storageBucket}/o/`)
+        ? raw
+        : null
+    }
+    return parsed.hostname === `${storageBucket}.storage.googleapis.com` ? raw : null
+  } catch {
+    return null
+  }
+}
+
+export function isTrustedMemoryMediaUrl(value: unknown, storageBucket?: string | null) {
+  return trustedMemoryMediaUrl(value, storageBucket) !== null
+}
+
 export function isExplicitDemoRequest(params: URLSearchParams) {
   return params.get('demo') === '1' && params.get('memoryId')?.startsWith('demo:') === true
 }
@@ -167,7 +196,7 @@ export function buildExplicitDemoMemory(id: string): SelectedMemory {
   }
 }
 
-export function parseSelectedMemory(raw: Record<string, unknown>, expectedOwnerId: string, id: string): SelectedMemoryResult {
+export function parseSelectedMemory(raw: Record<string, unknown>, expectedOwnerId: string, id: string, trustedStorageBucket?: string | null): SelectedMemoryResult {
   if (raw.deleted === true) return { status: 'deleted', memory: null, message: 'This memory was deleted.' }
   const ownerId = stringValue(raw.ownerId ?? raw.userId)
   if (!ownerId || ownerId !== expectedOwnerId) return { status: 'unauthorized', memory: null, message: 'This memory is not available to this account.' }
@@ -274,7 +303,7 @@ export function parseSelectedMemory(raw: Record<string, unknown>, expectedOwnerI
         if (!item || typeof item !== 'object') return []
         const value = item as Record<string, unknown>
         const kind = value.kind
-        const url = stringValue(value.url)
+        const url = trustedMemoryMediaUrl(value.url, trustedStorageBucket)
         return url && (kind === 'image' || kind === 'video' || kind === 'audio') ? [{ kind, url, caption: stringValue(value.caption) ?? undefined }] : []
       }) : [],
       privacy,
@@ -284,7 +313,7 @@ export function parseSelectedMemory(raw: Record<string, unknown>, expectedOwnerI
         durationMs: replayDurationMs,
         segments: chronologicalSegments,
         transcript: stringValue(replay?.transcript) ?? undefined,
-        audioUrl: stringValue(replay?.audioUrl) ?? undefined,
+        audioUrl: trustedMemoryMediaUrl(replay?.audioUrl, trustedStorageBucket) ?? undefined,
       },
       narrator: {
         focus: stringValue((raw.narrator as Record<string, unknown> | undefined)?.focus) ?? summary,

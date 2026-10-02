@@ -43,18 +43,27 @@ pnpm smoke:live
 - [ ] If launching with final assets, strict asset gate returns `V1_V6_ASSETS_ACTIVE`.
 - [ ] If launching before final assets, release notes explicitly say final assets are pending.
 - [ ] Replay/Tier-5 browser evidence is collected but not confused with core product safety.
-- [ ] Firebase deploy credentials are present.
+- [ ] Exact candidate head has legitimate independent approval and successful Release Governance Guard.
+- [ ] Candidate PR is merged without head drift and the merged PR number is recorded.
+- [ ] Distinct proven rollback ancestor is recorded.
+- [ ] Separate deployment authorization has been granted.
+- [ ] Protected `production` environment and Google WIF/OIDC path are available; no long-lived Firebase credential is required.
 - [ ] Live URL is set for smoke checks.
 
 ## Deploy command
 
 ```bash
-gh workflow run spatial-live-deploy.yml -R LifeLoggerAI/urai-spatial --ref main -f deploy=DEPLOY
+gh workflow run spatial-governed-wif-deploy.yml -R LifeLoggerAI/urai-spatial --ref main \
+  -f release_sha=<EXACT_APPROVED_MERGED_PR_HEAD_SHA> \
+  -f rollback_sha=<DISTINCT_PROVEN_ROLLBACK_SHA> \
+  -f pull_request=<MERGED_PR_NUMBER> \
+  -f confirm=DEPLOY_URAI_APP
 ```
 
 ## After deploy
 
-- [ ] Smoke live URL.
+- [ ] Confirm governed workflow exact post-deploy smoke succeeded; if it failed, confirm automatic Hosting rollback restored the predeploy version.
+- [ ] Smoke live URL independently.
 - [ ] Save workflow evidence artifact.
 - [ ] Confirm `/`, `/home`, `/life-map`, `/focus`, `/replay`, `/unwind`, `/spatial`, `/spatial/ar-vr`, `/privacy-controls`, `/status`.
 - [ ] Confirm no privacy/fallback claim is broken.

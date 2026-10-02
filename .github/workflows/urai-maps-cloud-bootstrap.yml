@@ -74,7 +74,6 @@ jobs:
 
       - name: Verify static workflow contract
         run: |
-          corepack enable
           pnpm install --frozen-lockfile
           pnpm --filter urai-tier1 exec node --import tsx --test tests/maps-cloud-bootstrap-contract.test.mjs
 
