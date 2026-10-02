@@ -26,3 +26,10 @@ export { getCapturedRealityAsset, getCapturedRealityRuntimeUrl, getCapturedReali
 export { getInterpretiveWorldAsset, getInterpretiveWorldRuntimeUrl, getInterpretiveWorldReplayEntry } from './interpretiveWorld'
 
 export { recordPassiveSignal } from './passiveSignals'
+
+export {
+  anthropicCouncilProvider,
+  geminiCouncilProvider,
+  mistralCouncilProvider,
+  xaiCouncilProvider,
+} from './councilProviderFunctions'
