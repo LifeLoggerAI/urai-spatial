@@ -15,6 +15,10 @@
   backdrop-filter: blur(18px);
   box-shadow: 0 14px 42px rgba(0,0,0,.38);
 }
+.lifeMapLauncher {
+  top: max(56px, calc(env(safe-area-inset-top) + 56px));
+  bottom: auto;
+}
 .panel {
   position: fixed;
   right: max(16px, env(safe-area-inset-right));
