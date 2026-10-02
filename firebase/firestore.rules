@@ -183,6 +183,61 @@ service cloud.firestore {
         allow write: if false;
       }
 
+      // Life Causal Graph / Person-World model. All writes are server-authoritative.
+      // Owners may read only their own graph and receipts; Admin SDK performs governed writes.
+      match /lifeEntities/{docId} {
+        allow read: if isSelf(uid);
+        allow write: if false;
+      }
+      match /lifeEntityStates/{docId} {
+        allow read: if isSelf(uid);
+        allow write: if false;
+      }
+      match /lifeClaims/{docId} {
+        allow read: if isSelf(uid);
+        allow write: if false;
+      }
+      match /lifeRelationships/{docId} {
+        allow read: if isSelf(uid);
+        allow write: if false;
+      }
+      match /lifeEvents/{docId} {
+        allow read: if isSelf(uid);
+        allow write: if false;
+      }
+      match /lifeCorrections/{docId} {
+        allow read: if isSelf(uid);
+        allow write: if false;
+      }
+      match /lifeConflicts/{docId} {
+        allow read: if isSelf(uid);
+        allow write: if false;
+      }
+      match /knowledgeGaps/{docId} {
+        allow read: if isSelf(uid);
+        allow write: if false;
+      }
+      match /personModelBundles/{docId} {
+        allow read: if isSelf(uid);
+        allow write: if false;
+      }
+      match /sceneTruthPackets/{docId} {
+        allow read: if isSelf(uid);
+        allow write: if false;
+      }
+      match /renderManifests/{docId} {
+        allow read: if isSelf(uid);
+        allow write: if false;
+      }
+      match /simulationSessions/{docId} {
+        allow read: if isSelf(uid);
+        allow write: if false;
+      }
+      match /lifeModelReceipts/{docId} {
+        allow read: if isSelf(uid);
+        allow write: if false;
+      }
+
       match /homeWorld/{docId} {
         allow read: if isSelf(uid) || isAdmin();
         allow create, update: if isAdmin() || (docId == 'state' && isValidHomeWorldStateWrite(uid));
