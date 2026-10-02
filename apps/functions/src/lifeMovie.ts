@@ -126,6 +126,10 @@ function trustedChapterFromMemory(requested: RequestedChapter, snapshot: Firebas
   const audioMixId = typeof lifeMovie?.audioMixId === 'string' && SAFE_TOKEN.test(lifeMovie.audioMixId)
     ? lifeMovie.audioMixId
     : undefined
+  const sceneTruthPacketId = typeof lifeMovie?.sceneTruthPacketId === 'string' && SAFE_TOKEN.test(lifeMovie.sceneTruthPacketId)
+    ? lifeMovie.sceneTruthPacketId
+    : undefined
+  const personModelBundleIds = tokenArray(lifeMovie?.personModelBundleIds)
 
   return {
     id: requested.id,
@@ -138,6 +142,8 @@ function trustedChapterFromMemory(requested: RequestedChapter, snapshot: Firebas
     ...(spatialAssetId ? { spatialAssetId } : {}),
     ...(captionTrackId ? { captionTrackId } : {}),
     ...(audioMixId ? { audioMixId } : {}),
+    ...(sceneTruthPacketId ? { sceneTruthPacketId } : {}),
+    personModelBundleIds,
     languageTracks: tokenArray(lifeMovie?.languageTracks),
     ...(internalHref(lifeMovie?.replayEntry) ? { replayEntry: internalHref(lifeMovie?.replayEntry) } : {}),
     ...(internalHref(lifeMovie?.replayExit) ? { replayExit: internalHref(lifeMovie?.replayExit) } : {}),
@@ -150,6 +156,57 @@ function trustedChapterFromMemory(requested: RequestedChapter, snapshot: Firebas
   }
 }
 
+async function requireReadyLifeModelAuthority(
+  uid: string,
+  chapters: ReturnType<typeof trustedChapterFromMemory>[],
+) {
+  const sceneIds = [...new Set(chapters.map((chapter) => chapter.sceneTruthPacketId).filter((value): value is string => Boolean(value)))]
+  if (sceneIds.length !== chapters.length) {
+    throw new functions.https.HttpsError('failed-precondition', 'READY_LIFE_MOVIE_REQUIRES_SCENE_TRUTH')
+  }
+  const bundleIds = [...new Set(chapters.flatMap((chapter) => chapter.personModelBundleIds))]
+  const [sceneSnapshots, bundleSnapshots] = await Promise.all([
+    sceneIds.length ? db.getAll(...sceneIds.map((id) => db.doc(`users/${uid}/sceneTruthPackets/${id}`))) : [],
+    bundleIds.length ? db.getAll(...bundleIds.map((id) => db.doc(`users/${uid}/personModelBundles/${id}`))) : [],
+  ])
+  const dependencyIds = new Set<string>(chapters.map((chapter) => chapter.memoryId))
+
+  for (const scene of sceneSnapshots) {
+    if (
+      !scene.exists
+      || scene.get('ownerId') !== uid
+      || scene.get('schemaVersion') !== 'urai-life-model-v1'
+      || scene.get('state') !== 'current'
+      || scene.get('syntheticOutputMayBecomeHistoricalSource') !== false
+      || !['READY','READY_WITH_OCCLUSION','READY_INTERPRETIVE'].includes(String(scene.get('decision') ?? ''))
+    ) {
+      throw new functions.https.HttpsError('failed-precondition', 'Life Movie SceneTruth authority is unavailable.')
+    }
+    dependencyIds.add(scene.id)
+    for (const dependency of Array.isArray(scene.get('dependencyIds')) ? scene.get('dependencyIds') : []) {
+      dependencyIds.add(String(dependency))
+    }
+  }
+
+  for (const bundle of bundleSnapshots) {
+    if (
+      !bundle.exists
+      || bundle.get('ownerId') !== uid
+      || bundle.get('schemaVersion') !== 'urai-life-model-v1'
+      || bundle.get('state') !== 'current'
+      || bundle.get('synthetic') !== false
+    ) {
+      throw new functions.https.HttpsError('failed-precondition', 'Life Movie Person Model authority is unavailable.')
+    }
+    dependencyIds.add(bundle.id)
+    for (const dependency of Array.isArray(bundle.get('dependencyIds')) ? bundle.get('dependencyIds') : []) {
+      dependencyIds.add(String(dependency))
+    }
+  }
+
+  return [...dependencyIds]
+}
+
 export const upsertLifeMovieManifest = lifeMovieFunctions.https.onCall(async (data, context) => {
   const uid = requireUid(context)
   const movieId = requireToken(data?.movieId, 'movieId')
@@ -158,6 +215,9 @@ export const upsertLifeMovieManifest = lifeMovieFunctions.https.onCall(async (da
   const refs = requested.map((chapter) => db.doc(`users/${uid}/memories/${chapter.memoryId}`))
   const snapshots = await db.getAll(...refs)
   const chapters = requested.map((chapter, index) => trustedChapterFromMemory(chapter, snapshots[index]))
+  const dependencyIds = status === 'ready'
+    ? await requireReadyLifeModelAuthority(uid, chapters)
+    : [...new Set(chapters.map((chapter) => chapter.memoryId))]
 
   const ref = db.doc(`users/${uid}/lifeMovies/${movieId}`)
   await db.runTransaction(async (transaction) => {
@@ -169,6 +229,9 @@ export const upsertLifeMovieManifest = lifeMovieFunctions.https.onCall(async (da
       ownerId: uid,
       status,
       consentState: 'authorized',
+      lifeModelSchemaVersion: 'urai-life-model-v1',
+      syntheticOutputMayBecomeHistoricalSource: false,
+      dependencyIds,
       chapters,
       updatedAt: admin.firestore.FieldValue.serverTimestamp(),
       createdAt: current.exists
