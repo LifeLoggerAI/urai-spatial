@@ -19,6 +19,31 @@ if (!fs.existsSync(rulesPath)) {
   process.exit(1)
 }
 
+const storageRulesPath = firebaseConfig.storage?.rules
+if (storageRulesPath !== 'firebase/storage.rules') {
+  console.error(`Firebase deploy must bind canonical Storage rules, found: ${storageRulesPath || 'none'}`)
+  process.exit(1)
+}
+
+if (!fs.existsSync(storageRulesPath)) {
+  console.error(`Missing ${storageRulesPath}`)
+  process.exit(1)
+}
+
+const storageRules = fs.readFileSync(storageRulesPath, 'utf8')
+if (!storageRules.includes('service firebase.storage')) {
+  console.error('Firebase Storage rules must declare service firebase.storage')
+  process.exit(1)
+}
+if (!storageRules.includes('match /{allPaths=**}') || !storageRules.includes('allow read, write: if false;')) {
+  console.error('Firebase Storage client boundary must fail closed by default.')
+  process.exit(1)
+}
+if (/allow\s+(?:read|write|read\s*,\s*write)\s*:\s*if\s+true\s*;/i.test(storageRules)) {
+  console.error('Firebase Storage boundary must not contain unconditional client access.')
+  process.exit(1)
+}
+
 const rules = fs.readFileSync(rulesPath, 'utf8')
 const contractPath = 'firebase/spatial-collection-contract.json'
 if (!fs.existsSync(contractPath)) {
@@ -106,4 +131,4 @@ for (const collection of spatialContract.collections ?? []) {
   }
 }
 
-console.log('Firestore Tier-1 and Spatial contract boundaries passed.')
+console.log('Firestore Tier-1, Spatial contract, and fail-closed Storage boundaries passed.')
