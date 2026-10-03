@@ -149,8 +149,16 @@ export default function LifeMapSemanticNavigator({ authenticatedUserId = null }:
         setOpen(true)
       }
     }
+    const onStepRequest = (event: Event) => {
+      const direction = (event as CustomEvent<{ direction?: number }>).detail?.direction
+      if (direction === 1 || direction === -1) step(direction)
+    }
     window.addEventListener('keydown', onKeyDown, true)
-    return () => window.removeEventListener('keydown', onKeyDown, true)
+    window.addEventListener('urai:life-map-step', onStepRequest as EventListener)
+    return () => {
+      window.removeEventListener('keydown', onKeyDown, true)
+      window.removeEventListener('urai:life-map-step', onStepRequest as EventListener)
+    }
   }, [closeNavigator, open, overview, step])
 
   const related = selected ? nodes.filter((node) => selected.connectedTo.includes(node.id) || node.connectedTo.includes(selected.id)) : []
