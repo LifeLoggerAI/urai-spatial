@@ -153,6 +153,12 @@ test('Only explicit demo identity can load the coherent disclosed sample univers
   }
 })
 
+test('Signed-out WebGL realm exposes machine-verifiable privacy isolation', () => {
+  assert.ok(canonical.includes('data-life-map-source={mode}'))
+  assert.ok(canonical.includes('data-private-memory-mounted={mode === "signed-out" ? "false" : undefined}'))
+  assert.ok(canonical.includes('data-testid="urai-life-map-signed-out-disclosure"'))
+})
+
 test('Signed-out threshold never mounts private memory data', () => {
   assert.ok(canonical.includes('data-testid="urai-life-map-signed-out-threshold"'))
   assert.ok(canonical.includes('data-private-memory-mounted="false"'))
