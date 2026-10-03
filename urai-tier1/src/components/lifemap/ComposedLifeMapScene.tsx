@@ -57,7 +57,7 @@ function goalForNode(node: LifeMapNode, phase: JourneyPhase, portrait: boolean):
   return { position: tuple(arrival), target: tuple(target) };
 }
 
-function CameraRig({ selected, phase, reducedMotion }: { selected: LifeMapNode | null; phase: JourneyPhase; reducedMotion: boolean }) {
+function CameraRig({ selected, phase, reducedMotion, shellRef }: { selected: LifeMapNode | null; phase: JourneyPhase; reducedMotion: boolean; shellRef: React.RefObject<HTMLElement | null> }) {
   const { camera, size } = useThree();
   const initialized = useRef(false);
   const positionGoal = useRef(new THREE.Vector3());
@@ -120,6 +120,16 @@ function CameraRig({ selected, phase, reducedMotion }: { selected: LifeMapNode |
     if (camera instanceof THREE.PerspectiveCamera) {
       camera.fov = reducedMotion ? fov : THREE.MathUtils.damp(camera.fov, fov, 4.6, delta);
       camera.updateProjectionMatrix();
+    }
+    const shell = shellRef.current;
+    if (shell) {
+      shell.dataset.lifeMapCameraX = camera.position.x.toFixed(4);
+      shell.dataset.lifeMapCameraY = camera.position.y.toFixed(4);
+      shell.dataset.lifeMapCameraZ = camera.position.z.toFixed(4);
+      shell.dataset.lifeMapTargetX = lookTarget.current.x.toFixed(4);
+      shell.dataset.lifeMapTargetY = lookTarget.current.y.toFixed(4);
+      shell.dataset.lifeMapTargetZ = lookTarget.current.z.toFixed(4);
+      shell.dataset.lifeMapFov = camera instanceof THREE.PerspectiveCamera ? camera.fov.toFixed(3) : "46";
     }
   });
   return null;
@@ -239,6 +249,7 @@ export default function ComposedLifeMapScene() {
   const [phase, setPhase] = useState<JourneyPhase>("overview");
   const [webglState, setWebglState] = useState<WebGLState>("ready");
   const journeyToken = useRef(0);
+  const shellRef = useRef<HTMLElement | null>(null);
   const localSelectionId = useRef<string | null>(null);
   const overviewPending = useRef(overviewRequested);
   const restoredRoutePending = useRef(Boolean(!overviewRequested && queryNode));
@@ -307,8 +318,20 @@ export default function ComposedLifeMapScene() {
     next.set("returnNode", selected.id);
     next.set("artifactFamily", resolveArtifactFamily(selected));
     next.set("from", "life-map");
+    if (route === "focus" && phase === "arrival") {
+      const shell = shellRef.current;
+      const values = shell?.dataset;
+      const camera = values ? [values.lifeMapCameraX, values.lifeMapCameraY, values.lifeMapCameraZ] : [];
+      const target = values ? [values.lifeMapTargetX, values.lifeMapTargetY, values.lifeMapTargetZ] : [];
+      if (camera.every(Boolean) && target.every(Boolean)) {
+        next.set("entryCamera", camera.join(","));
+        next.set("entryTarget", target.join(","));
+        if (values?.lifeMapFov) next.set("entryFov", values.lifeMapFov);
+        next.set("cameraCheckpoint", `life-map-arrival:${selected.id}`);
+      }
+    }
     return `/${route}?${next.toString()}`;
-  }, [selected, withIdentity]);
+  }, [phase, selected, withIdentity]);
 
   useEffect(() => {
     if (!overviewRequested) return;
@@ -358,6 +381,7 @@ export default function ComposedLifeMapScene() {
   const recovery = webglState !== "ready";
   const thresholdsVisible = Boolean(selected);
   return <main
+    ref={shellRef}
     className="life-map-root"
     style={{ position: "fixed", inset: 0, width: "100vw", height: "100svh", minWidth: "100vw", minHeight: "100svh", overflow: "hidden", opacity: 1, visibility: "visible", background: "#02050b" }}
     data-testid="urai-true-3d-life-map"
@@ -399,7 +423,7 @@ export default function ComposedLifeMapScene() {
           phase={phase as LifeMapJourneyPhase}
           profile={profile}
           onSelect={selectNode}
-          cameraRig={<CameraRig selected={selected} phase={phase} reducedMotion={profile.reducedMotion} />}
+          cameraRig={<CameraRig selected={selected} phase={phase} reducedMotion={profile.reducedMotion} shellRef={shellRef} />}
           webglRecovery={null}
         />
       </Suspense>
