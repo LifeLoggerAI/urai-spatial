@@ -235,11 +235,13 @@ test('privacy-safe denied, deleted, unavailable, and corrupt states exist', () =
   assert.match(contract, /replay manifest is incomplete/i)
 })
 
-test('Replay keeps the user inside the memory environment and subordinates presentation chrome', () => {
-  assert.match(replay, /data-replay-spatial-owner="r3f-immersive-memory-field"/)
-  assert.match(replay, /data-replay-composition="inside-memory-environment-ui-subordinate"/)
-  assert.match(replay, /data-replay-environment-fallback="approved-memory-asset"/)
-  assert.match(replay, /background-image:linear-gradient\([^}]*var\(--replay-asset\)/)
+test('Replay preserves inside-memory demonstration canon without admitting it as personal evidence', () => {
+  assert.match(replay, /demoEnvironment && webgl\.state === 'ready' \? 'r3f-immersive-memory-field'/)
+  assert.match(replay, /data-replay-composition=\{demoEnvironment \? 'inside-memory-environment-ui-subordinate' : 'recorded-source-or-neutral-fallback'\}/)
+  assert.match(replay, /data-replay-environment-fallback=\{admission\.kind\}/)
+  assert.match(replay, /data-canonical-asset=\{demoEnvironment \? replayAssets\.primary\.src : undefined\}/)
+  assert.doesNotMatch(replay, /var\(--replay-asset\)|approved-memory-asset/)
+  assert.match(replay, /A spatial reconstruction is not established by this source/)
   assert.match(replay, /width:min\(680px,74vw\)/)
   assert.doesNotMatch(replay, /projection|projector|movie screen/i)
 })
@@ -250,7 +252,7 @@ test('Focus and Replay share exact selected memory and manifest identity', () =>
   assert.match(focus, /data-star-id=\{memory\?\.star\.id\}/)
   assert.match(replay, /data-star-id=\{memory\.star\.id\}/)
   assert.match(focus, /memory\.replayManifest\.id/)
-  assert.match(replay, /memory\?\.replayManifest\.segments/)
+  assert.match(replay, /memory\.replayManifest\.segments/)
   assert.doesNotMatch(focus, /quiet-reset|replay-recovery-thread|The pressure became permission/)
   assert.doesNotMatch(replay, /quiet-reset|seed-memory-bloom|Evening Pattern/)
 })

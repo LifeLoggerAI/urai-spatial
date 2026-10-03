@@ -249,7 +249,7 @@ export function PersistentWorldCompanion() {
         >
           {audioEnabled ? 'Sound on' : 'Sound off'}
         </button>
-        <OrbConversationPanel />
+        <OrbConversationPanel active={open && phase === 'idle'} />
       </div>
       <button
         ref={orbRef}

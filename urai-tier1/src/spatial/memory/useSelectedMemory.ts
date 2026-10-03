@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
-import { doc, getDoc } from 'firebase/firestore'
+import { doc, onSnapshot } from 'firebase/firestore'
 import { getAuth, onAuthStateChanged } from 'firebase/auth'
 import { app, firebasePublicEnvReady, getFirebaseDb } from '@/lib/firebase/client'
 import { buildNamedExplicitDemoMemory } from './explicitDemoMemory'
@@ -46,9 +46,16 @@ function demoContinuationMemoryId(params: URLSearchParams, memoryId: string | nu
 }
 
 export function useSelectedMemory(): SelectedMemoryResult {
+  const [search, setSearch] = useState('')
+  useEffect(() => {
+    const hydrateSelection = () => setSearch(window.location.search)
+    hydrateSelection()
+    window.addEventListener('popstate', hydrateSelection)
+    return () => window.removeEventListener('popstate', hydrateSelection)
+  }, [])
   const params = useMemo(
-    () => typeof window === 'undefined' ? new URLSearchParams() : new URLSearchParams(window.location.search),
-    [],
+    () => new URLSearchParams(search),
+    [search],
   )
   const memoryId = sanitizeMemoryId(params.get('memoryId') ?? params.get('node'))
   const manifestId = sanitizeMemoryId(params.get('manifestId'))
@@ -56,10 +63,22 @@ export function useSelectedMemory(): SelectedMemoryResult {
   const requestedDemoMemoryId = isExplicitDemoRequest(params)
     ? asDemoMemoryId(memoryId)
     : continuedDemoMemoryId
-  const [result, setResult] = useState<SelectedMemoryResult>(LOADING)
+  const selectionKey = JSON.stringify([memoryId, manifestId, requestedDemoMemoryId])
+  const [selection, setSelection] = useState<{ key: string; result: SelectedMemoryResult }>({ key: '', result: LOADING })
 
   useEffect(() => {
+    const setResult = (result: SelectedMemoryResult) => setSelection({ key: selectionKey, result })
     let cancelled = false
+    let generation = 0
+    let unsubscribeMemory: (() => void) | undefined
+
+    // Invalidate callbacks before detaching their source. A queued Firestore
+    // callback must never restore a previous account or revoked memory.
+    const detachMemory = () => {
+      generation += 1
+      unsubscribeMemory?.()
+      unsubscribeMemory = undefined
+    }
 
     if (!memoryId) {
       setResult(unavailable('No selected memory was provided.'))
@@ -82,8 +101,11 @@ export function useSelectedMemory(): SelectedMemoryResult {
     }
 
     const auth = getAuth(app)
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (cancelled) return
+      detachMemory()
+      const activeGeneration = generation
+      const isCurrent = () => !cancelled && generation === activeGeneration
       if (!user) {
         setResult({ status: 'unauthorized', memory: null, message: 'Sign in to open this private memory.' })
         return
@@ -91,29 +113,40 @@ export function useSelectedMemory(): SelectedMemoryResult {
 
       setResult(LOADING)
       try {
-        const snapshot = await getDoc(doc(getFirebaseDb(), 'users', user.uid, 'memories', memoryId))
-        if (cancelled) return
-        if (!snapshot.exists()) {
-          setResult(unavailable('Selected memory could not be found.'))
-          return
-        }
-        const parsed = parseSelectedMemory(snapshot.data(), user.uid, memoryId, process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET)
-        if (parsed.memory && manifestId && parsed.memory.replayManifest.id !== manifestId) {
-          setResult({ status: 'corrupt', memory: null, message: 'The requested replay manifest does not match this memory.' })
-          return
-        }
-        setResult(parsed)
-      } catch (error) {
-        if (cancelled) return
-        setResult(unavailable(error instanceof Error ? error.message : 'Selected memory could not be loaded.'))
+        unsubscribeMemory = onSnapshot(
+          doc(getFirebaseDb(), 'users', user.uid, 'memories', memoryId),
+          (snapshot) => {
+            if (!isCurrent()) return
+            if (!snapshot.exists()) {
+              setResult(unavailable('Selected memory could not be found.'))
+              return
+            }
+            const parsed = parseSelectedMemory(snapshot.data(), user.uid, memoryId, process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET)
+            if (parsed.memory && manifestId && parsed.memory.replayManifest.id !== manifestId) {
+              setResult({ status: 'corrupt', memory: null, message: 'The requested replay manifest does not match this memory.' })
+              return
+            }
+            setResult(parsed)
+          },
+          () => {
+            if (!isCurrent()) return
+            setResult(unavailable('Selected memory could not be loaded.'))
+          },
+        )
+      } catch {
+        if (!isCurrent()) return
+        setResult(unavailable('Selected memory could not be loaded.'))
       }
     })
 
     return () => {
       cancelled = true
+      detachMemory()
       unsubscribe()
     }
-  }, [continuedDemoMemoryId, manifestId, memoryId, params, requestedDemoMemoryId])
+  }, [continuedDemoMemoryId, manifestId, memoryId, params, requestedDemoMemoryId, selectionKey])
 
-  return result
+  // Query navigation can reuse the mounted client. Never render the previous
+  // selection during the frame before its subscription effect is replaced.
+  return selection.key === selectionKey ? selection.result : LOADING
 }

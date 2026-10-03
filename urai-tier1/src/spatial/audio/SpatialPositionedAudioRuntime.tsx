@@ -13,7 +13,7 @@ const CUES: Record<SpatialAudioCue, { src: string; position: [number, number, nu
   error: { src: '/assets/urai/generated/audio/ui-error-v1.opus', position: [0, 1.1, -1.6], gain: 0.38 },
 }
 
-type AudioState = { context: AudioContext; reverb: ConvolverNode; cache: Map<string, AudioBuffer> }
+type AudioState = { context: AudioContext; reverb: ConvolverNode; output: GainNode; cache: Map<string, AudioBuffer>; sources: Set<AudioBufferSourceNode> }
 
 function makeImpulse(context: AudioContext) {
   const duration = 0.42
@@ -39,10 +39,22 @@ async function bufferFor(state: AudioState, src: string) {
   return decoded
 }
 
-async function playPositioned(state: AudioState, cue: SpatialAudioCue) {
+function stopPositioned(state: AudioState | null) {
+  if (state) state.output.gain.value = 0
+  for (const source of state?.sources ?? []) {
+    try { source.stop() } catch { /* already ended */ }
+  }
+  state?.sources.clear()
+}
+
+async function playPositioned(state: AudioState, cue: SpatialAudioCue, permitted: () => boolean) {
   const spec = CUES[cue]
   if (!spec) return
+  const buffer = await bufferFor(state, spec.src)
+  if (!permitted()) return
   if (state.context.state === 'suspended') await state.context.resume()
+  if (!permitted()) return
+  state.output.gain.value = 1
   const source = state.context.createBufferSource()
   const panner = new PannerNode(state.context, {
     panningModel: 'HRTF',
@@ -58,10 +70,18 @@ async function playPositioned(state: AudioState, cue: SpatialAudioCue) {
   const wet = state.context.createGain()
   dry.gain.value = spec.gain
   wet.gain.value = spec.gain * 0.18
-  source.buffer = await bufferFor(state, spec.src)
+  source.buffer = buffer
   source.connect(panner)
-  panner.connect(dry).connect(state.context.destination)
-  panner.connect(wet).connect(state.reverb).connect(state.context.destination)
+  panner.connect(dry).connect(state.output)
+  panner.connect(wet).connect(state.reverb)
+  source.onended = () => {
+    state.sources.delete(source)
+    source.disconnect()
+    panner.disconnect()
+    dry.disconnect()
+    wet.disconnect()
+  }
+  state.sources.add(source)
   source.start()
 }
 
@@ -70,6 +90,7 @@ export default function SpatialPositionedAudioRuntime() {
   const enabledRef = useRef(false)
   const mutedRef = useRef(true)
   const sensorySafeRef = useRef(false)
+  const generationRef = useRef(0)
 
   useEffect(() => {
     try {
@@ -86,22 +107,36 @@ export default function SpatialPositionedAudioRuntime() {
       const AudioContextCtor = window.AudioContext
       const context = new AudioContextCtor({ latencyHint: 'interactive' })
       const reverb = context.createConvolver()
+      const output = context.createGain()
       reverb.buffer = makeImpulse(context)
-      stateRef.current = { context, reverb, cache: new Map() }
+      reverb.connect(output).connect(context.destination)
+      stateRef.current = { context, reverb, output, cache: new Map(), sources: new Set() }
       return stateRef.current
     }
 
     const onConsent = (event: Event) => {
+      generationRef.current += 1
       enabledRef.current = Boolean((event as CustomEvent<{ enabled?: boolean }>).detail?.enabled)
       mutedRef.current = !enabledRef.current
-      if (enabledRef.current) void ensure().context.resume().catch(() => undefined)
+      if (enabledRef.current && !sensorySafeRef.current) void ensure().context.resume().catch(() => undefined)
+      else stopPositioned(stateRef.current)
     }
-    const onMute = (event: Event) => { mutedRef.current = Boolean((event as CustomEvent<{ muted?: boolean }>).detail?.muted) }
-    const onSensory = (event: Event) => { sensorySafeRef.current = (event as CustomEvent<{ enabled?: boolean }>).detail?.enabled === true }
+    const onMute = (event: Event) => {
+      generationRef.current += 1
+      mutedRef.current = Boolean((event as CustomEvent<{ muted?: boolean }>).detail?.muted)
+      if (mutedRef.current) stopPositioned(stateRef.current)
+    }
+    const onSensory = (event: Event) => {
+      generationRef.current += 1
+      sensorySafeRef.current = (event as CustomEvent<{ enabled?: boolean }>).detail?.enabled === true
+      if (sensorySafeRef.current) stopPositioned(stateRef.current)
+    }
     const onCue = (event: Event) => {
       const cue = (event as CustomEvent<{ cue?: SpatialAudioCue }>).detail?.cue
       if (!cue || !enabledRef.current || mutedRef.current || sensorySafeRef.current) return
-      void playPositioned(ensure(), cue).catch(() => undefined)
+      const generation = generationRef.current
+      const permitted = () => generation === generationRef.current && enabledRef.current && !mutedRef.current && !sensorySafeRef.current
+      void playPositioned(ensure(), cue, permitted).catch(() => undefined)
     }
 
     window.addEventListener('urai:audio-consent', onConsent)
@@ -113,8 +148,10 @@ export default function SpatialPositionedAudioRuntime() {
       window.removeEventListener('urai:audio-mute', onMute)
       window.removeEventListener('urai:audio-cue', onCue)
       window.removeEventListener(URAI_SENSORY_SAFE_EVENT, onSensory)
+      generationRef.current += 1
       const state = stateRef.current
       stateRef.current = null
+      stopPositioned(state)
       if (state) void state.context.close().catch(() => undefined)
     }
   }, [])

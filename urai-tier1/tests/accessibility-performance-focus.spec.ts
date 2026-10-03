@@ -13,6 +13,25 @@ async function disableWebGL(page: Page) {
 }
 
 test.describe('Focus exact-head accessibility and movement evidence', () => {
+  test('focused semantic controls keep arrow keys without moving the camera', async ({ page }) => {
+    await page.goto(focusDemo, { waitUntil: 'domcontentloaded' })
+    const focus = page.getByTestId('urai-final-focus-chamber')
+    await expect(focus).toHaveAttribute('data-focus-input-ready', 'true', { timeout: 20_000 })
+    const recenter = page.getByRole('navigation', { name: 'Focus memory controls' }).getByRole('button', { name: 'Recenter', exact: true })
+    await recenter.click()
+    await expect.poll(async () => Number(await focus.getAttribute('data-focus-distance'))).toBeLessThan(0.02)
+    await recenter.focus()
+    await page.keyboard.down('ArrowDown')
+    try {
+      await page.waitForTimeout(350)
+      await expect(recenter).toBeFocused()
+      await expect(focus).toHaveAttribute('data-focus-moving', 'false')
+      expect(Number(await focus.getAttribute('data-focus-distance'))).toBeLessThan(0.02)
+    } finally {
+      await page.keyboard.up('ArrowDown')
+    }
+  })
+
   test('reduced motion preserves explicit keyboard travel and truthful camera telemetry', async ({ page }) => {
     await page.emulateMedia({ reducedMotion: 'reduce' })
     await page.goto(focusDemo, { waitUntil: 'domcontentloaded' })

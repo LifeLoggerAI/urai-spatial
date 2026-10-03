@@ -345,6 +345,7 @@ export default function ComposedLifeMapScene() {
   useEffect(() => {
     const handler = (event: KeyboardEvent) => {
       if (event.defaultPrevented || event.key !== "Escape" || (event.target instanceof HTMLElement && event.target.matches("input,textarea,select,[role='textbox']"))) return;
+      if (document.querySelector('#life-map-navigator, [role="dialog"][aria-modal="true"]')) return;
       event.preventDefault();
       if (selectedId) overview(); else router.push("/home");
     };

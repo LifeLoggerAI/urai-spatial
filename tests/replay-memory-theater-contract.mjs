@@ -30,20 +30,19 @@ for (const token of [
   'CinematicReplayClient',
   'replay-route-launch-fingerprint',
   'cinematic-memory-camera-film',
-  'ReplayRouteProofSurface',
-  'data-proof-only="true"',
-  'aria-hidden="true"',
-  'data-replay-phase="replay_playing"',
-  'data-testid="urai-replay-timeline"',
-  'data-testid="urai-replay-meta-panel"',
-  'style={proofSurfaceStyle}',
 ]) {
   assertIncludes(replayPagePath, replayPage, token)
 }
 
+// A hidden static surface cannot certify readiness or playback. State belongs
+// to the mounted memory/source owner and the actual decoder-backed session.
+for (const forbidden of ['ReplayRouteProofSurface', 'data-proof-only="true"', 'data-replay-phase="replay_playing"', 'data-playing="true"']) {
+  assertNotIncludes(replayPagePath, replayPage, forbidden)
+}
+
 for (const token of [
   'data-testid="cinematic-replay-client"',
-  'data-memory-status={result.status}',
+  'data-memory-status={memoryStatus}',
   'data-memory-id={memory.id}',
   'data-star-id={memory.star.id}',
   'data-manifest-id={memory.replayManifest.id}',
@@ -59,7 +58,11 @@ for (const token of [
   'memory.replayManifest.transcript',
   'prefers-reduced-motion:reduce',
   'forced-colors:active',
-  'assetCssStack(replayAssets.primary)',
+  'replayVisualAdmission',
+  'replaySessionIdentity',
+  'data-replay-media-status={mediaStatus}',
+  "'recorded-source-original-framing'",
+  'media={{ kind:',
 ]) {
   assertIncludes(replayClientPath, replayClient, token)
 }
@@ -72,6 +75,8 @@ for (const forbidden of [
   'window.location.assign',
   'quiet-reset',
   'seed-memory-bloom',
+  'assetCssStack(replayAssets.primary)',
+  '--replay-asset',
 ]) {
   assertNotIncludes(replayClientPath, replayClient, forbidden)
 }

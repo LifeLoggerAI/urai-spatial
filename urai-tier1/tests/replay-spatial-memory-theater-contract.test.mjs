@@ -3,10 +3,12 @@ import fs from 'node:fs'
 import test from 'node:test'
 
 const source = fs.readFileSync('src/app/replay/CinematicReplayClient.tsx', 'utf8')
+const recordedSource = fs.readFileSync('src/app/replay/ReplayRecordedSource.tsx', 'utf8')
+const mediaSession = fs.readFileSync('src/app/replay/replayMediaSession.ts', 'utf8')
 
 test('Replay owns a real immersive R3F memory field instead of a theater or CSS-only composition', () => {
   assert.match(source, /import \{ Canvas, useFrame \} from '@react-three\/fiber'/)
-  assert.match(source, /data-replay-spatial-owner="r3f-immersive-memory-field"/)
+  assert.match(source, /demoEnvironment && webgl\.state === 'ready' \? 'r3f-immersive-memory-field'/)
   assert.match(source, /<ReplaySpatialScene memory=\{memory\}/)
   assert.match(source, /function MemoryMediaDome/)
   assert.match(source, /name="replay-immersive-memory-field"/)
@@ -16,14 +18,19 @@ test('Replay owns a real immersive R3F memory field instead of a theater or CSS-
   assert.doesNotMatch(source, /replay-memory-environment-v1\.glb|REPLAY_ENVIRONMENT_MODEL|r3f-memory-theater|replay-film-portal|MemoryMediaSurface|REPLAY_SCREEN_POSITION|planeGeometry/)
 })
 
-test('Replay maps source media into the inside-facing memory environment and preserves video play state', () => {
-  assert.match(source, /new THREE\.VideoTexture\(video\)/)
+test('Replay admits the demo dome separately and preserves original recorded-source framing and real video transport', () => {
   assert.match(source, /new THREE\.TextureLoader\(\)/)
   assert.match(source, /map=\{texture\}/)
-  assert.match(source, /video\.playsInline = true/)
-  assert.match(source, /video\.muted = true/)
-  assert.match(source, /if \(playing\) void video\.play\(\)\.catch/)
-  assert.match(source, /else video\.pause\(\)/)
+  assert.match(source, /memory\.demo \? <MemoryMediaDome/)
+  assert.match(recordedSource, /recorded-source-original-framing/)
+  assert.match(source, /object-fit:contain/)
+  assert.match(mediaSession, /video\.playsInline = true/)
+  assert.match(mediaSession, /video\.muted = true/)
+  assert.match(mediaSession, /await video\.play\(\)/)
+  assert.match(mediaSession, /listen\('timeupdate'/)
+  assert.match(mediaSession, /video\.currentTime = target \/ 1000/)
+  assert.match(mediaSession, /video\.removeAttribute\('src'\)/)
+  assert.doesNotMatch(source + recordedSource, /new THREE\.VideoTexture|useTexture\(/)
 })
 
 test('Replay retains diegetic temporal reconstruction controls without turning the scene back into a media player', () => {
@@ -38,5 +45,7 @@ test('Replay retains diegetic temporal reconstruction controls without turning t
   assert.match(source, /\.memorySeek\{position:absolute;width:1px;height:1px;opacity:\.001;pointer-events:none\}/)
   assert.match(source, /\.memorySeek:focus-visible\{position:relative/)
   assert.doesNotMatch(source, /className="controls"|aria-label="Replay controls"|aria-label=\{playing \? 'Pause replay' : 'Play replay'\}/)
-  assert.doesNotMatch(source, /<video|<img|<iframe/)
+  assert.doesNotMatch(source, /<iframe/)
+  assert.match(recordedSource, /<video ref=\{videoRef\}/)
+  assert.match(source, /admission\.kind !== 'recorded-source' && webgl\.state === 'ready' \? <ReplayCanvasBoundary/)
 })

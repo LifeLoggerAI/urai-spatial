@@ -13,6 +13,8 @@ on:
       - '.github/workflows/continuous-spatial-visual-proof.yml'
       - 'scripts/capture-continuous-spatial-proof-v18.mjs'
       - 'scripts/capture-memory-world-runtime-proof.mjs'
+      - 'scripts/capture-launch-route-matrix.mjs'
+      - 'release/route-manifest.json'
       - 'scripts/run-continuous-spatial-proof-v18-stable.mjs'
       - 'scripts/run-continuous-spatial-proof-v18-portal-stable.mjs'
       - 'scripts/run-continuous-spatial-proof-v19-portal-stable.mjs'
@@ -99,6 +101,8 @@ jobs:
           node --check scripts/run-with-ci-webgl.mjs
           node --check scripts/run-continuous-spatial-proof-v22-natural.mjs
           node --check scripts/capture-memory-world-runtime-proof.mjs
+          node --check scripts/capture-launch-route-matrix.mjs
+          node scripts/capture-launch-route-matrix.mjs --validate-only
 
       - name: Capture bounded spatial proof group
         shell: bash
@@ -127,8 +131,15 @@ jobs:
           URAI_PROOF_GROUP="$URAI_PROOF_GROUP" \
           URAI_PROOF_RECORD_VIDEO="$URAI_PROOF_RECORD_VIDEO" \
             node scripts/run-with-ci-webgl.mjs scripts/run-continuous-spatial-proof-v22-natural.mjs 2>&1 | tee "$output/capture.log" || spatial_status=$?
+          route_matrix_status=0
+          URAI_PROOF_BASE=http://127.0.0.1:4173 \
+          URAI_PROOF_DIR="$output/launch-route-matrix" \
+          URAI_EXACT_HEAD="$URAI_EXACT_HEAD" \
+          URAI_PROOF_GROUP="$URAI_PROOF_GROUP" \
+            node scripts/run-with-ci-webgl.mjs scripts/capture-launch-route-matrix.mjs 2>&1 | tee "$output/launch-route-matrix-capture.log" || route_matrix_status=$?
           test "$memory_status" = 0
           test "$spatial_status" = 0
+          test "$route_matrix_status" = 0
 
       - name: Prove complete group receipt
         shell: bash
@@ -144,6 +155,54 @@ jobs:
           if (receipt.exactHead !== head || receipt.group !== group) throw new Error('Exact-head or group receipt mismatch')
           if (receipt.captures.length !== captures || receipt.interactions.length !== interactions) throw new Error(`Incomplete ${group} receipt`)
           if (receipt.errors.length) throw new Error(`Receipt contains ${receipt.errors.length} errors`)
+          NODE
+
+      - name: Prove complete unsigned route matrix receipt
+        shell: bash
+        run: |
+          set -euo pipefail
+          output="artifacts/continuous-spatial-proof-$URAI_PROOF_GROUP/launch-route-matrix"
+          node --input-type=module - "$output/receipt.json" "$URAI_PROOF_GROUP" "$URAI_EXACT_HEAD" <<'NODE'
+          import { createHash } from 'node:crypto'
+          import { readFile } from 'node:fs/promises'
+          import path from 'node:path'
+          const [file, group, head] = process.argv.slice(2)
+          const receipt = JSON.parse(await readFile(file, 'utf8'))
+          const manifest = JSON.parse(await readFile('release/route-manifest.json', 'utf8'))
+          const routes = manifest.criticalRoutes
+          const demoCount = ['/life-map', '/focus', '/replay'].filter(route => routes.includes(route)).length
+          const primaryCount = routes.length + demoCount
+          const primaryProfiles = { visual: ['desktop-1440x900', 1440, 900], mobile: ['narrow-320x700', 320, 700], desktop: ['landscape-844x390', 844, 390], 'portal-fallback': ['no-webgl-390x844', 390, 844] }
+          const representativeRoutes = ['/home', '/life-map', '/focus', '/replay', '/passport', '/privacy-controls']
+          const representativeProfiles = [['tablet-portrait-768x1024', 768, 1024], ['tablet-landscape-1024x768', 1024, 768], ['wide-desktop-2560x1440', 2560, 1440]]
+          const representativeCount = group === 'visual' ? representativeRoutes.length * representativeProfiles.length : 0
+          const expectedCount = primaryCount + representativeCount
+          if (receipt.schemaVersion !== 'urai-launch-route-matrix-1' || receipt.exactHead !== head || receipt.group !== group) throw new Error('Route matrix identity mismatch')
+          if (receipt.expectedCaptures !== expectedCount || receipt.expectedRouteMatrixCaptures !== expectedCount || receipt.expectedPrimaryCaptures !== primaryCount || receipt.expectedRepresentativeCaptures !== representativeCount || receipt.captures.length !== expectedCount) throw new Error('Incomplete route matrix capture count')
+          if (receipt.errors.length) throw new Error(`Route matrix contains ${receipt.errors.length} technical defects`)
+          if (new Set(receipt.captures.map(capture => capture.id)).size !== expectedCount) throw new Error('Route matrix has duplicate capture identities')
+          const primary = receipt.captures.filter(capture => capture.coverage === 'primary-critical-routes')
+          const representatives = receipt.captures.filter(capture => capture.coverage === 'representative-tablet-or-wide')
+          if (primary.length !== primaryCount || representatives.length !== representativeCount) throw new Error('Route matrix coverage counts differ')
+          const initialRoutes = new Set(primary.filter(capture => capture.requestedState === 'initial-unsigned').map(capture => capture.route))
+          if (initialRoutes.size !== routes.length || routes.some(route => !initialRoutes.has(route))) throw new Error('Route matrix omitted a critical initial route')
+          for (const route of ['/life-map', '/focus', '/replay'].filter(route => routes.includes(route))) {
+            if (primary.filter(capture => capture.route === route && capture.requestedState === 'explicit-demo').length !== 1) throw new Error(`Route matrix omitted a primary disclosed demo: ${route}`)
+          }
+          if (group === 'visual') {
+            for (const [profile] of representativeProfiles) for (const route of representativeRoutes) {
+              const expectedState = ['/life-map', '/focus', '/replay'].includes(route) ? 'explicit-demo' : 'initial-unsigned'
+              if (!routes.includes(route) || representatives.filter(capture => capture.route === route && capture.profile === profile && capture.requestedState === expectedState).length !== 1) throw new Error(`Route matrix omitted a representative: ${profile} ${route}`)
+            }
+          }
+          for (const capture of receipt.captures) {
+            const expectedProfile = capture.coverage === 'primary-critical-routes' ? primaryProfiles[group] : representativeProfiles.find(([id]) => id === capture.profile)
+            if (!expectedProfile || capture.profile !== expectedProfile[0] || capture.profileMetadata?.width !== expectedProfile[1] || capture.profileMetadata?.height !== expectedProfile[2] || capture.profileMetadata?.deviceScaleFactor !== 1) throw new Error(`Route matrix profile mismatch: ${capture.id}`)
+            if (capture.exactHead !== head || !capture.dom || !capture.readiness || !capture.image || !capture.events || capture.technicalDefects.length || capture.sessionState !== 'fresh-unsigned-initial-entry' || capture.returningSession !== 'not-exercised') throw new Error(`Incomplete route matrix evidence: ${capture.id}`)
+            const bytes = await readFile(path.join(path.dirname(file), capture.image.path))
+            if (createHash('sha256').update(bytes).digest('hex') !== capture.image.sha256) throw new Error(`Route matrix image hash mismatch: ${capture.id}`)
+            if (capture.image.profile !== capture.profile || capture.image.width !== expectedProfile[1] || capture.image.height !== expectedProfile[2] || bytes.readUInt32BE(16) !== capture.image.width || bytes.readUInt32BE(20) !== capture.image.height) throw new Error(`Route matrix PNG dimensions mismatch: ${capture.id}`)
+          }
           NODE
 
       - name: Upload exact-head grouped visual proof

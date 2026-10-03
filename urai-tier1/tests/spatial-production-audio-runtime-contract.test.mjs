@@ -14,6 +14,7 @@ const orbConversation = fs.readFileSync(path.join(tierRoot, 'src/spatial/orb/Orb
 const generator = fs.readFileSync(path.join(repositoryRoot, 'scripts/generate-production-spatial-audio.py'), 'utf8')
 const forgeWorkflow = fs.readFileSync(path.join(repositoryRoot, '.github/workflows/production-spatial-audio-forge.yml'), 'utf8')
 const receipt = JSON.parse(fs.readFileSync(path.join(repositoryRoot, 'operations/assets/production-receipts/spatial-audio-production-v1.json'), 'utf8'))
+const cueManifest = JSON.parse(fs.readFileSync(path.join(repositoryRoot, 'operations/assets/spatial-audio-cue-manifest-v1.json'), 'utf8'))
 
 const expectedAssets = [
   'home-ambient-v1.opus',
@@ -58,6 +59,15 @@ test('production audio receipt generation binds provenance to the exact forge in
   assert.match(forgeWorkflow, /SOURCE_SHA: \$\{\{ github\.event\.pull_request\.head\.sha \|\| github\.sha \}\}/)
   assert.match(forgeWorkflow, /receipt\['sourceHead'\] == os\.environ\['SOURCE_SHA'\]/)
   assert.match(forgeWorkflow, /receipt\['sourceHeadSemantics'\] == 'exact-forge-input-head'/)
+})
+
+test('ready cue descriptions match the verified procedural audio assets', () => {
+  for (const cue of cueManifest.cues.filter((entry) => entry.status === 'ready')) {
+    const asset = receipt.assets.find((entry) => entry.path === cue.path)
+    assert.ok(asset, `ready cue ${cue.id} requires a verified asset`)
+    assert.equal(cue.caption, asset.caption, `${cue.id} describes a different sound from its verified asset`)
+    assert.ok(asset.bytes > 0 && asset.bytes <= cue.maxBytes, `${cue.id} must contain audio within its budget`)
+  }
 })
 
 test('canonical controller loads only promoted production audio paths', () => {

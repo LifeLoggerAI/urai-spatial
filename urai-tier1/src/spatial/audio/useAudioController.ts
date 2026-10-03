@@ -136,6 +136,10 @@ export function useAudioController() {
       next.src = nextSrc;
       next.loop = true;
       next.volume = 0;
+      // Track the requested destination while its crossfade is in progress. A
+      // quick return must replace that fade, and repeated requests must not
+      // restart it before the previous track has finished fading out.
+      ambientTrackRef.current = nextTrack;
       void next.play().catch(() => undefined);
       const started = performance.now();
       const duration = phase === "REPLAY" ? 2000 : phase === "FOCUS" ? 1600 : 1300;

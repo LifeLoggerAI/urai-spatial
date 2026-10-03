@@ -4,6 +4,7 @@ import fs from 'node:fs'
 
 const source = fs.readFileSync(new URL('../src/lib/orb-companion-contract.ts', import.meta.url), 'utf8')
 const conversationSource = fs.readFileSync(new URL('../src/spatial/orb/OrbConversationPanel.tsx', import.meta.url), 'utf8')
+const playbackSource = fs.readFileSync(new URL('../src/spatial/orb/orbVoicePlayback.ts', import.meta.url), 'utf8')
 const voiceClientSource = fs.readFileSync(new URL('../src/spatial/narrator/elevenlabsClient.ts', import.meta.url), 'utf8')
 const flat = source.replace(/\s+/g, ' ')
 
@@ -70,9 +71,21 @@ test('live Orb replies use the external natural voice path before device fallbac
 })
 
 test('Orb voice can be stopped after the AI response finishes', () => {
-  assert.match(conversationSource, /const \[voicePlaying, setVoicePlaying\] = useState\(false\)/)
+  assert.match(conversationSource, /data-orb-voice-phase=\{voicePhase\}/)
   assert.match(conversationSource, /disabled=\{!busy && !voicePlaying\}/)
-  assert.match(conversationSource, /voiceAborter\.current\?\.abort\(\)/)
-  assert.match(conversationSource, /activeAudio\.pause\(\)/)
-  assert.match(conversationSource, /window\.speechSynthesis\.cancel\(\)/)
+  assert.match(conversationSource, /voicePlayback\.current\?\.stop\(\)/)
+  assert.match(playbackSource, /this\.aborter\?\.abort\(\)/)
+  assert.match(playbackSource, /audio\.pause\(\)/)
+  assert.match(playbackSource, /this\.environment\.speech\?\.cancel\(\)/)
+})
+
+test('low stimulation blocks both voice entry points and unmute until an explicit later choice', () => {
+  for (const entry of ['playDeviceVoice', 'speakOrbResponse']) {
+    assert.match(conversationSource, new RegExp(`const ${entry} = [\\s\\S]{0,110}sensorySafeEnabled\\(\\) \\|\\| voicePreferences\\.current\\.sensorySafe`))
+    assert.match(conversationSource, new RegExp(`const ${entry} = [\\s\\S]{0,180}muteVoiceForComfort\\(\\)[\\s\\S]{0,30}return`))
+  }
+  assert.match(conversationSource, /aria-pressed=\{!voiceMuted\}[\s\S]{0,140}sensorySafeEnabled\(\) \|\| voicePreferences\.current\.sensorySafe/)
+  assert.match(conversationSource, /voicePreferences\.current\.sensorySafe = enabled/)
+  assert.match(conversationSource, /Low stimulation is off\. Orb voice remains muted until you choose Voice on\./)
+  assert.match(conversationSource, /const muteVoiceForComfort[\s\S]{0,180}voicePreferences\.current\.muted = true/)
 })

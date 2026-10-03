@@ -13,7 +13,7 @@ const navigation = read('src/spatial/world/worldNavigation.css')
 test('URA-068 memory focus tunnel is the governed Focus to Replay travelling transition', () => {
   assert.match(focus, /requestUraiWorldTravel\(\{ destination: 'replay'/)
   assert.match(focus, /entryPortal: 'focus-memory-aperture'/)
-  assert.match(controller, /destination === 'replay' \|\| destination === 'location-map'/)
+  assert.match(controller, /destination === 'replay' \|\| destination === 'life-movie' \|\| destination === 'location-map'/)
   assert.match(controller, /return 1900/)
   assert.match(controller, /return 260/)
   assert.match(provider, /return 'travelling'/)
@@ -25,7 +25,7 @@ test('URA-068 memory focus tunnel is the governed Focus to Replay travelling tra
 
 test('URA-069 replay return reuses deterministic reverse travel instead of bypassing Focus', () => {
   assert.match(replay, /const unwind = useCallback\(\(\) => requestUraiWorldReturn\(\), \[\]\)/)
-  assert.match(replay, /if \(event\.key === 'Escape'\) \{ event\.preventDefault\(\); unwind\(\); return \}/)
+  assert.match(replay, /if \(event\.key === 'Escape'\) \{ pauseMemory\(\); event\.preventDefault\(\); unwind\(\); return \}/)
   assert.match(controller, /const onReturn = \(\) => reverseTravel\(\)/)
   assert.match(controller, /if \(destination === 'replay'\) return 'focus'/)
   assert.match(controller, /const destination = currentWorld\.previousDestination \?\? fallbackReturnDestination\(currentWorld\.destination\)/)

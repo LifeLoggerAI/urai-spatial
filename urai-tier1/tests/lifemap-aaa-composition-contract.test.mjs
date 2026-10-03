@@ -23,7 +23,7 @@ test('semantic result requests the authoritative world owner without hidden-labe
   assert.match(world, /const node = nodes\.find\(\(candidate\) => candidate\.id === detail\.nodeId\)/)
   assert.match(world, /if \(node\) onSelect\(node\)/)
   assert.match(world, /onClick=\{\(event\) => \{ event\.stopPropagation\(\); onSelect\(node\); \}\}/)
-  assert.match(navigator, /className="life-map-semantic-result" data-life-map-semantic-result data-life-map-node-id=\{node\.id\} role="listitem"/)
+  assert.match(navigator, /className="life-map-semantic-result" data-life-map-semantic-result data-life-map-node-id=\{node\.id\} aria-label=/)
   assert.match(navigator, /requestLifeMapSelection\(node\.id, source\)/)
   assert.doesNotMatch(navigator, /querySelectorAll<HTMLButtonElement>\("button\.life-map-world-label"\)|activateWorldLabel|owner\.click\(\)/)
   assert.match(selectionBroker, /window\.dispatchEvent\(new CustomEvent<LifeMapSelectionDetail>/)

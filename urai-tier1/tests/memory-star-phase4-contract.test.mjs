@@ -2,6 +2,15 @@ import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import path from 'node:path'
 import test from 'node:test'
+import { renderToStaticMarkup } from 'react-dom/server'
+import { getURLFromRedirectError } from 'next/dist/client/components/redirect.js'
+import SpatialMemoryPage, { generateStaticParams as generateSpatialMemoryParams } from '../src/app/spatial/memory/[nodeId]/page.tsx'
+import MemoryStarRoute, { generateStaticParams as generateStarParams } from '../src/app/life-map/star/[starId]/page.tsx'
+import FocusSessionRoute, { generateStaticParams as generateSessionParams } from '../src/app/focus/session/[sessionId]/page.tsx'
+import ReplayDirectRoute, { generateStaticParams as generateReplayParams } from '../src/app/replay/[replayId]/page.tsx'
+import { DEMO_MEMORY_STAR_NODES, DEMO_MEMORY_STAR_NODE_BY_ID, resolveDemoMemoryStar } from '../src/spatial/memory/memoryStarSchema.ts'
+import { buildNamedExplicitDemoMemory } from '../src/spatial/memory/explicitDemoMemory.ts'
+import { isExplicitDemoRequest, parseSelectedMemory, sanitizeMemoryId } from '../src/spatial/memory/selectedMemoryContract.ts'
 
 const root = process.cwd()
 
@@ -76,4 +85,126 @@ test('Focus photosphere rejects planetary low-frequency terrain and exposes the 
   assert.ok(focusClient.includes('vec3 revealedMemory = mix(warmMemory, image * (.92 + localContrast * .20), .80);'))
   assert.ok(focusClient.includes('float alpha = veil * (.52 + luminance * .26 + core * .18);'))
   assert.ok(focusClient.includes('<planeGeometry args={[2.08, 2.08]} />'))
+})
+
+async function renderSpatialMemory(nodeId) {
+  return renderToStaticMarkup(await SpatialMemoryPage({ params: Promise.resolve({ nodeId }) }))
+}
+
+test('every generated spatial memory path renders its exact disclosed registry identity', async () => {
+  const params = generateSpatialMemoryParams()
+  const demoStars = DEMO_MEMORY_STAR_NODES.filter((star) => star.privacyState === 'demo')
+  assert.equal(params.length, 7, 'verify the complete current exported demo set')
+  assert.deepEqual(params.map(({ nodeId }) => nodeId), demoStars.map(({ id }) => id))
+  assert.equal(new Set(params.map(({ nodeId }) => nodeId)).size, params.length)
+
+  for (const { nodeId } of params) {
+    const star = DEMO_MEMORY_STAR_NODE_BY_ID[nodeId]
+    const markup = await renderSpatialMemory(nodeId)
+    assert.ok(markup.includes(`data-memory-id="${nodeId}"`), `requested identity missing: ${nodeId}`)
+    assert.equal(markup.match(/<h1[^>]*>([^<]+)<\/h1>/)?.[1], star.title, `wrong title for ${nodeId}`)
+    assert.ok(markup.includes(star.description), `wrong description for ${nodeId}`)
+    assert.ok(markup.includes(star.sourceId), `wrong provenance identity for ${nodeId}`)
+    assert.ok(markup.includes('data-demo-disclosure="true"'))
+    assert.ok(markup.includes('No private user data is used.'))
+    const hrefs = [...markup.matchAll(/href="([^"]+)"/g)].map(([, href]) => new URL(href.replaceAll('&amp;', '&'), 'https://urai.app'))
+    const returnUrl = hrefs.find(({ pathname }) => pathname === '/life-map')
+    assert.ok(returnUrl, 'a working return link must be available')
+    assert.equal(returnUrl.searchParams.get('node'), nodeId)
+    assert.equal(returnUrl.searchParams.get('demo'), '1')
+    assert.equal(hrefs.find(({ pathname }) => pathname === '/focus')?.href, new URL(star.focusHref, 'https://urai.app').href)
+    assert.equal(hrefs.find(({ pathname }) => pathname === '/replay')?.href, new URL(star.replayHref, 'https://urai.app').href)
+  }
+})
+
+test('unknown and legacy spatial memory IDs remain unavailable without substituting a sample', async () => {
+  for (const nodeId of ['unknown-memory', 'private-memory', 'demo-node-focus', '', '__proto__', 'constructor']) {
+    const markup = await renderSpatialMemory(nodeId)
+    assert.ok(markup.includes('Memory unavailable'), `unavailable state missing for ${nodeId}`)
+    assert.ok(markup.includes('data-status="404"'))
+    assert.ok(!markup.includes('data-memory-id='), `an unresolved identity was replaced for ${nodeId}`)
+    for (const star of DEMO_MEMORY_STAR_NODES) assert.ok(!markup.includes(star.title), `sample leaked into ${nodeId}`)
+  }
+})
+
+test('a non-demo spatial memory record is neither exported nor disclosed', async () => {
+  const star = DEMO_MEMORY_STAR_NODES[0]
+  const originalPrivacy = star.privacyState
+  try {
+    for (const privacyState of ['private', 'public', 'locked', 'vaulted', 'deleted', 'archived']) {
+      star.privacyState = privacyState
+      assert.ok(!generateSpatialMemoryParams().some(({ nodeId }) => nodeId === star.id), `${privacyState} record was exported`)
+      assert.equal(resolveDemoMemoryStar(star.id).ok, false, `${privacyState} record was accepted by a demo alias`)
+      const markup = await renderSpatialMemory(star.id)
+      assert.ok(markup.includes('Memory unavailable'))
+      assert.ok(!markup.includes(star.title), `${privacyState} title was disclosed`)
+      assert.ok(!markup.includes(star.description), `${privacyState} description was disclosed`)
+      assert.ok(!markup.includes(star.sourceId), `${privacyState} provenance was disclosed`)
+    }
+  } finally {
+    star.privacyState = originalPrivacy
+  }
+})
+
+test('all generated demo aliases roundtrip through real redirects and fixture/parser identity', async () => {
+  const ids = DEMO_MEMORY_STAR_NODES.map(({ id }) => id)
+  assert.deepEqual(generateStarParams().map(({ starId }) => starId), ids)
+  assert.deepEqual(generateSessionParams().map(({ sessionId }) => sessionId), ids)
+  assert.deepEqual(generateReplayParams().map(({ replayId }) => replayId), ids)
+
+  const aliases = [
+    [MemoryStarRoute, 'starId', '/focus'],
+    [FocusSessionRoute, 'sessionId', '/focus'],
+    [ReplayDirectRoute, 'replayId', '/replay'],
+  ]
+  for (const star of DEMO_MEMORY_STAR_NODES) {
+    for (const [route, parameter, destination] of aliases) {
+      let redirectHref = null
+      await assert.rejects(route({ params: Promise.resolve({ [parameter]: star.id }) }), (error) => {
+        redirectHref = getURLFromRedirectError(error)
+        return redirectHref !== null
+      })
+      const url = new URL(redirectHref, 'https://urai.app')
+      assert.equal(url.pathname, destination)
+      assert.equal(isExplicitDemoRequest(url.searchParams), true)
+      assert.equal(url.searchParams.get('node'), star.id)
+      const memoryId = sanitizeMemoryId(url.searchParams.get('memoryId'))
+      assert.equal(memoryId, `demo:${star.id}`)
+      const fixture = buildNamedExplicitDemoMemory(memoryId)
+      assert.equal(fixture.id, memoryId)
+      assert.equal(fixture.star.id, star.id)
+      assert.equal(fixture.title, star.title)
+      assert.ok(fixture.summary.includes(star.description))
+      assert.ok(fixture.summary.includes(star.provenanceSummary))
+      assert.equal(fixture.occurredAt, star.createdAt)
+      assert.deepEqual(fixture.people, [])
+      assert.equal(fixture.place, undefined)
+      assert.deepEqual(fixture.sourceMedia, [])
+      assert.equal(fixture.demo, true)
+      assert.equal(fixture.replayManifest.id, url.searchParams.get('manifestId'))
+      assert.equal(fixture.replayManifest.id, star.id)
+      const parsed = parseSelectedMemory(fixture, fixture.ownerId, fixture.id)
+      assert.equal(parsed.status, 'ready', 'fixture must satisfy the production memory schema')
+      assert.equal(parsed.memory.title, star.title)
+      assert.equal(parsed.memory.id, memoryId)
+      assert.equal(parsed.memory.star.id, star.id)
+      assert.equal(parsed.memory.replayManifest.id, star.id)
+      assert.deepEqual(parsed.memory.people, [])
+    }
+  }
+})
+
+test('existing quiet-reset and generic explicit fixtures retain their disclosed identity', () => {
+  const quiet = buildNamedExplicitDemoMemory('demo:quiet-reset')
+  assert.equal(quiet.id, 'demo:quiet-reset')
+  assert.equal(quiet.title, 'The Quiet Reset')
+  assert.equal(quiet.star.id, 'quiet-reset')
+  assert.equal(quiet.replayManifest.id, 'replay-recovery-thread')
+  assert.equal(quiet.replayManifest.durationMs, 12_000)
+  assert.equal(quiet.demo, true)
+  const generic = buildNamedExplicitDemoMemory('demo:existing-generic-fixture')
+  assert.equal(generic.id, 'demo:existing-generic-fixture')
+  assert.equal(generic.title, 'Demonstration Memory')
+  assert.equal(generic.replayManifest.id, 'demo-manifest')
+  assert.equal(generic.demo, true)
 })

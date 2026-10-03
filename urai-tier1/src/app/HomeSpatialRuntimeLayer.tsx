@@ -1,11 +1,13 @@
 'use client'
 
 import { usePathname } from 'next/navigation'
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import AssetDrivenHomeWorld from './AssetDrivenHomeWorld'
 import { useWebGLAvailable } from './HomeSpatialCanvas'
 import HomeSpatialWorldFinal from './HomeSpatialWorldFinal'
+import HomeSceneRenderBoundary from './home/HomeSceneRenderBoundary'
 import { requestUraiWorldOrbOpen } from '@/spatial/world/worldEvents'
+import { clearHomeAssetCache, isHomeAssetLoadError } from '@/spatial/layout/HomeWorldProductionPolished'
 
 type RendererState = 'ready' | 'recovering' | 'failed'
 
@@ -34,6 +36,22 @@ export default function HomeSpatialRuntimeLayer() {
   const [rendererState, setRendererState] = useState<RendererState>('ready')
   const [recoveryKey, setRecoveryKey] = useState(0)
   const [assetsReady, setAssetsReady] = useState(false)
+  const [assetLoadFailed, setAssetLoadFailed] = useState(false)
+
+  const onSceneFailure = useCallback((error: Error) => {
+    setAssetLoadFailed(isHomeAssetLoadError(error))
+    setAssetsReady(false)
+    setRendererState('failed')
+  }, [])
+
+  const retryHome = useCallback(() => {
+    clearHomeAssetCache()
+    recoveryAttemptsRef.current = 0
+    setAssetLoadFailed(false)
+    setAssetsReady(false)
+    setRecoveryKey((value) => value + 1)
+    setRendererState('ready')
+  }, [])
 
   useEffect(() => {
     document.body.style.cursor = 'default'
@@ -64,6 +82,8 @@ export default function HomeSpatialRuntimeLayer() {
     const onContextLost = (event: Event) => {
       event.preventDefault()
       if (recoveryAttemptsRef.current >= 1) {
+        setAssetLoadFailed(false)
+        setAssetsReady(false)
         setRendererState('failed')
         return
       }
@@ -166,19 +186,24 @@ export default function HomeSpatialRuntimeLayer() {
       <section
         className="urai-home-spatial-runtime-layer"
         data-testid="urai-home-accessible-fallback"
-        data-webgl-state={unavailable ? 'unavailable' : 'renderer-failed'}
-        data-urai-home-runtime={unavailable ? 'accessible-fallback-without-webgl' : 'accessible-fallback-after-renderer-failure'}
+        data-webgl-state={unavailable ? 'unavailable' : assetLoadFailed ? 'asset-load-failed' : 'renderer-failed'}
+        data-urai-home-runtime={unavailable ? 'accessible-fallback-without-webgl' : assetLoadFailed ? 'accessible-fallback-after-asset-load-failure' : 'accessible-fallback-after-renderer-failure'}
         data-webgl-ready="false"
+        data-home-assets-ready="false"
         aria-label="Spatial Home fallback"
       >
-        <div role="status" aria-live="polite" className="sr-only">
+        <div role="status" aria-live="polite" className="home-runtime-recovery">
           {unavailable
             ? 'WebGL is unavailable. Accessible Home controls remain available.'
-            : 'The spatial renderer could not recover. Accessible Home controls remain available.'}
+            : assetLoadFailed
+              ? 'Home assets could not load. Accessible Home controls remain available.'
+              : 'The spatial renderer could not recover. Accessible Home controls remain available.'}
+          {!unavailable ? <button type="button" data-testid="home-retry-assets" onClick={retryHome}>Retry loading Home</button> : null}
         </div>
         <HomeSemanticNavigation />
         <HomeSpatialWorldFinal />
         <style jsx global>{runtimeStyles}</style>
+        <style jsx>{`.home-runtime-recovery{position:absolute;left:50%;top:max(24px,env(safe-area-inset-top));transform:translateX(-50%);z-index:50;display:grid;gap:12px;width:min(560px,calc(100vw - 32px));padding:18px;border:1px solid rgba(230,246,240,.3);border-radius:18px;background:rgba(6,18,19,.94);color:#f3fbf8;font:600 14px/1.5 system-ui;text-align:center}.home-runtime-recovery button{min-height:48px;padding:10px 18px;border:1px solid rgba(230,246,240,.45);border-radius:12px;background:#173d33;color:#f3fbf8;font:700 14px/1.4 system-ui;cursor:pointer;touch-action:manipulation}.home-runtime-recovery button:focus-visible{outline:2px solid #fff;outline-offset:3px}`}</style>
       </section>
     )
   }
@@ -197,12 +222,15 @@ export default function HomeSpatialRuntimeLayer() {
       data-home-ground-affordance="home-ground-environmental-threshold"
       data-home-life-map-affordance="home-life-map-sky-lookout"
       data-home-context-owner="world-local-context-only"
+      data-home-assets-ready={assetsReady ? 'true' : 'false'}
       data-webgl-ready={rendererState === 'ready' ? 'true' : 'recovering'}
       aria-label="URAI living spatial Home"
     >
       {rendererState === 'recovering' ? <div role="status" aria-live="polite" className="sr-only">Restoring the spatial Home renderer.</div> : null}
       {!assetsReady ? <div className="home-runtime-loading" role="status" aria-label="Your private world is forming" aria-live="polite"><span aria-hidden="true" /><strong>Your private world is forming</strong></div> : null}
-      <AssetDrivenHomeWorld key={recoveryKey} webglAvailable={true} onOrbOpen={requestUraiWorldOrbOpen} />
+      <HomeSceneRenderBoundary key={recoveryKey} onFailure={onSceneFailure}>
+        <AssetDrivenHomeWorld webglAvailable={true} onOrbOpen={requestUraiWorldOrbOpen} />
+      </HomeSceneRenderBoundary>
       <style jsx global>{runtimeStyles}</style>
       </section>
     </>

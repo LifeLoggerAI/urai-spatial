@@ -4,8 +4,10 @@ import { readFile } from 'node:fs/promises'
 const proofPath = 'urai-tier1/tests/accessibility-performance-lifemap-independent.spec.ts'
 // Reviewed canonical semantic navigator proof: keyboard selection, disclosed
 // sample privacy, exact manifest identity, title containment, expanded mobile
-// navigator bounds, history restoration, and reduced-motion parity.
-const auditedCurrentSha256 = 'fb10759342436c2ea060e04735121d38a9fa353a8901fd2ddfd17261d592a30a'
+// navigator bounds, history restoration, reduced-motion parity, 320px/landscape
+// reflow, native button/filter semantics, focus return, disclosed RTL/text stress,
+// supporting route scroll ownership, and reachable first-run instructions.
+const auditedCurrentSha256 = '8b6676e5acd525cfa15499dfa8ff36326d31fb6071e2292d1d8977d8ed474d08'
 
 export async function preserveAuditedLifeMapProof() {
   const source = await readFile(proofPath)

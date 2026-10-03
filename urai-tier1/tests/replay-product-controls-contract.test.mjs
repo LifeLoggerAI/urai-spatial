@@ -9,7 +9,7 @@ const operations = fs.readFileSync('src/spatial/replay/replayOperations.ts', 'ut
 const rules = fs.readFileSync('../firebase/firestore.rules', 'utf8')
 
 test('Replay preserves cinematic identity while keeping Save Hide Correct and History behind memory controls', () => {
-  for (const marker of ['assetCssStack', 'replayAssets', 'data-node={memory.star.id}', 'data-canonical-asset={replayAssets.primary.src}', '<ReplayProductControls memory={memory} />']) {
+  for (const marker of ['replayVisualAdmission', 'replayAssets', 'data-node={memory.star.id}', 'data-canonical-asset={demoEnvironment ? replayAssets.primary.src : undefined}', '<ReplayProductControls memory={memory} />']) {
     assert.ok(client.includes(marker), `missing current-main Replay marker: ${marker}`)
   }
   for (const marker of ['<details className="replayProduct"', 'aria-label="Replay memory controls">Memory controls</summary>', 'replayProductActions', "operations.saved ? 'Saved' : 'Save'", "operations.hidden ? 'Unhide' : 'Hide'", "pendingCorrection ? 'Correcting…' : 'Correct'", '>History<', 'data-replay-saved', 'data-replay-hidden', 'data-pending-operations']) {
