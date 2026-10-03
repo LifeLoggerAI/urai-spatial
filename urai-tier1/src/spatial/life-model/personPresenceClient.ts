@@ -30,6 +30,23 @@ export class PersonPresenceError extends Error {
   }
 }
 
+async function stablePersonPresenceRequestId(input:{
+  sessionId:string
+  message:string
+  context:PersonPresenceMessage[]
+  locale:string
+}) {
+  if (!globalThis.crypto?.subtle) return null
+  const intent = JSON.stringify({
+    sessionId:input.sessionId,
+    message:input.message,
+    context:input.context.slice(-10),
+    locale:input.locale,
+  })
+  const digest = await globalThis.crypto.subtle.digest('SHA-256',new TextEncoder().encode(intent))
+  return Array.from(new Uint8Array(digest),(value)=>value.toString(16).padStart(2,'0')).join('')
+}
+
 async function bearerToken() {
   if (!firebasePublicEnvReady) throw new PersonPresenceError('FIREBASE_NOT_READY','UrAi authentication is not ready.')
   const user = getAuth(app).currentUser
@@ -47,6 +64,8 @@ export async function requestPersonPresence(input:{
   onEvent?:(event:PersonPresenceEvent)=>void
 }):Promise<PersonPresenceResult>{
   const token = await bearerToken()
+  const requestId = await stablePersonPresenceRequestId(input)
+  if(!requestId || input.signal.aborted) throw new PersonPresenceError('REQUEST_ID_UNAVAILABLE','Person presence could not establish a stable request identity.')
   const response = await fetch(clientApiUrl('/api/urai/person-presence/conversation'),{
     method:'POST',
     headers:{Authorization:`Bearer ${token}`,'Content-Type':'application/json'},
@@ -58,6 +77,7 @@ export async function requestPersonPresence(input:{
       context:input.context.slice(-10),
       locale:input.locale,
       aiProcessingConsent:input.aiProcessingConsent,
+      requestId,
     }),
   }).catch((error)=>{
     if(input.signal.aborted) throw error
