@@ -7,7 +7,9 @@ const proofPath = 'urai-tier1/tests/accessibility-performance-lifemap-independen
 // navigator bounds, history restoration, reduced-motion parity, 320px/landscape
 // reflow, native button/filter semantics, focus return, disclosed RTL/text stress,
 // supporting route scroll ownership, and reachable first-run instructions.
-const auditedCurrentSha256 = '8b6676e5acd525cfa15499dfa8ff36326d31fb6071e2292d1d8977d8ed474d08'
+// Re-reviewed on Spatial #1564 after the final onboarding proof durability update;
+// the tamper test still rejects weaker manifest assertions or unknown proof bytes.
+const auditedCurrentSha256 = 'c1cd5f0b2233162a80a94c5ec52f01e763984d61b34a995707327755cf1f8226'
 
 export async function preserveAuditedLifeMapProof() {
   const source = await readFile(proofPath)
