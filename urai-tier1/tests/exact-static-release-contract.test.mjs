@@ -33,12 +33,18 @@ function job(source, name) {
   return next < 0 ? rest : rest.slice(0, next)
 }
 
-test('Firebase publishes only the canonical static export', () => {
+test('Firebase publishes the canonical static export with only governed server API rewrites', () => {
   assert.equal(hosting.public, 'urai-tier1/out')
   assert.equal(hosting.cleanUrls, true)
   assert.equal(hosting.trailingSlash, true)
-  assert.deepEqual(hosting.rewrites, [])
+  assert.deepEqual(hosting.rewrites, [
+    { source: '/api/stripe/create-checkout-session', function: { functionId: 'createStripeCheckout', region: 'us-central1' } },
+    { source: '/api/stripe/customer-portal', function: { functionId: 'createStripeCustomerPortal', region: 'us-central1' } },
+    { source: '/api/entitlement', function: { functionId: 'getStripeEntitlement', region: 'us-central1' } },
+    { source: '/api/stripe/webhook', function: { functionId: 'handleStripeWebhook', region: 'us-central1' } },
+  ])
   assert.ok(hosting.ignore.includes('**/.*'))
+  assert.equal(hosting.rewrites.some((rewrite) => rewrite.source === '**' || rewrite.source === '/**'), false)
 })
 
 test('public output carries exact deployment identity or an unverified state', () => {
