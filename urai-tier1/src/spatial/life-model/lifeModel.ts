@@ -26,6 +26,19 @@ export type EntityKind =
   | 'media'
   | 'statement'
 
+export type CausalEdgeKind =
+  | 'PARTICIPATED_IN'
+  | 'OCCURRED_AT'
+  | 'INVOLVES_OBJECT'
+  | 'RELATES_TO'
+  | 'CAUSED'
+  | 'CHANGED'
+  | 'EVIDENCED_BY'
+  | 'BEFORE'
+  | 'AFTER'
+  | 'OWNED'
+  | 'LIVED_AT'
+
 export type ConfidenceLevel = 'confirmed' | 'probable' | 'approximate' | 'unknown'
 export type ReviewState = 'NOT_REVIEWED' | 'REJECTED' | 'ACCEPTED' | 'BLOCKED_INSUFFICIENT_EVIDENCE'
 export type SceneDecision = 'READY' | 'READY_WITH_OCCLUSION' | 'READY_INTERPRETIVE' | 'BLOCKED'
@@ -66,6 +79,34 @@ export type NegativeConstraint = {
   rule: string
   validDuring?: TemporalInterval
   sourceIds: string[]
+}
+
+export type LifeCausalEdge = {
+  id: string
+  ownerId: string
+  fromEntityId: string
+  toEntityId: string
+  kind: CausalEdgeKind
+  validDuring?: TemporalInterval
+  evidenceClass: EvidenceClass
+  sourceIds: string[]
+  confidence: ConfidenceLevel
+  status: 'accepted' | 'disputed' | 'superseded'
+  synthetic: false
+}
+
+export type LifeCausalGraphSnapshot = {
+  schemaVersion: typeof LIFE_MODEL_SCHEMA_VERSION
+  ownerId: string
+  id: string
+  entityIds: string[]
+  claimIds: string[]
+  edgeIds: string[]
+  sourceIds: string[]
+  dependencyIds: string[]
+  graphHash: string
+  state: 'current' | 'invalidated' | 'revoked'
+  syntheticOutputMayBecomeHistoricalSource: false
 }
 
 export type LifeEntityState = {
@@ -142,6 +183,9 @@ export function assertHistoricalSourceAuthority(input: {
   ) {
     throw new Error('SIMULATION_CANNOT_CREATE_HISTORICAL_EVIDENCE')
   }
+  if (input.synthetic && input.evidenceClass !== 'UNKNOWN') {
+    throw new Error('SYNTHETIC_OUTPUT_CANNOT_BECOME_HISTORICAL_EVIDENCE')
+  }
 }
 
 export function compilePersonModel(input: {
@@ -158,6 +202,7 @@ export function compilePersonModel(input: {
     throw new Error('PERSON_STATE_IDENTITY_MISMATCH')
   }
   if (input.person.revoked) throw new Error('PERSON_AUTHORITY_REVOKED')
+  if (!input.consentPurposes.includes('identity-model')) throw new Error('IDENTITY_MODEL_CONSENT_REQUIRED')
 
   const selected = input.claims.filter((claim) =>
     input.state.claimIds.includes(claim.id)
