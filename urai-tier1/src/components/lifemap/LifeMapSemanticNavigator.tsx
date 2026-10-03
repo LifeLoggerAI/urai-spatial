@@ -21,12 +21,12 @@ function matchesSearch(node: LifeMapNode, search: string) {
     .some((value) => String(value).toLowerCase().includes(query))
 }
 
-export default function LifeMapSemanticNavigator() {
+export default function LifeMapSemanticNavigator({ authenticatedUserId = null }: { authenticatedUserId?: string | null }) {
   const router = useRouter()
   const params = useSearchParams()
   const explicitDemo = params.get('demo') === '1'
   const overviewRequested = params.get('overview') === '1'
-  const { nodes, eras, loading, sourceMode } = useLifeMapEvents(explicitDemo ? 'demo-user' : undefined)
+  const { nodes, eras, loading, sourceMode } = useLifeMapEvents(explicitDemo ? 'demo-user' : authenticatedUserId ?? undefined)
   const [search, setSearch] = useState('')
   const [typeFilter, setTypeFilter] = useState<LifeMapNodeType | 'all'>('all')
   const [eraFilter, setEraFilter] = useState('all')
