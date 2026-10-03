@@ -4,6 +4,8 @@ import test from 'node:test'
 
 const source = fs.readFileSync(new URL('../src/components/lifemap/useLifeMapEvents.ts', import.meta.url), 'utf8')
 const accessGate = fs.readFileSync(new URL('../src/spatial/lifemap/SpatialLifeMapCanonical.tsx', import.meta.url), 'utf8')
+const semanticNavigator = fs.readFileSync(new URL('../src/components/lifemap/LifeMapSemanticNavigator.tsx', import.meta.url), 'utf8')
+const routeBoundary = fs.readFileSync(new URL('../src/components/lifemap/LifeMapRouteBoundary.tsx', import.meta.url), 'utf8')
 
 test('Life Map identity fails closed instead of defaulting to demo-user', () => {
   assert.doesNotMatch(source, /return "demo-user"/)
@@ -55,4 +57,13 @@ test('private Life Map data is loaded only from the Firebase-authenticated UID t
   assert.match(accessGate, /setAuthenticatedUserId\(user\?\.uid \?\? null\)/)
   assert.match(accessGate, /authenticatedUserId=\{mode === "private" \? authenticatedUserId : null\}/)
   assert.doesNotMatch(source, /urai:userId/)
+})
+
+
+test('semantic Life Map navigation uses authenticated ownership and remains available without WebGL', () => {
+  assert.match(semanticNavigator, /authenticatedUserId/)
+  assert.match(semanticNavigator, /useLifeMapEvents\(explicitDemo \? 'demo-user' : authenticatedUserId \?\? undefined\)/)
+  assert.match(routeBoundary, /<LifeMapSemanticNavigator authenticatedUserId=\{authenticatedUserId\}/)
+  assert.match(accessGate, /if \(!webglAvailable\) return <>[\s\S]*<LifeMapSemanticNavigator authenticatedUserId=\{mode === "private" \? authenticatedUserId : null\}/)
+  assert.doesNotMatch(semanticNavigator, /localStorage\.getItem/)
 })
