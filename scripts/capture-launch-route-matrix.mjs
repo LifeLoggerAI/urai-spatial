@@ -397,8 +397,14 @@ try {
         if (!response) defect('missing-document-response', {})
       } catch (error) { defect('navigation-error', { message: String(error) }) }
 
-      const settleBudgetMs = representative ? homeCase ? 40_000 : 20_000 : homeCase ? 60_000 : 25_000
-      const settleDeadline = Math.min(Date.now() + settleBudgetMs, caseDeadline - 30_000)
+      const settleBudgetMs = representative ? homeCase ? 32_000 : 20_000 : homeCase ? 60_000 : 25_000
+      // Wide Home captures are the heaviest compositor readback in the matrix.
+      // Preserve at least 45s of the existing 100s representative case budget
+      // for final DOM evidence + a full-resolution screenshot retry. Readiness
+      // criteria remain identical; this only prevents the settle loop from
+      // consuming the screenshot's time budget after the route is already stable.
+      const screenshotReserveMs = representative && homeCase ? 45_000 : 30_000
+      const settleDeadline = Math.min(Date.now() + settleBudgetMs, caseDeadline - screenshotReserveMs)
       let stableSamples = 0
       let previousSignature = null
       while (Date.now() < settleDeadline) {
