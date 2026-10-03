@@ -108,9 +108,23 @@ function LifeMapAccessGate() {
   }, [query, router]);
 
   if (mode === "checking" || webglAvailable === null) return <LifeMapLoading label="Checking the private threshold" />;
-  if (mode === "signed-out") return <SignedOutLifeMap onOpenDemo={openDemo} onReturnHome={() => router.push("/home")} />;
-  if (!webglAvailable) return <><LifeMapLoading label="WebGL is unavailable. Semantic navigation remains available" /><LifeMapSemanticNavigator authenticatedUserId={mode === "private" ? authenticatedUserId : null} /></>;
-  return <section data-testid="urai-r3f-canonical-lifemap" data-canonical-asset={lifeMapAssets.primary.src} data-selected-memory-owner="spatial-lens-only" data-life-map-access={mode} aria-label="URAI canonical spatial Life Map" style={{ position:"fixed", inset:0, zIndex:100, width:"100vw", height:"100svh", minHeight:"100svh", overflow:"hidden", background:"#01030a" }}><LifeMapRouteBoundary authenticatedUserId={mode === "private" ? authenticatedUserId : null} /></section>;
+  if (!webglAvailable) {
+    if (mode === "signed-out") {
+      return <><SignedOutLifeMap onOpenDemo={openDemo} onReturnHome={() => router.push("/home")} /><LifeMapSemanticNavigator authenticatedUserId={null} /></>;
+    }
+    return <><LifeMapLoading label="WebGL is unavailable. Semantic navigation remains available" /><LifeMapSemanticNavigator authenticatedUserId={mode === "private" ? authenticatedUserId : null} /></>;
+  }
+  return <section data-testid="urai-r3f-canonical-lifemap" data-canonical-asset={lifeMapAssets.primary.src} data-selected-memory-owner="spatial-lens-only" data-life-map-access={mode} aria-label="URAI canonical spatial Life Map" style={{ position:"fixed", inset:0, zIndex:100, width:"100vw", height:"100svh", minHeight:"100svh", overflow:"hidden", background:"#01030a" }}>
+    <LifeMapRouteBoundary authenticatedUserId={mode === "private" ? authenticatedUserId : null} />
+    {mode === "signed-out" ? <aside data-testid="urai-life-map-signed-out-disclosure" aria-label="Signed-out Life Map disclosure" style={{ position:"absolute", zIndex:120, left:"max(16px,env(safe-area-inset-left))", bottom:"max(16px,env(safe-area-inset-bottom))", width:"min(390px,calc(100vw - 32px))", padding:14, border:"1px solid rgba(183,239,255,.2)", borderRadius:18, background:"rgba(2,7,17,.78)", backdropFilter:"blur(18px)", color:"#f8fbff" }}>
+      <strong style={{ display:"block", fontSize:11, letterSpacing:".12em", textTransform:"uppercase" }}>Signed out · no personal data displayed</strong>
+      <span style={{ display:"block", marginTop:6, fontSize:12, lineHeight:1.45, color:"rgba(235,244,255,.76)" }}>This is the real empty Life Map realm. No private memories are mounted.</span>
+      <div style={{ display:"flex", flexWrap:"wrap", gap:8, marginTop:10 }}>
+        <button type="button" onClick={openDemo} style={{ minHeight:48, padding:"0 16px", border:0, borderRadius:999, fontWeight:900, cursor:"pointer" }}>Open disclosed sample</button>
+        <button type="button" onClick={() => router.push("/home")} style={{ minHeight:48, padding:"0 16px", border:"1px solid rgba(232,251,255,.2)", borderRadius:999, background:"rgba(2,7,17,.62)", color:"#fff", fontWeight:900, cursor:"pointer" }}>Return Home</button>
+      </div>
+    </aside> : null}
+  </section>;
 }
 
 export default function SpatialLifeMapCanonical() {
