@@ -3,6 +3,7 @@ import fs from 'node:fs'
 import test from 'node:test'
 
 const source = fs.readFileSync(new URL('../src/components/lifemap/useLifeMapEvents.ts', import.meta.url), 'utf8')
+const accessGate = fs.readFileSync(new URL('../src/spatial/lifemap/SpatialLifeMapCanonical.tsx', import.meta.url), 'utf8')
 
 test('Life Map identity fails closed instead of defaulting to demo-user', () => {
   assert.doesNotMatch(source, /return "demo-user"/)
@@ -35,4 +36,15 @@ test('normalized documents inherit the authenticated owner rather than a fake id
   assert.match(source, /userId: typeof data\.userId === "string" \? data\.userId : ownerId/)
   assert.match(source, /normalizeEvent\(doc\.id, doc\.data\(\), resolvedUserId\)/)
   assert.match(source, /normalizeEra\(doc\.id, doc\.data\(\), resolvedUserId\)/)
+})
+
+
+test('signed-out Life Map never auto-opens disclosed demo content', () => {
+  assert.doesNotMatch(accessGate, /setTimeout\(onOpenDemo/)
+  assert.doesNotMatch(accessGate, /USER_ID_KEY|urai:userId/)
+  assert.doesNotMatch(accessGate, /localStorage\.getItem/)
+  assert.match(accessGate, /onAuthStateChanged\(auth/)
+  assert.match(accessGate, /user \? "private" : "signed-out"/)
+  assert.match(accessGate, /current\.get\("demo"\) === "1"/)
+  assert.match(accessGate, /onClick=\{onOpenDemo\}/)
 })
