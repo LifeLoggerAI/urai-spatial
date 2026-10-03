@@ -12,6 +12,7 @@
   padding-top: max(clamp(24px,4vw,58px), env(safe-area-inset-top,0px));
 }
 .passportPanel {
+  box-sizing: border-box;
   scroll-margin-block: 12px;
 }
 .passportPanelHeading {
