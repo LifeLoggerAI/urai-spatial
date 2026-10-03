@@ -28,8 +28,24 @@ if (firebaseConfig.hosting?.source !== 'urai-tier1') {
 }
 
 const staticConfig = JSON.parse(await readFile('firebase.static.json', 'utf8'))
-if (staticConfig.hosting?.public !== 'urai-tier1/out' || staticConfig.hosting?.rewrites?.length !== 0) {
-  console.error('[xr:firebase:preflight] canonical static hosting must publish urai-tier1/out without rewrites')
+const allowedStaticServerRewrites = new Map([
+  ['/api/stripe/create-checkout-session', 'createStripeCheckout'],
+  ['/api/stripe/create-portal-session', 'createStripeCustomerPortal'],
+  ['/api/entitlement', 'getStripeEntitlement'],
+  ['/api/stripe/webhook', 'handleStripeWebhook'],
+])
+const staticRewrites = Array.isArray(staticConfig.hosting?.rewrites) ? staticConfig.hosting.rewrites : []
+const invalidStaticRewrite = staticRewrites.find((rewrite) => (
+  !allowedStaticServerRewrites.has(rewrite?.source)
+  || allowedStaticServerRewrites.get(rewrite?.source) !== rewrite?.function?.functionId
+  || rewrite?.function?.region !== 'us-central1'
+))
+if (
+  staticConfig.hosting?.public !== 'urai-tier1/out'
+  || staticRewrites.length !== allowedStaticServerRewrites.size
+  || invalidStaticRewrite
+) {
+  console.error('[xr:firebase:preflight] canonical static hosting must publish urai-tier1/out with only the governed server API rewrites')
   process.exit(1)
 }
 
