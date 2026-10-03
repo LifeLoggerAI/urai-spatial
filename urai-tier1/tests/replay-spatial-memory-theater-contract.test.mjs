@@ -3,39 +3,49 @@ import fs from 'node:fs'
 import test from 'node:test'
 
 const source = fs.readFileSync('src/app/replay/CinematicReplayClient.tsx', 'utf8')
-const model = 'public/assets/urai/generated/models/replay-memory-environment-v1.glb'
+const recordedSource = fs.readFileSync('src/app/replay/ReplayRecordedSource.tsx', 'utf8')
+const mediaSession = fs.readFileSync('src/app/replay/replayMediaSession.ts', 'utf8')
 
-test('Replay owns a real R3F memory theater instead of a CSS-only composition', () => {
+test('Replay owns a real immersive R3F memory field instead of a theater or CSS-only composition', () => {
   assert.match(source, /import \{ Canvas, useFrame \} from '@react-three\/fiber'/)
-  assert.match(source, /REPLAY_ENVIRONMENT_MODEL = '\/assets\/urai\/generated\/models\/replay-memory-environment-v1\.glb'/)
-  assert.match(source, /data-replay-spatial-owner="r3f-memory-theater"/)
+  assert.match(source, /demoEnvironment && webgl\.state === 'ready' \? 'r3f-immersive-memory-field'/)
   assert.match(source, /<ReplaySpatialScene memory=\{memory\}/)
-  assert.match(source, /<primitive object=\{model\} name="replay-memory-environment-v1"/)
-  assert.ok(fs.existsSync(model), 'committed Replay environment GLB must exist')
-  assert.ok(fs.statSync(model).size > 100_000, 'Replay environment must be a real binary asset')
+  assert.match(source, /function MemoryMediaDome/)
+  assert.match(source, /name="replay-immersive-memory-field"/)
+  assert.match(source, /inside-memory-environment-not-screen/)
+  assert.match(source, /<sphereGeometry args=\{\[24, 96, 64\]\}/)
+  assert.match(source, /side=\{THREE\.BackSide\}/)
+  assert.doesNotMatch(source, /replay-memory-environment-v1\.glb|REPLAY_ENVIRONMENT_MODEL|r3f-memory-theater|replay-film-portal|MemoryMediaSurface|REPLAY_SCREEN_POSITION|planeGeometry/)
 })
 
-test('Replay projects source media into the in-world screen and preserves video play state', () => {
-  assert.match(source, /function MemoryMediaSurface/)
-  assert.match(source, /new THREE\.VideoTexture\(video\)/)
+test('Replay admits the demo dome separately and preserves original recorded-source framing and real video transport', () => {
   assert.match(source, /new THREE\.TextureLoader\(\)/)
-  assert.match(source, /REPLAY_SCREEN_POSITION/)
-  assert.match(source, /if \(playing\) void video\.play\(\)\.catch/)
-  assert.match(source, /else video\.pause\(\)/)
+  assert.match(source, /map=\{texture\}/)
+  assert.match(source, /memory\.demo \? <MemoryMediaDome/)
+  assert.match(recordedSource, /recorded-source-original-framing/)
+  assert.match(source, /object-fit:contain/)
+  assert.match(mediaSession, /video\.playsInline = true/)
+  assert.match(mediaSession, /video\.muted = true/)
+  assert.match(mediaSession, /await video\.play\(\)/)
+  assert.match(mediaSession, /listen\('timeupdate'/)
+  assert.match(mediaSession, /video\.currentTime = target \/ 1000/)
+  assert.match(mediaSession, /video\.removeAttribute\('src'\)/)
+  assert.doesNotMatch(source + recordedSource, /new THREE\.VideoTexture|useTexture\(/)
 })
 
-test('Replay camera and timeline are semantic functions of replay progress', () => {
-  assert.match(source, /function ReplayCameraRig/)
-  assert.match(source, /progress - 0\.5/)
-  assert.match(source, /function ReplayTimelineField/)
-  assert.match(source, /memory\.replayManifest\.segments\.map/)
-  assert.match(source, /userData=\{\{ replaySegment: segment\.id \}\}/)
-})
-
-test('Replay keeps accessible product controls above the spatial scene', () => {
-  assert.match(source, /<section className="controls" aria-label="Replay controls">/)
-  assert.match(source, /<ReplayProductControls memory=\{memory\} \/>/)
-  assert.match(source, /<details className="transcript">/)
-  assert.match(source, /event\.key === 'Escape'/)
-  assert.match(source, /closest\('button, input, textarea, select, summary, a, \[role="button"\]'\)/)
+test('Replay retains diegetic temporal reconstruction controls without turning the scene back into a media player', () => {
+  assert.match(source, /ReplayTimelineField/)
+  assert.match(source, /ReplayCameraRig/)
+  assert.match(source, /ReplayMemoryAtmosphere/)
+  assert.match(source, /name="replay-living-memory-atmosphere"/)
+  assert.match(source, /className="memoryTempo" aria-label="Memory time"/)
+  assert.match(source, /aria-label=\{playing \? 'Pause memory' : 'Continue memory'\}/)
+  assert.match(source, /className="memoryTrace"/)
+  assert.match(source, /className="memorySeek" type="range"/)
+  assert.match(source, /\.memorySeek\{position:absolute;width:1px;height:1px;opacity:\.001;pointer-events:none\}/)
+  assert.match(source, /\.memorySeek:focus-visible\{position:relative/)
+  assert.doesNotMatch(source, /className="controls"|aria-label="Replay controls"|aria-label=\{playing \? 'Pause replay' : 'Play replay'\}/)
+  assert.doesNotMatch(source, /<iframe/)
+  assert.match(recordedSource, /<video ref=\{videoRef\}/)
+  assert.match(source, /admission\.kind !== 'recorded-source' && webgl\.state === 'ready' \? <ReplayCanvasBoundary/)
 })

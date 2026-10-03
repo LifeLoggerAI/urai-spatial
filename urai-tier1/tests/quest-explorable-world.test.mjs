@@ -195,3 +195,20 @@ test(
     }
   },
 )
+
+test(
+  'degraded XR disables renderer-only and immersive controls while keeping portal navigation available',
+  async () => {
+    const world = await readFile(worldUrl, 'utf8')
+    const entry = await readFile(entryUrl, 'utf8')
+
+    assert.match(world, /<QuestVrEntryButton[\s\S]*disabled=\{!rendererReady\}/)
+    assert.match(world, /disabled=\{!rendererReady\}[\s\S]*>\s*Recenter/)
+    assert.match(world, /aria-label="Turn left"[\s\S]*disabled=\{!rendererReady\}|disabled=\{!rendererReady\}[\s\S]*aria-label="Turn left"/)
+    assert.match(world, /aria-label="Move forward"[\s\S]*disabled=\{!rendererReady\}|disabled=\{!rendererReady\}[\s\S]*aria-label="Move forward"/)
+    assert.match(entry, /disabled\?: boolean/)
+    assert.match(entry, /if \(disabled\)/)
+    assert.match(entry, /disabled=\{disabled \|\| busy \|\| active\}/)
+    assert.match(world, /XR_PORTALS\.map/)
+  },
+)

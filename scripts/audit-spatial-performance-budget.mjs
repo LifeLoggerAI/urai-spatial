@@ -49,14 +49,14 @@ requireMatch('Secondary constellation geometry disposal', canvas, /lines\.dispos
 requireMatch('Secondary shadow map tiering', canvas, /profile\.tier === 'high' \? 1024 : 512/)
 
 requireMatch('Active route imports Life Map boundary', wrapper, /import(?:\s+LifeMapRouteBoundary\s+from\s+|\()["']@\/components\/lifemap\/LifeMapRouteBoundary["']\)?/)
-requireMatch('Active route renders Life Map boundary', wrapper, /<LifeMapRouteBoundary\s*\/>/)
+requireMatch('Active route renders auth-threaded Life Map boundary', wrapper, /<LifeMapRouteBoundary\s+authenticatedUserId=\{mode === "private" \? authenticatedUserId : null\}\s*\/>/)
 requireMatch('Active route wraps query reader in Suspense', wrapper, /<Suspense[\s\S]*<LifeMapAccessGate/)
 requireMatch('Signed-out route does not mount private memories', wrapper, /data-private-memory-mounted="false"/)
 forbidMatch('Wrapper retains implicit demo authority', wrapper, /lifeMapDemoMode|DEMO_MODE_KEY/)
 
 requireMatch('Life Map boundary imports composed scene', boundary, /import ComposedLifeMapScene from ["']\.\/ComposedLifeMapScene["']/)
 requireMatch('Life Map boundary imports semantic navigator', boundary, /import LifeMapSemanticNavigator from ["']\.\/LifeMapSemanticNavigator["']/)
-requireMatch('Life Map boundary preserves one stable composed scene and semantic navigator', boundary, /return <>\s*<ComposedLifeMapScene \/>\s*<LifeMapSemanticNavigator \/>\s*<\/>/)
+requireMatch('Life Map boundary preserves one stable auth-threaded composed scene and semantic navigator', boundary, /return <>\s*<ComposedLifeMapScene authenticatedUserId=\{authenticatedUserId\} \/>\s*<LifeMapSemanticNavigator authenticatedUserId=\{authenticatedUserId\} \/>\s*<\/>/)
 forbidMatch('Life Map boundary remounts on query identity', boundary, /useSearchParams|key=|revision|previousIdentity/)
 
 requireMatch('Active Life Map adaptive hook', lifeMap, /useAdaptiveSpatialQuality\(\)/)

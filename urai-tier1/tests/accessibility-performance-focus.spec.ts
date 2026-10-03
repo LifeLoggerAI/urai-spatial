@@ -1,6 +1,7 @@
 import { expect, test, type Page } from '@playwright/test'
 
 const focusDemo = '/focus?memoryId=demo%3Aquiet-reset&manifestId=replay-recovery-thread&node=quiet-reset&demo=1'
+const activeFocusOwner = (page: Page) => page.locator('[data-testid="urai-final-focus-chamber"]:visible')
 
 async function disableWebGL(page: Page) {
   await page.addInitScript(() => {
@@ -13,11 +14,32 @@ async function disableWebGL(page: Page) {
 }
 
 test.describe('Focus exact-head accessibility and movement evidence', () => {
+  test('focused semantic controls keep arrow keys without moving the camera', async ({ page }) => {
+    await page.goto(focusDemo, { waitUntil: 'domcontentloaded' })
+    const focus = activeFocusOwner(page)
+    await expect(focus).toHaveCount(1)
+    await expect(focus).toHaveAttribute('data-focus-input-ready', 'true', { timeout: 20_000 })
+    const recenter = page.getByRole('navigation', { name: 'Focus memory controls' }).getByRole('button', { name: 'Recenter', exact: true })
+    await recenter.click()
+    await expect.poll(async () => Number(await focus.getAttribute('data-focus-distance'))).toBeLessThan(0.02)
+    await recenter.focus()
+    await page.keyboard.down('ArrowDown')
+    try {
+      await page.waitForTimeout(350)
+      await expect(recenter).toBeFocused()
+      await expect(focus).toHaveAttribute('data-focus-moving', 'false')
+      expect(Number(await focus.getAttribute('data-focus-distance'))).toBeLessThan(0.02)
+    } finally {
+      await page.keyboard.up('ArrowDown')
+    }
+  })
+
   test('reduced motion preserves explicit keyboard travel and truthful camera telemetry', async ({ page }) => {
     await page.emulateMedia({ reducedMotion: 'reduce' })
     await page.goto(focusDemo, { waitUntil: 'domcontentloaded' })
 
-    const focus = page.getByTestId('urai-final-focus-chamber')
+    const focus = activeFocusOwner(page)
+    await expect(focus).toHaveCount(1)
     await expect(focus).toBeVisible({ timeout: 15_000 })
     await expect(focus.locator('canvas')).toBeVisible({ timeout: 15_000 })
     await expect(focus).toHaveAttribute('data-focus-movement', 'walk-keyboard-orbit-touch')
@@ -47,7 +69,8 @@ test.describe('Focus exact-head accessibility and movement evidence', () => {
 
   test('Focus preserves authorized identity through Replay travel authority', async ({ page }) => {
     await page.goto(focusDemo, { waitUntil: 'domcontentloaded' })
-    const focus = page.getByTestId('urai-final-focus-chamber')
+    const focus = activeFocusOwner(page)
+    await expect(focus).toHaveCount(1)
     await expect(focus).toHaveAttribute('data-memory-id', 'demo:quiet-reset')
     await expect(page.getByText('DEMO FIXTURE · NOT PERSONAL DATA', { exact: true })).toBeVisible()
 
@@ -66,7 +89,7 @@ test.describe('Focus exact-head accessibility and movement evidence', () => {
   test('forced colors retains visible semantic Focus controls', async ({ page }) => {
     await page.emulateMedia({ forcedColors: 'active', reducedMotion: 'reduce' })
     await page.goto(focusDemo, { waitUntil: 'domcontentloaded' })
-    const controls = page.getByRole('navigation', { name: 'Focus chamber controls' })
+    const controls = page.getByRole('navigation', { name: 'Focus memory controls' })
     await expect(controls).toBeVisible({ timeout: 15_000 })
     for (const name of ['Recenter', 'Life Map']) {
       const button = controls.getByRole('button', { name: new RegExp(name, 'i') }).first()
@@ -81,13 +104,14 @@ test.describe('Focus exact-head accessibility and movement evidence', () => {
   test('non-WebGL Focus keeps identity, privacy copy and keyboard-operable semantic controls', async ({ page }) => {
     await disableWebGL(page)
     await page.goto(focusDemo, { waitUntil: 'domcontentloaded' })
-    const focus = page.getByTestId('urai-final-focus-chamber')
+    const focus = activeFocusOwner(page)
+    await expect(focus).toHaveCount(1)
     await expect(focus).toBeVisible()
     await expect(focus).toHaveAttribute('data-memory-id', 'demo:quiet-reset')
     await expect(focus.locator('[data-focus-fallback="semantic"]')).toBeVisible()
     await expect(focus.getByText('Spatial view unavailable', { exact: true })).toBeVisible()
-    await expect(focus.getByText('Held in context. Nothing leaves this chamber.', { exact: true })).toBeVisible()
-    const controls = page.getByRole('navigation', { name: 'Focus chamber controls' })
+    await expect(focus.getByText('Held in context. Nothing leaves this memory field.', { exact: true })).toBeVisible()
+    const controls = page.getByRole('navigation', { name: 'Focus memory controls' })
     await expect(controls.getByRole('button', { name: 'Recenter', exact: true })).toBeVisible()
     await expect(controls.getByRole('button', { name: /Open Replay for|Enter Replay/i })).toBeVisible()
     await expect(controls.getByRole('button', { name: /Life Map/i })).toBeVisible()

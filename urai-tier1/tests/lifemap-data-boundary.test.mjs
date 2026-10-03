@@ -3,11 +3,17 @@ import fs from 'node:fs'
 import test from 'node:test'
 
 const source = fs.readFileSync(new URL('../src/components/lifemap/useLifeMapEvents.ts', import.meta.url), 'utf8')
+const accessGate = fs.readFileSync(new URL('../src/spatial/lifemap/SpatialLifeMapCanonical.tsx', import.meta.url), 'utf8')
+const semanticNavigator = fs.readFileSync(new URL('../src/components/lifemap/LifeMapSemanticNavigator.tsx', import.meta.url), 'utf8')
+const routeBoundary = fs.readFileSync(new URL('../src/components/lifemap/LifeMapRouteBoundary.tsx', import.meta.url), 'utf8')
+const routeTransactionBridge = fs.readFileSync(new URL('../src/spatial/world/LifeMapRouteTransactionBridge.tsx', import.meta.url), 'utf8')
 
 test('Life Map identity fails closed instead of defaulting to demo-user', () => {
   assert.doesNotMatch(source, /return "demo-user"/)
   assert.doesNotMatch(source, /\|\| "demo-user"/)
   assert.match(source, /function resolveUserId\(explicitUserId\?: string\): string \| null/)
+  assert.doesNotMatch(source, /localStorage\.getItem/)
+  assert.match(source, /return null;/)
   assert.match(source, /if \(!resolvedUserId\)/)
   assert.match(source, /Sign in to open your private Life Map\./)
 })
@@ -35,4 +41,50 @@ test('normalized documents inherit the authenticated owner rather than a fake id
   assert.match(source, /userId: typeof data\.userId === "string" \? data\.userId : ownerId/)
   assert.match(source, /normalizeEvent\(doc\.id, doc\.data\(\), resolvedUserId\)/)
   assert.match(source, /normalizeEra\(doc\.id, doc\.data\(\), resolvedUserId\)/)
+})
+
+
+test('signed-out Life Map never auto-opens disclosed demo content', () => {
+  assert.doesNotMatch(accessGate, /setTimeout\(onOpenDemo/)
+  assert.doesNotMatch(accessGate, /USER_ID_KEY|urai:userId/)
+  assert.doesNotMatch(accessGate, /localStorage\.getItem/)
+  assert.match(accessGate, /onAuthStateChanged\(auth/)
+  assert.match(accessGate, /user \? "private" : "signed-out"/)
+  assert.match(accessGate, /current\.get\("demo"\) === "1"/)
+  assert.match(accessGate, /onClick=\{onOpenDemo\}/)
+})
+
+test('private Life Map data is loaded only from the Firebase-authenticated UID threaded by the access gate', () => {
+  assert.match(accessGate, /setAuthenticatedUserId\(user\?\.uid \?\? null\)/)
+  assert.match(accessGate, /authenticatedUserId=\{mode === "private" \? authenticatedUserId : null\}/)
+  assert.doesNotMatch(source, /urai:userId/)
+})
+
+
+test('semantic Life Map navigation uses authenticated ownership and remains available without WebGL', () => {
+  assert.match(semanticNavigator, /authenticatedUserId/)
+  assert.match(semanticNavigator, /useLifeMapEvents\(explicitDemo \? 'demo-user' : authenticatedUserId \?\? undefined\)/)
+  assert.match(routeBoundary, /<LifeMapSemanticNavigator authenticatedUserId=\{authenticatedUserId\}/)
+  assert.match(accessGate, /if \(!webglAvailable\) \{/)
+  assert.match(accessGate, /if \(mode === "signed-out"\) \{[\s\S]*<LifeMapSemanticNavigator authenticatedUserId=\{null\} \/><\/\>;/)
+  assert.match(accessGate, /return <><LifeMapLoading label="WebGL is unavailable\. Semantic navigation remains available" \/><LifeMapSemanticNavigator authenticatedUserId=\{mode === "private" \? authenticatedUserId : null\} \/><\/\>;/)
+  assert.doesNotMatch(semanticNavigator, /localStorage\.getItem/)
+})
+
+
+test('semantic Life Map fallback preserves the Focus and Replay journey without inventing replay availability', () => {
+  assert.match(semanticNavigator, /destinationHref\('focus', selected\)/)
+  assert.match(semanticNavigator, /destinationHref\('replay', selected\)/)
+  assert.match(semanticNavigator, /next\.set\('from', 'life-map-semantic'\)/)
+  assert.match(semanticNavigator, /disabled=\{!selected\.replayAvailable \|\| selected\.locked\}/)
+  assert.match(semanticNavigator, />Enter Focus</)
+  assert.match(semanticNavigator, />Replay</)
+})
+
+
+test('persistent Life Map route transactions use Firebase auth rather than implicit browser identity', () => {
+  assert.match(routeTransactionBridge, /onAuthStateChanged\(getAuth\(app\)/)
+  assert.match(routeTransactionBridge, /setAuthenticatedUserId\(user\?\.uid \?\? null\)/)
+  assert.match(routeTransactionBridge, /useLifeMapEvents\(explicitDemo \? 'demo-user' : authenticatedUserId \?\? undefined\)/)
+  assert.doesNotMatch(routeTransactionBridge, /localStorage\.getItem/)
 })

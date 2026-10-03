@@ -4,8 +4,8 @@
   "repository": "LifeLoggerAI/urai-spatial",
   "assetId": "global-cinematic-material-pack-v1",
   "canonicalPath": "urai-tier1/public/assets/urai/generated/textures/global-cinematic-material-pack-v1.json",
-  "bytes": 673,
-  "sha256": "f50f13f9e581c5253d3c046bbfd8749600864cd2669bd7bef48226c3514a6035",
+  "bytes": 695,
+  "sha256": "4fee457c73871f98fb0f1e29fce4790a3b897cf9b4554c7771cdb226c4759b6f",
   "source": "URAI deterministic candidate forge",
   "fallback": "runtime-default-materials",
   "license": "URAI Labs internal production asset",
@@ -19,6 +19,7 @@
   "licenseApproved": true,
   "optimizationVerified": true,
   "visualProofVerified": false,
-  "exactHeadChecksPassed": true,
-  "notes": "Fail-closed rehearsal for unchanged asset bytes. This records governance coverage only; it does not promote the asset, claim visual approval, or change the pending-final-review manifest state."
+  "exactHeadChecksPassed": false,
+  "notes": "Fail-closed replacement rehearsal rebound to the schemaVersion:1 metadata repair. Material parameters and runtime rendering values are unchanged. This binds exact candidate bytes only; promote=false, humanReviewApproved=false, visualProofVerified=false and exactHeadChecksPassed=false remain explicit. Independent visual approval and exact-head checks are still required.",
+  "reviewedAtSemantics": "Historical rehearsal timestamp only; does not approve the schema metadata repair or current release candidate."
 }

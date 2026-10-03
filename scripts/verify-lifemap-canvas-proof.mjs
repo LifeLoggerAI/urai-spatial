@@ -2,18 +2,17 @@ import { createHash } from 'node:crypto'
 import { mkdir, writeFile } from 'node:fs/promises'
 import { createRequire } from 'node:module'
 import path from 'node:path'
+import { captureWebGLFramebuffer } from './capture-webgl-framebuffer.mjs'
 
 const requireFromTierOne = createRequire(new URL('../urai-tier1/package.json', import.meta.url))
 const { chromium } = requireFromTierOne('playwright')
 const base = process.env.URAI_PROOF_BASE || 'http://127.0.0.1:4173'
 const outputDir = path.resolve(process.env.URAI_CANVAS_PROOF_DIR || 'artifacts/lifemap-founder-proof/canvas-proof')
 const exactHead = process.env.URAI_EXACT_HEAD || 'local'
-const receipt = { schemaVersion: 'urai-lifemap-webgl-canvas-proof-1', exactHead, captures: [], browserEvents: [], capturedAt: new Date().toISOString() }
+const receipt = { schemaVersion: 'urai-lifemap-webgl-canvas-proof-2', exactHead, captures: [], browserEvents: [], capturedAt: new Date().toISOString() }
 let failed = false
 
 await mkdir(outputDir, { recursive: true })
-const browser = await chromium.launch({ headless: true })
-
 function recordEvents(page, label) {
   page.on('pageerror', (error) => receipt.browserEvents.push({ label, kind: 'pageerror', text: String(error) }))
   page.on('requestfailed', (request) => receipt.browserEvents.push({ label, kind: 'requestfailed', text: `${request.method()} ${request.url()} ${request.failure()?.errorText || ''}` }))
@@ -62,13 +61,23 @@ async function signalFromCanvasPng(page, buffer) {
       nonDarkRatio: nonDark / Math.max(1, count),
       sampleCount: count,
       sampling: 'distributed-grid-24x16-3x3',
-      source: 'retained-webgl-canvas-png',
+      source: 'webgl-default-framebuffer-readPixels',
     }
   }, { dataUrl })
 }
 
 async function capture(spec) {
+  const browser = await chromium.launch({ headless: true })
   const context = await browser.newContext({ viewport: spec.viewport, deviceScaleFactor: 2, reducedMotion: spec.reducedMotion || 'no-preference', hasTouch: Boolean(spec.touch), isMobile: Boolean(spec.touch) })
+  await context.addInitScript(() => {
+    const originalGetContext = HTMLCanvasElement.prototype.getContext
+    HTMLCanvasElement.prototype.getContext = function patchedGetContext(type, attributes) {
+      if (type === 'webgl' || type === 'webgl2' || type === 'experimental-webgl') {
+        return originalGetContext.call(this, type, { ...(attributes || {}), preserveDrawingBuffer: true })
+      }
+      return originalGetContext.call(this, type, attributes)
+    }
+  })
   const page = await context.newPage()
   recordEvents(page, spec.id)
   try {
@@ -83,15 +92,19 @@ async function capture(spec) {
     const canvas = root.locator('canvas').first()
     await canvas.waitFor({ state: 'visible', timeout: 20_000 })
     const file = `${spec.id}-${exactHead.slice(0, 12)}.png`
-    const buffer = await canvas.screenshot({ path: path.join(outputDir, file), animations: 'disabled', caret: 'hide', scale: 'device', timeout: 60_000 })
+    const framebuffer = await canvas.evaluate(captureWebGLFramebuffer)
+    if (framebuffer.source !== 'webgl-default-framebuffer-readPixels') throw new Error(`${spec.id} missing framebuffer provenance`)
+    const buffer = Buffer.from(framebuffer.dataUrl.replace(/^data:image\/png;base64,/, ''), 'base64')
+    await writeFile(path.join(outputDir, file), buffer)
     const signal = await signalFromCanvasPng(page, buffer)
     if (!signal || signal.sampleCount !== 3456) throw new Error(`${spec.id} missing exact canvas sampling`)
-    if (signal.source !== 'retained-webgl-canvas-png') throw new Error(`${spec.id} did not sample the WebGL canvas PNG`)
+    if (signal.source !== 'webgl-default-framebuffer-readPixels' || signal.width !== framebuffer.width || signal.height !== framebuffer.height) throw new Error(`${spec.id} did not sample the exact framebuffer PNG`)
     if (signal.variance < 8) throw new Error(`${spec.id} WebGL canvas variance below minimum: ${signal.variance}`)
     if (signal.nonDarkRatio <= 0.02) throw new Error(`${spec.id} WebGL canvas non-dark coverage below minimum: ${signal.nonDarkRatio}`)
     receipt.captures.push({ id: spec.id, route: page.url(), viewport: spec.viewport, phase: spec.phase, file, bytes: buffer.length, sha256: createHash('sha256').update(buffer).digest('hex'), signal })
   } finally {
-    await context.close()
+    await context.close().catch(() => {})
+    await browser.close().catch(() => {})
   }
 }
 
@@ -108,7 +121,6 @@ try {
   failed = true
   receipt.error = String(error)
 } finally {
-  await browser.close()
   receipt.completedAt = new Date().toISOString()
   receipt.passed = !failed && receipt.captures.length === 4
   await writeFile(path.join(outputDir, 'receipt.json'), JSON.stringify(receipt, null, 2))

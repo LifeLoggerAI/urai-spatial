@@ -19,6 +19,11 @@ const focusClient = read('urai-tier1/src/app/focus/FocusChamberClient.tsx')
 const selectedMemoryHook = read('urai-tier1/src/spatial/memory/useSelectedMemory.ts')
 const replayClient = read('urai-tier1/src/app/replay/CinematicReplayClient.tsx')
 const replayRoute = read('urai-tier1/src/app/replay/page.tsx')
+const lifeMovieRoute = read('urai-tier1/src/app/life-movie/page.tsx')
+const lifeMovieClient = read('urai-tier1/src/app/life-movie/LifeMovieClient.tsx')
+const worldTypes = read('urai-tier1/src/spatial/world/worldTypes.ts')
+const worldRegistry = read('urai-tier1/src/spatial/world/destinationRegistry.ts')
+const worldController = read('urai-tier1/src/spatial/world/WorldTransitionController.tsx')
 const worldEvents = read('urai-tier1/src/spatial/world/worldEvents.ts')
 
 function requireMatch(label, source, pattern) {
@@ -35,6 +40,7 @@ function forbidMatch(label, source, pattern) {
 
 requireMatch('Focus route', focusRoute, /FocusChamberClient/)
 requireMatch('Replay route', replayRoute, /CinematicReplayClient/)
+requireMatch('Life Movie route', lifeMovieRoute, /LifeMovieClient/)
 requireMatch('Focus authenticated memory authority', focusClient, /useSelectedMemory\(\)/)
 requireMatch('Replay authenticated memory authority', replayClient, /useSelectedMemory\(\)/)
 
@@ -79,6 +85,19 @@ requireMatch('Replay DOM manifest identity', replayClient, /data-manifest-id=\{m
 requireMatch('Replay uses manifest phases', replayClient, /memory\?\.replayManifest\.segments/)
 requireMatch('Replay honors reduced motion', replayClient, /useReducedMotion\(\)/)
 
+requireMatch('Life Movie is a persistent world destination', worldTypes, /'life-movie'/)
+requireMatch('Life Movie registry route', worldRegistry, /href:\s*'\/life-movie'/)
+requireMatch('Life Movie registry cinematic continuum', worldRegistry, /environmentalForm:\s*'cinematic-memory-continuum'/)
+requireMatch('Life Movie enters Replay through world travel', lifeMovieClient, /requestUraiWorldTravel\(\{/)
+requireMatch('Life Movie targets Replay', lifeMovieClient, /destination:\s*'replay'/)
+requireMatch('Life Movie preserves movie identity', lifeMovieClient, /movieId:\s*requestedMovieId/)
+requireMatch('Life Movie preserves chapter identity', lifeMovieClient, /chapterId:\s*activeChapter\?\.id/)
+requireMatch('Replay continues to Life Movie through world travel', replayClient, /destination:\s*'life-movie'/)
+requireMatch('Replay preserves Life Movie identity', replayClient, /movieId:\s*world\.movieId/)
+requireMatch('Replay preserves Life Movie chapter identity', replayClient, /chapterId:\s*world\.chapterId/)
+requireMatch('World travel carries movieId', worldController, /'movieId'/)
+requireMatch('World travel carries chapterId', worldController, /'chapterId'/)
+
 forbidMatch('Focus client', focusClient, /href="\/replay\?memoryId=quiet-reset/)
 forbidMatch('Focus client', focusClient, /DEFAULT_MEMORY_ID|DEFAULT_MANIFEST_ID/)
 forbidMatch('Replay client', replayClient, /quiet-reset|replay-recovery-thread|seed-memory-bloom/)
@@ -86,8 +105,8 @@ forbidMatch('Replay client', replayClient, /window\.location\.assign/)
 
 const result = {
   ok: failures.length === 0,
-  contract: 'home-life-map-focus-replay-return-v5',
-  requiredState: ['memoryId', 'manifestId', 'node'],
+  contract: 'home-life-map-focus-replay-life-movie-return-v6',
+  requiredState: ['memoryId', 'manifestId', 'node', 'movieId', 'chapterId'],
   failures,
 }
 

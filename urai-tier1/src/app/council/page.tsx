@@ -13,8 +13,8 @@ export default function CouncilRoutePage() {
   const scene = getSceneDefinition('council')
 
   return (
-    <section data-testid="urai-council-route" data-scene-id={scene.id} data-route-owner="rigged-embodied-council">
+    <main data-testid="urai-council-route" data-scene-id={scene.id} data-route-owner="rigged-embodied-council">
       <CouncilRealm />
-    </section>
+    </main>
   )
 }

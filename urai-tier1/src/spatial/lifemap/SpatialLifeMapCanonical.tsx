@@ -2,11 +2,13 @@
 
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
+import { getAuth, onAuthStateChanged } from "firebase/auth";
 import { assetCssStack, lifeMapAssets } from "@/spatial/assets/uraiAssets";
 import { requestUraiWorldReturn } from "@/spatial/world/worldEvents";
 import LifeMapRouteBoundary from "@/components/lifemap/LifeMapRouteBoundary";
+import LifeMapSemanticNavigator from "@/components/lifemap/LifeMapSemanticNavigator";
+import { app, firebasePublicEnvReady } from "@/lib/firebase/client";
 
-const USER_ID_KEY = "urai:userId";
 const DEMO_MANIFEST_ID = "replay-recovery-thread";
 type LifeMapAccessMode = "checking" | "signed-out" | "private" | "explicit-demo";
 
@@ -15,6 +17,7 @@ function isEditableTarget(target: EventTarget | null) {
 }
 
 function LifeMapLoading({ label = "Opening your memory universe" }: { label?: string }) {
+  const router = useRouter();
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.defaultPrevented || event.key !== "Escape" || isEditableTarget(event.target)) return;
@@ -30,17 +33,12 @@ function LifeMapLoading({ label = "Opening your memory universe" }: { label?: st
       <p style={{ margin:0, fontSize:10, fontWeight:900, letterSpacing:".24em", textTransform:"uppercase", color:"#a5f3fc" }}>URAI · LIFE MAP</p>
       <h1 style={{ margin:"10px 0 0", fontSize:"clamp(34px,7vw,74px)", lineHeight:.9, letterSpacing:"-.06em" }}>Your life has depth.</h1>
       <p role="status" aria-live="polite" style={{ margin:"18px 0 0", color:"rgba(235,244,255,.75)" }}>{label} · Escape remains available</p>
-      <button type="button" onClick={() => requestUraiWorldReturn()} style={{ minHeight:48, marginTop:20, padding:"0 20px", border:"1px solid rgba(232,251,255,.22)", borderRadius:999, background:"rgba(8,24,38,.82)", color:"#fff", fontWeight:900, cursor:"pointer" }}>Return Home</button>
+      <button type="button" onClick={() => router.push("/home")} style={{ minHeight:48, marginTop:20, padding:"0 20px", border:"1px solid rgba(232,251,255,.22)", borderRadius:999, background:"rgba(8,24,38,.82)", color:"#fff", fontWeight:900, cursor:"pointer" }}>Return Home</button>
     </section>
   </main>;
 }
 
 function SignedOutLifeMap({ onOpenDemo, onReturnHome }: { onOpenDemo: () => void; onReturnHome: () => void }) {
-  useEffect(() => {
-    const timer = window.setTimeout(onOpenDemo, 420);
-    return () => window.clearTimeout(timer);
-  }, [onOpenDemo]);
-
   return <main aria-label="Signed-out Life Map threshold" data-testid="urai-life-map-signed-out-threshold" data-life-map-source="signed-out" data-private-memory-mounted="false" style={{ position:"relative", minHeight:"100svh", overflow:"hidden", color:"#f8fbff", background:"#01030a" }}>
     <picture aria-hidden="true" style={{ position:"absolute", inset:0 }}><source media="(max-width:700px)" srcSet={lifeMapAssets.mobile.src} /><img src={lifeMapAssets.primary.src} alt="" draggable={false} style={{ width:"100%", height:"100%", objectFit:"cover", filter:"saturate(1.05) contrast(1.08) brightness(.62)" }} /></picture>
     <div aria-hidden="true" style={{ position:"absolute", inset:0, background:"radial-gradient(circle at 50% 42%,rgba(16,48,73,.04),rgba(1,3,10,.76) 88%)" }} />
@@ -77,13 +75,25 @@ function LifeMapAccessGate() {
   const params = useSearchParams();
   const query = useMemo(() => params.toString(), [params]);
   const [mode, setMode] = useState<LifeMapAccessMode>("checking");
+  const [authenticatedUserId, setAuthenticatedUserId] = useState<string | null>(null);
   const webglAvailable = useWebGLCapability();
 
   useEffect(() => {
     const current = new URLSearchParams(query);
-    if (current.get("demo") === "1") { setMode("explicit-demo"); return; }
-    try { setMode(window.localStorage.getItem(USER_ID_KEY)?.trim() ? "private" : "signed-out"); }
-    catch { setMode("signed-out"); }
+    if (current.get("demo") === "1") { setMode("explicit-demo"); setAuthenticatedUserId(null); return; }
+
+    if (!firebasePublicEnvReady) {
+      setAuthenticatedUserId(null);
+      setMode("signed-out");
+      return;
+    }
+
+    setMode("checking");
+    const auth = getAuth(app);
+    return onAuthStateChanged(auth, (user) => {
+      setAuthenticatedUserId(user?.uid ?? null);
+      setMode(user ? "private" : "signed-out");
+    });
   }, [query]);
 
   const openDemo = useCallback(() => {
@@ -98,9 +108,23 @@ function LifeMapAccessGate() {
   }, [query, router]);
 
   if (mode === "checking" || webglAvailable === null) return <LifeMapLoading label="Checking the private threshold" />;
-  if (mode === "signed-out") return <SignedOutLifeMap onOpenDemo={openDemo} onReturnHome={() => router.push("/home")} />;
-  if (!webglAvailable) return <LifeMapLoading label="WebGL is unavailable. Semantic navigation remains available" />;
-  return <section data-testid="urai-r3f-canonical-lifemap" data-canonical-asset={lifeMapAssets.primary.src} data-selected-memory-owner="spatial-lens-only" data-life-map-access={mode} aria-label="URAI canonical spatial Life Map" style={{ position:"fixed", inset:0, zIndex:100, width:"100vw", height:"100svh", minHeight:"100svh", overflow:"hidden", background:"#01030a" }}><LifeMapRouteBoundary /></section>;
+  if (!webglAvailable) {
+    if (mode === "signed-out") {
+      return <><SignedOutLifeMap onOpenDemo={openDemo} onReturnHome={() => router.push("/home")} /><LifeMapSemanticNavigator authenticatedUserId={null} /></>;
+    }
+    return <><LifeMapLoading label="WebGL is unavailable. Semantic navigation remains available" /><LifeMapSemanticNavigator authenticatedUserId={mode === "private" ? authenticatedUserId : null} /></>;
+  }
+  return <section data-testid="urai-r3f-canonical-lifemap" data-canonical-asset={lifeMapAssets.primary.src} data-selected-memory-owner="spatial-lens-only" data-life-map-access={mode} data-life-map-source={mode} data-private-memory-mounted={mode === "signed-out" ? "false" : undefined} aria-label="URAI canonical spatial Life Map" style={{ position:"fixed", inset:0, zIndex:100, width:"100vw", height:"100svh", minHeight:"100svh", overflow:"hidden", background:"#01030a" }}>
+    <LifeMapRouteBoundary authenticatedUserId={mode === "private" ? authenticatedUserId : null} />
+    {mode === "signed-out" ? <aside data-testid="urai-life-map-signed-out-disclosure" aria-label="Signed-out Life Map disclosure" style={{ position:"absolute", zIndex:120, left:"max(16px,env(safe-area-inset-left))", bottom:"max(16px,env(safe-area-inset-bottom))", width:"min(390px,calc(100vw - 32px))", padding:14, border:"1px solid rgba(183,239,255,.2)", borderRadius:18, background:"rgba(2,7,17,.78)", backdropFilter:"blur(18px)", color:"#f8fbff" }}>
+      <strong style={{ display:"block", fontSize:11, letterSpacing:".12em", textTransform:"uppercase" }}>Signed out · no personal data displayed</strong>
+      <span style={{ display:"block", marginTop:6, fontSize:12, lineHeight:1.45, color:"rgba(235,244,255,.76)" }}>This is the real empty Life Map realm. No private memories are mounted.</span>
+      <div style={{ display:"flex", flexWrap:"wrap", gap:8, marginTop:10 }}>
+        <button type="button" onClick={openDemo} style={{ minHeight:48, padding:"0 16px", border:0, borderRadius:999, fontWeight:900, cursor:"pointer" }}>Open disclosed sample</button>
+        <button type="button" onClick={() => router.push("/home")} style={{ minHeight:48, padding:"0 16px", border:"1px solid rgba(232,251,255,.2)", borderRadius:999, background:"rgba(2,7,17,.62)", color:"#fff", fontWeight:900, cursor:"pointer" }}>Return Home</button>
+      </div>
+    </aside> : null}
+  </section>;
 }
 
 export default function SpatialLifeMapCanonical() {

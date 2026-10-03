@@ -3,7 +3,9 @@
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent, type PointerEvent, type WheelEvent } from 'react'
+import { getAuth, onAuthStateChanged } from 'firebase/auth'
 import { locationMapAssets } from '@/spatial/assets/uraiAssets'
+import { app, firebasePublicEnvReady } from '@/lib/firebase/client'
 import { LocationMapSpatialWorld } from './LocationMapSpatialWorld'
 import type { MemoryPlace } from './memoryPlaceSchema'
 import './location-map-scene.css'
@@ -14,8 +16,6 @@ type AccessMode = 'checking' | 'threshold' | 'private' | 'demo'
 type PointerPoint = { x: number; y: number }
 
 const OVERVIEW: Camera = { x: 0, y: 0, zoom: 0.9 }
-const USER_KEY = 'urai:userId'
-const DEMO_KEY = 'urai:locationMapDemoMode'
 const SEEDS = [[18,29,.25],[34,58,.58],[47,34,.38],[62,51,.68],[77,27,.46],[82,66,.78],[43,75,.88],[24,72,.72],[69,77,.92]] as const
 
 function clamp(value: number, min: number, max: number) { return Math.min(max, Math.max(min, value)) }
@@ -45,7 +45,7 @@ function distance(points: PointerPoint[]) {
   return Math.hypot(points[0].x - points[1].x, points[0].y - points[1].y)
 }
 
-export function LocationMapScene({ places, acceptanceFixturesEnabled = false }: { places: MemoryPlace[]; acceptanceFixturesEnabled?: boolean }) {
+export function LocationMapScene({ places, acceptanceAccessMode = null }: { places: MemoryPlace[]; acceptanceAccessMode?: 'private' | null }) {
   const router = useRouter()
   const searchParams = useSearchParams()
   const stageRef = useRef<HTMLDivElement | null>(null)
@@ -55,20 +55,7 @@ export function LocationMapScene({ places, acceptanceFixturesEnabled = false }: 
   const pinch = useRef<{ distance: number; zoom: number } | null>(null)
   const touchDrag = useRef<{ x: number; y: number; camera: Camera } | null>(null)
   const touchPinch = useRef<{ distance: number; zoom: number } | null>(null)
-  const fixtureState = acceptanceFixturesEnabled ? searchParams.get('acceptanceState') : null
-  const visiblePlaces = useMemo(() => {
-    if (!places) return []
-    if (fixtureState === 'empty') return []
-    if (fixtureState !== 'private') return places
-    return places.map((place, index) => ({
-      ...place,
-      id: `private-acceptance-${index + 1}`,
-      userId: 'acceptance-user',
-      title: `Private Place ${index + 1}`,
-      privacyLevel: 'private' as const,
-      locationPrivacy: index === 0 ? 'exact-private' as const : 'approx-private' as const,
-    }))
-  }, [fixtureState, places])
+  const visiblePlaces = useMemo(() => places ?? [], [places])
   const points = useMemo(() => pointsFor(visiblePlaces), [visiblePlaces])
   const demoData = visiblePlaces.length > 0 && visiblePlaces.every(place => place.privacyLevel === 'demo')
   const [access, setAccess] = useState<AccessMode>('checking')
@@ -115,14 +102,23 @@ export function LocationMapScene({ places, acceptanceFixturesEnabled = false }: 
 
   useEffect(() => {
     const explicitDemo = searchParams.get('demo') === '1'
-    try {
-      const userId = localStorage.getItem(USER_KEY)?.trim()
-      const retainedDemo = localStorage.getItem(DEMO_KEY) === 'true'
-      setAccess(userId ? 'private' : explicitDemo || retainedDemo ? 'demo' : 'threshold')
-    } catch {
-      setAccess(explicitDemo ? 'demo' : 'threshold')
+    if (explicitDemo) {
+      setAccess('demo')
+      return
     }
-  }, [searchParams])
+    if (acceptanceAccessMode === 'private') {
+      setAccess('private')
+      return
+    }
+    if (!firebasePublicEnvReady) {
+      setAccess('threshold')
+      return
+    }
+    setAccess('checking')
+    return onAuthStateChanged(getAuth(app), (user) => {
+      setAccess(user ? 'private' : 'threshold')
+    })
+  }, [acceptanceAccessMode, searchParams])
   useEffect(() => { applyUrl() }, [applyUrl])
   useEffect(() => {
     if (!selected) return
@@ -290,14 +286,13 @@ export function LocationMapScene({ places, acceptanceFixturesEnabled = false }: 
   }, [access, visiblePlaces.length])
 
   const openDemo = () => {
-    try { localStorage.setItem(DEMO_KEY, 'true') } catch { /* storage may be unavailable */ }
     const params = new URLSearchParams(searchParams.toString())
     params.set('demo', '1'); params.set('privacyMode', 'private'); params.set('entryPortal', 'location-beacon'); params.set('cameraCheckpoint', 'atlas-world-view')
     setAccess('demo'); router.replace(`/location-map/?${params.toString()}`, { scroll: false })
   }
 
   if (access === 'checking') return <main className="locationAtlas locationAtlas--empty" data-location-map-owner="canonical-route" data-private-memory-mounted="false"><section><p>URAI · Private emotional geography</p><h1>Opening the atlas.</h1><span>Checking the private threshold without mounting personal location history.</span></section></main>
-  if (access === 'threshold') return <main className="locationAtlas locationAtlas--empty" data-location-map-owner="canonical-route" data-private-memory-mounted="false"><section><p>URAI · Private emotional geography</p><h1>Your places stay closed until you open them.</h1><span>No personal place history is mounted while signed out. You may enter the disclosed sample atlas.</span><button type="button" onClick={openDemo}>Open disclosed sample</button><Link href="/home">Return Home</Link></section></main>
+  if (access === 'threshold') return <main className="locationAtlas locationAtlas--empty" data-location-map-owner="canonical-route" data-private-memory-mounted="false"><section><p>URAI · Private emotional geography</p><h1>Your places stay closed until you open them.</h1><span>No personal place history is mounted while signed out. You may enter the disclosed sample atlas.</span><button type="button" onClick={openDemo}>Open disclosed sample</button><Link href="/home" prefetch={false}>Return Home</Link></section></main>
   if (!visiblePlaces.length) return <main className="locationAtlas locationAtlas--empty" data-location-map-owner="canonical-route"><section><p>URAI · Private emotional geography</p><h1>Your atlas is quiet.</h1><span>No place memories are available. Nothing private has been inferred.</span><Link href="/home">Return Home</Link></section></main>
 
   const isDemo = demoData || access === 'demo'
@@ -307,7 +302,7 @@ export function LocationMapScene({ places, acceptanceFixturesEnabled = false }: 
   return <main className="locationAtlas locationAtlas--r3f" style={style} data-launch-surface="premium-emotional-weather-atlas" data-location-map-owner="canonical-route" data-location-map-renderer="react-three-fiber-spatial-atlas" data-location-map-source={isDemo ? 'disclosed-demo' : 'private-repository'} data-privacy-mode={privacyMode} data-entry-portal={entryPortal} data-camera-checkpoint={checkpoint} data-reduced-motion={reducedMotion ? 'true' : 'false'} data-online={offline ? 'false' : 'true'}>
     <picture className="locationAtlasArt" aria-hidden="true"><source media="(max-width:760px)" srcSet={locationMapAssets.mobile.src}/><img src={locationMapAssets.primary.src} alt="" draggable={false}/></picture>
     <div className="locationAtlasWeather" aria-hidden="true"/>
-    <header className="locationAtlasHeader" data-atlas-panel><div><span>URAI · Emotional geography</span><strong>{isDemo ? 'Sample atlas' : 'Private atlas'}</strong></div><div className="locationAtlasStatus"><span>{isDemo ? 'Sample view' : 'Private view'}</span><span>{isDemo ? 'Disclosed sample places' : 'Permissioned places'}</span>{offline ? <span>Offline · local view retained</span> : null}</div><nav><Link href="/life-map">Life Map</Link><Link href="/home">Home</Link></nav></header>
+    <header className="locationAtlasHeader" data-atlas-panel><div><span>URAI · Emotional geography</span><strong>{isDemo ? 'Sample atlas' : 'Private atlas'}</strong></div><div className="locationAtlasStatus"><span>{isDemo ? 'Sample view' : 'Private view'}</span><span>{isDemo ? 'Disclosed sample places' : 'Permissioned places'}</span>{offline ? <span>Offline · local view retained</span> : null}</div><nav><Link href="/life-map" prefetch={false}>Life Map</Link><Link href="/home" prefetch={false}>Home</Link></nav></header>
     <section className="locationAtlasViewport" aria-label="Interactive symbolic emotional geography atlas"><div ref={stageRef} className="locationAtlasStage" role="application" tabIndex={0} aria-describedby="location-atlas-help" onKeyDown={onKey} onWheel={onWheel} onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={onPointerUp} onPointerCancel={onPointerUp}>
       <p id="location-atlas-help" className="srOnly">Use Left and Right Arrow to move between places. Enter focuses a place. Plus and Minus zoom. Escape or Home returns to overview. Drag to pan. Pinch to zoom on touch screens.</p>
       <LocationMapSpatialWorld camera={camera} points={worldPoints} selectedColor={selected ? tone(selected.place) : '#8eeaff'} reducedMotion={reducedMotion} />
@@ -316,7 +311,7 @@ export function LocationMapScene({ places, acceptanceFixturesEnabled = false }: 
       <div className="locationAtlasForeground" aria-hidden="true"/>
     </div></section>
     <aside className="locationAtlasOrientation" data-atlas-panel><span>{selected ? 'Place focus' : 'Atlas overview'}</span><strong>{selected ? selected.place.title : `${points.length} symbolic places`}</strong><small>{selected ? 'Escape returns to the atlas.' : 'Drag to explore · pinch or wheel to zoom · choose a beacon.'}</small></aside>
-    {selected ? <aside className="locationAtlasSelection" data-atlas-panel aria-labelledby="selected-place-title"><button type="button" className="locationAtlasClose" onClick={() => overview()} aria-label="Return to atlas overview">×</button><span>{words(selected.place.category)}</span><h1 id="selected-place-title">{selected.place.title}</h1><p>{words(selected.place.emotionalOverlay.mood)} weather at {Math.round(selected.place.emotionalOverlay.intensity * 100)}% intensity.</p><dl><div><dt>Privacy</dt><dd>{privacy(selected.place)}</dd></div><div><dt>Memories</dt><dd>{selected.place.memoryIds.length} permissioned marker{selected.place.memoryIds.length === 1 ? '' : 's'}</dd></div><div><dt>Place form</dt><dd>{words(selected.place.kind)} · {words(selected.place.reconstruction.scenePreset)}</dd></div></dl><div className="locationAtlasActions"><Link href={`/place/${encodeURIComponent(selected.place.id)}`}>Enter this place</Link><button type="button" onClick={() => overview()}>Return to atlas</button></div>{isDemo ? <small className="locationAtlasDisclosure">Sample place · no personal location history is displayed.</small> : null}</aside> : null}
+    {selected ? <aside className="locationAtlasSelection" data-atlas-panel aria-labelledby="selected-place-title"><button type="button" className="locationAtlasClose" onClick={() => overview()} aria-label="Return to atlas overview">×</button><span>{words(selected.place.category)}</span><h1 id="selected-place-title">{selected.place.title}</h1><p>{words(selected.place.emotionalOverlay.mood)} weather at {Math.round(selected.place.emotionalOverlay.intensity * 100)}% intensity.</p><dl><div><dt>Privacy</dt><dd>{privacy(selected.place)}</dd></div><div><dt>Memories</dt><dd>{selected.place.memoryIds.length} permissioned marker{selected.place.memoryIds.length === 1 ? '' : 's'}</dd></div><div><dt>Place form</dt><dd>{words(selected.place.kind)} · {words(selected.place.reconstruction.scenePreset)}</dd></div></dl><div className="locationAtlasActions"><Link href={`/place/${encodeURIComponent(selected.place.id)}`} prefetch={false}>Enter this place</Link><button type="button" onClick={() => overview()}>Return to atlas</button></div>{isDemo ? <small className="locationAtlasDisclosure">Sample place · no personal location history is displayed.</small> : null}</aside> : null}
     <div className="locationAtlasControls" data-atlas-panel aria-label="Atlas camera controls"><button type="button" onClick={() => zoom(-.12)} aria-label="Zoom out">−</button><button type="button" onClick={() => overview()} aria-label="Return to atlas overview">Overview</button><button type="button" onClick={() => zoom(.12)} aria-label="Zoom in">+</button></div>
     <div className="locationAtlasTruth" data-atlas-panel><span>{isDemo ? 'Sample atlas' : 'Private atlas'}</span><small>Symbolic positions protect precise history. No live location requested.</small></div>
     <div className="srOnly" role="status" aria-live="polite">{announcement}</div>

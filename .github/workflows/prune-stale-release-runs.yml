@@ -1,6 +1,13 @@
 name: Prune stale release runs
 
 on:
+  pull_request:
+    branches:
+      - main
+    types:
+      - opened
+      - synchronize
+      - reopened
   push:
     branches:
       - main
@@ -12,9 +19,10 @@ on:
 permissions:
   actions: write
   contents: read
+  pull-requests: read
 
 concurrency:
-  group: urai-spatial-release-queue-pruner-${{ github.ref }}
+  group: urai-spatial-release-queue-pruner-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -28,9 +36,10 @@ jobs:
         with:
           script: |
             const statuses = ['queued', 'in_progress', 'waiting', 'pending', 'requested'];
-            const keepSha = context.sha;
+            const pullRequest = context.payload.pull_request;
+            const keepSha = pullRequest?.head?.sha || context.sha;
             const keepRun = context.runId;
-            const keepBranch = context.ref.replace('refs/heads/', '');
+            const keepBranch = pullRequest?.head?.ref || context.ref.replace('refs/heads/', '');
             let inspected = 0;
             let cancelled = 0;
             const failures = [];

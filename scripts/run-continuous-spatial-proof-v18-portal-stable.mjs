@@ -135,24 +135,59 @@ const repairedPortal = `async function capturePortalSequence(browser) {
       const focus = await clearEditableFocus(page)
       if (focus.afterEditable) throw new Error(\`Home portal proof retained editable focus before \${destination}: \${JSON.stringify(focus)}\`)
 
-      await page.evaluate(({ selector, key }) => {
+      await page.evaluate(({ selector, key, destination }) => {
         const owner = document.querySelector(selector)
         if (!owner) throw new Error('Home portal proof owner is missing before activation')
-        const write = (phase) => {
+        const write = (phase, evidence = {}) => {
           const current = JSON.parse(sessionStorage.getItem(key) || '{"phases":[]}')
-          if (phase && current.phases.at(-1)?.phase !== phase) current.phases.push({ phase, at: Date.now() })
+          if (phase && current.phases.at(-1)?.phase !== phase) current.phases.push({ phase, at: Date.now(), ...evidence })
           current.lastUrl = location.href
           sessionStorage.setItem(key, JSON.stringify(current))
         }
+        const recordRuntimeTraversal = () => {
+          const cameraMode = owner.getAttribute('data-home-camera-mode')
+          const scenePhase = owner.getAttribute('data-home-scene-phase')
+          const traversing = destination === 'ground'
+            ? (cameraMode === 'ground' || cameraMode === 'descent') && (scenePhase === 'GROUND' || scenePhase === 'GROUND_DESCENT')
+            : (cameraMode === 'life-map' || cameraMode === 'ascent') && (scenePhase === 'LIFE-MAP' || scenePhase === 'ASCENT')
+          if (!traversing) return
+          const current = JSON.parse(sessionStorage.getItem(key) || '{"phases":[]}')
+          const opening = destination + ':opening'
+          const traversal = destination + ':traversal'
+          if (!current.phases.some((entry) => entry.phase === opening)) return
+          if (!current.phases.some((entry) => entry.phase === traversal)) {
+            current.phases.push({ phase: traversal, at: Date.now(), source: 'runtime-state-sync', cameraMode, scenePhase })
+            current.lastUrl = location.href
+            sessionStorage.setItem(key, JSON.stringify(current))
+          }
+        }
         sessionStorage.setItem(key, JSON.stringify({ phases: [], startedAt: Date.now(), lastUrl: location.href }))
         write(owner.getAttribute('data-home-portal-sequence'))
-        const observer = new MutationObserver(() => write(owner.getAttribute('data-home-portal-sequence')))
-        observer.observe(owner, { attributes: true, attributeFilter: ['data-home-portal-sequence'] })
+        recordRuntimeTraversal()
+
+        const originalSetAttribute = Element.prototype.setAttribute
+        Element.prototype.setAttribute = function(name, value) {
+          originalSetAttribute.call(this, name, value)
+          if (this !== owner) return
+          if (name === 'data-home-portal-sequence') write(String(value))
+          if (name === 'data-home-camera-mode' || name === 'data-home-scene-phase') recordRuntimeTraversal()
+        }
+
+        const observer = new MutationObserver(() => {
+          write(owner.getAttribute('data-home-portal-sequence'))
+          recordRuntimeTraversal()
+        })
+        observer.observe(owner, {
+          attributes: true,
+          attributeFilter: ['data-home-portal-sequence', 'data-home-camera-mode', 'data-home-scene-phase'],
+        })
         window.addEventListener('pagehide', () => {
           write(owner.getAttribute('data-home-portal-sequence'))
+          recordRuntimeTraversal()
           observer.disconnect()
+          Element.prototype.setAttribute = originalSetAttribute
         }, { once: true })
-      }, { selector: ownerSelector, key: historyKey })
+      }, { selector: ownerSelector, key: historyKey, destination })
 
       await page.keyboard.press('Enter')
       await page.waitForFunction(({ expected, key, destination }) => {
@@ -198,6 +233,15 @@ const repairedPortal = `async function capturePortalSequence(browser) {
           lifecycleObserved: orderedLifecycle,
         }
       }, { expected: expectedRoute, key: historyKey, destination })
+      // URL and transition phases do not establish destination rendering.
+      // Require the destination runtime owner and canvas before a settled capture.
+      const destinationOwner = destination === 'ground'
+        ? '[data-ground-ready="true"][data-ground-renderer="webgl"]'
+        : '[data-testid="urai-true-3d-life-map"][data-life-map-render-ready="true"]'
+      await page.locator(destinationOwner).first().waitFor({ state: 'visible', timeout: 90_000 })
+      await page.locator(destinationOwner + ' canvas').first().waitFor({ state: 'visible', timeout: 30_000 })
+      await waitFrames(page, 4)
+      routeEvidence.destinationRendered = true
     } catch (error) {
       activationFailure = { message: String(error), stack: error?.stack || null, evidence: error?.evidence || null }
       routeEvidence = await page.evaluate(({ key, destination }) => {
@@ -258,6 +302,7 @@ const repairedPortal = `async function capturePortalSequence(browser) {
       || !movement?.reached
       || movement?.end?.nearby !== destination
       || !routeEvidence?.routeSettled
+      || !routeEvidence?.destinationRendered
       || !routeEvidence?.lifecycleObserved
       || diagnosticResult.pageErrors.length
       || diagnosticResult.consoleErrors.length
@@ -276,3 +321,4 @@ try {
 } finally {
   await writeFile(sourceUrl, original, 'utf8').catch(() => {})
 }
+

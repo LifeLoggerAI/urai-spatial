@@ -44,16 +44,16 @@ export default function LoginClient() {
   }
 
   return (
-    <main data-route-owner="canonical-auth-entry" style={{minHeight:'100svh',display:'grid',placeItems:'center',padding:'max(28px,env(safe-area-inset-top)) 20px max(34px,env(safe-area-inset-bottom))',background:'radial-gradient(circle at 50% 24%,#15303a 0,#071119 38%,#020609 78%)',color:'#f6fafc',fontFamily:'var(--font-sans)'}}>
-      <section style={{width:'min(520px,100%)',padding:'clamp(26px,6vw,46px)',border:'1px solid rgba(188,239,246,.15)',borderRadius:32,background:'rgba(5,14,20,.72)',boxShadow:'0 30px 100px rgba(0,0,0,.42)',backdropFilter:'blur(22px)'}}>
-        <Link href="/home" style={{color:'#a9dce4',textDecoration:'none'}}>← Home</Link>
+    <main data-route-owner="canonical-auth-entry" style={{boxSizing:'border-box',overflowWrap:'anywhere',height:'100svh',minHeight:'100svh',overflowX:'hidden',overflowY:'auto',overscrollBehaviorY:'contain',display:'grid',justifyItems:'center',alignItems:'safe center',padding:'max(28px,env(safe-area-inset-top)) max(20px,env(safe-area-inset-right)) max(34px,env(safe-area-inset-bottom)) max(20px,env(safe-area-inset-left))',background:'radial-gradient(circle at 50% 24%,#15303a 0,#071119 38%,#020609 78%)',color:'#f6fafc',fontFamily:'var(--font-sans)'}}>
+      <section style={{boxSizing:'border-box',minWidth:0,width:'min(520px,100%)',padding:'clamp(26px,6vw,46px)',border:'1px solid rgba(188,239,246,.15)',borderRadius:32,background:'rgba(5,14,20,.72)',boxShadow:'0 30px 100px rgba(0,0,0,.42)',backdropFilter:'blur(22px)'}}>
+        <Link href="/home" style={{display:'inline-flex',alignItems:'center',minHeight:48,minWidth:48,color:'#a9dce4',textDecoration:'none'}}>← Home</Link>
         <p style={{margin:'44px 0 0',fontSize:11,letterSpacing:'.22em',textTransform:'uppercase',color:'#88aeb7'}}>Private threshold</p>
         <h1 style={{margin:'10px 0 12px',fontSize:'clamp(42px,9vw,66px)',lineHeight:.94,letterSpacing:'-.055em'}}>Enter your world.</h1>
         <p role="status" aria-live="polite" style={{minHeight:48,color:'#b8c9cf',lineHeight:1.55}}>{message}</p>
 
         {state === 'signed-in' && user ? (
           <div>
-            <p style={{color:'#d9f5f8'}}>Signed in as <strong>{user.email ?? 'your private account'}</strong>.</p>
+            <p style={{color:'#d9f5f8'}}>Signed in as <strong><bdi>{user.email ?? 'your private account'}</bdi></strong>.</p>
             <div style={{display:'flex',gap:10,flexWrap:'wrap',marginTop:24}}><Link href="/home" style={primary}>Open Home</Link><Link href="/passport" style={secondary}>Passport</Link><button type="button" onClick={() => void leave()} style={buttonSecondary}>Sign out</button></div>
           </div>
         ) : (
@@ -66,7 +66,7 @@ export default function LoginClient() {
   )
 }
 
-const primary = {display:'inline-flex',alignItems:'center',justifyContent:'center',padding:'11px 16px',borderRadius:999,background:'#e9fbfd',color:'#071116',fontWeight:800,textDecoration:'none'} as const
-const secondary = {display:'inline-flex',alignItems:'center',justifyContent:'center',padding:'11px 16px',borderRadius:999,border:'1px solid rgba(255,255,255,.17)',color:'#edf7f9',fontWeight:700,textDecoration:'none'} as const
+const primary = {boxSizing:'border-box',minHeight:48,minWidth:48,maxWidth:'100%',textAlign:'center',display:'inline-flex',alignItems:'center',justifyContent:'center',padding:'11px 16px',borderRadius:999,background:'#e9fbfd',color:'#071116',fontWeight:800,textDecoration:'none'} as const
+const secondary = {boxSizing:'border-box',minHeight:48,minWidth:48,maxWidth:'100%',textAlign:'center',display:'inline-flex',alignItems:'center',justifyContent:'center',padding:'11px 16px',borderRadius:999,border:'1px solid rgba(255,255,255,.17)',color:'#edf7f9',fontWeight:700,textDecoration:'none'} as const
 const buttonPrimary = {...primary,border:0,cursor:'pointer'} as const
 const buttonSecondary = {...secondary,background:'transparent',cursor:'pointer'} as const

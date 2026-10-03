@@ -78,6 +78,10 @@ function isCompleteManifest(manifest: AssetHandoffManifest, check: ManifestCheck
 export default function UraiFinalAssetSpineBridge() {
   const pathname = usePathname() ?? '/'
   const route = resolveFinalAssetRoute(pathname)
+  // Replay visuals are source-owned by CinematicReplayClient. Do not prefetch the
+  // generic route art here: a private/unavailable memory must never request a
+  // disclosed demonstration asset before replay admission has established it.
+  const shouldPreloadRouteAsset = route.id !== 'replay'
 
   useEffect(() => {
     const root = document.documentElement
@@ -121,7 +125,7 @@ export default function UraiFinalAssetSpineBridge() {
       data-urai-final-asset-src={route.asset}
       style={{ position: 'fixed', width: 1, height: 1, opacity: 0, pointerEvents: 'none', overflow: 'hidden', inset: 'auto 0 0 auto', zIndex: -1 }}
     >
-      <img src={route.asset} alt="" width={1} height={1} loading="eager" decoding="async" data-testid="urai-final-asset-spine-route-image" />
+      {shouldPreloadRouteAsset ? <img src={route.asset} alt="" width={1} height={1} loading="eager" decoding="async" data-testid="urai-final-asset-spine-route-image" /> : null}
       <span data-testid="urai-final-asset-spine-manifest">/assets/urai/final/manifests/urai-final-assets.json</span>
     </aside>
   )
