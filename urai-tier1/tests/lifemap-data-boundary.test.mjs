@@ -9,6 +9,8 @@ test('Life Map identity fails closed instead of defaulting to demo-user', () => 
   assert.doesNotMatch(source, /return "demo-user"/)
   assert.doesNotMatch(source, /\|\| "demo-user"/)
   assert.match(source, /function resolveUserId\(explicitUserId\?: string\): string \| null/)
+  assert.doesNotMatch(source, /localStorage\.getItem/)
+  assert.match(source, /return null;/)
   assert.match(source, /if \(!resolvedUserId\)/)
   assert.match(source, /Sign in to open your private Life Map\./)
 })
@@ -47,4 +49,10 @@ test('signed-out Life Map never auto-opens disclosed demo content', () => {
   assert.match(accessGate, /user \? "private" : "signed-out"/)
   assert.match(accessGate, /current\.get\("demo"\) === "1"/)
   assert.match(accessGate, /onClick=\{onOpenDemo\}/)
+})
+
+test('private Life Map data is loaded only from the Firebase-authenticated UID threaded by the access gate', () => {
+  assert.match(accessGate, /setAuthenticatedUserId\(user\?\.uid \?\? null\)/)
+  assert.match(accessGate, /authenticatedUserId=\{mode === "private" \? authenticatedUserId : null\}/)
+  assert.doesNotMatch(source, /urai:userId/)
 })
