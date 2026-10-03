@@ -66,7 +66,7 @@ test('Focus is an explorable stellar memory-star field rather than a static cham
     assert.match(cameraRig, new RegExp(`'${key}'`), `Focus camera travel must retain ${key}`)
   }
   assert.match(cameraRig, /const moving = keys\.current\.size > 0/, 'keyboard travel must remain driven by held movement keys')
-  assert.doesNotMatch(cameraRig, /if \\(!moving[^\\n]*reducedMotion/, 'reduced-motion may alter entry animation but must not gate held-key travel')
+  assert.doesNotMatch(cameraRig, /if \(!moving[^\n]*reducedMotion/, 'reduced-motion may alter entry animation but must not gate held-key travel')
   assert.match(cameraRig, /camera\.position\.add\(movementVector\)/)
   assert.match(cameraRig, /THREE\.MathUtils\.clamp\(camera\.position\.x, -CAMERA_LIMIT, CAMERA_LIMIT\)/)
   assert.match(cameraRig, /THREE\.MathUtils\.clamp\(camera\.position\.z, -0\.4, 12\)/)
