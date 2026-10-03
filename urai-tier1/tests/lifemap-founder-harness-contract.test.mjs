@@ -189,7 +189,10 @@ test('collapsed semantic navigator preserves a visible pointer and touch opener'
   assert.match(navigator, /aria-expanded=\{open\}/)
   assert.match(navigator, /width:48px;height:48px/)
   assert.match(navigator, /cursor:pointer/)
-  assert.match(isolation, /\.life-map-search-trigger \{ left: auto !important; pointer-events: auto !important; min-width: 48px !important; min-height: 48px !important; box-sizing: border-box !important; \}/)
+  const trigger = isolation.match(/\.life-map-search-trigger \{([^}]+)\}/)?.[1] || ''
+  for (const declaration of ['position: fixed !important', 'left: auto !important', 'pointer-events: auto !important', 'min-width: 48px !important', 'min-height: 48px !important', 'box-sizing: border-box !important']) {
+    assert.ok(trigger.includes(declaration), `Search opener must retain ${declaration}`)
+  }
   assert.doesNotMatch(isolation, /life-map-navigator:not\(\[open\]\)|> summary/)
 })
 
