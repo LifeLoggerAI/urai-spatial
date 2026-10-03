@@ -405,6 +405,7 @@ try {
       // A final snapshot is taken even when the route failed to settle.
       dom = await inspectDomWithinBudget(page, caseDeadline)
       record.finalUrl = safeUrl(page.url())
+      record.compatibilityNavigationAborts = compatibilityNavigationAborts.map((entry) => ({ ...entry }))
       if (compatibilityNavigationAborts.length) {
         let compatibilityRedirectConfirmed = false
         try {
