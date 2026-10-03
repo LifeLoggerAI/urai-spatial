@@ -74,16 +74,19 @@ function LifeMapAccessGate() {
   const params = useSearchParams();
   const query = useMemo(() => params.toString(), [params]);
   const [mode, setMode] = useState<LifeMapAccessMode>("checking");
+  const [authenticatedUserId, setAuthenticatedUserId] = useState<string | null>(null);
   const webglAvailable = useWebGLCapability();
 
   useEffect(() => {
     const current = new URLSearchParams(query);
     if (current.get("demo") === "1") {
+      setAuthenticatedUserId(null);
       setMode("explicit-demo");
       return;
     }
 
     if (!firebasePublicEnvReady) {
+      setAuthenticatedUserId(null);
       setMode("signed-out");
       return;
     }
@@ -91,6 +94,7 @@ function LifeMapAccessGate() {
     setMode("checking");
     const auth = getAuth(app);
     return onAuthStateChanged(auth, (user) => {
+      setAuthenticatedUserId(user?.uid ?? null);
       setMode(user ? "private" : "signed-out");
     });
   }, [query]);
@@ -109,7 +113,7 @@ function LifeMapAccessGate() {
   if (mode === "checking" || webglAvailable === null) return <LifeMapLoading label="Checking the private threshold" />;
   if (mode === "signed-out") return <SignedOutLifeMap onOpenDemo={openDemo} onReturnHome={() => router.push("/home")} />;
   if (!webglAvailable) return <LifeMapLoading label="WebGL is unavailable. Semantic navigation remains available" />;
-  return <section data-testid="urai-r3f-canonical-lifemap" data-canonical-asset={lifeMapAssets.primary.src} data-selected-memory-owner="spatial-lens-only" data-life-map-access={mode} aria-label="URAI canonical spatial Life Map" style={{ position:"fixed", inset:0, zIndex:100, width:"100vw", height:"100svh", minHeight:"100svh", overflow:"hidden", background:"#01030a" }}><LifeMapRouteBoundary /></section>;
+  return <section data-testid="urai-r3f-canonical-lifemap" data-canonical-asset={lifeMapAssets.primary.src} data-selected-memory-owner="spatial-lens-only" data-life-map-access={mode} aria-label="URAI canonical spatial Life Map" style={{ position:"fixed", inset:0, zIndex:100, width:"100vw", height:"100svh", minHeight:"100svh", overflow:"hidden", background:"#01030a" }}><LifeMapRouteBoundary authenticatedUserId={mode === "private" ? authenticatedUserId : null} /></section>;
 }
 
 export default function SpatialLifeMapCanonical() {
