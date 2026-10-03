@@ -7,6 +7,8 @@ const scene = await readFile(new URL('../src/components/lifemap/ComposedLifeMapS
 const world = await readFile(new URL('../src/components/lifemap/LifeMapProductionWorld.tsx', import.meta.url), 'utf8')
 const selection = await readFile(new URL('../src/components/lifemap/lifeMapSelection.ts', import.meta.url), 'utf8')
 const founder = await readFile(new URL('../../scripts/capture-lifemap-founder-proof-fixed.mjs', import.meta.url), 'utf8')
+const inputBoundary = await readFile(new URL('../src/spatial/world/LifeMapIndependentInputBoundary.tsx', import.meta.url), 'utf8')
+const onboarding = await readFile(new URL('../src/app/UraiV2OnboardingLayer.tsx', import.meta.url), 'utf8')
 
 test('semantic navigator invokes the authoritative world selection transaction without hidden re-entry', () => {
   assert.match(navigator, /className="life-map-semantic-result" data-life-map-semantic-result data-life-map-node-id=\{node\.id\} aria-label=/)
@@ -82,4 +84,19 @@ test('Founder proof observes the real selected world state and real journey phas
   assert.match(founder, /\['approach', 'approach'\]/)
   assert.match(founder, /waitForState\(page, 'data-life-map-phase', 'arrival'\)/)
   assert.doesNotMatch(founder, /synthetic-selected|test-only-selected|forceSelected|window\.setTimeout\s*=|captureTimingFactor/)
+})
+
+
+test('Life Map stepping has one URL-aware owner for keyboard and journey controls', () => {
+  assert.match(navigator, /window\.addEventListener\('urai:life-map-step', onStepRequest as EventListener\)/)
+  assert.match(navigator, /if \(direction === 1 \|\| direction === -1\) step\(direction\)/)
+  assert.match(inputBoundary, /new CustomEvent\('urai:life-map-step', \{ detail: \{ direction \} \}\)/)
+  assert.doesNotMatch(inputBoundary, /const indexRef = useRef|function memoryButtons|cycle\(-1\)|cycle\(1\)/)
+  assert.doesNotMatch(inputBoundary, /event\.code === 'ArrowLeft'.*requestStep|event\.code === 'ArrowRight'.*requestStep/)
+})
+
+test('guided onboarding restores the Skip focus target after route hydration', () => {
+  assert.match(onboarding, /const dismissRef = useRef<HTMLButtonElement>\(null\)/)
+  assert.match(onboarding, /dismissRef\.current\?\.focus\(\{ preventScroll: true \}\)/)
+  assert.match(onboarding, /<button ref=\{dismissRef\} type="button" onClick=\{dismiss\}>Skip<\/button>/)
 })
