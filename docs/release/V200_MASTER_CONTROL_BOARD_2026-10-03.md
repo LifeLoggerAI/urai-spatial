@@ -6,7 +6,7 @@ This ledger is an execution-control snapshot, not independent certification. A g
 |---|---|---|---|---|---|
 | V200-001 | Spatial terminal CI / contract convergence | urai-spatial PR #1550 | `6c7fec34b87c1583cf87ce750d6ac8e133e30489` | 🟡 GREEN-CANDIDATE | Fresh exact-head CI completion |
 | V200-002 | Independent release review | urai-spatial issue #564 | PR #1550 | 🔴 BLOCKED | Trusted independent reviewer approval/signature |
-| V200-003 | Privacy Next.js security remediation | urai-privacy PR #140 | `332a73b1735148556203045e8f29ab69dd63d38a` | 🟡 GREEN-CANDIDATE | Fresh exact-head CI/security gate after authoritative superstatic integrity repair |
+| V200-003 | Privacy Next.js security remediation | urai-privacy PR #140 | `ae8ab1715e3ba19a1ba11751b2f9a159e73b5dca` | 🟡 GREEN-CANDIDATE | Exact-head CI pending; malformed superstatic integrity is repaired, while npm audit still reports upstream Firebase/gRPC advisories requiring non-trivial dependency resolution |
 | V200-004 | Atomic consent revocation before dispatch | urai-jobs PR #133 | `1f36a0ca87b4ce02a3854af7b56d0b2490f668b4` | 🟡 GREEN-CANDIDATE | CI + emulator + staging/live zero-call receipt |
 | V200-005 | Life Model causal pipeline | urai-spatial PR #1543 | candidate branch | 🟠 IN PROGRESS | Merge/integration/release proof |
 | V200-006 | Adam Presence production runtime | urai-spatial PR #1534 | candidate branch | 🟠 IN PROGRESS | provider/device/runtime/consent evidence |
@@ -33,7 +33,7 @@ This ledger is an execution-control snapshot, not independent certification. A g
 ## Current exact candidate heads
 
 - Spatial PR #1550: `6c7fec34b87c1583cf87ce750d6ac8e133e30489`
-- Privacy PR #140: `332a73b1735148556203045e8f29ab69dd63d38a`
+- Privacy PR #140: `ae8ab1715e3ba19a1ba11751b2f9a159e73b5dca`
 - Jobs PR #133: `1f36a0ca87b4ce02a3854af7b56d0b2490f668b4`
 
 ## Non-transfer rule
