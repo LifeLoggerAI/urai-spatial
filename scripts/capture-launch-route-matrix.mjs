@@ -229,7 +229,7 @@ async function inspectDom(page) {
       performanceMarks: performance.getEntriesByType('mark').filter(mark => mark.name.startsWith('urai:')).map(mark => ({ name: mark.name, atMs: Math.round(mark.startTime) })).slice(0, 80),
       hasVisibleSvg: [...document.querySelectorAll('main svg,[role="main"] svg')].some(inViewport),
     }
-  }), 8_000, 'DOM inspection')
+  }), 20_000, 'DOM inspection')
 }
 
 function classifyState(spec, dom) {
