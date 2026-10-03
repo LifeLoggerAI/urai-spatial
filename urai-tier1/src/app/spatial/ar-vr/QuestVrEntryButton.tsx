@@ -14,17 +14,22 @@ type QuestXrNavigator = Navigator & {
 type Props = {
   onSessionRequested?: (session: QuestSession) => Promise<void> | void
   onSessionEnded?: () => void
+  disabled?: boolean
 }
 
 const idleCopy = 'On Quest Browser, enter the live 3D chamber. Desktop and mobile keep the truthful interactive fallback visible.'
 
-export default function QuestVrEntryButton({ onSessionRequested, onSessionEnded }: Props) {
+export default function QuestVrEntryButton({ onSessionRequested, onSessionEnded, disabled = false }: Props) {
   const [copy, setCopy] = useState(idleCopy)
   const [busy, setBusy] = useState(false)
   const [active, setActive] = useState(false)
   const [sessionConsent, setSessionConsent] = useState(false)
 
   async function enterQuestVr() {
+    if (disabled) {
+      setCopy('Immersive VR entry is unavailable until the real-time renderer is ready. Accessible portals remain available.')
+      return
+    }
     if (!sessionConsent) {
       setCopy('Choose the session-consent checkbox before starting immersive VR.')
       return
@@ -82,11 +87,11 @@ export default function QuestVrEntryButton({ onSessionRequested, onSessionEnded 
           type="checkbox"
           checked={sessionConsent}
           onChange={(event) => setSessionConsent(event.currentTarget.checked)}
-          disabled={busy || active}
+          disabled={disabled || busy || active}
         />
         I consent to start this browser-local immersive VR session. Headset pose and input remain session-scoped on this entry path; provider-backed recording or persistence is not enabled here.
       </label>
-      <button type="button" onClick={enterQuestVr} disabled={busy || active}>
+      <button type="button" onClick={enterQuestVr} disabled={disabled || busy || active}>
         {busy ? 'Entering VR…' : active ? 'VR active' : 'Enter VR in Quest'}
       </button>
       <p aria-live="polite">{copy}</p>
