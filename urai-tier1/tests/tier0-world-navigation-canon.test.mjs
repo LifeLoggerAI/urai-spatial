@@ -13,6 +13,8 @@ const shell = read('src/spatial/world/UraiWorldShell.tsx')
 const layout = read('src/app/layout.tsx')
 const homeRuntime = read('src/app/HomeSpatialRuntimeLayer.tsx')
 const homeCanvas = read('src/app/HomeSpatialCanvas.tsx')
+const groundModel = read('src/app/ground/GroundWorldModel.ts')
+const homeScene = read('src/scene/HomeScene.tsx')
 
 test('Tier-0 canon defines the required persistent-world destinations', () => {
   for (const destination of [
@@ -24,6 +26,7 @@ test('Tier-0 canon defines the required persistent-world destinations', () => {
     'location-map',
     'focus',
     'replay',
+    'life-movie',
   ]) {
     assert.match(worldTypes, new RegExp(`['"]${destination}['"]`))
     assert.match(registry, new RegExp(`['"]${destination}['"]`))
@@ -58,6 +61,23 @@ test('Home stays calm and exposes Ground through world geometry without tutorial
   assert.doesNotMatch(homeCanvas, /tap the ground to enter below|Drag to look/)
 })
 
+test('Focus and Replay use the current memory-star and inside-memory canon', () => {
+  assert.match(registry, /label:\s*['"]Focus Memory Star['"]/)
+  assert.match(registry, /environmentalForm:\s*['"]stellar-memory-photosphere['"]/)
+  assert.match(registry, /label:\s*['"]Replay['"]/)
+  assert.match(registry, /environmentalForm:\s*['"]immersive-memory-world['"]/)
+  assert.doesNotMatch(registry, /label:\s*['"]Focus Chamber['"]/)
+  assert.doesNotMatch(registry, /label:\s*['"]Replay Theater['"]/)
+
+  assert.match(groundModel, /label:\s*["']Focus Memory Star["']/)
+  assert.match(groundModel, /label:\s*["']Replay["']/)
+  assert.doesNotMatch(groundModel, /label:\s*["']Focus Chamber["']/)
+  assert.doesNotMatch(groundModel, /label:\s*["']Replay Theater["']/)
+
+  assert.doesNotMatch(homeScene, /label:\s*['"]Replay Theater['"]/)
+  assert.doesNotMatch(homeScene, /detail:\s*['"]Step into the focused memory chamber\./)
+})
+
 test('The root application owns one persistent world shell', () => {
   assert.match(layout, /WorldRuntimeBoundary/)
   assert.match(layout, /<WorldRuntimeBoundary>/)
@@ -67,7 +87,7 @@ test('The root application owns one persistent world shell', () => {
 })
 
 test('Travel preserves context and supports deterministic reversal', () => {
-  for (const key of ['memoryId', 'thread', 'personId', 'placeId', 'manifestId', 'privacyMode']) {
+  for (const key of ['memoryId', 'thread', 'personId', 'placeId', 'manifestId', 'movieId', 'chapterId', 'privacyMode']) {
     assert.match(controller, new RegExp(`['"]${key}['"]`))
   }
   assert.match(provider, /previousDestination/)

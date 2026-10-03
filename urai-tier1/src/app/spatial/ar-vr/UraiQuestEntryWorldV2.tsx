@@ -270,7 +270,7 @@ export default function UraiQuestEntryWorldV2() {
   }, [hold])
 
   return (
-    <section
+    <main
       className={styles.world}
       data-testid="urai-quest-explorable-world"
       data-quest-proof="QUEST_IMMERSIVE_ENTRY_VERIFIED_MINIMAL_SHELL"
@@ -295,6 +295,7 @@ export default function UraiQuestEntryWorldV2() {
         aria-label="XR and comfort controls"
       >
         <QuestVrEntryButton
+          disabled={!rendererReady}
           onSessionRequested={attachSession}
           onSessionEnded={handleSessionEnded}
         />
@@ -312,6 +313,7 @@ export default function UraiQuestEntryWorldV2() {
 
         <button
           type="button"
+          disabled={!rendererReady}
           onClick={() => {
             runtimeRef.current?.recenter()
           }}
@@ -360,6 +362,7 @@ export default function UraiQuestEntryWorldV2() {
       >
         <button
           type="button"
+          disabled={!rendererReady}
           aria-label="Turn left"
           onPointerDown={() => hold('KeyQ', true)}
           onPointerUp={() => hold('KeyQ', false)}
@@ -375,6 +378,7 @@ export default function UraiQuestEntryWorldV2() {
 
         <button
           type="button"
+          disabled={!rendererReady}
           aria-label="Move forward"
           onPointerDown={() => hold('KeyW', true)}
           onPointerUp={() => hold('KeyW', false)}
@@ -390,6 +394,7 @@ export default function UraiQuestEntryWorldV2() {
 
         <button
           type="button"
+          disabled={!rendererReady}
           aria-label="Move backward"
           onPointerDown={() => hold('KeyS', true)}
           onPointerUp={() => hold('KeyS', false)}
@@ -405,6 +410,7 @@ export default function UraiQuestEntryWorldV2() {
 
         <button
           type="button"
+          disabled={!rendererReady}
           aria-label="Turn right"
           onPointerDown={() => hold('KeyE', true)}
           onPointerUp={() => hold('KeyE', false)}
@@ -425,6 +431,6 @@ export default function UraiQuestEntryWorldV2() {
         selects portals; select the floor to teleport;
         right thumbstick snaps 30°.
       </p>
-    </section>
+    </main>
   )
 }

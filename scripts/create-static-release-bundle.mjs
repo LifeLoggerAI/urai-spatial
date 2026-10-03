@@ -43,6 +43,12 @@ function parseLiveUrl(value) {
 function sha256(file) {
   return createHash('sha256').update(readFileSync(file)).digest('hex')
 }
+function gitTreeSha(relativePath) {
+  const value = execFileSync('git', ['rev-parse', `HEAD:${relativePath}`], { encoding: 'utf8' }).trim()
+  if (!/^[0-9a-f]{40}$/.test(value)) throw new Error(`Unable to bind Git tree for ${relativePath}`)
+  return value
+}
+
 
 function isFirebaseIgnoredPath(relative) {
   return relative.split('/').some((segment) => segment.startsWith('.'))
@@ -85,6 +91,8 @@ function writeAuthoritativeFingerprint() {
     }
   }
 
+  const functionsTreeSha = gitTreeSha('apps/functions')
+  const firebaseStaticConfigSha256 = sha256(path.join(root, 'firebase.static.json'))
   const fingerprint = {
     schemaVersion: 'urai-release-fingerprint-1',
     generatedAt: new Date().toISOString(),
@@ -94,7 +102,9 @@ function writeAuthoritativeFingerprint() {
     rollbackSha,
     firebaseProject: project,
     liveUrl: 'https://urai.app',
-    deploymentScope: 'hosting-only',
+    deploymentScope: 'functions-and-hosting',
+    functionsTreeSha,
+    firebaseStaticConfigSha256,
     certification: 'pending-post-deploy-smoke',
     workflowRunId,
     attestedBy: 'scripts/create-static-release-bundle.mjs',
@@ -141,7 +151,9 @@ if (
   fingerprint.rollbackSha !== rollbackSha ||
   fingerprint.firebaseProject !== project ||
   fingerprint.liveUrl !== 'https://urai.app' ||
-  fingerprint.deploymentScope !== 'hosting-only' ||
+  fingerprint.deploymentScope !== 'functions-and-hosting' ||
+  fingerprint.functionsTreeSha !== gitTreeSha('apps/functions') ||
+  fingerprint.firebaseStaticConfigSha256 !== sha256(path.join(root, 'firebase.static.json')) ||
   fingerprint.certification !== 'pending-post-deploy-smoke' ||
   fingerprint.workflowRunId !== workflowRunId
 ) {
@@ -179,7 +191,9 @@ const manifest = {
   rollbackSha,
   firebaseProject: project,
   liveUrl: 'https://urai.app',
-  deploymentScope: 'hosting-only',
+  deploymentScope: 'functions-and-hosting',
+  functionsTreeSha: gitTreeSha('apps/functions'),
+  firebaseStaticConfigSha256: sha256(path.join(root, 'firebase.static.json')),
   fingerprintSha256: sha256(path.join(bundleOutputDirectory, 'release-fingerprint.json')),
   fileCount: copiedFiles.length,
   totalBytes: copiedFiles.reduce((total, entry) => total + entry.bytes, 0),

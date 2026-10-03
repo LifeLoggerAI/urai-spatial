@@ -27,17 +27,6 @@ export function LocationMapNativeWheelBridge() {
 
       event.preventDefault()
 
-      // A retained sample atlas can be open from localStorage before demo=1 is present
-      // in the URL. Normalize that same-route state before the overview action so the
-      // router does not remount the atlas between camera reset and the next native tap.
-      if (!atlas.querySelector('.locationAtlasSelection') && atlas.dataset.locationMapSource === 'disclosed-demo') {
-        const url = new URL(window.location.href)
-        if (url.searchParams.get('demo') !== '1') {
-          url.searchParams.set('demo', '1')
-          window.history.replaceState(window.history.state, '', url)
-        }
-      }
-
       overview.click()
     }
 

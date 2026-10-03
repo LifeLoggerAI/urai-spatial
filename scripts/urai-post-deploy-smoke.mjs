@@ -8,6 +8,8 @@ const baseUrl = (process.env.URAI_DEPLOY_URL || '').trim().replace(/\/$/, '')
 const expectedSha = (process.env.URAI_EXPECTED_DEPLOYED_SHA || '').trim()
 const expectedRollbackSha = (process.env.URAI_EXPECTED_ROLLBACK_SHA || process.env.ROLLBACK_SHA || '').trim()
 const expectedAuthoritySha = (process.env.URAI_EXPECTED_AUTHORITY_SHA || process.env.CURRENT_MAIN_SHA || '').trim()
+const expectedFunctionsTreeSha = (process.env.URAI_EXPECTED_FUNCTIONS_TREE_SHA || '').trim()
+const expectedStaticConfigSha256 = (process.env.URAI_EXPECTED_STATIC_CONFIG_SHA256 || '').trim()
 const receiptPath = process.env.URAI_LIVE_RECEIPT_PATH || 'deployment-receipt/live-content-parity.json'
 const maxAttempts = Number.parseInt(process.env.URAI_SMOKE_FETCH_ATTEMPTS || '4', 10)
 const retryBaseMs = Number.parseInt(process.env.URAI_SMOKE_RETRY_BASE_MS || '750', 10)
@@ -18,6 +20,8 @@ if (canonicalOrigin !== 'https://urai.app') throw new Error('Live certification 
 if (!/^[0-9a-f]{40}$/.test(expectedSha)) throw new Error('URAI_EXPECTED_DEPLOYED_SHA must be a full lowercase SHA')
 if (!/^[0-9a-f]{40}$/.test(expectedRollbackSha)) throw new Error('URAI_EXPECTED_ROLLBACK_SHA must be a full lowercase SHA')
 if (!/^[0-9a-f]{40}$/.test(expectedAuthoritySha)) throw new Error('URAI_EXPECTED_AUTHORITY_SHA or CURRENT_MAIN_SHA must be a full lowercase SHA')
+if (!/^[0-9a-f]{40}$/.test(expectedFunctionsTreeSha)) throw new Error('URAI_EXPECTED_FUNCTIONS_TREE_SHA must be a full lowercase Git tree SHA')
+if (!/^[0-9a-f]{64}$/.test(expectedStaticConfigSha256)) throw new Error('URAI_EXPECTED_STATIC_CONFIG_SHA256 must be a lowercase SHA-256 digest')
 if (expectedRollbackSha === expectedSha) throw new Error('Rollback SHA must be distinct from deployed SHA')
 if (!Number.isInteger(maxAttempts) || maxAttempts < 1 || maxAttempts > 8) throw new Error('URAI_SMOKE_FETCH_ATTEMPTS must be an integer from 1 to 8')
 if (!Number.isInteger(retryBaseMs) || retryBaseMs < 100 || retryBaseMs > 10_000) throw new Error('URAI_SMOKE_RETRY_BASE_MS must be an integer from 100 to 10000')
@@ -27,13 +31,53 @@ const contracts = [
   ['/home', ['aaa-final-home-sky-ground-orb-body-portals', 'Own your life.'], []],
   ['/ground', ['walkable-first-person-ground-layer', 'urai-ground-private-workforce-world', 'ground-destination-compass', 'data-ground-destination', 'URAI Ground embodied private infrastructure'], ['Street-level city world']],
   ['/life-map', ['URAI Life Map', 'URAI Life Map — step inside your private constellation'], []],
-  ['/focus?memoryId=quiet-reset&manifestId=replay-recovery-thread&node=quiet-reset', ['urai-final-focus-chamber', 'Selected memory chamber.'], ['Focus loading']],
-  ['/replay?memoryId=quiet-reset&manifestId=replay-recovery-thread&node=quiet-reset', ['replay-route-launch-fingerprint', 'Replay the thread. Film beats. Cinematic memory camera film.'], []],
+  ['/focus?memoryId=quiet-reset&manifestId=replay-recovery-thread&node=quiet-reset', ['urai-final-focus-chamber', 'URAI Focus stellar memory field', 'data-focus-spatial'], ['Focus loading']],
+  ['/replay?memoryId=quiet-reset&manifestId=replay-recovery-thread&node=quiet-reset', ['replay-route-launch-fingerprint', 'cinematic-replay-client', 'r3f-immersive-memory-field'], []],
+  ['/life-movie', ['life-movie-runtime', 'Life Movie'], []],
+  ['/council', ['urai-council-route', 'rigged-embodied-council'], []],
+  ['/spatial/memory-world', ['memory-world-route'], []],
+  ['/spatial/interpretive-world', ['interpretive-world-route'], []],
+  ['/spatial/captured-reality', ['captured-reality-private-route'], []],
+  ['/spatial/ar-vr', ['urai-quest-explorable-world', 'URAI AR / VR / XR entry chamber'], []],
+  ['/xr', ['urai-quest-explorable-world', 'URAI XR World'], []],
+  ['/settings', ['device-settings', 'How URAI meets you.'], []],
+  ['/launch', ['Your private world is the interface.', 'Launch destinations', 'Launch truth'], []],
   ['/mirror', ['urai-final-mirror-realm', 'See the pattern clearly.'], []],
   ['/passport', ['passport-ownership-vault', 'UrAi Passport', 'Ownership key'], ['urai-final-passport-vault', 'Your life stays yours.']],
   ['/privacy-controls', ['consent-sanctuary', 'UrAi Consent Sanctuary', 'Choose what the world may hold.', 'Enforcement:'], ['privacy-consent-console', 'Choose what the world can hold.', 'Home threshold']],
   ['/location-map', ['premium-emotional-weather-atlas'], []],
   ['/status', ['urai-final-status-control-room', 'Launch locked. Proof before expansion.', 'fingerprint-gated', 'Production certification remains hidden until the protected fingerprint is validated.'], ['Pending proof', 'World online. Route matrix visible.']],
+  ['/support', ['Help when you need it.', 'Email support', 'Report an issue'], []],
+  ['/about', ['A life you can move through.', 'Memory becomes navigable.', 'Privacy stays explicit.'], []],
+  ['/contact', ['Reach the right door.', 'Product support', 'Privacy-sensitive requests:'], []],
+  ['/event', ['See the system without overstating it.', 'Open demo', 'View release status'], []],
+  ['/glass', ['Move from screen to space.', 'Open XR preview', 'Open spatial web'], []],
+  ['/offline', ['Your way back stays visible.', 'Return Home', 'Check status'], []],
+  ['/report-bug', ['Tell us what broke.', 'Email support', 'Check status first'], []],
+  ['/terms', ['URAI Spatial Terms', 'No medical, diagnostic, or emergency use'], []],
+  ['/login', ['canonical-auth-entry', 'Enter your world.'], []],
+  ['/account-deletion', ['account-deletion-heading', 'Delete your account on your terms.'], []],
+  ['/privacy-policy', ['privacy-policy-heading', 'Privacy policy candidate'], []],
+]
+
+const serverContracts = [
+  ['POST', '/api/google/oauth/start'],
+  ['GET', '/api/google/oauth/callback'],
+  ['POST', '/api/google/oauth/status'],
+  ['POST', '/api/google/oauth/disconnect'],
+  ['POST', '/api/urai/orb/openai'],
+  ['POST', '/api/urai/narrator/elevenlabs'],
+  ['POST', '/api/voice/elevenlabs'],
+  ['POST', '/api/urai/adam/conversation'],
+  ['POST', '/api/urai/adam/voice'],
+  ['POST', '/api/urai/council/anthropic'],
+  ['POST', '/api/urai/council/gemini'],
+  ['POST', '/api/urai/council/xai'],
+  ['POST', '/api/urai/council/mistral'],
+  ['POST', '/api/stripe/create-checkout-session'],
+  ['POST', '/api/stripe/create-portal-session'],
+  ['GET', '/api/entitlement'],
+  ['POST', '/api/stripe/webhook'],
 ]
 
 function normalizePath(value) {
@@ -105,7 +149,9 @@ async function fetchFingerprint() {
     && payload?.authoritySha === expectedAuthoritySha
     && payload?.firebaseProject === 'urai-4dc1d'
     && payload?.liveUrl === 'https://urai.app'
-    && payload?.deploymentScope === 'hosting-only'
+    && payload?.deploymentScope === 'functions-and-hosting'
+    && payload?.functionsTreeSha === expectedFunctionsTreeSha
+    && payload?.firebaseStaticConfigSha256 === expectedStaticConfigSha256
   return {
     requestedUrl: url.toString(),
     finalUrl: response.url,
@@ -171,6 +217,58 @@ for (const [route, required, forbidden] of contracts) {
   }
 }
 
+const serverResults = []
+for (const [method, route] of serverContracts) {
+  const requested = new URL(route, `${baseUrl}/`)
+  const startedAt = new Date().toISOString()
+  try {
+    const { response, text, attemptsUsed } = await fetchTextWithRetries(requested, {
+      method,
+      redirect: 'manual',
+      cache: 'no-store',
+      headers: {
+        'cache-control': 'no-cache',
+        'content-type': 'application/json',
+        'user-agent': 'urai-server-boundary-verifier/1.0',
+      },
+      body: method === 'POST' ? '{}' : undefined,
+    })
+    const contentType = response.headers.get('content-type')?.toLowerCase() || ''
+    const finalUrl = new URL(response.url)
+    const passed = response.status !== 404
+      && response.status >= 300
+      && response.status < 600
+      && finalUrl.origin === canonicalOrigin
+      && normalizePath(finalUrl.pathname) === normalizePath(requested.pathname)
+      && !contentType.includes('text/html')
+    serverResults.push({
+      method,
+      route,
+      requestedUrl: requested.toString(),
+      finalUrl: response.url,
+      status: response.status,
+      contentType,
+      startedAt,
+      completedAt: new Date().toISOString(),
+      contentSha256: createHash('sha256').update(text).digest('hex'),
+      bytes: Buffer.byteLength(text),
+      attemptsUsed,
+      passed,
+    })
+  } catch (error) {
+    serverResults.push({
+      method,
+      route,
+      requestedUrl: requested.toString(),
+      startedAt,
+      completedAt: new Date().toISOString(),
+      error: error instanceof Error ? error.message : String(error),
+      attemptsUsed: error?.attemptsUsed || maxAttempts,
+      passed: false,
+    })
+  }
+}
+
 let fingerprint
 try {
   fingerprint = await fetchFingerprint()
@@ -182,9 +280,9 @@ try {
   }
 }
 
-const passed = results.every((result) => result.passed) && fingerprint.passed
+const passed = results.every((result) => result.passed) && serverResults.every((result) => result.passed) && fingerprint.passed
 const receipt = {
-  schemaVersion: 'urai-live-content-parity-3',
+  schemaVersion: 'urai-live-content-parity-6',
   generatedAt: new Date().toISOString(),
   baseUrl,
   expectedDeployedSha: expectedSha,
@@ -192,9 +290,15 @@ const receipt = {
   expectedAuthoritySha,
   routeContracts: contracts.length,
   checkedVariants: results.length,
+  serverContracts: serverContracts.length,
+  checkedServerBoundaries: serverResults.length,
+  expectedFunctionsTreeSha,
+  expectedStaticConfigSha256,
   fetchPolicy: { maxAttempts, retryBaseMs },
   hydratedIdentityProof: 'scripts/urai-release-control-smoke.mjs',
+  browserCompatibilityRoutes: ['/privacy', '/ascent/life-map', '/waitlist', '/system', '/settings/privacy', '/onboarding', '/signup', '/ascent', '/spatial', '/unwind'],
   fingerprint,
+  serverResults,
   passed,
   results,
 }

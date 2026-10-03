@@ -1,0 +1,916 @@
+{
+  "schemaVersion": "urai-memory-world-world-packages-1",
+  "generatedFrom": "operations/memory-world/reference-worlds-v1.json",
+  "statusPolicy": "reference packages are research/authoring scopes only and are not production worlds until sources, assets, licensing, cultural review where required, runtime validation, pixels and device evidence exist",
+  "worlds": [
+    {
+      "id": "qa-east-texas-kitchen-1997",
+      "label": "1990s East Texas family kitchen",
+      "archetypeId": "scene:residential:kitchen",
+      "localityScope": "US-TX",
+      "era": "1990s",
+      "climate": "humid-subtropical",
+      "explicitContext": [
+        "family-home",
+        "holiday-possible"
+      ],
+      "accessibilityTargets": [
+        "reduced-motion",
+        "seated-navigation"
+      ],
+      "status": "reference",
+      "sourceReferenceIds": [],
+      "assetDependencies": [],
+      "knownUnknowns": [
+        "exact architecture and layout require lawful references or user evidence",
+        "objects, signage, clothing and event details must not be inferred beyond explicit evidence",
+        "production licensing and provenance are unresolved until reference ingestion completes"
+      ],
+      "referenceRequirements": [
+        "architecture-layout",
+        "materials-objects",
+        "era",
+        "climate-vegetation",
+        "lighting-weather",
+        "language-signage",
+        "scale-dimensions",
+        "soundscape",
+        "licensing-provenance"
+      ],
+      "culturalReviewRequired": false,
+      "productionReady": false
+    },
+    {
+      "id": "qa-us-suburban-living-1970s",
+      "label": "1970s US suburban living room",
+      "archetypeId": "scene:residential:living-room",
+      "localityScope": "US",
+      "era": "1970s",
+      "climate": "variable",
+      "explicitContext": [
+        "family-home"
+      ],
+      "accessibilityTargets": [
+        "reduced-motion"
+      ],
+      "status": "reference",
+      "sourceReferenceIds": [],
+      "assetDependencies": [],
+      "knownUnknowns": [
+        "exact architecture and layout require lawful references or user evidence",
+        "objects, signage, clothing and event details must not be inferred beyond explicit evidence",
+        "production licensing and provenance are unresolved until reference ingestion completes"
+      ],
+      "referenceRequirements": [
+        "architecture-layout",
+        "materials-objects",
+        "era",
+        "climate-vegetation",
+        "lighting-weather",
+        "language-signage",
+        "scale-dimensions",
+        "soundscape",
+        "licensing-provenance"
+      ],
+      "culturalReviewRequired": false,
+      "productionReady": false
+    },
+    {
+      "id": "qa-rural-mexico-courtyard",
+      "label": "Rural Mexican family courtyard",
+      "archetypeId": "scene:residential:courtyard-house",
+      "localityScope": "MX",
+      "era": "contemporary",
+      "climate": "varies-by-region",
+      "explicitContext": [
+        "family-home",
+        "rural"
+      ],
+      "accessibilityTargets": [
+        "seated-navigation"
+      ],
+      "status": "reference",
+      "sourceReferenceIds": [],
+      "assetDependencies": [],
+      "knownUnknowns": [
+        "exact architecture and layout require lawful references or user evidence",
+        "objects, signage, clothing and event details must not be inferred beyond explicit evidence",
+        "production licensing and provenance are unresolved until reference ingestion completes"
+      ],
+      "referenceRequirements": [
+        "architecture-layout",
+        "materials-objects",
+        "era",
+        "climate-vegetation",
+        "lighting-weather",
+        "language-signage",
+        "scale-dimensions",
+        "soundscape",
+        "licensing-provenance"
+      ],
+      "culturalReviewRequired": false,
+      "productionReady": false
+    },
+    {
+      "id": "qa-mumbai-diwali-apartment",
+      "label": "Mumbai apartment during Diwali",
+      "archetypeId": "scene:residential:apartment-highrise",
+      "localityScope": "IN-MH",
+      "era": "contemporary",
+      "climate": "tropical-wet-dry",
+      "explicitContext": [
+        "urban",
+        "festival-explicit"
+      ],
+      "accessibilityTargets": [
+        "reduced-stimulation"
+      ],
+      "status": "reference",
+      "sourceReferenceIds": [],
+      "assetDependencies": [],
+      "knownUnknowns": [
+        "exact architecture and layout require lawful references or user evidence",
+        "objects, signage, clothing and event details must not be inferred beyond explicit evidence",
+        "production licensing and provenance are unresolved until reference ingestion completes"
+      ],
+      "referenceRequirements": [
+        "architecture-layout",
+        "materials-objects",
+        "era",
+        "climate-vegetation",
+        "lighting-weather",
+        "language-signage",
+        "scale-dimensions",
+        "soundscape",
+        "licensing-provenance"
+      ],
+      "culturalReviewRequired": true,
+      "productionReady": false
+    },
+    {
+      "id": "qa-seoul-classroom",
+      "label": "Seoul classroom",
+      "archetypeId": "scene:education:secondary-classroom",
+      "localityScope": "KR-11",
+      "era": "contemporary",
+      "climate": "humid-continental-subtropical-transition",
+      "explicitContext": [
+        "education",
+        "urban"
+      ],
+      "accessibilityTargets": [
+        "keyboard",
+        "captions"
+      ],
+      "status": "reference",
+      "sourceReferenceIds": [],
+      "assetDependencies": [],
+      "knownUnknowns": [
+        "exact architecture and layout require lawful references or user evidence",
+        "objects, signage, clothing and event details must not be inferred beyond explicit evidence",
+        "production licensing and provenance are unresolved until reference ingestion completes"
+      ],
+      "referenceRequirements": [
+        "architecture-layout",
+        "materials-objects",
+        "era",
+        "climate-vegetation",
+        "lighting-weather",
+        "language-signage",
+        "scale-dimensions",
+        "soundscape",
+        "licensing-provenance"
+      ],
+      "culturalReviewRequired": false,
+      "productionReady": false
+    },
+    {
+      "id": "qa-lagos-wedding",
+      "label": "Lagos wedding environment",
+      "archetypeId": "scene:lifeEvents:wedding",
+      "localityScope": "NG-LA",
+      "era": "contemporary",
+      "climate": "tropical",
+      "explicitContext": [
+        "wedding-explicit",
+        "urban"
+      ],
+      "accessibilityTargets": [
+        "captions",
+        "reduced-stimulation"
+      ],
+      "status": "reference",
+      "sourceReferenceIds": [],
+      "assetDependencies": [],
+      "knownUnknowns": [
+        "exact architecture and layout require lawful references or user evidence",
+        "objects, signage, clothing and event details must not be inferred beyond explicit evidence",
+        "production licensing and provenance are unresolved until reference ingestion completes"
+      ],
+      "referenceRequirements": [
+        "architecture-layout",
+        "materials-objects",
+        "era",
+        "climate-vegetation",
+        "lighting-weather",
+        "language-signage",
+        "scale-dimensions",
+        "soundscape",
+        "licensing-provenance"
+      ],
+      "culturalReviewRequired": true,
+      "productionReady": false
+    },
+    {
+      "id": "qa-polish-rural-farmhouse",
+      "label": "Polish rural farmhouse",
+      "archetypeId": "scene:residential:farmhouse",
+      "localityScope": "PL",
+      "era": "mid-late-20c",
+      "climate": "temperate",
+      "explicitContext": [
+        "rural",
+        "family-home"
+      ],
+      "accessibilityTargets": [
+        "seated-navigation"
+      ],
+      "status": "reference",
+      "sourceReferenceIds": [],
+      "assetDependencies": [],
+      "knownUnknowns": [
+        "exact architecture and layout require lawful references or user evidence",
+        "objects, signage, clothing and event details must not be inferred beyond explicit evidence",
+        "production licensing and provenance are unresolved until reference ingestion completes"
+      ],
+      "referenceRequirements": [
+        "architecture-layout",
+        "materials-objects",
+        "era",
+        "climate-vegetation",
+        "lighting-weather",
+        "language-signage",
+        "scale-dimensions",
+        "soundscape",
+        "licensing-provenance"
+      ],
+      "culturalReviewRequired": false,
+      "productionReady": false
+    },
+    {
+      "id": "qa-tokyo-apartment",
+      "label": "Tokyo apartment",
+      "archetypeId": "scene:residential:apartment-highrise",
+      "localityScope": "JP-13",
+      "era": "contemporary",
+      "climate": "humid-subtropical",
+      "explicitContext": [
+        "urban",
+        "residential"
+      ],
+      "accessibilityTargets": [
+        "keyboard"
+      ],
+      "status": "reference",
+      "sourceReferenceIds": [],
+      "assetDependencies": [],
+      "knownUnknowns": [
+        "exact architecture and layout require lawful references or user evidence",
+        "objects, signage, clothing and event details must not be inferred beyond explicit evidence",
+        "production licensing and provenance are unresolved until reference ingestion completes"
+      ],
+      "referenceRequirements": [
+        "architecture-layout",
+        "materials-objects",
+        "era",
+        "climate-vegetation",
+        "lighting-weather",
+        "language-signage",
+        "scale-dimensions",
+        "soundscape",
+        "licensing-provenance"
+      ],
+      "culturalReviewRequired": false,
+      "productionReady": false
+    },
+    {
+      "id": "qa-caribbean-neighborhood-home",
+      "label": "Caribbean neighborhood home",
+      "archetypeId": "scene:residential:detached-house",
+      "localityScope": "Caribbean-unspecified",
+      "era": "contemporary",
+      "climate": "tropical",
+      "explicitContext": [
+        "residential"
+      ],
+      "accessibilityTargets": [
+        "seated-navigation"
+      ],
+      "status": "reference",
+      "sourceReferenceIds": [],
+      "assetDependencies": [],
+      "knownUnknowns": [
+        "exact architecture and layout require lawful references or user evidence",
+        "objects, signage, clothing and event details must not be inferred beyond explicit evidence",
+        "production licensing and provenance are unresolved until reference ingestion completes"
+      ],
+      "referenceRequirements": [
+        "architecture-layout",
+        "materials-objects",
+        "era",
+        "climate-vegetation",
+        "lighting-weather",
+        "language-signage",
+        "scale-dimensions",
+        "soundscape",
+        "licensing-provenance"
+      ],
+      "culturalReviewRequired": false,
+      "productionReady": false
+    },
+    {
+      "id": "qa-gulf-multigenerational-home",
+      "label": "Gulf-region multigenerational household",
+      "archetypeId": "scene:residential:multigenerational-compound",
+      "localityScope": "Gulf-unspecified",
+      "era": "contemporary",
+      "climate": "arid",
+      "explicitContext": [
+        "family-home",
+        "multigenerational"
+      ],
+      "accessibilityTargets": [
+        "keyboard",
+        "captions"
+      ],
+      "status": "reference",
+      "sourceReferenceIds": [],
+      "assetDependencies": [],
+      "knownUnknowns": [
+        "exact architecture and layout require lawful references or user evidence",
+        "objects, signage, clothing and event details must not be inferred beyond explicit evidence",
+        "production licensing and provenance are unresolved until reference ingestion completes"
+      ],
+      "referenceRequirements": [
+        "architecture-layout",
+        "materials-objects",
+        "era",
+        "climate-vegetation",
+        "lighting-weather",
+        "language-signage",
+        "scale-dimensions",
+        "soundscape",
+        "licensing-provenance"
+      ],
+      "culturalReviewRequired": false,
+      "productionReady": false
+    },
+    {
+      "id": "qa-nordic-winter-cabin",
+      "label": "Nordic winter cabin",
+      "archetypeId": "scene:residential:cabin",
+      "localityScope": "Nordic-unspecified",
+      "era": "contemporary",
+      "climate": "cold-temperate",
+      "explicitContext": [
+        "rural",
+        "winter"
+      ],
+      "accessibilityTargets": [
+        "reduced-motion"
+      ],
+      "status": "reference",
+      "sourceReferenceIds": [],
+      "assetDependencies": [],
+      "knownUnknowns": [
+        "exact architecture and layout require lawful references or user evidence",
+        "objects, signage, clothing and event details must not be inferred beyond explicit evidence",
+        "production licensing and provenance are unresolved until reference ingestion completes"
+      ],
+      "referenceRequirements": [
+        "architecture-layout",
+        "materials-objects",
+        "era",
+        "climate-vegetation",
+        "lighting-weather",
+        "language-signage",
+        "scale-dimensions",
+        "soundscape",
+        "licensing-provenance"
+      ],
+      "culturalReviewRequired": false,
+      "productionReady": false
+    },
+    {
+      "id": "qa-north-african-market",
+      "label": "North African market street",
+      "archetypeId": "scene:communityCivicRetail:open-market",
+      "localityScope": "North-Africa-unspecified",
+      "era": "contemporary",
+      "climate": "arid-semiarid",
+      "explicitContext": [
+        "market",
+        "urban"
+      ],
+      "accessibilityTargets": [
+        "captions",
+        "reduced-stimulation"
+      ],
+      "status": "reference",
+      "sourceReferenceIds": [],
+      "assetDependencies": [],
+      "knownUnknowns": [
+        "exact architecture and layout require lawful references or user evidence",
+        "objects, signage, clothing and event details must not be inferred beyond explicit evidence",
+        "production licensing and provenance are unresolved until reference ingestion completes"
+      ],
+      "referenceRequirements": [
+        "architecture-layout",
+        "materials-objects",
+        "era",
+        "climate-vegetation",
+        "lighting-weather",
+        "language-signage",
+        "scale-dimensions",
+        "soundscape",
+        "licensing-provenance"
+      ],
+      "culturalReviewRequired": false,
+      "productionReady": false
+    },
+    {
+      "id": "qa-andean-village-home",
+      "label": "Andean mountain village home",
+      "archetypeId": "scene:residential:detached-house",
+      "localityScope": "Andes-unspecified",
+      "era": "contemporary",
+      "climate": "highland",
+      "explicitContext": [
+        "rural",
+        "mountain"
+      ],
+      "accessibilityTargets": [
+        "seated-navigation"
+      ],
+      "status": "reference",
+      "sourceReferenceIds": [],
+      "assetDependencies": [],
+      "knownUnknowns": [
+        "exact architecture and layout require lawful references or user evidence",
+        "objects, signage, clothing and event details must not be inferred beyond explicit evidence",
+        "production licensing and provenance are unresolved until reference ingestion completes"
+      ],
+      "referenceRequirements": [
+        "architecture-layout",
+        "materials-objects",
+        "era",
+        "climate-vegetation",
+        "lighting-weather",
+        "language-signage",
+        "scale-dimensions",
+        "soundscape",
+        "licensing-provenance"
+      ],
+      "culturalReviewRequired": false,
+      "productionReady": false
+    },
+    {
+      "id": "qa-seasia-stilt-home",
+      "label": "Southeast Asian stilt-house context",
+      "archetypeId": "scene:residential:stilt-house",
+      "localityScope": "Southeast-Asia-unspecified",
+      "era": "contemporary",
+      "climate": "tropical",
+      "explicitContext": [
+        "residential",
+        "rural"
+      ],
+      "accessibilityTargets": [
+        "navigation-warning"
+      ],
+      "status": "reference",
+      "sourceReferenceIds": [],
+      "assetDependencies": [],
+      "knownUnknowns": [
+        "exact architecture and layout require lawful references or user evidence",
+        "objects, signage, clothing and event details must not be inferred beyond explicit evidence",
+        "production licensing and provenance are unresolved until reference ingestion completes"
+      ],
+      "referenceRequirements": [
+        "architecture-layout",
+        "materials-objects",
+        "era",
+        "climate-vegetation",
+        "lighting-weather",
+        "language-signage",
+        "scale-dimensions",
+        "soundscape",
+        "licensing-provenance"
+      ],
+      "culturalReviewRequired": false,
+      "productionReady": false
+    },
+    {
+      "id": "qa-west-african-urban-neighborhood",
+      "label": "West African urban neighborhood",
+      "archetypeId": "scene:communityCivicRetail:neighborhood-street",
+      "localityScope": "West-Africa-unspecified",
+      "era": "contemporary",
+      "climate": "tropical",
+      "explicitContext": [
+        "urban",
+        "residential"
+      ],
+      "accessibilityTargets": [
+        "captions"
+      ],
+      "status": "reference",
+      "sourceReferenceIds": [],
+      "assetDependencies": [],
+      "knownUnknowns": [
+        "exact architecture and layout require lawful references or user evidence",
+        "objects, signage, clothing and event details must not be inferred beyond explicit evidence",
+        "production licensing and provenance are unresolved until reference ingestion completes"
+      ],
+      "referenceRequirements": [
+        "architecture-layout",
+        "materials-objects",
+        "era",
+        "climate-vegetation",
+        "lighting-weather",
+        "language-signage",
+        "scale-dimensions",
+        "soundscape",
+        "licensing-provenance"
+      ],
+      "culturalReviewRequired": false,
+      "productionReady": false
+    },
+    {
+      "id": "qa-australian-suburban-home",
+      "label": "Australian suburban home",
+      "archetypeId": "scene:residential:detached-house",
+      "localityScope": "AU",
+      "era": "contemporary",
+      "climate": "varies-by-region",
+      "explicitContext": [
+        "suburban"
+      ],
+      "accessibilityTargets": [
+        "keyboard"
+      ],
+      "status": "reference",
+      "sourceReferenceIds": [],
+      "assetDependencies": [],
+      "knownUnknowns": [
+        "exact architecture and layout require lawful references or user evidence",
+        "objects, signage, clothing and event details must not be inferred beyond explicit evidence",
+        "production licensing and provenance are unresolved until reference ingestion completes"
+      ],
+      "referenceRequirements": [
+        "architecture-layout",
+        "materials-objects",
+        "era",
+        "climate-vegetation",
+        "lighting-weather",
+        "language-signage",
+        "scale-dimensions",
+        "soundscape",
+        "licensing-provenance"
+      ],
+      "culturalReviewRequired": false,
+      "productionReady": false
+    },
+    {
+      "id": "qa-canadian-winter-neighborhood",
+      "label": "Canadian winter neighborhood",
+      "archetypeId": "scene:communityCivicRetail:neighborhood-street",
+      "localityScope": "CA",
+      "era": "contemporary",
+      "climate": "cold",
+      "explicitContext": [
+        "residential",
+        "winter"
+      ],
+      "accessibilityTargets": [
+        "reduced-motion"
+      ],
+      "status": "reference",
+      "sourceReferenceIds": [],
+      "assetDependencies": [],
+      "knownUnknowns": [
+        "exact architecture and layout require lawful references or user evidence",
+        "objects, signage, clothing and event details must not be inferred beyond explicit evidence",
+        "production licensing and provenance are unresolved until reference ingestion completes"
+      ],
+      "referenceRequirements": [
+        "architecture-layout",
+        "materials-objects",
+        "era",
+        "climate-vegetation",
+        "lighting-weather",
+        "language-signage",
+        "scale-dimensions",
+        "soundscape",
+        "licensing-provenance"
+      ],
+      "culturalReviewRequired": false,
+      "productionReady": false
+    },
+    {
+      "id": "qa-mediterranean-village-square",
+      "label": "Mediterranean village square",
+      "archetypeId": "scene:communityCivicRetail:town-square",
+      "localityScope": "Mediterranean-unspecified",
+      "era": "contemporary",
+      "climate": "mediterranean",
+      "explicitContext": [
+        "village",
+        "public-space"
+      ],
+      "accessibilityTargets": [
+        "seated-navigation"
+      ],
+      "status": "reference",
+      "sourceReferenceIds": [],
+      "assetDependencies": [],
+      "knownUnknowns": [
+        "exact architecture and layout require lawful references or user evidence",
+        "objects, signage, clothing and event details must not be inferred beyond explicit evidence",
+        "production licensing and provenance are unresolved until reference ingestion completes"
+      ],
+      "referenceRequirements": [
+        "architecture-layout",
+        "materials-objects",
+        "era",
+        "climate-vegetation",
+        "lighting-weather",
+        "language-signage",
+        "scale-dimensions",
+        "soundscape",
+        "licensing-provenance"
+      ],
+      "culturalReviewRequired": false,
+      "productionReady": false
+    },
+    {
+      "id": "qa-south-asian-rail-journey",
+      "label": "South Asian railway journey",
+      "archetypeId": "scene:transportation:long-distance-train",
+      "localityScope": "South-Asia-unspecified",
+      "era": "contemporary",
+      "climate": "varies-by-route",
+      "explicitContext": [
+        "travel",
+        "transit"
+      ],
+      "accessibilityTargets": [
+        "captions",
+        "seated-navigation"
+      ],
+      "status": "reference",
+      "sourceReferenceIds": [],
+      "assetDependencies": [],
+      "knownUnknowns": [
+        "exact architecture and layout require lawful references or user evidence",
+        "objects, signage, clothing and event details must not be inferred beyond explicit evidence",
+        "production licensing and provenance are unresolved until reference ingestion completes"
+      ],
+      "referenceRequirements": [
+        "architecture-layout",
+        "materials-objects",
+        "era",
+        "climate-vegetation",
+        "lighting-weather",
+        "language-signage",
+        "scale-dimensions",
+        "soundscape",
+        "licensing-provenance"
+      ],
+      "culturalReviewRequired": false,
+      "productionReady": false
+    },
+    {
+      "id": "qa-east-african-farm",
+      "label": "Rural East African farming context",
+      "archetypeId": "scene:agricultureRural:crop-field",
+      "localityScope": "East-Africa-unspecified",
+      "era": "contemporary",
+      "climate": "varies-by-region",
+      "explicitContext": [
+        "rural",
+        "agriculture"
+      ],
+      "accessibilityTargets": [
+        "reduced-motion"
+      ],
+      "status": "reference",
+      "sourceReferenceIds": [],
+      "assetDependencies": [],
+      "knownUnknowns": [
+        "exact architecture and layout require lawful references or user evidence",
+        "objects, signage, clothing and event details must not be inferred beyond explicit evidence",
+        "production licensing and provenance are unresolved until reference ingestion completes"
+      ],
+      "referenceRequirements": [
+        "architecture-layout",
+        "materials-objects",
+        "era",
+        "climate-vegetation",
+        "lighting-weather",
+        "language-signage",
+        "scale-dimensions",
+        "soundscape",
+        "licensing-provenance"
+      ],
+      "culturalReviewRequired": false,
+      "productionReady": false
+    },
+    {
+      "id": "qa-nyc-apartment",
+      "label": "New York apartment",
+      "archetypeId": "scene:residential:apartment-highrise",
+      "localityScope": "US-NY",
+      "era": "contemporary",
+      "climate": "humid-subtropical-continental-transition",
+      "explicitContext": [
+        "urban",
+        "residential"
+      ],
+      "accessibilityTargets": [
+        "keyboard"
+      ],
+      "status": "reference",
+      "sourceReferenceIds": [],
+      "assetDependencies": [],
+      "knownUnknowns": [
+        "exact architecture and layout require lawful references or user evidence",
+        "objects, signage, clothing and event details must not be inferred beyond explicit evidence",
+        "production licensing and provenance are unresolved until reference ingestion completes"
+      ],
+      "referenceRequirements": [
+        "architecture-layout",
+        "materials-objects",
+        "era",
+        "climate-vegetation",
+        "lighting-weather",
+        "language-signage",
+        "scale-dimensions",
+        "soundscape",
+        "licensing-provenance"
+      ],
+      "culturalReviewRequired": false,
+      "productionReady": false
+    },
+    {
+      "id": "qa-military-barracks",
+      "label": "Military barracks",
+      "archetypeId": "scene:militaryPublicSafety:barracks",
+      "localityScope": "unspecified",
+      "era": "contemporary",
+      "climate": "unspecified",
+      "explicitContext": [
+        "military",
+        "non-combat"
+      ],
+      "accessibilityTargets": [
+        "captions",
+        "reduced-stimulation"
+      ],
+      "status": "reference",
+      "sourceReferenceIds": [],
+      "assetDependencies": [],
+      "knownUnknowns": [
+        "exact architecture and layout require lawful references or user evidence",
+        "objects, signage, clothing and event details must not be inferred beyond explicit evidence",
+        "production licensing and provenance are unresolved until reference ingestion completes"
+      ],
+      "referenceRequirements": [
+        "architecture-layout",
+        "materials-objects",
+        "era",
+        "climate-vegetation",
+        "lighting-weather",
+        "language-signage",
+        "scale-dimensions",
+        "soundscape",
+        "licensing-provenance"
+      ],
+      "culturalReviewRequired": false,
+      "productionReady": false
+    },
+    {
+      "id": "qa-nursing-home-room",
+      "label": "Nursing-home room",
+      "archetypeId": "scene:residential:retirement-residence",
+      "localityScope": "unspecified",
+      "era": "contemporary",
+      "climate": "unspecified",
+      "explicitContext": [
+        "aging",
+        "care"
+      ],
+      "accessibilityTargets": [
+        "seated-navigation",
+        "captions"
+      ],
+      "status": "reference",
+      "sourceReferenceIds": [],
+      "assetDependencies": [],
+      "knownUnknowns": [
+        "exact architecture and layout require lawful references or user evidence",
+        "objects, signage, clothing and event details must not be inferred beyond explicit evidence",
+        "production licensing and provenance are unresolved until reference ingestion completes"
+      ],
+      "referenceRequirements": [
+        "architecture-layout",
+        "materials-objects",
+        "era",
+        "climate-vegetation",
+        "lighting-weather",
+        "language-signage",
+        "scale-dimensions",
+        "soundscape",
+        "licensing-provenance"
+      ],
+      "culturalReviewRequired": false,
+      "productionReady": false
+    },
+    {
+      "id": "qa-hospital-memory",
+      "label": "Hospital memory",
+      "archetypeId": "scene:healthcare:hospital-room",
+      "localityScope": "unspecified",
+      "era": "contemporary",
+      "climate": "indoor",
+      "explicitContext": [
+        "healthcare",
+        "sensitive"
+      ],
+      "accessibilityTargets": [
+        "explicit-entry",
+        "safe-exit",
+        "reduced-stimulation"
+      ],
+      "status": "reference",
+      "sourceReferenceIds": [],
+      "assetDependencies": [],
+      "knownUnknowns": [
+        "exact architecture and layout require lawful references or user evidence",
+        "objects, signage, clothing and event details must not be inferred beyond explicit evidence",
+        "production licensing and provenance are unresolved until reference ingestion completes"
+      ],
+      "referenceRequirements": [
+        "architecture-layout",
+        "materials-objects",
+        "era",
+        "climate-vegetation",
+        "lighting-weather",
+        "language-signage",
+        "scale-dimensions",
+        "soundscape",
+        "licensing-provenance"
+      ],
+      "culturalReviewRequired": false,
+      "productionReady": false
+    },
+    {
+      "id": "qa-remembrance-cemetery",
+      "label": "Cemetery/remembrance environment",
+      "archetypeId": "scene:agingGrief:cemetery-visit",
+      "localityScope": "unspecified",
+      "era": "contemporary",
+      "climate": "varies",
+      "explicitContext": [
+        "grief",
+        "memorial"
+      ],
+      "accessibilityTargets": [
+        "explicit-entry",
+        "safe-exit",
+        "captions"
+      ],
+      "status": "reference",
+      "sourceReferenceIds": [],
+      "assetDependencies": [],
+      "knownUnknowns": [
+        "exact architecture and layout require lawful references or user evidence",
+        "objects, signage, clothing and event details must not be inferred beyond explicit evidence",
+        "production licensing and provenance are unresolved until reference ingestion completes"
+      ],
+      "referenceRequirements": [
+        "architecture-layout",
+        "materials-objects",
+        "era",
+        "climate-vegetation",
+        "lighting-weather",
+        "language-signage",
+        "scale-dimensions",
+        "soundscape",
+        "licensing-provenance"
+      ],
+      "culturalReviewRequired": false,
+      "productionReady": false
+    }
+  ]
+}

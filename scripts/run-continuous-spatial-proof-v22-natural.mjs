@@ -3,33 +3,80 @@ import { readFile, writeFile } from 'node:fs/promises'
 const captureUrl = new URL('./capture-continuous-spatial-proof-v18.mjs', import.meta.url)
 const groupedUrl = new URL('./run-continuous-spatial-proof-v21-grouped.mjs', import.meta.url)
 const original = await readFile(captureUrl, 'utf8')
-const oldOwner = "result.animationOwner === 'authored-sanctuary-plus-gltf-interactions'"
-const newOwner = "result.animationOwner === 'canonical-sanctuary-plus-cc0-fern-plus-living-orb'"
-if (original.split(oldOwner).length - 1 !== 1) throw new Error('Continuous proof animation-owner contract changed')
 
-const staleEnvironmentalRadius = 'radius: 2.2'
-const runtimeEnvironmentalRadius = 'radius: 2.8'
-const staleEnvironmentalCount = original.split(staleEnvironmentalRadius).length - 1
-if (staleEnvironmentalCount !== 2) {
-  throw new Error(`Continuous proof environmental-threshold proximity contract changed: expected 2, found ${staleEnvironmentalCount}`)
+function count(source, token) {
+  return source.split(token).length - 1
 }
 
-const staleOrbRadius = "orb: { x: 0, z: -0.65, radius: 1.8"
-const runtimeOrbRadius = "orb: { x: 0, z: -2.65, radius: 2.5"
-const staleGroundTarget = "ground: { x: -4.55, z: -6.55"
-const runtimeGroundTarget = "ground: { x: -5.2, z: -8.4"
-const staleLifeMapTarget = "'life-map': { x: 4.55, z: -6.65"
-const runtimeLifeMapTarget = "'life-map': { x: 5.2, z: -8.4"
-if (original.split(staleOrbRadius).length - 1 !== 1) throw new Error('Continuous proof Orb interaction-zone contract changed')
-if (original.split(staleGroundTarget).length - 1 !== 1) throw new Error('Continuous proof Ground target contract changed')
-if (original.split(staleLifeMapTarget).length - 1 !== 1) throw new Error('Continuous proof Life Map target contract changed')
+function convergeSingle(source, stale, current, label) {
+  const staleCount = count(source, stale)
+  const currentCount = count(source, current)
+  if (staleCount === 1 && currentCount === 0) return source.replace(stale, current)
+  if (staleCount === 0 && currentCount === 1) return source
+  throw new Error(`${label} contract changed: stale=${staleCount}, current=${currentCount}`)
+}
 
-const patched = original
-  .replace(oldOwner, newOwner)
-  .replaceAll(staleEnvironmentalRadius, runtimeEnvironmentalRadius)
-  .replace(staleOrbRadius, runtimeOrbRadius)
-  .replace(staleGroundTarget, runtimeGroundTarget)
-  .replace(staleLifeMapTarget, runtimeLifeMapTarget)
+function convergeOneOf(source, staleValues, current, label) {
+  const currentCount = count(source, current)
+  const staleCounts = staleValues.map((value) => ({ value, count: count(source, value) }))
+  const staleTotal = staleCounts.reduce((total, item) => total + item.count, 0)
+  if (currentCount === 1 && staleTotal === 0) return source
+  if (currentCount === 0 && staleTotal === 1) {
+    const active = staleCounts.find((item) => item.count === 1)
+    return source.replace(active.value, current)
+  }
+  throw new Error(`${label} contract changed: stale=${staleTotal}, current=${currentCount}`)
+}
+
+function convergeRepeated(source, stale, current, expectedCount, label) {
+  const staleCount = count(source, stale)
+  const currentCount = count(source, current)
+  if (staleCount === expectedCount && currentCount === 0) return source.replaceAll(stale, current)
+  if (staleCount === 0 && currentCount === expectedCount) return source
+  throw new Error(`${label} contract changed: stale=${staleCount}, current=${currentCount}, expected=${expectedCount}`)
+}
+
+const oldOwner = "result.animationOwner === 'authored-sanctuary-plus-gltf-interactions'"
+const newOwner = "result.animationOwner === 'canonical-sanctuary-plus-cc0-fern-plus-living-orb'"
+const staleEnvironmentalRadius = 'radius: 2.2'
+const runtimeEnvironmentalRadius = 'radius: 2.8'
+const staleOrbRadius = "orb: { x: 0, z: -0.65, radius: 1.8"
+const transitionalOrbRadius = "orb: { x: 0, z: -2.65, radius: 1.8"
+const previousOrbRadius = "orb: { x: 0, z: -2.65, radius: 2.5"
+const runtimeOrbRadius = "orb: { x: 0, z: -4.25, radius: 2.4"
+const staleGroundTarget = "ground: { x: -4.55, z: -6.55"
+const previousGroundTarget = "ground: { x: -5.2, z: -8.4"
+const runtimeGroundTarget = "ground: { x: -5.4, z: -10.8"
+const staleLifeMapTarget = "'life-map': { x: 4.55, z: -6.65"
+const previousLifeMapTarget = "'life-map': { x: 5.2, z: -8.4"
+const runtimeLifeMapTarget = "'life-map': { x: 5.4, z: -10.8"
+
+const authoredOrbClips = `const orbClips = {
+  dormant: 'Orb_Resting', idle: 'Orb_Idle', attention: 'Orb_Attention', listening: 'Orb_Listening',
+  thinking: 'Orb_Thinking', speaking: 'Orb_Speaking', guiding: 'Orb_Guiding', reflecting: 'Orb_Reflecting',
+  calming: 'Orb_Calming', privacy: 'Orb_Privacy', warning: 'Orb_Degraded', transition: 'Orb_Transition',
+}`
+
+const staleHomeReadyWait = `    }, ownerSelector, { timeout: 45_000 })
+  }
+  await waitFrames(page, 3)`
+const boundedHomeReadyWait = `    }, ownerSelector, { timeout: 90_000 })
+  }
+  await waitFrames(page, 3)`
+
+let patched = original
+patched = convergeSingle(patched, staleHomeReadyWait, boundedHomeReadyWait, 'Continuous proof Home readiness timeout')
+patched = convergeSingle(patched, oldOwner, newOwner, 'Continuous proof animation-owner')
+patched = convergeRepeated(patched, staleEnvironmentalRadius, runtimeEnvironmentalRadius, 2, 'Continuous proof environmental-threshold proximity')
+patched = convergeOneOf(
+  patched,
+  [staleOrbRadius, transitionalOrbRadius, previousOrbRadius],
+  runtimeOrbRadius,
+  'Continuous proof Orb interaction-zone',
+)
+patched = convergeOneOf(patched, [staleGroundTarget, previousGroundTarget], runtimeGroundTarget, 'Continuous proof Ground target')
+patched = convergeOneOf(patched, [staleLifeMapTarget, previousLifeMapTarget], runtimeLifeMapTarget, 'Continuous proof Life Map target')
+if (count(patched, authoredOrbClips) !== 1) throw new Error('Continuous proof authored Orb clip contract changed')
 
 await writeFile(captureUrl, patched, 'utf8')
 try {

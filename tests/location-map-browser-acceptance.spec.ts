@@ -24,10 +24,6 @@ async function attachReceipt(testInfo: TestInfo, name: string, receipt: unknown)
 }
 
 async function openDemo(page: Page) {
-  await page.evaluate(() => {
-    localStorage.removeItem('urai:userId')
-    localStorage.removeItem('urai:locationMapDemoMode')
-  })
   await page.goto(route, { waitUntil: 'networkidle' })
   await expect(page.getByRole('heading', { name: 'Your places stay closed until you open them.' })).toBeVisible()
   await page.getByRole('button', { name: 'Open disclosed sample' }).click()
@@ -97,7 +93,6 @@ test.describe('Location Map browser acceptance evidence', () => {
     await page.keyboard.press('Home')
     await expect(page.locator('[data-camera-checkpoint="atlas-world-view"]')).toBeVisible()
 
-    await page.evaluate(() => localStorage.setItem('urai:userId', 'acceptance-user'))
     await page.goto(`${route}&acceptanceState=private`, { waitUntil: 'networkidle' })
     await expect(page.locator('[data-location-map-source="private-repository"]')).toBeVisible()
     await expect(page.getByText('Private atlas', { exact: true }).first()).toBeVisible()
@@ -131,8 +126,7 @@ test.describe('Location Map browser acceptance evidence', () => {
   test('mobile touch drag and touch selection', async ({ page }, testInfo) => {
     const evidence = monitor(page)
     await page.setViewportSize({ width: 390, height: 844 })
-    await page.addInitScript(() => localStorage.setItem('urai:locationMapDemoMode', 'true'))
-    await page.goto(route, { waitUntil: 'networkidle' })
+    await page.goto(`${route}&demo=1`, { waitUntil: 'networkidle' })
 
     const atlas = page.locator('[data-location-map-source="disclosed-demo"]')
     const stage = page.locator('.locationAtlasStage')

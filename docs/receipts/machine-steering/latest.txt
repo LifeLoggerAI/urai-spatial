@@ -3,7 +3,7 @@
 STATE: awaiting-current-proof
 MACHINE_PROOF_GREEN: no
 EXPECTED_SCREENSHOTS: 28
-PRODUCTION_AUTHORITY: .github/workflows/spatial-live-deploy.yml
+PRODUCTION_AUTHORITY: .github/workflows/spatial-governed-wif-deploy.yml
 
 No current exact-source proof receipt is recorded in this committed snapshot.
 

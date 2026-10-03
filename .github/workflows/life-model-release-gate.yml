@@ -1,0 +1,39 @@
+name: Life Model Release Gate
+
+on:
+  pull_request:
+    paths:
+      - 'operations/life-model/**'
+      - 'scripts/validate-life-model-release-receipt.mjs'
+      - 'urai-tier1/src/spatial/life-model/**'
+      - 'apps/functions/src/lifeModelFunctions.ts'
+      - 'apps/functions/src/personPresenceFunctions.ts'
+      - 'apps/functions/src/lifeMovie.ts'
+      - 'apps/functions/src/capturedReality.ts'
+      - 'urai-tier1/src/app/replay/**'
+      - '.github/workflows/life-model-release-gate.yml'
+  workflow_dispatch:
+    inputs:
+      certify:
+        description: 'Run strict exact-SHA launch certification'
+        required: true
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  receipt-contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - name: Validate fail-closed receipt contract
+        run: node scripts/validate-life-model-release-receipt.mjs
+      - name: Strict exact-SHA certification
+        if: github.event_name == 'workflow_dispatch' && inputs.certify == true
+        env:
+          GITHUB_SHA: ${{ github.sha }}
+        run: node scripts/validate-life-model-release-receipt.mjs --strict

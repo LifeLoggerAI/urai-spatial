@@ -1,5 +1,6 @@
 "use client";
 
+import { clientApiUrl } from "@/lib/clientApiUrl";
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import type {
   AmbientTrack,
@@ -135,6 +136,10 @@ export function useAudioController() {
       next.src = nextSrc;
       next.loop = true;
       next.volume = 0;
+      // Track the requested destination while its crossfade is in progress. A
+      // quick return must replace that fade, and repeated requests must not
+      // restart it before the previous track has finished fading out.
+      ambientTrackRef.current = nextTrack;
       void next.play().catch(() => undefined);
       const started = performance.now();
       const duration = phase === "REPLAY" ? 2000 : phase === "FOCUS" ? 1600 : 1300;
@@ -198,7 +203,7 @@ export function useAudioController() {
 
   const playElevenLabs = useCallback(async (line: NarratorAudioLine, signal: AbortSignal) => {
     if (!hasWindow()) return;
-    const res = await fetch("/api/voice/elevenlabs", {
+    const res = await fetch(clientApiUrl("/api/voice/elevenlabs"), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ id: line.id, text: line.text, tone: line.tone, voiceHint: line.voiceHint }),

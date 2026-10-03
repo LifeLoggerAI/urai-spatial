@@ -454,3 +454,9 @@
     filter: none;
   }
 }
+
+/* A selected place already owns the canonical detail panel. Hiding its duplicate
+   world-space label prevents that transformed label from clipping at viewport edges. */
+.locationAtlasBeacon[data-selected="true"] .locationAtlasBeaconLabel {
+  opacity: 0;
+}

@@ -3,6 +3,7 @@
 import { useEffect } from 'react'
 import { getHapticCue, type SpatialHapticCueId } from './hapticCueRegistry'
 import { URAI_WORLD_RETURN_EVENT, URAI_WORLD_TRAVEL_EVENT } from '@/spatial/world/worldEvents'
+import { sensorySafeEnabled } from '@/spatial/accessibility/SensorySafeRuntime'
 
 export const URAI_HAPTIC_CUE_EVENT = 'urai:haptic-cue'
 export const URAI_HAPTICS_ENABLED_EVENT = 'urai:haptics-enabled'
@@ -60,7 +61,7 @@ async function pulseGamepads(patternMs: number[]) {
 }
 
 export async function executeHapticCue(cueId: SpatialHapticCueId) {
-  if (!hapticsEnabled()) return false
+  if (!hapticsEnabled() || sensorySafeEnabled()) return false
   const cue = getHapticCue(cueId)
   let executed = false
 

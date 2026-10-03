@@ -88,6 +88,7 @@ function demoMemoryPlaceIdForStar(star: DemoMemoryStar) {
 export function demoMemoryStarToNode(star: DemoMemoryStar): MemoryStarNode {
   const id = star.manifestId
   const memoryPlaceId = demoMemoryPlaceIdForStar(star)
+  const demoRouteParams = new URLSearchParams({ demo: '1', memoryId: `demo:${id}`, manifestId: id, node: id })
   return {
     id,
     userId: null,
@@ -109,8 +110,8 @@ export function demoMemoryStarToNode(star: DemoMemoryStar): MemoryStarNode {
     createdAt: DEMO_TIMESTAMP,
     updatedAt: DEMO_TIMESTAMP,
     replayId: id,
-    focusHref: `/focus?manifestId=${encodeURIComponent(id)}`,
-    replayHref: `/replay?manifestId=${encodeURIComponent(id)}`,
+    focusHref: `/focus?${demoRouteParams}`,
+    replayHref: `/replay?${demoRouteParams}`,
     memoryPlaceId,
     canEnterPlace: true,
     enterPlaceHref: `/place/${encodeURIComponent(memoryPlaceId)}`,
@@ -139,6 +140,7 @@ export function resolveDemoMemoryStar(starId: string | undefined | null): Memory
     return { ok: false, status: 423, reason: 'locked-memory-star', safeHref: '/life-map' }
   }
   if (!canRenderMemoryStar(star)) return { ok: false, status: 404, reason: 'non-renderable-memory-star', safeHref: '/life-map' }
+  if (star.privacyState !== 'demo') return { ok: false, status: 404, reason: 'unknown-or-private-memory-star', safeHref: '/life-map' }
   return { ok: true, status: 200, star }
 }
 
