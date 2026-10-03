@@ -17,6 +17,7 @@
   padding-top: max(clamp(24px,4vw,56px), env(safe-area-inset-top,0px));
 }
 .consentPanel {
+  box-sizing: border-box;
   scroll-margin-block: 12px;
 }
 .consentPanelHeading,
