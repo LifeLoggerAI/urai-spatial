@@ -206,7 +206,7 @@ for (const spec of cases) {
     record.passed = record.status === 200
       && record.canvasReady === 'true'
       && record.primaryOwner === 'asset-driven'
-      && record.visibleWorld === 'final-physical-sanctuary-memory-rooms'
+      && record.visibleWorld === 'authored-coherent-three-dimensional-sanctuary'
       && record.movement === 'walk-keyboard-click-touch'
       && record.orbOwned
       && record.groundPortalOwned

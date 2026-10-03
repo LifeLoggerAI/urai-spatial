@@ -24,8 +24,8 @@ export function LocationMapAcceptanceBoundary({
   if (!enabled) return <LocationMapScene places={places} />
 
   const state = searchParams.get('acceptanceState')
-  if (state === 'empty') return <LocationMapScene places={EMPTY_PLACES} />
-  if (state === 'private') return <LocationMapScene places={privatePlaces} />
+  if (state === 'empty') return <LocationMapScene places={EMPTY_PLACES} acceptanceAccessMode="private" />
+  if (state === 'private') return <LocationMapScene places={privatePlaces} acceptanceAccessMode="private" />
 
   return <LocationMapScene places={places} />
 }

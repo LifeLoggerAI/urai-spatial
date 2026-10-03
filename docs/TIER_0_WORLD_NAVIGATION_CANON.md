@@ -34,8 +34,8 @@ The first registry contains:
 - Ownership Vault
 - Consent Sanctuary
 - Emotional Atlas
-- Focus Chamber
-- Replay Theater
+- Focus Memory Star
+- Replay
 
 Future dreams, goals, AI people, simulations, and marketplace systems register as world destinations instead of standalone landing pages.
 

@@ -2,18 +2,28 @@ import { NextResponse } from 'next/server';
 import type Stripe from 'stripe';
 import type { InsightPlanId } from '@/lib/entitlementStore';
 import {
+  parseStripeRuntimeMode,
+  stripeLivemodeMatchesRuntime,
+  stripeRuntimeMatchesSecret,
+} from '@/lib/server/stripe-runtime-config';
+import {
+  applyStripeEventEntitlement,
   defaultEntitlement,
   findEntitlementByStripeCustomer,
   mapStripeStatus,
   type SubscriptionStatus,
-  upsertEntitlement,
 } from '@/lib/entitlementStore';
 
 const WEBHOOK_EVENTS = new Set([
   'checkout.session.completed',
+  'checkout.session.async_payment_succeeded',
+  'checkout.session.async_payment_failed',
   'customer.subscription.created',
   'customer.subscription.updated',
   'customer.subscription.deleted',
+  'charge.refunded',
+  'charge.dispute.created',
+  'charge.dispute.closed',
 ]);
 
 function isPlanId(value: unknown): value is InsightPlanId {
@@ -37,82 +47,144 @@ function subscriptionIdFrom(value: string | Stripe.Subscription | null | undefin
   return value.id ?? null;
 }
 
-async function resolveSubscription(
-  stripe: Stripe,
-  eventType: string,
-  payload: Stripe.Event.Data.Object,
-): Promise<{
+type ResolvedEntitlementEvent = {
   userId: string | null;
   planId: InsightPlanId | null;
   customerId: string | null;
   subscriptionId: string | null;
   subscriptionStatus: SubscriptionStatus;
-}> {
+};
+
+async function resolveMetadataIdentity(
+  metadata: Stripe.Metadata | undefined,
+  customerId: string | null,
+): Promise<{ userId: string | null; planId: InsightPlanId | null }> {
+  let userId = stringValue(metadata?.userId);
+  const rawPlanId = stringValue(metadata?.planId);
+  let planId = isPlanId(rawPlanId) ? rawPlanId : null;
+
+  if (customerId && (!userId || !planId)) {
+    const existing = await findEntitlementByStripeCustomer(customerId);
+    userId = userId ?? existing?.userId ?? null;
+    planId = planId ?? existing?.planId ?? null;
+  }
+
+  return { userId, planId };
+}
+
+async function resolveSubscription(
+  stripe: Stripe,
+  eventType: string,
+  payload: Stripe.Event.Data.Object,
+): Promise<ResolvedEntitlementEvent> {
   let metadata: Stripe.Metadata | undefined;
   let customerId: string | null = null;
   let subscriptionId: string | null = null;
   let stripeStatus: string | null = null;
 
-  if (eventType === 'checkout.session.completed') {
+  if (
+    eventType === 'checkout.session.completed' ||
+    eventType === 'checkout.session.async_payment_succeeded' ||
+    eventType === 'checkout.session.async_payment_failed'
+  ) {
     const session = payload as Stripe.Checkout.Session;
     metadata = session.metadata ?? undefined;
     customerId = customerIdFrom(session.customer as string | Stripe.Customer | Stripe.DeletedCustomer | null);
     subscriptionId = subscriptionIdFrom(session.subscription as string | Stripe.Subscription | null);
 
+    if (eventType === 'checkout.session.async_payment_succeeded') {
+      stripeStatus = 'active';
+    } else if (eventType === 'checkout.session.async_payment_failed') {
+      stripeStatus = 'none';
+    } else if (!subscriptionId) {
+      stripeStatus = session.payment_status === 'paid' ? 'active' : 'none';
+    }
+
     if (subscriptionId) {
-      try {
-        const subscription = await stripe.subscriptions.retrieve(subscriptionId);
-        metadata = { ...(subscription.metadata ?? {}), ...(metadata ?? {}) };
-        customerId = customerId ?? customerIdFrom(subscription.customer as string | Stripe.Customer | Stripe.DeletedCustomer);
-        stripeStatus = subscription.status;
-      } catch (error) {
-        console.warn('Stripe webhook could not fetch checkout subscription', { subscriptionId, error });
-      }
+      const subscription = await stripe.subscriptions.retrieve(subscriptionId);
+      metadata = { ...(subscription.metadata ?? {}), ...(metadata ?? {}) };
+      customerId = customerId ?? customerIdFrom(subscription.customer as string | Stripe.Customer | Stripe.DeletedCustomer);
+      stripeStatus = subscription.status;
     }
   } else {
     const subscription = payload as Stripe.Subscription;
     metadata = subscription.metadata ?? undefined;
     customerId = customerIdFrom(subscription.customer as string | Stripe.Customer | Stripe.DeletedCustomer);
     subscriptionId = subscription.id;
-    stripeStatus = subscription.status;
+    stripeStatus = eventType === 'customer.subscription.deleted' ? 'canceled' : subscription.status;
   }
 
-  const userIdFromMetadata = stringValue(metadata?.userId);
-  const rawPlanId = stringValue(metadata?.planId);
-  const planId = isPlanId(rawPlanId) ? rawPlanId : null;
-  let resolvedUserId = userIdFromMetadata;
-
-  if (!resolvedUserId && customerId) {
-    try {
-      const existing = await findEntitlementByStripeCustomer(customerId);
-      resolvedUserId = existing?.userId ?? null;
-    } catch (error) {
-      console.warn('Stripe webhook could not resolve entitlement by customer', { customerId, error });
-    }
-  }
-
+  const identity = await resolveMetadataIdentity(metadata, customerId);
   return {
-    userId: resolvedUserId,
-    planId,
+    ...identity,
     customerId,
     subscriptionId,
-    subscriptionStatus: mapStripeStatus(eventType === 'customer.subscription.deleted' ? 'canceled' : stripeStatus),
+    subscriptionStatus: mapStripeStatus(stripeStatus),
   };
+}
+
+async function resolveChargeLifecycle(
+  stripe: Stripe,
+  eventType: string,
+  payload: Stripe.Event.Data.Object,
+): Promise<ResolvedEntitlementEvent | null> {
+  let charge: Stripe.Charge;
+  let stripeStatus: string;
+
+  if (eventType === 'charge.refunded') {
+    charge = payload as Stripe.Charge;
+    if (charge.refunded !== true) return null;
+    stripeStatus = 'canceled';
+  } else {
+    const dispute = payload as Stripe.Dispute;
+    stripeStatus = eventType === 'charge.dispute.closed'
+      ? (dispute.status === 'won' ? 'active' : 'canceled')
+      : 'canceled';
+    charge = typeof dispute.charge === 'string'
+      ? await stripe.charges.retrieve(dispute.charge)
+      : dispute.charge;
+  }
+
+  const paymentIntentRef = charge.payment_intent;
+  const paymentIntentId = typeof paymentIntentRef === 'string' ? paymentIntentRef : paymentIntentRef?.id ?? null;
+  if (!paymentIntentId) throw new Error('payment_intent_missing');
+
+  const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
+  const customerId = customerIdFrom(
+    paymentIntent.customer as string | Stripe.Customer | Stripe.DeletedCustomer | null,
+  ) ?? customerIdFrom(charge.customer as string | Stripe.Customer | Stripe.DeletedCustomer | null);
+  const identity = await resolveMetadataIdentity(paymentIntent.metadata ?? undefined, customerId);
+  if (identity.planId !== 'founder') return null;
+
+  return {
+    ...identity,
+    customerId,
+    subscriptionId: null,
+    subscriptionStatus: mapStripeStatus(stripeStatus),
+  };
+}
+
+function isChargeLifecycleEvent(eventType: string): boolean {
+  return eventType === 'charge.refunded' || eventType === 'charge.dispute.created' || eventType === 'charge.dispute.closed';
 }
 
 export async function POST(request: Request) {
   const signature = request.headers.get('stripe-signature');
   const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
   const secretKey = process.env.STRIPE_SECRET_KEY;
+  const runtimeMode = parseStripeRuntimeMode(process.env.URAI_STRIPE_MODE);
 
-  if (!signature || !webhookSecret || !secretKey) {
-    return NextResponse.json({ error: 'Missing Stripe webhook configuration' }, { status: 400 });
+  if (!signature || !webhookSecret || !secretKey || !runtimeMode) {
+    return NextResponse.json({ error: 'Missing or invalid Stripe webhook configuration' }, { status: 400 });
+  }
+  if (!stripeRuntimeMatchesSecret(runtimeMode, secretKey)) {
+    console.error('Stripe webhook refused mismatched secret key mode', { runtimeMode });
+    return NextResponse.json({ error: 'Stripe mode mismatch' }, { status: 503 });
   }
 
   const stripeModule = await import('stripe');
   const StripeClient = stripeModule.default;
   const stripe = new StripeClient(secretKey);
-
   const rawBody = await request.text();
 
   let event: Stripe.Event;
@@ -123,11 +195,28 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Invalid signature' }, { status: 400 });
   }
 
+  if (!stripeLivemodeMatchesRuntime(event.livemode, runtimeMode)) {
+    console.error('Stripe webhook refused event from wrong livemode', { runtimeMode, eventLivemode: event.livemode, type: event.type });
+    return NextResponse.json({ error: 'Stripe event mode mismatch' }, { status: 400 });
+  }
+
   if (!WEBHOOK_EVENTS.has(event.type)) {
     return NextResponse.json({ received: true, ignored: true });
   }
 
-  const resolved = await resolveSubscription(stripe, event.type, event.data.object);
+  let resolved: ResolvedEntitlementEvent | null;
+  try {
+    resolved = isChargeLifecycleEvent(event.type)
+      ? await resolveChargeLifecycle(stripe, event.type, event.data.object)
+      : await resolveSubscription(stripe, event.type, event.data.object);
+  } catch (error) {
+    console.warn('Stripe provider state could not be resolved', { type: event.type, error });
+    return NextResponse.json({ error: 'Stripe provider state could not be resolved' }, { status: 500 });
+  }
+
+  if (!resolved) {
+    return NextResponse.json({ received: true, ignored: true, reason: 'no-entitlement-transition' });
+  }
 
   if (!resolved.userId) {
     console.warn('Stripe webhook skipped event without resolvable userId', {
@@ -148,7 +237,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ received: true, skipped: 'missing-plan' });
   }
 
-  await upsertEntitlement({
+  const application = await applyStripeEventEntitlement({
     ...defaultEntitlement(resolved.userId),
     userId: resolved.userId,
     planId: resolved.planId,
@@ -156,7 +245,14 @@ export async function POST(request: Request) {
     stripeSubscriptionId: resolved.subscriptionId,
     subscriptionStatus: resolved.subscriptionStatus,
     updatedAt: Date.now(),
+  }, {
+    id: event.id,
+    created: event.created,
   });
 
-  return NextResponse.json({ received: true });
+  return NextResponse.json({
+    received: true,
+    applied: application.applied,
+    reason: application.reason,
+  });
 }

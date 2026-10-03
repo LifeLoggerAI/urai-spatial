@@ -29,6 +29,48 @@
           "functionId": "elevenLabsVoiceProvider",
           "region": "us-central1"
         }
+      },
+      {
+        "source": "/api/urai/adam/conversation",
+        "function": {
+          "functionId": "adamPresenceProvider",
+          "region": "us-central1"
+        }
+      },
+      {
+        "source": "/api/urai/adam/voice",
+        "function": {
+          "functionId": "adamFounderVoiceProvider",
+          "region": "us-central1"
+        }
+      },
+      {
+        "source": "/api/urai/council/anthropic",
+        "function": {
+          "functionId": "anthropicCouncilProvider",
+          "region": "us-central1"
+        }
+      },
+      {
+        "source": "/api/urai/council/gemini",
+        "function": {
+          "functionId": "geminiCouncilProvider",
+          "region": "us-central1"
+        }
+      },
+      {
+        "source": "/api/urai/council/xai",
+        "function": {
+          "functionId": "xaiCouncilProvider",
+          "region": "us-central1"
+        }
+      },
+      {
+        "source": "/api/urai/council/mistral",
+        "function": {
+          "functionId": "mistralCouncilProvider",
+          "region": "us-central1"
+        }
       }
     ]
   }

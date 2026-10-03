@@ -16,6 +16,12 @@ const ownerReadOnlyCollections = [
   'providerConnections',
 ]
 
+const strictlyOwnerReadOnlyCollections = [
+  'capturedRealityAssets',
+  'memories',
+  'lifeMovies',
+]
+
 const trustedCollections = [
   'privacyEnforcementJobs',
   'providerRevocationQueue',
@@ -33,6 +39,17 @@ test('owner privacy records are readable only inside users/{uid} and remain serv
   }
 })
 
+test('full private memory and media records are owner-only and server-write-only', () => {
+  for (const collectionName of strictlyOwnerReadOnlyCollections) {
+    const block = new RegExp(`match \\/${collectionName}\\/\\{[^}]+\\} \\{([\\s\\S]*?)\\n\\s*\\}`)
+    const match = rules.match(block)
+    assert.ok(match, `missing ${collectionName} rules block`)
+    assert.match(match[1], /allow read: if isSelf\(uid\);/)
+    assert.match(match[1], /allow write: if false;/)
+    assert.doesNotMatch(match[1], /allow read: if isSelf\(uid\) \|\| isAdmin\(\);/)
+  }
+})
+
 test('trusted queues and durable receipts are globally closed to clients', () => {
   for (const collectionName of trustedCollections) {
     assert.match(rules, new RegExp(`match \\/${collectionName}\\/\\{docId\\} \\{ allow read, write: if false; \\}`))
@@ -41,5 +58,7 @@ test('trusted queues and durable receipts are globally closed to clients', () =>
 
 test('privacy rules end in a default-deny boundary', () => {
   assert.match(rules, /match \/\{document=\*\*\} \{ allow read, write: if false; \}/)
-  assert.doesNotMatch(rules, /allow\s+(read|write|create|update|delete)[^;]*:\s*if\s+true\s*;/i)
+  const publicFeatureFlags = /match \/features\/\{flagId\} \{[\s\S]*?\n    \}/
+  assert.match(rules, /match \/features\/\{flagId\} \{\s*allow read: if true;\s*allow write: if isAdmin\(\);\s*\}/)
+  assert.doesNotMatch(rules.replace(publicFeatureFlags, ''), /allow\s+(read|write|create|update|delete)[^;]*:\s*if\s+true\s*;/i)
 })

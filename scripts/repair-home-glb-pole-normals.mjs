@@ -4,9 +4,6 @@ import crypto from 'node:crypto'
 import { execFileSync } from 'node:child_process'
 
 const PACK_PATH = 'operations/assets/generated-receipts/urai-final-glb-pack-v1.json'
-const CAPTURE_PROOF_PATH = 'scripts/capture-home-state-proof.mjs'
-const OLD_VISIBLE_WORLD = 'authored-coherent-three-dimensional-sanctuary'
-const CURRENT_VISIBLE_WORLD = 'moonlit-sacred-tech-sanctuary'
 
 const configs = [
   {
@@ -228,20 +225,11 @@ function repairOrbAsset(config, pack) {
   return { label: config.label, binaryChanged, receiptChanged, packChanged, rehearsalChanged, changed: binaryChanged || receiptChanged || packChanged || rehearsalChanged, bytes, sha256, accessorIndex, repairedVertices: [config.vectorIndex], normalBefore: before, normalAfter: after }
 }
 
-function repairHomeStateProofContract() {
-  if (!fs.existsSync(CAPTURE_PROOF_PATH)) return { changed: false, skipped: true, reason: 'capture-proof-script-not-present' }
-  const source = fs.readFileSync(CAPTURE_PROOF_PATH, 'utf8'), oldCount = source.split(OLD_VISIBLE_WORLD).length - 1, currentCount = source.split(CURRENT_VISIBLE_WORLD).length - 1
-  if (oldCount === 0) { if (currentCount >= 2) return { changed: false, oldCount, currentCount }; fail('Home State Proof contract contains neither the stale nor current visible-world marker in the expected assertions') }
-  if (oldCount !== 2) fail(`Expected exactly two stale Home State Proof visible-world assertions, found ${oldCount}`)
-  fs.writeFileSync(CAPTURE_PROOF_PATH, source.split(OLD_VISIBLE_WORLD).join(CURRENT_VISIBLE_WORLD))
-  return { changed: true, oldCount, currentCount: currentCount + oldCount }
-}
 
 const pack = readJson(PACK_PATH)
 const results = configs.map((config) => repairAsset(config, pack))
 results.push(repairOrbAsset(ORB_CONFIG, pack))
 if (results.some((result) => result.packChanged)) writeJson(PACK_PATH, pack)
-const proofRepair = repairHomeStateProofContract()
 if (process.env.GITHUB_ACTIONS === 'true') {
   for (const result of results) {
     if (!result.changed || result.label === 'Home') continue
@@ -249,6 +237,5 @@ if (process.env.GITHUB_ACTIONS === 'true') {
     if (!config) fail(`Staging configuration missing for ${result.label}`)
     execFileSync('git', ['add', config.glbPath, config.receiptPath, config.rehearsalPath], { stdio: 'inherit' })
   }
-  if (proofRepair.changed) execFileSync('git', ['add', CAPTURE_PROOF_PATH], { stdio: 'inherit' })
 }
-console.log(JSON.stringify({ ok: true, changed: results.some((result) => result.changed) || proofRepair.changed, assets: results, proofRepair }, null, 2))
+console.log(JSON.stringify({ ok: true, changed: results.some((result) => result.changed), assets: results }, null, 2))

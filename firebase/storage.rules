@@ -1,0 +1,12 @@
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+    // Launch clients do not directly read or write private media through the
+    // Firebase Storage SDK. Governed server/Admin SDK paths bypass Storage
+    // security rules and remain the only admitted storage authority.
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

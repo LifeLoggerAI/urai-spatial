@@ -43,22 +43,30 @@ const outputs: Record<OrbState, OrbSensoryOutput> = {
   reflecting: { animation: 'orb-reflect', material: 'mirror-glass', light: { intensity: .86, temperature: 'violet' }, particles: 'glass-ripple', movement: 'still-reflection', audioCue: 'orb-glass-tone', caption: 'Reflecting', haptic: null, announcement: 'A reflection is ready.', affordance: 'review' },
   calming: { animation: 'orb-calm', material: 'blue-green-warmth', light: { intensity: .66, temperature: 'warm' }, particles: 'exhale-mist', movement: 'slow-exhale', audioCue: 'orb-exhale', caption: 'Calming', haptic: 'calm-breath', announcement: 'Calming mode is active.', affordance: 'continue' },
   privacy: { animation: 'orb-privacy', material: 'white-blue-lock', light: { intensity: .78, temperature: 'cool' }, particles: 'secure-ring', movement: 'steady', audioCue: 'orb-secure-chime', caption: 'Privacy control', haptic: 'privacy-confirm', announcement: 'Privacy controls are available.', affordance: 'review' },
-  warning: { animation: 'orb-warning', material: 'muted-amber', light: { intensity: .82, temperature: 'warm' }, particles: 'bounded-pulse', movement: 'steady-alert', audioCue: 'orb-warning-soft', caption: 'UrAi needs your attention', haptic: 'warning-bounded', announcement: 'UrAi encountered a problem. Your private data remains protected.', affordance: 'recover' },
+  warning: { animation: 'orb-warning', material: 'muted-amber', light: { intensity: .82, temperature: 'warm' }, particles: 'bounded-pulse', movement: 'steady-alert', audioCue: 'orb-warning-soft', caption: 'UrAi needs your attention', haptic: 'warning-bounded', announcement: 'UrAi encountered a problem. Review the recovery or privacy controls.', affordance: 'recover' },
   transition: { animation: 'orb-transition', material: 'threshold-white-blue', light: { intensity: 1.32, temperature: 'neutral' }, particles: 'threshold-stream', movement: 'portal-lead', audioCue: 'orb-world-transition', caption: 'Moving through UrAi', haptic: 'world-transition', announcement: 'Moving to the next part of your world.', affordance: 'continue' },
 }
 
-export function resolveOrbSensoryOutput(state: OrbState, reducedMotion: boolean, muted: boolean): OrbSensoryOutput {
-  const output = outputs[state]
+export function isOrbState(value: unknown): value is OrbState {
+  return typeof value === 'string' && Object.prototype.hasOwnProperty.call(outputs, value)
+}
+
+export function resolveOrbSensoryOutput(state: OrbState, reducedMotion: boolean, muted: boolean, reducedStimulation = false): OrbSensoryOutput {
+  const output = outputs[isOrbState(state) ? state : 'idle']
+  const staticPresentation = reducedMotion || reducedStimulation
   return {
     ...output,
-    animation: reducedMotion ? 'orb-state-static' : output.animation,
-    movement: reducedMotion ? 'settled' : output.movement,
-    audioCue: muted ? null : output.audioCue,
+    animation: staticPresentation ? 'orb-state-static' : output.animation,
+    movement: staticPresentation ? 'settled' : output.movement,
+    particles: staticPresentation ? 'none' : output.particles,
+    light: reducedStimulation ? { ...output.light, intensity: Math.min(output.light.intensity, .66) } : output.light,
+    audioCue: muted || reducedStimulation ? null : output.audioCue,
+    haptic: reducedStimulation ? null : output.haptic,
   }
 }
 
 export function publishOrbState(state: OrbState, source: OrbStateEventDetail['source'] = 'system') {
-  if (typeof window === 'undefined') return
+  if (typeof window === 'undefined' || !isOrbState(state)) return
   window.dispatchEvent(new CustomEvent<OrbStateEventDetail>(URAI_ORB_STATE_EVENT, { detail: { state, source } }))
 }
 

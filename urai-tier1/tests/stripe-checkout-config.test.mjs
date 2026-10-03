@@ -1,0 +1,132 @@
+import assert from 'node:assert/strict';
+import test from 'node:test';
+import { readFile } from 'node:fs/promises';
+import { resolveApprovedReturnUrl } from '../src/lib/server/approved-return-url.ts';
+import {
+  checkoutModeForPlan,
+  isPaidPlanId,
+  parseStripeRuntimeMode,
+  stripeLivemodeMatchesRuntime,
+  stripeRuntimeMatchesSecret,
+  stripeSecretKeyMode,
+  STRIPE_PRICE_ENV_BY_PLAN,
+} from '../src/lib/server/stripe-runtime-config.ts';
+
+const testSecretFixture = 'sk_test_example';
+const productionSecretFixture = ['sk', 'live', 'example'].join('_');
+const restrictedLiveFixture = ['rk', 'live', 'example'].join('_');
+
+test('paid plan allowlist rejects free and arbitrary caller values', () => {
+  assert.equal(isPaidPlanId('pro'), true);
+  assert.equal(isPaidPlanId('therapist'), true);
+  assert.equal(isPaidPlanId('founder'), true);
+  assert.equal(isPaidPlanId('free'), false);
+  assert.equal(isPaidPlanId('price_attacker_controlled'), false);
+  assert.equal(isPaidPlanId(undefined), false);
+});
+
+test('price identifiers are selected through server-owned environment keys', () => {
+  assert.deepEqual(STRIPE_PRICE_ENV_BY_PLAN, {
+    pro: 'NEXT_PUBLIC_STRIPE_PRICE_PRO',
+    therapist: 'NEXT_PUBLIC_STRIPE_PRICE_THERAPIST',
+    founder: 'NEXT_PUBLIC_STRIPE_PRICE_FOUNDER',
+  });
+});
+
+test('runtime mode fails closed unless explicitly test or production', () => {
+  assert.equal(parseStripeRuntimeMode('test'), 'test');
+  assert.equal(parseStripeRuntimeMode('production'), 'production');
+  assert.equal(parseStripeRuntimeMode('live'), null);
+  assert.equal(parseStripeRuntimeMode(''), null);
+  assert.equal(parseStripeRuntimeMode(undefined), null);
+});
+
+test('Stripe secret key mode must agree with declared runtime mode', () => {
+  assert.equal(stripeSecretKeyMode(testSecretFixture), 'test');
+  assert.equal(stripeSecretKeyMode(productionSecretFixture), 'production');
+  assert.equal(stripeSecretKeyMode(restrictedLiveFixture), null);
+  assert.equal(stripeSecretKeyMode(undefined), null);
+  assert.equal(stripeRuntimeMatchesSecret('test', testSecretFixture), true);
+  assert.equal(stripeRuntimeMatchesSecret('production', productionSecretFixture), true);
+  assert.equal(stripeRuntimeMatchesSecret('test', productionSecretFixture), false);
+  assert.equal(stripeRuntimeMatchesSecret('production', testSecretFixture), false);
+});
+
+test('Stripe event and provider object livemode must agree with declared runtime mode', () => {
+  assert.equal(stripeLivemodeMatchesRuntime(false, 'test'), true);
+  assert.equal(stripeLivemodeMatchesRuntime(true, 'production'), true);
+  assert.equal(stripeLivemodeMatchesRuntime(true, 'test'), false);
+  assert.equal(stripeLivemodeMatchesRuntime(false, 'production'), false);
+});
+
+test('plan billing modes are fixed server-side', () => {
+  assert.equal(checkoutModeForPlan('pro'), 'subscription');
+  assert.equal(checkoutModeForPlan('therapist'), 'subscription');
+  assert.equal(checkoutModeForPlan('founder'), 'payment');
+});
+
+test('approved return URL accepts relative and same-origin destinations', () => {
+  assert.equal(resolveApprovedReturnUrl('/settings?tab=billing', 'https://staging.example.test').toString(), 'https://staging.example.test/settings?tab=billing');
+  assert.equal(resolveApprovedReturnUrl('https://staging.example.test/account', 'https://staging.example.test').toString(), 'https://staging.example.test/account');
+});
+
+test('approved return URL rejects foreign origins and embedded credentials', () => {
+  assert.throws(() => resolveApprovedReturnUrl('https://evil.example/account', 'https://staging.example.test'));
+  assert.throws(() => resolveApprovedReturnUrl('https://user:pass@staging.example.test/account', 'https://staging.example.test'));
+});
+
+
+const checkoutSource = await readFile(new URL('../src/app/api/stripe/create-checkout-session/route.ts', import.meta.url), 'utf8');
+const webhookSource = await readFile(new URL('../src/app/api/stripe/webhook/route.ts', import.meta.url), 'utf8');
+
+test('checkout rejects secret/runtime mode mismatches before provider session creation', () => {
+  assert.match(checkoutSource, /parseStripeRuntimeMode\(process\.env\.URAI_STRIPE_MODE\)/);
+  assert.match(checkoutSource, /stripeRuntimeMatchesSecret\(stripeMode, secretKey\)/);
+  const guard = checkoutSource.indexOf('stripeRuntimeMatchesSecret(stripeMode, secretKey)');
+  const providerCall = checkoutSource.indexOf('stripe.checkout.sessions.create');
+  assert.ok(guard >= 0 && providerCall > guard);
+  assert.match(checkoutSource, /mode: checkoutModeForPlan\(planId\)/);
+  assert.match(checkoutSource, /environment: stripeMode/);
+});
+
+test('webhook handles delayed Founder payment settlement and failure', () => {
+  assert.match(webhookSource, /checkout\.session\.async_payment_succeeded/);
+  assert.match(webhookSource, /checkout\.session\.async_payment_failed/);
+  assert.match(webhookSource, /async_payment_succeeded'[\s\S]*stripeStatus = 'active'/);
+  assert.match(webhookSource, /async_payment_failed'[\s\S]*stripeStatus = 'none'/);
+});
+
+test('invoice provider lookup failures stay retryable instead of being acknowledged as skipped', () => {
+  assert.match(webhookSource, /Stripe provider state could not be resolved/);
+  assert.match(webhookSource, /status: 500/);
+  assert.doesNotMatch(webhookSource, /could not fetch invoice subscription/);
+});
+
+test('Founder refunds and disputes revoke entitlement through PaymentIntent metadata', () => {
+  assert.match(webhookSource, /charge\.refunded/);
+  assert.match(webhookSource, /charge\.dispute\.created/);
+  assert.match(webhookSource, /charge\.dispute\.closed/);
+  assert.match(webhookSource, /paymentIntents\.retrieve/);
+  assert.match(webhookSource, /stripeStatus = 'canceled'/);
+  assert.match(webhookSource, /dispute\.status === 'won' \? 'active' : 'canceled'/);
+});
+
+
+test('webhook rejects secret/event mode mismatches before entitlement writes', () => {
+  assert.match(webhookSource, /parseStripeRuntimeMode\(process\.env\.URAI_STRIPE_MODE\)/);
+  assert.match(webhookSource, /stripeRuntimeMatchesSecret\(runtimeMode, secretKey\)/);
+  assert.match(webhookSource, /stripeLivemodeMatchesRuntime\(event\.livemode, runtimeMode\)/);
+  assert.match(webhookSource, /Stripe event mode mismatch/);
+});
+
+test('webhook applies events through durable provider ordering', () => {
+  assert.match(webhookSource, /applyStripeEventEntitlement/);
+  assert.match(webhookSource, /id: event\.id/);
+  assert.match(webhookSource, /created: event\.created/);
+  assert.doesNotMatch(webhookSource, /await upsertEntitlement\(/);
+});
+
+test('charge revocation is Founder-only and full-refund-only', () => {
+  assert.match(webhookSource, /if \(charge\.refunded !== true\) return null/);
+  assert.match(webhookSource, /if \(identity\.planId !== 'founder'\) return null/);
+});

@@ -12,7 +12,7 @@ const modelSource = fs.readFileSync(new URL('../src/spatial/mirror/mirrorPattern
 const navigationSource = fs.readFileSync(new URL('../src/spatial/navigation/EmbodiedNavigation.tsx', import.meta.url), 'utf8')
 const proofWorkflowSource = fs.readFileSync(new URL('../../.github/workflows/mirror-release-proof.yml', import.meta.url), 'utf8')
 
-test('Mirror route has one embodied spatial owner and no promotional-image owner', () => {
+test('Mirror route keeps one embodied spatial owner and forbids a flat promotional-image owner', () => {
   assert.match(pageSource, /MirrorSpatialClient/)
   assert.match(pageSource, /MirrorBareEntryGuard/)
   assert.match(pageSource, /mirror-embodied-reflection-chamber/)
@@ -62,7 +62,11 @@ test('Mirror spatial runtime owns chamber, embodied reflection, interaction, res
   ]) assert.match(clientSource, new RegExp(required.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')))
 
   assert.doesNotMatch(clientSource, /quiet-reset/)
-  assert.doesNotMatch(clientSource, /mirror-reflection-main\.webp/)
+  assert.match(clientSource, /assetCssStack, mirrorAssets/)
+  assert.match(clientSource, /data-mirror-environment-role="governed-visual-support"/)
+  assert.match(clientSource, /pointer-events:none/)
+  assert.match(clientSource, /data-mirror-renderer="webgl-r3f"/)
+  assert.doesNotMatch(clientSource, /<img[^>]+mirror-reflection-main|<Image[^>]+mirror-reflection-main/)
   assert.doesNotMatch(clientSource, /generic person/i)
 })
 
@@ -134,4 +138,11 @@ test('mobile inspection transfers pointer ownership from all overlays to thresho
   assert.match(mobileInspectionCss, /\.mirrorWorld:has\(\.mirrorInspection\) canvas\s*\{[^}]*pointer-events:\s*none\s*!important/s)
   assert.match(mobileInspectionCss, /\.mirrorWorld:has\(\.mirrorInspection\) \.mirrorThresholds\s*\{[^}]*z-index:\s*100\s*!important[^}]*pointer-events:\s*auto/s)
   assert.match(mobileInspectionCss, /\.mirrorWorld:has\(\.mirrorInspection\) \.mirrorThresholds button\s*\{[^}]*pointer-events:\s*auto/s)
+})
+
+
+test('Mirror threshold navigation owns the full bottom lane after Adam moves to the side dock', () => {
+  assert.match(clientSource, /\.mirrorThresholds\{[^}]*right:max\(18px,env\(safe-area-inset-right\)\)[^}]*bottom:max\(18px,env\(safe-area-inset-bottom\)\)/)
+  assert.match(clientSource, /@media\(max-width:760px\)[\s\S]*?\.mirrorThresholds\{left:12px;right:12px/)
+  assert.doesNotMatch(clientSource, /mirrorThresholds\{[^}]*right:max\(82px/)
 })

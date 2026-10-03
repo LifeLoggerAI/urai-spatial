@@ -1,3 +1,4 @@
+import { preserveAuditedLifeMapProof } from './materialize-accessibility-performance-lifemap-authority.mjs'
 import './materialize-accessibility-performance-current.mjs'
 import { readFile, writeFile } from 'node:fs/promises'
 
@@ -28,68 +29,36 @@ await transformFile('urai-tier1/tests/accessibility-performance-embodied-explora
   source = replaceExact(
     source,
     "    await expect(home).toHaveAttribute('data-home-pointer-lock', 'false')",
-    "    await expect(home).toHaveAttribute('data-home-camera-mode', 'embodied')",
+    "    await expect(home).toHaveAttribute('data-home-camera-mode', 'embodied-first-person')",
     1,
     'current Home embodied camera contract',
   )
   source = replaceExact(
     source,
-    "    await expect(home).toHaveAttribute('data-home-visible-world', 'final-physical-sanctuary-memory-rooms')",
-    "    await expect(home).toHaveAttribute('data-home-animation-owner', 'authored-sanctuary-plus-gltf-interactions')",
+    "    await expect(home).toHaveAttribute('data-home-visible-world', 'authored-coherent-three-dimensional-sanctuary')",
+    "    await expect(home).toHaveAttribute('data-home-animation-owner', 'canonical-sanctuary-plus-cc0-fern-plus-living-orb')",
     1,
     'current Home authored visual owner contract',
   )
-  source = replaceExact(
-    source,
-    `    const afterZ = Number(await home.getAttribute('data-home-player-z'))
+  const stableMovementProof = `    const afterZ = Number(await home.getAttribute('data-home-player-z'))
     expect(Math.abs(afterZ - beforeZ)).toBeGreaterThan(1.2)
     await expect.poll(async () => {
       const value = await home.evaluate((element) => element.style.getPropertyValue('--home-parallax-y'))
       return Math.abs(Number.parseFloat(value))
-    }, { timeout: 12_000 }).toBeGreaterThan(0.1)`,
-    `    await expect.poll(async () => Math.abs(Number(await home.getAttribute('data-home-player-z')) - beforeZ), { timeout: 30_000 }).toBeGreaterThan(1.2)
-    const afterZ = Number(await home.getAttribute('data-home-player-z'))
-    expect(Math.abs(afterZ - beforeZ)).toBeGreaterThan(1.2)`,
-    1,
-    'current Home primary-owner movement telemetry',
-  )
+    }, { timeout: 12_000 }).toBeGreaterThan(0.1)`
+  if (source.split(stableMovementProof).length - 1 !== 1) {
+    throw new Error('current Home direct displacement + parallax proof contract changed')
+  }
+  const staleZPoll = `    await expect.poll(async () => Math.abs(Number(await home.getAttribute('data-home-player-z')) - beforeZ), { timeout: 30_000 }).toBeGreaterThan(1.2)`
+  if (source.includes(staleZPoll)) {
+    throw new Error('stale redundant Home Z-position polling must not be reintroduced')
+  }
   return source
 })
 
-await transformFile('urai-tier1/tests/accessibility-performance-lifemap-independent.spec.ts', (input) => {
-  let source = replaceExact(
-    input,
-    '  test.describe.configure({ timeout: 90_000 })',
-    '  test.describe.configure({ timeout: 180_000 })',
-    1,
-    'Life Map software-renderer timeout envelope',
-  )
-  source = replaceExact(
-    source,
-    "    await expect(page.getByText('Disclosed sample universe · not your memories', { exact: true })).toBeVisible()",
-    "    await expect(root.getByText('Disclosed sample universe · not your memories', { exact: true })).toBeVisible()",
-    1,
-    'Life Map disclosed-demo truth owner',
-  )
-  source = replaceExact(
-    source,
-    "  await explore.locator('summary').click()",
-    `  const summary = explore.locator('summary')
-  await summary.focus()
-  await expect(summary).toBeFocused()
-  if (!(await explore.getAttribute('open'))) await summary.press('Enter')`,
-    1,
-    'Life Map reduced-motion keyboard-owned explorer opening',
-  )
-  source = replaceExact(
-    source,
-    "    await expect(page.locator('aside[aria-label=\"Selected life object details\"] h2')).toContainText((firstLabel || '').split('·')[0].trim())",
-    "    await expect(page.locator('aside[aria-label=\"Selected life object details\"] h2')).toHaveText('The Quiet Reset')",
-    1,
-    'Life Map selected title identity owner',
-  )
-  return source
-})
+// This proof now lives in its audited current form; historical rewrites must
+// never replace its stronger privacy, identity, title, and mobile assertions.
+await preserveAuditedLifeMapProof()
 
 await transformFile('urai-tier1/tests/accessibility-performance-spatial-visual.spec.ts', (input) => {
   let source = replaceExact(

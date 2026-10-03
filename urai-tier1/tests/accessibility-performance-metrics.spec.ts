@@ -6,6 +6,7 @@ const routes = [
   ['life-map', '/life-map'],
   ['focus', '/focus?memoryId=seed-memory-bloom&manifestId=seed-memory-bloom&node=seed-memory-bloom&demo=1'],
   ['replay', '/replay?memoryId=seed-memory-bloom&manifestId=seed-memory-bloom&node=seed-memory-bloom&demo=1'],
+  ['life-movie', '/life-movie'],
 ] as const
 
 const DESKTOP_FRAME_P95_BUDGET_MS = 20

@@ -1,7 +1,7 @@
 repo: LifeLoggerAI/urai-spatial
 privacyGovernanceVersion: 0.1.0-draft
 owner: TBD
-lastReviewed: 2026-05-09
+lastReviewed: 2026-09-29
 status: draft_real_inventory_from_repo_audit
 sourceEvidence:
   - URAI_ECOSYSTEM_AUDIT.md
@@ -86,7 +86,7 @@ fields:
     collectionOrTable: voiceEvents
     source: user_voice_interaction
     dataClass: L5
-    purpose: planned voice interaction storage
+    purpose: store explicitly consented bounded voice-interaction transcript/tone metadata without raw audio
     consentTier: C5
     retentionClass: R6
     exportable: true
@@ -95,13 +95,13 @@ fields:
     aiTrainingAllowed: false
     adminAccessible: false
     auditRequired: true
-    implementationStatus: stubbed_per_repo_audit
+    implementationStatus: partial_consent_bound_ingestion_no_implicit_microphone
 
   - name: behavior_signal
     collectionOrTable: behaviorSignals
     source: system_collected
     dataClass: L4
-    purpose: planned behavioral signal capture for AI analysis
+    purpose: consent-bound behavioral signal capture for user-facing adaptation
     consentTier: C4
     retentionClass: R3
     exportable: true
@@ -110,14 +110,16 @@ fields:
     aiTrainingAllowed: false
     adminAccessible: false
     auditRequired: true
-    implementationStatus: stubbed_per_repo_audit
+    implementationStatus: implemented_consent_bound_server_owned_runtime
 
   - name: location_record
     collectionOrTable: locations
     source: device_or_user_provided
-    dataClass: L4
-    purpose: planned location context associated with memories
-    consentTier: C4
+    dataClass: L3
+    purpose: consent-bound location context associated with memories and captured reality
+    consentTier: C1
+    requiredConsentPurposes:
+      - location.context
     retentionClass: R3
     exportable: true
     deletable: true
@@ -125,7 +127,107 @@ fields:
     aiTrainingAllowed: false
     adminAccessible: false
     auditRequired: true
-    implementationStatus: stubbed_per_repo_audit
+    implementationStatus: partial_consent_bound_browser_snapshot_requires_preexisting_device_permission
+
+  - name: captured_reality_manifest
+    collectionOrTable: users/{uid}/capturedRealityAssets
+    source: system_derived
+    dataClass: L3
+    purpose: govern source-backed private real-place reconstruction, truth class, provenance and runtime delivery
+    consentTier: C1
+    requiredConsentPurposes:
+      - memory.storage
+      - location.context
+    retentionClass: R3
+    exportable: true
+    deletable: true
+    monetizable: false
+    aiTrainingAllowed: false
+    adminAccessible: false
+    auditRequired: true
+    implementationStatus: implemented_hard_off
+
+  - name: captured_reality_runtime_asset
+    collectionOrTable: private_object_storage
+    source: system_derived
+    dataClass: L3
+    purpose: deliver optimized private real-place reconstruction to the authorized owner
+    consentTier: C1
+    requiredConsentPurposes:
+      - memory.storage
+      - location.context
+    retentionClass: R3
+    exportable: true
+    deletable: true
+    monetizable: false
+    aiTrainingAllowed: false
+    adminAccessible: false
+    auditRequired: true
+    implementationStatus: implemented_hard_off
+
+  - name: captured_reality_replay_binding
+    collectionOrTable: users/{uid}/capturedRealityReplayBindings
+    source: system_derived
+    dataClass: L3
+    purpose: bind one authorized memory to one reviewed source-backed captured place
+    consentTier: C1
+    requiredConsentPurposes:
+      - memory.storage
+      - location.context
+    retentionClass: R3
+    exportable: true
+    deletable: true
+    monetizable: false
+    aiTrainingAllowed: false
+    adminAccessible: false
+    auditRequired: true
+    implementationStatus: implemented_hard_off
+
+
+  - name: life_causal_graph
+    collectionOrTable: users/{uid}/lifeEntities + lifeClaims + lifeRelationships + lifeEvents
+    source: user_source_and_system_derived
+    dataClass: L5
+    purpose: preserve owner-private provenance-linked people, places, objects, relationships and events through time
+    consentTier: C5
+    retentionClass: R3
+    exportable: true
+    deletable: true
+    monetizable: false
+    aiTrainingAllowed: false
+    adminAccessible: false
+    auditRequired: true
+    implementationStatus: implementation_started_server_authoritative
+
+  - name: person_model_bundle
+    collectionOrTable: users/{uid}/personModelBundles
+    source: system_derived
+    dataClass: L5
+    purpose: compile evidence-constrained temporal person state for governed rendering and interaction
+    consentTier: C5
+    retentionClass: R3
+    exportable: true
+    deletable: true
+    monetizable: false
+    aiTrainingAllowed: false
+    adminAccessible: false
+    auditRequired: true
+    implementationStatus: implementation_started_provider_neutral
+
+  - name: simulation_session
+    collectionOrTable: users/{uid}/simulationSessions
+    source: user_interaction_and_model
+    dataClass: L5
+    purpose: isolate simulated/counterfactual interactions from historical source authority
+    consentTier: C5
+    retentionClass: R3
+    exportable: true
+    deletable: true
+    monetizable: false
+    aiTrainingAllowed: false
+    adminAccessible: false
+    auditRequired: true
+    implementationStatus: implementation_started_synthetic_firewall
 
 processors:
   - name: Firebase Authentication
@@ -134,7 +236,7 @@ processors:
     reviewStatus: needs_privacy_review
   - name: Firestore
     role: primary_database
-    status: mixed_complete_partial_stubbed_per_repo_audit
+    status: mixed_complete_partial_consent_bound_runtime
     reviewStatus: needs_privacy_review
   - name: Firebase Storage
     role: media_storage
