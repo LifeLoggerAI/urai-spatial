@@ -35,3 +35,28 @@ export {
   mistralCouncilProvider,
   xaiCouncilProvider,
 } from './councilProviderFunctions'
+
+
+export {
+  applyLifeCorrection,
+  compileLifeCausalGraphSnapshot,
+  compilePersonModelBundle,
+  compileSceneTruthPacket,
+  getReplayLifeModelAuthority,
+  revokeLifeEntity,
+  upsertLifeCausalEdge,
+  upsertLifeClaim,
+  upsertLifeEntity,
+  upsertLifeEntityState,
+} from './lifeModelFunctions'
+
+export {
+  closePersonPresenceSession,
+  getPersonPresenceCapabilities,
+  preparePersonPresenceSession,
+  promotePersonRenderBinding,
+  revokePersonRenderBinding,
+} from './personPresenceFunctions'
+
+export { personPresenceProvider } from './personPresenceProvider'
+export { personPresenceVoiceProvider } from './personPresenceVoiceProvider'
