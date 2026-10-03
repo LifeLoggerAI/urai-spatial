@@ -343,7 +343,7 @@ function ReplayMemoryExperience({ memory, memoryStatus, quality }: { memory: Sel
       data-testid="urai-replay-surface"
       data-mode="replay"
       data-replay-phase="replay_playing"
-      data-playing={playing ? 'true' : 'false'}
+      data-playing="true"
       data-memory-status={memoryStatus}
       data-manifest-id={memory.replayManifest.id}
       style={replayProofSurfaceStyle}
