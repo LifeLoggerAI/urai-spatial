@@ -76,7 +76,18 @@ test('approved return URL rejects foreign origins and embedded credentials', () 
 });
 
 
+const checkoutSource = await readFile(new URL('../src/app/api/stripe/create-checkout-session/route.ts', import.meta.url), 'utf8');
 const webhookSource = await readFile(new URL('../src/app/api/stripe/webhook/route.ts', import.meta.url), 'utf8');
+
+test('checkout rejects secret/runtime mode mismatches before provider session creation', () => {
+  assert.match(checkoutSource, /parseStripeRuntimeMode\(process\.env\.URAI_STRIPE_MODE\)/);
+  assert.match(checkoutSource, /stripeRuntimeMatchesSecret\(stripeMode, secretKey\)/);
+  const guard = checkoutSource.indexOf('stripeRuntimeMatchesSecret(stripeMode, secretKey)');
+  const providerCall = checkoutSource.indexOf('stripe.checkout.sessions.create');
+  assert.ok(guard >= 0 && providerCall > guard);
+  assert.match(checkoutSource, /mode: checkoutModeForPlan\(planId\)/);
+  assert.match(checkoutSource, /environment: stripeMode/);
+});
 
 test('webhook handles delayed Founder payment settlement and failure', () => {
   assert.match(webhookSource, /checkout\.session\.async_payment_succeeded/);
