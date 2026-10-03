@@ -227,7 +227,7 @@ function phaseLabel(phase: JourneyPhase) {
   return "Inside the Memory Star";
 }
 
-export default function ComposedLifeMapScene() {
+export default function ComposedLifeMapScene({ authenticatedUserId }: { authenticatedUserId: string | null }) {
   const router = useRouter();
   const params = useSearchParams();
   const adaptiveProfile = useAdaptiveSpatialQuality();
@@ -242,7 +242,7 @@ export default function ComposedLifeMapScene() {
   }), [adaptiveProfile, softwareRenderer]);
   const explicitDemoRequested = params.get("demo") === "1";
   const overviewRequested = params.get("overview") === "1";
-  const { nodes, loading, sourceMode } = useLifeMapEvents(explicitDemoRequested ? "demo-user" : undefined);
+  const { nodes, loading, sourceMode } = useLifeMapEvents(explicitDemoRequested ? "demo-user" : authenticatedUserId ?? undefined);
   const queryNode = safeToken(params.get("node") || params.get("memoryId"));
   const manifestId = safeToken(params.get("manifestId"), DEFAULT_MANIFEST_ID);
   const [selectedId, setSelectedId] = useState<string | null>(overviewRequested ? null : queryNode || null);
