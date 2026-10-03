@@ -6,6 +6,7 @@ const worldEvents = fs.readFileSync(new URL('../src/spatial/world/worldEvents.ts
 const semanticNavigator = fs.readFileSync(new URL('../src/components/lifemap/LifeMapSemanticNavigator.tsx', import.meta.url), 'utf8')
 const telemetryBridge = fs.readFileSync(new URL('../src/app/HomeParallaxTelemetryBridge.tsx', import.meta.url), 'utf8')
 const focusClient = fs.readFileSync(new URL('../src/app/focus/FocusChamberClient.tsx', import.meta.url), 'utf8')
+const lifeMapScene = fs.readFileSync(new URL('../src/components/lifemap/ComposedLifeMapScene.tsx', import.meta.url), 'utf8')
 
 test('deep-travel fallback cannot preempt the canonical transition controller', () => {
   const fallback = worldEvents.match(/WORLD_TRAVEL_FALLBACK_MS\s*=\s*(\d+)/)
@@ -29,4 +30,16 @@ test('Focus keyboard readiness reflects installed input listeners and resets dur
   assert.match(focusClient, /addEventListener\('keydown', down\)[\s\S]*dataset\.focusInputReady = 'true'/)
   assert.match(focusClient, /dataset\.focusInputReady = 'false'[\s\S]*removeEventListener\('keydown', down\)/)
   assert.match(focusClient, /@media\(forced-colors:active\)[\s\S]*outline:3px solid Highlight/)
+})
+
+
+test('selected Memory Star arrival framing is carried into Focus without a hard camera reset', () => {
+  for (const token of ['entryCamera', 'entryTarget', 'entryFov', 'life-map-arrival:']) assert.ok(lifeMapScene.includes(token), `Life Map handoff missing ${token}`)
+  assert.match(lifeMapScene, /dataset\.lifeMapCameraX/)
+  assert.match(lifeMapScene, /dataset\.lifeMapTargetX/)
+  assert.match(focusClient, /parseEntryCameraFrame/)
+  assert.match(focusClient, /cameraCheckpoint.*startsWith\('life-map-arrival:'\)/)
+  assert.match(focusClient, /entryBlendActive/)
+  assert.match(focusClient, /THREE\.MathUtils\.damp\(camera\.position\.x, defaultCamera\.x/)
+  assert.match(focusClient, /reducedMotion.*DEFAULT_CAMERA|useEntryFrame = recenterSignal === 0 && entryFrame && !reducedMotion/)
 })
