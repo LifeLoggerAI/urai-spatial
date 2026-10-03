@@ -365,7 +365,8 @@ export const createStripeCustomerPortal = functions.https.onRequest(async (req, 
   const stripe = stripeClient()
   const entitlement = await readEntitlement(uid)
   const returnUrl = approvedReturnUrl(req.body?.returnUrl)
-  if (!stripe || !returnUrl) {
+  const mode = runtimeMode()
+  if (!stripe || !returnUrl || !mode) {
     res.status(503).json({ error: 'Stripe environment is not configured for this request.' })
     return
   }
@@ -374,9 +375,27 @@ export const createStripeCustomerPortal = functions.https.onRequest(async (req, 
     return
   }
 
+  let customer: Stripe.Customer | Stripe.DeletedCustomer
+  try {
+    customer = await stripe.customers.retrieve(entitlement.stripeCustomerId)
+  } catch (error) {
+    console.error('[URAI] Stripe portal customer verification failed', { uid, error })
+    res.status(502).json({ error: 'Stripe customer could not be verified.' })
+    return
+  }
+  if (customer.deleted) {
+    res.status(409).json({ error: 'Stripe customer is no longer active.' })
+    return
+  }
+  if (customer.livemode !== (mode === 'production')) {
+    res.status(500).json({ error: 'Stripe customer mode mismatch.' })
+    return
+  }
+
   const session = await stripe.billingPortal.sessions.create({
-    customer: entitlement.stripeCustomerId,
+    customer: customer.id,
     return_url: returnUrl.toString(),
+    configuration: process.env.STRIPE_BILLING_PORTAL_CONFIGURATION || undefined,
   })
   res.status(200).json({ url: session.url })
 })
