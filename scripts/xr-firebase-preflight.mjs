@@ -28,12 +28,14 @@ if (firebaseConfig.hosting?.source !== 'urai-tier1') {
 }
 
 const staticConfig = JSON.parse(await readFile('firebase.static.json', 'utf8'))
-const allowedStaticServerRewrites = new Map([
+const providerRewrites = Array.isArray(firebaseConfig.hosting?.rewrites) ? firebaseConfig.hosting.rewrites : []
+const allowedStaticServerRewrites = new Map(providerRewrites.map((rewrite) => [rewrite?.source, rewrite?.function?.functionId]))
+for (const [source, functionId] of [
   ['/api/stripe/create-checkout-session', 'createStripeCheckout'],
   ['/api/stripe/create-portal-session', 'createStripeCustomerPortal'],
   ['/api/entitlement', 'getStripeEntitlement'],
   ['/api/stripe/webhook', 'handleStripeWebhook'],
-])
+]) allowedStaticServerRewrites.set(source, functionId)
 const staticRewrites = Array.isArray(staticConfig.hosting?.rewrites) ? staticConfig.hosting.rewrites : []
 const invalidStaticRewrite = staticRewrites.find((rewrite) => (
   !allowedStaticServerRewrites.has(rewrite?.source)
