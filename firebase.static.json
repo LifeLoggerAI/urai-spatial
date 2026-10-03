@@ -38,7 +38,7 @@
         }
       },
       {
-        "source": "/api/stripe/customer-portal",
+        "source": "/api/stripe/create-portal-session",
         "function": {
           "functionId": "createStripeCustomerPortal",
           "region": "us-central1"
