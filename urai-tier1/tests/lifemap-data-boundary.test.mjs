@@ -67,3 +67,13 @@ test('semantic Life Map navigation uses authenticated ownership and remains avai
   assert.match(accessGate, /if \(!webglAvailable\) return <>[\s\S]*<LifeMapSemanticNavigator authenticatedUserId=\{mode === "private" \? authenticatedUserId : null\}/)
   assert.doesNotMatch(semanticNavigator, /localStorage\.getItem/)
 })
+
+
+test('semantic Life Map fallback preserves the Focus and Replay journey without inventing replay availability', () => {
+  assert.match(semanticNavigator, /destinationHref\('focus', selected\)/)
+  assert.match(semanticNavigator, /destinationHref\('replay', selected\)/)
+  assert.match(semanticNavigator, /next\.set\('from', 'life-map-semantic'\)/)
+  assert.match(semanticNavigator, /disabled=\{!selected\.replayAvailable \|\| selected\.locked\}/)
+  assert.match(semanticNavigator, />Enter Focus</)
+  assert.match(semanticNavigator, />Replay</)
+})
