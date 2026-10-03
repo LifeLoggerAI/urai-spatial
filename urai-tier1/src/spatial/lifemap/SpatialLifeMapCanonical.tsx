@@ -80,11 +80,7 @@ function LifeMapAccessGate() {
 
   useEffect(() => {
     const current = new URLSearchParams(query);
-    if (current.get("demo") === "1") {
-      setAuthenticatedUserId(null);
-      setMode("explicit-demo");
-      return;
-    }
+    if (current.get("demo") === "1") { setMode("explicit-demo"); setAuthenticatedUserId(null); return; }
 
     if (!firebasePublicEnvReady) {
       setAuthenticatedUserId(null);
