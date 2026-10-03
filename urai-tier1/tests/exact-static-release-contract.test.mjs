@@ -12,6 +12,7 @@ const readTier1 = (file) => normalize(readFileSync(path.join(tier1Root, file), '
 const readRepo = (file) => normalize(readFileSync(path.join(repoRoot, file), 'utf8'))
 
 const hosting = JSON.parse(readRepo('firebase.static.json')).hosting
+const dynamicHosting = JSON.parse(readRepo('firebase.json')).hosting
 const layout = readTier1('src/app/layout.tsx')
 const operator = readRepo('scripts/live-release.mjs')
 const workflow = readRepo('.github/workflows/spatial-live-deploy.yml')
@@ -33,20 +34,20 @@ function job(source, name) {
   return next < 0 ? rest : rest.slice(0, next)
 }
 
-test('Firebase publishes the canonical static export with only governed server API rewrites', () => {
+test('Firebase publishes the canonical static export with full governed provider and commerce rewrites', () => {
   assert.equal(hosting.public, 'urai-tier1/out')
   assert.equal(hosting.cleanUrls, true)
   assert.equal(hosting.trailingSlash, true)
-  assert.deepEqual(hosting.rewrites, [
+  const commerceRewrites = [
     { source: '/api/stripe/create-checkout-session', function: { functionId: 'createStripeCheckout', region: 'us-central1' } },
     { source: '/api/stripe/create-portal-session', function: { functionId: 'createStripeCustomerPortal', region: 'us-central1' } },
     { source: '/api/entitlement', function: { functionId: 'getStripeEntitlement', region: 'us-central1' } },
     { source: '/api/stripe/webhook', function: { functionId: 'handleStripeWebhook', region: 'us-central1' } },
-  ])
+  ]
+  assert.deepEqual(hosting.rewrites, [...dynamicHosting.rewrites, ...commerceRewrites])
   assert.ok(hosting.ignore.includes('**/.*'))
   assert.equal(hosting.rewrites.some((rewrite) => rewrite.source === '**' || rewrite.source === '/**'), false)
 })
-
 test('public output carries exact deployment identity or an unverified state', () => {
   hasAll(layout, ['NEXT_PUBLIC_URAI_BUILD_SHA','process.env.GITHUB_SHA','data-deployed-sha','data-deployment-evidence','unverified'], 'layout')
 })
