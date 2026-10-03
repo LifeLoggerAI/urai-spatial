@@ -141,10 +141,10 @@ test('Semantic navigator supports search filters keyboard travel and connected d
 
 test('Only explicit demo identity can load the coherent disclosed sample universe', () => {
   assert.ok(source.includes('const explicitDemoRequested = params.get("demo") === "1"'))
-  assert.ok(source.includes('useLifeMapEvents(explicitDemoRequested ? "demo-user" : undefined)'))
+  assert.ok(source.includes('useLifeMapEvents(explicitDemoRequested ? "demo-user" : authenticatedUserId ?? undefined)'))
   assert.ok(source.includes('if (explicitDemoRequested) next.set("demo", "1")'))
   assert.match(navigator, /const explicitDemo = params\.get\('demo'\) === '1'|const explicitDemo = params\.get\("demo"\) === "1"/)
-  assert.match(navigator, /useLifeMapEvents\(explicitDemo \? 'demo-user' : undefined\)|useLifeMapEvents\(explicitDemo \? "demo-user" : undefined\)/)
+  assert.match(navigator, /useLifeMapEvents\(explicitDemo \? 'demo-user' : authenticatedUserId \?\? undefined\)|useLifeMapEvents\(explicitDemo \? "demo-user" : authenticatedUserId \?\? undefined\)/)
   assert.match(events, /function explicitDemoEnabled\(explicitUserId\?: string\) \{\s*return explicitUserId === "demo-user";/)
   assert.doesNotMatch(events, /NEXT_PUBLIC_URAI_EXPLICIT_DEMO/)
   assert.doesNotMatch(events, /lifeMapDemoMode/)
