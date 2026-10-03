@@ -234,7 +234,7 @@ function ReplayMemoryExperience({ memory, memoryStatus, quality }: { memory: Sel
   const playing = video ? videoSnapshot.playing : narrativePlaying
   const progressMs = video ? videoSnapshot.currentTimeMs : narrativeProgressMs
   const duration = video ? videoSnapshot.durationMs ?? memory.replayManifest.durationMs : memory.replayManifest.durationMs
-  const segments = memory.replayManifest.segments
+  const segments = memory?.replayManifest.segments ?? []
   const active = useMemo(() => segments.find((segment) => progressMs >= segment.startsAtMs && progressMs < segment.startsAtMs + segment.durationMs) ?? segments.at(-1), [progressMs, segments])
   const unwind = useCallback(() => requestUraiWorldReturn(), [])
   const pauseMemory = useCallback(() => { setNarrativePlaying(false); videoSession.current?.pause() }, [])
@@ -369,9 +369,8 @@ export default function CinematicReplayClient() {
   const result = useSelectedMemory()
   const memory = result.memory
   const quality = useAdaptiveSpatialQuality()
-  return memory
-    ? <ReplayMemoryExperience key={replaySessionIdentity(memory)} memory={memory} memoryStatus={result.status} quality={quality} />
-    : <ReplayMemoryHorizon memoryStatus={result.status} message={result.message} quality={quality} />
+  if (!memory) return <ReplayMemoryHorizon memoryStatus={result.status} message={result.message} quality={quality} />
+  return <ReplayMemoryExperience key={replaySessionIdentity(memory)} memory={memory} memoryStatus={result.status} quality={quality} />
 }
 
 const stateCss = `.replayState{position:fixed;inset:0;overflow:hidden;display:grid;place-items:center;padding:24px;background:#02060d;color:#fff;isolation:isolate}.replaySpatialCanvas{position:absolute!important;inset:0;width:100%!important;height:100%!important}.replayState:after{content:'';position:absolute;inset:0;background:radial-gradient(circle at 50% 45%,transparent 0 22%,rgba(1,5,12,.28) 48%,rgba(1,5,12,.8) 100%);pointer-events:none}.replayState section{z-index:2;text-align:center;max-width:620px;padding:28px 30px;border:1px solid rgba(220,248,255,.12);border-radius:28px;background:linear-gradient(145deg,rgba(2,8,16,.7),rgba(2,8,16,.24));backdrop-filter:blur(18px);text-shadow:0 3px 24px #000}.replayState section p{margin:0 0 9px;color:#c9f7ff;font-size:10px;font-weight:900;letter-spacing:.22em;text-transform:uppercase}.replayState section h1{margin:0;font:500 clamp(1.7rem,4.6vw,3.6rem)/1.02 var(--font-sans);letter-spacing:-.045em}.replayState section span{display:block;max-width:520px;margin:12px auto 0;color:rgba(235,247,255,.72);font-size:13px;line-height:1.55}.replayState button{min-height:48px;margin-top:20px;padding:0 22px;border-radius:999px;border:1px solid rgba(210,248,255,.32);background:linear-gradient(135deg,#dffbff,#8fe5ef);color:#041019;font-weight:900}.replayState button:focus-visible{outline:3px solid #fff;outline-offset:4px}@media(max-width:700px){.replayState section{max-width:calc(100vw - 32px);padding:24px 20px}}@media(prefers-reduced-motion:reduce){.replayState section{backdrop-filter:none}}@media(forced-colors:active){.replayState section,.replayState button{border:2px solid CanvasText}}`
