@@ -321,6 +321,8 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p deployment-receipt/postdeploy
+          URAI_EXPECTED_FUNCTIONS_TREE_SHA="$(git rev-parse HEAD:apps/functions)" \
+          URAI_EXPECTED_STATIC_CONFIG_SHA256="$(sha256sum firebase.static.json | cut -d ' ' -f 1)" \
           URAI_LIVE_RECEIPT_PATH=deployment-receipt/postdeploy/live-content-parity.json \
             node scripts/urai-post-deploy-smoke.mjs
 
