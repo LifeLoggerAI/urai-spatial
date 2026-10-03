@@ -304,14 +304,13 @@ export const createStripeCheckout = functions.https.onRequest(async (req, res) =
     res.status(405).json({ error: 'Method not allowed' })
     return
   }
-  if (!commerceEnabled()) {
-    res.status(503).json({ error: 'Stripe commerce is not enabled.' })
-    return
-  }
-
   const uid = await authenticatedUid(req)
   if (!uid) {
     res.status(401).json({ error: 'Unauthorized' })
+    return
+  }
+  if (!commerceEnabled()) {
+    res.status(503).json({ error: 'Stripe commerce is not enabled.' })
     return
   }
 
@@ -351,14 +350,13 @@ export const createStripeCustomerPortal = functions.https.onRequest(async (req, 
     res.status(405).json({ error: 'Method not allowed' })
     return
   }
-  if (!commerceEnabled()) {
-    res.status(503).json({ error: 'Stripe commerce is not enabled.' })
-    return
-  }
-
   const uid = await authenticatedUid(req)
   if (!uid) {
     res.status(401).json({ error: 'Unauthorized' })
+    return
+  }
+  if (!commerceEnabled()) {
+    res.status(503).json({ error: 'Stripe commerce is not enabled.' })
     return
   }
 
