@@ -237,8 +237,14 @@ async function inspectDomWithinBudget(page, caseDeadline) {
   try {
     return await inspectDom(page, Math.min(20_000, remaining()))
   } catch (error) {
-    if (!/DOM inspection exceeded/i.test(String(error)) || remaining() < 8_000) throw error
-    await bounded(page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)))), Math.min(3_000, remaining()), 'DOM retry settle')
+    const message = String(error)
+    const retryable = /DOM inspection exceeded|Execution context was destroyed|Cannot find context/i.test(message)
+    if (!retryable || remaining() < 8_000) throw error
+    // Navigation and GPU pressure can destroy or throttle the page execution
+    // context between readiness samples. The first inspection is observational;
+    // retry it once after a runner-side pause instead of depending on an in-page
+    // requestAnimationFrame callback that may never run under CI throttling.
+    await page.waitForTimeout(Math.min(250, Math.max(1, remaining())))
     return inspectDom(page, Math.min(30_000, remaining()))
   }
 }
