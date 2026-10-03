@@ -150,8 +150,8 @@ test('route boundary repairs a direct-entry state exactly once and requires a he
   assert.match(routeBoundary, /window\.dispatchEvent\(new CustomEvent<LifeMapSelectionDetail>\(LIFE_MAP_SELECTION_EVENT/)
   assert.equal((routeBoundary.match(/dispatchEvent\(new CustomEvent/g) || []).length, 1)
   assert.doesNotMatch(routeBoundary, /requestLifeMapSelection|restoreSelectedRoute|maxAttempts|attempts\s*[+<=>]/)
-  assert.match(routeBoundary, /<ComposedLifeMapScene \/>/)
-  assert.match(routeBoundary, /<LifeMapSemanticNavigator \/>/)
+  assert.match(routeBoundary, /<ComposedLifeMapScene\b[^>]*\/>/)
+  assert.match(routeBoundary, /<LifeMapSemanticNavigator\b[^>]*\/>/)
 })
 
 test('Founder render proof samples one atomic live-root snapshot', () => {
