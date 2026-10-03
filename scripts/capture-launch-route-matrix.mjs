@@ -154,7 +154,7 @@ async function bounded(promise, timeoutMs, label) {
 
 // Reading DOM evidence never creates a WebGL context or forces a synthetic
 // readiness flag. Missing texture/frame telemetry stays explicitly unverified.
-async function inspectDom(page) {
+async function inspectDom(page, timeoutMs = 20_000) {
   return bounded(page.evaluate(() => {
     const visible = element => {
       const rect = element.getBoundingClientRect()
@@ -229,7 +229,50 @@ async function inspectDom(page) {
       performanceMarks: performance.getEntriesByType('mark').filter(mark => mark.name.startsWith('urai:')).map(mark => ({ name: mark.name, atMs: Math.round(mark.startTime) })).slice(0, 80),
       hasVisibleSvg: [...document.querySelectorAll('main svg,[role="main"] svg')].some(inViewport),
     }
-  }), 20_000, 'DOM inspection')
+  }), timeoutMs, 'DOM inspection')
+}
+
+async function inspectDomWithinBudget(page, caseDeadline) {
+  const remaining = () => Math.max(1_000, caseDeadline - Date.now())
+  try {
+    return await inspectDom(page, Math.min(20_000, remaining()))
+  } catch (error) {
+    if (!/DOM inspection exceeded/i.test(String(error)) || remaining() < 8_000) throw error
+    await bounded(page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)))), Math.min(3_000, remaining()), 'DOM retry settle')
+    return inspectDom(page, Math.min(30_000, remaining()))
+  }
+}
+
+async function captureViewportScreenshot(page, filePath, caseDeadline) {
+  const remaining = () => Math.max(1_000, caseDeadline - Date.now())
+  try {
+    return {
+      buffer: await page.screenshot({
+        path: filePath,
+        fullPage: false,
+        animations: 'disabled',
+        caret: 'hide',
+        timeout: Math.min(12_000, remaining()),
+      }),
+      retried: false,
+    }
+  } catch (error) {
+    if (!/Timeout/i.test(String(error)) || remaining() < 5_000) throw error
+    await bounded(page.evaluate(async () => {
+      if (document.fonts?.ready) await document.fonts.ready
+      await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)))
+    }), Math.min(5_000, remaining()), 'Screenshot retry settle')
+    return {
+      buffer: await page.screenshot({
+        path: filePath,
+        fullPage: false,
+        animations: 'disabled',
+        caret: 'hide',
+        timeout: Math.min(30_000, remaining()),
+      }),
+      retried: true,
+    }
+  }
 }
 
 function classifyState(spec, dom) {
@@ -279,6 +322,7 @@ try {
     let page
     let dom
     const pendingAssets = new Set()
+    const compatibilityNavigationAborts = []
     const events = event => {
       record.eventCount += 1
       if (record.events.length < 1200) record.events.push({ at: new Date().toISOString(), ...event })
@@ -316,8 +360,23 @@ try {
       page.on('requestfailed', request => {
         pendingAssets.delete(request)
         const failure = request.failure()?.errorText || 'unknown'
-        events({ type: 'requestfailed', failure, resourceType: request.resourceType(), url: safeUrl(request.url()) })
-        if (isDocumentOrAsset(request)) defect('document-or-asset-request-failed', { failure, resourceType: request.resourceType(), url: safeUrl(request.url()) })
+        const requestUrl = safeUrl(request.url())
+        events({ type: 'requestfailed', failure, resourceType: request.resourceType(), url: requestUrl })
+        if (isDocumentOrAsset(request)) {
+          let compatibilityAbort = false
+          if (spec.route === '/unwind' && failure === 'net::ERR_ABORTED') {
+            try {
+              const parsed = new URL(request.url())
+              compatibilityAbort = parsed.origin === base.origin && request.method() === 'GET'
+            } catch {}
+          }
+          if (compatibilityAbort) {
+            compatibilityNavigationAborts.push({ failure, resourceType: request.resourceType(), url: requestUrl })
+            events({ type: 'compatibility-navigation-abort-candidate', failure, resourceType: request.resourceType(), url: requestUrl })
+          } else {
+            defect('document-or-asset-request-failed', { failure, resourceType: request.resourceType(), url: requestUrl })
+          }
+        }
       })
       const routePath = spec.route === '/' ? '/' : `${spec.route}/`
       const target = new URL(`${routePath}${spec.query ? `?${spec.query}` : ''}`, base)
@@ -332,7 +391,7 @@ try {
       let stableSamples = 0
       let previousSignature = null
       while (Date.now() < settleDeadline) {
-        dom = await inspectDom(page)
+        dom = await inspectDomWithinBudget(page, caseDeadline)
         const signature = JSON.stringify({ text: dom.mainText.slice(0, 800), states: dom.stateFields, readiness: dom.readiness, canvasCount: dom.canvasCount, images: dom.images.map(image => [image.src, image.complete, image.naturalWidth]) })
         const ready = dom.visibleMainCount > 0 && !dom.globalLoading && !dom.pendingStates.length && !dom.visibleLoadingText.length
           && dom.readiness.every(marker => marker.applicability === 'explicit-semantic-fallback' || marker.value === 'true')
@@ -344,8 +403,27 @@ try {
         await page.waitForTimeout(250)
       }
       // A final snapshot is taken even when the route failed to settle.
-      dom = await inspectDom(page)
+      dom = await inspectDomWithinBudget(page, caseDeadline)
       record.finalUrl = safeUrl(page.url())
+      if (compatibilityNavigationAborts.length) {
+        let compatibilityRedirectConfirmed = false
+        try {
+          const finalUrl = new URL(page.url())
+          compatibilityRedirectConfirmed = spec.route === '/unwind'
+            && finalUrl.origin === base.origin
+            && finalUrl.pathname.replace(/\/+$/, '') === '/life-map'
+            && finalUrl.searchParams.get('from') === 'unwind'
+            && finalUrl.searchParams.get('overview') === '1'
+        } catch {}
+        if (compatibilityRedirectConfirmed) {
+          events({ type: 'compatibility-navigation-aborts-accepted', route: spec.route, count: compatibilityNavigationAborts.length })
+        } else {
+          for (const aborted of compatibilityNavigationAborts) {
+            defect('document-or-asset-request-failed', aborted)
+          }
+          defect('unwind-compatibility-redirect-unconfirmed', { finalUrl: record.finalUrl, abortedRequests: compatibilityNavigationAborts.length })
+        }
+      }
       record.observedState = classifyState(spec, dom)
       record.dom = dom
       record.readiness = readinessEvidence(dom, captureProfile.noWebGL)
@@ -362,8 +440,10 @@ try {
       if (spec.state === 'explicit-demo' && record.observedState !== 'explicit-demo') defect('explicit-demo-source-unconfirmed', { observedState: record.observedState })
 
       const filename = `${id}--${exactHead.slice(0, 12)}.png`
-      const screenshot = await page.screenshot({ path: path.join(outputDir, filename), fullPage: false, animations: 'disabled', caret: 'hide', timeout: 30_000 })
-      record.image = { path: filename, sha256: sha256(screenshot), bytes: screenshot.length, width: screenshot.readUInt32BE(16), height: screenshot.readUInt32BE(20), profile: captureProfile.id, kind: 'actual-browser-viewport-png', fullPage: false }
+      const captured = await captureViewportScreenshot(page, path.join(outputDir, filename), caseDeadline)
+      const screenshot = captured.buffer
+      if (captured.retried) events({ type: 'screenshot-retry', reason: 'transient-compositor-timeout' })
+      record.image = { path: filename, sha256: sha256(screenshot), bytes: screenshot.length, width: screenshot.readUInt32BE(16), height: screenshot.readUInt32BE(20), profile: captureProfile.id, kind: 'actual-browser-viewport-png', fullPage: false, captureRetried: captured.retried }
       if (record.image.width !== captureProfile.width || record.image.height !== captureProfile.height) defect('actual-viewport-image-size-mismatch', { expectedWidth: captureProfile.width, expectedHeight: captureProfile.height, actualWidth: record.image.width, actualHeight: record.image.height })
     } catch (error) {
       defect('capture-error', { message: String(error) })
@@ -371,9 +451,9 @@ try {
       if (page && !record.image) {
         try {
           const filename = `${id}--${exactHead.slice(0, 12)}--failure.png`
-          const screenshot = await page.screenshot({ path: path.join(outputDir, filename), fullPage: false, animations: 'disabled', caret: 'hide', timeout: 20_000 })
+          const screenshot = await page.screenshot({ path: path.join(outputDir, filename), fullPage: false, animations: 'disabled', caret: 'hide', timeout: Math.min(8_000, Math.max(1_000, caseDeadline - Date.now())) })
           record.image = { path: filename, sha256: sha256(screenshot), bytes: screenshot.length, width: screenshot.readUInt32BE(16), height: screenshot.readUInt32BE(20), profile: captureProfile.id, kind: 'actual-browser-failure-viewport-png', fullPage: false }
-          record.dom ||= await inspectDom(page)
+          record.dom ||= await inspectDomWithinBudget(page, caseDeadline)
           record.finalUrl ||= safeUrl(page.url())
           record.observedState ||= classifyState(spec, record.dom)
           record.readiness ||= readinessEvidence(record.dom, captureProfile.noWebGL)
