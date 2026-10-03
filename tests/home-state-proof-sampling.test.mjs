@@ -13,3 +13,12 @@ test('Home visual proof bounds expensive PNG captures without lowering visual th
   assert.match(script, /luminanceRange >= receipt\.visualGate\.minimumLuminanceRange/)
   assert.match(script, /visibleSamples >= receipt\.visualGate\.minimumVisibleSamples/)
 })
+
+
+test('intentional blocked-loader errors are separated from real Home page failures', () => {
+  assert.match(script, /record\.unexpectedPageErrors = pageErrors\.filter/)
+  assert.match(script, /error\.includes\(fixture\.asset\)/)
+  assert.match(script, /Could not load\|503\|Service Unavailable/)
+  assert.match(script, /record\.unexpectedPageErrors\.length === 0/)
+  assert.match(script, /record\.unexpectedConsoleErrors\.length === 0/)
+})
