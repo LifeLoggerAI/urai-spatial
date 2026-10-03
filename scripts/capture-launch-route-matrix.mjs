@@ -258,10 +258,12 @@ async function captureViewportScreenshot(page, filePath, caseDeadline) {
     }
   } catch (error) {
     if (!/Timeout/i.test(String(error)) || remaining() < 5_000) throw error
-    await bounded(page.evaluate(async () => {
-      if (document.fonts?.ready) await document.fonts.ready
-      await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)))
-    }), Math.min(5_000, remaining()), 'Screenshot retry settle')
+    // A timed-out GPU screenshot can leave in-page frame callbacks throttled long
+    // enough that a requestAnimationFrame-only retry gate fails before the second
+    // screenshot is even attempted. Route/font/asset readiness has already been
+    // inspected above, so give Chromium a brief runner-side compositor breather
+    // without making retry progress depend on page-frame execution.
+    await page.waitForTimeout(Math.min(250, Math.max(1, remaining())))
     return {
       buffer: await page.screenshot({
         path: filePath,
