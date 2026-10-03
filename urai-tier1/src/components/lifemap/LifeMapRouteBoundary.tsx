@@ -140,6 +140,6 @@ export default function LifeMapRouteBoundary({ authenticatedUserId }: { authenti
 
   return <>
     <ComposedLifeMapScene authenticatedUserId={authenticatedUserId} />
-    <LifeMapSemanticNavigator />
+    <LifeMapSemanticNavigator authenticatedUserId={authenticatedUserId} />
   </>
 }
