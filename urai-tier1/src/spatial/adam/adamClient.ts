@@ -30,6 +30,23 @@ export class AdamProviderError extends Error {
   }
 }
 
+async function stableAdamRequestId(input: {
+  message: string
+  context: AdamConversationMessage[]
+  surface: AdamSurfaceId
+  locale: string
+}) {
+  if (!globalThis.crypto?.subtle) return null
+  const intent = JSON.stringify({
+    message: input.message,
+    context: input.context.slice(-10),
+    surface: input.surface,
+    locale: input.locale,
+  })
+  const digest = await globalThis.crypto.subtle.digest('SHA-256', new TextEncoder().encode(intent))
+  return Array.from(new Uint8Array(digest), (value) => value.toString(16).padStart(2, '0')).join('')
+}
+
 async function bearerToken() {
   if (!firebasePublicEnvReady) throw new AdamProviderError('FIREBASE_NOT_READY', 'UrAi authentication is not ready.')
   const user = getAuth(app).currentUser
@@ -49,6 +66,8 @@ export async function requestAdamPresence(input: {
   onEvent?: (event: AdamProviderEvent) => void
 }): Promise<AdamProviderResult> {
   const token = await bearerToken()
+  const requestId = await stableAdamRequestId(input)
+  if (!requestId || input.signal.aborted) throw new AdamProviderError('REQUEST_ID_UNAVAILABLE', 'Adam could not establish a stable request identity.')
   let response: Response
   try {
     response = await fetch(clientApiUrl('/api/urai/adam/conversation'), {
@@ -65,6 +84,7 @@ export async function requestAdamPresence(input: {
         surface: input.surface,
         locale: input.locale,
         aiProcessingConsent: input.aiProcessingConsent,
+        requestId,
       }),
     })
   } catch (error) {
