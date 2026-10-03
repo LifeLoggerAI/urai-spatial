@@ -7,6 +7,7 @@ import { HomeWorldProduction } from '@/spatial/layout/HomeWorldProduction'
 type Props = {
   onOrbOpen: () => void
   webglAvailable: true
+  onSceneFailure?: (error: Error) => void
 }
 
 const HOME_SPAWN = { x: -0.85, z: 8.4 } as const
@@ -30,7 +31,7 @@ function synchronizeCanonicalHomeTelemetry(world: HTMLElement) {
   world.dataset.homeDistanceLifeMap = distance(HOME_LIFE_MAP)
 }
 
-export default function AssetDrivenHomeWorld({ onOrbOpen, webglAvailable }: Props) {
+export default function AssetDrivenHomeWorld({ onOrbOpen, webglAvailable, onSceneFailure }: Props) {
   const ownerRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -91,7 +92,7 @@ export default function AssetDrivenHomeWorld({ onOrbOpen, webglAvailable }: Prop
       data-home-forge-scenery="suppressed"
       style={{ display: 'contents' }}
     >
-      <HomeWorldProduction onOrbOpen={onOrbOpen} webglAvailable={webglAvailable} />
+      <HomeWorldProduction onOrbOpen={onOrbOpen} webglAvailable={webglAvailable} onSceneFailure={onSceneFailure} />
     </div>
   )
 }
