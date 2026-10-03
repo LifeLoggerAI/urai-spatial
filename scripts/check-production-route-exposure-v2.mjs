@@ -125,12 +125,15 @@ const staticConfig = JSON.parse(read('firebase.static.json') || '{}').hosting ||
 if (staticConfig.public !== 'urai-tier1/out') failures.push('firebase.static.json must publish urai-tier1/out')
 if (staticConfig.cleanUrls !== true) failures.push('firebase.static.json must enable cleanUrls')
 if (staticConfig.trailingSlash !== true) failures.push('firebase.static.json must enable trailingSlash')
-const requiredServerRewrites = new Map([
+const dynamicHostingConfig = JSON.parse(read('firebase.json') || '{}').hosting || {}
+const providerRewrites = Array.isArray(dynamicHostingConfig.rewrites) ? dynamicHostingConfig.rewrites : []
+const requiredServerRewrites = new Map(providerRewrites.map((rewrite) => [rewrite?.source, rewrite?.function?.functionId]))
+for (const [source, functionId] of [
   ['/api/stripe/create-checkout-session', 'createStripeCheckout'],
   ['/api/stripe/create-portal-session', 'createStripeCustomerPortal'],
   ['/api/entitlement', 'getStripeEntitlement'],
   ['/api/stripe/webhook', 'handleStripeWebhook'],
-])
+]) requiredServerRewrites.set(source, functionId)
 const staticRewrites = Array.isArray(staticConfig.rewrites) ? staticConfig.rewrites : []
 for (const [source, functionId] of requiredServerRewrites) {
   const matches = staticRewrites.filter((rewrite) => rewrite?.source === source && rewrite?.function?.functionId === functionId && rewrite?.function?.region === 'us-central1')
