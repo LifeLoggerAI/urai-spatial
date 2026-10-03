@@ -1,11 +1,12 @@
 import * as functions from 'firebase-functions/v1'
 import * as admin from 'firebase-admin'
-import { randomUUID } from 'node:crypto'
+import { createHash, randomUUID } from 'node:crypto'
 
 if (!admin.apps.length) admin.initializeApp()
 
 const db = admin.firestore()
 const personPresenceFunctions = functions.region('us-central1')
+const fieldValue = admin.firestore.FieldValue
 const MODES = new Set(['HISTORICAL_AS_OF','ARCHIVE_PRESENT','SIMULATION_PRESENT'])
 const SAFE_TOKEN = /^[A-Za-z0-9._:-]{1,160}$/
 
@@ -21,6 +22,18 @@ function requireToken(value: unknown, label: string) {
   const token = String(value ?? '').trim()
   if (!SAFE_TOKEN.test(token)) throw new functions.https.HttpsError('invalid-argument', `${label} is invalid.`)
   return token
+}
+
+
+function tokenArray(value: unknown, maximum = 128) {
+  if (!Array.isArray(value) || value.length > maximum) {
+    throw new functions.https.HttpsError('invalid-argument', 'Token array is invalid.')
+  }
+  return [...new Set(value.map((item) => requireToken(item, 'token')))]
+}
+
+function stableDigest(value: unknown) {
+  return createHash('sha256').update(JSON.stringify(value)).digest('hex')
 }
 
 function isRecord(value: unknown): value is JsonMap {
