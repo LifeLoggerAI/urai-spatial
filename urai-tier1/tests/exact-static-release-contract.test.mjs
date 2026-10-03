@@ -39,7 +39,7 @@ test('Firebase publishes the canonical static export with only governed server A
   assert.equal(hosting.trailingSlash, true)
   assert.deepEqual(hosting.rewrites, [
     { source: '/api/stripe/create-checkout-session', function: { functionId: 'createStripeCheckout', region: 'us-central1' } },
-    { source: '/api/stripe/customer-portal', function: { functionId: 'createStripeCustomerPortal', region: 'us-central1' } },
+    { source: '/api/stripe/create-portal-session', function: { functionId: 'createStripeCustomerPortal', region: 'us-central1' } },
     { source: '/api/entitlement', function: { functionId: 'getStripeEntitlement', region: 'us-central1' } },
     { source: '/api/stripe/webhook', function: { functionId: 'handleStripeWebhook', region: 'us-central1' } },
   ])
