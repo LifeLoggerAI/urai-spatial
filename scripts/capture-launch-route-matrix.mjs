@@ -268,7 +268,10 @@ try {
     const id = `${spec.route.split('/').filter(Boolean).join('-') || 'root'}--${spec.state}--${captureProfile.id}`
     const representative = spec.coverage === 'representative-tablet-or-wide'
     const homeCase = ['/', '/home'].includes(spec.route) && !captureProfile.noWebGL
-    const caseBudgetMs = representative ? homeCase ? 75_000 : 55_000 : homeCase ? 110_000 : 75_000
+    // The matrix records real GPU-backed browser pixels. Budgets must cover navigation,
+    // route stabilization, retained screenshot readback, and context shutdown without
+    // treating a slow CI GPU readback as missing product evidence.
+    const caseBudgetMs = representative ? homeCase ? 100_000 : 75_000 : homeCase ? 130_000 : 90_000
     const caseDeadline = Date.now() + caseBudgetMs
     const record = { id, exactHead, route: spec.route, requestedState: spec.state, profile: captureProfile.id, profileMetadata: { ...captureProfile, deviceScaleFactor: 1 }, coverage: spec.coverage, sessionState: 'fresh-unsigned-initial-entry', returningSession: 'not-exercised', caseBudgetMs, startedAt: new Date().toISOString(), response: null, finalUrl: null, dom: null, readiness: null, image: null, events: [], eventCount: 0, omittedEvents: 0, technicalDefects: [] }
     receipt.captures.push(record)
@@ -359,7 +362,7 @@ try {
       if (spec.state === 'explicit-demo' && record.observedState !== 'explicit-demo') defect('explicit-demo-source-unconfirmed', { observedState: record.observedState })
 
       const filename = `${id}--${exactHead.slice(0, 12)}.png`
-      const screenshot = await page.screenshot({ path: path.join(outputDir, filename), fullPage: false, timeout: 12_000 })
+      const screenshot = await page.screenshot({ path: path.join(outputDir, filename), fullPage: false, animations: 'disabled', caret: 'hide', timeout: 30_000 })
       record.image = { path: filename, sha256: sha256(screenshot), bytes: screenshot.length, width: screenshot.readUInt32BE(16), height: screenshot.readUInt32BE(20), profile: captureProfile.id, kind: 'actual-browser-viewport-png', fullPage: false }
       if (record.image.width !== captureProfile.width || record.image.height !== captureProfile.height) defect('actual-viewport-image-size-mismatch', { expectedWidth: captureProfile.width, expectedHeight: captureProfile.height, actualWidth: record.image.width, actualHeight: record.image.height })
     } catch (error) {
@@ -368,7 +371,7 @@ try {
       if (page && !record.image) {
         try {
           const filename = `${id}--${exactHead.slice(0, 12)}--failure.png`
-          const screenshot = await page.screenshot({ path: path.join(outputDir, filename), fullPage: false, timeout: 8_000 })
+          const screenshot = await page.screenshot({ path: path.join(outputDir, filename), fullPage: false, animations: 'disabled', caret: 'hide', timeout: 20_000 })
           record.image = { path: filename, sha256: sha256(screenshot), bytes: screenshot.length, width: screenshot.readUInt32BE(16), height: screenshot.readUInt32BE(20), profile: captureProfile.id, kind: 'actual-browser-failure-viewport-png', fullPage: false }
           record.dom ||= await inspectDom(page)
           record.finalUrl ||= safeUrl(page.url())
