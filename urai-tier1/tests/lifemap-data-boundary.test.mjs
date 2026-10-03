@@ -6,6 +6,7 @@ const source = fs.readFileSync(new URL('../src/components/lifemap/useLifeMapEven
 const accessGate = fs.readFileSync(new URL('../src/spatial/lifemap/SpatialLifeMapCanonical.tsx', import.meta.url), 'utf8')
 const semanticNavigator = fs.readFileSync(new URL('../src/components/lifemap/LifeMapSemanticNavigator.tsx', import.meta.url), 'utf8')
 const routeBoundary = fs.readFileSync(new URL('../src/components/lifemap/LifeMapRouteBoundary.tsx', import.meta.url), 'utf8')
+const routeTransactionBridge = fs.readFileSync(new URL('../src/spatial/world/LifeMapRouteTransactionBridge.tsx', import.meta.url), 'utf8')
 
 test('Life Map identity fails closed instead of defaulting to demo-user', () => {
   assert.doesNotMatch(source, /return "demo-user"/)
@@ -76,4 +77,12 @@ test('semantic Life Map fallback preserves the Focus and Replay journey without 
   assert.match(semanticNavigator, /disabled=\{!selected\.replayAvailable \|\| selected\.locked\}/)
   assert.match(semanticNavigator, />Enter Focus</)
   assert.match(semanticNavigator, />Replay</)
+})
+
+
+test('persistent Life Map route transactions use Firebase auth rather than implicit browser identity', () => {
+  assert.match(routeTransactionBridge, /onAuthStateChanged\(getAuth\(app\)/)
+  assert.match(routeTransactionBridge, /setAuthenticatedUserId\(user\?\.uid \?\? null\)/)
+  assert.match(routeTransactionBridge, /useLifeMapEvents\(explicitDemo \? 'demo-user' : authenticatedUserId \?\? undefined\)/)
+  assert.doesNotMatch(routeTransactionBridge, /localStorage\.getItem/)
 })
