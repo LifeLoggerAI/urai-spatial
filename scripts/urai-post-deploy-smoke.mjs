@@ -8,6 +8,8 @@ const baseUrl = (process.env.URAI_DEPLOY_URL || '').trim().replace(/\/$/, '')
 const expectedSha = (process.env.URAI_EXPECTED_DEPLOYED_SHA || '').trim()
 const expectedRollbackSha = (process.env.URAI_EXPECTED_ROLLBACK_SHA || process.env.ROLLBACK_SHA || '').trim()
 const expectedAuthoritySha = (process.env.URAI_EXPECTED_AUTHORITY_SHA || process.env.CURRENT_MAIN_SHA || '').trim()
+const expectedFunctionsTreeSha = (process.env.URAI_EXPECTED_FUNCTIONS_TREE_SHA || '').trim()
+const expectedStaticConfigSha256 = (process.env.URAI_EXPECTED_STATIC_CONFIG_SHA256 || '').trim()
 const receiptPath = process.env.URAI_LIVE_RECEIPT_PATH || 'deployment-receipt/live-content-parity.json'
 const maxAttempts = Number.parseInt(process.env.URAI_SMOKE_FETCH_ATTEMPTS || '4', 10)
 const retryBaseMs = Number.parseInt(process.env.URAI_SMOKE_RETRY_BASE_MS || '750', 10)
@@ -18,6 +20,8 @@ if (canonicalOrigin !== 'https://urai.app') throw new Error('Live certification 
 if (!/^[0-9a-f]{40}$/.test(expectedSha)) throw new Error('URAI_EXPECTED_DEPLOYED_SHA must be a full lowercase SHA')
 if (!/^[0-9a-f]{40}$/.test(expectedRollbackSha)) throw new Error('URAI_EXPECTED_ROLLBACK_SHA must be a full lowercase SHA')
 if (!/^[0-9a-f]{40}$/.test(expectedAuthoritySha)) throw new Error('URAI_EXPECTED_AUTHORITY_SHA or CURRENT_MAIN_SHA must be a full lowercase SHA')
+if (!/^[0-9a-f]{40}$/.test(expectedFunctionsTreeSha)) throw new Error('URAI_EXPECTED_FUNCTIONS_TREE_SHA must be a full lowercase Git tree SHA')
+if (!/^[0-9a-f]{64}$/.test(expectedStaticConfigSha256)) throw new Error('URAI_EXPECTED_STATIC_CONFIG_SHA256 must be a lowercase SHA-256 digest')
 if (expectedRollbackSha === expectedSha) throw new Error('Rollback SHA must be distinct from deployed SHA')
 if (!Number.isInteger(maxAttempts) || maxAttempts < 1 || maxAttempts > 8) throw new Error('URAI_SMOKE_FETCH_ATTEMPTS must be an integer from 1 to 8')
 if (!Number.isInteger(retryBaseMs) || retryBaseMs < 100 || retryBaseMs > 10_000) throw new Error('URAI_SMOKE_RETRY_BASE_MS must be an integer from 100 to 10000')
@@ -54,6 +58,26 @@ const contracts = [
   ['/login', ['canonical-auth-entry', 'Enter your world.'], []],
   ['/account-deletion', ['account-deletion-heading', 'Delete your account on your terms.'], []],
   ['/privacy-policy', ['privacy-policy-heading', 'Privacy policy candidate'], []],
+]
+
+const serverContracts = [
+  ['POST', '/api/google/oauth/start'],
+  ['GET', '/api/google/oauth/callback'],
+  ['POST', '/api/google/oauth/status'],
+  ['POST', '/api/google/oauth/disconnect'],
+  ['POST', '/api/urai/orb/openai'],
+  ['POST', '/api/urai/narrator/elevenlabs'],
+  ['POST', '/api/voice/elevenlabs'],
+  ['POST', '/api/urai/adam/conversation'],
+  ['POST', '/api/urai/adam/voice'],
+  ['POST', '/api/urai/council/anthropic'],
+  ['POST', '/api/urai/council/gemini'],
+  ['POST', '/api/urai/council/xai'],
+  ['POST', '/api/urai/council/mistral'],
+  ['POST', '/api/stripe/create-checkout-session'],
+  ['POST', '/api/stripe/create-portal-session'],
+  ['GET', '/api/entitlement'],
+  ['POST', '/api/stripe/webhook'],
 ]
 
 function normalizePath(value) {
@@ -125,7 +149,9 @@ async function fetchFingerprint() {
     && payload?.authoritySha === expectedAuthoritySha
     && payload?.firebaseProject === 'urai-4dc1d'
     && payload?.liveUrl === 'https://urai.app'
-    && payload?.deploymentScope === 'hosting-only'
+    && payload?.deploymentScope === 'functions-and-hosting'
+    && payload?.functionsTreeSha === expectedFunctionsTreeSha
+    && payload?.firebaseStaticConfigSha256 === expectedStaticConfigSha256
   return {
     requestedUrl: url.toString(),
     finalUrl: response.url,
@@ -191,6 +217,58 @@ for (const [route, required, forbidden] of contracts) {
   }
 }
 
+const serverResults = []
+for (const [method, route] of serverContracts) {
+  const requested = new URL(route, `${baseUrl}/`)
+  const startedAt = new Date().toISOString()
+  try {
+    const { response, text, attemptsUsed } = await fetchTextWithRetries(requested, {
+      method,
+      redirect: 'manual',
+      cache: 'no-store',
+      headers: {
+        'cache-control': 'no-cache',
+        'content-type': 'application/json',
+        'user-agent': 'urai-server-boundary-verifier/1.0',
+      },
+      body: method === 'POST' ? '{}' : undefined,
+    })
+    const contentType = response.headers.get('content-type')?.toLowerCase() || ''
+    const finalUrl = new URL(response.url)
+    const passed = response.status !== 404
+      && response.status >= 300
+      && response.status < 600
+      && finalUrl.origin === canonicalOrigin
+      && normalizePath(finalUrl.pathname) === normalizePath(requested.pathname)
+      && !contentType.includes('text/html')
+    serverResults.push({
+      method,
+      route,
+      requestedUrl: requested.toString(),
+      finalUrl: response.url,
+      status: response.status,
+      contentType,
+      startedAt,
+      completedAt: new Date().toISOString(),
+      contentSha256: createHash('sha256').update(text).digest('hex'),
+      bytes: Buffer.byteLength(text),
+      attemptsUsed,
+      passed,
+    })
+  } catch (error) {
+    serverResults.push({
+      method,
+      route,
+      requestedUrl: requested.toString(),
+      startedAt,
+      completedAt: new Date().toISOString(),
+      error: error instanceof Error ? error.message : String(error),
+      attemptsUsed: error?.attemptsUsed || maxAttempts,
+      passed: false,
+    })
+  }
+}
+
 let fingerprint
 try {
   fingerprint = await fetchFingerprint()
@@ -202,7 +280,7 @@ try {
   }
 }
 
-const passed = results.every((result) => result.passed) && fingerprint.passed
+const passed = results.every((result) => result.passed) && serverResults.every((result) => result.passed) && fingerprint.passed
 const receipt = {
   schemaVersion: 'urai-live-content-parity-6',
   generatedAt: new Date().toISOString(),
@@ -212,10 +290,15 @@ const receipt = {
   expectedAuthoritySha,
   routeContracts: contracts.length,
   checkedVariants: results.length,
+  serverContracts: serverContracts.length,
+  checkedServerBoundaries: serverResults.length,
+  expectedFunctionsTreeSha,
+  expectedStaticConfigSha256,
   fetchPolicy: { maxAttempts, retryBaseMs },
   hydratedIdentityProof: 'scripts/urai-release-control-smoke.mjs',
   browserCompatibilityRoutes: ['/privacy', '/ascent/life-map', '/waitlist', '/system', '/settings/privacy', '/onboarding', '/signup', '/ascent', '/spatial', '/unwind'],
   fingerprint,
+  serverResults,
   passed,
   results,
 }

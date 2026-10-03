@@ -119,10 +119,12 @@ requireAll('Governed WIF production workflow', governedDeployWorkflow, [
   'create_credentials_file: true',
   'external_account',
   'firebase-tools@15.22.3 deploy',
+  '--only functions',
   '--only hosting',
+  'deployment_scope=functions-and-hosting',
   'node scripts/urai-post-deploy-smoke.mjs',
   'firebasehosting.googleapis.com/v1beta1/sites/$FIREBASE_PROJECT/releases',
-  'Roll back Hosting if live certification fails',
+  'Roll back Hosting and Functions after any deployment or certification failure',
   'DEPLOY_URAI_APP',
 ])
 

@@ -160,12 +160,13 @@ jobs:
             printf '%s=%s\n' "$env_name" "$value" >> "$GITHUB_ENV"
           done
 
-      - name: Build and attest exact static release
+      - name: Build and attest exact Functions + Hosting release
         shell: bash
         run: |
           set -euo pipefail
           test "$NEXT_PUBLIC_FIREBASE_PROJECT_ID" = "$FIREBASE_PROJECT"
           pnpm build:static
+          pnpm --filter urai-functions build
           node scripts/create-static-release-bundle.mjs
           test -s release-bundle/manifest.json
           test -s urai-tier1/out/release-fingerprint.json
@@ -175,8 +176,27 @@ jobs:
             and .authoritySha == $release
             and .rollbackSha == $rollback
             and .firebaseProject == "urai-4dc1d"
-            and .deploymentScope == "hosting-only"
+            and .deploymentScope == "functions-and-hosting"
+            and (.functionsTreeSha | test("^[0-9a-f]{40}$"))
+            and (.firebaseStaticConfigSha256 | test("^[0-9a-f]{64}$"))
           ' urai-tier1/out/release-fingerprint.json >/dev/null
+
+      - name: Prepare exact rollback Functions source before any production mutation
+        shell: bash
+        run: |
+          set -euo pipefail
+          rollback_dir="$RUNNER_TEMP/urai-rollback-source"
+          rm -rf "$rollback_dir"
+          git worktree add --detach "$rollback_dir" "$ROLLBACK_SHA"
+          test "$(git -C "$rollback_dir" rev-parse HEAD)" = "$ROLLBACK_SHA"
+          test -f "$rollback_dir/firebase.json"
+          test -f "$rollback_dir/apps/functions/package.json"
+          (
+            cd "$rollback_dir"
+            pnpm install --frozen-lockfile
+            pnpm --filter urai-functions build
+          )
+          printf '%s\n' "$rollback_dir" > "$RUNNER_TEMP/urai-rollback-source-path"
 
       - id: google-auth
         name: Authenticate to Google Cloud with short-lived WIF
@@ -264,44 +284,80 @@ jobs:
           test -n "${GOOGLE_APPLICATION_CREDENTIALS:-}"
           test "$GOOGLE_APPLICATION_CREDENTIALS" = "$GOOGLE_GHA_CREDS_PATH"
 
-      - name: Deploy exact Hosting release with WIF ADC
+      - id: deploy-functions
+        name: Deploy exact Firebase Functions source with WIF ADC
+        continue-on-error: true
         shell: bash
         run: |
           set -euo pipefail
+          mkdir -p deployment-receipt/deploy
+          npx --yes firebase-tools@15.22.3 deploy \
+            --only functions \
+            --project "$FIREBASE_PROJECT" \
+            --config firebase.json \
+            --non-interactive \
+            2>&1 | tee deployment-receipt/deploy/functions.log
+
+      - id: deploy-hosting
+        name: Deploy exact static Hosting release with WIF ADC
+        if: steps.deploy-functions.outcome == 'success'
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p deployment-receipt/deploy
           npx --yes firebase-tools@15.22.3 deploy \
             --only hosting \
             --project "$FIREBASE_PROJECT" \
             --config firebase.static.json \
-            --non-interactive
+            --non-interactive \
+            2>&1 | tee deployment-receipt/deploy/hosting.log
 
       - id: live-smoke
-        name: Verify exact live SHA, fingerprint, and canonical routes
+        name: Verify exact live SHA, fingerprint, routes, and server boundaries
+        if: steps.deploy-functions.outcome == 'success' && steps.deploy-hosting.outcome == 'success'
         continue-on-error: true
         shell: bash
         run: |
           set -euo pipefail
           mkdir -p deployment-receipt/postdeploy
+          URAI_EXPECTED_FUNCTIONS_TREE_SHA="$(git rev-parse HEAD:apps/functions)" \
+          URAI_EXPECTED_STATIC_CONFIG_SHA256="$(sha256sum firebase.static.json | cut -d ' ' -f 1)" \
           URAI_LIVE_RECEIPT_PATH=deployment-receipt/postdeploy/live-content-parity.json \
             node scripts/urai-post-deploy-smoke.mjs
 
-      - name: Roll back Hosting if live certification fails
-        if: steps.live-smoke.outcome == 'failure'
+      - name: Roll back Hosting and Functions after any deployment or certification failure
+        if: steps.deploy-functions.outcome != 'success' || steps.deploy-hosting.outcome != 'success' || steps.live-smoke.outcome != 'success'
         shell: bash
         env:
           GOOGLE_WIF_ACCESS_TOKEN: ${{ steps.google-auth.outputs.access_token }}
         run: |
           set -euo pipefail
           version_name="$(cat deployment-receipt/predeploy/version-name.txt)"
+          rollback_dir="$(cat "$RUNNER_TEMP/urai-rollback-source-path")"
           test -n "$version_name"
+          test "$(git -C "$rollback_dir" rev-parse HEAD)" = "$ROLLBACK_SHA"
           mkdir -p deployment-receipt/rollback
+
           curl --fail --silent --show-error \
             --request POST \
             --header "Authorization: Bearer $GOOGLE_WIF_ACCESS_TOKEN" \
             --header 'Content-Type: application/json' \
-            --data "$(jq -nc --arg message "URAI automatic rollback after failed exact-head live certification run $GITHUB_RUN_ID" '{message:$message}')" \
+            --data "$(jq -nc --arg message "URAI automatic Hosting rollback after failed exact-head release run $GITHUB_RUN_ID" '{message:$message}')" \
             "https://firebasehosting.googleapis.com/v1beta1/sites/$FIREBASE_PROJECT/releases?versionName=$version_name" \
             > deployment-receipt/rollback/restore-result.json
           test "$(jq -r '.version.name // empty' deployment-receipt/rollback/restore-result.json)" = "$version_name"
+
+          (
+            cd "$rollback_dir"
+            npx --yes firebase-tools@15.22.3 deploy \
+              --only functions \
+              --project "$FIREBASE_PROJECT" \
+              --config firebase.json \
+              --non-interactive \
+              2>&1 | tee "$GITHUB_WORKSPACE/deployment-receipt/rollback/functions.log"
+          )
+
           sleep 5
           curl --fail --silent --show-error \
             --header "Authorization: Bearer $GOOGLE_WIF_ACCESS_TOKEN" \
@@ -315,6 +371,7 @@ jobs:
             | .version.name // empty
           ' deployment-receipt/rollback/releases-after-restore.json)"
           test "$observed" = "$version_name"
+          printf '%s\n' "$ROLLBACK_SHA" > deployment-receipt/rollback/functions-source-sha.txt
 
       - name: Write governed deployment receipt
         if: always()
@@ -331,7 +388,11 @@ jobs:
             echo "firebase_project=$FIREBASE_PROJECT"
             echo "live_url=$LIVE_URL"
             echo "credential_class=github-oidc-wif-external-account"
-            echo "deployment_scope=hosting-only"
+            echo "deployment_scope=functions-and-hosting"
+            echo "functions_tree_sha=$(git rev-parse HEAD:apps/functions)"
+            echo "firebase_static_config_sha256=$(sha256sum firebase.static.json | awk '{print $1}')"
+            echo "functions_deploy_outcome=${{ steps.deploy-functions.outcome }}"
+            echo "hosting_deploy_outcome=${{ steps.deploy-hosting.outcome }}"
             echo "live_smoke_outcome=${{ steps.live-smoke.outcome }}"
             echo "deployed_at_utc=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
           } > deployment-receipt/release.env
@@ -348,9 +409,9 @@ jobs:
           if-no-files-found: warn
           retention-days: 90
 
-      - name: Fail release after rollback when live certification failed
-        if: steps.live-smoke.outcome == 'failure'
+      - name: Fail release after rollback when deployment or live certification failed
+        if: steps.deploy-functions.outcome != 'success' || steps.deploy-hosting.outcome != 'success' || steps.live-smoke.outcome != 'success'
         shell: bash
         run: |
-          echo 'Live certification failed. Hosting rollback was attempted and the release remains NO-GO.' >&2
+          echo 'Exact Functions + Hosting certification failed. Governed rollback was attempted and the release remains NO-GO.' >&2
           exit 1

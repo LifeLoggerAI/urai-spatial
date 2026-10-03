@@ -3,6 +3,7 @@ import fs from 'node:fs'
 import test from 'node:test'
 
 const firebaseConfig = JSON.parse(fs.readFileSync(new URL('../../firebase.json', import.meta.url), 'utf8'))
+const staticFirebaseConfig = JSON.parse(fs.readFileSync(new URL('../../firebase.static.json', import.meta.url), 'utf8'))
 const functionsIndex = fs.readFileSync(new URL('../../apps/functions/src/index.ts', import.meta.url), 'utf8')
 const providerFunctions = fs.readFileSync(new URL('../../apps/functions/src/providerFunctions.ts', import.meta.url), 'utf8')
 const adamFunctions = fs.readFileSync(new URL('../../apps/functions/src/adamPresenceFunctions.ts', import.meta.url), 'utf8')
@@ -45,6 +46,8 @@ test('static Hosting rewrites every live provider URL to secret-bound Firebase F
     { source: '/api/urai/council/xai', function: { functionId: 'xaiCouncilProvider', region: 'us-central1' } },
     { source: '/api/urai/council/mistral', function: { functionId: 'mistralCouncilProvider', region: 'us-central1' } },
   ])
+  assert.deepEqual(staticFirebaseConfig.hosting.rewrites.slice(0, firebaseConfig.hosting.rewrites.length), firebaseConfig.hosting.rewrites)
+  assert.equal(staticFirebaseConfig.hosting.rewrites.some((rewrite) => rewrite.source === '**' || rewrite.source === '/**'), false)
   assert.match(functionsIndex, /elevenLabsVoiceProvider, openAiOrbProvider/)
   assert.match(functionsIndex, /adamFounderVoiceProvider, adamPresenceProvider/)
   for (const handler of ['anthropicCouncilProvider', 'geminiCouncilProvider', 'mistralCouncilProvider', 'xaiCouncilProvider']) {

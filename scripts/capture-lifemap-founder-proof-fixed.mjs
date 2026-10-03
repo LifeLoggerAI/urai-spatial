@@ -29,6 +29,7 @@ let failed = false
 await mkdir(outputDir, { recursive: true })
 const browser = await chromium.launch({ headless: true })
 const ROOT = '[data-testid="urai-true-3d-life-map"]'
+const SIGNED_OUT_ROOT = '[data-testid="urai-r3f-canonical-lifemap"][data-life-map-access="signed-out"], [data-testid="urai-life-map-signed-out-threshold"]'
 const JOURNEY_WATCH_STORAGE_KEY = '__uraiFounderJourneyPhaseWatchRecord'
 
 async function stable(page, frames = 4) {
@@ -359,7 +360,7 @@ async function readRootState(root) {
 
 async function shot(page, id, captureState, extra = {}) {
   const file = `${String(receipt.captures.length + 1).padStart(2, '0')}-${id}-${exactHead.slice(0, 12)}.png`
-  const root = page.locator(`${ROOT}, [data-testid="urai-life-map-signed-out-threshold"], [data-testid="urai-life-map-authored-fallback"]`).first()
+  const root = page.locator(`${SIGNED_OUT_ROOT}, ${ROOT}, [data-testid="urai-life-map-authored-fallback"]`).first()
   const state = await root.count() ? await readRootState(root) : {}
   const { buffer, ...screenshot } = await captureScreenshot(page, file)
   const signal = await canvasSignal(page, buffer)
@@ -815,7 +816,12 @@ async function mobileAndReduced() {
 async function privacyAndRecovery() {
   const signed = await openPage({ label: 'signed-out' })
   try {
-    await goto(signed.page, '/life-map/', '[data-testid="urai-life-map-signed-out-threshold"]')
+    await goto(signed.page, '/life-map/', SIGNED_OUT_ROOT)
+    await signed.page.locator('[data-testid="urai-life-map-signed-out-disclosure"], [data-testid="urai-life-map-signed-out-threshold"]').first().waitFor({ state: 'visible', timeout: 45_000 })
+    const signedRoot = signed.page.locator(SIGNED_OUT_ROOT).first()
+    const signedState = await readRootState(signedRoot)
+    if (signedState.source !== 'signed-out') throw new Error(`Signed-out Life Map source drifted: ${JSON.stringify(signedState)}`)
+    if (signedState.privateMounted !== 'false') throw new Error(`Signed-out Life Map did not prove private-memory isolation: ${JSON.stringify(signedState)}`)
     await shot(signed.page, 'signed-out-private-threshold', 'signed-out')
   } finally {
     await signed.context.close()

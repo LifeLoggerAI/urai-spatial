@@ -84,3 +84,10 @@ test('semantic fallback may continue to Focus and Replay without becoming a seco
   assert.match(navigator, /destinationHref\('replay', selected\)/)
   assert.doesNotMatch(navigator, /aria-label="Selected memory actions"/)
 })
+
+
+test('keyboard stepping keeps world keyboard ownership across sequential selections', () => {
+  assert.match(navigator, /if \(source === 'semantic'\) closeNavigator\(\)/)
+  assert.match(navigator, /else setOpen\(false\)/)
+  assert.match(navigator, /event\.target instanceof Element && event\.target\.closest\('button,a\[href\],summary,\[role="button"\]'\)/)
+})
