@@ -46,16 +46,18 @@ export function LifeMapIndependentInputBoundary() {
     }
 
     const onKeyDown = (event: KeyboardEvent) => {
-      if (!isLifeMapRoute() || isEditableTarget(event.target)) return
-      if (event.code === 'KeyA' || event.code === 'ArrowLeft' || event.code === 'KeyQ') {
+      if (event.defaultPrevented || !isLifeMapRoute() || isEditableTarget(event.target)) return
+      // The semantic navigator owns ArrowLeft/ArrowRight and O/Home so route identity
+      // advances exactly once. This boundary retains the alternate embodied keys only.
+      if (event.code === 'KeyA' || event.code === 'KeyQ') {
         if (cycle(-1)) event.preventDefault()
         return
       }
-      if (event.code === 'KeyD' || event.code === 'ArrowRight' || event.code === 'KeyE') {
+      if (event.code === 'KeyD' || event.code === 'KeyE') {
         if (cycle(1)) event.preventDefault()
         return
       }
-      if (event.code === 'KeyR' || event.code === 'KeyO' || event.code === 'Home') {
+      if (event.code === 'KeyR') {
         reset()
         event.preventDefault()
       }
