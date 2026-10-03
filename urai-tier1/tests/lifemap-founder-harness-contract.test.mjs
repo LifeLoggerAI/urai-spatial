@@ -212,3 +212,11 @@ test('semantic navigator portals its hit surface above the canonical WebGL stack
   assert.match(navigator, /return createPortal\(<>/)
   assert.match(navigator, /<\/>[,] document\.body\)/)
 })
+
+
+test('founder proof follows both GPU and no-WebGL signed-out privacy roots', () => {
+  assert.match(runner, /const SIGNED_OUT_ROOT =/)
+  assert.match(runner, /data-life-map-access="signed-out"/)
+  assert.match(runner, /signedState\.privateMounted !== 'false'/)
+  assert.match(runner, /signedState\.source !== 'signed-out'/)
+})
