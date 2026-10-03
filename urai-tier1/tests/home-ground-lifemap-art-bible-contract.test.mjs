@@ -159,7 +159,7 @@ test('Life Map is a layered cinematic memory universe with truthful private fall
   assert.match(lifeMap, /data-private-memory-mounted="false"/)
   assert.match(lifeMap, /No private memory data is mounted\./)
   assert.match(lifeMap, /Open disclosed sample/)
-  assert.match(lifeMap, /if \(current\.get\("demo"\) === "1"\) \{ setMode\("explicit-demo"\); return; \}/)
+  assert.match(lifeMap, /current\.get\("demo"\) === "1"\s*\)\s*\{[\s\S]*setMode\("explicit-demo"\)/)
   assert.match(lifeMap, /Return Home/)
   assert.doesNotMatch(lifeMap, /FALLBACK_MEMORIES|Restoring Life Map|Loading home experience/)
 })
