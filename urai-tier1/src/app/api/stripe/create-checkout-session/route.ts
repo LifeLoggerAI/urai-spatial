@@ -1,5 +1,4 @@
 import { NextResponse } from 'next/server';
-import type { InsightPlanId } from '@/lib/entitlementStore';
 import { resolveApprovedReturnUrl, withStripeResult } from '@/lib/server/approved-return-url';
 import { verifyFirebaseUser } from '@/lib/server/firebase-user';
 import {
@@ -10,15 +9,6 @@ import {
   STRIPE_PRICE_ENV_BY_PLAN,
 } from '@/lib/server/stripe-runtime-config';
 
-const PRICE_ENV_BY_PLAN: Record<Exclude<InsightPlanId, 'free'>, string> = {
-  pro: 'NEXT_PUBLIC_STRIPE_PRICE_PRO',
-  therapist: 'NEXT_PUBLIC_STRIPE_PRICE_THERAPIST',
-  founder: 'NEXT_PUBLIC_STRIPE_PRICE_FOUNDER',
-};
-
-function isPaidPlanId(value: unknown): value is Exclude<InsightPlanId, 'free'> {
-  return value === 'pro' || value === 'therapist' || value === 'founder';
-}
 
 export async function POST(request: Request) {
   const uid = await verifyFirebaseUser(request);
