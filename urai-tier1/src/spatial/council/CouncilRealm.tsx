@@ -2,7 +2,7 @@
 
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import { ContactShadows, Environment, Lightformer, PerspectiveCamera, useAnimations, useGLTF } from '@react-three/drei'
-import { Suspense, useEffect, useRef, useState, type MutableRefObject } from 'react'
+import { Component, Suspense, useEffect, useRef, useState, type MutableRefObject, type ReactNode } from 'react'
 import * as THREE from 'three'
 import { COUNCIL_AGENTS } from './councilAgentSchema'
 import CouncilConversationPanel from './CouncilConversationPanel'
@@ -167,6 +167,54 @@ function RiggedCouncilHuman({
   )
 }
 
+function CouncilFallback({ reason = 'WebGL is unavailable on this device.' }: { reason?: string }) {
+  const travel = (destination: 'home' | 'mirror' | 'passport', href: string) => requestUraiWorldTravel({
+    destination,
+    href,
+    entryPortal: `council-${destination}`,
+    cameraCheckpoint: `${destination}-arrival`,
+  })
+
+  return (
+    <section
+      data-testid="urai-council-semantic-fallback"
+      data-council-renderer="unavailable"
+      className="grid min-h-screen place-content-center gap-4 bg-[#10151a] p-6 text-center text-white"
+      aria-label="Council accessible fallback"
+    >
+      <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-white/60">URAI Council</p>
+      <h1 className="text-4xl font-medium">Council remains reachable.</h1>
+      <p role="status" className="mx-auto max-w-[52ch] text-sm leading-6 text-white/75">{reason} The spatial chamber is not being represented as active; semantic navigation remains available.</p>
+      <nav className="mx-auto flex flex-wrap justify-center gap-2" aria-label="Council fallback destinations">
+        <button className="min-h-12 rounded-full bg-white px-5 text-sm font-semibold text-slate-950" type="button" onClick={() => travel('home', '/home?returnFrom=council')}>Return Home</button>
+        <button className="min-h-12 rounded-full border border-white/25 px-5 text-sm" type="button" onClick={() => travel('mirror', '/mirror?from=council')}>Mirror</button>
+        <button className="min-h-12 rounded-full border border-white/25 px-5 text-sm" type="button" onClick={() => travel('passport', '/passport?from=council')}>Passport</button>
+      </nav>
+    </section>
+  )
+}
+
+function useCouncilWebGLCapability() {
+  const [available, setAvailable] = useState<boolean | null>(null)
+  useEffect(() => {
+    try {
+      const canvas = document.createElement('canvas')
+      const context = canvas.getContext('webgl2') ?? canvas.getContext('webgl')
+      setAvailable(Boolean(context))
+      context?.getExtension('WEBGL_lose_context')?.loseContext()
+    } catch {
+      setAvailable(false)
+    }
+  }, [])
+  return available
+}
+
+class CouncilRenderBoundary extends Component<{ children: ReactNode }, { failed: boolean }> {
+  state = { failed: false }
+  static getDerivedStateFromError() { return { failed: true } }
+  render() { return this.state.failed ? <CouncilFallback reason="The spatial renderer could not start." /> : this.props.children }
+}
+
 function CouncilStage() {
   const [selected, setSelected] = useState(0)
   const [dragging, setDragging] = useState(false)
@@ -291,7 +339,10 @@ function CouncilStage() {
 }
 
 export function CouncilRealm() {
-  return <CouncilStage />
+  const webglAvailable = useCouncilWebGLCapability()
+  if (webglAvailable === null) return <CouncilFallback reason="Checking spatial renderer capability." />
+  if (!webglAvailable) return <CouncilFallback />
+  return <CouncilRenderBoundary><CouncilStage /></CouncilRenderBoundary>
 }
 
 for (const model of HUMAN_MODELS) useGLTF.preload(model)
