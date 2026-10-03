@@ -61,7 +61,11 @@ export default function LifeMapSemanticNavigator({ authenticatedUserId = null }:
   }, [])
 
   const selectNode = useCallback((node: LifeMapNode, source: 'semantic' | 'keyboard' | 'pointer' = 'semantic') => {
-    closeNavigator()
+    // Semantic result activation returns focus to the navigator trigger. Global keyboard
+    // stepping must not steal focus into that button, otherwise the next Arrow key is
+    // correctly ignored by the button-target guard and the selected identity gets stuck.
+    if (source === 'semantic') closeNavigator()
+    else setOpen(false)
     const next = withIdentity(new URLSearchParams())
     next.set('memoryId', node.id)
     next.set('node', node.id)
