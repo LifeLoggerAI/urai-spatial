@@ -229,7 +229,7 @@ export default function HomeSpatialRuntimeLayer() {
       {rendererState === 'recovering' ? <div role="status" aria-live="polite" className="sr-only">Restoring the spatial Home renderer.</div> : null}
       {!assetsReady ? <div className="home-runtime-loading" role="status" aria-label="Your private world is forming" aria-live="polite"><span aria-hidden="true" /><strong>Your private world is forming</strong></div> : null}
       <HomeSceneRenderBoundary key={recoveryKey} onFailure={onSceneFailure}>
-        <AssetDrivenHomeWorld webglAvailable={true} onOrbOpen={requestUraiWorldOrbOpen} />
+        <AssetDrivenHomeWorld webglAvailable={true} onOrbOpen={requestUraiWorldOrbOpen} onSceneFailure={onSceneFailure} />
       </HomeSceneRenderBoundary>
       <style jsx global>{runtimeStyles}</style>
       </section>
