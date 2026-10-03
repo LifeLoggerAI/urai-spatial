@@ -264,24 +264,40 @@ async function captureViewportScreenshot(page, filePath, caseDeadline) {
         timeout: Math.min(12_000, remaining()),
       }),
       retried: false,
+      capturePath: 'playwright',
     }
   } catch (error) {
     if (!/Timeout/i.test(String(error)) || remaining() < 5_000) throw error
-    // A timed-out GPU screenshot can leave in-page frame callbacks throttled long
-    // enough that a requestAnimationFrame-only retry gate fails before the second
-    // screenshot is even attempted. Route/font/asset readiness has already been
-    // inspected above, so give Chromium a brief runner-side compositor breather
-    // without making retry progress depend on page-frame execution.
+
+    // Readiness, fonts and visible assets have already been inspected before this
+    // helper runs. A timed-out Playwright screenshot can spend the rest of the case
+    // budget repeating Playwright's animation/font synchronization even though the
+    // Chromium compositor already has the exact viewport. Fall back once to the
+    // Chromium Page.captureScreenshot primitive. This keeps the same real browser
+    // pixels and viewport-size assertion while avoiding duplicate helper-side
+    // stabilization. The overall per-case deadline is unchanged and any compositor
+    // failure still fails the matrix.
     await page.waitForTimeout(Math.min(250, Math.max(1, remaining())))
-    return {
-      buffer: await page.screenshot({
-        path: filePath,
-        fullPage: false,
-        animations: 'disabled',
-        caret: 'hide',
-        timeout: Math.min(30_000, remaining()),
-      }),
-      retried: true,
+    const session = await page.context().newCDPSession(page)
+    try {
+      const captured = await bounded(
+        session.send('Page.captureScreenshot', {
+          format: 'png',
+          fromSurface: true,
+          captureBeyondViewport: false,
+        }),
+        Math.min(12_000, remaining()),
+        'Chromium compositor viewport capture',
+      )
+      const buffer = Buffer.from(captured.data, 'base64')
+      await writeFile(filePath, buffer)
+      return {
+        buffer,
+        retried: true,
+        capturePath: 'chromium-compositor',
+      }
+    } finally {
+      await session.detach().catch(() => {})
     }
   }
 }
@@ -454,8 +470,8 @@ try {
       const filename = `${id}--${exactHead.slice(0, 12)}.png`
       const captured = await captureViewportScreenshot(page, path.join(outputDir, filename), caseDeadline)
       const screenshot = captured.buffer
-      if (captured.retried) events({ type: 'screenshot-retry', reason: 'transient-compositor-timeout' })
-      record.image = { path: filename, sha256: sha256(screenshot), bytes: screenshot.length, width: screenshot.readUInt32BE(16), height: screenshot.readUInt32BE(20), profile: captureProfile.id, kind: 'actual-browser-viewport-png', fullPage: false, captureRetried: captured.retried }
+      if (captured.retried) events({ type: 'screenshot-retry', reason: 'playwright-screenshot-timeout', capturePath: captured.capturePath })
+      record.image = { path: filename, sha256: sha256(screenshot), bytes: screenshot.length, width: screenshot.readUInt32BE(16), height: screenshot.readUInt32BE(20), profile: captureProfile.id, kind: 'actual-browser-viewport-png', fullPage: false, captureRetried: captured.retried, capturePath: captured.capturePath }
       if (record.image.width !== captureProfile.width || record.image.height !== captureProfile.height) defect('actual-viewport-image-size-mismatch', { expectedWidth: captureProfile.width, expectedHeight: captureProfile.height, actualWidth: record.image.width, actualHeight: record.image.height })
     } catch (error) {
       defect('capture-error', { message: String(error) })
