@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 
 function isLifeMapRoute() {
   return window.location.pathname.replace(/\/+$/, '') === '/life-map'
@@ -10,49 +10,39 @@ function isEditableTarget(target: EventTarget | null) {
   return target instanceof Element && Boolean(target.closest('input,textarea,select,[contenteditable="true"],button,a,summary,details'))
 }
 
-function memoryButtons() {
-  return [...document.querySelectorAll<HTMLButtonElement>('.life-map-world-label, .life-map-help button')]
-    .filter((button) => !['Enter Focus', 'Replay', 'Overview', 'Return Home'].includes(button.textContent?.trim() || ''))
-}
-
 function overviewButton() {
   return [...document.querySelectorAll<HTMLButtonElement>('button')]
     .find((button) => button.textContent?.trim() === 'Overview') || null
 }
 
 export function LifeMapIndependentInputBoundary() {
-  const indexRef = useRef(-1)
   const [announcement, setAnnouncement] = useState('Life Map ready. Choose a memory or open movement help.')
 
   useEffect(() => {
-    const cycle = (direction: -1 | 1) => {
-      const buttons = memoryButtons()
-      if (!buttons.length) return false
-      indexRef.current = indexRef.current < 0
-        ? direction > 0 ? 0 : buttons.length - 1
-        : (indexRef.current + direction + buttons.length) % buttons.length
-      const next = buttons[indexRef.current]
-      next.click()
-      setAnnouncement(`${direction > 0 ? 'Traveling forward' : 'Traveling back'} to ${next.textContent?.split(':')[0]?.trim() || 'memory'}.`)
-      return true
+    const requestStep = (direction: -1 | 1) => {
+      window.dispatchEvent(new CustomEvent('urai:life-map-step', { detail: { direction } }))
+      setAnnouncement(direction > 0 ? 'Traveling forward to the next memory.' : 'Traveling back to the previous memory.')
     }
 
     const reset = () => {
       const button = overviewButton()
       if (button) button.click()
       else window.dispatchEvent(new CustomEvent('urai:life-map-overview'))
-      indexRef.current = -1
       setAnnouncement('Returned to the whole private constellation.')
     }
 
     const onKeyDown = (event: KeyboardEvent) => {
       if (!isLifeMapRoute() || isEditableTarget(event.target)) return
-      if (event.code === 'KeyA' || event.code === 'ArrowLeft' || event.code === 'KeyQ') {
-        if (cycle(-1)) event.preventDefault()
+      // Arrow keys are owned directly by LifeMapSemanticNavigator so one URL-aware
+      // step implementation controls deep links, keyboard input, and journey controls.
+      if (event.code === 'KeyA' || event.code === 'KeyQ') {
+        requestStep(-1)
+        event.preventDefault()
         return
       }
-      if (event.code === 'KeyD' || event.code === 'ArrowRight' || event.code === 'KeyE') {
-        if (cycle(1)) event.preventDefault()
+      if (event.code === 'KeyD' || event.code === 'KeyE') {
+        requestStep(1)
+        event.preventDefault()
         return
       }
       if (event.code === 'KeyR' || event.code === 'KeyO' || event.code === 'Home') {
@@ -63,8 +53,8 @@ export function LifeMapIndependentInputBoundary() {
 
     const onCommand = (event: Event) => {
       const action = (event as CustomEvent<{ action?: string }>).detail?.action
-      if (action === 'previous') cycle(-1)
-      if (action === 'next') cycle(1)
+      if (action === 'previous') requestStep(-1)
+      if (action === 'next') requestStep(1)
       if (action === 'overview') reset()
     }
 
