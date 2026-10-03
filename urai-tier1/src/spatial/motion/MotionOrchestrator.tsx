@@ -93,7 +93,7 @@ export function MotionOrchestrator() {
       activate('map_enter_zoom', 'world-transition')
       return
     }
-    if (pendingTravel.destination === 'replay') {
+    if (pendingTravel.destination === 'replay' || pendingTravel.destination === 'life-movie') {
       activate('replay_enter_curtain', 'world-transition')
       return
     }

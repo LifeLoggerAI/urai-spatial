@@ -1,7 +1,9 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { getAuth, onAuthStateChanged } from 'firebase/auth'
 import { useLifeMapEvents } from '@/components/lifemap/useLifeMapEvents'
+import { app, firebasePublicEnvReady } from '@/lib/firebase/client'
 
 function routeHref(params: URLSearchParams) {
   const query = params.toString()
@@ -19,10 +21,19 @@ export function LifeMapRouteTransactionBridge() {
   // useSearchParams here forces a CSR bailout during static export even though
   // this bridge renders no UI and owns only post-hydration click transactions.
   const [explicitDemo, setExplicitDemo] = useState(false)
-  const { nodes } = useLifeMapEvents(explicitDemo ? 'demo-user' : undefined)
+  const [authenticatedUserId, setAuthenticatedUserId] = useState<string | null>(null)
+  const { nodes } = useLifeMapEvents(explicitDemo ? 'demo-user' : authenticatedUserId ?? undefined)
 
   useEffect(() => {
-    setExplicitDemo(new URLSearchParams(window.location.search).get('demo') === '1')
+    const demo = new URLSearchParams(window.location.search).get('demo') === '1'
+    setExplicitDemo(demo)
+    if (demo || !firebasePublicEnvReady) {
+      setAuthenticatedUserId(null)
+      return
+    }
+    return onAuthStateChanged(getAuth(app), (user) => {
+      setAuthenticatedUserId(user?.uid ?? null)
+    })
   }, [])
 
   useEffect(() => {

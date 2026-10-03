@@ -12,7 +12,7 @@ import { LIFE_MAP_SELECTION_EVENT, type LifeMapSelectionDetail } from './lifeMap
 const overviewActionLabels = new Set(['Overview', 'Open semantic overview'])
 const MIN_DIRECT_ROUTE_RENDER_ANCHORS = 8
 
-export default function LifeMapRouteBoundary() {
+export default function LifeMapRouteBoundary({ authenticatedUserId }: { authenticatedUserId: string | null }) {
   const router = useRouter()
 
   useEffect(() => {
@@ -47,23 +47,21 @@ export default function LifeMapRouteBoundary() {
       const route = label.includes('Enter Focus') ? 'focus' : label.includes('Replay') ? 'replay' : null
       if (!route) return
 
-      const current = new URLSearchParams(window.location.search)
-      const memoryId = current.get('memoryId') || current.get('node')
-      if (!memoryId) return
-      current.delete('overview')
-      current.set('memoryId', memoryId)
-      current.set('node', memoryId)
-      current.set('returnNode', memoryId)
-      current.set('from', 'life-map')
-      const family = button.closest<HTMLElement>('.life-map-thresholds')?.dataset.family
-      if (family) current.set('artifactFamily', family)
+      // Use the scene's resolved destination for both hardware and software
+      // rendering. Rebuilding from the browser URL loses the default manifest
+      // when the user entered the disclosed sample through /life-map?demo=1.
+      const href = button.dataset.destinationHref
+      if (!href) return
+      const destination = new URL(href, window.location.origin)
+      if (destination.origin !== window.location.origin || destination.pathname !== `/${route}`) return
+      if (!destination.searchParams.get('memoryId') || !destination.searchParams.get('manifestId')) return
 
       // Native navigation tears down software WebGL immediately. Keeping a stalled
       // SwiftShader scene alive while Next streams the next realm can otherwise delay
       // an already-authorized keyboard/pointer transition for many seconds.
       event.preventDefault()
       event.stopImmediatePropagation()
-      window.location.assign(`/${route}?${current.toString()}`)
+      window.location.assign(`${destination.pathname}${destination.search}`)
     }
 
     const primeOverview = (event: MouseEvent) => {
@@ -141,7 +139,7 @@ export default function LifeMapRouteBoundary() {
   }, [])
 
   return <>
-    <ComposedLifeMapScene />
-    <LifeMapSemanticNavigator />
+    <ComposedLifeMapScene authenticatedUserId={authenticatedUserId} />
+    <LifeMapSemanticNavigator authenticatedUserId={authenticatedUserId} />
   </>
 }

@@ -49,18 +49,25 @@ async function activate(page, target, method) {
   if (!targetOwnsHitPoint) throw new Error('semantic target does not own its browser-coordinate hit point')
 
   if (method === 'semantic-touch') await page.touchscreen.tap(hitPoint.center.x, hitPoint.center.y)
-  else await page.mouse.click(hitPoint.center.x, hitPoint.center.y)
+  else {
+    await page.mouse.move(hitPoint.center.x, hitPoint.center.y)
+    await page.waitForTimeout(16)
+    await page.mouse.click(hitPoint.center.x, hitPoint.center.y)
+  }
   return { targetOwnsHitPoint, hitPoint }
 }
 
 async function resolveTarget(page, doorway) {
   const target = page.getByTestId(doorway.testId)
   await target.waitFor({ state: 'visible', timeout: 45000 })
-  await page.waitForFunction((testId) => {
+  await page.waitForFunction(({ testId, destination }) => {
     const node = document.querySelector(`[data-testid="${testId}"]`)
     if (!node) return false
-    return Object.keys(node).some((key) => key.startsWith('__reactProps') && typeof node[key]?.onClick === 'function')
-  }, doorway.testId, { timeout: 45000 })
+    const reactOwned = Object.keys(node).some((key) => key.startsWith('__reactProps') && typeof node[key]?.onClick === 'function')
+    const nativeAnchorOwned = node instanceof HTMLAnchorElement
+      && (new URL(node.href).pathname.replace(/\/$/, '') || '/') === destination
+    return reactOwned || nativeAnchorOwned
+  }, { testId: doorway.testId, destination: doorway.destination }, { timeout: 45000 })
   const ownership = await target.evaluate((node) => {
     const nav = node.closest('nav.home-semantic-navigation')
     return {
@@ -87,8 +94,9 @@ async function prove(browser, doorway, testCase) {
     await page.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => {})
     const target = await resolveTarget(page, doorway)
     record.legacyVisibleDoorways = await page.locator('.urai-final-home-doorways:visible').count()
-    record.semanticNavigationNonDominant = await target.evaluate((node) => {
-      const nav = node.closest('nav')
+    record.semanticNavigationNonDominant = await page.evaluate((testId) => {
+      const node = document.querySelector(`[data-testid="${testId}"]`)
+      const nav = node?.closest('nav')
       if (!nav) return false
       const style = getComputedStyle(nav)
       const rect = nav.getBoundingClientRect()
@@ -98,7 +106,7 @@ async function prove(browser, doorway, testCase) {
       const visuallyQuiet = Number.parseFloat(style.opacity || '1') <= 0.05
       const spatiallyBounded = rect.width <= 64 && navAreaRatio <= 0.03
       return declaredNonDominant && visuallyQuiet && spatiallyBounded
-    })
+    }, doorway.testId)
     if (!record.semanticNavigationNonDominant) throw new Error('semantic navigation became visually dominant')
     const activation = await activate(page, target, testCase.method)
     record.targetOwnsHitPoint = activation.targetOwnsHitPoint

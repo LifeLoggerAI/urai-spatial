@@ -14,8 +14,8 @@ const proof = read('../scripts/capture-lifemap-founder-proof.mjs')
 
 test('canonical Life Map has one spatial selected-memory action owner plus semantic navigation', () => {
   assert.match(canonical, /data-selected-memory-owner="spatial-lens-only"/)
-  assert.match(boundary, /<ComposedLifeMapScene \/>/)
-  assert.match(boundary, /<LifeMapSemanticNavigator \/>/)
+  assert.match(boundary, /<ComposedLifeMapScene authenticatedUserId=\{authenticatedUserId\} \/>/)
+  assert.match(boundary, /<LifeMapSemanticNavigator authenticatedUserId=\{authenticatedUserId\} \/>/)
   assert.doesNotMatch(canonical, /LifeMapDeepLinkControls|urai-lifemap-deep-link-controls/)
   assert.match(scene, /className="life-map-thresholds"/)
   assert.match(scene, /aria-label="Selected memory actions"/)
@@ -75,4 +75,12 @@ test('founder proof requires Focus Replay overview privacy fallback and recovery
     'explicit-disclosed-sample', 'no-webgl-fallback', 'webgl-context-loss',
     'webgl-recovered', 'context-recovery-state-preserved',
   ]) assert.match(proof, new RegExp(marker))
+})
+
+
+test('semantic fallback may continue to Focus and Replay without becoming a second spatial action owner', () => {
+  assert.match(navigator, /aria-label="Selected memory destinations"/)
+  assert.match(navigator, /destinationHref\('focus', selected\)/)
+  assert.match(navigator, /destinationHref\('replay', selected\)/)
+  assert.doesNotMatch(navigator, /aria-label="Selected memory actions"/)
 })

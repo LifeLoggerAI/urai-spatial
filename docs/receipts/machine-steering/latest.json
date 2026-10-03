@@ -10,7 +10,7 @@
   "sourceIdentityVerified": null,
   "cleanWorkingTree": null,
   "productionDeploymentAttempted": null,
-  "productionDeploymentAuthority": ".github/workflows/spatial-live-deploy.yml",
+  "productionDeploymentAuthority": ".github/workflows/spatial-governed-wif-deploy.yml",
   "pngCount": 0,
   "expectedPngCount": 28,
   "screenshotDirectory": "live-visual-audit/screenshots",

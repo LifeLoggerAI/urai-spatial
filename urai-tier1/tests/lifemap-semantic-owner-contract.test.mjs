@@ -9,7 +9,7 @@ const selection = await readFile(new URL('../src/components/lifemap/lifeMapSelec
 const founder = await readFile(new URL('../../scripts/capture-lifemap-founder-proof-fixed.mjs', import.meta.url), 'utf8')
 
 test('semantic navigator invokes the authoritative world selection transaction without hidden re-entry', () => {
-  assert.match(navigator, /className="life-map-semantic-result" data-life-map-semantic-result data-life-map-node-id=\{node\.id\} role="listitem"/)
+  assert.match(navigator, /className="life-map-semantic-result" data-life-map-semantic-result data-life-map-node-id=\{node\.id\} aria-label=/)
   assert.doesNotMatch(navigator, /className="life-map-world-label"|function activateWorldLabel|owner\.click\(\)|activateWorldLabel\(node\)/)
   assert.match(navigator, /requestLifeMapSelection\(node\.id, source\)/)
   assert.match(selection, /LIFE_MAP_SELECTION_EVENT = 'urai:life-map-select-node'/)
@@ -65,7 +65,7 @@ test('semantic navigator is opt-in, semantically controlled, and keyboard access
   assert.match(navigator, /aria-label="Search and navigate Life Map"/)
   assert.match(navigator, /aria-expanded=\{open\}/)
   assert.match(navigator, /onClick=\{\(\) => \{ setOpen\(\(value\) => !value\)/)
-  assert.match(navigator, /\{open \? <section className="life-map-navigator" aria-label="Search and filter Life Map">/)
+  assert.match(navigator, /\{open \? <section className="life-map-navigator" aria-label="Search and filter Life Map" id="life-map-navigator">/)
   assert.match(navigator, /if \(event\.key === '\/'\)|if \(event\.key === "\/"\)/)
   assert.match(navigator, /setOpen\(true\)/)
   assert.match(navigator, /event\.key === 'Escape' && open|event\.key === "Escape" && open/)

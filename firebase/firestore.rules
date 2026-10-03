@@ -122,6 +122,12 @@ service cloud.firestore {
         allow read: if isSelf(uid) || isAdmin();
         allow write: if false;
       }
+      match /capturedRealityAssets/{assetId} {
+        // Full Captured Reality manifests contain private provenance/storage metadata.
+        // They are owner-only; administrative operations use server authority and redacted evidence surfaces.
+        allow read: if isSelf(uid);
+        allow write: if false;
+      }
       match /exportJobs/{jobId} {
         allow read: if isSelf(uid) || isAdmin();
         allow write: if false;
@@ -144,6 +150,91 @@ service cloud.firestore {
       }
       match /tierLockAudit/{auditId} {
         allow read: if isSelf(uid) || isAdmin();
+        allow write: if false;
+      }
+      match /behaviorSignals/{signalId} {
+        allow read: if isSelf(uid) || isAdmin();
+        allow write: if false;
+      }
+      match /voiceEvents/{eventId} {
+        allow read: if isSelf(uid) || isAdmin();
+        allow write: if false;
+      }
+      match /locations/{locationId} {
+        allow read: if isSelf(uid) || isAdmin();
+        allow write: if false;
+      }
+      match /memories/{memoryId} {
+        // Canonical private memory documents used by Home personalization and Life Movie.
+        // Writes are server-authoritative; owners can read only their own memory records.
+        allow read: if isSelf(uid);
+        allow write: if false;
+      }
+
+      match /lifeMovies/{movieId} {
+        // Canonical private Life Movie manifests. Server-authoritative; owner-only reads.
+        allow read: if isSelf(uid);
+        allow write: if false;
+      }
+
+      match /lifeMovies/{movieId} {
+        // Canonical private Life Movie manifests. Server-authoritative; owner-only reads.
+        allow read: if isSelf(uid);
+        allow write: if false;
+      }
+
+      // Life Causal Graph / Person-World model. All writes are server-authoritative.
+      // Owners may read only their own graph and receipts; Admin SDK performs governed writes.
+      match /lifeEntities/{docId} {
+        allow read: if isSelf(uid);
+        allow write: if false;
+      }
+      match /lifeEntityStates/{docId} {
+        allow read: if isSelf(uid);
+        allow write: if false;
+      }
+      match /lifeClaims/{docId} {
+        allow read: if isSelf(uid);
+        allow write: if false;
+      }
+      match /lifeRelationships/{docId} {
+        allow read: if isSelf(uid);
+        allow write: if false;
+      }
+      match /lifeEvents/{docId} {
+        allow read: if isSelf(uid);
+        allow write: if false;
+      }
+      match /lifeCorrections/{docId} {
+        allow read: if isSelf(uid);
+        allow write: if false;
+      }
+      match /lifeConflicts/{docId} {
+        allow read: if isSelf(uid);
+        allow write: if false;
+      }
+      match /knowledgeGaps/{docId} {
+        allow read: if isSelf(uid);
+        allow write: if false;
+      }
+      match /personModelBundles/{docId} {
+        allow read: if isSelf(uid);
+        allow write: if false;
+      }
+      match /sceneTruthPackets/{docId} {
+        allow read: if isSelf(uid);
+        allow write: if false;
+      }
+      match /renderManifests/{docId} {
+        allow read: if isSelf(uid);
+        allow write: if false;
+      }
+      match /simulationSessions/{docId} {
+        allow read: if isSelf(uid);
+        allow write: if false;
+      }
+      match /lifeModelReceipts/{docId} {
+        allow read: if isSelf(uid);
         allow write: if false;
       }
 

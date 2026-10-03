@@ -8,7 +8,7 @@ const source = fs.readFileSync(path.join(process.cwd(), 'scripts/validate-assets
 test('ready and fallback assets require regular committed files', () => {
   assert.match(source, /asset\.status === 'ready' \|\| asset\.status === 'fallback'/)
   assert.match(source, /stats\.isFile\(\) && !symbolicLink && realPathInsidePublic/)
-  assert.match(source, /requiredFile && \(!pathInsidePublic \|\| !exists \|\| !regularFile\)/)
+  assert.match(source, /requiredFile && \(!pathInsidePublic \|\| !exists \|\| !regularFile \|\| fileBytes === 0\)/)
   assert.match(source, /missingRequiredFiles/)
   assert.match(source, /nonRegularRequiredFiles/)
 })

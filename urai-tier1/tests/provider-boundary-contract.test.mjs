@@ -28,7 +28,8 @@ test('Orb UI keeps external consent off and excludes rejected provider turns fro
   assert.match(openAiClient, /getAuth\(app\)\.currentUser/)
   assert.match(openAiClient, /Authorization/)
   assert.match(openAiClient, /deterministicOrbFallback/)
-  assert.equal((orbPanel.match(/useState\(false\)/g) ?? []).length >= 2, true)
+  assert.match(orbPanel, /const \[aiConsent, setAiConsent\] = useState\(false\)/)
+  assert.match(orbPanel, /const \[externalVoiceConsent, setExternalVoiceConsent\] = useState\(false\)/)
   assert.match(orbPanel, /Allow this message and bounded recent context to be processed by OpenAI/)
   assert.match(orbPanel, /if \(liveResult\) \{[\s\S]*setHistory/)
   assert.doesNotMatch(orbPanel, /content: resolved\.message/)
@@ -37,7 +38,9 @@ test('Orb UI keeps external consent off and excludes rejected provider turns fro
   assert.match(orbPanel, />Stop</)
   assert.match(orbPanel, /Voice muted/)
   assert.match(orbPanel, /Replay/)
-  assert.match(companion, /<OrbConversationPanel \/>/)
+  assert.match(companion, /<OrbConversationPanel active=\{open && phase === 'idle'\} \/>/)
+  assert.match(orbPanel, /if \(!trimmed \|\| busy \|\| !active\) return/)
+  assert.match(orbPanel, /voicePreferences\.current\.active = active[\s\S]*?if \(active\) return[\s\S]*?aborter\.current\?\.abort\(\)[\s\S]*?stopVoice\(\)/)
 })
 
 test('Orb fallback disclosure distinguishes local-only, definite external, and uncertain transport states', () => {

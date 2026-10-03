@@ -26,6 +26,10 @@ test('Ownership Vault is spatial and directly accessible without WebGL', () => {
   const css = read('src/app/passport/passport-vault.css')
   assert.match(client, /<Canvas/)
   assert.match(client, /OrbitControls/)
+  assert.match(client, /assetCssStack, passportAssets/)
+  assert.match(client, /data-passport-environment-role="governed-visual-support"/)
+  assert.match(client, /alpha: true/)
+  assert.doesNotMatch(client, /<color attach="background"/)
   assert.match(client, /Skip to vault controls/)
   assert.match(client, /All records and actions remain available without WebGL/)
   assert.match(client, /event\.key === 'Home'/)
@@ -35,6 +39,8 @@ test('Ownership Vault is spatial and directly accessible without WebGL', () => {
   assert.match(css, /min-height:48px/)
   assert.match(css, /prefers-reduced-motion/)
   assert.match(css, /forced-colors/)
+  assert.match(css, /\.passportEnvironmentArt\{[^}]*pointer-events:none/)
+  assert.match(css, /\.passportWorld canvas\{[^}]*background:transparent!important/)
 })
 
 test('Ownership Vault has no runtime font or external CDN dependency', () => {
@@ -66,4 +72,11 @@ test('Passport does not leak private identifiers into public presentation state'
   assert.match(client, /ownerReference/)
   assert.doesNotMatch(client, /window\.location\.search.*uid|[?&]uid=/)
   assert.doesNotMatch(client, /providerSecret|accessToken|refreshToken/)
+})
+
+
+test('desktop vault keeps long owner controls reachable instead of clipping at one viewport', () => {
+  const css = read('src/app/passport/passport-vault.css')
+  assert.match(css, /\.passportVault\{[^}]*overflow-x:hidden;overflow-y:auto;/)
+  assert.doesNotMatch(css, /\.passportVault\{[^}]*overflow:hidden;/)
 })

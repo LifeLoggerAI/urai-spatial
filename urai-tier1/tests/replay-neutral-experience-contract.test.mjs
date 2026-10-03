@@ -9,7 +9,7 @@ test('Replay no-selection state is a designed memory horizon, not an error dead 
   assert.doesNotMatch(replay, /Replay unavailable/)
   assert.doesNotMatch(replay, /Return to Focus/)
   assert.match(replay, /data-replay-neutral="memory-horizon"/)
-  assert.match(replay, /Choose a memory to enter its reconstruction\./)
+  assert.match(replay, /Choose a memory to enter Replay\./)
   assert.match(replay, /Choose a memory/)
   assert.match(replay, /destination: 'life-map'/)
   assert.match(replay, /entryPortal: 'replay-memory-horizon'/)

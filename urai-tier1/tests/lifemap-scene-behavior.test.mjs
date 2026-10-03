@@ -71,6 +71,9 @@ test('Life Map uses deterministic sequential travel compositions with a safe sel
   assert.ok(source.includes('setPhase("arrival")'))
   assert.ok(source.includes('PHASE_DURATION_MS[phase]'))
   assert.ok(source.includes('journeyToken.current'))
+  assert.ok(source.includes('localSelectionId.current = node.id'))
+  assert.ok(source.includes('if (localSelectionId.current === node.id)'))
+  assert.ok(source.includes('localSelectionId.current = null'))
   assert.ok(source.includes('goalForNode'))
   assert.match(source, /const SELECTED_MEMORY_STANDOFF = 5\.[0-9]+/)
   assert.ok(source.includes('addScaledVector(direction, SELECTED_MEMORY_STANDOFF)'))
@@ -90,7 +93,7 @@ test('Production artifacts are differentiated by meaning rather than generic bub
   }
   assert.doesNotMatch(world.slice(world.indexOf('function MemoryArtifact'), world.indexOf('function SemanticPath')), /sphereGeometry/)
   assert.match(world, /name={`life-map-artifact-\${resolveArtifactFamily\(node\)}-\${node\.id}`}/)
-  assert.match(world, /scale={active \? 1\.72 : 0\.9 \+ importance \* 0\.38}/)
+  assert.match(world, /scale={active \? 1\.46 : 0\.58 \+ importance \* 0\.22}/)
   assert.match(world, /artifactFamilyLabel\(node\)/)
 })
 
@@ -138,10 +141,10 @@ test('Semantic navigator supports search filters keyboard travel and connected d
 
 test('Only explicit demo identity can load the coherent disclosed sample universe', () => {
   assert.ok(source.includes('const explicitDemoRequested = params.get("demo") === "1"'))
-  assert.ok(source.includes('useLifeMapEvents(explicitDemoRequested ? "demo-user" : undefined)'))
+  assert.ok(source.includes('useLifeMapEvents(explicitDemoRequested ? "demo-user" : authenticatedUserId ?? undefined)'))
   assert.ok(source.includes('if (explicitDemoRequested) next.set("demo", "1")'))
   assert.match(navigator, /const explicitDemo = params\.get\('demo'\) === '1'|const explicitDemo = params\.get\("demo"\) === "1"/)
-  assert.match(navigator, /useLifeMapEvents\(explicitDemo \? 'demo-user' : undefined\)|useLifeMapEvents\(explicitDemo \? "demo-user" : undefined\)/)
+  assert.match(navigator, /useLifeMapEvents\(explicitDemo \? 'demo-user' : authenticatedUserId \?\? undefined\)|useLifeMapEvents\(explicitDemo \? "demo-user" : authenticatedUserId \?\? undefined\)/)
   assert.match(events, /function explicitDemoEnabled\(explicitUserId\?: string\) \{\s*return explicitUserId === "demo-user";/)
   assert.doesNotMatch(events, /NEXT_PUBLIC_URAI_EXPLICIT_DEMO/)
   assert.doesNotMatch(events, /lifeMapDemoMode/)

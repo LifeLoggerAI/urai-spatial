@@ -5,6 +5,7 @@ const requiredFiles = [
   'firebase.json',
   'firebase.static.json',
   '.github/workflows/spatial-live-deploy.yml',
+  '.github/workflows/spatial-governed-wif-deploy.yml',
   'urai-tier1/package.json',
   'urai-tier1/tests/xr-runtime-contract.test.mjs',
   'urai-tier1/src/spatial/xr/uraiXrRoomRuntime.ts',
@@ -55,7 +56,7 @@ if (rootPackage.scripts?.['live:deploy'] !== 'node scripts/live-release.mjs --de
 }
 
 const expectedSecretNames = [
-  'FIREBASE_SERVICE_ACCOUNT_JSON',
+  'GOOGLE_APPLICATION_CREDENTIALS',
   'FIREBASE_PROJECT_ID',
   'URAI_XR_SESSION_SECRET',
   'URAI_XR_ICE_SERVERS_JSON',
@@ -69,5 +70,6 @@ console.log(JSON.stringify({
   requiredFiles: requiredFiles.length,
   requiredScripts,
   expectedSecretNames,
-  productionAuthority: '.github/workflows/spatial-live-deploy.yml',
+  productionVerificationAuthority: '.github/workflows/spatial-live-deploy.yml',
+  productionAuthority: '.github/workflows/spatial-governed-wif-deploy.yml',
 }, null, 2))

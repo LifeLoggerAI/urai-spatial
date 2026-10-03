@@ -96,21 +96,30 @@ export const URAI_DESTINATION_REGISTRY: Record<UraiDestination, UraiDestinationD
   },
   focus: {
     id: 'focus',
-    label: 'Focus Chamber',
+    label: 'Focus Memory Star',
     href: '/focus',
     layer: 'infrastructure-world',
     entryPortal: 'memory-focus',
     cameraCheckpoint: 'focus-arrival',
-    environmentalForm: 'selected-memory-chamber',
+    environmentalForm: 'stellar-memory-photosphere',
   },
   replay: {
     id: 'replay',
-    label: 'Replay Theater',
+    label: 'Replay',
     href: '/replay',
     layer: 'infrastructure-world',
     entryPortal: 'memory-replay',
     cameraCheckpoint: 'replay-arrival',
-    environmentalForm: 'cinematic-memory-theater',
+    environmentalForm: 'immersive-memory-world',
+  },
+  'life-movie': {
+    id: 'life-movie',
+    label: 'Life Movie',
+    href: '/life-movie',
+    layer: 'infrastructure-world',
+    entryPortal: 'life-movie-threshold',
+    cameraCheckpoint: 'life-movie-arrival',
+    environmentalForm: 'cinematic-memory-continuum',
   },
 }
 
@@ -126,6 +135,7 @@ const PATH_DESTINATIONS: readonly [string, UraiDestination][] = [
   ['/mirror', 'mirror'],
   ['/focus', 'focus'],
   ['/replay', 'replay'],
+  ['/life-movie', 'life-movie'],
   ['/home', 'home'],
   ['/', 'home'],
 ]

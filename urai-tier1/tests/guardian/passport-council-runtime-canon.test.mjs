@@ -45,10 +45,16 @@ assert.match(council, /CouncilAgent/, "CouncilAgent schema must exist.");
 assert.match(council, /DEMO_COUNCIL_AGENTS/, "Demo Council agents must exist.");
 
 const councilRoute = readFileSync(join(app, "src/app/council/page.tsx"), "utf8");
-assert.match(councilRoute, /SpatialRealmRuntime/, "Council route must render the capability-aware spatial owner.");
-assert.match(councilRoute, /realm="council"/, "Council route must mount the Council spatial realm.");
+assert.match(councilRoute, /CouncilRealm/, "Council route must render the canonical embodied Council owner.");
+assert.match(councilRoute, /<main/, "Council route must expose one semantic primary owner.");
 assert.match(councilRoute, /getSceneDefinition/, "Council route must use sceneRegistry.");
 assert.doesNotMatch(councilRoute, /RealmShell/, "Council route must not regress to the flat shell owner.");
+
+const councilRealm = readFileSync(join(app, "src/spatial/council/CouncilRealm.tsx"), "utf8");
+assert.match(councilRealm, /useCouncilWebGLCapability/, "Council must detect unavailable WebGL before mounting the renderer.");
+assert.match(councilRealm, /urai-council-semantic-fallback/, "Council must keep a semantic no-WebGL fallback.");
+assert.match(councilRealm, /CouncilRenderBoundary/, "Council must fail closed if renderer setup throws.");
+assert.match(councilRealm, /requestUraiWorldTravel/, "Council fallback destinations must retain unified world travel.");
 
 const spatialRuntime = readFileSync(join(app, "src/spatial/realms/SpatialRealmRuntime.tsx"), "utf8");
 assert.match(spatialRuntime, /SpatialRealmExperience/, "Council runtime boundary must preserve the canonical navigable R3F owner.");
