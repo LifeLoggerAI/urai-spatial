@@ -58,7 +58,6 @@ export default function ReplayRoutePage() {
       >
         Replay the thread. Film beats. Cinematic memory camera film.
       </span>
-      <ReplayRouteProofSurface />
       <FinalReplayFilm />
     </>
   )
