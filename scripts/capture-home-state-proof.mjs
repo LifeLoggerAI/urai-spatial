@@ -559,7 +559,7 @@ async function captureHomeAssetFailure(fixture) {
     const query = `homeAssetReview=1&homeAssetFailure=${fixture.id}`
     const response = await page.goto(`${base}/home/?${query}`, { waitUntil: 'domcontentloaded', timeout: 60_000 })
     record.status = response?.status()
-    const fallback = page.getByTestId('urai-home-accessible-fallback')
+    const fallback = page.locator('[data-testid="urai-home-accessible-fallback"][data-urai-home-runtime="accessible-fallback-after-asset-load-failure"]')
     await fallback.waitFor({ state: 'visible', timeout: 45_000 })
     record.failureRuntime = await fallback.getAttribute('data-urai-home-runtime')
     record.failedAssetsReady = await fallback.getAttribute('data-home-assets-ready')
