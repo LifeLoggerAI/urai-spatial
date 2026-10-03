@@ -1,6 +1,7 @@
 import { expect, test, type Page } from '@playwright/test'
 
 const focusDemo = '/focus?memoryId=demo%3Aquiet-reset&manifestId=replay-recovery-thread&node=quiet-reset&demo=1'
+const activeFocusOwner = (page: Page) => page.locator('[data-testid="urai-final-focus-chamber"]:visible')
 
 async function disableWebGL(page: Page) {
   await page.addInitScript(() => {
@@ -15,7 +16,8 @@ async function disableWebGL(page: Page) {
 test.describe('Focus exact-head accessibility and movement evidence', () => {
   test('focused semantic controls keep arrow keys without moving the camera', async ({ page }) => {
     await page.goto(focusDemo, { waitUntil: 'domcontentloaded' })
-    const focus = page.getByTestId('urai-final-focus-chamber')
+    const focus = activeFocusOwner(page)
+    await expect(focus).toHaveCount(1)
     await expect(focus).toHaveAttribute('data-focus-input-ready', 'true', { timeout: 20_000 })
     const recenter = page.getByRole('navigation', { name: 'Focus memory controls' }).getByRole('button', { name: 'Recenter', exact: true })
     await recenter.click()
@@ -36,7 +38,8 @@ test.describe('Focus exact-head accessibility and movement evidence', () => {
     await page.emulateMedia({ reducedMotion: 'reduce' })
     await page.goto(focusDemo, { waitUntil: 'domcontentloaded' })
 
-    const focus = page.getByTestId('urai-final-focus-chamber')
+    const focus = activeFocusOwner(page)
+    await expect(focus).toHaveCount(1)
     await expect(focus).toBeVisible({ timeout: 15_000 })
     await expect(focus.locator('canvas')).toBeVisible({ timeout: 15_000 })
     await expect(focus).toHaveAttribute('data-focus-movement', 'walk-keyboard-orbit-touch')
@@ -66,7 +69,8 @@ test.describe('Focus exact-head accessibility and movement evidence', () => {
 
   test('Focus preserves authorized identity through Replay travel authority', async ({ page }) => {
     await page.goto(focusDemo, { waitUntil: 'domcontentloaded' })
-    const focus = page.getByTestId('urai-final-focus-chamber')
+    const focus = activeFocusOwner(page)
+    await expect(focus).toHaveCount(1)
     await expect(focus).toHaveAttribute('data-memory-id', 'demo:quiet-reset')
     await expect(page.getByText('DEMO FIXTURE · NOT PERSONAL DATA', { exact: true })).toBeVisible()
 
@@ -100,7 +104,8 @@ test.describe('Focus exact-head accessibility and movement evidence', () => {
   test('non-WebGL Focus keeps identity, privacy copy and keyboard-operable semantic controls', async ({ page }) => {
     await disableWebGL(page)
     await page.goto(focusDemo, { waitUntil: 'domcontentloaded' })
-    const focus = page.getByTestId('urai-final-focus-chamber')
+    const focus = activeFocusOwner(page)
+    await expect(focus).toHaveCount(1)
     await expect(focus).toBeVisible()
     await expect(focus).toHaveAttribute('data-memory-id', 'demo:quiet-reset')
     await expect(focus.locator('[data-focus-fallback="semantic"]')).toBeVisible()
