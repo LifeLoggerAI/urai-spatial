@@ -28,6 +28,23 @@ const CAMERA_LIMIT = 8.8
 
 type ChamberState = 'neutral' | 'loading' | 'ready' | 'unavailable' | 'unauthorized' | 'corrupt' | 'deleted'
 type WebGLState = 'ready' | 'lost' | 'restoring' | 'failed'
+type EntryCameraFrame = { position: [number, number, number]; target: [number, number, number]; fov: number }
+
+function parseEntryVector(value: string | null): [number, number, number] | null {
+  if (!value) return null
+  const numbers = value.split(',').map(Number)
+  if (numbers.length !== 3 || numbers.some((number) => !Number.isFinite(number))) return null
+  return [numbers[0], numbers[1], numbers[2]]
+}
+
+function parseEntryCameraFrame(params: URLSearchParams): EntryCameraFrame | null {
+  if (!params.get('cameraCheckpoint')?.startsWith('life-map-arrival:')) return null
+  const position = parseEntryVector(params.get('entryCamera'))
+  const target = parseEntryVector(params.get('entryTarget'))
+  const fov = Number(params.get('entryFov'))
+  if (!position || !target || !Number.isFinite(fov)) return null
+  return { position, target, fov: THREE.MathUtils.clamp(fov, 36, 68) }
+}
 
 function dateLabel(value: string) {
   try {
@@ -104,7 +121,7 @@ function WebGLRecoveryBridge({ onStateChange }: { onStateChange: (state: WebGLSt
   return null
 }
 
-function FocusCameraRig({ controls, recenterSignal, shellRef }: { controls: RefObject<OrbitControlsImpl | null>; recenterSignal: number; shellRef: RefObject<HTMLElement | null> }) {
+function FocusCameraRig({ controls, recenterSignal, shellRef, entryFrame, reducedMotion }: { controls: RefObject<OrbitControlsImpl | null>; recenterSignal: number; shellRef: RefObject<HTMLElement | null>; entryFrame: EntryCameraFrame | null; reducedMotion: boolean }) {
   const { camera } = useThree()
   const keys = useRef(new Set<string>())
   const target = useMemo(() => new THREE.Vector3(...DEFAULT_TARGET), [])
@@ -113,6 +130,7 @@ function FocusCameraRig({ controls, recenterSignal, shellRef }: { controls: RefO
   const forward = useRef(new THREE.Vector3())
   const right = useRef(new THREE.Vector3())
   const movement = useRef(new THREE.Vector3())
+  const entryBlendActive = useRef(false)
 
   useEffect(() => {
     const down = (event: KeyboardEvent) => {
@@ -144,13 +162,45 @@ function FocusCameraRig({ controls, recenterSignal, shellRef }: { controls: RefO
   }, [])
 
   useEffect(() => {
-    camera.position.set(...DEFAULT_CAMERA)
-    controls.current?.target.set(...DEFAULT_TARGET)
+    const useEntryFrame = recenterSignal === 0 && entryFrame && !reducedMotion
+    if (useEntryFrame) {
+      camera.position.set(...entryFrame.position)
+      controls.current?.target.set(...entryFrame.target)
+      if (camera instanceof THREE.PerspectiveCamera) {
+        camera.fov = entryFrame.fov
+        camera.updateProjectionMatrix()
+      }
+      entryBlendActive.current = true
+    } else {
+      camera.position.set(...DEFAULT_CAMERA)
+      controls.current?.target.set(...DEFAULT_TARGET)
+      if (camera instanceof THREE.PerspectiveCamera) {
+        camera.fov = 48
+        camera.updateProjectionMatrix()
+      }
+      entryBlendActive.current = false
+    }
     controls.current?.update()
-  }, [camera, controls, recenterSignal])
+  }, [camera, controls, entryFrame, recenterSignal, reducedMotion])
 
   useFrame((_, delta) => {
     const moving = keys.current.size > 0
+    if (!moving && entryBlendActive.current) {
+      camera.position.x = THREE.MathUtils.damp(camera.position.x, defaultCamera.x, 2.4, delta)
+      camera.position.y = THREE.MathUtils.damp(camera.position.y, defaultCamera.y, 2.4, delta)
+      camera.position.z = THREE.MathUtils.damp(camera.position.z, defaultCamera.z, 2.4, delta)
+      target.copy(controls.current?.target ?? defaultTarget)
+      target.x = THREE.MathUtils.damp(target.x, defaultTarget.x, 2.8, delta)
+      target.y = THREE.MathUtils.damp(target.y, defaultTarget.y, 2.8, delta)
+      target.z = THREE.MathUtils.damp(target.z, defaultTarget.z, 2.8, delta)
+      controls.current?.target.copy(target)
+      if (camera instanceof THREE.PerspectiveCamera) {
+        camera.fov = THREE.MathUtils.damp(camera.fov, 48, 2.6, delta)
+        camera.updateProjectionMatrix()
+      }
+      controls.current?.update()
+      if (camera.position.distanceTo(defaultCamera) < 0.035 && target.distanceTo(defaultTarget) < 0.035) entryBlendActive.current = false
+    }
     if (moving) {
       const forwardVector = forward.current
       camera.getWorldDirection(forwardVector)
@@ -431,7 +481,7 @@ function MemoryStarInteraction({ memory, accent, light, reducedMotion, onActivat
   )
 }
 
-function FocusScene({ memory, profile, recenterSignal, onActivate, controls, onWebGLState, shellRef }: { memory: SelectedMemory | null; profile: SpatialQualityProfile; recenterSignal: number; onActivate: () => void; controls: RefObject<OrbitControlsImpl | null>; onWebGLState: (state: WebGLState) => void; shellRef: RefObject<HTMLElement | null> }) {
+function FocusScene({ memory, profile, recenterSignal, onActivate, controls, onWebGLState, shellRef, entryFrame }: { memory: SelectedMemory | null; profile: SpatialQualityProfile; recenterSignal: number; onActivate: () => void; controls: RefObject<OrbitControlsImpl | null>; onWebGLState: (state: WebGLState) => void; shellRef: RefObject<HTMLElement | null>; entryFrame: EntryCameraFrame | null }) {
   const accent = memory?.visuals.accent ?? '#79dfff'
   const light = memory?.visuals.light ?? '#e7fbff'
   const memoryImageUrl = memory?.sourceMedia.find((media) => media.kind === 'image')?.url ?? (memory?.demo ? replayAssets.primary.src : null)
@@ -450,7 +500,7 @@ function FocusScene({ memory, profile, recenterSignal, onActivate, controls, onW
     <MemoryTraces memory={memory} accent={accent} reducedMotion={profile.reducedMotion} />
     <MemoryStarInteraction memory={memory} accent={accent} light={light} reducedMotion={profile.reducedMotion} onActivate={onActivate} />
     <OrbitControls ref={controls} makeDefault enableDamping={!profile.reducedMotion} dampingFactor={0.07} enablePan={false} enableZoom minDistance={3.4} maxDistance={11.5} zoomSpeed={0.55} rotateSpeed={0.32} minPolarAngle={0.58} maxPolarAngle={1.9} target={DEFAULT_TARGET} />
-    <FocusCameraRig controls={controls} recenterSignal={recenterSignal} shellRef={shellRef} />
+    <FocusCameraRig controls={controls} recenterSignal={recenterSignal} shellRef={shellRef} entryFrame={entryFrame} reducedMotion={profile.reducedMotion} />
   </>
 }
 
@@ -464,11 +514,13 @@ export default function FocusChamberClient() {
   const [recenterSignal, setRecenterSignal] = useState(0)
   const [committed, setCommitted] = useState(false)
   const [directEntry, setDirectEntry] = useState<boolean | null>(null)
+  const [entryFrame, setEntryFrame] = useState<EntryCameraFrame | null>(null)
   const [webglState, setWebglState] = useState<WebGLState>('ready')
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
     setDirectEntry(!params.get('memoryId') && !params.get('node'))
+    setEntryFrame(parseEntryCameraFrame(params))
     return () => { document.body.style.cursor = '' }
   }, [])
 
@@ -502,12 +554,12 @@ export default function FocusChamberClient() {
   const style = { '--memory-accent': memory?.visuals.accent ?? '#79dfff', '--memory-light': memory?.visuals.light ?? '#e7fbff', '--memory-sky': memory?.visuals.sky ?? '#020712', '--memory-ground': memory?.visuals.ground ?? '#07121c', '--focus-asset': assetCssStack(focusAssets.primary) } as CSSProperties
   const webglUsable = webglAvailable === true && webglState !== 'failed'
 
-  return <main ref={shellRef} className="focusWorld" style={style} data-testid="urai-final-focus-chamber" data-focus-composition="stellar-photosphere-corona-with-living-memory-vfx" data-focus-spatial="inside-memory-star" data-focus-movement="walk-keyboard-orbit-touch" data-focus-input-ready="false" data-focus-pointer-lock="false" data-focus-camera-x="0.000" data-focus-camera-y="1.450" data-focus-camera-z="8.200" data-focus-distance="0.000" data-focus-moving="false" data-memory-status={result.status} data-chamber-state={chamberState} data-webgl-state={webglState} data-canonical-asset={focusAssets.primary.src} data-spatial-quality={profile.tier} data-memory-id={memory?.id} data-manifest-id={memory?.replayManifest.id} data-star-id={memory?.star.id} data-node={memory?.star.id}>
+  return <main ref={shellRef} className="focusWorld" style={style} data-testid="urai-final-focus-chamber" data-focus-composition="stellar-photosphere-corona-with-living-memory-vfx" data-focus-spatial="inside-memory-star" data-focus-movement="walk-keyboard-orbit-touch" data-focus-input-ready="false" data-focus-pointer-lock="false" data-focus-entry-continuity={entryFrame ? 'life-map-arrival' : 'default'} data-focus-camera-x="0.000" data-focus-camera-y="1.450" data-focus-camera-z="8.200" data-focus-distance="0.000" data-focus-moving="false" data-memory-status={result.status} data-chamber-state={chamberState} data-webgl-state={webglState} data-canonical-asset={focusAssets.primary.src} data-spatial-quality={profile.tier} data-memory-id={memory?.id} data-manifest-id={memory?.replayManifest.id} data-star-id={memory?.star.id} data-node={memory?.star.id}>
     <h1 className="srOnly">URAI Focus stellar memory field</h1>
     <div className="focusBackdrop" aria-hidden="true" />
     <div className="focusFog" aria-hidden="true" />
     <div className="focusCanvas" aria-label="Focus memory star. Drag to orbit, scroll or pinch to move through depth, and use W A S D or arrow keys to travel.">
-      {webglAvailable === null ? <div className="focusFallback" role="status">Preparing stellar memory field…</div> : webglUsable ? <Suspense fallback={<div className="focusFallback" role="status">Opening stellar memory field…</div>}><Canvas camera={{ position: DEFAULT_CAMERA, fov: 48, near: 0.08, far: 120 }} dpr={[1, profile.pixelRatioMax]} shadows={profile.shadows} frameloop={profile.documentVisible ? 'always' : 'never'} gl={{ antialias: profile.antialias, alpha: false, powerPreference: 'high-performance' }}><FocusScene memory={memory} profile={profile} recenterSignal={recenterSignal} onActivate={enterReplay} controls={controls} onWebGLState={setWebglState} shellRef={shellRef} /></Canvas></Suspense> : <div className="focusFallback" role="status" data-focus-fallback="semantic"><strong>Spatial view unavailable</strong><span>The memory remains accessible through the controls and memory details.</span></div>}
+      {webglAvailable === null ? <div className="focusFallback" role="status">Preparing stellar memory field…</div> : webglUsable ? <Suspense fallback={<div className="focusFallback" role="status">Opening stellar memory field…</div>}><Canvas camera={{ position: DEFAULT_CAMERA, fov: 48, near: 0.08, far: 120 }} dpr={[1, profile.pixelRatioMax]} shadows={profile.shadows} frameloop={profile.documentVisible ? 'always' : 'never'} gl={{ antialias: profile.antialias, alpha: false, powerPreference: 'high-performance' }}><FocusScene memory={memory} profile={profile} recenterSignal={recenterSignal} onActivate={enterReplay} controls={controls} onWebGLState={setWebglState} shellRef={shellRef} entryFrame={entryFrame} /></Canvas></Suspense> : <div className="focusFallback" role="status" data-focus-fallback="semantic"><strong>Spatial view unavailable</strong><span>The memory remains accessible through the controls and memory details.</span></div>}
     </div>
     <header className="focusHeading"><p>{memory ? (memory.demo ? 'DEMO FIXTURE · NOT PERSONAL DATA' : `${memory.privacy} memory`) : 'URAI · FOCUS MEMORY STAR'}</p><h2>{heading}</h2>{memory ? <span>{dateLabel(memory.occurredAt)}</span> : null}<div className="focusNarration"><small>{memory ? 'Selected memory' : 'Memory star threshold'}</small><strong>{description}</strong></div></header>
     {!webglUsable && <section className="artifactStage" aria-label={memory ? `Selected memory ${memory.title}` : 'Neutral stellar Focus field'} data-focus-visual-owner="stellar-photosphere-corona" aria-hidden="true">
