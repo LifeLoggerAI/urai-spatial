@@ -183,7 +183,7 @@ for (const marker of [
   'firebase-tools@15.22.3 deploy',
   '--only hosting',
   'node scripts/urai-post-deploy-smoke.mjs',
-  'Roll back Hosting if live certification fails',
+  'Roll back Hosting and Functions after any deployment or certification failure',
   'DEPLOY_URAI_APP',
 ]) {
   if (!governedDeploy.includes(marker)) failures.push(`${governedDeployPath} must retain governed production marker: ${marker}`)
