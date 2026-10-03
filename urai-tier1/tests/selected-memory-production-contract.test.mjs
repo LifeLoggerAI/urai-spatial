@@ -24,7 +24,8 @@ test('production memory loading never silently substitutes demo or seed content'
 
 test('demo memory requires explicit disclosed intent and never inherits hidden browser or environment authority', () => {
   assert.match(contract, /params\.get\('demo'\) === '1'/)
-  assert.match(contract, /startsWith\('demo:'\)/)
+  assert.match(contract, /Boolean\(params\.get\('memoryId'\) \?\? params\.get\('node'\)\)/)
+  assert.doesNotMatch(contract, /startsWith\('demo:'\)/)
   assert.match(contract, /This is not personal data/)
   assert.match(hook, /const requestedDemoMemoryId = isExplicitDemoRequest\(params\)/)
   assert.match(hook, /\? asDemoMemoryId\(memoryId\)\s*:\s*null/)
