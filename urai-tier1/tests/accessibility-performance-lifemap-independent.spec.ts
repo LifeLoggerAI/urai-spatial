@@ -355,7 +355,13 @@ test.describe('Supporting route responsive and accessible runtime evidence', () 
   })
 
   test('onboarding instructions and dismissal remain reachable in small portrait and landscape', async ({ page }) => {
-    test.setTimeout(90_000)
+    // This acceptance test intentionally exercises two complete viewport passes,
+    // including geometry/48px audits and retained screenshots before keyboard
+    // dismissal. The prior 90s suite ceiling expired at the second Enter press
+    // after all preceding assertions had passed; 120s matches the existing
+    // multi-viewport accessibility evidence envelope without weakening a single
+    // product assertion or per-action timeout.
+    test.setTimeout(120_000)
     const reports = []
     for (const viewport of [{ width: 320, height: 568 }, { width: 568, height: 320 }]) {
       await page.setViewportSize(viewport)
