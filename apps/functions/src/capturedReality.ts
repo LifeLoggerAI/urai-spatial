@@ -248,6 +248,41 @@ export const getCapturedRealityRuntimeUrl = capturedRealityFunctions.https.onCal
 })
 
 
+async function requireCapturedRealityLifeModelAuthority(
+  uid: string,
+  binding: FirebaseFirestore.DocumentSnapshot,
+) {
+  if (binding.get('lifeModelSchemaVersion') !== 'urai-life-model-v1') return false
+  const sceneTruthPacketId = binding.get('sceneTruthPacketId')
+  if (typeof sceneTruthPacketId !== 'string' || !sceneTruthPacketId) return false
+  const bundleIds = Array.isArray(binding.get('personModelBundleIds'))
+    ? [...new Set(binding.get('personModelBundleIds').filter((value: unknown): value is string => typeof value === 'string' && value.length > 0))]
+    : []
+
+  const [scene, bundles] = await Promise.all([
+    db.doc(`users/${uid}/sceneTruthPackets/${sceneTruthPacketId}`).get(),
+    bundleIds.length
+      ? db.getAll(...bundleIds.map((id) => db.doc(`users/${uid}/personModelBundles/${id}`)))
+      : [],
+  ])
+  if (
+    !scene.exists
+    || scene.get('ownerId') !== uid
+    || scene.get('schemaVersion') !== 'urai-life-model-v1'
+    || scene.get('state') !== 'current'
+    || scene.get('syntheticOutputMayBecomeHistoricalSource') !== false
+    || !['READY','READY_WITH_OCCLUSION','READY_INTERPRETIVE'].includes(String(scene.get('decision') ?? ''))
+  ) return false
+
+  return bundles.every((bundle) =>
+    bundle.exists
+    && bundle.get('ownerId') === uid
+    && bundle.get('schemaVersion') === 'urai-life-model-v1'
+    && bundle.get('state') === 'current'
+    && bundle.get('synthetic') === false
+  )
+}
+
 /**
  * Resolves an authenticated Replay memory to a reviewed private Captured
  * Reality asset. No source IDs, storage locators, exact location, or provider
@@ -293,6 +328,9 @@ export const getCapturedRealityReplayEntry = capturedRealityFunctions.https.onCa
 
   const releaseState = String(asset.get('releaseState') ?? 'hard-off')
   if (!['private-pilot', 'private-beta', 'launch-enabled'].includes(releaseState)) {
+    return { available: false }
+  }
+  if (releaseState === 'launch-enabled' && !(await requireCapturedRealityLifeModelAuthority(uid, binding))) {
     return { available: false }
   }
 
