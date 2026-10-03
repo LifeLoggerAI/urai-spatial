@@ -18,6 +18,7 @@ import * as THREE from 'three'
 import { replayAssets } from '@/spatial/assets/uraiAssets'
 import { useReducedMotion } from '@/spatial/hooks/useReducedMotion'
 import { useSelectedMemory } from '@/spatial/memory/useSelectedMemory'
+import { useReplayLifeModelAuthority } from '@/spatial/life-model/useReplayLifeModelAuthority'
 import { useCapturedRealityReplayLookup } from '@/spatial/captured-reality/useCapturedRealityReplayEntry'
 import { useInterpretiveWorldReplayEntry } from '@/spatial/interpretive-world/useInterpretiveWorldReplayEntry'
 import { memoryWorldReplayHref } from '@/spatial/memory-world/memoryWorldReplay'
@@ -26,6 +27,7 @@ import { useAdaptiveSpatialQuality, type SpatialQualityProfile } from '@/spatial
 import { requestUraiWorldReturn, requestUraiWorldTravel } from '@/spatial/world/worldEvents'
 import { useUraiWorldState } from '@/spatial/world/WorldStateProvider'
 import { ReplayProductControls } from './ReplayProductControls'
+import { ReplayPersonPresence } from './ReplayPersonPresence'
 import { ReplayRecordedSource, type ReplayImageState } from './ReplayRecordedSource'
 import { initialReplayVideoSnapshot, type ReplayVideoSession, type ReplayVideoSnapshot } from './replayMediaSession'
 import { replaySessionIdentity, replayVisualAdmission } from './replayVisualAdmission'
@@ -221,11 +223,13 @@ function replayTimeLabel(timeMs: number) {
 
 function ReplayMemoryExperience({ memory, memoryStatus, quality }: { memory: SelectedMemory; memoryStatus: string; quality: SpatialQualityProfile }) {
   const { world } = useUraiWorldState()
-  const capturedRealityLookup = useCapturedRealityReplayLookup(memory.id)
+  const lifeModelAuthority = useReplayLifeModelAuthority(memory.id, memory.demo === true)
+  const governedMemoryId = lifeModelAuthority.available ? memory.id : null
+  const capturedRealityLookup = useCapturedRealityReplayLookup(governedMemoryId)
   const capturedRealityEntry = capturedRealityLookup.entry
-  const interpretiveWorldEntry = useInterpretiveWorldReplayEntry(memory.id)
+  const interpretiveWorldEntry = useInterpretiveWorldReplayEntry(governedMemoryId)
   const generatedWorldEntry = capturedRealityEntry ? null : interpretiveWorldEntry
-  const memoryWorldHref = useMemo(() => memoryWorldReplayHref(memory), [memory])
+  const memoryWorldHref = useMemo(() => memory.demo || lifeModelAuthority.available ? memoryWorldReplayHref(memory) : null, [lifeModelAuthority.available, memory])
   const admission = useMemo(() => replayVisualAdmission(memory), [memory])
   const media = admission.media
   const video = media?.kind === 'video'
@@ -330,7 +334,7 @@ function ReplayMemoryExperience({ memory, memoryStatus, quality }: { memory: Sel
     '--replay-progress': `${percent}%`,
   } as CSSProperties
 
-  return <main className="replayWorld" style={style} data-testid="cinematic-replay-client" data-memory-status={memoryStatus} data-memory-id={memory.id} data-star-id={memory.star.id} data-manifest-id={memory.replayManifest.id} data-node={memory.star.id} data-playing={playing ? 'true' : 'false'} data-current-time-ms={progressMs} data-duration-ms={duration} data-replay-media-status={mediaStatus} data-replay-media-ready={mediaReady ? 'true' : 'false'} data-canonical-asset={demoEnvironment ? replayAssets.primary.src : undefined} data-replay-spatial-owner={visualOwner} data-replay-composition={demoEnvironment ? 'inside-memory-environment-ui-subordinate' : 'recorded-source-or-neutral-fallback'} data-replay-environment-fallback={admission.kind} data-webgl-state={webgl.state}>
+  return <main className="replayWorld" style={style} data-testid="cinematic-replay-client" data-memory-status={memoryStatus} data-memory-id={memory.id} data-life-model-authority={memory.demo ? 'demo' : lifeModelAuthority.status} data-star-id={memory.star.id} data-manifest-id={memory.replayManifest.id} data-node={memory.star.id} data-playing={playing ? 'true' : 'false'} data-current-time-ms={progressMs} data-duration-ms={duration} data-replay-media-status={mediaStatus} data-replay-media-ready={mediaReady ? 'true' : 'false'} data-canonical-asset={demoEnvironment ? replayAssets.primary.src : undefined} data-replay-spatial-owner={visualOwner} data-replay-composition={demoEnvironment ? 'inside-memory-environment-ui-subordinate' : 'recorded-source-or-neutral-fallback'} data-replay-environment-fallback={admission.kind} data-webgl-state={webgl.state}>
     {admission.kind !== 'recorded-source' && webgl.state === 'ready' ? <ReplayCanvasBoundary key={`${webgl.attempt}:${mediaAttempt}`} onFailure={webgl.fail}>
       <Canvas className="replaySpatialCanvas" shadows={quality.shadows} dpr={[1, quality.pixelRatioMax]} frameloop={quality.documentVisible ? 'always' : 'never'} camera={{ position: [0, 0.42, 8.4], fov: 46, near: 0.05, far: 120 }} gl={{ antialias: quality.antialias, powerPreference: 'high-performance' }} onCreated={({ gl }) => { gl.outputColorSpace = THREE.SRGBColorSpace; gl.toneMapping = THREE.ACESFilmicToneMapping; gl.toneMappingExposure = 1.05; gl.domElement.addEventListener('webglcontextlost', (event) => { event.preventDefault(); webgl.fail() }, { once: true }) }}>
         {demoEnvironment ? <ReplaySpatialScene memory={memory} progressMs={progressMs} onMediaState={onImageState} /> : <ReplayNeutralSpatialScene />}
@@ -349,7 +353,7 @@ function ReplayMemoryExperience({ memory, memoryStatus, quality }: { memory: Sel
       style={replayProofSurfaceStyle}
     />
     <div className="replayAtmosphere" aria-hidden="true" />
-    <header><p>{memory.demo ? 'DEMO FIXTURE · NOT PERSONAL DATA' : `${memory.privacy} replay`}</p><h1>{memory.title}</h1><span>{active?.label ?? 'Replay'}</span><button className="unwind" type="button" onClick={() => { pauseMemory(); unwind() }}>{world.previousDestination === 'life-movie' ? '← Life Movie' : '← Focus'}</button><button className="replayLifeMovieEntry" type="button" onClick={continueLifeMovie}>Continue Life Movie</button>{memoryWorldHref ? capturedRealityLookup.status === 'loading' ? <span className="replayImmersiveEntry" role="status" aria-live="polite">Checking captured place…</span> : <a className="replayImmersiveEntry" href={capturedRealityEntry?.href ?? generatedWorldEntry?.href ?? memoryWorldHref} onClick={pauseMemory} aria-label={(capturedRealityEntry ? 'Enter captured place for ' : generatedWorldEntry ? 'Enter interpretive world for ' : 'Enter Memory World for ') + memory.title} title={capturedRealityEntry?.truthLabel ?? generatedWorldEntry?.truthLabel ?? 'Context template · not recorded history'}>{capturedRealityEntry ? 'Enter captured place' : generatedWorldEntry ? 'Enter interpretive world' : 'Enter Memory World'}</a> : null}</header>
+    <header><p>{memory.demo ? 'DEMO FIXTURE · NOT PERSONAL DATA' : lifeModelAuthority.available ? `${memory.privacy} replay · ${lifeModelAuthority.decision}` : `${memory.privacy} archive replay · reconstruction held`}</p><h1>{memory.title}</h1><span>{active?.label ?? 'Replay'}</span><button className="unwind" type="button" onClick={() => { pauseMemory(); unwind() }}>{world.previousDestination === 'life-movie' ? '← Life Movie' : '← Focus'}</button><button className="replayLifeMovieEntry" type="button" onClick={continueLifeMovie}>Continue Life Movie</button>{memoryWorldHref ? capturedRealityLookup.status === 'loading' ? <span className="replayImmersiveEntry" role="status" aria-live="polite">Checking captured place…</span> : <a className="replayImmersiveEntry" href={capturedRealityEntry?.href ?? generatedWorldEntry?.href ?? memoryWorldHref} onClick={pauseMemory} aria-label={(capturedRealityEntry ? 'Enter captured place for ' : generatedWorldEntry ? 'Enter interpretive world for ' : 'Enter Memory World for ') + memory.title} title={capturedRealityEntry?.truthLabel ?? generatedWorldEntry?.truthLabel ?? 'Context template · not recorded history'}>{capturedRealityEntry ? 'Enter captured place' : generatedWorldEntry ? 'Enter interpretive world' : 'Enter Memory World'}</a> : null}</header>
     {admission.kind !== 'disclosed-demo' || mediaStatus !== 'ready' || webgl.state !== 'ready' ? <section className="replaySourceStatus" role="status" aria-live="polite" data-replay-source-status={mediaStatus}>
       {media ? <><strong>{memory.demo ? 'Demonstration source' : 'Recorded source'} · original framing</strong><span>A spatial reconstruction is not established by this source. Use the world entry when an admitted place is available.</span></> : admission.kind === 'neutral' ? <><strong>No recorded visual source</strong><span>The memory text and controls remain accessible. No reconstructed place is being shown.</span></> : null}
       {mediaStatus === 'loading' ? <span>{video ? 'Loading recorded video…' : demoEnvironment ? 'Loading demonstration environment…' : 'Loading recorded image…'}</span> : mediaStatus === 'buffering' ? <span>Buffering recorded video. Memory time follows the source.</span> : null}
@@ -368,6 +372,7 @@ function ReplayMemoryExperience({ memory, memoryStatus, quality }: { memory: Sel
       {video ? <button className="memoryAudio" type="button" disabled={!videoSnapshot.audioAllowed} onClick={() => videoSession.current?.setMuted(!videoSnapshot.muted)} aria-label={!videoSnapshot.audioAllowed ? 'Recorded audio is off while low stimulation is on' : videoSnapshot.muted ? 'Enable recorded audio' : 'Mute recorded audio'} aria-pressed={!videoSnapshot.muted}>{!videoSnapshot.audioAllowed ? 'Audio off: low stimulation' : videoSnapshot.muted ? 'Enable audio' : 'Mute audio'}</button> : null}
     </section>
     <ReplayProductControls memory={memory} />
+    {lifeModelAuthority.available ? <ReplayPersonPresence people={lifeModelAuthority.people} /> : null}
     {memory.replayManifest.transcript ? <details className="transcript"><summary>Transcript</summary><p>{memory.replayManifest.transcript}</p></details> : null}
     <style>{replayCss}</style>
   </main>
