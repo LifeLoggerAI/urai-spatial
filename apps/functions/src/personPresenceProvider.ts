@@ -1,4 +1,4 @@
-import { createHash, randomUUID } from 'node:crypto'
+import { createHash } from 'node:crypto'
 import * as admin from 'firebase-admin'
 import { defineSecret } from 'firebase-functions/params'
 import { onRequest } from 'firebase-functions/v2/https'
@@ -103,6 +103,18 @@ async function consumeRateLimit(uid: string) {
       updatedAt: admin.firestore.FieldValue.serverTimestamp(),
     }, { merge: true })
   })
+}
+
+function requireRequestId(value: unknown) {
+  const requestId = String(value ?? '').trim().toLowerCase()
+  if (!/^[a-f0-9]{64}$/.test(requestId)) {
+    throw new PresenceError(400, 'INVALID_REQUEST_ID', 'A stable person-presence request identity is required.')
+  }
+  return requestId
+}
+
+function personPresenceIdempotencyKey(uid:string, sessionId:string, requestId:string) {
+  return createHash('sha256').update(`urai-person-presence-provider:${uid}:${sessionId}:${requestId}`).digest('hex')
 }
 
 function boundedContext(value: unknown) {
@@ -276,6 +288,8 @@ export const personPresenceProvider = onRequest({
     if (!message || message.length > 2500) throw new PresenceError(400, 'INVALID_MESSAGE', 'Message is missing or too long.')
     const sessionId = String(body.sessionId ?? '').trim()
     if (!/^presence:[A-Za-z0-9-]{16,80}$/.test(sessionId)) throw new PresenceError(400, 'INVALID_SESSION', 'Presence session is invalid.')
+    const requestId = requireRequestId(body.requestId)
+    const upstreamIdempotencyKey = personPresenceIdempotencyKey(uid, sessionId, requestId)
     const locale = String(body.locale ?? 'en-US').trim().slice(0, 35) || 'en-US'
     const context = boundedContext(body.context)
     await requireProviderConsent(uid, body.aiProcessingConsent === true)
@@ -305,7 +319,7 @@ export const personPresenceProvider = onRequest({
         Authorization: `Bearer ${OPENAI_API_KEY.value()}`,
         'Content-Type': 'application/json',
         Accept: 'text/event-stream',
-        'Idempotency-Key': randomUUID(),
+        'Idempotency-Key': upstreamIdempotencyKey,
       },
       body: JSON.stringify({
         model: process.env.OPENAI_PERSON_PRESENCE_MODEL || process.env.OPENAI_ADAM_MODEL || 'gpt-5',
