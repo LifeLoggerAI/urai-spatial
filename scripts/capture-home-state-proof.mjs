@@ -339,10 +339,11 @@ async function captureOrbLifecycle({ reducedMotion = 'no-preference' } = {}) {
     await page.getByRole('button', { name: 'Send' }).focus()
     await page.keyboard.press('Enter')
     await page.locator('section[aria-label="Orb response"]').waitFor({ state: 'visible', timeout: 20_000 })
-    await page.waitForFunction((selector) => document.querySelector(selector)?.getAttribute('data-home-orb-state') === 'attention', ownerSelector)
-    record.textReadyState = await owner.getAttribute('data-home-orb-state')
-    record.textReadyClip = await owner.getAttribute('data-home-orb-clip')
-    record.textReadyAnimation = await owner.getAttribute('data-home-orb-animation')
+    await page.waitForFunction(() => window.__uraiObservedOrbEventSnapshots?.some((snapshot) => snapshot.state === 'attention' && snapshot.ownerState === 'attention'))
+    const textReadySnapshot = await page.evaluate(() => [...(window.__uraiObservedOrbEventSnapshots || [])].reverse().find((snapshot) => snapshot.state === 'attention' && snapshot.ownerState === 'attention') || null)
+    record.textReadyState = textReadySnapshot?.ownerState ?? null
+    record.textReadyClip = textReadySnapshot?.clip ?? null
+    record.textReadyAnimation = textReadySnapshot?.animation ?? null
     record.textOnlyVoicePhase = await panel.getAttribute('data-orb-voice-phase')
     const textStates = await page.evaluate(() => window.__uraiObservedOrbStates || [])
     record.textDidNotClaimListeningOrSpeaking = !textStates.includes('listening') && !textStates.includes('speaking')
@@ -366,7 +367,7 @@ async function captureOrbLifecycle({ reducedMotion = 'no-preference' } = {}) {
     await page.keyboard.press('Enter')
     await page.waitForFunction(() => document.querySelector('details[data-orb-voice-phase] [role="status"]')?.textContent?.includes('turn low stimulation off before enabling voice'))
     record.lowStimulationBlockedUnmute = await mutedVoice.getAttribute('aria-pressed') === 'false'
-      && await page.getByRole('button', { name: 'Replay', exact: true }).isDisabled()
+      && await panel.getByRole('button', { name: 'Replay', exact: true }).isDisabled()
       && await panel.getAttribute('data-orb-voice-phase') === 'idle'
       && await owner.getAttribute('data-home-orb-playback') === 'stopped'
       && voiceProviderRequests.length === requestsBeforeComfortAttempt
@@ -384,7 +385,7 @@ async function captureOrbLifecycle({ reducedMotion = 'no-preference' } = {}) {
     await page.waitForFunction((selector) => document.querySelector(selector)?.getAttribute('data-home-orb-reduced-stimulation') === 'false', ownerSelector)
     await page.waitForFunction(() => document.querySelector('details[data-orb-voice-phase] [role="status"]')?.textContent?.includes('voice remains muted until you choose Voice on'))
     record.lowStimulationOffRemainedMuted = await mutedVoice.getAttribute('aria-pressed') === 'false'
-      && await page.getByRole('button', { name: 'Replay', exact: true }).isDisabled()
+      && await panel.getByRole('button', { name: 'Replay', exact: true }).isDisabled()
       && await panel.getAttribute('data-orb-voice-phase') === 'idle'
       && voiceProviderRequests.length === requestsBeforeComfortAttempt
     record.lowStimulationDidNotClaimSpeech = await page.evaluate((start) => !window.__uraiObservedOrbStates.slice(start).includes('speaking'), statesBeforeComfortAttempt)
@@ -393,7 +394,7 @@ async function captureOrbLifecycle({ reducedMotion = 'no-preference' } = {}) {
     stage = 'voice-replay'
     await page.getByRole('button', { name: 'Voice muted', exact: true }).focus()
     await page.keyboard.press('Enter')
-    await page.getByRole('button', { name: 'Replay', exact: true }).focus()
+    await panel.getByRole('button', { name: 'Replay', exact: true }).focus()
     await page.keyboard.press('Enter')
     const voiceSnapshotHandle = await page.waitForFunction((selector) => {
       const panel = document.querySelector('details[data-orb-voice-phase]')
