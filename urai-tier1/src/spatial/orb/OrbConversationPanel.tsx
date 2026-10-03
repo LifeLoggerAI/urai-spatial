@@ -274,7 +274,7 @@ export default function OrbConversationPanel({ active = true }: { active?: boole
                   setBusy(false)
                   setStatus('OpenAI consent revoked. This device canceled the current request and stopped Orb voice.')
                 }
-                publishConversationState(allowed ? 'attention' : 'privacy', 1800)
+                publishConversationState(allowed ? 'attention' : 'privacy')
               }}
             />
             Allow this message and bounded recent context to be processed by OpenAI.
@@ -290,7 +290,7 @@ export default function OrbConversationPanel({ active = true }: { active?: boole
                 if (!allowed) {
                   stopVoice()
                   setStatus('External voice consent revoked. Current Orb voice stopped.')
-                  publishConversationState('privacy', 1800)
+                  publishConversationState('privacy')
                 }
               }}
             />
