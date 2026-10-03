@@ -68,6 +68,11 @@ html.urai-route-life-map[dir='rtl'] .life-map-semantic-inspector {
   }
   html.urai-route-life-map[dir='rtl'] .life-map-search-trigger,
   html.urai-route-life-map[dir='rtl'] .life-map-navigator { left: max(12px, env(safe-area-inset-left)) !important; }
+  html.urai-route-life-map body #life-map-navigator .semantic-results {
+    max-height: none;
+    min-height: 0;
+    overflow: visible;
+  }
 }
 
 @media (max-width: 760px) { html.urai-route-life-map[dir='rtl'] body #life-map-navigator { right: auto !important; left: max(12px, env(safe-area-inset-left)) !important; } }
