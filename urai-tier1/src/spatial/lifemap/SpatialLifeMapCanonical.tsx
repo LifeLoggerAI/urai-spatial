@@ -6,6 +6,7 @@ import { getAuth, onAuthStateChanged } from "firebase/auth";
 import { assetCssStack, lifeMapAssets } from "@/spatial/assets/uraiAssets";
 import { requestUraiWorldReturn } from "@/spatial/world/worldEvents";
 import LifeMapRouteBoundary from "@/components/lifemap/LifeMapRouteBoundary";
+import LifeMapSemanticNavigator from "@/components/lifemap/LifeMapSemanticNavigator";
 import { app, firebasePublicEnvReady } from "@/lib/firebase/client";
 
 const DEMO_MANIFEST_ID = "replay-recovery-thread";
@@ -112,7 +113,7 @@ function LifeMapAccessGate() {
 
   if (mode === "checking" || webglAvailable === null) return <LifeMapLoading label="Checking the private threshold" />;
   if (mode === "signed-out") return <SignedOutLifeMap onOpenDemo={openDemo} onReturnHome={() => router.push("/home")} />;
-  if (!webglAvailable) return <LifeMapLoading label="WebGL is unavailable. Semantic navigation remains available" />;
+  if (!webglAvailable) return <><LifeMapLoading label="WebGL is unavailable. Semantic navigation remains available" /><LifeMapSemanticNavigator authenticatedUserId={mode === "private" ? authenticatedUserId : null} /></>;
   return <section data-testid="urai-r3f-canonical-lifemap" data-canonical-asset={lifeMapAssets.primary.src} data-selected-memory-owner="spatial-lens-only" data-life-map-access={mode} aria-label="URAI canonical spatial Life Map" style={{ position:"fixed", inset:0, zIndex:100, width:"100vw", height:"100svh", minHeight:"100svh", overflow:"hidden", background:"#01030a" }}><LifeMapRouteBoundary authenticatedUserId={mode === "private" ? authenticatedUserId : null} /></section>;
 }
 
