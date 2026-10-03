@@ -3,7 +3,9 @@
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent, type PointerEvent, type WheelEvent } from 'react'
+import { getAuth, onAuthStateChanged } from 'firebase/auth'
 import { locationMapAssets } from '@/spatial/assets/uraiAssets'
+import { app, firebasePublicEnvReady } from '@/lib/firebase/client'
 import { LocationMapSpatialWorld } from './LocationMapSpatialWorld'
 import type { MemoryPlace } from './memoryPlaceSchema'
 import './location-map-scene.css'
@@ -14,8 +16,6 @@ type AccessMode = 'checking' | 'threshold' | 'private' | 'demo'
 type PointerPoint = { x: number; y: number }
 
 const OVERVIEW: Camera = { x: 0, y: 0, zoom: 0.9 }
-const USER_KEY = 'urai:userId'
-const DEMO_KEY = 'urai:locationMapDemoMode'
 const SEEDS = [[18,29,.25],[34,58,.58],[47,34,.38],[62,51,.68],[77,27,.46],[82,66,.78],[43,75,.88],[24,72,.72],[69,77,.92]] as const
 
 function clamp(value: number, min: number, max: number) { return Math.min(max, Math.max(min, value)) }
@@ -45,7 +45,7 @@ function distance(points: PointerPoint[]) {
   return Math.hypot(points[0].x - points[1].x, points[0].y - points[1].y)
 }
 
-export function LocationMapScene({ places, acceptanceFixturesEnabled = false }: { places: MemoryPlace[]; acceptanceFixturesEnabled?: boolean }) {
+export function LocationMapScene({ places, acceptanceAccessMode = null }: { places: MemoryPlace[]; acceptanceAccessMode?: 'private' | null }) {
   const router = useRouter()
   const searchParams = useSearchParams()
   const stageRef = useRef<HTMLDivElement | null>(null)
@@ -55,20 +55,7 @@ export function LocationMapScene({ places, acceptanceFixturesEnabled = false }: 
   const pinch = useRef<{ distance: number; zoom: number } | null>(null)
   const touchDrag = useRef<{ x: number; y: number; camera: Camera } | null>(null)
   const touchPinch = useRef<{ distance: number; zoom: number } | null>(null)
-  const fixtureState = acceptanceFixturesEnabled ? searchParams.get('acceptanceState') : null
-  const visiblePlaces = useMemo(() => {
-    if (!places) return []
-    if (fixtureState === 'empty') return []
-    if (fixtureState !== 'private') return places
-    return places.map((place, index) => ({
-      ...place,
-      id: `private-acceptance-${index + 1}`,
-      userId: 'acceptance-user',
-      title: `Private Place ${index + 1}`,
-      privacyLevel: 'private' as const,
-      locationPrivacy: index === 0 ? 'exact-private' as const : 'approx-private' as const,
-    }))
-  }, [fixtureState, places])
+  const visiblePlaces = useMemo(() => places ?? [], [places])
   const points = useMemo(() => pointsFor(visiblePlaces), [visiblePlaces])
   const demoData = visiblePlaces.length > 0 && visiblePlaces.every(place => place.privacyLevel === 'demo')
   const [access, setAccess] = useState<AccessMode>('checking')
@@ -115,14 +102,23 @@ export function LocationMapScene({ places, acceptanceFixturesEnabled = false }: 
 
   useEffect(() => {
     const explicitDemo = searchParams.get('demo') === '1'
-    try {
-      const userId = localStorage.getItem(USER_KEY)?.trim()
-      const retainedDemo = localStorage.getItem(DEMO_KEY) === 'true'
-      setAccess(userId ? 'private' : explicitDemo || retainedDemo ? 'demo' : 'threshold')
-    } catch {
-      setAccess(explicitDemo ? 'demo' : 'threshold')
+    if (explicitDemo) {
+      setAccess('demo')
+      return
     }
-  }, [searchParams])
+    if (acceptanceAccessMode === 'private') {
+      setAccess('private')
+      return
+    }
+    if (!firebasePublicEnvReady) {
+      setAccess('threshold')
+      return
+    }
+    setAccess('checking')
+    return onAuthStateChanged(getAuth(app), (user) => {
+      setAccess(user ? 'private' : 'threshold')
+    })
+  }, [acceptanceAccessMode, searchParams])
   useEffect(() => { applyUrl() }, [applyUrl])
   useEffect(() => {
     if (!selected) return
@@ -290,7 +286,6 @@ export function LocationMapScene({ places, acceptanceFixturesEnabled = false }: 
   }, [access, visiblePlaces.length])
 
   const openDemo = () => {
-    try { localStorage.setItem(DEMO_KEY, 'true') } catch { /* storage may be unavailable */ }
     const params = new URLSearchParams(searchParams.toString())
     params.set('demo', '1'); params.set('privacyMode', 'private'); params.set('entryPortal', 'location-beacon'); params.set('cameraCheckpoint', 'atlas-world-view')
     setAccess('demo'); router.replace(`/location-map/?${params.toString()}`, { scroll: false })
