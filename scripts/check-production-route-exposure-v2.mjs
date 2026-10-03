@@ -127,7 +127,7 @@ if (staticConfig.cleanUrls !== true) failures.push('firebase.static.json must en
 if (staticConfig.trailingSlash !== true) failures.push('firebase.static.json must enable trailingSlash')
 const requiredServerRewrites = new Map([
   ['/api/stripe/create-checkout-session', 'createStripeCheckout'],
-  ['/api/stripe/customer-portal', 'createStripeCustomerPortal'],
+  ['/api/stripe/create-portal-session', 'createStripeCustomerPortal'],
   ['/api/entitlement', 'getStripeEntitlement'],
   ['/api/stripe/webhook', 'handleStripeWebhook'],
 ])
