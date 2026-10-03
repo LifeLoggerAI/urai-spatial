@@ -16,8 +16,9 @@ test('Replay authority resolves current canonical SceneTruth and Person Model bu
 
 test('Replay blocks generated world escalation when canonical authority is unavailable', () => {
   assert.match(replay, /useReplayLifeModelAuthority/)
-  assert.match(replay, /useCapturedRealityReplayLookup\(lifeModelAuthority\.available/)
-  assert.match(replay, /useInterpretiveWorldReplayEntry\(lifeModelAuthority\.available/)
+  assert.match(replay, /const governedMemoryId = lifeModelAuthority\.available \? memory\.id : null/)
+  assert.match(replay, /useCapturedRealityReplayLookup\(governedMemoryId\)/)
+  assert.match(replay, /useInterpretiveWorldReplayEntry\(governedMemoryId\)/)
   assert.match(replay, /memory\.demo \|\| lifeModelAuthority\.available/)
 })
 
