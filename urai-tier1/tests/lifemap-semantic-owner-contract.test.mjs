@@ -31,7 +31,12 @@ test('semantic selection emits one authoritative event and synchronizes route id
   assert.match(navigator, /requestLifeMapSelection\(node\.id, source\)/)
   assert.match(navigator, /next\.set\('memoryId'|next\.set\("memoryId"/)
   assert.match(navigator, /next\.set\('node'|next\.set\("node"/)
-  assert.match(navigator, /router\.replace\(`\/life-map\?\$\{next\.toString\(\)\}`/)
+  const navigatorSelection = navigator.match(/const selectNode = useCallback\([\s\S]*?\n  const destinationHref = useCallback/)?.[0] || ''
+  const sceneSelection = scene.match(/const selectNode = useCallback\([\s\S]*?\n  const overview = useCallback/)?.[0] || ''
+  assert.match(navigatorSelection, /commitBrowserIdentity\(next\)[\s\S]*requestLifeMapSelection\(node\.id, source\)/)
+  assert.doesNotMatch(navigatorSelection, /router\.replace\(/)
+  assert.match(sceneSelection, /window\.history\.replaceState\(window\.history\.state, "", destination\)/)
+  assert.doesNotMatch(sceneSelection, /router\.replace\(/)
   assert.doesNotMatch(navigator, /selectionFallbackRef|window\.setTimeout\([\s\S]*router\.replace|root\?\.dataset\.lifeMapMode|routeSelectedId/)
   assert.equal((navigator.match(/requestLifeMapSelection\(node\.id, source\)/g) || []).length, 1)
 })
