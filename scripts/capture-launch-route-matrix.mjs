@@ -50,6 +50,10 @@ const demoQueries = {
   '/focus': 'demo=1&memoryId=demo%3Aquiet-reset&manifestId=replay-recovery-thread',
   '/replay': 'demo=1&memoryId=demo%3Aquiet-reset&manifestId=replay-recovery-thread',
 }
+const canonicalRedirectTargets = new Map([
+  ['/ascent', '/home?from=ascent'],
+  ['/unwind', '/life-map?from=unwind&overview=1'],
+])
 const cases = routes.map(route => ({ route, state: 'initial-unsigned', query: '', profile, coverage: 'primary-critical-routes' }))
 for (const [route, query] of Object.entries(demoQueries)) {
   if (routes.includes(route)) cases.push({ route, state: 'explicit-demo', query, profile, coverage: 'primary-critical-routes' })
