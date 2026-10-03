@@ -1,3 +1,4 @@
+import { preserveAuditedLifeMapProof } from './materialize-accessibility-performance-lifemap-authority.mjs'
 import './materialize-accessibility-performance-current.mjs'
 import { readFile, writeFile } from 'node:fs/promises'
 
@@ -55,40 +56,9 @@ await transformFile('urai-tier1/tests/accessibility-performance-embodied-explora
   return source
 })
 
-await transformFile('urai-tier1/tests/accessibility-performance-lifemap-independent.spec.ts', (input) => {
-  let source = replaceExact(
-    input,
-    '  test.describe.configure({ timeout: 90_000 })',
-    '  test.describe.configure({ timeout: 180_000 })',
-    1,
-    'Life Map software-renderer timeout envelope',
-  )
-  source = replaceExact(
-    source,
-    "    await expect(page.getByText('Disclosed sample universe · not your memories', { exact: true })).toBeVisible()",
-    "    await expect(root.getByText('Disclosed sample universe · not your memories', { exact: true })).toBeVisible()",
-    1,
-    'Life Map disclosed-demo truth owner',
-  )
-  source = replaceExact(
-    source,
-    "  await explore.locator('summary').click()",
-    `  const summary = explore.locator('summary')
-  await summary.focus()
-  await expect(summary).toBeFocused()
-  if (!(await explore.getAttribute('open'))) await summary.press('Enter')`,
-    1,
-    'Life Map reduced-motion keyboard-owned explorer opening',
-  )
-  source = replaceExact(
-    source,
-    "    await expect(page.locator('aside[aria-label=\"Selected life object details\"] h2')).toContainText((firstLabel || '').split('·')[0].trim())",
-    "    await expect(page.locator('aside[aria-label=\"Selected life object details\"] h2')).toHaveText('The Quiet Reset')",
-    1,
-    'Life Map selected title identity owner',
-  )
-  return source
-})
+// This proof now lives in its audited current form; historical rewrites must
+// never replace its stronger privacy, identity, title, and mobile assertions.
+await preserveAuditedLifeMapProof()
 
 await transformFile('urai-tier1/tests/accessibility-performance-spatial-visual.spec.ts', (input) => {
   let source = replaceExact(

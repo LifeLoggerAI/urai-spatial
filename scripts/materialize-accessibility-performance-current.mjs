@@ -1,3 +1,4 @@
+import { preserveAuditedLifeMapProof } from './materialize-accessibility-performance-lifemap-authority.mjs'
 import { readFile, writeFile } from 'node:fs/promises'
 
 function replaceExact(source, from, to, expectedCount, label) {
@@ -80,74 +81,9 @@ await transformFile('urai-tier1/tests/accessibility-performance-embodied-explora
   return source
 })
 
-await transformFile('urai-tier1/tests/accessibility-performance-lifemap-independent.spec.ts', (input) => {
-  let source = replaceExact(
-    input,
-    `function normalizedPathname(url: string) {
-  return new URL(url).pathname.replace(/\\/+$/, '') || '/'
-}`,
-    `function normalizedPathname(url: string) {
-  return new URL(url).pathname.replace(/\\/+$/, '') || '/'
-}
-
-function demoMemoryUrl(overview: boolean) {
-  const params = new URLSearchParams({
-    demo: '1',
-    memoryId: 'quiet-reset',
-    manifestId: 'replay-recovery-thread',
-    node: 'quiet-reset',
-  })
-  if (overview) params.set('overview', '1')
-  return \`/life-map?\${params.toString()}\`
-}`,
-    1,
-    'Life Map exact demo identity helper',
-  )
-  source = replaceExact(
-    source,
-    'details.life-map-help',
-    'details.life-map-navigator',
-    3,
-    'Life Map current semantic navigator selector',
-  )
-  source = replaceExact(
-    source,
-    "const firstMemory = explore.locator('button').first()",
-    "const firstMemory = explore.getByRole('listitem').filter({ hasText: 'The Quiet Reset' }).first()",
-    1,
-    'Life Map reduced-motion memory result selector',
-  )
-  source = replaceExact(
-    source,
-    "const firstMemory = explorer.getByRole('button').first()",
-    "const firstMemory = explorer.getByRole('listitem').filter({ hasText: 'The Quiet Reset' }).first()",
-    1,
-    'Life Map keyboard memory result selector',
-  )
-  source = replaceExact(
-    source,
-    "page.getByText('Explore', { exact: true })",
-    "page.getByText('Search life', { exact: true })",
-    1,
-    'Life Map current semantic summary copy',
-  )
-  source = replaceExact(
-    source,
-    "page.getByText('Sample constellation · not your memories', { exact: true })",
-    "page.getByText('Disclosed sample universe · not your memories', { exact: true })",
-    1,
-    'Life Map current disclosed-demo boundary copy',
-  )
-  source = replaceExact(
-    source,
-    "await expect(page.locator('.life-map-title')).toContainText((firstLabel || '').split(':')[0].trim())",
-    "await expect(page.locator('aside[aria-label=\"Selected life object details\"] h2')).toContainText((firstLabel || '').split('·')[0].trim())",
-    1,
-    'Life Map current selected identity owner',
-  )
-  source = replaceExact(source, "'memory-thread'", "'quiet-reset'", 2, 'Life Map exact selected demo identity')
-  return source
-})
+// This proof now lives in its audited current form; historical rewrites must
+// never replace its stronger privacy, identity, title, and mobile assertions.
+await preserveAuditedLifeMapProof()
 
 await transformFile('urai-tier1/tests/accessibility-performance-spatial-visual.spec.ts', (input) => {
   let source = replaceExact(

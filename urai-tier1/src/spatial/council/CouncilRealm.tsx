@@ -282,6 +282,9 @@ function CouncilStage() {
         @media(max-width:900px),(pointer:coarse) {
           [data-council-embodied="true"] .council-conversation { bottom: calc(130px + env(safe-area-inset-bottom)); max-height: calc(100svh - 210px); overflow-y: auto; pointer-events: auto; }
         }
+        @media(max-width:700px) {
+          [data-council-embodied="true"] .council-conversation { width: calc(100vw - 120px); }
+        }
       `}</style>
     </div>
   )

@@ -1,3 +1,4 @@
+import { preserveAuditedLifeMapProof } from './materialize-accessibility-performance-lifemap-authority.mjs'
 import './materialize-accessibility-performance-current-v3.mjs'
 import { readFile, writeFile } from 'node:fs/promises'
 
@@ -149,91 +150,9 @@ await transformFile('urai-tier1/tests/accessibility-performance-embodied-explora
   return source
 })
 
-await transformFile('urai-tier1/tests/accessibility-performance-lifemap-independent.spec.ts', (input) => {
-  let source = input
-
-  const selectFirstMemoryPattern = /async function selectFirstMemory\(page: Page\) \{[\s\S]*?\n\}/g
-  const selectFirstMemoryCurrent = `async function selectFirstMemory(page: Page) {
-  const searchTrigger = page.locator('.life-map-search-trigger').first()
-  await expect(searchTrigger).toBeVisible({ timeout: 15_000 })
-  await expect(searchTrigger).toHaveAccessibleName('Search and navigate Life Map')
-  await searchTrigger.focus()
-  await expect(searchTrigger).toBeFocused()
-  await page.keyboard.press('Enter')
-  const explorer = page.locator('section.life-map-navigator[aria-label="Search and filter Life Map"]').first()
-  await expect(explorer).toBeVisible()
-  const firstMemory = explorer.locator('button[data-life-map-semantic-result][data-life-map-node-id="quiet-reset"]').first()
-  await expect(firstMemory).toBeVisible()
-  await expect(firstMemory).toHaveAccessibleName(/The Quiet Reset/i)
-  const label = await firstMemory.innerText()
-  await firstMemory.focus()
-  await expect(firstMemory).toBeFocused()
-  await page.keyboard.press('Enter')
-  await expect.poll(() => new URL(page.url()).searchParams.get('memoryId'), { timeout: 15_000 }).toBeTruthy()
-  return label
-}`
-  source = replaceRegex(source, selectFirstMemoryPattern, selectFirstMemoryCurrent, 1, 'current Life Map reduced-motion semantic selection helper')
-
-  const openExplorerPattern = /async function openSemanticExplorer\(page: Page\) \{[\s\S]*?\n\}/g
-  const openExplorerCurrent = `async function openSemanticExplorer(page: Page) {
-  const trigger = page.locator('.life-map-search-trigger').first()
-  await expect(trigger).toBeVisible({ timeout: 15_000 })
-  await expect(trigger).toHaveAccessibleName('Search and navigate Life Map')
-  await trigger.focus()
-  await expect(trigger).toBeFocused()
-  await page.keyboard.press('Enter')
-  const region = page.locator('section.life-map-navigator[aria-label="Search and filter Life Map"]').first()
-  await expect(region).toBeVisible({ timeout: 15_000 })
-  await expect(trigger).toHaveAttribute('aria-expanded', 'true')
-  return region
-}`
-  source = replaceRegex(source, openExplorerPattern, openExplorerCurrent, 1, 'current Life Map semantic explorer helper')
-
-  source = replaceExact(
-    source,
-    "    await expect(page.getByText('Search life', { exact: true })).toBeVisible()",
-    `    const searchTrigger = page.locator('.life-map-search-trigger').first()
-    await expect(searchTrigger).toBeVisible()
-    await expect(searchTrigger).toHaveAccessibleName('Search and navigate Life Map')`,
-    1,
-    'current Life Map search trigger visibility',
-  )
-
-  source = replaceExact(
-    source,
-    "    await expect(page.locator('aside[aria-label=\"Selected life object details\"] h2')).toHaveText('The Quiet Reset')",
-    `    const selectedActionUrl = new URL(page.url())
-    expect(selectedActionUrl.searchParams.get('memoryId')).toBe(selectedActionUrl.searchParams.get('node'))
-    await expect(page.getByRole('navigation', { name: 'Selected memory actions' })).toBeVisible()`,
-    1,
-    'current selected Life Map identity and action owner',
-  )
-
-  source = replaceExact(
-    source,
-    "await expect(lifeMapRoot(page)).toHaveAttribute('data-life-map-mode', 'overview')",
-    "await expect(lifeMapRoot(page)).toHaveAttribute('data-life-map-mode', 'overview', { timeout: 15_000 })",
-    3,
-    'Life Map overview settlement timeout envelope',
-  )
-
-  source = replaceExact(
-    source,
-    "const summary = document.querySelector('details.life-map-navigator summary')?.getBoundingClientRect()",
-    "const summary = document.querySelector('.life-map-search-trigger')?.getBoundingClientRect()",
-    1,
-    'current mobile Life Map search trigger geometry',
-  )
-  source = replaceExact(
-    source,
-    "const title = document.querySelector('.life-map-title')?.getBoundingClientRect()",
-    "const title = document.querySelector('[data-testid=\"urai-true-3d-life-map\"]')?.getBoundingClientRect()",
-    1,
-    'current mobile Life Map owner geometry',
-  )
-
-  return source
-})
+// This proof now lives in its audited current form; historical rewrites must
+// never replace its stronger privacy, identity, title, and mobile assertions.
+await preserveAuditedLifeMapProof()
 
 await transformFile('urai-tier1/tests/accessibility-performance-spatial-visual.spec.ts', (input) => {
   let source = input
