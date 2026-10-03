@@ -65,11 +65,19 @@ function OnboardingCardContent() {
   const [dismissed, setDismissed] = useState(false);
   const [automaticFirstRun, setAutomaticFirstRun] = useState(false);
   const dismissRef = useRef<HTMLButtonElement>(null);
+  const navigationKey = `${pathname}?${query}`;
+  const previousNavigationKeyRef = useRef(navigationKey);
   const card = cards[pathname as keyof typeof cards];
   const explicitSequence = searchParams?.get("onboarding") === "1" || searchParams?.get("firstRun") === "1";
 
   useEffect(() => {
-    setDismissed(false);
+    // Do not reset dismissal from the delayed mount effect: under a busy world
+    // hydration that can race a keyboard-triggered Skip and resurrect the card.
+    // Reset only after a real route/query transition.
+    if (previousNavigationKeyRef.current !== navigationKey) {
+      previousNavigationKeyRef.current = navigationKey;
+      setDismissed(false);
+    }
     if (explicitSequence) {
       setAutomaticFirstRun(false);
       return;
@@ -83,7 +91,7 @@ function OnboardingCardContent() {
     } catch {
       setAutomaticFirstRun(true);
     }
-  }, [explicitSequence, pathname, query]);
+  }, [explicitSequence, navigationKey, pathname]);
 
   const shouldShow = explicitSequence || automaticFirstRun;
 
