@@ -5,8 +5,9 @@ import os from 'node:os'
 import path from 'node:path'
 import { spawnSync } from 'node:child_process'
 import test from 'node:test'
+import { fileURLToPath } from 'node:url'
 
-const root = path.resolve(process.cwd(), '..')
+const root = fileURLToPath(new URL('../../', import.meta.url))
 const assetPath = 'urai-tier1/public/assets/urai/generated/textures/global-cinematic-material-pack-v1.json'
 const decisionPath = 'operations/assets/promotion-rehearsal/global-cinematic-material-pack-v1.json'
 const receiptPath = 'operations/assets/generated-receipts/global-cinematic-material-pack-v1.json'

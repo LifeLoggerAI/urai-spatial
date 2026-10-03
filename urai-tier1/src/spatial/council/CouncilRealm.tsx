@@ -262,7 +262,7 @@ function CouncilStage() {
         </Canvas>
       </div>
 
-      <section className="pointer-events-none absolute bottom-5 left-5 z-10 w-[min(430px,calc(100vw-40px))] rounded-3xl border border-white/15 bg-black/45 p-5 shadow-2xl backdrop-blur-xl md:bottom-8 md:left-8">
+      <section className="council-conversation pointer-events-none absolute bottom-5 left-5 z-10 w-[min(430px,calc(100vw-40px))] rounded-3xl border border-white/15 bg-black/45 p-5 shadow-2xl backdrop-blur-xl md:bottom-8 md:left-8">
         <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-white/55">URAI Council</p>
         <h1 className="mt-2 text-3xl font-medium tracking-tight md:text-4xl">{selectedAgent.name}</h1>
         <p className="mt-1 text-xs uppercase tracking-[0.18em] text-[#e8d8b9]/80">{selectedAgent.role}</p>
@@ -277,6 +277,12 @@ function CouncilStage() {
 
       <MovementHelp realm="Council" summary="Walk around the chamber and choose a Council presence." controls="WASD or arrows move. Drag to look. Tap a Council person to select them. Escape returns. Mobile movement controls appear on touch devices." />
       <MobileMovementPad input={input} label="Move through Council" />
+      <style jsx global>{`
+        [data-council-embodied="true"] .urai-mobile-movement { left: auto; right: max(12px,env(safe-area-inset-right)); bottom: max(12px,env(safe-area-inset-bottom)); }
+        @media(max-width:900px),(pointer:coarse) {
+          [data-council-embodied="true"] .council-conversation { bottom: calc(130px + env(safe-area-inset-bottom)); max-height: calc(100svh - 210px); overflow-y: auto; pointer-events: auto; }
+        }
+      `}</style>
     </div>
   )
 }

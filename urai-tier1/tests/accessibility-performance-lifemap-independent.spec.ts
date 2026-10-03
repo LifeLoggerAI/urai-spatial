@@ -77,7 +77,8 @@ test.describe('Life Map independent realm runtime evidence', () => {
     await expect(root).toBeVisible({ timeout: 15_000 })
     await expect(root).toHaveAttribute('data-life-map-source', 'explicit-demo')
     const explorer = await openSemanticExplorer(page)
-    await expect(page.getByText('Disclosed sample universe · not your memories', { exact: true })).toBeVisible()
+    await expect(explorer.getByText('Disclosed sample universe · not your memories', { exact: true })).toBeVisible()
+    await expect(root.getByText('Disclosed sample universe · not your memories', { exact: true })).toBeVisible()
 
     const firstMemory = explorer.locator('[data-life-map-semantic-result]').first()
     await expect(firstMemory).toBeVisible({ timeout: 15_000 })
