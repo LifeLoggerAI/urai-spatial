@@ -622,6 +622,10 @@ async function captureHomeAssetFailure(fixture) {
     record.freshSuccessfulRetryObserved = loaderRequests.some((request) => request.phase === 'retry')
       && loaderResponses.some((response) => response.phase === 'retry' && response.status === 200)
     record.unexpectedConsoleErrors = consoleErrors.filter((error) => !error.intentionalAssetFailure)
+    record.unexpectedPageErrors = pageErrors.filter((error) => !(
+      error.includes(fixture.asset)
+      && /Could not load|503|Service Unavailable/.test(error)
+    ))
     record.passed = record.status === 200 && record.actualBlockedRequestObserved
       && record.failureRuntime === 'accessible-fallback-after-asset-load-failure'
       && record.failedAssetsReady === 'false' && record.failedWebglReady === 'false'
@@ -634,7 +638,7 @@ async function captureHomeAssetFailure(fixture) {
       && record.recoveredVisual.viewportCoverage >= receipt.visualGate.minimumViewportCoverage
       && record.recoveredVisual.luminanceRange >= receipt.visualGate.minimumLuminanceRange
       && record.recoveredVisual.visibleSamples >= receipt.visualGate.minimumVisibleSamples
-      && record.retryScreenshotBytes > 12_000 && pageErrors.length === 0 && record.unexpectedConsoleErrors.length === 0
+      && record.retryScreenshotBytes > 12_000 && record.unexpectedPageErrors.length === 0 && record.unexpectedConsoleErrors.length === 0
   } catch (error) {
     record.error = String(error)
     record.failedStage = stage
