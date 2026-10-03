@@ -152,6 +152,42 @@ async function bounded(promise, timeoutMs, label) {
   } finally { clearTimeout(timer) }
 }
 
+async function captureViewportScreenshot(page, filePath, caseDeadline) {
+  const remaining = () => Math.max(1_000, caseDeadline - Date.now())
+  const primaryTimeout = Math.min(12_000, remaining())
+  try {
+    return {
+      buffer: await page.screenshot({
+        path: filePath,
+        fullPage: false,
+        animations: 'disabled',
+        caret: 'hide',
+        timeout: primaryTimeout,
+      }),
+      retried: false,
+    }
+  } catch (error) {
+    if (!/Timeout/i.test(String(error)) || remaining() < 5_000) throw error
+    // Playwright can transiently stall while a GPU-backed page is synchronizing its
+    // compositor for capture. Re-read fonts and yield one frame, then retry inside
+    // the original per-case budget. Route/readiness defects are not suppressed.
+    await bounded(page.evaluate(async () => {
+      if (document.fonts?.ready) await document.fonts.ready
+      await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)))
+    }), Math.min(5_000, remaining()), 'Screenshot retry settle')
+    return {
+      buffer: await page.screenshot({
+        path: filePath,
+        fullPage: false,
+        animations: 'disabled',
+        caret: 'hide',
+        timeout: Math.min(30_000, remaining()),
+      }),
+      retried: true,
+    }
+  }
+}
+
 // Reading DOM evidence never creates a WebGL context or forces a synthetic
 // readiness flag. Missing texture/frame telemetry stays explicitly unverified.
 async function inspectDom(page) {
@@ -359,8 +395,10 @@ try {
       if (spec.state === 'explicit-demo' && record.observedState !== 'explicit-demo') defect('explicit-demo-source-unconfirmed', { observedState: record.observedState })
 
       const filename = `${id}--${exactHead.slice(0, 12)}.png`
-      const screenshot = await page.screenshot({ path: path.join(outputDir, filename), fullPage: false, timeout: 12_000 })
-      record.image = { path: filename, sha256: sha256(screenshot), bytes: screenshot.length, width: screenshot.readUInt32BE(16), height: screenshot.readUInt32BE(20), profile: captureProfile.id, kind: 'actual-browser-viewport-png', fullPage: false }
+      const captured = await captureViewportScreenshot(page, path.join(outputDir, filename), caseDeadline)
+      const screenshot = captured.buffer
+      if (captured.retried) events({ type: 'screenshot-retry', reason: 'transient-compositor-timeout' })
+      record.image = { path: filename, sha256: sha256(screenshot), bytes: screenshot.length, width: screenshot.readUInt32BE(16), height: screenshot.readUInt32BE(20), profile: captureProfile.id, kind: 'actual-browser-viewport-png', fullPage: false, captureRetried: captured.retried }
       if (record.image.width !== captureProfile.width || record.image.height !== captureProfile.height) defect('actual-viewport-image-size-mismatch', { expectedWidth: captureProfile.width, expectedHeight: captureProfile.height, actualWidth: record.image.width, actualHeight: record.image.height })
     } catch (error) {
       defect('capture-error', { message: String(error) })
@@ -368,7 +406,7 @@ try {
       if (page && !record.image) {
         try {
           const filename = `${id}--${exactHead.slice(0, 12)}--failure.png`
-          const screenshot = await page.screenshot({ path: path.join(outputDir, filename), fullPage: false, timeout: 8_000 })
+          const screenshot = await page.screenshot({ path: path.join(outputDir, filename), fullPage: false, animations: 'disabled', caret: 'hide', timeout: Math.min(8_000, Math.max(1_000, caseDeadline - Date.now())) })
           record.image = { path: filename, sha256: sha256(screenshot), bytes: screenshot.length, width: screenshot.readUInt32BE(16), height: screenshot.readUInt32BE(20), profile: captureProfile.id, kind: 'actual-browser-failure-viewport-png', fullPage: false }
           record.dom ||= await inspectDom(page)
           record.finalUrl ||= safeUrl(page.url())
