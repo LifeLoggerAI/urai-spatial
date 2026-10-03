@@ -404,6 +404,8 @@ try {
     literalVisualQuality: 'not-certified',
   }
   if (receipt.summary.recordedCaptures !== cases.length) receipt.errors.push({ kind: 'incomplete-image-matrix', expected: cases.length, actual: receipt.summary.recordedCaptures })
+  // Emit compact machine-readable defect details so failed proof runs are diagnosable from CI logs.
+  if (receipt.errors.length) console.log(JSON.stringify({ exactHead, group, defectSummary: receipt.errors.map(error => ({ id: error.id, route: error.route, profile: error.profile, kind: error.kind, status: error.status, failure: error.failure, message: error.message, pixels: error.pixels })) }))
   if (receipt.summary.criticalRoutesAttempted !== routes.length) receipt.errors.push({ kind: 'incomplete-critical-route-matrix', expected: routes.length, actual: receipt.summary.criticalRoutesAttempted })
   receipt.summary.technicalDefects = receipt.errors.length
   await saveReceipt()
