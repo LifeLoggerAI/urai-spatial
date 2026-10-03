@@ -27,24 +27,6 @@ function asDemoMemoryId(memoryId: string | null) {
   return memoryId.startsWith('demo:') ? memoryId : `demo:${memoryId}`
 }
 
-function demoContinuationMemoryId(params: URLSearchParams, memoryId: string | null) {
-  if (!memoryId) return null
-
-  // Keep public route identity stable while resolving the explicitly disclosed
-  // sample through its namespaced internal fixture identity.
-  if (params.get('demo') === '1' && params.get('from') === 'life-map') {
-    return asDemoMemoryId(memoryId)
-  }
-
-  if (params.get('from') !== 'life-map-camera') return null
-
-  const publicDemoEnabled = process.env.NEXT_PUBLIC_URAI_EXPLICIT_DEMO === 'true'
-  const localDemoEnabled = typeof window !== 'undefined'
-    && window.localStorage.getItem('urai:lifeMapDemoMode') === 'true'
-
-  return publicDemoEnabled || localDemoEnabled ? asDemoMemoryId(memoryId) : null
-}
-
 export function useSelectedMemory(): SelectedMemoryResult {
   const [search, setSearch] = useState('')
   useEffect(() => {
@@ -59,10 +41,9 @@ export function useSelectedMemory(): SelectedMemoryResult {
   )
   const memoryId = sanitizeMemoryId(params.get('memoryId') ?? params.get('node'))
   const manifestId = sanitizeMemoryId(params.get('manifestId'))
-  const continuedDemoMemoryId = demoContinuationMemoryId(params, memoryId)
   const requestedDemoMemoryId = isExplicitDemoRequest(params)
     ? asDemoMemoryId(memoryId)
-    : continuedDemoMemoryId
+    : null
   const selectionKey = JSON.stringify([memoryId, manifestId, requestedDemoMemoryId])
   const [selection, setSelection] = useState<{ key: string; result: SelectedMemoryResult }>({ key: '', result: LOADING })
 
@@ -144,7 +125,7 @@ export function useSelectedMemory(): SelectedMemoryResult {
       detachMemory()
       unsubscribe()
     }
-  }, [continuedDemoMemoryId, manifestId, memoryId, params, requestedDemoMemoryId, selectionKey])
+  }, [manifestId, memoryId, requestedDemoMemoryId, selectionKey])
 
   // Query navigation can reuse the mounted client. Never render the previous
   // selection during the frame before its subscription effect is replaced.
