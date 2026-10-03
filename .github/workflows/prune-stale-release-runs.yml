@@ -43,16 +43,36 @@ jobs:
             let inspected = 0;
             let cancelled = 0;
             const failures = [];
+            const transientStatuses = new Set([429, 500, 502, 503, 504]);
+
+            const withRetry = async (label, operation, attempts = 4) => {
+              let lastError;
+              for (let attempt = 1; attempt <= attempts; attempt += 1) {
+                try {
+                  return await operation();
+                } catch (error) {
+                  lastError = error;
+                  if (!transientStatuses.has(error?.status) || attempt === attempts) throw error;
+                  const delayMs = Math.min(8_000, 750 * (2 ** (attempt - 1)));
+                  core.warning(`${label} transient HTTP ${error.status}; retry ${attempt}/${attempts} after ${delayMs}ms`);
+                  await new Promise((resolve) => setTimeout(resolve, delayMs));
+                }
+              }
+              throw lastError;
+            };
 
             for (const status of statuses) {
-              const runs = await github.paginate(
-                github.rest.actions.listWorkflowRunsForRepo,
-                {
-                  owner: context.repo.owner,
-                  repo: context.repo.repo,
-                  status,
-                  per_page: 100,
-                },
+              const runs = await withRetry(
+                `list workflow runs status=${status}`,
+                () => github.paginate(
+                  github.rest.actions.listWorkflowRunsForRepo,
+                  {
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    status,
+                    per_page: 100,
+                  },
+                ),
               );
 
               for (const run of runs) {
@@ -61,11 +81,14 @@ jobs:
                 if (run.head_sha === keepSha) continue;
                 inspected += 1;
                 try {
-                  await github.rest.actions.cancelWorkflowRun({
-                    owner: context.repo.owner,
-                    repo: context.repo.repo,
-                    run_id: run.id,
-                  });
+                  await withRetry(
+                    `cancel workflow run ${run.id}`,
+                    () => github.rest.actions.cancelWorkflowRun({
+                      owner: context.repo.owner,
+                      repo: context.repo.repo,
+                      run_id: run.id,
+                    }),
+                  );
                   cancelled += 1;
                 } catch (error) {
                   if (error?.status !== 409) {
