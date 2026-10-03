@@ -163,6 +163,18 @@ function requireAdamEnabled() {
   }
 }
 
+function requireRequestId(value: unknown) {
+  const requestId = String(value ?? '').trim().toLowerCase()
+  if (!/^[a-f0-9]{64}$/.test(requestId)) {
+    throw new ProviderError(400, 'INVALID_REQUEST_ID', 'A stable Adam request identity is required.')
+  }
+  return requestId
+}
+
+function adamIdempotencyKey(uid: string, requestId: string) {
+  return createHash('sha256').update(`urai-adam-provider:${uid}:${requestId}`).digest('hex')
+}
+
 function readSurface(value: unknown): SurfaceId {
   const candidate = String(value ?? '').trim() as SurfaceId
   if (!Object.prototype.hasOwnProperty.call(SURFACE_CONTEXT, candidate)) {
@@ -282,6 +294,8 @@ export const adamPresenceProvider = onRequest({
     const message = String(body.message ?? '').trim()
     if (!message || message.length > 2_500) throw new ProviderError(400, 'INVALID_MESSAGE', 'Message is missing or too long.')
     const surface = readSurface(body.surface)
+    const requestId = requireRequestId(body.requestId)
+    const upstreamIdempotencyKey = adamIdempotencyKey(uid, requestId)
     const locale = String(body.locale ?? 'en-US').trim().slice(0, 35) || 'en-US'
     const context = boundedContext(body.context)
     inputUnits = message.length
@@ -311,7 +325,7 @@ export const adamPresenceProvider = onRequest({
         Authorization: `Bearer ${apiKey}`,
         'Content-Type': 'application/json',
         Accept: 'text/event-stream',
-        'Idempotency-Key': randomUUID(),
+        'Idempotency-Key': upstreamIdempotencyKey,
       },
       body: JSON.stringify({
         model: process.env.OPENAI_ADAM_MODEL || process.env.OPENAI_ORB_MODEL || 'gpt-5',
