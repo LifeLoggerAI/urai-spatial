@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
 import { v2Onboarding } from "@/spatial/assets/uraiV2Assets";
 import UraiCanonicalVersionAssetTemplate from "./UraiCanonicalVersionAssetTemplate";
@@ -64,6 +64,7 @@ function OnboardingCardContent() {
   const query = searchParams?.toString() ?? "";
   const [dismissed, setDismissed] = useState(false);
   const [automaticFirstRun, setAutomaticFirstRun] = useState(false);
+  const dismissRef = useRef<HTMLButtonElement>(null);
   const card = cards[pathname as keyof typeof cards];
   const explicitSequence = searchParams?.get("onboarding") === "1" || searchParams?.get("firstRun") === "1";
 
@@ -85,6 +86,21 @@ function OnboardingCardContent() {
   }, [explicitSequence, pathname, query]);
 
   const shouldShow = explicitSequence || automaticFirstRun;
+
+  useEffect(() => {
+    if (!shouldShow || !card || !explicitSequence) return;
+    // The /onboarding route hands off to Home and can hydrate/remount the world shell.
+    // Re-assert focus after that frame so the guided dismissal remains keyboard reachable.
+    let secondFrame = 0;
+    const firstFrame = window.requestAnimationFrame(() => {
+      secondFrame = window.requestAnimationFrame(() => dismissRef.current?.focus({ preventScroll: true }));
+    });
+    return () => {
+      window.cancelAnimationFrame(firstFrame);
+      if (secondFrame) window.cancelAnimationFrame(secondFrame);
+    };
+  }, [card, explicitSequence, pathname, query, shouldShow]);
+
   if (dismissed || !shouldShow || !card) return null;
 
   const dismiss = () => {
@@ -111,7 +127,7 @@ function OnboardingCardContent() {
         <span>{card.label}</span>
         <strong>{card.title}</strong>
         <a href={card.href} onClick={finishIfLastGuidedStep}>{card.action}</a>
-        <button type="button" onClick={dismiss}>Skip</button>
+        <button ref={dismissRef} type="button" onClick={dismiss}>Skip</button>
       </div>
     </aside>
   );
