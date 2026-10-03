@@ -815,8 +815,21 @@ async function mobileAndReduced() {
 async function privacyAndRecovery() {
   const signed = await openPage({ label: 'signed-out' })
   try {
-    await goto(signed.page, '/life-map/', '[data-testid="urai-life-map-signed-out-threshold"]')
-    await shot(signed.page, 'signed-out-private-threshold', 'signed-out')
+    // Signed-out production now renders the real empty Life Map realm plus an
+    // explicit disclosure instead of the removed threshold component. Prove
+    // both the authored world and the private-data boundary.
+    await goto(signed.page, '/life-map/', '[data-testid="urai-r3f-canonical-lifemap"][data-life-map-access="signed-out"]')
+    await signed.page.locator('[data-testid="urai-life-map-signed-out-disclosure"]').first().waitFor({ state: 'visible', timeout: 30_000 })
+    await waitForRenderedWorld(signed.page)
+    const signedOutBoundary = await signed.page.evaluate(() => ({
+      access: document.querySelector('[data-testid="urai-r3f-canonical-lifemap"]')?.getAttribute('data-life-map-access'),
+      disclosure: document.querySelector('[data-testid="urai-life-map-signed-out-disclosure"]')?.textContent || '',
+      privateSourceMounted: Boolean(document.querySelector('[data-life-map-source="private"], [data-private-memory-mounted="true"]')),
+    }))
+    if (signedOutBoundary.access !== 'signed-out') throw new Error(`signed-out Life Map access drifted: ${JSON.stringify(signedOutBoundary)}`)
+    if (signedOutBoundary.privateSourceMounted) throw new Error('signed-out Life Map mounted a private memory source')
+    if (!/no personal data displayed/i.test(signedOutBoundary.disclosure)) throw new Error(`signed-out disclosure missing privacy boundary: ${JSON.stringify(signedOutBoundary)}`)
+    await shot(signed.page, 'signed-out-private-threshold', 'signed-out', { signedOutBoundary })
   } finally {
     await signed.context.close()
   }
