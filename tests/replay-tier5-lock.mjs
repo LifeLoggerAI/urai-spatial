@@ -9,7 +9,7 @@ const ARTIFACT_DIR = process.env.URAI_SPATIAL_ARTIFACT_DIR || 'artifacts/replay-
 const REQUESTED_PORT = Number(new URL(REQUESTED_BASE_URL).port || 3000);
 const FALLBACK_PORT = Number(process.env.URAI_SPATIAL_TEST_PORT || REQUESTED_PORT + 1);
 const MEMORY_ID = 'demo:seed-memory-bloom';
-const MANIFEST_ID = 'demo-manifest';
+const MANIFEST_ID = 'seed-memory-bloom';
 
 mkdirSync(ARTIFACT_DIR, { recursive: true });
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
