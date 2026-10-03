@@ -237,8 +237,17 @@ async function inspectDomWithinBudget(page, caseDeadline) {
   try {
     return await inspectDom(page, Math.min(20_000, remaining()))
   } catch (error) {
-    if (!/DOM inspection exceeded/i.test(String(error)) || remaining() < 8_000) throw error
-    await bounded(page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)))), Math.min(3_000, remaining()), 'DOM retry settle')
+    const message = String(error)
+    const transientInspectionFailure = /DOM inspection exceeded|Execution context was destroyed|Cannot find context with specified id/i.test(message)
+    if (!transientInspectionFailure || remaining() < 8_000) throw error
+
+    // Route transitions and heavily loaded GPU pages can invalidate an in-page
+    // evaluation context or throttle requestAnimationFrame after the product has
+    // already produced valid route/readiness evidence. Reacquire the document
+    // context from Playwright itself instead of depending on another page-side
+    // frame callback. This does not relax any DOM/readiness assertion.
+    await page.waitForLoadState('domcontentloaded', { timeout: Math.min(3_000, remaining()) }).catch(() => {})
+    await page.waitForTimeout(Math.min(250, Math.max(1, remaining())))
     return inspectDom(page, Math.min(30_000, remaining()))
   }
 }
