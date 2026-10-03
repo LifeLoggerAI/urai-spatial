@@ -1,7 +1,7 @@
 "use client"
 
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
-import { ContactShadows, Environment, PerspectiveCamera, useAnimations, useGLTF } from '@react-three/drei'
+import { ContactShadows, Environment, Lightformer, PerspectiveCamera, useAnimations, useGLTF } from '@react-three/drei'
 import { Suspense, useEffect, useRef, useState, type MutableRefObject } from 'react'
 import * as THREE from 'three'
 import { COUNCIL_AGENTS } from './councilAgentSchema'
@@ -254,7 +254,10 @@ function CouncilStage() {
             ))}
 
             {quality.tier === 'low' ? null : <ContactShadows position={[0, 0.01, -0.8]} opacity={0.48} scale={10} blur={2.7} far={7} />}
-            <Environment preset="apartment" environmentIntensity={environmentIntensity} />
+            <Environment resolution={128} environmentIntensity={environmentIntensity}>
+              <Lightformer position={[-4, 5, 2]} rotation={[0, Math.PI / 4, 0]} scale={[4, 5, 1]} color="#ffe4bd" intensity={2} />
+              <Lightformer position={[4, 3, -3]} rotation={[0, -Math.PI / 4, 0]} scale={[3, 4, 1]} color="#b8d9f2" intensity={1} />
+            </Environment>
           </Suspense>
         </Canvas>
       </div>

@@ -47,7 +47,7 @@ async function verifyViewport(
 
     const layout = await page.evaluate(() => {
       const movementRect = document.querySelector<HTMLElement>('.urai-mobile-movement')?.getBoundingClientRect()
-      const semanticNode = document.querySelector<HTMLElement>('.urai-home-spatial-runtime-layer > .home-semantic-navigation')
+      const semanticNode = document.querySelector<HTMLElement>('.home-semantic-navigation[data-home-navigation-owner="runtime-boundary"]')
       const semanticRect = semanticNode?.getBoundingClientRect()
       const viewport = window.visualViewport
       if (!movementRect || !semanticRect || !semanticNode) return null

@@ -57,12 +57,35 @@ function seeded(index: number, salt = 0) {
 function cloneNaturalSanctuaryMaterial(material: THREE.Material, grounded: boolean) {
   const clone = material.clone()
   if (clone instanceof THREE.MeshStandardMaterial) {
-    // Keep the authored base-color/normal/roughness maps. The previous candidate
-    // replaced every material with flat green, which made retained pixels read
-    // like a low-poly proof scene instead of a material-rich inhabited place.
+    // Keep authored maps on non-ground surfaces. The generated terrain shares
+    // a blue/cyan sci-fi atlas, not stone photography; it must not tint the yard.
     clone.roughness = THREE.MathUtils.clamp(Math.max(clone.roughness, grounded ? .72 : .64), .64, .96)
     clone.metalness = Math.min(clone.metalness, .08)
     clone.envMapIntensity = THREE.MathUtils.clamp(Math.max(clone.envMapIntensity, .72), .72, 1.08)
+    // The retained terrain's shared albedo is cyan and its packed map lowers
+    // roughness substantially. Scalar tint/roughness adjustments alone multiply
+    // those maps and leave a shiny blue foreground. Remove those inappropriate
+    // bindings explicitly; retain geometry and the subtle authored normal map.
+    if (grounded) {
+      clone.map = null
+      clone.roughnessMap = null
+      clone.metalnessMap = null
+      clone.emissiveMap = null
+      // The atlas AO channel is zero throughout, rather than local occlusion.
+      clone.aoMap = null
+      clone.roughness = .96
+      clone.envMapIntensity = .32
+      clone.color.set('#928574')
+      clone.emissive.set('#000000')
+      clone.emissiveIntensity = 0
+      clone.metalness = 0
+      clone.transparent = false
+      clone.opacity = 1
+      if (clone instanceof THREE.MeshPhysicalMaterial) {
+        clone.transmission = 0
+        clone.clearcoat = 0
+      }
+    }
     clone.needsUpdate = true
   }
   return clone
@@ -70,7 +93,7 @@ function cloneNaturalSanctuaryMaterial(material: THREE.Material, grounded: boole
 
 function prepareNaturalSanctuary(source: THREE.Object3D) {
   const world = source.clone(true)
-  const rejected = /portal|ring|threshold|village|mannequin|avatar|debug|marker|label|embodied|presence|memory-place-anchor|living-growth|vault|monolith|bridge|grove|firefly|alcove|veil|waterfall|sculpture|pedestal|rib|mountain|ridge|peak|horizon|low[-_ ]?poly|prototype|blockout|proof/i
+  const rejected = /mirror-basin|portal|ring|threshold|village|mannequin|avatar|debug|marker|label|embodied|presence|memory-place-anchor|living-growth|vault|monolith|bridge|grove|firefly|alcove|veil|waterfall|sculpture|pedestal|rib|mountain|ridge|peak|horizon|low[-_ ]?poly|prototype|blockout|proof/i
   let visibleMeshCount = 0
   world.traverse((object) => {
     if (!(object instanceof THREE.Mesh)) return
@@ -393,10 +416,78 @@ function Horizon() {
   </group>
 }
 
+function CourtyardMasonry({ side }: { side: number }) {
+  const mesh = useRef<THREE.InstancedMesh>(null)
+  useLayoutEffect(() => {
+    if (!mesh.current) return
+    const transform = new THREE.Object3D()
+    const color = new THREE.Color()
+    for (let course = 0; course < 3; course += 1) {
+      for (let block = 0; block < 8; block += 1) {
+        const index = course * 8 + block
+        transform.position.set(side * .76, .15 + course * .23, (block - 3.5) * .42 + (course % 2) * .08)
+        transform.updateMatrix()
+        mesh.current.setMatrixAt(index, transform.matrix)
+        color.set(block % 3 === 0 ? '#a09581' : block % 3 === 1 ? '#8b806f' : '#938a77')
+        mesh.current.setColorAt(index, color)
+      }
+    }
+    mesh.current.instanceMatrix.needsUpdate = true
+    if (mesh.current.instanceColor) mesh.current.instanceColor.needsUpdate = true
+    mesh.current.computeBoundingSphere()
+  }, [side])
+  return <instancedMesh ref={mesh} args={[undefined, undefined, 24]} castShadow receiveShadow>
+    <boxGeometry args={[.42, .218, .402]} />
+    <meshStandardMaterial roughness={.96} metalness={0} />
+  </instancedMesh>
+}
+
+// Original runtime construction, not a scan or a reconstruction of a user's
+// home. Low walls and timber seating define a roofless inhabited courtyard;
+// all construction stays outside the Orb and environmental travel approach lanes.
+function RooflessCourtyard() {
+  const floorY = .225
+  return <group name="home-roofless-courtyard" userData={{ source: 'URAI original runtime geometry', historicalEvidence: false, ceiling: false }}>
+    {[-1, 1].map((side) => <group key={side} position={[side * 4.45, floorY, -4.5]} rotation={[0, side * -.14, 0]}>
+      <mesh position={[0, -.175, .05]} receiveShadow castShadow>
+        <boxGeometry args={[2.5, .35, 4.25]} />
+        <meshStandardMaterial color="#9b8e77" roughness={.96} metalness={0} />
+      </mesh>
+      <group name={`home-courtyard-masonry-${side}`}>
+        <CourtyardMasonry side={side} />
+        <mesh position={[side * .76, .76, .04]} castShadow receiveShadow>
+          <boxGeometry args={[.49, .08, 3.47]} />
+          <meshStandardMaterial color="#b1a48b" roughness={.93} />
+        </mesh>
+      </group>
+      <group name={`home-courtyard-timber-bench-${side}`}>
+        {[-1.05, 1.05].map((z) => <mesh key={z} position={[0, .24, z]} castShadow receiveShadow>
+          <boxGeometry args={[.45, .48, .28]} />
+          <meshStandardMaterial color="#8b8270" roughness={.97} />
+        </mesh>)}
+        {[-.21, 0, .21].map((x) => <mesh key={x} position={[x, .51, 0]} castShadow receiveShadow>
+          <boxGeometry args={[.195, .085, 2.78]} />
+          <meshStandardMaterial color={x === 0 ? '#775638' : '#826144'} roughness={.87} metalness={0} />
+        </mesh>)}
+        {[-1.11, 1.11].map((z) => <mesh key={z} position={[side * .29, .74, z]} castShadow>
+          <boxGeometry args={[.055, .5, .055]} />
+          <meshStandardMaterial color="#654d35" roughness={.88} />
+        </mesh>)}
+        {[.83, 1.02].map((y) => <mesh key={y} position={[side * .29, y, 0]} castShadow receiveShadow>
+          <boxGeometry args={[.075, .16, 2.76]} />
+          <meshStandardMaterial color="#876748" roughness={.88} />
+        </mesh>)}
+      </group>
+      <group name={`home-courtyard-side-table-${side}`} position={[-side * .65, 0, 1.82]}>
+        <mesh position={[0, .27, 0]} castShadow receiveShadow><boxGeometry args={[.3, .54, .3]} /><meshStandardMaterial color="#85765f" roughness={.96} /></mesh>
+        <mesh position={[0, .56, 0]} castShadow receiveShadow><boxGeometry args={[.65, .09, .58]} /><meshStandardMaterial color="#a2947b" roughness={.93} /></mesh>
+        <mesh position={[.12, .68, -.05]} castShadow><cylinderGeometry args={[.075, .065, .15, 24]} /><meshStandardMaterial color="#b08e65" roughness={.84} /></mesh>
+      </group>
+    </group>)}
+  </group>
+}
+
 function SanctuaryPavilion() {
-  const stone = '#777a70'
-  const warmStone = '#8a7966'
-  const ceramic = '#8a6d52'
   return <group name="home-sanctuary-pavilion" userData={{ role: 'open-air-inhabited-resting-place-without-ceiling', ceiling: false, skyDominant: true }}>
     <mesh geometry={ORB_CLEARING_GEOMETRY} receiveShadow>
       <meshPhysicalMaterial color="#526458" roughness={.92} metalness={0} clearcoat={.06} clearcoatRoughness={.84} />
@@ -407,18 +498,13 @@ function SanctuaryPavilion() {
     <mesh geometry={SANCTUARY_BOULDER_RIGHT} position={[2.75, terrainHeight(2.75,-6.35) + .4, -6.35]} rotation={[-.12,-.42,.17]} scale={[1.08,.52,.76]} castShadow receiveShadow>
       <meshStandardMaterial color="#68756b" roughness={.97} metalness={0} />
     </mesh>
+    <RooflessCourtyard />
     <group name="home-lived-in-stone-seating" userData={{ treatment: 'irregular-authored-stone-no-proof-cylinders' }}>
-      <mesh geometry={SANCTUARY_BOULDER_LEFT} castShadow receiveShadow position={[-4.25, terrainHeight(-4.25,-4.2) + .34, -4.2]} rotation={[.08,.28,.02]} scale={[1.48,.38,1.18]}>
-        <meshStandardMaterial color={stone} roughness={.96} metalness={0} />
+      <mesh geometry={SANCTUARY_BOULDER_LEFT} position={[-7, terrainHeight(-7, -7) + .3, -7]} scale={[1.1, .35, .8]} castShadow receiveShadow>
+        <meshStandardMaterial color="#8b8576" roughness={.96} metalness={0} />
       </mesh>
-      <mesh geometry={SANCTUARY_BOULDER_RIGHT} castShadow receiveShadow position={[4.35, terrainHeight(4.35,-4.45) + .31, -4.45]} rotation={[-.06,-.34,-.04]} scale={[1.34,.36,1.06]}>
-        <meshStandardMaterial color={warmStone} roughness={.96} metalness={0} />
-      </mesh>
-      <mesh geometry={SANCTUARY_BOULDER_CENTER} castShadow receiveShadow position={[-2.55, terrainHeight(-2.55,-5.0) + .31, -5.0]} rotation={[.04,.72,-.03]} scale={[.72,.38,.66]}>
-        <meshStandardMaterial color="#66594c" roughness={.94} metalness={0} />
-      </mesh>
-      <mesh castShadow position={[-2.4, terrainHeight(-2.4,-5.0) + .72, -5.0]}>
-        <cylinderGeometry args={[.1,.12,.23,32]} /><meshStandardMaterial color={ceramic} roughness={.9} metalness={0} />
+      <mesh geometry={SANCTUARY_BOULDER_RIGHT} position={[7, terrainHeight(7, -7) + .3, -7]} scale={[1.1, .35, .8]} castShadow receiveShadow>
+        <meshStandardMaterial color="#8a8070" roughness={.96} metalness={0} />
       </mesh>
     </group>
     <group name="home-stone-hearth" position={[2.55, terrainHeight(2.55,-5.55) + .09, -5.55]} userData={{ treatment: 'irregular-stone-ring' }}>

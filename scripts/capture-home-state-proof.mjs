@@ -280,7 +280,7 @@ async function captureOrbLifecycle({ reducedMotion = 'no-preference' } = {}) {
       window.__uraiOrbLifecycleObserver = observer
     }, ownerSelector)
 
-    const openOrb = page.locator('.urai-home-spatial-runtime-layer .home-semantic-navigation[data-home-navigation-owner="runtime-boundary"] [data-testid="home-semantic-orb"]').first()
+    const openOrb = page.getByRole('navigation', { name: 'Accessible Home destinations' }).getByTestId('home-semantic-orb')
     await openOrb.waitFor({ state: 'attached', timeout: 20_000 })
     await openOrb.focus()
     stage = 'open-companion'

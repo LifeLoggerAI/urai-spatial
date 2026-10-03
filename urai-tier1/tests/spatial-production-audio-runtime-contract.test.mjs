@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import path from 'node:path'
 import test from 'node:test'
+import { createHash } from 'node:crypto'
 
 const tierRoot = process.cwd()
 const repositoryRoot = path.resolve(tierRoot, '..')
@@ -33,6 +34,12 @@ test('production audio receipt proves the eight-file verified Opus pack', () => 
   for (const fileName of expectedAssets) {
     const asset = receipt.assets.find((entry) => entry.path.endsWith(`/${fileName}`))
     assert.ok(asset, `missing production audio receipt entry ${fileName}`)
+    const payload = fs.readFileSync(path.join(tierRoot, 'public', asset.path.replace(/^\/+/, '')))
+    assert.ok(payload.length > 0, `${fileName} must contain audio bytes`)
+    assert.equal(payload.length, asset.bytes, `${fileName} size differs from its receipt`)
+    assert.equal(createHash('sha256').update(payload).digest('hex'), asset.sha256, `${fileName} bytes differ from its receipt`)
+    assert.equal(payload.subarray(0, 4).toString('ascii'), 'OggS', `${fileName} must use an Ogg container`)
+    assert.ok(payload.includes(Buffer.from('OpusHead')), `${fileName} must include an Opus stream header`)
     assert.equal(asset.codec, 'opus')
     assert.equal(asset.channels, 2)
     assert.ok(asset.integratedLufs <= -16, `${fileName} loudness exceeds policy`)

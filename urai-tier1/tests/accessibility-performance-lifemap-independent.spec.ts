@@ -10,6 +10,10 @@ function normalizedPathname(url: string) {
   return new URL(url).pathname.replace(/\/+$/, '') || '/'
 }
 
+function demoMemoryUrl(overview: boolean) {
+  return `/life-map?demo=1&memoryId=memory-thread&node=memory-thread&manifestId=replay-recovery-thread${overview ? '&overview=1' : ''}`
+}
+
 function lifeMapRoot(page: Page) {
   return page.getByTestId('urai-true-3d-life-map')
 }
@@ -19,10 +23,8 @@ function selectedMemoryControls(page: Page) {
 }
 
 async function selectFirstMemory(page: Page) {
-  const explore = page.locator('details.life-map-help')
-  await expect(explore).toBeVisible({ timeout: 30_000 })
-  await explore.locator('summary').click()
-  const firstMemory = explore.locator('button').first()
+  const explorer = await openSemanticExplorer(page)
+  const firstMemory = explorer.locator('[data-life-map-semantic-result]').first()
   await expect(firstMemory).toBeVisible({ timeout: 15_000 })
   await firstMemory.click()
   await expect.poll(() => new URL(page.url()).searchParams.get('memoryId')).toBeTruthy()
@@ -30,14 +32,15 @@ async function selectFirstMemory(page: Page) {
 }
 
 async function openSemanticExplorer(page: Page) {
-  const details = page.locator('details.life-map-help')
-  await expect(details).toBeVisible({ timeout: 15_000 })
-  const summary = details.locator('summary')
-  await summary.focus()
-  await expect(summary).toBeFocused()
-  if (!(await details.getAttribute('open'))) await summary.press('Enter')
-  await expect(details).toHaveAttribute('open', '')
-  return details
+  const trigger = page.getByRole('button', { name: 'Search and navigate Life Map' })
+  await expect(trigger).toBeVisible({ timeout: 15_000 })
+  await trigger.focus()
+  await expect(trigger).toBeFocused()
+  if (await trigger.getAttribute('aria-expanded') !== 'true') await trigger.press('Enter')
+  await expect(trigger).toHaveAttribute('aria-expanded', 'true')
+  const explorer = page.getByRole('region', { name: 'Search and filter Life Map' })
+  await expect(explorer).toBeVisible()
+  return explorer
 }
 
 test.describe('Life Map independent realm runtime evidence', () => {
@@ -63,7 +66,7 @@ test.describe('Life Map independent realm runtime evidence', () => {
       .filter((element) => element.matches('.urai-world-companion, .urai-world-companion *') || /orb travel controls/i.test(element.getAttribute('aria-label') || ''))
       .map((element) => element.outerHTML.slice(0, 240)))
     expect(forbiddenTabStops).toEqual([])
-    await expect(page.getByText('Explore', { exact: true })).toBeVisible()
+    await expect(page.getByRole('button', { name: 'Search and navigate Life Map' })).toBeVisible()
   })
 
   test('keyboard-accessible memory selection preserves identity into Focus', async ({ page }) => {
@@ -74,11 +77,11 @@ test.describe('Life Map independent realm runtime evidence', () => {
     await expect(root).toBeVisible({ timeout: 15_000 })
     await expect(root).toHaveAttribute('data-life-map-source', 'explicit-demo')
     const explorer = await openSemanticExplorer(page)
-    await expect(page.getByText('Sample constellation · not your memories', { exact: true })).toBeVisible()
+    await expect(page.getByText('Disclosed sample universe · not your memories', { exact: true })).toBeVisible()
 
-    const firstMemory = explorer.getByRole('button').first()
+    const firstMemory = explorer.locator('[data-life-map-semantic-result]').first()
     await expect(firstMemory).toBeVisible({ timeout: 15_000 })
-    const firstLabel = await firstMemory.textContent()
+    const firstLabel = await firstMemory.locator('strong').textContent()
     await firstMemory.focus()
     await expect(firstMemory).toBeFocused()
     await firstMemory.press('Enter')
@@ -88,7 +91,7 @@ test.describe('Life Map independent realm runtime evidence', () => {
     const selectedMemoryId = selectedUrl.searchParams.get('memoryId')
     expect(selectedMemoryId).toBeTruthy()
     await expect(root).toHaveAttribute('data-life-map-mode', 'selected')
-    await expect(page.locator('.life-map-title')).toContainText((firstLabel || '').split(':')[0].trim())
+    await expect(page.locator('.life-map-title')).toContainText((firstLabel || '').trim())
 
     const actions = selectedMemoryControls(page)
     await expect(actions).toBeVisible({ timeout: 15_000 })
@@ -102,7 +105,7 @@ test.describe('Life Map independent realm runtime evidence', () => {
     expect(focusUrl.searchParams.get('node')).toBe(selectedMemoryId)
     expect(focusUrl.searchParams.get('demo')).toBe('1')
     expect(focusUrl.searchParams.get('returnNode')).toBe(selectedMemoryId)
-    expect(focusUrl.searchParams.get('manifestId')).toBeTruthy()
+    expect(focusUrl.searchParams.get('manifestId')).toBe('replay-recovery-thread')
     expect(focusUrl.searchParams.get('from')).toBe('life-map')
   })
 
@@ -155,7 +158,7 @@ test.describe('Life Map independent realm runtime evidence', () => {
       await expect(selectedMemoryControls(page)).toHaveCount(0)
 
       const layout = await page.evaluate(() => {
-        const summary = document.querySelector('details.life-map-help summary')?.getBoundingClientRect()
+        const summary = document.querySelector('.life-map-search-trigger')?.getBoundingClientRect()
         const title = document.querySelector('.life-map-title')?.getBoundingClientRect()
         return {
           scrollWidth: document.documentElement.scrollWidth,
@@ -171,6 +174,13 @@ test.describe('Life Map independent realm runtime evidence', () => {
       expect(layout.summary!.right).toBeLessThanOrEqual(viewport.width)
       expect(layout.title!.left).toBeGreaterThanOrEqual(0)
       expect(layout.title!.right).toBeLessThanOrEqual(viewport.width)
+
+      const explorer = await openSemanticExplorer(page)
+      const explorerBox = await explorer.boundingBox()
+      expect(explorerBox).not.toBeNull()
+      expect(explorerBox!.x).toBeGreaterThanOrEqual(0)
+      expect(explorerBox!.x + explorerBox!.width).toBeLessThanOrEqual(viewport.width)
+      await explorer.getByRole('button', { name: 'Close Life Map search' }).click()
     }
   })
 
@@ -181,7 +191,7 @@ test.describe('Life Map independent realm runtime evidence', () => {
     await selectFirstMemory(page)
     await expect(page.locator(lifeMapOwnerSelector)).toHaveAttribute('data-life-map-phase', 'arrival')
     const actions = selectedMemoryControls(page)
-    await actions.getByRole('button', { name: 'Overview' }).click()
+    await actions.getByRole('button', { name: 'Return to Life Map overview' }).click()
     await expect.poll(() => normalizedPathname(page.url())).toBe('/life-map')
     await expect.poll(() => new URL(page.url()).searchParams.get('overview')).toBe('1')
     await expect(actions).toHaveCount(0)

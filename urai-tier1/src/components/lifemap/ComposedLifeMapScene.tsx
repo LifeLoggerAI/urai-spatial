@@ -416,10 +416,10 @@ export default function ComposedLifeMapScene() {
     </div>
 
     {thresholdsVisible ? <nav className="life-map-thresholds" aria-label="Selected memory actions" data-family={resolveArtifactFamily(selected!)}>
-      <button className="focus-threshold" onClick={() => router.push(destinationHref("focus"))}>
+      <button className="focus-threshold" data-destination-href={destinationHref("focus")} onClick={() => router.push(destinationHref("focus"))}>
         <span>Inspect</span><strong>Enter Focus</strong>
       </button>
-      <button className="replay-threshold" disabled={!selected!.replayAvailable || selected!.locked} onClick={() => router.push(destinationHref("replay"))}>
+      <button className="replay-threshold" data-destination-href={destinationHref("replay")} disabled={!selected!.replayAvailable || selected!.locked} onClick={() => router.push(destinationHref("replay"))}>
         <span>Cross threshold</span><strong>Replay</strong>
       </button>
       <button className="overview-return" onClick={overview} aria-label="Return to Life Map overview">Overview</button>
