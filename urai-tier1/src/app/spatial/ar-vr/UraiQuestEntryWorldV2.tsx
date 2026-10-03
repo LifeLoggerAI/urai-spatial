@@ -295,6 +295,7 @@ export default function UraiQuestEntryWorldV2() {
         aria-label="XR and comfort controls"
       >
         <QuestVrEntryButton
+          disabled={!rendererReady}
           onSessionRequested={attachSession}
           onSessionEnded={handleSessionEnded}
         />
