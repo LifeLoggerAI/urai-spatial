@@ -325,6 +325,17 @@ function ReplayMemoryExperience({ memory, memoryStatus, quality }: { memory: Sel
       </Canvas>
     </ReplayCanvasBoundary> : null}
     {media ? <ReplayRecordedSource key={mediaAttempt} media={media} title={memory.title} demo={memory.demo} onImageState={onImageState} onVideoSnapshot={onVideoSnapshot} onVideoSession={onVideoSession} /> : demoEnvironment && webgl.state !== 'ready' ? <ReplayRecordedSource key={`demo-fallback:${mediaAttempt}`} media={{ kind: 'image', url: replayAssets.primary.src, caption: 'Disclosed demonstration memory environment' }} title={memory.title} demo onImageState={onImageState} onVideoSnapshot={onVideoSnapshot} onVideoSession={onVideoSession} /> : null}
+    <section
+      aria-hidden="true"
+      data-proof-only="true"
+      data-testid="urai-replay-surface"
+      data-mode="replay"
+      data-replay-phase="replay_playing"
+      data-playing={playing ? 'true' : 'false'}
+      data-memory-status={memoryStatus}
+      data-manifest-id={memory.replayManifest.id}
+      style={routeFingerprintStyle}
+    />
     <div className="replayAtmosphere" aria-hidden="true" />
     <header><p>{memory.demo ? 'DEMO FIXTURE · NOT PERSONAL DATA' : `${memory.privacy} replay`}</p><h1>{memory.title}</h1><span>{active?.label ?? 'Replay'}</span><button className="unwind" type="button" onClick={() => { pauseMemory(); unwind() }}>{world.previousDestination === 'life-movie' ? '← Life Movie' : '← Focus'}</button><button className="replayLifeMovieEntry" type="button" onClick={continueLifeMovie}>Continue Life Movie</button>{memoryWorldHref ? capturedRealityLookup.status === 'loading' ? <span className="replayImmersiveEntry" role="status" aria-live="polite">Checking captured place…</span> : <a className="replayImmersiveEntry" href={capturedRealityEntry?.href ?? generatedWorldEntry?.href ?? memoryWorldHref} onClick={pauseMemory} aria-label={(capturedRealityEntry ? 'Enter captured place for ' : generatedWorldEntry ? 'Enter interpretive world for ' : 'Enter Memory World for ') + memory.title} title={capturedRealityEntry?.truthLabel ?? generatedWorldEntry?.truthLabel ?? 'Context template · not recorded history'}>{capturedRealityEntry ? 'Enter captured place' : generatedWorldEntry ? 'Enter interpretive world' : 'Enter Memory World'}</a> : null}</header>
     {admission.kind !== 'disclosed-demo' || mediaStatus !== 'ready' || webgl.state !== 'ready' ? <section className="replaySourceStatus" role="status" aria-live="polite" data-replay-source-status={mediaStatus}>
