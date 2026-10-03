@@ -76,12 +76,14 @@ test("static production topology exposes authenticated Stripe lifecycle only thr
   assert.match(stripeFunctions, /ENTITLEMENT_COLLECTION = 'userEntitlements'/);
   assert.match(stripeFunctions, /event\.livemode !== \(mode === 'production'\)/);
   assert.match(stripeFunctions, /applyOrderedEntitlement/);
+  assert.match(stripeFunctions, /customers\.retrieve/);
+  assert.match(stripeFunctions, /customer\.livemode !== \(mode === 'production'\)/);
   assert.match(stripeFunctions, /billingPortal\.sessions\.create/);
   assert.match(stripeFunctions, /checkout\.sessions\.create/);
   assert.match(stripeFunctions, /Cache-Control.*private, no-store, max-age=0/);
   const rewrites = new Map(staticHosting.rewrites.map((entry) => [entry.source, entry.function?.functionId]));
   assert.equal(rewrites.get('/api/stripe/create-checkout-session'), 'createStripeCheckout');
-  assert.equal(rewrites.get('/api/stripe/customer-portal'), 'createStripeCustomerPortal');
+  assert.equal(rewrites.get('/api/stripe/create-portal-session'), 'createStripeCustomerPortal');
   assert.equal(rewrites.get('/api/entitlement'), 'getStripeEntitlement');
   assert.equal(rewrites.get('/api/stripe/webhook'), 'handleStripeWebhook');
   assert.equal([...rewrites.keys()].some((source) => source === '**' || source === '/**'), false);
