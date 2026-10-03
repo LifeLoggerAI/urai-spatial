@@ -159,7 +159,13 @@ export function isTrustedMemoryMediaUrl(value: unknown, storageBucket?: string |
 }
 
 export function isExplicitDemoRequest(params: URLSearchParams) {
-  return params.get('demo') === '1' && params.get('memoryId')?.startsWith('demo:') === true
+  // Life Map preserves a public route identity (for example `memoryId=quiet-reset`)
+  // while `demo=1` is the explicit disclosure boundary. The loader canonicalizes
+  // that public token to the internal `demo:` fixture ID below. Requiring the
+  // `demo:` prefix in the URL would make the canonical Life Map -> Focus/Replay
+  // transition fail closed as unavailable even though the user explicitly entered
+  // the disclosed demo universe.
+  return params.get('demo') === '1' && Boolean(params.get('memoryId') ?? params.get('node'))
 }
 
 export function buildExplicitDemoMemory(id: string): SelectedMemory {
