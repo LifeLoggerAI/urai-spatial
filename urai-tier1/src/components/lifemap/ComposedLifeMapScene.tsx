@@ -290,8 +290,12 @@ export default function ComposedLifeMapScene({ authenticatedUserId }: { authenti
     next.set("memoryId", node.id);
     next.set("node", node.id);
     if (node.eraId) next.set("era", node.eraId);
-    router.replace(`/life-map?${next.toString()}`, { scroll: false });
-  }, [profile.reducedMotion, router, withIdentity]);
+    const destination = `/life-map?${next.toString()}`;
+    // Same-route selection must have one synchronous identity owner. Next's
+    // native History API integration keeps useSearchParams in sync without
+    // scheduling a competing router.replace that can settle after newer input.
+    window.history.replaceState(window.history.state, "", destination);
+  }, [profile.reducedMotion, withIdentity]);
 
   const overview = useCallback(() => {
     const retainedId = selectedId || queryNode;
