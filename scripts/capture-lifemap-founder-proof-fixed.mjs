@@ -360,7 +360,7 @@ async function readRootState(root) {
 
 async function shot(page, id, captureState, extra = {}) {
   const file = `${String(receipt.captures.length + 1).padStart(2, '0')}-${id}-${exactHead.slice(0, 12)}.png`
-  const root = page.locator(`${SIGNED_OUT_ROOT}, ${ROOT}, [data-testid="urai-life-map-authored-fallback"]`).first()
+  const root = page.locator(`${ROOT}, [data-testid="urai-life-map-signed-out-threshold"], [data-testid="urai-life-map-authored-fallback"]`).first()
   const state = await root.count() ? await readRootState(root) : {}
   const { buffer, ...screenshot } = await captureScreenshot(page, file)
   const signal = await canvasSignal(page, buffer)
@@ -816,13 +816,20 @@ async function mobileAndReduced() {
 async function privacyAndRecovery() {
   const signed = await openPage({ label: 'signed-out' })
   try {
-    await goto(signed.page, '/life-map/', SIGNED_OUT_ROOT)
-    await signed.page.locator('[data-testid="urai-life-map-signed-out-disclosure"], [data-testid="urai-life-map-signed-out-threshold"]').first().waitFor({ state: 'visible', timeout: 45_000 })
-    const signedRoot = signed.page.locator(SIGNED_OUT_ROOT).first()
-    const signedState = await readRootState(signedRoot)
-    if (signedState.source !== 'signed-out') throw new Error(`Signed-out Life Map source drifted: ${JSON.stringify(signedState)}`)
-    if (signedState.privateMounted !== 'false') throw new Error(`Signed-out Life Map did not prove private-memory isolation: ${JSON.stringify(signedState)}`)
-    await shot(signed.page, 'signed-out-private-threshold', 'signed-out')
+    // Signed-out production must render the real empty Life Map realm plus an
+    // explicit disclosure, while proving that no private memory source mounted.
+    await goto(signed.page, '/life-map/', '[data-testid="urai-r3f-canonical-lifemap"][data-life-map-access="signed-out"]')
+    await signed.page.locator('[data-testid="urai-life-map-signed-out-disclosure"]').first().waitFor({ state: 'visible', timeout: 30_000 })
+    await waitForRenderedWorld(signed.page)
+    const signedOutBoundary = await signed.page.evaluate(() => ({
+      access: document.querySelector('[data-testid="urai-r3f-canonical-lifemap"]')?.getAttribute('data-life-map-access'),
+      disclosure: document.querySelector('[data-testid="urai-life-map-signed-out-disclosure"]')?.textContent || '',
+      privateSourceMounted: Boolean(document.querySelector('[data-life-map-source="private"], [data-private-memory-mounted="true"]')),
+    }))
+    if (signedOutBoundary.access !== 'signed-out') throw new Error(`signed-out Life Map access drifted: ${JSON.stringify(signedOutBoundary)}`)
+    if (signedOutBoundary.privateSourceMounted) throw new Error('signed-out Life Map mounted a private memory source')
+    if (!/no personal data displayed/i.test(signedOutBoundary.disclosure)) throw new Error(`signed-out disclosure missing privacy boundary: ${JSON.stringify(signedOutBoundary)}`)
+    await shot(signed.page, 'signed-out-private-threshold', 'signed-out', { signedOutBoundary })
   } finally {
     await signed.context.close()
   }
