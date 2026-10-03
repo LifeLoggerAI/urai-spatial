@@ -68,17 +68,13 @@ export default function LifeMapSemanticNavigator({ authenticatedUserId = null }:
     if (node.eraId) next.set('era', node.eraId)
 
     // Same-route selection identity must become observable before the spatial world begins
-    // its potentially expensive camera/render transition.
-    const destination = commitBrowserIdentity(next)
+    // its potentially expensive camera/render transition. Native history is the
+    // synchronous route-identity owner for same-route selection; the world event
+    // then drives the camera transition. Avoid a second asynchronous router.replace
+    // here because rapid Next/Previous input can otherwise settle out of order.
+    commitBrowserIdentity(next)
     requestLifeMapSelection(node.id, source)
-
-    // Keep the event as the immediate world-animation owner, but always synchronize
-    // the same canonical URL through Next as a durable fallback. If the R3F listener
-    // is still mounting, the route-param owner restores the selected node at arrival.
-    // If the listener already handled the event, localSelectionId preserves the
-    // departure/travel/approach sequence and this replace is idempotent.
-    router.replace(destination, { scroll: false })
-  }, [closeNavigator, commitBrowserIdentity, router, withIdentity])
+  }, [closeNavigator, commitBrowserIdentity, withIdentity])
 
   const destinationHref = useCallback((route: 'focus' | 'replay', node: LifeMapNode) => {
     const next = withIdentity(new URLSearchParams())
