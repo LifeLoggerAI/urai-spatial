@@ -125,7 +125,39 @@ const staticConfig = JSON.parse(read('firebase.static.json') || '{}').hosting ||
 if (staticConfig.public !== 'urai-tier1/out') failures.push('firebase.static.json must publish urai-tier1/out')
 if (staticConfig.cleanUrls !== true) failures.push('firebase.static.json must enable cleanUrls')
 if (staticConfig.trailingSlash !== true) failures.push('firebase.static.json must enable trailingSlash')
-if (staticConfig.rewrites !== undefined && (!Array.isArray(staticConfig.rewrites) || staticConfig.rewrites.length !== 0)) failures.push('firebase.static.json must not mask missing static routes with rewrites')
+const requiredServerRewrites = new Map([
+  ['/api/stripe/create-checkout-session', 'createStripeCheckout'],
+  ['/api/stripe/customer-portal', 'createStripeCustomerPortal'],
+  ['/api/entitlement', 'getStripeEntitlement'],
+  ['/api/stripe/webhook', 'handleStripeWebhook'],
+])
+const staticRewrites = Array.isArray(staticConfig.rewrites) ? staticConfig.rewrites : []
+for (const [source, functionId] of requiredServerRewrites) {
+  const matches = staticRewrites.filter((rewrite) => rewrite?.source === source && rewrite?.function?.functionId === functionId && rewrite?.function?.region === 'us-central1')
+  if (matches.length !== 1) failures.push(`firebase.static.json must expose exactly one governed rewrite for ${source} -> ${functionId}`)
+}
+for (const rewrite of staticRewrites) {
+  if (!requiredServerRewrites.has(rewrite?.source)) failures.push(`firebase.static.json contains ungoverned rewrite: ${String(rewrite?.source)}`)
+  if (rewrite?.source === '**' || rewrite?.source === '/**') failures.push('firebase.static.json must not mask missing static routes with a catch-all rewrite')
+}
+
+requireTokens('apps/functions/src/stripeEntitlements.ts', [
+  'createStripeCheckout',
+  'createStripeCustomerPortal',
+  'getStripeEntitlement',
+  'handleStripeWebhook',
+  "ENTITLEMENT_COLLECTION = 'userEntitlements'",
+  "verifyIdToken(token, true)",
+  "URAI_STRIPE_COMMERCE_ENABLED === 'true'",
+  "event.livemode !== (mode === 'production')",
+  'applyOrderedEntitlement',
+])
+requireTokens('apps/functions/src/index.ts', [
+  'createStripeCheckout',
+  'createStripeCustomerPortal',
+  'getStripeEntitlement',
+  'handleStripeWebhook',
+])
 
 const gateSource = read('urai-tier1/src/app/CanonicalAssetGates.tsx')
 const contracts = [...gateSource.matchAll(/\['(v\d+)',\s*(\d+),/g)].map((match) => ({ version: match[1], expected: Number(match[2]) }))
