@@ -214,9 +214,11 @@ test('semantic navigator portals its hit surface above the canonical WebGL stack
 })
 
 
-test('founder proof follows both GPU and no-WebGL signed-out privacy roots', () => {
-  assert.match(runner, /const SIGNED_OUT_ROOT =/)
-  assert.match(runner, /data-life-map-access="signed-out"/)
-  assert.match(runner, /signedState\.privateMounted !== 'false'/)
-  assert.match(runner, /signedState\.source !== 'signed-out'/)
+test('founder proof follows the current rendered signed-out privacy boundary and no-WebGL fallback', () => {
+  assert.match(runner, /data-testid="urai-r3f-canonical-lifemap"\]\[data-life-map-access="signed-out"/)
+  assert.match(runner, /data-testid="urai-life-map-signed-out-disclosure"/)
+  assert.match(runner, /privateSourceMounted: Boolean\(document\.querySelector\('\[data-life-map-source="private"\], \[data-private-memory-mounted="true"\]'\)\)/)
+  assert.match(runner, /if \(signedOutBoundary\.privateSourceMounted\) throw new Error\('signed-out Life Map mounted a private memory source'\)/)
+  assert.match(runner, /if \(!\/no personal data displayed\/i\.test\(signedOutBoundary\.disclosure\)\)/)
+  assert.match(runner, /data-testid="urai-life-map-authored-fallback"/)
 })
