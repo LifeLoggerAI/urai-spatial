@@ -2,11 +2,12 @@
 
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
+import { getAuth, onAuthStateChanged } from "firebase/auth";
 import { assetCssStack, lifeMapAssets } from "@/spatial/assets/uraiAssets";
 import { requestUraiWorldReturn } from "@/spatial/world/worldEvents";
 import LifeMapRouteBoundary from "@/components/lifemap/LifeMapRouteBoundary";
+import { app, firebasePublicEnvReady } from "@/lib/firebase/client";
 
-const USER_ID_KEY = "urai:userId";
 const DEMO_MANIFEST_ID = "replay-recovery-thread";
 type LifeMapAccessMode = "checking" | "signed-out" | "private" | "explicit-demo";
 
@@ -37,11 +38,6 @@ function LifeMapLoading({ label = "Opening your memory universe" }: { label?: st
 }
 
 function SignedOutLifeMap({ onOpenDemo, onReturnHome }: { onOpenDemo: () => void; onReturnHome: () => void }) {
-  useEffect(() => {
-    const timer = window.setTimeout(onOpenDemo, 420);
-    return () => window.clearTimeout(timer);
-  }, [onOpenDemo]);
-
   return <main aria-label="Signed-out Life Map threshold" data-testid="urai-life-map-signed-out-threshold" data-life-map-source="signed-out" data-private-memory-mounted="false" style={{ position:"relative", minHeight:"100svh", overflow:"hidden", color:"#f8fbff", background:"#01030a" }}>
     <picture aria-hidden="true" style={{ position:"absolute", inset:0 }}><source media="(max-width:700px)" srcSet={lifeMapAssets.mobile.src} /><img src={lifeMapAssets.primary.src} alt="" draggable={false} style={{ width:"100%", height:"100%", objectFit:"cover", filter:"saturate(1.05) contrast(1.08) brightness(.62)" }} /></picture>
     <div aria-hidden="true" style={{ position:"absolute", inset:0, background:"radial-gradient(circle at 50% 42%,rgba(16,48,73,.04),rgba(1,3,10,.76) 88%)" }} />
@@ -82,9 +78,21 @@ function LifeMapAccessGate() {
 
   useEffect(() => {
     const current = new URLSearchParams(query);
-    if (current.get("demo") === "1") { setMode("explicit-demo"); return; }
-    try { setMode(window.localStorage.getItem(USER_ID_KEY)?.trim() ? "private" : "signed-out"); }
-    catch { setMode("signed-out"); }
+    if (current.get("demo") === "1") {
+      setMode("explicit-demo");
+      return;
+    }
+
+    if (!firebasePublicEnvReady) {
+      setMode("signed-out");
+      return;
+    }
+
+    setMode("checking");
+    const auth = getAuth(app);
+    return onAuthStateChanged(auth, (user) => {
+      setMode(user ? "private" : "signed-out");
+    });
   }, [query]);
 
   const openDemo = useCallback(() => {
