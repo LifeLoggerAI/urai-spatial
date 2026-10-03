@@ -12,7 +12,7 @@ import { LIFE_MAP_SELECTION_EVENT, type LifeMapSelectionDetail } from './lifeMap
 const overviewActionLabels = new Set(['Overview', 'Open semantic overview'])
 const MIN_DIRECT_ROUTE_RENDER_ANCHORS = 8
 
-export default function LifeMapRouteBoundary() {
+export default function LifeMapRouteBoundary({ authenticatedUserId }: { authenticatedUserId: string | null }) {
   const router = useRouter()
 
   useEffect(() => {
@@ -139,7 +139,7 @@ export default function LifeMapRouteBoundary() {
   }, [])
 
   return <>
-    <ComposedLifeMapScene />
+    <ComposedLifeMapScene authenticatedUserId={authenticatedUserId} />
     <LifeMapSemanticNavigator />
   </>
 }
