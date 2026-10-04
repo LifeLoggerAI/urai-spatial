@@ -127,7 +127,10 @@ export const createPossibleFuture = functions.https.onCall(async (data, context)
   const basisId = opaque('basis_')
   const returnToken = String(data?.returnToken ?? opaque('return_')).slice(0, 120)
   const excludedEvidence = Array.isArray(data?.excludedEvidence) ? data.excludedEvidence.slice(0, 128) : []
-  const permissionReceiptIds = [...new Set([...resolvedEvidence.permissionReceiptIds, ...asStringArray(data?.permissionReceiptIds)])]
+  if (Array.isArray(data?.permissionReceiptIds) && data.permissionReceiptIds.length) {
+    throw new functions.https.HttpsError('permission-denied', 'CLIENT_SCENARIO_PERMISSION_RECEIPTS_FORBIDDEN')
+  }
+  const permissionReceiptIds = resolvedEvidence.permissionReceiptIds
   const now = fv.serverTimestamp()
   const ref = scenarioRef(ownerId, scenarioId)
   const receiptId = stableReceipt(ownerId, op, 'scenario-create')
