@@ -7,19 +7,21 @@
   "assets": [
     {
       "fileName": "home-entry-chamber-v1.glb",
-      "bytes": 1786808,
-      "sha256": "73f2a49ed2cfd6cd7ae9baed7b3908d53e0cac75b9f36ff1b8be9654e3d3e2f2",
-      "triangleCount": 57352,
-      "nodes": 322,
+      "bytes": 184160,
+      "sha256": "b7bdced5a721598a9dfe592ee19da04d754d5b8b1d48b23cc44403a89b1ee529",
+      "triangleCount": 12934,
+      "nodes": 160,
       "animations": [
         "Home_Breathing",
         "Presence_Idle",
         "Presence_Privacy",
         "Presence_Forming"
       ],
-      "materials": 8,
-      "embeddedTextures": 4,
-      "uvMapped": true
+      "materials": 13,
+      "embeddedTextures": 0,
+      "uvMapped": false,
+      "authority": "governed-production-receipt",
+      "productionReceipt": "operations/assets/production-receipts/home-entry-chamber-v1.json"
     },
     {
       "fileName": "portal-ring-master-v1.glb",
