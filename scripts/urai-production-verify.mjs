@@ -7,14 +7,17 @@ if (!existsSync('package.json')) {
 }
 
 const pkg = JSON.parse(readFileSync('package.json', 'utf8'))
-const requestedScripts = ['typecheck', 'test', 'build', 'urai:qa']
+const requestedScripts = ['typecheck', 'build', 'test', 'urai:qa']
 const scripts = requestedScripts.filter((name) => typeof pkg.scripts?.[name] === 'string')
 
 for (const script of scripts) {
   const cmd = 'corepack'
   const args = ['pnpm', 'run', script]
   console.log(`\n> ${cmd} ${args.join(' ')}`)
-  const result = spawnSync(cmd, args, { stdio: 'inherit', shell: process.platform === 'win32' })
+  const env = script === 'test'
+    ? { ...process.env, URAI_SPATIAL_SERVER_MODE: 'production' }
+    : process.env
+  const result = spawnSync(cmd, args, { stdio: 'inherit', shell: process.platform === 'win32', env })
   if (result.status !== 0) {
     console.error(`[URAI production verify] ${script} failed with status ${result.status ?? 'unknown'}`)
     process.exit(result.status ?? 1)
