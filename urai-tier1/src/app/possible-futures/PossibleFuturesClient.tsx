@@ -40,6 +40,7 @@ export default function PossibleFuturesClient() {
   const existingScenarioId = params.get('scenario')
   const [scenarioId,setScenarioId] = useState(existingScenarioId ?? '')
   const [branchIds,setBranchIds] = useState<string[]>([])
+  const [branchLabels,setBranchLabels] = useState<string[]>([])
   const [branchesLoaded,setBranchesLoaded] = useState(!existingScenarioId)
   const [basisRevision,setBasisRevision] = useState(Number(params.get('basisRevision') ?? 1))
   const [setup,setSetup] = useState<SetupState>(existingScenarioId?'exploring':'question')
@@ -54,10 +55,11 @@ export default function PossibleFuturesClient() {
     setBranchesLoaded(false)
     void getPossibleFutureClient(existingScenarioId).then((result) => {
       if (!active) return
-      const ids = Array.isArray(result.branches)
-        ? result.branches.map((entry) => String(entry.id ?? '')).filter(Boolean).slice(0, BRANCH_LABELS.length)
-        : []
+      const branchRecords = Array.isArray(result.branches) ? result.branches.slice(0, BRANCH_LABELS.length) : []
+      const ids = branchRecords.map((entry) => String(entry.id ?? '')).filter(Boolean)
+      const labels = branchRecords.map((entry, index) => String(entry.label ?? BRANCH_LABELS[index] ?? `Branch ${index + 1}`)).slice(0, ids.length)
       setBranchIds(ids)
+      setBranchLabels(labels)
       setBranch((current) => Math.min(current, Math.max(0, ids.length - 1)))
       const revision = Number(result.scenario?.basisRevision ?? result.basis?.revision ?? 1)
       if (Number.isInteger(revision) && revision > 0) setBasisRevision(revision)
@@ -70,9 +72,9 @@ export default function PossibleFuturesClient() {
     return () => { active = false }
   }, [existingScenarioId])
 
-  const visibleBranchLabels = branchIds.length
-    ? BRANCH_LABELS.slice(0, branchIds.length)
-    : branchesLoaded ? [] : BRANCH_LABELS.slice(0, 1)
+  const visibleBranchLabels = branchLabels.length
+    ? branchLabels
+    : branchesLoaded ? [] : ['Loading Scenario…']
 
   const createScenario = async () => {
     if (!question.trim()) return
@@ -94,7 +96,7 @@ export default function PossibleFuturesClient() {
     const branches = manualSummaries.map((summary,index)=>({ label:BRANCH_LABELS[index], summary:summary.trim() })).filter((item)=>item.summary)
     if (!branches.length || !scenarioId) return
     setSetup('creating'); setMessage('Saving your Manual Scenario…')
-    try { const result = await submitManualScenarioBranchesClient({ scenarioId, expectedRevision:basisRevision, branches }); setBranchIds(result.branchIds); setBranch(0); setBranchesLoaded(true); setSetup('exploring'); setMessage('Manual Scenario loaded. These branches came from your assumptions, not an AI prediction.') }
+    try { const result = await submitManualScenarioBranchesClient({ scenarioId, expectedRevision:basisRevision, branches }); setBranchIds(result.branchIds); setBranchLabels(branches.map((item)=>item.label)); setBranch(0); setBranchesLoaded(true); setSetup('exploring'); setMessage('Manual Scenario loaded. These branches came from your assumptions, not an AI prediction.') }
     catch (error) { setSetup('error'); setMessage(error instanceof Error ? error.message : 'Manual Scenario failed safely.') }
   }
 
