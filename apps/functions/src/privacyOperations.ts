@@ -10,13 +10,14 @@ const timestamp = admin.firestore.Timestamp
 
 const CONSENT_DOMAINS = ['memory', 'location', 'models', 'exports', 'workforce', 'identity'] as const
 const CONSENT_MODES = ['granted', 'limited', 'paused', 'denied'] as const
-const EXPORT_SCOPES = ['profile', 'consent', 'memories', 'spatial', 'life-model', 'audit'] as const
+const EXPORT_SCOPES = ['profile', 'consent', 'memories', 'spatial', 'life-model', 'intelligence', 'audit'] as const
 const DELETION_SCOPES = [
   'export-history',
   'privacy-history',
   'memories',
   'spatial-state',
   'life-model',
+  'intelligence',
   'all-repository-data',
   'account',
 ] as const
@@ -667,6 +668,10 @@ async function buildExport(snapshot: FirebaseFirestore.DocumentSnapshot) {
       data.simulationSessions = await collectionDocuments(userRef.collection('simulationSessions'))
       data.lifeModelReceipts = await collectionDocuments(userRef.collection('lifeModelReceipts'))
     }
+    if (scopes.includes('intelligence')) {
+      data.scenarios = await collectionDocuments(userRef.collection('scenarios'))
+      data.aiLedger = await collectionDocuments(userRef.collection('aiLedger'))
+    }
     if (scopes.includes('spatial')) {
       data.homeWorld = await collectionDocuments(userRef.collection('homeWorld'))
       data.focusStates = await collectionDocuments(userRef.collection('focusStates'))
@@ -906,6 +911,7 @@ const DELETION_COLLECTIONS: Record<Exclude<DeletionScope, 'account'>, string[]> 
     'simulationSessions',
     'lifeModelReceipts',
   ],
+  intelligence: ['scenarios', 'aiLedger'],
   'spatial-state': [
     'homeWorld',
     'homeWorldExplainability',
@@ -946,6 +952,8 @@ const DELETION_COLLECTIONS: Record<Exclude<DeletionScope, 'account'>, string[]> 
     'capturedRealityAssets',
     'capturedRealityReplayBindings',
     'providerConnections',
+    'scenarios',
+    'aiLedger',
     'lifeEntities',
     'lifeEntityStates',
     'lifeClaims',
