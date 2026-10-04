@@ -57,7 +57,7 @@ export default function FocusChamber({ node, nodes, edges, onReplay, onUnwind, o
       data-testid="urai-focus-chamber"
       data-tier5={tiers["tier-5"] ? "complete" : "partial"}
       role="dialog"
-      aria-label={`${chamber.title} focus chamber`}
+      aria-label={`${chamber.title} focus memory star`}
       style={style}
     >
       <div className="focus-chamber__aura" aria-hidden="true" />
