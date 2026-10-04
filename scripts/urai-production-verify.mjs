@@ -11,6 +11,14 @@ const requestedScripts = ['typecheck', 'build', 'test', 'urai:qa']
 const scripts = requestedScripts.filter((name) => typeof pkg.scripts?.[name] === 'string')
 
 for (const script of scripts) {
+  if (script === 'test') {
+    console.log('\n> corepack pnpm run playwright:install')
+    const browserInstall = spawnSync('corepack', ['pnpm', 'run', 'playwright:install'], { stdio: 'inherit', shell: process.platform === 'win32' })
+    if (browserInstall.status !== 0) {
+      console.error(`[URAI production verify] Playwright browser reinstall failed with status ${browserInstall.status ?? 'unknown'}`)
+      process.exit(browserInstall.status ?? 1)
+    }
+  }
   const cmd = 'corepack'
   const args = ['pnpm', 'run', script]
   console.log(`\n> ${cmd} ${args.join(' ')}`)
