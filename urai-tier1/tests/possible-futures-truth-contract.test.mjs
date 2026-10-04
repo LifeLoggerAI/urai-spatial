@@ -43,6 +43,13 @@ test('Possible Futures controls preserve 48px targets and reduced-motion parity'
   assert.match(route,/reducedMotion \? 0/)
 })
 
+test('Possible Futures fails over to a semantic no-WebGL backdrop without mounting R3F',()=>{
+  assert.match(route,/useWebGLAvailable/)
+  assert.match(route,/webglAvailable === true/)
+  assert.match(route,/possible-futures-webgl-fallback/)
+  assert.match(route,/data-webgl-state=/)
+})
+
 test('Possible Futures and AI ledger participate in explicit owner export and deletion rights',()=>{
   assert.match(privacyOps,/EXPORT_SCOPES[^\n]*'intelligence'/)
   assert.match(privacyOps,/scopes\.includes\('intelligence'\)/)
