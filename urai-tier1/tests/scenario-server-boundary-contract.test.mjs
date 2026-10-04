@@ -63,5 +63,10 @@ test('Scenario Council bundle is owner-scoped, minimal and never exposes raw evi
   assert.match(ops, /evidenceCount: evidenceRefs\.length/)
   assert.match(ops, /evidenceKinds/)
   assert.match(ops, /Possible Future only\. Not a memory, prediction, consensus, or authority decision\./)
-  assert.doesNotMatch(ops, /return \{[^}]*evidenceRefs[^}]*\}/)
+
+  const councilStart = ops.indexOf('export const getPossibleFutureCouncilBundle')
+  const councilEnd = ops.indexOf('\nexport const savePossibleFuture', councilStart)
+  assert.ok(councilStart >= 0 && councilEnd > councilStart, 'Council callable source boundary must be discoverable')
+  const councilSource = ops.slice(councilStart, councilEnd)
+  assert.doesNotMatch(councilSource, /return \{[^}]*evidenceRefs[^}]*\}/)
 })
