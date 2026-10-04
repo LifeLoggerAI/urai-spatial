@@ -38,6 +38,71 @@ function asStringArray(value: unknown, max = 64) {
   if (!Array.isArray(value)) return []
   return value.filter((entry): entry is string => typeof entry === 'string' && entry.length > 0).slice(0, max)
 }
+
+type ScenarioSourceContext = {
+  memoryId?: string
+  personId?: string
+  placeId?: string
+}
+
+function safeContextId(value: unknown) {
+  const id = String(value ?? '').trim()
+  return /^[A-Za-z0-9:_-]{1,160}$/.test(id) ? id : ''
+}
+
+async function resolveAuthorizedScenarioEvidence(ownerId: string, value: unknown) {
+  const context = value && typeof value === 'object' ? value as Record<string, unknown> : {}
+  const memoryId = safeContextId(context.memoryId)
+  const personId = safeContextId(context.personId)
+  const placeId = safeContextId(context.placeId)
+  if (!memoryId && !personId && !placeId) return { evidenceRefs: [], permissionReceiptIds: [] as string[] }
+
+  const policySnapshot = await db.doc(`users/${ownerId}/privacyPolicy/current`).get()
+  if (!policySnapshot.exists) return { evidenceRefs: [], permissionReceiptIds: [] as string[] }
+  const policy = policySnapshot.data() ?? {}
+  const domains = typeof policy.domains === 'object' && policy.domains ? policy.domains as Record<string, unknown> : {}
+  const enforcement = typeof policy.enforcement === 'object' && policy.enforcement ? policy.enforcement as Record<string, unknown> : {}
+  const memoryPolicy = typeof domains.memory === 'object' && domains.memory ? domains.memory as Record<string, unknown> : {}
+  const modelPolicy = typeof domains.models === 'object' && domains.models ? domains.models as Record<string, unknown> : {}
+  if (enforcement.state !== 'fully-enforced') return { evidenceRefs: [], permissionReceiptIds: [] as string[] }
+
+  const evidenceRefs: Record<string, unknown>[] = []
+  const revision = Number(policy.revision ?? 0)
+
+  if (memoryId && memoryPolicy.modelContext === true && ['granted', 'limited'].includes(String(memoryPolicy.mode ?? ''))) {
+    const memory = await db.doc(`users/${ownerId}/memories/${memoryId}`).get()
+    if (memory.exists) {
+      evidenceRefs.push({
+        id: `evr_memory_${createHash('sha256').update(memoryId).digest('hex').slice(0, 24)}`,
+        truthRecordId: `memory:${memoryId}`,
+        sourceId: `users/${ownerId}/memories/${memoryId}`,
+        truthKind: 'autobiographical-memory',
+        purpose: SCENARIO_PURPOSE,
+        sourceRevision: revision,
+        transformations: ['reference-only'],
+      })
+    }
+  }
+
+  if (modelPolicy.modelContext === true && ['granted', 'limited'].includes(String(modelPolicy.mode ?? ''))) {
+    for (const [kind, entityId] of [['person', personId], ['place', placeId]] as const) {
+      if (!entityId) continue
+      const entity = await db.doc(`users/${ownerId}/lifeEntities/${entityId}`).get()
+      if (!entity.exists) continue
+      evidenceRefs.push({
+        id: `evr_${kind}_${createHash('sha256').update(entityId).digest('hex').slice(0, 24)}`,
+        truthRecordId: `life-entity:${entityId}`,
+        sourceId: `users/${ownerId}/lifeEntities/${entityId}`,
+        truthKind: 'interpretation',
+        purpose: SCENARIO_PURPOSE,
+        sourceRevision: revision,
+        transformations: ['reference-only', 'life-model-entity'],
+      })
+    }
+  }
+
+  return { evidenceRefs, permissionReceiptIds: [] as string[] }
+}
 function evidenceIdsFromBasis(basis: FirebaseFirestore.DocumentData | undefined) {
   const refs = Array.isArray(basis?.evidenceRefs) ? basis.evidenceRefs : []
   return new Set(refs.map((entry: unknown) => entry && typeof entry === 'object' ? String((entry as Record<string, unknown>).id ?? '') : '').filter(Boolean))
@@ -49,8 +114,12 @@ export const createPossibleFuture = functions.https.onCall(async (data, context)
   const question = boundedQuestion(data?.question)
   const originRealm = String(data?.originRealm ?? 'home')
   if (!ALLOWED_ORIGINS.has(originRealm)) throw new functions.https.HttpsError('invalid-argument', 'Invalid origin realm.')
-  const evidenceRefs = Array.isArray(data?.evidenceRefs) ? data.evidenceRefs.slice(0, 128) : []
-  const assumptionOnly = data?.assumptionOnly === true
+  if (Array.isArray(data?.evidenceRefs) && data.evidenceRefs.length) {
+    throw new functions.https.HttpsError('permission-denied', 'CLIENT_SCENARIO_EVIDENCE_REFS_FORBIDDEN')
+  }
+  const resolvedEvidence = await resolveAuthorizedScenarioEvidence(ownerId, data?.sourceContext)
+  const evidenceRefs = resolvedEvidence.evidenceRefs
+  const assumptionOnly = evidenceRefs.length === 0 ? data?.assumptionOnly === true : false
   if (!evidenceRefs.length && !assumptionOnly) {
     throw new functions.https.HttpsError('failed-precondition', 'SCENARIO_REQUIRES_AUTHORIZED_EVIDENCE_OR_EXPLICIT_ASSUMPTION_ONLY')
   }
@@ -58,7 +127,7 @@ export const createPossibleFuture = functions.https.onCall(async (data, context)
   const basisId = opaque('basis_')
   const returnToken = String(data?.returnToken ?? opaque('return_')).slice(0, 120)
   const excludedEvidence = Array.isArray(data?.excludedEvidence) ? data.excludedEvidence.slice(0, 128) : []
-  const permissionReceiptIds = asStringArray(data?.permissionReceiptIds)
+  const permissionReceiptIds = [...new Set([...resolvedEvidence.permissionReceiptIds, ...asStringArray(data?.permissionReceiptIds)])]
   const now = fv.serverTimestamp()
   const ref = scenarioRef(ownerId, scenarioId)
   const receiptId = stableReceipt(ownerId, op, 'scenario-create')
