@@ -4,6 +4,13 @@ body:has(.mirrorWorld .mirrorInspection) .urai-movement-help {
 }
 
 @media (max-width: 760px) {
+  /* Keep the global Founder launcher available in the reserved top strip.
+     Its default viewport-center position covers the inspector's controls. */
+  body:has(.mirrorWorld .mirrorInspection) [data-urai-adam-launcher] {
+    top: max(8px, env(safe-area-inset-top));
+    transform: none;
+  }
+
   body:has(.mirrorWorld .mirrorInspection) .urai-world-companion {
     display: none !important;
     pointer-events: none !important;

@@ -55,7 +55,30 @@ try {
   const range = inspector.locator('input[type="range"]')
   const max = Number(await range.getAttribute('max'))
   if (max <= 0) throw new Error('expected at least one inspectable fragment')
-  await range.fill(String(max))
+  const founderLauncher = page.locator('[data-urai-adam-launcher]')
+  await founderLauncher.waitFor({ state: 'visible' })
+  const launcherGeometry = await founderLauncher.evaluate((element) => {
+    const launcher = element.getBoundingClientRect()
+    const inspector = document.querySelector('.mirrorInspection').getBoundingClientRect()
+    return {
+      overlapsInspector: launcher.left < inspector.right && launcher.right > inspector.left && launcher.top < inspector.bottom && launcher.bottom > inspector.top,
+      insideViewport: launcher.top >= 0 && launcher.left >= 0 && launcher.right <= innerWidth && launcher.bottom <= innerHeight,
+    }
+  })
+  if (launcherGeometry.overlapsInspector || !launcherGeometry.insideViewport) throw new Error(`Founder launcher obstructs Mirror inspection: ${JSON.stringify(launcherGeometry)}`)
+  await range.scrollIntoViewIfNeeded()
+  const sliderHit = await range.evaluate((element) => {
+    const rect = element.getBoundingClientRect()
+    return [0.05, 0.5, 0.95].map(fraction => {
+      const hit = document.elementFromPoint(rect.left + rect.width * fraction, rect.top + rect.height / 2)
+      return { fraction, unobstructed: Boolean(hit && (hit === element || element.contains(hit))) }
+    })
+  })
+  if (sliderHit.some(hit => !hit.unobstructed)) throw new Error(`reflection depth slider is obstructed: ${JSON.stringify(sliderHit)}`)
+  const rangeBox = await range.boundingBox()
+  if (!rangeBox) throw new Error('reflection depth slider has no rendered bounds')
+  await page.touchscreen.tap(rangeBox.x + rangeBox.width - 2, rangeBox.y + rangeBox.height / 2)
+  if (Number(await range.inputValue()) !== max) throw new Error('touch did not select the final reflection depth')
 
   const finalFragment = inspector.locator('.fragmentList button:not([disabled])').last()
   await finalFragment.scrollIntoViewIfNeeded()
@@ -120,6 +143,9 @@ try {
     passportThresholdUnobstructed: true,
     finalFragmentUnobstructed: true,
     fragmentStatusVisibleWithinInspector: true,
+    founderLauncherVisibleAndClearOfInspector: true,
+    reflectionDepthSliderHitTest: sliderHit,
+    reflectionDepthSelectedByTouch: true,
     consoleErrors,
     failedRequests,
   }
