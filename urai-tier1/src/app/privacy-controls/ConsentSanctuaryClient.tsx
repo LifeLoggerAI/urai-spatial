@@ -144,6 +144,39 @@ function SanctuaryWorld({ policy, selectedDomain, onSelect, reducedMotion }: {
   )
 }
 
+function unresolvedPolicy(): ConsentPolicy {
+  const denied = (): ConsentDomainPolicy => ({
+    mode: 'denied',
+    retentionDays: null,
+    precise: false,
+    replayVisible: false,
+    lifeMapVisible: false,
+    modelContext: false,
+    sharingEnabled: false,
+    automationEnabled: false,
+    likenessEnabled: false,
+  })
+  return {
+    version: 2,
+    revision: 0,
+    ownerId: 'unresolved',
+    domains: {
+      memory: denied(),
+      location: denied(),
+      models: denied(),
+      exports: denied(),
+      workforce: denied(),
+      identity: denied(),
+    },
+    enforcement: {
+      state: 'pending',
+      jobId: null,
+      affectedTargets: [],
+      providerState: 'pending',
+    },
+  }
+}
+
 function demoPolicy() {
   const policy = defaultConsentPolicy('disclosed-demo')
   policy.domains.exports.mode = 'limited'
@@ -163,7 +196,7 @@ export default function ConsentSanctuaryClient() {
   const explicitDemo = params.get('demo') === '1'
   const [user, setUser] = useState<User | null>(null)
   const [loadState, setLoadState] = useState<LoadState>('loading')
-  const [policy, setPolicy] = useState<ConsentPolicy>(() => demoPolicy())
+  const [policy, setPolicy] = useState<ConsentPolicy>(() => unresolvedPolicy())
   const [selectedDomain, setSelectedDomain] = useState<ConsentDomain>('memory')
   const [pending, setPending] = useState<PendingChange | null>(null)
   const [mutationState, setMutationState] = useState<MutationState>('idle')
