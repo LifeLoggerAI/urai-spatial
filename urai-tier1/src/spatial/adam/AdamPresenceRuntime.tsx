@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react'
-import { usePathname } from 'next/navigation'
+import { usePathname, useSearchParams } from 'next/navigation'
 import {
   AdamProviderError,
   requestAdamFounderVoice,
@@ -57,7 +57,9 @@ function nextSpeakableChunk(buffer: string, final: boolean): [string | null, str
 
 export default function AdamPresenceRuntime() {
   const pathname = usePathname() ?? '/'
-  const surface = resolveAdamSurface(pathname)
+  const searchParams = useSearchParams()
+  const requestedSurface = pathname === '/adam' ? searchParams.get('surface') : null
+  const surface = resolveAdamSurface(pathname, requestedSurface)
   const [open, setOpen] = useState(false)
   const [message, setMessage] = useState('')
   const [messages, setMessages] = useState<DisplayMessage[]>([])

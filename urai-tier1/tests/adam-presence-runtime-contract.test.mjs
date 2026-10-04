@@ -26,6 +26,14 @@ test('Adam is one governed runtime mounted at the product shell', () => {
   assert.match(surfaces, /'support'/)
   assert.match(surfaces, /'onboarding'/)
   assert.match(surfaces, /'institutional-demo'/)
+  for (const id of ['labs', 'marketing', 'investors', 'b2b', 'studio', 'foundation']) {
+    assert.match(surfaces, new RegExp(`['"]${id}['"]`))
+    assert.match(functions, new RegExp(`\\b${id}:`))
+  }
+  assert.match(runtime, /searchParams\.get\('surface'\)/)
+  assert.match(surfaces, /CROSS_PROPERTY_SURFACES/)
+  assert.match(surfaces, /pathname === '\/adam' && requestedSurface/)
+  assert.doesNotMatch(surfaces, /SURFACES\[requestedSurface as AdamSurfaceId\](?![\s\S]*CROSS_PROPERTY_SURFACES)/)
   assert.match(adamRoute, /data-urai-adam-route="canonical"/)
   assert.match(runtime, /pathname === '\/adam'/)
 })
@@ -96,4 +104,16 @@ test('Adam route authority remains explicit and unknown routes stay fail-closed'
 test('Adam launcher vacates canonical bottom-right control ownership across spatial routes', () => {
   assert.match(adamStyles, /\.launcher\s*\{[\s\S]*top:\s*50%[\s\S]*bottom:\s*auto[\s\S]*transform:\s*translateY\(-50%\)/)
   assert.doesNotMatch(adamStyles, /:global\(html\.urai-route-life-map\) \.launcher/)
+})
+
+
+test('cross-property Adam contexts are allowlisted and remain inside the one canonical provider boundary', () => {
+  for (const id of ['labs', 'marketing', 'investors', 'b2b', 'studio', 'foundation']) {
+    assert.match(surfaces, new RegExp(`['"]${id}['"]`))
+    assert.match(functions, new RegExp(`\\b${id}:`))
+  }
+  assert.match(runtime, /resolveAdamSurface\(pathname, requestedSurface\)/)
+  assert.match(surfaces, /CROSS_PROPERTY_SURFACES\.has\(requestedSurface as AdamSurfaceId\)/)
+  assert.match(functions, /readSurface\(body\.surface\)/)
+  assert.match(functions, /INVALID_SURFACE/)
 })

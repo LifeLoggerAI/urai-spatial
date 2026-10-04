@@ -13,7 +13,7 @@ This lane introduces:
 - one dedicated private-Founder voice function that fails closed unless the accepted Founder voice is enabled and configured;
 - one accessible global product-shell Adam presence;
 - text input, browser voice input where available, streaming text, sentence-chunk speech start, interruption, mute, captions, and explicit human-Founder handoff;
-- Home, Council, Support, Onboarding, institutional-demo, and general product contexts;
+- Home, Council, Support, Onboarding, institutional-demo, general product, Labs, Marketing, Investors, B2B, Studio, and Foundation governed surface contexts;
 - Firebase Hosting and preview rewrites for the new protected endpoints;
 - regression tests that reject stock-Founder substitution.
 
@@ -27,7 +27,7 @@ The runtime remains incomplete for full-vision launch until:
 - ADAM_PRESENCE_ENABLED=true is enabled only in an approved environment;
 - a private Founder visual/digital-human model is created and accepted;
 - realtime visual lip/face/body presence is bound to this runtime;
-- cross-property adapters are installed in Labs, Marketing, Investors, B2B, Studio, Foundation and any other approved launch surface;
+- thin cross-property adapters in Labs, Marketing, Investors, B2B, Studio, Foundation and any other approved launch surface are exact-head proved and deployed; the canonical Spatial runtime now accepts only the explicit allowlisted property contexts and remains the sole AI/voice identity authority;
 - admitted locales have language/voice/lipsync/caption evidence;
 - provider, accessibility, latency, mobile/desktop/XR, failure/fallback and kill-switch evidence is retained;
 - exact-head review, governed deployment and post-deploy proof are complete.
