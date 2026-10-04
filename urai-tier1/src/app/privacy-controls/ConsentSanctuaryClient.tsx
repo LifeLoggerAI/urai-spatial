@@ -34,12 +34,14 @@ type MutationState = 'idle' | 'previewing' | 'requested' | 'pending' | 'partial'
 type PendingChange = { domain: ConsentDomain; next: ConsentDomainPolicy }
 
 const MODE_OPTIONS: ConsentMode[] = ['granted', 'limited', 'paused', 'denied']
-const EXPORT_SCOPES = ['profile', 'consent', 'memories', 'spatial', 'audit'] as const
+const EXPORT_SCOPES = ['profile', 'consent', 'memories', 'spatial', 'life-model', 'intelligence', 'audit'] as const
 const DELETION_SCOPES = [
   ['export-history', 'Export history', 'CONFIRM DELETE'],
   ['privacy-history', 'Privacy history', 'CONFIRM DELETE'],
   ['memories', 'Memories and replay records', 'CONFIRM DELETE'],
   ['spatial-state', 'Spatial state', 'CONFIRM DELETE'],
+  ['life-model', 'Life causal graph and person/world model', 'CONFIRM DELETE'],
+  ['intelligence', 'Possible Futures and AI activity ledger', 'CONFIRM DELETE'],
   ['all-repository-data', 'All repository-controlled UrAi data', 'DELETE MY URAI DATA'],
   ['account', 'Entire account after a grace period', 'DELETE MY URAI ACCOUNT'],
 ] as const
