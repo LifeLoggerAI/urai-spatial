@@ -43,7 +43,9 @@ test('Possible Futures controls preserve 48px targets and reduced-motion parity'
 test('Possible Futures and AI ledger participate in explicit owner export and deletion rights',()=>{
   assert.match(privacyOps,/EXPORT_SCOPES[^\n]*'intelligence'/)
   assert.match(privacyOps,/scopes\.includes\('intelligence'\)/)
-  assert.match(privacyOps,/data\.scenarios/)
+  assert.match(privacyOps,/data\.scenarios = await scenarioExportTree/)
+  assert.match(privacyOps,/SCENARIO_EXPORT_LIMIT_EXCEEDED/)
+  for (const child of ['basis','branches','comparisons','outcomeObservations','calibration']) assert.match(privacyOps,new RegExp(`${child}: await boundedCollectionDocuments`))
   assert.match(privacyOps,/data\.aiLedger/)
   assert.match(privacyOps,/intelligence: \['scenarios', 'aiLedger'\]/)
   assert.match(privacyOps,/'all-repository-data': \[[\s\S]*'scenarios'[\s\S]*'aiLedger'/)
