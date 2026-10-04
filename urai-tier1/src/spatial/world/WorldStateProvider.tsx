@@ -145,6 +145,17 @@ function reducer(state: RuntimeState, action: RuntimeAction): RuntimeState {
           action.context.cameraCheckpoint ??
           state.pendingTravel?.cameraCheckpoint ??
           definition.cameraCheckpoint,
+        truthMode:
+          action.context.truthMode ??
+          (action.destination === 'possible-futures'
+            ? 'scenario'
+            : action.destination === 'replay' || action.destination === 'life-movie'
+              ? 'memory'
+              : 'reality'),
+        scenarioId: action.destination === 'possible-futures' ? action.context.scenarioId ?? state.world.scenarioId : undefined,
+        scenarioBranchId: action.destination === 'possible-futures' ? action.context.scenarioBranchId ?? state.world.scenarioBranchId : undefined,
+        scenarioBasisRevision: action.destination === 'possible-futures' ? action.context.scenarioBasisRevision ?? state.world.scenarioBasisRevision : undefined,
+        scenarioOrigin: action.destination === 'possible-futures' ? action.context.scenarioOrigin ?? state.world.scenarioOrigin : undefined,
       },
     }
   }
