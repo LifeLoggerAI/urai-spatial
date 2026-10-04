@@ -2,7 +2,7 @@
 
 import { Canvas, useFrame } from '@react-three/fiber'
 import { Environment } from '@react-three/drei'
-import { useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import * as THREE from 'three'
 import { requestUraiWorldReturn } from '@/spatial/world/worldEvents'
@@ -13,8 +13,16 @@ type SetupState = 'question' | 'creating' | 'manual' | 'exploring' | 'error'
 
 function BranchMass({ branch }: { branch: number }) {
   const group = useRef<THREE.Group>(null); const seed = branch + 1
+  const [reducedMotion, setReducedMotion] = useState(false)
+  useEffect(() => {
+    const media = window.matchMedia('(prefers-reduced-motion: reduce)')
+    const sync = () => setReducedMotion(media.matches)
+    sync()
+    media.addEventListener?.('change', sync)
+    return () => media.removeEventListener?.('change', sync)
+  }, [])
   const pieces = useMemo(() => Array.from({ length:7 }, (_, index) => ({ x:Math.sin(seed*2.17+index*1.31)*2.6, z:-1.5-index*.82+Math.cos(index*1.7+seed)*.45, y:.42+(index%3)*.23, scale:.44+((index*17+seed*7)%9)*.035, rotation:Math.sin(index*.91+seed)*.4 })), [seed])
-  useFrame(({ clock }) => { if (group.current) group.current.rotation.y = Math.sin(clock.elapsedTime*.12)*.012 })
+  useFrame(({ clock }) => { if (group.current) group.current.rotation.y = reducedMotion ? 0 : Math.sin(clock.elapsedTime*.12)*.012 })
   return <group ref={group}>
     <mesh rotation={[-Math.PI/2,0,0]} receiveShadow><planeGeometry args={[18,18,1,1]} /><meshStandardMaterial color={branch===0?'#202a28':branch===1?'#29302e':'#262a30'} roughness={1} /></mesh>
     <group name="possible-future-factual-anchor" position={[0,.72,1.2]}><mesh castShadow><cylinderGeometry args={[.7,.95,1.25,7]} /><meshStandardMaterial color="#394744" roughness={.72} metalness={.08} /></mesh></group>
@@ -64,7 +72,7 @@ export default function PossibleFuturesClient() {
       <header style={{ maxWidth:620,pointerEvents:'auto',textShadow:'0 2px 18px #000' }}><p style={{ margin:0,letterSpacing:'.16em',fontSize:12,fontWeight:700 }}>POSSIBLE FUTURE · NOT A MEMORY</p><h1 style={{ margin:'8px 0 4px',fontSize:'clamp(24px,4vw,42px)',fontWeight:520 }}>Possible Futures</h1><p aria-live="polite" style={{ margin:0,opacity:.82 }}>{message}</p></header>
       {setup==='question'||setup==='creating'||setup==='error'?<div style={panelStyle}><label htmlFor="possible-future-question">What do you want to explore?</label><textarea id="possible-future-question" value={question} onChange={(e)=>setQuestion(e.target.value)} disabled={setup==='creating'} placeholder="What if I move?" style={{...inputStyle,minHeight:88,marginTop:8}} /><p style={{opacity:.72,fontSize:13}}>Direct arrival without evidence uses an explicit assumption-only basis. Nothing here becomes autobiographical memory.</p><button type="button" disabled={!question.trim()||setup==='creating'} onClick={createScenario} style={{...inputStyle,width:'auto',cursor:'pointer'}}>Create Possible Future</button></div>:null}
       {setup==='manual'?<div style={panelStyle}><strong>Manual Scenario</strong><p style={{opacity:.76}}>Provider generation is unavailable. Write one or more possible branches yourself.</p>{BRANCH_LABELS.map((label,index)=><label key={label} style={{display:'block',marginTop:10}}>{label}<textarea value={manualSummaries[index]} onChange={(e)=>setManualSummaries((current)=>current.map((value,i)=>i===index?e.target.value:value))} style={{...inputStyle,minHeight:64,marginTop:5}} /></label>)}<button type="button" onClick={submitManual} disabled={!manualSummaries.some((value)=>value.trim())} style={{...inputStyle,width:'auto',marginTop:12}}>Enter Manual Scenario</button></div>:null}
-      <footer style={{display:'flex',gap:10,flexWrap:'wrap',alignItems:'center',pointerEvents:'auto'}}><button type="button" onClick={requestUraiWorldReturn} style={{minHeight:48,padding:'0 18px',borderRadius:999,border:'1px solid rgba(255,255,255,.25)',background:'rgba(8,13,16,.78)',color:'inherit'}}>Return</button>{setup==='exploring'?<div role="group" aria-label="Scenario branches" style={{display:'flex',gap:8,padding:6,borderRadius:999,background:'rgba(8,13,16,.78)',border:'1px solid rgba(255,255,255,.16)'}}>{BRANCH_LABELS.map((label,index)=><button key={label} type="button" aria-pressed={branch===index} onClick={()=>setBranch(index)} style={{minHeight:42,padding:'0 14px',borderRadius:999,border:branch===index?'1px solid rgba(238,244,242,.7)':'1px solid transparent',background:branch===index?'rgba(238,244,242,.12)':'transparent',color:'inherit'}}>{label}</button>)}</div>:null}<span style={{fontSize:12,opacity:.65}}>{scenarioId?`Scenario ${scenarioId.slice(0,18)}… · `:''}{horizon}</span></footer>
+      <footer style={{display:'flex',gap:10,flexWrap:'wrap',alignItems:'center',pointerEvents:'auto'}}><button type="button" onClick={requestUraiWorldReturn} style={{minHeight:48,padding:'0 18px',borderRadius:999,border:'1px solid rgba(255,255,255,.25)',background:'rgba(8,13,16,.78)',color:'inherit'}}>Return</button>{setup==='exploring'?<div role="group" aria-label="Scenario branches" style={{display:'flex',gap:8,padding:6,borderRadius:999,background:'rgba(8,13,16,.78)',border:'1px solid rgba(255,255,255,.16)'}}>{BRANCH_LABELS.map((label,index)=><button key={label} type="button" aria-pressed={branch===index} onClick={()=>setBranch(index)} style={{minHeight:48,padding:'0 14px',borderRadius:999,border:branch===index?'1px solid rgba(238,244,242,.7)':'1px solid transparent',background:branch===index?'rgba(238,244,242,.12)':'transparent',color:'inherit'}}>{label}</button>)}</div>:null}<span style={{fontSize:12,opacity:.65}}>{scenarioId?`Scenario ${scenarioId.slice(0,18)}… · `:''}{horizon}</span></footer>
     </section>
     <p className="sr-only">This surface represents hypothetical scenarios only. It is not Replay and must not be interpreted as autobiographical memory.</p>
   </main>
