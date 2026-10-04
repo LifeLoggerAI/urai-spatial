@@ -12,7 +12,7 @@ on:
   workflow_dispatch:
     inputs:
       operation:
-        description: Audit current API state or enable the two governed Maps APIs
+        description: Audit current API state or enable the three governed Maps APIs
         required: true
         type: choice
         options:
@@ -33,7 +33,7 @@ concurrency:
 env:
   EXPECTED_REPOSITORY: LifeLoggerAI/urai-spatial
   EXPECTED_PROJECT_ID: urai-4dc1d
-  TARGET_SERVICES: maps-backend.googleapis.com geocoding-backend.googleapis.com
+  TARGET_SERVICES: maps-backend.googleapis.com geocoding-backend.googleapis.com elevation-backend.googleapis.com
   CANDIDATE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
 
 jobs:
@@ -223,7 +223,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          gcloud services enable maps-backend.googleapis.com geocoding-backend.googleapis.com --project "$EXPECTED_PROJECT_ID" --quiet
+          gcloud services enable maps-backend.googleapis.com geocoding-backend.googleapis.com elevation-backend.googleapis.com --project "$EXPECTED_PROJECT_ID" --quiet
 
       - name: Verify after state and write exact receipt
         shell: bash
@@ -239,6 +239,7 @@ jobs:
           if [[ "$OPERATION" = enable ]]; then
             grep -Fx 'maps-backend.googleapis.com' enabled-after-governed.txt
             grep -Fx 'geocoding-backend.googleapis.com' enabled-after-governed.txt
+            grep -Fx 'elevation-backend.googleapis.com' enabled-after-governed.txt
           fi
           ACTIVE_ACCOUNT="$active_account" node <<'NODE'
           const fs = require('node:fs')
