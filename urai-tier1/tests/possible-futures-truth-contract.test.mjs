@@ -16,6 +16,8 @@ const privacyOps=fs.readFileSync(new URL('../../apps/functions/src/privacyOperat
 const consentSurface=fs.readFileSync(new URL('../src/app/privacy-controls/ConsentSanctuaryClient.tsx',import.meta.url),'utf8')
 const passportSurface=fs.readFileSync(new URL('../src/app/passport/PassportVaultClient.tsx',import.meta.url),'utf8')
 const scenarioCouncil=fs.readFileSync(new URL('../src/spatial/scenario/ScenarioCouncilPanel.tsx',import.meta.url),'utf8')
+const doorway=fs.readFileSync(new URL('../src/spatial/scenario/PossibleFuturesOrbEntry.tsx',import.meta.url),'utf8')
+const scenarioOps=fs.readFileSync(new URL('../../apps/functions/src/scenarioOperations.ts',import.meta.url),'utf8')
 
 test('possible futures is one canonical scenario-world destination and visibly not memory',()=>{assert.match(worldTypes,/'possible-futures'/);assert.match(worldTypes,/'scenario-world'/);assert.match(worldTypes,/UraiTruthMode = 'reality' \| 'memory' \| 'interpretation' \| 'scenario'/);assert.match(destinationRegistry,/href: '\/possible-futures'/);assert.match(route,/POSSIBLE FUTURE · NOT A MEMORY/);assert.doesNotMatch(route,/\/dream/)})
 test('truth authority rejects factual high confidence without sources and scenario promotion to observation',()=>{const errors=validateTruthRecord({id:'t1',ownerId:'u1',kind:'observation',value:'x',sourceRefs:[],support:'high',userCorrectionRevision:0,createdAt:'2026-09-16T00:00:00Z',updatedAt:'2026-09-16T00:00:00Z'});assert.ok(errors.includes('HIGH_SUPPORT_REQUIRES_SOURCE'));assert.throws(()=>assertRealityIsolation('scenario','observation'),/TRUTH_PROMOTION_FORBIDDEN/)})
@@ -64,4 +66,13 @@ test('Possible Futures Council lens requires explicit consent and preserves hypo
   assert.match(scenarioCouncil,/aiProcessingConsent: true/)
   assert.match(scenarioCouncil,/Do not claim this Scenario is memory, prediction, fact, consensus, or an authority decision/)
   assert.match(scenarioCouncil,/No provider answer is being substituted/)
+})
+
+test('Possible Futures returns to the current realm and admits the complete current origin set',()=>{
+  assert.match(doorway,/function scenarioOriginFor\(destination: string\)/)
+  assert.doesNotMatch(doorway,/if \(inherited\) return inherited/)
+  assert.match(doorway,/'life-movie'/)
+  assert.match(doorway,/'location-map'/)
+  assert.match(scenarioOps,/ALLOWED_ORIGINS[^\n]*'life-movie'/)
+  assert.match(scenarioOps,/ALLOWED_ORIGINS[^\n]*'location-map'/)
 })
