@@ -10,7 +10,7 @@ $HOME/urai-final-receipts/aaa-launch-proof-<loop>-<short-sha>-<timestamp>/
 
 Set `URAI_RECEIPT_ROOT` to use a different receipt root. Set `URAI_PROOF_SOURCE_SHA` when an external caller needs the checked-out commit to match an explicit SHA. Pull-request runs do not infer the expected head from GitHub's merge-ref `GITHUB_SHA`; the checked-out clean commit remains recorded in every receipt.
 
-Production deployment is intentionally unavailable from this script. Deploy `urai.app` only through `.github/workflows/spatial-live-deploy.yml` using the protected `production` environment, exact release and rollback SHAs, and `DEPLOY_URAI_APP`.
+Production deployment is intentionally unavailable from this script. The only mutation path is the manual `.github/workflows/spatial-governed-wif-deploy.yml` after independent exact-head approval, merge, and separate deployment authorization; it requires the exact release SHA, distinct rollback SHA, merged PR number, and `DEPLOY_URAI_APP`.
 
 ## Standard proof pass
 
@@ -89,14 +89,17 @@ LOOP_NAME=live-surface-check node scripts/aaa-launch-proof.mjs \
 Use the canonical workflow:
 
 ```text
-.github/workflows/spatial-live-deploy.yml
+.github/workflows/spatial-governed-wif-deploy.yml
 ```
 
 Required manual inputs:
 
 - exact 40-character `release_sha`;
-- exact 40-character proven `rollback_sha`;
+- exact 40-character proven ancestor `rollback_sha`;
+- merged `pull_request` number whose approved head equals `release_sha`;
 - confirmation `DEPLOY_URAI_APP`.
+
+The workflow itself requires successful exact-head Release Governance Guard, protected production approval, short-lived WIF/OIDC identity, exact post-deploy smoke, and automatic Hosting rollback if live certification fails.
 
 The proof runner rejects `--deploy` with a nonzero exit code.
 

@@ -101,8 +101,7 @@ function explicitDemoEnabled(explicitUserId?: string) {
 
 function resolveUserId(explicitUserId?: string): string | null {
   if (explicitUserId && explicitUserId !== "demo-user") return explicitUserId;
-  if (typeof window === "undefined") return null;
-  return window.localStorage.getItem("urai:userId")?.trim() || null;
+  return null;
 }
 
 export function useLifeMapEvents(userId?: string): LifeMapEventState {

@@ -1,5 +1,6 @@
 import { getAuth } from "firebase/auth";
 import { app, firebasePublicEnvReady } from "@/lib/firebase/client";
+import { clientApiUrl } from "@/lib/clientApiUrl";
 import type { NarratorLine } from "./narratorTypes";
 
 export type ExternalVoiceRequest = Pick<NarratorLine, "text" | "voiceId" | "tone">;
@@ -48,7 +49,7 @@ export async function requestExternalVoiceAudio(
   }
 
   try {
-    const res = await fetch("/api/urai/narrator/elevenlabs", {
+    const res = await fetch(clientApiUrl("/api/urai/narrator/elevenlabs"), {
       method: "POST",
       headers: {
         "Authorization": `Bearer ${token}`,

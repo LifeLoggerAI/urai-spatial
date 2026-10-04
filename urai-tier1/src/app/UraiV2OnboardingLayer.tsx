@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
 import { v2Onboarding } from "@/spatial/assets/uraiV2Assets";
 import UraiCanonicalVersionAssetTemplate from "./UraiCanonicalVersionAssetTemplate";
@@ -64,11 +64,20 @@ function OnboardingCardContent() {
   const query = searchParams?.toString() ?? "";
   const [dismissed, setDismissed] = useState(false);
   const [automaticFirstRun, setAutomaticFirstRun] = useState(false);
+  const dismissRef = useRef<HTMLButtonElement>(null);
+  const navigationKey = `${pathname}?${query}`;
+  const previousNavigationKeyRef = useRef(navigationKey);
   const card = cards[pathname as keyof typeof cards];
   const explicitSequence = searchParams?.get("onboarding") === "1" || searchParams?.get("firstRun") === "1";
 
   useEffect(() => {
-    setDismissed(false);
+    // Do not reset dismissal from the delayed mount effect: under a busy world
+    // hydration that can race a keyboard-triggered Skip and resurrect the card.
+    // Reset only after a real route/query transition.
+    if (previousNavigationKeyRef.current !== navigationKey) {
+      previousNavigationKeyRef.current = navigationKey;
+      setDismissed(false);
+    }
     if (explicitSequence) {
       setAutomaticFirstRun(false);
       return;
@@ -82,9 +91,25 @@ function OnboardingCardContent() {
     } catch {
       setAutomaticFirstRun(true);
     }
-  }, [explicitSequence, pathname, query]);
+  }, [explicitSequence, navigationKey, pathname]);
 
   const shouldShow = explicitSequence || automaticFirstRun;
+
+  useEffect(() => {
+    if (!shouldShow || !card || !explicitSequence) return;
+    // Guided route handoffs can hydrate/remount the world shell after navigation.
+    // Restore the explicit Skip target after two frames so keyboard users retain
+    // a deterministic dismissal target on compact portrait/landscape viewports.
+    let secondFrame = 0;
+    const firstFrame = window.requestAnimationFrame(() => {
+      secondFrame = window.requestAnimationFrame(() => dismissRef.current?.focus({ preventScroll: true }));
+    });
+    return () => {
+      window.cancelAnimationFrame(firstFrame);
+      if (secondFrame) window.cancelAnimationFrame(secondFrame);
+    };
+  }, [card, explicitSequence, pathname, query, shouldShow]);
+
   if (dismissed || !shouldShow || !card) return null;
 
   const dismiss = () => {
@@ -111,7 +136,7 @@ function OnboardingCardContent() {
         <span>{card.label}</span>
         <strong>{card.title}</strong>
         <a href={card.href} onClick={finishIfLastGuidedStep}>{card.action}</a>
-        <button type="button" onClick={dismiss}>Skip</button>
+        <button ref={dismissRef} type="button" onClick={dismiss}>Skip</button>
       </div>
     </aside>
   );

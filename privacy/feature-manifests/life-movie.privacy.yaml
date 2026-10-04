@@ -1,0 +1,75 @@
+feature: life-movie
+repo: LifeLoggerAI/urai-spatial
+owner: TBD
+privacyGovernanceVersion: 0.1.0-draft
+status: implemented_pending_privacy_review
+lastReviewed: 2026-09-29
+sourceEvidence:
+  - urai-tier1/src/app/life-movie/LifeMovieClient.tsx
+  - firebase/firestore.rules
+  - apps/functions/src/privacyOperations.ts
+  - privacy/data-inventory.yaml
+  - privacy/RUNTIME_APPROVAL_PLAN.md
+
+summary:
+  purpose: Assemble an owner-authenticated cinematic sequence from existing private memories without creating a second memory store.
+  userBenefit: Lets the owner play permitted memories as a private Life Movie while preserving existing privacy, export, and deletion authority.
+  implementationStatus: implemented_owner_read_only_existing_memories
+  newInferenceCreated: false
+
+dataProcessing:
+  collectedFields:
+    - name: memory_text
+      collectionOrTable: memories
+      dataClass: L3
+      source: user_provided
+      purpose: select and display existing owner memory content in Life Movie
+      consentTier: C2
+      retentionClass: R3
+      exportable: true
+      deletable: true
+      auditRequired: true
+    - name: memory_media
+      collectionOrTable: memories/storage
+      dataClass: L4
+      source: user_upload
+      purpose: render existing authorized memory media inside the Life Movie experience
+      consentTier: C4
+      retentionClass: R3
+      exportable: true
+      deletable: true
+      auditRequired: true
+  derivedFields: []
+
+runtimeBoundary:
+  ownerAuthenticatedReadRequired: true
+  crossOwnerReadAllowed: false
+  clientWriteAllowed: false
+  malformedOrIncompleteMemoriesExcluded: true
+  deletedMemoriesRemainVisible: false
+  secondaryMemoryCollectionCreated: false
+
+userRights:
+  exportSupported: true
+  deletionSupported: true
+  consentRevocationSupported: true
+  explanationSupported: false
+
+adminAccess:
+  allowed: false
+  roles: []
+  auditEventTypes:
+    - memory.read
+    - life_movie.opened
+    - memory.deleted
+
+monetization:
+  participatesInDataSharing: false
+  requiresC8Consent: false
+  anonymizationBatchRequired: false
+  minimumCohortSize: 100
+
+review:
+  reviewer: TBD
+  decision: blocked_until_reviewed
+  notes: Technical contract is aligned to the canonical memories collection, owner-read Firestore boundary, portability export, and deletion scopes. Human privacy governance review is still required before production privacy approval.

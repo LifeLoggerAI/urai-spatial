@@ -21,9 +21,13 @@ test('reduced motion forces an in-flight selected journey to arrival', () => {
 })
 
 test('Founder proof samples retained WebGL canvas pixels only', () => {
-  assert.match(canvasProof, /canvas\.screenshot\(/)
+  assert.match(canvasProof, /capture-webgl-framebuffer\.mjs/)
   assert.match(canvasProof, /sampleCount !== 3456/)
-  assert.match(canvasProof, /retained-webgl-canvas-png/)
+  assert.match(canvasProof, /webgl-default-framebuffer-readPixels/)
+  assert.match(canvasProof, /canvas\.evaluate\(captureWebGLFramebuffer\)/)
+  assert.match(canvasProof, /preserveDrawingBuffer:\s*true/)
+  assert.match(canvasProof, /HTMLCanvasElement\.prototype\.getContext/)
+  assert.doesNotMatch(canvasProof, /canvas\.screenshot\(/)
   assert.match(canvasProof, /distributed-grid-24x16-3x3/)
   assert.match(canvasProof, /receipt\.captures\.length === 4/)
   assert.match(workflow, /scripts\/verify-lifemap-canvas-proof\.mjs/)

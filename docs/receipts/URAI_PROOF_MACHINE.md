@@ -7,7 +7,7 @@ This is the repeatable proof-only V1 route and visual verification loop.
 - `scripts/aaa-launch-proof.mjs` runs install, asset checks, typecheck, unit tests, build, production-authority audit, route-exposure checks, copy-policy checks, and optional live screenshots.
 - The proof runner writes receipts under `$HOME/urai-final-receipts` or `URAI_RECEIPT_ROOT`.
 - It never deploys production. Passing `--deploy` fails closed.
-- `.github/workflows/spatial-live-deploy.yml` is the sole production deployment authority.
+- `.github/workflows/spatial-governed-wif-deploy.yml` is the sole production deployment authority.
 
 The retired `scripts/urai-proof-loop.mjs` deploy path must not be restored or used.
 
@@ -38,7 +38,7 @@ Expected final line:
 URAI AAA proof passed. Receipt: <receipt-directory>
 ```
 
-The receipt records `productionDeploymentAttempted: false` and identifies `.github/workflows/spatial-live-deploy.yml` as production authority.
+The receipt records `productionDeploymentAttempted: false` and identifies `.github/workflows/spatial-governed-wif-deploy.yml` as production authority.
 
 ## Production release
 
@@ -46,7 +46,7 @@ Do not run a local Firebase deploy command. After an exact candidate is merged a
 
 1. Freeze the exact `main` SHA.
 2. Record a distinct proven rollback ancestor and rollback command.
-3. Dispatch **URAI Canonical Production Release** with the required `DEPLOY_URAI_APP` confirmation and Firebase project `urai-4dc1d`.
+3. Manually dispatch **URAI Governed WIF Production Deploy** only after independent exact-head approval, merge, and separate deployment authorization, with exact release/rollback SHAs, merged PR number, and `DEPLOY_URAI_APP`.
 4. Preserve the workflow verification, deployment, rollback, route, query, Status, Privacy Controls, and screenshot receipts.
 5. Treat the deployment as unverified until the custom-domain smoke proves the exact deployed SHA.
 

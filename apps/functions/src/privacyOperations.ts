@@ -10,12 +10,14 @@ const timestamp = admin.firestore.Timestamp
 
 const CONSENT_DOMAINS = ['memory', 'location', 'models', 'exports', 'workforce', 'identity'] as const
 const CONSENT_MODES = ['granted', 'limited', 'paused', 'denied'] as const
-const EXPORT_SCOPES = ['profile', 'consent', 'memories', 'spatial', 'audit'] as const
+const EXPORT_SCOPES = ['profile', 'consent', 'memories', 'spatial', 'life-model', 'intelligence', 'audit'] as const
 const DELETION_SCOPES = [
   'export-history',
   'privacy-history',
   'memories',
   'spatial-state',
+  'life-model',
+  'intelligence',
   'all-repository-data',
   'account',
 ] as const
@@ -213,6 +215,7 @@ function affectedTargets(domain: ConsentDomain, next: ConsentDomainPolicy): stri
     targets.add('location-collection')
     targets.add('location-precision')
     targets.add('location-retention')
+    targets.add('captured-reality-runtime')
   }
   if (domain === 'models') {
     targets.add('model-context-retrieval')
@@ -331,6 +334,23 @@ export const applyConsentPolicy = functions.https.onCall(async (data, context) =
   return result
 })
 
+async function revokeLifeModelDerivativesForConsent(uid: string, reasonId: string) {
+  const collections = ['personModelBundles', 'personRenderBindings', 'sceneTruthPackets', 'renderManifests']
+  for (const collectionName of collections) {
+    const snapshot = await db.collection(`users/${uid}/${collectionName}`).limit(500).get()
+    if (snapshot.empty) continue
+    const batch = db.batch()
+    for (const item of snapshot.docs) {
+      batch.set(item.ref, {
+        state: 'revoked',
+        invalidatedBy: reasonId,
+        invalidatedAt: fieldValue.serverTimestamp(),
+      }, { merge: true })
+    }
+    await batch.commit()
+  }
+}
+
 async function enforceConsentJob(snapshot: FirebaseFirestore.DocumentSnapshot) {
   const job = snapshot.data() as JsonMap | undefined
   if (!job || typeof job.uid !== 'string' || typeof job.domain !== 'string') return
@@ -432,6 +452,9 @@ async function enforceConsentJob(snapshot: FirebaseFirestore.DocumentSnapshot) {
       updatedAt: fieldValue.serverTimestamp(),
     })
     await batch.commit()
+    if (revoking && (domain === 'models' || domain === 'identity')) {
+      await revokeLifeModelDerivativesForConsent(uid, `consent:${jobId}:${domain}`)
+    }
   } catch (error) {
     const failure = error instanceof Error ? error.message.slice(0, 240) : 'UNKNOWN_ENFORCEMENT_FAILURE'
     await Promise.all([
@@ -471,7 +494,7 @@ function redactSecrets(value: unknown): unknown {
   if (!isRecord(value)) return value
   const output: JsonMap = {}
   for (const [key, item] of Object.entries(value)) {
-    if (/token|secret|password|api.?key|credential|privateMediaUrl|rawAudioUrl/i.test(key)) continue
+    if (/token|secret|password|api.?key|credential|privateMediaUrl|rawAudioUrl|runtimeObject|sourceLocator|exactLocation|privateObject/i.test(key)) continue
     output[key] = redactSecrets(item)
   }
   return output
@@ -480,6 +503,98 @@ function redactSecrets(value: unknown): unknown {
 async function collectionDocuments(ref: FirebaseFirestore.CollectionReference) {
   const snapshot = await ref.limit(MAX_EXPORT_DOCUMENTS_PER_COLLECTION).get()
   return snapshot.docs.map((item) => ({ id: item.id, ...redactSecrets(item.data()) as JsonMap }))
+}
+
+async function boundedCollectionDocuments(ref: FirebaseFirestore.CollectionReference, label: string) {
+  const snapshot = await ref.limit(MAX_EXPORT_DOCUMENTS_PER_COLLECTION + 1).get()
+  if (snapshot.size > MAX_EXPORT_DOCUMENTS_PER_COLLECTION) {
+    throw new Error(`EXPORT_COLLECTION_LIMIT_EXCEEDED:${label}`)
+  }
+  return snapshot.docs.map((item) => ({ id: item.id, ...redactSecrets(item.data()) as JsonMap }))
+}
+
+async function scenarioExportTree(userRef: FirebaseFirestore.DocumentReference) {
+  const scenarios = await userRef.collection('scenarios').limit(101).get()
+  if (scenarios.size > 100) throw new Error('SCENARIO_EXPORT_LIMIT_EXCEEDED')
+  return Promise.all(scenarios.docs.map(async (scenario) => ({
+    id: scenario.id,
+    ...redactSecrets(scenario.data()) as JsonMap,
+    basis: await boundedCollectionDocuments(scenario.ref.collection('basis'), `scenarios/${scenario.id}/basis`),
+    branches: await boundedCollectionDocuments(scenario.ref.collection('branches'), `scenarios/${scenario.id}/branches`),
+    comparisons: await boundedCollectionDocuments(scenario.ref.collection('comparisons'), `scenarios/${scenario.id}/comparisons`),
+    outcomeObservations: await boundedCollectionDocuments(scenario.ref.collection('outcomeObservations'), `scenarios/${scenario.id}/outcomeObservations`),
+    calibration: await boundedCollectionDocuments(scenario.ref.collection('calibration'), `scenarios/${scenario.id}/calibration`),
+  })))
+}
+
+type CapturedRealityRuntimeExport = {
+  assetId: string
+  objectPath: string
+  relativePath: string
+  runtimeSha256: string
+  storageGeneration: string
+  runtimeBytes: number
+}
+
+function requireCapturedRealityExportObject(uid: string, assetId: string, value: unknown): string {
+  const objectPath = String(value ?? '')
+  const prefix = `private-captured-reality/${uid}/${assetId}/runtime/`
+  if (!objectPath.startsWith(prefix) || objectPath.includes('..')) {
+    throw new Error('CAPTURED_REALITY_EXPORT_OBJECT_BOUNDARY_INVALID')
+  }
+  return objectPath
+}
+
+async function copyCapturedRealityRuntimeExports(
+  userRef: FirebaseFirestore.DocumentReference,
+  uid: string,
+  basePath: string,
+): Promise<CapturedRealityRuntimeExport[]> {
+  const bucket = admin.storage().bucket()
+  const assets = await userRef.collection('capturedRealityAssets').limit(MAX_EXPORT_DOCUMENTS_PER_COLLECTION).get()
+  const exports: CapturedRealityRuntimeExport[] = []
+  for (const asset of assets.docs) {
+    if (asset.get('ownerId') !== uid) continue
+    const runtimeObject = asset.get('runtimeObject')
+    if (typeof runtimeObject !== 'string' || !runtimeObject) continue
+    const objectPath = requireCapturedRealityExportObject(uid, asset.id, runtimeObject)
+    const runtimeSha256 = String(asset.get('runtimeSha256') ?? '').toLowerCase()
+    if (!/^[a-f0-9]{64}$/.test(runtimeSha256) || !objectPath.endsWith(`/${runtimeSha256}.splat`)) {
+      throw new Error('CAPTURED_REALITY_EXPORT_HASH_BINDING_INVALID')
+    }
+
+    const sourceFile = bucket.file(objectPath)
+    const [metadata] = await sourceFile.getMetadata()
+    const storageGeneration = String(metadata.generation ?? '')
+    const storedSha256 = String(metadata.metadata?.uraiRuntimeSha256 ?? '').toLowerCase()
+    const expectedGeneration = String(asset.get('runtimeStorageGeneration') ?? '')
+    if (
+      !/^\d+$/.test(storageGeneration) ||
+      storedSha256 !== runtimeSha256 ||
+      (expectedGeneration && expectedGeneration !== storageGeneration)
+    ) {
+      throw new Error('CAPTURED_REALITY_EXPORT_RUNTIME_CHANGED')
+    }
+
+    const runtimeBytes = Number(metadata.size ?? 0)
+    if (!Number.isSafeInteger(runtimeBytes) || runtimeBytes <= 0) {
+      throw new Error('CAPTURED_REALITY_EXPORT_RUNTIME_SIZE_INVALID')
+    }
+
+    const relativePath = `spatial/captured-reality/${asset.id}/${runtimeSha256}.splat`
+    const destination = bucket.file(`${basePath}/${relativePath}`)
+    const immutableSource = bucket.file(objectPath, { generation: storageGeneration })
+    await immutableSource.copy(destination)
+    exports.push({
+      assetId: asset.id,
+      objectPath: `${basePath}/${relativePath}`,
+      relativePath,
+      runtimeSha256,
+      storageGeneration,
+      runtimeBytes,
+    })
+  }
+  return exports
 }
 
 export const createExportRequest = functions.https.onCall(async (data, context) => {
@@ -526,6 +641,8 @@ async function buildExport(snapshot: FirebaseFirestore.DocumentSnapshot) {
   const uid = job.uid
   const scopes = parseExportScopes(job.scopes)
   const receiptRef = db.doc(`users/${uid}/privacyReceipts/${String(job.receiptId)}`)
+  const bucket = admin.storage().bucket()
+  const basePath = `private-exports/${uid}/${snapshot.id}`
   try {
     await snapshot.ref.update({ state: 'preparing', progress: 10, updatedAt: fieldValue.serverTimestamp() })
     const userRef = db.doc(`users/${uid}`)
@@ -550,14 +667,45 @@ async function buildExport(snapshot: FirebaseFirestore.DocumentSnapshot) {
       data.privacyRuntime = await collectionDocuments(userRef.collection('privacyRuntime'))
     }
     if (scopes.includes('memories')) {
+      data.memories = await collectionDocuments(userRef.collection('memories'))
       data.replayEvents = await collectionDocuments(userRef.collection('replayEvents'))
       data.spatialMemories = await collectionDocuments(userRef.collection('spatialMemories'))
+    }
+    let capturedRealityRuntimeExports: CapturedRealityRuntimeExport[] = []
+    if (scopes.includes('life-model')) {
+      data.lifeEntities = await collectionDocuments(userRef.collection('lifeEntities'))
+      data.lifeEntityStates = await collectionDocuments(userRef.collection('lifeEntityStates'))
+      data.lifeClaims = await collectionDocuments(userRef.collection('lifeClaims'))
+      data.lifeRelationships = await collectionDocuments(userRef.collection('lifeRelationships'))
+      data.lifeEvents = await collectionDocuments(userRef.collection('lifeEvents'))
+      data.lifeCausalEdges = await collectionDocuments(userRef.collection('lifeCausalEdges'))
+      data.lifeGraphSnapshots = await collectionDocuments(userRef.collection('lifeGraphSnapshots'))
+      data.lifeCorrections = await collectionDocuments(userRef.collection('lifeCorrections'))
+      data.lifeConflicts = await collectionDocuments(userRef.collection('lifeConflicts'))
+      data.knowledgeGaps = await collectionDocuments(userRef.collection('knowledgeGaps'))
+      data.personModelBundles = await collectionDocuments(userRef.collection('personModelBundles'))
+      data.personRenderBindings = await collectionDocuments(userRef.collection('personRenderBindings'))
+      data.sceneTruthPackets = await collectionDocuments(userRef.collection('sceneTruthPackets'))
+      data.renderManifests = await collectionDocuments(userRef.collection('renderManifests'))
+      data.simulationSessions = await collectionDocuments(userRef.collection('simulationSessions'))
+      data.lifeModelReceipts = await collectionDocuments(userRef.collection('lifeModelReceipts'))
+    }
+    if (scopes.includes('intelligence')) {
+      data.scenarios = await scenarioExportTree(userRef)
+      data.aiLedger = await collectionDocuments(userRef.collection('aiLedger'))
     }
     if (scopes.includes('spatial')) {
       data.homeWorld = await collectionDocuments(userRef.collection('homeWorld'))
       data.focusStates = await collectionDocuments(userRef.collection('focusStates'))
       data.transitionStates = await collectionDocuments(userRef.collection('transitionStates'))
       data.spatialAnchors = await collectionDocuments(userRef.collection('spatialAnchors'))
+      data.behaviorSignals = await collectionDocuments(userRef.collection('behaviorSignals'))
+      data.voiceEvents = await collectionDocuments(userRef.collection('voiceEvents'))
+      data.locations = await collectionDocuments(userRef.collection('locations'))
+      data.capturedRealityAssets = await collectionDocuments(userRef.collection('capturedRealityAssets'))
+      data.capturedRealityReplayBindings = await collectionDocuments(userRef.collection('capturedRealityReplayBindings'))
+      capturedRealityRuntimeExports = await copyCapturedRealityRuntimeExports(userRef, uid, basePath)
+      data.capturedRealityRuntimeAssets = capturedRealityRuntimeExports.map(({ objectPath: _privateObject, ...entry }) => entry)
     }
     if (scopes.includes('audit')) {
       data.receipts = await collectionDocuments(userRef.collection('privacyReceipts'))
@@ -571,10 +719,9 @@ async function buildExport(snapshot: FirebaseFirestore.DocumentSnapshot) {
       checksumAlgorithm: 'sha256',
       checksum,
       scopes,
+      runtimeAssets: capturedRealityRuntimeExports.map(({ objectPath: _privateObject, ...entry }) => entry),
       createdAt: new Date().toISOString(),
     }, null, 2)
-    const bucket = admin.storage().bucket()
-    const basePath = `private-exports/${uid}/${snapshot.id}`
     await Promise.all([
       bucket.file(`${basePath}/export.json`).save(Buffer.from(json), {
         resumable: false,
@@ -596,6 +743,7 @@ async function buildExport(snapshot: FirebaseFirestore.DocumentSnapshot) {
         checksumAlgorithm: 'sha256',
         exportObject: `${basePath}/export.json`,
         manifestObject: `${basePath}/manifest.json`,
+        runtimeExports: capturedRealityRuntimeExports,
         expiresAt,
         completedAt: fieldValue.serverTimestamp(),
         updatedAt: fieldValue.serverTimestamp(),
@@ -611,6 +759,7 @@ async function buildExport(snapshot: FirebaseFirestore.DocumentSnapshot) {
     ])
   } catch (error) {
     const failure = error instanceof Error ? error.message.slice(0, 240) : 'UNKNOWN_EXPORT_FAILURE'
+    await bucket.deleteFiles({ prefix: `${basePath}/` }).catch(() => undefined)
     await Promise.all([
       snapshot.ref.set({ state: 'failed', failureCode: failure, updatedAt: fieldValue.serverTimestamp() }, { merge: true }),
       receiptRef.set({ result: 'failed', failureCode: failure, updatedAt: fieldValue.serverTimestamp() }, { merge: true }),
@@ -627,7 +776,7 @@ export const getExportDownloadUrl = functions.https.onCall(async (data, context)
   const uid = requireUid(context)
   requireRecentAuthentication(context)
   const jobId = requireString(data?.jobId, 'jobId', 80)
-  const file = data?.file === 'manifest' ? 'manifest' : 'export'
+  const file = data?.file === 'manifest' ? 'manifest' : data?.file === 'runtime' ? 'runtime' : 'export'
   const job = await db.doc(`users/${uid}/exportJobs/${jobId}`).get()
   if (!job.exists || job.get('uid') !== uid) {
     throw new functions.https.HttpsError('not-found', 'Export request was not found.')
@@ -640,7 +789,23 @@ export const getExportDownloadUrl = functions.https.onCall(async (data, context)
     await job.ref.update({ state: 'expired', updatedAt: fieldValue.serverTimestamp() })
     throw new functions.https.HttpsError('failed-precondition', 'Export has expired.')
   }
-  const objectPath = String(job.get(file === 'manifest' ? 'manifestObject' : 'exportObject') ?? '')
+  let objectPath = ''
+  let assetId: string | null = null
+  let runtimeChecksum: string | null = null
+  if (file === 'runtime') {
+    assetId = requireString(data?.assetId, 'assetId', 128)
+    const runtimeExports = job.get('runtimeExports')
+    const match = Array.isArray(runtimeExports)
+      ? runtimeExports.find((entry) => isRecord(entry) && entry.assetId === assetId)
+      : undefined
+    objectPath = isRecord(match) ? String(match.objectPath ?? '') : ''
+    runtimeChecksum = isRecord(match) && typeof match.runtimeSha256 === 'string' ? match.runtimeSha256 : null
+    if (!objectPath || !runtimeChecksum) {
+      throw new functions.https.HttpsError('not-found', 'Captured Reality runtime export was not found.')
+    }
+  } else {
+    objectPath = String(job.get(file === 'manifest' ? 'manifestObject' : 'exportObject') ?? '')
+  }
   if (!objectPath.startsWith(`private-exports/${uid}/${jobId}/`)) {
     throw new functions.https.HttpsError('permission-denied', 'Invalid export object boundary.')
   }
@@ -651,9 +816,10 @@ export const getExportDownloadUrl = functions.https.onCall(async (data, context)
   return {
     jobId,
     file,
+    assetId,
     url,
     expiresAt: new Date(Date.now() + EXPORT_EXPIRY_MS).toISOString(),
-    checksum: job.get('checksum') ?? null,
+    checksum: file === 'runtime' ? runtimeChecksum : job.get('checksum') ?? null,
   }
 })
 
@@ -748,7 +914,26 @@ export const createDeletionRequest = functions.https.onCall(async (data, context
 const DELETION_COLLECTIONS: Record<Exclude<DeletionScope, 'account'>, string[]> = {
   'export-history': ['exportJobs'],
   'privacy-history': ['privacyAudit'],
-  memories: ['replayEvents', 'spatialMemories', 'canonChains'],
+  memories: ['memories', 'replayEvents', 'spatialMemories', 'canonChains'],
+  'life-model': [
+    'lifeEntities',
+    'lifeEntityStates',
+    'lifeClaims',
+    'lifeRelationships',
+    'lifeEvents',
+    'lifeCausalEdges',
+    'lifeGraphSnapshots',
+    'lifeCorrections',
+    'lifeConflicts',
+    'knowledgeGaps',
+    'personModelBundles',
+    'personRenderBindings',
+    'sceneTruthPackets',
+    'renderManifests',
+    'simulationSessions',
+    'lifeModelReceipts',
+  ],
+  intelligence: ['scenarios', 'aiLedger'],
   'spatial-state': [
     'homeWorld',
     'homeWorldExplainability',
@@ -759,12 +944,18 @@ const DELETION_COLLECTIONS: Record<Exclude<DeletionScope, 'account'>, string[]> 
     'spatialAnchors',
     'userSpatialPreferences',
     'spatialSessions',
+    'behaviorSignals',
+    'voiceEvents',
+    'locations',
+    'capturedRealityAssets',
+    'capturedRealityReplayBindings',
   ],
   'all-repository-data': [
     'exportJobs',
     'privacyAudit',
     'privacyPolicy',
     'privacyRuntime',
+    'memories',
     'replayEvents',
     'spatialMemories',
     'canonChains',
@@ -777,8 +968,48 @@ const DELETION_COLLECTIONS: Record<Exclude<DeletionScope, 'account'>, string[]> 
     'spatialAnchors',
     'userSpatialPreferences',
     'spatialSessions',
+    'behaviorSignals',
+    'voiceEvents',
+    'locations',
+    'capturedRealityAssets',
+    'capturedRealityReplayBindings',
     'providerConnections',
+    'scenarios',
+    'aiLedger',
+    'lifeEntities',
+    'lifeEntityStates',
+    'lifeClaims',
+    'lifeRelationships',
+    'lifeEvents',
+    'lifeCausalEdges',
+    'lifeGraphSnapshots',
+    'lifeCorrections',
+    'lifeConflicts',
+    'knowledgeGaps',
+    'personModelBundles',
+    'personRenderBindings',
+    'sceneTruthPackets',
+    'renderManifests',
+    'simulationSessions',
+    'lifeModelReceipts',
   ],
+}
+
+async function deleteCapturedRealityStorage(uid: string, options: { deleteAllExports?: boolean; deleteSource?: boolean } = {}) {
+  const bucket = admin.storage().bucket()
+  if (options.deleteSource !== false) {
+    await bucket.deleteFiles({ prefix: `private-captured-reality/${uid}/` })
+  }
+
+  const exportPrefix = `private-exports/${uid}/`
+  if (options.deleteAllExports) {
+    await bucket.deleteFiles({ prefix: exportPrefix })
+    return
+  }
+
+  const [exportFiles] = await bucket.getFiles({ prefix: exportPrefix })
+  const capturedRealityExports = exportFiles.filter((file) => file.name.includes('/spatial/captured-reality/'))
+  await Promise.all(capturedRealityExports.map((file) => file.delete({ ignoreNotFound: true })))
 }
 
 async function processDeletion(snapshot: FirebaseFirestore.DocumentSnapshot) {
@@ -803,9 +1034,17 @@ async function processDeletion(snapshot: FirebaseFirestore.DocumentSnapshot) {
     const userRef = db.doc(`users/${uid}`)
     const deletedCollections: string[] = []
     if (scope === 'account') {
+      await deleteCapturedRealityStorage(uid, { deleteAllExports: true })
       await db.recursiveDelete(userRef)
       await admin.auth().deleteUser(uid)
     } else {
+      if (scope === 'spatial-state') {
+        await deleteCapturedRealityStorage(uid)
+      } else if (scope === 'all-repository-data') {
+        await deleteCapturedRealityStorage(uid, { deleteAllExports: true })
+      } else if (scope === 'export-history') {
+        await deleteCapturedRealityStorage(uid, { deleteAllExports: true, deleteSource: false })
+      }
       for (const collectionName of DELETION_COLLECTIONS[scope]) {
         await db.recursiveDelete(userRef.collection(collectionName))
         deletedCollections.push(collectionName)

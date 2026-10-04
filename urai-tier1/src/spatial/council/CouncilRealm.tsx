@@ -1,10 +1,11 @@
 "use client"
 
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
-import { ContactShadows, Environment, PerspectiveCamera, useAnimations, useGLTF } from '@react-three/drei'
-import { Suspense, useEffect, useRef, useState, type MutableRefObject } from 'react'
+import { ContactShadows, Environment, Lightformer, PerspectiveCamera, useAnimations, useGLTF } from '@react-three/drei'
+import { Component, Suspense, useEffect, useRef, useState, type MutableRefObject, type ReactNode } from 'react'
 import * as THREE from 'three'
-import { DEMO_COUNCIL_AGENTS } from './councilAgentSchema'
+import { COUNCIL_AGENTS } from './councilAgentSchema'
+import CouncilConversationPanel from './CouncilConversationPanel'
 import { useReducedMotion } from '@/spatial/hooks/useReducedMotion'
 import { useAdaptiveSpatialQuality } from '@/spatial/performance/useAdaptiveSpatialQuality'
 import {
@@ -166,10 +167,58 @@ function RiggedCouncilHuman({
   )
 }
 
+function CouncilFallback({ reason = 'WebGL is unavailable on this device.' }: { reason?: string }) {
+  const travel = (destination: 'home' | 'mirror' | 'passport', href: string) => requestUraiWorldTravel({
+    destination,
+    href,
+    entryPortal: `council-${destination}`,
+    cameraCheckpoint: `${destination}-arrival`,
+  })
+
+  return (
+    <section
+      data-testid="urai-council-semantic-fallback"
+      data-council-renderer="unavailable"
+      className="grid min-h-screen place-content-center gap-4 bg-[#10151a] p-6 text-center text-white"
+      aria-label="Council accessible fallback"
+    >
+      <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-white/60">URAI Council</p>
+      <h1 className="text-4xl font-medium">Council remains reachable.</h1>
+      <p role="status" className="mx-auto max-w-[52ch] text-sm leading-6 text-white/75">{reason} The spatial chamber is not being represented as active; semantic navigation remains available.</p>
+      <nav className="mx-auto flex flex-wrap justify-center gap-2" aria-label="Council fallback destinations">
+        <button className="min-h-12 rounded-full bg-white px-5 text-sm font-semibold text-slate-950" type="button" onClick={() => travel('home', '/home?returnFrom=council')}>Return Home</button>
+        <button className="min-h-12 rounded-full border border-white/25 px-5 text-sm" type="button" onClick={() => travel('mirror', '/mirror?from=council')}>Mirror</button>
+        <button className="min-h-12 rounded-full border border-white/25 px-5 text-sm" type="button" onClick={() => travel('passport', '/passport?from=council')}>Passport</button>
+      </nav>
+    </section>
+  )
+}
+
+function useCouncilWebGLCapability() {
+  const [available, setAvailable] = useState<boolean | null>(null)
+  useEffect(() => {
+    try {
+      const canvas = document.createElement('canvas')
+      const context = canvas.getContext('webgl2') ?? canvas.getContext('webgl')
+      setAvailable(Boolean(context))
+      context?.getExtension('WEBGL_lose_context')?.loseContext()
+    } catch {
+      setAvailable(false)
+    }
+  }, [])
+  return available
+}
+
+class CouncilRenderBoundary extends Component<{ children: ReactNode }, { failed: boolean }> {
+  state = { failed: false }
+  static getDerivedStateFromError() { return { failed: true } }
+  render() { return this.state.failed ? <CouncilFallback reason="The spatial renderer could not start." /> : this.props.children }
+}
+
 function CouncilStage() {
   const [selected, setSelected] = useState(0)
   const [dragging, setDragging] = useState(false)
-  const selectedAgent = DEMO_COUNCIL_AGENTS[selected] ?? DEMO_COUNCIL_AGENTS[0]
+  const selectedAgent = COUNCIL_AGENTS[selected] ?? COUNCIL_AGENTS[0]
   const reducedMotion = useReducedMotion()
   const quality = useAdaptiveSpatialQuality()
   const shadowMapSize = quality.tier === 'high' ? 2048 : 1024
@@ -241,7 +290,7 @@ function CouncilStage() {
               <meshStandardMaterial color="#443a31" roughness={0.6} metalness={0.12} />
             </mesh>
 
-            {DEMO_COUNCIL_AGENTS.map((agent, index) => (
+            {COUNCIL_AGENTS.map((agent, index) => (
               <RiggedCouncilHuman
                 key={agent.id}
                 modelUrl={HUMAN_MODELS[index] ?? HUMAN_MODELS[0]}
@@ -253,16 +302,20 @@ function CouncilStage() {
             ))}
 
             {quality.tier === 'low' ? null : <ContactShadows position={[0, 0.01, -0.8]} opacity={0.48} scale={10} blur={2.7} far={7} />}
-            <Environment preset="apartment" environmentIntensity={environmentIntensity} />
+            <Environment resolution={128} environmentIntensity={environmentIntensity}>
+              <Lightformer position={[-4, 5, 2]} rotation={[0, Math.PI / 4, 0]} scale={[4, 5, 1]} color="#ffe4bd" intensity={2} />
+              <Lightformer position={[4, 3, -3]} rotation={[0, -Math.PI / 4, 0]} scale={[3, 4, 1]} color="#b8d9f2" intensity={1} />
+            </Environment>
           </Suspense>
         </Canvas>
       </div>
 
-      <section className="pointer-events-none absolute bottom-5 left-5 z-10 w-[min(430px,calc(100vw-40px))] rounded-3xl border border-white/15 bg-black/45 p-5 shadow-2xl backdrop-blur-xl md:bottom-8 md:left-8">
+      <section className="council-conversation pointer-events-none absolute bottom-5 left-5 z-10 w-[min(430px,calc(100vw-40px))] rounded-3xl border border-white/15 bg-black/45 p-5 shadow-2xl backdrop-blur-xl md:bottom-8 md:left-8">
         <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-white/55">URAI Council</p>
         <h1 className="mt-2 text-3xl font-medium tracking-tight md:text-4xl">{selectedAgent.name}</h1>
         <p className="mt-1 text-xs uppercase tracking-[0.18em] text-[#e8d8b9]/80">{selectedAgent.role}</p>
         <p className="mt-3 max-w-[38ch] text-sm leading-6 text-white/72">{selectedAgent.focus}</p>
+        <CouncilConversationPanel agent={selectedAgent} />
         <div className="pointer-events-auto mt-4 flex flex-wrap gap-2">
           <button className="rounded-full bg-white px-4 py-2 text-xs font-semibold text-slate-950" type="button" onClick={() => travel('home', '/home?returnFrom=council')}>Return Home</button>
           <button className="rounded-full border border-white/20 px-4 py-2 text-xs text-white" type="button" onClick={() => travel('mirror', '/mirror?from=council')}>Mirror</button>
@@ -272,12 +325,24 @@ function CouncilStage() {
 
       <MovementHelp realm="Council" summary="Walk around the chamber and choose a Council presence." controls="WASD or arrows move. Drag to look. Tap a Council person to select them. Escape returns. Mobile movement controls appear on touch devices." />
       <MobileMovementPad input={input} label="Move through Council" />
+      <style jsx global>{`
+        [data-council-embodied="true"] .urai-mobile-movement { left: auto; right: max(12px,env(safe-area-inset-right)); bottom: max(12px,env(safe-area-inset-bottom)); }
+        @media(max-width:900px),(pointer:coarse) {
+          [data-council-embodied="true"] .council-conversation { bottom: calc(130px + env(safe-area-inset-bottom)); max-height: calc(100svh - 210px); overflow-y: auto; pointer-events: auto; }
+        }
+        @media(max-width:700px) {
+          [data-council-embodied="true"] .council-conversation { width: calc(100vw - 120px); }
+        }
+      `}</style>
     </div>
   )
 }
 
 export function CouncilRealm() {
-  return <CouncilStage />
+  const webglAvailable = useCouncilWebGLCapability()
+  if (webglAvailable === null) return <CouncilFallback reason="Checking spatial renderer capability." />
+  if (!webglAvailable) return <CouncilFallback />
+  return <CouncilRenderBoundary><CouncilStage /></CouncilRenderBoundary>
 }
 
 for (const model of HUMAN_MODELS) useGLTF.preload(model)

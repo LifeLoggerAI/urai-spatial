@@ -51,7 +51,7 @@ Prepared responsibilities include:
 - coordinating trademark, patent, copyright, and domain strategy with qualified counsel;
 - preventing licensing terms from overriding user data rights or consent.
 
-URAI IP Holdings does not own user memories, personal data, or consent merely because it owns software or brand assets.
+URAI IP Holdings does not acquire user memories, personal data, or consent merely because it may own or administer separately evidenced software, brand, or licensing rights.
 
 ## Product separation
 

@@ -1,6 +1,7 @@
 import { buildOrbCompanionResponse } from '@/lib/orb-companion-contract'
 import { getAuth } from 'firebase/auth'
 import { app, firebasePublicEnvReady } from '@/lib/firebase/client'
+import { clientApiUrl } from '@/lib/clientApiUrl'
 
 export type OrbConversationMessage = {
   role: 'user' | 'assistant'
@@ -73,6 +74,13 @@ export function uncertainExternalOrbFallback(message = ''): OrbProviderResult {
   )
 }
 
+async function stableIntentRequestId(message: string, context: OrbConversationMessage[]) {
+  if (!globalThis.crypto?.subtle) return null
+  const intent = JSON.stringify({ message, context: context.slice(-8) })
+  const digest = await globalThis.crypto.subtle.digest('SHA-256', new TextEncoder().encode(intent))
+  return Array.from(new Uint8Array(digest), (value) => value.toString(16).padStart(2, '0')).join('')
+}
+
 export async function requestOpenAIOrb(input: {
   message: string
   context: OrbConversationMessage[]
@@ -85,10 +93,12 @@ export async function requestOpenAIOrb(input: {
   if (!user) return null
   const token = await user.getIdToken()
   if (!token || input.signal.aborted) return null
+  const requestId = await stableIntentRequestId(input.message, input.context)
+  if (!requestId || input.signal.aborted) return null
 
   let response: Response
   try {
-    response = await fetch('/api/urai/orb/openai', {
+    response = await fetch(clientApiUrl('/api/urai/orb/openai'), {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${token}`,
@@ -100,6 +110,7 @@ export async function requestOpenAIOrb(input: {
         message: input.message,
         context: input.context.slice(-8),
         aiProcessingConsent: true,
+        requestId,
       }),
     })
   } catch (error) {

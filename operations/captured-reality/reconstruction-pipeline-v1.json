@@ -1,0 +1,170 @@
+{
+  "schemaVersion": "urai-captured-reality-pipeline-1",
+  "classification": "IMPLEMENTED_PIPELINE_CONTRACT",
+  "executionOwner": {
+    "sourceAuthorization": "privacy/private-source-authority",
+    "sourcePreparation": "Jobs-compatible private worker or authorized local workstation",
+    "cameraSolve": "COLMAP-compatible SfM",
+    "reconstruction": "provider-neutral 3DGS implementation",
+    "assetGovernance": "Asset Factory",
+    "reviewOrchestration": "Studio",
+    "runtimePresentation": "Spatial"
+  },
+  "stages": [
+    {
+      "id": "source",
+      "requires": [
+        "immutable-original",
+        "owner-authority",
+        "C3-location-context"
+      ],
+      "outputs": [
+        "source-receipt"
+      ],
+      "maySucceedWithoutInput": false
+    },
+    {
+      "id": "prepare",
+      "requires": [
+        "source-receipt",
+        "ffmpeg",
+        "ffprobe"
+      ],
+      "outputs": [
+        "analysis-derivatives",
+        "derivative-receipt"
+      ],
+      "maySucceedWithoutInput": false
+    },
+    {
+      "id": "screen",
+      "requires": [
+        "analysis-derivatives"
+      ],
+      "outputs": [
+        "frame-manifest",
+        "privacy-screen-receipt",
+        "capture-readiness"
+      ],
+      "maySucceedWithoutInput": false
+    },
+    {
+      "id": "solve",
+      "requires": [
+        "approved-frames",
+        "COLMAP-compatible-SfM"
+      ],
+      "outputs": [
+        "camera-solve",
+        "registered-image-map"
+      ],
+      "maySucceedWithoutInput": false
+    },
+    {
+      "id": "train",
+      "requires": [
+        "camera-solve",
+        "3DGS-runtime"
+      ],
+      "outputs": [
+        "trained-reconstruction",
+        "training-receipt"
+      ],
+      "maySucceedWithoutInput": false
+    },
+    {
+      "id": "qa",
+      "requires": [
+        "trained-reconstruction",
+        "held-out-source-views"
+      ],
+      "outputs": [
+        "source-vs-reconstruction-review"
+      ],
+      "maySucceedWithoutInput": false
+    },
+    {
+      "id": "archive",
+      "requires": [
+        "accepted-reconstruction"
+      ],
+      "outputs": [
+        "archival-ply-or-spz",
+        "archival-checksum"
+      ],
+      "maySucceedWithoutInput": false
+    },
+    {
+      "id": "deliver",
+      "requires": [
+        "accepted-reconstruction"
+      ],
+      "outputs": [
+        "web-splat",
+        "runtime-checksum",
+        "runtime-byte-size"
+      ],
+      "maySucceedWithoutInput": false
+    },
+    {
+      "id": "collision",
+      "requires": [
+        "accepted-reconstruction"
+      ],
+      "outputs": [
+        "separate-collision-or-navmesh-proxy"
+      ],
+      "maySucceedWithoutInput": false
+    },
+    {
+      "id": "manifest",
+      "requires": [
+        "all-required-receipts"
+      ],
+      "outputs": [
+        "CapturedRealityAsset"
+      ],
+      "maySucceedWithoutInput": false
+    },
+    {
+      "id": "browser-proof",
+      "requires": [
+        "server-authorized-url",
+        "desktop-performance-receipt"
+      ],
+      "outputs": [
+        "browser-certification"
+      ],
+      "maySucceedWithoutInput": false
+    },
+    {
+      "id": "mobile-proof",
+      "requires": [
+        "server-authorized-url",
+        "mobile-performance-receipt"
+      ],
+      "outputs": [
+        "mobile-certification"
+      ],
+      "maySucceedWithoutInput": false
+    },
+    {
+      "id": "xr-proof",
+      "requires": [
+        "physical-device-receipt",
+        "xr-performance-receipt"
+      ],
+      "outputs": [
+        "xr-certification"
+      ],
+      "maySucceedWithoutInput": false
+    }
+  ],
+  "invariant": {
+    "originalNeverOverwritten": true,
+    "generatedFillIsRecordedTruth": false,
+    "browserProofImpliesXrProof": false,
+    "reconstructedPersonAuthorityInheritedFromPlace": false,
+    "splatVisualsImplyCollision": false
+  }
+}

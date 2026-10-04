@@ -42,3 +42,6 @@ blob-report/
 # Local Firebase Studio / Playwright runtime repair artifacts
 .playwright-runtime-libs/
 result-*
+
+# Generated Firebase Functions build output
+apps/functions/lib/

@@ -1,7 +1,11 @@
 {
   "hosting": {
     "public": "urai-tier1/out",
-    "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
+    ],
     "cleanUrls": true,
     "trailingSlash": true,
     "redirects": [],
@@ -9,16 +13,142 @@
       {
         "source": "**/*.html",
         "headers": [
-          { "key": "Cache-Control", "value": "no-store, max-age=0" }
+          {
+            "key": "Cache-Control",
+            "value": "no-store, max-age=0"
+          }
         ]
       },
       {
         "source": "/release-fingerprint.json",
         "headers": [
-          { "key": "Cache-Control", "value": "no-store, max-age=0" }
+          {
+            "key": "Cache-Control",
+            "value": "no-store, max-age=0"
+          }
         ]
       }
     ],
-    "rewrites": []
+    "rewrites": [
+      {
+        "source": "/api/google/oauth/start",
+        "function": {
+          "functionId": "googleOAuthStart",
+          "region": "us-central1"
+        }
+      },
+      {
+        "source": "/api/google/oauth/callback",
+        "function": {
+          "functionId": "googleOAuthCallback",
+          "region": "us-central1"
+        }
+      },
+      {
+        "source": "/api/google/oauth/status",
+        "function": {
+          "functionId": "googleOAuthStatus",
+          "region": "us-central1"
+        }
+      },
+      {
+        "source": "/api/google/oauth/disconnect",
+        "function": {
+          "functionId": "googleOAuthDisconnect",
+          "region": "us-central1"
+        }
+      },
+      {
+        "source": "/api/urai/orb/openai",
+        "function": {
+          "functionId": "openAiOrbProvider",
+          "region": "us-central1"
+        }
+      },
+      {
+        "source": "/api/urai/narrator/elevenlabs",
+        "function": {
+          "functionId": "elevenLabsVoiceProvider",
+          "region": "us-central1"
+        }
+      },
+      {
+        "source": "/api/voice/elevenlabs",
+        "function": {
+          "functionId": "elevenLabsVoiceProvider",
+          "region": "us-central1"
+        }
+      },
+      {
+        "source": "/api/urai/adam/conversation",
+        "function": {
+          "functionId": "adamPresenceProvider",
+          "region": "us-central1"
+        }
+      },
+      {
+        "source": "/api/urai/adam/voice",
+        "function": {
+          "functionId": "adamFounderVoiceProvider",
+          "region": "us-central1"
+        }
+      },
+      {
+        "source": "/api/urai/council/anthropic",
+        "function": {
+          "functionId": "anthropicCouncilProvider",
+          "region": "us-central1"
+        }
+      },
+      {
+        "source": "/api/urai/council/gemini",
+        "function": {
+          "functionId": "geminiCouncilProvider",
+          "region": "us-central1"
+        }
+      },
+      {
+        "source": "/api/urai/council/xai",
+        "function": {
+          "functionId": "xaiCouncilProvider",
+          "region": "us-central1"
+        }
+      },
+      {
+        "source": "/api/urai/council/mistral",
+        "function": {
+          "functionId": "mistralCouncilProvider",
+          "region": "us-central1"
+        }
+      },
+      {
+        "source": "/api/stripe/create-checkout-session",
+        "function": {
+          "functionId": "createStripeCheckout",
+          "region": "us-central1"
+        }
+      },
+      {
+        "source": "/api/stripe/create-portal-session",
+        "function": {
+          "functionId": "createStripeCustomerPortal",
+          "region": "us-central1"
+        }
+      },
+      {
+        "source": "/api/entitlement",
+        "function": {
+          "functionId": "getStripeEntitlement",
+          "region": "us-central1"
+        }
+      },
+      {
+        "source": "/api/stripe/webhook",
+        "function": {
+          "functionId": "handleStripeWebhook",
+          "region": "us-central1"
+        }
+      }
+    ]
   }
 }

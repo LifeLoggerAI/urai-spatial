@@ -16,7 +16,10 @@ import {
 import {
   INITIAL_URAI_WORLD_STATE,
   type UraiDestination,
+  type UraiOriginRealm,
   type UraiPrivacyMode,
+  type UraiReconstructionFidelity,
+  type UraiTruthMode,
   type UraiWorldContextPatch,
   type UraiWorldState,
   type UraiWorldTravelRequest,
@@ -49,6 +52,19 @@ function privacyModeFrom(value: string | null): UraiPrivacyMode | undefined {
   return undefined
 }
 
+function originRealmFrom(value: string | null): UraiOriginRealm | undefined {
+  const allowed: readonly UraiOriginRealm[] = ['home','ground','life-map','focus','replay','passport','mirror','shadow','council','privacy-controls','location-map','life-movie','possible-futures']
+  return value && allowed.includes(value as UraiOriginRealm) ? value as UraiOriginRealm : undefined
+}
+
+function reconstructionFidelityFrom(value: string | null): UraiReconstructionFidelity | undefined {
+  return value === 'confirmed' || value === 'partial' || value === 'unknown' ? value : undefined
+}
+
+function truthModeFrom(value: string | null): UraiTruthMode | undefined {
+  return value === 'reality' || value === 'memory' || value === 'interpretation' || value === 'scenario' ? value : undefined
+}
+
 function contextFromLocation(): UraiWorldContextPatch {
   if (typeof window === 'undefined') return {}
   const params = new URLSearchParams(window.location.search)
@@ -56,8 +72,20 @@ function contextFromLocation(): UraiWorldContextPatch {
   const threadId = params.get('thread') ?? undefined
   const personId = params.get('personId') ?? undefined
   const placeId = params.get('placeId') ?? undefined
+  const eraId = params.get('eraId') ?? undefined
   const replayManifestId = params.get('manifestId') ?? undefined
+  const movieId = params.get('movieId') ?? undefined
+  const chapterId = params.get('chapterId') ?? undefined
   const privacyMode = privacyModeFrom(params.get('privacyMode') ?? params.get('state'))
+  const originRealm = originRealmFrom(params.get('originRealm'))
+  const returnToken = params.get('returnToken') ?? undefined
+  const reconstructionFidelity = reconstructionFidelityFrom(params.get('fidelity'))
+  const scenarioId = params.get('scenario') ?? undefined
+  const scenarioBranchId = params.get('branch') ?? undefined
+  const scenarioBasisRaw = Number(params.get('basisRevision'))
+  const scenarioBasisRevision = Number.isInteger(scenarioBasisRaw) && scenarioBasisRaw > 0 ? scenarioBasisRaw : undefined
+  const truthMode = truthModeFrom(params.get('truthMode'))
+  const scenarioOrigin = originRealmFrom(params.get('scenarioOrigin'))
   const entryPortal = params.get('entryPortal') ?? params.get('from') ?? undefined
   const demo = params.get('demo') === '1'
 
@@ -66,8 +94,19 @@ function contextFromLocation(): UraiWorldContextPatch {
     ...(threadId ? { threadId } : {}),
     ...(personId ? { personId } : {}),
     ...(placeId ? { placeId } : {}),
+    ...(eraId ? { eraId } : {}),
     ...(replayManifestId ? { replayManifestId } : {}),
+    ...(movieId ? { movieId } : {}),
+    ...(chapterId ? { chapterId } : {}),
     ...(privacyMode ? { privacyMode } : {}),
+    ...(originRealm ? { originRealm } : {}),
+    ...(returnToken ? { returnToken } : {}),
+    ...(reconstructionFidelity ? { reconstructionFidelity } : {}),
+    ...(scenarioId ? { scenarioId } : {}),
+    ...(scenarioBranchId ? { scenarioBranchId } : {}),
+    ...(scenarioBasisRevision ? { scenarioBasisRevision } : {}),
+    ...(truthMode ? { truthMode } : {}),
+    ...(scenarioOrigin ? { scenarioOrigin } : {}),
     ...(entryPortal ? { entryPortal } : {}),
     ...(demo ? { demo: true } : {}),
   }
@@ -106,6 +145,17 @@ function reducer(state: RuntimeState, action: RuntimeAction): RuntimeState {
           action.context.cameraCheckpoint ??
           state.pendingTravel?.cameraCheckpoint ??
           definition.cameraCheckpoint,
+        truthMode:
+          action.context.truthMode ??
+          (action.destination === 'possible-futures'
+            ? 'scenario'
+            : action.destination === 'replay' || action.destination === 'life-movie'
+              ? 'memory'
+              : 'reality'),
+        scenarioId: action.destination === 'possible-futures' ? action.context.scenarioId ?? state.world.scenarioId : undefined,
+        scenarioBranchId: action.destination === 'possible-futures' ? action.context.scenarioBranchId ?? state.world.scenarioBranchId : undefined,
+        scenarioBasisRevision: action.destination === 'possible-futures' ? action.context.scenarioBasisRevision ?? state.world.scenarioBasisRevision : undefined,
+        scenarioOrigin: action.destination === 'possible-futures' ? action.context.scenarioOrigin ?? state.world.scenarioOrigin : undefined,
       },
     }
   }

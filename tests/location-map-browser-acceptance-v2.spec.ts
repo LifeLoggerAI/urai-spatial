@@ -41,10 +41,6 @@ async function cameraTransform(page: Page) {
 }
 
 async function openDemo(page: Page) {
-  await page.evaluate(() => {
-    localStorage.removeItem('urai:userId')
-    localStorage.removeItem('urai:locationMapDemoMode')
-  })
   await page.goto(route, { waitUntil: 'networkidle' })
   await expect(page.getByRole('heading', { name: 'Your places stay closed until you open them.' })).toBeVisible()
   await page.getByRole('button', { name: 'Open disclosed sample' }).click()
@@ -223,7 +219,6 @@ test.describe('Location Map exact-head browser acceptance evidence v2', () => {
     await expect(page).not.toHaveURL(/placeId=/, { timeout: 15_000 })
     await expect(atlas).toHaveAttribute('data-camera-checkpoint', 'atlas-world-view')
 
-    await page.evaluate(() => localStorage.setItem('urai:userId', 'acceptance-user'))
     await page.goto(`${route}&acceptanceState=private`, { waitUntil: 'networkidle' })
     await expect(page.locator('[data-location-map-source="private-repository"]')).toBeVisible()
     await expect(page.getByText('Permissioned places')).toBeVisible()
@@ -323,8 +318,7 @@ test.describe('Location Map exact-head browser acceptance evidence v2', () => {
     test.setTimeout(120_000)
     const errors = monitor(page)
     await page.setViewportSize({ width: 390, height: 844 })
-    await page.addInitScript(() => localStorage.setItem('urai:locationMapDemoMode', 'true'))
-    await page.goto(route, { waitUntil: 'domcontentloaded' })
+    await page.goto(`${route}&demo=1`, { waitUntil: 'domcontentloaded' })
     await expect(page.locator('[data-location-map-source="disclosed-demo"]')).toBeVisible({ timeout: 15_000 })
     await page.screenshot({ path: testInfo.outputPath('demo-mobile-overview.png'), fullPage: true })
 

@@ -5,6 +5,7 @@ const requiredFiles = [
   'firebase.json',
   'firebase.static.json',
   '.github/workflows/spatial-live-deploy.yml',
+  '.github/workflows/spatial-governed-wif-deploy.yml',
   'urai-tier1/package.json',
   'urai-tier1/tests/xr-runtime-contract.test.mjs',
   'urai-tier1/src/spatial/xr/uraiXrRoomRuntime.ts',
@@ -27,8 +28,26 @@ if (firebaseConfig.hosting?.source !== 'urai-tier1') {
 }
 
 const staticConfig = JSON.parse(await readFile('firebase.static.json', 'utf8'))
-if (staticConfig.hosting?.public !== 'urai-tier1/out' || staticConfig.hosting?.rewrites?.length !== 0) {
-  console.error('[xr:firebase:preflight] canonical static hosting must publish urai-tier1/out without rewrites')
+const providerRewrites = Array.isArray(firebaseConfig.hosting?.rewrites) ? firebaseConfig.hosting.rewrites : []
+const allowedStaticServerRewrites = new Map(providerRewrites.map((rewrite) => [rewrite?.source, rewrite?.function?.functionId]))
+for (const [source, functionId] of [
+  ['/api/stripe/create-checkout-session', 'createStripeCheckout'],
+  ['/api/stripe/create-portal-session', 'createStripeCustomerPortal'],
+  ['/api/entitlement', 'getStripeEntitlement'],
+  ['/api/stripe/webhook', 'handleStripeWebhook'],
+]) allowedStaticServerRewrites.set(source, functionId)
+const staticRewrites = Array.isArray(staticConfig.hosting?.rewrites) ? staticConfig.hosting.rewrites : []
+const invalidStaticRewrite = staticRewrites.find((rewrite) => (
+  !allowedStaticServerRewrites.has(rewrite?.source)
+  || allowedStaticServerRewrites.get(rewrite?.source) !== rewrite?.function?.functionId
+  || rewrite?.function?.region !== 'us-central1'
+))
+if (
+  staticConfig.hosting?.public !== 'urai-tier1/out'
+  || staticRewrites.length !== allowedStaticServerRewrites.size
+  || invalidStaticRewrite
+) {
+  console.error('[xr:firebase:preflight] canonical static hosting must publish urai-tier1/out with only the governed server API rewrites')
   process.exit(1)
 }
 
@@ -55,7 +74,7 @@ if (rootPackage.scripts?.['live:deploy'] !== 'node scripts/live-release.mjs --de
 }
 
 const expectedSecretNames = [
-  'FIREBASE_SERVICE_ACCOUNT_JSON',
+  'GOOGLE_APPLICATION_CREDENTIALS',
   'FIREBASE_PROJECT_ID',
   'URAI_XR_SESSION_SECRET',
   'URAI_XR_ICE_SERVERS_JSON',
@@ -69,5 +88,6 @@ console.log(JSON.stringify({
   requiredFiles: requiredFiles.length,
   requiredScripts,
   expectedSecretNames,
-  productionAuthority: '.github/workflows/spatial-live-deploy.yml',
+  productionVerificationAuthority: '.github/workflows/spatial-live-deploy.yml',
+  productionAuthority: '.github/workflows/spatial-governed-wif-deploy.yml',
 }, null, 2))

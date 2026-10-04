@@ -1,0 +1,108 @@
+feature: possible-futures
+repo: LifeLoggerAI/urai-spatial
+owner: URAI Privacy + Spatial + Intelligence
+privacyGovernanceVersion: 0.1.0-draft
+status: source_implemented_provider_disabled_review_required
+lastReviewed: 2026-09-16
+sourceEvidence:
+  - urai-tier1/src/lib/truth/truthTypes.ts
+  - urai-tier1/src/lib/scenario/scenarioTypes.ts
+  - urai-tier1/src/lib/scenario/scenarioValidation.ts
+  - apps/functions/src/scenarioOperations.ts
+  - apps/functions/src/scenarioProvider.ts
+  - firebase/firestore.rules
+
+summary:
+  purpose: Let a user explore explicitly hypothetical branches from authorized lived-world evidence without converting generated scenarios into autobiographical truth or external action.
+  userBenefit: Provides bounded what-if exploration while preserving evidence, uncertainty, source permissions, and the distinction between memory and simulation.
+  implementationStatus: deterministic_contracts_manual_scenario_and_server_authority_implemented_provider_not_activated
+
+dataProcessing:
+  collectedFields:
+    - name: scenario_metadata
+      collectionOrTable: users/{uid}/scenarios/{scenarioId}
+      dataClass: L2
+      source: user_and_system
+      purpose: scenario.explore
+      consentTier: C1
+      retentionClass: R3
+      exportable: true
+      deletable: true
+      monetizable: false
+      aiTrainingAllowed: false
+      adminAccessible: false
+      auditRequired: true
+    - name: scenario_basis_reference
+      collectionOrTable: users/{uid}/scenarios/{scenarioId}/basis/current
+      dataClass: inherits_source
+      source: authorized_lived_world_reference
+      purpose: scenario.explore
+      consentTier: inherits_source
+      retentionClass: R3
+      exportable: true
+      deletable: true
+      monetizable: false
+      aiTrainingAllowed: false
+      adminAccessible: false
+      auditRequired: true
+  derivedFields:
+    - name: scenario_branch
+      collectionOrTable: users/{uid}/scenarios/{scenarioId}/branches
+      dataClass: L3_or_L4_when_sensitive
+      sourceFields:
+        - scenario_basis_reference
+        - accepted_scenario_assumptions
+      purpose: scenario.explore
+      consentTier: C1_plus_source_specific_C3_C4_C5_where_applicable
+      retentionClass: R3
+      exportable: true
+      deletable: true
+      monetizable: false
+      aiTrainingAllowed: false
+      explainabilityRequired: true
+    - name: scenario_outcome_observation
+      collectionOrTable: users/{uid}/scenarios/{scenarioId}/outcomeObservations
+      dataClass: L3_or_L4_when_sensitive
+      sourceFields:
+        - independent_observation_or_user_assertion
+      purpose: scenario.outcome-compare
+      consentTier: inherits_source
+      retentionClass: R3
+      exportable: true
+      deletable: true
+      monetizable: false
+      aiTrainingAllowed: false
+      explainabilityRequired: true
+
+hardBoundaries:
+  scenarioToAutobiographicalMemory: forbidden
+  scenarioToObservedReality: forbidden
+  scenarioToExternalAction: forbidden
+  generatedContextAsConfirmedAutobiography: forbidden
+  providerEvidenceOutsideAuthorizedBasis: forbidden
+  hiddenChainOfThoughtPersistence: forbidden
+  providerActivation: false
+  maximumLaunchBranches: 3
+
+userRights:
+  exportSupported: true
+  deletionSupported: true
+  consentRevocationSupported: true
+  explanationSupported: true
+
+adminAccess:
+  allowed: false
+  roles: []
+  auditEventTypes:
+    - scenario.created
+    - scenario.basis_validated
+    - scenario.provider_unavailable
+    - scenario.saved
+    - scenario.discarded
+    - scenario.deleted
+    - scenario.outcome_recorded
+
+review:
+  reviewer: pending_independent_privacy_and_intelligence_review
+  decision: blocked_from_gold_master_until_exact_head_tests_visuals_accessibility_performance_and_review_pass
+  notes: Reality may seed a Scenario. Scenario output cannot write factual memory, observed reality, or an external action. Provider generation remains deliberately disabled; a manual Scenario path is available without fabricating provider results.

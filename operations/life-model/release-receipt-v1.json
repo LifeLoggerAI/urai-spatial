@@ -1,0 +1,38 @@
+{
+  "schemaVersion": "urai-life-model-release-receipt-v1",
+  "candidateSha": null,
+  "certified": false,
+  "gates": {
+    "sourceIngestionE2E": "PENDING",
+    "lifeCausalGraph": "IMPLEMENTED_NOT_E2E_PROVEN",
+    "personWorldCompilation": "IMPLEMENTED_NOT_E2E_PROVEN",
+    "replayBinding": "IMPLEMENTED_NOT_E2E_PROVEN",
+    "lifeMovieBinding": "IMPLEMENTED_NOT_E2E_PROVEN",
+    "capturedRealityBinding": "IMPLEMENTED_NOT_E2E_PROVEN",
+    "personPresence": "PARTIAL_SESSION_BOUNDARY_ONLY",
+    "syntheticMemoryFirewall": "IMPLEMENTED_NOT_E2E_PROVEN",
+    "correctionPropagation": "IMPLEMENTED_NOT_E2E_PROVEN",
+    "consentRevocation": "IMPLEMENTED_NOT_E2E_PROVEN",
+    "exportDeletion": "IMPLEMENTED_NOT_E2E_PROVEN",
+    "privacy": "PENDING_HUMAN_REVIEW",
+    "security": "PENDING",
+    "accessibility": "PENDING",
+    "localization": "PENDING",
+    "device": "PENDING",
+    "xr": "PENDING",
+    "literalQuality": "PENDING",
+    "identityAcceptance": "PENDING",
+    "independentApproval": "PENDING",
+    "deployment": "NOT_DEPLOYED",
+    "productionReverification": "NOT_RUN"
+  },
+  "receiptRefs": [],
+  "humanApprovalRefs": [],
+  "deploymentRef": null,
+  "productionFingerprint": null,
+  "notes": [
+    "This file is a fail-closed launch receipt, not a completion claim.",
+    "Any candidate SHA mutation invalidates all prior exact-head gate receipts.",
+    "Private evidence is referenced by opaque/hashes only; no private family source belongs here."
+  ]
+}

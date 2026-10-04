@@ -20,7 +20,7 @@ const extensionByType = {
   portal: ['.glb', '.gltf', '.json'],
   world: ['.glb', '.gltf', '.json'],
   ui: ['.svg', '.png', '.webp', '.json'],
-  audio: ['.mp3', '.wav', '.ogg'],
+  audio: ['.mp3', '.wav', '.ogg', '.opus'],
   fallback: ['.glb', '.gltf', '.json', '.svg', '.png', '.webp'],
 }
 
@@ -62,6 +62,7 @@ const rows = normalizedEntries.map(({ asset, normalizedPath }) => {
     abs.startsWith(`${publicRoot}${sep}`)
   let exists = false
   let regularFile = false
+  let fileBytes = 0
   let symbolicLink = false
   let realPathInsidePublic = false
   let realPath = ''
@@ -75,6 +76,7 @@ const rows = normalizedEntries.map(({ asset, normalizedPath }) => {
         realPath !== canonicalPublicRoot &&
         realPath.startsWith(`${canonicalPublicRoot}${sep}`)
       regularFile = stats.isFile() && !symbolicLink && realPathInsidePublic
+      if (regularFile) fileBytes = stats.size
     } catch {
       exists = true
       regularFile = false
@@ -86,12 +88,13 @@ const rows = normalizedEntries.map(({ asset, normalizedPath }) => {
   const extensionOk = allowed.includes(extension)
   const requiredFile = asset.status === 'ready' || asset.status === 'fallback'
   const pathInsidePublic = lexicalPathInsidePublic && (!exists || realPathInsidePublic)
-  const blocking = requiredFile && (!pathInsidePublic || !exists || !regularFile)
+  const blocking = requiredFile && (!pathInsidePublic || !exists || !regularFile || fileBytes === 0)
   return {
     ...asset,
     normalizedPath: normalizedPath.normalized,
     exists,
     regularFile,
+    fileBytes,
     symbolicLink,
     pathInsidePublic,
     lexicalPathInsidePublic,
@@ -116,6 +119,7 @@ const summary = {
   missingFiles: rows.filter((asset) => !asset.exists).length,
   missingRequiredFiles: rows.filter((asset) => asset.requiredFile && !asset.exists).length,
   nonRegularRequiredFiles: rows.filter((asset) => asset.requiredFile && asset.exists && !asset.regularFile).length,
+  emptyRequiredFiles: rows.filter((asset) => asset.requiredFile && asset.regularFile && asset.fileBytes === 0).length,
   invalidPaths: rows.filter((asset) => !asset.pathInsidePublic).length,
   invalidExtensions: rows.filter((asset) => !asset.extensionOk).length,
   duplicateIds: duplicateIds.size,
@@ -145,6 +149,7 @@ const lines = [
   `- Paths without files yet: ${summary.missingFiles}`,
   `- Missing ready/fallback files: ${summary.missingRequiredFiles}`,
   `- Non-regular or escaped ready/fallback files: ${summary.nonRegularRequiredFiles}`,
+  `- Empty ready/fallback files: ${summary.emptyRequiredFiles}`,
   `- Invalid or escaped paths: ${summary.invalidPaths}`,
   `- Invalid extensions: ${summary.invalidExtensions}`,
   `- Duplicate asset IDs: ${summary.duplicateIds}`,
@@ -160,8 +165,8 @@ const lines = [
   '## Gate Result',
   '',
   failed
-    ? 'FAIL: a ready/fallback file is missing, non-regular, symlinked or escaped; a path is unsafe; an extension is invalid; or an ID/normalized path is duplicated.'
-    : 'PASS: every ready/fallback asset is a regular in-root file and the manifest has valid unique IDs, normalized paths and extensions.',
+    ? 'FAIL: a ready/fallback file is missing, empty, non-regular, symlinked or escaped; a path is unsafe; an extension is invalid; or an ID/normalized path is duplicated.'
+    : 'PASS: every ready/fallback asset is a nonempty regular in-root file and the manifest has valid unique IDs, normalized paths and extensions.',
   '',
 ]
 

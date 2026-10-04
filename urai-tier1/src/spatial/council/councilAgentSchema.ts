@@ -1,4 +1,39 @@
+import type { EvidenceSupport } from '@/lib/truth/truthTypes'
+
 export type CouncilAgentRole = 'guardian' | 'mirror' | 'cartographer' | 'archivist' | 'guide' | 'builder' | 'trickster'
+
+export type CouncilScenarioRole = Exclude<CouncilAgentRole, 'guide'>
+export type ScenarioEvidenceBundle = {
+  scenarioId: string
+  branchId: string
+  evidenceRefIds: readonly string[]
+  permissionReceiptIds: readonly string[]
+}
+export type CouncilScenarioPerspective = {
+  role: CouncilScenarioRole
+  viewpoint: string
+  evidenceRefIds: readonly string[]
+  support: EvidenceSupport
+  uncertaintyIds: readonly string[]
+  assumptionsQuestioned: readonly string[]
+  alternativeExplanations: readonly string[]
+  consensusClaimed: false
+  authorityClaimed: false
+}
+
+export function validateCouncilScenarioPerspective(
+  perspective: CouncilScenarioPerspective,
+  bundle: ScenarioEvidenceBundle,
+) {
+  const allowed = new Set(bundle.evidenceRefIds)
+  const errors: string[] = []
+  for (const evidenceId of perspective.evidenceRefIds) {
+    if (!allowed.has(evidenceId)) errors.push(`COUNCIL_EVIDENCE_OUTSIDE_BUNDLE:${evidenceId}`)
+  }
+  if (perspective.consensusClaimed !== false) errors.push('COUNCIL_CONSENSUS_FABRICATION_FORBIDDEN')
+  if (perspective.authorityClaimed !== false) errors.push('COUNCIL_AUTHORITY_THEATER_FORBIDDEN')
+  return errors
+}
 
 export type CouncilAgent = {
   id: string
@@ -11,7 +46,7 @@ export type CouncilAgent = {
   canSuggestNextSteps: boolean
 }
 
-export const DEMO_COUNCIL_AGENTS: CouncilAgent[] = [
+export const COUNCIL_AGENTS: CouncilAgent[] = [
   {
     id: 'council-cartographer',
     name: 'The Cartographer',
@@ -73,3 +108,6 @@ export const DEMO_COUNCIL_AGENTS: CouncilAgent[] = [
     canSuggestNextSteps: true,
   },
 ]
+
+// Compatibility alias for older proof harnesses; runtime uses COUNCIL_AGENTS.
+export const DEMO_COUNCIL_AGENTS = COUNCIL_AGENTS

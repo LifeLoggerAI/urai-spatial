@@ -8,7 +8,7 @@ import {
   URAI_WORLD_RETURN_EVENT,
   URAI_WORLD_TRAVEL_EVENT,
 } from './worldEvents'
-import type { UraiDestination, UraiWorldTravelRequest } from './worldTypes'
+import type { UraiDestination, UraiOriginRealm, UraiWorldTravelRequest } from './worldTypes'
 
 const CONTEXT_KEYS = [
   'memoryId',
@@ -17,6 +17,8 @@ const CONTEXT_KEYS = [
   'personId',
   'placeId',
   'manifestId',
+  'movieId',
+  'chapterId',
   'privacyMode',
   'demo',
 ] as const
@@ -27,7 +29,7 @@ function prefersReducedMotion() {
 
 function transitionDuration(destination: UraiDestination) {
   if (prefersReducedMotion()) return 260
-  if (destination === 'replay' || destination === 'location-map') return 1900
+  if (destination === 'replay' || destination === 'life-movie' || destination === 'location-map') return 1900
   return 1100
 }
 
@@ -50,7 +52,17 @@ function buildTravelHref(request: UraiWorldTravelRequest) {
   if (context?.personId) target.searchParams.set('personId', context.personId)
   if (context?.placeId) target.searchParams.set('placeId', context.placeId)
   if (context?.replayManifestId) target.searchParams.set('manifestId', context.replayManifestId)
+  if (context?.movieId) target.searchParams.set('movieId', context.movieId)
+  if (context?.chapterId) target.searchParams.set('chapterId', context.chapterId)
   if (context?.privacyMode) target.searchParams.set('privacyMode', context.privacyMode)
+  if (context?.originRealm) target.searchParams.set('originRealm', context.originRealm)
+  if (context?.returnToken) target.searchParams.set('returnToken', context.returnToken)
+  if (context?.reconstructionFidelity) target.searchParams.set('fidelity', context.reconstructionFidelity)
+  if (context?.scenarioId) target.searchParams.set('scenario', context.scenarioId)
+  if (context?.scenarioBranchId) target.searchParams.set('branch', context.scenarioBranchId)
+  if (context?.scenarioBasisRevision !== undefined) target.searchParams.set('basisRevision', String(context.scenarioBasisRevision))
+  if (context?.truthMode) target.searchParams.set('truthMode', context.truthMode)
+  if (context?.scenarioOrigin) target.searchParams.set('scenarioOrigin', context.scenarioOrigin)
   if (context?.demo) target.searchParams.set('demo', '1')
   if (request.entryPortal) target.searchParams.set('entryPortal', request.entryPortal)
   if (request.cameraCheckpoint) target.searchParams.set('cameraCheckpoint', request.cameraCheckpoint)
@@ -75,9 +87,15 @@ function isEditableTarget(target: EventTarget | null) {
   return target.isContentEditable || target.matches('input, textarea, select, [role="textbox"]')
 }
 
+function destinationFromOriginRealm(origin: UraiOriginRealm): UraiDestination {
+  if (origin === 'ground') return 'infrastructure-hub'
+  return origin
+}
+
 function fallbackReturnDestination(destination: UraiDestination): UraiDestination {
   if (destination === 'focus') return 'life-map'
   if (destination === 'replay') return 'focus'
+  if (destination === 'life-movie') return 'replay'
   if (destination === 'infrastructure-hub') return 'home'
   return 'infrastructure-hub'
 }
@@ -138,7 +156,9 @@ export function WorldTransitionController() {
   const reverseTravel = useCallback(() => {
     const currentWorld = worldRef.current
     if (phaseRef.current !== 'idle') return
-    const destination = currentWorld.previousDestination ?? fallbackReturnDestination(currentWorld.destination)
+    const destination = currentWorld.destination === 'possible-futures' && currentWorld.scenarioOrigin
+      ? destinationFromOriginRealm(currentWorld.scenarioOrigin)
+      : currentWorld.previousDestination ?? fallbackReturnDestination(currentWorld.destination)
     const definition = definitionForDestination(destination)
     executeTravel({
       destination,
@@ -151,7 +171,13 @@ export function WorldTransitionController() {
         personId: currentWorld.personId,
         placeId: currentWorld.placeId,
         replayManifestId: currentWorld.replayManifestId,
+        movieId: currentWorld.movieId,
+        chapterId: currentWorld.chapterId,
         privacyMode: currentWorld.privacyMode,
+        originRealm: currentWorld.originRealm,
+        returnToken: currentWorld.returnToken,
+        reconstructionFidelity: currentWorld.reconstructionFidelity,
+        truthMode: destination === 'replay' || destination === 'life-movie' ? 'memory' : 'reality',
         demo: currentWorld.demo,
       },
     })
