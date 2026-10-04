@@ -1,0 +1,59 @@
+feature: ai-self-ledger
+repo: LifeLoggerAI/urai-spatial
+owner: URAI Privacy + Intelligence
+privacyGovernanceVersion: 0.1.0-draft
+status: source_implemented_review_required
+lastReviewed: 2026-09-16
+sourceEvidence:
+  - urai-tier1/src/lib/ai-ledger/aiLedgerTypes.ts
+  - urai-tier1/src/lib/ai-ledger/aiLedgerValidation.ts
+  - apps/functions/src/aiLedgerOperations.ts
+  - firebase/firestore.rules
+
+summary:
+  purpose: Preserve auditable facts about evidence availability, permissions, provider/model identity, externally visible outputs, corrections and later outcomes without persisting hidden model reasoning.
+  userBenefit: Makes UrAi operations inspectable and correctable while preserving privacy and provider-internal boundaries.
+  implementationStatus: typed_contract_and_server_authority_implemented_user_read_server_write
+
+dataProcessing:
+  collectedFields:
+    - name: ai_activity_ledger_entry
+      collectionOrTable: users/{uid}/aiLedger/{entryId}
+      dataClass: L2_or_inherits_referenced_source_when_sensitive
+      source: system
+      purpose: intelligence.audit-and-explain
+      consentTier: operational_plus_referenced_source_authority
+      retentionClass: R1
+      exportable: true
+      deletable: true
+      monetizable: false
+      aiTrainingAllowed: false
+      adminAccessible: false
+      auditRequired: true
+
+hardBoundaries:
+  chainOfThoughtStored: false
+  hiddenReasoningStored: false
+  modelWeightsInspectable: false
+  crossUserEvidenceAllowed: false
+  exactProviderModelVersionRequiredWhenProviderUsed: true
+  revokedEvidenceMayBeReused: false
+
+userRights:
+  exportSupported: true
+  deletionSupported: true
+  consentRevocationSupported: true
+  explanationSupported: true
+
+adminAccess:
+  allowed: false
+  roles: []
+  auditEventTypes:
+    - ai_ledger.entry_created
+    - ai_ledger.correction_linked
+    - ai_ledger.outcome_linked
+
+review:
+  reviewer: pending_independent_privacy_and_intelligence_review
+  decision: blocked_from_gold_master_until_exact_head_validation_and_review_pass
+  notes: Ledger entries store evidence references, exclusions, permission snapshots, provider/model version, hashes, corrections and outcomes. They must never contain hidden chain-of-thought or provider-private reasoning.

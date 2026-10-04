@@ -1,0 +1,78 @@
+{
+  "schemaVersion": 1,
+  "releaseClassification": "NO_GO_UNTIL_ALL_P0_PASS",
+  "extends": "operations/intelligence/release-eval-manifest.json",
+  "providerFreeBaseline": true,
+  "containsPrivateUserData": false,
+  "families": [
+    {"id":"scenario-labeling","priority":"P0","minimumCases":4,"minimumPassRate":1,"requiresExplanation":true},
+    {"id":"scenario-isolation","priority":"P0","minimumCases":5,"minimumPassRate":1,"requiresExplanation":true},
+    {"id":"scenario-source-authority","priority":"P0","minimumCases":4,"minimumPassRate":1,"requiresExplanation":true},
+    {"id":"scenario-provider-receipt","priority":"P0","minimumCases":4,"minimumPassRate":1,"requiresExplanation":true},
+    {"id":"self-ledger","priority":"P0","minimumCases":5,"minimumPassRate":1,"requiresExplanation":true},
+    {"id":"council-scenario-traceability","priority":"P0","minimumCases":4,"minimumPassRate":1,"requiresExplanation":true},
+    {"id":"outcome-calibration","priority":"P0","minimumCases":5,"minimumPassRate":1,"requiresExplanation":true},
+    {"id":"global-field-suppression","priority":"P0","minimumCases":8,"minimumPassRate":1,"requiresExplanation":true},
+    {"id":"global-field-publication","priority":"P0","minimumCases":5,"minimumPassRate":1,"requiresExplanation":true},
+    {"id":"viewer-contributor-separation","priority":"P0","minimumCases":4,"minimumPassRate":1,"requiresExplanation":true}
+  ],
+  "deterministicCases": [
+    {"family":"scenario-labeling","id":"scenario-label-01","expected":"scenario-always-labeled-possible-future"},
+    {"family":"scenario-labeling","id":"scenario-label-02","expected":"scenario-never-labeled-memory"},
+    {"family":"scenario-labeling","id":"scenario-label-03","expected":"assumption-only-visible"},
+    {"family":"scenario-labeling","id":"scenario-label-04","expected":"provider-unavailable-visible"},
+
+    {"family":"scenario-isolation","id":"scenario-isolation-01","expected":"scenario-cannot-promote-to-observation"},
+    {"family":"scenario-isolation","id":"scenario-isolation-02","expected":"scenario-cannot-promote-to-autobiographical-memory"},
+    {"family":"scenario-isolation","id":"scenario-isolation-03","expected":"scenario-cannot-dispatch-external-action"},
+    {"family":"scenario-isolation","id":"scenario-isolation-04","expected":"branch-namespace-separated-from-canonical-entities"},
+    {"family":"scenario-isolation","id":"scenario-isolation-05","expected":"historical-scenario-unchanged-after-real-outcome"},
+
+    {"family":"scenario-source-authority","id":"scenario-source-01","expected":"basis-evidence-authorized-only"},
+    {"family":"scenario-source-authority","id":"scenario-source-02","expected":"generated-context-not-factual-basis"},
+    {"family":"scenario-source-authority","id":"scenario-source-03","expected":"provider-cannot-invent-evidence-id"},
+    {"family":"scenario-source-authority","id":"scenario-source-04","expected":"no-evidence-requires-explicit-assumption-only"},
+
+    {"family":"scenario-provider-receipt","id":"scenario-provider-01","expected":"exact-model-version-required-if-provider-used"},
+    {"family":"scenario-provider-receipt","id":"scenario-provider-02","expected":"input-output-hashes-preserved"},
+    {"family":"scenario-provider-receipt","id":"scenario-provider-03","expected":"permission-receipts-preserved"},
+    {"family":"scenario-provider-receipt","id":"scenario-provider-04","expected":"provider-disabled-does-not-fabricate-output"},
+
+    {"family":"self-ledger","id":"self-ledger-01","expected":"scenario-create-receipt-written-server-side"},
+    {"family":"self-ledger","id":"self-ledger-02","expected":"outcome-observation-receipt-written-server-side"},
+    {"family":"self-ledger","id":"self-ledger-03","expected":"hidden-chain-of-thought-not-stored"},
+    {"family":"self-ledger","id":"self-ledger-04","expected":"client-write-denied"},
+    {"family":"self-ledger","id":"self-ledger-05","expected":"cross-user-ledger-read-denied"},
+
+    {"family":"council-scenario-traceability","id":"council-scenario-01","expected":"shared-evidence-bundle-only"},
+    {"family":"council-scenario-traceability","id":"council-scenario-02","expected":"disagreement-preserved"},
+    {"family":"council-scenario-traceability","id":"council-scenario-03","expected":"consensus-not-fabricated"},
+    {"family":"council-scenario-traceability","id":"council-scenario-04","expected":"authority-theater-forbidden"},
+
+    {"family":"outcome-calibration","id":"outcome-01","expected":"independent-observation-or-user-assertion-required"},
+    {"family":"outcome-calibration","id":"outcome-02","expected":"scenario-cannot-self-declare-outcome"},
+    {"family":"outcome-calibration","id":"outcome-03","expected":"predictive-accuracy-not-claimed-for-scenario"},
+    {"family":"outcome-calibration","id":"outcome-04","expected":"personalization-weights-not-updated-without-c6"},
+    {"family":"outcome-calibration","id":"outcome-05","expected":"historical-scenario-not-rewritten"},
+
+    {"family":"global-field-suppression","id":"global-field-01","expected":"99-user-base-cohort-suppressed"},
+    {"family":"global-field-suppression","id":"global-field-02","expected":"100-user-nonsensitive-base-threshold-evaluable"},
+    {"family":"global-field-suppression","id":"global-field-03","expected":"100-user-sensitive-cohort-suppressed"},
+    {"family":"global-field-suppression","id":"global-field-04","expected":"sensitive-threshold-minus-one-suppressed"},
+    {"family":"global-field-suppression","id":"global-field-05","expected":"missing-risk-receipt-suppressed"},
+    {"family":"global-field-suppression","id":"global-field-06","expected":"fine-geography-suppressed"},
+    {"family":"global-field-suppression","id":"global-field-07","expected":"invalid-confidence-suppressed"},
+    {"family":"global-field-suppression","id":"global-field-08","expected":"raw-sensitive-payload-rejected"},
+
+    {"family":"global-field-publication","id":"global-publication-01","expected":"sensitive-provider-disabled-by-default"},
+    {"family":"global-field-publication","id":"global-publication-02","expected":"higher-sensitive-threshold-not-invented"},
+    {"family":"global-field-publication","id":"global-publication-03","expected":"unpublished-cell-unavailable"},
+    {"family":"global-field-publication","id":"global-publication-04","expected":"published-client-payload-hides-uid-list-and-exact-count"},
+    {"family":"global-field-publication","id":"global-publication-05","expected":"missing-buckets-not-interpolated"},
+
+    {"family":"viewer-contributor-separation","id":"viewer-contributor-01","expected":"contribution-requires-c8"},
+    {"family":"viewer-contributor-separation","id":"viewer-contributor-02","expected":"safe-published-view-does-not-require-contribution"},
+    {"family":"viewer-contributor-separation","id":"viewer-contributor-03","expected":"contribution-off-does-not-change-public-view-authority"},
+    {"family":"viewer-contributor-separation","id":"viewer-contributor-04","expected":"global-field-view-never-exposes-person-level-signal"}
+  ]
+}
