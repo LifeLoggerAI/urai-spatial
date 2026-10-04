@@ -149,10 +149,13 @@ test('the immutable author rejects missing or altered inputs without generating 
   const fixtureRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'urai-immutable-asset-test-'))
   const receipt = JSON.parse(read('../operations/assets/generated-receipts/urai-final-glb-pack-v1.json'))
   const fixtureReceiptPath = path.join(fixtureRoot, 'operations/assets/generated-receipts/urai-final-glb-pack-v1.json')
+  const fixtureDecisionPath = path.join(fixtureRoot, 'operations/assets/promotion-decisions/home-entry-chamber-v1.json')
   const fixtureModels = path.join(fixtureRoot, 'urai-tier1/public/assets/urai/generated/models')
   const authorPath = path.resolve('../scripts/author-final-glb-pack.mjs')
   try {
     fs.mkdirSync(path.dirname(fixtureReceiptPath), { recursive: true })
+    fs.mkdirSync(path.dirname(fixtureDecisionPath), { recursive: true })
+    fs.copyFileSync(path.resolve('../operations/assets/promotion-decisions/home-entry-chamber-v1.json'), fixtureDecisionPath)
     fs.mkdirSync(fixtureModels, { recursive: true })
     for (const asset of receipt.assets) fs.symlinkSync(path.resolve(`public/assets/urai/generated/models/${asset.fileName}`), path.join(fixtureModels, asset.fileName))
     const rejectReceipt = (candidate, expected) => {
@@ -164,12 +167,14 @@ test('the immutable author rejects missing or altered inputs without generating 
     }
     rejectReceipt({ ...receipt, packId: 'unaccepted-pack' }, /receipt identity mismatch/)
     rejectReceipt({ ...receipt, assets: receipt.assets.slice(1) }, /Exactly eight authored production GLBs/)
+    const nonHomeIndex = receipt.assets.findIndex((asset) => asset.fileName !== 'home-entry-chamber-v1.glb')
+    assert.ok(nonHomeIndex >= 0)
     for (const field of ['sha256', 'bytes']) {
       const candidate = structuredClone(receipt)
-      candidate.assets[0][field] = field === 'sha256' ? '0'.repeat(64) : candidate.assets[0].bytes + 1
+      candidate.assets[nonHomeIndex][field] = field === 'sha256' ? '0'.repeat(64) : candidate.assets[nonHomeIndex].bytes + 1
       rejectReceipt(candidate, /immutable authored binary does not match its receipt/)
     }
-    const missing = path.join(fixtureModels, receipt.assets[0].fileName)
+    const missing = path.join(fixtureModels, receipt.assets[nonHomeIndex].fileName)
     fs.unlinkSync(missing)
     rejectReceipt(receipt, /authored binary is missing; no procedural fallback will be generated/)
     assert.equal(fs.existsSync(missing), false, 'author must not create replacement geometry')
