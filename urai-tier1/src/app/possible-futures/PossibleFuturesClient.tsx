@@ -1,7 +1,6 @@
 'use client'
 
 import { Canvas, useFrame } from '@react-three/fiber'
-import { Environment } from '@react-three/drei'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import * as THREE from 'three'
@@ -29,7 +28,7 @@ function BranchMass({ branch }: { branch: number }) {
     {pieces.map((piece,index)=><mesh key={index} position={[piece.x,piece.y,piece.z]} rotation={[piece.rotation*.3,piece.rotation,piece.rotation*.18]} scale={piece.scale} castShadow><dodecahedronGeometry args={[1,0]} /><meshStandardMaterial color={branch===0?'#596963':branch===1?'#6c665e':'#5b616b'} roughness={.82} metalness={.04} /></mesh>)}
   </group>
 }
-function ScenarioWorld({ branch }: { branch:number }) { return <Canvas camera={{ position:[0,3.6,8.4], fov:48 }} shadows dpr={[1,1.75]}><color attach="background" args={['#080d10']} /><fog attach="fog" args={['#080d10',8,23]} /><ambientLight intensity={.48} /><hemisphereLight args={['#dbe7e4','#0c1012',.52]} /><directionalLight position={[5,8,4]} intensity={1.3} castShadow /><BranchMass branch={branch} /><Environment preset="city" environmentIntensity={.24} /></Canvas> }
+function ScenarioWorld({ branch }: { branch:number }) { return <Canvas camera={{ position:[0,3.6,8.4], fov:48 }} shadows dpr={[1,1.75]}><color attach="background" args={['#080d10']} /><fog attach="fog" args={['#080d10',8,23]} /><ambientLight intensity={.48} /><hemisphereLight args={['#dbe7e4','#0c1012',.52]} /><directionalLight position={[5,8,4]} intensity={1.3} castShadow /><BranchMass branch={branch} /></Canvas> }
 
 const panelStyle = { pointerEvents:'auto' as const, background:'rgba(8,13,16,.88)', border:'1px solid rgba(255,255,255,.18)', borderRadius:18, padding:16, backdropFilter:'blur(16px)', maxWidth:620 }
 const inputStyle = { width:'100%', minHeight:48, borderRadius:12, border:'1px solid rgba(255,255,255,.22)', background:'rgba(255,255,255,.055)', color:'inherit', padding:'12px 14px', font:'inherit' }
