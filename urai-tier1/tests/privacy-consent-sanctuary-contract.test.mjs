@@ -33,6 +33,15 @@ test('Consent Sanctuary is spatial and remains directly operable', () => {
   assert.match(css, /forced-colors/)
 })
 
+test('Consent Sanctuary fails closed before authentication resolves and exposes demo policy only explicitly', () => {
+  const client = read('src/app/privacy-controls/ConsentSanctuaryClient.tsx')
+  assert.match(client, /useState<ConsentPolicy>\(\(\) => unresolvedPolicy\(\)\)/)
+  assert.match(client, /ownerId: 'unresolved'/)
+  assert.match(client, /mode: 'denied'/)
+  assert.match(client, /if \(explicitDemo\) \{[\s\S]*setPolicy\(demoPolicy\(\)\)/)
+  assert.doesNotMatch(client, /useState<ConsentPolicy>\(\(\) => demoPolicy\(\)\)/)
+})
+
 test('Consent mutations use authenticated trusted orchestration and durable enforcement state', () => {
   const client = read('src/app/privacy-controls/ConsentSanctuaryClient.tsx')
   const bridge = read('src/lib/privacy/operationalPrivacyClient.ts')
