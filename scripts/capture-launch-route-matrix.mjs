@@ -279,7 +279,7 @@ async function captureViewportScreenshot(page, filePath, caseDeadline) {
         fullPage: false,
         animations: 'disabled',
         caret: 'hide',
-        timeout: Math.min(30_000, remaining()),
+        timeout: Math.min(60_000, remaining()),
       }),
       retried: true,
     }
