@@ -30,5 +30,15 @@
     "reason": "Aligns the governed target contract with the exact independently reviewed production binary; no binary, runtime, route, license, spend, or deployment authority changed.",
     "approvedAt": "2026-08-01T03:08:00-05:00"
   },
-  "notes": "Promotes the immutable reviewed Meshopt Home asset already present on current main. Historical independent visual proof, current route consumption, fallback behavior, ownership, optimization, and exact binary identity are retained. No provider regeneration was needed. This follow-up metadata correction aligns the manifest X-axis target to the reviewed 18.69m binary bound without altering the asset."
+  "notes": "Promotes the immutable reviewed Meshopt Home asset already present on current main. Historical independent visual proof, current route consumption, fallback behavior, ownership, optimization, and exact binary identity are retained. No provider regeneration was needed. This follow-up metadata correction aligns the manifest X-axis target to the reviewed 18.69m binary bound without altering the asset. 2026-10-04 reconciliation restores this exact already-approved binary after canonical-path drift; the later candidate receipt remains historical and unpromoted.",
+  "restorationReconciliation": {
+    "reconciledAt": "2026-10-04",
+    "reason": "Canonical Home path had drifted to a later unpromoted candidate. Restore the exact previously approved production binary and align active pack/manifest authority without re-approving the candidate.",
+    "restoredBlobSha": "dd757954937009d2ee54a52df6f56792528356f4",
+    "restoredBytes": 184160,
+    "restoredSha256": "b7bdced5a721598a9dfe592ee19da04d754d5b8b1d48b23cc44403a89b1ee529",
+    "candidateReceiptRetained": "operations/assets/generated-receipts/home-entry-chamber-v1.json",
+    "providerGeneration": false,
+    "providerSpendUsd": "0.00"
+  }
 }
