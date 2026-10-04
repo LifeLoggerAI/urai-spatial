@@ -7,6 +7,7 @@ import * as THREE from 'three'
 import { requestUraiWorldReturn } from '@/spatial/world/worldEvents'
 import { createPossibleFutureClient, getPossibleFutureClient, requestPossibleFutureGenerationClient, submitManualScenarioBranchesClient } from '@/lib/scenario/scenarioClient'
 import { ScenarioCouncilPanel } from '@/spatial/scenario/ScenarioCouncilPanel'
+import { useWebGLAvailable } from '../HomeSpatialCanvas'
 
 const BRANCH_LABELS = ['Current path', 'Requested change', 'Alternative constraint'] as const
 type SetupState = 'question' | 'creating' | 'manual' | 'exploring' | 'error'
@@ -36,6 +37,7 @@ const inputStyle = { width:'100%', minHeight:48, boxSizing:'border-box' as const
 
 export default function PossibleFuturesClient() {
   const params = useSearchParams(); const requestedBranch = Number(params.get('branch') ?? 0)
+  const webglAvailable = useWebGLAvailable()
   const [branch,setBranch] = useState(Number.isInteger(requestedBranch)&&requestedBranch>=0&&requestedBranch<BRANCH_LABELS.length?requestedBranch:0)
   const existingScenarioId = params.get('scenario')
   const [scenarioId,setScenarioId] = useState(existingScenarioId ?? '')
@@ -101,7 +103,11 @@ export default function PossibleFuturesClient() {
   }
 
   return <main data-testid="urai-possible-futures" data-truth-mode="scenario" data-setup-state={setup} style={{ position:'fixed',inset:0,background:'#080d10',color:'#eef4f2',overflow:'hidden' }}>
-    <div aria-hidden="true" style={{ position:'absolute',inset:0 }}><ScenarioWorld branch={branch} /></div>
+    <div aria-hidden="true" style={{ position:'absolute',inset:0 }}>
+      {webglAvailable === true
+        ? <ScenarioWorld branch={branch} />
+        : <div data-testid="possible-futures-webgl-fallback" data-webgl-state={webglAvailable === null ? 'detecting' : 'unavailable'} style={{position:'absolute',inset:0,background:'radial-gradient(circle at 50% 32%, rgba(89,105,99,.24), transparent 34%), linear-gradient(180deg,#0d1517 0%,#080d10 58%,#05080a 100%)'}} />}
+    </div>
     <section aria-label="Possible Future controls" style={{ position:'absolute',inset:0,pointerEvents:'none',display:'flex',flexDirection:'column',justifyContent:'space-between',padding:'max(18px, env(safe-area-inset-top)) max(18px, env(safe-area-inset-right)) max(18px, env(safe-area-inset-bottom)) max(18px, env(safe-area-inset-left))',overflowY:'auto',boxSizing:'border-box' }}>
       <header style={{ maxWidth:620,pointerEvents:'auto',textShadow:'0 2px 18px #000' }}><p style={{ margin:0,letterSpacing:'.16em',fontSize:12,fontWeight:700 }}>POSSIBLE FUTURE · NOT A MEMORY</p><h1 style={{ margin:'8px 0 4px',fontSize:'clamp(24px,4vw,42px)',fontWeight:520 }}>Possible Futures</h1><p aria-live="polite" style={{ margin:0,opacity:.82 }}>{message}</p></header>
       {setup==='question'||setup==='creating'||setup==='error'?<div style={panelStyle}><label htmlFor="possible-future-question">What do you want to explore?</label><textarea id="possible-future-question" value={question} onChange={(e)=>setQuestion(e.target.value)} disabled={setup==='creating'} placeholder="What if I move?" style={{...inputStyle,minHeight:88,marginTop:8}} /><p style={{opacity:.72,fontSize:13}}>Direct arrival without evidence uses an explicit assumption-only basis. Nothing here becomes autobiographical memory.</p><button type="button" disabled={!question.trim()||setup==='creating'} onClick={createScenario} style={{...inputStyle,width:'auto',cursor:'pointer'}}>Create Possible Future</button></div>:null}
