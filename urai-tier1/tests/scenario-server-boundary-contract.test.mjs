@@ -56,3 +56,12 @@ test('Scenario evidence basis is resolved by trusted owner authority, never auth
   assert.match(ops, /users\/\$\{ownerId\}\/memories\/\$\{memoryId\}/)
   assert.match(ops, /users\/\$\{ownerId\}\/lifeEntities\/\$\{entityId\}/)
 })
+
+test('Scenario Council bundle is owner-scoped, minimal and never exposes raw evidence records', () => {
+  assert.match(ops, /export const getPossibleFutureCouncilBundle/)
+  assert.match(ops, /const ownerId = uid\(context\)/)
+  assert.match(ops, /evidenceCount: evidenceRefs\.length/)
+  assert.match(ops, /evidenceKinds/)
+  assert.match(ops, /Possible Future only\. Not a memory, prediction, consensus, or authority decision\./)
+  assert.doesNotMatch(ops, /return \{[^}]*evidenceRefs[^}]*\}/)
+})
