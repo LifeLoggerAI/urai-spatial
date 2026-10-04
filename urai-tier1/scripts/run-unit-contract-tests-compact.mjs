@@ -65,6 +65,8 @@ const tests = [
   'tests/orb-voice-playback-behavior.test.mjs',
   'tests/orb-provider-idempotency-contract.test.mjs',
   'tests/provider-boundary-contract.test.mjs',
+  'tests/possible-futures-truth-contract.test.mjs',
+  'tests/scenario-server-boundary-contract.test.mjs',
   'tests/council-provider-boundary-contract.test.mjs',
   'tests/provider-hosting-runtime-contract.test.mjs',
   'tests/provider-preview-routing-contract.test.mjs',
