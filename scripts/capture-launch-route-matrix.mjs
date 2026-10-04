@@ -325,7 +325,7 @@ try {
     // The matrix records real GPU-backed browser pixels. Budgets must cover navigation,
     // route stabilization, retained screenshot readback, and context shutdown without
     // treating a slow CI GPU readback as missing product evidence.
-    const caseBudgetMs = representative ? homeCase ? 100_000 : 75_000 : homeCase ? 130_000 : 90_000
+    const caseBudgetMs = homeCase ? 130_000 : representative ? 75_000 : 90_000
     const caseDeadline = Date.now() + caseBudgetMs
     const record = { id, exactHead, route: spec.route, requestedState: spec.state, profile: captureProfile.id, profileMetadata: { ...captureProfile, deviceScaleFactor: 1 }, coverage: spec.coverage, sessionState: 'fresh-unsigned-initial-entry', returningSession: 'not-exercised', caseBudgetMs, startedAt: new Date().toISOString(), response: null, finalUrl: null, dom: null, readiness: null, image: null, events: [], eventCount: 0, omittedEvents: 0, technicalDefects: [] }
     receipt.captures.push(record)
