@@ -595,7 +595,7 @@ function SacredOrb({ state, reducedMotion, reducedStimulation, onOpen }: { state
       <sphereGeometry args={[.30,48,32]} />
       <meshPhysicalMaterial color={palette.core} transparent opacity={0.14} depthWrite={false} emissive={palette.emissive} emissiveIntensity={reducedStimulation ? .12 : state === 'speaking' ? .3 : .18} roughness={.18} metalness={0} clearcoat={.45} clearcoatRoughness={.2} envMapIntensity={.72} />
     </mesh>
-    <group ref={authoredCore} scale={.18}><primitive object={authoredOrb} /></group>
+    <group ref={authoredCore} scale={.07}><primitive object={authoredOrb} /></group>
     <mesh name="orb-luminous-memory-volume"><sphereGeometry args={[.16,32,24]} /><meshStandardMaterial color={palette.aura} transparent opacity={.62} depthWrite={false} emissive={palette.emissive} emissiveIntensity={reducedStimulation ? .5 : state === 'speaking' ? 1.8 : 1.4} roughness={.28} metalness={0} toneMapped={false} /></mesh>
     <mesh name="orb-warm-memory-heart" position={[.06,-.03,.08]}><sphereGeometry args={[.07,24,16]} /><meshStandardMaterial color="#ffe1a3" emissive="#efbe64" emissiveIntensity={reducedStimulation ? .5 : 1.1} roughness={.3} metalness={0} toneMapped={false} /></mesh>
     {sensory.particles !== 'none' ? <OrbMotes reducedMotion={reducedMotion} color={palette.light} /> : null}
