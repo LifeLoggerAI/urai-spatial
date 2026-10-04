@@ -354,17 +354,13 @@ test.describe('Supporting route responsive and accessible runtime evidence', () 
     await test.info().attach('supporting-reflow-scroll-and-targets.json', { body: JSON.stringify(reports, null, 2), contentType: 'application/json' })
   })
 
-  test('onboarding instructions and dismissal remain reachable in small portrait and landscape', async ({ page }) => {
-    // This acceptance test intentionally exercises two complete viewport passes,
-    // including geometry/48px audits and retained screenshots before keyboard
-    // dismissal. The prior 90s suite ceiling expired at the second Enter press
-    // after all preceding assertions had passed. The two full viewport passes
-    // can each consume roughly two minutes under CI compositor pressure, so use
-    // a bounded 300s envelope without weakening any product assertion or
-    // per-action timeout.
-    test.setTimeout(300_000)
-    const reports = []
-    for (const viewport of [{ width: 320, height: 568 }, { width: 568, height: 320 }]) {
+  for (const viewport of [{ width: 320, height: 568 }, { width: 568, height: 320 }]) {
+    test(`onboarding instructions and keyboard dismissal remain reachable at ${viewport.width}x${viewport.height}`, async ({ page }) => {
+      // Each compact viewport retains the complete geometry, 48px-target,
+      // screenshot, focus, Enter-dismiss, and removal assertions. Separate
+      // tests prevent one GPU-heavy Home/onboarding pass from consuming the
+      // other viewport's test-level budget.
+      test.setTimeout(120_000)
       await page.setViewportSize(viewport)
       await page.goto('/onboarding', { waitUntil: 'domcontentloaded' })
       await expect.poll(() => normalizedPathname(page.url())).toBe('/')
@@ -379,11 +375,13 @@ test.describe('Supporting route responsive and accessible runtime evidence', () 
       await dismiss.focus()
       await expect(dismiss).toBeFocused()
       await expectViewportContained(page, dismiss)
-      reports.push({ viewport, geometry, targets })
       await test.info().attach(`onboarding-${viewport.width}x${viewport.height}.png`, { body: await page.screenshot(), contentType: 'image/png' })
       await dismiss.press('Enter')
       await expect(guide).toHaveCount(0)
-    }
-    await test.info().attach('onboarding-small-viewport-report.json', { body: JSON.stringify(reports, null, 2), contentType: 'application/json' })
-  })
+      await test.info().attach(`onboarding-${viewport.width}x${viewport.height}-report.json`, {
+        body: JSON.stringify({ viewport, geometry, targets }, null, 2),
+        contentType: 'application/json',
+      })
+    })
+  }
 })
