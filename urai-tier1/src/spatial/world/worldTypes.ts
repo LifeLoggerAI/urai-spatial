@@ -19,7 +19,7 @@ export type UraiDestination = (typeof URAI_DESTINATIONS)[number]
 export type UraiWorldLayer = 'living-world' | 'transition' | 'infrastructure-world' | 'scenario-world'
 
 export type UraiPrivacyMode = 'private' | 'revealing' | 'held-private'
-export type UraiOriginRealm = 'home' | 'ground' | 'life-map' | 'focus' | 'replay' | 'passport' | 'mirror' | 'council' | 'life-movie' | 'possible-futures'
+export type UraiOriginRealm = 'home' | 'ground' | 'life-map' | 'focus' | 'replay' | 'passport' | 'mirror' | 'shadow' | 'council' | 'privacy-controls' | 'location-map' | 'life-movie' | 'possible-futures'
 export type UraiReconstructionFidelity = 'confirmed' | 'partial' | 'unknown'
 export type UraiTruthMode = 'reality' | 'memory' | 'interpretation' | 'scenario'
 
