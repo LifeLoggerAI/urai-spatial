@@ -227,7 +227,18 @@ function repairOrbAsset(config, pack) {
 
 
 const pack = readJson(PACK_PATH)
-const results = configs.map((config) => repairAsset(config, pack))
+const homeDecision = readJson('operations/assets/promotion-decisions/home-entry-chamber-v1.json')
+const activeConfigs = configs.filter((config) => {
+  if (config.label !== 'Home') return true
+  if (homeDecision.mode === 'promotion' && homeDecision.promote === true) {
+    const bytes = fs.readFileSync(config.glbPath)
+    const sha256 = crypto.createHash('sha256').update(bytes).digest('hex')
+    if (bytes.length !== homeDecision.bytes || sha256 !== homeDecision.sha256) fail('Home promoted production binary does not match active promotion authority')
+    return false
+  }
+  return true
+})
+const results = activeConfigs.map((config) => repairAsset(config, pack))
 results.push(repairOrbAsset(ORB_CONFIG, pack))
 if (results.some((result) => result.packChanged)) writeJson(PACK_PATH, pack)
 if (process.env.GITHUB_ACTIONS === 'true') {
