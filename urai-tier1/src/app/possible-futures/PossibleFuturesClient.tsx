@@ -5,7 +5,8 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import * as THREE from 'three'
 import { requestUraiWorldReturn } from '@/spatial/world/worldEvents'
-import { createPossibleFutureClient, requestPossibleFutureGenerationClient, submitManualScenarioBranchesClient } from '@/lib/scenario/scenarioClient'
+import { createPossibleFutureClient, getPossibleFutureClient, requestPossibleFutureGenerationClient, submitManualScenarioBranchesClient } from '@/lib/scenario/scenarioClient'
+import { ScenarioCouncilPanel } from '@/spatial/scenario/ScenarioCouncilPanel'
 
 const BRANCH_LABELS = ['Current path', 'Requested change', 'Alternative constraint'] as const
 type SetupState = 'question' | 'creating' | 'manual' | 'exploring' | 'error'
@@ -38,12 +39,40 @@ export default function PossibleFuturesClient() {
   const [branch,setBranch] = useState(Number.isInteger(requestedBranch)&&requestedBranch>=0&&requestedBranch<BRANCH_LABELS.length?requestedBranch:0)
   const existingScenarioId = params.get('scenario')
   const [scenarioId,setScenarioId] = useState(existingScenarioId ?? '')
+  const [branchIds,setBranchIds] = useState<string[]>([])
+  const [branchesLoaded,setBranchesLoaded] = useState(!existingScenarioId)
   const [basisRevision,setBasisRevision] = useState(Number(params.get('basisRevision') ?? 1))
   const [setup,setSetup] = useState<SetupState>(existingScenarioId?'exploring':'question')
   const [question,setQuestion] = useState('')
   const [manualSummaries,setManualSummaries] = useState(['','',''])
   const [message,setMessage] = useState(existingScenarioId?'This is a possibility, not a prediction.':'Ask a what-if question. No provider will be simulated if one is unavailable.')
   const horizon = params.get('horizon') ?? 'Exploratory horizon'
+
+  useEffect(() => {
+    if (!existingScenarioId) return
+    let active = true
+    setBranchesLoaded(false)
+    void getPossibleFutureClient(existingScenarioId).then((result) => {
+      if (!active) return
+      const ids = Array.isArray(result.branches)
+        ? result.branches.map((entry) => String(entry.id ?? '')).filter(Boolean).slice(0, BRANCH_LABELS.length)
+        : []
+      setBranchIds(ids)
+      setBranch((current) => Math.min(current, Math.max(0, ids.length - 1)))
+      const revision = Number(result.scenario?.basisRevision ?? result.basis?.revision ?? 1)
+      if (Number.isInteger(revision) && revision > 0) setBasisRevision(revision)
+      setBranchesLoaded(true)
+    }).catch(() => {
+      if (!active) return
+      setBranchesLoaded(true)
+      setMessage('This Scenario could not be reloaded. Its truth boundary remains closed.')
+    })
+    return () => { active = false }
+  }, [existingScenarioId])
+
+  const visibleBranchLabels = branchIds.length
+    ? BRANCH_LABELS.slice(0, branchIds.length)
+    : branchesLoaded ? [] : BRANCH_LABELS.slice(0, 1)
 
   const createScenario = async () => {
     if (!question.trim()) return
@@ -65,7 +94,7 @@ export default function PossibleFuturesClient() {
     const branches = manualSummaries.map((summary,index)=>({ label:BRANCH_LABELS[index], summary:summary.trim() })).filter((item)=>item.summary)
     if (!branches.length || !scenarioId) return
     setSetup('creating'); setMessage('Saving your Manual Scenario…')
-    try { await submitManualScenarioBranchesClient({ scenarioId, expectedRevision:basisRevision, branches }); setSetup('exploring'); setMessage('Manual Scenario loaded. These branches came from your assumptions, not an AI prediction.') }
+    try { const result = await submitManualScenarioBranchesClient({ scenarioId, expectedRevision:basisRevision, branches }); setBranchIds(result.branchIds); setBranch(0); setBranchesLoaded(true); setSetup('exploring'); setMessage('Manual Scenario loaded. These branches came from your assumptions, not an AI prediction.') }
     catch (error) { setSetup('error'); setMessage(error instanceof Error ? error.message : 'Manual Scenario failed safely.') }
   }
 
@@ -75,7 +104,8 @@ export default function PossibleFuturesClient() {
       <header style={{ maxWidth:620,pointerEvents:'auto',textShadow:'0 2px 18px #000' }}><p style={{ margin:0,letterSpacing:'.16em',fontSize:12,fontWeight:700 }}>POSSIBLE FUTURE · NOT A MEMORY</p><h1 style={{ margin:'8px 0 4px',fontSize:'clamp(24px,4vw,42px)',fontWeight:520 }}>Possible Futures</h1><p aria-live="polite" style={{ margin:0,opacity:.82 }}>{message}</p></header>
       {setup==='question'||setup==='creating'||setup==='error'?<div style={panelStyle}><label htmlFor="possible-future-question">What do you want to explore?</label><textarea id="possible-future-question" value={question} onChange={(e)=>setQuestion(e.target.value)} disabled={setup==='creating'} placeholder="What if I move?" style={{...inputStyle,minHeight:88,marginTop:8}} /><p style={{opacity:.72,fontSize:13}}>Direct arrival without evidence uses an explicit assumption-only basis. Nothing here becomes autobiographical memory.</p><button type="button" disabled={!question.trim()||setup==='creating'} onClick={createScenario} style={{...inputStyle,width:'auto',cursor:'pointer'}}>Create Possible Future</button></div>:null}
       {setup==='manual'?<div style={panelStyle}><strong>Manual Scenario</strong><p style={{opacity:.76}}>Provider generation is unavailable. Write one or more possible branches yourself.</p>{BRANCH_LABELS.map((label,index)=><label key={label} style={{display:'block',marginTop:10}}>{label}<textarea value={manualSummaries[index]} onChange={(e)=>setManualSummaries((current)=>current.map((value,i)=>i===index?e.target.value:value))} style={{...inputStyle,minHeight:64,marginTop:5}} /></label>)}<button type="button" onClick={submitManual} disabled={!manualSummaries.some((value)=>value.trim())} style={{...inputStyle,width:'auto',marginTop:12}}>Enter Manual Scenario</button></div>:null}
-      <footer style={{display:'flex',gap:10,flexWrap:'wrap',alignItems:'center',pointerEvents:'auto'}}><button type="button" onClick={requestUraiWorldReturn} style={{minHeight:48,padding:'0 18px',borderRadius:999,border:'1px solid rgba(255,255,255,.25)',background:'rgba(8,13,16,.78)',color:'inherit'}}>Return</button>{setup==='exploring'?<div role="group" aria-label="Scenario branches" style={{display:'flex',flexWrap:'wrap',maxWidth:'100%',gap:8,padding:6,borderRadius:18,background:'rgba(8,13,16,.78)',border:'1px solid rgba(255,255,255,.16)'}}>{BRANCH_LABELS.map((label,index)=><button key={label} type="button" aria-pressed={branch===index} onClick={()=>setBranch(index)} style={{minHeight:48,padding:'0 14px',borderRadius:999,border:branch===index?'1px solid rgba(238,244,242,.7)':'1px solid transparent',background:branch===index?'rgba(238,244,242,.12)':'transparent',color:'inherit'}}>{label}</button>)}</div>:null}<span style={{fontSize:12,opacity:.65}}>{scenarioId?`Scenario ${scenarioId.slice(0,18)}… · `:''}{horizon}</span></footer>
+      {setup==='exploring'&&scenarioId&&branchesLoaded?<ScenarioCouncilPanel scenarioId={scenarioId} branchId={branchIds[branch]} />:null}
+      <footer style={{display:'flex',gap:10,flexWrap:'wrap',alignItems:'center',pointerEvents:'auto'}}><button type="button" onClick={requestUraiWorldReturn} style={{minHeight:48,padding:'0 18px',borderRadius:999,border:'1px solid rgba(255,255,255,.25)',background:'rgba(8,13,16,.78)',color:'inherit'}}>Return</button>{setup==='exploring'&&visibleBranchLabels.length?<div role="group" aria-label="Scenario branches" style={{display:'flex',flexWrap:'wrap',maxWidth:'100%',gap:8,padding:6,borderRadius:18,background:'rgba(8,13,16,.78)',border:'1px solid rgba(255,255,255,.16)'}}>{visibleBranchLabels.map((label,index)=><button key={label} type="button" aria-pressed={branch===index} onClick={()=>setBranch(index)} style={{minHeight:48,padding:'0 14px',borderRadius:999,border:branch===index?'1px solid rgba(238,244,242,.7)':'1px solid transparent',background:branch===index?'rgba(238,244,242,.12)':'transparent',color:'inherit'}}>{label}</button>)}</div>:null}<span style={{fontSize:12,opacity:.65}}>{scenarioId?`Scenario ${scenarioId.slice(0,18)}… · `:''}{horizon}</span></footer>
     </section>
     <p className="sr-only">This surface represents hypothetical scenarios only. It is not Replay and must not be interpreted as autobiographical memory.</p>
   </main>
