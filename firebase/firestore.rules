@@ -171,6 +171,15 @@ service cloud.firestore {
         allow write: if false;
       }
 
+      match /scenarios/{scenarioId} {
+        allow read: if isSelf(uid) || isAdmin();
+        allow write: if false;
+      }
+      match /aiLedger/{entryId} {
+        allow read: if isSelf(uid) || isAdmin();
+        allow write: if false;
+      }
+
       match /lifeMovies/{movieId} {
         // Canonical private Life Movie manifests. Server-authoritative; owner-only reads.
         allow read: if isSelf(uid);
@@ -333,6 +342,13 @@ service cloud.firestore {
         allow delete: if isAdmin() || isSelf(uid);
       }
     }
+
+    match /scenarioProviderReceipts/{docId} { allow read, write: if false; }
+    match /globalEmotionalFieldIntake/{docId} { allow read, write: if false; }
+    match /globalEmotionalFieldBatches/{docId} { allow read, write: if false; }
+    match /globalEmotionalFieldCells/{docId} { allow read, write: if false; }
+    match /globalEmotionalFieldRiskAssessments/{docId} { allow read, write: if false; }
+    match /globalEmotionalFieldPublicationReceipts/{docId} { allow read, write: if false; }
 
     // Trusted queues and durable receipts are never client-readable or client-writable.
     match /privacyEnforcementJobs/{docId} { allow read, write: if false; }
