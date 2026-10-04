@@ -70,6 +70,7 @@ export {
   createPossibleFuture,
   generatePossibleFutureBranches,
   getPossibleFuture,
+  getPossibleFutureCouncilBundle,
   savePossibleFuture,
   discardPossibleFuture,
   comparePossibleFutureBranches,
