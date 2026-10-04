@@ -12,6 +12,7 @@ const contracts = {
   'home-entry-chamber-v1.glb': {
     minNodes: 150,
     maxTriangles: 180000,
+    governedProduction: true,
     nodes: ['home-sanctuary-root','sanctuary-terrain','mirror-basin-water','ground-alcove-root','life-map-alcove-root','horizon-threshold-root','embodied-presence-root','embodied-presence-cloak-back','embodied-presence-face-light','memory-place-anchor-1'],
     clips: ['Home_Breathing','Presence_Idle','Presence_Privacy','Presence_Forming'],
   },
@@ -83,10 +84,15 @@ for (const [fileName, contract] of Object.entries(contracts)) {
   if ((record.triangleCount || Infinity) > contract.maxTriangles) errors.push(`${fileName}: triangle budget exceeded`)
   for (const node of contract.nodes) if (!nodes.has(node)) errors.push(`${fileName}: missing node ${node}`)
   for (const clip of contract.clips) if (!clips.has(clip)) errors.push(`${fileName}: missing clip ${clip}`)
-  for (const extension of ['KHR_materials_emissive_strength','KHR_materials_transmission','KHR_materials_clearcoat']) {
-    if (!json.extensionsUsed?.includes(extension)) errors.push(`${fileName}: missing material extension ${extension}`)
+  if (contract.governedProduction) {
+    if (!json.extensionsUsed?.includes('EXT_meshopt_compression')) errors.push(`${fileName}: governed production binary must retain Meshopt compression`)
+    if (json.asset?.generator !== 'glTF-Transform v4.4.2') errors.push(`${fileName}: governed production generator identity mismatch`)
+  } else {
+    for (const extension of ['KHR_materials_emissive_strength','KHR_materials_transmission','KHR_materials_clearcoat']) {
+      if (!json.extensionsUsed?.includes(extension)) errors.push(`${fileName}: missing material extension ${extension}`)
+    }
+    if (json.asset?.generator !== 'URAI Labs Final GLB Forge 1.0') errors.push(`${fileName}: generator identity mismatch`)
   }
-  if (json.asset?.generator !== 'URAI Labs Final GLB Forge 1.0') errors.push(`${fileName}: generator identity mismatch`)
 }
 
 const report = {
