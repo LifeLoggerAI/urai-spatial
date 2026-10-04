@@ -246,7 +246,8 @@ function CouncilStage() {
   return (
     <div
       ref={shellRef}
-      className="relative min-h-screen overflow-hidden bg-[#10151a] text-white"
+      className="urai-spatial-realm-experience relative min-h-screen overflow-hidden bg-[#10151a] text-white"
+      data-spatial-realm="council"
       data-council-human-authority="human-makehuman-v4-preview"
       data-council-lighting-authority="physical-pbr-v1"
       data-council-embodied="true"
