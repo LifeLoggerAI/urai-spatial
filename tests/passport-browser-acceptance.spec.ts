@@ -31,7 +31,16 @@ test('desktop Ownership Vault exposes every zone and transition', async ({ page 
   await page.setViewportSize({ width: 1440, height: 1000 })
   await openDemo(page)
   for (const label of ['Identity core', 'Connected sources', 'Devices and sessions', 'Provenance archive', 'Permission history', 'Export chamber', 'Deletion chamber', 'Audit corridor', 'Recovery threshold']) {
-    await expect(page.getByRole('button', { name: label })).toBeVisible()
+    const zone = page.getByRole('button', { name: label })
+    await expect(zone).toBeVisible()
+    const hits = await zone.evaluate(element => {
+      const rect = element.getBoundingClientRect()
+      return [0.1, 0.5, 0.9].map(fraction => {
+        const hit = document.elementFromPoint(rect.left + rect.width * fraction, rect.top + rect.height / 2)
+        return Boolean(hit && (hit === element || element.contains(hit)))
+      })
+    })
+    expect(hits, `${label} must remain unobstructed by global overlays`).toEqual([true, true, true])
   }
   await page.getByRole('button', { name: 'Provenance archive' }).click()
   await expect(page.getByRole('heading', { name: 'Provenance archive' })).toBeVisible()

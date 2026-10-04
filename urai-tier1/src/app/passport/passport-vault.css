@@ -76,3 +76,8 @@
 }
 
 .passportFallbackNotice{max-width:62ch;margin:0 0 12px;padding:12px 14px;border:1px solid #ffffff24;border-radius:14px;background:#020409d6;color:#d9dde6;font-size:14px;line-height:1.5}
+
+/* The global launcher must not cover the fixed Ownership Vault zone rail. */
+body:has(.passportVault) [data-urai-adam-launcher]{top:max(8px,env(safe-area-inset-top));left:50%;right:auto;transform:translateX(-50%)}
+.passportHeader{padding-top:max(84px,calc(env(safe-area-inset-top,0px) + 76px))}
+.passportSkip{z-index:2000}
