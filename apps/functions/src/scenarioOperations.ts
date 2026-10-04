@@ -206,6 +206,42 @@ export const getPossibleFuture = functions.https.onCall(async (data, context) =>
   return { scenario: scenario.data(), basis: basis.exists ? basis.data() : null, branches: branches.docs.map((doc) => doc.data()) }
 })
 
+export const getPossibleFutureCouncilBundle = functions.https.onCall(async (data, context) => {
+  const ownerId = uid(context)
+  const scenarioId = ensureScenarioId(data?.scenarioId)
+  const ref = scenarioRef(ownerId, scenarioId)
+  const [scenarioSnap, basisSnap, branchesSnap] = await Promise.all([
+    ref.get(),
+    ref.collection('basis').doc('current').get(),
+    ref.collection('branches').limit(BRANCH_LIMIT).get(),
+  ])
+  if (!scenarioSnap.exists || !basisSnap.exists) throw new functions.https.HttpsError('not-found', 'Scenario not found.')
+  const scenario = scenarioSnap.data() ?? {}
+  const requestedBranchId = safeContextId(data?.branchId)
+  const activeBranchId = requestedBranchId || String(scenario.activeBranchId ?? '')
+  const branch = branchesSnap.docs.find((doc) => doc.id === activeBranchId) ?? branchesSnap.docs[0] ?? null
+  if (requestedBranchId && !branch) throw new functions.https.HttpsError('not-found', 'Scenario branch not found.')
+  const basis = basisSnap.data() ?? {}
+  const evidenceRefs = Array.isArray(basis.evidenceRefs) ? basis.evidenceRefs : []
+  const evidenceKinds = [...new Set(evidenceRefs.map((entry: unknown) =>
+    entry && typeof entry === 'object' ? String((entry as Record<string, unknown>).truthKind ?? 'unknown') : 'unknown'
+  ))].slice(0, 8)
+  const branchData = branch?.data() ?? {}
+  return {
+    scenarioId,
+    branchId: branch?.id ?? null,
+    truthKind: 'scenario',
+    question: String(scenario.question ?? '').slice(0, 1200),
+    branchLabel: String(branchData.label ?? 'Scenario branch').slice(0, 80),
+    branchSummary: String(branchData.summary ?? '').slice(0, 1600),
+    uncertainty: asStringArray(branchData.uncertainty, 16),
+    assumptionOnly: basis.assumptionOnly === true,
+    evidenceCount: evidenceRefs.length,
+    evidenceKinds,
+    disclosure: 'Possible Future only. Not a memory, prediction, consensus, or authority decision.',
+  }
+})
+
 export const savePossibleFuture = functions.https.onCall(async (data, context) => {
   const ownerId = uid(context); operationId(data?.operationId); const scenarioId = ensureScenarioId(data?.scenarioId)
   await scenarioRef(ownerId, scenarioId).set({ status: 'saved', updatedAt: fv.serverTimestamp() }, { merge: true })
