@@ -5,10 +5,9 @@ import { requestUraiWorldTravel } from '@/spatial/world/worldEvents'
 import { useUraiWorldState } from '@/spatial/world/WorldStateProvider'
 import type { UraiOriginRealm } from '@/spatial/world/worldTypes'
 
-const DIRECT_SCENARIO_ORIGINS = new Set<UraiOriginRealm>(['home','life-map','focus','replay','passport','mirror','council','possible-futures'])
+const DIRECT_SCENARIO_ORIGINS = new Set<UraiOriginRealm>(['home','life-map','focus','replay','passport','mirror','shadow','council','privacy-controls','location-map','life-movie','possible-futures'])
 
-function scenarioOriginFor(destination: string, inherited?: UraiOriginRealm): UraiOriginRealm {
-  if (inherited) return inherited
+function scenarioOriginFor(destination: string): UraiOriginRealm {
   if (destination === 'infrastructure-hub') return 'ground'
   if (DIRECT_SCENARIO_ORIGINS.has(destination as UraiOriginRealm)) return destination as UraiOriginRealm
   return 'home'
@@ -52,7 +51,7 @@ export function PossibleFuturesOrbEntry() {
         privacyMode: world.privacyMode,
         reconstructionFidelity: world.reconstructionFidelity,
         truthMode: 'scenario',
-        scenarioOrigin: scenarioOriginFor(world.destination, world.originRealm),
+        scenarioOrigin: scenarioOriginFor(world.destination),
         originRealm: world.originRealm,
         returnToken: world.returnToken,
       },
