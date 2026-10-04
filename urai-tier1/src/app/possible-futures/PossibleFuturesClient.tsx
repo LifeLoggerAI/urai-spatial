@@ -49,7 +49,11 @@ export default function PossibleFuturesClient() {
     if (!question.trim()) return
     setSetup('creating'); setMessage('Building a governed Scenario basis…')
     try {
-      const created = await createPossibleFutureClient({ question:question.trim(), originRealm:params.get('scenarioOrigin') ?? 'home', returnToken:`possible-futures-${Date.now()}`, worldRevision:'client-context-v1', evidenceRefs:[], assumptionOnly:true, timeHorizon:{ amount:1, unit:'month' } })
+      const created = await createPossibleFutureClient({ question:question.trim(), originRealm:params.get('scenarioOrigin') ?? 'home', returnToken:`possible-futures-${Date.now()}`, worldRevision:'client-context-v1', sourceContext:{
+        memoryId: params.get('memoryId') ?? undefined,
+        personId: params.get('personId') ?? undefined,
+        placeId: params.get('placeId') ?? undefined,
+      }, assumptionOnly:true, timeHorizon:{ amount:1, unit:'month' } })
       setScenarioId(created.scenarioId); setBasisRevision(created.basisRevision)
       const generation = await requestPossibleFutureGenerationClient({ scenarioId:created.scenarioId, expectedRevision:created.basisRevision })
       if (generation.status === 'provider-unavailable') { setSetup('manual'); setMessage('AI generation is unavailable. Enter your own branch assumptions; UrAi will render them without pretending a model generated them.') }
