@@ -44,6 +44,13 @@ const routes = [
     visualPrompt: 'Replay should feel like a cinematic memory-film space, not a static poster.',
   },
   {
+    name: 'possible-futures',
+    route: '/possible-futures',
+    markers: ['POSSIBLE FUTURE · NOT A MEMORY', 'Possible Futures', 'Ask a what-if question'],
+    staleMarkers: ['prediction guaranteed', 'this will happen'],
+    visualPrompt: 'Possible Futures must read as a clearly hypothetical, premium spatial scenario world with a strong not-memory truth marker, calm branch controls, and no dashboard or prediction theater.',
+  },
+  {
     name: 'mirror',
     route: '/mirror',
     markers: ['See the pattern clearly', 'Reflection stack', 'Mirror'],
