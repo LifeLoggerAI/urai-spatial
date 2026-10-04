@@ -15,6 +15,7 @@ const transitions=fs.readFileSync(new URL('../src/spatial/world/WorldTransitionC
 const privacyOps=fs.readFileSync(new URL('../../apps/functions/src/privacyOperations.ts',import.meta.url),'utf8')
 const consentSurface=fs.readFileSync(new URL('../src/app/privacy-controls/ConsentSanctuaryClient.tsx',import.meta.url),'utf8')
 const passportSurface=fs.readFileSync(new URL('../src/app/passport/PassportVaultClient.tsx',import.meta.url),'utf8')
+const scenarioCouncil=fs.readFileSync(new URL('../src/spatial/scenario/ScenarioCouncilPanel.tsx',import.meta.url),'utf8')
 
 test('possible futures is one canonical scenario-world destination and visibly not memory',()=>{assert.match(worldTypes,/'possible-futures'/);assert.match(worldTypes,/'scenario-world'/);assert.match(worldTypes,/UraiTruthMode = 'reality' \| 'memory' \| 'interpretation' \| 'scenario'/);assert.match(destinationRegistry,/href: '\/possible-futures'/);assert.match(route,/POSSIBLE FUTURE · NOT A MEMORY/);assert.doesNotMatch(route,/\/dream/)})
 test('truth authority rejects factual high confidence without sources and scenario promotion to observation',()=>{const errors=validateTruthRecord({id:'t1',ownerId:'u1',kind:'observation',value:'x',sourceRefs:[],support:'high',userCorrectionRevision:0,createdAt:'2026-09-16T00:00:00Z',updatedAt:'2026-09-16T00:00:00Z'});assert.ok(errors.includes('HIGH_SUPPORT_REQUIRES_SOURCE'));assert.throws(()=>assertRealityIsolation('scenario','observation'),/TRUTH_PROMOTION_FORBIDDEN/)})
@@ -52,4 +53,15 @@ test('Possible Futures and AI ledger participate in explicit owner export and de
   assert.match(consentSurface,/EXPORT_SCOPES[^\n]*'life-model'[^\n]*'intelligence'/)
   assert.match(consentSurface,/Possible Futures and AI activity ledger/)
   assert.match(passportSurface,/Possible Futures and AI activity ledger/)
+})
+
+test('Possible Futures Council lens requires explicit consent and preserves hypothetical advisory truth',()=>{
+  assert.match(route,/ScenarioCouncilPanel/)
+  assert.match(route,/branchLabels/)
+  assert.match(scenarioCouncil,/Allow the selected provider to process this Scenario question/)
+  assert.match(scenarioCouncil,/Raw memory evidence is not sent by this surface/)
+  assert.match(scenarioCouncil,/requestCouncilProvider/)
+  assert.match(scenarioCouncil,/aiProcessingConsent: true/)
+  assert.match(scenarioCouncil,/Do not claim this Scenario is memory, prediction, fact, consensus, or an authority decision/)
+  assert.match(scenarioCouncil,/No provider answer is being substituted/)
 })
