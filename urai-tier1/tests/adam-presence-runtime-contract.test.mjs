@@ -33,7 +33,11 @@ test('Adam is one governed runtime mounted at the product shell', () => {
   assert.match(runtime, /searchParams\.get\('surface'\)/)
   assert.match(surfaces, /CROSS_PROPERTY_SURFACES/)
   assert.match(surfaces, /pathname === '\/adam' && requestedSurface/)
-  assert.doesNotMatch(surfaces, /SURFACES\[requestedSurface as AdamSurfaceId\](?![\s\S]*CROSS_PROPERTY_SURFACES)/)
+  assert.ok(
+    surfaces.indexOf('CROSS_PROPERTY_SURFACES.has(requestedSurface as AdamSurfaceId)') <
+      surfaces.indexOf('return SURFACES[requestedSurface as AdamSurfaceId]'),
+    'cross-property allowlist guard must execute before surface lookup',
+  )
   assert.match(adamRoute, /data-urai-adam-route="canonical"/)
   assert.match(runtime, /pathname === '\/adam'/)
 })
