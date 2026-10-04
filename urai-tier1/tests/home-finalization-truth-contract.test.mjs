@@ -73,7 +73,7 @@ test('all eight final GLB assets are selected while degraded fallbacks remain av
   assert.match(manifest, /Rendered visual acceptance remains an exact-head review gate/)
 })
 
-test('the immutable author and verifier retain all eight receipt-bound GLBs', () => {
+test('the immutable author and verifier retain all eight governed GLBs', () => {
   const budgets = {
     'home-entry-chamber-v1.glb': 180000,
     'portal-ring-master-v1.glb': 24000,
@@ -85,22 +85,35 @@ test('the immutable author and verifier retain all eight receipt-bound GLBs', ()
     'passport-status-room-v1.glb': 50000,
   }
   const receipt = JSON.parse(read('../operations/assets/generated-receipts/urai-final-glb-pack-v1.json'))
+  const homeDecision = JSON.parse(read('../operations/assets/promotion-decisions/home-entry-chamber-v1.json'))
   assert.equal(receipt.packId, 'urai-final-glb-production-pack-v1')
   assert.equal(receipt.assets.length, 8)
   assert.deepEqual(receipt.assets.map((asset) => asset.fileName).sort(), Object.keys(budgets).sort())
   for (const record of receipt.assets) {
     has(verifier, record.fileName)
     const payload = fs.readFileSync(`public/assets/urai/generated/models/${record.fileName}`)
-    assert.equal(payload.length, record.bytes)
-    assert.equal(createHash('sha256').update(payload).digest('hex'), record.sha256)
+    const expected = record.fileName === 'home-entry-chamber-v1.glb'
+      ? { ...record, bytes: homeDecision.bytes, sha256: homeDecision.sha256 }
+      : record
+    assert.equal(payload.length, expected.bytes)
+    assert.equal(createHash('sha256').update(payload).digest('hex'), expected.sha256)
     assert.equal(payload.readUInt32LE(0), 0x46546c67)
     assert.equal(payload.readUInt32LE(4), 2)
     assert.equal(payload.readUInt32LE(8), payload.length)
     assert.equal(payload.readUInt32LE(16), 0x4e4f534a)
     const json = JSON.parse(payload.subarray(20, 20 + payload.readUInt32LE(12)).toString('utf8').trim())
-    assert.equal(json.asset.generator, 'URAI Labs Final GLB Forge 1.0')
-    for (const extension of ['KHR_materials_emissive_strength', 'KHR_materials_transmission', 'KHR_materials_clearcoat']) {
-      assert.ok(json.extensionsUsed.includes(extension), `${record.fileName} is missing ${extension}`)
+    if (record.fileName === 'home-entry-chamber-v1.glb') {
+      assert.equal(homeDecision.mode, 'promotion')
+      assert.equal(homeDecision.promote, true)
+      assert.equal(homeDecision.humanReviewApproved, true)
+      assert.equal(homeDecision.visualProofVerified, true)
+      assert.equal(json.asset.generator, 'glTF-Transform v4.4.2')
+      assert.ok(json.extensionsUsed.includes('EXT_meshopt_compression'))
+    } else {
+      assert.equal(json.asset.generator, 'URAI Labs Final GLB Forge 1.0')
+      for (const extension of ['KHR_materials_emissive_strength', 'KHR_materials_transmission', 'KHR_materials_clearcoat']) {
+        assert.ok(json.extensionsUsed.includes(extension), `${record.fileName} is missing ${extension}`)
+      }
     }
     assert.equal(json.nodes.length, record.nodes)
     assert.deepEqual(json.animations.map((clip) => clip.name).sort(), [...record.animations].sort())
