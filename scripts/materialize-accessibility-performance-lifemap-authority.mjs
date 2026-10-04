@@ -10,7 +10,7 @@ const proofPath = 'urai-tier1/tests/accessibility-performance-lifemap-independen
 // Re-reviewed on Spatial #1567 after the bounded two-viewport onboarding proof
 // envelope changed from 120s to 300s; no product assertion was removed or weakened.
 // The tamper test still rejects weaker manifest assertions or unknown proof bytes.
-const auditedCurrentSha256 = '38fb80e7d4a6b63b6fb405ced63701733d55b39532b28e7d09826b802eaac3b8'
+const auditedCurrentSha256 = 'd94e3bb6d4f9745d0e9f0ca6170816cd04629fa7d903c9f5889f5d341f915cc8'
 
 export async function preserveAuditedLifeMapProof() {
   const source = await readFile(proofPath)
