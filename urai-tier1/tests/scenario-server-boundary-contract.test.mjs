@@ -44,3 +44,15 @@ test('Scenario receipts and Global Emotional Field working collections are serve
 test('callables are exported through canonical Functions index', () => {
   for (const name of ['createPossibleFuture','generatePossibleFutureBranches','getPossibleFuture','recordPossibleFutureOutcome','calibratePossibleFutureOutcome','getGlobalEmotionalFieldSnapshot']) assert.match(index, new RegExp(name))
 })
+
+test('Scenario evidence basis is resolved by trusted owner authority, never authored by the client', () => {
+  assert.match(ops, /CLIENT_SCENARIO_EVIDENCE_REFS_FORBIDDEN/)
+  assert.match(ops, /CLIENT_SCENARIO_PERMISSION_RECEIPTS_FORBIDDEN/)
+  assert.match(ops, /resolveAuthorizedScenarioEvidence/)
+  assert.match(ops, /privacyPolicy\/current/)
+  assert.match(ops, /enforcement\.state !== 'fully-enforced'/)
+  assert.match(ops, /memoryPolicy\.modelContext === true/)
+  assert.match(ops, /modelPolicy\.modelContext === true/)
+  assert.match(ops, /users\/\$\{ownerId\}\/memories\/\$\{memoryId\}/)
+  assert.match(ops, /users\/\$\{ownerId\}\/lifeEntities\/\$\{entityId\}/)
+})
