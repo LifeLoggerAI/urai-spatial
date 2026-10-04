@@ -11,13 +11,17 @@ export const URAI_DESTINATIONS = [
   'focus',
   'replay',
   'life-movie',
+  'possible-futures',
 ] as const
 
 export type UraiDestination = (typeof URAI_DESTINATIONS)[number]
 
-export type UraiWorldLayer = 'living-world' | 'transition' | 'infrastructure-world'
+export type UraiWorldLayer = 'living-world' | 'transition' | 'infrastructure-world' | 'scenario-world'
 
 export type UraiPrivacyMode = 'private' | 'revealing' | 'held-private'
+export type UraiOriginRealm = 'home' | 'ground' | 'life-map' | 'focus' | 'replay' | 'passport' | 'mirror' | 'council' | 'life-movie' | 'possible-futures'
+export type UraiReconstructionFidelity = 'confirmed' | 'partial' | 'unknown'
+export type UraiTruthMode = 'reality' | 'memory' | 'interpretation' | 'scenario'
 
 export type UraiWorldState = {
   destination: UraiDestination
@@ -29,10 +33,19 @@ export type UraiWorldState = {
   threadId?: string
   personId?: string
   placeId?: string
+  eraId?: string
   replayManifestId?: string
   movieId?: string
   chapterId?: string
   privacyMode?: UraiPrivacyMode
+  originRealm?: UraiOriginRealm
+  returnToken?: string
+  reconstructionFidelity?: UraiReconstructionFidelity
+  scenarioId?: string
+  scenarioBranchId?: string
+  scenarioBasisRevision?: number
+  truthMode?: UraiTruthMode
+  scenarioOrigin?: UraiOriginRealm
   demo?: boolean
 }
 
@@ -45,10 +58,19 @@ export type UraiWorldContextPatch = Partial<
     | 'threadId'
     | 'personId'
     | 'placeId'
+    | 'eraId'
     | 'replayManifestId'
     | 'movieId'
     | 'chapterId'
     | 'privacyMode'
+    | 'originRealm'
+    | 'returnToken'
+    | 'reconstructionFidelity'
+    | 'scenarioId'
+    | 'scenarioBranchId'
+    | 'scenarioBasisRevision'
+    | 'truthMode'
+    | 'scenarioOrigin'
     | 'demo'
   >
 >
@@ -65,4 +87,5 @@ export const INITIAL_URAI_WORLD_STATE: UraiWorldState = {
   destination: 'home',
   layer: 'living-world',
   privacyMode: 'private',
+  truthMode: 'reality',
 }
