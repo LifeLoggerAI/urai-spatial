@@ -18,9 +18,12 @@ export function createPossibleFutureClient(payload: {
   originRealm: string
   returnToken: string
   cameraCheckpoint?: string
-  evidenceRefs?: readonly Record<string, unknown>[]
+  sourceContext?: {
+    memoryId?: string
+    personId?: string
+    placeId?: string
+  }
   excludedEvidence?: readonly Record<string, unknown>[]
-  permissionReceiptIds?: readonly string[]
   worldRevision?: string
   timeHorizon?: { amount: number; unit: 'day' | 'week' | 'month' | 'year' }
   assumptionOnly?: boolean
