@@ -402,7 +402,7 @@ export default function ConsentSanctuaryClient() {
       <a className="consentSkip" href="#consent-controls">Skip to direct controls</a>
       <div className="consentWorld" aria-hidden="true">
         {webglAvailable ? <Suspense fallback={null}><SanctuaryWorld policy={policy} selectedDomain={selectedDomain} onSelect={setSelectedDomain} reducedMotion={reducedMotion} /></Suspense> : (
-          <div className="consentWorldFallback"><strong>Consent Sanctuary</strong><span>Semantic controls remain fully available without WebGL.</span></div>
+          <div className="consentWorldFallback" />
         )}
       </div>
       <header className="consentHeader">
@@ -410,6 +410,7 @@ export default function ConsentSanctuaryClient() {
         <h1>Choose what the world may hold.</h1>
         <div className="consentStatus" role="status" aria-live="polite">{message}</div>
         {loadState === 'demo' && <span className="consentDisclosure">DEMONSTRATION — no personal data</span>}
+        {!webglAvailable && <div className="consentFallbackNotice" role="note">Semantic controls remain fully available without WebGL.</div>}
       </header>
 
       <nav className="consentRealmNav" aria-label="Consent domains">
