@@ -121,9 +121,19 @@ export const URAI_DESTINATION_REGISTRY: Record<UraiDestination, UraiDestinationD
     cameraCheckpoint: 'life-movie-arrival',
     environmentalForm: 'cinematic-memory-continuum',
   },
+  'possible-futures': {
+    id: 'possible-futures',
+    label: 'Possible Futures',
+    href: '/possible-futures',
+    layer: 'scenario-world',
+    entryPortal: 'scenario-threshold',
+    cameraCheckpoint: 'possible-futures-arrival',
+    environmentalForm: 'grounded-counterfactual-world',
+  },
 }
 
 const PATH_DESTINATIONS: readonly [string, UraiDestination][] = [
+  ['/possible-futures', 'possible-futures'],
   ['/privacy-controls', 'privacy-controls'],
   ['/location-map', 'location-map'],
   ['/infrastructure', 'infrastructure-hub'],
