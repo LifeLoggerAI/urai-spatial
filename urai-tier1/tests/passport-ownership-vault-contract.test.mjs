@@ -36,6 +36,8 @@ test('Ownership Vault is spatial and directly accessible without WebGL', () => {
   assert.match(client, /event\.key === 'Escape'/)
   assert.match(client, /aria-live="polite"/)
   assert.match(client, /DEMONSTRATION — sample data only/)
+  assert.match(client, /useState<SnapshotPayload>\(\{\}\)/)
+  assert.doesNotMatch(client, /useState<SnapshotPayload>\(\(\) => toDemoPayload\(\)\)/)
   assert.match(css, /min-height:48px/)
   assert.match(css, /prefers-reduced-motion/)
   assert.match(css, /forced-colors/)
