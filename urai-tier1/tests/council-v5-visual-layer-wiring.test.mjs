@@ -8,6 +8,8 @@ test('canonical Council route retains promoted v5 visual-layer selectors', () =>
 
   assert.match(council, /className="urai-spatial-realm-experience\b/)
   assert.match(council, /data-spatial-realm="council"/)
+  assert.match(council, /alpha: true/)
+  assert.doesNotMatch(council, /<color attach="background"/)
   assert.match(wiring, /\.urai-spatial-realm-experience\[data-spatial-realm='council'\]/)
   assert.match(wiring, /\/assets\/urai\/v5\/council-chamber\.webp/)
   assert.match(wiring, /\/assets\/urai\/v5\/world-council\.webp/)
