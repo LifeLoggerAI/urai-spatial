@@ -229,6 +229,52 @@ fields:
     auditRequired: true
     implementationStatus: implementation_started_synthetic_firewall
 
+
+  - name: possible_future_scenario
+    collectionOrTable: users/{uid}/scenarios
+    source: user_and_system
+    dataClass: L5
+    purpose: scenario.explore with explicit separation from autobiographical reality
+    consentTier: C1_plus_source_specific_authority
+    retentionClass: R3
+    exportable: true
+    deletable: true
+    monetizable: false
+    aiTrainingAllowed: false
+    adminAccessible: false
+    auditRequired: true
+    implementationStatus: source_implemented_provider_hard_off
+
+  - name: possible_future_scenario_branch
+    collectionOrTable: users/{uid}/scenarios/{scenarioId}/branches
+    source: user_manual_or_future_governed_provider
+    dataClass: L5
+    purpose: bounded counterfactual branch exploration with assumptions uncertainty and evidence references
+    consentTier: C1_plus_source_specific_authority
+    retentionClass: R3
+    exportable: true
+    deletable: true
+    monetizable: false
+    aiTrainingAllowed: false
+    adminAccessible: false
+    auditRequired: true
+    implementationStatus: manual_path_implemented_provider_hard_off
+
+  - name: ai_activity_ledger
+    collectionOrTable: users/{uid}/aiLedger
+    source: system
+    dataClass: L5
+    purpose: intelligence.audit-and-explain without hidden chain-of-thought
+    consentTier: operational_plus_referenced_source_authority
+    retentionClass: R1
+    exportable: true
+    deletable: true
+    monetizable: false
+    aiTrainingAllowed: false
+    adminAccessible: false
+    auditRequired: true
+    implementationStatus: source_implemented
+
 processors:
   - name: Firebase Authentication
     role: authentication
@@ -246,6 +292,10 @@ processors:
     role: frontend_hosting
     status: complete_per_repo_audit
     reviewStatus: needs_privacy_review
+  - name: Scenario Provider
+    role: possible_futures_generation
+    status: not_activated
+    reviewStatus: exact_model_version_release_eval_and_provider_admission_required
 
 review:
   status: blocked_until_reviewed
