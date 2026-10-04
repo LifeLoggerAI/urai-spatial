@@ -39,6 +39,8 @@ const DELETION_SCOPES = [
   ['privacy-history', 'Privacy history', 'CONFIRM DELETE'],
   ['memories', 'Memories and replay records', 'CONFIRM DELETE'],
   ['spatial-state', 'Spatial state', 'CONFIRM DELETE'],
+  ['life-model', 'Life causal graph and person/world model', 'CONFIRM DELETE'],
+  ['intelligence', 'Possible Futures and AI activity ledger', 'CONFIRM DELETE'],
   ['all-repository-data', 'All repository-controlled UrAi data', 'DELETE MY URAI DATA'],
   ['account', 'Entire account after a grace period', 'DELETE MY URAI ACCOUNT'],
 ] as const
