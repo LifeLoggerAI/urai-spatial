@@ -505,6 +505,28 @@ async function collectionDocuments(ref: FirebaseFirestore.CollectionReference) {
   return snapshot.docs.map((item) => ({ id: item.id, ...redactSecrets(item.data()) as JsonMap }))
 }
 
+async function boundedCollectionDocuments(ref: FirebaseFirestore.CollectionReference, label: string) {
+  const snapshot = await ref.limit(MAX_EXPORT_DOCUMENTS_PER_COLLECTION + 1).get()
+  if (snapshot.size > MAX_EXPORT_DOCUMENTS_PER_COLLECTION) {
+    throw new Error(`EXPORT_COLLECTION_LIMIT_EXCEEDED:${label}`)
+  }
+  return snapshot.docs.map((item) => ({ id: item.id, ...redactSecrets(item.data()) as JsonMap }))
+}
+
+async function scenarioExportTree(userRef: FirebaseFirestore.DocumentReference) {
+  const scenarios = await userRef.collection('scenarios').limit(101).get()
+  if (scenarios.size > 100) throw new Error('SCENARIO_EXPORT_LIMIT_EXCEEDED')
+  return Promise.all(scenarios.docs.map(async (scenario) => ({
+    id: scenario.id,
+    ...redactSecrets(scenario.data()) as JsonMap,
+    basis: await boundedCollectionDocuments(scenario.ref.collection('basis'), `scenarios/${scenario.id}/basis`),
+    branches: await boundedCollectionDocuments(scenario.ref.collection('branches'), `scenarios/${scenario.id}/branches`),
+    comparisons: await boundedCollectionDocuments(scenario.ref.collection('comparisons'), `scenarios/${scenario.id}/comparisons`),
+    outcomeObservations: await boundedCollectionDocuments(scenario.ref.collection('outcomeObservations'), `scenarios/${scenario.id}/outcomeObservations`),
+    calibration: await boundedCollectionDocuments(scenario.ref.collection('calibration'), `scenarios/${scenario.id}/calibration`),
+  })))
+}
+
 type CapturedRealityRuntimeExport = {
   assetId: string
   objectPath: string
@@ -669,7 +691,7 @@ async function buildExport(snapshot: FirebaseFirestore.DocumentSnapshot) {
       data.lifeModelReceipts = await collectionDocuments(userRef.collection('lifeModelReceipts'))
     }
     if (scopes.includes('intelligence')) {
-      data.scenarios = await collectionDocuments(userRef.collection('scenarios'))
+      data.scenarios = await scenarioExportTree(userRef)
       data.aiLedger = await collectionDocuments(userRef.collection('aiLedger'))
     }
     if (scopes.includes('spatial')) {
