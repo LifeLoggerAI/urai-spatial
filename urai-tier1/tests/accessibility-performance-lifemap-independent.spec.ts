@@ -358,10 +358,11 @@ test.describe('Supporting route responsive and accessible runtime evidence', () 
     // This acceptance test intentionally exercises two complete viewport passes,
     // including geometry/48px audits and retained screenshots before keyboard
     // dismissal. The prior 90s suite ceiling expired at the second Enter press
-    // after all preceding assertions had passed; 120s matches the existing
-    // multi-viewport accessibility evidence envelope without weakening a single
-    // product assertion or per-action timeout.
-    test.setTimeout(120_000)
+    // after all preceding assertions had passed. The two full viewport passes
+    // can each consume roughly two minutes under CI compositor pressure, so use
+    // a bounded 300s envelope without weakening any product assertion or
+    // per-action timeout.
+    test.setTimeout(300_000)
     const reports = []
     for (const viewport of [{ width: 320, height: 568 }, { width: 568, height: 320 }]) {
       await page.setViewportSize(viewport)
