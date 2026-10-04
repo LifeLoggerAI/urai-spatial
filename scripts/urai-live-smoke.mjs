@@ -108,7 +108,7 @@ const normalizePath = (pathname) => {
 
 const loadSameOriginScriptBodies = async (html, pageUrl) => {
   const page = new URL(pageUrl)
-  const sources = [...html.matchAll(/<script\\b[^>]*\\bsrc=(['"])([^'"]+)\\1/gi)].map((match) => match[2])
+  const sources = [...html.matchAll(/<script\b[^>]*\bsrc=(['"])([^'"]+)\1/gi)].map((match) => match[2])
   const bodies = []
 
   for (const source of new Set(sources)) {
