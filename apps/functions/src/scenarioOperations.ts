@@ -9,7 +9,7 @@ const fv = admin.firestore.FieldValue
 
 const BRANCH_LIMIT = 3
 const SCENARIO_PURPOSE = 'scenario.explore'
-const ALLOWED_ORIGINS = new Set(['home','ground','life-map','focus','replay','passport','mirror','council','possible-futures'])
+const ALLOWED_ORIGINS = new Set(['home','ground','life-map','focus','replay','passport','mirror','shadow','council','privacy-controls','location-map','life-movie','possible-futures'])
 
 function uid(context: functions.https.CallableContext) {
   const value = context.auth?.uid
