@@ -1,5 +1,6 @@
 'use client'
 
+import { useReducedMotion } from '@/hooks/useReducedMotion'
 import { Canvas } from '@react-three/fiber'
 import { Float, Html, OrbitControls, RoundedBox } from '@react-three/drei'
 import { getAuth, onAuthStateChanged, type User } from 'firebase/auth'
@@ -63,19 +64,20 @@ function consentColor(mode: ConsentMode) {
   return '#657080'
 }
 
-function Chamber({ domain, policy, index, selected, onSelect }: {
+function Chamber({ domain, policy, index, selected, onSelect, reducedMotion }: {
   domain: ConsentDomain
   policy: ConsentDomainPolicy
   index: number
   selected: boolean
   onSelect: (domain: ConsentDomain) => void
+  reducedMotion: boolean
 }) {
   const angle = (index / DOMAIN_ORDER.length) * Math.PI * 2
   const radius = 5.2
   const color = consentColor(policy.mode)
   return (
     <group position={[Math.cos(angle) * radius, 0.2, Math.sin(angle) * radius]} rotation={[0, -angle + Math.PI / 2, 0]}>
-      <Float speed={policy.mode === 'paused' ? 0.2 : 0.65} rotationIntensity={0.05} floatIntensity={0.1}>
+      <Float speed={reducedMotion ? 0 : policy.mode === 'paused' ? 0.2 : 0.65} rotationIntensity={reducedMotion ? 0 : 0.05} floatIntensity={reducedMotion ? 0 : 0.1}>
         <RoundedBox
           args={[2.4, 2.5, 0.7]}
           radius={0.18}
@@ -129,7 +131,7 @@ function SanctuaryWorld({ policy, selectedDomain, onSelect, reducedMotion }: {
         <meshBasicMaterial color={interrupted ? '#8b392c' : '#163c47'} transparent opacity={0.24} />
       </mesh>
       {DOMAIN_ORDER.map((domain, index) => (
-        <Chamber key={domain} domain={domain} policy={policy.domains[domain]} index={index} selected={domain === selectedDomain} onSelect={onSelect} />
+        <Chamber key={domain} domain={domain} policy={policy.domains[domain]} index={index} selected={domain === selectedDomain} onSelect={onSelect} reducedMotion={reducedMotion} />
       ))}
       <group position={[0, 0.35, 0]}>
         <Float speed={reducedMotion ? 0 : 0.9} rotationIntensity={reducedMotion ? 0 : 0.25} floatIntensity={reducedMotion ? 0 : 0.3}>
@@ -212,7 +214,7 @@ export default function ConsentSanctuaryClient() {
   const [deletionConfirmation, setDeletionConfirmation] = useState('')
   const [operationBusy, setOperationBusy] = useState(false)
   const confirmRef = useRef<HTMLButtonElement>(null)
-  const reducedMotion = typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  const reducedMotion = useReducedMotion()
 
   useEffect(() => {
     const online = () => { setLoadState((state) => state === 'offline' ? 'loading' : state); setMessage('Connection restored. Rechecking server authority…') }

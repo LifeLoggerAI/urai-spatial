@@ -1,5 +1,6 @@
 "use client"
 
+import { useReducedMotion } from '@/hooks/useReducedMotion'
 import { Canvas } from '@react-three/fiber'
 import { Float, OrbitControls, RoundedBox } from '@react-three/drei'
 import { getAuth, onAuthStateChanged, type User } from 'firebase/auth'
@@ -137,7 +138,7 @@ export default function PassportVaultClient() {
   const [deletionScope, setDeletionScope] = useState('memories')
   const [confirmation, setConfirmation] = useState('')
   const [busy, setBusy] = useState(false)
-  const reducedMotion = typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  const reducedMotion = useReducedMotion()
 
   useEffect(() => {
     try {
