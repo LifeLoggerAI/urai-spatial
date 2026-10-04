@@ -30,3 +30,9 @@ test('scenario travel preserves origin and cannot leak scenario truth into reali
   assert.match(worldState,/: 'reality'/)
   assert.match(worldState,/scenarioId: action\.destination === 'possible-futures'.*: undefined/)
 })
+
+test('Possible Futures controls preserve 48px targets and reduced-motion parity',()=>{
+  assert.match(route,/minHeight:48/)
+  assert.match(route,/prefers-reduced-motion: reduce/)
+  assert.match(route,/reducedMotion \? 0/)
+})
