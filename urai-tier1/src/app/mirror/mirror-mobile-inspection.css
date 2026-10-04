@@ -3,10 +3,18 @@ body:has(.mirrorWorld .mirrorInspection) .urai-movement-help {
   pointer-events: none !important;
 }
 
+/* The desktop inspector occupies the right edge. Keep global help outside it. */
+body:has(.mirrorWorld .mirrorInspection) [data-urai-adam-launcher] {
+  left: max(18px, env(safe-area-inset-left));
+  right: auto;
+}
+
 @media (max-width: 760px) {
   /* Keep the global Founder launcher available in the reserved top strip.
      Its default viewport-center position covers the inspector's controls. */
   body:has(.mirrorWorld .mirrorInspection) [data-urai-adam-launcher] {
+    left: auto;
+    right: max(8px, env(safe-area-inset-right));
     top: max(8px, env(safe-area-inset-top));
     transform: none;
   }

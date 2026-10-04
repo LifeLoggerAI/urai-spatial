@@ -168,6 +168,14 @@ async function proveOverview(browser, deviceName) {
     await page.waitForFunction(() => document.querySelector('[data-testid="mirror-spatial-world"]')?.getAttribute('data-selected-pattern') === 'body-rhythm')
     const inspector = page.locator('aside[aria-label="Body rhythm evidence"]')
     await inspector.waitFor({ state: 'visible' })
+    const launcher = page.locator('[data-urai-adam-launcher]')
+    await launcher.waitFor({ state: 'visible' })
+    const launcherClear = await launcher.evaluate((element) => {
+      const a = element.getBoundingClientRect()
+      const b = document.querySelector('.mirrorInspection').getBoundingClientRect()
+      return a.left >= 0 && a.top >= 0 && a.right <= innerWidth && a.bottom <= innerHeight && !(a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top)
+    })
+    if (!launcherClear) throw new Error('Founder launcher overlaps the evidence inspector or leaves the viewport')
     if (deviceName === 'mobile') {
       const geometry = await inspector.evaluate((element) => ({ clientHeight: element.clientHeight, scrollHeight: element.scrollHeight }))
       if (geometry.scrollHeight <= geometry.clientHeight) throw new Error(`mobile inspector is not scrollable: ${geometry.clientHeight}/${geometry.scrollHeight}`)
@@ -230,9 +238,28 @@ async function proveTransition(browser, destination, buttonName) {
     await waitForWorld(page, `/mirror?${demoQuery}&pattern=body-rhythm`)
     await page.getByRole('button', { name: buttonName, exact: true }).click()
     await page.waitForURL((url) => pathname(url.toString()) === `/${destination}`, { timeout: 30000 })
+    if (destination === 'replay') {
+      const replay = page.getByTestId('cinematic-replay-client')
+      await replay.waitFor({ state: 'visible' })
+      await page.waitForFunction(() => {
+        const replay = document.querySelector('[data-testid="cinematic-replay-client"]')
+        return replay?.getAttribute('data-replay-media-ready') === 'true' && replay.getAttribute('data-replay-media-status') === 'ready'
+      }, null, { timeout: 45000 })
+      const before = Number(await replay.getAttribute('data-current-time-ms'))
+      await page.getByRole('button', { name: 'Continue memory', exact: true }).click()
+      await page.waitForFunction(before => Number(document.querySelector('[data-testid="cinematic-replay-client"]')?.getAttribute('data-current-time-ms')) > before + 100, before, { timeout: 15000 })
+      await page.getByRole('button', { name: 'Pause memory', exact: true }).click()
+      if (await replay.getAttribute('data-playing') !== 'false') throw new Error('Replay did not pause after real playback')
+    } else if (destination === 'passport') {
+      await page.locator('[data-route-owner="passport-ownership-vault"]').waitFor({ state: 'visible' })
+      await page.waitForFunction(() => {
+        const state = document.querySelector('[data-route-owner="passport-ownership-vault"]')?.getAttribute('data-passport-source')
+        return state && state !== 'loading'
+      }, null, { timeout: 30000 })
+    }
     const shot = await screenshot(page, `desktop-${name}`)
     const unattributedConsoleErrors = assertCleanEvidence(consoleErrors, failedRequests, httpErrors)
-    pushCase(name, 'desktop', 'passed', { screenshot: shot, finalUrl: page.url(), ...diagnostics(consoleErrors, failedRequests, httpErrors, unattributedConsoleErrors) })
+    pushCase(name, 'desktop', 'passed', { screenshot: shot, destinationSettled: true, replayPlaybackAndPauseVerified: destination === 'replay', personalizedRuntimeVerified: false, finalUrl: page.url(), ...diagnostics(consoleErrors, failedRequests, httpErrors, unattributedConsoleErrors) })
   } catch (error) {
     const shot = await screenshot(page, `desktop-${name}-failure`).catch(() => '')
     pushCase(name, 'desktop', 'failed', { screenshot: shot, error: String(error?.message || error), finalUrl: page.url(), ...diagnostics(consoleErrors, failedRequests, httpErrors) })
