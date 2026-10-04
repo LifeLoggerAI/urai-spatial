@@ -49,3 +49,19 @@ export function getPossibleFutureClient(scenarioId: string) {
 
 export function savePossibleFutureClient(scenarioId: string) { return call('savePossibleFuture', { scenarioId, operationId: op('scenario-save') }) }
 export function discardPossibleFutureClient(scenarioId: string) { return call('discardPossibleFuture', { scenarioId, operationId: op('scenario-discard') }) }
+
+export function getPossibleFutureCouncilBundleClient(scenarioId: string, branchId?: string) {
+  return call<{
+    scenarioId: string
+    branchId: string | null
+    truthKind: 'scenario'
+    question: string
+    branchLabel: string
+    branchSummary: string
+    uncertainty: string[]
+    assumptionOnly: boolean
+    evidenceCount: number
+    evidenceKinds: string[]
+    disclosure: string
+  }>('getPossibleFutureCouncilBundle', { scenarioId, ...(branchId ? { branchId } : {}) })
+}
