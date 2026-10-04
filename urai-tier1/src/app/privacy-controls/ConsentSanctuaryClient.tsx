@@ -217,12 +217,26 @@ export default function ConsentSanctuaryClient() {
   const reducedMotion = useReducedMotion()
 
   useEffect(() => {
-    const online = () => { setLoadState((state) => state === 'offline' ? 'loading' : state); setMessage('Connection restored. Rechecking server authority…') }
+    const online = () => {
+      if (explicitDemo) {
+        setLoadState('demo')
+        setMessage('DEMONSTRATION — no personal data. Controls cannot write production state.')
+      } else if (!firebasePublicEnvReady) {
+        setLoadState('unavailable')
+        setMessage('The permission service is not configured. Controls remain unavailable rather than pretending to save.')
+      } else if (!user) {
+        setLoadState('signed-out')
+        setMessage('Sign in to inspect or change private consent state.')
+      } else {
+        setLoadState('loading')
+        setMessage('Connection restored. Rechecking server authority…')
+      }
+    }
     const offline = () => { setLoadState('offline'); setMessage('Offline. No change can be represented as saved or enforced.') }
     window.addEventListener('online', online)
     window.addEventListener('offline', offline)
     return () => { window.removeEventListener('online', online); window.removeEventListener('offline', offline) }
-  }, [])
+  }, [explicitDemo, user])
 
   useEffect(() => {
     try {
@@ -266,10 +280,10 @@ export default function ConsentSanctuaryClient() {
   }, [explicitDemo])
 
   useEffect(() => {
-    if (!user || explicitDemo || loadState === 'signed-out' || loadState === 'unavailable') return
+    if (!user || explicitDemo || loadState === 'signed-out' || loadState === 'unavailable' || loadState === 'offline') return
     let active = true
     const epoch = authEpoch.current
-    const current = () => active && epoch === authEpoch.current
+    const current = () => active && epoch === authEpoch.current && navigator.onLine
     const policyRef = doc(getFirebaseDb(), 'users', user.uid, 'privacyPolicy', 'current')
     const unsubscribe = onSnapshot(policyRef, (snapshot) => {
       if (!current()) return

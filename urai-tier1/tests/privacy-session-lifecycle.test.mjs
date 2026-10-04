@@ -14,6 +14,29 @@ const effect = (source, marker) => {
   return matches[0]
 }
 const run = (body, env) => new Function(...Object.keys(env), body)(...Object.values(env))
+
+for (const [name, source, stateKey] of [['Passport', passport, 'State'], ['Consent', consent, 'LoadState']]) {
+  for (const mode of ['demo', 'signed-out', 'unavailable', 'private']) {
+    test(`${name} reconnect restores ${mode} authority without a permanent loading state`, () => {
+      const { env, state } = fixture()
+      const listeners = {}
+      env.explicitDemo = mode === 'demo'
+      env.firebasePublicEnvReady = mode !== 'unavailable'
+      env.user = mode === 'private' ? { uid: 'owner-a' } : null
+      env.window = { addEventListener: (type, callback) => { listeners[type] = callback }, removeEventListener: type => { delete listeners[type] } }
+      env.document = { createElement: () => ({ getContext: () => null }) }
+      env.setWebglAvailable = () => {}
+      env[`set${stateKey}`] = value => { state[stateKey] = typeof value === 'function' ? value(state[stateKey]) : value }
+      const cleanup = run(effect(source, "window.addEventListener('online'"), env)
+      listeners.offline()
+      assert.equal(state[stateKey], 'offline')
+      listeners.online()
+      assert.equal(state[stateKey], mode === 'private' ? 'loading' : mode)
+      cleanup()
+      assert.deepEqual(listeners, {})
+    })
+  }
+}
 const unresolvedSource = consent.slice(consent.indexOf('function unresolvedPolicy()'), consent.indexOf('function demoPolicy()'))
 const unresolvedPolicy = new Function(`${unresolvedSource.replaceAll(': ConsentPolicy', '').replaceAll(': ConsentDomainPolicy', '')}; return unresolvedPolicy`)()
 
@@ -87,6 +110,31 @@ test('Passport ignores a prior-owner snapshot resolving before React effect clea
   await Promise.resolve()
   assert.equal(state.Snapshot, undefined)
   assert.equal(state.State, undefined)
+  cleanup()
+})
+
+test('Passport ignores a snapshot that completes after the browser goes offline', async () => {
+  const { env, state } = fixture()
+  let resolve
+  env.getOperationalPassportSnapshot = () => new Promise(done => { resolve = done })
+  const cleanup = run(effect(passport, 'void getOperationalPassportSnapshot'), env)
+  env.navigator.onLine = false
+  resolve({ owner: { keyState: 'authorized' }, sources: [{ id: 'source' }] })
+  await Promise.resolve()
+  assert.equal(state.State, undefined)
+  assert.equal(state.Snapshot, undefined)
+  cleanup()
+})
+
+test('Consent cannot regain writable authority from an offline queued snapshot', () => {
+  const { env, state } = fixture()
+  let callback
+  env.onSnapshot = (_ref, next) => { callback = next; return () => {} }
+  const cleanup = run(effect(consent, 'const policyRef'), env)
+  env.navigator.onLine = false
+  callback({ exists: () => true, data: () => ({ ownerId: 'owner-a', version: 2, enforcement: { state: 'fully-enforced' } }) })
+  assert.equal(state.LoadState, undefined)
+  assert.equal(state.Policy, undefined)
   cleanup()
 })
 

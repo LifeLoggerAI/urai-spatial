@@ -74,3 +74,5 @@
     margin-inline: max(12px,env(safe-area-inset-left,0px)) max(12px,env(safe-area-inset-right,0px));
   }
 }
+
+.passportFallbackNotice{max-width:62ch;margin:0 0 12px;padding:12px 14px;border:1px solid #ffffff24;border-radius:14px;background:#020409d6;color:#d9dde6;font-size:14px;line-height:1.5}

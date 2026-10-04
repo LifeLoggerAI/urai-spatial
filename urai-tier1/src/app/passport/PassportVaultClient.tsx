@@ -148,11 +148,25 @@ export default function PassportVaultClient() {
       setWebglAvailable(false)
     }
     const onOffline = () => { setState('offline'); setMessage('Offline. The vault remains readable from its last server snapshot, but no sensitive action can begin.') }
-    const onOnline = () => { setMessage('Connection restored. Refreshing owner authority…'); setState('loading') }
+    const onOnline = () => {
+      if (explicitDemo) {
+        setState('demo')
+        setMessage('DEMONSTRATION — sample data only. No private account is connected.')
+      } else if (!firebasePublicEnvReady) {
+        setState('unavailable')
+        setMessage('Ownership services are not configured. Demo data was not substituted.')
+      } else if (!user) {
+        setState('signed-out')
+        setMessage('Sign in to open your private Ownership Vault.')
+      } else {
+        setMessage('Connection restored. Refreshing owner authority…')
+        setState('loading')
+      }
+    }
     window.addEventListener('offline', onOffline)
     window.addEventListener('online', onOnline)
     return () => { window.removeEventListener('offline', onOffline); window.removeEventListener('online', onOnline) }
-  }, [])
+  }, [explicitDemo, user])
 
   useEffect(() => {
     if (explicitDemo) {
@@ -189,13 +203,13 @@ export default function PassportVaultClient() {
     let active = true
     const epoch = authEpoch.current
     void getOperationalPassportSnapshot().then((payload) => {
-      if (!active || epoch !== authEpoch.current) return
+      if (!active || epoch !== authEpoch.current || !navigator.onLine) return
       setSnapshot(payload)
       const empty = list(payload.sources).length === 0 && list(payload.devices).length === 0 && list(payload.receipts).length === 0
       setState(empty ? 'empty' : 'private')
       setMessage(empty ? 'Your vault is private and currently empty. Connect a source only through an explicit authorization path.' : 'Owner-scoped records loaded from the trusted Passport service.')
     }).catch(() => {
-      if (!active || epoch !== authEpoch.current) return
+      if (!active || epoch !== authEpoch.current || !navigator.onLine) return
       setState('unavailable')
       setMessage('The vault service is unavailable. No private state was replaced with sample data.')
     })
@@ -287,9 +301,9 @@ export default function PassportVaultClient() {
           data-passport-environment-role="governed-visual-support"
           style={{ backgroundImage: assetCssStack(passportAssets.primary) }}
         />
-        {webglAvailable ? <Suspense fallback={null}><VaultWorld selected={selectedZone} keyState={keyState} onSelect={setSelectedZone} reducedMotion={reducedMotion} /></Suspense> : <div className="passportFallback"><strong>Ownership Vault</strong><span>All records and actions remain available without WebGL.</span></div>}
+        {webglAvailable ? <Suspense fallback={null}><VaultWorld selected={selectedZone} keyState={keyState} onSelect={setSelectedZone} reducedMotion={reducedMotion} /></Suspense> : <div className="passportFallback" />}
       </div>
-      <header className="passportHeader"><p>UrAi Passport</p><h1>Your life remains in your possession.</h1><div role="status" aria-live="polite" className="passportStatus">{message}</div>{state === 'demo' && <span className="passportDisclosure">DEMONSTRATION — sample data only</span>}</header>
+      <header className="passportHeader"><p>UrAi Passport</p><h1>Your life remains in your possession.</h1>{!webglAvailable && <div className="passportFallbackNotice" role="note">Vault controls remain available without WebGL.</div>}<div role="status" aria-live="polite" className="passportStatus">{message}</div>{state === 'demo' && <span className="passportDisclosure">DEMONSTRATION — sample data only</span>}</header>
       <nav className="passportZones" aria-label="Ownership Vault zones">{ZONES.map(([id, label]) => <button key={id} type="button" aria-pressed={selectedZone === id} onClick={() => setSelectedZone(id)}>{label}</button>)}</nav>
       <section id="passport-controls" tabIndex={-1} className="passportPanel">
         <div className="passportPanelHeading"><div><p>Owner reference {String(owner.ownerReference ?? 'not available')}</p><h2>{ZONES.find(([id]) => id === selectedZone)?.[1]}</h2></div><span data-state={keyState} className="passportKeyState">{keyState}</span></div>
