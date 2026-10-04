@@ -79,3 +79,4 @@ export {
 } from './scenarioOperations'
 export { calibratePossibleFutureOutcome } from './scenarioCalibration'
 export { getAILedgerEntries, ledgerScenarioCreated, ledgerScenarioOutcomeObserved } from './aiLedgerOperations'
+export { getGlobalEmotionalFieldSnapshot } from './globalEmotionalField'
