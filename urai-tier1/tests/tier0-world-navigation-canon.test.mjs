@@ -15,6 +15,11 @@ const homeRuntime = read('src/app/HomeSpatialRuntimeLayer.tsx')
 const homeCanvas = read('src/app/HomeSpatialCanvas.tsx')
 const groundModel = read('src/app/ground/GroundWorldModel.ts')
 const homeScene = read('src/scene/HomeScene.tsx')
+const spatialShell = read('src/spatial/layout/SpatialShell.tsx')
+const assetSpineBridge = read('src/app/UraiFinalAssetSpineBridge.tsx')
+const assetSpineSceneLayer = read('src/app/UraiFinalAssetSpineSceneLayer.tsx')
+const memoryStarJourney = read('src/app/MemoryStarJourneyWorld.tsx')
+const focusChamber = read('src/spatial/scene/FocusChamber.tsx')
 
 test('Tier-0 canon defines the required persistent-world destinations', () => {
   for (const destination of [
@@ -76,6 +81,24 @@ test('Focus and Replay use the current memory-star and inside-memory canon', () 
 
   assert.doesNotMatch(homeScene, /label:\s*['"]Replay Theater['"]/)
   assert.doesNotMatch(homeScene, /detail:\s*['"]Step into the focused memory chamber\./)
+
+  assert.match(spatialShell, /title:\s*['"]Focus Memory Star['"]/)
+  assert.match(spatialShell, /title:\s*['"]Replay['"]/)
+  assert.doesNotMatch(spatialShell, /title:\s*['"]Focus Chamber['"]/)
+  assert.doesNotMatch(spatialShell, /title:\s*['"]Replay Chamber['"]/)
+
+  assert.match(assetSpineBridge, /canon:\s*['"]Focus Memory Star['"]/)
+  assert.match(assetSpineBridge, /canon:\s*['"]Replay['"]/)
+  assert.match(assetSpineSceneLayer, /canon:\s*['"]Focus Memory Star['"]/)
+  assert.match(assetSpineSceneLayer, /canon:\s*['"]Replay['"]/)
+  assert.doesNotMatch(assetSpineBridge, /canon:\s*['"]Focus Chamber['"]/)
+  assert.doesNotMatch(assetSpineBridge, /canon:\s*['"]Replay Realm['"]/)
+  assert.doesNotMatch(assetSpineSceneLayer, /canon:\s*['"]Focus Chamber['"]/)
+  assert.doesNotMatch(assetSpineSceneLayer, /canon:\s*['"]Replay Realm['"]/)
+
+  assert.match(memoryStarJourney, /selected memory opens inside its stellar Memory Star/)
+  assert.doesNotMatch(memoryStarJourney, /private Focus chamber/)
+  assert.match(focusChamber, /focus memory star/)
 })
 
 test('The root application owns one persistent world shell', () => {
