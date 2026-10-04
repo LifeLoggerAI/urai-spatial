@@ -96,6 +96,7 @@ const tests = [
   'tests/spatial-audio-behavior.test.mjs',
   'tests/narrator-playback-behavior.test.mjs',
   'tests/tier0-world-navigation-canon.test.mjs',
+  'tests/twilio-a2p-web-compliance.test.mjs',
   'tests/spatial-missing-resource-diagnostic-contract.test.mjs',
   'tests/unit-runner-coverage.test.mjs',
   'tests/v2-asset-gating.test.mjs',
