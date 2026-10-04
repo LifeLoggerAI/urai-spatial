@@ -53,7 +53,7 @@ function privacyModeFrom(value: string | null): UraiPrivacyMode | undefined {
 }
 
 function originRealmFrom(value: string | null): UraiOriginRealm | undefined {
-  const allowed: readonly UraiOriginRealm[] = ['home','ground','life-map','focus','replay','passport','mirror','council','life-movie','possible-futures']
+  const allowed: readonly UraiOriginRealm[] = ['home','ground','life-map','focus','replay','passport','mirror','shadow','council','privacy-controls','location-map','life-movie','possible-futures']
   return value && allowed.includes(value as UraiOriginRealm) ? value as UraiOriginRealm : undefined
 }
 
