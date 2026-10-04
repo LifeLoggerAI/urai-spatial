@@ -10,6 +10,8 @@ const worldTypes=fs.readFileSync(new URL('../src/spatial/world/worldTypes.ts',im
 const destinationRegistry=fs.readFileSync(new URL('../src/spatial/world/destinationRegistry.ts',import.meta.url),'utf8')
 const route=fs.readFileSync(new URL('../src/app/possible-futures/PossibleFuturesClient.tsx',import.meta.url),'utf8')
 const calibration=fs.readFileSync(new URL('../../apps/functions/src/scenarioCalibration.ts',import.meta.url),'utf8')
+const worldState=fs.readFileSync(new URL('../src/spatial/world/WorldStateProvider.tsx',import.meta.url),'utf8')
+const transitions=fs.readFileSync(new URL('../src/spatial/world/WorldTransitionController.tsx',import.meta.url),'utf8')
 
 test('possible futures is one canonical scenario-world destination and visibly not memory',()=>{assert.match(worldTypes,/'possible-futures'/);assert.match(worldTypes,/'scenario-world'/);assert.match(worldTypes,/UraiTruthMode = 'reality' \| 'memory' \| 'interpretation' \| 'scenario'/);assert.match(destinationRegistry,/href: '\/possible-futures'/);assert.match(route,/POSSIBLE FUTURE · NOT A MEMORY/);assert.doesNotMatch(route,/\/dream/)})
 test('truth authority rejects factual high confidence without sources and scenario promotion to observation',()=>{const errors=validateTruthRecord({id:'t1',ownerId:'u1',kind:'observation',value:'x',sourceRefs:[],support:'high',userCorrectionRevision:0,createdAt:'2026-09-16T00:00:00Z',updatedAt:'2026-09-16T00:00:00Z'});assert.ok(errors.includes('HIGH_SUPPORT_REQUIRES_SOURCE'));assert.throws(()=>assertRealityIsolation('scenario','observation'),/TRUTH_PROMOTION_FORBIDDEN/)})
@@ -18,3 +20,13 @@ test('scenario entity ids are isolated and scenarios cannot directly trigger ext
 test('provider-unavailable UI exposes explicit manual scenario instead of fabricated output',()=>{assert.match(route,/Manual Scenario/);assert.match(route,/provider generation is unavailable/i);assert.match(route,/assumption-only basis/);assert.match(route,/submitManualScenarioBranchesClient/)})
 test('Council scenario perspectives stay inside shared evidence and cannot fabricate consensus or authority',()=>{const errors=validateCouncilScenarioPerspective({role:'guardian',viewpoint:'x',evidenceRefIds:['outside'],support:'low',uncertaintyIds:[],assumptionsQuestioned:[],alternativeExplanations:[],consensusClaimed:false,authorityClaimed:false},{scenarioId:'scn_a',branchId:'br_a',evidenceRefIds:['allowed'],permissionReceiptIds:[]});assert.deepEqual(errors,['COUNCIL_EVIDENCE_OUTSIDE_BUNDLE:outside'])})
 test('launch outcome calibration never claims predictive accuracy or updates personalization weights',()=>{assert.match(calibration,/predictiveAccuracyClaimed: false/);assert.match(calibration,/personalizationWeightsUpdated: false/)})
+
+test('scenario travel preserves origin and cannot leak scenario truth into reality routes',()=>{
+  assert.match(transitions,/context\?\.scenarioBasisRevision/)
+  assert.match(transitions,/scenarioOrigin/)
+  assert.match(transitions,/destinationFromOriginRealm/)
+  assert.match(worldState,/action\.destination === 'possible-futures'/)
+  assert.match(worldState,/\? 'scenario'/)
+  assert.match(worldState,/: 'reality'/)
+  assert.match(worldState,/scenarioId: action\.destination === 'possible-futures'.*: undefined/)
+})
