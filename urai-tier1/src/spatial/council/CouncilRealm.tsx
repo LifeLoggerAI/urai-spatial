@@ -246,7 +246,8 @@ function CouncilStage() {
   return (
     <div
       ref={shellRef}
-      className="relative min-h-screen overflow-hidden bg-[#10151a] text-white"
+      className="urai-spatial-realm-experience relative min-h-screen overflow-hidden bg-[#10151a] text-white"
+      data-spatial-realm="council"
       data-council-human-authority="human-makehuman-v4-preview"
       data-council-lighting-authority="physical-pbr-v1"
       data-council-embodied="true"
@@ -259,10 +260,9 @@ function CouncilStage() {
           shadows={quality.shadows}
           dpr={[1, quality.pixelRatioMax]}
           frameloop={quality.documentVisible ? 'always' : 'never'}
-          gl={{ antialias: quality.antialias, alpha: false, powerPreference: 'high-performance' }}
+          gl={{ antialias: quality.antialias, alpha: true, premultipliedAlpha: false, powerPreference: 'high-performance' }}
         >
           <Suspense fallback={null}>
-            <color attach="background" args={['#151b20']} />
             <fog attach="fog" args={['#20272a', 9, 25]} />
             <PerspectiveCamera makeDefault position={[0, 1.66, 5.4]} fov={42} />
             <CouncilCamera input={input} yaw={yaw} pitch={pitch} reducedMotion={reducedMotion} ownerRef={shellRef} />
