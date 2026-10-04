@@ -1,13 +1,17 @@
 import { NextResponse } from 'next/server'
 import { verifyFirebaseUser } from '@/lib/server/firebase-user'
 
-export const dynamic = 'force-dynamic'
+export const dynamic = 'force-static'
 
 function validCoordinate(value: unknown, min: number, max: number): value is number {
   return typeof value === 'number' && Number.isFinite(value) && value >= min && value <= max
 }
 
 export async function POST(request: Request) {
+  if (process.env.URAI_FIREBASE_STATIC_EXPORT === 'true') {
+    return NextResponse.json({ error: 'elevation_unavailable_in_static_export' }, { status: 503, headers: { 'cache-control': 'private, no-store, max-age=0' } })
+  }
+
   const uid = await verifyFirebaseUser(request)
   if (!uid) return NextResponse.json({ error: 'authentication_required' }, { status: 401, headers: { 'cache-control': 'private, no-store, max-age=0' } })
 
