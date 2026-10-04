@@ -22,7 +22,6 @@ const aliases = [
   ['src/app/spatial/life-map/page.tsx', /redirect\(['"]\/life-map\?from=spatial-life-map['"]\)/],
   ['src/app/spatial/life-map-r3f/page.tsx', /redirect\(['"]\/life-map\?from=spatial-life-map-r3f['"]\)/],
   ['src/app/spatial/life-map-orbit/page.tsx', /redirect\(['"]\/life-map\?from=spatial-life-map-orbit['"]\)/],
-  ['src/app/privacy/page.tsx', /redirect\(['"]\/privacy-controls\?from=privacy['"]\)/],
 ]
 
 for (const [route, expectedRedirect] of aliases) {
@@ -31,8 +30,14 @@ for (const [route, expectedRedirect] of aliases) {
   assert.doesNotMatch(source, /TierOneExperience|UraiV1Experience|UraiSpatialStage|SpatialLifeMapCanonical/, `${route} must not mount a parallel product runtime.`)
 }
 
+const privacy = read('src/app/privacy/page.tsx')
+assert.match(privacy, /export default function PrivacyPolicyPage/, 'Privacy must remain its canonical legal-policy owner.')
+assert.match(privacy, /id="privacy-policy-heading"/, 'Privacy must retain an explicit policy heading.')
+assert.match(privacy, /href="\/privacy-controls"/, 'Privacy policy must preserve the path into canonical privacy controls.')
+assert.doesNotMatch(privacy, /TierOneExperience|UraiV1Experience|UraiSpatialStage|SpatialLifeMapCanonical/, 'Privacy must not mount a parallel product runtime.')
+
 assert.equal(existsSync(join(appRoot, 'src/spatial/layout/TierOneExperience.tsx')), false, 'Retired TierOneExperience must stay removed.')
 assert.equal(existsSync(join(appRoot, 'src/components/urai/UraiV1Experience.tsx')), false, 'Retired UraiV1Experience must stay removed.')
 assert.equal(existsSync(join(appRoot, 'src/app/RootModeExperience.tsx')), false, 'Retired RootModeExperience must stay removed.')
 
-console.log('URAI route canon passed: compatibility routes redirect into canonical Home, Life Map, or Privacy owners.')
+console.log('URAI route canon passed: compatibility aliases resolve to canonical Home/Life Map owners and Privacy remains the canonical legal policy surface.')
