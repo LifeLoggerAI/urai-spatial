@@ -66,7 +66,7 @@ Home -> camera ascent -> Life Map -> selected memory -> Focus -> Replay -> recov
 
 Ascent is a Home-owned transition into canonical Life Map, not a separate launch runtime.
 
-## Retired / migration-candidate owners
+## Legacy / migration-candidate owners
 
 The following names may remain only as historical/migration code or reusable primitives where a current canonical owner explicitly imports them:
 
