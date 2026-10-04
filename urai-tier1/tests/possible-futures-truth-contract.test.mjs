@@ -12,6 +12,9 @@ const route=fs.readFileSync(new URL('../src/app/possible-futures/PossibleFutures
 const calibration=fs.readFileSync(new URL('../../apps/functions/src/scenarioCalibration.ts',import.meta.url),'utf8')
 const worldState=fs.readFileSync(new URL('../src/spatial/world/WorldStateProvider.tsx',import.meta.url),'utf8')
 const transitions=fs.readFileSync(new URL('../src/spatial/world/WorldTransitionController.tsx',import.meta.url),'utf8')
+const privacyOps=fs.readFileSync(new URL('../../apps/functions/src/privacyOperations.ts',import.meta.url),'utf8')
+const consentSurface=fs.readFileSync(new URL('../src/app/privacy-controls/ConsentSanctuaryClient.tsx',import.meta.url),'utf8')
+const passportSurface=fs.readFileSync(new URL('../src/app/passport/PassportVaultClient.tsx',import.meta.url),'utf8')
 
 test('possible futures is one canonical scenario-world destination and visibly not memory',()=>{assert.match(worldTypes,/'possible-futures'/);assert.match(worldTypes,/'scenario-world'/);assert.match(worldTypes,/UraiTruthMode = 'reality' \| 'memory' \| 'interpretation' \| 'scenario'/);assert.match(destinationRegistry,/href: '\/possible-futures'/);assert.match(route,/POSSIBLE FUTURE · NOT A MEMORY/);assert.doesNotMatch(route,/\/dream/)})
 test('truth authority rejects factual high confidence without sources and scenario promotion to observation',()=>{const errors=validateTruthRecord({id:'t1',ownerId:'u1',kind:'observation',value:'x',sourceRefs:[],support:'high',userCorrectionRevision:0,createdAt:'2026-09-16T00:00:00Z',updatedAt:'2026-09-16T00:00:00Z'});assert.ok(errors.includes('HIGH_SUPPORT_REQUIRES_SOURCE'));assert.throws(()=>assertRealityIsolation('scenario','observation'),/TRUTH_PROMOTION_FORBIDDEN/)})
@@ -35,4 +38,16 @@ test('Possible Futures controls preserve 48px targets and reduced-motion parity'
   assert.match(route,/minHeight:48/)
   assert.match(route,/prefers-reduced-motion: reduce/)
   assert.match(route,/reducedMotion \? 0/)
+})
+
+test('Possible Futures and AI ledger participate in explicit owner export and deletion rights',()=>{
+  assert.match(privacyOps,/EXPORT_SCOPES[^\n]*'intelligence'/)
+  assert.match(privacyOps,/scopes\.includes\('intelligence'\)/)
+  assert.match(privacyOps,/data\.scenarios/)
+  assert.match(privacyOps,/data\.aiLedger/)
+  assert.match(privacyOps,/intelligence: \['scenarios', 'aiLedger'\]/)
+  assert.match(privacyOps,/'all-repository-data': \[[\s\S]*'scenarios'[\s\S]*'aiLedger'/)
+  assert.match(consentSurface,/EXPORT_SCOPES[^\n]*'life-model'[^\n]*'intelligence'/)
+  assert.match(consentSurface,/Possible Futures and AI activity ledger/)
+  assert.match(passportSurface,/Possible Futures and AI activity ledger/)
 })
