@@ -5,6 +5,7 @@ import process from 'node:process';
 
 const REQUESTED_BASE_URL = process.env.URAI_SPATIAL_BASE_URL || 'http://127.0.0.1:3000';
 const USE_EXISTING = process.env.URAI_SPATIAL_USE_EXISTING_SERVER === 'true';
+const SERVER_MODE = process.env.URAI_SPATIAL_SERVER_MODE === 'production' ? 'production' : 'development';
 const ARTIFACT_DIR = process.env.URAI_SPATIAL_ARTIFACT_DIR || 'artifacts/replay-tier5-lock';
 const REQUESTED_PORT = Number(new URL(REQUESTED_BASE_URL).port || 3000);
 const FALLBACK_PORT = Number(process.env.URAI_SPATIAL_TEST_PORT || REQUESTED_PORT + 1);
@@ -39,11 +40,16 @@ async function waitForServer(url, timeoutMs = 90000) {
 }
 
 async function startServer() {
-  if (USE_EXISTING || (await serverResponds(REQUESTED_BASE_URL))) {
+  if (USE_EXISTING) {
+    if (SERVER_MODE === 'production') throw new Error('Production Replay proof must own the exact built server; existing-server reuse is forbidden.');
+    return { child: null, baseUrl: REQUESTED_BASE_URL.replace(/\/$/, '') };
+  }
+  if (SERVER_MODE !== 'production' && (await serverResponds(REQUESTED_BASE_URL))) {
     return { child: null, baseUrl: REQUESTED_BASE_URL.replace(/\/$/, '') };
   }
   const baseUrl = baseUrlForPort(FALLBACK_PORT);
-  const child = spawn('pnpm', ['--filter', 'urai-tier1', 'dev', '--port', String(FALLBACK_PORT)], {
+  const serverScript = SERVER_MODE === 'production' ? 'start' : 'dev';
+  const child = spawn('pnpm', ['--filter', 'urai-tier1', serverScript, '--port', String(FALLBACK_PORT)], {
     cwd: process.cwd(),
     env: { ...process.env, CI: '1' },
     stdio: 'inherit',
@@ -201,7 +207,7 @@ async function validateReplay(page, report, screenshotName) {
 async function run() {
   const server = await startServer();
   const report = {
-    schemaVersion: 'urai-replay-tier5-report-4',
+    schemaVersion: 'urai-replay-tier5-report-5',
     screenshots: [],
     console: [],
     pageErrors: [],
@@ -211,6 +217,7 @@ async function run() {
     bodyHtml: '',
     finalUrl: null,
     baseUrl: server.baseUrl,
+    serverMode: SERVER_MODE,
     failure: null,
   };
   const consoleErrors = [];
@@ -258,8 +265,16 @@ async function run() {
     const modeContract = '[data-scene-mode="replay"]';
     report.audits.push(`canonical data-scene-mode contract retained: ${modeContract}`);
 
+    if (SERVER_MODE === 'production') {
+      const developmentConsole = report.console.filter(({ text }) => /Fast Refresh|React DevTools for a better development experience/i.test(text));
+      const hotUpdateFailures = report.requestFailures.filter(({ url }) => /\.hot-update\.(?:json|js)(?:\?|$)/i.test(url));
+      if (developmentConsole.length || hotUpdateFailures.length) {
+        throw new Error(`Production Replay proof observed development-runtime signals: ${JSON.stringify({ developmentConsole, hotUpdateFailures })}`);
+      }
+      report.audits.push('production Replay proof owned a next start server and observed no Fast Refresh, React development tooling, or hot-update request failures');
+    }
     if (consoleErrors.length) throw new Error(`Console errors detected:\n${consoleErrors.join('\n')}`);
-    console.log(`URAI Replay Tier 5 Memory Theater validation passed at ${server.baseUrl}.`);
+    console.log(`URAI Replay Tier 5 Memory Theater validation passed at ${server.baseUrl} in ${SERVER_MODE} mode.`);
   } catch (error) {
     report.failure = error instanceof Error ? error.stack || error.message : String(error);
     if (page) {
