@@ -322,6 +322,7 @@ try {
     const id = `${spec.route.split('/').filter(Boolean).join('-') || 'root'}--${spec.state}--${captureProfile.id}`
     const representative = spec.coverage === 'representative-tablet-or-wide'
     const homeCase = ['/', '/home'].includes(spec.route) && !captureProfile.noWebGL
+    // Exact-head synchronization: the wide Home retry remains inside the existing case budget.
     // The matrix records real GPU-backed browser pixels. Budgets must cover navigation,
     // route stabilization, retained screenshot readback, and context shutdown without
     // treating a slow CI GPU readback as missing product evidence.
