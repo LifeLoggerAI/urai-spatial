@@ -2,6 +2,7 @@ import { spawnSync } from 'node:child_process'
 import fs from 'node:fs'
 
 const tests = [
+  'tests/privacy-session-lifecycle.test.mjs',
   'tests/aaa-world-artifact-contract.test.mjs',
   'tests/adam-presence-runtime-contract.test.mjs',
   'tests/v1-aaa-asset-program-matrix-contract.test.mjs',

@@ -194,6 +194,7 @@ function errorCode(error: unknown) {
 export default function ConsentSanctuaryClient() {
   const params = useMemo(() => typeof window === 'undefined' ? new URLSearchParams() : new URLSearchParams(window.location.search), [])
   const explicitDemo = params.get('demo') === '1'
+  const authEpoch = useRef(0)
   const [user, setUser] = useState<User | null>(null)
   const [loadState, setLoadState] = useState<LoadState>('loading')
   const [policy, setPolicy] = useState<ConsentPolicy>(() => unresolvedPolicy())
@@ -242,6 +243,16 @@ export default function ConsentSanctuaryClient() {
     }
     const auth = getAuth(app)
     return onAuthStateChanged(auth, (nextUser) => {
+      authEpoch.current += 1
+      setPolicy(unresolvedPolicy())
+      setReceipts([])
+      setExports([])
+      setDeletions([])
+      setPending(null)
+      setMutationState('idle')
+      setDeletionConfirmation('')
+      setOperationBusy(false)
+      setShowAudit(false)
       setUser(nextUser)
       if (!nextUser) {
         setLoadState('signed-out')
@@ -254,10 +265,22 @@ export default function ConsentSanctuaryClient() {
 
   useEffect(() => {
     if (!user || explicitDemo || loadState === 'signed-out' || loadState === 'unavailable') return
+    let active = true
+    const epoch = authEpoch.current
+    const current = () => active && epoch === authEpoch.current
     const policyRef = doc(getFirebaseDb(), 'users', user.uid, 'privacyPolicy', 'current')
-    return onSnapshot(policyRef, (snapshot) => {
+    const unsubscribe = onSnapshot(policyRef, (snapshot) => {
+      if (!current()) return
       const rawPolicy = snapshot.data()
-      const next = snapshot.exists() && isConsentPolicy(rawPolicy, user.uid) ? rawPolicy : defaultConsentPolicy(user.uid)
+      if (!snapshot.exists() || !isConsentPolicy(rawPolicy, user.uid)) {
+        setPolicy(unresolvedPolicy())
+        setPending(null)
+        setLoadState('unavailable')
+        setMutationState('failed')
+        setMessage('No valid server consent policy is available. Controls remain locked; enforcement is not verified.')
+        return
+      }
+      const next = rawPolicy
       setPolicy(next)
       setLoadState('private')
       const state = next.enforcement.state
@@ -269,19 +292,26 @@ export default function ConsentSanctuaryClient() {
         'Policy persisted. Enforcement is still pending.',
       )
     }, () => {
+      if (!current()) return
+      setPolicy(unresolvedPolicy())
+      setPending(null)
       setLoadState('unavailable')
       setMessage('The consent authority could not be read. No private state was replaced with demo data.')
     })
+    return () => { active = false; unsubscribe() }
   }, [user, explicitDemo, loadState])
 
   useEffect(() => {
     if (!user || explicitDemo) return
+    let active = true
+    const epoch = authEpoch.current
+    const current = () => active && epoch === authEpoch.current
     const unsubscribers = [
-      subscribeOperationalUserCollection('privacyReceipts', user.uid, setReceipts, () => setMessage('Audit receipts are temporarily unavailable.')),
-      subscribeOperationalUserCollection('exportJobs', user.uid, setExports, () => setMessage('Export status is temporarily unavailable.')),
-      subscribeOperationalUserCollection('deletionJobs', user.uid, setDeletions, () => setMessage('Deletion status is temporarily unavailable.')),
+      subscribeOperationalUserCollection('privacyReceipts', user.uid, (rows) => { if (current()) setReceipts(rows) }, () => { if (current()) setMessage('Audit receipts are temporarily unavailable.') }),
+      subscribeOperationalUserCollection('exportJobs', user.uid, (rows) => { if (current()) setExports(rows) }, () => { if (current()) setMessage('Export status is temporarily unavailable.') }),
+      subscribeOperationalUserCollection('deletionJobs', user.uid, (rows) => { if (current()) setDeletions(rows) }, () => { if (current()) setMessage('Deletion status is temporarily unavailable.') }),
     ]
-    return () => unsubscribers.forEach((unsubscribe) => unsubscribe())
+    return () => { active = false; unsubscribers.forEach((unsubscribe) => unsubscribe()) }
   }, [user, explicitDemo])
 
   useEffect(() => {
@@ -306,6 +336,7 @@ export default function ConsentSanctuaryClient() {
   }
 
   const confirmChange = async () => {
+    const epoch = authEpoch.current
     if (!pending || !user || loadState !== 'private') return
     setMutationState('requested')
     setMessage('Requesting a revision-controlled policy change…')
@@ -315,10 +346,13 @@ export default function ConsentSanctuaryClient() {
         next: pending.next as unknown as Record<string, unknown>,
         expectedRevision: policy.revision,
       })
+      if (epoch !== authEpoch.current) return
       setPending(null)
       setMutationState('pending')
+      if (epoch !== authEpoch.current) return
       setMessage(`Request accepted. Enforcement job ${String(result.jobId ?? '').slice(0, 10)} is pending; no completion is claimed yet.`)
     } catch (error) {
+      if (epoch !== authEpoch.current) return
       const code = errorCode(error)
       setMutationState(code === 'conflict' ? 'conflict' : 'failed')
       setMessage(code === 'conflict' ? 'Another session changed this policy first. Current server authority must be reloaded.' : 'The change was not accepted. The prior server policy remains authoritative.')
@@ -326,28 +360,35 @@ export default function ConsentSanctuaryClient() {
   }
 
   const requestExport = async () => {
+    const epoch = authEpoch.current
     if (loadState !== 'private' || exportScopes.length === 0) return
     setOperationBusy(true)
     try {
       const result = await createOperationalExportRequest(exportScopes)
+      if (epoch !== authEpoch.current) return
       setMessage(`Export ${String(result.jobId ?? '').slice(0, 10)} queued. It is not ready until the server reports ready.`)
     } catch (error) {
+      if (epoch !== authEpoch.current) return
       setMessage(errorCode(error) === 'reauth' ? 'Recent reauthentication is required before an export can begin.' : 'Export request failed. No file was created or represented as ready.')
-    } finally { setOperationBusy(false) }
+    } finally { if (epoch === authEpoch.current) setOperationBusy(false) }
   }
 
   const requestDeletion = async () => {
+    const epoch = authEpoch.current
     if (loadState !== 'private') return
     const required = DELETION_SCOPES.find(([scope]) => scope === deletionScope)?.[2] ?? 'CONFIRM DELETE'
     if (deletionConfirmation !== required) { setMessage(`Type “${required}” exactly to confirm this scope.`); return }
     setOperationBusy(true)
     try {
       const result = await createOperationalDeletionRequest({ scope: deletionScope, confirmation: deletionConfirmation })
+      if (epoch !== authEpoch.current) return
       setDeletionConfirmation('')
+      if (epoch !== authEpoch.current) return
       setMessage(`Deletion ${String(result.jobId ?? '').slice(0, 10)} entered ${String(result.state)}. Completion is not claimed until the trusted job reports completed.`)
     } catch (error) {
+      if (epoch !== authEpoch.current) return
       setMessage(errorCode(error) === 'reauth' ? 'Recent reauthentication is required before deletion can begin.' : 'Deletion request failed. No data was represented as deleted.')
-    } finally { setOperationBusy(false) }
+    } finally { if (epoch === authEpoch.current) setOperationBusy(false) }
   }
 
   const selected = policy.domains[selectedDomain]
@@ -393,7 +434,7 @@ export default function ConsentSanctuaryClient() {
         <p>Choose scope. Tokens, credentials, raw secret fields and legally excepted records are excluded.</p>
         <div className="consentToggleGrid">{EXPORT_SCOPES.map((scope) => <label key={scope}><input type="checkbox" disabled={loadState !== 'private' || operationBusy} checked={exportScopes.includes(scope)} onChange={(event) => setExportScopes((items) => event.target.checked ? [...new Set([...items, scope])] : items.filter((item) => item !== scope))} /><span>{scope}</span></label>)}</div>
         <div className="consentActions"><button type="button" disabled={loadState !== 'private' || operationBusy || exportScopes.length === 0} onClick={() => void requestExport()}>Request export</button></div>
-        <ol>{exports.slice(0, 5).map((job) => <li key={job.id}><strong>{String(job.state)}</strong> — {Array.isArray(job.scopes) ? job.scopes.join(', ') : 'scope unavailable'} {job.state === 'ready' && <button type="button" onClick={async () => { try { const result = await getOperationalExportDownloadUrl({ jobId: job.id }); window.location.assign(String(result.url)) } catch { setMessage('Secure download could not be authorized.') } }}>Secure download</button>} {job.state === 'ready' && runtimeExportAssetIds(job).map((assetId) => <button key={assetId} type="button" onClick={async () => { try { const result = await getOperationalExportDownloadUrl({ jobId: job.id, file: 'runtime', assetId }); window.location.assign(String(result.url)) } catch { setMessage('Secure runtime download could not be authorized.') } }}>Runtime {assetId.slice(0, 8)}</button>)} {['queued', 'preparing'].includes(String(job.state)) && <button type="button" onClick={() => void cancelOperationalExportRequest(job.id)}>Cancel</button>}</li>)}</ol>
+        <ol>{exports.slice(0, 5).map((job) => <li key={job.id}><strong>{String(job.state)}</strong> — {Array.isArray(job.scopes) ? job.scopes.join(', ') : 'scope unavailable'} {job.state === 'ready' && <button type="button" onClick={async () => { const epoch = authEpoch.current; try { const result = await getOperationalExportDownloadUrl({ jobId: job.id }); if (epoch !== authEpoch.current) return; window.location.assign(String(result.url)) } catch { setMessage('Secure download could not be authorized.') } }}>Secure download</button>} {job.state === 'ready' && runtimeExportAssetIds(job).map((assetId) => <button key={assetId} type="button" onClick={async () => { const epoch = authEpoch.current; try { const result = await getOperationalExportDownloadUrl({ jobId: job.id, file: 'runtime', assetId }); if (epoch !== authEpoch.current) return; window.location.assign(String(result.url)) } catch { setMessage('Secure runtime download could not be authorized.') } }}>Runtime {assetId.slice(0, 8)}</button>)} {['queued', 'preparing'].includes(String(job.state)) && <button type="button" onClick={() => void cancelOperationalExportRequest(job.id)}>Cancel</button>}</li>)}</ol>
 
         <hr />
         <h3>Scoped deletion</h3>
