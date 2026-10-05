@@ -176,6 +176,7 @@ test('travel infrastructure preserves fallback, route ownership and canonical as
   assert.match(worldEvents, /current === targetLocation/)
 
   assert.match(worldEvents, /destination === 'replay'[\s\S]*cinematic-replay-client/)
+  assert.match(worldEvents, /destination === 'passport'[\s\S]*passport-ownership-vault/)
   assert.match(worldEvents, /currentLocation === startingLocation \|\| !destinationSurfaceReady\(request\.destination\)/)
   for (const marker of ['beginTravelRef.current(request)', 'transitionDuration(request.destination)', 'router.push(href)', 'navigationWatchdog', 'requiresHardDocumentNavigation', "request.destination === 'replay'", "request.entryPortal === 'mirror-reflection-fragment'"]) has(worldTransitions, marker)
   for (const marker of ['enterLifeMap: () => set({ mode: "ASCENT"', 'phase: "ASCENT"', 'isTransitioning: true', 'inputLocked: true', 'progress: 0']) has(sceneStore, marker)
