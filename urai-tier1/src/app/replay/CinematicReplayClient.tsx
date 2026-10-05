@@ -112,13 +112,58 @@ function ReplayMemoryAtmosphere({ memory, reducedMotion }: { memory: SelectedMem
         </bufferGeometry>
         <pointsMaterial color={memory.visuals.light} size={0.055} transparent opacity={0.48} depthWrite={false} blending={THREE.AdditiveBlending} />
       </points>
-      <mesh position={[-4.2, 1.8, -8.5]} scale={[2.8, 1.4, 2.8]}>
-        <sphereGeometry args={[1, 48, 32]} />
-        <meshBasicMaterial color={memory.visuals.accent} transparent opacity={0.055} depthWrite={false} blending={THREE.AdditiveBlending} />
+      <pointLight position={[-5.2, 2.4, -8]} intensity={0.8} distance={12} color={memory.visuals.accent} />
+      <pointLight position={[5.4, 1.2, -12]} intensity={0.55} distance={14} color={memory.visuals.light} />
+    </group>
+  )
+}
+
+function DemoMemoryLandscape({ memory }: { memory: SelectedMemory }) {
+  const terrain = useMemo(() => {
+    const geometry = new THREE.PlaneGeometry(34, 46, 64, 84)
+    geometry.rotateX(-Math.PI / 2)
+    const position = geometry.attributes.position as THREE.BufferAttribute
+    for (let index = 0; index < position.count; index += 1) {
+      const x = position.getX(index)
+      const z = position.getZ(index)
+      const radial = Math.hypot(x * .72, z * .28)
+      const height = -1.72
+        + Math.sin(x * .31 + z * .07) * .22
+        + Math.cos(z * .16 - x * .11) * .18
+        + Math.sin(radial * .34) * .12
+      position.setY(index, height)
+    }
+    position.needsUpdate = true
+    geometry.computeVertexNormals()
+    return geometry
+  }, [])
+
+  useEffect(() => () => terrain.dispose(), [terrain])
+
+  return (
+    <group name="replay-interpretive-memory-landscape" userData={{ truthClass: 'disclosed-demonstration', autobiographical: false, role: 'inside-memory-spatial-context' }}>
+      <mesh geometry={terrain} position={[0, 0, -7]} receiveShadow>
+        <meshStandardMaterial color={memory.visuals.ground} roughness={.94} metalness={0} />
       </mesh>
-      <mesh position={[4.8, -1.2, -11]} scale={[3.4, 1.8, 3.4]}>
-        <sphereGeometry args={[1, 48, 32]} />
-        <meshBasicMaterial color={memory.visuals.light} transparent opacity={0.04} depthWrite={false} blending={THREE.AdditiveBlending} />
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -1.39, -7.2]} receiveShadow>
+        <planeGeometry args={[2.2, 25, 1, 24]} />
+        <meshStandardMaterial color={memory.visuals.light} roughness={.88} metalness={0} transparent opacity={.18} />
+      </mesh>
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[5.2, -1.43, -10.4]}>
+        <circleGeometry args={[3.9, 72]} />
+        <meshPhysicalMaterial color={memory.visuals.accent} roughness={.22} metalness={0} clearcoat={.48} clearcoatRoughness={.18} transparent opacity={.46} />
+      </mesh>
+      <mesh position={[-9.8, -1.4, -21]} scale={[9.5, 3.4, 5.8]} castShadow receiveShadow>
+        <sphereGeometry args={[1, 64, 32]} />
+        <meshStandardMaterial color="#17251f" roughness={1} metalness={0} />
+      </mesh>
+      <mesh position={[8.8, -1.7, -23]} scale={[11.2, 4.2, 6.6]} castShadow receiveShadow>
+        <sphereGeometry args={[1, 64, 32]} />
+        <meshStandardMaterial color="#20302a" roughness={1} metalness={0} />
+      </mesh>
+      <mesh position={[0, -2.05, -28]} scale={[17, 5.2, 7.5]} receiveShadow>
+        <sphereGeometry args={[1, 64, 32]} />
+        <meshStandardMaterial color="#2b3b34" roughness={1} metalness={0} />
       </mesh>
     </group>
   )
@@ -164,6 +209,7 @@ function ReplaySpatialScene({ memory, progressMs, onMediaState }: { memory: Sele
       <pointLight position={[0, 1.2, -4.8]} intensity={4.2} distance={17} color={memory.visuals.accent} />
       <pointLight position={[-3.8, 2.8, -2.4]} intensity={1.15} distance={11} color={memory.visuals.light} />
       {memory.demo ? <MemoryMediaDome url={replayAssets.primary.src} onState={onMediaState} /> : null}
+      {memory.demo ? <DemoMemoryLandscape memory={memory} /> : null}
       <ReplayMemoryAtmosphere memory={memory} reducedMotion={reducedMotion} />
       <ReplayTimelineField memory={memory} progress={progress} />
       <ReplayCameraRig progress={progress} reducedMotion={reducedMotion} />
