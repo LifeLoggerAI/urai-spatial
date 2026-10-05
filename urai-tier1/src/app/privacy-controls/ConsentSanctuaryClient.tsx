@@ -78,20 +78,25 @@ function Chamber({ domain, policy, index, selected, onSelect, reducedMotion }: {
   return (
     <group position={[Math.cos(angle) * radius, 0.2, Math.sin(angle) * radius]} rotation={[0, -angle + Math.PI / 2, 0]}>
       <Float speed={reducedMotion ? 0 : policy.mode === 'paused' ? 0.2 : 0.65} rotationIntensity={reducedMotion ? 0 : 0.05} floatIntensity={reducedMotion ? 0 : 0.1}>
-        <RoundedBox
-          args={[2.4, 2.5, 0.7]}
-          radius={0.18}
-          smoothness={4}
-          onClick={(event) => { event.stopPropagation(); onSelect(domain) }}
-        >
-          <meshStandardMaterial
-            color={selected ? color : '#101923'}
-            emissive={color}
-            emissiveIntensity={selected ? 0.72 : policy.mode === 'denied' ? 0.03 : 0.16}
-            metalness={0.35}
-            roughness={0.4}
-          />
-        </RoundedBox>
+        <group onClick={(event) => { event.stopPropagation(); onSelect(domain) }}>
+          <RoundedBox args={[2.28, 2.42, 0.42]} radius={0.28} smoothness={8}>
+            <meshPhysicalMaterial
+              color={selected ? color : '#101923'}
+              emissive={color}
+              emissiveIntensity={selected ? 0.46 : policy.mode === 'denied' ? 0.025 : 0.12}
+              metalness={0.08}
+              roughness={0.24}
+              clearcoat={0.8}
+              clearcoatRoughness={0.22}
+              transparent
+              opacity={selected ? 0.96 : 0.88}
+            />
+          </RoundedBox>
+          <mesh position={[0, 0, -0.28]} scale={[1.08, 1.1, 1]}>
+            <ringGeometry args={[0.92, 1.02, 48, 1, Math.PI * 0.12, Math.PI * 1.76]} />
+            <meshBasicMaterial color={color} transparent opacity={selected ? 0.42 : 0.14} toneMapped={false} />
+          </mesh>
+        </group>
         <Html position={[0, 0.15, 0.38]} center transform distanceFactor={8}>
           <span style={{ display: 'block', width: '152px', color: '#f4f8fb', fontSize: '16px', fontWeight: 800, lineHeight: 1.1, textAlign: 'center', textShadow: '0 2px 12px #000', pointerEvents: 'none' }}>
             {DOMAIN_LABELS[domain]}
@@ -122,22 +127,42 @@ function SanctuaryWorld({ policy, selectedDomain, onSelect, reducedMotion }: {
       <ambientLight intensity={0.42} />
       <directionalLight position={[4, 9, 5]} intensity={1.25} color="#dffbff" />
       <pointLight position={[0, 2.4, 0]} intensity={interrupted ? 8 : 24} distance={12} color={interrupted ? '#ff9f7a' : consentColor(selected.mode)} />
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -1.1, 0]}>
-        <circleGeometry args={[9.4, 64]} />
-        <meshStandardMaterial color="#07121a" metalness={0.18} roughness={0.72} />
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -1.1, 0]} receiveShadow>
+        <circleGeometry args={[10.2, 96]} />
+        <meshStandardMaterial color="#07121a" metalness={0.05} roughness={0.82} />
       </mesh>
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -1.05, 0]}>
-        <ringGeometry args={[2.3, 8.2, 64]} />
-        <meshBasicMaterial color={interrupted ? '#8b392c' : '#163c47'} transparent opacity={0.24} />
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -1.045, 0]}>
+        <ringGeometry args={[2.5, 8.75, 96]} />
+        <meshBasicMaterial color={interrupted ? '#8b392c' : '#1d5962'} transparent opacity={0.16} />
+      </mesh>
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -1.025, 0]}>
+        <ringGeometry args={[5.1, 5.16, 96]} />
+        <meshBasicMaterial color={consentColor(selected.mode)} transparent opacity={0.22} toneMapped={false} />
       </mesh>
       {DOMAIN_ORDER.map((domain, index) => (
         <Chamber key={domain} domain={domain} policy={policy.domains[domain]} index={index} selected={domain === selectedDomain} onSelect={onSelect} reducedMotion={reducedMotion} />
       ))}
-      <group position={[0, 0.35, 0]}>
-        <Float speed={reducedMotion ? 0 : 0.9} rotationIntensity={reducedMotion ? 0 : 0.25} floatIntensity={reducedMotion ? 0 : 0.3}>
-          <mesh>
-            <icosahedronGeometry args={[0.82, 3]} />
-            <meshStandardMaterial color={interrupted ? '#ffb09b' : '#baf8ff'} emissive={interrupted ? '#9b382a' : '#63e7f5'} emissiveIntensity={1.4} transparent opacity={0.9} />
+      <group position={[0, 0.35, 0]} name="consent-living-core">
+        <Float speed={reducedMotion ? 0 : 0.65} rotationIntensity={reducedMotion ? 0 : 0.08} floatIntensity={reducedMotion ? 0 : 0.18}>
+          <mesh scale={[1.08, 1.18, 1.08]}>
+            <sphereGeometry args={[0.78, 64, 48]} />
+            <meshPhysicalMaterial
+              color={interrupted ? '#ffb09b' : '#c9fbff'}
+              emissive={interrupted ? '#9b382a' : '#54cfdd'}
+              emissiveIntensity={0.72}
+              roughness={0.12}
+              metalness={0}
+              transmission={0.22}
+              thickness={0.8}
+              clearcoat={1}
+              clearcoatRoughness={0.08}
+              transparent
+              opacity={0.92}
+            />
+          </mesh>
+          <mesh scale={1.42}>
+            <sphereGeometry args={[0.78, 48, 32]} />
+            <meshBasicMaterial color={consentColor(selected.mode)} transparent opacity={0.06} depthWrite={false} toneMapped={false} />
           </mesh>
         </Float>
       </group>
