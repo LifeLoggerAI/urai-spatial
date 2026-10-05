@@ -32,6 +32,7 @@ const staticProviderRoutes = [
 
 test('static Hosting rewrites every live provider URL to secret-bound Firebase Functions', () => {
   assert.deepEqual(firebaseConfig.hosting.rewrites, [
+    { source: '/api/maps/elevation', function: { functionId: 'mapsElevationProvider', region: 'us-central1' } },
     { source: '/api/google/oauth/start', function: { functionId: 'googleOAuthStart', region: 'us-central1' } },
     { source: '/api/google/oauth/callback', function: { functionId: 'googleOAuthCallback', region: 'us-central1' } },
     { source: '/api/google/oauth/status', function: { functionId: 'googleOAuthStatus', region: 'us-central1' } },
