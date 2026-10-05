@@ -85,7 +85,7 @@ export const mapsElevationProvider = onRequest({
     if (!apiKey) throw new ElevationError(503, 'elevation_unavailable')
     const controller = new AbortController()
     const timeout = setTimeout(() => controller.abort(), 8_000)
-    request.on('close', () => controller.abort())
+    response.on('close', () => { if (!response.writableEnded) controller.abort() })
     try {
       const url = new URL('https://maps.googleapis.com/maps/api/elevation/json')
       url.searchParams.set('locations', `${latitude},${longitude}`)
