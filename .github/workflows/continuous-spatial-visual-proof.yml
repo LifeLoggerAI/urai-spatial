@@ -43,7 +43,10 @@ jobs:
   browser-proof:
     name: browser-proof-${{ matrix.proof_group }}
     runs-on: ubuntu-24.04
-    timeout-minutes: 40
+    # The visual group runs 15 Home/Orb captures plus the full 65-case launch route matrix.
+    # Exact-head evidence on 099470... reached 59/65 route captures with zero errors before the prior 40-minute job cap cancelled it.
+    # Keep every proof/assertion intact and allow the bounded matrix enough wall-clock budget to finish.
+    timeout-minutes: 60
     strategy:
       fail-fast: false
       matrix:
