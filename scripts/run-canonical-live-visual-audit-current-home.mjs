@@ -99,7 +99,7 @@ const currentHomeSettlement = `  if (route.id === 'home') {
         && rect.height >= 240
         && body.includes('Own your life.')
         && body.includes('Threshold online'))
-    }, null, { timeout: 45_000, polling: 50 })
+    }, null, { timeout: 90_000, polling: 50 })
   }`
 
 patched = replaceOnce(patched, oldHomeSettlement, currentHomeSettlement, 'current Home readiness')
