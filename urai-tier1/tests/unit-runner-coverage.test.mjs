@@ -6,6 +6,19 @@ const focusedRunnerSource = fs.readFileSync(new URL('../scripts/run-unit-contrac
 const compactRunnerSource = fs.readFileSync(new URL('../scripts/run-unit-contract-tests-compact.mjs', import.meta.url), 'utf8')
 
 const requiredFocusedTests = [
+  'tests/person-presence-provider-contract.test.mjs',
+  'tests/person-presence-voice-contract.test.mjs',
+  'tests/person-presence-session-contract.test.mjs',
+  'tests/person-render-binding-promotion.test.mjs',
+  'tests/replay-person-presence-ui.test.mjs',
+  'tests/life-model-functions-contract.test.mjs',
+  'tests/life-model-data-rights-contract.test.mjs',
+  'tests/life-model-privacy-boundary.test.mjs',
+  'tests/life-model-kernel.test.mjs',
+  'tests/scene-truth-life-model-compiler.test.mjs',
+  'tests/replay-life-model-authority.test.mjs',
+  'tests/life-movie-life-model-binding.test.mjs',
+  'tests/captured-reality-life-model-binding.test.mjs',
   'tests/body-biometric-contract.test.mjs',
   'tests/orb-companion-contract.test.mjs',
   'tests/provider-boundary-contract.test.mjs',
