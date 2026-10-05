@@ -44,9 +44,16 @@ function buildFallbackHref(request: UraiWorldTravelRequest) {
 }
 
 function commitHardFallback(href: string) {
-  // Commit exactly one browser-history entry. The previous pushState + reload
-  // sequence could race the client router and leave duplicate destination
-  // entries, causing one Back action to remain on the destination route.
+  // Commit exactly one browser-history entry. If the client router already moved
+  // the URL but failed to mount the destination surface, assigning the same URL
+  // may not create a fresh document. Force a reload only in that stalled case.
+  const target = new URL(href, window.location.origin)
+  const current = `${window.location.pathname}${window.location.search}${window.location.hash}`
+  const targetLocation = `${target.pathname}${target.search}${target.hash}`
+  if (current === targetLocation) {
+    window.location.reload()
+    return
+  }
   window.location.assign(href)
 }
 
