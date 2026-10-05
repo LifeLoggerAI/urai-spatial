@@ -14,6 +14,12 @@ test('Elevation is authenticated and server credential stays server-only', () =>
   assert.match(source, /cache-control.*private, no-store/)
 })
 
+test('deployed Elevation maps rejected Firebase tokens to authentication_required', () => {
+  assert.match(functionSource, /try \{[\s\S]*verifyIdToken\(token, true\)[\s\S]*catch \(error\)/)
+  assert.match(functionSource, /throw new ElevationError\(401, 'authentication_required'\)/)
+  assert.doesNotMatch(functionSource, /verifyIdToken\(token, true\)\n  if \(!decoded\.uid\)/)
+})
+
 test('Elevation validates coordinates and bounds provider execution', () => {
   assert.match(source, /validCoordinate\(latitude, -90, 90\)/)
   assert.match(source, /validCoordinate\(longitude, -180, 180\)/)
