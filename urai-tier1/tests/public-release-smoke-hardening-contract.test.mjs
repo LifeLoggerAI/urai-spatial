@@ -29,8 +29,8 @@ test('post-deploy parity includes current Focus, Replay and institutional public
 })
 
 test('post-deploy communications smoke matches the rendered SMS disclosure', () => {
-  assert.ok(postDeploy.includes("'Reply STOP to opt out or HELP for help'"))
-  assert.equal(postDeploy.includes("'Reply HELP'"), false)
+  assert.match(postDeploy, /\['\/settings\/communications', \['communication-settings', 'SMS preferences', 'Message and data rates may apply', 'Reply STOP to opt out or HELP for help'\], \[\]\]/)
+  assert.doesNotMatch(postDeploy, /\['\/settings\/communications', \[[^\]]*'Reply STOP', 'Reply HELP'[^\]]*\], \[\]\]/)
 })
 
 test('release-control browser smoke covers public routes and compatibility redirects', () => {
