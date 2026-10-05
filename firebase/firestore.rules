@@ -226,6 +226,10 @@ service cloud.firestore {
         allow read: if isSelf(uid);
         allow write: if false;
       }
+      // Provider voice identifiers are server-owned, including for the subject.
+      match /personRenderBindings/{docId} {
+        allow read, write: if false;
+      }
       match /personModelBundles/{docId} {
         allow read: if isSelf(uid);
         allow write: if false;
