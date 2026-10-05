@@ -7,8 +7,10 @@ const root = process.cwd()
 const assetRoot = path.join(root, 'urai-tier1', 'public', 'assets', 'urai')
 const handoffPath = path.join(assetRoot, 'final', 'manifests', 'asset-factory-spatial-handoff.json')
 const registryPath = path.join(root, 'urai-tier1', 'src', 'spatial', 'assets', 'uraiAssets.ts')
-const evidenceDirectory = path.join(root, 'release-control-evidence')
-const evidencePath = path.join(evidenceDirectory, 'provider-asset-verification.json')
+const evidencePath = process.env.URAI_PROVIDER_ASSET_EVIDENCE_PATH
+  ? path.resolve(root, process.env.URAI_PROVIDER_ASSET_EVIDENCE_PATH)
+  : path.join(root, 'release-control-evidence', 'provider-asset-verification.json')
+const evidenceDirectory = path.dirname(evidencePath)
 
 const corePaths = new Set([
   'home/home-threshold-main.webp',
