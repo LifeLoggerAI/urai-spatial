@@ -41,6 +41,9 @@ test('Ground focus expansion remains fully reachable at the required 390px viewp
 test('accessibility evidence is bound to the current Home and Life Map owners', () => {
   assert.match(embodiedEvidence, /urai-asset-home-world\[data-home-primary-owner=/)
   assert.match(embodiedEvidence, /Accessible Home destinations/)
+  const canonicalHomeOwnerBindings = embodiedEvidence.match(/page\\.locator\\(homeOwnerSelector\\)\\.first\\(\\)/g)?.length ?? 0
+  assert.equal(canonicalHomeOwnerBindings, 3, 'all embodied Home movement evidence must bind to the canonical asset-driven owner')
+  assert.equal(embodiedEvidence.includes("page.locator('.urai-final-home-world')"), false, 'legacy Home wrapper binding returned')
   assert.match(lifeMapEvidence, /urai-true-3d-life-map/)
   assert.match(visualEvidence, /details\.life-map-help/)
   for (const obsolete of [
