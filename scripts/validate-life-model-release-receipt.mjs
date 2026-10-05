@@ -1,8 +1,15 @@
 import fs from 'node:fs'
 import process from 'node:process'
 
-const path = process.argv[2] || 'operations/life-model/release-receipt-v1.json'
-const strict = process.argv.includes('--strict')
+const args = process.argv.slice(2)
+const unknownFlags = args.filter((arg) => arg.startsWith('--') && arg !== '--strict')
+const paths = args.filter((arg) => !arg.startsWith('--'))
+if (unknownFlags.length || paths.length > 1) {
+  console.error('[FAIL] Usage: validate-life-model-release-receipt.mjs [receipt-path] [--strict]')
+  process.exit(1)
+}
+const path = paths[0] || 'operations/life-model/release-receipt-v1.json'
+const strict = args.includes('--strict')
 const receipt = JSON.parse(fs.readFileSync(path, 'utf8'))
 
 const fail = (message) => { console.error(`[FAIL] ${message}`); process.exitCode = 1 }

@@ -4,6 +4,10 @@ import fs from 'node:fs'
 const tests = [
   'tests/privacy-session-lifecycle.test.mjs',
   'tests/sms-session-lifecycle.test.mjs',
+  'tests/asset-receipt-runner-contract.test.mjs',
+  'tests/provider-asset-verifier-fault-injection.test.mjs',
+  'tests/life-model-release-receipt-contract.test.mjs',
+  'tests/life-model-release-validator-cli.test.mjs',
   'tests/aaa-world-artifact-contract.test.mjs',
   'tests/adam-presence-runtime-contract.test.mjs',
   'tests/v1-aaa-asset-program-matrix-contract.test.mjs',
