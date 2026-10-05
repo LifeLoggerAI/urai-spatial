@@ -9,9 +9,17 @@ import test from 'node:test'
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..')
 const verifierPath = 'scripts/verify-provider-asset-handoff.mjs'
 const handoffPath = 'urai-tier1/public/assets/urai/final/manifests/asset-factory-spatial-handoff.json'
-const baseline = spawnSync(process.execPath, [verifierPath], { cwd: root, encoding: 'utf8' })
+const baselineFixture = fs.mkdtempSync(path.join(os.tmpdir(), 'urai-asset-baseline-'))
+const baselineEvidencePath = path.join(baselineFixture, 'provider-asset-verification.json')
+const baseline = spawnSync(process.execPath, [verifierPath], {
+  cwd: root,
+  encoding: 'utf8',
+  env: { ...process.env, URAI_PROVIDER_ASSET_EVIDENCE_PATH: baselineEvidencePath },
+})
 assert.equal(baseline.status, 0, baseline.stdout + baseline.stderr)
-const report = JSON.parse(fs.readFileSync(path.join(root, 'release-control-evidence/provider-asset-verification.json'), 'utf8'))
+const report = JSON.parse(fs.readFileSync(baselineEvidencePath, 'utf8'))
+fs.rmSync(baselineFixture, { recursive: true, force: true })
+assert.equal(fs.existsSync(path.join(root, 'release-control-evidence/provider-asset-verification.json')), false)
 
 // Execute the real verifier against actual binaries and manifest in a temporary
 // copy. Mutations never alter the committed runtime, source, or provider assets.
