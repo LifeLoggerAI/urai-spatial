@@ -120,17 +120,20 @@ function ReplayMemoryAtmosphere({ memory, reducedMotion }: { memory: SelectedMem
 
 function DemoMemoryLandscape({ memory }: { memory: SelectedMemory }) {
   const terrain = useMemo(() => {
-    const geometry = new THREE.PlaneGeometry(34, 46, 64, 84)
+    const geometry = new THREE.PlaneGeometry(38, 52, 84, 112)
     geometry.rotateX(-Math.PI / 2)
     const position = geometry.attributes.position as THREE.BufferAttribute
     for (let index = 0; index < position.count; index += 1) {
       const x = position.getX(index)
       const z = position.getZ(index)
-      const radial = Math.hypot(x * .72, z * .28)
+      const radial = Math.hypot(x * .68, z * .24)
+      const trail = Math.exp(-Math.pow(x / 3.5, 2)) * .18
       const height = -1.72
-        + Math.sin(x * .31 + z * .07) * .22
-        + Math.cos(z * .16 - x * .11) * .18
-        + Math.sin(radial * .34) * .12
+        + Math.sin(x * .37 + z * .075) * .28
+        + Math.cos(z * .19 - x * .13) * .21
+        + Math.sin(radial * .42) * .15
+        + Math.sin((x + z) * .54) * .055
+        - trail
       position.setY(index, height)
     }
     position.needsUpdate = true
@@ -138,32 +141,94 @@ function DemoMemoryLandscape({ memory }: { memory: SelectedMemory }) {
     return geometry
   }, [])
 
+  const stones = useMemo(() => Array.from({ length: 18 }, (_, index) => {
+    const side = index % 2 === 0 ? -1 : 1
+    const row = Math.floor(index / 2)
+    const z = -4.5 - row * 2.15
+    const x = side * (2.35 + ((index * 17) % 7) * .44)
+    const scale = .24 + ((index * 29) % 9) * .035
+    return { x, z, scale, rotation: ((index * 41) % 19) * .08 }
+  }), [])
+
+  const trees = useMemo(() => [
+    [-7.8, -11.8, 1.2], [-10.5, -16.2, 1.55], [-6.1, -20.8, 1.7],
+    [8.4, -12.9, 1.25], [11.2, -18.1, 1.6], [7.1, -23.5, 1.45],
+  ] as const, [])
+
   useEffect(() => () => terrain.dispose(), [terrain])
 
   return (
-    <group name="replay-interpretive-memory-landscape" userData={{ truthClass: 'disclosed-demonstration', autobiographical: false, role: 'inside-memory-spatial-context' }}>
+    <group name="replay-interpretive-memory-landscape" userData={{ truthClass: 'disclosed-demonstration', autobiographical: false, role: 'inside-memory-spatial-context', artState: 'no-spend-procedural-landscape-v2' }}>
       <mesh geometry={terrain} position={[0, 0, -7]} receiveShadow>
-        <meshStandardMaterial color={memory.visuals.ground} roughness={.94} metalness={0} />
+        <meshPhysicalMaterial color={memory.visuals.ground} roughness={.88} metalness={0} clearcoat={.08} clearcoatRoughness={.72} />
       </mesh>
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -1.39, -7.2]} receiveShadow>
-        <planeGeometry args={[2.2, 25, 1, 24]} />
-        <meshStandardMaterial color={memory.visuals.light} roughness={.88} metalness={0} transparent opacity={.18} />
+
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -1.42, -8.2]} receiveShadow name="replay-memory-walk">
+        <planeGeometry args={[2.35, 30, 1, 32]} />
+        <meshPhysicalMaterial color={memory.visuals.light} roughness={.84} metalness={0} transparent opacity={.20} clearcoat={.12} />
       </mesh>
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[5.2, -1.43, -10.4]}>
-        <circleGeometry args={[3.9, 72]} />
-        <meshPhysicalMaterial color={memory.visuals.accent} roughness={.22} metalness={0} clearcoat={.48} clearcoatRoughness={.18} transparent opacity={.46} />
+
+      <mesh rotation={[-Math.PI / 2, 0, -.055]} position={[5.65, -1.47, -13.2]} name="replay-memory-water">
+        <planeGeometry args={[7.8, 18, 18, 28]} />
+        <meshPhysicalMaterial color={memory.visuals.accent} roughness={.12} metalness={0} clearcoat={.92} clearcoatRoughness={.08} transparent opacity={.31} />
       </mesh>
-      <mesh position={[-9.8, -1.4, -21]} scale={[9.5, 3.4, 5.8]} castShadow receiveShadow>
-        <sphereGeometry args={[1, 64, 32]} />
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[5.1, -1.455, -8.3]}>
+        <circleGeometry args={[3.5, 72]} />
+        <meshPhysicalMaterial color={memory.visuals.light} roughness={.16} metalness={0} clearcoat={.9} clearcoatRoughness={.1} transparent opacity={.22} />
+      </mesh>
+
+      {stones.map((stone, index) => (
+        <mesh
+          key={index}
+          name={`replay-memory-stone-${index + 1}`}
+          position={[stone.x, -1.38 + stone.scale * .4, stone.z]}
+          rotation={[stone.rotation * .18, stone.rotation, stone.rotation * .11]}
+          scale={[stone.scale * 1.35, stone.scale * .72, stone.scale]}
+          castShadow
+          receiveShadow
+        >
+          <icosahedronGeometry args={[1, 2]} />
+          <meshStandardMaterial color={index % 3 === 0 ? '#39433d' : '#2b3531'} roughness={.93} metalness={0} />
+        </mesh>
+      ))}
+
+      {trees.map(([x, z, scale], index) => (
+        <group key={index} name={`replay-memory-tree-${index + 1}`} position={[x, -1.5, z]} scale={scale}>
+          <mesh position={[0, 1.45, 0]} castShadow>
+            <cylinderGeometry args={[.16, .24, 2.9, 10]} />
+            <meshStandardMaterial color="#3a2d22" roughness={.96} />
+          </mesh>
+          <mesh position={[0, 3.25, 0]} scale={[1.12, 1.7, 1.12]} castShadow>
+            <icosahedronGeometry args={[1.25, 2]} />
+            <meshStandardMaterial color={index % 2 ? '#213b31' : '#1b332a'} roughness={.92} />
+          </mesh>
+          <mesh position={[.55, 2.95, .18]} scale={[.72, 1.04, .68]} castShadow>
+            <icosahedronGeometry args={[1, 2]} />
+            <meshStandardMaterial color="#29483a" roughness={.9} />
+          </mesh>
+        </group>
+      ))}
+
+      <mesh position={[-10.8, -2.4, -24.5]} scale={[9.8, 4.8, 5.4]} rotation={[0, .2, -.04]} castShadow receiveShadow name="replay-memory-ridge-left">
+        <icosahedronGeometry args={[1, 3]} />
         <meshStandardMaterial color="#17251f" roughness={1} metalness={0} />
       </mesh>
-      <mesh position={[8.8, -1.7, -23]} scale={[11.2, 4.2, 6.6]} castShadow receiveShadow>
-        <sphereGeometry args={[1, 64, 32]} />
+      <mesh position={[10.2, -2.6, -26]} scale={[12.2, 5.6, 6.4]} rotation={[0, -.18, .03]} castShadow receiveShadow name="replay-memory-ridge-right">
+        <icosahedronGeometry args={[1, 3]} />
         <meshStandardMaterial color="#20302a" roughness={1} metalness={0} />
       </mesh>
-      <mesh position={[0, -2.05, -28]} scale={[17, 5.2, 7.5]} receiveShadow>
-        <sphereGeometry args={[1, 64, 32]} />
+      <mesh position={[0, -3.45, -33]} scale={[18.5, 6.8, 8.2]} receiveShadow name="replay-memory-ridge-horizon">
+        <icosahedronGeometry args={[1, 3]} />
         <meshStandardMaterial color="#2b3b34" roughness={1} metalness={0} />
+      </mesh>
+
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[-5.6, -1.43, -12.8]} name="replay-memory-meadow-light">
+        <circleGeometry args={[5.4, 64]} />
+        <meshBasicMaterial color={memory.visuals.light} transparent opacity={.035} depthWrite={false} blending={THREE.AdditiveBlending} />
+      </mesh>
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[2.8, -1.44, -19.5]} name="replay-memory-atmospheric-pool">
+        <circleGeometry args={[7.2, 64]} />
+        <meshBasicMaterial color={memory.visuals.accent} transparent opacity={.025} depthWrite={false} blending={THREE.AdditiveBlending} />
       </mesh>
     </group>
   )
