@@ -77,13 +77,14 @@ test('Orb ownership follows destination canon without visual duplication', () =>
 })
 
 test('Home Gold Master ground detail preserves density with bounded instanced rendering', () => {
-  assert.match(homeProduction, /const STONE_SCATTER = Array\.from\(\{ length: 34 \}/)
+  assert.match(homeProduction, /const STONE_SCATTER = Array\.from\(\{ length: 48 \}/)
   assert.match(homeProduction, /function StoneBatch/)
   assert.match(homeProduction, /<instancedMesh/)
   assert.match(homeProduction, /mesh\.setMatrixAt\(localIndex, transform\.matrix\)/)
   assert.match(homeProduction, /mesh\.setColorAt\(localIndex, color\)/)
   assert.match(homeProduction, /STONE_SCATTER\.slice\(0, 12\)/)
   assert.match(homeProduction, /STONE_SCATTER\.slice\(12\)/)
+  assert.match(homeProduction, /const FERN_PLACEMENTS = Array\.from\(\{ length: 104 \}/)
   assert.match(homeProduction, /castShadow=\{castShadow\}/)
   assert.match(homeProduction, /receiveShadow/)
   assert.doesNotMatch(homeProduction, /STONE_SCATTER\.map\([\s\S]{0,220}<mesh/)
