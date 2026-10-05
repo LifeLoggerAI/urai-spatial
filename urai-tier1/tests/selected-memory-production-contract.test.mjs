@@ -108,6 +108,7 @@ test('Focus is an explorable stellar memory-star field rather than a static cham
   assert.match(focus, /Held in context\. Nothing leaves this memory field\./)
   assert.match(focus, /prefers-reduced-motion:reduce/)
   assert.match(focus, /@media\(max-width:\d+px\)/)
+  assert.match(focus, /\.focusStatus\{width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect\(0,0,0,0\);clip-path:inset\(50%\);white-space:nowrap;border:0\}/)
 
   assert.doesNotMatch(focus, /className="artifactImage"/, 'the retired static artifact-image owner must not return')
   assert.doesNotMatch(focus, /\.artifactImage\{/, 'the retired static artifact-image CSS owner must not return')
