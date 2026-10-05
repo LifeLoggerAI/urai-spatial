@@ -234,6 +234,17 @@ jobs:
               test_status=${PIPESTATUS[0]}
               set -e
 
+              # Playwright exits 0 when an initially failing test passes on retry and
+              # reports it as "flaky". Retain one retry for diagnostic trace capture,
+              # but never promote a recovered flake to release-green evidence.
+              if grep -Eq '(^|[[:space:]])[1-9][0-9]* flaky([[:space:]]|$)' "$test_log"; then
+                echo "Recovered Playwright flake is a release failure for $spec hash=$test_hash" \
+                  | tee -a artifacts/accessibility-performance/playwright.log "$spec_log" "$test_log"
+                if [[ "$test_status" -eq 0 ]]; then
+                  test_status=86
+                fi
+              fi
+
               if [[ -d artifacts/accessibility-performance/playwright-report ]]; then
                 mv artifacts/accessibility-performance/playwright-report \
                   "artifacts/accessibility-performance/spec-reports/${slug}-${test_hash}"
