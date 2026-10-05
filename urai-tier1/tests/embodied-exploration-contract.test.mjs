@@ -172,6 +172,9 @@ test('Life Map keeps independent non-Orb travel, semantic depth and overview rec
 
 test('travel infrastructure preserves fallback, route ownership and canonical ascent capability', () => {
   for (const marker of ['URAI_WORLD_TRAVEL_EVENT', 'buildFallbackHref', 'commitHardFallback', 'WORLD_TRAVEL_FALLBACK_MS', 'markHomeAscentClosing', 'destinationSurfaceReady']) has(worldEvents, marker)
+  assert.match(worldEvents, /window\.location\.reload\(\)/)
+  assert.match(worldEvents, /current === targetLocation/)
+
   assert.match(worldEvents, /destination === 'replay'[\s\S]*cinematic-replay-client/)
   assert.match(worldEvents, /currentLocation === startingLocation \|\| !destinationSurfaceReady\(request\.destination\)/)
   for (const marker of ['beginTravelRef.current(request)', 'transitionDuration(request.destination)', 'router.push(href)', 'navigationWatchdog']) has(worldTransitions, marker)
