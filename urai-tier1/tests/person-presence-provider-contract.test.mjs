@@ -29,6 +29,11 @@ test('historical mode carries compiled knowledge cutoff and simulation never bec
   assert.match(provider,/syntheticOutputMayBecomeHistoricalSource:false/)
 })
 
+test('rejected Firebase person-presence tokens remain authentication failures',()=>{
+  assert.match(provider,/try \{[\s\S]*verifyIdToken\(bearerToken\(request\.headers\.authorization\), true\)[\s\S]*catch \(error\)/)
+  assert.match(provider,/throw new PresenceError\(401, 'UNAUTHORIZED', 'Authentication is required\.'\)/)
+})
+
 test('client route is private no-store streaming and checks returned truth boundary',()=>{
   assert.match(firebase,/\/api\/urai\/person-presence\/conversation/)
   assert.match(client,/cache:'no-store'/)
