@@ -267,12 +267,13 @@ function ReplaySpatialScene({ memory, progressMs, onMediaState }: { memory: Sele
     <>
       <color attach="background" args={[memory.visuals.sky]} />
       <fog attach="fog" args={[memory.visuals.sky, 10, 34]} />
-      <ambientLight intensity={0.26} />
-      <hemisphereLight intensity={0.5} color={memory.visuals.light} groundColor={memory.visuals.ground} />
-      <directionalLight position={[-4, 7, 6]} intensity={1.3} color={memory.visuals.light} castShadow />
-      <directionalLight position={[4, 2, -3]} intensity={0.42} color={memory.visuals.accent} />
-      <pointLight position={[0, 1.2, -4.8]} intensity={4.2} distance={17} color={memory.visuals.accent} />
-      <pointLight position={[-3.8, 2.8, -2.4]} intensity={1.15} distance={11} color={memory.visuals.light} />
+      <ambientLight intensity={0.38} />
+      <hemisphereLight intensity={0.72} color={memory.visuals.light} groundColor={memory.visuals.ground} />
+      <directionalLight position={[-4, 7, 6]} intensity={1.75} color={memory.visuals.light} castShadow />
+      <directionalLight position={[4, 3.2, -3]} intensity={0.66} color={memory.visuals.accent} />
+      <pointLight position={[0, 1.4, -4.8]} intensity={5.25} distance={19} color={memory.visuals.accent} />
+      <pointLight position={[-4.6, 3.1, -4.2]} intensity={1.85} distance={15} color={memory.visuals.light} />
+      <pointLight position={[5.4, 1.8, -13.8]} intensity={1.35} distance={18} color={memory.visuals.accent} />
       {memory.demo ? <MemoryMediaDome url={replayAssets.primary.src} onState={onMediaState} /> : null}
       {memory.demo ? <DemoMemoryLandscape memory={memory} /> : null}
       <ReplayMemoryAtmosphere memory={memory} reducedMotion={reducedMotion} />
