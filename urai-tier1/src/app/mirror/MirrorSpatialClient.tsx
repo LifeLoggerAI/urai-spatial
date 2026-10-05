@@ -261,7 +261,16 @@ useEffect(() => {
     if (!memory) return
     const href = buildMemoryHref(memory.id, memory.replayManifest.id, memory.star.id, memory.demo, 'replay')
     requestUraiWorldTravel({ destination: 'replay', href, entryPortal: 'mirror-reflection-fragment', cameraCheckpoint: `mirror:${selected?.id ?? 'overview'}`, context: { memoryId: memory.id, replayManifestId: memory.replayManifest.id, privacyMode: memory.privacy === 'private' ? 'held-private' : 'private' } })
-  }, [memory, selected])
+
+    // Mirror owns an explicit full-document safety handoff for Replay. The shared
+    // transition controller still carries world state, audio, and cinematic timing,
+    // while this retained fallback guarantees the destination commits even if the
+    // controller is remounted during the WebGL realm transition.
+    window.setTimeout(() => {
+      if (window.location.pathname.replace(/\\/+$/, '') === '/replay') return
+      window.location.assign(href)
+    }, reducedMotion ? 520 : 2250)
+  }, [memory, reducedMotion, selected])
 
   const goPassport = useCallback(() => {
     requestUraiWorldTravel({ destination: 'passport', href: '/passport', entryPortal: 'mirror-ownership-threshold', cameraCheckpoint: `mirror:${selected?.id ?? 'overview'}` })
