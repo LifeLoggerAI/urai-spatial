@@ -244,6 +244,11 @@ test('Replay preserves inside-memory demonstration canon without admitting it as
   assert.match(replay, /A spatial reconstruction is not established by this source/)
   assert.match(replay, /width:min\(640px,68vw\)/)
   assert.match(replay, /radial-gradient\(circle at 50% 42%,transparent 0 36%/)
+  assert.match(replay, /artState: 'no-spend-procedural-landscape-v2'/)
+  assert.match(replay, /replay-memory-stone-\$\{index \+ 1\}/)
+  assert.match(replay, /replay-memory-tree-\$\{index \+ 1\}/)
+  assert.match(replay, /replay-memory-water/)
+  assert.match(replay, /replay-memory-ridge-horizon/)
   assert.doesNotMatch(replay, /projection|projector|movie screen/i)
 })
 
