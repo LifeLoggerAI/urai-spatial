@@ -66,7 +66,7 @@ const oldHomeSettlement = `  if (route.id === 'home') {
       const fallback = document.querySelector('[data-testid="urai-home-accessible-fallback"]')
       const body = document.body.innerText || ''
       return Boolean(fallback && body.includes('Own your life.') && body.includes('Threshold online'))
-    }, null, { timeout: 90_000, polling: 50 })
+    }, null, { timeout: 45_000, polling: 50 })
   }`
 
 const currentHomeSettlement = `  if (route.id === 'home') {
