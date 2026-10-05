@@ -129,7 +129,6 @@ async function activate(page: Page, destination: Destination, activation: Activa
   const target = navigation.getByRole('button', { name: destination.label, exact: true })
   await expect(target).toBeVisible()
   await expect(target).toBeEnabled()
-  await target.scrollIntoViewIfNeeded()
 
   if (activation.method === 'keyboard') {
     await target.focus()
@@ -174,8 +173,6 @@ async function proveCanonicalTravel(
 ) {
   const page = await context.newPage()
   await page.goto('/home/', { waitUntil: 'domcontentloaded' })
-  await page.waitForLoadState('networkidle', { timeout: 15_000 }).catch(() => {})
-
   await activate(page, destination, activation)
 
   const expected = expectedSignature(destination)
