@@ -84,12 +84,6 @@ async function verifyViewport(
     expect(layout!.semanticOpacity, `${viewport.label} non-dominant opacity`).toBeLessThanOrEqual(0.02)
     expect(layout!.documentWidth, `${viewport.label} document width`).toBeLessThanOrEqual(layout!.viewport.width + 1)
 
-    const destinations = [
-      semantic.getByTestId('home-semantic-orb'),
-      semantic.getByTestId('home-semantic-ground'),
-      semantic.getByTestId('home-semantic-life-map'),
-    ]
-    await expect(semantic.locator(':is(button,a)')).toHaveCount(3)
     expect(layout!.destinationRects, `${viewport.label} destination count`).toHaveLength(3)
     for (const rect of layout!.destinationRects) {
       expect(rect, `${viewport.label} destination bounds`).not.toBeNull()
@@ -97,10 +91,22 @@ async function verifyViewport(
       expect(rect!.height, `${viewport.label} destination height`).toBeGreaterThanOrEqual(48)
     }
 
-    await destinations[0].focus()
-    await expect(destinations[0]).toBeFocused()
-    const focusedOpacity = await semantic.evaluate((element) => Number.parseFloat(getComputedStyle(element).opacity || '1'))
-    expect(focusedOpacity, `${viewport.label} focus reveal`).toBeGreaterThan(0.9)
+    const focusProof = await page.evaluate(() => {
+      const semanticNode = document.querySelector<HTMLElement>('.home-semantic-navigation[data-home-navigation-owner="runtime-boundary"]')
+      const destinations = semanticNode?.querySelectorAll<HTMLElement>(':scope > :is(button,a)') ?? []
+      const orb = semanticNode?.querySelector<HTMLElement>('[data-testid="home-semantic-orb"]')
+      if (!semanticNode || !orb) return null
+      orb.focus({ preventScroll: true })
+      return {
+        destinationCount: destinations.length,
+        focused: document.activeElement === orb,
+        focusedOpacity: Number.parseFloat(getComputedStyle(semanticNode).opacity || '1'),
+      }
+    })
+    expect(focusProof, `${viewport.label} focus proof`).not.toBeNull()
+    expect(focusProof!.destinationCount, `${viewport.label} semantic destination count`).toBe(3)
+    expect(focusProof!.focused, `${viewport.label} semantic focus`).toBe(true)
+    expect(focusProof!.focusedOpacity, `${viewport.label} focus reveal`).toBeGreaterThan(0.9)
   } finally {
     await context.close()
   }
