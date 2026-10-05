@@ -6,6 +6,9 @@ if (!admin.apps.length) admin.initializeApp()
 
 const REGION = 'us-central1'
 const ELEVATION_API_KEY = defineSecret('URAI_ELEVATION_SERVER_CREDENTIAL')
+const db = admin.firestore()
+const RATE_WINDOW_MS = 60_000
+const RATE_LIMIT_MAX = 12
 
 type JsonMap = Record<string, unknown>
 
@@ -22,6 +25,25 @@ function isRecord(value: unknown): value is JsonMap {
 
 function validCoordinate(value: unknown, min: number, max: number): value is number {
   return typeof value === 'number' && Number.isFinite(value) && value >= min && value <= max
+}
+
+async function consumeElevationRateLimit(uid: string) {
+  const ref = db.doc(`users/${uid}/providerRateLimits/maps-elevation`)
+  const now = Date.now()
+  await db.runTransaction(async (transaction) => {
+    const snapshot = await transaction.get(ref)
+    const data = snapshot.data() ?? {}
+    const prior = data.windowStartedAt instanceof admin.firestore.Timestamp ? data.windowStartedAt.toMillis() : 0
+    const active = prior > 0 && now - prior < RATE_WINDOW_MS
+    const count = active ? Number(data.count ?? 0) : 0
+    if (count >= RATE_LIMIT_MAX) throw new ElevationError(429, 'rate_limited')
+    transaction.set(ref, {
+      provider: 'maps-elevation',
+      count: count + 1,
+      windowStartedAt: admin.firestore.Timestamp.fromMillis(active ? prior : now),
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+    }, { merge: true })
+  })
 }
 
 async function authenticatedUid(request: { headers: { authorization?: string } }) {
@@ -56,6 +78,8 @@ export const mapsElevationProvider = onRequest({
     if (!validCoordinate(latitude, -90, 90) || !validCoordinate(longitude, -180, 180)) {
       throw new ElevationError(400, 'invalid_coordinate')
     }
+
+    await consumeElevationRateLimit(uid)
 
     const apiKey = ELEVATION_API_KEY.value().trim()
     if (!apiKey) throw new ElevationError(503, 'elevation_unavailable')
