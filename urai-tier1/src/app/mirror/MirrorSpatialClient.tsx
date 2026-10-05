@@ -267,7 +267,7 @@ useEffect(() => {
     // while this retained fallback guarantees the destination commits even if the
     // controller is remounted during the WebGL realm transition.
     window.setTimeout(() => {
-      if (window.location.pathname.replace(/\\/+$/, '') === '/replay') return
+      if (window.location.pathname.replace(/\/+$/, '') === '/replay') return
       window.location.assign(href)
     }, reducedMotion ? 520 : 2250)
   }, [memory, reducedMotion, selected])
