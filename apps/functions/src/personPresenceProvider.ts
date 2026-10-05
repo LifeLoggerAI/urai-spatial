@@ -42,9 +42,14 @@ function bearerToken(value: unknown) {
 }
 
 async function authenticatedUid(request: { headers: Record<string, unknown> }) {
-  const decoded = await admin.auth().verifyIdToken(bearerToken(request.headers.authorization), true)
-  if (!decoded.uid) throw new PresenceError(401, 'UNAUTHORIZED', 'Authentication is required.')
-  return decoded.uid
+  try {
+    const decoded = await admin.auth().verifyIdToken(bearerToken(request.headers.authorization), true)
+    if (!decoded.uid) throw new PresenceError(401, 'UNAUTHORIZED', 'Authentication is required.')
+    return decoded.uid
+  } catch (error) {
+    if (error instanceof PresenceError) throw error
+    throw new PresenceError(401, 'UNAUTHORIZED', 'Authentication is required.')
+  }
 }
 
 function readBody(request: { body?: unknown }, maximumBytes: number) {
