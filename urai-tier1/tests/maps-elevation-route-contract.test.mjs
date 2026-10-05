@@ -31,6 +31,11 @@ test('deployed Elevation rate-limits per uid before the billable provider fetch'
   assert.ok(limiterIndex > -1 && fetchIndex > limiterIndex)
 })
 
+test('deployed Elevation aborts provider fetch only when the response disconnects early', () => {
+  assert.match(functionSource, /response\.on\('close', \(\) => \{ if \(!response\.writableEnded\) controller\.abort\(\) \}\)/)
+  assert.doesNotMatch(functionSource, /request\.on\('close',/)
+})
+
 test('Elevation validates coordinates and bounds provider execution', () => {
   assert.match(source, /validCoordinate\(latitude, -90, 90\)/)
   assert.match(source, /validCoordinate\(longitude, -180, 180\)/)
