@@ -9,9 +9,15 @@ import test from 'node:test'
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..')
 const verifierPath = 'scripts/verify-provider-asset-handoff.mjs'
 const handoffPath = 'urai-tier1/public/assets/urai/final/manifests/asset-factory-spatial-handoff.json'
-const baseline = spawnSync(process.execPath, [verifierPath], { cwd: root, encoding: 'utf8' })
+const baselineDirectory = fs.mkdtempSync(path.join(os.tmpdir(), 'urai-asset-baseline-'))
+process.on('exit', () => fs.rmSync(baselineDirectory, { recursive: true, force: true }))
+const baseline = spawnSync(process.execPath, [verifierPath], {
+  cwd: root,
+  encoding: 'utf8',
+  env: { ...process.env, URAI_ASSET_EVIDENCE_DIRECTORY: baselineDirectory },
+})
 assert.equal(baseline.status, 0, baseline.stdout + baseline.stderr)
-const report = JSON.parse(fs.readFileSync(path.join(root, 'release-control-evidence/provider-asset-verification.json'), 'utf8'))
+const report = JSON.parse(fs.readFileSync(path.join(baselineDirectory, 'provider-asset-verification.json'), 'utf8'))
 
 // Execute the real verifier against actual binaries and manifest in a temporary
 // copy. Mutations never alter the committed runtime, source, or provider assets.
@@ -25,7 +31,11 @@ function inject(t, mutate) {
     fs.copyFileSync(path.join(root, file), path.join(fixture, file))
   }
   mutate(fixture)
-  const result = spawnSync(process.execPath, [verifierPath], { cwd: fixture, encoding: 'utf8' })
+  const result = spawnSync(process.execPath, [verifierPath], {
+    cwd: fixture,
+    encoding: 'utf8',
+    env: { ...process.env, URAI_ASSET_EVIDENCE_DIRECTORY: path.join(fixture, 'release-control-evidence') },
+  })
   assert.equal(result.status, 1, result.stdout + result.stderr)
   const failed = JSON.parse(fs.readFileSync(path.join(fixture, 'release-control-evidence/provider-asset-verification.json'), 'utf8'))
   assert.equal(failed.ok, false)

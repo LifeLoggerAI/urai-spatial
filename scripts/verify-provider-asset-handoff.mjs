@@ -7,7 +7,9 @@ const root = process.cwd()
 const assetRoot = path.join(root, 'urai-tier1', 'public', 'assets', 'urai')
 const handoffPath = path.join(assetRoot, 'final', 'manifests', 'asset-factory-spatial-handoff.json')
 const registryPath = path.join(root, 'urai-tier1', 'src', 'spatial', 'assets', 'uraiAssets.ts')
-const evidenceDirectory = path.join(root, 'release-control-evidence')
+const evidenceDirectory = process.env.URAI_ASSET_EVIDENCE_DIRECTORY
+  ? path.resolve(process.env.URAI_ASSET_EVIDENCE_DIRECTORY)
+  : path.join(root, 'release-control-evidence')
 const evidencePath = path.join(evidenceDirectory, 'provider-asset-verification.json')
 
 const corePaths = new Set([
