@@ -42,6 +42,8 @@ test('static Hosting rewrites every live provider URL to secret-bound Firebase F
     { source: '/api/voice/elevenlabs', function: { functionId: 'elevenLabsVoiceProvider', region: 'us-central1' } },
     { source: '/api/urai/adam/conversation', function: { functionId: 'adamPresenceProvider', region: 'us-central1' } },
     { source: '/api/urai/adam/voice', function: { functionId: 'adamFounderVoiceProvider', region: 'us-central1' } },
+    { source: '/api/urai/person-presence/conversation', function: { functionId: 'personPresenceProvider', region: 'us-central1' } },
+    { source: '/api/urai/person-presence/voice', function: { functionId: 'personPresenceVoiceProvider', region: 'us-central1' } },
     { source: '/api/urai/council/anthropic', function: { functionId: 'anthropicCouncilProvider', region: 'us-central1' } },
     { source: '/api/urai/council/gemini', function: { functionId: 'geminiCouncilProvider', region: 'us-central1' } },
     { source: '/api/urai/council/xai', function: { functionId: 'xaiCouncilProvider', region: 'us-central1' } },
@@ -51,7 +53,7 @@ test('static Hosting rewrites every live provider URL to secret-bound Firebase F
   assert.equal(staticFirebaseConfig.hosting.rewrites.some((rewrite) => rewrite.source === '**' || rewrite.source === '/**'), false)
   assert.match(functionsIndex, /elevenLabsVoiceProvider, openAiOrbProvider/)
   assert.match(functionsIndex, /adamFounderVoiceProvider, adamPresenceProvider/)
-  for (const handler of ['anthropicCouncilProvider', 'geminiCouncilProvider', 'mistralCouncilProvider', 'xaiCouncilProvider']) {
+  for (const handler of ['personPresenceProvider', 'personPresenceVoiceProvider', 'anthropicCouncilProvider', 'geminiCouncilProvider', 'mistralCouncilProvider', 'xaiCouncilProvider']) {
     assert.match(functionsIndex, new RegExp(`\\b${handler}\\b`))
   }
   for (const handler of ['googleOAuthCallback', 'googleOAuthDisconnect', 'googleOAuthStart', 'googleOAuthStatus']) {
