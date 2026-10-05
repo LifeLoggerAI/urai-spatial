@@ -72,7 +72,7 @@ test.describe('Embodied exploration runtime evidence', () => {
     const errors = await collectRuntimeErrors(page)
     await page.goto('/home/', { waitUntil: 'domcontentloaded' })
 
-    const home = page.locator('.urai-final-home-world')
+    const home = page.locator(homeOwnerSelector).first()
     await waitForHomeWorld(home)
     await expect(home).toHaveAttribute('data-home-movement', 'walk-keyboard-click-touch')
     await expect(home).toHaveAttribute('data-home-pointer-lock', 'false')
@@ -201,7 +201,7 @@ test.describe('Embodied exploration runtime evidence', () => {
   test('mobile movement controls remain contained, touch-sized, and move through Home', async ({ page }) => {
     await page.setViewportSize({ width: 393, height: 873 })
     await page.goto('/home/', { waitUntil: 'domcontentloaded' })
-    const home = page.locator('.urai-final-home-world')
+    const home = page.locator(homeOwnerSelector).first()
     await waitForHomeWorld(home)
     const homePad = page.getByRole('group', { name: 'Home movement controls' })
     await expect(homePad).toBeVisible({ timeout: 30_000 })
@@ -228,7 +228,7 @@ test.describe('Embodied exploration runtime evidence', () => {
   test('reduced motion preserves movement access without forced animation or pointer lock', async ({ page }) => {
     await page.emulateMedia({ reducedMotion: 'reduce' })
     await page.goto('/home/', { waitUntil: 'domcontentloaded' })
-    const home = page.locator('.urai-final-home-world')
+    const home = page.locator(homeOwnerSelector).first()
     await waitForHomeWorld(home)
     const movement = page.getByRole('group', { name: 'Home movement controls' })
     await expect(movement).toBeVisible({ timeout: 30_000 })
