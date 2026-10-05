@@ -100,6 +100,14 @@ function fallbackReturnDestination(destination: UraiDestination): UraiDestinatio
   return 'infrastructure-hub'
 }
 
+function requiresHardDocumentNavigation(request: UraiWorldTravelRequest) {
+  // Mirror's WebGL realm can leave Next's client router with the target URL
+  // committed before the Replay document owner mounts. Preserve the cinematic
+  // transition, then use one deterministic document navigation for this edge.
+  return request.destination === 'replay' && request.entryPortal === 'mirror-reflection-fragment'
+}
+
+
 export function WorldTransitionController() {
   const router = useRouter()
   const { world, phase, beginTravel } = useUraiWorldState()
@@ -141,6 +149,12 @@ export function WorldTransitionController() {
     const href = buildTravelHref(request)
     const targetPathname = normalizedPathname(new URL(href, window.location.origin).pathname)
     timer.current = window.setTimeout(() => {
+      if (requiresHardDocumentNavigation(request)) {
+        window.location.assign(href)
+        timer.current = null
+        return
+      }
+
       router.push(href)
       timer.current = null
 
