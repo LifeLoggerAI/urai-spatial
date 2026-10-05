@@ -39,9 +39,12 @@ export default function CommunicationSettingsClient() {
       return
     }
     const auth = getAuth(app)
-    return onAuthStateChanged(auth, (nextUser) => {
+    const unsubscribe = onAuthStateChanged(auth, (nextUser) => {
       const readEpoch = ++preferenceReadEpochRef.current
       setUser(nextUser)
+      setSaved(null)
+      setPhone('')
+      setBusy(false)
       setAffirmed(false)
       if (!nextUser) {
         setSaved(null)
@@ -72,11 +75,15 @@ export default function CommunicationSettingsClient() {
           if (preferenceReadEpochRef.current === readEpoch) setLoading(false)
         })
     })
+    return () => {
+      ++preferenceReadEpochRef.current
+      unsubscribe()
+    }
   }, [])
 
   async function enableSms(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    if (!user || busy) return
+    if (!user || loading || busy || getAuth(app).currentUser?.uid !== user.uid) return
     const normalized = phone.trim()
     if (!validE164(normalized)) {
       setMessage('Enter the mobile number in international E.164 format, for example +19035551234.')
@@ -87,6 +94,7 @@ export default function CommunicationSettingsClient() {
       return
     }
 
+    const writeEpoch = preferenceReadEpochRef.current
     setBusy(true)
     const now = new Date().toISOString()
     const next: SavedSmsPreference = {
@@ -100,18 +108,21 @@ export default function CommunicationSettingsClient() {
       await setDoc(doc(getFirebaseDb(), 'users', user.uid), {
         messagingPreferences: { sms: next },
       }, { merge: true })
+      if (preferenceReadEpochRef.current !== writeEpoch) return
       setSaved(next)
       setAffirmed(false)
       setMessage('SMS messaging enabled. UrAi recorded your explicit consent. Reply STOP to an UrAi text or use Disable SMS here to opt out.')
     } catch {
+      if (preferenceReadEpochRef.current !== writeEpoch) return
       setMessage('UrAi could not save the SMS preference. SMS has not been represented as enabled.')
     } finally {
-      setBusy(false)
+      if (preferenceReadEpochRef.current === writeEpoch) setBusy(false)
     }
   }
 
   async function disableSms() {
-    if (!user || busy || saved?.consented !== true) return
+    if (!user || loading || busy || saved?.consented !== true || getAuth(app).currentUser?.uid !== user.uid) return
+    const writeEpoch = preferenceReadEpochRef.current
     setBusy(true)
     const now = new Date().toISOString()
     const next: SavedSmsPreference = {
@@ -124,13 +135,15 @@ export default function CommunicationSettingsClient() {
       await setDoc(doc(getFirebaseDb(), 'users', user.uid), {
         messagingPreferences: { sms: next },
       }, { merge: true })
+      if (preferenceReadEpochRef.current !== writeEpoch) return
       setSaved(next)
       setAffirmed(false)
       setMessage('SMS messaging disabled. This account preference no longer authorizes new UrAi SMS sends.')
     } catch {
+      if (preferenceReadEpochRef.current !== writeEpoch) return
       setMessage('UrAi could not confirm the change. The previous saved preference remains authoritative.')
     } finally {
-      setBusy(false)
+      if (preferenceReadEpochRef.current === writeEpoch) setBusy(false)
     }
   }
 
@@ -164,7 +177,7 @@ export default function CommunicationSettingsClient() {
             <div style={{ display: 'grid', gap: 16 }}>
               <p><strong>SMS is enabled.</strong> Your saved mobile number is used only within the applicable UrAi messaging and privacy boundaries.</p>
               <p>Message frequency varies. Message and data rates may apply. Reply STOP to opt out or HELP for help.</p>
-              <button type="button" onClick={() => void disableSms()} disabled={busy} style={{ minHeight: 48, width: 'fit-content', padding: '0 18px', borderRadius: 999, border: '1px solid rgba(255,255,255,.24)', background: 'transparent', color: 'inherit', fontWeight: 800 }}>
+              <button type="button" onClick={() => void disableSms()} disabled={loading || busy} style={{ minHeight: 48, width: 'fit-content', padding: '0 18px', borderRadius: 999, border: '1px solid rgba(255,255,255,.24)', background: 'transparent', color: 'inherit', fontWeight: 800 }}>
                 {busy ? 'Saving…' : 'Disable SMS'}
               </button>
             </div>
