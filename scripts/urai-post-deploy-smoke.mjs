@@ -41,7 +41,7 @@ const contracts = [
   ['/spatial/ar-vr', ['urai-quest-explorable-world', 'URAI AR / VR / XR entry chamber'], []],
   ['/xr', ['urai-quest-explorable-world', 'URAI XR World'], []],
   ['/settings', ['device-settings', 'How URAI meets you.'], []],
-  ['/settings/communications', ['communication-settings', 'SMS preferences', 'Message and data rates may apply', 'Reply STOP', 'Reply HELP'], []],
+  ['/settings/communications', ['communication-settings', 'SMS preferences', 'Message and data rates may apply', 'Reply STOP to opt out or HELP for help'], []],
   ['/sms-opt-in', ['sms-opt-in-proof', 'SMS web-form opt-in', 'unchecked by default', 'Privacy Policy', 'Terms &amp; Conditions'], []],
   ['/launch', ['Your private world is the interface.', 'Launch destinations', 'Launch truth'], []],
   ['/mirror', ['urai-final-mirror-realm', 'See the pattern clearly.'], []],
