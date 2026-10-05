@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { getAuth, onAuthStateChanged, type User } from 'firebase/auth'
 import { doc, getDoc, setDoc } from 'firebase/firestore'
-import { useEffect, useState, type FormEvent } from 'react'
+import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { app, firebasePublicEnvReady, getFirebaseDb } from '@/lib/firebase/client'
 
 const CONSENT_VERSION = 'twilio-a2p-2026-10-04'
@@ -28,6 +28,7 @@ export default function CommunicationSettingsClient() {
   const [affirmed, setAffirmed] = useState(false)
   const [saved, setSaved] = useState<SavedSmsPreference | null>(null)
   const [busy, setBusy] = useState(false)
+  const preferenceReadEpochRef = useRef(0)
   const [message, setMessage] = useState(
     firebasePublicEnvReady ? 'Checking your communication preference…' : 'Account communication settings are unavailable until the account service is configured.',
   )
@@ -39,6 +40,7 @@ export default function CommunicationSettingsClient() {
     }
     const auth = getAuth(app)
     return onAuthStateChanged(auth, (nextUser) => {
+      const readEpoch = ++preferenceReadEpochRef.current
       setUser(nextUser)
       setAffirmed(false)
       if (!nextUser) {
@@ -52,6 +54,7 @@ export default function CommunicationSettingsClient() {
       const userRef = doc(getFirebaseDb(), 'users', nextUser.uid)
       void getDoc(userRef)
         .then((snapshot) => {
+          if (preferenceReadEpochRef.current !== readEpoch) return
           const data = snapshot.data() as { messagingPreferences?: { sms?: SavedSmsPreference } } | undefined
           const sms = data?.messagingPreferences?.sms ?? null
           setSaved(sms)
@@ -61,10 +64,13 @@ export default function CommunicationSettingsClient() {
             : 'SMS messaging is off. Enabling it is optional.')
         })
         .catch(() => {
+          if (preferenceReadEpochRef.current !== readEpoch) return
           setSaved(null)
           setMessage('UrAi could not read your SMS preference. No consent has been assumed.')
         })
-        .finally(() => setLoading(false))
+        .finally(() => {
+          if (preferenceReadEpochRef.current === readEpoch) setLoading(false)
+        })
     })
   }, [])
 
