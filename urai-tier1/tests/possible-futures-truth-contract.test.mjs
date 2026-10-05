@@ -37,6 +37,14 @@ test('scenario travel preserves origin and cannot leak scenario truth into reali
   assert.match(worldState,/scenarioId: action\.destination === 'possible-futures'.*: undefined/)
 })
 
+test('Possible Futures visual world rejects launch-greybox primitives',()=>{
+  assert.doesNotMatch(route,/dodecahedronGeometry|cylinderGeometry|boxGeometry/)
+  assert.match(route,/possible-futures-organic-scenario-landscape/)
+  assert.match(route,/makeScenarioTerrain/)
+  assert.match(route,/new THREE\.TubeGeometry/)
+  assert.match(route,/THREE\.AdditiveBlending/)
+})
+
 test('Possible Futures controls preserve 48px targets and reduced-motion parity',()=>{
   assert.match(route,/minHeight:48/)
   assert.match(route,/prefers-reduced-motion: reduce/)
