@@ -50,6 +50,11 @@ function commitHardFallback(href: string) {
   window.location.assign(href)
 }
 
+function destinationSurfaceReady(destination: UraiWorldTravelRequest['destination']) {
+  if (destination === 'replay') return Boolean(document.querySelector('[data-testid="cinematic-replay-client"]'))
+  return true
+}
+
 function shouldBeginHomeAscent(request: UraiWorldTravelRequest) {
   if (request.destination !== 'life-map') return false
   if (request.entryPortal !== 'home-sky' || request.cameraCheckpoint !== 'home-sky-ascent') return false
@@ -104,12 +109,12 @@ export function requestUraiWorldTravel(request: UraiWorldTravelRequest) {
     settled = true
     if (observer) window.clearInterval(observer)
     const currentLocation = `${window.location.pathname}${window.location.search}${window.location.hash}`
-    if (currentLocation === startingLocation) commitHardFallback(fallbackHref)
+    if (currentLocation === startingLocation || !destinationSurfaceReady(request.destination)) commitHardFallback(fallbackHref)
   }, WORLD_TRAVEL_FALLBACK_MS)
 
   observer = window.setInterval(() => {
     const currentLocation = `${window.location.pathname}${window.location.search}${window.location.hash}`
-    if (currentLocation === startingLocation) return
+    if (currentLocation === startingLocation || !destinationSurfaceReady(request.destination)) return
     settled = true
     window.clearTimeout(fallback)
     window.clearInterval(observer)
