@@ -20,6 +20,17 @@ test('deployed Elevation maps rejected Firebase tokens to authentication_require
   assert.doesNotMatch(functionSource, /verifyIdToken\(token, true\)\n  if \(!decoded\.uid\)/)
 })
 
+test('deployed Elevation rate-limits per uid before the billable provider fetch', () => {
+  assert.match(functionSource, /providerRateLimits\/maps-elevation/)
+  assert.match(functionSource, /db\.runTransaction\(async \(transaction\) =>/)
+  assert.match(functionSource, /RATE_WINDOW_MS = 60_000/)
+  assert.match(functionSource, /RATE_LIMIT_MAX = 12/)
+  assert.match(functionSource, /throw new ElevationError\(429, 'rate_limited'\)/)
+  const limiterIndex = functionSource.indexOf('await consumeElevationRateLimit(uid)')
+  const fetchIndex = functionSource.indexOf('await fetch(url')
+  assert.ok(limiterIndex > -1 && fetchIndex > limiterIndex)
+})
+
 test('Elevation validates coordinates and bounds provider execution', () => {
   assert.match(source, /validCoordinate\(latitude, -90, 90\)/)
   assert.match(source, /validCoordinate\(longitude, -180, 180\)/)
