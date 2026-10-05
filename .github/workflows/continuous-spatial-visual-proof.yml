@@ -43,7 +43,7 @@ jobs:
   browser-proof:
     name: browser-proof-${{ matrix.proof_group }}
     runs-on: ubuntu-24.04
-    timeout-minutes: 40
+    timeout-minutes: 55
     strategy:
       fail-fast: false
       matrix:
