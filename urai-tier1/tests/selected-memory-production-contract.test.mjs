@@ -242,7 +242,8 @@ test('Replay preserves inside-memory demonstration canon without admitting it as
   assert.match(replay, /data-canonical-asset=\{demoEnvironment \? replayAssets\.primary\.src : undefined\}/)
   assert.doesNotMatch(replay, /var\(--replay-asset\)|approved-memory-asset/)
   assert.match(replay, /A spatial reconstruction is not established by this source/)
-  assert.match(replay, /width:min\(640px,68vw\)/)\n  assert.match(replay, /radial-gradient\(circle at 50% 42%,transparent 0 36%/)
+  assert.match(replay, /width:min\(640px,68vw\)/)
+  assert.match(replay, /radial-gradient\(circle at 50% 42%,transparent 0 36%/)
   assert.doesNotMatch(replay, /projection|projector|movie screen/i)
 })
 
