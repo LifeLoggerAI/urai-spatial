@@ -227,25 +227,25 @@ const RIDGE_NEAR = makeRidgeGeometry(88, 2.45, .6)
 const RIDGE_MID = makeRidgeGeometry(96, 2.8, 1.7)
 const RIDGE_FAR = makeRidgeGeometry(104, 3.1, 2.8)
 
-const FERN_PLACEMENTS = Array.from({ length: 72 }, (_, index) => {
+const FERN_PLACEMENTS = Array.from({ length: 104 }, (_, index) => {
   const side = index % 2 === 0 ? -1 : 1
   const band = Math.floor(index / 2)
   const innerCluster = index % 4 === 0 || index % 9 === 0
-  const z = 8.1 - (band % 18) * 1.22 + (seeded(index, 64) - .5) * 1.35
+  const z = 8.1 - (band % 26) * .86 + (seeded(index, 64) - .5) * 1.15
   const edge = innerCluster ? 2.65 + seeded(index, 65) * 3.25 : 5.0 + seeded(index, 65) * 5.8
   const x = side * edge + (seeded(index, 66) - .5) * 1.65
-  const scale = innerCluster ? .58 + seeded(index, 67) * .62 : .44 + seeded(index, 67) * .5
+  const scale = innerCluster ? .42 + seeded(index, 67) * .46 : .32 + seeded(index, 67) * .38
   const rotation = seeded(index, 68) * Math.PI * 2
   return [x, z, scale, rotation] as const
 })
 
-const STONE_SCATTER = Array.from({ length: 34 }, (_, index) => {
+const STONE_SCATTER = Array.from({ length: 48 }, (_, index) => {
   const lane = index % 3
-  const t = (index + 1) / 35
+  const t = (index + 1) / 49
   const z = THREE.MathUtils.lerp(6.9, -10.4, t) + (seeded(index, 201) - .5) * 1.25
   const center = lane === 0 ? -2.7 : lane === 1 ? 2.9 : (seeded(index, 202) - .5) * 7.4
   const x = center + (seeded(index, 203) - .5) * 2.2
-  const scale = .065 + seeded(index, 204) * .105
+  const scale = .045 + seeded(index, 204) * .075
   const rotation = seeded(index, 205) * Math.PI * 2
   return [x, z, scale, rotation] as const
 })
@@ -731,7 +731,7 @@ function Scene(props: { input: MovementInput; yaw: MutableRefObject<number>; pit
     <color attach="background" args={[cosmic ? '#01050b' : '#304f4b']} />
     {!cosmic ? <HomeSkyGradient /> : null}
     <Stars radius={190} depth={90} count={cosmic ? 2200 : 220} factor={cosmic ? 2.7 : .58} saturation={.12} fade speed={props.reducedMotion ? 0 : .02} />
-    <fogExp2 attach="fog" args={[cosmic ? '#050b14' : '#2a4540', cosmic ? .0017 : .0048]} />
+    <fogExp2 attach="fog" args={[cosmic ? '#050b14' : '#2a4540', cosmic ? .0017 : .0058]} />
     <ambientLight intensity={cosmic ? .13 : .28} color="#d9e7dc" />
     <hemisphereLight args={['#c8dddc','#273126',cosmic ? .22 : .62]} />
     <directionalLight position={[8,18,7]} intensity={cosmic ? .34 : 1.85} color="#f2ecd8" castShadow shadow-mapSize={[1024,1024]} shadow-camera-left={-18} shadow-camera-right={18} shadow-camera-top={18} shadow-camera-bottom={-18} shadow-camera-near={1} shadow-camera-far={60} shadow-normalBias={.025} shadow-bias={-.00015} />
