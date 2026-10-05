@@ -65,10 +65,39 @@ export function HomeSurfaceMaterial({ kind = 'stone', ...props }: MaterialProps)
 
 export function HomeSkyGradient() {
   return <mesh name="home-original-living-sky" scale={150} renderOrder={-100}>
-    <sphereGeometry args={[1, 32, 16]} />
+    <sphereGeometry args={[1, 64, 32]} />
     <shaderMaterial side={THREE.BackSide} depthWrite={false} fog={false} toneMapped={false}
       vertexShader={`varying vec3 vHomeSkyDirection; void main() { vHomeSkyDirection = normalize(position); gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`}
-      fragmentShader={`varying vec3 vHomeSkyDirection; void main() { float height = clamp(normalize(vHomeSkyDirection).y, 0.0, 1.0); vec3 horizon = vec3(.41, .51, .48); vec3 zenith = vec3(.075, .16, .19); vec3 sky = mix(horizon, zenith, pow(height, .42)); gl_FragColor = vec4(sky, 1.0); #include <colorspace_fragment> }`.replace('#include <colorspace_fragment>', '\n#include <colorspace_fragment>\n')}
+      fragmentShader={`
+        varying vec3 vHomeSkyDirection;
+        float skyHash(vec2 p) { return fract(sin(dot(p, vec2(127.1,311.7))) * 43758.5453123); }
+        float skyNoise(vec2 p) {
+          vec2 i=floor(p), f=fract(p); f=f*f*(3.0-2.0*f);
+          return mix(mix(skyHash(i),skyHash(i+vec2(1.,0.)),f.x),mix(skyHash(i+vec2(0.,1.)),skyHash(i+vec2(1.,1.)),f.x),f.y);
+        }
+        void main() {
+          vec3 dir=normalize(vHomeSkyDirection);
+          float height=clamp(dir.y,0.0,1.0);
+          float horizonBand=exp(-height*7.2);
+          vec3 horizon=vec3(.43,.53,.49);
+          vec3 upper=vec3(.11,.22,.25);
+          vec3 zenith=vec3(.045,.105,.14);
+          vec3 sky=mix(horizon,upper,smoothstep(.0,.48,height));
+          sky=mix(sky,zenith,smoothstep(.38,1.0,height));
+          vec2 cloudUv=dir.xz/max(.2,abs(dir.y)+.34);
+          float broad=skyNoise(cloudUv*1.65+vec2(2.1,-1.4));
+          float fine=skyNoise(cloudUv*4.2+vec2(-.8,3.3));
+          float cloud=smoothstep(.56,.79,broad*.72+fine*.28)*(1.0-smoothstep(.72,1.0,height));
+          vec3 cloudTint=mix(vec3(.54,.60,.57),vec3(.72,.76,.70),height);
+          sky=mix(sky,cloudTint,cloud*.18);
+          vec3 sunDir=normalize(vec3(-.34,.34,-.88));
+          float sunDot=max(dot(dir,sunDir),0.0);
+          float sunGlow=pow(sunDot,28.0)*.22+pow(sunDot,240.0)*.36;
+          sky+=vec3(1.0,.82,.58)*sunGlow;
+          sky+=vec3(.12,.11,.07)*horizonBand;
+          gl_FragColor=vec4(sky,1.0);
+          #include <colorspace_fragment>
+        }`.replace('#include <colorspace_fragment>', '\n#include <colorspace_fragment>\n')}
     />
   </mesh>
 }
