@@ -40,13 +40,20 @@ await transformFile('urai-tier1/tests/accessibility-performance-canonical-home-t
 })
 
 await transformFile('urai-tier1/tests/accessibility-performance-embodied-exploration.spec.ts', (input) => {
-  let source = replaceExact(
-    input,
-    "page.locator('.urai-final-home-world')",
-    'page.locator(homeOwnerSelector)',
-    3,
-    'embodied Home primary owner selector',
-  )
+  const staleHomeOwnerSelector = "page.locator('.urai-final-home-world')"
+  const currentHomeOwnerSelector = 'page.locator(homeOwnerSelector)'
+  const staleHomeOwnerCount = input.split(staleHomeOwnerSelector).length - 1
+  const currentHomeOwnerCount = input.split(currentHomeOwnerSelector).length - 1
+  let source
+  if (staleHomeOwnerCount === 3 && currentHomeOwnerCount === 0) {
+    source = input.split(staleHomeOwnerSelector).join(currentHomeOwnerSelector)
+  } else if (staleHomeOwnerCount === 0 && currentHomeOwnerCount === 3) {
+    source = input
+  } else {
+    throw new Error(
+      `embodied Home primary owner selector expected 3 stale or current audited occurrence(s); found stale=${staleHomeOwnerCount} current=${currentHomeOwnerCount}`,
+    )
+  }
   source = replaceExact(
     source,
     "page.getByRole('navigation', { name: 'Direct Home destinations' })",
