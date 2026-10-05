@@ -20,6 +20,18 @@ test('voice likeness requires explicit identity likeness and provider consent',(
   assert.match(provider,/PROVIDER_PROCESSING_REVOKED/)
 })
 
+test('voice auth failures and provider spend are bounded before ElevenLabs',()=>{
+  assert.match(provider,/try\{[\s\S]*verifyIdToken\(bearer\(request\.headers\.authorization\),true\)[\s\S]*catch\(error\)/)
+  assert.match(provider,/throw new VoiceError\(401,'UNAUTHORIZED','Authentication is required\.'\)/)
+  assert.match(provider,/providerRateLimits\/elevenlabs-person-presence/)
+  assert.match(provider,/VOICE_RATE_WINDOW_MS=60_000/)
+  assert.match(provider,/VOICE_RATE_LIMIT_MAX=10/)
+  assert.match(provider,/throw new VoiceError\(429,'RATE_LIMITED'/)
+  const limiterIndex=provider.indexOf('await consumeVoiceRateLimit(uid)')
+  const fetchIndex=provider.indexOf('await fetch(endpoint')
+  assert.ok(limiterIndex>-1&&fetchIndex>limiterIndex)
+})
+
 test('provider binding identifiers are not directly readable by the client',()=>{
   const start=rules.indexOf('match /personRenderBindings/{docId}')
   assert.notEqual(start,-1)
