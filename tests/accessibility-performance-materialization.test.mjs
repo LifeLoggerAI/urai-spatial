@@ -8,6 +8,8 @@ import { fileURLToPath } from 'node:url'
 
 const repo = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const independentPath = 'urai-tier1/tests/accessibility-performance-lifemap-independent.spec.ts'
+const workflowPath = '.github/workflows/accessibility-performance-evidence.yml'
+const configPath = 'playwright.accessibility.config.ts'
 
 async function withFixture(run) {
   const fixture = await mkdtemp(path.join(tmpdir(), 'urai-a11y-materialization-'))
@@ -59,4 +61,16 @@ test('full v5 materialization rejects an unknown Life Map proof instead of accep
     assert.match(result.stderr, /Life Map current proof source is not the audited form/)
     assert.equal(await readFile(target, 'utf8'), altered)
   })
+})
+
+
+test('accessibility evidence keeps one diagnostic retry but fails closed on recovered Playwright flakes', async () => {
+  const workflow = await readFile(path.join(repo, workflowPath), 'utf8')
+  const config = await readFile(path.join(repo, configPath), 'utf8')
+
+  assert.match(config, /retries:\s*1\b/, 'one retry is retained only to capture diagnostic evidence')
+  assert.match(workflow, /Recovered Playwright flake is a release failure/)
+  assert.match(workflow, /grep -Eq '[^']*flaky[^']*' "\$test_log"/)
+  assert.match(workflow, /test_status=86/)
+  assert.match(workflow, /if \[\[ "\$test_status" -ne 0 \]\]; then/)
 })
