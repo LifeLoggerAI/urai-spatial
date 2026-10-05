@@ -10,6 +10,13 @@
     "trailingSlash": false,
     "rewrites": [
       {
+        "source": "/api/maps/elevation",
+        "function": {
+          "functionId": "mapsElevationProvider",
+          "region": "us-central1"
+        }
+      },
+      {
         "source": "/api/google/oauth/start",
         "function": {
           "functionId": "googleOAuthStart",
