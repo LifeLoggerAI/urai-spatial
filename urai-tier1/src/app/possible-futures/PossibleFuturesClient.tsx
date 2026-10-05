@@ -12,6 +12,11 @@ import { useWebGLAvailable } from '../HomeSpatialCanvas'
 const BRANCH_LABELS = ['Current path', 'Requested change', 'Alternative constraint'] as const
 type SetupState = 'question' | 'creating' | 'manual' | 'exploring' | 'error'
 
+function seeded(index: number, salt: number) {
+  const value = Math.sin((index + 1) * 12.9898 + salt * 78.233) * 43758.5453
+  return value - Math.floor(value)
+}
+
 function scenarioTerrainHeight(x: number, z: number, seed: number) {
   const radial = Math.hypot(x * 0.72, z * 0.56)
   const longWave = Math.sin(x * 0.34 + seed * 1.7) * 0.42 + Math.cos(z * 0.29 - seed * 0.9) * 0.34
