@@ -29,9 +29,14 @@ async function authenticatedUid(request: { headers: { authorization?: string } }
   if (!header.startsWith('Bearer ')) throw new ElevationError(401, 'authentication_required')
   const token = header.slice(7).trim()
   if (!token) throw new ElevationError(401, 'authentication_required')
-  const decoded = await admin.auth().verifyIdToken(token, true)
-  if (!decoded.uid) throw new ElevationError(401, 'authentication_required')
-  return decoded.uid
+  try {
+    const decoded = await admin.auth().verifyIdToken(token, true)
+    if (!decoded.uid) throw new ElevationError(401, 'authentication_required')
+    return decoded.uid
+  } catch (error) {
+    if (error instanceof ElevationError) throw error
+    throw new ElevationError(401, 'authentication_required')
+  }
 }
 
 export const mapsElevationProvider = onRequest({
