@@ -11,6 +11,7 @@ const mobileInspectionCss = fs.readFileSync(new URL('../src/app/mirror/mirror-mo
 const modelSource = fs.readFileSync(new URL('../src/spatial/mirror/mirrorPatternModel.ts', import.meta.url), 'utf8')
 const navigationSource = fs.readFileSync(new URL('../src/spatial/navigation/EmbodiedNavigation.tsx', import.meta.url), 'utf8')
 const proofWorkflowSource = fs.readFileSync(new URL('../../.github/workflows/mirror-release-proof.yml', import.meta.url), 'utf8')
+const transitionSource = fs.readFileSync(new URL('../src/spatial/world/WorldTransitionController.tsx', import.meta.url), 'utf8')
 
 test('Mirror route keeps one embodied spatial owner and forbids a flat promotional-image owner', () => {
   assert.match(pageSource, /MirrorSpatialClient/)
@@ -68,6 +69,14 @@ test('Mirror spatial runtime owns chamber, embodied reflection, interaction, res
   assert.match(clientSource, /data-mirror-renderer="webgl-r3f"/)
   assert.doesNotMatch(clientSource, /<img[^>]+mirror-reflection-main|<Image[^>]+mirror-reflection-main/)
   assert.doesNotMatch(clientSource, /generic person/i)
+})
+
+test('Mirror to Replay preserves the cinematic delay but commits a deterministic document handoff', () => {
+  assert.match(transitionSource, /requiresHardDocumentNavigation/)
+  assert.match(transitionSource, /request\.destination === 'replay'/)
+  assert.match(transitionSource, /request\.entryPortal === 'mirror-reflection-fragment'/)
+  assert.match(transitionSource, /window\.location\.assign\(href\)/)
+  assert.match(transitionSource, /transitionDuration\(request\.destination\)/)
 })
 
 test('Mirror model derives typed evidence-aware patterns from authorized memory', () => {
