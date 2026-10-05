@@ -12,9 +12,74 @@ import { useWebGLAvailable } from '../HomeSpatialCanvas'
 const BRANCH_LABELS = ['Current path', 'Requested change', 'Alternative constraint'] as const
 type SetupState = 'question' | 'creating' | 'manual' | 'exploring' | 'error'
 
+function scenarioTerrainHeight(x: number, z: number, seed: number) {
+  const radial = Math.hypot(x * 0.72, z * 0.56)
+  const longWave = Math.sin(x * 0.34 + seed * 1.7) * 0.42 + Math.cos(z * 0.29 - seed * 0.9) * 0.34
+  const crossWave = Math.sin((x + z) * 0.19 + seed * 2.1) * 0.22 + Math.cos((x - z) * 0.23 - seed) * 0.18
+  const basin = -Math.exp(-((x / 4.2) ** 2 + ((z - 1.5) / 5.8) ** 2)) * 0.9
+  const horizonLift = Math.max(0, radial - 7.5) * 0.075
+  return longWave + crossWave + basin + horizonLift - 0.55
+}
+
+function makeScenarioTerrain(branch: number) {
+  const seed = branch + 1
+  const geometry = new THREE.PlaneGeometry(36, 36, 150, 150)
+  geometry.rotateX(-Math.PI / 2)
+  const position = geometry.attributes.position as THREE.BufferAttribute
+  const colors = new Float32Array(position.count * 3)
+  const low = new THREE.Color(branch === 0 ? '#101c1a' : branch === 1 ? '#191c18' : '#141923')
+  const high = new THREE.Color(branch === 0 ? '#476b61' : branch === 1 ? '#756d55' : '#58647a')
+  const color = new THREE.Color()
+  for (let i = 0; i < position.count; i += 1) {
+    const x = position.getX(i)
+    const z = position.getZ(i)
+    const y = scenarioTerrainHeight(x, z, seed)
+    position.setY(i, y)
+    const normalized = THREE.MathUtils.clamp((y + 1.4) / 2.8, 0, 1)
+    color.copy(low).lerp(high, normalized * 0.82)
+    colors[i * 3] = color.r
+    colors[i * 3 + 1] = color.g
+    colors[i * 3 + 2] = color.b
+  }
+  geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3))
+  geometry.computeVertexNormals()
+  return geometry
+}
+
+function makeScenarioRibbon(branch: number, lane: number) {
+  const seed = branch + 1
+  const points: THREE.Vector3[] = []
+  for (let i = 0; i <= 72; i += 1) {
+    const t = i / 72
+    const z = 7.2 - t * 17.5
+    const x = (lane - 1) * 2.4 + Math.sin(t * Math.PI * 2.1 + seed * 1.2 + lane) * (0.8 + lane * 0.18)
+    const y = scenarioTerrainHeight(x, z, seed) + 0.11 + Math.sin(t * Math.PI * 3 + lane) * 0.035
+    points.push(new THREE.Vector3(x, y, z))
+  }
+  return new THREE.TubeGeometry(new THREE.CatmullRomCurve3(points), 96, 0.022 + lane * 0.008, 8, false)
+}
+
+function makeScenarioDust(branch: number) {
+  const seed = branch + 1
+  const positions = new Float32Array(320 * 3)
+  for (let i = 0; i < 320; i += 1) {
+    const x = (seeded(i, 101 + seed) - 0.5) * 27
+    const z = (seeded(i, 151 + seed) - 0.5) * 25 - 2
+    positions[i * 3] = x
+    positions[i * 3 + 1] = scenarioTerrainHeight(x, z, seed) + 0.35 + seeded(i, 201 + seed) * 2.6
+    positions[i * 3 + 2] = z
+  }
+  const geometry = new THREE.BufferGeometry()
+  geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3))
+  return geometry
+}
+
 function BranchMass({ branch }: { branch: number }) {
-  const group = useRef<THREE.Group>(null); const seed = branch + 1
+  const group = useRef<THREE.Group>(null)
   const [reducedMotion, setReducedMotion] = useState(false)
+  const terrain = useMemo(() => makeScenarioTerrain(branch), [branch])
+  const ribbons = useMemo(() => [0, 1, 2].map((lane) => makeScenarioRibbon(branch, lane)), [branch])
+  const dust = useMemo(() => makeScenarioDust(branch), [branch])
   useEffect(() => {
     const media = window.matchMedia('(prefers-reduced-motion: reduce)')
     const sync = () => setReducedMotion(media.matches)
@@ -22,15 +87,39 @@ function BranchMass({ branch }: { branch: number }) {
     media.addEventListener?.('change', sync)
     return () => media.removeEventListener?.('change', sync)
   }, [])
-  const pieces = useMemo(() => Array.from({ length:7 }, (_, index) => ({ x:Math.sin(seed*2.17+index*1.31)*2.6, z:-1.5-index*.82+Math.cos(index*1.7+seed)*.45, y:.42+(index%3)*.23, scale:.44+((index*17+seed*7)%9)*.035, rotation:Math.sin(index*.91+seed)*.4 })), [seed])
-  useFrame(({ clock }) => { if (group.current) group.current.rotation.y = reducedMotion ? 0 : Math.sin(clock.elapsedTime*.12)*.012 })
-  return <group ref={group}>
-    <mesh rotation={[-Math.PI/2,0,0]} receiveShadow><planeGeometry args={[18,18,1,1]} /><meshStandardMaterial color={branch===0?'#202a28':branch===1?'#29302e':'#262a30'} roughness={1} /></mesh>
-    <group name="possible-future-factual-anchor" position={[0,.72,1.2]}><mesh castShadow><cylinderGeometry args={[.7,.95,1.25,7]} /><meshStandardMaterial color="#394744" roughness={.72} metalness={.08} /></mesh></group>
-    {pieces.map((piece,index)=><mesh key={index} position={[piece.x,piece.y,piece.z]} rotation={[piece.rotation*.3,piece.rotation,piece.rotation*.18]} scale={piece.scale} castShadow><dodecahedronGeometry args={[1,0]} /><meshStandardMaterial color={branch===0?'#596963':branch===1?'#6c665e':'#5b616b'} roughness={.82} metalness={.04} /></mesh>)}
+  useEffect(() => () => {
+    terrain.dispose()
+    dust.dispose()
+    ribbons.forEach((geometry) => geometry.dispose())
+  }, [dust, ribbons, terrain])
+  useFrame(({ clock }) => {
+    if (group.current) group.current.rotation.y = reducedMotion ? 0 : Math.sin(clock.elapsedTime * 0.12) * 0.01
+  })
+  const ribbonColors = branch === 0 ? ['#8ad6c1', '#d8f3e7', '#6fae9f'] : branch === 1 ? ['#d9bd7a', '#fff0c0', '#a9925d'] : ['#9cb8ef', '#d7e5ff', '#778bb7']
+  return <group ref={group} name="possible-futures-organic-scenario-landscape">
+    <mesh geometry={terrain} receiveShadow>
+      <meshStandardMaterial vertexColors roughness={0.94} metalness={0.02} />
+    </mesh>
+    {ribbons.map((geometry, lane) => <mesh key={lane} geometry={geometry}>
+      <meshBasicMaterial color={ribbonColors[lane]} transparent opacity={lane === 1 ? 0.72 : 0.42} toneMapped={false} blending={THREE.AdditiveBlending} depthWrite={false} />
+    </mesh>)}
+    <points geometry={dust}>
+      <pointsMaterial color={branch === 1 ? '#f4d99a' : branch === 2 ? '#b9ccff' : '#a7e5d2'} size={0.038} transparent opacity={0.46} depthWrite={false} toneMapped={false} />
+    </points>
   </group>
 }
-function ScenarioWorld({ branch }: { branch:number }) { return <Canvas camera={{ position:[0,3.6,8.4], fov:48 }} shadows dpr={[1,1.75]}><color attach="background" args={['#080d10']} /><fog attach="fog" args={['#080d10',8,23]} /><ambientLight intensity={.48} /><hemisphereLight args={['#dbe7e4','#0c1012',.52]} /><directionalLight position={[5,8,4]} intensity={1.3} castShadow /><BranchMass branch={branch} /></Canvas> }
+
+function ScenarioWorld({ branch }: { branch:number }) {
+  return <Canvas camera={{ position:[0,3.7,8.8], fov:46 }} shadows dpr={[1,1.75]}>
+    <color attach="background" args={['#060a0d']} />
+    <fog attach="fog" args={['#060a0d',7.5,27]} />
+    <ambientLight intensity={.36} />
+    <hemisphereLight args={['#dbe7e4','#071014',.46]} />
+    <directionalLight position={[5,9,4]} intensity={1.45} castShadow />
+    <pointLight position={[0,3,-5]} intensity={2.2} distance={13} color={branch===1?'#d9bd7a':branch===2?'#94b3ff':'#8ad6c1'} />
+    <BranchMass branch={branch} />
+  </Canvas>
+}
 
 const panelStyle = { pointerEvents:'auto' as const, background:'rgba(8,13,16,.88)', border:'1px solid rgba(255,255,255,.18)', borderRadius:18, padding:16, backdropFilter:'blur(16px)', maxWidth:620, width:'100%', boxSizing:'border-box' as const, alignSelf:'flex-start' as const }
 const inputStyle = { width:'100%', minHeight:48, boxSizing:'border-box' as const, borderRadius:12, border:'1px solid rgba(255,255,255,.22)', background:'rgba(255,255,255,.055)', color:'inherit', padding:'12px 14px', font:'inherit' }
