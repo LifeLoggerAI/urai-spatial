@@ -230,10 +230,11 @@ const RIDGE_FAR = makeRidgeGeometry(104, 3.1, 2.8)
 const FERN_PLACEMENTS = Array.from({ length: 72 }, (_, index) => {
   const side = index % 2 === 0 ? -1 : 1
   const band = Math.floor(index / 2)
-  const z = 7.6 - (band % 18) * 1.28 + (seeded(index, 64) - .5) * .78
-  const edge = 5.2 + seeded(index, 65) * 6.3
-  const x = side * edge + (seeded(index, 66) - .5) * 1.1
-  const scale = .46 + seeded(index, 67) * .52
+  const innerCluster = index % 4 === 0 || index % 9 === 0
+  const z = 8.1 - (band % 18) * 1.22 + (seeded(index, 64) - .5) * 1.35
+  const edge = innerCluster ? 2.65 + seeded(index, 65) * 3.25 : 5.0 + seeded(index, 65) * 5.8
+  const x = side * edge + (seeded(index, 66) - .5) * 1.65
+  const scale = innerCluster ? .58 + seeded(index, 67) * .62 : .44 + seeded(index, 67) * .5
   const rotation = seeded(index, 68) * Math.PI * 2
   return [x, z, scale, rotation] as const
 })
@@ -244,7 +245,7 @@ const STONE_SCATTER = Array.from({ length: 34 }, (_, index) => {
   const z = THREE.MathUtils.lerp(6.9, -10.4, t) + (seeded(index, 201) - .5) * 1.25
   const center = lane === 0 ? -2.7 : lane === 1 ? 2.9 : (seeded(index, 202) - .5) * 7.4
   const x = center + (seeded(index, 203) - .5) * 2.2
-  const scale = .11 + seeded(index, 204) * .22
+  const scale = .065 + seeded(index, 204) * .105
   const rotation = seeded(index, 205) * Math.PI * 2
   return [x, z, scale, rotation] as const
 })
@@ -341,7 +342,7 @@ function StoneBatch({
       )
       transform.updateMatrix()
       mesh.setMatrixAt(localIndex, transform.matrix)
-      color.set(index % 3 === 0 ? '#687067' : index % 3 === 1 ? '#76776d' : '#5e6860')
+      color.set(index % 3 === 0 ? '#858b80' : index % 3 === 1 ? '#969487' : '#747e74')
       mesh.setColorAt(localIndex, color)
     })
 
@@ -372,9 +373,16 @@ function GroundDetail() {
 
 function Horizon() {
   return <group name="home-mountain-horizon" userData={{ source: 'original-three-dimensional-runtime-landform', photographicEvidence: false }}>
-    <mesh geometry={RIDGE_FAR} position={[0, -1.05, -54]}><meshStandardMaterial color="#536967" roughness={1} metalness={0} envMapIntensity={.2} /></mesh>
-    <mesh geometry={RIDGE_MID} position={[0, -1.35, -46]}><meshStandardMaterial color="#485e54" roughness={1} metalness={0} envMapIntensity={.2} /></mesh>
-    <mesh geometry={RIDGE_NEAR} position={[0, -1.65, -39]}><meshStandardMaterial color="#405642" roughness={1} metalness={0} envMapIntensity={.2} /></mesh>
+    <mesh geometry={RIDGE_FAR} position={[0, -1.2, -56]}><meshStandardMaterial color="#6d817b" roughness={1} metalness={0} envMapIntensity={.12} /></mesh>
+    <mesh geometry={RIDGE_MID} position={[0, -1.48, -48]}><meshStandardMaterial color="#5d7469" roughness={1} metalness={0} envMapIntensity={.14} /></mesh>
+    <mesh geometry={RIDGE_NEAR} position={[0, -1.78, -40]}><meshStandardMaterial color="#506557" roughness={1} metalness={0} envMapIntensity={.16} /></mesh>
+    <mesh position={[0, 2.5, -36]} renderOrder={-1}>
+      <planeGeometry args={[92, 12]} />
+      <shaderMaterial transparent depthWrite={false} fog={false}
+        vertexShader={`varying vec2 vUv; void main(){ vUv=uv; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0); }`}
+        fragmentShader={`varying vec2 vUv; void main(){ float band=sin(3.14159265*vUv.y); float edge=smoothstep(.0,.16,vUv.x)*smoothstep(.0,.16,1.0-vUv.x); gl_FragColor=vec4(vec3(.31,.41,.38), band*edge*.16); }`}
+      />
+    </mesh>
     <group position={[-17, 13.5, -52]}>
       <mesh><sphereGeometry args={[1.5, 32, 32]} /><meshBasicMaterial color="#e5eee4" toneMapped={false} /></mesh>
       <mesh scale={1.7}><sphereGeometry args={[1.5, 24, 24]} /><meshBasicMaterial color="#d9ede4" transparent opacity={.035} depthWrite={false} toneMapped={false} /></mesh>
