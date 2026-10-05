@@ -28,6 +28,11 @@ test('post-deploy parity includes current Focus, Replay and institutional public
   }
 })
 
+test('post-deploy communications smoke matches the rendered SMS disclosure', () => {
+  assert.ok(postDeploy.includes("'Reply STOP to opt out or HELP for help'"))
+  assert.equal(postDeploy.includes("'Reply HELP'"), false)
+})
+
 test('release-control browser smoke covers public routes and compatibility redirects', () => {
   for (const route of [...publicRoutes, ...fullVisionRoutes, ...directCriticalRoutes]) {
     assert.ok(releaseControl.includes(`'${route}'`), `missing browser release route ${route}`)
