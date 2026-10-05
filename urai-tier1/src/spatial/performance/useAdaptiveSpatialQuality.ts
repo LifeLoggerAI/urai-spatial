@@ -47,18 +47,12 @@ function deriveTier(reducedMotion: boolean): SpatialQualityTier {
   return 'high'
 }
 
-function initialReducedMotion() {
-  return typeof window === 'undefined' ? false : window.matchMedia('(prefers-reduced-motion: reduce)').matches
-}
-
-function initialDocumentVisible() {
-  return typeof document === 'undefined' ? true : document.visibilityState === 'visible'
-}
-
 export function useAdaptiveSpatialQuality(): SpatialQualityProfile {
-  const [reducedMotion, setReducedMotion] = useState(initialReducedMotion)
-  const [documentVisible, setDocumentVisible] = useState(initialDocumentVisible)
-  const [tier, setTier] = useState<SpatialQualityTier>(() => deriveTier(initialReducedMotion()))
+  // Server markup and the first client render must agree. Read device hints
+  // after hydration, before enabling the adaptive spatial scene.
+  const [reducedMotion, setReducedMotion] = useState(false)
+  const [documentVisible, setDocumentVisible] = useState(true)
+  const [tier, setTier] = useState<SpatialQualityTier>('medium')
 
   useEffect(() => {
     const motion = window.matchMedia('(prefers-reduced-motion: reduce)')
@@ -75,6 +69,10 @@ export function useAdaptiveSpatialQuality(): SpatialQualityProfile {
     coarsePointer.addEventListener('change', updateTier)
     document.addEventListener('visibilitychange', updateVisibility)
     connection?.addEventListener?.('change', updateTier)
+
+    updateMotion()
+    updateVisibility()
+    updateTier()
 
     return () => {
       motion.removeEventListener('change', updateMotion)
