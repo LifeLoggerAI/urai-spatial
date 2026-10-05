@@ -16,8 +16,32 @@ class VoiceError extends Error{
 }
 function isRecord(value:unknown):value is JsonMap{return Boolean(value)&&typeof value==='object'&&!Array.isArray(value)}
 function bearer(value:unknown){const h=Array.isArray(value)?value[0]:String(value??'');if(!h.startsWith('Bearer '))throw new VoiceError(401,'UNAUTHORIZED','Authentication is required.');return h.slice(7).trim()}
-async function uidFrom(request:{headers:Record<string,unknown>}){const decoded=await admin.auth().verifyIdToken(bearer(request.headers.authorization),true);if(!decoded.uid)throw new VoiceError(401,'UNAUTHORIZED','Authentication is required.');return decoded.uid}
+async function uidFrom(request:{headers:Record<string,unknown>}){
+  try{
+    const decoded=await admin.auth().verifyIdToken(bearer(request.headers.authorization),true)
+    if(!decoded.uid)throw new VoiceError(401,'UNAUTHORIZED','Authentication is required.')
+    return decoded.uid
+  }catch(error){
+    if(error instanceof VoiceError)throw error
+    throw new VoiceError(401,'UNAUTHORIZED','Authentication is required.')
+  }
+}
 function readBody(request:{body?:unknown}){if(!isRecord(request.body))throw new VoiceError(400,'INVALID_BODY','Request body must be JSON.');if(Buffer.byteLength(JSON.stringify(request.body),'utf8')>16_384)throw new VoiceError(413,'REQUEST_TOO_LARGE','Request is too large.');return request.body}
+const VOICE_RATE_WINDOW_MS=60_000
+const VOICE_RATE_LIMIT_MAX=10
+async function consumeVoiceRateLimit(uid:string){
+  const ref=db.doc(`users/${uid}/providerRateLimits/elevenlabs-person-presence`)
+  const now=Date.now()
+  await db.runTransaction(async(transaction)=>{
+    const snapshot=await transaction.get(ref)
+    const data=snapshot.data()??{}
+    const prior=data.windowStartedAt instanceof admin.firestore.Timestamp?data.windowStartedAt.toMillis():0
+    const active=prior>0&&now-prior<VOICE_RATE_WINDOW_MS
+    const count=active?Number(data.count??0):0
+    if(count>=VOICE_RATE_LIMIT_MAX)throw new VoiceError(429,'RATE_LIMITED','This voice is receiving too many requests.')
+    transaction.set(ref,{provider:'elevenlabs',count:count+1,windowStartedAt:admin.firestore.Timestamp.fromMillis(active?prior:now),updatedAt:admin.firestore.FieldValue.serverTimestamp()},{merge:true})
+  })
+}
 async function requireConsent(uid:string,explicit:boolean){
   if(!explicit)throw new VoiceError(403,'EXPLICIT_CONSENT_REQUIRED','External voice processing consent is required.')
   const [policy,provider]=await Promise.all([db.doc(`users/${uid}/privacyPolicy/current`).get(),db.doc(`users/${uid}/providerConnections/elevenlabs`).get()])
@@ -45,6 +69,7 @@ export const personPresenceVoiceProvider=onRequest({
     if(!/^presence:[A-Za-z0-9-]{16,80}$/.test(sessionId))throw new VoiceError(400,'INVALID_SESSION','Presence session is invalid.')
     if(!text||text.length>900)throw new VoiceError(413,'AUDIO_TOO_LONG','Voice request exceeds the configured limit.')
     await requireConsent(uid,body.externalProcessingConsent===true)
+    await consumeVoiceRateLimit(uid)
 
     const session=await db.doc(`users/${uid}/simulationSessions/${sessionId}`).get()
     if(!session.exists||session.get('ownerId')!==uid||session.get('state')!=='active'||session.get('historicalSourceAuthority')!==false){
