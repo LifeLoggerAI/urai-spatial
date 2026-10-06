@@ -24,12 +24,13 @@ try {
     { id: 'portrait', width: 390, height: 844, reducedMotion: 'no-preference' },
     { id: 'reduced-motion', width: 390, height: 844, reducedMotion: 'reduce' },
     { id: 'no-webgl', width: 390, height: 844, reducedMotion: 'reduce' },
+    { id: 'no-webgl-landscape', width: 568, height: 320, reducedMotion: 'reduce' },
   ]) {
     const context = await browser.newContext({ viewport: { width: spec.width, height: spec.height }, reducedMotion: spec.reducedMotion })
     const page = await context.newPage()
     const errors = []
     page.on('pageerror', error => errors.push(String(error)))
-    if (spec.id === 'no-webgl') await context.addInitScript(() => {
+    if (spec.id.startsWith('no-webgl')) await context.addInitScript(() => {
       const original = HTMLCanvasElement.prototype.getContext
       HTMLCanvasElement.prototype.getContext = function(type, ...args) { return /webgl/i.test(type) ? null : original.call(this, type, ...args) }
     })
@@ -39,7 +40,7 @@ try {
       await runtime.waitFor({ state: 'visible' })
       await page.waitForFunction(() => ['ready', 'unavailable'].includes(document.querySelector('[data-testid="memory-world-runtime"]')?.getAttribute('data-memory-world-renderer')), null, { timeout: 45000 })
       assert.match(await runtime.getAttribute('data-memory-world-truth'), /not recorded history/i)
-      if (spec.id === 'no-webgl') {
+      if (spec.id.startsWith('no-webgl')) {
         assert.equal(await runtime.getAttribute('data-memory-world-renderer'), 'unavailable')
         assert.equal(await runtime.locator('canvas').count(), 0)
         assert.equal(await page.getByTestId('memory-world-renderer-fallback').isVisible(), true)
@@ -84,6 +85,9 @@ try {
         assert.ok(clearance.width >= 48 && clearance.height >= 48, 'Fallback exit must be a 48px target')
         assert.ok(clearance.toolsTop !== null && clearance.bottom + 8 <= clearance.toolsTop, 'Fallback exit must clear authoring tools by at least 8px')
         assert.equal(clearance.reachable, true, 'Fallback exit center must receive pointer input')
+        const statusRegion = page.getByRole('region', { name: 'Memory view status and provenance' })
+        const statusBox = await statusRegion.boundingBox()
+        assert.ok(statusBox && statusBox.height > 0 && statusBox.y >= 0 && statusBox.y + statusBox.height <= spec.height, 'Fallback governance copy must have an onscreen scroll region')
         receipt.captures.at(-1).fallbackExitClearance = clearance
         await exit.click()
       } else await page.getByRole('button', { name: '← Replay', exact: true }).click()
@@ -101,7 +105,7 @@ try {
   }
 } finally {
   await browser.close()
-  receipt.passed = receipt.errors.length === 0 && receipt.captures.length === 5
+  receipt.passed = receipt.errors.length === 0 && receipt.captures.length === 6
   await writeFile(path.join(output, 'receipt.json'), JSON.stringify(receipt, null, 2) + '\n')
 }
 if (!receipt.passed) throw new Error(JSON.stringify(receipt.errors))
