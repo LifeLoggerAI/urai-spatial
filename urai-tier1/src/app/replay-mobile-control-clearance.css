@@ -7,3 +7,49 @@
     transform: none;
   }
 }
+
+/* Landscape columns are measured inside the safe viewport, including cutouts.
+   Variables also allow device-shell overrides without changing media queries. */
+:root {
+  --urai-landscape-inset-left: env(safe-area-inset-left, 0px);
+  --urai-landscape-inset-right: env(safe-area-inset-right, 0px);
+}
+@media (max-height: 500px) and (min-width: 501px) {
+  [data-testid="urai-final-focus-chamber"] {
+    --focus-safe-left: max(16px, var(--urai-landscape-inset-left));
+    --focus-safe-right: max(16px, var(--urai-landscape-inset-right));
+    --focus-safe-column: calc((100vw - var(--focus-safe-left) - var(--focus-safe-right) - 48px) / 2);
+  }
+  [data-testid="urai-final-focus-chamber"] .focusHeading,
+  [data-testid="urai-final-focus-chamber"] .memoryMeaning {
+    left: var(--focus-safe-left);
+    width: var(--focus-safe-column);
+  }
+  [data-testid="urai-final-focus-chamber"] .focusControls {
+    right: var(--focus-safe-right);
+    width: var(--focus-safe-column);
+  }
+  [data-testid="urai-final-focus-chamber"] .focusHelp {
+    right: var(--focus-safe-right);
+    max-width: var(--focus-safe-column);
+  }
+  .replayWorld[data-testid="cinematic-replay-client"] {
+    --replay-safe-left: max(18px, var(--urai-landscape-inset-left));
+    --replay-safe-right: max(18px, var(--urai-landscape-inset-right));
+    --replay-safe-column: calc((100vw - var(--replay-safe-left) - var(--replay-safe-right) - 36px) / 2);
+  }
+  .replayWorld[data-testid="cinematic-replay-client"] header,
+  .replayWorld[data-testid="cinematic-replay-client"] .replaySourceStatus {
+    left: var(--replay-safe-left);
+    width: var(--replay-safe-column);
+  }
+  .replayWorld[data-testid="cinematic-replay-client"] .caption,
+  .replayWorld[data-testid="cinematic-replay-client"] .memoryTempo {
+    right: var(--replay-safe-right);
+    width: var(--replay-safe-column);
+  }
+  .replayWorld[data-testid="cinematic-replay-client"] .transcript {
+    right: var(--replay-safe-right);
+    max-width: var(--replay-safe-column);
+  }
+}
