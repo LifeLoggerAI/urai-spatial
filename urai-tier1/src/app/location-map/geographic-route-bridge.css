@@ -1,10 +1,10 @@
 .locationMapGeographicBridge {
   position: fixed;
   top: clamp(5.75rem, 10vh, 7rem);
-  left: 50%;
-  right: auto;
+  left: auto;
+  right: max(0.75rem, env(safe-area-inset-right));
   z-index: 120;
-  transform: translateX(-50%);
+  transform: none;
   display: grid;
   gap: 0.35rem;
   min-width: min(16rem, calc(100vw - 1.5rem));

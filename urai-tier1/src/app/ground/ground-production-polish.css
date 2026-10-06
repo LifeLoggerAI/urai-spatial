@@ -11,9 +11,9 @@
 }
 
 .ground-spatial-root .ground-directory button {
-  width: 44px !important;
-  min-width: 44px !important;
-  min-height: 44px !important;
+  width: 48px !important;
+  min-width: 48px !important;
+  min-height: 48px !important;
   border-radius: 50% !important;
 }
 
@@ -40,8 +40,8 @@
 .ground-spatial-root .urai-mobile-movement {
   left: max(16px, env(safe-area-inset-left)) !important;
   bottom: max(22px, calc(env(safe-area-inset-bottom) + 18px)) !important;
-  grid-template-columns: repeat(3, 42px) !important;
-  grid-template-rows: repeat(2, 42px) !important;
+  grid-template-columns: repeat(3, 48px) !important;
+  grid-template-rows: repeat(2, 48px) !important;
   gap: 2px !important;
   padding: 7px !important;
   border: 1px solid rgba(207, 245, 238, .08);
@@ -52,11 +52,11 @@
 
 .ground-spatial-root .urai-mobile-movement button {
   position: relative;
-  width: 42px !important;
-  height: 42px !important;
+  width: 48px !important;
+  height: 48px !important;
   border-color: transparent !important;
   border-radius: 50% !important;
-  background: transparent !important;
+  background: rgba(7, 18, 19, .9) !important;
   box-shadow: none !important;
   color: transparent !important;
   font-size: 0 !important;
@@ -69,8 +69,8 @@
   top: 50%;
   width: 8px;
   height: 8px;
-  border-top: 1.5px solid rgba(224, 248, 242, .72);
-  border-right: 1.5px solid rgba(224, 248, 242, .72);
+  border-top: 1.5px solid rgb(224, 248, 242);
+  border-right: 1.5px solid rgb(224, 248, 242);
   transform: translate(-50%, -50%) rotate(-45deg);
 }
 
@@ -86,7 +86,7 @@
 
 @media (min-width: 1000px) and (pointer: fine) {
   .ground-spatial-root .urai-mobile-movement {
-    opacity: .22;
+    opacity: 1;
     transition: opacity .2s ease;
   }
   .ground-spatial-root .urai-mobile-movement:is(:hover,:focus-within) { opacity: 1; }
