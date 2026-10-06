@@ -239,10 +239,11 @@ async function proveTransition(browser, destination, buttonName) {
     await page.getByRole('button', { name: buttonName, exact: true }).click()
     await page.waitForURL((url) => pathname(url.toString()) === `/${destination}`, { timeout: 30000 })
     if (destination === 'replay') {
-      const replay = page.getByTestId('cinematic-replay-client')
-      await replay.waitFor({ state: 'visible' })
+      await page.getByTestId('urai-replay-surface').waitFor({ state: 'attached', timeout: 45000 })
+      const replay = page.locator('[data-testid="cinematic-replay-client"][data-memory-id="demo:quiet-reset"]').first()
+      await replay.waitFor({ state: 'attached', timeout: 45000 })
       await page.waitForFunction(() => {
-        const replay = document.querySelector('[data-testid="cinematic-replay-client"]')
+        const replay = document.querySelector('[data-testid="cinematic-replay-client"][data-memory-id="demo:quiet-reset"]')
         return replay?.getAttribute('data-replay-media-ready') === 'true' && replay.getAttribute('data-replay-media-status') === 'ready'
       }, null, { timeout: 45000 })
       const before = Number(await replay.getAttribute('data-current-time-ms'))
