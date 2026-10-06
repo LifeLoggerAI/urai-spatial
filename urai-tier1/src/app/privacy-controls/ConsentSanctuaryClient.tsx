@@ -97,12 +97,12 @@ function Chamber({ domain, policy, index, selected, onSelect, reducedMotion }: {
             <meshBasicMaterial color={color} transparent opacity={selected ? 0.42 : 0.14} toneMapped={false} />
           </mesh>
         </group>
-        <Html position={[0, 0.15, 0.38]} center transform distanceFactor={8}>
+        <Html position={[0, 0.15, 0.38]} center transform sprite distanceFactor={8}>
           <span style={{ display: 'block', width: '152px', color: '#f4f8fb', fontSize: '16px', fontWeight: 800, lineHeight: 1.1, textAlign: 'center', textShadow: '0 2px 12px #000', pointerEvents: 'none' }}>
             {DOMAIN_LABELS[domain]}
           </span>
         </Html>
-        <Html position={[0, -0.55, 0.38]} center transform distanceFactor={8}>
+        <Html position={[0, -0.55, 0.38]} center transform sprite distanceFactor={8}>
           <span style={{ display: 'block', color, fontSize: '12px', fontWeight: 900, letterSpacing: '.12em', textAlign: 'center', textShadow: '0 2px 12px #000', pointerEvents: 'none' }}>
             {policy.mode.toUpperCase()}
           </span>
