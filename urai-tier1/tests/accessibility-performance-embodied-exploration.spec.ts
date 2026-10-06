@@ -189,6 +189,22 @@ test.describe('Embodied exploration runtime evidence', () => {
     const forward = ground.getByRole('button', { name: 'Move forward' })
     await expect(forward).toBeVisible()
     await expectReadableMovementControl(forward)
+    const regions = await page.evaluate(() => {
+      const bounds = (selector: string) => {
+        const element = document.querySelector(selector)
+        if (!element) throw new Error(`Missing Ground hit region: ${selector}`)
+        const r = element.getBoundingClientRect()
+        return { left: r.left, right: r.right, top: r.top, bottom: r.bottom }
+      }
+      return {
+        movement: bounds('.ground-spatial-root .urai-mobile-movement'),
+        directory: bounds('.ground-spatial-root .ground-directory'),
+        orb: bounds('.urai-world-companion__orb'),
+      }
+    })
+    expect(regions.movement.bottom + 8).toBeLessThanOrEqual(regions.directory.top)
+    expect(regions.directory.right + 8).toBeLessThanOrEqual(regions.orb.left)
+    expect(regions.movement.bottom + 8).toBeLessThanOrEqual(regions.orb.top)
   })
 
   test('Life Map selects a memory, preserves identity, resets overview, and stays Orb-free', async ({ page }) => {

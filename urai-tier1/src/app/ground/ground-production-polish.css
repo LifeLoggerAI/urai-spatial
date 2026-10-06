@@ -92,6 +92,29 @@
   .ground-spatial-root .urai-mobile-movement:is(:hover,:focus-within) { opacity: 1; }
 }
 
+/* The direct Ground route can mount before the persistent destination catches
+   up. Let its actual scene own the mobile hit regions during that interval. */
+@media (max-width: 900px) {
+  body:has(.ground-spatial-root) .urai-world-companion {
+    left: auto !important;
+    right: max(18px, env(safe-area-inset-right)) !important;
+    bottom: max(18px, env(safe-area-inset-bottom)) !important;
+    transform: none !important;
+  }
+  .ground-spatial-root .urai-mobile-movement {
+    bottom: max(110px, calc(env(safe-area-inset-bottom) + 100px)) !important;
+  }
+  .ground-spatial-root .ground-directory {
+    left: 0 !important;
+    right: max(120px, calc(env(safe-area-inset-right) + 110px)) !important;
+    width: auto !important;
+    max-width: none !important;
+    transform: none !important;
+    box-sizing: border-box !important;
+    overflow-x: auto !important;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .ground-spatial-root .urai-mobile-movement,
   .ground-spatial-root .ground-directory button > span {
