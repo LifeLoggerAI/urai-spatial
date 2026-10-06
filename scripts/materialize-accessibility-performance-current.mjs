@@ -47,11 +47,11 @@ await transformFile('urai-tier1/tests/accessibility-performance-embodied-explora
   let source
   if (staleHomeOwnerCount === 3 && currentHomeOwnerCount === 0) {
     source = input.split(staleHomeOwnerSelector).join(currentHomeOwnerSelector)
-  } else if (staleHomeOwnerCount === 0 && currentHomeOwnerCount === 3) {
+  } else if (staleHomeOwnerCount === 0 && [3, 4].includes(currentHomeOwnerCount)) {
     source = input
   } else {
     throw new Error(
-      `embodied Home primary owner selector expected 3 stale or current audited occurrence(s); found stale=${staleHomeOwnerCount} current=${currentHomeOwnerCount}`,
+      `embodied Home primary owner selector expected 3 stale or 3/4 current audited occurrence(s); found stale=${staleHomeOwnerCount} current=${currentHomeOwnerCount}`,
     )
   }
   source = replaceExact(
