@@ -18,6 +18,8 @@ const requiredFocusedTests = [
   'tests/scene-truth-life-model-compiler.test.mjs',
   'tests/replay-life-model-authority.test.mjs',
   'tests/life-movie-life-model-binding.test.mjs',
+  'tests/life-movie-runtime-contract.test.mjs',
+  'tests/life-movie-runtime-binding-contract.test.mjs',
   'tests/captured-reality-life-model-binding.test.mjs',
   'tests/body-biometric-contract.test.mjs',
   'tests/orb-companion-contract.test.mjs',
