@@ -23,6 +23,8 @@ const tests = [
   'tests/life-movie-runtime-contract.test.mjs',
   'tests/life-movie-runtime-binding-contract.test.mjs',
   'tests/focus-review-regression-contract.test.mjs',
+  'tests/world-return-destination.test.mjs',
+  'tests/replay-transition-evidence-contract.test.mjs',
   'tests/dispatcher-transient-retry-contract.test.mjs',
   'tests/home-runtime-cursor-cleanup-contract.test.mjs',
   'tests/status-live-authority-contract.test.mjs',
