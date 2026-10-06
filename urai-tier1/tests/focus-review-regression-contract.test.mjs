@@ -56,4 +56,8 @@ test('hard travel fallback preserves canonical replay identity and context', () 
     "target.searchParams.set('node', memoryId)",
   ]) assert.ok(worldEvents.includes(token), `world fallback missing ${token}`)
   assert.match(worldEvents, /context\?\.demo\) target\.searchParams\.set\('demo', '1'\)/)
+  const contextIndex = worldEvents.indexOf("if (context?.demo) target.searchParams.set('demo', '1')")
+  const entryPortalIndex = worldEvents.indexOf("if (request.entryPortal) target.searchParams.set('entryPortal', request.entryPortal)")
+  const cameraCheckpointIndex = worldEvents.indexOf("if (request.cameraCheckpoint) target.searchParams.set('cameraCheckpoint', request.cameraCheckpoint)")
+  assert.ok(contextIndex > -1 && entryPortalIndex > contextIndex && cameraCheckpointIndex > entryPortalIndex)
 })
