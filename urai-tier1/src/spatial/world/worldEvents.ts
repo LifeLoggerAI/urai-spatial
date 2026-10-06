@@ -37,9 +37,6 @@ function buildFallbackHref(request: UraiWorldTravelRequest) {
       target.searchParams.set(key, current.get(key) ?? '')
     }
   }
-  if (request.entryPortal) target.searchParams.set('entryPortal', request.entryPortal)
-  if (request.cameraCheckpoint) target.searchParams.set('cameraCheckpoint', request.cameraCheckpoint)
-
   const context = request.context
   if (context?.memoryId) target.searchParams.set('memoryId', context.memoryId)
   if (context?.threadId) target.searchParams.set('thread', context.threadId)
@@ -58,6 +55,8 @@ function buildFallbackHref(request: UraiWorldTravelRequest) {
   if (context?.truthMode) target.searchParams.set('truthMode', context.truthMode)
   if (context?.scenarioOrigin) target.searchParams.set('scenarioOrigin', context.scenarioOrigin)
   if (context?.demo) target.searchParams.set('demo', '1')
+  if (request.entryPortal) target.searchParams.set('entryPortal', request.entryPortal)
+  if (request.cameraCheckpoint) target.searchParams.set('cameraCheckpoint', request.cameraCheckpoint)
 
   const memoryId = target.searchParams.get('memoryId')
   const nodeId = target.searchParams.get('node')
