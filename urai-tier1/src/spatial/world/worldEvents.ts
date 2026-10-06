@@ -9,6 +9,18 @@ export const URAI_HOME_ASCENT_EVENT = 'urai:home-ascent'
 const WORLD_TRAVEL_DEBOUNCE_MS = 1500
 const WORLD_TRAVEL_FALLBACK_MS = 2400
 const WORLD_TRAVEL_OBSERVE_MS = 50
+const WORLD_TRAVEL_CONTEXT_KEYS = [
+  'memoryId',
+  'node',
+  'thread',
+  'personId',
+  'placeId',
+  'manifestId',
+  'movieId',
+  'chapterId',
+  'privacyMode',
+  'demo',
+] as const
 let lastTravelFingerprint = ''
 let lastTravelAt = 0
 
@@ -19,6 +31,12 @@ function dispatchSpatialAudioCue(cue: 'transition' | 'orb-confirm' | 'error') {
 function buildFallbackHref(request: UraiWorldTravelRequest) {
   if (!request.href || typeof window === 'undefined') return request.href
   const target = new URL(request.href, window.location.origin)
+  const current = new URLSearchParams(window.location.search)
+  for (const key of WORLD_TRAVEL_CONTEXT_KEYS) {
+    if (!target.searchParams.has(key) && current.has(key)) {
+      target.searchParams.set(key, current.get(key) ?? '')
+    }
+  }
   if (request.entryPortal) target.searchParams.set('entryPortal', request.entryPortal)
   if (request.cameraCheckpoint) target.searchParams.set('cameraCheckpoint', request.cameraCheckpoint)
 
@@ -39,6 +57,7 @@ function buildFallbackHref(request: UraiWorldTravelRequest) {
   if (context?.scenarioBasisRevision !== undefined) target.searchParams.set('basisRevision', String(context.scenarioBasisRevision))
   if (context?.truthMode) target.searchParams.set('truthMode', context.truthMode)
   if (context?.scenarioOrigin) target.searchParams.set('scenarioOrigin', context.scenarioOrigin)
+  if (context?.demo) target.searchParams.set('demo', '1')
 
   return `${target.pathname}${target.search}${target.hash}`
 }
