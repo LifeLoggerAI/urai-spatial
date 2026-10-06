@@ -1,10 +1,10 @@
 .locationMapGeographicBridge {
   position: fixed;
   top: clamp(5.75rem, 10vh, 7rem);
-  left: auto;
-  right: max(0.75rem, env(safe-area-inset-right));
+  left: 50%;
+  right: auto;
   z-index: 120;
-  transform: none;
+  transform: translateX(-50%);
   display: grid;
   gap: 0.35rem;
   min-width: min(16rem, calc(100vw - 1.5rem));
@@ -25,6 +25,9 @@
 }
 
 .locationMapGeographicBridge a {
+  display: flex;
+  align-items: center;
+  min-height: 48px;
   color: #ecfdff;
   font-size: 0.84rem;
   font-weight: 900;
@@ -56,6 +59,9 @@
   }
 
   .locationMapGeographicBridge a {
+  display: flex;
+  align-items: center;
+  min-height: 48px;
     font-size: 0.76rem;
   }
 }
@@ -64,4 +70,23 @@
   .locationMapGeographicBridge {
     scroll-behavior: auto;
   }
+}
+
+/* Empty and signed-out thresholds reserve their own link lane. The populated
+   atlas keeps its canonical center lane and mobile selected-place clearance. */
+.locationMapGeographicBridge:has(~ .locationAtlas--empty) {
+  top: max(12px, env(safe-area-inset-top));
+  left: 50%;
+  right: auto;
+  transform: translateX(-50%);
+  box-sizing: border-box;
+  width: min(20rem, calc(100vw - 1.5rem));
+}
+
+.locationAtlas--empty {
+  box-sizing: border-box;
+  padding-top: max(148px, calc(env(safe-area-inset-top) + 148px));
+  align-items: safe center;
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
