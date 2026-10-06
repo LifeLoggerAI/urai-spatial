@@ -44,6 +44,8 @@ async function openDemo(page: Page) {
   await page.goto(route, { waitUntil: 'networkidle' })
   await expect(page.getByRole('heading', { name: 'Your places stay closed until you open them.' })).toBeVisible()
   await page.getByRole('button', { name: 'Open disclosed sample' }).click()
+  await page.waitForURL(url => url.pathname.replace(/\/$/, '') === '/location-map' && url.searchParams.get('demo') === '1')
+  await page.waitForLoadState('networkidle')
   await expect(page.locator('[data-location-map-source="disclosed-demo"]')).toBeVisible()
 }
 

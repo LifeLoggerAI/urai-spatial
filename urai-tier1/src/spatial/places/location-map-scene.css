@@ -466,4 +466,5 @@
 @media (max-width: 620px) {
   .locationAtlasHeader { gap: 8px; }
   .locationAtlasHeader nav { gap: 6px; }
+  .locationAtlas.locationAtlas--r3f .locationAtlasHeader nav a[href^="/life-map"] { display: none !important; }
 }
