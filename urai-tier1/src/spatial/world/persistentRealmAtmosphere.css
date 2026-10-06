@@ -23,7 +23,7 @@
   mix-blend-mode: screen;
 }
 
-.urai-world-atmosphere__horizon {
+.urai-world-atmosphere > span.urai-world-atmosphere__horizon {
   top: auto;
   height: 42vh;
   background: linear-gradient(180deg, transparent, rgba(60, 205, 196, .08) 48%, rgba(0, 0, 0, .28));
@@ -102,7 +102,7 @@
 }
 
 @media (max-width: 560px) {
-  .urai-world-atmosphere__horizon { height: 34vh; }
+  .urai-world-atmosphere > span.urai-world-atmosphere__horizon { height: 34vh; }
   .urai-world-atmosphere__threshold { inset-inline: 12vw; }
 }
 
