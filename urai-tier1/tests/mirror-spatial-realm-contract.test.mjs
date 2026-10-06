@@ -77,6 +77,8 @@ test('Mirror to Replay preserves the cinematic delay but commits a deterministic
   assert.match(transitionSource, /request\.entryPortal === 'mirror-reflection-fragment'/)
   assert.match(transitionSource, /window\.location\.assign\(href\)/)
   assert.match(transitionSource, /transitionDuration\(request\.destination\)/)
+  assert.doesNotMatch(clientSource, /window\.queueMicrotask/)
+  assert.doesNotMatch(clientSource, /window\.location\.assign/)
 })
 
 test('Mirror model derives typed evidence-aware patterns from authorized memory', () => {
