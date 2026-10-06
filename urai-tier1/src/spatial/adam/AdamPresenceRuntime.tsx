@@ -65,13 +65,14 @@ export default function AdamPresenceRuntime() {
   const [launcherAnchor, setLauncherAnchor] = useState<HTMLElement | null>(null)
 
   useEffect(() => {
-    // Text/card surfaces provide a flow-owned slot instead of a floating overlay.
+    // Only the slot's own mounted effect may make it eligible for a portal.
+    // Inserting into streamed server markup before its hydration causes React #418.
     const syncAnchor = () => {
-      const anchor = document.querySelector<HTMLElement>('[data-urai-adam-launcher-slot]')
+      const anchor = document.querySelector<HTMLElement>('[data-urai-adam-launcher-slot][data-urai-adam-launcher-ready="true"]')
       setLauncherAnchor(current => current === anchor ? current : anchor)
     }
     const observer = new MutationObserver(syncAnchor)
-    observer.observe(document.body, { childList: true, subtree: true })
+    observer.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['data-urai-adam-launcher-ready'] })
     syncAnchor()
     return () => observer.disconnect()
   }, [pathname])

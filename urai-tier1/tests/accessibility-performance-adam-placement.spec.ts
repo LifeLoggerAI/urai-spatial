@@ -2,9 +2,11 @@ import { expect, test } from '@playwright/test'
 
 for (const viewport of [{ width: 320, height: 700 }, { width: 844, height: 390 }]) {
   test(`Founder helper stays in flow on text surfaces at ${viewport.width}x${viewport.height}`, async ({ page }) => {
+    const pageErrors: string[] = []
+    page.on('pageerror', error => pageErrors.push(error.message))
     await page.setViewportSize(viewport)
     await page.emulateMedia({ reducedMotion: 'reduce' })
-    for (const route of ['/support', '/status', '/location-map']) {
+    for (const route of ['/about', '/support', '/status', '/location-map']) {
       await page.goto(route, { waitUntil: 'domcontentloaded' })
       const launcher = page.locator('[data-urai-adam-launcher]')
       await expect(launcher).toHaveAttribute('data-adam-launcher-placement', 'inline-slot')
@@ -30,6 +32,7 @@ for (const viewport of [{ width: 320, height: 700 }, { width: 844, height: 390 }
       await expect(about.locator('..')).toHaveAttribute('open', '')
       await page.getByRole('button', { name: 'Close Adam', exact: true }).click()
       await expect(launcher).toHaveAttribute('data-adam-launcher-placement', 'inline-slot')
+      expect(pageErrors, `${route} must hydrate without runtime errors`).toEqual([])
       await test.info().attach(`founder-${route.slice(1)}-${viewport.width}-geometry.json`, { body: JSON.stringify(geometry), contentType: 'application/json' })
     }
   })
