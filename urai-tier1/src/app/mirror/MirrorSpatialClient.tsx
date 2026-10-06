@@ -262,15 +262,6 @@ useEffect(() => {
     const href = buildMemoryHref(memory.id, memory.replayManifest.id, memory.star.id, memory.demo, 'replay')
     requestUraiWorldTravel({ destination: 'replay', href, entryPortal: 'mirror-reflection-fragment', cameraCheckpoint: `mirror:${selected?.id ?? 'overview'}`, context: { memoryId: memory.id, replayManifestId: memory.replayManifest.id, privacyMode: memory.privacy === 'private' ? 'held-private' : 'private' } })
 
-    // Mirror owns an explicit full-document safety handoff for Replay. Dispatch
-    // the shared transition first so state/audio listeners run synchronously, then
-    // commit the destination in a microtask only if no listener already moved the
-    // route. This avoids a timer being starved by a continuously rendered WebGL
-    // transition under software-GPU/low-power conditions.
-    window.queueMicrotask(() => {
-      if (window.location.pathname.replace(/\/+$/, '') === '/replay') return
-      window.location.assign(href)
-    })
   }, [memory, selected])
 
   const goPassport = useCallback(() => {
