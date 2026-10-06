@@ -83,7 +83,7 @@ function commitHardFallback(href: string) {
   window.location.assign(href)
 }
 
-function destinationSurfaceReady(destination: UraiWorldTravelRequest['destination']) {
+export function destinationSurfaceReady(destination: UraiWorldTravelRequest['destination']) {
   if (destination === 'replay') return Boolean(document.querySelector('[data-testid="cinematic-replay-client"]'))
   if (destination === 'passport') return Boolean(document.querySelector('main[data-route-owner="passport-ownership-vault"]'))
   return true
