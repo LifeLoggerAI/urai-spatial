@@ -68,7 +68,7 @@ test.describe('Embodied exploration runtime evidence', () => {
   // the complete interaction sequence to finish on that proven host envelope.
   test.describe.configure({ timeout: 180_000 })
 
-  test('Home is a visible world with meaningful keyboard displacement and no pointer lock', async ({ page }) => {
+  test('Home visible world exposes independently focusable direct destinations without pointer lock', async ({ page }) => {
     const errors = await collectRuntimeErrors(page)
     await page.goto('/home/', { waitUntil: 'domcontentloaded' })
 
@@ -88,6 +88,21 @@ test.describe('Embodied exploration runtime evidence', () => {
       await target.evaluate((element: HTMLElement) => element.focus())
       await expect(target).toBeFocused()
     }
+
+    expect(await page.evaluate(() => document.pointerLockElement)).toBeNull()
+    expect(errors.pageErrors).toEqual([])
+    expect(errors.consoleErrors).toEqual([])
+  })
+
+  // Keep keyboard displacement in its own fresh browser context. Retained
+  // exact-head traces showed every assertion passing while cumulative
+  // SwiftShader DOM/focus latency exhausted the combined test's deadline.
+  // Neither the timeout nor any acceptance threshold is relaxed.
+  test('Home is a visible world with meaningful keyboard displacement and no pointer lock', async ({ page }) => {
+    const errors = await collectRuntimeErrors(page)
+    await page.goto('/home/', { waitUntil: 'domcontentloaded' })
+    const home = page.locator(homeOwnerSelector).first()
+    await waitForHomeWorld(home)
 
     const movement = page.getByRole('group', { name: 'Home movement controls' })
     await expect(movement).toBeVisible({ timeout: 30_000 })
