@@ -50,6 +50,8 @@ jobs:
         run: |
           corepack enable
           pnpm install --frozen-lockfile
+      - name: Verify launcher intent handoff
+        run: node --test urai-tier1/tests/adam-launcher-intent.test.mjs
       - name: Preflight
         run: pnpm preflight
       - name: Build exact static candidate with acceptance fixtures
@@ -88,7 +90,7 @@ jobs:
           PLAYWRIGHT_BASE_URL: http://127.0.0.1:4173
           URAI_EXACT_HEAD: ${{ env.URAI_EXACT_HEAD }}
           URAI_LOCATION_MAP_ACCEPTANCE_FIXTURES: '1'
-        run: pnpm exec playwright test tests/location-map-browser-acceptance-v2.spec.ts --config=playwright.config.ts --timeout=120000
+        run: pnpm exec playwright test tests/location-map-browser-acceptance-v2.spec.ts --fail-on-flaky-tests --config=playwright.config.ts --timeout=120000
       - name: Build exact-head local evidence manifest
         if: always()
         shell: bash
