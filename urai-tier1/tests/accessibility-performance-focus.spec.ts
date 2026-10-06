@@ -117,3 +117,32 @@ test.describe('Focus exact-head accessibility and movement evidence', () => {
     await expect(controls.getByRole('button', { name: /Life Map/i })).toBeVisible()
   })
 })
+
+for (const viewport of [{ width: 844, height: 390 }, { width: 568, height: 320 }]) {
+  test(`Focus landscape controls stay clear of heading and context at ${viewport.width}x${viewport.height}`, async ({ page }) => {
+    await page.setViewportSize(viewport)
+    await page.emulateMedia({ reducedMotion: 'reduce' })
+    await page.goto(focusDemo, { waitUntil: 'domcontentloaded' })
+    const focus = activeFocusOwner(page)
+    await expect(focus).toHaveAttribute('data-memory-id', 'demo:quiet-reset')
+    const heading = await focus.locator('.focusHeading').boundingBox()
+    const meaning = await focus.locator('.memoryMeaning').boundingBox()
+    const controls = await focus.locator('.focusControls').boundingBox()
+    expect(heading).not.toBeNull()
+    expect(meaning).not.toBeNull()
+    expect(controls).not.toBeNull()
+    expect(heading!.x + heading!.width).toBeLessThanOrEqual(controls!.x)
+    expect(meaning!.x + meaning!.width).toBeLessThanOrEqual(controls!.x)
+    expect(heading!.y + heading!.height).toBeLessThanOrEqual(meaning!.y)
+    for (const rect of [heading!, meaning!, controls!]) {
+      expect(rect.x).toBeGreaterThanOrEqual(0)
+      expect(rect.y).toBeGreaterThanOrEqual(0)
+      expect(rect.x + rect.width).toBeLessThanOrEqual(viewport.width)
+      expect(rect.y + rect.height).toBeLessThanOrEqual(viewport.height)
+    }
+    await focus.locator('.focusControls').getByRole('button', { name: 'Recenter', exact: true }).click()
+    await focus.locator('.focusControls').getByRole('button', { name: /Open Replay for/ }).click()
+    await expect.poll(() => new URL(page.url()).pathname.split('/').filter(Boolean).join('/')).toBe('replay')
+    expect(new URL(page.url()).searchParams.get('memoryId')).toBe('demo:quiet-reset')
+  })
+}
