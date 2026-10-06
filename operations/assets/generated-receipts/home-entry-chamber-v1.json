@@ -5,40 +5,52 @@
   "bytes": 1786808,
   "sha256": "73f2a49ed2cfd6cd7ae9baed7b3908d53e0cac75b9f36ff1b8be9654e3d3e2f2",
   "measured": {
-    "triangleCount": 12934,
-    "boundsMeters": {
-      "min": [
-        -9.345,
-        -1.83,
-        -9.238
-      ],
-      "max": [
-        9.345,
-        5.0844,
-        7.452
-      ],
-      "size": [
-        18.69,
-        6.9144,
-        16.69
-      ]
-    },
-    "repairedEulerRotations": 2,
-    "nodeCount": 160,
-    "materialCount": 13,
-    "animationClips": [
-      "Home_Breathing",
-      "Presence_Idle",
-      "Presence_Privacy",
-      "Presence_Forming"
-    ]
+    "format": "glb",
+    "version": 2,
+    "generator": "URAI Labs Final GLB Forge 1.0",
+    "nodes": 322,
+    "meshes": 17,
+    "materials": 8,
+    "triangleCount": 57352,
+    "boundsMin": [
+      -10,
+      -0.5750903487205505,
+      -10
+    ],
+    "boundsMax": [
+      10,
+      4.900000095367432,
+      10
+    ],
+    "boundsMeters": [
+      20,
+      5.475,
+      20
+    ],
+    "extensionsUsed": [
+      "KHR_materials_clearcoat",
+      "KHR_materials_emissive_strength",
+      "KHR_materials_transmission"
+    ],
+    "extensionsRequired": []
   },
-  "compressionStatus": "meshopt",
+  "compressionStatus": "uncompressed-candidate",
   "requiredCompression": "draco-or-meshopt",
   "fallback": "procedural-home-threshold",
   "source": "URAI Labs deterministic authored sanctuary v3 pipeline; replaceable only by a separately reviewed provider asset",
   "license": "URAI Labs internal proprietary production asset",
   "generatedBy": "URAI Labs Final GLB Forge 1.0; bounded pole-normal repair; reconciled to urai-final-glb-production-pack-v1",
   "generatedAt": "2026-08-08T23:04:50.713Z",
-  "releaseState": "candidate-not-production-ready"
+  "releaseState": "candidate-not-production-ready",
+  "targetRoutes": [
+    "/",
+    "/home"
+  ],
+  "measurementReconciliation": {
+    "sourceSha": "45d760334ef7f0d5f475f1e71cb536c2c7c1cd5b",
+    "observedAt": "2026-10-06T17:20:57.483328+00:00",
+    "method": "audit-launch-critical-artifact.mjs actual-byte inspection",
+    "assetBytesChanged": false,
+    "finalReviewGranted": false
+  }
 }
