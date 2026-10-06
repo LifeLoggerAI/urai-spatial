@@ -12,7 +12,10 @@ const proofPath = 'urai-tier1/tests/accessibility-performance-lifemap-independen
 // all semantic, 48px-target, screenshot, focus, Enter-dismiss, and tamper assertions remain.
 // Re-reviewed after collapsing redundant Playwright locator round-trips into one
 // atomic DOM proof; this changes no asserted accessibility requirement.
-const auditedCurrentSha256 = '688426cc452fc56c03420b3ab209afeeaa65cee5eec617c4a8cda8a9a06803ae'
+// Re-reviewed after #1629 adds mobile overview helper geometry: 48px targets,
+// viewport containment, lower-field placement, 8px title/search clearance and
+// pointer reachability. Existing semantic/privacy/return assertions are intact.
+const auditedCurrentSha256 = '4b6b40a2e25af4884189b0b43c983fa51fc9d7eb2eb82f386a279bd163b695aa'
 
 export async function preserveAuditedLifeMapProof() {
   const source = await readFile(proofPath)
