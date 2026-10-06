@@ -254,11 +254,11 @@ function DemoMemoryLandscape({ memory }: { memory: SelectedMemory }) {
         </group>
       ))}
 
-      <mesh position={[-1.2, 4.2, -30.5]} name="replay-memory-horizon-glow" renderOrder={0}>
+      <mesh position={[-1.2, 4.2, -20.5]} name="replay-memory-horizon-glow" renderOrder={0}>
         <circleGeometry args={[4.6, 96]} />
         <meshBasicMaterial color={memory.visuals.light} transparent opacity={.065} depthWrite={false} blending={THREE.AdditiveBlending} />
       </mesh>
-      <pointLight position={[-1.2, 3.8, -22]} intensity={1.15} distance={24} color={memory.visuals.light} />
+      <pointLight position={[-1.2, 3.8, -18]} intensity={1.15} distance={20} color={memory.visuals.light} />
 
       <mesh position={[-10.8, -2.4, -24.5]} scale={[9.8, 4.8, 5.4]} rotation={[0, .2, -.04]} castShadow receiveShadow name="replay-memory-ridge-left">
         <icosahedronGeometry args={[1, 3]} />
