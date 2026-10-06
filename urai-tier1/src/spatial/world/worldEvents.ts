@@ -59,6 +59,14 @@ function buildFallbackHref(request: UraiWorldTravelRequest) {
   if (context?.scenarioOrigin) target.searchParams.set('scenarioOrigin', context.scenarioOrigin)
   if (context?.demo) target.searchParams.set('demo', '1')
 
+  const memoryId = target.searchParams.get('memoryId')
+  const nodeId = target.searchParams.get('node')
+  if (request.destination === 'life-map') {
+    if (!nodeId && memoryId) target.searchParams.set('node', memoryId)
+  } else if (!memoryId && nodeId) {
+    target.searchParams.set('memoryId', nodeId)
+  }
+
   return `${target.pathname}${target.search}${target.hash}`
 }
 
