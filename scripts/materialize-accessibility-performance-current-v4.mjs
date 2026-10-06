@@ -164,6 +164,14 @@ await transformFile('urai-tier1/tests/accessibility-performance-spatial-visual.s
     'spatial visual software-renderer timeout envelope',
   )
 
+  source = replaceExact(
+    source,
+    "    await ground.focus()",
+    "    await ground.evaluate((element: HTMLElement) => element.focus())",
+    1,
+    'Home semantic destination direct DOM focus proof',
+  )
+
   const staleMovementHelp = /  test\('Life Map movement help is keyboard-operable', async \(\{ page \}\) => \{[\s\S]*?\n  \}\)\n\n  test\('selected Life Map journey controls preserve identity and remain operable on portrait mobile'/g
   const currentSemanticSearch = `  test('Life Map semantic search is keyboard-operable', async ({ page }) => {
     await page.goto('/life-map?demo=1&overview=1&manifestId=replay-recovery-thread', { waitUntil: 'domcontentloaded' })
