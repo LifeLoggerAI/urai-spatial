@@ -96,6 +96,12 @@ test('Focus is an explorable stellar memory-star field rather than a static cham
 
   assert.match(focus, /aria-label="Focus memory controls"/)
   assert.match(focus, /focus-stellar-photosphere-luminance-floor/)
+  const memoryImprint = focus.match(/function MemoryImprint[\\s\\S]*?\\n}\\n\\nfunction MemoryTraces/)?.[0]
+  assert.ok(memoryImprint, 'Focus MemoryImprint must remain a distinct stellar-memory reveal')
+  assert.match(memoryImprint, /circleGeometry args=\\{\\[1\\.0, 96\\]\\}/)
+  assert.match(memoryImprint, /position=\\{\\[0, 0\\.35, -0\\.34\\]\\}/)
+  assert.match(memoryImprint, /depthTest: true/)
+  assert.doesNotMatch(memoryImprint, /planeGeometry/)
   assert.match(focus, /color="#ffd66b" transparent opacity=\{0\.055\}/)
   assert.doesNotMatch(focus, /color="#ffe8a8" transparent opacity=\{0\.48\}/)
   assert.doesNotMatch(focus, /aria-label="Focus chamber controls"/)
