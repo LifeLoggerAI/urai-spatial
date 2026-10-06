@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import AdamLauncherSlot from '@/spatial/adam/AdamLauncherSlot'
 import styles from './InstitutionalPublicSurface.module.css'
 
 type PublicSurfaceLink = {
@@ -45,7 +46,7 @@ export default function InstitutionalPublicSurface({
               {link.label}
             </a>
           ))}
-          <span data-urai-adam-launcher-slot="public-actions" />
+          <AdamLauncherSlot name="public-actions" />
         </nav>
       </section>
       <footer className={styles.footer}>

@@ -1,24 +1,22 @@
 # UrAi Android packaging preparation
 
-Status: **PACKAGE CANDIDATE / UNSIGNED BUILD ONLY / NOT PLAY-REGISTERED**
+Status: **PACKAGE REGISTERED / EXISTING INTERNAL RELEASE / CURRENT CI PREPARATION UNSIGNED**
 
 This lane packages the current governed UrAi static export into an Android shell without touching Spatial scene/pixel ownership, production deployment, billing, provider secrets, or Play signing state.
 
 ## Current provider evidence
 
-Direct Play Console verification on 2026-09-26 established:
+Authenticated Play Console readback on 2026-10-06 supersedes the September 26 no-bundle observation:
 
-- existing developer account `5930711665694942613`;
-- existing UrAi app internal ID `4972566068213337893`;
-- account contact email and phone are already verified;
-- Internal testing contains a draft release but no uploaded app bundle;
-- Production, Open testing, and Closed testing have no releases;
-- Android developer verification has no registered package names or signing keys;
-- the current UI did not expose any existing package name or signing-certificate fingerprint.
+- package `com.urailabs.urai` is accepted and must remain stable;
+- developer account `5930711665694942613`, app `4972566068213337893`;
+- internal release `UrAi Internal 0.1.126 - 82a708f2` is available to internal testers;
+- actual bundle versionCode **126**, versionName `0.1.126-unsigned`, minimum API 24, target SDK 36;
+- Play explicitly reports **Releases signed by Play** and an app-signing key in use;
+- public certificate SHA-256 fingerprints and observation limits are in `play-console-receipt-20261006.json`;
+- Production is inactive; the dashboard shows zero closed-test opted-in testers and requires at least 12 testers for 14 days before applying for production access.
 
-Historical connected GitHub searches found Android experimentation in `UrAi-Dev` (`AuthActivity.kt`, `UraiMessagingService.kt`, and a partial manifest), but no package declaration, Gradle namespace, keystore/signing reference, `google-services.json`, Firebase Android `package_name`, or `mobilesdk_app_id`.
-
-Therefore this branch uses **`com.urailabs.urai` only as a reversible candidate**. It must not be treated as permanently bound until a validated signed artifact is accepted by Google Play.
+The release label supplies only predecessor source prefix `82a708f2`. Full source binding and artifact bytes were not independently verified here. Existing internal delivery does not accept the current Spatial candidate. The versionName text “unsigned” is separate from Play's app-signing state.
 
 ## Build boundary
 
@@ -42,9 +40,9 @@ Do not:
 - commit a keystore or password;
 - reset/rotate a Play signing or upload key;
 - upload this CI artifact to Play;
-- register the candidate package name simply to make a deadline look green.
+- alter the already accepted package identity to make a deadline look green.
 
-Before Play upload, establish durable upload-key custody in an approved secret store, sign the exact validated AAB, record the certificate fingerprints, register the exact package/signing identity through Android developer verification, and retain provider-native evidence.
+Before Play upload, establish durable upload-key custody in an approved secret store, sign the exact validated AAB, verify its public upload certificate against the accepted Play upload identity, retain artifact/source hashes, and record provider-native delivery evidence. Any separate developer-verification status must be freshly inspected.
 
 ## Runtime authority
 
@@ -64,4 +62,4 @@ It requires an exact source SHA plus four deliberately provisioned repository se
 
 The workflow fails closed when any credential is absent, rebuilds from the exact requested source SHA, confirms the candidate package identity, signs the AAB, verifies the signature, records the public upload-certificate SHA-256 fingerprint, retains the signed AAB as evidence, removes the runner-local keystore, and records `play_upload_performed=false`.
 
-Provisioning the durable upload key and registering the first accepted package/signing identity remain deliberate owner/provider actions. Do not use the workflow with a disposable key merely to satisfy an account deadline.
+Access to the existing durable upload key and any required signing-secret provisioning remain owner-controlled actions. The existing accepted package/signing identity must be preserved. Do not use the workflow with a disposable key merely to satisfy an account deadline.
