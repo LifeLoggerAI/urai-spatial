@@ -118,6 +118,17 @@ function ReplayMemoryAtmosphere({ memory, reducedMotion }: { memory: SelectedMem
   )
 }
 
+function replayTerrainHeight(x: number, z: number) {
+  const radial = Math.hypot(x * .68, z * .24)
+  const trail = Math.exp(-Math.pow(x / 3.5, 2)) * .18
+  return -1.72
+    + Math.sin(x * .37 + z * .075) * .28
+    + Math.cos(z * .19 - x * .13) * .21
+    + Math.sin(radial * .42) * .15
+    + Math.sin((x + z) * .54) * .055
+    - trail
+}
+
 function DemoMemoryLandscape({ memory }: { memory: SelectedMemory }) {
   const terrain = useMemo(() => {
     const geometry = new THREE.PlaneGeometry(38, 52, 84, 112)
@@ -126,15 +137,7 @@ function DemoMemoryLandscape({ memory }: { memory: SelectedMemory }) {
     for (let index = 0; index < position.count; index += 1) {
       const x = position.getX(index)
       const z = position.getZ(index)
-      const radial = Math.hypot(x * .68, z * .24)
-      const trail = Math.exp(-Math.pow(x / 3.5, 2)) * .18
-      const height = -1.72
-        + Math.sin(x * .37 + z * .075) * .28
-        + Math.cos(z * .19 - x * .13) * .21
-        + Math.sin(radial * .42) * .15
-        + Math.sin((x + z) * .54) * .055
-        - trail
-      position.setY(index, height)
+      position.setY(index, replayTerrainHeight(x, z))
     }
     position.needsUpdate = true
     geometry.computeVertexNormals()
@@ -150,6 +153,16 @@ function DemoMemoryLandscape({ memory }: { memory: SelectedMemory }) {
     return { x, z, scale, rotation: ((index * 41) % 19) * .08 }
   }), [])
 
+  const trailStones = useMemo(() => Array.from({ length: 15 }, (_, index) => {
+    const z = -3.8 - index * 1.62
+    const x = Math.sin(index * .72) * .42 + Math.sin(index * .27) * .18
+    const width = .72 + ((index * 13) % 7) * .045
+    const depth = .46 + ((index * 17) % 5) * .035
+    const localTerrainZ = z + 7
+    const y = replayTerrainHeight(x, localTerrainZ) + .08
+    return { x, y, z, width, depth, yaw: Math.sin(index * .51) * .18 }
+  }), [])
+
   const trees = useMemo(() => [
     [-7.8, -11.8, 1.2], [-10.5, -16.2, 1.55], [-6.1, -20.8, 1.7],
     [8.4, -12.9, 1.25], [11.2, -18.1, 1.6], [7.1, -23.5, 1.45],
@@ -158,15 +171,33 @@ function DemoMemoryLandscape({ memory }: { memory: SelectedMemory }) {
   useEffect(() => () => terrain.dispose(), [terrain])
 
   return (
-    <group name="replay-interpretive-memory-landscape" userData={{ truthClass: 'disclosed-demonstration', autobiographical: false, role: 'inside-memory-spatial-context', artState: 'no-spend-procedural-landscape-v2' }}>
+    <group name="replay-interpretive-memory-landscape" userData={{ truthClass: 'disclosed-demonstration', autobiographical: false, role: 'inside-memory-spatial-context', artState: 'no-spend-procedural-landscape-v3' }}>
       <mesh geometry={terrain} position={[0, 0, -7]} receiveShadow>
         <meshPhysicalMaterial color={memory.visuals.ground} roughness={.88} metalness={0} clearcoat={.08} clearcoatRoughness={.72} />
       </mesh>
 
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -1.42, -8.2]} receiveShadow name="replay-memory-walk">
-        <planeGeometry args={[2.35, 30, 1, 32]} />
-        <meshPhysicalMaterial color={memory.visuals.light} roughness={.84} metalness={0} transparent opacity={.20} clearcoat={.12} />
-      </mesh>
+      <group name="replay-memory-walk">
+        {trailStones.map((stone, index) => (
+          <mesh
+            key={index}
+            name={`replay-memory-trail-stone-${index + 1}`}
+            position={[stone.x, stone.y, stone.z]}
+            rotation={[0, stone.yaw, 0]}
+            scale={[stone.width, .10, stone.depth]}
+            castShadow
+            receiveShadow
+          >
+            <icosahedronGeometry args={[1, 2]} />
+            <meshPhysicalMaterial
+              color={index % 4 === 0 ? memory.visuals.light : '#778079'}
+              roughness={.86}
+              metalness={0}
+              clearcoat={.08}
+              clearcoatRoughness={.75}
+            />
+          </mesh>
+        ))}
+      </group>
 
       <mesh rotation={[-Math.PI / 2, 0, -.055]} position={[5.65, -1.47, -13.2]} name="replay-memory-water">
         <planeGeometry args={[7.8, 18, 18, 28]} />
@@ -194,20 +225,40 @@ function DemoMemoryLandscape({ memory }: { memory: SelectedMemory }) {
 
       {trees.map(([x, z, scale], index) => (
         <group key={index} name={`replay-memory-tree-${index + 1}`} position={[x, -1.5, z]} scale={scale}>
-          <mesh position={[0, 1.45, 0]} castShadow>
-            <cylinderGeometry args={[.16, .24, 2.9, 10]} />
-            <meshStandardMaterial color="#3a2d22" roughness={.96} />
+          <mesh position={[0, 1.48, 0]} castShadow>
+            <cylinderGeometry args={[.15, .25, 2.95, 12]} />
+            <meshStandardMaterial color="#382a20" roughness={.96} />
           </mesh>
-          <mesh position={[0, 3.25, 0]} scale={[1.12, 1.7, 1.12]} castShadow>
-            <icosahedronGeometry args={[1.25, 2]} />
-            <meshStandardMaterial color={index % 2 ? '#213b31' : '#1b332a'} roughness={.92} />
-          </mesh>
-          <mesh position={[.55, 2.95, .18]} scale={[.72, 1.04, .68]} castShadow>
-            <icosahedronGeometry args={[1, 2]} />
-            <meshStandardMaterial color="#29483a" roughness={.9} />
-          </mesh>
+          {[
+            [0, 2.85, 0, .82, 1.02, .82],
+            [.54, 3.18, .16, .62, .76, .60],
+            [-.48, 3.12, -.14, .66, .82, .63],
+            [.06, 3.72, -.03, .53, .64, .50],
+          ].map(([cx, cy, cz, sx, sy, sz], clusterIndex) => (
+            <mesh
+              key={clusterIndex}
+              position={[cx, cy, cz]}
+              scale={[sx, sy, sz]}
+              rotation={[clusterIndex * .07, clusterIndex * .41, clusterIndex * .05]}
+              castShadow
+              receiveShadow
+            >
+              <icosahedronGeometry args={[1.08, 2]} />
+              <meshStandardMaterial
+                color={(index + clusterIndex) % 3 === 0 ? '#284739' : (index + clusterIndex) % 3 === 1 ? '#1d392f' : '#315344'}
+                roughness={.94}
+                metalness={0}
+              />
+            </mesh>
+          ))}
         </group>
       ))}
+
+      <mesh position={[-1.2, 4.2, -20.5]} name="replay-memory-horizon-glow" renderOrder={0}>
+        <circleGeometry args={[4.6, 96]} />
+        <meshBasicMaterial color={memory.visuals.light} transparent opacity={.065} depthWrite={false} blending={THREE.AdditiveBlending} />
+      </mesh>
+      <pointLight position={[-1.2, 3.8, -18]} intensity={1.15} distance={20} color={memory.visuals.light} />
 
       <mesh position={[-10.8, -2.4, -24.5]} scale={[9.8, 4.8, 5.4]} rotation={[0, .2, -.04]} castShadow receiveShadow name="replay-memory-ridge-left">
         <icosahedronGeometry args={[1, 3]} />
