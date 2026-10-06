@@ -369,6 +369,9 @@ function StellarPhotosphere({ accent, light, reducedMotion }: { accent: string; 
 
 function MemoryImprint({ url }: { url: string }) {
   const texture = useTexture(url)
+  const aperture = useRef<THREE.Group>(null)
+  const starCenter = useMemo(() => new THREE.Vector3(0, 0.35, -1.55), [])
+  const facingSurface = useMemo(() => new THREE.Vector3(), [])
   const material = useMemo(() => new THREE.ShaderMaterial({
     uniforms: { uMemory: { value: texture } },
     vertexShader: `
@@ -412,13 +415,26 @@ function MemoryImprint({ url }: { url: string }) {
     return () => material.dispose()
   }, [material, texture])
 
+  useFrame(({ camera }) => {
+    if (!aperture.current) return
+    facingSurface
+      .copy(camera.position)
+      .sub(starCenter)
+      .normalize()
+      .multiplyScalar(1.19)
+      .add(starCenter)
+    aperture.current.position.copy(facingSurface)
+  })
+
   return (
-    <Billboard follow position={[0, 0.35, -0.34]} name="focus-memory-imprint-billboard">
-      <mesh renderOrder={6} name="focus-memory-imprint">
-        <circleGeometry args={[1.0, 96]} />
-        <primitive object={material} attach="material" />
-      </mesh>
-    </Billboard>
+    <group ref={aperture} name="focus-memory-imprint-anchor">
+      <Billboard follow name="focus-memory-imprint-billboard">
+        <mesh renderOrder={6} name="focus-memory-imprint">
+          <circleGeometry args={[1.0, 96]} />
+          <primitive object={material} attach="material" />
+        </mesh>
+      </Billboard>
+    </group>
   )
 }
 
