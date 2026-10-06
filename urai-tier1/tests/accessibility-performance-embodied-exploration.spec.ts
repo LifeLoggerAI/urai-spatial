@@ -169,6 +169,7 @@ test.describe('Embodied exploration runtime evidence', () => {
     await page.waitForTimeout(550)
     await page.keyboard.up('w')
 
+    await expectReadableMovementControl(ground.getByRole('button', { name: 'Move forward' }))
     const destinations = page.getByRole('navigation', { name: 'Ground destinations' })
     const privacyCard = destinations.getByRole('button', { name: /^Privacy Sanctuary\./i })
     const privacyDirect = destinations.getByRole('button', { name: 'Go now to Privacy Sanctuary' })
