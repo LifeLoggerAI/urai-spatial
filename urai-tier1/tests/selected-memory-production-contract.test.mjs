@@ -260,6 +260,7 @@ test('Replay preserves inside-memory demonstration canon without admitting it as
   assert.match(replay, /replay-memory-water/)
   assert.ok(replay.includes('replay-memory-trail-stone-${index + 1}'))
   assert.match(replay, /replay-memory-horizon-glow/)
+  assert.ok(replay.includes('position={[-1.2, 4.2, -20.5]} name="replay-memory-horizon-glow"'))
   assert.ok(replay.includes('const y = replayTerrainHeight(x, localTerrainZ) + .08'))
   assert.ok(replay.includes('position={[stone.x, stone.y, stone.z]}'))
   assert.ok(!replay.includes('<planeGeometry args={[2.35, 30, 1, 32]} />'))
