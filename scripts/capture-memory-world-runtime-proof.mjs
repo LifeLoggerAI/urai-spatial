@@ -72,7 +72,21 @@ try {
         assert.equal(await runtime.getAttribute('data-memory-world-renderer'), 'lost')
         await capture(page, 'context-loss', spec)
       }
-      await page.getByRole('button', { name: '← Replay', exact: true }).click()
+      const hasFallback = ['unavailable', 'lost'].includes(await runtime.getAttribute('data-memory-world-renderer'))
+      if (hasFallback) {
+        const exit = page.getByTestId('memory-world-renderer-fallback').getByRole('button', { name: 'Return to Replay', exact: true })
+        const clearance = await exit.evaluate(button => {
+          const rect = button.getBoundingClientRect()
+          const tools = document.querySelector('[data-testid="memory-world-authoring-tools"]')?.getBoundingClientRect()
+          const hit = document.elementFromPoint(rect.left + rect.width / 2, rect.top + rect.height / 2)
+          return { width: rect.width, height: rect.height, bottom: rect.bottom, toolsTop: tools?.top ?? null, reachable: button === hit || button.contains(hit) }
+        })
+        assert.ok(clearance.width >= 48 && clearance.height >= 48, 'Fallback exit must be a 48px target')
+        assert.ok(clearance.toolsTop !== null && clearance.bottom + 8 <= clearance.toolsTop, 'Fallback exit must clear authoring tools by at least 8px')
+        assert.equal(clearance.reachable, true, 'Fallback exit center must receive pointer input')
+        receipt.captures.at(-1).fallbackExitClearance = clearance
+        await exit.click()
+      } else await page.getByRole('button', { name: '← Replay', exact: true }).click()
       await page.waitForURL(url => url.pathname.startsWith('/replay'), { timeout: 30000 })
       const returned = new URL(page.url())
       assert.equal(returned.searchParams.get('memoryId'), 'demo:quiet-reset')
