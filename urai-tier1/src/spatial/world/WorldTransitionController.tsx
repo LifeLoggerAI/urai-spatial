@@ -7,6 +7,7 @@ import { useUraiWorldState } from './WorldStateProvider'
 import {
   URAI_WORLD_RETURN_EVENT,
   URAI_WORLD_TRAVEL_EVENT,
+  destinationSurfaceReady,
 } from './worldEvents'
 import type { UraiDestination, UraiOriginRealm, UraiWorldTravelRequest } from './worldTypes'
 
@@ -100,14 +101,6 @@ function fallbackReturnDestination(destination: UraiDestination): UraiDestinatio
   return 'infrastructure-hub'
 }
 
-function requiresHardDocumentNavigation(request: UraiWorldTravelRequest) {
-  // Mirror's WebGL realm can leave Next's client router with the target URL
-  // committed before the Replay document owner mounts. Preserve the cinematic
-  // transition, then use one deterministic document navigation for this edge.
-  return request.destination === 'replay' && request.entryPortal === 'mirror-reflection-fragment'
-}
-
-
 export function WorldTransitionController() {
   const router = useRouter()
   const { world, phase, beginTravel } = useUraiWorldState()
@@ -149,18 +142,21 @@ export function WorldTransitionController() {
     const href = buildTravelHref(request)
     const targetPathname = normalizedPathname(new URL(href, window.location.origin).pathname)
     timer.current = window.setTimeout(() => {
-      if (requiresHardDocumentNavigation(request)) {
-        window.location.assign(href)
-        timer.current = null
-        return
-      }
-
+      // Use the governed client-router path for every realm transition, including
+      // Mirror -> Replay. A prior Replay-only hard-document shortcut could stall
+      // before navigation committed under the patched Next runtime.
       router.push(href)
       timer.current = null
 
+      // Route ownership is not proven by pathname alone. If the router changes
+      // the URL but the destination surface never mounts, force one deterministic
+      // document handoff after the client-router grace period.
       navigationWatchdog.current = window.setTimeout(() => {
         navigationWatchdog.current = null
-        if (normalizedPathname(window.location.pathname) !== targetPathname) {
+        if (
+          normalizedPathname(window.location.pathname) !== targetPathname ||
+          !destinationSurfaceReady(request.destination)
+        ) {
           window.location.assign(href)
         }
       }, 2500)

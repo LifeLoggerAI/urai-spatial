@@ -71,12 +71,13 @@ test('Mirror spatial runtime owns chamber, embodied reflection, interaction, res
   assert.doesNotMatch(clientSource, /generic person/i)
 })
 
-test('Mirror to Replay preserves the cinematic delay but commits a deterministic document handoff', () => {
-  assert.match(transitionSource, /requiresHardDocumentNavigation/)
-  assert.match(transitionSource, /request\.destination === 'replay'/)
-  assert.match(transitionSource, /request\.entryPortal === 'mirror-reflection-fragment'/)
-  assert.match(transitionSource, /window\.location\.assign\(href\)/)
+test('Mirror to Replay preserves the cinematic delay through governed routing with deterministic surface fallback', () => {
+  assert.doesNotMatch(transitionSource, /requiresHardDocumentNavigation/)
+  assert.match(transitionSource, /router\.push\(href\)/)
   assert.match(transitionSource, /transitionDuration\(request\.destination\)/)
+  assert.match(transitionSource, /normalizedPathname\(window\.location\.pathname\) !== targetPathname \|\|/)
+  assert.match(transitionSource, /!destinationSurfaceReady\(request\.destination\)/)
+  assert.match(transitionSource, /window\.location\.assign\(href\)/)
   assert.doesNotMatch(clientSource, /window\.queueMicrotask/)
   assert.doesNotMatch(clientSource, /window\.location\.assign/)
 })
