@@ -206,6 +206,29 @@ test.describe('Life Map independent realm runtime evidence', () => {
       expect(layout.title!.left).toBeGreaterThanOrEqual(0)
       expect(layout.title!.right).toBeLessThanOrEqual(viewport.width)
 
+      if (viewport.width <= 760) {
+        const helper = page.locator('[data-urai-adam-launcher]')
+        await expect(helper).toBeVisible()
+        const helperGeometry = await helper.evaluate(element => {
+          const r = element.getBoundingClientRect()
+          const title = document.querySelector('.life-map-title')!.getBoundingClientRect()
+          const search = document.querySelector('.life-map-search-trigger')!.getBoundingClientRect()
+          const hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2)
+          const clear = (other: DOMRect) => r.right + 8 <= other.left || other.right + 8 <= r.left || r.bottom + 8 <= other.top || other.bottom + 8 <= r.top
+          return { x: r.left, y: r.top, right: r.right, bottom: r.bottom, width: r.width, height: r.height, titleClear: clear(title), searchClear: clear(search), reachable: hit === element || element.contains(hit) }
+        })
+        expect(helperGeometry.width).toBeGreaterThanOrEqual(48)
+        expect(helperGeometry.height).toBeGreaterThanOrEqual(48)
+        expect(helperGeometry.x).toBeGreaterThanOrEqual(0)
+        expect(helperGeometry.right).toBeLessThanOrEqual(viewport.width)
+        expect(helperGeometry.bottom).toBeLessThanOrEqual(viewport.height)
+        expect(helperGeometry.y).toBeGreaterThan(viewport.height / 2)
+        expect(helperGeometry.titleClear).toBe(true)
+        expect(helperGeometry.searchClear).toBe(true)
+        expect(helperGeometry.reachable).toBe(true)
+        await test.info().attach(`life-map-helper-${viewport.width}x${viewport.height}.json`, { body: JSON.stringify(helperGeometry), contentType: 'application/json' })
+      }
+
       const explorer = await openSemanticExplorer(page)
       const explorerBox = await explorer.boundingBox()
       expect(explorerBox).not.toBeNull()

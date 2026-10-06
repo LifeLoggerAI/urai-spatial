@@ -137,3 +137,15 @@ body:has(.life-map-navigator[open]) [data-testid="urai-true-3d-life-map"] * {
     image-rendering: auto;
   }
 }
+
+/* Keep the overview helper out of the central mobile Memory Star field.
+   The selected-memory action rail retains its existing independent layout. */
+@media (max-width: 760px) {
+  body:has([data-testid="urai-true-3d-life-map"][data-life-map-mode="overview"]) [data-urai-adam-launcher] {
+    top: auto !important;
+    bottom: max(18px, calc(env(safe-area-inset-bottom) + 12px)) !important;
+    left: max(12px, env(safe-area-inset-left)) !important;
+    right: auto !important;
+    transform: none !important;
+  }
+}
