@@ -100,11 +100,12 @@
     right: max(18px, env(safe-area-inset-right)) !important;
     bottom: max(18px, env(safe-area-inset-bottom)) !important;
     transform: none !important;
+    justify-items: end !important;
   }
   .ground-spatial-root .urai-mobile-movement {
     bottom: max(110px, calc(env(safe-area-inset-bottom) + 100px)) !important;
   }
-  .ground-spatial-root .ground-directory {
+  body:has(.ground-spatial-root) .ground-spatial-root .ground-directory {
     left: 0 !important;
     right: max(120px, calc(env(safe-area-inset-right) + 110px)) !important;
     width: auto !important;
