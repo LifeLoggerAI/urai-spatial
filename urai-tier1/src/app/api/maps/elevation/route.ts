@@ -7,6 +7,32 @@ function validCoordinate(value: unknown, min: number, max: number): value is num
   return typeof value === 'number' && Number.isFinite(value) && value >= min && value <= max
 }
 
+const RATE_WINDOW_MS = 60_000
+const RATE_LIMIT_MAX = 12
+
+async function consumeElevationRateLimit(uid: string) {
+  const firestore = await import('firebase-admin/firestore')
+  const db = firestore.getFirestore()
+  const ref = db.doc(`users/${uid}/providerRateLimits/maps-elevation`)
+  const now = Date.now()
+  return db.runTransaction(async (transaction) => {
+    const snapshot = await transaction.get(ref)
+    const data = snapshot.data() ?? {}
+    const startedAt = data.windowStartedAt
+    const prior = startedAt instanceof firestore.Timestamp ? startedAt.toMillis() : 0
+    const active = prior > 0 && now - prior < RATE_WINDOW_MS
+    const count = active ? Number(data.count ?? 0) : 0
+    if (count >= RATE_LIMIT_MAX) return false
+    transaction.set(ref, {
+      provider: 'maps-elevation',
+      count: count + 1,
+      windowStartedAt: firestore.Timestamp.fromMillis(active ? prior : now),
+      updatedAt: firestore.FieldValue.serverTimestamp(),
+    }, { merge: true })
+    return true
+  })
+}
+
 export async function POST(request: Request) {
   if (process.env.URAI_FIREBASE_STATIC_EXPORT === 'true') {
     return NextResponse.json({ error: 'elevation_unavailable_in_static_export' }, { status: 503, headers: { 'cache-control': 'private, no-store, max-age=0' } })
@@ -24,6 +50,10 @@ export async function POST(request: Request) {
 
   const apiKey = process.env.URAI_ELEVATION_SERVER_CREDENTIAL
   if (!apiKey) return NextResponse.json({ error: 'elevation_unavailable' }, { status: 503, headers: { 'cache-control': 'private, no-store, max-age=0' } })
+
+  let allowed: boolean
+  try { allowed = await consumeElevationRateLimit(uid) } catch { return NextResponse.json({ error: 'elevation_rate_limit_unavailable' }, { status: 503, headers: { 'cache-control': 'private, no-store, max-age=0' } }) }
+  if (!allowed) return NextResponse.json({ error: 'rate_limited' }, { status: 429, headers: { 'cache-control': 'private, no-store, max-age=0' } })
 
   const controller = new AbortController()
   const timeout = setTimeout(() => controller.abort(), 8000)
