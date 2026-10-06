@@ -164,14 +164,26 @@ function DemoMemoryLandscape({ memory }: { memory: SelectedMemory }) {
   }), [])
 
   const trees = useMemo(() => [
-    [-7.8, -11.8, 1.2], [-10.5, -16.2, 1.55], [-6.1, -20.8, 1.7],
-    [8.4, -12.9, 1.25], [11.2, -18.1, 1.6], [7.1, -23.5, 1.45],
+    [-7.8, -10.6, 1.08], [-10.5, -14.2, 1.46], [-6.1, -18.4, 1.62], [-11.8, -22.8, 1.72],
+    [-7.4, -27.0, 1.48], [-13.2, -30.0, 1.82],
+    [8.4, -11.5, 1.12], [11.2, -15.5, 1.5], [7.1, -20.0, 1.42], [12.8, -23.8, 1.7],
+    [8.8, -27.7, 1.58], [13.7, -31.4, 1.86],
   ] as const, [])
+
+  const understory = useMemo(() => Array.from({ length: 28 }, (_, index) => {
+    const side = index % 2 === 0 ? -1 : 1
+    const lane = Math.floor(index / 2)
+    const z = -6.1 - lane * 1.82
+    const x = side * (4.1 + ((index * 11) % 9) * .43)
+    const y = replayTerrainHeight(x, z + 7) + .14
+    const scale = .28 + ((index * 7) % 6) * .055
+    return { x, y, z, scale, yaw: ((index * 31) % 17) * .17 }
+  }), [])
 
   useEffect(() => () => terrain.dispose(), [terrain])
 
   return (
-    <group name="replay-interpretive-memory-landscape" userData={{ truthClass: 'disclosed-demonstration', autobiographical: false, role: 'inside-memory-spatial-context', artState: 'no-spend-procedural-landscape-v3' }}>
+    <group name="replay-interpretive-memory-landscape" userData={{ truthClass: 'disclosed-demonstration', autobiographical: false, role: 'inside-memory-spatial-context', artState: 'no-spend-procedural-landscape-v4-layered-depth' }}>
       <mesh geometry={terrain} position={[0, 0, -7]} receiveShadow>
         <meshPhysicalMaterial color={memory.visuals.ground} roughness={.88} metalness={0} clearcoat={.08} clearcoatRoughness={.72} />
       </mesh>
@@ -221,6 +233,29 @@ function DemoMemoryLandscape({ memory }: { memory: SelectedMemory }) {
           <icosahedronGeometry args={[1, 2]} />
           <meshStandardMaterial color={index % 3 === 0 ? '#39433d' : '#2b3531'} roughness={.93} metalness={0} />
         </mesh>
+      ))}
+
+      {understory.map((plant, index) => (
+        <group
+          key={`understory-${index}`}
+          name={`replay-memory-understory-${index + 1}`}
+          position={[plant.x, plant.y, plant.z]}
+          rotation={[0, plant.yaw, 0]}
+          scale={plant.scale}
+        >
+          <mesh position={[0, .46, 0]} rotation={[0, 0, .12]} castShadow>
+            <coneGeometry args={[.34, 1.08, 7]} />
+            <meshStandardMaterial color={index % 3 === 0 ? '#41604d' : index % 3 === 1 ? '#355342' : '#294638'} roughness={.96} metalness={0} />
+          </mesh>
+          <mesh position={[.24, .30, .08]} rotation={[0, .65, -.22]} castShadow>
+            <coneGeometry args={[.24, .72, 7]} />
+            <meshStandardMaterial color={index % 2 === 0 ? '#526e56' : '#3b5b47'} roughness={.98} metalness={0} />
+          </mesh>
+          <mesh position={[-.22, .25, -.06]} rotation={[0, -.55, .28]} castShadow>
+            <coneGeometry args={[.2, .62, 7]} />
+            <meshStandardMaterial color="#2f503e" roughness={.98} metalness={0} />
+          </mesh>
+        </group>
       ))}
 
       {trees.map(([x, z, scale], index) => (
