@@ -393,10 +393,11 @@ function MemoryImprint({ url }: { url: string }) {
         float luminance = dot(image, vec3(.2126, .7152, .0722));
         float localContrast = smoothstep(.08, .92, luminance);
         vec3 warmMemory = mix(image, vec3(1.0, .48, .08), .06 + (1.0 - luminance) * .05);
-        vec3 revealedMemory = mix(warmMemory, image * (.92 + localContrast * .20), .80);
-        vec3 solarVeil = vec3(1.0, .34, .02) * (1.0 - core) * .08;
-        float alpha = veil * (.52 + luminance * .26 + core * .18);
-        gl_FragColor = vec4(revealedMemory + solarVeil, alpha);
+        vec3 revealedMemory = mix(warmMemory, image * (.92 + localContrast * .20), .72);
+        vec3 solarVeil = vec3(1.0, .34, .02) * (1.0 - core) * .12;
+        vec3 stellarizedMemory = mix(revealedMemory, vec3(1.0, .62, .12), (1.0 - luminance) * .08 + (1.0 - core) * .10);
+        float alpha = veil * (.36 + luminance * .22 + core * .20);
+        gl_FragColor = vec4(stellarizedMemory + solarVeil, alpha);
         #include <colorspace_fragment>
       }
     `,
@@ -427,10 +428,14 @@ function MemoryImprint({ url }: { url: string }) {
   })
 
   return (
-    <group ref={aperture} name="focus-memory-imprint-anchor">
+    <group
+      ref={aperture}
+      name="focus-memory-imprint-anchor"
+      userData={{ canon: 'memory-reveal-within-photosphere', apertureRadius: 0.68, surfaceWrap: false }}
+    >
       <Billboard follow name="focus-memory-imprint-billboard">
         <mesh renderOrder={6} name="focus-memory-imprint">
-          <circleGeometry args={[1.0, 96]} />
+          <circleGeometry args={[0.68, 96]} />
           <primitive object={material} attach="material" />
         </mesh>
       </Billboard>
