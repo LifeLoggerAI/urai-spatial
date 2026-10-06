@@ -20,6 +20,8 @@ const tests = [
   'tests/scene-truth-life-model-compiler.test.mjs',
   'tests/replay-life-model-authority.test.mjs',
   'tests/life-movie-life-model-binding.test.mjs',
+  'tests/life-movie-runtime-contract.test.mjs',
+  'tests/life-movie-runtime-binding-contract.test.mjs',
   'tests/captured-reality-life-model-binding.test.mjs',
   'tests/aaa-world-artifact-contract.test.mjs',
   'tests/adam-presence-runtime-contract.test.mjs',
