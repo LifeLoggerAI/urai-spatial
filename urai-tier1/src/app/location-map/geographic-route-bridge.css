@@ -83,7 +83,8 @@
   width: min(20rem, calc(100vw - 1.5rem));
 }
 
-.locationAtlas--empty {
+/* Outrank the scene's later-loaded .locationAtlas--empty padding shorthand. */
+.locationAtlas.locationAtlas--empty {
   box-sizing: border-box;
   padding-top: max(148px, calc(env(safe-area-inset-top) + 148px));
   align-items: safe center;
