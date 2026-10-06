@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react'
 import { usePathname, useSearchParams } from 'next/navigation'
+import { createPortal } from 'react-dom'
 import {
   AdamProviderError,
   requestAdamFounderVoice,
@@ -61,6 +62,19 @@ export default function AdamPresenceRuntime() {
   const requestedSurface = pathname === '/adam' ? searchParams.get('surface') : null
   const surface = resolveAdamSurface(pathname, requestedSurface)
   const [open, setOpen] = useState(false)
+  const [launcherAnchor, setLauncherAnchor] = useState<HTMLElement | null>(null)
+
+  useEffect(() => {
+    // Text/card surfaces provide a flow-owned slot instead of a floating overlay.
+    const syncAnchor = () => {
+      const anchor = document.querySelector<HTMLElement>('[data-urai-adam-launcher-slot]')
+      setLauncherAnchor(current => current === anchor ? current : anchor)
+    }
+    const observer = new MutationObserver(syncAnchor)
+    observer.observe(document.body, { childList: true, subtree: true })
+    syncAnchor()
+    return () => observer.disconnect()
+  }, [pathname])
   const [message, setMessage] = useState('')
   const [messages, setMessages] = useState<DisplayMessage[]>([])
   const [streamedText, setStreamedText] = useState('')
@@ -272,10 +286,11 @@ export default function AdamPresenceRuntime() {
   if (!surface) return null
 
   if (!open) {
-    return (
+    const launcher = (
       <button
         type="button"
-        className={styles.launcher}
+        className={`${styles.launcher} ${launcherAnchor ? styles.inlineLauncher : ''}`}
+        data-adam-launcher-placement={launcherAnchor ? 'inline-slot' : 'spatial-overlay'}
         onClick={() => setOpen(true)}
         aria-label={`Talk with Adam in ${surface.label}`}
         data-urai-adam-launcher="true"
@@ -283,6 +298,7 @@ export default function AdamPresenceRuntime() {
         Adam
       </button>
     )
+    return launcherAnchor ? createPortal(launcher, launcherAnchor) : launcher
   }
 
   const visibleMessages = streamedText

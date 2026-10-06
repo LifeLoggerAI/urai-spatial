@@ -69,7 +69,7 @@
   color: rgba(235,244,248,.7);
   font-size: 12px;
 }
-.about summary { cursor: pointer; min-height: 36px; display: flex; align-items: center; }
+.about summary { cursor: pointer; min-height: 48px; display: flex; align-items: center; }
 .about p { margin: 6px 0 0; }
 .log {
   flex: 1;
@@ -148,3 +148,14 @@
   .launcher, .panel, .presence { transition: none !important; animation: none !important; }
 }
 
+
+/* Flow-owned launchers must override route-specific floating placement. */
+.inlineLauncher {
+  position: static !important;
+  inset: auto !important;
+  transform: none !important;
+  margin: 0;
+  box-sizing: border-box;
+  width: 100%;
+}
+.launcher:focus-visible { outline: 2px solid #d8fff5; outline-offset: 3px; }

@@ -30,6 +30,7 @@ export default function StatusRoutePage() {
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_50%_50%,transparent_0_38%,rgba(0,0,0,0.64)_78%,rgba(0,0,0,0.92)_100%)]" />
       <section className="relative z-10 mx-auto max-w-[1480px]">
         <PreviewBuildIdentity fullSha={embeddedBuildSha} shortSha={shortBuildSha} />
+        <div className="mb-4 flex justify-end"><span data-urai-adam-launcher-slot="status-actions" /></div>
         <StatusReleaseAuthority />
       </section>
     </main>

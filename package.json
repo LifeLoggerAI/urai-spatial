@@ -108,7 +108,7 @@
     "tier1:immutable:check": "node scripts/check-tier1-immutable-diff.mjs",
     "tier1:redefinition:check": "node scripts/check-tier1-redefinition.mjs",
     "home:invariant": "node scripts/check-home-invariant.mjs",
-    "firebase:rules:check": "node scripts/check-firestore-tier1-boundaries.mjs",
+    "firebase:rules:check": "node scripts/check-firestore-tier1-boundaries.mjs && node --test tests/firestore.assetManifests.rules.static.test.mjs tests/firestore.privacyConsent.rules.static.test.mjs",
     "tier2:check": "node scripts/check-tier2-governance.mjs",
     "urai:tier1": "node scripts/run-pnpm.mjs bootstrap:check && node scripts/run-pnpm.mjs --filter urai-tier1 urai:tier1",
     "urai:tier2": "node scripts/run-pnpm.mjs bootstrap:check && node scripts/run-pnpm.mjs --filter urai-tier1 urai:tier2",
