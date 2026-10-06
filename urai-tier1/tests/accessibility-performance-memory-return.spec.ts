@@ -32,5 +32,14 @@ for (const viewport of [{ width: 1440, height: 900 }, { width: 393, height: 873 
     expect(target!.height).toBeGreaterThanOrEqual(48)
     expect(bridge!.x).toBeGreaterThanOrEqual(0)
     expect(bridge!.x + bridge!.width).toBeLessThanOrEqual(viewport.width)
+    const actions = await threshold.locator('section > button, section > a').evaluateAll(elements => elements.map(element => {
+      const r = element.getBoundingClientRect()
+      return { width: r.width, height: r.height }
+    }))
+    expect(actions.length).toBeGreaterThanOrEqual(2)
+    for (const action of actions) {
+      expect(action.width).toBeGreaterThanOrEqual(48)
+      expect(action.height).toBeGreaterThanOrEqual(48)
+    }
   })
 }
