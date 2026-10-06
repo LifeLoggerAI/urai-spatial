@@ -1,9 +1,9 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  // Candidate only until the first accepted Play artifact binds the package permanently.
-  // Connected Play evidence on 2026-09-26 showed no uploaded bundle and no registered
-  // Android package/signing key. Do not change this after Play accepts an artifact.
+  // Play accepted com.urailabs.urai: current internal release is versionCode 126.
+  // Keep this package identity stable. Public signing/track evidence is recorded in
+  // play-console-receipt-20261006.json; current-candidate upload remains unverified.
   appId: 'com.urailabs.urai',
   appName: 'UrAi',
   webDir: '../../urai-tier1/out',
