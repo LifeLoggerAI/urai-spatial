@@ -100,3 +100,32 @@ test.describe('Replay source ownership and accessible transport', () => {
     await expect(replay.getByRole('button', { name: 'Continue memory', exact: true })).toBeEnabled()
   })
 })
+
+for (const viewport of [{ width: 844, height: 390 }, { width: 568, height: 320 }]) {
+  test(`Replay landscape captions stay clear of transport at ${viewport.width}x${viewport.height}`, async ({ page }) => {
+    await page.setViewportSize(viewport)
+    await page.emulateMedia({ reducedMotion: 'reduce' })
+    await page.goto(replayDemo, { waitUntil: 'domcontentloaded' })
+    const replay = page.getByTestId('cinematic-replay-client')
+    await expect(replay).toHaveAttribute('data-replay-media-ready', 'true')
+    const caption = await replay.locator('.caption').boundingBox()
+    const tempo = await replay.locator('.memoryTempo').boundingBox()
+    const header = await replay.locator('header').boundingBox()
+    expect(caption).not.toBeNull()
+    expect(tempo).not.toBeNull()
+    expect(header).not.toBeNull()
+    expect(caption!.y + caption!.height).toBeLessThanOrEqual(tempo!.y)
+    expect(header!.x + header!.width).toBeLessThanOrEqual(caption!.x)
+    for (const rect of [caption!, tempo!, header!]) {
+      expect(rect.x).toBeGreaterThanOrEqual(0)
+      expect(rect.y).toBeGreaterThanOrEqual(0)
+      expect(rect.x + rect.width).toBeLessThanOrEqual(viewport.width)
+      expect(rect.y + rect.height).toBeLessThanOrEqual(viewport.height)
+    }
+    const play = replay.getByRole('button', { name: 'Continue memory', exact: true })
+    await play.click()
+    await expect(replay).toHaveAttribute('data-playing', 'true')
+    await replay.getByRole('button', { name: 'Pause memory', exact: true }).click()
+    await expect(replay).toHaveAttribute('data-playing', 'false')
+  })
+}
