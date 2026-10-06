@@ -42,12 +42,12 @@ await transformFile('urai-tier1/tests/accessibility-performance-embodied-explora
   )
   const stableMovementProof = `    const afterZ = Number(await home.getAttribute('data-home-player-z'))
     expect(Math.abs(afterZ - beforeZ)).toBeGreaterThan(1.2)
-    await expect.poll(async () => {
-      const value = await home.evaluate((element) => element.style.getPropertyValue('--home-parallax-y'))
-      return Math.abs(Number.parseFloat(value))
-    }, { timeout: 12_000 }).toBeGreaterThan(0.1)`
+    await expect(home).toHaveAttribute('data-home-telemetry-owner', 'embodied-motion-kernel')`
   if (source.split(stableMovementProof).length - 1 !== 1) {
-    throw new Error('current Home direct displacement + parallax proof contract changed')
+    throw new Error('current Home canonical displacement proof contract changed')
+  }
+  if (source.includes("getPropertyValue('--home-parallax-y')")) {
+    throw new Error('non-authoritative Home parallax style telemetry must not gate accessibility movement evidence')
   }
   const staleZPoll = `    await expect.poll(async () => Math.abs(Number(await home.getAttribute('data-home-player-z')) - beforeZ), { timeout: 30_000 }).toBeGreaterThan(1.2)`
   if (source.includes(staleZPoll)) {
