@@ -43,3 +43,17 @@ test('selected Memory Star arrival framing is carried into Focus without a hard 
   assert.match(focusClient, /THREE\.MathUtils\.damp\(camera\.position\.x, defaultCamera\.x/)
   assert.match(focusClient, /reducedMotion.*DEFAULT_CAMERA|useEntryFrame = recenterSignal === 0 && entryFrame && !reducedMotion/)
 })
+
+test('hard travel fallback preserves canonical replay identity and context', () => {
+  for (const token of [
+    'WORLD_TRAVEL_CONTEXT_KEYS',
+    "'thread'",
+    "'personId'",
+    "'placeId'",
+    "'movieId'",
+    "'chapterId'",
+    "target.searchParams.set('memoryId', nodeId)",
+    "target.searchParams.set('node', memoryId)",
+  ]) assert.ok(worldEvents.includes(token), `world fallback missing ${token}`)
+  assert.match(worldEvents, /context\?\.demo\) target\.searchParams\.set\('demo', '1'\)/)
+})
