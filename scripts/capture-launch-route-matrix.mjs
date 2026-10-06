@@ -444,6 +444,10 @@ try {
         }
       }
       record.observedState = classifyState(spec, dom)
+      if (spec.route === '/status' || spec.route === '/waitlist') {
+        const embedded = await page.getByTestId('urai-embedded-build-identity').getAttribute('data-preview-build-identity')
+        if (embedded !== exactHead) defect('embedded-preview-build-identity-mismatch', { expected: exactHead, actual: embedded })
+      }
       record.dom = dom
       record.readiness = readinessEvidence(dom, captureProfile.noWebGL)
       if (dom.globalLoading) defect('unsettled-global-opening-your-world', {})
