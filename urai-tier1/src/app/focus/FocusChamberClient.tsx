@@ -399,7 +399,7 @@ function MemoryImprint({ url }: { url: string }) {
     `,
     transparent: true,
     depthWrite: false,
-    depthTest: false,
+    depthTest: true,
     toneMapped: false,
     blending: THREE.NormalBlending,
   }), [texture])
@@ -413,9 +413,9 @@ function MemoryImprint({ url }: { url: string }) {
   }, [material, texture])
 
   return (
-    <Billboard follow position={[0, 0.35, -0.26]} name="focus-memory-imprint-billboard">
+    <Billboard follow position={[0, 0.35, -0.34]} name="focus-memory-imprint-billboard">
       <mesh renderOrder={6} name="focus-memory-imprint">
-        <planeGeometry args={[2.08, 2.08]} />
+        <circleGeometry args={[1.0, 96]} />
         <primitive object={material} attach="material" />
       </mesh>
     </Billboard>
