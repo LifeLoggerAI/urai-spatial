@@ -84,7 +84,8 @@ test('Focus photosphere rejects planetary low-frequency terrain and exposes the 
   assert.ok(focusClient.includes('intensity={1.75}'))
   assert.ok(focusClient.includes('vec3 revealedMemory = mix(warmMemory, image * (.92 + localContrast * .20), .80);'))
   assert.ok(focusClient.includes('float alpha = veil * (.52 + luminance * .26 + core * .18);'))
-  assert.ok(focusClient.includes('<planeGeometry args={[2.08, 2.08]} />'))
+  assert.ok(focusClient.includes('<circleGeometry args={[1.0, 96]} />'))
+  assert.ok(!focusClient.includes('<planeGeometry args={[2.08, 2.08]} />'))
 })
 
 async function renderSpatialMemory(nodeId) {
