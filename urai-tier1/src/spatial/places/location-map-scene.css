@@ -400,7 +400,7 @@
     top: 10px;
   }
 
-  .locationAtlasHeader nav a:first-child {
+  .locationAtlasHeader nav a[href="/life-map"] {
     display: none;
   }
 
@@ -459,4 +459,11 @@
    world-space label prevents that transformed label from clipping at viewport edges. */
 .locationAtlasBeacon[data-selected="true"] .locationAtlasBeaconLabel {
   opacity: 0;
+}
+
+.locationAtlasHeader nav [data-urai-adam-launcher-slot] { display: flex; align-items: center; flex: 0 0 auto; }
+.locationAtlas--empty [data-urai-adam-launcher-slot] { margin-top: 12px; }
+@media (max-width: 620px) {
+  .locationAtlasHeader { gap: 8px; }
+  .locationAtlasHeader nav { gap: 6px; }
 }

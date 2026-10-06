@@ -45,6 +45,7 @@ export default function InstitutionalPublicSurface({
               {link.label}
             </a>
           ))}
+          <span data-urai-adam-launcher-slot="public-actions" />
         </nav>
       </section>
       <footer className={styles.footer}>
