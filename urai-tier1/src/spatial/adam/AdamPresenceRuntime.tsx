@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react'
 import { usePathname, useSearchParams } from 'next/navigation'
-import { ADAM_OPEN_EVENT, consumeAdamOpenRequest } from './adamPresenceEvents'
+import { createPortal } from 'react-dom'
 import {
   AdamProviderError,
   requestAdamFounderVoice,
@@ -62,14 +62,6 @@ export default function AdamPresenceRuntime() {
   const requestedSurface = pathname === '/adam' ? searchParams.get('surface') : null
   const surface = resolveAdamSurface(pathname, requestedSurface)
   const [open, setOpen] = useState(false)
-  useEffect(() => {
-    const openRequested = () => {
-      if (consumeAdamOpenRequest()) setOpen(true)
-    }
-    window.addEventListener(ADAM_OPEN_EVENT, openRequested)
-    openRequested()
-    return () => window.removeEventListener(ADAM_OPEN_EVENT, openRequested)
-  }, [])
   const [launcherAnchor, setLauncherAnchor] = useState<HTMLElement | null>(null)
 
   useEffect(() => {
@@ -294,13 +286,11 @@ export default function AdamPresenceRuntime() {
   if (!surface) return null
 
   if (!open) {
-    // The route owns its inline button and hydration; this root owns the panel.
-    if (launcherAnchor) return null
-    return (
+    const launcher = (
       <button
         type="button"
-        className={styles.launcher}
-        data-adam-launcher-placement="spatial-overlay"
+        className={`${styles.launcher} ${launcherAnchor ? styles.inlineLauncher : ''}`}
+        data-adam-launcher-placement={launcherAnchor ? 'inline-slot' : 'spatial-overlay'}
         onClick={() => setOpen(true)}
         aria-label={`Talk with Adam in ${surface.label}`}
         data-urai-adam-launcher="true"
@@ -308,6 +298,7 @@ export default function AdamPresenceRuntime() {
         Adam
       </button>
     )
+    return launcherAnchor ? createPortal(launcher, launcherAnchor) : launcher
   }
 
   const visibleMessages = streamedText
