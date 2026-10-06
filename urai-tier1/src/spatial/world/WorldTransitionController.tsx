@@ -9,6 +9,7 @@ import {
   URAI_WORLD_TRAVEL_EVENT,
   destinationSurfaceReady,
 } from './worldEvents'
+import { previousDestinationForReturn } from './worldTypes'
 import type { UraiDestination, UraiOriginRealm, UraiWorldTravelRequest } from './worldTypes'
 
 const CONTEXT_KEYS = [
@@ -168,7 +169,7 @@ export function WorldTransitionController() {
     if (phaseRef.current !== 'idle') return
     const destination = currentWorld.destination === 'possible-futures' && currentWorld.scenarioOrigin
       ? destinationFromOriginRealm(currentWorld.scenarioOrigin)
-      : currentWorld.previousDestination ?? fallbackReturnDestination(currentWorld.destination)
+      : previousDestinationForReturn(currentWorld) ?? fallbackReturnDestination(currentWorld.destination)
     const definition = definitionForDestination(destination)
     executeTravel({
       destination,

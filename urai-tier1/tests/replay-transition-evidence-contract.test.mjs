@@ -28,7 +28,7 @@ test('URA-069 replay return reuses deterministic reverse travel instead of bypas
   assert.match(replay, /if \(event\.key === 'Escape'\) \{ pauseMemory\(\); event\.preventDefault\(\); unwind\(\); return \}/)
   assert.match(controller, /const onReturn = \(\) => reverseTravel\(\)/)
   assert.match(controller, /if \(destination === 'replay'\) return 'focus'/)
-  assert.match(controller, /const destination = currentWorld\.previousDestination \?\? fallbackReturnDestination\(currentWorld\.destination\)/)
+  assert.match(controller, /previousDestinationForReturn\(currentWorld\) \?\? fallbackReturnDestination\(currentWorld\.destination\)/)
   assert.match(controller, /executeTravel\(\{/)
   assert.match(provider, /previousDestination: state\.world\.destination/)
   assert.doesNotMatch(replay, /requestUraiWorldTravel\(\{ destination: 'life-map'.*unwind/)
