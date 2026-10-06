@@ -9,6 +9,24 @@
   --safe-area-left: env(safe-area-inset-left, 0px);
 }
 
+/* Keep narrow Focus labels inside their 48px controls and place the helper
+   beside Explore, away from the stellar field and fallback explanation. */
+@media (max-width: 380px) {
+  [data-testid="urai-final-focus-chamber"] .focusControls button {
+    font-size: 14px;
+    padding-inline: 4px;
+  }
+}
+@media (max-width: 760px) and (min-height: 501px) {
+  body:has([data-testid="urai-final-focus-chamber"]) [data-urai-adam-launcher] {
+    top: auto !important;
+    bottom: max(76px, calc(env(safe-area-inset-bottom) + 64px)) !important;
+    left: max(16px, env(safe-area-inset-left)) !important;
+    right: auto !important;
+    transform: none !important;
+  }
+}
+
 * {
   box-sizing: border-box;
 }
