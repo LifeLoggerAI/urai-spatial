@@ -169,7 +169,6 @@ test.describe('Embodied exploration runtime evidence', () => {
     await page.waitForTimeout(550)
     await page.keyboard.up('w')
 
-    await expectReadableMovementControl(ground.getByRole('button', { name: 'Move forward' }))
     const destinations = page.getByRole('navigation', { name: 'Ground destinations' })
     const privacyCard = destinations.getByRole('button', { name: /^Privacy Sanctuary\./i })
     const privacyDirect = destinations.getByRole('button', { name: 'Go now to Privacy Sanctuary' })
@@ -180,6 +179,16 @@ test.describe('Embodied exploration runtime evidence', () => {
     expect(await page.evaluate(() => document.pointerLockElement)).toBeNull()
     expect(errors.pageErrors).toEqual([])
     expect(errors.consoleErrors).toEqual([])
+  })
+
+  test('mobile Ground movement controls are readable and touch-sized before interaction', async ({ page }) => {
+    await page.setViewportSize({ width: 393, height: 873 })
+    await page.goto('/ground/', { waitUntil: 'domcontentloaded' })
+    const ground = page.locator('.ground-spatial-root[data-ground-exploration="walkable"]').first()
+    await expect(ground).toHaveAttribute('data-ground-ready', 'true', { timeout: 30_000 })
+    const forward = ground.getByRole('button', { name: 'Move forward' })
+    await expect(forward).toBeVisible()
+    await expectReadableMovementControl(forward)
   })
 
   test('Life Map selects a memory, preserves identity, resets overview, and stays Orb-free', async ({ page }) => {
