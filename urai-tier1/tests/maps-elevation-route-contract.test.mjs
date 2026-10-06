@@ -31,6 +31,17 @@ test('deployed Elevation rate-limits per uid before the billable provider fetch'
   assert.ok(limiterIndex > -1 && fetchIndex > limiterIndex)
 })
 
+test('standalone Next Elevation route rate-limits per uid before provider fetch', () => {
+  assert.match(source, /providerRateLimits\/maps-elevation/)
+  assert.match(source, /db\.runTransaction\(async \(transaction\) =>/)
+  assert.match(source, /RATE_WINDOW_MS = 60_000/)
+  assert.match(source, /RATE_LIMIT_MAX = 12/)
+  assert.match(source, /error: 'rate_limited'/)
+  const limiterIndex = source.indexOf('await consumeElevationRateLimit(uid)')
+  const fetchIndex = source.indexOf('await fetch(url')
+  assert.ok(limiterIndex > -1 && fetchIndex > limiterIndex)
+})
+
 test('deployed Elevation aborts provider fetch only when the response disconnects early', () => {
   assert.match(functionSource, /response\.on\('close', \(\) => \{ if \(!response\.writableEnded\) controller\.abort\(\) \}\)/)
   assert.doesNotMatch(functionSource, /request\.on\('close',/)
