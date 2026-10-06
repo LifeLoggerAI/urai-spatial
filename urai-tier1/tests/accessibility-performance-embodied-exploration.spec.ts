@@ -57,6 +57,39 @@ async function enableLifeMapDemo(page: Page) {
   await page.addInitScript(() => window.localStorage.setItem('urai:lifeMapDemoMode', 'true'))
 }
 
+async function expectReadableMovementControl(control: Locator) {
+  const metrics = await control.evaluate((element) => {
+    const rect = element.getBoundingClientRect()
+    let opacity = 1
+    for (let ancestor: Element | null = element; ancestor; ancestor = ancestor.parentElement) {
+      opacity *= Number(getComputedStyle(ancestor).opacity)
+    }
+    const style = getComputedStyle(element)
+    const arrow = getComputedStyle(element, '::before')
+    return {
+      width: rect.width, height: rect.height, opacity,
+      background: style.backgroundColor,
+      arrow: arrow.borderTopStyle === 'solid' ? arrow.borderTopColor : style.color,
+    }
+  })
+  expect(metrics.width).toBeGreaterThanOrEqual(48)
+  expect(metrics.height).toBeGreaterThanOrEqual(48)
+  expect(metrics.opacity).toBeGreaterThanOrEqual(0.99)
+  // The default controls must remain readable over the brightest Home sky.
+  const channels = (color: string) => color.match(/[\d.]+/g)!.map(Number)
+  const background = channels(metrics.background)
+  const foreground = channels(metrics.arrow)
+  const backgroundAlpha = background[3] ?? 1
+  const foregroundAlpha = foreground[3] ?? 1
+  const compositedBackground = background.slice(0, 3).map(channel => channel * backgroundAlpha + 255 * (1 - backgroundAlpha))
+  const compositedForeground = foreground.slice(0, 3).map((channel, index) => channel * foregroundAlpha + compositedBackground[index] * (1 - foregroundAlpha))
+  const luminance = (rgb: number[]) => rgb.map(channel => {
+    const value = channel / 255
+    return value <= 0.04045 ? value / 12.92 : Math.pow((value + 0.055) / 1.055, 2.4)
+  }).reduce((sum, value, index) => sum + value * [0.2126, 0.7152, 0.0722][index], 0)
+  expect((luminance(compositedForeground) + 0.05) / (luminance(compositedBackground) + 0.05)).toBeGreaterThanOrEqual(3)
+}
+
 function normalizedPathname(url: string) {
   return new URL(url).pathname.replace(/\/+$/, '') || '/'
 }
@@ -107,6 +140,7 @@ test.describe('Embodied exploration runtime evidence', () => {
     const movement = page.getByRole('group', { name: 'Home movement controls' })
     await expect(movement).toBeVisible({ timeout: 30_000 })
     const forward = movement.getByRole('button', { name: 'Move forward' })
+    await expectReadableMovementControl(forward)
     await forward.evaluate((element: HTMLElement) => element.focus())
     await expect(forward).toBeFocused()
     expect(await page.evaluate(() => document.pointerLockElement)).toBeNull()
@@ -229,6 +263,7 @@ test.describe('Embodied exploration runtime evidence', () => {
       expect(rect!.y + rect!.height).toBeLessThanOrEqual(873)
     }
     const forward = homePad.getByRole('button', { name: 'Move forward' })
+    await expectReadableMovementControl(forward)
     await forward.dispatchEvent('pointerdown', { pointerId: 1, button: 0, buttons: 1, pointerType: 'touch', isPrimary: true })
     await page.waitForTimeout(2_200)
     await forward.dispatchEvent('pointerup', { pointerId: 1, button: 0, buttons: 0, pointerType: 'touch', isPrimary: true })
