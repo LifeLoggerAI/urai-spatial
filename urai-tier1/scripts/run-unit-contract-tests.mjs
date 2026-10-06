@@ -16,6 +16,7 @@ const focusedContractTests = [
   'tests/life-movie-life-model-binding.test.mjs',
   'tests/life-movie-runtime-contract.test.mjs',
   'tests/life-movie-runtime-binding-contract.test.mjs',
+  'tests/focus-review-regression-contract.test.mjs',
   'tests/captured-reality-life-model-binding.test.mjs',
   'tests/aaa-world-artifact-contract.test.mjs',
   'tests/asset-factory-phase6-contract.test.mjs',
