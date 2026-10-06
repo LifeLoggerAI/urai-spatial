@@ -272,6 +272,41 @@ for (const [method, route] of serverContracts) {
   }
 }
 
+const systemProofResults = []
+for (const route of ['/api/system/deploy-proof', '/api/system/health', '/api/system/launch-boundary']) {
+  const requested = new URL(route, `${baseUrl}/`)
+  try {
+    const { response, text, attemptsUsed } = await fetchTextWithRetries(requested, {
+      redirect: 'manual',
+      cache: 'no-store',
+      headers: { 'cache-control': 'no-cache', 'user-agent': 'urai-system-proof-verifier/1.0' },
+    })
+    const contentType = response.headers.get('content-type')?.toLowerCase() || ''
+    const cacheControl = response.headers.get('cache-control')?.toLowerCase() || ''
+    const finalUrl = new URL(response.url)
+    let payload = null
+    try { payload = JSON.parse(text) } catch {}
+    const identityMatches = route !== '/api/system/deploy-proof'
+      || (payload?.environment?.commitSha === expectedSha && payload?.environment?.firebaseProject === 'urai-4dc1d')
+    systemProofResults.push({
+      route,
+      finalUrl: response.url,
+      status: response.status,
+      contentType,
+      cacheControl,
+      attemptsUsed,
+      contentSha256: createHash('sha256').update(text).digest('hex'),
+      passed: response.ok && finalUrl.origin === canonicalOrigin
+        && normalizePath(finalUrl.pathname) === normalizePath(requested.pathname)
+        && contentType.includes('application/json')
+        && cacheControl.split(',').some((directive) => directive.trim() === 'no-store')
+        && payload !== null && identityMatches,
+    })
+  } catch (error) {
+    systemProofResults.push({ route, error: error instanceof Error ? error.message : String(error), passed: false })
+  }
+}
+
 let fingerprint
 try {
   fingerprint = await fetchFingerprint()
@@ -283,7 +318,8 @@ try {
   }
 }
 
-const passed = results.every((result) => result.passed) && serverResults.every((result) => result.passed) && fingerprint.passed
+const passed = results.every((result) => result.passed) && serverResults.every((result) => result.passed)
+  && systemProofResults.every((result) => result.passed) && fingerprint.passed
 const receipt = {
   schemaVersion: 'urai-live-content-parity-6',
   generatedAt: new Date().toISOString(),
@@ -301,6 +337,7 @@ const receipt = {
   hydratedIdentityProof: 'scripts/urai-release-control-smoke.mjs',
   browserCompatibilityRoutes: ['/ascent/life-map', '/waitlist', '/system', '/settings/privacy', '/onboarding', '/signup', '/ascent', '/spatial', '/unwind'],
   fingerprint,
+  systemProofResults,
   serverResults,
   passed,
   results,
