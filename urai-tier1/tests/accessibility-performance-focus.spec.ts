@@ -142,7 +142,7 @@ for (const viewport of [{ width: 844, height: 390 }, { width: 568, height: 320 }
     }
     await focus.locator('.focusControls').getByRole('button', { name: 'Recenter', exact: true }).click()
     await focus.locator('.focusControls').getByRole('button', { name: /Open Replay for/ }).click()
-    await expect.poll(() => new URL(page.url()).pathname.replace(/\\/+$/, '')).toBe('/replay')
+    await expect.poll(() => new URL(page.url()).pathname.split('/').filter(Boolean).join('/')).toBe('replay')
     expect(new URL(page.url()).searchParams.get('memoryId')).toBe('demo:quiet-reset')
   })
 }
