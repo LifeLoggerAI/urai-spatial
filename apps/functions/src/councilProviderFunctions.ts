@@ -240,7 +240,8 @@ async function callGemini(apiKey: string, model: string, message: string, contex
         })),
         { role: 'user', parts: [{ text: message }] },
       ],
-      generationConfig: { maxOutputTokens: 700, temperature: 0.4 },
+      // Use provider sampling/thinking defaults; newer Gemini models reject custom sampling.
+      generationConfig: { maxOutputTokens: 700 },
     }),
     signal,
   })
