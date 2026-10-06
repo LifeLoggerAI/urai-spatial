@@ -20,6 +20,7 @@ const requiredFocusedTests = [
   'tests/life-movie-life-model-binding.test.mjs',
   'tests/life-movie-runtime-contract.test.mjs',
   'tests/life-movie-runtime-binding-contract.test.mjs',
+  'tests/focus-review-regression-contract.test.mjs',
   'tests/home-runtime-cursor-cleanup-contract.test.mjs',
   'tests/status-live-authority-contract.test.mjs',
   'tests/open-graph-asset-ownership-contract.test.mjs',
