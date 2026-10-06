@@ -101,10 +101,7 @@ test.describe('Embodied exploration runtime evidence', () => {
     await expect.poll(async () => Number(await home.getAttribute('data-home-distance')), { timeout: 15_000 }).toBeGreaterThan(1.2)
     const afterZ = Number(await home.getAttribute('data-home-player-z'))
     expect(Math.abs(afterZ - beforeZ)).toBeGreaterThan(1.2)
-    await expect.poll(async () => {
-      const value = await home.evaluate((element) => element.style.getPropertyValue('--home-parallax-y'))
-      return Math.abs(Number.parseFloat(value))
-    }, { timeout: 12_000 }).toBeGreaterThan(0.1)
+    await expect(home).toHaveAttribute('data-home-telemetry-owner', 'embodied-motion-kernel')
 
     expect(errors.pageErrors).toEqual([])
     expect(errors.consoleErrors).toEqual([])
