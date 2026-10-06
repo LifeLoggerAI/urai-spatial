@@ -2,13 +2,15 @@ import { expect, test } from '@playwright/test'
 
 test('Replay unwinds through Focus to Life Map without re-entering Replay', async ({ page }) => {
   test.setTimeout(180_000)
-  await page.goto('/replay/?demo=1&manifestId=replay-recovery-thread', { waitUntil: 'domcontentloaded' })
+  await page.goto('/replay/?memoryId=demo%3Aquiet-reset&manifestId=replay-recovery-thread&node=quiet-reset&demo=1', { waitUntil: 'domcontentloaded' })
   await expect(page.getByTestId('cinematic-replay-client')).toBeVisible({ timeout: 30_000 })
   await page.getByRole('button', { name: '← Focus', exact: true }).click()
   await expect(page.getByTestId('urai-final-focus-chamber')).toBeVisible({ timeout: 30_000 })
-  await expect.poll(() => new URL(page.url()).pathname.replace(/\/+$/, '')).toBe('/focus')
+  await expect.poll(() => new URL(page.url()).pathname.replace(/\/+$/, ''), { timeout: 30_000 }).toBe('/focus')
   await page.getByRole('button', { name: '← Life Map', exact: true }).click()
   await expect.poll(() => new URL(page.url()).pathname.replace(/\/+$/, ''), { timeout: 30_000 }).toBe('/life-map')
+  expect(new URL(page.url()).searchParams.get('memoryId')).toBe('demo:quiet-reset')
+  expect(new URL(page.url()).searchParams.get('manifestId')).toBe('replay-recovery-thread')
   await expect(page.getByTestId('cinematic-replay-client')).toHaveCount(0)
   await expect(page.getByTestId('urai-final-focus-chamber')).toHaveCount(0)
 })
