@@ -13,12 +13,13 @@
   "bytes": 622,
   "sha256": "3fb14004bc6320d1f2891a47af10f3e2c21c8a8fae2ad1a589c4d2e3b57ea1ba",
   "measured": {
+    "format": "svg",
     "resolution": [
       1024,
       1024
     ]
   },
-  "compressionStatus": "svg-source-then-ktx2-or-webp",
+  "compressionStatus": "uncompressed-candidate",
   "requiredCompression": "svg-source-then-ktx2-or-webp",
   "fallback": "shader-point-particles",
   "source": "URAI deterministic candidate forge",
@@ -26,5 +27,12 @@
   "generatedBy": "scripts/forge-launch-critical-assets.mjs + scripts/normalize-launch-critical-assets.mjs",
   "generatedAt": "2026-07-23T21:41:50.579Z",
   "releaseState": "candidate-not-production-ready",
-  "absolutePath": "urai-tier1/public/assets/urai/generated/textures/spatial-particle-atlas-v1.svg"
+  "absolutePath": "urai-tier1/public/assets/urai/generated/textures/spatial-particle-atlas-v1.svg",
+  "measurementReconciliation": {
+    "sourceSha": "45d760334ef7f0d5f475f1e71cb536c2c7c1cd5b",
+    "observedAt": "2026-10-06T17:20:57.488473+00:00",
+    "method": "audit-launch-critical-artifact.mjs actual-byte inspection",
+    "assetBytesChanged": false,
+    "finalReviewGranted": false
+  }
 }

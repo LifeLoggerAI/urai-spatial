@@ -13,9 +13,9 @@
   "bytes": 695,
   "sha256": "4fee457c73871f98fb0f1e29fce4790a3b897cf9b4554c7771cdb226c4759b6f",
   "measured": {
-    "bytes": 695
+    "format": "json"
   },
-  "compressionStatus": "json",
+  "compressionStatus": "uncompressed-candidate",
   "requiredCompression": "json",
   "fallback": "runtime-default-materials",
   "source": "URAI deterministic candidate forge",
@@ -24,5 +24,12 @@
   "generatedAt": "2026-07-23T21:41:50.579Z",
   "releaseState": "candidate-not-production-ready",
   "absolutePath": "urai-tier1/public/assets/urai/generated/textures/global-cinematic-material-pack-v1.json",
-  "generatedAtSemantics": "Historical original generation timestamp; byte identity rebound for schemaVersion:1 metadata repair, with no production approval."
+  "generatedAtSemantics": "Historical original generation timestamp; byte identity rebound for schemaVersion:1 metadata repair, with no production approval.",
+  "measurementReconciliation": {
+    "sourceSha": "45d760334ef7f0d5f475f1e71cb536c2c7c1cd5b",
+    "observedAt": "2026-10-06T17:20:57.488613+00:00",
+    "method": "audit-launch-critical-artifact.mjs actual-byte inspection",
+    "assetBytesChanged": false,
+    "finalReviewGranted": false
+  }
 }
