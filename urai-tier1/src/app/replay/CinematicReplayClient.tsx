@@ -118,6 +118,17 @@ function ReplayMemoryAtmosphere({ memory, reducedMotion }: { memory: SelectedMem
   )
 }
 
+function replayTerrainHeight(x: number, z: number) {
+  const radial = Math.hypot(x * .68, z * .24)
+  const trail = Math.exp(-Math.pow(x / 3.5, 2)) * .18
+  return -1.72
+    + Math.sin(x * .37 + z * .075) * .28
+    + Math.cos(z * .19 - x * .13) * .21
+    + Math.sin(radial * .42) * .15
+    + Math.sin((x + z) * .54) * .055
+    - trail
+}
+
 function DemoMemoryLandscape({ memory }: { memory: SelectedMemory }) {
   const terrain = useMemo(() => {
     const geometry = new THREE.PlaneGeometry(38, 52, 84, 112)
@@ -126,15 +137,7 @@ function DemoMemoryLandscape({ memory }: { memory: SelectedMemory }) {
     for (let index = 0; index < position.count; index += 1) {
       const x = position.getX(index)
       const z = position.getZ(index)
-      const radial = Math.hypot(x * .68, z * .24)
-      const trail = Math.exp(-Math.pow(x / 3.5, 2)) * .18
-      const height = -1.72
-        + Math.sin(x * .37 + z * .075) * .28
-        + Math.cos(z * .19 - x * .13) * .21
-        + Math.sin(radial * .42) * .15
-        + Math.sin((x + z) * .54) * .055
-        - trail
-      position.setY(index, height)
+      position.setY(index, replayTerrainHeight(x, z))
     }
     position.needsUpdate = true
     geometry.computeVertexNormals()
@@ -155,7 +158,9 @@ function DemoMemoryLandscape({ memory }: { memory: SelectedMemory }) {
     const x = Math.sin(index * .72) * .42 + Math.sin(index * .27) * .18
     const width = .72 + ((index * 13) % 7) * .045
     const depth = .46 + ((index * 17) % 5) * .035
-    return { x, z, width, depth, yaw: Math.sin(index * .51) * .18 }
+    const localTerrainZ = z + 7
+    const y = replayTerrainHeight(x, localTerrainZ) + .08
+    return { x, y, z, width, depth, yaw: Math.sin(index * .51) * .18 }
   }), [])
 
   const trees = useMemo(() => [
@@ -176,7 +181,7 @@ function DemoMemoryLandscape({ memory }: { memory: SelectedMemory }) {
           <mesh
             key={index}
             name={`replay-memory-trail-stone-${index + 1}`}
-            position={[stone.x, -1.36 + (index % 3) * .014, stone.z]}
+            position={[stone.x, stone.y, stone.z]}
             rotation={[0, stone.yaw, 0]}
             scale={[stone.width, .10, stone.depth]}
             castShadow
