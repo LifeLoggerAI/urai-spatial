@@ -24,10 +24,10 @@ export function buildPresenceReport(evidence, { generatedAt = new Date().toISOSt
     if (key !== 'generatedAt' && !Object.hasOwn(presenceChecks, key)) invalid.push(`unexpected evidence field: ${key}`)
   }
   for (const [group, keys] of Object.entries(presenceChecks)) {
-    const values = input[group]
+    const values = Object.hasOwn(input, group) ? input[group] : undefined
     if (!isRecord(values)) invalid.push(`${group} must be an object`)
     for (const key of keys) {
-      const value = isRecord(values) ? values[key] : undefined
+      const value = isRecord(values) && Object.hasOwn(values, key) ? values[key] : undefined
       if (value !== true) missing.push(`${group}.${key}`)
       if (value !== true && value !== false) invalid.push(`${group}.${key} must be a boolean`)
     }

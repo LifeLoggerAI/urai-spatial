@@ -46,6 +46,22 @@ test('empty evidence cannot be vacuously complete', () => {
   refusesShipping(report)
 })
 
+test('inherited required groups are not collected source evidence', () => {
+  const report = buildPresenceReport(Object.create(complete()))
+  assert.equal(report.sourcePresence, 'INCOMPLETE')
+  assert.equal(report.missing.length, 7)
+  refusesShipping(report)
+})
+
+test('inherited required checks are not collected source evidence', () => {
+  const input = complete()
+  input.core = Object.create(input.core)
+  const report = buildPresenceReport(input)
+  assert.equal(report.sourcePresence, 'INCOMPLETE')
+  assert.deepEqual(report.missing, ['core.assetSwitch', 'core.sceneGate', 'core.releaseChecklist'])
+  refusesShipping(report)
+})
+
 for (const bad of [null, false, [], 'all present', 1]) {
   test(`non-object evidence is incomplete: ${JSON.stringify(bad)}`, () => {
     const report = buildPresenceReport(bad)
