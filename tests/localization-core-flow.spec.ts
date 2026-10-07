@@ -13,9 +13,12 @@ async function installAdamFixtures(page: Page, speech: 'record' | 'missing' | 't
   await page.route('**/*', async route => {
     const url = new URL(route.request().url())
     if (url.pathname === '/api/urai/adam/conversation') {
-      conversations.push(route.request().postDataJSON())
+      const capturedRequest = route.request().postDataJSON() as {locale:string; surface:string; aiProcessingConsent:boolean; message:string}
+      expect(['fr-FR', 'en-US']).toContain(capturedRequest.locale)
+      conversations.push(capturedRequest)
       await route.fulfill({contentType:'application/x-ndjson', body:JSON.stringify({
-        type:'done', message:'Inert local fixture response.', caption:'Inert local fixture response.', suggestedActions:[],
+        // This inert sentinel tests transport metadata, not provider translation.
+        type:'done', locale:capturedRequest.locale, message:'Inert local fixture response.', caption:'Inert local fixture response.', suggestedActions:[],
         requiresHumanFounder:true, handoffReason:'Fixture preserves human authority.', provider:'openai',
       }) + '\n'})
     } else if (url.hostname === 'identitytoolkit.googleapis.com') {

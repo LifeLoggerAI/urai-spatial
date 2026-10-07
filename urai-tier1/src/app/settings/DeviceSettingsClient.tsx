@@ -9,6 +9,7 @@ import { setHapticsEnabled, URAI_HAPTICS_STORAGE_KEY } from '@/spatial/haptics/H
 import { sensorySafeEnabled, setSensorySafeEnabled } from '@/spatial/accessibility/SensorySafeRuntime'
 import { clientApiUrl } from '@/lib/clientApiUrl'
 import LanguageSettings from '@/components/settings/LanguageSettings'
+import { ManualEmotionalWeatherControls } from '@/lib/uraiEmotion/ManualEmotionalWeatherControls'
 import { useUraiLocale } from '@/lib/i18n/useUraiLocale'
 
 function readHapticsPreference() {
@@ -169,6 +170,7 @@ export default function DeviceSettingsClient() {
         <header style={{padding:'clamp(42px,8vw,92px) 0 34px'}}><p style={{letterSpacing:'.22em',textTransform:'uppercase',fontSize:11,color:'#8fb4bd'}}>Device feel</p><h1 style={{fontSize:'clamp(42px,8vw,78px)',lineHeight:.94,letterSpacing:'-.055em',margin:'10px 0 18px'}}>How URAI meets you.</h1><p style={{maxWidth:620,fontSize:'clamp(16px,2vw,20px)',lineHeight:1.6,color:'#c4d1d6'}}>Local sensory preferences live on this device. Private data permissions remain in the Consent Sanctuary, and ownership controls remain in Passport.</p></header>
 
         <LanguageSettings />
+        <ManualEmotionalWeatherControls />
 
         <section aria-labelledby="sensory-safe-heading" style={{border:'1px solid rgba(197,242,247,.16)',borderRadius:28,padding:'clamp(22px,4vw,34px)',background:'rgba(9,20,28,.66)',backdropFilter:'blur(18px)'}}>
           <div style={{display:'flex',justifyContent:'space-between',gap:24,alignItems:'start',flexWrap:'wrap'}}>

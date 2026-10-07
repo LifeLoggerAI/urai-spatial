@@ -396,15 +396,27 @@ for (const profile of [
           const background = rgba(style.backgroundColor)
           const world = panel.closest('[data-testid="urai-quest-explorable-world"]')
           const runtime = world?.closest('.urai-world-runtime')
-          const atmosphere = document.querySelector('.urai-world-atmosphere')
-          const zIndex = (node: Element | null | undefined, pseudo?: string) => node ? Number.parseInt(getComputedStyle(node, pseudo).zIndex, 10) : null
+          const atmosphere = runtime?.querySelector(':scope > .urai-world-atmosphere')
+          const zIndex = (node: Element | null | undefined) => node ? Number(getComputedStyle(node).zIndex) : Number.NaN
           const stacking = {
-            runtime: zIndex(runtime),
-            atmosphere: zIndex(atmosphere),
-            world: zIndex(world),
-            runtimeBefore: zIndex(runtime, '::before'),
-            runtimeAfter: zIndex(runtime, '::after'),
+            runtime: zIndex(runtime), atmosphere: zIndex(atmosphere), world: zIndex(world), panel: zIndex(panel),
           }
+          const ownership = {
+            panelInWorld: Boolean(world?.contains(panel)),
+            worldInRuntime: Boolean(runtime?.contains(world!)),
+            atmosphereInRuntime: Boolean(atmosphere && atmosphere.parentElement === runtime),
+            runtimeIsolation: runtime ? getComputedStyle(runtime).isolation : null,
+            worldIsolation: world ? getComputedStyle(world).isolation : null,
+            atmosphereIsolation: atmosphere ? getComputedStyle(atmosphere).isolation : null,
+          }
+          const pseudoLayers = [
+            { owner: 'runtime', node: runtime }, { owner: 'world', node: world }, { owner: 'atmosphere', node: atmosphere },
+          ].flatMap(({ owner, node }) => ['::before', '::after'].map(pseudo => {
+            if (!node) return { owner, pseudo, content: null, display: null, visibility: null, opacity: Number.NaN, position: null, zIndex: Number.NaN }
+            const computed = getComputedStyle(node, pseudo)
+            return { owner, pseudo, content: computed.content, display: computed.display, visibility: computed.visibility,
+              opacity: Number(computed.opacity), position: computed.position, zIndex: Number(computed.zIndex) }
+          }))
           const ancestorOpacities: number[] = []
           for (let node: Element | null = panel; node; node = node.parentElement) {
             ancestorOpacities.push(Number(getComputedStyle(node).opacity))
@@ -414,11 +426,35 @@ for (const profile of [
             const fore = luminance(color.rgb), back = luminance(background.rgb)
             return { text: node.textContent?.trim(), color: getComputedStyle(node).color, alpha: color.alpha, contrast: (Math.max(fore, back) + 0.05) / (Math.min(fore, back) + 0.05) }
           })
-          return { background: style.backgroundColor, backgroundAlpha: background.alpha, backgroundImage: style.backgroundImage, stacking, ancestorOpacities, text }
+          return { background: style.backgroundColor, backgroundAlpha: background.alpha, backgroundImage: style.backgroundImage, stacking, ownership, pseudoLayers, ancestorOpacities, text }
         })
-        for (const layer of Object.values(paint.stacking)) expect(Number.isFinite(layer), 'XR decorative and UI layers must have explicit stacking positions').toBe(true)
-        expect(paint.stacking.runtime!, 'The shared atmosphere must paint behind the XR runtime and its controls').toBeGreaterThan(paint.stacking.atmosphere!)
-        expect(paint.stacking.world!, 'The shared runtime vignette must paint behind the complete XR scene').toBeGreaterThan(Math.max(paint.stacking.runtimeBefore!, paint.stacking.runtimeAfter!))
+        for (const layer of Object.values(paint.stacking)) expect(Number.isFinite(layer), 'Actual XR decorative and UI layers require explicit numeric stacking positions').toBe(true)
+        expect(paint.ownership.panelInWorld).toBe(true)
+        expect(paint.ownership.worldInRuntime).toBe(true)
+        expect(paint.ownership.atmosphereInRuntime).toBe(true)
+        expect(paint.ownership.runtimeIsolation).toBe('isolate')
+        expect(paint.ownership.worldIsolation).toBe('isolate')
+        expect(paint.ownership.atmosphereIsolation).toBe('isolate')
+        expect(paint.stacking.runtime, 'The XR runtime must retain its explicit layer above the shared atmosphere').toBeGreaterThan(paint.stacking.atmosphere)
+        expect(paint.stacking.world, 'The complete XR scene must paint above its sibling shared atmosphere').toBeGreaterThan(paint.stacking.atmosphere)
+        expect(paint.pseudoLayers).toHaveLength(6)
+        for (const layer of paint.pseudoLayers) {
+          const label = `${layer.owner}${layer.pseudo}`
+          expect(layer.content, `${label} requires actual computed pseudo-element evidence`).not.toBeNull()
+          expect(Number.isFinite(layer.opacity), `${label} opacity must be known`).toBe(true)
+          expect(layer.opacity).toBeGreaterThanOrEqual(0)
+          expect(layer.opacity).toBeLessThanOrEqual(1)
+          // content:none/normal does not generate a pseudo-element. Retain the
+          // exact computed record as N/A rather than inventing a painted layer.
+          const generated = layer.content !== 'none' && layer.content !== 'normal'
+          const visible = generated && layer.display !== 'none' && layer.visibility === 'visible' && layer.opacity > 0
+          if (!visible) continue
+          expect(Number.isFinite(layer.zIndex), `${label} is generated and visible; its stacking position must be explicit`).toBe(true)
+          expect(layer.position, `${label} visible stacking must actually apply to a positioned layer`).not.toBe('static')
+          if (layer.owner === 'runtime') expect(paint.stacking.world, `${label} must paint behind the complete XR scene`).toBeGreaterThan(layer.zIndex)
+          if (layer.owner === 'world') expect(paint.stacking.panel, `${label} must paint behind the opaque consent and comfort controls`).toBeGreaterThan(layer.zIndex)
+          if (layer.owner === 'atmosphere') expect(paint.stacking.world, `${label} stays within its isolated atmosphere behind the XR scene`).toBeGreaterThan(paint.stacking.atmosphere)
+        }
         expect(paint.backgroundAlpha, 'XR consent backing must block the animated world').toBe(1)
         expect(paint.backgroundImage).toBe('none')
         expect(paint.ancestorOpacities.every(value => value === 1), 'XR backing cannot be faded by an ancestor').toBe(true)
