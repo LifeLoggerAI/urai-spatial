@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import test from 'node:test'
+import { URAI_SOURCE_MESSAGES } from '../src/lib/i18n/locales.ts'
 
 const read = (path) => fs.readFileSync(new URL(`../${path}`, import.meta.url), 'utf8')
 const readRoot = (path) => fs.readFileSync(new URL(`../../${path}`, import.meta.url), 'utf8')
@@ -116,7 +117,8 @@ test('Focus is an explorable stellar memory-star field rather than a static cham
   assert.match(focus, /aria-label=\{locale.locale === 'en' \? `Open Replay for \$\{memory\.title\}` : locale.text\('focus.enterReplay'\)\}/)
   assert.match(focus, /<details className="focusHelp">/)
   assert.match(focus, /data-focus-fallback="semantic"/)
-  assert.match(focus, /Spatial view unavailable/)
+  assert.match(focus, /locale.text\('common.spatialUnavailable'\)/)
+  assert.equal(URAI_SOURCE_MESSAGES['common.spatialUnavailable'].source, 'Spatial view unavailable')
   assert.match(focus, /No personal memory is displayed in this neutral stellar field/)
   assert.match(focus, /Held in context\. Nothing leaves this memory field\./)
   assert.match(focus, /prefers-reduced-motion:reduce/)
@@ -136,9 +138,11 @@ test('selected Memory Star copy rejects the retired chamber language', () => {
 })
 
 test('direct Focus entry remains a truthful neutral stellar field and never mounts fake personal data', () => {
-  assert.match(focus, /Focus Memory Star/)
+  assert.match(focus, /const headingId = directEntry \? 'focus.heading' : 'focus.resting'/)
+  assert.equal(URAI_SOURCE_MESSAGES['focus.heading'].source, 'Focus Memory Star')
   assert.match(focus, /No personal memory is displayed in this neutral stellar field/)
-  assert.match(focus, /Choose a star in Life Map/)
+  assert.match(focus, /locale.text\('focus.chooseMemory'\)/)
+  assert.equal(URAI_SOURCE_MESSAGES['focus.chooseMemory'].source, 'Choose a star in Life Map to enter the stellar memory field where that memory is held.')
   assert.match(focus, /Open Life Map/)
   assert.match(focus, /Awaiting a selected star/)
   assert.doesNotMatch(focus, /buildExplicitDemoMemory|buildNamedExplicitDemoMemory|URAI_SPATIAL_DEMO_DATA/)
@@ -185,7 +189,8 @@ test('Focus retains adaptive quality, reduced motion, visibility pausing, and We
   assert.match(focus, /profile\.pixelRatioMax/)
   assert.match(focus, /profile\.documentVisible \? 'always' : 'never'/)
   assert.match(focus, /useWebGLAvailable/)
-  assert.match(focus, /Spatial view unavailable/)
+  assert.match(focus, /locale.text\('common.spatialUnavailable'\)/)
+  assert.equal(URAI_SOURCE_MESSAGES['common.spatialUnavailable'].source, 'Spatial view unavailable')
   assert.match(focus, /profile\.reducedMotion/)
   assert.match(focus, /markFirstSpatialFrame\('\/focus'/)
   assert.match(focus, /webglcontextlost/)

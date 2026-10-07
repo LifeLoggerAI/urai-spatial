@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import test from 'node:test'
+import { URAI_SOURCE_MESSAGES } from '../src/lib/i18n/locales.ts'
 
 const source = fs.readFileSync('src/app/replay/CinematicReplayClient.tsx', 'utf8')
 const recordedSource = fs.readFileSync('src/app/replay/ReplayRecordedSource.tsx', 'utf8')
@@ -48,7 +49,9 @@ test('Replay retains diegetic temporal reconstruction controls without turning t
   assert.match(source, /ReplayMemoryAtmosphere/)
   assert.match(source, /name="replay-living-memory-atmosphere"/)
   assert.match(source, /className="memoryTempo" aria-label="Memory time"/)
-  assert.match(source, /aria-label=\{playing \? 'Pause memory' : 'Continue memory'\}/)
+  assert.match(source, /aria-label=\{locale.text\(playing \? 'replay.pause' : 'replay.continue'\)\}/)
+  assert.equal(URAI_SOURCE_MESSAGES['replay.pause'].source, 'Pause memory')
+  assert.equal(URAI_SOURCE_MESSAGES['replay.continue'].source, 'Continue memory')
   assert.match(source, /className="memoryTrace"/)
   assert.match(source, /className="memorySeek" type="range"/)
   assert.match(source, /\.memorySeek\{position:absolute;width:1px;height:1px;opacity:\.001;pointer-events:none\}/)

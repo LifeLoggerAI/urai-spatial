@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import path from 'node:path'
 import test from 'node:test'
+import { URAI_SOURCE_MESSAGES } from '../src/lib/i18n/locales.ts'
 
 const root = process.cwd()
 const read = (relativePath) => fs.readFileSync(path.join(root, relativePath), 'utf8')
@@ -220,7 +221,9 @@ test('Home environmental thresholds and generated manifest filter remain observa
   assert.match(homeProduction, /home-life-map-sky-lookout/)
   assert.ok(includesCanonical(homeProduction, "destination: 'infrastructure-hub'"))
   assert.ok(includesCanonical(homeProduction, "destination: 'life-map'"))
-  assert.match(homeProduction, /Look to the sky/)
+  assert.match(homeProduction, /nearby === 'life-map' \? 'home.skyNearby'/)
+  assert.match(homeProduction, /locale.text\(contextId\)/)
+  assert.equal(URAI_SOURCE_MESSAGES['home.skyNearby'].source, 'Look to the sky')
   assert.ok(hostStableProof.includes('const manifestRegexSource = String.raw`&& /^\\/assets\\/urai'))
   assert.ok(hostStableProof.includes('const escapedManifestRegexSource = String.raw`&& /^\\\\/assets\\\\/urai'))
   assert.ok(hostStableProof.includes('.replace(manifestRegexSource, escapedManifestRegexSource)'))

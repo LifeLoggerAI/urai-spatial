@@ -23,6 +23,10 @@ const autonomousIsolationPath = 'urai-tier1/src/app/urai-autonomous-v1-isolation
 
 const replayPage = read(replayPagePath)
 const replayClient = read(replayClientPath)
+const journeyCatalogPath = 'urai-tier1/src/lib/i18n/journeyMessages.ts'
+const journeyCatalog = read(journeyCatalogPath)
+assertIncludes(journeyCatalogPath, journeyCatalog, "'replay.pause': { id:'replay.pause', source:\"Pause memory\"")
+assertIncludes(journeyCatalogPath, journeyCatalog, "'replay.continue': { id:'replay.continue', source:\"Continue memory\"")
 const replayState = read(replayStatePath)
 const autonomousIsolation = read(autonomousIsolationPath)
 
@@ -52,7 +56,7 @@ for (const token of [
   "event.key === 'Escape'",
   "event.key === ' ' || event.key === 'Enter'",
   'type="range"',
-  "aria-label={playing ? 'Pause memory' : 'Continue memory'}",
+  "aria-label={locale.text(playing ? 'replay.pause' : 'replay.continue')}",
   'Move through memory time, ${percent} percent complete',
   'DEMO FIXTURE · NOT PERSONAL DATA',
   'memory.replayManifest.transcript',

@@ -1,5 +1,6 @@
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import path from 'node:path'
+import { localizationMessageBindings } from './lib/localization-message-bindings.mjs'
 import {
   URAI_LAUNCH_LOCALES,
   URAI_NATIVE_REVIEWED_LOCALES,
@@ -55,6 +56,8 @@ const locales = URAI_LAUNCH_LOCALES.map((locale) => {
 // percentage of the product. Record the real scoped UI consumers separately.
 const consumerPaths = [
   'src/app/HomeSpatialRuntimeLayer.tsx',
+  'src/spatial/layout/HomeWorldProductionPolished.tsx',
+  'src/lib/i18n/JourneyOfflineNotice.tsx',
   'src/app/settings/DeviceSettingsClient.tsx',
   'src/components/settings/LanguageSettings.tsx',
   'src/components/lifemap/LifeMapSemanticNavigator.tsx',
@@ -64,7 +67,7 @@ const consumerPaths = [
 ]
 const consumers = await Promise.all(consumerPaths.map(async (file) => {
   const source = await readFile(new URL(`../urai-tier1/${file}`, import.meta.url), 'utf8')
-  const messageIds = [...new Set([...source.matchAll(/locale\.(?:text|props)\(['"]([^'"]+)['"]/g)].map(match => match[1]))].sort()
+  const messageIds = localizationMessageBindings(source, URAI_SOURCE_MESSAGES, file)
   return {file, messageIds, numberFormatter:source.includes('locale.number('), dateFormatter:source.includes('locale.date(')}
 }))
 const wiredMessageIds = [...new Set(consumers.flatMap(consumer => consumer.messageIds))].sort()
@@ -78,7 +81,7 @@ const receipt = {
   runtimeAdmittedLocales: locales.filter((locale) => locale.runtimeAdmitted).map((locale) => locale.locale),
   preparationOnlyLocales: locales.filter((locale) => !locale.runtimeAdmitted).map((locale) => locale.locale),
   uiCoverage: {
-    scope:'GENERAL_CORE_CONTROLS_EXPLICIT_WORKING_PREVIEW',
+    scope:'CORE_JOURNEY_COPY_EXPLICIT_WORKING_PREVIEW',
     registeredMessageCount:Object.keys(URAI_SOURCE_MESSAGES).length,
     wiredMessageCount:wiredMessageIds.length,
     wiredMessageIds,
@@ -86,7 +89,7 @@ const receipt = {
     consumers,
     wholeProductTranslated:false,
     sensitiveFallback:'reviewed locale only',
-    remaining:'Route headings/instructions/status/errors, private content, sensitive policy copy and other product routes remain outside this scoped catalog. Human language, RTL visual, speech, AT and device acceptance remain pending.',
+    remaining:'Only registered core journey copy and controls are wired. Other headings, status/errors, private content, policy copy, other product routes and provider-generated language remain outside this scoped catalog. Native linguistic, RTL visual, speech, AT and device acceptance remain pending.',
   },
   locales,
 }

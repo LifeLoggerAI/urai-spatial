@@ -28,6 +28,7 @@ import { requestUraiWorldReturn, requestUraiWorldTravel } from '@/spatial/world/
 import { useUraiWorldState } from '@/spatial/world/WorldStateProvider'
 import { ReplayProductControls } from './ReplayProductControls'
 import { useUraiLocale } from '@/lib/i18n/useUraiLocale'
+import JourneyOfflineNotice from '@/lib/i18n/JourneyOfflineNotice'
 import { ReplayPersonPresence } from './ReplayPersonPresence'
 import { ReplayRecordedSource, type ReplayImageState } from './ReplayRecordedSource'
 import { initialReplayVideoSnapshot, type ReplayVideoSession, type ReplayVideoSnapshot } from './replayMediaSession'
@@ -561,12 +562,13 @@ function ReplayMemoryExperience({ memory, memoryStatus, quality }: { memory: Sel
       {mediaStatus === 'loading' ? <span>{video ? 'Loading recorded video…' : demoEnvironment ? 'Loading demonstration environment…' : 'Loading recorded image…'}</span> : mediaStatus === 'buffering' ? <span>Buffering recorded video. Memory time follows the source.</span> : null}
       {mediaError ? <span>{mediaError}</span> : null}
       {mediaStatus === 'error' ? <button type="button" onClick={retryMedia}>Retry {demoEnvironment ? 'demonstration environment' : 'recorded source'}</button> : null}
-      {webgl.state !== 'ready' && admission.kind !== 'recorded-source' ? <div className="replaySpatialNotice"><span>{webgl.state === 'checking' ? 'Checking spatial view…' : 'Spatial view unavailable. Memory details and controls remain accessible.'}</span>{webgl.state !== 'checking' ? <button type="button" onClick={webgl.retry}>Retry spatial view</button> : null}</div> : null}
+      {webgl.state !== 'ready' && admission.kind !== 'recorded-source' ? <div className="replaySpatialNotice"><span {...locale.props(webgl.state === 'checking' ? 'replay.checkingSpatial' : 'replay.spatialUnavailable')}>{locale.text(webgl.state === 'checking' ? 'replay.checkingSpatial' : 'replay.spatialUnavailable')}</span>{webgl.state !== 'checking' ? <button type="button" onClick={webgl.retry} {...locale.props('replay.retrySpatial')}>{locale.text('replay.retrySpatial')}</button> : null}</div> : null}
+      <JourneyOfflineNotice />
     </section> : null}
     <section className="caption" aria-live="polite"><small>{active?.label ?? 'Replay'}</small><strong>{active?.caption ?? memory.narrator.replay}</strong><span>{active?.narratorLine ?? memory.narrator.replay}</span></section>
     <section className="memoryTempo" aria-label="Memory time">
-      <button type="button" className="memoryPulse" onClick={togglePlayback} disabled={!canPlay && !playing} aria-label={playing ? 'Pause memory' : 'Continue memory'} aria-pressed={playing}>
-        <span aria-hidden="true">{playing ? 'Ⅱ' : '›'}</span>{playing ? 'Pause memory' : 'Continue memory'}
+      <button type="button" className="memoryPulse" onClick={togglePlayback} disabled={!canPlay && !playing} {...locale.props(playing ? 'replay.pause' : 'replay.continue')} aria-label={locale.text(playing ? 'replay.pause' : 'replay.continue')} aria-pressed={playing}>
+        <span aria-hidden="true">{playing ? 'Ⅱ' : '›'}</span>{locale.text(playing ? 'replay.pause' : 'replay.continue')}
       </button>
       <span className="memoryTrace" aria-hidden="true"><i style={{ width: `${percent}%` }} /></span>
       <input className="memorySeek" type="range" min={0} max={duration} step={100} value={progressMs} disabled={video && !videoSnapshot.durationMs} onChange={(event) => seek(Number(event.currentTarget.value))} aria-label={`Move through memory time, ${percent} percent complete`} aria-valuetext={`${replayTimeLabel(progressMs)} of ${replayTimeLabel(duration)}`} />
@@ -581,6 +583,7 @@ function ReplayMemoryExperience({ memory, memoryStatus, quality }: { memory: Sel
 }
 
 function ReplayMemoryHorizon({ memoryStatus, message, quality }: { memoryStatus: string; message: string; quality: SpatialQualityProfile }) {
+  const locale = useUraiLocale()
   const webgl = useReplayWebGL()
   const chooseMemory = useCallback(() => requestUraiWorldTravel({ destination: 'life-map', href: '/life-map/', entryPortal: 'replay-memory-horizon', cameraCheckpoint: 'life-map-overview' }), [])
 
@@ -589,7 +592,7 @@ function ReplayMemoryHorizon({ memoryStatus, message, quality }: { memoryStatus:
       {webgl.state === 'ready' ? <ReplayCanvasBoundary key={webgl.attempt} onFailure={webgl.fail}><Canvas className="replaySpatialCanvas" dpr={[1, quality.pixelRatioMax]} frameloop={quality.documentVisible ? (quality.reducedMotion ? 'demand' : 'always') : 'never'} camera={{ position: [0, 0.42, 8.4], fov: 46, near: 0.05, far: 120 }} gl={{ antialias: quality.antialias, powerPreference: 'high-performance' }} onCreated={({ gl }) => gl.domElement.addEventListener('webglcontextlost', (event) => { event.preventDefault(); webgl.fail() }, { once: true })}>
         <ReplayNeutralSpatialScene />
       </Canvas></ReplayCanvasBoundary> : null}
-      <section role={memoryStatus === 'loading' ? 'status' : 'region'} aria-label="Replay memory horizon"><p>{memoryStatus === 'loading' ? 'Opening memory field' : 'Memory horizon'}</p><h1>{memoryStatus === 'loading' ? 'A memory is coming into view.' : 'Choose a memory to enter Replay.'}</h1><span>{message}</span>{memoryStatus === 'loading' ? null : <button type="button" onClick={chooseMemory}>Choose a memory</button>}{webgl.state !== 'ready' && webgl.state !== 'checking' ? <span role="status">Spatial view unavailable. Memory selection remains accessible.</span> : null}</section>
+      <section role={memoryStatus === 'loading' ? 'status' : 'region'} aria-label="Replay memory horizon"><p {...locale.props(memoryStatus === 'loading' ? 'replay.opening' : 'replay.horizon')}>{locale.text(memoryStatus === 'loading' ? 'replay.opening' : 'replay.horizon')}</p><h1 {...locale.props(memoryStatus === 'loading' ? 'replay.comingIntoView' : 'replay.choosePrompt')} style={{overflowWrap:'anywhere'}}>{locale.text(memoryStatus === 'loading' ? 'replay.comingIntoView' : 'replay.choosePrompt')}</h1><span>{message}</span><JourneyOfflineNotice />{memoryStatus === 'loading' ? null : <button type="button" onClick={chooseMemory} {...locale.props('replay.chooseMemory')}>{locale.text('replay.chooseMemory')}</button>}{webgl.state !== 'ready' && webgl.state !== 'checking' ? <span role="status">Spatial view unavailable. Memory selection remains accessible.</span> : null}</section>
       <style>{stateCss}</style>
     </main>
   )

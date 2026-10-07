@@ -7,8 +7,10 @@ const compactRunnerSource = fs.readFileSync(new URL('../scripts/run-unit-contrac
 
 const requiredFocusedTests = [
   'tests/authorized-export-download.test.mjs',
+  'tests/operational-export-client.test.mjs',
   'tests/dependency-security-regressions.test.mjs',
   'tests/localization-flow.test.mjs',
+  'tests/localization-journey-copy.test.mjs',
   'tests/person-presence-provider-contract.test.mjs',
   'tests/person-presence-voice-contract.test.mjs',
   'tests/person-presence-session-contract.test.mjs',
