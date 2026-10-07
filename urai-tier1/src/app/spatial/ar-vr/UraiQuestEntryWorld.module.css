@@ -1,5 +1,11 @@
+/* Keep this complete XR scene above the shared decorative atmosphere. */
+:global(.urai-world-runtime):has(.world) {
+  z-index: 3;
+}
+
 .world {
   position: relative;
+  z-index: 3;
   min-height: 100svh;
   overflow: hidden;
   color: #fff;
