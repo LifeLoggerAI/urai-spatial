@@ -69,3 +69,18 @@ test('mounted consumers are notified of preference changes and the SSR snapshot 
     assert.equal(changes, 1)
   } finally { unsubscribe(); updateLocalePreference({requested:'en',preview:false}) }
 })
+
+test('speech tags preserve English admission and require explicit preview for every other launch locale', () => {
+  try {
+    for (const requested of URAI_LAUNCH_LOCALES) {
+      updateLocalePreference({requested, preview:false})
+      assert.equal(currentSpeechTag(), 'en-US')
+      updateLocalePreference({requested, preview:true})
+      assert.equal(currentSpeechTag(), speechTagFor({requested, preview:true}))
+      assert.ok(currentSpeechTag().length <= 35, 'tag fits the existing Adam server locale field')
+    }
+    updateLocalePreference({requested:'unsupported', preview:true})
+    assert.equal(currentSpeechTag(), 'en-US')
+    assert.deepEqual([...URAI_NATIVE_REVIEWED_LOCALES], ['en'])
+  } finally { updateLocalePreference({requested:'en',preview:false}) }
+})

@@ -15,6 +15,7 @@ on:
       - 'urai-tier1/src/app/replay/ReplayProductControls.tsx'
       - 'urai-tier1/src/components/settings/LanguageSettings.tsx'
       - 'urai-tier1/src/components/lifemap/LifeMapSemanticNavigator.tsx'
+      - 'urai-tier1/src/spatial/adam/AdamPresenceRuntime.tsx'
       - 'urai-tier1/tests/localization-*.test.mjs'
       - 'tests/localization-core-flow.spec.ts'
       - 'brand/LOCALIZATION_20_READINESS.md'
@@ -69,6 +70,9 @@ jobs:
       - name: Verify selected locale in real core routes
         env:
           PLAYWRIGHT_JSON_OUTPUT_NAME: artifacts/localization-readiness/browser-result.json
+          NEXT_PUBLIC_FIREBASE_API_KEY: localization-inert-public-key
+          NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: urai-localization-fixture.invalid
+          NEXT_PUBLIC_FIREBASE_PROJECT_ID: urai-localization-fixture
         run: pnpm exec playwright test tests/localization-core-flow.spec.ts --workers=1 --reporter=line,json --trace=retain-on-failure
       - name: Retain exact localization readiness evidence
         if: always()
