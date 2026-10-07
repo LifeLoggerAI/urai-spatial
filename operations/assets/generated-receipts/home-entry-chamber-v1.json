@@ -2,44 +2,49 @@
   "schemaVersion": 1,
   "id": "home-entry-chamber-v1",
   "fixedPath": "urai-tier1/public/assets/urai/generated/models/home-entry-chamber-v1.glb",
-  "bytes": 1786808,
-  "sha256": "73f2a49ed2cfd6cd7ae9baed7b3908d53e0cac75b9f36ff1b8be9654e3d3e2f2",
+  "bytes": 184160,
+  "sha256": "b7bdced5a721598a9dfe592ee19da04d754d5b8b1d48b23cc44403a89b1ee529",
   "measured": {
     "format": "glb",
     "version": 2,
-    "generator": "URAI Labs Final GLB Forge 1.0",
-    "nodes": 322,
-    "meshes": 17,
-    "materials": 8,
-    "triangleCount": 57352,
+    "generator": "glTF-Transform v4.4.2",
+    "nodes": 160,
+    "meshes": 143,
+    "materials": 13,
+    "triangleCount": 12934,
     "boundsMin": [
-      -10,
-      -0.5750903487205505,
-      -10
+      -9.344999599456788,
+      -1.1389961528778076,
+      -9.383786176831084
     ],
     "boundsMax": [
-      10,
-      4.900000095367432,
-      10
+      9.344999599456788,
+      5.1018419702297555,
+      7.451975496666518
     ],
     "boundsMeters": [
-      20,
-      5.475,
-      20
+      18.689999198913576,
+      6.240838123107563,
+      16.8357616734976
     ],
     "extensionsUsed": [
-      "KHR_materials_clearcoat",
-      "KHR_materials_emissive_strength",
-      "KHR_materials_transmission"
+      "EXT_meshopt_compression",
+      "KHR_mesh_quantization"
     ],
-    "extensionsRequired": []
+    "extensionsRequired": [
+      "EXT_meshopt_compression",
+      "KHR_mesh_quantization"
+    ],
+    "animationPoseEnvelopeVerified": false,
+    "measurementMethod": "three-stdlib 2.36.1 GLTFLoader and bundled MeshoptDecoder with Three 0.183.2; transformed decoded logical attributes",
+    "measurementReportSha256": "0759b8dd6b7eafbd07a81df3c97344b7af53ff899997145d1ff8bc9c66dfd834"
   },
-  "compressionStatus": "uncompressed-candidate",
+  "compressionStatus": "meshopt",
   "requiredCompression": "draco-or-meshopt",
   "fallback": "procedural-home-threshold",
   "source": "URAI Labs deterministic authored sanctuary v3 pipeline; replaceable only by a separately reviewed provider asset",
   "license": "URAI Labs internal proprietary production asset",
-  "generatedBy": "URAI Labs Final GLB Forge 1.0; bounded pole-normal repair; reconciled to urai-final-glb-production-pack-v1",
+  "generatedBy": "Unchanged reviewed source recovered from 51db7b3ba77a657659da34ca5e146e049dd03d31; no asset forge or substitution",
   "generatedAt": "2026-08-08T23:04:50.713Z",
   "releaseState": "candidate-not-production-ready",
   "targetRoutes": [
@@ -47,10 +52,10 @@
     "/home"
   ],
   "measurementReconciliation": {
-    "sourceSha": "45d760334ef7f0d5f475f1e71cb536c2c7c1cd5b",
-    "observedAt": "2026-10-06T17:20:57.483328+00:00",
-    "method": "audit-launch-critical-artifact.mjs actual-byte inspection",
-    "assetBytesChanged": false,
+    "sourceSha": "51db7b3ba77a657659da34ca5e146e049dd03d31",
+    "method": "Actual resolved Three 0.183.2 / three-stdlib 2.36.1 GLTFLoader and bundled MeshoptDecoder; normalized logical attributes",
+    "reportSha256": "0759b8dd6b7eafbd07a81df3c97344b7af53ff899997145d1ff8bc9c66dfd834",
+    "restoredAcceptedBytes": true,
     "finalReviewGranted": false
   }
 }

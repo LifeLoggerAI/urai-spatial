@@ -2,10 +2,10 @@ import { expect, test } from '@playwright/test'
 
 const route = '/focus?memoryId=demo%3Aquiet-reset&manifestId=replay-recovery-thread&node=quiet-reset&demo=1'
 
-for (const width of [320, 390]) {
+for (const width of [320, 390, 768, 1024, 1200, 1440]) {
   for (const noWebGL of [false, true]) {
-    test(`Focus mobile labels and helper remain clear at ${width}px, noWebGL=${noWebGL}`, async ({ page }) => {
-      await page.setViewportSize({ width, height: width === 320 ? 700 : 844 })
+    test(`Focus disclosure, labels and helper remain clear at ${width}px, noWebGL=${noWebGL}`, async ({ page }) => {
+      await page.setViewportSize({ width, height: width === 320 ? 700 : width === 390 ? 844 : width < 1200 ? 1024 : 900 })
       await page.emulateMedia({ reducedMotion: 'reduce' })
       if (noWebGL) await page.addInitScript(() => {
         const original = HTMLCanvasElement.prototype.getContext
@@ -25,8 +25,20 @@ for (const width of [320, 390]) {
           return { x: r.x, y: r.y, width: r.width, height: r.height, right: r.right, bottom: r.bottom, selector: element.className || element.tagName }
         }
         const launcher = document.querySelector('[data-urai-adam-launcher]')!
+        const heading = owner.querySelector('.focusHeading')!
+        const headingRange = document.createRange()
+        headingRange.selectNodeContents(heading)
+        const status = owner.querySelector('.focusStatus')!
+        const statusBox = rect(status)
+        const statusStyle = getComputedStyle(status)
         return {
           helper: rect(launcher),
+          controlRail: rect(owner.querySelector('.focusControls')!),
+          headingText: [...headingRange.getClientRects()].map(r => ({ x: r.x, y: r.y, width: r.width, height: r.height, right: r.right, bottom: r.bottom, selector: 'heading text' })),
+          status: {
+            box: statusBox,
+            visuallyHidden: statusBox.width <= 1 && statusBox.height <= 1 && statusStyle.clipPath !== 'none',
+          },
           protected: [...owner.querySelectorAll('.focusHeading,.memoryMeaning,.focusControls,.focusHelp,.focusFallback strong,.focusFallback span')].map(rect),
           controls: [...owner.querySelectorAll('.focusControls button,.focus-spatial-aperture-button')].filter(button => {
             const r = button.getBoundingClientRect()
@@ -46,6 +58,13 @@ for (const width of [320, 390]) {
       expect(geometry.helper.width).toBeGreaterThanOrEqual(48)
       expect(geometry.helper.height).toBeGreaterThanOrEqual(48)
       for (const box of geometry.protected) expect(overlaps(geometry.helper, box)).toBe(false)
+      for (const box of geometry.headingText) expect(overlaps(geometry.controlRail, box)).toBe(false)
+      if (!geometry.status.visuallyHidden) {
+        expect(overlaps(geometry.status.box, geometry.controlRail)).toBe(false)
+        for (const box of geometry.headingText) expect(overlaps(geometry.status.box, box)).toBe(false)
+      }
+      await expect(focus.locator('.focusStatus')).toHaveAttribute('aria-live', 'polite')
+      await expect(focus.locator('.focusStatus')).toContainText('Stellar memory field ready')
       expect(geometry.controls.length).toBeGreaterThanOrEqual(3)
       for (const { box, text, pointerReachable } of geometry.controls) {
         expect(pointerReachable).toBe(true)
@@ -58,6 +77,9 @@ for (const width of [320, 390]) {
           expect(line.bottom).toBeLessThanOrEqual(box.bottom)
         }
       }
+      await test.info().attach(`focus-layout-${width}-no-webgl-${noWebGL}.png`, {
+        body: await page.screenshot(), contentType: 'image/png',
+      })
       await helper.focus()
       await page.keyboard.press('Enter')
       await expect(page.getByRole('button', { name: 'Close Adam', exact: true })).toBeVisible()

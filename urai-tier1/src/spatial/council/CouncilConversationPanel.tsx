@@ -13,6 +13,7 @@ import {
 import {
   COUNCIL_PROVIDER_REGISTRY,
   LIVE_COUNCIL_PROVIDER_IDS,
+  REQUESTABLE_COUNCIL_PROVIDER_IDS,
   PENDING_COUNCIL_PROVIDER_IDS,
   requestCouncilProvider,
   type CouncilProviderId,
@@ -29,8 +30,8 @@ export default function CouncilConversationPanel({ agent }: { agent: CouncilAgen
   const [message, setMessage] = useState('')
   const [history, setHistory] = useState<OrbConversationMessage[]>([])
   const [result, setResult] = useState<CouncilProviderResult | null>(null)
-  const liveProviderIds = useMemo(() => LIVE_COUNCIL_PROVIDER_IDS.filter((id): id is Exclude<CouncilProviderId, 'local-fallback'> => id !== 'local-fallback'), [])
-  const [providerId, setProviderId] = useState<Exclude<CouncilProviderId, 'local-fallback'>>(liveProviderIds[0] ?? 'openai')
+  const requestableProviderIds = useMemo(() => REQUESTABLE_COUNCIL_PROVIDER_IDS.filter((id): id is Exclude<CouncilProviderId, 'local-fallback'> => id !== 'local-fallback'), [])
+  const [providerId, setProviderId] = useState<Exclude<CouncilProviderId, 'local-fallback'>>(requestableProviderIds[0] ?? 'openai')
   const [status, setStatus] = useState('Council conversation is idle.')
   const [busy, setBusy] = useState(false)
   const [consent, setConsent] = useState(false)
@@ -50,7 +51,7 @@ export default function CouncilConversationPanel({ agent }: { agent: CouncilAgen
     aborter.current = controller
     setBusy(true)
     setResult(null)
-    setStatus(`${agent.name} is considering your message through the live provider…`)
+    setStatus(`${agent.name} is considering your message through the selected provider…`)
 
     const councilMessage = [
       `Council presence: ${agent.name}.`,
@@ -62,7 +63,7 @@ export default function CouncilConversationPanel({ agent }: { agent: CouncilAgen
     ].join('\n')
 
     try {
-      const live = await requestCouncilProvider({
+      const response = await requestCouncilProvider({
         provider: providerId,
         message: councilMessage,
         context: history,
@@ -70,19 +71,19 @@ export default function CouncilConversationPanel({ agent }: { agent: CouncilAgen
         signal: controller.signal,
       })
       if (controller.signal.aborted) return
-      const resolved = live ?? deterministicOrbFallback(trimmed)
+      const resolved = response ?? deterministicOrbFallback(trimmed)
       setResult(resolved)
-      if (live) {
+      if (response) {
         setHistory((current) => [
           ...current.slice(-6),
           { role: 'user', content: trimmed },
-          { role: 'assistant', content: live.message },
+          { role: 'assistant', content: response.message },
         ])
       }
       setMessage('')
       setStatus(resolved.provider !== 'fallback'
         ? `${agent.name} responded through ${COUNCIL_PROVIDER_REGISTRY[resolved.provider].label}.`
-        : 'The live provider was unavailable before external processing; a disclosed local fallback is shown.')
+        : 'The selected provider was unavailable before external processing; a disclosed local fallback is shown.')
     } catch (error) {
       if (controller.signal.aborted) return
       const fallback = error instanceof OrbProviderAttemptError
@@ -95,7 +96,7 @@ export default function CouncilConversationPanel({ agent }: { agent: CouncilAgen
               ? uncertainCouncilProviderFallback(trimmed, error.provider)
               : deterministicOrbFallback(trimmed)
       setResult(fallback)
-      setStatus('The live Council provider did not return a usable answer; a disclosed local fallback is shown.')
+      setStatus('The selected Council provider did not return a usable answer; a disclosed local fallback is shown.')
     } finally {
       if (aborter.current === controller) aborter.current = null
       if (!controller.signal.aborted) setBusy(false)
@@ -105,9 +106,10 @@ export default function CouncilConversationPanel({ agent }: { agent: CouncilAgen
   return (
     <section
       className="councilConversation"
-      aria-label="Live Council conversation"
+      aria-label="Council conversation"
       data-provider={result?.provider ?? 'idle'}
       data-live-council-providers={LIVE_COUNCIL_PROVIDER_IDS.join(' ')}
+      data-requestable-council-providers={REQUESTABLE_COUNCIL_PROVIDER_IDS.join(' ')}
       data-pending-council-providers={PENDING_COUNCIL_PROVIDER_IDS.join(' ')}
     >
       <form onSubmit={submit} aria-busy={busy}>
@@ -123,7 +125,7 @@ export default function CouncilConversationPanel({ agent }: { agent: CouncilAgen
             setStatus('Council provider changed. Prior provider context was cleared.')
           }}
         >
-          {liveProviderIds.map((id) => <option key={id} value={id}>{COUNCIL_PROVIDER_REGISTRY[id].label}</option>)}
+          {requestableProviderIds.map((id) => <option key={id} value={id}>{COUNCIL_PROVIDER_REGISTRY[id].label}</option>)}
         </select>
         <label htmlFor="urai-council-message">Ask {agent.name}</label>
         <textarea
@@ -143,6 +145,7 @@ export default function CouncilConversationPanel({ agent }: { agent: CouncilAgen
           <button type="button" disabled={!busy} onClick={() => { aborter.current?.abort(); aborter.current = null; setBusy(false); setStatus('Council response stopped.') }}>Stop</button>
         </div>
       </form>
+      <small>Provider availability is checked when you ask. A listed provider may be unavailable.</small>
       <p role="status" aria-live="polite">{status}</p>
       {result ? <div className="councilResponse"><strong>{agent.name}</strong><p>{result.message}</p><small>{result.disclosure}</small></div> : null}
       <style>{`

@@ -1,0 +1,97 @@
+name: Passive Location Consent Proof
+
+on:
+  pull_request:
+    paths:
+      - 'apps/functions/src/passiveSignals.ts'
+      - 'apps/functions/test/passive-signals-location-consent.test.js'
+      - 'apps/functions/package.json'
+      - 'apps/functions/tsconfig.json'
+      - 'pnpm-lock.yaml'
+      - '.github/workflows/passive-location-consent-proof.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: passive-location-consent-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+env:
+  URAI_PROOF_SOURCE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+  URAI_PASSIVE_SIGNAL_SOURCE_TEST: '0'
+
+jobs:
+  compiled-handler-behavior:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Checkout exact source
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ env.URAI_PROOF_SOURCE_SHA }}
+          fetch-depth: 1
+          persist-credentials: false
+          show-progress: false
+      - name: Verify source identity
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$URAI_PROOF_SOURCE_SHA"
+          test -z "$(git status --porcelain --untracked-files=all)"
+      - name: Setup pnpm
+        uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1
+        with:
+          version: 10.0.0
+          run_install: false
+      - name: Setup native Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+      - name: Install locked Functions dependencies
+        run: pnpm --filter urai-functions... install --frozen-lockfile --ignore-scripts
+      - name: Strict compile Functions
+        run: pnpm --filter urai-functions build
+      - name: Prove compiled handler retention and rejection
+        shell: bash
+        run: |
+          node <<'NODE'
+          const fs = require('node:fs')
+          const crypto = require('node:crypto')
+          const { spawnSync } = require('node:child_process')
+          const hash = (file) => crypto.createHash('sha256').update(fs.readFileSync(file)).digest('hex')
+          const file = 'test/passive-signals-location-consent.test.js'
+          const result = spawnSync(process.execPath, ['--test', '--test-reporter=tap', file], {
+            cwd: 'apps/functions', encoding: 'utf8', env: { ...process.env, URAI_PASSIVE_SIGNAL_SOURCE_TEST: '0' },
+          })
+          fs.mkdirSync('passive-location-proof', { recursive: true })
+          const output = `${result.stdout || ''}${result.stderr || ''}`
+          fs.writeFileSync('passive-location-proof/behavior.tap', output)
+          fs.writeFileSync('passive-location-proof/receipt.json', JSON.stringify({
+            schemaVersion: 'urai-passive-location-behavior-receipt-v1',
+            sourceSha: process.env.URAI_PROOF_SOURCE_SHA,
+            nodeVersion: process.version,
+            typeScriptVersion: require('./apps/functions/node_modules/typescript/package.json').version,
+            sourceSha256: hash('apps/functions/src/passiveSignals.ts'),
+            compiledModuleSha256: hash('apps/functions/lib/apps/functions/src/passiveSignals.js'),
+            testSha256: hash(`apps/functions/${file}`),
+            behaviorTapSha256: hash('passive-location-proof/behavior.tap'),
+            testExitStatus: result.status,
+            testMode: 'native-node22-strict-tsc-compiled-module-with-synthetic-firestore',
+            productionOrEmulatorVerification: false,
+            state: result.status === 0 ? 'BEHAVIORALLY_VERIFIED_NATIVE_COMPILED' : 'FAILED',
+          }, null, 2) + '\n')
+          process.stdout.write(output)
+          process.exit(result.status ?? 1)
+          NODE
+      - name: Upload exact source behavior receipt
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: passive-location-consent-${{ env.URAI_PROOF_SOURCE_SHA }}
+          path: passive-location-proof
+          if-no-files-found: warn
+          retention-days: 90

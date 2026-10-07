@@ -83,10 +83,19 @@ for (const [fileName, contract] of Object.entries(contracts)) {
   if ((record.triangleCount || Infinity) > contract.maxTriangles) errors.push(`${fileName}: triangle budget exceeded`)
   for (const node of contract.nodes) if (!nodes.has(node)) errors.push(`${fileName}: missing node ${node}`)
   for (const clip of contract.clips) if (!clips.has(clip)) errors.push(`${fileName}: missing clip ${clip}`)
-  for (const extension of ['KHR_materials_emissive_strength','KHR_materials_transmission','KHR_materials_clearcoat']) {
-    if (!json.extensionsUsed?.includes(extension)) errors.push(`${fileName}: missing material extension ${extension}`)
+  const restoredReviewedHome = fileName === 'home-entry-chamber-v1.glb'
+    && payload.length === 184160
+    && hash === 'b7bdced5a721598a9dfe592ee19da04d754d5b8b1d48b23cc44403a89b1ee529'
+    && record.sourceHead === '51db7b3ba77a657659da34ca5e146e049dd03d31'
+  const requiredExtensions = restoredReviewedHome
+    ? ['EXT_meshopt_compression', 'KHR_mesh_quantization']
+    : ['KHR_materials_emissive_strength','KHR_materials_transmission','KHR_materials_clearcoat']
+  for (const extension of requiredExtensions) {
+    if (!json.extensionsUsed?.includes(extension)) errors.push(`${fileName}: missing source-required extension ${extension}`)
   }
-  if (json.asset?.generator !== 'URAI Labs Final GLB Forge 1.0') errors.push(`${fileName}: generator identity mismatch`)
+  const expectedGenerator = restoredReviewedHome ? 'glTF-Transform v4.4.2' : 'URAI Labs Final GLB Forge 1.0'
+  if (json.asset?.generator !== expectedGenerator) errors.push(`${fileName}: generator identity mismatch`)
+  if (restoredReviewedHome && json.asset?.extras?.source !== 'scripts/author-home-finalization-assets.mjs') errors.push(`${fileName}: reviewed source provenance mismatch`)
 }
 
 const report = {
