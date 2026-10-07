@@ -822,9 +822,33 @@ function exportSelection(data: JsonMap) {
   return { jobId, file, assetId }
 }
 
+async function readCanonicalDownloadConsent(transaction: FirebaseFirestore.Transaction, uid: string) {
+  const [consentSnapshot, fenceSnapshot] = await Promise.all([
+    transaction.get(db.doc(`consentRecords/${uid}_data_export`)),
+    transaction.get(db.doc(`privacyDeletionTombstones/${uid}`)),
+  ])
+  const consent = consentSnapshot.data(), fence = fenceSnapshot.data()
+  const epoch = (value: unknown) => value instanceof admin.firestore.Timestamp ? value.toMillis()
+    : typeof value === 'number' ? value : typeof value === 'string' ? Date.parse(value) : Number.NaN
+  const consentExpiresAt = epoch(consent?.expiresAt)
+  // This is an overriding canonical boundary, not a migration of operational jobs
+  // into Privacy's top-level request/completed-job schema.
+  if (!consentSnapshot.exists || !fenceSnapshot.exists || consent?.uid !== uid
+    || consent.purpose !== 'data.export' || consent.consentTier !== 'C7' || consent.policyVersion !== '1.0.0'
+    || consent.status !== 'granted' || !/^[a-f0-9]{64}$/.test(String(consent.receiptHash ?? ''))
+    || !Number.isFinite(consentExpiresAt) || consentExpiresAt <= Date.now()
+    || fence?.uid !== uid || fence.active === true || fence.exportConsentStatus !== 'granted'
+    || fence.exportConsentReceiptHash !== consent.receiptHash || fence.exportConsentPolicyVersion !== '1.0.0'
+    || epoch(fence.exportConsentExpiresAt) !== consentExpiresAt) {
+    throw new functions.https.HttpsError('failed-precondition', 'CURRENT_CANONICAL_EXPORT_AUTHORITY_REQUIRED')
+  }
+  return { canonicalConsentReceiptHash: consent.receiptHash as string, consentExpiresAt }
+}
+
 async function readDownloadAuthority(transaction: FirebaseFirestore.Transaction, uid: string, selection: ReturnType<typeof exportSelection>) {
   const { jobId, file, assetId } = selection
   const { job } = await readBoundExport(transaction, uid, jobId, 'ready')
+  const canonical = await readCanonicalDownloadConsent(transaction, uid)
   const expiresAt = job.get('expiresAt')
   const packageExpiresAt = expiresAt instanceof admin.firestore.Timestamp ? expiresAt.toMillis() : Number.NaN
   if (!Number.isFinite(packageExpiresAt) || packageExpiresAt <= Date.now()) {
@@ -853,8 +877,8 @@ async function readDownloadAuthority(transaction: FirebaseFirestore.Transaction,
   }
   const authorityHash = createHash('sha256').update(JSON.stringify({ uid, jobId, file, assetId, path, generation, checksum,
     consentRevision: job.get('consentRevision'), exportFenceGeneration: job.get('exportFenceGeneration'),
-    receiptId: job.get('receiptId'), packageExpiresAt })).digest('hex')
-  return { path, generation, checksum, packageExpiresAt, authorityHash }
+    receiptId: job.get('receiptId'), packageExpiresAt, ...canonical })).digest('hex')
+  return { path, generation, checksum, packageExpiresAt: Math.min(packageExpiresAt, canonical.consentExpiresAt), authorityHash }
 }
 
 function exportDownloadEndpoint(host: string | undefined) {
@@ -863,9 +887,13 @@ function exportDownloadEndpoint(host: string | undefined) {
     if (!project || !/^[a-z][a-z0-9-]{4,61}[a-z0-9]$/.test(project) || !host || !/^(?:localhost|127\.0\.0\.1):[0-9]{2,5}$/.test(host)) {
       throw new functions.https.HttpsError('failed-precondition', 'Local export endpoint unavailable.')
     }
-    return `http://${host}/${project}/us-central1/downloadExportPackage`
+    return `http://${host}/${project}/us-central1/downloadOperationalExportPackage`
   }
-  return '/api/privacy/export/download'
+  const project = process.env.GCLOUD_PROJECT
+  if (!project || !/^[a-z][a-z0-9-]{4,61}[a-z0-9]$/.test(project)) {
+    throw new functions.https.HttpsError('failed-precondition', 'Current export project unavailable.')
+  }
+  return `https://us-central1-${project}.cloudfunctions.net/downloadOperationalExportPackage`
 }
 
 function auditExportDownload(transaction: FirebaseFirestore.Transaction, uid: string, selection: ReturnType<typeof exportSelection>, action: string, authorityHash: string) {
@@ -875,7 +903,7 @@ function auditExportDownload(transaction: FirebaseFirestore.Transaction, uid: st
   return auditRef.id
 }
 
-export const getExportDownloadUrl = functions.https.onCall(async (data, context) => {
+export const getOperationalExportDownloadUrl = functions.https.onCall(async (data, context) => {
   const uid = requireUid(context)
   requireRecentAuthentication(context)
   const selection = exportSelection(data ?? {})
@@ -899,8 +927,15 @@ export const getExportDownloadUrl = functions.https.onCall(async (data, context)
 
 // A Storage signed capability bypasses rules and cannot be withdrawn. Revalidate
 // authentication, current revision and deletion authority on every delivery.
-export const downloadExportPackage = functions.runWith({ timeoutSeconds: 540, memory: '512MB' }).https.onRequest(async (request, response) => {
+export const downloadOperationalExportPackage = functions.runWith({ timeoutSeconds: 540, memory: '512MB' }).https.onRequest(async (request, response) => {
   response.set({ 'Cache-Control': 'private, no-store', 'X-Content-Type-Options': 'nosniff', 'Referrer-Policy': 'no-referrer' })
+  const origin = request.get('origin'), project = process.env.GCLOUD_PROJECT
+  const allowed = new Set(['https://urai.app', 'https://urai.life', 'https://uraispatial.com', 'capacitor://localhost', 'http://localhost', 'https://localhost', `https://${project}.web.app`, `https://${project}.firebaseapp.com`])
+  if (origin) {
+    if (!allowed.has(origin)) { response.status(403).json({ error: 'origin_unavailable' }); return }
+    response.set({ 'Access-Control-Allow-Origin': origin, 'Vary': 'Origin', 'Access-Control-Allow-Headers': 'Authorization', 'Access-Control-Allow-Methods': 'GET, OPTIONS' })
+  }
+  if (request.method === 'OPTIONS') { response.status(204).end(); return }
   if (request.method !== 'GET') { response.set('Allow', 'GET').status(405).json({ error: 'method_not_allowed' }); return }
   try {
     const bearer = request.get('authorization')?.match(/^Bearer\s+(\S+)$/i)?.[1]

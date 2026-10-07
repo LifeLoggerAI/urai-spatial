@@ -21,6 +21,8 @@ function fixture(options = {}) {
   const clone = value => value instanceof Timestamp ? new Timestamp(value.value) : Array.isArray(value) ? value.map(clone) : value && typeof value === 'object' ? Object.fromEntries(Object.entries(value).map(([k, v]) => [k, clone(v)])) : value
   const records = new Map([
     [prefix, { ownerId: uid }],
+    [`consentRecords/${uid}_data_export`, { uid, purpose: 'data.export', consentTier: 'C7', policyVersion: '1.0.0', status: 'granted', expiresAt: new Timestamp(now + 7200000), receiptHash: 'c'.repeat(64) }],
+    [`privacyDeletionTombstones/${uid}`, { uid, exportConsentStatus: 'granted', exportConsentReceiptHash: 'c'.repeat(64), exportConsentPolicyVersion: '1.0.0', exportConsentExpiresAt: new Timestamp(now + 7200000) }],
     [policyPath, { version: 2, ownerId: uid, revision: 4, domains: clone(domains), enforcement: { state: 'fully-enforced' } }],
     [jobPath, { uid, state: 'ready', scopes: ['profile'], receiptId: 'synthetic-receipt', consentRevision: 4, exportFenceGeneration: 0,
       expiresAt: new Timestamp(now + 3600000), checksum: 'a'.repeat(64), exportObject: exportPath, exportGeneration: '11',
@@ -72,19 +74,19 @@ function fixture(options = {}) {
       async getMetadata() { stats.metadata++; await options.afterMetadata?.(stats.metadata, records, objects); const object = objects.get(location); if (!object || (settings?.generation && settings.generation !== object.generation)) throw new Error('synthetic object generation missing'); return [{ generation: object.generation, metadata: {} }] },
       async getSignedUrl() { stats.signed++; return ['https://synthetic.invalid/irrevocable-signed-url'] },
       async save(bytes) { objects.set(location, { generation: String(++generation), bytes: Buffer.from(bytes) }) },
-      createReadStream() { stats.streams++; const object = objects.get(location); assert.equal(object.generation, settings.generation); return { async *[Symbol.asyncIterator]() { yield object.bytes }, destroy() {} } },
+      createReadStream() { stats.streams++; const object = objects.get(location); assert.equal(object.generation, settings.generation); if (options.realPipeline) return require('node:stream').Readable.from([object.bytes]); return { async *[Symbol.asyncIterator]() { yield object.bytes }, destroy() {} } },
     }), async deleteFiles({ prefix }) { for (const key of objects.keys()) if (key.startsWith(prefix)) objects.delete(key) } }) }) }
   const module = { exports: {} }
   const filename = process.env.URAI_EXPORT_COMPILED_MODULE ?? path.resolve(__dirname, '../lib/apps/functions/src/privacyOperations.js')
   // Only actual strict-tsc output is accepted. No source transpilation fallback.
   vm.runInNewContext(fs.readFileSync(filename, 'utf8'), { module, exports: module.exports, Buffer, URLSearchParams,
-    Date: class extends Date { static now() { return options.clock?.value ?? now } }, process: { env: {} },
+    Date: class extends Date { static now() { return options.clock?.value ?? now } }, process: { env: { GCLOUD_PROJECT: 'urai-4dc1d' } },
     console: Object.fromEntries(['log', 'info', 'error', 'warn'].map(method => [method, (...args) => stats.logs.push(args)])),
     require: name => {
       if (name === 'firebase-functions/v1') return functions
       if (name === 'firebase-admin') return admin
       if (name === 'node:crypto') return crypto
-      if (name === 'node:stream/promises') return { pipeline: async (source, guard, response) => {
+      if (name === 'node:stream/promises') return options.realPipeline ? require(name) : { pipeline: async (source, guard, response) => {
         assert.ok([...records.keys()].some(k => k.includes('/privacyAudit/') && records.get(k).action === 'export_download_authorized'), 'audit must commit before stream')
         try {
           const delivered = []
@@ -97,12 +99,18 @@ function fixture(options = {}) {
       throw new Error(`Unexpected compiled module dependency: ${name}`)
     } }, { filename })
   const context = { auth: { uid, token: { auth_time: Math.floor(now / 1000) } }, rawRequest: { get: () => 'synthetic.invalid' } }
-  const descriptor = (data = {}, auth = context) => module.exports.getExportDownloadUrl({ jobId, ...data }, auth)
-  async function deliver(result, authenticated = true) {
+  const descriptor = (data = {}, auth = context) => module.exports.getOperationalExportDownloadUrl({ jobId, ...data }, auth)
+  async function deliver(result, authenticated = true, requestOverride = {}) {
     const query = Object.fromEntries(new URL(result.url, 'https://synthetic.invalid').searchParams)
-    const response = { headers: {}, statusCode: 200, headersSent: false, destroyed: false, writableFinished: false,
-      set(key, value) { Object.assign(this.headers, typeof key === 'string' ? { [key]: value } : key); return this }, status(code) { this.statusCode = code; return this }, json(value) { this.body = clone(value); return this }, once() {} }
-    await module.exports.downloadExportPackage({ method: 'GET', query, get: name => name === 'authorization' && authenticated ? 'Bearer synthetic-token' : undefined }, response)
+    let response = { headers: {}, statusCode: 200, headersSent: false, destroyed: false, writableFinished: false,
+      set(key, value) { Object.assign(this.headers, typeof key === 'string' ? { [key]: value } : key); return this }, status(code) { this.statusCode = code; return this }, json(value) { this.body = clone(value); return this }, end() {}, once() {} }
+    if (options.realPipeline) {
+      const headers = {}, bytes = [], { Writable } = require('node:stream')
+      response = new Writable({ highWaterMark: 1, write(chunk, _encoding, callback) { stats.chunks.push(Buffer.from(chunk)); bytes.push(Buffer.from(chunk)); response.headersSent = true; Promise.resolve(options.afterChunk?.(stats.chunks.length, records)).then(() => callback(), callback) } })
+      Object.assign(response, { headers, statusCode: 200, headersSent: false, set(key, value) { Object.assign(headers, typeof key === 'string' ? { [key]: value } : key); return this }, status(code) { this.statusCode = code; return this }, json(value) { this.body = clone(value); this.end(); return this } })
+      Object.defineProperty(response, 'body', { get: () => Buffer.concat(bytes).toString(), configurable: true })
+    }
+    await module.exports.downloadOperationalExportPackage({ method: 'GET', query, get: name => name === 'authorization' && authenticated ? 'Bearer synthetic-token' : requestOverride.headers?.[name], ...requestOverride }, response)
     return response
   }
   return { records, objects, stats, context, descriptor, deliver, handlers: module.exports, db, Timestamp }
@@ -112,7 +120,7 @@ test('completed owner descriptor uses revocable authenticated delivery and commi
   const f = fixture(), result = await f.descriptor()
   assert.equal(result.requiresAuthorization, true)
   assert.equal(result.ownerId, uid)
-  assert.ok(result.url.startsWith('/api/privacy/export/download?'))
+  assert.ok(result.url.startsWith('https://us-central1-urai-4dc1d.cloudfunctions.net/downloadOperationalExportPackage?'))
   assert.equal(result.downloadExpiresAt, now + 15 * 60000)
   assert.equal(f.stats.signed, 0)
   const response = await f.deliver(result)
@@ -294,4 +302,75 @@ test('a duplicate worker that did not claim cannot delete another preparing atte
   f.records.get(jobPath).state = 'preparing'
   await assert.rejects(f.handlers.processExportJob(event), { code: 'failed-precondition' })
   assert.equal(f.records.get(jobPath).state, 'preparing'); assert.ok(f.objects.has(exportPath))
+})
+
+for (const [label, change] of [
+  ['missing canonical grant', f => f.records.delete(`consentRecords/${uid}_data_export`)],
+  ['revoked canonical grant', f => { f.records.get(`consentRecords/${uid}_data_export`).status = 'revoked' }],
+  ['wrong canonical owner', f => { f.records.get(`consentRecords/${uid}_data_export`).uid = 'other' }],
+  ['wrong canonical purpose', f => { f.records.get(`consentRecords/${uid}_data_export`).purpose = 'memory' }],
+  ['wrong canonical tier', f => { f.records.get(`consentRecords/${uid}_data_export`).consentTier = 'C1' }],
+  ['wrong canonical policy', f => { f.records.get(`consentRecords/${uid}_data_export`).policyVersion = 'old' }],
+  ['expired canonical consent', f => { f.records.get(`consentRecords/${uid}_data_export`).expiresAt = new f.Timestamp(now) }],
+  ['malformed canonical expiry', f => { f.records.get(`consentRecords/${uid}_data_export`).expiresAt = 'not-a-date' }],
+  ['malformed canonical receipt', f => { f.records.get(`consentRecords/${uid}_data_export`).receiptHash = 'old' }],
+  ['missing canonical fence', f => f.records.delete(`privacyDeletionTombstones/${uid}`)],
+  ['canonical deletion', f => { f.records.get(`privacyDeletionTombstones/${uid}`).active = true }],
+  ['foreign canonical fence', f => { f.records.get(`privacyDeletionTombstones/${uid}`).uid = 'other' }],
+  ['canonical projection revoked', f => { f.records.get(`privacyDeletionTombstones/${uid}`).exportConsentStatus = 'revoked' }],
+  ['canonical projection receipt drift', f => { f.records.get(`privacyDeletionTombstones/${uid}`).exportConsentReceiptHash = 'd'.repeat(64) }],
+  ['canonical projection expiry drift', f => { f.records.get(`privacyDeletionTombstones/${uid}`).exportConsentExpiresAt = new f.Timestamp(now + 999999) }],
+  ['canonical projection version drift', f => { f.records.get(`privacyDeletionTombstones/${uid}`).exportConsentPolicyVersion = 'old' }],
+]) {
+  test(`ready local job and local grant cannot override ${label}`, async () => {
+    const f = fixture(), descriptor = await f.descriptor(); change(f)
+    await assert.rejects(f.descriptor(), { code: 'failed-precondition' })
+    assert.equal((await f.deliver(descriptor)).statusCode, 409); assert.equal(f.stats.streams, 0)
+  })
+}
+
+test('canonical replacement and expiry bind the descriptor identity independently of local revision', async () => {
+  const f = fixture(), descriptor = await f.descriptor()
+  for (const key of [`consentRecords/${uid}_data_export`, `privacyDeletionTombstones/${uid}`]) {
+    const value = f.records.get(key)
+    if (key.startsWith('consent')) value.receiptHash = 'd'.repeat(64)
+    else value.exportConsentReceiptHash = 'd'.repeat(64)
+  }
+  assert.equal((await f.deliver(descriptor)).statusCode, 409)
+  const next = await f.descriptor(); assert.notEqual(new URL(next.url).searchParams.get('authorityHash'), new URL(descriptor.url).searchParams.get('authorityHash'))
+  const g = fixture(), deadline = now + 1000
+  g.records.get(`consentRecords/${uid}_data_export`).expiresAt = new g.Timestamp(deadline)
+  g.records.get(`privacyDeletionTombstones/${uid}`).exportConsentExpiresAt = new g.Timestamp(deadline)
+  assert.equal((await g.descriptor()).downloadExpiresAt, deadline)
+})
+
+test('canonical revocation during metadata and between actual delivery chunks denies continuation', async () => {
+  const f = fixture({ afterMetadata: (_count, records) => { records.get(`consentRecords/${uid}_data_export`).status = 'revoked' } })
+  await assert.rejects(f.descriptor(), { code: 'failed-precondition' }); assert.equal(f.stats.signed, 0)
+  for (const path of [`consentRecords/${uid}_data_export`, `privacyDeletionTombstones/${uid}`]) {
+    const g = fixture({ afterChunk: (_count, records) => { if (path.startsWith('consent')) records.get(path).status = 'revoked'; else records.get(path).active = true } })
+    g.objects.get(exportPath).bytes = Buffer.alloc(150000, 65)
+    const descriptor = await g.descriptor(), response = await g.deliver(descriptor)
+    assert.equal(g.stats.chunks.length, 1); assert.equal(g.stats.chunks[0].length, 65536); assert.equal(response.destroyed, true)
+  }
+})
+
+test('strict compiled handler uses real Node pipeline to stop canonical revocation before second64KiB', async () => {
+  for (const revoke of [false, true]) {
+    const f = fixture({ realPipeline: true, afterChunk: (_count, records) => { if (revoke) records.get(`consentRecords/${uid}_data_export`).status = 'revoked' } })
+    f.objects.get(exportPath).bytes = Buffer.alloc(150000, 65)
+    const descriptor = await f.descriptor(), response = await f.deliver(descriptor)
+    assert.equal(Buffer.byteLength(response.body), revoke ? 65536 : 150000)
+    assert.equal(response.writableFinished, !revoke); assert.ok(f.stats.chunks.every(chunk => chunk.length <= 65536))
+  }
+})
+
+test('native and governed web CORS preflight accepts only pinned origins without bearer access', async () => {
+  for (const origin of ['capacitor://localhost', 'http://localhost', 'https://localhost', 'https://urai.app', 'https://urai-4dc1d.web.app']) {
+    const f = fixture(), descriptor = await f.descriptor(), response = await f.deliver(descriptor, false, { method: 'OPTIONS', headers: { origin } })
+    assert.equal(response.statusCode, 204); assert.equal(response.headers['Access-Control-Allow-Origin'], origin)
+    assert.equal(response.headers['Access-Control-Allow-Headers'], 'Authorization'); assert.equal(f.stats.auth.length, 0); assert.equal(f.stats.streams, 0)
+  }
+  const f = fixture(), descriptor = await f.descriptor(), response = await f.deliver(descriptor, true, { headers: { origin: 'https://foreign.example' } })
+  assert.equal(response.statusCode, 403); assert.equal(f.stats.auth.length, 0); assert.equal(f.stats.streams, 0)
 })

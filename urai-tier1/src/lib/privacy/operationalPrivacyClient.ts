@@ -51,7 +51,7 @@ export function getOperationalPassportSnapshot() { return callOperationalPrivacy
 export function createOperationalExportRequest(scopes: string[], suppliedOperationId?: string) {
   return callOperationalPrivacyFunction('createExportRequest', { scopes, operationId: suppliedOperationId ?? operationId('export') })
 }
-export function getOperationalExportDownloadUrl(payload: { jobId: string; file?: 'export' | 'manifest' | 'runtime'; assetId?: string }) { return callOperationalPrivacyFunction('getExportDownloadUrl', payload) }
+export function getOperationalExportDownloadUrl(payload: { jobId: string; file?: 'export' | 'manifest' | 'runtime'; assetId?: string }) { return callOperationalPrivacyFunction('getOperationalExportDownloadUrl', payload) }
 export async function saveOperationalExportDownload(result: PrivacyCallableResult, isCurrent: () => boolean) {
   const auth = getAuth(app)
   const user = auth.currentUser
@@ -63,7 +63,7 @@ export async function saveOperationalExportDownload(result: PrivacyCallableResul
   }
   requireCurrent()
   if (typeof result.url !== 'string' || result.requiresAuthorization !== true) throw new Error('Authenticated export delivery is required.')
-  const contents = await fetchAuthorizedOperationalExport({ url: result.url, origin: window.location.origin, file,
+  const contents = await fetchAuthorizedOperationalExport({ url: result.url, origin: window.location.origin, projectId: app.options.projectId ?? '', jobId: String(result.jobId ?? ''), assetId: typeof result.assetId === 'string' ? result.assetId : undefined, file, current: () => !!user && auth.currentUser === user && isCurrent(),
     getIdToken: async () => { requireCurrent(); const token = await user!.getIdToken(true); requireCurrent(); return token },
   })
   requireCurrent()

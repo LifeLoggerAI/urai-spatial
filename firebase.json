@@ -12,7 +12,7 @@
       {
         "source": "/api/privacy/export/download",
         "function": {
-          "functionId": "downloadExportPackage",
+          "functionId": "downloadOperationalExportPackage",
           "region": "us-central1"
         }
       },

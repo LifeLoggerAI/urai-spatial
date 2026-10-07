@@ -14,6 +14,7 @@
       "repo": "LifeLoggerAI/asset-factory",
       "criticality": "asset-lane",
       "canonicalSystemId": "asset-factory",
+      "integrationGate": "gated pending exact provider-to-consumer acceptance",
       "sourceStatus": "DISCOVERED",
       "integrationAcceptance": "NOT_ASSESSED"
     },
@@ -23,6 +24,7 @@
       "repo": "LifeLoggerAI/urai-studio",
       "criticality": "handoff-lane",
       "canonicalSystemId": "urai-studio",
+      "integrationGate": "gated pending exact provider-to-consumer acceptance",
       "sourceStatus": "DISCOVERED",
       "integrationAcceptance": "NOT_ASSESSED"
     },
