@@ -11,10 +11,10 @@ const run = args => spawnSync(process.execPath, ['scripts/validate-life-model-re
   cwd: root, encoding: 'utf8', env: { ...process.env, GITHUB_SHA: 'a'.repeat(40) },
 })
 
-test('strict default invocation reaches certification checks and rejects the pending real receipt', () => {
+test('strict default invocation reaches evidence checks and rejects the pending real receipt', () => {
   const result = run(['--strict'])
   assert.equal(result.status, 1)
-  assert.match(result.stderr, /strict launch certification requires certified=true/)
+  assert.match(result.stderr, /strict terminal receipt validation requires certified=true/)
   assert.match(result.stderr, /receipt candidate SHA does not match/)
   assert.doesNotMatch(result.stderr, /ENOENT/)
 })
@@ -50,4 +50,18 @@ test('unknown flags and ambiguous receipt paths fail closed', () => {
     assert.match(result.stderr, /Usage:/)
     assert.doesNotMatch(result.stdout, /CERTIFIED/)
   }
+})
+
+test('malformed JSON and null reference arrays fail closed without certification output', () => {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'urai-life-receipt-malformed-'))
+  try {
+    const file = path.join(directory, 'receipt.json')
+    for (const content of ['{invalid', 'null', JSON.stringify({ schemaVersion: 'urai-life-model-release-receipt-v1', certified: true, receiptRefs: null, humanApprovalRefs: null })]) {
+      fs.writeFileSync(file, content)
+      const result = run([file, '--strict'])
+      assert.equal(result.status, 1)
+      assert.match(result.stderr, /\[FAIL\]/)
+      assert.doesNotMatch(result.stdout, /CERTIFIED/)
+    }
+  } finally { fs.rmSync(directory, { recursive: true, force: true }) }
 })
