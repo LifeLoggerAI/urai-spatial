@@ -93,6 +93,13 @@ async function exerciseKeyboardPanel(page: Page, slot: string, capture = true) {
   const closeBounds = await close.boundingBox()
   expect(closeBounds!.width).toBeGreaterThanOrEqual(48)
   expect(closeBounds!.height).toBeGreaterThanOrEqual(48)
+  const openingUrl = page.url()
+  await page.keyboard.press('Escape')
+  await expect(panel).toHaveCount(0)
+  await expect(page.locator('[data-urai-adam-launcher]')).toBeFocused()
+  expect(page.url(), 'Escape on Close must dismiss the panel before any realm return').toBe(openingUrl)
+  await page.keyboard.press('Enter')
+  await expect(close).toBeFocused()
   await page.keyboard.press('Tab')
   const about = panel.getByText('About Adam', { exact: true })
   await expect(about).toBeFocused()
@@ -218,7 +225,7 @@ test('Passport no-WebGL keeps the founder slot and protected deletion text clear
   await attachPlacement(page, info, 'passport-no-webgl-320x568', { launcher: initial.geometry, deletion })
 })
 
-const protectedRoutes = [
+const protectedRoutes: Array<{ route: string; slot: string; noWebGL?: boolean; fallbackSlot?: string }> = [
   { route: '/privacy-policy', slot: 'privacy-policy' },
   { route: '/privacy', slot: 'privacy-legal' },
   { route: '/terms', slot: 'terms-legal' },
@@ -232,6 +239,11 @@ const protectedRoutes = [
   { route: '/spatial/interpretive-world', slot: 'interpretive-world-fallback' },
   { route: '/spatial/memory-world', slot: 'memory-world-unavailable' },
   { route: '/life-movie', slot: 'life-movie-unavailable' },
+  { route: '/mirror', slot: 'mirror-entry' },
+  { route: '/possible-futures', slot: 'possible-futures-controls' },
+  { route: '/launch', slot: 'launch-actions' },
+  { route: '/life-map', slot: 'life-map-unsigned-controls', fallbackSlot: 'life-map-signed-out' },
+  { route: '/unwind', slot: 'life-map-unsigned-controls', fallbackSlot: 'life-map-signed-out' },
 ]
 
 async function disableWebGL(page: Page) {
@@ -248,7 +260,7 @@ async function inspectTextAndControls(page: Page, slot: string) {
   const { launcher, geometry } = await assertInlineLauncher(page, slot)
   const overlaps = await launcher.evaluate(element => {
     const r = element.getBoundingClientRect()
-    return [...document.querySelectorAll('main h1, main h2, main p, main label, main input, main textarea, main button, main a')].filter(target => {
+    return [...document.querySelectorAll('main h1, main h2, main p, main label, main input, main textarea, main button, main a, [data-testid="urai-life-map-signed-out-disclosure"] strong, [data-testid="urai-life-map-signed-out-disclosure"] span, [data-testid="urai-life-map-signed-out-disclosure"] button')].filter(target => {
       if (target === element || target.contains(element)) return false
       const t = target.getBoundingClientRect()
       return t.width > 2 && t.height > 2 && r.left < t.right && r.right > t.left && r.top < t.bottom && r.bottom > t.top
@@ -272,11 +284,16 @@ for (const profile of [
       await page.emulateMedia({ reducedMotion: 'reduce' })
       if (profile.noWebGL || surface.noWebGL) await disableWebGL(page)
       await page.goto(surface.route, { waitUntil: 'domcontentloaded' })
-      await info.attach(`${surface.slot}-${profile.width}x${profile.height}-initial.png`, { body: await page.screenshot(), contentType: 'image/png' })
-      const launcher = await inspectTextAndControls(page, surface.slot)
-      await attachPlacement(page, info, `${surface.slot}-${profile.width}x${profile.height}-flow`, launcher)
+      const slot = profile.noWebGL && surface.fallbackSlot ? surface.fallbackSlot : surface.slot
+      const anchor = page.locator(`[data-urai-adam-launcher-slot="${slot}"]`)
+      await expect(anchor).toHaveAttribute('data-urai-adam-launcher-ready', 'true')
+      await expect(anchor.locator('[data-urai-adam-launcher]')).toHaveCount(1)
+      await expect(page.locator('canvas [data-urai-adam-launcher], [hidden] [data-urai-adam-launcher], [inert] [data-urai-adam-launcher]')).toHaveCount(0)
+      await info.attach(`${slot}-${profile.width}x${profile.height}-initial.png`, { body: await page.screenshot(), contentType: 'image/png' })
+      const launcher = await inspectTextAndControls(page, slot)
+      await attachPlacement(page, info, `${slot}-${profile.width}x${profile.height}-flow`, launcher)
       const urlBefore = page.url()
-      await exerciseKeyboardPanel(page, surface.slot, false)
+      await exerciseKeyboardPanel(page, slot, profile.width === 320 && ['xr-portals', 'mirror-entry', 'possible-futures-controls'].includes(slot))
       expect(page.url(), 'Closing the founder panel must preserve the current route').toBe(urlBefore)
       const headings = page.locator('main h1, main h2')
       for (let index = 0; index < await headings.count(); index++) {
@@ -291,7 +308,20 @@ for (const profile of [
         })
         expect(collision, `${surface.route} heading must remain clear after scrolling`).toBe(false)
       }
-      if (surface.slot === 'xr-portals') {
+      if (slot === 'xr-portals') {
+        const groups = await page.locator('main').evaluate(element => {
+          const selectors = ['header', '[aria-label="XR and comfort controls"]', '[aria-label="Accessible portal equivalents"]', '[aria-label="Touch movement controls"]']
+          return selectors.map(selector => element.querySelector(selector)).filter((node): node is Element => Boolean(node)).map(node => {
+            const r = node.getBoundingClientRect()
+            return { label: node.getAttribute('aria-label') ?? 'XR status and consent HUD', left: r.left, right: r.right, top: r.top, bottom: r.bottom, width: r.width, height: r.height }
+          }).filter(rect => rect.width > 2 && rect.height > 2)
+        })
+        for (let a = 0; a < groups.length; a++) for (let b = a + 1; b < groups.length; b++) {
+          const first = groups[a], second = groups[b]
+          const collides = first.left < second.right && first.right > second.left && first.top < second.bottom && first.bottom > second.top
+          expect(collides, `${first.label} must not cover ${second.label}`).toBe(false)
+        }
+        await info.attach(`xr-safe-flow-${profile.width}x${profile.height}.json`, { body: JSON.stringify(groups), contentType: 'application/json' })
         const comfort = page.getByRole('button', { name: /^(Reduced motion on|Reduce motion)$/ })
         await comfort.scrollIntoViewIfNeeded()
         const accessible = await comfort.evaluate(element => {
@@ -302,8 +332,30 @@ for (const profile of [
         expect(accessible.width).toBeGreaterThanOrEqual(48)
         expect(accessible.height).toBeGreaterThanOrEqual(48)
         expect(accessible.reachable, 'XR reduced-motion control must remain reachable').toBe(true)
+        await attachPlacement(page, info, `xr-comfort-${profile.width}x${profile.height}`, accessible)
       }
-      await inspectTextAndControls(page, surface.slot)
+      if (slot === 'possible-futures-controls') {
+        const question = page.getByRole('textbox', { name: 'What do you want to explore?', exact: true })
+        await question.scrollIntoViewIfNeeded()
+        await question.fill('A privately held hypothetical question')
+        await assertCopyIsUnobstructed(question)
+        await exerciseKeyboardPanel(page, slot, false)
+        await expect(question).toHaveValue('A privately held hypothetical question')
+        await question.scrollIntoViewIfNeeded()
+        await attachPlacement(page, info, `possible-futures-input-${profile.width}x${profile.height}`, { unchangedQuestion: true })
+      }
+      if (surface.fallbackSlot) {
+        await expect(page).toHaveURL(/\/life-map/)
+        const returnHome = page.getByRole('button', { name: 'Return Home', exact: true }).first()
+        await returnHome.scrollIntoViewIfNeeded()
+        const bounds = await returnHome.boundingBox()
+        expect(bounds!.width).toBeGreaterThanOrEqual(48)
+        expect(bounds!.height).toBeGreaterThanOrEqual(48)
+        await expect(returnHome).toBeInViewport({ ratio: 1 })
+        await assertCopyIsUnobstructed(returnHome)
+        await attachPlacement(page, info, `life-map-return-${profile.width}x${profile.height}`, bounds)
+      }
+      await inspectTextAndControls(page, slot)
       expect(errors).toEqual([])
     })
   }
@@ -318,6 +370,7 @@ for (const profile of [{ width: 390, height: 844, noWebGL: false }, { width: 568
     await page.goto('/spatial/memory-world?demo=1&memoryId=demo%3Aquiet-reset&manifestId=replay-recovery-thread&node=quiet-reset', { waitUntil: 'domcontentloaded' })
     const slot = profile.noWebGL ? 'memory-world-fallback' : 'memory-world-controls'
     const geometry = await inspectTextAndControls(page, slot)
+    await expect(page.locator('canvas [data-urai-adam-launcher]')).toHaveCount(0)
     await attachPlacement(page, info, `memory-world-${profile.width}x${profile.height}-flow`, geometry)
     const before = page.url()
     await exerciseKeyboardPanel(page, slot, false)

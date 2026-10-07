@@ -1,3 +1,5 @@
+import AdamLauncherSlot from '@/spatial/adam/AdamLauncherSlot'
+
 const launchDestinations = [
   ['/login', 'Enter your private world', 'Sign in or create your UrAi identity.'],
   ['/life-map', 'Life Map', 'Navigate your private memories, people, places, and chapters.'],
@@ -27,6 +29,7 @@ export default function LaunchPage() {
         <div className="launchActions">
           <a href="/login">Enter UrAi</a>
           <a href="/demo">Open disclosed demo</a>
+          <AdamLauncherSlot name="launch-actions" />
         </div>
       </section>
 

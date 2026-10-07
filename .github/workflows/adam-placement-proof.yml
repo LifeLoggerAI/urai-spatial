@@ -22,16 +22,26 @@ on:
       - 'urai-tier1/src/spatial/memory-world/MemoryWorldRuntime.tsx'
       - 'urai-tier1/src/app/life-movie/LifeMovieClient.tsx'
       - 'urai-tier1/tests/accessibility-performance-adam-placement.spec.ts'
+      - 'urai-tier1/src/app/mirror/MirrorBareEntryGuard.tsx'
+      - 'urai-tier1/src/app/possible-futures/PossibleFuturesClient.tsx'
+      - 'urai-tier1/src/app/launch/page.tsx'
+      - 'urai-tier1/src/spatial/lifemap/SpatialLifeMapCanonical.tsx'
+      - 'urai-tier1/src/app/spatial/ar-vr/UraiQuestEntryWorld.module.css'
+      - 'scripts/visual-proof-transport.mjs'
+      - 'urai-tier1/tests/visual-proof-transport.test.mjs'
   workflow_dispatch:
 
 permissions:
   contents: read
+  actions: read
 
 concurrency:
   group: adam-placement-proof-${{ github.event.pull_request.number || github.ref }}-${{ github.event.pull_request.head.sha || github.sha }}
   cancel-in-progress: true
 
 env:
+  URAI_PROOF_GROUP: adam-placement
+  URAI_EXACT_HEAD: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
   URAI_PROOF_SOURCE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
   PLAYWRIGHT_BROWSERS_PATH: '0'
   NEXT_PUBLIC_URAI_ACCEPTANCE_FIXTURES: '1'
@@ -77,6 +87,9 @@ jobs:
           corepack enable
           pnpm install --frozen-lockfile
 
+      - name: Verify bounded native transport behavior
+        run: node --test urai-tier1/tests/visual-proof-transport.test.mjs
+
       - name: Typecheck and build exact static donor
         run: |
           pnpm --dir urai-tier1 typecheck
@@ -116,9 +129,9 @@ jobs:
           for suite in report.get('suites', []):
               collect(suite)
           images = [{'path': str(p.relative_to(root)), 'sha256': hashlib.sha256(p.read_bytes()).hexdigest(), 'bytes': p.stat().st_size} for p in sorted(root.rglob('*.png'))]
-          receipt = {'schemaVersion': 'urai-adam-placement-proof-v1', 'repository': os.environ['GITHUB_REPOSITORY'], 'exactHead': source, 'checkoutMatchesExactHead': True, 'runId': os.environ['GITHUB_RUN_ID'], 'runAttempt': os.environ['GITHUB_RUN_ATTEMPT'], 'scope': 'focused-donor-founder-launcher-placement-only', 'productionVerified': False, 'deviceVerified': False, 'releaseAccepted': False, 'expectedTests': 53, 'recordedTests': len(tests), 'testResults': [{'status': t.get('status'), 'attempts': [{'status': r.get('status'), 'retry': r.get('retry')} for r in t.get('results', [])]} for t in tests], 'images': images}
+          receipt = {'schemaVersion': 'urai-adam-placement-proof-v1', 'repository': os.environ['GITHUB_REPOSITORY'], 'exactHead': source, 'checkoutMatchesExactHead': True, 'runId': os.environ['GITHUB_RUN_ID'], 'runAttempt': os.environ['GITHUB_RUN_ATTEMPT'], 'scope': 'focused-donor-founder-launcher-placement-only', 'productionVerified': False, 'deviceVerified': False, 'releaseAccepted': False, 'expectedTests': 68, 'recordedTests': len(tests), 'testResults': [{'status': t.get('status'), 'attempts': [{'status': r.get('status'), 'retry': r.get('retry')} for r in t.get('results', [])]} for t in tests], 'images': images}
           (root / 'receipt.json').write_text(json.dumps(receipt, indent=2) + '\n')
-          assert len(tests) == 53, 'Missing or extra test coverage'
+          assert len(tests) == 68, 'Missing or extra test coverage'
           assert images, 'Literal screenshot receipts are required'
           assert all(t.get('status') == 'expected' for t in tests), 'Browser assertion failed'
           if any(r.get('retry', 0) > 0 for t in tests for r in t.get('results', [])):
@@ -126,21 +139,8 @@ jobs:
           assert all(r.get('status') == 'passed' for t in tests for r in t.get('results', [])), 'Not every test passed'
           PY
 
-      - name: Enforce bounded complete native evidence
-        if: always()
-        shell: bash
-        run: |
-          set -euo pipefail
-          python3 - <<'PY'
-          import pathlib
-          files = [p for p in pathlib.Path('artifacts/adam-placement').rglob('*') if p.is_file()]
-          assert files, 'No native proof produced'
-          total = sum(p.stat().st_size for p in files)
-          assert total <= 23 * 1024 * 1024, f'Native proof requires bounded part transport: {total} bytes'
-          print(f'Complete focused native evidence: {len(files)} files, {total} bytes')
-          PY
-
       - name: Upload exact-head focused native proof
+        id: original-visual-proof
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
@@ -148,3 +148,160 @@ jobs:
           path: artifacts/adam-placement
           if-no-files-found: error
           retention-days: 90
+
+      - name: Partition the original native visual archive
+        id: bounded-visual-transport
+        if: ${{ always() && steps.original-visual-proof.outputs.artifact-id != '' }}
+        timeout-minutes: 5
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          URAI_ORIGINAL_ARTIFACT_ID: ${{ steps.original-visual-proof.outputs.artifact-id }}
+          URAI_ORIGINAL_ARTIFACT_DIGEST: ${{ steps.original-visual-proof.outputs.artifact-digest }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          node scripts/visual-proof-transport.mjs prepare-native \
+            --output "artifacts/adam-placement-transport"
+
+      - name: Upload bounded visual transport manifest
+        id: bounded-visual-manifest
+        if: ${{ always() && steps.bounded-visual-transport.outcome == 'success' }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: adam-placement-transport-${{ env.URAI_EXACT_HEAD }}-${{ github.run_id }}-${{ github.run_attempt }}-manifest
+          path: artifacts/adam-placement-transport/manifest.json
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 0
+
+      - name: Upload bounded visual archive part 01
+        id: bounded-visual-part-01
+        if: ${{ always() && steps.bounded-visual-transport.outcome == 'success' && steps.bounded-visual-transport.outputs.part_count >= 1 }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: adam-placement-transport-${{ env.URAI_EXACT_HEAD }}-${{ github.run_id }}-${{ github.run_attempt }}-part-01
+          path: artifacts/adam-placement-transport/adam-placement.zip.part-01
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 0
+
+      - name: Upload bounded visual archive part 02
+        id: bounded-visual-part-02
+        if: ${{ always() && steps.bounded-visual-transport.outcome == 'success' && steps.bounded-visual-transport.outputs.part_count >= 2 }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: adam-placement-transport-${{ env.URAI_EXACT_HEAD }}-${{ github.run_id }}-${{ github.run_attempt }}-part-02
+          path: artifacts/adam-placement-transport/adam-placement.zip.part-02
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 0
+
+      - name: Upload bounded visual archive part 03
+        id: bounded-visual-part-03
+        if: ${{ always() && steps.bounded-visual-transport.outcome == 'success' && steps.bounded-visual-transport.outputs.part_count >= 3 }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: adam-placement-transport-${{ env.URAI_EXACT_HEAD }}-${{ github.run_id }}-${{ github.run_attempt }}-part-03
+          path: artifacts/adam-placement-transport/adam-placement.zip.part-03
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 0
+
+      - name: Upload bounded visual archive part 04
+        id: bounded-visual-part-04
+        if: ${{ always() && steps.bounded-visual-transport.outcome == 'success' && steps.bounded-visual-transport.outputs.part_count >= 4 }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: adam-placement-transport-${{ env.URAI_EXACT_HEAD }}-${{ github.run_id }}-${{ github.run_attempt }}-part-04
+          path: artifacts/adam-placement-transport/adam-placement.zip.part-04
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 0
+
+      - name: Upload bounded visual archive part 05
+        id: bounded-visual-part-05
+        if: ${{ always() && steps.bounded-visual-transport.outcome == 'success' && steps.bounded-visual-transport.outputs.part_count >= 5 }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: adam-placement-transport-${{ env.URAI_EXACT_HEAD }}-${{ github.run_id }}-${{ github.run_attempt }}-part-05
+          path: artifacts/adam-placement-transport/adam-placement.zip.part-05
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 0
+
+      - name: Upload bounded visual archive part 06
+        id: bounded-visual-part-06
+        if: ${{ always() && steps.bounded-visual-transport.outcome == 'success' && steps.bounded-visual-transport.outputs.part_count >= 6 }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: adam-placement-transport-${{ env.URAI_EXACT_HEAD }}-${{ github.run_id }}-${{ github.run_attempt }}-part-06
+          path: artifacts/adam-placement-transport/adam-placement.zip.part-06
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 0
+
+      - name: Upload bounded visual archive part 07
+        id: bounded-visual-part-07
+        if: ${{ always() && steps.bounded-visual-transport.outcome == 'success' && steps.bounded-visual-transport.outputs.part_count >= 7 }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: adam-placement-transport-${{ env.URAI_EXACT_HEAD }}-${{ github.run_id }}-${{ github.run_attempt }}-part-07
+          path: artifacts/adam-placement-transport/adam-placement.zip.part-07
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 0
+
+      - name: Upload bounded visual archive part 08
+        id: bounded-visual-part-08
+        if: ${{ always() && steps.bounded-visual-transport.outcome == 'success' && steps.bounded-visual-transport.outputs.part_count >= 8 }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: adam-placement-transport-${{ env.URAI_EXACT_HEAD }}-${{ github.run_id }}-${{ github.run_attempt }}-part-08
+          path: artifacts/adam-placement-transport/adam-placement.zip.part-08
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 0
+
+      - name: Verify separate native transport artifact identities and byte limits
+        id: verified-visual-transport
+        if: ${{ always() && steps.bounded-visual-transport.outcome == 'success' }}
+        timeout-minutes: 5
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          URAI_ORIGINAL_ARTIFACT_ID: ${{ steps.original-visual-proof.outputs.artifact-id }}
+          URAI_ORIGINAL_ARTIFACT_DIGEST: ${{ steps.original-visual-proof.outputs.artifact-digest }}
+          URAI_MANIFEST_ID: ${{ steps.bounded-visual-manifest.outputs.artifact-id }}
+          URAI_MANIFEST_DIGEST: ${{ steps.bounded-visual-manifest.outputs.artifact-digest }}
+          URAI_PART_01_ID: ${{ steps.bounded-visual-part-01.outputs.artifact-id }}
+          URAI_PART_01_DIGEST: ${{ steps.bounded-visual-part-01.outputs.artifact-digest }}
+          URAI_PART_02_ID: ${{ steps.bounded-visual-part-02.outputs.artifact-id }}
+          URAI_PART_02_DIGEST: ${{ steps.bounded-visual-part-02.outputs.artifact-digest }}
+          URAI_PART_03_ID: ${{ steps.bounded-visual-part-03.outputs.artifact-id }}
+          URAI_PART_03_DIGEST: ${{ steps.bounded-visual-part-03.outputs.artifact-digest }}
+          URAI_PART_04_ID: ${{ steps.bounded-visual-part-04.outputs.artifact-id }}
+          URAI_PART_04_DIGEST: ${{ steps.bounded-visual-part-04.outputs.artifact-digest }}
+          URAI_PART_05_ID: ${{ steps.bounded-visual-part-05.outputs.artifact-id }}
+          URAI_PART_05_DIGEST: ${{ steps.bounded-visual-part-05.outputs.artifact-digest }}
+          URAI_PART_06_ID: ${{ steps.bounded-visual-part-06.outputs.artifact-id }}
+          URAI_PART_06_DIGEST: ${{ steps.bounded-visual-part-06.outputs.artifact-digest }}
+          URAI_PART_07_ID: ${{ steps.bounded-visual-part-07.outputs.artifact-id }}
+          URAI_PART_07_DIGEST: ${{ steps.bounded-visual-part-07.outputs.artifact-digest }}
+          URAI_PART_08_ID: ${{ steps.bounded-visual-part-08.outputs.artifact-id }}
+          URAI_PART_08_DIGEST: ${{ steps.bounded-visual-part-08.outputs.artifact-digest }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          node scripts/visual-proof-transport.mjs verify-native-uploads \
+            --manifest "artifacts/adam-placement-transport/manifest.json" \
+            --output "artifacts/adam-placement-transport/upload-receipt.json"
+
+      - name: Upload verified native visual transport receipt
+        if: ${{ always() && steps.verified-visual-transport.outcome == 'success' }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: adam-placement-transport-${{ env.URAI_EXACT_HEAD }}-${{ github.run_id }}-${{ github.run_attempt }}-upload-receipt
+          path: artifacts/adam-placement-transport/upload-receipt.json
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 0
+

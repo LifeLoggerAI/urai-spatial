@@ -72,11 +72,20 @@ export default function AdamPresenceRuntime() {
     // Only the slot's own mounted effect may make it eligible for a portal.
     // Inserting into streamed server markup before its hydration causes React #418.
     const syncAnchor = () => {
-      const anchor = document.querySelector<HTMLElement>('[data-urai-adam-launcher-slot][data-urai-adam-launcher-ready="true"]')
+      // Canvas fallback children hydrate even while the canvas is rendering. They
+      // are semantic fallback content, not a visible place for an interactive UI.
+      const anchor = [...document.querySelectorAll<HTMLElement>('[data-urai-adam-launcher-slot][data-urai-adam-launcher-ready="true"]')].find(slot => {
+        if (slot.closest('canvas,[hidden],[inert],[aria-hidden="true"]')) return false
+        for (let parent: HTMLElement | null = slot; parent; parent = parent.parentElement) {
+          const style = getComputedStyle(parent)
+          if (style.display === 'none' || style.visibility === 'hidden' || style.visibility === 'collapse') return false
+        }
+        return true
+      }) ?? null
       setLauncherAnchor(current => current === anchor ? current : anchor)
     }
     const observer = new MutationObserver(syncAnchor)
-    observer.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['data-urai-adam-launcher-ready'] })
+    observer.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['data-urai-adam-launcher-ready', 'hidden', 'inert', 'aria-hidden', 'class', 'style'] })
     syncAnchor()
     return () => observer.disconnect()
   }, [pathname])

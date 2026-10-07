@@ -1,5 +1,6 @@
 'use client'
 
+import AdamLauncherSlot from '@/spatial/adam/AdamLauncherSlot'
 import { useEffect, useState, type ReactNode } from 'react'
 
 const EXPLICIT_DEMO_HREF = '/mirror?memoryId=demo%3Amirror-preview&node=mirror-preview&demo=1'
@@ -39,6 +40,7 @@ export default function MirrorBareEntryGuard({ children }: MirrorBareEntryGuardP
           <a href={EXPLICIT_DEMO_HREF}>Open disclosed demo</a>
           <a href="/passport">Open Passport</a>
           <a href="/">Return home</a>
+          <AdamLauncherSlot name="mirror-entry" />
         </nav>
       </section>
       <style>{bareEntryCss}</style>

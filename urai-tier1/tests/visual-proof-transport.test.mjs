@@ -30,7 +30,7 @@ function fixture(t, length = PART_BYTES + 107, proofGroup = 'visual') {
   return { root, archive, archivePath, binding, outputDirectory, manifest, manifestPath: path.join(outputDirectory, 'manifest.json'), partPaths: manifest.parts.map(part => path.join(outputDirectory, part.name)), outputPath: path.join(root, 'reconstructed.zip') }
 }
 const reconstruct = (f, overrides = {}) => reconstructArchive({ ...f, expected: f.binding, ...overrides })
-const metadata = (binding, overrides = {}) => ({ id: Number(binding.artifactId), name: binding.proofGroup === 'accessibility-performance' ? `accessibility-performance-evidence-${binding.sourceSha}` : `continuous-spatial-visual-proof-${binding.proofGroup}-${binding.sourceSha}`, expired: false,
+const metadata = (binding, overrides = {}) => ({ id: Number(binding.artifactId), name: binding.proofGroup === 'adam-placement' ? `adam-placement-proof-${binding.sourceSha}` : binding.proofGroup === 'accessibility-performance' ? `accessibility-performance-evidence-${binding.sourceSha}` : `continuous-spatial-visual-proof-${binding.proofGroup}-${binding.sourceSha}`, expired: false,
   size_in_bytes: 100, digest: `sha256:${binding.archiveSha256}`, workflow_run: { id: Number(binding.runId) }, ...overrides })
 
 test('partitioning is deterministic and reassembly retains every original byte', t => {
@@ -166,6 +166,25 @@ test('fixed accessibility profile retains the exact archive and cannot substitut
   await assert.rejects(prepareNativeArchive({ outputDirectory: path.join(f.root, 'wrong-profile'), env: nativeEnv(f.binding), fetchImpl }), /identity\/name/)
 })
 
+test('founder placement profile preserves native bytes and rejects another proof profile', async t => {
+  const f = fixture(t, PART_BYTES + 107, 'adam-placement')
+  assert.equal(f.manifest.originalArtifactName, `adam-placement-proof-${sourceSha}`)
+  assert.equal(f.manifest.archiveName, 'adam-placement.zip')
+  assert.equal(f.manifest.parts[0].name, 'adam-placement.zip.part-01')
+  assert.equal(f.manifest.parts[0].artifactName, `adam-placement-transport-${sourceSha}-100-2-part-01`)
+  reconstruct(f)
+  assert.deepEqual(fs.readFileSync(f.outputPath), f.archive)
+  let wrongName = false
+  const fetchImpl = async url => {
+    if (url.endsWith('/zip')) return new Response(null, { status: 302, headers: { location: 'https://storage.test/original-founder-placement' } })
+    if (url.startsWith('https://api.github.com/')) return Response.json(metadata(f.binding, { size_in_bytes: f.archive.length, ...(wrongName ? { name: `continuous-spatial-visual-proof-visual-${sourceSha}` } : {}) }))
+    return new Response(f.archive)
+  }
+  assert.deepEqual(await prepareNativeArchive({ outputDirectory: path.join(f.root, 'native-placement'), env: nativeEnv(f.binding), fetchImpl }), f.manifest)
+  wrongName = true
+  await assert.rejects(prepareNativeArchive({ outputDirectory: path.join(f.root, 'wrong-placement-profile'), env: nativeEnv(f.binding), fetchImpl }), /identity\/name/)
+})
+
 for (const failure of ['insecure-redirect', 'credential-redirect', 'wrong-hash', 'truncated-download', 'oversized-download', 'missing-token']) test(`native preparation fails closed for ${failure}`, async t => {
   const f = fixture(t, 100)
   const outputDirectory = path.join(f.root, 'bad-native')
@@ -281,3 +300,4 @@ test('a recovered metadata response cannot weaken digest or run ownership', asyn
   await assert.rejects(prepareNativeArchive({ outputDirectory: path.join(f.root, 'wrong-digest'), env: nativeEnv(f.binding), fetchImpl, delay: async () => {} }), /digest mismatch/)
   assert.equal(calls, 2)
 })
+

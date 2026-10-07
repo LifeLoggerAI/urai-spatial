@@ -10,17 +10,17 @@ export const ARTIFACT_BYTES = 24 * 1024 * 1024
 export const MAX_PARTS = 8
 export const REPOSITORY = 'LifeLoggerAI/urai-spatial'
 const SCHEMA = 'urai-visual-proof-transport-v1'
-const GROUPS = ['visual', 'desktop', 'mobile', 'portal-fallback', 'accessibility-performance']
+const GROUPS = ['visual', 'desktop', 'mobile', 'portal-fallback', 'accessibility-performance', 'adam-placement']
 const sha = bytes => createHash('sha256').update(bytes).digest('hex')
 const requireValue = (ok, message) => { if (!ok) throw new Error(message) }
 const digest = value => typeof value === 'string' && /^[0-9a-f]{64}$/.test(value)
 const positiveId = value => typeof value === 'string' && /^[1-9][0-9]{0,15}$/.test(value)
-const archiveName = binding => binding.proofGroup === 'accessibility-performance' ? 'accessibility-performance.zip' : 'visual-proof.zip'
-const originalArtifactName = binding => binding.proofGroup === 'accessibility-performance'
+const archiveName = binding => binding.proofGroup === 'adam-placement' ? 'adam-placement.zip' : binding.proofGroup === 'accessibility-performance' ? 'accessibility-performance.zip' : 'visual-proof.zip'
+const originalArtifactName = binding => binding.proofGroup === 'adam-placement' ? `adam-placement-proof-${binding.sourceSha}` : binding.proofGroup === 'accessibility-performance'
   ? `accessibility-performance-evidence-${binding.sourceSha}`
   : `continuous-spatial-visual-proof-${binding.proofGroup}-${binding.sourceSha}`
 const partName = (index, binding) => `${archiveName(binding)}.part-${String(index).padStart(2, '0')}`
-const prefix = binding => binding.proofGroup === 'accessibility-performance'
+const prefix = binding => binding.proofGroup === 'adam-placement' ? `adam-placement-transport-${binding.sourceSha}-${binding.runId}-${binding.runAttempt}` : binding.proofGroup === 'accessibility-performance'
   ? `accessibility-performance-transport-${binding.sourceSha}-${binding.runId}-${binding.runAttempt}`
   : `continuous-spatial-visual-transport-${binding.proofGroup}-${binding.sourceSha}-${binding.runId}-${binding.runAttempt}`
 
