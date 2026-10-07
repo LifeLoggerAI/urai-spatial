@@ -42,7 +42,8 @@ function ReplayCameraRig({ progress, reducedMotion }: { progress: number; reduce
     const breathe = reducedMotion ? 0 : Math.sin(clock.elapsedTime * 0.22) * 0.028
     const arc = reducedMotion ? 0 : (progress - 0.5) * 0.22
     desired.current.set(arc, 0.28 + breathe, 7.25 - progress * 0.48)
-    camera.position.lerp(desired.current, Math.min(1, delta * (reducedMotion ? 8 : 2.4)))
+    if (reducedMotion) camera.position.copy(desired.current)
+    else camera.position.lerp(desired.current, Math.min(1, delta * 2.4))
     camera.lookAt(target.current)
   })
 
@@ -535,7 +536,7 @@ function ReplayMemoryExperience({ memory, memoryStatus, quality }: { memory: Sel
 
   return <main className="replayWorld" style={style} data-testid="cinematic-replay-client" data-memory-status={memoryStatus} data-memory-id={memory.id} data-life-model-authority={memory.demo ? 'demo' : lifeModelAuthority.status} data-star-id={memory.star.id} data-manifest-id={memory.replayManifest.id} data-node={memory.star.id} data-playing={playing ? 'true' : 'false'} data-current-time-ms={progressMs} data-duration-ms={duration} data-replay-media-status={mediaStatus} data-replay-media-ready={mediaReady ? 'true' : 'false'} data-canonical-asset={demoEnvironment ? replayAssets.primary.src : undefined} data-replay-spatial-owner={visualOwner} data-replay-composition={demoEnvironment ? 'inside-memory-environment-ui-subordinate' : 'recorded-source-or-neutral-fallback'} data-replay-environment-fallback={admission.kind} data-webgl-state={webgl.state}>
     {admission.kind !== 'recorded-source' && webgl.state === 'ready' ? <ReplayCanvasBoundary key={`${webgl.attempt}:${mediaAttempt}`} onFailure={webgl.fail}>
-      <Canvas className="replaySpatialCanvas" shadows={quality.shadows} dpr={[1, quality.pixelRatioMax]} frameloop={quality.documentVisible ? 'always' : 'never'} camera={{ position: [0, 0.28, 7.25], fov: 50, near: 0.05, far: 120 }} gl={{ antialias: quality.antialias, powerPreference: 'high-performance' }} onCreated={({ gl }) => { gl.outputColorSpace = THREE.SRGBColorSpace; gl.toneMapping = THREE.ACESFilmicToneMapping; gl.toneMappingExposure = 1.05; gl.domElement.addEventListener('webglcontextlost', (event) => { event.preventDefault(); webgl.fail() }, { once: true }) }}>
+      <Canvas className="replaySpatialCanvas" shadows={quality.shadows} dpr={[1, quality.pixelRatioMax]} frameloop={quality.documentVisible ? (quality.reducedMotion ? 'demand' : 'always') : 'never'} camera={{ position: [0, 0.28, 7.25], fov: 50, near: 0.05, far: 120 }} gl={{ antialias: quality.antialias, powerPreference: 'high-performance' }} onCreated={({ gl }) => { gl.outputColorSpace = THREE.SRGBColorSpace; gl.toneMapping = THREE.ACESFilmicToneMapping; gl.toneMappingExposure = 1.05; gl.domElement.addEventListener('webglcontextlost', (event) => { event.preventDefault(); webgl.fail() }, { once: true }) }}>
         {demoEnvironment ? <ReplaySpatialScene memory={memory} progressMs={progressMs} onMediaState={onImageState} /> : <ReplayNeutralSpatialScene />}
       </Canvas>
     </ReplayCanvasBoundary> : null}
@@ -583,7 +584,7 @@ function ReplayMemoryHorizon({ memoryStatus, message, quality }: { memoryStatus:
 
   return (
     <main className="replayState" data-testid="cinematic-replay-client" data-memory-status={memoryStatus} data-replay-neutral="memory-horizon" data-replay-spatial-owner="neutral-memory-horizon" data-webgl-state={webgl.state}>
-      {webgl.state === 'ready' ? <ReplayCanvasBoundary key={webgl.attempt} onFailure={webgl.fail}><Canvas className="replaySpatialCanvas" dpr={[1, quality.pixelRatioMax]} frameloop={quality.documentVisible ? 'always' : 'never'} camera={{ position: [0, 0.42, 8.4], fov: 46, near: 0.05, far: 120 }} gl={{ antialias: quality.antialias, powerPreference: 'high-performance' }} onCreated={({ gl }) => gl.domElement.addEventListener('webglcontextlost', (event) => { event.preventDefault(); webgl.fail() }, { once: true })}>
+      {webgl.state === 'ready' ? <ReplayCanvasBoundary key={webgl.attempt} onFailure={webgl.fail}><Canvas className="replaySpatialCanvas" dpr={[1, quality.pixelRatioMax]} frameloop={quality.documentVisible ? (quality.reducedMotion ? 'demand' : 'always') : 'never'} camera={{ position: [0, 0.42, 8.4], fov: 46, near: 0.05, far: 120 }} gl={{ antialias: quality.antialias, powerPreference: 'high-performance' }} onCreated={({ gl }) => gl.domElement.addEventListener('webglcontextlost', (event) => { event.preventDefault(); webgl.fail() }, { once: true })}>
         <ReplayNeutralSpatialScene />
       </Canvas></ReplayCanvasBoundary> : null}
       <section role={memoryStatus === 'loading' ? 'status' : 'region'} aria-label="Replay memory horizon"><p>{memoryStatus === 'loading' ? 'Opening memory field' : 'Memory horizon'}</p><h1>{memoryStatus === 'loading' ? 'A memory is coming into view.' : 'Choose a memory to enter Replay.'}</h1><span>{message}</span>{memoryStatus === 'loading' ? null : <button type="button" onClick={chooseMemory}>Choose a memory</button>}{webgl.state !== 'ready' && webgl.state !== 'checking' ? <span role="status">Spatial view unavailable. Memory selection remains accessible.</span> : null}</section>
