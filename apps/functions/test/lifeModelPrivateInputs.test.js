@@ -68,7 +68,7 @@ function fixture(options = {}) {
     batch() {
       const writes = []
       return { set(ref, value, settings) { writes.push(() => ref.set(value, settings)) },
-        async commit() { for (const write of writes) await write() } }
+        async commit() { assert.ok(writes.length <= 500); for (const write of writes) await write() } }
     },
     async recursiveDelete(ref) {
       stats.deleted.push(ref.path)
@@ -224,4 +224,32 @@ test('actual life-model deletion tombstones handles before erasing all three pri
   assert.equal(f.records.has(provenancePath), false)
   assert.equal(f.records.get(handlePath).state, 'revoked')
   assert.equal((await f.resolve()).statusCode, 403)
+})
+
+test('actual life-model deletion pages more than one Firestore write batch without losing owner handles', async () => {
+  const f = fixture(), privacy = f.load('privacyOperations')
+  for (let i = 0; i < 601; i++) f.records.set(`privateLifeModelSourceHandles/${sha(`fictional-handle-${i}`)}`, { ...f.records.get(handlePath) })
+  const jobPath = 'deletionQueue/fixture-delete-large'
+  f.records.set(jobPath, { uid, scope: 'life-model', state: 'queued', receiptId: 'fixture-receipt' })
+  f.records.set(`${prefix}/deletionJobs/fixture-delete-large`, {})
+  await privacy.processDeletionQueueItem(await f.db.doc(jobPath).get())
+  assert.equal(f.records.get(jobPath).state, 'completed')
+  const handles = [...f.records.entries()].filter(([path]) => path.startsWith('privateLifeModelSourceHandles/'))
+  assert.equal(handles.length, 602)
+  assert.ok(handles.every(([, value]) => value.state === 'revoked' && value.ownerId === undefined && value.sourceId === undefined))
+  assert.equal(f.records.get(`privateLifeModelOwnerBarriers/${sha(uid)}`).epoch, 1)
+  assert.equal((await f.resolve()).statusCode, 403)
+})
+
+test('bounded tombstone exhaustion keeps authority closed and retries only remaining handles', async () => {
+  const f = fixture()
+  for (let i = 0; i < 10000; i++) f.records.set(`privateLifeModelSourceHandles/${sha(`fictional-large-handle-${i}`)}`, { ...f.records.get(handlePath) })
+  await assert.rejects(f.service.tombstonePrivateLifeModelInputs(f.db, uid, 'fixture-delete-time'), /PRIVATE_INPUT_DELETE_LIMIT/)
+  assert.equal((await f.db.collection('privateLifeModelSourceHandles').where('ownerId', '==', uid).get()).size, 1)
+  assert.equal(f.records.get(`privateLifeModelOwnerBarriers/${sha(uid)}`).blocked, true)
+  assert.equal((await f.resolve()).statusCode, 403)
+  const result = await f.service.tombstonePrivateLifeModelInputs(f.db, uid, 'fixture-delete-retry')
+  assert.equal(result.handlesTombstoned, 1)
+  assert.equal((await f.db.collection('privateLifeModelSourceHandles').where('ownerId', '==', uid).get()).size, 0)
+  assert.equal(f.records.get(`privateLifeModelOwnerBarriers/${sha(uid)}`).epoch, 1)
 })

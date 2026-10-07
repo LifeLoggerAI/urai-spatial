@@ -13,6 +13,7 @@ const SHA256 = /^[a-f0-9]{64}$/
 const EVIDENCE = new Set(['SOURCE_CAPTURED', 'SOURCE_DERIVED', 'DIRECT_SUBJECT_TESTIMONY', 'ATTRIBUTED_TESTIMONY', 'CORROBORATED_INFERENCE', 'CONTEXTUAL_RESEARCH'])
 const MAX_TRANSCRIPT_CHARS = 240000
 const MAX_HANDLES = 500
+const MAX_HANDLE_DELETE_BATCHES = 20
 
 class PrivateInputError extends Error {
   constructor(readonly status: number, readonly code: string) { super(code) }
@@ -124,15 +125,23 @@ export async function tombstonePrivateLifeModelInputs(database: FirebaseFirestor
     if (old.get('blocked') === true) return
     transaction.set(barrierRef, { schemaVersion: SCHEMA, ownerHash, epoch: epoch + 1, blocked: true, tombstonedAt: timestamp })
   })
-  const handles = await database.collection('privateLifeModelSourceHandles').where('ownerId', '==', ownerId).limit(MAX_HANDLES + 1).get()
-  if (handles.size > MAX_HANDLES) fail('PRIVATE_INPUT_DELETE_LIMIT', 409)
-  const batch = database.batch()
-  for (const handle of handles.docs) {
-    if (handle.get('ownerId') !== ownerId) fail('PRIVATE_INPUT_DELETE_OWNER_MISMATCH', 409)
-    batch.set(handle.ref, { schemaVersion: SCHEMA, state: 'revoked', ownerHash, tombstonedAt: timestamp })
+  let handlesTombstoned = 0
+  // A committed batch removes ownerId from every matched handle. Querying again
+  // advances over remaining records without relying on a mutable cursor.
+  for (let page = 0; page < MAX_HANDLE_DELETE_BATCHES; page++) {
+    const handles = await database.collection('privateLifeModelSourceHandles').where('ownerId', '==', ownerId).limit(MAX_HANDLES).get()
+    if (!handles.size) return { ownerHash, handlesTombstoned }
+    const batch = database.batch()
+    for (const handle of handles.docs) {
+      if (handle.get('ownerId') !== ownerId) fail('PRIVATE_INPUT_DELETE_OWNER_MISMATCH', 409)
+      batch.set(handle.ref, { schemaVersion: SCHEMA, state: 'revoked', ownerHash, tombstonedAt: timestamp })
+    }
+    await batch.commit()
+    handlesTombstoned += handles.size
   }
-  await batch.commit()
-  return { ownerHash, handlesTombstoned: handles.size }
+  const remaining = await database.collection('privateLifeModelSourceHandles').where('ownerId', '==', ownerId).limit(1).get()
+  if (remaining.size) fail('PRIVATE_INPUT_DELETE_LIMIT', 409)
+  return { ownerHash, handlesTombstoned }
 }
 
 export const resolveLifeModelPrivateInputs = functions.region('us-central1').runWith({
