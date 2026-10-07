@@ -218,6 +218,25 @@ test('canonical English fallback and legacy English streams retain truthful Engl
   assert.equal((await legacy.request()).locale, 'en-US')
 })
 
+test('actual Council fallback satisfies the shared response type with authored English metadata', () => {
+  const client = sourceModule('../src/spatial/council/councilClient.ts', id => {
+    if (id === '@/lib/orb-companion-contract') return { buildOrbCompanionResponse: () => ({ reply: 'Canonical English Council fallback.' }) }
+    if (id === 'firebase/auth') return { getAuth: () => ({ currentUser: null }) }
+    if (id === '@/lib/firebase/client') return { app: {}, firebasePublicEnvReady: true }
+    if (id === '@/lib/clientApiUrl') return { clientApiUrl: path => path }
+    throw new Error(`Unexpected Council dependency ${id}`)
+  })
+  for (const provider of ['anthropic', 'gemini', 'xai', 'mistral']) {
+    for (const fallback of [client.attemptedCouncilProviderFallback, client.uncertainCouncilProviderFallback]) {
+      const result = fallback('Synthetic question', provider)
+      assert.equal(result.locale, 'en-US')
+      assert.equal(result.provider, 'fallback')
+      assert.equal(result.caption, result.message)
+      assert.equal(result.message, 'Canonical English Council fallback.')
+    }
+  }
+})
+
 test('actual server routes all twenty languages into strict response schema, instruction, caption and stream metadata', async () => {
   const identities = new Set()
   for (const [, locale] of URAI_CONTENT_LANGUAGES) {

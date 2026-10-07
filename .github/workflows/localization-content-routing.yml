@@ -10,6 +10,7 @@ on:
       - 'urai-tier1/src/spatial/orb/openaiClient.ts'
       - 'urai-tier1/src/spatial/orb/orbVoicePlayback.ts'
       - 'urai-tier1/src/spatial/orb/OrbConversationPanel.tsx'
+      - 'urai-tier1/src/spatial/council/councilClient.ts'
       - 'urai-tier1/src/spatial/narrator/narratorTypes.ts'
       - 'urai-tier1/src/spatial/narrator/narratorPlayback.ts'
       - 'apps/functions/src/providerFunctions.ts'
@@ -17,6 +18,7 @@ on:
       - 'urai-tier1/tests/narrator-playback-behavior.test.mjs'
       - 'urai-tier1/tests/orb-voice-playback-behavior.test.mjs'
       - 'urai-tier1/tests/orb-provider-idempotency-contract.test.mjs'
+      - 'urai-tier1/tests/orb-companion-contract.test.mjs'
   workflow_dispatch:
     inputs:
       verification_sha:
@@ -67,6 +69,7 @@ jobs:
             tests/localization-runtime-contract.test.mjs \
             tests/narrator-playback-behavior.test.mjs \
             tests/orb-voice-playback-behavior.test.mjs \
+            tests/orb-companion-contract.test.mjs \
             tests/orb-provider-idempotency-contract.test.mjs \
             2>&1 | tee artifacts/localization-content-routing/tests.log
       - name: Compile actual frontend and Functions imports
@@ -86,6 +89,7 @@ jobs:
             'urai-tier1/src/spatial/orb/openaiClient.ts',
             'urai-tier1/src/spatial/orb/orbVoicePlayback.ts',
             'urai-tier1/src/spatial/orb/OrbConversationPanel.tsx',
+            'urai-tier1/src/spatial/council/councilClient.ts',
             'urai-tier1/src/spatial/narrator/narratorTypes.ts',
             'urai-tier1/src/spatial/narrator/narratorPlayback.ts',
             'apps/functions/src/providerFunctions.ts',
@@ -93,6 +97,7 @@ jobs:
             'urai-tier1/tests/narrator-playback-behavior.test.mjs',
             'urai-tier1/tests/orb-voice-playback-behavior.test.mjs',
             'urai-tier1/tests/orb-provider-idempotency-contract.test.mjs',
+            'urai-tier1/tests/orb-companion-contract.test.mjs',
             '.github/workflows/localization-content-routing.yml',
           ]
           receipt = {

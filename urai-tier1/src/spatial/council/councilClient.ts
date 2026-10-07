@@ -69,6 +69,7 @@ function councilFallback(message: string, disclosure: string): OrbProviderResult
     disclosure,
     suggestedActions: fallback.routeHint ? [`Open ${fallback.routeHint}`, 'Review privacy controls'] : ['Pause here', 'Review privacy controls'],
     provider: 'fallback',
+    locale: 'en-US',
   }
 }
 
@@ -164,3 +165,4 @@ export async function requestExternalCouncilProvider(input: {
     model: String(result.model),
   }
 }
+
