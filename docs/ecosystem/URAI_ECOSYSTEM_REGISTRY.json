@@ -10,19 +10,25 @@
     },
     {
       "id": "deferred-asset-lane",
-      "role": "external asset lane placeholder until live job integration is certified",
-      "repo": "external-or-adjacent",
-      "criticality": "asset-lane"
+      "role": "asset generation and provenance dependency",
+      "repo": "LifeLoggerAI/asset-factory",
+      "criticality": "asset-lane",
+      "canonicalSystemId": "asset-factory",
+      "sourceStatus": "DISCOVERED",
+      "integrationAcceptance": "NOT_ASSESSED"
     },
     {
       "id": "deferred-studio-handoff",
-      "role": "external studio handoff placeholder until live job integration is certified",
-      "repo": "external-or-adjacent",
-      "criticality": "handoff-lane"
+      "role": "creative production and studio handoff dependency",
+      "repo": "LifeLoggerAI/urai-studio",
+      "criticality": "handoff-lane",
+      "canonicalSystemId": "urai-studio",
+      "sourceStatus": "DISCOVERED",
+      "integrationAcceptance": "NOT_ASSESSED"
     },
     {
       "id": "firebase-hosting",
-      "role": "deployment and live runtime surface",
+      "role": "deployment and runtime hosting dependency",
       "repo": "infrastructure",
       "criticality": "deployment"
     }
@@ -32,6 +38,12 @@
     "Classify external dependencies separately from core runtime safety.",
     "Asset pending is not the same as product broken.",
     "Every ecosystem decision must produce auditable evidence.",
-    "External asset and studio lanes remain deferred until live job integration is certified."
-  ]
+    "The deferred-asset-lane and deferred-studio-handoff IDs are retained for compatibility; they identify discovered Asset Factory and Studio sources, not missing repositories.",
+    "Repository discovery and file presence do not establish live provider or consumer integration acceptance.",
+    "A complete source inventory remains acceptance-unverified; only the existing independent release governance can authorize shipping for an exact release SHA."
+  ],
+  "scope": "Spatial V9 source dependency registry; not the complete Holdings estate register",
+  "evidenceScope": "SOURCE_REPOSITORY_DISCOVERY_ONLY",
+  "releaseAcceptance": "NOT_ASSESSED",
+  "shipAuthorized": false
 }
