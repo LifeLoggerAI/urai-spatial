@@ -160,7 +160,8 @@ export const recordPassiveSignal = passiveSignalsFunctions.https.onCall(async (d
   if (type === 'location') {
     const location = isRecord(domains.location) ? domains.location as JsonMap : {}
     const preciseAllowed = location.precise === true
-    if (!preciseAllowed && payload.precision === 'precise') {
+    // Client labels do not grant permission to retain precise coordinates.
+    if (!preciseAllowed) {
       payload.precision = 'approximate'
       const latitude = typeof payload.latitude === 'number' ? payload.latitude : undefined
       const longitude = typeof payload.longitude === 'number' ? payload.longitude : undefined
