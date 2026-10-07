@@ -13,7 +13,7 @@ import ts from 'typescript'
 const SOURCE = 'd'.repeat(40), GATEWAY = 'a'.repeat(40), UID = 'synthetic-owner'
 const gatewayUrl = 'https://spend.example.invalid/api/worker/production-spend'
 const token = 'SYNTHETIC-WORKER-TOKEN-'.repeat(3), apiKey = 'SYNTHETIC-PROVIDER-CREDENTIAL'
-const paths = ['providerFunctions.ts', 'adamPresenceFunctions.ts', 'personPresenceProvider.ts', 'personPresenceVoiceProvider.ts', 'councilProviderFunctions.ts', 'protectedProviderSpend.ts'].map(name => `apps/functions/src/${name}`)
+const paths = [...['providerFunctions.ts', 'adamPresenceFunctions.ts', 'personPresenceProvider.ts', 'personPresenceVoiceProvider.ts', 'councilProviderFunctions.ts', 'protectedProviderSpend.ts', 'mapsElevation.ts', 'mapsElevationResult.ts'].map(name => `apps/functions/src/${name}`), 'urai-tier1/src/app/api/maps/elevation/route.ts']
 const digest = value => createHash('sha256').update(value).digest('hex')
 const syntheticJobDigest = job => digest(stable(Object.fromEntries(Object.entries(job).filter(([key]) => key !== 'approval' && key !== 'attempts'))).replace(/[\u007f-\uffff]/g, value => `\\u${value.charCodeAt(0).toString(16).padStart(4,'0')}`))
 function stable(value) {
@@ -78,10 +78,17 @@ function fixture(change = {}) {
       return controls.gatewayResponse ? controls.gatewayResponse(reply, 'record', clockContext()) : Response.json(reply)
     }
     providerCalls.push({ url:String(url), init })
-    assert.equal(init.method, 'POST'); assert.equal(init.redirect, 'error')
-    assert.deepEqual(Buffer.from(init.body), Buffer.from(expectedFields.body))
+    assert.equal(init.method, expectedFields.method); assert.equal(init.redirect, 'error')
     const headers = new Headers(init.headers)
-    assert.equal(digest(stable(Object.fromEntries([...headers].filter(([k]) => ['authorization','xi-api-key','x-api-key','x-goog-api-key'].includes(k))))), expectedFields.fields.credential_sha256)
+    if (expectedFields.method === 'GET') {
+      assert.equal(init.body, undefined); assert.equal(init.cache, 'no-store'); assert.equal(init.referrerPolicy, 'no-referrer')
+      assert.equal(String(url), expectedFields.nativeUrl)
+      assert.equal(digest(stable({ key:new URL(url).searchParams.get('key') })), expectedFields.fields.credential_sha256)
+      assert.equal(headers.get('authorization'), null)
+    } else {
+      assert.deepEqual(Buffer.from(init.body), Buffer.from(expectedFields.body))
+      assert.equal(digest(stable(Object.fromEntries([...headers].filter(([k]) => ['authorization','xi-api-key','x-api-key','x-goog-api-key'].includes(k))))), expectedFields.fields.credential_sha256)
+    }
     if (controls.streamError) return new Response(new ReadableStream({ start(stream) { stream.error(new Error('SYNTHETIC STREAM OUTCOME UNKNOWN')) } }))
     return currentProvider(url, init)
   }
@@ -101,13 +108,14 @@ function fixture(change = {}) {
     if (id === 'firebase-functions/params') return params
     throw new Error(`Unexpected helper dependency ${id}`)
   }, { process:{ env, cwd:() => '/synthetic-tracked-checkout' }, fetch:fakeFetch, Date:FixtureDate })
-  function prepare(args) {
+  function prepare(args, elevationKey) {
     const [_db, uid, lane, provider, model, input, target, init] = args
     const url = String(target), body = String(init.body), headers = new Headers(init.headers)
-    const credentials = Object.fromEntries([...headers].filter(([k]) => ['authorization','xi-api-key','x-api-key','x-goog-api-key'].includes(k)))
-    const requestSha = digest(Buffer.concat([Buffer.from(`POST\n${url}\n`), Buffer.from(body)])), inputSha = digest(stable({ uid, lane, input })), tenantSha = digest(uid)
+    const method = elevationKey ? 'GET' : 'POST'
+    const credentials = elevationKey ? { key:elevationKey } : Object.fromEntries([...headers].filter(([k]) => ['authorization','xi-api-key','x-api-key','x-goog-api-key'].includes(k)))
+    const requestSha = digest(Buffer.concat([Buffer.from(`${method}\n${url}\n`), Buffer.from(elevationKey ? '' : body)])), inputSha = digest(stable({ uid, lane, input })), tenantSha = digest(uid)
     const jobId = `SYNTHETIC-NOT-AUTHORIZATION-${lane}-${requestSha}`
-    const fields = { job_id:jobId, worker_id:'synthetic-worker', executor_repository:'LifeLoggerAI/urai-spatial', executor_source_sha:SOURCE, gateway_repository:'LifeLoggerAI/asset-factory', gateway_source_sha:GATEWAY, consumer:'spatial-functions', tenant_sha256:tenantSha, provider, account_id:'SYNTHETIC-API-ACCOUNT', credential_sha256:digest(stable(credentials)), source_input_sha256:inputSha, semantic_input_sha256:digest(stable(JSON.parse(body))), semantic_headers_sha256:digest(stable(Object.fromEntries([...headers].filter(([k]) => !Object.hasOwn(credentials,k))))), content_type:headers.get('content-type'), request_sha256:requestSha, endpoint:url, model, asset:`spatial/${tenantSha}/${lane}`, request_size:String(Buffer.byteLength(body)) }
+    const fields = { job_id:jobId, worker_id:'synthetic-worker', executor_repository:'LifeLoggerAI/urai-spatial', executor_source_sha:SOURCE, gateway_repository:'LifeLoggerAI/asset-factory', gateway_source_sha:GATEWAY, consumer:'spatial-functions', tenant_sha256:tenantSha, provider, account_id:'SYNTHETIC-API-ACCOUNT', credential_sha256:digest(stable(credentials)), source_input_sha256:inputSha, semantic_input_sha256:digest(stable(JSON.parse(body))), semantic_headers_sha256:digest(stable(Object.fromEntries([...headers].filter(([k]) => !Object.hasOwn(credentials,k))))), content_type:headers.get('content-type'), request_sha256:requestSha, endpoint:url, model, asset:`spatial/${tenantSha}/${lane}`, request_size:elevationKey ? '0' : String(Buffer.byteLength(body)) }
     metadata = { ...fields, lane, gateway_url:gatewayUrl }; controls.binding?.(metadata, clockContext()); metadataPath = `spatialPaidProviderBindings/${digest(stable({ tenant_sha256:tenantSha, lane, request_sha256:requestSha, source_input_sha256:inputSha }))}`
     bindings.set(metadataPath, metadata)
     if (!rows.has(jobId)) {
@@ -119,11 +127,19 @@ function fixture(change = {}) {
       job.approval = { status:'APPROVED',kind:'EXPLICIT_BOUNDED_SPEND',job_digest:syntheticJobDigest(job),max_usd_micros:2500000,max_credits:20,max_concurrency:2,receipt:'SYNTHETIC-NOT-AUTHORIZATION',approver:'synthetic-approver',key_id:'synthetic-test-only',signature:'U1lOVEhFVElDLU5PVC1BUFRIT1JJWkFUSU9O',issued_at:new Date(now()-60000).toISOString(),expires_at:new Date(now()+300000).toISOString() }
       rows.set(jobId, { job, hold:0, deploymentExpiresAt:now()+300000 })
     }
-    expectedFields = { fields, body }; return fields
+    const nativeUrl = new URL(url); if (elevationKey) nativeUrl.searchParams.set('key', elevationKey)
+    expectedFields = { fields, body, method, nativeUrl:nativeUrl.toString() }; return fields
   }
   const paidFetch = async (...args) => { prepare(args); return helper.paidSpatialFetch(...args) }
+  const elevationArgs = () => [db, UID, { latitude:37.422, longitude:-122.084 }, apiKey]
+  const prepareElevation = args => {
+    const [_db, uid, input, key] = args, url = new URL('https://maps.googleapis.com/maps/api/elevation/json')
+    url.searchParams.set('locations', `${input.latitude},${input.longitude}`)
+    return prepare([_db, uid, 'maps-elevation', 'google-maps-elevation', 'elevation-json', input, url.toString(), { method:'GET', headers:{ accept:'application/json', 'content-type':'application/x-www-form-urlencoded' }, body:JSON.stringify({ locations:`${input.latitude},${input.longitude}` }) }], key)
+  }
+  const paidElevation = async (...args) => { prepareElevation(args); return helper.paidSpatialElevationFetch(...args) }
   const directArgs = () => [db, UID, 'orb-reasoning', 'openai', 'synthetic-model', { message:'Synthetic question' }, 'https://api.openai.com/v1/responses', { method:'POST', headers:{ Authorization:`Bearer ${apiKey}`, 'Content-Type':'application/json', 'Idempotency-Key':'synthetic-stable-request' }, body:JSON.stringify({ model:'synthetic-model', input:'Synthetic question' }) }]
-  return { controls, env, calls, providerCalls, rows, bindings, db, helper, paidFetch, directArgs, params, sourceModule, fakeFetch, prepare, advanceTime, advanceMonotonic, now, setProvider:fn => { currentProvider = fn }, expected:() => expectedFields }
+  return { controls, env, calls, providerCalls, rows, bindings, db, helper, paidFetch, directArgs, params, sourceModule, fakeFetch, prepare, elevationArgs, prepareElevation, paidElevation, advanceTime, advanceMonotonic, now, setProvider:fn => { currentProvider = fn }, expected:() => expectedFields }
 }
 test('actual unmocked clean Git provenance rejects every dirty untracked or misdeclared provider source', () => {
   const root=mkdtempSync(join(tmpdir(),'spatial-spend-source-')), env={}
@@ -136,7 +152,7 @@ test('actual unmocked clean Git provenance rejects every dirty untracked or misd
     },{process:{env,cwd:()=>root}})
     env.URAI_SOURCE_SHA=SOURCE;assert.throws(()=>helper.spatialSpendSourceSha())
     git('init','--quiet');git('config','user.name','Synthetic source fixture');git('config','user.email','fixture@example.invalid')
-    for(const path of paths){mkdirSync(dirname(join(root,path)),{recursive:true});writeFileSync(join(root,path),readFileSync(new URL(`../src/${path.split('/').at(-1)}`,import.meta.url)))}
+    for(const path of paths){mkdirSync(dirname(join(root,path)),{recursive:true});writeFileSync(join(root,path),readFileSync(new URL(`../../../${path}`,import.meta.url)))}
     git('add','.');git('commit','--quiet','-m','Synthetic actual source provenance');env.URAI_SOURCE_SHA=git('rev-parse','HEAD')
     assert.equal(helper.spatialSpendSourceSha(),env.URAI_SOURCE_SHA)
     const head=env.URAI_SOURCE_SHA;env.URAI_SOURCE_SHA=SOURCE;assert.throws(()=>helper.spatialSpendSourceSha());env.URAI_SOURCE_SHA=head
@@ -188,6 +204,112 @@ test('actual helper reserves before its only POST and completed output retains u
   assert.equal(await response.text(),'SYNTHETIC OUTPUT')
   assert.deepEqual(f.calls.map(x => x.action),['preflight','reserve','record'])
   const row = [...f.rows.values()][0]; assert.equal(row.attempt.status,'RECONCILIATION_REQUIRED'); assert.equal(row.attempt.charges_reconciled,false); assert.equal(row.hold,2500000)
+})
+test('native Elevation GET binds exact coordinates and separately hashes its query credential', async () => {
+  const f=fixture(), response=await f.paidElevation(...f.elevationArgs())
+  assert.equal(await response.text(),'SYNTHETIC OUTPUT')
+  const fields=f.calls[0], native=new URL(f.providerCalls[0].url)
+  assert.equal(native.origin,'https://maps.googleapis.com');assert.equal(native.pathname,'/maps/api/elevation/json')
+  assert.deepEqual([...native.searchParams.keys()],['locations','key'])
+  assert.equal(fields.endpoint,`https://maps.googleapis.com/maps/api/elevation/json?locations=37.422%2C-122.084`)
+  assert.equal(fields.request_sha256,digest(`GET\n${fields.endpoint}\n`));assert.equal(fields.request_size,'0')
+  assert.equal(fields.semantic_input_sha256,digest(stable({locations:'37.422,-122.084'})))
+  assert.equal(fields.credential_sha256,digest(stable({key:apiKey})))
+  assert.equal(JSON.stringify(f.calls).includes(apiKey),false)
+  assert.deepEqual(f.calls.map(x=>x.action),['preflight','reserve','record'])
+  assert.equal([...f.rows.values()][0].attempt.charges_reconciled,false)
+})
+test('native Elevation cannot dispatch from labels, missing binding, denial, or an uncertain reserve',async()=>{
+  for(const change of [{missingBinding:true},{missingToken:true},{proofRejected:true},{reserveDenied:true},{reserveLost:true},{preflight:reply=>{reply.envelope.protected_controls.hard_stop_supported=false}}]){
+    const f=fixture(change);f.env.URAI_ELEVATION_SPEND_APPROVED='true';f.env.URAI_PROVIDER_SPEND_ENABLED='true'
+    await assert.rejects(f.paidElevation(...f.elevationArgs()));assert.equal(f.providerCalls.length,0)
+    if(change.reserveLost){assert.equal([...f.rows.values()][0].hold,2500000);assert.equal(f.calls.filter(x=>x.action==='reserve').length,1)}
+  }
+})
+test('Elevation credential replacement and coordinate replay cannot reuse the original protected binding',async()=>{
+  for(const change of ['credential','latitude','longitude']){
+    const f=fixture(),args=f.elevationArgs();f.prepareElevation(args)
+    if(change==='credential')args[3]='DIFFERENT-SYNTHETIC-KEY';else args[2][change]+=1
+    await assert.rejects(f.helper.paidSpatialElevationFetch(...args));assert.equal(f.calls.length,0);assert.equal(f.providerCalls.length,0)
+  }
+})
+test('Elevation rejects invalid coordinates or a query-injecting key before binding or secret reads',async()=>{
+  for(const change of [args=>{args[2].latitude=91},args=>{args[2].longitude=-181},args=>{args[2].latitude=NaN},args=>{args[3]='KEY&locations=0,0'},args=>{args[3]=' KEY '}]){
+    const f=fixture(),args=f.elevationArgs();change(args)
+    await assert.rejects(f.helper.paidSpatialElevationFetch(...args));assert.equal(f.calls.length,0);assert.equal(f.controls.tokenReads,0);assert.equal(f.providerCalls.length,0)
+  }
+})
+test('Elevation admission callback runs after genuine preflight and before reservation, then authority is rechecked',async()=>{
+  const missing=fixture({missingBinding:true}),args=missing.elevationArgs();let touched=0
+  args[5]=async()=>{touched++};await assert.rejects(missing.paidElevation(...args));assert.equal(touched,0)
+  for(const mutate of [f=>f.advanceTime(400000),(_f,input)=>{input.latitude=1},f=>{f.env.URAI_SOURCE_SHA='c'.repeat(40)}]){
+    const f=fixture(),args=f.elevationArgs();args[5]=async()=>{assert.deepEqual(f.calls.map(x=>x.action),['preflight']);mutate(f,args[2])}
+    await assert.rejects(f.paidElevation(...args));assert.equal(f.calls.some(x=>x.action==='reserve'),false);assert.equal(f.providerCalls.length,0)
+  }
+})
+test('Elevation native redirects are refused and auth cancellation withholds the final output without settling the hold',async()=>{
+  const f=fixture(),abort=new AbortController(),args=f.elevationArgs();args[4]=abort.signal
+  const response=await f.paidElevation(...args);await response.text();f.helper.assertSpatialPaidOutputCurrent(response)
+  abort.abort();assert.throws(()=>f.helper.assertSpatialPaidOutputCurrent(response))
+  await Promise.resolve();assert.equal(f.providerCalls[0].init.redirect,'error');assert.equal([...f.rows.values()][0].hold,2500000)
+})
+test('Elevation parsed output cannot survive an expired admission after its stream completes',async()=>{
+  const f=fixture(),response=await f.paidElevation(...f.elevationArgs());await response.text()
+  f.advanceTime(3000);assert.throws(()=>f.helper.assertSpatialPaidOutputCurrent(response))
+  assert.equal([...f.rows.values()][0].attempt.charges_reconciled,false)
+})
+test('Elevation output parser accepts only the bounded single requested coordinate and strips raw provider fields',async()=>{
+  const f=fixture(),input=f.elevationArgs()[2]
+  const parser=sourceModule('../src/mapsElevationResult.ts',id=>{assert.equal(id,'./protectedProviderSpend');return f.helper})
+  f.setProvider(()=>Response.json({status:'OK',results:[{elevation:123,resolution:1,location:{lat:input.latitude,lng:input.longitude},key:'DO-NOT-PUBLISH'}],provider_secret:'DO-NOT-PUBLISH'}))
+  const response=await f.paidElevation(...f.elevationArgs()),result=await parser.readNormalizedElevation(response,input)
+  assert.deepEqual(JSON.parse(JSON.stringify(result)),{elevationMeters:123,resolutionMeters:1,source:'google-maps-elevation'})
+  f.helper.assertSpatialPaidOutputCurrent(response)
+})
+for(const shape of ['oversized','invalid-json','multiple','wrong-coordinate','negative-resolution','provider-error'])test(`Elevation ${shape} output is withheld`,async()=>{
+  const f=fixture(),input=f.elevationArgs()[2],payload={status:'OK',results:[{elevation:123,resolution:1,location:{lat:input.latitude,lng:input.longitude}}]}
+  if(shape==='multiple')payload.results.push({...payload.results[0]})
+  if(shape==='wrong-coordinate')payload.results[0].location.lat+=1
+  if(shape==='negative-resolution')payload.results[0].resolution=-1
+  if(shape==='provider-error')payload.status='REQUEST_DENIED'
+  const parser=sourceModule('../src/mapsElevationResult.ts',id=>{assert.equal(id,'./protectedProviderSpend');return f.helper})
+  f.setProvider(()=>new Response(shape==='oversized'?'x'.repeat(65537):shape==='invalid-json'?'not-json':JSON.stringify(payload)))
+  const response=await f.paidElevation(...f.elevationArgs());await assert.rejects(parser.readNormalizedElevation(response,input))
+  assert.equal([...f.rows.values()][0].hold,2500000);assert.equal([...f.rows.values()][0].attempt.charges_reconciled,false)
+})
+for(const kind of ['functions','next'])test(`actual ${kind} Maps leaf executes the shared native adapter and withholds revoked output`,async()=>{
+  for(const revokeAt of [Infinity,2,3]){
+    const f=fixture(),args=f.elevationArgs(),input=args[2];f.prepareElevation(args)
+    f.env.URAI_FIREBASE_STATIC_EXPORT='false';f.env.URAI_ELEVATION_SERVER_CREDENTIAL=apiKey
+    let authChecks=0,rateWrites=0
+    const uid=()=>++authChecks<revokeAt?UID:null
+    class Timestamp{toMillis(){return 0}static fromMillis(){return new Timestamp()}}
+    const firestore=Object.assign(()=>f.db,{Timestamp,FieldValue:{serverTimestamp:()=>null}})
+    f.db.runTransaction=async callback=>callback({get:async()=>({data:()=>({})}),set:()=>{rateWrites++}})
+    const parser=sourceModule('../src/mapsElevationResult.ts',id=>{assert.equal(id,'./protectedProviderSpend');return f.helper})
+    f.setProvider(()=>Response.json({status:'OK',results:[{elevation:123,resolution:1,location:{lat:input.latitude,lng:input.longitude}}]}))
+    const imports={
+      'firebase-admin':{apps:[{}],firestore,auth:()=>({verifyIdToken:async(_token,revoked)=>{assert.equal(revoked,true);const subject=uid();if(!subject)throw new Error('SYNTHETIC REVOKED');return{uid:subject}}})},
+      'firebase-functions/params':f.params,'firebase-functions/v2/https':{onRequest:(_config,handler)=>handler},
+      'firebase-admin/firestore':{getFirestore:()=>f.db,Timestamp,FieldValue:firestore.FieldValue},
+      'next/server':{NextResponse:{json:(body,options)=>Response.json(body,options)}},'@/lib/server/firebase-user':{verifyFirebaseUser:async()=>uid()},
+      './protectedProviderSpend':f.helper,'./mapsElevationResult':parser,
+      '../../../../../../apps/functions/src/protectedProviderSpend':f.helper,'../../../../../../apps/functions/src/mapsElevationResult':parser,
+    }
+    const leaf=sourceModule(kind==='functions'?'../src/mapsElevation.ts':'../../../urai-tier1/src/app/api/maps/elevation/route.ts',id=>{assert.ok(imports[id],id);return imports[id]},{process:{env:f.env},fetch:()=>{throw new Error('Direct provider fetch forbidden')}})
+    let status,body
+    if(kind==='functions'){
+      const response={writableEnded:false,setHeader(){},on(){},status(value){status=value;return this},json(value){body=value;return this}}
+      await leaf.mapsElevationProvider({method:'POST',body:input,headers:{authorization:'Bearer SYNTHETIC-IDENTITY'}},response)
+    }else{
+      const result=await leaf.POST({json:async()=>input,signal:new AbortController().signal});status=result.status;body=await result.json()
+    }
+    assert.equal(status,revokeAt===Infinity?200:401)
+    assert.equal(f.providerCalls.length,revokeAt===2?0:1);assert.equal(rateWrites,1)
+    if(revokeAt===Infinity)assert.deepEqual(JSON.parse(JSON.stringify(body)),{elevationMeters:123,resolutionMeters:1,source:'google-maps-elevation',subject:UID})
+    else assert.equal(body.error,'authentication_required')
+    if(revokeAt===3){assert.equal([...f.rows.values()][0].hold,2500000);assert.equal([...f.rows.values()][0].attempt.charges_reconciled,false)}
+  }
 })
 test('missing protected binding token source or gateway denies all provider calls', async () => {
   for (const change of [{ missingBinding:true },{ missingToken:true },{ proofRejected:true },{ reserveDenied:true },{ preflight:(_reply,_body,{env}) => { env.URAI_SOURCE_SHA = 'c'.repeat(40) } }]) {

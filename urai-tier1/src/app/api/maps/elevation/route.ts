@@ -1,20 +1,12 @@
 import { NextResponse } from 'next/server'
 import { verifyFirebaseUser } from '@/lib/server/firebase-user'
+import { SpatialSpendError, paidSpatialElevationFetch, assertSpatialPaidOutputCurrent } from '../../../../../../apps/functions/src/protectedProviderSpend'
+import { ElevationResultError, readNormalizedElevation } from '../../../../../../apps/functions/src/mapsElevationResult'
 
 export const dynamic = 'force-static'
 
 function validCoordinate(value: unknown, min: number, max: number): value is number {
   return typeof value === 'number' && Number.isFinite(value) && value >= min && value <= max
-}
-
-function unadmittedElevationSpendResponse() {
-  // No environment flag or API key can admit this retained billable GET
-  // adapter. Reopening requires an actual protected executor and provisioning.
-  return NextResponse.json({ error: 'elevation_protected_spend_required' }, { status: 503, headers: { 'cache-control': 'private, no-store, max-age=0' } })
-}
-
-function blockUnadmittedElevationSpend(): void {
-  throw new Error('elevation_protected_spend_required')
 }
 
 const RATE_WINDOW_MS = 60_000
@@ -58,29 +50,30 @@ export async function POST(request: Request) {
   const longitude = record.longitude
   if (!validCoordinate(latitude, -90, 90) || !validCoordinate(longitude, -180, 180)) return NextResponse.json({ error: 'invalid_coordinate' }, { status: 400, headers: { 'cache-control': 'private, no-store, max-age=0' } })
 
-  try { blockUnadmittedElevationSpend() }
-  catch { return unadmittedElevationSpendResponse() }
-
   const apiKey = process.env.URAI_ELEVATION_SERVER_CREDENTIAL
   if (!apiKey) return NextResponse.json({ error: 'elevation_unavailable' }, { status: 503, headers: { 'cache-control': 'private, no-store, max-age=0' } })
 
-  let allowed: boolean
-  try { allowed = await consumeElevationRateLimit(uid) } catch { return NextResponse.json({ error: 'elevation_rate_limit_unavailable' }, { status: 503, headers: { 'cache-control': 'private, no-store, max-age=0' } }) }
-  if (!allowed) return NextResponse.json({ error: 'rate_limited' }, { status: 429, headers: { 'cache-control': 'private, no-store, max-age=0' } })
-
   const controller = new AbortController()
   const timeout = setTimeout(() => controller.abort(), 8000)
+  const signal = request.signal ? AbortSignal.any([request.signal, controller.signal]) : controller.signal
   try {
-    const url = new URL('https://maps.googleapis.com/maps/api/elevation/json')
-    url.searchParams.set('locations', `${latitude},${longitude}`)
-    url.searchParams.set('key', apiKey)
-    const response = await fetch(url, { signal: controller.signal, cache: 'no-store' })
-    if (!response.ok) return NextResponse.json({ error: 'elevation_provider_error' }, { status: 502, headers: { 'cache-control': 'private, no-store, max-age=0' } })
-    const payload = await response.json() as { status?: string; results?: Array<{ elevation?: number; resolution?: number }> }
-    const first = payload.status === 'OK' && Array.isArray(payload.results) ? payload.results[0] : undefined
-    if (!first || typeof first.elevation !== 'number' || !Number.isFinite(first.elevation)) return NextResponse.json({ error: 'elevation_result_unavailable' }, { status: 502, headers: { 'cache-control': 'private, no-store, max-age=0' } })
-    return NextResponse.json({ elevationMeters: first.elevation, resolutionMeters: typeof first.resolution === 'number' && Number.isFinite(first.resolution) ? first.resolution : null, source: 'google-maps-elevation', subject: uid }, { headers: { 'cache-control': 'private, no-store, max-age=0' } })
+    const firestore = await import('firebase-admin/firestore')
+    const db = firestore.getFirestore(), input = { latitude, longitude }
+    const response = await paidSpatialElevationFetch(db, uid, input, apiKey, signal, async () => {
+      let allowed: boolean
+      try { allowed = await consumeElevationRateLimit(uid) } catch { throw new Error('elevation_rate_limit_unavailable') }
+      if (!allowed) throw new Error('rate_limited')
+      if (await verifyFirebaseUser(request) !== uid) throw new Error('authentication_required')
+    })
+    const result = await readNormalizedElevation(response, input)
+    if (await verifyFirebaseUser(request) !== uid) throw new Error('authentication_required')
+    assertSpatialPaidOutputCurrent(response)
+    return NextResponse.json({ ...result, subject: uid }, { headers: { 'cache-control': 'private, no-store, max-age=0' } })
   } catch (error) {
+    const controlled = error instanceof Error ? error.message : ''
+    const status = controlled === 'authentication_required' ? 401 : controlled === 'rate_limited' ? 429 : controlled === 'elevation_rate_limit_unavailable' || error instanceof SpatialSpendError ? 503 : 502
+    if (status !== 502) return NextResponse.json({ error: error instanceof SpatialSpendError ? 'elevation_protected_spend_required' : controlled }, { status, headers: { 'cache-control': 'private, no-store, max-age=0' } })
+    if (error instanceof ElevationResultError) return NextResponse.json({ error: error.code }, { status: error.status, headers: { 'cache-control': 'private, no-store, max-age=0' } })
     const code = error instanceof Error && error.name === 'AbortError' ? 'elevation_timeout' : 'elevation_provider_error'
     return NextResponse.json({ error: code }, { status: 502, headers: { 'cache-control': 'private, no-store, max-age=0' } })
   } finally {

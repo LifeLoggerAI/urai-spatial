@@ -1,6 +1,8 @@
 import * as admin from 'firebase-admin'
 import { defineSecret } from 'firebase-functions/params'
 import { onRequest } from 'firebase-functions/v2/https'
+import { SPATIAL_SPEND_WORKER_TOKENS_JSON, SpatialSpendError, paidSpatialElevationFetch, assertSpatialPaidOutputCurrent } from './protectedProviderSpend'
+import { ElevationResultError, readNormalizedElevation } from './mapsElevationResult'
 
 if (!admin.apps.length) admin.initializeApp()
 
@@ -25,13 +27,6 @@ function isRecord(value: unknown): value is JsonMap {
 
 function validCoordinate(value: unknown, min: number, max: number): value is number {
   return typeof value === 'number' && Number.isFinite(value) && value >= min && value <= max
-}
-
-function blockUnadmittedElevationSpend(): void {
-  // The retained GET/query-key adapter has no admitted canonical spend
-  // executor. An API key, timeout or per-user rate limit cannot grant money.
-  // Preserve that adapter below as history while closing its active leaf.
-  throw new ElevationError(503, 'elevation_protected_spend_required')
 }
 
 async function consumeElevationRateLimit(uid: string) {
@@ -72,7 +67,7 @@ export const mapsElevationProvider = onRequest({
   region: REGION,
   timeoutSeconds: 15,
   memory: '256MiB',
-  secrets: [ELEVATION_API_KEY],
+  secrets: [ELEVATION_API_KEY, SPATIAL_SPEND_WORKER_TOKENS_JSON],
 }, async (request, response) => {
   response.setHeader('Cache-Control', 'private, no-store, max-age=0')
   response.setHeader('X-Content-Type-Options', 'nosniff')
@@ -86,36 +81,27 @@ export const mapsElevationProvider = onRequest({
       throw new ElevationError(400, 'invalid_coordinate')
     }
 
-    blockUnadmittedElevationSpend()
-    await consumeElevationRateLimit(uid)
-
     const apiKey = ELEVATION_API_KEY.value().trim()
     if (!apiKey) throw new ElevationError(503, 'elevation_unavailable')
     const controller = new AbortController()
     const timeout = setTimeout(() => controller.abort(), 8_000)
     response.on('close', () => { if (!response.writableEnded) controller.abort() })
     try {
-      const url = new URL('https://maps.googleapis.com/maps/api/elevation/json')
-      url.searchParams.set('locations', `${latitude},${longitude}`)
-      url.searchParams.set('key', apiKey)
-      const upstream = await fetch(url, { signal: controller.signal, cache: 'no-store' })
-      if (!upstream.ok) throw new ElevationError(502, 'elevation_provider_error')
-      const payload = await upstream.json() as { status?: string; results?: Array<{ elevation?: number; resolution?: number }> }
-      const first = payload.status === 'OK' && Array.isArray(payload.results) ? payload.results[0] : undefined
-      if (!first || typeof first.elevation !== 'number' || !Number.isFinite(first.elevation)) {
-        throw new ElevationError(502, 'elevation_result_unavailable')
-      }
-      response.status(200).json({
-        elevationMeters: first.elevation,
-        resolutionMeters: typeof first.resolution === 'number' && Number.isFinite(first.resolution) ? first.resolution : null,
-        source: 'google-maps-elevation',
-        subject: uid,
+      const input = { latitude, longitude }
+      const upstream = await paidSpatialElevationFetch(db, uid, input, apiKey, controller.signal, async () => {
+        await consumeElevationRateLimit(uid)
+        if (await authenticatedUid(request) !== uid) throw new ElevationError(401, 'authentication_required')
       })
+      const result = await readNormalizedElevation(upstream, input)
+      if (await authenticatedUid(request) !== uid) throw new ElevationError(401, 'authentication_required')
+      assertSpatialPaidOutputCurrent(upstream)
+      response.status(200).json({ ...result, subject: uid })
     } finally {
       clearTimeout(timeout)
     }
   } catch (error) {
-    if (error instanceof ElevationError) {
+    if (error instanceof SpatialSpendError) { response.status(503).json({ error: 'elevation_protected_spend_required' }); return }
+    if (error instanceof ElevationError || error instanceof ElevationResultError) {
       response.status(error.status).json({ error: error.code })
       return
     }
