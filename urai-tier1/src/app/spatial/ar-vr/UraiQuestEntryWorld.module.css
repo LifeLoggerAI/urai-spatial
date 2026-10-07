@@ -103,6 +103,7 @@
 
 .controls {
   position: absolute;
+  box-sizing: border-box;
   right: max(18px, env(safe-area-inset-right));
   top: max(18px, env(safe-area-inset-top));
   z-index: 7;
@@ -111,6 +112,37 @@
   justify-content: flex-end;
   gap: 9px;
   width: min(540px, calc(100vw - 36px));
+  padding: 16px;
+  border: 1px solid rgb(165 243 252 / .28);
+  border-radius: 24px;
+  /* Consent must remain legible over every animated world frame. */
+  background: #071221;
+  color: #ecfeff;
+}
+
+.controls label,
+.controls p {
+  color: #ecfeff;
+  opacity: 1;
+  line-height: 1.5;
+}
+
+.controls label {
+  display: flex;
+  gap: 10px;
+  min-height: 48px;
+  margin-bottom: 12px;
+}
+
+.controls label input {
+  flex: 0 0 20px;
+  width: 20px;
+  height: 20px;
+  margin: 3px 0 0;
+}
+
+.controls p {
+  margin: 10px 0 0;
 }
 
 .controls button,

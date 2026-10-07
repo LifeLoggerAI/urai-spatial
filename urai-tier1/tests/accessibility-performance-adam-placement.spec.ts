@@ -371,6 +371,39 @@ for (const profile of [
       await expect(anchor).toHaveAttribute('data-urai-adam-launcher-ready', 'true')
       await expect(anchor.locator('[data-urai-adam-launcher]')).toHaveCount(1)
       await expect(page.locator('canvas [data-urai-adam-launcher], [hidden] [data-urai-adam-launcher], [inert] [data-urai-adam-launcher]')).toHaveCount(0)
+      if (slot === 'xr-portals') {
+        const paint = await page.locator('[aria-label="XR and comfort controls"]').evaluate(panel => {
+          const rgba = (value: string) => {
+            const values = value.match(/[\d.]+/g)?.map(Number) ?? []
+            return { rgb: values.slice(0, 3), alpha: values[3] ?? 1 }
+          }
+          const luminance = (rgb: number[]) => rgb.map(channel => {
+            const value = channel / 255
+            return value <= 0.04045 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4
+          }).reduce((sum, value, index) => sum + value * [0.2126, 0.7152, 0.0722][index], 0)
+          const style = getComputedStyle(panel)
+          const background = rgba(style.backgroundColor)
+          const ancestorOpacities: number[] = []
+          for (let node: Element | null = panel; node; node = node.parentElement) {
+            ancestorOpacities.push(Number(getComputedStyle(node).opacity))
+          }
+          const text = [...panel.querySelectorAll('[data-testid="urai-quest-vr-entry-control"] label, [data-testid="urai-quest-vr-entry-control"] p')].map(node => {
+            const color = rgba(getComputedStyle(node).color)
+            const fore = luminance(color.rgb), back = luminance(background.rgb)
+            return { text: node.textContent?.trim(), color: getComputedStyle(node).color, alpha: color.alpha, contrast: (Math.max(fore, back) + 0.05) / (Math.min(fore, back) + 0.05) }
+          })
+          return { background: style.backgroundColor, backgroundAlpha: background.alpha, backgroundImage: style.backgroundImage, ancestorOpacities, text }
+        })
+        expect(paint.backgroundAlpha, 'XR consent backing must block the animated world').toBe(1)
+        expect(paint.backgroundImage).toBe('none')
+        expect(paint.ancestorOpacities.every(value => value === 1), 'XR backing cannot be faded by an ancestor').toBe(true)
+        expect(paint.text).toHaveLength(2)
+        for (const copy of paint.text) {
+          expect(copy.alpha).toBe(1)
+          expect(copy.contrast, 'XR consent and status copy must retain 4.5:1 contrast on the opaque backing').toBeGreaterThanOrEqual(4.5)
+        }
+        await info.attach(`xr-consent-paint-${profile.width}x${profile.height}.json`, { body: JSON.stringify(paint), contentType: 'application/json' })
+      }
       await info.attach(`${slot}-${profile.width}x${profile.height}-initial.png`, { body: await page.screenshot(), contentType: 'image/png' })
       const launcher = await inspectTextAndControls(page, slot)
       await attachPlacement(page, info, `${slot}-${profile.width}x${profile.height}-flow`, launcher)
