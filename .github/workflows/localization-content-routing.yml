@@ -1,0 +1,114 @@
+name: Localization Content Routing
+
+on:
+  pull_request:
+    branches: [main, 'converge/**', 'integration/**', 'repair/release-closure-integration-20261007']
+    paths:
+      - '.github/workflows/localization-content-routing.yml'
+      - 'packages/localization/src/**'
+      - 'urai-tier1/src/lib/i18n/**'
+      - 'urai-tier1/src/spatial/orb/openaiClient.ts'
+      - 'urai-tier1/src/spatial/orb/orbVoicePlayback.ts'
+      - 'urai-tier1/src/spatial/orb/OrbConversationPanel.tsx'
+      - 'urai-tier1/src/spatial/narrator/narratorTypes.ts'
+      - 'urai-tier1/src/spatial/narrator/narratorPlayback.ts'
+      - 'apps/functions/src/providerFunctions.ts'
+      - 'urai-tier1/tests/localization-*.test.mjs'
+      - 'urai-tier1/tests/narrator-playback-behavior.test.mjs'
+      - 'urai-tier1/tests/orb-voice-playback-behavior.test.mjs'
+      - 'urai-tier1/tests/orb-provider-idempotency-contract.test.mjs'
+  workflow_dispatch:
+    inputs:
+      verification_sha:
+        description: Exact 40-character commit SHA to verify
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+env:
+  URAI_EXACT_HEAD: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.event_name == 'workflow_dispatch' && inputs.verification_sha || github.sha }}
+
+jobs:
+  content-routing:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ env.URAI_EXACT_HEAD }}
+          fetch-depth: 1
+          persist-credentials: false
+      - name: Prove exact clean source
+        run: |
+          set -euo pipefail
+          [[ "$URAI_EXACT_HEAD" =~ ^[0-9a-f]{40}$ ]]
+          test "$(git rev-parse HEAD)" = "$URAI_EXACT_HEAD"
+          test -z "$(git status --porcelain --untracked-files=all)"
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1
+        with:
+          version: 10.0.0
+          run_install: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+      - name: Install exact lockfile
+        run: pnpm install --frozen-lockfile
+      - name: Run synthetic content routing, retained locale and cancellable voice tests
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/localization-content-routing
+          pnpm --dir urai-tier1 exec node --import tsx --test \
+            tests/localization-content-routing.test.mjs \
+            tests/localization-flow.test.mjs \
+            tests/localization-runtime-contract.test.mjs \
+            tests/narrator-playback-behavior.test.mjs \
+            tests/orb-voice-playback-behavior.test.mjs \
+            tests/orb-provider-idempotency-contract.test.mjs \
+            2>&1 | tee artifacts/localization-content-routing/tests.log
+      - name: Compile actual frontend and Functions imports
+        run: |
+          set -euo pipefail
+          pnpm --dir urai-tier1 run typecheck 2>&1 | tee artifacts/localization-content-routing/frontend-typecheck.log
+          pnpm --dir apps/functions run build 2>&1 | tee artifacts/localization-content-routing/functions-build.log
+      - name: Retain exact source receipt without runtime acceptance
+        run: |
+          python3 - <<'PY'
+          import hashlib, json, os, pathlib, subprocess
+          head = os.environ['URAI_EXACT_HEAD']
+          assert subprocess.check_output(['git','rev-parse','HEAD'], text=True).strip() == head
+          paths = [
+            'packages/localization/src/contentLanguage.ts',
+            'urai-tier1/src/lib/i18n/contentLanguage.ts',
+            'urai-tier1/src/spatial/orb/openaiClient.ts',
+            'urai-tier1/src/spatial/orb/orbVoicePlayback.ts',
+            'urai-tier1/src/spatial/orb/OrbConversationPanel.tsx',
+            'urai-tier1/src/spatial/narrator/narratorTypes.ts',
+            'urai-tier1/src/spatial/narrator/narratorPlayback.ts',
+            'apps/functions/src/providerFunctions.ts',
+            'urai-tier1/tests/localization-content-routing.test.mjs',
+            'urai-tier1/tests/narrator-playback-behavior.test.mjs',
+            'urai-tier1/tests/orb-voice-playback-behavior.test.mjs',
+            'urai-tier1/tests/orb-provider-idempotency-contract.test.mjs',
+            '.github/workflows/localization-content-routing.yml',
+          ]
+          receipt = {
+            'source_sha':head, 'run_id':os.environ['GITHUB_RUN_ID'], 'run_attempt':os.environ['GITHUB_RUN_ATTEMPT'],
+            'source_sha256':{path:hashlib.sha256(pathlib.Path(path).read_bytes()).hexdigest() for path in paths},
+            'synthetic_source_tests_and_compilation_passed':True,
+            'provider_requests_performed':False, 'protected_runtime_accepted':False,
+            'native_translation_review_granted':False, 'voice_identity_accepted':False, 'release_certified':False,
+          }
+          pathlib.Path('artifacts/localization-content-routing/receipt.json').write_text(json.dumps(receipt,indent=2)+'\n')
+          PY
+      - name: Upload exact source diagnostics
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: localization-content-routing-${{ env.URAI_EXACT_HEAD }}
+          path: artifacts/localization-content-routing
+          if-no-files-found: error
+          retention-days: 365

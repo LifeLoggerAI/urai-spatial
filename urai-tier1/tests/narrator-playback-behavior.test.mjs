@@ -4,6 +4,7 @@ import path from 'node:path'
 import test from 'node:test'
 import vm from 'node:vm'
 import ts from 'typescript'
+import { contentLanguage } from '../src/lib/i18n/contentLanguage.ts'
 
 const localVoice = { name: 'Local English', lang: 'en-US', localService: true }
 const remoteVoice = { name: 'Remote English', lang: 'en-US', localService: false }
@@ -44,7 +45,7 @@ function fixture({ voices = [localVoice], language = 'en-US', request = async ()
     exports: module.exports,
     module,
     require: (id) => {
-      if (id === '../../lib/i18n/localePreference') return { currentSpeechTag: () => language }
+      if (id === '../../lib/i18n/contentLanguage') return { contentLanguage }
       assert.equal(id, './elevenlabsClient')
       return { requestNarratorAudio: (line, signal, consent) => { requests.push({ line, signal, consent }); return request(line, signal, consent) } }
     },
@@ -197,23 +198,56 @@ test('remote-only browser voices cannot be used as a local privacy fallback', as
   assert.equal(f.captions.at(-1).visible, false)
 })
 
-test('native narrator uses the selected language and leaves foreign-only voices silent', async () => {
+test('native narrator uses declared content language and leaves foreign-only voices silent', async () => {
   const frenchVoice = { name: 'Local French', lang: 'fr-FR', localService: true }
   const f = fixture({ voices: [localVoice, frenchVoice], language: 'fr-FR' })
-  await f.playback.playLine(f.line('selected-language'))
+  await f.playback.playLine(f.line('selected-language', {locale:'fr-FR'}))
   f.advance(0)
   await f.settle()
   assert.equal(f.utterances[0].voice, frenchVoice)
   assert.equal(f.utterances[0].lang, 'fr-FR')
   assert.equal(f.requests.length, 0)
   const unavailable = fixture({ voices: [localVoice], language: 'fr-FR' })
-  await unavailable.playback.playLine(unavailable.line('foreign-only'))
+  await unavailable.playback.playLine(unavailable.line('foreign-only', {locale:'fr-FR'}))
   unavailable.advance(0)
   await unavailable.settle()
   unavailable.advance(1500)
   await unavailable.settle()
   assert.equal(unavailable.utterances.length, 0)
   assert.equal(unavailable.requests.length, 0)
+})
+
+test('a French interface preference does not relabel or voice authored English narration', async () => {
+  const frenchVoice = { name:'Local French', lang:'fr-FR', localService:true }
+  const f = fixture({ voices:[localVoice, frenchVoice], language:'fr-FR' })
+  await f.playback.playLine(f.line('english-source'))
+  f.advance(0); await f.settle()
+  assert.equal(f.utterances[0].voice, localVoice)
+  assert.equal(f.utterances[0].lang, 'en-US')
+})
+
+test('an unsupported declared content language remains readable without voice submission', async () => {
+  const f = fixture()
+  f.playback.setExternalVoiceConsent(true)
+  await f.playback.playLine(f.line('unsupported', {locale:'xx-ZZ'}))
+  f.advance(0); await f.settle()
+  assert.equal(f.requests.length, 0)
+  assert.equal(f.utterances.length, 0)
+  assert.equal(f.captions.at(-1).visible, true)
+})
+
+test('authored narrator language is captured before delayed external fallback', async () => {
+  const frenchVoice = { name: 'Local French', lang: 'fr-FR', localService: true }
+  let finishRequest
+  const f = fixture({ voices: [localVoice, frenchVoice], request: () => new Promise(resolve => { finishRequest = resolve }) })
+  f.playback.setExternalVoiceConsent(true)
+  const line = f.line('captured-french', { text: 'Texte français.', locale: 'fr-FR' })
+  await f.playback.playLine(line)
+  f.advance(0)
+  line.locale = 'en-US'
+  finishRequest(null)
+  await f.settle()
+  assert.equal(f.utterances[0].voice, frenchVoice)
 })
 
 test('later external consent cannot promote a line admitted for local playback', async () => {

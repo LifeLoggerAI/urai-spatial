@@ -171,6 +171,32 @@ test('Orb uses the selected language and declines a foreign-only local voice', a
   assert.equal(unavailable.notices.at(-1), 'unavailable')
 })
 
+test('English fallback content keeps its English voice under a French interface', async () => {
+  const frenchVoice = { name:'Local French', lang:'fr-FR', localService:true }
+  const f = fixture({ voices:[localVoice,frenchVoice], language:'fr-FR' })
+  await f.playback.play('English fallback.', false, 'en-US')
+  assert.equal(f.utterances[0].voice, localVoice)
+  assert.equal(f.utterances[0].lang, 'en-US')
+})
+
+test('content language is captured before delayed external audio and local fallback', async () => {
+  const frenchVoice = { name:'Local French', lang:'fr-FR', localService:true }
+  let resolve
+  const f = fixture({ voices:[localVoice,frenchVoice], requestExternalAudio:() => new Promise(finish => {resolve=finish}) })
+  const pending = f.playback.play('Réponse française.', true, 'fr-FR')
+  resolve(null)
+  await pending
+  assert.equal(f.utterances[0].voice, frenchVoice)
+})
+
+test('unsupported content language makes no external voice request', async () => {
+  const f = fixture()
+  await f.playback.play('Unknown language.', true, 'xx-ZZ')
+  assert.equal(f.requests.length, 0)
+  assert.equal(f.utterances.length, 0)
+  assert.equal(f.notices.at(-1), 'unavailable')
+})
+
 test('native speech error ends speaking, and stopping after completion leaves unrelated speech alone', async () => {
   const f = fixture()
   await f.playback.play('Reply', false)

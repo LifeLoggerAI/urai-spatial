@@ -2,6 +2,8 @@ import { buildOrbCompanionResponse } from '@/lib/orb-companion-contract'
 import { getAuth } from 'firebase/auth'
 import { app, firebasePublicEnvReady } from '@/lib/firebase/client'
 import { clientApiUrl } from '@/lib/clientApiUrl'
+import { currentSpeechTag } from '@/lib/i18n/localePreference'
+import { contentLanguage } from '@/lib/i18n/contentLanguage'
 
 export type OrbConversationMessage = {
   role: 'user' | 'assistant'
@@ -14,11 +16,12 @@ export type OrbProviderResult = {
   disclosure: string
   suggestedActions: string[]
   provider: 'openai' | 'fallback'
+  locale: string
 }
 
 export type OrbProviderEvent =
   | { type: 'status'; status: string }
-  | { type: 'delta'; text: string }
+  | { type: 'delta'; text: string; locale?: string }
   | ({ type: 'done' } & OrbProviderResult)
   | { type: 'error'; code: string; message: string }
 
@@ -53,6 +56,7 @@ function fallbackResult(message: string, disclosure: string): OrbProviderResult 
     disclosure,
     suggestedActions: fallback.routeHint ? [`Open ${fallback.routeHint}`, 'Review privacy controls'] : ['Pause here', 'Review privacy controls'],
     provider: 'fallback',
+    locale: 'en-US',
   }
 }
 
@@ -74,9 +78,9 @@ export function uncertainExternalOrbFallback(message = ''): OrbProviderResult {
   )
 }
 
-async function stableIntentRequestId(message: string, context: OrbConversationMessage[]) {
+async function stableIntentRequestId(message: string, context: OrbConversationMessage[], locale: string) {
   if (!globalThis.crypto?.subtle) return null
-  const intent = JSON.stringify({ message, context: context.slice(-8) })
+  const intent = JSON.stringify({ message, context: context.slice(-8), locale })
   const digest = await globalThis.crypto.subtle.digest('SHA-256', new TextEncoder().encode(intent))
   return Array.from(new Uint8Array(digest), (value) => value.toString(16).padStart(2, '0')).join('')
 }
@@ -85,15 +89,18 @@ export async function requestOpenAIOrb(input: {
   message: string
   context: OrbConversationMessage[]
   aiProcessingConsent: boolean
+  locale?: string
   signal: AbortSignal
   onEvent?: (event: OrbProviderEvent) => void
 }): Promise<OrbProviderResult | null> {
   if (!input.aiProcessingConsent || !firebasePublicEnvReady || input.signal.aborted) return null
+  const locale = contentLanguage(input.locale ?? currentSpeechTag())?.speechTag
+  if (!locale) return null
   const user = getAuth(app).currentUser
   if (!user) return null
   const token = await user.getIdToken()
   if (!token || input.signal.aborted) return null
-  const requestId = await stableIntentRequestId(input.message, input.context)
+  const requestId = await stableIntentRequestId(input.message, input.context, locale)
   if (!requestId || input.signal.aborted) return null
 
   let response: Response
@@ -111,6 +118,7 @@ export async function requestOpenAIOrb(input: {
         context: input.context.slice(-8),
         aiProcessingConsent: true,
         requestId,
+        locale,
       }),
     })
   } catch (error) {
@@ -146,6 +154,13 @@ export async function requestOpenAIOrb(input: {
         if (!line.trim()) continue
         let event: OrbProviderEvent
         try { event = JSON.parse(line) as OrbProviderEvent } catch { continue }
+        if (event.type === 'delta' || event.type === 'done') {
+          // Legacy English responses remain compatible; foreign responses must
+          // declare the exact requested language before captions or voice consume them.
+          const returned = contentLanguage(event.locale ?? (locale === 'en-US' ? 'en-US' : ''))
+          if (!returned || returned.speechTag !== locale) throw new OrbProviderAttemptError('INVALID_PROVIDER_LOCALE')
+          event = { ...event, locale: returned.speechTag }
+        }
         input.onEvent?.(event)
         if (event.type === 'done') finalResult = event
         if (event.type === 'error') throw new OrbProviderAttemptError(event.code)

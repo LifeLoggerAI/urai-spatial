@@ -1,4 +1,4 @@
-import { currentSpeechTag } from '../../lib/i18n/localePreference'
+import { contentLanguage } from '../../lib/i18n/contentLanguage'
 
 export type OrbVoicePhase = 'idle' | 'preparing' | 'queued' | 'speaking'
 export type OrbVoiceNotice = 'preparing' | 'external-playing' | 'device-playing' | 'external-unavailable' | 'unavailable' | 'finished'
@@ -27,7 +27,8 @@ function browserVoiceEnvironment(): VoiceEnvironment {
     createAudio: (url) => new Audio(url),
     createObjectURL: (blob) => URL.createObjectURL(blob),
     revokeObjectURL: (url) => URL.revokeObjectURL(url),
-    get language() { return currentSpeechTag() },
+    // An unlabeled legacy/fallback response is authored English, not UI preview.
+    language: 'en-US',
   }
 }
 
@@ -53,12 +54,14 @@ export class OrbVoicePlayback {
     this.options.onPhase('idle')
   }
 
-  async play(text: string, externalProcessingConsent: boolean) {
+  async play(text: string, externalProcessingConsent: boolean, contentLocale?: string) {
     this.stop()
     if (!text.trim()) return
     const generation = this.generation
     const controller = new AbortController()
     this.aborter = controller
+    const language = contentLanguage(contentLocale ?? this.environment.language)
+    if (!language) { this.finish(generation, controller, 'unavailable'); return }
 
     if (externalProcessingConsent) {
       this.options.onPhase('preparing')
@@ -97,7 +100,7 @@ export class OrbVoicePlayback {
             if (!ownsAudio()) return
             this.clearAudio()
             this.options.onNotice('external-unavailable')
-            void this.playDevice(text, generation, controller)
+            void this.playDevice(text, generation, controller, language.speechTag)
           }
           await audio.play()
           // A resolved play promise is insufficient evidence of audible playback.
@@ -112,7 +115,7 @@ export class OrbVoicePlayback {
       this.options.onNotice('external-unavailable')
     }
 
-    await this.playDevice(text, generation, controller)
+    await this.playDevice(text, generation, controller, language.speechTag)
   }
 
   private owns(generation: number, controller: AbortController) {
@@ -144,16 +147,16 @@ export class OrbVoicePlayback {
     if (cancel) this.environment.speech?.cancel()
   }
 
-  private localVoice() {
+  private localVoice(language: string) {
     const voices = this.environment.speech?.getVoices().filter((voice) => voice.localService) ?? []
-    const language = this.environment.language.toLowerCase()
+    language = language.toLowerCase()
     return voices.find((voice) => voice.lang.toLowerCase() === language)
       ?? voices.find((voice) => voice.lang.toLowerCase().split('-')[0] === language.split('-')[0])
       ?? null
   }
 
-  private async waitForLocalVoice(signal: AbortSignal) {
-    const available = this.localVoice()
+  private async waitForLocalVoice(signal: AbortSignal, language: string) {
+    const available = this.localVoice(language)
     if (available || !this.environment.speech || signal.aborted) return available
     const speech = this.environment.speech
     return new Promise<SpeechSynthesisVoice | null>((resolve) => {
@@ -164,7 +167,7 @@ export class OrbVoicePlayback {
         resolve(voice)
       }
       const onVoices = () => {
-        const voice = this.localVoice()
+        const voice = this.localVoice(language)
         if (voice) finish(voice)
       }
       const onAbort = () => finish(null)
@@ -177,12 +180,12 @@ export class OrbVoicePlayback {
     })
   }
 
-  private async playDevice(text: string, generation: number, controller: AbortController) {
+  private async playDevice(text: string, generation: number, controller: AbortController, language: string) {
     if (!this.owns(generation, controller)) return
     this.options.onPhase('queued')
     let voice: SpeechSynthesisVoice | null = null
     try {
-      voice = await this.waitForLocalVoice(controller.signal)
+      voice = await this.waitForLocalVoice(controller.signal, language)
     } catch {
       this.finish(generation, controller, 'unavailable')
       return
