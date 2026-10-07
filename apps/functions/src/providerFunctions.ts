@@ -146,7 +146,7 @@ function providerIdempotencyKey(uid: string, requestId: string, locale: string) 
 }
 
 const OPENAI_REQUEST_PURPOSE = 'spatial-orb-response'
-const OPENAI_REQUEST_BOUNDARY_VERSION = 'openai-orb-reservation-1'
+const OPENAI_REQUEST_BOUNDARY_VERSION = 'openai-orb-reservation-2'
 
 function digest(value: string) {
   return createHash('sha256').update(value).digest('hex')
@@ -302,6 +302,7 @@ export const openAiOrbProvider = onRequest({
       boundaryVersion: OPENAI_REQUEST_BOUNDARY_VERSION, purpose: OPENAI_REQUEST_PURPOSE,
       moderationEndpoint: 'https://api.openai.com/v1/moderations', responseEndpoint: 'https://api.openai.com/v1/responses',
       moderationModel: moderationBody.model, responseConfiguration,
+      moderationDeadlineMs: 8_000, responseDeadlineMs: 30_000,
     }))
     const bodyDigest = digest(canonicalJson({ message, context, moderationBody, upstreamBody }))
     const expectedRequestId = digest(JSON.stringify({ message, context, locale }))
@@ -312,58 +313,71 @@ export const openAiOrbProvider = onRequest({
     await requireProviderConsent(uid, 'openai', body.aiProcessingConsent === true)
     const moderationController = new AbortController()
     const moderationTimeout = setTimeout(() => moderationController.abort(), 8_000)
-    const moderation = await fetch('https://api.openai.com/v1/moderations', {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify(moderationBody),
-      signal: moderationController.signal,
-    }).finally(() => clearTimeout(moderationTimeout))
-    if (!moderation.ok) throw new ProviderError(503, 'MODERATION_UNAVAILABLE', 'The live Orb safety check is unavailable.')
-    const moderationResult = await moderation.json() as { results?: Array<{ flagged?: boolean }> }
-    if (moderationResult.results?.[0]?.flagged) throw new ProviderError(400, 'INPUT_BLOCKED', 'This message cannot be sent to the live provider.')
+    try {
+      const moderation = await fetch('https://api.openai.com/v1/moderations', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify(moderationBody),
+        signal: moderationController.signal,
+      })
+      if (!moderation.ok) throw new ProviderError(503, 'MODERATION_UNAVAILABLE', 'The live Orb safety check is unavailable.')
+      const moderationResult = await moderation.json() as { results?: Array<{ flagged?: boolean }> }
+      if (typeof moderationResult.results?.[0]?.flagged !== 'boolean') throw new ProviderError(503, 'MODERATION_UNAVAILABLE', 'The live Orb safety check returned no valid decision.')
+      if (moderationResult.results?.[0]?.flagged) throw new ProviderError(400, 'INPUT_BLOCKED', 'This message cannot be sent to the live provider.')
+    } finally {
+      clearTimeout(moderationTimeout)
+    }
     await requireProviderConsent(uid, 'openai', body.aiProcessingConsent === true)
 
     const controller = new AbortController()
     const timeout = setTimeout(() => controller.abort(), 30_000)
-    request.on('close', () => controller.abort())
-    const upstream = await fetch('https://api.openai.com/v1/responses', {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        'Content-Type': 'application/json',
-        Accept: 'text/event-stream',
-        'Idempotency-Key': upstreamIdempotencyKey,
-      },
-      body: JSON.stringify(upstreamBody),
-      signal: controller.signal,
-    }).finally(() => clearTimeout(timeout))
-    if (!upstream.ok || !upstream.body) throw new ProviderError(upstream.status === 429 ? 429 : 503, 'OPENAI_REQUEST_FAILED', 'The live Orb provider is unavailable.')
+    const abortOnClose = () => controller.abort()
+    request.on('close', abortOnClose)
+    const { result, upstreamRequestId } = await (async () => {
+      try {
+        const upstream = await fetch('https://api.openai.com/v1/responses', {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${apiKey}`,
+            'Content-Type': 'application/json',
+            Accept: 'text/event-stream',
+            'Idempotency-Key': upstreamIdempotencyKey,
+          },
+          body: JSON.stringify(upstreamBody),
+          signal: controller.signal,
+        })
+        if (!upstream.ok || !upstream.body) throw new ProviderError(upstream.status === 429 ? 429 : 503, 'OPENAI_REQUEST_FAILED', 'The live Orb provider is unavailable.')
 
-    const reader = upstream.body.getReader()
-    const decoder = new TextDecoder()
-    let buffer = ''
-    let output = ''
-    let completed = false
-    while (true) {
-      const { value, done } = await reader.read()
-      if (done) break
-      buffer += decoder.decode(value, { stream: true })
-      const frames = buffer.split('\n\n')
-      buffer = frames.pop() ?? ''
-      for (const frame of frames) {
-        const line = frame.split('\n').find((candidate) => candidate.startsWith('data:'))
-        if (!line) continue
-        const payload = line.slice(5).trim()
-        if (!payload || payload === '[DONE]') continue
-        let event: JsonMap
-        try { event = JSON.parse(payload) as JsonMap } catch { continue }
-        if (event.type === 'response.output_text.delta') output += String(event.delta ?? '')
-        if (event.type === 'response.completed') completed = true
-        if (event.type === 'response.failed' || event.type === 'error') throw new ProviderError(502, 'OPENAI_RESPONSE_FAILED', 'The live Orb provider could not complete the response.')
+        const reader = upstream.body.getReader()
+        const decoder = new TextDecoder()
+        let buffer = ''
+        let output = ''
+        let completed = false
+        while (true) {
+          const { value, done } = await reader.read()
+          if (done) break
+          buffer += decoder.decode(value, { stream: true })
+          const frames = buffer.split('\n\n')
+          buffer = frames.pop() ?? ''
+          for (const frame of frames) {
+            const line = frame.split('\n').find((candidate) => candidate.startsWith('data:'))
+            if (!line) continue
+            const payload = line.slice(5).trim()
+            if (!payload || payload === '[DONE]') continue
+            let event: JsonMap
+            try { event = JSON.parse(payload) as JsonMap } catch { continue }
+            if (event.type === 'response.output_text.delta') output += String(event.delta ?? '')
+            if (event.type === 'response.completed') completed = true
+            if (event.type === 'response.failed' || event.type === 'error') throw new ProviderError(502, 'OPENAI_RESPONSE_FAILED', 'The live Orb provider could not complete the response.')
+          }
+        }
+        if (!completed || !output) throw new ProviderError(502, 'OPENAI_RESPONSE_INCOMPLETE', 'The live Orb provider returned an incomplete response.')
+        return { result: parseOrbOutput(output, locale), upstreamRequestId: upstream.headers.get('x-request-id') }
+      } finally {
+        clearTimeout(timeout)
+        request.off?.('close', abortOnClose)
       }
-    }
-    if (!completed || !output) throw new ProviderError(502, 'OPENAI_RESPONSE_INCOMPLETE', 'The live Orb provider returned an incomplete response.')
-    const result = parseOrbOutput(output, locale)
+    })()
     await reservation.update({ state: 'completed', settledAt: admin.firestore.FieldValue.serverTimestamp() })
     reservationCompleted = true
 
@@ -377,7 +391,7 @@ export const openAiOrbProvider = onRequest({
       response.write(`${JSON.stringify({ type: 'delta', text: result.message.slice(offset, offset + 96), locale: result.locale })}\n`)
     }
     response.end(`${JSON.stringify({ type: 'done', ...result })}\n`)
-    await recordTelemetry({ uid, provider: 'openai', outcome: 'success', inputUnits: message.length, outputUnits: result.message.length, latencyMs: Date.now() - startedAt, upstreamRequestId: upstream.headers.get('x-request-id') })
+    await recordTelemetry({ uid, provider: 'openai', outcome: 'success', inputUnits: message.length, outputUnits: result.message.length, latencyMs: Date.now() - startedAt, upstreamRequestId })
   } catch (error) {
     if (reservation && !reservationCompleted) {
       try { await reservation.update({ state: 'uncertain', settledAt: admin.firestore.FieldValue.serverTimestamp() }) } catch {

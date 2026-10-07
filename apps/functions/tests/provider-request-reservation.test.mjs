@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url'
 import { createHash, webcrypto } from 'node:crypto'
 import { createRequire } from 'node:module'
 import vm from 'node:vm'
+import http from 'node:http'
 import test from 'node:test'
 import ts from 'typescript'
 
@@ -102,7 +103,7 @@ function responseDouble({ loseDelivery = false } = {}) {
   }
 }
 
-function fixture({ store = storage(), env = {}, fetchHook, authHook } = {}) {
+function fixture({ store = storage(), env = {}, fetchHook, authHook, shortenDeadlineMs } = {}) {
   for (const uid of ['alice', 'bob']) {
     if (!store.state.docs.has(`users/${uid}/privacyPolicy/current`)) store.state.docs.set(`users/${uid}/privacyPolicy/current`, clone(policy))
   }
@@ -121,7 +122,7 @@ function fixture({ store = storage(), env = {}, fetchHook, authHook } = {}) {
   }
   const fetch = async (url, options) => {
     assert.ok(['https://api.openai.com/v1/moderations', 'https://api.openai.com/v1/responses'].includes(String(url)), 'unexpected external route')
-    const call = { url: String(url), body: JSON.parse(options.body), headers: options.headers }
+    const call = { url: String(url), body: JSON.parse(options.body), headers: options.headers, signal: options.signal }
     calls.push(call)
     if (fetchHook) { const handled = await fetchHook(call, calls); if (handled) return handled }
     if (String(url).endsWith('/moderations')) return Response.json({ results: [{ flagged: false }] })
@@ -132,7 +133,7 @@ function fixture({ store = storage(), env = {}, fetchHook, authHook } = {}) {
     'firebase-admin': admin,
     'firebase-functions/params': { defineSecret: () => ({ value: () => 'synthetic-test-only-key' }) },
     'firebase-functions/v2/https': { onRequest: (_options, handler) => handler },
-  }, { fetch, env })
+  }, { fetch, env, setTimeout: (callback, duration) => setTimeout(callback, shortenDeadlineMs ? Math.min(duration, shortenDeadlineMs) : duration) })
   const run = async ({ uid = 'alice', body = {}, loseDelivery = false, authorization = `Bearer ${uid}` } = {}) => {
     const response = responseDouble({ loseDelivery })
     await exports.openAiOrbProvider({ method: 'POST', headers: { authorization }, body: { message, context: [], aiProcessingConsent: true, requestId, locale: 'en-US', ...body }, on() {} }, response)
@@ -201,6 +202,46 @@ test('failure to durably settle an answer prevents HTTP success and keeps replay
   const response = await f.run(); assert.equal(response.statusCode, 503); assert.equal(response.jsonBody.error, 'PROVIDER_ATTEMPT_UNCERTAIN')
   assert.equal(response.chunks.length, 0); assert.equal(f.reservations()[0][1].state, 'uncertain')
   assert.equal((await f.run()).jsonBody.error, 'PROVIDER_REQUEST_HELD'); assert.equal(f.calls.length, 2)
+})
+
+for (const stage of ['moderations', 'responses']) test(`actual local HTTP ${stage} headers do not release the deadline before delayed body consumption`, async () => {
+  let localRequests = 0
+  let headersArrived = false
+  const server = http.createServer((request, response) => {
+    request.resume(); localRequests++
+    response.writeHead(200, { 'Content-Type': stage === 'moderations' ? 'application/json' : 'text/event-stream' })
+    response.flushHeaders()
+    const delayed = setTimeout(() => response.end(stage === 'moderations'
+      ? JSON.stringify({ results: [{ flagged: false }] })
+      : `data: ${JSON.stringify({ type: 'response.output_text.delta', delta: JSON.stringify(answer) })}\n\ndata: {"type":"response.completed"}\n\n`), 700)
+    response.on('close', () => clearTimeout(delayed))
+  })
+  await new Promise((resolve, reject) => { server.once('error', reject); server.listen(0, '127.0.0.1', resolve) })
+  try {
+    const url = `http://127.0.0.1:${server.address().port}/${stage}`
+    const f = fixture({ shortenDeadlineMs: 200, fetchHook: async (call) => {
+      if (!call.url.endsWith(`/${stage}`)) return undefined
+      const upstream = await globalThis.fetch(url, { method: 'POST', body: JSON.stringify(call.body), signal: call.signal })
+      headersArrived = true
+      return upstream
+    } })
+    const first = await f.run()
+    assert.equal(headersArrived, true, 'headers must arrive before the deadline')
+    assert.equal(first.statusCode, 503); assert.equal(first.jsonBody.error, 'PROVIDER_ATTEMPT_UNCERTAIN')
+    assert.equal(f.reservations()[0][1].state, 'uncertain')
+    assert.equal((await f.run()).jsonBody.error, 'PROVIDER_REQUEST_HELD')
+    assert.equal(localRequests, 1)
+    assert.equal(f.calls.length, stage === 'moderations' ? 1 : 2)
+  } finally {
+    server.closeAllConnections()
+    await new Promise(resolve => server.close(resolve))
+  }
+})
+
+test('missing moderation decision cannot authorize the response invocation or release its reservation', async () => {
+  const f = fixture({ fetchHook: (call) => call.url.endsWith('/moderations') ? Response.json({ results: [] }) : undefined })
+  assert.equal((await f.run()).jsonBody.error, 'MODERATION_UNAVAILABLE'); assert.equal(f.calls.length, 1)
+  assert.equal((await f.run()).jsonBody.error, 'PROVIDER_REQUEST_HELD'); assert.equal(f.calls.length, 1)
 })
 
 test('no upstream request runs when reservation storage has not committed', async () => {

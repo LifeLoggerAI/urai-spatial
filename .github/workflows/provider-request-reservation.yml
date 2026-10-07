@@ -106,7 +106,7 @@ jobs:
           const out = path.join(process.env.RUNNER_TEMP,'provider-request-proof')
           const log = fs.readFileSync(path.join(out,'tests.tap'),'utf8')
           const counts = Object.fromEntries([...log.matchAll(/^# (tests|pass|fail|cancelled|skipped|todo) (\d+)\s*$/gm)].map(m=>[m[1],Number(m[2])]))
-          if (!(counts.tests >= 46) || counts.pass !== counts.tests || ['fail','cancelled','skipped','todo'].some(k=>counts[k]!==0)) throw new Error('Missing or incomplete provider request tests')
+          if (!(counts.tests >= 49) || counts.pass !== counts.tests || ['fail','cancelled','skipped','todo'].some(k=>counts[k]!==0)) throw new Error('Missing or incomplete provider request tests')
           for (const file of ['server-types.log','client-types.log']) if (!fs.existsSync(path.join(out,file))) throw new Error('Missing actual adapter typecheck')
           const consumerLog = fs.readFileSync(path.join(out,'consumer-tests.tap'),'utf8')
           const consumerCounts = Object.fromEntries([...consumerLog.matchAll(/^# (tests|pass|fail|cancelled|skipped|todo) (\d+)\s*$/gm)].map(m=>[m[1],Number(m[2])]))
