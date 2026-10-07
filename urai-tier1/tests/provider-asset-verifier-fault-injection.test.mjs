@@ -71,8 +71,27 @@ test('missing Home route owner fails closed', t => {
 
 test('localized Ground action cannot silently navigate to a different destination', t => {
   const failed = inject(t, fixture => replace(fixture, 'urai-tier1/src/app/HomeSpatialRuntimeLayer.tsx',
-    'href="/ground/?entryPortal=home-ground&cameraCheckpoint=home-ground-descent"', 'href="/unbound-destination/"'))
-  assert.ok(failed.failures.some(failure => failure.includes('missing active-owner binding: href="/ground/')))
+    '/ground/?entryPortal=home-ground&cameraCheckpoint=home-ground-descent', '/unbound-destination/'))
+  assert.ok(failed.failures.some(failure => failure.includes('home-semantic-ground destination')))
+})
+
+test('actual Life Map control must retain the source portal and completed Ascent checkpoint', t => {
+  const failed = inject(t, fixture => replace(fixture, 'urai-tier1/src/app/HomeSpatialRuntimeLayer.tsx',
+    '/life-map/?from=home-sky&entryPortal=home-sky&cameraCheckpoint=home-sky-ascent-complete', '/life-map/?from=unbound&cameraCheckpoint=unbound'))
+  assert.ok(failed.failures.some(failure => failure.includes('home-semantic-life-map destination')))
+})
+
+test('a destination-shaped call cannot substitute an unowned helper import', t => {
+  const failed = inject(t, fixture => replace(fixture, 'urai-tier1/src/app/HomeSpatialRuntimeLayer.tsx',
+    "from '@/spatial/navigation/homeSkyInteraction'", "from '@/unowned/navigation'"))
+  assert.ok(failed.failures.some(failure => failure.includes('home-semantic-ground destination')))
+  assert.ok(failed.failures.some(failure => failure.includes('home-semantic-life-map destination')))
+})
+
+test('a detached helper declaration cannot satisfy the actual exported destination helper', t => {
+  const failed = inject(t, fixture => replace(fixture, 'urai-tier1/src/spatial/navigation/homeSkyInteraction.ts',
+    'export function homeJourneyHref(', 'function homeJourneyHref('))
+  assert.ok(failed.failures.some(failure => failure.includes('home-semantic-ground destination')))
 })
 
 test('unmounted Home world fails even with imported name and markers present', t => {

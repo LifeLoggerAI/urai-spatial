@@ -6,6 +6,10 @@ const expected = [
   ['home-semantic-ground', 'a', 'home.groundAction', 'Open Ground directly'],
   ['home-semantic-life-map', 'a', 'home.lifeMapAction', 'Open Life Map directly'],
 ]
+const destinations = new Map([
+  ['home-semantic-ground', '/ground/?entryPortal=home-ground&cameraCheckpoint=home-ground-descent'],
+  ['home-semantic-life-map', '/life-map/?from=home-sky&entryPortal=home-sky&cameraCheckpoint=home-sky-ascent-complete'],
+])
 
 const unwrap = node => node && (ts.isParenthesizedExpression(node) || ts.isAsExpression(node) || ts.isSatisfiesExpression(node)) ? unwrap(node.expression) : node
 const nameOf = node => ts.isIdentifier(node) || ts.isStringLiteral(node) ? node.text : null
@@ -25,7 +29,7 @@ const messageAttribute = (node, name) => {
 
 // Parse the actual returned JSX and authoritative English definitions. Comments,
 // unused strings and detached fake controls do not satisfy this source boundary.
-export function homeNavigationSourceFailures(runtimeSource, catalogSources) {
+export function homeNavigationSourceFailures(runtimeSource, catalogSources, journeySource = '') {
   const failures = []
   const definitions = new Map()
   for (const [index, source] of catalogSources.entries()) {
@@ -52,6 +56,17 @@ export function homeNavigationSourceFailures(runtimeSource, catalogSources) {
   }
   const file = ts.createSourceFile('HomeSpatialRuntimeLayer.tsx', runtimeSource, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX)
   if (file.parseDiagnostics.length) failures.push('Home navigation runtime has syntax errors')
+  const journeyImports = file.statements.filter(node => ts.isImportDeclaration(node)
+    && ts.isStringLiteral(node.moduleSpecifier) && node.moduleSpecifier.text === '@/spatial/navigation/homeSkyInteraction'
+    && !node.importClause?.isTypeOnly && node.importClause?.namedBindings && ts.isNamedImports(node.importClause.namedBindings))
+    .flatMap(node => node.importClause.namedBindings.elements.filter(binding => !binding.isTypeOnly
+      && binding.name.text === 'homeJourneyHref' && (!binding.propertyName || binding.propertyName.text === 'homeJourneyHref')))
+  const journeyFile = ts.createSourceFile('homeSkyInteraction.ts', journeySource, ts.ScriptTarget.Latest, true, ts.ScriptKind.TS)
+  const journeyDeclarations = journeyFile.statements.filter(node => ts.isFunctionDeclaration(node)
+    && node.name?.text === 'homeJourneyHref' && node.modifiers?.some(modifier => modifier.kind === ts.SyntaxKind.ExportKeyword)
+    && node.parameters.length === 2 && node.parameters[0].name.getText() === 'href' && node.parameters[1].name.getText() === 'search'
+    && node.body)
+  const journeyBindingAvailable = journeyImports.length === 1 && !journeyFile.parseDiagnostics.length && journeyDeclarations.length === 1
   const owners = file.statements.filter(node => ts.isFunctionDeclaration(node) && node.name?.text === 'HomeSemanticNavigation')
   const returns = owners.length === 1 ? owners[0].body?.statements.filter(ts.isReturnStatement) ?? [] : []
   const nav = returns.length === 1 ? unwrap(returns[0].expression) : null
@@ -68,6 +83,19 @@ export function homeNavigationSourceFailures(runtimeSource, catalogSources) {
     if (targets.length !== 1 || targets[0].openingElement.tagName.getText() !== tag
       || messageAttribute(targets[0], 'aria-label') !== key || definitions.get(key) !== text) {
       failures.push(`Home navigation actual ${id} must bind its native ${tag} and authoritative ${key} English name`)
+    }
+    if (destinations.has(id) && targets.length === 1) {
+      const href = attribute(targets[0], 'href')
+      const expression = href.length === 1 && href[0].initializer && ts.isJsxExpression(href[0].initializer)
+        ? unwrap(href[0].initializer.expression) : null
+      const fixedHref = expression && ts.isCallExpression(expression) && ts.isIdentifier(expression.expression)
+        && expression.expression.text === 'homeJourneyHref' && expression.arguments.length === 2
+        && ts.isStringLiteral(expression.arguments[0]) && ts.isIdentifier(expression.arguments[1])
+        && expression.arguments[1].text === 'currentSearch' && journeyBindingAvailable
+        ? expression.arguments[0].text : literalAttribute(targets[0], 'href')
+      if (fixedHref !== destinations.get(id)) {
+        failures.push(`Home navigation actual ${id} destination must bind its exact canonical route, portal and camera checkpoint through the owned helper`)
+      }
     }
   }
   return failures

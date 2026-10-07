@@ -77,6 +77,7 @@ const routeOwnerChecks = [
       'urai-tier1/src/spatial/layout/HomeWorldProductionPolished.tsx',
       'urai-tier1/src/lib/i18n/coreMessages.ts',
       'urai-tier1/src/lib/i18n/journeyMessages.ts',
+      'urai-tier1/src/spatial/navigation/homeSkyInteraction.ts',
     ],
     renderMode: 'asset-driven-spatial',
     // Check the actual mounting edges in their owning files, not just names in
@@ -85,7 +86,6 @@ const routeOwnerChecks = [
     requiredByFile: {
       'urai-tier1/src/app/HomeSpatialRuntimeLayer.tsx': [
         '<AssetDrivenHomeWorld', '<HomeSemanticNavigation />',
-        'href="/ground/?entryPortal=home-ground&cameraCheckpoint=home-ground-descent"',
       ],
       'urai-tier1/src/app/AssetDrivenHomeWorld.tsx': [
         '<HomeWorldProduction',
@@ -359,6 +359,7 @@ const routeOwners = routeOwnerChecks.map((check) => {
     ownerFailures.push(...homeNavigationSourceFailures(
       sourcesByFile.get('urai-tier1/src/app/HomeSpatialRuntimeLayer.tsx') ?? '',
       ['coreMessages', 'journeyMessages'].map(name => sourcesByFile.get(`urai-tier1/src/lib/i18n/${name}.ts`) ?? ''),
+      sourcesByFile.get('urai-tier1/src/spatial/navigation/homeSkyInteraction.ts') ?? '',
     ))
   }
   if (check.assetSet) {
