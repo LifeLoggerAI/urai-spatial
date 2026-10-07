@@ -248,3 +248,36 @@ test('accessibility workflow retains the complete archive and strict first-run/r
   assert.match(workflow, /verify-native-uploads/)
   assert.doesNotMatch(workflow, /path: artifacts\/accessibility-performance-transport\s*\n/)
 })
+
+for (const status of [404, 429, 500, 502, 503, 504, 'network']) test(`native preparation recovers bounded ${status} metadata/redirect failures with exact validation`, async t => {
+  const f = fixture(t, 100)
+  const calls = new Map(); const delays = []
+  const fetchImpl = async (url, opts) => {
+    assert.equal(opts.headers?.Authorization, url.startsWith('https://api.github.com/') ? 'Bearer synthetic-read-only-test-token' : undefined)
+    if (!url.startsWith('https://api.github.com/')) return new Response(f.archive)
+    const count = (calls.get(url) ?? 0) + 1; calls.set(url, count)
+    if (count < 3) { if (status === 'network') throw new TypeError('synthetic network failure'); return new Response(null, { status }) }
+    if (url.endsWith('/zip')) return new Response(null, { status: 302, headers: { location: 'https://storage.test/native' } })
+    return Response.json(metadata(f.binding, { size_in_bytes: f.archive.length }))
+  }
+  const manifest = await prepareNativeArchive({ outputDirectory: path.join(f.root, 'retry'), env: nativeEnv(f.binding), fetchImpl, delay: async ms => delays.push(ms) })
+  assert.equal(manifest.archiveSha256, f.binding.archiveSha256)
+  assert.deepEqual([...calls.values()], [3, 3]); assert.deepEqual(delays, [1000, 2000, 1000, 2000])
+})
+
+for (const status of [404, 503, 'network', 401, 403]) test(`native metadata ${status} remains fail closed after its bounded attempt limit`, async t => {
+  const f = fixture(t, 100); let calls = 0; const delays = []
+  const outputDirectory = path.join(f.root, 'rejected')
+  const fetchImpl = async () => { calls++; if (status === 'network') throw new Error('synthetic'); return new Response(null, { status }) }
+  await assert.rejects(prepareNativeArchive({ outputDirectory, env: nativeEnv(f.binding), fetchImpl, delay: async ms => delays.push(ms) }), /unavailable/)
+  const retryable = status !== 401 && status !== 403
+  assert.equal(calls, retryable ? 5 : 1); assert.deepEqual(delays, retryable ? [1000, 2000, 4000, 8000] : [])
+  assert.equal(fs.existsSync(outputDirectory), false)
+})
+
+test('a recovered metadata response cannot weaken digest or run ownership', async t => {
+  const f = fixture(t, 100); let calls = 0
+  const fetchImpl = async () => ++calls === 1 ? new Response(null, { status: 404 }) : Response.json(metadata(f.binding, { digest: `sha256:${'f'.repeat(64)}` }))
+  await assert.rejects(prepareNativeArchive({ outputDirectory: path.join(f.root, 'wrong-digest'), env: nativeEnv(f.binding), fetchImpl, delay: async () => {} }), /digest mismatch/)
+  assert.equal(calls, 2)
+})

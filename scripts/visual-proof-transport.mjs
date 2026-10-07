@@ -143,12 +143,26 @@ function nativeBinding(env) {
   return binding
 }
 
-async function githubRequest(endpoint, token, fetchImpl) {
-  const response = await fetchImpl(`https://api.github.com/repos/${REPOSITORY}/actions/artifacts/${endpoint}`, {
-    headers: { Authorization: `Bearer ${token}`, Accept: 'application/vnd.github+json', 'X-GitHub-Api-Version': '2022-11-28' },
-    redirect: 'manual', signal: AbortSignal.timeout(60_000),
-  })
-  return response
+const retryDelay = milliseconds => new Promise(resolve => setTimeout(resolve, milliseconds))
+
+async function githubRequest(endpoint, token, fetchImpl, delay) {
+  // A finalized v4 upload can precede REST metadata availability. Retry only
+  // transport failures; every successful response still needs exact validation.
+  for (let attempt = 0; attempt < 5; attempt++) {
+    let response
+    try {
+      response = await fetchImpl(`https://api.github.com/repos/${REPOSITORY}/actions/artifacts/${endpoint}`, {
+        headers: { Authorization: `Bearer ${token}`, Accept: 'application/vnd.github+json', 'X-GitHub-Api-Version': '2022-11-28' },
+        redirect: 'manual', signal: AbortSignal.timeout(60_000),
+      })
+    } catch {
+      if (attempt === 4) throw new Error('Native artifact API transport unavailable after bounded retries')
+    }
+    if (response && ![404, 429, 500, 502, 503, 504].includes(response.status)) return response
+    if (attempt === 4) return response
+    await response?.body?.cancel()
+    await delay(1000 * 2 ** attempt)
+  }
 }
 
 export function validateNativeArtifact(metadata, binding, { id, name, archiveDigest, maxBytes = PART_BYTES * MAX_PARTS }) {
@@ -160,17 +174,17 @@ export function validateNativeArtifact(metadata, binding, { id, name, archiveDig
   return metadata
 }
 
-async function getArtifact(binding, spec, token, fetchImpl) {
+async function getArtifact(binding, spec, token, fetchImpl, delay) {
   requireValue(positiveId(spec.id) && digest(spec.archiveDigest), 'Native uploaded artifact identity/digest missing')
-  const response = await githubRequest(spec.id, token, fetchImpl)
+  const response = await githubRequest(spec.id, token, fetchImpl, delay)
   requireValue(response.status === 200, `Native artifact metadata unavailable (HTTP ${response.status})`)
   return validateNativeArtifact(await response.json(), binding, spec)
 }
 
-export async function prepareNativeArchive({ outputDirectory, env = process.env, fetchImpl = fetch }) {
+export async function prepareNativeArchive({ outputDirectory, env = process.env, fetchImpl = fetch, delay = retryDelay }) {
   const binding = nativeBinding(env)
-  const metadata = await getArtifact(binding, { id: binding.artifactId, name: originalArtifactName(binding), archiveDigest: binding.archiveSha256 }, env.GITHUB_TOKEN, fetchImpl)
-  const response = await githubRequest(`${binding.artifactId}/zip`, env.GITHUB_TOKEN, fetchImpl)
+  const metadata = await getArtifact(binding, { id: binding.artifactId, name: originalArtifactName(binding), archiveDigest: binding.archiveSha256 }, env.GITHUB_TOKEN, fetchImpl, delay)
+  const response = await githubRequest(`${binding.artifactId}/zip`, env.GITHUB_TOKEN, fetchImpl, delay)
   requireValue(response.status === 302, `Native archive redirect unavailable (HTTP ${response.status})`)
   const location = new URL(response.headers.get('location'))
   requireValue(location.protocol === 'https:' && !location.username && !location.password && location.hostname !== 'api.github.com', 'Unsafe native archive redirect')
@@ -201,7 +215,7 @@ export async function prepareNativeArchive({ outputDirectory, env = process.env,
   }
 }
 
-export async function verifyNativeUploads({ manifestPath, outputPath, env = process.env, fetchImpl = fetch }) {
+export async function verifyNativeUploads({ manifestPath, outputPath, env = process.env, fetchImpl = fetch, delay = retryDelay }) {
   const binding = nativeBinding(env)
   requireValue(fs.statSync(manifestPath).size <= 64 * 1024, 'Manifest exceeds bounded size')
   const manifest = validateManifest(JSON.parse(fs.readFileSync(manifestPath, 'utf8')), binding)
@@ -214,7 +228,7 @@ export async function verifyNativeUploads({ manifestPath, outputPath, env = proc
   }
   requireValue(new Set(specs.map(spec => spec.id)).size === specs.length, 'Duplicate native artifact identities')
   for (const spec of specs) {
-    const metadata = await getArtifact(binding, spec, env.GITHUB_TOKEN, fetchImpl)
+    const metadata = await getArtifact(binding, spec, env.GITHUB_TOKEN, fetchImpl, delay)
     artifacts.push({ artifactId: spec.id, name: spec.name, archiveBytes: metadata.size_in_bytes, archiveSha256: spec.archiveDigest })
   }
   const receipt = { schemaVersion: 'urai-visual-proof-upload-receipt-v1', validationScope: 'archive-transport-only', ...binding, partCount: manifest.partCount, artifactByteLimit: ARTIFACT_BYTES, artifacts }

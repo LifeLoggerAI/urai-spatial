@@ -1,10 +1,9 @@
 "use client"
 
 import { useReducedMotion } from '@/hooks/useReducedMotion'
-import { Canvas } from '@react-three/fiber'
-import { Float, OrbitControls, RoundedBox } from '@react-three/drei'
+import dynamic from 'next/dynamic'
 import { getAuth, onAuthStateChanged, type User } from 'firebase/auth'
-import { Suspense, useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { app, firebasePublicEnvReady } from '@/lib/firebase/client'
 import { assetCssStack, passportAssets } from '@/spatial/assets/uraiAssets'
 import {
@@ -18,22 +17,14 @@ import {
   type PrivacyRow,
 } from '@/lib/privacy/operationalPrivacyClient'
 import { demoPassportSnapshot, redactPassportSnapshot, type PassportSnapshot } from './passportModel'
+import { ZONES } from './passportZones'
 import './passport-vault.css'
+
+// Ownership controls commit before the decorative WebGL module initializes.
+const VaultWorld = dynamic(() => import('./VaultWorld'), { ssr: false })
 
 type LoadState = 'loading' | 'private' | 'demo' | 'signed-out' | 'empty' | 'offline' | 'unavailable'
 type SnapshotPayload = Record<string, unknown>
-
-const ZONES = [
-  ['identity', 'Identity core'],
-  ['sources', 'Connected sources'],
-  ['devices', 'Devices and sessions'],
-  ['provenance', 'Provenance archive'],
-  ['consent', 'Permission history'],
-  ['exports', 'Export chamber'],
-  ['deletion', 'Deletion chamber'],
-  ['audit', 'Audit corridor'],
-  ['recovery', 'Recovery threshold'],
-] as const
 
 const DELETION_SCOPES = [
   ['export-history', 'Export history', 'CONFIRM DELETE'],
@@ -54,53 +45,6 @@ function runtimeExportAssetIds(job: PrivacyRow): string[] {
     const assetId = (entry as Record<string, unknown>).assetId
     return typeof assetId === 'string' && assetId ? [assetId] : []
   })
-}
-
-function VaultWorld({ selected, keyState, onSelect, reducedMotion }: { selected: string; keyState: string; onSelect: (zone: string) => void; reducedMotion: boolean }) {
-  const keyColor = keyState === 'authorized' ? '#ffe0a3' : keyState === 'failed' ? '#ff8f78' : '#8edce5'
-  return (
-    <Canvas camera={{ position: [0, 5.2, 12], fov: 47 }} dpr={[1, 1.5]} gl={{ antialias: true, alpha: true }}>
-      <fog attach="fog" args={['#020409', 10, 28]} />
-      <ambientLight intensity={0.35} />
-      <directionalLight position={[5, 8, 4]} intensity={1.2} color="#fff4d4" />
-      <pointLight position={[0, 1.8, 0]} intensity={18} distance={10} color={keyColor} />
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -1.2, 0]} receiveShadow>
-        <circleGeometry args={[10, 72]} />
-        <meshStandardMaterial color="#090d14" metalness={0.3} roughness={0.72} />
-      </mesh>
-      {ZONES.map(([id], index) => {
-        const angle = ((index - 1) / ZONES.length) * Math.PI * 2
-        const radius = index === 0 ? 0 : 6.2
-        const x = index === 0 ? 0 : Math.cos(angle) * radius
-        const z = index === 0 ? -2.4 : Math.sin(angle) * radius
-        const active = id === selected
-        return (
-          <group key={id} position={[x, index === 0 ? 1.3 : 0, z]} rotation={[0, -angle + Math.PI / 2, 0]}>
-            <RoundedBox args={index === 0 ? [2.3, 3.7, 1.1] : [2.2, 2.2, 0.65]} radius={0.16} smoothness={4} onClick={(event) => { event.stopPropagation(); onSelect(id) }}>
-              <meshStandardMaterial color={active ? '#d6b66f' : '#101823'} emissive={active ? '#d8b463' : '#17313b'} emissiveIntensity={active ? 0.62 : 0.12} metalness={0.48} roughness={0.36} />
-            </RoundedBox>
-            <mesh position={[0, index === 0 ? 0.1 : 0, index === 0 ? 0.58 : 0.36]}>
-              <planeGeometry args={[active ? 1.42 : 1.12, 0.08]} />
-              <meshBasicMaterial color={active ? '#fff8e8' : '#8edce5'} />
-            </mesh>
-          </group>
-        )
-      })}
-      <group position={[0, 1.35, 0]}>
-        <Float speed={reducedMotion ? 0 : 0.8} rotationIntensity={reducedMotion ? 0 : 0.22} floatIntensity={reducedMotion ? 0 : 0.28}>
-          <mesh rotation={[0, 0, Math.PI / 4]}>
-            <torusGeometry args={[0.72, 0.16, 20, 64]} />
-            <meshStandardMaterial color={keyColor} emissive={keyColor} emissiveIntensity={1.3} metalness={0.75} roughness={0.2} />
-          </mesh>
-          <mesh position={[0.92, 0, 0]} rotation={[0, 0, Math.PI / 2]}>
-            <boxGeometry args={[0.18, 1.4, 0.18]} />
-            <meshStandardMaterial color={keyColor} emissive={keyColor} emissiveIntensity={0.9} metalness={0.8} roughness={0.2} />
-          </mesh>
-        </Float>
-      </group>
-      <OrbitControls enablePan enableZoom minDistance={6.8} maxDistance={18} maxPolarAngle={Math.PI * 0.5} minPolarAngle={Math.PI * 0.18} enableDamping={!reducedMotion} />
-    </Canvas>
-  )
 }
 
 function toDemoPayload(): SnapshotPayload {
@@ -301,7 +245,7 @@ export default function PassportVaultClient() {
           data-passport-environment-role="governed-visual-support"
           style={{ backgroundImage: assetCssStack(passportAssets.primary) }}
         />
-        {webglAvailable ? <Suspense fallback={null}><VaultWorld selected={selectedZone} keyState={keyState} onSelect={setSelectedZone} reducedMotion={reducedMotion} /></Suspense> : <div className="passportFallback" />}
+        {webglAvailable ? <VaultWorld selected={selectedZone} keyState={keyState} onSelect={setSelectedZone} reducedMotion={reducedMotion} /> : <div className="passportFallback" />}
       </div>
       <header className="passportHeader"><p>UrAi Passport</p><h1>Your life remains in your possession.</h1>{!webglAvailable && <div className="passportFallbackNotice" role="note">Vault controls remain available without WebGL.</div>}<div role="status" aria-live="polite" className="passportStatus">{message}</div>{state === 'demo' && <span className="passportDisclosure">DEMONSTRATION — sample data only</span>}</header>
       <nav className="passportZones" aria-label="Ownership Vault zones">{ZONES.map(([id, label]) => <button key={id} type="button" aria-pressed={selectedZone === id} onClick={() => setSelectedZone(id)}>{label}</button>)}</nav>

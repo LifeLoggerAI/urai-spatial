@@ -5,6 +5,7 @@ const tests = [
   'tests/private-life-model-review-behavior.test.mjs',
   'tests/private-life-model-owner-review-contract.test.mjs',
   'tests/visual-proof-transport.test.mjs',
+  'tests/passport-render-cadence.test.mjs',
   'tests/dependency-security-regressions.test.mjs',
   'tests/android-aab-transport.test.mjs',
   'tests/android-native-google-auth.test.mjs',
