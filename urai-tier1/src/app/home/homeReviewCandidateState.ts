@@ -27,15 +27,15 @@ export type HomeReviewCandidate = {
 export const homeReviewCandidates: readonly HomeReviewCandidate[] = [
   {
     assetId: 'home-entry-chamber-model-v1',
-    candidateId: 'home-entry-chamber-v1@forge-2026-07-23',
+    candidateId: 'home-entry-chamber-v1@restored-51db',
     path: '/assets/urai/generated/models/home-entry-chamber-v1.glb',
-    sha256: '0a3c3c2da53c5fe25958e57954c8337d7a27d9c4f94ae0967de21ae84e3e8883',
-    bytes: 45904,
-    triangleCount: 2132,
+    sha256: 'b7bdced5a721598a9dfe592ee19da04d754d5b8b1d48b23cc44403a89b1ee529',
+    bytes: 184160,
+    triangleCount: 12934,
     disposition: 'review-candidate',
-    artifactId: 8577690093,
-    artifactDigest: 'sha256:6c0c5b0e0207086e0f254434e7310f5c2fdaebfb3f969dae9a58a281ef477ca0',
-    source: 'URAI deterministic candidate forge, exact Actions run 30042154450',
+    artifactId: 8710341852,
+    artifactDigest: 'sha256:b14c3cfb15e58aa8a4bbe776a8ac1093f91541dcf7e1b56e999d96aeec687078',
+    source: 'Unchanged reviewed Home source recovered from 51db7b3ba77a657659da34ca5e146e049dd03d31; current-head acceptance pending',
     license: 'URAI Labs internal production asset',
   },
   {

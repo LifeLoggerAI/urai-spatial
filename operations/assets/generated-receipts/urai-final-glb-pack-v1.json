@@ -3,23 +3,27 @@
   "packId": "urai-final-glb-production-pack-v1",
   "generatedAt": "2026-08-08T04:10:38Z",
   "generator": "URAI Labs Final GLB Forge 1.0",
-  "authorship": "Original non-primitive authored mesh surfaces with embedded UV-mapped PBR texture sets; no visible basic primitive stand-ins.",
+  "authorship": "Committed source artifacts with per-asset provenance. Technical validation does not certify final visual suitability.",
   "assets": [
     {
       "fileName": "home-entry-chamber-v1.glb",
-      "bytes": 1786808,
-      "sha256": "73f2a49ed2cfd6cd7ae9baed7b3908d53e0cac75b9f36ff1b8be9654e3d3e2f2",
-      "triangleCount": 57352,
-      "nodes": 322,
+      "bytes": 184160,
+      "sha256": "b7bdced5a721598a9dfe592ee19da04d754d5b8b1d48b23cc44403a89b1ee529",
+      "triangleCount": 12934,
+      "nodes": 160,
       "animations": [
         "Home_Breathing",
         "Presence_Idle",
         "Presence_Privacy",
         "Presence_Forming"
       ],
-      "materials": 8,
-      "embeddedTextures": 4,
-      "uvMapped": true
+      "materials": 13,
+      "embeddedTextures": 0,
+      "uvMapped": false,
+      "sourceHead": "51db7b3ba77a657659da34ca5e146e049dd03d31",
+      "generator": "glTF-Transform v4.4.2",
+      "sourceRestoration": true,
+      "currentVisualAcceptance": false
     },
     {
       "fileName": "portal-ring-master-v1.glb",
@@ -141,5 +145,12 @@
       "embeddedTextures": 4,
       "uvMapped": true
     }
-  ]
+  ],
+  "sourceRestoration": {
+    "fileName": "home-entry-chamber-v1.glb",
+    "gitBlob": "dd757954937009d2ee54a52df6f56792528356f4",
+    "priorAcceptedSourceHead": "51db7b3ba77a657659da34ca5e146e049dd03d31",
+    "bytesChangedFromAcceptedSource": false,
+    "currentReleaseAccepted": false
+  }
 }
