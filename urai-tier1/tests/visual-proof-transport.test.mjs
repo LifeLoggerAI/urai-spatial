@@ -16,7 +16,7 @@ function temporary(t) {
   t.after(() => fs.rmSync(root, { recursive: true, force: true }))
   return root
 }
-function fixture(t, length = PART_BYTES + 107) {
+function fixture(t, length = PART_BYTES + 107, proofGroup = 'visual') {
   const root = temporary(t)
   const archive = Buffer.alloc(length, 0x83)
   archive.set([0x50, 0x4b, 0x03, 0x04])
@@ -24,13 +24,13 @@ function fixture(t, length = PART_BYTES + 107) {
   archive.set([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a], 17)
   const archivePath = path.join(root, 'original.zip')
   fs.writeFileSync(archivePath, archive)
-  const binding = { repository: REPOSITORY, sourceSha, proofGroup: 'visual', runId: '100', runAttempt: '2', artifactId: '200', archiveSha256: sha(archive) }
+  const binding = { repository: REPOSITORY, sourceSha, proofGroup, runId: '100', runAttempt: '2', artifactId: '200', archiveSha256: sha(archive) }
   const outputDirectory = path.join(root, 'parts')
   const manifest = splitArchive({ archivePath, outputDirectory, binding })
   return { root, archive, archivePath, binding, outputDirectory, manifest, manifestPath: path.join(outputDirectory, 'manifest.json'), partPaths: manifest.parts.map(part => path.join(outputDirectory, part.name)), outputPath: path.join(root, 'reconstructed.zip') }
 }
 const reconstruct = (f, overrides = {}) => reconstructArchive({ ...f, expected: f.binding, ...overrides })
-const metadata = (binding, overrides = {}) => ({ id: Number(binding.artifactId), name: `continuous-spatial-visual-proof-${binding.proofGroup}-${binding.sourceSha}`, expired: false,
+const metadata = (binding, overrides = {}) => ({ id: Number(binding.artifactId), name: binding.proofGroup === 'accessibility-performance' ? `accessibility-performance-evidence-${binding.sourceSha}` : `continuous-spatial-visual-proof-${binding.proofGroup}-${binding.sourceSha}`, expired: false,
   size_in_bytes: 100, digest: `sha256:${binding.archiveSha256}`, workflow_run: { id: Number(binding.runId) }, ...overrides })
 
 test('partitioning is deterministic and reassembly retains every original byte', t => {
@@ -146,6 +146,26 @@ test('native preparation verifies actual downloaded archive and sends token only
   assert.equal(fs.existsSync(`${outputDirectory}.original.zip`), false)
 })
 
+test('fixed accessibility profile retains the exact archive and cannot substitute a visual artifact', async t => {
+  const f = fixture(t, PART_BYTES + 107, 'accessibility-performance')
+  assert.equal(f.manifest.originalArtifactName, `accessibility-performance-evidence-${sourceSha}`)
+  assert.equal(f.manifest.archiveName, 'accessibility-performance.zip')
+  assert.equal(f.manifest.parts[0].name, 'accessibility-performance.zip.part-01')
+  assert.equal(f.manifest.parts[0].artifactName, `accessibility-performance-transport-${sourceSha}-100-2-part-01`)
+  reconstruct(f)
+  assert.deepEqual(fs.readFileSync(f.outputPath), f.archive)
+  const outputDirectory = path.join(f.root, 'native-accessibility')
+  let wrongName = false
+  const fetchImpl = async url => {
+    if (url.endsWith('/zip')) return new Response(null, { status: 302, headers: { location: 'https://storage.test/original-accessibility' } })
+    if (url.startsWith('https://api.github.com/')) return Response.json(metadata(f.binding, { size_in_bytes: f.archive.length, ...(wrongName ? { name: `continuous-spatial-visual-proof-visual-${sourceSha}` } : {}) }))
+    return new Response(f.archive)
+  }
+  assert.deepEqual(await prepareNativeArchive({ outputDirectory, env: nativeEnv(f.binding), fetchImpl }), f.manifest)
+  wrongName = true
+  await assert.rejects(prepareNativeArchive({ outputDirectory: path.join(f.root, 'wrong-profile'), env: nativeEnv(f.binding), fetchImpl }), /identity\/name/)
+})
+
 for (const failure of ['insecure-redirect', 'credential-redirect', 'wrong-hash', 'truncated-download', 'oversized-download', 'missing-token']) test(`native preparation fails closed for ${failure}`, async t => {
   const f = fixture(t, 100)
   const outputDirectory = path.join(f.root, 'bad-native')
@@ -209,4 +229,22 @@ test('workflow preserves all original proof assertions and upload, and uses eigh
   assert.equal(workflow.match(/compression-level: 0/g).length, MAX_PARTS + 2)
   assert.match(workflow, /verify-native-uploads/)
   assert.doesNotMatch(workflow, /path: artifacts\/continuous-spatial-transport-\$\{\{ matrix.proof_group \}\}\s*\n/)
+})
+
+test('accessibility workflow retains the complete archive and strict first-run/recovered-flake result', () => {
+  const workflow = fs.readFileSync(new URL('../../.github/workflows/accessibility-performance-evidence.yml', import.meta.url), 'utf8')
+  const suite = workflow.slice(workflow.indexOf('      - name: Run isolated accessibility and performance suite\n'), workflow.indexOf('      - name: Retain exact-head evidence\n'))
+  assert.equal(sha(suite), 'd102e3cc51573649aef1714674a9f258f1e205c9846c96871e38c43181728c68')
+  const original = workflow.slice(workflow.indexOf('      - name: Retain exact-head evidence\n'), workflow.indexOf('      - name: Partition the original native accessibility archive\n'))
+  assert.match(original, /if: always\(\)/)
+  assert.match(original, /name: accessibility-performance-evidence-\$\{\{ env.URAI_EXACT_HEAD \}\}/)
+  assert.match(original, /path: artifacts\/accessibility-performance\n/)
+  assert.match(original, /retention-days: 365/)
+  assert.match(workflow, /URAI_PROOF_GROUP: accessibility-performance/)
+  const parts = workflow.match(/path: artifacts\/accessibility-performance-transport\/accessibility-performance.zip.part-[0-9]{2}/g)
+  assert.equal(parts.length, MAX_PARTS)
+  assert.equal(new Set(parts).size, MAX_PARTS)
+  assert.equal(workflow.match(/compression-level: 0/g).length, MAX_PARTS + 2)
+  assert.match(workflow, /verify-native-uploads/)
+  assert.doesNotMatch(workflow, /path: artifacts\/accessibility-performance-transport\s*\n/)
 })

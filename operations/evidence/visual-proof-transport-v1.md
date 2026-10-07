@@ -15,6 +15,14 @@ the whole transport directory as one artifact. The complete original artifact
 remains available independently. At most eight parts (184 MiB original ZIP) are
 supported; larger or inconsistent archives fail explicitly.
 
+The same utility supports the fixed `accessibility-performance` profile. It
+retains `accessibility-performance-evidence-<source SHA>` and partitions that
+original native ZIP as `accessibility-performance.zip.part-01`, and so on,
+with separate `accessibility-performance-transport-<source SHA>-<run>-<attempt>`
+artifacts and the same byte limits, manifest, and native identity checks.
+Accessibility suite assertions and the recovered-flake exit-86 failure gate are
+unchanged. Transporting a failed run's diagnostics cannot change its strict result.
+
 The `urai-visual-proof-transport-v1` manifest records repository, exact checked-out
 source SHA, proof group, native run and attempt, original artifact ID/name,
 original ZIP byte count and SHA-256, fixed part size, part count, and the ordered

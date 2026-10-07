@@ -10,13 +10,19 @@ export const ARTIFACT_BYTES = 24 * 1024 * 1024
 export const MAX_PARTS = 8
 export const REPOSITORY = 'LifeLoggerAI/urai-spatial'
 const SCHEMA = 'urai-visual-proof-transport-v1'
-const GROUPS = ['visual', 'desktop', 'mobile', 'portal-fallback']
+const GROUPS = ['visual', 'desktop', 'mobile', 'portal-fallback', 'accessibility-performance']
 const sha = bytes => createHash('sha256').update(bytes).digest('hex')
 const requireValue = (ok, message) => { if (!ok) throw new Error(message) }
 const digest = value => typeof value === 'string' && /^[0-9a-f]{64}$/.test(value)
 const positiveId = value => typeof value === 'string' && /^[1-9][0-9]{0,15}$/.test(value)
-const partName = index => `visual-proof.zip.part-${String(index).padStart(2, '0')}`
-const prefix = binding => `continuous-spatial-visual-transport-${binding.proofGroup}-${binding.sourceSha}-${binding.runId}-${binding.runAttempt}`
+const archiveName = binding => binding.proofGroup === 'accessibility-performance' ? 'accessibility-performance.zip' : 'visual-proof.zip'
+const originalArtifactName = binding => binding.proofGroup === 'accessibility-performance'
+  ? `accessibility-performance-evidence-${binding.sourceSha}`
+  : `continuous-spatial-visual-proof-${binding.proofGroup}-${binding.sourceSha}`
+const partName = (index, binding) => `${archiveName(binding)}.part-${String(index).padStart(2, '0')}`
+const prefix = binding => binding.proofGroup === 'accessibility-performance'
+  ? `accessibility-performance-transport-${binding.sourceSha}-${binding.runId}-${binding.runAttempt}`
+  : `continuous-spatial-visual-transport-${binding.proofGroup}-${binding.sourceSha}-${binding.runId}-${binding.runAttempt}`
 
 function validateBinding(binding) {
   requireValue(binding?.repository === REPOSITORY, 'Unexpected evidence repository')
@@ -33,15 +39,15 @@ export function validateManifest(manifest, expected) {
   for (const key of ['repository', 'sourceSha', 'proofGroup', 'runId', 'runAttempt', 'artifactId', 'archiveSha256']) {
     requireValue(manifest[key] === expected[key], `Archive binding mismatch: ${key}`)
   }
-  requireValue(manifest.originalArtifactName === `continuous-spatial-visual-proof-${manifest.proofGroup}-${manifest.sourceSha}`, 'Original artifact name mismatch')
-  requireValue(manifest.archiveName === 'visual-proof.zip' && manifest.partBytes === PART_BYTES, 'Archive partition format mismatch')
+  requireValue(manifest.originalArtifactName === originalArtifactName(manifest), 'Original artifact name mismatch')
+  requireValue(manifest.archiveName === archiveName(manifest) && manifest.partBytes === PART_BYTES, 'Archive partition format mismatch')
   requireValue(Number.isSafeInteger(manifest.archiveBytes) && manifest.archiveBytes > 0 && manifest.archiveBytes <= PART_BYTES * MAX_PARTS, 'Archive exceeds bounded transport size')
   const count = Math.ceil(manifest.archiveBytes / PART_BYTES)
   requireValue(manifest.partCount === count && Array.isArray(manifest.parts) && manifest.parts.length === count, 'Missing or extra archive parts')
   for (const [offset, part] of manifest.parts.entries()) {
     const index = offset + 1
     const bytes = Math.min(PART_BYTES, manifest.archiveBytes - offset * PART_BYTES)
-    requireValue(part?.index === index && part.name === partName(index), 'Archive part order/name mismatch')
+    requireValue(part?.index === index && part.name === partName(index, manifest), 'Archive part order/name mismatch')
     requireValue(part.bytes === bytes && digest(part.sha256), 'Invalid archive part size/digest')
     requireValue(part.artifactName === `${prefix(manifest)}-part-${String(index).padStart(2, '0')}`, 'Native part artifact name mismatch')
   }
@@ -72,8 +78,8 @@ export function splitArchive({ archivePath, outputDirectory, binding }) {
     created = true
     const manifest = {
       schemaVersion: SCHEMA, validationScope: 'archive-transport-only', ...binding,
-      originalArtifactName: `continuous-spatial-visual-proof-${binding.proofGroup}-${binding.sourceSha}`,
-      archiveName: 'visual-proof.zip', archiveBytes: before.size, partBytes: PART_BYTES,
+      originalArtifactName: originalArtifactName(binding),
+      archiveName: archiveName(binding), archiveBytes: before.size, partBytes: PART_BYTES,
       partCount: Math.ceil(before.size / PART_BYTES), manifestArtifactName: `${prefix(binding)}-manifest`, parts: [],
     }
     const whole = createHash('sha256')
@@ -81,7 +87,7 @@ export function splitArchive({ archivePath, outputDirectory, binding }) {
       const bytes = readExact(fd, Math.min(PART_BYTES, before.size - (index - 1) * PART_BYTES))
       if (index === 1) requireValue(bytes.length >= 4 && bytes.subarray(0, 4).equals(Buffer.from([0x50, 0x4b, 0x03, 0x04])), 'Original native ZIP header missing')
       whole.update(bytes)
-      const name = partName(index)
+      const name = partName(index, binding)
       fs.writeFileSync(path.join(outputDirectory, name), bytes, { flag: 'wx' })
       manifest.parts.push({ index, name, bytes: bytes.length, sha256: sha(bytes), artifactName: `${prefix(binding)}-part-${String(index).padStart(2, '0')}` })
     }
@@ -163,7 +169,7 @@ async function getArtifact(binding, spec, token, fetchImpl) {
 
 export async function prepareNativeArchive({ outputDirectory, env = process.env, fetchImpl = fetch }) {
   const binding = nativeBinding(env)
-  const metadata = await getArtifact(binding, { id: binding.artifactId, name: `continuous-spatial-visual-proof-${binding.proofGroup}-${binding.sourceSha}`, archiveDigest: binding.archiveSha256 }, env.GITHUB_TOKEN, fetchImpl)
+  const metadata = await getArtifact(binding, { id: binding.artifactId, name: originalArtifactName(binding), archiveDigest: binding.archiveSha256 }, env.GITHUB_TOKEN, fetchImpl)
   const response = await githubRequest(`${binding.artifactId}/zip`, env.GITHUB_TOKEN, fetchImpl)
   requireValue(response.status === 302, `Native archive redirect unavailable (HTTP ${response.status})`)
   const location = new URL(response.headers.get('location'))
