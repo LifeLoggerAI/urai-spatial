@@ -1,6 +1,7 @@
 import * as functions from 'firebase-functions/v1'
 import * as admin from 'firebase-admin'
 import { createHash } from 'node:crypto'
+import { invalidateLifeModelDependencies } from './personPresenceAuthority'
 
 if (!admin.apps.length) admin.initializeApp()
 
@@ -18,7 +19,6 @@ const CLAIM_STATUS = new Set(['accepted','disputed'])
 const PRESENTATION_CLASSES = new Set(['ARCHIVAL','RECONSTRUCTED','INTERPRETIVE','SIMULATED','COUNTERFACTUAL'])
 const CAUSAL_EDGE_KINDS = new Set(['PARTICIPATED_IN','OCCURRED_AT','INVOLVES_OBJECT','RELATES_TO','CAUSED','CHANGED','EVIDENCED_BY','BEFORE','AFTER','OWNED','LIVED_AT'])
 const MAX_CLAIMS_PER_STATE = 256
-const MAX_DEPENDENCY_INVALIDATIONS = 100
 
 type JsonMap = Record<string, unknown>
 
@@ -100,25 +100,7 @@ async function requireModelConsent(uid: string) {
 }
 
 async function invalidateDependency(uid: string, dependencyId: string, reasonId: string, revoked = false) {
-  const collections = ['lifeGraphSnapshots','personModelBundles','sceneTruthPackets','renderManifests','lifeMovies']
-  const batch = db.batch()
-  let count = 0
-  for (const collection of collections) {
-    const snapshot = await db.collection(`users/${uid}/${collection}`)
-      .where('dependencyIds', 'array-contains', dependencyId)
-      .limit(MAX_DEPENDENCY_INVALIDATIONS)
-      .get()
-    for (const doc of snapshot.docs) {
-      batch.set(doc.ref, {
-        state: revoked ? 'revoked' : 'invalidated',
-        invalidatedBy: reasonId,
-        invalidatedAt: fieldValue.serverTimestamp(),
-      }, { merge: true })
-      count += 1
-    }
-  }
-  if (count) await batch.commit()
-  return count
+  return invalidateLifeModelDependencies(db, uid, dependencyId, reasonId, revoked, fieldValue.serverTimestamp())
 }
 
 export const upsertLifeEntity = lifeModelFunctions.https.onCall(async (data, context) => {
@@ -149,6 +131,7 @@ export const upsertLifeEntity = lifeModelFunctions.https.onCall(async (data, con
       updatedAt: fieldValue.serverTimestamp(),
     }, { merge: true })
   })
+  await invalidateDependency(uid, id, `entity-update:${id}`)
   return { id, kind }
 })
 

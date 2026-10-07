@@ -1,5 +1,6 @@
 import * as functions from 'firebase-functions/v1'
 import * as admin from 'firebase-admin'
+import { revokePersonPresenceConsentDerivatives } from './personPresenceAuthority'
 import { createHash } from 'node:crypto'
 
 if (!admin.apps.length) admin.initializeApp()
@@ -335,20 +336,7 @@ export const applyConsentPolicy = functions.https.onCall(async (data, context) =
 })
 
 async function revokeLifeModelDerivativesForConsent(uid: string, reasonId: string) {
-  const collections = ['personModelBundles', 'personRenderBindings', 'sceneTruthPackets', 'renderManifests']
-  for (const collectionName of collections) {
-    const snapshot = await db.collection(`users/${uid}/${collectionName}`).limit(500).get()
-    if (snapshot.empty) continue
-    const batch = db.batch()
-    for (const item of snapshot.docs) {
-      batch.set(item.ref, {
-        state: 'revoked',
-        invalidatedBy: reasonId,
-        invalidatedAt: fieldValue.serverTimestamp(),
-      }, { merge: true })
-    }
-    await batch.commit()
-  }
+  return revokePersonPresenceConsentDerivatives(db, uid, reasonId, fieldValue.serverTimestamp())
 }
 
 async function enforceConsentJob(snapshot: FirebaseFirestore.DocumentSnapshot) {

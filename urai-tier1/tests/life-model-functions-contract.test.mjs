@@ -3,6 +3,7 @@ import fs from 'node:fs'
 import test from 'node:test'
 
 const source = fs.readFileSync(new URL('../../apps/functions/src/lifeModelFunctions.ts', import.meta.url), 'utf8')
+const authority = fs.readFileSync(new URL('../../apps/functions/src/personPresenceAuthority.ts', import.meta.url), 'utf8')
 const index = fs.readFileSync(new URL('../../apps/functions/src/index.ts', import.meta.url), 'utf8')
 
 test('Life Model mutations are owner-bound and server authoritative', () => {
@@ -27,13 +28,15 @@ test('person model compilation requires enforced model and identity consent', ()
 test('corrections preserve history and invalidate derivatives', () => {
   assert.match(source, /lifeCorrections/)
   assert.match(source, /supersededByCorrectionId/)
-  assert.match(source, /personModelBundles','sceneTruthPackets','renderManifests/)
-  assert.match(source, /invalidatedAt/)
+  assert.match(source, /invalidateLifeModelDependencies\(db, uid, dependencyId, reasonId, revoked/)
+  assert.match(authority, /personModelBundles','sceneTruthPackets','renderManifests/)
+  assert.match(authority, /simulationSessions','personRenderBindings/)
+  assert.match(authority, /invalidatedAt/)
 })
 
 test('entity revocation propagates a revoked derivative state', () => {
   assert.match(source, /revokeLifeEntity/)
-  assert.match(source, /revoked \? 'revoked' : 'invalidated'/)
+  assert.match(authority, /revoked \? 'revoked' : 'invalidated'/)
 })
 
 

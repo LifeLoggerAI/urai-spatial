@@ -7,7 +7,7 @@ import { requestPersonPresenceVoice } from '@/spatial/life-model/personPresenceV
 
 type PersonChoice={bundleId:string;personId:string;label:string;asOf:string;knowledgeCutoff:string|null}
 
-export function ReplayPersonPresence({people}:{people:PersonChoice[]}){
+export function ReplayPersonPresence({people,sceneTruthPacketId}:{people:PersonChoice[];sceneTruthPacketId:string}){
   const [selected,setSelected]=useState<PersonChoice|null>(null)
   const [mode,setMode]=useState<PersonPresenceMode>('HISTORICAL_AS_OF')
   const [sessionId,setSessionId]=useState<string|null>(null)
@@ -46,7 +46,7 @@ export function ReplayPersonPresence({people}:{people:PersonChoice[]}){
     setAiConsent(false)
     setStatus('Starting governed simulation...')
     try{
-      const session=await preparePersonPresenceSession({bundleId:person.bundleId,mode:chosenMode})
+      const session=await preparePersonPresenceSession({bundleId:person.bundleId,sceneTruthPacketId,mode:chosenMode})
       setSessionId(session.sessionId)
       const capabilities=await getPersonPresenceCapabilities(session.sessionId).catch(()=>null)
       setVoiceAvailable(capabilities?.voice===true)
