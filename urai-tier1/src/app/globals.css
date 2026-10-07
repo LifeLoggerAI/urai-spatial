@@ -18,6 +18,11 @@
   }
 }
 @media (max-width: 760px) and (min-height: 501px) {
+  /* The portrait control rail owns Replay. The duplicate 3D aperture sits
+     behind the context card, so it must not remain a covered focus target. */
+  .focusWorld[data-chamber-state="ready"] .focus-spatial-aperture-button {
+    display: none !important;
+  }
   body:has([data-testid="urai-final-focus-chamber"]) [data-urai-adam-launcher] {
     top: auto !important;
     bottom: max(76px, calc(env(safe-area-inset-bottom) + 64px)) !important;
