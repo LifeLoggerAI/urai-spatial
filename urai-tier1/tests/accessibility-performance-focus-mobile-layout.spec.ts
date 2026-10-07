@@ -28,11 +28,15 @@ for (const width of [320, 390]) {
         return {
           helper: rect(launcher),
           protected: [...owner.querySelectorAll('.focusHeading,.memoryMeaning,.focusControls,.focusHelp,.focusFallback strong,.focusFallback span')].map(rect),
-          controls: [...owner.querySelectorAll('.focusControls button')].map(button => {
+          controls: [...owner.querySelectorAll('.focusControls button,.focus-spatial-aperture-button')].filter(button => {
+            const r = button.getBoundingClientRect()
+            return r.width > 0 && r.height > 0 && getComputedStyle(button).visibility !== 'hidden'
+          }).map(button => {
             const range = document.createRange()
             range.selectNodeContents(button)
             const box = rect(button)
-            return { box, text: [...range.getClientRects()].map(r => ({ x: r.x, right: r.right, y: r.y, bottom: r.bottom })) }
+            const hit = document.elementFromPoint(box.x + box.width / 2, box.y + box.height / 2)
+            return { box, pointerReachable: hit === button || (hit !== null && button.contains(hit)), text: [...range.getClientRects()].map(r => ({ x: r.x, right: r.right, y: r.y, bottom: r.bottom })) }
           }),
         }
       })
@@ -41,7 +45,9 @@ for (const width of [320, 390]) {
       expect(geometry.helper.width).toBeGreaterThanOrEqual(48)
       expect(geometry.helper.height).toBeGreaterThanOrEqual(48)
       for (const box of geometry.protected) expect(overlaps(geometry.helper, box)).toBe(false)
-      for (const { box, text } of geometry.controls) {
+      expect(geometry.controls.length).toBeGreaterThanOrEqual(3)
+      for (const { box, text, pointerReachable } of geometry.controls) {
+        expect(pointerReachable).toBe(true)
         expect(box.width).toBeGreaterThanOrEqual(48)
         expect(box.height).toBeGreaterThanOrEqual(48)
         for (const line of text) {
