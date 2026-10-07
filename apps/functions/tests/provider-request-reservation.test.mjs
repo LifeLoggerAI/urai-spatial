@@ -300,6 +300,9 @@ for (const [name, body] of [['missing ID', { requestId: '' }], ['malformed ID', 
 
 test('authentication is checked with revocation before any reservation or replay lookup', async () => {
   const f = fixture(); const response = await f.run({ authorization: '' }); assert.equal(response.statusCode, 401); assert.equal(f.calls.length, 0); assert.equal(f.reservations().length, 0)
+  const invalid=await f.run({ authorization:'Bearer synthetic-revoked-token' })
+  assert.equal(invalid.statusCode,401); assert.equal(invalid.jsonBody.error,'UNAUTHORIZED')
+  assert.equal(f.calls.length,0); assert.equal(f.reservations().length,0)
   await f.run(); const revoked = fixture({ store: f.store, authHook: () => { throw new Error('synthetic revoked token') } })
   assert.ok((await revoked.run()).statusCode >= 400); assert.equal(revoked.calls.length, 0)
 })

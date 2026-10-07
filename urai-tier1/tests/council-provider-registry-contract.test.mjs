@@ -152,13 +152,18 @@ test('denied consent, missing authentication and aborted requests send no HTTP',
 test('provider failure and uncertain processing never mutate runtime acceptance', async () => {
   const configured = await registryFor('true')
   requests = []
-  responseFor = () => Response.json({ error: 'COUNCIL_PROVIDER_DISABLED' }, { status: 503 })
+  responseFor = endpoint => Response.json({ error: endpoint.endsWith('/openai') ? 'PROVIDER_UNCONFIGURED' : 'COUNCIL_PROVIDER_DISABLED' }, { status: 503 })
   for (const provider of allProviders) assert.equal(await configured.requestCouncilProvider(input(provider)), null)
   assert.equal(requests.length, 5)
   assertUnverified(configured)
+  // A Council-only code from the Orb route is unknown, so it cannot certify
+  // that OpenAI was never reached or turn the registry into runtime acceptance.
+  responseFor = () => Response.json({ error: 'COUNCIL_PROVIDER_DISABLED' }, { status: 503 })
+  await assert.rejects(configured.requestCouncilProvider(input('openai')), /uncertain|confirmed/)
+  assertUnverified(configured)
   responseFor = () => { throw new Error('Synthetic transport failure') }
   for (const provider of allProviders) await assert.rejects(configured.requestCouncilProvider(input(provider)), /uncertain|confirmed/)
-  assert.equal(requests.length, 10)
+  assert.equal(requests.length, 11)
   assertUnverified(configured)
 })
 

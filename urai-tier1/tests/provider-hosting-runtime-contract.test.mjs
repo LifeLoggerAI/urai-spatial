@@ -64,8 +64,8 @@ test('static Hosting rewrites every live provider URL to secret-bound Firebase F
 test('provider functions bind secrets, auth, consent, throttling, privacy and cancellation', () => {
   assert.match(providerFunctions, /defineSecret\('OPENAI_API_KEY'\)/)
   assert.match(providerFunctions, /defineSecret\('ELEVENLABS_API_KEY'\)/)
-  assert.match(providerFunctions, /secrets: \[OPENAI_API_KEY\]/)
-  assert.match(providerFunctions, /secrets: \[ELEVENLABS_API_KEY\]/)
+  assert.match(providerFunctions, /secrets: \[OPENAI_API_KEY, SPATIAL_SPEND_WORKER_TOKENS_JSON\]/)
+  assert.match(providerFunctions, /secrets: \[ELEVENLABS_API_KEY, SPATIAL_SPEND_WORKER_TOKENS_JSON\]/)
   assert.match(providerFunctions, /WEB_CLIENT_ORIGINS = \['https:\/\/urai\.app', 'https:\/\/www\.urai\.app', \/\^https:\\\/\\\/localhost/)
   assert.equal((providerFunctions.match(/cors: WEB_CLIENT_ORIGINS/g) ?? []).length, 2)
   assert.match(googleFunctions, /WEB_CLIENT_ORIGINS = \['https:\/\/urai\.app', 'https:\/\/www\.urai\.app', \/\^https:\\\/\\\/localhost/)

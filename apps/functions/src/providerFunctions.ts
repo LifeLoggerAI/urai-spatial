@@ -37,9 +37,14 @@ function bearerToken(value: unknown) {
 }
 
 async function authenticatedUid(request: { headers: Record<string, unknown> }) {
-  const decoded = await admin.auth().verifyIdToken(bearerToken(request.headers.authorization), true)
-  if (!decoded.uid) throw new ProviderError(401, 'UNAUTHORIZED', 'Authentication is required.')
-  return decoded.uid
+  try {
+    const decoded = await admin.auth().verifyIdToken(bearerToken(request.headers.authorization), true)
+    if (!decoded.uid) throw new ProviderError(401, 'UNAUTHORIZED', 'Authentication is required.')
+    return decoded.uid
+  } catch (error) {
+    if (error instanceof ProviderError) throw error
+    throw new ProviderError(401, 'UNAUTHORIZED', 'Authentication is required.')
+  }
 }
 
 async function requireProviderConsent(uid: string, provider: Provider, explicitConsent: boolean) {

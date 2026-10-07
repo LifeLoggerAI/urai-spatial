@@ -5,6 +5,7 @@ const path = require('node:path')
 const vm = require('node:vm')
 const { EventEmitter } = require('node:events')
 const { createHash } = require('node:crypto')
+const { createRequire } = require('node:module')
 const authority = require('../lib/apps/functions/src/personPresenceAuthority.js')
 const uid = 'synthetic-owner', bundleId = 'synthetic-bundle', sceneId = 'synthetic-scene', sessionId = 'presence:synthetic-session-0001'
 const sha = (value) => createHash('sha256').update(JSON.stringify(value)).digest('hex')
@@ -49,11 +50,40 @@ function fixture() {
   function bindVoice() { put('personRenderBindings', `${bundleId}:voice`, { ownerId: uid, personId: 'person', bundleId, modality: 'voice', provider: 'elevenlabs',
     providerResourceId: 'synthetic-voice', reviewState: 'ACCEPTED', consentState: 'authorized', state: 'current', sourceAuthorityHash: 'b'.repeat(64), bundleHash: 'b'.repeat(64),
     bindingHash: 'e'.repeat(64), dependencyIds: ['claim','person','source'] }) }
-  return { db, docs, put, get, prepare, bindVoice }
+  return { db, docs, put, get, prepare, bindVoice, syntheticSpendCalls: [] }
 }
 
 function handler(file, f, fetch) {
   const module = { exports: {} }, filename = path.resolve(__dirname, `../lib/apps/functions/src/${file}.js`)
+  const compiledRequire = createRequire(filename)
+  // This fixture tests private source/consent authority with synthetic transport.
+  // Only its three private paid leaves receive this test-only adapter; it creates
+  // no approval, reservation or settlement. The separate protected-provider suite
+  // exercises the real financial helper and canonical gateway, without this stub.
+  class TestOnlySpendError extends Error { constructor() { super('Synthetic spend fixture failed.'); this.status = 503; this.code = 'PROTECTED_SPEND_REQUIRED' } }
+  const testOnlyPrivateSpend = {
+    SpatialSpendError: TestOnlySpendError,
+    SPATIAL_SPEND_WORKER_TOKENS_JSON: { value: () => 'synthetic-unused-no-financial-approval' },
+    paidSpatialFetch: async (bindingDb, owner, lane, provider, model, sourceInput, target, init) => {
+      assert.equal(bindingDb, f.db); assert.equal(owner, uid)
+      assert.ok(['person-moderation', 'person-reasoning', 'person-voice'].includes(lane))
+      assert.equal(provider, lane === 'person-voice' ? 'elevenlabs' : 'openai')
+      assert.ok(typeof model === 'string' && model)
+      assert.equal(sourceInput.request.sessionId, sessionId)
+      assert.match(sourceInput.authority_digest, /^[a-f0-9]{64}$/)
+      assert.equal(init.method, 'POST'); assert.equal(typeof init.body, 'string')
+      const url = new URL(String(target))
+      assert.equal(url.origin, lane === 'person-voice' ? 'https://api.elevenlabs.io' : 'https://api.openai.com')
+      if (lane === 'person-moderation') assert.equal(url.pathname, '/v1/moderations')
+      if (lane === 'person-reasoning') assert.equal(url.pathname, '/v1/responses')
+      if (lane === 'person-voice') {
+        assert.equal(url.pathname, '/v1/text-to-speech/synthetic-voice/stream')
+        assert.equal(sourceInput.render_binding_sha256, 'e'.repeat(64))
+      }
+      f.syntheticSpendCalls.push({ lane, provider, model })
+      return fetch(String(target), init)
+    },
+  }
   const admin = { apps: ['synthetic'], firestore: Object.assign(() => f.db, { Timestamp, FieldValue: { serverTimestamp: () => 'synthetic-timestamp' } }),
     auth: () => ({ verifyIdToken: async () => ({ uid }) }) }
   const region = { https: { HttpsError, onCall: (callback) => callback } }
@@ -63,10 +93,8 @@ function handler(file, f, fetch) {
     if (name === 'firebase-functions/v2/https') return { onRequest: (_options, callback) => callback }
     if (name === 'firebase-functions/params') return { defineSecret: () => ({ value: () => 'synthetic-token' }) }
     if (name === './personPresenceAuthority') return authority
-    if (name === '../../../packages/localization/src/contentLanguage') return require('../lib/packages/localization/src/contentLanguage.js')
-    // Authority/privacy race assertions use synthetic transport; protected spend is exercised separately.
-    if (name === './protectedProviderSpend') return { paidSpatialFetch: (_db, _uid, _lane, _provider, _model, _input, url, init) => fetch(url, init), SpatialSpendError: class extends Error {}, SPATIAL_SPEND_WORKER_TOKENS_JSON: {} }
-    return require(name)
+    if (name === './protectedProviderSpend') return testOnlyPrivateSpend
+    return compiledRequire(name)
   }, Buffer, process: { env: { PERSON_PRESENCE_ENABLED: 'true', PERSON_PRESENCE_VOICE_ENABLED: 'true' } }, fetch,
   AbortController, URL, TextDecoder, setTimeout, clearTimeout, setInterval, clearInterval, console }, { filename })
   return module.exports
@@ -79,8 +107,8 @@ function response() {
   return res
 }
 function request(extra = {}) { return { method: 'POST', headers: { authorization: 'Bearer synthetic' }, body: {
-  sessionId, message: 'synthetic question', text: 'synthetic reply', context: [], requestId: 'f'.repeat(64), aiProcessingConsent: true, externalProcessingConsent: true, ...extra } } }
-function stream() { const result = { message: 'synthetic reply', caption: 'synthetic reply', evidenceClaimIds: ['claim'], uncertainty: '', simulationLabel: 'Simulation', locale: 'en-US' }
+  sessionId, message: 'synthetic question', text: 'synthetic reply', context: [], locale: 'en-US', requestId: 'f'.repeat(64), aiProcessingConsent: true, externalProcessingConsent: true, ...extra } } }
+function stream(locale = 'en-US') { const result = { locale, message: 'synthetic reply', caption: 'synthetic reply', evidenceClaimIds: ['claim'], uncertainty: '', simulationLabel: 'Simulation' }
   return new Response(`data: ${JSON.stringify({ type: 'response.output_text.delta', delta: JSON.stringify(result) })}\n\ndata: {"type":"response.completed"}\n\n`, { status: 200 }) }
 
 test('Presence pins selected scene, graph, person state, claim values and cutoff instead of accepting arbitrary current bundles', async () => {
@@ -188,4 +216,26 @@ test('dependency correction/revocation reaches sessions and render bindings beyo
   for (let i = 0; i < 505; i++) g.put('simulationSessions', `session-${String(i).padStart(4, '0')}`, { ownerId: uid, state: 'active', dependencyIds: [] })
   await authority.revokePersonPresenceConsentDerivatives(g.db, uid, 'synthetic-consent-revoke', 'synthetic-timestamp')
   assert.equal(g.get('simulationSessions', 'session-0504').state, 'revoked', 'consent revocation cannot silently truncate the session set at 500')
+})
+
+// Run through the actual compiled provider and its actual compiled language
+// dependency. No language implementation or private authority is mocked here.
+test('compiled private Presence preserves canonical RTL language and authority in the retained fixture', async () => {
+  const f = fixture(), prepared = await f.prepare()
+  const h = handler('personPresenceProvider', f, async (url) => url.endsWith('/moderations')
+    ? Response.json({ results: [{ flagged: false }] }) : stream('ar-SA')).personPresenceProvider, res = response()
+  await h(request({ locale: 'ar' }), res)
+  assert.equal(res.code, 200)
+  const done = JSON.parse(Buffer.concat(res.chunks).toString().trim().split('\n').at(-1))
+  assert.equal(done.locale, 'ar-SA'); assert.equal(done.caption, done.message)
+  assert.equal(done.authorityDigest, prepared.authorityDigest)
+  assert.equal(done.historicalSourceAuthority, false); assert.equal(done.syntheticOutputMayBecomeHistoricalSource, false)
+})
+
+test('compiled private Presence rejects unsupported language before synthetic transport or spend adapter', async () => {
+  const f = fixture(); await f.prepare(); let calls = 0
+  const h = handler('personPresenceProvider', f, async () => { calls++; throw new Error('invalid language must not dispatch') }).personPresenceProvider, res = response()
+  await h(request({ locale: 'en-US; override' }), res)
+  assert.equal(res.code, 400); assert.equal(res.jsonValue.error, 'INVALID_LOCALE')
+  assert.equal(calls, 0); assert.equal(f.syntheticSpendCalls.length, 0)
 })
