@@ -21,7 +21,7 @@
   position: fixed;
   right: max(16px, env(safe-area-inset-right));
   bottom: max(16px, env(safe-area-inset-bottom));
-  z-index: 1901;
+  z-index: 2147483101;
   width: min(430px, calc(100vw - 32px));
   max-height: min(720px, calc(100dvh - 32px));
   display: flex;
@@ -124,7 +124,7 @@
   color: rgba(238,246,248,.75);
   font-size: 12px;
 }
-.options label { display: flex; gap: 8px; align-items: flex-start; }
+.options label { display: flex; gap: 8px; align-items: center; min-height: 48px; }
 .controls { display: flex; flex-wrap: wrap; gap: 8px; }
 .controls button {
   min-height: 48px;

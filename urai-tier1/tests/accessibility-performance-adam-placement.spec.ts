@@ -1,4 +1,5 @@
 import { expect, test, type Locator, type Page, type TestInfo } from '@playwright/test'
+import { createHash } from 'node:crypto'
 
 for (const viewport of [{ width: 320, height: 700 }, { width: 844, height: 390 }]) {
   test(`Founder helper stays in flow on text surfaces at ${viewport.width}x${viewport.height}`, async ({ page }) => {
@@ -134,6 +135,31 @@ async function exerciseKeyboardPanel(page: Page, slot: string, capture = true) {
   expect(controlGeometry.reachable).toBe(true)
   await expect(close).toBeInViewport({ ratio: 1 })
   if (capture) await attachPlacement(page, test.info(), `${slot}-panel-controls-${controlGeometry.viewportWidth}x${controlGeometry.viewportHeight}`, controlGeometry)
+  const actions = panel.getByRole('button').filter({ hasNotText: '×' })
+  const actionCount = await actions.count()
+  expect(actionCount).toBe(4)
+  const actionBounds = []
+  for (let index = 0; index < actionCount; index++) {
+    const action = actions.nth(index)
+    await action.scrollIntoViewIfNeeded()
+    await expect(action).toBeInViewport({ ratio: 1 })
+    const bounds = await action.evaluate(element => {
+      const r = element.getBoundingClientRect()
+      const hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2)
+      return { label: element.textContent?.trim(), width: r.width, height: r.height, reachable: hit === element || element.contains(hit) }
+    })
+    expect(bounds.width).toBeGreaterThanOrEqual(48)
+    expect(bounds.height).toBeGreaterThanOrEqual(48)
+    expect(bounds.reachable, `${bounds.label} must remain reachable above the persistent Orb`).toBe(true)
+    actionBounds.push(bounds)
+  }
+  for (const consent of await panel.getByRole('checkbox').all()) {
+    const label = consent.locator('..')
+    await label.scrollIntoViewIfNeeded()
+    expect((await label.boundingBox())!.height).toBeGreaterThanOrEqual(48)
+  }
+  await test.info().attach(`${slot}-actual-panel-action-targets.json`, { body: JSON.stringify(actionBounds), contentType: 'application/json' })
+  await expect(close).toBeInViewport({ ratio: 1 })
   await page.keyboard.press('Escape')
   await expect(panel).toHaveCount(0)
   launcher = page.locator('[data-urai-adam-launcher]')
@@ -349,6 +375,7 @@ for (const profile of [
         await attachPlacement(page, info, `xr-comfort-${profile.width}x${profile.height}`, accessible)
       }
       if (slot === 'possible-futures-controls') {
+        if (!profile.noWebGL) await expect(page.getByTestId('possible-futures-canvas')).toHaveAttribute('data-render-cadence', 'reduced-motion-demand')
         const question = page.getByRole('textbox', { name: 'What do you want to explore?', exact: true })
         await question.scrollIntoViewIfNeeded()
         await question.fill('A privately held hypothetical question')
@@ -357,6 +384,29 @@ for (const profile of [
         await expect(question).toHaveValue('A privately held hypothetical question')
         await question.scrollIntoViewIfNeeded()
         await attachPlacement(page, info, `possible-futures-input-${profile.width}x${profile.height}`, { unchangedQuestion: true })
+        if (!profile.noWebGL && profile.width === 844) {
+          await page.emulateMedia({ reducedMotion: 'no-preference' })
+          await expect(page.getByTestId('possible-futures-canvas')).toHaveAttribute('data-render-cadence', 'continuous')
+          await page.emulateMedia({ reducedMotion: 'reduce' })
+          await expect(page.getByTestId('possible-futures-canvas')).toHaveAttribute('data-render-cadence', 'reduced-motion-demand')
+          await expect(question).toHaveValue('A privately held hypothetical question')
+        }
+      }
+      if (slot === 'mirror-entry') {
+        const choices = page.getByRole('navigation', { name: 'Mirror entry choices', exact: true }).getByRole('link')
+        expect(await choices.count()).toBe(3)
+        for (let index = 0; index < await choices.count(); index++) {
+          const choice = choices.nth(index)
+          await choice.scrollIntoViewIfNeeded()
+          const target = await choice.evaluate(element => {
+            const r = element.getBoundingClientRect()
+            const hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2)
+            return { width: r.width, height: r.height, reachable: hit === element || element.contains(hit) }
+          })
+          expect(target.width).toBeGreaterThanOrEqual(48)
+          expect(target.height).toBeGreaterThanOrEqual(48)
+          expect(target.reachable, 'Every Mirror recovery choice must remain reachable above the Orb').toBe(true)
+        }
       }
       if (surface.fallbackSlot) {
         await expect(page).toHaveURL(/\/life-map/)
@@ -402,6 +452,54 @@ for (const profile of [
       expect(errors).toEqual([])
     })
   }
+}
+
+for (const viewport of placementViewports) {
+  test(`Exported 404 has readable recovery and no debug frame at ${viewport.width}x${viewport.height}`, async ({ page }, info) => {
+    const errors: string[] = []
+    page.on('pageerror', error => errors.push(error.message))
+    await page.setViewportSize(viewport)
+    await page.emulateMedia({ reducedMotion: 'reduce' })
+    const response = await page.goto('/404.html', { waitUntil: 'domcontentloaded' })
+    expect(response?.status(), 'Existing static server must deliver the real exported file').toBe(200)
+    const html = await response!.text()
+    expect(await page.locator('body').innerText()).not.toMatch(/legacy Pages Router shim|static builds always emit/i)
+    const heading = page.getByRole('heading', { name: 'This place isn’t part of your world', exact: true })
+    await expect(heading).toBeVisible()
+    await expect(page.getByText('The address may have changed, or this view may no longer be available.', { exact: true })).toBeVisible()
+    const recovery = page.getByRole('link', { name: 'Return home', exact: true })
+    await expect(recovery).toHaveAttribute('href', '/')
+    const geometry = await page.locator('main').evaluate(element => {
+      const r = element.getBoundingClientRect()
+      const body = getComputedStyle(document.body)
+      return { left: r.left, right: r.right, top: r.top, bottom: r.bottom, viewportWidth: innerWidth, viewportHeight: innerHeight, documentWidth: document.documentElement.scrollWidth, bodyMargin: body.margin, bodyBackground: body.backgroundColor }
+    })
+    expect(geometry.left).toBe(0)
+    expect(geometry.top).toBe(0)
+    expect(geometry.right).toBe(geometry.viewportWidth)
+    expect(geometry.bottom).toBeGreaterThanOrEqual(geometry.viewportHeight)
+    expect(geometry.documentWidth).toBeLessThanOrEqual(geometry.viewportWidth)
+    expect(geometry.bodyMargin).toBe('0px')
+    expect(geometry.bodyBackground).toBe('rgb(8, 3, 15)')
+    const bounds = await recovery.boundingBox()
+    expect(bounds!.width).toBeGreaterThanOrEqual(48)
+    expect(bounds!.height).toBeGreaterThanOrEqual(48)
+    await page.keyboard.press('Tab')
+    await expect(recovery).toBeFocused()
+    const focus = await recovery.evaluate(element => {
+      const style = getComputedStyle(element), r = element.getBoundingClientRect()
+      const hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2)
+      return { outlineWidth: parseFloat(style.outlineWidth), outlineStyle: style.outlineStyle, reachable: hit === element || element.contains(hit) }
+    })
+    expect(focus.outlineWidth).toBeGreaterThanOrEqual(3)
+    expect(focus.outlineStyle).toBe('solid')
+    expect(focus.reachable).toBe(true)
+    await attachPlacement(page, info, `exported-404-${viewport.width}x${viewport.height}`, { response: { path: '/404.html', status: response!.status(), contentType: response!.headers()['content-type'], htmlSha256: createHash('sha256').update(html).digest('hex') }, geometry, bounds, focus, productionAuthenticationVerified: false })
+    await page.keyboard.press('Enter')
+    await expect(page).toHaveURL(/\/(?:home\/?)?$/)
+    await expect(page.getByRole('heading', { name: 'This place isn’t part of your world', exact: true })).toHaveCount(0)
+    expect(errors).toEqual([])
+  })
 }
 
 for (const profile of [{ width: 390, height: 844, noWebGL: false }, { width: 568, height: 320, noWebGL: true }, { width: 320, height: 568, noWebGL: true }]) {

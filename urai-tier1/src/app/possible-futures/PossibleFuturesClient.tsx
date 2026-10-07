@@ -9,6 +9,7 @@ import { requestUraiWorldReturn } from '@/spatial/world/worldEvents'
 import { createPossibleFutureClient, getPossibleFutureClient, requestPossibleFutureGenerationClient, submitManualScenarioBranchesClient } from '@/lib/scenario/scenarioClient'
 import { ScenarioCouncilPanel } from '@/spatial/scenario/ScenarioCouncilPanel'
 import { useWebGLAvailable } from '../HomeSpatialCanvas'
+import { useReducedMotion } from '@/spatial/hooks/useReducedMotion'
 
 const BRANCH_LABELS = ['Current path', 'Requested change', 'Alternative constraint'] as const
 type SetupState = 'question' | 'creating' | 'manual' | 'exploring' | 'error'
@@ -116,7 +117,8 @@ function BranchMass({ branch }: { branch: number }) {
 }
 
 function ScenarioWorld({ branch }: { branch:number }) {
-  return <Canvas camera={{ position:[0,3.7,8.8], fov:46 }} shadows dpr={[1,1.75]}>
+  const reducedMotion = useReducedMotion()
+  return <Canvas data-testid="possible-futures-canvas" data-render-cadence={reducedMotion ? 'reduced-motion-demand' : 'continuous'} frameloop={reducedMotion ? 'demand' : 'always'} camera={{ position:[0,3.7,8.8], fov:46 }} shadows dpr={[1,1.75]}>
     <color attach="background" args={['#060a0d']} />
     <fog attach="fog" args={['#060a0d',7.5,27]} />
     <ambientLight intensity={.36} />
