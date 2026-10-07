@@ -6,8 +6,9 @@ export default function PagesRouterNotFoundShim() {
         <p style={{ color: 'rgba(154, 238, 255, .92)', fontSize: 12, fontWeight: 900, letterSpacing: '.16em', textTransform: 'uppercase' }}>URAI</p>
         <h1 id="page-unavailable-title" style={{ margin: '12px 0', fontSize: 'clamp(2rem, 8vw, 4rem)', lineHeight: 1 }}>This place isn’t part of your world</h1>
         <p style={{ color: 'rgba(248, 253, 255, .76)', lineHeight: 1.6 }}>The address may have changed, or this view may no longer be available.</p>
-        <a className="urai-not-found-recovery" href="/" style={{ display: 'inline-flex', alignItems: 'center', minHeight: 48, boxSizing: 'border-box', marginTop: 18, color: '#03111a', background: '#8ff2ff', borderRadius: 999, padding: '12px 16px', fontWeight: 900, textDecoration: 'none' }}>Return home</a>
+        <a className="urai-not-found-recovery" href="/" style={{ display: 'inline-flex', alignItems: 'center', minHeight: 48, boxSizing: 'border-box', scrollMarginBlock: 8, marginTop: 18, color: '#03111a', background: '#8ff2ff', borderRadius: 999, padding: '12px 16px', fontWeight: 900, textDecoration: 'none' }}>Return home</a>
       </section>
     </main>
   )
 }
+

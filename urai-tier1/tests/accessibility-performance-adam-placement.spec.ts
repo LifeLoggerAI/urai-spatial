@@ -564,11 +564,15 @@ for (const viewport of placementViewports) {
     const focus = await recovery.evaluate(element => {
       const style = getComputedStyle(element), r = element.getBoundingClientRect()
       const hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2)
-      return { outlineWidth: parseFloat(style.outlineWidth), outlineStyle: style.outlineStyle, reachable: hit === element || element.contains(hit) }
+      const outlineInset = parseFloat(style.outlineWidth) + Math.max(0, parseFloat(style.outlineOffset))
+      return { outlineWidth: parseFloat(style.outlineWidth), outlineStyle: style.outlineStyle, reachable: hit === element || element.contains(hit), boundsAfterFocus: { left: r.left, right: r.right, top: r.top, bottom: r.bottom, width: r.width, height: r.height }, outlineInset, fullOutlineVisible: r.left - outlineInset >= 0 && r.right + outlineInset <= innerWidth && r.top - outlineInset >= 0 && r.bottom + outlineInset <= innerHeight }
     })
     expect(focus.outlineWidth).toBeGreaterThanOrEqual(3)
     expect(focus.outlineStyle).toBe('solid')
     expect(focus.reachable).toBe(true)
+    expect(focus.boundsAfterFocus.width).toBeGreaterThanOrEqual(48)
+    expect(focus.boundsAfterFocus.height).toBeGreaterThanOrEqual(48)
+    expect(focus.fullOutlineVisible, 'The complete recovery button and focus ring must remain inside the viewport after keyboard focus').toBe(true)
     // DOM geometry can exist before Chromium has a painted surface. Await real
     // document readiness and two animation frames, then capture exactly once.
     await page.waitForLoadState('load')
