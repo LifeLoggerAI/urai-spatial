@@ -20,9 +20,15 @@ const handlePath = `privateLifeModelSourceHandles/${sha(body.sourceHandle)}`
 const narration = 'This is fictional test narration. No private source is present.'
 
 function fixture(options = {}) {
+  const canonicalDeadline = Date.now() + 3600000
+  const exportBinding = { canonicalExportReceiptHash: 'e'.repeat(64), canonicalExportConsentExpiresAt: canonicalDeadline }
+  class Timestamp { constructor(value) { this.value = value }; toMillis() { return this.value }; static fromMillis(value) { return new Timestamp(value) } }
+  const clone = value => value instanceof Timestamp ? new Timestamp(value.value) : Array.isArray(value) ? value.map(clone) : value && typeof value === 'object' ? Object.fromEntries(Object.entries(value).map(([key, item]) => [key, clone(item)])) : value
   const shared = { schemaVersion: SCHEMA, state: 'current', synthetic: false, ownerId: uid, sourceId, sourceSha256: 'a'.repeat(64), sourceReceiptRef: 'private:fixtures/source-receipt-01', sourceRevision: 1 }
   const records = new Map([
     [prefix, { ownerId: uid }],
+    [`consentRecords/${uid}_data_export`, { uid, purpose: 'data.export', consentTier: 'C7', status: 'granted', policyVersion: '1.0.0', receiptHash: exportBinding.canonicalExportReceiptHash, expiresAt: new Date(canonicalDeadline).toISOString() }],
+    [`privacyDeletionTombstones/${uid}`,{uid,exportConsentStatus:'granted',exportConsentReceiptHash:exportBinding.canonicalExportReceiptHash,exportConsentPolicyVersion:'1.0.0',exportConsentExpiresAt:new Timestamp(canonicalDeadline)}],
     [handlePath, { ...shared, ownerDataEpoch: 0, transcriptRef: body.transcriptRef, provenanceRef: body.provenanceRef }],
     [sourcePath, { ...shared, revision: 1, sourceEvidenceClass: 'ATTRIBUTED_TESTIMONY', sourceFixityRef: 'private:fixtures/fixity-01', transcriptRef: body.transcriptRef, provenanceRef: body.provenanceRef, transcriptSha256: sha(narration), consentRevision: 4, consentState: 'authorized', externalProcessingConsent: true, purposes: ['memory-index'] }],
     [transcriptPath, { ...shared, opaqueRef: body.transcriptRef, text: narration, sha256: sha(narration) }],
@@ -34,14 +40,14 @@ function fixture(options = {}) {
   const snapshot = path => {
     const value = records.get(path)
     return { id: path.split('/').at(-1), ref: document(path), exists: value !== undefined,
-      data: () => value === undefined ? undefined : structuredClone(value),
+      data: () => value === undefined ? undefined : clone(value),
       get: key => key.split('.').reduce((result, part) => result?.[part], value) }
   }
   function document(path) {
     return { path, id: path.split('/').at(-1), collection: name => collection(`${path}/${name}`),
       async get() { stats.reads++; return snapshot(path) },
-      async set(value, settings) { records.set(path, structuredClone(settings?.merge ? { ...records.get(path), ...value } : value)) },
-      async update(value) { assert.ok(records.has(path)); records.set(path, structuredClone({ ...records.get(path), ...value })) },
+      async set(value, settings) { records.set(path, clone(settings?.merge ? { ...records.get(path), ...value } : value)) },
+      async update(value) { assert.ok(records.has(path)); records.set(path, clone({ ...records.get(path), ...value })) },
       async delete() { records.delete(path) } }
   }
   function collection(path, filters = [], maximum = Infinity) {
@@ -79,9 +85,9 @@ function fixture(options = {}) {
   const functions = { region: () => functions, runWith: () => functions,
     https: { onRequest: handler => handler, onCall: handler => handler, HttpsError: class extends Error { constructor(code, message) { super(message); this.code = code } } },
     firestore: { document: () => ({ onCreate: handler => handler }) }, pubsub: { schedule: () => ({ onRun: handler => handler }) } }
-  const firestore = Object.assign(() => db, { FieldValue: { serverTimestamp: () => 'fixture-server-time' }, Timestamp: { fromMillis: value => ({ value }) } })
+  const firestore = Object.assign(() => db, { FieldValue: { serverTimestamp: () => 'fixture-server-time' }, Timestamp })
   const admin = { apps: [{}], firestore, initializeApp() {}, auth: () => ({ deleteUser: async () => {} }),
-    storage: () => ({ bucket: () => ({ deleteFiles: async () => {}, file: path => ({ save: async bytes => { stats.files.set(path, Buffer.from(bytes)) }, getMetadata: async () => [{ generation: '1' }] }) }) }) }
+    storage: () => ({ bucket: () => ({ deleteFiles: async () => {}, file: path => ({ save: async bytes => { stats.files.set(path, Buffer.from(bytes)) }, getMetadata: async () => [{ generation: '1', size: String(stats.files.get(path)?.length), contentType: 'application/json' }] }) }) }) }
   const env = { URAI_PRIVATE_LIFE_MODEL_INPUTS_ENABLED: 'true', PRIVATE_SOURCE_REF_RESOLVER_TOKEN: 'fixture-resolver-token', GCLOUD_PROJECT: 'urai-4dc1d', URAI_SOURCE_SHA: 'c'.repeat(40), ...options.env }
   let service
   function load(filename) {
@@ -99,9 +105,9 @@ function fixture(options = {}) {
     return exports
   }
   service = load('lifeModelPrivateInputs')
-  return { records, stats, db, service, load,
+  return { records, stats, db, service, load, exportBinding, Timestamp,
     async resolve(extra = {}, overrides = {}) {
-      const response = { statusCode: 200, headers: {}, body: undefined, setHeader(key, value) { this.headers[key] = value }, status(value) { this.statusCode = value; return this }, json(value) { this.body = structuredClone(value) } }
+      const response = { statusCode: 200, headers: {}, body: undefined, setHeader(key, value) { this.headers[key] = value }, status(value) { this.statusCode = value; return this }, json(value) { this.body = clone(value) } }
       await service.resolveLifeModelPrivateInputs({ method: 'POST', path: '/resolve-life-model-inputs', headers: { authorization: 'Bearer fixture-resolver-token' }, body: { ...body, ...extra }, ...overrides }, response)
       return response
     } }
@@ -201,8 +207,8 @@ test('deletion while resolving closes the entire owner input authority before de
 test('actual life-model export includes private source, transcript and provenance records', async () => {
   const f = fixture(), privacy = f.load('privacyOperations')
   const jobPath = `${prefix}/exportJobs/fixture-export`
-  f.records.set(jobPath, { uid, scopes: ['life-model'], state: 'queued', receiptId: 'fixture-receipt', consentRevision: 4, exportFenceGeneration: 0 })
-  f.records.set(`${prefix}/privacyReceipts/fixture-receipt`, { ownerId: uid, kind: 'export', jobId: 'fixture-export', result: 'queued' })
+  f.records.set(jobPath, { uid, scopes: ['life-model'], state: 'queued', receiptId: 'fixture-receipt', ...f.exportBinding, consentRevision:4, exportFenceGeneration:0 })
+  f.records.set(`${prefix}/privacyReceipts/fixture-receipt`, { ownerId: uid, kind: 'export', jobId: 'fixture-export', result: 'queued', ...f.exportBinding, consentRevision:4, exportFenceGeneration:0 })
   await privacy.processExportJob(await f.db.doc(jobPath).get())
   assert.equal(f.records.get(jobPath).state, 'ready')
   const payload = JSON.parse(f.stats.files.get(`private-exports/${uid}/fixture-export/export.json`).toString())
@@ -217,8 +223,8 @@ test('actual life-model export includes private source, transcript and provenanc
 test('actual life-model deletion tombstones handles before erasing all three private input tables', async () => {
   const f = fixture(), privacy = f.load('privacyOperations')
   const jobPath = 'deletionQueue/fixture-delete'
-  f.records.set(jobPath, { uid, scope: 'life-model', state: 'queued', receiptId: 'fixture-receipt' })
-  f.records.set(`${prefix}/deletionJobs/fixture-delete`, {})
+  f.records.set(jobPath, { uid, scope:'life-model', state:'queued', receiptId:'fixture-receipt',executeAfter:new f.Timestamp(Date.now()-1000) })
+  f.records.set(`${prefix}/deletionJobs/fixture-delete`,{uid,state:'queued'})
   await privacy.processDeletionQueueItem(await f.db.doc(jobPath).get())
   assert.equal(f.records.get(jobPath).state, 'completed')
   assert.equal(f.records.has(sourcePath), false)
@@ -232,8 +238,8 @@ test('actual life-model deletion pages more than one Firestore write batch witho
   const f = fixture(), privacy = f.load('privacyOperations')
   for (let i = 0; i < 601; i++) f.records.set(`privateLifeModelSourceHandles/${sha(`fictional-handle-${i}`)}`, { ...f.records.get(handlePath) })
   const jobPath = 'deletionQueue/fixture-delete-large'
-  f.records.set(jobPath, { uid, scope: 'life-model', state: 'queued', receiptId: 'fixture-receipt' })
-  f.records.set(`${prefix}/deletionJobs/fixture-delete-large`, {})
+  f.records.set(jobPath, { uid, scope:'life-model', state:'queued', receiptId:'fixture-receipt',executeAfter:new f.Timestamp(Date.now()-1000) })
+  f.records.set(`${prefix}/deletionJobs/fixture-delete-large`,{uid,state:'queued'})
   await privacy.processDeletionQueueItem(await f.db.doc(jobPath).get())
   assert.equal(f.records.get(jobPath).state, 'completed')
   const handles = [...f.records.entries()].filter(([path]) => path.startsWith('privateLifeModelSourceHandles/'))
@@ -255,3 +261,4 @@ test('bounded tombstone exhaustion keeps authority closed and retries only remai
   assert.equal((await f.db.collection('privateLifeModelSourceHandles').where('ownerId', '==', uid).get()).size, 0)
   assert.equal(f.records.get(`privateLifeModelOwnerBarriers/${sha(uid)}`).epoch, 1)
 })
+
