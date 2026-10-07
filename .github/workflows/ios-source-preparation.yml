@@ -53,6 +53,29 @@ jobs:
           corepack enable
           corepack pnpm install --frozen-lockfile
 
+      - name: Load canonical Firebase public configuration
+        shell: bash
+        run: |
+          set -euo pipefail
+          config="$(curl --fail --silent --show-error --location --proto '=https' --tlsv1.2 https://urai.app/__/firebase/init.json)"
+          test "$(jq -r '.projectId // empty' <<<"$config")" = "urai-4dc1d"
+          test "$(jq -r '.authDomain // empty' <<<"$config")" = "urai-4dc1d.firebaseapp.com"
+          for pair in \
+            "NEXT_PUBLIC_FIREBASE_API_KEY apiKey" \
+            "NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN authDomain" \
+            "NEXT_PUBLIC_FIREBASE_PROJECT_ID projectId" \
+            "NEXT_PUBLIC_FIREBASE_APP_ID appId" \
+            "NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET storageBucket" \
+            "NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID messagingSenderId" \
+            "NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID measurementId"; do
+            env_name="${pair%% *}"
+            json_name="${pair#* }"
+            value="$(jq -r --arg key "$json_name" '.[$key] // empty' <<<"$config")"
+            test -n "$value" || { echo "Canonical Firebase config is missing: $json_name" >&2; exit 1; }
+            printf '%s=%s\n' "$env_name" "$value" >> "$GITHUB_ENV"
+          done
+
+
       - name: Build static export for unconfigured source preparation
         env:
           VERCEL_GIT_COMMIT_SHA: ${{ env.URAI_EXACT_HEAD }}
