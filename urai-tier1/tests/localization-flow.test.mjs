@@ -85,3 +85,78 @@ test('speech tags preserve English admission and require explicit preview for ev
     assert.deepEqual([...URAI_NATIVE_REVIEWED_LOCALES], ['en'])
   } finally { updateLocalePreference({requested:'en',preview:false}) }
 })
+// Compile the actual Focus helper, rather than a copied implementation. The
+// foreign default Intl locale matches the observed browser regression fixture.
+async function actualFocusDateLabel() {
+  const {readFile} = await import('node:fs/promises')
+  const {runInNewContext} = await import('node:vm')
+  const ts = (await import('typescript')).default
+  const text = await readFile(new URL('../src/app/focus/FocusChamberClient.tsx', import.meta.url), 'utf8')
+  const parsed = ts.createSourceFile('FocusChamberClient.tsx', text, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX)
+  const helper = parsed.statements.find(node => ts.isFunctionDeclaration(node) && node.name?.text === 'dateLabel')
+  assert.ok(helper, 'actual Focus date helper must exist')
+  const compiled = ts.transpileModule(helper.getText(parsed), {compilerOptions:{target:ts.ScriptTarget.ES2022}}).outputText
+  const foreignIntl = {DateTimeFormat:class extends Intl.DateTimeFormat {
+    constructor(locale, options) { super(locale ?? 'de-DE', options) }
+  }}
+  return runInNewContext(compiled + ';dateLabel', {Intl:foreignIntl})
+}
+
+test('actual Focus date helper uses the selected general-preview locale for all twenty languages', async () => {
+  const label = await actualFocusDateLabel()
+  const occurredAt = '2026-01-01T12:00:00Z'
+  for (const requested of URAI_LAUNCH_LOCALES) {
+    const preference = {requested,preview:true}
+    let calls = 0
+    const result = label(occurredAt, {date:(value,options) => {
+      calls += 1
+      assert.equal(value, occurredAt, 'source timestamp stays unchanged')
+      assert.deepEqual(JSON.parse(JSON.stringify(options)), {dateStyle:'medium',timeStyle:'short'})
+      return localeDate(preference,value,options)
+    }})
+    assert.equal(calls, 1, `Focus must use the captured selected formatter:${requested}`)
+    assert.equal(result, new Intl.DateTimeFormat(requested,{dateStyle:'medium',timeStyle:'short'}).format(new Date(occurredAt)))
+  }
+})
+
+test('actual Focus date helper keeps every unreviewed preference in admitted English without preview', async () => {
+  const label = await actualFocusDateLabel()
+  const occurredAt = '2026-01-01T12:00:00Z'
+  const expected = new Intl.DateTimeFormat('en',{dateStyle:'medium',timeStyle:'short'}).format(new Date(occurredAt))
+  for (const requested of URAI_LAUNCH_LOCALES) {
+    assert.equal(label(occurredAt, {date:(value,options) => localeDate({requested,preview:false},value,options)}), expected)
+  }
+  assert.deepEqual([...URAI_NATIVE_REVIEWED_LOCALES], ['en'], 'date repair grants no language admission')
+})
+
+test('actual Focus date helper preserves unparseable source labels when the existing formatter rejects', async () => {
+  const label = await actualFocusDateLabel()
+  for (const value of ['not recorded', 'not-a-date', '']) {
+    assert.equal(label(value, {date:(input,options) => localeDate({requested:'fr',preview:true},input,options)}), value)
+  }
+})
+
+test('actual Focus date attributes identify formatted dates and leave unparseable source-label language unclaimed', async () => {
+  const {readFile} = await import('node:fs/promises')
+  const {runInNewContext} = await import('node:vm')
+  const ts = (await import('typescript')).default
+  const text = await readFile(new URL('../src/app/focus/FocusChamberClient.tsx', import.meta.url), 'utf8')
+  const parsed = ts.createSourceFile('FocusChamberClient.tsx',text,ts.ScriptTarget.Latest,true,ts.ScriptKind.TSX)
+  let span
+  const visit = node => {
+    if (ts.isJsxElement(node) && node.openingElement.tagName.getText(parsed) === 'span' && node.children.some(child => ts.isJsxExpression(child) && child.expression && ts.isCallExpression(child.expression) && child.expression.expression.getText(parsed) === 'dateLabel')) span = node
+    ts.forEachChild(node,visit)
+  }
+  visit(parsed)
+  assert.ok(span, 'actual rendered date span must exist')
+  const spread = span.openingElement.attributes.properties.find(ts.isJsxSpreadAttribute)
+  const evaluate = (value,formatProps) => spread ? runInNewContext('(' + spread.expression.getText(parsed) + ')',{memory:{occurredAt:value},locale:{formatProps}}) : {}
+  for (const requested of URAI_LAUNCH_LOCALES) {
+    const formatProps={lang:requested,dir:['ar','ur','fa'].includes(requested)?'rtl':'ltr'}
+    assert.deepEqual(JSON.parse(JSON.stringify(evaluate('2026-01-01T12:00:00Z',formatProps))),formatProps)
+    for (const value of ['not recorded','not-a-date','']) {
+      assert.deepEqual(JSON.parse(JSON.stringify(evaluate(value,formatProps))),{dir:'auto'})
+    }
+  }
+})
+
