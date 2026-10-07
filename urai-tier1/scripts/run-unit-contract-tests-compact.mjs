@@ -154,6 +154,8 @@ const tests = [
   'tests/v2-asset-gating.test.mjs',
   'tests/xr-runtime-contract.test.mjs',
   'tests/xr-static-gate-diagnostics-contract.test.mjs',
+  'tests/stripe-webhook-lifecycle.test.mjs',
+  '../tests/stripe-plan-gate.test.mjs',
 ]
 
 for (const testPath of tests) {
