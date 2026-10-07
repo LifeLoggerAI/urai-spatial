@@ -20,6 +20,7 @@ export {
   createDeletionRequest,
   createExportRequest,
   getExportDownloadUrl,
+  downloadExportPackage,
   getPassportSnapshot,
   processDeletionGraceQueue,
   processDeletionQueueItem,
