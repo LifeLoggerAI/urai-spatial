@@ -1,5 +1,6 @@
 'use client'
 
+import AdamLauncherSlot from '@/spatial/adam/AdamLauncherSlot'
 import { Canvas } from '@react-three/fiber'
 import { OrbitControls } from '@react-three/drei'
 import { Component, useEffect, useRef, useState, type ReactNode } from 'react'
@@ -103,10 +104,10 @@ export default function MemoryWorldRuntime({ world, onExit, validationContext }:
   const accent = world.context.emotionalWeather === 'Heavy' ? '#90a6bb' : '#9de5db'
 
   if (!plan.valid) {
-    return <main data-testid="memory-world-runtime" data-memory-world-state="suppressed" style={{minHeight:'100svh',display:'grid',placeItems:'center',background:'#05070b',color:'#fff',padding:24}}><section><h1>Memory World unavailable</h1><p>This world failed its provenance or governance contract and was not mounted.</p><button type="button" onClick={onExit} style={{minWidth:48,minHeight:48}}>Return to Replay</button></section></main>
+    return <main data-testid="memory-world-runtime" data-memory-world-state="suppressed" style={{minHeight:'100svh',display:'grid',placeItems:'center',background:'#05070b',color:'#fff',padding:24}}><section><h1>Memory World unavailable</h1><p>This world failed its provenance or governance contract and was not mounted.</p><button type="button" onClick={onExit} style={{minWidth:48,minHeight:48}}>Return to Replay</button><AdamLauncherSlot name="memory-world-suppressed" as="div" /></section></main>
   }
 
-  const fallback = <section role="status" data-testid="memory-world-renderer-fallback" style={{position:'absolute',inset:0,display:'flex',flexDirection:'column',justifyContent:'flex-end',boxSizing:'border-box',padding:'24px 24px 180px',textAlign:'center',background:'#071018',color:'#fff'}}><div role="region" aria-label="Memory view status and provenance" tabIndex={0} style={{minHeight:0,overflowY:'auto'}}><h2>{rendererState === 'checking' ? 'Preparing the memory view' : 'Memory view paused safely'}</h2><p>{plan.truthLabel}</p><p>Three-dimensional exploration is unavailable. Your memory and return controls remain available.</p><details><summary style={{minHeight:48,display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer'}}>Truth & provenance</summary><p>Archetype: {world.archetypeId}</p><p>Correction revision: {world.provenance.userCorrectionRevision}</p><p>Runtime: {plan.runtimeVersion}</p></details></div><button type="button" onClick={onExit} style={{minWidth:48,minHeight:48,flexShrink:0}}>Return to Replay</button></section>
+  const fallback = <section role="status" data-testid="memory-world-renderer-fallback" style={{position:'absolute',inset:0,display:'flex',flexDirection:'column',justifyContent:'flex-end',boxSizing:'border-box',padding:'24px 24px 180px',textAlign:'center',background:'#071018',color:'#fff'}}><div role="region" aria-label="Memory view status and provenance" tabIndex={0} style={{minHeight:0,overflowY:'auto'}}><h2>{rendererState === 'checking' ? 'Preparing the memory view' : 'Memory view paused safely'}</h2><p>{plan.truthLabel}</p><p>Three-dimensional exploration is unavailable. Your memory and return controls remain available.</p><details><summary style={{minHeight:48,display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer'}}>Truth & provenance</summary><p>Archetype: {world.archetypeId}</p><p>Correction revision: {world.provenance.userCorrectionRevision}</p><p>Runtime: {plan.runtimeVersion}</p></details></div><button type="button" onClick={onExit} style={{minWidth:48,minHeight:48,flexShrink:0}}>Return to Replay</button><AdamLauncherSlot name="memory-world-fallback" as="div" /></section>
   const moveView = (direction: 'left' | 'right' | 'nearer' | 'farther') => {
     const orbit = controls.current
     const view = camera.current
@@ -150,6 +151,7 @@ export default function MemoryWorldRuntime({ world, onExit, validationContext }:
         <button type="button" onClick={onExit} style={{minHeight:48,padding:'0 16px',borderRadius:999}}>← Replay</button>
       {rendererState === 'ready' ? <nav aria-label="Memory World view controls" style={{marginTop:12,display:'flex',flexWrap:'wrap',gap:8,maxWidth:'calc(100% - 32px)'}}>{(['left','right','nearer','farther'] as const).map((direction) => <button key={direction} type="button" onClick={() => moveView(direction)} style={{minWidth:48,minHeight:48,padding:'0 12px',borderRadius:12,background:'#112731',color:'#fff'}}>{direction === 'left' ? 'Look left' : direction === 'right' ? 'Look right' : direction === 'nearer' ? 'Move nearer' : 'Move farther'}</button>)}</nav> : null}
         <details style={{marginTop:10,fontSize:12}}><summary style={{minHeight:48,display:'flex',alignItems:'center',cursor:'pointer'}}>Truth & provenance</summary><p>Archetype: {world.archetypeId}</p><p>Correction revision: {world.provenance.userCorrectionRevision}</p><p>Runtime: {plan.runtimeVersion}</p></details>
+        <AdamLauncherSlot name="memory-world-controls" as="div" />
       </header> : null}
 
       <span className="sr-only">Use drag or touch to orbit and scroll or pinch to move through bounded depth. This template does not replace source-backed memory evidence.</span>

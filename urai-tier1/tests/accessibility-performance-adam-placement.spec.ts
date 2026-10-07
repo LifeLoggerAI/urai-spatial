@@ -83,7 +83,7 @@ async function assertCopyIsUnobstructed(copy: Locator) {
   return geometry
 }
 
-async function exerciseKeyboardPanel(page: Page, slot: string) {
+async function exerciseKeyboardPanel(page: Page, slot: string, capture = true) {
   let { launcher } = await assertInlineLauncher(page, slot)
   await launcher.focus()
   await page.keyboard.press('Enter')
@@ -108,7 +108,7 @@ async function exerciseKeyboardPanel(page: Page, slot: string) {
   expect(panelGeometry.bottom).toBeLessThanOrEqual(panelGeometry.viewportHeight + 1)
   expect(panelGeometry.horizontalOverflow).toBe(false)
   if (panelGeometry.hasVerticalOverflow) expect(panelGeometry.overflowY).toMatch(/^(auto|scroll)$/)
-  await attachPlacement(page, test.info(), `${slot}-panel-open-${panelGeometry.viewportWidth}x${panelGeometry.viewportHeight}`, panelGeometry)
+  if (capture) await attachPlacement(page, test.info(), `${slot}-panel-open-${panelGeometry.viewportWidth}x${panelGeometry.viewportHeight}`, panelGeometry)
   await page.keyboard.press('Tab')
   await expect(panel.getByRole('textbox', { name: 'Message Adam', exact: true })).toBeFocused()
   const voice = panel.getByRole('button', { name: 'Mute voice', exact: true })
@@ -126,7 +126,7 @@ async function exerciseKeyboardPanel(page: Page, slot: string) {
   expect(controlGeometry.bottom).toBeLessThanOrEqual(controlGeometry.viewportHeight + 1)
   expect(controlGeometry.reachable).toBe(true)
   await expect(close).toBeInViewport({ ratio: 1 })
-  await attachPlacement(page, test.info(), `${slot}-panel-controls-${controlGeometry.viewportWidth}x${controlGeometry.viewportHeight}`, controlGeometry)
+  if (capture) await attachPlacement(page, test.info(), `${slot}-panel-controls-${controlGeometry.viewportWidth}x${controlGeometry.viewportHeight}`, controlGeometry)
   await page.keyboard.press('Escape')
   await expect(panel).toHaveCount(0)
   launcher = page.locator('[data-urai-adam-launcher]')
@@ -217,3 +217,116 @@ test('Passport no-WebGL keeps the founder slot and protected deletion text clear
   const deletion = await assertCopyIsUnobstructed(page.locator('.passportDanger > p'))
   await attachPlacement(page, info, 'passport-no-webgl-320x568', { launcher: initial.geometry, deletion })
 })
+
+const protectedRoutes = [
+  { route: '/privacy-policy', slot: 'privacy-policy' },
+  { route: '/privacy', slot: 'privacy-legal' },
+  { route: '/terms', slot: 'terms-legal' },
+  { route: '/account-deletion', slot: 'account-deletion' },
+  { route: '/sms-opt-in', slot: 'sms-opt-in' },
+  { route: '/settings/communications', slot: 'communications-settings' },
+  { route: '/spatial/ar-vr', slot: 'xr-portals' },
+  { route: '/xr', slot: 'xr-portals' },
+  { route: '/council', slot: 'council-fallback', noWebGL: true },
+  { route: '/spatial/captured-reality', slot: 'captured-reality-fallback' },
+  { route: '/spatial/interpretive-world', slot: 'interpretive-world-fallback' },
+  { route: '/spatial/memory-world', slot: 'memory-world-unavailable' },
+  { route: '/life-movie', slot: 'life-movie-unavailable' },
+]
+
+async function disableWebGL(page: Page) {
+  await page.addInitScript(() => {
+    const original = HTMLCanvasElement.prototype.getContext
+    Object.defineProperty(HTMLCanvasElement.prototype, 'getContext', { value: function(contextId: string, ...args: unknown[]) {
+      if (['webgl', 'webgl2', 'experimental-webgl'].includes(contextId)) return null
+      return Reflect.apply(original, this, [contextId, ...args])
+    } })
+  })
+}
+
+async function inspectTextAndControls(page: Page, slot: string) {
+  const { launcher, geometry } = await assertInlineLauncher(page, slot)
+  const overlaps = await launcher.evaluate(element => {
+    const r = element.getBoundingClientRect()
+    return [...document.querySelectorAll('main h1, main h2, main p, main label, main input, main textarea, main button, main a')].filter(target => {
+      if (target === element || target.contains(element)) return false
+      const t = target.getBoundingClientRect()
+      return t.width > 2 && t.height > 2 && r.left < t.right && r.right > t.left && r.top < t.bottom && r.bottom > t.top
+    }).map(target => ({ tag: target.tagName, text: target.textContent?.trim() }))
+  })
+  expect(overlaps, `${slot} founder launcher must not cover copy or another control`).toEqual([])
+  return geometry
+}
+
+for (const profile of [
+  { width: 320, height: 568, noWebGL: false },
+  { width: 844, height: 390, noWebGL: false },
+  { width: 390, height: 844, noWebGL: true },
+]) {
+  for (const surface of protectedRoutes) {
+    test(`Founder launcher protects ${surface.route} text and controls at ${profile.width}x${profile.height}${profile.noWebGL ? ' without WebGL' : ''}`, async ({ page }, info) => {
+      test.setTimeout(60000)
+      const errors: string[] = []
+      page.on('pageerror', error => errors.push(error.message))
+      await page.setViewportSize(profile)
+      await page.emulateMedia({ reducedMotion: 'reduce' })
+      if (profile.noWebGL || surface.noWebGL) await disableWebGL(page)
+      await page.goto(surface.route, { waitUntil: 'domcontentloaded' })
+      await info.attach(`${surface.slot}-${profile.width}x${profile.height}-initial.png`, { body: await page.screenshot(), contentType: 'image/png' })
+      const launcher = await inspectTextAndControls(page, surface.slot)
+      await attachPlacement(page, info, `${surface.slot}-${profile.width}x${profile.height}-flow`, launcher)
+      const urlBefore = page.url()
+      await exerciseKeyboardPanel(page, surface.slot, false)
+      expect(page.url(), 'Closing the founder panel must preserve the current route').toBe(urlBefore)
+      const headings = page.locator('main h1, main h2')
+      for (let index = 0; index < await headings.count(); index++) {
+        const heading = headings.nth(index)
+        const box = await heading.boundingBox()
+        if (!box || box.width <= 2 || box.height <= 2) continue
+        await heading.scrollIntoViewIfNeeded()
+        const collision = await heading.evaluate(element => {
+          const a = element.getBoundingClientRect()
+          const launcher = document.querySelector('[data-urai-adam-launcher]')?.getBoundingClientRect()
+          return Boolean(launcher && a.left < launcher.right && a.right > launcher.left && a.top < launcher.bottom && a.bottom > launcher.top)
+        })
+        expect(collision, `${surface.route} heading must remain clear after scrolling`).toBe(false)
+      }
+      if (surface.slot === 'xr-portals') {
+        const comfort = page.getByRole('button', { name: /^(Reduced motion on|Reduce motion)$/ })
+        await comfort.scrollIntoViewIfNeeded()
+        const accessible = await comfort.evaluate(element => {
+          const r = element.getBoundingClientRect()
+          const hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2)
+          return { width: r.width, height: r.height, reachable: hit === element || element.contains(hit) }
+        })
+        expect(accessible.width).toBeGreaterThanOrEqual(48)
+        expect(accessible.height).toBeGreaterThanOrEqual(48)
+        expect(accessible.reachable, 'XR reduced-motion control must remain reachable').toBe(true)
+      }
+      await inspectTextAndControls(page, surface.slot)
+      expect(errors).toEqual([])
+    })
+  }
+}
+
+for (const profile of [{ width: 390, height: 844, noWebGL: false }, { width: 568, height: 320, noWebGL: true }]) {
+  test(`Founder launcher preserves disclosed Memory World controls at ${profile.width}x${profile.height}${profile.noWebGL ? ' without WebGL' : ''}`, async ({ page }, info) => {
+    test.setTimeout(60000)
+    await page.setViewportSize(profile)
+    await page.emulateMedia({ reducedMotion: 'reduce' })
+    if (profile.noWebGL) await disableWebGL(page)
+    await page.goto('/spatial/memory-world?demo=1&memoryId=demo%3Aquiet-reset&manifestId=replay-recovery-thread&node=quiet-reset', { waitUntil: 'domcontentloaded' })
+    const slot = profile.noWebGL ? 'memory-world-fallback' : 'memory-world-controls'
+    const geometry = await inspectTextAndControls(page, slot)
+    await attachPlacement(page, info, `memory-world-${profile.width}x${profile.height}-flow`, geometry)
+    const before = page.url()
+    await exerciseKeyboardPanel(page, slot, false)
+    expect(page.url()).toBe(before)
+    const exit = page.getByRole('button', { name: profile.noWebGL ? 'Return to Replay' : '← Replay', exact: true })
+    await exit.scrollIntoViewIfNeeded()
+    await expect(exit).toBeInViewport({ ratio: 1 })
+    expect((await exit.boundingBox())!.height).toBeGreaterThanOrEqual(48)
+    await exit.click()
+    await expect(page).toHaveURL(/\/replay/)
+  })
+}

@@ -1,3 +1,5 @@
+import AdamLauncherSlot from '@/spatial/adam/AdamLauncherSlot'
+
 import Link from 'next/link'
 
 export const metadata = {
@@ -74,6 +76,7 @@ export default function PrivacyPolicyPage() {
           <Link href="/terms/" style={{ ...linkStyle, minHeight: 48, display: 'inline-flex', alignItems: 'center' }}>Terms &amp; Conditions</Link>
           <Link href="/support" style={{ ...linkStyle, minHeight: 48, display: 'inline-flex', alignItems: 'center' }}>Support</Link>
           <Link href="/home" style={{ ...linkStyle, minHeight: 48, display: 'inline-flex', alignItems: 'center' }}>Return to UrAi</Link>
+          <AdamLauncherSlot name="privacy-legal" />
         </nav>
       </article>
     </main>

@@ -1,5 +1,6 @@
 'use client'
 
+import AdamLauncherSlot from '@/spatial/adam/AdamLauncherSlot'
 import Link from 'next/link'
 import { getAuth, onAuthStateChanged, type User } from 'firebase/auth'
 import { doc, getDoc, setDoc } from 'firebase/firestore'
@@ -156,6 +157,7 @@ export default function CommunicationSettingsClient() {
           <Link href="/settings" style={{ color: '#b9f4ff', minHeight: 48, display: 'inline-flex', alignItems: 'center' }}>← Settings</Link>
           <Link href="/privacy/" style={{ color: '#b9f4ff', minHeight: 48, display: 'inline-flex', alignItems: 'center' }}>Privacy Policy</Link>
           <Link href="/terms/" style={{ color: '#b9f4ff', minHeight: 48, display: 'inline-flex', alignItems: 'center' }}>Terms &amp; Conditions</Link>
+          <AdamLauncherSlot name="communications-settings" />
         </nav>
 
         <header>

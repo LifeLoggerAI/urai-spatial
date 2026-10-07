@@ -1,5 +1,6 @@
 "use client"
 
+import AdamLauncherSlot from '@/spatial/adam/AdamLauncherSlot'
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import { ContactShadows, Environment, Lightformer, PerspectiveCamera, useAnimations, useGLTF } from '@react-three/drei'
 import { Component, Suspense, useEffect, useRef, useState, type MutableRefObject, type ReactNode } from 'react'
@@ -189,6 +190,7 @@ function CouncilFallback({ reason = 'WebGL is unavailable on this device.' }: { 
         <button className="min-h-12 rounded-full bg-white px-5 text-sm font-semibold text-slate-950" type="button" onClick={() => travel('home', '/home?returnFrom=council')}>Return Home</button>
         <button className="min-h-12 rounded-full border border-white/25 px-5 text-sm" type="button" onClick={() => travel('mirror', '/mirror?from=council')}>Mirror</button>
         <button className="min-h-12 rounded-full border border-white/25 px-5 text-sm" type="button" onClick={() => travel('passport', '/passport?from=council')}>Passport</button>
+        <AdamLauncherSlot name="council-fallback" />
       </nav>
     </section>
   )

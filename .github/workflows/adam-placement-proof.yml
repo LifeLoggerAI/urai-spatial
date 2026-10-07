@@ -1,4 +1,4 @@
-name: Adam Settings and Passport Placement Proof
+name: Founder Launcher Placement Proof
 
 on:
   pull_request:
@@ -8,6 +8,19 @@ on:
       - 'urai-tier1/src/app/settings/DeviceSettingsClient.tsx'
       - 'urai-tier1/src/app/passport/PassportVaultClient.tsx'
       - 'urai-tier1/src/spatial/adam/**'
+      - 'urai-tier1/src/app/privacy-policy/page.tsx'
+      - 'urai-tier1/src/app/privacy/page.tsx'
+      - 'urai-tier1/src/app/terms/page.tsx'
+      - 'urai-tier1/src/app/account-deletion/page.tsx'
+      - 'urai-tier1/src/app/sms-opt-in/page.tsx'
+      - 'urai-tier1/src/app/settings/communications/CommunicationSettingsClient.tsx'
+      - 'urai-tier1/src/app/spatial/ar-vr/UraiQuestEntryWorldV2.tsx'
+      - 'urai-tier1/src/spatial/council/CouncilRealm.tsx'
+      - 'urai-tier1/src/app/spatial/captured-reality/CapturedRealityRouteClient.tsx'
+      - 'urai-tier1/src/app/spatial/interpretive-world/InterpretiveWorldRouteClient.tsx'
+      - 'urai-tier1/src/app/spatial/memory-world/MemoryWorldRouteClient.tsx'
+      - 'urai-tier1/src/spatial/memory-world/MemoryWorldRuntime.tsx'
+      - 'urai-tier1/src/app/life-movie/LifeMovieClient.tsx'
       - 'urai-tier1/tests/accessibility-performance-adam-placement.spec.ts'
   workflow_dispatch:
 
@@ -72,7 +85,7 @@ jobs:
       - name: Install exact Chromium
         run: pnpm --dir urai-tier1 exec playwright install --with-deps chromium
 
-      - name: Prove actual hydrated Settings and Passport placement
+      - name: Prove actual hydrated text and fallback placement
         id: browser
         shell: bash
         run: |
@@ -103,9 +116,9 @@ jobs:
           for suite in report.get('suites', []):
               collect(suite)
           images = [{'path': str(p.relative_to(root)), 'sha256': hashlib.sha256(p.read_bytes()).hexdigest(), 'bytes': p.stat().st_size} for p in sorted(root.rglob('*.png'))]
-          receipt = {'schemaVersion': 'urai-adam-placement-proof-v1', 'repository': os.environ['GITHUB_REPOSITORY'], 'exactHead': source, 'checkoutMatchesExactHead': True, 'runId': os.environ['GITHUB_RUN_ID'], 'runAttempt': os.environ['GITHUB_RUN_ATTEMPT'], 'scope': 'focused-donor-settings-passport-placement-only', 'productionVerified': False, 'deviceVerified': False, 'releaseAccepted': False, 'expectedTests': 12, 'recordedTests': len(tests), 'testResults': [{'status': t.get('status'), 'attempts': [{'status': r.get('status'), 'retry': r.get('retry')} for r in t.get('results', [])]} for t in tests], 'images': images}
+          receipt = {'schemaVersion': 'urai-adam-placement-proof-v1', 'repository': os.environ['GITHUB_REPOSITORY'], 'exactHead': source, 'checkoutMatchesExactHead': True, 'runId': os.environ['GITHUB_RUN_ID'], 'runAttempt': os.environ['GITHUB_RUN_ATTEMPT'], 'scope': 'focused-donor-founder-launcher-placement-only', 'productionVerified': False, 'deviceVerified': False, 'releaseAccepted': False, 'expectedTests': 53, 'recordedTests': len(tests), 'testResults': [{'status': t.get('status'), 'attempts': [{'status': r.get('status'), 'retry': r.get('retry')} for r in t.get('results', [])]} for t in tests], 'images': images}
           (root / 'receipt.json').write_text(json.dumps(receipt, indent=2) + '\n')
-          assert len(tests) == 12, 'Missing or extra test coverage'
+          assert len(tests) == 53, 'Missing or extra test coverage'
           assert images, 'Literal screenshot receipts are required'
           assert all(t.get('status') == 'expected' for t in tests), 'Browser assertion failed'
           if any(r.get('retry', 0) > 0 for t in tests for r in t.get('results', [])):

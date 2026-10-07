@@ -1,5 +1,6 @@
 'use client'
 
+import AdamLauncherSlot from '@/spatial/adam/AdamLauncherSlot'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { getAuth, onAuthStateChanged, type User } from 'firebase/auth'
 import { doc, onSnapshot, type Unsubscribe } from 'firebase/firestore'
@@ -356,6 +357,7 @@ export default function InterpretiveWorldRouteClient() {
             <div>
               <p>{message}</p>
               <button type="button" onClick={exit}>Return to Replay</button>
+              <AdamLauncherSlot name="interpretive-world-fallback" as="div" />
             </div>
           </section>
         )}
