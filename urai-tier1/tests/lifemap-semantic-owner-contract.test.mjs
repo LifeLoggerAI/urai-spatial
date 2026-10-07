@@ -64,7 +64,7 @@ test('pointer keyboard and touch semantic paths converge on one single-fire sele
 test('semantic navigator is opt-in, semantically controlled, and keyboard accessible without a permanent rail', () => {
   assert.match(navigator, /const \[open, setOpen\] = useState\(false\)/)
   assert.match(navigator, /className="life-map-search-trigger"/)
-  assert.match(navigator, /aria-label="Search and navigate Life Map"/)
+  assert.match(navigator, /aria-label=\{locale.locale === 'en' \? 'Search and navigate Life Map' : `\$\{locale.text\('common.search'\)\} · \$\{locale.text\('nav.lifeMap'\)\}`\}/)
   assert.match(navigator, /aria-expanded=\{open\}/)
   assert.match(navigator, /onClick=\{\(\) => \{ setOpen\(\(value\) => !value\)/)
   assert.match(navigator, /\{open \? <section className="life-map-navigator" aria-label="Search and filter Life Map" id="life-map-navigator">/)

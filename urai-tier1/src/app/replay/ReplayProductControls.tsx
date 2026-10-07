@@ -1,5 +1,7 @@
 'use client'
 
+import { useUraiLocale } from '@/lib/i18n/useUraiLocale'
+
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { SelectedMemory } from '@/spatial/memory/selectedMemoryContract'
 import {
@@ -55,6 +57,7 @@ function operationLabel(operation: ReplayOperation, pending: boolean) {
 }
 
 export function ReplayProductControls({ memory }: { memory: SelectedMemory }) {
+  const locale = useUraiLocale()
   const [operations, setOperations] = useState<ReplayOperationState>(emptyState)
   const [correcting, setCorrecting] = useState(false)
   const [correctionText, setCorrectionText] = useState('')
@@ -189,7 +192,7 @@ export function ReplayProductControls({ memory }: { memory: SelectedMemory }) {
       <button type="button" disabled={!mutable || pendingHide} aria-pressed={operations.hidden} onClick={() => void submit('hide', { hidden: !operations.hidden })}>{pendingHide ? 'Updating…' : operations.hidden ? 'Unhide' : 'Hide'}</button>
       <button type="button" disabled={!mutable || pendingCorrection} aria-expanded={correcting} onClick={openCorrection}>{pendingCorrection ? 'Correcting…' : 'Correct'}</button>
       <a className="lifeMovieEntry" href={`/life-movie?memoryId=${encodeURIComponent(memory.id)}`}>Life Movie</a>
-      <details className="replayHistory"><summary>History</summary>{operations.audit.length ? <ol>{operations.audit.slice().reverse().map((item) => <li key={item.id}><span>{operationLabel(item, operations.pending.some((pending) => pending.id === item.id))}</span><time dateTime={item.createdAt}>{new Date(item.createdAt).toLocaleString()}</time>{item.kind === 'correct' && item.correction ? <small>Original: {String(item.correction.previousValue ?? '')}<br />Corrected: {String(item.correction.nextValue ?? '')}</small> : null}</li>)}</ol> : <p>No Replay changes yet.</p>}</details>
+      <details className="replayHistory"><summary {...locale.props('common.history')}>{locale.text('common.history')}</summary>{operations.audit.length ? <ol>{operations.audit.slice().reverse().map((item) => <li key={item.id}><span>{operationLabel(item, operations.pending.some((pending) => pending.id === item.id))}</span><time dateTime={item.createdAt} {...locale.formatProps}>{locale.date(item.createdAt, {dateStyle:'medium', timeStyle:'short'})}</time>{item.kind === 'correct' && item.correction ? <small>Original: {String(item.correction.previousValue ?? '')}<br />Corrected: {String(item.correction.nextValue ?? '')}</small> : null}</li>)}</ol> : <p>No Replay changes yet.</p>}</details>
       {operations.pending.length || operations.error ? <button className="retry" type="button" disabled={!mutable || !online} onClick={() => void retryPending()}>Retry</button> : null}
       </div>
     </details>

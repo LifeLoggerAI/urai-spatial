@@ -1,5 +1,7 @@
 'use client'
 
+import { currentSpeechTag } from '@/lib/i18n/localePreference'
+
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { preparePersonPresenceSession, closePersonPresenceSession, getPersonPresenceCapabilities, type PersonPresenceMode } from '@/spatial/life-model/personPresenceSessionClient'
 import { PersonPresenceError, requestPersonPresence, type PersonPresenceMessage } from '@/spatial/life-model/personPresenceClient'
@@ -88,7 +90,7 @@ export function ReplayPersonPresence({people}:{people:PersonChoice[]}){
         sessionId,
         message:text,
         context:prior,
-        locale:typeof navigator==='undefined'?'en-US':navigator.language,
+        locale:currentSpeechTag(),
         aiProcessingConsent:true,
         signal:controller.signal,
         onEvent:(evt)=>{if(evt.type==='delta')setStreamed(current=>current+evt.text)},

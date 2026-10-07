@@ -48,7 +48,7 @@ test('Home keeps direct semantic Ground, Orb, and Life Map navigation in the run
   assert.match(runtime, /aria-label="Open Ground directly"/)
   assert.match(runtime, /data-testid="home-semantic-ground"/)
   assert.match(runtime, /href="\/ground\/\?entryPortal=home-ground&cameraCheckpoint=home-ground-descent"/)
-  assert.match(runtime, /aria-label="Open Life Map directly"/)
+  assert.match(runtime, /aria-label=\{locale.text\('home.lifeMapAction'\)\}/)
   assert.match(runtime, /data-testid="home-semantic-life-map"/)
   assert.match(runtime, /href="\/life-map\/\?from=home-sky&entryPortal=home-sky&cameraCheckpoint=home-sky-ascent-complete"/)
 })

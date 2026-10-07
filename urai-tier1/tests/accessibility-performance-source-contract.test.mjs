@@ -124,7 +124,7 @@ test('accessibility and performance implementation contracts are present', () =>
   assert.doesNotMatch(routeOwnerCss, /ground-spatial-root canvas[\s\S]{0,220}transform:\s*scale\(/, 'Ground canvas must not exceed the mobile viewport through CSS scaling')
   requireText(routeOwnerCss, 'max-width: 100vw !important;')
   requireText(routeOwnerCss, 'max-height: 100svh !important;')
-  requireText(focus, 'aria-label={`Open Replay for ${memory.title}`}')
+  requireText(focus, "aria-label={locale.locale === 'en' ? `Open Replay for ${memory.title}` : locale.text('focus.enterReplay')}")
   assert.equal(focus.includes('min-height:44px'), false, 'Focus controls must not retain 44px minimum targets')
   requireText(focus, 'min-height:48px')
   requireText(focus, 'env(safe-area-inset-left)')

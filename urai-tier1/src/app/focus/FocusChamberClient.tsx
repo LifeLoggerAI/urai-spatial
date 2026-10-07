@@ -1,5 +1,7 @@
 'use client'
 
+import { useUraiLocale } from '@/lib/i18n/useUraiLocale'
+
 import StellarCorona from '@/spatial/stellar/StellarCorona'
 
 import { Billboard, Html, OrbitControls, Sparkles, Stars, useTexture } from '@react-three/drei'
@@ -527,6 +529,7 @@ function FocusScene({ memory, profile, recenterSignal, onActivate, controls, onW
 }
 
 export default function FocusChamberClient() {
+  const locale = useUraiLocale()
   const result = useSelectedMemory()
   const memory = result.memory
   const profile = useAdaptiveSpatialQuality()
@@ -588,8 +591,8 @@ export default function FocusChamberClient() {
       <div className="focusPhotosphereVisual" />
     </section>}
     <aside className="memoryMeaning" aria-label="Selected memory context"><p>{memory ? 'Held in context. Nothing leaves this memory field.' : result.status === 'loading' ? 'Opening the selected memory safely.' : 'No personal memory is displayed in this neutral stellar field.'}</p>{memory ? <dl><div><dt>Emotion</dt><dd>{memory.emotionalState}</dd></div><div><dt>Place</dt><dd>{memory.place?.label ?? 'Not recorded'}</dd></div><div><dt>People</dt><dd>{memory.people.map((person) => person.relationship ? `${person.label} · ${person.relationship}` : person.label).join(', ') || 'Not recorded'}</dd></div><div><dt>Privacy</dt><dd>{memory.privacy}</dd></div></dl> : <div className="neutralActions"><button type="button" onClick={unwind}>Open Life Map</button><span>{result.status === 'loading' ? 'Loading' : result.message}</span></div>}</aside>
-    <nav className="focusControls" aria-label="Focus memory controls"><button type="button" onClick={() => setRecenterSignal((value) => value + 1)}>Recenter</button>{memory ? <button type="button" className="primary" disabled={committed} onClick={enterReplay} aria-label={`Open Replay for ${memory.title}`}>{committed ? 'Opening…' : 'Enter Replay'}</button> : null}<button className="unwind" type="button" onClick={unwind}>← Life Map</button></nav>
-    <details className="focusHelp"><summary>Explore</summary><p>Drag to orbit. Scroll or pinch to move through depth. Use W A S D or arrow keys to travel. Recenter restores the arrival view. Escape returns to Life Map.</p></details>
+    <nav className="focusControls" aria-label="Focus memory controls"><button type="button" onClick={() => setRecenterSignal((value) => value + 1)} {...locale.props('focus.recenter')}>{locale.text('focus.recenter')}</button>{memory ? <button type="button" className="primary" disabled={committed} onClick={enterReplay} {...locale.props('focus.enterReplay')} aria-label={locale.locale === 'en' ? `Open Replay for ${memory.title}` : locale.text('focus.enterReplay')}><span {...locale.props(committed ? 'common.loading' : 'focus.enterReplay')}>{committed ? locale.text('common.loading') : locale.text('focus.enterReplay')}</span></button> : null}<button className="unwind" type="button" onClick={unwind} {...locale.props('nav.lifeMap')}>← {locale.text('nav.lifeMap')}</button></nav>
+    <details className="focusHelp"><summary {...locale.props('focus.explore')}>{locale.text('focus.explore')}</summary><p>Drag to orbit. Scroll or pinch to move through depth. Use W A S D or arrow keys to travel. Recenter restores the arrival view. Escape returns to Life Map.</p></details>
     {webglState !== 'ready' && webglState !== 'failed' ? <section className="webglRecovery" role="status" aria-live="assertive"><strong>{webglState === 'lost' ? 'Visual field paused safely' : 'Restoring visual field'}</strong><span>Your selected memory and privacy state remain preserved.</span><button type="button" onClick={() => setRecenterSignal((value) => value + 1)}>Recenter when restored</button></section> : null}
     <div className="focusStatus" role={result.status === 'loading' ? 'status' : 'note'} aria-live="polite">{memory ? 'Stellar memory field ready' : result.status === 'loading' ? 'Opening selected memory' : directEntry ? 'Neutral stellar field' : result.message}</div>
     <style>{focusCss + focusAccessibilityCss}</style>

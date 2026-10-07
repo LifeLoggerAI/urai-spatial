@@ -28,7 +28,7 @@ test('Life Map route uses one canonical R3F private-universe owner chain', () =>
   assert.match(boundary, /<ComposedLifeMapScene(?:\s[^>]*)?\/>/)
   assert.match(boundary, /<LifeMapSemanticNavigator(?:\s[^>]*)?\/>/)
   assert.equal((scene.match(/<Canvas\b/g) || []).length, 1)
-  assert.match(navigator, /aria-label="Search and navigate Life Map"/)
+  assert.match(navigator, /aria-label=\{locale.locale === 'en' \? 'Search and navigate Life Map'/)
   assert.match(navigator, /aria-expanded=\{open\}/)
   assert.match(navigator, /className="life-map-navigator" aria-label="Search and filter Life Map"/)
   assert.match(scene, /data-testid="urai-true-3d-life-map"/)

@@ -85,7 +85,7 @@ test('Home is one coherent authored natural 3D sanctuary with final physical ass
   assert.match(homeProduction, /cameraCheckpoint:\s*'home-ground-descent'/)
   assert.match(homeProduction, /cameraCheckpoint:\s*'home-sky-ascent-complete'/)
   assert.match(homeProduction, /href:\s*'\/life-map\/\?from=home-sky'/)
-  assert.match(homeRuntime, /aria-label="Open Life Map directly"/)
+  assert.match(homeRuntime, /aria-label=\{locale.text\('home.lifeMapAction'\)\}/)
   assert.match(homeRuntime, /data-testid="home-semantic-life-map"/)
   assert.match(homeRuntime, /href="\/life-map\/\?from=home-sky&entryPortal=home-sky&cameraCheckpoint=home-sky-ascent-complete"/)
   assert.match(homeProduction, /data-home-runtime-assets="home-entry-chamber-v1\.glb polyhaven-fern-02-geometry-v1\.glb local-three-dimensional-terrain living-orb reflecting-water"/)

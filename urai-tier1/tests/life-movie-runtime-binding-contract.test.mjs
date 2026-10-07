@@ -116,7 +116,7 @@ test('Life Movie and Replay cross the same persistent-world threshold in both di
   assert.match(replay, /Continue Life Movie/)
   assert.match(client, /parsed\.findIndex\(\(memory\) => memory\.id === requestedMemoryId\)/)
   assert.match(client, /if \(resumeIndex >= 0\) setActiveIndex\(resumeIndex\)/)
-  assert.match(replay, /world\.previousDestination === 'life-movie' \? '← Life Movie' : '← Focus'/)
+  assert.match(replay, /world\.previousDestination === 'life-movie' \? '← Life Movie' : locale\.locale === 'en' \? '← Focus' : `← \$\{locale.text\('replay.returnFocus'\)\}`/)
 })
 
 test('Life Movie is exposed by canonical launch and live certification surfaces', () => {

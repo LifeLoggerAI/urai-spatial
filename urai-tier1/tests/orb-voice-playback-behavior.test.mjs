@@ -6,7 +6,7 @@ import { isOrbState, resolveOrbSensoryOutput } from '../src/app/home/orbStateCon
 const localVoice = { name: 'Local English', lang: 'en-US', localService: true }
 const remoteVoice = { name: 'Remote English', lang: 'en-US', localService: false }
 
-function fixture({ voices = [localVoice], requestExternalAudio = async () => new Blob(['voice']), playAudio } = {}) {
+function fixture({ voices = [localVoice], language = 'en-US', requestExternalAudio = async () => new Blob(['voice']), playAudio } = {}) {
   const phases = []
   const notices = []
   const audios = []
@@ -31,7 +31,7 @@ function fixture({ voices = [localVoice], requestExternalAudio = async () => new
     voiceAvailabilityTimeoutMs: 0,
     environment: {
       speech,
-      language: 'en-US',
+      language,
       createUtterance: (text) => ({ text, onstart: null, onend: null, onerror: null }),
       createAudio: (url) => {
         const audio = {
@@ -155,6 +155,20 @@ test('browser voices marked remote cannot be used as the local privacy fallback'
   assert.equal(f.phases.includes('speaking'), false)
   assert.equal(f.phases.at(-1), 'idle')
   assert.equal(f.notices.at(-1), 'unavailable')
+})
+
+test('Orb uses the selected language and declines a foreign-only local voice', async () => {
+  const frenchVoice = { name: 'Local French', lang: 'fr-FR', localService: true }
+  const f = fixture({ voices: [localVoice, frenchVoice], language: 'fr-FR' })
+  await f.playback.play('Réponse', false)
+  assert.equal(f.utterances[0].voice, frenchVoice)
+  assert.equal(f.utterances[0].lang, 'fr-FR')
+  assert.equal(f.requests.length, 0)
+  const unavailable = fixture({ voices: [localVoice], language: 'fr-FR' })
+  await unavailable.playback.play('Réponse', false)
+  assert.equal(unavailable.utterances.length, 0)
+  assert.equal(unavailable.requests.length, 0)
+  assert.equal(unavailable.notices.at(-1), 'unavailable')
 })
 
 test('native speech error ends speaking, and stopping after completion leaves unrelated speech alone', async () => {

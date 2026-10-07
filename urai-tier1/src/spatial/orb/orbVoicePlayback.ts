@@ -1,3 +1,5 @@
+import { currentSpeechTag } from '../../lib/i18n/localePreference'
+
 export type OrbVoicePhase = 'idle' | 'preparing' | 'queued' | 'speaking'
 export type OrbVoiceNotice = 'preparing' | 'external-playing' | 'device-playing' | 'external-unavailable' | 'unavailable' | 'finished'
 
@@ -25,7 +27,7 @@ function browserVoiceEnvironment(): VoiceEnvironment {
     createAudio: (url) => new Audio(url),
     createObjectURL: (blob) => URL.createObjectURL(blob),
     revokeObjectURL: (url) => URL.revokeObjectURL(url),
-    language: typeof navigator !== 'undefined' ? navigator.language : 'en-US',
+    get language() { return currentSpeechTag() },
   }
 }
 
@@ -147,7 +149,6 @@ export class OrbVoicePlayback {
     const language = this.environment.language.toLowerCase()
     return voices.find((voice) => voice.lang.toLowerCase() === language)
       ?? voices.find((voice) => voice.lang.toLowerCase().split('-')[0] === language.split('-')[0])
-      ?? voices[0]
       ?? null
   }
 

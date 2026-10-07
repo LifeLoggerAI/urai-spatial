@@ -8,7 +8,7 @@ import ts from 'typescript'
 const localVoice = { name: 'Local English', lang: 'en-US', localService: true }
 const remoteVoice = { name: 'Remote English', lang: 'en-US', localService: false }
 
-function fixture({ voices = [localVoice], request = async () => new Blob(['narration']), playAudio, fallback = 'speech' } = {}) {
+function fixture({ voices = [localVoice], language = 'en-US', request = async () => new Blob(['narration']), playAudio, fallback = 'speech' } = {}) {
   let now = 100000
   let timerId = 0
   let urlId = 0
@@ -44,6 +44,7 @@ function fixture({ voices = [localVoice], request = async () => new Blob(['narra
     exports: module.exports,
     module,
     require: (id) => {
+      if (id === '../../lib/i18n/localePreference') return { currentSpeechTag: () => language }
       assert.equal(id, './elevenlabsClient')
       return { requestNarratorAudio: (line, signal, consent) => { requests.push({ line, signal, consent }); return request(line, signal, consent) } }
     },
@@ -194,6 +195,25 @@ test('remote-only browser voices cannot be used as a local privacy fallback', as
   assert.equal(f.requests.length, 0)
   assert.equal(f.utterances.length, 0)
   assert.equal(f.captions.at(-1).visible, false)
+})
+
+test('native narrator uses the selected language and leaves foreign-only voices silent', async () => {
+  const frenchVoice = { name: 'Local French', lang: 'fr-FR', localService: true }
+  const f = fixture({ voices: [localVoice, frenchVoice], language: 'fr-FR' })
+  await f.playback.playLine(f.line('selected-language'))
+  f.advance(0)
+  await f.settle()
+  assert.equal(f.utterances[0].voice, frenchVoice)
+  assert.equal(f.utterances[0].lang, 'fr-FR')
+  assert.equal(f.requests.length, 0)
+  const unavailable = fixture({ voices: [localVoice], language: 'fr-FR' })
+  await unavailable.playback.playLine(unavailable.line('foreign-only'))
+  unavailable.advance(0)
+  await unavailable.settle()
+  unavailable.advance(1500)
+  await unavailable.settle()
+  assert.equal(unavailable.utterances.length, 0)
+  assert.equal(unavailable.requests.length, 0)
 })
 
 test('later external consent cannot promote a line admitted for local playback', async () => {

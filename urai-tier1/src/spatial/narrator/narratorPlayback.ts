@@ -1,5 +1,6 @@
 import type { NarratorLine } from "./narratorTypes";
 import { requestNarratorAudio } from "./elevenlabsClient";
+import { currentSpeechTag } from '../../lib/i18n/localePreference'
 
 type Listener = (line: NarratorLine | null, visible: boolean) => void;
 
@@ -137,10 +138,9 @@ class NarratorPlaybackController {
 
   private localVoice() {
     const voices = window.speechSynthesis.getVoices().filter((voice) => voice.localService);
-    const language = typeof navigator === "undefined" ? "en-US" : navigator.language.toLowerCase();
+    const language = currentSpeechTag().toLowerCase();
     return voices.find((voice) => voice.lang.toLowerCase() === language)
       ?? voices.find((voice) => voice.lang.toLowerCase().split("-")[0] === language.split("-")[0])
-      ?? voices[0]
       ?? null;
   }
 

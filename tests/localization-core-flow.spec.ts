@@ -1,0 +1,82 @@
+import { test, expect } from '@playwright/test'
+
+test.beforeEach(async ({ page }) => {
+  // Exercise the real route controls without requiring GPU availability or an account.
+  await page.addInitScript(() => {
+    const getContext = HTMLCanvasElement.prototype.getContext
+    HTMLCanvasElement.prototype.getContext = function (kind: string, ...args: unknown[]) {
+      if (kind === 'webgl' || kind === 'webgl2' || kind === 'experimental-webgl') return null
+      return Reflect.apply(getContext, this, [kind, ...args])
+    } as typeof getContext
+  })
+})
+
+test('French preview persists and renders in actual Home, Life Map, Focus and Replay controls', async ({ page }) => {
+  test.setTimeout(180_000)
+  await page.goto('/settings?lang=fr')
+  const language = page.locator('#urai-language')
+  await expect(language).toHaveValue('fr')
+  await expect(language.locator('option')).toHaveCount(20)
+  await expect(page.getByTestId('locale-preview-toggle')).not.toBeChecked()
+  await expect(page.getByRole('link', { name: '← Home', exact: true })).toBeVisible()
+  await page.getByTestId('locale-preview-toggle').check()
+  await expect(page.getByRole('heading', { name: 'Langue', exact: true })).toHaveAttribute('lang', 'fr')
+  await expect(page.getByRole('link', { name: '← Accueil', exact: true })).toBeVisible()
+  await page.reload()
+  await expect(language).toHaveValue('fr')
+  await expect(page.getByTestId('locale-preview-toggle')).toBeChecked()
+  await expect(page.locator('html')).toHaveAttribute('lang', 'en')
+  await expect(page.locator('html')).toHaveAttribute('data-urai-locale-preview', 'true')
+  await expect(page.locator('#language-review-status')).toContainText('Native language review is pending')
+  await expect(page.locator('#language-review-status')).toHaveAttribute('lang', 'en')
+
+  await page.goto('/home')
+  await expect(page.getByTestId('home-semantic-life-map')).toHaveAccessibleName('Ouvrir directement la carte de vie')
+  await expect(page.getByTestId('home-semantic-life-map')).toHaveAttribute('lang', 'fr')
+  await page.goto('/life-map?demo=1')
+  await page.getByRole('button', { name: 'Rechercher · Carte de vie', exact: true }).click()
+  await expect(page.getByRole('textbox', { name: 'Rechercher', exact: true })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Fermer', exact: true })).toHaveAttribute('lang', 'fr')
+  const results = page.locator('.semantic-results')
+  const count = Number(await results.getAttribute('data-visible-count'))
+  expect(count).toBeGreaterThan(0)
+  await expect(page.locator('.life-map-navigator [role="status"]')).toHaveText(`Résultats : ${new Intl.NumberFormat('fr').format(count)}`)
+  const date = results.locator('time').first()
+  const occurredAt = await date.getAttribute('datetime')
+  expect(occurredAt).toBeTruthy()
+  await expect(date).toHaveText(new Intl.DateTimeFormat('fr', { dateStyle: 'medium' }).format(new Date(occurredAt!)))
+  await expect(date).toHaveAttribute('lang', 'fr')
+  await expect(page.locator('.privacy-truth')).toHaveText('Disclosed sample universe · not your memories')
+  await page.getByRole('button', { name: 'Fermer', exact: true }).click()
+  await expect(page.getByTestId('life-map-semantic-trigger')).toBeFocused()
+
+  await page.goto('/focus?memoryId=quiet-reset&demo=1')
+  await expect(page.getByRole('button', { name: 'Recentrer', exact: true })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Recentrer', exact: true })).toHaveAttribute('lang', 'fr')
+  await expect(page.getByRole('button', {name:'Entrer dans la relecture',exact:true})).toBeVisible()
+  await expect(page.getByRole('button', {name:'Entrer dans la relecture',exact:true})).toHaveAttribute('lang','fr')
+  await page.goto('/replay?memoryId=quiet-reset&demo=1')
+  await expect(page.locator('button.unwind')).toHaveAccessibleName('← Revenir à la concentration')
+  await expect(page.locator('button.unwind')).toHaveAttribute('lang', 'fr')
+})
+
+test('changing language clears preview; Arabic controls have scoped RTL and reviewed English disclosure', async ({ page }) => {
+  test.setTimeout(90_000)
+  await page.goto('/settings')
+  await page.locator('#urai-language').selectOption('fr')
+  await page.getByTestId('locale-preview-toggle').check()
+  await page.locator('#urai-language').selectOption('ar')
+  await expect(page.getByTestId('locale-preview-toggle')).not.toBeChecked()
+  await expect(page.getByRole('heading', { name: 'Language', exact: true })).toBeVisible()
+  await page.getByTestId('locale-preview-toggle').check()
+  await expect(page.getByRole('heading', { name: 'اللغة', exact: true })).toHaveAttribute('lang', 'ar')
+  await expect(page.getByRole('heading', { name: 'اللغة', exact: true })).toHaveAttribute('dir', 'rtl')
+  await expect(page.locator('html')).toHaveAttribute('dir', 'ltr')
+  await expect(page.locator('#language-review-status')).toHaveAttribute('dir', 'ltr')
+  await page.reload()
+  await expect(page.locator('#urai-language')).toHaveValue('ar')
+  await expect(page.getByTestId('locale-preview-toggle')).toBeChecked()
+  await page.locator('#urai-language').selectOption('en')
+  await expect(page.getByTestId('locale-preview-toggle')).toHaveCount(0)
+  await expect(page.getByRole('heading', { name: 'Language', exact: true })).toBeVisible()
+})

@@ -113,7 +113,7 @@ test('Focus is an explorable stellar memory-star field rather than a static cham
   assert.doesNotMatch(focus, /color="#ffe8a8" transparent opacity=\{0\.48\}/)
   assert.doesNotMatch(focus, /aria-label="Focus chamber controls"/)
   assert.match(focus, /<button type="button" onClick=\{\(\) => setRecenterSignal/)
-  assert.match(focus, /aria-label=\{`Open Replay for \$\{memory\.title\}`\}/)
+  assert.match(focus, /aria-label=\{locale.locale === 'en' \? `Open Replay for \$\{memory\.title\}` : locale.text\('focus.enterReplay'\)\}/)
   assert.match(focus, /<details className="focusHelp">/)
   assert.match(focus, /data-focus-fallback="semantic"/)
   assert.match(focus, /Spatial view unavailable/)

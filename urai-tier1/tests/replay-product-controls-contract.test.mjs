@@ -12,7 +12,7 @@ test('Replay preserves cinematic identity while keeping Save Hide Correct and Hi
   for (const marker of ['replayVisualAdmission', 'replayAssets', 'data-node={memory.star.id}', 'data-canonical-asset={demoEnvironment ? replayAssets.primary.src : undefined}', '<ReplayProductControls memory={memory} />']) {
     assert.ok(client.includes(marker), `missing current-main Replay marker: ${marker}`)
   }
-  for (const marker of ['<details className="replayProduct"', 'aria-label="Replay memory controls">Memory controls</summary>', 'replayProductActions', "operations.saved ? 'Saved' : 'Save'", "operations.hidden ? 'Unhide' : 'Hide'", "pendingCorrection ? 'Correcting…' : 'Correct'", '>History<', 'data-replay-saved', 'data-replay-hidden', 'data-pending-operations']) {
+  for (const marker of ['<details className="replayProduct"', 'aria-label="Replay memory controls">Memory controls</summary>', 'replayProductActions', "operations.saved ? 'Saved' : 'Save'", "operations.hidden ? 'Unhide' : 'Hide'", "pendingCorrection ? 'Correcting…' : 'Correct'", "locale.text('common.history')", 'data-replay-saved', 'data-replay-hidden', 'data-pending-operations']) {
     assert.ok(controls.includes(marker), `missing Replay product marker: ${marker}`)
   }
 })

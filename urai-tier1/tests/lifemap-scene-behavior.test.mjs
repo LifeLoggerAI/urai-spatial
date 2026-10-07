@@ -122,7 +122,7 @@ test('Selection Focus Replay Overview and Escape preserve artifact identity', ()
 })
 
 test('Semantic navigator supports search filters keyboard travel and connected destinations', () => {
-  assert.match(navigator, /Search memories, people, dates, places, themes, and eras/)
+  assert.match(navigator, /placeholder=\{locale.locale === 'en' \? 'Search memories, people, places…' : locale.text\('common.search'\)\}/)
   assert.match(navigator, /TYPE_FILTERS/)
   assert.match(navigator, /typeFilter === 'all' \|\| node\.type === typeFilter|typeFilter === "all" \|\| node\.type === typeFilter/)
   assert.match(navigator, /eraFilter === 'all' \|\| node\.eraId === eraFilter|eraFilter === "all" \|\| node\.eraId === eraFilter/)
