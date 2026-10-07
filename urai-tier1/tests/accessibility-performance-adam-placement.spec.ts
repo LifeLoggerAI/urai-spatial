@@ -84,6 +84,22 @@ async function assertCopyIsUnobstructed(copy: Locator) {
   return geometry
 }
 
+async function assertPassportTargetClearOfOrb(target: Locator) {
+  await target.scrollIntoViewIfNeeded()
+  const geometry = await target.evaluate(element => {
+    const rect = element.getBoundingClientRect()
+    const scrollbox = element.closest('.passportVault')!.getBoundingClientRect()
+    const orb = document.querySelector('.urai-world-companion__orb')!.getBoundingClientRect()
+    const hit = document.elementFromPoint(rect.left + rect.width / 2, rect.top + rect.height / 2)
+    return { text: element.textContent?.trim(), width: rect.width, height: rect.height, top: rect.top, bottom: rect.bottom, scrollboxBottom: scrollbox.bottom, viewportHeight: innerHeight, coveredByOrb: rect.left < orb.right && rect.right > orb.left && rect.top < orb.bottom && rect.bottom > orb.top, pointerReachable: hit === element || element.contains(hit) }
+  })
+  expect(geometry.top).toBeGreaterThanOrEqual(-1)
+  expect(geometry.bottom).toBeLessThanOrEqual(Math.min(geometry.scrollboxBottom, geometry.viewportHeight) + 1)
+  expect(geometry.coveredByOrb, 'The persistent Orb must not cover Passport operation fields or ownership information').toBe(false)
+  expect(geometry.pointerReachable).toBe(true)
+  return geometry
+}
+
 async function exerciseKeyboardPanel(page: Page, slot: string, capture = true) {
   let { launcher } = await assertInlineLauncher(page, slot)
   await launcher.focus()
@@ -221,6 +237,18 @@ for (const viewport of placementViewports) {
       const deletionCopy = page.getByText('Deletion is scoped, revision-safe, queued through the trusted backend, and leaves an append-only privacy-safe receipt. Provider and legal retention exceptions are disclosed rather than hidden.', { exact: true })
       const deletion = await assertCopyIsUnobstructed(deletionCopy)
       await attachPlacement(page, info, `passport-deletion-${state}-${viewport.width}x${viewport.height}`, { launcher: initial.geometry, deletion, zoneCount })
+      await expect(page.locator('.urai-world-companion__orb')).toBeVisible()
+      const operationTargets = []
+      for (const target of await page.locator('.passportDanger > label > select, .passportDanger > label > input, .passportDanger > button').all()) {
+        const geometry = await assertPassportTargetClearOfOrb(target)
+        expect(geometry.width).toBeGreaterThanOrEqual(48)
+        expect(geometry.height).toBeGreaterThanOrEqual(48)
+        operationTargets.push(geometry)
+      }
+      expect(operationTargets).toHaveLength(3)
+      await attachPlacement(page, info, `passport-operation-fields-${state}-${viewport.width}x${viewport.height}`, operationTargets)
+      const ownershipInformation = await assertPassportTargetClearOfOrb(page.locator('.passportKey span'))
+      await info.attach(`passport-ownership-orb-clear-${state}-${viewport.width}x${viewport.height}.json`, { body: JSON.stringify(ownershipInformation), contentType: 'application/json' })
       const action = owner.getByRole('button', { name: 'Unlock and create deletion request', exact: true })
       await expect(action).toBeDisabled()
       await action.scrollIntoViewIfNeeded()
@@ -248,6 +276,11 @@ test('Passport no-WebGL keeps the founder slot and protected deletion text clear
   const initial = await assertInlineLauncher(page, 'passport-controls')
   await exerciseKeyboardPanel(page, 'passport-controls')
   const deletion = await assertCopyIsUnobstructed(page.locator('.passportDanger > p'))
+  await expect(page.locator('.urai-world-companion__orb')).toBeVisible()
+  const confirmation = await assertPassportTargetClearOfOrb(page.locator('.passportDanger > label > input'))
+  expect(confirmation.height).toBeGreaterThanOrEqual(48)
+  await attachPlacement(page, info, 'passport-no-webgl-operation-field-320x568', confirmation)
+  await assertCopyIsUnobstructed(page.locator('.passportDanger > p'))
   await attachPlacement(page, info, 'passport-no-webgl-320x568', { launcher: initial.geometry, deletion })
 })
 
@@ -494,7 +527,20 @@ for (const viewport of placementViewports) {
     expect(focus.outlineWidth).toBeGreaterThanOrEqual(3)
     expect(focus.outlineStyle).toBe('solid')
     expect(focus.reachable).toBe(true)
-    await attachPlacement(page, info, `exported-404-${viewport.width}x${viewport.height}`, { response: { path: '/404.html', status: response!.status(), contentType: response!.headers()['content-type'], htmlSha256: createHash('sha256').update(html).digest('hex') }, geometry, bounds, focus, productionAuthenticationVerified: false })
+    // DOM geometry can exist before Chromium has a painted surface. Await real
+    // document readiness and two animation frames, then capture exactly once.
+    await page.waitForLoadState('load')
+    const paint = await page.evaluate(async () => {
+      await document.fonts.ready
+      const first = await new Promise<number>(resolve => requestAnimationFrame(resolve))
+      const second = await new Promise<number>(resolve => requestAnimationFrame(resolve))
+      return { firstFrame: first, secondFrame: second, readyState: document.readyState, visibilityState: document.visibilityState, fonts: document.fonts.status }
+    })
+    expect(paint.readyState).toBe('complete')
+    expect(paint.visibilityState).toBe('visible')
+    expect(paint.fonts).toBe('loaded')
+    expect(paint.secondFrame).toBeGreaterThan(paint.firstFrame)
+    await attachPlacement(page, info, `exported-404-${viewport.width}x${viewport.height}`, { response: { path: '/404.html', status: response!.status(), contentType: response!.headers()['content-type'], htmlSha256: createHash('sha256').update(html).digest('hex') }, geometry, bounds, focus, paint, productionAuthenticationVerified: false })
     await page.keyboard.press('Enter')
     await expect(page).toHaveURL(/\/(?:home\/?)?$/)
     await expect(page.getByRole('heading', { name: 'This place isn’t part of your world', exact: true })).toHaveCount(0)
