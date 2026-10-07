@@ -36,7 +36,7 @@ for (const width of [320, 390]) {
             range.selectNodeContents(button)
             const box = rect(button)
             const hit = document.elementFromPoint(box.x + box.width / 2, box.y + box.height / 2)
-            return { box, pointerReachable: hit === button || (hit !== null && button.contains(hit)), text: [...range.getClientRects()].map(r => ({ x: r.x, right: r.right, y: r.y, bottom: r.bottom, selector: element.className || element.tagName })) }
+            return { box, pointerReachable: hit === button || (hit !== null && button.contains(hit)), text: [...range.getClientRects()].map(r => ({ x: r.x, right: r.right, y: r.y, bottom: r.bottom, selector: button.className || button.tagName })) }
           }),
         }
       })
