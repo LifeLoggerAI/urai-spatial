@@ -1,6 +1,8 @@
 import * as functions from 'firebase-functions/v1'
 import * as admin from 'firebase-admin'
+import { revokePersonPresenceConsentDerivatives } from './personPresenceAuthority'
 import { createHash } from 'node:crypto'
+import { exportPrivateLifeModelHandles, tombstonePrivateLifeModelInputs } from './lifeModelPrivateInputs'
 
 if (!admin.apps.length) admin.initializeApp()
 
@@ -335,20 +337,7 @@ export const applyConsentPolicy = functions.https.onCall(async (data, context) =
 })
 
 async function revokeLifeModelDerivativesForConsent(uid: string, reasonId: string) {
-  const collections = ['personModelBundles', 'personRenderBindings', 'sceneTruthPackets', 'renderManifests']
-  for (const collectionName of collections) {
-    const snapshot = await db.collection(`users/${uid}/${collectionName}`).limit(500).get()
-    if (snapshot.empty) continue
-    const batch = db.batch()
-    for (const item of snapshot.docs) {
-      batch.set(item.ref, {
-        state: 'revoked',
-        invalidatedBy: reasonId,
-        invalidatedAt: fieldValue.serverTimestamp(),
-      }, { merge: true })
-    }
-    await batch.commit()
-  }
+  return revokePersonPresenceConsentDerivatives(db, uid, reasonId, fieldValue.serverTimestamp())
 }
 
 async function enforceConsentJob(snapshot: FirebaseFirestore.DocumentSnapshot) {
@@ -689,6 +678,10 @@ async function buildExport(snapshot: FirebaseFirestore.DocumentSnapshot) {
       data.renderManifests = await collectionDocuments(userRef.collection('renderManifests'))
       data.simulationSessions = await collectionDocuments(userRef.collection('simulationSessions'))
       data.lifeModelReceipts = await collectionDocuments(userRef.collection('lifeModelReceipts'))
+      data.privateLifeModelSources = await boundedCollectionDocuments(userRef.collection('privateLifeModelSources'), 'privateLifeModelSources')
+      data.privateLifeModelTranscripts = await boundedCollectionDocuments(userRef.collection('privateLifeModelTranscripts'), 'privateLifeModelTranscripts')
+      data.privateLifeModelProvenance = await boundedCollectionDocuments(userRef.collection('privateLifeModelProvenance'), 'privateLifeModelProvenance')
+      data.privateLifeModelSourceHandles = redactSecrets(await exportPrivateLifeModelHandles(db, uid))
     }
     if (scopes.includes('intelligence')) {
       data.scenarios = await scenarioExportTree(userRef)
@@ -932,6 +925,9 @@ const DELETION_COLLECTIONS: Record<Exclude<DeletionScope, 'account'>, string[]> 
     'renderManifests',
     'simulationSessions',
     'lifeModelReceipts',
+    'privateLifeModelSources',
+    'privateLifeModelTranscripts',
+    'privateLifeModelProvenance',
   ],
   intelligence: ['scenarios', 'aiLedger'],
   'spatial-state': [
@@ -992,6 +988,9 @@ const DELETION_COLLECTIONS: Record<Exclude<DeletionScope, 'account'>, string[]> 
     'renderManifests',
     'simulationSessions',
     'lifeModelReceipts',
+    'privateLifeModelSources',
+    'privateLifeModelTranscripts',
+    'privateLifeModelProvenance',
   ],
 }
 
@@ -1033,6 +1032,9 @@ async function processDeletion(snapshot: FirebaseFirestore.DocumentSnapshot) {
     ])
     const userRef = db.doc(`users/${uid}`)
     const deletedCollections: string[] = []
+    if (scope === 'account' || scope === 'all-repository-data' || scope === 'life-model') {
+      await tombstonePrivateLifeModelInputs(db, uid, fieldValue.serverTimestamp())
+    }
     if (scope === 'account') {
       await deleteCapturedRealityStorage(uid, { deleteAllExports: true })
       await db.recursiveDelete(userRef)

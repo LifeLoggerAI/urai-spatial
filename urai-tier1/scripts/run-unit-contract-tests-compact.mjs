@@ -2,6 +2,11 @@ import { spawnSync } from 'node:child_process'
 import fs from 'node:fs'
 
 const tests = [
+  'tests/dependency-security-regressions.test.mjs',
+  'tests/android-aab-transport.test.mjs',
+  'tests/android-native-google-auth.test.mjs',
+  'tests/native-deep-links.test.mjs',
+  'tests/ios-native-preparation.test.mjs',
   'tests/privacy-session-lifecycle.test.mjs',
   'tests/sms-session-lifecycle.test.mjs',
   'tests/asset-receipt-runner-contract.test.mjs',
@@ -13,6 +18,7 @@ const tests = [
   'tests/person-presence-session-contract.test.mjs',
   'tests/person-render-binding-promotion.test.mjs',
   'tests/replay-person-presence-ui.test.mjs',
+  'tests/replay-person-presence-lifecycle.test.mjs',
   'tests/life-model-functions-contract.test.mjs',
   'tests/life-model-data-rights-contract.test.mjs',
   'tests/life-model-privacy-boundary.test.mjs',
@@ -27,6 +33,7 @@ const tests = [
   'tests/replay-transition-evidence-contract.test.mjs',
   'tests/dispatcher-transient-retry-contract.test.mjs',
   'tests/home-runtime-cursor-cleanup-contract.test.mjs',
+  'tests/home-movement-lifecycle.test.mjs',
   'tests/status-live-authority-contract.test.mjs',
   'tests/open-graph-asset-ownership-contract.test.mjs',
   'tests/captured-reality-life-model-binding.test.mjs',
@@ -79,6 +86,7 @@ const tests = [
   'tests/lifemap-scene-behavior.test.mjs',
   'tests/life-movie-privacy-contract.test.mjs',
   'tests/localization-runtime-contract.test.mjs',
+  'tests/localization-flow.test.mjs',
   'tests/localization-readiness-evidence-contract.test.mjs',
   'tests/memory-star-phase4-contract.test.mjs',
   'tests/memory-world-foundation.test.mjs',

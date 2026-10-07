@@ -2,12 +2,21 @@ name: Localization Readiness Evidence
 
 on:
   pull_request:
-    branches: [main, 'converge/**', 'integration/**']
+    branches: [main, 'converge/**', 'integration/**', 'repair/release-closure-integration-20261007']
     paths:
       - '.github/workflows/localization-readiness-evidence.yml'
       - 'scripts/generate-localization-readiness.mjs'
       - 'urai-tier1/src/lib/i18n/**'
-      - 'urai-tier1/tests/localization-runtime-contract.test.mjs'
+      - 'urai-tier1/src/app/LocaleRuntime.tsx'
+      - 'urai-tier1/src/app/HomeSpatialRuntimeLayer.tsx'
+      - 'urai-tier1/src/app/settings/DeviceSettingsClient.tsx'
+      - 'urai-tier1/src/app/focus/FocusChamberClient.tsx'
+      - 'urai-tier1/src/app/replay/CinematicReplayClient.tsx'
+      - 'urai-tier1/src/app/replay/ReplayProductControls.tsx'
+      - 'urai-tier1/src/components/settings/LanguageSettings.tsx'
+      - 'urai-tier1/src/components/lifemap/LifeMapSemanticNavigator.tsx'
+      - 'urai-tier1/tests/localization-*.test.mjs'
+      - 'tests/localization-core-flow.spec.ts'
       - 'brand/LOCALIZATION_20_READINESS.md'
   workflow_dispatch:
     inputs:
@@ -53,13 +62,21 @@ jobs:
         run: |
           node --check scripts/generate-localization-readiness.mjs
           URAI_LOCALIZATION_OUTPUT=artifacts/localization-readiness             node --import tsx scripts/generate-localization-readiness.mjs
-      - name: Verify locale runtime contract
-        run: pnpm --dir urai-tier1 exec node --import tsx --test tests/localization-runtime-contract.test.mjs
+      - name: Verify locale preference, fallback and formatting behavior
+        run: pnpm --dir urai-tier1 exec node --import tsx --test tests/localization-runtime-contract.test.mjs tests/localization-flow.test.mjs tests/localization-readiness-evidence-contract.test.mjs
+      - name: Install standard Chromium runtime
+        run: pnpm exec playwright install --with-deps chromium
+      - name: Verify selected locale in real core routes
+        env:
+          PLAYWRIGHT_JSON_OUTPUT_NAME: artifacts/localization-readiness/browser-result.json
+        run: pnpm exec playwright test tests/localization-core-flow.spec.ts --workers=1 --reporter=line,json --trace=retain-on-failure
       - name: Retain exact localization readiness evidence
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: localization-readiness-${{ env.URAI_EXACT_HEAD }}
-          path: artifacts/localization-readiness
+          path: |
+            artifacts/localization-readiness
+            test-results
           if-no-files-found: error
           retention-days: 365

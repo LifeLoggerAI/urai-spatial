@@ -6,11 +6,14 @@ const focusedRunnerSource = fs.readFileSync(new URL('../scripts/run-unit-contrac
 const compactRunnerSource = fs.readFileSync(new URL('../scripts/run-unit-contract-tests-compact.mjs', import.meta.url), 'utf8')
 
 const requiredFocusedTests = [
+  'tests/dependency-security-regressions.test.mjs',
+  'tests/localization-flow.test.mjs',
   'tests/person-presence-provider-contract.test.mjs',
   'tests/person-presence-voice-contract.test.mjs',
   'tests/person-presence-session-contract.test.mjs',
   'tests/person-render-binding-promotion.test.mjs',
   'tests/replay-person-presence-ui.test.mjs',
+  'tests/replay-person-presence-lifecycle.test.mjs',
   'tests/life-model-functions-contract.test.mjs',
   'tests/life-model-data-rights-contract.test.mjs',
   'tests/life-model-privacy-boundary.test.mjs',
@@ -25,6 +28,7 @@ const requiredFocusedTests = [
   'tests/replay-transition-evidence-contract.test.mjs',
   'tests/dispatcher-transient-retry-contract.test.mjs',
   'tests/home-runtime-cursor-cleanup-contract.test.mjs',
+  'tests/home-movement-lifecycle.test.mjs',
   'tests/status-live-authority-contract.test.mjs',
   'tests/open-graph-asset-ownership-contract.test.mjs',
   'tests/captured-reality-life-model-binding.test.mjs',

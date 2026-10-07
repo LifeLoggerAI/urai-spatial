@@ -3,14 +3,17 @@ import fs from 'node:fs'
 import test from 'node:test'
 
 const provider=fs.readFileSync(new URL('../../apps/functions/src/personPresenceVoiceProvider.ts',import.meta.url),'utf8')
+const authority=fs.readFileSync(new URL('../../apps/functions/src/personPresenceAuthority.ts',import.meta.url),'utf8')
 const client=fs.readFileSync(new URL('../src/spatial/life-model/personPresenceVoiceClient.ts',import.meta.url),'utf8')
 const rules=fs.readFileSync(new URL('../../firebase/firestore.rules',import.meta.url),'utf8')
 
 test('Person voice exists only for an accepted binding to the exact current person bundle',()=>{
-  assert.match(provider,/personRenderBindings/)
-  assert.match(provider,/binding\.get\('bundleId'\)!==bundleId/)
-  assert.match(provider,/reviewState'\)!=='ACCEPTED'/)
-  assert.match(provider,/consentState'\)!=='authorized'/)
+  assert.match(provider,/requirePersonPresenceRenderBinding\(db,uid,authority,'voice'\)/)
+  assert.match(authority,/personRenderBindings/)
+  assert.match(authority,/binding\.get\('bundleId'\) !== authority\.bundleId/)
+  assert.match(authority,/reviewState'\) !== 'ACCEPTED'/)
+  assert.match(authority,/consentState'\) !== 'authorized'/)
+  assert.match(authority,/sourceAuthorityHash'\) !== authority\.bundleHash/)
   assert.match(provider,/ACCEPTED_PERSON_VOICE_NOT_READY/)
 })
 

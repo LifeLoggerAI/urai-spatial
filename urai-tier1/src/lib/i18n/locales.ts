@@ -1,3 +1,5 @@
+import { URAI_CORE_CATALOGS, URAI_CORE_MESSAGES } from './coreMessages'
+
 export const URAI_LAUNCH_LOCALES = [
   'en','zh-Hans','hi','es','fr','ar','bn','pt-BR','ru','ur',
   'id','de','ja','sw','tr','vi','fil','ko','it','fa',
@@ -61,6 +63,7 @@ export type UraiMessageDefinition = {
 }
 
 export const URAI_SOURCE_MESSAGES = {
+  ...URAI_CORE_MESSAGES,
   'nav.home': { id:'nav.home', source:'Home', sensitivity:'general', description:'Canonical Home navigation label' },
   'nav.lifeMap': { id:'nav.lifeMap', source:'Life Map', sensitivity:'general', description:'Canonical Life Map navigation label' },
   'nav.focus': { id:'nav.focus', source:'Focus', sensitivity:'general', description:'Canonical Focus navigation label' },
@@ -259,6 +262,8 @@ export const URAI_CATALOGS: Record<UraiLaunchLocale,UraiCatalog> = {
     'privacy.reviewRequired': 'بازبینی توسط گویشور بومی الزامی است',
   },
 }
+
+for (const locale of URAI_LAUNCH_LOCALES) Object.assign(URAI_CATALOGS[locale], URAI_CORE_CATALOGS[locale])
 
 export function messageFor(locale: UraiLaunchLocale, id: UraiMessageId) {
   const admittedLocale = runtimeUraiLocale(locale)

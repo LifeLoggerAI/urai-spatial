@@ -45,7 +45,7 @@ test('Home is the live embodied sacred-tech sanctuary with an explicit degraded 
     'data-home-context-owner="world-local-context-only"',
     'aria-label="Open URAI Orb companion"',
     'aria-label="Open Ground directly"',
-    'aria-label="Open Life Map directly"',
+    "aria-label={locale.text('home.lifeMapAction')}",
   ]) has(homeRuntime, marker)
   assert.doesNotMatch(homeRuntime, /EmbodiedHomeSpatialCanvas|HomeSanctuaryWorld|data-home-ground-portal=|data-home-life-map-portal=/)
 

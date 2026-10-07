@@ -5,6 +5,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import AssetDrivenHomeWorld from './AssetDrivenHomeWorld'
 import { useWebGLAvailable } from './HomeSpatialCanvas'
 import HomeSpatialWorldFinal from './HomeSpatialWorldFinal'
+import { useUraiLocale } from '@/lib/i18n/useUraiLocale'
 import HomeSceneRenderBoundary from './home/HomeSceneRenderBoundary'
 import { requestUraiWorldOrbOpen } from '@/spatial/world/worldEvents'
 import { clearHomeAssetCache, isHomeAssetLoadError } from '@/spatial/layout/HomeWorldProductionPolished'
@@ -14,11 +15,12 @@ type RendererState = 'ready' | 'recovering' | 'failed'
 const HOME_TELEMETRY_SELECTOR = '.urai-asset-home-world[data-home-primary-owner="asset-driven"], .urai-final-home-world'
 
 function HomeSemanticNavigation() {
+  const locale = useUraiLocale()
   return (
     <nav className="home-semantic-navigation" aria-label="Accessible Home destinations" data-home-navigation-owner="runtime-boundary" data-home-navigation-non-dominant="true">
       <button type="button" aria-label="Open URAI Orb companion" data-testid="home-semantic-orb" onClick={requestUraiWorldOrbOpen}>Open URAI Orb companion</button>
       <a href="/ground/?entryPortal=home-ground&cameraCheckpoint=home-ground-descent" aria-label="Open Ground directly" data-testid="home-semantic-ground">Ground</a>
-      <a href="/life-map/?from=home-sky&entryPortal=home-sky&cameraCheckpoint=home-sky-ascent-complete" aria-label="Open Life Map directly" data-testid="home-semantic-life-map">Life Map</a>
+      <a href="/life-map/?from=home-sky&entryPortal=home-sky&cameraCheckpoint=home-sky-ascent-complete" {...locale.props('home.lifeMapAction')} aria-label={locale.text('home.lifeMapAction')} data-testid="home-semantic-life-map">{locale.text('nav.lifeMap')}</a>
     </nav>
   )
 }

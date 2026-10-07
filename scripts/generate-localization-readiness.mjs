@@ -1,9 +1,10 @@
-import { mkdir, writeFile } from 'node:fs/promises'
+import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import {
   URAI_LAUNCH_LOCALES,
   URAI_NATIVE_REVIEWED_LOCALES,
   URAI_RTL_LOCALES,
+  URAI_SOURCE_MESSAGES,
   localizationCompleteness,
   runtimeUraiLocale,
   uraiTextDirection,
@@ -50,6 +51,24 @@ const locales = URAI_LAUNCH_LOCALES.map((locale) => {
   }
 })
 
+// Catalog coverage is measured only against registered strings. It is not a
+// percentage of the product. Record the real scoped UI consumers separately.
+const consumerPaths = [
+  'src/app/HomeSpatialRuntimeLayer.tsx',
+  'src/app/settings/DeviceSettingsClient.tsx',
+  'src/components/settings/LanguageSettings.tsx',
+  'src/components/lifemap/LifeMapSemanticNavigator.tsx',
+  'src/app/focus/FocusChamberClient.tsx',
+  'src/app/replay/CinematicReplayClient.tsx',
+  'src/app/replay/ReplayProductControls.tsx',
+]
+const consumers = await Promise.all(consumerPaths.map(async (file) => {
+  const source = await readFile(new URL(`../urai-tier1/${file}`, import.meta.url), 'utf8')
+  const messageIds = [...new Set([...source.matchAll(/locale\.(?:text|props)\(['"]([^'"]+)['"]/g)].map(match => match[1]))].sort()
+  return {file, messageIds, numberFormatter:source.includes('locale.number('), dateFormatter:source.includes('locale.date(')}
+}))
+const wiredMessageIds = [...new Set(consumers.flatMap(consumer => consumer.messageIds))].sort()
+
 const receipt = {
   schemaVersion: 'urai-localization-readiness-1',
   exactHead,
@@ -58,6 +77,17 @@ const receipt = {
   governedLocaleCount: URAI_LAUNCH_LOCALES.length,
   runtimeAdmittedLocales: locales.filter((locale) => locale.runtimeAdmitted).map((locale) => locale.locale),
   preparationOnlyLocales: locales.filter((locale) => !locale.runtimeAdmitted).map((locale) => locale.locale),
+  uiCoverage: {
+    scope:'GENERAL_CORE_CONTROLS_EXPLICIT_WORKING_PREVIEW',
+    registeredMessageCount:Object.keys(URAI_SOURCE_MESSAGES).length,
+    wiredMessageCount:wiredMessageIds.length,
+    wiredMessageIds,
+    unwiredMessageIds:Object.keys(URAI_SOURCE_MESSAGES).filter(id => !wiredMessageIds.includes(id)),
+    consumers,
+    wholeProductTranslated:false,
+    sensitiveFallback:'reviewed locale only',
+    remaining:'Route headings/instructions/status/errors, private content, sensitive policy copy and other product routes remain outside this scoped catalog. Human language, RTL visual, speech, AT and device acceptance remain pending.',
+  },
   locales,
 }
 

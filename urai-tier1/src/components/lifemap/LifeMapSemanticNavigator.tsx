@@ -6,6 +6,7 @@ import { createPortal } from 'react-dom'
 import { lifeMapTypeLabels, type LifeMapNode, type LifeMapNodeType } from './lifeMapData'
 import { requestLifeMapSelection } from './lifeMapSelection'
 import { useLifeMapEvents } from './useLifeMapEvents'
+import { useUraiLocale } from '@/lib/i18n/useUraiLocale'
 
 const TYPE_FILTERS: readonly (LifeMapNodeType | 'all')[] = ['all', 'memory', 'relationship', 'season', 'recovery', 'threshold', 'ritual', 'forecast', 'legacy']
 
@@ -22,6 +23,7 @@ function matchesSearch(node: LifeMapNode, search: string) {
 }
 
 export default function LifeMapSemanticNavigator({ authenticatedUserId = null }: { authenticatedUserId?: string | null }) {
+  const locale = useUraiLocale()
   const router = useRouter()
   const params = useSearchParams()
   const explicitDemo = params.get('demo') === '1'
@@ -162,6 +164,9 @@ export default function LifeMapSemanticNavigator({ authenticatedUserId = null }:
   }, [closeNavigator, open, overview, step])
 
   const related = selected ? nodes.filter((node) => selected.connectedTo.includes(node.id) || node.connectedTo.includes(selected.id)) : []
+  const nodeDate = (node: LifeMapNode) => node.occurredAt && Number.isFinite(Date.parse(node.occurredAt))
+    ? <time dateTime={node.occurredAt} {...locale.formatProps}>{locale.date(node.occurredAt, {dateStyle:'medium'})}</time>
+    : <span dir="auto">{node.dateLabel}</span>
 
   if (!portalReady) return null
 
@@ -172,35 +177,36 @@ export default function LifeMapSemanticNavigator({ authenticatedUserId = null }:
       className="life-map-search-trigger"
       data-testid="life-map-semantic-trigger"
       data-life-map-source={sourceMode}
-      aria-label="Search and navigate Life Map"
+      {...locale.props('common.search')}
+      aria-label={locale.locale === 'en' ? 'Search and navigate Life Map' : `${locale.text('common.search')} · ${locale.text('nav.lifeMap')}`}
       aria-expanded={open}
       aria-controls={open ? 'life-map-navigator' : undefined}
       onClick={() => { setOpen((value) => !value) }}
     >
-      <span aria-hidden="true">⌕</span><span className="sr-only">Search life</span>
+      <span aria-hidden="true">⌕</span><span className="sr-only">{locale.text('common.search')}</span>
     </button>
 
     {open ? <section className="life-map-navigator" aria-label="Search and filter Life Map" id="life-map-navigator">
-      <header><strong>Search life</strong><button type="button" onClick={closeNavigator} aria-label="Close Life Map search">×</button></header>
-      <label htmlFor="life-map-search" className="sr-only">Search memories, people, dates, places, themes, and eras</label>
-      <input ref={searchRef} id="life-map-search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search memories, people, places…" />
-      <div className="filter-row" role="group" aria-label="Filter by life object type">{TYPE_FILTERS.map((type) => <button key={type} type="button" data-active={typeFilter === type ? 'true' : 'false'} aria-pressed={typeFilter === type} onClick={() => setTypeFilter(type)}>{type === 'all' ? 'All' : lifeMapTypeLabels[type]}</button>)}</div>
+      <header><strong {...locale.props('common.search')}>{locale.text('common.search')}</strong><button type="button" onClick={closeNavigator} {...locale.props('common.close')} aria-label={locale.locale === 'en' ? 'Close Life Map search' : locale.text('common.close')}>×</button></header>
+      <label htmlFor="life-map-search" className="sr-only" {...locale.props('common.search')}>{locale.locale === 'en' ? 'Search memories, people, dates, places, themes, and eras' : locale.text('common.search')}</label>
+      <input ref={searchRef} id="life-map-search" value={search} onChange={(event) => setSearch(event.target.value)} {...locale.props('common.search')} placeholder={locale.locale === 'en' ? 'Search memories, people, places…' : locale.text('common.search')} />
+      <div className="filter-row" role="group" aria-label="Filter by life object type">{TYPE_FILTERS.map((type) => <button key={type} type="button" data-active={typeFilter === type ? 'true' : 'false'} aria-pressed={typeFilter === type} onClick={() => setTypeFilter(type)} {...(type === 'all' ? locale.props('common.all') : {})}>{type === 'all' ? locale.text('common.all') : lifeMapTypeLabels[type]}</button>)}</div>
       <div className="filter-row" role="group" aria-label="Filter by era"><button type="button" data-active={eraFilter === 'all' ? 'true' : 'false'} aria-pressed={eraFilter === 'all'} onClick={() => setEraFilter('all')}>All eras</button>{eras.map((era) => <button key={era.id} type="button" data-active={eraFilter === era.id ? 'true' : 'false'} aria-pressed={eraFilter === era.id} onClick={() => setEraFilter(era.id)}>{era.title}</button>)}</div>
-      <p className="sr-only" role="status" aria-live="polite">{loading ? 'Opening constellation…' : `${visibleNodes.length} life objects match these filters.`}</p>
+      <p className="sr-only" role="status" aria-live="polite" {...locale.props(loading ? 'common.loading' : 'common.results')}>{loading ? locale.text('common.loading') : locale.text('common.results', {count:locale.number(visibleNodes.length)})}</p>
       <ul className="semantic-results" role="list" aria-label="Visible Life Map objects" data-visible-count={visibleNodes.length}>
-        {loading ? <li>Opening constellation…</li> : visibleNodes.length ? visibleNodes.map((node) => <li key={node.id}><button className="life-map-semantic-result" data-life-map-semantic-result data-life-map-node-id={node.id} aria-label={node.title} aria-current={selected?.id === node.id ? 'true' : undefined} aria-describedby={`life-map-result-${node.id}-details`} type="button" data-selected={selected?.id === node.id ? 'true' : 'false'} onClick={(event) => selectNode(node, event.detail === 0 ? 'keyboard' : 'pointer')}><strong dir="auto">{node.title}</strong><span id={`life-map-result-${node.id}-details`}><span>{lifeMapTypeLabels[node.type]} · {node.dateLabel}</span><small dir="auto">{node.summary}</small></span></button></li>) : <li>No life objects match these filters.</li>}
+        {loading ? <li>Opening constellation…</li> : visibleNodes.length ? visibleNodes.map((node) => <li key={node.id}><button className="life-map-semantic-result" data-life-map-semantic-result data-life-map-node-id={node.id} aria-label={node.title} aria-current={selected?.id === node.id ? 'true' : undefined} aria-describedby={`life-map-result-${node.id}-details`} type="button" data-selected={selected?.id === node.id ? 'true' : 'false'} onClick={(event) => selectNode(node, event.detail === 0 ? 'keyboard' : 'pointer')}><strong dir="auto">{node.title}</strong><span id={`life-map-result-${node.id}-details`}><span>{lifeMapTypeLabels[node.type]} · {nodeDate(node)}</span><small dir="auto">{node.summary}</small></span></button></li>) : <li>No life objects match these filters.</li>}
       </ul>
       <p className="privacy-truth">{sourceMode === 'explicit-demo' ? 'Disclosed sample universe · not your memories' : sourceMode === 'private' ? 'Private universe' : sourceMode}</p>
     </section> : null}
 
     {selected && open ? <aside className="life-map-semantic-inspector" aria-label="Selected life object details">
-      <span>{lifeMapTypeLabels[selected.type]} · {selected.dateLabel}</span>
+      <span>{lifeMapTypeLabels[selected.type]} · {nodeDate(selected)}</span>
       <h2>{selected.title}</h2>
       <p>{selected.summary}</p>
       <nav className="semantic-thresholds" aria-label="Selected memory destinations">
         <button type="button" onClick={() => router.push(destinationHref('focus', selected))}>Enter Focus</button>
-        <button type="button" disabled={!selected.replayAvailable || selected.locked} onClick={() => router.push(destinationHref('replay', selected))}>Replay</button>
-        <button type="button" onClick={overview}>Overview</button>
+        <button type="button" disabled={!selected.replayAvailable || selected.locked} onClick={() => router.push(destinationHref('replay', selected))} {...locale.props('nav.replay')}>{locale.text('nav.replay')}</button>
+        <button type="button" onClick={overview} {...locale.props('common.overview')}>{locale.text('common.overview')}</button>
       </nav>
       {related.length ? <div className="related-paths"><strong>Connected</strong>{related.slice(0, 4).map((node) => <button key={node.id} type="button" onClick={() => selectNode(node)}>{node.title}</button>)}</div> : null}
     </aside> : null}

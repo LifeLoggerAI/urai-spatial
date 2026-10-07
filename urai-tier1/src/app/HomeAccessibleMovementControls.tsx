@@ -59,7 +59,7 @@ export default function HomeAccessibleMovementControls() {
       document.removeEventListener('visibilitychange', releaseWhenHidden)
       releaseActive()
     }
-  }, [])
+  }, [homeRouteActive, fineDesktop])
 
   if (!homeRouteActive || !fineDesktop) return null
 

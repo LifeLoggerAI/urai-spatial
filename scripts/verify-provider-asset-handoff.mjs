@@ -108,7 +108,7 @@ const routeOwnerChecks = [
       'home-ground-environmental-threshold',
       'home-life-map-sky-lookout',
       'aria-label="Open Ground directly"',
-      'aria-label="Open Life Map directly"',
+      "aria-label={locale.text('home.lifeMapAction')}",
     ],
     forbidden: [
       'EmbodiedHomeSpatialCanvas',

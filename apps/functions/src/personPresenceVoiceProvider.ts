@@ -1,6 +1,7 @@
 import * as admin from 'firebase-admin'
 import { defineSecret } from 'firebase-functions/params'
 import { onRequest } from 'firebase-functions/v2/https'
+import { loadPersonPresenceAuthority, requirePersonPresenceRenderBinding, PersonPresenceAuthorityError } from './personPresenceAuthority'
 
 if (!admin.apps.length) admin.initializeApp()
 
@@ -59,6 +60,7 @@ async function requireConsent(uid:string,explicit:boolean){
 export const personPresenceVoiceProvider=onRequest({
   region:REGION,timeoutSeconds:30,memory:'256MiB',cors:WEB_CLIENT_ORIGINS,secrets:[ELEVENLABS_API_KEY],
 },async(request,response)=>{
+  let controller:AbortController|undefined,timeout:ReturnType<typeof setTimeout>|undefined,monitor:ReturnType<typeof setInterval>|undefined
   try{
     if(process.env.PERSON_PRESENCE_VOICE_ENABLED!=='true')throw new VoiceError(503,'PERSON_PRESENCE_VOICE_DISABLED','Person voice is not enabled.')
     if(request.method!=='POST')throw new VoiceError(405,'METHOD_NOT_ALLOWED','POST is required.')
@@ -71,59 +73,53 @@ export const personPresenceVoiceProvider=onRequest({
     await requireConsent(uid,body.externalProcessingConsent===true)
     await consumeVoiceRateLimit(uid)
 
-    const session=await db.doc(`users/${uid}/simulationSessions/${sessionId}`).get()
-    if(!session.exists||session.get('ownerId')!==uid||session.get('state')!=='active'||session.get('historicalSourceAuthority')!==false){
-      throw new VoiceError(409,'PRESENCE_SESSION_UNAVAILABLE','Person presence session is unavailable.')
+    const authority=await loadPersonPresenceAuthority(db,uid,sessionId)
+    const binding=await requirePersonPresenceRenderBinding(db,uid,authority,'voice')
+    if(binding.get('provider')!=='elevenlabs')throw new VoiceError(409,'ACCEPTED_PERSON_VOICE_NOT_READY','No accepted private voice is bound to this person state.')
+    const bindingHash=String(binding.get('bindingHash')??'')
+    if(!/^[a-f0-9]{64}$/.test(bindingHash))throw new VoiceError(409,'PERSON_VOICE_BINDING_INVALID','Accepted voice binding is invalid.')
+    const recheck=async()=>{
+      await requireConsent(uid,true)
+      const current=await loadPersonPresenceAuthority(db,uid,sessionId)
+      const currentBinding=await requirePersonPresenceRenderBinding(db,uid,current,'voice')
+      if(current.authorityDigest!==authority.authorityDigest||currentBinding.get('bindingHash')!==bindingHash)throw new VoiceError(409,'PRESENCE_AUTHORITY_CHANGED','Person voice source authority changed.')
     }
-    const bundleId=String(session.get('bundleId')??'')
-    const personId=String(session.get('personId')??'')
-    const [bundle,binding]=await Promise.all([
-      db.doc(`users/${uid}/personModelBundles/${bundleId}`).get(),
-      db.doc(`users/${uid}/personRenderBindings/${bundleId}:voice`).get(),
-    ])
-    if(!bundle.exists||bundle.get('ownerId')!==uid||bundle.get('state')!=='current'||bundle.get('synthetic')!==false){
-      throw new VoiceError(409,'PERSON_MODEL_STALE','Person model must be recompiled.')
-    }
-    if(
-      !binding.exists
-      ||binding.get('ownerId')!==uid
-      ||binding.get('personId')!==personId
-      ||binding.get('bundleId')!==bundleId
-      ||binding.get('modality')!=='voice'
-      ||binding.get('provider')!=='elevenlabs'
-      ||binding.get('reviewState')!=='ACCEPTED'
-      ||binding.get('consentState')!=='authorized'
-      ||binding.get('state')!=='current'
-    )throw new VoiceError(409,'ACCEPTED_PERSON_VOICE_NOT_READY','No accepted private voice is bound to this person state.')
-
     const voiceId=String(binding.get('providerResourceId')??'')
     if(!/^[A-Za-z0-9_-]{1,64}$/.test(voiceId))throw new VoiceError(409,'PERSON_VOICE_BINDING_INVALID','Accepted voice binding is invalid.')
     const modelId=String(binding.get('providerModelId')??process.env.ELEVENLABS_MODEL_ID??'eleven_multilingual_v2').slice(0,100)
     const endpoint=new URL(`https://api.elevenlabs.io/v1/text-to-speech/${encodeURIComponent(voiceId)}/stream`)
     endpoint.searchParams.set('output_format',process.env.ELEVENLABS_OUTPUT_FORMAT||'mp3_44100_128')
     if(process.env.ELEVENLABS_ZERO_RETENTION==='true')endpoint.searchParams.set('enable_logging','false')
-    const controller=new AbortController()
-    const timeout=setTimeout(()=>controller.abort(),15_000)
-    response.on('close',()=>{if(!response.writableEnded)controller.abort()})
+    controller=new AbortController()
+    const upstreamController=controller
+    timeout=setTimeout(()=>upstreamController.abort(),15_000)
+    monitor=setInterval(()=>{recheck().catch(()=>upstreamController.abort())},5_000)
+    response.on('close',()=>{if(!response.writableEnded)upstreamController.abort()})
+    await recheck()
     const upstream=await fetch(endpoint,{
       method:'POST',
       headers:{'xi-api-key':ELEVENLABS_API_KEY.value(),'Content-Type':'application/json',Accept:'audio/mpeg'},
       body:JSON.stringify({text,model_id:modelId,voice_settings:{stability:0.68,similarity_boost:0.84,style:0.12,use_speaker_boost:true}}),
-      signal:controller.signal,
-    }).finally(()=>clearTimeout(timeout))
+      signal:upstreamController.signal,
+    })
     if(!upstream.ok||!upstream.body)throw new VoiceError(upstream.status===429?429:503,'ELEVENLABS_REQUEST_FAILED','Accepted person voice is unavailable.')
+    // Buffer bounded private audio until source/consent/binding authority is
+    // checked again; an in-flight correction/revocation cannot leak a prefix.
+    const reader=upstream.body.getReader(),chunks:Buffer[]=[];let total=0
+    while(true){const {value,done}=await reader.read();if(done)break;total+=value.byteLength;if(total>8*1024*1024)throw new VoiceError(502,'PERSON_VOICE_OUTPUT_LIMIT','Person voice exceeded its output bound.');chunks.push(Buffer.from(value))}
+    await recheck()
+    if(upstreamController.signal.aborted)throw new VoiceError(409,'PRESENCE_AUTHORITY_UNAVAILABLE','Person voice source authority is unavailable.')
     response.status(200)
     response.setHeader('Content-Type',upstream.headers.get('content-type')||'audio/mpeg')
     response.setHeader('Cache-Control','private, no-store, max-age=0')
     response.setHeader('X-Content-Type-Options','nosniff')
     response.setHeader('X-URAI-Provider','elevenlabs')
     response.setHeader('X-URAI-Presence','accepted-private-person-voice')
-    const reader=upstream.body.getReader()
-    while(true){const {value,done}=await reader.read();if(done)break;response.write(Buffer.from(value))}
-    response.end()
+    response.setHeader('X-URAI-Presence-Authority',authority.authorityDigest)
+    response.end(Buffer.concat(chunks,total))
   }catch(error){
-    const e=error instanceof VoiceError?error:new VoiceError(500,'PERSON_VOICE_FAILURE','Person voice is temporarily unavailable.')
+    const e=error instanceof VoiceError?error:error instanceof PersonPresenceAuthorityError?new VoiceError(409,error.code,'Person voice source authority must be refreshed.'):new VoiceError(500,'PERSON_VOICE_FAILURE','Person voice is temporarily unavailable.')
     if(!response.headersSent)response.status(e.status).json({error:e.code,message:e.message})
     else response.end()
-  }
+  }finally{if(timeout)clearTimeout(timeout);if(monitor)clearInterval(monitor);controller?.abort()}
 })
