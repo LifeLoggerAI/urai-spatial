@@ -74,7 +74,7 @@ test('desktop first-run guide leaves Home movement and dismissal targets reachab
   test.setTimeout(120_000)
   await page.setViewportSize({ width:1440, height:900 })
   await page.emulateMedia({ reducedMotion:'reduce' })
-  await page.goto('/?onboarding=1', { waitUntil:'domcontentloaded' })
+  await page.goto('/?onboarding=1', { waitUntil:'domcontentloaded', timeout: 30_000 })
   const guide = page.locator('.uraiV2OnboardingCard[data-first-run="guided"]')
   const movement = page.getByRole('group', { name:'Home movement controls' })
   await expect(guide).toBeVisible()
