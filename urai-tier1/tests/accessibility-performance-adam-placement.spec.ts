@@ -9,6 +9,17 @@ for (const viewport of [{ width: 320, height: 700 }, { width: 844, height: 390 }
     await page.emulateMedia({ reducedMotion: 'reduce' })
     for (const route of ['/about', '/support', '/status', '/location-map', '/adam']) {
       await page.goto(route, { waitUntil: 'domcontentloaded' })
+      // The canonical founder route intentionally opens its panel on entry.
+      // Verify that accessible entry before exercising its inline launcher.
+      if (route === '/adam') {
+        const panel = page.getByRole('complementary', { name: 'Adam founder presence' })
+        const close = panel.getByRole('button', { name: 'Close Adam', exact: true })
+        await expect(panel).toBeVisible()
+        await expect(close).toBeFocused()
+        await page.keyboard.press('Escape')
+        await expect(panel).toHaveCount(0)
+        await expect(page.locator('[data-urai-adam-launcher]')).toBeFocused()
+      }
       const launcher = page.locator('[data-urai-adam-launcher]')
       await expect(launcher).toHaveAttribute('data-adam-launcher-placement', 'inline-slot')
       await launcher.scrollIntoViewIfNeeded()
