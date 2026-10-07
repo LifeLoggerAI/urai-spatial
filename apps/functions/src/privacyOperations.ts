@@ -996,6 +996,16 @@ async function readIssuedExportDownload(transaction: FirebaseFirestore.Transacti
   return current
 }
 
+function allowedExportBrowserOrigin(origin: string, project: string) {
+  if (['https://urai.app', 'https://www.urai.app', 'https://urai.life', 'https://uraispatial.com',
+    'https://localhost', 'capacitor://localhost', 'http://localhost'].includes(origin)) return true
+  if (origin === `https://${project}.web.app` || origin === `https://${project}.firebaseapp.com`) return true
+  if (process.env.FUNCTIONS_EMULATOR === 'true' && ['http://localhost:4173', 'http://127.0.0.1:4173'].includes(origin)) return true
+  // Only this runtime's governed project preview namespace is admitted.
+  return new RegExp(`^https://${project}--[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\\.web\\.app$`).test(origin)
+    && new URL(origin).hostname.split('.')[0].length <= 63
+}
+
 // Entry exports this only as downloadOperationalExportPackage. Privacy's canonical
 // downloadExportPackage owns its separate root-job schema and is never overwritten.
 export const downloadOperationalExportPackage = functions.runWith({ timeoutSeconds: 540, memory: '512MB' }).https.onRequest(async (request, response) => {
@@ -1003,14 +1013,22 @@ export const downloadOperationalExportPackage = functions.runWith({ timeoutSecon
   try {
     const project = exportProject()
     const origin = request.get('origin')
-    if (origin) {
-      const origins = ['https://urai.app', 'https://urai.life', 'https://uraispatial.com', 'capacitor://localhost', 'http://localhost', 'https://localhost', `https://${project}.web.app`, `https://${project}.firebaseapp.com`]
-      if (process.env.FUNCTIONS_EMULATOR === 'true') origins.push('http://localhost:4173', 'http://127.0.0.1:4173')
-      if (!origins.includes(origin)) throw new functions.https.HttpsError('permission-denied', 'Export origin is not admitted.')
-      response.set({ 'Access-Control-Allow-Origin': origin, 'Access-Control-Allow-Methods': 'GET, OPTIONS',
-        'Access-Control-Allow-Headers': 'Authorization', 'Access-Control-Expose-Headers': 'Content-Type, Content-Length, X-URAI-Checksum-SHA256, X-URAI-Storage-Generation' })
+    if (origin && !allowedExportBrowserOrigin(origin, project)) {
+      throw new functions.https.HttpsError('permission-denied', 'Export origin is not admitted.')
     }
-    if (request.method === 'OPTIONS') { response.status(204).end(); return }
+    if (request.method === 'OPTIONS') {
+      response.set('Vary', 'Origin, Access-Control-Request-Method, Access-Control-Request-Headers')
+      const requestedHeaders = request.get('access-control-request-headers')
+      if (!origin || request.get('access-control-request-method') !== 'GET' || !requestedHeaders
+        || !requestedHeaders.split(',').every(header => header.trim().toLowerCase() === 'authorization')) {
+        throw new functions.https.HttpsError('permission-denied', 'Export preflight is not admitted.')
+      }
+      response.set({ 'Access-Control-Allow-Origin': origin, 'Access-Control-Allow-Methods': 'GET',
+        'Access-Control-Allow-Headers': 'Authorization', 'Access-Control-Max-Age': '0' }).status(204).end()
+      return
+    }
+    if (origin) response.set({ 'Access-Control-Allow-Origin': origin,
+      'Access-Control-Expose-Headers': 'Content-Disposition, Content-Type, Content-Length, X-URAI-Checksum-SHA256, X-URAI-Storage-Generation' })
     if (request.method !== 'GET') { response.set('Allow', 'GET, OPTIONS').status(405).json({ error: 'method_not_allowed' }); return }
     const bearer = request.get('authorization')?.match(/^Bearer\s+(\S+)$/i)?.[1]
     if (!bearer) throw new functions.https.HttpsError('unauthenticated', 'Authentication is required.')
@@ -1018,6 +1036,14 @@ export const downloadOperationalExportPackage = functions.runWith({ timeoutSecon
     try { token = await admin.auth().verifyIdToken(bearer, true) }
     catch { throw new functions.https.HttpsError('unauthenticated', 'Current authentication is required.') }
     requireRecentAuthentication({ auth: { uid: token.uid, token } } as functions.https.CallableContext)
+    const requireCurrentDownloadAuthentication = async () => {
+      let currentToken: admin.auth.DecodedIdToken
+      try { currentToken = await admin.auth().verifyIdToken(bearer, true) }
+      catch { throw new functions.https.HttpsError('unauthenticated', 'Current authentication is required.') }
+      if (currentToken.uid !== token.uid) throw new functions.https.HttpsError('permission-denied', 'Authenticated export owner changed.')
+      if (request.aborted || response.destroyed) throw new functions.https.HttpsError('unauthenticated', 'Download connection changed.')
+      requireRecentAuthentication({ auth: { uid: currentToken.uid, token: currentToken } } as functions.https.CallableContext)
+    }
     const selection = exportSelection(request.query as JsonMap)
     const expiresAt = typeof request.query.expiresAt === 'string' && /^[1-9][0-9]{0,15}$/.test(request.query.expiresAt)
       ? Number(request.query.expiresAt) : Number.NaN
@@ -1026,13 +1052,16 @@ export const downloadOperationalExportPackage = functions.runWith({ timeoutSecon
       throw new functions.https.HttpsError('failed-precondition', 'Export descriptor expired.')
     }
     const authority = await db.runTransaction((transaction) => readIssuedExportDownload(transaction, token.uid, selection, authorityHash, expiresAt))
+    await requireCurrentDownloadAuthentication()
     const object = admin.storage().bucket().file(authority.path, { generation: authority.generation })
     const [metadata] = await object.getMetadata()
+    await requireCurrentDownloadAuthentication()
     verifyExportMetadata(metadata, authority)
     await db.runTransaction(async (transaction) => {
       await readIssuedExportDownload(transaction, token.uid, selection, authorityHash, expiresAt)
       auditExportDownload(transaction, token.uid, selection, 'export_download_authorized', authorityHash)
     })
+    await requireCurrentDownloadAuthentication()
     response.set({ 'Content-Type': authority.contentType, 'Content-Length': String(authority.byteLength),
       'X-URAI-Checksum-SHA256': authority.checksum, 'X-URAI-Storage-Generation': authority.generation,
       'Content-Disposition': `attachment; filename="urai-${selection.file}.${selection.file === 'runtime' ? 'splat' : 'json'}"` })
@@ -1041,12 +1070,11 @@ export const downloadOperationalExportPackage = functions.runWith({ timeoutSecon
     let deliveredBytes = 0
     const digest = createHash('sha256')
     const requireCurrent = async () => {
-      let currentToken: admin.auth.DecodedIdToken
-      try { currentToken = await admin.auth().verifyIdToken(bearer, true) }
-      catch { throw new functions.https.HttpsError('unauthenticated', 'Current authentication is required.') }
-      if (currentToken.uid !== token.uid || request.aborted || response.destroyed) throw new functions.https.HttpsError('unauthenticated', 'Download owner or connection changed.')
-      requireRecentAuthentication({ auth: { uid: currentToken.uid, token: currentToken } } as functions.https.CallableContext)
-      await db.runTransaction((transaction) => readIssuedExportDownload(transaction, currentToken.uid, selection, authorityHash, expiresAt))
+      await requireCurrentDownloadAuthentication()
+      await db.runTransaction((transaction) => readIssuedExportDownload(transaction, token.uid, selection, authorityHash, expiresAt))
+      // The transaction and metadata awaits can outlive a token grant. Check
+      // revocation, the same owner and recent auth again immediately before bytes.
+      await requireCurrentDownloadAuthentication()
     }
     const guardedChunks = async function* (source: AsyncIterable<Buffer>) {
       for await (const incoming of source) {

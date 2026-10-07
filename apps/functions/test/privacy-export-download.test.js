@@ -87,7 +87,7 @@ function fixture(options = {}) {
   const module = { exports: {} }
   const filename = process.env.URAI_EXPORT_COMPILED_MODULE ?? path.resolve(__dirname, '../lib/apps/functions/src/privacyOperations.js')
   // Only actual strict-tsc output is accepted. No source transpilation fallback.
-  vm.runInNewContext(fs.readFileSync(filename, 'utf8'), { module, exports: module.exports, Buffer, URLSearchParams,
+  vm.runInNewContext(fs.readFileSync(filename, 'utf8'), { module, exports: module.exports, Buffer, URL, URLSearchParams,
     Date: class extends Date { static now() { return options.clock?.value ?? now } }, process: { env: { GCLOUD_PROJECT: 'urai-4dc1d', ...options.env } },
     console: Object.fromEntries(['log', 'info', 'error', 'warn'].map(method => [method, (...args) => stats.logs.push(args)])),
     require: name => {
@@ -111,14 +111,17 @@ function fixture(options = {}) {
   async function deliver(result, authenticated = true, requestOptions = {}) {
     const query = Object.fromEntries(new URL(result.url, 'https://synthetic.invalid').searchParams)
     let response = { headers: {}, statusCode: 200, headersSent: false, destroyed: false, writableFinished: false,
-      set(key, value) { Object.assign(this.headers, typeof key === 'string' ? { [key]: value } : key); return this }, status(code) { this.statusCode = code; return this }, json(value) { this.body=clone(value); return this }, once() {}, end() { this.writableFinished = true; return this } }
+      set(key, value) { Object.assign(this.headers, typeof key === 'string' ? { [key]: value } : key); return this }, status(code) { this.statusCode = code; return this }, json(value) { this.body=clone(value); return this }, once() {}, end() { this.body = ''; this.writableFinished = true; return this } }
     if(options.realPipeline) {
       const headers={},bytes=[],{Writable}=require('node:stream')
       response=new Writable({highWaterMark:1,write(chunk,_encoding,callback){stats.chunks.push(Buffer.from(chunk));bytes.push(Buffer.from(chunk));response.headersSent=true;Promise.resolve(options.afterChunk?.(stats.chunks.length,records)).then(()=>callback(),callback)}})
       Object.assign(response,{headers,statusCode:200,headersSent:false,set(key,value){Object.assign(headers,typeof key==='string'?{[key]:value}:key);return this},status(code){this.statusCode=code;return this},json(value){this.end(JSON.stringify(value));return this}})
       Object.defineProperty(response,'body',{get:()=>Buffer.concat(bytes).toString()})
     }
-    await (module.exports.downloadOperationalExportPackage||module.exports.downloadExportPackage)({ method: requestOptions.method ?? 'GET', query, get: name => name === 'origin' ? requestOptions.origin : name === 'authorization' && authenticated ? 'Bearer synthetic-token' : undefined }, response)
+    await module.exports.downloadOperationalExportPackage({ method: requestOptions.method ?? 'GET', query, get: name => {
+      const supplied = requestOptions.headers?.[name.toLowerCase()] ?? (name === 'origin' ? requestOptions.origin : undefined)
+      return supplied ?? (name === 'authorization' && authenticated ? 'Bearer synthetic-token' : undefined)
+    } }, response)
     return response
   }
   return { records, objects, stats, context, descriptor, deliver, handlers: module.exports, db, Timestamp }
@@ -406,7 +409,7 @@ test('issued nonce prevents a reconstructed URL from extending its transport dea
 
 test('project-pinned CORS preflight admits only controlled origins and no bytes or credentials',async()=>{
   const f=fixture(),descriptor=await f.descriptor()
-  const accepted=await f.deliver(descriptor,false,{method:'OPTIONS',origin:'https://urai.app'})
+  const accepted=await f.deliver(descriptor,false,{method:'OPTIONS',origin:'https://urai.app',headers:{'access-control-request-method':'GET','access-control-request-headers':'authorization'}})
   assert.equal(accepted.statusCode,204);assert.equal(accepted.headers['Access-Control-Allow-Origin'],'https://urai.app')
   assert.equal(accepted.headers['Access-Control-Allow-Credentials'],undefined)
   assert.equal((await f.deliver(descriptor,true,{origin:'https://untrusted.invalid'})).statusCode,403)
@@ -462,3 +465,122 @@ test('deployment source guard rejects canonical namespace, wrong project, wrong 
   for(const sample of samples)assert.ok(verify(sample).length>0)
 })
 
+
+const allowedBrowserOrigins = ['https://urai.app', 'https://www.urai.app', 'https://urai.life', 'https://uraispatial.com', 'http://localhost', 'https://urai-4dc1d.web.app',
+  'https://urai-4dc1d.firebaseapp.com', 'https://urai-4dc1d--export-review-ab12.web.app', 'https://localhost', 'capacitor://localhost']
+for (const origin of allowedBrowserOrigins) {
+  test(`export preflight permits only GET Authorization for owned origin ${origin} without accessing auth or data`, async () => {
+    const f = fixture({ env: { GCLOUD_PROJECT: 'urai-4dc1d' } })
+    const response = await f.deliver({ url: '/api/privacy/export/download' }, false, { method: 'OPTIONS', headers: {
+      origin, 'access-control-request-method': 'GET', 'access-control-request-headers': 'authorization',
+    } })
+    assert.equal(response.statusCode, 204); assert.equal(response.body, '')
+    assert.equal(response.headers['Access-Control-Allow-Origin'], origin)
+    assert.equal(response.headers['Access-Control-Allow-Methods'], 'GET')
+    assert.equal(response.headers['Access-Control-Allow-Headers'], 'Authorization')
+    assert.equal(response.headers['Access-Control-Allow-Credentials'], undefined)
+    assert.match(response.headers.Vary, /Origin/)
+    assert.equal(f.stats.auth.length, 0); assert.equal(f.stats.transactions, 0); assert.equal(f.stats.metadata, 0); assert.equal(f.stats.streams, 0)
+  })
+}
+for (const origin of ['null', 'https://foreign.invalid', 'https://urai.app.foreign.invalid', 'https://user:pass@urai.app',
+  'https://urai.app/', 'https://localhost:4321', 'http://localhost:4321', 'https://other-project--review-ab12.web.app',
+  'https://urai-4dc1d--review-ab12.web.app.foreign.invalid']) {
+  test(`unknown export origin ${origin} denies before authentication or private object access`, async () => {
+    const f = fixture({ env: { GCLOUD_PROJECT: 'urai-4dc1d' } }), result = await f.descriptor()
+    const response = await f.deliver(result, true, { headers: { origin } })
+    assert.equal(response.statusCode, 403); assert.equal(response.headers['Access-Control-Allow-Origin'], undefined)
+    assert.equal(f.stats.auth.length, 0); assert.equal(f.stats.transactions, 2); assert.equal(f.stats.metadata, 1); assert.equal(f.stats.streams, 0)
+  })
+}
+for (const origin of ['https://localhost', 'capacitor://localhost', 'https://urai-4dc1d--export-review-ab12.web.app']) {
+  test(`allowed native or preview origin ${origin} still requires current Bearer authority for bytes`, async () => {
+    const f = fixture({ env: { GCLOUD_PROJECT: 'urai-4dc1d' } }), result = await f.descriptor()
+    const denied = await f.deliver(result, false, { headers: { origin } })
+    assert.equal(denied.statusCode, 401); assert.equal(f.stats.streams, 0)
+    const allowed = await f.deliver(result, true, { headers: { origin } })
+    assert.equal(allowed.statusCode, 200); assert.equal(allowed.body, '{"synthetic":true}')
+    assert.equal(allowed.headers['Access-Control-Allow-Origin'], origin)
+    assert.ok(f.stats.auth.every(check => check.revoked === true))
+  })
+}
+for (const headers of [
+  { 'access-control-request-method': 'GET' },
+  { 'access-control-request-method': 'GET', 'access-control-request-headers': '' },
+  { 'access-control-request-method': 'POST', 'access-control-request-headers': 'authorization' },
+  { 'access-control-request-method': 'GET', 'access-control-request-headers': 'authorization, content-type' },
+  { 'access-control-request-method': 'GET', 'access-control-request-headers': 'x-private-token' },
+  { 'access-control-request-headers': 'authorization' },
+]) {
+  test(`export preflight denies incompatible request ${JSON.stringify(headers)} without private reads`, async () => {
+    const f = fixture(), response = await f.deliver({ url: '/api/privacy/export/download' }, false, {
+      method: 'OPTIONS', headers: { origin: 'capacitor://localhost', ...headers },
+    })
+    assert.equal(response.statusCode, 403); assert.equal(response.headers['Access-Control-Allow-Origin'], undefined)
+    assert.equal(f.stats.auth.length, 0); assert.equal(f.stats.transactions, 0); assert.equal(f.stats.metadata, 0); assert.equal(f.stats.streams, 0)
+  })
+}
+
+
+test('preflight without an Origin cannot access authentication or private data', async () => {
+  const f = fixture(), response = await f.deliver({ url: '/api/privacy/export/download' }, false, {
+    method: 'OPTIONS', headers: { 'access-control-request-method': 'GET', 'access-control-request-headers': 'authorization' },
+  })
+  assert.equal(response.statusCode, 403); assert.equal(response.headers['Access-Control-Allow-Origin'], undefined)
+  assert.equal(f.stats.auth.length, 0); assert.equal(f.stats.transactions, 0); assert.equal(f.stats.metadata, 0); assert.equal(f.stats.streams, 0)
+})
+
+for (const phase of ['initial authority', 'metadata', 'audit']) {
+  for (const drift of ['revocation', 'owner change', 'stale recent auth']) {
+    test(`post-await ${drift} during ${phase} cannot start a private object stream`, async () => {
+      const options = { realPipeline: true }
+      const invalidate = () => {
+        if (drift === 'revocation') options.revokedToken = true
+        else if (drift === 'owner change') options.authUid = 'synthetic-other-owner'
+        else options.authTime = Math.floor(now / 1000) - 301
+      }
+      options.afterTransaction = id => { if ((phase === 'initial authority' && id === 3) || (phase === 'audit' && id === 4)) invalidate() }
+      options.afterMetadata = count => { if (phase === 'metadata' && count === 2) invalidate() }
+      const f = fixture(options), descriptor = await f.descriptor(), response = await f.deliver(descriptor)
+      assert.equal(f.stats.streams, 0, 'a revoked, foreign or stale token must be checked after awaits and before stream creation')
+      assert.equal(response.statusCode, drift === 'revocation' ? 401 : drift === 'owner change' ? 403 : 409)
+      if (phase === 'initial authority') assert.equal(f.stats.metadata, 1, 'do not read the private object using auth invalidated during authority lookup')
+    })
+  }
+}
+for (const readTransaction of [5, 6]) {
+  for (const drift of ['revocation', 'owner change', 'stale recent auth']) {
+    test(`real pipeline post-await ${drift} during chunk transaction${readTransaction} stops before that64KiB`, async () => {
+      const options = { realPipeline: true, afterTransaction(id) {
+        if (id !== readTransaction) return
+        if (drift === 'revocation') options.revokedToken = true
+        else if (drift === 'owner change') options.authUid = 'synthetic-other-owner'
+        else options.authTime = Math.floor(now / 1000) - 301
+      } }
+      const f = fixture(options); f.objects.get(exportPath).bytes = Buffer.alloc(150000, 65)
+      f.records.get(jobPath).exportBytes = 150000; f.records.get(jobPath).checksum = hash(f.objects.get(exportPath).bytes)
+      const descriptor = await f.descriptor(), response = await f.deliver(descriptor)
+      const alreadyAuthorized = (readTransaction - 5) * 65536
+      assert.equal(Buffer.byteLength(response.body), alreadyAuthorized, 'no chunk may use token verification performed before an awaited authority read')
+      assert.equal(f.stats.chunks.length, readTransaction - 5)
+      assert.equal(response.writableFinished, false)
+      assert.ok(f.stats.auth.every(check => check.revoked === true))
+    })
+  }
+}
+
+for (const drift of ['revocation', 'owner change', 'stale recent auth']) {
+  test(`real pipeline final authority read cannot complete with post-await ${drift}`, async () => {
+    const options = { realPipeline: true, afterTransaction(id) {
+      if (id !== 8) return
+      if (drift === 'revocation') options.revokedToken = true
+      else if (drift === 'owner change') options.authUid = 'synthetic-other-owner'
+      else options.authTime = Math.floor(now / 1000) - 301
+    } }
+    const f = fixture(options); f.objects.get(exportPath).bytes = Buffer.alloc(150000, 65)
+    f.records.get(jobPath).exportBytes = 150000; f.records.get(jobPath).checksum = hash(f.objects.get(exportPath).bytes)
+    const descriptor = await f.descriptor(), response = await f.deliver(descriptor)
+    assert.equal(Buffer.byteLength(response.body), 150000, 'already authorized delivered bytes cannot be recalled')
+    assert.equal(response.writableFinished, false, 'the transfer cannot finish using auth verified before its final authority await')
+  })
+}

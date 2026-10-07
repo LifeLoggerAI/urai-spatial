@@ -28,14 +28,33 @@ function fixture(overrides = {}) {
     url: '/api/privacy/export/download?jobId=synthetic-job&file=export', current: () => true, jobId: request.jobId, origin: 'https://synthetic-spatial.invalid', file: 'export', ...overrides }
   return { exports, settings, descriptor, env, anchors, saved, revoked, run: () => exports.fetchAuthorizedOperationalExport(settings), counts: () => ({ fetches, tokens }), advance: ms => { clock += ms }, now: () => clock }
 }
-test('actual transport pins project and selected bytes before saving', async () => {
-  const f = fixture(); let observed
-  f.settings.fetcher = async (url, options) => { observed = { url, options }; return new Response(bytes, { headers: { 'Content-Type': 'application/json' } }) }
-  const result = await f.run()
-  assert.equal(await result.blob.text(), new TextDecoder().decode(bytes)); assert.equal(result.filename, 'urai-export-synthetic-job.json')
-  assert.equal(observed.url, f.descriptor.url); assert.equal(observed.options.headers.Authorization, 'Bearer synthetic-token'); assert.equal(observed.options.signal, f.settings.signal)
-  for (const [key, value] of Object.entries({ credentials: 'omit', redirect: 'error', cache: 'no-store', referrerPolicy: 'no-referrer' })) assert.equal(observed.options[key], value)
+test('actual transport and Firebase wrapper pin project bytes independently of native or preview origin', async () => {
+  const bridgeSource = fs.readFileSync('src/lib/privacy/operationalPrivacyClient.ts', 'utf8')
+  const bridgeCode = ts.transpileModule(bridgeSource, { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS } }).outputText
+  for (const pageHref of ['https://localhost/passport', 'capacitor://localhost/passport', 'https://urai-4dc1d--export-review.web.app/passport']) {
+    const f = fixture(); let observed
+    f.settings.fetcher = async (url, options) => { observed = { url, options }; return new Response(bytes, { headers: { 'Content-Type': 'application/json' } }) }
+    const user = { uid: ownerId, async getIdToken(force) { assert.equal(force, true); return f.settings.getIdToken() } }
+    const bridge = {}, imports = {
+      'firebase/firestore': {}, 'firebase/auth': { getAuth: () => ({ currentUser: user }) },
+      'firebase/functions': { httpsCallable: (_functions, name) => async payload => {
+        assert.equal(name, 'getOperationalExportDownloadUrl'); assert.equal(payload.jobId, request.jobId); return { data: f.descriptor }
+      } },
+      '@/lib/firebase/client': { app: { options: { projectId } }, firebasePublicEnvReady: true, functions: {} },
+      './authorizedExportDownload': f.exports,
+    }
+    vm.runInNewContext(bridgeCode, { exports: bridge, URL, DOMException, crypto: webcrypto,
+      window: { location: { href: pageHref, origin: new URL(pageHref).origin } },
+      require: name => { assert.ok(Object.hasOwn(imports, name)); return imports[name] },
+    }, { filename: 'operationalPrivacyClient.ts' })
+    const result = await bridge.downloadOperationalExportBytes(request, { signal: f.settings.signal, isCurrent: () => true })
+    assert.equal(await result.blob.text(), new TextDecoder().decode(bytes)); assert.equal(result.filename, 'urai-export-synthetic-job.json')
+    assert.equal(observed.url, f.descriptor.url); assert.equal(new URL(observed.url).origin, origin)
+    assert.equal(observed.options.headers.Authorization, 'Bearer synthetic-token'); assert.equal(observed.options.signal, f.settings.signal)
+    for (const [key, value] of Object.entries({ credentials: 'omit', redirect: 'error', cache: 'no-store', referrerPolicy: 'no-referrer' })) assert.equal(observed.options[key], value)
+  }
 })
+
 const badDescriptors = {
   'legacy signed URL': d => ({ ...d, requiresAuthorization: false }), 'missing schema': d => ({ ...d, schemaVersion: undefined }), 'wrong job': d => ({ ...d, jobId: 'other-job' }), 'wrong selected file': d => ({ ...d, file: 'runtime' }), 'wrong asset': d => ({ ...d, assetId: 'other-asset' }), 'missing owner': d => ({ ...d, ownerId: '' }), 'expired grant': d => ({ ...d, downloadExpiresAt: 1 }), 'short package lifetime': d => ({ ...d, packageExpiresAt: 1 }), 'non-finite deadline': d => ({ ...d, downloadExpiresAt: Infinity }), 'zero length': d => ({ ...d, byteLength: 0 }), 'unsafe length': d => ({ ...d, byteLength: Number.MAX_SAFE_INTEGER + 1 }), 'over browser memory bound': d => ({ ...d, byteLength: 64 * 1024 * 1024 + 1 }), 'non-hash checksum': d => ({ ...d, checksum: 'unsupported' }), 'wrong content type': d => ({ ...d, contentType: 'text/html' }), 'zero generation': d => ({ ...d, storageGeneration: '0' }),
   'unpinned storage URL': d => ({ ...d, url: 'https://storage.googleapis.com/private/export' }), 'another project': d => ({ ...d, url: d.url.replace(projectId, 'another-project') }), 'lookalike host': d => ({ ...d, url: d.url.replace('.cloudfunctions.net', '.cloudfunctions.net.untrusted.invalid') }), 'HTTP endpoint': d => ({ ...d, url: d.url.replace('https:', 'http:') }), 'nondefault port': d => ({ ...d, url: d.url.replace('.net/', '.net:8443/') }), 'userinfo': d => ({ ...d, url: d.url.replace('https://', 'https://private:secret@') }), 'fragment': d => ({ ...d, url: d.url + '#secret' }), 'collided Privacy namespace': d => ({ ...d, url: d.url.replace('downloadOperationalExportPackage', 'downloadExportPackage') }), 'extra query': d => ({ ...d, url: d.url + '&ownerId=other' }), 'duplicate query': d => ({ ...d, url: d.url + '&jobId=other' }), 'extended deadline': d => ({ ...d, url: d.url.replace('expiresAt=' + d.downloadExpiresAt, 'expiresAt=' + (d.downloadExpiresAt + 1)) }),
