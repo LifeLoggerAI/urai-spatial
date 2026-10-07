@@ -411,6 +411,8 @@ export default function GroundSpatialWorldClean() {
       <span className="sr-only" data-testid="urai-ground-walkable-surface">{webglUsable ? "The authored Ground navigation surface is active." : "Use direct Ground routes while the spatial renderer is unavailable."}</span>
 
       <style jsx>{`
+        :global(.urai-world-runtime:has([data-ground-renderer="fallback"])){z-index:3}
+        .ground-spatial-root[data-ground-renderer="fallback"]{z-index:3}
         .ground-renderer-fallback{position:absolute;inset:0;z-index:15;overflow:auto;padding:max(90px,calc(env(safe-area-inset-top) + 80px)) max(24px,env(safe-area-inset-right)) max(30px,env(safe-area-inset-bottom)) max(24px,env(safe-area-inset-left));background:#102b38;touch-action:pan-y;cursor:default}
         .ground-renderer-fallback h1{font:600 clamp(24px,5vw,40px)/1.2 system-ui}
         .ground-renderer-fallback p{max-width:680px;line-height:1.5}

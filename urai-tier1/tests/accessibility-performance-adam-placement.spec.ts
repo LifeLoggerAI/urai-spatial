@@ -557,6 +557,39 @@ for (const profile of [
       }
       if (slot === 'ground-semantic-routes') {
         await expect(page.getByTestId('urai-ground-accessible-fallback')).toBeVisible()
+        const paint = await page.getByTestId('urai-ground-accessible-fallback').evaluate(fallback => {
+          const root = fallback.closest('.ground-spatial-root')
+          const runtime = root?.closest('.urai-world-runtime')
+          const atmosphere = runtime?.querySelector(':scope > .urai-world-atmosphere')
+          const zIndex = (node: Element | null | undefined) => node ? Number(getComputedStyle(node).zIndex) : Number.NaN
+          const pseudoLayers = [{ owner: 'runtime', node: runtime }, { owner: 'ground', node: root }].flatMap(({ owner, node }) => ['::before', '::after'].map(pseudo => {
+            const style = node ? getComputedStyle(node, pseudo) : null
+            return { owner, pseudo, content: style?.content ?? null, display: style?.display ?? null, visibility: style?.visibility ?? null, opacity: style ? Number(style.opacity) : Number.NaN, position: style?.position ?? null, zIndex: style ? Number(style.zIndex) : Number.NaN }
+          }))
+          return {
+            stacking: { runtime: zIndex(runtime), atmosphere: zIndex(atmosphere), ground: zIndex(root), fallback: zIndex(fallback) },
+            ownership: { rootInRuntime: Boolean(root && runtime?.contains(root)), atmosphereInRuntime: Boolean(atmosphere && atmosphere.parentElement === runtime), runtimeIsolation: runtime ? getComputedStyle(runtime).isolation : null, rootIsolation: root ? getComputedStyle(root).isolation : null },
+            mode: root?.getAttribute('data-ground-renderer'), pseudoLayers,
+          }
+        })
+        expect(paint.mode).toBe('fallback')
+        expect(paint.ownership.rootInRuntime).toBe(true)
+        expect(paint.ownership.atmosphereInRuntime).toBe(true)
+        expect(paint.ownership.runtimeIsolation).toBe('isolate')
+        expect(paint.ownership.rootIsolation).toBe('isolate')
+        for (const layer of Object.values(paint.stacking)) expect(Number.isFinite(layer), 'Ground fallback paint layers require actual numeric stacking evidence').toBe(true)
+        expect(paint.stacking.runtime).toBeGreaterThan(paint.stacking.atmosphere)
+        expect(paint.stacking.ground, 'The isolated accessible Ground fallback must paint above its sibling atmosphere').toBeGreaterThan(paint.stacking.atmosphere)
+        for (const layer of paint.pseudoLayers) {
+          expect(layer.content).not.toBeNull()
+          expect(Number.isFinite(layer.opacity)).toBe(true)
+          const visible = layer.content !== 'none' && layer.content !== 'normal' && layer.display !== 'none' && layer.visibility === 'visible' && layer.opacity > 0
+          if (!visible) continue // Non-generated/hidden pseudo-elements retain their exact N/A evidence.
+          expect(Number.isFinite(layer.zIndex)).toBe(true)
+          expect(layer.position).not.toBe('static')
+          expect(layer.owner === 'runtime' ? paint.stacking.ground : paint.stacking.fallback, 'Decorative Ground layers must paint behind the accessible fallback').toBeGreaterThan(layer.zIndex)
+        }
+        await info.attach(`ground-fallback-paint-${profile.width}x${profile.height}.json`, { body: JSON.stringify(paint), contentType: 'application/json' })
         const routes = page.getByRole('navigation', { name: 'Direct Ground routes', exact: true }).getByRole('link')
         expect(await routes.count()).toBeGreaterThanOrEqual(10)
         const routeBounds = []
