@@ -383,6 +383,17 @@ for (const profile of [
           }).reduce((sum, value, index) => sum + value * [0.2126, 0.7152, 0.0722][index], 0)
           const style = getComputedStyle(panel)
           const background = rgba(style.backgroundColor)
+          const world = panel.closest('[data-testid="urai-quest-explorable-world"]')
+          const runtime = world?.closest('.urai-world-runtime')
+          const atmosphere = document.querySelector('.urai-world-atmosphere')
+          const zIndex = (node: Element | null | undefined, pseudo?: string) => node ? Number.parseInt(getComputedStyle(node, pseudo).zIndex, 10) : null
+          const stacking = {
+            runtime: zIndex(runtime),
+            atmosphere: zIndex(atmosphere),
+            world: zIndex(world),
+            runtimeBefore: zIndex(runtime, '::before'),
+            runtimeAfter: zIndex(runtime, '::after'),
+          }
           const ancestorOpacities: number[] = []
           for (let node: Element | null = panel; node; node = node.parentElement) {
             ancestorOpacities.push(Number(getComputedStyle(node).opacity))
@@ -392,8 +403,11 @@ for (const profile of [
             const fore = luminance(color.rgb), back = luminance(background.rgb)
             return { text: node.textContent?.trim(), color: getComputedStyle(node).color, alpha: color.alpha, contrast: (Math.max(fore, back) + 0.05) / (Math.min(fore, back) + 0.05) }
           })
-          return { background: style.backgroundColor, backgroundAlpha: background.alpha, backgroundImage: style.backgroundImage, ancestorOpacities, text }
+          return { background: style.backgroundColor, backgroundAlpha: background.alpha, backgroundImage: style.backgroundImage, stacking, ancestorOpacities, text }
         })
+        for (const layer of Object.values(paint.stacking)) expect(Number.isFinite(layer), 'XR decorative and UI layers must have explicit stacking positions').toBe(true)
+        expect(paint.stacking.runtime!, 'The shared atmosphere must paint behind the XR runtime and its controls').toBeGreaterThan(paint.stacking.atmosphere!)
+        expect(paint.stacking.world!, 'The shared runtime vignette must paint behind the complete XR scene').toBeGreaterThan(Math.max(paint.stacking.runtimeBefore!, paint.stacking.runtimeAfter!))
         expect(paint.backgroundAlpha, 'XR consent backing must block the animated world').toBe(1)
         expect(paint.backgroundImage).toBe('none')
         expect(paint.ancestorOpacities.every(value => value === 1), 'XR backing cannot be faded by an ancestor').toBe(true)
