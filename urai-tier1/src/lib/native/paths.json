@@ -1,4 +1,4 @@
 {
   "origin": "https://urai.app",
-  "paths": ["/", "/home", "/ground", "/lifemap", "/focus", "/replay", "/mirror", "/shadow", "/council", "/dream", "/passport", "/privacy-controls", "/settings", "/login", "/account-deletion", "/support"]
+  "paths": ["/", "/home", "/ground", "/life-map", "/focus", "/replay", "/mirror", "/shadow", "/council", "/dream", "/passport", "/privacy-controls", "/settings", "/login", "/account-deletion", "/support"]
 }

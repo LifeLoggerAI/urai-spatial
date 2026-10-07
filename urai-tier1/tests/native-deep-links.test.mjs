@@ -28,6 +28,24 @@ test('native links handle cold and warm delivery and stop after listener cleanup
   assert.equal(removed, 1)
 })
 
+test('canonical Life Map opens on cold and warm native delivery and is associated on both platforms', async () => {
+  assert.equal(nativeNavigationPath('https://urai.app/life-map'), '/life-map')
+  assert.equal(nativeNavigationPath('https://urai.app/lifemap'), null)
+  let receive
+  const routes = []
+  const dispose = await observeNativeNavigation({
+    addListener: async (_name, listener) => { receive = listener; return { remove: async () => {} } },
+    getLaunchUrl: async () => ({ url: 'https://urai.app/life-map' }),
+  }, route => routes.push(route), () => true)
+  await Promise.resolve()
+  receive({ url: 'https://urai.app/life-map' })
+  assert.deepEqual(routes, ['/life-map', '/life-map'])
+  await dispose()
+  const association = appleAppSiteAssociation('SYNTH12345', 'com.urailabs.urai')
+  assert.ok(association.applinks.details[0].paths.includes('/life-map'))
+  assert.equal(association.applinks.details[0].paths.includes('/lifemap'), false)
+})
+
 test('a pending cold launch does not delay removal and an inactive runtime never navigates', async () => {
   let launch, event, removed = false, active = true
   const routes = []
@@ -57,6 +75,8 @@ test('Android association uses observed Play app-signing identity and generated 
     assert.equal(await fs.readFile(file, 'utf8'), first)
     assert.match(first, /android:autoVerify="true"/)
     assert.match(first, /android:host="urai.app" android:path="\/focus"/)
+    assert.match(first, /android:host="urai.app" android:path="\/life-map"/)
+    assert.doesNotMatch(first, /android:path="\/lifemap"/)
     assert.match(first, /android:allowBackup="false"/)
     assert.match(first, /android:usesCleartextTraffic="false"/)
     assert.match(first, /android:dataExtractionRules="@xml\/urai_data_extraction_rules"/)
