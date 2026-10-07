@@ -21,7 +21,7 @@ function fixture() {
    const reads = new Map(), writes = []
    const tx = {get:async r=>{assert.equal(writes.length,0,'reads must precede writes');reads.set(r.path,versions.get(r.path)||0);return snapshot(r.path)},
     getAll:async(...refs)=>Promise.all(refs.map(r=>tx.get(r))),
-    set:(r,v,o)=>writes.push({r,v,o})}
+    set:(r,v,o)=>writes.push({r,v,o}),create:(r,v)=>{assert.equal(docs.has(r.path),false);writes.push({r,v})}}
    const result=await fn(tx)
    if(conflict){const hook=conflict;conflict=undefined;hook()}
    if([...reads].some(([p,v])=>v!==(versions.get(p)||0))){retries++;continue}
@@ -130,4 +130,43 @@ test('overwriting state resets explicitly removed cutoff instead of retaining pr
 test('foreign state identity and missing relationship cannot be overwritten or silently retained',async()=>{
  const f=fixture();f.put(prefix+'lifeEntityStates/state-a',{ownerId:'other'});await assert.rejects(f.call('upsertLifeEntityState',state));assert.equal(f.docs.get(prefix+'lifeEntityStates/state-a').ownerId,'other');
  const r=fixture();await assert.rejects(r.call('upsertLifeEntityState',{...state,relationshipContextIds:['edge-missing']}));
+})
+
+async function compiled(){const f=await ready();await f.call('compilePersonModelBundle',{personId:'person-a',stateId:'state-a'});await f.call('compileLifeCausalGraphSnapshot',f.graph);
+ const scene={...f.scene,personModelBundleIds:['person-model:person-a:state-a']};await f.call('compileSceneTruthPacket',scene);
+ f.put(prefix+'memories/memory-a',{ownerId:uid,lifeMovie:{sceneTruthPacketId:'scene-a',personModelBundleIds:scene.personModelBundleIds}});return {f,scene};}
+test('actual SceneTruth and Replay consume current source-bound temporal bundle',async()=>{const {f}=await compiled();assert.equal((await f.call('getReplayLifeModelAuthority',{memoryId:'memory-a'})).available,true)})
+for(const[name,mutate]of Object.entries({
+ 'changed temporal cutoff':f=>f.amend(prefix+'lifeEntityStates/state-a',{knowledgeCutoff:'2099-01-01'}),
+ 'revoked current source':f=>f.amend(sourcePath,{status:'REVOKED'}),
+ 'changed source content':f=>f.amend(sourcePath,{sourceSha256:sha('changed')}),
+ 'missing bound state':f=>f.docs.delete(prefix+'lifeEntityStates/state-a'),
+ 'legacy unbound bundle':f=>f.amend(prefix+'personModelBundles/person-model:person-a:state-a',{authorityBindings:undefined}),
+ 'foreign bound dependency':f=>f.amend(prefix+'lifeEntityStates/state-a',{ownerId:'other'}),
+})){
+ test(name+' denies SceneTruth and Replay before asynchronous invalidation',async()=>{const{f,scene}=await compiled();mutate(f);await assert.rejects(f.call('compileSceneTruthPacket',scene));await assert.rejects(f.call('getReplayLifeModelAuthority',{memoryId:'memory-a'}));})
+}
+test('Replay consent race retries then rejects without returning stale authority',async()=>{const{f}=await compiled();f.conflict(()=>f.amend(prefix+'privacyPolicy/current',{domains:{}}));await assert.rejects(f.call('getReplayLifeModelAuthority',{memoryId:'memory-a'}));assert.equal(f.retries,1)})
+const correction={correctionId:'correction-a',targetClaimId:'claim-a',replacementClaimId:'claim-b',sourceIds:['psr_qrstuvwxyzabcdef'],evidenceClass:'DIRECT_SUBJECT_TESTIMONY',replacementValue:'Disclosed synthetic corrected testimony'}
+function testimony(){const f=fixture(),id=correction.sourceIds[0];f.put('uraiPrivateSourceReceipts/'+sha(id),{...f.docs.get(sourcePath),sourceReceiptRef:id,sourceHandle:'psh_qrstuvwxyzabcdef',sourceEvidenceClass:'DIRECT_SUBJECT_TESTIMONY'});return f}
+test('actual authorized testimony correction retains original and binds replacement source',async()=>{const f=testimony();await f.call('applyLifeCorrection',correction);assert.equal(f.docs.get(prefix+'lifeClaims/claim-a').status,'superseded');assert.match(f.docs.get(prefix+'lifeClaims/claim-b').sourceBindingDigest,/^[a-f0-9]{64}$/);assert.equal(f.docs.get(prefix+'lifeClaims/claim-b').historicalSourceAuthority,false)})
+for(const[name,mutate]of Object.entries({
+ 'missing correction source':f=>f.docs.delete('uraiPrivateSourceReceipts/'+sha(correction.sourceIds[0])),
+ 'wrong evidence class':f=>f.amend('uraiPrivateSourceReceipts/'+sha(correction.sourceIds[0]),{sourceEvidenceClass:'SOURCE_CAPTURED'}),
+ 'foreign testimony':f=>f.amend('uraiPrivateSourceReceipts/'+sha(correction.sourceIds[0]),{ownerUid:'other'}),
+ 'revoked model consent':f=>f.amend(prefix+'privacyPolicy/current',{domains:{}}),
+ 'deleted owner':f=>f.put('uraiPrivateLifeModelOwnerFences/'+sha(uid),{deleted:true}),
+ 'revoked target source':f=>f.amend(sourcePath,{status:'REVOKED'}),
+})){
+ test(name+' denies correction without superseding target or accepting replacement',async()=>{const f=testimony();mutate(f);await assert.rejects(f.call('applyLifeCorrection',correction));assert.equal(f.docs.get(prefix+'lifeClaims/claim-a').status,'accepted');assert.equal(f.docs.has(prefix+'lifeClaims/claim-b'),false)})
+}
+test('correction consent race retries without accepting replacement',async()=>{const f=testimony();f.conflict(()=>f.put('jobConsentBlocks/'+sha(uid+'\n'+'memory.storage'),{active:true}));await assert.rejects(f.call('applyLifeCorrection',correction));assert.equal(f.retries,1);assert.equal(f.docs.has(prefix+'lifeClaims/claim-b'),false)})
+
+test('relationship changes after state creation deny compiler before asynchronous invalidation',async()=>{
+ const f=fixture();f.reviewed();await f.call('upsertLifeEntityState',{...state,relationshipContextIds:['edge-a']});
+ const a=await f.call('compilePersonModelBundle',{personId:'person-a',stateId:'state-a'});assert.ok(a.bundleHash);
+ f.amend(prefix+'lifeCausalEdges/edge-a',{kind:'CAUSED'});await assert.rejects(f.call('compilePersonModelBundle',{personId:'person-a',stateId:'state-a'}));
+})
+test('negative constraint sources must be included in declared state source set',async()=>{
+ const f=testimony();await assert.rejects(f.call('upsertLifeEntityState',{...state,negativeConstraints:[{id:'constraint-a',rule:'NO_FUTURE_KNOWLEDGE',sourceIds:correction.sourceIds}]}),/STATE_SOURCE_SET_INCOMPLETE/);
 })
