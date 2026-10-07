@@ -8,6 +8,7 @@ const tests = [
   'tests/visual-proof-transport.test.mjs',
   'tests/home-semantic-action-proof.test.mjs',
   'tests/home-sky-interaction.test.mjs',
+  'tests/manual-emotional-weather-session.test.mjs',
   '../scripts/simulation/run-v10-scenario.test.mjs',
   'tests/passport-render-cadence.test.mjs',
   'tests/passport-ownership-vault-contract.test.mjs',
