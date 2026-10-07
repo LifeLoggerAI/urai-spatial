@@ -11,6 +11,7 @@ on:
       - 'urai-tier1/src/app/replay/CinematicReplayClient.tsx'
       - 'urai-tier1/tests/accessibility-performance-focus-mobile-layout.spec.ts'
       - 'urai-tier1/tests/accessibility-performance-replay.spec.ts'
+      - 'urai-tier1/tests/accessibility-performance-home-fallback-canon.spec.ts'
 
 permissions:
   contents: read
@@ -62,7 +63,7 @@ jobs:
       - name: Install Chromium
         run: pnpm --dir urai-tier1 exec playwright install --with-deps chromium
       - name: Verify actual Focus and Replay control geometry
-        run: pnpm exec playwright test --config playwright.accessibility.config.ts --fail-on-flaky-tests urai-tier1/tests/accessibility-performance-focus-mobile-layout.spec.ts urai-tier1/tests/accessibility-performance-replay.spec.ts
+        run: pnpm exec playwright test --config playwright.accessibility.config.ts --fail-on-flaky-tests urai-tier1/tests/accessibility-performance-focus-mobile-layout.spec.ts urai-tier1/tests/accessibility-performance-replay.spec.ts urai-tier1/tests/accessibility-performance-home-fallback-canon.spec.ts
       - name: Retain scoped exact-head evidence
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02

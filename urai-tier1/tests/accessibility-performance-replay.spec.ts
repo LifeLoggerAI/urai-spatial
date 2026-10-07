@@ -108,9 +108,17 @@ for (const viewport of [{ width: 844, height: 390 }, { width: 568, height: 320 }
     await page.goto(replayDemo, { waitUntil: 'domcontentloaded' })
     const replay = page.getByTestId('cinematic-replay-client')
     await expect(replay).toHaveAttribute('data-replay-media-ready', 'true')
-    const caption = await replay.locator('.caption').boundingBox()
-    const tempo = await replay.locator('.memoryTempo').boundingBox()
-    const header = await replay.locator('header').boundingBox()
+    // Read one simultaneous layout snapshot instead of three forced GPU frames.
+    const { caption, tempo, header } = await replay.evaluate(owner => {
+      const rect = (selector: string) => {
+        const element = owner.querySelector(selector)
+        if (!element) return null
+        const r = element.getBoundingClientRect()
+        return { x: r.x, y: r.y, width: r.width, height: r.height }
+      }
+      return { caption: rect('.caption'), tempo: rect('.memoryTempo'), header: rect('header') }
+    })
+    await test.info().attach('replay-control-geometry.json', { body: JSON.stringify({ viewport, caption, tempo, header }), contentType: 'application/json' })
     expect(caption).not.toBeNull()
     expect(tempo).not.toBeNull()
     expect(header).not.toBeNull()
