@@ -6,6 +6,7 @@ on:
     paths:
       - '.github/workflows/spatial-control-clearance-proof.yml'
       - 'urai-tier1/src/app/globals.css'
+      - 'urai-tier1/src/spatial/adam/**'
       - 'urai-tier1/src/app/focus/FocusChamberClient.tsx'
       - 'urai-tier1/src/app/replay/CinematicReplayClient.tsx'
       - 'urai-tier1/tests/accessibility-performance-focus-mobile-layout.spec.ts'

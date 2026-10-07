@@ -22,7 +22,7 @@ for (const width of [320, 390]) {
       const geometry = await focus.evaluate(owner => {
         const rect = (element: Element) => {
           const r = element.getBoundingClientRect()
-          return { x: r.x, y: r.y, width: r.width, height: r.height, right: r.right, bottom: r.bottom }
+          return { x: r.x, y: r.y, width: r.width, height: r.height, right: r.right, bottom: r.bottom, selector: element.className || element.tagName }
         }
         const launcher = document.querySelector('[data-urai-adam-launcher]')!
         return {
@@ -36,10 +36,11 @@ for (const width of [320, 390]) {
             range.selectNodeContents(button)
             const box = rect(button)
             const hit = document.elementFromPoint(box.x + box.width / 2, box.y + box.height / 2)
-            return { box, pointerReachable: hit === button || (hit !== null && button.contains(hit)), text: [...range.getClientRects()].map(r => ({ x: r.x, right: r.right, y: r.y, bottom: r.bottom })) }
+            return { box, pointerReachable: hit === button || (hit !== null && button.contains(hit)), text: [...range.getClientRects()].map(r => ({ x: r.x, right: r.right, y: r.y, bottom: r.bottom, selector: element.className || element.tagName })) }
           }),
         }
       })
+      await test.info().attach('mobile-focus-geometry.json', { body: JSON.stringify(geometry), contentType: 'application/json' })
       const overlaps = (a: typeof geometry.helper, b: typeof geometry.helper) =>
         a.x < b.right && a.right > b.x && a.y < b.bottom && a.bottom > b.y
       expect(geometry.helper.width).toBeGreaterThanOrEqual(48)
@@ -64,7 +65,6 @@ for (const width of [320, 390]) {
       await focus.locator('.focusControls').getByRole('button', { name: /Open Replay for/ }).click()
       await expect.poll(() => new URL(page.url()).pathname.replace(/\/$/, '')).toBe('/replay')
       expect(new URL(page.url()).searchParams.get('memoryId')).toBe('demo:quiet-reset')
-      await test.info().attach('mobile-focus-geometry.json', { body: JSON.stringify(geometry), contentType: 'application/json' })
     })
   }
 }

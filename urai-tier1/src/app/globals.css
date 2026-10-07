@@ -23,9 +23,14 @@
   .focusWorld[data-chamber-state="ready"] .focus-spatial-aperture-button {
     display: none !important;
   }
+  /* The 64px control rail starts 80px above the safe-area edge. Reserve
+     another 8px for both utility controls, including their borders. */
+  [data-testid="urai-final-focus-chamber"] .focusHelp {
+    bottom: max(88px, calc(env(safe-area-inset-bottom) + 88px)) !important;
+  }
   body:has([data-testid="urai-final-focus-chamber"]) [data-urai-adam-launcher] {
     top: auto !important;
-    bottom: max(76px, calc(env(safe-area-inset-bottom) + 64px)) !important;
+    bottom: max(88px, calc(env(safe-area-inset-bottom) + 88px)) !important;
     left: max(16px, env(safe-area-inset-left)) !important;
     right: auto !important;
     transform: none !important;
