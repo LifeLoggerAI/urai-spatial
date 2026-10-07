@@ -6,6 +6,7 @@ import { Component, Suspense, useEffect, useRef, useState, type MutableRefObject
 import * as THREE from 'three'
 import { COUNCIL_AGENTS } from './councilAgentSchema'
 import CouncilConversationPanel from './CouncilConversationPanel'
+import { playCouncilBodyIdle, playCouncilListening } from './CouncilAnimationLayers'
 import { useReducedMotion } from '@/spatial/hooks/useReducedMotion'
 import { useAdaptiveSpatialQuality } from '@/spatial/performance/useAdaptiveSpatialQuality'
 import {
@@ -112,24 +113,25 @@ function RiggedCouncilHuman({
   selected,
   reducedMotion,
   onSelect,
+  ownerRef,
 }: {
   modelUrl: string
   index: number
   selected: boolean
   reducedMotion: boolean
   onSelect: () => void
+  ownerRef: MutableRefObject<HTMLDivElement | null>
 }) {
   const model = useGLTF(modelUrl)
   const root = useRef<THREE.Group>(null)
   const { actions } = useAnimations(model.animations, root)
 
   useEffect(() => {
-    if (reducedMotion) return
-    const clip = selected ? (actions.listen_acknowledge ?? actions.idle_breath) : actions.idle_breath
-    clip?.reset().fadeIn(0.25).play()
-    return () => {
-      clip?.fadeOut(0.2)
-    }
+    return playCouncilBodyIdle(actions, reducedMotion)
+  }, [actions, reducedMotion])
+
+  useEffect(() => {
+    return playCouncilListening(actions, selected, reducedMotion)
   }, [actions, reducedMotion, selected])
 
   useEffect(() => {
@@ -145,6 +147,14 @@ function RiggedCouncilHuman({
     if (!root.current) return
     root.current.rotation.y = ROTATIONS[index]?.[1] ?? 0
     root.current.position.y = reducedMotion ? 0 : Math.sin((clock.elapsedTime + index * 0.77) * 0.8) * 0.004
+    if (ownerRef.current) {
+      const body = model.scene.getObjectByName('hips')
+      const head = model.scene.getObjectByName('head')
+      ownerRef.current.dataset[`councilIdleActive${index}`] = actions.idle_breath?.isRunning() ? 'true' : 'false'
+      ownerRef.current.dataset[`councilListeningActive${index}`] = actions.listen_acknowledge?.isRunning() ? 'true' : 'false'
+      if (body) ownerRef.current.dataset[`councilBodyY${index}`] = body.position.y.toFixed(8)
+      if (head) ownerRef.current.dataset[`councilHeadX${index}`] = head.quaternion.x.toFixed(8)
+    }
   })
 
   return (
@@ -298,6 +308,7 @@ function CouncilStage() {
                 selected={selected === index}
                 reducedMotion={reducedMotion}
                 onSelect={() => setSelected(index)}
+                ownerRef={shellRef}
               />
             ))}
 
