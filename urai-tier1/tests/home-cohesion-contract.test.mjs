@@ -45,7 +45,9 @@ test('Home keeps one capability-aware accessible fallback', () => {
 
 test('Home keeps direct semantic Ground, Orb, and Life Map navigation in the runtime boundary', () => {
   assert.match(runtime, /requestUraiWorldOrbOpen/)
-  assert.match(runtime, /aria-label="Open Ground directly"/)
+  assert.ok(runtime.includes("aria-label={locale.text('home.groundAction')}"))
+  const messages = read('src/lib/i18n/journeyMessages.ts')
+  assert.ok(messages.includes("'home.groundAction': { id:'home.groundAction', source:\"Open Ground directly\""))
   assert.match(runtime, /data-testid="home-semantic-ground"/)
   assert.match(runtime, /href="\/ground\/\?entryPortal=home-ground&cameraCheckpoint=home-ground-descent"/)
   assert.match(runtime, /aria-label=\{locale.text\('home.lifeMapAction'\)\}/)

@@ -23,7 +23,8 @@ test('canonical private memories are owner-readable and server-write-only', () =
 })
 
 test('canonical memories are portable and included in deletion scopes', () => {
-  assert.match(privacy, /data\.memories = await collectionDocuments\(userRef\.collection\('memories'\)\)/)
+  assert.match(privacy, /data\.memories = await collectionDocuments\(userRef\.collection\('memories'\), context\)/)
+  assert.match(privacy, /collectExportPages\(context\.transaction, ref, context\.budget/)
   assert.match(privacy, /memories: \['memories', 'replayEvents', 'spatialMemories', 'canonChains'\]/)
   const allData = privacy.match(/'all-repository-data': \[([\s\S]*?)\n\s*\],/)
   assert.ok(allData, 'missing all-repository-data deletion scope')

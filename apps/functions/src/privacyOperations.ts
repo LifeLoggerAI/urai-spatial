@@ -1218,7 +1218,7 @@ export const createDeletionRequest = functions.https.onCall(async (data, context
 })
 
 const DELETION_COLLECTIONS: Record<Exclude<DeletionScope, 'account'>, string[]> = {
-  'export-history': ['exportJobs'],
+  'export-history': ['exportJobs', 'spatialExportDownloads'],
   'privacy-history': ['privacyAudit'],
   memories: ['memories', 'replayEvents', 'spatialMemories', 'canonChains'],
   'life-model': [
@@ -1261,6 +1261,7 @@ const DELETION_COLLECTIONS: Record<Exclude<DeletionScope, 'account'>, string[]> 
   ],
   'all-repository-data': [
     'exportJobs',
+    'spatialExportDownloads',
     'privacyAudit',
     'privacyPolicy',
     'privacyRuntime',

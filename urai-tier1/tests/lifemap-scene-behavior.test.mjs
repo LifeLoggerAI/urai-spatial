@@ -10,6 +10,7 @@ const world = fs.readFileSync(new URL('../src/components/lifemap/LifeMapProducti
 const visualSystem = fs.readFileSync(new URL('../src/components/lifemap/lifeMapVisualSystem.ts', import.meta.url), 'utf8')
 const demo = fs.readFileSync(new URL('../src/components/lifemap/canonicalLifeMapDemoNodes.ts', import.meta.url), 'utf8')
 const navigator = fs.readFileSync(new URL('../src/components/lifemap/LifeMapSemanticNavigator.tsx', import.meta.url), 'utf8')
+const journeyMessages = fs.readFileSync(new URL('../src/lib/i18n/journeyMessages.ts', import.meta.url), 'utf8')
 const events = fs.readFileSync(new URL('../src/components/lifemap/useLifeMapEvents.ts', import.meta.url), 'utf8')
 const shell = fs.readFileSync(new URL('../src/spatial/world/UraiWorldShell.tsx', import.meta.url), 'utf8')
 const isolation = fs.readFileSync(new URL('../src/spatial/world/lifeMapProductionIsolation.css', import.meta.url), 'utf8')
@@ -122,7 +123,8 @@ test('Selection Focus Replay Overview and Escape preserve artifact identity', ()
 })
 
 test('Semantic navigator supports search filters keyboard travel and connected destinations', () => {
-  assert.match(navigator, /placeholder=\{locale.locale === 'en' \? 'Search memories, people, places…' : locale.text\('common.search'\)\}/)
+  assert.ok(navigator.includes("placeholder={locale.text('lifeMap.searchHint')}"))
+  assert.ok(journeyMessages.includes("'lifeMap.searchHint': { id:'lifeMap.searchHint', source:\"Search memories, people, places…\""))
   assert.match(navigator, /TYPE_FILTERS/)
   assert.match(navigator, /typeFilter === 'all' \|\| node\.type === typeFilter|typeFilter === "all" \|\| node\.type === typeFilter/)
   assert.match(navigator, /eraFilter === 'all' \|\| node\.eraId === eraFilter|eraFilter === "all" \|\| node\.eraId === eraFilter/)

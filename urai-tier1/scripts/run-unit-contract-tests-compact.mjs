@@ -45,6 +45,7 @@ const tests = [
   'tests/home-runtime-cursor-cleanup-contract.test.mjs',
   'tests/home-movement-lifecycle.test.mjs',
   'tests/status-live-authority-contract.test.mjs',
+  'tests/discoverability-enforcement.test.mjs',
   'tests/open-graph-asset-ownership-contract.test.mjs',
   'tests/captured-reality-life-model-binding.test.mjs',
   'tests/aaa-world-artifact-contract.test.mjs',

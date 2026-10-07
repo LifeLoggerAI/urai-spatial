@@ -5,6 +5,7 @@ import fs from 'node:fs'
 const read = (relativePath) => fs.readFileSync(new URL(`../${relativePath}`, import.meta.url), 'utf8')
 const kernel = read('src/spatial/navigation/EmbodiedNavigation.tsx')
 const homeRuntime = read('src/app/HomeSpatialRuntimeLayer.tsx')
+const journeyMessages = read('src/lib/i18n/journeyMessages.ts')
 const assetHome = read('src/app/AssetDrivenHomeWorld.tsx')
 const homeProductionEntry = read('src/spatial/layout/HomeWorldProduction.tsx')
 const homeProduction = read('src/spatial/layout/HomeWorldProductionPolished.tsx')
@@ -43,10 +44,12 @@ test('Home is the live embodied sacred-tech sanctuary with an explicit degraded 
     'data-home-ground-affordance="home-ground-environmental-threshold"',
     'data-home-life-map-affordance="home-life-map-sky-lookout"',
     'data-home-context-owner="world-local-context-only"',
-    'aria-label="Open URAI Orb companion"',
-    'aria-label="Open Ground directly"',
+    "aria-label={locale.text('home.orbAction')}",
+    "aria-label={locale.text('home.groundAction')}",
     "aria-label={locale.text('home.lifeMapAction')}",
   ]) has(homeRuntime, marker)
+  has(journeyMessages, "'home.orbAction': { id:'home.orbAction', source:\"Open URAI Orb companion\"")
+  has(journeyMessages, "'home.groundAction': { id:'home.groundAction', source:\"Open Ground directly\"")
   assert.doesNotMatch(homeRuntime, /EmbodiedHomeSpatialCanvas|HomeSanctuaryWorld|data-home-ground-portal=|data-home-life-map-portal=/)
 
   has(assetHome, 'HomeWorldProduction')

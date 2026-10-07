@@ -282,6 +282,45 @@ test('a stale queued deletion event cannot execute after current owner cancellat
   assert.ok(f.records.has(`${prefix}/memories/private-synthetic`));assert.equal(f.stats.deleted.length,0)
 })
 
+for (const scope of ['export-history', 'all-repository-data']) {
+  test(`${scope} completion removes issued downloads and their children without deleting another owner`, async () => {
+    const f = fixture(), issued = await f.descriptor()
+    const descriptorPath = `${prefix}/spatialExportDownloads/${new URL(issued.url).searchParams.get('authorityHash')}`
+    const otherOwnerPath = 'users/other-synthetic-owner/spatialExportDownloads/retained'
+    assert.ok(f.records.has(descriptorPath), 'descriptor must have been committed by the actual handler')
+    f.records.set(`${descriptorPath}/synthetic-child/retained`, { synthetic: true })
+    f.records.set(otherOwnerPath, { ownerId: 'other-synthetic-owner' })
+    const deletion = await f.handlers.createDeletionRequest({ operationId: `synthetic-descriptor-${scope}`, scope,
+      confirmation: scope === 'all-repository-data' ? 'DELETE MY URAI DATA' : 'CONFIRM DELETE' }, f.context)
+    await f.handlers.processDeletionQueueItem(await f.db.doc(`deletionQueue/${deletion.jobId}`).get())
+    assert.equal(f.records.get(`${prefix}/deletionJobs/${deletion.jobId}`).state, 'completed')
+    assert.equal(f.records.has(descriptorPath), false)
+    assert.equal(f.records.has(`${descriptorPath}/synthetic-child/retained`), false)
+    assert.equal(f.records.has(jobPath), false)
+    assert.ok(f.records.has(otherOwnerPath))
+    const receipt = f.records.get(`deletionReceipts/${deletion.receiptId}`)
+    assert.equal(receipt.result, 'completed')
+    assert.ok(receipt.deletedCollections.includes('spatialExportDownloads'))
+    assert.equal((await f.deliver(issued)).statusCode, 409)
+    assert.equal(f.stats.signed, 0)
+  })
+}
+
+test('cancelled export-history deletion retains issued records while its epoch still denies the old descriptor', async () => {
+  const f = fixture(), issued = await f.descriptor()
+  const descriptorPath = `${prefix}/spatialExportDownloads/${new URL(issued.url).searchParams.get('authorityHash')}`
+  const deletion = await f.handlers.createDeletionRequest({ operationId: 'synthetic-descriptor-cancel',
+    scope: 'export-history', confirmation: 'CONFIRM DELETE' }, f.context)
+  const staleQueue = await f.db.doc(`deletionQueue/${deletion.jobId}`).get()
+  await f.handlers.cancelDeletionRequest({ jobId: deletion.jobId }, f.context)
+  await f.handlers.processDeletionQueueItem(staleQueue)
+  assert.equal(f.records.get(`${prefix}/deletionJobs/${deletion.jobId}`).state, 'cancelled')
+  assert.ok(f.records.has(descriptorPath))
+  assert.ok(f.records.has(jobPath))
+  assert.equal(f.stats.deleted.length, 0)
+  assert.equal((await f.deliver(issued)).statusCode, 409)
+})
+
 test('export publication requires the same current request revision after all Storage writes', async () => {
   const f = fixture({ afterMetadata: (_count, records) => { records.get(policyPath).revision = 5 } })
   f.records.get(jobPath).state = 'queued'; f.records.get(receiptPath).result = 'queued'

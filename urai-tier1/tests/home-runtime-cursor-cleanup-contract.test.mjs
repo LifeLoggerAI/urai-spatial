@@ -3,6 +3,7 @@ import fs from 'node:fs'
 import test from 'node:test'
 import vm from 'node:vm'
 import ts from 'typescript'
+import { localizedMessage, serverLocalePreference } from '../src/lib/i18n/localePreference.ts'
 
 const runtime = fs.readFileSync('src/app/HomeSpatialRuntimeLayer.tsx', 'utf8')
 
@@ -25,6 +26,13 @@ function lifecycle(pathname) {
     if (id === 'react/jsx-runtime') return { jsx, jsxs: jsx }
     if (id === 'next/navigation') return { usePathname: () => pathname }
     if (id === './HomeSpatialCanvas') return { useWebGLAvailable: () => true }
+    if (id === '@/lib/i18n/useUraiLocale') return { useUraiLocale: () => ({
+      text: id => localizedMessage(serverLocalePreference(), id).text,
+      props: id => {
+        const message = localizedMessage(serverLocalePreference(), id)
+        return { lang: message.locale, dir: message.direction, 'data-urai-translation-preview': String(message.preview) }
+      },
+    }) }
     return { default: () => null }
   } })
   exports.default()

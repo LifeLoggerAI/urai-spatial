@@ -69,6 +69,12 @@ test('missing Home route owner fails closed', t => {
   assert.ok(failed.failures.some(failure => failure.includes(`${homeOwner}: active owner file is missing`)))
 })
 
+test('localized Ground action cannot silently navigate to a different destination', t => {
+  const failed = inject(t, fixture => replace(fixture, 'urai-tier1/src/app/HomeSpatialRuntimeLayer.tsx',
+    'href="/ground/?entryPortal=home-ground&cameraCheckpoint=home-ground-descent"', 'href="/unbound-destination/"'))
+  assert.ok(failed.failures.some(failure => failure.includes('missing active-owner binding: href="/ground/')))
+})
+
 test('unmounted Home world fails even with imported name and markers present', t => {
   const failed = inject(t, fixture => replace(fixture, homeOwner, '<HomeWorldProduction ', '<DisconnectedHomeWorld '))
   assert.ok(failed.failures.some(failure => failure.includes('missing active-owner binding: <HomeWorldProduction')))

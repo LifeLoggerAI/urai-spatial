@@ -83,7 +83,10 @@ const routeOwnerChecks = [
     // an aggregate of retired and active source. This remains source evidence;
     // literal rendered-pixel acceptance is a separate release gate.
     requiredByFile: {
-      'urai-tier1/src/app/HomeSpatialRuntimeLayer.tsx': ['<AssetDrivenHomeWorld', '<HomeSemanticNavigation />'],
+      'urai-tier1/src/app/HomeSpatialRuntimeLayer.tsx': [
+        '<AssetDrivenHomeWorld', '<HomeSemanticNavigation />',
+        'href="/ground/?entryPortal=home-ground&cameraCheckpoint=home-ground-descent"',
+      ],
       'urai-tier1/src/app/AssetDrivenHomeWorld.tsx': [
         '<HomeWorldProduction',
         'data-home-route-owner="asset-driven-natural-home"',
