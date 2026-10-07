@@ -6,6 +6,7 @@ import os
 from pathlib import Path
 import re
 import stat
+import shutil
 import sys
 import zipfile
 
@@ -18,6 +19,10 @@ CRITICAL = (
     "App/App/App.entitlements", "App/App/Assets.xcassets/AppIcon.appiconset/Contents.json",
     "App/App/public/index.html", "App/App/public/api/system/deploy-proof",
     "App/App/public/native-build-fingerprint.json",
+    "App/CapApp-SPM/Dependencies/CapacitorApp/Package.swift",
+    "App/CapApp-SPM/Dependencies/CapacitorApp/package.json",
+    "App/CapApp-SPM/Dependencies/CapacitorApp/LICENSE",
+    "App/CapApp-SPM/Dependencies/CapacitorApp/ios/Sources/AppPlugin/AppPlugin.swift",
 )
 FLAGS = ("compiled", "signingPerformed", "appleAuthoritySupplied",
          "nativeAppleAuthConfigured", "nativeGoogleAuthConfigured")
@@ -83,6 +88,32 @@ def verify_identity(read, source, run):
             "HTML_SOURCE_MISMATCH")
 
 
+def vendor(project, package):
+    # Resolve pnpm's package-root link once; reject linked files inside the locked package.
+    package = package.resolve(strict=True)
+    regular(package / "package.json")
+    metadata = json.loads((package / "package.json").read_text())
+    require(metadata.get("name") == "@capacitor/app" and metadata.get("version") == "8.1.2", "LOCKED_PLUGIN_REQUIRED")
+    manifest = project / "App/CapApp-SPM/Package.swift"
+    regular(manifest)
+    text = manifest.read_text()
+    before = '.package(name: "CapacitorApp", path: "../../../../../node_modules/@capacitor/app")'
+    after = '.package(name: "CapacitorApp", path: "Dependencies/CapacitorApp")'
+    require(text.count(before) == 1 and 'exact: "8.5.2"' in text, "LOCKED_SPM_INPUT_REQUIRED")
+    destination = manifest.parent / "Dependencies/CapacitorApp"
+    require(not destination.exists() and not destination.is_symlink(), "VENDOR_OUTPUT_EXISTS")
+    require(all((package / name).is_file() for name in ("Package.swift", "LICENSE", "package.json")), "PLUGIN_INPUT_MISSING")
+    require((package / "ios/Sources/AppPlugin/AppPlugin.swift").is_file(), "PLUGIN_SOURCE_MISSING")
+    for file in package.rglob("*"):
+        require(not file.is_symlink(), "PLUGIN_SYMLINK_REJECTED")
+    destination.mkdir(parents=True)
+    for name in ("Package.swift", "LICENSE", "package.json"):
+        shutil.copy2(package / name, destination / name)
+    shutil.copytree(package / "ios", destination / "ios")
+    manifest.write_text(text.replace(before, after))
+    return {"status": "LOCKED_LOCAL_SPM_PLUGIN_RETAINED", "name": "@capacitor/app", "version": "8.1.2"}
+
+
 def verify_archive(archive, source):
     exact_source(source)
     regular(archive)
@@ -139,6 +170,10 @@ def package(project, receipt, output, source, run):
     output.mkdir(parents=True, exist_ok=True)
     require(not output.is_symlink(), "OUTPUT_UNSAFE")
     require(not any(output.iterdir()), "OUTPUT_NOT_EMPTY")
+    spm = sources[PREFIX + "App/CapApp-SPM/Package.swift"].read_text()
+    require('.package(name: "CapacitorApp", path: "Dependencies/CapacitorApp")' in spm and 'exact: "8.5.2"' in spm, "SELF_CONTAINED_SPM_REQUIRED")
+    plugin = json.loads(sources[PREFIX + "App/CapApp-SPM/Dependencies/CapacitorApp/package.json"].read_text())
+    require(plugin.get("name") == "@capacitor/app" and plugin.get("version") == "8.1.2", "LOCKED_PLUGIN_REQUIRED")
     index = {"schemaVersion": "urai-ios-full-source-index-v1",
              "repository": "LifeLoggerAI/urai-spatial", "sourceSha": source,
              "workflowRunId": run, "compiled": False, "signed": False,
@@ -212,6 +247,9 @@ def reconstruct(manifest, parts_directory, output, source):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     commands = parser.add_subparsers(dest="command", required=True)
+    retain = commands.add_parser("vendor")
+    retain.add_argument("--project", required=True, type=Path)
+    retain.add_argument("--capacitor-app-package", required=True, type=Path)
     pack = commands.add_parser("package")
     pack.add_argument("--project", required=True, type=Path)
     pack.add_argument("--receipt", required=True, type=Path)
@@ -226,7 +264,9 @@ def main():
     for command in (pack, rebuild, check):
         command.add_argument("--source-sha", required=True)
     args = parser.parse_args()
-    if args.command == "package":
+    if args.command == "vendor":
+        result = vendor(args.project, args.capacitor_app_package)
+    elif args.command == "package":
         result = package(args.project, args.receipt, args.output_directory, args.source_sha, args.workflow_run_id)
     elif args.command == "reconstruct":
         result = reconstruct(args.manifest, args.parts_directory, args.output, args.source_sha)

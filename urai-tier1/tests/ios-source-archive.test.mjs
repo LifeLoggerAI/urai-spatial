@@ -16,6 +16,13 @@ function fixture() {
   const project = path.join(directory, 'ios')
   const entries = ['App/App.xcodeproj/project.pbxproj', 'App/CapApp-SPM/Package.swift', 'App/App/AppDelegate.swift', 'App/App/SceneDelegate.swift', 'App/App/Info.plist', 'App/App/App.entitlements', 'App/App/Assets.xcassets/AppIcon.appiconset/Contents.json']
   for (const entry of entries) { const file = path.join(project, entry); fs.mkdirSync(path.dirname(file), { recursive: true }); fs.writeFileSync(file, 'source fixture\n') }
+  const plugin = path.join(project, 'App/CapApp-SPM/Dependencies/CapacitorApp')
+  fs.mkdirSync(path.join(plugin, 'ios/Sources/AppPlugin'), { recursive: true })
+  fs.writeFileSync(path.join(plugin, 'package.json'), JSON.stringify({ name: '@capacitor/app', version: '8.1.2' }))
+  fs.writeFileSync(path.join(plugin, 'Package.swift'), 'plugin source')
+  fs.writeFileSync(path.join(plugin, 'LICENSE'), 'plugin license')
+  fs.writeFileSync(path.join(plugin, 'ios/Sources/AppPlugin/AppPlugin.swift'), 'plugin source')
+  fs.writeFileSync(path.join(project, 'App/CapApp-SPM/Package.swift'), '.package(url: "https://github.com/ionic-team/capacitor-swift-pm.git", exact: "8.5.2"), .package(name: "CapacitorApp", path: "Dependencies/CapacitorApp")')
   const web = path.join(project, 'App/App/public')
   fs.mkdirSync(path.join(web, 'api/system'), { recursive: true })
   fs.mkdirSync(path.join(web, 'assets'), { recursive: true })
@@ -103,3 +110,31 @@ test('iOS source archive rejects linked source files and unsafe ZIP entries', ()
   } finally { cleanup(f) }
 })
 
+
+test('iOS archive vendors the exact local SPM plugin with native sources and license', () => {
+  const f = fixture()
+  try {
+    const plugin = path.join(f.project, 'App/CapApp-SPM/Dependencies/CapacitorApp')
+    const external = path.join(f.directory, 'locked-plugin')
+    fs.renameSync(plugin, external)
+    const manifest = path.join(f.project, 'App/CapApp-SPM/Package.swift')
+    fs.writeFileSync(manifest, '.package(url: "https://github.com/ionic-team/capacitor-swift-pm.git", exact: "8.5.2"), .package(name: "CapacitorApp", path: "../../../../../node_modules/@capacitor/app")')
+    const result = run(['vendor', '--project', f.project, '--capacitor-app-package', external])
+    assert.equal(result.status, 0, result.stderr)
+    assert.ok(fs.existsSync(path.join(plugin, 'LICENSE')))
+    assert.ok(fs.existsSync(path.join(plugin, 'ios/Sources/AppPlugin/AppPlugin.swift')))
+    assert.match(fs.readFileSync(manifest, 'utf8'), /path: "Dependencies\/CapacitorApp"/)
+    assert.equal(run(f.args).status, 0)
+  } finally { cleanup(f) }
+})
+test('iOS plugin vendoring rejects an unpinned version before changing generated source', () => {
+  const f = fixture()
+  try {
+    const plugin = path.join(f.project, 'App/CapApp-SPM/Dependencies/CapacitorApp')
+    fs.writeFileSync(path.join(plugin, 'package.json'), JSON.stringify({ name: '@capacitor/app', version: '0.0.0' }))
+    const manifest = path.join(f.project, 'App/CapApp-SPM/Package.swift')
+    const original = fs.readFileSync(manifest, 'utf8')
+    assert.match(run(['vendor', '--project', f.project, '--capacitor-app-package', plugin]).stderr, /LOCKED_PLUGIN_REQUIRED/)
+    assert.equal(fs.readFileSync(manifest, 'utf8'), original)
+  } finally { cleanup(f) }
+})
