@@ -10,6 +10,9 @@ on:
       - "pnpm-lock.yaml"
       - "scripts/prepare-ios-shell.mjs"
       - "scripts/prepare-native-links.mjs"
+      - "scripts/prepare-native-static-provenance.mjs"
+      - "scripts/prepare-ios-source-archive.py"
+      - "scripts/prepare-ios-compiler-artifact.py"
       - ".github/workflows/ios-source-preparation.yml"
 
 permissions:
@@ -53,14 +56,47 @@ jobs:
           corepack enable
           corepack pnpm install --frozen-lockfile
 
+      - name: Load canonical Firebase public configuration
+        shell: bash
+        run: |
+          set -euo pipefail
+          config="$(curl --fail --silent --show-error --location --proto '=https' --tlsv1.2 https://urai.app/__/firebase/init.json)"
+          test "$(jq -r '.projectId // empty' <<<"$config")" = "urai-4dc1d"
+          test "$(jq -r '.authDomain // empty' <<<"$config")" = "urai-4dc1d.firebaseapp.com"
+          for pair in \
+            "NEXT_PUBLIC_FIREBASE_API_KEY apiKey" \
+            "NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN authDomain" \
+            "NEXT_PUBLIC_FIREBASE_PROJECT_ID projectId" \
+            "NEXT_PUBLIC_FIREBASE_APP_ID appId" \
+            "NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET storageBucket" \
+            "NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID messagingSenderId" \
+            "NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID measurementId"; do
+            env_name="${pair%% *}"
+            json_name="${pair#* }"
+            value="$(jq -r --arg key "$json_name" '.[$key] // empty' <<<"$config")"
+            test -n "$value" || { echo "Canonical Firebase config is missing: $json_name" >&2; exit 1; }
+            printf '%s=%s\n' "$env_name" "$value" >> "$GITHUB_ENV"
+          done
+
+
       - name: Build static export for unconfigured source preparation
+        env:
+          VERCEL_GIT_COMMIT_SHA: ${{ env.URAI_EXACT_HEAD }}
+          NEXT_PUBLIC_URAI_BUILD_SHA: ${{ env.URAI_EXACT_HEAD }}
         run: corepack pnpm build:static
+
+      - name: Bind and verify exact native static identity
+        run: node scripts/prepare-native-static-provenance.mjs --directory urai-tier1/out --source-sha "$URAI_EXACT_HEAD" --platform ios --workflow-run-id "$GITHUB_RUN_ID"
 
       - name: Generate iOS Swift Package Manager source
         working-directory: distribution/ios-shell
         run: |
           corepack pnpm exec cap add ios --packagemanager SPM
           node ../../scripts/prepare-ios-shell.mjs --optional --project ios --receipt-output ../../ios-source-receipt.json
+          node ../../scripts/prepare-native-static-provenance.mjs --directory ios/App/App/public --source-sha "$URAI_EXACT_HEAD" --platform ios --workflow-run-id "$GITHUB_RUN_ID" --verify-only
+
+      - name: Retain locked local Swift package inside generated project
+        run: python3 scripts/prepare-ios-source-archive.py vendor --project distribution/ios-shell/ios --capacitor-app-package node_modules/@capacitor/app
 
       - name: Retain source hashes and explicit native boundary
         shell: bash
@@ -81,7 +117,78 @@ jobs:
             distribution/ios-shell/ios/App/App/SceneDelegate.swift \
             distribution/ios-shell/ios/App/App/Info.plist \
             distribution/ios-shell/ios/App/App/App.entitlements \
-            distribution/ios-shell/ios/App/App/capacitor.config.json > ios-project-source.sha256
+            distribution/ios-shell/ios/App/App/capacitor.config.json \
+            distribution/ios-shell/ios/App/App/public/native-build-fingerprint.json > ios-project-source.sha256
+
+      - name: Archive the complete generated Xcode project and static web bundle
+        run: |
+          python3 scripts/prepare-ios-source-archive.py package --project distribution/ios-shell/ios --receipt ios-source-receipt.json --output-directory ios-source-archive --source-sha "$URAI_EXACT_HEAD" --workflow-run-id "$GITHUB_RUN_ID"
+          python3 - <<'PYVERIFY'
+          import json
+          manifest = json.load(open('ios-source-archive/ios-source-archive-transport.json'))
+          assert len(manifest['parts']) <= 5, 'iOS archive exceeds retained transport part budget'
+          PYVERIFY
+          python3 scripts/prepare-ios-source-archive.py verify --archive ios-source-archive/urai-ios-project-source.zip --source-sha "$URAI_EXACT_HEAD"
+
+      - name: Retain complete unsigned iOS source project
+        uses: actions/upload-artifact@v4
+        with:
+          name: urai-ios-full-source-${{ env.URAI_EXACT_HEAD }}
+          path: ios-source-archive/urai-ios-project-source.zip
+          compression-level: 0
+          retention-days: 30
+
+      - name: Retain bounded iOS source transport
+        uses: actions/upload-artifact@v4
+        with:
+          name: urai-ios-source-transport-${{ env.URAI_EXACT_HEAD }}
+          path: ios-source-archive/ios-source-archive-transport.json
+          retention-days: 30
+
+      - name: Retain iOS source transport part 01
+        if: ${{ hashFiles('ios-source-archive/urai-ios-project-source.zip.part-01') != '' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: urai-ios-source-part-01-${{ env.URAI_EXACT_HEAD }}
+          path: ios-source-archive/urai-ios-project-source.zip.part-01
+          compression-level: 0
+          retention-days: 30
+
+      - name: Retain iOS source transport part 02
+        if: ${{ hashFiles('ios-source-archive/urai-ios-project-source.zip.part-02') != '' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: urai-ios-source-part-02-${{ env.URAI_EXACT_HEAD }}
+          path: ios-source-archive/urai-ios-project-source.zip.part-02
+          compression-level: 0
+          retention-days: 30
+
+      - name: Retain iOS source transport part 03
+        if: ${{ hashFiles('ios-source-archive/urai-ios-project-source.zip.part-03') != '' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: urai-ios-source-part-03-${{ env.URAI_EXACT_HEAD }}
+          path: ios-source-archive/urai-ios-project-source.zip.part-03
+          compression-level: 0
+          retention-days: 30
+
+      - name: Retain iOS source transport part 04
+        if: ${{ hashFiles('ios-source-archive/urai-ios-project-source.zip.part-04') != '' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: urai-ios-source-part-04-${{ env.URAI_EXACT_HEAD }}
+          path: ios-source-archive/urai-ios-project-source.zip.part-04
+          compression-level: 0
+          retention-days: 30
+
+      - name: Retain iOS source transport part 05
+        if: ${{ hashFiles('ios-source-archive/urai-ios-project-source.zip.part-05') != '' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: urai-ios-source-part-05-${{ env.URAI_EXACT_HEAD }}
+          path: ios-source-archive/urai-ios-project-source.zip.part-05
+          compression-level: 0
+          retention-days: 30
 
       - name: Retain source-only iOS evidence
         uses: actions/upload-artifact@v4
@@ -89,6 +196,7 @@ jobs:
           name: urai-ios-source-preparation-${{ env.URAI_EXACT_HEAD }}
           path: |
             ios-source-receipt.json
+            distribution/ios-shell/ios/App/App/public/native-build-fingerprint.json
             ios-project-source.sha256
             distribution/ios-shell/ios/App/App.xcodeproj/project.pbxproj
             distribution/ios-shell/ios/App/CapApp-SPM/Package.swift
@@ -97,4 +205,209 @@ jobs:
             distribution/ios-shell/ios/App/App/Info.plist
             distribution/ios-shell/ios/App/App/App.entitlements
             distribution/ios-shell/ios/App/App/capacitor.config.json
+          retention-days: 30
+
+  unsigned-native-compile:
+    name: Compile unprovisioned iOS Release (${{ matrix.sdk }})
+    needs: source-preparation
+    runs-on: macos-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - sdk: iphonesimulator
+            destination: generic/platform=iOS Simulator
+          - sdk: iphoneos
+            destination: generic/platform=iOS
+    env:
+      URAI_EXACT_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
+    steps:
+      - name: Checkout exact compiler authority source
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ env.URAI_EXACT_HEAD }}
+          fetch-depth: 1
+          persist-credentials: false
+          # Native product input is the complete verified Linux archive. Avoid case-colliding web sources on macOS.
+          sparse-checkout: scripts
+
+      - name: Prove exact clean compiler authority source
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$URAI_EXACT_HEAD"
+          test -z "$(git status --porcelain --untracked-files=all)"
+
+      - name: Setup Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Download exact-source complete project
+        uses: actions/download-artifact@v4
+        with:
+          name: urai-ios-full-source-${{ env.URAI_EXACT_HEAD }}
+          path: compiler-input
+
+      - name: Verify and materialize complete compiler input
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/prepare-ios-source-archive.py verify --archive compiler-input/urai-ios-project-source.zip --source-sha "$URAI_EXACT_HEAD"
+          python3 -m zipfile -e compiler-input/urai-ios-project-source.zip .
+          node scripts/prepare-native-static-provenance.mjs --directory distribution/ios-shell/ios/App/App/public --source-sha "$URAI_EXACT_HEAD" --platform ios --workflow-run-id "$GITHUB_RUN_ID" --verify-only
+
+      - name: Require eligible Xcode compiler and record SDK
+        shell: bash
+        run: |
+          set -euo pipefail
+          DEVELOPER_DIR="$(python3 - <<'PYXCODE'
+          import glob, re, subprocess
+          candidates = []
+          for application in glob.glob('/Applications/Xcode*.app'):
+              match = re.search(r'Xcode[_ ]([0-9._]+)\.app$', application)
+              if match and int(re.split(r'[._]', match.group(1))[0]) >= 26:
+                  version = tuple(int(part) for part in re.split(r'[._]', match.group(1)))
+                  candidates.append((version, application))
+          print(sorted(candidates)[-1][1] + '/Contents/Developer' if candidates else subprocess.check_output(['xcode-select', '-p'], text=True).strip())
+          PYXCODE
+          )"
+          export DEVELOPER_DIR
+          printf 'DEVELOPER_DIR=%s\n' "$DEVELOPER_DIR" >> "$GITHUB_ENV"
+          xcodebuild -version > xcode-version.txt
+          python3 - <<'PYVERSION'
+          import re
+          match = re.search(r'Xcode (\d+)', open('xcode-version.txt').read())
+          assert match and int(match.group(1)) >= 26, 'macOS runner lacks required Xcode26+'
+          PYVERSION
+          xcrun --sdk "${{ matrix.sdk }}" --show-sdk-version > sdk-version.txt
+
+      - name: Resolve exact pinned native dependency and retain lock
+        shell: bash
+        run: |
+          set -euo pipefail
+          xcodebuild -resolvePackageDependencies -project distribution/ios-shell/ios/App/App.xcodeproj -scheme App -clonedSourcePackagesDirPath "$RUNNER_TEMP/urai-native-spm"
+          python3 - <<'PYLOCK'
+          import json
+          lock = json.load(open('distribution/ios-shell/ios/App/App.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved'))
+          core = [pin for pin in lock['pins'] if pin['identity'] == 'capacitor-swift-pm']
+          assert len(core) == 1
+          assert core[0]['state']['version'] == '8.5.2'
+          assert core[0]['state']['revision'] == '0b6882e9a3288342aacf36348e5a94e4f1dd7b13'
+          PYLOCK
+
+      - name: Compile Release with signing and provisioning disabled
+        shell: bash
+        run: |
+          set -euo pipefail
+          xcodebuild -project distribution/ios-shell/ios/App/App.xcodeproj -scheme App -configuration Release -sdk "${{ matrix.sdk }}" -destination "${{ matrix.destination }}" -derivedDataPath "native-derived-${{ matrix.sdk }}" -clonedSourcePackagesDirPath "$RUNNER_TEMP/urai-native-spm" -disableAutomaticPackageResolution -onlyUsePackageVersionsFromResolvedFile CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY= DEVELOPMENT_TEAM= build 2>&1 | tee "ios-xcodebuild-${{ matrix.sdk }}.log"
+          node scripts/prepare-native-static-provenance.mjs --directory "native-derived-${{ matrix.sdk }}/Build/Products/Release-${{ matrix.sdk }}/App.app/public" --source-sha "$URAI_EXACT_HEAD" --platform ios --workflow-run-id "$GITHUB_RUN_ID" --verify-only
+
+      - name: Hash actual compiler output and prepare bounded transport
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/prepare-ios-compiler-artifact.py --app "native-derived-${{ matrix.sdk }}/Build/Products/Release-${{ matrix.sdk }}/App.app" --package-lock distribution/ios-shell/ios/App/App.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved --xcode-version-file xcode-version.txt --sdk-version-file sdk-version.txt --compile-log "ios-xcodebuild-${{ matrix.sdk }}.log" --output-directory "ios-compiler-${{ matrix.sdk }}" --source-sha "$URAI_EXACT_HEAD" --workflow-run-id "$GITHUB_RUN_ID" --sdk "${{ matrix.sdk }}"
+
+      - name: Retain unprovisioned native compiler artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: urai-ios-compiler-${{ matrix.sdk }}-${{ env.URAI_EXACT_HEAD }}
+          path: ios-compiler-${{ matrix.sdk }}/urai-ios-${{ matrix.sdk }}-compiler.zip
+          compression-level: 0
+          retention-days: 30
+
+      - name: Retain actual compiler receipt and bounded transport manifest
+        uses: actions/upload-artifact@v4
+        with:
+          name: urai-ios-compiler-transport-${{ matrix.sdk }}-${{ env.URAI_EXACT_HEAD }}
+          path: |
+            ios-compiler-${{ matrix.sdk }}/ios-native-compiler-receipt.json
+            ios-compiler-${{ matrix.sdk }}/ios-compiler-transport.json
+          retention-days: 30
+
+      - name: Retain native compiler transport part 01
+        if: ${{ hashFiles(format('ios-compiler-{0}/urai-ios-{0}-compiler.zip.part-01', matrix.sdk)) != '' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: urai-ios-compiler-part-01-${{ matrix.sdk }}-${{ env.URAI_EXACT_HEAD }}
+          path: ios-compiler-${{ matrix.sdk }}/urai-ios-${{ matrix.sdk }}-compiler.zip.part-01
+          compression-level: 0
+          retention-days: 30
+
+      - name: Retain native compiler transport part 02
+        if: ${{ hashFiles(format('ios-compiler-{0}/urai-ios-{0}-compiler.zip.part-02', matrix.sdk)) != '' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: urai-ios-compiler-part-02-${{ matrix.sdk }}-${{ env.URAI_EXACT_HEAD }}
+          path: ios-compiler-${{ matrix.sdk }}/urai-ios-${{ matrix.sdk }}-compiler.zip.part-02
+          compression-level: 0
+          retention-days: 30
+
+      - name: Retain native compiler transport part 03
+        if: ${{ hashFiles(format('ios-compiler-{0}/urai-ios-{0}-compiler.zip.part-03', matrix.sdk)) != '' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: urai-ios-compiler-part-03-${{ matrix.sdk }}-${{ env.URAI_EXACT_HEAD }}
+          path: ios-compiler-${{ matrix.sdk }}/urai-ios-${{ matrix.sdk }}-compiler.zip.part-03
+          compression-level: 0
+          retention-days: 30
+
+      - name: Retain native compiler transport part 04
+        if: ${{ hashFiles(format('ios-compiler-{0}/urai-ios-{0}-compiler.zip.part-04', matrix.sdk)) != '' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: urai-ios-compiler-part-04-${{ matrix.sdk }}-${{ env.URAI_EXACT_HEAD }}
+          path: ios-compiler-${{ matrix.sdk }}/urai-ios-${{ matrix.sdk }}-compiler.zip.part-04
+          compression-level: 0
+          retention-days: 30
+
+      - name: Retain native compiler transport part 05
+        if: ${{ hashFiles(format('ios-compiler-{0}/urai-ios-{0}-compiler.zip.part-05', matrix.sdk)) != '' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: urai-ios-compiler-part-05-${{ matrix.sdk }}-${{ env.URAI_EXACT_HEAD }}
+          path: ios-compiler-${{ matrix.sdk }}/urai-ios-${{ matrix.sdk }}-compiler.zip.part-05
+          compression-level: 0
+          retention-days: 30
+
+      - name: Retain native compiler transport part 06
+        if: ${{ hashFiles(format('ios-compiler-{0}/urai-ios-{0}-compiler.zip.part-06', matrix.sdk)) != '' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: urai-ios-compiler-part-06-${{ matrix.sdk }}-${{ env.URAI_EXACT_HEAD }}
+          path: ios-compiler-${{ matrix.sdk }}/urai-ios-${{ matrix.sdk }}-compiler.zip.part-06
+          compression-level: 0
+          retention-days: 30
+
+      - name: Retain native compiler transport part 07
+        if: ${{ hashFiles(format('ios-compiler-{0}/urai-ios-{0}-compiler.zip.part-07', matrix.sdk)) != '' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: urai-ios-compiler-part-07-${{ matrix.sdk }}-${{ env.URAI_EXACT_HEAD }}
+          path: ios-compiler-${{ matrix.sdk }}/urai-ios-${{ matrix.sdk }}-compiler.zip.part-07
+          compression-level: 0
+          retention-days: 30
+
+      - name: Retain native compiler transport part 08
+        if: ${{ hashFiles(format('ios-compiler-{0}/urai-ios-{0}-compiler.zip.part-08', matrix.sdk)) != '' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: urai-ios-compiler-part-08-${{ matrix.sdk }}-${{ env.URAI_EXACT_HEAD }}
+          path: ios-compiler-${{ matrix.sdk }}/urai-ios-${{ matrix.sdk }}-compiler.zip.part-08
+          compression-level: 0
+          retention-days: 30
+
+      - name: Retain compiler failure diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: urai-ios-compiler-diagnostics-${{ matrix.sdk }}-${{ env.URAI_EXACT_HEAD }}
+          path: |
+            xcode-version.txt
+            sdk-version.txt
+            ios-xcodebuild-${{ matrix.sdk }}.log
+            distribution/ios-shell/ios/App/App.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved
+          if-no-files-found: warn
           retention-days: 30

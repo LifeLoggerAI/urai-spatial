@@ -98,3 +98,54 @@ test('desktop first-run guide leaves Home movement and dismissal targets reachab
   await page.keyboard.press('Enter')
   await expect(guide).toHaveCount(0)
 })
+
+test('reduced-motion Home rests between keyboard movement and look interactions', async ({ page }) => {
+  test.setTimeout(120_000)
+  await page.setViewportSize({ width: 1440, height: 900 })
+  await page.emulateMedia({ reducedMotion: 'reduce' })
+  await page.addInitScript(() => {
+    window.localStorage.setItem('urai:onboarding:v2:complete', '1')
+    const counters = window as typeof window & { homeDrawCalls: number }
+    counters.homeDrawCalls = 0
+    for (const prototype of [WebGLRenderingContext.prototype, WebGL2RenderingContext.prototype]) {
+      const draw = prototype.drawElements
+      prototype.drawElements = function (...args) { counters.homeDrawCalls += 1; return draw.apply(this, args) }
+    }
+  })
+  await page.goto('/home/', { waitUntil: 'domcontentloaded', timeout: 30_000 })
+  const home = page.locator('[data-home-primary-owner="asset-driven"]')
+  await expect(home).toHaveAttribute('data-home-assets-ready', 'true', { timeout: 45_000 })
+  const readDraws = () => page.evaluate(() => (window as typeof window & { homeDrawCalls: number }).homeDrawCalls)
+  await expect(home).toHaveAttribute('data-home-player-z', /^-?\d/)
+  let previous = await readDraws(), stableObservations = 0
+  await expect.poll(async () => {
+    const current = await readDraws(), difference = current - previous
+    previous = current
+    stableObservations = difference === 0 ? stableObservations + 1 : 0
+    return stableObservations
+  }, { intervals: [500, 500, 500], timeout: 15_000 }).toBe(3)
+
+  const startZ = Number(await home.getAttribute('data-home-player-z'))
+  await page.evaluate(() => { if (document.activeElement instanceof HTMLElement) document.activeElement.blur() })
+  await page.keyboard.down('KeyW')
+  try {
+    await expect.poll(async () => startZ - Number(await home.getAttribute('data-home-player-z')), { timeout: 15_000 }).toBeGreaterThan(0.1)
+  } finally { await page.keyboard.up('KeyW') }
+  const movingDraws = await readDraws()
+  expect(movingDraws).toBeGreaterThan(previous)
+  previous = movingDraws
+  stableObservations = 0
+  await expect.poll(async () => {
+    const current = await readDraws(), difference = current - previous
+    previous = current
+    stableObservations = difference === 0 ? stableObservations + 1 : 0
+    return stableObservations
+  }, { intervals: [500, 500, 500], timeout: 15_000 }).toBe(3)
+
+  const restingDraws = previous
+  await page.mouse.move(700, 420)
+  await page.mouse.down()
+  await page.mouse.move(760, 420, { steps: 4 })
+  await page.mouse.up()
+  await expect.poll(readDraws, { timeout: 15_000 }).toBeGreaterThan(restingDraws)
+})

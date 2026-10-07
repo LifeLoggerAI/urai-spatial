@@ -633,7 +633,8 @@ function Thresholds({ onGround, onLifeMap }: { onGround: () => void; onLifeMap: 
 }
 
 function PlayerRig({ input, yaw, pitch, target, avatar, onNearby, groundDescent, reducedMotion, onGroundComplete, onTransitionSequence }: { input: MovementInput; yaw: MutableRefObject<number>; pitch: MutableRefObject<number>; target: MutableRefObject<THREE.Vector3 | null>; avatar: MutableRefObject<THREE.Group | null>; onNearby: (value: Nearby) => void; groundDescent: boolean; reducedMotion: boolean; onGroundComplete: () => void; onTransitionSequence: (value: TransitionSequence) => void }) {
-  const { camera, size } = useThree()
+  const { camera, size, invalidate, gl } = useThree()
+  const owner = useRef<HTMLElement | null>(null)
   const position = useRef(SPAWN.clone())
   const velocity = useRef(new THREE.Vector3())
   const lastNearby = useRef<Nearby>(null)
@@ -653,6 +654,26 @@ function PlayerRig({ input, yaw, pitch, target, avatar, onNearby, groundDescent,
     camera.lookAt(look.current.x, position.current.y + 1.22 + pitch.current, look.current.z)
   }, [camera, pitch, size.height, size.width, yaw])
   useLayoutEffect(() => place(), [place])
+  useEffect(() => { owner.current = gl.domElement.closest<HTMLElement>('[data-home-primary-owner="asset-driven"]') }, [gl])
+
+  useEffect(() => {
+    if (!reducedMotion) return
+    // Ref-based input wakes the renderer only while interaction or settling needs it.
+    let frame = 0
+    let previousYaw = yaw.current
+    let previousPitch = pitch.current
+    const observeInput = () => {
+      const looking = yaw.current !== previousYaw || pitch.current !== previousPitch
+      previousYaw = yaw.current
+      previousPitch = pitch.current
+      const moving = input.keys.current.size > 0 || input.virtualX.current !== 0 || input.virtualZ.current !== 0
+      const settling = velocity.current.lengthSq() > 0.000001 || camera.position.distanceToSquared(desired.current) > 0.000001
+      if (document.visibilityState === 'visible' && (moving || looking || settling || target.current || groundDescent || useSceneStore.getState().phase === 'ASCENT')) invalidate()
+      frame = window.requestAnimationFrame(observeInput)
+    }
+    frame = window.requestAnimationFrame(observeInput)
+    return () => window.cancelAnimationFrame(frame)
+  }, [camera, groundDescent, input.keys, input.virtualX, input.virtualZ, invalidate, pitch, reducedMotion, target, yaw])
 
   useFrame(({ clock }, delta) => {
     const store = useSceneStore.getState()
@@ -684,6 +705,12 @@ function PlayerRig({ input, yaw, pitch, target, avatar, onNearby, groundDescent,
     stepEmbodiedMotion({ delta, input, yaw: yaw.current, position: position.current, velocity: velocity.current, target, bounds: HOME_BOUNDS, obstacles: HOME_NAVIGATION_OBSTACLES, speed: 3.15, acceleration: 9, deceleration: 12 })
     resolveHomeSolidPenetration(position.current)
     position.current.y = homeWalkSurfaceHeight(position.current.x, position.current.z)
+    // Publish actual locomotion to the existing Home telemetry owner.
+    if (owner.current) {
+      const x = position.current.x.toFixed(4), z = position.current.z.toFixed(4)
+      if (owner.current.dataset.homePlayerX !== x) owner.current.dataset.homePlayerX = x
+      if (owner.current.dataset.homePlayerZ !== z) owner.current.dataset.homePlayerZ = z
+    }
     if (target.current && position.current.distanceTo(target.current) < .2) target.current = null
     if (avatar.current) { avatar.current.position.copy(position.current); avatar.current.rotation.y = yaw.current }
     const portrait = size.height > size.width
@@ -719,8 +746,14 @@ function PlayerRig({ input, yaw, pitch, target, avatar, onNearby, groundDescent,
 }
 
 function SceneReady({ onReady }: { onReady: () => void }) {
-  const { scene } = useThree(); const frames = useRef(0); const done = useRef(false)
-  useFrame(() => { if (done.current || ++frames.current < 4) return; const required = ['home-authored-terrain','home-authored-embodied-self','home-orb-sanctuary','home-ground-environmental-threshold','home-life-map-sky-lookout','home-mountain-horizon','home-living-vegetation','home-sanctuary-pavilion','home-sanctuary-path']; if (!required.every((name) => scene.getObjectByName(name))) return; done.current = true; onReady() })
+  const { scene, invalidate } = useThree(); const frames = useRef(0); const done = useRef(false)
+  useFrame(() => {
+    if (done.current) return
+    const required = ['home-authored-terrain','home-authored-embodied-self','home-orb-sanctuary','home-ground-environmental-threshold','home-life-map-sky-lookout','home-mountain-horizon','home-living-vegetation','home-sanctuary-pavilion','home-sanctuary-path']
+    if (++frames.current < 4 || !required.every((name) => scene.getObjectByName(name))) { invalidate(); return }
+    done.current = true
+    onReady()
+  })
   return null
 }
 
@@ -839,7 +872,7 @@ export function HomeWorldProductionPolished({ onOrbOpen = requestUraiWorldOrbOpe
   const context = phase === 'ASCENT' ? 'Ascending through the sky' : groundDescent ? 'Descending into Ground' : nearby === 'orb' ? 'The Orb is here' : nearby === 'ground' ? 'The path descends' : nearby === 'life-map' ? 'Look to the sky' : null
 
   return <main className={`${styles.world} urai-asset-home-world`} data-urai-home-production data-urai-true-3d="true" data-home-primary-owner="asset-driven" data-home-real-world-first="true" data-home-visible-world="authored-coherent-three-dimensional-sanctuary" data-home-world-character="believable-natural-inhabitable-environment" data-home-visible-portals="false" data-home-transition-affordances="ground-environmental-descent life-map-sky-lookout" data-home-provider-environment={HOME_PROVIDER_ENVIRONMENT} data-home-provider-role="legacy-placeholder-metadata-only" data-home-provider-regions="not-rendered" data-home-generated-scenery="suppressed" data-home-physical-base="authored-coherent-world" data-home-visual-ownership="three-dimensional-geometry" data-home-desktop-mobile-world="same-scene" data-home-embodied-self="privacy-preserving-shadow" data-home-movement="walk-keyboard-click-touch" data-home-pointer-lock="false" data-home-audio="production-opus-consent-controlled" data-home-assets-ready={ready ? 'true' : 'false'} data-home-runtime-assets="home-entry-chamber-v1.glb polyhaven-fern-02-geometry-v1.glb local-three-dimensional-terrain living-orb reflecting-water" data-home-authored-regions="home-canonical-sanctuary-structure home-sanctuary-geometry home-mountain-horizon home-living-vegetation home-reflecting-water" data-home-nearby={nearby ?? 'none'} data-home-camera-mode={groundDescent ? 'descent' : phase === 'ASCENT' ? 'ascent' : dragging ? 'look' : 'embodied-first-person'} data-home-scene-phase={groundDescent ? 'GROUND_DESCENT' : phase} data-home-ascent-progress={phase === 'ASCENT' ? progress.toFixed(3) : '0.000'} data-home-input-locked={transitioning || inputLocked ? 'true' : 'false'} data-home-portal-sequence={portalSequence} data-home-portal-lifecycle="environmental-approach-traversal-arrival" data-home-review-fixture={reviewFixture} data-home-orb-state={orbState} data-home-orb-clip={ORB_CLIPS[orbState]} data-home-orb-animation={orbSensory.animation} data-home-orb-material={orbSensory.material} data-home-orb-movement={orbSensory.movement} data-home-orb-caption={orbSensory.caption} data-home-orb-reduced-motion={reducedMotion ? 'true' : 'false'} data-home-orb-reduced-stimulation={reducedStimulation ? 'true' : 'false'} data-home-orb-playback={orbSensory.movement === 'settled' ? 'stopped' : 'playing'} data-home-animation-owner={HOME_SCANNED_COMPOSITION_V1} data-testid="home-visible-navigable-sanctuary-world" style={{ position:'relative', overflow:'hidden', background:'#172c27' }} {...look}>
-    <div style={{ position:'absolute', inset:0, zIndex:1 }}><Canvas className={styles.canvas} dpr={[1,Math.min(1.35,quality.pixelRatioMax)]} shadows={quality.shadows} frameloop={quality.documentVisible ? 'always' : 'never'} camera={{ position:[SPAWN.x,1.68,SPAWN.z], fov:50, near:.05, far:300 }} gl={{ antialias:quality.antialias, alpha:false, powerPreference:'high-performance' }} onCreated={({ gl }) => { gl.outputColorSpace = THREE.SRGBColorSpace; gl.toneMapping = THREE.ACESFilmicToneMapping; gl.toneMappingExposure = 1.22; gl.shadowMap.type = THREE.PCFSoftShadowMap; setCanvasReady(true) }}><HomeSceneAssetBoundary onFailure={onSceneFailure}><Scene input={input} yaw={yaw} pitch={pitch} target={target} avatar={avatar} onNearby={setNearby} onOrbOpen={openOrb} onGround={startGround} onGroundComplete={finishGround} onLifeMap={startLifeMap} onReady={() => setSceneReady(true)} onTransitionSequence={setPortalSequence} groundDescent={groundDescent} reducedMotion={reducedMotion} reducedStimulation={reducedStimulation} orbState={orbState} /></HomeSceneAssetBoundary></Canvas></div>
+    <div style={{ position:'absolute', inset:0, zIndex:1 }}><Canvas className={styles.canvas} dpr={[1,Math.min(1.35,quality.pixelRatioMax)]} shadows={quality.shadows} frameloop={quality.documentVisible ? (reducedMotion ? 'demand' : 'always') : 'never'} camera={{ position:[SPAWN.x,1.68,SPAWN.z], fov:50, near:.05, far:300 }} gl={{ antialias:quality.antialias, alpha:false, powerPreference:'high-performance' }} onCreated={({ gl }) => { gl.outputColorSpace = THREE.SRGBColorSpace; gl.toneMapping = THREE.ACESFilmicToneMapping; gl.toneMappingExposure = 1.22; gl.shadowMap.type = THREE.PCFSoftShadowMap; setCanvasReady(true) }}><HomeSceneAssetBoundary onFailure={onSceneFailure}><Scene input={input} yaw={yaw} pitch={pitch} target={target} avatar={avatar} onNearby={setNearby} onOrbOpen={openOrb} onGround={startGround} onGroundComplete={finishGround} onLifeMap={startLifeMap} onReady={() => setSceneReady(true)} onTransitionSequence={setPortalSequence} groundDescent={groundDescent} reducedMotion={reducedMotion} reducedStimulation={reducedStimulation} orbState={orbState} /></HomeSceneAssetBoundary></Canvas></div>
     <header className={styles.brand} aria-label="URAI" style={{ zIndex:3 }}><strong>URAI</strong></header>
     {context ? <div className={`${styles.worldHint} home-world-context`} role="status" aria-live="polite" style={{ zIndex:3 }}>{context}</div> : null}
     {!transitioning && mobileControls ? <MobileMovementPad input={input} label="Home movement controls" /> : null}
