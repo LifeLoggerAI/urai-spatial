@@ -3,6 +3,7 @@ import * as admin from 'firebase-admin'
 import { defineSecret } from 'firebase-functions/params'
 import { onRequest } from 'firebase-functions/v2/https'
 import { contentLanguage, URAI_CONTENT_LANGUAGE_TAGS } from '../../../packages/localization/src/contentLanguage'
+import { paidSpatialFetch, SpatialSpendError, SPATIAL_SPEND_WORKER_TOKENS_JSON } from './protectedProviderSpend'
 
 if (!admin.apps.length) admin.initializeApp()
 
@@ -123,7 +124,7 @@ function readBody(request: { body?: unknown }, maximumBytes: number) {
 }
 
 function sendError(response: { status: (code: number) => { json: (value: unknown) => void } }, error: unknown) {
-  const boundary = error instanceof ProviderError
+  const boundary = error instanceof ProviderError || error instanceof SpatialSpendError
     ? error
     : new ProviderError(500, 'PROVIDER_BOUNDARY_FAILURE', 'Provider boundary is unavailable.')
   response.status(boundary.status).json({ error: boundary.code, message: boundary.message })
@@ -190,7 +191,7 @@ export const openAiOrbProvider = onRequest({
   timeoutSeconds: 60,
   memory: '512MiB',
   cors: WEB_CLIENT_ORIGINS,
-  secrets: [OPENAI_API_KEY],
+  secrets: [OPENAI_API_KEY, SPATIAL_SPEND_WORKER_TOKENS_JSON],
 }, async (request, response) => {
   const startedAt = Date.now()
   let uid = ''
@@ -212,7 +213,7 @@ export const openAiOrbProvider = onRequest({
     const apiKey = OPENAI_API_KEY.value()
     const moderationController = new AbortController()
     const moderationTimeout = setTimeout(() => moderationController.abort(), 8_000)
-    const moderation = await fetch('https://api.openai.com/v1/moderations', {
+    const moderation = await paidSpatialFetch(db, uid, 'orb-moderation', 'openai', 'omni-moderation-latest', body, 'https://api.openai.com/v1/moderations', {
       method: 'POST',
       headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({ model: 'omni-moderation-latest', input: message }),
@@ -226,7 +227,8 @@ export const openAiOrbProvider = onRequest({
     const timeout = setTimeout(() => controller.abort(), 30_000)
     request.on('close', () => controller.abort())
     const recent = context.map((item, index) => `${index + 1}. ${item.role}: ${item.content}`).join('\n')
-    const upstream = await fetch('https://api.openai.com/v1/responses', {
+    const model = process.env.OPENAI_ORB_MODEL || 'gpt-5'
+    const upstream = await paidSpatialFetch(db, uid, 'orb-reasoning', 'openai', model, body, 'https://api.openai.com/v1/responses', {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${apiKey}`,
@@ -235,7 +237,7 @@ export const openAiOrbProvider = onRequest({
         'Idempotency-Key': upstreamIdempotencyKey,
       },
       body: JSON.stringify({
-        model: process.env.OPENAI_ORB_MODEL || 'gpt-5',
+        model,
         instructions: [
           'You are the live UrAi Orb companion inside a private spatial life-reflection product.',
           'Be warm, calm, concise, optional, and non-diagnostic.',
@@ -309,7 +311,7 @@ export const elevenLabsVoiceProvider = onRequest({
   timeoutSeconds: 30,
   memory: '256MiB',
   cors: WEB_CLIENT_ORIGINS,
-  secrets: [ELEVENLABS_API_KEY],
+  secrets: [ELEVENLABS_API_KEY, SPATIAL_SPEND_WORKER_TOKENS_JSON],
 }, async (request, response) => {
   const startedAt = Date.now()
   let uid = ''
@@ -334,12 +336,13 @@ export const elevenLabsVoiceProvider = onRequest({
     const controller = new AbortController()
     const timeout = setTimeout(() => controller.abort(), 15_000)
     request.on('close', () => controller.abort())
-    const upstream = await fetch(endpoint, {
+    const model = process.env.ELEVENLABS_MODEL_ID || 'eleven_multilingual_v2'
+    const upstream = await paidSpatialFetch(db, uid, 'narrator-voice', 'elevenlabs', model, body, endpoint, {
       method: 'POST',
       headers: { 'xi-api-key': ELEVENLABS_API_KEY.value(), 'Content-Type': 'application/json', Accept: 'audio/mpeg' },
       body: JSON.stringify({
         text,
-        model_id: process.env.ELEVENLABS_MODEL_ID || 'eleven_multilingual_v2',
+        model_id: model,
         voice_settings: { stability: 0.66, similarity_boost: 0.78, style: 0.18, use_speaker_boost: true },
       }),
       signal: controller.signal,
@@ -365,3 +368,4 @@ export const elevenLabsVoiceProvider = onRequest({
     else response.end()
   }
 })
+

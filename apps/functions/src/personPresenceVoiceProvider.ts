@@ -2,6 +2,7 @@ import * as admin from 'firebase-admin'
 import { defineSecret } from 'firebase-functions/params'
 import { onRequest } from 'firebase-functions/v2/https'
 import { loadPersonPresenceAuthority, requirePersonPresenceRenderBinding, PersonPresenceAuthorityError } from './personPresenceAuthority'
+import { paidSpatialFetch, SpatialSpendError, SPATIAL_SPEND_WORKER_TOKENS_JSON } from './protectedProviderSpend'
 
 if (!admin.apps.length) admin.initializeApp()
 
@@ -58,7 +59,7 @@ async function requireConsent(uid:string,explicit:boolean){
 }
 
 export const personPresenceVoiceProvider=onRequest({
-  region:REGION,timeoutSeconds:30,memory:'256MiB',cors:WEB_CLIENT_ORIGINS,secrets:[ELEVENLABS_API_KEY],
+  region:REGION,timeoutSeconds:30,memory:'256MiB',cors:WEB_CLIENT_ORIGINS,secrets:[ELEVENLABS_API_KEY,SPATIAL_SPEND_WORKER_TOKENS_JSON],
 },async(request,response)=>{
   let controller:AbortController|undefined,timeout:ReturnType<typeof setTimeout>|undefined,monitor:ReturnType<typeof setInterval>|undefined
   try{
@@ -96,7 +97,7 @@ export const personPresenceVoiceProvider=onRequest({
     monitor=setInterval(()=>{recheck().catch(()=>upstreamController.abort())},5_000)
     response.on('close',()=>{if(!response.writableEnded)upstreamController.abort()})
     await recheck()
-    const upstream=await fetch(endpoint,{
+    const upstream=await paidSpatialFetch(db,uid,'person-voice','elevenlabs',modelId,{request:body,authority_digest:authority.authorityDigest,render_binding_sha256:bindingHash},endpoint,{
       method:'POST',
       headers:{'xi-api-key':ELEVENLABS_API_KEY.value(),'Content-Type':'application/json',Accept:'audio/mpeg'},
       body:JSON.stringify({text,model_id:modelId,voice_settings:{stability:0.68,similarity_boost:0.84,style:0.12,use_speaker_boost:true}}),
@@ -118,8 +119,9 @@ export const personPresenceVoiceProvider=onRequest({
     response.setHeader('X-URAI-Presence-Authority',authority.authorityDigest)
     response.end(Buffer.concat(chunks,total))
   }catch(error){
-    const e=error instanceof VoiceError?error:error instanceof PersonPresenceAuthorityError?new VoiceError(409,error.code,'Person voice source authority must be refreshed.'):new VoiceError(500,'PERSON_VOICE_FAILURE','Person voice is temporarily unavailable.')
+    const e=error instanceof VoiceError||error instanceof SpatialSpendError?error:error instanceof PersonPresenceAuthorityError?new VoiceError(409,error.code,'Person voice source authority must be refreshed.'):new VoiceError(500,'PERSON_VOICE_FAILURE','Person voice is temporarily unavailable.')
     if(!response.headersSent)response.status(e.status).json({error:e.code,message:e.message})
     else response.end()
   }finally{if(timeout)clearTimeout(timeout);if(monitor)clearInterval(monitor);controller?.abort()}
 })
+

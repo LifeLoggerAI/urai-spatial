@@ -3,6 +3,7 @@ import * as admin from 'firebase-admin'
 import { defineSecret } from 'firebase-functions/params'
 import { onRequest } from 'firebase-functions/v2/https'
 import { contentLanguage, URAI_CONTENT_LANGUAGE_TAGS } from '../../../packages/localization/src/contentLanguage'
+import { paidSpatialFetch, SpatialSpendError, SPATIAL_SPEND_WORKER_TOKENS_JSON } from './protectedProviderSpend'
 
 if (!admin.apps.length) admin.initializeApp()
 
@@ -170,7 +171,7 @@ function readBody(request: { body?: unknown }, maximumBytes: number) {
 }
 
 function sendError(response: { status: (code: number) => { json: (value: unknown) => void } }, error: unknown) {
-  const boundary = error instanceof ProviderError
+  const boundary = error instanceof ProviderError || error instanceof SpatialSpendError
     ? error
     : new ProviderError(500, 'ADAM_PROVIDER_BOUNDARY_FAILURE', 'Adam is temporarily unavailable.')
   response.status(boundary.status).json({ error: boundary.code, message: boundary.message })
@@ -316,7 +317,7 @@ export const adamPresenceProvider = onRequest({
   timeoutSeconds: 60,
   memory: '512MiB',
   cors: WEB_CLIENT_ORIGINS,
-  secrets: [OPENAI_API_KEY],
+  secrets: [OPENAI_API_KEY, SPATIAL_SPEND_WORKER_TOKENS_JSON],
 }, async (request, response) => {
   const startedAt = Date.now()
   let uid = ''
@@ -342,7 +343,7 @@ export const adamPresenceProvider = onRequest({
     const apiKey = OPENAI_API_KEY.value()
     const moderationController = new AbortController()
     const moderationTimeout = setTimeout(() => moderationController.abort(), 8_000)
-    const moderation = await fetch('https://api.openai.com/v1/moderations', {
+    const moderation = await paidSpatialFetch(db, uid, 'adam-moderation', 'openai', 'omni-moderation-latest', body, 'https://api.openai.com/v1/moderations', {
       method: 'POST',
       headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({ model: 'omni-moderation-latest', input: message }),
@@ -356,7 +357,8 @@ export const adamPresenceProvider = onRequest({
     const controller = new AbortController()
     const timeout = setTimeout(() => controller.abort(), 32_000)
     response.on('close', () => { if (!response.writableEnded) controller.abort() })
-    const upstream = await fetch('https://api.openai.com/v1/responses', {
+    const model = process.env.OPENAI_ADAM_MODEL || process.env.OPENAI_ORB_MODEL || 'gpt-5'
+    const upstream = await paidSpatialFetch(db, uid, 'adam-reasoning', 'openai', model, body, 'https://api.openai.com/v1/responses', {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${apiKey}`,
@@ -365,7 +367,7 @@ export const adamPresenceProvider = onRequest({
         'Idempotency-Key': upstreamIdempotencyKey,
       },
       body: JSON.stringify({
-        model: process.env.OPENAI_ADAM_MODEL || process.env.OPENAI_ORB_MODEL || 'gpt-5',
+        model,
         instructions: [
           'You are Adam, the governed Founder digital presence inside UrAi.',
           'You represent founder Adam Clamp through approved product knowledge and founder material, but you are not the live human Adam in this moment.',
@@ -464,7 +466,7 @@ export const adamPresenceProvider = onRequest({
     if (uid) await recordTelemetry({ uid, provider: 'openai', lane: 'adam', outcome: 'failure', inputUnits, latencyMs: Date.now() - startedAt })
     if (!response.headersSent) sendError(response, error)
     else {
-      const boundary = error instanceof ProviderError
+      const boundary = error instanceof ProviderError || error instanceof SpatialSpendError
         ? error
         : new ProviderError(500, 'ADAM_PROVIDER_BOUNDARY_FAILURE', 'Adam is temporarily unavailable.')
       response.end(`${JSON.stringify({ type: 'error', code: boundary.code, message: boundary.message })}\n`)
@@ -477,7 +479,7 @@ export const adamFounderVoiceProvider = onRequest({
   timeoutSeconds: 30,
   memory: '256MiB',
   cors: WEB_CLIENT_ORIGINS,
-  secrets: [ELEVENLABS_API_KEY],
+  secrets: [ELEVENLABS_API_KEY, SPATIAL_SPEND_WORKER_TOKENS_JSON],
 }, async (request, response) => {
   const startedAt = Date.now()
   let uid = ''
@@ -508,12 +510,13 @@ export const adamFounderVoiceProvider = onRequest({
     const controller = new AbortController()
     const timeout = setTimeout(() => controller.abort(), 15_000)
     response.on('close', () => { if (!response.writableEnded) controller.abort() })
-    const upstream = await fetch(endpoint, {
+    const model = process.env.ELEVENLABS_FOUNDER_MODEL_ID || process.env.ELEVENLABS_MODEL_ID || 'eleven_multilingual_v2'
+    const upstream = await paidSpatialFetch(db, uid, 'founder-voice', 'elevenlabs', model, body, endpoint, {
       method: 'POST',
       headers: { 'xi-api-key': ELEVENLABS_API_KEY.value(), 'Content-Type': 'application/json', Accept: 'audio/mpeg' },
       body: JSON.stringify({
         text,
-        model_id: process.env.ELEVENLABS_FOUNDER_MODEL_ID || process.env.ELEVENLABS_MODEL_ID || 'eleven_multilingual_v2',
+        model_id: model,
         voice_settings: { stability: 0.68, similarity_boost: 0.84, style: 0.14, use_speaker_boost: true },
       }),
       signal: controller.signal,
@@ -548,3 +551,4 @@ export const adamFounderVoiceProvider = onRequest({
     else response.end()
   }
 })
+
