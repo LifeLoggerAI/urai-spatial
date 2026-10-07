@@ -4,6 +4,7 @@ import { revokePersonPresenceConsentDerivatives } from './personPresenceAuthorit
 import { createHash, randomBytes } from 'node:crypto'
 import { pipeline } from 'node:stream/promises'
 import { exportPrivateLifeModelHandles, tombstonePrivateLifeModelInputs } from './lifeModelPrivateInputs'
+import { collectExportPages, createExportReadBudget, requireExportReadBudget, chargeExportValue, EXPORT_RESOURCE_LIMITS, type ExportReadBudget } from './exportPagination'
 
 if (!admin.apps.length) admin.initializeApp()
 
@@ -59,7 +60,9 @@ type ConsentPolicy = {
 const REAUTH_WINDOW_SECONDS = 5 * 60
 const EXPORT_EXPIRY_MS = 15 * 60 * 1000
 const ACCOUNT_GRACE_MS = 24 * 60 * 60 * 1000
-const MAX_EXPORT_DOCUMENTS_PER_COLLECTION = 500
+const MAX_EXPORT_RUNTIME_ASSETS = 1000
+const MAX_EXPORT_RUNTIME_BYTES = 512 * 1024 * 1024
+type ExportReadContext = { transaction: FirebaseFirestore.Transaction; budget: ExportReadBudget }
 
 function requireUid(context: functions.https.CallableContext): string {
   const uid = context.auth?.uid
@@ -491,30 +494,29 @@ function redactSecrets(value: unknown): unknown {
   return output
 }
 
-async function collectionDocuments(ref: FirebaseFirestore.CollectionReference) {
-  return boundedCollectionDocuments(ref, 'scoped-collection')
+async function collectionDocuments(ref: FirebaseFirestore.CollectionReference, context: ExportReadContext) {
+  return boundedCollectionDocuments(ref, context)
 }
 
-async function boundedCollectionDocuments(ref: FirebaseFirestore.CollectionReference, label: string) {
-  const snapshot = await ref.limit(MAX_EXPORT_DOCUMENTS_PER_COLLECTION + 1).get()
-  if (snapshot.size > MAX_EXPORT_DOCUMENTS_PER_COLLECTION) {
-    throw new Error(`EXPORT_COLLECTION_LIMIT_EXCEEDED:${label}`)
+async function boundedCollectionDocuments(ref: FirebaseFirestore.CollectionReference, context: ExportReadContext) {
+  return collectExportPages(context.transaction, ref, context.budget, item => ({ ...redactSecrets(item.data()) as JsonMap, id: item.id }))
+}
+
+async function scenarioExportTree(userRef: FirebaseFirestore.DocumentReference, context: ExportReadContext) {
+  const scenarios = await collectionDocuments(userRef.collection('scenarios'), context)
+  const output: JsonMap[] = []
+  // Sequential nested reads share the same snapshot and finite resource budget.
+  for (const scenario of scenarios) {
+    const ref = userRef.collection('scenarios').doc(String(scenario.id))
+    output.push({ ...scenario,
+      basis: await collectionDocuments(ref.collection('basis'), context),
+      branches: await collectionDocuments(ref.collection('branches'), context),
+      comparisons: await collectionDocuments(ref.collection('comparisons'), context),
+      outcomeObservations: await collectionDocuments(ref.collection('outcomeObservations'), context),
+      calibration: await collectionDocuments(ref.collection('calibration'), context),
+    })
   }
-  return snapshot.docs.map((item) => ({ id: item.id, ...redactSecrets(item.data()) as JsonMap }))
-}
-
-async function scenarioExportTree(userRef: FirebaseFirestore.DocumentReference) {
-  const scenarios = await userRef.collection('scenarios').limit(101).get()
-  if (scenarios.size > 100) throw new Error('SCENARIO_EXPORT_LIMIT_EXCEEDED')
-  return Promise.all(scenarios.docs.map(async (scenario) => ({
-    id: scenario.id,
-    ...redactSecrets(scenario.data()) as JsonMap,
-    basis: await boundedCollectionDocuments(scenario.ref.collection('basis'), `scenarios/${scenario.id}/basis`),
-    branches: await boundedCollectionDocuments(scenario.ref.collection('branches'), `scenarios/${scenario.id}/branches`),
-    comparisons: await boundedCollectionDocuments(scenario.ref.collection('comparisons'), `scenarios/${scenario.id}/comparisons`),
-    outcomeObservations: await boundedCollectionDocuments(scenario.ref.collection('outcomeObservations'), `scenarios/${scenario.id}/outcomeObservations`),
-    calibration: await boundedCollectionDocuments(scenario.ref.collection('calibration'), `scenarios/${scenario.id}/calibration`),
-  })))
+  return output
 }
 
 type CapturedRealityRuntimeExport = {
@@ -537,20 +539,24 @@ function requireCapturedRealityExportObject(uid: string, assetId: string, value:
 }
 
 async function copyCapturedRealityRuntimeExports(
-  userRef: FirebaseFirestore.DocumentReference,
+  assets: JsonMap[],
   uid: string,
   basePath: string,
+  budget: ExportReadBudget,
+  requireCurrentAuthority: () => Promise<unknown>,
 ): Promise<CapturedRealityRuntimeExport[]> {
   const bucket = admin.storage().bucket()
-  const assets = await userRef.collection('capturedRealityAssets').limit(MAX_EXPORT_DOCUMENTS_PER_COLLECTION + 1).get()
-  if (assets.size > MAX_EXPORT_DOCUMENTS_PER_COLLECTION) throw new Error('CAPTURED_REALITY_EXPORT_COLLECTION_LIMIT_EXCEEDED')
   const exports: CapturedRealityRuntimeExport[] = []
-  for (const asset of assets.docs) {
-    if (asset.get('ownerId') !== uid) continue
-    const runtimeObject = asset.get('runtimeObject')
+  let totalBytes = 0
+  for (const asset of assets) {
+    requireExportReadBudget(budget)
+    await requireCurrentAuthority()
+    if (asset.ownerId !== uid) continue
+    const runtimeObject = asset.runtimeObject
     if (typeof runtimeObject !== 'string' || !runtimeObject) continue
-    const objectPath = requireCapturedRealityExportObject(uid, asset.id, runtimeObject)
-    const runtimeSha256 = String(asset.get('runtimeSha256') ?? '').toLowerCase()
+    const assetId = String(asset.id)
+    const objectPath = requireCapturedRealityExportObject(uid, assetId, runtimeObject)
+    const runtimeSha256 = String(asset.runtimeSha256 ?? '').toLowerCase()
     if (!/^[a-f0-9]{64}$/.test(runtimeSha256) || !objectPath.endsWith(`/${runtimeSha256}.splat`)) {
       throw new Error('CAPTURED_REALITY_EXPORT_HASH_BINDING_INVALID')
     }
@@ -559,7 +565,7 @@ async function copyCapturedRealityRuntimeExports(
     const [metadata] = await sourceFile.getMetadata()
     const storageGeneration = String(metadata.generation ?? '')
     const storedSha256 = String(metadata.metadata?.uraiRuntimeSha256 ?? '').toLowerCase()
-    const expectedGeneration = String(asset.get('runtimeStorageGeneration') ?? '')
+    const expectedGeneration = String(asset.runtimeStorageGeneration ?? '')
     if (
       !/^\d+$/.test(storageGeneration) ||
       storedSha256 !== runtimeSha256 ||
@@ -572,8 +578,10 @@ async function copyCapturedRealityRuntimeExports(
     if (!Number.isSafeInteger(runtimeBytes) || runtimeBytes <= 0) {
       throw new Error('CAPTURED_REALITY_EXPORT_RUNTIME_SIZE_INVALID')
     }
+    totalBytes += runtimeBytes
+    if (exports.length >= MAX_EXPORT_RUNTIME_ASSETS || totalBytes > MAX_EXPORT_RUNTIME_BYTES) throw new Error('EXPORT_RESOURCE_BUDGET_EXCEEDED')
 
-    const relativePath = `spatial/captured-reality/${asset.id}/${runtimeSha256}.splat`
+    const relativePath = `spatial/captured-reality/${assetId}/${runtimeSha256}.splat`
     const destination = bucket.file(`${basePath}/${relativePath}`)
     const immutableSource = bucket.file(objectPath, { generation: storageGeneration })
     const digest = createHash('sha256')
@@ -581,6 +589,8 @@ async function copyCapturedRealityRuntimeExports(
     const sourceStream = immutableSource.createReadStream()
     try {
       for await (const incoming of sourceStream) {
+        requireExportReadBudget(budget)
+        await requireCurrentAuthority()
         const bytes = Buffer.from(incoming)
         sourceBytes += bytes.length
         if (!Number.isSafeInteger(sourceBytes) || sourceBytes > runtimeBytes) throw new Error('CAPTURED_REALITY_EXPORT_RUNTIME_SIZE_CHANGED')
@@ -588,6 +598,7 @@ async function copyCapturedRealityRuntimeExports(
       }
     } finally { sourceStream.destroy() }
     if (sourceBytes !== runtimeBytes || digest.digest('hex') !== runtimeSha256) throw new Error('CAPTURED_REALITY_EXPORT_RUNTIME_CHECKSUM_CHANGED')
+    await requireCurrentAuthority()
     await immutableSource.copy(destination)
     await destination.setMetadata({ contentType: 'application/octet-stream', metadata: { ownerUid: uid, checksum: runtimeSha256 } })
     const [copiedMetadata] = await destination.getMetadata()
@@ -595,7 +606,7 @@ async function copyCapturedRealityRuntimeExports(
     if (!/^[1-9][0-9]{0,39}$/.test(exportGeneration) || Number(copiedMetadata.size) !== runtimeBytes
       || copiedMetadata.contentType !== 'application/octet-stream') throw new Error('CAPTURED_REALITY_EXPORT_GENERATION_REQUIRED')
     exports.push({
-      assetId: asset.id,
+      assetId,
       objectPath: `${basePath}/${relativePath}`,
       relativePath,
       runtimeSha256,
@@ -742,64 +753,82 @@ async function buildExport(snapshot: FirebaseFirestore.DocumentSnapshot) {
       data: {},
     }
     const data = payload.data as JsonMap
+    const budget = createExportReadBudget()
+    let runtimeInventory: JsonMap[] = []
+    let capturedRealityRuntimeExports: CapturedRealityRuntimeExport[] = []
+    await db.runTransaction(async transaction => {
+    await readBoundExport(transaction, uid, snapshot.id, 'preparing')
+    const context = { transaction, budget }
     if (scopes.includes('profile')) {
-      const profile = await userRef.get()
+      const profile = await transaction.get(userRef)
       data.profile = profile.exists ? redactSecrets(profile.data()) : null
+      chargeExportValue(budget, data.profile)
     }
     if (scopes.includes('consent')) {
-      data.privacyPolicy = await collectionDocuments(userRef.collection('privacyPolicy'))
-      data.privacyRuntime = await collectionDocuments(userRef.collection('privacyRuntime'))
+      data.privacyPolicy = await collectionDocuments(userRef.collection('privacyPolicy'), context)
+      data.privacyRuntime = await collectionDocuments(userRef.collection('privacyRuntime'), context)
     }
     if (scopes.includes('memories')) {
-      data.memories = await collectionDocuments(userRef.collection('memories'))
-      data.replayEvents = await collectionDocuments(userRef.collection('replayEvents'))
-      data.spatialMemories = await collectionDocuments(userRef.collection('spatialMemories'))
+      data.memories = await collectionDocuments(userRef.collection('memories'), context)
+      data.replayEvents = await collectionDocuments(userRef.collection('replayEvents'), context)
+      data.spatialMemories = await collectionDocuments(userRef.collection('spatialMemories'), context)
     }
-    let capturedRealityRuntimeExports: CapturedRealityRuntimeExport[] = []
     if (scopes.includes('life-model')) {
-      data.lifeEntities = await collectionDocuments(userRef.collection('lifeEntities'))
-      data.lifeEntityStates = await collectionDocuments(userRef.collection('lifeEntityStates'))
-      data.lifeClaims = await collectionDocuments(userRef.collection('lifeClaims'))
-      data.lifeRelationships = await collectionDocuments(userRef.collection('lifeRelationships'))
-      data.lifeEvents = await collectionDocuments(userRef.collection('lifeEvents'))
-      data.lifeCausalEdges = await collectionDocuments(userRef.collection('lifeCausalEdges'))
-      data.lifeGraphSnapshots = await collectionDocuments(userRef.collection('lifeGraphSnapshots'))
-      data.lifeCorrections = await collectionDocuments(userRef.collection('lifeCorrections'))
-      data.lifeConflicts = await collectionDocuments(userRef.collection('lifeConflicts'))
-      data.knowledgeGaps = await collectionDocuments(userRef.collection('knowledgeGaps'))
-      data.personModelBundles = await collectionDocuments(userRef.collection('personModelBundles'))
-      data.personRenderBindings = await collectionDocuments(userRef.collection('personRenderBindings'))
-      data.sceneTruthPackets = await collectionDocuments(userRef.collection('sceneTruthPackets'))
-      data.renderManifests = await collectionDocuments(userRef.collection('renderManifests'))
-      data.simulationSessions = await collectionDocuments(userRef.collection('simulationSessions'))
-      data.lifeModelReceipts = await collectionDocuments(userRef.collection('lifeModelReceipts'))
-      data.privateLifeModelSources = await boundedCollectionDocuments(userRef.collection('privateLifeModelSources'), 'privateLifeModelSources')
-      data.privateLifeModelTranscripts = await boundedCollectionDocuments(userRef.collection('privateLifeModelTranscripts'), 'privateLifeModelTranscripts')
-      data.privateLifeModelProvenance = await boundedCollectionDocuments(userRef.collection('privateLifeModelProvenance'), 'privateLifeModelProvenance')
-      data.privateLifeModelSourceHandles = redactSecrets(await exportPrivateLifeModelHandles(db, uid))
+      data.lifeEntities = await collectionDocuments(userRef.collection('lifeEntities'), context)
+      data.lifeEntityStates = await collectionDocuments(userRef.collection('lifeEntityStates'), context)
+      data.lifeClaims = await collectionDocuments(userRef.collection('lifeClaims'), context)
+      data.lifeRelationships = await collectionDocuments(userRef.collection('lifeRelationships'), context)
+      data.lifeEvents = await collectionDocuments(userRef.collection('lifeEvents'), context)
+      data.lifeCausalEdges = await collectionDocuments(userRef.collection('lifeCausalEdges'), context)
+      data.lifeGraphSnapshots = await collectionDocuments(userRef.collection('lifeGraphSnapshots'), context)
+      data.lifeCorrections = await collectionDocuments(userRef.collection('lifeCorrections'), context)
+      data.lifeConflicts = await collectionDocuments(userRef.collection('lifeConflicts'), context)
+      data.knowledgeGaps = await collectionDocuments(userRef.collection('knowledgeGaps'), context)
+      data.personModelBundles = await collectionDocuments(userRef.collection('personModelBundles'), context)
+      data.personRenderBindings = await collectionDocuments(userRef.collection('personRenderBindings'), context)
+      data.sceneTruthPackets = await collectionDocuments(userRef.collection('sceneTruthPackets'), context)
+      data.renderManifests = await collectionDocuments(userRef.collection('renderManifests'), context)
+      data.simulationSessions = await collectionDocuments(userRef.collection('simulationSessions'), context)
+      data.lifeModelReceipts = await collectionDocuments(userRef.collection('lifeModelReceipts'), context)
+      data.privateLifeModelSources = await boundedCollectionDocuments(userRef.collection('privateLifeModelSources'), context)
+      data.privateLifeModelTranscripts = await boundedCollectionDocuments(userRef.collection('privateLifeModelTranscripts'), context)
+      data.privateLifeModelProvenance = await boundedCollectionDocuments(userRef.collection('privateLifeModelProvenance'), context)
+      data.privateLifeModelSourceHandles = redactSecrets(await exportPrivateLifeModelHandles(db, uid, transaction, budget))
     }
     if (scopes.includes('intelligence')) {
-      data.scenarios = await scenarioExportTree(userRef)
-      data.aiLedger = await collectionDocuments(userRef.collection('aiLedger'))
+      data.scenarios = await scenarioExportTree(userRef, context)
+      data.aiLedger = await collectionDocuments(userRef.collection('aiLedger'), context)
     }
     if (scopes.includes('spatial')) {
-      data.homeWorld = await collectionDocuments(userRef.collection('homeWorld'))
-      data.focusStates = await collectionDocuments(userRef.collection('focusStates'))
-      data.transitionStates = await collectionDocuments(userRef.collection('transitionStates'))
-      data.spatialAnchors = await collectionDocuments(userRef.collection('spatialAnchors'))
-      data.behaviorSignals = await collectionDocuments(userRef.collection('behaviorSignals'))
-      data.voiceEvents = await collectionDocuments(userRef.collection('voiceEvents'))
-      data.locations = await collectionDocuments(userRef.collection('locations'))
-      data.capturedRealityAssets = await collectionDocuments(userRef.collection('capturedRealityAssets'))
-      data.capturedRealityReplayBindings = await collectionDocuments(userRef.collection('capturedRealityReplayBindings'))
-      capturedRealityRuntimeExports = await copyCapturedRealityRuntimeExports(userRef, uid, basePath)
-      data.capturedRealityRuntimeAssets = capturedRealityRuntimeExports.map(({ objectPath: _privateObject, ...entry }) => entry)
+      data.homeWorld = await collectionDocuments(userRef.collection('homeWorld'), context)
+      data.focusStates = await collectionDocuments(userRef.collection('focusStates'), context)
+      data.transitionStates = await collectionDocuments(userRef.collection('transitionStates'), context)
+      data.spatialAnchors = await collectionDocuments(userRef.collection('spatialAnchors'), context)
+      data.behaviorSignals = await collectionDocuments(userRef.collection('behaviorSignals'), context)
+      data.voiceEvents = await collectionDocuments(userRef.collection('voiceEvents'), context)
+      data.locations = await collectionDocuments(userRef.collection('locations'), context)
+      data.capturedRealityAssets = await collectionDocuments(userRef.collection('capturedRealityAssets'), context)
+      data.capturedRealityReplayBindings = await collectionDocuments(userRef.collection('capturedRealityReplayBindings'), context)
+      runtimeInventory = await collectExportPages(transaction, userRef.collection('capturedRealityAssets'), budget, asset => ({ id: asset.id, ownerId: asset.get('ownerId'), runtimeObject: asset.get('runtimeObject') ?? null, runtimeSha256: asset.get('runtimeSha256') ?? null, runtimeStorageGeneration: asset.get('runtimeStorageGeneration') ?? null }))
     }
     if (scopes.includes('audit')) {
-      data.receipts = await collectionDocuments(userRef.collection('privacyReceipts'))
+      data.receipts = await collectionDocuments(userRef.collection('privacyReceipts'), context)
     }
 
+    }, { readOnly: true })
+    requireExportReadBudget(budget)
+    if (budget.snapshotMillis !== null) payload.snapshotReadAt = new Date(budget.snapshotMillis).toISOString()
+    payload.resourceLimits = EXPORT_RESOURCE_LIMITS
+    const requireCurrentAuthority = () => db.runTransaction(transaction => readBoundExport(transaction, uid, snapshot.id, 'preparing'))
+    await requireCurrentAuthority()
+    if (scopes.includes('spatial')) {
+      capturedRealityRuntimeExports = await copyCapturedRealityRuntimeExports(runtimeInventory, uid, basePath, budget, requireCurrentAuthority)
+      data.capturedRealityRuntimeAssets = capturedRealityRuntimeExports.map(({ objectPath: _privateObject, ...entry }) => entry)
+    }
+    // Keep the signed manifest inventory inside Firestore's 1-MiB document limit.
+    if (Buffer.byteLength(JSON.stringify(capturedRealityRuntimeExports)) > 768 * 1024) throw new Error('EXPORT_RESOURCE_BUDGET_EXCEEDED')
     const json = JSON.stringify(payload, null, 2)
+    if (Buffer.byteLength(json) > 32 * 1024 * 1024) throw new Error('EXPORT_RESOURCE_BUDGET_EXCEEDED')
     const checksum = createHash('sha256').update(json).digest('hex')
     const manifest = JSON.stringify({
       schema: 'urai-user-export-manifest-v1',
@@ -858,14 +887,14 @@ async function buildExport(snapshot: FirebaseFirestore.DocumentSnapshot) {
       const [freshJob, freshReceipt] = await Promise.all([transaction.get(snapshot.ref), transaction.get(receiptRef)])
       if (!freshJob.exists || freshJob.get('uid') !== uid || !['queued', 'preparing'].includes(String(freshJob.get('state')))
         || !freshReceipt.exists || freshReceipt.get('ownerId') !== uid || freshReceipt.get('kind') !== 'export') return
-      transaction.update(snapshot.ref, { state: 'failed', failureCode: 'EXPORT_AUTHORITY_OR_BUILD_FAILED', updatedAt: fieldValue.serverTimestamp() })
-      transaction.update(receiptRef, { result: 'failed', failureCode: 'EXPORT_AUTHORITY_OR_BUILD_FAILED', updatedAt: fieldValue.serverTimestamp() })
+      transaction.update(snapshot.ref, { state: 'failed', failureCode: error instanceof Error && error.message === 'EXPORT_RESOURCE_BUDGET_EXCEEDED' ? 'EXPORT_RESOURCE_BUDGET_EXCEEDED' : 'EXPORT_AUTHORITY_OR_BUILD_FAILED', updatedAt: fieldValue.serverTimestamp() })
+      transaction.update(receiptRef, { result: 'failed', failureCode: error instanceof Error && error.message === 'EXPORT_RESOURCE_BUDGET_EXCEEDED' ? 'EXPORT_RESOURCE_BUDGET_EXCEEDED' : 'EXPORT_AUTHORITY_OR_BUILD_FAILED', updatedAt: fieldValue.serverTimestamp() })
     })
     throw error
   }
 }
 
-export const processExportJob = functions.firestore
+export const processExportJob = functions.runWith({ timeoutSeconds: 540 }).firestore
   .document('users/{uid}/exportJobs/{jobId}')
   .onCreate(async (snapshot) => buildExport(snapshot))
 
