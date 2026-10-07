@@ -81,8 +81,8 @@ test('desktop first-run guide leaves Home movement and dismissal targets reachab
   await expect(movement).toBeVisible()
   const geometry = await page.evaluate(() => {
     const card = document.querySelector('.uraiV2OnboardingCard')!.getBoundingClientRect()
-    const buttons = [...document.querySelectorAll('.urai-mobile-movement button,.uraiV2OnboardingCard button,.uraiV2OnboardingCard a')].filter(node => node.getBoundingClientRect().width > 0)
-    return { guideBottom:card.bottom, movementTop:document.querySelector('.urai-mobile-movement')!.getBoundingClientRect().top, controls:buttons.map(node => {
+    const buttons = [...document.querySelectorAll('[role="group"][aria-label="Home movement controls"] button,.uraiV2OnboardingCard button,.uraiV2OnboardingCard a')].filter(node => node.getBoundingClientRect().width > 0)
+    return { guideBottom:card.bottom, movementTop:document.querySelector('[role="group"][aria-label="Home movement controls"]')!.getBoundingClientRect().top, controls:buttons.map(node => {
       const r = node.getBoundingClientRect();const hit = document.elementFromPoint(r.x+r.width/2,r.y+r.height/2)
       return { label:node.getAttribute('aria-label')||node.textContent, width:r.width,height:r.height,pointerReachable:hit===node||(hit!==null&&node.contains(hit)) }
     }) }
