@@ -2,6 +2,9 @@ import { spawnSync } from 'node:child_process'
 import fs from 'node:fs'
 
 const tests = [
+  'tests/android-native-google-auth.test.mjs',
+  'tests/native-deep-links.test.mjs',
+  'tests/ios-native-preparation.test.mjs',
   'tests/privacy-session-lifecycle.test.mjs',
   'tests/sms-session-lifecycle.test.mjs',
   'tests/asset-receipt-runner-contract.test.mjs',

@@ -103,6 +103,14 @@ jobs:
           test "$NEXT_PUBLIC_URAI_API_ORIGIN" = "https://urai.app"
           [[ "$ANDROID_VERSION_CODE" =~ ^[1-9][0-9]*$ ]]
 
+      - name: Validate optional canonical Android Google sign-in configuration
+        env:
+          ANDROID_FIREBASE_GOOGLE_SERVICES_JSON: ${{ secrets.ANDROID_FIREBASE_GOOGLE_SERVICES_JSON }}
+        run: |
+          node scripts/prepare-android-native-google-auth.mjs --optional \
+            --config-output "$RUNNER_TEMP/urai-google-services.json" \
+            --receipt-output android-native-auth-receipt.json
+
       - name: Build governed static export
         run: corepack pnpm build:static
 
@@ -111,6 +119,8 @@ jobs:
         run: |
           rm -rf android
           corepack pnpm exec cap add android
+          node ../../scripts/prepare-native-links.mjs --android-project android
+          node ../../scripts/prepare-android-native-google-auth.mjs --optional --apply-project android
           corepack pnpm exec cap sync android
 
       - name: Apply governed Android version
@@ -149,6 +159,7 @@ jobs:
             echo "version_name=$ANDROID_VERSION_NAME"
             echo "api_origin=$NEXT_PUBLIC_URAI_API_ORIGIN"
             echo "firebase_project=$NEXT_PUBLIC_FIREBASE_PROJECT_ID"
+            echo "native_google_auth_configured=$URAI_ANDROID_NATIVE_GOOGLE_AUTH_READY"
             echo "aab_path=$AAB"
           } | tee android-package-receipt.txt
 
@@ -160,4 +171,5 @@ jobs:
             distribution/android-shell/android/app/build/outputs/bundle/release/app-release.aab
             android-aab.sha256
             android-package-receipt.txt
+            android-native-auth-receipt.json
           retention-days: 30

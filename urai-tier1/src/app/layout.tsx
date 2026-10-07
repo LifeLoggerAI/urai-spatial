@@ -60,6 +60,7 @@ import WorldRuntimeBoundary from '@/spatial/world/WorldRuntimeBoundary'
 import PassiveSignalRuntime from '@/spatial/signals/PassiveSignalRuntime'
 import SensorySafeRuntime from '@/spatial/accessibility/SensorySafeRuntime'
 import LocaleRuntime from './LocaleRuntime'
+import NativeLinkRuntime from './NativeLinkRuntime'
 import AdamPresenceRuntime from '@/spatial/adam/AdamPresenceRuntime'
 
 const configuredBuildSha = process.env.NEXT_PUBLIC_URAI_BUILD_SHA ?? process.env.GITHUB_SHA ?? ''
@@ -134,6 +135,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <WorldRuntimeBoundary>
           <SensorySafeRuntime />
           <LocaleRuntime />
+          <NativeLinkRuntime />
           <PassiveSignalRuntime />
           <UraiAAAARoutePolish />
           <UraiFinalAssetSpineBridge />

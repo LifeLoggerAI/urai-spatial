@@ -32,6 +32,8 @@ The workflow:
 
 The CI artifact is intentionally **unsigned / non-publishable**. It is proof of package construction only.
 
+Native Google account sign-in uses the pinned Credential Manager bridge when canonical Android Firebase configuration is present. Without that configuration, unsigned preparation excludes the native auth plugin and disables native sign-in without attempting a Google WebView popup. Governed signing additionally requires the canonical native configuration. See [NATIVE_GOOGLE_AUTH.md](NATIVE_GOOGLE_AUTH.md) for configuration, certificate and device-acceptance prerequisites. Google Workspace authorization remains a separate native return-path gate.
+
 ## Signing boundary
 
 Do not:

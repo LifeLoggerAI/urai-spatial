@@ -1,0 +1,100 @@
+name: iOS Source Preparation
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - "distribution/ios-shell/**"
+      - "urai-tier1/**"
+      - "pnpm-workspace.yaml"
+      - "pnpm-lock.yaml"
+      - "scripts/prepare-ios-shell.mjs"
+      - "scripts/prepare-native-links.mjs"
+      - ".github/workflows/ios-source-preparation.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  source-preparation:
+    name: Generate iOS source without signing or Apple authority
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      URAI_EXACT_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
+      NEXT_PUBLIC_URAI_API_ORIGIN: https://urai.app
+      URAI_IOS_APPLE_AUTH_READY: "false"
+      URAI_IOS_GOOGLE_AUTH_READY: "false"
+      NEXT_PUBLIC_URAI_IOS_APPLE_AUTH_READY: "false"
+      NEXT_PUBLIC_URAI_IOS_GOOGLE_AUTH_READY: "false"
+
+    steps:
+      - name: Checkout exact head
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ env.URAI_EXACT_HEAD }}
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Prove exact clean source
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$URAI_EXACT_HEAD"
+          test -z "$(git status --porcelain --untracked-files=all)"
+
+      - name: Setup Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install locked dependencies
+        run: |
+          corepack enable
+          corepack pnpm install --frozen-lockfile
+
+      - name: Build static export for unconfigured source preparation
+        run: corepack pnpm build:static
+
+      - name: Generate iOS Swift Package Manager source
+        working-directory: distribution/ios-shell
+        run: |
+          corepack pnpm exec cap add ios --packagemanager SPM
+          node ../../scripts/prepare-ios-shell.mjs --optional --project ios --receipt-output ../../ios-source-receipt.json
+
+      - name: Retain source hashes and explicit native boundary
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json, pathlib
+          receipt = json.loads(pathlib.Path('ios-source-receipt.json').read_text())
+          assert receipt['sourceSha'] == __import__('os').environ['URAI_EXACT_HEAD']
+          assert receipt['compiled'] is False and receipt['signingPerformed'] is False
+          assert receipt['nativeAppleAuthConfigured'] is False and receipt['nativeGoogleAuthConfigured'] is False
+          assert receipt['appleAuthoritySupplied'] is False
+          PY
+          sha256sum \
+            distribution/ios-shell/ios/App/App.xcodeproj/project.pbxproj \
+            distribution/ios-shell/ios/App/CapApp-SPM/Package.swift \
+            distribution/ios-shell/ios/App/App/AppDelegate.swift \
+            distribution/ios-shell/ios/App/App/SceneDelegate.swift \
+            distribution/ios-shell/ios/App/App/Info.plist \
+            distribution/ios-shell/ios/App/App/App.entitlements \
+            distribution/ios-shell/ios/App/App/capacitor.config.json > ios-project-source.sha256
+
+      - name: Retain source-only iOS evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: urai-ios-source-preparation-${{ env.URAI_EXACT_HEAD }}
+          path: |
+            ios-source-receipt.json
+            ios-project-source.sha256
+            distribution/ios-shell/ios/App/App.xcodeproj/project.pbxproj
+            distribution/ios-shell/ios/App/CapApp-SPM/Package.swift
+            distribution/ios-shell/ios/App/App/AppDelegate.swift
+            distribution/ios-shell/ios/App/App/SceneDelegate.swift
+            distribution/ios-shell/ios/App/App/Info.plist
+            distribution/ios-shell/ios/App/App/App.entitlements
+            distribution/ios-shell/ios/App/App/capacitor.config.json
+          retention-days: 30
