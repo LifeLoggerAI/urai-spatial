@@ -65,8 +65,8 @@ test('live Orb replies use the external natural voice path before device fallbac
   assert.match(conversationSource, /requestExternalVoiceAudio/)
   assert.match(conversationSource, /URAI_VOICE_CONFIG\.neutral\.voiceId/)
   assert.match(conversationSource, /resolved\.provider === 'openai'/)
-  assert.match(conversationSource, /void speakOrbResponse\(resolved\.message\)/)
-  assert.match(conversationSource, /playDeviceVoice\(resolved\.message\)/)
+  assert.match(conversationSource, /void speakOrbResponse\(resolved\.message, resolved\.locale\)/)
+  assert.match(conversationSource, /playDeviceVoice\(resolved\.message, resolved\.locale\)/)
   assert.match(conversationSource, /Allow Orb replies and narrator lines to use the configured natural external voice provider/)
 })
 

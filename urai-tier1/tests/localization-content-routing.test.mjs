@@ -218,6 +218,36 @@ test('canonical English fallback and legacy English streams retain truthful Engl
   assert.equal((await legacy.request()).locale, 'en-US')
 })
 
+test('actual Council attempted and uncertain fallbacks keep canonical English metadata without provider dispatch', () => {
+  const companion = sourceModule('../src/lib/orb-companion-contract.ts', id => {
+    throw new Error(`Unexpected companion dependency ${id}`)
+  })
+  let providerReads = 0
+  const council = sourceModule('../src/spatial/council/councilClient.ts', id => {
+    if (id === '@/lib/orb-companion-contract') return companion
+    if (id === 'firebase/auth') return { getAuth: () => { providerReads += 1; throw new Error('Fallback cannot read authentication') } }
+    if (id === '@/lib/firebase/client') return { app: {}, firebasePublicEnvReady: true }
+    if (id === '@/lib/clientApiUrl') return { clientApiUrl: () => { providerReads += 1; throw new Error('Fallback cannot prepare an external URL') } }
+    throw new Error(`Unexpected Council dependency ${id}`)
+  }, {
+    fetch: () => { providerReads += 1; throw new Error('Fallback cannot dispatch an external request') },
+  })
+  for (const provider of ['anthropic', 'gemini', 'xai', 'mistral']) {
+    for (const build of [council.attemptedCouncilProviderFallback, council.uncertainCouncilProviderFallback]) {
+      const result = build('go home', provider)
+      assert.equal(result.provider, 'fallback')
+      assert.equal(result.locale, 'en')
+      assert.equal(result.message, companion.buildOrbCompanionResponse({ message: 'go home' }).reply)
+      assert.equal(result.caption, result.message)
+      assert.deepEqual([...result.suggestedActions], ['Open home', 'Review privacy controls'])
+      assert.match(result.disclosure, /no external answer was used/i)
+      assert.match(result.disclosure, /deterministic local fallback/)
+      assert.deepEqual(contentLanguageProps(result.locale), { lang: 'en-US', dir: 'ltr' })
+    }
+  }
+  assert.equal(providerReads, 0)
+})
+
 test('actual server routes all twenty languages into strict response schema, instruction, caption and stream metadata', async () => {
   const identities = new Set()
   for (const [, locale] of URAI_CONTENT_LANGUAGES) {
