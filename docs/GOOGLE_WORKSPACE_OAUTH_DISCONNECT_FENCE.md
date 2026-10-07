@@ -1,0 +1,21 @@
+# Google Workspace OAuth disconnect fence
+
+An authorization started before disconnect could previously reconnect the account. The same restoration occurred when a callback had already started its Google token exchange and the exchange returned after disconnect. Both races are reproduced by executing the original handler fixture, whose Git blob is `e4e6a39a7f6d66377a532397a3efda7459225ee9`, from integration source `a99ed54d411dc48d57168cda1bb225fff0991fad`. The fixture is test-only and is outside the Functions build include.
+
+`disconnectGeneration` is stored on the server-owned `users/<uid>/providerConnections/google-workspace` marker. Start reads the current generation and writes the pending state in one transaction. Callback consumes its one-time state, performs the bound PKCE exchange, then checks the generation while writing both encrypted tokens and the connected marker in one transaction. Disconnect advances the generation, deletes local tokens and marks the connection disconnected in one transaction before awaiting upstream revocation. The older disconnect invocation performs no subsequent local writes, so it cannot delete a fresh reconnect while its network request is pending.
+
+Legacy markers and states with no generation are interpreted as generation zero. A legacy state can connect only until the first fenced disconnect. Malformed, negative, fractional or unsafe generation values fail closed and are never reset. Integer overflow also fails closed. These are server data integrity errors requiring protected runtime investigation, rather than silently recovering an older authorization. No deployed data is migrated by this source change.
+
+The current canonical `firebase/firestore.rules` (blob `4d408dee26f46f1b97f624895d44a92f85da6e60`) denies client writes to provider connection markers and defaults to denying the token and pending-state collections. This source permission prerequisite is unchanged. Deployed rules parity and other privileged writers remain protected runtime verification prerequisites; a writer must preserve this field or participate in the same fence.
+
+## Evidence
+
+`test/googleWorkspaceOAuth.test.js` executes the actual TypeScript handler, compiled by TypeScript, with bounded Firebase module, authentication and serialized transaction doubles. Its 55 cases comprise two pinned original-source race receipts and 53 current-handler regressions. They exercise revoked authentication, one-time state expiry and replay, concurrent callbacks, PKCE and callback binding, exchange failures with no persistence, actual AES-256-GCM envelopes, encryption failure, refresh preservation, tenant binding, atomic commit failures, both disconnect races, concurrent disconnect, stale in-flight exchange versus newer connection, and legitimate reconnect while upstream revocation is pending. No Google or Firebase network calls are made.
+
+The full Functions build uses the existing strict TypeScript configuration. The existing Functions runner includes the new suite and currently executes 98 cases. The independent workflow uses Node 22, the unmodified frozen workspace lockfile, and the exact PR head. Its retained receipt records source/blob hashes, typecheck output, test summaries and evidence scope. These bounded transaction tests do not prove Firestore retry behavior or deployed integration.
+
+## Admission and protected runtime prerequisites
+
+This is an independent source admission artifact for the convergence owner. It changes one production handler plus tests, receipts and documentation; it changes no package, lockfile, credential, endpoint configuration, rules or deployed function. Admission requires rerunning the exact candidate's full Functions build and tests and the release matrix after integrating this patch.
+
+Real consent/client configuration, Google token exchange and revocation semantics, existing privileged writer compatibility, deployed rules parity, and the authenticated UI flow remain provider/account-dependent work. A reconnect made while an earlier upstream revoke is pending is protected against local overwrite by this fence, but its real Google grant behavior must be verified with the actual configured client. Provider approval or account state is not established by these fixtures.
