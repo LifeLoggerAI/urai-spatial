@@ -7,6 +7,16 @@ function validCoordinate(value: unknown, min: number, max: number): value is num
   return typeof value === 'number' && Number.isFinite(value) && value >= min && value <= max
 }
 
+function unadmittedElevationSpendResponse() {
+  // No environment flag or API key can admit this retained billable GET
+  // adapter. Reopening requires an actual protected executor and provisioning.
+  return NextResponse.json({ error: 'elevation_protected_spend_required' }, { status: 503, headers: { 'cache-control': 'private, no-store, max-age=0' } })
+}
+
+function blockUnadmittedElevationSpend(): void {
+  throw new Error('elevation_protected_spend_required')
+}
+
 const RATE_WINDOW_MS = 60_000
 const RATE_LIMIT_MAX = 12
 
@@ -47,6 +57,9 @@ export async function POST(request: Request) {
   const latitude = record.latitude
   const longitude = record.longitude
   if (!validCoordinate(latitude, -90, 90) || !validCoordinate(longitude, -180, 180)) return NextResponse.json({ error: 'invalid_coordinate' }, { status: 400, headers: { 'cache-control': 'private, no-store, max-age=0' } })
+
+  try { blockUnadmittedElevationSpend() }
+  catch { return unadmittedElevationSpendResponse() }
 
   const apiKey = process.env.URAI_ELEVATION_SERVER_CREDENTIAL
   if (!apiKey) return NextResponse.json({ error: 'elevation_unavailable' }, { status: 503, headers: { 'cache-control': 'private, no-store, max-age=0' } })

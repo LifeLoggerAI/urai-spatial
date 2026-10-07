@@ -2,6 +2,7 @@ import * as functions from 'firebase-functions/v1'
 import * as admin from 'firebase-admin'
 import { revokePersonPresenceConsentDerivatives } from './personPresenceAuthority'
 import { createHash } from 'node:crypto'
+import { pipeline } from 'node:stream/promises'
 import { exportPrivateLifeModelHandles, tombstonePrivateLifeModelInputs } from './lifeModelPrivateInputs'
 
 if (!admin.apps.length) admin.initializeApp()
@@ -68,9 +69,10 @@ function requireUid(context: functions.https.CallableContext): string {
 
 function requireRecentAuthentication(context: functions.https.CallableContext) {
   requireUid(context)
-  const authTime = Number(context.auth?.token.auth_time ?? 0)
+  const authTime = context.auth?.token.auth_time
   const now = Math.floor(Date.now() / 1000)
-  if (!Number.isFinite(authTime) || authTime <= 0 || now - authTime > REAUTH_WINDOW_SECONDS) {
+  if (typeof authTime !== 'number' || !Number.isSafeInteger(authTime) || authTime <= 0
+    || authTime > now || now - authTime > REAUTH_WINDOW_SECONDS) {
     throw new functions.https.HttpsError(
       'failed-precondition',
       'RECENT_REAUTHENTICATION_REQUIRED',
@@ -490,8 +492,7 @@ function redactSecrets(value: unknown): unknown {
 }
 
 async function collectionDocuments(ref: FirebaseFirestore.CollectionReference) {
-  const snapshot = await ref.limit(MAX_EXPORT_DOCUMENTS_PER_COLLECTION).get()
-  return snapshot.docs.map((item) => ({ id: item.id, ...redactSecrets(item.data()) as JsonMap }))
+  return boundedCollectionDocuments(ref, 'scoped-collection')
 }
 
 async function boundedCollectionDocuments(ref: FirebaseFirestore.CollectionReference, label: string) {
@@ -522,6 +523,7 @@ type CapturedRealityRuntimeExport = {
   relativePath: string
   runtimeSha256: string
   storageGeneration: string
+  exportGeneration: string
   runtimeBytes: number
 }
 
@@ -540,7 +542,8 @@ async function copyCapturedRealityRuntimeExports(
   basePath: string,
 ): Promise<CapturedRealityRuntimeExport[]> {
   const bucket = admin.storage().bucket()
-  const assets = await userRef.collection('capturedRealityAssets').limit(MAX_EXPORT_DOCUMENTS_PER_COLLECTION).get()
+  const assets = await userRef.collection('capturedRealityAssets').limit(MAX_EXPORT_DOCUMENTS_PER_COLLECTION + 1).get()
+  if (assets.size > MAX_EXPORT_DOCUMENTS_PER_COLLECTION) throw new Error('CAPTURED_REALITY_EXPORT_COLLECTION_LIMIT_EXCEEDED')
   const exports: CapturedRealityRuntimeExport[] = []
   for (const asset of assets.docs) {
     if (asset.get('ownerId') !== uid) continue
@@ -574,16 +577,69 @@ async function copyCapturedRealityRuntimeExports(
     const destination = bucket.file(`${basePath}/${relativePath}`)
     const immutableSource = bucket.file(objectPath, { generation: storageGeneration })
     await immutableSource.copy(destination)
+    const [copiedMetadata] = await destination.getMetadata()
+    const exportGeneration = String(copiedMetadata.generation ?? '')
+    if (!/^\d+$/.test(exportGeneration)) throw new Error('CAPTURED_REALITY_EXPORT_GENERATION_REQUIRED')
     exports.push({
       assetId: asset.id,
       objectPath: `${basePath}/${relativePath}`,
       relativePath,
       runtimeSha256,
       storageGeneration,
+      exportGeneration,
       runtimeBytes,
     })
   }
   return exports
+}
+
+function exportFenceRef(uid: string) {
+  return db.doc(`users/${uid}/privacyRuntime/exportAuthority`)
+}
+
+async function readExportSubject(transaction: FirebaseFirestore.Transaction, uid: string) {
+  const [user, policy, fence, deletions] = await Promise.all([
+    transaction.get(db.doc(`users/${uid}`)),
+    transaction.get(db.doc(`users/${uid}/privacyPolicy/current`)),
+    transaction.get(exportFenceRef(uid)),
+    transaction.get(db.collection(`users/${uid}/deletionJobs`).where('state', 'in', ['awaiting-grace', 'queued', 'in-progress', 'failed']).limit(1)),
+  ])
+  const stored = policy.data()
+  const generation = fence.exists ? fence.get('generation') : 0
+  const pending = fence.get('pendingDeletions')
+  if (!user.exists || !policy.exists || stored?.ownerId !== uid || stored.version !== 2
+    || !Number.isSafeInteger(stored.revision) || stored.revision < 0
+    || !['granted', 'limited'].includes(stored.domains?.exports?.mode)
+    || !['fully-enforced', 'partially-enforced'].includes(stored.enforcement?.state)
+    || !Number.isSafeInteger(generation) || generation < 0
+    || (fence.exists && !isRecord(pending)) || (isRecord(pending) && Object.keys(pending).length > 0) || !deletions.empty) {
+    throw new functions.https.HttpsError('failed-precondition', 'CURRENT_EXPORT_AUTHORITY_REQUIRED')
+  }
+  return { consentRevision: stored.revision as number, exportFenceGeneration: generation as number }
+}
+
+async function readBoundExport(transaction: FirebaseFirestore.Transaction, uid: string, jobId: string, state: string) {
+  const job = await transaction.get(db.doc(`users/${uid}/exportJobs/${jobId}`))
+  if (!job.exists || job.get('uid') !== uid || job.get('state') !== state) {
+    throw new functions.https.HttpsError('failed-precondition', 'Export is unavailable.')
+  }
+  const receiptId = requireDocumentId(job.get('receiptId'), 'receiptId', 80)
+  const [subject, receipt] = await Promise.all([
+    readExportSubject(transaction, uid),
+    transaction.get(db.doc(`users/${uid}/privacyReceipts/${receiptId}`)),
+  ])
+  if (job.get('consentRevision') !== subject.consentRevision || job.get('exportFenceGeneration') !== subject.exportFenceGeneration
+    || !receipt.exists || receipt.get('ownerId') !== uid || receipt.get('kind') !== 'export' || receipt.get('jobId') !== jobId
+    || (state === 'ready' && receipt.get('result') !== 'ready')) {
+    throw new functions.https.HttpsError('failed-precondition', 'EXPORT_RECEIPT_OR_REVISION_CHANGED')
+  }
+  return { job, receipt, subject }
+}
+
+function requireDocumentId(value: unknown, label: string, maximum: number) {
+  const id = requireString(value, label, maximum)
+  if (!/^[A-Za-z0-9_-]+$/.test(id)) throw new functions.https.HttpsError('invalid-argument', `Invalid ${label}.`)
+  return id
 }
 
 export const createExportRequest = functions.https.onCall(async (data, context) => {
@@ -595,32 +651,15 @@ export const createExportRequest = functions.https.onCall(async (data, context) 
   const receiptId = stableId(uid, operationId, 'export-receipt')
   const jobRef = db.doc(`users/${uid}/exportJobs/${jobId}`)
   const receiptRef = db.doc(`users/${uid}/privacyReceipts/${receiptId}`)
-  const existing = await jobRef.get()
-  if (existing.exists) return publicJobState(existing.data() as JsonMap)
-  const now = fieldValue.serverTimestamp()
-  const batch = db.batch()
-  batch.create(jobRef, {
-    jobId,
-    uid,
-    scopes,
-    state: 'queued',
-    progress: 0,
-    receiptId,
-    createdAt: now,
-    updatedAt: now,
+  return db.runTransaction(async (transaction) => {
+    const existing = await transaction.get(jobRef)
+    if (existing.exists) return publicJobState(existing.data() as JsonMap)
+    const authority = await readExportSubject(transaction, uid)
+    const now = fieldValue.serverTimestamp()
+    transaction.create(jobRef, { jobId, uid, scopes, ...authority, state: 'queued', progress: 0, receiptId, createdAt: now, updatedAt: now })
+    transaction.create(receiptRef, { receiptId, ownerId: uid, kind: 'export', scopes, jobId, ...authority, result: 'queued', createdAt: now, updatedAt: now })
+    return { jobId, state: 'queued', receiptId }
   })
-  batch.create(receiptRef, {
-    receiptId,
-    ownerId: uid,
-    kind: 'export',
-    jobId,
-    scopes,
-    result: 'queued',
-    createdAt: now,
-    updatedAt: now,
-  })
-  await batch.commit()
-  return { jobId, state: 'queued', receiptId }
 })
 
 async function buildExport(snapshot: FirebaseFirestore.DocumentSnapshot) {
@@ -632,8 +671,13 @@ async function buildExport(snapshot: FirebaseFirestore.DocumentSnapshot) {
   const receiptRef = db.doc(`users/${uid}/privacyReceipts/${String(job.receiptId)}`)
   const bucket = admin.storage().bucket()
   const basePath = `private-exports/${uid}/${snapshot.id}`
+  let claimed = false
   try {
-    await snapshot.ref.update({ state: 'preparing', progress: 10, updatedAt: fieldValue.serverTimestamp() })
+    await db.runTransaction(async (transaction) => {
+      await readBoundExport(transaction, uid, snapshot.id, 'queued')
+      transaction.update(snapshot.ref, { state: 'preparing', progress: 10, updatedAt: fieldValue.serverTimestamp() })
+    })
+    claimed = true
     const userRef = db.doc(`users/${uid}`)
     const payload: JsonMap = {
       schema: 'urai-user-export-v1',
@@ -727,36 +771,38 @@ async function buildExport(snapshot: FirebaseFirestore.DocumentSnapshot) {
         metadata: { metadata: { ownerUid: uid, jobId: snapshot.id, checksum } },
       }),
     ])
+    const [exportMetadata, manifestMetadata] = await Promise.all([
+      bucket.file(`${basePath}/export.json`).getMetadata(), bucket.file(`${basePath}/manifest.json`).getMetadata(),
+    ])
+    const exportGeneration = String(exportMetadata[0].generation ?? '')
+    const manifestGeneration = String(manifestMetadata[0].generation ?? '')
+    if (!/^\d+$/.test(exportGeneration) || !/^\d+$/.test(manifestGeneration)) throw new Error('EXPORT_OBJECT_GENERATION_REQUIRED')
     const expiresAt = timestamp.fromMillis(Date.now() + 7 * 24 * 60 * 60 * 1000)
-    await Promise.all([
-      snapshot.ref.update({
-        state: 'ready',
-        progress: 100,
-        checksum,
-        checksumAlgorithm: 'sha256',
-        exportObject: `${basePath}/export.json`,
-        manifestObject: `${basePath}/manifest.json`,
-        runtimeExports: capturedRealityRuntimeExports,
-        expiresAt,
-        completedAt: fieldValue.serverTimestamp(),
-        updatedAt: fieldValue.serverTimestamp(),
-      }),
-      receiptRef.update({
-        result: 'ready',
-        checksum,
-        checksumAlgorithm: 'sha256',
-        expiresAt,
-        completedAt: fieldValue.serverTimestamp(),
-        updatedAt: fieldValue.serverTimestamp(),
-      }),
-    ])
+    await db.runTransaction(async (transaction) => {
+      await readBoundExport(transaction, uid, snapshot.id, 'preparing')
+      transaction.update(snapshot.ref, {
+        state: 'ready', progress: 100, checksum, checksumAlgorithm: 'sha256',
+        exportObject: `${basePath}/export.json`, manifestObject: `${basePath}/manifest.json`,
+        exportGeneration, manifestGeneration, runtimeExports: capturedRealityRuntimeExports, expiresAt,
+        completedAt: fieldValue.serverTimestamp(), updatedAt: fieldValue.serverTimestamp(),
+      })
+      transaction.update(receiptRef, { result: 'ready', checksum, checksumAlgorithm: 'sha256', expiresAt,
+        completedAt: fieldValue.serverTimestamp(), updatedAt: fieldValue.serverTimestamp() })
+    })
   } catch (error) {
-    const failure = error instanceof Error ? error.message.slice(0, 240) : 'UNKNOWN_EXPORT_FAILURE'
-    await bucket.deleteFiles({ prefix: `${basePath}/` }).catch(() => undefined)
-    await Promise.all([
-      snapshot.ref.set({ state: 'failed', failureCode: failure, updatedAt: fieldValue.serverTimestamp() }, { merge: true }),
-      receiptRef.set({ result: 'failed', failureCode: failure, updatedAt: fieldValue.serverTimestamp() }, { merge: true }),
-    ])
+    if (!claimed) throw error
+    // A reply can fail after a successful publication. Preserve committed bytes
+    // and receipts; an unavailable read also cannot authorize cleanup.
+    const current = await snapshot.ref.get().catch(() => null)
+    if (!current || (current.exists && current.get('state') === 'ready')) throw error
+    await bucket.deleteFiles({ prefix: `${basePath}/` })
+    await db.runTransaction(async (transaction) => {
+      const [freshJob, freshReceipt] = await Promise.all([transaction.get(snapshot.ref), transaction.get(receiptRef)])
+      if (!freshJob.exists || freshJob.get('uid') !== uid || !['queued', 'preparing'].includes(String(freshJob.get('state')))
+        || !freshReceipt.exists || freshReceipt.get('ownerId') !== uid || freshReceipt.get('kind') !== 'export') return
+      transaction.update(snapshot.ref, { state: 'failed', failureCode: 'EXPORT_AUTHORITY_OR_BUILD_FAILED', updatedAt: fieldValue.serverTimestamp() })
+      transaction.update(receiptRef, { result: 'failed', failureCode: 'EXPORT_AUTHORITY_OR_BUILD_FAILED', updatedAt: fieldValue.serverTimestamp() })
+    })
     throw error
   }
 }
@@ -765,54 +811,148 @@ export const processExportJob = functions.firestore
   .document('users/{uid}/exportJobs/{jobId}')
   .onCreate(async (snapshot) => buildExport(snapshot))
 
+type ExportFile = 'export' | 'manifest' | 'runtime'
+function exportSelection(data: JsonMap) {
+  const jobId = requireDocumentId(data.jobId, 'jobId', 80)
+  if (data.file !== undefined && !['export', 'manifest', 'runtime'].includes(String(data.file))) {
+    throw new functions.https.HttpsError('invalid-argument', 'Invalid export file.')
+  }
+  const file = (data.file ?? 'export') as ExportFile
+  const assetId = file === 'runtime' ? requireDocumentId(data.assetId, 'assetId', 128) : null
+  return { jobId, file, assetId }
+}
+
+async function readDownloadAuthority(transaction: FirebaseFirestore.Transaction, uid: string, selection: ReturnType<typeof exportSelection>) {
+  const { jobId, file, assetId } = selection
+  const { job } = await readBoundExport(transaction, uid, jobId, 'ready')
+  const expiresAt = job.get('expiresAt')
+  const packageExpiresAt = expiresAt instanceof admin.firestore.Timestamp ? expiresAt.toMillis() : Number.NaN
+  if (!Number.isFinite(packageExpiresAt) || packageExpiresAt <= Date.now()) {
+    throw new functions.https.HttpsError('failed-precondition', 'Export has expired.')
+  }
+  let path = '', generation = '', checksum = ''
+  if (file === 'runtime') {
+    const items = job.get('runtimeExports')
+    const match = Array.isArray(items) ? items.find((entry) => isRecord(entry) && entry.assetId === assetId) : undefined
+    if (isRecord(match)) {
+      path = String(match.objectPath ?? '')
+      generation = String(match.exportGeneration ?? '')
+      checksum = String(match.runtimeSha256 ?? '')
+    }
+  } else {
+    path = String(job.get(file === 'manifest' ? 'manifestObject' : 'exportObject') ?? '')
+    generation = String(job.get(file === 'manifest' ? 'manifestGeneration' : 'exportGeneration') ?? '')
+    checksum = String(job.get('checksum') ?? '')
+  }
+  if (!path.startsWith(`private-exports/${uid}/${jobId}/`) || path.includes('..')
+    || !/^\d+$/.test(generation) || !/^[a-f0-9]{64}$/.test(checksum)) {
+    throw new functions.https.HttpsError('failed-precondition', 'Export object binding is invalid.')
+  }
+  if (file !== 'runtime' && path !== `private-exports/${uid}/${jobId}/${file === 'manifest' ? 'manifest' : 'export'}.json`) {
+    throw new functions.https.HttpsError('failed-precondition', 'Export object boundary is invalid.')
+  }
+  const authorityHash = createHash('sha256').update(JSON.stringify({ uid, jobId, file, assetId, path, generation, checksum,
+    consentRevision: job.get('consentRevision'), exportFenceGeneration: job.get('exportFenceGeneration'),
+    receiptId: job.get('receiptId'), packageExpiresAt })).digest('hex')
+  return { path, generation, checksum, packageExpiresAt, authorityHash }
+}
+
+function exportDownloadEndpoint(host: string | undefined) {
+  if (process.env.FUNCTIONS_EMULATOR === 'true') {
+    const project = process.env.GCLOUD_PROJECT
+    if (!project || !/^[a-z][a-z0-9-]{4,61}[a-z0-9]$/.test(project) || !host || !/^(?:localhost|127\.0\.0\.1):[0-9]{2,5}$/.test(host)) {
+      throw new functions.https.HttpsError('failed-precondition', 'Local export endpoint unavailable.')
+    }
+    return `http://${host}/${project}/us-central1/downloadExportPackage`
+  }
+  return '/api/privacy/export/download'
+}
+
+function auditExportDownload(transaction: FirebaseFirestore.Transaction, uid: string, selection: ReturnType<typeof exportSelection>, action: string, authorityHash: string) {
+  const auditRef = db.collection(`users/${uid}/privacyAudit`).doc()
+  transaction.create(auditRef, { ownerId: uid, action, jobId: selection.jobId, file: selection.file, assetId: selection.assetId,
+    authorityHash, transport: 'authenticated-function', createdAt: fieldValue.serverTimestamp() })
+  return auditRef.id
+}
+
 export const getExportDownloadUrl = functions.https.onCall(async (data, context) => {
   const uid = requireUid(context)
   requireRecentAuthentication(context)
-  const jobId = requireString(data?.jobId, 'jobId', 80)
-  const file = data?.file === 'manifest' ? 'manifest' : data?.file === 'runtime' ? 'runtime' : 'export'
-  const job = await db.doc(`users/${uid}/exportJobs/${jobId}`).get()
-  if (!job.exists || job.get('uid') !== uid) {
-    throw new functions.https.HttpsError('not-found', 'Export request was not found.')
-  }
-  if (job.get('state') !== 'ready') {
-    throw new functions.https.HttpsError('failed-precondition', 'Export is not ready.')
-  }
-  const expiresAt = job.get('expiresAt') as admin.firestore.Timestamp | undefined
-  if (expiresAt && expiresAt.toMillis() <= Date.now()) {
-    await job.ref.update({ state: 'expired', updatedAt: fieldValue.serverTimestamp() })
-    throw new functions.https.HttpsError('failed-precondition', 'Export has expired.')
-  }
-  let objectPath = ''
-  let assetId: string | null = null
-  let runtimeChecksum: string | null = null
-  if (file === 'runtime') {
-    assetId = requireString(data?.assetId, 'assetId', 128)
-    const runtimeExports = job.get('runtimeExports')
-    const match = Array.isArray(runtimeExports)
-      ? runtimeExports.find((entry) => isRecord(entry) && entry.assetId === assetId)
-      : undefined
-    objectPath = isRecord(match) ? String(match.objectPath ?? '') : ''
-    runtimeChecksum = isRecord(match) && typeof match.runtimeSha256 === 'string' ? match.runtimeSha256 : null
-    if (!objectPath || !runtimeChecksum) {
-      throw new functions.https.HttpsError('not-found', 'Captured Reality runtime export was not found.')
+  const selection = exportSelection(data ?? {})
+  const authority = await db.runTransaction((transaction) => readDownloadAuthority(transaction, uid, selection))
+  const [metadata] = await admin.storage().bucket().file(authority.path, { generation: authority.generation }).getMetadata()
+  if (String(metadata.generation) !== authority.generation) throw new functions.https.HttpsError('failed-precondition', 'Export object changed.')
+  const downloadExpiresAt = Math.min(Date.now() + EXPORT_EXPIRY_MS, authority.packageExpiresAt)
+  const params = new URLSearchParams({ jobId: selection.jobId, file: selection.file,
+    expiresAt: String(downloadExpiresAt), authorityHash: authority.authorityHash })
+  if (selection.assetId) params.set('assetId', selection.assetId)
+  const auditId = await db.runTransaction(async (transaction) => {
+    const current = await readDownloadAuthority(transaction, uid, selection)
+    if (current.authorityHash !== authority.authorityHash || downloadExpiresAt <= Date.now()) {
+      throw new functions.https.HttpsError('failed-precondition', 'Export authority changed.')
     }
-  } else {
-    objectPath = String(job.get(file === 'manifest' ? 'manifestObject' : 'exportObject') ?? '')
-  }
-  if (!objectPath.startsWith(`private-exports/${uid}/${jobId}/`)) {
-    throw new functions.https.HttpsError('permission-denied', 'Invalid export object boundary.')
-  }
-  const [url] = await admin.storage().bucket().file(objectPath).getSignedUrl({
-    action: 'read',
-    expires: Date.now() + EXPORT_EXPIRY_MS,
+    return auditExportDownload(transaction, uid, selection, 'export_download_descriptor_created', authority.authorityHash)
   })
-  return {
-    jobId,
-    file,
-    assetId,
-    url,
-    expiresAt: new Date(Date.now() + EXPORT_EXPIRY_MS).toISOString(),
-    checksum: file === 'runtime' ? runtimeChecksum : job.get('checksum') ?? null,
+  return { ...selection, ownerId: uid, url: `${exportDownloadEndpoint(context.rawRequest?.get('host'))}?${params}`, requiresAuthorization: true,
+    expiresAt: new Date(downloadExpiresAt).toISOString(), downloadExpiresAt, packageExpiresAt: authority.packageExpiresAt, checksum: authority.checksum, auditId }
+})
+
+// A Storage signed capability bypasses rules and cannot be withdrawn. Revalidate
+// authentication, current revision and deletion authority on every delivery.
+export const downloadExportPackage = functions.runWith({ timeoutSeconds: 540, memory: '512MB' }).https.onRequest(async (request, response) => {
+  response.set({ 'Cache-Control': 'private, no-store', 'X-Content-Type-Options': 'nosniff', 'Referrer-Policy': 'no-referrer' })
+  if (request.method !== 'GET') { response.set('Allow', 'GET').status(405).json({ error: 'method_not_allowed' }); return }
+  try {
+    const bearer = request.get('authorization')?.match(/^Bearer\s+(\S+)$/i)?.[1]
+    if (!bearer) throw new functions.https.HttpsError('unauthenticated', 'Authentication is required.')
+    let token: admin.auth.DecodedIdToken
+    try { token = await admin.auth().verifyIdToken(bearer, true) }
+    catch { throw new functions.https.HttpsError('unauthenticated', 'Current authentication is required.') }
+    requireRecentAuthentication({ auth: { uid: token.uid, token } } as functions.https.CallableContext)
+    const selection = exportSelection(request.query as JsonMap)
+    const expiresAt = Number(request.query.expiresAt)
+    const authorityHash = String(request.query.authorityHash ?? '')
+    if (!Number.isSafeInteger(expiresAt) || expiresAt <= Date.now() || !/^[a-f0-9]{64}$/.test(authorityHash)) {
+      throw new functions.https.HttpsError('failed-precondition', 'Export descriptor expired.')
+    }
+    const authority = await db.runTransaction((transaction) => readDownloadAuthority(transaction, token.uid, selection))
+    if (authority.authorityHash !== authorityHash || expiresAt > Math.min(Date.now() + EXPORT_EXPIRY_MS, authority.packageExpiresAt)) {
+      throw new functions.https.HttpsError('failed-precondition', 'Export authority changed.')
+    }
+    const object = admin.storage().bucket().file(authority.path, { generation: authority.generation })
+    const [metadata] = await object.getMetadata()
+    if (String(metadata.generation) !== authority.generation) throw new functions.https.HttpsError('failed-precondition', 'Export object changed.')
+    await db.runTransaction(async (transaction) => {
+      const current = await readDownloadAuthority(transaction, token.uid, selection)
+      if (current.authorityHash !== authorityHash || expiresAt <= Date.now()) throw new functions.https.HttpsError('failed-precondition', 'Export authority changed.')
+      auditExportDownload(transaction, token.uid, selection, 'export_download_authorized', authorityHash)
+    })
+    response.set({ 'Content-Type': selection.file === 'runtime' ? 'application/octet-stream' : 'application/json',
+      'Content-Disposition': `attachment; filename="urai-${selection.file}.${selection.file === 'runtime' ? 'splat' : 'json'}"` })
+    const stream = object.createReadStream()
+    response.once('close', () => { if (!response.writableFinished) stream.destroy() })
+    const guardedChunks = async function* (source: AsyncIterable<Buffer>) {
+      for await (const incoming of source) {
+        const chunk = Buffer.isBuffer(incoming) ? incoming : Buffer.from(incoming)
+        for (let offset = 0; offset < chunk.length; offset += 64 * 1024) {
+          let currentToken: admin.auth.DecodedIdToken
+          try { currentToken = await admin.auth().verifyIdToken(bearer, true) }
+          catch { throw new functions.https.HttpsError('unauthenticated', 'Current authentication is required.') }
+          requireRecentAuthentication({ auth: { uid: currentToken.uid, token: currentToken } } as functions.https.CallableContext)
+          const current = await db.runTransaction((transaction) => readDownloadAuthority(transaction, currentToken.uid, selection))
+          if (current.authorityHash !== authorityHash || expiresAt <= Date.now()) {
+            throw new functions.https.HttpsError('failed-precondition', 'Export authority changed during delivery.')
+          }
+          yield chunk.subarray(offset, offset + 64 * 1024)
+        }
+      }
+    }
+    await pipeline(stream, guardedChunks, response)
+  } catch (error) {
+    if (response.headersSent || response.destroyed) return
+    const status = error instanceof functions.https.HttpsError
+      ? ({ unauthenticated: 401, 'permission-denied': 403, 'not-found': 404, 'invalid-argument': 400, 'failed-precondition': 409 } as Record<string, number>)[error.code] ?? 500 : 500
+    response.status(status).json({ error: 'export_download_unavailable' })
   }
 })
 
@@ -886,21 +1026,21 @@ export const createDeletionRequest = functions.https.onCall(async (data, context
     createdAt: now,
     updatedAt: now,
   }
-  const batch = db.batch()
-  batch.create(jobRef, record)
-  batch.create(queueRef, record)
-  batch.create(receiptRef, {
-    receiptId,
-    ownerId: uid,
-    kind: 'deletion',
-    jobId,
-    scope,
-    result: initialState,
-    retainedExceptions: record.retainedExceptions,
-    createdAt: now,
-    updatedAt: now,
+  await db.runTransaction(async (transaction) => {
+    const [existingJob, fence] = await Promise.all([transaction.get(jobRef), transaction.get(exportFenceRef(uid))])
+    if (existingJob.exists) return
+    const generation = fence.exists ? fence.get('generation') : 0
+    if (!Number.isSafeInteger(generation) || generation < 0 || generation >= Number.MAX_SAFE_INTEGER
+      || (fence.exists && !isRecord(fence.get('pendingDeletions')))) {
+      throw new functions.https.HttpsError('failed-precondition', 'Invalid export deletion epoch.')
+    }
+    const pending = isRecord(fence.get('pendingDeletions')) ? fence.get('pendingDeletions') as JsonMap : {}
+    transaction.create(jobRef, record)
+    transaction.create(queueRef, record)
+    transaction.create(receiptRef, { receiptId, ownerId: uid, kind: 'deletion', jobId, scope, result: initialState,
+      retainedExceptions: record.retainedExceptions, createdAt: now, updatedAt: now })
+    transaction.set(exportFenceRef(uid), { generation: generation + 1, pendingDeletions: { ...pending, [jobId]: true }, updatedAt: now })
   })
-  await batch.commit()
   return { jobId, state: initialState, receiptId, executeAfter: executeAfter.toDate().toISOString() }
 })
 
@@ -1011,6 +1151,17 @@ async function deleteCapturedRealityStorage(uid: string, options: { deleteAllExp
   await Promise.all(capturedRealityExports.map((file) => file.delete({ ignoreNotFound: true })))
 }
 
+async function finishExportDeletionFence(uid: string, jobId: string) {
+  await db.runTransaction(async (transaction) => {
+    const fence = await transaction.get(exportFenceRef(uid))
+    if (!fence.exists) return
+    if (!isRecord(fence.get('pendingDeletions'))) throw new functions.https.HttpsError('failed-precondition', 'Invalid export deletion epoch.')
+    const pending = { ...fence.get('pendingDeletions') as JsonMap }
+    delete pending[jobId]
+    transaction.update(exportFenceRef(uid), { pendingDeletions: pending, updatedAt: fieldValue.serverTimestamp() })
+  })
+}
+
 async function processDeletion(snapshot: FirebaseFirestore.DocumentSnapshot) {
   const job = snapshot.data() as JsonMap | undefined
   if (!job || typeof job.uid !== 'string') return
@@ -1070,6 +1221,7 @@ async function processDeletion(snapshot: FirebaseFirestore.DocumentSnapshot) {
         userJobRef.set({ state: 'completed', deletedCollections, completedAt: fieldValue.serverTimestamp(), updatedAt: fieldValue.serverTimestamp() }, { merge: true }),
         userReceiptRef.set({ result: 'completed', deletedCollections, completedAt: fieldValue.serverTimestamp(), updatedAt: fieldValue.serverTimestamp() }, { merge: true }),
       ])
+      await finishExportDeletionFence(uid, snapshot.id)
     } else {
       await snapshot.ref.delete()
     }
@@ -1114,6 +1266,7 @@ export const cancelDeletionRequest = functions.https.onCall(async (data, context
     transaction.update(jobRef, { state: 'cancelled', cancelledAt: fieldValue.serverTimestamp(), updatedAt: fieldValue.serverTimestamp() })
     transaction.set(queueRef, { state: 'cancelled', cancelledAt: fieldValue.serverTimestamp(), updatedAt: fieldValue.serverTimestamp() }, { merge: true })
   })
+  await finishExportDeletionFence(uid, jobId)
   return { jobId, state: 'cancelled' }
 })
 

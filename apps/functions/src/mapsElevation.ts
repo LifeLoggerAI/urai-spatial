@@ -27,6 +27,13 @@ function validCoordinate(value: unknown, min: number, max: number): value is num
   return typeof value === 'number' && Number.isFinite(value) && value >= min && value <= max
 }
 
+function blockUnadmittedElevationSpend(): void {
+  // The retained GET/query-key adapter has no admitted canonical spend
+  // executor. An API key, timeout or per-user rate limit cannot grant money.
+  // Preserve that adapter below as history while closing its active leaf.
+  throw new ElevationError(503, 'elevation_protected_spend_required')
+}
+
 async function consumeElevationRateLimit(uid: string) {
   const ref = db.doc(`users/${uid}/providerRateLimits/maps-elevation`)
   const now = Date.now()
@@ -79,6 +86,7 @@ export const mapsElevationProvider = onRequest({
       throw new ElevationError(400, 'invalid_coordinate')
     }
 
+    blockUnadmittedElevationSpend()
     await consumeElevationRateLimit(uid)
 
     const apiKey = ELEVATION_API_KEY.value().trim()

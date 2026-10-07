@@ -2,7 +2,9 @@
 
 import { collection, limit, onSnapshot, orderBy, query, type DocumentData, type Unsubscribe } from 'firebase/firestore'
 import { httpsCallable } from 'firebase/functions'
-import { functions, getFirebaseDb } from '@/lib/firebase/client'
+import { getAuth } from 'firebase/auth'
+import { fetchAuthorizedOperationalExport } from './authorizedExportDownload'
+import { app, functions, getFirebaseDb } from '@/lib/firebase/client'
 
 export type PrivacyRow = DocumentData & { id: string }
 export type PrivacyCallableResult = Record<string, unknown>
@@ -50,6 +52,31 @@ export function createOperationalExportRequest(scopes: string[], suppliedOperati
   return callOperationalPrivacyFunction('createExportRequest', { scopes, operationId: suppliedOperationId ?? operationId('export') })
 }
 export function getOperationalExportDownloadUrl(payload: { jobId: string; file?: 'export' | 'manifest' | 'runtime'; assetId?: string }) { return callOperationalPrivacyFunction('getExportDownloadUrl', payload) }
+export async function saveOperationalExportDownload(result: PrivacyCallableResult, isCurrent: () => boolean) {
+  const auth = getAuth(app)
+  const user = auth.currentUser
+  const file = result.file === 'runtime' ? 'runtime' : result.file === 'manifest' ? 'manifest' : 'export'
+  const requireCurrent = () => {
+    if (!user || auth.currentUser !== user || result.ownerId !== user.uid || !isCurrent()) {
+      throw new Error('Current owner authentication is required.')
+    }
+  }
+  requireCurrent()
+  if (typeof result.url !== 'string' || result.requiresAuthorization !== true) throw new Error('Authenticated export delivery is required.')
+  const contents = await fetchAuthorizedOperationalExport({ url: result.url, origin: window.location.origin, file,
+    getIdToken: async () => { requireCurrent(); const token = await user!.getIdToken(true); requireCurrent(); return token },
+  })
+  requireCurrent()
+  const objectUrl = URL.createObjectURL(contents)
+  try {
+    const link = document.createElement('a')
+    link.href = objectUrl
+    link.download = `urai-${file}.${file === 'runtime' ? 'splat' : 'json'}`
+    link.rel = 'noopener noreferrer'
+    document.body.append(link); link.click(); link.remove()
+  } finally { setTimeout(() => URL.revokeObjectURL(objectUrl), 1000) }
+}
+
 export function cancelOperationalExportRequest(jobId: string) { return callOperationalPrivacyFunction('cancelExportRequest', { jobId }) }
 export function createOperationalDeletionRequest(payload: { scope: string; confirmation: string; reason?: string; operationId?: string }) {
   return callOperationalPrivacyFunction('createDeletionRequest', { ...payload, operationId: payload.operationId ?? operationId('deletion') })

@@ -95,17 +95,21 @@ export async function paidSpatialFetch(db: BindingStore, uid: string, lane: stri
   const semanticSha = spendDigest(stableJson(Object.fromEntries([...headers.entries()].filter(([key]) => !Object.prototype.hasOwnProperty.call(credentials, key)))))
   const requestSha = spendDigest(Buffer.concat([Buffer.from(`POST\n${url}\n`, 'utf8'), bytes]))
   const inputSha = spendDigest(stableJson({ uid, lane, input:sourceInput })), tenantSha = spendDigest(uid)
+  // This permanent input identity excludes transport whitespace and object key
+  // ordering. It includes every actual provider JSON value and array position.
+  const semanticInputSha = spendDigest(stableJson(actualBody))
   // This protected metadata merely locates the job. It cannot create an approval or a hold.
   const locator = spendDigest(stableJson({ tenant_sha256:tenantSha, lane, request_sha256:requestSha, source_input_sha256:inputSha }))
   const snapshot = await db.doc(`spatialPaidProviderBindings/${locator}`).get(); need(snapshot.exists)
   const binding = record(snapshot.data()), workerId = text(binding.worker_id), jobId = text(binding.job_id), accountId = text(binding.account_id)
-  need(binding.tenant_sha256 === tenantSha && binding.lane === lane && binding.request_sha256 === requestSha && binding.source_input_sha256 === inputSha && binding.executor_source_sha === sourceSha && binding.credential_sha256 === credentialSha && binding.provider === provider)
+  need(binding.tenant_sha256 === tenantSha && binding.lane === lane && binding.request_sha256 === requestSha && binding.source_input_sha256 === inputSha && binding.semantic_input_sha256 === semanticInputSha && binding.executor_source_sha === sourceSha && binding.credential_sha256 === credentialSha && binding.provider === provider)
   // Protected issuer metadata pins the destination before any token is read.
   const gatewayUrl = endpoint(text(binding.gateway_url), true)
   need(gatewayUrl === configuredGatewayUrl && binding.gateway_repository === 'LifeLoggerAI/asset-factory' && binding.gateway_source_sha === gatewaySha)
   const materialized = () => {
     need(spatialSpendSourceSha() === sourceSha && spendDigest(stableJson({ uid, lane, input:sourceInput })) === inputSha)
     need(spendDigest(Buffer.concat([Buffer.from(`POST\n${url}\n`, 'utf8'), bytes])) === requestSha)
+    need(spendDigest(stableJson(JSON.parse(bytes.toString('utf8')))) === semanticInputSha)
     const currentCredentials = Object.fromEntries([...headers.entries()].filter(([key]) => ['authorization', 'xi-api-key', 'x-api-key', 'x-goog-api-key'].includes(key)))
     need(spendDigest(stableJson(currentCredentials)) === credentialSha)
     need(spendDigest(stableJson(Object.fromEntries([...headers.entries()].filter(([key]) => !Object.prototype.hasOwnProperty.call(currentCredentials, key))))) === semanticSha)
@@ -119,7 +123,7 @@ export async function paidSpatialFetch(db: BindingStore, uid: string, lane: stri
     job_id:jobId, worker_id:workerId, executor_repository:'LifeLoggerAI/urai-spatial', executor_source_sha:sourceSha,
     gateway_repository:'LifeLoggerAI/asset-factory', gateway_source_sha:gatewaySha, consumer:'spatial-functions',
     tenant_sha256:tenantSha, provider, account_id:accountId, credential_sha256:credentialSha,
-    source_input_sha256:inputSha, semantic_input_sha256:spendDigest(stableJson(actualBody)), semantic_headers_sha256:semanticSha, content_type:text(headers.get('content-type')),
+    source_input_sha256:inputSha, semantic_input_sha256:semanticInputSha, semantic_headers_sha256:semanticSha, content_type:text(headers.get('content-type')),
     request_sha256:requestSha, endpoint:url, model, asset:`spatial/${tenantSha}/${lane}`, request_size:String(bytes.byteLength),
   }
   const gateway = async (action: string, extra: JsonRecord = {}) => {
@@ -140,6 +144,9 @@ export async function paidSpatialFetch(db: BindingStore, uid: string, lane: stri
   need(executor.repository === fields.executor_repository && executor.source_sha === sourceSha && Array.isArray(job.input_sha256) && job.input_sha256.includes(inputSha) && job.input_sha256.includes(requestSha))
   need(account.provider === provider && account.account_id === accountId && account.credential_sha256 === credentialSha && account.credential_binding_verified === true && Boolean(text(account.credential_binding_receipt)))
   need(account.trusted_readback === true); fresh(account)
+  const concurrency = budget.max_concurrency
+  need(typeof concurrency === 'number' && Number.isSafeInteger(concurrency) && concurrency >= 1 && concurrency <= 20)
+  need(account.frozen === false && account.max_concurrency === concurrency && controls.max_concurrency === concurrency)
   for (const key of ['credential_sha256', 'semantic_headers_sha256', 'source_input_sha256', 'semantic_input_sha256', 'content_type'] as const) need(controls[key] === fields[key] && price[key] === fields[key])
   need(controls.provider === provider && controls.account_id === accountId && controls.trusted_readback === true)
   need(controls.enforcement_source_sha === gatewaySha && controls.endpoint === url && controls.request_sha256 === requestSha && controls.hard_stop_supported === true && controls.cost_cap_enforced === true && controls.auto_top_up === false)
@@ -150,6 +157,7 @@ export async function paidSpatialFetch(db: BindingStore, uid: string, lane: stri
   const digest = jobDigest(job), approval = record(job.approval), authorityProof = record(envelope.authority)
   need(approval.status === 'APPROVED' && approval.kind === 'EXPLICIT_BOUNDED_SPEND' && approval.job_digest === digest)
   need(approval.max_usd_micros === budget.max_usd_micros && approval.max_credits === budget.max_credits)
+  need(approval.max_concurrency === concurrency)
   text(approval.receipt); text(approval.approver); text(approval.key_id)
   need(/^[A-Za-z0-9+/]+={0,2}$/.test(text(approval.signature)))
   need(authorityProof.trusted_readback === true && canonical(authorityProof.binding) === canonical(authority))

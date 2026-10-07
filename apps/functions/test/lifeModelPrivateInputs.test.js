@@ -22,11 +22,12 @@ const narration = 'This is fictional test narration. No private source is presen
 function fixture(options = {}) {
   const shared = { schemaVersion: SCHEMA, state: 'current', synthetic: false, ownerId: uid, sourceId, sourceSha256: 'a'.repeat(64), sourceReceiptRef: 'private:fixtures/source-receipt-01', sourceRevision: 1 }
   const records = new Map([
+    [prefix, { ownerId: uid }],
     [handlePath, { ...shared, ownerDataEpoch: 0, transcriptRef: body.transcriptRef, provenanceRef: body.provenanceRef }],
     [sourcePath, { ...shared, revision: 1, sourceEvidenceClass: 'ATTRIBUTED_TESTIMONY', sourceFixityRef: 'private:fixtures/fixity-01', transcriptRef: body.transcriptRef, provenanceRef: body.provenanceRef, transcriptSha256: sha(narration), consentRevision: 4, consentState: 'authorized', externalProcessingConsent: true, purposes: ['memory-index'] }],
     [transcriptPath, { ...shared, opaqueRef: body.transcriptRef, text: narration, sha256: sha(narration) }],
     [provenancePath, { ...shared, opaqueRef: body.provenanceRef, transcriptSha256: sha(narration) }],
-    [`${prefix}/privacyPolicy/current`, { ownerId: uid, revision: 4, domains: { memory: { mode: 'granted', modelContext: true }, models: { mode: 'limited', modelContext: true }, identity: { mode: 'limited' } }, enforcement: { state: 'fully-enforced' } }],
+    [`${prefix}/privacyPolicy/current`, { version: 2, ownerId: uid, revision: 4, domains: { exports: { mode: 'granted' }, memory: { mode: 'granted', modelContext: true }, models: { mode: 'limited', modelContext: true }, identity: { mode: 'limited' } }, enforcement: { state: 'fully-enforced' } }],
     [`${prefix}/providerConnections/openai`, { processingAllowed: true, revocationState: 'not-required' }],
   ])
   const stats = { reads: 0, transactions: 0, logs: [], deleted: [], files: new Map() }
@@ -44,12 +45,12 @@ function fixture(options = {}) {
       async delete() { records.delete(path) } }
   }
   function collection(path, filters = [], maximum = Infinity) {
-    return { path, doc: id => document(`${path}/${id}`),
-      where: (key, operator, value) => { assert.equal(operator, '=='); return collection(path, [...filters, [key, value]], maximum) },
+    return { path, query: true, doc: id => document(`${path}/${id}`),
+      where: (key, operator, value) => { assert.ok(['==', 'in'].includes(operator)); return collection(path, [...filters, [key, operator, value]], maximum) },
       limit: limit => collection(path, filters, limit),
       async get() {
         const docs = [...records.keys()].filter(key => key.startsWith(path + '/') && key.slice(path.length + 1).split('/').length === 1)
-          .filter(key => filters.every(([field, value]) => snapshot(key).get(field) === value)).sort().slice(0, maximum).map(snapshot)
+          .filter(key => filters.every(([field, operator, value]) => operator === 'in' ? value.includes(snapshot(key).get(field)) : snapshot(key).get(field) === value)).sort().slice(0, maximum).map(snapshot)
         return { size: docs.length, docs, empty: docs.length === 0 }
       } }
   }
@@ -57,7 +58,7 @@ function fixture(options = {}) {
     doc: document, collection,
     async runTransaction(callback) {
       const writes = []
-      const tx = { get: async ref => { stats.reads++; return snapshot(ref.path) }, getAll: async (...refs) => refs.map(ref => snapshot(ref.path)),
+      const tx = { create(ref, value) { writes.push(() => ref.set(value)) }, get: async ref => { stats.reads++; return ref.query ? ref.get() : snapshot(ref.path) }, getAll: async (...refs) => refs.map(ref => snapshot(ref.path)),
         set(ref, value, settings) { writes.push(() => ref.set(value, settings)) }, update(ref, value) { writes.push(() => ref.update(value)) } }
       const result = await callback(tx)
       for (const write of writes) await write()
@@ -80,7 +81,7 @@ function fixture(options = {}) {
     firestore: { document: () => ({ onCreate: handler => handler }) }, pubsub: { schedule: () => ({ onRun: handler => handler }) } }
   const firestore = Object.assign(() => db, { FieldValue: { serverTimestamp: () => 'fixture-server-time' }, Timestamp: { fromMillis: value => ({ value }) } })
   const admin = { apps: [{}], firestore, initializeApp() {}, auth: () => ({ deleteUser: async () => {} }),
-    storage: () => ({ bucket: () => ({ deleteFiles: async () => {}, file: path => ({ save: async bytes => { stats.files.set(path, Buffer.from(bytes)) } }) }) }) }
+    storage: () => ({ bucket: () => ({ deleteFiles: async () => {}, file: path => ({ save: async bytes => { stats.files.set(path, Buffer.from(bytes)) }, getMetadata: async () => [{ generation: '1' }] }) }) }) }
   const env = { URAI_PRIVATE_LIFE_MODEL_INPUTS_ENABLED: 'true', PRIVATE_SOURCE_REF_RESOLVER_TOKEN: 'fixture-resolver-token', GCLOUD_PROJECT: 'urai-4dc1d', URAI_SOURCE_SHA: 'c'.repeat(40), ...options.env }
   let service
   function load(filename) {
@@ -92,7 +93,7 @@ function fixture(options = {}) {
         if (name === 'firebase-admin') return admin
         if (name === './lifeModelPrivateInputs') return service
         if (name === './personPresenceAuthority') return load('personPresenceAuthority')
-        if (name === 'node:crypto') return require(name)
+        if (name === 'node:crypto' || name === 'node:stream/promises') return require(name)
         throw new Error(`Unexpected private-input dependency: ${name}`)
       } }, { filename })
     return exports
@@ -200,8 +201,8 @@ test('deletion while resolving closes the entire owner input authority before de
 test('actual life-model export includes private source, transcript and provenance records', async () => {
   const f = fixture(), privacy = f.load('privacyOperations')
   const jobPath = `${prefix}/exportJobs/fixture-export`
-  f.records.set(jobPath, { uid, scopes: ['life-model'], state: 'queued', receiptId: 'fixture-receipt' })
-  f.records.set(`${prefix}/privacyReceipts/fixture-receipt`, {})
+  f.records.set(jobPath, { uid, scopes: ['life-model'], state: 'queued', receiptId: 'fixture-receipt', consentRevision: 4, exportFenceGeneration: 0 })
+  f.records.set(`${prefix}/privacyReceipts/fixture-receipt`, { ownerId: uid, kind: 'export', jobId: 'fixture-export', result: 'queued' })
   await privacy.processExportJob(await f.db.doc(jobPath).get())
   assert.equal(f.records.get(jobPath).state, 'ready')
   const payload = JSON.parse(f.stats.files.get(`private-exports/${uid}/fixture-export/export.json`).toString())

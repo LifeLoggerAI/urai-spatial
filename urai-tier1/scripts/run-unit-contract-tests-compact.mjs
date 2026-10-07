@@ -16,6 +16,7 @@ const tests = [
   'tests/ios-source-archive.test.mjs',
   'tests/ios-native-preparation.test.mjs',
   'tests/privacy-session-lifecycle.test.mjs',
+  'tests/authorized-export-download.test.mjs',
   'tests/sms-session-lifecycle.test.mjs',
   'tests/asset-receipt-runner-contract.test.mjs',
   'tests/provider-asset-verifier-fault-injection.test.mjs',

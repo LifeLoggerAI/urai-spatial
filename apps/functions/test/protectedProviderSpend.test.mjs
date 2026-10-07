@@ -49,7 +49,7 @@ function fixture(change = {}) {
       if (body.action === 'preflight') {
         const fingerprints = Object.fromEntries(['credential_sha256','semantic_headers_sha256','source_input_sha256','semantic_input_sha256','content_type'].map(key => [key,body[key]]))
         const timing = { observed_at:new Date(now()-60000).toISOString(), expires_at:new Date(now()+300000).toISOString() }
-        const reply = { ok:true, provider_call_authorized:false, execution_performed:false, envelope:{ job:structuredClone(row.job), account:{ ...timing,provider:body.provider,account_id:body.account_id,credential_sha256:body.credential_sha256,credential_binding_verified:true,credential_binding_receipt:'SYNTHETIC-ACCOUNT-MAP',trusted_readback:true }, protected_controls:{ ...timing,...fingerprints,provider:body.provider,account_id:body.account_id,trusted_readback:true,endpoint:body.endpoint,request_sha256:body.request_sha256,enforcement_source_sha:GATEWAY,hard_stop_supported:true,cost_cap_enforced:true,auto_top_up:false,max_usd_micros:2500000,max_credits:20,max_runtime_seconds:2,proof_receipt:'SYNTHETIC-CONTROLS' }, protected_pricing:{ ...timing,...fingerprints,provider:body.provider,account_id:body.account_id,model_version:body.model,request_sha256:body.request_sha256,trusted_readback:true,receipt:'SYNTHETIC-PRICE',rates:structuredClone(row.job.budget.rates) } } }
+        const reply = { ok:true, provider_call_authorized:false, execution_performed:false, envelope:{ job:structuredClone(row.job), account:{ ...timing,provider:body.provider,account_id:body.account_id,credential_sha256:body.credential_sha256,credential_binding_verified:true,credential_binding_receipt:'SYNTHETIC-ACCOUNT-MAP',trusted_readback:true,max_concurrency:2,frozen:false }, protected_controls:{ ...timing,...fingerprints,provider:body.provider,account_id:body.account_id,trusted_readback:true,endpoint:body.endpoint,request_sha256:body.request_sha256,enforcement_source_sha:GATEWAY,hard_stop_supported:true,cost_cap_enforced:true,auto_top_up:false,max_usd_micros:2500000,max_credits:20,max_runtime_seconds:2,max_concurrency:2,proof_receipt:'SYNTHETIC-CONTROLS' }, protected_pricing:{ ...timing,...fingerprints,provider:body.provider,account_id:body.account_id,model_version:body.model,request_sha256:body.request_sha256,trusted_readback:true,receipt:'SYNTHETIC-PRICE',rates:structuredClone(row.job.budget.rates) } } }
         reply.envelope.authority = { ...timing, trusted_readback:true, binding:structuredClone(row.job.authority) }
         reply.admission_expires_at = new Date(Math.min(row.deploymentExpiresAt, ...[reply.envelope.job.approval, reply.envelope.authority, reply.envelope.account, reply.envelope.protected_controls, reply.envelope.protected_pricing, reply.envelope.job.budget.rates].map(value => Date.parse(value.expires_at)))).toISOString()
         if (controls.proofRejected) return new Response('{}', { status:409 })
@@ -114,9 +114,9 @@ function fixture(change = {}) {
       const executor = { ...fields, repository:fields.executor_repository, source_sha:SOURCE, binding_version:2, deployment_ref:'e'.repeat(64), controls_ref:'f'.repeat(64) }
       for (const k of ['job_id','executor_repository','executor_source_sha','provider','account_id','model','consumer']) delete executor[k]
       const rates = { usd_micros_per_unit:1000000,credits_per_unit:10,receipt:'SYNTHETIC-PRICING',verified_at:new Date(now()-60000).toISOString(),expires_at:new Date(now()+300000).toISOString() }
-      const job = { job_id:jobId, provider, account_id:fields.account_id, model_version:model, consumer:fields.consumer, rights_reviewed:true, authority:{ repository:fields.executor_repository, sha:SOURCE }, input_sha256:[inputSha,requestSha], executor, budget:{ max_usd_micros:2500000,max_credits:20,max_runtime_seconds:2,rates }, attempts:[] }
+      const job = { job_id:jobId, provider, account_id:fields.account_id, model_version:model, consumer:fields.consumer, rights_reviewed:true, authority:{ repository:fields.executor_repository, sha:SOURCE }, input_sha256:[inputSha,requestSha], executor, budget:{ max_usd_micros:2500000,max_credits:20,max_runtime_seconds:2,max_concurrency:2,rates }, attempts:[] }
       // Entirely synthetic gateway response fields; no signing or real approval.
-      job.approval = { status:'APPROVED',kind:'EXPLICIT_BOUNDED_SPEND',job_digest:syntheticJobDigest(job),max_usd_micros:2500000,max_credits:20,receipt:'SYNTHETIC-NOT-AUTHORIZATION',approver:'synthetic-approver',key_id:'synthetic-test-only',signature:'U1lOVEhFVElDLU5PVC1BUFRIT1JJWkFUSU9O',issued_at:new Date(now()-60000).toISOString(),expires_at:new Date(now()+300000).toISOString() }
+      job.approval = { status:'APPROVED',kind:'EXPLICIT_BOUNDED_SPEND',job_digest:syntheticJobDigest(job),max_usd_micros:2500000,max_credits:20,max_concurrency:2,receipt:'SYNTHETIC-NOT-AUTHORIZATION',approver:'synthetic-approver',key_id:'synthetic-test-only',signature:'U1lOVEhFVElDLU5PVC1BUFRIT1JJWkFUSU9O',issued_at:new Date(now()-60000).toISOString(),expires_at:new Date(now()+300000).toISOString() }
       rows.set(jobId, { job, hold:0, deploymentExpiresAt:now()+300000 })
     }
     expectedFields = { fields, body }; return fields
@@ -581,4 +581,74 @@ test('secret issuer origin cannot diverge even when protected binding and enviro
 })
 test('monotonic elapsed runtime suppresses output when wall clock remains before expiry', async () => {
   const f=fixture();f.setProvider(async()=>{await Promise.resolve();f.advanceMonotonic(2500);return new Response('LATE OUTPUT')});await assert.rejects(f.paidFetch(...f.directArgs()));assert.equal(f.providerCalls.length,1);assertUnsettled(f)
+})
+
+test('semantic input identity hashes normalized actual JSON independently of transport formatting and source labels', async () => {
+  const bodies = [
+    '{"model":"synthetic-model","input":{"b":["café 😀",2],"a":{"y":false,"x":1}}}',
+    '{ "input": {"a":{"x":1,"y":false}, "b":["café 😀",2]}, "model":"synthetic-model" }',
+    '{"model":"synthetic-model","input":{"a":{"x":1,"y":false},"b":[2,"café 😀"]}}',
+  ]
+  const observed=[]
+  for(const body of bodies){
+    const f=fixture(),args=f.directArgs();args[7].body=body
+    const response=await f.paidFetch(...args);await response.text()
+    const field=f.calls[0].semantic_input_sha256
+    assert.equal(field,digest(stable(JSON.parse(body))))
+    assert.notEqual(field,f.calls[0].source_input_sha256)
+    assert.ok(f.calls.every(call=>call.semantic_input_sha256===field))
+    observed.push({semantic:field,request:f.calls[0].request_sha256})
+  }
+  assert.equal(observed[0].semantic,observed[1].semantic)
+  assert.notEqual(observed[0].request,observed[1].request)
+  assert.notEqual(observed[0].semantic,observed[2].semantic)
+})
+
+test('missing or changed protected semantic input identity blocks before reading the worker token', async () => {
+  for(const binding of [value=>{delete value.semantic_input_sha256},value=>{value.semantic_input_sha256='c'.repeat(64)}]){
+    const f=fixture({binding});await assert.rejects(f.paidFetch(...f.directArgs()))
+    assert.equal(f.controls.tokenReads,0);assert.equal(f.calls.length,0);assert.equal(f.providerCalls.length,0)
+  }
+})
+
+for(const location of ['executor','protected_controls','protected_pricing']){
+  test(`missing or changed ${location} semantic input identity blocks before reserve`,async()=>{
+    for(const value of [undefined,'c'.repeat(64)]){
+      const f=fixture({preflight:reply=>{
+        const target=location==='executor'?reply.envelope.job.executor:reply.envelope[location]
+        if(value===undefined)delete target.semantic_input_sha256;else target.semantic_input_sha256=value
+      }})
+      await assert.rejects(f.paidFetch(...f.directArgs()))
+      assert.equal(f.calls.some(call=>call.action==='reserve'),false);assert.equal(f.providerCalls.length,0)
+    }
+  })
+}
+
+test('missing or changed reserve semantic identity retains the full hold without a provider POST',async()=>{
+  for(const value of [undefined,'c'.repeat(64)]){
+    const f=fixture({reserveReply:reply=>{if(value===undefined)delete reply.semantic_input_sha256;else reply.semantic_input_sha256=value}})
+    await assert.rejects(f.paidFetch(...f.directArgs()))
+    assert.equal(f.providerCalls.length,0);assertUnsettled(f)
+  }
+})
+
+for (const location of ['account', 'budget', 'approval', 'protected_controls']) {
+  test(`canonical shared account concurrency must be bounded and matched in ${location}`, async () => {
+    for (const value of [undefined, 0, 21, 3, '2']) {
+      const f = fixture({ preflight: reply => {
+        const target = ['budget', 'approval'].includes(location) ? reply.envelope.job[location] : reply.envelope[location]
+        if (value === undefined) delete target.max_concurrency; else target.max_concurrency = value
+        reply.envelope.job.approval.job_digest = syntheticJobDigest(reply.envelope.job)
+      } })
+      await assert.rejects(f.paidFetch(...f.directArgs()))
+      assert.equal(f.calls.some(call => call.action === 'reserve'), false); assert.equal(f.providerCalls.length, 0)
+    }
+  })
+}
+test('a missing or frozen protected account cannot reserve or dispatch', async () => {
+  for (const value of [undefined, true, 'false']) {
+    const f = fixture({ preflight: reply => { if (value === undefined) delete reply.envelope.account.frozen; else reply.envelope.account.frozen = value } })
+    await assert.rejects(f.paidFetch(...f.directArgs()))
+    assert.equal(f.calls.some(call => call.action === 'reserve'), false); assert.equal(f.providerCalls.length, 0)
+  }
 })
