@@ -2,6 +2,8 @@ import { createHash } from 'node:crypto'
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import { createRequire } from 'node:module'
+import { collectHomeSemanticActionProof } from './home-semantic-action-proof.mjs'
+import { proveHomeSkyAscent } from './home-sky-ascent-proof.mjs'
 
 const requireFromTierOne = createRequire(new URL('../urai-tier1/package.json', import.meta.url))
 const { chromium } = requireFromTierOne('playwright')
@@ -50,12 +52,23 @@ for (const [assetPath, proof] of Object.entries(expected)) {
 }
 
 const receipt = {
-  schemaVersion: 'urai-portal-orb-proof-7',
+  schemaVersion: 'urai-portal-orb-proof-8',
   exactHead,
   capturedAt: new Date().toISOString(),
   runtimeMode: 'final-glb-pack-live-with-visual-approval-pending',
   finalPackReceipt: path.relative(process.cwd(), finalPackReceiptPath),
   stagedAssetIdentity,
+  actionGate: {
+    source: 'current-home-native-accessibility-and-physical-sky-ascent',
+    accessibleNameEngine: 'playwright-exact-role-name',
+    minimumInteractiveTargetPixels: 48,
+    originalWorldTextRetained: true,
+    orbLaw: 'one enabled native button named Open URAI Orb companion in the current governed Home navigation',
+    groundLaw: 'one enabled native link named Open Ground directly with exact same-origin Ground entry and camera checkpoint',
+    lifeMapLaw: 'the correctly named same-origin direct Life Map link plus literal upper-sky pointer or touch input, actual ASCENT ownership, physical camera lift, and exact Life Map arrival',
+    directNavigationCannotAuthorizeAscent: true,
+    physicalAscentAfterRetainedHomeScreenshot: true,
+  },
   visualGate: {
     source: 'retained-canvas-png',
     sampling: 'distributed-3x3-neighborhood',
@@ -171,7 +184,7 @@ for (const spec of cases) {
   const pageErrors = []
   page.on('pageerror', (error) => pageErrors.push(String(error)))
 
-  const record = { id: spec.id, viewport: spec.viewport, reducedMotion: spec.reducedMotion, pageErrors, passed: false }
+  const record = { id: spec.id, viewport: spec.viewport, reducedMotion: spec.reducedMotion, pageErrors, lifeMapAscentOwned: false, passed: false }
 
   try {
     const response = await page.goto(`${base}/home/?homeAssetReview=1&homePrivateFixture=1`, { waitUntil: 'domcontentloaded', timeout: 60_000 })
@@ -189,9 +202,10 @@ for (const spec of cases) {
     record.visibleWorld = await owner.getAttribute('data-home-visible-world')
     record.movement = await owner.getAttribute('data-home-movement')
     record.accessibleRuntimeText = (await owner.textContent()) || ''
-    record.orbOwned = record.accessibleRuntimeText.includes('Open URAI Orb companion')
-    record.groundPortalOwned = record.accessibleRuntimeText.includes('Open Ground directly')
-    record.lifeMapAscentOwned = record.accessibleRuntimeText.includes('Ascend to Life Map')
+    record.semanticActions = await collectHomeSemanticActionProof(page, { base })
+    record.orbOwned = record.semanticActions.actions.orb.passed
+    record.groundPortalOwned = record.semanticActions.actions.ground.passed
+    record.lifeMapDirectNavigationOwned = record.semanticActions.actions.lifeMap.passed
     record.visual = await waitForVisualEvidence(page)
     record.visualPassed = record.visual?.available === true
       && record.visual.viewportCoverage >= receipt.visualGate.minimumViewportCoverage
@@ -202,6 +216,9 @@ for (const spec of cases) {
     const screenshot = await page.screenshot({ path: path.join(outputDir, record.screenshot), fullPage: false, animations: 'disabled', caret: 'hide', timeout: 90_000 })
     record.screenshotBytes = screenshot.length
     record.screenshotSha256 = createHash('sha256').update(screenshot).digest('hex')
+
+    record.lifeMapAscent = await proveHomeSkyAscent(page, owner, { mode: spec.hasTouch ? 'touch' : 'pointer' })
+    record.lifeMapAscentOwned = record.lifeMapDirectNavigationOwned && record.lifeMapAscent.ascentProven === true
 
     record.passed = record.status === 200
       && record.canvasReady === 'true'
@@ -216,6 +233,7 @@ for (const spec of cases) {
       && pageErrors.length === 0
   } catch (error) {
     record.error = String(error)
+    if (error?.proof) record.lifeMapAscent = error.proof
   } finally {
     receipt.cases.push(record)
     if (!record.passed) receipt.errors.push(record)
