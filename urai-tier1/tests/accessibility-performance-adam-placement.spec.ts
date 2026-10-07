@@ -84,18 +84,18 @@ async function assertCopyIsUnobstructed(copy: Locator) {
   return geometry
 }
 
-async function assertPassportTargetClearOfOrb(target: Locator) {
+async function assertScrollTargetClearOfOrb(target: Locator, scrollboxSelector = '.passportVault') {
   await target.scrollIntoViewIfNeeded()
-  const geometry = await target.evaluate(element => {
+  const geometry = await target.evaluate((element, selector) => {
     const rect = element.getBoundingClientRect()
-    const scrollbox = element.closest('.passportVault')!.getBoundingClientRect()
+    const scrollbox = element.closest(selector)!.getBoundingClientRect()
     const orb = document.querySelector('.urai-world-companion__orb')!.getBoundingClientRect()
     const hit = document.elementFromPoint(rect.left + rect.width / 2, rect.top + rect.height / 2)
     return { text: element.textContent?.trim(), width: rect.width, height: rect.height, top: rect.top, bottom: rect.bottom, scrollboxBottom: scrollbox.bottom, viewportHeight: innerHeight, coveredByOrb: rect.left < orb.right && rect.right > orb.left && rect.top < orb.bottom && rect.bottom > orb.top, pointerReachable: hit === element || element.contains(hit) }
-  })
+  }, scrollboxSelector)
   expect(geometry.top).toBeGreaterThanOrEqual(-1)
   expect(geometry.bottom).toBeLessThanOrEqual(Math.min(geometry.scrollboxBottom, geometry.viewportHeight) + 1)
-  expect(geometry.coveredByOrb, 'The persistent Orb must not cover Passport operation fields or ownership information').toBe(false)
+  expect(geometry.coveredByOrb, `The persistent Orb must not cover ${scrollboxSelector} controls or copy`).toBe(false)
   expect(geometry.pointerReachable).toBe(true)
   return geometry
 }
@@ -240,14 +240,14 @@ for (const viewport of placementViewports) {
       await expect(page.locator('.urai-world-companion__orb')).toBeVisible()
       const operationTargets = []
       for (const target of await page.locator('.passportDanger > label > select, .passportDanger > label > input, .passportDanger > button').all()) {
-        const geometry = await assertPassportTargetClearOfOrb(target)
+        const geometry = await assertScrollTargetClearOfOrb(target)
         expect(geometry.width).toBeGreaterThanOrEqual(48)
         expect(geometry.height).toBeGreaterThanOrEqual(48)
         operationTargets.push(geometry)
       }
       expect(operationTargets).toHaveLength(3)
       await attachPlacement(page, info, `passport-operation-fields-${state}-${viewport.width}x${viewport.height}`, operationTargets)
-      const ownershipInformation = await assertPassportTargetClearOfOrb(page.locator('.passportKey span'))
+      const ownershipInformation = await assertScrollTargetClearOfOrb(page.locator('.passportKey span'))
       await info.attach(`passport-ownership-orb-clear-${state}-${viewport.width}x${viewport.height}.json`, { body: JSON.stringify(ownershipInformation), contentType: 'application/json' })
       const action = owner.getByRole('button', { name: 'Unlock and create deletion request', exact: true })
       await expect(action).toBeDisabled()
@@ -277,7 +277,7 @@ test('Passport no-WebGL keeps the founder slot and protected deletion text clear
   await exerciseKeyboardPanel(page, 'passport-controls')
   const deletion = await assertCopyIsUnobstructed(page.locator('.passportDanger > p'))
   await expect(page.locator('.urai-world-companion__orb')).toBeVisible()
-  const confirmation = await assertPassportTargetClearOfOrb(page.locator('.passportDanger > label > input'))
+  const confirmation = await assertScrollTargetClearOfOrb(page.locator('.passportDanger > label > input'))
   expect(confirmation.height).toBeGreaterThanOrEqual(48)
   await attachPlacement(page, info, 'passport-no-webgl-operation-field-320x568', confirmation)
   await assertCopyIsUnobstructed(page.locator('.passportDanger > p'))
@@ -340,6 +340,15 @@ async function inspectTextAndControls(page: Page, slot: string) {
     }).map(target => ({ tag: target.tagName, text: target.textContent?.trim() }))
   })
   expect(overlaps, `${slot} founder launcher must not cover copy or another control`).toEqual([])
+  if (slot === 'possible-futures-controls') {
+    const scrollbox = 'section[aria-label="Possible Future controls"]'
+    for (const target of await page.locator(scrollbox).locator('textarea, button').all()) {
+      const control = await assertScrollTargetClearOfOrb(target, scrollbox)
+      expect(control.width).toBeGreaterThanOrEqual(48)
+      expect(control.height).toBeGreaterThanOrEqual(48)
+    }
+    await assertScrollTargetClearOfOrb(launcher, scrollbox)
+  }
   return geometry
 }
 
