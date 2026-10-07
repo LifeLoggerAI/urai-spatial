@@ -9,9 +9,13 @@ on:
       - 'apps/functions/src/personPresenceProvider.ts'
       - 'apps/functions/src/personPresenceVoiceProvider.ts'
       - 'apps/functions/src/councilProviderFunctions.ts'
+      - 'apps/functions/src/mapsElevation.ts'
+      - 'apps/functions/src/mapsElevationResult.ts'
+      - 'urai-tier1/src/app/api/maps/elevation/route.ts'
       - 'apps/functions/test/protectedProviderSpend.test.mjs'
       - 'urai-tier1/tests/localization-content-routing.test.mjs'
       - 'urai-tier1/tests/presence-content-language.test.mjs'
+      - 'urai-tier1/tests/maps-elevation-route-contract.test.mjs'
       - 'docs/protected-spatial-provider-spend.md'
       - '.github/workflows/spatial-protected-spend-source.yml'
   workflow_dispatch:
@@ -74,6 +78,7 @@ jobs:
           pnpm --dir urai-tier1 exec node --import tsx --test \
             tests/localization-content-routing.test.mjs \
             tests/presence-content-language.test.mjs \
+            tests/maps-elevation-route-contract.test.mjs \
             2>&1 | tee artifacts/spatial-protected-spend/locale-tests.log
       - name: Retain source proof with acceptance false
         run: |
@@ -88,9 +93,13 @@ jobs:
             'apps/functions/src/personPresenceProvider.ts',
             'apps/functions/src/personPresenceVoiceProvider.ts',
             'apps/functions/src/councilProviderFunctions.ts',
+            'apps/functions/src/mapsElevation.ts',
+            'apps/functions/src/mapsElevationResult.ts',
+            'urai-tier1/src/app/api/maps/elevation/route.ts',
             'apps/functions/test/protectedProviderSpend.test.mjs',
             'urai-tier1/tests/localization-content-routing.test.mjs',
             'urai-tier1/tests/presence-content-language.test.mjs',
+            'urai-tier1/tests/maps-elevation-route-contract.test.mjs',
             'docs/protected-spatial-provider-spend.md',
             '.github/workflows/spatial-protected-spend-source.yml',
           ]

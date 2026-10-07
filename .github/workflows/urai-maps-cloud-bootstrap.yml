@@ -5,6 +5,11 @@ on:
     paths:
       - '.github/workflows/urai-maps-cloud-bootstrap.yml'
       - 'operations/maps/**'
+      - 'apps/functions/src/protectedProviderSpend.ts'
+      - 'apps/functions/src/mapsElevation.ts'
+      - 'apps/functions/src/mapsElevationResult.ts'
+      - 'urai-tier1/src/app/api/maps/elevation/route.ts'
+      - 'urai-tier1/tests/maps-elevation-route-contract.test.mjs'
       - 'urai-tier1/src/app/location-map/geographic/**'
       - 'urai-tier1/tests/geographic-location-client-contract.test.mjs'
       - 'urai-tier1/tests/maps-cloud-bootstrap-contract.test.mjs'

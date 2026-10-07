@@ -44,7 +44,7 @@ function canonical(value: unknown): string {
 }
 function jobDigest(job: JsonRecord) { return spendDigest(canonical(Object.fromEntries(Object.entries(job).filter(([key]) => key !== 'approval' && key !== 'attempts')))) }
 
-const SOURCE_PATHS = ['providerFunctions.ts', 'adamPresenceFunctions.ts', 'personPresenceProvider.ts', 'personPresenceVoiceProvider.ts', 'councilProviderFunctions.ts', 'protectedProviderSpend.ts'].map(name => `apps/functions/src/${name}`)
+const SOURCE_PATHS = [...['providerFunctions.ts', 'adamPresenceFunctions.ts', 'personPresenceProvider.ts', 'personPresenceVoiceProvider.ts', 'councilProviderFunctions.ts', 'protectedProviderSpend.ts', 'mapsElevation.ts', 'mapsElevationResult.ts'].map(name => `apps/functions/src/${name}`), 'urai-tier1/src/app/api/maps/elevation/route.ts']
 /** Runtime declarations must agree with actual clean tracked enforcement source. */
 export function spatialSpendSourceSha() {
   const expected = sha(process.env.URAI_SOURCE_SHA, 40)
@@ -82,8 +82,7 @@ async function boundedGatewayJson(response: Response) {
 /** Every external POST, including screening, enters this exact request boundary. */
 export async function paidSpatialFetch(db: BindingStore, uid: string, lane: string, provider: string, model: string, sourceInput: unknown, target: string | URL, init: RequestInit): Promise<Response> {
   need(uid && lane && provider && model && init.method === 'POST' && typeof init.body === 'string')
-  const url = endpoint(String(target)), configuredGatewayUrl = endpoint(text(process.env.SPATIAL_PRODUCTION_SPEND_URL), true)
-  const sourceSha = spatialSpendSourceSha(), gatewaySha = sha(process.env.SPATIAL_SPEND_GATEWAY_SOURCE_SHA, 40)
+  const url = endpoint(String(target))
   const bytes = Buffer.from(init.body, 'utf8'), headers = new Headers(init.headers), callerSignal = init.signal
   let actualBody: JsonRecord; try { actualBody = record(JSON.parse(init.body)) } catch { throw new SpatialSpendError() }
   const origins: Record<string, string> = { openai:'https://api.openai.com', elevenlabs:'https://api.elevenlabs.io', anthropic:'https://api.anthropic.com', gemini:'https://generativelanguage.googleapis.com', xai:'https://api.x.ai', mistral:'https://api.mistral.ai' }
@@ -91,13 +90,39 @@ export async function paidSpatialFetch(db: BindingStore, uid: string, lane: stri
   need(provider === 'gemini' ? new URL(url).pathname === `/v1beta/models/${encodeURIComponent(model)}:generateContent` : (provider === 'elevenlabs' ? actualBody.model_id : actualBody.model) === model)
   const credentials = Object.fromEntries([...headers.entries()].filter(([key]) => ['authorization', 'xi-api-key', 'x-api-key', 'x-goog-api-key'].includes(key)))
   need(Object.keys(credentials).length > 0 && Object.values(credentials).every(value => Boolean(value.trim())) && (!credentials.authorization || /^Bearer\s+\S+$/.test(credentials.authorization)))
+  return executeSpatialRequest(db, uid, lane, provider, model, sourceInput, url, bytes, headers, credentials, () => JSON.parse(bytes.toString('utf8')), () => Object.fromEntries([...headers.entries()].filter(([key]) => Object.prototype.hasOwnProperty.call(credentials, key))), init, callerSignal)
+}
+
+type ElevationInput = { latitude: number; longitude: number }
+/** Native Google GET: one coordinate, fixed endpoint, and a separately bound query credential. */
+export async function paidSpatialElevationFetch(db: BindingStore, uid: string, input: ElevationInput, apiKey: string, signal?: AbortSignal, beforeReserve?: () => Promise<void>): Promise<Response> {
+  need(uid && typeof apiKey === 'string' && apiKey.trim() === apiKey && /^[A-Za-z0-9_-]{1,256}$/.test(apiKey))
+  need(input && Number.isFinite(input.latitude) && input.latitude >= -90 && input.latitude <= 90 && Number.isFinite(input.longitude) && input.longitude >= -180 && input.longitude <= 180)
+  const url = new URL('https://maps.googleapis.com/maps/api/elevation/json')
+  url.searchParams.set('locations', `${input.latitude},${input.longitude}`)
+  // The issuer sees coordinates and a credential digest, never the key-bearing URL.
+  const endpointUrl = url.toString(), credentials = { key: apiKey }
+  const headers = new Headers({ accept: 'application/json', 'content-type': 'application/x-www-form-urlencoded' })
+  const semantic = () => ({ locations: `${input.latitude},${input.longitude}` })
+  url.searchParams.set('key', apiKey)
+  return executeSpatialRequest(db, uid, 'maps-elevation', 'google-maps-elevation', 'elevation-json', input, endpointUrl, Buffer.alloc(0), headers, credentials, semantic, () => ({ key: url.searchParams.get('key') }), { method: 'GET', cache: 'no-store', referrerPolicy: 'no-referrer' }, signal, beforeReserve, url.toString())
+}
+
+const outputAuthority = new WeakMap<Response, () => void>()
+/** Final publication rechecks the same admission after parsing and asynchronous auth work. */
+export function assertSpatialPaidOutputCurrent(response: Response) { const check = outputAuthority.get(response); need(check); check() }
+
+async function executeSpatialRequest(db: BindingStore, uid: string, lane: string, provider: string, model: string, sourceInput: unknown, url: string, bytes: Buffer<ArrayBuffer>, headers: Headers, credentials: Record<string, unknown>, semanticInput: () => unknown, currentCredentials: () => unknown, init: RequestInit, callerSignal?: AbortSignal | null, beforeReserve?: () => Promise<void>, dispatchUrl = url): Promise<Response> {
+  const configuredGatewayUrl = endpoint(text(process.env.SPATIAL_PRODUCTION_SPEND_URL), true)
+  const sourceSha = spatialSpendSourceSha(), gatewaySha = sha(process.env.SPATIAL_SPEND_GATEWAY_SOURCE_SHA, 40)
+  const method = init.method === 'GET' ? 'GET' : 'POST'
   const credentialSha = spendDigest(stableJson(credentials))
   const semanticSha = spendDigest(stableJson(Object.fromEntries([...headers.entries()].filter(([key]) => !Object.prototype.hasOwnProperty.call(credentials, key)))))
-  const requestSha = spendDigest(Buffer.concat([Buffer.from(`POST\n${url}\n`, 'utf8'), bytes]))
+  const requestSha = spendDigest(Buffer.concat([Buffer.from(`${method}\n${url}\n`, 'utf8'), bytes]))
   const inputSha = spendDigest(stableJson({ uid, lane, input:sourceInput })), tenantSha = spendDigest(uid)
   // This permanent input identity excludes transport whitespace and object key
   // ordering. It includes every actual provider JSON value and array position.
-  const semanticInputSha = spendDigest(stableJson(actualBody))
+  const semanticInputSha = spendDigest(stableJson(semanticInput()))
   // This protected metadata merely locates the job. It cannot create an approval or a hold.
   const locator = spendDigest(stableJson({ tenant_sha256:tenantSha, lane, request_sha256:requestSha, source_input_sha256:inputSha }))
   const snapshot = await db.doc(`spatialPaidProviderBindings/${locator}`).get(); need(snapshot.exists)
@@ -108,11 +133,10 @@ export async function paidSpatialFetch(db: BindingStore, uid: string, lane: stri
   need(gatewayUrl === configuredGatewayUrl && binding.gateway_repository === 'LifeLoggerAI/asset-factory' && binding.gateway_source_sha === gatewaySha)
   const materialized = () => {
     need(spatialSpendSourceSha() === sourceSha && spendDigest(stableJson({ uid, lane, input:sourceInput })) === inputSha)
-    need(spendDigest(Buffer.concat([Buffer.from(`POST\n${url}\n`, 'utf8'), bytes])) === requestSha)
-    need(spendDigest(stableJson(JSON.parse(bytes.toString('utf8')))) === semanticInputSha)
-    const currentCredentials = Object.fromEntries([...headers.entries()].filter(([key]) => ['authorization', 'xi-api-key', 'x-api-key', 'x-goog-api-key'].includes(key)))
-    need(spendDigest(stableJson(currentCredentials)) === credentialSha)
-    need(spendDigest(stableJson(Object.fromEntries([...headers.entries()].filter(([key]) => !Object.prototype.hasOwnProperty.call(currentCredentials, key))))) === semanticSha)
+    need(spendDigest(Buffer.concat([Buffer.from(`${method}\n${url}\n`, 'utf8'), bytes])) === requestSha)
+    need(spendDigest(stableJson(semanticInput())) === semanticInputSha)
+    need(spendDigest(stableJson(currentCredentials())) === credentialSha)
+    need(spendDigest(stableJson(Object.fromEntries([...headers.entries()].filter(([key]) => !Object.prototype.hasOwnProperty.call(credentials, key))))) === semanticSha)
   }
   materialized(); need(!callerSignal?.aborted)
   let tokens: JsonRecord; try { tokens = record(JSON.parse(SPATIAL_SPEND_WORKER_TOKENS_JSON.value())) } catch { throw new SpatialSpendError() }
@@ -173,6 +197,9 @@ export async function paidSpatialFetch(db: BindingStore, uid: string, lane: stri
   let now = Date.now()
   // The canonical minimum also includes its independently verified deployment.
   need(now < preflightExpiry && preflightExpiry <= proofWindow(now))
+  // Rate limits and owner reauthentication may deny admission; they never grant it.
+  await beforeReserve?.()
+  materialized(); need(!callerSignal?.aborted)
   const reserveStartedMonotonic = performance.now()
   const reserveStartedAt = Date.now()
   need(reserveStartedAt < preflightExpiry && reserveStartedAt < proofWindow(reserveStartedAt))
@@ -214,11 +241,11 @@ export async function paidSpatialFetch(db: BindingStore, uid: string, lane: stri
   }, { once:true })
   try {
     current()
-    const upstream = await fetch(url, { ...init, method:'POST', body:bytes, headers, redirect:'error', signal })
+    const upstream = await fetch(dispatchUrl, { ...init, method, body:method === 'POST' ? bytes : undefined, headers, redirect:'error', signal })
     current()
     requestId = upstream.headers.get('request-id') ?? upstream.headers.get('x-request-id') ?? undefined
     if (!upstream.ok || !upstream.body) { await observe('failed'); current() }
-    if (!upstream.body) { clearTimeout(timer); return new Response(null, { status:upstream.status, statusText:upstream.statusText, headers:upstream.headers }) }
+    if (!upstream.body) { clearTimeout(timer); const result = new Response(null, { status:upstream.status, statusText:upstream.statusText, headers:upstream.headers }); outputAuthority.set(result, current); return result }
     const reader = upstream.body.getReader()
     upstreamReader = reader
     const body = new ReadableStream<Uint8Array>({
@@ -251,7 +278,9 @@ export async function paidSpatialFetch(db: BindingStore, uid: string, lane: stri
       },
     })
     current()
-    return new Response(body, { status:upstream.status, statusText:upstream.statusText, headers:upstream.headers })
+    const result = new Response(body, { status:upstream.status, statusText:upstream.statusText, headers:upstream.headers })
+    outputAuthority.set(result, current)
+    return result
   } catch (error) {
     controller.abort()
     await observe('failed').catch(() => undefined)
