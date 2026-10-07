@@ -77,8 +77,8 @@ function fixture(options = {}) {
   const module = { exports: {} }
   const filename = process.env.URAI_EXPORT_COMPILED_MODULE ?? path.resolve(__dirname, '../lib/apps/functions/src/privacyOperations.js')
   // Only actual strict-tsc output is accepted. No source transpilation fallback.
-  vm.runInNewContext(fs.readFileSync(filename, 'utf8'), { module, exports: module.exports, Buffer, URLSearchParams,
-    Date: class extends Date { static now() { return options.clock?.value ?? now } }, process: { env: {} },
+  vm.runInNewContext(fs.readFileSync(filename, 'utf8'), { module, exports: module.exports, Buffer, URL, URLSearchParams,
+    Date: class extends Date { static now() { return options.clock?.value ?? now } }, process: { env: options.env ?? {} },
     console: Object.fromEntries(['log', 'info', 'error', 'warn'].map(method => [method, (...args) => stats.logs.push(args)])),
     require: name => {
       if (name === 'firebase-functions/v1') return functions
@@ -98,14 +98,70 @@ function fixture(options = {}) {
     } }, { filename })
   const context = { auth: { uid, token: { auth_time: Math.floor(now / 1000) } }, rawRequest: { get: () => 'synthetic.invalid' } }
   const descriptor = (data = {}, auth = context) => module.exports.getExportDownloadUrl({ jobId, ...data }, auth)
-  async function deliver(result, authenticated = true) {
+  async function deliver(result, authenticated = true, requestOptions = {}) {
     const query = Object.fromEntries(new URL(result.url, 'https://synthetic.invalid').searchParams)
     const response = { headers: {}, statusCode: 200, headersSent: false, destroyed: false, writableFinished: false,
-      set(key, value) { Object.assign(this.headers, typeof key === 'string' ? { [key]: value } : key); return this }, status(code) { this.statusCode = code; return this }, json(value) { this.body = clone(value); return this }, once() {} }
-    await module.exports.downloadExportPackage({ method: 'GET', query, get: name => name === 'authorization' && authenticated ? 'Bearer synthetic-token' : undefined }, response)
+      set(key, value) { Object.assign(this.headers, typeof key === 'string' ? { [key]: value } : key); return this }, status(code) { this.statusCode = code; return this }, json(value) { this.body = clone(value); return this }, end() { this.body = ''; this.writableFinished = true; return this }, once() {} }
+    await module.exports.downloadExportPackage({ method: requestOptions.method ?? 'GET', query, get: name => {
+      const supplied = requestOptions.headers?.[name.toLowerCase()]
+      return supplied ?? (name === 'authorization' && authenticated ? 'Bearer synthetic-token' : undefined)
+    } }, response)
     return response
   }
   return { records, objects, stats, context, descriptor, deliver, handlers: module.exports, db, Timestamp }
+}
+
+const allowedBrowserOrigins = ['https://urai.app', 'https://www.urai.app', 'https://urai-4dc1d.web.app',
+  'https://urai-4dc1d.firebaseapp.com', 'https://urai-4dc1d--export-review-ab12.web.app', 'https://localhost', 'capacitor://localhost']
+for (const origin of allowedBrowserOrigins) {
+  test(`export preflight permits only GET Authorization for owned origin ${origin} without accessing auth or data`, async () => {
+    const f = fixture({ env: { GCLOUD_PROJECT: 'urai-4dc1d' } })
+    const response = await f.deliver({ url: '/api/privacy/export/download' }, false, { method: 'OPTIONS', headers: {
+      origin, 'access-control-request-method': 'GET', 'access-control-request-headers': 'authorization',
+    } })
+    assert.equal(response.statusCode, 204); assert.equal(response.body, '')
+    assert.equal(response.headers['Access-Control-Allow-Origin'], origin)
+    assert.equal(response.headers['Access-Control-Allow-Methods'], 'GET')
+    assert.equal(response.headers['Access-Control-Allow-Headers'], 'Authorization')
+    assert.equal(response.headers['Access-Control-Allow-Credentials'], undefined)
+    assert.match(response.headers.Vary, /Origin/)
+    assert.equal(f.stats.auth.length, 0); assert.equal(f.stats.transactions, 0); assert.equal(f.stats.metadata, 0); assert.equal(f.stats.streams, 0)
+  })
+}
+for (const origin of ['null', 'https://foreign.invalid', 'https://urai.app.foreign.invalid', 'https://user:pass@urai.app',
+  'https://urai.app/', 'https://localhost:4321', 'http://localhost', 'https://other-project--review-ab12.web.app',
+  'https://urai-4dc1d--review-ab12.web.app.foreign.invalid']) {
+  test(`unknown export origin ${origin} denies before authentication or private object access`, async () => {
+    const f = fixture({ env: { GCLOUD_PROJECT: 'urai-4dc1d' } }), result = await f.descriptor()
+    const response = await f.deliver(result, true, { headers: { origin } })
+    assert.equal(response.statusCode, 403); assert.equal(response.headers['Access-Control-Allow-Origin'], undefined)
+    assert.equal(f.stats.auth.length, 0); assert.equal(f.stats.transactions, 2); assert.equal(f.stats.metadata, 1); assert.equal(f.stats.streams, 0)
+  })
+}
+for (const origin of ['https://localhost', 'capacitor://localhost', 'https://urai-4dc1d--export-review-ab12.web.app']) {
+  test(`allowed native or preview origin ${origin} still requires current Bearer authority for bytes`, async () => {
+    const f = fixture({ env: { GCLOUD_PROJECT: 'urai-4dc1d' } }), result = await f.descriptor()
+    const denied = await f.deliver(result, false, { headers: { origin } })
+    assert.equal(denied.statusCode, 401); assert.equal(f.stats.streams, 0)
+    const allowed = await f.deliver(result, true, { headers: { origin } })
+    assert.equal(allowed.statusCode, 200); assert.equal(allowed.body, '{"synthetic":true}')
+    assert.equal(allowed.headers['Access-Control-Allow-Origin'], origin)
+    assert.ok(f.stats.auth.every(check => check.revoked === true))
+  })
+}
+for (const headers of [
+  { 'access-control-request-method': 'POST', 'access-control-request-headers': 'authorization' },
+  { 'access-control-request-method': 'GET', 'access-control-request-headers': 'authorization, content-type' },
+  { 'access-control-request-method': 'GET', 'access-control-request-headers': 'x-private-token' },
+  { 'access-control-request-headers': 'authorization' },
+]) {
+  test(`export preflight denies incompatible request ${JSON.stringify(headers)} without private reads`, async () => {
+    const f = fixture(), response = await f.deliver({ url: '/api/privacy/export/download' }, false, {
+      method: 'OPTIONS', headers: { origin: 'capacitor://localhost', ...headers },
+    })
+    assert.equal(response.statusCode, 403); assert.equal(response.headers['Access-Control-Allow-Origin'], undefined)
+    assert.equal(f.stats.auth.length, 0); assert.equal(f.stats.transactions, 0); assert.equal(f.stats.metadata, 0); assert.equal(f.stats.streams, 0)
+  })
 }
 
 test('completed owner descriptor uses revocable authenticated delivery and committed audit', async () => {
