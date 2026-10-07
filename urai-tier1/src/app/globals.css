@@ -208,3 +208,15 @@ body:has(.life-map-navigator[open]) [data-testid="urai-true-3d-life-map"] * {
     transform: none !important;
   }
 }
+
+@media (max-width: 760px) {
+  [data-testid="urai-home-accessible-fallback"][data-webgl-state] .urai-genesis-home .urai-genesis-home__hero h1 {
+    font-size:24px!important;line-height:1.1!important;max-width:none!important;letter-spacing:-.03em!important;
+  }
+}
+@media (min-width: 761px) {
+  body:has(.urai-home-spatial-runtime-layer) .uraiV2OnboardingCard {
+    bottom:max(132px,calc(env(safe-area-inset-bottom) + 132px))!important;
+    max-height:calc(100svh - max(132px,calc(env(safe-area-inset-bottom) + 132px)) - max(18px,env(safe-area-inset-top)))!important;
+  }
+}
