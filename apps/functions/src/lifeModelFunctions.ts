@@ -380,7 +380,7 @@ export const upsertLifeEntityState = lifeModelFunctions.https.onCall(async (data
       authorityBindings[edge.ref.path] = { itemDigest: lifeItemDigest(edge), sourceBindingDigest: lifeAuthorityDigest(current) }
     }
     for (const constraint of negativeConstraints) {
-      if (constraint.sourceIds.some(sourceId => !sourceIds.includes(sourceId))) throw new functions.https.HttpsError('failed-precondition', 'STATE_SOURCE_SET_INCOMPLETE')
+      if (constraint.sourceIds.some((sourceId: string) => !sourceIds.includes(sourceId))) throw new functions.https.HttpsError('failed-precondition', 'STATE_SOURCE_SET_INCOMPLETE')
       await readLifeSourceBindings(db, transaction, uid, constraint.sourceIds)
     }
     transaction.set(db.doc(`users/${uid}/lifeEntityStates/${id}`), {
