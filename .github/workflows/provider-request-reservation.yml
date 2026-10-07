@@ -1,0 +1,126 @@
+name: Provider Request Reservation
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/provider-request-reservation.yml'
+      - 'apps/functions/src/providerFunctions.ts'
+      - 'apps/functions/tests/provider-request-reservation.test.mjs'
+      - 'urai-tier1/src/spatial/orb/openaiClient.ts'
+      - 'packages/localization/src/contentLanguage.ts'
+      - 'firebase/firestore.rules'
+      - 'urai-tier1/tests/localization-content-routing.test.mjs'
+  workflow_dispatch:
+    inputs:
+      verification_sha:
+        description: Exact source commit to verify
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: provider-request-reservation-${{ github.event.pull_request.number || github.ref }}-${{ github.event.pull_request.head.sha || inputs.verification_sha || github.sha }}
+  cancel-in-progress: false
+
+env:
+  URAI_EXACT_HEAD: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || inputs.verification_sha || github.sha }}
+
+jobs:
+  reservation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout exact source
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ env.URAI_EXACT_HEAD }}
+          fetch-depth: 1
+          persist-credentials: false
+          show-progress: false
+      - name: Require exact clean source
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "$URAI_EXACT_HEAD" =~ ^[0-9a-f]{40}$ ]]
+          test "$(git rev-parse HEAD)" = "$URAI_EXACT_HEAD"
+          test -z "$(git status --porcelain --untracked-files=all)"
+      - name: Setup pnpm
+        uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1
+        with:
+          version: 10.0.0
+          run_install: false
+      - name: Setup Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+      - name: Install locked dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Exercise actual handler, transaction storage and HTTP uncertainty paths
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/provider-request-proof"
+          pnpm --dir apps/functions exec node --test --test-reporter=tap tests/provider-request-reservation.test.mjs \
+            2>&1 | tee "$RUNNER_TEMP/provider-request-proof/tests.tap"
+      - name: Strictly check actual server and browser adapters with real SDK types
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --input-type=module - <<'NODE'
+          import fs from 'node:fs'
+          import path from 'node:path'
+          const root = process.cwd()
+          const out = path.join(process.env.RUNNER_TEMP, 'provider-request-proof')
+          const common = { target:'ES2022', strict:true, skipLibCheck:true, noEmit:true, esModuleInterop:true, types:['node'], typeRoots:['urai-tier1','apps/functions',''].map(dir=>path.join(root,dir,'node_modules/@types')) }
+          const server = { compilerOptions:{...common,module:'Node16',moduleResolution:'Node16'},files:[path.join(root,'apps/functions/src/providerFunctions.ts')] }
+          const client = { compilerOptions:{...common,module:'ESNext',moduleResolution:'bundler',lib:['ES2022','DOM','DOM.Iterable'],jsx:'react-jsx',paths:{'@/*':[path.join(root,'urai-tier1/src/*')]}},files:[path.join(root,'urai-tier1/src/spatial/orb/openaiClient.ts')] }
+          fs.writeFileSync(path.join(out,'server-tsconfig.json'),JSON.stringify(server,null,2))
+          fs.writeFileSync(path.join(out,'client-tsconfig.json'),JSON.stringify(client,null,2))
+          NODE
+          pnpm --dir apps/functions exec tsc --project "$RUNNER_TEMP/provider-request-proof/server-tsconfig.json" \
+            2>&1 | tee "$RUNNER_TEMP/provider-request-proof/server-types.log"
+          pnpm --dir urai-tier1 exec tsc --project "$RUNNER_TEMP/provider-request-proof/client-tsconfig.json" \
+            2>&1 | tee "$RUNNER_TEMP/provider-request-proof/client-types.log"
+      - name: Preserve admitted language and provider consumer contracts
+        shell: bash
+        run: |
+          set -euo pipefail
+          pnpm --dir urai-tier1 exec node --import tsx --test --test-reporter=tap \
+            tests/localization-content-routing.test.mjs tests/orb-provider-idempotency-contract.test.mjs \
+            tests/provider-boundary-contract.test.mjs \
+            2>&1 | tee "$RUNNER_TEMP/provider-request-proof/consumer-tests.tap"
+      - name: Bind proof to unchanged source and explicit acceptance limits
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$URAI_EXACT_HEAD"
+          test -z "$(git status --porcelain --untracked-files=all)"
+          node --input-type=module - <<'NODE'
+          import fs from 'node:fs'
+          import path from 'node:path'
+          import {createHash} from 'node:crypto'
+          const out = path.join(process.env.RUNNER_TEMP,'provider-request-proof')
+          const log = fs.readFileSync(path.join(out,'tests.tap'),'utf8')
+          const counts = Object.fromEntries([...log.matchAll(/^# (tests|pass|fail|cancelled|skipped|todo) (\d+)\s*$/gm)].map(m=>[m[1],Number(m[2])]))
+          if (!(counts.tests >= 46) || counts.pass !== counts.tests || ['fail','cancelled','skipped','todo'].some(k=>counts[k]!==0)) throw new Error('Missing or incomplete provider request tests')
+          for (const file of ['server-types.log','client-types.log']) if (!fs.existsSync(path.join(out,file))) throw new Error('Missing actual adapter typecheck')
+          const consumerLog = fs.readFileSync(path.join(out,'consumer-tests.tap'),'utf8')
+          const consumerCounts = Object.fromEntries([...consumerLog.matchAll(/^# (tests|pass|fail|cancelled|skipped|todo) (\d+)\s*$/gm)].map(m=>[m[1],Number(m[2])]))
+          if (!(consumerCounts.tests >= 20) || consumerCounts.pass !== consumerCounts.tests || ['fail','cancelled','skipped','todo'].some(k=>consumerCounts[k]!==0)) throw new Error('Incomplete admitted consumer proof')
+          const files = ['apps/functions/src/providerFunctions.ts','apps/functions/tests/provider-request-reservation.test.mjs','urai-tier1/src/spatial/orb/openaiClient.ts','urai-tier1/tests/localization-content-routing.test.mjs','urai-tier1/tests/orb-provider-idempotency-contract.test.mjs','urai-tier1/tests/provider-boundary-contract.test.mjs','packages/localization/src/contentLanguage.ts','apps/functions/src/index.ts','firebase.json','firebase/firestore.rules','apps/functions/src/privacyOperations.ts','.github/workflows/provider-request-reservation.yml']
+          const sources = Object.fromEntries(files.map(file=>[file,createHash('sha256').update(fs.readFileSync(file)).digest('hex')]))
+          const receipt = {schema:'urai-provider-request-reservation-proof-1',sourceHead:process.env.URAI_EXACT_HEAD,workflowRun:process.env.GITHUB_RUN_ID,runAttempt:process.env.GITHUB_RUN_ATTEMPT,node:process.version,tests:counts,consumerTests:consumerCounts,sources,transport:'Actual exported HTTP handler/browser adapter with synthetic upstream and atomic transaction storage doubles; no paid requests',firestoreEmulatorAcceptance:false,providerCanaryAcceptance:false,protectedRuntimeAcceptance:false,financialAuthorization:false,releaseCertification:false,scope:'OpenAI Orb/Council HTTP boundary only; no claim for other provider SDK leaves'}
+          fs.writeFileSync(path.join(out,'receipt.json'),`${JSON.stringify(receipt,null,2)}\n`)
+          NODE
+      - name: Retain provider reservation evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: provider-request-reservation-${{ env.URAI_EXACT_HEAD }}-${{ github.run_id }}
+          path: ${{ runner.temp }}/provider-request-proof
+          if-no-files-found: error
+          retention-days: 90
