@@ -38,6 +38,11 @@ function hooks() {
         queued.push(() => { slots[index].cleanup?.(); slots[index].cleanup = effect() })
       }
     },
+    useSyncExternalStore(subscribe, snapshot) {
+      const index = cursor++
+      if (!slots[index]) slots[index] = { cleanup: subscribe(() => { dirty = true }) }
+      return snapshot()
+    },
   }
   return {
     react,
@@ -62,10 +67,24 @@ function harness(search = '?memoryId=memory-one') {
   let authStopped = false
   const listeners = new Map()
   const browser = {
-    location: { search }, localStorage: { getItem: () => null },
+    location: { pathname: '/focus', search, hash: '' }, localStorage: { getItem: () => null },
     addEventListener(name, listener) { listeners.set(name, listener) },
     removeEventListener(name, listener) { if (listeners.get(name) === listener) listeners.delete(name) },
   }
+  const commit = (url) => {
+    const target = new URL(url, 'http://localhost/focus')
+    Object.assign(browser.location, { pathname: target.pathname, search: target.search, hash: target.hash })
+  }
+  browser.history = {
+    length: 1,
+    pushState(_state, _title, url) { commit(url); this.length += 1 },
+    replaceState(_state, _title, url) { commit(url) },
+  }
+  const locationStore = load('../../lib/browserLocationStore.ts', {}, { window: browser })
+  const locationHook = load('../../hooks/useBrowserLocation.ts', {
+    react: driver.react,
+    '@/lib/browserLocationStore': locationStore,
+  })
   const contract = load('selectedMemoryContract.ts', {}, { URL })
   const owner = load('useSelectedMemory.ts', {
     react: driver.react,
@@ -81,6 +100,7 @@ function harness(search = '?memoryId=memory-one') {
     '@/lib/firebase/client': { app: {}, firebasePublicEnvReady: true, getFirebaseDb: () => ({}) },
     './selectedMemoryContract': contract,
     './explicitDemoMemory': { buildNamedExplicitDemoMemory: contract.buildExplicitDemoMemory },
+    '@/hooks/useBrowserLocation': locationHook,
   }, { window: browser, URLSearchParams, process: { env: { NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET: 'governed-bucket' } } })
   const render = () => driver.render(owner.useSelectedMemory)
   render()
@@ -92,6 +112,9 @@ function harness(search = '?memoryId=memory-one') {
     emit(index, value) { subscriptions[index].receive(snapshot(value)); return render() },
     error(index) { subscriptions[index].error(new Error('provider-private-details')); return render() },
     navigate(nextSearch) { browser.location.search = nextSearch; listeners.get('popstate')?.(); return render() },
+    push(nextSearch) { browser.history.pushState({}, '', nextSearch); return render() },
+    replace(nextSearch) { browser.history.replaceState({}, '', nextSearch); return render() },
+    historyLength: () => browser.history.length,
     unmount: () => driver.unmount(), authStopped: () => authStopped, listeners,
   }
 }
@@ -150,6 +173,45 @@ test('same-path Back/Forward query changes detach the old selection before new d
   assert.deepEqual(h.subscriptions[1].ref.slice(1), ['users', 'account-a', 'memories', 'memory-two'])
   h.emit(1, h.data('account-a', 'memory-two'))
   assert.equal(h.emit(0, h.data()).memory.id, 'memory-two')
+})
+
+for (const operation of ['push', 'replace']) {
+  test(`same-path client ${operation} detaches old memory without relying on popstate`, () => {
+    const h = harness(); h.signIn('account-a'); h.emit(0, h.data())
+    assert.equal(h[operation]('?memoryId=memory-two').memory, null)
+    assert.equal(h.subscriptions[0].stopped, true)
+    assert.equal(h.historyLength(), operation === 'push' ? 2 : 1)
+    h.signIn('account-a')
+    assert.deepEqual(h.subscriptions[1].ref.slice(1), ['users', 'account-a', 'memories', 'memory-two'])
+    h.emit(1, h.data('account-a', 'memory-two'))
+    assert.equal(h.emit(0, h.data()).memory.id, 'memory-two')
+  })
+}
+
+test('same-path client manifest replacement cannot reuse the old accepted source', () => {
+  const h = harness(); h.signIn('account-a'); h.emit(0, h.data())
+  assert.equal(h.replace('?memoryId=memory-one&manifestId=wrong-manifest').memory, null)
+  assert.equal(h.subscriptions[0].stopped, true)
+  h.signIn('account-a')
+  const result = h.emit(1, h.data())
+  assert.equal(result.status, 'corrupt')
+  assert.equal(result.memory, null)
+})
+
+test('clearing selection in client navigation removes the previously loaded private memory', () => {
+  const h = harness(); h.signIn('account-a'); h.emit(0, h.data())
+  const result = h.push('/focus')
+  assert.equal(result.status, 'unavailable')
+  assert.equal(result.memory, null)
+  assert.equal(h.subscriptions[0].stopped, true)
+})
+
+test('a memory-looking fragment cannot substitute for an authoritative selection query', () => {
+  const h = harness(); h.signIn('account-a'); h.emit(0, h.data())
+  const result = h.push('/focus#?memoryId=memory-one')
+  assert.equal(result.status, 'unavailable')
+  assert.equal(result.memory, null)
+  assert.equal(h.subscriptions[0].stopped, true)
 })
 
 test('manifest mismatch fails closed even on a previously loaded source', () => {
