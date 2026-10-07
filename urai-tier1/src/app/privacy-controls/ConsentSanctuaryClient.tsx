@@ -376,7 +376,15 @@ export default function ConsentSanctuaryClient() {
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Home') { event.preventDefault(); setSelectedDomain('memory'); document.getElementById('consent-controls')?.focus() }
+      if (event.key === 'Home') {
+        const target = event.target
+        const editing = target instanceof Element && (target.closest('input, textarea, select, [role="textbox"], [role="combobox"], [role="spinbutton"]') !== null
+          || (target instanceof HTMLElement && target.isContentEditable))
+        if (event.defaultPrevented || event.altKey || event.ctrlKey || event.metaKey || event.shiftKey || editing) return
+        event.preventDefault()
+        setSelectedDomain('memory')
+        document.getElementById('consent-controls')?.focus()
+      }
       if (event.key !== 'Escape') return
       if (pending) { setPending(null); setMutationState('idle'); return }
       if (showAudit) { setShowAudit(false); return }
