@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import fs from 'node:fs/promises'
 import path from 'node:path'
 import { createRequire } from 'node:module'
+import { proveHomeSkyAscent } from './home-sky-ascent-proof.mjs'
 
 const requireFromTierOne = createRequire(new URL('../urai-tier1/package.json', import.meta.url))
 const { chromium } = requireFromTierOne('playwright')
@@ -118,40 +119,11 @@ async function openHome(page, journey) {
 }
 
 async function proveRealHomeAscent(page, journey, home, mode) {
-  // Current non-XR Home authority is direct bodyless first person. Prove the
-  // superseded Avatar presentation/activation gate is absent before sky ascent.
-  await waitAttr(home, 'data-home-stable-state', 'AVATAR_HOME_FIRST_PERSON', 45_000)
-  await waitAttr(home, 'data-home-input-ready', 'true', 45_000)
-  assert.equal(await page.getByTestId('urai-home-avatar-enter-first-person').count(), 0, 'superseded Avatar activation gate must not exist in ordinary Home')
-  assert.equal(await home.getAttribute('data-home-avatar-activation-gate'), 'none-direct-first-person-home')
-  assert.equal(await home.getAttribute('data-home-non-xr-body-policy'), 'camera-only-no-hands-body-rig')
   await capture(page, journey, 'home-first-person')
-
-  const canvas = home.locator('canvas').first()
-  await canvas.waitFor({ state: 'visible', timeout: 45_000 })
-  const box = await canvas.boundingBox()
-  assert.ok(box && box.width > 200 && box.height > 200, 'Home canvas must expose the governed broad-sky interaction surface')
-
-  // The sky interaction itself owns the validity law (upward ray direction).
-  // Try several upper-sky points rather than encoding retired world geometry.
-  const points = [[.50, .12], [.36, .15], [.64, .15], [.50, .22]]
-  let activated = false
-  for (const [x, y] of points) {
-    const absolute = { x: box.x + box.width * x, y: box.y + box.height * y }
-    if (mode === 'touch') await page.touchscreen.tap(absolute.x, absolute.y)
-    else await page.mouse.click(absolute.x, absolute.y)
-    try {
-      await waitAttr(home, 'data-home-scene-phase', 'SKY_ASCENT', 2_500)
-      activated = true
-      break
-    } catch {}
-  }
-  assert.equal(activated, true, 'real broad visible-sky interaction did not enter SKY_ASCENT')
-  const sequence = await home.getAttribute('data-home-transition-sequence')
-  assert.ok(sequence === 'SKY_ASCENT' || sequence === 'LIFE_MAP_TRANSITION' || sequence?.includes('life-map'), 'Home did not own the Life Map ascent sequence')
-  journey.ascentProven = true
-  await capture(page, journey, 'home-ascent')
-  await waitPath(page, '/life-map', 60_000)
+  journey.ascentEvidence = await proveHomeSkyAscent(page, home, {
+    mode, captureAscent:() => capture(page, journey, 'home-ascent'),
+  })
+  journey.ascentProven = journey.ascentEvidence.ascentProven
 }
 
 async function directAccessibleHomeHandoff(page, journey, mode) {
@@ -306,6 +278,7 @@ try {
       journey.passed = true
     } catch (error) {
       journey.error = error instanceof Error ? error.stack || error.message : String(error)
+      if (error?.proof) journey.ascentFailure = error.proof
       receipt.errors.push({ journey: variant.id, error: journey.error })
     } finally {
       journey.diagnostics = readDiagnostics()

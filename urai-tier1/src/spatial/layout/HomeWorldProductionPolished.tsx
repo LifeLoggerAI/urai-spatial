@@ -7,6 +7,7 @@ import * as THREE from 'three'
 import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js'
 import { isOrbState, resolveOrbSensoryOutput, URAI_ORB_STATE_EVENT, type OrbState, type OrbStateEventDetail } from '@/app/home/orbStateController'
 import { MobileMovementPad, stepEmbodiedMotion, useDragLook, useMovementInput, type MovementInput } from '@/spatial/navigation/EmbodiedNavigation'
+import HomeSkyInteraction from '@/spatial/navigation/HomeSkyInteraction'
 import { useSceneStore } from '@/spatial/store/useSceneStore'
 import { requestUraiWorldOrbOpen, requestUraiWorldTravel } from '@/spatial/world/worldEvents'
 import { HomeInterpretiveSplatEnvironment, resolveHomeInterpretiveSplatAsset } from '@/spatial/home/HomeInterpretiveSplat'
@@ -656,6 +657,11 @@ function PlayerRig({ input, yaw, pitch, target, avatar, onNearby, groundDescent,
   }, [camera, pitch, size.height, size.width, yaw])
   useLayoutEffect(() => place(), [place])
   useEffect(() => { owner.current = gl.domElement.closest<HTMLElement>('[data-home-primary-owner="asset-driven"]') }, [gl])
+  const publishCameraHeight = () => {
+    if (!owner.current) return
+    const height = camera.position.y.toFixed(4)
+    if (owner.current.dataset.homeCameraHeight !== height) owner.current.dataset.homeCameraHeight = height
+  }
 
   useEffect(() => {
     if (!reducedMotion) return
@@ -698,6 +704,7 @@ function PlayerRig({ input, yaw, pitch, target, avatar, onNearby, groundDescent,
         store.setProgress(t)
         if (t >= 1 && !transitionIssued.current) { transitionIssued.current = true; onGroundComplete() }
       }
+      publishCameraHeight()
       return
     }
     transitionStarted.current = null
@@ -718,6 +725,7 @@ function PlayerRig({ input, yaw, pitch, target, avatar, onNearby, groundDescent,
     forward.current.set(Math.sin(yaw.current),0,-Math.cos(yaw.current))
     desired.current.copy(position.current).add(new THREE.Vector3(0, portrait ? 1.58 : 1.68, .14))
     camera.position.lerp(desired.current, 1 - Math.pow(.001, delta))
+    publishCameraHeight()
     look.current.copy(position.current).addScaledVector(forward.current, portrait ? 6 : 8)
     camera.lookAt(look.current.x, position.current.y + 1.22 + pitch.current, look.current.z)
     const candidates: readonly [Nearby, THREE.Vector3, number][] = [['orb', ORB, 2.4], ['ground', GROUND_THRESHOLD, 2.8], ['life-map', LIFE_MAP_LOOKOUT, 2.8]]
@@ -792,6 +800,7 @@ function Scene(props: { input: MovementInput; yaw: MutableRefObject<number>; pit
     <OrbGroundGlow state={props.orbState} />
     <Orb onOpen={props.onOrbOpen} reducedMotion={props.reducedMotion} reducedStimulation={props.reducedStimulation} state={props.orbState} />
     <EmbodiedPresence root={props.avatar} />
+    <HomeSkyInteraction groundDescent={props.groundDescent} onAscent={props.onLifeMap} />
     <Thresholds onGround={props.onGround} onLifeMap={props.onLifeMap} />
     <PlayerRig input={props.input} yaw={props.yaw} pitch={props.pitch} target={props.target} avatar={props.avatar} onNearby={props.onNearby} groundDescent={props.groundDescent} reducedMotion={props.reducedMotion} onGroundComplete={props.onGroundComplete} onTransitionSequence={props.onTransitionSequence} />
     <SceneReady onReady={props.onReady} />

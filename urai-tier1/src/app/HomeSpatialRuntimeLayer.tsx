@@ -9,6 +9,7 @@ import { useUraiLocale } from '@/lib/i18n/useUraiLocale'
 import JourneyOfflineNotice from '@/lib/i18n/JourneyOfflineNotice'
 import HomeSceneRenderBoundary from './home/HomeSceneRenderBoundary'
 import { requestUraiWorldOrbOpen } from '@/spatial/world/worldEvents'
+import { homeJourneyHref } from '@/spatial/navigation/homeSkyInteraction'
 import { clearHomeAssetCache, isHomeAssetLoadError } from '@/spatial/layout/HomeWorldProductionPolished'
 
 type RendererState = 'ready' | 'recovering' | 'failed'
@@ -17,11 +18,13 @@ const HOME_TELEMETRY_SELECTOR = '.urai-asset-home-world[data-home-primary-owner=
 
 function HomeSemanticNavigation() {
   const locale = useUraiLocale()
+  const [currentSearch, setCurrentSearch] = useState('')
+  useEffect(() => { setCurrentSearch(window.location.search) }, [])
   return (
     <nav className="home-semantic-navigation" {...locale.props('home.destinations')} aria-label={locale.text('home.destinations')} data-home-navigation-owner="runtime-boundary" data-home-navigation-non-dominant="true">
       <button type="button" {...locale.props('home.orbAction')} aria-label={locale.text('home.orbAction')} data-testid="home-semantic-orb" onClick={requestUraiWorldOrbOpen}>{locale.text('home.orbAction')}</button>
-      <a href="/ground/?entryPortal=home-ground&cameraCheckpoint=home-ground-descent" {...locale.props('home.groundAction')} aria-label={locale.text('home.groundAction')} data-testid="home-semantic-ground">{locale.text('nav.ground')}</a>
-      <a href="/life-map/?from=home-sky&entryPortal=home-sky&cameraCheckpoint=home-sky-ascent-complete" {...locale.props('home.lifeMapAction')} aria-label={locale.text('home.lifeMapAction')} data-testid="home-semantic-life-map">{locale.text('nav.lifeMap')}</a>
+      <a href={homeJourneyHref('/ground/?entryPortal=home-ground&cameraCheckpoint=home-ground-descent', currentSearch)} {...locale.props('home.groundAction')} aria-label={locale.text('home.groundAction')} data-testid="home-semantic-ground">{locale.text('nav.ground')}</a>
+      <a href={homeJourneyHref('/life-map/?from=home-sky&entryPortal=home-sky&cameraCheckpoint=home-sky-ascent-complete', currentSearch)} {...locale.props('home.lifeMapAction')} aria-label={locale.text('home.lifeMapAction')} data-testid="home-semantic-life-map">{locale.text('nav.lifeMap')}</a>
     </nav>
   )
 }

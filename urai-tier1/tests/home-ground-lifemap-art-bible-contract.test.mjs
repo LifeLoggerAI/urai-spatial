@@ -87,7 +87,7 @@ test('Home is one coherent authored natural 3D sanctuary with final physical ass
   assert.match(homeProduction, /href:\s*'\/life-map\/\?from=home-sky'/)
   assert.match(homeRuntime, /aria-label=\{locale.text\('home.lifeMapAction'\)\}/)
   assert.match(homeRuntime, /data-testid="home-semantic-life-map"/)
-  assert.match(homeRuntime, /href="\/life-map\/\?from=home-sky&entryPortal=home-sky&cameraCheckpoint=home-sky-ascent-complete"/)
+  assert.match(homeRuntime, /href=\{homeJourneyHref\('\/life-map\/\?from=home-sky&entryPortal=home-sky&cameraCheckpoint=home-sky-ascent-complete', currentSearch\)\}/)
   assert.match(homeProduction, /data-home-runtime-assets="home-entry-chamber-v1\.glb polyhaven-fern-02-geometry-v1\.glb local-three-dimensional-terrain living-orb reflecting-water"/)
   assert.match(homeProduction, /data-home-orb-clip=\{ORB_CLIPS\[orbState\]\}/)
   assert.doesNotMatch(homeRuntime, /EmbodiedHomeSpatialCanvas|HomeSanctuaryWorld/)

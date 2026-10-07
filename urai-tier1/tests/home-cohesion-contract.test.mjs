@@ -49,10 +49,10 @@ test('Home keeps direct semantic Ground, Orb, and Life Map navigation in the run
   const messages = read('src/lib/i18n/journeyMessages.ts')
   assert.ok(messages.includes("'home.groundAction': { id:'home.groundAction', source:\"Open Ground directly\""))
   assert.match(runtime, /data-testid="home-semantic-ground"/)
-  assert.match(runtime, /href="\/ground\/\?entryPortal=home-ground&cameraCheckpoint=home-ground-descent"/)
+  assert.match(runtime, /href=\{homeJourneyHref\('\/ground\/\?entryPortal=home-ground&cameraCheckpoint=home-ground-descent', currentSearch\)\}/)
   assert.match(runtime, /aria-label=\{locale.text\('home.lifeMapAction'\)\}/)
   assert.match(runtime, /data-testid="home-semantic-life-map"/)
-  assert.match(runtime, /href="\/life-map\/\?from=home-sky&entryPortal=home-sky&cameraCheckpoint=home-sky-ascent-complete"/)
+  assert.match(runtime, /href=\{homeJourneyHref\('\/life-map\/\?from=home-sky&entryPortal=home-sky&cameraCheckpoint=home-sky-ascent-complete', currentSearch\)\}/)
 })
 
 test('Home world preserves separate bounded cinematic ascent and reduced-motion behavior', () => {

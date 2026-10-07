@@ -9,6 +9,7 @@ import ts from 'typescript'
 import { URAI_CATALOGS, URAI_LAUNCH_LOCALES, URAI_NATIVE_REVIEWED_LOCALES, URAI_SOURCE_MESSAGES, runtimeUraiLocale } from '../src/lib/i18n/locales.ts'
 import { URAI_JOURNEY_MESSAGES } from '../src/lib/i18n/journeyMessages.ts'
 import { localizedMessage, localeNumber, localeDate } from '../src/lib/i18n/localePreference.ts'
+import { homeJourneyHref } from '../src/spatial/navigation/homeSkyInteraction.ts'
 import * as homeGeometry from '../src/spatial/layout/HomeSanctuaryGeometry.ts'
 import { localizationMessageBindings } from '../../scripts/lib/localization-message-bindings.mjs'
 
@@ -44,6 +45,7 @@ function fixture(preference, {memory=null,status='unavailable',message='No selec
     if(id==='next/navigation') return {usePathname:()=>'/home',useSearchParams:()=>params,useRouter:()=>({push:href=>travels.push(href),replace:href=>travels.push(href)})}
     if(id.includes('useUraiLocale')) return {useUraiLocale:()=>locale}
     if(id.includes('JourneyOfflineNotice')) return {__esModule:true,default:load('../src/lib/i18n/JourneyOfflineNotice.tsx').default}
+    if(id.includes('homeSkyInteraction')) return {homeJourneyHref}
     if(id.includes('HomeSpatialCanvas')) return {useWebGLAvailable:()=>webgl}
     if(id.includes('useSelectedMemory')) return {useSelectedMemory:()=>({memory,status,message})}
     if(id.includes('useAdaptiveSpatialQuality')) return {useAdaptiveSpatialQuality:()=>quality}
