@@ -3,6 +3,10 @@ name: Spatial Export Authority
 on:
   pull_request:
     paths:
+      - apps/functions/src/exportPagination.ts
+      - apps/functions/src/lifeModelPrivateInputs.ts
+      - apps/functions/scripts/export-pagination-emulator-proof.cjs
+      - firebase.export-pagination-test.json
       - '.github/workflows/spatial-export-authority.yml'
       - 'apps/functions/src/index.ts'
       - 'apps/functions/src/privacyOperations.ts'
@@ -55,12 +59,21 @@ jobs:
           mkdir -p "$RUNNER_TEMP/spatial-export-proof"
           pnpm --filter urai-functions build 2>&1 | tee "$RUNNER_TEMP/spatial-export-proof/build.log"
           pnpm --filter urai-functions test 2>&1 | tee "$RUNNER_TEMP/spatial-export-proof/tests.tap"
+      - name: Prove actual snapshot pagination in an isolated demo Firestore
+        shell: bash
+        run: |
+          set -euo pipefail
+          export JAVA_HOME="${JAVA_HOME_21_X64:?Java21 runtime is required}"
+          export PATH="$JAVA_HOME/bin:$PATH"
+          java -version 2>&1 | tee "$RUNNER_TEMP/spatial-export-proof/java-version.log"
+          java -version 2>&1 | grep -E 'version "21\.'
+          pnpm exec firebase emulators:exec --project demo-spatial-export-pages --config firebase.export-pagination-test.json --only firestore "node apps/functions/scripts/export-pagination-emulator-proof.cjs" 2>&1 | tee "$RUNNER_TEMP/spatial-export-proof/firestore-pagination.log"
       - name: Preserve exact source and acceptance limits
         if: always()
         run: |
           mkdir -p "$RUNNER_TEMP/spatial-export-proof"
           printf '%s\n' "$EXACT_SHA" > "$RUNNER_TEMP/spatial-export-proof/source-sha.txt"
-          printf '%s\n' 'Actual compiled handlers with synthetic SDK doubles; no emulator, provider, deployed-runtime or independent-review acceptance is claimed.' > "$RUNNER_TEMP/spatial-export-proof/acceptance-limits.txt"
+          printf '%s\n' 'Strict-compiled export handlers plus retained fixtures; the separate actual Firestore snapshot proof must pass. No loaded Functions, provider, deployed-runtime or independent-review acceptance is claimed.' > "$RUNNER_TEMP/spatial-export-proof/acceptance-limits.txt"
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         if: always()
         with:

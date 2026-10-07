@@ -36,36 +36,43 @@ function fixture(options = {}) {
         objectPath: `private-exports/${uid}/${jobId}/spatial/captured-reality/synthetic-asset/${runtimeChecksum}.splat`, exportGeneration: '13', runtimeSha256: runtimeChecksum, runtimeBytes: runtimeBody.length }] }],
     [receiptPath, { ...receiptBinding, ownerId: uid, kind: 'export', jobId, result: 'ready' }],
   ])
-  const stats = { deleted: [], reads: [], signed: 0, streams: 0, chunks: [], transactions: 0, metadata: 0, logs: [], auth: [] }
+  const stats = { deleted: [], reads: [], signed: 0, streams: 0, chunks: [], transactions: 0, readOnlyTransactions: 0, queryPages: [], metadata: 0, logs: [], auth: [] }
   const objects = new Map([[exportPath, { generation: '11', contentType: 'application/json', bytes: exportBody }]])
   const job = records.get(jobPath)
   objects.set(job.manifestObject, { generation: '12', contentType: 'application/json', bytes: manifestBody })
   objects.set(job.runtimeExports[0].objectPath, { generation: '13', contentType: 'application/octet-stream', bytes: runtimeBody })
   let generation = 20
-  const snapshot = ref => { const value = records.get(ref.path); return { id: ref.id, ref, exists: value !== undefined, data: () => clone(value), get: key => key.split('.').reduce((v, part) => v?.[part], value) } }
+  const snapshot = (ref, view = records) => { const value = view.get(ref.path); return { id: ref.id, ref, exists: value !== undefined, readTime: new Timestamp(now), data: () => clone(value), get: key => key.split('.').reduce((v, part) => v?.[part], value) } }
   function doc(location) { return { path: location, id: location.split('/').at(-1), collection: name => collection(`${location}/${name}`),
     async get() { stats.reads.push(location); return snapshot(this) },
     async set(value, settings) { records.set(location, clone(settings?.merge ? { ...records.get(location), ...value } : value)) },
     async update(value) { assert.ok(records.has(location)); records.set(location, clone({ ...records.get(location), ...value })) },
     async delete() { records.delete(location) } } }
-  function collection(location, filters = [], maximum = Infinity) {
+  function collection(location, filters = [], maximum = Infinity, afterId = '', ordered = false) {
     return { path: location, query: true, doc: id => doc(`${location}/${id ?? `synthetic-audit-${stats.transactions}`}`),
-      where: (key, op, value) => collection(location, [...filters, [key, op, value]], maximum), limit: n => collection(location, filters, n),
-      async get() { const docs = [...records.keys()].filter(key => key.startsWith(location + '/') && key.slice(location.length + 1).split('/').length === 1)
-        .filter(key => filters.every(([field, op, value]) => op === 'in' ? value.includes(snapshot(doc(key)).get(field)) : snapshot(doc(key)).get(field) === value)).slice(0, maximum).map(key => snapshot(doc(key)))
+      where: (key, op, value) => collection(location, [...filters, [key, op, value]], maximum, afterId, ordered), limit: n => collection(location, filters, n, afterId, ordered),
+      orderBy: field => { assert.equal(field,'__name__');return collection(location,filters,maximum,afterId,true) },
+      startAfter: cursor => collection(location,filters,maximum,cursor.id,ordered),
+      async get(view = records) { let keys = [...view.keys()].filter(key => key.startsWith(location + '/') && key.slice(location.length + 1).split('/').length === 1)
+        .filter(key => filters.every(([field, op, value]) => op === 'in' ? value.includes(snapshot(doc(key),view).get(field)) : snapshot(doc(key),view).get(field) === value))
+        if (ordered) keys.sort((a,b)=>Buffer.compare(Buffer.from(a),Buffer.from(b)))
+        const docs = keys.filter(key=>!afterId||Buffer.compare(Buffer.from(doc(key).id),Buffer.from(afterId))>0).slice(0, maximum).map(key => snapshot(doc(key),view))
+        stats.queryPages.push({location,maximum,afterId,size:docs.length})
         await options.afterQuery?.(location, records)
-        return { docs, empty: docs.length === 0, size: docs.length } } }
+        return { docs, empty: docs.length === 0, size: docs.length, readTime:new Timestamp(options.snapshotChanged&&afterId?now+1:now) } } }
   }
   const db = { doc, collection,
-    async runTransaction(callback) {
+    async runTransaction(callback, settings) {
       const writes = [], id = ++stats.transactions
-      const tx = { get: async ref => { assert.equal(writes.length, 0, 'no read after transaction writes'); return ref.query ? ref.get() : snapshot(ref) },
+      const view=settings?.readOnly ? new Map([...records].map(([key,value])=>[key,clone(value)])) : records
+      if(settings?.readOnly)stats.readOnlyTransactions++
+      const tx = { get: async ref => { assert.equal(writes.length, 0, 'no read after transaction writes'); return ref.query ? ref.get(view) : snapshot(ref,view) },
         create: (ref, value) => writes.push(() => { assert.ok(!records.has(ref.path)); records.set(ref.path, clone(value)) }),
         update: (ref, value) => writes.push(() => ref.update(value)), set: (ref, value, settings) => writes.push(() => ref.set(value, settings)) }
       const result = await callback(tx)
       if (options.failCommit === id) throw new Error('synthetic audit commit outage')
       for (const write of writes) await write()
-      if (options.failAfterCommit === id) throw new Error('synthetic uncertain commit reply')
+      if (options.failAfterCommit === id || (typeof options.failAfterCommit==='function'&&options.failAfterCommit(id,records))) throw new Error('synthetic uncertain commit reply')
       await options.afterTransaction?.(id, records)
       return result
     },
@@ -74,7 +81,7 @@ function fixture(options = {}) {
   class HttpsError extends Error { constructor(code, message) { super(message); this.code = code } }
   const functions = { runWith: () => functions, https: { HttpsError, onCall: f => f, onRequest: f => f },
     firestore: { document: () => ({ onCreate: f => f }) }, pubsub: { schedule: () => ({ onRun: f => f }) } }
-  const admin = { apps: [{}], firestore: Object.assign(() => db, { Timestamp, FieldValue: { serverTimestamp: () => new Timestamp(now) } }),
+  const admin = { apps: [{}], firestore: Object.assign(() => db, { Timestamp, FieldPath:{documentId:()=> '__name__'}, FieldValue: { serverTimestamp: () => new Timestamp(now) } }),
     auth: () => ({ verifyIdToken: async (token, revoked) => { stats.auth.push({ revoked }); assert.equal(token, 'synthetic-token'); assert.equal(revoked, true); if (options.revokedToken) throw new Error('synthetic revoked session'); return { uid: options.authUid ?? uid, auth_time: options.authTime ?? Math.floor(now / 1000) - (options.staleAuth ? 400 : 0) } }, deleteUser: async () => {} }),
     storage: () => ({ bucket: () => ({ file: (location, settings) => ({ path: location,
       async getMetadata() { stats.metadata++; await options.afterMetadata?.(stats.metadata, records, objects); const object = objects.get(location); if (!object || (settings?.generation && settings.generation !== object.generation)) throw new Error('synthetic object generation missing'); return [{ generation: object.generation, size: String(object.bytes.length), contentType: object.contentType, metadata: object.metadata ?? {} }] },
@@ -85,9 +92,11 @@ function fixture(options = {}) {
       createReadStream() { stats.streams++; const object = objects.get(location); assert.equal(object.generation, settings.generation); if(options.realPipeline)return require('node:stream').Readable.from([object.bytes]); return { async *[Symbol.asyncIterator]() { yield object.bytes }, destroy() {} } },
     }), async deleteFiles({ prefix }) { for (const key of objects.keys()) if (key.startsWith(prefix)) objects.delete(key) } }) }) }
   const module = { exports: {} }
+  let pagination
+  const loadPagination = () => { if(pagination)return pagination; const result={exports:{}};vm.runInNewContext(fs.readFileSync(path.resolve(__dirname,'../lib/apps/functions/src/exportPagination.js'),'utf8'),{module:result,exports:result.exports,Buffer,Error,Date:class extends Date{static now(){return options.clock?.value??now}},require:name=>{assert.equal(name,'firebase-admin');return admin}},{filename:'exportPagination.strict-compiled.js'});return pagination=result.exports }
   const filename = process.env.URAI_EXPORT_COMPILED_MODULE ?? path.resolve(__dirname, '../lib/apps/functions/src/privacyOperations.js')
   // Only actual strict-tsc output is accepted. No source transpilation fallback.
-  vm.runInNewContext(fs.readFileSync(filename, 'utf8'), { module, exports: module.exports, Buffer, URL, URLSearchParams,
+  vm.runInNewContext(fs.readFileSync(filename, 'utf8'), { module, exports: module.exports, Buffer, Error, URL, URLSearchParams,
     Date: class extends Date { static now() { return options.clock?.value ?? now } }, process: { env: { GCLOUD_PROJECT: 'urai-4dc1d', ...options.env } },
     console: Object.fromEntries(['log', 'info', 'error', 'warn'].map(method => [method, (...args) => stats.logs.push(args)])),
     require: name => {
@@ -104,6 +113,7 @@ function fixture(options = {}) {
       } }
       if (name === './personPresenceAuthority') return { revokePersonPresenceConsentDerivatives: async () => {} }
       if (name === './lifeModelPrivateInputs') return { exportPrivateLifeModelHandles: async () => [], tombstonePrivateLifeModelInputs: async () => {} }
+      if (name === './exportPagination') return loadPagination()
       throw new Error(`Unexpected compiled module dependency: ${name}`)
     } }, { filename })
   const context = { auth: { uid, token: { auth_time: Math.floor(now / 1000) } }, rawRequest: { get: () => 'synthetic.invalid' } }
@@ -299,32 +309,80 @@ for (const reason of ['withdrawal', 'revision', 'deletion', 'session', 'expiry']
 }
 
 for (const scope of ['memories', 'spatial']) {
-  test(`501 documents in ${scope} cannot publish a silently truncated ready package`, async () => {
+  test(`1001 ${scope} records paginate completely with no partial-ready output`, async () => {
     const f = fixture()
     f.records.get(jobPath).state = 'queued'; f.records.get(jobPath).scopes = [scope]; f.records.get(receiptPath).result = 'queued'
-    const collection = scope === 'memories' ? 'memories' : 'capturedRealityAssets'
-    for (let i = 0; i < 501; i++) f.records.set(`${prefix}/${collection}/synthetic-${i}`, { synthetic: true })
-    await assert.rejects(f.handlers.processExportJob(await f.db.doc(jobPath).get()), /EXPORT_COLLECTION_LIMIT_EXCEEDED/)
-    assert.equal(f.records.get(jobPath).state, 'failed'); assert.equal(f.records.get(receiptPath).result, 'failed')
-    assert.equal(f.objects.size, 0); assert.equal(f.stats.streams, 0)
+    const name = scope === 'memories' ? 'memories' : 'capturedRealityAssets'
+    for (let i = 0; i < 1001; i++) f.records.set(`${prefix}/${name}/synthetic-${String(i).padStart(5,'0')}`, { ownerId:uid, synthetic:i, apiKey:'must-not-export' })
+    await f.handlers.processExportJob(await f.db.doc(jobPath).get())
+    assert.equal(f.records.get(jobPath).state, 'ready')
+    const payload=JSON.parse(f.objects.get(exportPath).bytes.toString()),rows=payload.data[name]
+    assert.equal(rows.length,1001);assert.equal(new Set(rows.map(row=>row.id)).size,1001)
+    assert.deepEqual(rows.map(row=>row.synthetic),Array.from({length:1001},(_,i)=>i))
+    assert.ok(rows.every(row=>row.apiKey===undefined));assert.equal(payload.snapshotReadAt,new Date(now).toISOString())
+    assert.equal(f.stats.readOnlyTransactions,1);assert.ok(f.stats.queryPages.filter(page=>page.location===`${prefix}/${name}`).every(page=>page.maximum===250))
   })
 }
 
-test('late captured-runtime inventory growth to 501 fails before any copy or ready publication', async () => {
-  let grown = false
-  const f = fixture({ afterQuery: (location, records) => {
-    if (location === `${prefix}/capturedRealityAssets` && !grown) {
-      grown = true
-      for (let i = 0; i < 501; i++) records.set(`${location}/synthetic-${i}`, { ownerId: uid, synthetic: true })
-    }
-  } })
-  f.records.get(jobPath).state = 'queued'; f.records.get(jobPath).scopes = ['spatial']; f.records.get(receiptPath).result = 'queued'
-  await assert.rejects(f.handlers.processExportJob(await f.db.doc(jobPath).get()), /CAPTURED_REALITY_EXPORT_COLLECTION_LIMIT_EXCEEDED/)
-  assert.equal(f.records.get(jobPath).state, 'failed'); assert.equal(f.objects.size, 0)
+test('101 scenarios and601 nested branches use the same complete owner snapshot',async()=>{
+  const f=fixture();f.records.get(jobPath).state='queued';f.records.get(jobPath).scopes=['intelligence'];f.records.get(receiptPath).result='queued'
+  for(let i=0;i<101;i++)f.records.set(`${prefix}/scenarios/scenario-${String(i).padStart(3,'0')}`,{label:i,id:'forged-stored-id'})
+  for(let i=0;i<601;i++)f.records.set(`${prefix}/scenarios/scenario-000/branches/branch-${String(i).padStart(4,'0')}`,{meaning:i})
+  f.records.set(`users/other-owner/scenarios/foreign`,{private:'never-owner-data'})
+  await f.handlers.processExportJob(await f.db.doc(jobPath).get())
+  const rows=JSON.parse(f.objects.get(exportPath).bytes.toString()).data.scenarios
+  assert.equal(rows.length,101);assert.equal(rows[0].id,'scenario-000');assert.equal(rows[0].branches.length,601)
+  assert.deepEqual(rows[0].branches.map(row=>row.meaning),Array.from({length:601},(_,i)=>i));assert.equal(f.stats.readOnlyTransactions,1)
+})
+
+test('cross-page insertion, deletion and correction cannot mix export snapshot versions',async()=>{
+  let changed=false
+  const f=fixture({afterQuery:(location,records)=>{if(location===`${prefix}/memories`&&!changed){changed=true;records.delete(`${location}/memory-0300`);records.get(`${location}/memory-0400`).meaning='later-correction';records.set(`${location}/memory-0601`,{meaning:'later-insertion'})}}})
+  f.records.get(jobPath).state='queued';f.records.get(jobPath).scopes=['memories'];f.records.get(receiptPath).result='queued'
+  for(let i=0;i<601;i++)f.records.set(`${prefix}/memories/memory-${String(i).padStart(4,'0')}`,{meaning:i})
+  await f.handlers.processExportJob(await f.db.doc(jobPath).get())
+  const rows=JSON.parse(f.objects.get(exportPath).bytes.toString()).data.memories
+  assert.equal(rows.length,601);assert.deepEqual(rows.map(row=>row.meaning),Array.from({length:601},(_,i)=>i))
+  assert.equal(f.records.get(`${prefix}/memories/memory-0400`).meaning,'later-correction')
+})
+
+test('UTF8 document cursor order exports supplementary and BMP names without false overflow',async()=>{
+  const f=fixture();f.records.get(jobPath).state='queued';f.records.get(jobPath).scopes=['memories'];f.records.get(receiptPath).result='queued'
+  const names=['a','\uE000','\u{10000}'];for(const name of names)f.records.set(`${prefix}/memories/${name}`,{name})
+  await f.handlers.processExportJob(await f.db.doc(jobPath).get())
+  assert.deepEqual(JSON.parse(f.objects.get(exportPath).bytes.toString()).data.memories.map(row=>row.id),names)
+})
+
+for(const reason of ['snapshot','byte-budget','time-budget','document-budget','withdrawal']) {
+  test(`pagination ${reason} denial cleans staged output without publishing ready`,async()=>{
+    const options={clock:{value:now},snapshotChanged:reason==='snapshot',afterQuery:(location,records)=>{if(reason==='withdrawal'&&location===`${prefix}/memories`)records.get(canonicalPath).status='withdrawn';if(reason==='time-budget'&&location===`${prefix}/memories`)options.clock.value=now+240001}}
+    const f=fixture(options);f.records.get(jobPath).state='queued';f.records.get(jobPath).scopes=['memories'];f.records.get(receiptPath).result='queued'
+    for(let i=0;i<(reason==='byte-budget'?22:reason==='document-budget'?20001:601);i++)f.records.set(`${prefix}/memories/item-${String(i).padStart(5,'0')}`,{text:reason==='byte-budget'?'t'.repeat(800000):'small'})
+    await assert.rejects(f.handlers.processExportJob(await f.db.doc(jobPath).get()),reason==='snapshot'?/EXPORT_SNAPSHOT_CHANGED/:reason.endsWith('budget')?/EXPORT_RESOURCE_BUDGET_EXCEEDED/:{code:'failed-precondition'})
+    assert.equal(f.records.get(jobPath).state,'failed');assert.equal(f.records.get(receiptPath).result,'failed');assert.equal(f.objects.size,0)
+    if(reason.endsWith('budget'))assert.equal(f.records.get(jobPath).failureCode,'EXPORT_RESOURCE_BUDGET_EXCEEDED')
+  })
+}
+
+test('601 Captured Reality runtime records copy every validated source and keep source authority',async()=>{
+  const f=fixture()
+  f.records.get(jobPath).state='queued';f.records.get(jobPath).scopes=['spatial'];f.records.get(receiptPath).result='queued'
+  for(let i=0;i<601;i++) {
+    const assetId=`captured-${String(i).padStart(4,'0')}`,sourcePath=`private-captured-reality/${uid}/${assetId}/runtime/${runtimeChecksum}.splat`
+    f.objects.set(sourcePath,{generation:'77',bytes:runtimeBody,contentType:'application/octet-stream',metadata:{uraiRuntimeSha256:runtimeChecksum}})
+    f.records.set(`${prefix}/capturedRealityAssets/${assetId}`,{ownerId:uid,runtimeObject:sourcePath,runtimeSha256:runtimeChecksum,runtimeStorageGeneration:'77'})
+  }
+  await f.handlers.processExportJob(await f.db.doc(jobPath).get())
+  assert.equal(f.records.get(jobPath).state,'ready');assert.equal(f.records.get(jobPath).runtimeExports.length,601)
+  const payload=JSON.parse(f.objects.get(exportPath).bytes.toString())
+  assert.equal(payload.data.capturedRealityAssets.length,601);assert.equal(payload.data.capturedRealityRuntimeAssets.length,601)
+  assert.equal([...f.objects.keys()].filter(path=>path.startsWith(`private-captured-reality/${uid}/`)).length,601)
+  const descriptor=await f.descriptor({file:'runtime',assetId:'captured-0600'})
+  assert.equal(descriptor.checksum,runtimeChecksum);assert.equal(descriptor.byteLength,runtimeBody.length)
 })
 
 test('uncertain successful publication reply preserves committed bytes and completion receipt', async () => {
-  const f = fixture({ failAfterCommit: 2 })
+  const f = fixture({ failAfterCommit: (_id,records)=>records.get(jobPath).state==='ready' })
   f.records.get(jobPath).state = 'queued'; f.records.get(receiptPath).result = 'queued'
   await assert.rejects(f.handlers.processExportJob(await f.db.doc(jobPath).get()), /uncertain commit reply/)
   assert.equal(f.records.get(jobPath).state, 'ready'); assert.equal(f.records.get(receiptPath).result, 'ready')

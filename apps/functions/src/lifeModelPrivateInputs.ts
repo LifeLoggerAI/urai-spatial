@@ -106,11 +106,14 @@ async function resolveCurrent(request: ReturnType<typeof input>) {
 }
 
 // Used only by the canonical owner-authenticated private export executor.
-export async function exportPrivateLifeModelHandles(database: FirebaseFirestore.Firestore, ownerId: string) {
+export async function exportPrivateLifeModelHandles(database: FirebaseFirestore.Firestore, ownerId: string,
+  transaction?: FirebaseFirestore.Transaction, budget?: import('./exportPagination').ExportReadBudget) {
   if (!OWNER.test(ownerId)) fail('PRIVATE_INPUT_OWNER_INVALID', 400)
-  const handles = await database.collection('privateLifeModelSourceHandles').where('ownerId', '==', ownerId).limit(MAX_HANDLES + 1).get()
-  if (handles.size > MAX_HANDLES) fail('PRIVATE_INPUT_EXPORT_LIMIT', 409)
-  return handles.docs.map(handle => ({ id: handle.id, ...handle.data() }))
+  const { collectExportPages, createExportReadBudget } = await import('./exportPagination')
+  const collect = (reader: FirebaseFirestore.Transaction) => collectExportPages(reader,
+    database.collection('privateLifeModelSourceHandles').where('ownerId', '==', ownerId), budget ?? createExportReadBudget(),
+    handle => ({ ...handle.data(), id: handle.id }))
+  return transaction ? collect(transaction) : database.runTransaction(collect, { readOnly: true })
 }
 
 // Called by the canonical owner-authenticated deletion executor before source erasure.

@@ -50,14 +50,17 @@ function fixture(options = {}) {
       async update(value) { assert.ok(records.has(path)); records.set(path, clone({ ...records.get(path), ...value })) },
       async delete() { records.delete(path) } }
   }
-  function collection(path, filters = [], maximum = Infinity) {
+  function collection(path, filters = [], maximum = Infinity, afterId = '') {
     return { path, query: true, doc: id => document(`${path}/${id}`),
-      where: (key, operator, value) => { assert.ok(['==', 'in'].includes(operator)); return collection(path, [...filters, [key, operator, value]], maximum) },
-      limit: limit => collection(path, filters, limit),
+      where: (key, operator, value) => { assert.ok(['==', 'in'].includes(operator)); return collection(path, [...filters, [key, operator, value]], maximum,afterId) },
+      limit: limit => collection(path, filters, limit,afterId),
+      orderBy: field => {assert.equal(field,'__name__');return collection(path,filters,maximum,afterId)},
+      startAfter: cursor=>collection(path,filters,maximum,cursor.id),
       async get() {
         const docs = [...records.keys()].filter(key => key.startsWith(path + '/') && key.slice(path.length + 1).split('/').length === 1)
-          .filter(key => filters.every(([field, operator, value]) => operator === 'in' ? value.includes(snapshot(key).get(field)) : snapshot(key).get(field) === value)).sort().slice(0, maximum).map(snapshot)
-        return { size: docs.length, docs, empty: docs.length === 0 }
+          .filter(key => filters.every(([field, operator, value]) => operator === 'in' ? value.includes(snapshot(key).get(field)) : snapshot(key).get(field) === value))
+          .sort((a,b)=>Buffer.compare(Buffer.from(a),Buffer.from(b))).filter(key=>!afterId||Buffer.compare(Buffer.from(key.split('/').at(-1)),Buffer.from(afterId))>0).slice(0, maximum).map(snapshot)
+        return { size: docs.length, docs, empty: docs.length === 0,readTime:new Timestamp(canonicalDeadline-3600000) }
       } }
   }
   const db = {
@@ -85,7 +88,7 @@ function fixture(options = {}) {
   const functions = { region: () => functions, runWith: () => functions,
     https: { onRequest: handler => handler, onCall: handler => handler, HttpsError: class extends Error { constructor(code, message) { super(message); this.code = code } } },
     firestore: { document: () => ({ onCreate: handler => handler }) }, pubsub: { schedule: () => ({ onRun: handler => handler }) } }
-  const firestore = Object.assign(() => db, { FieldValue: { serverTimestamp: () => 'fixture-server-time' }, Timestamp })
+  const firestore = Object.assign(() => db, { FieldValue: { serverTimestamp: () => 'fixture-server-time' }, Timestamp,FieldPath:{documentId:()=> '__name__'} })
   const admin = { apps: [{}], firestore, initializeApp() {}, auth: () => ({ deleteUser: async () => {} }),
     storage: () => ({ bucket: () => ({ deleteFiles: async () => {}, file: path => ({ save: async bytes => { stats.files.set(path, Buffer.from(bytes)) }, getMetadata: async () => [{ generation: '1', size: String(stats.files.get(path)?.length), contentType: 'application/json' }] }) }) }) }
   const env = { URAI_PRIVATE_LIFE_MODEL_INPUTS_ENABLED: 'true', PRIVATE_SOURCE_REF_RESOLVER_TOKEN: 'fixture-resolver-token', GCLOUD_PROJECT: 'urai-4dc1d', URAI_SOURCE_SHA: 'c'.repeat(40), ...options.env }
@@ -98,6 +101,7 @@ function fixture(options = {}) {
         if (name === 'firebase-functions/v1') return functions
         if (name === 'firebase-admin') return admin
         if (name === './lifeModelPrivateInputs') return service
+        if (name === './exportPagination') return load('exportPagination')
         if (name === './personPresenceAuthority') return load('personPresenceAuthority')
         if (name === 'node:crypto' || name === 'node:stream/promises') return require(name)
         throw new Error(`Unexpected private-input dependency: ${name}`)
@@ -218,6 +222,24 @@ test('actual life-model export includes private source, transcript and provenanc
   assert.equal(payload.data.privateLifeModelTranscripts[0].ownerId, uid)
   assert.equal(payload.data.privateLifeModelSourceHandles[0].id, sha(body.sourceHandle))
   assert.equal(payload.data.privateLifeModelSourceHandles[0].sourceId, sourceId)
+})
+
+test('actual life-model export pages602 owner handles and601 source records without foreign handles',async()=>{
+  const f=fixture(),privacy=f.load('privacyOperations')
+  for(let i=0;i<601;i++) {
+    f.records.set(`privateLifeModelSourceHandles/${sha(`fictional-export-handle-${i}`)}`,{...f.records.get(handlePath),id:'forged-id'})
+    if(i>0)f.records.set(`${prefix}/privateLifeModelSources/source-${String(i).padStart(4,'0')}`,{...f.records.get(sourcePath),meaning:i})
+  }
+  f.records.set('privateLifeModelSourceHandles/foreign-owner-handle',{...f.records.get(handlePath),ownerId:'other-owner'})
+  const jobPath=`${prefix}/exportJobs/fixture-export-large`
+  f.records.set(jobPath,{uid,scopes:['life-model'],state:'queued',receiptId:'fixture-receipt',...f.exportBinding,consentRevision:4,exportFenceGeneration:0})
+  f.records.set(`${prefix}/privacyReceipts/fixture-receipt`,{ownerId:uid,kind:'export',jobId:'fixture-export-large',result:'queued',...f.exportBinding,consentRevision:4,exportFenceGeneration:0})
+  await privacy.processExportJob(await f.db.doc(jobPath).get())
+  assert.equal(f.records.get(jobPath).state,'ready')
+  const data=JSON.parse(f.stats.files.get(`private-exports/${uid}/fixture-export-large/export.json`).toString()).data
+  assert.equal(data.privateLifeModelSources.length,601);assert.equal(data.privateLifeModelSourceHandles.length,602)
+  assert.equal(new Set(data.privateLifeModelSourceHandles.map(row=>row.id)).size,602)
+  assert.ok(data.privateLifeModelSourceHandles.every(row=>row.ownerId===uid&&row.id!=='forged-id'))
 })
 
 test('actual life-model deletion tombstones handles before erasing all three private input tables', async () => {
