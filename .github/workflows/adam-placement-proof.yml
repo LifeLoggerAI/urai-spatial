@@ -22,6 +22,8 @@ on:
       - 'urai-tier1/src/spatial/memory-world/MemoryWorldRuntime.tsx'
       - 'urai-tier1/src/app/life-movie/LifeMovieClient.tsx'
       - 'urai-tier1/tests/accessibility-performance-adam-placement.spec.ts'
+      - 'urai-tier1/src/app/GroundSpatialWorldClean.tsx'
+      - 'urai-tier1/src/app/ground/ground-production-polish.css'
       - 'urai-tier1/src/app/mirror/MirrorBareEntryGuard.tsx'
       - 'urai-tier1/src/app/possible-futures/PossibleFuturesClient.tsx'
       - 'urai-tier1/src/app/launch/page.tsx'
@@ -129,9 +131,9 @@ jobs:
           for suite in report.get('suites', []):
               collect(suite)
           images = [{'path': str(p.relative_to(root)), 'sha256': hashlib.sha256(p.read_bytes()).hexdigest(), 'bytes': p.stat().st_size} for p in sorted(root.rglob('*.png'))]
-          receipt = {'schemaVersion': 'urai-adam-placement-proof-v1', 'repository': os.environ['GITHUB_REPOSITORY'], 'exactHead': source, 'checkoutMatchesExactHead': True, 'runId': os.environ['GITHUB_RUN_ID'], 'runAttempt': os.environ['GITHUB_RUN_ATTEMPT'], 'scope': 'focused-donor-founder-launcher-placement-only', 'productionVerified': False, 'deviceVerified': False, 'releaseAccepted': False, 'expectedTests': 68, 'recordedTests': len(tests), 'testResults': [{'status': t.get('status'), 'attempts': [{'status': r.get('status'), 'retry': r.get('retry')} for r in t.get('results', [])]} for t in tests], 'images': images}
+          receipt = {'schemaVersion': 'urai-adam-placement-proof-v1', 'repository': os.environ['GITHUB_REPOSITORY'], 'exactHead': source, 'checkoutMatchesExactHead': True, 'runId': os.environ['GITHUB_RUN_ID'], 'runAttempt': os.environ['GITHUB_RUN_ATTEMPT'], 'scope': 'focused-donor-founder-launcher-placement-only', 'productionVerified': False, 'deviceVerified': False, 'releaseAccepted': False, 'expectedTests': 72, 'recordedTests': len(tests), 'testResults': [{'status': t.get('status'), 'attempts': [{'status': r.get('status'), 'retry': r.get('retry')} for r in t.get('results', [])]} for t in tests], 'images': images}
           (root / 'receipt.json').write_text(json.dumps(receipt, indent=2) + '\n')
-          assert len(tests) == 68, 'Missing or extra test coverage'
+          assert len(tests) == 72, 'Missing or extra test coverage'
           assert images, 'Literal screenshot receipts are required'
           assert all(t.get('status') == 'expected' for t in tests), 'Browser assertion failed'
           if any(r.get('retry', 0) > 0 for t in tests for r in t.get('results', [])):

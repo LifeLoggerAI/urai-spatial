@@ -1,5 +1,7 @@
 "use client";
 
+import AdamLauncherSlot from '@/spatial/adam/AdamLauncherSlot'
+
 import { Canvas, useFrame, useThree, type ThreeEvent } from "@react-three/fiber";
 import { Sparkles, useAnimations, useGLTF } from "@react-three/drei";
 import { Bloom, EffectComposer, Vignette } from "@react-three/postprocessing";
@@ -379,7 +381,7 @@ export default function GroundSpatialWorldClean() {
       </Canvas> : <section className="ground-renderer-fallback" data-testid="urai-ground-accessible-fallback" aria-label="Accessible Ground destinations">
         <h1>{webglAvailable === null ? "Preparing Ground" : "Spatial view unavailable"}</h1>
         <p role="status">{webglAvailable === null ? "Checking renderer availability." : "The 3D environment is unavailable. These direct routes remain accessible; this is not the rendered Ground world."}</p>
-        {webglAvailable !== null ? <nav aria-label="Direct Ground routes">{DESTINATIONS.map((destination) => <a key={destination.id} href={destination.href}>{destination.label}</a>)}</nav> : null}
+        {webglAvailable !== null ? <nav aria-label="Direct Ground routes">{DESTINATIONS.map((destination) => <a key={destination.id} href={destination.href}>{destination.label}</a>)}<AdamLauncherSlot name="ground-semantic-routes" as="div" /></nav> : null}
       </section>}
 
       <header className="ground-brand" aria-hidden="true">

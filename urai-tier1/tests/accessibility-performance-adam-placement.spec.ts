@@ -244,6 +244,7 @@ const protectedRoutes: Array<{ route: string; slot: string; noWebGL?: boolean; f
   { route: '/launch', slot: 'launch-actions' },
   { route: '/life-map', slot: 'life-map-unsigned-controls', fallbackSlot: 'life-map-signed-out' },
   { route: '/unwind', slot: 'life-map-unsigned-controls', fallbackSlot: 'life-map-signed-out' },
+  { route: '/ground', slot: 'ground-semantic-routes', noWebGL: true },
 ]
 
 async function disableWebGL(page: Page) {
@@ -262,8 +263,21 @@ async function inspectTextAndControls(page: Page, slot: string) {
     const r = element.getBoundingClientRect()
     return [...document.querySelectorAll('main h1, main h2, main p, main label, main input, main textarea, main button, main a, [data-testid="urai-life-map-signed-out-disclosure"] strong, [data-testid="urai-life-map-signed-out-disclosure"] span, [data-testid="urai-life-map-signed-out-disclosure"] button')].filter(target => {
       if (target === element || target.contains(element)) return false
+      // HTML canvas fallback and closed details retain semantic descendants but
+      // do not paint them. Inspect their real visible states separately below.
+      if (target.closest('canvas,[hidden],[inert],[aria-hidden="true"]')) return false
+      const closedDetails = target.closest('details:not([open])')
+      if (closedDetails && !closedDetails.querySelector('summary')?.contains(target)) return false
       const t = target.getBoundingClientRect()
-      return t.width > 2 && t.height > 2 && r.left < t.right && r.right > t.left && r.top < t.bottom && r.bottom > t.top
+      let left = t.left, right = t.right, top = t.top, bottom = t.bottom
+      for (let parent = target.parentElement; parent; parent = parent.parentElement) {
+        const style = getComputedStyle(parent)
+        if (style.display === 'none' || style.visibility === 'hidden') return false
+        const clip = parent.getBoundingClientRect()
+        if (/^(auto|scroll|hidden|clip)$/.test(style.overflowX)) { left = Math.max(left, clip.left); right = Math.min(right, clip.right) }
+        if (/^(auto|scroll|hidden|clip)$/.test(style.overflowY)) { top = Math.max(top, clip.top); bottom = Math.min(bottom, clip.bottom) }
+      }
+      return right - left > 2 && bottom - top > 2 && r.left < right && r.right > left && r.top < bottom && r.bottom > top
     }).map(target => ({ tag: target.tagName, text: target.textContent?.trim() }))
   })
   expect(overlaps, `${slot} founder launcher must not cover copy or another control`).toEqual([])
@@ -355,13 +369,42 @@ for (const profile of [
         await assertCopyIsUnobstructed(returnHome)
         await attachPlacement(page, info, `life-map-return-${profile.width}x${profile.height}`, bounds)
       }
+      if (slot === 'ground-semantic-routes') {
+        await expect(page.getByTestId('urai-ground-accessible-fallback')).toBeVisible()
+        const routes = page.getByRole('navigation', { name: 'Direct Ground routes', exact: true }).getByRole('link')
+        expect(await routes.count()).toBeGreaterThanOrEqual(10)
+        const routeBounds = []
+        for (let index = 0; index < await routes.count(); index++) {
+          const route = routes.nth(index)
+          await route.scrollIntoViewIfNeeded()
+          const bounds = await route.evaluate(element => {
+            const r = element.getBoundingClientRect()
+            const collisions = [...document.querySelectorAll('[data-urai-adam-launcher], .urai-world-companion__orb')].filter(control => {
+              const c = control.getBoundingClientRect()
+              return r.left < c.right && r.right > c.left && r.top < c.bottom && r.bottom > c.top
+            }).map(control => control.getAttribute('aria-label') ?? control.textContent?.trim())
+            const hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2)
+            return { label: element.textContent?.trim(), left: r.left, right: r.right, top: r.top, bottom: r.bottom, width: r.width, height: r.height, viewportWidth: innerWidth, viewportHeight: innerHeight, collisions, reachable: hit === element || element.contains(hit) }
+          })
+          expect(bounds.height).toBeGreaterThanOrEqual(48)
+          expect(bounds.width).toBeGreaterThanOrEqual(48)
+          expect(bounds.left).toBeGreaterThanOrEqual(0)
+          expect(bounds.right).toBeLessThanOrEqual(bounds.viewportWidth)
+          expect(bounds.top).toBeGreaterThanOrEqual(0)
+          expect(bounds.bottom).toBeLessThanOrEqual(bounds.viewportHeight + 1)
+          expect(bounds.collisions, `${bounds.label} must not be covered by founder or Orb`).toEqual([])
+          expect(bounds.reachable).toBe(true)
+          routeBounds.push(bounds)
+        }
+        await attachPlacement(page, info, `ground-route-list-${profile.width}x${profile.height}`, routeBounds)
+      }
       await inspectTextAndControls(page, slot)
       expect(errors).toEqual([])
     })
   }
 }
 
-for (const profile of [{ width: 390, height: 844, noWebGL: false }, { width: 568, height: 320, noWebGL: true }]) {
+for (const profile of [{ width: 390, height: 844, noWebGL: false }, { width: 568, height: 320, noWebGL: true }, { width: 320, height: 568, noWebGL: true }]) {
   test(`Founder launcher preserves disclosed Memory World controls at ${profile.width}x${profile.height}${profile.noWebGL ? ' without WebGL' : ''}`, async ({ page }, info) => {
     test.setTimeout(60000)
     await page.setViewportSize(profile)
@@ -375,6 +418,20 @@ for (const profile of [{ width: 390, height: 844, noWebGL: false }, { width: 568
     const before = page.url()
     await exerciseKeyboardPanel(page, slot, false)
     expect(page.url()).toBe(before)
+    const provenance = profile.noWebGL ? page.getByTestId('memory-world-renderer-fallback').getByText('Truth & provenance', { exact: true }) : page.getByTestId('memory-world-runtime').locator('header').getByText('Truth & provenance', { exact: true })
+    await provenance.scrollIntoViewIfNeeded()
+    await provenance.click()
+    await expect(provenance.locator('..')).toHaveAttribute('open', '')
+    const expandedGeometry = await inspectTextAndControls(page, slot)
+    await attachPlacement(page, info, `memory-world-${profile.width}x${profile.height}-provenance-open`, expandedGeometry)
+    await provenance.click()
+    for (const name of ['Correct this world', 'Guided capture']) {
+      const summary = page.getByTestId('memory-world-authoring-tools').getByText(name, { exact: true })
+      await summary.click()
+      await expect(summary.locator('..')).toHaveAttribute('open', '')
+      await summary.click()
+      await expect(summary.locator('..')).not.toHaveAttribute('open', '')
+    }
     const exit = page.getByRole('button', { name: profile.noWebGL ? 'Return to Replay' : '← Replay', exact: true })
     await exit.scrollIntoViewIfNeeded()
     await expect(exit).toBeInViewport({ ratio: 1 })

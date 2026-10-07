@@ -166,4 +166,20 @@
   box-sizing: border-box;
   width: 100%;
 }
+/* Route typography and spatial header transforms do not own founder controls. */
+.launcher[data-urai-adam-launcher][data-adam-launcher-placement] {
+  min-width: 64px !important;
+  min-height: 48px !important;
+  max-height: none !important;
+}
+.panel[data-urai-adam-presence] > .header {
+  max-width: none !important;
+  opacity: 1 !important;
+  transform: none !important;
+}
+.panel[data-urai-adam-presence] .close {
+  flex: 0 0 48px;
+  min-width: 48px !important;
+  min-height: 48px !important;
+}
 .launcher:focus-visible { outline: 2px solid #d8fff5; outline-offset: 3px; }
