@@ -101,8 +101,8 @@ test.describe('Replay source ownership and accessible transport', () => {
   })
 })
 
-for (const viewport of [{ width: 844, height: 390 }, { width: 568, height: 320 }]) {
-  test(`Replay landscape captions stay clear of transport at ${viewport.width}x${viewport.height}`, async ({ page }) => {
+for (const viewport of [{ width: 844, height: 390 }, { width: 568, height: 320 }, { width: 1440, height: 900 }, { width: 1280, height: 800 }]) {
+  test(`Replay captions stay clear of transport at ${viewport.width}x${viewport.height}`, async ({ page }) => {
     await page.setViewportSize(viewport)
     await page.emulateMedia({ reducedMotion: 'reduce' })
     await page.goto(replayDemo, { waitUntil: 'domcontentloaded' })
@@ -114,8 +114,10 @@ for (const viewport of [{ width: 844, height: 390 }, { width: 568, height: 320 }
     expect(caption).not.toBeNull()
     expect(tempo).not.toBeNull()
     expect(header).not.toBeNull()
-    expect(caption!.y + caption!.height).toBeLessThanOrEqual(tempo!.y)
-    expect(header!.x + header!.width).toBeLessThanOrEqual(caption!.x)
+    // Keep the original landscape clearance gate; desktop needs an explicit gap.
+    expect(caption!.y + caption!.height + (viewport.height > 500 ? 8 : 0)).toBeLessThanOrEqual(tempo!.y)
+    if (viewport.height <= 500) expect(header!.x + header!.width).toBeLessThanOrEqual(caption!.x)
+    else expect(header!.y + header!.height).toBeLessThanOrEqual(caption!.y)
     for (const rect of [caption!, tempo!, header!]) {
       expect(rect.x).toBeGreaterThanOrEqual(0)
       expect(rect.y).toBeGreaterThanOrEqual(0)

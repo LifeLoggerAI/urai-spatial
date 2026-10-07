@@ -1,0 +1,72 @@
+name: Spatial Control Clearance Proof
+
+on:
+  pull_request:
+    branches: [main, 'visual/**']
+    paths:
+      - '.github/workflows/spatial-control-clearance-proof.yml'
+      - 'urai-tier1/src/app/globals.css'
+      - 'urai-tier1/src/app/focus/FocusChamberClient.tsx'
+      - 'urai-tier1/src/app/replay/CinematicReplayClient.tsx'
+      - 'urai-tier1/tests/accessibility-performance-focus-mobile-layout.spec.ts'
+      - 'urai-tier1/tests/accessibility-performance-replay.spec.ts'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: spatial-control-clearance-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+env:
+  URAI_EXACT_HEAD: ${{ github.event.pull_request.head.sha }}
+  NEXT_PUBLIC_URAI_BUILD_SHA: ${{ github.event.pull_request.head.sha }}
+  PLAYWRIGHT_BROWSERS_PATH: '0'
+
+jobs:
+  control-clearance:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Checkout exact candidate
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ env.URAI_EXACT_HEAD }}
+          fetch-depth: 1
+          persist-credentials: false
+          show-progress: false
+      - name: Prove exact clean candidate
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$URAI_EXACT_HEAD"
+          test -z "$(git status --porcelain --untracked-files=all)"
+      - name: Setup pnpm
+        uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1
+        with:
+          version: 10.0.0
+          run_install: false
+      - name: Setup Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+      - name: Install and build exact candidate
+        run: |
+          corepack enable
+          pnpm install --frozen-lockfile
+          pnpm --dir urai-tier1 typecheck
+          pnpm build:static
+      - name: Install Chromium
+        run: pnpm --dir urai-tier1 exec playwright install --with-deps chromium
+      - name: Verify actual Focus and Replay control geometry
+        run: pnpm exec playwright test --config playwright.accessibility.config.ts --fail-on-flaky-tests urai-tier1/tests/accessibility-performance-focus-mobile-layout.spec.ts urai-tier1/tests/accessibility-performance-replay.spec.ts
+      - name: Retain scoped exact-head evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: spatial-control-clearance-${{ env.URAI_EXACT_HEAD }}
+          path: artifacts/accessibility-performance/
+          if-no-files-found: warn
+          retention-days: 90
