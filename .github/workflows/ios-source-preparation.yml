@@ -10,6 +10,8 @@ on:
       - "pnpm-lock.yaml"
       - "scripts/prepare-ios-shell.mjs"
       - "scripts/prepare-native-links.mjs"
+      - "scripts/prepare-native-static-provenance.mjs"
+      - "scripts/prepare-ios-source-archive.py"
       - ".github/workflows/ios-source-preparation.yml"
 
 permissions:
@@ -113,6 +115,76 @@ jobs:
             distribution/ios-shell/ios/App/App/App.entitlements \
             distribution/ios-shell/ios/App/App/capacitor.config.json \
             distribution/ios-shell/ios/App/App/public/native-build-fingerprint.json > ios-project-source.sha256
+
+      - name: Archive the complete generated Xcode project and static web bundle
+        run: |
+          python3 scripts/prepare-ios-source-archive.py package --project distribution/ios-shell/ios --receipt ios-source-receipt.json --output-directory ios-source-archive --source-sha "$URAI_EXACT_HEAD" --workflow-run-id "$GITHUB_RUN_ID"
+          python3 - <<'PYVERIFY'
+          import json
+          manifest = json.load(open('ios-source-archive/ios-source-archive-transport.json'))
+          assert len(manifest['parts']) <= 5, 'iOS archive exceeds retained transport part budget'
+          PYVERIFY
+          python3 scripts/prepare-ios-source-archive.py verify --archive ios-source-archive/urai-ios-project-source.zip --source-sha "$URAI_EXACT_HEAD"
+
+      - name: Retain complete unsigned iOS source project
+        uses: actions/upload-artifact@v4
+        with:
+          name: urai-ios-full-source-${{ env.URAI_EXACT_HEAD }}
+          path: ios-source-archive/urai-ios-project-source.zip
+          compression-level: 0
+          retention-days: 30
+
+      - name: Retain bounded iOS source transport
+        uses: actions/upload-artifact@v4
+        with:
+          name: urai-ios-source-transport-${{ env.URAI_EXACT_HEAD }}
+          path: ios-source-archive/ios-source-archive-transport.json
+          retention-days: 30
+
+      - name: Retain iOS source transport part 01
+        if: ${{ hashFiles('ios-source-archive/urai-ios-project-source.zip.part-01') != '' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: urai-ios-source-part-01-${{ env.URAI_EXACT_HEAD }}
+          path: ios-source-archive/urai-ios-project-source.zip.part-01
+          compression-level: 0
+          retention-days: 30
+
+      - name: Retain iOS source transport part 02
+        if: ${{ hashFiles('ios-source-archive/urai-ios-project-source.zip.part-02') != '' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: urai-ios-source-part-02-${{ env.URAI_EXACT_HEAD }}
+          path: ios-source-archive/urai-ios-project-source.zip.part-02
+          compression-level: 0
+          retention-days: 30
+
+      - name: Retain iOS source transport part 03
+        if: ${{ hashFiles('ios-source-archive/urai-ios-project-source.zip.part-03') != '' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: urai-ios-source-part-03-${{ env.URAI_EXACT_HEAD }}
+          path: ios-source-archive/urai-ios-project-source.zip.part-03
+          compression-level: 0
+          retention-days: 30
+
+      - name: Retain iOS source transport part 04
+        if: ${{ hashFiles('ios-source-archive/urai-ios-project-source.zip.part-04') != '' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: urai-ios-source-part-04-${{ env.URAI_EXACT_HEAD }}
+          path: ios-source-archive/urai-ios-project-source.zip.part-04
+          compression-level: 0
+          retention-days: 30
+
+      - name: Retain iOS source transport part 05
+        if: ${{ hashFiles('ios-source-archive/urai-ios-project-source.zip.part-05') != '' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: urai-ios-source-part-05-${{ env.URAI_EXACT_HEAD }}
+          path: ios-source-archive/urai-ios-project-source.zip.part-05
+          compression-level: 0
+          retention-days: 30
 
       - name: Retain source-only iOS evidence
         uses: actions/upload-artifact@v4

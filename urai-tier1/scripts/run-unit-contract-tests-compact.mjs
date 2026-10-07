@@ -7,6 +7,7 @@ const tests = [
   'tests/android-native-google-auth.test.mjs',
   'tests/native-deep-links.test.mjs',
   'tests/native-static-provenance.test.mjs',
+  'tests/ios-source-archive.test.mjs',
   'tests/ios-native-preparation.test.mjs',
   'tests/privacy-session-lifecycle.test.mjs',
   'tests/sms-session-lifecycle.test.mjs',
