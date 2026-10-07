@@ -65,6 +65,7 @@ function runtimeSessionForRightHandTurning(
         gamepad?: Gamepad
       }>
     },
+    get frameRate() { return session.frameRate },
   }
 }
 
@@ -73,6 +74,7 @@ export default function UraiQuestEntryWorldV2() {
 
   const mountRef = useRef<HTMLDivElement>(null)
   const runtimeRef = useRef<UraiXrWorldRuntime | null>(null)
+  const motionPreferenceOverridden = useRef(false)
 
   const [message, setMessage] = useState(
     'Building the explorable entry chamber…',
@@ -80,6 +82,19 @@ export default function UraiQuestEntryWorldV2() {
   const [reducedMotion, setReducedMotion] = useState(false)
   const [vrActive, setVrActive] = useState(false)
   const [rendererReady, setRendererReady] = useState(false)
+
+  useEffect(() => {
+    if (!window.matchMedia) return
+    const media = window.matchMedia('(prefers-reduced-motion: reduce)')
+    const applyPreference = () => {
+      if (motionPreferenceOverridden.current) return
+      setReducedMotion(media.matches)
+      if (runtimeRef.current) runtimeRef.current.reducedMotion = media.matches
+    }
+    applyPreference()
+    media.addEventListener('change', applyPreference)
+    return () => media.removeEventListener('change', applyPreference)
+  }, [])
 
   const openRoute = useCallback(
     async (route: string, label: string) => {
@@ -185,7 +200,9 @@ export default function UraiQuestEntryWorldV2() {
     const runtime = runtimeRef.current
 
     if (runtime) {
-      runtime.reducedMotion = reducedMotion
+      runtime.reducedMotion = motionPreferenceOverridden.current
+        ? reducedMotion
+        : window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? reducedMotion
     }
   }, [reducedMotion])
 
@@ -325,6 +342,7 @@ export default function UraiQuestEntryWorldV2() {
           type="button"
           aria-pressed={reducedMotion}
           onClick={() => {
+            motionPreferenceOverridden.current = true
             setReducedMotion((current) => !current)
           }}
         >
