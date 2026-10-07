@@ -101,21 +101,31 @@ test.describe('Replay source ownership and accessible transport', () => {
   })
 })
 
-for (const viewport of [{ width: 844, height: 390 }, { width: 568, height: 320 }]) {
-  test(`Replay landscape captions stay clear of transport at ${viewport.width}x${viewport.height}`, async ({ page }) => {
+for (const viewport of [{ width: 844, height: 390 }, { width: 568, height: 320 }, { width: 1440, height: 900 }, { width: 1280, height: 800 }]) {
+  test(`Replay captions stay clear of transport at ${viewport.width}x${viewport.height}`, async ({ page }) => {
     await page.setViewportSize(viewport)
     await page.emulateMedia({ reducedMotion: 'reduce' })
     await page.goto(replayDemo, { waitUntil: 'domcontentloaded' })
     const replay = page.getByTestId('cinematic-replay-client')
     await expect(replay).toHaveAttribute('data-replay-media-ready', 'true')
-    const caption = await replay.locator('.caption').boundingBox()
-    const tempo = await replay.locator('.memoryTempo').boundingBox()
-    const header = await replay.locator('header').boundingBox()
+    // Read one simultaneous layout snapshot instead of three forced GPU frames.
+    const { caption, tempo, header } = await replay.evaluate(owner => {
+      const rect = (selector: string) => {
+        const element = owner.querySelector(selector)
+        if (!element) return null
+        const r = element.getBoundingClientRect()
+        return { x: r.x, y: r.y, width: r.width, height: r.height }
+      }
+      return { caption: rect('.caption'), tempo: rect('.memoryTempo'), header: rect('header') }
+    })
+    await test.info().attach('replay-control-geometry.json', { body: JSON.stringify({ viewport, caption, tempo, header }), contentType: 'application/json' })
     expect(caption).not.toBeNull()
     expect(tempo).not.toBeNull()
     expect(header).not.toBeNull()
-    expect(caption!.y + caption!.height).toBeLessThanOrEqual(tempo!.y)
-    expect(header!.x + header!.width).toBeLessThanOrEqual(caption!.x)
+    // Keep the original landscape clearance gate; desktop needs an explicit gap.
+    expect(caption!.y + caption!.height + (viewport.height > 500 ? 8 : 0)).toBeLessThanOrEqual(tempo!.y)
+    if (viewport.height <= 500) expect(header!.x + header!.width).toBeLessThanOrEqual(caption!.x)
+    else expect(header!.y + header!.height).toBeLessThanOrEqual(caption!.y)
     for (const rect of [caption!, tempo!, header!]) {
       expect(rect.x).toBeGreaterThanOrEqual(0)
       expect(rect.y).toBeGreaterThanOrEqual(0)

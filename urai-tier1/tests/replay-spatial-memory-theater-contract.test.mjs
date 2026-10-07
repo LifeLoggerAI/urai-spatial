@@ -15,7 +15,16 @@ test('Replay owns a real immersive R3F memory field instead of a theater or CSS-
   assert.match(source, /inside-memory-environment-not-screen/)
   assert.match(source, /<sphereGeometry args=\{\[24, 96, 64\]\}/)
   assert.match(source, /side=\{THREE\.BackSide\}/)
-  assert.doesNotMatch(source, /replay-memory-environment-v1\.glb|REPLAY_ENVIRONMENT_MODEL|r3f-memory-theater|replay-film-portal|MemoryMediaSurface|REPLAY_SCREEN_POSITION|planeGeometry/)
+  assert.doesNotMatch(source, /replay-memory-environment-v1\.glb|REPLAY_ENVIRONMENT_MODEL|r3f-memory-theater|replay-film-portal|MemoryMediaSurface|REPLAY_SCREEN_POSITION/)
+  // The disclosed landscape legitimately has horizontal water. A world surface
+  // is not a projection screen: every flat JSX plane must be named terrain/water
+  // and rotated into the horizontal world, rather than accepting arbitrary planes.
+  const worldPlanes = [...source.matchAll(/<mesh\b([^>]*?)>\s*<planeGeometry\b/g)]
+  assert.equal(worldPlanes.length, (source.match(/<planeGeometry\b/g) || []).length)
+  for (const [, attributes] of worldPlanes) {
+    assert.match(attributes, /name="replay-memory-(?:water|ground)"/)
+    assert.match(attributes, /rotation=\{\[-Math\.PI\s*\/\s*2,/)
+  }
 })
 
 test('Replay admits the demo dome separately and preserves original recorded-source framing and real video transport', () => {

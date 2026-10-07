@@ -23,9 +23,14 @@
   .focusWorld[data-chamber-state="ready"] .focus-spatial-aperture-button {
     display: none !important;
   }
+  /* The 64px control rail starts 80px above the safe-area edge. Reserve
+     another 8px for both utility controls, including their borders. */
+  [data-testid="urai-final-focus-chamber"] .focusHelp {
+    bottom: max(88px, calc(env(safe-area-inset-bottom) + 88px)) !important;
+  }
   body:has([data-testid="urai-final-focus-chamber"]) [data-urai-adam-launcher] {
     top: auto !important;
-    bottom: max(76px, calc(env(safe-area-inset-bottom) + 64px)) !important;
+    bottom: max(88px, calc(env(safe-area-inset-bottom) + 88px)) !important;
     left: max(16px, env(safe-area-inset-left)) !important;
     right: auto !important;
     transform: none !important;
@@ -170,5 +175,48 @@ body:has(.life-map-navigator[open]) [data-testid="urai-true-3d-life-map"] * {
     left: max(12px, env(safe-area-inset-left)) !important;
     right: auto !important;
     transform: none !important;
+  }
+}
+
+/* Accessible Home fallback must not render the old multi-panel concept art
+   or its third-person avatar. Keep its semantic destinations and status. */
+[data-testid="urai-home-accessible-fallback"][data-webgl-state] .urai-genesis-home .urai-genesis-home__world {
+  background: radial-gradient(ellipse at 50% 24%, #1b3651, #081827 58%, #030912) !important;
+}
+[data-testid="urai-home-accessible-fallback"][data-webgl-state] .urai-genesis-home .urai-genesis-home__world::before,
+[data-testid="urai-home-accessible-fallback"][data-webgl-state] .urai-genesis-home .urai-genesis-home__world::after {
+  background-image: none !important;
+}
+[data-testid="urai-home-accessible-fallback"][data-webgl-state] .urai-genesis-home .urai-genesis-home__body {
+  display: none !important;
+}
+
+/* Keep capability status clear of the fallback heading, and preserve the
+   same 48px target floor on its legacy text actions as on semantic navigation. */
+[data-testid="urai-home-accessible-fallback"][data-webgl-state] .urai-genesis-home .urai-genesis-home__cta {
+  min-height: 48px !important;
+  min-width: 48px !important;
+}
+@media (max-width: 760px) {
+  [data-testid="urai-home-accessible-fallback"][data-webgl-state] .urai-genesis-home .urai-genesis-home__hero {
+    position: absolute !important;
+    top: max(140px, calc(env(safe-area-inset-top) + 140px)) !important;
+    left: 16px !important;
+    right: 16px !important;
+    width: auto !important;
+    padding: 16px !important;
+    transform: none !important;
+  }
+}
+
+@media (max-width: 760px) {
+  [data-testid="urai-home-accessible-fallback"][data-webgl-state] .urai-genesis-home .urai-genesis-home__hero h1 {
+    font-size:24px!important;line-height:1.1!important;max-width:none!important;letter-spacing:-.03em!important;
+  }
+}
+@media (min-width: 761px) {
+  body:has(.urai-home-spatial-runtime-layer) .uraiV2OnboardingCard {
+    bottom:max(132px,calc(env(safe-area-inset-bottom) + 132px))!important;
+    max-height:calc(100svh - max(132px,calc(env(safe-area-inset-bottom) + 132px)) - max(18px,env(safe-area-inset-top)))!important;
   }
 }
