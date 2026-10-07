@@ -15,6 +15,7 @@ const gatewayUrl = 'https://spend.example.invalid/api/worker/production-spend'
 const token = 'SYNTHETIC-WORKER-TOKEN-'.repeat(3), apiKey = 'SYNTHETIC-PROVIDER-CREDENTIAL'
 const paths = ['providerFunctions.ts', 'adamPresenceFunctions.ts', 'personPresenceProvider.ts', 'personPresenceVoiceProvider.ts', 'councilProviderFunctions.ts', 'protectedProviderSpend.ts'].map(name => `apps/functions/src/${name}`)
 const digest = value => createHash('sha256').update(value).digest('hex')
+const syntheticJobDigest = job => digest(stable(Object.fromEntries(Object.entries(job).filter(([key]) => key !== 'approval' && key !== 'attempts'))).replace(/[\u007f-\uffff]/g, value => `\\u${value.charCodeAt(0).toString(16).padStart(4,'0')}`))
 function stable(value) {
   if (value === null || typeof value !== 'object') return JSON.stringify(value)
   if (Array.isArray(value)) return `[${value.map(stable).join(',')}]`
@@ -29,7 +30,13 @@ function sourceModule(path, require, globals = {}) {
   return module.exports
 }
 function fixture(change = {}) {
-  const controls = { missingBinding:false, missingToken:false, reserveLost:false, reserveDenied:false, proofRejected:false, recordLost:false, streamError:false, ...change }
+  const controls = { missingBinding:false, missingToken:false, reserveLost:false, reserveDenied:false, proofRejected:false, recordLost:false, streamError:false, tokenReads:0, ...change }
+  let clockOffset = 0, monotonicOffset = 0
+  const now = () => Date.now() + clockOffset
+  const advanceTime = value => { clockOffset += value; monotonicOffset += value }
+  const advanceMonotonic = value => { monotonicOffset += value }
+  class FixtureDate extends Date { static now() { return now() } }
+  const clockContext = () => ({ env, setHead:value => { activeHead = value }, advanceTime, now })
   const env = { URAI_SOURCE_SHA:SOURCE, SPATIAL_PRODUCTION_SPEND_URL:gatewayUrl, SPATIAL_SPEND_GATEWAY_SOURCE_SHA:GATEWAY }
   const calls = [], providerCalls = [], rows = new Map(), bindings = new Map()
   let activeHead = SOURCE, metadata, metadataPath, expectedFields, currentProvider = async () => new Response('SYNTHETIC OUTPUT', { headers:{ 'x-request-id':'synthetic-task' } })
@@ -41,29 +48,34 @@ function fixture(change = {}) {
       const row = rows.get(body.job_id); assert.ok(row)
       if (body.action === 'preflight') {
         const fingerprints = Object.fromEntries(['credential_sha256','semantic_headers_sha256','source_input_sha256','content_type'].map(key => [key,body[key]]))
-        const timing = { observed_at:new Date(Date.now()-60000).toISOString(), expires_at:new Date(Date.now()+300000).toISOString() }
-        const reply = { ok:true, admission_expires_at:new Date(Date.now()+300000).toISOString(), provider_call_authorized:false, execution_performed:false, envelope:{ job:structuredClone(row.job), account:{ ...timing,provider:body.provider,account_id:body.account_id,credential_sha256:body.credential_sha256,credential_binding_verified:true,credential_binding_receipt:'SYNTHETIC-ACCOUNT-MAP',trusted_readback:true }, protected_controls:{ ...timing,...fingerprints,provider:body.provider,account_id:body.account_id,trusted_readback:true,endpoint:body.endpoint,request_sha256:body.request_sha256,enforcement_source_sha:GATEWAY,hard_stop_supported:true,cost_cap_enforced:true,auto_top_up:false,max_usd_micros:2500000,max_credits:20,max_runtime_seconds:2,proof_receipt:'SYNTHETIC-CONTROLS' }, protected_pricing:{ ...timing,...fingerprints,provider:body.provider,account_id:body.account_id,model_version:body.model,request_sha256:body.request_sha256,trusted_readback:true,receipt:'SYNTHETIC-PRICE',rates:structuredClone(row.job.budget.rates) } } }
+        const timing = { observed_at:new Date(now()-60000).toISOString(), expires_at:new Date(now()+300000).toISOString() }
+        const reply = { ok:true, provider_call_authorized:false, execution_performed:false, envelope:{ job:structuredClone(row.job), account:{ ...timing,provider:body.provider,account_id:body.account_id,credential_sha256:body.credential_sha256,credential_binding_verified:true,credential_binding_receipt:'SYNTHETIC-ACCOUNT-MAP',trusted_readback:true }, protected_controls:{ ...timing,...fingerprints,provider:body.provider,account_id:body.account_id,trusted_readback:true,endpoint:body.endpoint,request_sha256:body.request_sha256,enforcement_source_sha:GATEWAY,hard_stop_supported:true,cost_cap_enforced:true,auto_top_up:false,max_usd_micros:2500000,max_credits:20,max_runtime_seconds:2,proof_receipt:'SYNTHETIC-CONTROLS' }, protected_pricing:{ ...timing,...fingerprints,provider:body.provider,account_id:body.account_id,model_version:body.model,request_sha256:body.request_sha256,trusted_readback:true,receipt:'SYNTHETIC-PRICE',rates:structuredClone(row.job.budget.rates) } } }
+        reply.envelope.authority = { ...timing, trusted_readback:true, binding:structuredClone(row.job.authority) }
+        reply.admission_expires_at = new Date(Math.min(row.deploymentExpiresAt, ...[reply.envelope.job.approval, reply.envelope.authority, reply.envelope.account, reply.envelope.protected_controls, reply.envelope.protected_pricing, reply.envelope.job.budget.rates].map(value => Date.parse(value.expires_at)))).toISOString()
         if (controls.proofRejected) return new Response('{}', { status:409 })
-        controls.preflight?.(reply, body, { env, setHead:value => { activeHead = value } })
-        return Response.json(reply)
+        await controls.preflight?.(reply, body, clockContext())
+        row.preflightReply = structuredClone(reply)
+        return controls.gatewayResponse ? controls.gatewayResponse(reply, 'preflight', clockContext()) : Response.json(reply)
       }
       if (body.action === 'reserve') {
         if (row.attempt || controls.reserveDenied) return new Response('{}', { status:409 })
         row.attempt = { id:'synthetic-attempt', status:'RESERVED', charges_reconciled:false }
         row.hold = 2500000
-        controls.reserve?.(body, { env, setHead:value => { activeHead = value } })
+        const reservedAt = now()
+        const reply = { ok:true, provider_call_authorized:true, execution_performed:false, executor_source_sha:SOURCE, gateway_source_sha:GATEWAY, worker_id:body.worker_id, job_digest:body.job_digest, attempt_id:row.attempt.id, max_runtime_seconds:2, reserved_at:new Date(reservedAt).toISOString(), admission_expires_at:new Date(Math.min(Date.parse(row.preflightReply.admission_expires_at), reservedAt + 2000)).toISOString(), ...Object.fromEntries(['account_id','credential_sha256','semantic_headers_sha256','source_input_sha256','content_type'].map(key => [key,body[key]])) }
+        row.attempt.reserved_at = reply.reserved_at; row.attempt.admission_expires_at = reply.admission_expires_at
+        await controls.reserve?.(body, clockContext())
+        await controls.reserveReply?.(reply, body, clockContext())
         if (controls.reserveLost) throw new Error('SYNTHETIC LOST COMMITTED RESERVE RESPONSE')
-        const reservedAt = new Date().toISOString()
-        const reply = { ok:true, reserved_at:reservedAt, admission_expires_at:new Date(Date.parse(reservedAt)+2000).toISOString(), provider_call_authorized:true, execution_performed:false, executor_source_sha:SOURCE, gateway_source_sha:GATEWAY, worker_id:body.worker_id, job_digest:body.job_digest, attempt_id:row.attempt.id, max_runtime_seconds:2, ...Object.fromEntries(['account_id','credential_sha256','semantic_headers_sha256','source_input_sha256','content_type'].map(key => [key,body[key]])) }
-        await controls.reservationReply?.(reply)
-        return Response.json(reply)
+        return controls.gatewayResponse ? controls.gatewayResponse(reply, 'reserve', clockContext()) : Response.json(reply)
       }
       assert.equal(body.action, 'record', 'caller must never reconcile charges')
       assert.ok(row.attempt); assert.equal(body.attempt_id, row.attempt.id)
+      await controls.record?.(body, clockContext())
       if (controls.recordLost) throw new Error('SYNTHETIC RECORD OUTCOME UNKNOWN')
       row.attempt.status = 'RECONCILIATION_REQUIRED'; row.attempt.reported_outcome = body.status
-      await controls.record?.(body, { env, setHead:value => { activeHead = value } })
-      return Response.json({ ok:true, provider_call_authorized:false, execution_performed:false, reconciliation_required:true })
+      const reply = { ok:true, provider_call_authorized:false, execution_performed:false, reconciliation_required:true }
+      return controls.gatewayResponse ? controls.gatewayResponse(reply, 'record', clockContext()) : Response.json(reply)
     }
     providerCalls.push({ url:String(url), init })
     assert.equal(init.method, 'POST'); assert.equal(init.redirect, 'error')
@@ -73,12 +85,13 @@ function fixture(change = {}) {
     if (controls.streamError) return new Response(new ReadableStream({ start(stream) { stream.error(new Error('SYNTHETIC STREAM OUTCOME UNKNOWN')) } }))
     return currentProvider(url, init)
   }
-  const params = { defineSecret:name => ({ value:() => name === 'SPATIAL_SPEND_WORKER_TOKENS_JSON' ? JSON.stringify(controls.missingToken ? {} : { 'synthetic-worker':{ token, gateway_origin:new URL(gatewayUrl).origin } }) : apiKey }) }
+  const params = { defineSecret:name => ({ value:() => { if (name !== 'SPATIAL_SPEND_WORKER_TOKENS_JSON') return apiKey; controls.tokenReads++; return JSON.stringify(controls.missingToken ? {} : { 'synthetic-worker':{ token, gateway_origin:controls.secretOrigin ?? new URL(gatewayUrl).origin } }) } }) }
   const helper = sourceModule('../src/protectedProviderSpend.ts', id => {
+    if (id === 'node:perf_hooks') return { performance:{ now:() => performance.now()+monotonicOffset } }
     if (id === 'node:crypto') return { createHash }
     if (id === 'node:net') return { isIP }
-    if (id === 'node:perf_hooks') return { performance }
     if (id === 'node:child_process') return { execFileSync:(_cmd, args) => {
+      controls.sourceCheck?.(args, clockContext())
       if (args.includes('--show-toplevel')) return '/synthetic-tracked-checkout\n'
       if (args.includes('HEAD')) return activeHead + '\n'
       if (args.includes('ls-files')) return paths.join('\n') + '\n'
@@ -87,7 +100,7 @@ function fixture(change = {}) {
     } }
     if (id === 'firebase-functions/params') return params
     throw new Error(`Unexpected helper dependency ${id}`)
-  }, { process:{ env, cwd:() => '/synthetic-tracked-checkout' }, fetch:fakeFetch })
+  }, { process:{ env, cwd:() => '/synthetic-tracked-checkout' }, fetch:fakeFetch, Date:FixtureDate })
   function prepare(args) {
     const [_db, uid, lane, provider, model, input, target, init] = args
     const url = String(target), body = String(init.body), headers = new Headers(init.headers)
@@ -95,27 +108,30 @@ function fixture(change = {}) {
     const requestSha = digest(Buffer.concat([Buffer.from(`POST\n${url}\n`), Buffer.from(body)])), inputSha = digest(stable({ uid, lane, input })), tenantSha = digest(uid)
     const jobId = `SYNTHETIC-NOT-AUTHORIZATION-${lane}-${requestSha}`
     const fields = { job_id:jobId, worker_id:'synthetic-worker', executor_repository:'LifeLoggerAI/urai-spatial', executor_source_sha:SOURCE, gateway_repository:'LifeLoggerAI/asset-factory', gateway_source_sha:GATEWAY, consumer:'spatial-functions', tenant_sha256:tenantSha, provider, account_id:'SYNTHETIC-API-ACCOUNT', credential_sha256:digest(stable(credentials)), source_input_sha256:inputSha, semantic_headers_sha256:digest(stable(Object.fromEntries([...headers].filter(([k]) => !Object.hasOwn(credentials,k))))), content_type:headers.get('content-type'), request_sha256:requestSha, endpoint:url, model, asset:`spatial/${tenantSha}/${lane}`, request_size:String(Buffer.byteLength(body)) }
-    metadata = { ...fields, lane }; metadataPath = `spatialPaidProviderBindings/${digest(stable({ tenant_sha256:tenantSha, lane, request_sha256:requestSha, source_input_sha256:inputSha }))}`
+    metadata = { ...fields, lane, gateway_url:gatewayUrl }; controls.binding?.(metadata, clockContext()); metadataPath = `spatialPaidProviderBindings/${digest(stable({ tenant_sha256:tenantSha, lane, request_sha256:requestSha, source_input_sha256:inputSha }))}`
     bindings.set(metadataPath, metadata)
     if (!rows.has(jobId)) {
       const executor = { ...fields, repository:fields.executor_repository, source_sha:SOURCE, binding_version:2, deployment_ref:'e'.repeat(64), controls_ref:'f'.repeat(64) }
       for (const k of ['job_id','executor_repository','executor_source_sha','provider','account_id','model','consumer']) delete executor[k]
-      const rates = { usd_micros_per_unit:1000000,credits_per_unit:10,receipt:'SYNTHETIC-PRICING',verified_at:new Date(Date.now()-60000).toISOString(),expires_at:new Date(Date.now()+300000).toISOString() }
-      rows.set(jobId, { job:{ job_id:jobId, provider, account_id:fields.account_id, model_version:model, consumer:fields.consumer, rights_reviewed:true, authority:{ repository:fields.executor_repository, sha:SOURCE }, input_sha256:[inputSha,requestSha], executor, budget:{ max_usd_micros:2500000,max_credits:20,max_runtime_seconds:2,rates }, attempts:[] }, hold:0 })
+      const rates = { usd_micros_per_unit:1000000,credits_per_unit:10,receipt:'SYNTHETIC-PRICING',verified_at:new Date(now()-60000).toISOString(),expires_at:new Date(now()+300000).toISOString() }
+      const job = { job_id:jobId, provider, account_id:fields.account_id, model_version:model, consumer:fields.consumer, rights_reviewed:true, authority:{ repository:fields.executor_repository, sha:SOURCE }, input_sha256:[inputSha,requestSha], executor, budget:{ max_usd_micros:2500000,max_credits:20,max_runtime_seconds:2,rates }, attempts:[] }
+      // Entirely synthetic gateway response fields; no signing or real approval.
+      job.approval = { status:'APPROVED',kind:'EXPLICIT_BOUNDED_SPEND',job_digest:syntheticJobDigest(job),max_usd_micros:2500000,max_credits:20,receipt:'SYNTHETIC-NOT-AUTHORIZATION',approver:'synthetic-approver',key_id:'synthetic-test-only',signature:'U1lOVEhFVElDLU5PVC1BUFRIT1JJWkFUSU9O',issued_at:new Date(now()-60000).toISOString(),expires_at:new Date(now()+300000).toISOString() }
+      rows.set(jobId, { job, hold:0, deploymentExpiresAt:now()+300000 })
     }
     expectedFields = { fields, body }; return fields
   }
   const paidFetch = async (...args) => { prepare(args); return helper.paidSpatialFetch(...args) }
   const directArgs = () => [db, UID, 'orb-reasoning', 'openai', 'synthetic-model', { message:'Synthetic question' }, 'https://api.openai.com/v1/responses', { method:'POST', headers:{ Authorization:`Bearer ${apiKey}`, 'Content-Type':'application/json', 'Idempotency-Key':'synthetic-stable-request' }, body:JSON.stringify({ model:'synthetic-model', input:'Synthetic question' }) }]
-  return { controls, env, calls, providerCalls, rows, bindings, db, helper, paidFetch, directArgs, params, sourceModule, fakeFetch, prepare, setProvider:fn => { currentProvider = fn }, expected:() => expectedFields }
+  return { controls, env, calls, providerCalls, rows, bindings, db, helper, paidFetch, directArgs, params, sourceModule, fakeFetch, prepare, advanceTime, advanceMonotonic, now, setProvider:fn => { currentProvider = fn }, expected:() => expectedFields }
 }
 test('actual unmocked clean Git provenance rejects every dirty untracked or misdeclared provider source', () => {
   const root=mkdtempSync(join(tmpdir(),'spatial-spend-source-')), env={}
   const git=(...args) => { const r=spawnSync('git',['-C',root,...args],{encoding:'utf8'}); assert.equal(r.status,0,r.stderr); return r.stdout.trim() }
   try {
     const helper=sourceModule('../src/protectedProviderSpend.ts', id => {
-      if(id==='node:crypto')return{createHash};if(id==='node:child_process')return{execFileSync};if(id==='node:net')return{isIP};if(id==='firebase-functions/params')return{defineSecret:()=>({value:()=>''})}
       if(id==='node:perf_hooks')return{performance}
+      if(id==='node:crypto')return{createHash};if(id==='node:child_process')return{execFileSync};if(id==='node:net')return{isIP};if(id==='firebase-functions/params')return{defineSecret:()=>({value:()=>''})}
       throw new Error(`Unexpected provenance dependency ${id}`)
     },{process:{env,cwd:()=>root}})
     env.URAI_SOURCE_SHA=SOURCE;assert.throws(()=>helper.spatialSpendSourceSha())
@@ -149,14 +165,6 @@ test('parallel replays dispatch at most once for the same actual paid request', 
 })
 test('unknown stream and outcome record failures retain reservation and prohibit retries', async () => {
   for (const change of [{ streamError:true },{ recordLost:true }]) { const f = fixture(change), response = await f.paidFetch(...f.directArgs()); await assert.rejects(response.text()); assert.equal(f.providerCalls.length,1); assert.equal([...f.rows.values()][0].hold,2500000); await assert.rejects(f.paidFetch(...f.directArgs())); assert.equal(f.providerCalls.length,1) }
-})
-test('source drift during awaited outcome recording suppresses successful stream completion and retains hold', async () => {
-  const f=fixture({record:async (_body,{setHead})=>{await Promise.resolve();setHead('c'.repeat(40))}})
-  const response=await f.paidFetch(...f.directArgs());await assert.rejects(response.text());assert.equal(f.providerCalls.length,1);assert.equal([...f.rows.values()][0].hold,2500000);assert.equal(f.calls.some(x=>x.action==='reconcile'),false)
-})
-test('deadline exhausted during awaited outcome recording suppresses successful stream completion and retains hold', async () => {
-  const f=fixture({record:async()=>{await new Promise(resolve=>setTimeout(resolve,2100))}})
-  const response=await f.paidFetch(...f.directArgs());await assert.rejects(response.text());assert.equal(f.providerCalls.length,1);assert.equal([...f.rows.values()][0].hold,2500000)
 })
 test('source/head account input header credential tenant and model envelope drift denies dispatch', async () => {
   for (const field of ['gateway_source_sha','source_sha','worker_id','credential_sha256','semantic_headers_sha256','source_input_sha256','tenant_sha256','content_type','request_sha256','request_size','asset']) {
@@ -199,42 +207,6 @@ test('materialized body and effective headers stay frozen through reservation', 
 test('caller financial authorization labels cannot replace server metadata or admission', async () => {
   const f = fixture({ missingBinding:true }), args = f.directArgs(); args[5] = { ...args[5], providerAuthorization:{ approved:true, usd:0, providerCallAuthorized:true } }
   await assert.rejects(f.paidFetch(...args)); assert.equal(f.providerCalls.length,0)
-})
-test('gateway credentials remain local when configured origin differs from the secret-bound gateway', async () => {
-  const f = fixture(); f.env.SPATIAL_PRODUCTION_SPEND_URL = 'https://foreign.example.invalid/api/worker/production-spend'
-  await assert.rejects(f.paidFetch(...f.directArgs()))
-  assert.equal(f.calls.length, 0); assert.equal(f.providerCalls.length, 0)
-})
-test('missing or expired preflight admission deadlines deny before reservation', async () => {
-  for (const mutate of [r => { delete r.admission_expires_at }, r => { r.admission_expires_at = new Date(Date.now()-1).toISOString() }]) {
-    const f=fixture({ preflight:mutate }); await assert.rejects(f.paidFetch(...f.directArgs()))
-    assert.equal(f.calls.some(x=>x.action==='reserve'),false); assert.equal(f.providerCalls.length,0)
-  }
-})
-test('missing expired or extended reservation deadlines retain the hold with zero provider POSTs', async () => {
-  for (const mutate of [r=>{ delete r.reserved_at },r=>{ delete r.admission_expires_at },r=>{ r.admission_expires_at=new Date(Date.now()-1).toISOString() },r=>{ r.admission_expires_at=new Date(Date.now()+5000).toISOString() }]) {
-    const f=fixture({ reservationReply:mutate }); await assert.rejects(f.paidFetch(...f.directArgs()))
-    assert.equal(f.providerCalls.length,0); assert.equal([...f.rows.values()][0].hold,2500000)
-  }
-})
-test('reservation response latency consumes the approved runtime and never resets it', async () => {
-  const f=fixture({ reservationReply:async()=>{ await new Promise(r=>setTimeout(r,2100)) } })
-  await assert.rejects(f.paidFetch(...f.directArgs())); assert.equal(f.providerCalls.length,0)
-  assert.equal([...f.rows.values()][0].hold,2500000)
-})
-test('source or corrected input changes while awaiting an output chunk suppress it and retain the hold', async () => {
-  for (const kind of ['source','input']) {
-    const f=fixture(), args=f.directArgs()
-    f.setProvider(async()=>new Response(new ReadableStream({ async pull(stream) {
-      await Promise.resolve()
-      if(kind==='source') f.env.URAI_SOURCE_SHA='f'.repeat(40)
-      else args[5].message='corrected'
-      stream.enqueue(new TextEncoder().encode('must not escape')); stream.close()
-    } })))
-    const response=await f.paidFetch(...args).catch(()=>null)
-    if(response) await assert.rejects(response.text())
-    assert.equal([...f.rows.values()][0].hold,2500000); assert.equal(f.providerCalls.length,1)
-  }
 })
 test('unexpected origin provider identity raw credentials or mismatched body model cannot dispatch', async () => {
   for (const mutate of [args => { args[6] = 'https://untrusted.example.invalid/v1/responses' },args => { args[3] = 'elevenlabs' },args => { args[7].headers.Authorization = 'Bearer ' },args => { args[4] = 'another-model' }]) { const f = fixture(), args = f.directArgs(); mutate(args); await assert.rejects(f.paidFetch(...args)); assert.equal(f.providerCalls.length,0) }
@@ -326,3 +298,249 @@ for (const leaf of leaves) {
     const f=leafFixture(leaf,{ preflight:reply => { delete reply.envelope.protected_pricing } }); await f.invoke(); assert.equal(f.providerCalls.length,0); assert.equal(f.calls.some(x => x.action==='reserve'),false)
   })
 }
+
+function syntheticShortWindow(reply, window, expires) {
+  const envelope = reply.envelope
+  if (window === 'approval') envelope.job.approval.expires_at = expires
+  if (window === 'authority') envelope.authority.expires_at = expires
+  if (window === 'account') envelope.account.expires_at = expires
+  if (window === 'controls') envelope.protected_controls.expires_at = expires
+  if (window === 'pricing') envelope.protected_pricing.expires_at = expires
+  if (window === 'rates') {
+    envelope.job.budget.rates.expires_at = expires
+    envelope.protected_pricing.rates = structuredClone(envelope.job.budget.rates)
+    envelope.job.approval.job_digest = syntheticJobDigest(envelope.job)
+  }
+  // Deployment is independently verified by the canonical gateway; its minimum
+  // is carried in admission_expires_at, not an invented client proof object.
+  reply.admission_expires_at = expires
+}
+function assertUnsettled(f) {
+  for (const row of f.rows.values()) {
+    assert.equal(row.hold,2500000)
+    assert.equal(row.attempt.charges_reconciled,false)
+  }
+  assert.equal(f.calls.some(call => call.action === 'reconcile'),false)
+}
+
+test('protected issuer mismatch or missing gateway pin denies token lookup and all HTTP', async () => {
+  for (const binding of [
+    value => { delete value.gateway_url },
+    value => { value.gateway_url = 'https://foreign.example.invalid/api/worker/production-spend' },
+    value => { value.gateway_repository = 'foreign/repository' },
+    value => { value.gateway_source_sha = 'c'.repeat(40) },
+  ]) {
+    const f=fixture({ binding }); await assert.rejects(f.paidFetch(...f.directArgs()))
+    assert.equal(f.controls.tokenReads,0); assert.equal(f.calls.length,0); assert.equal(f.providerCalls.length,0)
+  }
+  const f=fixture(); f.env.SPATIAL_PRODUCTION_SPEND_URL='https://foreign.example.invalid/api/worker/production-spend'
+  await assert.rejects(f.paidFetch(...f.directArgs()))
+  assert.equal(f.controls.tokenReads,0); assert.equal(f.calls.length,0); assert.equal(f.providerCalls.length,0)
+})
+
+test('missing malformed expired or overlong preflight admission windows cannot reserve', async () => {
+  const cases = [
+    reply => { delete reply.admission_expires_at },
+    reply => { reply.admission_expires_at = '2030-02-30T00:00:00Z' },
+    reply => { reply.admission_expires_at = '2030-01-01T00:00:00' },
+    reply => { reply.admission_expires_at = new Date(Date.now()-1).toISOString() },
+    reply => { reply.admission_expires_at = new Date(Date.now()+600000).toISOString() },
+  ]
+  for (const preflight of cases) {
+    const f=fixture({ preflight }); await assert.rejects(f.paidFetch(...f.directArgs()))
+    assert.equal(f.providerCalls.length,0); assert.equal(f.calls.some(call => call.action === 'reserve'),false)
+  }
+})
+
+test('actual approval context digest caps signer and temporal fields are mandatory', async () => {
+  const cases=[reply => { delete reply.envelope.job.approval }]
+  for (const field of ['receipt','approver','key_id','signature','issued_at','expires_at']) cases.push(reply => { delete reply.envelope.job.approval[field] })
+  cases.push(reply => { reply.envelope.job.approval.status='PENDING' },reply => { reply.envelope.job.approval.kind='UNBOUNDED' },
+    reply => { reply.envelope.job.approval.job_digest='0'.repeat(64) },reply => { reply.envelope.job.approval.max_usd_micros=1 },
+    reply => { reply.envelope.job.approval.max_credits=1 },reply => { reply.envelope.job.approval.signature='not a signature' },
+    reply => { reply.envelope.job.approval.issued_at='2100-01-01T00:00:00Z' })
+  for (const preflight of cases) {
+    const f=fixture({ preflight }); await assert.rejects(f.paidFetch(...f.directArgs()))
+    assert.equal(f.providerCalls.length,0); assert.equal(f.calls.some(call => call.action==='reserve'),false)
+  }
+})
+
+test('actual source authority context cannot be missing untrusted foreign stale or future', async () => {
+  const cases=[reply => { delete reply.envelope.authority },reply => { reply.envelope.authority.trusted_readback=false },
+    reply => { reply.envelope.authority.binding.sha='c'.repeat(40) },reply => { reply.envelope.authority.expires_at='2000-01-01T00:00:00Z' },
+    reply => { reply.envelope.authority.observed_at='2100-01-01T00:00:00Z' },reply => { reply.envelope.job.executor.deployment_ref='invalid' }]
+  for (const preflight of cases) {
+    const f=fixture({ preflight }); await assert.rejects(f.paidFetch(...f.directArgs()))
+    assert.equal(f.providerCalls.length,0); assert.equal(f.calls.some(call => call.action==='reserve'),false)
+  }
+})
+
+for (const window of ['approval','authority','deployment','controls','account','pricing','rates']) {
+  test(`delayed reserve delivery cannot outlive the original ${window} minimum`, async () => {
+    const f=fixture({
+      preflight:(reply,_body,{now}) => syntheticShortWindow(reply,window,new Date(now()+1000).toISOString()),
+      reserve:async (_body,{advanceTime}) => { await Promise.resolve(); advanceTime(1500) },
+    })
+    await assert.rejects(f.paidFetch(...f.directArgs()))
+    assert.equal(f.providerCalls.length,0); assert.equal(f.calls.filter(call=>call.action==='reserve').length,1)
+    assertUnsettled(f)
+  })
+}
+
+test('missing malformed old future expired or extended reserve timestamps retain the hold without dispatch', async () => {
+  const cases=[
+    reply=>{delete reply.reserved_at},reply=>{delete reply.admission_expires_at},
+    reply=>{reply.reserved_at='2030-02-30T00:00:00Z'},reply=>{reply.admission_expires_at='2030-01-01T00:00:00'},
+    (reply,_body,{now})=>{reply.reserved_at=new Date(now()+1000).toISOString()},
+    (reply,_body,{now})=>{reply.reserved_at=new Date(now()-60000).toISOString()},
+    (reply,_body,{now})=>{reply.admission_expires_at=new Date(now()-1).toISOString()},
+    reply=>{reply.admission_expires_at=new Date(Date.parse(reply.reserved_at)+3000).toISOString()},
+    reply=>{reply.admission_expires_at=new Date(Date.parse(reply.reserved_at)+600000).toISOString()},
+  ]
+  for (const reserveReply of cases) {
+    const f=fixture({reserveReply});await assert.rejects(f.paidFetch(...f.directArgs()))
+    assert.equal(f.providerCalls.length,0);assertUnsettled(f)
+  }
+})
+
+test('reserve round trip consumes local runtime even if the server commits late', async () => {
+  const f=fixture({
+    reserve:async(_body,{advanceTime})=>{await Promise.resolve();advanceTime(1500)},
+    reserveReply:(reply,_body,{now})=>{reply.reserved_at=new Date(now()).toISOString();reply.admission_expires_at=new Date(now()+2000).toISOString()},
+  })
+  f.setProvider(async()=>{await Promise.resolve();f.advanceTime(600);return new Response('LATE OUTPUT')})
+  await assert.rejects(f.paidFetch(...f.directArgs()))
+  assert.equal(f.providerCalls.length,1);assertUnsettled(f)
+})
+
+test('fresh time is checked after the final blocking source read beside dispatch', async () => {
+  let admitted=false
+  const f=fixture({
+    reserveReply:()=>{admitted=true},
+    sourceCheck:(args,{advanceTime})=>{if(admitted&&args.includes('status')){admitted=false;advanceTime(2500)}},
+  })
+  await assert.rejects(f.paidFetch(...f.directArgs()))
+  assert.equal(f.providerCalls.length,0);assertUnsettled(f)
+})
+
+for (const drift of ['source','input','body','credential','semantic headers']) {
+  test(`actual ${drift} drift while provider fetch is awaiting suppresses returned output`, async () => {
+    const f=fixture(),args=f.directArgs()
+    f.setProvider(async(_url,init)=>{
+      await Promise.resolve()
+      if(drift==='source')f.env.URAI_SOURCE_SHA='c'.repeat(40)
+      if(drift==='input')args[5].message='Changed source input'
+      if(drift==='body')init.body[0]=0
+      if(drift==='credential')init.headers.set('authorization','Bearer DRIFTED')
+      if(drift==='semantic headers')init.headers.set('content-type','text/plain')
+      return new Response('INVALID BOUND OUTPUT')
+    })
+    await assert.rejects(f.paidFetch(...args))
+    assert.equal(f.providerCalls.length,1);assertUnsettled(f)
+  })
+}
+
+test('a delayed provider body chunk cannot become accepted output after absolute expiry', async () => {
+  const f=fixture()
+  f.setProvider(async()=>new Response(new ReadableStream({
+    async pull(stream){await Promise.resolve();f.advanceTime(2500);stream.enqueue(new TextEncoder().encode('LATE CHUNK'));stream.close()},
+  },{highWaterMark:0})))
+  await assert.rejects(async()=>{const response=await f.paidFetch(...f.directArgs());await response.text()})
+  assert.equal(f.providerCalls.length,1);assertUnsettled(f)
+})
+
+test('a delayed record acknowledgement cannot close an otherwise empty successful stream', async () => {
+  const f=fixture({record:async(_body,{advanceTime})=>{await Promise.resolve();advanceTime(2500)}})
+  f.setProvider(async()=>new Response(''))
+  const response=await f.paidFetch(...f.directArgs())
+  await assert.rejects(response.text())
+  assert.equal(f.calls.filter(call=>call.action==='record').length,1)
+  assert.equal(f.providerCalls.length,1);assertUnsettled(f)
+})
+
+test('the original abort timer remains active while the final record acknowledgement is pending', async () => {
+  const f=fixture({
+    preflight:(reply,_body,{now})=>syntheticShortWindow(reply,'approval',new Date(now()+200).toISOString()),
+    record:async()=>{await new Promise(resolve=>setTimeout(resolve,300))},
+  })
+  f.setProvider(async()=>new Response(''))
+  const response=await f.paidFetch(...f.directArgs())
+  await assert.rejects(response.text())
+  assert.equal(f.providerCalls[0].init.signal.aborted,true)
+  assert.equal(f.calls.filter(call=>call.action==='record').length,1);assertUnsettled(f)
+})
+
+for (const action of ['preflight','reserve','record']) {
+  test(`expiry while consuming the ${action} gateway response body cannot renew admission`,async()=>{
+    const f=fixture({gatewayResponse:(reply,current,{advanceTime})=>{
+      if(current!==action)return Response.json(reply)
+      return new Response(new ReadableStream({async pull(stream){
+        await Promise.resolve();advanceTime(action==='preflight'?300001:2500)
+        stream.enqueue(new TextEncoder().encode(JSON.stringify(reply)));stream.close()
+      }},{highWaterMark:0}))
+    }})
+    f.setProvider(async()=>new Response(''))
+    await assert.rejects(async()=>{const response=await f.paidFetch(...f.directArgs());await response.text()})
+    assert.equal(f.providerCalls.length,action==='record'?1:0)
+    if(action==='preflight')assert.equal(f.calls.some(call=>call.action==='reserve'),false)
+    else assertUnsettled(f)
+  })
+}
+
+test('source drift during awaited outcome recording suppresses successful stream completion and retains hold', async () => {
+  const f=fixture({record:async (_body,{setHead})=>{await Promise.resolve();setHead('c'.repeat(40))}})
+  const response=await f.paidFetch(...f.directArgs());await assert.rejects(response.text());assert.equal(f.providerCalls.length,1);assert.equal([...f.rows.values()][0].hold,2500000);assert.equal(f.calls.some(x=>x.action==='reconcile'),false)
+})
+
+test('deadline exhausted during awaited outcome recording suppresses successful stream completion and retains hold', async () => {
+  const f=fixture({record:async()=>{await new Promise(resolve=>setTimeout(resolve,2100))}})
+  const response=await f.paidFetch(...f.directArgs());await assert.rejects(response.text());assert.equal(f.providerCalls.length,1);assert.equal([...f.rows.values()][0].hold,2500000)
+})
+
+test('gateway credentials remain local when configured origin differs from the secret-bound gateway', async () => {
+  const f = fixture(); f.env.SPATIAL_PRODUCTION_SPEND_URL = 'https://foreign.example.invalid/api/worker/production-spend'
+  await assert.rejects(f.paidFetch(...f.directArgs()))
+  assert.equal(f.calls.length, 0); assert.equal(f.providerCalls.length, 0)
+})
+
+test('missing or expired preflight admission deadlines deny before reservation', async () => {
+  for (const mutate of [r => { delete r.admission_expires_at }, r => { r.admission_expires_at = new Date(Date.now()-1).toISOString() }]) {
+    const f=fixture({ preflight:mutate }); await assert.rejects(f.paidFetch(...f.directArgs()))
+    assert.equal(f.calls.some(x=>x.action==='reserve'),false); assert.equal(f.providerCalls.length,0)
+  }
+})
+
+test('missing expired or extended reservation deadlines retain the hold with zero provider POSTs', async () => {
+  for (const mutate of [r=>{ delete r.reserved_at },r=>{ delete r.admission_expires_at },r=>{ r.admission_expires_at=new Date(Date.now()-1).toISOString() },r=>{ r.admission_expires_at=new Date(Date.now()+5000).toISOString() }]) {
+    const f=fixture({ reserveReply:mutate }); await assert.rejects(f.paidFetch(...f.directArgs()))
+    assert.equal(f.providerCalls.length,0); assert.equal([...f.rows.values()][0].hold,2500000)
+  }
+})
+
+test('reservation response latency consumes the approved runtime and never resets it', async () => {
+  const f=fixture({ reserveReply:async()=>{ await new Promise(r=>setTimeout(r,2100)) } })
+  await assert.rejects(f.paidFetch(...f.directArgs())); assert.equal(f.providerCalls.length,0)
+  assert.equal([...f.rows.values()][0].hold,2500000)
+})
+
+test('source or corrected input changes while awaiting an output chunk suppress it and retain the hold', async () => {
+  for (const kind of ['source','input']) {
+    const f=fixture(), args=f.directArgs()
+    f.setProvider(async()=>new Response(new ReadableStream({ async pull(stream) {
+      await Promise.resolve()
+      if(kind==='source') f.env.URAI_SOURCE_SHA='f'.repeat(40)
+      else args[5].message='corrected'
+      stream.enqueue(new TextEncoder().encode('must not escape')); stream.close()
+    } })))
+    const response=await f.paidFetch(...args).catch(()=>null)
+    if(response) await assert.rejects(response.text())
+    assert.equal([...f.rows.values()][0].hold,2500000); assert.equal(f.providerCalls.length,1)
+  }
+})
+
+test('secret issuer origin cannot diverge even when protected binding and environment agree', async () => {
+  const f=fixture({secretOrigin:'https://foreign.example.invalid'});await assert.rejects(f.paidFetch(...f.directArgs()));assert.equal(f.calls.length,0);assert.equal(f.providerCalls.length,0)
+})
+test('monotonic elapsed runtime suppresses output when wall clock remains before expiry', async () => {
+  const f=fixture();f.setProvider(async()=>{await Promise.resolve();f.advanceMonotonic(2500);return new Response('LATE OUTPUT')});await assert.rejects(f.paidFetch(...f.directArgs()));assert.equal(f.providerCalls.length,1);assertUnsettled(f)
+})
