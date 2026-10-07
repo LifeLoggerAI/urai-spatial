@@ -3,7 +3,7 @@
 const assert = require('node:assert/strict')
 const crypto = require('node:crypto')
 const { test } = require('node:test')
-const { oauthHarness, deferred, TOKEN_PATH, CONNECTION_PATH, BASELINE_BLOB } = require('./helpers/googleWorkspaceOAuthHarness')
+const { oauthHarness, deferred, TOKEN_PATH, CONNECTION_PATH, BASELINE_BLOB, GENERATION_ONLY_BLOB } = require('./helpers/googleWorkspaceOAuthHarness')
 const caseTest = (name, fn) => test(name, { timeout: 10000 }, fn)
 const EXCHANGE_URL = 'https://oauth2.googleapis.com/token'
 const REVOKE_URL = 'https://oauth2.googleapis.com/revoke'
@@ -63,6 +63,16 @@ caseTest('baseline receipt: pinned original reconnects when exchange returns aft
   assert.equal(h.records.get(CONNECTION_PATH).connected, true)
 })
 
+caseTest('superseded generation-only receipt: deleting the marker revives an old state at generation zero', async () => {
+  const h = oauthHarness({ generationOnlyBaseline: true })
+  assert.equal(h.sourceBlob, GENERATION_ONLY_BLOB)
+  const pending = await start(h)
+  await h.invoke('googleOAuthDisconnect')
+  h.records.delete(CONNECTION_PATH)
+  assert.equal((await callback(h, pending.state)).redirect, 'https://urai.app/settings?google=connected')
+  assert.equal(h.records.get(CONNECTION_PATH).connected, true)
+})
+
 for (const name of ['googleOAuthStart', 'googleOAuthStatus', 'googleOAuthDisconnect']) {
   caseTest(`${name}: missing or empty bearer token is rejected without mutation`, async () => {
     const h = oauthHarness()
@@ -106,6 +116,8 @@ caseTest('start: hashed uid-bound state, ten minute TTL, S256 PKCE and callback 
   assert.equal(pending.document.uid, 'owner-a')
   assert.equal(pending.document.expiresAt.toMillis(), h.now() + 600000)
   assert.equal(pending.document.disconnectGeneration, 0)
+  assert.match(pending.document.oauthInstance, /^[A-Za-z0-9_-]{43}$/)
+  assert.equal(h.records.get(CONNECTION_PATH).oauthInstance, pending.document.oauthInstance)
   assert.equal(h.records.has(`providerOAuthStates/${pending.state}`), false)
   assert.match(pending.document.verifier, /^[A-Za-z0-9_-]{64}$/)
   assert.equal(pending.url.searchParams.get('code_challenge_method'), 'S256')
@@ -180,6 +192,7 @@ for (const [name, mutation] of [
   ['missing expiry', { expiresAt: undefined }], ['incorrect expiry type', { expiresAt: 1_900_000_000_000 }],
   ['missing uid', { uid: undefined }], ['missing verifier', { verifier: undefined }],
   ['malformed generation', { disconnectGeneration: -1 }],
+  ['missing marker instance', { oauthInstance: undefined }], ['malformed marker instance', { oauthInstance: 'invalid' }],
 ]) {
   caseTest(`callback: ${name} invalidates and consumes state without exchange`, async () => {
     const h = oauthHarness()
@@ -393,18 +406,17 @@ caseTest('callback: a stale in-flight exchange cannot overwrite newer connected 
   assert.equal(h.records.get(CONNECTION_PATH).disconnectGeneration, 1)
 })
 
-caseTest('legacy: pre-fence pending state may connect only before the first fenced disconnect', async () => {
-  for (const disconnect of [false, true]) {
-    const h = oauthHarness()
-    const pending = await start(h)
-    const legacy = { ...pending.document }
-    delete legacy.disconnectGeneration
-    h.seed(h.statePath(pending.state), legacy)
-    if (disconnect) await h.invoke('googleOAuthDisconnect')
-    const response = await callback(h, pending.state)
-    assert.equal(response.redirect, `https://urai.app/settings?google=${disconnect ? 'error' : 'connected'}`)
-    if (disconnect) noTokens(h)
-  }
+caseTest('legacy: pending state without a marker instance fails closed and a fresh authorization succeeds', async () => {
+  const h = oauthHarness()
+  const pending = await start(h)
+  const legacy = { ...pending.document }
+  delete legacy.disconnectGeneration
+  delete legacy.oauthInstance
+  h.seed(h.statePath(pending.state), legacy)
+  assert.equal((await callback(h, pending.state)).redirect, 'https://urai.app/settings?google=invalid-state')
+  assert.equal(exchangeCalls(h).length, 0)
+  noTokens(h)
+  await connect(h)
 })
 
 caseTest('legacy: existing connection without generation increments to one on disconnect', async () => {
@@ -412,6 +424,7 @@ caseTest('legacy: existing connection without generation increments to one on di
   await connect(h)
   const legacy = { ...h.records.get(CONNECTION_PATH) }
   delete legacy.disconnectGeneration
+  delete legacy.oauthInstance
   h.seed(CONNECTION_PATH, legacy)
   await h.invoke('googleOAuthDisconnect')
   assert.equal(h.records.get(CONNECTION_PATH).disconnectGeneration, 1)
@@ -479,4 +492,88 @@ caseTest('tenant binding: callback uses the authenticated state uid rather than 
   assert.equal(h.records.has(TOKEN_PATH), false)
   assert.equal(h.records.get('providerOAuthTokens/owner-b_google-workspace').uid, 'owner-b')
   assert.equal(h.records.get('users/owner-b/providerConnections/google-workspace').connected, true)
+})
+
+caseTest('deletion fence: removing the marker after start prevents an old callback from restoring authority', async () => {
+  const h = oauthHarness()
+  const pending = await start(h)
+  h.records.delete(CONNECTION_PATH)
+  assert.equal((await callback(h, pending.state)).redirect, 'https://urai.app/settings?google=error')
+  noTokens(h)
+  assert.equal(h.records.has(CONNECTION_PATH), false)
+})
+
+caseTest('deletion fence: removing a disconnected marker cannot reset an earlier callback to generation zero', async () => {
+  const h = oauthHarness()
+  const pending = await start(h)
+  await h.invoke('googleOAuthDisconnect')
+  h.records.delete(CONNECTION_PATH)
+  assert.equal((await callback(h, pending.state)).redirect, 'https://urai.app/settings?google=error')
+  noTokens(h)
+})
+
+caseTest('deletion fence: a fresh marker instance after deletion cannot admit the previous instance state', async () => {
+  const h = oauthHarness()
+  const stale = await start(h)
+  h.records.delete(CONNECTION_PATH)
+  const fresh = await connect(h)
+  assert.notEqual(fresh.document.oauthInstance, stale.document.oauthInstance)
+  assert.equal(fresh.document.disconnectGeneration, 0)
+  assert.equal((await callback(h, stale.state)).redirect, 'https://urai.app/settings?google=error')
+  assert.equal(h.records.get(CONNECTION_PATH).oauthInstance, fresh.document.oauthInstance)
+  assert.equal(h.records.get(CONNECTION_PATH).connected, true)
+})
+
+caseTest('deletion fence: an in-flight old exchange cannot overwrite a connection with a recreated marker', async () => {
+  const entered = deferred(), release = deferred()
+  let exchanges = 0
+  const h = oauthHarness({ fetch: async (url, init, { defaultFetch, tokenResponse }) => {
+    if (url !== EXCHANGE_URL) return defaultFetch(url)
+    const old = ++exchanges === 1
+    if (old) { entered.resolve(); await release.promise }
+    return { ok: true, json: async () => ({ ...tokenResponse(), access_token: old ? 'old-fixture-access' : 'new-fixture-access' }) }
+  } })
+  const stale = await start(h)
+  const inflight = callback(h, stale.state)
+  await entered.promise
+  h.records.delete(CONNECTION_PATH)
+  const fresh = await connect(h)
+  release.resolve()
+  assert.equal((await inflight).redirect, 'https://urai.app/settings?google=error')
+  assert.equal(h.decrypt(h.records.get(TOKEN_PATH).accessToken), 'new-fixture-access')
+  assert.equal(h.records.get(CONNECTION_PATH).oauthInstance, fresh.document.oauthInstance)
+})
+
+caseTest('marker integrity: malformed server instance cannot be silently replaced by start or disconnect', async () => {
+  for (const oauthInstance of ['short', '', null, 42]) {
+    const h = oauthHarness()
+    const pending = await start(h)
+    h.seed(CONNECTION_PATH, { ...h.records.get(CONNECTION_PATH), oauthInstance })
+    assert.equal((await h.invoke('googleOAuthStart')).body.error, 'OAUTH_CONNECTION_STATE_INVALID')
+    assert.equal((await callback(h, pending.state)).redirect, 'https://urai.app/settings?google=error')
+    assert.equal((await h.invoke('googleOAuthDisconnect')).body.error, 'OAUTH_CONNECTION_STATE_INVALID')
+    assert.equal(h.records.get(CONNECTION_PATH).oauthInstance, oauthInstance)
+    noTokens(h)
+  }
+})
+
+caseTest('marker integrity: an instance without its generation fails closed rather than resetting to zero', async () => {
+  const h = oauthHarness()
+  const pending = await start(h)
+  const marker = { ...h.records.get(CONNECTION_PATH) }
+  delete marker.disconnectGeneration
+  h.seed(CONNECTION_PATH, marker)
+  assert.equal((await h.invoke('googleOAuthStart')).body.error, 'OAUTH_CONNECTION_STATE_INVALID')
+  assert.equal((await callback(h, pending.state)).redirect, 'https://urai.app/settings?google=error')
+  assert.equal((await h.invoke('googleOAuthDisconnect')).body.error, 'OAUTH_CONNECTION_STATE_INVALID')
+  assert.equal(h.records.get(CONNECTION_PATH).disconnectGeneration, undefined)
+  noTokens(h)
+})
+
+caseTest('atomic start: failed commit persists neither pending state nor a new marker instance', async () => {
+  const h = oauthHarness()
+  h.failNextCommit()
+  assert.equal((await h.invoke('googleOAuthStart')).status, 500)
+  assert.equal(h.records.size, 0)
+  assert.equal(h.fetchCalls.length, 0)
 })

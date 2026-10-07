@@ -24,6 +24,7 @@ const sourcePaths = [
   'apps/functions/test/googleWorkspaceOAuth.test.js',
   'apps/functions/test/helpers/googleWorkspaceOAuthHarness.js',
   'apps/functions/test/fixtures/googleWorkspaceOAuth.before.ts',
+  'apps/functions/test/fixtures/googleWorkspaceOAuth.generationOnly.before.ts',
   'apps/functions/scripts/google-oauth-privacy-receipt.mjs',
   '.github/workflows/google-oauth-privacy-fence.yml',
   'docs/GOOGLE_WORKSPACE_OAUTH_DISCONNECT_FENCE.md',
@@ -41,6 +42,7 @@ const receipt = {
   sourceHead: actualHead,
   nodeVersion: process.version,
   baselineSource: { head: 'a99ed54d411dc48d57168cda1bb225fff0991fad', blob: 'e4e6a39a7f6d66377a532397a3efda7459225ee9' },
+  supersededGenerationOnlySource: { head: 'a51f6c169a663ecac68348a77cd0be2a47d4f2d7', blob: '5db8e719dddbf073111b6c3f05f363063a8e7b6d' },
   oauthSuite: summary('oauth-tests.tap'),
   fullFunctionsSuite: summary('functions-tests.log'),
   verification: {
@@ -56,5 +58,8 @@ const receipt = {
 }
 const baseline = receipt.sources['apps/functions/test/fixtures/googleWorkspaceOAuth.before.ts']
 if (baseline.gitBlob !== receipt.baselineSource.blob) throw new Error('Original OAuth regression fixture does not match its pinned source blob.')
+if (receipt.sources['apps/functions/test/fixtures/googleWorkspaceOAuth.generationOnly.before.ts'].gitBlob !== receipt.supersededGenerationOnlySource.blob) {
+  throw new Error('Superseded generation-only OAuth fixture does not match its pinned source blob.')
+}
 fs.writeFileSync(path.join(proofDirectory, 'receipt.json'), `${JSON.stringify(receipt, null, 2)}\n`)
 console.log(JSON.stringify({ sourceHead: receipt.sourceHead, oauthSuite: receipt.oauthSuite, fullFunctionsSuite: receipt.fullFunctionsSuite }))

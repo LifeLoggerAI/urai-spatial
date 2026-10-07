@@ -11,6 +11,7 @@ const ts = require('typescript')
 const TOKEN_PATH = 'providerOAuthTokens/owner-a_google-workspace'
 const CONNECTION_PATH = 'users/owner-a/providerConnections/google-workspace'
 const BASELINE_BLOB = 'e4e6a39a7f6d66377a532397a3efda7459225ee9'
+const GENERATION_ONLY_BLOB = '5db8e719dddbf073111b6c3f05f363063a8e7b6d'
 
 function deferred() {
   let resolve, reject
@@ -131,9 +132,11 @@ function oauthHarness(options = {}) {
     return options.fetch ? options.fetch(url, init, { defaultFetch, tokenResponse, records, operations }) : defaultFetch(url)
   }
 
-  const sourcePath = options.baseline
-    ? path.join(__dirname, '../fixtures/googleWorkspaceOAuth.before.ts')
-    : path.join(__dirname, '../../src/googleWorkspaceOAuth.ts')
+  const sourcePath = options.generationOnlyBaseline
+    ? path.join(__dirname, '../fixtures/googleWorkspaceOAuth.generationOnly.before.ts')
+    : options.baseline
+      ? path.join(__dirname, '../fixtures/googleWorkspaceOAuth.before.ts')
+      : path.join(__dirname, '../../src/googleWorkspaceOAuth.ts')
   const source = fs.readFileSync(sourcePath, 'utf8')
   const sourceBlob = crypto.createHash('sha1').update(`blob ${Buffer.byteLength(source)}\0`).update(source).digest('hex')
   const compiled = ts.transpileModule(source, {
@@ -185,4 +188,4 @@ function oauthHarness(options = {}) {
   }
 }
 
-module.exports = { oauthHarness, deferred, TOKEN_PATH, CONNECTION_PATH, BASELINE_BLOB }
+module.exports = { oauthHarness, deferred, TOKEN_PATH, CONNECTION_PATH, BASELINE_BLOB, GENERATION_ONLY_BLOB }
