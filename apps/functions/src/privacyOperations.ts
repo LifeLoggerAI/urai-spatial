@@ -1,6 +1,7 @@
 import * as functions from 'firebase-functions/v1'
 import * as admin from 'firebase-admin'
 import { createHash } from 'node:crypto'
+import { exportPrivateLifeModelHandles, tombstonePrivateLifeModelInputs } from './lifeModelPrivateInputs'
 
 if (!admin.apps.length) admin.initializeApp()
 
@@ -689,6 +690,10 @@ async function buildExport(snapshot: FirebaseFirestore.DocumentSnapshot) {
       data.renderManifests = await collectionDocuments(userRef.collection('renderManifests'))
       data.simulationSessions = await collectionDocuments(userRef.collection('simulationSessions'))
       data.lifeModelReceipts = await collectionDocuments(userRef.collection('lifeModelReceipts'))
+      data.privateLifeModelSources = await boundedCollectionDocuments(userRef.collection('privateLifeModelSources'), 'privateLifeModelSources')
+      data.privateLifeModelTranscripts = await boundedCollectionDocuments(userRef.collection('privateLifeModelTranscripts'), 'privateLifeModelTranscripts')
+      data.privateLifeModelProvenance = await boundedCollectionDocuments(userRef.collection('privateLifeModelProvenance'), 'privateLifeModelProvenance')
+      data.privateLifeModelSourceHandles = redactSecrets(await exportPrivateLifeModelHandles(db, uid))
     }
     if (scopes.includes('intelligence')) {
       data.scenarios = await scenarioExportTree(userRef)
@@ -932,6 +937,9 @@ const DELETION_COLLECTIONS: Record<Exclude<DeletionScope, 'account'>, string[]> 
     'renderManifests',
     'simulationSessions',
     'lifeModelReceipts',
+    'privateLifeModelSources',
+    'privateLifeModelTranscripts',
+    'privateLifeModelProvenance',
   ],
   intelligence: ['scenarios', 'aiLedger'],
   'spatial-state': [
@@ -992,6 +1000,9 @@ const DELETION_COLLECTIONS: Record<Exclude<DeletionScope, 'account'>, string[]> 
     'renderManifests',
     'simulationSessions',
     'lifeModelReceipts',
+    'privateLifeModelSources',
+    'privateLifeModelTranscripts',
+    'privateLifeModelProvenance',
   ],
 }
 
@@ -1033,6 +1044,9 @@ async function processDeletion(snapshot: FirebaseFirestore.DocumentSnapshot) {
     ])
     const userRef = db.doc(`users/${uid}`)
     const deletedCollections: string[] = []
+    if (scope === 'account' || scope === 'all-repository-data' || scope === 'life-model') {
+      await tombstonePrivateLifeModelInputs(db, uid, fieldValue.serverTimestamp())
+    }
     if (scope === 'account') {
       await deleteCapturedRealityStorage(uid, { deleteAllExports: true })
       await db.recursiveDelete(userRef)

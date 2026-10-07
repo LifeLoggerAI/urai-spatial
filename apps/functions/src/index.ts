@@ -82,3 +82,4 @@ export { getAILedgerEntries, ledgerScenarioCreated, ledgerScenarioOutcomeObserve
 export { getGlobalEmotionalFieldSnapshot } from './globalEmotionalField'
 
 export { mapsElevationProvider } from './mapsElevation'
+export { resolveLifeModelPrivateInputs } from './lifeModelPrivateInputs'
