@@ -4,19 +4,21 @@ Status: **PACKAGE REGISTERED / EXISTING INTERNAL RELEASE / CURRENT CI PREPARATIO
 
 This lane packages the current governed UrAi static export into an Android shell without touching Spatial scene/pixel ownership, production deployment, billing, provider secrets, or Play signing state.
 
-## Current provider evidence
+## Provider evidence and current authority
 
-Authenticated Play Console readback on 2026-10-06 supersedes the September 26 no-bundle observation:
+As of 2026-10-07, the current authenticated Play Console release, actual bundle versionCode and testing/production state are **NOT VERIFIED**. The current actual versionCode is **UNKNOWN** until a fresh authenticated release-details or bundle-manifest readback resolves the retained conflict. This does not authorize a new upload or version-code guess.
 
-- package `com.urailabs.urai` is accepted and must remain stable;
-- developer account `5930711665694942613`, app `4972566068213337893`;
-- internal release `UrAi Internal 0.1.126 - 82a708f2` is available to internal testers;
-- actual bundle versionCode **126**, versionName `0.1.126-unsigned`, minimum API 24, target SDK 36;
-- Play explicitly reports **Releases signed by Play** and an app-signing key in use;
-- public certificate SHA-256 fingerprints and observation limits are in `play-console-receipt-20261006.json`;
-- Production is inactive; the dashboard shows zero closed-test opted-in testers and requires at least 12 testers for 14 days before applying for production access.
+Retained observations must keep their dates:
 
-The release label supplies only predecessor source prefix `82a708f2`. Full source binding and artifact bytes were not independently verified here. Existing internal delivery does not accept the current Spatial candidate. The versionName text “unsigned” is separate from Play's app-signing state.
+- `play-console-receipt-20261006.json` records a 2026-10-06 Console observation for package `com.urailabs.urai`, developer account `5930711665694942613`, app `4972566068213337893`, internal release label `UrAi Internal 0.1.126 - 82a708f2`, versionCode 126, and versionName `0.1.126-unsigned`. The dated JSON is preserved unchanged.
+- Provider support dated 2026-10-06 confirms the inactivity issue was resolved and the app was no longer at risk of closure for inactivity. Its quoted 2026-10-01 account report corrects the release's actual version code to **1**, while preserving the same release label containing **126**. The quoted report is historical, not a fresh October 7 Console readback.
+- A release **label** containing 126 is not proof of bundle **versionCode** 126. The retained reports conflict on that field and must not be silently reconciled or relabeled as current store truth.
+- The retained Console receipt records Play signing and public app/upload certificate fingerprints, with no private key read or key change. Those dated identities do not prove current signing custody or accept a successor artifact.
+- The retained production/closed-testing status and requirements are historical observations. Current track state, tester counts, production access and policy state require authenticated provider readback before store action.
+
+The support-resolved inactivity issue is not treated as an active launch blocker on that evidence. Signing custody, final frozen-source binding, physical acceptance and current store authority remain distinct gates. No obsolete or incorrectly signed build may be uploaded to create activity.
+
+The release label supplies only predecessor source prefix `82a708f2`; full source binding and artifact bytes were not independently verified by these observations. Existing internal delivery does not accept the current Spatial candidate. A versionName containing “unsigned” is separate from Play's dated app-signing observation.
 
 ## Build boundary
 
