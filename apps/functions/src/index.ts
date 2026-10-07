@@ -83,3 +83,4 @@ export { getGlobalEmotionalFieldSnapshot } from './globalEmotionalField'
 
 export { mapsElevationProvider } from './mapsElevation'
 export { resolveLifeModelPrivateInputs } from './lifeModelPrivateInputs'
+export { reviewPrivateLifeModelCandidate } from './privateLifeModelReview'
