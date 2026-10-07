@@ -47,7 +47,7 @@ function fixture(change = {}) {
       assert.equal(init.headers.authorization, `Bearer ${token}`); assert.equal(init.redirect, 'error')
       const row = rows.get(body.job_id); assert.ok(row)
       if (body.action === 'preflight') {
-        const fingerprints = Object.fromEntries(['credential_sha256','semantic_headers_sha256','source_input_sha256','content_type'].map(key => [key,body[key]]))
+        const fingerprints = Object.fromEntries(['credential_sha256','semantic_headers_sha256','source_input_sha256','semantic_input_sha256','content_type'].map(key => [key,body[key]]))
         const timing = { observed_at:new Date(now()-60000).toISOString(), expires_at:new Date(now()+300000).toISOString() }
         const reply = { ok:true, provider_call_authorized:false, execution_performed:false, envelope:{ job:structuredClone(row.job), account:{ ...timing,provider:body.provider,account_id:body.account_id,credential_sha256:body.credential_sha256,credential_binding_verified:true,credential_binding_receipt:'SYNTHETIC-ACCOUNT-MAP',trusted_readback:true }, protected_controls:{ ...timing,...fingerprints,provider:body.provider,account_id:body.account_id,trusted_readback:true,endpoint:body.endpoint,request_sha256:body.request_sha256,enforcement_source_sha:GATEWAY,hard_stop_supported:true,cost_cap_enforced:true,auto_top_up:false,max_usd_micros:2500000,max_credits:20,max_runtime_seconds:2,proof_receipt:'SYNTHETIC-CONTROLS' }, protected_pricing:{ ...timing,...fingerprints,provider:body.provider,account_id:body.account_id,model_version:body.model,request_sha256:body.request_sha256,trusted_readback:true,receipt:'SYNTHETIC-PRICE',rates:structuredClone(row.job.budget.rates) } } }
         reply.envelope.authority = { ...timing, trusted_readback:true, binding:structuredClone(row.job.authority) }
@@ -62,7 +62,7 @@ function fixture(change = {}) {
         row.attempt = { id:'synthetic-attempt', status:'RESERVED', charges_reconciled:false }
         row.hold = 2500000
         const reservedAt = now()
-        const reply = { ok:true, provider_call_authorized:true, execution_performed:false, executor_source_sha:SOURCE, gateway_source_sha:GATEWAY, worker_id:body.worker_id, job_digest:body.job_digest, attempt_id:row.attempt.id, max_runtime_seconds:2, reserved_at:new Date(reservedAt).toISOString(), admission_expires_at:new Date(Math.min(Date.parse(row.preflightReply.admission_expires_at), reservedAt + 2000)).toISOString(), ...Object.fromEntries(['account_id','credential_sha256','semantic_headers_sha256','source_input_sha256','content_type'].map(key => [key,body[key]])) }
+        const reply = { ok:true, provider_call_authorized:true, execution_performed:false, executor_source_sha:SOURCE, gateway_source_sha:GATEWAY, worker_id:body.worker_id, job_digest:body.job_digest, attempt_id:row.attempt.id, max_runtime_seconds:2, reserved_at:new Date(reservedAt).toISOString(), admission_expires_at:new Date(Math.min(Date.parse(row.preflightReply.admission_expires_at), reservedAt + 2000)).toISOString(), ...Object.fromEntries(['account_id','credential_sha256','semantic_headers_sha256','source_input_sha256','semantic_input_sha256','content_type'].map(key => [key,body[key]])) }
         row.attempt.reserved_at = reply.reserved_at; row.attempt.admission_expires_at = reply.admission_expires_at
         await controls.reserve?.(body, clockContext())
         await controls.reserveReply?.(reply, body, clockContext())
@@ -107,7 +107,7 @@ function fixture(change = {}) {
     const credentials = Object.fromEntries([...headers].filter(([k]) => ['authorization','xi-api-key','x-api-key','x-goog-api-key'].includes(k)))
     const requestSha = digest(Buffer.concat([Buffer.from(`POST\n${url}\n`), Buffer.from(body)])), inputSha = digest(stable({ uid, lane, input })), tenantSha = digest(uid)
     const jobId = `SYNTHETIC-NOT-AUTHORIZATION-${lane}-${requestSha}`
-    const fields = { job_id:jobId, worker_id:'synthetic-worker', executor_repository:'LifeLoggerAI/urai-spatial', executor_source_sha:SOURCE, gateway_repository:'LifeLoggerAI/asset-factory', gateway_source_sha:GATEWAY, consumer:'spatial-functions', tenant_sha256:tenantSha, provider, account_id:'SYNTHETIC-API-ACCOUNT', credential_sha256:digest(stable(credentials)), source_input_sha256:inputSha, semantic_headers_sha256:digest(stable(Object.fromEntries([...headers].filter(([k]) => !Object.hasOwn(credentials,k))))), content_type:headers.get('content-type'), request_sha256:requestSha, endpoint:url, model, asset:`spatial/${tenantSha}/${lane}`, request_size:String(Buffer.byteLength(body)) }
+    const fields = { job_id:jobId, worker_id:'synthetic-worker', executor_repository:'LifeLoggerAI/urai-spatial', executor_source_sha:SOURCE, gateway_repository:'LifeLoggerAI/asset-factory', gateway_source_sha:GATEWAY, consumer:'spatial-functions', tenant_sha256:tenantSha, provider, account_id:'SYNTHETIC-API-ACCOUNT', credential_sha256:digest(stable(credentials)), source_input_sha256:inputSha, semantic_input_sha256:digest(stable(JSON.parse(body))), semantic_headers_sha256:digest(stable(Object.fromEntries([...headers].filter(([k]) => !Object.hasOwn(credentials,k))))), content_type:headers.get('content-type'), request_sha256:requestSha, endpoint:url, model, asset:`spatial/${tenantSha}/${lane}`, request_size:String(Buffer.byteLength(body)) }
     metadata = { ...fields, lane, gateway_url:gatewayUrl }; controls.binding?.(metadata, clockContext()); metadataPath = `spatialPaidProviderBindings/${digest(stable({ tenant_sha256:tenantSha, lane, request_sha256:requestSha, source_input_sha256:inputSha }))}`
     bindings.set(metadataPath, metadata)
     if (!rows.has(jobId)) {
@@ -144,6 +144,44 @@ test('actual unmocked clean Git provenance rejects every dirty untracked or misd
     git('rm','--cached','apps/functions/src/protectedProviderSpend.ts');assert.throws(()=>helper.spatialSpendSourceSha())
   }finally{rmSync(root,{recursive:true,force:true})}
 })
+test('actual normalized payload identity survives JSON formatting and key order while wire identity stays exact', async () => {
+  const payloads = [
+    JSON.stringify({ model:'synthetic-model', input:'Fictional العربية context', parameters:{ z:[1,true,null], a:'bounded' } }),
+    ' { "parameters": { "a": "bounded", "z": [1, true, null] }, "input": "Fictional العربية context", "model": "synthetic-model" } ',
+  ]
+  const sent=[]
+  for(const body of payloads){
+    const f=fixture(),args=f.directArgs();args[7].body=body
+    const result=await f.paidFetch(...args);await result.text()
+    const actual=f.calls[0]
+    assert.equal(actual.semantic_input_sha256,digest(stable(JSON.parse(body))))
+    assert.equal(f.providerCalls.length,1)
+    sent.push(actual)
+  }
+  assert.equal(sent[0].semantic_input_sha256,sent[1].semantic_input_sha256)
+  assert.notEqual(sent[0].request_sha256,sent[1].request_sha256)
+  assert.equal(sent[0].provider,sent[1].provider)
+  assert.equal(sent[0].account_id,sent[1].account_id)
+  assert.equal(sent[0].model,sent[1].model)
+})
+for(const scope of ['executor','controls','pricing','reservation']){
+  for(const change of ['missing','drifted']){
+    test(`actual normalized payload ${scope} ${change} cannot authorize provider dispatch`, async()=>{
+      const mutate=reply=>{
+        const target=scope==='executor'?reply.envelope.job.executor:scope==='controls'?reply.envelope.protected_controls:scope==='pricing'?reply.envelope.protected_pricing:reply
+        if(change==='missing')delete target.semantic_input_sha256
+        else target.semantic_input_sha256='f'.repeat(64)
+      }
+      const f=fixture(scope==='reservation'?{reserveReply:mutate}:{preflight:mutate})
+      await assert.rejects(f.paidFetch(...f.directArgs()))
+      assert.equal(f.providerCalls.length,0)
+      if(scope==='reservation'){
+        assert.equal(f.calls.filter(call=>call.action==='reserve').length,1)
+        assert.equal([...f.rows.values()][0].hold,2500000)
+      }else assert.equal(f.calls.some(call=>call.action==='reserve'),false)
+    })
+  }
+}
 test('actual helper reserves before its only POST and completed output retains uncertain charges', async () => {
   const f = fixture(), response = await f.paidFetch(...f.directArgs())
   assert.equal(f.providerCalls.length,1); assert.equal([...f.rows.values()][0].hold,2500000)
@@ -167,14 +205,14 @@ test('unknown stream and outcome record failures retain reservation and prohibit
   for (const change of [{ streamError:true },{ recordLost:true }]) { const f = fixture(change), response = await f.paidFetch(...f.directArgs()); await assert.rejects(response.text()); assert.equal(f.providerCalls.length,1); assert.equal([...f.rows.values()][0].hold,2500000); await assert.rejects(f.paidFetch(...f.directArgs())); assert.equal(f.providerCalls.length,1) }
 })
 test('source/head account input header credential tenant and model envelope drift denies dispatch', async () => {
-  for (const field of ['gateway_source_sha','source_sha','worker_id','credential_sha256','semantic_headers_sha256','source_input_sha256','tenant_sha256','content_type','request_sha256','request_size','asset']) {
+  for (const field of ['gateway_source_sha','source_sha','worker_id','credential_sha256','semantic_headers_sha256','source_input_sha256','semantic_input_sha256','tenant_sha256','content_type','request_sha256','request_size','asset']) {
     const f = fixture({ preflight:reply => { reply.envelope.job.executor[field] = 'drifted' } }); await assert.rejects(f.paidFetch(...f.directArgs())); assert.equal(f.providerCalls.length,0)
   }
   for (const field of ['provider','account_id','model_version','consumer']) { const f = fixture({ preflight:reply => { reply.envelope.job[field] = 'drifted' } }); await assert.rejects(f.paidFetch(...f.directArgs())); assert.equal(f.providerCalls.length,0) }
 })
 test('missing drifted stale or untrusted actual-bound pricing denies reserve and external dispatch', async () => {
   const changes = [reply => { delete reply.envelope.protected_pricing }]
-  for (const field of ['provider','account_id','model_version','request_sha256','credential_sha256','semantic_headers_sha256','source_input_sha256','content_type','receipt','observed_at','expires_at']) changes.push(reply => { delete reply.envelope.protected_pricing[field] })
+  for (const field of ['provider','account_id','model_version','request_sha256','credential_sha256','semantic_headers_sha256','source_input_sha256','semantic_input_sha256','content_type','receipt','observed_at','expires_at']) changes.push(reply => { delete reply.envelope.protected_pricing[field] })
   changes.push(reply => { reply.envelope.protected_pricing.trusted_readback=false }, reply => { reply.envelope.protected_pricing.expires_at='2000-01-01T00:00:00Z' }, reply => { reply.envelope.protected_pricing.observed_at='2100-01-01T00:00:00Z' }, reply => { reply.envelope.protected_pricing.rates.usd_micros_per_unit=1 })
   for (const preflight of changes) {
     const f=fixture({ preflight }); await assert.rejects(f.paidFetch(...f.directArgs())); assert.equal(f.providerCalls.length,0); assert.equal(f.calls.some(x => x.action==='reserve'),false)

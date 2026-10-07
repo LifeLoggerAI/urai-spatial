@@ -119,7 +119,7 @@ export async function paidSpatialFetch(db: BindingStore, uid: string, lane: stri
     job_id:jobId, worker_id:workerId, executor_repository:'LifeLoggerAI/urai-spatial', executor_source_sha:sourceSha,
     gateway_repository:'LifeLoggerAI/asset-factory', gateway_source_sha:gatewaySha, consumer:'spatial-functions',
     tenant_sha256:tenantSha, provider, account_id:accountId, credential_sha256:credentialSha,
-    source_input_sha256:inputSha, semantic_headers_sha256:semanticSha, content_type:text(headers.get('content-type')),
+    source_input_sha256:inputSha, semantic_input_sha256:spendDigest(stableJson(actualBody)), semantic_headers_sha256:semanticSha, content_type:text(headers.get('content-type')),
     request_sha256:requestSha, endpoint:url, model, asset:`spatial/${tenantSha}/${lane}`, request_size:String(bytes.byteLength),
   }
   const gateway = async (action: string, extra: JsonRecord = {}) => {
@@ -140,7 +140,7 @@ export async function paidSpatialFetch(db: BindingStore, uid: string, lane: stri
   need(executor.repository === fields.executor_repository && executor.source_sha === sourceSha && Array.isArray(job.input_sha256) && job.input_sha256.includes(inputSha) && job.input_sha256.includes(requestSha))
   need(account.provider === provider && account.account_id === accountId && account.credential_sha256 === credentialSha && account.credential_binding_verified === true && Boolean(text(account.credential_binding_receipt)))
   need(account.trusted_readback === true); fresh(account)
-  for (const key of ['credential_sha256', 'semantic_headers_sha256', 'source_input_sha256', 'content_type'] as const) need(controls[key] === fields[key] && price[key] === fields[key])
+  for (const key of ['credential_sha256', 'semantic_headers_sha256', 'source_input_sha256', 'semantic_input_sha256', 'content_type'] as const) need(controls[key] === fields[key] && price[key] === fields[key])
   need(controls.provider === provider && controls.account_id === accountId && controls.trusted_readback === true)
   need(controls.enforcement_source_sha === gatewaySha && controls.endpoint === url && controls.request_sha256 === requestSha && controls.hard_stop_supported === true && controls.cost_cap_enforced === true && controls.auto_top_up === false)
   for (const key of ['max_usd_micros', 'max_credits', 'max_runtime_seconds']) need(controls[key] === budget[key])
@@ -172,7 +172,7 @@ export async function paidSpatialFetch(db: BindingStore, uid: string, lane: stri
   const runtime = admitted.max_runtime_seconds
   need(admitted.provider_call_authorized === true && admitted.execution_performed === false && admitted.executor_source_sha === sourceSha && admitted.gateway_source_sha === gatewaySha && admitted.worker_id === workerId && admitted.job_digest === digest && typeof runtime === 'number' && Number.isSafeInteger(runtime) && runtime > 0 && runtime <= 86400)
   need(runtime === budget.max_runtime_seconds)
-  for (const key of ['account_id', 'credential_sha256', 'semantic_headers_sha256', 'source_input_sha256', 'content_type'] as const) need(admitted[key] === fields[key])
+  for (const key of ['account_id', 'credential_sha256', 'semantic_headers_sha256', 'source_input_sha256', 'semantic_input_sha256', 'content_type'] as const) need(admitted[key] === fields[key])
   const reservedAt = instant(admitted.reserved_at), reserveExpiry = instant(admitted.admission_expires_at)
   now = Date.now()
   need(reserveStartedAt <= reservedAt && reservedAt <= now && reservedAt < reserveExpiry && now < reserveExpiry)
