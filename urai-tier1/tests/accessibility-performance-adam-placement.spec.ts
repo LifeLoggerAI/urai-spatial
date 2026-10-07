@@ -6,7 +6,7 @@ for (const viewport of [{ width: 320, height: 700 }, { width: 844, height: 390 }
     page.on('pageerror', error => pageErrors.push(error.message))
     await page.setViewportSize(viewport)
     await page.emulateMedia({ reducedMotion: 'reduce' })
-    for (const route of ['/about', '/support', '/status', '/location-map']) {
+    for (const route of ['/about', '/support', '/status', '/location-map', '/adam']) {
       await page.goto(route, { waitUntil: 'domcontentloaded' })
       const launcher = page.locator('[data-urai-adam-launcher]')
       await expect(launcher).toHaveAttribute('data-adam-launcher-placement', 'inline-slot')
@@ -14,7 +14,11 @@ for (const viewport of [{ width: 320, height: 700 }, { width: 844, height: 390 }
       const geometry = await launcher.evaluate(element => {
         const r = element.getBoundingClientRect()
         const hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2)
-        return { width: r.width, height: r.height, left: r.left, right: r.right, viewportWidth: innerWidth, position: getComputedStyle(element).position, pointerReachable: hit === element || element.contains(hit) }
+        const textOverlaps = [...document.querySelectorAll('main h1, main p')].filter(node => {
+          const text = node.getBoundingClientRect()
+          return text.width > 2 && text.height > 2 && r.left < text.right && r.right > text.left && r.top < text.bottom && r.bottom > text.top
+        }).map(node => node.textContent?.trim())
+        return { width: r.width, height: r.height, left: r.left, right: r.right, viewportWidth: innerWidth, position: getComputedStyle(element).position, pointerReachable: hit === element || element.contains(hit), textOverlaps }
       })
       expect(geometry.position).toBe('static')
       expect(geometry.width).toBeGreaterThanOrEqual(48)
@@ -22,6 +26,7 @@ for (const viewport of [{ width: 320, height: 700 }, { width: 844, height: 390 }
       expect(geometry.left).toBeGreaterThanOrEqual(0)
       expect(geometry.right).toBeLessThanOrEqual(geometry.viewportWidth)
       expect(geometry.pointerReachable).toBe(true)
+      expect(geometry.textOverlaps, `${route} helper must not cover the page's text`).toEqual([])
       await launcher.focus()
       await page.keyboard.press('Enter')
       const about = page.getByText('About Adam', { exact: true })

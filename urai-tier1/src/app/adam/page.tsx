@@ -1,3 +1,5 @@
+import AdamLauncherSlot from '@/spatial/adam/AdamLauncherSlot'
+
 export const metadata = {
   title: 'Adam — UrAi Founder Presence',
   description: 'Talk with Adam, the governed digital Founder presence inside UrAi.',
@@ -30,6 +32,9 @@ export default function AdamPage() {
         <p style={{ maxWidth: 620, margin: '18px 0 0', fontSize: 13, lineHeight: 1.6, color: 'rgba(244,249,250,.52)' }}>
           Binding founder, legal, financial, governance, partnership, and other explicitly human decisions still require the human founder.
         </p>
+        <div style={{ maxWidth: 320, marginTop: 28 }}>
+          <AdamLauncherSlot name="adam-route" as="div" />
+        </div>
       </section>
     </main>
   )
