@@ -58,7 +58,7 @@ function input(provider, overrides = {}) {
 }
 function success(endpoint) {
   const provider = endpoint.split('/').at(-1)
-  const result = { provider, message: `Synthetic ${provider} answer`, caption: 'Synthetic answer', disclosure: 'Synthetic in-process transport only.', suggestedActions: [], model: `synthetic-${provider}-model` }
+  const result = { provider, message: `Synthetic ${provider} answer`, caption: 'Synthetic answer', disclosure: 'Synthetic in-process transport only.', suggestedActions: [], model: `synthetic-${provider}-model`, locale: 'en' }
   return provider === 'openai'
     ? new Response(`${JSON.stringify({ type: 'done', ...result })}\n`, { headers: { 'Content-Type': 'application/x-ndjson' } })
     : Response.json(result)

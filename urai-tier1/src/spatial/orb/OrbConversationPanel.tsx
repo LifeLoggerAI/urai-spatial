@@ -8,6 +8,8 @@ import { narratorPlayback } from '@/spatial/narrator/narratorPlayback'
 import { sensorySafeEnabled, URAI_SENSORY_SAFE_EVENT, URAI_SENSORY_SAFE_STORAGE_KEY } from '@/spatial/accessibility/SensorySafeRuntime'
 import { OrbVoicePlayback, type OrbVoicePhase } from './orbVoicePlayback'
 import styles from './OrbConversationPanel.module.css'
+import { currentSpeechTag } from '@/lib/i18n/localePreference'
+import { contentLanguageProps } from '@/lib/i18n/contentLanguage'
 import {
   attemptedExternalOrbFallback,
   deterministicOrbFallback,
@@ -29,6 +31,7 @@ export default function OrbConversationPanel({ active = true }: { active?: boole
   const [history, setHistory] = useState<OrbConversationMessage[]>([])
   const [result, setResult] = useState<OrbProviderResult | null>(null)
   const [streamedText, setStreamedText] = useState('')
+  const [responseLocale, setResponseLocale] = useState('en-US')
   const [status, setStatus] = useState('Orb conversation is idle.')
   const [busy, setBusy] = useState(false)
   const [aiConsent, setAiConsent] = useState(false)
@@ -93,21 +96,21 @@ export default function OrbConversationPanel({ active = true }: { active?: boole
     return voicePlayback.current
   }
 
-  const playDeviceVoice = (text: string) => {
+  const playDeviceVoice = (text: string, locale = 'en-US') => {
     if (sensorySafeEnabled() || voicePreferences.current.sensorySafe) {
       muteVoiceForComfort()
       return
     }
-    if (!voicePreferences.current.muted && voicePreferences.current.active) void getVoicePlayback().play(text, false)
+    if (!voicePreferences.current.muted && voicePreferences.current.active) void getVoicePlayback().play(text, false, locale)
   }
 
-  const speakOrbResponse = async (text: string) => {
+  const speakOrbResponse = async (text: string, locale: string) => {
     if (sensorySafeEnabled() || voicePreferences.current.sensorySafe) {
       muteVoiceForComfort()
       return
     }
     const preferences = voicePreferences.current
-    if (!preferences.muted && preferences.active) await getVoicePlayback().play(text, preferences.externalConsent)
+    if (!preferences.muted && preferences.active) await getVoicePlayback().play(text, preferences.externalConsent, locale)
   }
 
   useEffect(() => {
@@ -177,6 +180,8 @@ export default function OrbConversationPanel({ active = true }: { active?: boole
     setBusy(true)
     setResult(null)
     setStreamedText('')
+    const requestedLocale = currentSpeechTag()
+    setResponseLocale(requestedLocale)
     setStatus('Orb is responding through the live provider.')
     publishConversationState('thinking')
 
@@ -185,6 +190,7 @@ export default function OrbConversationPanel({ active = true }: { active?: boole
         message: trimmed,
         context: history,
         aiProcessingConsent: true,
+        locale: requestedLocale,
         signal: controller.signal,
         onEvent: (providerEvent) => {
           if (controller.signal.aborted || aborter.current !== controller) return
@@ -200,6 +206,7 @@ export default function OrbConversationPanel({ active = true }: { active?: boole
 
       const resolved = liveResult ?? deterministicOrbFallback(trimmed)
       setResult(resolved)
+      setResponseLocale(resolved.locale)
       setStreamedText(resolved.message)
       if (liveResult) {
         setHistory((current) => [
@@ -213,8 +220,8 @@ export default function OrbConversationPanel({ active = true }: { active?: boole
       publishConversationState('attention', 1800)
       emitAudioCue('orb-confirm')
       if (!voicePreferences.current.muted) {
-        if (resolved.provider === 'openai') void speakOrbResponse(resolved.message)
-        else playDeviceVoice(resolved.message)
+        if (resolved.provider === 'openai') void speakOrbResponse(resolved.message, resolved.locale)
+        else playDeviceVoice(resolved.message, resolved.locale)
       }
     } catch (error) {
       if (controller.signal.aborted || aborter.current !== controller) return
@@ -224,6 +231,7 @@ export default function OrbConversationPanel({ active = true }: { active?: boole
           ? uncertainExternalOrbFallback(trimmed)
           : deterministicOrbFallback(trimmed)
       setResult(fallback)
+      setResponseLocale(fallback.locale)
       setStreamedText(fallback.message)
       setStatus(error instanceof OrbProviderAttemptError
         ? 'External provider attempt did not return an answer; truthful local fallback ready.'
@@ -232,7 +240,7 @@ export default function OrbConversationPanel({ active = true }: { active?: boole
           : 'Live provider unavailable before external processing; local fallback response ready.')
       publishConversationState('warning', 2400)
       emitAudioCue('error')
-      if (!voicePreferences.current.muted) playDeviceVoice(fallback.message)
+      if (!voicePreferences.current.muted) playDeviceVoice(fallback.message, fallback.locale)
     } finally {
       if (aborter.current === controller) aborter.current = null
       if (!controller.signal.aborted) setBusy(false)
@@ -318,8 +326,8 @@ export default function OrbConversationPanel({ active = true }: { active?: boole
             </button>
             <button type="button" disabled={!result || voiceMuted} onClick={() => {
               if (!result) return
-              if (result.provider === 'openai') void speakOrbResponse(result.message)
-              else playDeviceVoice(result.message)
+              if (result.provider === 'openai') void speakOrbResponse(result.message, result.locale)
+              else playDeviceVoice(result.message, result.locale)
             }}>
               Replay
             </button>
@@ -330,10 +338,10 @@ export default function OrbConversationPanel({ active = true }: { active?: boole
         </p>
         {streamedText ? (
           <section className={styles.response} aria-label="Orb response">
-            <p>{streamedText}</p>
-            {result ? <small>{result.disclosure}</small> : null}
+            <p {...contentLanguageProps(responseLocale)} style={{ textAlign: 'start', overflowWrap: 'anywhere' }}>{streamedText}</p>
+            {result ? <small lang="en" dir="ltr">{result.disclosure}</small> : null}
             {result?.suggestedActions.length ? (
-              <ul>{result.suggestedActions.map((action) => <li key={action}>{action}</li>)}</ul>
+              <ul {...contentLanguageProps(result.locale)}>{result.suggestedActions.map((action) => <li key={action}>{action}</li>)}</ul>
             ) : null}
           </section>
         ) : null}

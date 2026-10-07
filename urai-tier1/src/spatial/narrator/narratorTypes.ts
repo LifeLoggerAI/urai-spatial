@@ -29,6 +29,8 @@ export type NarratorLine = {
   id: string;
   moment: NarratorMoment;
   text: string;
+  /** Actual authored content language, independent of interface preview. */
+  locale?: string;
   tone: NarratorTone;
   priority: number;
   delayMs: number;
