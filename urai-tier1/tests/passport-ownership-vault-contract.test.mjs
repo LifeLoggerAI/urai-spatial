@@ -23,13 +23,18 @@ test('Passport has one canonical route owner and excludes the legacy realm owner
 
 test('Ownership Vault is spatial and directly accessible without WebGL', () => {
   const client = read('src/app/passport/PassportVaultClient.tsx')
+  const world = read('src/app/passport/VaultWorld.tsx')
   const css = read('src/app/passport/passport-vault.css')
-  assert.match(client, /<Canvas/)
-  assert.match(client, /OrbitControls/)
+  assert.match(client, /dynamic\(\(\) => import\('\.\/VaultWorld'\), \{ ssr: false \}\)/)
+  assert.match(client, /webglAvailable \? <VaultWorld selected=\{selectedZone\}/)
+  assert.match(world, /<Canvas/)
+  assert.match(world, /OrbitControls/)
   assert.match(client, /assetCssStack, passportAssets/)
   assert.match(client, /data-passport-environment-role="governed-visual-support"/)
-  assert.match(client, /alpha: true/)
-  assert.doesNotMatch(client, /<color attach="background"/)
+  assert.match(world, /alpha: true/)
+  assert.doesNotMatch(world, /<color attach="background"/)
+  assert.match(world, /frameloop=\{quality.documentVisible \? "demand" : "never"\}/)
+  assert.match(world, /VaultAmbientFrames enabled=\{quality.documentVisible && !reducedMotion\}/)
   assert.match(client, /Skip to vault controls/)
   assert.match(client, /className="passportFallbackNotice" role="note">Vault controls remain available without WebGL/)
   assert.match(client, /<div className="passportFallback" \/>/)
@@ -48,10 +53,12 @@ test('Ownership Vault is spatial and directly accessible without WebGL', () => {
 
 test('Ownership Vault has no runtime font or external CDN dependency', () => {
   const client = read('src/app/passport/PassportVaultClient.tsx')
-  assert.doesNotMatch(client, /\bText\b/)
-  assert.doesNotMatch(client, /unicode-font-resolver/)
-  assert.doesNotMatch(client, /cdn\.jsdelivr\.net/)
-  assert.match(client, /boxGeometry/)
+  const world = read('src/app/passport/VaultWorld.tsx')
+  const runtime = client + world
+  assert.doesNotMatch(runtime, /\bText\b/)
+  assert.doesNotMatch(runtime, /unicode-font-resolver/)
+  assert.doesNotMatch(runtime, /cdn\.jsdelivr\.net/)
+  assert.match(world, /boxGeometry/)
 })
 
 test('Passport uses trusted authenticated export deletion and snapshot operations', () => {
