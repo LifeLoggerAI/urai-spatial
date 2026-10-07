@@ -4,6 +4,7 @@ import vm from 'node:vm'
 import test from 'node:test'
 import ts from 'typescript'
 import { jsx, jsxs } from 'react/jsx-runtime'
+import { contentLanguage, contentLanguageProps } from '../../packages/localization/src/contentLanguage.ts'
 
 const source = fs.readFileSync(new URL('../src/app/replay/ReplayPersonPresence.tsx', import.meta.url), 'utf8')
 const compiled = ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX } }).outputText
@@ -16,13 +17,14 @@ const text = node => typeof node === 'string' ? node : Array.isArray(node) ? nod
 // late delivery; this does not establish a live private-provider acceptance.
 function fixture(adapters = {}) {
   const cells = [], effects = []; let cursor = 0
-  const closed = [], requests = [], audio = [], urls = []
+  const closed = [], requests = [], audio = [], urls = [], voiceRequests = []
+  let locale = 'en-US'
   const session = { preparePersonPresenceSession: async () => ({ sessionId: 'session-a' }),
     closePersonPresenceSession: async id => { closed.push(id) }, getPersonPresenceCapabilities: async () => ({ voice: true }), ...adapters.session }
   const provider = { PersonPresenceError: Error, requestPersonPresence: async request => {
-    requests.push(request); return { caption: 'synthetic reply', uncertainty: '' }
+    requests.push(request); return { caption: 'synthetic reply', uncertainty: '', locale: request.locale }
   }, ...adapters.provider }
-  const voice = { requestPersonPresenceVoice: async () => ({ blob: new Blob(['synthetic audio']) }), ...adapters.voice }
+  const voice = { requestPersonPresenceVoice: async input => { voiceRequests.push(input); return { blob: new Blob(['synthetic audio']) } }, ...adapters.voice }
   const hooks = {
     useState: initial => { const i = cursor++; cells[i] ??= { value: typeof initial === 'function' ? initial() : initial }
       return [cells[i].value, next => { cells[i].value = typeof next === 'function' ? next(cells[i].value) : next }] },
@@ -37,7 +39,8 @@ function fixture(adapters = {}) {
   vm.runInNewContext(compiled, { module, exports: module.exports, require: name => {
     if (name === 'react') return hooks
     if (name === 'react/jsx-runtime') return { jsx, jsxs }
-    if (name.endsWith('/localePreference')) return { currentSpeechTag: () => 'en-US' }
+    if (name.endsWith('/localePreference')) return { currentSpeechTag: () => locale }
+    if (name.endsWith('/contentLanguage')) return { contentLanguage, contentLanguageProps }
     if (name.endsWith('/personPresenceSessionClient')) return session
     if (name.endsWith('/personPresenceClient')) return provider
     if (name.endsWith('/personPresenceVoiceClient')) return voice
@@ -59,7 +62,7 @@ function fixture(adapters = {}) {
   }
   const send = async value => { find(node => node.type === 'textarea').props.onChange({ currentTarget: { value } })
     find(node => node.type === 'form').props.onSubmit({ preventDefault() {} }); await tick() }
-  return { render, find, button, choose, consent, send, closed, requests, audio, urls,
+  return { render, find, button, choose, consent, send, closed, requests, audio, urls, voiceRequests, setLocale: next => { locale = next },
     changeScene: async () => { props = { ...props, sceneTruthPacketId: 'scene-b' }; render(); await tick() },
     unmount: () => { for (const cell of cells) cell?.cleanup?.() } }
 }
@@ -117,4 +120,23 @@ test('preparation failure offers retry without reusing an old session or consent
   await f.choose(); assert.ok(f.button('Try again')); f.button('Try again').props.onClick(); await tick()
   assert.equal(f.find(node => node.type === 'section').props['data-person-presence'], 'active')
   assert.equal(f.button('Send').props.disabled, true)
+})
+
+test('actual Replay captions, stream and private voice metadata keep captured RTL language after preferences change', async () => {
+  const pending = deferred(); let request
+  const f = fixture({ provider: { requestPersonPresence: input => { request = input; return pending.promise } } })
+  await f.choose(); f.setLocale('ar-SA'); f.consent(0, true); f.consent(1, true); await f.send('synthetic question')
+  f.setLocale('fr-FR'); request.onEvent({ type: 'delta', text: 'synthetic stream', locale: 'ar-SA' })
+  assert.equal(f.find(node => node.type === 'span' && text(node) === 'synthetic stream').props.lang, 'ar-SA')
+  assert.equal(f.find(node => node.type === 'span' && text(node) === 'synthetic stream').props.dir, 'rtl')
+  pending.resolve({ caption: 'synthetic captured reply', uncertainty: '', locale: 'ar-SA' }); await tick()
+  const caption = f.find(node => node.type === 'span' && text(node) === 'synthetic captured reply')
+  assert.equal(caption.props.lang, 'ar-SA'); assert.equal(caption.props.dir, 'rtl')
+  assert.equal(request.locale, 'ar-SA'); assert.equal(f.voiceRequests[0].locale, 'ar-SA'); assert.equal(f.audio[0].lang, 'ar-SA')
+})
+
+test('actual Replay request rejects an unsupported current language before its client or voice is called', async () => {
+  const f = fixture(); await f.choose(); f.consent(0, true); f.setLocale('xx-XX'); await f.send('synthetic question')
+  assert.equal(f.requests.length, 0); assert.equal(f.voiceRequests.length, 0)
+  assert.ok(text(f.render()).includes('Choose a supported content language.'))
 })

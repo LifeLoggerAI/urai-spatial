@@ -1,6 +1,7 @@
 'use client'
 
 import { currentSpeechTag } from '@/lib/i18n/localePreference'
+import { contentLanguage,contentLanguageProps,type UraiContentLanguageTag } from '@/lib/i18n/contentLanguage'
 
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { preparePersonPresenceSession, closePersonPresenceSession, getPersonPresenceCapabilities, type PersonPresenceMode } from '@/spatial/life-model/personPresenceSessionClient'
@@ -17,6 +18,7 @@ export function ReplayPersonPresence({people,sceneTruthPacketId}:{people:PersonC
   const [message,setMessage]=useState('')
   const [messages,setMessages]=useState<PersonPresenceMessage[]>([])
   const [streamed,setStreamed]=useState('')
+  const [streamedLocale,setStreamedLocale]=useState<UraiContentLanguageTag>('en-US')
   const [status,setStatus]=useState('Choose a person to start an evidence-grounded simulation.')
   const [busy,setBusy]=useState(false)
   const [voiceAvailable,setVoiceAvailable]=useState(false)
@@ -106,14 +108,17 @@ export function ReplayPersonPresence({people,sceneTruthPacketId}:{people:PersonC
     event.preventDefault()
     const text=message.trim()
     if(!sessionId||activeSession.current!==sessionId||!selected||!text||!aiConsent||busy||aborter.current)return
+    const locale=contentLanguage(currentSpeechTag())?.speechTag
+    if(!locale){setStatus('Choose a supported content language.');return}
     stop()
     const generation=epoch.current
     const controller=new AbortController()
     aborter.current=controller
     const prior=messages.slice(-10)
-    setMessages(current=>[...current,{role:'user',content:text}])
+    setMessages(current=>[...current,{role:'user',content:text,locale}])
     setMessage('')
     setStreamed('')
+    setStreamedLocale(locale)
     setBusy(true)
     setStatus('Reconstructing from evidence...')
     try{
@@ -121,22 +126,23 @@ export function ReplayPersonPresence({people,sceneTruthPacketId}:{people:PersonC
         sessionId,
         message:text,
         context:prior,
-        locale:currentSpeechTag(),
+        locale,
         aiProcessingConsent:true,
         signal:controller.signal,
         onEvent:(evt)=>{if(current(generation)&&!controller.signal.aborted&&evt.type==='delta')setStreamed(previous=>previous+evt.text)},
       })
       if(!current(generation)||controller.signal.aborted||activeSession.current!==sessionId)return
-      setMessages(current=>[...current,{role:'assistant',content:result.caption}])
+      setMessages(current=>[...current,{role:'assistant',content:result.caption,locale:result.locale}])
       setStreamed('')
       if(voiceEnabled&&voiceAvailable){
-        const voice=await requestPersonPresenceVoice({sessionId,text:result.caption,externalProcessingConsent:true,signal:controller.signal})
+        const voice=await requestPersonPresenceVoice({sessionId,text:result.caption,locale:result.locale,externalProcessingConsent:true,signal:controller.signal})
         if(!current(generation)||controller.signal.aborted||activeSession.current!==sessionId)return
         if(voice.blob){
           audioRef.current?.pause()
           if(audioUrlRef.current)URL.revokeObjectURL(audioUrlRef.current)
           const url=URL.createObjectURL(voice.blob);audioUrlRef.current=url
           const audio=new Audio(url);audioRef.current=audio
+          audio.lang=result.locale
           void audio.play().catch(()=>undefined)
         }else if(voice.errorCode==='ACCEPTED_PERSON_VOICE_NOT_READY'){
           setVoiceAvailable(false);setVoiceEnabled(false)
@@ -165,7 +171,7 @@ export function ReplayPersonPresence({people,sceneTruthPacketId}:{people:PersonC
         {!sessionId&&!busy?<button type="button" onClick={()=>void start(selected)}>Try again</button>:null}
         <label className="presenceConsent"><input type="checkbox" checked={aiConsent} onChange={event=>{setAiConsent(event.currentTarget.checked);if(!event.currentTarget.checked)stop()}} /> Allow this conversation to use the configured AI provider with the authorized evidence context.</label>
         {voiceAvailable?<label className="presenceConsent"><input type="checkbox" checked={voiceEnabled} onChange={event=>{setVoiceEnabled(event.currentTarget.checked);if(!event.currentTarget.checked)stop()}} /> Use this person's accepted private voice for generated simulation replies. Text remains available if voice fails.</label>:<p className="voiceFallback">Accepted private voice is not available for this person/time state. Text simulation remains available.</p>}
-        <div className="presenceTranscript" aria-live="polite">{messages.map((item,index)=><p key={item.role+'-'+index} data-role={item.role}><strong>{item.role==='user'?'You':selected.label}</strong>{item.content}</p>)}{streamed?<p data-role="assistant"><strong>{selected.label}</strong>{streamed}</p>:null}</div>
+        <div className="presenceTranscript" aria-live="polite">{messages.map((item,index)=><p key={item.role+'-'+index} data-role={item.role}><strong>{item.role==='user'?'You':selected.label}</strong><span {...contentLanguageProps(item.locale)}>{item.content}</span></p>)}{streamed?<p data-role="assistant"><strong>{selected.label}</strong><span {...contentLanguageProps(streamedLocale)}>{streamed}</span></p>:null}</div>
         <form onSubmit={event=>void submit(event)}><label htmlFor="person-presence-message">Message</label><textarea id="person-presence-message" value={message} maxLength={2500} onChange={event=>setMessage(event.currentTarget.value)} disabled={!sessionId||busy}/><div><button type="button" onClick={stop} disabled={!busy}>Stop</button><button type="submit" disabled={!sessionId||!aiConsent||busy||message.trim().length===0}>Send</button></div></form>
         <p role="status">{status}</p>
       </div>}
