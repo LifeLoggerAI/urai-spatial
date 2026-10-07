@@ -68,6 +68,23 @@ html.urai-route-life-map[dir='rtl'] .life-map-semantic-inspector {
   }
   html.urai-route-life-map[dir='rtl'] .life-map-search-trigger,
   html.urai-route-life-map[dir='rtl'] .life-map-navigator { left: max(12px, env(safe-area-inset-left)) !important; }
+  /* A keyboard result must fit the list's viewport, including at enlarged text.
+     The complete name/description remain in aria-label and aria-describedby. */
+  html.urai-route-life-map body #life-map-navigator .life-map-semantic-result {
+    max-height: min(36svh, 420px);
+    overflow: hidden;
+  }
+  html.urai-route-life-map body #life-map-navigator .life-map-semantic-result > strong {
+    -webkit-line-clamp: 1;
+    line-height: 1.25;
+  }
+  html.urai-route-life-map body #life-map-navigator .life-map-semantic-result > span > span {
+    -webkit-line-clamp: 1;
+    line-height: 1.3;
+  }
+  html.urai-route-life-map body #life-map-navigator .life-map-semantic-result > span > small {
+    -webkit-line-clamp: 2;
+  }
   html.urai-route-life-map body #life-map-navigator .semantic-results {
     /* The panel owns the compact-viewport scroll budget. Keep the result list
        bounded so 200% text and long localized strings cannot grow the fixed
