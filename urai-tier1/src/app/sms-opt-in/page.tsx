@@ -1,3 +1,5 @@
+import AdamLauncherSlot from '@/spatial/adam/AdamLauncherSlot'
+
 import Link from 'next/link'
 
 export const metadata = {
@@ -59,6 +61,7 @@ export default function SmsOptInProofPage() {
             <li>The authenticated implementation is available at <Link href="/settings/communications" style={{ color: '#b9f4ff' }}>/settings/communications</Link>.</li>
           </ul>
         </section>
+        <AdamLauncherSlot name="sms-opt-in" />
       </article>
     </main>
   )

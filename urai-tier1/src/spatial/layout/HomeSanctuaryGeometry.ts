@@ -48,8 +48,19 @@ export function projectHomeTerrainGeometry(source: THREE.BufferGeometry, worldTr
   // A clone keeps useGLTF's shared source and receipts untouched. Both retained
   // topology and the terrain extension now use one elevation and material field.
   const geometry = source.clone()
-  const position = geometry.attributes.position as THREE.BufferAttribute
+  // Runtime deformation needs logical floats. Quantized accessors and normal
+  // accumulators must not be rewritten through their encoded integer storage.
+  const originalPosition = geometry.getAttribute('position')
+  const logicalPositions = new Float32Array(originalPosition.count * 3)
+  for (let index = 0; index < originalPosition.count; index += 1) {
+    logicalPositions.set([originalPosition.getX(index), originalPosition.getY(index), originalPosition.getZ(index)], index * 3)
+  }
+  const position = new THREE.Float32BufferAttribute(logicalPositions, 3)
+  geometry.setAttribute('position', position)
+  geometry.deleteAttribute('normal')
   const inverse = worldTransform.clone().invert()
+  const orientation = Math.sign(worldTransform.determinant())
+  if (!orientation || !Number.isFinite(worldTransform.determinant())) throw new Error('Finite invertible terrain transform required')
   const point = new THREE.Vector3()
   const color = new THREE.Color()
   const colors = new Float32Array(position.count * 3)
@@ -66,6 +77,22 @@ export function projectHomeTerrainGeometry(source: THREE.BufferGeometry, worldTr
   }
   geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3))
   geometry.setAttribute('uv', new THREE.BufferAttribute(uv, 2))
+  const priorIndex = geometry.getIndex()
+  const count = priorIndex?.count ?? position.count
+  const surfaceIndices: number[] = []
+  const a = new THREE.Vector3(), b = new THREE.Vector3(), c = new THREE.Vector3()
+  // Closed retained ground meshes have top, underside and vertical side faces.
+  // Projection collapses them onto one height field. Keep its rendered upward
+  // faces so opposite surfaces cannot overlap and zero-area sides cannot cancel
+  // the rebuilt normals. Reflected transforms retain Three's front-face rule.
+  for (let triangle = 0; triangle < count; triangle += 3) {
+    const ids = [0, 1, 2].map(offset => priorIndex?.getX(triangle + offset) ?? triangle + offset)
+    a.fromBufferAttribute(position, ids[0]).applyMatrix4(worldTransform)
+    b.fromBufferAttribute(position, ids[1]).applyMatrix4(worldTransform)
+    c.fromBufferAttribute(position, ids[2]).applyMatrix4(worldTransform)
+    if (new THREE.Vector3().crossVectors(b.sub(a), c.sub(a)).y * orientation > 0) surfaceIndices.push(...ids)
+  }
+  geometry.setIndex(surfaceIndices)
   geometry.computeVertexNormals()
   geometry.computeBoundingBox()
   geometry.computeBoundingSphere()

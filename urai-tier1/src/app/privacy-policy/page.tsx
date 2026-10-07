@@ -1,3 +1,5 @@
+import AdamLauncherSlot from '@/spatial/adam/AdamLauncherSlot'
+
 export const metadata = {
   title: 'URAI Privacy Policy',
   description: 'URAI privacy policy candidate describing data use, controls, retention, sharing, security, and user rights.',
@@ -35,6 +37,7 @@ export default function PrivacyPolicyPage() {
           <a href="/privacy-controls" style={{ minHeight: 48, display: 'inline-flex', alignItems: 'center', color: 'inherit' }}>Privacy & Consent</a>
           <a href="/account-deletion" style={{ minHeight: 48, display: 'inline-flex', alignItems: 'center', color: 'inherit' }}>Account deletion</a>
           <a href="/support" style={{ minHeight: 48, display: 'inline-flex', alignItems: 'center', color: 'inherit' }}>Support</a>
+          <AdamLauncherSlot name="privacy-policy" />
         </nav>
       </article>
     </main>

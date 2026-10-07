@@ -1,3 +1,5 @@
+import AdamLauncherSlot from '@/spatial/adam/AdamLauncherSlot'
+
 import Link from 'next/link'
 
 export const metadata = {
@@ -70,6 +72,7 @@ export default function TermsPage() {
           <Link href="/privacy/" style={{ ...linkStyle, minHeight: 48, display: 'inline-flex', alignItems: 'center' }}>Privacy Policy</Link>
           <Link href="/settings/communications" style={{ ...linkStyle, minHeight: 48, display: 'inline-flex', alignItems: 'center' }}>Communication settings</Link>
           <Link href="/support" style={{ ...linkStyle, minHeight: 48, display: 'inline-flex', alignItems: 'center' }}>Support</Link>
+          <AdamLauncherSlot name="terms-legal" />
         </nav>
       </article>
     </main>

@@ -46,6 +46,7 @@ function harness(pendingStage) {
     'firebase/functions': { httpsCallable: (_, name) => async () => ({ data: await stage(name === 'getCapturedRealityAsset' ? 'metadata' : 'delivery', name === 'getCapturedRealityAsset' ? metadata : delivery) }) },
     'next/navigation': { useRouter: () => router, useSearchParams: () => new URLSearchParams('assetId=place') },
     '@/lib/firebase/client': { app: {}, firebasePublicEnvReady: true, functions: {}, getFirebaseDb: () => ({}) },
+    '@/spatial/adam/AdamLauncherSlot': { default: () => null },
     '@/spatial/hooks/useReducedMotion': { useReducedMotion: () => true },
     '@/spatial/captured-reality/CapturedRealityPrivateScene': { default: () => null },
     '@/spatial/captured-reality/capturedRealityRuntime': { capturedRealityDeviceTier: () => 'desktop', CAPTURED_REALITY_QUALITY_PROFILES: { desktop: { maxRuntimeBytes: 4096 } }, capturedRealityBrowserCapability: () => ({ supported: true, missing: [] }) },

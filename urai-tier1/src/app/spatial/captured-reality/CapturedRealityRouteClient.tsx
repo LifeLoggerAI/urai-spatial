@@ -1,5 +1,6 @@
 'use client'
 
+import AdamLauncherSlot from '@/spatial/adam/AdamLauncherSlot'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { getAuth, onAuthStateChanged, type User } from 'firebase/auth'
 import { doc, onSnapshot, type Unsubscribe } from 'firebase/firestore'
@@ -396,6 +397,7 @@ export default function CapturedRealityRouteClient() {
           <p>{stateMessage}</p>
           {state.kind === 'unauthenticated' ? <a href="/login">Continue securely</a> : null}
           <button type="button" onClick={exit}>Return to Replay</button>
+              <AdamLauncherSlot name="captured-reality-fallback" as="div" />
         </section>
       </main>
     )

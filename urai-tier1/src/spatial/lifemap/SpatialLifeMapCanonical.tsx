@@ -1,5 +1,6 @@
 "use client";
 
+import AdamLauncherSlot from '@/spatial/adam/AdamLauncherSlot'
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { getAuth, onAuthStateChanged } from "firebase/auth";
@@ -13,7 +14,7 @@ const DEMO_MANIFEST_ID = "replay-recovery-thread";
 type LifeMapAccessMode = "checking" | "signed-out" | "private" | "explicit-demo";
 
 function isEditableTarget(target: EventTarget | null) {
-  return target instanceof HTMLElement && (target.isContentEditable || target.matches('input,textarea,select,[role="textbox"]'));
+  return target instanceof HTMLElement && (target.closest('[data-urai-adam-presence]') || target.isContentEditable || target.matches('input,textarea,select,[role="textbox"]'));
 }
 
 function LifeMapLoading({ label = "Opening your memory universe" }: { label?: string }) {
@@ -34,6 +35,7 @@ function LifeMapLoading({ label = "Opening your memory universe" }: { label?: st
       <h1 style={{ margin:"10px 0 0", fontSize:"clamp(34px,7vw,74px)", lineHeight:.9, letterSpacing:"-.06em" }}>Your life has depth.</h1>
       <p role="status" aria-live="polite" style={{ margin:"18px 0 0", color:"rgba(235,244,255,.75)" }}>{label} · Escape remains available</p>
       <button type="button" onClick={() => router.push("/home")} style={{ minHeight:48, marginTop:20, padding:"0 20px", border:"1px solid rgba(232,251,255,.22)", borderRadius:999, background:"rgba(8,24,38,.82)", color:"#fff", fontWeight:900, cursor:"pointer" }}>Return Home</button>
+      <AdamLauncherSlot name="life-map-fallback" as="div" />
     </section>
   </main>;
 }
@@ -46,7 +48,7 @@ function SignedOutLifeMap({ onOpenDemo, onReturnHome }: { onOpenDemo: () => void
       <p style={{ margin:0, fontSize:10, fontWeight:900, letterSpacing:".22em", textTransform:"uppercase", color:"#b7efff" }}>DISCLOSED SAMPLE · NOT YOUR MEMORIES</p>
       <h1 style={{ margin:"8px 0 0", fontSize:"clamp(24px,4vw,40px)", lineHeight:.95, letterSpacing:"-.05em" }}>Entering an interactive sample universe.</h1>
       <p style={{ margin:"12px 0 0", fontSize:13, lineHeight:1.5, color:"rgba(235,244,255,.76)" }}>No private memory data is mounted. You can travel, search, select, inspect, and return safely.</p>
-      <div style={{ display:"flex", flexWrap:"wrap", gap:8, marginTop:14 }}><button type="button" onClick={onOpenDemo} style={{ minHeight:48, padding:"0 18px", border:0, borderRadius:999, fontWeight:900, cursor:"pointer" }}>Open disclosed sample</button><button type="button" onClick={onReturnHome} style={{ minHeight:48, padding:"0 18px", border:"1px solid rgba(232,251,255,.2)", borderRadius:999, background:"rgba(2,7,17,.62)", color:"#fff", fontWeight:900, cursor:"pointer" }}>Return Home</button></div>
+      <div style={{ display:"flex", flexWrap:"wrap", gap:8, marginTop:14 }}><button type="button" onClick={onOpenDemo} style={{ minHeight:48, padding:"0 18px", border:0, borderRadius:999, fontWeight:900, cursor:"pointer" }}>Open disclosed sample</button><button type="button" onClick={onReturnHome} style={{ minHeight:48, padding:"0 18px", border:"1px solid rgba(232,251,255,.2)", borderRadius:999, background:"rgba(2,7,17,.62)", color:"#fff", fontWeight:900, cursor:"pointer" }}>Return Home</button></div><AdamLauncherSlot name="life-map-signed-out" as="div" />
     </section>
     <div role="status" aria-live="polite" style={{ position:"absolute", left:"max(16px,env(safe-area-inset-left))", top:"max(16px,env(safe-area-inset-top))", fontSize:10, fontWeight:900, letterSpacing:".2em", textTransform:"uppercase", color:"rgba(220,247,255,.72)" }}>Signed out · no personal data displayed</div>
   </main>;
@@ -122,6 +124,7 @@ function LifeMapAccessGate() {
       <div style={{ display:"flex", flexWrap:"wrap", gap:8, marginTop:10 }}>
         <button type="button" onClick={openDemo} style={{ minHeight:48, padding:"0 16px", border:0, borderRadius:999, fontWeight:900, cursor:"pointer" }}>Open disclosed sample</button>
         <button type="button" onClick={() => router.push("/home")} style={{ minHeight:48, padding:"0 16px", border:"1px solid rgba(232,251,255,.2)", borderRadius:999, background:"rgba(2,7,17,.62)", color:"#fff", fontWeight:900, cursor:"pointer" }}>Return Home</button>
+        <AdamLauncherSlot name="life-map-unsigned-controls" />
       </div>
     </aside> : null}
   </section>;

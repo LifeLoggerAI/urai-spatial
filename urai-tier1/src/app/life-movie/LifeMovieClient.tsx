@@ -1,5 +1,6 @@
 'use client'
 
+import AdamLauncherSlot from '@/spatial/adam/AdamLauncherSlot'
 import { useEffect, useMemo, useState } from 'react'
 import { getAuth, onAuthStateChanged, type User } from 'firebase/auth'
 import { collection, doc, getDoc, getDocs, limit, query } from 'firebase/firestore'
@@ -180,15 +181,15 @@ export default function LifeMovieClient() {
   }, [memories.length])
 
   if (!identityReady || user === undefined || state.kind === 'auth-loading' || state.kind === 'loading') {
-    return <main className="lifeMovieState" data-testid="life-movie-runtime" data-state={state.kind}><p role="status">{state.message}</p><style>{css}</style></main>
+    return <main className="lifeMovieState" data-testid="life-movie-runtime" data-state={state.kind}><section><p role="status">{state.message}</p><AdamLauncherSlot name="life-movie-loading" as="div" /></section><style>{css}</style></main>
   }
 
   if (!user || state.kind === 'unauthenticated') {
-    return <main className="lifeMovieState" data-testid="life-movie-runtime" data-state="unauthenticated"><section><h1>Life Movie</h1><p>{state.message}</p><a href="/login?returnTo=%2Flife-movie">Continue securely</a></section><style>{css}</style></main>
+    return <main className="lifeMovieState" data-testid="life-movie-runtime" data-state="unauthenticated"><section><h1>Life Movie</h1><p>{state.message}</p><a href="/login?returnTo=%2Flife-movie">Continue securely</a><AdamLauncherSlot name="life-movie-unavailable" as="div" /></section><style>{css}</style></main>
   }
 
   if (!active) {
-    return <main className="lifeMovieState" data-testid="life-movie-runtime" data-state={state.kind}><section><h1>Life Movie</h1><p>{state.message}</p><div className="lifeMovieStateActions"><a href="/life-map">Open Life Map</a><a href="/home">Return Home</a></div></section><style>{css}</style></main>
+    return <main className="lifeMovieState" data-testid="life-movie-runtime" data-state={state.kind}><section><h1>Life Movie</h1><p>{state.message}</p><div className="lifeMovieStateActions"><a href="/life-map">Open Life Map</a><a href="/home">Return Home</a><AdamLauncherSlot name="life-movie-empty" /></div></section><style>{css}</style></main>
   }
 
   const enterReplay = () => {

@@ -2,6 +2,7 @@ import { createHash } from 'node:crypto'
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import { createRequire } from 'node:module'
+import { attachHomeOrbFailureProbe, captureHomeOrbFailure } from './home-orb-failure-diagnostics.mjs'
 
 const requireFromTierOne = createRequire(new URL('../urai-tier1/package.json', import.meta.url))
 const { chromium } = requireFromTierOne('playwright')
@@ -72,6 +73,7 @@ for (const spec of cases) {
   const browser = await chromium.launch({ headless: true, args: ['--enable-unsafe-swiftshader'] })
   const context = await browser.newContext({ viewport: spec.viewport, isMobile: spec.isMobile, hasTouch: spec.hasTouch, reducedMotion: spec.reducedMotion })
   const page = await context.newPage()
+  const diagnosticProbe = await attachHomeOrbFailureProbe(page)
   const pageErrors = []
   const failedRequests = []
   const portalRequests = []
@@ -79,11 +81,15 @@ for (const spec of cases) {
   page.on('requestfailed', (request) => failedRequests.push({ url: request.url(), failure: request.failure()?.errorText || 'unknown' }))
   page.on('request', (request) => { if (request.url().includes(path.basename(portalPath))) portalRequests.push(request.url()) })
   const record = { id: spec.id, viewport: spec.viewport, pageErrors, failedRequests, portalRequests, passed: false }
+  let stage = 'navigation'
   try {
     const response = await page.goto(`${base}/home/?homeAssetReview=1&homePrivateFixture=1`, { waitUntil: 'domcontentloaded', timeout: 60_000 })
     const owner = page.locator('.urai-asset-home-world[data-home-primary-owner="asset-driven"]')
+    stage = 'visible-home-owner'
     await owner.waitFor({ state: 'visible', timeout: 45_000 })
+    stage = 'home-assets-ready'
     await page.waitForFunction(() => document.querySelector('.urai-asset-home-world')?.getAttribute('data-home-assets-ready') === 'true', null, { timeout: 45_000 })
+    stage = 'painted-home-proof'
     await frames(page)
     record.status = response?.status()
     record.visibleWorld = await owner.getAttribute('data-home-visible-world')
@@ -158,7 +164,14 @@ for (const spec of cases) {
       && failedRequests.length === 0
   } catch (error) {
     record.error = String(error)
+    record.failureStage = stage
+    try {
+      record.failureDiagnostics = await captureHomeOrbFailure(page, {
+        outputDir, prefix: `${spec.id}-${exactHead.slice(0, 12)}`, stage, probe: diagnosticProbe,
+      })
+    } catch { record.failureDiagnosticsUnavailable = true }
   }
+  diagnosticProbe.stop()
   receipt.cases.push(record)
   if (!record.passed) receipt.errors.push(record)
   await context.close().catch(() => {})

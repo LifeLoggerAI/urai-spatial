@@ -64,16 +64,28 @@ export default function AdamPresenceRuntime() {
   const surface = resolveAdamSurface(pathname, requestedSurface)
   const [open, setOpen] = useState(false)
   const [launcherAnchor, setLauncherAnchor] = useState<HTMLElement | null>(null)
+  const launcherRef = useRef<HTMLButtonElement | null>(null)
+  const closeButtonRef = useRef<HTMLButtonElement | null>(null)
+  const restoreLauncherFocus = useRef(false)
 
   useEffect(() => {
     // Only the slot's own mounted effect may make it eligible for a portal.
     // Inserting into streamed server markup before its hydration causes React #418.
     const syncAnchor = () => {
-      const anchor = document.querySelector<HTMLElement>('[data-urai-adam-launcher-slot][data-urai-adam-launcher-ready="true"]')
+      // Canvas fallback children hydrate even while the canvas is rendering. They
+      // are semantic fallback content, not a visible place for an interactive UI.
+      const anchor = [...document.querySelectorAll<HTMLElement>('[data-urai-adam-launcher-slot][data-urai-adam-launcher-ready="true"]')].find(slot => {
+        if (slot.closest('canvas,[hidden],[inert],[aria-hidden="true"]')) return false
+        for (let parent: HTMLElement | null = slot; parent; parent = parent.parentElement) {
+          const style = getComputedStyle(parent)
+          if (style.display === 'none' || style.visibility === 'hidden' || style.visibility === 'collapse') return false
+        }
+        return true
+      }) ?? null
       setLauncherAnchor(current => current === anchor ? current : anchor)
     }
     const observer = new MutationObserver(syncAnchor)
-    observer.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['data-urai-adam-launcher-ready'] })
+    observer.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['data-urai-adam-launcher-ready', 'hidden', 'inert', 'aria-hidden', 'class', 'style'] })
     syncAnchor()
     return () => observer.disconnect()
   }, [pathname])
@@ -117,6 +129,32 @@ export default function AdamPresenceRuntime() {
     setBusy(false)
     setStatus('Stopped.')
   }, [stopVoice])
+
+  const closePresence = useCallback(() => {
+    restoreLauncherFocus.current = true
+    stopAll()
+    setOpen(false)
+  }, [stopAll])
+
+  useEffect(() => {
+    if (open) closeButtonRef.current?.focus()
+    else if (restoreLauncherFocus.current && launcherRef.current) {
+      restoreLauncherFocus.current = false
+      launcherRef.current.focus()
+    }
+  }, [open, launcherAnchor])
+
+  useEffect(() => {
+    if (!open) return
+    const dismiss = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return
+      event.preventDefault()
+      event.stopPropagation()
+      closePresence()
+    }
+    document.addEventListener('keydown', dismiss)
+    return () => document.removeEventListener('keydown', dismiss)
+  }, [open, closePresence])
 
   useEffect(() => () => stopAll(), [stopAll])
   useEffect(() => {
@@ -296,6 +334,7 @@ export default function AdamPresenceRuntime() {
   if (!open) {
     const launcher = (
       <button
+        ref={launcherRef}
         type="button"
         className={`${styles.launcher} ${launcherAnchor ? styles.inlineLauncher : ''}`}
         data-adam-launcher-placement={launcherAnchor ? 'inline-slot' : 'spatial-overlay'}
@@ -327,7 +366,7 @@ export default function AdamPresenceRuntime() {
           <p className={styles.name}>Adam</p>
           <p className={styles.surface}>{surface.label} · {busy ? 'thinking' : listening ? 'listening' : 'present'}</p>
         </div>
-        <button type="button" className={styles.close} onClick={() => { stopAll(); setOpen(false) }} aria-label="Close Adam">×</button>
+        <button ref={closeButtonRef} type="button" className={styles.close} onClick={closePresence} aria-label="Close Adam">×</button>
       </header>
 
       <details className={styles.about}>

@@ -95,6 +95,13 @@
 /* The direct Ground route can mount before the persistent destination catches
    up. Let its actual scene own the mobile hit regions during that interval. */
 @media (max-width: 900px) {
+  /* The semantic route list scrolls beside the existing Orb's actual hit area. */
+  .ground-spatial-root[data-ground-renderer="fallback"] .ground-renderer-fallback {
+    padding-right: max(120px, calc(env(safe-area-inset-right) + 112px));
+  }
+  .ground-spatial-root[data-ground-renderer="fallback"] .ground-renderer-fallback nav {
+    grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr));
+  }
   body:has(.ground-spatial-root) .urai-world-companion {
     left: auto !important;
     right: max(18px, env(safe-area-inset-right)) !important;

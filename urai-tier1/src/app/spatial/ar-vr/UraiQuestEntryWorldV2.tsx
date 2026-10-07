@@ -1,5 +1,6 @@
 'use client'
 
+import AdamLauncherSlot from '@/spatial/adam/AdamLauncherSlot'
 import {
   useCallback,
   useEffect,
@@ -370,6 +371,7 @@ export default function UraiQuestEntryWorldV2() {
             {portal.label}
           </button>
         ))}
+        <AdamLauncherSlot name="xr-portals" />
       </nav>
 
       <div
