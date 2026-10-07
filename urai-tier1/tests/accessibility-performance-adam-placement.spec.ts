@@ -262,6 +262,17 @@ async function inspectTextAndControls(page: Page, slot: string) {
     const r = element.getBoundingClientRect()
     return [...document.querySelectorAll('main h1, main h2, main p, main label, main input, main textarea, main button, main a, [data-testid="urai-life-map-signed-out-disclosure"] strong, [data-testid="urai-life-map-signed-out-disclosure"] span, [data-testid="urai-life-map-signed-out-disclosure"] button')].filter(target => {
       if (target === element || target.contains(element)) return false
+      // Closed details have laid-out descendants in Chromium even though only
+      // their summary is rendered. Preserve every visible overlap assertion.
+      for (let ancestor: Element | null = target; ancestor; ancestor = ancestor.parentElement) {
+        if (ancestor.matches('[hidden],[inert],[aria-hidden="true"]')) return false
+        const style = getComputedStyle(ancestor)
+        if (style.display === 'none' || style.visibility === 'hidden' || style.visibility === 'collapse') return false
+        if (ancestor instanceof HTMLDetailsElement && !ancestor.open) {
+          const summary = [...ancestor.children].find(child => child.tagName === 'SUMMARY')
+          if (!summary || !(summary === target || summary.contains(target))) return false
+        }
+      }
       const t = target.getBoundingClientRect()
       return t.width > 2 && t.height > 2 && r.left < t.right && r.right > t.left && r.top < t.bottom && r.bottom > t.top
     }).map(target => ({ tag: target.tagName, text: target.textContent?.trim() }))

@@ -10,8 +10,9 @@
   background: rgba(10,16,24,.86);
   color: #fff;
   padding: 12px 18px;
-  min-width: 64px;
-  min-height: 48px;
+  min-width: 64px !important;
+  min-height: 48px !important;
+  flex-shrink: 0;
   font: 700 14px/1 system-ui, sans-serif;
   letter-spacing: .02em;
   backdrop-filter: blur(18px);
@@ -62,8 +63,12 @@
 .name { margin: 0; font-size: 17px; font-weight: 760; }
 .surface { margin: 2px 0 0; color: rgba(235,244,248,.64); font-size: 12px; }
 .close {
-  min-width: 48px;
-  min-height: 48px;
+  box-sizing: border-box;
+  flex: 0 0 48px;
+  width: 48px;
+  height: 48px;
+  min-width: 48px !important;
+  min-height: 48px !important;
   border: 0;
   border-radius: 50%;
   background: rgba(255,255,255,.08);
