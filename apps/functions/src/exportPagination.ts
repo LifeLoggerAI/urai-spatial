@@ -25,16 +25,23 @@ export function chargeExportValue(budget: ExportReadBudget, value: unknown) {
 // The caller supplies one read-only transaction for the entire selected estate.
 // Its public SDK contract fixes one snapshot across every collection and page.
 export async function collectExportPages<T>(transaction: FirebaseFirestore.Transaction, query: FirebaseFirestore.Query,
-  budget: ExportReadBudget, map: (document: FirebaseFirestore.QueryDocumentSnapshot) => T): Promise<T[]> {
+  budget: ExportReadBudget, map: (document: FirebaseFirestore.QueryDocumentSnapshot) => T,
+  requireCurrentAuthority?: () => Promise<unknown>): Promise<T[]> {
   const output: T[] = []
   let cursor: FirebaseFirestore.QueryDocumentSnapshot | undefined
   let previousId = ''
   while (true) {
     requireExportReadBudget(budget)
+    // Snapshot consistency cannot authorize continued private collection after
+    // a live denial. The executor supplies a separate current-authority read.
+    await requireCurrentAuthority?.()
+    requireExportReadBudget(budget)
     let page = query.orderBy(admin.firestore.FieldPath.documentId()).limit(EXPORT_PAGE_SIZE)
     if (cursor) page = page.startAfter(cursor)
     const snapshot = await transaction.get(page)
     budget.pages++
+    await requireCurrentAuthority?.()
+    requireExportReadBudget(budget)
     const readMillis = snapshot.readTime.toMillis()
     if (!Number.isSafeInteger(readMillis) || readMillis <= 0 || (budget.snapshotMillis !== null && budget.snapshotMillis !== readMillis)) {
       throw new Error('EXPORT_SNAPSHOT_CHANGED')
