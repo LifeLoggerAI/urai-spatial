@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react'
 import { usePathname, useSearchParams } from 'next/navigation'
 import { createPortal } from 'react-dom'
+import { currentSpeechTag } from '@/lib/i18n/localePreference'
 import {
   AdamProviderError,
   requestAdamFounderVoice,
@@ -203,7 +204,7 @@ export default function AdamPresenceRuntime() {
     const recognition = new Constructor()
     recognition.continuous = false
     recognition.interimResults = true
-    recognition.lang = navigator.language || 'en-US'
+    recognition.lang = currentSpeechTag()
     recognition.onresult = (event) => {
       let text = ''
       for (let index = 0; index < event.results.length; index += 1) text += event.results[index][0]?.transcript ?? ''
@@ -222,7 +223,13 @@ export default function AdamPresenceRuntime() {
     recognitionRef.current = recognition
     setListening(true)
     setStatus('Listening…')
-    recognition.start()
+    try {
+      recognition.start()
+    } catch {
+      recognitionRef.current = null
+      setListening(false)
+      setStatus('Voice input is not available in this browser. Type to Adam instead.')
+    }
   }, [stopVoice])
 
   const submit = async (event: FormEvent) => {
@@ -248,7 +255,7 @@ export default function AdamPresenceRuntime() {
         message: text,
         context: priorContext,
         surface: surface.id,
-        locale: typeof navigator !== 'undefined' ? navigator.language : 'en-US',
+        locale: currentSpeechTag(),
         aiProcessingConsent: true,
         signal: controller.signal,
         onEvent: (providerEvent) => {
