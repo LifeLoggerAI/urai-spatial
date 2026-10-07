@@ -96,7 +96,7 @@ jobs:
           node ../../scripts/prepare-native-static-provenance.mjs --directory ios/App/App/public --source-sha "$URAI_EXACT_HEAD" --platform ios --workflow-run-id "$GITHUB_RUN_ID" --verify-only
 
       - name: Retain locked local Swift package inside generated project
-        run: python3 scripts/prepare-ios-source-archive.py vendor --project distribution/ios-shell/ios --capacitor-app-package distribution/ios-shell/node_modules/@capacitor/app
+        run: python3 scripts/prepare-ios-source-archive.py vendor --project distribution/ios-shell/ios --capacitor-app-package node_modules/@capacitor/app
 
       - name: Retain source hashes and explicit native boundary
         shell: bash

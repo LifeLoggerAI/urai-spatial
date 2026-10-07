@@ -138,3 +138,24 @@ test('iOS plugin vendoring rejects an unpinned version before changing generated
     assert.equal(fs.readFileSync(manifest, 'utf8'), original)
   } finally { cleanup(f) }
 })
+
+test('iOS workflow vendor command resolves the actual frozen root plugin before archive creation', () => {
+  const f = fixture()
+  try {
+    const repo = f.directory
+    const generated = path.join(repo, 'distribution/ios-shell/ios')
+    fs.mkdirSync(path.dirname(generated), { recursive: true })
+    fs.renameSync(f.project, generated)
+    const vendored = path.join(generated, 'App/CapApp-SPM/Dependencies/CapacitorApp')
+    const rootPlugin = path.join(repo, 'node_modules/@capacitor/app')
+    fs.mkdirSync(path.dirname(rootPlugin), { recursive: true })
+    fs.renameSync(vendored, rootPlugin)
+    fs.writeFileSync(path.join(generated, 'App/CapApp-SPM/Package.swift'), '.package(url: "https://github.com/ionic-team/capacitor-swift-pm.git", exact: "8.5.2"), .package(name: "CapacitorApp", path: "../../../../../node_modules/@capacitor/app")')
+    const workflow = fs.readFileSync(new URL('../../.github/workflows/ios-source-preparation.yml', import.meta.url), 'utf8')
+    const command = workflow.match(/run: python3 scripts\/prepare-ios-source-archive\.py (vendor [^\n]+)/)?.[1]
+    assert.ok(command, 'workflow exposes explicit vendoring command')
+    const result = spawnSync('python3', [script, ...command.split(/\s+/)], { cwd: repo, encoding: 'utf8' })
+    assert.equal(result.status, 0, result.stderr)
+    assert.ok(fs.existsSync(path.join(vendored, 'ios/Sources/AppPlugin/AppPlugin.swift')))
+  } finally { cleanup(f) }
+})
