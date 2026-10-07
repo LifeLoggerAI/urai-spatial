@@ -77,32 +77,6 @@ function stateDigest(state: string) {
   return createHash('sha256').update(state).digest('hex')
 }
 
-function generationNumber(value: unknown): number | null {
-  // Legacy connection markers predate the fence and start at generation zero.
-  if (value === undefined) return 0
-  return typeof value === 'number' && Number.isSafeInteger(value) && value >= 0 ? value : null
-}
-
-function connectionGeneration(data: { disconnectGeneration?: unknown; oauthInstance?: unknown }) {
-  const generation = generationNumber(data.disconnectGeneration)
-  if (generation === null || (data.oauthInstance !== undefined && data.disconnectGeneration === undefined)) {
-    throw new OAuthError(500, 'OAUTH_CONNECTION_STATE_INVALID', 'Google Workspace connection state is unavailable.')
-  }
-  return generation
-}
-
-function connectionInstance(data: { oauthInstance?: unknown }) {
-  if (data.oauthInstance === undefined) return null
-  if (typeof data.oauthInstance !== 'string' || !/^[A-Za-z0-9_-]{43}$/.test(data.oauthInstance)) {
-    throw new OAuthError(500, 'OAUTH_CONNECTION_STATE_INVALID', 'Google Workspace connection state is unavailable.')
-  }
-  return data.oauthInstance
-}
-
-function connectionDocument(uid: string) {
-  return db.doc(`users/${uid}/providerConnections/${PROVIDER_ID}`)
-}
-
 function createPkcePair() {
   const verifier = randomBytes(48).toString('base64url')
   const challenge = createHash('sha256').update(verifier).digest('base64url')
@@ -195,9 +169,7 @@ async function consumeOAuthState(state: string) {
     if (!expiresAt || expiresAt < Date.now()) return null
     const uid = typeof data.uid === 'string' ? data.uid : ''
     const verifier = typeof data.verifier === 'string' ? data.verifier : ''
-    const disconnectGeneration = data.disconnectGeneration === undefined ? null : generationNumber(data.disconnectGeneration)
-    const oauthInstance = typeof data.oauthInstance === 'string' && /^[A-Za-z0-9_-]{43}$/.test(data.oauthInstance) ? data.oauthInstance : ''
-    return uid && verifier && oauthInstance && disconnectGeneration !== null ? { uid, verifier, disconnectGeneration, oauthInstance } : null
+    return uid && verifier ? { uid, verifier } : null
   })
 }
 
@@ -205,43 +177,36 @@ function tokenDocumentId(uid: string) {
   return `${uid}_${PROVIDER_ID}`
 }
 
-async function saveTokens(uid: string, tokens: TokenResponse, expectedGeneration: number, expectedInstance: string) {
+async function saveTokens(uid: string, tokens: TokenResponse) {
   const tokenRef = db.collection(TOKEN_COLLECTION).doc(tokenDocumentId(uid))
-  const connectionRef = connectionDocument(uid)
-  await db.runTransaction(async (transaction) => {
-    const [prior, connection] = await Promise.all([transaction.get(tokenRef), transaction.get(connectionRef)])
-    const authority = connection.data() ?? {}
-    if (!connection.exists || connectionInstance(authority) !== expectedInstance || connectionGeneration(authority) !== expectedGeneration) {
-      throw new OAuthError(409, 'OAUTH_DISCONNECTED', 'This Google Workspace authorization was disconnected.')
-    }
-    const priorRefresh = prior.exists ? decryptSecret(prior.data()?.refreshToken) : null
-    const refreshToken = tokens.refresh_token || priorRefresh
-    if (!refreshToken) throw new OAuthError(502, 'GOOGLE_REFRESH_TOKEN_MISSING', 'Google did not issue a refresh token for this connection.')
+  const prior = await tokenRef.get()
+  const priorRefresh = prior.exists ? decryptSecret(prior.data()?.refreshToken) : null
+  const refreshToken = tokens.refresh_token || priorRefresh
+  if (!refreshToken) throw new OAuthError(502, 'GOOGLE_REFRESH_TOKEN_MISSING', 'Google did not issue a refresh token for this connection.')
 
-    const expiresAtMillis = Date.now() + Math.max(60, tokens.expires_in) * 1000
-    const scopes = String(tokens.scope || GOOGLE_WORKSPACE_SCOPES.join(' ')).split(/\s+/).filter(Boolean)
-    transaction.set(tokenRef, {
-      provider: PROVIDER_ID,
-      uid,
-      accessToken: encryptSecret(tokens.access_token),
-      refreshToken: encryptSecret(refreshToken),
-      expiresAt: admin.firestore.Timestamp.fromMillis(expiresAtMillis),
-      scopes,
-      tokenType: tokens.token_type || 'Bearer',
-      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-    }, { merge: true })
-    transaction.set(connectionRef, {
-      provider: PROVIDER_ID,
-      status: 'connected',
-      connected: true,
-      disconnectGeneration: expectedGeneration,
-      oauthInstance: expectedInstance,
-      scopes,
-      expiresAt: admin.firestore.Timestamp.fromMillis(expiresAtMillis),
-      connectedAt: admin.firestore.FieldValue.serverTimestamp(),
-      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-    }, { merge: true })
-  })
+  const expiresAtMillis = Date.now() + Math.max(60, tokens.expires_in) * 1000
+  const scopes = String(tokens.scope || GOOGLE_WORKSPACE_SCOPES.join(' ')).split(/\s+/).filter(Boolean)
+
+  await tokenRef.set({
+    provider: PROVIDER_ID,
+    uid,
+    accessToken: encryptSecret(tokens.access_token),
+    refreshToken: encryptSecret(refreshToken),
+    expiresAt: admin.firestore.Timestamp.fromMillis(expiresAtMillis),
+    scopes,
+    tokenType: tokens.token_type || 'Bearer',
+    updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+  }, { merge: true })
+
+  await db.doc(`users/${uid}/providerConnections/${PROVIDER_ID}`).set({
+    provider: PROVIDER_ID,
+    status: 'connected',
+    connected: true,
+    scopes,
+    expiresAt: admin.firestore.Timestamp.fromMillis(expiresAtMillis),
+    connectedAt: admin.firestore.FieldValue.serverTimestamp(),
+    updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+  }, { merge: true })
 }
 
 function sendError(response: { status: (code: number) => { json: (value: unknown) => void } }, error: unknown) {
@@ -263,32 +228,11 @@ export const googleOAuthStart = onRequest({
     const uid = await authenticatedUid(request)
     const state = randomBytes(32).toString('base64url')
     const { verifier, challenge } = createPkcePair()
-    const stateRef = db.collection(STATE_COLLECTION).doc(stateDigest(state))
-    await db.runTransaction(async (transaction) => {
-      const connectionRef = connectionDocument(uid)
-      const connection = await transaction.get(connectionRef)
-      const authority = connection.data() ?? {}
-      const disconnectGeneration = connectionGeneration(authority)
-      const priorInstance = connectionInstance(authority)
-      const oauthInstance = priorInstance || randomBytes(32).toString('base64url')
-      if (!priorInstance) {
-        // A fresh marker instance prevents deletion/recreation from reviving an older state at generation zero.
-        transaction.set(connectionRef, {
-          ...(!connection.exists ? { status: 'disconnected', connected: false, scopes: [], expiresAt: null } : {}),
-          provider: PROVIDER_ID,
-          disconnectGeneration,
-          oauthInstance,
-          updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-        }, { merge: true })
-      }
-      transaction.set(stateRef, {
-        uid,
-        verifier,
-        disconnectGeneration,
-        oauthInstance,
-        createdAt: admin.firestore.FieldValue.serverTimestamp(),
-        expiresAt: admin.firestore.Timestamp.fromMillis(Date.now() + 10 * 60 * 1000),
-      })
+    await db.collection(STATE_COLLECTION).doc(stateDigest(state)).set({
+      uid,
+      verifier,
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      expiresAt: admin.firestore.Timestamp.fromMillis(Date.now() + 10 * 60 * 1000),
     })
     response.setHeader('Cache-Control', 'private, no-store, max-age=0')
     response.status(200).json({ authorizationUrl: buildAuthorizationUrl(state, challenge) })
@@ -315,7 +259,7 @@ export const googleOAuthCallback = onRequest({
     const pending = await consumeOAuthState(state)
     if (!pending) return redirect('invalid-state')
     const tokens = await exchangeCode(code, pending.verifier)
-    await saveTokens(pending.uid, tokens, pending.disconnectGeneration, pending.oauthInstance)
+    await saveTokens(pending.uid, tokens)
     return redirect('connected')
   } catch {
     return redirect('error')
@@ -331,7 +275,7 @@ export const googleOAuthStatus = onRequest({
   try {
     if (request.method !== 'POST') throw new OAuthError(405, 'METHOD_NOT_ALLOWED', 'POST is required.')
     const uid = await authenticatedUid(request)
-    const snapshot = await connectionDocument(uid).get()
+    const snapshot = await db.doc(`users/${uid}/providerConnections/${PROVIDER_ID}`).get()
     const data = snapshot.data() ?? {}
     const expiresAt = data.expiresAt instanceof admin.firestore.Timestamp ? data.expiresAt.toMillis() : null
     response.setHeader('Cache-Control', 'private, no-store, max-age=0')
@@ -357,30 +301,8 @@ export const googleOAuthDisconnect = onRequest({
     if (request.method !== 'POST') throw new OAuthError(405, 'METHOD_NOT_ALLOWED', 'POST is required.')
     const uid = await authenticatedUid(request)
     const tokenRef = db.collection(TOKEN_COLLECTION).doc(tokenDocumentId(uid))
-    const connectionRef = connectionDocument(uid)
-    // Fence pending and in-flight callbacks before waiting on the upstream revoke request.
-    const data = await db.runTransaction(async (transaction) => {
-      const [token, connection] = await Promise.all([transaction.get(tokenRef), transaction.get(connectionRef)])
-      const authority = connection.data() ?? {}
-      const generation = connectionGeneration(authority)
-      const oauthInstance = connectionInstance(authority) || randomBytes(32).toString('base64url')
-      if (generation === Number.MAX_SAFE_INTEGER) {
-        throw new OAuthError(500, 'OAUTH_CONNECTION_STATE_INVALID', 'Google Workspace connection state is unavailable.')
-      }
-      transaction.delete(tokenRef)
-      transaction.set(connectionRef, {
-        provider: PROVIDER_ID,
-        status: 'disconnected',
-        connected: false,
-        disconnectGeneration: generation + 1,
-        oauthInstance,
-        scopes: [],
-        expiresAt: null,
-        disconnectedAt: admin.firestore.FieldValue.serverTimestamp(),
-        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-      }, { merge: true })
-      return token.data() ?? {}
-    })
+    const snapshot = await tokenRef.get()
+    const data = snapshot.data() ?? {}
     const token = decryptSecret(data.refreshToken) || decryptSecret(data.accessToken)
 
     if (token) {
@@ -394,6 +316,19 @@ export const googleOAuthDisconnect = onRequest({
         // Local deletion remains authoritative even when the upstream revoke endpoint is temporarily unavailable.
       }
     }
+
+    await Promise.all([
+      tokenRef.delete(),
+      db.doc(`users/${uid}/providerConnections/${PROVIDER_ID}`).set({
+        provider: PROVIDER_ID,
+        status: 'disconnected',
+        connected: false,
+        scopes: [],
+        expiresAt: null,
+        disconnectedAt: admin.firestore.FieldValue.serverTimestamp(),
+        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      }, { merge: true }),
+    ])
 
     response.setHeader('Cache-Control', 'private, no-store, max-age=0')
     response.status(200).json({ connected: false })

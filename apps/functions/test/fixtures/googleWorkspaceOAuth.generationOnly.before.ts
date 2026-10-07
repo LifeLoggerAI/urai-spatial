@@ -78,25 +78,17 @@ function stateDigest(state: string) {
 }
 
 function generationNumber(value: unknown): number | null {
-  // Legacy connection markers predate the fence and start at generation zero.
+  // Existing connections and pending states predate the fence and start at generation zero.
   if (value === undefined) return 0
   return typeof value === 'number' && Number.isSafeInteger(value) && value >= 0 ? value : null
 }
 
-function connectionGeneration(data: { disconnectGeneration?: unknown; oauthInstance?: unknown }) {
+function connectionGeneration(data: { disconnectGeneration?: unknown }) {
   const generation = generationNumber(data.disconnectGeneration)
-  if (generation === null || (data.oauthInstance !== undefined && data.disconnectGeneration === undefined)) {
+  if (generation === null) {
     throw new OAuthError(500, 'OAUTH_CONNECTION_STATE_INVALID', 'Google Workspace connection state is unavailable.')
   }
   return generation
-}
-
-function connectionInstance(data: { oauthInstance?: unknown }) {
-  if (data.oauthInstance === undefined) return null
-  if (typeof data.oauthInstance !== 'string' || !/^[A-Za-z0-9_-]{43}$/.test(data.oauthInstance)) {
-    throw new OAuthError(500, 'OAUTH_CONNECTION_STATE_INVALID', 'Google Workspace connection state is unavailable.')
-  }
-  return data.oauthInstance
 }
 
 function connectionDocument(uid: string) {
@@ -195,9 +187,8 @@ async function consumeOAuthState(state: string) {
     if (!expiresAt || expiresAt < Date.now()) return null
     const uid = typeof data.uid === 'string' ? data.uid : ''
     const verifier = typeof data.verifier === 'string' ? data.verifier : ''
-    const disconnectGeneration = data.disconnectGeneration === undefined ? null : generationNumber(data.disconnectGeneration)
-    const oauthInstance = typeof data.oauthInstance === 'string' && /^[A-Za-z0-9_-]{43}$/.test(data.oauthInstance) ? data.oauthInstance : ''
-    return uid && verifier && oauthInstance && disconnectGeneration !== null ? { uid, verifier, disconnectGeneration, oauthInstance } : null
+    const disconnectGeneration = generationNumber(data.disconnectGeneration)
+    return uid && verifier && disconnectGeneration !== null ? { uid, verifier, disconnectGeneration } : null
   })
 }
 
@@ -205,13 +196,12 @@ function tokenDocumentId(uid: string) {
   return `${uid}_${PROVIDER_ID}`
 }
 
-async function saveTokens(uid: string, tokens: TokenResponse, expectedGeneration: number, expectedInstance: string) {
+async function saveTokens(uid: string, tokens: TokenResponse, expectedGeneration: number) {
   const tokenRef = db.collection(TOKEN_COLLECTION).doc(tokenDocumentId(uid))
   const connectionRef = connectionDocument(uid)
   await db.runTransaction(async (transaction) => {
     const [prior, connection] = await Promise.all([transaction.get(tokenRef), transaction.get(connectionRef)])
-    const authority = connection.data() ?? {}
-    if (!connection.exists || connectionInstance(authority) !== expectedInstance || connectionGeneration(authority) !== expectedGeneration) {
+    if (connectionGeneration(connection.data() ?? {}) !== expectedGeneration) {
       throw new OAuthError(409, 'OAUTH_DISCONNECTED', 'This Google Workspace authorization was disconnected.')
     }
     const priorRefresh = prior.exists ? decryptSecret(prior.data()?.refreshToken) : null
@@ -235,7 +225,6 @@ async function saveTokens(uid: string, tokens: TokenResponse, expectedGeneration
       status: 'connected',
       connected: true,
       disconnectGeneration: expectedGeneration,
-      oauthInstance: expectedInstance,
       scopes,
       expiresAt: admin.firestore.Timestamp.fromMillis(expiresAtMillis),
       connectedAt: admin.firestore.FieldValue.serverTimestamp(),
@@ -265,27 +254,11 @@ export const googleOAuthStart = onRequest({
     const { verifier, challenge } = createPkcePair()
     const stateRef = db.collection(STATE_COLLECTION).doc(stateDigest(state))
     await db.runTransaction(async (transaction) => {
-      const connectionRef = connectionDocument(uid)
-      const connection = await transaction.get(connectionRef)
-      const authority = connection.data() ?? {}
-      const disconnectGeneration = connectionGeneration(authority)
-      const priorInstance = connectionInstance(authority)
-      const oauthInstance = priorInstance || randomBytes(32).toString('base64url')
-      if (!priorInstance) {
-        // A fresh marker instance prevents deletion/recreation from reviving an older state at generation zero.
-        transaction.set(connectionRef, {
-          ...(!connection.exists ? { status: 'disconnected', connected: false, scopes: [], expiresAt: null } : {}),
-          provider: PROVIDER_ID,
-          disconnectGeneration,
-          oauthInstance,
-          updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-        }, { merge: true })
-      }
+      const connection = await transaction.get(connectionDocument(uid))
       transaction.set(stateRef, {
         uid,
         verifier,
-        disconnectGeneration,
-        oauthInstance,
+        disconnectGeneration: connectionGeneration(connection.data() ?? {}),
         createdAt: admin.firestore.FieldValue.serverTimestamp(),
         expiresAt: admin.firestore.Timestamp.fromMillis(Date.now() + 10 * 60 * 1000),
       })
@@ -315,7 +288,7 @@ export const googleOAuthCallback = onRequest({
     const pending = await consumeOAuthState(state)
     if (!pending) return redirect('invalid-state')
     const tokens = await exchangeCode(code, pending.verifier)
-    await saveTokens(pending.uid, tokens, pending.disconnectGeneration, pending.oauthInstance)
+    await saveTokens(pending.uid, tokens, pending.disconnectGeneration)
     return redirect('connected')
   } catch {
     return redirect('error')
@@ -361,9 +334,7 @@ export const googleOAuthDisconnect = onRequest({
     // Fence pending and in-flight callbacks before waiting on the upstream revoke request.
     const data = await db.runTransaction(async (transaction) => {
       const [token, connection] = await Promise.all([transaction.get(tokenRef), transaction.get(connectionRef)])
-      const authority = connection.data() ?? {}
-      const generation = connectionGeneration(authority)
-      const oauthInstance = connectionInstance(authority) || randomBytes(32).toString('base64url')
+      const generation = connectionGeneration(connection.data() ?? {})
       if (generation === Number.MAX_SAFE_INTEGER) {
         throw new OAuthError(500, 'OAUTH_CONNECTION_STATE_INVALID', 'Google Workspace connection state is unavailable.')
       }
@@ -373,7 +344,6 @@ export const googleOAuthDisconnect = onRequest({
         status: 'disconnected',
         connected: false,
         disconnectGeneration: generation + 1,
-        oauthInstance,
         scopes: [],
         expiresAt: null,
         disconnectedAt: admin.firestore.FieldValue.serverTimestamp(),
