@@ -2,6 +2,7 @@ import { createHash } from 'node:crypto'
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import { createRequire } from 'node:module'
+import { homeProofNetworkLedger, retainHomeProofFailure } from './home-proof-failure-diagnostics.mjs'
 
 const requireFromTierOne = createRequire(new URL('../urai-tier1/package.json', import.meta.url))
 const { chromium } = requireFromTierOne('playwright')
@@ -72,6 +73,7 @@ for (const spec of cases) {
   const browser = await chromium.launch({ headless: true, args: ['--enable-unsafe-swiftshader'] })
   const context = await browser.newContext({ viewport: spec.viewport, isMobile: spec.isMobile, hasTouch: spec.hasTouch, reducedMotion: spec.reducedMotion })
   const page = await context.newPage()
+  const network = homeProofNetworkLedger(page)
   const pageErrors = []
   const failedRequests = []
   const portalRequests = []
@@ -79,13 +81,18 @@ for (const spec of cases) {
   page.on('requestfailed', (request) => failedRequests.push({ url: request.url(), failure: request.failure()?.errorText || 'unknown' }))
   page.on('request', (request) => { if (request.url().includes(path.basename(portalPath))) portalRequests.push(request.url()) })
   const record = { id: spec.id, viewport: spec.viewport, pageErrors, failedRequests, portalRequests, passed: false }
+  let stage = 'navigation'
   try {
     const response = await page.goto(`${base}/home/?homeAssetReview=1&homePrivateFixture=1`, { waitUntil: 'domcontentloaded', timeout: 60_000 })
-    const owner = page.locator('.urai-asset-home-world[data-home-primary-owner="asset-driven"]')
-    await owner.waitFor({ state: 'visible', timeout: 45_000 })
-    await page.waitForFunction(() => document.querySelector('.urai-asset-home-world')?.getAttribute('data-home-assets-ready') === 'true', null, { timeout: 45_000 })
-    await frames(page)
     record.status = response?.status()
+    const owner = page.locator('.urai-asset-home-world[data-home-primary-owner="asset-driven"]')
+    stage = 'owner-visible'
+    await owner.waitFor({ state: 'visible', timeout: 45_000 })
+    stage = 'assets-ready'
+    await page.waitForFunction(() => document.querySelector('.urai-asset-home-world')?.getAttribute('data-home-assets-ready') === 'true', null, { timeout: 45_000 })
+    stage = 'rendered-frames'
+    await frames(page)
+    stage = 'semantic-contract'
     record.visibleWorld = await owner.getAttribute('data-home-visible-world')
     record.worldCharacter = await owner.getAttribute('data-home-world-character')
     record.physicalBase = await owner.getAttribute('data-home-physical-base')
@@ -116,6 +123,7 @@ for (const spec of cases) {
       const element = document.querySelector('.home-semantic-navigation[data-home-navigation-owner="runtime-boundary"]')
       return element ? Number.parseFloat(getComputedStyle(element).opacity || '1') : null
     })
+    stage = 'visual-capture'
     const visual = await imageEvidence(page)
     record.screenshot = `${spec.id}-${exactHead.slice(0, 12)}.png`
     await writeFile(path.join(outputDir, record.screenshot), visual.buffer)
@@ -123,6 +131,7 @@ for (const spec of cases) {
     record.screenshotSha256 = createHash('sha256').update(visual.buffer).digest('hex')
     record.luminanceRange = visual.luminanceRange
     record.visibleSamples = visual.visibleSamples
+    stage = 'acceptance-contract'
     record.passed = record.status === 200
       && record.visibleWorld === 'authored-coherent-three-dimensional-sanctuary'
       && record.worldCharacter === 'believable-natural-inhabitable-environment'
@@ -159,6 +168,7 @@ for (const spec of cases) {
   } catch (error) {
     record.error = String(error)
   }
+  if (!record.passed) record.failureDiagnostic = await retainHomeProofFailure(page, { outputDir, id: spec.id, exactHead, stage, network })
   receipt.cases.push(record)
   if (!record.passed) receipt.errors.push(record)
   await context.close().catch(() => {})

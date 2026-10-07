@@ -5,6 +5,8 @@ on:
     branches: [main]
     paths:
       - 'scripts/capture-natural-home-orb-proof.mjs'
+      - 'scripts/home-proof-failure-diagnostics.mjs'
+      - 'urai-tier1/tests/home-proof-failure-diagnostics.test.mjs'
       - 'scripts/run-with-ci-webgl.mjs'
       - '.github/workflows/portal-orb-exact-proof.yml'
       - 'urai-tier1/src/app/AssetDrivenHomeWorld.tsx'
@@ -55,7 +57,9 @@ jobs:
       - name: Install exact lockfile
         run: pnpm install --frozen-lockfile
       - name: Validate authored Home and Orb assets
-        run: node scripts/verify-home-finalization-authored-assets.mjs
+        run: |
+          node --test urai-tier1/tests/home-proof-failure-diagnostics.test.mjs
+          node scripts/verify-home-finalization-authored-assets.mjs
       - name: Build exact static candidate
         env:
           NEXT_PUBLIC_URAI_BUILD_SHA: ${{ env.URAI_EXACT_HEAD }}
