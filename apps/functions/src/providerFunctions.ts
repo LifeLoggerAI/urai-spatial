@@ -146,7 +146,7 @@ function providerIdempotencyKey(uid: string, requestId: string, locale: string) 
 }
 
 const OPENAI_REQUEST_PURPOSE = 'spatial-orb-response'
-const OPENAI_REQUEST_BOUNDARY_VERSION = 'openai-orb-reservation-2'
+const OPENAI_REQUEST_BOUNDARY_VERSION = 'openai-orb-reservation-3'
 
 function digest(value: string) {
   return createHash('sha256').update(value).digest('hex')
@@ -327,6 +327,7 @@ export const openAiOrbProvider = onRequest({
     } finally {
       clearTimeout(moderationTimeout)
     }
+    if (await authenticatedUid(request) !== uid) throw new ProviderError(401, 'UNAUTHORIZED', 'Authentication changed before response dispatch.')
     await requireProviderConsent(uid, 'openai', body.aiProcessingConsent === true)
 
     const controller = new AbortController()

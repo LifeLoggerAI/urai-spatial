@@ -331,6 +331,19 @@ test('provider revocation after moderation prevents the response invocation and 
   assert.equal((await f.run()).jsonBody.error, 'PROVIDER_ATTEMPT_UNCERTAIN'); assert.equal(f.calls.length, 1); assert.equal(f.reservations()[0][1].state, 'uncertain')
 })
 
+test('auth revocation during moderation prevents Responses and retains the held intent', async () => {
+  let revoked = false
+  const f = fixture({
+    authHook: () => { if (revoked) throw new Error('synthetic auth revoked after moderation'); return { uid: 'alice' } },
+    fetchHook: (call) => { if (call.url.endsWith('/moderations')) revoked = true },
+  })
+  assert.equal((await f.run()).jsonBody.error, 'PROVIDER_ATTEMPT_UNCERTAIN'); assert.equal(f.calls.length, 1)
+  assert.equal(f.reservations()[0][1].state, 'uncertain')
+  assert.ok((await f.run()).statusCode >= 400); assert.equal(f.calls.length, 1)
+  revoked = false
+  assert.equal((await f.run()).jsonBody.error, 'PROVIDER_REQUEST_HELD'); assert.equal(f.calls.length, 1)
+})
+
 test('verified users have separate private reservations and cannot accept copied foreign provenance', async () => {
   const f = fixture(); await f.run(); await f.run({ uid: 'bob' }); assert.equal(f.reservations().length, 2)
   const [alice] = f.reservations().filter(([key]) => key.startsWith('users/alice/'))
