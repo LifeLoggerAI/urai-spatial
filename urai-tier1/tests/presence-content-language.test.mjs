@@ -49,6 +49,9 @@ function providerFixture(lane, options = {}) {
   })
   assert.equal(compiled.diagnostics.length, 0)
   const module = { exports: {} }
+  // This locale fixture keeps its existing synthetic transport. Dedicated paid
+  // leaf tests execute the actual canonical admission helper independently.
+  let providerTransport
   vm.runInNewContext(compiled.outputText, {
     exports: module.exports, module,
     require: id => {
@@ -57,6 +60,7 @@ function providerFixture(lane, options = {}) {
       if (id === 'firebase-functions/params') return { defineSecret: () => ({ value: () => 'synthetic-provider-key' }) }
       if (id === 'firebase-functions/v2/https') return { onRequest: (_configuration, handler) => handler }
       if (id === '../../../packages/localization/src/contentLanguage') return { contentLanguage, URAI_CONTENT_LANGUAGE_TAGS }
+      if (id === './protectedProviderSpend') return { paidSpatialFetch: (_db, _uid, _lane, _provider, _model, _input, url, init) => providerTransport(url, init), SpatialSpendError: class extends Error {}, SPATIAL_SPEND_WORKER_TOKENS_JSON: {} }
       if (id === './personPresenceAuthority') return {
         PersonPresenceAuthorityError,
         loadPersonPresenceAuthority: async () => {
@@ -70,7 +74,7 @@ function providerFixture(lane, options = {}) {
     AbortController, Buffer, TextEncoder, TextDecoder, Response,
     setTimeout, clearTimeout, setInterval, clearInterval, Date, console,
     process: { env: { ADAM_PRESENCE_ENABLED: 'true', PERSON_PRESENCE_ENABLED: 'true' } },
-    fetch: async (url, init) => {
+    fetch: providerTransport = async (url, init) => {
       const body = JSON.parse(init.body)
       calls.push({ url, init, body })
       if (url.endsWith('/moderations')) return new Response(JSON.stringify({ results: [{ flagged: false }] }), { status: 200 })

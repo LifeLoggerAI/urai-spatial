@@ -34,6 +34,13 @@ const DEFINITE_EXTERNAL_ATTEMPT_CODES = new Set([
   'INVALID_PROVIDER_RESPONSE',
 ])
 
+const PRE_DISPATCH_REJECTION_CODES = new Set([
+  'METHOD_NOT_ALLOWED', 'UNAUTHORIZED', 'INVALID_BODY', 'REQUEST_TOO_LARGE',
+  'INVALID_MESSAGE', 'INVALID_REQUEST_ID', 'INVALID_CONTEXT', 'INVALID_LOCALE',
+  'EXPLICIT_CONSENT_REQUIRED', 'CONSENT_POLICY_REQUIRED', 'MODEL_PROCESSING_NOT_AUTHORIZED',
+  'CONSENT_ENFORCEMENT_PENDING', 'PROVIDER_PROCESSING_REVOKED', 'RATE_LIMITED', 'PROVIDER_UNCONFIGURED',
+])
+
 export class OrbProviderAttemptError extends Error {
   constructor(readonly code = 'EXTERNAL_PROVIDER_ATTEMPT_FAILED') {
     super('An OpenAI safety or response request was attempted but no external answer was used.')
@@ -61,7 +68,7 @@ function fallbackResult(message: string, disclosure: string): OrbProviderResult 
 }
 
 export function deterministicOrbFallback(message = ''): OrbProviderResult {
-  return fallbackResult(message, 'Deterministic local fallback — no external AI provider processed this message.')
+  return fallbackResult(message, 'Deterministic local fallback — this request was not sent to an external AI provider.')
 }
 
 export function attemptedExternalOrbFallback(message = ''): OrbProviderResult {
@@ -80,6 +87,8 @@ export function uncertainExternalOrbFallback(message = ''): OrbProviderResult {
 
 async function stableIntentRequestId(message: string, context: OrbConversationMessage[], locale: string) {
   if (!globalThis.crypto?.subtle) return null
+  message = message.trim()
+  context = context.slice(-8).map(({ role, content }) => ({ role, content: content.trim() }))
   const intent = JSON.stringify({ message, context: context.slice(-8), locale })
   const digest = await globalThis.crypto.subtle.digest('SHA-256', new TextEncoder().encode(intent))
   return Array.from(new Uint8Array(digest), (value) => value.toString(16).padStart(2, '0')).join('')
@@ -132,10 +141,11 @@ export async function requestOpenAIOrb(input: {
       const payload = await response.json() as { error?: unknown }
       if (payload.error) code = String(payload.error)
     } catch {
-      // Unknown boundary failures remain local-only unless a provider-stage code proves an external attempt.
+      // A submitted HTTP request with an unknown outcome may already be admitted.
     }
     if (DEFINITE_EXTERNAL_ATTEMPT_CODES.has(code)) throw new OrbProviderAttemptError(code)
-    return null
+    if (PRE_DISPATCH_REJECTION_CODES.has(code)) return null
+    throw new OrbProviderAttemptUncertainError()
   }
 
   const reader = response.body.getReader()

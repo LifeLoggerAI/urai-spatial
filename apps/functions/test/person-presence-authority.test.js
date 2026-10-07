@@ -63,6 +63,9 @@ function handler(file, f, fetch) {
     if (name === 'firebase-functions/v2/https') return { onRequest: (_options, callback) => callback }
     if (name === 'firebase-functions/params') return { defineSecret: () => ({ value: () => 'synthetic-token' }) }
     if (name === './personPresenceAuthority') return authority
+    if (name === '../../../packages/localization/src/contentLanguage') return require('../lib/packages/localization/src/contentLanguage.js')
+    // Authority/privacy race assertions use synthetic transport; protected spend is exercised separately.
+    if (name === './protectedProviderSpend') return { paidSpatialFetch: (_db, _uid, _lane, _provider, _model, _input, url, init) => fetch(url, init), SpatialSpendError: class extends Error {}, SPATIAL_SPEND_WORKER_TOKENS_JSON: {} }
     return require(name)
   }, Buffer, process: { env: { PERSON_PRESENCE_ENABLED: 'true', PERSON_PRESENCE_VOICE_ENABLED: 'true' } }, fetch,
   AbortController, URL, TextDecoder, setTimeout, clearTimeout, setInterval, clearInterval, console }, { filename })
@@ -77,7 +80,7 @@ function response() {
 }
 function request(extra = {}) { return { method: 'POST', headers: { authorization: 'Bearer synthetic' }, body: {
   sessionId, message: 'synthetic question', text: 'synthetic reply', context: [], requestId: 'f'.repeat(64), aiProcessingConsent: true, externalProcessingConsent: true, ...extra } } }
-function stream() { const result = { message: 'synthetic reply', caption: 'synthetic reply', evidenceClaimIds: ['claim'], uncertainty: '', simulationLabel: 'Simulation' }
+function stream() { const result = { message: 'synthetic reply', caption: 'synthetic reply', evidenceClaimIds: ['claim'], uncertainty: '', simulationLabel: 'Simulation', locale: 'en-US' }
   return new Response(`data: ${JSON.stringify({ type: 'response.output_text.delta', delta: JSON.stringify(result) })}\n\ndata: {"type":"response.completed"}\n\n`, { status: 200 }) }
 
 test('Presence pins selected scene, graph, person state, claim values and cutoff instead of accepting arbitrary current bundles', async () => {

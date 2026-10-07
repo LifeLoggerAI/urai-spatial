@@ -60,34 +60,39 @@ function clientFixture({ initialLocale = 'en-US', events, getToken = async () =>
 function providerFixture({ output = doneEvent('en-US'), policyGranted = true } = {}) {
   const calls = []
   const stored = []
+  const records = new Map()
   class Timestamp {
     constructor(value) { this.value = value }
     toMillis() { return this.value }
     static fromMillis(value) { return new Timestamp(value) }
   }
   const snapshot = path => ({
-    exists: path.endsWith('privacyPolicy/current'),
+    exists: path.endsWith('privacyPolicy/current') || records.has(path),
     data: () => path.endsWith('privacyPolicy/current')
       ? { domains: { models: { mode: policyGranted ? 'granted' : 'denied', modelContext: policyGranted } }, enforcement: { state: 'fully-enforced' } }
-      : {},
+      : records.get(path) ?? {},
   })
+  const write = (path, value) => { records.set(path, { ...records.get(path), ...value }); stored.push({ path, value }) }
   const db = {
-    doc: path => ({ path, get: async () => snapshot(path), set: async value => { stored.push({ path, value }) } }),
-    runTransaction: async run => run({ get: async ref => snapshot(ref.path), set: () => undefined }),
+    doc: path => ({ path, get: async () => snapshot(path), set: async value => write(path, value), update: async value => { assert.ok(records.has(path)); write(path, value) } }),
+    runTransaction: async run => run({ get: async ref => snapshot(ref.path), set: (ref, value) => write(ref.path, value), create: (ref, value) => { assert.equal(records.has(ref.path), false); write(ref.path, value) } }),
   }
   const firestore = Object.assign(() => db, {
     Timestamp, FieldValue: { increment: value => value, serverTimestamp: () => 'synthetic-timestamp' },
   })
+  // Locale assertions use the retained synthetic transport; the dedicated spend suite executes actual admission.
+  let providerTransport
   const provider = sourceModule('../../apps/functions/src/providerFunctions.ts', (id) => {
     if (id === 'node:crypto') return { createHash }
     if (id === 'firebase-admin') return { apps: [{}], firestore, auth: () => ({ verifyIdToken: async () => ({ uid: 'synthetic-owner' }) }) }
     if (id === 'firebase-functions/params') return { defineSecret: () => ({ value: () => 'synthetic-provider-key' }) }
     if (id === 'firebase-functions/v2/https') return { onRequest: (_options, handler) => handler }
     if (id === '../../../packages/localization/src/contentLanguage') return { contentLanguage, URAI_CONTENT_LANGUAGE_TAGS }
+    if (id === './protectedProviderSpend') return { paidSpatialFetch: (_db, _uid, _lane, _provider, _model, _input, url, init) => providerTransport(url, init), SpatialSpendError: class extends Error {}, SPATIAL_SPEND_WORKER_TOKENS_JSON: {} }
     throw new Error(`Unexpected provider dependency ${id}`)
   }, {
     process: { env: {} },
-    fetch: async (url, options) => {
+    fetch: providerTransport = async (url, options) => {
       const body = JSON.parse(options.body)
       calls.push({ url, options, body })
       if (url.endsWith('/moderations')) return new Response(JSON.stringify({ results: [{ flagged: false }] }), { status: 200 })
@@ -117,9 +122,12 @@ function providerFixture({ output = doneEvent('en-US'), policyGranted = true } =
       write(value) { this.headersSent = true; chunks.push(String(value)) },
       end(value = '') { chunks.push(String(value)) },
     }
+    const requestBody = { message: 'Synthetic question', context: [], aiProcessingConsent: true, ...body }
+    const locale = contentLanguage(requestBody.locale)?.speechTag ?? 'en-US'
+    const requestId = createHash('sha256').update(JSON.stringify({ message: requestBody.message.trim(), context: requestBody.context, locale })).digest('hex')
     await provider.openAiOrbProvider({
       method: 'POST', headers: { authorization: 'Bearer synthetic-token' }, on: () => undefined,
-      body: { message: 'Synthetic question', context: [], requestId: 'a'.repeat(64), aiProcessingConsent: true, ...body },
+      body: { ...requestBody, requestId },
     }, response)
     return { code, json, headers, events: chunks.join('').trim().split('\n').filter(Boolean).map(value => JSON.parse(value)) }
   }

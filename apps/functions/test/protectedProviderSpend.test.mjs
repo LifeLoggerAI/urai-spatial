@@ -1,0 +1,319 @@
+import assert from 'node:assert/strict'
+import { createHash } from 'node:crypto'
+import { readFileSync, mkdtempSync, mkdirSync, writeFileSync, rmSync } from 'node:fs'
+import { execFileSync, spawnSync } from 'node:child_process'
+import { tmpdir } from 'node:os'
+import { join, dirname } from 'node:path'
+import { isIP } from 'node:net'
+import { performance } from 'node:perf_hooks'
+import test from 'node:test'
+import vm from 'node:vm'
+import ts from 'typescript'
+
+const SOURCE = 'd'.repeat(40), GATEWAY = 'a'.repeat(40), UID = 'synthetic-owner'
+const gatewayUrl = 'https://spend.example.invalid/api/worker/production-spend'
+const token = 'SYNTHETIC-WORKER-TOKEN-'.repeat(3), apiKey = 'SYNTHETIC-PROVIDER-CREDENTIAL'
+const paths = ['providerFunctions.ts', 'adamPresenceFunctions.ts', 'personPresenceProvider.ts', 'personPresenceVoiceProvider.ts', 'councilProviderFunctions.ts', 'protectedProviderSpend.ts'].map(name => `apps/functions/src/${name}`)
+const digest = value => createHash('sha256').update(value).digest('hex')
+function stable(value) {
+  if (value === null || typeof value !== 'object') return JSON.stringify(value)
+  if (Array.isArray(value)) return `[${value.map(stable).join(',')}]`
+  return `{${Object.keys(value).filter(k => value[k] !== undefined).sort().map(k => `${JSON.stringify(k)}:${stable(value[k])}`).join(',')}}`
+}
+function sourceModule(path, require, globals = {}) {
+  const source = readFileSync(new URL(path, import.meta.url), 'utf8')
+  const { outputText, diagnostics } = ts.transpileModule(source, { reportDiagnostics:true, compilerOptions:{ module:ts.ModuleKind.CommonJS, target:ts.ScriptTarget.ES2022 } })
+  assert.equal(diagnostics.length, 0)
+  const module = { exports:{} }
+  vm.runInNewContext(outputText, { exports:module.exports, module, require, Buffer, Headers, URL, Response, ReadableStream, AbortController, AbortSignal, TextEncoder, TextDecoder, setTimeout, clearTimeout, setInterval, clearInterval, Date, console, ...globals }, { filename:path })
+  return module.exports
+}
+function fixture(change = {}) {
+  const controls = { missingBinding:false, missingToken:false, reserveLost:false, reserveDenied:false, proofRejected:false, recordLost:false, streamError:false, ...change }
+  const env = { URAI_SOURCE_SHA:SOURCE, SPATIAL_PRODUCTION_SPEND_URL:gatewayUrl, SPATIAL_SPEND_GATEWAY_SOURCE_SHA:GATEWAY }
+  const calls = [], providerCalls = [], rows = new Map(), bindings = new Map()
+  let activeHead = SOURCE, metadata, metadataPath, expectedFields, currentProvider = async () => new Response('SYNTHETIC OUTPUT', { headers:{ 'x-request-id':'synthetic-task' } })
+  const db = { doc:path => ({ path, get:async () => ({ exists:!controls.missingBinding && bindings.has(path), data:() => structuredClone(bindings.get(path)) }) }) }
+  const fakeFetch = async (url, init) => {
+    if (String(url) === gatewayUrl) {
+      const body = JSON.parse(init.body); calls.push(body)
+      assert.equal(init.headers.authorization, `Bearer ${token}`); assert.equal(init.redirect, 'error')
+      const row = rows.get(body.job_id); assert.ok(row)
+      if (body.action === 'preflight') {
+        const fingerprints = Object.fromEntries(['credential_sha256','semantic_headers_sha256','source_input_sha256','content_type'].map(key => [key,body[key]]))
+        const timing = { observed_at:new Date(Date.now()-60000).toISOString(), expires_at:new Date(Date.now()+300000).toISOString() }
+        const reply = { ok:true, admission_expires_at:new Date(Date.now()+300000).toISOString(), provider_call_authorized:false, execution_performed:false, envelope:{ job:structuredClone(row.job), account:{ ...timing,provider:body.provider,account_id:body.account_id,credential_sha256:body.credential_sha256,credential_binding_verified:true,credential_binding_receipt:'SYNTHETIC-ACCOUNT-MAP',trusted_readback:true }, protected_controls:{ ...timing,...fingerprints,provider:body.provider,account_id:body.account_id,trusted_readback:true,endpoint:body.endpoint,request_sha256:body.request_sha256,enforcement_source_sha:GATEWAY,hard_stop_supported:true,cost_cap_enforced:true,auto_top_up:false,max_usd_micros:2500000,max_credits:20,max_runtime_seconds:2,proof_receipt:'SYNTHETIC-CONTROLS' }, protected_pricing:{ ...timing,...fingerprints,provider:body.provider,account_id:body.account_id,model_version:body.model,request_sha256:body.request_sha256,trusted_readback:true,receipt:'SYNTHETIC-PRICE',rates:structuredClone(row.job.budget.rates) } } }
+        if (controls.proofRejected) return new Response('{}', { status:409 })
+        controls.preflight?.(reply, body, { env, setHead:value => { activeHead = value } })
+        return Response.json(reply)
+      }
+      if (body.action === 'reserve') {
+        if (row.attempt || controls.reserveDenied) return new Response('{}', { status:409 })
+        row.attempt = { id:'synthetic-attempt', status:'RESERVED', charges_reconciled:false }
+        row.hold = 2500000
+        controls.reserve?.(body, { env, setHead:value => { activeHead = value } })
+        if (controls.reserveLost) throw new Error('SYNTHETIC LOST COMMITTED RESERVE RESPONSE')
+        const reservedAt = new Date().toISOString()
+        const reply = { ok:true, reserved_at:reservedAt, admission_expires_at:new Date(Date.parse(reservedAt)+2000).toISOString(), provider_call_authorized:true, execution_performed:false, executor_source_sha:SOURCE, gateway_source_sha:GATEWAY, worker_id:body.worker_id, job_digest:body.job_digest, attempt_id:row.attempt.id, max_runtime_seconds:2, ...Object.fromEntries(['account_id','credential_sha256','semantic_headers_sha256','source_input_sha256','content_type'].map(key => [key,body[key]])) }
+        await controls.reservationReply?.(reply)
+        return Response.json(reply)
+      }
+      assert.equal(body.action, 'record', 'caller must never reconcile charges')
+      assert.ok(row.attempt); assert.equal(body.attempt_id, row.attempt.id)
+      if (controls.recordLost) throw new Error('SYNTHETIC RECORD OUTCOME UNKNOWN')
+      row.attempt.status = 'RECONCILIATION_REQUIRED'; row.attempt.reported_outcome = body.status
+      return Response.json({ ok:true, provider_call_authorized:false, execution_performed:false, reconciliation_required:true })
+    }
+    providerCalls.push({ url:String(url), init })
+    assert.equal(init.method, 'POST'); assert.equal(init.redirect, 'error')
+    assert.deepEqual(Buffer.from(init.body), Buffer.from(expectedFields.body))
+    const headers = new Headers(init.headers)
+    assert.equal(digest(stable(Object.fromEntries([...headers].filter(([k]) => ['authorization','xi-api-key','x-api-key','x-goog-api-key'].includes(k))))), expectedFields.fields.credential_sha256)
+    if (controls.streamError) return new Response(new ReadableStream({ start(stream) { stream.error(new Error('SYNTHETIC STREAM OUTCOME UNKNOWN')) } }))
+    return currentProvider(url, init)
+  }
+  const params = { defineSecret:name => ({ value:() => name === 'SPATIAL_SPEND_WORKER_TOKENS_JSON' ? JSON.stringify(controls.missingToken ? {} : { 'synthetic-worker':{ token, gateway_origin:new URL(gatewayUrl).origin } }) : apiKey }) }
+  const helper = sourceModule('../src/protectedProviderSpend.ts', id => {
+    if (id === 'node:crypto') return { createHash }
+    if (id === 'node:net') return { isIP }
+    if (id === 'node:perf_hooks') return { performance }
+    if (id === 'node:child_process') return { execFileSync:(_cmd, args) => {
+      if (args.includes('--show-toplevel')) return '/synthetic-tracked-checkout\n'
+      if (args.includes('HEAD')) return activeHead + '\n'
+      if (args.includes('ls-files')) return paths.join('\n') + '\n'
+      if (args.includes('status')) return ''
+      throw new Error('Unexpected source command')
+    } }
+    if (id === 'firebase-functions/params') return params
+    throw new Error(`Unexpected helper dependency ${id}`)
+  }, { process:{ env, cwd:() => '/synthetic-tracked-checkout' }, fetch:fakeFetch })
+  function prepare(args) {
+    const [_db, uid, lane, provider, model, input, target, init] = args
+    const url = String(target), body = String(init.body), headers = new Headers(init.headers)
+    const credentials = Object.fromEntries([...headers].filter(([k]) => ['authorization','xi-api-key','x-api-key','x-goog-api-key'].includes(k)))
+    const requestSha = digest(Buffer.concat([Buffer.from(`POST\n${url}\n`), Buffer.from(body)])), inputSha = digest(stable({ uid, lane, input })), tenantSha = digest(uid)
+    const jobId = `SYNTHETIC-NOT-AUTHORIZATION-${lane}-${requestSha}`
+    const fields = { job_id:jobId, worker_id:'synthetic-worker', executor_repository:'LifeLoggerAI/urai-spatial', executor_source_sha:SOURCE, gateway_repository:'LifeLoggerAI/asset-factory', gateway_source_sha:GATEWAY, consumer:'spatial-functions', tenant_sha256:tenantSha, provider, account_id:'SYNTHETIC-API-ACCOUNT', credential_sha256:digest(stable(credentials)), source_input_sha256:inputSha, semantic_headers_sha256:digest(stable(Object.fromEntries([...headers].filter(([k]) => !Object.hasOwn(credentials,k))))), content_type:headers.get('content-type'), request_sha256:requestSha, endpoint:url, model, asset:`spatial/${tenantSha}/${lane}`, request_size:String(Buffer.byteLength(body)) }
+    metadata = { ...fields, lane }; metadataPath = `spatialPaidProviderBindings/${digest(stable({ tenant_sha256:tenantSha, lane, request_sha256:requestSha, source_input_sha256:inputSha }))}`
+    bindings.set(metadataPath, metadata)
+    if (!rows.has(jobId)) {
+      const executor = { ...fields, repository:fields.executor_repository, source_sha:SOURCE, binding_version:2, deployment_ref:'e'.repeat(64), controls_ref:'f'.repeat(64) }
+      for (const k of ['job_id','executor_repository','executor_source_sha','provider','account_id','model','consumer']) delete executor[k]
+      const rates = { usd_micros_per_unit:1000000,credits_per_unit:10,receipt:'SYNTHETIC-PRICING',verified_at:new Date(Date.now()-60000).toISOString(),expires_at:new Date(Date.now()+300000).toISOString() }
+      rows.set(jobId, { job:{ job_id:jobId, provider, account_id:fields.account_id, model_version:model, consumer:fields.consumer, rights_reviewed:true, authority:{ repository:fields.executor_repository, sha:SOURCE }, input_sha256:[inputSha,requestSha], executor, budget:{ max_usd_micros:2500000,max_credits:20,max_runtime_seconds:2,rates }, attempts:[] }, hold:0 })
+    }
+    expectedFields = { fields, body }; return fields
+  }
+  const paidFetch = async (...args) => { prepare(args); return helper.paidSpatialFetch(...args) }
+  const directArgs = () => [db, UID, 'orb-reasoning', 'openai', 'synthetic-model', { message:'Synthetic question' }, 'https://api.openai.com/v1/responses', { method:'POST', headers:{ Authorization:`Bearer ${apiKey}`, 'Content-Type':'application/json', 'Idempotency-Key':'synthetic-stable-request' }, body:JSON.stringify({ model:'synthetic-model', input:'Synthetic question' }) }]
+  return { controls, env, calls, providerCalls, rows, bindings, db, helper, paidFetch, directArgs, params, sourceModule, fakeFetch, prepare, setProvider:fn => { currentProvider = fn }, expected:() => expectedFields }
+}
+test('actual unmocked clean Git provenance rejects every dirty untracked or misdeclared provider source', () => {
+  const root=mkdtempSync(join(tmpdir(),'spatial-spend-source-')), env={}
+  const git=(...args) => { const r=spawnSync('git',['-C',root,...args],{encoding:'utf8'}); assert.equal(r.status,0,r.stderr); return r.stdout.trim() }
+  try {
+    const helper=sourceModule('../src/protectedProviderSpend.ts', id => {
+      if(id==='node:crypto')return{createHash};if(id==='node:child_process')return{execFileSync};if(id==='node:net')return{isIP};if(id==='firebase-functions/params')return{defineSecret:()=>({value:()=>''})}
+      if(id==='node:perf_hooks')return{performance}
+      throw new Error(`Unexpected provenance dependency ${id}`)
+    },{process:{env,cwd:()=>root}})
+    env.URAI_SOURCE_SHA=SOURCE;assert.throws(()=>helper.spatialSpendSourceSha())
+    git('init','--quiet');git('config','user.name','Synthetic source fixture');git('config','user.email','fixture@example.invalid')
+    for(const path of paths){mkdirSync(dirname(join(root,path)),{recursive:true});writeFileSync(join(root,path),readFileSync(new URL(`../src/${path.split('/').at(-1)}`,import.meta.url)))}
+    git('add','.');git('commit','--quiet','-m','Synthetic actual source provenance');env.URAI_SOURCE_SHA=git('rev-parse','HEAD')
+    assert.equal(helper.spatialSpendSourceSha(),env.URAI_SOURCE_SHA)
+    const head=env.URAI_SOURCE_SHA;env.URAI_SOURCE_SHA=SOURCE;assert.throws(()=>helper.spatialSpendSourceSha());env.URAI_SOURCE_SHA=head
+    for(const path of paths){writeFileSync(join(root,path),'SYNTHETIC DIRTY SOURCE\n');assert.throws(()=>helper.spatialSpendSourceSha());git('restore','--',path)}
+    git('rm','--cached','apps/functions/src/protectedProviderSpend.ts');assert.throws(()=>helper.spatialSpendSourceSha())
+  }finally{rmSync(root,{recursive:true,force:true})}
+})
+test('actual helper reserves before its only POST and completed output retains uncertain charges', async () => {
+  const f = fixture(), response = await f.paidFetch(...f.directArgs())
+  assert.equal(f.providerCalls.length,1); assert.equal([...f.rows.values()][0].hold,2500000)
+  assert.equal(await response.text(),'SYNTHETIC OUTPUT')
+  assert.deepEqual(f.calls.map(x => x.action),['preflight','reserve','record'])
+  const row = [...f.rows.values()][0]; assert.equal(row.attempt.status,'RECONCILIATION_REQUIRED'); assert.equal(row.attempt.charges_reconciled,false); assert.equal(row.hold,2500000)
+})
+test('missing protected binding token source or gateway denies all provider calls', async () => {
+  for (const change of [{ missingBinding:true },{ missingToken:true },{ proofRejected:true },{ reserveDenied:true },{ preflight:(_reply,_body,{env}) => { env.URAI_SOURCE_SHA = 'c'.repeat(40) } }]) {
+    const f = fixture(change); await assert.rejects(f.paidFetch(...f.directArgs())); assert.equal(f.providerCalls.length,0)
+  }
+})
+test('lost committed reserve response holds budget without provider dispatch or retry', async () => {
+  const f = fixture({ reserveLost:true }); await assert.rejects(f.paidFetch(...f.directArgs())); assert.equal(f.providerCalls.length,0); assert.equal(f.calls.filter(x => x.action === 'reserve').length,1); assert.equal([...f.rows.values()][0].hold,2500000)
+})
+test('parallel replays dispatch at most once for the same actual paid request', async () => {
+  const f = fixture(); const outcomes = await Promise.allSettled([f.paidFetch(...f.directArgs()),f.paidFetch(...f.directArgs())]); assert.equal(outcomes.filter(x => x.status === 'fulfilled').length,1); assert.equal(f.providerCalls.length,1)
+  await outcomes.find(x => x.status === 'fulfilled').value.text(); assert.equal([...f.rows.values()][0].hold,2500000)
+})
+test('unknown stream and outcome record failures retain reservation and prohibit retries', async () => {
+  for (const change of [{ streamError:true },{ recordLost:true }]) { const f = fixture(change), response = await f.paidFetch(...f.directArgs()); await assert.rejects(response.text()); assert.equal(f.providerCalls.length,1); assert.equal([...f.rows.values()][0].hold,2500000); await assert.rejects(f.paidFetch(...f.directArgs())); assert.equal(f.providerCalls.length,1) }
+})
+test('source/head account input header credential tenant and model envelope drift denies dispatch', async () => {
+  for (const field of ['gateway_source_sha','source_sha','worker_id','credential_sha256','semantic_headers_sha256','source_input_sha256','tenant_sha256','content_type','request_sha256','request_size','asset']) {
+    const f = fixture({ preflight:reply => { reply.envelope.job.executor[field] = 'drifted' } }); await assert.rejects(f.paidFetch(...f.directArgs())); assert.equal(f.providerCalls.length,0)
+  }
+  for (const field of ['provider','account_id','model_version','consumer']) { const f = fixture({ preflight:reply => { reply.envelope.job[field] = 'drifted' } }); await assert.rejects(f.paidFetch(...f.directArgs())); assert.equal(f.providerCalls.length,0) }
+})
+test('missing drifted stale or untrusted actual-bound pricing denies reserve and external dispatch', async () => {
+  const changes = [reply => { delete reply.envelope.protected_pricing }]
+  for (const field of ['provider','account_id','model_version','request_sha256','credential_sha256','semantic_headers_sha256','source_input_sha256','content_type','receipt','observed_at','expires_at']) changes.push(reply => { delete reply.envelope.protected_pricing[field] })
+  changes.push(reply => { reply.envelope.protected_pricing.trusted_readback=false }, reply => { reply.envelope.protected_pricing.expires_at='2000-01-01T00:00:00Z' }, reply => { reply.envelope.protected_pricing.observed_at='2100-01-01T00:00:00Z' }, reply => { reply.envelope.protected_pricing.rates.usd_micros_per_unit=1 })
+  for (const preflight of changes) {
+    const f=fixture({ preflight }); await assert.rejects(f.paidFetch(...f.directArgs())); assert.equal(f.providerCalls.length,0); assert.equal(f.calls.some(x => x.action==='reserve'),false)
+  }
+})
+test('fresh protected account cap and deployment controls are required locally before reserve', async () => {
+  const changes = [reply => { reply.envelope.account.trusted_readback=false }, reply => { reply.envelope.account.expires_at='2000-01-01T00:00:00Z' }, reply => { reply.envelope.protected_controls.proof_receipt='' }, reply => { reply.envelope.protected_controls.enforcement_source_sha='c'.repeat(40) }, reply => { reply.envelope.protected_controls.max_runtime_seconds=86400 }, reply => { reply.envelope.protected_controls.auto_top_up=true }]
+  for (const preflight of changes) { const f=fixture({ preflight }); await assert.rejects(f.paidFetch(...f.directArgs())); assert.equal(f.providerCalls.length,0); assert.equal(f.calls.some(x => x.action==='reserve'),false) }
+})
+test('source or input drift during reserve retains the committed hold and never dispatches', async () => {
+  for (const change of ['source','input']) {
+    const f=fixture(), args=f.directArgs()
+    f.controls.reserve = (_body,{ setHead }) => { if(change==='source')setHead('c'.repeat(40));else args[5].message='Mutated source after admission' }
+    await assert.rejects(f.paidFetch(...args)); assert.equal(f.providerCalls.length,0); assert.equal([...f.rows.values()][0].hold,2500000); assert.equal([...f.rows.values()][0].attempt.charges_reconciled,false)
+  }
+})
+test('captured caller cancellation cannot be replaced while admission is pending', async () => {
+  const f=fixture(), args=f.directArgs(), controller=new AbortController();args[7].signal=controller.signal
+  f.controls.preflight=()=>{controller.abort();args[7].signal=new AbortController().signal}
+  await assert.rejects(f.paidFetch(...args));assert.equal(f.providerCalls.length,0);assert.equal(f.calls.some(x=>x.action==='reserve'),false)
+})
+test('preflight cannot claim dispatch authorization and exact runtime source is read twice', async () => {
+  for (const change of [{ preflight:reply => { reply.provider_call_authorized = true } }, { preflight:(_reply,_body,{setHead}) => { setHead('c'.repeat(40)) } }]) { const f = fixture(change); await assert.rejects(f.paidFetch(...f.directArgs())); assert.equal(f.providerCalls.length,0) }
+})
+test('materialized body and effective headers stay frozen through reservation', async () => {
+  const f = fixture(), args = f.directArgs()
+  f.controls.preflight = () => { args[7].body = '{}'; args[7].headers.Authorization = 'Bearer MUTATED'; args[7].method = 'GET' }
+  const response = await f.paidFetch(...args); assert.equal(await response.text(),'SYNTHETIC OUTPUT'); assert.equal(f.providerCalls.length,1)
+})
+test('caller financial authorization labels cannot replace server metadata or admission', async () => {
+  const f = fixture({ missingBinding:true }), args = f.directArgs(); args[5] = { ...args[5], providerAuthorization:{ approved:true, usd:0, providerCallAuthorized:true } }
+  await assert.rejects(f.paidFetch(...args)); assert.equal(f.providerCalls.length,0)
+})
+test('gateway credentials remain local when configured origin differs from the secret-bound gateway', async () => {
+  const f = fixture(); f.env.SPATIAL_PRODUCTION_SPEND_URL = 'https://foreign.example.invalid/api/worker/production-spend'
+  await assert.rejects(f.paidFetch(...f.directArgs()))
+  assert.equal(f.calls.length, 0); assert.equal(f.providerCalls.length, 0)
+})
+test('missing or expired preflight admission deadlines deny before reservation', async () => {
+  for (const mutate of [r => { delete r.admission_expires_at }, r => { r.admission_expires_at = new Date(Date.now()-1).toISOString() }]) {
+    const f=fixture({ preflight:mutate }); await assert.rejects(f.paidFetch(...f.directArgs()))
+    assert.equal(f.calls.some(x=>x.action==='reserve'),false); assert.equal(f.providerCalls.length,0)
+  }
+})
+test('missing expired or extended reservation deadlines retain the hold with zero provider POSTs', async () => {
+  for (const mutate of [r=>{ delete r.reserved_at },r=>{ delete r.admission_expires_at },r=>{ r.admission_expires_at=new Date(Date.now()-1).toISOString() },r=>{ r.admission_expires_at=new Date(Date.now()+5000).toISOString() }]) {
+    const f=fixture({ reservationReply:mutate }); await assert.rejects(f.paidFetch(...f.directArgs()))
+    assert.equal(f.providerCalls.length,0); assert.equal([...f.rows.values()][0].hold,2500000)
+  }
+})
+test('reservation response latency consumes the approved runtime and never resets it', async () => {
+  const f=fixture({ reservationReply:async()=>{ await new Promise(r=>setTimeout(r,2100)) } })
+  await assert.rejects(f.paidFetch(...f.directArgs())); assert.equal(f.providerCalls.length,0)
+  assert.equal([...f.rows.values()][0].hold,2500000)
+})
+test('source or corrected input changes while awaiting an output chunk suppress it and retain the hold', async () => {
+  for (const kind of ['source','input']) {
+    const f=fixture(), args=f.directArgs()
+    f.setProvider(async()=>new Response(new ReadableStream({ async pull(stream) {
+      await Promise.resolve()
+      if(kind==='source') f.env.URAI_SOURCE_SHA='f'.repeat(40)
+      else args[5].message='corrected'
+      stream.enqueue(new TextEncoder().encode('must not escape')); stream.close()
+    } })))
+    const response=await f.paidFetch(...args).catch(()=>null)
+    if(response) await assert.rejects(response.text())
+    assert.equal([...f.rows.values()][0].hold,2500000); assert.equal(f.providerCalls.length,1)
+  }
+})
+test('unexpected origin provider identity raw credentials or mismatched body model cannot dispatch', async () => {
+  for (const mutate of [args => { args[6] = 'https://untrusted.example.invalid/v1/responses' },args => { args[3] = 'elevenlabs' },args => { args[7].headers.Authorization = 'Bearer ' },args => { args[4] = 'another-model' }]) { const f = fixture(), args = f.directArgs(); mutate(args); await assert.rejects(f.paidFetch(...args)); assert.equal(f.providerCalls.length,0) }
+})
+test('aborted and deadline-limited streams retain full charges and never release or retry', async () => {
+  const f=fixture(), controller=new AbortController(), args=f.directArgs(); args[7].signal=controller.signal
+  const response=await f.paidFetch(...args); controller.abort(); await assert.rejects(response.text()); assert.equal([...f.rows.values()][0].hold,2500000); assert.equal([...f.rows.values()][0].attempt.status,'RECONCILIATION_REQUIRED')
+  const g=fixture(); g.setProvider(async()=>new Response(new ReadableStream({ pull:()=>new Promise(()=>{}) })))
+  const before=Date.now(), stalled=await g.paidFetch(...g.directArgs()); await assert.rejects(stalled.text()); assert.ok(Date.now()-before<3500); assert.equal([...g.rows.values()][0].hold,2500000); assert.equal(g.providerCalls.length,1)
+  await assert.rejects(g.paidFetch(...g.directArgs())); assert.equal(g.providerCalls.length,1); assert.equal(g.calls.some(x=>x.action==='reconcile'),false)
+})
+
+const language = sourceModule('../../../packages/localization/src/contentLanguage.ts', id => { throw new Error(`Unexpected language dependency ${id}`) })
+const leaves = [
+  ['providerFunctions.ts','openAiOrbProvider','orb','openai'],
+  ['providerFunctions.ts','elevenLabsVoiceProvider','narrator','elevenlabs'],
+  ['adamPresenceFunctions.ts','adamPresenceProvider','adam','openai'],
+  ['adamPresenceFunctions.ts','adamFounderVoiceProvider','founder-voice','elevenlabs'],
+  ['personPresenceProvider.ts','personPresenceProvider','person','openai'],
+  ['personPresenceVoiceProvider.ts','personPresenceVoiceProvider','person-voice','elevenlabs'],
+  ['councilProviderFunctions.ts','anthropicCouncilProvider','council-anthropic','anthropic'],
+  ['councilProviderFunctions.ts','geminiCouncilProvider','council-gemini','gemini'],
+  ['councilProviderFunctions.ts','xaiCouncilProvider','council-xai','xai'],
+  ['councilProviderFunctions.ts','mistralCouncilProvider','council-mistral','mistral'],
+]
+function leafFixture(leaf, change = {}) {
+  const f = fixture(change), [file,handlerName,lane,provider] = leaf
+  Object.assign(f.env, { ADAM_PRESENCE_ENABLED:'true', FOUNDER_VOICE_ENABLED:'true', FOUNDER_ELEVENLABS_VOICE_ID:'SYNTHETIC_VOICE', ELEVENLABS_DEFAULT_VOICE_ID:'SYNTHETIC_VOICE', ELEVENLABS_ALLOWED_VOICE_IDS:'SYNTHETIC_VOICE', PERSON_PRESENCE_ENABLED:'true', PERSON_PRESENCE_VOICE_ENABLED:'true', OPENAI_ORB_MODEL:'synthetic-model', OPENAI_ADAM_MODEL:'synthetic-model' })
+  for (const key of ['ANTHROPIC','GEMINI','XAI','MISTRAL']) { f.env[`URAI_COUNCIL_${key}_ENABLED`] = 'true'; f.env[`COUNCIL_${key}_MODEL`] = 'synthetic-model' }
+  class Timestamp { constructor(value) { this.value=value } toMillis() { return this.value } static fromMillis(value) { return new Timestamp(value) } }
+  const privacy = { domains:{ models:{ mode:'granted', modelContext:true }, identity:{ mode:'granted', likenessEnabled:true } }, enforcement:{ state:'fully-enforced' } }
+  const originalDoc = f.db.doc
+  f.db.doc = path => {
+    if (path.startsWith('spatialPaidProviderBindings/')) return originalDoc(path)
+    return { path, get:async () => snapshot(path), set:async () => undefined, update:async () => undefined }
+  }
+  const snapshot = path => ({ exists:path.endsWith('privacyPolicy/current'), data:() => path.endsWith('privacyPolicy/current') ? privacy : {} })
+  f.db.runTransaction = async fn => fn({ get:ref => Promise.resolve(snapshot(ref.path)), set:() => undefined, create:() => undefined })
+  const firestore = Object.assign(() => f.db, { Timestamp, FieldValue:{ increment:x => x, serverTimestamp:() => 'synthetic-time' } })
+  class PersonPresenceAuthorityError extends Error {}
+  const authority = { authorityDigest:'e'.repeat(64), canonicalLabel:'Synthetic person', mode:'SIMULATION_PRESENT', asOf:'2026-10-07', knowledgeCutoff:'2026-10-07', evidence:[{ id:'synthetic-claim', text:'Synthetic source fixture' }], negativeConstraints:[], sceneUnknowns:[], forbiddenAssertions:[], personId:'synthetic-person', sceneTruthPacketId:'synthetic-truth' }
+  const requireAuthority = async () => { if (f.controls.rightsDenied) throw new PersonPresenceAuthorityError('SYNTHETIC RIGHTS DENIED'); return authority }
+  const providerModule = sourceModule(`../src/${file}`, id => {
+    if (id === 'node:crypto') return { createHash }
+    if (id === 'firebase-admin') return { apps:[{}], firestore, auth:() => ({ verifyIdToken:async () => { if (f.controls.authDenied) throw new Error('SYNTHETIC AUTH DENIED'); return { uid:UID } } }) }
+    if (id === 'firebase-functions/params') return f.params
+    if (id === 'firebase-functions/v2/https') return { onRequest:(options,handler) => { assert.ok(options.secrets.includes(f.helper.SPATIAL_SPEND_WORKER_TOKENS_JSON)); return handler } }
+    if (id === '../../../packages/localization/src/contentLanguage') return language
+    if (id === './protectedProviderSpend') return { ...f.helper, paidSpatialFetch:f.paidFetch }
+    if (id === './personPresenceAuthority') return { PersonPresenceAuthorityError, loadPersonPresenceAuthority:requireAuthority, requirePersonPresenceRenderBinding:async () => { await requireAuthority(); return { get:key => ({ provider:'elevenlabs',bindingHash:'e'.repeat(64),providerResourceId:'SYNTHETIC_VOICE',providerModelId:'synthetic-model' })[key] } } }
+    throw new Error(`Unexpected paid-leaf dependency ${id}`)
+  }, { process:{ env:f.env }, fetch:f.fakeFetch })
+  f.setProvider(async (url,init) => {
+    if (String(url).endsWith('/moderations')) return Response.json({ results:[{ flagged:false }] })
+    if (provider === 'elevenlabs') return new Response('SYNTHETIC AUDIO', { headers:{ 'content-type':'audio/mpeg','request-id':'synthetic-voice-task' } })
+    if (provider === 'anthropic') return Response.json({ content:[{ type:'text',text:'Synthetic response' }] })
+    if (provider === 'gemini') return Response.json({ candidates:[{ content:{ parts:[{ text:'Synthetic response' }] } }] })
+    if (provider === 'xai' || provider === 'mistral') return Response.json({ choices:[{ message:{ content:'Synthetic response' } }] })
+    const out = { message:'Synthetic response',caption:'Synthetic response',locale:'en-US',suggestedActions:[] }
+    if (lane === 'orb') out.disclosure = 'Synthetic provider disclosure'
+    if (lane === 'adam') Object.assign(out,{ requiresHumanFounder:false,handoffReason:'' })
+    if (lane === 'person') Object.assign(out,{ evidenceClaimIds:['synthetic-claim'],uncertainty:'',simulationLabel:'Synthetic simulation' })
+    return new Response([{ type:'response.output_text.delta',delta:JSON.stringify(out) },{ type:'response.completed' }].map(x => `data: ${JSON.stringify(x)}\n\n`).join(''), { headers:{ 'x-request-id':'synthetic-reasoning-task' } })
+  })
+  const invoke = async extra => {
+    const chunks=[], headers={}; let code=200, json
+    const response = { headersSent:false, writableEnded:false, status(value) { code=value; return this }, json(value) { json=value; this.writableEnded=true }, setHeader(key,value) { headers[key]=value }, write(value) { this.headersSent=true; chunks.push(value) }, end(value='') { this.writableEnded=true; chunks.push(value) }, on:() => undefined }
+    const request = { method:'POST',headers:{ authorization:'Bearer SYNTHETIC-USER-AUTH' },on:() => undefined, body:{ message:'Synthetic question',text:'Synthetic spoken text',context:[],requestId:digest(JSON.stringify({ message:'Synthetic question',context:[],locale:'en-US' })),sessionId:'presence:synthetic-session-12345678',locale:'en-US',surface:'home',aiProcessingConsent:true,externalProcessingConsent:true,...extra } }
+    await providerModule[handlerName](request,response)
+    return { code,json,headers,chunks }
+  }
+  return { ...f, invoke, privacy }
+}
+for (const leaf of leaves) {
+  test(`actual paid leaf ${leaf[1]} denies absent authentic admission before any external POST`, async () => {
+    const f=leafFixture(leaf,{ missingBinding:true }); await f.invoke(); assert.equal(f.providerCalls.length,0); assert.equal(f.calls.filter(x => x.action === 'reserve').length,0)
+  })
+  test(`actual paid leaf ${leaf[1]} uses protected exact request and retains stream charges`, async () => {
+    const f=leafFixture(leaf), result=await f.invoke(); assert.equal(result.code,200,JSON.stringify(result.json)); assert.equal(f.providerCalls.length,leaf[3] === 'openai' ? 2 : 1)
+    for (const row of f.rows.values()) { assert.equal(row.attempt.status,'RECONCILIATION_REQUIRED'); assert.equal(row.attempt.charges_reconciled,false); assert.equal(row.hold,2500000) }
+    assert.equal(f.calls.some(x => x.action === 'reconcile'),false)
+  })
+  test(`actual paid leaf ${leaf[1]} preserves authentication consent and rights denial`, async () => {
+    const f=leafFixture(leaf,{ authDenied:true }); await f.invoke(); assert.equal(f.providerCalls.length,0); assert.equal(f.calls.length,0)
+    const g=leafFixture(leaf); await g.invoke({ aiProcessingConsent:false,externalProcessingConsent:false }); assert.equal(g.providerCalls.length,0); assert.equal(g.calls.length,0)
+    if (leaf[2].startsWith('person')) { const h=leafFixture(leaf,{ rightsDenied:true }); await h.invoke(); assert.equal(h.providerCalls.length,0); assert.equal(h.calls.length,0) }
+  })
+  test(`actual paid leaf ${leaf[1]} denies missing actual-bound price proof before reservation`, async () => {
+    const f=leafFixture(leaf,{ preflight:reply => { delete reply.envelope.protected_pricing } }); await f.invoke(); assert.equal(f.providerCalls.length,0); assert.equal(f.calls.some(x => x.action==='reserve'),false)
+  })
+}

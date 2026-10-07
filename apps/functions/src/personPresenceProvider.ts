@@ -4,6 +4,7 @@ import { defineSecret } from 'firebase-functions/params'
 import { onRequest } from 'firebase-functions/v2/https'
 import { loadPersonPresenceAuthority, PersonPresenceAuthorityError } from './personPresenceAuthority'
 import { contentLanguage, URAI_CONTENT_LANGUAGE_TAGS } from '../../../packages/localization/src/contentLanguage'
+import { paidSpatialFetch, SpatialSpendError, SPATIAL_SPEND_WORKER_TOKENS_JSON } from './protectedProviderSpend'
 
 if (!admin.apps.length) admin.initializeApp()
 
@@ -191,7 +192,7 @@ export const personPresenceProvider = onRequest({
   timeoutSeconds: 60,
   memory: '512MiB',
   cors: WEB_CLIENT_ORIGINS,
-  secrets: [OPENAI_API_KEY],
+  secrets: [OPENAI_API_KEY, SPATIAL_SPEND_WORKER_TOKENS_JSON],
 }, async (request, response) => {
   let uid = '', timeout: ReturnType<typeof setTimeout> | undefined, monitor: ReturnType<typeof setInterval> | undefined
   let controller: AbortController | undefined
@@ -215,10 +216,11 @@ export const personPresenceProvider = onRequest({
     await requireProviderConsent(uid, body.aiProcessingConsent === true)
     await consumeRateLimit(uid)
     const authority = await loadSessionAuthority(uid, sessionId)
+    const spendInput = { request: body, authority_digest: authority.authorityDigest }
 
     const moderationController = new AbortController()
     const moderationTimeout = setTimeout(() => moderationController.abort(), 8_000)
-    const moderation = await fetch('https://api.openai.com/v1/moderations', {
+    const moderation = await paidSpatialFetch(db, uid, 'person-moderation', 'openai', 'omni-moderation-latest', spendInput, 'https://api.openai.com/v1/moderations', {
       method: 'POST',
       headers: { Authorization: `Bearer ${OPENAI_API_KEY.value()}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({ model: 'omni-moderation-latest', input: message }),
@@ -236,7 +238,8 @@ export const personPresenceProvider = onRequest({
     monitor = setInterval(() => { recheckSessionAuthority(uid, sessionId, authority.authorityDigest).catch(() => upstreamController.abort()) }, 5_000)
     await recheckSessionAuthority(uid, sessionId, authority.authorityDigest)
     response.on('close', () => { if (!response.writableEnded) upstreamController.abort() })
-    const upstream = await fetch('https://api.openai.com/v1/responses', {
+    const model = process.env.OPENAI_PERSON_PRESENCE_MODEL || process.env.OPENAI_ADAM_MODEL || 'gpt-5'
+    const upstream = await paidSpatialFetch(db, uid, 'person-reasoning', 'openai', model, spendInput, 'https://api.openai.com/v1/responses', {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${OPENAI_API_KEY.value()}`,
@@ -245,7 +248,7 @@ export const personPresenceProvider = onRequest({
         'Idempotency-Key': upstreamIdempotencyKey,
       },
       body: JSON.stringify({
-        model: process.env.OPENAI_PERSON_PRESENCE_MODEL || process.env.OPENAI_ADAM_MODEL || 'gpt-5',
+        model,
         instructions: [
           `You are an evidence-grounded simulated representation of ${authority.canonicalLabel} inside UrAi.`,
           'You are not the literal person and must never imply consciousness, survival, or a real-time action by that human.',
@@ -328,7 +331,7 @@ export const personPresenceProvider = onRequest({
     response.write(`${JSON.stringify({ type:'delta', text:result.message, locale })}\n`)
     response.end(`${JSON.stringify({ type:'done', ...result, authorityDigest:authority.authorityDigest, sceneTruthPacketId:authority.sceneTruthPacketId, historicalSourceAuthority:false, syntheticOutputMayBecomeHistoricalSource:false })}\n`)
   } catch (error) {
-    const boundary = error instanceof PresenceError
+    const boundary = error instanceof PresenceError || error instanceof SpatialSpendError
       ? error
       : new PresenceError(500, 'PERSON_PRESENCE_FAILURE', 'Person presence is temporarily unavailable.')
     if (!response.headersSent) response.status(boundary.status).json({ error:boundary.code, message:boundary.message })
