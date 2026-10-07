@@ -180,13 +180,13 @@ body:has(.life-map-navigator[open]) [data-testid="urai-true-3d-life-map"] * {
 
 /* Accessible Home fallback must not render the old multi-panel concept art
    or its third-person avatar. Keep its semantic destinations and status. */
-.urai-genesis-home[data-testid="urai-home-accessible-fallback"][data-webgl-state] .urai-genesis-home__world {
+[data-testid="urai-home-accessible-fallback"][data-webgl-state] .urai-genesis-home .urai-genesis-home__world {
   background: radial-gradient(ellipse at 50% 24%, #1b3651, #081827 58%, #030912) !important;
 }
-.urai-genesis-home[data-testid="urai-home-accessible-fallback"][data-webgl-state] .urai-genesis-home__world::before,
-.urai-genesis-home[data-testid="urai-home-accessible-fallback"][data-webgl-state] .urai-genesis-home__world::after {
+[data-testid="urai-home-accessible-fallback"][data-webgl-state] .urai-genesis-home .urai-genesis-home__world::before,
+[data-testid="urai-home-accessible-fallback"][data-webgl-state] .urai-genesis-home .urai-genesis-home__world::after {
   background-image: none !important;
 }
-.urai-genesis-home[data-testid="urai-home-accessible-fallback"][data-webgl-state] .urai-genesis-home__body {
+[data-testid="urai-home-accessible-fallback"][data-webgl-state] .urai-genesis-home .urai-genesis-home__body {
   display: none !important;
 }
