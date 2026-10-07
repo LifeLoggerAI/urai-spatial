@@ -86,11 +86,13 @@ async function captureInertSpeech(page: Page, transcript: string) {
   }, transcript)
 }
 
+test.use({locale:'de-DE',timezoneId:'UTC'})
+
 test.beforeEach(async ({ page }) => {
   // Exercise the real route controls without requiring GPU availability or an account.
   await page.addInitScript(() => {
     const getContext = HTMLCanvasElement.prototype.getContext
-    HTMLCanvasElement.prototype.getContext = function (kind: string, ...args: unknown[]) {
+    HTMLCanvasElement.prototype.getContext = function (this: HTMLCanvasElement, kind: string, ...args: unknown[]) {
       if (kind === 'webgl' || kind === 'webgl2' || kind === 'experimental-webgl') return null
       return Reflect.apply(getContext, this, [kind, ...args])
     } as typeof getContext
@@ -141,6 +143,10 @@ test('French preview persists and renders in actual Home, Life Map, Focus and Re
   await expect(page.getByRole('button', { name: 'Recentrer', exact: true })).toHaveAttribute('lang', 'fr')
   await expect(page.getByRole('button', {name:'Entrer dans la relecture',exact:true})).toBeVisible()
   await expect(page.getByRole('button', {name:'Entrer dans la relecture',exact:true})).toHaveAttribute('lang','fr')
+  const focusDate = page.locator('.focusHeading > span')
+  await expect(focusDate).toHaveText('1 janv. 2026, 12:00')
+  await expect(focusDate).toHaveAttribute('lang','fr')
+  await expect(focusDate).toHaveAttribute('dir','ltr')
   await page.goto('/replay?memoryId=quiet-reset&demo=1')
   await expect(page.locator('button.unwind')).toHaveAccessibleName('← Revenir à la concentration')
   await expect(page.locator('button.unwind')).toHaveAttribute('lang', 'fr')
@@ -220,3 +226,16 @@ for (const speech of ['missing','throw'] as const) {
     expect(conversations).toHaveLength(0)
   })
 }
+
+test('Focus uses admitted English date formatting when an unreviewed language is selected without preview', async ({page}) => {
+  test.setTimeout(60_000)
+  await page.goto('/settings?lang=fr')
+  await expect(page.getByTestId('locale-preview-toggle')).not.toBeChecked()
+  await page.goto('/focus?memoryId=quiet-reset&demo=1')
+  const date = page.locator('.focusHeading > span')
+  await expect(date).toHaveText('Jan 1, 2026, 12:00 PM')
+  await expect(date).toHaveAttribute('lang','en')
+  await expect(date).toHaveAttribute('dir','ltr')
+  await expect(page.locator('html')).toHaveAttribute('lang','en')
+})
+
