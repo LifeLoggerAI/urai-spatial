@@ -5,21 +5,21 @@ import { getPossibleFutureCouncilBundleClient } from '@/lib/scenario/scenarioCli
 import { COUNCIL_AGENTS } from '@/spatial/council/councilAgentSchema'
 import {
   COUNCIL_PROVIDER_REGISTRY,
-  LIVE_COUNCIL_PROVIDER_IDS,
+  REQUESTABLE_COUNCIL_PROVIDER_IDS,
   PENDING_COUNCIL_PROVIDER_IDS,
   CouncilProviderNotConnectedError,
   requestCouncilProvider,
   type CouncilProviderId,
 } from '@/spatial/council/councilProviderRegistry'
 
-type LiveProvider = Exclude<CouncilProviderId, 'local-fallback'>
+type RequestableProvider = Exclude<CouncilProviderId, 'local-fallback'>
 
 export function ScenarioCouncilPanel({ scenarioId, branchId }: { scenarioId: string; branchId?: string }) {
-  const liveProviders = useMemo(
-    () => LIVE_COUNCIL_PROVIDER_IDS.filter((id): id is LiveProvider => id !== 'local-fallback'),
+  const requestableProviders = useMemo(
+    () => REQUESTABLE_COUNCIL_PROVIDER_IDS.filter((id): id is RequestableProvider => id !== 'local-fallback'),
     [],
   )
-  const [provider, setProvider] = useState<LiveProvider>(liveProviders[0] ?? 'openai')
+  const [provider, setProvider] = useState<RequestableProvider>(requestableProviders[0] ?? 'openai')
   const [roleId, setRoleId] = useState(COUNCIL_AGENTS[0]?.id ?? 'council-guardian')
   const [question, setQuestion] = useState('What assumptions or uncertainties should I examine before I treat this branch seriously?')
   const [consent, setConsent] = useState(false)
@@ -72,7 +72,7 @@ export function ScenarioCouncilPanel({ scenarioId, branchId }: { scenarioId: str
       if (aborter.signal.aborted) {
         setStatus('Council request stopped.')
       } else if (error instanceof CouncilProviderNotConnectedError) {
-        setStatus(`${COUNCIL_PROVIDER_REGISTRY[error.provider].label} is source-ready but not admitted in this environment.`)
+        setStatus(`${COUNCIL_PROVIDER_REGISTRY[error.provider].label} is not enabled for Council requests in this environment.`)
       } else {
         setStatus('Council could not review this Scenario. No provider answer is being substituted.')
       }
@@ -99,8 +99,8 @@ export function ScenarioCouncilPanel({ scenarioId, branchId }: { scenarioId: str
         </label>
         <label>
           Provider
-          <select value={provider} onChange={(event)=>setProvider(event.currentTarget.value as LiveProvider)} disabled={busy || !liveProviders.length} style={{ width:'100%', minHeight:48, boxSizing:'border-box', marginTop:5 }}>
-            {liveProviders.map((id)=><option key={id} value={id}>{COUNCIL_PROVIDER_REGISTRY[id].label}</option>)}
+          <select value={provider} onChange={(event)=>setProvider(event.currentTarget.value as RequestableProvider)} disabled={busy || !requestableProviders.length} style={{ width:'100%', minHeight:48, boxSizing:'border-box', marginTop:5 }}>
+            {requestableProviders.map((id)=><option key={id} value={id}>{COUNCIL_PROVIDER_REGISTRY[id].label}</option>)}
           </select>
         </label>
         <label>
@@ -112,13 +112,14 @@ export function ScenarioCouncilPanel({ scenarioId, branchId }: { scenarioId: str
           <span>Allow the selected provider to process this Scenario question, branch summary, uncertainty labels, and evidence-class counts for this request. Raw memory evidence is not sent by this surface.</span>
         </label>
         <div style={{ display:'flex', flexWrap:'wrap', gap:8 }}>
-          <button type="button" onClick={()=>void askCouncil()} disabled={busy || !consent || !question.trim() || !liveProviders.length} style={{ minHeight:48, padding:'0 14px' }}>{busy ? 'Considering…' : 'Ask Council'}</button>
+          <button type="button" onClick={()=>void askCouncil()} disabled={busy || !consent || !question.trim() || !requestableProviders.length} style={{ minHeight:48, padding:'0 14px' }}>{busy ? 'Considering…' : 'Ask Council'}</button>
           <button type="button" onClick={()=>controller.current?.abort()} disabled={!busy} style={{ minHeight:48, padding:'0 14px' }}>Stop</button>
         </div>
       </div>
+      <small>Provider availability is checked when you ask. A listed provider may be unavailable.</small>
       <p role="status" aria-live="polite" style={{ opacity:.72 }}>{status}</p>
       {answer ? <div data-testid="possible-futures-council-answer" style={{ borderTop:'1px solid rgba(255,255,255,.14)', paddingTop:10 }}><strong>{role?.name}</strong><p>{answer}</p><small>{disclosure}</small></div> : null}
-      {PENDING_COUNCIL_PROVIDER_IDS.length ? <small style={{ display:'block', opacity:.55 }}>Other governed providers remain unavailable until their protected runtime admission is enabled.</small> : null}
+      {PENDING_COUNCIL_PROVIDER_IDS.length ? <small style={{ display:'block', opacity:.55 }}>Other providers are currently unavailable.</small> : null}
     </section>
   )
 }
