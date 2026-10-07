@@ -13,11 +13,11 @@ import {
   cancelOperationalExportRequest,
   createOperationalDeletionRequest,
   createOperationalExportRequest,
-  getOperationalExportDownloadUrl,
-  saveOperationalExportDownload,
+  downloadOperationalExportBytes,
   subscribeOperationalUserCollection,
   type PrivacyRow,
 } from '@/lib/privacy/operationalPrivacyClient'
+import { OperationalExportDownloadSession, type OperationalExportRequest } from '@/lib/privacy/authorizedExportDownload'
 import {
   consequenceSummary,
   defaultConsentPolicy,
@@ -239,6 +239,10 @@ export default function ConsentSanctuaryClient() {
   const [deletionScope, setDeletionScope] = useState('memories')
   const [deletionConfirmation, setDeletionConfirmation] = useState('')
   const [operationBusy, setOperationBusy] = useState(false)
+  const [exportDownloading, setExportDownloading] = useState(false)
+  const exportDownloads = useRef<OperationalExportDownloadSession | null>(null)
+  if (!exportDownloads.current) exportDownloads.current = new OperationalExportDownloadSession()
+  const exportAuthorityRevision = useRef<number | null>(null)
   const confirmRef = useRef<HTMLButtonElement>(null)
   const reducedMotion = useReducedMotion()
 
@@ -258,11 +262,13 @@ export default function ConsentSanctuaryClient() {
         setMessage('Connection restored. Rechecking server authority…')
       }
     }
-    const offline = () => { setLoadState('offline'); setMessage('Offline. No change can be represented as saved or enforced.') }
+    const offline = () => { exportDownloads.current?.stop(); setExportDownloading(false); setLoadState('offline'); setMessage('Offline. No change can be represented as saved or enforced.') }
     window.addEventListener('online', online)
     window.addEventListener('offline', offline)
     return () => { window.removeEventListener('online', online); window.removeEventListener('offline', offline) }
   }, [explicitDemo, user])
+
+  useEffect(() => () => { authEpoch.current += 1; exportDownloads.current?.stop() }, [])
 
   useEffect(() => {
     try {
@@ -286,6 +292,9 @@ export default function ConsentSanctuaryClient() {
     const auth = getAuth(app)
     return onAuthStateChanged(auth, (nextUser) => {
       authEpoch.current += 1
+      exportDownloads.current?.stop()
+      exportAuthorityRevision.current = null
+      setExportDownloading(false)
       setPolicy(unresolvedPolicy())
       setReceipts([])
       setExports([])
@@ -315,6 +324,8 @@ export default function ConsentSanctuaryClient() {
       if (!current()) return
       const rawPolicy = snapshot.data()
       if (!snapshot.exists() || !isConsentPolicy(rawPolicy, user.uid)) {
+        exportDownloads.current?.stop()
+        setExportDownloading(false)
         setPolicy(unresolvedPolicy())
         setPending(null)
         setLoadState('unavailable')
@@ -323,6 +334,11 @@ export default function ConsentSanctuaryClient() {
         return
       }
       const next = rawPolicy
+      if (exportAuthorityRevision.current !== null && next.revision !== exportAuthorityRevision.current) {
+        exportDownloads.current?.stop()
+        setExportDownloading(false)
+      }
+      exportAuthorityRevision.current = next.revision
       setPolicy(next)
       setLoadState('private')
       const state = next.enforcement.state
@@ -335,6 +351,8 @@ export default function ConsentSanctuaryClient() {
       )
     }, () => {
       if (!current()) return
+      exportDownloads.current?.stop()
+      setExportDownloading(false)
       setPolicy(unresolvedPolicy())
       setPending(null)
       setLoadState('unavailable')
@@ -420,6 +438,8 @@ export default function ConsentSanctuaryClient() {
     if (loadState !== 'private') return
     const required = DELETION_SCOPES.find(([scope]) => scope === deletionScope)?.[2] ?? 'CONFIRM DELETE'
     if (deletionConfirmation !== required) { setMessage(`Type “${required}” exactly to confirm this scope.`); return }
+    exportDownloads.current?.stop()
+    setExportDownloading(false)
     setOperationBusy(true)
     try {
       const result = await createOperationalDeletionRequest({ scope: deletionScope, confirmation: deletionConfirmation })
@@ -431,6 +451,24 @@ export default function ConsentSanctuaryClient() {
       if (epoch !== authEpoch.current) return
       setMessage(errorCode(error) === 'reauth' ? 'Recent reauthentication is required before deletion can begin.' : 'Deletion request failed. No data was represented as deleted.')
     } finally { if (epoch === authEpoch.current) setOperationBusy(false) }
+  }
+
+  const downloadExport = async (request: OperationalExportRequest) => {
+    const epoch = authEpoch.current
+    if (loadState !== 'private' || !user || !navigator.onLine) return
+    const session = exportDownloads.current!
+    setExportDownloading(true)
+    const transfer = session.download(request, () => epoch === authEpoch.current && navigator.onLine, downloadOperationalExportBytes)
+    const attempt = session.revision
+    try {
+      await transfer
+      if (epoch === authEpoch.current && attempt === session.revision) setMessage('Verified export transfer started. Files saved to your device remain under your control.')
+    } catch (error) {
+      if (epoch !== authEpoch.current || attempt !== session.revision) return
+      setMessage(error instanceof DOMException && error.name === 'AbortError' ? 'Export transfer stopped.' :
+        error instanceof Error && error.message === 'EXPORT_TOO_LARGE' ? 'This transfer supports exports up to 64 MiB. Request a smaller scope or contact support.' :
+        'Secure download was not authorized. Request a current export; no file was opened.')
+    } finally { if (epoch === authEpoch.current && attempt === session.revision) setExportDownloading(session.active) }
   }
 
   const selected = policy.domains[selectedDomain]
@@ -473,11 +511,11 @@ export default function ConsentSanctuaryClient() {
         <div className="consentActions"><button type="button" onClick={() => setShowAudit(true)}>Inspect receipts</button><a href="/passport">Open Ownership Vault</a><a href="/ground">Return to Ground</a></div>
 
         <hr />
-        <h3>Authenticated export</h3>
+        <h3>Authenticated export</h3><p>Cancelling stops this transfer. Files already saved to your device cannot be recalled.</p>{exportDownloading && <button type="button" onClick={() => { exportDownloads.current?.stop(); setExportDownloading(false) }}>Stop download</button>}
         <p>Choose scope. Tokens, credentials, raw secret fields and legally excepted records are excluded.</p>
         <div className="consentToggleGrid">{EXPORT_SCOPES.map((scope) => <label key={scope}><input type="checkbox" disabled={loadState !== 'private' || operationBusy} checked={exportScopes.includes(scope)} onChange={(event) => setExportScopes((items) => event.target.checked ? [...new Set([...items, scope])] : items.filter((item) => item !== scope))} /><span>{scope}</span></label>)}</div>
         <div className="consentActions"><button type="button" disabled={loadState !== 'private' || operationBusy || exportScopes.length === 0} onClick={() => void requestExport()}>Request export</button></div>
-        <ol>{exports.slice(0, 5).map((job) => <li key={job.id}><strong>{String(job.state)}</strong> — {Array.isArray(job.scopes) ? job.scopes.join(', ') : 'scope unavailable'} {job.state === 'ready' && <button type="button" onClick={async () => { const epoch = authEpoch.current; try { const result = await getOperationalExportDownloadUrl({ jobId: job.id }); if (epoch !== authEpoch.current) return; await saveOperationalExportDownload(result, () => epoch === authEpoch.current) } catch { if (epoch !== authEpoch.current) return; setMessage('Secure download could not be authorized.') } }}>Secure download</button>} {job.state === 'ready' && runtimeExportAssetIds(job).map((assetId) => <button key={assetId} type="button" onClick={async () => { const epoch = authEpoch.current; try { const result = await getOperationalExportDownloadUrl({ jobId: job.id, file: 'runtime', assetId }); if (epoch !== authEpoch.current) return; await saveOperationalExportDownload(result, () => epoch === authEpoch.current) } catch { if (epoch !== authEpoch.current) return; setMessage('Secure runtime download could not be authorized.') } }}>Runtime {assetId.slice(0, 8)}</button>)} {['queued', 'preparing'].includes(String(job.state)) && <button type="button" onClick={() => void cancelOperationalExportRequest(job.id)}>Cancel</button>}</li>)}</ol>
+        <ol>{exports.slice(0, 5).map((job) => <li key={job.id}><strong>{String(job.state)}</strong> — {Array.isArray(job.scopes) ? job.scopes.join(', ') : 'scope unavailable'} {job.state === 'ready' && <button type="button" disabled={exportDownloading} onClick={() => void downloadExport({ jobId: job.id })}>Secure download</button>} {job.state === 'ready' && runtimeExportAssetIds(job).map((assetId) => <button key={assetId} type="button" disabled={exportDownloading} onClick={() => void downloadExport({ jobId: job.id, file: 'runtime', assetId })}>Runtime {assetId.slice(0, 8)}</button>)} {['queued', 'preparing'].includes(String(job.state)) && <button type="button" onClick={() => void cancelOperationalExportRequest(job.id)}>Cancel</button>}</li>)}</ol>
 
         <hr />
         <h3>Scoped deletion</h3>

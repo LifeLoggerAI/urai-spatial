@@ -45,21 +45,31 @@ function fixture() {
   const env = {
     explicitDemo: false, firebasePublicEnvReady: true, app: {},
     user: { uid: 'owner-a' }, state: 'loading', loadState: 'loading',
-    authEpoch: { current: 1 }, navigator: { onLine: true },
+    authEpoch: { current: 1 }, exportDownloads: { current: { stop: () => { state.transferStops = (state.transferStops ?? 0) + 1 } } }, exportAuthorityRevision: { current: null }, navigator: { onLine: true },
     getAuth: () => ({}), getFirebaseDb: () => ({}), doc: (...args) => args,
     unresolvedPolicy,
     list: (value) => Array.isArray(value) ? value : [],
+    record: value => value && typeof value === 'object' ? value : {},
     isConsentPolicy: (value, uid) => value?.ownerId === uid && value?.version === 2,
     defaultConsentPolicy: () => { throw new Error('Client must not invent persisted consent') },
     onAuthStateChanged: (_auth, callback) => { env.authCallback = callback; return () => {} },
   }
-  for (const name of ['User', 'Snapshot', 'Exports', 'Deletions', 'Receipts', 'Confirmation', 'Busy', 'State', 'Message', 'Policy', 'Pending', 'MutationState', 'DeletionConfirmation', 'OperationBusy', 'ShowAudit', 'LoadState']) {
+  for (const name of ['User', 'Snapshot', 'Exports', 'Deletions', 'Receipts', 'Confirmation', 'Busy', 'State', 'Message', 'Policy', 'Pending', 'MutationState', 'DeletionConfirmation', 'OperationBusy', 'ShowAudit', 'LoadState', 'ExportDownloading']) {
     env[`set${name}`] = (value) => { state[name] = value }
   }
   return { env, state }
 }
 
 for (const [name, source] of [['Passport', passport], ['Consent', consent]]) {
+  test(`${name} unmount invalidates pending export authority and stops its session`, () => {
+    const { env, state } = fixture()
+    const cleanupSource = source.match(/useEffect\(\(\) => \(\) => \{ ([^\n]+) \}, \[\]\)/)?.[1]
+    assert.ok(cleanupSource, 'actual unmount effect must own pending-transfer cleanup')
+    const prior = env.authEpoch.current
+    run(cleanupSource, env)
+    assert.equal(env.authEpoch.current, prior + 1)
+    assert.equal(state.transferStops, 1)
+  })
   test(`${name} clears private history and confirmation on sign-out and account switch`, () => {
     const { env, state } = fixture()
     run(effect(source, 'onAuthStateChanged'), env)
@@ -68,6 +78,8 @@ for (const [name, source] of [['Passport', passport], ['Consent', consent]]) {
       const epoch = env.authEpoch.current
       env.authCallback(nextUser)
       assert.equal(env.authEpoch.current, epoch + 1)
+      assert.equal(state.ExportDownloading, false)
+      assert.ok(state.transferStops > 0)
       for (const key of ['Receipts', 'Exports', 'Deletions']) assert.deepEqual(state[key], [])
       if (name === 'Passport') {
         assert.deepEqual(state.Snapshot, {})

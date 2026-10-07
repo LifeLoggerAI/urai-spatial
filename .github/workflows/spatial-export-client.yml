@@ -1,0 +1,91 @@
+name: Spatial export client authority
+on:
+  pull_request:
+    branches: [repair/release-closure-integration-20261007]
+    paths:
+      - '.github/workflows/spatial-export-client.yml'
+      - 'urai-tier1/src/lib/privacy/authorizedExportDownload.ts'
+      - 'urai-tier1/src/lib/privacy/operationalPrivacyClient.ts'
+      - 'urai-tier1/src/app/passport/PassportVaultClient.tsx'
+      - 'urai-tier1/src/app/privacy-controls/ConsentSanctuaryClient.tsx'
+      - 'urai-tier1/tests/authorized-export-download.test.mjs'
+      - 'urai-tier1/tests/operational-export-client.test.mjs'
+      - 'urai-tier1/tests/privacy-session-lifecycle.test.mjs'
+      - 'urai-tier1/tests/privacy-consent-sanctuary-contract.test.mjs'
+      - 'urai-tier1/tests/passport-ownership-vault-contract.test.mjs'
+  push:
+    branches: [repair/release-closure-integration-20261007]
+    paths:
+      - '.github/workflows/spatial-export-client.yml'
+      - 'urai-tier1/src/lib/privacy/**'
+      - 'urai-tier1/src/app/passport/PassportVaultClient.tsx'
+      - 'urai-tier1/src/app/privacy-controls/ConsentSanctuaryClient.tsx'
+      - 'urai-tier1/tests/*export*.test.mjs'
+      - 'urai-tier1/tests/privacy-session-lifecycle.test.mjs'
+      - 'urai-tier1/tests/privacy-consent-sanctuary-contract.test.mjs'
+      - 'urai-tier1/tests/passport-ownership-vault-contract.test.mjs'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: spatial-export-client-${{ github.event.pull_request.number || github.ref }}-${{ github.event.pull_request.head.sha || github.sha }}
+  cancel-in-progress: true
+env:
+  URAI_EXACT_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
+jobs:
+  client-authority:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ env.URAI_EXACT_HEAD }}
+          persist-credentials: false
+      - name: Verify clean exact source
+        run: |
+          test "$(git rev-parse HEAD)" = "$URAI_EXACT_HEAD"
+          test -z "$(git status --porcelain --untracked-files=all)"
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1
+        with:
+          version: 10.0.0
+          run_install: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+      - name: Actual transport, SDK and captured UI regressions
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/spatial-export-client
+          cd urai-tier1
+          node --test --test-reporter=tap \
+            tests/authorized-export-download.test.mjs tests/operational-export-client.test.mjs \
+            tests/privacy-session-lifecycle.test.mjs tests/privacy-consent-sanctuary-contract.test.mjs \
+            tests/passport-ownership-vault-contract.test.mjs \
+            2>&1 | tee ../artifacts/spatial-export-client/tests.tap
+      - name: Strict client types
+        run: pnpm --dir urai-tier1 typecheck
+      - name: Bind exact source and reject missing or skipped cases
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import hashlib, json, os, pathlib, re, subprocess
+          log = pathlib.Path('artifacts/spatial-export-client/tests.tap')
+          text = log.read_text()
+          counts = {key: int(re.search(r'^# ' + key + r' (\d+)$', text, re.M)[1]) for key in ['tests', 'pass', 'fail', 'cancelled', 'skipped']}
+          assert counts == {'tests': 93, 'pass': 93, 'fail': 0, 'cancelled': 0, 'skipped': 0}, counts
+          sha = subprocess.check_output(['git', 'rev-parse', 'HEAD'], text=True).strip()
+          assert sha == os.environ['URAI_EXACT_HEAD']
+          receipt = {'schemaVersion': 'urai-spatial-export-client-source-proof-v1', 'exactHead': sha, 'tree': subprocess.check_output(['git', 'rev-parse', 'HEAD^{tree}'], text=True).strip(), 'runId': os.environ['GITHUB_RUN_ID'], 'runAttempt': os.environ['GITHUB_RUN_ATTEMPT'], 'tests': counts, 'testLogSha256': hashlib.sha256(log.read_bytes()).hexdigest(), 'privateDataUsed': False, 'providerCalls': 0, 'deployedTransportVerified': False, 'browserAccepted': False, 'deviceAccepted': False, 'releaseAccepted': False}
+          pathlib.Path('artifacts/spatial-export-client/receipt.json').write_text(json.dumps(receipt, indent=2) + '\n')
+          PY
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: spatial-export-client-${{ env.URAI_EXACT_HEAD }}
+          path: artifacts/spatial-export-client
+          if-no-files-found: error
+          retention-days: 90

@@ -15,10 +15,10 @@ export {
 } from './googleWorkspaceOAuth'
 export {
   applyConsentPolicy,
-  cancelDeletionRequest,
-  cancelExportRequest,
-  createDeletionRequest,
-  createExportRequest,
+  cancelDeletionRequest as cancelSpatialDeletionRequest,
+  cancelExportRequest as cancelSpatialExportRequest,
+  createDeletionRequest as createSpatialDeletionRequest,
+  createExportRequest as createSpatialExportRequest,
   getOperationalExportDownloadUrl,
   downloadOperationalExportPackage,
   getPassportSnapshot,
@@ -85,3 +85,4 @@ export { getGlobalEmotionalFieldSnapshot } from './globalEmotionalField'
 export { mapsElevationProvider } from './mapsElevation'
 export { resolveLifeModelPrivateInputs } from './lifeModelPrivateInputs'
 export { reviewPrivateLifeModelCandidate } from './privateLifeModelReview'
+

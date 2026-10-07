@@ -3,8 +3,8 @@
 import { collection, limit, onSnapshot, orderBy, query, type DocumentData, type Unsubscribe } from 'firebase/firestore'
 import { httpsCallable } from 'firebase/functions'
 import { getAuth } from 'firebase/auth'
-import { fetchAuthorizedOperationalExport } from './authorizedExportDownload'
-import { app, functions, getFirebaseDb } from '@/lib/firebase/client'
+import { app, firebasePublicEnvReady, functions, getFirebaseDb } from '@/lib/firebase/client'
+import { fetchAuthorizedOperationalExport, validateOperationalExportDescriptor, type OperationalExportRequest } from './authorizedExportDownload'
 
 export type PrivacyRow = DocumentData & { id: string }
 export type PrivacyCallableResult = Record<string, unknown>
@@ -49,39 +49,31 @@ export function applyOperationalConsentPolicy(payload: { domain: string; next: R
 
 export function getOperationalPassportSnapshot() { return callOperationalPrivacyFunction('getPassportSnapshot') }
 export function createOperationalExportRequest(scopes: string[], suppliedOperationId?: string) {
-  return callOperationalPrivacyFunction('createExportRequest', { scopes, operationId: suppliedOperationId ?? operationId('export') })
+  return callOperationalPrivacyFunction('createSpatialExportRequest', { scopes, operationId: suppliedOperationId ?? operationId('export') })
 }
-export function getOperationalExportDownloadUrl(payload: { jobId: string; file?: 'export' | 'manifest' | 'runtime'; assetId?: string }) { return callOperationalPrivacyFunction('getOperationalExportDownloadUrl', payload) }
-export async function saveOperationalExportDownload(result: PrivacyCallableResult, isCurrent: () => boolean) {
+// Operational Spatial jobs remain users/{uid}/exportJobs. Privacy root jobs and
+// downloadExportPackage have a separate authority and are never selected here.
+export async function getOperationalExportDownloadUrl(payload: OperationalExportRequest) {
+  const value = await callOperationalPrivacyFunction('getOperationalExportDownloadUrl', payload)
+  return validateOperationalExportDescriptor(value, payload, app.options.projectId ?? '')
+}
+export async function downloadOperationalExportBytes(payload: OperationalExportRequest, lifecycle: { signal: AbortSignal; isCurrent: () => boolean }) {
   const auth = getAuth(app)
-  const user = auth.currentUser
-  const file = result.file === 'runtime' ? 'runtime' : result.file === 'manifest' ? 'manifest' : 'export'
-  const requireCurrent = () => {
-    if (!user || auth.currentUser !== user || result.ownerId !== user.uid || !isCurrent()) {
-      throw new Error('Current owner authentication is required.')
-    }
-  }
-  requireCurrent()
-  if (typeof result.url !== 'string' || result.requiresAuthorization !== true) throw new Error('Authenticated export delivery is required.')
-  const contents = await fetchAuthorizedOperationalExport({ url: result.url, origin: window.location.origin, projectId: app.options.projectId ?? '', jobId: String(result.jobId ?? ''), assetId: typeof result.assetId === 'string' ? result.assetId : undefined, file, current: () => !!user && auth.currentUser === user && isCurrent(),
-    getIdToken: async () => { requireCurrent(); const token = await user!.getIdToken(true); requireCurrent(); return token },
-  })
-  requireCurrent()
-  const objectUrl = URL.createObjectURL(contents)
-  try {
-    const link = document.createElement('a')
-    link.href = objectUrl
-    link.download = `urai-${file}.${file === 'runtime' ? 'splat' : 'json'}`
-    link.rel = 'noopener noreferrer'
-    document.body.append(link); link.click(); link.remove()
-  } finally { setTimeout(() => URL.revokeObjectURL(objectUrl), 1000) }
+  const owner = auth.currentUser
+  if (!firebasePublicEnvReady || !owner) throw new Error('AUTH_REQUIRED')
+  const isCurrent = () => !lifecycle.signal.aborted && lifecycle.isCurrent() && auth.currentUser === owner
+  if (!isCurrent()) throw new DOMException('Export transfer stopped.', 'AbortError')
+  const descriptor = await getOperationalExportDownloadUrl(payload)
+  if (!isCurrent()) throw new DOMException('Export transfer stopped.', 'AbortError')
+  if (descriptor.ownerId !== owner.uid) throw new Error('AUTH_REQUIRED')
+  return fetchAuthorizedOperationalExport({ descriptor, request: payload, projectId: app.options.projectId ?? '',
+    signal: lifecycle.signal, isCurrent, getIdToken: () => owner.getIdToken(true) })
 }
-
-export function cancelOperationalExportRequest(jobId: string) { return callOperationalPrivacyFunction('cancelExportRequest', { jobId }) }
+export function cancelOperationalExportRequest(jobId: string) { return callOperationalPrivacyFunction('cancelSpatialExportRequest', { jobId }) }
 export function createOperationalDeletionRequest(payload: { scope: string; confirmation: string; reason?: string; operationId?: string }) {
-  return callOperationalPrivacyFunction('createDeletionRequest', { ...payload, operationId: payload.operationId ?? operationId('deletion') })
+  return callOperationalPrivacyFunction('createSpatialDeletionRequest', { ...payload, operationId: payload.operationId ?? operationId('deletion') })
 }
-export function cancelOperationalDeletionRequest(jobId: string) { return callOperationalPrivacyFunction('cancelDeletionRequest', { jobId }) }
+export function cancelOperationalDeletionRequest(jobId: string) { return callOperationalPrivacyFunction('cancelSpatialDeletionRequest', { jobId }) }
 
 export function subscribeOperationalUserCollection(collectionName: string, uid: string, onRows: (rows: PrivacyRow[]) => void, onError: (error: Error) => void): Unsubscribe {
   requireUserCollection(collectionName)

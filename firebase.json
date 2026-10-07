@@ -161,6 +161,7 @@
     "codebase": "urai-spatial-functions",
     "runtime": "nodejs22",
     "predeploy": [
+      "node scripts/check-spatial-export-deployment-boundary.mjs",
       "pnpm --filter urai-functions build"
     ]
   },
