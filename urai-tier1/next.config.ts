@@ -20,6 +20,8 @@ const uraiAllowedDevOrigins = [
 ]);
 
 const nextConfig: NextConfig = {
+  // Keep the full build within bounded worker memory without skipping analysis.
+  experimental: { cpus: 1, webpackBuildWorker: true, webpackMemoryOptimizations: true },
   outputFileTracingRoot: projectRoot,
   ...(isFirebaseStaticExport
     ? {
