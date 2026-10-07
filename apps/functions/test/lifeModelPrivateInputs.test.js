@@ -242,6 +242,20 @@ test('actual life-model export pages602 owner handles and601 source records with
   assert.ok(data.privateLifeModelSourceHandles.every(row=>row.ownerId===uid&&row.id!=='forged-id'))
 })
 
+test('private owner handle pages enforce the supplied live guard before and after each awaited query', async () => {
+  for (const deniedAt of [1, 2]) {
+    const f = fixture()
+    for (let i = 0; i < 601; i++) f.records.set(`privateLifeModelSourceHandles/${sha(`fictional-guard-handle-${i}`)}`, { ...f.records.get(handlePath) })
+    let guards = 0
+    await assert.rejects(f.service.exportPrivateLifeModelHandles(f.db, uid, undefined, undefined, async () => {
+      if (++guards === deniedAt) throw new Error('synthetic current export authority denied')
+    }), /synthetic current export authority denied/)
+    assert.equal(guards, deniedAt)
+    assert.equal(f.stats.reads, deniedAt === 1 ? 0 : 1, 'no additional private handle page may read after the live guard denies')
+    assert.equal(f.stats.files.size, 0)
+  }
+})
+
 test('actual life-model deletion tombstones handles before erasing all three private input tables', async () => {
   const f = fixture(), privacy = f.load('privacyOperations')
   const jobPath = 'deletionQueue/fixture-delete'

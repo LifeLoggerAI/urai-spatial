@@ -62,7 +62,7 @@ const EXPORT_EXPIRY_MS = 15 * 60 * 1000
 const ACCOUNT_GRACE_MS = 24 * 60 * 60 * 1000
 const MAX_EXPORT_RUNTIME_ASSETS = 1000
 const MAX_EXPORT_RUNTIME_BYTES = 512 * 1024 * 1024
-type ExportReadContext = { transaction: FirebaseFirestore.Transaction; budget: ExportReadBudget }
+type ExportReadContext = { transaction: FirebaseFirestore.Transaction; budget: ExportReadBudget; requireCurrentAuthority: () => Promise<unknown> }
 
 function requireUid(context: functions.https.CallableContext): string {
   const uid = context.auth?.uid
@@ -499,7 +499,7 @@ async function collectionDocuments(ref: FirebaseFirestore.CollectionReference, c
 }
 
 async function boundedCollectionDocuments(ref: FirebaseFirestore.CollectionReference, context: ExportReadContext) {
-  return collectExportPages(context.transaction, ref, context.budget, item => ({ ...redactSecrets(item.data()) as JsonMap, id: item.id }))
+  return collectExportPages(context.transaction, ref, context.budget, item => ({ ...redactSecrets(item.data()) as JsonMap, id: item.id }), context.requireCurrentAuthority)
 }
 
 async function scenarioExportTree(userRef: FirebaseFirestore.DocumentReference, context: ExportReadContext) {
@@ -754,13 +754,21 @@ async function buildExport(snapshot: FirebaseFirestore.DocumentSnapshot) {
     }
     const data = payload.data as JsonMap
     const budget = createExportReadBudget()
+    const requireCurrentAuthority = async () => {
+      requireExportReadBudget(budget)
+      const authority = await db.runTransaction(transaction => readBoundExport(transaction, uid, snapshot.id, 'preparing'))
+      requireExportReadBudget(budget)
+      return authority
+    }
     let runtimeInventory: JsonMap[] = []
     let capturedRealityRuntimeExports: CapturedRealityRuntimeExport[] = []
     await db.runTransaction(async transaction => {
     await readBoundExport(transaction, uid, snapshot.id, 'preparing')
-    const context = { transaction, budget }
+    const context = { transaction, budget, requireCurrentAuthority }
     if (scopes.includes('profile')) {
+      await requireCurrentAuthority()
       const profile = await transaction.get(userRef)
+      await requireCurrentAuthority()
       data.profile = profile.exists ? redactSecrets(profile.data()) : null
       chargeExportValue(budget, data.profile)
     }
@@ -793,7 +801,7 @@ async function buildExport(snapshot: FirebaseFirestore.DocumentSnapshot) {
       data.privateLifeModelSources = await boundedCollectionDocuments(userRef.collection('privateLifeModelSources'), context)
       data.privateLifeModelTranscripts = await boundedCollectionDocuments(userRef.collection('privateLifeModelTranscripts'), context)
       data.privateLifeModelProvenance = await boundedCollectionDocuments(userRef.collection('privateLifeModelProvenance'), context)
-      data.privateLifeModelSourceHandles = redactSecrets(await exportPrivateLifeModelHandles(db, uid, transaction, budget))
+      data.privateLifeModelSourceHandles = redactSecrets(await exportPrivateLifeModelHandles(db, uid, transaction, budget, requireCurrentAuthority))
     }
     if (scopes.includes('intelligence')) {
       data.scenarios = await scenarioExportTree(userRef, context)
@@ -809,7 +817,7 @@ async function buildExport(snapshot: FirebaseFirestore.DocumentSnapshot) {
       data.locations = await collectionDocuments(userRef.collection('locations'), context)
       data.capturedRealityAssets = await collectionDocuments(userRef.collection('capturedRealityAssets'), context)
       data.capturedRealityReplayBindings = await collectionDocuments(userRef.collection('capturedRealityReplayBindings'), context)
-      runtimeInventory = await collectExportPages(transaction, userRef.collection('capturedRealityAssets'), budget, asset => ({ id: asset.id, ownerId: asset.get('ownerId'), runtimeObject: asset.get('runtimeObject') ?? null, runtimeSha256: asset.get('runtimeSha256') ?? null, runtimeStorageGeneration: asset.get('runtimeStorageGeneration') ?? null }))
+      runtimeInventory = await collectExportPages(transaction, userRef.collection('capturedRealityAssets'), budget, asset => ({ id: asset.id, ownerId: asset.get('ownerId'), runtimeObject: asset.get('runtimeObject') ?? null, runtimeSha256: asset.get('runtimeSha256') ?? null, runtimeStorageGeneration: asset.get('runtimeStorageGeneration') ?? null }), requireCurrentAuthority)
     }
     if (scopes.includes('audit')) {
       data.receipts = await collectionDocuments(userRef.collection('privacyReceipts'), context)
@@ -819,7 +827,6 @@ async function buildExport(snapshot: FirebaseFirestore.DocumentSnapshot) {
     requireExportReadBudget(budget)
     if (budget.snapshotMillis !== null) payload.snapshotReadAt = new Date(budget.snapshotMillis).toISOString()
     payload.resourceLimits = EXPORT_RESOURCE_LIMITS
-    const requireCurrentAuthority = () => db.runTransaction(transaction => readBoundExport(transaction, uid, snapshot.id, 'preparing'))
     await requireCurrentAuthority()
     if (scopes.includes('spatial')) {
       capturedRealityRuntimeExports = await copyCapturedRealityRuntimeExports(runtimeInventory, uid, basePath, budget, requireCurrentAuthority)
@@ -840,6 +847,7 @@ async function buildExport(snapshot: FirebaseFirestore.DocumentSnapshot) {
       createdAt: new Date().toISOString(),
     }, null, 2)
     const manifestChecksum = createHash('sha256').update(manifest).digest('hex')
+    await requireCurrentAuthority()
     await Promise.all([
       bucket.file(`${basePath}/export.json`).save(Buffer.from(json), {
         resumable: false,
@@ -852,9 +860,11 @@ async function buildExport(snapshot: FirebaseFirestore.DocumentSnapshot) {
         metadata: { metadata: { ownerUid: uid, jobId: snapshot.id, checksum: manifestChecksum } },
       }),
     ])
+    await requireCurrentAuthority()
     const [exportMetadata, manifestMetadata] = await Promise.all([
       bucket.file(`${basePath}/export.json`).getMetadata(), bucket.file(`${basePath}/manifest.json`).getMetadata(),
     ])
+    await requireCurrentAuthority()
     const exportGeneration = String(exportMetadata[0].generation ?? '')
     const manifestGeneration = String(manifestMetadata[0].generation ?? '')
     const exportBytes = Number(exportMetadata[0].size), manifestBytes = Number(manifestMetadata[0].size)
@@ -864,7 +874,9 @@ async function buildExport(snapshot: FirebaseFirestore.DocumentSnapshot) {
       throw new Error('EXPORT_OBJECT_GENERATION_OR_METADATA_REQUIRED')
     }
     await db.runTransaction(async (transaction) => {
+      requireExportReadBudget(budget)
       const { subject } = await readBoundExport(transaction, uid, snapshot.id, 'preparing')
+      requireExportReadBudget(budget)
       const expiresAt = timestamp.fromMillis(Math.min(Date.now() + 7 * 24 * 60 * 60 * 1000, subject.canonicalExportConsentExpiresAt))
       transaction.update(snapshot.ref, {
         state: 'ready', progress: 100, checksum, checksumAlgorithm: 'sha256',

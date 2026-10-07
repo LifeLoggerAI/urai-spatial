@@ -107,12 +107,13 @@ async function resolveCurrent(request: ReturnType<typeof input>) {
 
 // Used only by the canonical owner-authenticated private export executor.
 export async function exportPrivateLifeModelHandles(database: FirebaseFirestore.Firestore, ownerId: string,
-  transaction?: FirebaseFirestore.Transaction, budget?: import('./exportPagination').ExportReadBudget) {
+  transaction?: FirebaseFirestore.Transaction, budget?: import('./exportPagination').ExportReadBudget,
+  requireCurrentAuthority?: () => Promise<unknown>) {
   if (!OWNER.test(ownerId)) fail('PRIVATE_INPUT_OWNER_INVALID', 400)
   const { collectExportPages, createExportReadBudget } = await import('./exportPagination')
   const collect = (reader: FirebaseFirestore.Transaction) => collectExportPages(reader,
     database.collection('privateLifeModelSourceHandles').where('ownerId', '==', ownerId), budget ?? createExportReadBudget(),
-    handle => ({ ...handle.data(), id: handle.id }))
+    handle => ({ ...handle.data(), id: handle.id }), requireCurrentAuthority)
   return transaction ? collect(transaction) : database.runTransaction(collect, { readOnly: true })
 }
 

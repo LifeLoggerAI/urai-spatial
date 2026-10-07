@@ -149,6 +149,14 @@ test('completed owner descriptor uses revocable authenticated delivery and commi
   assert.equal(response.headers['Cache-Control'], 'private, no-store'); assert.equal(f.stats.streams, 1)
 })
 
+test('isolated pagination emulator loads the actual canonical deployment rules', () => {
+  const root = path.resolve(__dirname, '../../..')
+  const deployment = JSON.parse(fs.readFileSync(path.join(root, 'firebase.json'), 'utf8'))
+  const isolated = JSON.parse(fs.readFileSync(path.join(root, 'firebase.export-pagination-test.json'), 'utf8'))
+  assert.equal(isolated.firestore.rules, deployment.firestore.rules, 'the isolated proof must not load the non-runtime root placeholder')
+  assert.match(fs.readFileSync(path.join(root, isolated.firestore.rules), 'utf8'), /rules_version\s*=\s*'2'/)
+})
+
 for (const [label, change] of [
   ['missing canonical grant', f => f.records.delete(canonicalPath)],
   ['wrong canonical purpose',f=>{f.records.get(canonicalPath).purpose='memory.storage'}],
@@ -363,6 +371,35 @@ for(const reason of ['snapshot','byte-budget','time-budget','document-budget','w
     if(reason.endsWith('budget'))assert.equal(f.records.get(jobPath).failureCode,'EXPORT_RESOURCE_BUDGET_EXCEEDED')
   })
 }
+
+for (const reason of ['withdrawal', 'deletion', 'cancellation']) {
+  test(`live ${reason} during page one prevents the next private page and ready publication`, async () => {
+    let changed = false
+    const f = fixture({ afterQuery: (location, records) => {
+      if (location !== `${prefix}/memories` || changed) return
+      changed = true
+      if (reason === 'withdrawal') records.get(canonicalPath).status = 'withdrawn'
+      else if (reason === 'deletion') records.set(fencePath, { generation: 1, pendingDeletions: { synthetic: true } })
+      else { records.get(jobPath).state = 'cancelled'; records.get(receiptPath).result = 'cancelled' }
+    } })
+    f.records.get(jobPath).state = 'queued'; f.records.get(jobPath).scopes = ['memories']; f.records.get(receiptPath).result = 'queued'
+    for (let i = 0; i < 1001; i++) f.records.set(`${prefix}/memories/memory-${String(i).padStart(4, '0')}`, { meaning: i })
+    await assert.rejects(f.handlers.processExportJob(await f.db.doc(jobPath).get()), { code: 'failed-precondition' })
+    assert.equal(f.stats.queryPages.filter(page => page.location === `${prefix}/memories`).length, 1, 'a current denial must stop collection before the next snapshot page')
+    assert.equal(f.records.get(jobPath).state, reason === 'cancellation' ? 'cancelled' : 'failed')
+    assert.equal(f.records.get(receiptPath).result, reason === 'cancellation' ? 'cancelled' : 'failed')
+    assert.equal(f.objects.size, 0); assert.equal(f.stats.streams, 0)
+  })
+}
+
+test('elapsed resource budget during final Storage metadata await cannot publish ready', async () => {
+  const options = { clock: { value: now }, afterMetadata: () => { options.clock.value = now + 240001 } }
+  const f = fixture(options)
+  f.records.get(jobPath).state = 'queued'; f.records.get(receiptPath).result = 'queued'
+  await assert.rejects(f.handlers.processExportJob(await f.db.doc(jobPath).get()), /EXPORT_RESOURCE_BUDGET_EXCEEDED/)
+  assert.equal(f.records.get(jobPath).state, 'failed'); assert.equal(f.records.get(receiptPath).result, 'failed')
+  assert.equal(f.records.get(jobPath).failureCode, 'EXPORT_RESOURCE_BUDGET_EXCEEDED'); assert.equal(f.objects.size, 0)
+})
 
 test('601 Captured Reality runtime records copy every validated source and keep source authority',async()=>{
   const f=fixture()
