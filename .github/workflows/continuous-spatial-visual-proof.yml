@@ -14,6 +14,7 @@ on:
       - 'scripts/capture-continuous-spatial-proof-v18.mjs'
       - 'scripts/capture-memory-world-runtime-proof.mjs'
       - 'scripts/capture-launch-route-matrix.mjs'
+      - 'scripts/visual-proof-transport.mjs'
       - 'release/route-manifest.json'
       - 'scripts/run-continuous-spatial-proof-v18-stable.mjs'
       - 'scripts/run-continuous-spatial-proof-v18-portal-stable.mjs'
@@ -28,6 +29,7 @@ on:
 
 permissions:
   contents: read
+  actions: read # Download and check this run's immutable native artifact bytes.
 
 concurrency:
   group: continuous-spatial-visual-proof-${{ github.event.pull_request.number || inputs.verification_sha || github.ref }}
@@ -106,6 +108,8 @@ jobs:
           node --check scripts/run-continuous-spatial-proof-v22-natural.mjs
           node --check scripts/capture-memory-world-runtime-proof.mjs
           node --check scripts/capture-launch-route-matrix.mjs
+          node --check scripts/visual-proof-transport.mjs
+          node --test urai-tier1/tests/visual-proof-transport.test.mjs
           node scripts/capture-launch-route-matrix.mjs --validate-only
 
       - name: Capture bounded spatial proof group
@@ -210,6 +214,7 @@ jobs:
           NODE
 
       - name: Upload exact-head grouped visual proof
+        id: original-visual-proof
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
@@ -218,3 +223,159 @@ jobs:
           if-no-files-found: error
           retention-days: 90
           compression-level: 6
+
+      - name: Partition the original native visual archive
+        id: bounded-visual-transport
+        if: ${{ always() && steps.original-visual-proof.outputs.artifact-id != '' }}
+        timeout-minutes: 5
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          URAI_ORIGINAL_ARTIFACT_ID: ${{ steps.original-visual-proof.outputs.artifact-id }}
+          URAI_ORIGINAL_ARTIFACT_DIGEST: ${{ steps.original-visual-proof.outputs.artifact-digest }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          node scripts/visual-proof-transport.mjs prepare-native \
+            --output "artifacts/continuous-spatial-transport-$URAI_PROOF_GROUP"
+
+      - name: Upload bounded visual transport manifest
+        id: bounded-visual-manifest
+        if: ${{ always() && steps.bounded-visual-transport.outcome == 'success' }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: continuous-spatial-visual-transport-${{ matrix.proof_group }}-${{ env.URAI_EXACT_HEAD }}-${{ github.run_id }}-${{ github.run_attempt }}-manifest
+          path: artifacts/continuous-spatial-transport-${{ matrix.proof_group }}/manifest.json
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 0
+
+      - name: Upload bounded visual archive part 01
+        id: bounded-visual-part-01
+        if: ${{ always() && steps.bounded-visual-transport.outcome == 'success' && steps.bounded-visual-transport.outputs.part_count >= 1 }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: continuous-spatial-visual-transport-${{ matrix.proof_group }}-${{ env.URAI_EXACT_HEAD }}-${{ github.run_id }}-${{ github.run_attempt }}-part-01
+          path: artifacts/continuous-spatial-transport-${{ matrix.proof_group }}/visual-proof.zip.part-01
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 0
+
+      - name: Upload bounded visual archive part 02
+        id: bounded-visual-part-02
+        if: ${{ always() && steps.bounded-visual-transport.outcome == 'success' && steps.bounded-visual-transport.outputs.part_count >= 2 }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: continuous-spatial-visual-transport-${{ matrix.proof_group }}-${{ env.URAI_EXACT_HEAD }}-${{ github.run_id }}-${{ github.run_attempt }}-part-02
+          path: artifacts/continuous-spatial-transport-${{ matrix.proof_group }}/visual-proof.zip.part-02
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 0
+
+      - name: Upload bounded visual archive part 03
+        id: bounded-visual-part-03
+        if: ${{ always() && steps.bounded-visual-transport.outcome == 'success' && steps.bounded-visual-transport.outputs.part_count >= 3 }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: continuous-spatial-visual-transport-${{ matrix.proof_group }}-${{ env.URAI_EXACT_HEAD }}-${{ github.run_id }}-${{ github.run_attempt }}-part-03
+          path: artifacts/continuous-spatial-transport-${{ matrix.proof_group }}/visual-proof.zip.part-03
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 0
+
+      - name: Upload bounded visual archive part 04
+        id: bounded-visual-part-04
+        if: ${{ always() && steps.bounded-visual-transport.outcome == 'success' && steps.bounded-visual-transport.outputs.part_count >= 4 }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: continuous-spatial-visual-transport-${{ matrix.proof_group }}-${{ env.URAI_EXACT_HEAD }}-${{ github.run_id }}-${{ github.run_attempt }}-part-04
+          path: artifacts/continuous-spatial-transport-${{ matrix.proof_group }}/visual-proof.zip.part-04
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 0
+
+      - name: Upload bounded visual archive part 05
+        id: bounded-visual-part-05
+        if: ${{ always() && steps.bounded-visual-transport.outcome == 'success' && steps.bounded-visual-transport.outputs.part_count >= 5 }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: continuous-spatial-visual-transport-${{ matrix.proof_group }}-${{ env.URAI_EXACT_HEAD }}-${{ github.run_id }}-${{ github.run_attempt }}-part-05
+          path: artifacts/continuous-spatial-transport-${{ matrix.proof_group }}/visual-proof.zip.part-05
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 0
+
+      - name: Upload bounded visual archive part 06
+        id: bounded-visual-part-06
+        if: ${{ always() && steps.bounded-visual-transport.outcome == 'success' && steps.bounded-visual-transport.outputs.part_count >= 6 }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: continuous-spatial-visual-transport-${{ matrix.proof_group }}-${{ env.URAI_EXACT_HEAD }}-${{ github.run_id }}-${{ github.run_attempt }}-part-06
+          path: artifacts/continuous-spatial-transport-${{ matrix.proof_group }}/visual-proof.zip.part-06
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 0
+
+      - name: Upload bounded visual archive part 07
+        id: bounded-visual-part-07
+        if: ${{ always() && steps.bounded-visual-transport.outcome == 'success' && steps.bounded-visual-transport.outputs.part_count >= 7 }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: continuous-spatial-visual-transport-${{ matrix.proof_group }}-${{ env.URAI_EXACT_HEAD }}-${{ github.run_id }}-${{ github.run_attempt }}-part-07
+          path: artifacts/continuous-spatial-transport-${{ matrix.proof_group }}/visual-proof.zip.part-07
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 0
+
+      - name: Upload bounded visual archive part 08
+        id: bounded-visual-part-08
+        if: ${{ always() && steps.bounded-visual-transport.outcome == 'success' && steps.bounded-visual-transport.outputs.part_count >= 8 }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: continuous-spatial-visual-transport-${{ matrix.proof_group }}-${{ env.URAI_EXACT_HEAD }}-${{ github.run_id }}-${{ github.run_attempt }}-part-08
+          path: artifacts/continuous-spatial-transport-${{ matrix.proof_group }}/visual-proof.zip.part-08
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 0
+
+      - name: Verify separate native transport artifact identities and byte limits
+        id: verified-visual-transport
+        if: ${{ always() && steps.bounded-visual-transport.outcome == 'success' }}
+        timeout-minutes: 5
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          URAI_ORIGINAL_ARTIFACT_ID: ${{ steps.original-visual-proof.outputs.artifact-id }}
+          URAI_ORIGINAL_ARTIFACT_DIGEST: ${{ steps.original-visual-proof.outputs.artifact-digest }}
+          URAI_MANIFEST_ID: ${{ steps.bounded-visual-manifest.outputs.artifact-id }}
+          URAI_MANIFEST_DIGEST: ${{ steps.bounded-visual-manifest.outputs.artifact-digest }}
+          URAI_PART_01_ID: ${{ steps.bounded-visual-part-01.outputs.artifact-id }}
+          URAI_PART_01_DIGEST: ${{ steps.bounded-visual-part-01.outputs.artifact-digest }}
+          URAI_PART_02_ID: ${{ steps.bounded-visual-part-02.outputs.artifact-id }}
+          URAI_PART_02_DIGEST: ${{ steps.bounded-visual-part-02.outputs.artifact-digest }}
+          URAI_PART_03_ID: ${{ steps.bounded-visual-part-03.outputs.artifact-id }}
+          URAI_PART_03_DIGEST: ${{ steps.bounded-visual-part-03.outputs.artifact-digest }}
+          URAI_PART_04_ID: ${{ steps.bounded-visual-part-04.outputs.artifact-id }}
+          URAI_PART_04_DIGEST: ${{ steps.bounded-visual-part-04.outputs.artifact-digest }}
+          URAI_PART_05_ID: ${{ steps.bounded-visual-part-05.outputs.artifact-id }}
+          URAI_PART_05_DIGEST: ${{ steps.bounded-visual-part-05.outputs.artifact-digest }}
+          URAI_PART_06_ID: ${{ steps.bounded-visual-part-06.outputs.artifact-id }}
+          URAI_PART_06_DIGEST: ${{ steps.bounded-visual-part-06.outputs.artifact-digest }}
+          URAI_PART_07_ID: ${{ steps.bounded-visual-part-07.outputs.artifact-id }}
+          URAI_PART_07_DIGEST: ${{ steps.bounded-visual-part-07.outputs.artifact-digest }}
+          URAI_PART_08_ID: ${{ steps.bounded-visual-part-08.outputs.artifact-id }}
+          URAI_PART_08_DIGEST: ${{ steps.bounded-visual-part-08.outputs.artifact-digest }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          node scripts/visual-proof-transport.mjs verify-native-uploads \
+            --manifest "artifacts/continuous-spatial-transport-$URAI_PROOF_GROUP/manifest.json" \
+            --output "artifacts/continuous-spatial-transport-$URAI_PROOF_GROUP/upload-receipt.json"
+
+      - name: Upload verified native visual transport receipt
+        if: ${{ always() && steps.verified-visual-transport.outcome == 'success' }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: continuous-spatial-visual-transport-${{ matrix.proof_group }}-${{ env.URAI_EXACT_HEAD }}-${{ github.run_id }}-${{ github.run_attempt }}-upload-receipt
+          path: artifacts/continuous-spatial-transport-${{ matrix.proof_group }}/upload-receipt.json
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 0

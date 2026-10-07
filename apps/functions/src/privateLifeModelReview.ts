@@ -258,6 +258,12 @@ export const reviewPrivateLifeModelCandidate = lifeModelReviewFunctions.https.on
       transaction.get(receiptRef),
     ])
 
+    // Idempotent retries remain subject to the current owner's privacy boundary.
+    requireCurrentModelConsent(policySnapshot)
+    if (fenceSnapshot.exists && fenceSnapshot.get('deleted') === true) {
+      throw new functions.https.HttpsError('failed-precondition', 'PRIVATE_LIFE_MODEL_OWNER_DELETED')
+    }
+
     const replayReceipt = () => {
       if (
         priorReceipt.get('ownerId') !== uid
@@ -276,10 +282,6 @@ export const reviewPrivateLifeModelCandidate = lifeModelReviewFunctions.https.on
       }
     }
 
-    requireCurrentModelConsent(policySnapshot)
-    if (fenceSnapshot.exists && fenceSnapshot.get('deleted') === true) {
-      throw new functions.https.HttpsError('failed-precondition', 'PRIVATE_LIFE_MODEL_OWNER_DELETED')
-    }
     if (!revisionSnapshot.exists || !currentSnapshot.exists) {
       throw new functions.https.HttpsError('not-found', 'Private Life Model revision is unavailable.')
     }

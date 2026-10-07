@@ -35,3 +35,31 @@ Owner prerequisites for enabling it:
 Native compilation, provider behavior, signing and delivery remain required. Browser and synthetic credential tests do not certify an iPhone or the App Store.
 
 Primary references: [Capacitor iOS](https://capacitorjs.com/docs/ios), [Firebase plugin setup](https://capawesome.io/docs/sdks/capacitor/firebase/authentication/), [Apple login requirement](https://developer.apple.com/app-store/review/guidelines/#login-services), [Firebase Apple identity](https://firebase.google.com/docs/auth/web/apple), [Associated Domains](https://developer.apple.com/documentation/xcode/supporting-associated-domains).
+
+## Complete source archive and exact-source transport
+
+The source preparation workflow now retains the entire generated `ios` directory, including the Xcode/SPM project, asset catalog, native resources and copied static web export. The complete archive includes `ios-source-receipt.json` and an embedded `ios-source-project-index.json` with every retained file's SHA256, exact source SHA and workflow run. A separate transport manifest binds the complete ZIP and bounded 24 MiB parts. The small `urai-ios-source-preparation-*` artifact remains selected evidence; it is not the complete project.
+
+After downloading and extracting the transport manifest and all numbered part artifacts into one directory, reconstruct and verify without transferring identity from another SHA:
+
+```sh
+python3 scripts/prepare-ios-source-archive.py reconstruct \
+  --manifest /absolute/path/ios-source-archive-transport.json \
+  --parts-directory /absolute/path/downloaded-parts \
+  --output /absolute/path/urai-ios-project-source.zip \
+  --source-sha "$EXACT_APPROVED_SOURCE_SHA"
+python3 scripts/prepare-ios-source-archive.py verify \
+  --archive /absolute/path/urai-ios-project-source.zip \
+  --source-sha "$EXACT_APPROVED_SOURCE_SHA"
+```
+
+Extract the ZIP into a clean directory on the eligible Mac and open `distribution/ios-shell/ios/App/App.xcodeproj`. Resolve the pinned remote SPM dependencies before building. Unconfigured source preparation supplies canonical public Firebase web configuration while deliberately omitting native Google/Apple authority. The archived receipt and fingerprint retain `compiled=false`, `signed=false` and no physical-device acceptance. Supplying genuine provider/signing configuration requires a new exact-source build and its own acceptance; it must not be retroactively claimed for this archive.
+
+
+## Self-contained source and unprovisioned compiler evidence
+
+The full source archive now vendors the exact locked Capacitor App8.1.2 local SPM package, native sources and license inside the generated project. It no longer requires an external node_modules package path. Capacitor core stays pinned to8.5.2; the compiler job validates its resolved commit0b6882e9a3288342aacf36348e5a94e4f1dd7b13 and retains Package.resolved.
+
+The same workflow verifies the complete exact-source ZIP on macos-latest, requires Xcode26+, and builds Release for generic iPhoneOS and iOS Simulator. Both builds set CODE_SIGNING_ALLOWED=NO, CODE_SIGNING_REQUIRED=NO and empty signing identity/team. The artifacts retain the actual .app, Mach-O executable hash, per-file index, Xcode/SDK versions, dependency lock, build log, copied static fingerprint and bounded transport. The receipt records actual application signature inspection; any linker ad-hoc signature carries no Apple team authority.
+
+These artifacts prove compilation only after their exact jobs succeed. They are unprovisioned and carry no physical-device, simulator-runtime, provider, TestFlight or App Store acceptance. Native Google/Apple authority remains deliberately unconfigured. Genuine provider configuration, provisioning, signing, review and devices require their own accepted exact-source build.

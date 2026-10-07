@@ -5,6 +5,8 @@ on:
     branches: [main]
     paths:
       - '.github/workflows/accessibility-performance-evidence.yml'
+      - 'scripts/visual-proof-transport.mjs'
+      - 'urai-tier1/tests/visual-proof-transport.test.mjs'
       - 'playwright.accessibility.config.ts'
       - 'scripts/materialize-accessibility-performance-current.mjs'
       - 'scripts/materialize-accessibility-performance-current-v2.mjs'
@@ -42,6 +44,8 @@ on:
     branches: [main]
     paths:
       - '.github/workflows/accessibility-performance-evidence.yml'
+      - 'scripts/visual-proof-transport.mjs'
+      - 'urai-tier1/tests/visual-proof-transport.test.mjs'
       - 'playwright.accessibility.config.ts'
       - 'scripts/materialize-accessibility-performance-current.mjs'
       - 'scripts/materialize-accessibility-performance-current-v2.mjs'
@@ -72,6 +76,7 @@ on:
 
 permissions:
   contents: read
+  actions: read # Download and check this run's immutable native artifact bytes.
 
 concurrency:
   group: accessibility-performance-${{ github.event.pull_request.number || inputs.verification_sha || github.ref }}
@@ -80,6 +85,7 @@ concurrency:
 env:
   URAI_EXACT_HEAD: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.event_name == 'workflow_dispatch' && inputs.verification_sha || github.sha }}
   PLAYWRIGHT_BROWSERS_PATH: '0'
+  URAI_PROOF_GROUP: accessibility-performance
 
 jobs:
   evidence:
@@ -267,6 +273,7 @@ jobs:
           exit "$status"
 
       - name: Retain exact-head evidence
+        id: original-accessibility-proof
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
@@ -274,3 +281,159 @@ jobs:
           path: artifacts/accessibility-performance
           if-no-files-found: error
           retention-days: 365
+
+      - name: Partition the original native accessibility archive
+        id: bounded-accessibility-transport
+        if: ${{ always() && steps.original-accessibility-proof.outputs.artifact-id != '' }}
+        timeout-minutes: 5
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          URAI_ORIGINAL_ARTIFACT_ID: ${{ steps.original-accessibility-proof.outputs.artifact-id }}
+          URAI_ORIGINAL_ARTIFACT_DIGEST: ${{ steps.original-accessibility-proof.outputs.artifact-digest }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          node scripts/visual-proof-transport.mjs prepare-native \
+            --output "artifacts/accessibility-performance-transport"
+
+      - name: Upload bounded accessibility transport manifest
+        id: bounded-accessibility-manifest
+        if: ${{ always() && steps.bounded-accessibility-transport.outcome == 'success' }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: accessibility-performance-transport-${{ env.URAI_EXACT_HEAD }}-${{ github.run_id }}-${{ github.run_attempt }}-manifest
+          path: artifacts/accessibility-performance-transport/manifest.json
+          if-no-files-found: error
+          retention-days: 365
+          compression-level: 0
+
+      - name: Upload bounded accessibility archive part 01
+        id: bounded-accessibility-part-01
+        if: ${{ always() && steps.bounded-accessibility-transport.outcome == 'success' && steps.bounded-accessibility-transport.outputs.part_count >= 1 }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: accessibility-performance-transport-${{ env.URAI_EXACT_HEAD }}-${{ github.run_id }}-${{ github.run_attempt }}-part-01
+          path: artifacts/accessibility-performance-transport/accessibility-performance.zip.part-01
+          if-no-files-found: error
+          retention-days: 365
+          compression-level: 0
+
+      - name: Upload bounded accessibility archive part 02
+        id: bounded-accessibility-part-02
+        if: ${{ always() && steps.bounded-accessibility-transport.outcome == 'success' && steps.bounded-accessibility-transport.outputs.part_count >= 2 }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: accessibility-performance-transport-${{ env.URAI_EXACT_HEAD }}-${{ github.run_id }}-${{ github.run_attempt }}-part-02
+          path: artifacts/accessibility-performance-transport/accessibility-performance.zip.part-02
+          if-no-files-found: error
+          retention-days: 365
+          compression-level: 0
+
+      - name: Upload bounded accessibility archive part 03
+        id: bounded-accessibility-part-03
+        if: ${{ always() && steps.bounded-accessibility-transport.outcome == 'success' && steps.bounded-accessibility-transport.outputs.part_count >= 3 }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: accessibility-performance-transport-${{ env.URAI_EXACT_HEAD }}-${{ github.run_id }}-${{ github.run_attempt }}-part-03
+          path: artifacts/accessibility-performance-transport/accessibility-performance.zip.part-03
+          if-no-files-found: error
+          retention-days: 365
+          compression-level: 0
+
+      - name: Upload bounded accessibility archive part 04
+        id: bounded-accessibility-part-04
+        if: ${{ always() && steps.bounded-accessibility-transport.outcome == 'success' && steps.bounded-accessibility-transport.outputs.part_count >= 4 }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: accessibility-performance-transport-${{ env.URAI_EXACT_HEAD }}-${{ github.run_id }}-${{ github.run_attempt }}-part-04
+          path: artifacts/accessibility-performance-transport/accessibility-performance.zip.part-04
+          if-no-files-found: error
+          retention-days: 365
+          compression-level: 0
+
+      - name: Upload bounded accessibility archive part 05
+        id: bounded-accessibility-part-05
+        if: ${{ always() && steps.bounded-accessibility-transport.outcome == 'success' && steps.bounded-accessibility-transport.outputs.part_count >= 5 }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: accessibility-performance-transport-${{ env.URAI_EXACT_HEAD }}-${{ github.run_id }}-${{ github.run_attempt }}-part-05
+          path: artifacts/accessibility-performance-transport/accessibility-performance.zip.part-05
+          if-no-files-found: error
+          retention-days: 365
+          compression-level: 0
+
+      - name: Upload bounded accessibility archive part 06
+        id: bounded-accessibility-part-06
+        if: ${{ always() && steps.bounded-accessibility-transport.outcome == 'success' && steps.bounded-accessibility-transport.outputs.part_count >= 6 }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: accessibility-performance-transport-${{ env.URAI_EXACT_HEAD }}-${{ github.run_id }}-${{ github.run_attempt }}-part-06
+          path: artifacts/accessibility-performance-transport/accessibility-performance.zip.part-06
+          if-no-files-found: error
+          retention-days: 365
+          compression-level: 0
+
+      - name: Upload bounded accessibility archive part 07
+        id: bounded-accessibility-part-07
+        if: ${{ always() && steps.bounded-accessibility-transport.outcome == 'success' && steps.bounded-accessibility-transport.outputs.part_count >= 7 }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: accessibility-performance-transport-${{ env.URAI_EXACT_HEAD }}-${{ github.run_id }}-${{ github.run_attempt }}-part-07
+          path: artifacts/accessibility-performance-transport/accessibility-performance.zip.part-07
+          if-no-files-found: error
+          retention-days: 365
+          compression-level: 0
+
+      - name: Upload bounded accessibility archive part 08
+        id: bounded-accessibility-part-08
+        if: ${{ always() && steps.bounded-accessibility-transport.outcome == 'success' && steps.bounded-accessibility-transport.outputs.part_count >= 8 }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: accessibility-performance-transport-${{ env.URAI_EXACT_HEAD }}-${{ github.run_id }}-${{ github.run_attempt }}-part-08
+          path: artifacts/accessibility-performance-transport/accessibility-performance.zip.part-08
+          if-no-files-found: error
+          retention-days: 365
+          compression-level: 0
+
+      - name: Verify separate native transport artifact identities and byte limits
+        id: verified-accessibility-transport
+        if: ${{ always() && steps.bounded-accessibility-transport.outcome == 'success' }}
+        timeout-minutes: 5
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          URAI_ORIGINAL_ARTIFACT_ID: ${{ steps.original-accessibility-proof.outputs.artifact-id }}
+          URAI_ORIGINAL_ARTIFACT_DIGEST: ${{ steps.original-accessibility-proof.outputs.artifact-digest }}
+          URAI_MANIFEST_ID: ${{ steps.bounded-accessibility-manifest.outputs.artifact-id }}
+          URAI_MANIFEST_DIGEST: ${{ steps.bounded-accessibility-manifest.outputs.artifact-digest }}
+          URAI_PART_01_ID: ${{ steps.bounded-accessibility-part-01.outputs.artifact-id }}
+          URAI_PART_01_DIGEST: ${{ steps.bounded-accessibility-part-01.outputs.artifact-digest }}
+          URAI_PART_02_ID: ${{ steps.bounded-accessibility-part-02.outputs.artifact-id }}
+          URAI_PART_02_DIGEST: ${{ steps.bounded-accessibility-part-02.outputs.artifact-digest }}
+          URAI_PART_03_ID: ${{ steps.bounded-accessibility-part-03.outputs.artifact-id }}
+          URAI_PART_03_DIGEST: ${{ steps.bounded-accessibility-part-03.outputs.artifact-digest }}
+          URAI_PART_04_ID: ${{ steps.bounded-accessibility-part-04.outputs.artifact-id }}
+          URAI_PART_04_DIGEST: ${{ steps.bounded-accessibility-part-04.outputs.artifact-digest }}
+          URAI_PART_05_ID: ${{ steps.bounded-accessibility-part-05.outputs.artifact-id }}
+          URAI_PART_05_DIGEST: ${{ steps.bounded-accessibility-part-05.outputs.artifact-digest }}
+          URAI_PART_06_ID: ${{ steps.bounded-accessibility-part-06.outputs.artifact-id }}
+          URAI_PART_06_DIGEST: ${{ steps.bounded-accessibility-part-06.outputs.artifact-digest }}
+          URAI_PART_07_ID: ${{ steps.bounded-accessibility-part-07.outputs.artifact-id }}
+          URAI_PART_07_DIGEST: ${{ steps.bounded-accessibility-part-07.outputs.artifact-digest }}
+          URAI_PART_08_ID: ${{ steps.bounded-accessibility-part-08.outputs.artifact-id }}
+          URAI_PART_08_DIGEST: ${{ steps.bounded-accessibility-part-08.outputs.artifact-digest }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          node scripts/visual-proof-transport.mjs verify-native-uploads \
+            --manifest "artifacts/accessibility-performance-transport/manifest.json" \
+            --output "artifacts/accessibility-performance-transport/upload-receipt.json"
+
+      - name: Upload verified native accessibility transport receipt
+        if: ${{ always() && steps.verified-accessibility-transport.outcome == 'success' }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: accessibility-performance-transport-${{ env.URAI_EXACT_HEAD }}-${{ github.run_id }}-${{ github.run_attempt }}-upload-receipt
+          path: artifacts/accessibility-performance-transport/upload-receipt.json
+          if-no-files-found: error
+          retention-days: 365
+          compression-level: 0
