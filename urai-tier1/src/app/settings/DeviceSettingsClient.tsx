@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import AdamLauncherSlot from '@/spatial/adam/AdamLauncherSlot'
 import { useEffect, useState } from 'react'
 import { getAuth, onAuthStateChanged, type User } from 'firebase/auth'
 import { app, firebasePublicEnvReady } from '@/lib/firebase/client'
@@ -164,7 +165,7 @@ export default function DeviceSettingsClient() {
   return (
     <main style={{boxSizing:'border-box',overflowWrap:'anywhere',height:'100svh',minHeight:'100svh',overflowX:'hidden',overflowY:'auto',overscrollBehaviorY:'contain',background:'radial-gradient(circle at 50% 0%,#10202a 0,#071018 42%,#02060a 100%)',color:'#f4f8fb',padding:'max(28px,env(safe-area-inset-top)) max(clamp(18px,5vw,72px),env(safe-area-inset-right)) max(44px,env(safe-area-inset-bottom)) max(clamp(18px,5vw,72px),env(safe-area-inset-left))',fontFamily:'var(--font-sans)'}} data-route-owner="device-settings">
       <div style={{maxWidth:860,margin:'0 auto'}}>
-        <nav aria-label="Settings navigation" style={{display:'flex',justifyContent:'space-between',gap:16,alignItems:'center',flexWrap:'wrap'}}><Link href="/home" {...locale.props('nav.home')} style={{display:'inline-flex',alignItems:'center',minWidth:48,minHeight:48,color:'#c9eef3',textDecoration:'none'}}>← {locale.text('nav.home')}</Link><Link href="/passport" style={{display:'inline-flex',alignItems:'center',minWidth:48,minHeight:48,color:'#c9eef3',textDecoration:'none'}}>Passport</Link></nav>
+        <nav aria-label="Settings navigation" style={{display:'flex',justifyContent:'space-between',gap:16,alignItems:'center',flexWrap:'wrap'}}><Link href="/home" {...locale.props('nav.home')} style={{display:'inline-flex',alignItems:'center',minWidth:48,minHeight:48,color:'#c9eef3',textDecoration:'none'}}>← {locale.text('nav.home')}</Link><Link href="/passport" style={{display:'inline-flex',alignItems:'center',minWidth:48,minHeight:48,color:'#c9eef3',textDecoration:'none'}}>Passport</Link><AdamLauncherSlot name="device-settings" /></nav>
         <header style={{padding:'clamp(42px,8vw,92px) 0 34px'}}><p style={{letterSpacing:'.22em',textTransform:'uppercase',fontSize:11,color:'#8fb4bd'}}>Device feel</p><h1 style={{fontSize:'clamp(42px,8vw,78px)',lineHeight:.94,letterSpacing:'-.055em',margin:'10px 0 18px'}}>How URAI meets you.</h1><p style={{maxWidth:620,fontSize:'clamp(16px,2vw,20px)',lineHeight:1.6,color:'#c4d1d6'}}>Local sensory preferences live on this device. Private data permissions remain in the Consent Sanctuary, and ownership controls remain in Passport.</p></header>
 
         <LanguageSettings />

@@ -1,0 +1,137 @@
+name: Adam Settings and Passport Placement Proof
+
+on:
+  pull_request:
+    branches: [repair/release-closure-integration-20261007]
+    paths:
+      - '.github/workflows/adam-placement-proof.yml'
+      - 'urai-tier1/src/app/settings/DeviceSettingsClient.tsx'
+      - 'urai-tier1/src/app/passport/PassportVaultClient.tsx'
+      - 'urai-tier1/src/spatial/adam/**'
+      - 'urai-tier1/tests/accessibility-performance-adam-placement.spec.ts'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: adam-placement-proof-${{ github.event.pull_request.number || github.ref }}-${{ github.event.pull_request.head.sha || github.sha }}
+  cancel-in-progress: true
+
+env:
+  URAI_PROOF_SOURCE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+  PLAYWRIGHT_BROWSERS_PATH: '0'
+  NEXT_PUBLIC_URAI_ACCEPTANCE_FIXTURES: '1'
+  PLAYWRIGHT_HTML_OUTPUT_DIR: artifacts/adam-placement/playwright-report
+  PLAYWRIGHT_JSON_OUTPUT_FILE: artifacts/adam-placement/results.json
+
+jobs:
+  browser-placement:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - name: Checkout exact donor
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ env.URAI_PROOF_SOURCE_SHA }}
+          fetch-depth: 1
+          persist-credentials: false
+          show-progress: false
+
+      - name: Prove exact clean source
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "$URAI_PROOF_SOURCE_SHA" =~ ^[0-9a-f]{40}$ ]]
+          test "$(git rev-parse HEAD)" = "$URAI_PROOF_SOURCE_SHA"
+          test -z "$(git status --porcelain --untracked-files=all)"
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1
+        with:
+          version: 10.0.0
+          run_install: false
+
+      - name: Setup Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Install exact lockfile
+        run: |
+          corepack enable
+          pnpm install --frozen-lockfile
+
+      - name: Typecheck and build exact static donor
+        run: |
+          pnpm --dir urai-tier1 typecheck
+          pnpm build:static
+
+      - name: Install exact Chromium
+        run: pnpm --dir urai-tier1 exec playwright install --with-deps chromium
+
+      - name: Prove actual hydrated Settings and Passport placement
+        id: browser
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/adam-placement
+          pnpm exec playwright test --config playwright.accessibility.config.ts \
+            urai-tier1/tests/accessibility-performance-adam-placement.spec.ts \
+            --reporter=line,html,json 2>&1 | tee artifacts/adam-placement/playwright.log
+
+      - name: Bind receipts and reject recovered flakes
+        if: ${{ always() && steps.browser.outcome != 'skipped' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import hashlib, json, os, pathlib, subprocess
+          root = pathlib.Path('artifacts/adam-placement')
+          source = os.environ['URAI_PROOF_SOURCE_SHA']
+          checkout = subprocess.check_output(['git', 'rev-parse', 'HEAD'], text=True).strip()
+          assert checkout == source
+          report = json.loads((root / 'results.json').read_text())
+          tests = []
+          def collect(suite):
+              for spec in suite.get('specs', []):
+                  tests.extend(spec.get('tests', []))
+              for nested in suite.get('suites', []):
+                  collect(nested)
+          for suite in report.get('suites', []):
+              collect(suite)
+          images = [{'path': str(p.relative_to(root)), 'sha256': hashlib.sha256(p.read_bytes()).hexdigest(), 'bytes': p.stat().st_size} for p in sorted(root.rglob('*.png'))]
+          receipt = {'schemaVersion': 'urai-adam-placement-proof-v1', 'repository': os.environ['GITHUB_REPOSITORY'], 'exactHead': source, 'checkoutMatchesExactHead': True, 'runId': os.environ['GITHUB_RUN_ID'], 'runAttempt': os.environ['GITHUB_RUN_ATTEMPT'], 'scope': 'focused-donor-settings-passport-placement-only', 'productionVerified': False, 'deviceVerified': False, 'releaseAccepted': False, 'expectedTests': 12, 'recordedTests': len(tests), 'testResults': [{'status': t.get('status'), 'attempts': [{'status': r.get('status'), 'retry': r.get('retry')} for r in t.get('results', [])]} for t in tests], 'images': images}
+          (root / 'receipt.json').write_text(json.dumps(receipt, indent=2) + '\n')
+          assert len(tests) == 12, 'Missing or extra test coverage'
+          assert images, 'Literal screenshot receipts are required'
+          assert all(t.get('status') == 'expected' for t in tests), 'Browser assertion failed'
+          if any(r.get('retry', 0) > 0 for t in tests for r in t.get('results', [])):
+              raise SystemExit(86)
+          assert all(r.get('status') == 'passed' for t in tests for r in t.get('results', [])), 'Not every test passed'
+          PY
+
+      - name: Enforce bounded complete native evidence
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import pathlib
+          files = [p for p in pathlib.Path('artifacts/adam-placement').rglob('*') if p.is_file()]
+          assert files, 'No native proof produced'
+          total = sum(p.stat().st_size for p in files)
+          assert total <= 23 * 1024 * 1024, f'Native proof requires bounded part transport: {total} bytes'
+          print(f'Complete focused native evidence: {len(files)} files, {total} bytes')
+          PY
+
+      - name: Upload exact-head focused native proof
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: adam-placement-proof-${{ env.URAI_PROOF_SOURCE_SHA }}
+          path: artifacts/adam-placement
+          if-no-files-found: error
+          retention-days: 90
