@@ -62,6 +62,7 @@ function fixture(change = {}) {
       assert.ok(row.attempt); assert.equal(body.attempt_id, row.attempt.id)
       if (controls.recordLost) throw new Error('SYNTHETIC RECORD OUTCOME UNKNOWN')
       row.attempt.status = 'RECONCILIATION_REQUIRED'; row.attempt.reported_outcome = body.status
+      await controls.record?.(body, { env, setHead:value => { activeHead = value } })
       return Response.json({ ok:true, provider_call_authorized:false, execution_performed:false, reconciliation_required:true })
     }
     providerCalls.push({ url:String(url), init })
@@ -148,6 +149,14 @@ test('parallel replays dispatch at most once for the same actual paid request', 
 })
 test('unknown stream and outcome record failures retain reservation and prohibit retries', async () => {
   for (const change of [{ streamError:true },{ recordLost:true }]) { const f = fixture(change), response = await f.paidFetch(...f.directArgs()); await assert.rejects(response.text()); assert.equal(f.providerCalls.length,1); assert.equal([...f.rows.values()][0].hold,2500000); await assert.rejects(f.paidFetch(...f.directArgs())); assert.equal(f.providerCalls.length,1) }
+})
+test('source drift during awaited outcome recording suppresses successful stream completion and retains hold', async () => {
+  const f=fixture({record:async (_body,{setHead})=>{await Promise.resolve();setHead('c'.repeat(40))}})
+  const response=await f.paidFetch(...f.directArgs());await assert.rejects(response.text());assert.equal(f.providerCalls.length,1);assert.equal([...f.rows.values()][0].hold,2500000);assert.equal(f.calls.some(x=>x.action==='reconcile'),false)
+})
+test('deadline exhausted during awaited outcome recording suppresses successful stream completion and retains hold', async () => {
+  const f=fixture({record:async()=>{await new Promise(resolve=>setTimeout(resolve,2100))}})
+  const response=await f.paidFetch(...f.directArgs());await assert.rejects(response.text());assert.equal(f.providerCalls.length,1);assert.equal([...f.rows.values()][0].hold,2500000)
 })
 test('source/head account input header credential tenant and model envelope drift denies dispatch', async () => {
   for (const field of ['gateway_source_sha','source_sha','worker_id','credential_sha256','semantic_headers_sha256','source_input_sha256','tenant_sha256','content_type','request_sha256','request_size','asset']) {

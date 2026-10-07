@@ -173,7 +173,7 @@ export async function paidSpatialFetch(db: BindingStore, uid: string, lane: stri
     const upstream = await fetch(url, { ...init, method:'POST', body:bytes, headers, redirect:'error', signal })
     assertFreshAdmission()
     requestId = upstream.headers.get('request-id') ?? upstream.headers.get('x-request-id') ?? undefined
-    if (!upstream.ok || !upstream.body) { await observe('failed'); return upstream }
+    if (!upstream.ok || !upstream.body) { await observe('failed'); assertFreshAdmission(); return upstream }
     const reader = upstream.body.getReader()
     upstreamReader = reader
     const body = new ReadableStream<Uint8Array>({
@@ -181,7 +181,7 @@ export async function paidSpatialFetch(db: BindingStore, uid: string, lane: stri
         try {
           assertFreshAdmission()
           const chunk = await reader.read(); assertFreshAdmission()
-          if (chunk.done) { await observe('succeeded'); reader.releaseLock(); stream.close() }
+          if (chunk.done) { await observe('succeeded'); assertFreshAdmission(); reader.releaseLock(); stream.close() }
           else stream.enqueue(chunk.value)
         } catch (error) { controller.abort(); await observe('failed').catch(() => undefined); stream.error(error) }
       },
