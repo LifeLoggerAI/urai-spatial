@@ -21,6 +21,26 @@ for (const viewport of [{ width: 1440, height: 900 }, { width: 320, height: 700 
     }))
     expect(art.backgrounds.join(' ')).not.toMatch(/home-threshold|https?:|url\(/)
     expect(art.avatarVisible).toBe(false)
+    const readable = await fallback.evaluate(owner => {
+      const rect = (element: Element) => {
+        const r = element.getBoundingClientRect()
+        return { x: r.x, y: r.y, right: r.right, bottom: r.bottom, width: r.width, height: r.height }
+      }
+      return {
+        status: rect(owner.querySelector('[role="status"]')!),
+        heading: rect(owner.querySelector('h1')!),
+        targets: [...owner.querySelectorAll('button,a')].filter(el => {
+          const r = el.getBoundingClientRect()
+          return r.width > 0 && r.height > 0 && getComputedStyle(el).visibility !== 'hidden'
+        }).map(rect),
+      }
+    })
+    expect(readable.status.bottom + 12).toBeLessThanOrEqual(readable.heading.y)
+    for (const target of readable.targets) {
+      expect(target.width).toBeGreaterThanOrEqual(48)
+      expect(target.height).toBeGreaterThanOrEqual(48)
+    }
+    await test.info().attach('home-fallback-readable-geometry.json', { body: JSON.stringify(readable), contentType: 'application/json' })
     const nav = fallback.getByRole('navigation', { name: 'Accessible Home destinations' })
     const controls = await nav.locator(':scope > :is(button,a)').evaluateAll(nodes => nodes.map(node => {
       const r = node.getBoundingClientRect()

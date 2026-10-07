@@ -190,3 +190,21 @@ body:has(.life-map-navigator[open]) [data-testid="urai-true-3d-life-map"] * {
 [data-testid="urai-home-accessible-fallback"][data-webgl-state] .urai-genesis-home .urai-genesis-home__body {
   display: none !important;
 }
+
+/* Keep capability status clear of the fallback heading, and preserve the
+   same 48px target floor on its legacy text actions as on semantic navigation. */
+[data-testid="urai-home-accessible-fallback"][data-webgl-state] .urai-genesis-home .urai-genesis-home__cta {
+  min-height: 48px !important;
+  min-width: 48px !important;
+}
+@media (max-width: 760px) {
+  [data-testid="urai-home-accessible-fallback"][data-webgl-state] .urai-genesis-home .urai-genesis-home__hero {
+    position: absolute !important;
+    top: max(140px, calc(env(safe-area-inset-top) + 140px)) !important;
+    left: 16px !important;
+    right: 16px !important;
+    width: auto !important;
+    padding: 16px !important;
+    transform: none !important;
+  }
+}
