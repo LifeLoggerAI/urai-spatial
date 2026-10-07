@@ -927,16 +927,35 @@ export const getOperationalExportDownloadUrl = functions.https.onCall(async (dat
 
 // A Storage signed capability bypasses rules and cannot be withdrawn. Revalidate
 // authentication, current revision and deletion authority on every delivery.
+function allowedExportBrowserOrigin(origin: string) {
+  if (['https://urai.app', 'https://www.urai.app', 'https://urai.life', 'https://uraispatial.com', 'https://localhost', 'capacitor://localhost', 'http://localhost'].includes(origin)) return true
+  const project = process.env.GCLOUD_PROJECT
+  if (!project || !/^[a-z][a-z0-9-]{4,61}[a-z0-9]$/.test(project)) return false
+  if (origin === `https://${project}.web.app` || origin === `https://${project}.firebaseapp.com`) return true
+  // Hosting preview channels remain inside this runtime's own project namespace.
+  // No arbitrary web.app, localhost port, null or URL suffix origin is accepted.
+  return new RegExp(`^https://${project}--[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\\.web\\.app$`).test(origin)
+    && new URL(origin).hostname.split('.')[0].length <= 63
+}
+
 export const downloadOperationalExportPackage = functions.runWith({ timeoutSeconds: 540, memory: '512MB' }).https.onRequest(async (request, response) => {
-  response.set({ 'Cache-Control': 'private, no-store', 'X-Content-Type-Options': 'nosniff', 'Referrer-Policy': 'no-referrer' })
-  const origin = request.get('origin'), project = process.env.GCLOUD_PROJECT
-  const allowed = new Set(['https://urai.app', 'https://urai.life', 'https://uraispatial.com', 'capacitor://localhost', 'http://localhost', 'https://localhost', `https://${project}.web.app`, `https://${project}.firebaseapp.com`])
-  if (origin) {
-    if (!allowed.has(origin)) { response.status(403).json({ error: 'origin_unavailable' }); return }
-    response.set({ 'Access-Control-Allow-Origin': origin, 'Vary': 'Origin', 'Access-Control-Allow-Headers': 'Authorization', 'Access-Control-Allow-Methods': 'GET, OPTIONS' })
+  response.set({ 'Cache-Control': 'private, no-store', 'X-Content-Type-Options': 'nosniff', 'Referrer-Policy': 'no-referrer', Vary: 'Origin' })
+  const origin = request.get('origin')
+  if (origin && !allowedExportBrowserOrigin(origin)) { response.status(403).json({ error: 'export_origin_unavailable' }); return }
+  if (request.method === 'OPTIONS') {
+    response.set('Vary', 'Origin, Access-Control-Request-Method, Access-Control-Request-Headers')
+    const requestedHeaders = request.get('access-control-request-headers')
+    if (!origin || request.get('access-control-request-method') !== 'GET'
+      || (requestedHeaders && !requestedHeaders.split(',').every(header => header.trim().toLowerCase() === 'authorization'))) {
+      response.status(403).json({ error: 'export_preflight_unavailable' }); return
+    }
+    // Preflight grants browser transport only. No token, job or private object is read.
+    response.set({ 'Access-Control-Allow-Origin': origin, 'Access-Control-Allow-Methods': 'GET',
+      'Access-Control-Allow-Headers': 'Authorization', 'Access-Control-Max-Age': '0' }).status(204).end()
+    return
   }
-  if (request.method === 'OPTIONS') { response.status(204).end(); return }
-  if (request.method !== 'GET') { response.set('Allow', 'GET').status(405).json({ error: 'method_not_allowed' }); return }
+  if (origin) response.set({ 'Access-Control-Allow-Origin': origin, 'Access-Control-Expose-Headers': 'Content-Disposition' })
+  if (request.method !== 'GET') { response.set('Allow', 'GET, OPTIONS').status(405).json({ error: 'method_not_allowed' }); return }
   try {
     const bearer = request.get('authorization')?.match(/^Bearer\s+(\S+)$/i)?.[1]
     if (!bearer) throw new functions.https.HttpsError('unauthenticated', 'Authentication is required.')

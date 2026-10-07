@@ -93,11 +93,12 @@ test('actual consumer requires authenticated descriptor and cannot save after ow
     const module = { exports: {} }
     class LocalURL extends URL { static createObjectURL() { saved++; return 'blob:synthetic' }; static revokeObjectURL() {} }
     const document = { body: { append() {} }, createElement: () => ({ click() {}, remove() {} }) }
-    vm.runInNewContext(clientCode, { module, exports: module.exports, URL: LocalURL, document, window: { location: { origin: 'capacitor://localhost' } }, setTimeout: () => {}, require: name => {
+    vm.runInNewContext(clientCode, { module, exports: module.exports, URL: LocalURL, document, window: { location: { origin: 'capacitor://localhost', href: 'capacitor://localhost/passport' } }, setTimeout: () => {}, require: name => {
       if (name === 'firebase/functions') return { httpsCallable: (_functions, callable) => async () => { assert.equal(callable, 'getOperationalExportDownloadUrl'); if (drift === 'descriptor') auth.currentUser = null; if (drift === 'owner') descriptor.ownerId = 'other'; return { data: descriptor } } }
       if (name === 'firebase/auth') return { getAuth: () => auth }
       if (name === 'firebase/firestore') return {}
       if (name === '@/lib/firebase/client') return { app: { options: { projectId: 'urai-4dc1d' } }, functions: {} }
+      if (name === '@/lib/clientApiUrl') return { clientApiUrl: path => 'https://urai.app' + path }
       if (name === './authorizedExportDownload') return { fetchAuthorizedOperationalExport: async args => { fetched++; await args.getIdToken(); if (drift === 'body') auth.currentUser = null; if (drift === 'epoch') current = false; return new Blob(['{}']) } }
       throw new Error(`Unexpected actual client dependency ${name}`)
     } })
@@ -105,4 +106,82 @@ test('actual consumer requires authenticated descriptor and cannot save after ow
     assert.equal(saved, 0)
     if (['unsigned', 'owner'].includes(drift)) assert.equal(fetched, 0)
   }
+})
+
+function actualSaveFixture({ pageHref, configuredOrigin, descriptorUrl = url, afterToken, afterBody } = {}) {
+  const stats = { tokens: 0, fetches: [], saved: 0, blobUrls: 0, revoked: 0 }
+  const state = { current: true }
+  const user = { uid: 'synthetic-export-owner', async getIdToken(refresh) {
+    assert.equal(refresh, true); stats.tokens++; afterToken?.(state); return 'synthetic-token'
+  } }
+  const auth = { currentUser: user }
+  class BrowserURL extends URL {
+    static createObjectURL() { stats.blobUrls++; return 'blob:synthetic-export' }
+    static revokeObjectURL() { stats.revoked++ }
+  }
+  const globals = { URL: BrowserURL, Blob, Uint8Array,
+    window: { location: { href: pageHref, origin: new URL(pageHref).origin } },
+    document: { body: { append() {} }, createElement() { return { click() { stats.saved++ }, remove() {} } } },
+    setTimeout(callback) { callback(); return 1 },
+    fetch: async (target, options) => {
+      stats.fetches.push({ target, options }); afterBody?.(state)
+      return new Response('{"synthetic":true}', { headers: { 'Content-Type': 'application/json' } })
+    },
+  }
+  function load(filename, dependencies = {}, environment = {}) {
+    const exports = {}
+    const code = ts.transpileModule(fs.readFileSync(filename, 'utf8'), {
+      compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS },
+    }).outputText
+    vm.runInNewContext(code, { ...globals, exports, process: { env: environment }, require(name) {
+      assert.ok(Object.hasOwn(dependencies, name), `Unexpected actual client dependency ${name}`)
+      return dependencies[name]
+    } }, { filename })
+    return exports
+  }
+  const api = load('src/lib/clientApiUrl.ts', {}, { NEXT_PUBLIC_URAI_API_ORIGIN: configuredOrigin })
+  const transport = load('src/lib/privacy/authorizedExportDownload.ts')
+  const client = load('src/lib/privacy/operationalPrivacyClient.ts', {
+    'firebase/firestore': {}, 'firebase/functions': {}, 'firebase/auth': { getAuth: () => auth },
+    '@/lib/firebase/client': { app: { options: { projectId: 'urai-4dc1d' } }, functions: {} }, '@/lib/clientApiUrl': api,
+    './authorizedExportDownload': transport,
+  })
+  return { stats, auth, state, save: () => client.saveOperationalExportDownload({
+    ownerId: user.uid, jobId: 'synthetic-job', file: 'export', requiresAuthorization: true, url: descriptorUrl,
+  }, () => state.current) }
+}
+
+for (const pageHref of ['https://localhost/passport', 'capacitor://localhost/passport']) {
+  test(`actual native save from ${pageHref} sends refreshed Bearer only to configured canonical API`, async () => {
+    const f = actualSaveFixture({ pageHref, configuredOrigin: 'https://urai.app' })
+    await f.save()
+    assert.equal(f.stats.fetches[0].target, 'https://urai.app' + url)
+    assert.equal(f.stats.fetches[0].options.headers.Authorization, 'Bearer synthetic-token')
+    assert.equal(f.stats.fetches[0].options.credentials, 'omit'); assert.equal(f.stats.fetches[0].options.redirect, 'error')
+    assert.equal(f.stats.tokens, 1); assert.equal(f.stats.saved, 1); assert.equal(f.stats.revoked, 1)
+  })
+}
+test('actual browser save without API override preserves its current owned preview origin', async () => {
+  const f = actualSaveFixture({ pageHref: 'https://urai-4dc1d--review-ab12.web.app/passport' })
+  await f.save(); assert.equal(f.stats.fetches[0].target, 'https://urai-4dc1d--review-ab12.web.app' + url)
+  assert.equal(f.stats.saved, 1)
+})
+test('native save rejects a descriptor outside the configured API before token refresh', async () => {
+  const f = actualSaveFixture({ pageHref: 'capacitor://localhost/passport', configuredOrigin: 'https://urai.app',
+    descriptorUrl: 'https://foreign.invalid/api/privacy/export/download' })
+  await assert.rejects(f.save(), /current application/); assert.equal(f.stats.tokens, 0); assert.equal(f.stats.fetches.length, 0)
+})
+test('native save rejects malformed configured API authority before token refresh', async () => {
+  const f = actualSaveFixture({ pageHref: 'capacitor://localhost/passport', configuredOrigin: 'https://user:pass@urai.app' })
+  await assert.rejects(f.save(), /bare HTTPS origin/); assert.equal(f.stats.tokens, 0); assert.equal(f.stats.fetches.length, 0)
+})
+test('actual configured native save retains auth epoch fencing across token refresh', async () => {
+  const f = actualSaveFixture({ pageHref: 'capacitor://localhost/passport', configuredOrigin: 'https://urai.app', afterToken: state => { state.current = false } })
+  await assert.rejects(f.save(), /Current owner authentication/); assert.equal(f.stats.tokens, 1); assert.equal(f.stats.fetches.length, 0)
+  assert.equal(f.stats.blobUrls, 0)
+})
+test('actual configured native save retains auth epoch fencing after private bytes arrive', async () => {
+  const f = actualSaveFixture({ pageHref: 'https://localhost/passport', configuredOrigin: 'https://urai.app', afterBody: state => { state.current = false } })
+  await assert.rejects(f.save(), /Current owner authentication|Current export authority/); assert.equal(f.stats.fetches.length, 1)
+  assert.equal(f.stats.blobUrls, 0); assert.equal(f.stats.saved, 0)
 })

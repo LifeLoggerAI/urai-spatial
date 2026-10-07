@@ -3,6 +3,7 @@
 import { collection, limit, onSnapshot, orderBy, query, type DocumentData, type Unsubscribe } from 'firebase/firestore'
 import { httpsCallable } from 'firebase/functions'
 import { getAuth } from 'firebase/auth'
+import { clientApiUrl } from '@/lib/clientApiUrl'
 import { fetchAuthorizedOperationalExport } from './authorizedExportDownload'
 import { app, functions, getFirebaseDb } from '@/lib/firebase/client'
 
@@ -63,7 +64,8 @@ export async function saveOperationalExportDownload(result: PrivacyCallableResul
   }
   requireCurrent()
   if (typeof result.url !== 'string' || result.requiresAuthorization !== true) throw new Error('Authenticated export delivery is required.')
-  const contents = await fetchAuthorizedOperationalExport({ url: result.url, origin: window.location.origin, projectId: app.options.projectId ?? '', jobId: String(result.jobId ?? ''), assetId: typeof result.assetId === 'string' ? result.assetId : undefined, file, current: () => !!user && auth.currentUser === user && isCurrent(),
+  const apiOrigin = new URL(clientApiUrl('/api/privacy/export/download'), window.location.href).origin
+  const contents = await fetchAuthorizedOperationalExport({ url: result.url, origin: apiOrigin, projectId: app.options.projectId ?? '', jobId: String(result.jobId ?? ''), assetId: typeof result.assetId === 'string' ? result.assetId : undefined, file, current: () => !!user && auth.currentUser === user && isCurrent(),
     getIdToken: async () => { requireCurrent(); const token = await user!.getIdToken(true); requireCurrent(); return token },
   })
   requireCurrent()
