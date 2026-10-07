@@ -1,6 +1,7 @@
 import * as functions from 'firebase-functions/v1'
 import * as admin from 'firebase-admin'
 import { createHash } from 'node:crypto'
+import { assertAppleDeletionMayComplete, revokeAppleForAccountDeletion, type AppleRevocationEvidence } from './appleDeletionRevocation'
 
 if (!admin.apps.length) admin.initializeApp()
 
@@ -872,6 +873,22 @@ export const createDeletionRequest = functions.https.onCall(async (data, context
   const receiptRef = db.doc(`users/${uid}/privacyReceipts/${receiptId}`)
   const existing = await jobRef.get()
   if (existing.exists) return publicJobState(existing.data() as JsonMap)
+  let appleProviderRevocation: AppleRevocationEvidence | null = null
+  if (scope === 'account') {
+    const account = await admin.auth().getUser(uid)
+    const apple = account.providerData.find((provider) => provider.providerId === 'apple.com')
+    if (apple) {
+      const bearerToken = /^Bearer ([A-Za-z0-9._-]+)$/.exec(context.rawRequest.get('authorization') ?? '')?.[1] ?? ''
+      try {
+        appleProviderRevocation = await revokeAppleForAccountDeletion({
+          uid, appleProviderUid: apple.uid, bearerToken, credential: data?.appleRevocationCredential,
+          publicApiKey: process.env.URAI_FIREBASE_WEB_API_KEY ?? '',
+        }, { verifyIdToken: (token) => admin.auth().verifyIdToken(token, true), fetch, now: Date.now })
+      } catch {
+        throw new functions.https.HttpsError('failed-precondition', 'APPLE_PROVIDER_REVOCATION_REQUIRED')
+      }
+    }
+  }
   const executeAfter = scope === 'account'
     ? timestamp.fromMillis(Date.now() + ACCOUNT_GRACE_MS)
     : timestamp.fromMillis(Date.now())
@@ -890,6 +907,7 @@ export const createDeletionRequest = functions.https.onCall(async (data, context
       'security and fraud records required for service integrity',
       'records a provider or law requires URAI to retain',
     ],
+    ...(appleProviderRevocation ? { appleProviderRevocation } : {}),
     createdAt: now,
     updatedAt: now,
   }
@@ -903,6 +921,7 @@ export const createDeletionRequest = functions.https.onCall(async (data, context
     jobId,
     scope,
     result: initialState,
+    ...(appleProviderRevocation ? { appleProviderRevocation } : {}),
     retainedExceptions: record.retainedExceptions,
     createdAt: now,
     updatedAt: now,
@@ -1034,6 +1053,8 @@ async function processDeletion(snapshot: FirebaseFirestore.DocumentSnapshot) {
     const userRef = db.doc(`users/${uid}`)
     const deletedCollections: string[] = []
     if (scope === 'account') {
+      const account = await admin.auth().getUser(uid)
+      assertAppleDeletionMayComplete(account.providerData.some((provider) => provider.providerId === 'apple.com'), job.appleProviderRevocation, account.metadata.lastSignInTime)
       await deleteCapturedRealityStorage(uid, { deleteAllExports: true })
       await db.recursiveDelete(userRef)
       await admin.auth().deleteUser(uid)
@@ -1057,6 +1078,7 @@ async function processDeletion(snapshot: FirebaseFirestore.DocumentSnapshot) {
       scope,
       result: 'completed',
       deletedCollections,
+      ...(scope === 'account' && job.appleProviderRevocation ? { appleProviderRevocation: job.appleProviderRevocation } : {}),
       retainedExceptions: Array.isArray(job.retainedExceptions) ? job.retainedExceptions : [],
       completedAt: fieldValue.serverTimestamp(),
       createdAt: fieldValue.serverTimestamp(),

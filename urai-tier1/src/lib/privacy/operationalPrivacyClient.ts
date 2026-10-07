@@ -3,6 +3,7 @@
 import { collection, limit, onSnapshot, orderBy, query, type DocumentData, type Unsubscribe } from 'firebase/firestore'
 import { httpsCallable } from 'firebase/functions'
 import { functions, getFirebaseDb } from '@/lib/firebase/client'
+import { appleCredentialForAccountDeletion } from '@/lib/firebase/appleAccountDeletion'
 
 export type PrivacyRow = DocumentData & { id: string }
 export type PrivacyCallableResult = Record<string, unknown>
@@ -51,8 +52,9 @@ export function createOperationalExportRequest(scopes: string[], suppliedOperati
 }
 export function getOperationalExportDownloadUrl(payload: { jobId: string; file?: 'export' | 'manifest' | 'runtime'; assetId?: string }) { return callOperationalPrivacyFunction('getExportDownloadUrl', payload) }
 export function cancelOperationalExportRequest(jobId: string) { return callOperationalPrivacyFunction('cancelExportRequest', { jobId }) }
-export function createOperationalDeletionRequest(payload: { scope: string; confirmation: string; reason?: string; operationId?: string }) {
-  return callOperationalPrivacyFunction('createDeletionRequest', { ...payload, operationId: payload.operationId ?? operationId('deletion') })
+export async function createOperationalDeletionRequest(payload: { scope: string; confirmation: string; reason?: string; operationId?: string }) {
+  const appleRevocationCredential = payload.scope === 'account' ? await appleCredentialForAccountDeletion() : undefined
+  return callOperationalPrivacyFunction('createDeletionRequest', { ...payload, ...(appleRevocationCredential ? { appleRevocationCredential } : {}), operationId: payload.operationId ?? operationId('deletion') })
 }
 export function cancelOperationalDeletionRequest(jobId: string) { return callOperationalPrivacyFunction('cancelDeletionRequest', { jobId }) }
 

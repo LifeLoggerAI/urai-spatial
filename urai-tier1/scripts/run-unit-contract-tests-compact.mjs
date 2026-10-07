@@ -3,6 +3,7 @@ import fs from 'node:fs'
 
 const tests = [
   'tests/android-aab-transport.test.mjs',
+  'tests/apple-account-deletion.test.mjs',
   'tests/android-native-google-auth.test.mjs',
   'tests/native-deep-links.test.mjs',
   'tests/ios-native-preparation.test.mjs',

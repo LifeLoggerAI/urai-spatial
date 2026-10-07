@@ -37,6 +37,12 @@ export default function AccountDeletionPage() {
             <li>Enter the required confirmation phrase and submit the deletion request.</li>
             <li>Use the same privacy surface to review or cancel an eligible queued request.</li>
           </ol>
+          <p style={{ lineHeight: 1.7 }}>
+            If your account uses Sign in with Apple, confirm the same Apple account again. Accepting the request
+            revokes its Apple sign-in permission before the deletion grace period starts. Cancelling the queued
+            deletion does not restore that permission; you can grant it again when signing in. Signing in again
+            requires a new verified deletion request before full-account deletion can complete.
+          </p>
           <a
             href="/privacy-controls?from=account-deletion"
             style={{ minHeight: 48, display: 'inline-flex', alignItems: 'center', padding: '0 18px', border: '1px solid currentColor', borderRadius: 999, color: 'inherit', textDecoration: 'none' }}
