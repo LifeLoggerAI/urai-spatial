@@ -2,6 +2,7 @@
 import { createHash } from 'node:crypto'
 import { existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
+import { homeNavigationSourceFailures } from './lib/home-navigation-source-authority.mjs'
 
 const root = process.cwd()
 const assetRoot = path.join(root, 'urai-tier1', 'public', 'assets', 'urai')
@@ -73,19 +74,25 @@ const routeOwnerChecks = [
       'urai-tier1/src/app/HomeSpatialRuntimeLayer.tsx',
       'urai-tier1/src/app/AssetDrivenHomeWorld.tsx',
       'urai-tier1/src/spatial/layout/HomeWorldProduction.tsx',
-      'urai-tier1/src/spatial/layout/HomeWorldProductionFinal.tsx',
+      'urai-tier1/src/spatial/layout/HomeWorldProductionPolished.tsx',
+      'urai-tier1/src/lib/i18n/coreMessages.ts',
+      'urai-tier1/src/lib/i18n/journeyMessages.ts',
     ],
     renderMode: 'asset-driven-spatial',
     // Check the actual mounting edges in their owning files, not just names in
     // an aggregate of retired and active source. This remains source evidence;
     // literal rendered-pixel acceptance is a separate release gate.
     requiredByFile: {
-      'urai-tier1/src/app/HomeSpatialRuntimeLayer.tsx': ['<AssetDrivenHomeWorld'],
+      'urai-tier1/src/app/HomeSpatialRuntimeLayer.tsx': ['<AssetDrivenHomeWorld', '<HomeSemanticNavigation />'],
       'urai-tier1/src/app/AssetDrivenHomeWorld.tsx': [
         '<HomeWorldProduction',
         'data-home-route-owner="asset-driven-natural-home"',
         'data-home-visible-world="moonlit-natural-inhabited-sanctuary"',
       ],
+      'urai-tier1/src/spatial/layout/HomeWorldProduction.tsx': [
+        'export { HomeWorldProductionPolished as HomeWorldProduction } from "./HomeWorldProductionPolished"',
+      ],
+      'urai-tier1/src/spatial/layout/HomeWorldProductionPolished.tsx': ['<Canvas ', '<Scene ', '<Terrain ', '<Orb ', '<Thresholds '],
     },
     required: [
       'AssetDrivenHomeWorld',
@@ -107,8 +114,6 @@ const routeOwnerChecks = [
       'home-orb-sanctuary',
       'home-ground-environmental-threshold',
       'home-life-map-sky-lookout',
-      'aria-label="Open Ground directly"',
-      "aria-label={locale.text('home.lifeMapAction')}",
     ],
     forbidden: [
       'EmbodiedHomeSpatialCanvas',
@@ -347,6 +352,12 @@ const routeOwners = routeOwnerChecks.map((check) => {
   }
 
   const sourceGraph = sources.join('\n')
+  if (check.routes.includes('/home')) {
+    ownerFailures.push(...homeNavigationSourceFailures(
+      sourcesByFile.get('urai-tier1/src/app/HomeSpatialRuntimeLayer.tsx') ?? '',
+      ['coreMessages', 'journeyMessages'].map(name => sourcesByFile.get(`urai-tier1/src/lib/i18n/${name}.ts`) ?? ''),
+    ))
+  }
   if (check.assetSet) {
     if (!sourceGraph.includes(check.assetSet)) ownerFailures.push(`does not import ${check.assetSet}`)
     if (check.assetConsumption !== 'memory-media-dome' && !sourceGraph.includes(`assetCssStack(${check.assetSet}.`)) ownerFailures.push(`does not render ${check.assetSet} through assetCssStack`)

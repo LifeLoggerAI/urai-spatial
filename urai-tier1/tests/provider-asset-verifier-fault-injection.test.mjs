@@ -26,11 +26,19 @@ assert.equal(fs.existsSync(path.join(root, 'release-control-evidence/provider-as
 function inject(t, mutate) {
   const fixture = fs.mkdtempSync(path.join(os.tmpdir(), 'urai-asset-verifier-'))
   t.after(() => fs.rmSync(fixture, { recursive: true, force: true }))
-  const files = new Set([verifierPath, handoffPath, 'urai-tier1/src/spatial/assets/uraiAssets.ts', ...report.routeOwners.flatMap(owner => owner.files)])
+  const files = new Set([verifierPath, 'scripts/lib/home-navigation-source-authority.mjs', handoffPath, 'urai-tier1/src/spatial/assets/uraiAssets.ts', ...report.routeOwners.flatMap(owner => owner.files)])
   for (const record of report.records) files.add(`urai-tier1/public/assets/urai/${record.canonicalPath}`)
   for (const file of files) {
     fs.mkdirSync(path.dirname(path.join(fixture, file)), { recursive: true })
     fs.copyFileSync(path.join(root, file), path.join(fixture, file))
+  }
+  // The real pinned parser is a declared workspace dependency. Keep the isolated
+  // verifier fixture complete without copying unrelated installed packages.
+  const parserRoot = path.dirname(fileURLToPath(import.meta.resolve('typescript/package.json')))
+  for (const file of ['package.json', 'lib/typescript.js']) {
+    const target = path.join(fixture, 'node_modules/typescript', file)
+    fs.mkdirSync(path.dirname(target), { recursive: true })
+    fs.copyFileSync(path.join(parserRoot, file), target)
   }
   mutate(fixture)
   const result = spawnSync(process.execPath, [verifierPath], { cwd: fixture, encoding: 'utf8' })
@@ -64,6 +72,33 @@ test('missing Home route owner fails closed', t => {
 test('unmounted Home world fails even with imported name and markers present', t => {
   const failed = inject(t, fixture => replace(fixture, homeOwner, '<HomeWorldProduction ', '<DisconnectedHomeWorld '))
   assert.ok(failed.failures.some(failure => failure.includes('missing active-owner binding: <HomeWorldProduction')))
+})
+
+test('retired Home producer cannot satisfy the current renderer mounting edge', t => {
+  const failed = inject(t, fixture => replace(fixture, 'urai-tier1/src/spatial/layout/HomeWorldProduction.tsx',
+    'HomeWorldProductionPolished as HomeWorldProduction', 'HomeWorldProductionFinal as HomeWorldProduction'))
+  assert.ok(failed.failures.some(failure => failure.includes('missing active-owner binding: export { HomeWorldProductionPolished')))
+})
+
+test('unused source strings and a wrong localized key cannot satisfy the actual Ground control', t => {
+  const failed = inject(t, fixture => {
+    const file = 'urai-tier1/src/app/HomeSpatialRuntimeLayer.tsx'
+    replace(fixture, file, "aria-label={locale.text('home.groundAction')}", "aria-label={locale.text('home.orbAction')}")
+    fs.appendFileSync(path.join(fixture, file), '\n// aria-label="Open Ground directly"; locale.text(\'home.groundAction\')\n')
+  })
+  assert.ok(failed.failures.some(failure => failure.includes('Home navigation actual home-semantic-ground')))
+})
+
+test('the authoritative English name cannot silently drift behind a correct message key', t => {
+  const failed = inject(t, fixture => replace(fixture, 'urai-tier1/src/lib/i18n/journeyMessages.ts',
+    'source:"Open Ground directly"', 'source:"Open a different destination"'))
+  assert.ok(failed.failures.some(failure => failure.includes('Home navigation actual home-semantic-ground')))
+})
+
+test('detached duplicate controls cannot stand in for the returned Home nav', t => {
+  const failed = inject(t, fixture => replace(fixture, 'urai-tier1/src/app/HomeSpatialRuntimeLayer.tsx',
+    'data-home-navigation-owner="runtime-boundary"', 'data-home-navigation-owner="detached"'))
+  assert.ok(failed.failures.some(failure => failure.includes('actual returned, named runtime-boundary nav')))
 })
 
 test('Replay dome consumption cannot silently detach from provider registry', t => {
