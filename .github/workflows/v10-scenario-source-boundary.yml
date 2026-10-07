@@ -1,0 +1,49 @@
+name: V10 Advisory Scenario Source Boundary
+
+on:
+  pull_request:
+    paths:
+      - 'scripts/simulation/run-v10-scenario.mjs'
+      - 'scripts/simulation/run-v10-scenario.test.mjs'
+      - '.github/workflows/v10-scenario-source-boundary.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  scenario-source-boundary:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Bind exact source and runtime
+        shell: bash
+        run: |
+          mkdir -p artifacts/v10-scenario-source-boundary
+          node --version > artifacts/v10-scenario-source-boundary/node-version.txt
+          git rev-parse HEAD > artifacts/v10-scenario-source-boundary/source-sha.txt
+          sha256sum scripts/simulation/run-v10-scenario.mjs scripts/simulation/run-v10-scenario.test.mjs .github/workflows/v10-scenario-source-boundary.yml > artifacts/v10-scenario-source-boundary/source-sha256.txt
+      - name: Test actual script output boundaries
+        shell: bash
+        run: |
+          set -o pipefail
+          node --test --test-reporter=tap scripts/simulation/run-v10-scenario.test.mjs | tee artifacts/v10-scenario-source-boundary/tests.tap
+      - name: Retain classified source examples
+        shell: bash
+        run: |
+          node scripts/simulation/run-v10-scenario.mjs > artifacts/v10-scenario-source-boundary/placeholder.json
+          node scripts/simulation/run-v10-scenario.mjs --example > artifacts/v10-scenario-source-boundary/example.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: v10-scenario-source-boundary-${{ github.event.pull_request.head.sha || github.sha }}
+          path: artifacts/v10-scenario-source-boundary
+          if-no-files-found: error
+          retention-days: 14
