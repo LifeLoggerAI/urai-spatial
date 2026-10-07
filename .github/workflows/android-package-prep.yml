@@ -112,7 +112,13 @@ jobs:
             --receipt-output android-native-auth-receipt.json
 
       - name: Build governed static export
+        env:
+          VERCEL_GIT_COMMIT_SHA: ${{ env.URAI_EXACT_HEAD }}
+          NEXT_PUBLIC_URAI_BUILD_SHA: ${{ env.URAI_EXACT_HEAD }}
         run: corepack pnpm build:static
+
+      - name: Bind and verify exact native static identity
+        run: node scripts/prepare-native-static-provenance.mjs --directory urai-tier1/out --source-sha "$URAI_EXACT_HEAD" --platform android --workflow-run-id "$GITHUB_RUN_ID"
 
       - name: Generate and sync Android project
         working-directory: distribution/android-shell
@@ -122,6 +128,7 @@ jobs:
           node ../../scripts/prepare-native-links.mjs --android-project android
           node ../../scripts/prepare-android-native-google-auth.mjs --optional --apply-project android
           corepack pnpm exec cap sync android
+          node ../../scripts/prepare-native-static-provenance.mjs --directory android/app/src/main/assets/public --source-sha "$URAI_EXACT_HEAD" --platform android --workflow-run-id "$GITHUB_RUN_ID" --verify-only
 
       - name: Apply governed Android version
         working-directory: distribution/android-shell/android
@@ -277,3 +284,4 @@ jobs:
           compression-level: 0
           if-no-files-found: error
           retention-days: 30
+

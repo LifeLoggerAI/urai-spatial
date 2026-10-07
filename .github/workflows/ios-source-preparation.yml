@@ -54,13 +54,20 @@ jobs:
           corepack pnpm install --frozen-lockfile
 
       - name: Build static export for unconfigured source preparation
+        env:
+          VERCEL_GIT_COMMIT_SHA: ${{ env.URAI_EXACT_HEAD }}
+          NEXT_PUBLIC_URAI_BUILD_SHA: ${{ env.URAI_EXACT_HEAD }}
         run: corepack pnpm build:static
+
+      - name: Bind and verify exact native static identity
+        run: node scripts/prepare-native-static-provenance.mjs --directory urai-tier1/out --source-sha "$URAI_EXACT_HEAD" --platform ios --workflow-run-id "$GITHUB_RUN_ID"
 
       - name: Generate iOS Swift Package Manager source
         working-directory: distribution/ios-shell
         run: |
           corepack pnpm exec cap add ios --packagemanager SPM
           node ../../scripts/prepare-ios-shell.mjs --optional --project ios --receipt-output ../../ios-source-receipt.json
+          node ../../scripts/prepare-native-static-provenance.mjs --directory ios/App/App/public --source-sha "$URAI_EXACT_HEAD" --platform ios --workflow-run-id "$GITHUB_RUN_ID" --verify-only
 
       - name: Retain source hashes and explicit native boundary
         shell: bash
@@ -81,7 +88,8 @@ jobs:
             distribution/ios-shell/ios/App/App/SceneDelegate.swift \
             distribution/ios-shell/ios/App/App/Info.plist \
             distribution/ios-shell/ios/App/App/App.entitlements \
-            distribution/ios-shell/ios/App/App/capacitor.config.json > ios-project-source.sha256
+            distribution/ios-shell/ios/App/App/capacitor.config.json \
+            distribution/ios-shell/ios/App/App/public/native-build-fingerprint.json > ios-project-source.sha256
 
       - name: Retain source-only iOS evidence
         uses: actions/upload-artifact@v4
@@ -89,6 +97,7 @@ jobs:
           name: urai-ios-source-preparation-${{ env.URAI_EXACT_HEAD }}
           path: |
             ios-source-receipt.json
+            distribution/ios-shell/ios/App/App/public/native-build-fingerprint.json
             ios-project-source.sha256
             distribution/ios-shell/ios/App/App.xcodeproj/project.pbxproj
             distribution/ios-shell/ios/App/CapApp-SPM/Package.swift
