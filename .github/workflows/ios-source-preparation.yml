@@ -229,6 +229,8 @@ jobs:
           ref: ${{ env.URAI_EXACT_HEAD }}
           fetch-depth: 1
           persist-credentials: false
+          # Native product input is the complete verified Linux archive. Avoid case-colliding web sources on macOS.
+          sparse-checkout: scripts
 
       - name: Prove exact clean compiler authority source
         shell: bash
