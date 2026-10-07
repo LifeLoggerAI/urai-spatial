@@ -81,3 +81,25 @@
 body:has(.passportVault) [data-urai-adam-launcher]{top:max(8px,env(safe-area-inset-top));left:50%;right:auto;transform:translateX(-50%)}
 .passportHeader{padding-top:max(84px,calc(env(safe-area-inset-top,0px) + 76px))}
 .passportSkip{z-index:2000}
+
+/* Keep the actual scroll viewport above the persistent companion, including
+   partially revealed operation fields that scrollIntoView considers visible. */
+.passportVault {
+  --passport-companion-clearance: max(120px, calc(env(safe-area-inset-bottom,0px) + 110px));
+  height: calc(100svh - var(--passport-companion-clearance));
+  max-height: calc(100svh - var(--passport-companion-clearance));
+  box-sizing: border-box;
+  padding-bottom: 24px;
+  scroll-padding-block: max(12px,env(safe-area-inset-top,0px)) 16px;
+}
+@media (min-width: 921px) {
+  .passportKey {
+    position: relative;
+    right: auto;
+    bottom: auto;
+    width: min(650px, calc(100vw - min(290px,28vw) - 54px));
+    max-height: none;
+    margin: 0 0 24px max(18px,env(safe-area-inset-left,0px));
+    overflow: visible;
+  }
+}

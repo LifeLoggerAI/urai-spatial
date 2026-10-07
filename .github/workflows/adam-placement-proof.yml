@@ -7,6 +7,7 @@ on:
       - '.github/workflows/adam-placement-proof.yml'
       - 'urai-tier1/src/app/settings/DeviceSettingsClient.tsx'
       - 'urai-tier1/src/app/passport/PassportVaultClient.tsx'
+      - 'urai-tier1/src/app/passport/passport-vault.css'
       - 'urai-tier1/src/spatial/adam/**'
       - 'urai-tier1/src/app/privacy-policy/page.tsx'
       - 'urai-tier1/src/app/privacy/page.tsx'
@@ -308,4 +309,3 @@ jobs:
           if-no-files-found: error
           retention-days: 90
           compression-level: 0
-
