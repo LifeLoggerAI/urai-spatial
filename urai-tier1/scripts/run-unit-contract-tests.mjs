@@ -3,6 +3,7 @@ import fs from 'node:fs'
 
 const focusedContractTests = [
   'tests/private-life-model-review-behavior.test.mjs',
+  '../tests/private-life-model-owner-authority.test.mjs',
   'tests/private-life-model-owner-review-contract.test.mjs',
   'tests/visual-proof-transport.test.mjs',
   'tests/passport-render-cadence.test.mjs',

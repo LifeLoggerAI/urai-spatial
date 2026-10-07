@@ -10,7 +10,7 @@ const source = fs.readFileSync(new URL('../../apps/functions/src/privateLifeMode
 const compiled = ts.transpileModule(source, {compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2020}}).outputText
 const canonical = value => Array.isArray(value) ? '['+value.map(canonical).join(',')+']' : value && typeof value==='object' ? '{'+Object.entries(value).sort(([a],[b])=>a.localeCompare(b)).map(([key,val])=>JSON.stringify(key)+':'+canonical(val)).join(',')+'}' : JSON.stringify(value)
 const hash = value => createHash('sha256').update(value).digest('hex')
-const owner='fixture-owner', handle='a'.repeat(40), root=`uraiPrivateLifeModel/${handle}`
+const owner='fixture-owner', sourceHandle='psh_abcdefghijklmnop', sourceReceiptRef='psr_abcdefghijklmnop', handle=hash(owner+'\n'+sourceHandle).slice(0,40), root=`uraiPrivateLifeModel/${handle}`
 const entityPath=`users/${owner}/lifeEntities/person:fixture`, claimPath=`users/${owner}/lifeClaims/claim:fixture`
 const policyPath=`users/${owner}/privacyPolicy/current`, fencePath=`uraiPrivateLifeModelOwnerFences/${hash(owner)}`
 
@@ -40,11 +40,17 @@ function fixture({retry=false}={}) {
     if(name==='firebase-admin')return {apps:[{}],firestore:Object.assign(()=>db,{FieldValue:{serverTimestamp:()=>({fixtureTimestamp:true})}})}
     throw new Error(`Unexpected import ${name}`)
   }})
-  const candidate={schemaVersion:'urai-spatial-owner-review-import-candidate-v1',ownerId:owner,reviewState:'OWNER_REVIEW_REQUIRED',importExecutable:false,historicalSourceAuthority:false,lineage:{sourceIds:['source:fixture']},
-    entities:[{id:'person:fixture',ownerId:owner,kind:'person',canonicalLabel:'Disclosed synthetic test person',aliases:[],createdFromSourceIds:['source:fixture'],reviewState:'QUARANTINED'}],
-    claims:[{id:'claim:fixture',ownerId:owner,subjectEntityId:'person:fixture',predicate:'role',value:'fixture-role',sourceIds:['source:fixture'],reviewState:'QUARANTINED',synthetic:true,evidenceClass:'UNKNOWN',proposedEvidenceClass:'DIRECT_SUBJECT_TESTIMONY',confidence:'unknown',status:'disputed'}],relationships:[]}
+  const candidate={schemaVersion:'urai-spatial-owner-review-import-candidate-v1',ownerId:owner,reviewState:'OWNER_REVIEW_REQUIRED',importExecutable:false,historicalSourceAuthority:false,lineage:{schemaVersion:'urai-private-source-receipt-v2',ownerUid:owner,jobId:'job-fixture-001',sourceReceiptRef,sourceHandleHash:hash(sourceHandle),sourceEvidenceClass:'DIRECT_SUBJECT_TESTIMONY',requestedPurpose:'memory-index',transcriptRef:'private:transcript/fixture',provenanceRef:'private:provenance/fixture',sourceFixityRef:'private:fixity/fixture',sourceSha256:hash('source'),sourceByteLength:42,sourceRevision:1,transcriptSha256:hash('transcript'),provenanceSha256:hash('provenance'),transcriptByteLength:24,priorMemoryIndexRef:null,locale:null,correlationTrigger:'initial-source',idempotencyKey:'job-fixture-001'},
+    entities:[{id:'person:fixture',ownerId:owner,kind:'person',canonicalLabel:'Disclosed synthetic test person',aliases:[],createdFromSourceIds:[sourceReceiptRef],reviewState:'QUARANTINED'}],
+    claims:[{id:'claim:fixture',ownerId:owner,subjectEntityId:'person:fixture',predicate:'role',value:'fixture-role',sourceIds:[sourceReceiptRef],reviewState:'QUARANTINED',synthetic:true,evidenceClass:'UNKNOWN',proposedEvidenceClass:'DIRECT_SUBJECT_TESTIMONY',confidence:'unknown',status:'disputed'}],relationships:[]}
   candidate.lineageSha256=hash(canonical(candidate.lineage))
-  const revision={ownerUid:owner,schemaVersion:'urai-life-model-v1',reviewState:'OWNER_REVIEW_REQUIRED',historicalSourceAuthority:false,syntheticOutputMayBecomeHistoricalSource:false,sourceEvidenceClass:'DIRECT_SUBJECT_TESTIMONY',importCandidate:candidate}
+  const revision={ownerUid:owner,jobId:candidate.lineage.jobId,lineage:candidate.lineage,requestDigest:hash(canonical(candidate.lineage)),schemaVersion:'urai-life-model-v1',reviewState:'OWNER_REVIEW_REQUIRED',historicalSourceAuthority:false,syntheticOutputMayBecomeHistoricalSource:false,sourceEvidenceClass:'DIRECT_SUBJECT_TESTIMONY',importCandidate:candidate}
+  // The owner-review fixture must include the protected producer authority.
+  const grant=candidate.lineage, consent={purpose:'memory.storage',policyVersion:'policy-fixture',decisionReceiptId:'consent-fixture'}
+  const sourcePath='uraiPrivateSourceReceipts/'+hash(sourceReceiptRef)
+  docs.set('jobs/'+grant.jobId,{ownerUid:owner,type:'memory.private-source.index',status:'SUCCEEDED',payload:grant,consent})
+  docs.set(sourcePath,{...grant,schemaVersion:'urai-private-source-receipt-v2',sourceHandle,status:'ACTIVE',synthetic:false,purposes:['memory-index'],consent})
+  docs.set(sourcePath+'/transcripts/'+hash(grant.transcriptRef),{...grant,schemaVersion:'urai-private-source-transcript-v2',status:'CURRENT',synthetic:false})
   const checksum=hash(canonical(revision))
   docs.set(root+'/revisions/00000001',{...revision,checksum,backlogState:'QUARANTINED_OWNER_REVIEW'})
   docs.set(root+'/state/current',{ownerUid:owner,revision:1,checksum,reviewState:'OWNER_REVIEW_REQUIRED',historicalSourceAuthority:false})
@@ -58,7 +64,7 @@ test('actual review transaction produces canonical entities and claims consumed 
   const f=fixture();const result=await f.call()
   assert.equal(result.entityCount,1);assert.equal(result.claimCount,1);assert.equal(result.replayed,false)
   const person=f.docs.get(entityPath),claim=f.docs.get(claimPath)
-  const bundle=compilePersonModel({ownerId:owner,person,state:{id:'state:fixture',ownerId:owner,entityId:person.id,asOf:'2026-10-07',claimIds:[claim.id],negativeConstraints:[],knowledgeCutoff:'2026-10-07',relationshipContextIds:[],sourceIds:['source:fixture']},claims:[claim],consentPurposes:['archive','identity-model']})
+  const bundle=compilePersonModel({ownerId:owner,person,state:{id:'state:fixture',ownerId:owner,entityId:person.id,asOf:'2026-10-07',claimIds:[claim.id],negativeConstraints:[],knowledgeCutoff:'2026-10-07',relationshipContextIds:[],sourceIds:[sourceReceiptRef]},claims:[claim],consentPurposes:['archive','identity-model']})
   assert.equal(bundle.personId,person.id);assert.deepEqual(bundle.acceptedClaimIds,[claim.id])
   assert.equal(claim.privateLifeModelChecksum,f.request.checksum)
   assert.equal(f.docs.get(`users/${owner}/lifeModelReceipts/review:fixture`).sourceChecksum,f.request.checksum)

@@ -140,6 +140,73 @@ function requireCurrentModelConsent(policy: FirebaseFirestore.DocumentSnapshot) 
   }
 }
 
+/** Reads the same protected source documents as the Jobs producer. All reads
+ * participate in the promotion transaction, so correction/revocation conflicts
+ * force Firestore to retry against current authority. A finished extraction does
+ * not need a live worker lease, but its source grant must still be current. */
+async function requireProtectedSourceAuthority(
+  transaction: FirebaseFirestore.Transaction, uid: string, handleHash: string,
+  retained: JsonMap, candidate: JsonMap,
+) {
+  const lineage = isRecord(retained.lineage) ? retained.lineage : null
+  const deny = () => new functions.https.HttpsError('failed-precondition', 'PRIVATE_LIFE_MODEL_SOURCE_AUTHORITY_STALE')
+  if (!lineage || lineage.schemaVersion !== 'urai-private-source-receipt-v2'
+    || lineage.ownerUid !== uid || lineage.requestedPurpose !== 'memory-index'
+    || lineage.jobId !== retained.jobId || lineage.sourceEvidenceClass !== retained.sourceEvidenceClass
+    || retained.requestDigest !== sha256(canonicalJson(lineage))
+    || canonicalJson(candidate.lineage) !== canonicalJson(lineage)) throw deny()
+  if (typeof lineage.sourceReceiptRef !== 'string' || !/^psr_[A-Za-z0-9_-]{16,128}$/.test(lineage.sourceReceiptRef)
+    || typeof lineage.jobId !== 'string' || !/^[A-Za-z0-9._:-]{8,200}$/.test(lineage.jobId)) throw deny()
+  for (const key of ['transcriptRef','provenanceRef','sourceFixityRef']) {
+    if (typeof lineage[key] !== 'string' || !/^private:[A-Za-z0-9_./:-]{8,512}$/.test(lineage[key] as string)) throw deny()
+  }
+  for (const key of ['sourceHandleHash','sourceSha256','transcriptSha256','provenanceSha256']) {
+    if (typeof lineage[key] !== 'string' || !SHA256.test(lineage[key] as string)) throw deny()
+  }
+  for (const key of ['sourceByteLength','transcriptByteLength','sourceRevision']) {
+    if (!Number.isSafeInteger(lineage[key]) || Number(lineage[key]) < 1) throw deny()
+  }
+  const sourceRef = db.collection('uraiPrivateSourceReceipts').doc(sha256(lineage.sourceReceiptRef as string))
+  const [sourceSnap, transcriptSnap, blockSnap, jobSnap] = await Promise.all([
+    transaction.get(sourceRef),
+    transaction.get(sourceRef.collection('transcripts').doc(sha256(lineage.transcriptRef as string))),
+    transaction.get(db.collection('jobConsentBlocks').doc(sha256(uid + '\n' + 'memory.storage'))),
+    transaction.get(db.collection('jobs').doc(lineage.jobId as string)),
+  ])
+  const source = sourceSnap.data() ?? {}
+  const transcript = transcriptSnap.data() ?? {}
+  const job = jobSnap.data() ?? {}
+  const consent = isRecord(job.consent) ? job.consent : {}
+  const sourceConsent = isRecord(source.consent) ? source.consent : {}
+  const payload = isRecord(job.payload) ? job.payload : {}
+  if (blockSnap.get('active') === true || job.ownerUid !== uid
+    || (job.type || job.jobType) !== 'memory.private-source.index'
+    || consent.purpose !== 'memory.storage' || !consent.policyVersion || !consent.decisionReceiptId
+    || source.schemaVersion !== 'urai-private-source-receipt-v2' || source.ownerUid !== uid
+    || source.sourceReceiptRef !== lineage.sourceReceiptRef || source.status !== 'ACTIVE' || source.synthetic !== false
+    || typeof source.sourceHandle !== 'string' || sha256(source.sourceHandle) !== lineage.sourceHandleHash
+    || sha256(uid + '\n' + source.sourceHandle).slice(0, 40) !== handleHash
+    || source.sourceEvidenceClass !== lineage.sourceEvidenceClass
+    || !Array.isArray(source.purposes) || !source.purposes.includes('memory-index')
+    || sourceConsent.purpose !== consent.purpose || sourceConsent.policyVersion !== consent.policyVersion
+    || sourceConsent.decisionReceiptId !== consent.decisionReceiptId) throw deny()
+  for (const key of ['sourceReceiptRef','transcriptRef','provenanceRef','requestedPurpose','priorMemoryIndexRef','locale']) {
+    if (String(payload[key] || '') !== String(lineage[key] || '')) throw deny()
+  }
+  if ((payload.correlationTrigger || 'initial-source') !== lineage.correlationTrigger) throw deny()
+  for (const key of ['sourceRevision','sourceFixityRef','sourceSha256','sourceByteLength']) {
+    if (source[key] !== lineage[key]) throw deny()
+  }
+  if (transcript.schemaVersion !== 'urai-private-source-transcript-v2' || transcript.ownerUid !== uid
+    || transcript.sourceReceiptRef !== lineage.sourceReceiptRef || transcript.status !== 'CURRENT'
+    || transcript.synthetic !== false || transcript.requestedPurpose !== 'memory-index'
+    || transcript.transcriptRef !== lineage.transcriptRef || transcript.provenanceRef !== lineage.provenanceRef) throw deny()
+  for (const key of ['sourceRevision','sourceSha256','transcriptSha256','provenanceSha256','transcriptByteLength']) {
+    if (transcript[key] !== lineage[key]) throw deny()
+  }
+  return lineage.sourceReceiptRef as string
+}
+
 /**
  * Promotes only explicitly owner-reviewed portions of one exact quarantined
  * private Life Model revision. The Jobs extraction remains inert by default:
@@ -197,7 +264,7 @@ export const reviewPrivateLifeModelCandidate = lifeModelReviewFunctions.https.on
       throw new functions.https.HttpsError('failed-precondition', 'PRIVATE_LIFE_MODEL_OWNER_DELETED')
     }
 
-    if (priorReceipt.exists) {
+    const replayReceipt = () => {
       if (
         priorReceipt.get('ownerId') !== uid
         || priorReceipt.get('kind') !== 'private-index-owner-review'
@@ -253,6 +320,16 @@ export const reviewPrivateLifeModelCandidate = lifeModelReviewFunctions.https.on
       || importCandidate.lineageSha256 !== sha256(canonicalJson(importCandidate.lineage))
     ) {
       throw new functions.https.HttpsError('failed-precondition', 'Private Life Model import candidate is invalid.')
+    }
+
+    const protectedSourceId = await requireProtectedSourceAuthority(transaction, uid, handleHash, revisionData, importCandidate)
+    if (priorReceipt.exists) return replayReceipt()
+    const reviewedSourceIds = (value: unknown) => {
+      const ids = sourceIds(value)
+      if (ids.length !== 1 || ids[0] !== protectedSourceId) {
+        throw new functions.https.HttpsError('failed-precondition', 'PRIVATE_LIFE_MODEL_CANDIDATE_SOURCE_SUBSTITUTION')
+      }
+      return ids
     }
 
     const entityCandidates = candidateMap(importCandidate.entities, 'Entity')
@@ -350,7 +427,7 @@ export const reviewPrivateLifeModelCandidate = lifeModelReviewFunctions.https.on
         kind: String(candidate.kind),
         canonicalLabel: String(candidate.canonicalLabel ?? '').slice(0, 180),
         aliases: Array.isArray(candidate.aliases) ? candidate.aliases.slice(0, 24).map(String) : [],
-        createdFromSourceIds: sourceIds(candidate.createdFromSourceIds),
+        createdFromSourceIds: reviewedSourceIds(candidate.createdFromSourceIds),
         privateLifeModelReviewId: reviewId,
         privateLifeModelRevision: revision,
         privateLifeModelChecksum: checksum,
@@ -374,7 +451,7 @@ export const reviewPrivateLifeModelCandidate = lifeModelReviewFunctions.https.on
         predicate: requireToken(candidate.predicate, 'predicate'),
         value,
         evidenceClass: decision.evidenceClass,
-        sourceIds: sourceIds(candidate.sourceIds),
+        sourceIds: reviewedSourceIds(candidate.sourceIds),
         confidence: decision.confidence,
         status: 'accepted',
         synthetic: false,
@@ -395,7 +472,7 @@ export const reviewPrivateLifeModelCandidate = lifeModelReviewFunctions.https.on
         toEntityId: requireToken(candidate.toEntityId, 'toEntityId'),
         kind: decision.kind,
         evidenceClass: sourceEvidenceClass,
-        sourceIds: sourceIds(candidate.sourceIds),
+        sourceIds: reviewedSourceIds(candidate.sourceIds),
         confidence: decision.confidence,
         status: 'accepted',
         synthetic: false,

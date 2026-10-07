@@ -100,6 +100,45 @@ async function createPage(browser, deviceName, options = {}) {
   return { context, page, consoleErrors, failedRequests, httpErrors }
 }
 
+
+async function captureRouteDiagnostics(page, name) {
+  const evidence = await page.evaluate(() => {
+    function inspect(element) {
+      const style = getComputedStyle(element)
+      const box = element.getBoundingClientRect()
+      return {
+        tag: element.tagName, id: element.id, className: element.getAttribute('class'),
+        routeOwner: element.getAttribute('data-route-owner'),
+        box: { x: box.x, y: box.y, width: box.width, height: box.height },
+        display: style.display, visibility: style.visibility, contentVisibility: style.contentVisibility,
+        position: style.position, transform: style.transform, animation: style.animation,
+        opacity: style.opacity, overflow: style.overflow, height: style.height, width: style.width,
+        hidden: element.hasAttribute('hidden'), inert: element.hasAttribute('inert'),
+        ariaHidden: element.getAttribute('aria-hidden'),
+      }
+    }
+    const owners = [...document.querySelectorAll('main,[data-route-owner]')]
+    return {
+      url: location.href, readyState: document.readyState,
+      root: inspect(document.documentElement), body: inspect(document.body),
+      stylesheets: [...document.querySelectorAll('link[rel="stylesheet"],style')].map(element => ({
+        href: element.getAttribute('href'), precedence: element.getAttribute('data-precedence'),
+        text: element.tagName === 'STYLE' ? element.textContent : null,
+      })),
+      owners: owners.map(owner => {
+        const ancestors = []
+        for (let parent = owner.parentElement; parent; parent = parent.parentElement) ancestors.push(inspect(parent))
+        const children = [...owner.children].map(inspect)
+        return { ...inspect(owner), children, nonzeroChildBoxes: children.filter(child => child.box.width > 0 && child.box.height > 0).length, ancestors }
+      }),
+    }
+  })
+  const relative = `diagnostics/${name}.json`
+  await fs.mkdir(path.join(outDir, 'diagnostics'), { recursive: true })
+  await fs.writeFile(path.join(outDir, relative), JSON.stringify(evidence, null, 2))
+  return relative
+}
+
 async function screenshot(page, name) {
   const relative = path.join('screenshots', `${name}.png`)
   await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))))
@@ -262,8 +301,9 @@ async function proveTransition(browser, destination, buttonName) {
     const unattributedConsoleErrors = assertCleanEvidence(consoleErrors, failedRequests, httpErrors)
     pushCase(name, 'desktop', 'passed', { screenshot: shot, destinationSettled: true, replayPlaybackAndPauseVerified: destination === 'replay', personalizedRuntimeVerified: false, finalUrl: page.url(), ...diagnostics(consoleErrors, failedRequests, httpErrors, unattributedConsoleErrors) })
   } catch (error) {
+    const routeDiagnostics = await captureRouteDiagnostics(page, `desktop-${name}`).catch(() => '')
     const shot = await screenshot(page, `desktop-${name}-failure`).catch(() => '')
-    pushCase(name, 'desktop', 'failed', { screenshot: shot, error: String(error?.message || error), finalUrl: page.url(), ...diagnostics(consoleErrors, failedRequests, httpErrors) })
+    pushCase(name, 'desktop', 'failed', { routeDiagnostics, screenshot: shot, error: String(error?.message || error), finalUrl: page.url(), ...diagnostics(consoleErrors, failedRequests, httpErrors) })
   } finally {
     await context.close()
   }
