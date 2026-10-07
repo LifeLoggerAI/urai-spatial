@@ -6,9 +6,11 @@ import type { CapacitorConfig } from '@capacitor/cli';
 const nativeGoogleAuthReady = process.env.URAI_ANDROID_NATIVE_GOOGLE_AUTH_READY === 'true';
 
 const config: CapacitorConfig = {
-  // Play accepted com.urailabs.urai: current internal release is versionCode 126.
-  // Keep this package identity stable. Public signing/track evidence is recorded in
-  // play-console-receipt-20261006.json; current-candidate upload remains unverified.
+  // Retain the package identity from the dated Play observation; it is not current
+  // track/version authority. The retained receipt and quoted support history disagree
+  // on versionCode versus release label, so fresh authenticated Play readback is needed.
+  // Keep the historical play-console-receipt-20261006.json unchanged. This source,
+  // candidate upload, signing and store acceptance remain unverified.
   appId: 'com.urailabs.urai',
   appName: 'UrAi',
   loggingBehavior: 'none',
