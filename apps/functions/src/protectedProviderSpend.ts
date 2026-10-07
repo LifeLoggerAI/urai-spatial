@@ -23,7 +23,7 @@ function instant(value: unknown) {
   need(calendar.getUTCFullYear() === year && calendar.getUTCMonth() === month - 1 && calendar.getUTCDate() === day && hour < 24 && minute < 60 && second < 60)
   const result = Date.parse(value); need(Number.isFinite(result)); return result
 }
-function fresh(value: JsonRecord, observed = 'observed_at') { need(instant(value[observed]) <= Date.now() && Date.now() < instant(value.expires_at)) }
+function fresh(value: JsonRecord, observed = 'observed_at', now = Date.now()) { need(instant(value[observed]) <= now && now < instant(value.expires_at)) }
 export function spendDigest(value: string | Uint8Array) { return createHash('sha256').update(value).digest('hex') }
 function stableJson(value: unknown): string {
   if (value === null || typeof value === 'boolean' || typeof value === 'string') return JSON.stringify(value)
@@ -81,7 +81,7 @@ async function boundedGatewayJson(response: Response) {
 /** Every external POST, including screening, enters this exact request boundary. */
 export async function paidSpatialFetch(db: BindingStore, uid: string, lane: string, provider: string, model: string, sourceInput: unknown, target: string | URL, init: RequestInit): Promise<Response> {
   need(uid && lane && provider && model && init.method === 'POST' && typeof init.body === 'string')
-  const url = endpoint(String(target)), gatewayUrl = endpoint(text(process.env.SPATIAL_PRODUCTION_SPEND_URL), true)
+  const url = endpoint(String(target)), configuredGatewayUrl = endpoint(text(process.env.SPATIAL_PRODUCTION_SPEND_URL), true)
   const sourceSha = spatialSpendSourceSha(), gatewaySha = sha(process.env.SPATIAL_SPEND_GATEWAY_SOURCE_SHA, 40)
   const bytes = Buffer.from(init.body, 'utf8'), headers = new Headers(init.headers), callerSignal = init.signal
   let actualBody: JsonRecord; try { actualBody = record(JSON.parse(init.body)) } catch { throw new SpatialSpendError() }
@@ -99,6 +99,17 @@ export async function paidSpatialFetch(db: BindingStore, uid: string, lane: stri
   const snapshot = await db.doc(`spatialPaidProviderBindings/${locator}`).get(); need(snapshot.exists)
   const binding = record(snapshot.data()), workerId = text(binding.worker_id), jobId = text(binding.job_id), accountId = text(binding.account_id)
   need(binding.tenant_sha256 === tenantSha && binding.lane === lane && binding.request_sha256 === requestSha && binding.source_input_sha256 === inputSha && binding.executor_source_sha === sourceSha && binding.credential_sha256 === credentialSha && binding.provider === provider)
+  // Protected issuer metadata pins the destination before any token is read.
+  const gatewayUrl = endpoint(text(binding.gateway_url), true)
+  need(gatewayUrl === configuredGatewayUrl && binding.gateway_repository === 'LifeLoggerAI/asset-factory' && binding.gateway_source_sha === gatewaySha)
+  const materialized = () => {
+    need(spatialSpendSourceSha() === sourceSha && spendDigest(stableJson({ uid, lane, input:sourceInput })) === inputSha)
+    need(spendDigest(Buffer.concat([Buffer.from(`POST\n${url}\n`, 'utf8'), bytes])) === requestSha)
+    const currentCredentials = Object.fromEntries([...headers.entries()].filter(([key]) => ['authorization', 'xi-api-key', 'x-api-key', 'x-goog-api-key'].includes(key)))
+    need(spendDigest(stableJson(currentCredentials)) === credentialSha)
+    need(spendDigest(stableJson(Object.fromEntries([...headers.entries()].filter(([key]) => !Object.prototype.hasOwnProperty.call(currentCredentials, key))))) === semanticSha)
+  }
+  materialized(); need(!callerSignal?.aborted)
   let tokens: JsonRecord; try { tokens = record(JSON.parse(SPATIAL_SPEND_WORKER_TOKENS_JSON.value())) } catch { throw new SpatialSpendError() }
   const token = text(tokens[workerId]); need(token.length >= 32)
   const fields = {
@@ -110,6 +121,7 @@ export async function paidSpatialFetch(db: BindingStore, uid: string, lane: stri
   }
   const gateway = async (action: string, extra: JsonRecord = {}) => {
     // An uncertain reserve is never retried; the protected hold may already exist.
+    materialized(); if (action !== 'record') need(!callerSignal?.aborted)
     try { return await boundedGatewayJson(await fetch(gatewayUrl, { method:'POST', redirect:'error', cache:'no-store', headers:{ authorization:`Bearer ${token}`, 'content-type':'application/json' }, body:JSON.stringify({ action, ...fields, ...extra }), signal:AbortSignal.timeout(15000) })) }
     catch { throw new SpatialSpendError() }
   }
@@ -132,43 +144,106 @@ export async function paidSpatialFetch(db: BindingStore, uid: string, lane: stri
   text(controls.proof_receipt); fresh(controls)
   need(price.provider === provider && price.account_id === accountId && price.model_version === model && price.request_sha256 === requestSha && price.trusted_readback === true)
   text(price.receipt); fresh(price); need(canonical(price.rates) === canonical(rates)); text(rates.receipt); fresh(rates, 'verified_at')
-  const digest = jobDigest(job)
-  need(spatialSpendSourceSha() === sourceSha && spendDigest(stableJson({ uid, lane, input:sourceInput })) === inputSha && !callerSignal?.aborted)
+  const digest = jobDigest(job), approval = record(job.approval), authorityProof = record(envelope.authority)
+  need(approval.status === 'APPROVED' && approval.kind === 'EXPLICIT_BOUNDED_SPEND' && approval.job_digest === digest)
+  need(approval.max_usd_micros === budget.max_usd_micros && approval.max_credits === budget.max_credits)
+  text(approval.receipt); text(approval.approver); text(approval.key_id)
+  need(/^[A-Za-z0-9+/]+={0,2}$/.test(text(approval.signature)))
+  need(authorityProof.trusted_readback === true && canonical(authorityProof.binding) === canonical(authority))
+  sha(executor.deployment_ref); sha(executor.controls_ref)
+  const proofWindow = (now: number) => {
+    fresh(approval, 'issued_at', now); fresh(authorityProof, 'observed_at', now)
+    fresh(account, 'observed_at', now); fresh(controls, 'observed_at', now)
+    fresh(price, 'observed_at', now); fresh(rates, 'verified_at', now)
+    return Math.min(...[approval, authorityProof, account, controls, price, rates].map(value => instant(value.expires_at)))
+  }
+  const preflightExpiry = instant(prepared.admission_expires_at)
+  materialized()
+  let now = Date.now()
+  // The canonical minimum also includes its independently verified deployment.
+  need(now < preflightExpiry && preflightExpiry <= proofWindow(now))
+  const reserveStartedAt = Date.now()
+  need(reserveStartedAt < preflightExpiry && reserveStartedAt < proofWindow(reserveStartedAt))
   const admitted = await gateway('reserve', { job_digest:digest })
   const runtime = admitted.max_runtime_seconds
   need(admitted.provider_call_authorized === true && admitted.execution_performed === false && admitted.executor_source_sha === sourceSha && admitted.gateway_source_sha === gatewaySha && admitted.worker_id === workerId && admitted.job_digest === digest && typeof runtime === 'number' && Number.isSafeInteger(runtime) && runtime > 0 && runtime <= 86400)
-  need(runtime === budget.max_runtime_seconds && spatialSpendSourceSha() === sourceSha && spendDigest(stableJson({ uid, lane, input:sourceInput })) === inputSha)
-  fresh(account); fresh(controls); fresh(price); fresh(rates, 'verified_at')
+  need(runtime === budget.max_runtime_seconds)
   for (const key of ['account_id', 'credential_sha256', 'semantic_headers_sha256', 'source_input_sha256', 'content_type'] as const) need(admitted[key] === fields[key])
+  const reservedAt = instant(admitted.reserved_at), reserveExpiry = instant(admitted.admission_expires_at)
+  now = Date.now()
+  need(reserveStartedAt <= reservedAt && reservedAt <= now && reservedAt < reserveExpiry && now < reserveExpiry)
+  need(reserveExpiry <= preflightExpiry && reserveExpiry <= reservedAt + runtime * 1000)
+  // Network/admission delay consumes the original local runtime, never resets it.
+  const deadline = Math.min(preflightExpiry, reserveExpiry, reserveStartedAt + runtime * 1000)
   const attemptId = text(admitted.attempt_id), controller = new AbortController()
   const signal = callerSignal ? AbortSignal.any([callerSignal, controller.signal]) : controller.signal
-  const timer = setTimeout(() => controller.abort(), runtime * 1000)
-  let observed = false, requestId: string | undefined, upstreamReader: ReadableStreamDefaultReader<Uint8Array> | undefined
-  const observe = async (status: 'succeeded' | 'failed') => {
-    if (observed) return; observed = true; clearTimeout(timer)
-    // This only requests RECONCILIATION_REQUIRED. No runtime outcome settles money.
-    const result = await gateway('record', { attempt_id:attemptId, status, ...(requestId ? { request_id:requestId } : {}) })
-    need(result.provider_call_authorized === false && result.execution_performed === false && result.reconciliation_required === true)
+  const current = () => {
+    materialized()
+    const checkedAt = Date.now()
+    need(!signal.aborted && checkedAt < deadline && checkedAt < proofWindow(checkedAt))
   }
-  signal.addEventListener('abort', () => { upstreamReader?.cancel(new SpatialSpendError()).catch(() => undefined); observe('failed').catch(() => undefined) }, { once:true })
+  current()
+  const timer = setTimeout(() => controller.abort(), Math.max(1, deadline - Date.now()))
+  let observation: Promise<void> | undefined, requestId: string | undefined
+  let upstreamReader: ReadableStreamDefaultReader<Uint8Array> | undefined, outputController: ReadableStreamDefaultController<Uint8Array> | undefined
+  const observe = (status: 'succeeded' | 'failed') => {
+    if (observation) return observation
+    // This only requests RECONCILIATION_REQUIRED. No runtime outcome settles money.
+    observation = (async () => {
+      const result = await gateway('record', { attempt_id:attemptId, status, ...(requestId ? { request_id:requestId } : {}) })
+      need(result.provider_call_authorized === false && result.execution_performed === false && result.reconciliation_required === true)
+    })()
+    return observation
+  }
+  signal.addEventListener('abort', () => {
+    outputController?.error(new SpatialSpendError())
+    upstreamReader?.cancel(new SpatialSpendError()).catch(() => undefined)
+    observe('failed').catch(() => undefined)
+  }, { once:true })
   try {
-    need(!signal.aborted)
+    current()
     const upstream = await fetch(url, { ...init, method:'POST', body:bytes, headers, redirect:'error', signal })
+    current()
     requestId = upstream.headers.get('request-id') ?? upstream.headers.get('x-request-id') ?? undefined
-    if (!upstream.ok || !upstream.body) { await observe('failed'); return upstream }
+    if (!upstream.ok || !upstream.body) { await observe('failed'); current() }
+    if (!upstream.body) { clearTimeout(timer); return new Response(null, { status:upstream.status, statusText:upstream.statusText, headers:upstream.headers }) }
     const reader = upstream.body.getReader()
     upstreamReader = reader
     const body = new ReadableStream<Uint8Array>({
+      start(stream) { outputController = stream },
       async pull(stream) {
         try {
-          need(!signal.aborted)
-          const chunk = await reader.read(); need(!signal.aborted)
-          if (chunk.done) { await observe('succeeded'); reader.releaseLock(); stream.close() }
-          else stream.enqueue(chunk.value)
-        } catch (error) { controller.abort(); await observe('failed').catch(() => undefined); stream.error(error) }
+          current()
+          const chunk = await reader.read()
+          current()
+          if (chunk.done) {
+            await observe(upstream.ok ? 'succeeded' : 'failed')
+            // A record acknowledgement does not renew authority or runtime.
+            current()
+            reader.releaseLock()
+            clearTimeout(timer)
+            stream.close()
+          } else { current(); stream.enqueue(chunk.value) }
+        } catch (error) {
+          controller.abort()
+          await observe('failed').catch(() => undefined)
+          clearTimeout(timer)
+          stream.error(error)
+        }
       },
-      async cancel(reason) { controller.abort(); await reader.cancel(reason).catch(() => undefined); await observe('failed').catch(() => undefined) },
+      async cancel(reason) {
+        controller.abort()
+        await reader.cancel(reason).catch(() => undefined)
+        await observe('failed').catch(() => undefined)
+        clearTimeout(timer)
+      },
     })
+    current()
     return new Response(body, { status:upstream.status, statusText:upstream.statusText, headers:upstream.headers })
-  } catch (error) { controller.abort(); await observe('failed').catch(() => undefined); throw error }
+  } catch (error) {
+    controller.abort()
+    await observe('failed').catch(() => undefined)
+    clearTimeout(timer)
+    throw error
+  }
 }
