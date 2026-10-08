@@ -59,10 +59,14 @@ export async function POST(request: Request) {
   try {
     const firestore = await import('firebase-admin/firestore')
     const db = firestore.getFirestore(), input = { latitude, longitude }
+    let rateConsumed = false
     const response = await paidSpatialElevationFetch(db, uid, input, apiKey, signal, async () => {
-      let allowed: boolean
-      try { allowed = await consumeElevationRateLimit(uid) } catch { throw new Error('elevation_rate_limit_unavailable') }
-      if (!allowed) throw new Error('rate_limited')
+      if (!rateConsumed) {
+        let allowed: boolean
+        try { allowed = await consumeElevationRateLimit(uid) } catch { throw new Error('elevation_rate_limit_unavailable') }
+        if (!allowed) throw new Error('rate_limited')
+        rateConsumed = true
+      }
       if (await verifyFirebaseUser(request) !== uid) throw new Error('authentication_required')
     })
     const result = await readNormalizedElevation(response, input)

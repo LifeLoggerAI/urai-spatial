@@ -99,6 +99,11 @@ jobs:
         run: |
           corepack pnpm@10.0.0 --dir apps/functions build
           corepack pnpm@10.0.0 --dir apps/functions test
+      - name: Verify protected provider reservation authority
+        shell: bash
+        run: |
+          set -euo pipefail
+          corepack pnpm@10.0.0 --dir apps/functions exec node --test test/protectedProviderSpend.test.mjs 2>&1 | tee "$RUNNER_TEMP/spatial-maintained-evidence/protected-spend-tests.log"
       - name: Existing current Next type and build checks
         run: |
           corepack pnpm@10.0.0 --dir urai-tier1 check:types

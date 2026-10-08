@@ -161,6 +161,101 @@ test('authority callback cannot extend expired protected admission or dispatch a
     assert.equal(f.providerCalls.length, 0)
   }
 })
+// Use the actual shared executor with an explicitly delayed protected reserve.
+// Synthetic state changes must be rejected before any external provider dispatch.
+for (const [label, replacement] of [
+  ['consent withdrawal', { consent:false }],
+  ['policy revision replacement', { revision:'SYNTHETIC-revision-2' }],
+  ['authenticated subject replacement', { uid:'synthetic-other-owner' }],
+  ['person source binding replacement', { binding:'SYNTHETIC-binding-2' }],
+]) test('POST rechecks current authority after delayed reservation: ' + label, async () => {
+  const authority = { uid:UID, consent:true, revision:'SYNTHETIC-revision-1', binding:'SYNTHETIC-binding-1' }
+  const admittedAuthority = stable(authority)
+  let enterReserve, releaseReserve, checks = 0
+  const entered = new Promise(resolve => { enterReserve = resolve })
+  const reserveDelay = new Promise(resolve => { releaseReserve = resolve })
+  const f = fixture({ reserve:async () => { enterReserve(); await reserveDelay } })
+  const request = f.paidFetch(...f.directArgs(), async () => {
+    checks++
+    if (stable(authority) !== admittedAuthority) throw new Error('SYNTHETIC authority changed')
+  })
+  await entered
+  assert.equal(checks, 1)
+  assert.equal(f.providerCalls.length, 0)
+  Object.assign(authority, replacement)
+  const denied = assert.rejects(request, error => error.message === 'SYNTHETIC authority changed')
+  releaseReserve()
+  await denied
+  assert.equal(checks, 2)
+  assert.equal(f.providerCalls.length, 0)
+  assert.deepEqual(f.calls.map(call => call.action), ['preflight', 'reserve', 'record'])
+  assert.equal(f.calls.filter(call => call.action === 'record')[0].status, 'failed')
+  const row = [...f.rows.values()][0]
+  assert.equal(row.attempt.id, 'synthetic-attempt')
+  assert.equal(row.attempt.status, 'RECONCILIATION_REQUIRED')
+  assert.equal(row.attempt.reported_outcome, 'failed')
+  assertUnsettled(f)
+})
+test('GET rechecks authenticated subject after delayed reservation without sending coordinates', async () => {
+  let authenticatedSubject = UID, enterReserve, releaseReserve, checks = 0
+  const entered = new Promise(resolve => { enterReserve = resolve })
+  const reserveDelay = new Promise(resolve => { releaseReserve = resolve })
+  const f = fixture({ reserve:async () => { enterReserve(); await reserveDelay } })
+  const request = f.paidElevation(...f.elevationArgs(), undefined, async () => {
+    checks++
+    if (authenticatedSubject !== UID) throw new Error('SYNTHETIC authentication changed')
+  })
+  await entered
+  assert.equal(checks, 1)
+  authenticatedSubject = 'synthetic-other-owner'
+  const denied = assert.rejects(request, error => error.message === 'SYNTHETIC authentication changed')
+  releaseReserve()
+  await denied
+  assert.equal(checks, 2)
+  assert.equal(f.providerCalls.length, 0)
+  assert.deepEqual(f.calls.map(call => call.action), ['preflight', 'reserve', 'record'])
+  const row = [...f.rows.values()][0]
+  assert.equal(row.attempt.status, 'RECONCILIATION_REQUIRED')
+  assert.equal(row.attempt.reported_outcome, 'failed')
+  assertUnsettled(f)
+})
+for (const method of ['POST', 'GET']) test(method + ' retains ordinary success with two current authority checks and one dispatch', async () => {
+  const f = fixture()
+  let checks = 0
+  const authority = async () => { checks++ }
+  const response = method === 'POST'
+    ? await f.paidFetch(...f.directArgs(), authority)
+    : await f.paidElevation(...f.elevationArgs(), undefined, authority)
+  assert.equal(await response.text(), 'SYNTHETIC OUTPUT')
+  assert.equal(checks, 2)
+  assert.equal(f.providerCalls.length, 1)
+  assert.deepEqual(f.calls.map(call => call.action), ['preflight', 'reserve', 'record'])
+  const row = [...f.rows.values()][0]
+  assert.equal(row.attempt.status, 'RECONCILIATION_REQUIRED')
+  assert.equal(row.attempt.reported_outcome, 'succeeded')
+  assertUnsettled(f)
+})
+for (const change of ['expiry', 'cancellation']) test('post-reserve authority callback cannot renew admission after ' + change, async () => {
+  const f = fixture(), args = f.directArgs(), controller = new AbortController()
+  args[7].signal = controller.signal
+  let checks = 0
+  await assert.rejects(f.paidFetch(...args, async () => {
+    checks++
+    if (checks === 2) {
+      await Promise.resolve()
+      if (change === 'expiry') f.advanceTime(400000)
+      else controller.abort()
+    }
+  }))
+  assert.equal(checks, 2)
+  assert.equal(f.providerCalls.length, 0)
+  assert.deepEqual(f.calls.map(call => call.action), ['preflight', 'reserve', 'record'])
+  const row = [...f.rows.values()][0]
+  assert.equal(row.attempt.status, 'RECONCILIATION_REQUIRED')
+  assert.equal(row.attempt.reported_outcome, 'failed')
+  assertUnsettled(f)
+})
+
 test('actual unmocked clean Git provenance rejects every dirty untracked or misdeclared provider source', () => {
   const root=mkdtempSync(join(tmpdir(),'spatial-spend-source-')), env={}
   const git=(...args) => { const r=spawnSync('git',['-C',root,...args],{encoding:'utf8'}); assert.equal(r.status,0,r.stderr); return r.stdout.trim() }
@@ -298,7 +393,7 @@ for(const shape of ['oversized','invalid-json','multiple','wrong-coordinate','ne
   assert.equal([...f.rows.values()][0].hold,2500000);assert.equal([...f.rows.values()][0].attempt.charges_reconciled,false)
 })
 for(const kind of ['functions','next'])test(`actual ${kind} Maps leaf executes the shared native adapter and withholds revoked output`,async()=>{
-  for(const revokeAt of [Infinity,2,3]){
+  for(const revokeAt of [Infinity,2,3,4]){
     const f=fixture(),args=f.elevationArgs(),input=args[2];f.prepareElevation(args)
     f.env.URAI_FIREBASE_STATIC_EXPORT='false';f.env.URAI_ELEVATION_SERVER_CREDENTIAL=apiKey
     let authChecks=0,rateWrites=0
@@ -325,10 +420,16 @@ for(const kind of ['functions','next'])test(`actual ${kind} Maps leaf executes t
       const result=await leaf.POST({json:async()=>input,signal:new AbortController().signal});status=result.status;body=await result.json()
     }
     assert.equal(status,revokeAt===Infinity?200:401)
-    assert.equal(f.providerCalls.length,revokeAt===2?0:1);assert.equal(rateWrites,1)
+    assert.equal(f.providerCalls.length,revokeAt<=3?0:1);assert.equal(rateWrites,1)
+    assert.equal(authChecks,Math.min(revokeAt,4))
     if(revokeAt===Infinity)assert.deepEqual(JSON.parse(JSON.stringify(body)),{elevationMeters:123,resolutionMeters:1,source:'google-maps-elevation',subject:UID})
     else assert.equal(body.error,'authentication_required')
-    if(revokeAt===3){assert.equal([...f.rows.values()][0].hold,2500000);assert.equal([...f.rows.values()][0].attempt.charges_reconciled,false)}
+    if(revokeAt>=3){
+      const row=[...f.rows.values()][0]
+      assert.equal(row.attempt.status,'RECONCILIATION_REQUIRED')
+      assert.equal(row.attempt.reported_outcome,revokeAt===3?'failed':'succeeded')
+      assertUnsettled(f)
+    }
   }
 })
 test('missing protected binding token source or gateway denies all provider calls', async () => {

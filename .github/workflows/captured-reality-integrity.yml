@@ -48,6 +48,12 @@ jobs:
           cache: pnpm
           cache-dependency-path: pnpm-lock.yaml
       - run: pnpm install --frozen-lockfile
+      - name: Require actual media tools for source-preservation controls
+        shell: bash
+        run: |
+          set -euo pipefail
+          ffmpeg -version
+          ffprobe -version
       - name: Verify private delivery, generated-world integrity and source preservation
         working-directory: urai-tier1
         shell: bash

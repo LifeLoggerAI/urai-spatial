@@ -241,6 +241,8 @@ async function executeSpatialRequest(db: BindingStore, uid: string, lane: string
   }, { once:true })
   try {
     current()
+    await beforeReserve?.()
+    current()
     const upstream = await fetch(dispatchUrl, { ...init, method, body:method === 'POST' ? bytes : undefined, headers, redirect:'error', signal })
     current()
     requestId = upstream.headers.get('request-id') ?? upstream.headers.get('x-request-id') ?? undefined

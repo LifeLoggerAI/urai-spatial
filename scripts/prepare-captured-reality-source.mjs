@@ -64,16 +64,38 @@ const probeJson = JSON.parse(command('ffprobe', [
 fs.mkdirSync(outDir, { recursive: true })
 const base = path.basename(source, path.extname(source)).replace(/[^A-Za-z0-9._-]+/g, '_')
 const receiptPath = path.join(outDir, `${base}_DERIVATIVE_RECEIPT.json`)
-const existing = fs.readdirSync(outDir).some((name) =>
+const outputOccupied = () => fs.readdirSync(outDir).some((name) =>
   name === path.basename(receiptPath) || (name.startsWith(`${base}_PART`) && name.endsWith('.mp4')),
 )
-if (existing) fail('output contains prior derivatives or receipt for this source; select a fresh --out-dir to preserve provenance')
+// The lock owns this basename, not a process ID. Never reclaim an interrupted
+// invocation automatically: its source-bound evidence must first be reconciled.
+const lockPath = path.join(outDir, `.source-preparation-lock-${crypto.createHash('sha256').update(base).digest('hex')}`)
+try {
+  fs.mkdirSync(lockPath, { mode: 0o700 })
+} catch (error) {
+  if (error.code === 'EEXIST') fail(`output destination is reserved or incomplete: ${lockPath}; preserve its staged evidence and reconcile it, or select a fresh --out-dir`)
+  fail(error.message)
+}
 
-const stage = fs.mkdtempSync(path.join(outDir, '.source-preparation-'))
+let stage
 let derivatives
+let receipt
 let mode = 'stream-copy'
 let copyFallbackReason = null
+let publicationStarted = false
+let committed = false
+let failure
 try {
+  if (outputOccupied()) throw new Error('output contains prior derivatives or receipt for this source; select a fresh --out-dir to preserve provenance')
+  stage = fs.mkdtempSync(path.join(outDir, '.source-preparation-'))
+  fs.writeFileSync(path.join(lockPath, 'owner.json'), JSON.stringify({
+    schema: 'urai-captured-reality-preparation-owner-v1',
+    classification: 'INCOMPLETE_UNTIL_FINAL_RECEIPT',
+    originalSha256,
+    sourceFileName: path.basename(source),
+    stageDirectory: path.basename(stage),
+    receiptFileName: path.basename(receiptPath),
+  }, null, 2) + '\n', { flag: 'wx', mode: 0o600 })
   const pattern = path.join(stage, `${base}_PART%03d.mp4`)
   const listPath = path.join(stage, 'segments.csv')
   const bound = durationSeconds === null ? [] : ['-t', String(durationSeconds)]
@@ -139,38 +161,49 @@ try {
   if (!derivatives.length || derivatives.length !== timeline.size) throw new Error('ffmpeg produced an incomplete derivative set')
   const after = fs.statSync(source)
   if (before.size !== after.size || before.mtimeMs !== after.mtimeMs || sha256(source) !== originalSha256) throw new Error('immutable source changed during derivative creation')
-  for (const derivative of derivatives) fs.renameSync(path.join(stage, derivative.fileName), path.join(outDir, derivative.fileName))
+  receipt = {
+    schema: 'urai-captured-reality-source-derivative-v1',
+    classification: 'ANALYSIS_DERIVATIVE_NOT_SOURCE_AUTHORITY',
+    generatedAt: new Date().toISOString(),
+    original: {
+      fileName: path.basename(source),
+      byteSize: before.size,
+      sha256: originalSha256,
+      probe: probeJson,
+      immutableVerified: true,
+    },
+    derivativePolicy: {
+      maxBytes: MAX_DERIVATIVE_BYTES,
+      segmentSeconds,
+      mode,
+      codec: mode === 'stream-copy' ? 'original-streams-preserved' : 'h264+aac',
+      videoCrf: mode === 'stream-copy' ? null : 18,
+      copyFallbackReason,
+      requestedSourceDurationSeconds: durationSeconds,
+      timelinePrecision: 'CONTAINER_TIMING_NOT_FRAME_OR_SAMPLE_CORRESPONDENCE',
+      purpose: 'private captured-reality analysis and reconstruction input',
+    },
+    derivatives,
+  }
+
+  // Same-filesystem hard links publish without replacing any existing path.
+  // The complete staged receipt survives interruption and is committed last.
+  const stagedReceiptPath = path.join(stage, path.basename(receiptPath))
+  fs.writeFileSync(stagedReceiptPath, JSON.stringify(receipt, null, 2) + '\n', { flag: 'wx', mode: 0o600 })
+  publicationStarted = true
+  for (const derivative of derivatives) fs.linkSync(path.join(stage, derivative.fileName), path.join(outDir, derivative.fileName))
+  fs.linkSync(stagedReceiptPath, receiptPath)
+  committed = true
 } catch (error) {
-  fs.rmSync(stage, { recursive: true, force: true })
-  fail(error.message)
+  failure = error
 } finally {
-  fs.rmSync(stage, { recursive: true, force: true })
+  // Never remove evidence for an incomplete publication. Abrupt interruption
+  // likewise leaves the exclusive lock and staged receipt for reconciliation.
+  if (!publicationStarted || committed) {
+    if (stage) fs.rmSync(stage, { recursive: true, force: true })
+    fs.rmSync(lockPath, { recursive: true, force: true })
+  }
 }
 
-const receipt = {
-  schema: 'urai-captured-reality-source-derivative-v1',
-  classification: 'ANALYSIS_DERIVATIVE_NOT_SOURCE_AUTHORITY',
-  generatedAt: new Date().toISOString(),
-  original: {
-    fileName: path.basename(source),
-    byteSize: before.size,
-    sha256: originalSha256,
-    probe: probeJson,
-    immutableVerified: true,
-  },
-  derivativePolicy: {
-    maxBytes: MAX_DERIVATIVE_BYTES,
-    segmentSeconds,
-    mode,
-    codec: mode === 'stream-copy' ? 'original-streams-preserved' : 'h264+aac',
-    videoCrf: mode === 'stream-copy' ? null : 18,
-    copyFallbackReason,
-    requestedSourceDurationSeconds: durationSeconds,
-    timelinePrecision: 'CONTAINER_TIMING_NOT_FRAME_OR_SAMPLE_CORRESPONDENCE',
-    purpose: 'private captured-reality analysis and reconstruction input',
-  },
-  derivatives,
-}
-
-fs.writeFileSync(receiptPath, JSON.stringify(receipt, null, 2) + '\n')
+if (failure) fail(`${failure.message}${publicationStarted ? `; incomplete publication preserved at ${lockPath}; reconcile it before reuse` : ''}`)
 console.log(JSON.stringify({ ok: true, receiptPath, derivativeCount: derivatives.length, originalSha256 }, null, 2))
