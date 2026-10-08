@@ -8,10 +8,12 @@ import { createManualWeatherSession, MANUAL_WEATHER_RESET_EVENT, UNAVAILABLE_MAN
 type Session = ReturnType<typeof createManualWeatherSession>
 type WeatherContext = { session: Session; lease: ReturnType<Session['getLease']> } | null
 const Context = createContext<WeatherContext>(null)
+const unavailableSnapshot = () => UNAVAILABLE_MANUAL_WEATHER
+const subscribeUnavailable = () => () => {}
 
 export default function ManualEmotionalWeatherProvider({ children }: { children: ReactNode }) {
   const [session] = useState(createManualWeatherSession)
-  const state = useSyncExternalStore(session.subscribe, session.getSnapshot, () => UNAVAILABLE_MANUAL_WEATHER)
+  const state = useSyncExternalStore(session.subscribe, session.getSnapshot, unavailableSnapshot)
   useEffect(() => {
     let active = true
     let resolved = !firebasePublicEnvReady
@@ -58,10 +60,17 @@ export default function ManualEmotionalWeatherProvider({ children }: { children:
 
 export function useManualEmotionalWeather() {
   const value = useContext(Context)
+  // A streamed consumer must hydrate against the same denied server snapshot,
+  // even when the parent effect has already bound its local session.
+  const snapshot = useSyncExternalStore(
+    value?.session.subscribe ?? subscribeUnavailable,
+    value?.session.getSnapshot ?? unavailableSnapshot,
+    unavailableSnapshot,
+  )
   // Recheck actual viewer/session authority on each consumer read as well as
   // each action. Cached UI state cannot transfer to a successor auth owner.
   return {
-    snapshot:value?.session.getSnapshot() ?? UNAVAILABLE_MANUAL_WEATHER,
+    snapshot,
     setEnabled:(enabled: boolean) => value?.session.setEnabled(value.lease, enabled) ?? false,
     choose:(choice: unknown) => value?.session.choose(value.lease, choice) ?? false,
     reset:() => value?.session.reset(value.lease) ?? false,

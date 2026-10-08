@@ -60,7 +60,7 @@ function nextSpeakableChunk(buffer: string, final: boolean): [string | null, str
 }
 
 export default function AdamPresenceRuntime() {
-  const pathname = usePathname() ?? '/'
+  const pathname = (usePathname() ?? '/').replace(/\/+$/, '') || '/'
   const searchParams = useSearchParams()
   const requestedSurface = pathname === '/adam' ? searchParams.get('surface') : null
   const surface = resolveAdamSurface(pathname, requestedSurface)

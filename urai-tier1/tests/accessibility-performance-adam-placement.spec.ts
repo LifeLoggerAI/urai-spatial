@@ -57,7 +57,8 @@ for (const viewport of [{ width: 320, height: 700 }, { width: 844, height: 390 }
 
 async function assertInlineLauncher(page: Page, slot: string) {
   const launcher = page.locator('[data-urai-adam-launcher]')
-  const anchor = page.locator(`[data-urai-adam-launcher-slot="${slot}"]`)
+  const anchor = page.locator(`[data-urai-adam-launcher-slot="${slot}"]:visible`)
+  await expect(anchor, 'Exactly one actual visible founder slot must own the launcher').toHaveCount(1)
   await expect(anchor).toHaveAttribute('data-urai-adam-launcher-ready', 'true')
   await expect(anchor.locator('[data-urai-adam-launcher]')).toHaveCount(1)
   await expect(launcher).toHaveAttribute('data-adam-launcher-placement', 'inline-slot')
@@ -211,7 +212,24 @@ for (const viewport of placementViewports) {
     page.on('pageerror', error => errors.push(error.message))
     await page.setViewportSize(viewport)
     await page.emulateMedia({ reducedMotion: 'reduce' })
+    const serverResponse = await page.request.get('/settings/')
+    expect(serverResponse.status()).toBe(200)
+    const serverHtml = await serverResponse.text()
+    const deniedServerText = 'Session authority is unavailable. Emotional Weather remains off.'
+    expect(serverHtml, 'The exact exported settings consumer must start with denied session authority').toContain(deniedServerText)
     await page.goto('/settings', { waitUntil: 'domcontentloaded' })
+    const weather = page.locator('[data-manual-weather-preference="session-only"]')
+    const weatherStatus = weather.getByRole('status')
+    await expect(weatherStatus, 'A resolved local session changes ready state only after the consumer hydrates').toHaveText('Emotional Weather is off.')
+    const weatherToggle = weather.getByRole('checkbox', { name: 'Show my manual description in Home', exact: true })
+    await expect(weatherToggle).not.toBeChecked()
+    await expect(weatherToggle).toBeEnabled()
+    await expect(weather.getByRole('combobox', { name: 'My description', exact: true })).toBeDisabled()
+    await expect(weather.getByRole('button', { name: 'Reset and turn off', exact: true })).toBeDisabled()
+    await info.attach(`settings-streamed-hydration-${viewport.width}x${viewport.height}.json`, {
+      body: JSON.stringify({ serverHtmlSha256: createHash('sha256').update(serverHtml).digest('hex'), deniedServerText, streamedBoundaryIds: [...serverHtml.matchAll(/id="(S:\d+)"/g)].map(match => match[1]), clientText: await weatherStatus.innerText(), clientEnabled: await weatherToggle.isEnabled(), clientChecked: await weatherToggle.isChecked(), pageErrors: [...errors] }),
+      contentType: 'application/json',
+    })
     const initial = await assertInlineLauncher(page, 'device-settings')
     const privacyCopy = page.getByText('Local sensory preferences live on this device. Private data permissions remain in the Consent Sanctuary, and ownership controls remain in Passport.', { exact: true })
     const privacy = await assertCopyIsUnobstructed(privacyCopy)
@@ -378,7 +396,8 @@ for (const profile of [
       if (profile.noWebGL || surface.noWebGL) await disableWebGL(page)
       await page.goto(surface.route, { waitUntil: 'domcontentloaded' })
       const slot = profile.noWebGL && surface.fallbackSlot ? surface.fallbackSlot : surface.slot
-      const anchor = page.locator(`[data-urai-adam-launcher-slot="${slot}"]`)
+      const anchor = page.locator(`[data-urai-adam-launcher-slot="${slot}"]:visible`)
+      await expect(anchor, 'Exactly one actual visible founder slot must own the launcher').toHaveCount(1)
       await expect(anchor).toHaveAttribute('data-urai-adam-launcher-ready', 'true')
       await expect(anchor.locator('[data-urai-adam-launcher]')).toHaveCount(1)
       await expect(page.locator('canvas [data-urai-adam-launcher], [hidden] [data-urai-adam-launcher], [inert] [data-urai-adam-launcher]')).toHaveCount(0)
