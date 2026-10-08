@@ -12,9 +12,15 @@ const root = process.env.CONSENT_SERVER_SOURCE_ROOT || path.resolve(__dirname, '
 const source = fs.readFileSync(path.join(root, 'src/privacyOperations.ts'), 'utf8')
 const ast = ts.createSourceFile('privacyOperations.ts', source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TS)
 const constants = ['CONSENT_DOMAINS', 'CONSENT_MODES', 'REAUTH_WINDOW_SECONDS', 'STORED_DOMAIN_KEYS', 'STORED_PERMISSION_KEYS', 'STORED_AUTHORITY_IDENTIFIER', 'getPassportSnapshot', 'applyConsentPolicy']
-const selected = ast.statements.filter(n => ts.isFunctionDeclaration(n) || (ts.isVariableStatement(n) && n.declarationList.declarations.some(d => constants.includes(d.name.getText(ast)))))
+const selected = ast.statements.filter(n => ts.isFunctionDeclaration(n) || (ts.isImportDeclaration(n) && n.moduleSpecifier.text === './consentPolicyAuthority') || (ts.isVariableStatement(n) && n.declarationList.declarations.some(d => constants.includes(d.name.getText(ast)))))
 for (const name of ['parseStoredPolicy', 'defaultPolicy']) assert.equal(selected.filter(n => ts.isFunctionDeclaration(n) && n.name?.text === name).length, 1, name)
 const code = ts.transpileModule(selected.map(n => n.getText(ast)).join('\n') + '\nexports.testParseStoredPolicy = parseStoredPolicy; exports.testDefaultPolicy = defaultPolicy;', { compilerOptions: { target: ts.ScriptTarget.ES2020, module: ts.ModuleKind.CommonJS } }).outputText
+const policyAuthority = {}
+vm.runInNewContext(ts.transpileModule(fs.readFileSync(path.join(root, 'src/consentPolicyAuthority.ts'), 'utf8'), {
+  compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS },
+}).outputText, { exports: policyAuthority })
+const requirePolicyAuthority = name => { assert.equal(name, './consentPolicyAuthority'); return policyAuthority }
+
 const owner = 'synthetic-consent-owner'
 const domains = ['memory', 'location', 'models', 'exports', 'workforce', 'identity']
 const permissionKeys = ['precise', 'replayVisible', 'lifeMapVisible', 'modelContext', 'sharingEnabled', 'automationEnabled', 'likenessEnabled']
@@ -35,7 +41,7 @@ function fixture(policy, { absent = false } = {}) {
     runTransaction: async callback => callback({ get: async r => { calls.push({ kind: 'transaction-read', path: r.path }); return snapshot(r.path) }, set: (r, v) => { calls.push({ kind: 'write', path: r.path }); documents.set(r.path, v) }, create: (r, v) => { assert.equal(documents.has(r.path), false); calls.push({ kind: 'create', path: r.path }); documents.set(r.path, v) } }),
   }
   const output = {}, functions = { https: { onCall: fn => fn, HttpsError: class extends Error { constructor(code, message) { super(message); this.code = code } } } }
-  vm.runInNewContext(code, { exports: output, functions, db, createHash, fieldValue: { serverTimestamp: () => ({ seconds: 1770000000, nanoseconds: 1 }) } })
+  vm.runInNewContext(code, { exports: output, require: requirePolicyAuthority, functions, db, createHash, fieldValue: { serverTimestamp: () => ({ seconds: 1770000000, nanoseconds: 1 }) } })
   return { output, calls, documents, policyPath }
 }
 

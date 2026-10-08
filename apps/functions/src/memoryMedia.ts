@@ -1,6 +1,7 @@
 import * as admin from 'firebase-admin'
 import * as functions from 'firebase-functions/v1'
 import { createHash, randomBytes } from 'node:crypto'
+import { isCanonicalStoredPolicy } from './consentPolicyAuthority'
 import { chargeExportValue, requireExportReadBudget, type ExportReadBudget } from './exportPagination'
 
 if (!admin.apps.length) admin.initializeApp()
@@ -63,8 +64,8 @@ async function readOwner(transaction: FirebaseFirestore.Transaction, uid: string
   if (!user.exists || user.get('deleted') === true || ['deleting', 'deleted', 'disabled'].includes(String(user.get('accountStatus')))
     || !memory.exists || (memory.get('ownerId') ?? memory.get('userId')) !== uid || memory.get('deleted') === true
     || ['pending', 'revoked'].includes(String(memory.get('consentState')))
-    || !policy.exists || p?.ownerId !== uid || p.version !== 2 || !Number.isSafeInteger(p.revision) || p.revision < 1
-    || row(row(p.domains).memory).mode !== 'granted' || row(p.enforcement).state !== 'fully-enforced'
+    || !policy.exists || !isCanonicalStoredPolicy(p, uid) || p.revision < 1
+    || p.domains.memory.mode !== 'granted' || p.enforcement.state !== 'fully-enforced'
     || !consent.exists || c?.uid !== uid || c.purpose !== 'memory.storage' || c.consentTier !== 'C1' || c.policyVersion !== '1.0.0'
     || c.status !== 'granted' || !SHA.test(String(c.receiptHash)) || !Number.isSafeInteger(expiresAt) || expiresAt <= Date.now()
     || (central.exists && (central.get('uid') !== uid || central.get('active') === true))

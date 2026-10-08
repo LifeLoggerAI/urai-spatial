@@ -113,6 +113,7 @@ function fixture(options = {}) {
         if (name === 'firebase-admin') return admin
         if (name === './lifeModelPrivateInputs') return service
         if (name === './exportPagination') return load('exportPagination')
+        if (name === './consentPolicyAuthority') return load('consentPolicyAuthority')
         if (name === './memoryMedia') return load('memoryMedia')
         if (name === './personPresenceAuthority') return load('personPresenceAuthority')
         if (name === 'node:crypto' || name === 'node:stream/promises') return require(name)
