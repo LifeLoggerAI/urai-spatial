@@ -130,6 +130,15 @@ function fixture(options = {}) {
   const filename = process.env.URAI_EXPORT_COMPILED_MODULE ?? path.resolve(__dirname, '../lib/apps/functions/src/privacyOperations.js')
   let pagination
   const loadPagination = () => { if(pagination)return pagination; const result={exports:{}};vm.runInNewContext(fs.readFileSync(path.join(path.dirname(filename),'exportPagination.js'),'utf8'),{module:result,exports:result.exports,Buffer,Error,Date:class extends Date{static now(){return options.clock?.value??now}},require:name=>{assert.equal(name,'firebase-admin');return admin}},{filename:'exportPagination.strict-compiled.js'});return pagination=result.exports }
+  let policyAuthority
+  const loadPolicyAuthority = () => {
+    if (policyAuthority) return policyAuthority
+    const result = { exports: {} }
+    vm.runInNewContext(fs.readFileSync(path.join(path.dirname(filename), 'consentPolicyAuthority.js'), 'utf8'), {
+      module: result, exports: result.exports,
+    }, { filename: 'consentPolicyAuthority.strict-compiled.js' })
+    return policyAuthority = result.exports
+  }
   let memoryMedia
   const loadMemoryMedia = () => {
     if (memoryMedia) return memoryMedia
@@ -137,7 +146,7 @@ function fixture(options = {}) {
     vm.runInNewContext(fs.readFileSync(path.join(path.dirname(filename), 'memoryMedia.js'), 'utf8'), {
       module: result, exports: result.exports, Buffer, Error, Date: class extends Date { static now() { return options.clock?.value ?? now } },
       require: name => { if (name === 'firebase-admin') return admin; if (name === 'firebase-functions/v1') return functions;
-        if (name === 'node:crypto') return crypto; if (name === './exportPagination') return loadPagination(); throw new Error(`Unexpected memory-media dependency ${name}`) },
+        if (name === 'node:crypto') return crypto; if (name === './exportPagination') return loadPagination(); if (name === './consentPolicyAuthority') return loadPolicyAuthority(); throw new Error(`Unexpected memory-media dependency ${name}`) },
     }, { filename: 'memoryMedia.strict-compiled.js' })
     return memoryMedia = result.exports
   }
@@ -160,6 +169,7 @@ function fixture(options = {}) {
       if (name === './personPresenceAuthority') return { revokePersonPresenceConsentDerivatives: async () => {} }
       if (name === './lifeModelPrivateInputs') return { exportPrivateLifeModelHandles: async () => [], tombstonePrivateLifeModelInputs: async () => {} }
       if (name === './exportPagination') return loadPagination()
+      if (name === './consentPolicyAuthority') return loadPolicyAuthority()
       if (name === './memoryMedia') return loadMemoryMedia()
       throw new Error(`Unexpected compiled module dependency: ${name}`)
     } }, { filename })

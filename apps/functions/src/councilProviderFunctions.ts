@@ -1,4 +1,5 @@
 import { createHash } from 'node:crypto'
+import { isCanonicalStoredPolicy } from './consentPolicyAuthority'
 import * as admin from 'firebase-admin'
 import { defineSecret } from 'firebase-functions/params'
 import { onRequest } from 'firebase-functions/v2/https'
@@ -81,9 +82,11 @@ async function requireProviderConsent(uid: string, provider: CouncilProvider, ex
   ])
   if (!policySnapshot.exists) throw new CouncilProviderError(403, 'CONSENT_POLICY_REQUIRED', 'A saved privacy policy is required.')
   const policy = policySnapshot.data() ?? {}
-  const domains = isRecord(policy.domains) ? policy.domains : {}
-  const models = isRecord(domains.models) ? domains.models : {}
-  const enforcement = isRecord(policy.enforcement) ? policy.enforcement : {}
+  if (!isCanonicalStoredPolicy(policy, uid)) {
+    throw new CouncilProviderError(403, 'CONSENT_POLICY_REQUIRED', 'A canonical owner privacy policy is required.')
+  }
+  const models = policy.domains.models
+  const enforcement = policy.enforcement
   if (models.mode !== 'granted' || models.modelContext !== true) {
     throw new CouncilProviderError(403, 'MODEL_PROCESSING_NOT_AUTHORIZED', 'Model processing is not authorized.')
   }

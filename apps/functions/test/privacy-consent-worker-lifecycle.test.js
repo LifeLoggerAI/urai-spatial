@@ -18,6 +18,7 @@ const names = ['CONSENT_DOMAINS', 'CONSENT_MODES', 'STORED_DOMAIN_KEYS', 'STORED
   'STORED_AUTHORITY_IDENTIFIER', 'CONSENT_ENFORCEMENT_LIMITS', 'CONSENT_DERIVATIVE_COLLECTIONS',
   'REAUTH_WINDOW_SECONDS', 'applyConsentPolicy', 'processPrivacyEnforcementJob']
 const selected = ast.statements.filter(n => ts.isFunctionDeclaration(n)
+  || (ts.isImportDeclaration(n) && n.moduleSpecifier.text === './consentPolicyAuthority')
   || (ts.isVariableStatement(n) && n.declarationList.declarations.some(d => names.includes(d.name.getText(ast)))))
 assert.equal(selected.filter(n => ts.isFunctionDeclaration(n) && n.name?.text === 'enforceConsentJob').length, 1)
 const code = ts.transpileModule(selected.map(n => n.getText(ast)).join('\n')
@@ -30,6 +31,12 @@ const presenceCode = ts.transpileModule(presenceAst.statements.filter(n => ts.is
   .map(n => n.getText(presenceAst)).join('\n'), {
   compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS },
 }).outputText
+
+const policyAuthority = {}
+vm.runInNewContext(ts.transpileModule(fs.readFileSync(path.join(root, 'src/consentPolicyAuthority.ts'), 'utf8'), {
+  compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS },
+}).outputText, { exports: policyAuthority })
+const requirePolicyAuthority = name => { assert.equal(name, './consentPolicyAuthority'); return policyAuthority }
 
 const uid = 'synthetic-consent-worker-owner'
 const domains = ['memory', 'location', 'models', 'exports', 'workforce', 'identity']
@@ -168,7 +175,7 @@ function fixture() {
   const presenceExports = {}
   vm.runInNewContext(presenceCode, { exports: presenceExports, functions })
   const output = {}
-  vm.runInNewContext(code, { exports: output, functions, db, createHash, fieldValue, Buffer,
+  vm.runInNewContext(code, { exports: output, require: requirePolicyAuthority, functions, db, createHash, fieldValue, Buffer,
     Date: class extends Date { static now() { return clock } },
     revokePersonPresenceConsentDerivatives: (...args) => presenceExports.revokePersonPresenceConsentDerivatives(...args) })
   const base = clone(output.testDefaultPolicy(uid))
