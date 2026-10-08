@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 import { URAI_CATALOGS, URAI_LAUNCH_LOCALES, URAI_NATIVE_REVIEWED_LOCALES, URAI_SOURCE_MESSAGES } from '../src/lib/i18n/locales.ts'
 import { URAI_JOURNEY_CONTROL_MESSAGES } from '../src/lib/i18n/journeyControlMessages.ts'
+import { URAI_GEOGRAPHIC_MESSAGES } from '../src/lib/i18n/geographicMessages.ts'
 import { URAI_JOURNEY_MESSAGES } from '../src/lib/i18n/journeyMessages.ts'
 import { currentLocalePreference, currentSpeechTag, displayLocale, localeDate, localeNumber, localizedMessage, readLocalePreference, serverLocalePreference, speechTagFor, subscribeLocale, updateLocalePreference, writeLocalePreference } from '../src/lib/i18n/localePreference.ts'
 
@@ -13,7 +14,7 @@ function storage(initial = {}) {
 test('all twenty catalogs retain matching placeholders without granting language acceptance', () => {
   assert.equal(URAI_LAUNCH_LOCALES.length, 20)
   assert.deepEqual([...URAI_NATIVE_REVIEWED_LOCALES], ['en'])
-  assert.equal(Object.keys(URAI_SOURCE_MESSAGES).length, 20 + Object.keys(URAI_JOURNEY_MESSAGES).length + Object.keys(URAI_JOURNEY_CONTROL_MESSAGES).length)
+  assert.equal(Object.keys(URAI_SOURCE_MESSAGES).length, 20 + Object.keys(URAI_JOURNEY_MESSAGES).length + Object.keys(URAI_JOURNEY_CONTROL_MESSAGES).length + Object.keys(URAI_GEOGRAPHIC_MESSAGES).length)
   for (const code of URAI_LAUNCH_LOCALES) {
     const expected=Object.keys(URAI_SOURCE_MESSAGES)
     assert.deepEqual(Object.keys(URAI_CATALOGS[code]).sort(), expected.sort())
