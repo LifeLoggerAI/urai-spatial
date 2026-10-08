@@ -4,7 +4,23 @@ import path from 'node:path'
 
 const EVENT_LIMIT = 64
 const SCREENSHOT_LIMIT = 4 * 1024 * 1024
-const DIAGNOSTIC_TIMEOUT_MS = 3000
+const DIAGNOSTIC_TIMEOUT_MS = 30_000
+
+// Diagnostic identities only: no text, URL, user attributes or acceptance.
+// This function is self-contained so the browser can evaluate it directly.
+export function readCanvasOcclusionSamples() {
+  const canvas = document.querySelector('.urai-asset-home-world canvas')
+  if (!canvas) return { canvasPresent: false, samples: [] }
+  const bounds = canvas.getBoundingClientRect()
+  const points = [[.12,.18],[.36,.18],[.64,.18],[.88,.18],[.12,.5],[.36,.5],[.64,.5],[.88,.5],[.12,.82],[.36,.82],[.64,.82],[.88,.82]]
+  return { canvasPresent: true, samples: points.map(([x, y]) => {
+    const hit = document.elementFromPoint(bounds.x + bounds.width * x, bounds.y + bounds.height * y)
+    return { point: [x, y], canvasTopmost: hit === canvas,
+      hitTag: hit?.tagName?.slice(0, 24) ?? null,
+      hitClasses: hit ? [...hit.classList].slice(0, 6).map(value => value.slice(0, 80)) : [],
+    }
+  }) }
+}
 
 export function diagnosticUrl(value) {
   try {
@@ -71,9 +87,12 @@ export async function captureHomeOrbFailure(page, { outputDir, prefix, stage, pr
     runtimeReadinessVerified: false,
     network: probe.snapshot(),
     errors: [],
+    screenshotPurpose: 'failure-diagnostic-only-not-acceptance',
     rendererSceneNames: 'not-exposed-to-this-browser-probe',
     frameMeaning: 'document-animation-heartbeat-only-not-renderer-readiness',
   }
+  try { result.occlusion = await bounded(() => page.evaluate(readCanvasOcclusionSamples)) }
+  catch { result.errors.push('occlusion-snapshot-unavailable') }
   try {
     result.browser = await bounded(() => page.evaluate(() => {
       const owner = document.querySelector('.urai-asset-home-world')
