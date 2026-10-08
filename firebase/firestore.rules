@@ -170,6 +170,11 @@ service cloud.firestore {
         allow read: if isSelf(uid);
         allow write: if false;
       }
+      match /memoryMediaReceipts/{receiptId} {
+        // The producer is the only writer. Object locators never grant delivery.
+        allow read: if isSelf(uid);
+        allow write: if false;
+      }
 
       match /scenarios/{scenarioId} {
         allow read: if isSelf(uid) || isAdmin();
