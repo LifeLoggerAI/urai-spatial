@@ -33,7 +33,7 @@ new file mode 100644
 +const { expand } = require("brace-expansion");
 +const MATCH = { dot: false, matchBase: false, nobrace: false, nocase: false,
 +    noext: false, noglobstar: false, posix: true, strictSlashes: false };
-+const LIMIT = { input: 65536, depth: 128, count: 10000, bytes: 3000000, range: 1000 };
++const LIMIT = { input: 10000, depth: 64, count: 10000, bytes: 3000000, range: 1000 };
 +function rejected(reason) { throw new TypeError("Next root pattern rejected: " + reason); }
 +function dynamic(pattern) {
 +    return pattern !== "" && (pattern.includes("\\") || /[*?]|^!/.test(pattern) ||
@@ -55,7 +55,7 @@ new file mode 100644
 +            const end = pattern.indexOf(char, index + 1);
 +            if (end !== -1) { index = end; continue; }
 +        }
-+        if (char === "{" || char === "(") { if (++depth > LIMIT.depth) rejected("nesting limit"); if (++groups > 1024) rejected("group limit"); }
++        if (char === "{" || char === "(") { if (++depth > LIMIT.depth) throw new RangeError("Next root pattern rejected: exceeds supported depth of 64"); if (++groups > 1024) rejected("group limit"); }
 +        if (char === "}" || char === ")") { depth = Math.max(0, depth - 1); if (++closing > 1024) rejected("group limit"); }
 +    }
 +    const values = [];

@@ -4,11 +4,13 @@ import { spawnSync } from 'node:child_process'
 import { Readable } from 'node:stream'
 import test from 'node:test'
 
-const require = createRequire(import.meta.url)
-// Retained predecessor algorithms only; current installed ingress is checked separately.
-const braces = require('../../vendor/braces')
+assert.equal(process.env.URAI_LEGACY_TOOLING_QUARANTINE, '1', 'Legacy AST assertions require the explicit standalone nonproduction fixture')
+const applicationRequire = createRequire(new URL('../../package.json', import.meta.url))
+const require = createRequire(applicationRequire.resolve('firebase-tools/package.json'))
+const legacyRequire = createRequire(process.env.URAI_BRACES_CONSUMER_ROOT + '/package.json')
+const braces = legacyRequire('braces')
 
-test('retained historical vendor source: bounded brace walkers preserve ordinary nested patterns and padded ranges', () => {
+test('bounded brace walkers preserve ordinary nested patterns and padded ranges', () => {
   assert.deepEqual(braces.expand('{a,b}-{01..03}'), ['a-01', 'a-02', 'a-03', 'b-01', 'b-02', 'b-03'])
   assert.equal(braces.stringify('src/{app,{lib,test}}/*.ts'), 'src/{app,{lib,test}}/*.ts')
   const regex = new RegExp(`^${braces.compile('src/{app,{lib,test}}/file.ts')}$`)
@@ -16,10 +18,10 @@ test('retained historical vendor source: bounded brace walkers preserve ordinary
   assert.equal(regex.test('src/private/file.ts'), false)
 })
 
-test('retained historical vendor source: deep untrusted patterns fail with a bounded validation error without exhausting a small stack', () => {
+test('deep untrusted patterns fail with a bounded validation error without exhausting a small stack', () => {
   const source = `
     const assert = require('node:assert/strict');
-    const braces = require(${JSON.stringify(require.resolve('../../vendor/braces'))});
+    const braces = require(${JSON.stringify(legacyRequire.resolve('braces'))});
     const input = '{a,'.repeat(2400) + 'b' + '}'.repeat(2400);
     for (const method of ['compile', 'expand', 'stringify']) {
       assert.throws(() => braces[method](input), error => error instanceof RangeError && /supported depth of 64/.test(error.message), method);
@@ -30,7 +32,7 @@ test('retained historical vendor source: deep untrusted patterns fail with a bou
   assert.equal(result.signal, null)
 })
 
-test('retained historical vendor source: direct AST consumers have the same bounded depth and cycle protection', () => {
+test('direct AST consumers have the same bounded depth and cycle protection', () => {
   let ast = { type: 'text', value: 'leaf' }
   for (let depth = 0; depth < 200; depth++) ast = { type: 'root', nodes: [ast] }
   for (const method of ['compile', 'expand', 'stringify']) {
@@ -41,8 +43,8 @@ test('retained historical vendor source: direct AST consumers have the same boun
 })
 
 test('updated CLI parsers preserve duplicate columns without inherited JSON authority', async () => {
-  const { parser } = await import('stream-json')
-  const { streamValues } = await import('stream-json/streamers/stream-values.js')
+  const { parser } = await import(require.resolve('stream-json'))
+  const { streamValues } = await import(require.resolve('stream-json/streamers/stream-values.js'))
   const { parse } = require('csv-parse/sync')
   const values = []
   for await (const row of Readable.from(['{"__proto__":{"isAdmin":true},"name":"synthetic"}']).pipe(parser.asStream()).pipe(streamValues.asStream())) values.push(row.value)

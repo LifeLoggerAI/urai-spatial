@@ -10,6 +10,7 @@ const { createHash } = require("node:crypto");
 const { spawnSync } = require("node:child_process");
 
 const sourceRoot = path.resolve(__dirname, "..");
+assert.equal(process.env.URAI_LEGACY_TOOLING_QUARANTINE, "1", "Legacy generic API proof must use the explicit standalone nonproduction fixture");
 const bounded = Boolean(process.env.URAI_BRACES_CONSUMER_ROOT);
 const installedRoot = bounded ? path.resolve(process.env.URAI_BRACES_CONSUMER_ROOT) : sourceRoot;
 const rootRequire = createRequire(path.join(installedRoot, "package.json"));
@@ -25,9 +26,9 @@ const consumers = [["direct", rootRequire], ["Firebase CLI delegated watcher", w
 const digest = bytes => createHash("sha256").update(bytes).digest("hex");
 const guard = error => error instanceof RangeError && /supported depth of 64/.test(error.message);
 
-console.log(JSON.stringify({ measurement: bounded ? "BOUNDED_REAL_WATCHER_AND_NEXT_ESLINT_LEAF_GRAPH_WITH_ACTUAL_CLI_METADATA" : "ACTUAL_INSTALLED_CLI_AND_NEXT_ESLINT_CONSUMER_GRAPH", node: process.version, wholeRepositoryBuildClaim: false, upstreamFixedReleaseClaim: false }));
+console.log(JSON.stringify({ measurement: "QUARANTINED_LEGACY_SOURCE_API_WITH_AUTHENTICATED_ORIGINAL_CLI_METADATA", rawAdvisory: "GHSA-vfj7-8cjw-p6xm", advisoryWaiver: false, node: process.version, wholeRepositoryBuildClaim: false, upstreamFixedReleaseClaim: false }));
 
-test("declared locked tooling remains at the current consumer versions", () => {
+test("quarantined locked tooling retains the original generic consumer versions", () => {
   assert.equal(cliManifest.version, "15.32.1");
   assert.equal(cliManifest.dependencies.chokidar, "^3.6.0");
   assert.equal(watcherRequire("./package.json").version, "3.6.0-urai.spatial.1");

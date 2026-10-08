@@ -79,3 +79,28 @@ export function originalBaselineRequire(originalRoot, manifestPath, identities) 
   }
   return requireBaseline;
 }
+
+// Every literal registry and local/file package participates in the advisory census.
+// File forks use authenticated canonical upstream identity as well as their actual
+// installed identity; a prerelease or directory specifier cannot hide an advisory.
+export function literalLockGraph(lock, semver, sourceRoot, allowRetainedLegacy = false) {
+  if (!lock.packages || typeof lock.packages !== 'object' || Array.isArray(lock.packages)) throw new Error('Complete literal package inventory required');
+  const localSources = [];
+  const nodes = Object.keys(lock.packages).map(spec => {
+    const at = spec.lastIndexOf('@');
+    const name = spec.slice(0, at); let version = spec.slice(at + 1);
+    if (at <= 0 || !name) throw new Error('Malformed literal package identity: ' + spec);
+    if (version.startsWith('file:')) {
+      if (!allowRetainedLegacy || !['braces@file:vendor/braces','chokidar@file:vendor/chokidar'].includes(spec)) throw new Error('Unreviewed local/file dependency: ' + spec);
+      const dir = path.join(sourceRoot, version.slice(5));
+      const actual = JSON.parse(fs.readFileSync(path.join(dir,'package.json')));
+      const original = JSON.parse(fs.readFileSync(path.join(dir,'UPSTREAM-PROVENANCE.json')));
+      version = original.version ?? original.upstreamVersion;
+      if (actual.name !== name || original.package !== name || actual.license !== 'MIT' || !semver.valid(version)) throw new Error('Invalid retained source provenance: ' + spec);
+      localSources.push({specifier:spec,name,actualVersion:actual.version,canonicalUpstreamVersion:version,license:actual.license,scope:'quarantined nonproduction',securityWaiver:false});
+    }
+    if (!semver.valid(version)) throw new Error('Unsupported literal package identity: ' + spec);
+    return {name,version,packagePath:'literal complete frozen lock',sourcePaths:[['literal complete frozen lock',spec]]};
+  });
+  return {nodes,problems:[],localSources};
+}
