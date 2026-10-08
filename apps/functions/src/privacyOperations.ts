@@ -114,11 +114,11 @@ function isRecord(value: unknown): value is JsonMap {
 
 function defaultDomain(): ConsentDomainPolicy {
   return {
-    mode: 'limited',
-    retentionDays: 365,
+    mode: 'denied',
+    retentionDays: null,
     precise: false,
-    replayVisible: true,
-    lifeMapVisible: true,
+    replayVisible: false,
+    lifeMapVisible: false,
     modelContext: false,
     sharingEnabled: false,
     automationEnabled: false,
@@ -132,18 +132,18 @@ function defaultPolicy(uid: string): ConsentPolicy {
     revision: 0,
     ownerId: uid,
     domains: {
-      memory: { ...defaultDomain(), mode: 'granted', modelContext: true },
-      location: { ...defaultDomain(), mode: 'limited' },
-      models: { ...defaultDomain(), mode: 'limited', modelContext: true },
-      exports: { ...defaultDomain(), mode: 'denied' },
-      workforce: { ...defaultDomain(), mode: 'paused' },
-      identity: { ...defaultDomain(), mode: 'limited' },
+      memory: defaultDomain(),
+      location: defaultDomain(),
+      models: defaultDomain(),
+      exports: defaultDomain(),
+      workforce: defaultDomain(),
+      identity: defaultDomain(),
     },
     enforcement: {
-      state: 'fully-enforced',
+      state: 'pending',
       jobId: null,
       affectedTargets: [],
-      providerState: 'not-applicable',
+      providerState: 'pending',
     },
   }
 }
@@ -186,27 +186,66 @@ function parseDomainPolicy(value: unknown): ConsentDomainPolicy {
   }
 }
 
+const STORED_DOMAIN_KEYS = ['mode', 'retentionDays', 'precise', 'replayVisible', 'lifeMapVisible', 'modelContext', 'sharingEnabled', 'automationEnabled', 'likenessEnabled'] as const
+const STORED_PERMISSION_KEYS = STORED_DOMAIN_KEYS.slice(2)
+const STORED_AUTHORITY_IDENTIFIER = /^[A-Za-z0-9_-]{1,128}$/
+
+function ownPolicyRecord(value: unknown, required: readonly string[], optional: readonly string[] = []): value is JsonMap {
+  if (!isRecord(value)) return false
+  const descriptors = Object.getOwnPropertyDescriptors(value)
+  return required.every(key => Object.prototype.hasOwnProperty.call(descriptors, key)) && Reflect.ownKeys(descriptors).every(key =>
+    typeof key === 'string' && (required.includes(key) || optional.includes(key)) && 'value' in descriptors[key],
+  )
+}
+
+function isCanonicalStoredPolicy(value: unknown, uid: string): value is ConsentPolicy {
+  try {
+    if (!ownPolicyRecord(value, ['version', 'revision', 'ownerId', 'domains', 'enforcement'], ['updatedAt'])
+      || value.version !== 2 || typeof uid !== 'string' || !uid || value.ownerId !== uid
+      || typeof value.revision !== 'number' || !Number.isSafeInteger(value.revision) || value.revision < 0
+      || !ownPolicyRecord(value.domains, CONSENT_DOMAINS)) return false
+    for (const domain of CONSENT_DOMAINS) {
+      const policy = value.domains[domain]
+      if (!ownPolicyRecord(policy, STORED_DOMAIN_KEYS) || typeof policy.mode !== 'string' || !CONSENT_MODES.includes(policy.mode as ConsentMode)
+        || (policy.retentionDays !== null && (typeof policy.retentionDays !== 'number' || ![30, 90, 365].includes(policy.retentionDays)))
+        || STORED_PERMISSION_KEYS.some(key => typeof policy[key] !== 'boolean')) return false
+    }
+    const enforcement = value.enforcement
+    if (!ownPolicyRecord(enforcement, ['state', 'jobId', 'affectedTargets', 'providerState'])
+      || typeof enforcement.state !== 'string' || !['pending', 'partially-enforced', 'fully-enforced', 'failed', 'conflicted'].includes(enforcement.state)
+      || typeof enforcement.providerState !== 'string' || !['not-applicable', 'pending', 'partial', 'complete', 'failed'].includes(enforcement.providerState)
+      || (enforcement.jobId !== null && (typeof enforcement.jobId !== 'string' || !STORED_AUTHORITY_IDENTIFIER.test(enforcement.jobId)))) return false
+    const targets = enforcement.affectedTargets
+    if (!Array.isArray(targets) || targets.length > 1024) return false
+    const descriptors = Object.getOwnPropertyDescriptors(targets)
+    if (Reflect.ownKeys(descriptors).some(key => typeof key !== 'string' || (key !== 'length' && !/^(0|[1-9][0-9]*)$/.test(key)) || !('value' in descriptors[key]))) return false
+    const unique = new Set<string>()
+    for (let index = 0; index < targets.length; index++) {
+      const target = descriptors[String(index)]?.value
+      if (typeof target !== 'string' || !STORED_AUTHORITY_IDENTIFIER.test(target) || unique.has(target)) return false
+      unique.add(target)
+    }
+    return true
+  } catch {
+    return false
+  }
+}
+
 function parseStoredPolicy(value: unknown, uid: string): ConsentPolicy {
-  if (!isRecord(value) || value.ownerId !== uid || !isRecord(value.domains)) return defaultPolicy(uid)
+  // An absent or malformed stored policy cannot create collection authority or an enforcement receipt.
+  if (!isCanonicalStoredPolicy(value, uid)) return defaultPolicy(uid)
   const domains = {} as Record<ConsentDomain, ConsentDomainPolicy>
   for (const domain of CONSENT_DOMAINS) domains[domain] = parseDomainPolicy(value.domains[domain])
-  const enforcement = isRecord(value.enforcement) ? value.enforcement : {}
   return {
     version: 2,
-    revision: Number(value.revision ?? 0),
+    revision: value.revision,
     ownerId: uid,
     domains,
     enforcement: {
-      state: ['pending', 'partially-enforced', 'fully-enforced', 'failed', 'conflicted'].includes(String(enforcement.state))
-        ? (String(enforcement.state) as ConsentPolicy['enforcement']['state'])
-        : 'fully-enforced',
-      jobId: typeof enforcement.jobId === 'string' ? enforcement.jobId : null,
-      affectedTargets: Array.isArray(enforcement.affectedTargets)
-        ? enforcement.affectedTargets.filter((item): item is string => typeof item === 'string')
-        : [],
-      providerState: ['not-applicable', 'pending', 'partial', 'complete', 'failed'].includes(String(enforcement.providerState))
-        ? (String(enforcement.providerState) as ConsentPolicy['enforcement']['providerState'])
-        : 'not-applicable',
+      state: value.enforcement.state,
+      jobId: value.enforcement.jobId,
+      affectedTargets: [...value.enforcement.affectedTargets],
+      providerState: value.enforcement.providerState,
     },
   }
 }
@@ -292,6 +331,9 @@ export const applyConsentPolicy = functions.https.onCall(async (data, context) =
       throw new functions.https.HttpsError('aborted', 'CONSENT_REVISION_CONFLICT', {
         currentRevision: current.revision,
       })
+    }
+    if (current.revision === Number.MAX_SAFE_INTEGER) {
+      throw new functions.https.HttpsError('failed-precondition', 'CONSENT_REVISION_EXHAUSTED')
     }
 
     const nextPolicy: ConsentPolicy = {
