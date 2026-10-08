@@ -75,7 +75,7 @@ await transformFile('urai-tier1/tests/accessibility-performance-embodied-explora
     await expect(searchTrigger).toBeVisible()
     await expect(searchTrigger).toHaveAccessibleName('Search and navigate Life Map')
     await searchTrigger.click()
-    const navigator = page.locator('section.life-map-navigator[aria-label="Search and filter Life Map"]').first()
+    const navigator = page.getByRole('region', { name: 'Search and filter Life Map', exact: true })
     await expect(navigator).toBeVisible()
     const memory = navigator.locator('button[data-life-map-semantic-result][data-life-map-node-id="quiet-reset"]').first()
     await expect(memory).toHaveAccessibleName(/The Quiet Reset/i)`
@@ -143,7 +143,7 @@ await transformFile('urai-tier1/tests/accessibility-performance-embodied-explora
     await expect(trigger).toBeFocused()
     await page.keyboard.press('Enter')
     await expect(trigger).toHaveAttribute('aria-expanded', 'true')
-    await expect(page.locator('section.life-map-navigator[aria-label="Search and filter Life Map"]').first()).toBeVisible()`,
+    await expect(page.getByRole('region', { name: 'Search and filter Life Map', exact: true })).toBeVisible()`,
     1,
     'current mobile Life Map compact keyboard-operable search trigger',
   )
@@ -183,7 +183,7 @@ await transformFile('urai-tier1/tests/accessibility-performance-spatial-visual.s
     await expect(trigger).toBeFocused()
     await page.keyboard.press('Enter')
     await expect(trigger).toHaveAttribute('aria-expanded', 'true')
-    const region = page.locator('section.life-map-navigator[aria-label="Search and filter Life Map"]').first()
+    const region = page.getByRole('region', { name: 'Search and filter Life Map', exact: true })
     await expect(region).toBeVisible({ timeout: 15_000 })
     await expect(region.locator('button[data-life-map-semantic-result]').first()).toBeVisible()
   })

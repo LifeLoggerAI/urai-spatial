@@ -49,6 +49,13 @@ test('full v5 materialization preserves the audited current Life Map proof byte-
     assert.match(result.stdout, /Preserved audited current Home semantic-link destination identity/)
     assert.match(result.stdout, /Materialized current accessibility-performance v5 proof/)
     assert.match(result.stdout, /Materialized atomic Focus camera telemetry proof/)
+    const embodied = await readFile(path.join(fixture, 'urai-tier1/tests/accessibility-performance-embodied-exploration.spec.ts'), 'utf8')
+    const visual = await readFile(path.join(fixture, 'urai-tier1/tests/accessibility-performance-spatial-visual.spec.ts'), 'utf8')
+    const exactRegion = "page.getByRole('region', { name: 'Search and filter Life Map', exact: true })"
+    assert.equal(embodied.split(exactRegion).length - 1, 2)
+    assert.equal(visual.split(exactRegion).length - 1, 1)
+    assert.doesNotMatch(embodied + visual, /section\.life-map-navigator\[aria-label=/)
+
   })
   assert.deepEqual(await readFile(path.join(repo, independentPath)), checkedIn, 'The functional test must not materialize checked-in tests')
   assert.deepEqual(await readFile(path.join(repo, canonicalHomePath)), checkedInHome, 'The functional test must not materialize checked-in Home tests')
@@ -80,6 +87,19 @@ test('full v5 materialization rejects altered current Home authority without rew
     assert.notEqual(result.status, 0)
     assert.match(result.stderr, /canonical Home semantic navigation contract expected 1 audited occurrence/)
     assert.equal(await readFile(target, 'utf8'), altered)
+  })
+})
+
+test('full v5 materialization rejects weakened mobile navigator authority', async () => {
+  await withFixture(async (fixture) => {
+    const target = path.join(fixture, 'urai-tier1/tests/accessibility-performance-embodied-exploration.spec.ts')
+    const source = await readFile(target, 'utf8')
+    const altered = source.replace("await expect(help).not.toHaveAttribute('open', '')", "await expect(help).toBeVisible()")
+    assert.notEqual(altered, source)
+    await writeFile(target, altered)
+    const result = materialize(fixture)
+    assert.notEqual(result.status, 0)
+    assert.match(result.stderr, /current mobile Life Map compact keyboard-operable search trigger expected 1 stale or current audited occurrence/)
   })
 })
 
