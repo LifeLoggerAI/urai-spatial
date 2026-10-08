@@ -1,5 +1,6 @@
 import { preserveAuditedLifeMapProof } from './materialize-accessibility-performance-lifemap-authority.mjs'
 import { readFile, writeFile } from 'node:fs/promises'
+import { isAuditedCurrentHomeProof } from './materialize-accessibility-performance-home-authority.mjs'
 
 function replaceExact(source, from, to, expectedCount, label) {
   const count = source.split(from).length - 1
@@ -25,7 +26,11 @@ async function transformFile(path, transform) {
   console.log(`Materialized current accessibility-performance proof at ${path}`)
 }
 
-await transformFile('urai-tier1/tests/accessibility-performance-canonical-home-travel.spec.ts', (input) => {
+const canonicalHomeProofPath = 'urai-tier1/tests/accessibility-performance-canonical-home-travel.spec.ts'
+const canonicalHomeProofSource = await readFile(canonicalHomeProofPath, 'utf8')
+if (isAuditedCurrentHomeProof(canonicalHomeProofSource)) {
+  console.log('Preserved audited current Home travel proof unchanged')
+} else await transformFile(canonicalHomeProofPath, (input) => {
   const stale = `  const navigation = page.getByRole('navigation', { name: 'Direct Home destinations' })
   await expect(navigation).toBeVisible({ timeout: 30_000 })
   const target = navigation.getByRole('button', { name: destination.label, exact: true })

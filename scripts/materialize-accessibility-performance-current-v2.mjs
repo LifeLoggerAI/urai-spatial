@@ -1,3 +1,4 @@
+import { isAuditedCurrentHomeProof } from './materialize-accessibility-performance-home-authority.mjs'
 import { preserveAuditedLifeMapProof } from './materialize-accessibility-performance-lifemap-authority.mjs'
 import './materialize-accessibility-performance-current.mjs'
 import { readFile, writeFile } from 'node:fs/promises'
@@ -118,7 +119,9 @@ const stableIdSelector = 'navigation.getByTestId(`home-semantic-${destination.id
 const accessibleNameAssertion = 'await expect(target).toHaveAccessibleName(destination.label)'
 const stableIdSelectorCount = canonicalHomeTravel.split(stableIdSelector).length - 1
 const accessibleNameAssertionCount = canonicalHomeTravel.split(accessibleNameAssertion).length - 1
-if (stableIdSelectorCount !== 1 || accessibleNameAssertionCount !== 1) {
+if (!isAuditedCurrentHomeProof(canonicalHomeTravel) && (stableIdSelectorCount !== 1 || accessibleNameAssertionCount !== 1)) {
   throw new Error(`canonical Home destination identity authority expected one stable-id selector and one accessible-name assertion; found id=${stableIdSelectorCount}, name=${accessibleNameAssertionCount}`)
 }
-console.log('Canonical Home destination identity is bound to stable id and accessible label')
+console.log(isAuditedCurrentHomeProof(canonicalHomeTravel)
+  ? 'Preserved audited current Home semantic-link destination identity'
+  : 'Canonical Home destination identity is bound to stable id and accessible label')

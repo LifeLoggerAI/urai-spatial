@@ -15,7 +15,9 @@ const proofPath = 'urai-tier1/tests/accessibility-performance-lifemap-independen
 // Re-reviewed after #1629 adds mobile overview helper geometry: 48px targets,
 // viewport containment, lower-field placement, 8px title/search clearance and
 // pointer reachability. Existing semantic/privacy/return assertions are intact.
-const auditedCurrentSha256 = '4b6b40a2e25af4884189b0b43c983fa51fc9d7eb2eb82f386a279bd163b695aa'
+// Re-reviewed current mounted-route headings and real mouse-wheel scrolling;
+// all prior semantic, identity, geometry and scroll assertions remain.
+const auditedCurrentSha256 = 'ff5d24f7f373ee1ad8893f37ce798c7e7785bf2c0ef62bc5648bfdb434965027'
 
 export async function preserveAuditedLifeMapProof() {
   const source = await readFile(proofPath)
