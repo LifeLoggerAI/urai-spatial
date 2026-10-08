@@ -1,5 +1,8 @@
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
+import os from 'node:os'
+import path from 'node:path'
+import { spawnSync } from 'node:child_process'
 import test from 'node:test'
 
 const verifierPath = new URL('../../scripts/verify-launch-critical-assets.mjs', import.meta.url)
@@ -40,16 +43,15 @@ test('candidate bundle audit is isolated, retainable, and rejects production rec
   assert.doesNotMatch(candidateAuditor, /fs\.writeFileSync\(path\.join\(sourceRoot, manifestRelativePath\)/)
 })
 
-test('forge workflow verifies governed production and uploads the exact audited candidate bundle', () => {
+test('forge workflow verifies current governed source and uploads the exact audited candidate bundle', () => {
   const governedVerifier = 'node scripts/verify-governed-asset-promotion.mjs'
   const governedContract = 'node --test --test-concurrency=1 tests/home-entry-governed-production-contract.test.mjs'
   const candidateForge = 'node scripts/forge-launch-critical-assets.mjs'
   const candidateVerifier = 'node scripts/verify-launch-critical-assets.mjs'
   const candidateAudit = 'node scripts/audit-launch-critical-candidate-bundle.mjs'
   const auditedBundlePath = '.urai-artifacts/launch-critical-candidate-bundle/'
-  assert.match(workflow, /Verify governed production authority before candidate generation/)
-  assert.match(workflow, /Run governed Home production contract before candidate generation/)
-  assert.match(workflow, /Prove governed Home binary immutable before candidate generation/)
+  assert.match(workflow, /Verify fail-closed rehearsal control before candidate generation/)
+  assert.match(workflow, /Verify exact governed Home source before candidate generation/)
   assert.match(workflow, /Independently audit and retain exact candidate bundle/)
   assert.match(workflow, /URAI_CANDIDATE_BUNDLE_ROOT: \.urai-artifacts\/launch-critical-candidate-bundle/)
   assert.match(workflow, /Upload exact audited candidate bundle/)
@@ -62,3 +64,70 @@ test('forge workflow verifies governed production and uploads the exact audited 
   assert.equal(workflow.indexOf('Upload exact audited candidate bundle') > workflow.indexOf(candidateAudit), true)
   assert.doesNotMatch(workflow, /Independently audit governed production state before candidate generation/)
 })
+
+function currentHomeGateScript() {
+  const step = workflow.split(/      - name: (?:Verify exact governed Home source|Run governed Home production contract) before candidate generation\n/)[1]?.split('      - name: ')[0]
+  assert.ok(step, 'current Home source gate is present')
+  assert.match(step, /if: steps\.mode\.outputs\.promotion != 'true' && steps\.mode\.outputs\.replacement != 'true'/)
+  const shell = step.split('        run: |\n')[1]
+  assert.ok(shell, 'current Home source gate has an executable shell')
+  return shell.split('\n').filter(line => line.trim()).map(line => {
+    assert.ok(line.startsWith('          '), 'gate shell keeps YAML indentation')
+    return line.slice(10)
+  }).join('\n')
+}
+
+function runCurrentHomeGate(releaseState, contractExit = 0) {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'urai-current-home-source-gate-'))
+  try {
+    const marker = path.join(directory, 'contract-invoked')
+    fs.writeFileSync(path.join(directory, 'node'), `#!/bin/bash
+set -euo pipefail
+if [[ "$1" == "-e" ]]; then
+  printf '%s' "$URAI_GATE_TEST_STATE"
+elif [[ "$*" == "--test --test-concurrency=1 tests/home-entry-governed-production-contract.test.mjs" ]]; then
+  printf '%s' "$*" > "$URAI_GATE_TEST_MARKER"
+  exit "$URAI_GATE_TEST_CONTRACT_EXIT"
+else
+  echo "Unexpected source-gate node invocation: $*" >&2
+  exit 97
+fi
+`, { mode: 0o755 })
+    const result = spawnSync('bash', ['-c', currentHomeGateScript()], {
+      encoding: 'utf8',
+      env: {
+        ...process.env,
+        PATH: `${directory}:${process.env.PATH}`,
+        URAI_GATE_TEST_STATE: releaseState,
+        URAI_GATE_TEST_MARKER: marker,
+        URAI_GATE_TEST_CONTRACT_EXIT: String(contractExit),
+      },
+    })
+    assert.equal(result.error, undefined)
+    return { ...result, invoked: fs.existsSync(marker) }
+  } finally {
+    fs.rmSync(directory, { recursive: true, force: true })
+  }
+}
+
+for (const state of ['pending-final-review', 'production-ready']) {
+  test(`current workflow invokes the exact Home source contract for ${state}`, () => {
+    const result = runCurrentHomeGate(state)
+    assert.equal(result.status, 0, result.stderr)
+    assert.equal(result.invoked, true)
+  })
+  test(`current workflow propagates the Home source contract failure for ${state}`, () => {
+    const result = runCurrentHomeGate(state, 23)
+    assert.equal(result.status, 23, result.stderr)
+    assert.equal(result.invoked, true)
+  })
+}
+
+for (const state of ['', 'candidate-not-production-ready', 'unexpected']) {
+  test(`current workflow rejects unsupported Home state ${JSON.stringify(state)}`, () => {
+    const result = runCurrentHomeGate(state)
+    assert.equal(result.status, 1)
+    assert.equal(result.invoked, false)
+    assert.match(result.stderr, /Unsupported Home releaseState:/)
+  })
+}
