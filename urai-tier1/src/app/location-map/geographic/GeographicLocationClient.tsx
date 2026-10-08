@@ -20,13 +20,23 @@ import {
   type GeographicPrecision,
 } from '@/spatial/places/geographicLocationVault'
 import './geographic-location.css'
+import { useUraiLocale } from '@/lib/i18n/useUraiLocale'
+import { localizedGeographicStatus } from '@/lib/i18n/geographicCopy'
+import { URAI_GEOGRAPHIC_MESSAGES, type GeographicMessageId, type GeographicStatusMessage } from '@/lib/i18n/geographicMessages'
 import { createGeographicLocationRequest, type GeographicRequestAuthority } from '@/spatial/places/geographicLocationRequest'
 
-const precisionLabels: Record<GeographicPrecision, string> = {
-  city: 'City-level',
-  approximate: 'Approximate area',
-  'exact-private': 'Exact and private',
+const precisionLabels: Record<GeographicPrecision, GeographicMessageId> = {
+  city: 'geographic.precision.city',
+  approximate: 'geographic.precision.approximate',
+  'exact-private': 'geographic.precision.exact',
 }
+
+const authorityLabels = {
+  granted: 'geographic.authority.granted', limited: 'geographic.authority.limited',
+  paused: 'geographic.authority.paused', denied: 'geographic.authority.denied',
+  loading: 'geographic.authority.loading', 'signed-out': 'geographic.authority.signed-out',
+  ready: 'geographic.authority.ready', unavailable: 'geographic.authority.unavailable',
+} as const satisfies Record<ConsentDomainPolicy['mode'] | LocationAuthorityState, GeographicMessageId>
 
 type LocationAuthorityState = 'loading' | 'signed-out' | 'ready' | 'unavailable'
 type StoredPinsState = { pins: GeographicMemoryPin[]; present: boolean; invalid: boolean }
@@ -57,21 +67,23 @@ function inspectStoredPins(raw: string | null): StoredPinsState {
 }
 
 export default function GeographicLocationClient() {
+  const locale = useUraiLocale()
   const [permission, setPermission] = useState<GeographicPermissionState>('idle')
   const [consented, setConsented] = useState(false)
   const [storageAvailable, setStorageAvailable] = useState(true)
   const [storedPinsPresent, setStoredPinsPresent] = useState(false)
   const [coordinate, setCoordinate] = useState<GeographicCoordinate | null>(null)
   const [precision, setPrecision] = useState<GeographicPrecision>('approximate')
-  const [title, setTitle] = useState('Current place')
+  const [title, setTitle] = useState(URAI_GEOGRAPHIC_MESSAGES['geographic.pin.currentPlace'].source as string)
   const [readablePlace, setReadablePlace] = useState('')
   const [pins, setPins] = useState<GeographicMemoryPin[]>([])
   const [user, setUser] = useState<User | null>(null)
   const [authorityState, setAuthorityState] = useState<LocationAuthorityState>(firebasePublicEnvReady ? 'loading' : 'signed-out')
   const [locationPolicy, setLocationPolicy] = useState<ConsentDomainPolicy>(() => defaultConsentPolicy('local-only').domains.location)
   const [policyRevision, setPolicyRevision] = useState(0)
-  const [message, setMessage] = useState('Location is off. UrAi will not request or store coordinates until you explicitly opt in.')
+  const [message, setMessage] = useState<GeographicStatusMessage>({id: 'geographic.status.off'})
 
+  const statusCopy = localizedGeographicStatus(locale.preference, message)
   const locationClosed = authorityState === 'ready' && (locationPolicy.mode === 'denied' || locationPolicy.mode === 'paused')
   const exactPrivateAllowed = Boolean(user) && authorityState === 'ready' && !locationClosed && locationPolicy.precise
   const requestBlockedByAuthority = authorityState === 'loading' || authorityState === 'unavailable' || locationClosed
@@ -85,29 +97,29 @@ export default function GeographicLocationClient() {
     online: typeof navigator !== 'undefined' && navigator.onLine,
     currentAuthOwnerId: firebasePublicEnvReady ? getAuth(app).currentUser?.uid ?? null : null,
   }), {
-    requested: () => { setPermission('requesting'); setMessage('Waiting for your browser permission. Nothing is stored by requesting access.') },
+    requested: () => { setPermission('requesting'); setMessage({id: 'geographic.status.waiting'}) },
     retainConsent: () => localStorage.setItem(LOCATION_CONSENT_KEY, 'granted'),
     accepted: (next, precise) => {
       setConsented(true); setCoordinate(next); setPermission('granted')
       setMessage(precise
-        ? 'Location received under the current precise-location grant. Choose the stored precision and label before saving.'
-        : 'Location received and immediately reduced to approximate precision under the current privacy authority.')
+        ? {id: 'geographic.status.receivedPrecise'}
+        : {id: 'geographic.status.receivedApproximate'})
     },
-    invalid: () => { setPermission('error'); setMessage('The browser returned an invalid coordinate. Nothing was stored.') },
+    invalid: () => { setPermission('error'); setMessage({id: 'geographic.status.invalidCoordinate'}) },
     storageFailed: () => {
       setStorageAvailable(false); setConsented(false); setCoordinate(null); setPermission('error')
-      setMessage('Consent could not be retained privately, so UrAi discarded the coordinate and kept location off.')
+      setMessage({id: 'geographic.status.storageFailed'})
     },
     failed: code => {
       const state = geolocationErrorState(code)
       setPermission(state)
       setMessage(state === 'denied'
-        ? 'Location permission was denied or dismissed. No coordinates were stored.'
+        ? {id: 'geographic.status.permissionDenied'}
         : state === 'unavailable'
-          ? 'Location is unavailable right now. No coordinates were stored.'
+          ? {id: 'geographic.status.deviceUnavailable'}
           : state === 'timeout'
-            ? 'The location request timed out. No coordinates were stored.'
-            : 'The location request failed. No coordinates were stored.')
+            ? {id: 'geographic.status.timeout'}
+            : {id: 'geographic.status.failed'})
     },
   })
   const invalidateLocationRequest = () => {
@@ -119,7 +131,7 @@ export default function GeographicLocationClient() {
     return () => { mounted.current = false; locationRequest.current?.cancel() }
   }, [])
 
-  const clearLocalConsent = (nextMessage?: string) => {
+  const clearLocalConsent = (nextMessage?: GeographicStatusMessage) => {
     invalidateLocationRequest()
     try { localStorage.removeItem(LOCATION_CONSENT_KEY) } catch { setStorageAvailable(false) }
     setConsented(false)
@@ -133,12 +145,12 @@ export default function GeographicLocationClient() {
       try { localStorage.removeItem(LOCATION_PINS_KEY) } catch { setStorageAvailable(false) }
       setPins([])
       setStoredPinsPresent(false)
-      setMessage('An unreadable local location record was removed so hidden coordinates cannot survive without a working delete control.')
+      setMessage({id: 'geographic.status.corruptRecordRemoved'})
       return
     }
     setPins(inspected.pins)
     setStoredPinsPresent(inspected.present)
-    if (source === 'storage' && !inspected.present) setMessage('Location pins were deleted in another tab. This tab cleared its in-memory copy.')
+    if (source === 'storage' && !inspected.present) setMessage({id: 'geographic.status.pinsDeletedOtherTab'})
   }
 
   useEffect(() => {
@@ -150,7 +162,7 @@ export default function GeographicLocationClient() {
       setConsented(false)
       setPins([])
       setStoredPinsPresent(false)
-      setMessage('Private browser storage is unavailable. No location data can be retained on this device.')
+      setMessage({id: 'geographic.status.storageUnavailable'})
     }
   }, [])
 
@@ -158,7 +170,7 @@ export default function GeographicLocationClient() {
     const syncStorage = (event: StorageEvent) => {
       if (event.key === null) {
         invalidateLocationRequest(); setConsented(false); setCoordinate(null); setPins([]); setStoredPinsPresent(false); setPermission('revoked')
-        setMessage('Local location data was cleared in another tab. This tab retained no coordinate or pin in memory.')
+        setMessage({id: 'geographic.status.allClearedOtherTab'})
         return
       }
       if (event.key === LOCATION_PINS_KEY) {
@@ -173,7 +185,7 @@ export default function GeographicLocationClient() {
         if (!granted) {
           setCoordinate(null)
           setPermission('revoked')
-          setMessage('UrAi location consent was revoked in another tab. No coordinate remains in memory here.')
+          setMessage({id: 'geographic.status.consentRevokedOtherTab'})
         }
       }
     }
@@ -210,7 +222,7 @@ export default function GeographicLocationClient() {
       invalidateLocationRequest()
       if (snapshot.metadata.fromCache || snapshot.metadata.hasPendingWrites) {
         setAuthorityState('loading')
-        clearLocalConsent('The current location policy is awaiting server confirmation. No new coordinate can be requested or retained from cached or unconfirmed authority.')
+        clearLocalConsent({id: 'geographic.status.awaitingPolicy'})
         return
       }
       const raw = snapshot.data()
@@ -221,7 +233,7 @@ export default function GeographicLocationClient() {
     }, () => {
       if (!active || getAuth(app).currentUser?.uid !== user.uid) return
       setAuthorityState('unavailable')
-      clearLocalConsent('The authoritative location policy could not be read. New geographic collection remains blocked rather than guessing permission.')
+      clearLocalConsent({id: 'geographic.status.policyUnavailable'})
       setPermission('error')
     })
     return () => { active = false; invalidateLocationRequest(); stop() }
@@ -229,7 +241,7 @@ export default function GeographicLocationClient() {
 
   useEffect(() => {
     if (locationClosed) {
-      clearLocalConsent(`Consent Sanctuary has ${locationPolicy.mode} location collection. New browser location requests are blocked and no coordinate remains in memory.`)
+      clearLocalConsent({id: 'geographic.status.policyClosed', mode: locationPolicy.mode})
       setPermission('revoked')
       return
     }
@@ -265,7 +277,7 @@ export default function GeographicLocationClient() {
         if (status.state === 'denied' || hadConsent) {
           invalidateLocationRequest()
           setPermission('revoked')
-          setMessage('Browser location permission is no longer granted. UrAi cleared its local consent flag and retained no coordinate in memory.')
+          setMessage({id: 'geographic.status.browserPermissionLost'})
         }
       }
     }
@@ -286,24 +298,24 @@ export default function GeographicLocationClient() {
   const requestLocation = () => {
     if (!storageAvailable) {
       setPermission('error')
-      setMessage('Location remains off because private browser storage is unavailable. Nothing was requested or stored.')
+      setMessage({id: 'geographic.status.requestStorageUnavailable'})
       return
     }
     if (requestBlockedByAuthority) {
       setPermission('error')
       setMessage(locationClosed
-        ? `Consent Sanctuary has ${locationPolicy.mode} location collection. Browser geolocation was not requested.`
-        : 'The authoritative location policy is not available yet. Browser geolocation was not requested.')
+        ? {id: 'geographic.status.policyBlocked', mode: locationPolicy.mode}
+        : {id: 'geographic.status.requestPolicyUnavailable'})
       return
     }
     if (!('geolocation' in navigator)) {
       setPermission('unsupported')
-      setMessage('This browser does not provide geolocation. The symbolic Life Map remains available.')
+      setMessage({id: 'geographic.status.unsupported'})
       return
     }
     if (!locationRequest.current?.request(navigator.geolocation)) {
       setPermission('error')
-      setMessage('Location authority changed before the request. Nothing was requested or stored; choose location again after the current policy is ready.')
+      setMessage({id: 'geographic.status.authorityChanged'})
     }
   }
 
@@ -316,21 +328,21 @@ export default function GeographicLocationClient() {
       const pin = createPin({
         title,
         coordinate: exactPrivateAllowed ? coordinate : applyPrecision(coordinate, safePrecision === 'city' ? 'city' : 'approximate'),
-        readablePlace: readablePlace || 'Unnamed private place',
+        readablePlace: readablePlace || URAI_GEOGRAPHIC_MESSAGES['geographic.pin.unnamed'].source,
         precision: safePrecision,
       })
       const next = [pin, ...(current.invalid ? [] : current.pins)]
       localStorage.setItem(LOCATION_PINS_KEY, JSON.stringify(next))
       setPins(next)
       setStoredPinsPresent(true)
-      setMessage('Memory pin saved locally with the selected authorized precision.')
+      setMessage({id: 'geographic.status.pinSaved'})
     } catch {
-      setMessage('The memory pin could not be saved. No existing location record changed.')
+      setMessage({id: 'geographic.status.pinSaveFailed'})
     }
   }
 
   const revoke = () => {
-    clearLocalConsent('Location permission inside UrAi is revoked. Existing saved pins remain until you delete them.')
+    clearLocalConsent({id: 'geographic.status.revoked'})
     setPermission('revoked')
   }
 
@@ -341,47 +353,48 @@ export default function GeographicLocationClient() {
       localStorage.removeItem(LOCATION_PINS_KEY)
       setPins([])
       setStoredPinsPresent(false)
-      setMessage('All locally stored geographic memory pins were deleted.')
+      setMessage({id: 'geographic.status.pinsDeleted'})
     } catch {
       setStorageAvailable(false)
-      setMessage('Private browser storage is unavailable, so deletion could not be verified on this device.')
+      setMessage({id: 'geographic.status.deletionUnverified'})
     }
   }
 
   return <main className="geoLayer" data-location-layer="geographic-support" data-permission-state={permission} data-location-authority={authorityState} data-location-policy-mode={locationPolicy.mode}>
     <header className="geoHeader">
-      <div><span>UrAi · Geographic supporting layer</span><h1>Places, only when you choose.</h1></div>
-      <nav><Link href="/location-map">Symbolic atlas</Link><Link href="/privacy-controls">Privacy controls</Link></nav>
+      <div><span {...locale.props('geographic.brand')}>{locale.text('geographic.brand')}</span><h1 {...locale.props('geographic.title')}>{locale.text('geographic.title')}</h1></div>
+      <nav><Link href="/location-map" {...locale.props('geographic.nav.symbolic')}>{locale.text('geographic.nav.symbolic')}</Link><Link href="/privacy-controls" {...locale.props('geographic.nav.privacy')}>{locale.text('geographic.nav.privacy')}</Link></nav>
     </header>
 
     <section className="geoConsent" aria-labelledby="geo-consent-title">
-      <p id="geo-consent-title">This layer never starts background collection. Browser location is requested only after you press the button below and the current Consent Sanctuary policy permits collection.</p>
+      <p id="geo-consent-title" {...locale.props('geographic.consent.explanation')}>{locale.text('geographic.consent.explanation')}</p>
       <div className="geoActions">
-        <button type="button" onClick={requestLocation} disabled={permission === 'requesting' || permission === 'offline' || !storageAvailable || requestBlockedByAuthority}>{permission === 'requesting' ? 'Requesting…' : 'Use current location'}</button>
-        <button type="button" onClick={revoke} disabled={!consented && permission !== 'requesting'}>Revoke UrAi location consent</button>
+        <button type="button" {...locale.props('geographic.action.useLocation')} onClick={requestLocation} disabled={permission === 'requesting' || permission === 'offline' || !storageAvailable || requestBlockedByAuthority}>{locale.text(permission === 'requesting' ? 'geographic.action.requesting' : 'geographic.action.useLocation')}</button>
+        <button type="button" {...locale.props('geographic.action.revoke')} onClick={revoke} disabled={!consented && permission !== 'requesting'}>{locale.text('geographic.action.revoke')}</button>
       </div>
-      <p role="status" aria-live="polite">{message}</p>
-      <small>{user ? `Consent Sanctuary: ${authorityState === 'ready' ? locationPolicy.mode : authorityState}. Precise private storage: ${exactPrivateAllowed ? 'allowed' : 'not allowed'}.` : 'Signed-out local use is approximate-only; exact private location requires an authenticated Consent Sanctuary grant.'}</small>
+      <p role="status" aria-live="polite" lang={statusCopy.locale} dir={statusCopy.direction} data-urai-translation-preview={String(statusCopy.preview)}>{statusCopy.text}</p>
+      <small {...locale.props(user ? 'geographic.policy.summary' : 'geographic.policy.signedOut')}>{user ? locale.text('geographic.policy.summary', {mode: locale.text(authorityLabels[authorityState === 'ready' ? locationPolicy.mode : authorityState]), precise: locale.text(exactPrivateAllowed ? 'geographic.policy.allowed' : 'geographic.policy.notAllowed')}) : locale.text('geographic.policy.signedOut')}</small>
     </section>
 
-    <section className="geoMap" aria-label="Geographic map fallback">
-      {displayCoordinate ? <div className="geoCoordinate"><span>Private coordinate preview</span><strong>{displayCoordinate.latitude.toFixed(precision === 'city' ? 2 : precision === 'approximate' || !exactPrivateAllowed ? 3 : 5)}, {displayCoordinate.longitude.toFixed(precision === 'city' ? 2 : precision === 'approximate' || !exactPrivateAllowed ? 3 : 5)}</strong><small>Accuracy reported by device: {Math.round(displayCoordinate.accuracyMeters ?? 0)} m</small></div> : <div className="geoEmpty"><strong>No geographic location mounted.</strong><span>The symbolic Life Map remains the primary experience.</span></div>}
+    <section className="geoMap" aria-labelledby="geo-map-label">
+      <span id="geo-map-label" {...locale.props('geographic.map.label')} style={{position:'absolute',width:1,height:1,overflow:'hidden',clipPath:'inset(50%)'}}>{locale.text('geographic.map.label')}</span>
+      {displayCoordinate ? <div className="geoCoordinate"><span {...locale.props('geographic.coordinate.preview')}>{locale.text('geographic.coordinate.preview')}</span><strong dir="ltr">{displayCoordinate.latitude.toFixed(precision === 'city' ? 2 : precision === 'approximate' || !exactPrivateAllowed ? 3 : 5)}, {displayCoordinate.longitude.toFixed(precision === 'city' ? 2 : precision === 'approximate' || !exactPrivateAllowed ? 3 : 5)}</strong><small {...locale.props('geographic.coordinate.accuracy')}>{locale.text('geographic.coordinate.accuracy', {meters: String(Math.round(displayCoordinate.accuracyMeters ?? 0))})}</small></div> : <div className="geoEmpty"><strong {...locale.props('geographic.coordinate.empty')}>{locale.text('geographic.coordinate.empty')}</strong><span {...locale.props('geographic.map.primary')}>{locale.text('geographic.map.primary')}</span></div>}
       <div className="geoMapPlaceholder" aria-hidden="true"><i/><i/><i/><b/></div>
-      <p className="geoMapTruth">Interactive Google Maps will load only after restricted project keys are configured. This truthful fallback makes no external map request.</p>
+      <p className="geoMapTruth" {...locale.props('geographic.map.fallback')}>{locale.text('geographic.map.fallback')}</p>
     </section>
 
     <section className="geoEditor" aria-labelledby="geo-pin-title">
-      <h2 id="geo-pin-title">Create a memory pin</h2>
-      <label>Label<input value={title} onChange={(event) => setTitle(event.target.value)} /></label>
-      <label>Readable place<input value={readablePlace} onChange={(event) => setReadablePlace(event.target.value)} placeholder="Neighborhood, city, or private label" /></label>
-      <fieldset><legend>Stored precision</legend>{(Object.keys(precisionLabels) as GeographicPrecision[]).map((value) => <label key={value}><input type="radio" name="precision" checked={precision === value} disabled={value === 'exact-private' && !exactPrivateAllowed} onChange={() => setPrecision(value)} />{precisionLabels[value]}{value === 'exact-private' && !exactPrivateAllowed ? ' — requires precise-location consent' : ''}</label>)}</fieldset>
-      <button type="button" onClick={savePin} disabled={!coordinate || !consented || !storageAvailable || requestBlockedByAuthority}>Save memory pin</button>
+      <h2 id="geo-pin-title" {...locale.props('geographic.pin.create')}>{locale.text('geographic.pin.create')}</h2>
+      <label><span {...locale.props('geographic.pin.label')}>{locale.text('geographic.pin.label')}</span><input dir="auto" value={title} onChange={(event) => setTitle(event.target.value)} /></label>
+      <label><span {...locale.props('geographic.pin.readablePlace')}>{locale.text('geographic.pin.readablePlace')}</span><input dir="auto" value={readablePlace} onChange={(event) => setReadablePlace(event.target.value)} placeholder={locale.text('geographic.pin.placeholder')} /></label>
+      <fieldset><legend {...locale.props('geographic.precision.legend')}>{locale.text('geographic.precision.legend')}</legend>{(Object.keys(precisionLabels) as GeographicPrecision[]).map((value) => <label key={value}><input type="radio" name="precision" checked={precision === value} disabled={value === 'exact-private' && !exactPrivateAllowed} onChange={() => setPrecision(value)} /><span {...locale.props(precisionLabels[value])}>{locale.text(precisionLabels[value])}</span>{value === 'exact-private' && !exactPrivateAllowed ? <span {...locale.props('geographic.precision.requiresConsent')}>{locale.text('geographic.precision.requiresConsent')}</span> : null}</label>)}</fieldset>
+      <button type="button" {...locale.props('geographic.action.savePin')} onClick={savePin} disabled={!coordinate || !consented || !storageAvailable || requestBlockedByAuthority}>{locale.text('geographic.action.savePin')}</button>
     </section>
 
     <section className="geoPins" aria-labelledby="geo-pins-title">
-      <div><h2 id="geo-pins-title">Saved geographic memories</h2><span>{pins.length} local pin{pins.length === 1 ? '' : 's'}</span></div>
-      {pins.length ? <ul>{pins.map((pin) => <li key={pin.id}><strong>{pin.title}</strong><span>{pin.readablePlace}</span><small>{precisionLabels[pin.precision]} · {pin.coordinate.latitude}, {pin.coordinate.longitude}</small></li>)}</ul> : <p>No geographic memory pins are stored.</p>}
-      <div className="geoActions"><button type="button" onClick={() => downloadJson(exportPins(pins), 'urai-location-export.json')} disabled={!pins.length}>Export location data</button><button type="button" onClick={deleteAll} disabled={!storedPinsPresent && !pins.length}>Delete all location pins</button></div>
+      <div><h2 id="geo-pins-title" {...locale.props('geographic.pins.title')}>{locale.text('geographic.pins.title')}</h2><span {...locale.props(pins.length === 1 ? 'geographic.pins.countOne' : 'geographic.pins.countOther')}>{locale.text(pins.length === 1 ? 'geographic.pins.countOne' : 'geographic.pins.countOther', {count: String(pins.length)})}</span></div>
+      {pins.length ? <ul>{pins.map((pin) => <li key={pin.id}><strong dir="auto">{pin.title}</strong><span dir="auto">{pin.readablePlace}</span><small><span {...locale.props(precisionLabels[pin.precision])}>{locale.text(precisionLabels[pin.precision])}</span> · {pin.coordinate.latitude}, {pin.coordinate.longitude}</small></li>)}</ul> : <p {...locale.props('geographic.pins.empty')}>{locale.text('geographic.pins.empty')}</p>}
+      <div className="geoActions"><button type="button" {...locale.props('geographic.action.export')} onClick={() => downloadJson(exportPins(pins), 'urai-location-export.json')} disabled={!pins.length}>{locale.text('geographic.action.export')}</button><button type="button" {...locale.props('geographic.action.delete')} onClick={deleteAll} disabled={!storedPinsPresent && !pins.length}>{locale.text('geographic.action.delete')}</button></div>
     </section>
   </main>
 }

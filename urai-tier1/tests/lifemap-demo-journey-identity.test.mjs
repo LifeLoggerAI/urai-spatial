@@ -4,16 +4,10 @@ import test from 'node:test'
 import vm from 'node:vm'
 import ts from 'typescript'
 import { localizedMessage } from '../src/lib/i18n/localePreference.ts'
+import { URAI_SOURCE_MESSAGES as messages } from '../src/lib/i18n/locales.ts'
 
 const source = fs.readFileSync('src/components/lifemap/LifeMapSemanticNavigator.tsx', 'utf8')
 const compiled = ts.transpileModule(source, { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX } }).outputText
-function loadMessages(name, imports = {}) {
-  const code = ts.transpileModule(fs.readFileSync('src/lib/i18n/' + name + '.ts', 'utf8'), {compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.CommonJS}}).outputText
-  const module = {exports:{}}
-  vm.runInNewContext(code,{exports:module.exports,module,require:id=>{assert.ok(id in imports);return imports[id]}},{filename:'actual-'+name+'.ts'})
-  return module.exports
-}
-const messages = loadMessages('locales', {'./coreMessages':loadMessages('coreMessages'),'./journeyMessages':loadMessages('journeyMessages'),'./journeyControlMessages':loadMessages('journeyControlMessages',{'./journeyControlTranslations':loadMessages('journeyControlTranslations')})}).URAI_SOURCE_MESSAGES
 const node = { id:'quiet-reset', title:'The Quiet Reset', type:'recovery', eraId:'threshold-return', connectedTo:[], summary:'Disclosed test memory', dateLabel:'Now', replayAvailable:true }
 function descendants(tree) {
   if (!tree || typeof tree !== 'object') return []

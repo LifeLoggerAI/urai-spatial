@@ -67,6 +67,8 @@ const consumerPaths = [
   'src/app/replay/ReplayProductControls.tsx',
   'src/spatial/memory/MemoryMediaAttachment.tsx',
   'src/lib/i18n/journeyControlCopy.ts',
+  'src/app/location-map/geographic/GeographicLocationClient.tsx',
+  'src/lib/i18n/geographicCopy.ts',
 ]
 const consumers = await Promise.all(consumerPaths.map(async (file) => {
   const source = await readFile(new URL(`../urai-tier1/${file}`, import.meta.url), 'utf8')
@@ -84,7 +86,7 @@ const receipt = {
   runtimeAdmittedLocales: locales.filter((locale) => locale.runtimeAdmitted).map((locale) => locale.locale),
   preparationOnlyLocales: locales.filter((locale) => !locale.runtimeAdmitted).map((locale) => locale.locale),
   uiCoverage: {
-    scope:'CORE_JOURNEY_COPY_EXPLICIT_WORKING_PREVIEW',
+    scope:'CORE_JOURNEY_AND_GEOGRAPHIC_COPY_EXPLICIT_WORKING_PREVIEW',
     registeredMessageCount:Object.keys(URAI_SOURCE_MESSAGES).length,
     wiredMessageCount:wiredMessageIds.length,
     wiredMessageIds,
@@ -92,7 +94,7 @@ const receipt = {
     consumers,
     wholeProductTranslated:false,
     sensitiveFallback:'reviewed locale only',
-    remaining:'Registered core journey, selected-memory controls and owned file attachment copy are governed. Missing preparation entries use reviewed English with matching language/direction; the per-locale missingMessageIds are unresolved translations, not native acceptance. Other product routes, private values, policy copy and provider-generated language remain outside this scope. Native linguistic, RTL visual, speech, AT and device acceptance remain pending.',
+    remaining:'Registered core journey, selected-memory controls and owned file attachment and geographic control copy are governed. Missing preparation entries use reviewed English with matching language/direction; the per-locale missingMessageIds are unresolved translations, not native acceptance. Other product routes, private values, policy copy and provider-generated language remain outside this scope. Native linguistic, RTL visual, speech, AT and device acceptance remain pending.',
   },
   locales,
 }
