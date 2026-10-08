@@ -1,6 +1,5 @@
 import * as functions from 'firebase-functions/v1'
 import * as admin from 'firebase-admin'
-import { revokePersonPresenceConsentDerivatives } from './personPresenceAuthority'
 import { createHash, randomBytes } from 'node:crypto'
 import { pipeline } from 'node:stream/promises'
 import { exportPrivateLifeModelHandles, tombstonePrivateLifeModelInputs } from './lifeModelPrivateInputs'
@@ -320,11 +319,14 @@ export const applyConsentPolicy = functions.https.onCall(async (data, context) =
   const targets = affectedTargets(domain, next)
 
   const result = await db.runTransaction(async (transaction) => {
-    const [policySnapshot, jobSnapshot] = await Promise.all([
+    const [policySnapshot, jobSnapshot, deletionFence] = await Promise.all([
       transaction.get(policyRef),
       transaction.get(jobRef),
+      transaction.get(exportFenceRef(uid)),
     ])
     if (jobSnapshot.exists) return publicJobState(jobSnapshot.data() as JsonMap)
+    const deletionGeneration = consentDeletionEpoch(deletionFence)
+    if (deletionGeneration === null) throw new functions.https.HttpsError('failed-precondition', 'CONSENT_DELETION_PENDING')
 
     const current = policySnapshot.exists ? parseStoredPolicy(policySnapshot.data(), uid) : defaultPolicy(uid)
     if (current.revision !== expectedRevision) {
@@ -357,6 +359,7 @@ export const applyConsentPolicy = functions.https.onCall(async (data, context) =
       previous: current.domains[domain],
       next,
       revision: nextPolicy.revision,
+      deletionGeneration,
       affectedTargets: targets,
       state: 'requested',
       providerState: 'pending',
@@ -383,129 +386,235 @@ export const applyConsentPolicy = functions.https.onCall(async (data, context) =
   return result
 })
 
-async function revokeLifeModelDerivativesForConsent(uid: string, reasonId: string) {
-  return revokePersonPresenceConsentDerivatives(db, uid, reasonId, fieldValue.serverTimestamp())
+const CONSENT_ENFORCEMENT_LIMITS = {
+  providerDocuments: 100,
+  derivativeDocuments: 100,
+  readBytes: 256 * 1024,
+  writeOperations: 250,
+  runtimeMs: 30 * 1000,
+  transactionAttempts: 5,
+} as const
+const CONSENT_DERIVATIVE_COLLECTIONS = ['personModelBundles', 'personRenderBindings', 'sceneTruthPackets', 'renderManifests', 'simulationSessions'] as const
+
+function consentDeletionEpoch(fence: FirebaseFirestore.DocumentSnapshot): number | null {
+  if (!fence.exists) return 0
+  const generation = fence.get('generation')
+  const pending = fence.get('pendingDeletions')
+  if (!Number.isSafeInteger(generation) || generation < 0 || !isRecord(pending)
+    || Object.values(pending).some(value => value !== true)) {
+    throw new functions.https.HttpsError('failed-precondition', 'CONSENT_DELETION_EPOCH_INVALID')
+  }
+  return Object.keys(pending).length ? null : generation as number
+}
+
+function validConsentJobIdentity(job: JsonMap, uid: string, jobId: string): boolean {
+  return job.uid === uid && job.jobId === jobId && typeof job.operationId === 'string'
+    && /^[A-Za-z0-9_-]{12,96}$/.test(job.operationId)
+    && jobId === stableId(uid, job.operationId, 'consent')
+    && job.receiptId === stableId(uid, job.operationId, 'consent-receipt')
+    && typeof job.domain === 'string' && CONSENT_DOMAINS.includes(job.domain as ConsentDomain)
+    && typeof job.revision === 'number' && Number.isSafeInteger(job.revision) && job.revision > 0
+}
+
+async function currentConsentJob(transaction: FirebaseFirestore.Transaction, uid: string, jobId: string) {
+  const jobRef = db.doc('privacyEnforcementJobs/' + jobId)
+  const policyRef = db.doc('users/' + uid + '/privacyPolicy/current')
+  const userRef = db.doc('users/' + uid)
+  const [liveJob, policySnapshot, owner, fence] = await Promise.all([
+    transaction.get(jobRef), transaction.get(policyRef), transaction.get(userRef), transaction.get(exportFenceRef(uid)),
+  ])
+  const job = liveJob.data()
+  if (!liveJob.exists || !isRecord(job) || !validConsentJobIdentity(job, uid, jobId)
+    || !['requested', 'validating'].includes(String(job.state))) return null
+  const conflict = () => {
+    // Superseded global jobs remain visible, but cannot rewrite newer policy or
+    // recreate deleted owner projections/receipts.
+    transaction.update(jobRef, {
+      state: 'conflicted', failureCode: 'CONSENT_AUTHORITY_SUPERSEDED', updatedAt: fieldValue.serverTimestamp(),
+    })
+    return null
+  }
+  const policy = policySnapshot.data()
+  const epoch = consentDeletionEpoch(fence)
+  const boundEpoch = job.deletionGeneration === undefined ? 0 : job.deletionGeneration
+  if (!owner.exists || owner.get('deleted') === true
+    || ['deleting', 'deleted', 'disabled'].includes(String(owner.get('accountStatus') ?? ''))
+    || !policySnapshot.exists || !isCanonicalStoredPolicy(policy, uid)
+    || policy.revision !== job.revision || policy.enforcement.jobId !== jobId
+    || policy.enforcement.state !== 'pending' || policy.enforcement.providerState !== 'pending'
+    || epoch === null || !Number.isSafeInteger(boundEpoch) || boundEpoch !== epoch) return conflict()
+  const projectedRevision = owner.get('privacyRevision')
+  if (projectedRevision !== undefined && (!Number.isSafeInteger(projectedRevision)
+    || projectedRevision < 0 || projectedRevision > policy.revision)) return conflict()
+  const domain = job.domain as ConsentDomain
+  const next = policy.domains[domain]
+  const targets = affectedTargets(domain, next)
+  if (!ownPolicyRecord(job.next, STORED_DOMAIN_KEYS)
+    || STORED_DOMAIN_KEYS.some(key => (job.next as JsonMap)[key] !== next[key])
+    || !Array.isArray(job.affectedTargets) || job.affectedTargets.length !== targets.length
+    || targets.some((target, index) => (job.affectedTargets as unknown[])[index] !== target)
+    || policy.enforcement.affectedTargets.length !== targets.length
+    || targets.some((target, index) => policy.enforcement.affectedTargets[index] !== target)) return conflict()
+  const receiptRef = db.doc('users/' + uid + '/privacyReceipts/' + job.receiptId)
+  const receipt = await transaction.get(receiptRef)
+  if (!receipt.exists || receipt.get('ownerId') !== uid || receipt.get('kind') !== 'consent'
+    || receipt.get('receiptId') !== job.receiptId || receipt.get('jobId') !== jobId
+    || receipt.get('domain') !== domain || receipt.get('revision') !== policy.revision
+    || receipt.get('result') !== 'requested') return conflict()
+  return { job, jobRef, policy, policyRef, userRef, receiptRef }
+}
+
+function consentRuntimeProjections(policy: ConsentPolicy) {
+  const projections = new Map<string, { target: string; domain: ConsentDomain | 'all'; policy: ConsentDomainPolicy; domains?: ConsentPolicy['domains'] }>()
+  for (const domain of CONSENT_DOMAINS) {
+    const next = policy.domains[domain]
+    for (const target of affectedTargets(domain, next)) {
+      if (target === 'privacy-authority' || target === 'pending-work-cancellation') {
+        const enabled = CONSENT_DOMAINS.every(item => consentEnabled(policy.domains[item]))
+        projections.set(target, {
+          target, domain: 'all', domains: policy.domains,
+          policy: {
+            mode: enabled ? 'granted' : 'denied', retentionDays: null,
+            precise: false, replayVisible: false, lifeMapVisible: false, modelContext: false,
+            sharingEnabled: false, automationEnabled: false, likenessEnabled: false,
+          },
+        })
+      } else projections.set(target, { target, domain, policy: next })
+    }
+  }
+  return [...projections.values()]
 }
 
 async function enforceConsentJob(snapshot: FirebaseFirestore.DocumentSnapshot) {
-  const job = snapshot.data() as JsonMap | undefined
-  if (!job || typeof job.uid !== 'string' || typeof job.domain !== 'string') return
-  if (['fully-enforced', 'partially-enforced', 'failed'].includes(String(job.state))) return
-
-  const uid = job.uid
-  const domain = job.domain as ConsentDomain
-  if (!CONSENT_DOMAINS.includes(domain)) return
-  const next = parseDomainPolicy(job.next)
-  const revision = Number(job.revision)
+  const captured = snapshot.data()
+  if (!isRecord(captured) || typeof captured.uid !== 'string' || !captured.uid
+    || captured.uid.length > 128 || captured.uid.includes('/') || !/^[a-f0-9]{40}$/.test(snapshot.id)
+    || snapshot.ref.path !== 'privacyEnforcementJobs/' + snapshot.id) return
+  const uid = captured.uid
   const jobId = snapshot.id
-  const policyRef = db.doc(`users/${uid}/privacyPolicy/current`)
-  const receiptRef = db.doc(`users/${uid}/privacyReceipts/${String(job.receiptId)}`)
-  const providerSnapshot = await db.collection(`users/${uid}/providerConnections`).limit(100).get()
-  const relevantProviders = providerSnapshot.docs.filter((item) => {
-    const domains = item.get('consentDomains')
-    return !Array.isArray(domains) || domains.includes(domain)
-  })
-
+  const deadline = Date.now() + CONSENT_ENFORCEMENT_LIMITS.runtimeMs
+  const requireTime = () => {
+    if (Date.now() >= deadline) throw new functions.https.HttpsError('deadline-exceeded', 'CONSENT_ENFORCEMENT_DEADLINE_EXCEEDED')
+  }
   try {
-    await snapshot.ref.update({ state: 'validating', updatedAt: fieldValue.serverTimestamp() })
-    const batch = db.batch()
-    const targets = Array.isArray(job.affectedTargets)
-      ? job.affectedTargets.filter((item): item is string => typeof item === 'string')
-      : affectedTargets(domain, next)
-    for (const target of targets) {
-      batch.set(db.doc(`users/${uid}/privacyRuntime/${target}`), {
-        ownerId: uid,
-        target,
-        domain,
-        revision,
-        enabled: consentEnabled(next),
-        mode: next.mode,
-        precise: next.precise,
-        replayVisible: next.replayVisible,
-        lifeMapVisible: next.lifeMapVisible,
-        modelContext: next.modelContext,
-        sharingEnabled: next.sharingEnabled,
-        automationEnabled: next.automationEnabled,
-        likenessEnabled: next.likenessEnabled,
-        retentionDays: next.retentionDays,
-        sourceJobId: jobId,
-        updatedAt: fieldValue.serverTimestamp(),
-      }, { merge: true })
-    }
-    batch.set(db.doc(`users/${uid}`), {
-      consents: {
-        [domain]: consentEnabled(next),
-        [`${domain}Mode`]: next.mode,
-      },
-      privacyRevision: revision,
-      updatedAt: fieldValue.serverTimestamp(),
-    }, { merge: true })
-
-    const revoking = next.mode === 'denied' || next.mode === 'paused'
-    for (const provider of relevantProviders) {
-      batch.set(provider.ref, {
-        processingAllowed: consentEnabled(next),
-        consentRevision: revision,
-        revocationState: revoking ? 'requested' : 'not-required',
-        revocationRequestedAt: revoking ? fieldValue.serverTimestamp() : null,
-        updatedAt: fieldValue.serverTimestamp(),
-      }, { merge: true })
-      if (revoking) {
-        const queueId = stableId(uid, `${jobId}:${provider.id}`, 'provider-revocation')
-        batch.set(db.doc(`providerRevocationQueue/${queueId}`), {
-          queueId,
-          uid,
-          providerId: provider.id,
-          domain,
-          revision,
-          sourceJobId: jobId,
-          state: 'requested',
-          createdAt: fieldValue.serverTimestamp(),
-          updatedAt: fieldValue.serverTimestamp(),
-        }, { merge: false })
+    await db.runTransaction(async transaction => {
+      const authority = await currentConsentJob(transaction, uid, jobId)
+      if (!authority) return
+      requireTime()
+      let readBytes = 0
+      const chargeRead = (value: unknown) => {
+        readBytes += Buffer.byteLength(JSON.stringify(value) ?? '', 'utf8')
+        if (readBytes > CONSENT_ENFORCEMENT_LIMITS.readBytes) {
+          throw new functions.https.HttpsError('resource-exhausted', 'CONSENT_READ_BYTE_BUDGET_EXCEEDED')
+        }
       }
-    }
-
-    const providerState = relevantProviders.length > 0 && revoking ? 'pending' : 'not-applicable'
-    const state = providerState === 'pending' ? 'partially-enforced' : 'fully-enforced'
-    batch.update(snapshot.ref, {
-      state,
-      providerState,
-      repositoryTargets: targets.map((target) => ({ target, state: 'enforced' })),
-      completedAt: fieldValue.serverTimestamp(),
-      updatedAt: fieldValue.serverTimestamp(),
-    })
-    batch.update(policyRef, {
-      'enforcement.state': state,
-      'enforcement.providerState': providerState,
-      'enforcement.jobId': jobId,
-      updatedAt: fieldValue.serverTimestamp(),
-    })
-    batch.update(receiptRef, {
-      result: state,
-      providerState,
-      completedAt: fieldValue.serverTimestamp(),
-      updatedAt: fieldValue.serverTimestamp(),
-    })
-    await batch.commit()
-    if (revoking && (domain === 'models' || domain === 'identity')) {
-      await revokeLifeModelDerivativesForConsent(uid, `consent:${jobId}:${domain}`)
-    }
+      const providers = await transaction.get(db.collection('users/' + uid + '/providerConnections')
+        .select('consentDomains').limit(CONSENT_ENFORCEMENT_LIMITS.providerDocuments + 1))
+      requireTime()
+      if (providers.size > CONSENT_ENFORCEMENT_LIMITS.providerDocuments) {
+        throw new functions.https.HttpsError('resource-exhausted', 'CONSENT_PROVIDER_BUDGET_EXCEEDED')
+      }
+      const providerPlans = providers.docs.map(provider => {
+        chargeRead(provider.data())
+        const domains = provider.get('consentDomains')
+        const valid = Array.isArray(domains) && domains.length > 0 && domains.length <= CONSENT_DOMAINS.length
+          && new Set(domains).size === domains.length
+          && domains.every(value => typeof value === 'string' && CONSENT_DOMAINS.includes(value as ConsentDomain))
+        const required = valid ? domains as ConsentDomain[] : []
+        const allowed = valid && required.every(domain => consentEnabled(authority.policy.domains[domain]))
+        // Missing/unknown provider scopes cannot become collection authority.
+        const revokedDomains = valid
+          ? required.filter(domain => !consentEnabled(authority.policy.domains[domain]))
+          : [authority.job.domain as ConsentDomain]
+        return { provider, allowed, revokedDomains }
+      })
+      const derivatives: FirebaseFirestore.QueryDocumentSnapshot[] = []
+      if (!consentEnabled(authority.policy.domains.models) || !consentEnabled(authority.policy.domains.identity)) {
+        for (const collection of CONSENT_DERIVATIVE_COLLECTIONS) {
+          const remaining = CONSENT_ENFORCEMENT_LIMITS.derivativeDocuments - derivatives.length
+          const page = await transaction.get(db.collection('users/' + uid + '/' + collection).select('ownerId').limit(remaining + 1))
+          requireTime()
+          if (page.size > remaining) throw new functions.https.HttpsError('resource-exhausted', 'CONSENT_DERIVATIVE_BUDGET_EXCEEDED')
+          for (const doc of page.docs) {
+            chargeRead(doc.data())
+            if (doc.get('ownerId') !== uid) throw new functions.https.HttpsError('failed-precondition', 'CONSENT_DERIVATIVE_OWNER_MISMATCH')
+            derivatives.push(doc)
+          }
+        }
+      }
+      const projections = consentRuntimeProjections(authority.policy)
+      const queues = providerPlans.flatMap(plan => plan.revokedDomains.map(domain => {
+        const suffix = domain === authority.job.domain ? jobId + ':' + plan.provider.id : jobId + ':' + plan.provider.id + ':' + domain
+        return { queueId: stableId(uid, suffix, 'provider-revocation'), providerId: plan.provider.id, domain }
+      }))
+      const writes = projections.length + 4 + providerPlans.length + queues.length + derivatives.length
+      if (writes > CONSENT_ENFORCEMENT_LIMITS.writeOperations) {
+        throw new functions.https.HttpsError('resource-exhausted', 'CONSENT_WRITE_BUDGET_EXCEEDED')
+      }
+      requireTime()
+      // All reads precede writes. A changed policy/job/owner/deletion epoch or
+      // queried document makes the SDK retry against live authority before any
+      // projection, provider flag, derivative, queue or completion can commit.
+      const now = fieldValue.serverTimestamp()
+      const revision = authority.policy.revision
+      for (const projection of projections) {
+        transaction.set(db.doc('users/' + uid + '/privacyRuntime/' + projection.target), {
+          ownerId: uid, target: projection.target, domain: projection.domain, revision,
+          enabled: projection.domain === 'all' ? CONSENT_DOMAINS.every(domain => consentEnabled(authority.policy.domains[domain])) : consentEnabled(projection.policy),
+          ...projection.policy, ...(projection.domains ? { domains: projection.domains } : {}),
+          sourceJobId: jobId, updatedAt: now,
+        }, { merge: true })
+      }
+      const ownerProjection: JsonMap = { privacyRevision: revision, updatedAt: now }
+      for (const domain of CONSENT_DOMAINS) {
+        ownerProjection['consents.' + domain] = consentEnabled(authority.policy.domains[domain])
+        ownerProjection['consents.' + domain + 'Mode'] = authority.policy.domains[domain].mode
+      }
+      // Update only these legacy projections; preserve canonical C7 purpose grants,
+      // including data.export, and every unrelated owner field.
+      transaction.update(authority.userRef, ownerProjection)
+      for (const plan of providerPlans) transaction.update(plan.provider.ref, {
+        processingAllowed: plan.allowed, consentRevision: revision,
+        revocationState: plan.revokedDomains.length ? 'requested' : 'not-required',
+        revocationRequestedAt: plan.revokedDomains.length ? now : null, updatedAt: now,
+      })
+      for (const queue of queues) transaction.set(db.doc('providerRevocationQueue/' + queue.queueId), {
+        ...queue, uid, revision, sourceJobId: jobId, state: 'requested', createdAt: now, updatedAt: now,
+      })
+      for (const derivative of derivatives) transaction.update(derivative.ref, {
+        state: 'revoked', invalidatedBy: 'consent:' + jobId + ':canonical', invalidatedAt: now,
+      })
+      const providerState = queues.length ? 'pending' : 'not-applicable'
+      const state = queues.length ? 'partially-enforced' : 'fully-enforced'
+      const repositoryTargets = projections.map(({ target, domain }) => ({ target, domain, state: 'enforced' }))
+      const revocationQueues = queues.map(queue => ({ ...queue, state: 'requested' }))
+      transaction.update(authority.jobRef, {
+        state, providerState, repositoryTargets, revocationQueues, invalidatedDerivatives: derivatives.length,
+        completedAt: now, updatedAt: now,
+      })
+      transaction.update(authority.policyRef, {
+        'enforcement.state': state, 'enforcement.providerState': providerState,
+        'enforcement.affectedTargets': projections.map(projection => projection.target), updatedAt: now,
+      })
+      transaction.update(authority.receiptRef, {
+        result: state, providerState, repositoryTargets, revocationQueues, invalidatedDerivatives: derivatives.length,
+        completedAt: now, updatedAt: now,
+      })
+    }, { maxAttempts: CONSENT_ENFORCEMENT_LIMITS.transactionAttempts })
   } catch (error) {
-    const failure = error instanceof Error ? error.message.slice(0, 240) : 'UNKNOWN_ENFORCEMENT_FAILURE'
-    await Promise.all([
-      snapshot.ref.set({ state: 'failed', failureCode: failure, updatedAt: fieldValue.serverTimestamp() }, { merge: true }),
-      policyRef.set({
-        enforcement: {
-          state: 'failed',
-          jobId,
-          affectedTargets: Array.isArray(job.affectedTargets) ? job.affectedTargets : [],
-          providerState: 'failed',
-        },
-        updatedAt: fieldValue.serverTimestamp(),
-      }, { merge: true }),
-      receiptRef.set({ result: 'failed', failureCode: failure, updatedAt: fieldValue.serverTimestamp() }, { merge: true }),
-    ])
+    const known = ['CONSENT_PROVIDER_BUDGET_EXCEEDED', 'CONSENT_DERIVATIVE_BUDGET_EXCEEDED', 'CONSENT_READ_BYTE_BUDGET_EXCEEDED',
+      'CONSENT_WRITE_BUDGET_EXCEEDED', 'CONSENT_ENFORCEMENT_DEADLINE_EXCEEDED', 'CONSENT_DERIVATIVE_OWNER_MISMATCH']
+    const failureCode = error instanceof functions.https.HttpsError && known.includes(error.message) ? error.message : 'CONSENT_ENFORCEMENT_FAILED'
+    await db.runTransaction(async transaction => {
+      const authority = await currentConsentJob(transaction, uid, jobId)
+      if (!authority) return
+      const now = fieldValue.serverTimestamp()
+      // Update-only and the same live fence: a late failure cannot create a
+      // deleted receipt/policy or overwrite a successor's enforcement result.
+      transaction.update(authority.jobRef, { state: 'failed', failureCode, updatedAt: now })
+      transaction.update(authority.policyRef, { 'enforcement.state': 'failed', 'enforcement.providerState': 'failed', updatedAt: now })
+      transaction.update(authority.receiptRef, { result: 'failed', providerState: 'failed', failureCode, updatedAt: now })
+    }, { maxAttempts: CONSENT_ENFORCEMENT_LIMITS.transactionAttempts })
     throw error
   }
 }
