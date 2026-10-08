@@ -76,9 +76,10 @@ jobs:
           import path from 'node:path'
           import { createRequire } from 'node:module'
           const root = process.cwd(), require = createRequire(path.join(root, 'package.json'))
+          const typeRoots = [...new Set(['@types/node/package.json', '@types/react/package.json'].map(specifier => path.dirname(path.dirname(fs.realpathSync(require.resolve(specifier))))))]
           const files = ['src/lib/privacy/aiActorBoundary.ts', 'src/spatial/council/councilClient.ts', 'src/spatial/orb/openaiClient.ts', 'src/spatial/council/CouncilConversationPanel.tsx', 'src/spatial/orb/OrbConversationPanel.tsx'].map(file => path.join(root, file))
           files.push(require.resolve('next/types/global.d.ts'))
-          const config = { compilerOptions: { target: 'ES2017', lib: ['dom', 'dom.iterable', 'esnext'], module: 'esnext', moduleResolution: 'bundler', jsx: 'preserve', strict: true, skipLibCheck: true, noEmit: true, incremental: false, esModuleInterop: true, resolveJsonModule: true, types: ['node', 'react'], typeRoots: [path.join(root, 'node_modules/@types')], paths: { '@/*': [path.join(root, 'src/*')] } }, files }
+          const config = { compilerOptions: { target: 'ES2017', lib: ['dom', 'dom.iterable', 'esnext'], module: 'esnext', moduleResolution: 'bundler', jsx: 'preserve', strict: true, skipLibCheck: true, noEmit: true, incremental: false, esModuleInterop: true, resolveJsonModule: true, types: ['node', 'react'], typeRoots, paths: { '@/*': [path.join(root, 'src/*')] } }, files }
           fs.writeFileSync(path.join(process.env.RUNNER_TEMP, 'ai-actor-proof', 'strict-types.json'), JSON.stringify(config, null, 2))
           NODE
           pnpm --dir urai-tier1 exec tsc -p "$RUNNER_TEMP/ai-actor-proof/strict-types.json" 2>&1 | tee "$RUNNER_TEMP/ai-actor-proof/strict-types.log"
