@@ -35,6 +35,14 @@ function readRequiredTextFile(file) {
   return fs.readFileSync(fullPath, 'utf8').trim()
 }
 
+function resolveInstalledDependency(resolver, dependency, moduleDirectories) {
+  const resolved = fs.realpathSync(resolver.resolve(dependency))
+  const installedRoots = moduleDirectories.filter(directory => fs.existsSync(directory)).map(directory => fs.realpathSync(directory))
+  if (!installedRoots.some(directory => resolved.startsWith(directory + path.sep))) {
+    throw new Error('Dependency resolved outside the installed workspace: ' + dependency)
+  }
+}
+
 const nodeMajor = Number.parseInt(process.versions.node.split('.')[0] ?? '0', 10)
 if (!Number.isFinite(nodeMajor) || nodeMajor < requiredNodeMajor) {
   fail(`Expected Node ${requiredNodeMajor}+ but found ${process.version}. Use .nvmrc, .node-version, or another version manager to select Node ${requiredNodeMajor}.`)
@@ -63,7 +71,12 @@ try {
 }
 
 try {
-  requireFromRoot.resolve('typescript')
+  const packageJson = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8'))
+  const declaredRootDependencies = Object.keys({ ...packageJson.dependencies, ...packageJson.devDependencies })
+  if (declaredRootDependencies.length === 0) fail('Root workspace dependency declarations are missing')
+  for (const dependency of declaredRootDependencies) {
+    resolveInstalledDependency(requireFromRoot, dependency, [path.join(root, 'node_modules')])
+  }
 } catch {
   fail('Root workspace dependencies are not installed')
 }
@@ -71,7 +84,7 @@ try {
 const missingTier1 = []
 for (const dependency of requiredTier1Packages) {
   try {
-    requireFromTier1.resolve(dependency)
+    resolveInstalledDependency(requireFromTier1, dependency, [path.join(root, 'urai-tier1', 'node_modules'), path.join(root, 'node_modules')])
   } catch {
     missingTier1.push(dependency)
   }
