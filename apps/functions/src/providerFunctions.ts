@@ -4,6 +4,7 @@ import { defineSecret } from 'firebase-functions/params'
 import { onRequest } from 'firebase-functions/v2/https'
 import { contentLanguage, URAI_CONTENT_LANGUAGE_TAGS } from '../../../packages/localization/src/contentLanguage'
 import { paidSpatialFetch, assertSpatialPaidOutputCurrent, SpatialSpendError, SPATIAL_SPEND_WORKER_TOKENS_JSON } from './protectedProviderSpend'
+import { isCanonicalStoredPolicy } from './consentPolicyAuthority'
 
 if (!admin.apps.length) admin.initializeApp()
 
@@ -53,15 +54,16 @@ async function requireProviderConsent(uid: string, provider: Provider, explicitC
     db.doc(`users/${uid}/privacyPolicy/current`).get(),
     db.doc(`users/${uid}/providerConnections/${provider}`).get(),
   ])
-  assertProviderConsent(policySnapshot, providerSnapshot)
+  assertProviderConsent(uid, policySnapshot, providerSnapshot)
 }
 
-function assertProviderConsent(policySnapshot: FirebaseFirestore.DocumentSnapshot, providerSnapshot: FirebaseFirestore.DocumentSnapshot) {
+function assertProviderConsent(uid: string, policySnapshot: FirebaseFirestore.DocumentSnapshot, providerSnapshot: FirebaseFirestore.DocumentSnapshot) {
   if (!policySnapshot.exists) throw new ProviderError(403, 'CONSENT_POLICY_REQUIRED', 'A saved privacy policy is required.')
-  const policy = policySnapshot.data() ?? {}
-  const domains = isRecord(policy.domains) ? policy.domains : {}
+  const policy = policySnapshot.data()
+  if (!isCanonicalStoredPolicy(policy, uid)) throw new ProviderError(403, 'CONSENT_POLICY_REQUIRED', 'A saved privacy policy is required.')
+  const domains: JsonMap = isRecord(policy.domains) ? policy.domains : {}
   const models = isRecord(domains.models) ? domains.models : {}
-  const enforcement = isRecord(policy.enforcement) ? policy.enforcement : {}
+  const enforcement: JsonMap = isRecord(policy.enforcement) ? policy.enforcement : {}
   if (models.mode !== 'granted' || models.modelContext !== true) {
     throw new ProviderError(403, 'MODEL_PROCESSING_NOT_AUTHORIZED', 'Model processing is not authorized.')
   }
@@ -179,7 +181,7 @@ async function reserveOpenAiRequest(uid: string, requestId: string, expectedRequ
     const [policySnapshot, providerSnapshot, prior, rateSnapshot] = await Promise.all([
       transaction.get(policy), transaction.get(provider), transaction.get(reservation), transaction.get(rate),
     ])
-    assertProviderConsent(policySnapshot, providerSnapshot)
+    assertProviderConsent(uid, policySnapshot, providerSnapshot)
     if (prior.exists) {
       const saved = prior.data() ?? {}
       if (saved.ownerDigest !== ownerDigest || saved.requestDigest !== requestDigest || saved.purpose !== OPENAI_REQUEST_PURPOSE

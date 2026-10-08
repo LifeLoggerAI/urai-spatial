@@ -17,7 +17,7 @@ function fixture() {
   const db = { doc:ref }
   const firestore = () => db
   firestore.FieldValue = { serverTimestamp:()=>({ synthetic:true }) }
-  const imports = { 'firebase-functions/v1':{ https:{ onCall:handler=>handler,HttpsError } },'firebase-admin':{ apps:[{}],firestore },'node:crypto':crypto,'./scenarioProvider':{ scenarioProviderState:'provider-unavailable' } }
+  const imports = { 'firebase-functions/v1':{ https:{ onCall:handler=>handler,HttpsError } },'firebase-admin':{ apps:[{}],firestore },'node:crypto':crypto,'./scenarioProvider':{ scenarioProviderState:'provider-unavailable' },'./consentPolicyAuthority':require(path.resolve(__dirname,'../lib/apps/functions/src/consentPolicyAuthority.js')) }
   const module = { exports:{} }
   vm.runInNewContext(code,{ module,exports:module.exports,require:name=>{ assert.ok(name in imports,'Unexpected import '+name);return imports[name] } },{ filename:'actual-compiled-scenarioOperations.js' })
   docs.set(prefix,{ id:scenarioId,ownerId,question:'Synthetic what-if',activeBranchId:'br_a' })

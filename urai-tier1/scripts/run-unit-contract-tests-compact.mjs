@@ -157,6 +157,7 @@ const tests = [
   'tests/sensory-asset-resolution-contract.test.mjs',
   'tests/spatial-launch-boundaries.test.mjs',
   'tests/spatial-production-audio-runtime-contract.test.mjs',
+  'tests/elevenlabs-output-authority.test.mjs',
   'tests/spatial-audio-behavior.test.mjs',
   'tests/narrator-playback-behavior.test.mjs',
   'tests/tier0-world-navigation-canon.test.mjs',
