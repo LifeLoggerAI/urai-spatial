@@ -123,6 +123,7 @@ const tests = [
   'tests/orb-provider-idempotency-contract.test.mjs',
   'tests/provider-boundary-contract.test.mjs',
   'tests/possible-futures-truth-contract.test.mjs',
+  'tests/scenario-council-session-behavior.test.mjs',
   'tests/scenario-server-boundary-contract.test.mjs',
   'tests/council-provider-boundary-contract.test.mjs',
   'tests/provider-hosting-runtime-contract.test.mjs',
@@ -181,3 +182,4 @@ for (const testPath of tests) {
 }
 
 console.log(`PASS all ${tests.length} focused contract suites`)
+

@@ -1,6 +1,8 @@
 'use client'
 
-import { useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { getAuth, onAuthStateChanged } from 'firebase/auth'
+import { app } from '@/lib/firebase/client'
 import { getPossibleFutureCouncilBundleClient } from '@/lib/scenario/scenarioClient'
 import { COUNCIL_AGENTS } from '@/spatial/council/councilAgentSchema'
 import {
@@ -13,34 +15,99 @@ import {
 } from '@/spatial/council/councilProviderRegistry'
 
 type RequestableProvider = Exclude<CouncilProviderId, 'local-fallback'>
+const DEFAULT_QUESTION = 'What assumptions or uncertainties should I examine before I treat this branch seriously?'
 
 export function ScenarioCouncilPanel({ scenarioId, branchId }: { scenarioId: string; branchId?: string }) {
+  const auth = useMemo(() => getAuth(app), [])
+  const [owner, setOwner] = useState(() => auth.currentUser)
   const requestableProviders = useMemo(
     () => REQUESTABLE_COUNCIL_PROVIDER_IDS.filter((id): id is RequestableProvider => id !== 'local-fallback'),
     [],
   )
   const [provider, setProvider] = useState<RequestableProvider>(requestableProviders[0] ?? 'openai')
   const [roleId, setRoleId] = useState(COUNCIL_AGENTS[0]?.id ?? 'council-guardian')
-  const [question, setQuestion] = useState('What assumptions or uncertainties should I examine before I treat this branch seriously?')
+  const [question, setQuestion] = useState(DEFAULT_QUESTION)
   const [consent, setConsent] = useState(false)
   const [busy, setBusy] = useState(false)
   const [status, setStatus] = useState('Council has not reviewed this Scenario.')
   const [answer, setAnswer] = useState('')
   const [disclosure, setDisclosure] = useState('')
+  const [answerRole, setAnswerRole] = useState('')
+  const [answerScope, setAnswerScope] = useState('')
+  const [answerOwner, setAnswerOwner] = useState<typeof auth.currentUser>(null)
   const controller = useRef<AbortController | null>(null)
+  const consentCurrent = useRef(consent)
+  consentCurrent.current = consent
+  const selection = useRef({ scenarioId, branchId })
+  selection.current = { scenarioId, branchId }
+  const scope = JSON.stringify([scenarioId, branchId ?? null])
+
+  function stopRequest() {
+    const pending = controller.current
+    controller.current = null
+    pending?.abort()
+    setBusy(false)
+  }
+
+  function clearAnswer() {
+    setAnswer('')
+    setDisclosure('')
+    setAnswerRole('')
+    setAnswerScope('')
+    setAnswerOwner(null)
+  }
+
+  useEffect(() => {
+    let observedOwner = auth.currentUser
+    return onAuthStateChanged(auth, (nextOwner) => {
+      setOwner(nextOwner)
+      if (nextOwner === observedOwner) return
+      observedOwner = nextOwner
+      stopRequest()
+      consentCurrent.current = false
+      setConsent(false)
+      clearAnswer()
+      setQuestion(DEFAULT_QUESTION)
+      setStatus('Council has not reviewed this Scenario.')
+    })
+  }, [auth])
+
+  useEffect(() => {
+    stopRequest()
+    consentCurrent.current = false
+    setConsent(false)
+    clearAnswer()
+    setStatus('Council has not reviewed this Scenario.')
+    return () => {
+      const pending = controller.current
+      controller.current = null
+      pending?.abort()
+    }
+  }, [scenarioId, branchId])
 
   const role = COUNCIL_AGENTS.find((agent) => agent.id === roleId) ?? COUNCIL_AGENTS[0]
 
   async function askCouncil() {
-    if (!scenarioId || !role || !question.trim() || !consent || busy) return
+    if (!scenarioId || !role || !question.trim() || !consent || busy || controller.current) return
+    const requestOwner = auth.currentUser
+    if (!requestOwner || requestOwner !== owner) {
+      setStatus('Sign in before asking Council to review a private Scenario.')
+      return
+    }
     setBusy(true)
-    setAnswer('')
-    setDisclosure('')
+    clearAnswer()
     setStatus('Preparing a minimal trusted Scenario bundle…')
     const aborter = new AbortController()
     controller.current = aborter
+    const isCurrent = () => controller.current === aborter && !aborter.signal.aborted
+      && consentCurrent.current && auth.currentUser === requestOwner
+      && selection.current.scenarioId === scenarioId && selection.current.branchId === branchId
     try {
       const bundle = await getPossibleFutureCouncilBundleClient(scenarioId, branchId)
+      if (!isCurrent()) return
+      if (bundle.scenarioId !== scenarioId || bundle.truthKind !== 'scenario' || (branchId && bundle.branchId !== branchId)) {
+        throw new Error('Scenario bundle does not match the selected hypothetical branch.')
+      }
       const message = [
         `Council role: ${role.name} (${role.role}).`,
         `Role focus: ${role.focus}`,
@@ -61,24 +128,29 @@ export function ScenarioCouncilPanel({ scenarioId, branchId }: { scenarioId: str
         aiProcessingConsent: true,
         signal: aborter.signal,
       })
+      if (!isCurrent()) return
       if (!result) {
         setStatus('No external Council response was used.')
         return
       }
       setAnswer(result.message)
       setDisclosure(result.disclosure)
+      setAnswerRole(role.name)
+      setAnswerScope(scope)
+      setAnswerOwner(requestOwner)
       setStatus(`${role.name} returned one provider-backed perspective. It remains advisory and hypothetical.`)
     } catch (error) {
-      if (aborter.signal.aborted) {
-        setStatus('Council request stopped.')
-      } else if (error instanceof CouncilProviderNotConnectedError) {
+      if (!isCurrent()) return
+      if (error instanceof CouncilProviderNotConnectedError) {
         setStatus(`${COUNCIL_PROVIDER_REGISTRY[error.provider].label} is not enabled for Council requests in this environment.`)
       } else {
         setStatus('Council could not review this Scenario. No provider answer is being substituted.')
       }
     } finally {
-      if (controller.current === aborter) controller.current = null
-      setBusy(false)
+      if (controller.current === aborter) {
+        controller.current = null
+        setBusy(false)
+      }
     }
   }
 
@@ -108,18 +180,31 @@ export function ScenarioCouncilPanel({ scenarioId, branchId }: { scenarioId: str
           <textarea value={question} onChange={(event)=>setQuestion(event.currentTarget.value)} disabled={busy} style={{ width:'100%', minHeight:80, boxSizing:'border-box', marginTop:5 }} />
         </label>
         <label style={{ display:'flex', gap:10, alignItems:'flex-start' }}>
-          <input type="checkbox" checked={consent} disabled={busy} onChange={(event)=>setConsent(event.currentTarget.checked)} style={{ minWidth:24, minHeight:24, marginTop:2 }} />
+          <input type="checkbox" checked={consent} onChange={(event)=>{
+            const allowed = event.currentTarget.checked
+            consentCurrent.current = allowed
+            setConsent(allowed)
+            if (!allowed) {
+              stopRequest()
+              clearAnswer()
+              setStatus('Council consent withdrawn. No further answer will be shown.')
+            }
+          }} style={{ minWidth:24, minHeight:24, marginTop:2 }} />
           <span>Allow the selected provider to process this Scenario question, branch summary, uncertainty labels, and evidence-class counts for this request. Raw memory evidence is not sent by this surface.</span>
         </label>
         <div style={{ display:'flex', flexWrap:'wrap', gap:8 }}>
           <button type="button" onClick={()=>void askCouncil()} disabled={busy || !consent || !question.trim() || !requestableProviders.length} style={{ minHeight:48, padding:'0 14px' }}>{busy ? 'Considering…' : 'Ask Council'}</button>
-          <button type="button" onClick={()=>controller.current?.abort()} disabled={!busy} style={{ minHeight:48, padding:'0 14px' }}>Stop</button>
+          <button type="button" onClick={()=>{
+            stopRequest()
+            setStatus('Council request stopped.')
+          }} disabled={!busy} style={{ minHeight:48, padding:'0 14px' }}>Stop</button>
         </div>
       </div>
       <small>Provider availability is checked when you ask. A listed provider may be unavailable.</small>
       <p role="status" aria-live="polite" style={{ opacity:.72 }}>{status}</p>
-      {answer ? <div data-testid="possible-futures-council-answer" style={{ borderTop:'1px solid rgba(255,255,255,.14)', paddingTop:10 }}><strong>{role?.name}</strong><p>{answer}</p><small>{disclosure}</small></div> : null}
+      {answer && answerScope === scope && answerOwner === owner && answerOwner === auth.currentUser && consent ? <div data-testid="possible-futures-council-answer" style={{ borderTop:'1px solid rgba(255,255,255,.14)', paddingTop:10 }}><strong>{answerRole}</strong><p>{answer}</p><small>{disclosure}</small></div> : null}
       {PENDING_COUNCIL_PROVIDER_IDS.length ? <small style={{ display:'block', opacity:.55 }}>Other providers are currently unavailable.</small> : null}
     </section>
   )
 }
+
