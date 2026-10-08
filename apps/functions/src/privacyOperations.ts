@@ -698,8 +698,8 @@ async function readExportSubject(transaction: FirebaseFirestore.Transaction, uid
     || canonicalExportExpiry(canonicalFence.get('exportConsentExpiresAt')) !== canonicalExportConsentExpiresAt) {
     throw new functions.https.HttpsError('failed-precondition', 'CANONICAL_EXPORT_CONSENT_REQUIRED')
   }
-  if (!user.exists || !policy.exists || stored?.ownerId !== uid || stored.version !== 2
-    || !Number.isSafeInteger(stored.revision) || stored.revision < 1
+  if (!user.exists || !policy.exists || !isCanonicalStoredPolicy(stored, uid)
+    || stored.revision < 1
     || stored.domains?.exports?.mode !== 'granted'
     || stored.enforcement?.state !== 'fully-enforced'
     || user.get('deleted') === true || ['deleting', 'deleted', 'disabled'].includes(String(user.get('accountStatus') ?? ''))

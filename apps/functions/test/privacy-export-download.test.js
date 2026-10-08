@@ -29,7 +29,7 @@ function fixture(options = {}) {
     [prefix, { ownerId: uid }],
     [canonicalPath, { uid, purpose:'data.export', consentTier:'C7', policyVersion:'1.0.0', status:'granted',receiptHash:canonicalBinding.canonicalExportReceiptHash,expiresAt:new Timestamp(canonicalBinding.canonicalExportConsentExpiresAt) }],
     [canonicalFencePath,{uid,exportConsentStatus:'granted',exportConsentReceiptHash:canonicalBinding.canonicalExportReceiptHash,exportConsentPolicyVersion:'1.0.0',exportConsentExpiresAt:new Timestamp(canonicalBinding.canonicalExportConsentExpiresAt)}],
-    [policyPath, { version: 2, ownerId: uid, revision: 4, domains: clone(domains), enforcement: { state: 'fully-enforced' } }],
+    [policyPath, { version: 2, ownerId: uid, revision: 4, domains: clone(domains), enforcement: { state: 'fully-enforced', jobId: 'synthetic-enforcement-job', affectedTargets: ['export-runtime'], providerState: 'complete' } }],
     [jobPath, { uid, ...canonicalBinding, exportBytes: exportBody.length, manifestBytes: manifestBody.length, manifestChecksum, state: 'ready', scopes: ['profile'], receiptId: 'synthetic-receipt', consentRevision: 4, exportFenceGeneration: 0,
       expiresAt: new Timestamp(now + 3600000), checksum: exportChecksum, exportObject: exportPath, exportGeneration: '11',
       manifestObject: `private-exports/${uid}/${jobId}/manifest.json`, manifestGeneration: '12', runtimeExports: [{ assetId: 'synthetic-asset',
@@ -212,6 +212,49 @@ test('canonical withdrawal changes current revision and revokes an already issue
   await f.handlers.applyConsentPolicy({ operationId: 'synthetic-withdrawal-001', domain: 'exports', expectedRevision: 4, next: { ...domains.exports, mode: 'denied' } }, f.context)
   assert.equal((await f.deliver(result)).statusCode, 409); assert.equal(f.stats.streams, 0)
 })
+
+// Descriptor creation and delivery must consume the same complete stored-policy
+// schema as applyConsentPolicy. A valid C7 grant cannot repair malformed policy.
+for (const [label, changePolicy] of [
+  ['missing enforcement job id', policy => { delete policy.enforcement.jobId }],
+  ['missing enforcement targets', policy => { delete policy.enforcement.affectedTargets }],
+  ['missing enforcement provider state', policy => { delete policy.enforcement.providerState }],
+  ['unknown enforcement provider state', policy => { policy.enforcement.providerState = 'available' }],
+  ['invalid enforcement job id', policy => { policy.enforcement.jobId = '../foreign-job' }],
+  ['duplicate enforcement targets', policy => { policy.enforcement.affectedTargets = ['export-runtime', 'export-runtime'] }],
+  ['invalid enforcement target id', policy => { policy.enforcement.affectedTargets = ['../foreign-target'] }],
+  ['non-string enforcement target', policy => { policy.enforcement.affectedTargets = [true] }],
+  ['non-array enforcement targets', policy => { policy.enforcement.affectedTargets = { target: 'export-runtime' } }],
+  ['unbounded enforcement targets', policy => { policy.enforcement.affectedTargets = Array.from({ length: 1025 }, (_, index) => `target-${index}`) }],
+  ['missing non-export domain', policy => { delete policy.domains.memory }],
+  ['unknown policy domain', policy => { policy.domains.unknown = { ...policy.domains.memory } }],
+  ['non-boolean export permission', policy => { policy.domains.exports.sharingEnabled = 'false' }],
+  ['non-boolean non-export permission', policy => { policy.domains.models.modelContext = 'false' }],
+  ['missing non-export permission', policy => { delete policy.domains.models.modelContext }],
+  ['unknown non-export mode', policy => { policy.domains.identity.mode = 'available' }],
+  ['string retention period', policy => { policy.domains.memory.retentionDays = '365' }],
+  ['invalid retention period', policy => { policy.domains.memory.retentionDays = 180 }],
+  ['unknown policy field', policy => { policy.compatibilityGrant = true }],
+  ['unknown domain field', policy => { policy.domains.exports.compatibilityGrant = true }],
+  ['unknown enforcement field', policy => { policy.enforcement.compatibilityGrant = true }],
+]) {
+  test(`complete stored-policy schema rejects ${label} before descriptor authorization`, async () => {
+    const f = fixture(); changePolicy(f.records.get(policyPath))
+    await assert.rejects(f.descriptor(), { code: 'failed-precondition', message: 'CURRENT_EXPORT_AUTHORITY_REQUIRED' })
+    assert.equal(f.stats.metadata, 0); assert.equal(f.stats.signed, 0); assert.equal(f.stats.streams, 0)
+    assert.equal([...f.records.keys()].some(key => key.startsWith(`${prefix}/spatialExportDownloads/`)), false)
+    assert.equal(f.records.get(canonicalPath).status, 'granted')
+  })
+  test(`complete stored-policy schema rejects ${label} for an already issued descriptor`, async () => {
+    const f = fixture(), result = await f.descriptor(), metadataBefore = f.stats.metadata
+    changePolicy(f.records.get(policyPath))
+    const response = await f.deliver(result)
+    assert.equal(response.statusCode, 409)
+    assert.equal(f.stats.metadata, metadataBefore); assert.equal(f.stats.signed, 0); assert.equal(f.stats.streams, 0)
+    assert.equal(f.stats.chunks.length, 0)
+    assert.equal(f.records.get(canonicalPath).status, 'granted')
+  })
+}
 
 test('revocation after Storage await denies descriptor and actual delivery', async () => {
   const f = fixture({ afterMetadata: (_count, records) => { records.get(policyPath).domains.exports.mode = 'denied' } })
