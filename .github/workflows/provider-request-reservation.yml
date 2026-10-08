@@ -5,6 +5,7 @@ on:
     paths:
       - '.github/workflows/provider-request-reservation.yml'
       - 'apps/functions/src/providerFunctions.ts'
+      - 'apps/functions/src/consentPolicyAuthority.ts'
       - 'apps/functions/tests/provider-request-reservation.test.mjs'
       - 'urai-tier1/src/spatial/orb/openaiClient.ts'
       - 'packages/localization/src/contentLanguage.ts'
@@ -111,7 +112,7 @@ jobs:
           const consumerLog = fs.readFileSync(path.join(out,'consumer-tests.tap'),'utf8')
           const consumerCounts = Object.fromEntries([...consumerLog.matchAll(/^# (tests|pass|fail|cancelled|skipped|todo) (\d+)\s*$/gm)].map(m=>[m[1],Number(m[2])]))
           if (!(consumerCounts.tests >= 20) || consumerCounts.pass !== consumerCounts.tests || ['fail','cancelled','skipped','todo'].some(k=>consumerCounts[k]!==0)) throw new Error('Incomplete admitted consumer proof')
-          const files = ['apps/functions/src/providerFunctions.ts','apps/functions/tests/provider-request-reservation.test.mjs','urai-tier1/src/spatial/orb/openaiClient.ts','urai-tier1/tests/localization-content-routing.test.mjs','urai-tier1/tests/orb-provider-idempotency-contract.test.mjs','urai-tier1/tests/provider-boundary-contract.test.mjs','packages/localization/src/contentLanguage.ts','apps/functions/src/index.ts','firebase.json','firebase/firestore.rules','apps/functions/src/privacyOperations.ts','.github/workflows/provider-request-reservation.yml']
+          const files = ['apps/functions/src/providerFunctions.ts','apps/functions/src/consentPolicyAuthority.ts','apps/functions/tests/provider-request-reservation.test.mjs','urai-tier1/src/spatial/orb/openaiClient.ts','urai-tier1/tests/localization-content-routing.test.mjs','urai-tier1/tests/orb-provider-idempotency-contract.test.mjs','urai-tier1/tests/provider-boundary-contract.test.mjs','packages/localization/src/contentLanguage.ts','apps/functions/src/index.ts','firebase.json','firebase/firestore.rules','apps/functions/src/privacyOperations.ts','.github/workflows/provider-request-reservation.yml']
           const sources = Object.fromEntries(files.map(file=>[file,createHash('sha256').update(fs.readFileSync(file)).digest('hex')]))
           const receipt = {schema:'urai-provider-request-reservation-proof-1',sourceHead:process.env.URAI_EXACT_HEAD,workflowRun:process.env.GITHUB_RUN_ID,runAttempt:process.env.GITHUB_RUN_ATTEMPT,node:process.version,tests:counts,consumerTests:consumerCounts,sources,transport:'Actual exported HTTP handler/browser adapter with synthetic upstream and atomic transaction storage doubles; no paid requests',firestoreEmulatorAcceptance:false,providerCanaryAcceptance:false,protectedRuntimeAcceptance:false,financialAuthorization:false,releaseCertification:false,scope:'OpenAI Orb/Council HTTP boundary only; no claim for other provider SDK leaves'}
           fs.writeFileSync(path.join(out,'receipt.json'),`${JSON.stringify(receipt,null,2)}\n`)

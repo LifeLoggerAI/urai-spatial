@@ -4,6 +4,7 @@ on:
     paths:
       - 'apps/functions/src/lifeModelFunctions.ts'
       - 'apps/functions/src/lifeGraphAuthority.ts'
+      - 'apps/functions/src/consentPolicyAuthority.ts'
       - 'urai-tier1/tests/life-graph-authority-behavior.test.mjs'
       - '.github/workflows/life-graph-authority-tests.yml'
 permissions:
