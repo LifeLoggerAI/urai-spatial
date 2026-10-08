@@ -3,6 +3,7 @@ import { readFile } from 'node:fs/promises'
 import { spawnSync } from 'node:child_process'
 import { fileURLToPath } from 'node:url'
 import test from 'node:test'
+import { runInNewContext } from 'node:vm'
 
 const repoRoot = fileURLToPath(new URL('../..', import.meta.url))
 const launcherPath = fileURLToPath(new URL('../../scripts/run-lifemap-founder-proof-fixed.mjs', import.meta.url))
@@ -223,4 +224,62 @@ test('founder proof follows the current rendered signed-out privacy boundary and
   assert.match(runner, /if \(signedOutBoundary\.privateSourceMounted\) throw new Error\('signed-out Life Map mounted a private memory source'\)/)
   assert.match(runner, /if \(!\/no personal data displayed\/i\.test\(signedOutBoundary\.disclosure\)\)/)
   assert.match(runner, /data-testid="urai-life-map-authored-fallback"/)
+})
+
+function replayReadinessHarness(snapshots, url = 'http://127.0.0.1:4173/replay/?demo=1&memoryId=quiet-reset&manifestId=replay-recovery-thread') {
+  const pollSource = runner.match(/async function poll\([\s\S]*?\n\}\n/)?.[0]
+  const readinessSource = runner.match(/async function waitForReplayRenderedWorld\([\s\S]*?\n\}\n/)?.[0]
+  assert.ok(pollSource && readinessSource, 'Replay destination proof must wait for actual media and a rendered first frame')
+  class TestElement {}
+  class TestCanvas {}
+  let samples = 0
+  const document = {
+    querySelector(selector) {
+      assert.equal(selector, '[data-testid="cinematic-replay-client"]', 'Do not certify from the hidden proof-only Replay surface')
+      const state = snapshots[Math.min(samples++, snapshots.length - 1)]
+      if (!state) return null
+      const canvas = Object.assign(new TestCanvas(), { dataset: { replayFirstFrame: state.firstFrame ? 'true' : 'false' } })
+      return Object.assign(new TestElement(), {
+        dataset: { memoryId: state.memoryId, manifestId: state.manifestId, replayMediaStatus: state.mediaStatus, replayMediaReady: state.mediaReady, webglState: state.webgl, replayEnvironmentFallback: state.admission },
+        querySelector: (canvasSelector) => { assert.equal(canvasSelector, 'canvas'); return canvas },
+      })
+    },
+  }
+  const waitForReplay = runInNewContext(`${pollSource}\n${readinessSource}\nwaitForReplayRenderedWorld`, { URL, Date, setTimeout, document, HTMLElement: TestElement, HTMLCanvasElement: TestCanvas })
+  return { run: (timeout = 1000) => waitForReplay({ url: () => url, evaluate: async (read) => read() }, timeout), samples: () => samples }
+}
+
+const renderedReplay = { memoryId: 'quiet-reset', manifestId: 'replay-recovery-thread', mediaStatus: 'ready', mediaReady: 'true', webgl: 'ready', admission: 'disclosed-demo', firstFrame: true }
+
+test('Replay capture waits through the real loading state before retaining the selected media first frame', async () => {
+  const proof = replayReadinessHarness([{ ...renderedReplay, mediaStatus: 'loading', mediaReady: 'false', firstFrame: false }, renderedReplay])
+  const state = await proof.run()
+  assert.equal(proof.samples(), 2)
+  assert.equal(state.firstFrame, true)
+  assert.equal(state.mediaStatus, 'ready')
+  assert.match(runner, /const replayRenderProof = await waitForReplayRenderedWorld\(page\)\s+await shot\(page, 'replay-destination', 'replay', \{ memoryId: 'quiet-reset', replayRenderProof \}\)/)
+})
+
+test('Replay capture rejects a visible shell, loading or errored media and an unrendered canvas', async (t) => {
+  for (const [name, state] of [
+    ['shell only', null],
+    ['media loading', { ...renderedReplay, mediaStatus: 'loading' }],
+    ['media error', { ...renderedReplay, mediaStatus: 'error' }],
+    ['readiness false', { ...renderedReplay, mediaReady: 'false' }],
+    ['no first frame', { ...renderedReplay, firstFrame: false }],
+    ['lost context', { ...renderedReplay, webgl: 'lost' }],
+  ]) await t.test(name, async () => {
+    await assert.rejects(replayReadinessHarness([state]).run(10), /selected Replay media and first rendered frame timed out/)
+  })
+})
+
+test('Replay capture rejects a stale memory, wrong manifest, private source or a route without exact selected identity', async (t) => {
+  for (const [name, state] of [
+    ['stale memory', { ...renderedReplay, memoryId: 'different-memory' }],
+    ['wrong manifest', { ...renderedReplay, manifestId: 'different-manifest' }],
+    ['private recorded source', { ...renderedReplay, admission: 'recorded-source' }],
+  ]) await t.test(name, async () => {
+    await assert.rejects(replayReadinessHarness([state]).run(10), /selected Replay media and first rendered frame timed out/)
+  })
+  await assert.rejects(replayReadinessHarness([renderedReplay], 'http://127.0.0.1:4173/replay/').run(), /requires the selected memory and manifest route identity/)
 })

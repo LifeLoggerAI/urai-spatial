@@ -134,6 +134,8 @@ test('accessibility and performance implementation contracts are present', () =>
   assert.doesNotMatch(routeOwnerCss, /ground-spatial-root canvas[\s\S]{0,220}transform:\s*scale\(/, 'Ground canvas must not exceed the mobile viewport through CSS scaling')
   requireText(routeOwnerCss, 'max-width: 100vw !important;')
   requireText(routeOwnerCss, 'max-height: 100svh !important;')
+  requireText(focus, "aria-label={locale.locale === 'en' ? `Open Replay for ${memory.title}` : locale.text('focus.enterReplay')}")
+  requireText(focus, "{...locale.props(memory ? 'focus.openReplayFor' : 'focus.chooseReplay')} aria-label={memory ? locale.text('focus.openReplayFor', {title:memory.title}) : locale.text('focus.chooseReplay')}")
   const focusReplayAperture = normalizeSource(focus).match(/<button\b[^>]*className='focus-spatial-aperture-button'[^>]*>/)?.[0] ?? ''
   requireText(focusReplayAperture, 'disabled={!memory}', 'Focus must disable Replay when no memory is selected')
   requireText(focusReplayAperture, "{...locale.props(memory ? 'focus.openReplayFor' : 'focus.chooseReplay')}", 'Focus must bind selected and neutral labels to their actual locale metadata')
