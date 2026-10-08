@@ -3,7 +3,7 @@
 import { getAuth, onAuthStateChanged, type User } from 'firebase/auth'
 import { doc, onSnapshot } from 'firebase/firestore'
 import Link from 'next/link'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { defaultConsentPolicy, isConsentPolicy, type ConsentDomainPolicy } from '@/app/privacy-controls/consentModel'
 import { app, firebasePublicEnvReady, getFirebaseDb } from '@/lib/firebase/client'
 import {
@@ -13,7 +13,6 @@ import {
   createPin,
   exportPins,
   geolocationErrorState,
-  isValidCoordinate,
   parsePins,
   type GeographicCoordinate,
   type GeographicMemoryPin,
@@ -21,6 +20,7 @@ import {
   type GeographicPrecision,
 } from '@/spatial/places/geographicLocationVault'
 import './geographic-location.css'
+import { createGeographicLocationRequest, type GeographicRequestAuthority } from '@/spatial/places/geographicLocationRequest'
 
 const precisionLabels: Record<GeographicPrecision, string> = {
   city: 'City-level',
@@ -69,13 +69,58 @@ export default function GeographicLocationClient() {
   const [user, setUser] = useState<User | null>(null)
   const [authorityState, setAuthorityState] = useState<LocationAuthorityState>(firebasePublicEnvReady ? 'loading' : 'signed-out')
   const [locationPolicy, setLocationPolicy] = useState<ConsentDomainPolicy>(() => defaultConsentPolicy('local-only').domains.location)
+  const [policyRevision, setPolicyRevision] = useState(0)
   const [message, setMessage] = useState('Location is off. UrAi will not request or store coordinates until you explicitly opt in.')
 
   const locationClosed = authorityState === 'ready' && (locationPolicy.mode === 'denied' || locationPolicy.mode === 'paused')
   const exactPrivateAllowed = Boolean(user) && authorityState === 'ready' && !locationClosed && locationPolicy.precise
   const requestBlockedByAuthority = authorityState === 'loading' || authorityState === 'unavailable' || locationClosed
+  const mounted = useRef(true)
+  const requestAuthority = useRef<GeographicRequestAuthority>({ mounted: true, online: true, storageAvailable, ownerId: null, currentAuthOwnerId: null, state: authorityState, mode: locationPolicy.mode, revision: policyRevision, precise: exactPrivateAllowed })
+  requestAuthority.current = { mounted: mounted.current, online: true, storageAvailable, ownerId: user?.uid ?? null, currentAuthOwnerId: null, state: authorityState, mode: locationPolicy.mode, revision: policyRevision, precise: exactPrivateAllowed }
+  const locationRequest = useRef<ReturnType<typeof createGeographicLocationRequest> | null>(null)
+  if (!locationRequest.current) locationRequest.current = createGeographicLocationRequest(() => ({
+    ...requestAuthority.current,
+    mounted: mounted.current,
+    online: typeof navigator !== 'undefined' && navigator.onLine,
+    currentAuthOwnerId: firebasePublicEnvReady ? getAuth(app).currentUser?.uid ?? null : null,
+  }), {
+    requested: () => { setPermission('requesting'); setMessage('Waiting for your browser permission. Nothing is stored by requesting access.') },
+    retainConsent: () => localStorage.setItem(LOCATION_CONSENT_KEY, 'granted'),
+    accepted: (next, precise) => {
+      setConsented(true); setCoordinate(next); setPermission('granted')
+      setMessage(precise
+        ? 'Location received under the current precise-location grant. Choose the stored precision and label before saving.'
+        : 'Location received and immediately reduced to approximate precision under the current privacy authority.')
+    },
+    invalid: () => { setPermission('error'); setMessage('The browser returned an invalid coordinate. Nothing was stored.') },
+    storageFailed: () => {
+      setStorageAvailable(false); setConsented(false); setCoordinate(null); setPermission('error')
+      setMessage('Consent could not be retained privately, so UrAi discarded the coordinate and kept location off.')
+    },
+    failed: code => {
+      const state = geolocationErrorState(code)
+      setPermission(state)
+      setMessage(state === 'denied'
+        ? 'Location permission was denied or dismissed. No coordinates were stored.'
+        : state === 'unavailable'
+          ? 'Location is unavailable right now. No coordinates were stored.'
+          : state === 'timeout'
+            ? 'The location request timed out. No coordinates were stored.'
+            : 'The location request failed. No coordinates were stored.')
+    },
+  })
+  const invalidateLocationRequest = () => {
+    if (locationRequest.current?.cancel()) setPermission('idle')
+  }
+
+  useEffect(() => {
+    mounted.current = true
+    return () => { mounted.current = false; locationRequest.current?.cancel() }
+  }, [])
 
   const clearLocalConsent = (nextMessage?: string) => {
+    invalidateLocationRequest()
     try { localStorage.removeItem(LOCATION_CONSENT_KEY) } catch { setStorageAvailable(false) }
     setConsented(false)
     setCoordinate(null)
@@ -111,8 +156,18 @@ export default function GeographicLocationClient() {
 
   useEffect(() => {
     const syncStorage = (event: StorageEvent) => {
-      if (event.key === LOCATION_PINS_KEY) applyStoredPins(event.newValue, 'storage')
+      if (event.key === null) {
+        invalidateLocationRequest(); setConsented(false); setCoordinate(null); setPins([]); setStoredPinsPresent(false); setPermission('revoked')
+        setMessage('Local location data was cleared in another tab. This tab retained no coordinate or pin in memory.')
+        return
+      }
+      if (event.key === LOCATION_PINS_KEY) {
+        invalidateLocationRequest()
+        if (event.newValue === null) setCoordinate(null)
+        applyStoredPins(event.newValue, 'storage')
+      }
       if (event.key === LOCATION_CONSENT_KEY) {
+        invalidateLocationRequest()
         const granted = event.newValue === 'granted'
         setConsented(granted)
         if (!granted) {
@@ -134,10 +189,12 @@ export default function GeographicLocationClient() {
     }
     const auth = getAuth(app)
     return onAuthStateChanged(auth, (nextUser) => {
+      clearLocalConsent()
       setUser(nextUser)
       if (!nextUser) {
         setAuthorityState('signed-out')
         setLocationPolicy(defaultConsentPolicy('signed-out-local').domains.location)
+        setPolicyRevision(0)
         return
       }
       setAuthorityState('loading')
@@ -146,17 +203,28 @@ export default function GeographicLocationClient() {
 
   useEffect(() => {
     if (!user) return
+    let active = true
     const policyRef = doc(getFirebaseDb(), 'users', user.uid, 'privacyPolicy', 'current')
-    return onSnapshot(policyRef, (snapshot) => {
+    const stop = onSnapshot(policyRef, { includeMetadataChanges: true }, (snapshot) => {
+      if (!active || getAuth(app).currentUser?.uid !== user.uid) return
+      invalidateLocationRequest()
+      if (snapshot.metadata.fromCache || snapshot.metadata.hasPendingWrites) {
+        setAuthorityState('loading')
+        clearLocalConsent('The current location policy is awaiting server confirmation. No new coordinate can be requested or retained from cached or unconfirmed authority.')
+        return
+      }
       const raw = snapshot.data()
       const policy = snapshot.exists() && isConsentPolicy(raw, user.uid) ? raw : defaultConsentPolicy(user.uid)
       setLocationPolicy(policy.domains.location)
+      setPolicyRevision(policy.revision)
       setAuthorityState('ready')
     }, () => {
+      if (!active || getAuth(app).currentUser?.uid !== user.uid) return
       setAuthorityState('unavailable')
       clearLocalConsent('The authoritative location policy could not be read. New geographic collection remains blocked rather than guessing permission.')
       setPermission('error')
     })
+    return () => { active = false; invalidateLocationRequest(); stop() }
   }, [user])
 
   useEffect(() => {
@@ -174,7 +242,7 @@ export default function GeographicLocationClient() {
   useEffect(() => {
     if (!navigator.onLine) setPermission('offline')
     const online = () => setPermission((state) => state === 'offline' ? 'idle' : state)
-    const offline = () => setPermission('offline')
+    const offline = () => { invalidateLocationRequest(); setPermission('offline') }
     window.addEventListener('online', online)
     window.addEventListener('offline', offline)
     return () => { window.removeEventListener('online', online); window.removeEventListener('offline', offline) }
@@ -195,6 +263,7 @@ export default function GeographicLocationClient() {
         setConsented(false)
         setCoordinate(null)
         if (status.state === 'denied' || hadConsent) {
+          invalidateLocationRequest()
           setPermission('revoked')
           setMessage('Browser location permission is no longer granted. UrAi cleared its local consent flag and retained no coordinate in memory.')
         }
@@ -232,47 +301,10 @@ export default function GeographicLocationClient() {
       setMessage('This browser does not provide geolocation. The symbolic Life Map remains available.')
       return
     }
-    setPermission('requesting')
-    setMessage('Waiting for your browser permission. Nothing is stored by requesting access.')
-    navigator.geolocation.getCurrentPosition((position) => {
-      const received = {
-        latitude: position.coords.latitude,
-        longitude: position.coords.longitude,
-        accuracyMeters: position.coords.accuracy,
-      }
-      if (!isValidCoordinate(received)) {
-        setPermission('error')
-        setMessage('The browser returned an invalid coordinate. Nothing was stored.')
-        return
-      }
-      const next = exactPrivateAllowed ? received : applyPrecision(received, 'approximate')
-      try {
-        localStorage.setItem(LOCATION_CONSENT_KEY, 'granted')
-      } catch {
-        setStorageAvailable(false)
-        setConsented(false)
-        setCoordinate(null)
-        setPermission('error')
-        setMessage('Consent could not be retained privately, so UrAi discarded the coordinate and kept location off.')
-        return
-      }
-      setConsented(true)
-      setCoordinate(next)
-      setPermission('granted')
-      setMessage(exactPrivateAllowed
-        ? 'Location received under the current precise-location grant. Choose the stored precision and label before saving.'
-        : 'Location received and immediately reduced to approximate precision under the current privacy authority.')
-    }, (error) => {
-      const state = geolocationErrorState(error.code)
-      setPermission(state)
-      setMessage(state === 'denied'
-        ? 'Location permission was denied or dismissed. No coordinates were stored.'
-        : state === 'unavailable'
-          ? 'Location is unavailable right now. No coordinates were stored.'
-          : state === 'timeout'
-            ? 'The location request timed out. No coordinates were stored.'
-            : 'The location request failed. No coordinates were stored.')
-    }, { enableHighAccuracy: false, timeout: 12_000, maximumAge: 60_000 })
+    if (!locationRequest.current?.request(navigator.geolocation)) {
+      setPermission('error')
+      setMessage('Location authority changed before the request. Nothing was requested or stored; choose location again after the current policy is ready.')
+    }
   }
 
   const savePin = () => {
@@ -303,6 +335,8 @@ export default function GeographicLocationClient() {
   }
 
   const deleteAll = () => {
+    invalidateLocationRequest()
+    setCoordinate(null)
     try {
       localStorage.removeItem(LOCATION_PINS_KEY)
       setPins([])
@@ -324,7 +358,7 @@ export default function GeographicLocationClient() {
       <p id="geo-consent-title">This layer never starts background collection. Browser location is requested only after you press the button below and the current Consent Sanctuary policy permits collection.</p>
       <div className="geoActions">
         <button type="button" onClick={requestLocation} disabled={permission === 'requesting' || permission === 'offline' || !storageAvailable || requestBlockedByAuthority}>{permission === 'requesting' ? 'Requesting…' : 'Use current location'}</button>
-        <button type="button" onClick={revoke} disabled={!consented}>Revoke UrAi location consent</button>
+        <button type="button" onClick={revoke} disabled={!consented && permission !== 'requesting'}>Revoke UrAi location consent</button>
       </div>
       <p role="status" aria-live="polite">{message}</p>
       <small>{user ? `Consent Sanctuary: ${authorityState === 'ready' ? locationPolicy.mode : authorityState}. Precise private storage: ${exactPrivateAllowed ? 'allowed' : 'not allowed'}.` : 'Signed-out local use is approximate-only; exact private location requires an authenticated Consent Sanctuary grant.'}</small>
@@ -351,3 +385,4 @@ export default function GeographicLocationClient() {
     </section>
   </main>
 }
+

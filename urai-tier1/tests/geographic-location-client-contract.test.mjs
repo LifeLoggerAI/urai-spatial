@@ -3,6 +3,7 @@ import fs from 'node:fs'
 import test from 'node:test'
 
 const source = fs.readFileSync(new URL('../src/app/location-map/geographic/GeographicLocationClient.tsx', import.meta.url), 'utf8')
+const request = fs.readFileSync(new URL('../src/spatial/places/geographicLocationRequest.ts', import.meta.url), 'utf8')
 
 test('authoritative Consent Sanctuary policy gates geographic collection', () => {
   assert.match(source, /users', user\.uid, 'privacyPolicy', 'current'/)
@@ -15,7 +16,8 @@ test('exact private storage requires an authenticated precise-location grant', (
   assert.match(source, /const exactPrivateAllowed = Boolean\(user\).*locationPolicy\.precise/)
   assert.match(source, /disabled=\{value === 'exact-private' && !exactPrivateAllowed\}/)
   assert.match(source, /precision === 'exact-private' && !exactPrivateAllowed \? 'approximate'/)
-  assert.match(source, /applyPrecision\(received, 'approximate'\)/)
+  assert.match(source, /createGeographicLocationRequest/)
+  assert.match(request, /precise \? received : applyPrecision\(received, 'approximate'\)/)
 })
 
 test('permission revocation clears local consent and coordinates', () => {
@@ -32,3 +34,4 @@ test('local deletion remains complete across corrupt data and multiple tabs', ()
   assert.match(source, /An unreadable local location record was removed/)
   assert.match(source, /disabled=\{!storedPinsPresent && !pins\.length\}/)
 })
+
