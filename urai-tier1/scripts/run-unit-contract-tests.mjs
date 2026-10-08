@@ -2,6 +2,7 @@ import { spawn } from 'node:child_process'
 import fs from 'node:fs'
 
 const focusedContractTests = [
+  'tests/stripe-session-authority.test.mjs',
   'tests/owned-memory-media-client.test.mjs',
   'tests/authorized-export-download.test.mjs',
   'tests/operational-export-client.test.mjs',

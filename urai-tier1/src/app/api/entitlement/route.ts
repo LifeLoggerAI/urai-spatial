@@ -18,6 +18,9 @@ export async function GET(request: Request) {
   }
 
   const entitlement = await readEntitlement(uid);
+  if (await verifyFirebaseUser(request) !== uid) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
 
   return NextResponse.json({ entitlement }, { headers: { 'Cache-Control': 'private, no-store' } });
 }

@@ -240,7 +240,7 @@ test('valid authentication reads only its own entitlement without shared caching
   state.entitlements.set('other-user',{userId:'other-user',planId:'founder',subscriptionStatus:'active'});
   const response=await GET(new Request('https://source-test.invalid/api/entitlement',{headers:{authorization:'Bearer valid-fixture'}}));
   assert.equal(response.status,200); assert.equal((await response.json()).entitlement.userId,userId);
-  assert.equal(response.headers.get('cache-control'),'private, no-store'); assert.deepEqual(state.authChecks,[true]);
+  assert.equal(response.headers.get('cache-control'),'private, no-store'); assert.deepEqual(state.authChecks,[true,true]);
 });
 test('static export remains closed with no auth or Firestore access',async()=>{
   process.env.URAI_FIREBASE_STATIC_EXPORT='true';

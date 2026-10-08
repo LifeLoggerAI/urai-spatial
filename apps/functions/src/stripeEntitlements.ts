@@ -390,6 +390,10 @@ export const createStripeCheckout = functions.https.onRequest(async (req, res) =
   }
 
   const existing = await readEntitlement(uid)
+  if (await authenticatedUid(req) !== uid) {
+    res.status(401).json({ error: 'Unauthorized' })
+    return
+  }
   const session = await stripe.checkout.sessions.create({
     mode: planId === 'founder' ? 'payment' : 'subscription',
     line_items: [{ price: priceId, quantity: 1 }],
@@ -402,6 +406,10 @@ export const createStripeCheckout = functions.https.onRequest(async (req, res) =
     subscription_data: planId === 'founder' ? undefined : { metadata: { planId, userId: uid } },
   })
 
+  if (await authenticatedUid(req) !== uid) {
+    res.status(401).json({ error: 'Unauthorized' })
+    return
+  }
   res.status(200).json({ url: session.url })
 })
 
@@ -423,6 +431,10 @@ export const createStripeCustomerPortal = functions.https.onRequest(async (req, 
 
   const stripe = stripeClient()
   const entitlement = await readEntitlement(uid)
+  if (await authenticatedUid(req) !== uid) {
+    res.status(401).json({ error: 'Unauthorized' })
+    return
+  }
   const returnUrl = approvedReturnUrl(req.body?.returnUrl)
   const mode = runtimeMode()
   if (!stripe || !returnUrl || !mode) {
@@ -451,11 +463,19 @@ export const createStripeCustomerPortal = functions.https.onRequest(async (req, 
     return
   }
 
+  if (await authenticatedUid(req) !== uid) {
+    res.status(401).json({ error: 'Unauthorized' })
+    return
+  }
   const session = await stripe.billingPortal.sessions.create({
     customer: customer.id,
     return_url: returnUrl.toString(),
     configuration: process.env.STRIPE_BILLING_PORTAL_CONFIGURATION || undefined,
   })
+  if (await authenticatedUid(req) !== uid) {
+    res.status(401).json({ error: 'Unauthorized' })
+    return
+  }
   res.status(200).json({ url: session.url })
 })
 
@@ -472,7 +492,12 @@ export const getStripeEntitlement = functions.https.onRequest(async (req, res) =
     return
   }
 
-  res.status(200).json({ entitlement: await readEntitlement(uid) })
+  const entitlement = await readEntitlement(uid)
+  if (await authenticatedUid(req) !== uid) {
+    res.status(401).json({ error: 'Unauthorized' })
+    return
+  }
+  res.status(200).json({ entitlement })
 })
 
 export const handleStripeWebhook = functions.https.onRequest(async (req, res) => {

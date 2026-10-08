@@ -20,6 +20,9 @@ export async function POST(request: Request) {
     planId?: unknown;
     returnUrl?: string;
   };
+  if (await verifyFirebaseUser(request) !== uid) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
 
   if (!isPaidPlanId(planId)) {
     return NextResponse.json({ error: 'Paid planId required.' }, { status: 400 });
@@ -51,6 +54,9 @@ export async function POST(request: Request) {
   const stripeModule = await import('stripe');
   const Stripe = stripeModule.default;
   const stripe = new Stripe(secretKey);
+  if (await verifyFirebaseUser(request) !== uid) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
 
   const session = await stripe.checkout.sessions.create({
     mode: checkoutModeForPlan(planId),
@@ -75,5 +81,8 @@ export async function POST(request: Request) {
     },
   });
 
-  return NextResponse.json({ url: session.url, environment: stripeMode });
+  if (await verifyFirebaseUser(request) !== uid) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+  return NextResponse.json({ url: session.url, environment: stripeMode }, { headers: { 'Cache-Control': 'private, no-store' } });
 }
