@@ -1,0 +1,31 @@
+system,surface,template_status,final_capture_required,exact_sha_required,human_approval_required,spend_usd,notes
+Genesis,hero-template,ready,true,true,true,0.00,Replace template with exact-SHA product capture before public use
+Genesis,splash,ready,false,false,true,0.00,Vector/3D derivative may ship after brand approval
+Home Sanctuary,hero-template,ready,true,true,true,0.00,Must show final coherent world not placeholder composition
+Ground,store-frame,ready,true,true,true,0.00,Use real Ground capture after release lock
+Life Map / Galaxy,demo-scroll,ready,true,true,true,0.00,Bind starfield capture to exact release SHA
+Focus,walkthrough-card,ready,true,true,true,0.00,Use selected-memory state
+Replay,weekly-memory-scroll,ready,true,true,true,0.00,Use real replay state and truthful provenance
+Mirror,hero-template,ready,true,true,true,0.00,Do not represent generated UI as real product
+Shadow,hero-template,ready,true,true,true,0.00,Final realm capture required
+Legacy,hero-template,ready,true,true,true,0.00,Final realm capture required
+Passport,store-frame,ready,true,true,true,0.00,Show real consent/permission surface
+Council,investor-frame,ready,true,true,true,0.00,Final human/council art must be approved
+Orb,social-card,ready,true,true,true,0.00,Final Orb state should come from accepted runtime
+Privacy Controls,store-frame,ready,true,true,true,0.00,Must remain readable and truthful
+Location Map,store-frame,ready,true,true,true,0.00,Exact route acceptance required
+Status,github-card,ready,true,true,true,0.00,Claims must derive from evidence
+Spatial / XR,investor-frame,ready,true,true,true,0.00,Physical XR certification remains separate
+URAI Studio,github-card,ready,false,false,true,0.00,Repository/system identity surface
+URAI Motion,social-card,ready,false,false,true,0.00,Brand derivative
+URAI Cinema,social-card,ready,false,false,true,0.00,Brand derivative
+URAI Music,social-card,ready,false,false,true,0.00,Brand derivative
+URAI Visuals,social-card,ready,false,false,true,0.00,Brand derivative
+URAI Labs,investor-frame,ready,false,false,true,0.00,Organization surface
+URAI Foundation,investor-frame,ready,false,false,true,0.00,Organization surface
+URAI Admin,github-card,ready,false,false,true,0.00,System surface
+URAI Analytics,investor-frame,ready,false,false,true,0.00,System surface
+URAI Communications,social-card,ready,false,false,true,0.00,System surface
+URAI Content,social-card,ready,false,false,true,0.00,System surface
+URAI Jobs,github-card,ready,false,false,true,0.00,System surface
+URAI B2B,investor-frame,ready,false,false,true,0.00,System surface

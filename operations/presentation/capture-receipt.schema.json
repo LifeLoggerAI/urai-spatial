@@ -1,0 +1,24 @@
+{
+  "$schema":"https://json-schema.org/draft/2020-12/schema",
+  "$id":"https://urai.app/schemas/presentation-capture-receipt.schema.json",
+  "title":"URAI Presentation Capture Receipt",
+  "type":"object",
+  "additionalProperties":false,
+  "required":["schemaVersion","releaseSha","route","viewport","timestampUtc","mode","claimClass","captureHash","sourceType"],
+  "properties":{
+    "schemaVersion":{"const":"1.0.0"},
+    "releaseSha":{"type":"string","pattern":"^[0-9a-f]{40}$"},
+    "route":{"type":"string","pattern":"^/"},
+    "viewport":{"type":"object","required":["width","height"],"properties":{"width":{"type":"integer","minimum":240},"height":{"type":"integer","minimum":240}},"additionalProperties":false},
+    "timestampUtc":{"type":"string","format":"date-time"},
+    "mode":{"enum":["default","reduced-motion","forced-colors","muted-audio","no-webgl","offline","failed-asset","permission-denied"]},
+    "claimClass":{"enum":["LIVE_VERIFIED","WORKING_DEMO","PROTOTYPE","VISION","BRAND_ONLY"]},
+    "captureHash":{"type":"string","pattern":"^sha256:[0-9a-f]{64}$"},
+    "sourceType":{"enum":["exact-sha-runtime-capture","deterministic-template","brand-vector"]},
+    "humanApproved":{"type":"boolean"},
+    "notes":{"type":"string"}
+  },
+  "allOf":[
+    {"if":{"properties":{"claimClass":{"const":"LIVE_VERIFIED"}}},"then":{"properties":{"sourceType":{"const":"exact-sha-runtime-capture"},"humanApproved":{"const":true}},"required":["humanApproved"]}}
+  ]
+}

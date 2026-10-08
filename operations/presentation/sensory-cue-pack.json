@@ -1,0 +1,21 @@
+{
+  "schemaVersion":"1.0.0",
+  "spendUsd":"0.00",
+  "providerCalls":0,
+  "audioPolicy":{"generatedProofOnly":true,"finalMixHumanApprovalRequired":true,"externalVoiceNotIncluded":true,"muteEquivalentRequired":true},
+  "families":[
+    {"id":"orb","cues":[{"id":"orb-wake","shape":"soft-rise","durationMs":520},{"id":"orb-listen","shape":"low-pulse","durationMs":280},{"id":"orb-response-ready","shape":"two-tone-resolve","durationMs":420}]},
+    {"id":"portal","cues":[{"id":"portal-open","shape":"air-bloom","durationMs":900},{"id":"portal-cross","shape":"wide-pass","durationMs":1200},{"id":"portal-return","shape":"reverse-resolve","durationMs":760}]},
+    {"id":"memory","cues":[{"id":"star-focus","shape":"glass-ping","durationMs":360},{"id":"replay-enter","shape":"memory-swell","durationMs":1100},{"id":"replay-return","shape":"home-resolve","durationMs":900}]},
+    {"id":"realm","cues":[{"id":"council-arrival","shape":"six-point-chime","durationMs":1000},{"id":"mirror-arrival","shape":"split-harmonic","durationMs":900},{"id":"shadow-arrival","shape":"low-eclipse","durationMs":950},{"id":"legacy-arrival","shape":"thread-bell","durationMs":1000},{"id":"passport-open","shape":"permission-tone","durationMs":520}]},
+    {"id":"system","cues":[{"id":"success","shape":"calm-resolve","durationMs":320},{"id":"attention","shape":"single-soft-knock","durationMs":220},{"id":"error","shape":"low-double-pulse","durationMs":360}]}
+  ],
+  "haptics":[
+    {"id":"confirm","patternMs":[35]},
+    {"id":"portal","patternMs":[20,50,45]},
+    {"id":"memory-focus","patternMs":[18,35,18]},
+    {"id":"attention","patternMs":[30,70,30]},
+    {"id":"error","patternMs":[55,60,55]}
+  ],
+  "accessibility":{"visualEquivalentRequired":true,"captionOrTextEquivalentRequiredForSemanticAudio":true,"hapticsMayNotBeSoleSignal":true,"reducedSensoryModeRequired":true}
+}
