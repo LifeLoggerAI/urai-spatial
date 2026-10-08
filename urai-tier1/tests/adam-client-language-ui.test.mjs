@@ -5,9 +5,13 @@ import test from 'node:test'
 import ts from 'typescript'
 import { jsx,jsxs } from 'react/jsx-runtime'
 import { contentLanguage,contentLanguageProps } from '../../packages/localization/src/contentLanguage.ts'
+import * as localePreference from '../src/lib/i18n/localePreference.ts'
+import * as locales from '../src/lib/i18n/locales.ts'
 
 const source=fs.readFileSync(new URL('../src/spatial/adam/AdamPresenceRuntime.tsx',import.meta.url),'utf8')
-const compiled=ts.transpileModule(source,{compilerOptions:{module:ts.ModuleKind.CommonJS,jsx:ts.JsxEmit.ReactJSX}}).outputText
+const compiled=ts.transpileModule(source,{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2017,jsx:ts.JsxEmit.ReactJSX}}).outputText
+const localeSource=fs.readFileSync(new URL('../src/lib/i18n/useUraiLocale.ts',import.meta.url),'utf8')
+const localeCompiled=ts.transpileModule(localeSource,{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2017}}).outputText
 const text=node=>typeof node==='string'?node:Array.isArray(node)?node.map(text).join(''):node?.props?text(node.props.children):''
 const tick=async()=>{for(let i=0;i<8;i++)await new Promise(resolve=>setImmediate(resolve))}
 function fixture(){
@@ -17,6 +21,13 @@ function fixture(){
   class AdamProviderError extends Error{}
   const client={AdamProviderError,requestAdamPresence:input=>{requests.push(input);return new Promise((yes,no)=>{resolve=yes;reject=no})},
     requestAdamFounderVoice:async input=>{voices.push(input);return {blob:new Blob(['synthetic-audio']),errorCode:null}}}
+  const localeModule={exports:{}}
+  vm.runInNewContext(localeCompiled,{module:localeModule,exports:localeModule.exports,require:name=>{
+    if(name==='react')return {useSyncExternalStore:(_subscribe,getSnapshot)=>getSnapshot()}
+    if(name==='./localePreference')return {...localePreference,currentLocalePreference:()=>({requested:contentLanguage(locale)?.locale??'en',preview:false})}
+    if(name==='./locales')return locales
+    throw Error('Unexpected locale hook dependency '+name)
+  }})
   const module={exports:{}}
   vm.runInNewContext(compiled,{module,exports:module.exports,require:name=>{
     if(name==='react')return hooks
@@ -24,10 +35,11 @@ function fixture(){
     if(name==='react-dom')return {createPortal:child=>child}
     if(name==='next/navigation')return {usePathname:()=>'/home',useSearchParams:()=>({get:()=>null})}
     if(name.endsWith('/localePreference'))return {currentSpeechTag:()=>locale}
+    if(name.endsWith('/useUraiLocale'))return localeModule.exports
     if(name.endsWith('/contentLanguage'))return {contentLanguage,contentLanguageProps}
     if(name==='./adamClient')return client
     if(name==='./adamSurfaceContext')return {resolveAdamSurface:()=>({id:'home',label:'Home'})}
-    if(name.endsWith('.module.css'))return {}
+    if(name.endsWith('.module.css'))return {default:{}}
     throw Error('Unexpected Adam dependency '+name)
   },AbortController,crypto:{randomUUID:()=>String(cells.length)},URL:{createObjectURL:()=> 'blob:synthetic',revokeObjectURL:()=>{}},
   Audio:class{constructor(){audio.push(this)}play(){return Promise.resolve()}pause(){this.paused=true}}})

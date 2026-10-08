@@ -32,10 +32,11 @@ const doneEvent = (locale, message = 'Synthetic response') => ({
 
 function clientFixture({ initialLocale = 'en-US', events, getToken = async () => 'synthetic-token', user = true } = {}) {
   let currentLocale = initialLocale
+  const auth = { currentUser: user ? { uid: 'synthetic-owner', getIdToken: getToken } : null }
   const calls = []
   const client = sourceModule('../src/spatial/orb/openaiClient.ts', (id) => {
     if (id === '@/lib/orb-companion-contract') return { buildOrbCompanionResponse: () => ({ reply: 'Canonical English fallback.' }) }
-    if (id === 'firebase/auth') return { getAuth: () => ({ currentUser: user ? { getIdToken: getToken } : null }) }
+    if (id === 'firebase/auth') return { getAuth: () => auth }
     if (id === '@/lib/firebase/client') return { app: {}, firebasePublicEnvReady: true }
     if (id === '@/lib/clientApiUrl') return { clientApiUrl: path => path }
     if (id === '@/lib/i18n/localePreference') return { currentSpeechTag: () => currentLocale }

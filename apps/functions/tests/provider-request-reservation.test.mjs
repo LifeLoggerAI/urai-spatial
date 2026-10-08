@@ -15,7 +15,16 @@ const localRequire = createRequire(import.meta.url)
 const hash = (text) => createHash('sha256').update(text).digest('hex')
 const message = 'synthetic private reflection; never send this fixture externally'
 const requestId = hash(JSON.stringify({ message, context: [], locale: 'en-US' }))
-const policy = { domains: { models: { mode: 'granted', modelContext: true } }, enforcement: { state: 'fully-enforced' } }
+const consentPolicyAuthority = loadSource('apps/functions/src/consentPolicyAuthority.ts', {})
+const consentModel = loadSource('urai-tier1/src/app/privacy-controls/consentModel.ts', {})
+function canonicalProviderPolicy(uid) {
+  const policy = JSON.parse(JSON.stringify(consentModel.defaultConsentPolicy(uid)))
+  policy.domains.models.mode = 'granted'
+  policy.domains.models.modelContext = true
+  assert.equal(consentPolicyAuthority.isCanonicalStoredPolicy(policy, uid), true, 'positive reservation fixture executes actual canonical owner consent')
+  return policy
+}
+const policy = canonicalProviderPolicy('alice')
 const answer = { message: 'A synthetic answer.', caption: 'A synthetic answer.', disclosure: 'OpenAI processed the response.', suggestedActions: ['Pause here'], locale: 'en-US' }
 
 function loadSource(relativePath, dependencies, globals = {}) {
@@ -105,7 +114,7 @@ function responseDouble({ loseDelivery = false } = {}) {
 
 function fixture({ store = storage(), env = {}, fetchHook, authHook, shortenDeadlineMs } = {}) {
   for (const uid of ['alice', 'bob']) {
-    if (!store.state.docs.has(`users/${uid}/privacyPolicy/current`)) store.state.docs.set(`users/${uid}/privacyPolicy/current`, clone(policy))
+    if (!store.state.docs.has(`users/${uid}/privacyPolicy/current`)) store.state.docs.set(`users/${uid}/privacyPolicy/current`, canonicalProviderPolicy(uid))
   }
   const calls = []
   let authReads = 0
@@ -130,6 +139,7 @@ function fixture({ store = storage(), env = {}, fetchHook, authHook, shortenDead
   }
   const exports = loadSource('apps/functions/src/providerFunctions.ts', {
     '../../../packages/localization/src/contentLanguage': loadSource('packages/localization/src/contentLanguage.ts', {}),
+    './consentPolicyAuthority': consentPolicyAuthority,
     './protectedProviderSpend': { paidSpatialFetch: (_db, _uid, _lane, _provider, _model, _input, url, init) => fetch(url, init), SpatialSpendError: class extends Error {}, SPATIAL_SPEND_WORKER_TOKENS_JSON: {} },
     'firebase-admin': admin,
     'firebase-functions/params': { defineSecret: () => ({ value: () => 'synthetic-test-only-key' }) },
@@ -309,11 +319,12 @@ test('authentication is checked with revocation before any reservation or replay
 
 for (const [name, savedPolicy, connection] of [
   ['no saved policy', null, null],
-  ['model context denied', { ...policy, domains: { models: { mode: 'granted', modelContext: false } } }, null],
-  ['enforcement pending', { ...policy, enforcement: { state: 'pending' } }, null],
+  ['model context denied', { ...policy, domains: { ...policy.domains, models: { ...policy.domains.models, modelContext: false } } }, null],
+  ['enforcement pending', { ...policy, enforcement: { ...policy.enforcement, state: 'pending' } }, null],
   ['provider revocation pending', policy, { processingAllowed: true, revocationState: 'pending' }],
 ]) test(`${name} cannot use client-supplied consent as authority`, async () => {
   const f = fixture(); const docs = f.store.state.docs
+  if (savedPolicy) assert.equal(consentPolicyAuthority.isCanonicalStoredPolicy(savedPolicy, 'alice'), true, 'permission-denial fixture retains a canonical policy shape')
   if (savedPolicy) docs.set('users/alice/privacyPolicy/current', clone(savedPolicy)); else docs.delete('users/alice/privacyPolicy/current')
   if (connection) docs.set('users/alice/providerConnections/openai', clone(connection))
   assert.ok((await f.run()).statusCode >= 400); assert.equal(f.calls.length, 0); assert.equal(f.reservations().length, 0)
@@ -406,9 +417,10 @@ test('canonical whitespace and context field ordering cannot create a second ide
 })
 
 function client(fetch) {
+  const auth = { currentUser: { uid: 'alice', getIdToken: async () => 'alice' } }
   return loadSource('urai-tier1/src/spatial/orb/openaiClient.ts', {
     '@/lib/orb-companion-contract': { buildOrbCompanionResponse: () => ({ reply: 'synthetic local fallback' }) },
-    'firebase/auth': { getAuth: () => ({ currentUser: { getIdToken: async () => 'alice' } }) },
+    'firebase/auth': { getAuth: () => auth },
     '@/lib/firebase/client': { app: {}, firebasePublicEnvReady: true },
     '@/lib/clientApiUrl': { clientApiUrl: (value) => value },
     '@/lib/i18n/localePreference': { currentSpeechTag: () => 'en-US' },
