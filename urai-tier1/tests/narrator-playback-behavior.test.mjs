@@ -9,6 +9,40 @@ import { contentLanguage } from '../src/lib/i18n/contentLanguage.ts'
 const localVoice = { name: 'Local English', lang: 'en-US', localService: true }
 const remoteVoice = { name: 'Remote English', lang: 'en-US', localService: false }
 
+function narratorCopyWith(env = {}) {
+  const source = fs.readFileSync(new URL('../src/spatial/narrator/narratorCopy.ts', import.meta.url), 'utf8')
+  const exports = {}
+  vm.runInNewContext(ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText,
+    { exports, process: { env }, Date, Math }, { filename: 'narratorCopy.ts' })
+  return exports
+}
+
+for (const tone of ['calm', 'awe', 'tension', 'grief', 'recovery', 'neutral']) {
+  test(`unconfigured ${tone} narrator never selects an unaccepted external voice`, () => {
+    const copy = narratorCopyWith()
+    assert.equal(copy.URAI_VOICE_CONFIG[tone].voiceId, '')
+    assert.equal(copy.buildNarratorLine('home_idle', { tone }).voiceId, '')
+  })
+  test(`configured ${tone} narrator uses only its selected configured default`, () => {
+    const copy = narratorCopyWith({ NEXT_PUBLIC_URAI_ELEVENLABS_DEFAULT_VOICE_ID: 'reviewed-default' })
+    assert.equal(copy.buildNarratorLine('home_idle', { tone }).voiceId, 'reviewed-default')
+  })
+}
+test('explicit tone configuration overrides the configured default without inventing a voice', () => {
+  const copy = narratorCopyWith({ NEXT_PUBLIC_URAI_ELEVENLABS_DEFAULT_VOICE_ID: 'reviewed-default', NEXT_PUBLIC_URAI_ELEVENLABS_CALM_VOICE_ID: 'reviewed-calm' })
+  assert.equal(copy.buildNarratorLine('home_idle', { tone: 'calm' }).voiceId, 'reviewed-calm')
+  assert.equal(copy.buildNarratorLine('home_idle', { tone: 'neutral' }).voiceId, 'reviewed-default')
+})
+test('committed environment templates do not pre-authorize an unreviewed provider voice', () => {
+  for (const pathname of ['../../.env.example', '../../apps/functions/.env.urai-4dc1d']) {
+    const source = fs.readFileSync(new URL(pathname, import.meta.url), 'utf8')
+    for (const key of ['ELEVENLABS_DEFAULT_VOICE_ID', 'ELEVENLABS_ALLOWED_VOICE_IDS']) {
+      assert.match(source, new RegExp(`^${key}=[ \\t]*$`, 'm'))
+    }
+    assert.doesNotMatch(source, /pNInz6obpgDQGcFmaJgB/)
+  }
+})
+
 function fixture({ voices = [localVoice], language = 'en-US', request = async () => new Blob(['narration']), playAudio, fallback = 'speech' } = {}) {
   let now = 100000
   let timerId = 0
