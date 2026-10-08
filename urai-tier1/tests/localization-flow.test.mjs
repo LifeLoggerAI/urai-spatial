@@ -4,6 +4,8 @@ import { URAI_CATALOGS, URAI_LAUNCH_LOCALES, URAI_NATIVE_REVIEWED_LOCALES, URAI_
 import { URAI_JOURNEY_CONTROL_MESSAGES } from '../src/lib/i18n/journeyControlMessages.ts'
 import { URAI_GEOGRAPHIC_MESSAGES } from '../src/lib/i18n/geographicMessages.ts'
 import { URAI_FOUNDER_MESSAGES } from '../src/lib/i18n/founderMessages.ts'
+import { URAI_FOCUS_COMPATIBILITY_MESSAGES } from '../src/lib/i18n/focusCompatibilityMessages.ts'
+import { DEMO_MEMORY_STAR_NODES, resolveDemoMemoryStar } from '../src/spatial/memory/memoryStarSchema.ts'
 import { URAI_JOURNEY_MESSAGES } from '../src/lib/i18n/journeyMessages.ts'
 import { currentLocalePreference, currentSpeechTag, displayLocale, localeDate, localeNumber, localizedMessage, readLocalePreference, serverLocalePreference, speechTagFor, subscribeLocale, updateLocalePreference, writeLocalePreference } from '../src/lib/i18n/localePreference.ts'
 
@@ -15,7 +17,7 @@ function storage(initial = {}) {
 test('all twenty catalogs retain matching placeholders without granting language acceptance', () => {
   assert.equal(URAI_LAUNCH_LOCALES.length, 20)
   assert.deepEqual([...URAI_NATIVE_REVIEWED_LOCALES], ['en'])
-  assert.equal(Object.keys(URAI_SOURCE_MESSAGES).length, 20 + Object.keys(URAI_JOURNEY_MESSAGES).length + Object.keys(URAI_JOURNEY_CONTROL_MESSAGES).length + Object.keys(URAI_GEOGRAPHIC_MESSAGES).length + Object.keys(URAI_FOUNDER_MESSAGES).length)
+  assert.equal(Object.keys(URAI_SOURCE_MESSAGES).length, 20 + Object.keys(URAI_JOURNEY_MESSAGES).length + Object.keys(URAI_JOURNEY_CONTROL_MESSAGES).length + Object.keys(URAI_GEOGRAPHIC_MESSAGES).length + Object.keys(URAI_FOUNDER_MESSAGES).length + Object.keys(URAI_FOCUS_COMPATIBILITY_MESSAGES).length)
   for (const code of URAI_LAUNCH_LOCALES) {
     const expected=Object.keys(URAI_SOURCE_MESSAGES)
     assert.deepEqual(Object.keys(URAI_CATALOGS[code]).sort(), expected.sort())
@@ -179,3 +181,118 @@ test('persistent digital-Founder disclosure has complete preparation and critica
     assert.equal(result.preview, false)
   }
 })
+
+async function actualFocusCompatibility() {
+  const {readFile} = await import('node:fs/promises')
+  const {runInNewContext} = await import('node:vm')
+  const ts = (await import('typescript')).default
+  let preference = {requested:'en', preview:false}
+  const jsx = (type, props) => ({type, props})
+  const Fragment = Symbol('fragment')
+  const Link = props => jsx('a', props)
+  const compile = async (path, dependencies) => {
+    const source = await readFile(new URL(path, import.meta.url), 'utf8')
+    const output = ts.transpileModule(source, {compilerOptions:{module:ts.ModuleKind.CommonJS, target:ts.ScriptTarget.ES2022, jsx:ts.JsxEmit.ReactJSX}}).outputText
+    const exports = {}
+    runInNewContext(output, {exports, require: name => {
+      if (name === 'react/jsx-runtime') return {jsx,jsxs:jsx,Fragment}
+      assert.ok(Object.hasOwn(dependencies,name), `unexpected actual Focus dependency:${name}`)
+      return dependencies[name]
+    }})
+    return exports
+  }
+  const fragment = await compile('../src/app/focus/session/FocusSessionUnavailable.tsx', {
+    'next/link': {default:Link},
+    '@/lib/i18n/useUraiLocale': {useUraiLocale:() => ({
+      text:id => localizedMessage(preference,id).text,
+      props:id => {const message=localizedMessage(preference,id); return {lang:message.locale,dir:message.direction,'data-urai-translation-preview':String(message.preview)}},
+    })},
+  })
+  const route = await compile('../src/app/focus/session/[sessionId]/page.tsx', {
+    'next/navigation': {redirect:href => {throw Object.assign(new Error('REDIRECT'),{href})}},
+    'next/link': {default:Link},
+    '../FocusSessionUnavailable': fragment,
+    '@/spatial/memory/memoryStarSchema': {DEMO_MEMORY_STAR_NODES, resolveDemoMemoryStar},
+  })
+  const expand = element => {
+    if (element == null || typeof element !== 'object') return element
+    if (Array.isArray(element)) return element.map(expand)
+    if (typeof element.type === 'function') return expand(element.type(element.props))
+    return {type:element.type,props:{...element.props,children:expand(element.props?.children)}}
+  }
+  const leaves = element => {
+    if (element == null || typeof element !== 'object') return []
+    if (Array.isArray(element)) return element.flatMap(leaves)
+    return [element,...leaves(element.props.children)]
+  }
+  return {route, render:async(requested,preview,sessionId='private-owner-memory') => {
+    preference={requested,preview}
+    return expand(await route.default({params:Promise.resolve({sessionId})}))
+  },leaves}
+}
+
+test('actual compatibility Focus route identifies the selected unavailable memory without disclosing it', async () => {
+  const {render,leaves} = await actualFocusCompatibility()
+  for (const sessionId of ['', 'private-owner-memory', 'deleted-owner-memory', 'arbitrary-unlisted-id']) {
+    const tree=await render('en',false,sessionId)
+    const resolution=resolveDemoMemoryStar(sessionId)
+    assert.equal(resolution.ok,false)
+    assert.equal(tree.type,'main')
+    assert.equal(tree.props['data-testid'],'urai-focus-session-direct-route')
+    assert.equal(tree.props['data-status'],resolution.status)
+    assert.equal(tree.props['data-reason'],resolution.reason)
+    const nodes=leaves(tree)
+    assert.equal(nodes.find(node=>node.type==='h1').props.children,'Selected memory unavailable')
+    assert.equal(nodes.find(node=>node.type==='p').props.children,'This memory cannot be opened in Focus because it is unavailable, private, locked, deleted, or not part of the launch-safe demo set.')
+    assert.equal(nodes.find(node=>node.type==='a').props.href,resolution.safeHref)
+    assert.equal(nodes.find(node=>node.type==='a').props.children,'Return to Life Map')
+    if (sessionId) assert.ok(!JSON.stringify(tree).includes(sessionId),'unavailable route must not echo requested private identity')
+  }
+})
+
+test('actual compatibility Focus route retains every demo redirect and unavailable-state authority', async () => {
+  const {route,render} = await actualFocusCompatibility()
+  assert.deepEqual(JSON.parse(JSON.stringify(route.generateStaticParams())),DEMO_MEMORY_STAR_NODES.map(star=>({sessionId:star.id})))
+  for (const star of DEMO_MEMORY_STAR_NODES) {
+    const resolution=resolveDemoMemoryStar(star.id)
+    if (resolution.ok) await assert.rejects(()=>route.default({params:Promise.resolve({sessionId:star.id})}),error=>error.message==='REDIRECT'&&error.href===resolution.star.focusHref)
+    else {
+      const tree=await render('ar',true,star.id)
+      assert.equal(tree.props['data-status'],resolution.status)
+      assert.equal(tree.props['data-reason'],resolution.reason)
+    }
+  }
+})
+
+test('actual compatibility Focus copy keeps privacy English in all twenty review previews and scopes navigation direction', async () => {
+  const {render,leaves}=await actualFocusCompatibility()
+  assert.equal(Object.keys(URAI_FOCUS_COMPATIBILITY_MESSAGES).length,3)
+  for (const requested of URAI_LAUNCH_LOCALES) for (const preview of [false,true]) {
+    const nodes=leaves(await render(requested,preview))
+    for (const tag of ['h1','p']) {
+      const props=nodes.find(node=>node.type===tag).props
+      assert.equal(props.lang,'en');assert.equal(props.dir,'ltr');assert.equal(props['data-urai-translation-preview'],'false')
+      assert.equal(props.children,URAI_FOCUS_COMPATIBILITY_MESSAGES[tag==='h1'?'focus.compatibility.unavailableTitle':'focus.compatibility.unavailableDescription'].source)
+    }
+    const nav=nodes.find(node=>node.type==='a').props
+    const expected=localizedMessage({requested,preview},'focus.compatibility.returnLifeMap')
+    assert.equal(nav.children,expected.text)
+    assert.equal(nav.lang,preview?requested:'en')
+    assert.equal(nav.dir,preview&&['ar','ur','fa'].includes(requested)?'rtl':'ltr')
+    assert.equal(nav.href,'/life-map')
+  }
+  assert.deepEqual([...URAI_NATIVE_REVIEWED_LOCALES],['en'])
+})
+
+test('actual compatibility Focus missing navigation translation renders truthful English language attributes', async () => {
+  const {render,leaves}=await actualFocusCompatibility()
+  const id='focus.compatibility.returnLifeMap'
+  const saved=URAI_CATALOGS.ar[id]
+  try {
+    delete URAI_CATALOGS.ar[id]
+    const props=leaves(await render('ar',true)).find(node=>node.type==='a').props
+    assert.equal(props.children,'Return to Life Map')
+    assert.equal(props.lang,'en');assert.equal(props.dir,'ltr');assert.equal(props['data-urai-translation-preview'],'false')
+  } finally {URAI_CATALOGS.ar[id]=saved}
+})
+
