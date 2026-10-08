@@ -1,6 +1,12 @@
 name: URAI Governed WIF Production Deploy
 
 on:
+  pull_request:
+    branches: [main, repair/release-closure-integration-20261007]
+    paths:
+      - .github/workflows/spatial-governed-wif-deploy.yml
+      - scripts/run-frozen-firebase.mjs
+      - tests/frozen-firebase-deploy-boundary.test.mjs
   workflow_dispatch:
     inputs:
       release_sha:
@@ -25,7 +31,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: urai-governed-wif-production
+  group: ${{ github.event_name == 'pull_request' && format('urai-frozen-cli-{0}', github.event.pull_request.head.sha) || 'urai-governed-wif-production' }}
   cancel-in-progress: false
 
 env:
@@ -37,6 +43,26 @@ env:
   WIF_SERVICE_ACCOUNT: urai-spatial-github-deployer@urai-4dc1d.iam.gserviceaccount.com
 
 jobs:
+  verify-frozen-cli:
+    name: Verify frozen Firebase deployment boundary
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout exact candidate
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+      - name: Setup Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '22'
+      - name: Verify actual CLI runner and deployment commands without provider access
+        run: node --test tests/frozen-firebase-deploy-boundary.test.mjs
+
   deploy:
     name: Deploy exact governed SHA with WIF
     if: github.ref == 'refs/heads/main' && inputs.confirm == 'DEPLOY_URAI_APP'
@@ -291,7 +317,7 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p deployment-receipt/deploy
-          npx --yes firebase-tools@15.22.3 deploy \
+          node scripts/run-frozen-firebase.mjs deploy \
             --only functions \
             --project "$FIREBASE_PROJECT" \
             --config firebase.json \
@@ -306,7 +332,7 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p deployment-receipt/deploy
-          npx --yes firebase-tools@15.22.3 deploy \
+          node scripts/run-frozen-firebase.mjs deploy \
             --only hosting \
             --project "$FIREBASE_PROJECT" \
             --config firebase.static.json \
@@ -353,7 +379,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          npx --yes firebase-tools@15.22.3 deploy \
+          node scripts/run-frozen-firebase.mjs deploy \
             --only hosting \
             --project "$FIREBASE_PROJECT" \
             --config firebase.static.json \
@@ -397,7 +423,7 @@ jobs:
 
           (
             cd "$rollback_dir"
-            npx --yes firebase-tools@15.22.3 deploy \
+            node "$GITHUB_WORKSPACE/scripts/run-frozen-firebase.mjs" deploy \
               --only functions \
               --project "$FIREBASE_PROJECT" \
               --config firebase.json \
