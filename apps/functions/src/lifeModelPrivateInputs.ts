@@ -1,6 +1,7 @@
 import * as functions from 'firebase-functions/v1'
 import * as admin from 'firebase-admin'
 import { createHash, timingSafeEqual } from 'node:crypto'
+import { isCanonicalStoredPolicy } from './consentPolicyAuthority'
 
 if (!admin.apps.length) admin.initializeApp()
 const db = admin.firestore()
@@ -65,7 +66,8 @@ async function resolveCurrent(request: ReturnType<typeof input>) {
     if (barrier.get('blocked') === true) fail('PRIVATE_SOURCE_OWNER_DELETED')
     const epoch = barrier.exists ? barrier.get('epoch') : 0
     if (!Number.isSafeInteger(epoch) || epoch < 0 || handle.get('ownerDataEpoch') !== epoch) fail('PRIVATE_SOURCE_OWNER_EPOCH_CHANGED')
-    if (!policy.exists || policy.get('ownerId') !== ownerId || !Number.isSafeInteger(policy.get('revision'))
+    if (!policy.exists || !isCanonicalStoredPolicy(policy.data(), ownerId)
+      || policy.get('ownerId') !== ownerId || !Number.isSafeInteger(policy.get('revision'))
       || policy.get('revision') < 1 || policy.get('enforcement.state') !== 'fully-enforced') fail('PRIVATE_SOURCE_POLICY_UNENFORCED')
     for (const domain of ['memory', 'models', 'identity']) {
       if (!['granted', 'limited'].includes(String(policy.get(`domains.${domain}.mode`)))) fail('PRIVATE_SOURCE_CONSENT_DENIED')
