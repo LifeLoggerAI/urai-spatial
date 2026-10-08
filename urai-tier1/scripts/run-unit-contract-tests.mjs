@@ -32,6 +32,8 @@ const focusedContractTests = [
   'tests/replay-person-presence-lifecycle.test.mjs',
   'tests/life-model-functions-contract.test.mjs',
   'tests/life-model-data-rights-contract.test.mjs',
+  'tests/scenario-council-session-behavior.test.mjs',
+  'tests/geographic-location-request.test.mjs',
   'tests/life-model-privacy-boundary.test.mjs',
   'tests/life-model-kernel.test.mjs',
   'tests/scene-truth-life-model-compiler.test.mjs',

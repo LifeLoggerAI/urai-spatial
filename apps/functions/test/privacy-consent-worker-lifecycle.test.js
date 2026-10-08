@@ -402,6 +402,23 @@ test('combined queue/write budget rejects before any partial repository or provi
   assertNoProjectionOrProviderCommit(f)
 })
 
+for (const domain of ['models', 'identity']) for (const mode of ['denied', 'paused']) {
+  test('owner rights revocation: ' + domain + ' ' + mode + ' disposes authority for all five derivative kinds', async () => {
+    const f = fixture(), j = f.seed(domain, mode)
+    const assets = derivativeCollections.map((collection, index) => f.derivative(collection, 'owner-rights-' + index))
+    await run(f, j)
+    for (const asset of assets) {
+      const value = f.documents.get(asset)
+      assert.equal(value.state, 'revoked', asset)
+      assert.equal(value.ownerId, uid, asset)
+      assert.equal(f.committed.filter(write => write.path === asset).length, 1, asset)
+      assert.equal(f.committed.find(write => write.path === asset).mode, 'transaction', asset)
+    }
+    assert.equal(f.documents.get(j.receiptPath).invalidatedDerivatives, 5)
+    assert.equal(f.documents.get(j.jobPath).invalidatedDerivatives, 5)
+  })
+}
+
 test('derivative revocation is in the same atomic canonical transaction and receipt', async () => {
   const f = fixture(), j = f.seed('models', 'denied')
   const assets = derivativeCollections.map((c, i) => f.derivative(c, 'private-' + i))

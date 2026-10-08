@@ -64,6 +64,7 @@ const tests = [
   'tests/geographic-location-vault.test.mjs',
   'tests/global-emotional-weather-privacy.test.mjs',
   'tests/geographic-location-client-contract.test.mjs',
+  'tests/geographic-location-request.test.mjs',
   'tests/geographic-maps-launch-policy.test.mjs',
   'tests/maps-elevation-route-contract.test.mjs',
   'tests/maps-cloud-bootstrap-contract.test.mjs',
