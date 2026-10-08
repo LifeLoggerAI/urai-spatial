@@ -199,7 +199,7 @@ export default function PossibleFuturesClient() {
     catch (error) { setSetup('error'); setMessage(error instanceof Error ? error.message : 'Manual Scenario failed safely.') }
   }
 
-  return <main data-testid="urai-possible-futures" data-truth-mode="scenario" data-setup-state={setup} style={{ position:'fixed',inset:0,background:'#080d10',color:'#eef4f2',overflow:'hidden' }}>
+  return <main data-testid="urai-possible-futures" data-truth-mode="scenario" data-setup-state={setup} style={{ position:'fixed',zIndex:3,inset:0,background:'#080d10',color:'#eef4f2',overflow:'hidden' }}>
     <div aria-hidden="true" style={{ position:'absolute',inset:0 }}>
       {webglAvailable === true
         ? <ScenarioWorld branch={branch} />
@@ -213,5 +213,6 @@ export default function PossibleFuturesClient() {
       <footer style={{flexShrink:0,display:'flex',gap:10,flexWrap:'wrap',alignItems:'center',pointerEvents:'auto'}}><button type="button" onClick={requestUraiWorldReturn} style={{minHeight:48,padding:'0 18px',borderRadius:999,border:'1px solid rgba(255,255,255,.25)',background:'rgba(8,13,16,.78)',color:'inherit'}}>Return</button>{setup==='exploring'&&visibleBranchLabels.length?<div role="group" aria-label="Scenario branches" style={{display:'flex',flexWrap:'wrap',maxWidth:'100%',gap:8,padding:6,borderRadius:18,background:'rgba(8,13,16,.78)',border:'1px solid rgba(255,255,255,.16)'}}>{visibleBranchLabels.map((label,index)=><button key={label} type="button" aria-pressed={branch===index} onClick={()=>setBranch(index)} style={{minHeight:48,padding:'0 14px',borderRadius:999,border:branch===index?'1px solid rgba(238,244,242,.7)':'1px solid transparent',background:branch===index?'rgba(238,244,242,.12)':'transparent',color:'inherit'}}>{label}</button>)}</div>:null}<AdamLauncherSlot name="possible-futures-controls" /><span style={{fontSize:12,opacity:.65}}>{scenarioId?`Scenario ${scenarioId.slice(0,18)}… · `:''}{horizon}</span></footer>
     </section>
     <p className="sr-only">This surface represents hypothetical scenarios only. It is not Replay and must not be interpreted as autobiographical memory.</p>
+    <style jsx global>{`.urai-world-runtime:has([data-testid="urai-possible-futures"]){z-index:3}`}</style>
   </main>
 }
