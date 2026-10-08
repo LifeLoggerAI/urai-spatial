@@ -86,6 +86,13 @@
       "baseline_blob": null,
       "successor_blob": "f8ac41f69b25cc3deffbf9d067154f8cee9e76c9",
       "changed": true
+    },
+    {
+      "path": "apps/functions/test/person-presence-authority.test.js",
+      "bytes": 20564,
+      "baseline_blob": "b9ca0436aa2d0e8ed840ef9a1f35d626c8c4f170",
+      "successor_blob": "9f4263789edc15f46ea5adfb40422504b3825bd3",
+      "changed": true
     }
   ],
   "localRuntime": {
@@ -198,6 +205,19 @@
         "todo": 0
       },
       "expectedBaselineFailure": false
+    },
+    {
+      "path": "verification/evidence/intelligence-current-authority-20261008/presence-retained-successor.tap",
+      "sha256": "33e7aa0d5469995d00f76701cb1e78aaf7afc8f5e8ee0b57cb1695feeba3136e",
+      "counts": {
+        "tests": 11,
+        "pass": 11,
+        "fail": 0,
+        "cancelled": 0,
+        "skipped": 0,
+        "todo": 0
+      },
+      "scope": "actual targeted compiled Presence authority/provider/language modules; explicit cloud and paid transport adapters"
     }
   ],
   "compile": {
@@ -208,7 +228,13 @@
   "transport": "Actual adapters/client/TSX source with explicit local Firebase and protected-gateway doubles, real local HTTP delayed body, SDK-loaded Firebase/React SSR readiness fixture; all provider network requests denied or intercepted",
   "realProviderRequests": 0,
   "spending": 0,
-  "nativeExactHeadCI": "NOT RUN; workflow retained for successor proof",
+  "nativeExactHeadCI": {
+    "head": "cb6935b93a346d43aaf93931af6ccb5fd9852849",
+    "job": 113205979527,
+    "run": 37745527826,
+    "status": "FAIL",
+    "result": "Native complete Functions compile and1213/1214 tests passed; retained voice fixture used noncanonical incomplete privacy policy, correctly rejected403 before binding test expected409. Fixture now canonical, original denial/success assertions retained; synthetic financial adapter follows new callback contract. Local targeted compiled retained11/11PASS; successor full exact-head native CI required."
+  },
   "sourceOnly": true,
   "runtimeVerified": false,
   "humanAccepted": false,
