@@ -176,6 +176,7 @@ const tests = [
   'tests/browser-location-store.test.mjs',
   'tests/world-state-query-navigation.test.mjs',
   'tests/stripe-webhook-lifecycle.test.mjs',
+  'tests/stripe-account-authority.test.mjs',
   'tests/stripe-session-authority.test.mjs',
   '../tests/stripe-plan-gate.test.mjs',
 ]
@@ -197,4 +198,3 @@ for (const testPath of tests) {
 }
 
 console.log(`PASS all ${tests.length} focused contract suites`)
-
