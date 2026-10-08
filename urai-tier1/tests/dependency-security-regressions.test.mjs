@@ -5,9 +5,10 @@ import { Readable } from 'node:stream'
 import test from 'node:test'
 
 const require = createRequire(import.meta.url)
-const braces = require('braces')
+// Retained predecessor algorithms only; current installed ingress is checked separately.
+const braces = require('../../vendor/braces')
 
-test('bounded brace walkers preserve ordinary nested patterns and padded ranges', () => {
+test('retained historical vendor source: bounded brace walkers preserve ordinary nested patterns and padded ranges', () => {
   assert.deepEqual(braces.expand('{a,b}-{01..03}'), ['a-01', 'a-02', 'a-03', 'b-01', 'b-02', 'b-03'])
   assert.equal(braces.stringify('src/{app,{lib,test}}/*.ts'), 'src/{app,{lib,test}}/*.ts')
   const regex = new RegExp(`^${braces.compile('src/{app,{lib,test}}/file.ts')}$`)
@@ -15,10 +16,10 @@ test('bounded brace walkers preserve ordinary nested patterns and padded ranges'
   assert.equal(regex.test('src/private/file.ts'), false)
 })
 
-test('deep untrusted patterns fail with a bounded validation error without exhausting a small stack', () => {
+test('retained historical vendor source: deep untrusted patterns fail with a bounded validation error without exhausting a small stack', () => {
   const source = `
     const assert = require('node:assert/strict');
-    const braces = require(${JSON.stringify(require.resolve('braces'))});
+    const braces = require(${JSON.stringify(require.resolve('../../vendor/braces'))});
     const input = '{a,'.repeat(2400) + 'b' + '}'.repeat(2400);
     for (const method of ['compile', 'expand', 'stringify']) {
       assert.throws(() => braces[method](input), error => error instanceof RangeError && /supported depth of 64/.test(error.message), method);
@@ -29,7 +30,7 @@ test('deep untrusted patterns fail with a bounded validation error without exhau
   assert.equal(result.signal, null)
 })
 
-test('direct AST consumers have the same bounded depth and cycle protection', () => {
+test('retained historical vendor source: direct AST consumers have the same bounded depth and cycle protection', () => {
   let ast = { type: 'text', value: 'leaf' }
   for (let depth = 0; depth < 200; depth++) ast = { type: 'root', nodes: [ast] }
   for (const method of ['compile', 'expand', 'stringify']) {
