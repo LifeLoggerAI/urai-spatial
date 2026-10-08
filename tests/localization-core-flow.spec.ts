@@ -52,17 +52,19 @@ async function installAdamFixtures(page: Page, speech: 'record' | 'missing' | 't
     Object.defineProperty(window, 'SpeechRecognition', {configurable:true,value:mode === 'missing' ? undefined : InertRecognition})
     Object.defineProperty(window, 'webkitSpeechRecognition', {configurable:true,value:undefined})
   }, speech)
-  // Seed an inert user before the application starts. The fixture public config
-  // is supplied only to this CI browser lane; no production auth bypass exists.
+  // Match this local build's public Firebase config while retaining an inert
+  // user/token and blocking every external auth/provider request. Native CI uses
+  // the inert-key default; configured local builds may supply their public key.
+  const fixtureApiKey = process.env.URAI_LOCALIZATION_FIXTURE_API_KEY?.trim() || 'localization-inert-public-key'
   await page.goto('/robots.txt')
-  await page.evaluate(async () => {
+  await page.evaluate(async (apiKey) => {
     localStorage.setItem('urai:locale', 'fr')
     localStorage.setItem('urai:locale-preview', 'fr')
-    const key = 'firebase:authUser:localization-inert-public-key:[DEFAULT]'
+    const key = `firebase:authUser:${apiKey}:[DEFAULT]`
     const user = {
       uid:'localization-inert-user',emailVerified:true,isAnonymous:true,providerData:[],
       stsTokenManager:{refreshToken:'inert-refresh-token',accessToken:'inert-access-token',expirationTime:Date.now()+86_400_000},
-      createdAt:'0',lastLoginAt:'0',apiKey:'localization-inert-public-key',appName:'[DEFAULT]',
+      createdAt:'0',lastLoginAt:'0',apiKey,appName:'[DEFAULT]',
     }
     localStorage.setItem(key, JSON.stringify(user))
     await new Promise<void>((resolve,reject) => {
@@ -77,7 +79,7 @@ async function installAdamFixtures(page: Page, speech: 'record' | 'missing' | 't
         transaction.onerror = () => {database.close();reject(transaction.error)}
       }
     })
-  })
+  }, fixtureApiKey)
   return conversations
 }
 
