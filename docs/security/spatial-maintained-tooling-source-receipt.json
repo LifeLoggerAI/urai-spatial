@@ -162,5 +162,100 @@
     "originalBaselineAuthority": "scripts/test-spatial-original-baseline-authority.mjs",
     "targetOwnerBase": "b3800350c9412f6de5c6003f308d1f8ea5c0e2a2",
     "actualCombinedInstallAndRiskAcceptance": false
+  },
+  "currentReconciliation": {
+    "baseSha": "38cc23fa2706dd6444e0b980f42f074191d865cf",
+    "sourceScope": "Deliberate current owner reconciliation retaining direct fill-range, all original licensed vendor source and baseline/export-safe manifest fences",
+    "candidateLockSha256": "dccaa203dcf6b89db79b9362e02e65699b9d756b1bcdabaee6a647d8c9c0d88c",
+    "activeNextPatchSha256": "b6cd38c7e5af46d8271b82e5de532b35757dc96473ec8bb4be72266ad4358412",
+    "preservedResourceBounds": {
+      "depth": 64,
+      "inputCharacters": 10000,
+      "depthError": "RangeError",
+      "sourceOwner": "729b84db34dcf817dfed2a75bfe5f9cbcb48368a"
+    },
+    "helperSha256": "cee9f6addc775fa30091f0662fd2fdd4a298d670a9387f0d9977bc37986b782d",
+    "currentBoundaryAndSourceCasesPassed": 44,
+    "actualMaintainedWatcherAndCompleteLintCasesPassed": 12,
+    "exactNextDifferentialCasesPassed": 7,
+    "exactNextDifferential": {
+      "schemaVersion": "urai-next-root-dirs-exact-differential-v1",
+      "node": "v22.23.3",
+      "upstreamNext": "15.5.27",
+      "upstreamFastGlob": "3.3.1",
+      "upstreamLiteralSha256": "886677432990a735e5ebdfb345ff1cbd40e264f9947a8432eeeb254b3a926bde",
+      "currentLiteralSha256": "e266136ba9fbb988caa2f073251b8bdffe325125308e293d5ad1e28f6e156923",
+      "helperSha256": "cee9f6addc775fa30091f0662fd2fdd4a298d670a9387f0d9977bc37986b782d",
+      "dependencies": {
+        "@nodelib/fs.walk": "1.2.8",
+        "brace-expansion": "5.0.12",
+        "glob-parent": "5.1.2",
+        "picomatch": "2.3.2"
+      },
+      "orderedDirectoryCases": 215,
+      "expansionCases": 388,
+      "resourceCases": 29,
+      "fixedExpectedCases": 52,
+      "filesystemCaseSensitive": true,
+      "scope": "actual installed candidate consumers; full graph/advisory acceptance is separate",
+      "humanIndependentAcceptance": false,
+      "productionAcceptance": false,
+      "providerCallsExecuted": 0,
+      "preservedOwnerResourceBounds": {
+        "sourceOwner": "729b84db34dcf817dfed2a75bfe5f9cbcb48368a",
+        "depth": 64,
+        "inputCharacters": 10000,
+        "depthError": "RangeError"
+      }
+    },
+    "originalGenericConsumerCasesRetained": 16,
+    "currentDependencyRegressionsRetained": 5,
+    "currentExistingAdmissionBoundaryAndRetainedSourceCasesRetained": 23,
+    "actualInstalledNodes": 1098,
+    "graphProblems": [],
+    "completeLiteralPackageEntries": 1197,
+    "retainedSupportDependencies": [
+      "fill-range7.1.1",
+      "to-regex-range5.0.1",
+      "is-number7.0.0"
+    ],
+    "licensedVendorFilesRetainedByteForByte": 22,
+    "standalonePrivateFixtureLockSha256": "ab61e0abd440e35b062080e8f49745410f6b1bd5554465007edb0f563290db3a",
+    "privateFixtureInstalledNodes": 25,
+    "privateFixtureLiteralEntries": 26,
+    "retainedAdvisories": {
+      "actualForkVersion": [
+        "GHSA-vfj7-8cjw-p6xm HIGH",
+        "GHSA-grv7-fg5c-xmjg HIGH"
+      ],
+      "canonicalBraces3.0.3": [
+        "GHSA-vfj7-8cjw-p6xm HIGH"
+      ],
+      "acceptance": "OPEN_UNWAIVED",
+      "upstreamFixedVersion": null
+    },
+    "completeOfficialCorpusBinding": {
+      "head": "ccd4868bd8cfbed178f5ada1194b4fe30674c25b",
+      "records": 36576,
+      "manifestSha256": "b5275e7dcc32ce7401e166c9f3ee79ce7e65c00c0ddc32fd6bf23c961dfc3f87",
+      "coverageMethod": "Actual final graph and whole literal lock identity-by-identity verified as subset of two independently full-byte-verified same-snapshot corpus comparisons. Three current support pairs already covered in the separately matched retained fixture. No reused successor approval; exact native fresh whole-source scan remains required.",
+      "datedActiveProofSha256": "af249d1231e3c9a16fecc1c1f9ef25bd9b91dd2c0dbef88fcab1d2f3c0702e9f",
+      "datedRetainedFixtureProofSha256": "be38be1b87872fe82248f5e6353e510413a3cbe4b87d931bbb1eb70c26f04f51"
+    },
+    "actualGraphProofSha256": "6a4a375897ccc2373d1f67ab7cee207cffdb8739f6f626e310e0f60317a9b4c8",
+    "freshNativeWholeSourceAcceptance": false,
+    "securityWaiver": false,
+    "independentApproval": false,
+    "wholeRepositoryBuildAcceptance": false,
+    "productionAcceptance": false,
+    "providerCallsExecuted": 0,
+    "baseTree": "53dc89fb885125c7141b35c7a1eb0ba902397db3",
+    "defaultFreshFixtureLaunchCasesPassed": 44,
+    "retainedFixtureProofSourceTreeCorrection": {
+      "datedProofSourceTreeField": "062a4df0d23e4a2b260ca2ce8d56fba8d9f570b7",
+      "correctRetainedVendorOriginSha": "3db161ce51eba32f894bc2d9cd651016fb076bd4",
+      "correctOriginTree": "dd6850a3afb70d02a5c99ebedeff236f6df72f44",
+      "reason": "Standalone old proof inherited donor-tree metadata; independently verified22-file licensed-source manifest binds actual3db vendor bytes. Original dated proof retained unchanged."
+    }
   }
 }

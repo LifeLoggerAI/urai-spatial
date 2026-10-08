@@ -48,8 +48,15 @@ jobs:
           corepack enable
           corepack pnpm@10.0.0 install --frozen-lockfile --ignore-scripts
           git diff --exit-code -- package.json pnpm-lock.yaml pnpm-workspace.yaml patches
-      - name: Prove current ingress and retained source boundaries
-        run: node --test tests/spatial-maintained-tooling-admission.test.mjs scripts/test-spatial-dependency-manifest-resolution.mjs scripts/test-spatial-original-baseline-authority.mjs tests/retained-braces-source.test.cjs urai-tier1/tests/dependency-security-regressions.test.mjs
+      - name: Prove current ingress, all retained boundaries and frozen original consumers
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/spatial-legacy-tooling/vendor" "$RUNNER_TEMP/spatial-maintained-evidence"
+          cp scripts/fixtures/spatial-legacy-tooling/package.json scripts/fixtures/spatial-legacy-tooling/pnpm-lock.yaml "$RUNNER_TEMP/spatial-legacy-tooling/"
+          cp -R vendor/braces vendor/chokidar "$RUNNER_TEMP/spatial-legacy-tooling/vendor/"
+          corepack pnpm@10.0.0 --dir "$RUNNER_TEMP/spatial-legacy-tooling" install --frozen-lockfile --ignore-scripts
+          URAI_LEGACY_TOOLING_FIXTURE="$RUNNER_TEMP/spatial-legacy-tooling" node scripts/run-spatial-quarantined-security-tests.mjs | tee "$RUNNER_TEMP/spatial-maintained-evidence/retained-legacy-tests.log"
       - name: Verify every actual installed importer and original consumer file
         run: node scripts/check-spatial-maintained-tooling.mjs "$RUNNER_TEMP/spatial-maintained-evidence/installed-tooling.json"
       - name: Prepare original public packages outside candidate scope
@@ -82,7 +89,7 @@ jobs:
           git clone --depth 1 --filter=blob:none --sparse https://github.com/github/advisory-database.git "$RUNNER_TEMP/spatial-current-reviewed-advisories"
           git -C "$RUNNER_TEMP/spatial-current-reviewed-advisories" sparse-checkout set advisories/github-reviewed
           test "$(git -C "$RUNNER_TEMP/spatial-current-reviewed-advisories" rev-parse HEAD)" = ccd4868bd8cfbed178f5ada1194b4fe30674c25b
-          node scripts/check-current-spatial-reviewed-advisories.mjs "$RUNNER_TEMP/spatial-current-reviewed-advisories" "$RUNNER_TEMP/spatial-maintained-evidence/current-advisories.json"
+          URAI_LEGACY_TOOLING_FIXTURE="$RUNNER_TEMP/spatial-legacy-tooling" node scripts/check-current-spatial-reviewed-advisories.mjs "$RUNNER_TEMP/spatial-current-reviewed-advisories" "$RUNNER_TEMP/spatial-maintained-evidence/current-advisories.json"
       - name: Existing current Functions compile and tests
         run: |
           corepack pnpm@10.0.0 --dir apps/functions build

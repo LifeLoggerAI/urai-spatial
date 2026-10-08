@@ -180,12 +180,26 @@ test('actual helper rejects malformed and excessive inputs before stat or walk u
     'apps/"' + '{'.repeat(129) + 'a,b' + '}'.repeat(129),
     "apps/'" + '{'.repeat(129) + 'a,b' + '}'.repeat(129),
     'apps/{"' + '('.repeat(129) + 'a|b' + ')'.repeat(129) + '}'];
-  const code = `const fs=require('fs'),{createRequire}=require('module');const r=createRequire(${JSON.stringify(helperPath)}),g=r(${JSON.stringify(helperPath)}).rootDirectories,walk=r('@nodelib/fs.walk');const patterns=JSON.parse(fs.readFileSync(0,'utf8'));fs.statSync=()=>{throw Error('PATTERN_REACHED_STAT')};walk.walkSync=()=>{throw Error('PATTERN_REACHED_WALK')};for(const p of patterns){let e;try{g(p)}catch(x){e=x}if(!e||e.name!=='TypeError')throw Error('RESOURCE_NOT_REJECTED:'+p.slice(0,40)+':'+e?.message)}process.stdout.write(JSON.stringify({rejected:patterns.length,filesystemCalls:0}));`;
-  const result = spawnSync(process.execPath, ['--max-old-space-size=128', '-e', code], {input: JSON.stringify(patterns), timeout: 8000, encoding: 'utf8'});
+  const code = `const fs=require('fs'),{createRequire}=require('module');const r=createRequire(${JSON.stringify(helperPath)}),g=r(${JSON.stringify(helperPath)}).rootDirectories,walk=r('@nodelib/fs.walk');const patterns=JSON.parse(fs.readFileSync(0,'utf8'));fs.statSync=()=>{throw Error('PATTERN_REACHED_STAT')};walk.walkSync=()=>{throw Error('PATTERN_REACHED_WALK')};for(const [p,expected] of patterns){let e;try{g(p)}catch(x){e=x}if(!e||e.name!==expected||(expected==='RangeError'&&!/supported depth of 64/.test(e.message)))throw Error('RESOURCE_NOT_REJECTED:'+p.slice(0,40)+':'+e?.message)}process.stdout.write(JSON.stringify({rejected:patterns.length,filesystemCalls:0}));`;
+  const result = spawnSync(process.execPath, ['--max-old-space-size=128', '-e', code], {input: JSON.stringify(patterns.map((pattern,index)=>[pattern,[4,5,6,16,26,27,28].includes(index)?'RangeError':'TypeError'])), timeout: 8000, encoding: 'utf8'});
   assert.equal(result.error, undefined, result.error?.message); assert.equal(result.status, 0, result.stderr);
   assert.deepEqual(JSON.parse(result.stdout), {rejected: patterns.length, filesystemCalls: 0});
   receipt.resourceCases = patterns.length;
   fs.mkdirSync(path.join(root, 'artifacts'), {recursive: true});
   fs.writeFileSync(path.join(root, 'artifacts/spatial-next-root-dirs-exact-differential.json'), JSON.stringify(receipt, null, 2) + '\n');
+});
+
+
+test('active Next roots preserve the stronger fixed64-depth and10000-character contract', () => {
+  const expand = exposeExpansion();
+  for (const [open,close] of [['{','}'],['(',')']]) {
+    assert.doesNotThrow(() => expand(open.repeat(63)+'x'+close.repeat(63)));
+    for (const depth of [65,129,4000]) assert.throws(() => expand(open.repeat(depth)+'x'+close.repeat(depth)), error => error.name === 'RangeError' && /supported depth of 64/.test(error.message));
+    assert.throws(() => helperRequire(helperPath).rootDirectories(open.repeat(65)+'x'+close.repeat(65), {maxDepth: Infinity}), error => error instanceof RangeError && /supported depth of 64/.test(error.message));
+  }
+  assert.doesNotThrow(() => expand('x'.repeat(10000)));
+  assert.throws(() => expand('x'.repeat(10001)), error => error.name === 'TypeError' && /input length/.test(error.message));
+  receipt.preservedOwnerResourceBounds = {sourceOwner:'729b84db34dcf817dfed2a75bfe5f9cbcb48368a',depth:64,inputCharacters:10000,depthError:'RangeError'};
+  fs.writeFileSync(path.join(root, 'artifacts/spatial-next-root-dirs-exact-differential.json'), JSON.stringify(receipt, null, 2)+'\n');
 });
 

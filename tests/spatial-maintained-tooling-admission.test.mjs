@@ -19,7 +19,7 @@ test('current source declares only the maintained watcher and directory consumer
   assert.equal(manifest.pnpm.patchedDependencies['firebase-tools@15.32.1'],'patches/firebase-tools-15.32.1-maintained-watch.patch');
   assert.equal(manifest.pnpm.patchedDependencies['@next/eslint-plugin-next@15.5.27'],'patches/next-eslint-plugin-next-15.5.27-maintained-glob.patch');
   assert.equal(sha256(fs.readFileSync(path.join(root,manifest.pnpm.patchedDependencies['firebase-tools@15.32.1']))),'d48efb262a4970d85984dcfd982070a88835713b0b83d41a4b37b0c5f4fccb20');
-  assert.equal(sha256(fs.readFileSync(path.join(root,manifest.pnpm.patchedDependencies['@next/eslint-plugin-next@15.5.27']))),'093fcffbf55fd7ebdc8f7de2be6f58cfcc342742b73d1eeb7ca6e73ce9458056');
+  assert.equal(sha256(fs.readFileSync(path.join(root,manifest.pnpm.patchedDependencies['@next/eslint-plugin-next@15.5.27']))),'b6cd38c7e5af46d8271b82e5de532b35757dc96473ec8bb4be72266ad4358412');
 });
 
 test('all seven actual installed importer graphs are complete and exclude the removed ingress',()=>{

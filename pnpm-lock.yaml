@@ -49,7 +49,7 @@ packageExtensionsChecksum: sha256-2JyhcaIckTgyasr+oZmlMlfRx+u+TqSI6CwehszA33g=
 
 patchedDependencies:
   '@next/eslint-plugin-next@15.5.27':
-    hash: 093fcffbf55fd7ebdc8f7de2be6f58cfcc342742b73d1eeb7ca6e73ce9458056
+    hash: b6cd38c7e5af46d8271b82e5de532b35757dc96473ec8bb4be72266ad4358412
     path: patches/next-eslint-plugin-next-15.5.27-maintained-glob.patch
   firebase-tools@15.32.1:
     hash: d48efb262a4970d85984dcfd982070a88835713b0b83d41a4b37b0c5f4fccb20
@@ -6454,7 +6454,7 @@ snapshots:
 
   '@next/env@15.5.27': {}
 
-  '@next/eslint-plugin-next@15.5.27(patch_hash=093fcffbf55fd7ebdc8f7de2be6f58cfcc342742b73d1eeb7ca6e73ce9458056)':
+  '@next/eslint-plugin-next@15.5.27(patch_hash=b6cd38c7e5af46d8271b82e5de532b35757dc96473ec8bb4be72266ad4358412)':
     dependencies:
       '@nodelib/fs.walk': 1.2.8
       brace-expansion: 5.0.12
@@ -7939,7 +7939,7 @@ snapshots:
 
   eslint-config-next@15.5.27(eslint@9.39.4(jiti@2.7.0))(typescript@6.0.3):
     dependencies:
-      '@next/eslint-plugin-next': 15.5.27(patch_hash=093fcffbf55fd7ebdc8f7de2be6f58cfcc342742b73d1eeb7ca6e73ce9458056)
+      '@next/eslint-plugin-next': 15.5.27(patch_hash=b6cd38c7e5af46d8271b82e5de532b35757dc96473ec8bb4be72266ad4358412)
       '@rushstack/eslint-patch': 1.16.1
       '@typescript-eslint/eslint-plugin': 8.60.0(@typescript-eslint/parser@8.60.0(eslint@9.39.4(jiti@2.7.0))(typescript@6.0.3))(eslint@9.39.4(jiti@2.7.0))(typescript@6.0.3)
       '@typescript-eslint/parser': 8.60.0(eslint@9.39.4(jiti@2.7.0))(typescript@6.0.3)
