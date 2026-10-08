@@ -7,6 +7,7 @@ const { EventEmitter } = require('node:events')
 const { createHash } = require('node:crypto')
 const { createRequire } = require('node:module')
 const authority = require('../lib/apps/functions/src/personPresenceAuthority.js')
+const { CONSENT_DOMAINS } = require('../lib/apps/functions/src/consentPolicyAuthority.js')
 const uid = 'synthetic-owner', bundleId = 'synthetic-bundle', sceneId = 'synthetic-scene', sessionId = 'presence:synthetic-session-0001'
 const sha = (value) => createHash('sha256').update(JSON.stringify(value)).digest('hex')
 
@@ -30,7 +31,11 @@ function fixture() {
       get: async () => { const rows = [...docs].filter(([key, value]) => key.startsWith(`${location}/`) && !key.slice(location.length + 1).includes('/') && (!predicate || predicate(value)))
         .sort(([a], [b]) => a.localeCompare(b)).filter(([key]) => key.split('/').at(-1) > after).slice(0, limit).map(([key]) => snapshot(key))
         return { docs: rows, empty: rows.length === 0, size: rows.length } }, add: async () => ({}) }; return query } }
-  put('privacyPolicy', 'current', { domains: { models: { mode: 'granted', modelContext: true }, identity: { mode: 'granted', likenessEnabled: true } }, enforcement: { state: 'fully-enforced' } })
+  put('privacyPolicy', 'current', { version: 2, revision: 1, ownerId: uid,
+    domains: Object.fromEntries(CONSENT_DOMAINS.map(domain => [domain, { mode: 'granted', retentionDays: 30,
+      precise: false, replayVisible: true, lifeMapVisible: true, modelContext: true,
+      sharingEnabled: false, automationEnabled: false, likenessEnabled: true }])),
+    enforcement: { state: 'fully-enforced', jobId: null, affectedTargets: [], providerState: 'complete' } })
   put('lifeEntities', 'person', { ownerId: uid, kind: 'person', revoked: false, canonicalLabel: 'Synthetic fixture person', revision: 1 })
   put('lifeEntityStates', 'state', { ownerId: uid, entityId: 'person', asOf: '2020-01-01', knowledgeCutoff: '2020-01-01' })
   put('lifeClaims', 'claim', { ownerId: uid, subjectEntityId: 'person', status: 'accepted', synthetic: false, evidenceClass: 'SOURCE_DERIVED',
@@ -64,7 +69,8 @@ function handler(file, f, fetch) {
   const testOnlyPrivateSpend = {
     SpatialSpendError: TestOnlySpendError,
     SPATIAL_SPEND_WORKER_TOKENS_JSON: { value: () => 'synthetic-unused-no-financial-approval' },
-    paidSpatialFetch: async (bindingDb, owner, lane, provider, model, sourceInput, target, init) => {
+    assertSpatialPaidOutputCurrent: () => {},
+    paidSpatialFetch: async (bindingDb, owner, lane, provider, model, sourceInput, target, init, beforeReserve) => {
       assert.equal(bindingDb, f.db); assert.equal(owner, uid)
       assert.ok(['person-moderation', 'person-reasoning', 'person-voice'].includes(lane))
       assert.equal(provider, lane === 'person-voice' ? 'elevenlabs' : 'openai')
@@ -80,6 +86,7 @@ function handler(file, f, fetch) {
         assert.equal(url.pathname, '/v1/text-to-speech/synthetic-voice/stream')
         assert.equal(sourceInput.render_binding_sha256, 'e'.repeat(64))
       }
+      if (beforeReserve) await beforeReserve()
       f.syntheticSpendCalls.push({ lane, provider, model })
       return fetch(String(target), init)
     },

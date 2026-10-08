@@ -1,0 +1,70 @@
+TAP version 13
+# Subtest: Council adapters are server-only, authenticated, consent-bound and hard-off until explicitly enabled
+ok 1 - Council adapters are server-only, authenticated, consent-bound and hard-off until explicitly enabled
+  ---
+  duration_ms: 0.993824
+  type: 'test'
+  ...
+# Subtest: Council provider request formats match the governed provider families
+ok 2 - Council provider request formats match the governed provider families
+  ---
+  duration_ms: 0.381533
+  type: 'test'
+  ...
+# Subtest: Council request configuration is distinct from protected runtime acceptance
+ok 3 - Council request configuration is distinct from protected runtime acceptance
+  ---
+  duration_ms: 0.157206
+  type: 'test'
+  ...
+# Subtest: Firebase hosting exposes only the protected server provider boundaries
+ok 4 - Firebase hosting exposes only the protected server provider boundaries
+  ---
+  duration_ms: 0.260702
+  type: 'test'
+  ...
+# Subtest: Council fallback truth distinguishes pre-provider, definite provider attempt, and uncertain transport states
+ok 5 - Council fallback truth distinguishes pre-provider, definite provider attempt, and uncertain transport states
+  ---
+  duration_ms: 0.160432
+  type: 'test'
+  ...
+# Subtest: Person voice exists only for an accepted binding to the exact current person bundle
+ok 6 - Person voice exists only for an accepted binding to the exact current person bundle
+  ---
+  duration_ms: 0.901116
+  type: 'test'
+  ...
+# Subtest: voice likeness requires explicit identity likeness and provider consent
+ok 7 - voice likeness requires explicit identity likeness and provider consent
+  ---
+  duration_ms: 0.143686
+  type: 'test'
+  ...
+# Subtest: voice auth failures and provider spend are bounded before ElevenLabs
+ok 8 - voice auth failures and provider spend are bounded before ElevenLabs
+  ---
+  duration_ms: 0.304749
+  type: 'test'
+  ...
+# Subtest: provider binding identifiers are not directly readable by the client
+ok 9 - provider binding identifiers are not directly readable by the client
+  ---
+  duration_ms: 0.244497
+  type: 'test'
+  ...
+# Subtest: voice client fails back to text when no accepted voice exists
+ok 10 - voice client fails back to text when no accepted voice exists
+  ---
+  duration_ms: 0.115134
+  type: 'test'
+  ...
+1..10
+# tests 10
+# suites 0
+# pass 10
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 110.465901

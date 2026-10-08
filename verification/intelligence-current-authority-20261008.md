@@ -1,0 +1,17 @@
+# Intelligence current-authority source repair
+
+The sole release controller remains Spatial PR #1636. This isolated donor starts from current source `3817922a8b0a536ddcce718d3ce1c74e9299a1d2`, tree `670359effc5af2ac85354aa7e858d1038f50e6e1`; it does not change the controller or main.
+
+Council and consented presence voice must withhold results when current consent, owner token, source authority or protected admission expires during work. The existing paid executor now admits their current-authority callback after protected preflight and before reservation. Council performs an immediate protected-output check after its final async authority check. Presence voice requires canonical owner policy and unchanged revision.
+
+The actual Council, Orb and presence-voice clients capture the current Firebase account object and check it after asynchronous token, request and output boundaries. Council UI aborts pending work and clears retained context on account changes and unmount. Current-account requests and explicit consent continue to work. Provider-attempted errors preserve processing truth.
+
+The 50 focused current-source regressions reproduced 44 failures against the exact predecessor and all pass after repair (21 backend, 27 client/UI and 2 protected callback cases). Retained full protected-spend suite passes 128/128, including its original 126 cases. Council SDK/React-rendered readiness suite passes 54/54 and retained Council/voice boundaries pass 10/10. The targeted strict changed-backend compile passes. The JSON packet links complete TAP files and binds their hashes and affected source blob identities.
+
+These are Node 24.19.0 source diagnostics using existing read-only TypeScript 5.9.3/6.0.3 dependencies and explicit Firebase/protected-transport doubles. The delayed-body case uses real local HTTP. The broader readiness suite loads actual Firebase and React libraries but intercepts every HTTP request. No real provider, cloud runtime, paid budget, private-family source, full declared frozen dependency graph, Node22 native build, human acceptance, production parity or release approval is certified.
+
+The existing Council workflow now retains exact-head backend and client proof under the declared Node22 frozen graph; required test counts increase from27 to54 plus21 backend. The compact runner adds only the client/UI test registration. Root release integration must union this registration with other donor additions. Existing guarded-spend tests and release gates are retained.
+
+Real-provider completion requires an authorized current environment and canonical consenting test account, valid Secret Manager credentials, exact executor/gateway protected-spend bindings, trusted pricing and explicit available spending allocation. Run the existing staging/provider lifecycle verifier, retain request/fallback/reconciliation receipts, then repeat exact-head release acceptance. Independent approval must come from an actual independent reviewer.
+
+Native donor cb6935b macOS installed-consumer run37745527826 compiled Functions and passed1213/1214 tests. The retained voice source-authority fixture was incomplete and failed with403 before its intended409 binding-withdrawal check. Its fixture now uses the actual canonical owner policy, and its existing synthetic paid adapter honors the before-reserve/output callback interface. Original409 denial and200 valid-voice assertions remain. Actual targeted compiled retained Presence tests pass11/11 locally; full successor native evidence remains required.

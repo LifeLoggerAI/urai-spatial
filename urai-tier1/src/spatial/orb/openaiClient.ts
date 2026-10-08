@@ -107,10 +107,11 @@ export async function requestOpenAIOrb(input: {
   if (!locale) return null
   const user = getAuth(app).currentUser
   if (!user) return null
+  const ownsAccount = () => !input.signal.aborted && getAuth(app).currentUser === user
   const token = await user.getIdToken()
-  if (!token || input.signal.aborted) return null
+  if (!token || !ownsAccount()) return null
   const requestId = await stableIntentRequestId(input.message, input.context, locale)
-  if (!requestId || input.signal.aborted) return null
+  if (!requestId || !ownsAccount()) return null
 
   let response: Response
   try {
@@ -131,8 +132,13 @@ export async function requestOpenAIOrb(input: {
       }),
     })
   } catch (error) {
+    if (!ownsAccount()) return null
     if (input.signal.aborted) throw error
     throw new OrbProviderAttemptUncertainError()
+  }
+  if (!ownsAccount()) {
+    await response.body?.cancel().catch(() => undefined)
+    return null
   }
 
   if (!response.ok || !response.body) {
@@ -143,6 +149,7 @@ export async function requestOpenAIOrb(input: {
     } catch {
       // A submitted HTTP request with an unknown outcome may already be admitted.
     }
+    if (!ownsAccount()) return null
     if (DEFINITE_EXTERNAL_ATTEMPT_CODES.has(code)) throw new OrbProviderAttemptError(code)
     if (PRE_DISPATCH_REJECTION_CODES.has(code)) return null
     throw new OrbProviderAttemptUncertainError()
@@ -156,6 +163,7 @@ export async function requestOpenAIOrb(input: {
   try {
     while (true) {
       const { value, done } = await reader.read()
+      if (!ownsAccount()) { await reader.cancel().catch(() => undefined); return null }
       if (done) break
       buffer += decoder.decode(value, { stream: true })
       const lines = buffer.split('\n')
@@ -177,11 +185,13 @@ export async function requestOpenAIOrb(input: {
       }
     }
   } catch (error) {
+    if (!ownsAccount()) return null
     if (input.signal.aborted) throw error
     if (error instanceof OrbProviderAttemptError) throw error
     throw new OrbProviderAttemptError('EXTERNAL_STREAM_FAILED')
   }
 
+  if (!ownsAccount()) return null
   if (!finalResult) throw new OrbProviderAttemptError('EXTERNAL_RESPONSE_INCOMPLETE')
   return finalResult
 }

@@ -1,0 +1,136 @@
+TAP version 13
+# Subtest: anthropic keeps the current consented result, caption and actual provider attribution
+ok 1 - anthropic keeps the current consented result, caption and actual provider attribution
+  ---
+  duration_ms: 62.381006
+  type: 'test'
+  ...
+# Subtest: anthropic denies policy withdrawal after the provider body without publishing its text
+ok 2 - anthropic denies policy withdrawal after the provider body without publishing its text
+  ---
+  duration_ms: 38.975637
+  type: 'test'
+  ...
+# Subtest: gemini keeps the current consented result, caption and actual provider attribution
+ok 3 - gemini keeps the current consented result, caption and actual provider attribution
+  ---
+  duration_ms: 47.668225
+  type: 'test'
+  ...
+# Subtest: gemini denies policy withdrawal after the provider body without publishing its text
+ok 4 - gemini denies policy withdrawal after the provider body without publishing its text
+  ---
+  duration_ms: 22.715306
+  type: 'test'
+  ...
+# Subtest: xai keeps the current consented result, caption and actual provider attribution
+ok 5 - xai keeps the current consented result, caption and actual provider attribution
+  ---
+  duration_ms: 23.269124
+  type: 'test'
+  ...
+# Subtest: xai denies policy withdrawal after the provider body without publishing its text
+ok 6 - xai denies policy withdrawal after the provider body without publishing its text
+  ---
+  duration_ms: 14.8261
+  type: 'test'
+  ...
+# Subtest: mistral keeps the current consented result, caption and actual provider attribution
+ok 7 - mistral keeps the current consented result, caption and actual provider attribution
+  ---
+  duration_ms: 55.521347
+  type: 'test'
+  ...
+# Subtest: mistral denies policy withdrawal after the provider body without publishing its text
+ok 8 - mistral denies policy withdrawal after the provider body without publishing its text
+  ---
+  duration_ms: 26.31999
+  type: 'test'
+  ...
+# Subtest: consent withdrawal during protected preflight denies provider dispatch
+ok 9 - consent withdrawal during protected preflight denies provider dispatch
+  ---
+  duration_ms: 32.07317
+  type: 'test'
+  ...
+# Subtest: a replacement granted revision cannot silently authorize the prior Council intent
+ok 10 - a replacement granted revision cannot silently authorize the prior Council intent
+  ---
+  duration_ms: 26.224827
+  type: 'test'
+  ...
+# Subtest: a revoked token at the final boundary denies a previously completed provider result
+ok 11 - a revoked token at the final boundary denies a previously completed provider result
+  ---
+  duration_ms: 23.783647
+  type: 'test'
+  ...
+# Subtest: protected output authority expiration after consent/auth awaits withholds the result
+ok 12 - protected output authority expiration after consent/auth awaits withholds the result
+  ---
+  duration_ms: 25.099946
+  type: 'test'
+  ...
+# Subtest: without explicit consent no provider or protected admission is called
+ok 13 - without explicit consent no provider or protected admission is called
+  ---
+  duration_ms: 25.167989
+  type: 'test'
+  ...
+# Subtest: real loopback delayed body keeps consent withdrawal fenced at final publication
+ok 14 - real loopback delayed body keeps consent withdrawal fenced at final publication
+  ---
+  duration_ms: 75.904302
+  type: 'test'
+  ...
+# Subtest: accepted synthetic person voice still returns bounded private audio under current authority
+ok 15 - accepted synthetic person voice still returns bounded private audio under current authority
+  ---
+  duration_ms: 19.882592
+  type: 'test'
+  ...
+# Subtest: person voice foreign policy owner never authorizes synthesis
+ok 16 - person voice foreign policy owner never authorizes synthesis
+  ---
+  duration_ms: 17.573911
+  type: 'test'
+  ...
+# Subtest: person voice missing policy revision never authorizes synthesis
+ok 17 - person voice missing policy revision never authorizes synthesis
+  ---
+  duration_ms: 13.853517
+  type: 'test'
+  ...
+# Subtest: person voice consent revision replacement during synthesis withholds audio
+ok 18 - person voice consent revision replacement during synthesis withholds audio
+  ---
+  duration_ms: 21.461906
+  type: 'test'
+  ...
+# Subtest: person voice revoked token during synthesis withholds audio
+ok 19 - person voice revoked token during synthesis withholds audio
+  ---
+  duration_ms: 16.109289
+  type: 'test'
+  ...
+# Subtest: person voice source change during protected preflight denies synthesis
+ok 20 - person voice source change during protected preflight denies synthesis
+  ---
+  duration_ms: 13.644283
+  type: 'test'
+  ...
+# Subtest: person voice protected output expiration after final authority awaits withholds audio
+ok 21 - person voice protected output expiration after final authority awaits withholds audio
+  ---
+  duration_ms: 12.020382
+  type: 'test'
+  ...
+1..21
+# tests 21
+# suites 0
+# pass 21
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 1038.017547

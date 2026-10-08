@@ -6,6 +6,14 @@ on:
       - '.github/workflows/council-provider-request-truth.yml'
       - 'urai-tier1/src/spatial/council/councilProviderRegistry.ts'
       - 'urai-tier1/src/spatial/council/CouncilConversationPanel.tsx'
+      - 'urai-tier1/src/spatial/council/councilClient.ts'
+      - 'urai-tier1/src/spatial/orb/openaiClient.ts'
+      - 'urai-tier1/src/spatial/life-model/personPresenceVoiceClient.ts'
+      - 'apps/functions/src/councilProviderFunctions.ts'
+      - 'apps/functions/src/personPresenceVoiceProvider.ts'
+      - 'apps/functions/src/protectedProviderSpend.ts'
+      - 'apps/functions/test/council-current-authority.test.js'
+      - 'urai-tier1/tests/intelligence-client-account-lifecycle.test.mjs'
       - 'urai-tier1/src/spatial/scenario/ScenarioCouncilPanel.tsx'
       - 'urai-tier1/tests/council-provider-registry-contract.test.mjs'
       - 'urai-tier1/tests/council-provider-boundary-contract.test.mjs'
@@ -66,8 +74,12 @@ jobs:
           pnpm --dir urai-tier1 exec node --import tsx --test \
             tests/council-provider-registry-contract.test.mjs \
             tests/council-provider-boundary-contract.test.mjs \
+            tests/intelligence-client-account-lifecycle.test.mjs \
             tests/possible-futures-truth-contract.test.mjs \
             2>&1 | tee "$RUNNER_TEMP/council-provider-proof/tests.tap"
+          pnpm --dir apps/functions build
+          pnpm --dir apps/functions exec node --test test/council-current-authority.test.js \
+            2>&1 | tee "$RUNNER_TEMP/council-provider-proof/current-authority.tap"
       - name: Bind retained proof to unchanged source
         shell: bash
         run: |
@@ -81,10 +93,14 @@ jobs:
           const output = path.join(process.env.RUNNER_TEMP, 'council-provider-proof')
           const log = fs.readFileSync(path.join(output, 'tests.tap'), 'utf8')
           const counts = Object.fromEntries([...log.matchAll(/^(?:#|ℹ) (tests|pass|fail|cancelled|skipped|todo) (\d+)\s*$/gm)].map((match) => [match[1], Number(match[2])]))
-          if (!(counts.tests >= 27) || counts.pass !== counts.tests || ['fail', 'cancelled', 'skipped', 'todo'].some((key) => counts[key] !== 0)) throw new Error('Missing or incomplete Council test evidence')
+          if (!(counts.tests >= 54) || counts.pass !== counts.tests || ['fail', 'cancelled', 'skipped', 'todo'].some((key) => counts[key] !== 0)) throw new Error('Missing or incomplete Council test evidence')
+          const authorityLog = fs.readFileSync(path.join(output, 'current-authority.tap'), 'utf8')
+          const authorityCounts = Object.fromEntries([...authorityLog.matchAll(/^(?:#|ℹ) (tests|pass|fail|cancelled|skipped|todo) (\d+)\s*$/gm)].map(match => [match[1], Number(match[2])]))
+          if (!(authorityCounts.tests >= 21) || authorityCounts.pass !== authorityCounts.tests || ['fail', 'cancelled', 'skipped', 'todo'].some(key => authorityCounts[key] !== 0)) throw new Error('Missing or incomplete current-authority evidence')
           const files = ['urai-tier1/src/spatial/council/councilProviderRegistry.ts', 'urai-tier1/src/spatial/council/CouncilConversationPanel.tsx', 'urai-tier1/src/spatial/scenario/ScenarioCouncilPanel.tsx', 'urai-tier1/src/spatial/council/councilClient.ts', 'urai-tier1/src/spatial/orb/openaiClient.ts', 'urai-tier1/tests/council-provider-registry-contract.test.mjs', 'urai-tier1/tests/council-provider-boundary-contract.test.mjs', 'urai-tier1/tests/possible-futures-truth-contract.test.mjs', '.github/workflows/council-provider-request-truth.yml']
           const sources = Object.fromEntries(files.map((file) => [file, createHash('sha256').update(fs.readFileSync(file)).digest('hex')]))
-          const receipt = { schema: 'urai-council-request-truth-proof-1', sourceHead: process.env.URAI_EXACT_HEAD, workflowRun: process.env.GITHUB_RUN_ID, runAttempt: process.env.GITHUB_RUN_ATTEMPT, node: process.version, tests: counts, sources, transport: 'synthetic in-process responses; actual existing adapters', protectedRuntimeAcceptance: false, providerCanaryAcceptance: false, releaseCertification: false }
+          for (const file of ['apps/functions/src/councilProviderFunctions.ts', 'apps/functions/src/personPresenceVoiceProvider.ts', 'apps/functions/src/protectedProviderSpend.ts', 'apps/functions/test/council-current-authority.test.js', 'urai-tier1/src/spatial/life-model/personPresenceVoiceClient.ts', 'urai-tier1/tests/intelligence-client-account-lifecycle.test.mjs']) sources[file] = createHash('sha256').update(fs.readFileSync(file)).digest('hex')
+          const receipt = { schema: 'urai-council-request-truth-proof-1', sourceHead: process.env.URAI_EXACT_HEAD, workflowRun: process.env.GITHUB_RUN_ID, runAttempt: process.env.GITHUB_RUN_ATTEMPT, node: process.version, tests: counts, authorityTests: authorityCounts, sources, transport: 'synthetic in-process responses and real local HTTP delayed body; actual existing adapters', protectedRuntimeAcceptance: false, providerCanaryAcceptance: false, releaseCertification: false }
           fs.writeFileSync(path.join(output, 'receipt.json'), `${JSON.stringify(receipt, null, 2)}\n`)
           NODE
       - name: Retain complete Council evidence

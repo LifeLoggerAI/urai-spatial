@@ -1,5 +1,6 @@
 import { assertExternalAccountAdc } from '@/lib/server/google-adc';
 import { decideStripeEventApplication } from '@/lib/server/stripe-event-order';
+import { readStripeAccountAuthority } from '@/lib/server/stripe-account-authority';
 
 export type InsightPlanId = 'free' | 'pro' | 'therapist' | 'founder';
 
@@ -59,7 +60,7 @@ export async function upsertEntitlement(record: StoredEntitlement): Promise<Stor
 
 export type StripeEventApplicationResult = {
   applied: boolean;
-  reason: 'applied' | 'duplicate-event' | 'stale-event' | 'equal-time-precedence' | 'provider-state-unresolved';
+  reason: 'applied' | 'duplicate-event' | 'stale-event' | 'equal-time-precedence' | 'provider-state-unresolved' | 'current-account-denied' | 'current-account-unavailable';
   entitlement: StoredEntitlement;
   retryable?: boolean;
 };
@@ -70,6 +71,8 @@ export async function applyStripeEventEntitlement(
 ): Promise<StripeEventApplicationResult> {
   const db = await getAdminFirestore();
   const ref = db.collection(COLLECTION).doc(record.userId);
+  const { getAuth } = await import('firebase-admin/auth');
+  const getCurrentUser = (uid: string) => getAuth().getUser(uid);
   return db.runTransaction(async (transaction) => {
     const snapshot = await transaction.get(ref);
     const current = snapshot.exists
@@ -80,6 +83,8 @@ export async function applyStripeEventEntitlement(
       return { applied: false, reason: 'duplicate-event' as const, entitlement: current };
     }
 
+    const authority = await readStripeAccountAuthority(db, transaction, record.userId, event.created, getCurrentUser);
+    if (!authority.allowed) return { applied: false, reason: authority.reason, entitlement: current, retryable: authority.retryable };
     let nextRecord = record;
     let currentProviderResolved = false;
     const equalTime = (current.stripeLastEventCreated ?? 0) === event.created;
@@ -102,6 +107,8 @@ export async function applyStripeEventEntitlement(
         nextRecord = latest;
         currentProviderResolved = true;
       } catch {
+        const live = await readStripeAccountAuthority(db, transaction, record.userId, event.created, getCurrentUser, authority.creationTime);
+        if (!live.allowed) return { applied: false, reason: live.reason, entitlement: current, retryable: live.retryable };
         // Retain a known nonpaid state while Stripe retries. Never acknowledge
         // this unresolved event or reopen access from a conflicting snapshot.
         const currentPaid = current.subscriptionStatus === 'active' || current.subscriptionStatus === 'trialing';
@@ -123,6 +130,8 @@ export async function applyStripeEventEntitlement(
       return { applied: false, reason: decision.reason, entitlement: current };
     }
 
+    const live = await readStripeAccountAuthority(db, transaction, record.userId, event.created, getCurrentUser, authority.creationTime);
+    if (!live.allowed) return { applied: false, reason: live.reason, entitlement: current, retryable: live.retryable };
     const next: StoredEntitlement = {
       ...nextRecord,
       stripeLastEventCreated: event.created,
@@ -146,4 +155,5 @@ export function mapStripeStatus(status?: string | null): SubscriptionStatus {
   if (status === 'active' || status === 'trialing' || status === 'past_due' || status === 'canceled' || status === 'incomplete') return status;
   return 'none';
 }
+
 

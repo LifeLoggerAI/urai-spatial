@@ -1,0 +1,42 @@
+TAP version 13
+# Subtest: current user authority callback denies POST reservation after successful protected preflight
+not ok 1 - current user authority callback denies POST reservation after successful protected preflight
+  ---
+  duration_ms: 184.476845
+  type: 'test'
+  location: '/workspace/scratch/e41cf8ed94ac/lane-intelligence/sources/spatial/apps/functions/test/protectedProviderSpend.test.mjs:144:1'
+  failureType: 'testCodeFailure'
+  error: 'Missing expected rejection.'
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  operator: 'rejects'
+  stack: |-
+    async TestContext.<anonymous> (file:///workspace/scratch/e41cf8ed94ac/lane-intelligence/sources/spatial/apps/functions/test/protectedProviderSpend.test.mjs:147:3)
+    async Test.run (node:internal/test_runner/test:1389:7)
+    async startSubtestAfterBootstrap (node:internal/test_runner/harness:387:3)
+  ...
+# Subtest: authority callback cannot extend expired protected admission or dispatch after cancellation
+not ok 2 - authority callback cannot extend expired protected admission or dispatch after cancellation
+  ---
+  duration_ms: 108.266368
+  type: 'test'
+  location: '/workspace/scratch/e41cf8ed94ac/lane-intelligence/sources/spatial/apps/functions/test/protectedProviderSpend.test.mjs:152:1'
+  failureType: 'testCodeFailure'
+  error: 'Missing expected rejection.'
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  operator: 'rejects'
+  stack: |-
+    async TestContext.<anonymous> (file:///workspace/scratch/e41cf8ed94ac/lane-intelligence/sources/spatial/apps/functions/test/protectedProviderSpend.test.mjs:156:5)
+    async Test.run (node:internal/test_runner/test:1389:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:960:7)
+  ...
+1..2
+# tests 2
+# suites 0
+# pass 0
+# fail 2
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 2801.592897

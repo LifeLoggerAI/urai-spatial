@@ -5,8 +5,9 @@ import vm from 'node:vm'
 import ts from 'typescript'
 import { localizedMessage } from '../src/lib/i18n/localePreference.ts'
 import { URAI_SOURCE_MESSAGES as messages } from '../src/lib/i18n/locales.ts'
+import { withLifeMapSelectionIdentity } from '../src/spatial/memory/lifeMapSelectionJourney.ts'
 
-const source = fs.readFileSync('src/components/lifemap/LifeMapSemanticNavigator.tsx', 'utf8')
+const source = fs.readFileSync(process.env.URAI_LIFEMAP_NAVIGATOR_SOURCE ?? 'src/components/lifemap/LifeMapSemanticNavigator.tsx', 'utf8')
 const compiled = ts.transpileModule(source, { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX } }).outputText
 const node = { id:'quiet-reset', title:'The Quiet Reset', type:'recovery', eraId:'threshold-return', connectedTo:[], summary:'Disclosed test memory', dateLabel:'Now', replayAvailable:true }
 function descendants(tree) {
@@ -39,6 +40,7 @@ function fixture(search) {
     '@/lib/i18n/localePreference':{localizedMessage},
     '@/lib/i18n/useUraiLocale':{useUraiLocale:()=>({preference:{requested:'en',preview:false},locale:'en',text:key=>{assert.ok(messages[key]);return messages[key].source},props:()=>({lang:'en',dir:'ltr'}),formatProps:{},number:String})},
     '@/lib/i18n/JourneyOfflineNotice':{__esModule:true,default:()=>null},
+    '@/spatial/memory/lifeMapSelectionJourney':{withLifeMapSelectionIdentity},
   }
   const module = {exports:{}}
   vm.runInNewContext(compiled,{exports:module.exports,module,require:id=>{assert.ok(id in imports,'Unexpected import '+id);return imports[id]},window:browser,document:{body:{}},URLSearchParams,HTMLElement:class {},Element:class {}},{filename:'actual-LifeMapSemanticNavigator.tsx'})
@@ -63,7 +65,8 @@ for (const search of ['', '?demo=0','?demo=true','?demo=01']) test('actual priva
   const f=fixture(search);const q=f.select();assert.equal(q.get('manifestId'),null);assert.equal(q.get('demo'),null);assert.equal(q.get('memoryId'),'quiet-reset')
 })
 for (const demo of [false,true]) test('actual '+(demo?'disclosed demo':'private')+' selection preserves an existing explicit manifest',()=>{
-  const f=fixture('?manifestId=existing-source-manifest'+(demo?'&demo=1':''));const q=f.select();assert.equal(q.get('manifestId'),'existing-source-manifest');assert.equal(q.getAll('manifestId').length,1)
+  const manifest=demo?'replay-recovery-thread':'existing-source-manifest'
+  const f=fixture('?memoryId=quiet-reset&manifestId='+manifest+(demo?'&demo=1':''));const q=f.select();assert.equal(q.get('manifestId'),manifest);assert.equal(q.getAll('manifestId').length,1)
 })
 for (const route of ['focus','replay']) test('actual '+route+' destination carries selected demo identity without copying incoming private query',()=>{
   const f=fixture('?demo=1&node=quiet-reset&privateNote=not-for-navigation')
@@ -76,4 +79,13 @@ test('actual demo Overview return preserves selected memory and manifest exactly
   const control=descendants(f.open()).find(el=>el.type==='button' && el.props.children==='Overview')
   assert.ok(control);control.props.onClick();const q=f.browser.location.searchParams
   assert.equal(q.get('overview'),'1');assert.equal(q.get('node'),'quiet-reset');assert.equal(q.get('memoryId'),'quiet-reset');assert.deepEqual(q.getAll('manifestId'),['replay-recovery-thread'])
+})
+
+for (const flag of ['onboarding','firstRun']) test('actual semantic selection retains '+flag+' until resolved Focus arrival',()=>{
+  const f=fixture('?demo=1&'+flag+'=1');const q=f.select()
+  assert.equal(q.get(flag),'1');assert.equal(q.get('manifestId'),'replay-recovery-thread')
+})
+test('selecting a different private memory drops the previous manifest rather than rebinding it',()=>{
+  const f=fixture('?memoryId=other-private-memory&manifestId=other-private-manifest&onboarding=1');const q=f.select()
+  assert.equal(q.get('memoryId'),'quiet-reset');assert.equal(q.get('manifestId'),null);assert.equal(q.get('onboarding'),'1');assert.equal(q.get('demo'),null)
 })

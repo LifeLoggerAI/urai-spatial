@@ -111,9 +111,11 @@ export async function requestExternalCouncilProvider(input: {
   if (!input.aiProcessingConsent || !firebasePublicEnvReady || input.signal.aborted) return null
   const user = getAuth(app).currentUser
   if (!user) return null
+  const ownsAccount = () => !input.signal.aborted && getAuth(app).currentUser === user
   const token = await user.getIdToken()
+  if (!token || !ownsAccount()) return null
   const requestId = await stableCouncilRequestId(input.provider, input.message, input.context)
-  if (!token || !requestId || input.signal.aborted) return null
+  if (!requestId || !ownsAccount()) return null
 
   let response: Response
   try {
@@ -133,18 +135,27 @@ export async function requestExternalCouncilProvider(input: {
       }),
     })
   } catch (error) {
+    if (!ownsAccount()) return null
     if (input.signal.aborted) throw error
     throw new CouncilExternalProviderAttemptUncertainError(input.provider)
+  }
+  if (!ownsAccount()) {
+    await response.body?.cancel().catch(() => undefined)
+    return null
   }
 
   if (!response.ok) {
     let code = 'COUNCIL_PROVIDER_BOUNDARY_FAILURE'
+    let externalProcessingAttempted = false
     try {
-      const body = await response.json() as { error?: unknown }
+      const body = await response.json() as { error?: unknown; externalProcessingAttempted?: unknown }
       if (body.error) code = String(body.error)
+      externalProcessingAttempted = body.externalProcessingAttempted === true
     } catch {
       // Preserve generic provider boundary.
     }
+    if (!ownsAccount()) return null
+    if (externalProcessingAttempted) throw new CouncilExternalProviderAttemptError(input.provider, code)
     if (PRE_EXTERNAL_FAILURE_CODES.has(code)) return null
     if (DEFINITE_EXTERNAL_FAILURE_CODES.has(code)) {
       throw new CouncilExternalProviderAttemptError(input.provider, code)
@@ -153,6 +164,7 @@ export async function requestExternalCouncilProvider(input: {
   }
 
   const result = await response.json() as Partial<ExternalCouncilProviderResult>
+  if (!ownsAccount()) return null
   if (result.provider !== input.provider || !result.message || !result.caption || !result.disclosure || !result.model) {
     throw new Error('INVALID_COUNCIL_PROVIDER_RESPONSE')
   }
