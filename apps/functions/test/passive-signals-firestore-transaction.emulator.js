@@ -43,11 +43,16 @@ const report = {
 const writeReport = () => fs.writeFileSync(path.join(outputDir, `${mode}-cases.json`), JSON.stringify(report, null, 2) + '\n')
 writeReport()
 
-const domains = () => ({
-  workforce: { mode: 'granted', automationEnabled: true },
-  location: { mode: 'granted', precise: true },
-  models: { mode: 'granted', modelContext: true },
-  identity: { mode: 'granted', likenessEnabled: true },
+const domains = () => {
+  const base = { mode: 'granted', retentionDays: 30, precise: true, replayVisible: false,
+    lifeMapVisible: false, modelContext: true, sharingEnabled: false, automationEnabled: true, likenessEnabled: true }
+  return Object.fromEntries(['memory', 'location', 'models', 'exports', 'workforce', 'identity']
+    .map((name) => [name, { ...base }]))
+}
+const policyFor = (ownerId, overrides = {}) => ({
+  version: 2, revision: 1, ownerId,
+  domains: Object.fromEntries(Object.entries(domains()).map(([name, value]) => [name, { ...value, ...(overrides[name] || {}) }])),
+  enforcement: { state: 'fully-enforced', jobId: null, affectedTargets: [], providerState: 'not-applicable' },
 })
 const coordinates = { latitude: 37.4219999, longitude: -122.0840575, accuracyMeters: 8, precision: 'precise' }
 const payloadFor = (type) => type === 'location' ? coordinates
@@ -121,6 +126,7 @@ async function fixture(name, onPolicyRead = async () => {}) {
   load(holder.exports, (name) => {
     if (name === 'firebase-admin') return adminFacade
     if (name === 'firebase-functions/v1') return functions
+    if (name === './consentPolicyAuthority') return require(path.resolve(__dirname, '../lib/apps/functions/src/consentPolicyAuthority.js'))
     throw new Error(`Unexpected actual-handler dependency: ${name}`)
   }, holder, moduleFile, path.dirname(moduleFile))
   const callable = holder.exports.recordPassiveSignal
@@ -140,7 +146,7 @@ function caseTest(name, role, run) {
 
 caseTest('unchanged location consent preserves precise coordinates and owner metadata', 'positive', async (item) => {
   const f = await fixture('precise')
-  await f.policyRef.set({ domains: domains() })
+  await f.policyRef.set(policyFor(f.uid))
   const result = await f.record('location')
   const rows = await f.stored('location')
   assert.equal(result.accepted, true)
@@ -154,7 +160,7 @@ caseTest('unchanged location consent preserves precise coordinates and owner met
 })
 caseTest('approximate consent still coarsens server-side with a minimum radius', 'positive', async (item) => {
   const f = await fixture('approximate')
-  await f.policyRef.set({ domains: { ...domains(), location: { mode: 'limited', precise: false } } })
+  await f.policyRef.set(policyFor(f.uid, { location: { mode: 'limited', precise: false } }))
   await f.record('location')
   const rows = await f.stored('location')
   assert.equal(rows.length, 1)
@@ -185,7 +191,7 @@ const revocations = [
 for (const [type, domain, value] of revocations) {
   caseTest(`already revoked ${domain} consent rejects in the actual datastore`, 'positive', async () => {
     const f = await fixture(`already-revoked-${domain}`)
-    await f.policyRef.set({ domains: { ...domains(), [domain]: value } })
+    await f.policyRef.set(policyFor(f.uid, { [domain]: value }))
     await assert.rejects(f.record(type), { code: 'permission-denied' })
     assert.equal((await f.stored(type)).length, 0)
   })
@@ -197,10 +203,10 @@ async function race(item, name, type, changePolicy, precisionOnly = false) {
   const f = await fixture(name, async () => {
     if (firstRead) { firstRead = false; reached.resolve(); await release.promise }
   })
-  await f.policyRef.set({ domains: domains() })
+  await f.policyRef.set(policyFor(f.uid))
   const outcome = f.record(type).then((value) => ({ value }), (error) => ({ error }))
   await bounded(reached.promise, 'actual policy read')
-  const revocation = changePolicy(f.policyRef)
+  const revocation = changePolicy(f.policyRef, f.uid)
   try {
     // An independent original read holds no write lock, so require its revoke
     // to finish first. The repair may lock or conflict/retry; both are valid.
@@ -237,14 +243,14 @@ async function race(item, name, type, changePolicy, precisionOnly = false) {
 }
 for (const [type, domain, value] of revocations) {
   caseTest(`conflicting ${domain} revocation never commits a stale-consent ${type} signal`, 'regression', async (item) => {
-    await race(item, `raced-${domain}`, type, (ref) => ref.set({ domains: { ...domains(), [domain]: value } }))
+    await race(item, `raced-${domain}`, type, (ref, ownerId) => ref.set(policyFor(ownerId, { [domain]: value })))
   })
 }
 caseTest('conflicting actual policy deletion never commits a stale-consent signal', 'regression', async (item) => {
   await race(item, 'raced-delete', 'location', (ref) => ref.delete())
 })
 caseTest('precision downgrade retains precise coordinates only if committed before the downgrade', 'regression', async (item) => {
-  await race(item, 'raced-precision', 'location', (ref) => ref.set({ domains: { ...domains(), location: { mode: 'limited', precise: false } } }), true)
+  await race(item, 'raced-precision', 'location', (ref, ownerId) => ref.set(policyFor(ownerId, { location: { mode: 'limited', precise: false } })), true)
 })
 after(async () => {
   writeReport()

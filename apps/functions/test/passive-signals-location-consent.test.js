@@ -11,17 +11,32 @@ const policy = (location = { mode: 'limited', precise: false }) => ({
   workforce: { mode: 'granted', automationEnabled: true }, location,
 })
 
+
+const canonicalPolicy = (ownerId, overrides = {}) => {
+  const base = { mode: 'denied', retentionDays: 30, precise: false, replayVisible: false,
+    lifeMapVisible: false, modelContext: false, sharingEnabled: false, automationEnabled: false, likenessEnabled: false }
+  const domains = Object.fromEntries(['memory', 'location', 'models', 'exports', 'workforce', 'identity']
+    .map((name) => [name, { ...base, ...(overrides[name] || {}) }]))
+  return { version: 2, revision: 1, ownerId, domains,
+    enforcement: { state: 'fully-enforced', jobId: null, affectedTargets: [], providerState: 'not-applicable' } }
+}
+
 class HttpsError extends Error {
   constructor(code, message) { super(message); this.code = code }
 }
 
 async function fixture(domains = policy(), policyExists = true, options = {}) {
   const reads = [], writes = [], logs = [], allocatedIds = [], stagedWrites = []
-  let currentDomains = domains, currentExists = policyExists, revision = 0, beforeCommitCalled = false, transactionAttempts = 0
-  const changePolicy = (nextDomains, exists = true) => { currentDomains = nextDomains; currentExists = exists; revision += 1 }
+  let currentPolicy = Object.hasOwn(options, 'policyRecord') ? options.policyRecord : canonicalPolicy(uid, domains)
+  let currentExists = policyExists, revision = 0, beforeCommitCalled = false, transactionAttempts = 0
+  const changePolicy = (nextDomains, exists = true, ...rawPolicy) => {
+    currentPolicy = rawPolicy.length ? rawPolicy[0] : canonicalPolicy(uid, nextDomains)
+    currentExists = exists; revision += 1
+  }
   const policySnapshot = () => {
-    const capturedDomains = structuredClone(currentDomains)
-    return { exists: currentExists, get: (field) => field === 'domains' ? capturedDomains : undefined }
+    const capturedPolicy = structuredClone(currentPolicy)
+    return { exists: currentExists, data: () => capturedPolicy,
+      get: (field) => field === 'domains' ? capturedPolicy?.domains : undefined }
   }
   const beforeCommit = async () => {
     if (options.beforeCommit && !beforeCommitCalled) { beforeCommitCalled = true; await options.beforeCommit(changePolicy) }
@@ -80,6 +95,10 @@ async function fixture(domains = policy(), policyExists = true, options = {}) {
     const context = vm.createContext({ console })
     const module = new vm.SourceTextModule(stripTypeScriptTypes(fs.readFileSync(filename, 'utf8')), { context, identifier: filename })
     await module.link((name) => {
+      if (name === './consentPolicyAuthority') {
+        const helper = path.resolve(__dirname, '../src/consentPolicyAuthority.ts')
+        return new vm.SourceTextModule(stripTypeScriptTypes(fs.readFileSync(helper, 'utf8')), { context, identifier: helper })
+      }
       const dependency = name === 'firebase-admin' ? admin : name === 'firebase-functions/v1' ? functions : undefined
       assert.ok(dependency, `Unexpected module dependency: ${name}`)
       return new vm.SyntheticModule(Object.keys(dependency), function () {
@@ -95,6 +114,13 @@ async function fixture(domains = policy(), policyExists = true, options = {}) {
       require: (name) => {
         if (name === 'firebase-admin') return admin
         if (name === 'firebase-functions/v1') return functions
+        if (name === './consentPolicyAuthority') {
+          const authority = { exports: {} }
+          vm.runInNewContext(fs.readFileSync(path.resolve(__dirname, '../lib/apps/functions/src/consentPolicyAuthority.js'), 'utf8'), {
+            module: authority, exports: authority.exports,
+          }, { filename: 'actual-compiled-consentPolicyAuthority.js' })
+          return authority.exports
+        }
         throw new Error(`Unexpected module dependency: ${name}`)
       },
     }, { filename })
@@ -125,10 +151,13 @@ for (const precision of ['approximate', undefined, null, '', 'unknown', 'precise
 }
 
 for (const precise of [undefined, null, 'true', 1, {}, []]) {
-  test(`only server boolean true authorizes precision: ${JSON.stringify(precise)}`, async () => {
+  test(`malformed server precise flag denies retention: ${JSON.stringify(precise)}`, async () => {
     const f = await fixture(policy({ mode: 'granted', precise }))
-    await f.record({ ...coordinates, precision: 'approximate', precise: true, consent: { precise: true } }, undefined, { domains: policy({ mode: 'granted', precise: true }) })
-    assert.deepEqual(stored(f), { source: 'browser', precision: 'approximate', ...approximate })
+    await assert.rejects(f.record({ ...coordinates, precision: 'approximate', precise: true, consent: { precise: true } }, undefined, { domains: policy({ mode: 'granted', precise: true }) }), {
+      code: 'permission-denied', message: 'PASSIVE_SIGNAL_CONSENT_POLICY_REQUIRED',
+    })
+    assert.equal(f.writes.length, 0)
+    assert.equal(f.logs.length, 0)
   })
 }
 
@@ -155,7 +184,7 @@ test('invalid coordinates are omitted and an absent accuracy receives the coarse
 for (const mode of ['paused', 'denied', 'unknown']) {
   test(`location ${mode} consent rejects before storing any signal`, async () => {
     const f = await fixture(policy({ mode, precise: true }))
-    await assert.rejects(f.record({ ...coordinates, precision: 'precise' }), { code: 'permission-denied', message: 'PASSIVE_SIGNAL_LOCATION_CONSENT_REQUIRED' })
+    await assert.rejects(f.record({ ...coordinates, precision: 'precise' }), { code: 'permission-denied', message: mode === 'unknown' ? 'PASSIVE_SIGNAL_CONSENT_POLICY_REQUIRED' : 'PASSIVE_SIGNAL_LOCATION_CONSENT_REQUIRED' })
     assert.equal(f.writes.length, 0)
     assert.equal(f.logs.length, 0)
   })

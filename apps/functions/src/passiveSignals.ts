@@ -1,5 +1,6 @@
 import * as functions from 'firebase-functions/v1'
 import * as admin from 'firebase-admin'
+import { isCanonicalStoredPolicy } from './consentPolicyAuthority'
 
 if (!admin.apps.length) admin.initializeApp()
 
@@ -59,7 +60,14 @@ async function requireSignalConsent(uid: string, type: SignalType, transaction: 
   const policy = await transaction.get(db.doc(`users/${uid}/privacyPolicy/current`))
   if (!policy.exists) throw new functions.https.HttpsError('permission-denied', 'PASSIVE_SIGNAL_CONSENT_POLICY_REQUIRED')
 
-  const domains = isRecord(policy.get('domains')) ? policy.get('domains') as JsonMap : {}
+  const storedPolicy = policy.data()
+  if (!isCanonicalStoredPolicy(storedPolicy, uid)) {
+    throw new functions.https.HttpsError('permission-denied', 'PASSIVE_SIGNAL_CONSENT_POLICY_REQUIRED')
+  }
+  if (storedPolicy.enforcement.state !== 'fully-enforced') {
+    throw new functions.https.HttpsError('permission-denied', 'PASSIVE_SIGNAL_ENFORCEMENT_REQUIRED')
+  }
+  const domains = storedPolicy.domains
   const workforce = isRecord(domains.workforce) ? domains.workforce as JsonMap : {}
   if (!enabledDomain(workforce) || workforce.automationEnabled !== true) {
     throw new functions.https.HttpsError('permission-denied', 'PASSIVE_SIGNAL_AUTOMATION_CONSENT_REQUIRED')
