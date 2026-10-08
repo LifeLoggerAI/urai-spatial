@@ -1,0 +1,188 @@
+name: Passive Consent Real Firestore Transaction Proof
+
+on:
+  pull_request:
+    paths:
+      - 'apps/functions/src/passiveSignals.ts'
+      - 'apps/functions/test/passive-signals-firestore-transaction.test.js'
+      - 'apps/functions/test/fixtures/passiveSignals-before-consent-transaction.ts'
+      - 'apps/functions/package.json'
+      - 'apps/functions/tsconfig.json'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+      - '.github/workflows/passive-firestore-transaction-proof.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: passive-firestore-proof-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+env:
+  URAI_PROOF_SOURCE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+  GCLOUD_PROJECT: demo-urai-passive-consent-proof
+  URAI_PASSIVE_SIGNAL_EMULATOR_TEST: '1'
+  JAVA_TOOL_OPTIONS: '-Xms64m -Xmx256m'
+  FIREBASE_EMULATORS_PATH: ${{ runner.temp }}/urai-passive-emulators
+
+jobs:
+  actual-firestore-commit-ordering:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - name: Checkout exact proof source
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ env.URAI_PROOF_SOURCE_SHA }}
+          fetch-depth: 1
+          persist-credentials: false
+          show-progress: false
+      - name: Verify immutable source and no credential files
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$URAI_PROOF_SOURCE_SHA"
+          test -z "$(git status --porcelain --untracked-files=all)"
+          test -z "${GOOGLE_APPLICATION_CREDENTIALS:-}"
+      - name: Setup pnpm
+        uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1
+        with:
+          version: 10.0.0
+          run_install: false
+      - name: Setup native Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+      - name: Select existing runner Java 21
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "${JAVA_HOME_21_X64:-}"
+          test -x "$JAVA_HOME_21_X64/bin/java"
+          echo "JAVA_HOME=$JAVA_HOME_21_X64" >> "$GITHUB_ENV"
+          echo "$JAVA_HOME_21_X64/bin" >> "$GITHUB_PATH"
+          "$JAVA_HOME_21_X64/bin/java" -version
+      - name: Install actual locked CLI and Functions SDKs
+        run: pnpm --filter urai-functions... --filter urai-spatial-monorepo install --frozen-lockfile --ignore-scripts
+      - name: Strict compile actual handler and pinned original
+        shell: bash
+        run: |
+          set -euo pipefail
+          pnpm --filter urai-functions build
+          pnpm --filter urai-functions exec tsc test/fixtures/passiveSignals-before-consent-transaction.ts --target ES2020 --module commonjs --moduleResolution node --strict --esModuleInterop --skipLibCheck --outDir test/proof-original
+      - name: Prepare guarded demo-only emulator and regression receipts
+        shell: bash
+        run: |
+          node <<'NODE'
+          const assert = require('node:assert/strict')
+          const crypto = require('node:crypto')
+          const fs = require('node:fs')
+          const path = require('node:path')
+          const proof = 'passive-firestore-proof'
+          const fixture = 'apps/functions/test/fixtures/passiveSignals-before-consent-transaction.ts'
+          const raw = fs.readFileSync(fixture)
+          const gitBlob = crypto.createHash('sha1').update(Buffer.concat([Buffer.from(`blob ${raw.length}\0`), raw])).digest('hex')
+          assert.equal(gitBlob, '167eefc30f285c549051379d45e49853e847ec0e', 'Original fixture must retain actual pre-transaction source bytes')
+          assert.equal(process.env.GCLOUD_PROJECT, 'demo-urai-passive-consent-proof')
+          assert.ok(!process.env.GOOGLE_APPLICATION_CREDENTIALS)
+          fs.mkdirSync(path.join(proof, 'emulator'), { recursive: true })
+          fs.writeFileSync(path.join(proof, 'emulator/deny-all.rules'), "rules_version = '2';\nservice cloud.firestore {\n  match /databases/{database}/documents {\n    match /{document=**} { allow read, write: if false; }\n  }\n}\n")
+          fs.writeFileSync(path.join(proof, 'emulator/firebase.json'), JSON.stringify({
+            firestore: { rules: 'deny-all.rules' },
+            emulators: {
+              firestore: { host: '127.0.0.1', port: 8089 },
+              hub: { host: '127.0.0.1', port: 4419 },
+              logging: { host: '127.0.0.1', port: 4519 },
+              ui: { enabled: false }, singleProjectMode: true,
+            },
+          }, null, 2) + '\n')
+          const script = `
+          const assert = require('node:assert/strict')
+          const fs = require('node:fs')
+          const path = require('node:path')
+          const crypto = require('node:crypto')
+          const { spawnSync } = require('node:child_process')
+          const proof = path.resolve('passive-firestore-proof')
+          const hash = (file) => crypto.createHash('sha256').update(fs.readFileSync(file)).digest('hex')
+          assert.equal(process.env.GCLOUD_PROJECT, 'demo-urai-passive-consent-proof')
+          assert.equal(process.env.FIRESTORE_EMULATOR_HOST, '127.0.0.1:8089')
+          assert.ok(!process.env.GOOGLE_APPLICATION_CREDENTIALS)
+          const results = []
+          let valid = true
+          for (const mode of ['original', 'repaired']) {
+            const result = spawnSync(process.execPath, ['--test', '--test-reporter=tap', 'test/passive-signals-firestore-transaction.test.js'], {
+              cwd: 'apps/functions', encoding: 'utf8', timeout: 360000,
+              env: { ...process.env, URAI_PASSIVE_SIGNAL_HANDLER_MODE: mode, URAI_PASSIVE_SIGNAL_PROOF_OUTPUT_DIR: proof },
+            })
+            const text = (result.stdout || '') + (result.stderr || '')
+            fs.writeFileSync(path.join(proof, mode + '.tap'), text)
+            process.stdout.write(text)
+            const casesPath = path.join(proof, mode + '-cases.json')
+            const cases = fs.existsSync(casesPath) ? JSON.parse(fs.readFileSync(casesPath, 'utf8')).cases : []
+            const positive = cases.filter((item) => item.role === 'positive')
+            const regression = cases.filter((item) => item.role === 'regression')
+            const originalReproduced = result.status !== 0 && positive.length === 8 && positive.every((item) => item.passed) &&
+              regression.length === 6 && regression.every((item) => !item.passed && item.ordering === 'VIOLATION_SIGNAL_COMMITTED_AFTER_REVOCATION')
+            const repairPassed = result.status === 0 && cases.length === 14 && cases.every((item) => item.passed)
+            valid = valid && (mode === 'original' ? originalReproduced : repairPassed)
+            results.push({ mode, exitStatus: result.status, signal: result.signal, tests: cases.length,
+              positivePassed: positive.filter((item) => item.passed).length,
+              regressionPassed: regression.filter((item) => item.passed).length,
+              regressionFailed: regression.filter((item) => !item.passed).length,
+              originalActualRegressionReproduced: mode === 'original' ? originalReproduced : undefined,
+              repairActualCasesPassed: mode === 'repaired' ? repairPassed : undefined,
+              tapSha256: hash(path.join(proof, mode + '.tap')),
+              casesSha256: fs.existsSync(casesPath) ? hash(casesPath) : null,
+            })
+          }
+          const emulatorJars = fs.readdirSync(process.env.FIREBASE_EMULATORS_PATH).filter((name) => /^cloud-firestore-emulator.*[.]jar$/.test(name))
+          assert.equal(emulatorJars.length, 1, 'One actual executed Firestore emulator jar required')
+          const emulatorJar = path.join(process.env.FIREBASE_EMULATORS_PATH, emulatorJars[0])
+          const java = spawnSync('java', ['-version'], { encoding: 'utf8' })
+          assert.equal(java.status, 0)
+          fs.writeFileSync(path.join(proof, 'receipt.json'), JSON.stringify({
+            schemaVersion: 'urai-passive-consent-real-firestore-native-receipt-v1',
+            sourceSha: process.env.URAI_PROOF_SOURCE_SHA,
+            nodeVersion: process.version,
+            firebaseAdminVersion: require('../apps/functions/node_modules/firebase-admin/package.json').version,
+            firebaseFunctionsVersion: require('../apps/functions/node_modules/firebase-functions/package.json').version,
+            typeScriptVersion: require('../apps/functions/node_modules/typescript/package.json').version,
+            firebaseCliVersion: require('../node_modules/firebase-tools/package.json').version,
+            project: process.env.GCLOUD_PROJECT, emulatorHost: process.env.FIRESTORE_EMULATOR_HOST,
+            javaRuntime: String(java.stdout || '') + String(java.stderr || ''),
+            emulatorJar: emulatorJars[0], emulatorJarSha256: hash(emulatorJar),
+            originalSourceGitBlob: '167eefc30f285c549051379d45e49853e847ec0e',
+            sourceSha256: hash('apps/functions/src/passiveSignals.ts'),
+            compiledModuleSha256: hash('apps/functions/lib/apps/functions/src/passiveSignals.js'),
+            originalFixtureSha256: hash('apps/functions/test/fixtures/passiveSignals-before-consent-transaction.ts'),
+            originalCompiledSha256: hash('apps/functions/test/proof-original/passiveSignals-before-consent-transaction.js'),
+            testSha256: hash('apps/functions/test/passive-signals-firestore-transaction.test.js'),
+            rulesSha256: hash(path.join(proof, 'emulator/deny-all.rules')),
+            rulesMode: 'deny-all-client-rules-admin-sdk-transaction-test',
+            realFirestoreEmulatorAndSdk: true,
+            syntheticCallableContextAndReadScheduling: true,
+            jwtOrAppCheckVerification: false, firestoreRulesVerification: false,
+            productionOrDeploymentVerification: false, shipAuthorized: false,
+            results, state: valid ? 'ACTUAL_EMULATOR_ORDERING_VERIFIED' : 'FAILED',
+          }, null, 2) + '\\n')
+          process.exit(valid ? 0 : 1)
+          `
+          fs.writeFileSync(path.join(proof, 'run-real-firestore.cjs'), script)
+          NODE
+      - name: Execute actual original and repaired handler against Firestore
+        shell: bash
+        run: |
+          set -euo pipefail
+          pnpm exec firebase emulators:exec --only firestore --project demo-urai-passive-consent-proof --non-interactive --config passive-firestore-proof/emulator/firebase.json "node passive-firestore-proof/run-real-firestore.cjs"
+      - name: Upload exact-source emulator receipt
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: passive-firestore-consent-${{ env.URAI_PROOF_SOURCE_SHA }}
+          path: passive-firestore-proof
+          if-no-files-found: warn
+          retention-days: 90
