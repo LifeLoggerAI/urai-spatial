@@ -10,6 +10,7 @@ import { useUraiLocale } from '@/lib/i18n/useUraiLocale'
 import JourneyOfflineNotice from '@/lib/i18n/JourneyOfflineNotice'
 import { localizedMessage } from '@/lib/i18n/localePreference'
 import type { UraiLaunchLocale } from '@/lib/i18n/locales'
+import { withLifeMapSelectionIdentity } from '@/spatial/memory/lifeMapSelectionJourney'
 
 const LIFE_MAP_TYPE_MESSAGES = {"memory": "lifeMap.type.memory", "relationship": "lifeMap.type.relationship", "season": "lifeMap.type.season", "recovery": "lifeMap.type.recovery", "threshold": "lifeMap.type.threshold", "ritual": "lifeMap.type.ritual", "forecast": "lifeMap.type.forecast", "legacy": "lifeMap.type.legacy"} as const
 
@@ -56,14 +57,7 @@ export default function LifeMapSemanticNavigator({ authenticatedUserId = null }:
     [eraFilter, nodes, search, typeFilter],
   )
 
-  const withIdentity = useCallback((next: URLSearchParams) => {
-    if (explicitDemo) next.set('demo', '1')
-    // A disclosed Home Ascent arrives without a movie query. Bind the existing
-    // demo thread when choosing its memory; never synthesize private authority.
-    const manifestId = params.get('manifestId') || (explicitDemo ? 'replay-recovery-thread' : null)
-    if (manifestId) next.set('manifestId', manifestId)
-    return next
-  }, [explicitDemo, params])
+  const withIdentity = useCallback((next: URLSearchParams, memoryId?: string) => withLifeMapSelectionIdentity(params, next, memoryId), [params])
 
   const commitBrowserIdentity = useCallback((next: URLSearchParams) => {
     const destination = `/life-map?${next.toString()}`
@@ -77,7 +71,7 @@ export default function LifeMapSemanticNavigator({ authenticatedUserId = null }:
     // correctly ignored by the button-target guard and the selected identity gets stuck.
     if (source === 'semantic') closeNavigator()
     else setOpen(false)
-    const next = withIdentity(new URLSearchParams())
+    const next = withIdentity(new URLSearchParams(), node.id)
     next.set('memoryId', node.id)
     next.set('node', node.id)
     if (node.eraId) next.set('era', node.eraId)
@@ -96,7 +90,7 @@ export default function LifeMapSemanticNavigator({ authenticatedUserId = null }:
   }, [closeNavigator, commitBrowserIdentity, router, withIdentity])
 
   const destinationHref = useCallback((route: 'focus' | 'replay', node: LifeMapNode) => {
-    const next = withIdentity(new URLSearchParams())
+    const next = withIdentity(new URLSearchParams(), node.id)
     next.set('memoryId', node.id)
     next.set('node', node.id)
     next.set('returnNode', node.id)
