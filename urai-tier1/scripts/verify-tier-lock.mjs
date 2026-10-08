@@ -39,7 +39,12 @@ const fileNeedles = {
     'data-testid="urai-home-accessible-fallback"',
     "aria-label={locale.text('home.lifeMapAction')}",
     'data-testid="home-semantic-life-map"',
-    'href="/life-map/?from=home-sky&entryPortal=home-sky&cameraCheckpoint=home-sky-ascent-complete"',
+    // The current accessible consumer composes this exact canonical route with
+    // homeJourneyHref so only a disclosed demo survives hydration. Requiring a
+    // literal JSX href rejects that adopted authority boundary. Keep the full
+    // route and composition locked; home-sky-interaction.test exercises the
+    // actual helper and hydrated HomeSemanticNavigation (including non-demo).
+    "href={homeJourneyHref('/life-map/?from=home-sky&entryPortal=home-sky&cameraCheckpoint=home-sky-ascent-complete', currentSearch)}",
   ],
   'src/spatial/lifemap/SpatialLifeMapCanonical.tsx': [
     'data-testid="urai-r3f-canonical-lifemap"',

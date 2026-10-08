@@ -7,6 +7,8 @@ on:
       - .github/workflows/spatial-governed-wif-deploy.yml
       - scripts/run-frozen-firebase.mjs
       - tests/frozen-firebase-deploy-boundary.test.mjs
+      - urai-tier1/scripts/verify-tier-lock.mjs
+      - urai-tier1/tests/tier-lock-home-navigation.test.mjs
   workflow_dispatch:
     inputs:
       release_sha:
