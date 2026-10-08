@@ -92,6 +92,9 @@ const focusedContractTests = [
   'tests/spatial-audio-behavior.test.mjs',
   'tests/spatial-missing-resource-diagnostic-contract.test.mjs',
   'tests/unit-runner-coverage.test.mjs',
+  'tests/mirror-candidate-origin-authority.test.mjs',
+  'tests/xr-conditional-release-authority.test.mjs',
+  'tests/reduced-motion-preference-behavior.test.mjs',
   'tests/xr-runtime-contract.test.mjs',
   'tests/xr-static-gate-diagnostics-contract.test.mjs',
 ]

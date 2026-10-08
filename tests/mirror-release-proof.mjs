@@ -1,3 +1,4 @@
+import { createCandidateRouteAuthority } from './lib/candidate-route-authority.mjs'
 import { chromium } from 'playwright'
 import fs from 'node:fs/promises'
 import path from 'node:path'
@@ -5,6 +6,7 @@ import path from 'node:path'
 const exactSha = String(process.env.URAI_PROOF_SOURCE_SHA || process.env.URAI_EXACT_HEAD || '').trim()
 const baseUrl = String(process.env.URAI_AUDIT_BASE_URL || 'http://127.0.0.1:4173').replace(/\/$/, '')
 const outDir = process.env.URAI_MIRROR_PROOF_OUT_DIR || 'mirror-release-proof'
+const candidateAuthority = createCandidateRouteAuthority(baseUrl)
 const shotDir = path.join(outDir, 'screenshots')
 
 if (!/^[0-9a-f]{40}$/.test(exactSha)) throw new Error('Exact source SHA required')
@@ -28,9 +30,6 @@ function absolute(route) {
   return new URL(route, `${baseUrl}/`).toString()
 }
 
-function pathname(value) {
-  return new URL(value).pathname.replace(/\/$/, '') || '/'
-}
 
 function pushCase(name, device, status, details = {}) {
   const record = { name, device, status, ...details }
@@ -149,6 +148,7 @@ async function screenshot(page, name) {
 async function waitForWorld(page, route) {
   const response = await page.goto(absolute(route), { waitUntil: 'domcontentloaded', timeout: 60000 })
   if (response && response.status() >= 400) throw new Error(`HTTP ${response.status()} for ${route}`)
+  candidateAuthority.assertExactRoute(page.url(), route)
   const world = page.getByTestId('mirror-spatial-world')
   await world.waitFor({ state: 'visible', timeout: 45000 })
   await page.waitForFunction(() => document.querySelector('[data-testid="mirror-spatial-world"]')?.getAttribute('data-mirror-ready') === 'true', null, { timeout: 45000 })
@@ -237,7 +237,9 @@ async function proveOverview(browser, deviceName) {
     if (deviceName === 'desktop') await orb.click()
     else await orb.waitFor({ state: 'hidden' })
 
+    candidateAuthority.assertExactRoute(page.url(), '/mirror')
     const shot = await screenshot(page, `${deviceName}-mirror-selected-body-rhythm`)
+    candidateAuthority.assertExactRoute(page.url(), '/mirror')
     const unattributedConsoleErrors = assertCleanEvidence(consoleErrors, failedRequests, httpErrors)
     pushCase(name, deviceName, 'passed', { screenshot: shot, startCameraZ: startZ, finalCameraZ: movedZ, mobileOrbHiddenDuringInspection: deviceName === 'mobile', finalUrl: page.url(), ...diagnostics(consoleErrors, failedRequests, httpErrors, unattributedConsoleErrors) })
   } catch (error) {
@@ -254,12 +256,15 @@ async function proveState(browser, config) {
   try {
     const response = await page.goto(absolute(route), { waitUntil: 'domcontentloaded', timeout: 60000 })
     if (response && response.status() >= 400) throw new Error(`HTTP ${response.status()} for ${route}`)
+  candidateAuthority.assertExactRoute(page.url(), route)
     await page.waitForTimeout(1200)
     if (afterLoad) await afterLoad(page, context)
     const marker = config.marker ? page.locator(config.marker) : page.locator('main')
     await marker.first().waitFor({ state: 'visible', timeout: 30000 })
     if (config.text) await page.getByText(config.text, { exact: false }).first().waitFor({ state: 'visible', timeout: 30000 })
+    candidateAuthority.assertExactRoute(page.url(), route)
     const shot = await screenshot(page, `${device}-${name}`)
+    candidateAuthority.assertExactRoute(page.url(), route)
     const unattributedConsoleErrors = assertCleanEvidence(consoleErrors, failedRequests, httpErrors)
     pushCase(name, device, 'passed', { screenshot: shot, finalUrl: page.url(), ...diagnostics(consoleErrors, failedRequests, httpErrors, unattributedConsoleErrors) })
   } catch (error) {
@@ -276,7 +281,7 @@ async function proveTransition(browser, destination, buttonName) {
   try {
     await waitForWorld(page, `/mirror?${demoQuery}&pattern=body-rhythm`)
     await page.getByRole('button', { name: buttonName, exact: true }).click()
-    await page.waitForURL((url) => pathname(url.toString()) === `/${destination}`, { timeout: 30000 })
+    await page.waitForURL((url) => candidateAuthority.isExactRoute(url.toString(), `/${destination}`), { timeout: 30000 })
     if (destination === 'replay') {
       await page.getByTestId('urai-replay-surface').waitFor({ state: 'attached', timeout: 45000 })
       const replay = page.locator('[data-testid="cinematic-replay-client"][data-memory-id="demo:quiet-reset"]').first()
@@ -297,7 +302,9 @@ async function proveTransition(browser, destination, buttonName) {
         return state && state !== 'loading'
       }, null, { timeout: 30000 })
     }
+    candidateAuthority.assertExactRoute(page.url(), `/${destination}`)
     const shot = await screenshot(page, `desktop-${name}`)
+    candidateAuthority.assertExactRoute(page.url(), `/${destination}`)
     const unattributedConsoleErrors = assertCleanEvidence(consoleErrors, failedRequests, httpErrors)
     pushCase(name, 'desktop', 'passed', { screenshot: shot, destinationSettled: true, replayPlaybackAndPauseVerified: destination === 'replay', personalizedRuntimeVerified: false, finalUrl: page.url(), ...diagnostics(consoleErrors, failedRequests, httpErrors, unattributedConsoleErrors) })
   } catch (error) {
@@ -322,7 +329,9 @@ async function proveSemanticFallback(browser) {
     await inspector.waitFor({ state: 'visible' })
     await inspector.getByText('Uncertainty', { exact: true }).waitFor({ state: 'visible' })
     await inspector.getByText(/owner-authorized|demonstration data/).waitFor({ state: 'visible' })
+    candidateAuthority.assertExactRoute(page.url(), '/mirror')
     const shot = await screenshot(page, 'desktop-no-webgl-semantic-fallback')
+    candidateAuthority.assertExactRoute(page.url(), '/mirror')
     const unattributedConsoleErrors = assertCleanEvidence(consoleErrors, failedRequests, httpErrors)
     pushCase(name, 'desktop', 'passed', { screenshot: shot, finalUrl: page.url(), ...diagnostics(consoleErrors, failedRequests, httpErrors, unattributedConsoleErrors) })
   } catch (error) {
