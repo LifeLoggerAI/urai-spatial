@@ -45,3 +45,20 @@ test('a symlinked original entry outside the baseline is rejected even with matc
 test('an empty original identity set cannot turn manifest configuration into package proof',()=>fixture(f=>{
   assert.throws(()=>originalBaselineRequire(f.baseline,f.manifest,[]),/Explicit original public baseline authority required/);
 }));
+
+test('a canonical entry with private package metadata still binds its real original manifest',()=>fixture(f=>{
+  packageAt(f.dependency,{exports:{'.':'./index.js'}});
+  const r=originalBaselineRequire(f.baseline,f.manifest,ids);
+  assert.equal(r.resolve(name),path.join(f.dependency,'index.js'));
+}));
+test('a symlinked original manifest outside the baseline cannot authorize an inside entry',()=>fixture(f=>{
+  const outside=path.join(f.dir,'outside-package.json');
+  fs.copyFileSync(path.join(f.dependency,'package.json'),outside);
+  fs.rmSync(path.join(f.dependency,'package.json'));fs.symlinkSync(outside,path.join(f.dependency,'package.json'));
+  assert.throws(()=>originalBaselineRequire(f.baseline,f.manifest,ids),/Original public package resolved outside baseline/);
+}));
+test('missing original metadata cannot inherit named baseline-root authority',()=>fixture(f=>{
+  fs.writeFileSync(f.manifest,JSON.stringify({name,version}));
+  fs.rmSync(path.join(f.dependency,'package.json'));
+  assert.throws(()=>originalBaselineRequire(f.baseline,f.manifest,ids),/Original public package manifest is missing/);
+}));

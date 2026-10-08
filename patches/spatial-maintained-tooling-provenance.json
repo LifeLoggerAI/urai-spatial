@@ -10,6 +10,9 @@
       "patch": "patches/firebase-tools-15.32.1-maintained-watch.patch",
       "patchedFiles": [
         "lib/emulator/functionsEmulator.js",
+        "lib/emulator/databaseEmulator.js",
+        "lib/emulator/firestoreEmulator.js",
+        "lib/emulator/storage/rules/manager.js",
         "package.json"
       ],
       "originalSourceSha256": {
@@ -1426,7 +1429,7 @@
         "lib/emulator/commandUtils.js": "7dff2253a7ecfccc629af15be881f31f7a5ff583114ed79c7828050ae2dcbb24",
         "lib/emulator/constants.js": "47b5cbf552fc92ad0515b8d9fb6e0bd4ded194e1fbad5595b5eecdbfcd0da6be",
         "lib/emulator/controller.js": "86a3411bbb68a6e6c031e79f921b545045618471fd373e16cf6621f67011a946",
-        "lib/emulator/databaseEmulator.js": "6a0232c09431d237565d196e0e9ed5643d65919cc1c7e61678e240a0eca512e0",
+        "lib/emulator/databaseEmulator.js": "dca20ed0698193e95fa9c254d64e042f4b9d406d9a261bfeb9ef9c389b52a043",
         "lib/emulator/dataconnect/pgliteServer.js": "97f07965ee5475fd26e301c8612648e72e562acb772672fa2e01603c4a899164",
         "lib/emulator/dataconnectEmulator.js": "39315bc9ee8b3e0404a4ac5858fc4d6fbf46d9fbd9fb614bda40b944bd24a3b8",
         "lib/emulator/dataconnectToolkitController.js": "26e94bbb861dfaf780a45cca07897bf5b143b95cec990698a7ef3eb69804834a",
@@ -1442,7 +1445,7 @@
         "lib/emulator/extensions/postinstall.js": "d31e58520d442dbfd4db244725a698da770294f0b5cc875679a3bd52e9d19a04",
         "lib/emulator/extensions/validation.js": "4cf32a30d8831731ff32cfa606578332c202e6eb89a1d946866ef5c4eb383063",
         "lib/emulator/extensionsEmulator.js": "e8be125cee4d28096455556734685e43916e9c9ac37263da13a98ce7490ace8d",
-        "lib/emulator/firestoreEmulator.js": "242e2d443427838ea720e6b646c3f57e522b6789271837d79c05108a94cde00e",
+        "lib/emulator/firestoreEmulator.js": "947bcf3e689c0b91b1dfe51ad7f5690dacf9ec58ee061a2aedd8f3d19dea557a",
         "lib/emulator/functionsEmulator.js": "697d67e729ef9401d72512119eacefac7a57ad155872d123e22e3707c438810b",
         "lib/emulator/functionsEmulatorRuntime.js": "224e604c745fd538ce13b56ea651aa9c955cd32b8e629d8e118f6564c6f9c50a",
         "lib/emulator/functionsEmulatorShared.js": "7cc072aa17eb493d19a3b507e614a2adf00c6d5365aabd25794ff08ef9bcbc56",
@@ -1473,7 +1476,7 @@
         "lib/emulator/storage/rfc.js": "25d8fe309b366b861a446d6be59900b81480bbbab29db59a52420c41d23270ed",
         "lib/emulator/storage/rules/config.js": "0b276251b380a7cb4fb664b30d0d1602764e5255a75a4ea1da39ed9d33fb34bd",
         "lib/emulator/storage/rules/expressionValue.js": "d43aa81f5bc89faa359e0f97c814ba25155591ff078fbb9bfd40f8c7c9683230",
-        "lib/emulator/storage/rules/manager.js": "0c111d2f94af53d39392a8b90629f3b2ab73de0e2856c56c2350a52574fad041",
+        "lib/emulator/storage/rules/manager.js": "c8c26cd9609a8a2a4b9b2b6354eccb7f8106e185ca8fb68da19327103510c9c3",
         "lib/emulator/storage/rules/runtime.js": "060fc9bdd069b41dc3c93f3ef21d3c8b243b20591c6c571c0df3f6ae455e29d7",
         "lib/emulator/storage/rules/types.js": "20eec1092017e139757cd0e1b31e2aa10274835c057b9d6263c0692cb8c7e7f3",
         "lib/emulator/storage/rules/utils.js": "f680bd09c852cf739a25c1e5fe41571e393775736261a5359b50ab4c649befb5",

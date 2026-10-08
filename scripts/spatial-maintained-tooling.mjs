@@ -71,11 +71,29 @@ export function originalBaselineRequire(originalRoot, manifestPath, identities) 
   if (!inside(manifest) || !fs.statSync(manifest).isFile() || !identities.length) throw new Error('Explicit original public baseline authority required');
   const requireBaseline = createRequire(manifest);
   for (const [requestName, name, version] of identities) {
-    const metadataPath = fs.realpathSync(requireBaseline.resolve(requestName + '/package.json'));
+    // The canonical entry may be exported while package.json is deliberately
+    // private (as in Chokidar 4). Find its actual manifest inside this baseline.
     const entryPath = fs.realpathSync(requireBaseline.resolve(requestName));
-    if (!inside(metadataPath) || !inside(entryPath)) throw new Error('Original public package resolved outside baseline: ' + requestName);
-    const actual = JSON.parse(fs.readFileSync(metadataPath, 'utf8'));
-    if (actual.name !== name || actual.version !== version) throw new Error('Original public package identity mismatch: ' + requestName);
+    if (!inside(entryPath)) throw new Error('Original public package resolved outside baseline: ' + requestName);
+    let directory = path.dirname(entryPath);
+    let matched = false;
+    while (inside(directory)) {
+      const metadata = path.join(directory, 'package.json');
+      if (fs.existsSync(metadata)) {
+        const metadataPath = fs.realpathSync(metadata);
+        if (!inside(metadataPath) || !fs.statSync(metadataPath).isFile()) throw new Error('Original public package resolved outside baseline: ' + requestName);
+        const actual = JSON.parse(fs.readFileSync(metadataPath, 'utf8'));
+        if (actual.name !== undefined) {
+          if (actual.name !== name || actual.version !== version) throw new Error('Original public package identity mismatch: ' + requestName);
+          matched = true;
+          break;
+        }
+      }
+      const parent = path.dirname(directory);
+      if (parent === directory) break;
+      directory = parent;
+    }
+    if (!matched) throw new Error('Original public package manifest is missing: ' + requestName);
   }
   return requireBaseline;
 }

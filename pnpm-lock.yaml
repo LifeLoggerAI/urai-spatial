@@ -52,7 +52,7 @@ patchedDependencies:
     hash: b6cd38c7e5af46d8271b82e5de532b35757dc96473ec8bb4be72266ad4358412
     path: patches/next-eslint-plugin-next-15.5.27-maintained-glob.patch
   firebase-tools@15.32.1:
-    hash: d48efb262a4970d85984dcfd982070a88835713b0b83d41a4b37b0c5f4fccb20
+    hash: 6a244a585f90c42f84f3548023b70c75bd00114db33a93ba4c787b3489937032
     path: patches/firebase-tools-15.32.1-maintained-watch.patch
 
 importers:
@@ -61,7 +61,7 @@ importers:
     devDependencies:
       firebase-tools:
         specifier: 15.32.1
-        version: 15.32.1(patch_hash=d48efb262a4970d85984dcfd982070a88835713b0b83d41a4b37b0c5f4fccb20)(@types/node@25.9.1)
+        version: 15.32.1(patch_hash=6a244a585f90c42f84f3548023b70c75bd00114db33a93ba4c787b3489937032)(@types/node@25.9.1)
       fill-range:
         specifier: 7.1.1
         version: 7.1.1
@@ -8393,7 +8393,7 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  firebase-tools@15.32.1(patch_hash=d48efb262a4970d85984dcfd982070a88835713b0b83d41a4b37b0c5f4fccb20)(@types/node@25.9.1):
+  firebase-tools@15.32.1(patch_hash=6a244a585f90c42f84f3548023b70c75bd00114db33a93ba4c787b3489937032)(@types/node@25.9.1):
     dependencies:
       '@apphosting/common': 0.0.8
       '@electric-sql/pglite': 0.3.16

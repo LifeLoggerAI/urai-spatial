@@ -52,6 +52,20 @@ function firebaseModule(dir,relative,chokidar,puts){
 async function waitFor(predicate,label){const until=Date.now()+5000;while(Date.now()<until){if(predicate())return;await delay(20);}throw new Error('Watch deadline exhausted: '+label);}
 async function ready(watcher){await new Promise((resolve,reject)=>{const timeout=setTimeout(()=>reject(new Error('Watcher ready deadline')),5000);watcher.once('ready',()=>{clearTimeout(timeout);resolve();});watcher.once('error',e=>{clearTimeout(timeout);reject(e);});});}
 
+function observedRulesWatcher(actual,label,target){
+  return {...actual,watch(input,options){
+    if(label==='maintained'){
+      const file=path.resolve(target),parent=path.dirname(file);
+      assert.deepEqual(input,[file,parent],'Actual rules file and bounded parent watch');
+      assert.equal(options.depth,0);
+      assert.equal(options.ignored(file),false);assert.equal(options.ignored(parent),false);
+      assert.equal(options.ignored(path.join(parent,'unrelated.rules')),true);
+      assert.equal(options.ignored(path.join(parent,'nested')),true);
+    }
+    return actual.watch(input,options);
+  }};
+}
+
 for(const [label,dir,actual] of [['original',path.join(baselineRoot,'firebase'),baselineChokidar],['maintained',consumers.firebase,candidateChokidar]]){
   test(label+' actual FunctionsEmulator.connect literal watch, ignore algebra and lifecycle',async()=>{
     const fixture=fs.mkdtempSync(path.join(os.tmpdir(),'urai-functions-watch-'));const watchers=[];const events=[];let reloads=0;
@@ -78,15 +92,15 @@ for(const [label,dir,actual] of [['original',path.join(baselineRoot,'firebase'),
   });
   test(label+' actual DatabaseEmulator.start/connect reads and updates literal rules',async()=>{
     const fixture=fs.mkdtempSync(path.join(os.tmpdir(),'urai-database-watch-'));const file=path.join(fixture,'database.rules.json');const puts=[];let instance;
-    try{fs.writeFileSync(file,'{"rules":{".read":false}}');const {DatabaseEmulator}=firebaseModule(dir,'lib/emulator/databaseEmulator.js',actual,puts);instance=new DatabaseEmulator({rules:[{instance:'fixture',rules:file}]});await instance.start();await ready(instance.rulesWatchers[0]);await instance.connect();assert(puts.some(args=>args[1].includes('false')));fs.writeFileSync(file,'{"rules":{".read":true}}');await waitFor(()=>puts.some(args=>args[1].includes('true')),'Database rules change');await instance.stop();assert.equal(instance.rulesWatchers.length,0);}finally{if(instance)await instance.stop();fs.rmSync(fixture,{recursive:true,force:true});}
+    try{fs.writeFileSync(file,'{"rules":{".read":false}}');const {DatabaseEmulator}=firebaseModule(dir,'lib/emulator/databaseEmulator.js',observedRulesWatcher(actual,label,file),puts);instance=new DatabaseEmulator({rules:[{instance:'fixture',rules:file}]});await instance.start();await ready(instance.rulesWatchers[0]);await instance.connect();assert(puts.some(args=>args[1].includes('false')));fs.writeFileSync(file,'{"rules":{".read":true}}');await waitFor(()=>puts.some(args=>args[1].includes('true')),'Database rules change');const count=puts.length;fs.writeFileSync(path.join(fixture,'unrelated.rules'),'sibling');await delay(180);assert.equal(puts.length,count);const replacement=path.join(fixture,'replacement.tmp');fs.writeFileSync(replacement,'{"rules":{".read":true,".write":true}}');fs.renameSync(replacement,file);await waitFor(()=>puts.some(args=>args[1].includes('.write')),'Database atomic rules replacement');await instance.stop();assert.equal(instance.rulesWatchers.length,0);}finally{if(instance)await instance.stop();fs.rmSync(fixture,{recursive:true,force:true});}
   });
   test(label+' actual FirestoreEmulator.start recompiles changed literal rules',async()=>{
     const fixture=fs.mkdtempSync(path.join(os.tmpdir(),'urai-firestore-watch-'));const file=path.join(fixture,'firestore.rules');const puts=[];let instance;
-    try{fs.writeFileSync(file,'rules_version = "2"; // first');const {FirestoreEmulator}=firebaseModule(dir,'lib/emulator/firestoreEmulator.js',actual,puts);instance=new FirestoreEmulator({rules:file,project_id:'fixture'});await instance.start();await ready(instance.rulesWatcher);fs.writeFileSync(file,'rules_version = "2"; // second');await waitFor(()=>puts.some(args=>args[1].rules.files[0].content.includes('second')),'Firestore rules change');await instance.rulesWatcher.close();assert(instance.rulesWatcher.closed);}finally{if(instance?.rulesWatcher)await instance.rulesWatcher.close();fs.rmSync(fixture,{recursive:true,force:true});}
+    try{fs.writeFileSync(file,'rules_version = "2"; // first');const {FirestoreEmulator}=firebaseModule(dir,'lib/emulator/firestoreEmulator.js',observedRulesWatcher(actual,label,file),puts);instance=new FirestoreEmulator({rules:file,project_id:'fixture'});await instance.start();await ready(instance.rulesWatcher);fs.writeFileSync(file,'rules_version = "2"; // second');await waitFor(()=>puts.some(args=>args[1].rules.files[0].content.includes('second')),'Firestore rules change');const count=puts.length;fs.writeFileSync(path.join(fixture,'unrelated.rules'),'sibling');await delay(180);assert.equal(puts.length,count);const replacement=path.join(fixture,'replacement.tmp');fs.writeFileSync(replacement,'rules_version = "2"; // atomically replaced');fs.renameSync(replacement,file);await waitFor(()=>puts.some(args=>args[1].rules.files[0].content.includes('atomically replaced')),'Firestore atomic rules replacement');await instance.rulesWatcher.close();assert(instance.rulesWatcher.closed);}finally{if(instance?.rulesWatcher)await instance.rulesWatcher.close();fs.rmSync(fixture,{recursive:true,force:true});}
   });
   test(label+' actual StorageRulesManager.start updates rules, denies unreadable and closes',async()=>{
     const fixture=fs.mkdtempSync(path.join(os.tmpdir(),'urai-storage-watch-'));const file=path.join(fixture,'storage.rules');const loads=[];let instance;
-    try{fs.writeFileSync(file,'first');const runtime={loadRuleset:async input=>{loads.push(input.files[0].content);return {ruleset:{},issues:{all:[]}};}};const {createStorageRulesManager}=firebaseModule(dir,'lib/emulator/storage/rules/manager.js',actual,[]);instance=createStorageRulesManager({name:file,content:'first'},runtime);await instance.start();await ready(instance._watcher);assert.deepEqual(loads,['first']);fs.writeFileSync(file,'second');await waitFor(()=>loads.includes('second'),'Storage rules change');fs.unlinkSync(file);await delay(180);assert.equal(loads.at(-1),'second');await instance.stop();assert(instance._watcher.closed);}finally{if(instance)await instance.stop();fs.rmSync(fixture,{recursive:true,force:true});}
+    try{fs.writeFileSync(file,'first');const runtime={loadRuleset:async input=>{loads.push(input.files[0].content);return {ruleset:{},issues:{all:[]}};}};const {createStorageRulesManager}=firebaseModule(dir,'lib/emulator/storage/rules/manager.js',observedRulesWatcher(actual,label,file),[]);instance=createStorageRulesManager({name:file,content:'first'},runtime);await instance.start();await ready(instance._watcher);assert.deepEqual(loads,['first']);fs.writeFileSync(file,'second');await waitFor(()=>loads.includes('second'),'Storage rules change');const count=loads.length;fs.writeFileSync(path.join(fixture,'unrelated.rules'),'sibling');await delay(180);assert.equal(loads.length,count);const replacement=path.join(fixture,'replacement.tmp');fs.writeFileSync(replacement,'atomically replaced');fs.renameSync(replacement,file);await waitFor(()=>loads.includes('atomically replaced'),'Storage atomic rules replacement');fs.unlinkSync(file);await delay(180);assert.equal(loads.at(-1),'atomically replaced');await instance.stop();assert(instance._watcher.closed);}finally{if(instance)await instance.stop();fs.rmSync(fixture,{recursive:true,force:true});}
   });
 }
 
