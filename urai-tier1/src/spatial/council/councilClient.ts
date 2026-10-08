@@ -156,18 +156,23 @@ export async function requestExternalCouncilProvider(input: {
     throw new CouncilExternalProviderAttemptUncertainError(input.provider)
   }
 
-  const result = await actor.wait(response.json()) as Partial<ExternalCouncilProviderResult>
-  actor.check()
-  if (result.provider !== input.provider || !result.message || !result.caption || !result.disclosure || !result.model) {
-    throw new Error('INVALID_COUNCIL_PROVIDER_RESPONSE')
-  }
-  return {
-    message: String(result.message),
-    caption: String(result.message),
-    disclosure: String(result.disclosure),
-    suggestedActions: Array.isArray(result.suggestedActions) ? result.suggestedActions.map(String).slice(0, 3) : [],
-    provider: input.provider,
-    model: String(result.model),
+  try {
+    const result = await actor.wait(response.json()) as Partial<ExternalCouncilProviderResult>
+    actor.check()
+    if (result.provider !== input.provider || !result.message || !result.caption || !result.disclosure || !result.model) {
+      throw new Error('INVALID_COUNCIL_PROVIDER_RESPONSE')
+    }
+    return {
+      message: String(result.message),
+      caption: String(result.message),
+      disclosure: String(result.disclosure),
+      suggestedActions: Array.isArray(result.suggestedActions) ? result.suggestedActions.map(String).slice(0, 3) : [],
+      provider: input.provider,
+      model: String(result.model),
+    }
+  } catch {
+    actor.check()
+    throw new CouncilExternalProviderAttemptUncertainError(input.provider)
   }
   } finally { actor.dispose() }
 }

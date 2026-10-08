@@ -313,3 +313,33 @@ test('private lease disposal consumes late values and preserves mutable SDK and 
   assert.equal(caller.signal.aborted, false); assert.equal(f.listeners.size, 0)
   lease.dispose(); assert.equal(f.listeners.size, 0)
 })
+
+for (const [name, lines] of [
+  ['malformed JSON', '{'],
+  ['invalid shape', JSON.stringify({ provider: 'anthropic', message: 'Synthetic incomplete answer' })],
+  ['null JSON shape', 'null'],
+]) test('client: council preserves uncertain processing for HTTP200 ' + name, async () => {
+  const f = fixture({ lines }), input = f.input()
+  await assert.rejects(f.request('council')(input), error => {
+    assert.equal(f.requests.length, 1)
+    assert.equal(f.events.length, 0)
+    assert.equal(f.listeners.size, 0)
+    assert.equal(input.signal.aborted, false)
+    return error?.name === 'CouncilExternalProviderAttemptUncertainError' && error.provider === input.provider
+  })
+  assert.equal(f.requests[0].signal.aborted, true)
+})
+
+test('client: council gives actor cancellation priority over malformed HTTP200 JSON', async () => {
+  const f = fixture({ phase: 'headers', lines: '{' }), input = f.input()
+  const pending = f.request('council')(input), expected = assert.rejects(pending, cancellation)
+  await f.reached.promise
+  const response = f.makeResponse('council'), json = response.json.bind(response)
+  let parses = 0
+  response.json = () => { parses++; f.setActor(f.userB, false); return json() }
+  f.headers.resolve(response)
+  await expected; await tick()
+  assert.equal(parses, 1)
+  assert.equal(f.requests.length, 1); assert.equal(f.events.length, 0); assert.equal(f.listeners.size, 0)
+  assert.equal(input.signal.aborted, false); assert.equal(f.requests[0].signal.aborted, true)
+})
