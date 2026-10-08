@@ -22,7 +22,11 @@ env:
 
 jobs:
   installed-consumers:
-    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
     timeout-minutes: 30
     steps:
       - name: Checkout actual exact source
@@ -55,19 +59,20 @@ jobs:
           npm pack @next/eslint-plugin-next@15.5.27 --ignore-scripts --pack-destination "$RUNNER_TEMP/spatial-maintained-baseline"
           tar -xzf "$RUNNER_TEMP/spatial-maintained-baseline/firebase-tools-15.32.1.tgz" -C "$RUNNER_TEMP/spatial-maintained-baseline/firebase" --strip-components=1
           tar -xzf "$RUNNER_TEMP/spatial-maintained-baseline/next-eslint-plugin-next-15.5.27.tgz" -C "$RUNNER_TEMP/spatial-maintained-baseline/next" --strip-components=1
-          npm install --prefix "$RUNNER_TEMP/spatial-maintained-baseline/dependencies" --ignore-scripts --no-audit --no-fund chokidar@3.6.0 fast-glob@3.3.1 semver@7.7.3
+          npm install --prefix "$RUNNER_TEMP/spatial-maintained-baseline/dependencies" --ignore-scripts --no-audit --no-fund chokidar@3.6.0 fast-glob@3.3.1 micromatch@4.0.8 @next/eslint-plugin-next@15.5.27 semver@7.7.3
       - name: Actual four watcher consumers and complete Next lint equivalence
         shell: bash
         run: |
           set -euo pipefail
           node scripts/test-spatial-maintained-consumers.mjs "$RUNNER_TEMP/spatial-maintained-baseline" "$RUNNER_TEMP/spatial-maintained-baseline/dependencies/package.json" | tee "$RUNNER_TEMP/spatial-maintained-evidence/consumer-tests.log"
+          URAI_GLOB_BASELINE_ROOT="$RUNNER_TEMP/spatial-maintained-baseline/dependencies" node --test scripts/test-spatial-next-root-exact-differential.mjs | tee "$RUNNER_TEMP/spatial-maintained-evidence/exact-next-tests.log"
+          cp artifacts/spatial-next-root-dirs-exact-differential.json "$RUNNER_TEMP/spatial-maintained-evidence/exact-next-differential.json"
       - name: Build actual locked native CLI dependency and execute offline CLI
         shell: bash
         run: |
           set -euo pipefail
           corepack pnpm@10.0.0 rebuild re2
-          timeout 60 corepack pnpm@10.0.0 exec firebase --version | tee "$RUNNER_TEMP/spatial-maintained-evidence/firebase-version.log"
-          timeout 60 corepack pnpm@10.0.0 exec firebase --help > "$RUNNER_TEMP/spatial-maintained-evidence/firebase-help.log"
+          node scripts/check-spatial-offline-cli.mjs "$RUNNER_TEMP/spatial-maintained-evidence"
       - name: Read complete fresh official reviewed advisory source
         shell: bash
         run: |
@@ -90,6 +95,6 @@ jobs:
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
-          name: spatial-maintained-tooling-${{ env.URAI_EXACT_HEAD }}
+          name: spatial-maintained-tooling-${{ matrix.os }}-${{ env.URAI_EXACT_HEAD }}
           path: ${{ runner.temp }}/spatial-maintained-evidence
           if-no-files-found: error

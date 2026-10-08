@@ -19,7 +19,7 @@ const candidateRequire=sourceOnlyRoot?baselineRequire:createRequire(path.join(co
 const candidateChokidar=sourceOnlyRoot?candidateRequire('chokidar-candidate'):candidateRequire('chokidar');
 const baselineChokidar=baselineRequire(sourceOnlyRoot?'chokidar-original':'chokidar');
 const candidateAnymatch=candidateRequire('anymatch');
-const candidateGlob=sourceOnlyRoot?baselineRequire('glob'):createRequire(path.join(consumers.next,'package.json'))('glob');
+const nextRequire=sourceOnlyRoot?baselineRequire:createRequire(path.join(consumers.next,'package.json'));
 const originalGlob=baselineRequire('fast-glob');
 const log={log(){},logLabeled(){}};
 const forbidden=()=>{throw new Error('Network/process/provider operation forbidden in watcher fixture');};
@@ -87,13 +87,13 @@ for(const [label,dir,actual] of [['original',path.join(baselineRoot,'firebase'),
 
 function nextModule(dir,relative,glob){
   const cache=new Map();
-  function load(file){file=path.resolve(dir,file);if(!file.startsWith(path.resolve(dir)+path.sep))throw new Error('Next fixture path escape');if(!file.endsWith('.js'))file+='.js';if(cache.has(file))return cache.get(file).exports;const module={exports:{}};cache.set(file,module);const require=name=>{if(name==='glob'||name==='fast-glob')return glob;if(['fs','path'].includes(name))return baselineRequire('node:'+name);if(name.startsWith('.'))return load(path.relative(dir,path.resolve(path.dirname(file),name)));throw new Error('Unexpected Next dependency: '+name);};vm.runInThisContext('(function(exports,require,module){'+fs.readFileSync(file,'utf8')+'\n})',{filename:file})(module.exports,require,module);return module.exports;}
+  function load(file){file=path.resolve(dir,file);if(!file.startsWith(path.resolve(dir)+path.sep))throw new Error('Next fixture path escape');if(!file.endsWith('.js'))file+='.js';if(cache.has(file))return cache.get(file).exports;const module={exports:{}};cache.set(file,module);const require=name=>{if(name==='fast-glob')return glob;if(['@nodelib/fs.walk','brace-expansion','glob-parent','picomatch'].includes(name))return nextRequire(name);if(['fs','path'].includes(name))return baselineRequire('node:'+name);if(name.startsWith('.'))return load(path.relative(dir,path.resolve(path.dirname(file),name)));throw new Error('Unexpected Next dependency: '+name);};vm.runInThisContext('(function(exports,require,module){'+fs.readFileSync(file,'utf8')+'\n})',{filename:file})(module.exports,require,module);return module.exports;}
   return load(relative);
 }
 test('Next root discovery preserves literal, symlink, hidden, braces, extglob, exclusions and terminal globstar results',()=>{
   const fixture=fs.mkdtempSync(path.join(os.tmpdir(),'urai-next-roots-'));const before=process.cwd();
   try{for(const dir of ['apps/a/pages','apps/b/pages','apps/.hidden/pages','apps/a/nested/deep','literal','name[bracket]'])fs.mkdirSync(path.join(fixture,dir),{recursive:true});fs.symlinkSync('a',path.join(fixture,'apps/link'),'dir');fs.writeFileSync(path.join(fixture,'literal/file'),'file');process.chdir(fixture);
-    const original=nextModule(path.join(baselineRoot,'next'),'dist/utils/get-root-dirs.js',originalGlob).getRootDirs;const candidate=nextModule(consumers.next,'dist/utils/get-root-dirs.js',candidateGlob).getRootDirs;
+    const original=nextModule(path.join(baselineRoot,'next'),'dist/utils/get-root-dirs.js',originalGlob).getRootDirs;const candidate=nextModule(consumers.next,'dist/utils/get-root-dirs.js').getRootDirs;
     const patterns=[undefined,'literal','missing','literal/file','apps/*','apps/{a,b}','apps/@(a|b)','apps/**','**','apps/**/pages','apps/link/**','!apps/a',['apps/*','!apps/b'],['literal',42,'missing'],'name[bracket]'];
     for(const pattern of patterns){const context={cwd:fixture,settings:{next:pattern===undefined?{}:{rootDir:pattern}}};assert.deepEqual(candidate(context).sort(),original(context).sort(),'Root pattern '+JSON.stringify(pattern));}
   }finally{process.chdir(before);fs.rmSync(fixture,{recursive:true,force:true});}
@@ -101,7 +101,7 @@ test('Next root discovery preserves literal, symlink, hidden, braces, extglob, e
 test('All Next lint rules/configs retained; actual ESLint emits equivalent diagnostics across real root settings',()=>{
   const fixture=fs.mkdtempSync(path.join(os.tmpdir(),'urai-next-lint-'));const before=process.cwd();
   try{for(const dir of ['apps/a/pages','apps/b/pages'])fs.mkdirSync(path.join(fixture,dir),{recursive:true});fs.writeFileSync(path.join(fixture,'apps/a/pages/about.jsx'),'export default function About(){return null}');process.chdir(fixture);
-    const original=nextModule(path.join(baselineRoot,'next'),'dist/index.js',originalGlob);const candidate=nextModule(consumers.next,'dist/index.js',candidateGlob);
+    const original=nextModule(path.join(baselineRoot,'next'),'dist/index.js',originalGlob);const candidate=nextModule(consumers.next,'dist/index.js');
     assert.deepEqual(Object.keys(candidate.rules),Object.keys(original.rules));assert.deepEqual(candidate.configs,original.configs);for(const name of Object.keys(candidate.rules))assert.deepEqual(candidate.rules[name].meta,original.rules[name].meta);
     const snippets=['export default()=> <a href="/about">About</a>','export default()=> <img src="/x.png"/>','export default()=> <script src="/x.js"/>','export default()=> <head><title>Title</title></head>','let module = {};','export default()=> <link rel="stylesheet" href="/style.css"/>','export default()=> <a href="https://example.com">External</a>'];
     const patterns=['apps/a','apps/*','apps/{a,b}','apps/@(a|b)','apps/**',['apps/a','apps/b']];

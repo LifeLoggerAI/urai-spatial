@@ -1,7 +1,7 @@
 {
   "baseSha": "ae2ca65a392cbb58d7218b55edfcf698947fb148",
   "oldLockBlob": "7cbe6c7555983a31ebbdb76179b7fbbd0702978c",
-  "candidateLockSha256": "2ea21061ec78f8ba2aacf4963036fed0e0fb0283b46cd682db4faec105882411",
+  "candidateLockSha256": "262ffc532ee2acda3559e3bf4ee9f19ffebde2f2b9714603753eff5b2d9e1f66",
   "unchangedImporterPaths": [
     "apps/functions",
     "distribution/android-shell",
@@ -10,29 +10,24 @@
     "packages/tier-locks",
     "urai-tier1"
   ],
-  "unchangedSharedPackages": 1185,
+  "unchangedSharedPackages": 1191,
   "removedPackages": [
-    "@nodelib/fs.scandir@2.1.5",
-    "@nodelib/fs.stat@2.0.5",
-    "@nodelib/fs.walk@1.2.8",
     "binary-extensions@2.3.0",
     "braces@3.0.3",
     "chokidar@3.6.0",
     "fast-glob@3.3.1",
     "fastq@1.20.1",
     "fill-range@7.1.1",
-    "glob-parent@5.1.2",
     "is-binary-path@2.1.0",
     "is-number@7.0.0",
     "merge2@1.4.1",
     "micromatch@4.0.8",
     "readdirp@3.6.0",
-    "reusify@1.1.0",
-    "run-parallel@1.2.0",
     "to-regex-range@5.0.1"
   ],
   "addedPackages": [
     "chokidar@4.0.3",
+    "fastq@1.20.3",
     "readdirp@4.1.2"
   ],
   "sourceConsumerTests": {
@@ -41,5 +36,30 @@
     "proofScope": "SOURCE_ONLY_PUBLIC_PACKAGE_PROBE"
   },
   "rawHighAcceptance": "OPEN_UNTIL_CURRENT_INSTALLED_NATIVE_PROOF",
-  "securityWaiver": false
+  "securityWaiver": false,
+  "candidatePackageEntries": 1194,
+  "exactNextDifferential": {
+    "schemaVersion": "urai-next-root-dirs-exact-differential-v1",
+    "node": "v22.23.3",
+    "upstreamNext": "15.5.27",
+    "upstreamFastGlob": "3.3.1",
+    "upstreamLiteralSha256": "886677432990a735e5ebdfb345ff1cbd40e264f9947a8432eeeb254b3a926bde",
+    "currentLiteralSha256": "e266136ba9fbb988caa2f073251b8bdffe325125308e293d5ad1e28f6e156923",
+    "helperSha256": "a8103902a33aca43034bfbd6ffad69c1e69523ba42cb50b84f6956b6695c3832",
+    "dependencies": {
+      "@nodelib/fs.walk": "1.2.8",
+      "brace-expansion": "5.0.12",
+      "glob-parent": "5.1.2",
+      "picomatch": "2.3.2"
+    },
+    "orderedDirectoryCases": 215,
+    "expansionCases": 388,
+    "resourceCases": 29,
+    "fixedExpectedCases": 52,
+    "filesystemCaseSensitive": true,
+    "scope": "selected-package source comparison; not a whole installed workspace",
+    "humanIndependentAcceptance": false,
+    "productionAcceptance": false,
+    "providerCallsExecuted": 0
+  }
 }

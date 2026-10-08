@@ -11,7 +11,7 @@ const consumers = resolveConsumers();
 const provenance = verifyConsumerSource(consumers);
 const firebaseRequire = createRequire(path.join(consumers.firebase, 'package.json'));
 const nextRequire = createRequire(path.join(consumers.next, 'package.json'));
-for (const [require, name, version] of [[firebaseRequire,'chokidar','4.0.3'],[firebaseRequire,'anymatch','3.1.3'],[nextRequire,'glob','13.0.6']]) {
+for (const [require, name, version] of [[firebaseRequire,'chokidar','4.0.3'],[firebaseRequire,'anymatch','3.1.3'],[nextRequire,'@nodelib/fs.walk','1.2.8'],[nextRequire,'brace-expansion','5.0.12'],[nextRequire,'glob-parent','5.1.2'],[nextRequire,'picomatch','2.3.2']]) {
   const actual = JSON.parse(fs.readFileSync(require.resolve(name + '/package.json')));
   if (actual.version !== version) throw new Error('Unexpected dependency: ' + name + '@' + actual.version);
 }
