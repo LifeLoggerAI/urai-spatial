@@ -7,7 +7,7 @@ import vm from 'node:vm';
 import {createRequire} from 'node:module';
 import {setTimeout as delay} from 'node:timers/promises';
 import test from 'node:test';
-import {root,sha256,resolveConsumers,verifyConsumerSource,originalBaselineRequire} from './spatial-maintained-tooling.mjs';
+import {root,sha256,resolveConsumers,verifyConsumerSource,originalBaselineRequire,literalLockGraph} from './spatial-maintained-tooling.mjs';
 
 const [baselineRoot,baselineManifest,sourceOnlyRoot]=process.argv.slice(2);
 if(!baselineRoot||!baselineManifest)throw new Error('Usage: node scripts/test-spatial-maintained-consumers.mjs ORIGINAL_UNPACK_ROOT BASELINE_PACKAGE_JSON [SOURCE_ONLY_PROBE_ROOT]');
@@ -121,3 +121,17 @@ test('Independent advisory comparator remains fail closed for actual High and ma
   assert.equal(match({nodes:[{name:'braces',version:'3.0.3'}],problems:[]},[high],semver).status,'BLOCKED');assert.equal(match({nodes:[],problems:[{name:'missing'}]},[],semver).status,'BLOCKED');assert.throws(()=>affected('3.0.3',{ranges:[{type:'GIT',events:[]}]},semver));
 });
 console.log(JSON.stringify({proofScope:sourceOnlyRoot?'SOURCE_ONLY_PUBLIC_PACKAGE_PROBE':'ACTUAL_INSTALLED_CONSUMER_PROOF',providerAcceptance:false,productionAcceptance:false,securityWaiver:false}));
+
+test('literal complete lock census rejects hidden file/unsupported identities and retains canonical raw fork origins', () => {
+  const semver=candidateRequire('semver');
+  const census=literalLockGraph({packages:{'@next/eslint-plugin-next@15.5.27':{},'chokidar@4.0.3':{}}},semver,root);
+  assert.equal(census.nodes.length,2);assert.equal(census.localSources.length,0);
+  for(const spec of ['braces@file:vendor/braces','custom@file:../outside','custom@link:vendor/unknown','custom@workspace:*','custom@https://example.test/package','malformed']) {
+    assert.throws(()=>literalLockGraph({packages:{[spec]:{}}},semver,root));
+  }
+  const retained=literalLockGraph({packages:{'braces@file:vendor/braces':{},'chokidar@file:vendor/chokidar':{}}},semver,root,true);
+  assert.deepEqual(retained.nodes.map(x=>[x.name,x.version]),[['braces','3.0.3'],['chokidar','3.6.0']]);
+  assert.deepEqual(retained.localSources.map(x=>x.securityWaiver),[false,false]);
+  assert.throws(()=>literalLockGraph({packages:{'custom@file:vendor/braces':{}}},semver,root,true));
+  assert.throws(()=>literalLockGraph({},semver,root));
+});
