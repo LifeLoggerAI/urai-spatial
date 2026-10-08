@@ -1,0 +1,464 @@
+TAP version 13
+# Subtest: anthropic keeps the current consented result, caption and actual provider attribution
+not ok 1 - anthropic keeps the current consented result, caption and actual provider attribution
+  ---
+  duration_ms: 88.320909
+  type: 'test'
+  location: '/workspace/scratch/e41cf8ed94ac/lane-intelligence/sources/spatial/apps/functions/test/council-current-authority.test.js:104:3'
+  failureType: 'testCodeFailure'
+  error: |-
+    The expression evaluated to a falsy value:
+    
+      assert.ok(f.state.tokenChecks >= 2)
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: true
+  actual: false
+  operator: '=='
+  stack: |-
+    TestContext.<anonymous> (/workspace/scratch/e41cf8ed94ac/lane-intelligence/sources/spatial/apps/functions/test/council-current-authority.test.js:108:12)
+    async Test.run (node:internal/test_runner/test:1389:7)
+    async startSubtestAfterBootstrap (node:internal/test_runner/harness:387:3)
+  ...
+# Subtest: anthropic denies policy withdrawal after the provider body without publishing its text
+not ok 2 - anthropic denies policy withdrawal after the provider body without publishing its text
+  ---
+  duration_ms: 60.743846
+  type: 'test'
+  location: '/workspace/scratch/e41cf8ed94ac/lane-intelligence/sources/spatial/apps/functions/test/council-current-authority.test.js:110:3'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    
+    200 !== 403
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 403
+  actual: 200
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (/workspace/scratch/e41cf8ed94ac/lane-intelligence/sources/spatial/apps/functions/test/council-current-authority.test.js:113:12)
+    async Test.run (node:internal/test_runner/test:1389:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:960:7)
+  ...
+# Subtest: gemini keeps the current consented result, caption and actual provider attribution
+not ok 3 - gemini keeps the current consented result, caption and actual provider attribution
+  ---
+  duration_ms: 77.544014
+  type: 'test'
+  location: '/workspace/scratch/e41cf8ed94ac/lane-intelligence/sources/spatial/apps/functions/test/council-current-authority.test.js:104:3'
+  failureType: 'testCodeFailure'
+  error: |-
+    The expression evaluated to a falsy value:
+    
+      assert.ok(f.state.tokenChecks >= 2)
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: true
+  actual: false
+  operator: '=='
+  stack: |-
+    TestContext.<anonymous> (/workspace/scratch/e41cf8ed94ac/lane-intelligence/sources/spatial/apps/functions/test/council-current-authority.test.js:108:12)
+    async Test.run (node:internal/test_runner/test:1389:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:960:7)
+  ...
+# Subtest: gemini denies policy withdrawal after the provider body without publishing its text
+not ok 4 - gemini denies policy withdrawal after the provider body without publishing its text
+  ---
+  duration_ms: 39.816983
+  type: 'test'
+  location: '/workspace/scratch/e41cf8ed94ac/lane-intelligence/sources/spatial/apps/functions/test/council-current-authority.test.js:110:3'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    
+    200 !== 403
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 403
+  actual: 200
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (/workspace/scratch/e41cf8ed94ac/lane-intelligence/sources/spatial/apps/functions/test/council-current-authority.test.js:113:12)
+    async Test.run (node:internal/test_runner/test:1389:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:960:7)
+  ...
+# Subtest: xai keeps the current consented result, caption and actual provider attribution
+not ok 5 - xai keeps the current consented result, caption and actual provider attribution
+  ---
+  duration_ms: 56.725272
+  type: 'test'
+  location: '/workspace/scratch/e41cf8ed94ac/lane-intelligence/sources/spatial/apps/functions/test/council-current-authority.test.js:104:3'
+  failureType: 'testCodeFailure'
+  error: |-
+    The expression evaluated to a falsy value:
+    
+      assert.ok(f.state.tokenChecks >= 2)
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: true
+  actual: false
+  operator: '=='
+  stack: |-
+    TestContext.<anonymous> (/workspace/scratch/e41cf8ed94ac/lane-intelligence/sources/spatial/apps/functions/test/council-current-authority.test.js:108:12)
+    async Test.run (node:internal/test_runner/test:1389:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:960:7)
+  ...
+# Subtest: xai denies policy withdrawal after the provider body without publishing its text
+not ok 6 - xai denies policy withdrawal after the provider body without publishing its text
+  ---
+  duration_ms: 41.964322
+  type: 'test'
+  location: '/workspace/scratch/e41cf8ed94ac/lane-intelligence/sources/spatial/apps/functions/test/council-current-authority.test.js:110:3'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    
+    200 !== 403
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 403
+  actual: 200
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (/workspace/scratch/e41cf8ed94ac/lane-intelligence/sources/spatial/apps/functions/test/council-current-authority.test.js:113:12)
+    async Test.run (node:internal/test_runner/test:1389:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:960:7)
+  ...
+# Subtest: mistral keeps the current consented result, caption and actual provider attribution
+not ok 7 - mistral keeps the current consented result, caption and actual provider attribution
+  ---
+  duration_ms: 30.6477
+  type: 'test'
+  location: '/workspace/scratch/e41cf8ed94ac/lane-intelligence/sources/spatial/apps/functions/test/council-current-authority.test.js:104:3'
+  failureType: 'testCodeFailure'
+  error: |-
+    The expression evaluated to a falsy value:
+    
+      assert.ok(f.state.tokenChecks >= 2)
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: true
+  actual: false
+  operator: '=='
+  stack: |-
+    TestContext.<anonymous> (/workspace/scratch/e41cf8ed94ac/lane-intelligence/sources/spatial/apps/functions/test/council-current-authority.test.js:108:12)
+    async Test.run (node:internal/test_runner/test:1389:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:960:7)
+  ...
+# Subtest: mistral denies policy withdrawal after the provider body without publishing its text
+not ok 8 - mistral denies policy withdrawal after the provider body without publishing its text
+  ---
+  duration_ms: 22.666354
+  type: 'test'
+  location: '/workspace/scratch/e41cf8ed94ac/lane-intelligence/sources/spatial/apps/functions/test/council-current-authority.test.js:110:3'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    
+    200 !== 403
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 403
+  actual: 200
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (/workspace/scratch/e41cf8ed94ac/lane-intelligence/sources/spatial/apps/functions/test/council-current-authority.test.js:113:12)
+    async Test.run (node:internal/test_runner/test:1389:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:960:7)
+  ...
+# Subtest: consent withdrawal during protected preflight denies provider dispatch
+not ok 9 - consent withdrawal during protected preflight denies provider dispatch
+  ---
+  duration_ms: 35.347822
+  type: 'test'
+  location: '/workspace/scratch/e41cf8ed94ac/lane-intelligence/sources/spatial/apps/functions/test/council-current-authority.test.js:117:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    
+    200 !== 403
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 403
+  actual: 200
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (/workspace/scratch/e41cf8ed94ac/lane-intelligence/sources/spatial/apps/functions/test/council-current-authority.test.js:119:40)
+    async Test.run (node:internal/test_runner/test:1389:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:960:7)
+  ...
+# Subtest: a replacement granted revision cannot silently authorize the prior Council intent
+not ok 10 - a replacement granted revision cannot silently authorize the prior Council intent
+  ---
+  duration_ms: 24.345569
+  type: 'test'
+  location: '/workspace/scratch/e41cf8ed94ac/lane-intelligence/sources/spatial/apps/functions/test/council-current-authority.test.js:121:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    
+    200 !== 409
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 409
+  actual: 200
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (/workspace/scratch/e41cf8ed94ac/lane-intelligence/sources/spatial/apps/functions/test/council-current-authority.test.js:123:40)
+    async Test.run (node:internal/test_runner/test:1389:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:960:7)
+  ...
+# Subtest: a revoked token at the final boundary denies a previously completed provider result
+not ok 11 - a revoked token at the final boundary denies a previously completed provider result
+  ---
+  duration_ms: 26.179707
+  type: 'test'
+  location: '/workspace/scratch/e41cf8ed94ac/lane-intelligence/sources/spatial/apps/functions/test/council-current-authority.test.js:125:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    
+    200 !== 401
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 401
+  actual: 200
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (/workspace/scratch/e41cf8ed94ac/lane-intelligence/sources/spatial/apps/functions/test/council-current-authority.test.js:129:40)
+    async Test.run (node:internal/test_runner/test:1389:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:960:7)
+  ...
+# Subtest: protected output authority expiration after consent/auth awaits withholds the result
+not ok 12 - protected output authority expiration after consent/auth awaits withholds the result
+  ---
+  duration_ms: 23.864115
+  type: 'test'
+  location: '/workspace/scratch/e41cf8ed94ac/lane-intelligence/sources/spatial/apps/functions/test/council-current-authority.test.js:132:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    
+    200 !== 503
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 503
+  actual: 200
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (/workspace/scratch/e41cf8ed94ac/lane-intelligence/sources/spatial/apps/functions/test/council-current-authority.test.js:134:40)
+    async Test.run (node:internal/test_runner/test:1389:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:960:7)
+  ...
+# Subtest: without explicit consent no provider or protected admission is called
+ok 13 - without explicit consent no provider or protected admission is called
+  ---
+  duration_ms: 21.894022
+  type: 'test'
+  ...
+# Subtest: real loopback delayed body keeps consent withdrawal fenced at final publication
+not ok 14 - real loopback delayed body keeps consent withdrawal fenced at final publication
+  ---
+  duration_ms: 70.449861
+  type: 'test'
+  location: '/workspace/scratch/e41cf8ed94ac/lane-intelligence/sources/spatial/apps/functions/test/council-current-authority.test.js:140:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    
+    200 !== 403
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 403
+  actual: 200
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (/workspace/scratch/e41cf8ed94ac/lane-intelligence/sources/spatial/apps/functions/test/council-current-authority.test.js:154:42)
+    process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    async Test.run (node:internal/test_runner/test:1389:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:960:7)
+  ...
+# Subtest: accepted synthetic person voice still returns bounded private audio under current authority
+not ok 15 - accepted synthetic person voice still returns bounded private audio under current authority
+  ---
+  duration_ms: 46.395314
+  type: 'test'
+  location: '/workspace/scratch/e41cf8ed94ac/lane-intelligence/sources/spatial/apps/functions/test/council-current-authority.test.js:158:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    
+    0 !== 1
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 1
+  actual: 0
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (/workspace/scratch/e41cf8ed94ac/lane-intelligence/sources/spatial/apps/functions/test/council-current-authority.test.js:161:10)
+    process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    async Test.run (node:internal/test_runner/test:1389:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:960:7)
+  ...
+# Subtest: person voice foreign policy owner never authorizes synthesis
+not ok 16 - person voice foreign policy owner never authorizes synthesis
+  ---
+  duration_ms: 27.86422
+  type: 'test'
+  location: '/workspace/scratch/e41cf8ed94ac/lane-intelligence/sources/spatial/apps/functions/test/council-current-authority.test.js:166:4'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    
+    200 !== 403
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 403
+  actual: 200
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (/workspace/scratch/e41cf8ed94ac/lane-intelligence/sources/spatial/apps/functions/test/council-current-authority.test.js:168:10)
+    process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    async Test.run (node:internal/test_runner/test:1389:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:960:7)
+  ...
+# Subtest: person voice missing policy revision never authorizes synthesis
+not ok 17 - person voice missing policy revision never authorizes synthesis
+  ---
+  duration_ms: 46.032479
+  type: 'test'
+  location: '/workspace/scratch/e41cf8ed94ac/lane-intelligence/sources/spatial/apps/functions/test/council-current-authority.test.js:166:4'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    
+    200 !== 403
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 403
+  actual: 200
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (/workspace/scratch/e41cf8ed94ac/lane-intelligence/sources/spatial/apps/functions/test/council-current-authority.test.js:168:10)
+    process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    async Test.run (node:internal/test_runner/test:1389:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:960:7)
+  ...
+# Subtest: person voice consent revision replacement during synthesis withholds audio
+not ok 18 - person voice consent revision replacement during synthesis withholds audio
+  ---
+  duration_ms: 15.878581
+  type: 'test'
+  location: '/workspace/scratch/e41cf8ed94ac/lane-intelligence/sources/spatial/apps/functions/test/council-current-authority.test.js:170:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    
+    200 !== 409
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 409
+  actual: 200
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (/workspace/scratch/e41cf8ed94ac/lane-intelligence/sources/spatial/apps/functions/test/council-current-authority.test.js:172:10)
+    process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    async Test.run (node:internal/test_runner/test:1389:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:960:7)
+  ...
+# Subtest: person voice revoked token during synthesis withholds audio
+not ok 19 - person voice revoked token during synthesis withholds audio
+  ---
+  duration_ms: 22.799785
+  type: 'test'
+  location: '/workspace/scratch/e41cf8ed94ac/lane-intelligence/sources/spatial/apps/functions/test/council-current-authority.test.js:174:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    
+    200 !== 401
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 401
+  actual: 200
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (/workspace/scratch/e41cf8ed94ac/lane-intelligence/sources/spatial/apps/functions/test/council-current-authority.test.js:178:10)
+    process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    async Test.run (node:internal/test_runner/test:1389:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:960:7)
+  ...
+# Subtest: person voice source change during protected preflight denies synthesis
+not ok 20 - person voice source change during protected preflight denies synthesis
+  ---
+  duration_ms: 19.165008
+  type: 'test'
+  location: '/workspace/scratch/e41cf8ed94ac/lane-intelligence/sources/spatial/apps/functions/test/council-current-authority.test.js:180:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    
+    1 !== 0
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 0
+  actual: 1
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (/workspace/scratch/e41cf8ed94ac/lane-intelligence/sources/spatial/apps/functions/test/council-current-authority.test.js:182:48)
+    process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    async Test.run (node:internal/test_runner/test:1389:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:960:7)
+  ...
+# Subtest: person voice protected output expiration after final authority awaits withholds audio
+not ok 21 - person voice protected output expiration after final authority awaits withholds audio
+  ---
+  duration_ms: 31.829362
+  type: 'test'
+  location: '/workspace/scratch/e41cf8ed94ac/lane-intelligence/sources/spatial/apps/functions/test/council-current-authority.test.js:184:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    
+    200 !== 503
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 503
+  actual: 200
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (/workspace/scratch/e41cf8ed94ac/lane-intelligence/sources/spatial/apps/functions/test/council-current-authority.test.js:186:10)
+    process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    async Test.run (node:internal/test_runner/test:1389:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:960:7)
+  ...
+1..21
+# tests 21
+# suites 0
+# pass 1
+# fail 20
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 1287.134955

@@ -1,6 +1,8 @@
 'use client'
 
-import { useMemo, useRef, useState, type FormEvent } from 'react'
+import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
+import { getAuth, onAuthStateChanged } from 'firebase/auth'
+import { app, firebasePublicEnvReady } from '@/lib/firebase/client'
 import type { CouncilAgent } from './councilAgentSchema'
 import {
   attemptedExternalOrbFallback,
@@ -36,6 +38,24 @@ export default function CouncilConversationPanel({ agent }: { agent: CouncilAgen
   const [busy, setBusy] = useState(false)
   const [consent, setConsent] = useState(false)
   const aborter = useRef<AbortController | null>(null)
+  useEffect(() => {
+    if (!firebasePublicEnvReady) return
+    const auth = getAuth(app)
+    let account = auth.currentUser
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (account === user) return
+      account = user
+      aborter.current?.abort()
+      aborter.current = null
+      setMessage('')
+      setHistory([])
+      setResult(null)
+      setConsent(false)
+      setBusy(false)
+      setStatus('Account changed. Prior Council context was cleared.')
+    })
+    return () => { unsubscribe(); aborter.current?.abort(); aborter.current = null }
+  }, [])
 
   const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
