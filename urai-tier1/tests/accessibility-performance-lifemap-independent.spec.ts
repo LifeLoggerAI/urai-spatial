@@ -338,9 +338,17 @@ test.describe('Supporting route responsive and accessible runtime evidence', () 
     const reports = []
     for (const viewport of [{ width: 320, height: 568 }, { width: 568, height: 320 }, { width: 1280, height: 720 }]) {
       await page.setViewportSize(viewport)
-      for (const route of ['/login', '/settings', '/support']) {
+      for (const route of ['/login', '/settings', '/support'] as const) {
         await page.goto(route, { waitUntil: 'domcontentloaded' })
-        const main = page.locator('main').first()
+        // Read the mounted destination, never the transient world-opening shell.
+        const heading = {
+          '/login': 'Enter your world.',
+          '/settings': 'How URAI meets you.',
+          '/support': 'Help when you need it.',
+        }[route]
+        const main = page.locator('main').filter({
+          has: page.getByRole('heading', { level: 1, name: heading, exact: true }),
+        })
         await expect(main).toBeVisible()
         const layout = await main.evaluate((element) => ({ overflowY: getComputedStyle(element).overflowY, scrollWidth: element.scrollWidth, clientWidth: element.clientWidth, scrollHeight: element.scrollHeight, clientHeight: element.clientHeight }))
         expect(layout.overflowY).toBe('auto')
@@ -353,7 +361,8 @@ test.describe('Supporting route responsive and accessible runtime evidence', () 
           await expect(main.getByRole('checkbox', { name: 'Haptics', exact: true })).toBeVisible()
         }
         if (layout.scrollHeight > layout.clientHeight + 1) {
-          await main.evaluate((element) => { element.scrollTop = element.scrollHeight })
+          await main.hover()
+          await page.mouse.wheel(0, layout.scrollHeight)
           await expect.poll(() => main.evaluate((element) => element.scrollTop)).toBeGreaterThan(0)
         }
         const lastLink = main.locator('a[href]').last()
