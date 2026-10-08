@@ -5,7 +5,8 @@ import { Readable } from 'node:stream'
 import test from 'node:test'
 
 const require = createRequire(import.meta.url)
-const braces = require('braces')
+const braces = require('../../vendor/braces')
+console.log(JSON.stringify({proofScope:'RETAINED_VENDOR_SOURCE_REGRESSIONS',installedGraphAcceptance:false,upstreamFixedReleaseClaim:false}))
 
 test('bounded brace walkers preserve ordinary nested patterns and padded ranges', () => {
   assert.deepEqual(braces.expand('{a,b}-{01..03}'), ['a-01', 'a-02', 'a-03', 'b-01', 'b-02', 'b-03'])
@@ -18,7 +19,7 @@ test('bounded brace walkers preserve ordinary nested patterns and padded ranges'
 test('deep untrusted patterns fail with a bounded validation error without exhausting a small stack', () => {
   const source = `
     const assert = require('node:assert/strict');
-    const braces = require(${JSON.stringify(require.resolve('braces'))});
+    const braces = require(${JSON.stringify(require.resolve('../../vendor/braces'))});
     const input = '{a,'.repeat(2400) + 'b' + '}'.repeat(2400);
     for (const method of ['compile', 'expand', 'stringify']) {
       assert.throws(() => braces[method](input), error => error instanceof RangeError && /supported depth of 64/.test(error.message), method);

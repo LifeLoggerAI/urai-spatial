@@ -1,0 +1,107 @@
+name: Spatial Maintained Tooling Installed Compatibility
+
+on:
+  pull_request:
+    branches: [main, repair/release-closure-integration-20261007]
+  push:
+    branches: [main, repair/release-closure-integration-20261007]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: spatial-maintained-tooling-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+env:
+  URAI_EXACT_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
+  CI: 'true'
+  FIREBASE_CLI_DISABLE_USAGE_REPORTING: '1'
+  NEXT_TELEMETRY_DISABLED: '1'
+
+jobs:
+  installed-consumers:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    steps:
+      - name: Checkout actual exact source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ env.URAI_EXACT_HEAD }}
+          fetch-depth: 1
+          persist-credentials: false
+      - name: Setup supported Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '22'
+      - name: Prove exact clean source and frozen workspace graph
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$URAI_EXACT_HEAD"
+          test -z "$(git status --porcelain --untracked-files=all)"
+          corepack enable
+          corepack pnpm@10.0.0 install --frozen-lockfile --ignore-scripts
+          git diff --exit-code -- package.json pnpm-lock.yaml pnpm-workspace.yaml patches
+      - name: Verify manifest exports and original baseline identity boundaries
+        run: node --test scripts/test-spatial-dependency-manifest-resolution.mjs scripts/test-spatial-original-baseline-authority.mjs
+      - name: Verify every actual installed importer and original consumer file
+        run: node scripts/check-spatial-maintained-tooling.mjs "$RUNNER_TEMP/spatial-maintained-evidence/installed-tooling.json"
+      - name: Retained bounded fork source and current parser regressions
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --test tests/braces-retained-source.test.cjs urai-tier1/tests/dependency-security-regressions.test.mjs | tee "$RUNNER_TEMP/spatial-maintained-evidence/retained-source-tests.log"
+      - name: Prepare original public packages outside candidate scope
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/spatial-maintained-baseline/firebase" "$RUNNER_TEMP/spatial-maintained-baseline/next" "$RUNNER_TEMP/spatial-maintained-baseline/dependencies"
+          npm pack firebase-tools@15.32.1 --ignore-scripts --pack-destination "$RUNNER_TEMP/spatial-maintained-baseline"
+          npm pack @next/eslint-plugin-next@15.5.27 --ignore-scripts --pack-destination "$RUNNER_TEMP/spatial-maintained-baseline"
+          tar -xzf "$RUNNER_TEMP/spatial-maintained-baseline/firebase-tools-15.32.1.tgz" -C "$RUNNER_TEMP/spatial-maintained-baseline/firebase" --strip-components=1
+          tar -xzf "$RUNNER_TEMP/spatial-maintained-baseline/next-eslint-plugin-next-15.5.27.tgz" -C "$RUNNER_TEMP/spatial-maintained-baseline/next" --strip-components=1
+          npm install --prefix "$RUNNER_TEMP/spatial-maintained-baseline/dependencies" --ignore-scripts --no-audit --no-fund chokidar@3.6.0 fast-glob@3.3.1 micromatch@4.0.8 @next/eslint-plugin-next@15.5.27 semver@7.7.3
+      - name: Actual four watcher consumers and complete Next lint equivalence
+        shell: bash
+        run: |
+          set -euo pipefail
+          node scripts/test-spatial-maintained-consumers.mjs "$RUNNER_TEMP/spatial-maintained-baseline" "$RUNNER_TEMP/spatial-maintained-baseline/dependencies/package.json" | tee "$RUNNER_TEMP/spatial-maintained-evidence/consumer-tests.log"
+          URAI_GLOB_BASELINE_ROOT="$RUNNER_TEMP/spatial-maintained-baseline/dependencies" node --test scripts/test-spatial-next-root-exact-differential.mjs | tee "$RUNNER_TEMP/spatial-maintained-evidence/exact-next-tests.log"
+          cp artifacts/spatial-next-root-dirs-exact-differential.json "$RUNNER_TEMP/spatial-maintained-evidence/exact-next-differential.json"
+      - name: Build actual locked native CLI dependency and execute offline CLI
+        shell: bash
+        run: |
+          set -euo pipefail
+          corepack pnpm@10.0.0 rebuild re2
+          node scripts/check-spatial-offline-cli.mjs "$RUNNER_TEMP/spatial-maintained-evidence"
+      - name: Read complete fresh official reviewed advisory source
+        shell: bash
+        run: |
+          set -euo pipefail
+          git clone --depth 1 --filter=blob:none --sparse https://github.com/github/advisory-database.git "$RUNNER_TEMP/spatial-current-reviewed-advisories"
+          git -C "$RUNNER_TEMP/spatial-current-reviewed-advisories" sparse-checkout set advisories/github-reviewed
+          test "$(git -C "$RUNNER_TEMP/spatial-current-reviewed-advisories" rev-parse HEAD)" = ccd4868bd8cfbed178f5ada1194b4fe30674c25b
+          node scripts/check-current-spatial-reviewed-advisories.mjs "$RUNNER_TEMP/spatial-current-reviewed-advisories" "$RUNNER_TEMP/spatial-maintained-evidence/current-advisories.json"
+      - name: Existing current Functions compile and tests
+        run: |
+          corepack pnpm@10.0.0 --dir apps/functions build
+          corepack pnpm@10.0.0 --dir apps/functions test
+      - name: Existing current Next type and build checks
+        run: |
+          corepack pnpm@10.0.0 --dir urai-tier1 check:types
+          corepack pnpm@10.0.0 --dir urai-tier1 build
+      - name: Verify immutable tracked source after every consumer check
+        run: git diff --exit-code HEAD
+      - name: Retain exact source and graph evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: spatial-maintained-tooling-${{ matrix.os }}-${{ env.URAI_EXACT_HEAD }}
+          path: ${{ runner.temp }}/spatial-maintained-evidence
+          if-no-files-found: error
