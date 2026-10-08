@@ -345,3 +345,28 @@ test('Firebase wrong-mode webhook cannot call providers or write entitlement',as
   assert.equal(result.status,400);assert.equal(state.readbacks.length,0);assert.equal(state.entitlements.size,0);
 });
 
+for (const transport of ['Next', 'Firebase']) test(transport + ' verified latest-invoice failure revokes a grant at the same event second', async () => {
+  current();
+  const send = transport === 'Next' ? deliver : deliverFunction;
+  await send('invoice.paid', invoice(), { id: 'evt_a_paid', created: 200 });
+  assert.equal(state.entitlements.get(userId).subscriptionStatus, 'active');
+  const latest = invoice({ id: 'in_new_period', status: 'open' });
+  current(subscription({ latest_invoice: latest.id }), latest);
+  const result = await send('invoice.payment_failed', latest, { id: 'evt_z_failed', created: 200 });
+  assert.equal(result.status, 200);
+  assert.equal(state.entitlements.get(userId).subscriptionStatus, 'past_due');
+});
+
+for (const transport of ['Next', 'Firebase']) for (const status of ['past_due', 'incomplete', 'none'])
+test(transport + ' equal-second ' + status + ' denies access and suppresses a competing grant', async () => {
+  current();
+  const send = transport === 'Next' ? deliver : deliverFunction;
+  await send('invoice.paid', invoice(), { id: 'evt_a_paid', created: 200 });
+  await send('customer.subscription.updated', subscription({ status }), { id: 'evt_z_denied', created: 200 });
+  assert.equal(state.entitlements.get(userId).subscriptionStatus, status);
+  await send('invoice.paid', invoice(), { id: 'evt_zz_competing_paid', created: 200 });
+  assert.equal(state.entitlements.get(userId).subscriptionStatus, status);
+  await send('invoice.paid', invoice(), { id: 'evt_later_paid', created: 201 });
+  assert.equal(state.entitlements.get(userId).subscriptionStatus, 'active');
+});
+

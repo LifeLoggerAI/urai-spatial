@@ -191,7 +191,7 @@ async function applyOrderedEntitlement(record: StoredEntitlement, event: Stripe.
     if ((current.stripeLastEventCreated ?? 0) > event.created) return { applied: false, reason: 'stale-event' }
     if ((current.stripeLastEventCreated ?? 0) === event.created) {
       const precedence: Record<SubscriptionStatus, number> = {
-        none: 0, incomplete: 10, past_due: 20, trialing: 30, active: 40, canceled: 50,
+        trialing: 20, active: 30, none: 40, incomplete: 50, past_due: 60, canceled: 70,
       }
       if (
         precedence[record.subscriptionStatus] < precedence[current.subscriptionStatus]
