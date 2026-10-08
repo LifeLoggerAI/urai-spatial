@@ -2,6 +2,7 @@ import { createHash } from 'node:crypto'
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import { createRequire } from 'node:module'
+import { captureVisibleCanvasPng } from './capture-visible-canvas-png.mjs'
 import { attachHomeOrbFailureProbe, captureHomeOrbFailure } from './home-orb-failure-diagnostics.mjs'
 
 const requireFromTierOne = createRequire(new URL('../urai-tier1/package.json', import.meta.url))
@@ -27,7 +28,7 @@ const cases = [
 
 await mkdir(outputDir, { recursive: true })
 const receipt = {
-  schemaVersion: 'urai-sacred-home-orb-proof-3',
+  schemaVersion: 'urai-sacred-home-orb-proof-4',
   exactHead,
   capturedAt: new Date().toISOString(),
   runtimeContract: 'natural-home-real-glb-orb-environmental-threshold-semantic-and-visual-proof',
@@ -45,8 +46,8 @@ async function frames(page, count = 8) {
   }), count)
 }
 
-async function imageEvidence(page) {
-  const buffer = await page.screenshot({ fullPage: false, animations: 'disabled', caret: 'hide', timeout: 90_000 })
+async function imageEvidence(page, canvas) {
+  const { buffer, capture } = await captureVisibleCanvasPng(page, canvas)
   const dataUrl = `data:image/png;base64,${buffer.toString('base64')}`
   const sample = await page.evaluate(async (url) => {
     const image = new Image()
@@ -66,7 +67,7 @@ async function imageEvidence(page) {
     })
     return { luminanceRange: Math.max(...values) - Math.min(...values), visibleSamples: values.filter((value) => value >= 10).length }
   }, dataUrl)
-  return { buffer, ...sample }
+  return { buffer, capture, ...sample }
 }
 
 for (const spec of cases) {
@@ -122,7 +123,10 @@ for (const spec of cases) {
       const element = document.querySelector('.home-semantic-navigation[data-home-navigation-owner="runtime-boundary"]')
       return element ? Number.parseFloat(getComputedStyle(element).opacity || '1') : null
     })
-    const visual = await imageEvidence(page)
+    const worldCanvas = owner.locator('canvas')
+    if (await worldCanvas.count() !== 1) throw new Error('Home/Orb visual proof requires exactly one world canvas')
+    const visual = await imageEvidence(page, worldCanvas)
+    record.canvasCapture = visual.capture
     record.screenshot = `${spec.id}-${exactHead.slice(0, 12)}.png`
     await writeFile(path.join(outputDir, record.screenshot), visual.buffer)
     record.screenshotBytes = visual.buffer.length
@@ -157,6 +161,10 @@ for (const spec of cases) {
       && Number.isFinite(record.semanticOpacity) && record.semanticOpacity <= .02
       && record.visiblePortals === 'false'
       && record.portalRequests.length === 0
+      && record.canvasCapture?.source === 'visible-canvas-viewport-clip'
+      && record.canvasCapture?.boundsUnchanged === true
+      && record.canvasCapture?.canvasTopmostAtSamplePoints === true
+      && record.canvasCapture?.canvasTopmostAfterCapture === true
       && record.screenshotBytes > 12000
       && record.luminanceRange >= 16
       && record.visibleSamples >= 5

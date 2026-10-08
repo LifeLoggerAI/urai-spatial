@@ -5,6 +5,8 @@ on:
     branches: [main, repair/release-closure-integration-20261007]
     paths:
       - 'scripts/capture-natural-home-orb-proof.mjs'
+      - 'scripts/capture-visible-canvas-png.mjs'
+      - 'urai-tier1/tests/visible-canvas-capture.test.mjs'
       - 'scripts/run-with-ci-webgl.mjs'
       - '.github/workflows/portal-orb-exact-proof.yml'
       - 'urai-tier1/src/app/AssetDrivenHomeWorld.tsx'
@@ -70,6 +72,7 @@ jobs:
           pnpm --dir urai-tier1 exec playwright install --with-deps chromium
           node --check scripts/run-with-ci-webgl.mjs
           node --check scripts/capture-natural-home-orb-proof.mjs
+          node --test urai-tier1/tests/visible-canvas-capture.test.mjs
       - name: Capture exact desktop, mobile, reduced-motion, natural-threshold and Orb proof
         run: |
           python3 -m http.server 4173 --bind 127.0.0.1 --directory urai-tier1/out > /tmp/urai-portal-orb-http.log 2>&1 &
