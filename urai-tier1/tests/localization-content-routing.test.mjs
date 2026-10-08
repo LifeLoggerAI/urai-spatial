@@ -57,19 +57,31 @@ function clientFixture({ initialLocale = 'en-US', events, getToken = async () =>
   return { client, calls, request, changeLocale: value => { currentLocale = value } }
 }
 
-function providerFixture({ output = doneEvent('en-US'), policyGranted = true } = {}) {
+const unexpectedConsentDependency = id => { throw new Error(`Unexpected canonical consent dependency ${id}`) }
+const consentPolicyAuthority = sourceModule('../../apps/functions/src/consentPolicyAuthority.ts', unexpectedConsentDependency)
+const consentModel = sourceModule('../src/app/privacy-controls/consentModel.ts', unexpectedConsentDependency)
+function canonicalProviderPolicy(granted = true) {
+  const policy = JSON.parse(JSON.stringify(consentModel.defaultConsentPolicy('synthetic-owner')))
+  policy.domains.models.mode = granted ? 'granted' : 'denied'
+  policy.domains.models.modelContext = granted
+  assert.equal(consentPolicyAuthority.isCanonicalStoredPolicy(policy, 'synthetic-owner'), true, 'positive locale fixture executes actual canonical owner consent')
+  return policy
+}
+
+function providerFixture({ output = doneEvent('en-US'), policyGranted = true, policyOverride, policyPresent = true } = {}) {
   const calls = []
   const stored = []
   const records = new Map()
+  const policy = policyOverride === undefined ? canonicalProviderPolicy(policyGranted) : policyOverride
   class Timestamp {
     constructor(value) { this.value = value }
     toMillis() { return this.value }
     static fromMillis(value) { return new Timestamp(value) }
   }
   const snapshot = path => ({
-    exists: path.endsWith('privacyPolicy/current') || records.has(path),
+    exists: path.endsWith('privacyPolicy/current') ? policyPresent : records.has(path),
     data: () => path.endsWith('privacyPolicy/current')
-      ? { domains: { models: { mode: policyGranted ? 'granted' : 'denied', modelContext: policyGranted } }, enforcement: { state: 'fully-enforced' } }
+      ? policy
       : records.get(path) ?? {},
   })
   const write = (path, value) => { records.set(path, { ...records.get(path), ...value }); stored.push({ path, value }) }
@@ -88,6 +100,7 @@ function providerFixture({ output = doneEvent('en-US'), policyGranted = true } =
     if (id === 'firebase-functions/params') return { defineSecret: () => ({ value: () => 'synthetic-provider-key' }) }
     if (id === 'firebase-functions/v2/https') return { onRequest: (_options, handler) => handler }
     if (id === '../../../packages/localization/src/contentLanguage') return { contentLanguage, URAI_CONTENT_LANGUAGE_TAGS }
+    if (id === './consentPolicyAuthority') return consentPolicyAuthority
     if (id === './protectedProviderSpend') return { paidSpatialFetch: (_db, _uid, _lane, _provider, _model, _input, url, init) => providerTransport(url, init), SpatialSpendError: class extends Error {}, SPATIAL_SPEND_WORKER_TOKENS_JSON: {} }
     throw new Error(`Unexpected provider dependency ${id}`)
   }, {
@@ -278,6 +291,35 @@ test('unsupported server language and saved consent denial do not call moderatio
   const denied = providerFixture({ policyGranted: false })
   assert.equal((await denied.invoke({ locale: 'ar-SA' })).code, 403)
   assert.equal(denied.calls.length, 0)
+})
+
+test('missing saved canonical consent prevents every locale provider request', async () => {
+  const f = providerFixture({ policyPresent: false })
+  const response = await f.invoke({ locale: 'ar-SA' })
+  assert.equal(response.code, 403)
+  assert.equal(response.json.error, 'CONSENT_POLICY_REQUIRED')
+  assert.equal(f.calls.length, 0)
+  assert.ok(f.stored.every(row => row.path === 'users/synthetic-owner/providerTelemetry/openai' && row.value.lastOutcome === 'failure' && row.value.inputUnits === 0 && row.value.outputUnits === 0), 'denied consent may retain aggregate failure telemetry only')
+})
+
+const malformedProviderPolicies = [
+  ['null', () => null],
+  ['legacy partial permission', () => ({ domains: { models: { mode: 'granted', modelContext: true } }, enforcement: { state: 'fully-enforced' } })],
+  ['wrong owner', p => { p.ownerId = 'synthetic-other-owner'; return p }],
+  ['missing revision', p => { delete p.revision; return p }],
+  ['missing location domain', p => { delete p.domains.location; return p }],
+  ['truthy model permission', p => { p.domains.models.modelContext = 'true'; return p }],
+  ['missing enforcement targets', p => { delete p.enforcement.affectedTargets; return p }],
+  ['inherited complete policy', p => Object.create(p)],
+  ['unknown approval field', p => ({ ...p, approved: true })],
+]
+for (const [name, alter] of malformedProviderPolicies) test(`malformed canonical consent ${name} causes zero moderation or generation requests`, async () => {
+  const f = providerFixture({ policyOverride: alter(canonicalProviderPolicy()) })
+  const response = await f.invoke({ locale: 'ar-SA' })
+  assert.equal(response.code, 403)
+  assert.equal(response.json.error, 'CONSENT_POLICY_REQUIRED')
+  assert.equal(f.calls.length, 0)
+  assert.ok(f.stored.every(row => row.path === 'users/synthetic-owner/providerTelemetry/openai' && row.value.lastOutcome === 'failure' && row.value.inputUnits === 0 && row.value.outputUnits === 0), 'denied consent may retain aggregate failure telemetry only')
 })
 
 test('server rejects missing/wrong output language or different caption without publishing generated text', async () => {
