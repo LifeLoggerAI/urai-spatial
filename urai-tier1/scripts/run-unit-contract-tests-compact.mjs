@@ -112,6 +112,7 @@ const tests = [
   'tests/localization-flow.test.mjs',
   'tests/localization-journey-copy.test.mjs',
   'tests/adam-navigation-lifecycle.test.mjs',
+  'tests/ground-semantic-return-lifecycle.test.mjs',
   'tests/localization-readiness-evidence-contract.test.mjs',
   'tests/memory-star-phase4-contract.test.mjs',
   'tests/memory-world-foundation.test.mjs',

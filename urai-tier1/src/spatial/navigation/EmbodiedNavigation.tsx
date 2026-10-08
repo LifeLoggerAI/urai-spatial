@@ -42,7 +42,10 @@ const MOTION_RIGHT = new THREE.Vector3()
 const MOTION_NEXT = new THREE.Vector3()
 
 function isEditableTarget(target: EventTarget | null) {
-  return target instanceof Element && Boolean(target.closest('input,textarea,select,[contenteditable="true"],button,a,summary'))
+  return target instanceof Element && (
+    (target instanceof HTMLElement && target.isContentEditable) ||
+    Boolean(target.closest('input,textarea,select,[role="textbox"],[contenteditable="true"],button,a,summary'))
+  )
 }
 
 export function useMovementInput({
@@ -68,6 +71,7 @@ export function useMovementInput({
   useEffect(() => {
     if (!enabled) return
     const onKeyDown = (event: KeyboardEvent) => {
+      if (event.defaultPrevented) return
       const editableTarget = isEditableTarget(event.target)
       const movementControl = event.target instanceof Element && Boolean(event.target.closest('[data-movement-ui="true"]'))
       if (MOVEMENT_KEYS.has(event.code)) {

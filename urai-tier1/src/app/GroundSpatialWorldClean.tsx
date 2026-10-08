@@ -1,5 +1,6 @@
 "use client";
 
+import { requestUraiWorldReturn } from '@/spatial/world/worldEvents'
 import AdamLauncherSlot from '@/spatial/adam/AdamLauncherSlot'
 
 import { Canvas, useFrame, useThree, type ThreeEvent } from "@react-three/fiber";
@@ -317,7 +318,7 @@ export default function GroundSpatialWorldClean() {
     target.current = SPAWN.clone();
     setActiveId(null);
   }, []);
-  const input = useMovementInput({ onEscape: () => router.push("/home?returnFrom=ground"), onInteract: interact, onReset: reset });
+  const input = useMovementInput({ onEscape: requestUraiWorldReturn, onInteract: interact, onReset: reset });
   const look = useDragLook({ yaw, pitch, sensitivity: 0.0034, onDragState: setDragging });
   const focusDestination = useCallback((destination: GroundDestination) => {
     setActiveId(destination.id);
@@ -388,7 +389,7 @@ export default function GroundSpatialWorldClean() {
         <span>URAI GROUND</span>
         <strong>{nearby ? nearby.label : "Private infrastructure beneath the living world"}</strong>
       </header>
-      <button className="ground-home-return" type="button" onClick={() => router.push("/home?returnFrom=ground")} aria-label="Return Home">Home</button>
+      <button className="ground-home-return" type="button" onClick={requestUraiWorldReturn} aria-label="Return Home">Home</button>
       <div className="ground-prompt" role="status" aria-live="polite">{nearby ? `Enter ${nearby.label}` : "Walk deeper. Approach a chamber."}</div>
       <nav className="ground-directory ground-destination-compass" aria-label="Ground destinations">
         {DESTINATIONS.map((destination) => (

@@ -25,6 +25,7 @@ const focusedContractTests = [
   'tests/localization-flow.test.mjs',
   'tests/localization-journey-copy.test.mjs',
   'tests/adam-navigation-lifecycle.test.mjs',
+  'tests/ground-semantic-return-lifecycle.test.mjs',
   'tests/localization-readiness-evidence-contract.test.mjs',
   'tests/person-presence-provider-contract.test.mjs',
   'tests/person-presence-voice-contract.test.mjs',
