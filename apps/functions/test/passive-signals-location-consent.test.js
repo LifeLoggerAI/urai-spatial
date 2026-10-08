@@ -15,16 +15,55 @@ class HttpsError extends Error {
   constructor(code, message) { super(message); this.code = code }
 }
 
-async function fixture(domains = policy(), policyExists = true) {
-  const reads = [], writes = [], logs = []
+async function fixture(domains = policy(), policyExists = true, options = {}) {
+  const reads = [], writes = [], logs = [], allocatedIds = [], stagedWrites = []
+  let currentDomains = domains, currentExists = policyExists, revision = 0, beforeCommitCalled = false, transactionAttempts = 0
+  const changePolicy = (nextDomains, exists = true) => { currentDomains = nextDomains; currentExists = exists; revision += 1 }
+  const policySnapshot = () => {
+    const capturedDomains = structuredClone(currentDomains)
+    return { exists: currentExists, get: (field) => field === 'domains' ? capturedDomains : undefined }
+  }
+  const beforeCommit = async () => {
+    if (options.beforeCommit && !beforeCommitCalled) { beforeCommitCalled = true; await options.beforeCommit(changePolicy) }
+  }
+  const commit = (pending) => {
+    if (options.commitError) throw options.commitError
+    writes.push(...pending)
+  }
   const db = {
-    doc: (location) => ({ get: async () => {
+    doc: (location) => ({ location, get: async () => {
       reads.push(location)
-      return { exists: policyExists, get: (field) => field === 'domains' ? domains : undefined }
+      return policySnapshot()
     } }),
-    collection: (location) => ({ doc: () => ({ id: 'synthetic-location-signal', set: async (data) => {
-      writes.push({ location, data: JSON.parse(JSON.stringify(data)) })
-    } }) }),
+    collection: (location) => ({ doc: () => {
+      allocatedIds.push('synthetic-location-signal')
+      return { id: 'synthetic-location-signal', location, set: async (data) => {
+        await beforeCommit()
+        commit([{ location, data: JSON.parse(JSON.stringify(data)) }])
+      } }
+    } }),
+    // Deterministic optimistic-conflict model for actual handler behavior.
+    // This is not the Firestore emulator or a claim about production lock timing.
+    runTransaction: async (callback) => {
+      for (let attempt = 0; attempt < 3; attempt += 1) {
+        transactionAttempts += 1
+        const pending = []
+        let readRevision
+        const transaction = {
+          get: async (ref) => { readRevision = revision; return ref.get() },
+          set: (ref, data) => {
+            const write = { location: ref.location, data: JSON.parse(JSON.stringify(data)) }
+            pending.push(write); stagedWrites.push(write)
+          },
+        }
+        const result = await callback(transaction)
+        await beforeCommit()
+        if (readRevision !== revision) continue
+        commit(pending)
+        return result
+      }
+      throw new Error('Synthetic transaction retries exhausted')
+    },
   }
   const functions = { https: { HttpsError }, region: () => ({ https: { onCall: (callback) => callback } }) }
   const admin = { apps: ['synthetic'], firestore: Object.assign(() => db, {
@@ -63,7 +102,7 @@ async function fixture(domains = policy(), policyExists = true) {
   }
 
   const record = (payload, context = { auth: { uid } }, extra = {}) => handler({ type: 'location', payload, ...extra }, context)
-  return { record, reads, writes, logs }
+  return { record, reads, writes, logs, allocatedIds, stagedWrites, transactionAttempts: () => transactionAttempts }
 }
 
 function stored(f) {
@@ -144,5 +183,93 @@ test('unauthenticated request cannot read policy or retain coordinates', async (
   const f = await fixture()
   await assert.rejects(f.record(coordinates, {}), { code: 'unauthenticated' })
   assert.equal(f.reads.length, 0)
+  assert.equal(f.writes.length, 0)
+})
+
+
+const allSignalDomains = () => ({
+  ...policy({ mode: 'granted', precise: true }),
+  models: { mode: 'granted', modelContext: true },
+  identity: { mode: 'granted', likenessEnabled: true },
+})
+const sensitivePayloads = {
+  'voice-interaction': { transcript: 'Synthetic private transcript', toneTag: 'reflective', rawAudio: 'must-not-store' },
+  'camera-emotion': { emotionTag: 'calm', colorTag: 'blue', rawImage: 'must-not-store' },
+  location: { ...coordinates, precision: 'precise' },
+}
+const revocations = [
+  ['location', 'location', { mode: 'denied', precise: true }, 'PASSIVE_SIGNAL_LOCATION_CONSENT_REQUIRED'],
+  ['location', 'workforce', { mode: 'granted', automationEnabled: false }, 'PASSIVE_SIGNAL_AUTOMATION_CONSENT_REQUIRED'],
+  ['motion', 'workforce', { mode: 'paused', automationEnabled: true }, 'PASSIVE_SIGNAL_AUTOMATION_CONSENT_REQUIRED'],
+  ['voice-interaction', 'models', { mode: 'granted', modelContext: false }, 'PASSIVE_SIGNAL_MODEL_CONTEXT_CONSENT_REQUIRED'],
+  ['voice-interaction', 'models', { mode: 'denied', modelContext: true }, 'PASSIVE_SIGNAL_MODEL_CONTEXT_CONSENT_REQUIRED'],
+  ['camera-emotion', 'identity', { mode: 'granted', likenessEnabled: false }, 'PASSIVE_SIGNAL_LIKENESS_CONSENT_REQUIRED'],
+  ['camera-emotion', 'identity', { mode: 'paused', likenessEnabled: true }, 'PASSIVE_SIGNAL_LIKENESS_CONSENT_REQUIRED'],
+]
+
+for (const [type, domain, replacement, message] of revocations) {
+  test(`policy ${domain} revocation during ${type} persistence retries and denies without committing`, async () => {
+    const initial = allSignalDomains()
+    const f = await fixture(initial, true, { beforeCommit: (changePolicy) => changePolicy({ ...initial, [domain]: replacement }) })
+    await assert.rejects(f.record(sensitivePayloads[type] || { intensity: 5 }, undefined, { type }), { code: 'permission-denied', message })
+    assert.equal(f.writes.length, 0)
+    assert.equal(f.transactionAttempts(), 2)
+    assert.equal(f.stagedWrites.length, 1)
+    assert.deepEqual(f.reads, [`users/${uid}/privacyPolicy/current`, `users/${uid}/privacyPolicy/current`])
+    assert.deepEqual(f.allocatedIds, ['synthetic-location-signal'])
+    assert.equal(f.logs.length, 0)
+  })
+}
+
+test('policy deletion during persistence discards the staged signal and denies on retry', async () => {
+  const f = await fixture(allSignalDomains(), true, { beforeCommit: (changePolicy) => changePolicy(undefined, false) })
+  await assert.rejects(f.record(coordinates), { code: 'permission-denied', message: 'PASSIVE_SIGNAL_CONSENT_POLICY_REQUIRED' })
+  assert.equal(f.writes.length, 0)
+  assert.equal(f.transactionAttempts(), 2)
+  assert.equal(f.logs.length, 0)
+})
+
+test('precise-to-approximate conflict retries minimization and commits one coarse signal with the same id', async () => {
+  const initial = allSignalDomains()
+  const f = await fixture(initial, true, { beforeCommit: (changePolicy) => changePolicy({ ...initial, location: { mode: 'limited', precise: false } }) })
+  const result = await f.record({ ...coordinates, precision: 'precise', originalLatitude: coordinates.latitude, originalLongitude: coordinates.longitude })
+  assert.deepEqual(stored(f), { source: 'browser', precision: 'approximate', ...approximate })
+  assert.equal(f.transactionAttempts(), 2)
+  assert.equal(f.stagedWrites.length, 2)
+  assert.deepEqual(f.allocatedIds, ['synthetic-location-signal'])
+  assert.equal(result.signalId, f.writes[0].data.signalId)
+  assert.equal(f.logs.length, 0)
+})
+
+for (const type of ['voice-interaction', 'camera-emotion']) {
+  test(`unchanged ${type} consent commits one minimized sensitive signal`, async () => {
+    const f = await fixture(allSignalDomains())
+    const result = await f.record(sensitivePayloads[type], undefined, { type })
+    assert.equal(result.accepted, true)
+    assert.equal(f.writes.length, 1)
+    assert.equal(f.writes[0].location, `users/${uid}/${type === 'voice-interaction' ? 'voiceEvents' : 'behaviorSignals'}`)
+    assert.equal(f.writes[0].data.ownerId, uid)
+    assert.equal(f.writes[0].data.privacyClass, 'sensitive')
+    assert.equal(f.writes[0].data.rawMediaStored, false)
+    assert.equal(f.writes[0].data.payload[type === 'voice-interaction' ? 'rawAudioStored' : 'rawImageStored'], false)
+    assert.equal(Object.hasOwn(f.writes[0].data.payload, 'rawAudio'), false)
+    assert.equal(Object.hasOwn(f.writes[0].data.payload, 'rawImage'), false)
+    assert.equal(f.transactionAttempts(), 1)
+    assert.equal(f.logs.length, 0)
+  })
+}
+
+test('failed commit never returns accepted and never leaves a committed signal', async () => {
+  const f = await fixture(allSignalDomains(), true, { commitError: new Error('Synthetic storage unavailable') })
+  await assert.rejects(f.record(coordinates), { message: 'Synthetic storage unavailable' })
+  assert.equal(f.writes.length, 0)
+  assert.equal(f.logs.length, 0)
+})
+
+test('unsupported signal rejects before reading policy or starting a transaction', async () => {
+  const f = await fixture()
+  await assert.rejects(f.record({}, undefined, { type: 'unsupported' }), { code: 'invalid-argument' })
+  assert.equal(f.reads.length, 0)
+  assert.equal(f.transactionAttempts(), 0)
   assert.equal(f.writes.length, 0)
 })

@@ -1,4 +1,4 @@
-name: Passive Location Consent Proof
+name: Passive Signal Consent Persistence Proof
 
 on:
   pull_request:
@@ -55,7 +55,7 @@ jobs:
         run: pnpm --filter urai-functions... install --frozen-lockfile --ignore-scripts
       - name: Strict compile Functions
         run: pnpm --filter urai-functions build
-      - name: Prove compiled handler retention and rejection
+      - name: Prove compiled handler minimization and transactional consent retries
         shell: bash
         run: |
           node <<'NODE'
@@ -71,7 +71,7 @@ jobs:
           const output = `${result.stdout || ''}${result.stderr || ''}`
           fs.writeFileSync('passive-location-proof/behavior.tap', output)
           fs.writeFileSync('passive-location-proof/receipt.json', JSON.stringify({
-            schemaVersion: 'urai-passive-location-behavior-receipt-v1',
+            schemaVersion: 'urai-passive-signal-consent-behavior-receipt-v2',
             sourceSha: process.env.URAI_PROOF_SOURCE_SHA,
             nodeVersion: process.version,
             typeScriptVersion: require('./apps/functions/node_modules/typescript/package.json').version,
@@ -80,7 +80,9 @@ jobs:
             testSha256: hash(`apps/functions/${file}`),
             behaviorTapSha256: hash('passive-location-proof/behavior.tap'),
             testExitStatus: result.status,
-            testMode: 'native-node22-strict-tsc-compiled-module-with-synthetic-firestore',
+            testMode: 'native-node22-strict-tsc-compiled-module-with-synthetic-firestore-conflict-model',
+            consentPersistence: 'transactional-policy-read-and-signal-write',
+            preservesPriorLocationAssertions: true,
             productionOrEmulatorVerification: false,
             state: result.status === 0 ? 'BEHAVIORALLY_VERIFIED_NATIVE_COMPILED' : 'FAILED',
           }, null, 2) + '\n')

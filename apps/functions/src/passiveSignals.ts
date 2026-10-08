@@ -55,8 +55,8 @@ function enabledDomain(value: unknown) {
   return (mode === 'granted' || mode === 'limited')
 }
 
-async function requireSignalConsent(uid: string, type: SignalType) {
-  const policy = await db.doc(`users/${uid}/privacyPolicy/current`).get()
+async function requireSignalConsent(uid: string, type: SignalType, transaction: admin.firestore.Transaction) {
+  const policy = await transaction.get(db.doc(`users/${uid}/privacyPolicy/current`))
   if (!policy.exists) throw new functions.https.HttpsError('permission-denied', 'PASSIVE_SIGNAL_CONSENT_POLICY_REQUIRED')
 
   const domains = isRecord(policy.get('domains')) ? policy.get('domains') as JsonMap : {}
@@ -154,22 +154,6 @@ function compact(value: JsonMap) {
 export const recordPassiveSignal = passiveSignalsFunctions.https.onCall(async (data, context) => {
   const uid = requireUid(context)
   const type = signalType(data?.type)
-  const domains = await requireSignalConsent(uid, type)
-  const payload = compact(normalizedSignal(type, data?.payload))
-
-  if (type === 'location') {
-    const location = isRecord(domains.location) ? domains.location as JsonMap : {}
-    const preciseAllowed = location.precise === true
-    // Client labels do not grant permission to retain precise coordinates.
-    if (!preciseAllowed) {
-      payload.precision = 'approximate'
-      const latitude = typeof payload.latitude === 'number' ? payload.latitude : undefined
-      const longitude = typeof payload.longitude === 'number' ? payload.longitude : undefined
-      payload.latitude = latitude === undefined ? undefined : Math.round(latitude * 100) / 100
-      payload.longitude = longitude === undefined ? undefined : Math.round(longitude * 100) / 100
-      payload.accuracyMeters = Math.max(Number(payload.accuracyMeters ?? 0), 1_000)
-    }
-  }
 
   const collectionName = type === 'voice-interaction'
     ? 'voiceEvents'
@@ -178,16 +162,37 @@ export const recordPassiveSignal = passiveSignalsFunctions.https.onCall(async (d
       : 'behaviorSignals'
 
   const ref = db.collection(`users/${uid}/${collectionName}`).doc()
-  await ref.set({
-    signalId: ref.id,
-    ownerId: uid,
-    type,
-    payload: compact(payload),
-    privacyClass: type === 'voice-interaction' || type === 'camera-emotion' ? 'sensitive' : 'private',
-    rawMediaStored: false,
-    source: 'consented-passive-runtime-v1',
-    createdAt: admin.firestore.FieldValue.serverTimestamp(),
-  })
+  // The policy read and signal write share one transaction. A conflicting policy
+  // change retries validation and minimization before any signal is committed.
+  return db.runTransaction(async (transaction) => {
+    const domains = await requireSignalConsent(uid, type, transaction)
+    const payload = compact(normalizedSignal(type, data?.payload))
 
-  return { accepted: true, signalId: ref.id, type, rawMediaStored: false }
+    if (type === 'location') {
+      const location = isRecord(domains.location) ? domains.location as JsonMap : {}
+      const preciseAllowed = location.precise === true
+      // Client labels do not grant permission to retain precise coordinates.
+      if (!preciseAllowed) {
+        payload.precision = 'approximate'
+        const latitude = typeof payload.latitude === 'number' ? payload.latitude : undefined
+        const longitude = typeof payload.longitude === 'number' ? payload.longitude : undefined
+        payload.latitude = latitude === undefined ? undefined : Math.round(latitude * 100) / 100
+        payload.longitude = longitude === undefined ? undefined : Math.round(longitude * 100) / 100
+        payload.accuracyMeters = Math.max(Number(payload.accuracyMeters ?? 0), 1_000)
+      }
+    }
+
+    transaction.set(ref, {
+      signalId: ref.id,
+      ownerId: uid,
+      type,
+      payload: compact(payload),
+      privacyClass: type === 'voice-interaction' || type === 'camera-emotion' ? 'sensitive' : 'private',
+      rawMediaStored: false,
+      source: 'consented-passive-runtime-v1',
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+    })
+
+    return { accepted: true, signalId: ref.id, type, rawMediaStored: false }
+  })
 })
