@@ -3,6 +3,7 @@ import * as admin from 'firebase-admin'
 import { createHash } from 'node:crypto'
 import { invalidateLifeModelDependencies } from './personPresenceAuthority'
 import { readLifeSourceBindings, requireLifeItemSources, lifeItemDigest, lifeAuthorityDigest } from './lifeGraphAuthority'
+import { isCanonicalStoredPolicy } from './consentPolicyAuthority'
 
 if (!admin.apps.length) admin.initializeApp()
 
@@ -86,10 +87,13 @@ async function requireModelConsent(uid: string, transaction?: FirebaseFirestore.
   const snapshot = transaction ? await transaction.get(ref) : await ref.get()
   if (!snapshot.exists) throw new functions.https.HttpsError('failed-precondition', 'CONSENT_POLICY_REQUIRED')
   const policy = snapshot.data() ?? {}
-  const domains = isRecord(policy.domains) ? policy.domains : {}
+  if (!isCanonicalStoredPolicy(policy, uid)) {
+    throw new functions.https.HttpsError('failed-precondition', 'CONSENT_POLICY_REQUIRED')
+  }
+  const domains: JsonMap = isRecord(policy.domains) ? policy.domains : {}
   const models = isRecord(domains.models) ? domains.models : {}
   const identity = isRecord(domains.identity) ? domains.identity : {}
-  const enforcement = isRecord(policy.enforcement) ? policy.enforcement : {}
+  const enforcement: JsonMap = isRecord(policy.enforcement) ? policy.enforcement : {}
   if (!['granted','limited'].includes(String(models.mode ?? '')) || models.modelContext !== true) {
     throw new functions.https.HttpsError('permission-denied', 'MODEL_CONTEXT_NOT_AUTHORIZED')
   }
