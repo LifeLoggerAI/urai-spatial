@@ -4,7 +4,7 @@ on:
   push:
     branches: [agent/location-map-canonical-world-872-v2]
   pull_request:
-    branches: [main]
+    branches: [main, repair/release-closure-integration-20261007]
   workflow_dispatch:
 
 permissions:

@@ -26,14 +26,19 @@ export function subscribeBrowserLocation(listener: LocationListener): () => void
     const notify = () => {
       if (active) for (const subscriber of [...listeners]) subscriber()
     }
+    const notifyAfterCommit = () => {
+      // Next commits history from useInsertionEffect. Keep snapshots synchronous,
+      // but notify React observers only after the framework commit has returned.
+      void Promise.resolve().then(notify)
+    }
     const pushState: History['pushState'] = function (this: History, ...args) {
       const result = Reflect.apply(previousPush, this, args)
-      notify()
+      notifyAfterCommit()
       return result
     }
     const replaceState: History['replaceState'] = function (this: History, ...args) {
       const result = Reflect.apply(previousReplace, this, args)
-      notify()
+      notifyAfterCommit()
       return result
     }
     history.pushState = pushState
