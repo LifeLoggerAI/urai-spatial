@@ -143,9 +143,25 @@ async function poll(label, sample, predicate, timeout = 30_000, interval = 75) {
   throw new Error(`${label} timed out after ${timeout}ms; last=${JSON.stringify(last)}`)
 }
 
+async function waitForDocumentStylesheets(page, timeout = 60_000) {
+  await page.waitForLoadState('load', { timeout })
+  return poll('complete document stylesheets', () => page.evaluate(() => {
+    const links = Array.from(document.querySelectorAll('link[rel="stylesheet"]'))
+    return {
+      readyState: document.readyState,
+      stylesheets: links.map((link) => ({ href: link.href, loaded: link.sheet !== null })),
+    }
+  }), (state) => state?.readyState === 'complete'
+    && state.stylesheets.length > 0
+    && state.stylesheets.every((sheet) => sheet.loaded), timeout)
+}
+
 async function goto(page, route, selector = ROOT) {
+  // Complete the current document before deliberate navigation can cancel its CSS.
+  if (page.url() !== 'about:blank') await waitForDocumentStylesheets(page)
   const response = await page.goto(new URL(route, base).toString(), { waitUntil: 'domcontentloaded', timeout: 60_000 })
   if (!response || response.status() !== 200) throw new Error(`${route} returned ${response?.status()}`)
+  await waitForDocumentStylesheets(page)
   if (selector === ROOT) {
     await page.locator('[data-testid="urai-r3f-canonical-lifemap"]').first().waitFor({ state: 'visible', timeout: 45_000 })
     const scene = page.locator(selector).first()
@@ -516,6 +532,7 @@ async function clickRouteAction(page, name, destinationPath, destinationSelector
   if (!geometry.text.includes(name)) throw new Error(`${name} action text drifted: ${geometry.text}`)
   await activateCanonicalControl(page, selector, geometry, 'pointer')
   await waitForPath(page, destinationPath)
+  await waitForDocumentStylesheets(page)
   await page.locator(destinationSelector).first().waitFor({ state: 'visible', timeout: 30_000 })
   await stable(page)
 }
