@@ -11,8 +11,15 @@ const source = fs.readFileSync(new URL('../../apps/functions/src/providerFunctio
 // gateway is independently tested; these cases authorize no real paid request.
 function fixture(options = {}) {
   const output = { status: null, error: null, bytes: 0, destroyed: false, ended: false, cancelled: 0, released: 0, calls: 0, checks: 0 }
-  const records = { policy: { domains: { models: { mode: 'granted', modelContext: true } }, enforcement: { state: 'fully-enforced' } },
+  const domain = (mode = 'denied', permissions = {}) => ({ mode, retentionDays: null, precise: false, replayVisible: false, lifeMapVisible: false, modelContext: false, sharingEnabled: false, automationEnabled: false, likenessEnabled: false, ...permissions })
+  const policyAuthority = {}
+  const helperSource = fs.readFileSync(new URL('../../apps/functions/src/consentPolicyAuthority.ts', import.meta.url), 'utf8')
+  vm.runInNewContext(ts.transpileModule(helperSource, { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText, { exports: policyAuthority })
+  const records = { policy: { version: 2, revision: 1, ownerId: 'synthetic-owner',
+    domains: { memory: domain(), models: domain('granted', { modelContext: true }), identity: domain(), location: domain(), exports: domain(), workforce: domain() },
+    enforcement: { state: 'fully-enforced', jobId: null, affectedTargets: [], providerState: 'not-applicable' } },
     connection: { processingAllowed: true }, uid: 'synthetic-owner' }
+  assert.equal(policyAuthority.isCanonicalStoredPolicy(records.policy, records.uid), true, 'positive voice fixture requires actual canonical owner consent')
   const events = new Map(), timers = new Map()
   let timerId = 0, index = 0, signal
   const snapshot = data => ({ exists: true, data: () => data })
@@ -43,6 +50,7 @@ function fixture(options = {}) {
       : id === 'firebase-functions/params' ? { defineSecret: () => ({ value: () => 'synthetic-key' }) }
       : id === 'firebase-functions/v2/https' ? { onRequest: (_options, handler) => handler }
       : id.endsWith('contentLanguage') ? { contentLanguage: () => ({ speechTag: 'en-US' }), URAI_CONTENT_LANGUAGE_TAGS: ['en-US'] }
+      : id === './consentPolicyAuthority' ? policyAuthority
       : id === './protectedProviderSpend' ? { paidSpatialFetch: transport, assertSpatialPaidOutputCurrent: () => { output.checks++; options.onOutputCheck?.(output.checks) }, SpatialSpendError: class extends Error {}, SPATIAL_SPEND_WORKER_TOKENS_JSON: {} }
       : require(id),
     process: { env: { ELEVENLABS_ALLOWED_VOICE_IDS: 'synthetic', ELEVENLABS_DEFAULT_VOICE_ID: 'synthetic', ELEVENLABS_MAX_RESPONSE_BYTES: options.limit ?? '32' } },
