@@ -12,7 +12,7 @@ type Fingerprint = {
   rollbackSha: string
   firebaseProject: string
   liveUrl: string
-  deploymentScope: 'hosting-only'
+  deploymentScope: 'functions-and-hosting'
   certification: string
   workflowRunId: string | number
 }
@@ -49,7 +49,7 @@ function validate(value: unknown): Fingerprint {
   if (item.releaseSha === item.rollbackSha) throw new Error('Release and rollback authority must remain distinct.')
   if (item.firebaseProject !== 'urai-4dc1d') throw new Error('Firebase project is not canonical.')
   if (item.liveUrl !== 'https://urai.app') throw new Error('Public origin is not canonical.')
-  if (item.deploymentScope !== 'hosting-only') throw new Error('Deployment scope is not the protected hosting-only boundary.')
+  if (item.deploymentScope !== 'functions-and-hosting') throw new Error('Deployment scope is not the governed Functions + Hosting boundary.')
   if (item.certification === 'pending-post-deploy-smoke') throw new Error('Release fingerprint certification is pending post-deploy smoke.')
   if (item.certification !== 'verified-post-deploy-smoke') throw new Error('Release fingerprint certification state is not recognized.')
   const runId = item.workflowRunId

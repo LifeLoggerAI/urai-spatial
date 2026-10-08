@@ -10,6 +10,7 @@ const expectedRollbackSha = (process.env.URAI_EXPECTED_ROLLBACK_SHA || process.e
 const expectedAuthoritySha = (process.env.URAI_EXPECTED_AUTHORITY_SHA || process.env.CURRENT_MAIN_SHA || '').trim()
 const expectedFunctionsTreeSha = (process.env.URAI_EXPECTED_FUNCTIONS_TREE_SHA || '').trim()
 const expectedStaticConfigSha256 = (process.env.URAI_EXPECTED_STATIC_CONFIG_SHA256 || '').trim()
+const expectedFingerprintCertification = (process.env.URAI_EXPECTED_FINGERPRINT_CERTIFICATION || 'pending-post-deploy-smoke').trim()
 const receiptPath = process.env.URAI_LIVE_RECEIPT_PATH || 'deployment-receipt/live-content-parity.json'
 const maxAttempts = Number.parseInt(process.env.URAI_SMOKE_FETCH_ATTEMPTS || '4', 10)
 const retryBaseMs = Number.parseInt(process.env.URAI_SMOKE_RETRY_BASE_MS || '750', 10)
@@ -22,6 +23,7 @@ if (!/^[0-9a-f]{40}$/.test(expectedRollbackSha)) throw new Error('URAI_EXPECTED_
 if (!/^[0-9a-f]{40}$/.test(expectedAuthoritySha)) throw new Error('URAI_EXPECTED_AUTHORITY_SHA or CURRENT_MAIN_SHA must be a full lowercase SHA')
 if (!/^[0-9a-f]{40}$/.test(expectedFunctionsTreeSha)) throw new Error('URAI_EXPECTED_FUNCTIONS_TREE_SHA must be a full lowercase Git tree SHA')
 if (!/^[0-9a-f]{64}$/.test(expectedStaticConfigSha256)) throw new Error('URAI_EXPECTED_STATIC_CONFIG_SHA256 must be a lowercase SHA-256 digest')
+if (!['pending-post-deploy-smoke', 'verified-post-deploy-smoke'].includes(expectedFingerprintCertification)) throw new Error('URAI_EXPECTED_FINGERPRINT_CERTIFICATION is invalid')
 if (expectedRollbackSha === expectedSha) throw new Error('Rollback SHA must be distinct from deployed SHA')
 if (!Number.isInteger(maxAttempts) || maxAttempts < 1 || maxAttempts > 8) throw new Error('URAI_SMOKE_FETCH_ATTEMPTS must be an integer from 1 to 8')
 if (!Number.isInteger(retryBaseMs) || retryBaseMs < 100 || retryBaseMs > 10_000) throw new Error('URAI_SMOKE_RETRY_BASE_MS must be an integer from 100 to 10000')
@@ -155,6 +157,7 @@ async function fetchFingerprint() {
     && payload?.deploymentScope === 'functions-and-hosting'
     && payload?.functionsTreeSha === expectedFunctionsTreeSha
     && payload?.firebaseStaticConfigSha256 === expectedStaticConfigSha256
+    && payload?.certification === expectedFingerprintCertification
   return {
     requestedUrl: url.toString(),
     finalUrl: response.url,
@@ -333,6 +336,7 @@ const receipt = {
   checkedServerBoundaries: serverResults.length,
   expectedFunctionsTreeSha,
   expectedStaticConfigSha256,
+  expectedFingerprintCertification,
   fetchPolicy: { maxAttempts, retryBaseMs },
   hydratedIdentityProof: 'scripts/urai-release-control-smoke.mjs',
   browserCompatibilityRoutes: ['/ascent/life-map', '/waitlist', '/system', '/settings/privacy', '/onboarding', '/signup', '/ascent', '/spatial', '/unwind'],

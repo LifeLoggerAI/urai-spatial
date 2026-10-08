@@ -323,11 +323,57 @@ jobs:
           mkdir -p deployment-receipt/postdeploy
           URAI_EXPECTED_FUNCTIONS_TREE_SHA="$(git rev-parse HEAD:apps/functions)" \
           URAI_EXPECTED_STATIC_CONFIG_SHA256="$(sha256sum firebase.static.json | cut -d ' ' -f 1)" \
+          URAI_EXPECTED_FINGERPRINT_CERTIFICATION=pending-post-deploy-smoke \
           URAI_LIVE_RECEIPT_PATH=deployment-receipt/postdeploy/live-content-parity.json \
             node scripts/urai-post-deploy-smoke.mjs
 
+      - id: certify-fingerprint
+        name: Promote fingerprint only after exact live smoke passes
+        if: steps.live-smoke.outcome == 'success'
+        shell: bash
+        run: |
+          set -euo pipefail
+          URAI_EXPECTED_FUNCTIONS_TREE_SHA="$(git rev-parse HEAD:apps/functions)" \
+          URAI_EXPECTED_STATIC_CONFIG_SHA256="$(sha256sum firebase.static.json | cut -d ' ' -f 1)" \
+            node scripts/certify-release-fingerprint.mjs
+          jq -e --arg release "$RELEASE_SHA" --arg rollback "$ROLLBACK_SHA" --arg run "$GITHUB_RUN_ID" '
+            .releaseSha == $release
+            and .authoritySha == $release
+            and .rollbackSha == $rollback
+            and .deploymentScope == "functions-and-hosting"
+            and .certification == "verified-post-deploy-smoke"
+            and .certificationRunId == $run
+          ' urai-tier1/out/release-fingerprint.json >/dev/null
+
+      - id: deploy-certified-fingerprint
+        name: Publish certified fingerprint with unchanged exact Hosting bundle
+        if: steps.certify-fingerprint.outcome == 'success'
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -euo pipefail
+          npx --yes firebase-tools@15.22.3 deploy \
+            --only hosting \
+            --project "$FIREBASE_PROJECT" \
+            --config firebase.static.json \
+            --non-interactive \
+            2>&1 | tee deployment-receipt/deploy/certified-hosting.log
+
+      - id: certified-smoke
+        name: Verify certified public fingerprint and unchanged live release
+        if: steps.deploy-certified-fingerprint.outcome == 'success'
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -euo pipefail
+          URAI_EXPECTED_FUNCTIONS_TREE_SHA="$(git rev-parse HEAD:apps/functions)" \
+          URAI_EXPECTED_STATIC_CONFIG_SHA256="$(sha256sum firebase.static.json | cut -d ' ' -f 1)" \
+          URAI_EXPECTED_FINGERPRINT_CERTIFICATION=verified-post-deploy-smoke \
+          URAI_LIVE_RECEIPT_PATH=deployment-receipt/postdeploy/certified-live-content-parity.json \
+            node scripts/urai-post-deploy-smoke.mjs
+
       - name: Roll back Hosting and Functions after any deployment or certification failure
-        if: steps.deploy-functions.outcome != 'success' || steps.deploy-hosting.outcome != 'success' || steps.live-smoke.outcome != 'success'
+        if: steps.deploy-functions.outcome != 'success' || steps.deploy-hosting.outcome != 'success' || steps.live-smoke.outcome != 'success' || steps.certify-fingerprint.outcome != 'success' || steps.deploy-certified-fingerprint.outcome != 'success' || steps.certified-smoke.outcome != 'success'
         shell: bash
         env:
           GOOGLE_WIF_ACCESS_TOKEN: ${{ steps.google-auth.outputs.access_token }}
@@ -394,6 +440,9 @@ jobs:
             echo "functions_deploy_outcome=${{ steps.deploy-functions.outcome }}"
             echo "hosting_deploy_outcome=${{ steps.deploy-hosting.outcome }}"
             echo "live_smoke_outcome=${{ steps.live-smoke.outcome }}"
+            echo "fingerprint_certification_outcome=${{ steps.certify-fingerprint.outcome }}"
+            echo "certified_hosting_deploy_outcome=${{ steps.deploy-certified-fingerprint.outcome }}"
+            echo "certified_live_smoke_outcome=${{ steps.certified-smoke.outcome }}"
             echo "deployed_at_utc=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
           } > deployment-receipt/release.env
 
@@ -410,7 +459,7 @@ jobs:
           retention-days: 90
 
       - name: Fail release after rollback when deployment or live certification failed
-        if: steps.deploy-functions.outcome != 'success' || steps.deploy-hosting.outcome != 'success' || steps.live-smoke.outcome != 'success'
+        if: steps.deploy-functions.outcome != 'success' || steps.deploy-hosting.outcome != 'success' || steps.live-smoke.outcome != 'success' || steps.certify-fingerprint.outcome != 'success' || steps.deploy-certified-fingerprint.outcome != 'success' || steps.certified-smoke.outcome != 'success'
         shell: bash
         run: |
           echo 'Exact Functions + Hosting certification failed. Governed rollback was attempted and the release remains NO-GO.' >&2

@@ -68,7 +68,7 @@ test('Only canonical production requests and validates the complete protected fi
   assert.match(authority, /item\.releaseSha === item\.rollbackSha/)
   assert.match(authority, /item\.firebaseProject !== 'urai-4dc1d'/)
   assert.match(authority, /item\.liveUrl !== 'https:\/\/urai\.app'/)
-  assert.match(authority, /item\.deploymentScope !== 'hosting-only'/)
+  assert.match(authority, /item\.deploymentScope !== 'functions-and-hosting'/)
   assert.match(authority, /item\.certification === 'pending-post-deploy-smoke'/)
   assert.match(authority, /item\.certification !== 'verified-post-deploy-smoke'/)
   assert.match(authority, /Release fingerprint certification is pending post-deploy smoke/)
