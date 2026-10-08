@@ -79,7 +79,7 @@ test('actual policy gate rejects accessors and typed objects without executing t
 test('actual trusted apply handler produces accepted pending snapshots without replacing other saved permissions', async () => {
   const source = fs.readFileSync(path.join(root, '../apps/functions/src/privacyOperations.ts'), 'utf8')
   const ast = ts.createSourceFile('privacyOperations.ts', source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TS)
-  const declarations = ast.statements.filter(n => ts.isFunctionDeclaration(n) || (ts.isVariableStatement(n) && n.declarationList.declarations.some(d => ['CONSENT_DOMAINS', 'CONSENT_MODES', 'applyConsentPolicy'].includes(d.name.getText(ast)))))
+  const declarations = ast.statements.filter(n => ts.isFunctionDeclaration(n) || (ts.isVariableStatement(n) && n.declarationList.declarations.some(d => ['CONSENT_DOMAINS', 'CONSENT_MODES', 'STORED_DOMAIN_KEYS', 'STORED_PERMISSION_KEYS', 'STORED_AUTHORITY_IDENTIFIER', 'applyConsentPolicy'].includes(d.name.getText(ast)))))
   assert.equal(declarations.filter(n => ts.isVariableStatement(n) && n.declarationList.declarations.some(d => d.name.getText(ast) === 'applyConsentPolicy')).length, 1)
   const code = compile(declarations.map(n => n.getText(ast)).join('\n'))
   for (const domain of model.DOMAIN_ORDER) for (const mode of ['granted', 'limited', 'paused', 'denied']) for (const retentionDays of [null, 30, 90, 365]) {
