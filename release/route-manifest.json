@@ -41,7 +41,6 @@
     "/signup",
     "/sms-opt-in",
     "/spatial",
-    "/spatial/ar-vr",
     "/spatial/captured-reality",
     "/spatial/interpretive-world",
     "/spatial/memory-world",
@@ -50,8 +49,7 @@
     "/system",
     "/terms",
     "/unwind",
-    "/waitlist",
-    "/xr"
+    "/waitlist"
   ],
   "classification": {
     "servicePrefixes": [
@@ -129,15 +127,33 @@
       "/terms",
       "/unwind",
       "/waitlist",
-      "/world",
-      "/xr"
+      "/world"
     ],
     "publicPrefixes": [
       "/demo/",
       "/invite/",
       "/location-map/",
-      "/spatial/",
-      "/xr/"
+      "/spatial/"
+    ],
+    "conditionalExact": [
+      "/xr",
+      "/spatial/ar-vr"
     ]
-  }
+  },
+  "conditionalRoutes": [
+    {
+      "route": "/xr",
+      "authority": "urai-tier1/src/lib/spatial-launch-boundaries.ts#liveArWebXrEnabled",
+      "disabledStatus": 404,
+      "enabledStatus": 200,
+      "deviceAcceptance": false
+    },
+    {
+      "route": "/spatial/ar-vr",
+      "authority": "urai-tier1/src/lib/spatial-launch-boundaries.ts#liveArWebXrEnabled",
+      "disabledStatus": 404,
+      "enabledStatus": 200,
+      "deviceAcceptance": false
+    }
+  ]
 }

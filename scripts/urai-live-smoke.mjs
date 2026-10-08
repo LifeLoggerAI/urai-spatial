@@ -1,4 +1,6 @@
 #!/usr/bin/env node
+import { currentXrReleaseAuthority, verifyConditionalXrRoutes, inspectXrDeployProof } from './lib/xr-release-authority.mjs'
+const xrAuthority = currentXrReleaseAuthority()
 const baseUrl = process.env.URAI_DEPLOY_URL
 const requireLiveCommitSha = process.env.REQUIRE_LIVE_COMMIT_SHA === 'true'
 const requireCustomDomain = process.env.REQUIRE_CUSTOM_DOMAIN === 'true'
@@ -64,10 +66,6 @@ const routes = [
   {
     paths: ['/location-map', '/location-map/'],
     markers: [/premium-emotional-weather-atlas/i],
-  },
-  {
-    paths: ['/spatial/ar-vr', '/spatial/ar-vr/'],
-    markers: [/AR|VR|XR|Quest|spatial/i, /Life Map|device|browser|fallback/i],
   },
   {
     paths: ['/status', '/status/'],
@@ -145,7 +143,7 @@ const inspectStaleCopy = (body, requestedPath) => {
   try {
     const proof = JSON.parse(body)
     const declaredForbiddenCopy = Array.isArray(proof?.forbiddenLiveCopy) ? proof.forbiddenLiveCopy : []
-    const deployProofContractInvalid = staleFallbackPatterns.some(
+    const deployProofContractInvalid = !inspectXrDeployProof(proof, xrAuthority) || staleFallbackPatterns.some(
       (pattern) => !declaredForbiddenCopy.some((value) => pattern.test(String(value))),
     )
     const staleScanProof = { ...proof, forbiddenLiveCopy: [] }
@@ -223,6 +221,9 @@ for (const { paths, markers, bundleMarkers = [], forbidden = [] } of routes) {
     }
   }
 }
+
+failures.push(...await verifyConditionalXrRoutes(normalizedBase, xrAuthority))
+checkCount += 4
 
 if (failures.length > 0) {
   console.error('URAI live smoke failed:')
