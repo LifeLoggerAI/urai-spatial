@@ -155,7 +155,9 @@ test('Ground remains walkable infrastructure with paths, boundaries and semantic
     'const BOUNDS =',
     'obstacles:',
   ]) has(groundGraph, marker)
-  assert.match(ground, /onEscape:\s*\(\) => router\.push\("\/home\?returnFrom=ground"\)/)
+  assert.match(ground, /onEscape:\s*requestUraiWorldReturn/)
+  assert.match(ground, /className="ground-home-return"[^\n]*onClick=\{requestUraiWorldReturn\}/)
+  assert.doesNotMatch(ground, /router\.push\("\/home\?returnFrom=ground"\)/)
   assert.match(ground, /onFocus=\{\(event\) => event\.currentTarget\.scrollIntoView\(\{ block: "nearest", inline: "nearest" \}\)\}/)
   assert.match(ground, /min-height:48px/)
   assert.match(embodiedLayout, /data-world-destination='infrastructure-hub'[\s\S]*\.urai-movement-help/)

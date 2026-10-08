@@ -186,6 +186,7 @@ test.describe('Embodied exploration runtime evidence', () => {
     await page.goto('/ground/', { waitUntil: 'domcontentloaded' })
     const ground = page.locator('.ground-spatial-root[data-ground-exploration="walkable"]').first()
     await expect(ground).toHaveAttribute('data-ground-ready', 'true', { timeout: 30_000 })
+    await expect(page.locator('[data-testid="urai-persistent-world-shell"] .urai-world-companion')).toHaveCount(0)
     const forward = ground.getByRole('button', { name: 'Move forward' })
     await expect(forward).toBeVisible()
     await expectReadableMovementControl(forward)
@@ -199,12 +200,25 @@ test.describe('Embodied exploration runtime evidence', () => {
       return {
         movement: bounds('.ground-spatial-root .urai-mobile-movement'),
         directory: bounds('.ground-spatial-root .ground-directory'),
-        orb: bounds('.urai-world-companion__orb'),
+        home: bounds('.ground-spatial-root .ground-home-return'),
+        viewport: { width: innerWidth, height: innerHeight },
       }
     })
     expect(regions.movement.bottom + 8).toBeLessThanOrEqual(regions.directory.top)
-    expect(regions.directory.right + 8).toBeLessThanOrEqual(regions.orb.left)
-    expect(regions.movement.bottom + 8).toBeLessThanOrEqual(regions.orb.top)
+    expect(regions.directory.left).toBeGreaterThanOrEqual(0)
+    expect(regions.directory.right).toBeLessThanOrEqual(regions.viewport.width)
+    expect(regions.directory.bottom).toBeLessThanOrEqual(regions.viewport.height)
+    expect(regions.home.bottom + 8).toBeLessThanOrEqual(regions.movement.top)
+    const directory = ground.getByRole('navigation', { name: 'Ground destinations', exact: true })
+    await expect(directory.getByRole('button')).toHaveCount(12)
+    const privacy = directory.getByRole('button', { name: 'Approach Privacy Sanctuary' })
+    await privacy.focus()
+    await expect(privacy).toBeFocused()
+    const privacyBounds = await privacy.boundingBox()
+    expect(privacyBounds!.width).toBeGreaterThanOrEqual(48)
+    expect(privacyBounds!.height).toBeGreaterThanOrEqual(48)
+    await privacy.press('Enter')
+    await expect(privacy).toHaveAttribute('aria-current', 'location')
   })
 
   test('Life Map selects a memory, preserves identity, resets overview, and stays Orb-free', async ({ page }) => {

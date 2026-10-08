@@ -4,7 +4,7 @@ import { requestUraiWorldReturn } from '@/spatial/world/worldEvents'
 import AdamLauncherSlot from '@/spatial/adam/AdamLauncherSlot'
 
 import { Canvas, useFrame, useThree, type ThreeEvent } from "@react-three/fiber";
-import { Sparkles, useAnimations, useGLTF } from "@react-three/drei";
+import { Sparkles, useGLTF } from "@react-three/drei";
 import { Bloom, EffectComposer, Vignette } from "@react-three/postprocessing";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState, type MutableRefObject } from "react";
@@ -52,7 +52,7 @@ function liftedMaterial(material: THREE.Material) {
 
 function prepareModel(source: THREE.Object3D) {
   source.traverse((object) => {
-    if (object.name.startsWith("ground-dimensional-path-")) {
+    if (object.name.startsWith("ground-dimensional-path-") || object.name === "ground-central-nexus" || object.name === "nexus-core") {
       object.visible = false;
       return;
     }
@@ -74,6 +74,36 @@ function prepareModel(source: THREE.Object3D) {
     root.userData.uraiChamberForm = destination.chamberForm;
     root.userData.uraiLayer = destination.layer;
   }
+
+  // The retained model has legacy floating chamber elevations and a shorter
+  // terrain footprint than the active walking bounds. Project its existing
+  // terrain to those bounds, then support each chamber on that real surface.
+  // Asset bytes, vertices, x/z route positions and semantic bindings stay intact.
+  const terrain = source.getObjectByName("ground-sacred-black-glass");
+  if (!(terrain instanceof THREE.Mesh)) throw new Error("Authored Ground is missing its retained terrain.");
+  terrain.geometry.computeBoundingBox();
+  const terrainBounds = terrain.geometry.boundingBox;
+  if (!terrainBounds) throw new Error("Authored Ground terrain has no bounds.");
+  const size = terrainBounds.getSize(new THREE.Vector3());
+  const center = terrainBounds.getCenter(new THREE.Vector3());
+  if (!(size.x > 0 && size.z > 0)) throw new Error("Authored Ground terrain cannot support navigation.");
+  terrain.scale.x = (BOUNDS.maxX - BOUNDS.minX) / size.x;
+  terrain.scale.z = (BOUNDS.maxZ - BOUNDS.minZ) / size.z;
+  terrain.position.x = (BOUNDS.minX + BOUNDS.maxX) / 2 - center.x * terrain.scale.x;
+  terrain.position.z = (BOUNDS.minZ + BOUNDS.maxZ) / 2 - center.z * terrain.scale.z;
+  source.updateMatrixWorld(true);
+  const supportRay = new THREE.Raycaster(new THREE.Vector3(), new THREE.Vector3(0, -1, 0));
+  for (const destination of DESTINATIONS) {
+    const chamber = source.getObjectByName(`ground-destination-${destination.id}`);
+    if (!chamber) throw new Error(`Authored Ground is missing chamber ${destination.id}.`);
+    const chamberBounds = new THREE.Box3().setFromObject(chamber);
+    supportRay.ray.origin.set(chamber.position.x, terrainBounds.max.y + 100, chamber.position.z);
+    const support = supportRay.intersectObject(terrain, false)[0];
+    if (!support) throw new Error(`Authored Ground chamber ${destination.id} has no terrain support.`);
+    chamber.position.y += support.point.y - chamberBounds.min.y;
+    chamber.userData.uraiTerrainSupport = "retained-authored-terrain";
+  }
+  source.updateMatrixWorld(true);
   return source;
 }
 
@@ -96,24 +126,21 @@ function bindGroundAuthoredRegions(source: THREE.Object3D) {
   return source;
 }
 
-function GroundWorld({ target, activeId, onSelect }: {
+function GroundWorld({ target, activeId, onSelect, terrainHeights }: {
   target: MutableRefObject<THREE.Vector3 | null>;
   activeId: string | null;
   onSelect: (destination: GroundDestination) => void;
+  terrainHeights: MutableRefObject<Record<string, number>>;
 }) {
-  const { scene, animations } = useGLTF(GROUND_MODEL);
+  const { scene } = useGLTF(GROUND_MODEL);
   const root = useRef<THREE.Group>(null);
   const world = useMemo(() => bindGroundAuthoredRegions(prepareModel(scene.clone(true))), [scene]);
-  const { actions } = useAnimations(animations, root);
 
   useEffect(() => {
-    actions.Ground_Pulse?.reset().fadeIn(0.35).play();
-    actions.Nexus_Idle?.reset().fadeIn(0.35).play();
-    return () => {
-      actions.Ground_Pulse?.fadeOut(0.2);
-      actions.Nexus_Idle?.fadeOut(0.2);
-    };
-  }, [actions]);
+    terrainHeights.current = Object.fromEntries(DESTINATIONS.map((destination) => [
+      destination.id, world.getObjectByName(`ground-destination-${destination.id}`)!.position.y,
+    ]));
+  }, [terrainHeights, world]);
 
   useEffect(() => {
     for (const destination of DESTINATIONS) {
@@ -163,45 +190,14 @@ function GroundWorld({ target, activeId, onSelect }: {
   );
 }
 
-function ArchitecturalRouteLighting({ activeId }: { activeId: string | null }) {
-  const routes = useMemo(() => DESTINATIONS.map((destination) => {
-    const dx = destination.position[0];
-    const dz = destination.position[2] + 1;
-    const length = Math.max(1, Math.hypot(dx, dz));
-    return {
-      destination,
-      position: [dx / 2, 0.095, (-1 + destination.position[2]) / 2] as [number, number, number],
-      rotationY: Math.atan2(dx, dz),
-      length,
-    };
-  }), []);
-
-  return <group name="ground-authored-architectural-route-lighting" raycast={() => null}>
-    {routes.map(({ destination, position, rotationY, length }) => {
-      const active = activeId === destination.id;
-      return <mesh key={destination.id} position={position} rotation={[0, rotationY, 0]} receiveShadow>
-        <boxGeometry args={[active ? 0.52 : 0.34, 0.025, length]} />
-        <meshStandardMaterial
-          color={destination.color}
-          emissive={destination.color}
-          emissiveIntensity={active ? 0.7 : 0.14}
-          roughness={0.72}
-          metalness={0.08}
-          transparent
-          opacity={active ? 0.34 : 0.11}
-        />
-      </mesh>;
-    })}
-  </group>;
-}
-
-function Player({ input, yaw, pitch, target, activeId, onNearby }: {
+function Player({ input, yaw, pitch, target, activeId, onNearby, terrainHeights }: {
   input: MovementInput;
   yaw: MutableRefObject<number>;
   pitch: MutableRefObject<number>;
   target: MutableRefObject<THREE.Vector3 | null>;
   activeId: string | null;
   onNearby: (value: GroundDestination | null) => void;
+  terrainHeights: MutableRefObject<Record<string, number>>;
 }) {
   const { camera, size } = useThree();
   const position = useRef(SPAWN.clone());
@@ -225,7 +221,8 @@ function Player({ input, yaw, pitch, target, activeId, onNearby }: {
       acceleration: 11,
       deceleration: 13,
       bounds: BOUNDS,
-      obstacles: [{ x: 0, z: -1, radius: 2.15 }],
+      // The removed legacy disc must not leave an invisible walking barrier.
+      obstacles: [],
     });
 
     const portrait = size.height > size.width;
@@ -236,7 +233,8 @@ function Player({ input, yaw, pitch, target, activeId, onNearby }: {
     camera.position.lerp(desired.current, 1 - Math.pow(0.0018, delta));
 
     if (activeDestination && Math.hypot(position.current.x - activeDestination.camera[0], position.current.z - activeDestination.camera[2]) < 5.5) {
-      lookAt.current.set(activeDestination.lookAt[0], activeDestination.lookAt[1], activeDestination.lookAt[2]);
+      const support = terrainHeights.current[activeDestination.id] ?? activeDestination.position[1];
+      lookAt.current.set(activeDestination.lookAt[0], support + activeDestination.lookAt[1] - activeDestination.position[1], activeDestination.lookAt[2]);
     } else {
       forward.current.set(0, 0, -12.5).applyAxisAngle(new THREE.Vector3(0, 1, 0), yaw.current);
       lookAt.current.copy(position.current).add(forward.current);
@@ -271,6 +269,7 @@ function GroundScene({ input, yaw, pitch, target, activeId, onNearby, onSelect }
   onNearby: (value: GroundDestination | null) => void;
   onSelect: (destination: GroundDestination) => void;
 }) {
+  const terrainHeights = useRef<Record<string, number>>({});
   return (
     <>
       <color attach="background" args={["#102b38"]} />
@@ -283,9 +282,8 @@ function GroundScene({ input, yaw, pitch, target, activeId, onNearby, onSelect }
       <pointLight position={[7.5, 3.1, -15]} intensity={1.6} distance={22} decay={2} color="#8fe5ff" />
       <pointLight position={[-8.2, 3.4, -23]} intensity={1.4} distance={22} decay={2} color="#cabdff" />
       <Sparkles count={28} scale={[28, 7, 36]} position={[0, 2.5, -12]} size={0.48} speed={0.025} opacity={0.045} color="#f9e7ba" />
-      <Player input={input} yaw={yaw} pitch={pitch} target={target} activeId={activeId} onNearby={onNearby} />
-      <GroundWorld target={target} activeId={activeId} onSelect={onSelect} />
-      <ArchitecturalRouteLighting activeId={activeId} />
+      <Player input={input} yaw={yaw} pitch={pitch} target={target} activeId={activeId} onNearby={onNearby} terrainHeights={terrainHeights} />
+      <GroundWorld target={target} activeId={activeId} onSelect={onSelect} terrainHeights={terrainHeights} />
       <EffectComposer multisampling={0}>
         <Bloom intensity={0.24} luminanceThreshold={0.82} luminanceSmoothing={0.18} mipmapBlur />
         <Vignette eskil={false} offset={0.12} darkness={0.12} />
