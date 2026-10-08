@@ -134,7 +134,8 @@ test('accessibility and performance implementation contracts are present', () =>
   assert.doesNotMatch(routeOwnerCss, /ground-spatial-root canvas[\s\S]{0,220}transform:\s*scale\(/, 'Ground canvas must not exceed the mobile viewport through CSS scaling')
   requireText(routeOwnerCss, 'max-width: 100vw !important;')
   requireText(routeOwnerCss, 'max-height: 100svh !important;')
-  requireText(focus, "aria-label={locale.locale === 'en' ? locale.text('focus.openReplayFor', {title:memory.title}) : locale.text('focus.enterReplay')}")
+  requireText(focus, "aria-label={locale.locale === 'en' ? `Open Replay for ${memory.title}` : locale.text('focus.enterReplay')}")
+  requireText(focus, "{...locale.props(memory ? 'focus.openReplayFor' : 'focus.chooseReplay')} aria-label={memory ? locale.text('focus.openReplayFor', {title:memory.title}) : locale.text('focus.chooseReplay')}")
   requireText(read('src/lib/i18n/journeyControlMessages.ts'), '"focus.openReplayFor": {id:"focus.openReplayFor",source:"Open Replay for {title}"')
   assert.equal(URAI_SOURCE_MESSAGES['focus.openReplayFor'].source, 'Open Replay for {title}')
   for (const requested of URAI_LAUNCH_LOCALES) {
