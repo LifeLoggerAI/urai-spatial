@@ -35,6 +35,7 @@ const locales = URAI_LAUNCH_LOCALES.map((locale) => {
     locale,
     direction: uraiTextDirection(locale),
     translated: completeness.translated,
+    missingMessageIds: completeness.missingMessageIds,
     total: completeness.total,
     complete: completeness.complete,
     nativeReviewed,
@@ -47,7 +48,7 @@ const locales = URAI_LAUNCH_LOCALES.map((locale) => {
       ? 'authoritative-source'
       : completeness.complete
         ? 'machine-prepared-native-review-required'
-        : 'not-yet-provided',
+        : completeness.translated > 0 ? 'machine-prepared-partial-native-review-required' : 'not-yet-provided',
     blockingReasons,
   }
 })
@@ -64,6 +65,8 @@ const consumerPaths = [
   'src/app/focus/FocusChamberClient.tsx',
   'src/app/replay/CinematicReplayClient.tsx',
   'src/app/replay/ReplayProductControls.tsx',
+  'src/spatial/memory/MemoryMediaAttachment.tsx',
+  'src/lib/i18n/journeyControlCopy.ts',
 ]
 const consumers = await Promise.all(consumerPaths.map(async (file) => {
   const source = await readFile(new URL(`../urai-tier1/${file}`, import.meta.url), 'utf8')
@@ -89,7 +92,7 @@ const receipt = {
     consumers,
     wholeProductTranslated:false,
     sensitiveFallback:'reviewed locale only',
-    remaining:'Only registered core journey copy and controls are wired. Other headings, status/errors, private content, policy copy, other product routes and provider-generated language remain outside this scoped catalog. Native linguistic, RTL visual, speech, AT and device acceptance remain pending.',
+    remaining:'Registered core journey, selected-memory controls and owned file attachment copy are governed. Missing preparation entries use reviewed English with matching language/direction; the per-locale missingMessageIds are unresolved translations, not native acceptance. Other product routes, private values, policy copy and provider-generated language remain outside this scope. Native linguistic, RTL visual, speech, AT and device acceptance remain pending.',
   },
   locales,
 }

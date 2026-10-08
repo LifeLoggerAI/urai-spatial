@@ -36,7 +36,7 @@ export function displayLocale(preference: LocalePreference): UraiLaunchLocale {
 export function localizedMessage(preference: LocalePreference, id: UraiMessageId, values: Record<string, string> = {}) {
   const definition = URAI_SOURCE_MESSAGES[id]
   const candidate = definition.sensitivity === 'general' ? displayLocale(preference) : runtimeUraiLocale(preference.requested)
-  const translated = URAI_CATALOGS[candidate][id]
+  const translated = URAI_CATALOGS[candidate][id]?.trim() ? URAI_CATALOGS[candidate][id] : undefined
   const locale = translated ? candidate : 'en'
   const text = (translated ?? messageFor('en', id)).replace(/\{([a-zA-Z]+)\}/g, (placeholder, name) => values[name] ?? placeholder)
   return {text, locale, direction:uraiTextDirection(locale), preview:locale !== runtimeUraiLocale(preference.requested)}

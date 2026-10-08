@@ -3,6 +3,7 @@ import fs from 'node:fs'
 import test from 'node:test'
 import vm from 'node:vm'
 import ts from 'typescript'
+import { localizedMessage } from '../src/lib/i18n/localePreference.ts'
 
 const source = fs.readFileSync('src/components/lifemap/LifeMapSemanticNavigator.tsx', 'utf8')
 const compiled = ts.transpileModule(source, { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX } }).outputText
@@ -12,7 +13,7 @@ function loadMessages(name, imports = {}) {
   vm.runInNewContext(code,{exports:module.exports,module,require:id=>{assert.ok(id in imports);return imports[id]}},{filename:'actual-'+name+'.ts'})
   return module.exports
 }
-const messages = loadMessages('locales', {'./coreMessages':loadMessages('coreMessages'),'./journeyMessages':loadMessages('journeyMessages')}).URAI_SOURCE_MESSAGES
+const messages = loadMessages('locales', {'./coreMessages':loadMessages('coreMessages'),'./journeyMessages':loadMessages('journeyMessages'),'./journeyControlMessages':loadMessages('journeyControlMessages',{'./journeyControlTranslations':loadMessages('journeyControlTranslations')})}).URAI_SOURCE_MESSAGES
 const node = { id:'quiet-reset', title:'The Quiet Reset', type:'recovery', eraId:'threshold-return', connectedTo:[], summary:'Disclosed test memory', dateLabel:'Now', replayAvailable:true }
 function descendants(tree) {
   if (!tree || typeof tree !== 'object') return []
@@ -41,7 +42,8 @@ function fixture(search) {
     'react-dom':{createPortal:tree=>tree}, 'next/navigation':{useRouter:()=>router,useSearchParams:()=>browser.location.searchParams},
     './lifeMapData':{lifeMapTypeLabels:{recovery:'Recovery'}}, './lifeMapSelection':{requestLifeMapSelection(id,activation) {calls.push({kind:'world-selection',id,activation,identity:new URL(browser.location).search})}},
     './useLifeMapEvents':{useLifeMapEvents:()=>({nodes:[node],eras:[],loading:false,sourceMode:search.includes('demo=1')?'explicit-demo':'private'})},
-    '@/lib/i18n/useUraiLocale':{useUraiLocale:()=>({locale:'en',text:key=>{assert.ok(messages[key]);return messages[key].source},props:()=>({lang:'en',dir:'ltr'}),formatProps:{},number:String})},
+    '@/lib/i18n/localePreference':{localizedMessage},
+    '@/lib/i18n/useUraiLocale':{useUraiLocale:()=>({preference:{requested:'en',preview:false},locale:'en',text:key=>{assert.ok(messages[key]);return messages[key].source},props:()=>({lang:'en',dir:'ltr'}),formatProps:{},number:String})},
     '@/lib/i18n/JourneyOfflineNotice':{__esModule:true,default:()=>null},
   }
   const module = {exports:{}}

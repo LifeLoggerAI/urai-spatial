@@ -4,6 +4,9 @@ import vm from 'node:vm'
 import { createRequire } from 'node:module'
 import { createHash, webcrypto } from 'node:crypto'
 import test from 'node:test'
+import { localizedMessage } from '../src/lib/i18n/localePreference.ts'
+import * as journeyControlCopy from '../src/lib/i18n/journeyControlCopy.ts'
+import { URAI_SOURCE_MESSAGES } from '../src/lib/i18n/locales.ts'
 const require = createRequire(import.meta.url), ts = require('typescript')
 const compile = source => ts.transpileModule(source, { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX } }).outputText
 const code = compile(fs.readFileSync('src/lib/privacy/ownedMemoryMediaClient.ts', 'utf8'))
@@ -93,6 +96,8 @@ function componentFixture() {
     useEffect(callback, deps) { const i = effectIndex++; if (effects[i] && JSON.stringify(effects[i].deps) === JSON.stringify(deps)) return; effects[i]?.cleanup?.(); effects[i] = { deps, cleanup: callback() } },
   }, 'react/jsx-runtime': { jsx, jsxs: jsx }, 'firebase/auth': { getAuth: () => ({}), onAuthStateChanged: (_auth, callback) => { state.auth = callback; callback({ uid: memory.ownerId }); return () => {} } },
     '@/lib/firebase/client': { app: {}, firebasePublicEnvReady: true },
+    '@/lib/i18n/useUraiLocale': {useUraiLocale:()=>({preference:{requested:'en',preview:false},text:(id,values)=>localizedMessage({requested:'en',preview:false},id,values).text,props:id=>{const m=localizedMessage({requested:'en',preview:false},id);return{lang:m.locale,dir:m.direction}}})},
+    '@/lib/i18n/journeyControlCopy':journeyControlCopy,
     '@/lib/privacy/ownedMemoryMediaClient': { MEMORY_MEDIA_TYPES: 'image/png', attachOwnedMemoryFile: async (...args) => { state.calls.push(args); return state.pending?.() } } }
   const result = {}; vm.runInNewContext(componentCode, { exports: result, require: name => { assert.ok(name in imports); return imports[name] }, AbortController, Error, crypto: webcrypto })
   const render = (selection = memory) => { stateIndex = 0; refIndex = 0; effectIndex = 0; return result.default({ memory: selection }) }
@@ -120,5 +125,6 @@ test('Focus mounts the real file control only for an owned selected private memo
   const mounts = []; const visit = node => { if (ts.isConditionalExpression(node) && node.whenTrue.getText(ast).includes('<MemoryMediaAttachment ')) mounts.push(node); ts.forEachChild(node, visit) }; visit(ast)
   assert.equal(mounts.length, 1)
   assert.match(mounts[0].condition.getText(ast), /memory && !memory.demo && memory.privacy === 'private' && memory.authorization === 'owner'/)
-  assert.match(fs.readFileSync('src/spatial/memory/MemoryMediaAttachment.tsx', 'utf8'), /Preview is not available here/)
+  assert.match(fs.readFileSync('src/spatial/memory/MemoryMediaAttachment.tsx', 'utf8'), /setMessage\('memoryMedia.attached'\)/)
+  assert.match(URAI_SOURCE_MESSAGES['memoryMedia.attached'].source,/Preview is not available here/)
 })

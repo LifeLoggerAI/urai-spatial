@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import { URAI_CATALOGS, URAI_LAUNCH_LOCALES, URAI_NATIVE_REVIEWED_LOCALES, URAI_SOURCE_MESSAGES } from '../src/lib/i18n/locales.ts'
+import { URAI_JOURNEY_CONTROL_MESSAGES } from '../src/lib/i18n/journeyControlMessages.ts'
 import { URAI_JOURNEY_MESSAGES } from '../src/lib/i18n/journeyMessages.ts'
 import { currentLocalePreference, currentSpeechTag, displayLocale, localeDate, localeNumber, localizedMessage, readLocalePreference, serverLocalePreference, speechTagFor, subscribeLocale, updateLocalePreference, writeLocalePreference } from '../src/lib/i18n/localePreference.ts'
 
@@ -12,12 +13,14 @@ function storage(initial = {}) {
 test('all twenty catalogs retain matching placeholders without granting language acceptance', () => {
   assert.equal(URAI_LAUNCH_LOCALES.length, 20)
   assert.deepEqual([...URAI_NATIVE_REVIEWED_LOCALES], ['en'])
-  assert.equal(Object.keys(URAI_SOURCE_MESSAGES).length, 20 + Object.keys(URAI_JOURNEY_MESSAGES).length)
+  assert.equal(Object.keys(URAI_SOURCE_MESSAGES).length, 20 + Object.keys(URAI_JOURNEY_MESSAGES).length + Object.keys(URAI_JOURNEY_CONTROL_MESSAGES).length)
   for (const code of URAI_LAUNCH_LOCALES) {
-    assert.deepEqual(Object.keys(URAI_CATALOGS[code]).sort(), Object.keys(URAI_SOURCE_MESSAGES).sort())
+    const expected=Object.keys(URAI_SOURCE_MESSAGES)
+    assert.deepEqual(Object.keys(URAI_CATALOGS[code]).sort(), expected.sort())
     for (const [id,definition] of Object.entries(URAI_SOURCE_MESSAGES)) {
       const placeholders = value => (value.match(/\{[a-zA-Z]+\}/g) ?? []).sort()
-      assert.deepEqual(placeholders(URAI_CATALOGS[code][id]), placeholders(definition.source))
+      if(URAI_CATALOGS[code][id] !== undefined) assert.deepEqual(placeholders(URAI_CATALOGS[code][id]), placeholders(definition.source))
+      else {const fallback=localizedMessage({requested:code,preview:true},id);assert.equal(fallback.text,definition.source);assert.equal(fallback.locale,'en');assert.equal(fallback.direction,'ltr');assert.equal(fallback.preview,false)}
     }
   }
 })

@@ -7,6 +7,8 @@ import React from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 import ts from 'typescript'
 import { URAI_CATALOGS, URAI_LAUNCH_LOCALES, URAI_NATIVE_REVIEWED_LOCALES, URAI_SOURCE_MESSAGES, runtimeUraiLocale } from '../src/lib/i18n/locales.ts'
+import { URAI_JOURNEY_CONTROL_MESSAGES } from '../src/lib/i18n/journeyControlMessages.ts'
+import * as journeyControlCopy from '../src/lib/i18n/journeyControlCopy.ts'
 import { URAI_JOURNEY_MESSAGES } from '../src/lib/i18n/journeyMessages.ts'
 import { localizedMessage, localeNumber, localeDate } from '../src/lib/i18n/localePreference.ts'
 import { homeJourneyHref } from '../src/spatial/navigation/homeSkyInteraction.ts'
@@ -22,6 +24,7 @@ function fixture(preference, {memory=null,status='unavailable',message='No selec
   let stateIndex = 0
   const travels = []
   const locale = {
+    preference,
     locale:preference.preview ? preference.requested : 'en',
     text:(id,values) => localizedMessage(preference,id,values).text,
     props:id => {const m=localizedMessage(preference,id); return {lang:m.locale,dir:m.direction,'data-urai-translation-preview':String(m.preview)}},
@@ -43,6 +46,10 @@ function fixture(preference, {memory=null,status='unavailable',message='No selec
     if(id==='three') return require('three')
     if(id.includes('RoundedBoxGeometry')) return {RoundedBoxGeometry:require('three').BoxGeometry}
     if(id==='next/navigation') return {usePathname:()=>'/home',useSearchParams:()=>params,useRouter:()=>({push:href=>travels.push(href),replace:href=>travels.push(href)})}
+    if(id.includes('ownedMemoryMediaClient')) return {MEMORY_MEDIA_TYPES:'image/png,audio/mpeg,video/mp4',attachOwnedMemoryFile:async()=>{throw new Error('INERT_NO_UPLOAD')}}
+    if(id.includes('localePreference')) return {localizedMessage}
+    if(id.includes('journeyControlCopy')) return journeyControlCopy
+    if(id.includes('replayServerTransport')) return {createAuthenticatedReplayTransport:()=>async()=>{throw new Error('INERT_NO_TRANSPORT')},readAuthenticatedReplayServerState:async()=>{throw new Error('INERT_NO_TRANSPORT')}}
     if(id.includes('useUraiLocale')) return {useUraiLocale:()=>locale}
     if(id.includes('JourneyOfflineNotice')) return {__esModule:true,default:load('../src/lib/i18n/JourneyOfflineNotice.tsx').default}
     if(id.includes('homeSkyInteraction')) return {homeJourneyHref}
@@ -124,7 +131,7 @@ test('new journey catalog is exact, nonempty and prepared for the twenty governe
   assert.equal(journeyIds.length,44)
   assert.equal(URAI_LAUNCH_LOCALES.length,20)
   assert.deepEqual([...URAI_NATIVE_REVIEWED_LOCALES],['en'])
-  assert.equal(Object.keys(URAI_SOURCE_MESSAGES).length,64)
+  assert.equal(Object.keys(URAI_SOURCE_MESSAGES).length,64 + Object.keys(URAI_JOURNEY_CONTROL_MESSAGES).length)
   for(const locale of URAI_LAUNCH_LOCALES) for(const id of journeyIds) {
     assert.ok(URAI_CATALOGS[locale][id]?.trim(),`${locale}:${id}`)
     assert.equal(URAI_SOURCE_MESSAGES[id].id,id)
@@ -279,4 +286,130 @@ test('readiness resolves lexical const branches while rejecting false and unreso
   assert.throws(()=>localizationMessageBindings("locale.text('not.registered')",URAI_SOURCE_MESSAGES),/LOCALIZATION_UNREGISTERED_MESSAGE_ID/)
   assert.throws(()=>localizationMessageBindings('locale.text(providerOutput)',URAI_SOURCE_MESSAGES),/LOCALIZATION_UNRESOLVED_MESSAGE_ID/)
   assert.throws(()=>localizationMessageBindings("let key='nav.home';locale.props(key)",URAI_SOURCE_MESSAGES),/LOCALIZATION_MUTABLE_MESSAGE_ID/)
+})
+
+
+test('remaining journey catalogs are prepared for twenty locales without granting runtime or sensitive-copy acceptance',()=>{
+  const ids=Object.keys(URAI_JOURNEY_CONTROL_MESSAGES)
+  assert.equal(ids.length,99)
+  const values={title:'عنوان خاص <script>private</script>',count:'2',action:'save',percent:'50',elapsed:'0:10',duration:'0:20'}
+  for(const requested of URAI_LAUNCH_LOCALES) for(const id of ids) {
+    const definition=URAI_JOURNEY_CONTROL_MESSAGES[id]
+    const runtime=localizedMessage({requested,preview:false},id,values)
+    assert.equal(runtime.locale,'en');assert.equal(runtime.direction,'ltr');assert.equal(runtime.preview,false)
+    const copy=localizedMessage({requested,preview:true},id,values)
+    const expectedLocale=definition.sensitivity==='general' ? requested : 'en'
+    assert.equal(copy.locale,expectedLocale);assert.equal(copy.direction,['ar','ur','fa'].includes(expectedLocale)?'rtl':'ltr')
+    assert.equal(copy.preview,expectedLocale!=='en');assert.ok(copy.text.trim())
+    assert.equal(URAI_CATALOGS.en[id],definition.source)
+    assert.ok(URAI_CATALOGS[requested][id]?.trim())
+    const placeholders=value=>(value.match(/\{[a-zA-Z]+\}/g)??[]).sort()
+    assert.deepEqual(placeholders(URAI_CATALOGS[requested][id]),placeholders(definition.source))
+  }
+})
+
+test('actual Replay controls/correction preserve disabled demo actions and raw private values in every locale fallback',()=>{
+  const malicious='<img src=x onerror="alert(1)"> نص خاص'
+  for(const requested of URAI_LAUNCH_LOCALES) {
+    const memory={id:'memory-fixture',ownerId:'owner-fixture',authorization:'owner',demo:true,summary:malicious,replayManifest:{id:'manifest-fixture'}}
+    const state={saved:false,hidden:false,pending:[],audit:[]}
+    const rendered=fixture({requested,preview:true},{states:[state,true,malicious,true,{id:'replay.demoReadOnly'}]}).render('../src/app/replay/ReplayProductControls.tsx','ReplayProductControls',{memory})
+    const summary=elements(rendered,n=>n.type==='summary' && n.props['aria-label']===localizedMessage({requested,preview:true},'replay.controls').text)[0]
+    const label=localizedMessage({requested,preview:true},'replay.controlSummary')
+    assert.equal(text(summary),label.text);assert.equal(summary.props.lang,label.locale);assert.equal(summary.props.dir,label.direction)
+    for(const name of ['Save','Hide','Correct']) assert.equal(elements(rendered,n=>n.type==='button'&&text(n)===name)[0].props.disabled,true)
+    const textarea=elements(rendered,n=>n.type==='textarea')[0]
+    assert.equal(textarea.props.value,malicious);assert.equal(textarea.props.dir,'auto');assert.equal(textarea.props.lang,undefined)
+    assert.ok(text(rendered).includes('The original memory remains unchanged. Your correction updates only URAI’s interpretation.'))
+    const html=renderToStaticMarkup(rendered)
+    assert.ok(html.includes('&lt;img'));assert.equal(html.includes('<img src=x'),false)
+  }
+})
+
+test('Replay status identities reformat pending counts without mutation and keep raw errors out of translated copy',()=>{
+  const status={id:'replay.waitingChanges',count:12345}
+  const before=JSON.stringify(status)
+  for(const requested of URAI_LAUNCH_LOCALES) {
+    const copy=journeyControlCopy.replayStatusCopy({requested,preview:true},status)
+    assert.equal(copy.locale,'en');assert.equal(copy.direction,'ltr')
+    assert.ok(copy.text.includes(new Intl.NumberFormat(copy.locale).format(12345)))
+    const error={id:'replay.failedOperation',action:'replay.operationCorrect',detail:'خطأ خاص <script>private</script>'}
+    const errorCopy=journeyControlCopy.replayStatusCopy({requested,preview:true},error)
+    assert.equal(errorCopy.text,'correct failed.');assert.equal(errorCopy.text.includes(error.detail),false)
+  }
+  assert.equal(JSON.stringify(status),before)
+  assert.throws(()=>journeyControlCopy.replayStatusCopy({requested:'en',preview:false},{id:'nav.home'}),/UNREGISTERED_REPLAY_STATUS/)
+})
+
+test('real Life Map labels resolve bounded type maps and preserve semantic result titles',()=>{
+  const node={id:'private-node',type:'memory',title:'عنوان خاص',summary:'Private <script>value</script>',occurredAt:'2026-01-01T12:00:00Z',dateLabel:'private date',eraId:'fixture',connectedTo:[]}
+  const rendered=fixture({requested:'ar',preview:true},{nodes:[node],states:['','all','all',true,true]}).render(lifeMap)
+  const filter=elements(rendered,n=>n.props.id==='life-map-type-label')[0]
+  const expected=localizedMessage({requested:'ar',preview:true},'lifeMap.filterType')
+  assert.equal(text(filter),expected.text);assert.equal(filter.props.lang,'ar');assert.equal(filter.props.dir,'rtl')
+  const result=elements(rendered,n=>n.props['data-life-map-node-id']==='private-node')[0]
+  assert.equal(result.props['aria-label'],node.title);assert.equal(result.props.lang,undefined)
+  assert.equal(elements(result,n=>n.type==='strong')[0].props.dir,'auto')
+})
+
+test('owned media copy migration preserves owner gate and explicit source fallback',()=>{
+  const memory={id:'memory-fixture',ownerId:'owner-fixture',privacy:'private',demo:false}
+  for(const requested of URAI_LAUNCH_LOCALES) {
+    const rendered=fixture({requested,preview:true},{states:['owner-fixture',null,false,'memoryMedia.attached']}).render('../src/spatial/memory/MemoryMediaAttachment.tsx','default',{memory})
+    assert.ok(text(rendered).includes('Attach a file'))
+    const status=elements(rendered,n=>n.props.role==='status')[0]
+    assert.equal(status.props.lang,'en');assert.equal(status.props.dir,'ltr')
+    assert.match(text(status),/Preview is not available here/)
+    const denied=fixture({requested,preview:true},{states:['other-owner',null,false,null]}).render('../src/spatial/memory/MemoryMediaAttachment.tsx','default',{memory})
+    assert.equal(denied,null)
+  }
+})
+
+test('message binding evidence admits actual immutable maps/helpers and rejects mutable or unregistered lookup contents',()=>{
+  assert.deepEqual(localizationMessageBindings("const ids={first:'replay.save',second:'replay.hide'} as const; locale.text(ids[value])",URAI_SOURCE_MESSAGES),['replay.hide','replay.save'])
+  assert.deepEqual(localizationMessageBindings("import { localizedMessage } from './localePreference'; localizedMessage(pref,'replay.save')",URAI_SOURCE_MESSAGES),['replay.save'])
+  assert.throws(()=>localizationMessageBindings("let ids={first:'replay.save'}; locale.text(ids[value])",URAI_SOURCE_MESSAGES),/LOCALIZATION_MUTABLE_MESSAGE_ID/)
+  assert.throws(()=>localizationMessageBindings("const ids={first:'unknown'}; locale.text(ids[value])",URAI_SOURCE_MESSAGES),/LOCALIZATION_UNREGISTERED_MESSAGE_ID/)
+  assert.throws(()=>localizationMessageBindings("const ids={...other}; locale.text(ids[value])",URAI_SOURCE_MESSAGES),/LOCALIZATION_UNRESOLVED_MESSAGE_ID/)
+})
+
+
+test('sensitive status copy stays in reviewed English even when an RTL working translation exists, including blank fallback',()=>{
+  const previous=URAI_CATALOGS.ar['replay.waitingChanges']
+  try {
+    URAI_CATALOGS.ar['replay.waitingChanges']='تغييرات تنتظر المزامنة: {count}.'
+    const translated=journeyControlCopy.replayStatusCopy({requested:'ar',preview:true},{id:'replay.waitingChanges',count:12345})
+    assert.equal(translated.locale,'en');assert.equal(translated.direction,'ltr');assert.equal(translated.preview,false)
+    assert.equal(translated.text,'Changes waiting to sync: 12,345.')
+    URAI_CATALOGS.ar['replay.waitingChanges']='   '
+    const fallback=journeyControlCopy.replayStatusCopy({requested:'ar',preview:true},{id:'replay.waitingChanges',count:12345})
+    assert.equal(fallback.locale,'en');assert.equal(fallback.direction,'ltr');assert.equal(fallback.preview,false)
+    assert.equal(fallback.text,'Changes waiting to sync: 12,345.')
+  } finally {if(previous===undefined) delete URAI_CATALOGS.ar['replay.waitingChanges'];else URAI_CATALOGS.ar['replay.waitingChanges']=previous}
+})
+
+
+test('new general-interface missing/blank translations report the actual gap and preserve English label direction',()=>{
+  const id='lifeMap.filterEra', previous=URAI_CATALOGS.ar[id]
+  try {
+    for(const value of [undefined,'   ']) {
+      if(value===undefined) delete URAI_CATALOGS.ar[id]; else URAI_CATALOGS.ar[id]=value
+      const copy=localizedMessage({requested:'ar',preview:true},id)
+      assert.deepEqual(copy,{text:'Filter by era',locale:'en',direction:'ltr',preview:false})
+    }
+  } finally {URAI_CATALOGS.ar[id]=previous}
+})
+
+
+test('actual Life Map search finds its displayed translated type while preserving private titles and original enum filters',()=>{
+  const node={id:'private-node',type:'memory',title:'عنوان خاص',summary:'Private unchanged content',occurredAt:'2026-01-01T12:00:00Z',dateLabel:'private date',eraId:'fixture',connectedTo:[]}
+  for(const requested of URAI_LAUNCH_LOCALES) {
+    const label=localizedMessage({requested,preview:true},'lifeMap.type.memory').text
+    const rendered=fixture({requested,preview:true},{nodes:[node],states:[label,'all','all',true,true]}).render(lifeMap)
+    assert.equal(elements(rendered,n=>n.props['data-life-map-node-id']==='private-node').length,1,requested)
+    const result=elements(rendered,n=>n.props['data-life-map-node-id']==='private-node')[0]
+    assert.equal(result.props['aria-label'],node.title)
+  }
+  const turkish=fixture({requested:'tr',preview:true},{nodes:[{...node,type:'relationship'}],states:['ilişki','all','all',true,true]}).render(lifeMap)
+  assert.equal(elements(turkish,n=>n.props['data-life-map-node-id']==='private-node').length,1,'Turkish dotted-I case folding must match the displayed relationship label')
 })
