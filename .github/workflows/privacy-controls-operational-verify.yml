@@ -4,7 +4,7 @@ on:
   push:
     branches: [feat/privacy-consent-sanctuary-550-20260721]
   pull_request:
-    branches: [main]
+    branches: [main, repair/release-closure-integration-20261007]
   workflow_dispatch:
 
 permissions:
@@ -55,6 +55,7 @@ jobs:
           set -o pipefail
           mkdir -p privacy-controls-evidence
           node urai-tier1/tests/privacy-consent-sanctuary-contract.test.mjs 2>&1 | tee privacy-controls-evidence/privacy-contracts.log
+          node --test urai-tier1/tests/consent-policy-validation.test.mjs 2>&1 | tee privacy-controls-evidence/consent-policy-validation.log
       - name: Build privacy functions
         shell: bash
         run: |
