@@ -59,6 +59,10 @@ jobs:
           URAI_LEGACY_TOOLING_FIXTURE="$RUNNER_TEMP/spatial-legacy-tooling" node scripts/run-spatial-quarantined-security-tests.mjs | tee "$RUNNER_TEMP/spatial-maintained-evidence/retained-legacy-tests.log"
       - name: Verify every actual installed importer and original consumer file
         run: node scripts/check-spatial-maintained-tooling.mjs "$RUNNER_TEMP/spatial-maintained-evidence/installed-tooling.json"
+      - name: Verify actual workspace dependency boundaries
+        run: |
+          node --test tests/workspace-install-declared-boundary.test.mjs
+          node scripts/check-workspace-install.mjs
       - name: Prepare original public packages outside candidate scope
         shell: bash
         run: |
