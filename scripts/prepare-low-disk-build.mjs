@@ -1,11 +1,13 @@
 import fs from 'node:fs/promises'
-import os from 'node:os'
+import { fileURLToPath } from 'node:url'
 import path from 'node:path'
 import process from 'node:process'
 import { spawn } from 'node:child_process'
 
-const home = os.homedir()
+const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 
+// Home-directory caches are shared by parallel lanes and are never removed here.
+// Cleanup is confined to these repository-owned generated paths.
 const pathsToRemove = [
   // Next can leave hundreds of MB across server traces/static output. Remove the
   // whole build output before a fresh production build in small preview sandboxes.
@@ -26,13 +28,6 @@ const pathsToRemove = [
   // Repo-local no-sudo browser-library cache; E2E can recreate it after build.
   '.cache/urai-browser-libs',
 
-  // Playwright browsers are large. Build does not need them, and lock:all runs
-  // build before e2e, so free this space now and let e2e recreate only what it needs.
-  path.join(home, '.cache', 'ms-playwright'),
-
-  // Common transient browser/build caches in these constrained containers.
-  path.join(home, '.cache', 'webpack'),
-  path.join(home, '.cache', 'next'),
 ]
 
 async function rm(targetPath) {
@@ -73,7 +68,7 @@ function formatMiB(bytes) {
 async function runNodeScript(scriptPath) {
   await new Promise((resolve, reject) => {
     const child = spawn(process.execPath, [scriptPath], {
-      cwd: process.cwd(),
+      cwd: repoRoot,
       env: process.env,
       stdio: 'inherit',
     })
@@ -85,7 +80,8 @@ async function runNodeScript(scriptPath) {
   })
 }
 
-for (const targetPath of pathsToRemove) {
+for (const relativePath of pathsToRemove) {
+  const targetPath = path.join(repoRoot, relativePath)
   if (process.env.URAI_LOW_DISK_BUILD_VERBOSE === 'true') {
     const size = await dirSize(targetPath)
     if (size > 0) console.log(`[URAI Spatial] Removing ${targetPath} (${formatMiB(size)})`)
@@ -93,8 +89,8 @@ for (const targetPath of pathsToRemove) {
   await rm(targetPath)
 }
 
-const assetForge = path.join(process.cwd(), 'scripts', 'author-final-glb-pack.mjs')
-const assetVerifier = path.join(process.cwd(), 'scripts', 'verify-final-glb-pack.mjs')
+const assetForge = path.join(repoRoot, 'scripts', 'author-final-glb-pack.mjs')
+const assetVerifier = path.join(repoRoot, 'scripts', 'verify-final-glb-pack.mjs')
 await runNodeScript(assetForge)
 await runNodeScript(assetVerifier)
 
