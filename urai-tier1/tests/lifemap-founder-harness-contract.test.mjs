@@ -249,7 +249,13 @@ function replayReadinessHarness(snapshots, url = 'http://127.0.0.1:4173/replay/?
   return { run: (timeout = 1000) => waitForReplay({ url: () => url, evaluate: async (read) => read() }, timeout), samples: () => samples }
 }
 
-const renderedReplay = { memoryId: 'quiet-reset', manifestId: 'replay-recovery-thread', mediaStatus: 'ready', mediaReady: 'true', webgl: 'ready', admission: 'disclosed-demo', firstFrame: true }
+const renderedReplay = { memoryId: 'demo:quiet-reset', manifestId: 'replay-recovery-thread', mediaStatus: 'ready', mediaReady: 'true', webgl: 'ready', admission: 'disclosed-demo', firstFrame: true }
+
+test('Replay rendered proof binds the actual disclosed demo namespace without admitting a private route', async () => {
+  const state = await replayReadinessHarness([renderedReplay], 'http://127.0.0.1:4173/replay/?demo=1&memoryId=demo%3Aquiet-reset&manifestId=replay-recovery-thread').run()
+  assert.equal(state.memoryId, 'demo:quiet-reset')
+  await assert.rejects(replayReadinessHarness([renderedReplay], 'http://127.0.0.1:4173/replay/?memoryId=quiet-reset&manifestId=replay-recovery-thread').run(), /requires the selected memory and manifest route identity/)
+})
 
 test('Replay capture waits through the real loading state before retaining the selected media first frame', async () => {
   const proof = replayReadinessHarness([{ ...renderedReplay, mediaStatus: 'loading', mediaReady: 'false', firstFrame: false }, renderedReplay])
