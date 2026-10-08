@@ -379,6 +379,7 @@ test('aborted and deadline-limited streams retain full charges and never release
   await assert.rejects(g.paidFetch(...g.directArgs())); assert.equal(g.providerCalls.length,1); assert.equal(g.calls.some(x=>x.action==='reconcile'),false)
 })
 
+const policyAuthority = sourceModule('../src/consentPolicyAuthority.ts', id => { throw new Error(`Unexpected policy-authority dependency ${id}`) })
 const language = sourceModule('../../../packages/localization/src/contentLanguage.ts', id => { throw new Error(`Unexpected language dependency ${id}`) })
 const leaves = [
   ['providerFunctions.ts','openAiOrbProvider','orb','openai'],
@@ -397,7 +398,11 @@ function leafFixture(leaf, change = {}) {
   Object.assign(f.env, { ADAM_PRESENCE_ENABLED:'true', FOUNDER_VOICE_ENABLED:'true', FOUNDER_ELEVENLABS_VOICE_ID:'SYNTHETIC_VOICE', ELEVENLABS_DEFAULT_VOICE_ID:'SYNTHETIC_VOICE', ELEVENLABS_ALLOWED_VOICE_IDS:'SYNTHETIC_VOICE', PERSON_PRESENCE_ENABLED:'true', PERSON_PRESENCE_VOICE_ENABLED:'true', OPENAI_ORB_MODEL:'synthetic-model', OPENAI_ADAM_MODEL:'synthetic-model' })
   for (const key of ['ANTHROPIC','GEMINI','XAI','MISTRAL']) { f.env[`URAI_COUNCIL_${key}_ENABLED`] = 'true'; f.env[`COUNCIL_${key}_MODEL`] = 'synthetic-model' }
   class Timestamp { constructor(value) { this.value=value } toMillis() { return this.value } static fromMillis(value) { return new Timestamp(value) } }
-  const privacy = { domains:{ models:{ mode:'granted', modelContext:true }, identity:{ mode:'granted', likenessEnabled:true } }, enforcement:{ state:'fully-enforced' } }
+  const domainPolicy = { mode:'granted', retentionDays:365, precise:true, replayVisible:true, lifeMapVisible:true, modelContext:true, sharingEnabled:true, automationEnabled:true, likenessEnabled:true }
+  const privacy = { version:2, revision:1, ownerId:UID,
+    domains:Object.fromEntries(policyAuthority.CONSENT_DOMAINS.map(domain => [domain,{ ...domainPolicy }])),
+    enforcement:{ state:'fully-enforced', jobId:null, affectedTargets:[], providerState:'not-applicable' } }
+  assert.equal(policyAuthority.isCanonicalStoredPolicy(privacy,UID),true, 'positive paid-leaf fixture requires actual canonical owner consent')
   const originalDoc = f.db.doc
   f.db.doc = path => {
     if (path.startsWith('spatialPaidProviderBindings/')) return originalDoc(path)
@@ -415,6 +420,7 @@ function leafFixture(leaf, change = {}) {
     if (id === 'firebase-functions/params') return f.params
     if (id === 'firebase-functions/v2/https') return { onRequest:(options,handler) => { assert.ok(options.secrets.includes(f.helper.SPATIAL_SPEND_WORKER_TOKENS_JSON)); return handler } }
     if (id === '../../../packages/localization/src/contentLanguage') return language
+    if (id === './consentPolicyAuthority') return policyAuthority
     if (id === './protectedProviderSpend') return { ...f.helper, paidSpatialFetch:f.paidFetch }
     if (id === './personPresenceAuthority') return { PersonPresenceAuthorityError, loadPersonPresenceAuthority:requireAuthority, requirePersonPresenceRenderBinding:async () => { await requireAuthority(); return { get:key => ({ provider:'elevenlabs',bindingHash:'e'.repeat(64),providerResourceId:'SYNTHETIC_VOICE',providerModelId:'synthetic-model' })[key] } } }
     throw new Error(`Unexpected paid-leaf dependency ${id}`)

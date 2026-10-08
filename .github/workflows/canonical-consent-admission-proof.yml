@@ -5,6 +5,7 @@ on:
     paths:
       - 'apps/functions/src/**'
       - 'apps/functions/test/canonical-consent-admission.test.js'
+      - 'apps/functions/test/protectedProviderSpend.test.mjs'
       - 'apps/functions/test/privacy-policy-fallback.test.js'
       - 'apps/functions/test/privacy-consent-worker-lifecycle.test.js'
       - 'apps/functions/test/privacy-export-download.test.js'
@@ -44,7 +45,7 @@ jobs:
           mkdir -p "$RUNNER_TEMP/canonical-consent-admission"
           git rev-parse HEAD > "$RUNNER_TEMP/canonical-consent-admission/head.txt"
           git rev-parse 'HEAD^{tree}' > "$RUNNER_TEMP/canonical-consent-admission/tree.txt"
-          sha256sum apps/functions/src/consentPolicyAuthority.ts apps/functions/src/privacyOperations.ts apps/functions/src/memoryMedia.ts apps/functions/src/councilProviderFunctions.ts apps/functions/test/privacy-policy-fallback.test.js apps/functions/test/privacy-consent-worker-lifecycle.test.js apps/functions/test/privacy-export-download.test.js apps/functions/test/lifeModelPrivateInputs.test.js apps/functions/test/canonical-consent-admission.test.js .github/workflows/canonical-consent-admission-proof.yml docs/CANONICAL_CONSENT_ADMISSION_20261008.md > "$RUNNER_TEMP/canonical-consent-admission/source-sha256.txt"
+          sha256sum apps/functions/src/consentPolicyAuthority.ts apps/functions/src/privacyOperations.ts apps/functions/src/memoryMedia.ts apps/functions/src/councilProviderFunctions.ts apps/functions/test/privacy-policy-fallback.test.js apps/functions/test/privacy-consent-worker-lifecycle.test.js apps/functions/test/privacy-export-download.test.js apps/functions/test/lifeModelPrivateInputs.test.js apps/functions/test/canonical-consent-admission.test.js apps/functions/test/protectedProviderSpend.test.mjs .github/workflows/canonical-consent-admission-proof.yml docs/CANONICAL_CONSENT_ADMISSION_20261008.md > "$RUNNER_TEMP/canonical-consent-admission/source-sha256.txt"
       - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1
         with:
           version: 10.0.0
@@ -63,6 +64,7 @@ jobs:
         run: |
           set -euo pipefail
           pnpm --dir apps/functions exec node --test test/privacy-policy-fallback.test.js test/privacy-consent-worker-lifecycle.test.js test/lifeModelPrivateInputs.test.js test/privacy-export-download.test.js test/canonical-consent-admission.test.js 2>&1 | tee "$RUNNER_TEMP/canonical-consent-admission/tests.tap"
+          pnpm --dir apps/functions exec node --test test/protectedProviderSpend.test.mjs 2>&1 | tee "$RUNNER_TEMP/canonical-consent-admission/protected-spend-tests.tap"
           sha256sum -c "$RUNNER_TEMP/canonical-consent-admission/source-sha256.txt"
       - name: Preserve proof scope and tool versions
         if: always()
