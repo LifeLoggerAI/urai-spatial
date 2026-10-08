@@ -19,6 +19,12 @@ const provenancePath = `${prefix}/privateLifeModelProvenance/${sha(body.provenan
 const handlePath = `privateLifeModelSourceHandles/${sha(body.sourceHandle)}`
 const narration = 'This is fictional test narration. No private source is present.'
 
+const policyDomain = (mode = 'denied', permissions = {}) => ({
+  mode, retentionDays: null, precise: false, replayVisible: false, lifeMapVisible: false,
+  modelContext: false, sharingEnabled: false, automationEnabled: false, likenessEnabled: false,
+  ...permissions,
+})
+
 function fixture(options = {}) {
   const canonicalDeadline = Date.now() + 3600000
   const exportBinding = { canonicalExportReceiptHash: 'e'.repeat(64), canonicalExportConsentExpiresAt: canonicalDeadline }
@@ -33,7 +39,12 @@ function fixture(options = {}) {
     [sourcePath, { ...shared, revision: 1, sourceEvidenceClass: 'ATTRIBUTED_TESTIMONY', sourceFixityRef: 'private:fixtures/fixity-01', transcriptRef: body.transcriptRef, provenanceRef: body.provenanceRef, transcriptSha256: sha(narration), consentRevision: 4, consentState: 'authorized', externalProcessingConsent: true, purposes: ['memory-index'] }],
     [transcriptPath, { ...shared, opaqueRef: body.transcriptRef, text: narration, sha256: sha(narration) }],
     [provenancePath, { ...shared, opaqueRef: body.provenanceRef, transcriptSha256: sha(narration) }],
-    [`${prefix}/privacyPolicy/current`, { version: 2, ownerId: uid, revision: 4, domains: { exports: { mode: 'granted' }, memory: { mode: 'granted', modelContext: true }, models: { mode: 'limited', modelContext: true }, identity: { mode: 'limited' } }, enforcement: { state: 'fully-enforced' } }],
+    [`${prefix}/privacyPolicy/current`, { version: 2, ownerId: uid, revision: 4,
+      domains: { exports: policyDomain('granted'), memory: policyDomain('granted', { modelContext: true }),
+        models: policyDomain('limited', { modelContext: true }), identity: policyDomain('limited'),
+        location: policyDomain(), workforce: policyDomain() },
+      enforcement: { state: 'fully-enforced', jobId: 'fixture-enforcement',
+        affectedTargets: ['private-inputs', 'export-runtime'], providerState: 'complete' } }],
     [`${prefix}/providerConnections/openai`, { processingAllowed: true, revocationState: 'not-required' }],
   ])
   const stats = { reads: 0, transactions: 0, logs: [], deleted: [], files: new Map() }
