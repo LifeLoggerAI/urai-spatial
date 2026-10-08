@@ -249,7 +249,13 @@ function replayReadinessHarness(snapshots, url = 'http://127.0.0.1:4173/replay/?
   return { run: (timeout = 1000) => waitForReplay({ url: () => url, evaluate: async (read) => read() }, timeout), samples: () => samples }
 }
 
-const renderedReplay = { memoryId: 'quiet-reset', manifestId: 'replay-recovery-thread', mediaStatus: 'ready', mediaReady: 'true', webgl: 'ready', admission: 'disclosed-demo', firstFrame: true }
+const renderedReplay = { memoryId: 'demo:quiet-reset', manifestId: 'replay-recovery-thread', mediaStatus: 'ready', mediaReady: 'true', webgl: 'ready', admission: 'disclosed-demo', firstFrame: true }
+
+test('Replay rendered proof binds the actual disclosed demo namespace without admitting a private route', async () => {
+  const state = await replayReadinessHarness([renderedReplay], 'http://127.0.0.1:4173/replay/?demo=1&memoryId=demo%3Aquiet-reset&manifestId=replay-recovery-thread').run()
+  assert.equal(state.memoryId, 'demo:quiet-reset')
+  await assert.rejects(replayReadinessHarness([renderedReplay], 'http://127.0.0.1:4173/replay/?memoryId=quiet-reset&manifestId=replay-recovery-thread').run(), /requires the selected memory and manifest route identity/)
+})
 
 test('Replay capture waits through the real loading state before retaining the selected media first frame', async () => {
   const proof = replayReadinessHarness([{ ...renderedReplay, mediaStatus: 'loading', mediaReady: 'false', firstFrame: false }, renderedReplay])
@@ -282,4 +288,45 @@ test('Replay capture rejects a stale memory, wrong manifest, private source or a
     await assert.rejects(replayReadinessHarness([state]).run(10), /selected Replay media and first rendered frame timed out/)
   })
   await assert.rejects(replayReadinessHarness([renderedReplay], 'http://127.0.0.1:4173/replay/').run(), /requires the selected memory and manifest route identity/)
+})
+
+function stylesheetHarness(states, failLoad = false) {
+  const pollSource = runner.match(/async function poll\([\s\S]*?\n\}\n/)?.[0]
+  const source = runner.match(/async function waitForDocumentStylesheets\([\s\S]*?\n\}\n/)?.[0]
+  assert.ok(source && pollSource)
+  let samples = 0, loadObserved = false
+  const document = {
+    get readyState() { return states[Math.min(samples, states.length - 1)].readyState },
+    querySelectorAll(selector) {
+      assert.ok(loadObserved, 'Document load must be awaited before reading CSS')
+      assert.equal(selector, 'link[rel="stylesheet"]')
+      const state = states[Math.min(samples++, states.length - 1)]
+      return state.loaded.map((loaded, i) => ({ href: '/style-' + i + '.css', sheet: loaded ? {} : null }))
+    },
+  }
+  const fn = runInNewContext(pollSource + '\n' + source + '\nwaitForDocumentStylesheets', { Date, setTimeout, document })
+  return { samples: () => samples, run: (timeout = 1000) => fn({
+    waitForLoadState: async (state, options) => {
+      assert.equal(state, 'load'); assert.equal(options.timeout, timeout)
+      if (failLoad) throw new Error('Document load failed')
+      loadObserved = true
+    },
+    evaluate: async read => read(),
+  }, timeout) }
+}
+test('Founder navigation waits for actual loaded document CSS without hiding failed requests', async () => {
+  const h = stylesheetHarness([{ readyState: 'complete', loaded: [false] }, { readyState: 'complete', loaded: [true] }])
+  const state = await h.run()
+  assert.equal(h.samples(), 2)
+  assert.equal(state.stylesheets[0].loaded, true)
+  assert.match(runner, /if \(page\.url\(\) !== 'about:blank'\) await waitForDocumentStylesheets\(page\)/)
+  assert.match(runner, /await waitForPath\(page, destinationPath\)\s+await waitForDocumentStylesheets\(page\)/)
+  assert.match(runner, /event\.kind === 'requestfailed'/)
+  assert.doesNotMatch(runner, /ERR_ABORTED.*\.css|\.css.*ERR_ABORTED/)
+})
+test('Founder CSS readiness rejects absent stylesheets, unloaded CSS and load failure', async () => {
+  for (const state of [{readyState:'loading', loaded:[true]}, {readyState:'complete', loaded:[]}, {readyState:'complete', loaded:[false]}]) {
+    await assert.rejects(stylesheetHarness([state]).run(10), /complete document stylesheets timed out/)
+  }
+  await assert.rejects(stylesheetHarness([{readyState:'complete',loaded:[true]}], true).run(), /Document load failed/)
 })
