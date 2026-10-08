@@ -76,7 +76,9 @@ const hooks = registerHooks({
 beforeEach(() => {
   state = {
     subscriptions: new Map(), invoices: new Map(), paymentIntents: new Map(), charges: new Map(),
-    accountDocs: new Map([['users/user-source-fixture', {accountStatus:'active'}]]),
+    accountDocs: new Map([['users/user-source-fixture', {accountStatus:'active'}],
+      ['users/user-source-fixture/billingRuntime/stripeAuthority',{schemaVersion:1,uid:'user-source-fixture',creationTime:1000,incarnationId:'inc_webhook_current_001',mode:'test',stripeCustomerId:'cus_fixture',issuedPlans:['pro','founder','therapist']}],
+      ['users/user-source-fixture/stripeCheckoutSessions/cs_fixture',{schemaVersion:1,uid:'user-source-fixture',creationTime:1000,incarnationId:'inc_webhook_current_001',mode:'test',stripeCustomerId:'cus_fixture',planId:'pro',sessionId:'cs_fixture'}]]),
     async getUser(uid) { return {uid, disabled:false, metadata:{creationTime:new Date(1000).toUTCString()}}; },
     entitlements: new Map(), clients: [], readbacks: [], authChecks: [], reads: 0,
     async retrieve(kind, id) {
@@ -135,7 +137,7 @@ const {handleStripeWebhook,getStripeEntitlement}=await import('../../apps/functi
 const userId='user-source-fixture';
 function subscription(overrides={}) {
   return {id:'sub_fixture',customer:'cus_fixture',status:'active',latest_invoice:'in_current',
-    metadata:{userId,planId:'pro'},...overrides};
+    metadata:{userId,planId:'pro',uraiAccountIncarnation:'inc_webhook_current_001'},...overrides};
 }
 function invoice(overrides={}) {
   return {id:'in_current',customer:'cus_fixture',status:'paid',
@@ -179,7 +181,7 @@ test('legacy signed invoice subscription fields are supported',async()=>{
   assert.equal(state.entitlements.get(userId).subscriptionStatus,'active');
 });
 test('a standalone one-off invoice cannot choose a user entitlement',async()=>{
-  const response=await deliver('invoice.paid',invoice({parent:undefined,metadata:{userId,planId:'pro'}}));
+  const response=await deliver('invoice.paid',invoice({parent:undefined,metadata:{userId,planId:'pro',uraiAccountIncarnation:'inc_webhook_current_001'}}));
   assert.equal(response.status,200); assert.equal((await response.json()).ignored,true);
   assert.equal(state.readbacks.length,0); assert.equal(state.entitlements.size,0);
 });
@@ -268,7 +270,7 @@ async function deliverFunction(type,payload,options={}) {
 }
 function checkout(overrides={}) {
   return {id:'cs_fixture',customer:'cus_fixture',subscription:'sub_fixture',payment_status:'paid',
-    metadata:{userId,planId:'pro'},...overrides};
+    metadata:{userId,planId:'pro',uraiAccountIncarnation:'inc_webhook_current_001'},...overrides};
 }
 for (const [handler,send] of [['Next',deliver],['Firebase',deliverFunction]]) {
   test(handler+' same-second current latest payment failure revokes previously paid access',async()=>{
@@ -448,5 +450,22 @@ test(transport + ' equal-second ' + status + ' denies access and suppresses a co
   await send('invoice.paid', invoice(), { id: 'evt_later_paid', created: 201 });
   assert.equal(state.entitlements.get(userId).subscriptionStatus, 'active');
 });
+
+
+
+
+for(const [handler,send] of [['Next',deliver],['Firebase',deliverFunction]]) {
+  for(const incarnation of [undefined,'inc_prior_subscription_002']) test(handler+' Checkout cannot override missing/prior subscription incarnation: '+String(incarnation),async()=>{
+    const metadata={userId,planId:'pro',...(incarnation?{uraiAccountIncarnation:incarnation}:{})};
+    current(subscription({metadata}));
+    const result=await send('checkout.session.completed',checkout());
+    assert.equal(result.status,500);assert.equal(state.entitlements.size,0);
+  });
+  test(handler+' retries a known current callback racing trusted checkout issuance without granting access',async()=>{
+    state.accountDocs.get('users/'+userId+'/billingRuntime/stripeAuthority').issuedPlans=[];
+    const {bill}=current();const result=await send('invoice.paid',bill);
+    assert.equal(result.status,500);assert.equal(state.entitlements.size,0);
+  });
+}
 
 

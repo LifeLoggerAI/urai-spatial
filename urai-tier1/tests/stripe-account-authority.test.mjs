@@ -43,13 +43,17 @@ const uid='source-owned-account';
 const ownedPath='users/'+uid;
 const fencePath=ownedPath+'/privacyRuntime/exportAuthority';
 const tombstonePath='privacyDeletionTombstones/'+uid;
+const billingPath=ownedPath+'/billingRuntime/stripeAuthority';
+const priorStripeMode=process.env.URAI_STRIPE_MODE;
+const incarnationId='inc_source_current_001';
 let state;
 function snapshot(path) {
   return {exists:state.docs.has(path),data:()=>state.docs.get(path),get:key=>state.docs.get(path)?.[key]};
 }
 beforeEach(()=>{
+  process.env.URAI_STRIPE_MODE='test';
   state={
-    docs:new Map([[ownedPath,{accountStatus:'active'}]]),writes:[],reads:[],authReads:0,
+    docs:new Map([[ownedPath,{accountStatus:'active'}],[billingPath,{schemaVersion:1,uid,creationTime:1000,incarnationId,mode:'test',stripeCustomerId:'cus_source',issuedPlans:['pro','founder','therapist']}]]),writes:[],reads:[],authReads:0,
     auth:{uid,disabled:false,metadata:{creationTime:new Date(1000).toUTCString()}},
     async getUser(value) { assert.equal(value,uid); this.authReads++; await this.onAuthRead?.(this.authReads); if(this.authError)throw this.authError;return structuredClone(this.auth); },
   };
@@ -67,8 +71,8 @@ beforeEach(()=>{
   };
   globalThis.__stripeAccountFixture=state;
 });
-after(()=>{hooks.deregister();delete globalThis.__stripeAccountFixture;});
-const record=()=>({...next.defaultEntitlement(uid),planId:'pro',stripeCustomerId:'cus_source',stripeSubscriptionId:'sub_source',subscriptionStatus:'active'});
+after(()=>{hooks.deregister();delete globalThis.__stripeAccountFixture;if(priorStripeMode===undefined)delete process.env.URAI_STRIPE_MODE;else process.env.URAI_STRIPE_MODE=priorStripeMode;});
+const record=()=>({...next.defaultEntitlement(uid),planId:'pro',stripeCustomerId:'cus_source',stripeSubscriptionId:'sub_source',subscriptionStatus:'active',stripeIncarnationId:incarnationId,stripeAccountCreationTime:1000,stripeBillingMode:'test'});
 const implementations=[
   {name:'Next',run:(value,resolve)=>next.applyStripeEventEntitlement(value,{id:'evt_source',created:100,resolveCurrentSubscription:resolve})},
   {name:'Functions',run:(value,resolve)=>firebase.applyOrderedEntitlement(value,{id:'evt_source',created:100},resolve)},
@@ -76,7 +80,7 @@ const implementations=[
 for(const implementation of implementations) {
   test(implementation.name+' applies an ordinary current-account settled event',async()=>{
     const result=await implementation.run(record());assert.equal(result.applied,true);assert.equal(state.writes.length,1);
-    assert.ok(state.reads.includes(ownedPath));assert.ok(state.reads.includes(fencePath));assert.ok(state.reads.includes(tombstonePath));assert.equal(state.authReads,2);
+    assert.ok(state.reads.includes(ownedPath));assert.ok(state.reads.includes(fencePath));assert.ok(state.reads.includes(tombstonePath));assert.equal(state.authReads,4);
   });
   const denials=[
     ['missing current owner',()=>state.docs.delete(ownedPath)],
@@ -118,7 +122,7 @@ for(const implementation of implementations) {
     const result=await implementation.run(value,async()=>{change();return value;});assert.equal(result.applied,false);assert.equal(state.writes.length,0);
   });
   test(implementation.name+' denies Auth disable during final current-authority read',async()=>{
-    state.onAuthRead=async count=>{if(count===2)state.auth.disabled=true;};
+    state.onAuthRead=async count=>{if(count===4)state.auth.disabled=true;};
     assert.equal((await implementation.run(record())).applied,false);assert.equal(state.writes.length,0);
   });
   test(implementation.name+' preserves duplicate and stale-event no-write controls',async()=>{
@@ -126,5 +130,57 @@ for(const implementation of implementations) {
     assert.equal((await implementation.run(record())).reason,'duplicate-event');assert.equal(state.writes.length,0);
     state.docs.set('userEntitlements/'+uid,{...record(),stripeLastEventCreated:200,stripeLastEventId:'evt_other'});
     assert.equal((await implementation.run(record())).reason,'stale-event');assert.equal(state.writes.length,0);
+  });
+}
+
+
+
+for (const implementation of implementations) {
+  const billingDenials = [
+    ['missing server billing authority',()=>state.docs.delete(billingPath)],
+    ['missing incarnation on provider event',value=>delete value.stripeIncarnationId],
+    ['foreign provider incarnation',value=>value.stripeIncarnationId='inc_previous_account_001'],
+    ['foreign provider customer',value=>value.stripeCustomerId='cus_foreign'],
+    ['unissued plan',()=>state.docs.get(billingPath).issuedPlans=[]],
+    ['foreign billing owner',()=>state.docs.get(billingPath).uid='foreign'],
+    ['wrong provider realm',()=>state.docs.get(billingPath).mode='production'],
+    ['legacy malformed billing authority',()=>state.docs.set(billingPath,{stripeCustomerId:'cus_source'})],
+  ];
+  for(const [name,change] of billingDenials) test(implementation.name+' denies '+name+' without changing retained finance',async()=>{
+    const value=record();change(value);const before=structuredClone([...state.docs]);
+    const result=await implementation.run(value);assert.equal(result.applied,false);assert.equal(state.writes.length,0);
+    assert.deepEqual([...state.docs],before);
+  });
+  test(implementation.name+' rejects a delayed predecessor subscription after new account creation',async()=>{
+    state.auth.metadata.creationTime=new Date(2000).toISOString();
+    state.docs.set(billingPath,{...state.docs.get(billingPath),creationTime:2000,incarnationId:'inc_new_account_002'});
+    // Event second 100 is later than the recreated account; timestamp fence alone cannot establish authority.
+    assert.equal((await implementation.run(record())).applied,false);assert.equal(state.writes.length,0);
+  });
+  test(implementation.name+' rejects predecessor metadata after recreation within the same event second',async()=>{
+    state.auth.metadata.creationTime=new Date(100200).toISOString();
+    state.docs.set(billingPath,{...state.docs.get(billingPath),creationTime:100200,incarnationId:'inc_new_same_second_002'});
+    assert.equal((await implementation.run(record())).applied,false);assert.equal(state.writes.length,0);
+  });
+  test(implementation.name+' accepts exact current association at the same event second',async()=>{
+    state.auth.metadata.creationTime=new Date(100200).toISOString();state.docs.get(billingPath).creationTime=100200;
+    const value={...record(),stripeAccountCreationTime:100200};
+    assert.equal((await implementation.run(value)).applied,true);
+    assert.equal(state.writes[0].value.stripeAccountCreationTime,100200);assert.equal(state.writes[0].value.stripeIncarnationId,incarnationId);
+  });
+  test(implementation.name+' retains an unbound legacy finance row without converting it to active current access',async()=>{
+    const legacy={...record()};delete legacy.stripeIncarnationId;delete legacy.stripeAccountCreationTime;delete legacy.stripeBillingMode;
+    state.docs.set('userEntitlements/'+uid,legacy);
+    assert.equal((await implementation.run(record())).applied,false);assert.equal(state.writes.length,0);
+    assert.deepEqual(state.docs.get('userEntitlements/'+uid),legacy);
+  });
+  test(implementation.name+' rejects binding withdrawal during equal-second provider readback',async()=>{
+    const value=record();state.docs.set('userEntitlements/'+uid,{...value,subscriptionStatus:'past_due',stripeLastEventCreated:100,stripeLastEventId:'evt_old'});
+    const result=await implementation.run(value,async()=>{state.docs.delete(billingPath);return value;});
+    assert.equal(result.applied,false);assert.equal(state.writes.length,0);
+  });
+  test(implementation.name+' requires an issued matching checkout receipt',async()=>{
+    const value={...record(),stripeCheckoutSessionId:'cs_unissued'};
+    const result=await implementation.run(value);assert.equal(result.applied,false);assert.equal(result.retryable,true);assert.equal(state.writes.length,0);
   });
 }

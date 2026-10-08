@@ -7,7 +7,7 @@ import {createHash} from 'node:crypto';
 import {match, installedGraph, primaryCommit as historicalPrimaryCommit} from './check-installed-reviewed-advisories.mjs';
 import {root,workspaceGraph,resolveConsumers,sha256,literalLockGraph} from './spatial-maintained-tooling.mjs';
 
-export const currentPrimaryCommit='da312cd90ec277994d809ab1b9550e2cd1a10142';
+export const currentPrimaryCommit='99ef6f144c4868742e6e9bc3342ba8f1748ac332';
 const [checkout,output]=process.argv.slice(2);
 if(!checkout||!output) throw new Error('Usage: node scripts/check-current-spatial-reviewed-advisories.mjs OFFICIAL_CHECKOUT OUTPUT_JSON');
 const git=(args,options={})=>execFileSync('git',args,{encoding:'utf8',maxBuffer:16*1024*1024,...options});

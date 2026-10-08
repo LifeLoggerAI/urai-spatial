@@ -1,7 +1,7 @@
 import * as functions from 'firebase-functions/v1'
 import * as admin from 'firebase-admin'
 import Stripe from 'stripe'
-import { readStripeAccountAuthority } from './stripeAccountAuthority'
+import { readStripeBillingAuthority, prepareStripeCheckoutBinding, recordStripeCheckoutSession, stripeRecordMatchesBilling, hasStripeFinancialAssociation, readStripeIssuedCheckout } from './stripeAccountAuthority'
 import { assertCheckoutSubscriptionMatch, invoiceSubscriptionId, invoiceBelongsToSubscription, settledStripeSubscriptionStatus } from './stripeEntitlementEvent'
 
 if (!admin.apps.length) admin.initializeApp()
@@ -19,6 +19,10 @@ type StoredEntitlement = {
   subscriptionStatus: SubscriptionStatus
   stripeLastEventCreated: number
   stripeLastEventId: string | null
+  stripeIncarnationId?: string | null
+  stripeAccountCreationTime?: number | null
+  stripeBillingMode?: 'test' | null
+  stripeCheckoutSessionId?: string | null
   updatedAt: number
 }
 
@@ -28,6 +32,8 @@ type ResolvedEvent = {
   customerId: string | null
   subscriptionId: string | null
   subscriptionStatus: SubscriptionStatus
+  incarnationId: string | null
+  checkoutSessionId?: string | null
 }
 
 const STRIPE_API_VERSION: Stripe.LatestApiVersion = '2025-10-29.clover'
@@ -164,9 +170,14 @@ function withStripeResult(base: URL, result: 'success' | 'cancelled', planId: Pa
 }
 
 async function readEntitlement(userId: string): Promise<StoredEntitlement> {
-  const snapshot = await admin.firestore().collection(ENTITLEMENT_COLLECTION).doc(userId).get()
-  if (!snapshot.exists) return defaultEntitlement(userId)
-  return { ...defaultEntitlement(userId), ...(snapshot.data() as Partial<StoredEntitlement>), userId }
+  const db = admin.firestore()
+  return db.runTransaction(async transaction => {
+    const snapshot = await transaction.get(db.collection(ENTITLEMENT_COLLECTION).doc(userId))
+    if (!snapshot.exists) return defaultEntitlement(userId)
+    const authority = await readStripeBillingAuthority(db, transaction, userId, uid => admin.auth().getUser(uid))
+    const row = { ...defaultEntitlement(userId), ...(snapshot.data() as Partial<StoredEntitlement>), userId }
+    return authority.allowed && stripeRecordMatchesBilling(row, authority.binding) ? row : defaultEntitlement(userId)
+  })
 }
 
 async function findByCustomer(customerId: string): Promise<StoredEntitlement | null> {
@@ -177,7 +188,8 @@ async function findByCustomer(customerId: string): Promise<StoredEntitlement | n
     .get()
   if (snapshot.empty) return null
   const doc = snapshot.docs[0]
-  return { ...defaultEntitlement(doc.id), ...(doc.data() as Partial<StoredEntitlement>), userId: doc.id }
+  const current = await readEntitlement(doc.id)
+  return current.stripeCustomerId === customerId ? current : null
 }
 
 async function applyOrderedEntitlement(
@@ -194,10 +206,17 @@ async function applyOrderedEntitlement(
       ? { ...defaultEntitlement(record.userId), ...(snapshot.data() as Partial<StoredEntitlement>), userId: record.userId }
       : defaultEntitlement(record.userId)
 
+    const expected = { incarnationId: record.stripeIncarnationId ?? null, customerId: record.stripeCustomerId,
+      planId: record.planId, eventCreated: event.created }
+    const authority = await readStripeBillingAuthority(db, transaction, record.userId, getCurrentUser, expected)
+    if (!authority.allowed) return { applied: false, reason: authority.reason, retryable: authority.retryable }
+    if (hasStripeFinancialAssociation(current) && !stripeRecordMatchesBilling(current, authority.binding)) {
+      return { applied: false, reason: 'current-account-denied' }
+    }
+    if (record.stripeCheckoutSessionId && !await readStripeIssuedCheckout(db, transaction, record.userId,
+      record.stripeCheckoutSessionId, authority.binding, record.planId)) return { applied: false, reason: 'provider-state-unresolved', retryable: true }
     if (current.stripeLastEventId === event.id) return { applied: false, reason: 'duplicate-event' }
     if ((current.stripeLastEventCreated ?? 0) > event.created) return { applied: false, reason: 'stale-event' }
-    const authority = await readStripeAccountAuthority(db, transaction, record.userId, event.created, getCurrentUser)
-    if (!authority.allowed) return { applied: false, reason: authority.reason, retryable: authority.retryable }
     let nextRecord = record
     let currentProviderResolved = false
     if (
@@ -214,13 +233,14 @@ async function applyOrderedEntitlement(
         const latest = await resolveCurrentSubscription()
         if (latest.userId !== record.userId || latest.planId !== record.planId
           || latest.stripeCustomerId !== record.stripeCustomerId
-          || latest.stripeSubscriptionId !== record.stripeSubscriptionId) {
+          || latest.stripeSubscriptionId !== record.stripeSubscriptionId
+          || latest.stripeIncarnationId !== record.stripeIncarnationId) {
           throw new Error('Stripe subscription authority mismatch')
         }
         nextRecord = latest
         currentProviderResolved = true
       } catch {
-        const live = await readStripeAccountAuthority(db, transaction, record.userId, event.created, getCurrentUser, authority.creationTime)
+        const live = await readStripeBillingAuthority(db, transaction, record.userId, getCurrentUser, { ...expected, creationTime: authority.creationTime })
         if (!live.allowed) return { applied: false, reason: live.reason, retryable: live.retryable }
         const currentPaid = current.subscriptionStatus === 'active' || current.subscriptionStatus === 'trialing'
         const incomingPaid = record.subscriptionStatus === 'active' || record.subscriptionStatus === 'trialing'
@@ -242,10 +262,13 @@ async function applyOrderedEntitlement(
       ) return { applied: false, reason: 'equal-time-precedence' }
     }
 
-    const live = await readStripeAccountAuthority(db, transaction, record.userId, event.created, getCurrentUser, authority.creationTime)
+    const live = await readStripeBillingAuthority(db, transaction, record.userId, getCurrentUser, { ...expected, creationTime: authority.creationTime })
     if (!live.allowed) return { applied: false, reason: live.reason, retryable: live.retryable }
     transaction.set(ref, {
       ...nextRecord,
+      stripeIncarnationId: authority.binding.incarnationId,
+      stripeAccountCreationTime: authority.creationTime,
+      stripeBillingMode: 'test',
       stripeLastEventCreated: event.created,
       stripeLastEventId: event.id,
       updatedAt: Date.now(),
@@ -273,7 +296,7 @@ async function resolveIdentity(metadata: Stripe.Metadata | undefined, customer: 
     userId = userId ?? existing?.userId ?? null
     planId = planId ?? existing?.planId ?? null
   }
-  return { userId, planId }
+  return { userId, planId, incarnationId: typeof metadata?.uraiAccountIncarnation === 'string' ? metadata.uraiAccountIncarnation : null }
 }
 
 async function resolveSubscriptionEvent(stripe: Stripe, event: Stripe.Event): Promise<ResolvedEvent | null> {
@@ -330,6 +353,7 @@ async function resolveSubscriptionEvent(stripe: Stripe, event: Stripe.Event): Pr
     ...(await resolveIdentity(metadata, resolvedCustomer)),
     customerId: resolvedCustomer,
     subscriptionId: resolvedSubscription,
+    checkoutSessionId: type.startsWith('checkout.session.') ? (event.data.object as Stripe.Checkout.Session).id : null,
     subscriptionStatus: status,
   }
 }
@@ -399,11 +423,11 @@ export const createStripeCheckout = functions.https.onRequest(async (req, res) =
     return
   }
 
-  const existing = await readEntitlement(uid)
   if (await authenticatedUid(req) !== uid) {
     res.status(401).json({ error: 'Unauthorized' })
     return
   }
+  if (mode !== 'test') { res.status(503).json({ error: 'Stripe LIVE checkout is not authorized.' }); return }
   let price: Stripe.Price
   try {
     price = await stripe.prices.retrieve(priceId)
@@ -420,22 +444,44 @@ export const createStripeCheckout = functions.https.onRequest(async (req, res) =
     return
   }
 
+  let authority
+  try {
+    authority = await prepareStripeCheckoutBinding(admin.firestore(), uid, id => admin.auth().getUser(id), stripe.customers,
+      async () => await authenticatedUid(req) === uid)
+  } catch {
+    res.status(502).json({ error: 'Stripe customer association could not be verified.' }); return
+  }
+  if (await authenticatedUid(req) !== uid) { res.status(401).json({ error: 'Unauthorized' }); return }
+  if (!authority.allowed) { res.status(409).json({ error: 'Current Stripe association requires reconciliation.' }); return }
+  const incarnationId = authority.binding.incarnationId
+  const dispatch = await admin.firestore().runTransaction(transaction => readStripeBillingAuthority(admin.firestore(), transaction, uid,
+    id => admin.auth().getUser(id), { incarnationId, customerId: authority.binding.stripeCustomerId, creationTime: authority.creationTime }))
+  if (!dispatch.allowed) { res.status(409).json({ error: 'Current Stripe association changed.' }); return }
   const session = await stripe.checkout.sessions.create({
     mode: planId === 'founder' ? 'payment' : 'subscription',
     line_items: [{ price: price.id, quantity: 1 }],
     success_url: withStripeResult(redirectBase, 'success', planId),
     cancel_url: withStripeResult(redirectBase, 'cancelled', planId),
-    customer: existing.stripeCustomerId || undefined,
+    customer: authority.binding.stripeCustomerId!,
     client_reference_id: uid,
-    metadata: { planId, userId: uid },
-    payment_intent_data: planId === 'founder' ? { metadata: { planId, userId: uid } } : undefined,
-    subscription_data: planId === 'founder' ? undefined : { metadata: { planId, userId: uid } },
+    metadata: { planId, userId: uid, uraiAccountIncarnation: incarnationId },
+    payment_intent_data: planId === 'founder' ? { metadata: { planId, userId: uid, uraiAccountIncarnation: incarnationId } } : undefined,
+    subscription_data: planId === 'founder' ? undefined : { metadata: { planId, userId: uid, uraiAccountIncarnation: incarnationId } },
   })
 
   if (await authenticatedUid(req) !== uid) {
     res.status(401).json({ error: 'Unauthorized' })
     return
   }
+  if (session.livemode !== false || session.customer !== authority.binding.stripeCustomerId
+    || session.metadata?.uraiAccountIncarnation !== incarnationId
+    || !await recordStripeCheckoutSession(admin.firestore(), uid, id => admin.auth().getUser(id), authority.binding, planId, session.id)) {
+    res.status(409).json({ error: 'Stripe checkout association could not be committed.' }); return
+  }
+  if (await authenticatedUid(req) !== uid) { res.status(401).json({ error: 'Unauthorized' }); return }
+  const finalCheckout = await admin.firestore().runTransaction(transaction => readStripeBillingAuthority(admin.firestore(), transaction, uid,
+    id => admin.auth().getUser(id), { incarnationId, customerId: authority.binding.stripeCustomerId, creationTime: authority.creationTime }))
+  if (!finalCheckout.allowed) { res.status(409).json({ error: 'Current Stripe association changed.' }); return }
   res.status(200).json({ url: session.url })
 })
 
@@ -480,11 +526,14 @@ export const createStripeCustomerPortal = functions.https.onRequest(async (req, 
     res.status(502).json({ error: 'Stripe customer could not be verified.' })
     return
   }
+  if (await authenticatedUid(req) !== uid) { res.status(401).json({ error: 'Unauthorized' }); return }
   if (customer.deleted) {
     res.status(409).json({ error: 'Stripe customer is no longer active.' })
     return
   }
-  if (customer.livemode !== (mode === 'production')) {
+  if (customer.id !== entitlement.stripeCustomerId || customer.metadata?.userId !== uid
+    || customer.metadata?.uraiAccountIncarnation !== entitlement.stripeIncarnationId
+    || customer.livemode !== (mode === 'production')) {
     res.status(500).json({ error: 'Stripe customer mode mismatch.' })
     return
   }
@@ -513,6 +562,14 @@ export const createStripeCustomerPortal = functions.https.onRequest(async (req, 
     }
   }
 
+  if (mode !== 'test') { res.status(503).json({ error: 'Stripe LIVE portal is not authorized.' }); return }
+  if (await authenticatedUid(req) !== uid) { res.status(401).json({ error: 'Unauthorized' }); return }
+  const latest = await readEntitlement(uid)
+  if (!latest.stripeCustomerId || latest.stripeCustomerId !== entitlement.stripeCustomerId
+    || latest.stripeIncarnationId !== entitlement.stripeIncarnationId
+    || latest.stripeAccountCreationTime !== entitlement.stripeAccountCreationTime) {
+    res.status(409).json({ error: 'Current Stripe association changed.' }); return
+  }
   const session = await stripe.billingPortal.sessions.create({
     customer: customer.id,
     return_url: returnUrl.toString(),
@@ -521,6 +578,11 @@ export const createStripeCustomerPortal = functions.https.onRequest(async (req, 
   if (await authenticatedUid(req) !== uid) {
     res.status(401).json({ error: 'Unauthorized' })
     return
+  }
+  const final = await readEntitlement(uid)
+  if (!final.stripeCustomerId || final.stripeIncarnationId !== entitlement.stripeIncarnationId
+    || final.stripeAccountCreationTime !== entitlement.stripeAccountCreationTime) {
+    res.status(409).json({ error: 'Current Stripe association changed.' }); return
   }
   res.status(200).json({ url: session.url })
 })
@@ -561,6 +623,7 @@ export const handleStripeWebhook = functions.https.onRequest(async (req, res) =>
     res.status(400).json({ error: 'Missing or invalid Stripe webhook configuration' })
     return
   }
+  if (mode !== 'test') { res.status(503).json({ error: 'Stripe LIVE callbacks are not authorized.' }); return }
 
   let event: Stripe.Event
   try {
@@ -613,6 +676,8 @@ export const handleStripeWebhook = functions.https.onRequest(async (req, res) =>
     userId: resolved.userId,
     planId: resolved.planId,
     stripeCustomerId: resolved.customerId,
+    stripeIncarnationId: resolved.incarnationId,
+    stripeCheckoutSessionId: resolved.checkoutSessionId ?? null,
     stripeSubscriptionId: resolved.subscriptionId,
     subscriptionStatus: resolved.subscriptionStatus,
     stripeLastEventCreated: event.created,
@@ -626,7 +691,7 @@ export const handleStripeWebhook = functions.https.onRequest(async (req, res) =>
     return {
       ...defaultEntitlement(identity.userId ?? ''),
       userId: identity.userId ?? '', planId: identity.planId ?? 'free',
-      stripeCustomerId: resolvedCustomer, stripeSubscriptionId: current.id,
+      stripeCustomerId: resolvedCustomer, stripeSubscriptionId: current.id, stripeIncarnationId: identity.incarnationId,
       subscriptionStatus: await settledStripeSubscriptionStatus(
         { ...current, status: mapStatus(current.status) }, (id) => stripe.invoices.retrieve(id),
         event.type === 'invoice.payment_failed',
