@@ -266,6 +266,78 @@ function checkout(overrides={}) {
     metadata:{userId,planId:'pro'},...overrides};
 }
 for (const [handler,send] of [['Next',deliver],['Firebase',deliverFunction]]) {
+  test(handler+' same-second current latest payment failure revokes previously paid access',async()=>{
+    const {bill}=current();
+    await send('invoice.paid',bill,{id:'evt_a_paid',created:200});
+    assert.equal(state.entitlements.get(userId).subscriptionStatus,'active');
+    const renewal=invoice({id:'in_renewal',status:'open'});
+    current(subscription({latest_invoice:'in_renewal'}),renewal);
+    const response=await send('invoice.payment_failed',renewal,{id:'evt_z_failed',created:200});
+    assert.equal(response.status,200);
+    assert.equal(state.entitlements.get(userId).subscriptionStatus,'past_due');
+  });
+  test(handler+' same-second verified paid recovery beats a later lexical failure ID',async()=>{
+    current(subscription(),invoice({status:'open'}));
+    await send('invoice.payment_failed',invoice({status:'open'}),{id:'evt_z_failed',created:200});
+    assert.equal(state.entitlements.get(userId).subscriptionStatus,'past_due');
+    state.invoices.set('in_current',invoice());
+    assert.equal((await send('invoice.paid',invoice(),{id:'evt_a_paid',created:200})).status,200);
+    assert.equal(state.entitlements.get(userId).subscriptionStatus,'active');
+  });
+  test(handler+' resolves a recovery occurring between initial failure lookup and transaction',async()=>{
+    const {bill}=current();
+    await send('invoice.paid',bill,{id:'evt_first',created:200});
+    state.invoices.set('in_current',invoice({status:'open'}));
+    const retrieve=state.retrieve;
+    let reads=0;
+    state.retrieve=async function(kind,id) {
+      const value=await retrieve.call(this,kind,id);
+      if(kind==='invoices' && ++reads===1) this.invoices.set('in_current',invoice());
+      return value;
+    };
+    assert.equal((await send('invoice.payment_failed',invoice({status:'open'}),{id:'evt_failed',created:200})).status,200);
+    assert.equal(state.entitlements.get(userId).subscriptionStatus,'active');
+    assert.equal(reads,2);
+  });
+  test(handler+' cannot open access when a new unpaid invoice appears before the transaction',async()=>{
+    current(subscription(),invoice({status:'open'}));
+    await send('invoice.payment_failed',invoice({status:'open'}),{id:'evt_failed',created:200});
+    state.invoices.set('in_current',invoice());
+    const retrieve=state.retrieve;
+    let changed=false;
+    state.retrieve=async function(kind,id) {
+      const value=await retrieve.call(this,kind,id);
+      if(kind==='invoices' && !changed) {
+        changed=true;
+        current(subscription({latest_invoice:'in_renewal'}),invoice({id:'in_renewal',status:'open'}));
+      }
+      return value;
+    };
+    assert.equal((await send('invoice.paid',invoice(),{id:'evt_paid',created:200})).status,200);
+    assert.equal(state.entitlements.get(userId).subscriptionStatus,'incomplete');
+  });
+  for(const direction of ['revoke','grant']) {
+    test(handler+' unresolved same-second '+direction+' stays nonpaid and retryable',async()=>{
+      current(subscription(),invoice({status:direction==='revoke'?'paid':'open'}));
+      const initialType=direction==='revoke'?'invoice.paid':'invoice.payment_failed';
+      await send(initialType,invoice({status:direction==='revoke'?'paid':'open'}),{id:'evt_first',created:200});
+      state.invoices.set('in_current',invoice({status:direction==='revoke'?'open':'paid'}));
+      const retrieve=state.retrieve;
+      let reads=0;
+      state.retrieve=async function(kind,id) {
+        if(kind==='subscriptions' && ++reads===2) throw Error('provider-transaction-unavailable');
+        return retrieve.call(this,kind,id);
+      };
+      const type=direction==='revoke'?'invoice.payment_failed':'invoice.paid';
+      const bill=invoice({status:direction==='revoke'?'open':'paid'});
+      assert.equal((await send(type,bill,{id:'evt_retryable',created:200})).status,500);
+      assert.equal(state.entitlements.get(userId).subscriptionStatus,'past_due');
+      assert.equal(state.entitlements.get(userId).stripeLastEventId,'evt_first');
+      state.retrieve=retrieve;
+      assert.equal((await send(type,bill,{id:'evt_retryable',created:200})).status,200);
+      assert.equal(state.entitlements.get(userId).subscriptionStatus,direction==='revoke'?'past_due':'active');
+    });
+  }
   test(handler+' Checkout grants only its matching settled subscription',async()=>{
     current();
     assert.equal((await send('checkout.session.completed',checkout())).status,200);
@@ -362,10 +434,12 @@ test(transport + ' equal-second ' + status + ' denies access and suppresses a co
   current();
   const send = transport === 'Next' ? deliver : deliverFunction;
   await send('invoice.paid', invoice(), { id: 'evt_a_paid', created: 200 });
+  state.subscriptions.set('sub_fixture', subscription({ status }));
   await send('customer.subscription.updated', subscription({ status }), { id: 'evt_z_denied', created: 200 });
   assert.equal(state.entitlements.get(userId).subscriptionStatus, status);
   await send('invoice.paid', invoice(), { id: 'evt_zz_competing_paid', created: 200 });
   assert.equal(state.entitlements.get(userId).subscriptionStatus, status);
+  state.subscriptions.set('sub_fixture', subscription());
   await send('invoice.paid', invoice(), { id: 'evt_later_paid', created: 201 });
   assert.equal(state.entitlements.get(userId).subscriptionStatus, 'active');
 });

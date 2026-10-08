@@ -269,7 +269,25 @@ export async function POST(request: Request) {
   }, {
     id: event.id,
     created: event.created,
+    resolveCurrentSubscription: async () => {
+      if (!resolved.subscriptionId) throw new Error('Missing Stripe subscription authority');
+      const current = await stripe.subscriptions.retrieve(resolved.subscriptionId);
+      const customerId = customerIdFrom(current.customer);
+      const identity = await resolveMetadataIdentity(current.metadata ?? undefined, customerId);
+      return {
+        ...defaultEntitlement(identity.userId ?? ''),
+        userId: identity.userId ?? '', planId: identity.planId ?? 'free',
+        stripeCustomerId: customerId, stripeSubscriptionId: current.id,
+        subscriptionStatus: await settledStripeSubscriptionStatus(
+          current, (id) => stripe.invoices.retrieve(id), event.type === 'invoice.payment_failed',
+        ),
+      };
+    },
   });
+
+  if (application.retryable) {
+    return NextResponse.json({ error: 'Stripe provider state could not be resolved' }, { status: 500 });
+  }
 
   return NextResponse.json({
     received: true,
