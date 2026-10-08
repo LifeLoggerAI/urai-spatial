@@ -3,7 +3,7 @@ import * as admin from 'firebase-admin'
 import { defineSecret } from 'firebase-functions/params'
 import { onRequest } from 'firebase-functions/v2/https'
 import { contentLanguage, URAI_CONTENT_LANGUAGE_TAGS } from '../../../packages/localization/src/contentLanguage'
-import { paidSpatialFetch, SpatialSpendError, SPATIAL_SPEND_WORKER_TOKENS_JSON } from './protectedProviderSpend'
+import { paidSpatialFetch, assertSpatialPaidOutputCurrent, SpatialSpendError, SPATIAL_SPEND_WORKER_TOKENS_JSON } from './protectedProviderSpend'
 
 if (!admin.apps.length) admin.initializeApp()
 
@@ -425,6 +425,14 @@ function allowedVoiceIds() {
   return new Set(String(process.env.ELEVENLABS_ALLOWED_VOICE_IDS ?? '').split(',').map((value) => value.trim()).filter(Boolean))
 }
 
+function maximumVoiceOutputBytes() {
+  const configured = Number(process.env.ELEVENLABS_MAX_RESPONSE_BYTES ?? 8 * 1024 * 1024)
+  if (!Number.isSafeInteger(configured) || configured <= 0) {
+    throw new ProviderError(503, 'ELEVENLABS_OUTPUT_LIMIT_INVALID', 'The voice output limit requires configuration.')
+  }
+  return Math.min(32 * 1024 * 1024, configured)
+}
+
 export const elevenLabsVoiceProvider = onRequest({
   region: REGION,
   timeoutSeconds: 30,
@@ -434,6 +442,10 @@ export const elevenLabsVoiceProvider = onRequest({
 }, async (request, response) => {
   const startedAt = Date.now()
   let uid = ''
+  let timeout: ReturnType<typeof setTimeout> | undefined
+  let reader: ReadableStreamDefaultReader<Uint8Array> | undefined
+  let cancelOutput: () => Promise<void> = async () => {}
+  let completed = false
   try {
     if (request.method !== 'POST') throw new ProviderError(405, 'METHOD_NOT_ALLOWED', 'POST is required.')
     uid = await authenticatedUid(request)
@@ -442,6 +454,7 @@ export const elevenLabsVoiceProvider = onRequest({
     const maximumCharacters = Math.max(1, Math.min(2_000, Number(process.env.ELEVENLABS_MAX_CHARACTERS_PER_REQUEST ?? 1_200)))
     if (!text) throw new ProviderError(400, 'MISSING_TEXT', 'Text is required.')
     if (text.length > maximumCharacters || Math.ceil(text.length / 14) > 120) throw new ProviderError(413, 'AUDIO_TOO_LONG', 'Voice request exceeds the configured limit.')
+    const maximumAudioBytes = maximumVoiceOutputBytes()
     await requireProviderConsent(uid, 'elevenlabs', body.externalProcessingConsent === true)
     await consumeRateLimit(uid, 'elevenlabs', 6)
 
@@ -453,8 +466,24 @@ export const elevenLabsVoiceProvider = onRequest({
     endpoint.searchParams.set('output_format', process.env.ELEVENLABS_OUTPUT_FORMAT || 'mp3_44100_128')
     if (process.env.ELEVENLABS_ZERO_RETENTION === 'true') endpoint.searchParams.set('enable_logging', 'false')
     const controller = new AbortController()
-    const timeout = setTimeout(() => controller.abort(), 15_000)
+    timeout = setTimeout(() => controller.abort(), 15_000)
     request.on('close', () => controller.abort())
+    const currentVoiceAuthority = async () => {
+      if (controller.signal.aborted) throw new ProviderError(499, 'VOICE_OUTPUT_CANCELLED', 'Voice output was cancelled.')
+      if (await authenticatedUid(request) !== uid) throw new ProviderError(401, 'UNAUTHORIZED', 'Authentication changed before voice delivery.')
+      await requireProviderConsent(uid, 'elevenlabs', body.externalProcessingConsent === true)
+      if (controller.signal.aborted) throw new ProviderError(499, 'VOICE_OUTPUT_CANCELLED', 'Voice output was cancelled.')
+    }
+    cancelOutput = async () => {
+      controller.abort()
+      if (!reader) return
+      let cleanupTimer: ReturnType<typeof setTimeout> | undefined
+      try {
+        await Promise.race([reader.cancel('Voice delivery stopped').catch(() => undefined),
+          new Promise<void>(resolve => { cleanupTimer = setTimeout(resolve, 1000) })])
+      } finally { if (cleanupTimer !== undefined) clearTimeout(cleanupTimer) }
+    }
+    if (typeof response.on === 'function') response.on('close', () => { if (!completed) void cancelOutput() })
     const model = process.env.ELEVENLABS_MODEL_ID || 'eleven_multilingual_v2'
     const upstream = await paidSpatialFetch(db, uid, 'narrator-voice', 'elevenlabs', model, body, endpoint, {
       method: 'POST',
@@ -465,25 +494,48 @@ export const elevenLabsVoiceProvider = onRequest({
         voice_settings: { stability: 0.66, similarity_boost: 0.78, style: 0.18, use_speaker_boost: true },
       }),
       signal: controller.signal,
-    }).finally(() => clearTimeout(timeout))
+    })
     if (!upstream.ok || !upstream.body) throw new ProviderError(upstream.status === 429 ? 429 : 503, 'ELEVENLABS_REQUEST_FAILED', 'The voice provider is unavailable.')
+
+    reader = upstream.body.getReader()
+    await currentVoiceAuthority()
+    assertSpatialPaidOutputCurrent(upstream)
+    const declaredLength = upstream.headers.get('content-length')
+    if (declaredLength !== null && (!/^\d+$/.test(declaredLength) || !Number.isSafeInteger(Number(declaredLength)) || Number(declaredLength) > maximumAudioBytes)) {
+      throw new ProviderError(502, 'ELEVENLABS_RESPONSE_TOO_LARGE', 'The voice provider returned an invalid or oversized audio response.')
+    }
 
     response.status(200)
     response.setHeader('Content-Type', upstream.headers.get('content-type') || 'audio/mpeg')
     response.setHeader('Cache-Control', 'private, no-store, max-age=0')
     response.setHeader('X-Content-Type-Options', 'nosniff')
     response.setHeader('X-URAI-Provider', 'elevenlabs')
-    const reader = upstream.body.getReader()
+    let streamedAudioBytes = 0
     while (true) {
+      await currentVoiceAuthority()
+      assertSpatialPaidOutputCurrent(upstream)
       const { value, done } = await reader.read()
+      await currentVoiceAuthority()
+      assertSpatialPaidOutputCurrent(upstream)
       if (done) break
+      if (!value) continue
+      streamedAudioBytes += value.byteLength
+      if (streamedAudioBytes > maximumAudioBytes) {
+        throw new ProviderError(502, 'ELEVENLABS_RESPONSE_TOO_LARGE', 'The voice provider returned an oversized audio response.')
+      }
       response.write(Buffer.from(value))
     }
     response.end()
+    completed = true
     await recordTelemetry({ uid, provider: 'elevenlabs', outcome: 'success', inputUnits: text.length, latencyMs: Date.now() - startedAt, upstreamRequestId: upstream.headers.get('request-id') ?? upstream.headers.get('x-request-id') })
   } catch (error) {
+    await cancelOutput()
     if (uid) await recordTelemetry({ uid, provider: 'elevenlabs', outcome: 'failure', inputUnits: 0, latencyMs: Date.now() - startedAt })
     if (!response.headersSent) sendError(response, error)
-    else response.end()
+    else if (!completed) response.destroy()
+  } finally {
+    if (timeout !== undefined) clearTimeout(timeout)
+    try { reader?.releaseLock() } catch { /* A cancelled pending read cannot grant output authority. */ }
   }
 })
+

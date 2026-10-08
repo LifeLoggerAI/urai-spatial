@@ -224,7 +224,7 @@ test('repeated phase requests preserve the ongoing crossfade and mute cancels it
   assert.ok(h.elements.every((element) => element.paused && element.src === '' && element.volume === 0))
 })
 
-test('rapid Home, Focus, Replay requests finish with only Replay ambience', () => {
+test('explicit controller phase requests preserve their requested final ambience', () => {
   const h = controllerHarness()
   h.audio.setAmbientPhase('HOME')
   h.advance(1500)
@@ -255,6 +255,36 @@ test('consent and unmute events cannot start ambience while sensory-safe is enab
   h.event('urai:audio-mute', { muted: false })
   assert.deepEqual(h.plays, [])
 })
+
+for (const destination of ['replay', 'life-movie']) {
+  for (const phase of ['idle', 'ascending', 'travelling']) {
+    test(`${destination} ${phase} never mounts generic ambience over the source soundtrack`, () => {
+      const h = ambientHarness()
+      h.state.destination = destination
+      h.state.phase = phase
+      const before = h.plays.length
+      const stops = h.stops()
+      const state = h.render()
+      h.event('urai:audio-consent', { enabled: true })
+      h.event('urai:audio-mute', { muted: false })
+      h.event('urai:sensory-safe-changed', { enabled: true })
+      h.event('urai:sensory-safe-changed', { enabled: false })
+      assert.equal(h.plays.length, before)
+      assert.ok(h.stops() > stops)
+      assert.equal(state.props['data-audio-phase'], 'none')
+      assert.match(state.props.children, destination === 'replay' ? /source-audio-first/ : /authorized soundtrack/)
+    })
+  }
+  test(`leaving ${destination} restores only the current authorized Home ambience`, () => {
+    const h = ambientHarness()
+    h.state.destination = destination
+    h.render()
+    const before = h.plays.length
+    h.state.destination = 'home'
+    h.render()
+    assert.deepEqual(h.plays.slice(before), ['HOME'])
+  })
+}
 
 test('muted or unconsented sound stays silent after sensory-safe is disabled', () => {
   for (const options of [{ consented: false, safe: true }, { muted: true, safe: true }]) {
@@ -303,3 +333,4 @@ test('unmount cancels a pending cue decode before it can create a sound source',
   await settleCue()
   assert.equal(h.sources.filter((source) => source.started).length, 0)
 })
+
