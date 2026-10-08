@@ -13,9 +13,12 @@ async function installAdamFixtures(page: Page, speech: 'record' | 'missing' | 't
   await page.route('**/*', async route => {
     const url = new URL(route.request().url())
     if (url.pathname === '/api/urai/adam/conversation') {
-      conversations.push(route.request().postDataJSON())
+      const capturedRequest = route.request().postDataJSON() as {locale:string; surface:string; aiProcessingConsent:boolean; message:string}
+      expect(['fr-FR', 'en-US']).toContain(capturedRequest.locale)
+      conversations.push(capturedRequest)
       await route.fulfill({contentType:'application/x-ndjson', body:JSON.stringify({
-        type:'done', message:'Inert local fixture response.', caption:'Inert local fixture response.', suggestedActions:[],
+        // This inert sentinel tests transport metadata, not provider translation.
+        type:'done', locale:capturedRequest.locale, message:'Inert local fixture response.', caption:'Inert local fixture response.', suggestedActions:[],
         requiresHumanFounder:true, handoffReason:'Fixture preserves human authority.', provider:'openai',
       }) + '\n'})
     } else if (url.hostname === 'identitytoolkit.googleapis.com') {
@@ -88,7 +91,18 @@ async function captureInertSpeech(page: Page, transcript: string) {
 
 test.use({locale:'de-DE',timezoneId:'UTC'})
 
-test.beforeEach(async ({ page }) => {
+test.beforeEach(async ({ page }, info) => {
+  // All six cases are inert local fixtures. No external account or provider
+  // request may escape; later Adam-specific routes retain their precedence.
+  const configured = new URL(info.project.use.baseURL ?? 'http://localhost:3000')
+  expect(['localhost', '127.0.0.1']).toContain(configured.hostname)
+  expect(configured.protocol).toBe('http:')
+  const localOrigin = configured.origin
+  await page.route('**/*', async route => {
+    const url = new URL(route.request().url())
+    if (url.protocol === 'http:' && url.origin === localOrigin && !url.username && !url.password) await route.continue()
+    else await route.abort()
+  })
   // Exercise the real route controls without requiring GPU availability or an account.
   await page.addInitScript(() => {
     const getContext = HTMLCanvasElement.prototype.getContext

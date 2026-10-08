@@ -79,12 +79,40 @@ test('Android association uses observed Play app-signing identity and generated 
     assert.doesNotMatch(first, /android:path="\/lifemap"/)
     assert.match(first, /android:allowBackup="false"/)
     assert.match(first, /android:usesCleartextTraffic="false"/)
+    assert.equal((first.match(/android\.permission\.ACCESS_COARSE_LOCATION/g) || []).length, 1)
+    assert.equal((first.match(/android\.permission\.ACCESS_FINE_LOCATION/g) || []).length, 1)
+    for (const feature of ['location', 'location.gps', 'location.network']) {
+      assert.ok(first.includes(`android:name="android.hardware.${feature}" android:required="false"`))
+    }
     assert.match(first, /android:dataExtractionRules="@xml\/urai_data_extraction_rules"/)
     assert.match(await fs.readFile(path.join(dir, 'app/src/main/res/xml/urai_backup_exclusions.xml'), 'utf8'), /<exclude domain="database" path="\."/)
     const extraction = await fs.readFile(path.join(dir, 'app/src/main/res/xml/urai_data_extraction_rules.xml'), 'utf8')
     assert.match(extraction, /<cloud-backup>/); assert.match(extraction, /<device-transfer>/)
     assert.equal((extraction.match(/<exclude /g) || []).length, 18)
-    assert.doesNotMatch(first, /custom_url_scheme|android.permission.RECORD_AUDIO/)
+    assert.doesNotMatch(first, /custom_url_scheme|android\.permission\.(?:ACCESS_BACKGROUND_LOCATION|CAMERA|RECORD_AUDIO|READ_EXTERNAL_STORAGE|WRITE_EXTERNAL_STORAGE|POST_NOTIFICATIONS)/)
+  } finally { await fs.rm(dir, { recursive: true, force: true }) }
+})
+
+test('foreground geolocation preparation preserves existing grants and rejects mandatory location hardware', async () => {
+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'urai-native-location-test-'))
+  try {
+    const file = path.join(dir, 'app/src/main/AndroidManifest.xml')
+    await fs.mkdir(path.dirname(file), { recursive: true })
+    const template = '<manifest xmlns:android="http://schemas.android.com/apk/res/android"><uses-permission android:name="android.permission.INTERNET" /><uses-permission android:name=\'android.permission.ACCESS_COARSE_LOCATION\' /><uses-feature android:name=\'android.hardware.location.gps\' android:required=\'false\' /><application android:allowBackup="true"><activity android:name=".MainActivity">\n        </activity></application></manifest>'
+    await fs.writeFile(file, template)
+    await configureAndroidAppLinks(dir)
+    const configured = await fs.readFile(file, 'utf8')
+    assert.equal((configured.match(/android\.permission\.ACCESS_COARSE_LOCATION/g) || []).length, 1)
+    assert.equal((configured.match(/android\.permission\.ACCESS_FINE_LOCATION/g) || []).length, 1)
+    assert.equal((configured.match(/android\.hardware\.location\.gps/g) || []).length, 1)
+    assert.equal((configured.match(/<uses-permission /g) || []).length, 3)
+    assert.match(configured, /android\.permission\.INTERNET/)
+    await configureAndroidAppLinks(dir)
+    assert.equal(await fs.readFile(file, 'utf8'), configured)
+    const required = template.replace("android:required='false'", "android:required='true'")
+    await fs.writeFile(file, required)
+    await assert.rejects(configureAndroidAppLinks(dir), /ANDROID_LOCATION_FEATURE_MUST_BE_OPTIONAL/)
+    assert.equal(await fs.readFile(file, 'utf8'), required)
   } finally { await fs.rm(dir, { recursive: true, force: true }) }
 })
 
@@ -95,3 +123,4 @@ test('Apple association cannot be generated without supplied Team and bundle ide
   assert.equal(fixture.applinks.details[0].appID, 'SYNTH12345.com.urailabs.urai')
   assert.ok(fixture.applinks.details[0].paths.includes('/home'))
 })
+

@@ -8,6 +8,7 @@ const tests = [
   'tests/visual-proof-transport.test.mjs',
   'tests/home-semantic-action-proof.test.mjs',
   'tests/home-sky-interaction.test.mjs',
+  'tests/manual-emotional-weather-session.test.mjs',
   '../scripts/simulation/run-v10-scenario.test.mjs',
   'tests/passport-render-cadence.test.mjs',
   'tests/passport-ownership-vault-contract.test.mjs',
@@ -153,6 +154,8 @@ const tests = [
   'tests/v2-asset-gating.test.mjs',
   'tests/xr-runtime-contract.test.mjs',
   'tests/xr-static-gate-diagnostics-contract.test.mjs',
+  'tests/browser-location-store.test.mjs',
+  'tests/world-state-query-navigation.test.mjs',
 ]
 
 for (const testPath of tests) {

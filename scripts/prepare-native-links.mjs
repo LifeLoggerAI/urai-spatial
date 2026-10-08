@@ -9,6 +9,21 @@ if (links.origin !== 'https://urai.app' || !Array.isArray(links.paths) || !links
 export async function configureAndroidAppLinks(projectDirectory) {
   const manifestPath = path.join(projectDirectory, 'app/src/main/AndroidManifest.xml')
   let manifest = await fs.readFile(manifestPath, 'utf8')
+  if (!/<manifest\b[^>]*>/.test(manifest)) throw new Error('ANDROID_MANIFEST_ROOT_MISSING')
+  // Capacitor's WebChromeClient requests these foreground permissions for the
+  // consent-gated browser geolocation path. Declaring them does not grant them.
+  // No background location, camera, microphone or storage authority is added.
+  for (const permission of ['ACCESS_COARSE_LOCATION', 'ACCESS_FINE_LOCATION']) {
+    const name = `android.permission.${permission}`
+    const existing = new RegExp(`<uses-permission\\b[^>]*android:name\\s*=\\s*["']${name.replaceAll('.', '\\.')}["'][^>]*>`)
+    if (!existing.test(manifest)) manifest = manifest.replace(/<manifest\b[^>]*>/, `$&\n    <uses-permission android:name="${name}" />`)
+  }
+  // Location remains optional: devices without GPS keep the symbolic Life Map.
+  for (const name of ['android.hardware.location', 'android.hardware.location.gps', 'android.hardware.location.network']) {
+    const existing = new RegExp(`<uses-feature\\b[^>]*android:name\\s*=\\s*["']${name.replaceAll('.', '\\.')}["'][^>]*>`).exec(manifest)?.[0]
+    if (existing && !/android:required\s*=\s*["']false["']/.test(existing)) throw new Error('ANDROID_LOCATION_FEATURE_MUST_BE_OPTIONAL')
+    if (!existing) manifest = manifest.replace(/<manifest\b[^>]*>/, `$&\n    <uses-feature android:name="${name}" android:required="false" />`)
+  }
   if (!manifest.includes('android:name=".MainActivity"') || (manifest.match(/<\/activity>/g) || []).length !== 1) throw new Error('ANDROID_MAIN_ACTIVITY_MISSING_OR_AMBIGUOUS')
   const marker = '<!-- UrAi canonical HTTPS navigation links -->'
   if (!manifest.includes(marker)) {

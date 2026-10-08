@@ -1,5 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Keep the full build within bounded worker memory without skipping analysis.
+  experimental: { cpus: 1, webpackBuildWorker: true, webpackMemoryOptimizations: true },
   ...(process.env.URAI_FIREBASE_STATIC_EXPORT === 'true'
     ? {
         output: 'export',

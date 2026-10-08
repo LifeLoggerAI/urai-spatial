@@ -8,10 +8,26 @@ const require = createRequire(import.meta.url), ts = require('typescript')
 const transpile = source => ts.transpileModule(source, { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS } }).outputText
 const helperCode = transpile(fs.readFileSync('src/lib/privacy/authorizedExportDownload.ts', 'utf8'))
 const bridgeCode = transpile(fs.readFileSync('src/lib/privacy/operationalPrivacyClient.ts', 'utf8'))
+const weatherCode = transpile(fs.readFileSync('src/lib/uraiEmotion/weather.ts', 'utf8'))
+const manualWeatherCode = transpile(fs.readFileSync('src/lib/uraiEmotion/manualWeatherSession.ts', 'utf8'))
 const request = { jobId: 'synthetic-job' }, bytes = new TextEncoder().encode('{"synthetic":true}')
 function fixture() {
-  const state = { calls: [], tokens: [], fetches: 0, saves: [], messages: [] }, auth = { currentUser: null }, app = { options: { projectId: 'urai-4dc1d' } }
+  const state = { calls: [], tokens: [], fetches: 0, saves: [], messages: [], weatherResets: 0, manualEnabledAtCalls: [] }, auth = { currentUser: null }, app = { options: { projectId: 'urai-4dc1d' } }
   const user = { uid: 'synthetic-owner', getIdToken: async force => { state.tokens.push(force); return 'synthetic-token' } }; auth.currentUser = user
+  const lifecycle = new EventTarget(), weather = {}, manualWeather = {}
+  vm.runInNewContext(weatherCode, { exports: weather })
+  vm.runInNewContext(manualWeatherCode, { exports: manualWeather, window: lifecycle, Event,
+    require: name => { assert.equal(name, './weather'); return weather },
+  }, { filename: 'manualWeatherSession.ts' })
+  const manualSession = manualWeather.createManualWeatherSession()
+  manualSession.bind({}, () => auth.currentUser === user)
+  assert.equal(manualSession.setEnabled(manualSession.getLease(), true), true)
+  assert.equal(manualSession.choose(manualSession.getLease(), 'Heavy'), true)
+  lifecycle.addEventListener(manualWeather.MANUAL_WEATHER_RESET_EVENT, event => {
+    assert.equal('detail' in event, false)
+    state.weatherResets++
+    manualSession.revoke()
+  })
   const expiry = Date.now() + 30_000
   const descriptor = { schemaVersion: 'urai-spatial-export-download-v1', requiresAuthorization: true, ownerId: user.uid, jobId: request.jobId, file: 'export', assetId: null, downloadExpiresAt: expiry, packageExpiresAt: expiry + 30_000, checksum: createHash('sha256').update(bytes).digest('hex'), contentType: 'application/json', byteLength: bytes.length, storageGeneration: '1234', url: 'https://us-central1-urai-4dc1d.cloudfunctions.net/downloadOperationalExportPackage?jobId=synthetic-job&file=export&expiresAt=' + expiry + '&authorityHash=' + 'a'.repeat(64) }
   const helper = {}, api = { onCallable: async () => descriptor }
@@ -22,12 +38,13 @@ function fixture() {
   vm.runInNewContext(helperCode, context)
   const bridge = {}, imports = {
     'firebase/firestore': {}, 'firebase/auth': { getAuth: () => auth },
-    'firebase/functions': { httpsCallable: (_functions, name) => async payload => { state.calls.push({ name, payload }); return { data: await api.onCallable(name, payload) } } },
+    'firebase/functions': { httpsCallable: (_functions, name) => async payload => { state.calls.push({ name, payload }); state.manualEnabledAtCalls.push(manualSession.getSnapshot().enabled); return { data: await api.onCallable(name, payload) } } },
     '@/lib/firebase/client': { app, firebasePublicEnvReady: true, functions: {}, getFirebaseDb: () => ({}) },
+    '@/lib/uraiEmotion/manualWeatherSession': manualWeather,
     './authorizedExportDownload': helper,
   }
   vm.runInNewContext(bridgeCode, { exports: bridge, require: name => { assert.ok(name in imports, name); return imports[name] }, DOMException, crypto: webcrypto })
-  return { state, auth, user, descriptor, api, helper, bridge, context }
+  return { state, auth, user, descriptor, api, helper, bridge, context, manualSession }
 }
 test('actual Firebase wrapper uses Spatial namespaces and forces a current ID token', async () => {
   const f = fixture(), controller = new AbortController()
@@ -36,9 +53,31 @@ test('actual Firebase wrapper uses Spatial namespaces and forces a current ID to
   assert.deepEqual(f.state.tokens, [true]); assert.equal(f.state.fetches, 1)
   await f.bridge.createOperationalExportRequest(['consent'], 'synthetic-export')
   await f.bridge.cancelOperationalExportRequest(request.jobId)
+  assert.equal(f.state.weatherResets, 0)
+  assert.equal(f.manualSession.getSnapshot().reading.weather, 'Heavy')
   await f.bridge.createOperationalDeletionRequest({ scope: 'memories', confirmation: 'DELETE', operationId: 'synthetic-deletion' })
   await f.bridge.cancelOperationalDeletionRequest('synthetic-deletion')
   assert.deepEqual(f.state.calls.map(x => x.name), ['getOperationalExportDownloadUrl', 'createSpatialExportRequest', 'cancelSpatialExportRequest', 'createSpatialDeletionRequest', 'cancelSpatialDeletionRequest'])
+  assert.deepEqual(f.state.manualEnabledAtCalls, [true, true, true, false, false])
+  assert.equal(f.state.weatherResets, 1)
+  assert.equal(f.manualSession.getSnapshot().reading.weather, null)
+})
+for (const action of ['consent', 'deletion']) test('actual wrapper clears manual session before failed ' + action + ' request without claiming server success', async () => {
+  const f = fixture(), oldLease = f.manualSession.getLease()
+  f.api.onCallable = async () => {
+    assert.equal(f.state.weatherResets, 1)
+    assert.equal(f.manualSession.getSnapshot().enabled, false)
+    assert.equal(f.manualSession.getSnapshot().reading.weather, null)
+    throw new Error('synthetic server failure')
+  }
+  const operation = action === 'consent'
+    ? f.bridge.applyOperationalConsentPolicy({ domain: 'passive-signals', next: { enabled: false }, expectedRevision: 1, operationId: 'synthetic-consent' })
+    : f.bridge.createOperationalDeletionRequest({ scope: 'memories', confirmation: 'DELETE', operationId: 'synthetic-deletion' })
+  await assert.rejects(operation, /synthetic server failure/)
+  assert.deepEqual(f.state.calls.map(x => x.name), [action === 'consent' ? 'applyConsentPolicy' : 'createSpatialDeletionRequest'])
+  assert.deepEqual(f.state.manualEnabledAtCalls, [false])
+  assert.equal(f.manualSession.setEnabled(oldLease, true), false)
+  assert.equal(f.manualSession.getSnapshot().inferenceEnabled, false)
 })
 for (const timing of ['descriptor', 'token']) test('actual wrapper rejects account change during ' + timing, async () => {
   const f = fixture(); let resolve, reached

@@ -1,4 +1,5 @@
 import UraiFinalAssetSpineBridge from './UraiFinalAssetSpineBridge'
+import ManualEmotionalWeatherProvider from '@/lib/uraiEmotion/ManualEmotionalWeatherProvider'
 import './home-spatial-world-final.css'
 import './home-one-world-owner.css'
 import type { Metadata, Viewport } from 'next'
@@ -136,19 +137,21 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           </div>
         ) : null}
         <WorldRuntimeBoundary>
-          <SensorySafeRuntime />
-          <LocaleRuntime />
-          <NativeLinkRuntime />
-          <PassiveSignalRuntime />
-          <UraiAAAARoutePolish />
-          <UraiFinalAssetSpineBridge />
-          {children}
-          <UraiAutonomousV1Layer />
-          <UraiV2StateController />
-          <UraiV2OnboardingLayer />
-          <Suspense fallback={null}>
-            <AdamPresenceRuntime />
-          </Suspense>
+          <ManualEmotionalWeatherProvider>
+            <SensorySafeRuntime />
+            <LocaleRuntime />
+            <NativeLinkRuntime />
+            <PassiveSignalRuntime />
+            <UraiAAAARoutePolish />
+            <UraiFinalAssetSpineBridge />
+            {children}
+            <UraiAutonomousV1Layer />
+            <UraiV2StateController />
+            <UraiV2OnboardingLayer />
+            <Suspense fallback={null}>
+              <AdamPresenceRuntime />
+            </Suspense>
+          </ManualEmotionalWeatherProvider>
         </WorldRuntimeBoundary>
       </body>
     </html>

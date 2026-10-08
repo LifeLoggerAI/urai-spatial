@@ -5,6 +5,7 @@ import { httpsCallable } from 'firebase/functions'
 import { getAuth } from 'firebase/auth'
 import { app, firebasePublicEnvReady, functions, getFirebaseDb } from '@/lib/firebase/client'
 import { fetchAuthorizedOperationalExport, validateOperationalExportDescriptor, type OperationalExportRequest } from './authorizedExportDownload'
+import { notifyManualWeatherRevocation } from '@/lib/uraiEmotion/manualWeatherSession'
 
 export type PrivacyRow = DocumentData & { id: string }
 export type PrivacyCallableResult = Record<string, unknown>
@@ -44,6 +45,7 @@ export async function callOperationalPrivacyFunction<T extends PrivacyCallableRe
 }
 
 export function applyOperationalConsentPolicy(payload: { domain: string; next: Record<string, unknown>; expectedRevision: number; operationId?: string }) {
+  notifyManualWeatherRevocation()
   return callOperationalPrivacyFunction('applyConsentPolicy', { ...payload, operationId: payload.operationId ?? operationId('consent') })
 }
 
@@ -71,6 +73,7 @@ export async function downloadOperationalExportBytes(payload: OperationalExportR
 }
 export function cancelOperationalExportRequest(jobId: string) { return callOperationalPrivacyFunction('cancelSpatialExportRequest', { jobId }) }
 export function createOperationalDeletionRequest(payload: { scope: string; confirmation: string; reason?: string; operationId?: string }) {
+  notifyManualWeatherRevocation()
   return callOperationalPrivacyFunction('createSpatialDeletionRequest', { ...payload, operationId: payload.operationId ?? operationId('deletion') })
 }
 export function cancelOperationalDeletionRequest(jobId: string) { return callOperationalPrivacyFunction('cancelSpatialDeletionRequest', { jobId }) }

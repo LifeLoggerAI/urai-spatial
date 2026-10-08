@@ -7,6 +7,8 @@ import test from 'node:test'
 const require = createRequire(import.meta.url), ts = require('typescript')
 const source = fs.readFileSync('src/lib/privacy/authorizedExportDownload.ts', 'utf8')
 const code = ts.transpileModule(source, { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS } }).outputText
+const weatherCode = ts.transpileModule(fs.readFileSync('src/lib/uraiEmotion/weather.ts', 'utf8'), { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS } }).outputText
+const manualWeatherCode = ts.transpileModule(fs.readFileSync('src/lib/uraiEmotion/manualWeatherSession.ts', 'utf8'), { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS } }).outputText
 const projectId = 'urai-4dc1d', ownerId = 'synthetic-owner', request = { jobId: 'synthetic-job', file: 'export' }
 const bytes = new TextEncoder().encode('{"synthetic":true}'), checksum = createHash('sha256').update(bytes).digest('hex')
 const origin = 'https://us-central1-' + projectId + '.cloudfunctions.net'
@@ -33,6 +35,13 @@ test('actual transport and Firebase wrapper pin project bytes independently of n
   const bridgeCode = ts.transpileModule(bridgeSource, { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS } }).outputText
   for (const pageHref of ['https://localhost/passport', 'capacitor://localhost/passport', 'https://urai-4dc1d--export-review.web.app/passport']) {
     const f = fixture(); let observed
+    const lifecycle = new EventTarget(), weather = {}, manualWeather = {}; let weatherResets = 0
+    lifecycle.location = { href: pageHref, origin: new URL(pageHref).origin }
+    vm.runInNewContext(weatherCode, { exports: weather })
+    vm.runInNewContext(manualWeatherCode, { exports: manualWeather, window: lifecycle, Event,
+      require: name => { assert.equal(name, './weather'); return weather },
+    }, { filename: 'manualWeatherSession.ts' })
+    lifecycle.addEventListener(manualWeather.MANUAL_WEATHER_RESET_EVENT, () => { weatherResets++ })
     f.settings.fetcher = async (url, options) => { observed = { url, options }; return new Response(bytes, { headers: { 'Content-Type': 'application/json' } }) }
     const user = { uid: ownerId, async getIdToken(force) { assert.equal(force, true); return f.settings.getIdToken() } }
     const bridge = {}, imports = {
@@ -41,10 +50,11 @@ test('actual transport and Firebase wrapper pin project bytes independently of n
         assert.equal(name, 'getOperationalExportDownloadUrl'); assert.equal(payload.jobId, request.jobId); return { data: f.descriptor }
       } },
       '@/lib/firebase/client': { app: { options: { projectId } }, firebasePublicEnvReady: true, functions: {} },
+      '@/lib/uraiEmotion/manualWeatherSession': manualWeather,
       './authorizedExportDownload': f.exports,
     }
     vm.runInNewContext(bridgeCode, { exports: bridge, URL, DOMException, crypto: webcrypto,
-      window: { location: { href: pageHref, origin: new URL(pageHref).origin } },
+      window: lifecycle,
       require: name => { assert.ok(Object.hasOwn(imports, name)); return imports[name] },
     }, { filename: 'operationalPrivacyClient.ts' })
     const result = await bridge.downloadOperationalExportBytes(request, { signal: f.settings.signal, isCurrent: () => true })
@@ -52,6 +62,7 @@ test('actual transport and Firebase wrapper pin project bytes independently of n
     assert.equal(observed.url, f.descriptor.url); assert.equal(new URL(observed.url).origin, origin)
     assert.equal(observed.options.headers.Authorization, 'Bearer synthetic-token'); assert.equal(observed.options.signal, f.settings.signal)
     for (const [key, value] of Object.entries({ credentials: 'omit', redirect: 'error', cache: 'no-store', referrerPolicy: 'no-referrer' })) assert.equal(observed.options[key], value)
+    assert.equal(weatherResets, 0, 'read-only export does not revoke or grant a manual preference')
   }
 })
 

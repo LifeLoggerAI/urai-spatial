@@ -10,6 +10,7 @@ import JourneyOfflineNotice from '@/lib/i18n/JourneyOfflineNotice'
 import HomeSceneRenderBoundary from './home/HomeSceneRenderBoundary'
 import { requestUraiWorldOrbOpen } from '@/spatial/world/worldEvents'
 import { homeJourneyHref } from '@/spatial/navigation/homeSkyInteraction'
+import { HomeManualEmotionalWeatherStatus } from '@/lib/uraiEmotion/ManualEmotionalWeatherControls'
 import { clearHomeAssetCache, isHomeAssetLoadError } from '@/spatial/layout/HomeWorldProductionPolished'
 
 type RendererState = 'ready' | 'recovering' | 'failed'
@@ -200,6 +201,7 @@ export default function HomeSpatialRuntimeLayer() {
         data-home-assets-ready="false"
         aria-label="Spatial Home fallback"
       >
+        <HomeManualEmotionalWeatherStatus />
         <div role="status" aria-live="polite" className="home-runtime-recovery">
           <span {...locale.props(failureMessageId)}>{locale.text(failureMessageId)}</span>
           <JourneyOfflineNotice />
@@ -216,6 +218,7 @@ export default function HomeSpatialRuntimeLayer() {
   return (
     <>
       <HomeSemanticNavigation />
+      <HomeManualEmotionalWeatherStatus />
       <section
       ref={runtimeRef}
       className="urai-home-spatial-runtime-layer"
