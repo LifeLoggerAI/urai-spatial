@@ -3,6 +3,7 @@ import test from 'node:test'
 import { URAI_CATALOGS, URAI_LAUNCH_LOCALES, URAI_NATIVE_REVIEWED_LOCALES, URAI_SOURCE_MESSAGES } from '../src/lib/i18n/locales.ts'
 import { URAI_JOURNEY_CONTROL_MESSAGES } from '../src/lib/i18n/journeyControlMessages.ts'
 import { URAI_GEOGRAPHIC_MESSAGES } from '../src/lib/i18n/geographicMessages.ts'
+import { URAI_FOUNDER_MESSAGES } from '../src/lib/i18n/founderMessages.ts'
 import { URAI_JOURNEY_MESSAGES } from '../src/lib/i18n/journeyMessages.ts'
 import { currentLocalePreference, currentSpeechTag, displayLocale, localeDate, localeNumber, localizedMessage, readLocalePreference, serverLocalePreference, speechTagFor, subscribeLocale, updateLocalePreference, writeLocalePreference } from '../src/lib/i18n/localePreference.ts'
 
@@ -14,7 +15,7 @@ function storage(initial = {}) {
 test('all twenty catalogs retain matching placeholders without granting language acceptance', () => {
   assert.equal(URAI_LAUNCH_LOCALES.length, 20)
   assert.deepEqual([...URAI_NATIVE_REVIEWED_LOCALES], ['en'])
-  assert.equal(Object.keys(URAI_SOURCE_MESSAGES).length, 20 + Object.keys(URAI_JOURNEY_MESSAGES).length + Object.keys(URAI_JOURNEY_CONTROL_MESSAGES).length + Object.keys(URAI_GEOGRAPHIC_MESSAGES).length)
+  assert.equal(Object.keys(URAI_SOURCE_MESSAGES).length, 20 + Object.keys(URAI_JOURNEY_MESSAGES).length + Object.keys(URAI_JOURNEY_CONTROL_MESSAGES).length + Object.keys(URAI_GEOGRAPHIC_MESSAGES).length + Object.keys(URAI_FOUNDER_MESSAGES).length)
   for (const code of URAI_LAUNCH_LOCALES) {
     const expected=Object.keys(URAI_SOURCE_MESSAGES)
     assert.deepEqual(Object.keys(URAI_CATALOGS[code]).sort(), expected.sort())
@@ -164,3 +165,17 @@ test('actual Focus date attributes identify formatted dates and leave unparseabl
   }
 })
 
+
+
+test('persistent digital-Founder disclosure has complete preparation and critical English fallback', () => {
+  assert.deepEqual(Object.keys(URAI_FOUNDER_MESSAGES), ['founder.disclosure'])
+  assert.equal(URAI_FOUNDER_MESSAGES['founder.disclosure'].sensitivity, 'privacy')
+  for (const requested of URAI_LAUNCH_LOCALES) {
+    assert.ok(URAI_CATALOGS[requested]['founder.disclosure'].trim())
+    const result = localizedMessage({requested,preview:true}, 'founder.disclosure')
+    assert.equal(result.text, 'Founder digital presence')
+    assert.equal(result.locale, 'en')
+    assert.equal(result.direction, 'ltr')
+    assert.equal(result.preview, false)
+  }
+})

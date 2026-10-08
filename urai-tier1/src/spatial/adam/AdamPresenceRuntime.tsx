@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react'
 import { usePathname, useSearchParams } from 'next/navigation'
 import { createPortal } from 'react-dom'
 import { currentSpeechTag } from '@/lib/i18n/localePreference'
+import { useUraiLocale } from '@/lib/i18n/useUraiLocale'
 import { contentLanguage, contentLanguageProps, type UraiContentLanguageTag } from '@/lib/i18n/contentLanguage'
 import {
   AdamProviderError,
@@ -64,6 +65,12 @@ export default function AdamPresenceRuntime() {
   const searchParams = useSearchParams()
   const requestedSurface = pathname === '/adam' ? searchParams.get('surface') : null
   const surface = resolveAdamSurface(pathname, requestedSurface)
+  const locale = useUraiLocale()
+  const surfaceKey = `${pathname}:${surface?.id ?? 'hidden'}`
+  const renderedSurfaceKey = useRef(surfaceKey)
+  renderedSurfaceKey.current = surfaceKey
+  const activeSurfaceKey = useRef(surfaceKey)
+  const conversationGeneration = useRef(0)
   const [open, setOpen] = useState(false)
   const [launcherAnchor, setLauncherAnchor] = useState<HTMLElement | null>(null)
   const launcherRef = useRef<HTMLButtonElement | null>(null)
@@ -126,6 +133,8 @@ export default function AdamPresenceRuntime() {
   }, [])
 
   const stopAll = useCallback(() => {
+    // Invalidate callbacks before abort(), which may synchronously dispatch events.
+    conversationGeneration.current += 1
     conversationAborter.current?.abort()
     conversationAborter.current = null
     recognitionRef.current?.abort()
@@ -164,10 +173,19 @@ export default function AdamPresenceRuntime() {
 
   useEffect(() => () => stopAll(), [stopAll])
   useEffect(() => {
+    if (activeSurfaceKey.current !== surfaceKey) {
+      activeSurfaceKey.current = surfaceKey
+      stopAll()
+      setMessages([])
+      setMessage('')
+      setAiConsent(false)
+      setVoiceConsent(false)
+      setStatus('Adam is ready when you are.')
+    }
     stopVoice()
     setStreamedText('')
     if (pathname === '/adam') setOpen(true)
-  }, [pathname, stopVoice])
+  }, [pathname, surfaceKey, stopAll, stopVoice])
 
   const playAudio = useCallback((blob: Blob, generation: number, locale: UraiContentLanguageTag) => new Promise<void>((resolve) => {
     if (generation !== voiceGeneration.current) return resolve()
@@ -254,20 +272,28 @@ export default function AdamPresenceRuntime() {
     }
     recognitionRef.current?.abort()
     const recognition = new Constructor()
+    const generation = conversationGeneration.current
+    const recognitionSurfaceKey = surfaceKey
+    const isCurrentRecognition = () => recognitionRef.current === recognition
+      && conversationGeneration.current === generation
+      && renderedSurfaceKey.current === recognitionSurfaceKey
     recognition.continuous = false
     recognition.interimResults = true
     recognition.lang = currentSpeechTag()
     recognition.onresult = (event) => {
+      if (!isCurrentRecognition()) return
       let text = ''
       for (let index = 0; index < event.results.length; index += 1) text += event.results[index][0]?.transcript ?? ''
       setMessage(text.trimStart())
     }
     recognition.onend = () => {
+      if (!isCurrentRecognition()) return
       setListening(false)
       recognitionRef.current = null
       setStatus('Voice captured. Send when ready.')
     }
     recognition.onerror = () => {
+      if (!isCurrentRecognition()) return
       setListening(false)
       recognitionRef.current = null
       setStatus('Voice input stopped. You can type instead.')
@@ -282,18 +308,24 @@ export default function AdamPresenceRuntime() {
       setListening(false)
       setStatus('Voice input is not available in this browser. Type to Adam instead.')
     }
-  }, [stopVoice])
+  }, [stopVoice, surfaceKey])
 
   const submit = async (event: FormEvent) => {
     event.preventDefault()
     const text = message.trim()
-    if (!surface || !text || busy || !aiConsent) return
+    if (!surface || !text || busy || !aiConsent || activeSurfaceKey.current !== surfaceKey) return
     const locale = contentLanguage(currentSpeechTag())?.speechTag
     if (!locale) { setStatus('Choose a supported content language.'); return }
 
     stopVoice()
     const controller = new AbortController()
     conversationAborter.current = controller
+    const generation = conversationGeneration.current
+    const requestSurfaceKey = surfaceKey
+    const isCurrentRequest = () => conversationAborter.current === controller
+      && !controller.signal.aborted
+      && conversationGeneration.current === generation
+      && renderedSurfaceKey.current === requestSurfaceKey
     setBusy(true)
     setStreamedText('')
     setStreamedLocale(locale)
@@ -314,12 +346,13 @@ export default function AdamPresenceRuntime() {
         aiProcessingConsent: true,
         signal: controller.signal,
         onEvent: (providerEvent) => {
-          if (providerEvent.type !== 'delta') return
+          if (!isCurrentRequest() || providerEvent.type !== 'delta') return
           setStreamedText((current) => current + providerEvent.text)
           streamingSpeechBuffer.current += providerEvent.text
           drainSpeechBuffer(false, providerEvent.locale)
         },
       })
+      if (!isCurrentRequest()) return
       drainSpeechBuffer(true, result.locale)
       const adamMessage: DisplayMessage = {
         id: uid(),
@@ -333,6 +366,7 @@ export default function AdamPresenceRuntime() {
       setStreamedText('')
       setStatus(result.requiresHumanFounder ? 'This needs the human founder.' : voiceConsent && !voiceMuted ? 'Adam response complete.' : 'Adam responded.')
     } catch (error) {
+      if (!isCurrentRequest()) return
       stopVoice()
       setStreamedText('')
       if (controller.signal.aborted) {
@@ -343,8 +377,10 @@ export default function AdamPresenceRuntime() {
         setStatus('Adam is temporarily unavailable.')
       }
     } finally {
-      if (conversationAborter.current === controller) conversationAborter.current = null
-      setBusy(false)
+      if (isCurrentRequest()) {
+        conversationAborter.current = null
+        setBusy(false)
+      }
     }
   }
 
@@ -367,7 +403,8 @@ export default function AdamPresenceRuntime() {
     return launcherAnchor ? createPortal(launcher, launcherAnchor) : launcher
   }
 
-  const visibleMessages = streamedText
+  const contextCurrent = activeSurfaceKey.current === surfaceKey
+  const visibleMessages = !contextCurrent ? [] : streamedText
     ? [...messages, { id: 'streaming', role: 'assistant' as const, content: streamedText, locale: streamedLocale }]
     : messages
 
@@ -383,6 +420,7 @@ export default function AdamPresenceRuntime() {
         <div className={styles.presence} aria-hidden="true">A</div>
         <div className={styles.identity}>
           <p className={styles.name}>Adam</p>
+          <p className={styles.surface} {...locale.props('founder.disclosure')}>{locale.text('founder.disclosure')}</p>
           <p className={styles.surface}>{surface.label} · {busy ? 'thinking' : listening ? 'listening' : 'present'}</p>
         </div>
         <button ref={closeButtonRef} type="button" className={styles.close} onClick={closePresence} aria-label="Close Adam">×</button>
@@ -413,7 +451,7 @@ export default function AdamPresenceRuntime() {
       <form className={styles.composer} onSubmit={submit}>
         <textarea
           className={styles.textarea}
-          value={message}
+          value={contextCurrent ? message : ''}
           rows={3}
           maxLength={2500}
           onChange={(event) => setMessage(event.target.value)}
