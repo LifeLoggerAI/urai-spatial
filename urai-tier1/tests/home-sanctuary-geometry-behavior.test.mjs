@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
+import fs from 'node:fs'
 import * as THREE from 'three'
+import { classifyRetainedHomeMesh } from '../src/spatial/layout/HomeSanctuaryAssetPolicy.ts'
 import { stepEmbodiedMotion } from '../src/spatial/navigation/EmbodiedNavigation.tsx'
 import {
   HOME_NAVIGATION_OBSTACLES, HOME_POND, HOME_POND_WATER_LEVEL,
@@ -10,6 +12,27 @@ import {
 } from '../src/spatial/layout/HomeSanctuaryGeometry.ts'
 
 const close = (actual, expected, tolerance = .00001) => assert.ok(Math.abs(actual - expected) < tolerance, `${actual} differs from ${expected}`)
+
+test('the retained governed Home GLB admits terrain and excludes legacy growth and unnamed descendant props', () => {
+  const bytes = fs.readFileSync(new URL('../public/assets/urai/generated/models/home-entry-chamber-v1.glb', import.meta.url))
+  const gltf = JSON.parse(bytes.subarray(20, 20 + bytes.readUInt32LE(12)).toString())
+  const objects = gltf.nodes.map((node) => Object.assign(new THREE.Object3D(), { name: node.name ?? '' }))
+  gltf.nodes.forEach((node, index) => node.children?.forEach((child) => objects[index].add(objects[child])))
+  const find = (name) => objects[gltf.nodes.findIndex((node) => node.name === name)]
+  assert.equal(classifyRetainedHomeMesh(find('sanctuary-inner-earth')), 'ground', 'the flat cyan inner earth must share the terrain elevation and material')
+  assert.equal(classifyRetainedHomeMesh(find('sanctuary-terrain')), 'ground')
+  assert.equal(classifyRetainedHomeMesh(find('sanctuary-foreground-landing')), 'ground')
+  const growth = gltf.nodes.flatMap((node, index) => /^sanctuary-growth-\d+$/.test(node.name ?? '') ? [objects[index]] : [])
+  assert.equal(growth.length, 18, 'the governed fixture must still contain its original growth geometry')
+  growth.forEach((object) => assert.equal(classifyRetainedHomeMesh(object), 'excluded'))
+  for (const parent of ['sanctuary-heart-light', 'embodied-presence-face-light', 'embodied-presence-heart']) {
+    const node = find(parent)
+    assert.ok(node.children.length > 0, `${parent} must exercise the unnamed GLTFLoader child boundary`)
+    node.children.forEach((child) => assert.equal(classifyRetainedHomeMesh(child), 'excluded', `${parent} leaked a generic child mesh`))
+  }
+  const fern = new THREE.Object3D(); fern.name = 'home-scanned-fern-1'
+  assert.equal(classifyRetainedHomeMesh(fern), 'retained', 'the real fern authority must remain admitted')
+})
 
 test('retained ground is projected in world meters without mutating the loaded source', () => {
   const source = new THREE.PlaneGeometry(6, 5, 6, 5)

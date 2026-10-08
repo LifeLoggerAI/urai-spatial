@@ -7,7 +7,7 @@ import * as THREE from 'three'
 import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js'
 import { isOrbState, resolveOrbSensoryOutput, URAI_ORB_STATE_EVENT, type OrbState, type OrbStateEventDetail } from '@/app/home/orbStateController'
 import { MobileMovementPad, stepEmbodiedMotion, useDragLook, useMovementInput, type MovementInput } from '@/spatial/navigation/EmbodiedNavigation'
-import HomeSkyInteraction from '@/spatial/navigation/HomeSkyInteraction'
+import HomeSkyInteraction from '@/spatial/navigation/HomeSkyAscentInteraction'
 import { useSceneStore } from '@/spatial/store/useSceneStore'
 import { requestUraiWorldOrbOpen, requestUraiWorldTravel } from '@/spatial/world/worldEvents'
 import { HomeInterpretiveSplatEnvironment, resolveHomeInterpretiveSplatAsset } from '@/spatial/home/HomeInterpretiveSplat'
@@ -15,6 +15,7 @@ import { sensorySafeEnabled, URAI_SENSORY_SAFE_EVENT, URAI_SENSORY_SAFE_STORAGE_
 import { useAdaptiveSpatialQuality } from '@/spatial/performance/useAdaptiveSpatialQuality'
 import { HOME_COURTYARD, HOME_NAVIGATION_OBSTACLES, HOME_POND, HOME_POND_WATER_LEVEL, homeCourtyardFloorHeight, homeTerrainHeight, homeWalkSurfaceHeight, makeHomeHorizonGeometry, makeHomePatchGeometry, makeHomeRibbonGeometry, makeHomeTerrainGeometry, projectHomeTerrainGeometry, resolveHomeSolidPenetration } from './HomeSanctuaryGeometry'
 import { applyOriginalHomeSurfaceDetail, HomeSkyGradient, HomeSurfaceMaterial } from './HomeSanctuaryMaterials'
+import { classifyRetainedHomeMesh } from './HomeSanctuaryAssetPolicy'
 import styles from './HomeWorldProduction.module.css'
 import { useUraiLocale } from '@/lib/i18n/useUraiLocale'
 
@@ -123,14 +124,13 @@ function prepareNaturalSanctuary(source: THREE.Object3D) {
   world.scale.setScalar(.94)
   world.updateWorldMatrix(true, true)
   const groundBounds = new THREE.Box3()
-  const rejected = /mirror-basin|portal|ring|threshold|village|mannequin|avatar|debug|marker|label|embodied|presence|memory-place-anchor|living-growth|vault|monolith|bridge|grove|firefly|alcove|veil|waterfall|sculpture|pedestal|rib|mountain|ridge|peak|horizon|low[-_ ]?poly|prototype|blockout|proof/i
   let visibleMeshCount = 0
   world.traverse((object) => {
     if (!(object instanceof THREE.Mesh)) return
-    object.visible = !rejected.test(object.name)
+    const disposition = classifyRetainedHomeMesh(object)
+    object.visible = disposition !== 'excluded'
     if (!object.visible) return
-    const name = object.name.toLowerCase()
-    const grounded = /basin|path|ground|terrain|stone|floor/.test(name)
+    const grounded = disposition === 'ground'
     if (grounded) {
       object.geometry = projectHomeTerrainGeometry(object.geometry, object.matrixWorld)
       object.userData.homeProjectedGround = true

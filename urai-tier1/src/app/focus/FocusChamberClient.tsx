@@ -352,18 +352,6 @@ function StellarPhotosphere({ accent, light, reducedMotion }: { accent: string; 
         <sphereGeometry args={[1.15, 96, 96]} />
         <meshBasicMaterial color="#ffd66b" transparent opacity={0.055} depthWrite={false} blending={THREE.AdditiveBlending} toneMapped={false} />
       </mesh>
-      <mesh scale={1.075}>
-        <sphereGeometry args={[1.15, 80, 80]} />
-        <meshBasicMaterial color="#ffb53f" transparent opacity={0.045} side={THREE.BackSide} depthWrite={false} blending={THREE.AdditiveBlending} toneMapped={false} />
-      </mesh>
-      <mesh scale={1.22}>
-        <sphereGeometry args={[1.15, 64, 64]} />
-        <meshBasicMaterial color={light} transparent opacity={0.018} side={THREE.BackSide} depthWrite={false} blending={THREE.AdditiveBlending} toneMapped={false} />
-      </mesh>
-      <mesh scale={1.52}>
-        <sphereGeometry args={[1.15, 48, 48]} />
-        <meshBasicMaterial color={accent} transparent opacity={0.008} side={THREE.BackSide} depthWrite={false} blending={THREE.AdditiveBlending} toneMapped={false} />
-      </mesh>
       <Sparkles count={reducedMotion ? 42 : 124} scale={[4.2, 4.2, 4.2]} size={reducedMotion ? 1.55 : 2.15} speed={reducedMotion ? 0 : 0.11} opacity={0.58} color="#ffd36c" />
       <pointLight color="#fff0ba" intensity={15.5} distance={20} decay={2} />
       <pointLight color={accent} intensity={4.8} distance={14} decay={2} />
@@ -494,10 +482,6 @@ function MemoryStarInteraction({ memory, accent, light, reducedMotion, onActivat
       >
         <sphereGeometry args={[1.16, 96, 96]} />
         <meshBasicMaterial color={light} transparent opacity={0.025} depthWrite={false} />
-      </mesh>
-      <mesh scale={hovered ? 1.38 : 1.32}>
-        <sphereGeometry args={[1.16, 64, 64]} />
-        <meshBasicMaterial color={accent} transparent opacity={hovered ? 0.105 : 0.06} side={THREE.BackSide} depthWrite={false} blending={THREE.AdditiveBlending} />
       </mesh>
       <Html center position={[0, -2.25, 0]} transform distanceFactor={7.6}>
         <button type="button" className="focus-spatial-aperture-button" disabled={!memory} onClick={onActivate} {...locale.props(memory ? 'focus.openReplayFor' : 'focus.chooseReplay')} aria-label={memory ? locale.text('focus.openReplayFor', {title:memory.title}) : locale.text('focus.chooseReplay')}>

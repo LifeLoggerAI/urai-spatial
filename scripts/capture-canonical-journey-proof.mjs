@@ -51,6 +51,27 @@ async function capture(page, journey, id) {
   journey.steps.push({ id, url: page.url(), filename })
 }
 
+async function waitStableLifeMapCamera(root, journey, id) {
+  const start = Date.now()
+  let previous = null, stable = 0, last = null
+  while (Date.now() - start < 60_000) {
+    last = await root.evaluate((node) => [
+      'lifeMapCameraX', 'lifeMapCameraY', 'lifeMapCameraZ',
+      'lifeMapTargetX', 'lifeMapTargetY', 'lifeMapTargetZ', 'lifeMapFov',
+    ].map((key) => node.dataset[key] === undefined ? NaN : Number(node.dataset[key])))
+    const valid = last.every(Number.isFinite)
+    stable = valid && previous && last.every((value, index) => Math.abs(value - previous[index]) < 0.01) ? stable + 1 : 0
+    if (stable >= 3) {
+      journey.cameraCheckpoints ||= []
+      journey.cameraCheckpoints.push({ id, values: last, observedAt: new Date().toISOString() })
+      return
+    }
+    previous = valid ? last : null
+    await sleep(100)
+  }
+  throw new Error(`Life Map camera did not settle for ${id}: ${JSON.stringify(last)}`)
+}
+
 function diagnostics(page) {
   const pageErrors = [], failedRequests = []
   page.on('pageerror', (error) => pageErrors.push(String(error)))
@@ -88,10 +109,11 @@ function blockingRequests(requests) {
 }
 
 async function activate(page, locator, mode) {
+  assert.equal(await locator.count(), 1, 'activation must identify exactly one canonical control')
   await locator.waitFor({ state: 'visible', timeout: 45_000 })
   if (mode === 'touch') {
     const box = await locator.boundingBox()
-    if (!box || box.width <= 0 || box.height <= 0) throw new Error('touch target has no usable geometry')
+    if (!box || box.width < 48 || box.height < 48) throw new Error(`touch target must be at least 48px; got ${box?.width}x${box?.height}`)
     return page.touchscreen.tap(box.x + box.width / 2, box.y + box.height / 2)
   }
   if (mode === 'keyboard') {
@@ -111,7 +133,7 @@ async function activate(page, locator, mode) {
 async function openHome(page, journey) {
   const response = await page.goto(`${base}/home/?demo=1`, { waitUntil: 'domcontentloaded', timeout: 60_000 })
   assert.ok(response?.ok(), 'Home did not return 2xx')
-  const home = page.locator('.urai-asset-home-world[data-home-primary-owner="asset-driven"]').first()
+  const home = ownedHome(page)
   await home.waitFor({ state: 'visible', timeout: 90_000 })
   await waitAttr(home, 'data-home-assets-ready', 'true', 90_000)
   await capture(page, journey, 'home')
@@ -127,7 +149,7 @@ async function proveRealHomeAscent(page, journey, home, mode) {
 }
 
 async function directAccessibleHomeHandoff(page, journey, mode) {
-  const nav = page.locator('.home-semantic-navigation[data-home-navigation-owner="runtime-boundary"]').first()
+  const nav = page.getByTestId('urai-persistent-world-shell').locator('.home-semantic-navigation[data-home-navigation-owner="runtime-boundary"]')
   await nav.waitFor({ state: 'visible', timeout: 45_000 })
   await activate(page, nav.getByTestId('home-semantic-life-map'), mode)
   await waitPath(page, '/life-map', 60_000)
@@ -141,6 +163,7 @@ async function lifeMapOverview(page, journey) {
   await waitAttr(root, 'data-life-map-phase', 'overview', 60_000)
   await waitAttr(root, 'data-life-map-render-ready', 'true', 60_000)
   assert.equal(new URL(page.url()).searchParams.get('demo'), '1')
+  await waitStableLifeMapCamera(root, journey, 'life-map-overview')
   await capture(page, journey, 'life-map-overview')
   return root
 }
@@ -159,6 +182,8 @@ async function selectQuietReset(page, journey, mode, root) {
   assert.equal(identity.node, identity.memoryId)
   assert.equal(identity.manifestId, 'replay-recovery-thread')
   assert.equal(url.searchParams.get('demo'), '1')
+  journey.selectedIdentity = { starId: identity.node, selectedMemoryId: `demo:${identity.memoryId}`, manifestId: identity.manifestId, disclosedDemo: true }
+  await waitStableLifeMapCamera(root, journey, 'memory-star')
   await capture(page, journey, 'memory-star')
   return identity
 }
@@ -169,47 +194,66 @@ async function assertRealmIdentity(locator, identity) {
   await waitAttr(locator, 'data-manifest-id', identity.manifestId)
 }
 
+function ownedRealm(page, testId) {
+  return page.getByTestId('urai-persistent-world-shell').getByTestId(testId)
+}
+
+function ownedHome(page) {
+  return page.getByTestId('urai-persistent-world-shell').locator('.urai-asset-home-world[data-home-primary-owner="asset-driven"]')
+}
+
+async function waitFocusFrame(focus) {
+  await waitAttr(focus, 'data-webgl-state', 'ready', 60_000)
+  const canvas = focus.locator('canvas')
+  await canvas.waitFor({ state: 'visible', timeout: 60_000 })
+  await waitAttr(canvas, 'data-focus-first-frame', 'true', 60_000)
+}
+
 async function enterFocus(page, journey, mode, identity) {
   const nav = page.getByRole('navigation', { name: 'Selected memory actions' })
   await activate(page, nav.getByRole('button', { name: /Enter Focus$/ }), mode)
   await waitPath(page, '/focus', 60_000)
-  const focus = page.getByTestId('urai-final-focus-chamber')
+  const focus = ownedRealm(page, 'urai-final-focus-chamber')
   await focus.waitFor({ state: 'visible', timeout: 90_000 })
   await assertRealmIdentity(focus, identity)
-  await waitAttr(focus, 'data-focus-render-ready', 'true', 60_000)
+  await waitFocusFrame(focus)
   assert.equal(new URL(page.url()).searchParams.get('demo'), '1')
   await capture(page, journey, 'focus')
 }
 
 async function enterReplay(page, journey, mode, identity) {
-  const controls = page.getByRole('navigation', { name: 'Focus controls' })
-  await activate(page, controls.getByRole('button', { name: /Enter Replay for/ }), mode)
+  const controls = ownedRealm(page, 'urai-final-focus-chamber').getByRole('navigation', { name: 'Focus memory controls', exact: true })
+  await activate(page, controls.getByRole('button', { name: 'Open Replay for The Quiet Reset', exact: true }), mode)
   await waitPath(page, '/replay', 60_000)
-  const replay = page.getByTestId('cinematic-replay-client')
+  const replay = ownedRealm(page, 'cinematic-replay-client')
   await replay.waitFor({ state: 'visible', timeout: 90_000 })
   await assertRealmIdentity(replay, identity)
-  await activate(page, page.getByRole('button', { name: 'Begin memory', exact: true }), mode)
+  await waitAttr(replay, 'data-replay-media-ready', 'true', 60_000)
+  await waitAttr(replay, 'data-webgl-state', 'ready', 60_000)
+  const canvas = replay.locator('canvas')
+  await canvas.waitFor({ state: 'visible', timeout: 60_000 })
+  await waitAttr(canvas, 'data-replay-first-frame', 'true', 60_000)
+  await activate(page, replay.getByRole('button', { name: 'Continue memory', exact: true }), mode)
   await waitAttr(replay, 'data-playing', 'true', 20_000)
-  await waitAttr(replay, 'data-replay-render-ready', 'true', 60_000)
   await capture(page, journey, 'replay')
-  await activate(page, page.getByRole('button', { name: 'Hold memory', exact: true }), mode)
+  await activate(page, replay.getByRole('button', { name: 'Pause memory', exact: true }), mode)
   await waitAttr(replay, 'data-playing', 'false', 20_000)
 }
 
 async function unwindReplayToFocus(page, journey, mode, identity) {
-  if (mode === 'touch') await activate(page, page.getByRole('button', { name: 'Focus', exact: true }), mode)
+  if (mode === 'touch') await activate(page, ownedRealm(page, 'cinematic-replay-client').getByRole('button', { name: '← Focus', exact: true }), mode)
   else await page.keyboard.press('Escape')
   await waitPath(page, '/focus', 60_000)
-  const focus = page.getByTestId('urai-final-focus-chamber')
+  const focus = ownedRealm(page, 'urai-final-focus-chamber')
   await focus.waitFor({ state: 'visible', timeout: 90_000 })
   await assertRealmIdentity(focus, identity)
-  await waitAttr(focus, 'data-focus-render-ready', 'true', 60_000)
+  await waitFocusFrame(focus)
   await capture(page, journey, 'return-focus')
 }
 
 async function unwindFocusToLifeMap(page, journey, mode, identity) {
   if (mode === 'touch') {
-    const controls = page.getByRole('navigation', { name: 'Focus controls' })
+    const controls = ownedRealm(page, 'urai-final-focus-chamber').getByRole('navigation', { name: 'Focus memory controls', exact: true })
     await activate(page, controls.getByRole('button', { name: '← Life Map', exact: true }), mode)
   } else await page.keyboard.press('Escape')
   await waitPath(page, '/life-map', 60_000)
@@ -218,10 +262,11 @@ async function unwindFocusToLifeMap(page, journey, mode, identity) {
   await waitAttr(root, 'data-life-map-phase', 'arrival', 60_000)
   await waitAttr(root, 'data-life-map-render-ready', 'true', 60_000)
   const url = new URL(page.url())
-  assert.equal(url.searchParams.get('memoryId'), identity.memoryId)
+  assert.equal(url.searchParams.get('memoryId'), `demo:${identity.memoryId}`, 'Life Map return must retain the exact disclosed memory namespace')
   assert.equal(url.searchParams.get('node'), identity.node)
   assert.equal(url.searchParams.get('manifestId'), identity.manifestId)
   assert.equal(url.searchParams.get('demo'), '1')
+  await waitStableLifeMapCamera(root, journey, 'return-life-map-selected')
   await capture(page, journey, 'return-life-map-selected')
   return root
 }
@@ -229,17 +274,19 @@ async function unwindFocusToLifeMap(page, journey, mode, identity) {
 async function lifeMapToHome(page, journey, mode, root) {
   if (mode === 'touch') {
     const actions = page.getByRole('navigation', { name: 'Selected memory actions' })
-    await activate(page, actions.getByRole('button', { name: /Overview/ }), mode)
+    await activate(page, actions.getByRole('button', { name: 'Return to Life Map overview', exact: true }), mode)
   } else await page.keyboard.press('Escape')
   await waitAttr(root, 'data-life-map-phase', 'overview', 30_000)
   await waitAttr(root, 'data-life-map-render-ready', 'true', 60_000)
+  await waitStableLifeMapCamera(root, journey, 'return-life-map-overview')
   await capture(page, journey, 'return-life-map-overview')
-  if (mode === 'touch') await activate(page, page.locator('[data-life-map-overview-home-return="true"]').first(), mode)
+  if (mode === 'touch') await activate(page, root.getByRole('button', { name: 'Return Home', exact: true }), mode)
   else await page.keyboard.press('Escape')
   await waitPath(page, '/home', 60_000)
   assert.equal(new URL(page.url()).searchParams.get('demo'), '1', 'final Home return lost disclosed demo context')
-  const home = page.locator('.urai-asset-home-world[data-home-primary-owner="asset-driven"]').first()
+  const home = ownedHome(page)
   await home.waitFor({ state: 'visible', timeout: 90_000 })
+  await waitAttr(home, 'data-home-assets-ready', 'true', 90_000)
   await capture(page, journey, 'return-home')
 }
 

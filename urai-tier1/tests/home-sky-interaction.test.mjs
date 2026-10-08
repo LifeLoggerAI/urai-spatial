@@ -40,7 +40,7 @@ test('lower or occluded sky never starts Ascent',()=>{const f=fixture({visible:f
 
 function skyModule(context={}) {
   const effects=[]
-  const code=ts.transpileModule(fs.readFileSync(new URL('../src/spatial/navigation/HomeSkyInteraction.tsx',import.meta.url),'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022,jsx:ts.JsxEmit.ReactJSX}}).outputText
+  const code=ts.transpileModule(fs.readFileSync(new URL('../src/spatial/navigation/HomeSkyAscentInteraction.tsx',import.meta.url),'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022,jsx:ts.JsxEmit.ReactJSX}}).outputText
   const module={exports:{}}
   vm.runInNewContext(code,{module,exports:module.exports,window:context.window,require:id=>{
     if(id==='three')return THREE

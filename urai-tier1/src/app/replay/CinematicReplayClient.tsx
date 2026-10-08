@@ -79,7 +79,7 @@ function MemoryMediaDome({ url, onState }: { url: string; onState: (state: Repla
 
   return (
     <group name="replay-immersive-memory-field" userData={{ presentation: 'inside-memory-environment-not-screen', truthClass: 'disclosed-demonstration', mediaReady: Boolean(texture), mediaKind: 'image' }}>
-      <mesh>
+      <mesh onAfterRender={(renderer) => { if (texture) renderer.domElement.dataset.replayFirstFrame = 'true' }}>
         <sphereGeometry args={[24, 96, 64]} />
         {texture ? <meshBasicMaterial map={texture} toneMapped={false} side={THREE.BackSide} /> : <meshBasicMaterial color="#06131c" side={THREE.BackSide} />}
       </mesh>

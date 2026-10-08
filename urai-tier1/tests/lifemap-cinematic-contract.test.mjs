@@ -63,7 +63,7 @@ test('Life Map keeps deterministic camera travel, Escape recovery, reduced motio
     'THREE.MathUtils.damp',
     'event.key !== "Escape"',
     'profile.reducedMotion',
-    'router.push("/home")',
+    'router.push(homeJourneyHref("/home", params.toString()))',
     'webglcontextlost',
     'webglcontextrestored',
   ])

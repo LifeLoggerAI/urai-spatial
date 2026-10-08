@@ -439,30 +439,7 @@ function AuthoredMemoryStar({ aura, active, scale = 1, rotation = [0, 0, 0], cli
         <sphereGeometry args={[0.38, 72, 56]} />
         <primitive object={photosphere} attach="material" />
       </mesh>
-      <mesh name="memory-star-inner-corona" scale={active ? 1.42 : 1.30} raycast={() => null}>
-        <sphereGeometry args={[0.38, 56, 40]} />
-        <meshBasicMaterial
-          color="#fff0c2"
-          transparent
-          opacity={active ? 0.04 : 0.022}
-          blending={THREE.AdditiveBlending}
-          depthWrite={false}
-          toneMapped={false}
-          side={THREE.BackSide}
-        />
-      </mesh>
-      <mesh name="memory-star-outer-corona" scale={active ? 1.66 : 1.44} raycast={() => null}>
-        <sphereGeometry args={[0.38, 56, 40]} />
-        <meshBasicMaterial
-          color={aura}
-          transparent
-          opacity={active ? 0.008 : 0.005}
-          blending={THREE.AdditiveBlending}
-          depthWrite={false}
-          toneMapped={false}
-          side={THREE.BackSide}
-        />
-      </mesh>
+
       <Sparkles
         count={active ? 28 : 10}
         scale={[active ? 2.2 : 1.6, active ? 2.2 : 1.6, active ? 2.2 : 1.6]}
