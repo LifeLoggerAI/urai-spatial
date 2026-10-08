@@ -330,6 +330,7 @@ jobs:
       - id: certify-fingerprint
         name: Promote fingerprint only after exact live smoke passes
         if: steps.live-smoke.outcome == 'success'
+        continue-on-error: true
         shell: bash
         run: |
           set -euo pipefail
@@ -373,7 +374,7 @@ jobs:
             node scripts/urai-post-deploy-smoke.mjs
 
       - name: Roll back Hosting and Functions after any deployment or certification failure
-        if: steps.deploy-functions.outcome != 'success' || steps.deploy-hosting.outcome != 'success' || steps.live-smoke.outcome != 'success' || steps.certify-fingerprint.outcome != 'success' || steps.deploy-certified-fingerprint.outcome != 'success' || steps.certified-smoke.outcome != 'success'
+        if: always() && steps.deploy-functions.outcome != '' && steps.deploy-functions.outcome != 'skipped' && (steps.deploy-functions.outcome != 'success' || steps.deploy-hosting.outcome != 'success' || steps.live-smoke.outcome != 'success' || steps.certify-fingerprint.outcome != 'success' || steps.deploy-certified-fingerprint.outcome != 'success' || steps.certified-smoke.outcome != 'success')
         shell: bash
         env:
           GOOGLE_WIF_ACCESS_TOKEN: ${{ steps.google-auth.outputs.access_token }}
@@ -459,7 +460,7 @@ jobs:
           retention-days: 90
 
       - name: Fail release after rollback when deployment or live certification failed
-        if: steps.deploy-functions.outcome != 'success' || steps.deploy-hosting.outcome != 'success' || steps.live-smoke.outcome != 'success' || steps.certify-fingerprint.outcome != 'success' || steps.deploy-certified-fingerprint.outcome != 'success' || steps.certified-smoke.outcome != 'success'
+        if: always() && steps.deploy-functions.outcome != '' && steps.deploy-functions.outcome != 'skipped' && (steps.deploy-functions.outcome != 'success' || steps.deploy-hosting.outcome != 'success' || steps.live-smoke.outcome != 'success' || steps.certify-fingerprint.outcome != 'success' || steps.deploy-certified-fingerprint.outcome != 'success' || steps.certified-smoke.outcome != 'success')
         shell: bash
         run: |
           echo 'Exact Functions + Hosting certification failed. Governed rollback was attempted and the release remains NO-GO.' >&2

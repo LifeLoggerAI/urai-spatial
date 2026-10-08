@@ -107,7 +107,20 @@ export default function MemoryWorldRuntime({ world, onExit, validationContext }:
     return <main data-testid="memory-world-runtime" data-memory-world-state="suppressed" style={{minHeight:'100svh',display:'grid',placeItems:'center',background:'#05070b',color:'#fff',padding:24}}><section><h1>Memory World unavailable</h1><p>This world failed its provenance or governance contract and was not mounted.</p><button type="button" onClick={onExit} style={{minWidth:48,minHeight:48}}>Return to Replay</button><AdamLauncherSlot name="memory-world-suppressed" as="div" /></section></main>
   }
 
-  const fallback = <section role="status" data-testid="memory-world-renderer-fallback" style={{position:'absolute',inset:'0 0 160px',boxSizing:'border-box',overflowY:'auto',padding:24,textAlign:'center',background:'#071018',color:'#fff'}}><div role="region" aria-label="Memory view status and provenance" tabIndex={0}><h2>{rendererState === 'checking' ? 'Preparing the memory view' : 'Memory view paused safely'}</h2><p>{plan.truthLabel}</p><p>Three-dimensional exploration is unavailable. Your memory and return controls remain available.</p><details><summary style={{minHeight:48,display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer'}}>Truth & provenance</summary><p>Archetype: {world.archetypeId}</p><p>Correction revision: {world.provenance.userCorrectionRevision}</p><p>Runtime: {plan.runtimeVersion}</p></details></div><nav aria-label="Memory view fallback controls" style={{display:'flex',flexWrap:'wrap',alignItems:'center',gap:8}}><button type="button" onClick={onExit} style={{minWidth:48,minHeight:48}}>Return to Replay</button><AdamLauncherSlot name="memory-world-fallback" /></nav></section>
+  const fallback = (
+    <section role="status" data-testid="memory-world-renderer-fallback" style={{position:'absolute',inset:'0 0 160px',boxSizing:'border-box',display:'grid',gridTemplateRows:'minmax(0,1fr) auto',gap:8,padding:24,textAlign:'center',background:'#071018',color:'#fff'}}>
+      <div role="region" aria-label="Memory view status and provenance" tabIndex={0} style={{minHeight:0,overflowY:'auto'}}>
+        <h2>{rendererState === 'checking' ? 'Preparing the memory view' : 'Memory view paused safely'}</h2>
+        <p>{plan.truthLabel}</p>
+        <p>Three-dimensional exploration is unavailable. Your memory and return controls remain available.</p>
+        <details><summary style={{minHeight:48,display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer'}}>Truth & provenance</summary><p>Archetype: {world.archetypeId}</p><p>Correction revision: {world.provenance.userCorrectionRevision}</p><p>Runtime: {plan.runtimeVersion}</p></details>
+      </div>
+      <nav aria-label="Memory view fallback controls" style={{display:'flex',flexWrap:'wrap',alignItems:'center',gap:8}}>
+        <button type="button" onClick={onExit} style={{minWidth:48,minHeight:48}}>Return to Replay</button>
+        <AdamLauncherSlot name="memory-world-fallback" />
+      </nav>
+    </section>
+  )
   const moveView = (direction: 'left' | 'right' | 'nearer' | 'farther') => {
     const orbit = controls.current
     const view = camera.current
