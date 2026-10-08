@@ -1,9 +1,12 @@
+import { createCandidateRouteAuthority } from './lib/candidate-route-authority.mjs'
 import { spawn } from 'node:child_process'
 import { readFile, writeFile, mkdir } from 'node:fs/promises'
 import path from 'node:path'
 import { chromium } from 'playwright'
 
 const outDir = process.env.URAI_MIRROR_PROOF_OUT_DIR || 'mirror-release-proof'
+const baseUrl = String(process.env.URAI_AUDIT_BASE_URL || 'http://127.0.0.1:4173').replace(/\/$/, '')
+const candidateAuthority = createCandidateRouteAuthority(baseUrl)
 const exactSha = String(process.env.URAI_PROOF_SOURCE_SHA || process.env.URAI_EXACT_HEAD || '').trim()
 
 function runOriginalProof() {
@@ -17,9 +20,6 @@ function runOriginalProof() {
   })
 }
 
-function pathname(value) {
-  return new URL(value).pathname.replace(/\/$/, '') || '/'
-}
 
 function isNarrowReplayScreenshotFailure(receipt) {
   if (!receipt || receipt.exactSha !== exactSha || receipt.status !== 'failed') return false
@@ -28,7 +28,7 @@ function isNarrowReplayScreenshotFailure(receipt) {
   const failure = failedCases[0]
   if (failure?.name !== 'transition-to-replay' || failure?.device !== 'desktop') return false
   if (!String(failure?.error || '').includes('page.screenshot: Timeout 60000ms exceeded')) return false
-  if (pathname(String(failure?.finalUrl || 'http://invalid/')) !== '/replay') return false
+  if (!candidateAuthority.isExactRoute(failure?.finalUrl, '/replay')) return false
   if ((failure?.consoleErrors || []).length) return false
   if ((failure?.failedRequests || []).length) return false
   if ((failure?.httpErrors || []).length) return false
@@ -73,9 +73,10 @@ async function proveReplayCaptureReconciliation(failure) {
 
   try {
     const replayUrl = String(failure.finalUrl)
+    candidateAuthority.assertExactRoute(replayUrl, '/replay')
     const response = await page.goto(replayUrl, { waitUntil: 'domcontentloaded', timeout: 60000 })
     if (response && response.status() >= 400) throw new Error(`HTTP ${response.status()} for Replay`)
-    if (pathname(page.url()) !== '/replay') throw new Error(`Replay destination drifted: ${page.url()}`)
+    candidateAuthority.assertExactRoute(page.url(), '/replay')
 
     await page.getByTestId('urai-replay-surface').waitFor({ state: 'attached', timeout: 45000 })
     await page.getByTestId('urai-replay-timeline').first().waitFor({ state: 'attached', timeout: 45000 })
@@ -90,7 +91,7 @@ async function proveReplayCaptureReconciliation(failure) {
       timeout: 120000,
     })
 
-    if (pathname(page.url()) !== '/replay') throw new Error(`Replay destination drifted after capture: ${page.url()}`)
+    candidateAuthority.assertExactRoute(page.url(), '/replay')
     if (consoleErrors.length) throw new Error(`console errors: ${consoleErrors.join(' | ')}`)
     if (failedRequests.length) throw new Error(`failed requests: ${failedRequests.join(' | ')}`)
     if (httpErrors.length) throw new Error(`HTTP resource errors: ${httpErrors.join(' | ')}`)
