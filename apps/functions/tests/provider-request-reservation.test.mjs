@@ -15,7 +15,7 @@ const localRequire = createRequire(import.meta.url)
 const hash = (text) => createHash('sha256').update(text).digest('hex')
 const message = 'synthetic private reflection; never send this fixture externally'
 const requestId = hash(JSON.stringify({ message, context: [], locale: 'en-US' }))
-const policy = { domains: { models: { mode: 'granted', modelContext: true } }, enforcement: { state: 'fully-enforced' } }
+const policy = { version: 2, revision: 0, ownerId: 'alice', domains: Object.fromEntries(['memory', 'location', 'models', 'exports', 'workforce', 'identity'].map(domain => [domain, { mode: domain === 'models' ? 'granted' : 'denied', retentionDays: null, precise: false, replayVisible: false, lifeMapVisible: false, modelContext: domain === 'models', sharingEnabled: false, automationEnabled: false, likenessEnabled: false }])), enforcement: { state: 'fully-enforced', jobId: null, affectedTargets: [], providerState: 'not-applicable' } }
 const answer = { message: 'A synthetic answer.', caption: 'A synthetic answer.', disclosure: 'OpenAI processed the response.', suggestedActions: ['Pause here'], locale: 'en-US' }
 
 function loadSource(relativePath, dependencies, globals = {}) {
@@ -105,7 +105,7 @@ function responseDouble({ loseDelivery = false } = {}) {
 
 function fixture({ store = storage(), env = {}, fetchHook, authHook, shortenDeadlineMs } = {}) {
   for (const uid of ['alice', 'bob']) {
-    if (!store.state.docs.has(`users/${uid}/privacyPolicy/current`)) store.state.docs.set(`users/${uid}/privacyPolicy/current`, clone(policy))
+    if (!store.state.docs.has(`users/${uid}/privacyPolicy/current`)) store.state.docs.set(`users/${uid}/privacyPolicy/current`, clone({ ...policy, ownerId: uid }))
   }
   const calls = []
   let authReads = 0
@@ -129,6 +129,7 @@ function fixture({ store = storage(), env = {}, fetchHook, authHook, shortenDead
     return sse(answer)
   }
   const exports = loadSource('apps/functions/src/providerFunctions.ts', {
+    './consentPolicyAuthority': loadSource('apps/functions/src/consentPolicyAuthority.ts', {}),
     '../../../packages/localization/src/contentLanguage': loadSource('packages/localization/src/contentLanguage.ts', {}),
     './protectedProviderSpend': { paidSpatialFetch: (_db, _uid, _lane, _provider, _model, _input, url, init) => fetch(url, init), SpatialSpendError: class extends Error {}, SPATIAL_SPEND_WORKER_TOKENS_JSON: {} },
     'firebase-admin': admin,
@@ -309,8 +310,8 @@ test('authentication is checked with revocation before any reservation or replay
 
 for (const [name, savedPolicy, connection] of [
   ['no saved policy', null, null],
-  ['model context denied', { ...policy, domains: { models: { mode: 'granted', modelContext: false } } }, null],
-  ['enforcement pending', { ...policy, enforcement: { state: 'pending' } }, null],
+  ['model context denied', { ...policy, domains: { ...policy.domains, models: { ...policy.domains.models, modelContext: false } } }, null],
+  ['enforcement pending', { ...policy, enforcement: { ...policy.enforcement, state: 'pending' } }, null],
   ['provider revocation pending', policy, { processingAllowed: true, revocationState: 'pending' }],
 ]) test(`${name} cannot use client-supplied consent as authority`, async () => {
   const f = fixture(); const docs = f.store.state.docs
