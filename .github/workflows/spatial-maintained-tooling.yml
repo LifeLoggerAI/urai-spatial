@@ -72,7 +72,8 @@ jobs:
           npm pack @next/eslint-plugin-next@15.5.27 --ignore-scripts --pack-destination "$RUNNER_TEMP/spatial-maintained-baseline"
           tar -xzf "$RUNNER_TEMP/spatial-maintained-baseline/firebase-tools-15.32.1.tgz" -C "$RUNNER_TEMP/spatial-maintained-baseline/firebase" --strip-components=1
           tar -xzf "$RUNNER_TEMP/spatial-maintained-baseline/next-eslint-plugin-next-15.5.27.tgz" -C "$RUNNER_TEMP/spatial-maintained-baseline/next" --strip-components=1
-          npm install --prefix "$RUNNER_TEMP/spatial-maintained-baseline/dependencies" --ignore-scripts --no-audit --no-fund chokidar@3.6.0 fast-glob@3.3.1 micromatch@4.0.8 @next/eslint-plugin-next@15.5.27 semver@7.7.3
+          node -e 'require("node:fs").writeFileSync(process.argv[1], JSON.stringify({name:"urai-spatial-original-baseline",version:"0.0.0",private:true}) + "\n")' "$RUNNER_TEMP/spatial-maintained-baseline/dependencies/package.json"
+          corepack pnpm@10.0.0 --dir "$RUNNER_TEMP/spatial-maintained-baseline/dependencies" add --save-exact --ignore-scripts chokidar@3.6.0 fast-glob@3.3.1 micromatch@4.0.8 @next/eslint-plugin-next@15.5.27 semver@7.7.3
       - name: Actual four watcher consumers and complete Next lint equivalence
         shell: bash
         run: |

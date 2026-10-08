@@ -87,8 +87,8 @@ test('private signed delivery is renewed before expiry and failure closes the sc
 })
 
 test('route always provides a deterministic exit and provenance is redacted to safe metadata', () => {
-  assert.match(client, /router\.back\(\)/)
-  assert.match(client, /router\.push\('\/replay'\)/)
+  assert.match(client, /capturedRealityJourneyReturnHref/)
+  assert.match(client, /router\.push\(returnHref\)/)
   assert.match(client, /View source and provenance|Captured Reality provenance/)
   assert.match(client, /Exact source locators and private location are intentionally not exposed/)
 })

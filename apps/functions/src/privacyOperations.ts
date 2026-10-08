@@ -919,6 +919,7 @@ async function buildExport(snapshot: FirebaseFirestore.DocumentSnapshot) {
       data.locations = await collectionDocuments(userRef.collection('locations'), context)
       data.capturedRealityAssets = await collectionDocuments(userRef.collection('capturedRealityAssets'), context)
       data.capturedRealityReplayBindings = await collectionDocuments(userRef.collection('capturedRealityReplayBindings'), context)
+      data.capturedRealityRuntimeDeliveries = await collectionDocuments(userRef.collection('capturedRealityRuntimeDeliveries'), context)
       runtimeInventory = await collectExportPages(transaction, userRef.collection('capturedRealityAssets'), budget, asset => ({ id: asset.id, ownerId: asset.get('ownerId'), runtimeObject: asset.get('runtimeObject') ?? null, runtimeSha256: asset.get('runtimeSha256') ?? null, runtimeStorageGeneration: asset.get('runtimeStorageGeneration') ?? null }), requireCurrentAuthority)
     }
     if (scopes.includes('audit')) {
@@ -1380,6 +1381,7 @@ const DELETION_COLLECTIONS: Record<Exclude<DeletionScope, 'account'>, string[]> 
     'locations',
     'capturedRealityAssets',
     'capturedRealityReplayBindings',
+    'capturedRealityRuntimeDeliveries',
   ],
   'all-repository-data': [
     'memoryMediaReceipts',
@@ -1406,6 +1408,7 @@ const DELETION_COLLECTIONS: Record<Exclude<DeletionScope, 'account'>, string[]> 
     'locations',
     'capturedRealityAssets',
     'capturedRealityReplayBindings',
+    'capturedRealityRuntimeDeliveries',
     'providerConnections',
     'scenarios',
     'aiLedger',

@@ -1,10 +1,13 @@
+import { createCapturedRealitySha256 } from './capturedRealitySha256'
+import type { CapturedRealityStreamAuthority } from './capturedRealityDelivery'
+
 const MAX_ABS_POSITION = 1e7
 const MAX_GAUSSIAN_SCALE = 1e4
 const MIN_GAUSSIAN_SCALE = 1e-7
 
 /** Streaming validation for the actual renderer GET, with bounded staging memory. */
 export async function streamCapturedRealitySplat({
-  url, maxBytes, chunkSize, signal, onHeader, onChunk, fetcher = fetch,
+  url, maxBytes, chunkSize, signal, onHeader, onChunk, authority, fetcher = fetch,
 }: {
   url: string
   maxBytes: number
@@ -12,14 +15,18 @@ export async function streamCapturedRealitySplat({
   signal: AbortSignal
   onHeader: (bytes: number) => void
   onChunk: (chunk: Uint8Array, loadedBytes: number) => void | Promise<void>
+  authority?: CapturedRealityStreamAuthority
   fetcher?: typeof fetch
 }) {
   if (!Number.isSafeInteger(maxBytes) || maxBytes < 32 || !Number.isSafeInteger(chunkSize) || chunkSize < 1 || chunkSize > 25_000) throw new Error('INVALID_SPLAT_BUDGET')
   signal.throwIfAborted()
-  const response = await fetcher(url, { method: 'GET', credentials: 'omit', cache: 'no-store', redirect: 'error', signal })
+  const headers = authority ? await authority.requestHeaders() : undefined
+  signal.throwIfAborted()
+  const response = await fetcher(url, { method: 'GET', credentials: 'omit', cache: 'no-store', redirect: 'error', signal, headers })
   let reader: ReadableStreamDefaultReader<Uint8Array> | undefined
   let completed = false
   let staging: Uint8Array | undefined
+  const fixity = authority ? createCapturedRealitySha256() : undefined
   const cancel = () => { void reader?.cancel().catch(() => {}) }
   try {
     signal.throwIfAborted()
@@ -27,6 +34,7 @@ export async function streamCapturedRealitySplat({
     const bytes = rawLength && /^\d+$/.test(rawLength) ? Number(rawLength) : NaN
     const encoding = response.headers.get('content-encoding')
     if (response.status !== 200 || !response.body || !Number.isSafeInteger(bytes) || bytes < 32 || bytes % 32 || bytes > maxBytes || (encoding && encoding.toLowerCase() !== 'identity') || response.headers.has('content-range')) throw new Error('INVALID_SPLAT_RESPONSE')
+    if (authority && (bytes !== authority.expectedByteLength || !/^[a-f0-9]{64}$/i.test(authority.expectedSha256))) throw new Error('SPLAT_ARTIFACT_BINDING_INVALID')
     reader = response.body.getReader()
     signal.addEventListener('abort', cancel, { once: true })
     onHeader(bytes)
@@ -42,6 +50,7 @@ export async function streamCapturedRealitySplat({
       if (done) break
       downloaded += value.byteLength
       if (downloaded > bytes) throw new Error('SPLAT_BODY_EXCEEDS_DECLARED_LENGTH')
+      fixity?.update(value)
       let offset = 0
       while (offset < value.byteLength) {
         const count = Math.min(staging.length - staged, value.byteLength - offset)
@@ -65,11 +74,14 @@ export async function streamCapturedRealitySplat({
       signal.throwIfAborted()
     }
     if (!visible) throw new Error('SPLAT_HAS_NO_VISIBLE_POINTS')
+    const sha256 = fixity?.digest()
+    if (authority && sha256 !== authority.expectedSha256.toLowerCase()) throw new Error('SPLAT_FIXITY_MISMATCH')
     completed = true
-    return { byteSize: bytes, pointCount: bytes / 32 }
+    return { byteSize: bytes, pointCount: bytes / 32, ...(sha256 ? { sha256 } : {}) }
   } finally {
     signal.removeEventListener('abort', cancel)
     staging?.fill(0)
+    fixity?.dispose()
     if (reader) {
       if (!completed) await reader.cancel().catch(() => {})
       reader.releaseLock()

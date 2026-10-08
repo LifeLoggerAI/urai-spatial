@@ -6,6 +6,7 @@ import { httpsCallable } from 'firebase/functions'
 import { app, firebasePublicEnvReady, functions } from '@/lib/firebase/client'
 import { capturedRealityDeviceTier } from './capturedRealityRuntime'
 import { createCapturedRealityRequestAuthority } from './capturedRealityDelivery'
+import { capturedRealityJourneyEntryHref } from './capturedRealityJourney'
 
 type ReplayEntryResponse = {
   available: boolean
@@ -56,7 +57,8 @@ export function useCapturedRealityReplayLookup(memoryId: string | null): Capture
       void callable({ memoryId, deviceTier }).then((result) => {
         if (cancelled || !currentRequest() || auth.currentUser?.uid !== user.uid) return
         const data = result.data
-        if (!data.available || !data.assetId || !SAFE_ASSET_ID.test(data.assetId)) {
+        const href = data.assetId ? capturedRealityJourneyEntryHref(data.assetId, memoryId) : null
+        if (!data.available || !data.assetId || !SAFE_ASSET_ID.test(data.assetId) || !href) {
           setLookup(unavailable)
           return
         }
@@ -64,7 +66,7 @@ export function useCapturedRealityReplayLookup(memoryId: string | null): Capture
           status: 'available',
           entry: {
             assetId: data.assetId,
-            href: `/spatial/captured-reality?assetId=${encodeURIComponent(data.assetId)}`,
+            href,
             truthLabel: data.truthLabel ?? 'Spatial reconstruction from recorded sources',
           },
         })
