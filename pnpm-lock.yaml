@@ -41,15 +41,16 @@ overrides:
   hono@4.12.27: 4.13.7
   '@hono/node-server@1.19.14': 1.19.15
   morgan@1.11.0: 1.12.1
-
-patchedDependencies:
-  braces@3.0.3:
-    hash: 264303780bc364e9b2170db87bc211dd34e62abc31dedfd72676bbf5310ce1dc
-    path: patches/braces@3.0.3.patch
+  braces: file:vendor/braces
+  chokidar@3.6.0: file:vendor/chokidar
 
 importers:
 
   .:
+    dependencies:
+      braces:
+        specifier: file:vendor/braces
+        version: file:vendor/braces
     devDependencies:
       firebase-tools:
         specifier: 15.32.1
@@ -2124,8 +2125,8 @@ packages:
     resolution: {integrity: sha512-YovQ3rzhaLMIrDjNDMkNS01tea93qhEhG5xy8f6+R0l+dw3Ki+5sCoIoI942iuLZTHWogWktgwVDhU09iNEimQ==}
     engines: {node: 20 || >=22}
 
-  braces@3.0.3:
-    resolution: {integrity: sha512-yQbXgO/OSZVD2IsiLlro+7Hf6Q18EJrKSEsdoMzKePKXct3gvD8oLcOQdIzGupr5Fj+EDe8gO/lxc1BzfMpxvA==}
+  braces@file:vendor/braces:
+    resolution: {directory: vendor/braces, type: directory}
     engines: {node: '>=8'}
 
   buffer-crc32@0.2.13:
@@ -2199,8 +2200,8 @@ packages:
   chardet@2.2.0:
     resolution: {integrity: sha512-rddelWYNPRrXq6PtNEN2S3f6t9ILzvqaN5pVgi4kqt9jHQaXIial9PznB5iSPVlQSLNaaH22ItWz3EJtQ10+OA==}
 
-  chokidar@3.6.0:
-    resolution: {integrity: sha512-7VT13fmjotKpGipCW9JEQAusEPE+Ei8nl6/g4FBAmIm0GOOLMua9NDDo/DWp0ZAxCr3cPq5ZpBqmPAQgDda2Pw==}
+  chokidar@file:vendor/chokidar:
+    resolution: {directory: vendor/chokidar, type: directory}
     engines: {node: '>= 8.10.0'}
 
   chownr@3.0.0:
@@ -7407,7 +7408,7 @@ snapshots:
     dependencies:
       balanced-match: 4.0.4
 
-  braces@3.0.3(patch_hash=264303780bc364e9b2170db87bc211dd34e62abc31dedfd72676bbf5310ce1dc):
+  braces@file:vendor/braces:
     dependencies:
       fill-range: 7.1.1
 
@@ -7471,10 +7472,10 @@ snapshots:
 
   chardet@2.2.0: {}
 
-  chokidar@3.6.0:
+  chokidar@file:vendor/chokidar:
     dependencies:
       anymatch: 3.1.3
-      braces: 3.0.3(patch_hash=264303780bc364e9b2170db87bc211dd34e62abc31dedfd72676bbf5310ce1dc)
+      braces: file:vendor/braces
       glob-parent: 5.1.2
       is-binary-path: 2.1.0
       is-glob: 4.0.3
@@ -8440,7 +8441,7 @@ snapshots:
       archiver: 7.0.1
       async-lock: 1.4.1
       body-parser: 1.20.6
-      chokidar: 3.6.0
+      chokidar: file:vendor/chokidar
       cjson: 0.3.3
       cli-table3: 0.6.5
       colorette: 2.0.20
@@ -9507,7 +9508,7 @@ snapshots:
 
   micromatch@4.0.8:
     dependencies:
-      braces: 3.0.3(patch_hash=264303780bc364e9b2170db87bc211dd34e62abc31dedfd72676bbf5310ce1dc)
+      braces: file:vendor/braces
       picomatch: 2.3.2
 
   mime-db@1.52.0: {}
