@@ -147,7 +147,7 @@ async function lifeMapOverview(page, journey) {
 
 async function selectQuietReset(page, journey, mode, root) {
   await activate(page, page.locator('.life-map-search-trigger').first(), mode)
-  const navigator = page.locator('section.life-map-navigator[aria-label="Search and filter Life Map"]').first()
+  const navigator = page.getByRole('region', { name: 'Search and filter Life Map', exact: true })
   await navigator.waitFor({ state: 'visible', timeout: 45_000 })
   const button = navigator.locator('button[data-life-map-semantic-result]').filter({ hasText: 'The Quiet Reset' }).first()
   await activate(page, button, mode)

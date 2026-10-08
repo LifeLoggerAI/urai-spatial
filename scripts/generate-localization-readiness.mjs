@@ -63,6 +63,7 @@ const consumerPaths = [
   'src/components/settings/LanguageSettings.tsx',
   'src/components/lifemap/LifeMapSemanticNavigator.tsx',
   'src/app/focus/FocusChamberClient.tsx',
+  'src/app/focus/session/FocusSessionUnavailable.tsx',
   'src/app/replay/CinematicReplayClient.tsx',
   'src/app/replay/ReplayProductControls.tsx',
   'src/spatial/memory/MemoryMediaAttachment.tsx',
