@@ -44,6 +44,7 @@ function fixture() {
    if(name==='firebase-admin')return {apps:[{}],firestore}
    if(name==='node:crypto')return {createHash}
    if(name==='./lifeGraphAuthority')return load('lifeGraphAuthority.ts')
+   if(name==='./consentPolicyAuthority')return load('consentPolicyAuthority.ts')
    if(name==='./personPresenceAuthority')return {invalidateLifeModelDependencies:async()=>0}
    throw new Error('unexpected import '+name)
   }})
@@ -51,7 +52,7 @@ function fixture() {
  }
  const handlers=load('lifeModelFunctions.ts')
  const authority=load('lifeGraphAuthority.ts')
- put(prefix+'privacyPolicy/current',{domains:{models:{mode:'granted',modelContext:true},identity:{mode:'granted'}},enforcement:{state:'fully-enforced'}})
+ put(prefix+'privacyPolicy/current',{version:2,revision:0,ownerId:uid,domains:Object.fromEntries(['memory','location','models','exports','workforce','identity'].map(domain=>[domain,{mode:['models','identity'].includes(domain)?'granted':'denied',retentionDays:null,precise:false,replayVisible:false,lifeMapVisible:false,modelContext:domain==='models',sharingEnabled:false,automationEnabled:false,likenessEnabled:false}])),enforcement:{state:'fully-enforced',jobId:null,affectedTargets:[],providerState:'not-applicable'}})
  put(sourcePath,{schemaVersion:'urai-private-source-receipt-v2',ownerUid:uid,sourceReceiptRef:sourceId,status:'ACTIVE',synthetic:false,
   purposes:['memory-index'],sourceRevision:1,sourceSha256:sha('synthetic-source'),sourceFixityRef:'private:fixity/synthetic',sourceByteLength:42,
   sourceHandle:'psh_abcdefghijklmnop',sourceEvidenceClass:'SOURCE_CAPTURED',consent:{purpose:'memory.storage',policyVersion:'test-policy',decisionReceiptId:'test-receipt'}})

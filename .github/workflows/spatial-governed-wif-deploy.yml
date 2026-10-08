@@ -63,7 +63,9 @@ jobs:
         with:
           node-version: '22'
       - name: Verify actual CLI runner and deployment commands without provider access
-        run: node --test tests/frozen-firebase-deploy-boundary.test.mjs
+        run: |
+          node --test tests/frozen-firebase-deploy-boundary.test.mjs
+          node --test urai-tier1/tests/tier-lock-home-navigation.test.mjs
 
   deploy:
     name: Deploy exact governed SHA with WIF
