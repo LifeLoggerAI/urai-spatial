@@ -160,6 +160,8 @@ const tests = [
   'tests/xr-static-gate-diagnostics-contract.test.mjs',
   'tests/browser-location-store.test.mjs',
   'tests/world-state-query-navigation.test.mjs',
+  'tests/stripe-webhook-lifecycle.test.mjs',
+  '../tests/stripe-plan-gate.test.mjs',
 ]
 
 for (const testPath of tests) {

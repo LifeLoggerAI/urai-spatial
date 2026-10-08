@@ -1,6 +1,7 @@
 import * as functions from 'firebase-functions/v1'
 import * as admin from 'firebase-admin'
 import Stripe from 'stripe'
+import { assertCheckoutSubscriptionMatch, invoiceSubscriptionId, invoiceBelongsToSubscription, settledStripeSubscriptionStatus } from './stripeEntitlementEvent'
 
 if (!admin.apps.length) admin.initializeApp()
 
@@ -38,6 +39,8 @@ const WEBHOOK_EVENTS = new Set([
   'customer.subscription.created',
   'customer.subscription.updated',
   'customer.subscription.deleted',
+  'invoice.paid',
+  'invoice.payment_failed',
   'charge.refunded',
   'charge.dispute.created',
   'charge.dispute.closed',
@@ -186,8 +189,15 @@ async function applyOrderedEntitlement(record: StoredEntitlement, event: Stripe.
 
     if (current.stripeLastEventId === event.id) return { applied: false, reason: 'duplicate-event' }
     if ((current.stripeLastEventCreated ?? 0) > event.created) return { applied: false, reason: 'stale-event' }
-    if ((current.stripeLastEventCreated ?? 0) === event.created && current.stripeLastEventId && current.stripeLastEventId > event.id) {
-      return { applied: false, reason: 'equal-time-precedence' }
+    if ((current.stripeLastEventCreated ?? 0) === event.created) {
+      const precedence: Record<SubscriptionStatus, number> = {
+        trialing: 20, active: 30, none: 40, incomplete: 50, past_due: 60, canceled: 70,
+      }
+      if (
+        precedence[record.subscriptionStatus] < precedence[current.subscriptionStatus]
+        || (precedence[record.subscriptionStatus] === precedence[current.subscriptionStatus]
+          && current.stripeLastEventId && current.stripeLastEventId > event.id)
+      ) return { applied: false, reason: 'equal-time-precedence' }
     }
 
     transaction.set(ref, {
@@ -222,7 +232,7 @@ async function resolveIdentity(metadata: Stripe.Metadata | undefined, customer: 
   return { userId, planId }
 }
 
-async function resolveSubscriptionEvent(stripe: Stripe, event: Stripe.Event): Promise<ResolvedEvent> {
+async function resolveSubscriptionEvent(stripe: Stripe, event: Stripe.Event): Promise<ResolvedEvent | null> {
   const type = event.type
   let metadata: Stripe.Metadata | undefined
   let resolvedCustomer: string | null = null
@@ -244,16 +254,32 @@ async function resolveSubscriptionEvent(stripe: Stripe, event: Stripe.Event): Pr
 
     if (resolvedSubscription) {
       const subscription = await stripe.subscriptions.retrieve(resolvedSubscription)
+      assertCheckoutSubscriptionMatch(session, subscription)
       metadata = { ...(subscription.metadata ?? {}), ...(metadata ?? {}) }
       resolvedCustomer = resolvedCustomer ?? customerId(subscription.customer as string | Stripe.Customer | Stripe.DeletedCustomer)
-      status = mapStatus(subscription.status)
+      status = await settledStripeSubscriptionStatus({ ...subscription, status: mapStatus(subscription.status) }, (id) => stripe.invoices.retrieve(id))
     }
+  } else if (type === 'invoice.paid' || type === 'invoice.payment_failed') {
+    const invoice = event.data.object as Stripe.Invoice
+    const id = invoiceSubscriptionId(invoice)
+    if (!id) return null
+    const subscription = await stripe.subscriptions.retrieve(id)
+    if (!invoiceBelongsToSubscription(invoice, subscription)) return null
+    metadata = subscription.metadata ?? undefined
+    resolvedCustomer = customerId(subscription.customer)
+    resolvedSubscription = subscription.id
+    status = await settledStripeSubscriptionStatus(
+      { ...subscription, status: mapStatus(subscription.status) },
+      (latestId) => stripe.invoices.retrieve(latestId),
+      type === 'invoice.payment_failed',
+    )
   } else {
     const subscription = event.data.object as Stripe.Subscription
     metadata = subscription.metadata ?? undefined
     resolvedCustomer = customerId(subscription.customer as string | Stripe.Customer | Stripe.DeletedCustomer)
     resolvedSubscription = subscription.id
-    status = type === 'customer.subscription.deleted' ? 'canceled' : mapStatus(subscription.status)
+    status = type === 'customer.subscription.deleted' ? 'canceled'
+      : await settledStripeSubscriptionStatus({ ...subscription, status: mapStatus(subscription.status) }, (id) => stripe.invoices.retrieve(id))
   }
 
   return {
@@ -490,3 +516,4 @@ export const handleStripeWebhook = functions.https.onRequest(async (req, res) =>
 
   res.status(200).json({ received: true, ...application })
 })
+
