@@ -520,6 +520,36 @@ async function clickRouteAction(page, name, destinationPath, destinationSelector
   await stable(page)
 }
 
+async function waitForReplayRenderedWorld(page, timeout = 60_000) {
+  const destination = new URL(page.url())
+  const memoryId = destination.searchParams.get('memoryId') || destination.searchParams.get('node')
+  const manifestId = destination.searchParams.get('manifestId')
+  if (destination.pathname.replace(/\/$/, '') !== '/replay' || !memoryId || !manifestId) {
+    throw new Error('Replay rendered proof requires the selected memory and manifest route identity')
+  }
+  return poll('selected Replay media and first rendered frame', () => page.evaluate(() => {
+    const root = document.querySelector('[data-testid="cinematic-replay-client"]')
+    if (!(root instanceof HTMLElement)) return null
+    const canvas = root.querySelector('canvas')
+    return {
+      memoryId: root.dataset.memoryId,
+      manifestId: root.dataset.manifestId,
+      mediaStatus: root.dataset.replayMediaStatus,
+      mediaReady: root.dataset.replayMediaReady,
+      webgl: root.dataset.webglState,
+      admission: root.dataset.replayEnvironmentFallback,
+      firstFrame: canvas instanceof HTMLCanvasElement && canvas.dataset.replayFirstFrame === 'true',
+    }
+  }), (state) => Boolean(state
+    && state.memoryId === memoryId
+    && state.manifestId === manifestId
+    && state.mediaStatus === 'ready'
+    && state.mediaReady === 'true'
+    && state.webgl === 'ready'
+    && state.admission === 'disclosed-demo'
+    && state.firstFrame), timeout, 75)
+}
+
 function assertVisualSanity() {
   const byId = new Map(receipt.captures.map((capture) => [capture.id, capture]))
   const highResolution = byId.get('desktop-overview-high-resolution')
@@ -750,7 +780,8 @@ async function desktopActionsAndKeyboard() {
     await waitForRenderedWorld(page)
     await waitForState(page, 'data-life-map-phase', 'arrival')
     await clickRouteAction(page, 'Replay', '/replay', 'main')
-    await shot(page, 'replay-destination', 'replay', { memoryId: 'quiet-reset' })
+    const replayRenderProof = await waitForReplayRenderedWorld(page)
+    await shot(page, 'replay-destination', 'replay', { memoryId: 'quiet-reset', replayRenderProof })
 
     await goto(page, arrivalRoute)
     await waitForRenderedWorld(page)
