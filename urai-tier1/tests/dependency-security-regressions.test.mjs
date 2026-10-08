@@ -19,7 +19,7 @@ test('retained historical vendor source: bounded brace walkers preserve ordinary
 test('retained historical vendor source: deep untrusted patterns fail with a bounded validation error without exhausting a small stack', () => {
   const source = `
     const assert = require('node:assert/strict');
-    const braces = require(${JSON.stringify(require.resolve('braces'))});
+    const braces = require(${JSON.stringify(require.resolve('../../vendor/braces'))});
     const input = '{a,'.repeat(2400) + 'b' + '}'.repeat(2400);
     for (const method of ['compile', 'expand', 'stringify']) {
       assert.throws(() => braces[method](input), error => error instanceof RangeError && /supported depth of 64/.test(error.message), method);
