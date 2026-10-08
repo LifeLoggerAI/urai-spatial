@@ -86,5 +86,25 @@
     "wholeRepositoryBuildAcceptance": false,
     "currentCompleteAdvisoryAcceptance": false,
     "scope": "Actual full importer installation and consumers in isolated authenticated manifest/source context; no whole-repository clean/freeze or successor claim"
+  },
+  "exportSafeManifestCorrection": {
+    "predecessorSha": "f091657413328f9bb8f7986132d672a2a78662fe",
+    "trigger": "Actual installed checker rejected chokidar/package.json with ERR_PACKAGE_PATH_NOT_EXPORTED after successful actual consumer suites",
+    "method": "Resolve the actual declared package entry, ascend matching name/version manifest wholly inside current checkout; preserve every original-source/installed-graph/zero-ingress guard",
+    "upstreamConsumerPayloadChanged": false,
+    "trackedLockChanged": false,
+    "actualSuccessorFrozenInstallAcceptance": false,
+    "actualSuccessorInstalledAcceptance": false,
+    "nativeOSAcceptance": false,
+    "independentReviewAcceptance": false,
+    "productionAcceptance": false,
+    "providerCallsExecuted": 0,
+    "boundaryTests": {
+      "passed": 6,
+      "failed": 0,
+      "skipped": 0,
+      "node": "22.23.3",
+      "proofScope": "Synthetic package exports, name/version, missing manifest, entry/manifest symlink and relative identity boundaries; not successor installed/native acceptance"
+    }
   }
 }

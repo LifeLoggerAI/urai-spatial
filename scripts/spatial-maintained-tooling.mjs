@@ -38,3 +38,28 @@ export function verifyConsumerSource(consumers = resolveConsumers()) {
   }
   return provenance;
 }
+
+export function resolveDeclaredPackageManifest(requireConsumer, name, expectedVersion) {
+  if (!/^(?:@[a-z0-9_.-]+\/)?[a-z0-9_.-]+$/i.test(name) || !expectedVersion) throw new Error('Invalid expected package identity');
+  const boundary = fs.realpathSync(root);
+  const inside = file => file === boundary || file.startsWith(boundary + path.sep);
+  const entry = fs.realpathSync(requireConsumer.resolve(name));
+  if (!inside(entry)) throw new Error('Resolved dependency is outside current checkout: ' + name);
+  let directory = path.dirname(entry);
+  while (inside(directory)) {
+    const manifestPath = path.join(directory, 'package.json');
+    if (fs.existsSync(manifestPath)) {
+      const actualPath = fs.realpathSync(manifestPath);
+      if (!inside(actualPath) || !fs.statSync(actualPath).isFile()) throw new Error('Dependency manifest is outside current checkout: ' + name);
+      const manifest = JSON.parse(fs.readFileSync(actualPath, 'utf8'));
+      if (manifest.name !== undefined) {
+        if (manifest.name !== name || manifest.version !== expectedVersion) throw new Error('Unexpected dependency identity: ' + name + '@' + manifest.version);
+        return {path: actualPath, manifest, entry};
+      }
+    }
+    const parent = path.dirname(directory);
+    if (parent === directory) break;
+    directory = parent;
+  }
+  throw new Error('Actual resolved dependency manifest is missing: ' + name);
+}
