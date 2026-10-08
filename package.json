@@ -70,7 +70,7 @@
     "live:deploy": "node scripts/live-release.mjs --deploy-prebuilt",
     "live:record": "node scripts/record-live-status.mjs",
     "publish:live": "node scripts/run-pnpm.mjs live:deploy",
-    "test:unit": "node scripts/run-pnpm.mjs bootstrap:check && node --test tests/braces-tooling-consumers.test.cjs && node scripts/run-pnpm.mjs --filter urai-tier1 test:unit",
+    "test:unit": "node scripts/run-pnpm.mjs bootstrap:check && node --test tests/spatial-maintained-tooling-admission.test.mjs scripts/test-spatial-dependency-manifest-resolution.mjs scripts/test-spatial-original-baseline-authority.mjs tests/retained-braces-source.test.cjs && node scripts/run-pnpm.mjs --filter urai-tier1 test:unit",
     "test:integration": "node scripts/run-pnpm.mjs test:canon",
     "test:rules": "node scripts/run-pnpm.mjs firebase:rules:check",
     "test:smoke": "node scripts/run-pnpm.mjs smoke",
@@ -140,10 +140,11 @@
     "lock:v11-v20:non-assets": "node scripts/check-v11-v20-non-asset-lock.mjs",
     "verify:v11-v20:non-assets": "pnpm lock:v11-v20:non-assets && pnpm verify:release:critical",
     "verify:v1-v20:non-assets": "pnpm verify:v1-v10:non-assets && pnpm verify:v11-v20:non-assets",
-    "test:dependency-security": "node --test tests/braces-tooling-consumers.test.cjs urai-tier1/tests/dependency-security-regressions.test.mjs"
+    "test:dependency-security": "node --test tests/spatial-maintained-tooling-admission.test.mjs scripts/test-spatial-dependency-manifest-resolution.mjs scripts/test-spatial-original-baseline-authority.mjs tests/retained-braces-source.test.cjs urai-tier1/tests/dependency-security-regressions.test.mjs"
   },
   "devDependencies": {
-    "firebase-tools": "15.32.1"
+    "firebase-tools": "15.32.1",
+    "fill-range": "7.1.1"
   },
   "pnpm": {
     "overrides": {
@@ -183,11 +184,28 @@
       "hono@4.12.27": "4.13.7",
       "@hono/node-server@1.19.14": "1.19.15",
       "morgan@1.11.0": "1.12.1",
-      "braces": "file:vendor/braces",
-      "chokidar@3.6.0": "file:vendor/chokidar"
+      "firebase-tools@15.32.1>chokidar": "4.0.3",
+      "@next/eslint-plugin-next@15.5.27>fast-glob": "-",
+      "anymatch@3.1.3>picomatch": "2.3.2"
+    },
+    "patchedDependencies": {
+      "firebase-tools@15.32.1": "patches/firebase-tools-15.32.1-maintained-watch.patch",
+      "@next/eslint-plugin-next@15.5.27": "patches/next-eslint-plugin-next-15.5.27-maintained-glob.patch"
+    },
+    "packageExtensions": {
+      "firebase-tools@15.32.1": {
+        "dependencies": {
+          "anymatch": "3.1.3"
+        }
+      },
+      "@next/eslint-plugin-next@15.5.27": {
+        "dependencies": {
+          "@nodelib/fs.walk": "1.2.8",
+          "brace-expansion": "5.0.12",
+          "glob-parent": "5.1.2",
+          "picomatch": "2.3.2"
+        }
+      }
     }
-  },
-  "dependencies": {
-    "braces": "file:vendor/braces"
   }
 }

@@ -1,0 +1,166 @@
+{
+  "baseSha": "ae2ca65a392cbb58d7218b55edfcf698947fb148",
+  "oldLockBlob": "7cbe6c7555983a31ebbdb76179b7fbbd0702978c",
+  "candidateLockSha256": "88d6cd690aad95283cc38ccc99b72a8575cab62e030368a490e90ccfedd96e1b",
+  "unchangedImporterPaths": [
+    "apps/functions",
+    "distribution/android-shell",
+    "distribution/ios-shell",
+    "packages/release-tools",
+    "packages/tier-locks",
+    "urai-tier1"
+  ],
+  "unchangedSharedPackages": 1195,
+  "removedPackages": [
+    "binary-extensions@2.3.0",
+    "braces@3.0.3",
+    "chokidar@3.6.0",
+    "fast-glob@3.3.1",
+    "is-binary-path@2.1.0",
+    "merge2@1.4.1",
+    "micromatch@4.0.8",
+    "readdirp@3.6.0"
+  ],
+  "addedPackages": [
+    "chokidar@4.0.3",
+    "readdirp@4.1.2"
+  ],
+  "sourceConsumerTests": {
+    "passed": 11,
+    "failed": 0,
+    "proofScope": "SOURCE_ONLY_PUBLIC_PACKAGE_PROBE"
+  },
+  "rawHighAcceptance": "OPEN_UNTIL_CURRENT_INSTALLED_NATIVE_PROOF",
+  "securityWaiver": false,
+  "candidatePackageEntries": 1197,
+  "exactNextDifferential": {
+    "schemaVersion": "urai-next-root-dirs-exact-differential-v1",
+    "node": "v22.23.3",
+    "upstreamNext": "15.5.27",
+    "upstreamFastGlob": "3.3.1",
+    "upstreamLiteralSha256": "886677432990a735e5ebdfb345ff1cbd40e264f9947a8432eeeb254b3a926bde",
+    "currentLiteralSha256": "e266136ba9fbb988caa2f073251b8bdffe325125308e293d5ad1e28f6e156923",
+    "helperSha256": "a8103902a33aca43034bfbd6ffad69c1e69523ba42cb50b84f6956b6695c3832",
+    "dependencies": {
+      "@nodelib/fs.walk": "1.2.8",
+      "brace-expansion": "5.0.12",
+      "glob-parent": "5.1.2",
+      "picomatch": "2.3.2"
+    },
+    "orderedDirectoryCases": 215,
+    "expansionCases": 388,
+    "resourceCases": 29,
+    "fixedExpectedCases": 52,
+    "filesystemCaseSensitive": true,
+    "scope": "selected-package source comparison; not a whole installed workspace",
+    "humanIndependentAcceptance": false,
+    "productionAcceptance": false,
+    "providerCallsExecuted": 0
+  },
+  "selectedPinPreservation": "Retained original fastq1.20.1 exact integrity and snapshot; current @nodelib/fs.walk1.2.8 declared range remains satisfied",
+  "nativePatchSerialization": {
+    "correctedNewFileModeHeaders": 2,
+    "patchSha256": "093fcffbf55fd7ebdc8f7de2be6f58cfcc342742b73d1eeb7ca6e73ce9458056",
+    "gitApplyOriginalPackage": "PASS",
+    "scope": "Only unified patch metadata; installed consumer bytes/provenance unchanged"
+  },
+  "actualInstalledPreparation": {
+    "node": "22.23.3",
+    "pnpm": "10.0.0",
+    "frozenOfflineInstall": "PASS",
+    "installedHostPackages": 1094,
+    "downloads": 0,
+    "importers": 7,
+    "installedGraphNodes": 1095,
+    "missingOrOutsideGraphProblems": 0,
+    "affectedIngressNodes": 0,
+    "verifiedFirebaseSourceFiles": 983,
+    "verifiedNextSourceFiles": 56,
+    "actualInstalledConsumerCasesPassed": 11,
+    "actualInstalledExactNextSuitesPassed": 6,
+    "offlineNativeCliVersion": "15.32.1",
+    "offlineNativeCliVersionAndHelp": "PASS",
+    "wholeRepositoryBuildAcceptance": false,
+    "currentCompleteAdvisoryAcceptance": false,
+    "scope": "Actual full importer installation and consumers in isolated authenticated manifest/source context; no whole-repository clean/freeze or successor claim"
+  },
+  "exportSafeManifestCorrection": {
+    "predecessorSha": "f091657413328f9bb8f7986132d672a2a78662fe",
+    "trigger": "Actual installed checker rejected chokidar/package.json with ERR_PACKAGE_PATH_NOT_EXPORTED after successful actual consumer suites",
+    "method": "Resolve the actual declared package entry, ascend matching name/version manifest wholly inside current checkout; preserve every original-source/installed-graph/zero-ingress guard",
+    "upstreamConsumerPayloadChanged": false,
+    "trackedLockChanged": false,
+    "actualSuccessorFrozenInstallAcceptance": false,
+    "actualSuccessorInstalledAcceptance": false,
+    "nativeOSAcceptance": false,
+    "independentReviewAcceptance": false,
+    "productionAcceptance": false,
+    "providerCallsExecuted": 0,
+    "boundaryTests": {
+      "passed": 6,
+      "failed": 0,
+      "skipped": 0,
+      "node": "22.23.3",
+      "proofScope": "Synthetic package exports, name/version, missing manifest, entry/manifest symlink and relative identity boundaries; not successor installed/native acceptance"
+    },
+    "currentCheckoutRootBoundaryCorrection": {
+      "predecessorSha": "5e2321606fd813bbee0b18be13a5deb57cf5bd62",
+      "trigger": "Actual repository-root manifest must never acquire dependency authority when a package manifest is missing",
+      "method": "Ascend only within current checkout and stop before its root directory; preserve all six original boundary assertions",
+      "filesystemProbeNode": "22.23.3",
+      "filesystemProbePassed": 6,
+      "filesystemProbeFailed": 0,
+      "filesystemProbeSkipped": 0,
+      "proofScope": "Real scratch-filesystem synthetic package fixtures with an actual named repository-root manifest; no installed/native successor acceptance",
+      "historicalActualRootFailuresRetained": true,
+      "actualSuccessorInstalledAcceptance": false,
+      "productionAcceptance": false,
+      "securityWaiver": false
+    }
+  },
+  "originalPublicBaselineAuthority": {
+    "predecessorSha": "8e0ef8a5fb6872aa2d743e6348fdd3b8d4d75a95",
+    "manifestMustActuallyExist": true,
+    "originalPackageNamesAndVersionsMustMatch": true,
+    "originalManifestAndEntryMustResolveWithinPublicBaseline": true,
+    "nodeParentAndGlobalFallbackMayNotAuthorizeProof": true,
+    "boundaryFixtureCasesPassed": 7,
+    "boundaryFixtureCasesFailed": 0,
+    "previousCheckoutBoundaryCasesPreserved": 6,
+    "actualOriginalPublicFivePackageIdentityProbe": "PASS_2026-10-08T02:39:55.615Z",
+    "scope": "Synthetic boundary fixtures and actual original public package identity only; no successor installed/consumer/native/advisory/release acceptance",
+    "actualSuccessorConsumerAcceptance": false,
+    "productionAcceptance": false,
+    "securityWaiver": false,
+    "providerCallsExecuted": 0
+  },
+  "retainedHistoricalAlgorithmSupport": {
+    "names": [
+      "fill-range@7.1.1",
+      "is-number@7.0.0",
+      "to-regex-range@5.0.1"
+    ],
+    "rootDevDependency": "fill-range7.1.1",
+    "purpose": "Run retained predecessor vendor-source algorithms honestly without declaring removed braces/micromatch/fast-glob as installed dependencies",
+    "registryPinsAndSriFromExactOwner": "729b84db34dcf817dfed2a75bfe5f9cbcb48368a",
+    "allUnrelated1194DonorPackageEntriesPreserved": true,
+    "otherSixImporterEntriesPreserved": true,
+    "actualCombinedFrozenInstallAcceptance": false,
+    "actualCombinedInstalledRiskAcceptance": false
+  },
+  "convergenceGateMapping": {
+    "currentInstalledSourceAndIngress": "tests/spatial-maintained-tooling-admission.test.mjs",
+    "historicalVendorSourceOnly": "tests/retained-braces-source.test.cjs",
+    "originalHistoricalDelegatedConsumerRecipePreservedUnchanged": "tests/braces-tooling-consumers.test.cjs",
+    "currentParserAndTelemetryAssertionsPreservedByteForByte": true,
+    "rootUnitAndDependencySecurityHooksPreservedWithExplicitScopes": true,
+    "cleanSourceNativeGateRetained": true,
+    "sourceAndRuntimeAcceptanceNotTransferred": true,
+    "independentSecurityAcceptance": false,
+    "releaseAcceptance": false,
+    "productionAcceptance": false,
+    "originalBaselineAuthority": "scripts/test-spatial-original-baseline-authority.mjs",
+    "targetOwnerBase": "b3800350c9412f6de5c6003f308d1f8ea5c0e2a2",
+    "actualCombinedInstallAndRiskAcceptance": false
+  }
+}
