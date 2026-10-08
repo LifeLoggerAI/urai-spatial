@@ -92,7 +92,7 @@ jobs:
           set -euo pipefail
           git clone --depth 1 --filter=blob:none --sparse https://github.com/github/advisory-database.git "$RUNNER_TEMP/spatial-current-reviewed-advisories"
           git -C "$RUNNER_TEMP/spatial-current-reviewed-advisories" sparse-checkout set advisories/github-reviewed
-          test "$(git -C "$RUNNER_TEMP/spatial-current-reviewed-advisories" rev-parse HEAD)" = ccd4868bd8cfbed178f5ada1194b4fe30674c25b
+          test "$(git -C "$RUNNER_TEMP/spatial-current-reviewed-advisories" rev-parse HEAD)" = 4a4d987c2a10120439be63a222087d94dd54f719
           URAI_LEGACY_TOOLING_FIXTURE="$RUNNER_TEMP/spatial-legacy-tooling" node scripts/check-current-spatial-reviewed-advisories.mjs "$RUNNER_TEMP/spatial-current-reviewed-advisories" "$RUNNER_TEMP/spatial-maintained-evidence/current-advisories.json"
       - name: Existing current Functions compile and tests
         run: |
