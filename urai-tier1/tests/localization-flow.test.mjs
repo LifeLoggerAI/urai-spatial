@@ -202,7 +202,7 @@ async function actualFocusCompatibility() {
     return exports
   }
   const fragment = await compile('../src/app/focus/session/FocusSessionUnavailable.tsx', {
-    'next/link': {default:Link},
+    'next/link': {__esModule:true,default:Link},
     '@/lib/i18n/useUraiLocale': {useUraiLocale:() => ({
       text:id => localizedMessage(preference,id).text,
       props:id => {const message=localizedMessage(preference,id); return {lang:message.locale,dir:message.direction,'data-urai-translation-preview':String(message.preview)}},
@@ -210,7 +210,7 @@ async function actualFocusCompatibility() {
   })
   const route = await compile('../src/app/focus/session/[sessionId]/page.tsx', {
     'next/navigation': {redirect:href => {throw Object.assign(new Error('REDIRECT'),{href})}},
-    'next/link': {default:Link},
+    'next/link': {__esModule:true,default:Link},
     '../FocusSessionUnavailable': fragment,
     '@/spatial/memory/memoryStarSchema': {DEMO_MEMORY_STAR_NODES, resolveDemoMemoryStar},
   })

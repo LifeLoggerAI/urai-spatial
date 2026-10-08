@@ -10,6 +10,7 @@ import { URAI_CATALOGS, URAI_LAUNCH_LOCALES, URAI_NATIVE_REVIEWED_LOCALES, URAI_
 import { URAI_JOURNEY_CONTROL_MESSAGES } from '../src/lib/i18n/journeyControlMessages.ts'
 import { URAI_GEOGRAPHIC_MESSAGES } from '../src/lib/i18n/geographicMessages.ts'
 import { URAI_FOUNDER_MESSAGES } from '../src/lib/i18n/founderMessages.ts'
+import { URAI_FOCUS_COMPATIBILITY_MESSAGES } from '../src/lib/i18n/focusCompatibilityMessages.ts'
 import * as journeyControlCopy from '../src/lib/i18n/journeyControlCopy.ts'
 import { URAI_JOURNEY_MESSAGES } from '../src/lib/i18n/journeyMessages.ts'
 import { localizedMessage, localeNumber, localeDate } from '../src/lib/i18n/localePreference.ts'
@@ -133,7 +134,7 @@ test('new journey catalog is exact, nonempty and prepared for the twenty governe
   assert.equal(journeyIds.length,44)
   assert.equal(URAI_LAUNCH_LOCALES.length,20)
   assert.deepEqual([...URAI_NATIVE_REVIEWED_LOCALES],['en'])
-  assert.equal(Object.keys(URAI_SOURCE_MESSAGES).length,64 + Object.keys(URAI_JOURNEY_CONTROL_MESSAGES).length + Object.keys(URAI_GEOGRAPHIC_MESSAGES).length + Object.keys(URAI_FOUNDER_MESSAGES).length)
+  assert.equal(Object.keys(URAI_SOURCE_MESSAGES).length,64 + Object.keys(URAI_JOURNEY_CONTROL_MESSAGES).length + Object.keys(URAI_GEOGRAPHIC_MESSAGES).length + Object.keys(URAI_FOUNDER_MESSAGES).length + Object.keys(URAI_FOCUS_COMPATIBILITY_MESSAGES).length)
   for(const locale of URAI_LAUNCH_LOCALES) for(const id of journeyIds) {
     assert.ok(URAI_CATALOGS[locale][id]?.trim(),`${locale}:${id}`)
     assert.equal(URAI_SOURCE_MESSAGES[id].id,id)
