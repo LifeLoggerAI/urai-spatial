@@ -1,7 +1,7 @@
 {
   "baseSha": "ae2ca65a392cbb58d7218b55edfcf698947fb148",
   "oldLockBlob": "7cbe6c7555983a31ebbdb76179b7fbbd0702978c",
-  "candidateLockSha256": "262ffc532ee2acda3559e3bf4ee9f19ffebde2f2b9714603753eff5b2d9e1f66",
+  "candidateLockSha256": "b40b6c6af452335316b1dfd7fc88d0279c09aaabe3651e48728936d31c33c392",
   "unchangedImporterPaths": [
     "apps/functions",
     "distribution/android-shell",
@@ -10,13 +10,12 @@
     "packages/tier-locks",
     "urai-tier1"
   ],
-  "unchangedSharedPackages": 1191,
+  "unchangedSharedPackages": 1192,
   "removedPackages": [
     "binary-extensions@2.3.0",
     "braces@3.0.3",
     "chokidar@3.6.0",
     "fast-glob@3.3.1",
-    "fastq@1.20.1",
     "fill-range@7.1.1",
     "is-binary-path@2.1.0",
     "is-number@7.0.0",
@@ -27,7 +26,6 @@
   ],
   "addedPackages": [
     "chokidar@4.0.3",
-    "fastq@1.20.3",
     "readdirp@4.1.2"
   ],
   "sourceConsumerTests": {
@@ -61,5 +59,6 @@
     "humanIndependentAcceptance": false,
     "productionAcceptance": false,
     "providerCallsExecuted": 0
-  }
+  },
+  "selectedPinPreservation": "Retained original fastq1.20.1 exact integrity and snapshot; current @nodelib/fs.walk1.2.8 declared range remains satisfied"
 }
