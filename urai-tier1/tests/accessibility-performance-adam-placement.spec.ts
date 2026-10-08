@@ -19,6 +19,7 @@ for (const viewport of [{ width: 320, height: 700 }, { width: 844, height: 390 }
         await page.keyboard.press('Escape')
         await expect(panel).toHaveCount(0)
         await expect(page.locator('[data-urai-adam-launcher]')).toBeFocused()
+        await assertCanonicalFounderPaint(page, viewport)
       }
       const launcher = page.locator('[data-urai-adam-launcher]')
       await expect(launcher).toHaveAttribute('data-adam-launcher-placement', 'inline-slot')
@@ -53,6 +54,70 @@ for (const viewport of [{ width: 320, height: 700 }, { width: 844, height: 390 }
       await test.info().attach(`founder-${route.slice(1)}-${viewport.width}-geometry.json`, { body: JSON.stringify(geometry), contentType: 'application/json' })
     }
   })
+}
+
+async function assertCanonicalFounderPaint(page: Page, viewport: { width: number; height: number }) {
+  const main = page.locator('[data-urai-adam-route="canonical"]:visible')
+  await expect(main).toHaveCount(1)
+  const paint = await main.evaluate(element => {
+    const runtime = element.closest('.urai-world-runtime')
+    const atmosphere = runtime?.querySelector(':scope > .urai-world-atmosphere')
+    const copy = element.querySelector('section > p:last-of-type')
+    const rgba = (value: string) => {
+      const channels = value.match(/[\d.]+/g)?.map(Number) ?? []
+      return { rgb: channels.slice(0, 3), alpha: channels[3] ?? 1 }
+    }
+    const luminance = (rgb: number[]) => rgb.map(channel => {
+      const value = channel / 255
+      return value <= 0.04045 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4
+    }).reduce((sum, value, index) => sum + value * [0.2126, 0.7152, 0.0722][index], 0)
+    const mainStyle = getComputedStyle(element)
+    const copyStyle = copy ? getComputedStyle(copy) : null
+    const foreground = rgba(copyStyle?.color ?? '')
+    const stops = [...mainStyle.backgroundImage.matchAll(/rgba?\(([^)]+)\)/g)].map(match => rgba(match[0]))
+    const ancestorOpacities: number[] = []
+    for (let node: Element | null = copy; node; node = node.parentElement) ancestorOpacities.push(Number(getComputedStyle(node).opacity))
+    const contrast = stops.map(stop => {
+      const composite = foreground.rgb.map((channel, index) => channel * foreground.alpha + stop.rgb[index] * (1 - foreground.alpha))
+      const a = luminance(composite), b = luminance(stop.rgb)
+      return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05)
+    })
+    const pseudoLayers = [{ owner: 'runtime', node: runtime }, { owner: 'main', node: element }, { owner: 'atmosphere', node: atmosphere }].flatMap(({ owner, node }) => ['::before', '::after'].map(pseudo => {
+      const style = node ? getComputedStyle(node, pseudo) : null
+      return { owner, pseudo, content: style?.content ?? null, display: style?.display ?? null, visibility: style?.visibility ?? null, opacity: Number(style?.opacity), position: style?.position ?? null, zIndex: Number(style?.zIndex) }
+    }))
+    return {
+      ownership: { mainOwnedByRuntime: element.parentElement === runtime, atmosphereOwnedByRuntime: atmosphere?.parentElement === runtime },
+      main: { position: mainStyle.position, zIndex: Number(mainStyle.zIndex), backgroundImage: mainStyle.backgroundImage },
+      atmosphere: { zIndex: atmosphere ? Number(getComputedStyle(atmosphere).zIndex) : Number.NaN, isolation: atmosphere ? getComputedStyle(atmosphere).isolation : null },
+      copy: { text: copy?.textContent?.trim() ?? '', fontSize: copyStyle?.fontSize ?? null, foreground, gradientStops: stops, contrasts: contrast },
+      ancestorOpacities, pseudoLayers,
+      contrastBasis: 'Actual RGBA copy over every opaque gradient stop after asserting its main paints above the isolated atmosphere; literal inspection remains required',
+    }
+  })
+  expect(paint.ownership.mainOwnedByRuntime).toBe(true)
+  expect(paint.ownership.atmosphereOwnedByRuntime).toBe(true)
+  expect(paint.main.position).not.toBe('static')
+  expect(Number.isFinite(paint.main.zIndex)).toBe(true)
+  expect(Number.isFinite(paint.atmosphere.zIndex)).toBe(true)
+  expect(paint.main.zIndex, 'The real founder disclosure must paint above its atmosphere').toBeGreaterThan(paint.atmosphere.zIndex)
+  expect(paint.atmosphere.isolation).toBe('isolate')
+  expect(paint.ancestorOpacities.every(value => value === 1)).toBe(true)
+  expect(paint.copy.text).toContain('still require the human founder.')
+  expect(paint.copy.foreground.rgb).toHaveLength(3)
+  expect(paint.copy.gradientStops.length).toBeGreaterThan(0)
+  expect(paint.copy.gradientStops.every(stop => stop.rgb.length === 3 && stop.alpha === 1)).toBe(true)
+  for (const contrast of paint.copy.contrasts) expect(contrast, 'The small founder disclosure must retain 4.5:1 contrast over the brightest declared backing').toBeGreaterThanOrEqual(4.5)
+  for (const layer of paint.pseudoLayers) {
+    expect(layer.content).not.toBeNull()
+    const generated = layer.content !== 'none' && layer.content !== 'normal'
+    if (!generated || layer.display === 'none' || layer.visibility !== 'visible' || layer.opacity <= 0) continue
+    expect(Number.isFinite(layer.zIndex), `${layer.owner}${layer.pseudo} visible painting must be explicit`).toBe(true)
+    expect(layer.position).not.toBe('static')
+    if (layer.owner === 'runtime') expect(paint.main.zIndex).toBeGreaterThan(layer.zIndex)
+  }
+  await test.info().attach(`founder-adam-paint-${viewport.width}x${viewport.height}.json`, { body: JSON.stringify(paint), contentType: 'application/json' })
+  await test.info().attach(`founder-adam-closed-${viewport.width}x${viewport.height}.png`, { body: await page.screenshot(), contentType: 'image/png' })
 }
 
 async function assertInlineLauncher(page: Page, slot: string) {

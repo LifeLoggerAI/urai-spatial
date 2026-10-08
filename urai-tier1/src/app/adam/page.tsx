@@ -10,6 +10,8 @@ export default function AdamPage() {
     <main
       data-urai-adam-route="canonical"
       style={{
+        position: 'relative',
+        zIndex: 3,
         minHeight: '100dvh',
         display: 'grid',
         placeItems: 'center',
