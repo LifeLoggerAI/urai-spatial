@@ -33,7 +33,7 @@ function fixture(options = {}) {
     [sourcePath, { ...shared, revision: 1, sourceEvidenceClass: 'ATTRIBUTED_TESTIMONY', sourceFixityRef: 'private:fixtures/fixity-01', transcriptRef: body.transcriptRef, provenanceRef: body.provenanceRef, transcriptSha256: sha(narration), consentRevision: 4, consentState: 'authorized', externalProcessingConsent: true, purposes: ['memory-index'] }],
     [transcriptPath, { ...shared, opaqueRef: body.transcriptRef, text: narration, sha256: sha(narration) }],
     [provenancePath, { ...shared, opaqueRef: body.provenanceRef, transcriptSha256: sha(narration) }],
-    [`${prefix}/privacyPolicy/current`, { version: 2, ownerId: uid, revision: 4, domains: { exports: { mode: 'granted' }, memory: { mode: 'granted', modelContext: true }, models: { mode: 'limited', modelContext: true }, identity: { mode: 'limited' } }, enforcement: { state: 'fully-enforced' } }],
+    [`${prefix}/privacyPolicy/current`, { version: 2, ownerId: uid, revision: 4, domains: Object.fromEntries(['memory', 'location', 'models', 'exports', 'workforce', 'identity'].map(domain => [domain, { mode: ['memory', 'exports'].includes(domain) ? 'granted' : ['models', 'identity'].includes(domain) ? 'limited' : 'denied', retentionDays: 365, precise: false, replayVisible: true, lifeMapVisible: true, modelContext: ['memory', 'models'].includes(domain), sharingEnabled: false, automationEnabled: false, likenessEnabled: false }])), enforcement: { state: 'fully-enforced', jobId: 'fixture-enforcement-job', affectedTargets: ['export-runtime'], providerState: 'complete' } }],
     [`${prefix}/providerConnections/openai`, { processingAllowed: true, revocationState: 'not-required' }],
   ])
   const stats = { reads: 0, transactions: 0, logs: [], deleted: [], files: new Map() }
@@ -102,6 +102,7 @@ function fixture(options = {}) {
         if (name === 'firebase-admin') return admin
         if (name === './lifeModelPrivateInputs') return service
         if (name === './exportPagination') return load('exportPagination')
+        if (name === './memoryMedia') return load('memoryMedia')
         if (name === './personPresenceAuthority') return load('personPresenceAuthority')
         if (name === 'node:crypto' || name === 'node:stream/promises') return require(name)
         throw new Error(`Unexpected private-input dependency: ${name}`)

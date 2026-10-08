@@ -5,6 +5,7 @@ import { createHash, randomBytes } from 'node:crypto'
 import { pipeline } from 'node:stream/promises'
 import { exportPrivateLifeModelHandles, tombstonePrivateLifeModelInputs } from './lifeModelPrivateInputs'
 import { collectExportPages, createExportReadBudget, requireExportReadBudget, chargeExportValue, EXPORT_RESOURCE_LIMITS, type ExportReadBudget } from './exportPagination'
+import { assertBoundMemoryMedia, exportMemoryMediaBytes, deleteMemoryMedia, verifyMemoryMediaExportAuthorities, MEMORY_MEDIA_SCHEMA } from './memoryMedia'
 
 if (!admin.apps.length) admin.initializeApp()
 
@@ -731,6 +732,19 @@ async function readBoundExport(transaction: FirebaseFirestore.Transaction, uid: 
     || (state === 'ready' && receipt.get('result') !== 'ready')) {
     throw new functions.https.HttpsError('failed-precondition', 'EXPORT_RECEIPT_OR_REVISION_CHANGED')
   }
+  if (state === 'ready' && parseExportScopes(job.get('scopes')).includes('memories')) {
+    const authorities = job.get('memoryMediaAuthorities')
+    const authorityHash = createHash('sha256').update(JSON.stringify(authorities ?? null)).digest('hex')
+    if (job.get('memoryMediaAuthorityVersion') !== MEMORY_MEDIA_SCHEMA || job.get('memoryMediaAuthorityHash') !== authorityHash
+      || receipt.get('memoryMediaAuthorityVersion') !== MEMORY_MEDIA_SCHEMA || receipt.get('memoryMediaAuthorityHash') !== authorityHash) {
+      throw new functions.https.HttpsError('failed-precondition', 'MEMORY_MEDIA_EXPORT_AUTHORITY_REQUIRED')
+    }
+    const sourceExpiresAt = await verifyMemoryMediaExportAuthorities(transaction, uid, authorities)
+    const packageExpiresAt = job.get('expiresAt')
+    if (!(packageExpiresAt instanceof admin.firestore.Timestamp) || packageExpiresAt.toMillis() > sourceExpiresAt) {
+      throw new functions.https.HttpsError('failed-precondition', 'MEMORY_MEDIA_EXPORT_AUTHORITY_REQUIRED')
+    }
+  }
   return { job, receipt, subject }
 }
 
@@ -796,13 +810,20 @@ async function buildExport(snapshot: FirebaseFirestore.DocumentSnapshot) {
     }
     const data = payload.data as JsonMap
     const budget = createExportReadBudget()
+    let memoryMediaAuthorities: JsonMap[] = []
+    let memoryMediaBound = false
     const requireCurrentAuthority = async () => {
       requireExportReadBudget(budget)
-      const authority = await db.runTransaction(transaction => readBoundExport(transaction, uid, snapshot.id, 'preparing'))
+      const authority = await db.runTransaction(async transaction => {
+        const current = await readBoundExport(transaction, uid, snapshot.id, 'preparing')
+        if (memoryMediaBound) await verifyMemoryMediaExportAuthorities(transaction, uid, memoryMediaAuthorities)
+        return current
+      })
       requireExportReadBudget(budget)
       return authority
     }
     let runtimeInventory: JsonMap[] = []
+    let memoryMediaReceipts: JsonMap[] = []
     let capturedRealityRuntimeExports: CapturedRealityRuntimeExport[] = []
     await db.runTransaction(async transaction => {
     await readBoundExport(transaction, uid, snapshot.id, 'preparing')
@@ -820,6 +841,9 @@ async function buildExport(snapshot: FirebaseFirestore.DocumentSnapshot) {
     }
     if (scopes.includes('memories')) {
       data.memories = await collectionDocuments(userRef.collection('memories'), context)
+      for (const memory of data.memories as JsonMap[]) assertBoundMemoryMedia(memory)
+      memoryMediaReceipts = await collectExportPages(transaction, userRef.collection('memoryMediaReceipts'), budget,
+        item => ({ ...item.data(), id: item.id }), requireCurrentAuthority)
       data.replayEvents = await collectionDocuments(userRef.collection('replayEvents'), context)
       data.spatialMemories = await collectionDocuments(userRef.collection('spatialMemories'), context)
     }
@@ -870,12 +894,16 @@ async function buildExport(snapshot: FirebaseFirestore.DocumentSnapshot) {
     if (budget.snapshotMillis !== null) payload.snapshotReadAt = new Date(budget.snapshotMillis).toISOString()
     payload.resourceLimits = EXPORT_RESOURCE_LIMITS
     await requireCurrentAuthority()
+    if (scopes.includes('memories')) {
+      const media = await exportMemoryMediaBytes(db, uid, data.memories as JsonMap[], memoryMediaReceipts, budget, requireCurrentAuthority)
+      data.memoryMedia = media.rows; memoryMediaAuthorities = media.authorities; memoryMediaBound = true
+    }
     if (scopes.includes('spatial')) {
       capturedRealityRuntimeExports = await copyCapturedRealityRuntimeExports(runtimeInventory, uid, basePath, budget, requireCurrentAuthority)
       data.capturedRealityRuntimeAssets = capturedRealityRuntimeExports.map(({ objectPath: _privateObject, ...entry }) => entry)
     }
     // Keep the signed manifest inventory inside Firestore's 1-MiB document limit.
-    if (Buffer.byteLength(JSON.stringify(capturedRealityRuntimeExports)) > 768 * 1024) throw new Error('EXPORT_RESOURCE_BUDGET_EXCEEDED')
+    if (Buffer.byteLength(JSON.stringify({ capturedRealityRuntimeExports, memoryMediaAuthorities })) > 768 * 1024) throw new Error('EXPORT_RESOURCE_BUDGET_EXCEEDED')
     const json = JSON.stringify(payload, null, 2)
     if (Buffer.byteLength(json) > 32 * 1024 * 1024) throw new Error('EXPORT_RESOURCE_BUDGET_EXCEEDED')
     const checksum = createHash('sha256').update(json).digest('hex')
@@ -918,16 +946,20 @@ async function buildExport(snapshot: FirebaseFirestore.DocumentSnapshot) {
     await db.runTransaction(async (transaction) => {
       requireExportReadBudget(budget)
       const { subject } = await readBoundExport(transaction, uid, snapshot.id, 'preparing')
+      const sourceExpiresAt = memoryMediaBound ? await verifyMemoryMediaExportAuthorities(transaction, uid, memoryMediaAuthorities) : Number.MAX_SAFE_INTEGER
       requireExportReadBudget(budget)
-      const expiresAt = timestamp.fromMillis(Math.min(Date.now() + 7 * 24 * 60 * 60 * 1000, subject.canonicalExportConsentExpiresAt))
+      const expiresAt = timestamp.fromMillis(Math.min(Date.now() + 7 * 24 * 60 * 60 * 1000, subject.canonicalExportConsentExpiresAt, sourceExpiresAt))
+      const memoryBinding = memoryMediaBound ? { memoryMediaAuthorityVersion: MEMORY_MEDIA_SCHEMA, memoryMediaAuthorities,
+        memoryMediaAuthorityHash: createHash('sha256').update(JSON.stringify(memoryMediaAuthorities)).digest('hex') } : {}
       transaction.update(snapshot.ref, {
         state: 'ready', progress: 100, checksum, checksumAlgorithm: 'sha256',
         exportObject: `${basePath}/export.json`, manifestObject: `${basePath}/manifest.json`,
         exportGeneration, manifestGeneration, exportBytes, manifestBytes, manifestChecksum,
-        runtimeExports: capturedRealityRuntimeExports, expiresAt,
+        runtimeExports: capturedRealityRuntimeExports, expiresAt, ...memoryBinding,
         completedAt: fieldValue.serverTimestamp(), updatedAt: fieldValue.serverTimestamp(),
       })
       transaction.update(receiptRef, { result: 'ready', checksum, checksumAlgorithm: 'sha256', expiresAt,
+        ...(memoryMediaBound ? { memoryMediaAuthorityVersion: MEMORY_MEDIA_SCHEMA, memoryMediaAuthorityHash: memoryBinding.memoryMediaAuthorityHash } : {}),
         completedAt: fieldValue.serverTimestamp(), updatedAt: fieldValue.serverTimestamp() })
     })
   } catch (error) {
@@ -997,7 +1029,7 @@ async function readDownloadAuthority(transaction: FirebaseFirestore.Transaction,
     throw new functions.https.HttpsError('failed-precondition', 'Export object binding is invalid. Create a new export.')
   }
   const authorityHash = createHash('sha256').update(JSON.stringify({ uid, jobId, file, assetId, path, generation, checksum, byteLength, contentType,
-    ...subject, receiptId: job.get('receiptId'), packageExpiresAt })).digest('hex')
+    ...subject, receiptId: job.get('receiptId'), packageExpiresAt, memoryMediaAuthorityHash: job.get('memoryMediaAuthorityHash') ?? null })).digest('hex')
   return { path, generation, checksum, byteLength, contentType, packageExpiresAt,
     canonicalExportConsentExpiresAt: subject.canonicalExportConsentExpiresAt, authorityHash }
 }
@@ -1274,7 +1306,7 @@ export const createDeletionRequest = functions.https.onCall(async (data, context
 const DELETION_COLLECTIONS: Record<Exclude<DeletionScope, 'account'>, string[]> = {
   'export-history': ['exportJobs', 'spatialExportDownloads'],
   'privacy-history': ['privacyAudit'],
-  memories: ['memories', 'replayEvents', 'spatialMemories', 'canonChains'],
+  memories: ['memories', 'memoryMediaReceipts', 'replayEvents', 'spatialMemories', 'canonChains'],
   'life-model': [
     'lifeEntities',
     'lifeEntityStates',
@@ -1314,6 +1346,7 @@ const DELETION_COLLECTIONS: Record<Exclude<DeletionScope, 'account'>, string[]> 
     'capturedRealityReplayBindings',
   ],
   'all-repository-data': [
+    'memoryMediaReceipts',
     'exportJobs',
     'spatialExportDownloads',
     'privacyAudit',
@@ -1430,6 +1463,18 @@ async function processDeletion(snapshot: FirebaseFirestore.DocumentSnapshot) {
     if (!claimed) return
     const userRef = db.doc(`users/${uid}`)
     const deletedCollections: string[] = []
+    let memoryMediaObjectsFenced = 0
+    if (['account', 'all-repository-data', 'memories'].includes(scope)) {
+      const requireCurrentDeletion = () => db.runTransaction(async transaction => {
+        const [queue, owner, fence] = await Promise.all([transaction.get(snapshot.ref), transaction.get(userJobRef), transaction.get(exportFenceRef(uid))])
+        if (!queue.exists || queue.get('uid') !== uid || queue.get('state') !== 'in-progress'
+          || !owner.exists || owner.get('uid') !== uid || owner.get('state') !== 'in-progress'
+          || !isRecord(fence.get('pendingDeletions')) || fence.get('pendingDeletions')[snapshot.id] !== true) {
+          throw new functions.https.HttpsError('failed-precondition', 'MEMORY_MEDIA_DELETION_AUTHORITY_CHANGED')
+        }
+      })
+      memoryMediaObjectsFenced = await deleteMemoryMedia(db, uid, requireCurrentDeletion)
+    }
     if (scope === 'account' || scope === 'all-repository-data' || scope === 'life-model') {
       await tombstonePrivateLifeModelInputs(db, uid, fieldValue.serverTimestamp())
     }
@@ -1457,7 +1502,11 @@ async function processDeletion(snapshot: FirebaseFirestore.DocumentSnapshot) {
       scope,
       result: 'completed',
       deletedCollections,
-      retainedExceptions: Array.isArray(job.retainedExceptions) ? job.retainedExceptions : [],
+      memoryMediaObjectsFenced,
+      ...(memoryMediaObjectsFenced ? { memoryMediaDisposal: 'owned-active-generations-disposed', permanentMemoryMediaErasureProven: false } : {}),
+      retainedExceptions: [...(Array.isArray(job.retainedExceptions) ? job.retainedExceptions : []),
+        ...(memoryMediaObjectsFenced ? ['Zero-byte memory-media attempt tombstones retain hashes and nonce only to prevent delayed writes.',
+          'Provider soft-delete or retention can preserve recoverable data; permanent erasure is not proven by this receipt.'] : [])],
       completedAt: fieldValue.serverTimestamp(),
       createdAt: fieldValue.serverTimestamp(),
     }

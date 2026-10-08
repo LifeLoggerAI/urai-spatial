@@ -36,11 +36,15 @@ function fixture(options = {}) {
         objectPath: `private-exports/${uid}/${jobId}/spatial/captured-reality/synthetic-asset/${runtimeChecksum}.splat`, exportGeneration: '13', runtimeSha256: runtimeChecksum, runtimeBytes: runtimeBody.length }] }],
     [receiptPath, { ...receiptBinding, ownerId: uid, kind: 'export', jobId, result: 'ready' }],
   ])
-  const stats = { deleted: [], reads: [], signed: 0, streams: 0, chunks: [], transactions: 0, readOnlyTransactions: 0, queryPages: [], metadata: 0, logs: [], auth: [] }
+  const stats = { deleted: [], reads: [], signed: 0, streams: 0, chunks: [], transactions: 0, readOnlyTransactions: 0, queryPages: [], metadata: 0, logs: [], auth: [], storageWrites: [] }
   const objects = new Map([[exportPath, { generation: '11', contentType: 'application/json', bytes: exportBody }]])
   const job = records.get(jobPath)
   objects.set(job.manifestObject, { generation: '12', contentType: 'application/json', bytes: manifestBody })
   objects.set(job.runtimeExports[0].objectPath, { generation: '13', contentType: 'application/octet-stream', bytes: runtimeBody })
+  const versions = new Map([...objects].map(([location, object]) => [`${location}#${object.generation}`, object]))
+  const storedObject = (location, settings) => settings?.generation
+    ? options.versionedStorage ? versions.get(`${location}#${settings.generation}`) : objects.get(location)?.generation === settings.generation ? objects.get(location) : undefined
+    : objects.get(location)
   let generation = 20
   const snapshot = (ref, view = records) => { const value = view.get(ref.path); return { id: ref.id, ref, exists: value !== undefined, readTime: new Timestamp(now), data: () => clone(value), get: key => key.split('.').reduce((v, part) => v?.[part], value) } }
   function doc(location) { return { path: location, id: location.split('/').at(-1), collection: name => collection(`${location}/${name}`),
@@ -48,28 +52,38 @@ function fixture(options = {}) {
     async set(value, settings) { records.set(location, clone(settings?.merge ? { ...records.get(location), ...value } : value)) },
     async update(value) { assert.ok(records.has(location)); records.set(location, clone({ ...records.get(location), ...value })) },
     async delete() { records.delete(location) } } }
-  function collection(location, filters = [], maximum = Infinity, afterId = '', ordered = false) {
+  function collection(location, filters = [], maximum = Infinity, afterId = '', ordered = false, grouped = false) {
     return { path: location, query: true, doc: id => doc(`${location}/${id ?? `synthetic-audit-${stats.transactions}`}`),
-      where: (key, op, value) => collection(location, [...filters, [key, op, value]], maximum, afterId, ordered), limit: n => collection(location, filters, n, afterId, ordered),
-      orderBy: field => { assert.equal(field,'__name__');return collection(location,filters,maximum,afterId,true) },
-      startAfter: cursor => collection(location,filters,maximum,cursor.id,ordered),
-      async get(view = records) { let keys = [...view.keys()].filter(key => key.startsWith(location + '/') && key.slice(location.length + 1).split('/').length === 1)
-        .filter(key => filters.every(([field, op, value]) => op === 'in' ? value.includes(snapshot(doc(key),view).get(field)) : snapshot(doc(key),view).get(field) === value))
+      where: (key, op, value) => collection(location, [...filters, [key, op, value]], maximum, afterId, ordered, grouped), limit: n => collection(location, filters, n, afterId, ordered, grouped),
+      orderBy: field => { assert.equal(field,'__name__');return collection(location,filters,maximum,afterId,true,grouped) },
+      startAfter: cursor => collection(location,filters,maximum,cursor.id,ordered,grouped),
+      async get(view = records) { let keys = [...view.keys()].filter(key => grouped ? key.split('/').at(-2) === location : key.startsWith(location + '/') && key.slice(location.length + 1).split('/').length === 1)
+        .filter(key => filters.every(([field, op, value]) => {
+          const current = snapshot(doc(key), view).get(field)
+          return op === 'in' ? value.includes(current) : op === '<=' ? current.toMillis() <= value.toMillis() : current === value
+        }))
         if (ordered) keys.sort((a,b)=>Buffer.compare(Buffer.from(a),Buffer.from(b)))
         const docs = keys.filter(key=>!afterId||Buffer.compare(Buffer.from(doc(key).id),Buffer.from(afterId))>0).slice(0, maximum).map(key => snapshot(doc(key),view))
         stats.queryPages.push({location,maximum,afterId,size:docs.length})
         await options.afterQuery?.(location, records)
         return { docs, empty: docs.length === 0, size: docs.length, readTime:new Timestamp(options.snapshotChanged&&afterId?now+1:now) } } }
   }
-  const db = { doc, collection,
+  const db = { doc, collection, collectionGroup: name => collection(name, [], Infinity, '', false, true),
     async runTransaction(callback, settings) {
-      const writes = [], id = ++stats.transactions
+      const writes = [], reads = new Map(), id = ++stats.transactions
       const view=settings?.readOnly ? new Map([...records].map(([key,value])=>[key,clone(value)])) : records
       if(settings?.readOnly)stats.readOnlyTransactions++
-      const tx = { get: async ref => { assert.equal(writes.length, 0, 'no read after transaction writes'); return ref.query ? ref.get(view) : snapshot(ref,view) },
+      const tx = { get: async ref => { assert.equal(writes.length, 0, 'no read after transaction writes');
+          if (!ref.query) reads.set(ref.path, JSON.stringify(clone(view.get(ref.path))))
+          return ref.query ? ref.get(view) : snapshot(ref,view) },
         create: (ref, value) => writes.push(() => { assert.ok(!records.has(ref.path)); records.set(ref.path, clone(value)) }),
         update: (ref, value) => writes.push(() => ref.update(value)), set: (ref, value, settings) => writes.push(() => ref.set(value, settings)) }
       const result = await callback(tx)
+      // Real Firestore retries a write transaction when an authority document
+      // changes during an awaited token verification before the final commit.
+      if (writes.length && [...reads].some(([key, before]) => JSON.stringify(clone(records.get(key))) !== before)) {
+        return db.runTransaction(callback, settings)
+      }
       if (options.failCommit === id) throw new Error('synthetic audit commit outage')
       for (const write of writes) await write()
       if (options.failAfterCommit === id || (typeof options.failAfterCommit==='function'&&options.failAfterCommit(id,records))) throw new Error('synthetic uncertain commit reply')
@@ -82,19 +96,51 @@ function fixture(options = {}) {
   const functions = { runWith: () => functions, https: { HttpsError, onCall: f => f, onRequest: f => f },
     firestore: { document: () => ({ onCreate: f => f }) }, pubsub: { schedule: () => ({ onRun: f => f }) } }
   const admin = { apps: [{}], firestore: Object.assign(() => db, { Timestamp, FieldPath:{documentId:()=> '__name__'}, FieldValue: { serverTimestamp: () => new Timestamp(now) } }),
-    auth: () => ({ verifyIdToken: async (token, revoked) => { stats.auth.push({ revoked }); assert.equal(token, 'synthetic-token'); assert.equal(revoked, true); if (options.revokedToken) throw new Error('synthetic revoked session'); return { uid: options.authUid ?? uid, auth_time: options.authTime ?? Math.floor(now / 1000) - (options.staleAuth ? 400 : 0) } }, deleteUser: async () => {} }),
-    storage: () => ({ bucket: () => ({ file: (location, settings) => ({ path: location,
-      async getMetadata() { stats.metadata++; await options.afterMetadata?.(stats.metadata, records, objects); const object = objects.get(location); if (!object || (settings?.generation && settings.generation !== object.generation)) throw new Error('synthetic object generation missing'); return [{ generation: object.generation, size: String(object.bytes.length), contentType: object.contentType, metadata: object.metadata ?? {} }] },
+    auth: () => ({ verifyIdToken: async (token, revoked) => { stats.auth.push({ revoked }); assert.equal(token, 'synthetic-token'); assert.equal(revoked, true); await options.afterAuthentication?.(stats.auth.length, records, objects); if (options.revokedToken) throw new Error('synthetic revoked session'); return { uid: options.authUid ?? uid, auth_time: options.authTime ?? Math.floor(now / 1000) - (options.staleAuth ? 400 : 0) } }, deleteUser: async () => {} }),
+    storage: () => ({ bucket: () => ({ name: 'synthetic-owned-memory.appspot.com', file: (location, settings) => ({ path: location,
+      async getMetadata() { stats.metadata++; await options.afterMetadata?.(stats.metadata, records, objects, location); const object = storedObject(location, settings); if (!object) throw Object.assign(new Error('synthetic object generation missing'), { code: 404 }); return [{ generation: object.generation, size: String(object.bytes.length), contentType: object.contentType, metadata: object.metadata ?? {} }] },
       async getSignedUrl() { stats.signed++; return ['https://synthetic.invalid/irrevocable-signed-url'] },
-      async save(bytes, options) { objects.set(location, { generation: String(++generation), bytes: Buffer.from(bytes), contentType: options.contentType, metadata: options.metadata?.metadata ?? {} }) },
+      async save(bytes, settings) {
+        await options.beforeSave?.(location, bytes, records, objects)
+        const old = objects.get(location), match = settings.preconditionOpts?.ifGenerationMatch
+        if ((match === 0 && old) || (match !== undefined && match !== 0 && String(match) !== old?.generation)) throw Object.assign(new Error('synthetic generation precondition failed'), { code: 412 })
+        stats.storageWrites.push({ location, bytes: bytes.length, match })
+        objects.set(location, { generation: String(++generation), bytes: Buffer.from(bytes), contentType: settings.contentType, metadata: settings.metadata?.metadata ?? {} })
+        if (options.versionedStorage) versions.set(`${location}#${generation}`, objects.get(location))
+        await options.afterSave?.(location, bytes, records, objects)
+      },
+      async delete(request) {
+        await options.beforeObjectDelete?.(location, settings, request, records, objects)
+        const object = storedObject(location, settings)
+        if (!object) { if (request.ignoreNotFound) return; throw Object.assign(new Error('synthetic object absent'), { code: 404 }) }
+        assert.equal(String(request.ifGenerationMatch), settings.generation, 'only the exact known old generation may be disposed')
+        assert.equal(object.generation, settings.generation)
+        versions.delete(`${location}#${settings.generation}`)
+        if (objects.get(location)?.generation === settings.generation) objects.delete(location)
+        await options.afterObjectDelete?.(location, settings, records, objects)
+      },
       async setMetadata(value) { Object.assign(objects.get(location), clone(value)) },
       async copy(destination) { const source=objects.get(location); assert.equal(source.generation,settings.generation); objects.set(destination.path,{...source,bytes:Buffer.from(source.bytes),generation:String(++generation)}) },
-      createReadStream() { stats.streams++; const object = objects.get(location); assert.equal(object.generation, settings.generation); if(options.realPipeline)return require('node:stream').Readable.from([object.bytes]); return { async *[Symbol.asyncIterator]() { yield object.bytes }, destroy() {} } },
+      createReadStream() { stats.streams++; const object = storedObject(location, settings); assert.equal(object.generation, settings.generation); if(options.realPipeline)return require('node:stream').Readable.from([object.bytes]); return { async *[Symbol.asyncIterator]() {
+        const size = location.startsWith('private-memory-media/') ? (options.mediaChunkBytes ?? object.bytes.length) : object.bytes.length
+        for (let offset = 0; offset < object.bytes.length; offset += size) { yield object.bytes.subarray(offset, offset + size); await options.afterMediaChunk?.(location, offset, records, objects) }
+      }, destroy() {} } },
     }), async deleteFiles({ prefix }) { for (const key of objects.keys()) if (key.startsWith(prefix)) objects.delete(key) } }) }) }
   const module = { exports: {} }
-  let pagination
-  const loadPagination = () => { if(pagination)return pagination; const result={exports:{}};vm.runInNewContext(fs.readFileSync(path.resolve(__dirname,'../lib/apps/functions/src/exportPagination.js'),'utf8'),{module:result,exports:result.exports,Buffer,Error,Date:class extends Date{static now(){return options.clock?.value??now}},require:name=>{assert.equal(name,'firebase-admin');return admin}},{filename:'exportPagination.strict-compiled.js'});return pagination=result.exports }
   const filename = process.env.URAI_EXPORT_COMPILED_MODULE ?? path.resolve(__dirname, '../lib/apps/functions/src/privacyOperations.js')
+  let pagination
+  const loadPagination = () => { if(pagination)return pagination; const result={exports:{}};vm.runInNewContext(fs.readFileSync(path.join(path.dirname(filename),'exportPagination.js'),'utf8'),{module:result,exports:result.exports,Buffer,Error,Date:class extends Date{static now(){return options.clock?.value??now}},require:name=>{assert.equal(name,'firebase-admin');return admin}},{filename:'exportPagination.strict-compiled.js'});return pagination=result.exports }
+  let memoryMedia
+  const loadMemoryMedia = () => {
+    if (memoryMedia) return memoryMedia
+    const result = { exports: {} }
+    vm.runInNewContext(fs.readFileSync(path.join(path.dirname(filename), 'memoryMedia.js'), 'utf8'), {
+      module: result, exports: result.exports, Buffer, Error, Date: class extends Date { static now() { return options.clock?.value ?? now } },
+      require: name => { if (name === 'firebase-admin') return admin; if (name === 'firebase-functions/v1') return functions;
+        if (name === 'node:crypto') return crypto; if (name === './exportPagination') return loadPagination(); throw new Error(`Unexpected memory-media dependency ${name}`) },
+    }, { filename: 'memoryMedia.strict-compiled.js' })
+    return memoryMedia = result.exports
+  }
   // Only actual strict-tsc output is accepted. No source transpilation fallback.
   vm.runInNewContext(fs.readFileSync(filename, 'utf8'), { module, exports: module.exports, Buffer, Error, URL, URLSearchParams,
     Date: class extends Date { static now() { return options.clock?.value ?? now } }, process: { env: { GCLOUD_PROJECT: 'urai-4dc1d', ...options.env } },
@@ -114,9 +160,10 @@ function fixture(options = {}) {
       if (name === './personPresenceAuthority') return { revokePersonPresenceConsentDerivatives: async () => {} }
       if (name === './lifeModelPrivateInputs') return { exportPrivateLifeModelHandles: async () => [], tombstonePrivateLifeModelInputs: async () => {} }
       if (name === './exportPagination') return loadPagination()
+      if (name === './memoryMedia') return loadMemoryMedia()
       throw new Error(`Unexpected compiled module dependency: ${name}`)
     } }, { filename })
-  const context = { auth: { uid, token: { auth_time: Math.floor(now / 1000) } }, rawRequest: { get: () => 'synthetic.invalid' } }
+  const context = { auth: { uid, token: { auth_time: Math.floor(now / 1000) } }, rawRequest: { get: name => name === 'authorization' ? 'Bearer synthetic-token' : 'synthetic.invalid' } }
   const descriptor = (data = {}, auth = context) => (module.exports.getOperationalExportDownloadUrl||module.exports.getExportDownloadUrl)({ jobId, ...data }, auth)
   async function deliver(result, authenticated = true, requestOptions = {}) {
     const query = Object.fromEntries(new URL(result.url, 'https://synthetic.invalid').searchParams)
@@ -134,7 +181,7 @@ function fixture(options = {}) {
     } }, response)
     return response
   }
-  return { records, objects, stats, context, descriptor, deliver, handlers: module.exports, db, Timestamp }
+  return { records, objects, versions, stats, context, descriptor, deliver, handlers: module.exports, db, Timestamp, media: loadMemoryMedia() }
 }
 
 test('completed owner descriptor uses revocable authenticated delivery and committed audit', async () => {
@@ -147,6 +194,328 @@ test('completed owner descriptor uses revocable authenticated delivery and commi
   const response = await f.deliver(result)
   assert.equal(response.statusCode, 200); assert.equal(response.body, '{"synthetic":true}')
   assert.equal(response.headers['Cache-Control'], 'private, no-store'); assert.equal(f.stats.streams, 1)
+})
+
+test('unbound memory media cannot publish a portable package containing a bearer URL instead of bytes', async () => {
+  const f = fixture()
+  f.records.get(jobPath).state = 'queued'; f.records.get(jobPath).scopes = ['memories']; f.records.get(receiptPath).result = 'queued'
+  f.records.set(`${prefix}/memories/synthetic-memory`, { ownerId: uid, sourceMedia: [{ kind: 'image',
+    url: 'https://firebasestorage.googleapis.com/v0/b/synthetic-private.appspot.com/o/borrowed-media?alt=media&token=synthetic-private-media-token' }] })
+  await assert.rejects(f.handlers.processExportJob(await f.db.doc(jobPath).get()), /MEMORY_MEDIA_AUTHORITY_REQUIRED/)
+  assert.equal(f.records.get(jobPath).state, 'failed'); assert.equal(f.objects.size, 0)
+})
+
+const fictionalPng = Buffer.concat([Buffer.from('89504e470d0a1a0a', 'hex'), Buffer.from('fictional memory pixels')])
+function mediaFixture(options = {}) {
+  const f = fixture(options)
+  f.records.set(`${prefix}/memories/synthetic-memory`, { ownerId: uid, sourceMedia: [] })
+  f.records.set(`consentRecords/${uid}_memory_storage`, { uid, purpose: 'memory.storage', consentTier: 'C1', policyVersion: '1.0.0',
+    status: 'granted', receiptHash: 'b'.repeat(64), expiresAt: new f.Timestamp(now + 3600000) })
+  f.upload = (changes = {}, context = f.context) => f.media.registerMemoryMedia({ memoryId: 'synthetic-memory', operationId: 'synthetic-media-upload',
+    contentType: 'image/png', kind: 'image', base64: fictionalPng.toString('base64'), ...changes }, context)
+  f.buildMemoryExport = async () => { f.records.get(jobPath).state = 'queued'; f.records.get(jobPath).scopes = ['memories']; f.records.get(receiptPath).result = 'queued';
+    await f.handlers.processExportJob(await f.db.doc(jobPath).get()); return JSON.parse(f.objects.get(exportPath).bytes.toString()) }
+  return f
+}
+
+test('actual compiled producer registers the attempt before create-only bytes and exports verified media without a URL credential', async () => {
+  let observedAttempt = false
+  const f = mediaFixture({ beforeSave: (location, bytes, records) => {
+    if (!location.startsWith('private-memory-media/') || !bytes.length) return
+    const attempt = [...records.values()].find(r => r.schemaVersion === 'urai-owned-memory-media-v1')
+    assert.equal(attempt.state, 'uploading'); assert.equal(attempt.objectPath, location); observedAttempt = true
+  } })
+  const result = await f.upload(), r = f.records.get(`${prefix}/memoryMediaReceipts/${result.receiptId}`)
+  assert.equal(observedAttempt, true); assert.equal(r.state, 'ready'); assert.equal(r.sha256, hash(fictionalPng))
+  assert.match(r.objectPath, new RegExp(`^private-memory-media/${hash(uid)}/${hash('synthetic-memory')}/${result.receiptId}/`))
+  assert.ok(f.stats.storageWrites.some(write => write.location === r.objectPath && write.match === 0))
+  assert.equal(f.objects.get(r.objectPath).generation, r.storageGeneration)
+  assert.ok(f.stats.auth.length >= 8); assert.ok(f.stats.auth.every(a => a.revoked === true)); assert.equal(f.stats.signed, 0)
+  const portable = await f.buildMemoryExport()
+  assert.equal(portable.data.memoryMedia.length, 1)
+  const exported = portable.data.memoryMedia[0]
+  assert.equal(exported.sha256, hash(fictionalPng)); assert.equal(exported.sourceGeneration, r.storageGeneration)
+  assert.deepEqual(Buffer.from(exported.bytesBase64, 'base64'), fictionalPng)
+  assert.doesNotMatch(JSON.stringify(portable), /https?:\/\/|gs:\/\/|synthetic-private-media-token|private-memory-media\//)
+})
+
+test('same operation and same bytes replays the committed receipt; changed bytes cannot reuse it', async () => {
+  const f = mediaFixture(), first = await f.upload(), writes = f.stats.storageWrites.length
+  assert.equal((await f.upload()).receiptId, first.receiptId); assert.equal(f.stats.storageWrites.length, writes)
+  await assert.rejects(f.upload({ base64: Buffer.concat([fictionalPng, Buffer.from('changed')]).toString('base64') }), /MEMORY_MEDIA_OPERATION_ALREADY_BOUND/)
+  assert.equal(f.stats.storageWrites.length, writes)
+})
+
+test('canonical C1 ISO expiry permits storage without requiring a C7 export grant', async () => {
+  const f = mediaFixture()
+  f.records.get(`consentRecords/${uid}_memory_storage`).expiresAt = new Date(now + 3600000).toISOString()
+  f.records.delete(canonicalPath); f.records.delete(canonicalFencePath)
+  const result = await f.upload()
+  assert.equal(result.state, 'ready'); assert.equal(f.stats.signed, 0)
+  await assert.rejects(f.buildMemoryExport(), /CANONICAL_EXPORT_CONSENT_REQUIRED/)
+})
+
+test('a lost ready commit acknowledgement preserves bytes and idempotent retry returns the committed receipt', async () => {
+  let lost = false
+  const f = mediaFixture({ failAfterCommit: (_id, records) => {
+    if (lost || ![...records.values()].some(r => r.schemaVersion === 'urai-owned-memory-media-v1' && r.state === 'ready')) return false
+    lost = true; return true
+  } })
+  await assert.rejects(f.upload(), /uncertain commit reply/)
+  const r = [...f.records.values()].find(r => r.schemaVersion === 'urai-owned-memory-media-v1')
+  assert.equal(r.state, 'ready'); assert.deepEqual(f.objects.get(r.objectPath).bytes, fictionalPng)
+  const writes = f.stats.storageWrites.length
+  assert.equal((await f.upload()).receiptId, r.receiptId); assert.equal(f.stats.storageWrites.length, writes)
+})
+
+test('revocation after a ready commit denies acknowledgement while preserving the committed owned source', async () => {
+  const options = { afterTransaction: (_id, records) => {
+    if ([...records.values()].some(r => r.schemaVersion === 'urai-owned-memory-media-v1' && r.state === 'ready')) options.revokedToken = true
+  } }
+  const f = mediaFixture(options); await assert.rejects(f.upload(), /revoked session/)
+  const r = [...f.records.values()].find(r => r.schemaVersion === 'urai-owned-memory-media-v1')
+  assert.equal(r.state, 'ready'); assert.deepEqual(f.objects.get(r.objectPath).bytes, fictionalPng)
+})
+
+for (const [label, change] of [
+  ['withdrawal', records => { records.get(`consentRecords/${uid}_memory_storage`).status = 'revoked' }],
+  ['operational revision', records => { records.get(policyPath).revision++ }],
+  ['central deletion', records => { records.get(canonicalFencePath).active = true }],
+]) test(`producer denies ${label} during awaited authentication before first Storage bytes`, async () => {
+  const f = mediaFixture({ afterAuthentication: (count, records) => { if (count === 5) change(records) } })
+  await assert.rejects(f.upload()); assert.equal(f.records.get(`${prefix}/memories/synthetic-memory`).sourceMedia.length, 0)
+  assert.equal(f.stats.storageWrites.filter(w => w.bytes > 0).length, 0)
+  assert.ok([...f.objects].filter(([p]) => p.startsWith('private-memory-media/')).every(([, o]) => o.bytes.length === 0))
+})
+
+test('authority changed during final token verification retries the real write-transaction contract and cannot publish ready', async () => {
+  let changed = false
+  const f = mediaFixture({ afterAuthentication: (_count, records, objects) => {
+    if (!changed && [...objects.keys()].some(p => p.startsWith('private-memory-media/')) && [...records.values()].some(r => r.state === 'uploading')) {
+      changed = true; records.get(`consentRecords/${uid}_memory_storage`).status = 'revoked'
+    }
+  } })
+  await assert.rejects(f.upload()); assert.equal(changed, true)
+  assert.equal(f.records.get(`${prefix}/memories/synthetic-memory`).sourceMedia.length, 0)
+  assert.ok([...f.objects].filter(([p]) => p.startsWith('private-memory-media/')).every(([, o]) => o.bytes.length === 0))
+})
+
+test('expired durable attempt closes a delayed create-only first save and cannot publish a ready receipt', async () => {
+  const clock = { value: now }; let f, reconciled = false
+  f = mediaFixture({ clock, beforeSave: async (location, bytes) => {
+    if (reconciled || !location.startsWith('private-memory-media/') || !bytes.length) return
+    clock.value += 120001; await f.media.reconcileMemoryMediaUploads(); reconciled = true
+  } })
+  await assert.rejects(f.upload()); assert.equal(reconciled, true)
+  const r = [...f.records.values()].find(r => r.schemaVersion === 'urai-owned-memory-media-v1')
+  assert.equal(r.state, 'aborted'); assert.equal(r.cleanupStatus, 'completed'); assert.equal(f.objects.get(r.objectPath).bytes.length, 0)
+  assert.equal(f.records.get(`${prefix}/memories/synthetic-memory`).sourceMedia.length, 0)
+})
+
+test('uncertain Storage reply and unavailable cleanup remain registered until actual later reconciliation', async () => {
+  const clock = { value: now }; let outage = true
+  const f = mediaFixture({ clock, beforeSave: (location, bytes) => { if (outage && location.startsWith('private-memory-media/') && !bytes.length) throw new Error('synthetic cleanup outage') },
+    afterSave: (location, bytes) => { if (outage && location.startsWith('private-memory-media/') && bytes.length) throw new Error('synthetic Storage response loss') } })
+  await assert.rejects(f.upload(), /Storage response loss/)
+  const r = [...f.records.values()].find(r => r.schemaVersion === 'urai-owned-memory-media-v1')
+  assert.equal(r.state, 'closing'); assert.notEqual(r.cleanupStatus, 'completed'); assert.deepEqual(f.objects.get(r.objectPath).bytes, fictionalPng)
+  outage = false; clock.value += 120001; await f.media.reconcileMemoryMediaUploads()
+  assert.equal(f.records.get(`${prefix}/memoryMediaReceipts/${r.receiptId}`).state, 'aborted')
+  assert.equal(f.objects.get(r.objectPath).bytes.length, 0)
+})
+
+for (const [label, change] of [
+  ['missing registered receipt', (f, r) => f.records.delete(`${prefix}/memoryMediaReceipts/${r.receiptId}`)],
+  ['receipt for a different memory', (_f, r) => { r.memoryId = 'other-memory' }],
+  ['foreign object owner', (f, r) => { f.objects.get(r.objectPath).metadata.ownerHash = hash('other-owner') }],
+]) test(`deletion refuses ${label} before claiming complete or erasing source custody`, async () => {
+  const f = mediaFixture(), result = await f.upload(), r = f.records.get(`${prefix}/memoryMediaReceipts/${result.receiptId}`)
+  change(f, r)
+  const deletion = await f.handlers.createDeletionRequest({ operationId: 'synthetic-unknown-media-delete', scope: 'memories', confirmation: 'CONFIRM DELETE' }, f.context)
+  await assert.rejects(f.handlers.processDeletionQueueItem(await f.db.doc(`deletionQueue/${deletion.jobId}`).get()))
+  assert.ok(f.records.has(`${prefix}/memories/synthetic-memory`)); assert.notEqual(f.records.get(`deletionReceipts/${deletion.receiptId}`)?.result, 'completed')
+})
+
+for (const [label, change] of [
+  ['C1 withdrawal', records => { records.get(`consentRecords/${uid}_memory_storage`).status = 'revoked' }],
+  ['C7 withdrawal', records => { records.get(canonicalPath).status = 'revoked' }],
+  ['operational revision', records => { records.get(policyPath).revision++ }],
+  ['export cancellation', records => { records.get(jobPath).state = 'cancelled' }],
+  ['central deletion', records => { records.get(canonicalFencePath).active = true }],
+]) test(`media export denies late ${label} between bounded source chunks and publishes no partial ready package`, async () => {
+  let changed = false
+  const f = mediaFixture({ mediaChunkBytes: 8, afterMediaChunk: (location, _offset, records) => {
+    if (!changed && location.startsWith('private-memory-media/')) { changed = true; change(records) }
+  } })
+  const upload = await f.upload(); await assert.rejects(f.buildMemoryExport())
+  assert.equal(changed, true); assert.equal(f.objects.has(exportPath), false)
+  assert.notEqual(f.records.get(jobPath).state, 'ready'); assert.equal(f.records.get(`${prefix}/memoryMediaReceipts/${upload.receiptId}`).state, 'ready')
+})
+
+test('media inventory page withdrawal fails before publishing bytes even though the fixed data snapshot was collected', async () => {
+  let withdrawing = false
+  const f = mediaFixture({ afterQuery: (location, records) => {
+    if (withdrawing && location === `${prefix}/memoryMediaReceipts`) records.get(`consentRecords/${uid}_memory_storage`).status = 'revoked'
+  } })
+  await f.upload(); withdrawing = true; await assert.rejects(f.buildMemoryExport())
+  assert.equal(f.objects.has(exportPath), false)
+})
+
+test('ready memory-media package deadline is clamped to C1 independently of its longer C7 grant', async () => {
+  const f = mediaFixture(); f.records.get(`consentRecords/${uid}_memory_storage`).expiresAt = new f.Timestamp(now + 30000)
+  await f.upload(); await f.buildMemoryExport()
+  assert.equal(f.records.get(jobPath).expiresAt.toMillis(), now + 30000)
+})
+for (const [label, change] of [
+  ['C1 withdrawal', f => { f.records.get(`consentRecords/${uid}_memory_storage`).status = 'revoked' }],
+  ['C1 replacement', f => { f.records.get(`consentRecords/${uid}_memory_storage`).receiptHash = 'e'.repeat(64) }],
+  ['C1 natural expiry', (f, options) => { options.clock.value = now + 30001 }],
+]) test(`READY media package denies ${label} without a C7 or operational revision change`, async () => {
+  const options = { clock: { value: now } }, f = mediaFixture(options)
+  f.records.get(`consentRecords/${uid}_memory_storage`).expiresAt = new f.Timestamp(now + 30000)
+  await f.upload(); await f.buildMemoryExport(); const issued = await f.descriptor()
+  const streams = f.stats.streams; change(f, options)
+  assert.equal(f.records.get(canonicalPath).status, 'granted'); assert.equal(f.records.get(policyPath).revision, 4)
+  await assert.rejects(f.descriptor())
+  assert.equal((await f.deliver(issued)).statusCode, 409); assert.equal(f.stats.streams, streams)
+})
+test('legacy READY memory package without source C1 authority is refused', async () => {
+  const f = fixture(); f.records.get(jobPath).scopes = ['memories']
+  await assert.rejects(f.descriptor()); assert.equal(f.stats.streams, 0)
+})
+for (const [label, change] of [
+  ['C1 withdrawal', records => { records.get(`consentRecords/${uid}_memory_storage`).status = 'revoked' }],
+  ['C1 replacement', records => { records.get(`consentRecords/${uid}_memory_storage`).receiptHash = 'e'.repeat(64) }],
+]) test(`real pipeline stops READY memory-media ${label} after its first64KiB`, async () => {
+  const f = mediaFixture({ realPipeline: true, afterChunk: (count, records) => { if (count === 1) change(records) } })
+  await f.upload({ base64: Buffer.concat([fictionalPng, Buffer.alloc(120000, 1)]).toString('base64') }); await f.buildMemoryExport()
+  const result = await f.descriptor(), response = await f.deliver(result)
+  assert.equal(f.stats.chunks.length, 1); assert.equal(f.stats.chunks[0].length, 65536); assert.equal(response.destroyed, true)
+  assert.equal(f.records.get(canonicalPath).status, 'granted'); assert.equal(f.records.get(policyPath).revision, 4)
+})
+test('late C1 withdrawal during final package metadata await cannot publish ready', async () => {
+  let armed = false
+  const f = mediaFixture({ afterMetadata: (_count, records, _objects, location) => {
+    if (armed && location === exportPath && records.get(jobPath).state === 'preparing') records.get(`consentRecords/${uid}_memory_storage`).status = 'revoked'
+  } })
+  await f.upload(); armed = true; await assert.rejects(f.buildMemoryExport())
+  assert.equal(f.records.get(jobPath).state, 'failed'); assert.equal(f.objects.has(exportPath), false)
+})
+
+test('versioned Storage deletion preserves the tombstone but explicitly disposes the known previous binary generation', async () => {
+  const f = mediaFixture({ versionedStorage: true }), upload = await f.upload(), r = f.records.get(`${prefix}/memoryMediaReceipts/${upload.receiptId}`)
+  const oldGeneration = r.storageGeneration, path = r.objectPath
+  assert.ok(f.versions.has(`${path}#${oldGeneration}`))
+  const deletion = await f.handlers.createDeletionRequest({ operationId: 'synthetic-versioned-media-delete', scope: 'memories', confirmation: 'CONFIRM DELETE' }, f.context)
+  await f.handlers.processDeletionQueueItem(await f.db.doc(`deletionQueue/${deletion.jobId}`).get())
+  assert.equal(f.versions.has(`${path}#${oldGeneration}`), false)
+  assert.equal(f.objects.get(path).bytes.length, 0); assert.equal(f.objects.get(path).metadata.tombstone, 'true')
+  const completed = f.records.get(`deletionReceipts/${deletion.receiptId}`)
+  assert.equal(completed.result, 'completed'); assert.equal(completed.permanentMemoryMediaErasureProven, false)
+})
+
+test('post-tombstone crash retains known binary generations and real retry disposes them before cleanup completion', async () => {
+  const clock = { value: now }; let interrupted = true
+  const f = mediaFixture({ versionedStorage: true, clock,
+    beforeObjectDelete: () => { if (interrupted) throw new Error('synthetic post-tombstone process interruption') },
+    afterSave: (location, bytes) => { if (interrupted && location.startsWith('private-memory-media/') && bytes.length) throw new Error('synthetic upload response loss') } })
+  await assert.rejects(f.upload())
+  const r = [...f.records.values()].find(r => r.schemaVersion === 'urai-owned-memory-media-v1'), path = r.objectPath
+  assert.equal(r.state, 'closing'); assert.notEqual(r.cleanupStatus, 'completed')
+  assert.ok(r.cleanupGenerations.length >= 1); assert.equal(f.objects.get(path).bytes.length, 0)
+  assert.ok(r.cleanupGenerations.some(g => f.versions.get(`${path}#${g}`)?.bytes.length > 0))
+  interrupted = false; clock.value += 120001; await f.media.reconcileMemoryMediaUploads()
+  assert.equal(f.records.get(`${prefix}/memoryMediaReceipts/${r.receiptId}`).cleanupStatus, 'completed')
+  assert.ok(r.cleanupGenerations.every(g => !f.versions.has(`${path}#${g}`)))
+  assert.equal(f.objects.get(path).metadata.tombstone, 'true')
+})
+
+test('provider retention refusal cannot report a completed memory deletion', async () => {
+  const f = mediaFixture({ versionedStorage: true, beforeObjectDelete: () => { throw Object.assign(new Error('synthetic provider object retention'), { code: 403 }) } })
+  const upload = await f.upload(), r = f.records.get(`${prefix}/memoryMediaReceipts/${upload.receiptId}`)
+  const deletion = await f.handlers.createDeletionRequest({ operationId: 'synthetic-retained-media-delete', scope: 'memories', confirmation: 'CONFIRM DELETE' }, f.context)
+  await assert.rejects(f.handlers.processDeletionQueueItem(await f.db.doc(`deletionQueue/${deletion.jobId}`).get()))
+  assert.notEqual(f.records.get(`deletionReceipts/${deletion.receiptId}`)?.result, 'completed')
+  assert.ok(f.records.has(`${prefix}/memories/synthetic-memory`)); assert.ok(f.versions.get(`${r.objectPath}#${r.storageGeneration}`).bytes.length)
+})
+
+for (const [label, change] of [
+  ['missing C1', f => f.records.delete(`consentRecords/${uid}_memory_storage`)],
+  ['C1 withdrawal', f => { f.records.get(`consentRecords/${uid}_memory_storage`).status = 'withdrawn' }],
+  ['wrong C1 tier', f => { f.records.get(`consentRecords/${uid}_memory_storage`).consentTier = 'C4' }],
+  ['expired C1', f => { f.records.get(`consentRecords/${uid}_memory_storage`).expiresAt = new f.Timestamp(now) }],
+  ['paused memory domain', f => { f.records.get(policyPath).domains.memory.mode = 'paused' }],
+  ['unenforced policy', f => { f.records.get(policyPath).enforcement.state = 'pending' }],
+  ['foreign memory', f => { f.records.get(`${prefix}/memories/synthetic-memory`).ownerId = 'other-owner' }],
+  ['deleted memory', f => { f.records.get(`${prefix}/memories/synthetic-memory`).deleted = true }],
+  ['canonical deletion', f => { f.records.get(canonicalFencePath).active = true }],
+  ['central source block', f => f.records.set(`jobConsentBlocks/${hash(uid + '\n' + 'memory.storage')}`, { active: true })],
+  ['permanent owner fence', f => f.records.set(`uraiPrivateLifeModelOwnerFences/${hash(uid)}`, { deleted: true })],
+  ['owner barrier', f => f.records.set(`privateLifeModelOwnerBarriers/${hash(uid)}`, { blocked: true })],
+]) test(`media producer denies ${label} before any storage effect`, async () => {
+  const f = mediaFixture(); change(f); await assert.rejects(f.upload(), /MEMORY_MEDIA_CURRENT_AUTHORITY_REQUIRED/)
+  assert.equal(f.stats.storageWrites.length, 0); assert.equal([...f.records.keys()].some(k => k.startsWith(`${prefix}/memoryMediaReceipts/`)), false)
+})
+
+for (const [label, mutate] of [
+  ['actor change', o => { o.authUid = 'other-owner' }],
+  ['revocation', o => { o.revokedToken = true }],
+  ['stale authentication', o => { o.staleAuth = true }],
+]) test(`media producer rechecks ${label} after awaited attempt registration`, async () => {
+  const options = { afterTransaction: (_n, records) => { if ([...records.values()].some(r => r.schemaVersion === 'urai-owned-memory-media-v1')) mutate(options) } }
+  const f = mediaFixture(options); await assert.rejects(f.upload())
+  assert.equal(f.records.get(`${prefix}/memories/synthetic-memory`).sourceMedia.length, 0)
+  assert.ok([...f.objects].filter(([key]) => key.startsWith('private-memory-media/')).every(([, object]) => object.bytes.length === 0))
+})
+
+for (const phase of ['beforeSave', 'afterSave']) {
+  test(`deletion during ${phase} fences the registered first Storage request before completed deletion`, async () => {
+    let f, acted = false, completed
+    const options = { [phase]: async (location, bytes) => {
+      if (acted || !location.startsWith('private-memory-media/') || !bytes.length) return
+      acted = true
+      const operation = await f.handlers.createDeletionRequest({ operationId: `synthetic-media-${phase}`, scope: 'memories', confirmation: 'CONFIRM DELETE' }, f.context)
+      await f.handlers.processDeletionQueueItem(await f.db.doc(`deletionQueue/${operation.jobId}`).get())
+      completed = f.records.get(`deletionReceipts/${operation.receiptId}`)
+    } }
+    f = mediaFixture(options)
+    await assert.rejects(f.upload())
+    assert.equal(acted, true); assert.equal(completed.result, 'completed'); assert.equal(completed.memoryMediaObjectsFenced, 1)
+    assert.ok(completed.retainedExceptions.some(item => /Zero-byte/.test(item)))
+    assert.equal(f.records.has(`${prefix}/memories/synthetic-memory`), false)
+    const objects = [...f.objects].filter(([key]) => key.startsWith('private-memory-media/'))
+    assert.equal(objects.length, 1); assert.equal(objects[0][1].bytes.length, 0); assert.equal(objects[0][1].metadata.tombstone, 'true')
+    assert.equal([...f.records.keys()].some(k => k.startsWith(`${prefix}/memoryMediaReceipts/`)), false)
+  })
+}
+
+test('unbound legacy media prevents a completed deletion rather than deleting its document and losing byte custody', async () => {
+  const f = mediaFixture()
+  f.records.get(`${prefix}/memories/synthetic-memory`).sourceMedia = [{ kind: 'image', url: 'https://synthetic.invalid/private?token=synthetic-private-media-token' }]
+  const deletion = await f.handlers.createDeletionRequest({ operationId: 'synthetic-unbound-delete', scope: 'memories', confirmation: 'CONFIRM DELETE' }, f.context)
+  await assert.rejects(f.handlers.processDeletionQueueItem(await f.db.doc(`deletionQueue/${deletion.jobId}`).get()), /MEMORY_MEDIA_AUTHORITY_REQUIRED/)
+  assert.ok(f.records.has(`${prefix}/memories/synthetic-memory`)); assert.equal(f.records.get(`${prefix}/deletionJobs/${deletion.jobId}`).state, 'failed')
+  assert.notEqual(f.records.get(`deletionReceipts/${deletion.receiptId}`)?.result, 'completed'); assert.equal(f.stats.storageWrites.length, 0)
+})
+
+test('media export requires C7 separately and pins actual bytes to the source generation and checksum', async () => {
+  const f = mediaFixture(), result = await f.upload(), r = f.records.get(`${prefix}/memoryMediaReceipts/${result.receiptId}`)
+  f.objects.get(r.objectPath).bytes = Buffer.concat([fictionalPng.subarray(0, fictionalPng.length - 1), Buffer.from('x')])
+  await assert.rejects(f.buildMemoryExport(), /MEMORY_MEDIA_BYTES_CHANGED/)
+  assert.equal(f.records.get(jobPath).state, 'failed'); assert.ok(f.objects.has(r.objectPath)); assert.equal(f.objects.has(exportPath), false)
+  const other = mediaFixture(); other.records.delete(canonicalPath)
+  await other.upload(); await assert.rejects(other.buildMemoryExport(), /CANONICAL_EXPORT_CONSENT_REQUIRED/)
+})
+
+for (const [label, change] of [
+  ['foreign namespace', (r) => { r.objectPath = `private-memory-media/${hash('other-owner')}/borrowed` }],
+  ['changed generation', (r) => { r.storageGeneration = '98765' }],
+  ['object owner hash', (_r, object) => { object.metadata.ownerHash = hash('other-owner') }],
+  ['object nonce', (_r, object) => { object.metadata.attemptNonce = 'f'.repeat(64) }],
+]) test(`media export denies ${label} without publishing a partial ready package`, async () => {
+  const f = mediaFixture(), result = await f.upload(), r = f.records.get(`${prefix}/memoryMediaReceipts/${result.receiptId}`), object = f.objects.get(r.objectPath)
+  change(r, object); await assert.rejects(f.buildMemoryExport())
+  assert.equal(f.records.get(jobPath).state, 'failed'); assert.equal(f.objects.has(exportPath), false)
 })
 
 test('isolated pagination emulator loads the actual canonical deployment rules', () => {
@@ -761,3 +1130,39 @@ for (const drift of ['revocation', 'owner change', 'stale recent auth']) {
     assert.equal(response.writableFinished, false, 'the transfer cannot finish using auth verified before its final authority await')
   })
 }
+
+for (const operation of ['export', 'delete']) test('foreign configured bucket receipt cannot authorize '+operation, async () => {
+  const f=mediaFixture(), uploaded=await f.upload(), r=f.records.get(`${prefix}/memoryMediaReceipts/${uploaded.receiptId}`)
+  r.bucketName='synthetic-foreign-bucket.appspot.com'
+  if(operation==='export') await assert.rejects(f.buildMemoryExport(), /MEMORY_MEDIA_RECEIPT_INVALID/)
+  else {
+    const deletion=await f.handlers.createDeletionRequest({operationId:'synthetic-foreign-bucket-delete',scope:'memories',confirmation:'CONFIRM DELETE'},f.context)
+    await assert.rejects(f.handlers.processDeletionQueueItem(await f.db.doc(`deletionQueue/${deletion.jobId}`).get()), /MEMORY_MEDIA_RECEIPT_INVALID/)
+    assert.ok(f.records.has(`${prefix}/memories/synthetic-memory`))
+  }
+  assert.ok(f.objects.get(r.objectPath).bytes.length>0)
+})
+
+test('a fresh authorized deletion retries a partially closed ready binding without losing the durable generation ledger', async () => {
+  let interrupted=true
+  const f=mediaFixture({versionedStorage:true,afterObjectDelete:()=>{if(interrupted)throw new Error('synthetic disposal acknowledgement loss')}})
+  const uploaded=await f.upload(),r=f.records.get(`${prefix}/memoryMediaReceipts/${uploaded.receiptId}`)
+  const first=await f.handlers.createDeletionRequest({operationId:'synthetic-disposal-first',scope:'memories',confirmation:'CONFIRM DELETE'},f.context)
+  await assert.rejects(f.handlers.processDeletionQueueItem(await f.db.doc(`deletionQueue/${first.jobId}`).get()))
+  assert.equal(f.objects.get(r.objectPath).bytes.length,0)
+  interrupted=false
+  const second=await f.handlers.createDeletionRequest({operationId:'synthetic-disposal-retry',scope:'memories',confirmation:'CONFIRM DELETE'},f.context)
+  await f.handlers.processDeletionQueueItem(await f.db.doc(`deletionQueue/${second.jobId}`).get())
+  assert.equal(f.records.get(`deletionReceipts/${second.receiptId}`).result,'completed')
+  assert.ok(!f.versions.has(`${r.objectPath}#${r.storageGeneration}`))
+})
+
+test('known receipt generation is disposed even when versioned Storage has no live binary generation', async () => {
+  const f=mediaFixture({versionedStorage:true}),uploaded=await f.upload(),r=f.records.get(`${prefix}/memoryMediaReceipts/${uploaded.receiptId}`)
+  f.objects.delete(r.objectPath)
+  assert.ok(f.versions.has(`${r.objectPath}#${r.storageGeneration}`))
+  const deletion=await f.handlers.createDeletionRequest({operationId:'synthetic-archived-binary-delete',scope:'memories',confirmation:'CONFIRM DELETE'},f.context)
+  await f.handlers.processDeletionQueueItem(await f.db.doc(`deletionQueue/${deletion.jobId}`).get())
+  assert.ok(!f.versions.has(`${r.objectPath}#${r.storageGeneration}`))
+  assert.equal(f.objects.get(r.objectPath).bytes.length,0)
+})
