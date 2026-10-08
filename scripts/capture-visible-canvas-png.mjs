@@ -5,7 +5,12 @@
 // starve on software WebGL even when the fixed canvas bounds are unchanged.
 export const CANVAS_EVIDENCE_SAMPLE_POINTS = [[.12,.18],[.36,.18],[.64,.18],[.88,.18],[.12,.5],[.36,.5],[.64,.5],[.88,.5],[.12,.82],[.36,.82],[.64,.82],[.88,.82]]
 
-export async function captureVisibleCanvasPng(page, canvas, timeoutMs = 90_000) {
+export async function captureVisibleCanvasPng(page, canvas, timeoutMs = 90_000, samplePoints = CANVAS_EVIDENCE_SAMPLE_POINTS) {
+  if (!Array.isArray(samplePoints) || samplePoints.length < 1 || samplePoints.length > 64
+    || samplePoints.some((point) => !Array.isArray(point) || point.length !== 2
+      || point.some((value) => !Number.isFinite(value) || value < 0 || value > 1))) {
+    throw new Error('Canvas capture requires finite bounded sampling points within the canvas')
+  }
   if (!Number.isFinite(timeoutMs) || timeoutMs <= 0 || timeoutMs > 90_000) throw new Error('Canvas capture requires a finite deadline between 1 and 90000 milliseconds')
   const deadline = Date.now() + timeoutMs
   const remaining = () => {
@@ -31,7 +36,7 @@ export async function captureVisibleCanvasPng(page, canvas, timeoutMs = 90_000) 
     if (!(element instanceof HTMLCanvasElement)) return false
     const rect = element.getBoundingClientRect()
     return points.every(([x, y]) => document.elementFromPoint(rect.x + rect.width * x, rect.y + rect.height * y) === element)
-  }, CANVAS_EVIDENCE_SAMPLE_POINTS, { timeout: remaining() })
+  }, samplePoints, { timeout: remaining() })
   if (!unoccluded) throw new Error('Canvas evidence sample points are covered by another hit-testable element')
   const buffer = await page.screenshot({
     type: 'png', fullPage: false, clip, animations: 'disabled', caret: 'hide', timeout: remaining(),
@@ -44,14 +49,14 @@ export async function captureVisibleCanvasPng(page, canvas, timeoutMs = 90_000) 
     if (!(element instanceof HTMLCanvasElement)) return false
     const rect = element.getBoundingClientRect()
     return points.every(([x, y]) => document.elementFromPoint(rect.x + rect.width * x, rect.y + rect.height * y) === element)
-  }, CANVAS_EVIDENCE_SAMPLE_POINTS, { timeout: remaining() })
+  }, samplePoints, { timeout: remaining() })
   if (!stillUnoccluded) throw new Error('Canvas evidence became covered during capture')
   return {
     buffer,
     capture: {
       source: 'visible-canvas-viewport-clip',
       pixelSource: 'unmodified-browser-composite',
-      samplePoints: CANVAS_EVIDENCE_SAMPLE_POINTS,
+      samplePoints,
       canvasTopmostAtSamplePoints: true,
       bounds,
       clip,

@@ -5,6 +5,8 @@ on:
     branches: [main]
     paths:
       - 'scripts/capture-home-state-proof.mjs'
+      - 'scripts/capture-visible-canvas-png.mjs'
+      - 'urai-tier1/tests/visible-canvas-capture.test.mjs'
       - 'urai-tier1/tests/continuous-spatial-restoration-contract.test.mjs'
       - '.github/workflows/home-state-proof.yml'
       - 'urai-tier1/src/app/AssetDrivenHomeWorld.tsx'
@@ -49,6 +51,7 @@ jobs:
           pnpm install --frozen-lockfile 2>&1 | tee artifacts/home-state-proof/install.log
       - name: Verify state-proof contract and build
         run: |
+          (cd urai-tier1 && node --test tests/visible-canvas-capture.test.mjs)
           (cd urai-tier1 && node tests/continuous-spatial-restoration-contract.test.mjs)
           pnpm build:static
           pnpm --dir urai-tier1 exec playwright install --with-deps chromium

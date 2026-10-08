@@ -1,5 +1,10 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
+import { readFile, mkdtemp, rm, writeFile } from 'node:fs/promises'
+import { createHash } from 'node:crypto'
+import { tmpdir } from 'node:os'
+import path from 'node:path'
+import vm from 'node:vm'
 import { CANVAS_EVIDENCE_SAMPLE_POINTS, captureVisibleCanvasPng } from '../../scripts/capture-visible-canvas-png.mjs'
 
 const visibleBounds = { x: 12, y: 18, width: 800, height: 600 }
@@ -83,4 +88,117 @@ test('Home/Orb proof binds its visual samples and receipt to guarded canvas pixe
   assert.match(source, /record\.canvasCapture = visual\.capture/)
   assert.match(source, /record\.canvasCapture\?\.canvasTopmostAfterCapture === true/)
   assert.match(source, /if \(await worldCanvas\.count\(\) !== 1\)/)
+})
+
+const homePoints = [[.18,.2],[.5,.2],[.82,.2],[.18,.5],[.5,.5],[.82,.5],[.18,.8],[.5,.8],[.82,.8]]
+test('caller-specific sampling points are guarded before and after capture', async () => {
+  const f = fixture()
+  const result = await captureVisibleCanvasPng(f.page, f.canvas, 5000, homePoints)
+  assert.deepEqual(result.capture.samplePoints, homePoints)
+  assert.deepEqual(f.calls.filter(([name]) => name === 'occlusion').map(([, points]) => points), [homePoints, homePoints])
+})
+test('invalid or unbounded sampling point sets are refused before screenshot', async () => {
+  for (const points of [[], [[NaN,.5]], [[-.1,.5]], [[.5,1.1]], [[.5]], Array(65).fill([.5,.5])]) {
+    const f = fixture()
+    await assert.rejects(captureVisibleCanvasPng(f.page, f.canvas, 5000, points), /sampling points/)
+    assert.equal(f.calls.some(([name]) => name === 'screenshot'), false)
+  }
+})
+
+// Execute the actual Home sampler body and actual shared capture helper.
+// Browser/PNG-decode boundaries are inert fixtures; these tests certify no
+// rendered scene, screenshot pixels, provider, account or physical device.
+async function homeSamplerFixture(options = {}) {
+  const source = await readFile(new URL('../../scripts/capture-home-state-proof.mjs', import.meta.url), 'utf8')
+  const start = source.indexOf('async function readVisualEvidence(page)')
+  const end = source.indexOf('async function waitForVisualEvidence(', start)
+  assert.ok(start >= 0 && end > start)
+  const directory = await mkdtemp(path.join(tmpdir(), 'urai-home-sampler-'))
+  const bounds = options.bounds ?? { x: 0, y: 0, width: 1440, height: 900 }
+  const f = fixture(bounds, options.after ?? bounds)
+  f.canvas.count = async () => options.canvasCount ?? 1
+  f.canvas.first = () => f.canvas
+  f.page.locator = () => f.canvas
+  f.page.viewportSize = () => ({ width: 1440, height: 900 })
+  let occlusionReads = 0
+  f.canvas.evaluate = async (_read, points) => {
+    f.calls.push(['occlusion', points]); occlusionReads += 1
+    return options.occluded !== true && !(options.coveredAfter === true && occlusionReads > 1)
+  }
+  const environment = {
+    Buffer, createHash, writeFile, path, captureVisibleCanvasPng,
+    exactHead: 'a'.repeat(40), outputDir: directory,
+    HOME_CANVAS_SAMPLE_POINTS: homePoints,
+    MAX_CANVAS_EVIDENCE_FILES: 64,
+    canvasEvidenceCount: options.priorCaptures ?? 0,
+    Image: class {
+      naturalWidth = 1440; naturalHeight = 900
+      set src(value) { f.calls.push(['decoded-png', value]); queueMicrotask(() => this.onload()) }
+    },
+    document: { createElement(kind) {
+      assert.equal(kind, 'canvas')
+      return { width: 0, height: 0, getContext() { return {
+        drawImage() {}, getImageData(x) {
+          const luminance = 40 + Math.round(x / 20)
+          return { data: Uint8ClampedArray.from([luminance,luminance,luminance,255]) }
+        },
+      } } }
+    } },
+  }
+  f.page.evaluate = async (read, argument) => argument === undefined ? bounds : read(argument)
+  const context = vm.createContext(environment)
+  const run = vm.runInContext(source.slice(start, end) + '\nreadVisualEvidence', context)
+  return { ...f, directory, context, async run() { return run(f.page) }, async close() { await rm(directory, { recursive: true, force: true }) } }
+}
+
+test('Home sampler retains exact guarded PNG bytes, hash and its nine sampling points', async () => {
+  const f = await homeSamplerFixture()
+  try {
+    const result = await f.run()
+    assert.equal(result.available, true)
+    assert.equal(result.viewportCoverage, 1)
+    assert.equal(result.luminance.length, 9)
+    assert.ok(result.luminanceRange >= 12)
+    assert.ok(result.visibleSamples >= 3)
+    assert.equal(result.capture.canvasTopmostAfterCapture, true)
+    assert.equal(result.capture.boundsUnchanged, true)
+    assert.deepEqual(result.capture.samplePoints, homePoints)
+    const saved = await readFile(path.join(f.directory, result.canvasPngFile))
+    assert.deepEqual(saved, f.pixels)
+    assert.equal(result.canvasPngSha256, createHash('sha256').update(saved).digest('hex'))
+    assert.equal(result.canvasPngBytes, saved.length)
+    assert.equal(f.context.canvasEvidenceCount, 1)
+    assert.deepEqual(f.calls.filter(([name]) => name === 'occlusion').map(([, points]) => points), [homePoints, homePoints])
+  } finally { await f.close() }
+})
+test('Home sampler refuses absent or ambiguous world canvases before screenshot', async () => {
+  for (const canvasCount of [0, 2]) {
+    const f = await homeSamplerFixture({ canvasCount })
+    try { await assert.rejects(f.run(), /exactly one/); assert.equal(f.calls.some(([name]) => name === 'screenshot'), false) }
+    finally { await f.close() }
+  }
+})
+test('Home sampler rejects partial viewport crops and nonfinite bounds', async () => {
+  for (const bounds of [{x:-1,y:0,width:1440,height:900}, {x:0,y:0,width:1441,height:900}, {x:NaN,y:0,width:1440,height:900}]) {
+    const f = await homeSamplerFixture({ bounds })
+    try { await assert.rejects(f.run()); assert.equal(f.calls.some(([name]) => name === 'screenshot'), false) }
+    finally { await f.close() }
+  }
+})
+test('Home sampler rejects initially occluded or newly covered capture samples', async () => {
+  for (const options of [{occluded:true}, {coveredAfter:true}]) {
+    const f = await homeSamplerFixture(options)
+    try { await assert.rejects(f.run(), /covered/) }
+    finally { await f.close() }
+  }
+})
+test('Home sampler rejects canvas drift during screenshot', async () => {
+  const f = await homeSamplerFixture({ after: {x:1,y:0,width:1440,height:900} })
+  try { await assert.rejects(f.run(), /bounds changed/) }
+  finally { await f.close() }
+})
+test('Home sampler enforces a finite retained-image count before screenshot', async () => {
+  const f = await homeSamplerFixture({ priorCaptures:64 })
+  try { await assert.rejects(f.run(), /image budget/); assert.equal(f.calls.some(([name]) => name === 'screenshot'), false) }
+  finally { await f.close() }
 })
