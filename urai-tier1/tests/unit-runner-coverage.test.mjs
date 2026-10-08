@@ -6,6 +6,7 @@ const focusedRunnerSource = fs.readFileSync(new URL('../scripts/run-unit-contrac
 const compactRunnerSource = fs.readFileSync(new URL('../scripts/run-unit-contract-tests-compact.mjs', import.meta.url), 'utf8')
 
 const requiredFocusedTests = [
+  'tests/ai-evolution-policy-safety.test.mjs',
   'tests/body-biometric-contract.test.mjs',
   'tests/orb-companion-contract.test.mjs',
   'tests/provider-boundary-contract.test.mjs',

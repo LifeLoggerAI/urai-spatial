@@ -15,6 +15,7 @@ const tests = [
   'tests/asset-validation-fail-closed-contract.test.mjs',
   'tests/automatic-hosting-recovery-contract.test.mjs',
   'tests/accessibility-performance-source-contract.test.mjs',
+  'tests/ai-evolution-policy-safety.test.mjs',
   'tests/body-biometric-contract.test.mjs',
   'tests/captured-reality-gaussian-v1-contract.test.mjs',
   'tests/captured-reality-delivery-behavior.test.mjs',
