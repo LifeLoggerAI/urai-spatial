@@ -46,7 +46,7 @@ export function resolveDeclaredPackageManifest(requireConsumer, name, expectedVe
   const entry = fs.realpathSync(requireConsumer.resolve(name));
   if (!inside(entry)) throw new Error('Resolved dependency is outside current checkout: ' + name);
   let directory = path.dirname(entry);
-  while (inside(directory)) {
+  while (inside(directory) && directory !== boundary) {
     const manifestPath = path.join(directory, 'package.json');
     if (fs.existsSync(manifestPath)) {
       const actualPath = fs.realpathSync(manifestPath);

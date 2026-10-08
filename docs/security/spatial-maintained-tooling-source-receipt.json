@@ -105,6 +105,20 @@
       "skipped": 0,
       "node": "22.23.3",
       "proofScope": "Synthetic package exports, name/version, missing manifest, entry/manifest symlink and relative identity boundaries; not successor installed/native acceptance"
+    },
+    "currentCheckoutRootBoundaryCorrection": {
+      "predecessorSha": "5e2321606fd813bbee0b18be13a5deb57cf5bd62",
+      "trigger": "Actual repository-root manifest must never acquire dependency authority when a package manifest is missing",
+      "method": "Ascend only within current checkout and stop before its root directory; preserve all six original boundary assertions",
+      "filesystemProbeNode": "22.23.3",
+      "filesystemProbePassed": 6,
+      "filesystemProbeFailed": 0,
+      "filesystemProbeSkipped": 0,
+      "proofScope": "Real scratch-filesystem synthetic package fixtures with an actual named repository-root manifest; no installed/native successor acceptance",
+      "historicalActualRootFailuresRetained": true,
+      "actualSuccessorInstalledAcceptance": false,
+      "productionAcceptance": false,
+      "securityWaiver": false
     }
   }
 }
