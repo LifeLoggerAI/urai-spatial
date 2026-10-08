@@ -2,8 +2,8 @@
   "schemaVersion": 1,
   "id": "home-entry-chamber-v1",
   "fixedPath": "urai-tier1/public/assets/urai/generated/models/home-entry-chamber-v1.glb",
-  "bytes": 184160,
-  "sha256": "b7bdced5a721598a9dfe592ee19da04d754d5b8b1d48b23cc44403a89b1ee529",
+  "bytes": 186040,
+  "sha256": "808d6a7e0a64aa9f69f10aabf8134bd6b5e0f2335afc1e83e21fa11fa2f35e17",
   "measured": {
     "format": "glb",
     "version": 2,
@@ -44,8 +44,8 @@
   "fallback": "procedural-home-threshold",
   "source": "URAI Labs deterministic authored sanctuary v3 pipeline; replaceable only by a separately reviewed provider asset",
   "license": "URAI Labs internal proprietary production asset",
-  "generatedBy": "Unchanged reviewed source recovered from 51db7b3ba77a657659da34ca5e146e049dd03d31; no asset forge or substitution",
-  "generatedAt": "2026-08-08T23:04:50.713Z",
+  "generatedBy": "URAI Labs deterministic NORMAL-only derivative of restored51db7b3ba77a657659da34ca5e146e049dd03d31 geometry; pinned meshoptimizer1.0;14zero normals repaired using exact same-position donors; no asset forge, shape edit or visual approval",
+  "generatedAt": "2026-10-08T01:05:50.484508+00:00",
   "releaseState": "candidate-not-production-ready",
   "targetRoutes": [
     "/",
@@ -53,9 +53,39 @@
   ],
   "measurementReconciliation": {
     "sourceSha": "51db7b3ba77a657659da34ca5e146e049dd03d31",
-    "method": "Actual resolved Three 0.183.2 / three-stdlib 2.36.1 GLTFLoader and bundled MeshoptDecoder; normalized logical attributes",
-    "reportSha256": "0759b8dd6b7eafbd07a81df3c97344b7af53ff899997145d1ff8bc9c66dfd834",
-    "restoredAcceptedBytes": true,
+    "method": "All177bufferViews and204accessors decoded and compared against immutable predecessor: only14NORMAL vectors changed; POSITION/indices/materials/nodes/animations/skin/bounds untouched. Candidate normal proof is separate from historical transformed geometry measurement.",
+    "historicalGeometryReportSha256": "0759b8dd6b7eafbd07a81df3c97344b7af53ff899997145d1ff8bc9c66dfd834",
+    "normalRepairReceiptSha256": "5f57bbee1123e418456d13e240fdf5dc9812b2fd017d10292c46fae975d221e4",
+    "restoredAcceptedBytes": false,
+    "geometryUnchangedFromPredecessor": true,
     "finalReviewGranted": false
+  },
+  "historicalPredecessorGeneratedReceipt": {
+    "bytes": 184160,
+    "sha256": "b7bdced5a721598a9dfe592ee19da04d754d5b8b1d48b23cc44403a89b1ee529",
+    "generatedBy": "Unchanged reviewed source recovered from 51db7b3ba77a657659da34ca5e146e049dd03d31; no asset forge or substitution",
+    "generatedAt": "2026-08-08T23:04:50.713Z",
+    "measurementReconciliation": {
+      "sourceSha": "51db7b3ba77a657659da34ca5e146e049dd03d31",
+      "method": "Actual resolved Three 0.183.2 / three-stdlib 2.36.1 GLTFLoader and bundled MeshoptDecoder; normalized logical attributes",
+      "reportSha256": "0759b8dd6b7eafbd07a81df3c97344b7af53ff899997145d1ff8bc9c66dfd834",
+      "restoredAcceptedBytes": true,
+      "finalReviewGranted": false
+    },
+    "status": "historical unchanged-source receipt; no approval transfers to derived normal-repair successor"
+  },
+  "normalRepair": {
+    "receiptPath": "operations/assets/normal-repair-receipts/home-entry-chamber-v1.json",
+    "receiptSha256": "5f57bbee1123e418456d13e240fdf5dc9812b2fd017d10292c46fae975d221e4",
+    "predecessorPath": "operations/assets/normal-repair-predecessors/home-entry-chamber-v1.b7bdced5a721598a.glb",
+    "predecessorBytes": 184160,
+    "predecessorSha256": "b7bdced5a721598a9dfe592ee19da04d754d5b8b1d48b23cc44403a89b1ee529",
+    "candidateBytes": 186040,
+    "candidateSha256": "808d6a7e0a64aa9f69f10aabf8134bd6b5e0f2335afc1e83e21fa11fa2f35e17",
+    "visualAcceptance": false,
+    "humanReviewApproved": false,
+    "deviceAcceptance": false,
+    "productionPromotion": false,
+    "exactHeadChecksPassed": false
   }
 }

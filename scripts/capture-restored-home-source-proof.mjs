@@ -2,6 +2,8 @@ import { createHash } from 'node:crypto'
 import { createRequire } from 'node:module'
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import path from 'node:path'
+import { HOME_NORMAL_PREDECESSOR, verifyHomeNormalRepair } from './lib/home-normal-repair.mjs'
+import { verifyGlbNormalIntegrity } from './lib/glb-normal-integrity.mjs'
 
 const requireFromTierOne = createRequire(new URL('../urai-tier1/package.json', import.meta.url))
 const { chromium } = requireFromTierOne('playwright')
@@ -10,15 +12,19 @@ const exactHead = process.env.URAI_EXACT_HEAD
 if (!/^[0-9a-f]{40}$/.test(exactHead || '')) throw new Error('Exact donor head is required')
 const output = path.resolve(process.env.URAI_PROOF_DIR || 'artifacts/restored-home-source-proof')
 const modelPath = '/assets/urai/generated/models/home-entry-chamber-v1.glb'
-const expected = { bytes: 184160, sha256: 'b7bdced5a721598a9dfe592ee19da04d754d5b8b1d48b23cc44403a89b1ee529' }
+const expected = { bytes: 186040, sha256: '808d6a7e0a64aa9f69f10aabf8134bd6b5e0f2335afc1e83e21fa11fa2f35e17' }
+const predecessor = await readFile(HOME_NORMAL_PREDECESSOR.archivePath)
 const digest = bytes => createHash('sha256').update(bytes).digest('hex')
 for (const root of ['urai-tier1/public', 'urai-tier1/out']) {
   const bytes = await readFile(path.join(root, modelPath.slice(1)))
-  if (bytes.length !== expected.bytes || digest(bytes) !== expected.sha256) throw new Error(`${root}: restored model identity changed`)
+  if (bytes.length !== expected.bytes || digest(bytes) !== expected.sha256) throw new Error(`${root}: NORMAL-only successor identity changed`)
+  await verifyHomeNormalRepair(predecessor, bytes)
+  await verifyGlbNormalIntegrity(bytes, 'Browser capture candidate')
 }
 await mkdir(output, { recursive: true })
 const receipt = {
   schema: 'urai.restored-home-source-proof.v1', exactHead, modelPath, expected,
+  immutablePredecessor: HOME_NORMAL_PREDECESSOR, normalRepairReceipt: 'operations/assets/normal-repair-receipts/home-entry-chamber-v1.json',
   truthBoundary: {
     freshUnsignedContexts: true, privateFixturesUsed: false, personalizedRuntimeVerified: false,
     visualApproval: false, currentReleaseAccepted: false, deploymentAuthorized: false,

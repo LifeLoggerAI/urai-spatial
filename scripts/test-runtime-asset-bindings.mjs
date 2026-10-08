@@ -5,6 +5,8 @@ import path from 'node:path'
 import { createHash } from 'node:crypto'
 import { pathToFileURL } from 'node:url'
 import { test } from 'node:test'
+import { HOME_NORMAL_PREDECESSOR, verifyHomeNormalRepair } from './lib/home-normal-repair.mjs'
+import { verifyGlbNormalIntegrity } from './lib/glb-normal-integrity.mjs'
 
 const requireTierOne = createRequire(new URL('../urai-tier1/package.json', import.meta.url))
 const threeUrl = pathToFileURL(path.join(path.dirname(requireTierOne.resolve('three')), 'three.module.js')).href
@@ -60,13 +62,18 @@ test('existing open ground grid preserves its triangle count under reflection an
   result.dispose(); source.dispose()
 })
 
-test('exact retained Home decodes with the consumer loader and projects its five visible ground meshes', async () => {
+test('exact NORMAL-only Home successor decodes with the consumer loader and projects its five visible ground meshes', async () => {
   const stdlib = path.dirname(requireTierOne.resolve('three-stdlib'))
   const { GLTFLoader } = await import(pathToFileURL(path.join(stdlib, 'loaders/GLTFLoader.js')).href)
   const { MeshoptDecoder } = await import(pathToFileURL(path.join(stdlib, 'libs/MeshoptDecoder.js')).href)
   const bytes = await readFile(new URL('../urai-tier1/public/assets/urai/generated/models/home-entry-chamber-v1.glb', import.meta.url))
-  assert.equal(bytes.length, 184160)
-  assert.equal(createHash('sha256').update(bytes).digest('hex'), 'b7bdced5a721598a9dfe592ee19da04d754d5b8b1d48b23cc44403a89b1ee529')
+  assert.equal(bytes.length, 186040)
+  assert.equal(createHash('sha256').update(bytes).digest('hex'), '808d6a7e0a64aa9f69f10aabf8134bd6b5e0f2335afc1e83e21fa11fa2f35e17')
+  const predecessor = await readFile(new URL(`../${HOME_NORMAL_PREDECESSOR.archivePath}`, import.meta.url))
+  const proof = await verifyHomeNormalRepair(predecessor, bytes)
+  assert.equal(proof.changedNormalVectors, 14)
+  assert.equal(proof.geometryTopologyMaterialsNodesSkinsAnimationsUntouched, true)
+  assert.equal((await verifyGlbNormalIntegrity(bytes)).checkedVectors, 4236)
   globalThis.self = globalThis
   const decoder = typeof MeshoptDecoder === 'function' ? MeshoptDecoder() : MeshoptDecoder
   await decoder.ready

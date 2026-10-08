@@ -7,8 +7,8 @@
     "/",
     "/home"
   ],
-  "sha256": "b7bdced5a721598a9dfe592ee19da04d754d5b8b1d48b23cc44403a89b1ee529",
-  "bytes": 184160,
+  "sha256": "808d6a7e0a64aa9f69f10aabf8134bd6b5e0f2335afc1e83e21fa11fa2f35e17",
+  "bytes": 186040,
   "measured": {
     "triangleCount": 12934,
     "boundsMeters": {
@@ -62,7 +62,7 @@
   "paidExecutionAuthorized": false,
   "providerCallsForPromotion": 0,
   "providerSpendForPromotionUsd": "0.00",
-  "providerRegenerationSkippedReason": "The exact accepted Meshopt binary was already present on current main; regeneration would spend credits without changing the reviewed artifact.",
+  "providerRegenerationSkippedReason": "The successor is a deterministic NORMAL-only derivative of the preserved authored predecessor. No provider call or paid generation occurred; current review and deployment remain unapproved.",
   "historicalAcceptance": {
     "acceptedSourceHead": "51db7b3ba77a657659da34ca5e146e049dd03d31",
     "visualAcceptance": {
@@ -116,7 +116,42 @@
     "repository": "LifeLoggerAI/urai-spatial",
     "sourceHead": "51db7b3ba77a657659da34ca5e146e049dd03d31",
     "gitBlob": "dd757954937009d2ee54a52df6f56792528356f4",
-    "bytesChangedFromAcceptedSource": false,
-    "currentReleaseAccepted": false
+    "bytesChangedFromAcceptedSource": true,
+    "currentReleaseAccepted": false,
+    "geometryChangedFromAcceptedSource": false,
+    "normalRepair": {
+      "receiptPath": "operations/assets/normal-repair-receipts/home-entry-chamber-v1.json",
+      "receiptSha256": "5f57bbee1123e418456d13e240fdf5dc9812b2fd017d10292c46fae975d221e4",
+      "predecessorPath": "operations/assets/normal-repair-predecessors/home-entry-chamber-v1.b7bdced5a721598a.glb",
+      "predecessorBytes": 184160,
+      "predecessorSha256": "b7bdced5a721598a9dfe592ee19da04d754d5b8b1d48b23cc44403a89b1ee529",
+      "candidateBytes": 186040,
+      "candidateSha256": "808d6a7e0a64aa9f69f10aabf8134bd6b5e0f2335afc1e83e21fa11fa2f35e17",
+      "visualAcceptance": false,
+      "humanReviewApproved": false,
+      "deviceAcceptance": false,
+      "productionPromotion": false,
+      "exactHeadChecksPassed": false
+    }
+  },
+  "historicalPredecessorIdentity": {
+    "bytes": 184160,
+    "sha256": "b7bdced5a721598a9dfe592ee19da04d754d5b8b1d48b23cc44403a89b1ee529",
+    "archivePath": "operations/assets/normal-repair-predecessors/home-entry-chamber-v1.b7bdced5a721598a.glb",
+    "status": "historical source identity; no approval transfers to NORMAL-only successor"
+  },
+  "normalRepair": {
+    "receiptPath": "operations/assets/normal-repair-receipts/home-entry-chamber-v1.json",
+    "receiptSha256": "5f57bbee1123e418456d13e240fdf5dc9812b2fd017d10292c46fae975d221e4",
+    "predecessorPath": "operations/assets/normal-repair-predecessors/home-entry-chamber-v1.b7bdced5a721598a.glb",
+    "predecessorBytes": 184160,
+    "predecessorSha256": "b7bdced5a721598a9dfe592ee19da04d754d5b8b1d48b23cc44403a89b1ee529",
+    "candidateBytes": 186040,
+    "candidateSha256": "808d6a7e0a64aa9f69f10aabf8134bd6b5e0f2335afc1e83e21fa11fa2f35e17",
+    "visualAcceptance": false,
+    "humanReviewApproved": false,
+    "deviceAcceptance": false,
+    "productionPromotion": false,
+    "exactHeadChecksPassed": false
   }
 }

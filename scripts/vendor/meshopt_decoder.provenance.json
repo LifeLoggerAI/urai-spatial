@@ -1,0 +1,15 @@
+{
+  "schema": "urai.vendored-decoder-provenance.v1",
+  "source": "https://github.com/mrdoob/three.js/blob/r183/examples/jsm/libs/meshopt_decoder.module.js",
+  "sourceGitBlob": "cf0588e962035907b19389cd9a0defdc89a7c0d0",
+  "meshoptimizerVersion": "1.0",
+  "threeVersion": "0.183.2",
+  "bytes": 32392,
+  "sha256": "97901fb3d2d296eeea2a57348a734ef0a17e35f2d4aea5a65223635d3f0e1709",
+  "license": "MIT",
+  "copyright": "2016-2025 Arseny Kapoulkine",
+  "licenseSource": "https://github.com/zeux/meshoptimizer/blob/v1.0/LICENSE.md",
+  "licenseGitBlob": "a5c3b1ccca7bbe958d17644bde2ec1fc6f14c19d",
+  "localPinnedDependencyMatch": true,
+  "modifications": "None; only extension changed .js\u2192.mjs for explicit standalone Node ESM. No runtime dependency installation."
+}

@@ -98,11 +98,14 @@ test('the immutable author and verifier retain all eight receipt-bound GLBs', ()
     assert.equal(payload.readUInt32LE(8), payload.length)
     assert.equal(payload.readUInt32LE(16), 0x4e4f534a)
     const json = JSON.parse(payload.subarray(20, 20 + payload.readUInt32LE(12)).toString('utf8').trim())
-    const restoredReviewedHome = record.fileName === 'home-entry-chamber-v1.glb'
-      && record.sha256 === 'b7bdced5a721598a9dfe592ee19da04d754d5b8b1d48b23cc44403a89b1ee529'
-    if (restoredReviewedHome) {
-      assert.equal(record.bytes, 184160)
+    const normalRepairedHome = record.fileName === 'home-entry-chamber-v1.glb'
+      && record.sha256 === '808d6a7e0a64aa9f69f10aabf8134bd6b5e0f2335afc1e83e21fa11fa2f35e17'
+    if (normalRepairedHome) {
+      assert.equal(record.bytes, 186040)
       assert.equal(record.sourceHead, '51db7b3ba77a657659da34ca5e146e049dd03d31')
+      assert.equal(record.normalRepair.predecessorSha256, 'b7bdced5a721598a9dfe592ee19da04d754d5b8b1d48b23cc44403a89b1ee529')
+      assert.equal(record.normalRepair.visualAcceptance, false)
+      assert.equal(record.normalRepair.exactHeadChecksPassed, false)
       assert.equal(json.asset.generator, 'glTF-Transform v4.4.2')
       assert.equal(json.asset.extras.source, 'scripts/author-home-finalization-assets.mjs')
       for (const extension of ['EXT_meshopt_compression', 'KHR_mesh_quantization']) assert.ok(json.extensionsRequired.includes(extension))

@@ -4,8 +4,8 @@
   "repository": "LifeLoggerAI/urai-spatial",
   "assetId": "home-entry-chamber-v1",
   "canonicalPath": "urai-tier1/public/assets/urai/generated/models/home-entry-chamber-v1.glb",
-  "bytes": 184160,
-  "sha256": "b7bdced5a721598a9dfe592ee19da04d754d5b8b1d48b23cc44403a89b1ee529",
+  "bytes": 186040,
+  "sha256": "808d6a7e0a64aa9f69f10aabf8134bd6b5e0f2335afc1e83e21fa11fa2f35e17",
   "source": "URAI Labs deterministic authored sanctuary v3 pipeline; replaceable only by a separately reviewed provider asset",
   "fallback": "procedural-home-threshold",
   "license": "URAI Labs internal proprietary production asset",
@@ -22,7 +22,7 @@
   "exactHeadChecksPassed": false,
   "paidExecutionAuthorized": false,
   "deploymentAuthorized": false,
-  "notes": "Restores the exact immutable 184,160-byte Meshopt Home source accepted at 51db7b3ba77a657659da34ca5e146e049dd03d31. The current release remains pending independent exact-head visual and governance review. No provider execution or deployment is authorized.",
+  "notes": "Rehearses only the exact 186,040-byte NORMAL-only successor. The immutable 184,160-byte b7bd predecessor and all historical promotion evidence remain separate. Fourteen zero normals were repaired from exact same-position valid donors; geometry, topology, materials, nodes, skin and animations are unchanged. Current promote, human review, visual proof, exact-head checks, deployment and paid execution remain false.",
   "historicalPromotion": {
     "schemaVersion": 1,
     "mode": "promotion",
@@ -57,5 +57,25 @@
     },
     "notes": "Promotes the immutable reviewed Meshopt Home asset already present on current main. Historical independent visual proof, current route consumption, fallback behavior, ownership, optimization, and exact binary identity are retained. No provider regeneration was needed. This follow-up metadata correction aligns the manifest X-axis target to the reviewed 18.69m binary bound without altering the asset."
   },
-  "reviewedAtSemantics": "Historical source-review timestamp retained; this rehearsal does not record current human or visual approval."
+  "reviewedAtSemantics": "Historical source-review timestamp retained; this rehearsal does not record current human or visual approval.",
+  "normalRepairPredecessorIdentity": {
+    "bytes": 184160,
+    "sha256": "b7bdced5a721598a9dfe592ee19da04d754d5b8b1d48b23cc44403a89b1ee529",
+    "archivePath": "operations/assets/normal-repair-predecessors/home-entry-chamber-v1.b7bdced5a721598a.glb",
+    "status": "historical source identity; not successor promotion authority"
+  },
+  "normalRepair": {
+    "receiptPath": "operations/assets/normal-repair-receipts/home-entry-chamber-v1.json",
+    "receiptSha256": "5f57bbee1123e418456d13e240fdf5dc9812b2fd017d10292c46fae975d221e4",
+    "predecessorPath": "operations/assets/normal-repair-predecessors/home-entry-chamber-v1.b7bdced5a721598a.glb",
+    "predecessorBytes": 184160,
+    "predecessorSha256": "b7bdced5a721598a9dfe592ee19da04d754d5b8b1d48b23cc44403a89b1ee529",
+    "candidateBytes": 186040,
+    "candidateSha256": "808d6a7e0a64aa9f69f10aabf8134bd6b5e0f2335afc1e83e21fa11fa2f35e17",
+    "visualAcceptance": false,
+    "humanReviewApproved": false,
+    "deviceAcceptance": false,
+    "productionPromotion": false,
+    "exactHeadChecksPassed": false
+  }
 }

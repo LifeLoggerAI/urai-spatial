@@ -10,6 +10,11 @@ on:
       - 'scripts/forge-launch-critical-assets.mjs'
       - 'scripts/normalize-launch-critical-assets.mjs'
       - 'scripts/repair-home-glb-pole-normals.mjs'
+      - 'scripts/lib/glb-normal-integrity.mjs'
+      - 'scripts/lib/home-normal-repair.mjs'
+      - 'scripts/vendor/meshopt_decoder.*'
+      - 'scripts/vendor/meshopt_encoder.*'
+      - 'urai-tier1/tests/glb-normal-repair-source-immutability.test.mjs'
       - 'scripts/repair-focus-glb-accessor-bounds.mjs'
       - 'scripts/verify-launch-critical-assets.mjs'
       - 'scripts/verify-governed-asset-promotion.mjs'
@@ -72,6 +77,9 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+
+      - name: Verify bounded GLB repair and exact successor immutability
+        run: node --test --test-concurrency=1 urai-tier1/tests/glb-normal-repair-source-immutability.test.mjs
 
       - name: Repair exact Home GLB pole normals and emit successor when required
         id: home_repair
