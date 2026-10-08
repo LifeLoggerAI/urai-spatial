@@ -127,3 +127,40 @@ test("the actual Firebase delegated watcher preserves brace file discovery and c
     assert.equal(hostile._readyEmitted, false);
   } finally { await hostile.close(); }
 });
+
+for (const closeEarly of [false, true]) {
+  test(`retained FSEvents source error channel handles a synthetic rejected promise; closeEarly=${closeEarly}`, () => {
+    const entry = watcherRequire.resolve("./index.js");
+    // This bounded private-handler fixture checks only the source error channel.
+    // It neither exercises the real FSEvents handler nor grants native acceptance.
+    // Genuine native failure logs establish applicability; the original watcher
+    // case and successor macOS CI remain the native backend authority.
+    const script = `
+      const assert=require('node:assert/strict');
+      const sdk=require(${JSON.stringify(entry)});
+      const watcher=new sdk.FSWatcher({persistent:false,useFsEvents:false});
+      watcher.options={...watcher.options,useFsEvents:true};
+      assert.equal(watcher.options.useFsEvents,true);
+      let branchCalls=0,errors=0;
+      const rejection=new Error('Synthetic retained FSEvents rejection');
+      watcher._fsEventsHandler={_addToFsEvents(){branchCalls++;return Promise.reject(rejection)}};
+      watcher.on('ready',()=>{throw Error('Rejected input cannot emit ready')});
+      watcher.on('error',async error=>{
+        assert.equal(error,rejection);
+        assert.equal(watcher._readyEmitted,false);assert.equal(${closeEarly},false);
+        errors++;await watcher.close();
+      });
+      watcher.add('synthetic-source-only.txt');
+      if(${closeEarly})watcher.close();
+      setImmediate(()=>{
+        assert.equal(branchCalls,1);assert.equal(errors,${closeEarly ? 0 : 1});
+        assert.equal(watcher.closed,true);
+        console.log('retained source error channel PASS; synthetic private-handler fixture only');
+      });
+    `;
+    const child=spawnSync(process.execPath,["--unhandled-rejections=strict","-e",script],{encoding:"utf8",timeout:5000});
+    assert.equal(child.status,0,child.stdout+child.stderr);
+    assert.equal(child.signal,null);
+    assert.match(child.stdout,/retained source error channel PASS/);
+  });
+}

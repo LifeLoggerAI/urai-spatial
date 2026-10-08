@@ -38,6 +38,6 @@
       "sha256": "0744807211f8cd16343fb1a796f53a8f7b7f95d4bd278c48febf657679bf28e6"
     }
   },
-  "change": "Only index.js Promise.all rejection handler and local package identity; upstream source/license/README/types retained.",
+  "change": "Only index.js NodeFs and FSEvents promise rejection handlers and local package identity; original upstream source hashes/license/README/types retained. Retained nonproduction source only; no raw advisory waiver or upstream fixed-release claim.",
   "originalRegistryIntegrity": "sha512-7VT13fmjotKpGipCW9JEQAusEPE+Ei8nl6/g4FBAmIm0GOOLMua9NDDo/DWp0ZAxCr3cPq5ZpBqmPAQgDda2Pw=="
 }

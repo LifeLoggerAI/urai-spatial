@@ -79,13 +79,13 @@
     },
     {
       "path": "vendor/chokidar/UPSTREAM-PROVENANCE.json",
-      "gitBlob": "f97105fff9d6716ad28fe750ac12ea272a894289",
-      "sha256": "e776d4c01bf99fdcdbf47f83d2b48bb8e3e449e9a319263e3331ef412c76c4c8"
+      "gitBlob": "ea1aed265d2d4887f75390f3f27d0c90eb6cc818",
+      "sha256": "a03c6534ee22d6207db1416f795498e4e1f7b157121be8135227859924358524"
     },
     {
       "path": "vendor/chokidar/index.js",
-      "gitBlob": "66bfafd3c15eeafbb61ae4ac45b8c416332757f5",
-      "sha256": "59c723bb84dc14e67bb4d3c4697f4cfdafd5fe071994dfd47eaddf06ce5632c6"
+      "gitBlob": "cc737950c662cb8892192159902871b4d0d6800d",
+      "sha256": "3c38727e7c3d754c9e499181941a6bf745b1090c0eaa5136e5c9ee7820bb8bfb"
     },
     {
       "path": "vendor/chokidar/lib/constants.js",
@@ -115,5 +115,12 @@
   ],
   "rawAdvisory": "GHSA-vfj7-8cjw-p6xm",
   "upstreamFixedVersion": null,
-  "waiver": false
+  "waiver": false,
+  "sourceRepair": {
+    "baseOwner": "e39caebf85814c7677658c3d3785c7aff75eddf4",
+    "scope": "Catch retained FSEvents rejected promises on the existing watcher error channel; fixed64depth and frozen standalone quarantine retained",
+    "productionAcceptance": false,
+    "nativeMacOSAcceptance": false,
+    "rawAdvisoryWaiver": false
+  }
 }

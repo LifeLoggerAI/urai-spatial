@@ -442,7 +442,12 @@ add(paths_, _origAdd, _internal) {
   if (this.options.useFsEvents && this._fsEventsHandler) {
     if (!this._readyCount) this._readyCount = paths.length;
     if (this.options.persistent) this._readyCount += paths.length;
-    paths.forEach((path) => this._fsEventsHandler._addToFsEvents(path));
+    paths.forEach((path) => {
+      this._fsEventsHandler._addToFsEvents(path).catch(error => {
+        // Preserve the existing error channel for bounded FSEvents rejection.
+        if (!this.closed) this._handleError(error);
+      });
+    });
   } else {
     if (!this._readyCount) this._readyCount = 0;
     this._readyCount += paths.length;
