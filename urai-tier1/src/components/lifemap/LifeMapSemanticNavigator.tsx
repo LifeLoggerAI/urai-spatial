@@ -52,7 +52,9 @@ export default function LifeMapSemanticNavigator({ authenticatedUserId = null }:
 
   const withIdentity = useCallback((next: URLSearchParams) => {
     if (explicitDemo) next.set('demo', '1')
-    const manifestId = params.get('manifestId')
+    // A disclosed Home Ascent arrives without a movie query. Bind the existing
+    // demo thread when choosing its memory; never synthesize private authority.
+    const manifestId = params.get('manifestId') || (explicitDemo ? 'replay-recovery-thread' : null)
     if (manifestId) next.set('manifestId', manifestId)
     return next
   }, [explicitDemo, params])
