@@ -72,6 +72,8 @@ jobs:
       - name: Install Chromium
         run: pnpm exec playwright install --with-deps chromium
       - name: Run exact-head browser acceptance
+        env:
+          URAI_EXACT_HEAD: ${{ env.EXACT_HEAD_SHA }}
         run: pnpm exec playwright test tests/location-map-browser-acceptance-v2.spec.ts --fail-on-flaky-tests --config=playwright.config.ts --timeout=120000
       - name: Retain browser evidence
         if: always()

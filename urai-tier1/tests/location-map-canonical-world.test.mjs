@@ -27,6 +27,8 @@ assert.equal(verificationWorkflow.match(/test "\$\(git rev-parse HEAD\)" = "\$EX
 assert.equal(verificationWorkflow.match(/persist-credentials: false/g)?.length, 2, 'Both jobs must discard checkout credentials.')
 assert.equal(verificationWorkflow.match(/pnpm install --frozen-lockfile/g)?.length, 2, 'Both jobs must install frozen dependencies.')
 assert.ok(verificationWorkflow.includes('pnpm exec playwright test tests/location-map-browser-acceptance-v2.spec.ts --fail-on-flaky-tests --config=playwright.config.ts --timeout=120000'), 'Browser proof must retain the strict actual acceptance command.')
+assert.match(verificationWorkflow, /- name: Run exact-head browser acceptance\s*\n\s*env:\s*\n\s*URAI_EXACT_HEAD: \$\{\{ env\.EXACT_HEAD_SHA \}\}\s*\n\s*run:/, 'Browser interaction receipts must receive the checked-out source head instead of the synthetic PR merge SHA.')
+assert.equal(browserAcceptance.match(/exactSha: process\.env\.URAI_EXACT_HEAD \|\| process\.env\.GITHUB_SHA \|\| 'local'/g)?.length, 2, 'Both browser interaction receipts must prefer the supplied source head.')
 assert.ok(verificationWorkflow.includes('name: location-map-browser-acceptance-${{ env.EXACT_HEAD_SHA }}'), 'Retained browser evidence must name the exact source head.')
 for (const strictAssertion of [
   'expect(unexpectedConsoleErrors).toEqual([])',
