@@ -57,6 +57,7 @@ jobs:
           node urai-tier1/tests/privacy-consent-sanctuary-contract.test.mjs 2>&1 | tee privacy-controls-evidence/privacy-contracts.log
           node --test urai-tier1/tests/consent-policy-validation.test.mjs 2>&1 | tee privacy-controls-evidence/consent-policy-validation.log
           node --test apps/functions/test/privacy-policy-fallback.test.js 2>&1 | tee privacy-controls-evidence/privacy-policy-fallback.log
+          node --test apps/functions/test/privacy-consent-worker-lifecycle.test.js 2>&1 | tee privacy-controls-evidence/privacy-consent-worker-lifecycle.log
       - name: Build privacy functions
         shell: bash
         run: |
