@@ -1,7 +1,7 @@
 {
   "baseSha": "ae2ca65a392cbb58d7218b55edfcf698947fb148",
   "oldLockBlob": "7cbe6c7555983a31ebbdb76179b7fbbd0702978c",
-  "candidateLockSha256": "b40b6c6af452335316b1dfd7fc88d0279c09aaabe3651e48728936d31c33c392",
+  "candidateLockSha256": "3616dd16cb26ddbe3a56bf0d0964da2de4bb515a24a9bfaa624ed73fcfb0d6c8",
   "unchangedImporterPaths": [
     "apps/functions",
     "distribution/android-shell",
@@ -60,5 +60,31 @@
     "productionAcceptance": false,
     "providerCallsExecuted": 0
   },
-  "selectedPinPreservation": "Retained original fastq1.20.1 exact integrity and snapshot; current @nodelib/fs.walk1.2.8 declared range remains satisfied"
+  "selectedPinPreservation": "Retained original fastq1.20.1 exact integrity and snapshot; current @nodelib/fs.walk1.2.8 declared range remains satisfied",
+  "nativePatchSerialization": {
+    "correctedNewFileModeHeaders": 2,
+    "patchSha256": "093fcffbf55fd7ebdc8f7de2be6f58cfcc342742b73d1eeb7ca6e73ce9458056",
+    "gitApplyOriginalPackage": "PASS",
+    "scope": "Only unified patch metadata; installed consumer bytes/provenance unchanged"
+  },
+  "actualInstalledPreparation": {
+    "node": "22.23.3",
+    "pnpm": "10.0.0",
+    "frozenOfflineInstall": "PASS",
+    "installedHostPackages": 1094,
+    "downloads": 0,
+    "importers": 7,
+    "installedGraphNodes": 1095,
+    "missingOrOutsideGraphProblems": 0,
+    "affectedIngressNodes": 0,
+    "verifiedFirebaseSourceFiles": 983,
+    "verifiedNextSourceFiles": 56,
+    "actualInstalledConsumerCasesPassed": 11,
+    "actualInstalledExactNextSuitesPassed": 6,
+    "offlineNativeCliVersion": "15.32.1",
+    "offlineNativeCliVersionAndHelp": "PASS",
+    "wholeRepositoryBuildAcceptance": false,
+    "currentCompleteAdvisoryAcceptance": false,
+    "scope": "Actual full importer installation and consumers in isolated authenticated manifest/source context; no whole-repository clean/freeze or successor claim"
+  }
 }

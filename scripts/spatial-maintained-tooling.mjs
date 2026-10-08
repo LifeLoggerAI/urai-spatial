@@ -17,9 +17,12 @@ export function workspaceGraph() {
 export function resolveConsumers() {
   const rootRequire = createRequire(path.join(root, 'package.json'));
   const nextRequire = createRequire(path.join(root, 'urai-tier1/package.json'));
+  // The actual consumer declares eslint-config-next; its plugin is a dependency
+  // of that config rather than a direct application dependency under PNPM.
+  const configRequire = createRequire(nextRequire.resolve('eslint-config-next/package.json'));
   return {
     firebase: path.dirname(rootRequire.resolve('firebase-tools/package.json')),
-    next: path.dirname(nextRequire.resolve('@next/eslint-plugin-next/package.json')),
+    next: path.dirname(configRequire.resolve('@next/eslint-plugin-next/package.json')),
     eslint: nextRequire('eslint'),
   };
 }

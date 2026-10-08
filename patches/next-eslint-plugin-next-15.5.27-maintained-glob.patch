@@ -18,6 +18,7 @@ diff --git a/dist/utils/get-root-dirs.js b/dist/utils/get-root-dirs.js
  var getRootDirs = function(context) {
      var rootDirs = [
 diff --git a/dist/utils/urai-next-root-glob.js b/dist/utils/urai-next-root-glob.js
+new file mode 100644
 --- /dev/null
 +++ b/dist/utils/urai-next-root-glob.js
 @@ -0,0 +1,188 @@
@@ -210,6 +211,7 @@ diff --git a/dist/utils/urai-next-root-glob.js b/dist/utils/urai-next-root-glob.
 +}
 +module.exports = { rootDirectories };
 diff --git a/dist/utils/urai-next-root-glob.LICENSE b/dist/utils/urai-next-root-glob.LICENSE
+new file mode 100644
 --- /dev/null
 +++ b/dist/utils/urai-next-root-glob.LICENSE
 @@ -0,0 +1,21 @@
