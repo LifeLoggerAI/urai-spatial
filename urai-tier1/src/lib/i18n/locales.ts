@@ -1,5 +1,6 @@
 import { URAI_CORE_CATALOGS, URAI_CORE_MESSAGES } from './coreMessages'
 import { URAI_JOURNEY_CATALOGS, URAI_JOURNEY_MESSAGES } from './journeyMessages'
+import { URAI_JOURNEY_CONTROL_CATALOGS, URAI_JOURNEY_CONTROL_MESSAGES } from './journeyControlMessages'
 
 export const URAI_LAUNCH_LOCALES = [
   'en','zh-Hans','hi','es','fr','ar','bn','pt-BR','ru','ur',
@@ -66,6 +67,7 @@ export type UraiMessageDefinition = {
 export const URAI_SOURCE_MESSAGES = {
   ...URAI_CORE_MESSAGES,
   ...URAI_JOURNEY_MESSAGES,
+  ...URAI_JOURNEY_CONTROL_MESSAGES,
   'nav.home': { id:'nav.home', source:'Home', sensitivity:'general', description:'Canonical Home navigation label' },
   'nav.lifeMap': { id:'nav.lifeMap', source:'Life Map', sensitivity:'general', description:'Canonical Life Map navigation label' },
   'nav.focus': { id:'nav.focus', source:'Focus', sensitivity:'general', description:'Canonical Focus navigation label' },
@@ -265,7 +267,7 @@ export const URAI_CATALOGS: Record<UraiLaunchLocale,UraiCatalog> = {
   },
 }
 
-for (const locale of URAI_LAUNCH_LOCALES) Object.assign(URAI_CATALOGS[locale], URAI_CORE_CATALOGS[locale], URAI_JOURNEY_CATALOGS[locale])
+for (const locale of URAI_LAUNCH_LOCALES) Object.assign(URAI_CATALOGS[locale], URAI_CORE_CATALOGS[locale], URAI_JOURNEY_CATALOGS[locale], URAI_JOURNEY_CONTROL_CATALOGS[locale])
 
 export function messageFor(locale: UraiLaunchLocale, id: UraiMessageId) {
   const admittedLocale = runtimeUraiLocale(locale)
@@ -274,11 +276,13 @@ export function messageFor(locale: UraiLaunchLocale, id: UraiMessageId) {
 
 export function localizationCompleteness(locale: UraiLaunchLocale) {
   const total = Object.keys(URAI_SOURCE_MESSAGES).length
-  const translated = Object.keys(URAI_CATALOGS[locale]).length
+  const missingMessageIds = (Object.keys(URAI_SOURCE_MESSAGES) as UraiMessageId[]).filter(id => !URAI_CATALOGS[locale][id]?.trim())
+  const translated = total - missingMessageIds.length
   return {
     locale,
     translated,
     total,
+    missingMessageIds,
     complete: translated === total,
     nativeReviewRequired: !URAI_NATIVE_REVIEWED_LOCALES.has(locale),
   }

@@ -38,6 +38,7 @@ test('locale normalization and RTL rules are bounded to governed launch ids', ()
 test('machine-prepared unreviewed locales stay runtime-fallback and review-required', () => {
   assert.equal(messageFor('fr','nav.home'), 'Home')
   assert.equal(localizationCompleteness('fr').complete, true)
+  assert.deepEqual(localizationCompleteness('fr').missingMessageIds,[])
   assert.equal(localizationCompleteness('fr').nativeReviewRequired, true)
   assert.equal(localizationCompleteness('en').complete, true)
   assert.equal(localizationCompleteness('en').nativeReviewRequired, false)

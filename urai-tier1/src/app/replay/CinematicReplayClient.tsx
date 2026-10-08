@@ -566,18 +566,18 @@ function ReplayMemoryExperience({ memory, memoryStatus, quality }: { memory: Sel
       <JourneyOfflineNotice />
     </section> : null}
     <section className="caption" aria-live="polite"><small>{active?.label ?? 'Replay'}</small><strong>{active?.caption ?? memory.narrator.replay}</strong><span>{active?.narratorLine ?? memory.narrator.replay}</span></section>
-    <section className="memoryTempo" aria-label="Memory time">
+    <section className="memoryTempo" aria-label={locale.text('replay.memoryTime')}>
       <button type="button" className="memoryPulse" onClick={togglePlayback} disabled={!canPlay && !playing} {...locale.props(playing ? 'replay.pause' : 'replay.continue')} aria-label={locale.text(playing ? 'replay.pause' : 'replay.continue')} aria-pressed={playing}>
         <span aria-hidden="true">{playing ? 'Ⅱ' : '›'}</span>{locale.text(playing ? 'replay.pause' : 'replay.continue')}
       </button>
       <span className="memoryTrace" aria-hidden="true"><i style={{ width: `${percent}%` }} /></span>
-      <input className="memorySeek" type="range" min={0} max={duration} step={100} value={progressMs} disabled={video && !videoSnapshot.durationMs} onChange={(event) => seek(Number(event.currentTarget.value))} aria-label={`Move through memory time, ${percent} percent complete`} aria-valuetext={`${replayTimeLabel(progressMs)} of ${replayTimeLabel(duration)}`} />
+      <input className="memorySeek" type="range" min={0} max={duration} step={100} value={progressMs} disabled={video && !videoSnapshot.durationMs} onChange={(event) => seek(Number(event.currentTarget.value))} {...locale.props('replay.seekTime')} aria-label={locale.text('replay.seekTime',{percent:new Intl.NumberFormat(locale.props('replay.seekTime').lang).format(percent)})} aria-valuetext={locale.text('replay.timeValue',{elapsed:replayTimeLabel(progressMs),duration:replayTimeLabel(duration)})} />
       <output className="srOnly">{percent}% through memory</output>
       {video ? <button className="memoryAudio" type="button" disabled={!videoSnapshot.audioAllowed} onClick={() => videoSession.current?.setMuted(!videoSnapshot.muted)} aria-label={!videoSnapshot.audioAllowed ? 'Recorded audio is off while low stimulation is on' : videoSnapshot.muted ? 'Enable recorded audio' : 'Mute recorded audio'} aria-pressed={!videoSnapshot.muted}>{!videoSnapshot.audioAllowed ? 'Audio off: low stimulation' : videoSnapshot.muted ? 'Enable audio' : 'Mute audio'}</button> : null}
     </section>
     <ReplayProductControls memory={memory} />
     {lifeModelAuthority.available ? <ReplayPersonPresence people={lifeModelAuthority.people} sceneTruthPacketId={lifeModelAuthority.sceneTruthPacketId} /> : null}
-    {memory.replayManifest.transcript ? <details className="transcript"><summary>Transcript</summary><p>{memory.replayManifest.transcript}</p></details> : null}
+    {memory.replayManifest.transcript ? <details className="transcript"><summary {...locale.props('replay.transcript')}>{locale.text('replay.transcript')}</summary><p dir="auto">{memory.replayManifest.transcript}</p></details> : null}
     <style>{replayCss}</style>
   </main>
 }
@@ -592,7 +592,7 @@ function ReplayMemoryHorizon({ memoryStatus, message, quality }: { memoryStatus:
       {webgl.state === 'ready' ? <ReplayCanvasBoundary key={webgl.attempt} onFailure={webgl.fail}><Canvas className="replaySpatialCanvas" dpr={[1, quality.pixelRatioMax]} frameloop={quality.documentVisible ? (quality.reducedMotion ? 'demand' : 'always') : 'never'} camera={{ position: [0, 0.42, 8.4], fov: 46, near: 0.05, far: 120 }} gl={{ antialias: quality.antialias, powerPreference: 'high-performance' }} onCreated={({ gl }) => gl.domElement.addEventListener('webglcontextlost', (event) => { event.preventDefault(); webgl.fail() }, { once: true })}>
         <ReplayNeutralSpatialScene />
       </Canvas></ReplayCanvasBoundary> : null}
-      <section role={memoryStatus === 'loading' ? 'status' : 'region'} aria-label="Replay memory horizon"><p {...locale.props(memoryStatus === 'loading' ? 'replay.opening' : 'replay.horizon')}>{locale.text(memoryStatus === 'loading' ? 'replay.opening' : 'replay.horizon')}</p><h1 {...locale.props(memoryStatus === 'loading' ? 'replay.comingIntoView' : 'replay.choosePrompt')} style={{overflowWrap:'anywhere'}}>{locale.text(memoryStatus === 'loading' ? 'replay.comingIntoView' : 'replay.choosePrompt')}</h1><span>{message}</span><JourneyOfflineNotice />{memoryStatus === 'loading' ? null : <button type="button" onClick={chooseMemory} {...locale.props('replay.chooseMemory')}>{locale.text('replay.chooseMemory')}</button>}{webgl.state !== 'ready' && webgl.state !== 'checking' ? <span role="status">Spatial view unavailable. Memory selection remains accessible.</span> : null}</section>
+      <section role={memoryStatus === 'loading' ? 'status' : 'region'} aria-label="Replay memory horizon"><p {...locale.props(memoryStatus === 'loading' ? 'replay.opening' : 'replay.horizon')}>{locale.text(memoryStatus === 'loading' ? 'replay.opening' : 'replay.horizon')}</p><h1 {...locale.props(memoryStatus === 'loading' ? 'replay.comingIntoView' : 'replay.choosePrompt')} style={{overflowWrap:'anywhere'}}>{locale.text(memoryStatus === 'loading' ? 'replay.comingIntoView' : 'replay.choosePrompt')}</h1><span>{message}</span><JourneyOfflineNotice />{memoryStatus === 'loading' ? null : <button type="button" onClick={chooseMemory} {...locale.props('replay.chooseMemory')}>{locale.text('replay.chooseMemory')}</button>}{webgl.state !== 'ready' && webgl.state !== 'checking' ? <span role="status" {...locale.props('replay.selectionAccessible')}>{locale.text('replay.selectionAccessible')}</span> : null}</section>
       <style>{stateCss}</style>
     </main>
   )
