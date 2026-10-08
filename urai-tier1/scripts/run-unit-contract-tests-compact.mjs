@@ -12,6 +12,7 @@ const tests = [
   'tests/lifemap-demo-journey-identity.test.mjs',
   'tests/lifemap-data-boundary.test.mjs',
   'tests/lifemap-semantic-owner-contract.test.mjs',
+  'tests/lifemap-founder-harness-contract.test.mjs',
   'tests/lifemap-quiet-reset-identity-contract.test.mjs',
   'tests/manual-emotional-weather-session.test.mjs',
   '../scripts/simulation/run-v10-scenario.test.mjs',

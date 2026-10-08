@@ -3,6 +3,8 @@ import fs from 'node:fs'
 import path from 'node:path'
 import test from 'node:test'
 import { fileURLToPath } from 'node:url'
+import { URAI_LAUNCH_LOCALES, URAI_SOURCE_MESSAGES } from '../src/lib/i18n/locales.ts'
+import { localizedMessage } from '../src/lib/i18n/localePreference.ts'
 
 const testDirectory = path.dirname(fileURLToPath(import.meta.url))
 const read = (relativePath) => fs.readFileSync(path.resolve(testDirectory, '..', relativePath), 'utf8')
@@ -126,6 +128,14 @@ test('accessibility and performance implementation contracts are present', () =>
   requireText(routeOwnerCss, 'max-height: 100svh !important;')
   requireText(focus, "aria-label={locale.locale === 'en' ? locale.text('focus.openReplayFor', {title:memory.title}) : locale.text('focus.enterReplay')}")
   requireText(read('src/lib/i18n/journeyControlMessages.ts'), '"focus.openReplayFor": {id:"focus.openReplayFor",source:"Open Replay for {title}"')
+  assert.equal(URAI_SOURCE_MESSAGES['focus.openReplayFor'].source, 'Open Replay for {title}')
+  for (const requested of URAI_LAUNCH_LOCALES) {
+    const label = localizedMessage({ requested, preview: false }, 'focus.openReplayFor', { title: 'Synthetic owned memory' })
+    assert.equal(label.text, 'Open Replay for Synthetic owned memory')
+    assert.equal(label.locale, 'en')
+    assert.equal(label.direction, 'ltr')
+    assert.equal(label.preview, false)
+  }
   assert.equal(focus.includes('min-height:44px'), false, 'Focus controls must not retain 44px minimum targets')
   requireText(focus, 'min-height:48px')
   requireText(focus, 'env(safe-area-inset-left)')

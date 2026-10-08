@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import path from 'node:path'
 import test from 'node:test'
+import { URAI_SOURCE_MESSAGES } from '../src/lib/i18n/locales.ts'
 
 const root = process.cwd()
 const read = (relativePath) => fs.readFileSync(path.join(root, relativePath), 'utf8')
@@ -30,7 +31,9 @@ test('Life Map route uses one canonical R3F private-universe owner chain', () =>
   assert.equal((scene.match(/<Canvas\b/g) || []).length, 1)
   assert.match(navigator, /aria-label=\{locale.locale === 'en' \? 'Search and navigate Life Map'/)
   assert.match(navigator, /aria-expanded=\{open\}/)
-  assert.match(navigator, /className="life-map-navigator" aria-label="Search and filter Life Map"/)
+  assert.match(navigator, /className="life-map-navigator" aria-labelledby="life-map-navigator-label"/)
+  assert.match(navigator, /id="life-map-navigator-label"[^>]*locale.props\('lifeMap.searchRegion'\)[^>]*>\{locale.text\('lifeMap.searchRegion'\)\}/)
+  assert.equal(URAI_SOURCE_MESSAGES['lifeMap.searchRegion'].source, 'Search and filter Life Map')
   assert.match(scene, /data-testid="urai-true-3d-life-map"/)
 })
 

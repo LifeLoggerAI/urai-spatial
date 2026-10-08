@@ -476,8 +476,13 @@ async function selectQuietReset(page, options = {}) {
   if (trigger.ariaLabel !== 'Search and navigate Life Map') throw new Error(`Life Map search trigger semantic label drifted: ${trigger.ariaLabel}`)
   await activateCanonicalControl(page, triggerSelector, trigger, options.touch ? 'touch' : options.keyboard ? 'keyboard' : 'pointer')
 
-  const navigatorSelector = 'section.life-map-navigator[aria-label="Search and filter Life Map"]'
-  await poll('canonical Life Map semantic navigator', () => page.evaluate((selector) => Boolean(document.querySelector(selector)), navigatorSelector), Boolean, 20_000, 50)
+  const navigatorSelector = 'section.life-map-navigator[aria-labelledby="life-map-navigator-label"]'
+  await poll('canonical Life Map semantic navigator', () => page.evaluate((selector) => {
+    const region = document.querySelector(selector)
+    const labelId = region?.getAttribute('aria-labelledby')
+    const label = labelId ? document.getElementById(labelId) : null
+    return Boolean(region && label && region.contains(label) && label.textContent === 'Search and filter Life Map')
+  }, navigatorSelector), Boolean, 20_000, 50)
 
   const resultSelector = `${navigatorSelector} button[data-life-map-semantic-result][data-life-map-node-id="quiet-reset"]`
   const result = await canonicalControlGeometry(page, resultSelector, 'canonical Quiet Reset semantic result')
