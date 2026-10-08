@@ -19,8 +19,12 @@ const consentPolicyAuthority = loadSource('apps/functions/src/consentPolicyAutho
 const consentModel = loadSource('urai-tier1/src/app/privacy-controls/consentModel.ts', {})
 function canonicalProviderPolicy(uid) {
   const policy = JSON.parse(JSON.stringify(consentModel.defaultConsentPolicy(uid)))
-  policy.domains.models.mode = 'granted'
-  policy.domains.models.modelContext = true
+  // Preserve the current owner's models-only grant without recreating its canonical shape.
+  for (const [domain, settings] of Object.entries(policy.domains)) {
+    settings.mode = domain === 'models' ? 'granted' : 'denied'
+    settings.retentionDays = null
+    for (const key of Object.keys(settings)) if (typeof settings[key] === 'boolean') settings[key] = domain === 'models' && key === 'modelContext'
+  }
   assert.equal(consentPolicyAuthority.isCanonicalStoredPolicy(policy, uid), true, 'positive reservation fixture executes actual canonical owner consent')
   return policy
 }
@@ -33,7 +37,7 @@ function loadSource(relativePath, dependencies, globals = {}) {
   const emitted = ts.transpileModule(source, { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS, esModuleInterop: true } }).outputText
   const module = { exports: {} }
   const require = (id) => Object.hasOwn(dependencies, id) ? dependencies[id] : localRequire(id)
-  const context = vm.createContext({ Buffer, TextEncoder, TextDecoder, AbortController, URL, Response, setTimeout, clearTimeout, process: { env: globals.env || {} }, crypto: webcrypto, ...globals })
+  const context = vm.createContext({ Buffer, TextEncoder, TextDecoder, AbortController, AbortSignal, DOMException, URL, Response, setTimeout, clearTimeout, process: { env: globals.env || {} }, crypto: webcrypto, ...globals })
   const wrapper = new vm.Script(`(function(require, module, exports) { ${emitted}\n})`, { filename }).runInContext(context)
   wrapper(require, module, module.exports)
   return module.exports
@@ -418,10 +422,23 @@ test('canonical whitespace and context field ordering cannot create a second ide
 
 function client(fetch) {
   const auth = { currentUser: { uid: 'alice', getIdToken: async () => 'alice' } }
+  const observers = new Set()
+  const sdk = { getAuth: () => auth, onIdTokenChanged: (_auth, next, error) => {
+    const observer = { next, error }, initial = auth.currentUser
+    observers.add(observer)
+    queueMicrotask(() => { if (observers.has(observer)) next(initial) })
+    return () => observers.delete(observer)
+  } }
+  const firebase = { app: {}, firebasePublicEnvReady: true }
+  const authority = loadSource('urai-tier1/src/lib/privacy/aiActorBoundary.ts', {
+    'firebase/auth': sdk,
+    '@/lib/firebase/client': firebase,
+  })
   return loadSource('urai-tier1/src/spatial/orb/openaiClient.ts', {
     '@/lib/orb-companion-contract': { buildOrbCompanionResponse: () => ({ reply: 'synthetic local fallback' }) },
-    'firebase/auth': { getAuth: () => auth },
-    '@/lib/firebase/client': { app: {}, firebasePublicEnvReady: true },
+    'firebase/auth': sdk,
+    '@/lib/firebase/client': firebase,
+    '@/lib/privacy/aiActorBoundary': authority,
     '@/lib/clientApiUrl': { clientApiUrl: (value) => value },
     '@/lib/i18n/localePreference': { currentSpeechTag: () => 'en-US' },
     '@/lib/i18n/contentLanguage': loadSource('packages/localization/src/contentLanguage.ts', {}),

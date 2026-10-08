@@ -18,7 +18,7 @@ function sourceModule(path, require, globals = {}) {
   const module = { exports: {} }
   vm.runInNewContext(outputText, {
     exports: module.exports, module, require,
-    AbortController, Buffer, TextEncoder, TextDecoder, Response,
+    AbortController, AbortSignal, DOMException, Buffer, TextEncoder, TextDecoder, Response,
     setTimeout, clearTimeout, Date, console,
     ...globals,
   }, { filename: path })
@@ -33,11 +33,25 @@ const doneEvent = (locale, message = 'Synthetic response') => ({
 function clientFixture({ initialLocale = 'en-US', events, getToken = async () => 'synthetic-token', user = true } = {}) {
   let currentLocale = initialLocale
   const auth = { currentUser: user ? { uid: 'synthetic-owner', getIdToken: getToken } : null }
+  const observers = new Set()
+  const sdk = { getAuth: () => auth, onIdTokenChanged: (_auth, next, error) => {
+    const observer = { next, error }, initial = auth.currentUser
+    observers.add(observer)
+    queueMicrotask(() => { if (observers.has(observer)) next(initial) })
+    return () => observers.delete(observer)
+  } }
+  const firebase = { app: {}, firebasePublicEnvReady: true }
+  const authority = sourceModule('../src/lib/privacy/aiActorBoundary.ts', id => {
+    if (id === 'firebase/auth') return sdk
+    if (id === '@/lib/firebase/client') return firebase
+    throw new Error(`Unexpected actor dependency ${id}`)
+  })
   const calls = []
   const client = sourceModule('../src/spatial/orb/openaiClient.ts', (id) => {
     if (id === '@/lib/orb-companion-contract') return { buildOrbCompanionResponse: () => ({ reply: 'Canonical English fallback.' }) }
-    if (id === 'firebase/auth') return { getAuth: () => auth }
-    if (id === '@/lib/firebase/client') return { app: {}, firebasePublicEnvReady: true }
+    if (id === 'firebase/auth') return sdk
+    if (id === '@/lib/firebase/client') return firebase
+    if (id === '@/lib/privacy/aiActorBoundary') return authority
     if (id === '@/lib/clientApiUrl') return { clientApiUrl: path => path }
     if (id === '@/lib/i18n/localePreference') return { currentSpeechTag: () => currentLocale }
     if (id === '@/lib/i18n/contentLanguage') return { contentLanguage }
@@ -55,7 +69,12 @@ function clientFixture({ initialLocale = 'en-US', events, getToken = async () =>
     message: 'Synthetic user question', context: [], aiProcessingConsent: true,
     signal: new AbortController().signal, ...input,
   })
-  return { client, calls, request, changeLocale: value => { currentLocale = value } }
+  return { client, calls, request, authority, actorObserverCount: () => observers.size,
+    changeLocale: value => { currentLocale = value },
+    changeActor: value => {
+      auth.currentUser = value
+      for (const observer of [...observers]) queueMicrotask(() => { if (observers.has(observer)) observer.next(value) })
+    } }
 }
 
 const unexpectedConsentDependency = id => { throw new Error(`Unexpected canonical consent dependency ${id}`) }
@@ -241,7 +260,9 @@ test('canonical English fallback and legacy English streams retain truthful Engl
 })
 
 test('actual Council fallback satisfies the shared response type with authored English metadata', () => {
+  const authority = clientFixture({ user: false }).authority
   const client = sourceModule('../src/spatial/council/councilClient.ts', id => {
+    if (id === '@/lib/privacy/aiActorBoundary') return authority
     if (id === '@/lib/orb-companion-contract') return { buildOrbCompanionResponse: () => ({ reply: 'Canonical English Council fallback.' }) }
     if (id === 'firebase/auth') return { getAuth: () => ({ currentUser: null }) }
     if (id === '@/lib/firebase/client') return { app: {}, firebasePublicEnvReady: true }
@@ -335,30 +356,44 @@ test('server rejects missing/wrong output language or different caption without 
 })
 
 function panelFixture(locale, live = true) {
-  let cursor = 0
-  const hooks = []
-  const voiceCalls = []
-  const requestCalls = []
-  const clients = clientFixture({ initialLocale: locale }).client
+  // Simulated hooks execute the actual returned keyed child and its cleanups.
+  let cursor = 0, hooks = [], childKey, storeOff, voiceStops = 0
+  const voiceCalls = [], narratorConsents = [], requestCalls = [], windowListeners = new Map()
+  const f = clientFixture({ initialLocale: locale }), clients = f.client
+  const sameDeps = (a, b) => Boolean(a && b && a.length === b.length && a.every((value, index) => value === b[index]))
   const react = {
     useState(initial) {
       const index = cursor++
-      if (!(index in hooks)) hooks[index] = initial
-      return [hooks[index], value => { hooks[index] = typeof value === 'function' ? value(hooks[index]) : value }]
+      hooks[index] ??= { kind: 'state', value: typeof initial === 'function' ? initial() : initial }
+      const cell = hooks[index]
+      return [cell.value, value => { cell.value = typeof value === 'function' ? value(cell.value) : value }]
     },
-    useRef(initial) { const index = cursor++; return hooks[index] ??= { current: initial } },
-    useEffect() {}, useCallback: callback => callback,
+    useRef(initial) { const index = cursor++; return hooks[index] ??= { kind: 'ref', current: initial } },
+    useCallback(callback, deps) {
+      const index = cursor++, prior = hooks[index]
+      if (!prior || !sameDeps(prior.deps, deps)) hooks[index] = { kind: 'callback', callback, deps }
+      return hooks[index].callback
+    },
+    useEffect(effect, deps) {
+      const index = cursor++, prior = hooks[index]
+      if (!prior || !sameDeps(prior.deps, deps)) hooks[index] = { kind: 'effect', effect, deps, cleanup: prior?.cleanup, pending: true }
+    },
+    useSyncExternalStore(subscribe, getSnapshot) {
+      if (!storeOff) storeOff = subscribe(() => render())
+      return getSnapshot()
+    },
   }
-  const jsx = (type, props) => ({ type, props })
+  const jsx = (type, props, key) => ({ type, props, key })
   const panel = sourceModule('../src/spatial/orb/OrbConversationPanel.tsx', id => {
     if (id === 'react') return react
     if (id === 'react/jsx-runtime') return { jsx, jsxs: jsx }
+    if (id === '@/lib/privacy/aiActorBoundary') return f.authority
     if (id === '@/app/home/orbStateController') return { publishOrbState() {} }
     if (id === '@/spatial/narrator/elevenlabsClient') return { requestExternalVoiceAudio() { throw new Error('External voice must be mocked at playback') } }
     if (id === '@/spatial/narrator/narratorCopy') return { URAI_VOICE_CONFIG: { neutral: { voiceId: 'synthetic-voice' } } }
-    if (id === '@/spatial/narrator/narratorPlayback') return { narratorPlayback: { setExternalVoiceConsent() {} } }
-    if (id === '@/spatial/accessibility/SensorySafeRuntime') return { sensorySafeEnabled: () => false }
-    if (id === './orbVoicePlayback') return { OrbVoicePlayback: class { stop() {} async play(...args) { voiceCalls.push(args) } } }
+    if (id === '@/spatial/narrator/narratorPlayback') return { narratorPlayback: { setExternalVoiceConsent: value => narratorConsents.push(value) } }
+    if (id === '@/spatial/accessibility/SensorySafeRuntime') return { sensorySafeEnabled: () => false, URAI_SENSORY_SAFE_STORAGE_KEY: 'urai:sensory-safe:enabled-v1', URAI_SENSORY_SAFE_EVENT: 'urai:sensory-safe-changed' }
+    if (id === './orbVoicePlayback') return { OrbVoicePlayback: class { stop() { voiceStops++ } async play(...args) { voiceCalls.push(args) } } }
     if (id === './OrbConversationPanel.module.css') return { default: {} }
     if (id === '@/lib/i18n/localePreference') return { currentSpeechTag: () => locale }
     if (id === '@/lib/i18n/contentLanguage') return { contentLanguageProps }
@@ -373,10 +408,22 @@ function panelFixture(locale, live = true) {
     }
     throw new Error(`Unexpected panel dependency ${id}`)
   }, {
-    window: { setTimeout: () => 1, clearTimeout() {}, dispatchEvent() {} },
+    window: { setTimeout: () => 1, clearTimeout() {}, dispatchEvent() {},
+      addEventListener: (name, fn) => { if (!windowListeners.has(name)) windowListeners.set(name, new Set()); windowListeners.get(name).add(fn) },
+      removeEventListener: (name, fn) => windowListeners.get(name)?.delete(fn) },
     CustomEvent: class { constructor(type, options) { this.type = type; this.detail = options.detail } },
   }).default
-  const render = () => { cursor = 0; return panel({ active: true }) }
+  const clearChild = () => { for (const hook of hooks) if (hook?.kind === 'effect') hook.cleanup?.() }
+  function render() {
+    const node = panel({ active: true })
+    if (node.key !== childKey) { clearChild(); childKey = node.key; hooks = [] }
+    cursor = 0
+    const tree = node.type(node.props)
+    for (const hook of hooks) if (hook?.kind === 'effect' && hook.pending) {
+      hook.cleanup?.(); hook.cleanup = hook.effect(); hook.pending = false
+    }
+    return tree
+  }
   function descendants(node) {
     if (!node || typeof node !== 'object') return []
     if (Array.isArray(node)) return node.flatMap(descendants)
@@ -388,7 +435,11 @@ function panelFixture(locale, live = true) {
     elements().find(node => node.type === 'input' && node.props.type === 'checkbox').props.onChange({ target: { checked: true } })
     await elements().find(node => node.type === 'form').props.onSubmit({ preventDefault() {} })
   }
-  return { submit, elements, voiceCalls, requestCalls }
+  return { submit, elements, voiceCalls, requestCalls, narratorConsents,
+    voiceStops: () => voiceStops, actorObserverCount: f.actorObserverCount,
+    changeActor: () => f.changeActor({ uid: 'synthetic-next-owner', getIdToken: async () => 'synthetic-next-token' }),
+    unmount: () => { clearChild(); storeOff?.(); storeOff = undefined },
+  }
 }
 
 test('actual Orb panel labels foreign response direction and replays in its captured language', async () => {
@@ -407,6 +458,11 @@ test('actual Orb panel labels foreign response direction and replays in its capt
     const disclosure = f.elements().find(node => node.type === 'small')
     assert.equal(disclosure.props.lang, 'en')
     assert.equal(disclosure.props.dir, 'ltr')
+    f.changeActor(); await new Promise(resolve => setImmediate(resolve))
+    assert.equal(f.elements().some(node => node.type === 'p' && node.props.children === 'Synthetic localized response'), false)
+    assert.ok(f.voiceStops() > 0)
+    assert.equal(f.narratorConsents.at(-1), false)
+    f.unmount(); assert.equal(f.actorObserverCount(), 0)
   }
 })
 
@@ -420,4 +476,6 @@ test('actual Orb panel resets a foreign request to English when it shows and rep
   assert.equal(f.voiceCalls[0][2], 'en-US')
   f.elements().find(node => node.type === 'button' && node.props.children === 'Replay').props.onClick()
   assert.equal(f.voiceCalls.at(-1)[2], 'en-US')
+  f.unmount(); assert.equal(f.actorObserverCount(), 0)
+  assert.ok(f.voiceStops() > 0)
 })

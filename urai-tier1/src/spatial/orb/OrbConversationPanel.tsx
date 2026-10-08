@@ -1,6 +1,7 @@
 'use client'
 
-import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react'
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore, type FormEvent } from 'react'
+import { getAIActorSnapshot, getServerAIActorSnapshot, isCurrentAIActorSnapshot, subscribeAIActor, type AIActorSnapshot } from '@/lib/privacy/aiActorBoundary'
 import { publishOrbState } from '@/app/home/orbStateController'
 import { requestExternalVoiceAudio } from '@/spatial/narrator/elevenlabsClient'
 import { URAI_VOICE_CONFIG } from '@/spatial/narrator/narratorCopy'
@@ -27,6 +28,11 @@ function emitAudioCue(cue: 'orb-confirm' | 'error') {
 }
 
 export default function OrbConversationPanel({ active = true }: { active?: boolean }) {
+  const actor = useSyncExternalStore(subscribeAIActor, getAIActorSnapshot, getServerAIActorSnapshot)
+  return <ActorBoundOrbConversationPanel key={actor.generation} active={active} actor={actor} />
+}
+
+function ActorBoundOrbConversationPanel({ active, actor }: { active: boolean; actor: AIActorSnapshot }) {
   const [message, setMessage] = useState('')
   const [history, setHistory] = useState<OrbConversationMessage[]>([])
   const [result, setResult] = useState<OrbProviderResult | null>(null)
@@ -63,6 +69,18 @@ export default function OrbConversationPanel({ active = true }: { active?: boole
     setVoicePhase('idle')
   }, [])
 
+  useEffect(() => {
+    const unsubscribe = subscribeAIActor(() => {
+      if (!isCurrentAIActorSnapshot(actor)) {
+        aborter.current?.abort(); aborter.current = null
+        voicePreferences.current.externalConsent = false
+        narratorPlayback.setExternalVoiceConsent(false)
+        stopVoice()
+      }
+    })
+    return unsubscribe
+  }, [actor, stopVoice])
+
   const muteVoiceForComfort = useCallback(() => {
     voicePreferences.current.muted = true
     setVoiceMuted(true)
@@ -97,6 +115,7 @@ export default function OrbConversationPanel({ active = true }: { active?: boole
   }
 
   const playDeviceVoice = (text: string, locale = 'en-US') => {
+    if (!isCurrentAIActorSnapshot(actor)) return
     if (sensorySafeEnabled() || voicePreferences.current.sensorySafe) {
       muteVoiceForComfort()
       return
@@ -105,6 +124,7 @@ export default function OrbConversationPanel({ active = true }: { active?: boole
   }
 
   const speakOrbResponse = async (text: string, locale: string) => {
+    if (!isCurrentAIActorSnapshot(actor)) return
     if (sensorySafeEnabled() || voicePreferences.current.sensorySafe) {
       muteVoiceForComfort()
       return
@@ -165,6 +185,7 @@ export default function OrbConversationPanel({ active = true }: { active?: boole
 
   const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
+    if (!isCurrentAIActorSnapshot(actor)) return
     const trimmed = message.trim()
     if (!trimmed || busy || !active) return
     if (!aiConsent) {
@@ -193,7 +214,7 @@ export default function OrbConversationPanel({ active = true }: { active?: boole
         locale: requestedLocale,
         signal: controller.signal,
         onEvent: (providerEvent) => {
-          if (controller.signal.aborted || aborter.current !== controller) return
+          if (controller.signal.aborted || aborter.current !== controller || !isCurrentAIActorSnapshot(actor)) return
           if (providerEvent.type === 'delta') {
             setStreamedText((current) => current + providerEvent.text)
           } else if (providerEvent.type === 'status') {
@@ -202,7 +223,7 @@ export default function OrbConversationPanel({ active = true }: { active?: boole
           }
         },
       })
-      if (controller.signal.aborted || aborter.current !== controller) return
+      if (controller.signal.aborted || aborter.current !== controller || !isCurrentAIActorSnapshot(actor)) return
 
       const resolved = liveResult ?? deterministicOrbFallback(trimmed)
       setResult(resolved)
@@ -224,7 +245,7 @@ export default function OrbConversationPanel({ active = true }: { active?: boole
         else playDeviceVoice(resolved.message, resolved.locale)
       }
     } catch (error) {
-      if (controller.signal.aborted || aborter.current !== controller) return
+      if (controller.signal.aborted || aborter.current !== controller || !isCurrentAIActorSnapshot(actor)) return
       const fallback = error instanceof OrbProviderAttemptError
         ? attemptedExternalOrbFallback(trimmed)
         : error instanceof OrbProviderAttemptUncertainError
@@ -242,8 +263,8 @@ export default function OrbConversationPanel({ active = true }: { active?: boole
       emitAudioCue('error')
       if (!voicePreferences.current.muted) playDeviceVoice(fallback.message, fallback.locale)
     } finally {
+      if (!controller.signal.aborted && aborter.current === controller && isCurrentAIActorSnapshot(actor)) setBusy(false)
       if (aborter.current === controller) aborter.current = null
-      if (!controller.signal.aborted) setBusy(false)
     }
   }
 
@@ -311,7 +332,8 @@ export default function OrbConversationPanel({ active = true }: { active?: boole
               type="button"
               aria-pressed={!voiceMuted}
               onClick={() => {
-                if (sensorySafeEnabled() || voicePreferences.current.sensorySafe) {
+                if (!isCurrentAIActorSnapshot(actor)) return
+    if (sensorySafeEnabled() || voicePreferences.current.sensorySafe) {
                   muteVoiceForComfort()
                   return
                 }
