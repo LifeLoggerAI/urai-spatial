@@ -511,6 +511,70 @@ for (const profile of [
         await attachPlacement(page, info, `xr-comfort-${profile.width}x${profile.height}`, accessible)
       }
       if (slot === 'possible-futures-controls') {
+        const paint = await page.getByTestId('urai-possible-futures').evaluate(world => {
+          const runtime = world.closest('.urai-world-runtime')
+          const atmosphere = runtime?.querySelector(':scope > .urai-world-atmosphere')
+          const caption = world.querySelector('footer > span:last-child')
+          const launcher = world.querySelector('[data-urai-adam-launcher]')
+          const zIndex = (node: Element | null | undefined) => node ? Number(getComputedStyle(node).zIndex) : Number.NaN
+          const pseudoLayers = [{ owner: 'runtime', node: runtime }, { owner: 'world', node: world }].flatMap(({ owner, node }) => ['::before', '::after'].map(pseudo => {
+            const style = node ? getComputedStyle(node, pseudo) : null
+            return { owner, pseudo, content: style?.content ?? null, display: style?.display ?? null, visibility: style?.visibility ?? null, opacity: Number(style?.opacity), position: style?.position ?? null, zIndex: Number(style?.zIndex) }
+          }))
+          const ancestorOpacities: number[] = []
+          for (let node: Element | null = world; node; node = node.parentElement) ancestorOpacities.push(Number(getComputedStyle(node).opacity))
+          const rgba = (value: string) => {
+            const values = value.match(/[\d.]+/g)?.map(Number) ?? []
+            return { rgb: values.slice(0, 3), alpha: values[3] ?? 1 }
+          }
+          const luminance = (rgb: number[]) => rgb.map(channel => {
+            const value = channel / 255
+            return value <= 0.04045 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4
+          }).reduce((sum, value, index) => sum + value * [0.2126, 0.7152, 0.0722][index], 0)
+          const worldStyle = getComputedStyle(world)
+          const background = rgba(worldStyle.backgroundColor)
+          const captionStyle = caption ? getComputedStyle(caption) : null
+          const foreground = rgba(captionStyle?.color ?? '')
+          const alpha = foreground.alpha * Number(captionStyle?.opacity)
+          const composite = foreground.rgb.map((channel, index) => channel * alpha + background.rgb[index] * (1 - alpha))
+          const foregroundLuminance = luminance(composite), backgroundLuminance = luminance(background.rgb)
+          return {
+            ownership: { runtimeContainsWorld: Boolean(runtime?.contains(world)), worldContainsLauncher: Boolean(launcher && world.contains(launcher)), atmosphereOwnedByRuntime: atmosphere?.parentElement === runtime },
+            isolation: { runtime: runtime ? getComputedStyle(runtime).isolation : null, atmosphere: atmosphere ? getComputedStyle(atmosphere).isolation : null },
+            stacking: { runtime: zIndex(runtime), world: zIndex(world), atmosphere: zIndex(atmosphere) },
+            worldPosition: worldStyle.position, backgroundAlpha: background.alpha, ancestorOpacities, pseudoLayers,
+            caption: { text: caption?.textContent?.trim() ?? '', opacity: Number(captionStyle?.opacity), foregroundAlpha: foreground.alpha, contrast: (Math.max(foregroundLuminance, backgroundLuminance) + 0.05) / (Math.min(foregroundLuminance, backgroundLuminance) + 0.05) },
+            contrastBasis: 'Source RGBA composited over the opaque scene background; literal after-image inspection remains independently required',
+          }
+        })
+        expect(paint.ownership.runtimeContainsWorld, 'The actual Possible Futures scene must be owned by the runtime').toBe(true)
+        expect(paint.ownership.worldContainsLauncher, 'The actual Possible Futures scene must own its launcher').toBe(true)
+        expect(paint.ownership.atmosphereOwnedByRuntime, 'The measured atmosphere must belong to that runtime').toBe(true)
+        expect(paint.isolation.runtime).toBe('isolate')
+        expect(paint.isolation.atmosphere).toBe('isolate')
+        for (const [label, value] of Object.entries(paint.stacking)) expect(Number.isFinite(value), `${label} stacking must be explicit`).toBe(true)
+        expect(paint.worldPosition, 'Scene stacking must apply to a positioned element').not.toBe('static')
+        expect(paint.stacking.runtime, 'The full scene must not be dimmed by the global atmosphere').toBeGreaterThan(paint.stacking.atmosphere)
+        expect(paint.stacking.world, 'Possible Futures controls must paint above the isolated atmosphere').toBeGreaterThan(paint.stacking.atmosphere)
+        for (const layer of paint.pseudoLayers) {
+          const label = `${layer.owner}${layer.pseudo}`
+          expect(layer.content, `${label} requires actual computed pseudo-element evidence`).not.toBeNull()
+          expect(Number.isFinite(layer.opacity), `${label} opacity must be known`).toBe(true)
+          expect(layer.opacity).toBeGreaterThanOrEqual(0)
+          expect(layer.opacity).toBeLessThanOrEqual(1)
+          const generated = layer.content !== 'none' && layer.content !== 'normal'
+          const visible = generated && layer.display !== 'none' && layer.visibility === 'visible' && layer.opacity > 0
+          if (!visible) continue
+          expect(Number.isFinite(layer.zIndex), `${label} visible stacking must be explicit`).toBe(true)
+          expect(layer.position, `${label} visible stacking requires a positioned layer`).not.toBe('static')
+          if (layer.owner === 'runtime') expect(paint.stacking.world, `${label} must paint behind the complete Possible Futures scene`).toBeGreaterThan(layer.zIndex)
+        }
+        expect(paint.ancestorOpacities.every(value => value === 1), 'Possible Futures cannot be faded by an ancestor').toBe(true)
+        expect(paint.backgroundAlpha).toBe(1)
+        expect(paint.caption.text.length, 'The real horizon/scenario caption must be present').toBeGreaterThan(0)
+        expect(paint.caption.foregroundAlpha).toBe(1)
+        expect(paint.caption.contrast, 'The horizon/scenario caption must retain at least 4.5:1 contrast on the scene background').toBeGreaterThanOrEqual(4.5)
+        await info.attach(`possible-futures-paint-${profile.width}x${profile.height}.json`, { body: JSON.stringify(paint), contentType: 'application/json' })
         if (!profile.noWebGL) await expect(page.getByTestId('possible-futures-canvas')).toHaveAttribute('data-render-cadence', 'reduced-motion-demand')
         const question = page.getByRole('textbox', { name: 'What do you want to explore?', exact: true })
         await question.scrollIntoViewIfNeeded()
