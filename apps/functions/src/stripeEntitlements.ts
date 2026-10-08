@@ -439,7 +439,7 @@ export const createStripeCheckout = functions.https.onRequest(async (req, res) =
     res.status(401).json({ error: 'Unauthorized' })
     return
   }
-  if (price.id !== priceId || price.active !== true || price.livemode !== (mode === 'production')) {
+  if (price.id !== priceId || price.active !== true || price.livemode !== false) {
     res.status(500).json({ error: 'Configured Stripe Price authority mismatch.' })
     return
   }
@@ -634,7 +634,7 @@ export const handleStripeWebhook = functions.https.onRequest(async (req, res) =>
     return
   }
 
-  if (event.livemode !== (mode === 'production')) {
+  if (event.livemode !== false) {
     res.status(400).json({ error: 'Stripe event mode mismatch' })
     return
   }
