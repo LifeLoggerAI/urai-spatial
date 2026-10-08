@@ -48,8 +48,8 @@ jobs:
           corepack enable
           corepack pnpm@10.0.0 install --frozen-lockfile --ignore-scripts
           git diff --exit-code -- package.json pnpm-lock.yaml pnpm-workspace.yaml patches
-      - name: Verify manifest exports and checkout identity boundaries
-        run: node --test scripts/test-spatial-dependency-manifest-resolution.mjs
+      - name: Verify manifest exports and original baseline identity boundaries
+        run: node --test scripts/test-spatial-dependency-manifest-resolution.mjs scripts/test-spatial-original-baseline-authority.mjs
       - name: Verify every actual installed importer and original consumer file
         run: node scripts/check-spatial-maintained-tooling.mjs "$RUNNER_TEMP/spatial-maintained-evidence/installed-tooling.json"
       - name: Prepare original public packages outside candidate scope

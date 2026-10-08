@@ -120,5 +120,21 @@
       "productionAcceptance": false,
       "securityWaiver": false
     }
+  },
+  "originalPublicBaselineAuthority": {
+    "predecessorSha": "8e0ef8a5fb6872aa2d743e6348fdd3b8d4d75a95",
+    "manifestMustActuallyExist": true,
+    "originalPackageNamesAndVersionsMustMatch": true,
+    "originalManifestAndEntryMustResolveWithinPublicBaseline": true,
+    "nodeParentAndGlobalFallbackMayNotAuthorizeProof": true,
+    "boundaryFixtureCasesPassed": 7,
+    "boundaryFixtureCasesFailed": 0,
+    "previousCheckoutBoundaryCasesPreserved": 6,
+    "actualOriginalPublicFivePackageIdentityProbe": "PASS_2026-10-08T02:39:55.615Z",
+    "scope": "Synthetic boundary fixtures and actual original public package identity only; no successor installed/consumer/native/advisory/release acceptance",
+    "actualSuccessorConsumerAcceptance": false,
+    "productionAcceptance": false,
+    "securityWaiver": false,
+    "providerCallsExecuted": 0
   }
 }

@@ -63,3 +63,19 @@ export function resolveDeclaredPackageManifest(requireConsumer, name, expectedVe
   }
   throw new Error('Actual resolved dependency manifest is missing: ' + name);
 }
+
+export function originalBaselineRequire(originalRoot, manifestPath, identities) {
+  const boundary = fs.realpathSync(path.resolve(originalRoot));
+  const inside = file => file.startsWith(boundary + path.sep);
+  const manifest = fs.realpathSync(path.resolve(manifestPath));
+  if (!inside(manifest) || !fs.statSync(manifest).isFile() || !identities.length) throw new Error('Explicit original public baseline authority required');
+  const requireBaseline = createRequire(manifest);
+  for (const [requestName, name, version] of identities) {
+    const metadataPath = fs.realpathSync(requireBaseline.resolve(requestName + '/package.json'));
+    const entryPath = fs.realpathSync(requireBaseline.resolve(requestName));
+    if (!inside(metadataPath) || !inside(entryPath)) throw new Error('Original public package resolved outside baseline: ' + requestName);
+    const actual = JSON.parse(fs.readFileSync(metadataPath, 'utf8'));
+    if (actual.name !== name || actual.version !== version) throw new Error('Original public package identity mismatch: ' + requestName);
+  }
+  return requireBaseline;
+}

@@ -7,11 +7,16 @@ import vm from 'node:vm';
 import {createRequire} from 'node:module';
 import {setTimeout as delay} from 'node:timers/promises';
 import test from 'node:test';
-import {root,sha256,resolveConsumers,verifyConsumerSource} from './spatial-maintained-tooling.mjs';
+import {root,sha256,resolveConsumers,verifyConsumerSource,originalBaselineRequire} from './spatial-maintained-tooling.mjs';
 
 const [baselineRoot,baselineManifest,sourceOnlyRoot]=process.argv.slice(2);
 if(!baselineRoot||!baselineManifest)throw new Error('Usage: node scripts/test-spatial-maintained-consumers.mjs ORIGINAL_UNPACK_ROOT BASELINE_PACKAGE_JSON [SOURCE_ONLY_PROBE_ROOT]');
-const baselineRequire=createRequire(path.resolve(baselineManifest));
+const baselineRequire=originalBaselineRequire(baselineRoot,baselineManifest,[
+  [sourceOnlyRoot?'chokidar-original':'chokidar','chokidar','3.6.0'],
+  ['fast-glob','fast-glob','3.3.1'],['micromatch','micromatch','4.0.8'],
+  ['@next/eslint-plugin-next','@next/eslint-plugin-next','15.5.27'],['semver','semver','7.7.3'],
+  ...(sourceOnlyRoot?[['chokidar-candidate','chokidar','4.0.3']]:[])
+]);
 const consumers=sourceOnlyRoot?{firebase:path.join(sourceOnlyRoot,'firebase'),next:path.join(sourceOnlyRoot,'next'),eslint:baselineRequire('eslint')}:resolveConsumers();
 const provenance=verifyConsumerSource(consumers);
 for(const c of provenance.consumers){const dir=path.join(baselineRoot,c.name==='firebase-tools'?'firebase':'next');for(const [file,hash]of Object.entries(c.originalSourceSha256))assert.equal(sha256(fs.readFileSync(path.join(dir,file))),hash,'Original public package drift: '+file);}

@@ -9,10 +9,13 @@ import {createHash} from 'node:crypto';
 import {createRequire} from 'node:module';
 import {fileURLToPath} from 'node:url';
 import {spawnSync} from 'node:child_process';
+import {originalBaselineRequire} from './spatial-maintained-tooling.mjs';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
 assert.ok(process.env.URAI_GLOB_BASELINE_ROOT, 'Exact upstream comparison tools are required');
-const baseline = createRequire(path.join(process.env.URAI_GLOB_BASELINE_ROOT, 'package.json'));
+const baseline = originalBaselineRequire(process.env.URAI_GLOB_BASELINE_ROOT, path.join(process.env.URAI_GLOB_BASELINE_ROOT, 'package.json'), [
+  ['@next/eslint-plugin-next','@next/eslint-plugin-next','15.5.27'],['fast-glob','fast-glob','3.3.1'],['micromatch','micromatch','4.0.8']
+]);
 const probe = process.env.URAI_GLOB_REPLACEMENT_PROBE_ROOT;
 const applicationRequire = createRequire(path.join(root, 'urai-tier1/package.json'));
 const current = probe ? createRequire(path.join(probe, 'package.json')) : createRequire(applicationRequire.resolve('eslint-config-next/package.json'));
