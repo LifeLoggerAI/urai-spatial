@@ -25,7 +25,6 @@ env:
   GCLOUD_PROJECT: demo-urai-passive-consent-proof
   URAI_PASSIVE_SIGNAL_EMULATOR_TEST: '1'
   JAVA_TOOL_OPTIONS: '-Xms64m -Xmx256m'
-  FIREBASE_EMULATORS_PATH: ${{ runner.temp }}/urai-passive-emulators
 
 jobs:
   actual-firestore-commit-ordering:
@@ -63,6 +62,8 @@ jobs:
           set -euo pipefail
           test -n "${JAVA_HOME_21_X64:-}"
           test -x "$JAVA_HOME_21_X64/bin/java"
+          test -n "${RUNNER_TEMP:-}"
+          echo "FIREBASE_EMULATORS_PATH=$RUNNER_TEMP/urai-passive-emulators" >> "$GITHUB_ENV"
           echo "JAVA_HOME=$JAVA_HOME_21_X64" >> "$GITHUB_ENV"
           echo "$JAVA_HOME_21_X64/bin" >> "$GITHUB_PATH"
           "$JAVA_HOME_21_X64/bin/java" -version
