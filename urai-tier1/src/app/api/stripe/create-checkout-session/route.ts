@@ -5,6 +5,7 @@ import {
   checkoutModeForPlan,
   isPaidPlanId,
   parseStripeRuntimeMode,
+  stripeLivemodeMatchesRuntime,
   stripeRuntimeMatchesSecret,
   STRIPE_PRICE_ENV_BY_PLAN,
 } from '@/lib/server/stripe-runtime-config';
@@ -14,6 +15,10 @@ export async function POST(request: Request) {
   const uid = await verifyFirebaseUser(request);
   if (!uid) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  if (process.env.URAI_STRIPE_COMMERCE_ENABLED !== 'true') {
+    return NextResponse.json({ error: 'Stripe commerce is not enabled.' }, { status: 503, headers: { 'Cache-Control': 'private, no-store' } });
   }
 
   const { planId, returnUrl } = await request.json() as {
@@ -58,9 +63,22 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
+  let price;
+  try {
+    price = await stripe.prices.retrieve(priceId);
+  } catch {
+    return NextResponse.json({ error: 'Configured Stripe Price could not be verified.' }, { status: 502 });
+  }
+  if (await verifyFirebaseUser(request) !== uid) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+  if (price.id !== priceId || price.active !== true || !stripeLivemodeMatchesRuntime(price.livemode, stripeMode)) {
+    return NextResponse.json({ error: 'Configured Stripe Price authority mismatch.' }, { status: 500 });
+  }
+
   const session = await stripe.checkout.sessions.create({
     mode: checkoutModeForPlan(planId),
-    line_items: [{ price: priceId, quantity: 1 }],
+    line_items: [{ price: price.id, quantity: 1 }],
     success_url: withStripeResult(redirectBase, 'success', planId),
     cancel_url: withStripeResult(redirectBase, 'cancelled', planId),
     metadata: {

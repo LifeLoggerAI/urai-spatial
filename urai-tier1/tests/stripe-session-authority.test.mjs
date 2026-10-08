@@ -16,7 +16,7 @@ writeFileSync(adcPath, JSON.stringify({
   credential_source: { file: join(fixtureDirectory, 'fixture.jwt') },
 }));
 const environmentKeys = ['URAI_STRIPE_MODE', 'URAI_STRIPE_COMMERCE_ENABLED', 'STRIPE_SECRET_KEY',
-  'NEXT_PUBLIC_APP_URL', 'NEXT_PUBLIC_STRIPE_PRICE_PRO', 'GOOGLE_APPLICATION_CREDENTIALS',
+  'NEXT_PUBLIC_APP_URL', 'NEXT_PUBLIC_STRIPE_PRICE_PRO', 'STRIPE_BILLING_PORTAL_CONFIGURATION', 'GOOGLE_APPLICATION_CREDENTIALS',
   'URAI_FIREBASE_STATIC_EXPORT', 'FIREBASE_SERVICE_ACCOUNT_JSON', 'FIREBASE_PRIVATE_KEY',
   'FIREBASE_CLIENT_EMAIL', 'FIREBASE_TOKEN'];
 const priorEnvironment = new Map(environmentKeys.map(key => [key, process.env[key]]));
@@ -46,9 +46,10 @@ const hooks = registerHooks({
     } else if (kind === 'stripe') {
       source = `export default class Stripe { constructor() {
         const s = globalThis.__uraiStripeAuthorityFixture;
+        this.prices = { retrieve: async id => { s.priceReads.push(id); await s.onPriceRead?.(); if (s.priceReadError) throw Error('Price unavailable'); return { id: s.priceId ?? id, active: s.priceActive, livemode: s.priceLivemode }; } };
         this.customers = { retrieve: async id => { s.customerReads.push(id); await s.onCustomerRead?.(); return { id, livemode: false }; } };
         this.checkout = { sessions: { create: async value => { s.checkoutWrites.push(value); await s.onCheckoutCreate?.(); return { id: 'cs_source', url: 'https://checkout.stripe.com/source-fixture' }; } } };
-        this.billingPortal = { sessions: { create: async value => { s.portalWrites.push(value); await s.onPortalCreate?.(); return { id: 'bps_source', url: 'https://billing.stripe.com/source-fixture' }; } } };
+        this.billingPortal = { configurations: { retrieve: async id => { s.configurationReads.push(id); await s.onConfigurationRead?.(); if (s.configurationReadError) throw Error('Configuration unavailable'); return { id: s.configurationId ?? id, active: s.configurationActive, livemode: s.configurationLivemode }; } }, sessions: { create: async value => { s.portalWrites.push(value); await s.onPortalCreate?.(); return { id: 'bps_source', url: 'https://billing.stripe.com/source-fixture' }; } } };
       } }`;
     } else if (kind === 'firebase-admin/app') {
       source = 'export const getApps = () => [{}]; export const initializeApp = () => ({}); export const applicationDefault = () => ({});';
@@ -69,7 +70,8 @@ const hooks = registerHooks({
 
 beforeEach(() => {
   state = {
-    currentUid: uid, authChecks: [], reads: [], customerReads: [], checkoutWrites: [], portalWrites: [],
+    currentUid: uid, authChecks: [], reads: [], customerReads: [], priceReads: [], configurationReads: [], checkoutWrites: [], portalWrites: [],
+    priceLivemode: false, priceActive: true, configurationLivemode: false, configurationActive: true,
     async verify(token, checkRevoked) {
       this.authChecks.push(checkRevoked);
       assert.equal(token, 'owned-fixture-token');
@@ -87,7 +89,7 @@ beforeEach(() => {
   globalThis.__uraiStripeAuthorityFixture = state;
   Object.assign(process.env, { URAI_STRIPE_MODE: 'test', URAI_STRIPE_COMMERCE_ENABLED: 'true',
     STRIPE_SECRET_KEY: 'sk_test_source_fixture', NEXT_PUBLIC_APP_URL: 'https://urai.app',
-    NEXT_PUBLIC_STRIPE_PRICE_PRO: 'price_source_fixture', GOOGLE_APPLICATION_CREDENTIALS: adcPath });
+    NEXT_PUBLIC_STRIPE_PRICE_PRO: 'price_source_fixture', STRIPE_BILLING_PORTAL_CONFIGURATION: 'bpc_source_fixture', GOOGLE_APPLICATION_CREDENTIALS: adcPath });
   for (const key of ['URAI_FIREBASE_STATIC_EXPORT', 'FIREBASE_SERVICE_ACCOUNT_JSON', 'FIREBASE_PRIVATE_KEY',
     'FIREBASE_CLIENT_EMAIL', 'FIREBASE_TOKEN']) delete process.env[key];
 });
@@ -168,4 +170,53 @@ for (const implementation of implementations) {
       }
     }
   }
+}
+
+for (const implementation of implementations) {
+  for (const action of ['checkout', 'portal']) {
+    test(implementation.name + ' refuses ' + action + ' when commerce is disabled', async () => {
+      process.env.URAI_STRIPE_COMMERCE_ENABLED = 'false';
+      const result = await implementation.run(action);
+      assert.equal(result.status, 503); assert.equal(result.body.url, undefined);
+      assert.equal(state.checkoutWrites.length, 0); assert.equal(state.portalWrites.length, 0);
+      assert.equal(state.priceReads.length, 0); assert.equal(state.configurationReads.length, 0);
+    });
+  }
+  for (const [action, label, key, value, expectedStatus] of [
+    ['checkout', 'cross-realm Price', 'priceLivemode', true, 500],
+    ['checkout', 'unbound Price identity', 'priceId', 'price_foreign_fixture', 500],
+    ['checkout', 'inactive Price', 'priceActive', false, 500],
+    ['checkout', 'unknown Price realm', 'priceLivemode', undefined, 500],
+    ['checkout', 'unavailable Price', 'priceReadError', true, 502],
+    ['portal', 'cross-realm portal Configuration', 'configurationLivemode', true, 500],
+    ['portal', 'unbound portal Configuration', 'configurationId', 'bpc_foreign_fixture', 500],
+    ['portal', 'inactive portal Configuration', 'configurationActive', false, 500],
+    ['portal', 'unknown Configuration realm', 'configurationLivemode', undefined, 500],
+    ['portal', 'unavailable Configuration', 'configurationReadError', true, 502],
+  ]) {
+    test(implementation.name + ' refuses ' + label + ' before provider session creation', async () => {
+      state[key] = value;
+      const result = await implementation.run(action);
+      assert.equal(result.status, expectedStatus); assert.equal(result.body.url, undefined);
+      assert.equal(state.checkoutWrites.length, 0); assert.equal(state.portalWrites.length, 0);
+    });
+  }
+  for (const currentUid of [null, 'foreign-session-fixture']) {
+    for (const [action, hook] of [['checkout', 'onPriceRead'], ['portal', 'onConfigurationRead']]) {
+      test(implementation.name + ' denies ' + action + ' after owner change during provider-object verification: ' + String(currentUid), async () => {
+        state[hook] = async () => { state.currentUid = currentUid; };
+        const result = await implementation.run(action);
+        assert.equal(result.status, 401); assert.equal(result.body.url, undefined);
+        assert.equal(state.checkoutWrites.length, 0); assert.equal(state.portalWrites.length, 0);
+      });
+    }
+  }
+  test(implementation.name + ' uses the exact verified Price and Configuration', async () => {
+    assert.equal((await implementation.run('checkout')).status, 200);
+    assert.equal((await implementation.run('portal')).status, 200);
+    assert.deepEqual(state.priceReads, ['price_source_fixture']);
+    assert.deepEqual(state.configurationReads, ['bpc_source_fixture']);
+    assert.equal(state.checkoutWrites[0].line_items[0].price, 'price_source_fixture');
+    assert.equal(state.portalWrites[0].configuration, 'bpc_source_fixture');
+  });
 }

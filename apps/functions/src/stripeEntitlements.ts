@@ -384,7 +384,8 @@ export const createStripeCheckout = functions.https.onRequest(async (req, res) =
   const stripe = stripeClient()
   const priceId = process.env[PRICE_ENV_BY_PLAN[planId]]
   const redirectBase = approvedReturnUrl(req.body?.returnUrl)
-  if (!stripe || !priceId || !redirectBase) {
+  const mode = runtimeMode()
+  if (!stripe || !priceId || !redirectBase || !mode) {
     res.status(503).json({ error: 'Stripe environment is not configured for this request.' })
     return
   }
@@ -394,9 +395,25 @@ export const createStripeCheckout = functions.https.onRequest(async (req, res) =
     res.status(401).json({ error: 'Unauthorized' })
     return
   }
+  let price: Stripe.Price
+  try {
+    price = await stripe.prices.retrieve(priceId)
+  } catch {
+    res.status(502).json({ error: 'Configured Stripe Price could not be verified.' })
+    return
+  }
+  if (await authenticatedUid(req) !== uid) {
+    res.status(401).json({ error: 'Unauthorized' })
+    return
+  }
+  if (price.id !== priceId || price.active !== true || price.livemode !== (mode === 'production')) {
+    res.status(500).json({ error: 'Configured Stripe Price authority mismatch.' })
+    return
+  }
+
   const session = await stripe.checkout.sessions.create({
     mode: planId === 'founder' ? 'payment' : 'subscription',
-    line_items: [{ price: priceId, quantity: 1 }],
+    line_items: [{ price: price.id, quantity: 1 }],
     success_url: withStripeResult(redirectBase, 'success', planId),
     cancel_url: withStripeResult(redirectBase, 'cancelled', planId),
     customer: existing.stripeCustomerId || undefined,
@@ -467,10 +484,30 @@ export const createStripeCustomerPortal = functions.https.onRequest(async (req, 
     res.status(401).json({ error: 'Unauthorized' })
     return
   }
+  const configuration = process.env.STRIPE_BILLING_PORTAL_CONFIGURATION
+  if (configuration) {
+    let portalConfiguration: Stripe.BillingPortal.Configuration
+    try {
+      portalConfiguration = await stripe.billingPortal.configurations.retrieve(configuration)
+    } catch {
+      res.status(502).json({ error: 'Stripe portal configuration could not be verified.' })
+      return
+    }
+    if (await authenticatedUid(req) !== uid) {
+      res.status(401).json({ error: 'Unauthorized' })
+      return
+    }
+    if (portalConfiguration.id !== configuration || portalConfiguration.active !== true
+      || portalConfiguration.livemode !== (mode === 'production')) {
+      res.status(500).json({ error: 'Stripe portal configuration authority mismatch.' })
+      return
+    }
+  }
+
   const session = await stripe.billingPortal.sessions.create({
     customer: customer.id,
     return_url: returnUrl.toString(),
-    configuration: process.env.STRIPE_BILLING_PORTAL_CONFIGURATION || undefined,
+    configuration: configuration || undefined,
   })
   if (await authenticatedUid(req) !== uid) {
     res.status(401).json({ error: 'Unauthorized' })
