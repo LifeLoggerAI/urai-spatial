@@ -209,6 +209,10 @@ export const getPossibleFuture = functions.https.onCall(async (data, context) =>
 export const getPossibleFutureCouncilBundle = functions.https.onCall(async (data, context) => {
   const ownerId = uid(context)
   const scenarioId = ensureScenarioId(data?.scenarioId)
+  const requestedBranchId = safeContextId(data?.branchId)
+  if (data?.branchId !== undefined && (typeof data.branchId !== 'string' || !requestedBranchId)) {
+    throw new functions.https.HttpsError('invalid-argument', 'Invalid Scenario branch ID.')
+  }
   const ref = scenarioRef(ownerId, scenarioId)
   const [scenarioSnap, basisSnap, branchesSnap] = await Promise.all([
     ref.get(),
@@ -217,9 +221,10 @@ export const getPossibleFutureCouncilBundle = functions.https.onCall(async (data
   ])
   if (!scenarioSnap.exists || !basisSnap.exists) throw new functions.https.HttpsError('not-found', 'Scenario not found.')
   const scenario = scenarioSnap.data() ?? {}
-  const requestedBranchId = safeContextId(data?.branchId)
   const activeBranchId = requestedBranchId || String(scenario.activeBranchId ?? '')
-  const branch = branchesSnap.docs.find((doc) => doc.id === activeBranchId) ?? branchesSnap.docs[0] ?? null
+  const branch = requestedBranchId
+    ? branchesSnap.docs.find((doc) => doc.id === requestedBranchId) ?? null
+    : branchesSnap.docs.find((doc) => doc.id === activeBranchId) ?? branchesSnap.docs[0] ?? null
   if (requestedBranchId && !branch) throw new functions.https.HttpsError('not-found', 'Scenario branch not found.')
   const basis = basisSnap.data() ?? {}
   const evidenceRefs = Array.isArray(basis.evidenceRefs) ? basis.evidenceRefs : []
@@ -286,3 +291,4 @@ export const deletePossibleFuture = functions.https.onCall(async (data, context)
   await db.recursiveDelete(ref)
   return { scenarioId, deleted: true }
 })
+
