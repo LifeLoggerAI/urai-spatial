@@ -52,7 +52,7 @@ const shims = {
   './ReplayProductControls': `export function ReplayProductControls(){return null}`, 
   './ReplayPersonPresence': `export function ReplayPersonPresence(){return null}`, 
   'next/navigation': `export const useSearchParams=()=>new URLSearchParams(location.search);export const useRouter=()=>({push:(href)=>{window.__fixture.navigation=href}});`,
-  '@/spatial/captured-reality/CapturedRealityPrivateScene': `import {useEffect} from 'react';export default function Scene({decision}){useEffect(()=>{if(decision.mode!=='gaussian-splat')return;window.__fixture.sceneMounts++;return()=>{window.__fixture.sceneDisposals++}},[decision.mode]);return <div data-scene-fixture={decision.mode}/>}`,
+  '@/spatial/captured-reality/CapturedRealityPrivateScene': `import {useEffect} from 'react';export default function Scene({decision}){useEffect(()=>{if(decision.mode!=='gaussian-splat')return;window.__fixture.sceneMounts++;return()=>{window.__fixture.sceneDisposals++}},[decision.mode]);return <div data-scene-fixture={decision.mode} style={{minHeight:'100svh'}}>Synthetic scene-disposal boundary — no reconstructed geometry</div>}`,
 }
 const compiled = await build({
   stdin: { contents: `import React from 'react';import{createRoot}from'react-dom/client';import Replay from './src/app/replay/CinematicReplayClient';import Movie from './src/app/life-movie/LifeMovieClient';import Place from './src/app/spatial/captured-reality/CapturedRealityRouteClient';const Component=location.pathname==='/life-movie'?Movie:location.pathname==='/spatial/captured-reality'?Place:Replay;const root=createRoot(document.getElementById('root'));root.render(<Component/>);window.__unmount=()=>root.unmount();`, resolveDir: path.join(repo, 'urai-tier1'), loader: 'tsx' },
