@@ -202,8 +202,9 @@ export function WorldTransitionController() {
       if (event.defaultPrevented || event.key !== 'Escape' || isEditableTarget(event.target)) return
       if (currentWorld.destination === 'home' && phaseRef.current === 'idle') return
       // Life Map and Location Map own their realm-specific Escape contracts.
-      // The global reverse-travel fallback must not race either realm-owned handler.
-      if (currentWorld.destination === 'life-map' || currentWorld.destination === 'location-map') return
+      // Consent Sanctuary owns audit/pending dismissal and its history/Passport return.
+      // The global reverse-travel fallback must not race a realm-owned handler.
+      if (currentWorld.destination === 'life-map' || currentWorld.destination === 'location-map' || currentWorld.destination === 'privacy-controls') return
       event.preventDefault()
       reverseTravel()
     }

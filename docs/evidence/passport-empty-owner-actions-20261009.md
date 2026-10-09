@@ -5,6 +5,14 @@ Integration destination: the existing Spatial owner PR #1636, branch
 `8c74d00a1ff1775bb65c69f25941cbb9e185b893`, tree
 `f7e2a2adf6d84a04dc028451cb412e790e159ad0`.
 
+The owner advanced during verification to
+`85b60b462d4f503d953691fed0de9e1a94333b8a`, with its own stronger Consent
+Sanctuary Escape correction. This donor merges that ancestry without force.
+All four owner leaves (Sanctuary, world controller, Privacy browser proof,
+and Privacy contract tests) are preserved byte-exact. The duplicate donor
+privacy correction is superseded. The remaining delta against that owner
+is nine paths, including this receipt; no integration-owner ref is moved.
+
 ## Corrected behavior
 
 A trusted snapshot with no sources, devices, or receipts is classified as
@@ -22,12 +30,13 @@ No backend policy or deletion implementation changes.
 Original consuming Privacy pixels subsequently reveal another defect: Escape
 while inspecting receipts can reach a persistent world unwind listener and
 leave the Sanctuary. Its former green browser test only checks receipt removal,
-which also passes when the whole route exits. The Sanctuary now owns Escape
-in the capture phase, consumes its dismissal/unwind event, and respects an
-already handled key or a foreign dialog. Pending consent previews and receipts
-close without routing. The browser test additionally requires the same demo
-URL, route owner, source disclosure, and absence of the global loading surface
-after receipt dismissal. Shared navigation and backend authority are unchanged.
+which also passes when the whole route exits. The preserved owner correction
+gives Sanctuary ownership of Escape and makes the global world listener defer
+to that realm in either registration order. Pending consent previews and
+receipts close without routing. Its stronger browser proof requires the same
+URL, route owner, source disclosure, idle world destination, and absence of
+global loading both before and after the screenshot; it retains the PNG hash.
+The owner, rather than this donor, supplies those four corrected leaves.
 
 Original browser pixels from the starting source also reveal mid-word export
 scope labels. The generic full-width input rule overrides checkbox sizing.
@@ -70,17 +79,24 @@ security, keyboard, motion, fallback, and offline assertions remain.
   Its test and workflow leaves are unchanged from the starting source. The
   affected workflow now also executes the new 13 empty-owner regressions;
   the actual local Node 22.23.3 total is 108 pass, 0 fail, 0 cancelled, 0 skip.
-  The exact-count receipt requires 108. All existing tests/type checks and
+  The dated successor receipt required 108. All existing tests/type checks and
   zero-failure/zero-skip controls remain; no acceptance requirement is waived.
 - The additional Privacy keyboard-effect regression reproduces three failures
   against exact `968d4f19ad90188fc47eecb515ba4f181e51d65e` (6 retained pass,
   3 new fail). The corrected actual typed effect passes all nine tests using
   a disclosed simulated earlier world listener, without a Firebase/React
   runtime or network. The combined export/privacy authority suite now passes
-  111/111 locally, with zero failures, cancellations, or skips; its exact-count
-  receipt is 111. Current final-source native behavior and settled Privacy
+  111/111 locally, with zero failures, cancellations, or skips. That duplicate
+  privacy correction is superseded by the stronger owner correction. Settled Privacy
   PNGs must be earned; the former five green cases and loading-screen PNG are
   retained as counterevidence, not visual acceptance.
+- Reconciled current owner plus the Passport delta: all 118 actual selected
+  export/privacy/Passport cases pass on Node 22.23.3, with zero failures,
+  cancellations, or skips. The strict receipt now requires that exact 118,
+  retaining all owner cases and all 13 new empty-owner cases. Runtime TypeScript
+  checking passes. Native browser/build evidence must run against the newly
+  published merge source; the two checks on the conflicted `1d1a` source do not
+  satisfy these gates.
 - Thirteen retained source/archive tests pass for manual Apple containment.
   The manual-only workflow is byte-identical to the separately reviewed
   containment leaf `ab53b956ef51e791e2c0c54a3f3ed5c75b5a1f93` from donor #1761.

@@ -78,7 +78,7 @@ jobs:
           log = pathlib.Path('artifacts/spatial-export-client/tests.tap')
           text = log.read_text()
           counts = {key: int(re.search(r'^# ' + key + r' (\d+)$', text, re.M)[1]) for key in ['tests', 'pass', 'fail', 'cancelled', 'skipped']}
-          assert counts == {'tests': 111, 'pass': 111, 'fail': 0, 'cancelled': 0, 'skipped': 0}, counts
+          assert counts == {'tests': 118, 'pass': 118, 'fail': 0, 'cancelled': 0, 'skipped': 0}, counts
           sha = subprocess.check_output(['git', 'rev-parse', 'HEAD'], text=True).strip()
           assert sha == os.environ['URAI_EXACT_HEAD']
           receipt = {'schemaVersion': 'urai-spatial-export-client-source-proof-v1', 'exactHead': sha, 'tree': subprocess.check_output(['git', 'rev-parse', 'HEAD^{tree}'], text=True).strip(), 'runId': os.environ['GITHUB_RUN_ID'], 'runAttempt': os.environ['GITHUB_RUN_ATTEMPT'], 'tests': counts, 'testLogSha256': hashlib.sha256(log.read_bytes()).hexdigest(), 'privateDataUsed': False, 'providerCalls': 0, 'deployedTransportVerified': False, 'browserAccepted': False, 'deviceAccepted': False, 'releaseAccepted': False}

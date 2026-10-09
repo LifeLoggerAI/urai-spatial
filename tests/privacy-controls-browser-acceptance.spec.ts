@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
+import { createHash } from 'node:crypto'
 import fs from 'node:fs/promises'
 import path from 'node:path'
 
@@ -13,6 +14,24 @@ type RuntimeEvidence = {
   failedRequests: string[]
   expectedOfflineFailures?: string[]
   unexpectedOfflineFailures?: string[]
+  auditEscape?: {
+    exactSha: string | null
+    expectedURL: string
+    browserAnimationFrames: number
+    afterDismissal: SanctuaryReadback
+    afterCapture: SanctuaryReadback
+    screenshot: { path: string; bytes: number; sha256: string }
+  }
+}
+
+type SanctuaryReadback = {
+  url: string
+  routeOwner: string | null
+  privacySource: string | null
+  destination: string | null
+  transition: string | null
+  loadingRoots: number
+  auditPanels: number
 }
 
 async function captureRuntime(page: Page): Promise<RuntimeEvidence> {
@@ -54,6 +73,41 @@ async function openDemo(page: Page) {
   await expect(page.getByText('DEMONSTRATION — no personal data', { exact: true })).toBeVisible()
 }
 
+async function assertSettledSanctuary(page: Page, expectedURL: string): Promise<SanctuaryReadback> {
+  const root = page.locator('main[data-route-owner="consent-sanctuary"]')
+  const world = page.getByTestId('urai-persistent-world-shell')
+  await expect(page).toHaveURL(expectedURL)
+  await expect(root).toBeVisible()
+  await expect(root).toHaveAttribute('data-privacy-source', 'demo')
+  await expect(world).toHaveAttribute('data-world-destination', 'privacy-controls')
+  await expect(world).toHaveAttribute('data-world-transition', 'idle')
+  await expect(page.locator('main.urai-system-state')).toHaveCount(0)
+  await expect(page.getByRole('region', { name: 'Privacy audit receipts' })).toHaveCount(0)
+  const readback = await page.evaluate(() => {
+    const root = document.querySelector('main[data-route-owner="consent-sanctuary"]')
+    const world = document.querySelector('[data-testid="urai-persistent-world-shell"]')
+    return {
+      url: window.location.href,
+      routeOwner: root?.getAttribute('data-route-owner') ?? null,
+      privacySource: root?.getAttribute('data-privacy-source') ?? null,
+      destination: world?.getAttribute('data-world-destination') ?? null,
+      transition: world?.getAttribute('data-world-transition') ?? null,
+      loadingRoots: document.querySelectorAll('main.urai-system-state').length,
+      auditPanels: document.querySelectorAll('[aria-label="Privacy audit receipts"]').length,
+    }
+  })
+  expect(readback).toEqual({
+    url: expectedURL,
+    routeOwner: 'consent-sanctuary',
+    privacySource: 'demo',
+    destination: 'privacy-controls',
+    transition: 'idle',
+    loadingRoots: 0,
+    auditPanels: 0,
+  })
+  return readback
+}
+
 function classifyOfflineFailures(runtime: RuntimeEvidence) {
   const expectedPageErrors = runtime.pageErrors.filter((message) => message === 'Failed to fetch')
   const unexpectedPageErrors = runtime.pageErrors.filter((message) => message !== 'Failed to fetch')
@@ -85,15 +139,29 @@ test('desktop demo exposes all domains and direct keyboard controls', async ({ p
 
   await page.getByRole('button', { name: 'Inspect receipts' }).click()
   await expect(page.getByRole('region', { name: 'Privacy audit receipts' })).toBeVisible()
+  const sanctuaryURL = page.url()
   await page.keyboard.press('Escape')
   await expect(page.getByRole('region', { name: 'Privacy audit receipts' })).toHaveCount(0)
-  await expect(page).toHaveURL(/\/privacy-controls\/\?demo=1$/)
-  await expect(page.locator('main[data-route-owner="consent-sanctuary"]')).toBeVisible()
-  await expect(page.locator('main[data-route-owner="consent-sanctuary"]')).toHaveAttribute('data-privacy-source', 'demo')
-  await expect(page.getByText('DEMONSTRATION — no personal data', { exact: true })).toBeVisible()
-  await expect(page.locator('main.urai-system-state')).toHaveCount(0)
+  // Escape must dismiss this realm's panel without scheduling global reverse travel.
+  // Browser animation frames allow React to commit; they are not GPU-frame proof.
+  await page.evaluate(async () => {
+    for (let frame = 0; frame < 4; frame += 1) {
+      await new Promise<void>(resolve => requestAnimationFrame(() => resolve()))
+    }
+  })
+  const afterDismissal = await assertSettledSanctuary(page, sanctuaryURL)
 
-  await page.screenshot({ path: path.join(evidenceRoot, 'desktop-sanctuary-overview.png'), fullPage: true })
+  const screenshotPath = path.join(evidenceRoot, 'desktop-sanctuary-overview.png')
+  const screenshot = await page.screenshot({ path: screenshotPath, fullPage: true })
+  const afterCapture = await assertSettledSanctuary(page, sanctuaryURL)
+  runtime.auditEscape = {
+    exactSha: process.env.EXACT_HEAD_SHA ?? null,
+    expectedURL: sanctuaryURL,
+    browserAnimationFrames: 4,
+    afterDismissal,
+    afterCapture,
+    screenshot: { path: screenshotPath, bytes: screenshot.length, sha256: createHash('sha256').update(screenshot).digest('hex') },
+  }
   await saveEvidence('desktop-runtime', runtime)
   expect(runtime.consoleErrors).toEqual([])
   expect(runtime.pageErrors).toEqual([])
