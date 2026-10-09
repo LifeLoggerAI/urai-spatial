@@ -119,5 +119,5 @@ test('actual Home shortcut preserves inherited contenteditable', () => assert.de
 for (const key of ['defaultPrevented', 'altKey', 'ctrlKey', 'metaKey', 'shiftKey']) test('actual Home shortcut preserves ' + key, () => assert.deepEqual(runKey({ [key]: true }), []))
 test('plain Home retains canonical direct-controls focus and Escape retains return', () => {
   assert.deepEqual(runKey(), [['preventDefault'], ['selected', 'memory'], ['focus', 'consent-controls']])
-  assert.deepEqual(runKey({ key: 'Escape' }), [['navigate', '/passport']])
+  assert.deepEqual(runKey({ key: 'Escape' }), [['preventDefault'], ['navigate', '/passport']])
 })
