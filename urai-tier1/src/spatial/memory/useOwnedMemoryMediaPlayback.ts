@@ -72,7 +72,17 @@ export function useOwnedMemoryMediaPlayback(memory: SelectedMemory | null, onRel
         const deadline = new Promise<never>((_resolve, reject) => {
           timeout = setTimeout(() => reject(new Error('PRIVATE_MEDIA_AUTHORITY_TIMEOUT')), 15_000)
         })
-        const result = await Promise.race([callable({ memoryId: memory.id, receiptId: receipt.mediaReceiptId }), deadline]).finally(() => clearTimeout(timeout))
+        // SDK calls cannot be aborted. Stop this mount's wait on withdrawal,
+        // while the race continues to observe the underlying late settlement.
+        let removeAbortListener = () => {}
+        const canceled = new Promise<never>((_resolve, reject) => {
+          const aborted = () => reject(new Error('PRIVATE_MEDIA_AUTHORITY_CHANGED'))
+          removeAbortListener = () => controller.signal.removeEventListener('abort', aborted)
+          controller.signal.addEventListener('abort', aborted, { once: true })
+          if (controller.signal.aborted) aborted()
+        })
+        const result = await Promise.race([callable({ memoryId: memory.id, receiptId: receipt.mediaReceiptId }), deadline, canceled])
+          .finally(() => { clearTimeout(timeout); removeAbortListener() })
         if (!current() || !validateOwnedMemoryPlaybackDescriptor(result.data, { ownerId: user.uid, memoryId: memory.id, receipt })) throw new Error('PRIVATE_MEDIA_AUTHORITY_CHANGED')
         return result.data
       }

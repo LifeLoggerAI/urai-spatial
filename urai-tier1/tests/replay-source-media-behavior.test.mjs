@@ -584,7 +584,7 @@ for(const [label,change] of [
 function staleReleaseDeferred(){let resolve,reject; const promise=new Promise((a,b)=>{resolve=a;reject=b});return {promise,resolve,reject};}
 async function staleReleaseDrain(){for(let i=0;i<60;i++)await Promise.resolve();}
 function staleReleaseLoad(source,requireFn,extra={}){const module={exports:{}};vm.runInNewContext(ts.transpileModule(source,{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText,{module,exports:module.exports,require:requireFn,AbortController,URL,Uint8Array,Blob,crypto:webcrypto,fetch,Response,Date,...extra});return module.exports;}
-async function staleReleaseScenario(source,phase){
+async function staleReleaseScenario(source,phase,settlement="resolve"){
  const bytes=Buffer.from('synthetic hook cleanup fixture; not family media');
  const receipt={mediaReceiptId:'a'.repeat(64),kind:'audio'};
  const memory={ownerId:'owner',id:'memory',privacy:'private',authorization:'owner',sourceMediaReceipts:[receipt]};
@@ -599,7 +599,7 @@ async function staleReleaseScenario(source,phase){
   if(id==='react')return {useRef:()=>ref,useState:()=>[{},()=>{}],useEffect:fn=>{effect=fn;}};
   if(id==='firebase/auth')return {getAuth:()=>auth,onAuthStateChanged(_auth,fn){authCallback=fn;return ()=>{};}};
   if(id==='firebase/firestore')return {Timestamp:Timestamp,doc:(_db,...parts)=>parts.join('/'),onSnapshot(path,fn){watches.push({path,fn});return ()=>{};}};
-  if(id==='firebase/functions')return {httpsCallable:()=>()=>{callableCalls++;return phase==='callable'&&callableCalls===1?pending.promise:Promise.resolve({data:descriptor});}};
+  if(id==='firebase/functions')return {httpsCallable:()=>()=>{callableCalls++;return ((phase==='callable'&&callableCalls===1)||(phase==='post-download-authority'&&callableCalls===2))?pending.promise:Promise.resolve({data:descriptor});}};
   if(id==='@/lib/firebase/client')return {app:{},firebasePublicEnvReady:true,functions:{},getFirebaseDb:()=>({})};
   if(id==='./selectedMemoryContract')return {parseSelectedMemory:()=>({status:'ready',memory})};
   if(id==='./ownedMemoryMediaPlayback')return transport;
@@ -607,11 +607,14 @@ async function staleReleaseScenario(source,phase){
  },{...timerEnv,navigator:{onLine:true},window:{addEventListener(){},removeEventListener(){}},process:{env:{NEXT_PUBLIC_FIREBASE_PROJECT_ID:'urai-4dc1d'}}});
  hook.useOwnedMemoryMediaPlayback(memory,()=>{oldRelease++;});const cleanup=effect();authCallback(user);
  for(const {path,fn}of watches){let data=sourceReceipt;if(path==='consentRecords/owner_memory_storage')data={uid:'owner',purpose:'memory.storage',consentTier:'C1',policyVersion:'1.0.0',status:'granted',receiptHash:sourceReceipt.consentReceiptHash,expiresAt:consentExpiry};else if(path.endsWith('/memories/memory'))data={};else if(path.endsWith('/privacyPolicy/current'))data={ownerId:'owner',version:2,revision:1,domains:{memory:{mode:'granted',replayVisible:true}},enforcement:{state:'fully-enforced'}};else if(path.endsWith('/privacyRuntime/exportAuthority'))data={generation:0,pendingDeletions:{}};else if(path==='users/owner')data={};fn({exists:()=>true,data:()=>data});}
- await staleReleaseDrain();assert.equal(callableCalls,1,'old mount entered actual callable wait');if(phase==='token')assert.equal(tokenCalls,1,'old mount entered actual token wait');
+ await staleReleaseDrain();if(phase==='post-download-authority')for(let i=0;i<5;i++){await new Promise(resolve=>setImmediate(resolve));await staleReleaseDrain();}assert.equal(callableCalls,phase==='post-download-authority'?2:1,'old mount entered actual callable wait');if(phase==='token')assert.equal(tokenCalls,1,'old mount entered actual token wait');
  cleanup();assert.equal(oldRelease,1,'initial cleanup releases old consumer once');
  hook.useOwnedMemoryMediaPlayback(memory,()=>{newRelease++;});
- await staleReleaseDrain();pending.resolve(phase==='callable'?{data:descriptor}:'synthetic-token');await staleReleaseDrain();
- return {newRelease,oldRelease,timers:timers.size};
+ await staleReleaseDrain();const timersAfterCancel=timers.size;
+ if(settlement==='reject')pending.reject(new Error('late underlying SDK rejection'));else pending.resolve(phase==='token'?'synthetic-token':{data:descriptor});await staleReleaseDrain();
+ return {newRelease,oldRelease,timers:timers.size,timersAfterCancel};
 }
 
 for(const phase of ['callable','token']) test('obsolete private playback '+phase+' settlement preserves the newer consumer', async()=>{ const source=fs.readFileSync(new URL('../src/spatial/memory/useOwnedMemoryMediaPlayback.ts',import.meta.url),'utf8');const r=await staleReleaseScenario(source,phase);assert.equal(r.newRelease,0,JSON.stringify(r));assert.equal(r.oldRelease,1);assert.equal(r.timers,0) })
+
+for(const phase of ["callable","post-download-authority"])for(const settlement of ["resolve","reject"])test("canceled "+phase+" stops waiting before late SDK "+settlement,async()=>{const source=fs.readFileSync(new URL("../src/spatial/memory/useOwnedMemoryMediaPlayback.ts",import.meta.url),"utf8");const r=await staleReleaseScenario(source,phase,settlement);assert.equal(r.timersAfterCancel,0,"obsolete authority deadline still active before SDK settlement");assert.equal(r.oldRelease,1);assert.equal(r.newRelease,0);assert.equal(r.timers,0)});
