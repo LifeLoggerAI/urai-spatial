@@ -140,6 +140,9 @@
   .consentRealmNav button {
     background-color: rgba(2,7,12,.98);
   }
+  .consentRealmNav button[aria-pressed="true"] {
+    background-color: rgba(2,7,12,.98);
+  }
   .consentPanel {
     margin-bottom: 24px;
     background-color: rgba(2,7,12,.98);
