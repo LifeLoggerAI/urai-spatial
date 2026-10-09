@@ -262,12 +262,6 @@ export function PersistentWorldCompanion() {
         data-urai-audit-action="orb-controls"
         disabled={!hydrated || phase !== 'idle'}
         onClick={toggleCompanion}
-        onKeyDown={(event) => {
-          if (event.key !== 'Enter' && event.key !== ' ') return
-          event.preventDefault()
-          event.stopPropagation()
-          toggleCompanion()
-        }}
       >
         <span aria-hidden="true" />
       </button>
