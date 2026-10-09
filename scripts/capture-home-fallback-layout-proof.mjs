@@ -57,6 +57,19 @@ try {
       assert.equal(await fallback.count(), 1, 'Exactly one canonical Home fallback must own the proof')
       assert.equal(await fallback.getAttribute('data-webgl-state'), 'unavailable')
       assert.equal(await fallback.getAttribute('role'), 'main', 'Fallback must own the primary page landmark')
+      const sanctuaryStyles = await fallback.locator('.home-accessible-sanctuary').evaluate(element => {
+        const style = getComputedStyle(element)
+        const world = element.querySelector('.home-accessible-sanctuary__world')
+        const heading = element.querySelector('h1')
+        return { position: style.position, backgroundImage: style.backgroundImage,
+          worldPosition: world ? getComputedStyle(world).position : null,
+          headingSize: heading ? Number.parseFloat(getComputedStyle(heading).fontSize) : null }
+      })
+      assert.equal(sanctuaryStyles.position, 'absolute', 'Sanctuary stylesheet must be applied')
+      assert.match(sanctuaryStyles.backgroundImage, /linear-gradient/, 'Retain the authored sanctuary sky and ground')
+      assert.equal(sanctuaryStyles.worldPosition, 'absolute', 'Sanctuary world layers must remain positioned')
+      assert.ok(sanctuaryStyles.headingSize >= 25, 'Sanctuary heading must retain its authored readable size')
+      record.sanctuaryStyles = sanctuaryStyles
       assert.equal(await page.locator('body').getAttribute('data-deployed-sha'), exactHead, 'Served build must match the proof head')
       const launcher = fallback.locator('.home-adam-launcher-slot button')
       await launcher.waitFor({ state: 'visible', timeout: 15000 })

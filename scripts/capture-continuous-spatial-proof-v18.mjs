@@ -526,7 +526,7 @@ async function captureFallback(browser) {
   const diagnostics = attachDiagnostics(page, 'home-no-webgl-fallback')
   await page.addInitScript(() => { Object.defineProperty(HTMLCanvasElement.prototype, 'getContext', { configurable: true, value: () => null }) })
   await page.goto(urlFor('/home/'), { waitUntil: 'domcontentloaded' })
-  const fallback = page.getByRole('region', { name: 'Spatial Home fallback' })
+  const fallback = page.getByRole('main', { name: 'Spatial Home fallback' })
   await fallback.waitFor({ state: 'visible', timeout: 30_000 })
   const semantic = page.getByRole('navigation', { name: 'Accessible Home destinations' })
   const screenshot = path.join(outputDir, `home-no-webgl-fallback-${exactHead.slice(0, 12)}.png`)
