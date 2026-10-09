@@ -51,8 +51,11 @@ try {
       })
       const response = await page.goto(`${base}/home/`, { waitUntil: 'domcontentloaded', timeout: 60000 })
       assert.equal(response?.status(), 200, 'Built Home must load')
-      const fallback = page.locator('[data-testid="urai-home-accessible-fallback"]')
+      // Capability detectors share a test ID while hydrating. Measure only the
+      // canonical settled Home owner, never a detecting placeholder or nth match.
+      const fallback = page.locator('section.urai-home-spatial-runtime-layer[data-urai-home-runtime="accessible-fallback-without-webgl"]')
       await fallback.waitFor({ state: 'visible', timeout: 90000 })
+      assert.equal(await fallback.count(), 1, 'Exactly one canonical Home fallback must own the scene')
       assert.equal(await fallback.getAttribute('data-webgl-state'), 'unavailable')
       assert.equal(await page.locator('body').getAttribute('data-deployed-sha'), exactHead, 'Served build must match the proof head')
       const launcher = fallback.locator('.home-adam-launcher-slot button')
