@@ -1,4 +1,6 @@
 import { chromium } from 'playwright'
+import { createHash } from 'node:crypto'
+import { waitForLifeMapDestination } from './native-doorway-destination-readiness.mjs'
 import fs from 'node:fs/promises'
 import path from 'node:path'
 
@@ -88,7 +90,7 @@ async function prove(browser, doorway, testCase) {
   const context = await browser.newContext({ viewport: testCase.viewport, isMobile: !!testCase.isMobile, hasTouch: !!testCase.hasTouch, deviceScaleFactor: testCase.isMobile ? 2 : 1 })
   const page = await context.newPage()
   const screenshot = `screenshots/${testCase.device}-${testCase.method}-home-to-${doorway.id}.png`
-  const record = { exactSha, sourceRoute: '/home', destinationRoute: doorway.destination, device: testCase.device, activationMethod: testCase.method, inputDispatch: testCase.method === 'keyboard' ? 'focused-enter' : 'browser-coordinate-hit', viewport: testCase.viewport, targetAccessibleName: doorway.name, targetTestId: doorway.testId, resultingUrl: '', screenshot, semanticNavigationOwner: 'runtime-boundary', semanticNavigationNonDominant: false, legacyVisibleDoorways: 0, targetOwnsHitPoint: false, hitPoint: null, success: false, failureReason: '' }
+  const record = { exactSha, sourceRoute: '/home', destinationRoute: doorway.destination, device: testCase.device, activationMethod: testCase.method, inputDispatch: testCase.method === 'keyboard' ? 'focused-enter' : 'browser-coordinate-hit', viewport: testCase.viewport, targetAccessibleName: doorway.name, targetTestId: doorway.testId, resultingUrl: '', screenshot, semanticNavigationOwner: 'runtime-boundary', semanticNavigationNonDominant: false, legacyVisibleDoorways: 0, targetOwnsHitPoint: false, hitPoint: null, navigationSucceeded: false, destinationReadiness: null, image: null, success: false, failureReason: '' }
   try {
     await page.goto(`${baseUrl}/home`, { waitUntil: 'domcontentloaded', timeout: 60000 })
     await page.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => {})
@@ -113,12 +115,23 @@ async function prove(browser, doorway, testCase) {
     record.hitPoint = activation.hitPoint
     await page.waitForURL((url) => normalize(url.toString()) === doorway.destination, { timeout: 20000 })
     record.resultingUrl = page.url()
-    record.success = normalize(record.resultingUrl) === doorway.destination
+    record.navigationSucceeded = normalize(record.resultingUrl) === doorway.destination
+    if (!record.navigationSucceeded) throw new Error('destination route did not match the native doorway')
+    if (doorway.destination === '/life-map') record.destinationReadiness = await waitForLifeMapDestination(page)
+    record.success = record.navigationSucceeded
   } catch (error) {
     record.resultingUrl = page.url()
     record.failureReason = String(error?.message || error)
   } finally {
-    await page.screenshot({ path: path.join(outDir, screenshot), animations: 'disabled' }).catch(() => {})
+    try {
+      const bytes = await page.screenshot({ path: path.join(outDir, screenshot), animations: 'disabled' })
+      if (bytes.length < 24 || bytes.subarray(0, 8).toString('hex') !== '89504e470d0a1a0a') throw new Error('retained screenshot is not a nonempty PNG')
+      record.image = { path: screenshot, sourceSha: exactSha, capturedAt: new Date().toISOString(), bytes: bytes.length, sha256: createHash('sha256').update(bytes).digest('hex'), width: bytes.readUInt32BE(16), height: bytes.readUInt32BE(20) }
+    } catch (error) {
+      record.success = false
+      const detail = `retained screenshot failed: ${String(error?.message || error)}`
+      record.failureReason = record.failureReason ? `${record.failureReason}; ${detail}` : detail
+    }
     await context.close()
   }
   return record
@@ -133,7 +146,7 @@ try {
   await browser.close()
 }
 const errors = interactions.filter((item) => !item.success).map((item) => `${item.device}:${item.activationMethod}:${item.destinationRoute}: ${item.failureReason}`)
-const receipt = { schemaVersion: 10, exactSha, baseUrl, createdAt: new Date().toISOString(), persistentWorldCanon: true, directDestinationNavigationPermitted: true, persistentVisibleShortcutPillsForbidden: true, semanticNavigationRequired: true, semanticNavigationOwner: 'runtime-boundary', fallbackNavigationParityRequired: true, spatialPointerAndTouchCoveredByBrowserCoordinates: true, nonDominanceMeasuredByDeclaredOwnershipOpacityAndViewportFootprint: true, interactions, status: errors.length ? 'failed' : 'passed', errors }
+const receipt = { schemaVersion: 11, lifeMapDestinationReadinessRequired: true, screenshotCustodyRequired: true, groundDestinationRenderReadinessVerified: false, exactSha, baseUrl, createdAt: new Date().toISOString(), persistentWorldCanon: true, directDestinationNavigationPermitted: true, persistentVisibleShortcutPillsForbidden: true, semanticNavigationRequired: true, semanticNavigationOwner: 'runtime-boundary', fallbackNavigationParityRequired: true, spatialPointerAndTouchCoveredByBrowserCoordinates: true, nonDominanceMeasuredByDeclaredOwnershipOpacityAndViewportFootprint: true, interactions, status: errors.length ? 'failed' : 'passed', errors }
 await fs.writeFile(path.join(outDir, 'native-doorway-receipt.json'), `${JSON.stringify(receipt, null, 2)}\n`)
 console.log(errors.length ? 'NATIVE_DOORWAY_PROOF_FAILED' : 'NATIVE_DOORWAY_PROOF_PASSED')
 console.log(JSON.stringify(receipt, null, 2))
