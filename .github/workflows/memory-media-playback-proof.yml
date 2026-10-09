@@ -3,6 +3,8 @@ name: Private Memory Media Playback Proof
 on:
   pull_request:
     paths:
+      - 'firebase/firestore.rules'
+      - 'tests/firestore.privacyConsent.rules.test.mjs'
       - 'apps/functions/src/**'
       - 'apps/functions/test/memoryMediaPlayback.test.js'
       - 'apps/functions/test/captured-reality-replay-memory-authority.test.js'
@@ -50,6 +52,7 @@ jobs:
           git rev-parse HEAD > "$RUNNER_TEMP/memory-media-playback/source-sha.txt"
           git rev-parse 'HEAD^{tree}' > "$RUNNER_TEMP/memory-media-playback/source-tree.txt"
           sha256sum \
+            firebase/firestore.rules tests/firestore.privacyConsent.rules.test.mjs \
             apps/functions/src/memoryMedia.ts apps/functions/src/capturedReality.ts apps/functions/src/consentPolicyAuthority.ts apps/functions/src/index.ts \
             apps/functions/test/memoryMediaPlayback.test.js apps/functions/test/captured-reality-replay-memory-authority.test.js \
             apps/functions/scripts/memory-media-playback-emulator-proof.cjs firebase.memory-media-playback-test.json .github/workflows/memory-media-playback-proof.yml \
@@ -94,7 +97,7 @@ jobs:
           export PATH="$JAVA_HOME/bin:$PATH"
           java -version 2>&1 | tee "$RUNNER_TEMP/memory-media-playback/java-version.log"
           java -version 2>&1 | grep -E 'version "21\.'
-          pnpm exec firebase emulators:exec --project demo-memory-media-playback --config firebase.memory-media-playback-test.json --only auth,firestore,storage,functions "node apps/functions/scripts/memory-media-playback-emulator-proof.cjs" 2>&1 | tee "$RUNNER_TEMP/memory-media-playback/loaded-emulators.log"
+          pnpm exec firebase emulators:exec --project demo-memory-media-playback --config firebase.memory-media-playback-test.json --only auth,firestore,storage,functions "node apps/functions/scripts/memory-media-playback-emulator-proof.cjs && node --test tests/firestore.privacyConsent.rules.test.mjs" 2>&1 | tee "$RUNNER_TEMP/memory-media-playback/loaded-emulators.log"
       - name: Preserve scope and current source integrity
         if: always()
         run: |

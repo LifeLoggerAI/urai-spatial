@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { getAuth, onAuthStateChanged } from 'firebase/auth'
-import { doc, onSnapshot } from 'firebase/firestore'
+import { doc, onSnapshot, Timestamp } from 'firebase/firestore'
 import { httpsCallable } from 'firebase/functions'
 import { app, firebasePublicEnvReady, functions, getFirebaseDb } from '@/lib/firebase/client'
 import { parseSelectedMemory, type SelectedMemory, type SelectedMemoryMedia } from './selectedMemoryContract'
@@ -10,6 +10,17 @@ import { fetchOwnedMemoryPlayback, validateOwnedMemoryPlaybackDescriptor, type O
 
 type Playback = { key: string; status: 'absent' | 'loading' | 'ready' | 'unavailable'; media: SelectedMemoryMedia[] }
 const EMPTY: Playback = { key: '', status: 'absent', media: [] }
+
+function consentExpiryMillis(value: unknown): number {
+  if (typeof value === 'number') return Number.isSafeInteger(value) && value > 0 ? value : Number.NaN
+  if (value instanceof Timestamp) return value.toMillis()
+  if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/.test(value)) {
+    const millis = Date.parse(value)
+    if (Number.isSafeInteger(millis) && millis > 0 && new Date(millis).toISOString() === value) return millis
+  }
+  return Number.NaN
+}
+
 
 export function useOwnedMemoryMediaPlayback(memory: SelectedMemory | null, onRelease?: () => void) {
   const releaseConsumer = useRef(onRelease)
@@ -31,13 +42,17 @@ export function useOwnedMemoryMediaPlayback(memory: SelectedMemory | null, onRel
       const version = generation, controller = new AbortController(), stops: (() => void)[] = []
       let objectUrl: string | null = null, expiry: ReturnType<typeof setTimeout> | undefined, poll: ReturnType<typeof setTimeout> | undefined
       let policyRevision: number | null = null, deletionGeneration: number | null = null
+      let consentSnapshot: { receiptHash: string; expiresAt: number } | null = null
       let sourceSnapshot: Record<string, unknown> | null = null
       const readSourceSnapshot = (): Record<string, unknown> | null => sourceSnapshot
       const loaded = new Set<number>()
       let finishSnapshots: () => void = () => {}
       const snapshotsReady = new Promise<void>(resolve => { finishSnapshots = resolve })
       const current = () => !closed && version === generation && !controller.signal.aborted && auth.currentUser === user
+      let released = false
       const release = () => {
+        if (released) return
+        released = true
         controller.abort(); stops.splice(0).forEach(stop => stop())
         clearTimeout(expiry); clearTimeout(poll)
         finishSnapshots()
@@ -79,11 +94,22 @@ export function useOwnedMemoryMediaPlayback(memory: SelectedMemory | null, onRel
           if (!current()) return
           if (!check(snapshot.exists() ? snapshot.data() : null)) { deny(); return }
           loaded.add(index)
-          if (loaded.size === 5) finishSnapshots()
+          if (loaded.size === 6) finishSnapshots()
         }, deny)
         if (current()) stops.push(stop)
         else stop()
       }
+      watch(['consentRecords', user.uid + '_memory_storage'], data => {
+        const expiresAt = consentExpiryMillis(data?.expiresAt)
+        if (!data || data.uid !== user.uid || data.purpose !== 'memory.storage' || data.consentTier !== 'C1'
+          || data.policyVersion !== '1.0.0' || data.status !== 'granted'
+          || typeof data.receiptHash !== 'string' || !/^[a-f0-9]{64}$/.test(data.receiptHash)
+          || !Number.isSafeInteger(expiresAt) || expiresAt <= Date.now()
+          || (consentSnapshot && (data.receiptHash !== consentSnapshot.receiptHash || expiresAt !== consentSnapshot.expiresAt))
+          || (sourceSnapshot && (data.receiptHash !== sourceSnapshot.consentReceiptHash || expiresAt !== sourceSnapshot.consentExpiresAt))) return false
+        consentSnapshot = { receiptHash: data.receiptHash, expiresAt }
+        return true
+      })
       watch(['users', user.uid, 'memories', memory.id], data => {
         if (!data) return false
         const parsed = parseSelectedMemory(data, user.uid, memory.id, process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET)
@@ -110,7 +136,8 @@ export function useOwnedMemoryMediaPlayback(memory: SelectedMemory | null, onRel
       watch(['users', user.uid], data => !!data && data.deleted !== true && !['deleting', 'deleted', 'disabled'].includes(String(data.accountStatus)))
       watch(['users', user.uid, 'memoryMediaReceipts', receipt.mediaReceiptId], data => {
         if (!data || data.ownerUid !== user.uid || data.memoryId !== memory.id || data.receiptId !== receipt.mediaReceiptId || data.kind !== receipt.kind || data.state !== 'ready') return false
-        if ((policyRevision !== null && data.consentRevision !== policyRevision)
+        if ((consentSnapshot && (data.consentReceiptHash !== consentSnapshot.receiptHash || data.consentExpiresAt !== consentSnapshot.expiresAt))
+          || (policyRevision !== null && data.consentRevision !== policyRevision)
           || (deletionGeneration !== null && data.deletionGeneration !== deletionGeneration)) return false
         if (admitted) return data.sha256 === admitted.sha256 && data.storageGeneration === admitted.storageGeneration
           && data.byteLength === admitted.byteLength && data.contentType === admitted.contentType && !!sourceSnapshot
@@ -146,3 +173,4 @@ export function useOwnedMemoryMediaPlayback(memory: SelectedMemory | null, onRel
   }, [key])
   return playback.key === key ? playback : { key, status: receipt ? 'loading' as const : 'absent' as const, media: [] }
 }
+

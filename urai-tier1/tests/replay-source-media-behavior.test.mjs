@@ -3,9 +3,11 @@ import fs from 'node:fs'
 import vm from 'node:vm'
 import test from 'node:test'
 import ts from 'typescript'
+import { Timestamp } from 'firebase/firestore'
+import * as ownedPlayback from '../src/spatial/memory/ownedMemoryMediaPlayback.ts'
 import { createReplayVideoSession, createReplayMediaSession } from '../src/app/replay/replayMediaSession.ts'
 import { replaySessionIdentity, replayVisualAdmission } from '../src/app/replay/replayVisualAdmission.ts'
-import { buildExplicitDemoMemory } from '../src/spatial/memory/selectedMemoryContract.ts'
+import { parseSelectedMemory, buildExplicitDemoMemory } from '../src/spatial/memory/selectedMemoryContract.ts'
 
 class FakeVideo extends EventTarget {
   duration = Number.NaN
@@ -527,3 +529,89 @@ test('released Life Movie media cannot auto-start the source-less chapter timer'
   await h.controls.play(); h.release(); h.advance()
   assert.equal(h.timers.length, 0, 'a following source-less chapter needs a new explicit play action')
 })
+
+// Actual hook execution; SDK/HTTP boundary doubles are explicitly synthetic.
+const c1HookCode = ts.transpileModule(fs.readFileSync(new URL('../src/spatial/memory/useOwnedMemoryMediaPlayback.ts', import.meta.url), 'utf8'), { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS } }).outputText
+async function mountC1Playback() {
+ const uid='synthetic-owner',id='synthetic-memory',rid='a'.repeat(64),expiry=Date.now()+600000
+ const raw={ownerId:uid,title:'Synthetic consent boundary',occurredAt:'2026-01-01T12:00:00.000Z',summary:'Synthetic only',emotionalState:'calm',privacy:'private',sourceMedia:[{kind:'video',mediaReceiptId:rid}],star:{position:[0,0,-4]},replayManifest:{id:'synthetic-manifest',version:1,durationMs:3000,segments:['memory','emotion','pattern','return'].map((id,i)=>({id,label:id,caption:id,narratorLine:'Synthetic',startsAtMs:i*750,durationMs:750}))}}
+ const parsed=parseSelectedMemory(raw,uid,id,'synthetic-bucket');assert.equal(parsed.status,'ready')
+ const descriptor={schemaVersion:'urai-owned-memory-media-playback-v1',requiresAuthorization:true,ownerId:uid,memoryId:id,receiptId:rid,kind:'video',contentType:'video/mp4',sha256:'f'.repeat(64),byteLength:16,storageGeneration:'123',sourceAuthorityHash:'c'.repeat(64),authorityHash:'d'.repeat(64),expiresAt:Date.now()+60000}
+ const path='consentRecords/'+uid+'_memory_storage'
+ const consent={uid,purpose:'memory.storage',consentTier:'C1',policyVersion:'1.0.0',status:'granted',receiptHash:'b'.repeat(64),expiresAt:expiry}
+ const docs=new Map([
+ ['users/'+uid,{accountStatus:'active'}],
+ ['users/'+uid+'/memories/'+id,raw],
+ ['users/'+uid+'/privacyPolicy/current',{ownerId:uid,version:2,revision:1,domains:{memory:{mode:'granted',replayVisible:true}},enforcement:{state:'fully-enforced'}}],
+ ['users/'+uid+'/privacyRuntime/exportAuthority',{generation:0,pendingDeletions:{}}],
+ ['users/'+uid+'/memoryMediaReceipts/'+rid,{schemaVersion:'urai-owned-memory-media-v1',ownerUid:uid,memoryId:id,receiptId:rid,kind:'video',state:'ready',sha256:descriptor.sha256,byteLength:16,contentType:'video/mp4',storageGeneration:'123',consentRevision:1,consentReceiptHash:consent.receiptHash,consentExpiresAt:expiry,deletionGeneration:0,attemptNonce:'synthetic-nonce',bucketName:'synthetic-bucket',objectPath:'synthetic-private-object'}],
+ [path,consent]])
+ const states=[],refs=[],effects=[],queued=[],watchers=new Set(),timers=new Map(),revoked=[]
+ let si=0,ri=0,ei=0,tid=0,releases=0
+ const auth={currentUser:{uid,getIdToken:async()=> 'synthetic-token'}}
+ const snapshot=p=>({exists:()=>docs.has(p),data:()=>docs.get(p)})
+ const modules={
+  react:{useState(initial){const i=si++;if(!(i in states))states[i]=initial;return[states[i],v=>{states[i]=typeof v==='function'?v(states[i]):v}]},
+   useRef(v){return refs[ri++]??={current:v}},useEffect(fn,deps){const i=ei++;if(!effects[i]||deps.some((x,j)=>x!==effects[i].deps[j]))queued.push(()=>{effects[i]?.cleanup?.();effects[i]={deps,cleanup:fn()}})}},
+  'firebase/auth':{getAuth:()=>auth,onAuthStateChanged(_a,cb){queueMicrotask(()=>cb(auth.currentUser));return()=>{}}},
+  'firebase/firestore':{Timestamp,doc:(_db,...p)=>p.join('/'),onSnapshot(p,fn){const w={p,fn};watchers.add(w);queueMicrotask(()=>{if(watchers.has(w))fn(snapshot(p))});return()=>watchers.delete(w)}},
+  'firebase/functions':{httpsCallable:()=>async()=>({data:{...descriptor}})},
+  '@/lib/firebase/client':{app:{},firebasePublicEnvReady:true,functions:{},getFirebaseDb:()=>({})},
+  './selectedMemoryContract':{parseSelectedMemory},
+  './ownedMemoryMediaPlayback':{...ownedPlayback,fetchOwnedMemoryPlayback:async()=>new Blob(['synthetic'])}}
+ const output={}
+ const setTimer=(fn,ms)=>{const i=++tid;timers.set(i,{fn,ms});return i},clearTimer=i=>timers.delete(i)
+ vm.runInNewContext(c1HookCode,{exports:output,require:n=>{assert.ok(n in modules,n);return modules[n]},AbortController,Date,Number,JSON,navigator:{onLine:true},process:{env:{NEXT_PUBLIC_FIREBASE_PROJECT_ID:'urai-4dc1d',NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET:'synthetic-bucket'}},setTimeout:setTimer,clearTimeout:clearTimer,URL:{createObjectURL:()=> 'blob:synthetic',revokeObjectURL:u=>revoked.push(u)},window:new EventTarget()})
+ const render=()=>{si=ri=ei=0;const p=output.useOwnedMemoryMediaPlayback(parsed.memory,()=>releases++);while(queued.length)queued.shift()();return p}
+ render();for(let i=0;i<30;i++)await Promise.resolve()
+ assert.equal(render().status,'ready','the actual hook mounts under disclosed SDK/HTTP fixtures')
+ return {path,consent,revoked,releaseCount:()=>releases,render,
+  update(value){docs.set(path,value);for(const w of [...watchers])if(w.p===path)w.fn(snapshot(path))},
+  cleanup(){for(const e of effects)e.cleanup?.()}}
+}
+for(const [label,change] of [
+ ['C1 status revoked',c=>({...c,status:'revoked'})],
+ ['C1 receipt hash replaced',c=>({...c,receiptHash:'e'.repeat(64)})],
+ ['C1 expiry replaced',c=>({...c,expiresAt:Date.now()-1})]
+])test('mounted private source immediately closes on '+label,async()=>{
+ const h=await mountC1Playback()
+ try {h.update(change(h.consent));assert.equal(h.render().status,'unavailable');assert.ok(h.revoked.length>0);assert.ok(h.releaseCount()>0)}
+ finally{h.cleanup()}
+})
+
+
+// Late SDK settlement executes the actual hook and transport; SDK/HTTP doubles are synthetic.
+function staleReleaseDeferred(){let resolve,reject; const promise=new Promise((a,b)=>{resolve=a;reject=b});return {promise,resolve,reject};}
+async function staleReleaseDrain(){for(let i=0;i<60;i++)await Promise.resolve();}
+function staleReleaseLoad(source,requireFn,extra={}){const module={exports:{}};vm.runInNewContext(ts.transpileModule(source,{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText,{module,exports:module.exports,require:requireFn,AbortController,URL,Uint8Array,Blob,crypto:webcrypto,fetch,Response,Date,...extra});return module.exports;}
+async function staleReleaseScenario(source,phase){
+ const bytes=Buffer.from('synthetic hook cleanup fixture; not family media');
+ const receipt={mediaReceiptId:'a'.repeat(64),kind:'audio'};
+ const memory={ownerId:'owner',id:'memory',privacy:'private',authorization:'owner',sourceMediaReceipts:[receipt]};
+ const descriptor={schemaVersion:'urai-owned-memory-media-playback-v1',requiresAuthorization:true,ownerId:'owner',memoryId:'memory',receiptId:receipt.mediaReceiptId,kind:'audio',contentType:'audio/wav',sha256:createHash('sha256').update(bytes).digest('hex'),byteLength:bytes.length,storageGeneration:'123',sourceAuthorityHash:'b'.repeat(64),authorityHash:'c'.repeat(64),expiresAt:Date.now()+60000};
+ const pending=staleReleaseDeferred(), watches=[],timers=new Set();let effect,authCallback,tokenCalls=0,callableCalls=0,newRelease=0,oldRelease=0;
+ const ref={current:null};const user={uid:'owner',getIdToken(){tokenCalls++;return phase==='token'?pending.promise:Promise.resolve('synthetic-token');}};const auth={currentUser:user};
+ const consentExpiry=Date.now()+600000;
+ const sourceReceipt={consentReceiptHash:'d'.repeat(64),consentExpiresAt:consentExpiry,ownerUid:'owner',memoryId:'memory',receiptId:receipt.mediaReceiptId,kind:'audio',state:'ready',consentRevision:1,deletionGeneration:0,sha256:descriptor.sha256,storageGeneration:'123',byteLength:bytes.length,contentType:'audio/wav'};
+ const timerEnv={setTimeout(fn,ms){const timer={fn,ms};timers.add(timer);return timer;},clearTimeout(timer){timers.delete(timer);}};
+ const transport=staleReleaseLoad(fs.readFileSync(new URL('../src/spatial/memory/ownedMemoryMediaPlayback.ts', import.meta.url),'utf8'),()=>{throw Error('transport import unexpected');},{...timerEnv,fetch:async()=>new Response(bytes,{status:200,headers:{'content-type':descriptor.contentType,'content-length':String(bytes.length),'x-urai-checksum-sha256':descriptor.sha256,'x-urai-storage-generation':'123'}})});
+ const hook=staleReleaseLoad(source,id=>{
+  if(id==='react')return {useRef:()=>ref,useState:()=>[{},()=>{}],useEffect:fn=>{effect=fn;}};
+  if(id==='firebase/auth')return {getAuth:()=>auth,onAuthStateChanged(_auth,fn){authCallback=fn;return ()=>{};}};
+  if(id==='firebase/firestore')return {Timestamp:Timestamp,doc:(_db,...parts)=>parts.join('/'),onSnapshot(path,fn){watches.push({path,fn});return ()=>{};}};
+  if(id==='firebase/functions')return {httpsCallable:()=>()=>{callableCalls++;return phase==='callable'&&callableCalls===1?pending.promise:Promise.resolve({data:descriptor});}};
+  if(id==='@/lib/firebase/client')return {app:{},firebasePublicEnvReady:true,functions:{},getFirebaseDb:()=>({})};
+  if(id==='./selectedMemoryContract')return {parseSelectedMemory:()=>({status:'ready',memory})};
+  if(id==='./ownedMemoryMediaPlayback')return transport;
+  throw Error('unexpected import '+id);
+ },{...timerEnv,navigator:{onLine:true},window:{addEventListener(){},removeEventListener(){}},process:{env:{NEXT_PUBLIC_FIREBASE_PROJECT_ID:'urai-4dc1d'}}});
+ hook.useOwnedMemoryMediaPlayback(memory,()=>{oldRelease++;});const cleanup=effect();authCallback(user);
+ for(const {path,fn}of watches){let data=sourceReceipt;if(path==='consentRecords/owner_memory_storage')data={uid:'owner',purpose:'memory.storage',consentTier:'C1',policyVersion:'1.0.0',status:'granted',receiptHash:sourceReceipt.consentReceiptHash,expiresAt:consentExpiry};else if(path.endsWith('/memories/memory'))data={};else if(path.endsWith('/privacyPolicy/current'))data={ownerId:'owner',version:2,revision:1,domains:{memory:{mode:'granted',replayVisible:true}},enforcement:{state:'fully-enforced'}};else if(path.endsWith('/privacyRuntime/exportAuthority'))data={generation:0,pendingDeletions:{}};else if(path==='users/owner')data={};fn({exists:()=>true,data:()=>data});}
+ await staleReleaseDrain();assert.equal(callableCalls,1,'old mount entered actual callable wait');if(phase==='token')assert.equal(tokenCalls,1,'old mount entered actual token wait');
+ cleanup();assert.equal(oldRelease,1,'initial cleanup releases old consumer once');
+ hook.useOwnedMemoryMediaPlayback(memory,()=>{newRelease++;});
+ await staleReleaseDrain();pending.resolve(phase==='callable'?{data:descriptor}:'synthetic-token');await staleReleaseDrain();
+ return {newRelease,oldRelease,timers:timers.size};
+}
+
+for(const phase of ['callable','token']) test('obsolete private playback '+phase+' settlement preserves the newer consumer', async()=>{ const source=fs.readFileSync(new URL('../src/spatial/memory/useOwnedMemoryMediaPlayback.ts',import.meta.url),'utf8');const r=await staleReleaseScenario(source,phase);assert.equal(r.newRelease,0,JSON.stringify(r));assert.equal(r.oldRelease,1);assert.equal(r.timers,0) })
