@@ -119,7 +119,7 @@ function LifeMapAccessGate() {
   return <section data-testid="urai-r3f-canonical-lifemap" data-canonical-asset={lifeMapAssets.primary.src} data-selected-memory-owner="spatial-lens-only" data-life-map-access={mode} data-life-map-source={mode} data-private-memory-mounted={mode === "signed-out" ? "false" : undefined} aria-label="URAI canonical spatial Life Map" style={{ position:"fixed", inset:0, zIndex:100, width:"100vw", height:"100svh", minHeight:"100svh", overflow:"hidden", background:"#01030a" }}>
     <div
       aria-hidden={mode === "signed-out" ? true : undefined}
-      {...(mode === "signed-out" ? { inert: "" } : {})}
+      inert={mode === "signed-out" ? true : undefined}
       style={{ position:"absolute", inset:0 }}
     >
       <LifeMapRouteBoundary authenticatedUserId={mode === "private" ? authenticatedUserId : null} />
