@@ -2,6 +2,8 @@ import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import path from 'node:path'
 import test from 'node:test'
+import vm from 'node:vm'
+import ts from 'typescript'
 
 const root = path.resolve(import.meta.dirname, '..')
 const read = (relative) => fs.readFileSync(path.join(root, relative), 'utf8')
@@ -83,4 +85,77 @@ test('Client subscriptions remain inside the authenticated owner path', () => {
   assert.match(bridge, /collection\(getFirebaseDb\(\), 'users', uid, collectionName\)/)
   assert.doesNotMatch(bridge, /where\('uid'/)
   assert.doesNotMatch(bridge, /collection\(getFirebaseDb\(\), collectionName\)/)
+})
+
+// Actual typed keyboard effect, with a disclosed earlier synthetic world listener.
+// No React/Firebase runtime, network, provider, or real private state is used.
+function keyboardFixture({ pending = null, showAudit = false } = {}) {
+  const source = read('src/app/privacy-controls/ConsentSanctuaryClient.tsx')
+  const start = source.indexOf('  useEffect(() => {\n    const onKeyDown =')
+  const end = source.indexOf('  }, [pending, showAudit])', start)
+  assert.ok(start >= 0 && end > start, 'production keyboard effect exists')
+  const code = ts.transpileModule(source.slice(start, end + '  }, [pending, showAudit])'.length), {
+    compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS },
+  }).outputText
+  const listeners = [], calls = { worldUnwinds: 0, historyBack: 0, audit: [], pending: [], mutation: [] }
+  let cleanup
+  const window = {
+    history: { length: 2, back: () => { calls.historyBack++ } },
+    location: { assign: () => { calls.historyBack++ } },
+    addEventListener: (_name, callback, capture = false) => listeners.push({ callback, capture }),
+    removeEventListener: (_name, callback, capture = false) => {
+      const index = listeners.findIndex(listener => listener.callback === callback && listener.capture === capture)
+      assert.ok(index >= 0, 'cleanup removes the exact listener and event phase')
+      listeners.splice(index, 1)
+    },
+  }
+  window.addEventListener('keydown', () => { calls.worldUnwinds++ })
+  class Element { constructor(foreign = false) { this.foreign = foreign } closest(selector) {
+    if (selector === '[role="dialog"]' && this.foreign) return { closest: () => null }
+    return null
+  } }
+  vm.runInNewContext(code, { window, Element, HTMLElement: Element, pending, showAudit,
+    useEffect: effect => { cleanup = effect() }, document: { getElementById: () => ({ focus() {} }) },
+    setPending: value => calls.pending.push(value), setMutationState: value => calls.mutation.push(value),
+    setShowAudit: value => calls.audit.push(value), setSelectedDomain: () => {},
+  })
+  return { calls, cleanup: () => cleanup(), dispatch({ prevented = false, foreign = false } = {}) {
+    let stopped = false
+    const event = { key: 'Escape', target: new Element(foreign), defaultPrevented: prevented,
+      preventDefault() { this.defaultPrevented = true }, stopImmediatePropagation() { stopped = true } }
+    for (const phase of [true, false]) for (const listener of listeners.filter(item => item.capture === phase)) {
+      if (stopped) break
+      listener.callback(event)
+    }
+    return event
+  } }
+}
+
+test('Escape closes audit receipts before an earlier world listener can leave Privacy', () => {
+  const f = keyboardFixture({ showAudit: true })
+  assert.equal(f.dispatch().defaultPrevented, true)
+  assert.deepEqual(f.calls.audit, [false])
+  assert.equal(f.calls.worldUnwinds, 0)
+  assert.equal(f.calls.historyBack, 0)
+  f.cleanup()
+})
+
+test('Escape cancels a pending consent preview without routing or dispatching it', () => {
+  const f = keyboardFixture({ pending: { domain: 'memory' } })
+  f.dispatch()
+  assert.deepEqual(f.calls.pending, [null])
+  assert.deepEqual(f.calls.mutation, ['idle'])
+  assert.equal(f.calls.worldUnwinds, 0)
+  assert.equal(f.calls.historyBack, 0)
+  f.cleanup()
+})
+
+test('Privacy Escape respects an already-consumed key or a foreign dialog', () => {
+  for (const options of [{ prevented: true }, { foreign: true }]) {
+    const f = keyboardFixture({ showAudit: true }); f.dispatch(options)
+    assert.deepEqual(f.calls.audit, [])
+    assert.deepEqual(f.calls.pending, [])
+    assert.equal(f.calls.historyBack, 0)
+    f.cleanup()
+  }
 })

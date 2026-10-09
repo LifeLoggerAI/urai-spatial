@@ -19,6 +19,16 @@ online availability, cancellation, and stale-response fences remain intact.
 Demo, signed-out, loading, unavailable, and offline states remain denied.
 No backend policy or deletion implementation changes.
 
+Original consuming Privacy pixels subsequently reveal another defect: Escape
+while inspecting receipts can reach a persistent world unwind listener and
+leave the Sanctuary. Its former green browser test only checks receipt removal,
+which also passes when the whole route exits. The Sanctuary now owns Escape
+in the capture phase, consumes its dismissal/unwind event, and respects an
+already handled key or a foreign dialog. Pending consent previews and receipts
+close without routing. The browser test additionally requires the same demo
+URL, route owner, source disclosure, and absence of the global loading surface
+after receipt dismissal. Shared navigation and backend authority are unchanged.
+
 Original browser pixels from the starting source also reveal mid-word export
 scope labels. The generic full-width input rule overrides checkbox sizing.
 The targeted checkbox rule restores a fixed 22px control while retaining the
@@ -62,6 +72,15 @@ security, keyboard, motion, fallback, and offline assertions remain.
   the actual local Node 22.23.3 total is 108 pass, 0 fail, 0 cancelled, 0 skip.
   The exact-count receipt requires 108. All existing tests/type checks and
   zero-failure/zero-skip controls remain; no acceptance requirement is waived.
+- The additional Privacy keyboard-effect regression reproduces three failures
+  against exact `968d4f19ad90188fc47eecb515ba4f181e51d65e` (6 retained pass,
+  3 new fail). The corrected actual typed effect passes all nine tests using
+  a disclosed simulated earlier world listener, without a Firebase/React
+  runtime or network. The combined export/privacy authority suite now passes
+  111/111 locally, with zero failures, cancellations, or skips; its exact-count
+  receipt is 111. Current final-source native behavior and settled Privacy
+  PNGs must be earned; the former five green cases and loading-screen PNG are
+  retained as counterevidence, not visual acceptance.
 - Thirteen retained source/archive tests pass for manual Apple containment.
   The manual-only workflow is byte-identical to the separately reviewed
   containment leaf `ab53b956ef51e791e2c0c54a3f3ed5c75b5a1f93` from donor #1761.

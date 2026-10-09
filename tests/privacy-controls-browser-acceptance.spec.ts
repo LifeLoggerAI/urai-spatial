@@ -87,6 +87,11 @@ test('desktop demo exposes all domains and direct keyboard controls', async ({ p
   await expect(page.getByRole('region', { name: 'Privacy audit receipts' })).toBeVisible()
   await page.keyboard.press('Escape')
   await expect(page.getByRole('region', { name: 'Privacy audit receipts' })).toHaveCount(0)
+  await expect(page).toHaveURL(/\/privacy-controls\/\?demo=1$/)
+  await expect(page.locator('main[data-route-owner="consent-sanctuary"]')).toBeVisible()
+  await expect(page.locator('main[data-route-owner="consent-sanctuary"]')).toHaveAttribute('data-privacy-source', 'demo')
+  await expect(page.getByText('DEMONSTRATION — no personal data', { exact: true })).toBeVisible()
+  await expect(page.locator('main.urai-system-state')).toHaveCount(0)
 
   await page.screenshot({ path: path.join(evidenceRoot, 'desktop-sanctuary-overview.png'), fullPage: true })
   await saveEvidence('desktop-runtime', runtime)

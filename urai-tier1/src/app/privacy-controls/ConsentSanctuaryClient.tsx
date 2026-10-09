@@ -386,12 +386,18 @@ export default function ConsentSanctuaryClient() {
         document.getElementById('consent-controls')?.focus()
       }
       if (event.key !== 'Escape') return
+      if (event.defaultPrevented) return
+      const dialog = event.target instanceof Element ? event.target.closest('[role="dialog"]') : null
+      if (dialog && !dialog.closest('.consentDialog')) return
+      // This route owns dismissal before the persistent world's unwind listeners.
+      event.preventDefault()
+      event.stopImmediatePropagation()
       if (pending) { setPending(null); setMutationState('idle'); return }
       if (showAudit) { setShowAudit(false); return }
       if (window.history.length > 1) window.history.back(); else window.location.assign('/passport')
     }
-    window.addEventListener('keydown', onKeyDown)
-    return () => window.removeEventListener('keydown', onKeyDown)
+    window.addEventListener('keydown', onKeyDown, true)
+    return () => window.removeEventListener('keydown', onKeyDown, true)
   }, [pending, showAudit])
 
   useEffect(() => { if (pending) requestAnimationFrame(() => confirmRef.current?.focus()) }, [pending])
