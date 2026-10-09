@@ -59,7 +59,20 @@ export async function fetchOwnedMemoryPlayback(descriptor: OwnedMemoryPlaybackDe
   let reader: ReadableStreamDefaultReader<Uint8Array> | undefined
   try {
     check()
-    const headers = await lifecycle.requestHeaders(); check()
+    // Token refresh is not abortable by the fetch signal. Bound its wait by
+    // the same cancellation/deadline, and observe late SDK settlement safely.
+    let removeTokenAbortListener = () => {}
+    const tokenAbort = new Promise<never>((_resolve, reject) => {
+      const aborted = () => reject(new Error('PRIVATE_MEDIA_AUTHORITY_CHANGED'))
+      removeTokenAbortListener = () => controller.signal.removeEventListener('abort', aborted)
+      controller.signal.addEventListener('abort', aborted, { once: true })
+      if (controller.signal.aborted) aborted()
+    })
+    const headers = await Promise.race([
+      Promise.resolve().then(() => { check(); return lifecycle.requestHeaders() }),
+      tokenAbort,
+    ]).finally(removeTokenAbortListener)
+    check()
     const response = await fetcher(endpoint, { method: 'GET', headers, cache: 'no-store', credentials: 'omit',
       redirect: 'error', referrerPolicy: 'no-referrer', signal: controller.signal })
     check()
