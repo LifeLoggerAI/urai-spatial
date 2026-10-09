@@ -72,6 +72,7 @@ jobs:
       - name: Install exact frozen graph
         run: pnpm install --frozen-lockfile
       - name: Strict build and independent actual handler range regressions
+        id: source_build
         run: |
           set -euo pipefail
           pnpm --filter urai-functions build 2>&1 | tee "$RUNNER_TEMP/memory-media-playback/build.log"
@@ -83,6 +84,7 @@ jobs:
           pnpm --dir urai-tier1 exec playwright install --with-deps chromium 2>&1 | tee "$RUNNER_TEMP/memory-media-playback/chromium-install.log"
           pnpm --dir urai-tier1 exec node tests/owned-memory-media-playback.browser.mjs 2>&1 | tee "$RUNNER_TEMP/memory-media-playback/browser.log"
       - name: Actual loaded Auth, Firestore, Storage and Functions boundaries
+        if: ${{ !cancelled() && steps.source_build.outcome == 'success' }}
         env:
           URAI_ENABLE_CAPTURED_REALITY: 'true'
           FIREBASE_STORAGE_BUCKET: 'demo-memory-media-playback.appspot.com'
