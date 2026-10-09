@@ -13,6 +13,7 @@ on:
       - 'urai-tier1/tests/privacy-session-lifecycle.test.mjs'
       - 'urai-tier1/tests/privacy-consent-sanctuary-contract.test.mjs'
       - 'urai-tier1/tests/passport-ownership-vault-contract.test.mjs'
+      - 'urai-tier1/tests/passport-empty-owner-actions.test.mjs'
   push:
     branches: [repair/release-closure-integration-20261007]
     paths:
@@ -24,6 +25,7 @@ on:
       - 'urai-tier1/tests/privacy-session-lifecycle.test.mjs'
       - 'urai-tier1/tests/privacy-consent-sanctuary-contract.test.mjs'
       - 'urai-tier1/tests/passport-ownership-vault-contract.test.mjs'
+      - 'urai-tier1/tests/passport-empty-owner-actions.test.mjs'
   workflow_dispatch:
 permissions:
   contents: read
@@ -64,7 +66,7 @@ jobs:
           node --test --test-reporter=tap \
             tests/authorized-export-download.test.mjs tests/operational-export-client.test.mjs \
             tests/privacy-session-lifecycle.test.mjs tests/privacy-consent-sanctuary-contract.test.mjs \
-            tests/passport-ownership-vault-contract.test.mjs \
+            tests/passport-ownership-vault-contract.test.mjs tests/passport-empty-owner-actions.test.mjs \
             2>&1 | tee ../artifacts/spatial-export-client/tests.tap
       - name: Strict client types
         run: pnpm --dir urai-tier1 typecheck
@@ -76,7 +78,7 @@ jobs:
           log = pathlib.Path('artifacts/spatial-export-client/tests.tap')
           text = log.read_text()
           counts = {key: int(re.search(r'^# ' + key + r' (\d+)$', text, re.M)[1]) for key in ['tests', 'pass', 'fail', 'cancelled', 'skipped']}
-          assert counts == {'tests': 105, 'pass': 105, 'fail': 0, 'cancelled': 0, 'skipped': 0}, counts
+          assert counts == {'tests': 118, 'pass': 118, 'fail': 0, 'cancelled': 0, 'skipped': 0}, counts
           sha = subprocess.check_output(['git', 'rev-parse', 'HEAD'], text=True).strip()
           assert sha == os.environ['URAI_EXACT_HEAD']
           receipt = {'schemaVersion': 'urai-spatial-export-client-source-proof-v1', 'exactHead': sha, 'tree': subprocess.check_output(['git', 'rev-parse', 'HEAD^{tree}'], text=True).strip(), 'runId': os.environ['GITHUB_RUN_ID'], 'runAttempt': os.environ['GITHUB_RUN_ATTEMPT'], 'tests': counts, 'testLogSha256': hashlib.sha256(log.read_bytes()).hexdigest(), 'privateDataUsed': False, 'providerCalls': 0, 'deployedTransportVerified': False, 'browserAccepted': False, 'deviceAccepted': False, 'releaseAccepted': False}

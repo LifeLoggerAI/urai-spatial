@@ -117,7 +117,10 @@ const runKey = (event = {}) => {
 for (const [name, tag, role] of [['text input','INPUT'],['textarea','TEXTAREA'],['select','SELECT'],['textbox role','DIV','textbox'],['combobox role','DIV','combobox'],['spinbutton role','DIV','spinbutton']]) test('actual Home shortcut preserves ' + name, () => assert.deepEqual(runKey({ target: new HTMLElement(tag,role) }), []))
 test('actual Home shortcut preserves inherited contenteditable', () => assert.deepEqual(runKey({ target: new HTMLElement('SPAN',null,true) }), []))
 for (const key of ['defaultPrevented', 'altKey', 'ctrlKey', 'metaKey', 'shiftKey']) test('actual Home shortcut preserves ' + key, () => assert.deepEqual(runKey({ [key]: true }), []))
-test('plain Home retains canonical direct-controls focus and Escape retains return', () => {
+test('plain Home retains canonical direct-controls focus and Escape claims its canonical return', () => {
   assert.deepEqual(runKey(), [['preventDefault'], ['selected', 'memory'], ['focus', 'consent-controls']])
   assert.deepEqual(runKey({ key: 'Escape' }), [['preventDefault'], ['navigate', '/passport']])
+})
+test('an already consumed Escape adds no second return', () => {
+  assert.deepEqual(runKey({ key: 'Escape', defaultPrevented: true }), [])
 })

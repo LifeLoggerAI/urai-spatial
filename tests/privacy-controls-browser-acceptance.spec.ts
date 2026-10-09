@@ -196,6 +196,89 @@ test('portrait mobile remains usable without spatial movement', async ({ page })
   expect(runtime.pageErrors).toEqual([])
 })
 
+test('narrow direct controls and lower privacy copy remain reachable above the companion', async ({ page }) => {
+  const runtime = await captureRuntime(page)
+  const surfaces: unknown[] = []
+  for (const viewport of [{ width: 390, height: 844 }, { width: 320, height: 568 }]) {
+    await page.setViewportSize(viewport)
+    const root = await openSanctuary(page, '?demo=1')
+    const panel = page.getByRole('region', { name: /Memory controls/i })
+    const controls = panel.locator('button:not(:disabled), a, select:not(:disabled), input:not(:disabled)')
+    expect(await controls.count()).toBeGreaterThanOrEqual(3)
+    for (const control of await controls.all()) {
+      await control.evaluate(element => element.scrollIntoView({ block: 'center', inline: 'nearest' }))
+      await control.focus()
+      await expect(control).toBeFocused()
+      const probe = await control.evaluate(element => {
+        const rect = element.getBoundingClientRect()
+        const companionOverlaps = [...document.querySelectorAll('.urai-world-companion__orb, .urai-world-companion[data-open="true"] .urai-world-companion__menu, [data-urai-adam-launcher], [data-urai-adam-presence]')].filter(candidate => {
+          for (let node: Element | null = candidate; node; node = node.parentElement) {
+            const style = getComputedStyle(node)
+            if (style.display === 'none' || style.visibility === 'hidden' || Number(style.opacity) === 0) return false
+          }
+          const paint = candidate.getBoundingClientRect()
+          return paint.width > 0 && paint.height > 0 && rect.left < paint.right && rect.right > paint.left && rect.top < paint.bottom && rect.bottom > paint.top
+        }).map(candidate => candidate.className || candidate.tagName)
+        const samples = [[0.1, 0.1], [0.9, 0.1], [0.5, 0.5], [0.1, 0.9], [0.9, 0.9]].map(([x, y]) => {
+          const hit = document.elementFromPoint(rect.left + rect.width * x, rect.top + rect.height * y)
+          return { x, y, owned: hit === element || element.contains(hit) }
+        })
+        return { text: element.textContent, width: rect.width, height: rect.height,
+          top: rect.top, bottom: rect.bottom, samples, companionOverlaps }
+      })
+      expect(probe.width, `${probe.text}: target width`).toBeGreaterThanOrEqual(48)
+      expect(probe.height, `${probe.text}: target height`).toBeGreaterThanOrEqual(48)
+      expect(probe.top).toBeGreaterThanOrEqual(0)
+      expect(probe.bottom).toBeLessThanOrEqual(viewport.height)
+      expect(probe.samples.every(sample => sample.owned), `${probe.text}: painted target must be unobscured`).toBe(true)
+      expect(probe.companionOverlaps, `${probe.text}: companion core rectangles must be clear`).toEqual([])
+      surfaces.push({ viewport, control: probe })
+    }
+    for (const copy of [
+      panel.getByText('Choose scope. Tokens, credentials, raw secret fields and legally excepted records are excluded.', { exact: true }),
+      panel.getByText('Completion is shown only after the trusted deletion job confirms it. Append-only evidence and required security/legal records may remain.', { exact: true }),
+    ]) {
+      await copy.evaluate(element => element.scrollIntoView({ block: 'center', inline: 'nearest' }))
+      await expect(copy).toBeVisible()
+      const probe = await copy.evaluate(element => {
+        const rect = element.getBoundingClientRect()
+        const companionOverlaps = [...document.querySelectorAll('.urai-world-companion__orb, .urai-world-companion[data-open="true"] .urai-world-companion__menu, [data-urai-adam-launcher], [data-urai-adam-presence]')].filter(candidate => {
+          for (let node: Element | null = candidate; node; node = node.parentElement) {
+            const style = getComputedStyle(node)
+            if (style.display === 'none' || style.visibility === 'hidden' || Number(style.opacity) === 0) return false
+          }
+          const paint = candidate.getBoundingClientRect()
+          return paint.width > 0 && paint.height > 0 && rect.left < paint.right && rect.right > paint.left && rect.top < paint.bottom && rect.bottom > paint.top
+        }).map(candidate => candidate.className || candidate.tagName)
+        const points = [[0.05, 0.1], [0.95, 0.1], [0.5, 0.5], [0.05, 0.9], [0.95, 0.9]].map(([x, y]) => {
+          const hit = document.elementFromPoint(rect.left + rect.width * x, rect.top + rect.height * y)
+          return { x, y, owned: hit === element || element.contains(hit) }
+        })
+        return { text: element.textContent, left: rect.left, right: rect.right,
+          top: rect.top, bottom: rect.bottom, points, companionOverlaps }
+      })
+      expect(probe.left).toBeGreaterThanOrEqual(0)
+      expect(probe.right).toBeLessThanOrEqual(viewport.width)
+      expect(probe.top).toBeGreaterThanOrEqual(0)
+      expect(probe.bottom).toBeLessThanOrEqual(viewport.height)
+      expect(probe.points.every(point => point.owned), 'lower privacy copy must be painted above any companion').toBe(true)
+      expect(probe.companionOverlaps, 'lower privacy copy must clear companion core rectangles').toEqual([])
+      surfaces.push({ viewport, copy: probe })
+    }
+    await expect(root).toHaveAttribute('data-privacy-source', 'demo')
+    await expect(page.getByRole('button', { name: 'Request export' })).toBeDisabled()
+    await expect(page.getByRole('button', { name: 'Create deletion request' })).toBeDisabled()
+    await page.screenshot({ path: path.join(evidenceRoot, `mobile-lower-copy-${viewport.width}x${viewport.height}.png`) })
+  }
+  await fs.writeFile(path.join(evidenceRoot, 'mobile-surface-geometry.json'), JSON.stringify({
+    exactSha: process.env.EXACT_HEAD_SHA ?? null, surfaces,
+    scope: 'disclosed-demo-native-scroll-focus-and-painted-surface-only',
+  }, null, 2))
+  await saveEvidence('mobile-lower-runtime', runtime)
+  expect(runtime.consoleErrors).toEqual([])
+  expect(runtime.pageErrors).toEqual([])
+})
+
 test('reduced motion and WebGL fallback preserve the complete semantic surface', async ({ page }) => {
   const runtime = await captureRuntime(page)
   await page.emulateMedia({ reducedMotion: 'reduce' })
