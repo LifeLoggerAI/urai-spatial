@@ -385,7 +385,8 @@ export default function ConsentSanctuaryClient() {
         setSelectedDomain('memory')
         document.getElementById('consent-controls')?.focus()
       }
-      if (event.key !== 'Escape') return
+      if (event.key !== 'Escape' || event.defaultPrevented) return
+      event.preventDefault()
       if (pending) { setPending(null); setMutationState('idle'); return }
       if (showAudit) { setShowAudit(false); return }
       if (window.history.length > 1) window.history.back(); else window.location.assign('/passport')
